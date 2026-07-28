@@ -1,12 +1,30 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { rutaPorRol } from "@/lib/auth/rutas";
 
-// Solo refresca la sesión por ahora. Los Server Components no pueden
-// escribir cookies, así que sin este middleware un access token vencido
-// nunca se renueva y un refresh de página puede tumbar al usuario. Las
-// guardas de ruta por rol se agregan aquí mismo en el siguiente paso.
+// Zonas de página: si el rol no está permitido, se redirige a la zona que
+// sí le toca (nunca a /login con sesión activa — eso se lee como un bug).
+const ZONAS_PROTEGIDAS: { prefijo: string; rolesPermitidos: string[] }[] = [
+  { prefijo: "/admin", rolesPermitidos: ["admin"] },
+  { prefijo: "/recepcion", rolesPermitidos: ["recepcion", "admin"] },
+  { prefijo: "/estetica", rolesPermitidos: ["estetica", "admin"] },
+  { prefijo: "/portal", rolesPermitidos: ["cliente"] },
+];
+
+// Zonas de API: nunca redirige (un fetch no sabe qué hacer con un 302 a
+// HTML) — responde 401/403 directo.
+const ZONAS_API_PROTEGIDAS: { prefijo: string; rolesPermitidos: string[] }[] = [
+  { prefijo: "/api/staff", rolesPermitidos: ["admin"] },
+];
+
+function conCookiesDe(origen: NextResponse, destino: NextResponse) {
+  origen.cookies.getAll().forEach((cookie) => destino.cookies.set(cookie));
+  return destino;
+}
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
+  const { pathname } = request.nextUrl;
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -27,7 +45,47 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getUser();
+  // getUser() (no getSession()) revalida el token contra el servidor de
+  // Auth en vez de confiar en lo que ya traiga la cookie.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const zonaPagina = ZONAS_PROTEGIDAS.find((z) => pathname.startsWith(z.prefijo));
+  const zonaApi = ZONAS_API_PROTEGIDAS.find((z) => pathname.startsWith(z.prefijo));
+  const zona = zonaPagina ?? zonaApi;
+
+  if (!zona) return response;
+
+  if (!user) {
+    if (zonaApi) {
+      return conCookiesDe(
+        response,
+        NextResponse.json({ error: "No autenticado." }, { status: 401 })
+      );
+    }
+    return conCookiesDe(response, NextResponse.redirect(new URL("/login", request.url)));
+  }
+
+  // El rol se lee de la base en cada request — nunca de un claim que el
+  // cliente pudiera manipular ni de estado guardado en el navegador.
+  const { data: perfil } = await supabase
+    .from("profiles")
+    .select("rol")
+    .eq("id", user.id)
+    .single();
+
+  const rol = perfil?.rol ?? "cliente";
+
+  if (!zona.rolesPermitidos.includes(rol)) {
+    if (zonaApi) {
+      return conCookiesDe(
+        response,
+        NextResponse.json({ error: "No tienes permiso para esto." }, { status: 403 })
+      );
+    }
+    return conCookiesDe(response, NextResponse.redirect(new URL(rutaPorRol(rol), request.url)));
+  }
 
   return response;
 }

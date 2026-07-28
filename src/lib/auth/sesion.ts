@@ -10,7 +10,7 @@ export async function obtenerSesionConRol() {
 
   const { data: perfil } = await supabase
     .from("profiles")
-    .select("rol, nombre_completo")
+    .select("rol, nombre_completo, cliente_id")
     .eq("id", user.id)
     .single();
 
@@ -18,5 +18,6 @@ export async function obtenerSesionConRol() {
     user,
     rol: (perfil?.rol as string | undefined) ?? "cliente",
     nombreCompleto: (perfil?.nombre_completo as string | null | undefined) ?? null,
+    clienteId: (perfil?.cliente_id as string | null | undefined) ?? null,
   };
 }
