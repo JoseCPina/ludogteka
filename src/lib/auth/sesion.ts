@@ -1,6 +1,9 @@
+import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export async function obtenerSesionConRol() {
+// cache() evita repetir la consulta cuando el layout y la página de una
+// misma request llaman a esto por separado.
+export const obtenerSesionConRol = cache(async () => {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -20,4 +23,4 @@ export async function obtenerSesionConRol() {
     nombreCompleto: (perfil?.nombre_completo as string | null | undefined) ?? null,
     clienteId: (perfil?.cliente_id as string | null | undefined) ?? null,
   };
-}
+});
