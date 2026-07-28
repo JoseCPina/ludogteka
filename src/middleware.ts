@@ -11,6 +11,9 @@ const ZONAS_PROTEGIDAS: { prefijo: string; rolesPermitidos: string[] }[] = [
   { prefijo: "/portal", rolesPermitidos: ["cliente"] },
   { prefijo: "/clientes", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/vinculacion", rolesPermitidos: ["admin", "recepcion"] },
+  // Estética entra también: escribe peso/alergias/alertas del perro, aunque
+  // no pueda tocar los datos base (eso lo filtra RLS, no esta zona).
+  { prefijo: "/perros", rolesPermitidos: ["admin", "recepcion", "estetica"] },
 ];
 
 // Zonas de API: nunca redirige (un fetch no sabe qué hacer con un 302 a
