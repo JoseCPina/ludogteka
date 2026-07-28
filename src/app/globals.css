@@ -1,26 +1,63 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Tokens de marca — ver docs/DISENO.md para la justificación de cada valor
+ * (contraste AA verificado, no supuesto). Un solo tema (claro): decisión
+ * deliberada para una herramienta de mostrador usada todo el turno.
+ */
+@theme {
+  /* marca — colores base: fondos grandes, íconos, bordes. Nunca texto. */
+  --color-azul: #3148dd;
+  --color-turquesa: #00cdc4;
+  --color-naranja: #ef5025;
+  --color-amarillo: #ffc73a;
+  --color-verde: #2ac862;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* marca — variantes oscuras: texto, botón sólido con texto blanco, badges */
+  --color-azul-oscuro: #26379e;
+  --color-turquesa-oscuro: #0b6e68;
+  --color-naranja-oscuro: #a6330f;
+  --color-amarillo-oscuro: #8a6300;
+  --color-verde-oscuro: #1b7a42;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* marca — fondos suaves para badges/alertas */
+  --color-azul-suave: #e3e7fc;
+  --color-turquesa-suave: #dff9f7;
+  --color-naranja-suave: #fce4dc;
+  --color-amarillo-suave: #fff3d6;
+  --color-verde-suave: #e2f7e9;
+
+  /* marca — solo para gráficas y reportes (Fase 8+), nunca en UI base */
+  --color-azul-brillante: #0b6af8;
+  --color-amarillo-brillante: #f8db1a;
+  --color-naranja-brillante: #ff5d02;
+
+  /* neutros — rampa con sesgo azul, no gris de banco. Roles fijos: ver
+     docs/DISENO.md (400 es solo decorativo, nunca texto). */
+  --color-n-0: #ffffff;
+  --color-n-50: #f5f6fa;
+  --color-n-100: #ebedf5;
+  --color-n-200: #dde1ed;
+  --color-n-300: #c6cbdc;
+  --color-n-400: #9ba3bd;
+  --color-n-500: #747c99;
+  --color-n-600: #5c6480;
+  --color-n-700: #454c63;
+  --color-n-800: #2b2f3d;
+  --color-n-900: #14161f;
+
+  --color-background: var(--color-n-50);
+  --color-foreground: var(--color-n-900);
+
+  --font-sans: var(--font-nunito);
+
+  /* radios: 8 / 10 / 14px, sobre-escriben el default de Tailwind */
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-foreground);
 }
