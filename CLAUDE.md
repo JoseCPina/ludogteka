@@ -6,6 +6,12 @@ App interna + portal de clientes para un negocio canino en San Luis Potosí (gua
 
 
 
+\## Contexto completo
+
+Antes de trabajar, lee docs/PROYECTO.md: ahí está el detalle de roles, roadmap por fases, reglas de negocio y qué está fuera de alcance.
+
+
+
 \## Stack
 
 \- Next.js 16 (App Router, TypeScript, Tailwind), carpeta src/
