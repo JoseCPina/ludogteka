@@ -16,6 +16,7 @@ export type ItemNav = {
 export const SECCIONES_STAFF: ItemNav[] = [
   { etiqueta: "Reservas", href: "/reservas", roles: ["admin", "recepcion"], proximamente: true },
   { etiqueta: "Clientes", href: "/clientes", roles: ["admin", "recepcion"] },
+  { etiqueta: "Vinculación", href: "/vinculacion", roles: ["admin", "recepcion"] },
   { etiqueta: "Caja", href: "/caja", roles: ["admin", "recepcion"], proximamente: true },
   { etiqueta: "Agenda", href: "/agenda", roles: ["admin", "estetica"], proximamente: true },
   { etiqueta: "Inventario", href: "/inventario", roles: ["admin", "estetica"], proximamente: true },
