@@ -229,9 +229,9 @@ Cualquier tabla nueva con índice único + RLS restrictivo (Fase 2 en adelante: 
 - UI para ver la bitácora de vinculación completa (hoy solo se ve inline en `/vinculacion`; no hay pantalla de auditoría dedicada).
 - El expediente completo del perro (Fase 2) — el portal solo tiene el placeholder "Tus perros".
 
-## Fase 2 — esquema completo (falta la UI)
+## Fase 2 — completa (esquema + UI)
 
-Modelo del expediente del perro: migraciones aplicadas y verificadas con JWTs reales (cuentas de prueba creadas vía Admin API + login real, no solo simulación). Esta fase cerró la base de datos; las pantallas (alta/edición de perro, subida de fotos, registro de vacunas/peso/alertas/medicamentos) todavía no se construyen.
+Modelo del expediente del perro y las pantallas que lo usan: migraciones y UI construidas y verificadas con JWTs reales (cuentas de prueba creadas vía Admin API + login real, no solo simulación) en cada punto.
 
 ### Modelo de datos
 
@@ -255,6 +255,19 @@ Modelo del expediente del perro: migraciones aplicadas y verificadas con JWTs re
 - **Los tres roles de staff escriben**: peso, alergias, alertas — quien detecta el problema lo reporta.
 - **Solo admin/recepción escriben**: alta/edición del perro, vacunas/desparasitación, medicamentos.
 - **Visibilidad**: alertas y alergias son staff-only incluso para lectura. Vacunas, peso y medicamentos sí los puede leer el dueño (transparencia — "¿cuándo le toca la próxima vacuna a mi perro?").
+
+### UI construida (los 6 puntos, en orden)
+
+1. **Alta/edición de perro** — accesible desde el expediente del cliente (`/clientes/[id]/perros/nuevo`, `/perros/[id]`), porque así es como recepción llega: primero a la persona, luego a su perro. Solo admin/recepción editan los campos base; estética ve la misma pantalla en solo lectura.
+2. **Foto del perro** — subida directa desde el navegador con la sesión del usuario (no pasa por el servidor de Next.js), compresión y corrección de orientación EXIF del lado del cliente antes de subir (`createImageBitmap` + canvas, ver `src/lib/imagen.ts`), input con `capture="environment"` para cámara en tablet, ruta fija por perro para que reemplazar sea un upsert sin huérfanos, y una política de `DELETE` para staff que faltaba en el bucket original (migración aparte, `add_perros_archivos_delete_staff`).
+3. **Requisitos sanitarios** — registro (tipo, fecha con tope de hoy, veterinario/producto según categoría, notas, comprobante), historial completo, y el resumen de 4 estados visible tanto en el expediente del perro como en el del dueño. `sin_registro` usa el mismo tratamiento visual que `vencida` a propósito — es el caso más peligroso, no debe leerse como "más tranquilo". Bordetella lleva una insignia "CRÍTICA" aparte del color de estado.
+4. **Peso** — registrar lectura + historial. El aviso de "baja notable" exige **dos condiciones a la vez**: 10% relativo Y un piso absoluto de 0.4 kg (sin el piso, un chihuahua que baja 200 g dispara la alerta por nada). Se muestra el tiempo entre lecturas, y si la baja fue en menos de 30 días el aviso escala (borde más grueso, texto más urgente). Un alza notable se marca en tono informativo (azul), no de alarma.
+5. **Alertas de manejo y alergias** — nunca se borran, se desactivan (`activa=false`) y el motivo de baja se guarda con fecha en las notas de esa fila. El banner de alertas activas + alergias graves no colapsa nada: se muestra completo, arriba de todo (antes que el resumen sanitario), en el expediente del perro y, en versión compacta, junto a cada perro en el expediente del dueño. Verificado con JWT real que un `cliente` no puede leer `perro_alertas` (RLS ya lo bloqueaba desde el esquema) aunque sí lee `perro_alergias`.
+6. **Portal del cliente** — lista de perros con foto (propios + acceso compartido, RLS ya combina ambos sin necesidad de filtrar en la query), ficha en solo lectura de lo clínico, edición únicamente de los 5 campos vía `actualizar_mi_perro()`. Estado sanitario redactado como recordatorio ("Para tu próxima visita: ..."), no como regaño. Un perro con acceso compartido se ve igual pero con una insignia "Acceso compartido" y sin formulario de edición. Un perro fallecido se queda en la lista tal cual, con una insignia gris discreta — nunca tachado en rojo ni ocultado de golpe. Verificado con JWT real que un perro con alerta crítica no muestra ni rastro de ella en el portal.
+
+### Bug corregido: fechas `date` mostradas un día antes
+
+`formatearFecha()` (Fase 1) hace `new Date(iso)` y formatea con `Intl.DateTimeFormat` — correcto para `timestamptz`, pero una columna `date` como `"2026-07-28"` se parsea como medianoche UTC, y en un huso horario negativo (México, UTC-6) eso se muestra como el día **anterior**. Apareció al construir el historial de requisitos sanitarios y de peso. Fix: `formatearFechaCalendario()` nueva en `src/lib/formato.ts`, arma la fecha con año/mes/día locales (`new Date(anio, mes-1, dia)`) en vez de parsear el string ISO directo. Se usa en todo lo que muestre una columna `date` (`fecha_aplicacion`, `fecha_vencimiento`, `fecha_nacimiento`, `pesos_registrados.fecha`); `formatearFecha()` original se deja intacta para `timestamptz` (`created_at`, etc.), donde sí es correcta.
 
 ### `created_by` automático (aplica a todo el proyecto, no solo Fase 2)
 
@@ -280,14 +293,17 @@ Se agregó `default auth.uid()` a la columna `created_by` en las 15 tablas del p
 - `perro_medicamentos` se dejó como solo admin/recepción (el acuerdo Q2 no cubrió medicamentos explícitamente) — confirmar si estética también debería poder registrar uno.
 - Acceso compartido (`perro_accesos_compartidos`) es de solo lectura por defecto — nadie más que el dueño principal (`perros.cliente_id`) edita.
 
+Ya confirmados con el negocio en esta fase (dejan de ser supuestos): el umbral de "por vencer" (30 días, ahora en `tipos_requisito_sanitario.dias_aviso_vencimiento`, no en la vista) y el criterio de "baja notable" de peso (10% relativo + piso absoluto de 0.4 kg + escalamiento si la baja fue en menos de 30 días).
+
 ### Pendiente
 
-- Toda la UI de Fase 2: formularios de alta/edición de perro, subida de fotos, registro de vacunas/desparasitación/peso/alertas/alergias/medicamentos. Nada de esto se construyó todavía, solo el esquema y las políticas.
-- El caso "pareja con dos cuentas" de Fase 1 queda resuelto a nivel de esquema (`perro_accesos_compartidos`); falta la UI para que staff dé de alta ese acceso compartido.
+- **UI de `perro_medicamentos`**: el esquema y las políticas RLS existen (solo admin/recepción escriben), pero ninguna pantalla los usa todavía — no se pidió como parte de los 6 puntos de esta fase.
+- **UI para dar de alta un acceso compartido**: `perro_accesos_compartidos` funciona de punta a punta (el portal ya lo muestra correctamente, con su insignia y sin edición) pero hoy la única forma de crear ese acceso es SQL directo — falta un botón/formulario en el expediente del perro para que admin/recepción lo den de alta sin tocar la base a mano.
+- Repetir las pruebas de aislamiento por rol de Fase 1 con un JWT emitido de verdad por GoTrue vía login (login normal, no invite) — sigue pendiente desde Fase 1, no bloquea nada de Fase 2.
 
 ## Estado actual
 
-Fase 0 y Fase 1 completas. Fase 2: esquema y RLS completos y verificados; falta construir la UI.
+Fase 0, Fase 1 y Fase 2 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 3 (catálogo de servicios y tarifas) es lo siguiente en el roadmap.
 
 ## Invite server-side de staff
 

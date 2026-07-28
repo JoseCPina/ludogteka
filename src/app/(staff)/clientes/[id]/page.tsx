@@ -8,6 +8,8 @@ import { ClienteForm } from "../cliente-form";
 import { BajaClienteBoton } from "../baja-cliente-boton";
 import { actualizarCliente, darDeBajaCliente } from "../actions";
 import { PerroFoto } from "../../perros/perro-foto";
+import { ResumenSanitario, type EstadoRequisitoItem } from "../../perros/resumen-sanitario";
+import { AlertaCriticaBanner } from "../../perros/alerta-critica-banner";
 
 export default async function EditarClientePage({
   params,
@@ -47,6 +49,54 @@ export default async function EditarClientePage({
         if (data?.signedUrl) urlsFotos.set(p.id, data.signedUrl);
       })
   );
+
+  const estadoSanitarioPorPerro = new Map<string, EstadoRequisitoItem[]>();
+  if (perros && perros.length > 0) {
+    const { data: estados } = await supabase
+      .from("perro_requisitos_sanitarios_estado")
+      .select(
+        "perro_id, tipo_requisito_id, clave, etiqueta, es_critica, ultima_fecha_aplicacion, fecha_vencimiento, estado"
+      )
+      .in(
+        "perro_id",
+        perros.map((p) => p.id)
+      );
+    for (const fila of estados ?? []) {
+      const lista = estadoSanitarioPorPerro.get(fila.perro_id) ?? [];
+      lista.push(fila as EstadoRequisitoItem);
+      estadoSanitarioPorPerro.set(fila.perro_id, lista);
+    }
+  }
+
+  const alertasActivasPorPerro = new Map<string, { id: string; etiqueta: string }[]>();
+  const alergiasGravesPorPerro = new Map<string, { id: string; alergeno: string }[]>();
+  if (perros && perros.length > 0) {
+    const idsPerros = perros.map((p) => p.id);
+    const [{ data: alertas }, { data: alergias }] = await Promise.all([
+      supabase
+        .from("perro_alertas")
+        .select("id, perro_id, catalogo_alertas(etiqueta)")
+        .in("perro_id", idsPerros)
+        .eq("activa", true),
+      supabase
+        .from("perro_alergias")
+        .select("id, perro_id, alergeno")
+        .in("perro_id", idsPerros)
+        .eq("gravedad", "grave")
+        .is("deleted_at", null),
+    ]);
+    for (const fila of alertas ?? []) {
+      const catalogo = fila.catalogo_alertas as unknown as { etiqueta: string } | null;
+      const lista = alertasActivasPorPerro.get(fila.perro_id) ?? [];
+      lista.push({ id: fila.id, etiqueta: catalogo?.etiqueta ?? "—" });
+      alertasActivasPorPerro.set(fila.perro_id, lista);
+    }
+    for (const fila of alergias ?? []) {
+      const lista = alergiasGravesPorPerro.get(fila.perro_id) ?? [];
+      lista.push({ id: fila.id, alergeno: fila.alergeno });
+      alergiasGravesPorPerro.set(fila.perro_id, lista);
+    }
+  }
 
   const actualizarConId = actualizarCliente.bind(null, id);
   const bajaConId = darDeBajaCliente.bind(null, id);
@@ -90,26 +140,37 @@ export default async function EditarClientePage({
                 <li key={perro.id}>
                   <Link
                     href={`/perros/${perro.id}`}
-                    className="flex items-center justify-between rounded-md border-[1.5px] border-n-200 bg-white px-4 py-3 hover:border-azul"
+                    className="flex flex-col gap-2 rounded-md border-[1.5px] border-n-200 bg-white px-4 py-3 hover:border-azul"
                   >
-                    <span className="flex items-center gap-3">
-                      <PerroFoto
-                        perroId={perro.id}
-                        urlInicial={urlsFotos.get(perro.id) ?? null}
-                        tieneFotoInicial={Boolean(perro.foto_path)}
-                        soloLectura
-                        tamano="miniatura"
-                      />
-                      <span className="font-semibold text-n-900">{perro.nombre}</span>
+                    <span className="flex items-center justify-between">
+                      <span className="flex items-center gap-3">
+                        <PerroFoto
+                          perroId={perro.id}
+                          urlInicial={urlsFotos.get(perro.id) ?? null}
+                          tieneFotoInicial={Boolean(perro.foto_path)}
+                          soloLectura
+                          tamano="miniatura"
+                        />
+                        <span className="font-semibold text-n-900">{perro.nombre}</span>
+                      </span>
+                      <span className="flex items-center gap-2 text-sm text-n-600">
+                        {tamano?.etiqueta ?? "Sin tamaño"}
+                        {perro.fallecido && (
+                          <span className="rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-600">
+                            Falleció
+                          </span>
+                        )}
+                      </span>
                     </span>
-                    <span className="flex items-center gap-2 text-sm text-n-600">
-                      {tamano?.etiqueta ?? "Sin tamaño"}
-                      {perro.fallecido && (
-                        <span className="rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-600">
-                          Falleció
-                        </span>
-                      )}
-                    </span>
+                    <AlertaCriticaBanner
+                      alertas={alertasActivasPorPerro.get(perro.id) ?? []}
+                      alergiasGraves={alergiasGravesPorPerro.get(perro.id) ?? []}
+                      tamano="compacto"
+                    />
+                    <ResumenSanitario
+                      items={estadoSanitarioPorPerro.get(perro.id) ?? []}
+                      tamano="compacto"
+                    />
                   </Link>
                 </li>
               );

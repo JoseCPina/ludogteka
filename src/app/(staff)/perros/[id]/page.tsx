@@ -6,6 +6,14 @@ import { Alert } from "@/components/ui/alert";
 import { PerroForm } from "../perro-form";
 import { PerroFoto } from "../perro-foto";
 import { actualizarPerro } from "../actions";
+import { ResumenSanitario, type EstadoRequisitoItem } from "../resumen-sanitario";
+import { RequisitoForm, type TipoRequisitoOpcion } from "../requisito-form";
+import { RequisitosHistorial, type RequisitoAplicadoFila } from "../requisitos-historial";
+import { PesoForm } from "../peso-form";
+import { PesoResumen, type PesoFila } from "../peso-resumen";
+import { AlertaCriticaBanner } from "../alerta-critica-banner";
+import { AlertasManejo, type CatalogoAlertaOpcion, type AlertaActivaFila } from "../alertas-manejo";
+import { AlergiasSeccion, type AlergiaFila } from "../alergias-seccion";
 
 export default async function PerroPage({
   params,
@@ -21,7 +29,18 @@ export default async function PerroPage({
   if (!sesion) return null;
 
   const supabase = await createSupabaseServerClient();
-  const [{ data: perro }, { data: tamanos }, { data: pelajes }] = await Promise.all([
+  const [
+    { data: perro },
+    { data: tamanos },
+    { data: pelajes },
+    { data: estadoSanitario },
+    { data: tiposRequisito },
+    { data: historialCrudo },
+    { data: pesos },
+    { data: catalogoAlertas },
+    { data: alertasCrudo },
+    { data: alergias },
+  ] = await Promise.all([
     supabase
       .from("perros")
       .select(
@@ -36,6 +55,43 @@ export default async function PerroPage({
       .is("deleted_at", null)
       .order("orden"),
     supabase.from("tipos_pelaje").select("id, etiqueta").is("deleted_at", null).order("orden"),
+    supabase
+      .from("perro_requisitos_sanitarios_estado")
+      .select("tipo_requisito_id, clave, etiqueta, es_critica, ultima_fecha_aplicacion, fecha_vencimiento, estado")
+      .eq("perro_id", id),
+    supabase
+      .from("tipos_requisito_sanitario")
+      .select("id, clave, etiqueta, categoria")
+      .is("deleted_at", null)
+      .order("orden"),
+    supabase
+      .from("requisitos_sanitarios_aplicados")
+      .select(
+        "id, fecha_aplicacion, fecha_vencimiento, detalle, notas, comprobante_path, tipos_requisito_sanitario(etiqueta)"
+      )
+      .eq("perro_id", id)
+      .is("deleted_at", null)
+      .order("fecha_aplicacion", { ascending: false }),
+    supabase
+      .from("pesos_registrados")
+      .select("id, peso_kg, fecha, notas")
+      .eq("perro_id", id)
+      .is("deleted_at", null)
+      .order("fecha", { ascending: false })
+      .order("created_at", { ascending: false }),
+    supabase.from("catalogo_alertas").select("id, etiqueta").is("deleted_at", null).order("orden"),
+    supabase
+      .from("perro_alertas")
+      .select("id, alerta_id, notas, activa, catalogo_alertas(etiqueta)")
+      .eq("perro_id", id)
+      .eq("activa", true)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("perro_alergias")
+      .select("id, alergeno, gravedad, notas")
+      .eq("perro_id", id)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false }),
   ]);
 
   if (!perro) notFound();
@@ -47,6 +103,40 @@ export default async function PerroPage({
       .createSignedUrl(perro.foto_path, 60 * 60);
     urlFoto = data?.signedUrl ?? null;
   }
+
+  const historial: RequisitoAplicadoFila[] = await Promise.all(
+    (historialCrudo ?? []).map(async (fila) => {
+      let comprobante_url: string | null = null;
+      if (fila.comprobante_path) {
+        const { data } = await supabase.storage
+          .from("perros-archivos")
+          .createSignedUrl(fila.comprobante_path, 60 * 60);
+        comprobante_url = data?.signedUrl ?? null;
+      }
+      const tipo = fila.tipos_requisito_sanitario as unknown as { etiqueta: string } | null;
+      return {
+        id: fila.id,
+        fecha_aplicacion: fila.fecha_aplicacion,
+        fecha_vencimiento: fila.fecha_vencimiento,
+        detalle: fila.detalle,
+        notas: fila.notas,
+        tipo_etiqueta: tipo?.etiqueta ?? "—",
+        comprobante_url,
+      };
+    })
+  );
+
+  const alertasActivas: AlertaActivaFila[] = (alertasCrudo ?? []).map((fila) => {
+    const catalogo = fila.catalogo_alertas as unknown as { etiqueta: string } | null;
+    return {
+      id: fila.id,
+      alerta_id: fila.alerta_id,
+      etiqueta: catalogo?.etiqueta ?? "—",
+      notas: fila.notas,
+    };
+  });
+  const alergiasFilas = (alergias as AlergiaFila[]) ?? [];
+  const alergiasGraves = alergiasFilas.filter((a) => a.gravedad === "grave");
 
   const cliente = perro.clientes as unknown as { nombre: string } | null;
   const actualizarConId = actualizarPerro.bind(null, id);
@@ -66,6 +156,10 @@ export default async function PerroPage({
         <h1 className="mt-1 text-2xl font-bold text-n-900">{perro.nombre}</h1>
         <p className="mt-1 text-n-600">Expediente del perro.</p>
       </div>
+
+      <AlertaCriticaBanner alertas={alertasActivas} alergiasGraves={alergiasGraves} tamano="grande" />
+
+      <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
 
       {perro.fallecido && (
         <Alert variante="advertencia" titulo="Este perro falleció">
@@ -101,6 +195,40 @@ export default async function PerroPage({
         textoBoton="Guardar cambios"
         soloLectura={soloLectura}
       />
+
+      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+        <h2 className="text-lg font-bold text-n-900">Requisitos sanitarios</h2>
+
+        {!soloLectura && (
+          <RequisitoForm
+            perroId={id}
+            clienteId={perro.cliente_id}
+            tipos={(tiposRequisito as TipoRequisitoOpcion[]) ?? []}
+          />
+        )}
+
+        <RequisitosHistorial filas={historial} />
+      </div>
+
+      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+        <h2 className="text-lg font-bold text-n-900">Peso</h2>
+        <PesoForm perroId={id} />
+        <PesoResumen historial={(pesos as PesoFila[]) ?? []} />
+      </div>
+
+      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+        <h2 className="text-lg font-bold text-n-900">Alertas de manejo</h2>
+        <AlertasManejo
+          perroId={id}
+          catalogo={(catalogoAlertas as CatalogoAlertaOpcion[]) ?? []}
+          activas={alertasActivas}
+        />
+      </div>
+
+      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+        <h2 className="text-lg font-bold text-n-900">Alergias</h2>
+        <AlergiasSeccion perroId={id} alergias={alergiasFilas} />
+      </div>
     </div>
   );
 }
