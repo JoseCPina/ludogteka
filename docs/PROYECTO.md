@@ -229,9 +229,65 @@ Cualquier tabla nueva con índice único + RLS restrictivo (Fase 2 en adelante: 
 - UI para ver la bitácora de vinculación completa (hoy solo se ve inline en `/vinculacion`; no hay pantalla de auditoría dedicada).
 - El expediente completo del perro (Fase 2) — el portal solo tiene el placeholder "Tus perros".
 
+## Fase 2 — esquema completo (falta la UI)
+
+Modelo del expediente del perro: migraciones aplicadas y verificadas con JWTs reales (cuentas de prueba creadas vía Admin API + login real, no solo simulación). Esta fase cerró la base de datos; las pantallas (alta/edición de perro, subida de fotos, registro de vacunas/peso/alertas/medicamentos) todavía no se construyen.
+
+### Modelo de datos
+
+- **`tamanos_categoria`, `tipos_pelaje`**: catálogos (chico/mediano/grande/gigante; corto/medio/largo/rizado). Fase 3 los usa para tarifa — el pelaje pesa tanto como el tamaño en el precio de estética.
+- **`perros`**: tabla base — identidad del perro, tamaño/pelaje, `fallecido`/`fecha_fallecimiento` (no reutiliza `deleted_at`: un perro fallecido sigue siendo parte del historial del cliente, solo se muestra con tacto). Los 5 campos que el dueño puede editar (contacto de emergencia, veterinario, autorización médica, tope de gasto, notas de alimentación) conviven en la misma fila con campos de solo-staff — por eso el dueño no tiene política de `UPDATE` directa, edita vía `actualizar_mi_perro()` (`SECURITY DEFINER`, mismo patrón que `actualizar_mi_cliente`).
+- **`perro_historial_dueno`**: bitácora append-only de cambios de dueño (trigger `registrar_cambio_dueno_perro` en `perros.cliente_id`).
+- **`perro_accesos_compartidos`**: resuelve el caso "pareja separada, dos cuentas, un perro" (pendiente desde Fase 1, ver abajo) sin tocar el modelo cliente/profile — dueño principal sigue siendo `perros.cliente_id`, un acceso compartido solo da lectura adicional. Solo staff lo da de alta.
+- **`tipos_requisito_sanitario`**: catálogo generalizado de vacuna + desparasitación (misma forma: fecha, vigencia, obligatoria — Fase 4 va a preguntar "¿qué le falta a este perro?" cruzando ambas categorías con una sola vista, no dos sistemas paralelos). `es_critica` (bordetella) da prominencia de UI sin mezclarse con `obligatoria` (que es la señal de bloqueo de negocio). `dias_aviso_vencimiento` (default 30) fija el umbral de "por vencer" ahí — no incrustado en la vista, porque es un número que el negocio va a querer mover.
+- **`requisitos_sanitarios_aplicados`**: aplicaciones reales. `fecha_vencimiento` es una columna generada (`GENERATED ALWAYS AS (...) STORED`) a partir de `vigencia_meses_aplicado`, congelado en cada fila al momento de aplicar — un cambio futuro a la vigencia del catálogo no recalcula vencimientos ya registrados. Incluye `comprobante_path` (foto del carnet físico, mismas reglas de privacidad que la foto del perro).
+- **Vista `perro_requisitos_sanitarios_estado`**: cruza cada perro activo contra cada requisito obligatorio (`CROSS JOIN` + `LEFT JOIN LATERAL` a la última aplicación), devuelve 4 estados: `sin_registro`, `vigente`, `por_vencer`, `vencida`. `security_invoker = true` (respeta el RLS de quien consulta). Punto clave: un perro sin ningún registro aparece como `sin_registro` en vez de desaparecer de la consulta — con un `DISTINCT ON` ingenuo sobre las aplicaciones existentes, ese perro se hubiera colado sin bloqueo en la futura Fase 4.
+- **`pesos_registrados`** + vista `perro_peso_actual` (`DISTINCT ON`): peso historizado, no vive en `perros` — cambia cada visita, a diferencia del tamaño (que sí vive ahí porque fija tarifa).
+- **`catalogo_alertas`** + **`perro_alertas`**: vocabulario controlado de alertas de manejo (muerde, se escapa, no socializa, agresivo con la comida, alergia grave, ansiedad de separación) en vez de texto libre — así se puede destacar en la UI de recepción, no enterrarse en un párrafo. Staff-only incluso para lectura (no se muestra en el portal). `activa` reemplaza a `deleted_at` en esta tabla: una alerta resuelta sigue en el historial, no se borra.
+- **`perro_alergias`**: columnas `confirmada`/`reportado_por` agregadas ya (default `confirmada=true`, sin reporte) para la función futura "el dueño reporta una alergia, recepción la confirma" — no construida todavía, solo prevista para no requerir otra migración cuando se construya.
+- **`perro_medicamentos`**: régimen/prescripción (dosis, horario, vigencia), no el registro de si ya se administró — eso queda para Fase 9 a propósito, y el `id` de esta tabla ya es estable para que esa fase solo agregue una tabla nueva que la referencie.
+- **`actualizar_mi_perro()`**: RPC `SECURITY DEFINER`, mismo patrón que `actualizar_mi_cliente()`. Solo el dueño principal (`perros.cliente_id`), no un acceso compartido.
+- **Bucket Storage `perros-archivos`** (privado): foto de perfil del perro + comprobante de vacuna/desparasitación. Ruta `{cliente_id}/{perro_id}/perfil/...` o `{cliente_id}/{perro_id}/requisitos/{requisito_id}/...`. Las políticas de `storage.objects` **no confían en el segmento `{cliente_id}` de la ruta** (cualquiera podría escribir ahí un cliente_id ajeno) — validan contra la propiedad real de `{perro_id}` en `public.perros` (+ acceso compartido). El folder `{cliente_id}` es solo organización para el staff, nunca la fuente de verdad del permiso.
+
+### Quién escribe qué (acordado con el negocio)
+
+- **Dueño edita** (vía RPC, nunca RLS directo): contacto de emergencia, veterinario, autorización médica, tope de gasto, notas de alimentación.
+- **Los tres roles de staff escriben**: peso, alergias, alertas — quien detecta el problema lo reporta.
+- **Solo admin/recepción escriben**: alta/edición del perro, vacunas/desparasitación, medicamentos.
+- **Visibilidad**: alertas y alergias son staff-only incluso para lectura. Vacunas, peso y medicamentos sí los puede leer el dueño (transparencia — "¿cuándo le toca la próxima vacuna a mi perro?").
+
+### `created_by` automático (aplica a todo el proyecto, no solo Fase 2)
+
+Se agregó `default auth.uid()` a la columna `created_by` en las 15 tablas del patrón (Fase 1: `sucursales`, `clientes`, `profiles`; Fase 2: las 12 nuevas). Antes dependía de que cada pantalla lo mandara explícito; con 7 fases más por delante era cuestión de tiempo que se olvidara justo donde importara la auditoría. Un `DEFAULT` alcanza (no hace falta trigger): si el `INSERT` no lo manda, Postgres llama a `auth.uid()`; si lo manda explícito, ese valor gana.
+
+**Límite conocido**: un `INSERT` hecho con la secret key (`service_role`, sin sesión) o SQL corrido directo como `postgres` (migraciones, SQL Editor) sigue dando `null` — no hay JWT que `auth.uid()` pueda leer ahí, el default no inventa un usuario donde no lo hay. Hoy el único uso del cliente admin en el código (`/api/staff/invite`) hace `UPDATE`, no `INSERT`, así que no lo toca. Si en el futuro se agrega un `INSERT` vía el cliente admin actuando en nombre de un staff, ese código va a tener que mandar `created_by` explícito con el id del caller.
+
+### Verificado con JWTs reales (cuentas de prueba vía Admin API + login real, todas borradas al terminar)
+
+- Aislamiento de `perros`: cliente ve solo el suyo (+ acceso compartido); staff ve todos.
+- Cliente bloqueado en `UPDATE` directo a `perros` (0 filas); sí puede vía `actualizar_mi_perro()`.
+- Cliente bloqueado en lectura de `perro_alertas` de su propio perro.
+- Acceso compartido: solo lectura confirmada; RPC de edición bloqueado para quien no es el dueño principal.
+- Estética escribe peso; bloqueada en `requisitos_sanitarios_aplicados` y en edición de `perros`.
+- Vista de 4 estados probada con perros reales de prueba: `sin_registro`, `vigente`, `vencida`, `por_vencer`, los 4 correctos.
+- Trigger de historial de dueño: cambio de `cliente_id` quedó registrado con el cliente anterior y el nuevo.
+- `created_by` se llena solo sin que la app lo mande explícito.
+- Storage: cliente lee su propia foto (200); ruta real de un perro ajeno y ruta manipulada (su propio `cliente_id` + `perro_id` ajeno) ambas bloqueadas igual (404, RLS oculta la existencia del objeto); subida bloqueada para cliente (403 RLS); sin política de `DELETE` para staff — confirmado que ni con JWT de recepción se pudo borrar un objeto (siguió existiendo hasta borrarlo con la secret key).
+
+### Decisiones propias marcadas para confirmar con el negocio
+
+- Vigencia de desparasitación interna: **6 meses, valor supuesto** (no confirmado). En cachorro es más frecuente, pero como ya es editable por aplicación individual no hace falta modelarlo por edad.
+- `perro_medicamentos` se dejó como solo admin/recepción (el acuerdo Q2 no cubrió medicamentos explícitamente) — confirmar si estética también debería poder registrar uno.
+- Acceso compartido (`perro_accesos_compartidos`) es de solo lectura por defecto — nadie más que el dueño principal (`perros.cliente_id`) edita.
+
+### Pendiente
+
+- Toda la UI de Fase 2: formularios de alta/edición de perro, subida de fotos, registro de vacunas/desparasitación/peso/alertas/alergias/medicamentos. Nada de esto se construyó todavía, solo el esquema y las políticas.
+- El caso "pareja con dos cuentas" de Fase 1 queda resuelto a nivel de esquema (`perro_accesos_compartidos`); falta la UI para que staff dé de alta ese acceso compartido.
+
 ## Estado actual
 
-Fase 0 y Fase 1 completas. Fase 2 (expediente de dueños y perros) es lo siguiente en el roadmap.
+Fase 0 y Fase 1 completas. Fase 2: esquema y RLS completos y verificados; falta construir la UI.
 
 ## Invite server-side de staff
 
