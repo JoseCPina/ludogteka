@@ -198,17 +198,40 @@ Camino permitido confirmado: un `admin` sí puede resolver la cola de vinculaci�
 
 Pendiente real (no cubierto por esta simulación): probar el flujo completo con un JWT emitido de verdad por GoTrue vía login — requiere esperar el reset del rate limit de email o configurar SMTP propio. La simulación por SQL cubre las políticas RLS al 100%, pero no cubre bugs de configuración de Auth en sí (ej. algo mal puesto en `site_url`/redirects).
 
+## Fase 1 — completa
+
+Los 7 puntos construidos y verificados en el navegador con cuentas/JWT reales (no solo simulación):
+
+1. **Login/logout** — `/login`, Server Actions (`useActionState`), error visible para credenciales inválidas y correo sin confirmar. Middleware refresca la sesión en cada request.
+2. **Guardas de ruta por rol** — mismo middleware, lee `profiles.rol` en cada request. Con sesión pero rol equivocado redirige a la zona correcta, nunca a `/login`. Páginas → redirect; API → 401/403 JSON.
+3. **Layout con navegación por rol** — grupo de rutas `(staff)` con sidebar filtrado por rol (`src/lib/nav/config.ts`, agregar sección = agregar entrada), drawer móvil de 44px. Portal tiene su propio layout, más simple.
+4. **Panel de admin** — lista de cuentas (`listar_cuentas()`), invitar staff (`POST /api/staff/invite`) con link de un solo uso.
+5. **Alta y listado de clientes** — `/clientes`, teléfono normalizado a 10 dígitos, búsqueda por nombre/teléfono, baja lógica con confirmación en dos pasos.
+6. **Cola de vinculación pendiente** — `/vinculacion` (admin y recepción, no estética), confirmación explícita mostrando ambas partes antes de vincular, desvincular reversible, bitácora (`vinculacion_eventos`) con quién/cuándo/automático.
+7. **Portal del cliente** — datos reales (nombre solo lectura, teléfono/correo editables vía RPC `actualizar_mi_cliente`), placeholder de "Tus perros" para Fase 2.
+
+### Decisión de modelado: una cuenta por cliente
+
+`profiles.cliente_id` tiene constraint único (`profiles_cliente_id_unico_idx`, ya desde Migración 2) — un cliente no puede tener dos cuentas de portal a la vez. **Pendiente para Fase 2**: el caso real de una pareja que comparte perro y quiere acceso cada quien (hoy uno de los dos se queda sin cuenta propia; hay que decidir si es un segundo `cliente_id` en `profiles`, una tabla de "contactos autorizados" separada, u otra cosa — no decidido).
+
+### Bug transversal a recordar: índices únicos + RLS
+
+Encontrado dos veces en Fase 1 (vinculación de `profiles.cliente_id`, y de nuevo al diseñar la edición de `clientes.email` desde el portal): si una columna con **índice único** también está protegida por una política RLS de `SELECT` que **no** cubre el estado que tendría una fila en conflicto, Postgres no puede verificar la unicidad y lo reporta como `"violates row-level security policy"` en vez de como conflicto de índice — aunque no exista ningún conflicto real. Dos salidas, según el caso:
+- Si quien escribe es personal de confianza (recepción vinculando cuentas): ampliar su política de `SELECT` al estado completo relevante.
+- Si quien escribe es un cliente externo (portal editando su propio correo): **nunca** ampliar su visibilidad de otros registros por esto — usar una función `SECURITY DEFINER` que haga el `UPDATE` con visibilidad completa internamente, acotada por `auth.uid()` en la lógica de la función, no por RLS. Ver `actualizar_mi_cliente()`.
+
+Cualquier tabla nueva con índice único + RLS restrictivo (Fase 2 en adelante: `perros`, reservas, etc.) debe revisarse contra esto antes de darla por buena.
+
+### Pendiente para fases posteriores
+
+- Caso de la pareja con dos cuentas por cliente (arriba).
+- Repetir las pruebas de aislamiento por rol con un JWT **emitido de verdad por GoTrue vía login** (no simulado con `set_config` ni creado por Admin API) — quedó pendiente por el rate limit de envío de correo del proyecto (2/hora). La simulación cubre las políticas RLS al 100%, pero no bugs de configuración de Auth en sí (`site_url`, redirects, plantillas de correo).
+- UI para ver la bitácora de vinculación completa (hoy solo se ve inline en `/vinculacion`; no hay pantalla de auditoría dedicada).
+- El expediente completo del perro (Fase 2) — el portal solo tiene el placeholder "Tus perros".
+
 ## Estado actual
 
-Fase 0 lista. En curso: Fase 1 (auth con roles + vinculación dueño↔negocio).
-- Migración 1 (`sucursales`, `clientes`) aplicada.
-- Migración 2 (`profiles`, triggers de vinculación) aplicada.
-- Migración 3 (helpers de rol, protección de columnas sensibles, políticas RLS de `profiles` y `clientes`) aplicada.
-- Migración 4 (fix de `vincular_cliente_por_email`) aplicada.
-- Verificado por REST/SQL directo: anon no ve `profiles` ni `clientes`; login rechazado antes de confirmar correo; las tres variantes de vinculación (0, 1, 2 coincidencias) se comportan como se espera; aislamiento de lectura y escritura confirmado para los 4 roles (simulación de sesión RLS, ver arriba).
-- Primer admin promovido (`jpinadev@gmail.com`, vía dashboard + SQL Editor, procedimiento de arriba). Las dos pruebas inversas (auto-promoción de rol, auto-vinculación de cliente_id) fallaron como se esperaba antes de promover.
-- Invite server-side de staff implementado y probado con JWTs reales (no solo lectura de código): `POST /api/staff/invite` (`src/app/api/staff/invite/route.ts`).
-- Pendiente: UI de vinculación manual, UI de login/portal, y —cuando ya no choque con el rate limit de email— una prueba end-to-end del signup normal (cliente) con un correo real confirmado por link.
+Fase 0 y Fase 1 completas. Fase 2 (expediente de dueños y perros) es lo siguiente en el roadmap.
 
 ## Invite server-side de staff
 

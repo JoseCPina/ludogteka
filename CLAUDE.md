@@ -40,5 +40,5 @@ Antes de trabajar, lee docs/PROYECTO.md: ahí está el detalle de roles, roadmap
 
 \## Estado
 
-Fase 0 lista. En curso: Fase 1 = auth con roles + vinculación dueño↔negocio.
+Fase 0 y Fase 1 completas (auth con roles, vinculación dueño↔negocio, panel de admin, clientes, portal). En curso: Fase 2 = expediente de dueños y perros. Detalle en docs/PROYECTO.md.
 
