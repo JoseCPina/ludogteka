@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { comprimirImagen } from "@/lib/imagen";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { hoyNegocio } from "@/lib/formato";
 import {
   crearRequisitoAplicado,
   guardarComprobanteRequisito,
@@ -16,10 +17,6 @@ import {
 
 const BUCKET = "perros-archivos";
 const DOS_ANIOS_MS = 2 * 365 * 24 * 60 * 60 * 1000;
-
-function hoyISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export type TipoRequisitoOpcion = {
   id: string;
@@ -42,7 +39,7 @@ export function RequisitoForm({
   const formRef = useRef<HTMLFormElement>(null);
 
   const [tipoId, setTipoId] = useState(tipos[0]?.id ?? "");
-  const [fecha, setFecha] = useState(hoyISO());
+  const [fecha, setFecha] = useState(hoyNegocio());
   const [archivo, setArchivo] = useState<File | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -110,7 +107,7 @@ export function RequisitoForm({
 
       setExito(true);
       formRef.current?.reset();
-      setFecha(hoyISO());
+      setFecha(hoyNegocio());
       setAvisoFechaAntigua(false);
       setArchivo(null);
       router.refresh();
@@ -152,7 +149,7 @@ export function RequisitoForm({
           type="date"
           required
           disabled={enviando}
-          max={hoyISO()}
+          max={hoyNegocio()}
           value={fecha}
           onChange={(e) => manejarCambioFecha(e.target.value)}
         />

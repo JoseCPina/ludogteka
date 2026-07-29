@@ -301,9 +301,67 @@ Ya confirmados con el negocio en esta fase (dejan de ser supuestos): el umbral d
 - **UI para dar de alta un acceso compartido**: `perro_accesos_compartidos` funciona de punta a punta (el portal ya lo muestra correctamente, con su insignia y sin edición) pero hoy la única forma de crear ese acceso es SQL directo — falta un botón/formulario en el expediente del perro para que admin/recepción lo den de alta sin tocar la base a mano.
 - Repetir las pruebas de aislamiento por rol de Fase 1 con un JWT emitido de verdad por GoTrue vía login (login normal, no invite) — sigue pendiente desde Fase 1, no bloquea nada de Fase 2.
 
+## Fase 3 — completa (catálogo de servicios y tarifas)
+
+Resumen retroactivo (construida en una sesión anterior a la que documentó el resto de este archivo en detalle):
+
+- **`servicios`**: catálogo con `categoria` (`guarderia`, `hotel`, `estetica`, `cargo`) — esta columna termina siendo la bisagra de Fase 4: distingue qué servicios pueden ir en una `estancia` (guardería/hotel), cuáles en una `cita_estetica` (estética) y cuáles son cargos extra aplicables sobre una estancia (`cargo`, p. ej. recogida tardía).
+- **`tarifas`**: tabla insert-only (vigencia por fecha, nunca se edita una tarifa ya capturada — una corrección es una fila nueva con vigencia posterior). Precio depende de tamaño del perro y, para estética, también del pelaje.
+- **`resolver_precio(p_servicio_id, p_tamano_id, p_pelaje_id, p_cantidad, p_fecha default fecha_negocio())`**: función canónica de resolución de precio, siempre devuelve una fila con `estado` en (`disponible`, `no_aplica`, `sin_tarifa`) — nunca un `null` silencioso. Se volvió el patrón repetido en Fase 4 (`resolver_cupo_configuracion`, `perro_requisitos_sanitarios_estado`): estado explícito sobre ausencia silenciosa.
+- **`tarifas_vigentes`**: vista de solo lectura para mostrar la tarifa vigente de cada combinación sin repetir la lógica de `resolver_precio` en el cliente.
+- UI: catálogo de servicios y matriz de captura de tarifas (`matriz-tarifas.tsx`) por tamaño × pelaje.
+- **Bug corregido, relevante para el checklist de CLAUDE.md**: `created_by` de `servicios`/`tarifas` no tenía `default auth.uid()` — encontrado con JWT real ya en Fase 4, corregido en `fix_created_by_default_fase3_fase4.sql`. Motivó agregar la sección "Checklist: tabla nueva" a `CLAUDE.md`.
+
+## Fase 4 — completa (reservas, cupo, calendario, check-in/out, cargos, agenda de estética, series recurrentes)
+
+Seis pantallas, construidas y verificadas con JWT real en cada una. Tema transversal de la fase: **disciplina de zona horaria** (San Luis Potosí = `America/Mexico_City`, UTC-6 fijo, sin horario de verano desde 2022; el servidor de Postgres corre en UTC). Toda fecha/hora de negocio se resuelve con `fecha_negocio()`/`hora_negocio()` (SQL) o `hoyNegocio()`/`fechaLocalDeInstante()`/`horaLocalDeInstante()` (`src/lib/formato.ts`) — nunca `current_date`/`now()`/`new Date().toISOString().slice(0,10)` directo en lógica de negocio. Un barrido sistemático a mitad de fase encontró y corrigió 7 bugs de esta clase (`barrido_zona_horaria_fixes.sql` + varios archivos de la app).
+
+### Modelo de datos
+
+- **`estancias`**: unifica guardería y hotel. `daterange(fecha_entrada, fecha_salida)` generado — guardería siempre es un rango de 1 día (`fecha_salida = fecha_entrada + 1`), hotel abarca noches reales. `EXCLUDE` por GiST evita que el mismo perro tenga dos estancias activas traslapadas. Cupo (`cupo_configuracion` + `resolver_cupo_configuracion()`, diurno/nocturno por separado) se hace cumplir en el trigger `validar_estancia()` con `pg_advisory_xact_lock` + recorrido día a día — a nivel de trigger, no de un RPC opcional, para que ningún camino de inserción se lo salte.
+- **`reservas`**: encabezado ligero (cliente, notas), sin estado propio — el estado real vive por `estancia` (o por `cita_estetica`), porque cancelar un perro de una reserva familiar no debe tocar a los demás.
+- **Máquina de estados compartida**: `estado_inicial_reserva_valido()` y `transicion_estado_reserva_valida()` — mismas funciones usadas por `validar_estancia()` y `validar_cita_estetica()`. `reservada → confirmada → en_curso → finalizada`, con `cancelada`/`no_llego` como ramas terminales desde `reservada`/`confirmada`.
+- **`cargos_aplicados`**: cargos extra (recogida tardía, etc.) sobre una estancia, con snapshot de precio vía `resolver_precio`. Cancelar un cargo deja rastro (`cancelado`, `motivo_cancelacion`, `cancelado_por`, `cancelado_at` — llenados por trigger) y **un cargo cancelado nunca se puede reactivar**: es la defensa contra el hueco clásico de caja en efectivo.
+- **`citas_estetica`**: tabla separada de `estancias` porque el recurso es distinto (tiempo de un empleado, no cupo de guardería). `EXCLUDE` por `empleado_id` + rango de tiempo. `estancia_id` nullable: si la cita es de un perro que ya está hospedado, no pide entrega/recogida propias (esos campos solo son obligatorios en visitas sueltas de estética).
+- **`series_recurrentes`**: el patrón ("este perro viene todos los martes y jueves a guardería") — `perro_id`, `servicio_id`, `dias_semana int[]` (1=lunes…7=domingo, mismo criterio que `extract(isodow from fecha)`), `fecha_inicio`, `fecha_fin` opcional.
+- **`generar_estancias_serie(p_serie_id, p_horizonte_semanas default 8)`**: materializa un horizonte acotado (nunca genera años a futuro de una sola vez). Cada fecha candidata se intenta en su propio savepoint implícito (`BEGIN/EXCEPTION` de plpgsql) — si una fecha choca con cupo o requisito sanitario, no aborta el resto del horizonte; devuelve `(fecha, exito, motivo)` por fecha. Salta en silencio (sin reportar ni éxito ni fallo) las fechas que ya tienen una estancia no borrada para esa serie — necesario para que "renovar horizonte" no reintente y reporte como "fallidas" fechas que ya existían.
+- **`series_pausas`**: rango de pausa por vacaciones (`desde`, `hasta`, `motivo`), tabla aparte de `series_recurrentes` porque puede haber varias pausas en la vida de una serie. `generar_estancias_serie` salta cualquier fecha dentro de un rango de pausa activo.
+- **Distinción clave para "editar una serie ya materializada"**: al cambiar el patrón (días/servicio/fecha fin), las estancias futuras que **todavía no iniciaron** (`estado in ('reservada','confirmada')` y `fecha_entrada >= hoy`) se cancelan **y además se borran** (`deleted_at`) — no solo se cancelan — para que `generar_estancias_serie` no las cuente como "ya existentes" y pueda rellenar esas fechas con el patrón nuevo. Una cancelación suelta de un día (`cancelarEstancia`, reutilizada tal cual de la pantalla 2) nunca toca `deleted_at`, así que una fecha dada de baja a propósito no revive sola en la siguiente renovación. Las estancias con check-in ya hecho o que ya pasaron nunca se tocan, sin importar cuál de los dos caminos se use.
+
+### Las seis pantallas
+
+1. **Calendario de ocupación** (`/reservas`) — llegadas/salidas/quién está adentro del día, más una tabla de disponibilidad diurna/nocturna de los próximos 14 días (`calendario_ocupacion()` RPC, vistas `llegadas_hoy`/`salidas_hoy`/`quienes_estan_adentro`).
+2. **Crear reserva** (`/reservas/nueva`, también walk-in en `/reservas/checkin/walkin` reusando el mismo formulario) — uno o varios perros de la misma familia, éxito parcial por perro (reintentar solo lo que falló, incluida excepción sanitaria autorizada por admin con motivo). Detalle de reserva (`/reservas/[id]`) con cancelar estancia suelta, mover fechas, marcar "no llegó", cancelar la reserva completa (solo toca lo cancelable, cuenta lo que no).
+3. **Check-in/check-out** (`/reservas/estancias/[id]/checkin|checkout`) — hora real de entrada/salida, pertenencias confirmadas también al checkout (no solo capturadas al entrar), quién entrega/quién recoge con distinción explícita de si es el dueño registrado, foto de llegada, botón "Extender estancia" de un clic, walk-in con las mismas validaciones que cualquier reserva.
+4. **Cargos aplicados** — catálogo de cargos con snapshot de precio, total corriente visible en la estancia y en la reserva, sugerencia (no aplicación automática) de cargo por recogida tardía calculada con `minutos_retraso_cierre()`, cancelación con rastro obligatorio.
+5. **Agenda de estética** (`/agenda`) — vista día/semana por empleado, agendar/reagendar/cancelar/marcar no llegó/iniciar/finalizar, aviso (no bloqueo) de fuera de horario, cita ligada a una estancia en curso no pide entrega/recogida propias.
+6. **Series recurrentes** (`/reservas/series`) — crear el patrón y generar el horizonte de 8 semanas mostrando qué fechas se crearon y cuáles no cupieron con su motivo; renovar horizonte con un botón; **editar el patrón** mostrando cuántas estancias futuras se van a cancelar y regenerar antes de confirmar; **pausar por vacaciones** (libera cupo de un rango sin cancelar la serie ni tocar día por día); cancelar un día suelto o la serie completa (cancela solo lo futuro sin iniciar, nunca lo que ya tiene check-in o ya pasó); insignia de "serie recurrente activa" en el expediente del perro y aviso en los formularios de nueva reserva para que recepción no acepte una reserva suelta que choque con el patrón.
+
+### Bug encontrado y corregido durante la construcción de la pantalla 6
+
+Al cancelar la serie completa, la página de detalle daba **404** justo después de la acción: la consulta filtraba `deleted_at is null` sobre `series_recurrentes`, y cancelar la serie es precisamente poner `deleted_at`. Corregido quitando ese filtro de la página de detalle (una serie cancelada debe poder seguir viéndose, con su historial, solo sin las acciones de mutación) — el listado (`/reservas/series`) sí mantiene el filtro, para no mostrar series canceladas como activas.
+
+### Verificado con JWT real (cuenta de prueba vía Admin API, datos borrados al terminar)
+
+- `generar_estancias_serie` con bloqueo sanitario real (perro sin requisitos vigentes): las 17 fechas del horizonte fallan limpio con motivo explícito, sin dejar estancias huérfanas.
+- Con requisitos sanitarios vigentes: mismo horizonte, 17/17 fechas creadas.
+- Renovar horizonte sin cambios: devuelve `[]` (ninguna fecha ya existente se reintenta ni se reporta como fallo).
+- Renovar con horizonte más amplio: solo devuelve las fechas nuevas más allá de las ya generadas.
+- Cancelar un día suelto y renovar de nuevo: esa fecha no revive.
+- Editar el patrón (martes/jueves → miércoles): preview mostró el conteo correcto de estancias futuras afectadas (20), las canceló, regeneró 8 fechas nuevas con el patrón nuevo, y una fecha cancelada suelta previamente se mantuvo intacta (no se tocó ni se regeneró).
+- Pausar por vacaciones: registra la pausa y cancela las estancias futuras dentro del rango; quitar la pausa no resucita lo ya cancelado (solo permite que una futura renovación vuelva a generar esas fechas si aún no pasaron).
+- Cancelar serie completa: cuenta correctamente 0 afectadas cuando ya no quedaba nada pendiente por cancelar.
+- Insignia de "serie recurrente activa" visible en el expediente del perro (solo series activas, no las canceladas) y aviso correspondiente en "Nueva reserva" antes de marcar el perro.
+
+### Pendiente / decisiones marcadas para confirmar con el negocio
+
+- `servicios.duracion_minutos` para las filas de estética existentes se llenó con valores supuestos al agregar la columna — no confirmado con el negocio.
+- No hay UI para "deshacer" una pausa mal capturada más allá de quitarla hacia adelante (no resucita estancias ya canceladas por esa pausa) — si el negocio pide eso, hace falta un flujo explícito de "restaurar" en vez de solo insertar la reserva/estancia de nuevo a mano.
+- La visibilidad de "serie activa" se resolvió en el expediente del perro y en el formulario de nueva reserva (el punto concreto de riesgo de choque); no se agregó a la tabla agregada de ocupación de `/reservas` por no tener una columna natural por perro ahí — revisar si el negocio la echa de menos ahí también.
+
 ## Estado actual
 
-Fase 0, Fase 1 y Fase 2 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 3 (catálogo de servicios y tarifas) es lo siguiente en el roadmap.
+Fase 0, Fase 1, Fase 2, Fase 3 y Fase 4 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 5 (POS: métodos de pago, turno de caja, arqueo con corte ciego) es lo siguiente en el roadmap.
 
 ## Invite server-side de staff
 

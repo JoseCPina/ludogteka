@@ -14,11 +14,12 @@ export type ItemNav = {
 // tocar el layout. `roles` respeta lo que cada rol puede ver según
 // docs/PROYECTO.md (recepción no ve dinero/reportes, estética no ve dinero).
 export const SECCIONES_STAFF: ItemNav[] = [
-  { etiqueta: "Reservas", href: "/reservas", roles: ["admin", "recepcion"], proximamente: true },
+  { etiqueta: "Reservas", href: "/reservas", roles: ["admin", "recepcion"] },
+  { etiqueta: "Servicios", href: "/servicios", roles: ["admin"] },
   { etiqueta: "Clientes", href: "/clientes", roles: ["admin", "recepcion"] },
   { etiqueta: "Vinculación", href: "/vinculacion", roles: ["admin", "recepcion"] },
   { etiqueta: "Caja", href: "/caja", roles: ["admin", "recepcion"], proximamente: true },
-  { etiqueta: "Agenda", href: "/agenda", roles: ["admin", "estetica"], proximamente: true },
+  { etiqueta: "Agenda", href: "/agenda", roles: ["admin", "recepcion", "estetica"] },
   { etiqueta: "Inventario", href: "/inventario", roles: ["admin", "estetica"], proximamente: true },
   { etiqueta: "Reportes", href: "/reportes", roles: ["admin"], proximamente: true },
 ];

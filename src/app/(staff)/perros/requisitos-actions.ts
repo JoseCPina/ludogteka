@@ -7,10 +7,6 @@ const BUCKET = "perros-archivos";
 
 export type EstadoRequisitoForm = { error: string | null; id?: string };
 
-function hoyISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export async function crearRequisitoAplicado(
   perroId: string,
   datos: {
@@ -22,11 +18,14 @@ export async function crearRequisitoAplicado(
 ): Promise<EstadoRequisitoForm> {
   if (!datos.tipoRequisitoId) return { error: "Elige qué tipo de requisito estás registrando." };
   if (!datos.fechaAplicacion) return { error: "Escribe la fecha de aplicación." };
-  if (datos.fechaAplicacion > hoyISO()) {
+
+  const supabase = await createSupabaseServerClient();
+  // fecha_negocio(), no new Date() — barrido de zona horaria, Fase 4.
+  const { data: hoyData } = await supabase.rpc("fecha_negocio");
+  if (datos.fechaAplicacion > (hoyData as string)) {
     return { error: "La fecha de aplicación no puede ser futura." };
   }
 
-  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("requisitos_sanitarios_aplicados")
     .insert({

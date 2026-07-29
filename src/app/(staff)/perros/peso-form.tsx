@@ -5,13 +5,10 @@ import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { hoyNegocio } from "@/lib/formato";
 import { registrarPeso, type EstadoPesoForm } from "./peso-actions";
 
 const ESTADO_INICIAL: EstadoPesoForm = { error: null };
-
-function hoyISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
 
 export function PesoForm({ perroId }: { perroId: string }) {
   const registrarConId = registrarPeso.bind(null, perroId);
@@ -41,8 +38,8 @@ export function PesoForm({ perroId }: { perroId: string }) {
           label="Fecha"
           name="fecha"
           type="date"
-          max={hoyISO()}
-          defaultValue={hoyISO()}
+          max={hoyNegocio()}
+          defaultValue={hoyNegocio()}
           required
           disabled={enviando}
         />

@@ -14,6 +14,7 @@ import { PesoResumen, type PesoFila } from "../peso-resumen";
 import { AlertaCriticaBanner } from "../alerta-critica-banner";
 import { AlertasManejo, type CatalogoAlertaOpcion, type AlertaActivaFila } from "../alertas-manejo";
 import { AlergiasSeccion, type AlergiaFila } from "../alergias-seccion";
+import { formatearDiasSemana } from "@/app/(staff)/reservas/series/dias-semana";
 
 export default async function PerroPage({
   params,
@@ -94,6 +95,12 @@ export default async function PerroPage({
       .order("created_at", { ascending: false }),
   ]);
 
+  const { data: seriesActivas } = await supabase
+    .from("series_recurrentes")
+    .select("id, dias_semana, servicios(nombre)")
+    .eq("perro_id", id)
+    .is("deleted_at", null);
+
   if (!perro) notFound();
 
   let urlFoto: string | null = null;
@@ -158,6 +165,23 @@ export default async function PerroPage({
       </div>
 
       <AlertaCriticaBanner alertas={alertasActivas} alergiasGraves={alergiasGraves} tamano="grande" />
+
+      {seriesActivas && seriesActivas.length > 0 && (
+        <div className="flex flex-col gap-2">
+          {seriesActivas.map((s) => {
+            const servicio = Array.isArray(s.servicios) ? s.servicios[0] : s.servicios;
+            return (
+              <Link
+                key={s.id}
+                href={`/reservas/series/${s.id}`}
+                className="flex items-center gap-2 rounded-md border-l-4 border-azul bg-azul-suave px-4 py-2.5 text-sm font-semibold text-azul hover:underline"
+              >
+                Serie recurrente activa: {servicio?.nombre ?? "—"} — {formatearDiasSemana(s.dias_semana as number[])}
+              </Link>
+            );
+          })}
+        </div>
+      )}
 
       <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
 

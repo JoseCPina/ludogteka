@@ -5,10 +5,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type EstadoAlertaForm = { error: string | null; ok?: boolean };
 
-function hoyISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export async function activarAlerta(
   perroId: string,
   _estadoPrevio: EstadoAlertaForm,
@@ -40,13 +36,13 @@ export async function desactivarAlerta(
   if (!motivo.trim()) return { error: "Escribe el motivo de la baja." };
 
   const supabase = await createSupabaseServerClient();
-  const { data: actual } = await supabase
-    .from("perro_alertas")
-    .select("notas")
-    .eq("id", perroAlertaId)
-    .single();
+  const [{ data: actual }, { data: hoyData }] = await Promise.all([
+    supabase.from("perro_alertas").select("notas").eq("id", perroAlertaId).single(),
+    // fecha_negocio(), no new Date() — barrido de zona horaria, Fase 4.
+    supabase.rpc("fecha_negocio"),
+  ]);
 
-  const notasNuevas = [actual?.notas, `Desactivada (${hoyISO()}): ${motivo.trim()}`]
+  const notasNuevas = [actual?.notas, `Desactivada (${hoyData}): ${motivo.trim()}`]
     .filter(Boolean)
     .join("\n\n");
 
