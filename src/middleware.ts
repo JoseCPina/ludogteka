@@ -20,6 +20,7 @@ const ZONAS_PROTEGIDAS: { prefijo: string; rolesPermitidos: string[] }[] = [
   { prefijo: "/contratos", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/agenda", rolesPermitidos: ["admin", "recepcion", "estetica"] },
   { prefijo: "/inventario", rolesPermitidos: ["admin", "recepcion", "estetica"] },
+  { prefijo: "/reportes", rolesPermitidos: ["admin"] },
 ];
 
 // Zonas de API: nunca redirige (un fetch no sabe qué hacer con un 302 a

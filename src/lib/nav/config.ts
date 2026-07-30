@@ -22,7 +22,7 @@ export const SECCIONES_STAFF: ItemNav[] = [
   { etiqueta: "Contratos", href: "/contratos", roles: ["admin", "recepcion"] },
   { etiqueta: "Agenda", href: "/agenda", roles: ["admin", "recepcion", "estetica"] },
   { etiqueta: "Inventario", href: "/inventario", roles: ["admin", "recepcion", "estetica"] },
-  { etiqueta: "Reportes", href: "/reportes", roles: ["admin"], proximamente: true },
+  { etiqueta: "Reportes", href: "/reportes", roles: ["admin"] },
 ];
 
 // Vacío por ahora — Fase 2/6/9 agregan aquí Mis perros, Mis reservas,
