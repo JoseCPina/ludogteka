@@ -113,6 +113,11 @@ export default async function CheckoutEstanciaPage({
 
   const esHotel = servicio?.categoria === "hotel";
   const puedeCheckout = estancia.estado === "en_curso";
+  // precio_unitario es tarifa por noche/día, no el total (ver tarifas:
+  // "el total es N × precio del tramo") — hay que multiplicar por noches.
+  const noches = Math.round(
+    (new Date(estancia.fecha_salida).getTime() - new Date(estancia.fecha_entrada).getTime()) / 86400000
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -164,7 +169,7 @@ export default async function CheckoutEstanciaPage({
           cargosIniciales={cargos}
           serviciosCargo={puedeCheckout ? serviciosCargoLista : []}
           sugerenciaRetraso={sugerenciaRetraso}
-          precioBase={estancia.precio_unitario}
+          precioBase={estancia.precio_unitario * noches}
         />
       </div>
     </div>

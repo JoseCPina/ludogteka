@@ -5,7 +5,7 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { AlertaCriticaBanner } from "@/app/(staff)/perros/alerta-critica-banner";
 import { ResumenSanitario, type EstadoRequisitoItem } from "@/app/(staff)/perros/resumen-sanitario";
 import { formatearFechaCalendario, horaLocalDeInstante } from "@/lib/formato";
-import { CitaDetalle } from "./cita-detalle";
+import { CitaDetalle, type RecetaItem } from "./cita-detalle";
 
 export default async function CitaDetallePage({
   params,
@@ -19,7 +19,7 @@ export default async function CitaDetallePage({
   const { data: cita, error } = await supabase
     .from("citas_estetica")
     .select(
-      "id, perro_id, servicio_id, empleado_id, estancia_id, inicio, fin, estado, precio, fuera_de_horario, entregado_por_nombre, recogido_por_nombre, recogido_por_es_dueno, perros(nombre), servicios(nombre)"
+      "id, perro_id, servicio_id, tamano_id, empleado_id, estancia_id, inicio, fin, estado, precio, fuera_de_horario, entregado_por_nombre, recogido_por_nombre, recogido_por_es_dueno, perros(nombre), servicios(nombre)"
     )
     .eq("id", citaId)
     .single();
@@ -45,6 +45,26 @@ export default async function CitaDetallePage({
       supabase.from("perro_alergias").select("id, alergeno, gravedad").eq("perro_id", cita.perro_id).is("deleted_at", null),
       supabase.from("profiles").select("nombre_completo").eq("id", cita.empleado_id).single(),
     ]);
+
+  let recetaItems: RecetaItem[] = [];
+  if (cita.tamano_id) {
+    const { data: recetaCrudo } = await supabase
+      .from("recetas_consumo")
+      .select("insumo_id, cantidad_consumo, insumos(nombre, unidades_medida!unidad_consumo_id(etiqueta))")
+      .eq("servicio_id", cita.servicio_id)
+      .eq("tamano_id", cita.tamano_id)
+      .is("deleted_at", null);
+
+    recetaItems = (recetaCrudo ?? []).map((r) => {
+      const insumo = r.insumos as unknown as { nombre: string; unidades_medida: { etiqueta: string } | null } | null;
+      return {
+        insumo_id: r.insumo_id,
+        insumo_nombre: insumo?.nombre ?? "—",
+        unidad_etiqueta: insumo?.unidades_medida?.etiqueta ?? "",
+        cantidad_sugerida: Number(r.cantidad_consumo),
+      };
+    });
+  }
 
   const alertasActivas = (alertasCrudo ?? []).map((a) => {
     const catalogo = a.catalogo_alertas as unknown as { etiqueta: string } | null;
@@ -101,6 +121,7 @@ export default async function CitaDetallePage({
           entregadoPorNombre={cita.entregado_por_nombre}
           recogidoPorNombre={cita.recogido_por_nombre}
           recogidoPorEsDueno={cita.recogido_por_es_dueno}
+          recetaItems={recetaItems}
         />
       )}
     </div>

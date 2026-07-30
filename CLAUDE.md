@@ -58,5 +58,5 @@ Cada tabla nueva lleva esto DENTRO de su propia migración de creación, no en u
 
 \## Estado
 
-Fase 0 a Fase 4 completas (auth con roles, vinculación dueño↔negocio, panel de admin, clientes, portal, expediente completo del perro, catálogo de servicios y tarifas, reservas con cupo y calendario, check-in/check-out, cargos, agenda de estética, series recurrentes). En curso: Fase 5 = POS (métodos de pago, turno de caja, arqueo con corte ciego). Detalle en docs/PROYECTO.md.
+Fase 0 a Fase 4 completas (auth con roles, vinculación dueño↔negocio, panel de admin, clientes, portal, expediente completo del perro, catálogo de servicios y tarifas, reservas con cupo y calendario, check-in/check-out, cargos, agenda de estética, series recurrentes). Fase 5 (POS: cobros, bonos, descuentos, turno de caja y arqueo) y Fase 6 (contratos: plantillas versionadas, generación y firma en PDF con evidencia de auditoría, subida en papel, visibilidad operativa y vigencia) construidas y probadas con JWTs reales. Fase 5 pendiente de que el negocio la termine de probar para cerrarla formalmente. Fase 7 (inventario) completa (catálogo, movimientos, consumo automático por receta). Detalle en docs/PROYECTO.md.
 

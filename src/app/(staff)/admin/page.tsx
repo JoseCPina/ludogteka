@@ -2,10 +2,15 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { InvitarStaff } from "./invitar-staff";
 import { ListaCuentas, type Cuenta } from "./lista-cuentas";
+import { DescuentoConfig } from "./descuento-config";
 
 export default async function AdminPage() {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.rpc("listar_cuentas");
+  const [{ data, error }, { data: topeData }] = await Promise.all([
+    supabase.rpc("listar_cuentas"),
+    supabase.rpc("resolver_tope_descuento_recepcion"),
+  ]);
+  const topeFila = Array.isArray(topeData) ? topeData[0] : topeData;
 
   return (
     <div className="flex flex-col gap-8">
@@ -17,6 +22,14 @@ export default async function AdminPage() {
       <section className="rounded-lg border border-n-200 bg-white p-5">
         <h2 className="mb-4 text-lg font-bold text-n-900">Invitar personal</h2>
         <InvitarStaff />
+      </section>
+
+      <section className="rounded-lg border border-n-200 bg-white p-5">
+        <h2 className="mb-4 text-lg font-bold text-n-900">Tope de descuentos de recepción</h2>
+        <DescuentoConfig
+          topeActual={topeFila?.estado === "configurado" ? Number(topeFila.tope_recepcion) : null}
+          vigenteDesde={topeFila?.vigencia_desde ?? null}
+        />
       </section>
 
       <section>

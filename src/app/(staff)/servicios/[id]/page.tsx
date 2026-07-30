@@ -54,9 +54,18 @@ export default async function EditarServicioPage({
           </div>
           <p className="mt-1 text-n-600">Editar el servicio.</p>
         </div>
-        <Link href={`/servicios/${id}/tarifas`}>
-          <Button type="button">Ver/editar tarifas</Button>
-        </Link>
+        <div className="flex gap-2">
+          {servicio.categoria === "estetica" && (
+            <Link href={`/servicios/${id}/receta`}>
+              <Button type="button" variante="secundario">
+                Receta de consumo
+              </Button>
+            </Link>
+          )}
+          <Link href={`/servicios/${id}/tarifas`}>
+            <Button type="button">Ver/editar tarifas</Button>
+          </Link>
+        </div>
       </div>
 
       {creado === "1" && <Alert variante="exito" titulo="Servicio creado correctamente" />}

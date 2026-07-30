@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { formatearTelefono } from "@/lib/telefono";
 import { EstanciaFila } from "./estancia-fila";
 import { CancelarReservaBoton } from "./cancelar-reserva-boton";
@@ -88,6 +89,10 @@ export default async function DetalleReservaPage({
     nombre: s.nombre as string,
   }));
 
+  const { data: totalesCrudo } = await supabase.rpc("cuenta_totales_reserva", { p_reserva_id: id });
+  const totalesFila = Array.isArray(totalesCrudo) ? totalesCrudo[0] : totalesCrudo;
+  const saldo = Number(totalesFila?.saldo ?? 0);
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -102,9 +107,20 @@ export default async function DetalleReservaPage({
             </p>
             {reserva.notas && <p className="mt-2 text-n-700">{reserva.notas}</p>}
           </div>
-          {cancelables > 0 && (
-            <CancelarReservaBoton reservaId={reserva.id} cancelables={cancelables} />
-          )}
+          <div className="flex flex-col items-end gap-2">
+            <p className={`text-sm font-bold ${saldo > 0 ? "text-naranja-oscuro" : "text-verde-oscuro"}`}>
+              Saldo: ${saldo.toFixed(2)}
+              {saldo < 0 ? " (a favor)" : ""}
+            </p>
+            <div className="flex gap-2">
+              <Link href={`/reservas/${id}/cobrar`}>
+                <Button type="button">Cobrar</Button>
+              </Link>
+              {cancelables > 0 && (
+                <CancelarReservaBoton reservaId={reserva.id} cancelables={cancelables} />
+              )}
+            </div>
+          </div>
         </div>
       </div>
 

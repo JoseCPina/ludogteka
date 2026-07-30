@@ -12,7 +12,15 @@ import {
   marcarCitaNoLlego,
   iniciarCita,
   finalizarCita,
+  type AjusteConsumo,
 } from "../agenda-actions";
+
+export type RecetaItem = {
+  insumo_id: string;
+  insumo_nombre: string;
+  unidad_etiqueta: string;
+  cantidad_sugerida: number;
+};
 
 function localAUtc(valorDatetimeLocal: string): string {
   return new Date(`${valorDatetimeLocal}:00-06:00`).toISOString();
@@ -39,6 +47,7 @@ export function CitaDetalle({
   entregadoPorNombre,
   recogidoPorNombre,
   recogidoPorEsDueno,
+  recetaItems,
 }: {
   citaId: string;
   perroNombre: string;
@@ -49,6 +58,7 @@ export function CitaDetalle({
   entregadoPorNombre: string | null;
   recogidoPorNombre: string | null;
   recogidoPorEsDueno: boolean | null;
+  recetaItems: RecetaItem[];
 }) {
   const router = useRouter();
   const [estado, setEstado] = useState(estadoInicial);
@@ -69,6 +79,9 @@ export function CitaDetalle({
   const [recogidoNombre, setRecogidoNombre] = useState("");
   const [recogidoTelefono, setRecogidoTelefono] = useState("");
   const [esDueno, setEsDueno] = useState<boolean | null>(null);
+  const [cantidadesConsumo, setCantidadesConsumo] = useState<Record<string, string>>(() =>
+    Object.fromEntries(recetaItems.map((r) => [r.insumo_id, String(r.cantidad_sugerida)]))
+  );
 
   async function accionReagendar() {
     setCargando(true);
@@ -135,11 +148,16 @@ export function CitaDetalle({
     }
     setCargando(true);
     setError(null);
+    const ajustes: AjusteConsumo[] = recetaItems.map((r) => ({
+      insumo_id: r.insumo_id,
+      cantidad: Number(cantidadesConsumo[r.insumo_id] ?? r.cantidad_sugerida),
+    }));
     const res = await finalizarCita(
       citaId,
       esStandalone ? recogidoNombre : null,
       esStandalone ? recogidoTelefono || null : null,
-      esStandalone ? esDueno : null
+      esStandalone ? esDueno : null,
+      ajustes
     );
     setCargando(false);
     if (res.error) {
@@ -311,6 +329,33 @@ export function CitaDetalle({
               ) : (
                 <p className="text-sm text-n-600">El perro sigue adentro (estancia ligada) — el cierre no requiere estos datos.</p>
               )}
+
+              {recetaItems.length > 0 && (
+                <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3">
+                  <p className="text-sm font-semibold text-n-800">
+                    Consumo de inventario — ajusta si se usó más o menos
+                  </p>
+                  {recetaItems.map((r) => (
+                    <div key={r.insumo_id} className="flex items-center justify-between gap-3">
+                      <span className="text-sm text-n-700">{r.insumo_nombre}</span>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={cantidadesConsumo[r.insumo_id] ?? ""}
+                          onChange={(e) =>
+                            setCantidadesConsumo((prev) => ({ ...prev, [r.insumo_id]: e.target.value }))
+                          }
+                          className="min-h-10 w-24 rounded-md border-[1.5px] border-n-400 px-2 text-right text-sm focus:border-azul focus:outline-none focus:ring-[3px] focus:ring-azul-suave"
+                        />
+                        <span className="text-sm text-n-600">{r.unidad_etiqueta}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <Button type="button" disabled={cargando} onClick={accionFinalizar}>
                   {cargando ? "Guardando…" : "Confirmar cierre"}

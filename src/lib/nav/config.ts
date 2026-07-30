@@ -18,9 +18,10 @@ export const SECCIONES_STAFF: ItemNav[] = [
   { etiqueta: "Servicios", href: "/servicios", roles: ["admin"] },
   { etiqueta: "Clientes", href: "/clientes", roles: ["admin", "recepcion"] },
   { etiqueta: "Vinculación", href: "/vinculacion", roles: ["admin", "recepcion"] },
-  { etiqueta: "Caja", href: "/caja", roles: ["admin", "recepcion"], proximamente: true },
+  { etiqueta: "Caja", href: "/caja", roles: ["admin", "recepcion"] },
+  { etiqueta: "Contratos", href: "/contratos", roles: ["admin", "recepcion"] },
   { etiqueta: "Agenda", href: "/agenda", roles: ["admin", "recepcion", "estetica"] },
-  { etiqueta: "Inventario", href: "/inventario", roles: ["admin", "estetica"], proximamente: true },
+  { etiqueta: "Inventario", href: "/inventario", roles: ["admin", "recepcion", "estetica"] },
   { etiqueta: "Reportes", href: "/reportes", roles: ["admin"], proximamente: true },
 ];
 

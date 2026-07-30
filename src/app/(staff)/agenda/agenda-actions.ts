@@ -113,22 +113,23 @@ export async function iniciarCita(
   return { error: null };
 }
 
+export type AjusteConsumo = { insumo_id: string; cantidad: number };
+
 export async function finalizarCita(
   citaId: string,
   recogidoPorNombre: string | null,
   recogidoPorTelefono: string | null,
-  recogidoPorEsDueno: boolean | null
+  recogidoPorEsDueno: boolean | null,
+  ajustesConsumo: AjusteConsumo[] = []
 ): Promise<EstadoAccion> {
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
-    .from("citas_estetica")
-    .update({
-      estado: "finalizada",
-      recogido_por_nombre: recogidoPorNombre,
-      recogido_por_telefono: recogidoPorTelefono,
-      recogido_por_es_dueno: recogidoPorEsDueno,
-    })
-    .eq("id", citaId);
+  const { error } = await supabase.rpc("finalizar_cita_con_consumo", {
+    p_cita_id: citaId,
+    p_recogido_por_nombre: recogidoPorNombre,
+    p_recogido_por_telefono: recogidoPorTelefono,
+    p_recogido_por_es_dueno: recogidoPorEsDueno,
+    p_ajustes: ajustesConsumo,
+  });
 
   if (error) return { error: traducirError(error) };
   revalidatePath("/agenda");

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { AlertaCriticaBanner } from "@/app/(staff)/perros/alerta-critica-banner";
 import { ResumenSanitario, type EstadoRequisitoItem } from "@/app/(staff)/perros/resumen-sanitario";
+import { ContratoEstadoBanner, type ContratoEstado } from "@/app/(staff)/perros/contrato-estado-banner";
 import { formatearFechaCalendario, formatearFecha } from "@/lib/formato";
 import { CheckinForm } from "./checkin-form";
 
@@ -29,29 +30,39 @@ export default async function CheckinEstanciaPage({
 
   if (!perro) notFound();
 
-  const [{ data: estadoSanitario }, { data: alertasCrudo }, { data: alergias }, { data: pertenencias }] =
-    await Promise.all([
-      supabase
-        .from("perro_requisitos_sanitarios_estado")
-        .select("tipo_requisito_id, clave, etiqueta, es_critica, ultima_fecha_aplicacion, fecha_vencimiento, estado")
-        .eq("perro_id", estancia.perro_id),
-      supabase
-        .from("perro_alertas")
-        .select("id, alerta_id, notas, catalogo_alertas(etiqueta)")
-        .eq("perro_id", estancia.perro_id)
-        .eq("activa", true),
-      supabase
-        .from("perro_alergias")
-        .select("id, alergeno, gravedad")
-        .eq("perro_id", estancia.perro_id)
-        .is("deleted_at", null),
-      supabase
-        .from("estancia_pertenencias")
-        .select("id, descripcion, devuelto")
-        .eq("estancia_id", estanciaId)
-        .is("deleted_at", null)
-        .order("created_at"),
-    ]);
+  const [
+    { data: estadoSanitario },
+    { data: alertasCrudo },
+    { data: alergias },
+    { data: pertenencias },
+    { data: contratoEstado },
+  ] = await Promise.all([
+    supabase
+      .from("perro_requisitos_sanitarios_estado")
+      .select("tipo_requisito_id, clave, etiqueta, es_critica, ultima_fecha_aplicacion, fecha_vencimiento, estado")
+      .eq("perro_id", estancia.perro_id),
+    supabase
+      .from("perro_alertas")
+      .select("id, alerta_id, notas, catalogo_alertas(etiqueta)")
+      .eq("perro_id", estancia.perro_id)
+      .eq("activa", true),
+    supabase
+      .from("perro_alergias")
+      .select("id, alergeno, gravedad")
+      .eq("perro_id", estancia.perro_id)
+      .is("deleted_at", null),
+    supabase
+      .from("estancia_pertenencias")
+      .select("id, descripcion, devuelto")
+      .eq("estancia_id", estanciaId)
+      .is("deleted_at", null)
+      .order("created_at"),
+    supabase
+      .from("perros_contrato_estado")
+      .select("estado")
+      .eq("perro_id", estancia.perro_id)
+      .maybeSingle(),
+  ]);
 
   const alertasActivas = (alertasCrudo ?? []).map((a) => {
     const catalogo = a.catalogo_alertas as unknown as { etiqueta: string } | null;
@@ -79,6 +90,7 @@ export default async function CheckinEstanciaPage({
 
       <AlertaCriticaBanner alertas={alertasActivas} alergiasGraves={alergiasGraves} tamano="grande" />
       <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
+      <ContratoEstadoBanner estado={(contratoEstado?.estado as ContratoEstado) ?? "sin_contrato"} />
 
       {yaHizoCheckin ? (
         <div className="rounded-lg border border-n-200 bg-n-50 p-4">

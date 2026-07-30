@@ -8,6 +8,7 @@ import { PerroFoto } from "@/app/(staff)/perros/perro-foto";
 import { ResumenSanitario, type EstadoRequisitoItem } from "@/app/(staff)/perros/resumen-sanitario";
 import { MiPerroForm } from "../../mi-perro-form";
 import { RecordatorioSanitario } from "../../recordatorio-sanitario";
+import { FirmarContrato } from "./firmar-contrato";
 
 const ESTILO_GRAVEDAD: Record<string, string> = {
   grave: "border-naranja bg-naranja-suave text-naranja-oscuro",
@@ -52,6 +53,19 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
   if (!perro) notFound();
 
   const esPropio = perro.cliente_id === sesion.clienteId;
+
+  // Solo el dueño principal firma — un acceso compartido nunca puede
+  // firmar en nombre de otro, aunque vea el resto del expediente.
+  const { data: contrato } = esPropio
+    ? await supabase
+        .from("contratos")
+        .select("id, estado, storage_path")
+        .eq("perro_id", id)
+        .neq("estado", "cancelado")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    : { data: null };
 
   let urlFoto: string | null = null;
   if (perro.foto_path) {
@@ -142,6 +156,13 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
         <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
         <RecordatorioSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} />
       </div>
+
+      {esPropio && contrato && (
+        <div className="flex flex-col gap-3">
+          <h2 className="text-lg font-bold text-n-900">Contrato</h2>
+          <FirmarContrato contratoId={contrato.id} estado={contrato.estado} storagePath={contrato.storage_path} />
+        </div>
+      )}
 
       {alergias && alergias.length > 0 && (
         <div className="flex flex-col gap-3">

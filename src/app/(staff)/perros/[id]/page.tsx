@@ -15,6 +15,7 @@ import { AlertaCriticaBanner } from "../alerta-critica-banner";
 import { AlertasManejo, type CatalogoAlertaOpcion, type AlertaActivaFila } from "../alertas-manejo";
 import { AlergiasSeccion, type AlergiaFila } from "../alergias-seccion";
 import { formatearDiasSemana } from "@/app/(staff)/reservas/series/dias-semana";
+import { ContratoSeccion, type ContratoFila } from "../contrato-seccion";
 
 export default async function PerroPage({
   params,
@@ -101,6 +102,12 @@ export default async function PerroPage({
     .eq("perro_id", id)
     .is("deleted_at", null);
 
+  const { data: contratosCrudo } = await supabase
+    .from("contratos")
+    .select("id, estado, storage_path, fecha_firma, created_at, motivo_cancelacion")
+    .eq("perro_id", id)
+    .order("created_at", { ascending: false });
+
   if (!perro) notFound();
 
   let urlFoto: string | null = null;
@@ -148,6 +155,15 @@ export default async function PerroPage({
   const cliente = perro.clientes as unknown as { nombre: string } | null;
   const actualizarConId = actualizarPerro.bind(null, id);
   const soloLectura = sesion.rol === "estetica";
+
+  const contratos: ContratoFila[] = (contratosCrudo ?? []).map((c) => ({
+    id: c.id,
+    estado: c.estado,
+    storagePath: c.storage_path,
+    fechaFirma: c.fecha_firma,
+    createdAt: c.created_at,
+    motivoCancelacion: c.motivo_cancelacion,
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -253,6 +269,13 @@ export default async function PerroPage({
         <h2 className="text-lg font-bold text-n-900">Alergias</h2>
         <AlergiasSeccion perroId={id} alergias={alergiasFilas} />
       </div>
+
+      {!soloLectura && perro.cliente_id && (
+        <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+          <h2 className="text-lg font-bold text-n-900">Contrato</h2>
+          <ContratoSeccion perroId={id} clienteId={perro.cliente_id} contratos={contratos} />
+        </div>
+      )}
     </div>
   );
 }

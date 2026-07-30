@@ -61,6 +61,12 @@ export function EstanciaFila({
 
   const esGuarderia = fila.categoria === "guarderia";
   const editable = estado === "reservada" || estado === "confirmada";
+  // precioUnitario es tarifa POR NOCHE/DÍA, no el total de la estancia
+  // (ver tarifas: "el total es N × precio del tramo") — para guardería
+  // noches siempre da 1, así que ahí no cambia nada visible.
+  const noches = Math.round(
+    (new Date(fechaSalida).getTime() - new Date(fechaEntrada).getTime()) / 86400000
+  );
 
   async function accionCancelar() {
     setCargando(true);
@@ -129,7 +135,11 @@ export function EstanciaFila({
           </span>
         )}
         <span>
-          Precio: <span className="font-semibold text-n-900">${fila.precioUnitario.toFixed(2)}</span>
+          {esGuarderia ? "Precio" : `Precio por noche × ${noches}`}:{" "}
+          <span className="font-semibold text-n-900">
+            ${fila.precioUnitario.toFixed(2)}
+            {!esGuarderia && ` = $${(fila.precioUnitario * noches).toFixed(2)}`}
+          </span>
         </span>
       </div>
 
@@ -226,7 +236,7 @@ export function EstanciaFila({
           estanciaId={fila.id}
           cargosIniciales={cargosIniciales}
           serviciosCargo={estado === "cancelada" || estado === "no_llego" ? [] : serviciosCargo}
-          precioBase={fila.precioUnitario}
+          precioBase={fila.precioUnitario * noches}
         />
       </div>
     </div>

@@ -10,6 +10,8 @@ import { actualizarCliente, darDeBajaCliente } from "../actions";
 import { PerroFoto } from "../../perros/perro-foto";
 import { ResumenSanitario, type EstadoRequisitoItem } from "../../perros/resumen-sanitario";
 import { AlertaCriticaBanner } from "../../perros/alerta-critica-banner";
+import { ContratoEstadoBanner, type ContratoEstado } from "../../perros/contrato-estado-banner";
+import { BonosCliente, type BonoCatalogo, type BonoFila } from "../bonos-cliente";
 
 export default async function EditarClientePage({
   params,
@@ -98,8 +100,38 @@ export default async function EditarClientePage({
     }
   }
 
+  const estadoContratoPorPerro = new Map<string, ContratoEstado>();
+  if (perros && perros.length > 0) {
+    const { data: contratoEstados } = await supabase
+      .from("perros_contrato_estado")
+      .select("perro_id, estado")
+      .in(
+        "perro_id",
+        perros.map((p) => p.id)
+      );
+    for (const fila of contratoEstados ?? []) {
+      estadoContratoPorPerro.set(fila.perro_id, fila.estado as ContratoEstado);
+    }
+  }
+
   const actualizarConId = actualizarCliente.bind(null, id);
   const bajaConId = darDeBajaCliente.bind(null, id);
+
+  const [{ data: catalogoBonos }, { data: bonosCliente }] = await Promise.all([
+    supabase
+      .from("servicios")
+      .select("id, nombre")
+      .eq("categoria", "bono")
+      .is("deleted_at", null)
+      .order("orden"),
+    supabase
+      .from("bonos_clientes_estado")
+      .select(
+        "id, servicio_nombre, servicio_incluido_nombre, cantidad_total, cantidad_disponible, precio_pagado, fecha_compra, fecha_vencimiento, estado"
+      )
+      .eq("cliente_id", id)
+      .order("fecha_compra", { ascending: false }),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -171,12 +203,25 @@ export default async function EditarClientePage({
                       items={estadoSanitarioPorPerro.get(perro.id) ?? []}
                       tamano="compacto"
                     />
+                    <ContratoEstadoBanner
+                      estado={estadoContratoPorPerro.get(perro.id) ?? "sin_contrato"}
+                      tamano="compacto"
+                    />
                   </Link>
                 </li>
               );
             })}
           </ul>
         )}
+      </div>
+
+      <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
+        <h2 className="text-lg font-bold text-n-900">Bonos prepagados</h2>
+        <BonosCliente
+          clienteId={id}
+          catalogo={(catalogoBonos as BonoCatalogo[]) ?? []}
+          bonos={(bonosCliente as BonoFila[]) ?? []}
+        />
       </div>
 
       <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
