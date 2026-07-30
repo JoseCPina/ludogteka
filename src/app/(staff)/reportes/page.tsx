@@ -22,10 +22,14 @@ export default async function ReportesPage({
     { data, error },
     { data: costosData, error: errorCostos },
     { data: margenPorServicio, error: errorMargen },
+    { data: operativoData, error: errorOperativo },
+    { data: estadoActualData, error: errorEstadoActual },
   ] = await Promise.all([
     supabase.rpc("reporte_financiero_periodo", { p_desde: desde, p_hasta: hasta }).single(),
     supabase.rpc("reporte_costos_periodo", { p_desde: desde, p_hasta: hasta }).single(),
     supabase.rpc("reporte_margen_por_servicio_periodo", { p_desde: desde, p_hasta: hasta }),
+    supabase.rpc("reporte_operativo_periodo", { p_desde: desde, p_hasta: hasta }).single(),
+    supabase.rpc("reporte_estado_operativo_actual").single(),
   ]);
 
   const reporte = data as {
@@ -63,6 +67,25 @@ export default async function ReportesPage({
     costo_consumo: number;
     margen: number;
   }[];
+
+  const operativo = operativoData as {
+    dias_guarderia: number;
+    noches_hotel: number;
+    citas_estetica_finalizadas: number;
+    estancias_canceladas: number;
+    citas_no_llego: number;
+  } | null;
+
+  const estadoActual = estadoActualData as {
+    sanitario_vigente: number;
+    sanitario_por_vencer: number;
+    sanitario_bloqueado: number;
+    contrato_vigente: number;
+    contrato_sin_firmar: number;
+    contrato_requiere_actualizacion: number;
+    insumos_bajo_minimo: number;
+    insumos_por_caducar: number;
+  } | null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -322,6 +345,85 @@ export default async function ReportesPage({
               </div>
             )}
           </>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+        <div>
+          <h2 className="text-lg font-bold text-n-900">Operación del periodo</h2>
+          <p className="mt-1 text-sm text-n-600">
+            No calcula % de ocupación contra el cupo configurado, solo cuenta días/noches reales.
+          </p>
+        </div>
+
+        {errorOperativo || !operativo ? (
+          <Alert variante="error" titulo="No pudimos cargar la operación del periodo">
+            Recarga la página. Si el problema sigue, avísale al equipo técnico.
+          </Alert>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+            <div className="rounded-lg border border-n-200 bg-white p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-n-600">Días de guardería</p>
+              <p className="mt-1 text-xl font-bold text-n-900">{operativo.dias_guarderia}</p>
+            </div>
+            <div className="rounded-lg border border-n-200 bg-white p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-n-600">Noches de hotel</p>
+              <p className="mt-1 text-xl font-bold text-n-900">{operativo.noches_hotel}</p>
+            </div>
+            <div className="rounded-lg border border-n-200 bg-white p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-n-600">Citas de estética</p>
+              <p className="mt-1 text-xl font-bold text-n-900">{operativo.citas_estetica_finalizadas}</p>
+            </div>
+            <div className="rounded-lg border border-n-200 bg-white p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-n-600">Estancias canceladas</p>
+              <p className="mt-1 text-xl font-bold text-n-900">{operativo.estancias_canceladas}</p>
+            </div>
+            <div className="rounded-lg border border-n-200 bg-white p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-n-600">Citas no llegó</p>
+              <p className="mt-1 text-xl font-bold text-n-900">{operativo.citas_no_llego}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+        <div>
+          <h2 className="text-lg font-bold text-n-900">Estado actual</h2>
+          <p className="mt-1 text-sm text-n-600">
+            Fotografía de ahora mismo — no cambia con el rango de fechas de arriba.
+          </p>
+        </div>
+
+        {errorEstadoActual || !estadoActual ? (
+          <Alert variante="error" titulo="No pudimos cargar el estado actual">
+            Recarga la página. Si el problema sigue, avísale al equipo técnico.
+          </Alert>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="rounded-lg border border-n-200 bg-white p-4">
+              <p className="text-sm font-bold text-n-900">Cumplimiento sanitario</p>
+              <div className="mt-2 flex flex-col gap-1 text-sm">
+                <span className="text-verde-oscuro">Vigente: {estadoActual.sanitario_vigente}</span>
+                <span className="text-amarillo-oscuro">Por vencer: {estadoActual.sanitario_por_vencer}</span>
+                <span className="text-naranja-oscuro">Vencido/sin registro: {estadoActual.sanitario_bloqueado}</span>
+              </div>
+            </div>
+            <div className="rounded-lg border border-n-200 bg-white p-4">
+              <p className="text-sm font-bold text-n-900">Contratos</p>
+              <div className="mt-2 flex flex-col gap-1 text-sm">
+                <span className="text-verde-oscuro">Vigente: {estadoActual.contrato_vigente}</span>
+                <span className="text-azul-oscuro">Requiere actualización: {estadoActual.contrato_requiere_actualizacion}</span>
+                <span className="text-amarillo-oscuro">Sin firmar: {estadoActual.contrato_sin_firmar}</span>
+              </div>
+            </div>
+            <div className="rounded-lg border border-n-200 bg-white p-4">
+              <p className="text-sm font-bold text-n-900">Inventario</p>
+              <div className="mt-2 flex flex-col gap-1 text-sm">
+                <span className="text-amarillo-oscuro">Bajo mínimo: {estadoActual.insumos_bajo_minimo}</span>
+                <span className="text-naranja-oscuro">Por caducar/caducados: {estadoActual.insumos_por_caducar}</span>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
