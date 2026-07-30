@@ -17,6 +17,7 @@ import { AlergiasSeccion, type AlergiaFila } from "../alergias-seccion";
 import { formatearDiasSemana } from "@/app/(staff)/reservas/series/dias-semana";
 import { ContratoSeccion, type ContratoFila } from "../contrato-seccion";
 import { BitacoraSeccion, type EntradaBitacora } from "../bitacora-seccion";
+import { MedicamentosSeccion, type MedicamentoFila } from "../medicamentos-seccion";
 
 export default async function PerroPage({
   params,
@@ -115,6 +116,22 @@ export default async function PerroPage({
     .eq("perro_id", id)
     .order("created_at", { ascending: false });
 
+  const { data: medicamentosCrudo } = await supabase
+    .from("perro_medicamentos")
+    .select("id, medicamento, dosis, horario, fecha_inicio, fecha_fin, activo, notas")
+    .eq("perro_id", id)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
+  const idsMedicamentos = (medicamentosCrudo ?? []).map((m) => m.id);
+  const { data: dosisCrudo } = idsMedicamentos.length
+    ? await supabase
+        .from("medicamentos_administrados")
+        .select("id, perro_medicamento_id, administrado_at, omitida, notas")
+        .in("perro_medicamento_id", idsMedicamentos)
+        .order("administrado_at", { ascending: false })
+    : { data: [] as { id: string; perro_medicamento_id: string; administrado_at: string; omitida: boolean; notas: string | null }[] };
+
   if (!perro) notFound();
 
   let urlFoto: string | null = null;
@@ -189,6 +206,20 @@ export default async function PerroPage({
       };
     })
   );
+
+  const medicamentos: MedicamentoFila[] = (medicamentosCrudo ?? []).map((m) => ({
+    id: m.id,
+    medicamento: m.medicamento,
+    dosis: m.dosis,
+    horario: m.horario,
+    fecha_inicio: m.fecha_inicio,
+    fecha_fin: m.fecha_fin,
+    activo: m.activo,
+    notas: m.notas,
+    dosisRegistradas: (dosisCrudo ?? [])
+      .filter((d) => d.perro_medicamento_id === m.id)
+      .map((d) => ({ id: d.id, administrado_at: d.administrado_at, omitida: d.omitida, notas: d.notas })),
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -308,6 +339,14 @@ export default async function PerroPage({
           Fotos y notas del día a día — el dueño las ve en su portal.
         </p>
         <BitacoraSeccion perroId={id} entradas={entradasBitacora} />
+      </div>
+
+      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+        <h2 className="text-lg font-bold text-n-900">Medicamentos</h2>
+        <p className="-mt-2 text-sm text-n-600">
+          Régimen prescrito y cada dosis administrada — el dueño también lo ve.
+        </p>
+        <MedicamentosSeccion perroId={id} medicamentos={medicamentos} puedeEscribir={!soloLectura} />
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ import { MiPerroForm } from "../../mi-perro-form";
 import { RecordatorioSanitario } from "../../recordatorio-sanitario";
 import { FirmarContrato } from "./firmar-contrato";
 import { BitacoraCliente, type EntradaBitacoraCliente } from "./bitacora-cliente";
+import { MedicamentosCliente, type MedicamentoFilaCliente } from "./medicamentos-cliente";
 
 const ESTILO_GRAVEDAD: Record<string, string> = {
   grave: "border-naranja bg-naranja-suave text-naranja-oscuro",
@@ -84,6 +85,35 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
       return { id: e.id, tipo: e.tipo, nota: e.nota, foto_url, created_at: e.created_at };
     })
   );
+
+  const { data: medicamentosCrudo } = await supabase
+    .from("perro_medicamentos")
+    .select("id, medicamento, dosis, horario, fecha_inicio, fecha_fin, activo")
+    .eq("perro_id", id)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
+  const idsMedicamentos = (medicamentosCrudo ?? []).map((m) => m.id);
+  const { data: dosisCrudo } = idsMedicamentos.length
+    ? await supabase
+        .from("medicamentos_administrados")
+        .select("id, perro_medicamento_id, administrado_at, omitida, notas")
+        .in("perro_medicamento_id", idsMedicamentos)
+        .order("administrado_at", { ascending: false })
+    : { data: [] as { id: string; perro_medicamento_id: string; administrado_at: string; omitida: boolean; notas: string | null }[] };
+
+  const medicamentos: MedicamentoFilaCliente[] = (medicamentosCrudo ?? []).map((m) => ({
+    id: m.id,
+    medicamento: m.medicamento,
+    dosis: m.dosis,
+    horario: m.horario,
+    fecha_inicio: m.fecha_inicio,
+    fecha_fin: m.fecha_fin,
+    activo: m.activo,
+    dosisRegistradas: (dosisCrudo ?? [])
+      .filter((d) => d.perro_medicamento_id === m.id)
+      .map((d) => ({ id: d.id, administrado_at: d.administrado_at, omitida: d.omitida, notas: d.notas })),
+  }));
 
   let urlFoto: string | null = null;
   if (perro.foto_path) {
@@ -186,6 +216,13 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
         <h2 className="text-lg font-bold text-n-900">Bitácora</h2>
         <BitacoraCliente entradas={entradasBitacora} />
       </div>
+
+      {medicamentos.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <h2 className="text-lg font-bold text-n-900">Medicamentos</h2>
+          <MedicamentosCliente medicamentos={medicamentos} />
+        </div>
+      )}
 
       {alergias && alergias.length > 0 && (
         <div className="flex flex-col gap-3">
