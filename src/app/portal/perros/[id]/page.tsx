@@ -9,6 +9,7 @@ import { ResumenSanitario, type EstadoRequisitoItem } from "@/app/(staff)/perros
 import { MiPerroForm } from "../../mi-perro-form";
 import { RecordatorioSanitario } from "../../recordatorio-sanitario";
 import { FirmarContrato } from "./firmar-contrato";
+import { BitacoraCliente, type EntradaBitacoraCliente } from "./bitacora-cliente";
 
 const ESTILO_GRAVEDAD: Record<string, string> = {
   grave: "border-naranja bg-naranja-suave text-naranja-oscuro",
@@ -66,6 +67,23 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
         .limit(1)
         .maybeSingle()
     : { data: null };
+
+  const { data: bitacoraCrudo } = await supabase
+    .from("bitacora_entradas")
+    .select("id, tipo, nota, foto_path, created_at")
+    .eq("perro_id", id)
+    .order("created_at", { ascending: false });
+
+  const entradasBitacora: EntradaBitacoraCliente[] = await Promise.all(
+    (bitacoraCrudo ?? []).map(async (e) => {
+      let foto_url: string | null = null;
+      if (e.foto_path) {
+        const { data } = await supabase.storage.from("perros-archivos").createSignedUrl(e.foto_path, 60 * 60);
+        foto_url = data?.signedUrl ?? null;
+      }
+      return { id: e.id, tipo: e.tipo, nota: e.nota, foto_url, created_at: e.created_at };
+    })
+  );
 
   let urlFoto: string | null = null;
   if (perro.foto_path) {
@@ -163,6 +181,11 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
           <FirmarContrato contratoId={contrato.id} estado={contrato.estado} storagePath={contrato.storage_path} />
         </div>
       )}
+
+      <div className="flex flex-col gap-3">
+        <h2 className="text-lg font-bold text-n-900">Bitácora</h2>
+        <BitacoraCliente entradas={entradasBitacora} />
+      </div>
 
       {alergias && alergias.length > 0 && (
         <div className="flex flex-col gap-3">

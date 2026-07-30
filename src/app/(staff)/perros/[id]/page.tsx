@@ -16,6 +16,7 @@ import { AlertasManejo, type CatalogoAlertaOpcion, type AlertaActivaFila } from 
 import { AlergiasSeccion, type AlergiaFila } from "../alergias-seccion";
 import { formatearDiasSemana } from "@/app/(staff)/reservas/series/dias-semana";
 import { ContratoSeccion, type ContratoFila } from "../contrato-seccion";
+import { BitacoraSeccion, type EntradaBitacora } from "../bitacora-seccion";
 
 export default async function PerroPage({
   params,
@@ -108,6 +109,12 @@ export default async function PerroPage({
     .eq("perro_id", id)
     .order("created_at", { ascending: false });
 
+  const { data: bitacoraCrudo } = await supabase
+    .from("bitacora_entradas")
+    .select("id, tipo, nota, foto_path, created_at, notificado_whatsapp_at")
+    .eq("perro_id", id)
+    .order("created_at", { ascending: false });
+
   if (!perro) notFound();
 
   let urlFoto: string | null = null;
@@ -164,6 +171,24 @@ export default async function PerroPage({
     createdAt: c.created_at,
     motivoCancelacion: c.motivo_cancelacion,
   }));
+
+  const entradasBitacora: EntradaBitacora[] = await Promise.all(
+    (bitacoraCrudo ?? []).map(async (e) => {
+      let foto_url: string | null = null;
+      if (e.foto_path) {
+        const { data } = await supabase.storage.from("perros-archivos").createSignedUrl(e.foto_path, 60 * 60);
+        foto_url = data?.signedUrl ?? null;
+      }
+      return {
+        id: e.id,
+        tipo: e.tipo,
+        nota: e.nota,
+        foto_url,
+        created_at: e.created_at,
+        notificado_whatsapp_at: e.notificado_whatsapp_at,
+      };
+    })
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -276,6 +301,14 @@ export default async function PerroPage({
           <ContratoSeccion perroId={id} clienteId={perro.cliente_id} contratos={contratos} />
         </div>
       )}
+
+      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+        <h2 className="text-lg font-bold text-n-900">Bitácora</h2>
+        <p className="-mt-2 text-sm text-n-600">
+          Fotos y notas del día a día — el dueño las ve en su portal.
+        </p>
+        <BitacoraSeccion perroId={id} entradas={entradasBitacora} />
+      </div>
     </div>
   );
 }
