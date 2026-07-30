@@ -18,9 +18,15 @@ export default async function ReportesPage({
   const hasta = params.hasta || hoy;
 
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .rpc("reporte_financiero_periodo", { p_desde: desde, p_hasta: hasta })
-    .single();
+  const [
+    { data, error },
+    { data: costosData, error: errorCostos },
+    { data: margenPorServicio, error: errorMargen },
+  ] = await Promise.all([
+    supabase.rpc("reporte_financiero_periodo", { p_desde: desde, p_hasta: hasta }).single(),
+    supabase.rpc("reporte_costos_periodo", { p_desde: desde, p_hasta: hasta }).single(),
+    supabase.rpc("reporte_margen_por_servicio_periodo", { p_desde: desde, p_hasta: hasta }),
+  ]);
 
   const reporte = data as {
     cobros_efectivo: number;
@@ -39,6 +45,24 @@ export default async function ReportesPage({
     ingreso_caja_neto: number;
     ingreso_reconocido: number;
   } | null;
+
+  const costos = costosData as {
+    compras_total: number;
+    consumo_valorizado_total: number;
+    merma_valorizada: number;
+    consumo_estetica_valorizado: number;
+    ingreso_estetica: number;
+    margen_estetica: number;
+  } | null;
+
+  const margenServicios = (margenPorServicio ?? []) as {
+    servicio_id: string;
+    servicio_nombre: string;
+    citas_finalizadas: number;
+    ingreso: number;
+    costo_consumo: number;
+    margen: number;
+  }[];
 
   return (
     <div className="flex flex-col gap-6">
@@ -195,6 +219,111 @@ export default async function ReportesPage({
           </div>
         </div>
       )}
+
+      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+        <div>
+          <h2 className="text-lg font-bold text-n-900">Costos y margen — estética</h2>
+          <p className="mt-1 text-sm text-n-600">
+            Costo valorizado al promedio ponderado de compra de cada insumo (no por lote). Solo
+            cubre servicios de estética con receta de consumo configurada — guardería y hotel no
+            tienen costo de insumo ligado todavía.
+          </p>
+        </div>
+
+        {errorCostos || errorMargen || !costos ? (
+          <Alert variante="error" titulo="No pudimos cargar el reporte de costos">
+            Recarga la página. Si el problema sigue, avísale al equipo técnico.
+          </Alert>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="rounded-lg border-[1.5px] border-turquesa bg-turquesa-suave p-5">
+                <p className="text-sm font-bold uppercase tracking-wide text-turquesa-oscuro">
+                  Margen bruto de estética
+                </p>
+                <p className="mt-1 text-3xl font-extrabold text-turquesa-oscuro">
+                  {formatearMoneda(costos.margen_estetica)}
+                </p>
+                <p className="mt-2 text-sm text-n-700">
+                  Ingreso de citas finalizadas del periodo menos el costo real de su consumo ligado.
+                </p>
+              </div>
+              <div className="rounded-lg border border-n-200 bg-white p-5">
+                <p className="text-sm font-bold uppercase tracking-wide text-n-600">Compras del periodo</p>
+                <p className="mt-1 text-3xl font-extrabold text-n-900">
+                  {formatearMoneda(costos.compras_total)}
+                </p>
+                <p className="mt-2 text-sm text-n-700">Lo que se pagó a proveedores en el rango de fechas.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="rounded-lg border border-n-200 bg-white p-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-n-600">Ingreso de estética</p>
+                <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(costos.ingreso_estetica)}</p>
+              </div>
+              <div className="rounded-lg border border-n-200 bg-white p-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-n-600">Costo de consumo (estética)</p>
+                <p className="mt-1 text-xl font-bold text-n-900">
+                  {formatearMoneda(costos.consumo_estetica_valorizado)}
+                </p>
+              </div>
+              <div className="rounded-lg border border-n-200 bg-white p-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-n-600">Merma valorizada</p>
+                <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(costos.merma_valorizada)}</p>
+                <p className="mt-1 text-xs text-n-500">Insumo perdido, no vendido</p>
+              </div>
+            </div>
+
+            {margenServicios.length > 0 && (
+              <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
+                <table className="w-full min-w-[560px] border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+                        Servicio
+                      </th>
+                      <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+                        Citas
+                      </th>
+                      <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+                        Ingreso
+                      </th>
+                      <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+                        Costo
+                      </th>
+                      <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+                        Margen
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {margenServicios.map((s) => (
+                      <tr key={s.servicio_id}>
+                        <td className="border-b border-n-200 px-4 py-2.5 font-semibold text-n-900">
+                          {s.servicio_nombre}
+                        </td>
+                        <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                          {s.citas_finalizadas}
+                        </td>
+                        <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                          {formatearMoneda(s.ingreso)}
+                        </td>
+                        <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                          {formatearMoneda(s.costo_consumo)}
+                        </td>
+                        <td className="border-b border-n-200 px-4 py-2.5 text-right font-semibold text-n-900">
+                          {formatearMoneda(s.margen)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
