@@ -24,6 +24,18 @@ Antes de trabajar, lee docs/PROYECTO.md: ahí está el detalle de roles, roadmap
 
 
 
+\## Entornos
+
+\- \*\*Desarrollo\*\* — proyecto Supabase `sgfolltpvktbsiisfuzq` ("Ludogteka"). Es el que queda vinculado al CLI (`npx supabase link`), el que usa `.env.local`, y donde vive todo el residuo de pruebas de las fases 0 a 9.
+
+\- \*\*Producción\*\* — proyecto Supabase `xdsxjhytggpsgrmfuuff` ("ludogteka-prod"), dominio ludogteka.mx, DNS en Hostinger. Sus llaves viven ÚNICAMENTE en las variables de entorno de Vercel — nunca en un archivo del repo, nunca en `.env.local`.
+
+\- \*\*Toda migración se prueba primero en desarrollo.\*\* Solo después de verificarla ahí (REST + navegador) se aplica a producción con `npx supabase db push --db-url <connection string de producción>` — sin re-vincular el CLI, sin tocar el link a desarrollo. Nunca se escribe una migración directo contra producción.
+
+\- \*\*Nunca a mano en producción\*\*: nada de SQL manual por consola/dashboard para cambios de esquema (eso es una migración, sin excepción) ni para cargar datos de negocio reales (tarifas, plantilla de contrato, catálogo de insumos, altas de clientes) — esos se capturan por la UI de la app, igual que los va a capturar el negocio en el día a día. La única SQL manual tolerada en producción es de un administrador de la app resolviendo un caso operativo puntual (nunca cambios de esquema), y siempre documentando qué y por qué.
+
+
+
 \## Reglas
 
 \- Nada de SQL manual por copy-paste: todo cambio de esquema va como migración.
