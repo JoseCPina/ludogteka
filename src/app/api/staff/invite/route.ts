@@ -73,11 +73,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const origin = new URL(request.url).origin;
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
     type: "invite",
     email,
-    options: { redirectTo: `${origin}/auth/callback` },
   });
 
   if (linkError) {
@@ -95,9 +93,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: profileUpdateError.message }, { status: 500 });
   }
 
+  // El link apunta a nuestra propia app (/auth/callback), no al
+  // action_link crudo de Supabase — ver comentario en esa ruta.
+  const origin = new URL(request.url).origin;
+  const inviteLink = `${origin}/auth/callback?token_hash=${linkData.properties.hashed_token}&type=invite`;
+
   return NextResponse.json({
     email,
     rol,
-    invite_link: linkData.properties.action_link,
+    invite_link: inviteLink,
   });
 }
