@@ -6,9 +6,8 @@ import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 
-const estadoInicial: EstadoLogin = { error: null };
-
-export function LoginForm() {
+export function LoginForm({ errorInicial = null }: { errorInicial?: string | null }) {
+  const estadoInicial: EstadoLogin = { error: errorInicial };
   const [estado, formAction, enviando] = useActionState(iniciarSesion, estadoInicial);
 
   return (

@@ -73,9 +73,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: linkData, error: linkError } = await admin.auth.admin.generateLink(
-    { type: "invite", email }
-  );
+  const origin = new URL(request.url).origin;
+  const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+    type: "invite",
+    email,
+    options: { redirectTo: `${origin}/auth/callback` },
+  });
 
   if (linkError) {
     return NextResponse.json({ error: linkError.message }, { status: 500 });

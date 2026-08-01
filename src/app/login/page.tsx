@@ -3,7 +3,11 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { rutaPorRol } from "@/lib/auth/rutas";
 import { LoginForm } from "./login-form";
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -18,6 +22,12 @@ export default async function LoginPage() {
     redirect(rutaPorRol(perfil?.rol));
   }
 
+  const { error } = await searchParams;
+  const errorInicial =
+    error === "invitacion_invalida"
+      ? "Tu link de invitación ya no es válido — expiró o ya se usó. Pide uno nuevo."
+      : null;
+
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
@@ -25,7 +35,7 @@ export default async function LoginPage() {
           Ludogteka
         </h1>
         <p className="mb-8 text-center text-n-600">Inicia sesión para continuar</p>
-        <LoginForm />
+        <LoginForm errorInicial={errorInicial} />
       </div>
     </main>
   );
