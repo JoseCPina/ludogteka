@@ -7,7 +7,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export type EstadoServicioForm = { error: string | null; ok?: boolean };
 
 const CATEGORIAS = ["guarderia", "hotel", "estetica", "cargo", "bono"] as const;
-const UNIDADES = ["dia", "noche", "sesion", "evento"] as const;
+const UNIDADES = ["dia", "noche", "sesion", "evento", "km"] as const;
 
 function leerCampos(formData: FormData) {
   const clave = String(formData.get("clave") ?? "").trim();

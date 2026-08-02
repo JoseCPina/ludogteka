@@ -17,7 +17,7 @@ export default async function CheckoutEstanciaPage({
   const { data: estancia, error } = await supabase
     .from("estancias")
     .select(
-      "id, perro_id, fecha_entrada, fecha_salida, estado, precio_unitario, hora_entrada_real, hora_salida_real, recogido_por_nombre, recogido_por_es_dueno, perros(nombre), servicios(nombre, categoria)"
+      "id, perro_id, fecha_entrada, fecha_salida, estado, precio_unitario, hora_entrada_real, hora_salida_real, recogido_por_nombre, recogido_por_es_dueno, perros(nombre, clientes(distancia_base_km)), servicios(nombre, categoria)"
     )
     .eq("id", estanciaId)
     .single();
@@ -25,6 +25,8 @@ export default async function CheckoutEstanciaPage({
   if (error || !estancia) notFound();
 
   const perro = Array.isArray(estancia.perros) ? estancia.perros[0] : estancia.perros;
+  const clienteDePerro = perro ? (Array.isArray(perro.clientes) ? perro.clientes[0] : perro.clientes) : null;
+  const distanciaClienteKm = clienteDePerro?.distancia_base_km ?? null;
   const servicio = Array.isArray(estancia.servicios) ? estancia.servicios[0] : estancia.servicios;
 
   if (!perro) notFound();
@@ -101,6 +103,7 @@ export default async function CheckoutEstanciaPage({
   const serviciosCargoLista: ServicioCargo[] = (serviciosCargo ?? []).map((s) => ({
     id: s.id as string,
     nombre: s.nombre as string,
+    clave: s.clave as string,
   }));
 
   const alertasActivas = (alertasCrudo ?? []).map((a) => {
@@ -170,6 +173,7 @@ export default async function CheckoutEstanciaPage({
           serviciosCargo={puedeCheckout ? serviciosCargoLista : []}
           sugerenciaRetraso={sugerenciaRetraso}
           precioBase={estancia.precio_unitario * noches}
+          distanciaClienteKm={distanciaClienteKm}
         />
       </div>
     </div>

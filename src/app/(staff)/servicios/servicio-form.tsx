@@ -91,6 +91,7 @@ export function ServicioForm({
           <option value="noche">Noche</option>
           <option value="sesion">Sesión</option>
           <option value="evento">Evento</option>
+          <option value="km">Kilómetro</option>
         </Select>
       </div>
 

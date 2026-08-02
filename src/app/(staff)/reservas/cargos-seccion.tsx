@@ -16,7 +16,7 @@ export type Cargo = {
   motivoCancelacion: string | null;
 };
 
-export type ServicioCargo = { id: string; nombre: string };
+export type ServicioCargo = { id: string; nombre: string; clave?: string };
 
 export type SugerenciaRetraso = {
   servicioId: string;
@@ -35,12 +35,14 @@ export function CargosSeccion({
   serviciosCargo,
   sugerenciaRetraso,
   precioBase,
+  distanciaClienteKm,
 }: {
   estanciaId: string;
   cargosIniciales: Cargo[];
   serviciosCargo: ServicioCargo[];
   sugerenciaRetraso?: SugerenciaRetraso | null;
   precioBase?: number;
+  distanciaClienteKm?: number | null;
 }) {
   const [cargos, setCargos] = useState(cargosIniciales);
   const [sugerenciaOmitida, setSugerenciaOmitida] = useState(false);
@@ -54,6 +56,9 @@ export function CargosSeccion({
   const [cancelandoId, setCancelandoId] = useState<string | null>(null);
   const [motivoCancelar, setMotivoCancelar] = useState("");
   const [cancelando, setCancelando] = useState(false);
+
+  const servicioSeleccionado = serviciosCargo.find((s) => s.id === servicioId);
+  const esRecoleccion = servicioSeleccionado?.clave === "recoleccion";
 
   const acumuladoCargos = cargos
     .filter((c) => !c.cancelado)
@@ -261,8 +266,18 @@ export function CargosSeccion({
               min="1"
               value={cantidad}
               onChange={(e) => setCantidad(e.target.value)}
+              ayuda={esRecoleccion ? "km" : undefined}
             />
           </div>
+          {esRecoleccion && distanciaClienteKm != null && (
+            <button
+              type="button"
+              onClick={() => setCantidad(String(Math.round(distanciaClienteKm)))}
+              className="mb-[1px] text-sm font-semibold text-azul hover:underline"
+            >
+              Usar distancia guardada ({distanciaClienteKm} km)
+            </button>
+          )}
           <div className="min-w-[200px] flex-1">
             <Field
               label="Notas (opcional)"

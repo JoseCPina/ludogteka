@@ -18,7 +18,7 @@ export default async function DetalleReservaPage({
 
   const { data: reserva, error: errorReserva } = await supabase
     .from("reservas")
-    .select("id, notas, created_at, cliente_id, clientes(nombre, telefono)")
+    .select("id, notas, created_at, cliente_id, clientes(nombre, telefono, distancia_base_km)")
     .eq("id", id)
     .single();
 
@@ -56,7 +56,7 @@ export default async function DetalleReservaPage({
   const [{ data: serviciosCargo }, { data: cargosCrudo }] = await Promise.all([
     supabase
       .from("servicios")
-      .select("id, nombre")
+      .select("id, nombre, clave")
       .eq("categoria", "cargo")
       .is("deleted_at", null)
       .order("orden"),
@@ -87,6 +87,7 @@ export default async function DetalleReservaPage({
   const serviciosCargoLista: ServicioCargo[] = (serviciosCargo ?? []).map((s) => ({
     id: s.id as string,
     nombre: s.nombre as string,
+    clave: s.clave as string,
   }));
 
   const { data: totalesCrudo } = await supabase.rpc("cuenta_totales_reserva", { p_reserva_id: id });
@@ -138,6 +139,7 @@ export default async function DetalleReservaPage({
               fila={f}
               cargosIniciales={cargosPorEstancia.get(f.id) ?? []}
               serviciosCargo={serviciosCargoLista}
+              distanciaClienteKm={cliente?.distancia_base_km ?? null}
             />
           ))}
         </div>

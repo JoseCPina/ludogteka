@@ -12,6 +12,7 @@ import { ResumenSanitario, type EstadoRequisitoItem } from "../../perros/resumen
 import { AlertaCriticaBanner } from "../../perros/alerta-critica-banner";
 import { ContratoEstadoBanner, type ContratoEstado } from "../../perros/contrato-estado-banner";
 import { BonosCliente, type BonoCatalogo, type BonoFila } from "../bonos-cliente";
+import { DistanciaSeccion } from "./distancia-seccion";
 
 export default async function EditarClientePage({
   params,
@@ -26,7 +27,9 @@ export default async function EditarClientePage({
   const supabase = await createSupabaseServerClient();
   const { data: cliente } = await supabase
     .from("clientes")
-    .select("id, nombre, telefono, email")
+    .select(
+      "id, nombre, telefono, email, direccion, distancia_base_km, distancia_calculada_at, distancia_ajustada_manualmente"
+    )
     .eq("id", id)
     .is("deleted_at", null)
     .single();
@@ -214,6 +217,14 @@ export default async function EditarClientePage({
           </ul>
         )}
       </div>
+
+      <DistanciaSeccion
+        clienteId={id}
+        direccionInicial={cliente.direccion}
+        distanciaKmInicial={cliente.distancia_base_km}
+        calculadaAtInicial={cliente.distancia_calculada_at}
+        ajustadaManualmenteInicial={cliente.distancia_ajustada_manualmente}
+      />
 
       <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Bonos prepagados</h2>

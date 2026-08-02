@@ -43,10 +43,12 @@ export function EstanciaFila({
   fila,
   cargosIniciales,
   serviciosCargo,
+  distanciaClienteKm,
 }: {
   fila: FilaEstancia;
   cargosIniciales: Cargo[];
   serviciosCargo: ServicioCargo[];
+  distanciaClienteKm?: number | null;
 }) {
   const [estado, setEstado] = useState(fila.estado);
   const [fechaEntrada, setFechaEntrada] = useState(fila.fechaEntrada);
@@ -237,6 +239,7 @@ export function EstanciaFila({
           cargosIniciales={cargosIniciales}
           serviciosCargo={estado === "cancelada" || estado === "no_llego" ? [] : serviciosCargo}
           precioBase={fila.precioUnitario * noches}
+          distanciaClienteKm={distanciaClienteKm}
         />
       </div>
     </div>

@@ -48,6 +48,8 @@ Antes de trabajar, lee docs/PROYECTO.md: ahí está el detalle de roles, roadmap
 
 \- Fuera de alcance por ahora: facturación CFDI (solo guardar RFC opcional).
 
+\- Llaves de servicios externos facturables (Google Maps, etc.) van server-side, SIN prefijo NEXT\_PUBLIC\_ — igual que las de Supabase, en .env.local para desarrollo y en variables de Vercel para producción, nunca en el repo.
+
 
 
 \## Checklist: tabla nueva
@@ -70,5 +72,5 @@ Cada tabla nueva lleva esto DENTRO de su propia migración de creación, no en u
 
 \## Estado
 
-Fase 0 a Fase 4 completas (auth con roles, vinculación dueño↔negocio, panel de admin, clientes, portal, expediente completo del perro, catálogo de servicios y tarifas, reservas con cupo y calendario, check-in/check-out, cargos, agenda de estética, series recurrentes). Fase 5 (POS: cobros, bonos, descuentos, turno de caja y arqueo) y Fase 6 (contratos: plantillas versionadas, generación y firma en PDF con evidencia de auditoría, subida en papel, visibilidad operativa y vigencia) construidas y probadas con JWTs reales. Fase 5 pendiente de que el negocio la termine de probar para cerrarla formalmente. Fase 7 (inventario) completa (catálogo, movimientos, consumo automático por receta). Fase 8 (reportes) completa (financiero, costos/margen, operativo). Fase 9 (bitácora diaria y medicamentos) completa (fotos/notas/incidencias con aviso por WhatsApp vía wa.me; régimen y registro de dosis administradas). Con esto las diez fases del roadmap original (0 a 9) están completas. Detalle en docs/PROYECTO.md.
+Fase 0 a Fase 4 completas (auth con roles, vinculación dueño↔negocio, panel de admin, clientes, portal, expediente completo del perro, catálogo de servicios y tarifas, reservas con cupo y calendario, check-in/check-out, cargos, agenda de estética, series recurrentes). Fase 5 (POS: cobros, bonos, descuentos, turno de caja y arqueo) y Fase 6 (contratos: plantillas versionadas, generación y firma en PDF con evidencia de auditoría, subida en papel, visibilidad operativa y vigencia) construidas y probadas con JWTs reales. Fase 5 pendiente de que el negocio la termine de probar para cerrarla formalmente. Fase 7 (inventario) completa (catálogo, movimientos, consumo automático por receta). Fase 8 (reportes) completa (financiero, costos/margen, operativo). Fase 9 (bitácora diaria y medicamentos) completa (fotos/notas/incidencias con aviso por WhatsApp vía wa.me; régimen y registro de dosis administradas). Con esto las diez fases del roadmap original (0 a 9) están completas. Fase 10 (recolección a domicilio: cotizador de distancia por Google Routes API, reutilizando tarifas/cargos_aplicados de Fase 3/4 sin mecanismo de cobro nuevo) completa, corriendo en modo simulación hasta que el negocio capture direcciones reales, tarifas por km y la llave de Google Maps. Detalle en docs/PROYECTO.md.
 
