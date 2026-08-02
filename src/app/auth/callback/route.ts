@@ -23,17 +23,6 @@ export async function GET(request: NextRequest) {
     if (!error) {
       return NextResponse.redirect(`${origin}/auth/nueva-password`);
     }
-    // DEBUG temporal: se quita en cuanto se diagnostique el error real.
-    return NextResponse.redirect(
-      `${origin}/login?error=invitacion_invalida&debug=${encodeURIComponent(
-        JSON.stringify({
-          message: error.message,
-          status: error.status,
-          code: error.code,
-          url: process.env.NEXT_PUBLIC_SUPABASE_URL,
-        })
-      )}`
-    );
   }
 
   return NextResponse.redirect(`${origin}/login?error=invitacion_invalida`);
