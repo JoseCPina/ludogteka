@@ -68,7 +68,7 @@ function corre(cmd, argumentos, opciones = {}) {
   // npx en Windows es un .cmd y spawnSync sin shell lo rechaza (EINVAL),
   // así que ahí sí hace falta shell. Por eso el CLI de Supabase —el único
   // que recibe la contraseña— NO va por npx: ver supabase() abajo.
-  const necesitaShell = cmd === "npx" && process.platform === "win32";
+  const necesitaShell = cmd.startsWith("npx") && process.platform === "win32";
   const r = spawnSync(cmd, argumentos, {
     shell: necesitaShell,
     encoding: "utf8",
@@ -105,7 +105,11 @@ function supabase(...argumentos) {
 // cosas; quedarse con la primera línea que tenga una URL daba siempre
 // "Building", aunque el deploy llevara rato Ready.
 function ultimoDeploy() {
-  const salida = corre("npx", ["vercel", "ls", "ludogteka", "--prod"]);
+  // Comando completo en una sola cadena: con shell y arreglo de
+  // argumentos, node avisa (DEP0190) que los concatena sin escapar. Aquí
+  // no hay ningún secreto que escapar, pero el aviso ensucia la salida
+  // del despliegue justo cuando uno la está leyendo.
+  const salida = corre("npx vercel ls ludogteka --prod", []);
   const renglon = salida
     .split("\n")
     .find((l) => /vercel\.app/.test(l) && /(Ready|Building|Queued|Error|Canceled)/.test(l));
