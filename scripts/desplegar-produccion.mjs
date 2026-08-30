@@ -29,7 +29,7 @@
 // (ver CLAUDE.md, sección Entornos): se pasa por variable de entorno en
 // el momento de correrlo.
 
-import { execFileSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import pg from "pg";
 
 const PROY_PROD = "xdsxjhytggpsgrmfuuff";
@@ -60,17 +60,60 @@ function abortar(motivo, detalle) {
   process.exit(1);
 }
 
+// Se juntan stdout y stderr a propósito: `vercel ls` manda la tabla con
+// la columna de estado por stderr y solo las URLs peladas por stdout, así
+// que leer nada más stdout hacía que un deploy "Ready" se viera eterno en
+// "Building". Git también reporta progreso por stderr.
 function corre(cmd, argumentos, opciones = {}) {
-  return execFileSync(cmd, argumentos, {
+  // npx en Windows es un .cmd y spawnSync sin shell lo rechaza (EINVAL),
+  // así que ahí sí hace falta shell. Por eso el CLI de Supabase —el único
+  // que recibe la contraseña— NO va por npx: ver supabase() abajo.
+  const necesitaShell = cmd === "npx" && process.platform === "win32";
+  const r = spawnSync(cmd, argumentos, {
+    shell: necesitaShell,
     encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
     maxBuffer: 32 * 1024 * 1024,
     ...opciones,
   });
+  const salida = (r.stdout || "") + (r.stderr || "");
+  if (r.error) throw Object.assign(r.error, { salida });
+  if (r.status !== 0) {
+    throw Object.assign(new Error(`${cmd} salió con código ${r.status}`), { salida });
+  }
+  return salida;
 }
 
 function git(...argumentos) {
   return corre("git", argumentos).trim();
+}
+
+// El CLI de Supabase es dependencia local (node_modules/supabase) y su
+// entrada es JavaScript plano: se corre con el mismo node, sin shell de
+// por medio. Es el único comando que recibe la cadena de conexión con la
+// contraseña, y así viaja como argumento directo del proceso — nunca por
+// la línea de comandos de cmd.exe, donde ni se escapa ni se puede evitar
+// que quede a la vista de la lista de procesos.
+const CLI_SUPABASE = new URL("../node_modules/supabase/dist/supabase.js", import.meta.url)
+  .pathname.replace(/^\/([A-Za-z]:)/, "$1");
+
+function supabase(...argumentos) {
+  return corre(process.execPath, [CLI_SUPABASE, ...argumentos]);
+}
+
+// `vercel ls` escupe las URLs peladas por stdout y la tabla con la
+// columna de estado por stderr. El renglón bueno es el que trae las dos
+// cosas; quedarse con la primera línea que tenga una URL daba siempre
+// "Building", aunque el deploy llevara rato Ready.
+function ultimoDeploy() {
+  const salida = corre("npx", ["vercel", "ls", "ludogteka", "--prod"]);
+  const renglon = salida
+    .split("\n")
+    .find((l) => /vercel\.app/.test(l) && /(Ready|Building|Queued|Error|Canceled)/.test(l));
+  if (!renglon) return { url: "", estado: "" };
+  return {
+    url: (renglon.match(/https:\/\/[a-z0-9-]+\.vercel\.app/) || [""])[0],
+    estado: (renglon.match(/(Ready|Building|Queued|Error|Canceled)/) || [""])[0],
+  };
 }
 
 // La cadena trae la contraseña: nunca se imprime, ni siquiera al fallar.
@@ -200,11 +243,9 @@ titulo("Migraciones pendientes");
 
 let salidaSeco;
 try {
-  salidaSeco = corre("npx", ["supabase", "db", "push", "--dry-run", "--db-url", DB_URL], {
-    shell: process.platform === "win32",
-  });
+  salidaSeco = supabase("db", "push", "--dry-run", "--db-url", DB_URL);
 } catch (e) {
-  abortar("el dry-run de las migraciones falló", sinSecreto(e.stdout || e.stderr || e.message));
+  abortar("el dry-run de las migraciones falló", sinSecreto(e.salida || e.message));
 }
 console.log(sinSecreto(salidaSeco).trim());
 
@@ -251,16 +292,14 @@ if (migrado) {
 for (let intento = 1; intento <= REINTENTOS_MIGRACION && !migrado; intento += 1) {
   console.log(`   intento ${intento} de ${REINTENTOS_MIGRACION}…`);
   try {
-    const salida = corre("npx", ["supabase", "db", "push", "--db-url", DB_URL], {
-      shell: process.platform === "win32",
-    });
+    const salida = supabase("db", "push", "--db-url", DB_URL);
     console.log(sinSecreto(salida).trim());
     migrado = migracionOk(salida);
     if (!migrado) {
       console.log("   terminó sin confirmar el push; se reintenta.");
     }
   } catch (e) {
-    const detalle = sinSecreto(e.stdout || e.stderr || e.message);
+    const detalle = sinSecreto(e.salida || e.message);
     console.log(`   falló: ${detalle.split("\n").slice(-2).join(" ").trim()}`);
     // El fallo de conexión del pooler es transitorio y fue justo el que
     // provocó el incidente: se reintenta antes de rendirse.
@@ -306,22 +345,20 @@ if (!pendientes) {
   process.exit(0);
 }
 
-let antesDeploy = "";
+let deployPrevio = "";
 try {
-  antesDeploy = corre("npx", ["vercel", "ls", "ludogteka", "--prod"], {
-    shell: process.platform === "win32",
-  });
+  deployPrevio = ultimoDeploy().url;
+  console.log(`   deploy actual en producción: ${deployPrevio || "(ninguno)"}`);
 } catch {
   console.log("   (no se pudo leer el estado previo de Vercel; se sigue de todos modos)");
 }
-const deployPrevio = (antesDeploy.match(/https:\/\/[a-z0-9-]+\.vercel\.app/) || [""])[0];
 
 try {
   console.log(corre("git", ["push", "origin", RAMA]).trim() || "   push enviado.");
 } catch (e) {
   abortar(
     "el push del código falló DESPUÉS de migrar",
-    sinSecreto(e.stdout || e.stderr || e.message) +
+    sinSecreto(e.salida || e.message) +
       "\n\nProducción quedó con el esquema nuevo y el código viejo. Resuelve el push\n" +
       "cuanto antes: es la ventana que este script existe para evitar."
   );
@@ -334,26 +371,19 @@ const limite = Date.now() + 6 * 60 * 1000;
 let listo = false;
 while (Date.now() < limite && !listo) {
   await new Promise((r) => setTimeout(r, 15000));
-  let salida = "";
+  let d;
   try {
-    salida = corre("npx", ["vercel", "ls", "ludogteka", "--prod"], {
-      shell: process.platform === "win32",
-    });
+    d = ultimoDeploy();
   } catch {
     continue;
   }
-  const linea = salida.split("\n").find((l) => l.includes(".vercel.app"));
-  if (!linea) continue;
-  const url = (linea.match(/https:\/\/[a-z0-9-]+\.vercel\.app/) || [""])[0];
-  const estado = linea.includes("Ready")
-    ? "Ready"
-    : linea.includes("Error")
-      ? "Error"
-      : "Building";
-  console.log(`   ${url}  ${estado}`);
-  if (url && url !== deployPrevio) {
-    if (estado === "Ready") listo = true;
-    if (estado === "Error") abortar("el build de Vercel falló", `Revisa: ${url}`);
+  if (!d.url) continue;
+  console.log(`   ${d.url}  ${d.estado}`);
+  if (d.url !== deployPrevio) {
+    if (d.estado === "Ready") listo = true;
+    if (d.estado === "Error" || d.estado === "Canceled") {
+      abortar(`el build de Vercel terminó en ${d.estado}`, `Revisa: ${d.url}`);
+    }
   }
 }
 
