@@ -230,7 +230,24 @@ if (REVISAR && !APLICAR) {
 // ---------------------------------------------------------------- 4
 titulo("Aplicando migraciones a producción");
 
-let migrado = false;
+// El CLI no siempre dice lo mismo al terminar bien: "Finished supabase db
+// push" cuando aplicó algo, "Remote database is up to date" cuando no
+// había nada. Y al fallar por conexión devolvió un JSON con _tag Error
+// SIN código de salida distinto de cero — por eso no basta con el exit
+// code ni con una sola frase.
+function migracionOk(salida) {
+  if (/"_tag"\s*:\s*"Error"|LegacyDbConnectError|Failed to connect/.test(salida)) return false;
+  return (
+    salida.includes("Finished supabase db push") ||
+    salida.includes("Remote database is up to date") ||
+    /"upToDate"\s*:\s*true/.test(salida)
+  );
+}
+
+let migrado = migracionesUnicas.length === 0;
+if (migrado) {
+  console.log("   No hay migraciones pendientes: no se toca el esquema.");
+}
 for (let intento = 1; intento <= REINTENTOS_MIGRACION && !migrado; intento += 1) {
   console.log(`   intento ${intento} de ${REINTENTOS_MIGRACION}…`);
   try {
@@ -238,7 +255,7 @@ for (let intento = 1; intento <= REINTENTOS_MIGRACION && !migrado; intento += 1)
       shell: process.platform === "win32",
     });
     console.log(sinSecreto(salida).trim());
-    migrado = salida.includes("Finished supabase db push");
+    migrado = migracionOk(salida);
     if (!migrado) {
       console.log("   terminó sin confirmar el push; se reintenta.");
     }
@@ -264,6 +281,9 @@ try {
   );
   const registradas = new Set(aplicadas.map((r) => r.version));
   const faltantes = migracionesUnicas.filter((m) => !registradas.has(m.slice(0, 14)));
+  if (migracionesUnicas.length === 0) {
+    console.log(`   Sin migraciones en este despliegue. Última registrada: ${aplicadas[0]?.version ?? "?"}`);
+  }
   migracionesUnicas.forEach((m) =>
     console.log(`   ${registradas.has(m.slice(0, 14)) ? "OK   " : "FALTA"} ${m}`)
   );
