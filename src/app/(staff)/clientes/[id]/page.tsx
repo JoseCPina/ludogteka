@@ -10,7 +10,11 @@ import { actualizarCliente, darDeBajaCliente } from "../actions";
 import { PerroFoto } from "../../perros/perro-foto";
 import { ResumenSanitario, type EstadoRequisitoItem } from "../../perros/resumen-sanitario";
 import { AlertaCriticaBanner } from "../../perros/alerta-critica-banner";
-import { ContratoEstadoBanner, type ContratoEstado } from "../../perros/contrato-estado-banner";
+import {
+  ContratoEstadoBanner,
+  resumenVacio,
+  type ContratoResumen,
+} from "../../perros/contrato-estado-banner";
 import { BonosCliente, type BonoCatalogo, type BonoFila } from "../bonos-cliente";
 import { DistanciaSeccion } from "./distancia-seccion";
 
@@ -103,17 +107,21 @@ export default async function EditarClientePage({
     }
   }
 
-  const estadoContratoPorPerro = new Map<string, ContratoEstado>();
+  const contratoPorPerro = new Map<string, ContratoResumen>();
   if (perros && perros.length > 0) {
     const { data: contratoEstados } = await supabase
-      .from("perros_contrato_estado")
-      .select("perro_id, estado")
+      .from("perros_contrato_resumen")
+      .select("perro_id, estado, faltantes, desactualizados")
       .in(
         "perro_id",
         perros.map((p) => p.id)
       );
     for (const fila of contratoEstados ?? []) {
-      estadoContratoPorPerro.set(fila.perro_id, fila.estado as ContratoEstado);
+      contratoPorPerro.set(fila.perro_id, {
+        estado: fila.estado as ContratoResumen["estado"],
+        faltantes: fila.faltantes ?? [],
+        desactualizados: fila.desactualizados ?? [],
+      });
     }
   }
 
@@ -207,7 +215,7 @@ export default async function EditarClientePage({
                       tamano="compacto"
                     />
                     <ContratoEstadoBanner
-                      estado={estadoContratoPorPerro.get(perro.id) ?? "sin_contrato"}
+                      resumen={contratoPorPerro.get(perro.id) ?? resumenVacio()}
                       tamano="compacto"
                     />
                   </Link>

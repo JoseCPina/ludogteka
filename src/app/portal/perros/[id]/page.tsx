@@ -58,16 +58,39 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
 
   // Solo el dueño principal firma — un acceso compartido nunca puede
   // firmar en nombre de otro, aunque vea el resto del expediente.
-  const { data: contrato } = esPropio
+  // Todos, no solo el último: ahora hay varios contratos a la vez
+  // (guardería, hotel, …) y el dueño puede deber uno mientras ya firmó
+  // otro — quedarnos con el más reciente escondería el pendiente.
+  const { data: contratosCrudo } = esPropio
     ? await supabase
         .from("contratos")
-        .select("id, estado, storage_path")
+        .select("id, estado, storage_path, plantillas_contrato(tipos_contrato(nombre))")
         .eq("perro_id", id)
         .neq("estado", "cancelado")
         .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle()
     : { data: null };
+
+  const contratos = (contratosCrudo ?? []).map((c) => {
+    const plantilla = (Array.isArray(c.plantillas_contrato)
+      ? c.plantillas_contrato[0]
+      : c.plantillas_contrato) as unknown as
+      | { tipos_contrato: { nombre: string } | { nombre: string }[] | null }
+      | null;
+    const tipo = Array.isArray(plantilla?.tipos_contrato)
+      ? plantilla?.tipos_contrato[0]
+      : plantilla?.tipos_contrato;
+    return {
+      id: c.id as string,
+      estado: c.estado as string,
+      storagePath: c.storage_path as string | null,
+      tipoNombre: tipo?.nombre ?? "Contrato",
+    };
+  });
+  // Lo pendiente primero: es lo único que le pide una acción al dueño.
+  contratos.sort((a, b) => {
+    const peso = (estado: string) => (estado === "pendiente_firma" ? 0 : 1);
+    return peso(a.estado) - peso(b.estado);
+  });
 
   const { data: bitacoraCrudo } = await supabase
     .from("bitacora_entradas")
@@ -205,10 +228,20 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
         <RecordatorioSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} />
       </div>
 
-      {esPropio && contrato && (
+      {esPropio && contratos.length > 0 && (
         <div className="flex flex-col gap-3">
-          <h2 className="text-lg font-bold text-n-900">Contrato</h2>
-          <FirmarContrato contratoId={contrato.id} estado={contrato.estado} storagePath={contrato.storage_path} />
+          <h2 className="text-lg font-bold text-n-900">
+            {contratos.length === 1 ? "Contrato" : "Contratos"}
+          </h2>
+          {contratos.map((contrato) => (
+            <FirmarContrato
+              key={contrato.id}
+              contratoId={contrato.id}
+              tipoNombre={contrato.tipoNombre}
+              estado={contrato.estado}
+              storagePath={contrato.storagePath}
+            />
+          ))}
         </div>
       )}
 

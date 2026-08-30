@@ -1,0 +1,14 @@
+-- Encontrado probando con JWT real: publicar_plantilla(text, text) —la
+-- versión original de Fase 6, antes de que requiere_refirma le agregara
+-- un tercer parámetro— seguía viva como sobrecarga. Al agregar el
+-- parámetro con DEFAULT, Postgres no reemplazó la función de dos
+-- argumentos: creó una segunda. La migración que pasó las plantillas a
+-- tipos solo eliminó la de tres.
+--
+-- El resultado era una puerta trasera silenciosa: llamar
+-- publicar_plantilla(titulo, cuerpo) todavía entraba a la función vieja,
+-- que inserta en plantillas_contrato SIN tipo_contrato_id. Hoy truena con
+-- un 23502 crudo (la columna es not null), pero es exactamente el tipo de
+-- función zombi que en la siguiente fase alguien vuelve a llamar por
+-- accidente. Se elimina.
+drop function if exists public.publicar_plantilla(text, text);

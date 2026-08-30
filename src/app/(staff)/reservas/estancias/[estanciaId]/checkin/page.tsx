@@ -3,7 +3,11 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { AlertaCriticaBanner } from "@/app/(staff)/perros/alerta-critica-banner";
 import { ResumenSanitario, type EstadoRequisitoItem } from "@/app/(staff)/perros/resumen-sanitario";
-import { ContratoEstadoBanner, type ContratoEstado } from "@/app/(staff)/perros/contrato-estado-banner";
+import {
+  ContratoEstadoBanner,
+  resumenVacio,
+  type ContratoResumen,
+} from "@/app/(staff)/perros/contrato-estado-banner";
 import { formatearFechaCalendario, formatearFecha } from "@/lib/formato";
 import { CheckinForm } from "./checkin-form";
 
@@ -58,8 +62,8 @@ export default async function CheckinEstanciaPage({
       .is("deleted_at", null)
       .order("created_at"),
     supabase
-      .from("perros_contrato_estado")
-      .select("estado")
+      .from("perros_contrato_resumen")
+      .select("estado, faltantes, desactualizados")
       .eq("perro_id", estancia.perro_id)
       .maybeSingle(),
   ]);
@@ -90,7 +94,17 @@ export default async function CheckinEstanciaPage({
 
       <AlertaCriticaBanner alertas={alertasActivas} alergiasGraves={alergiasGraves} tamano="grande" />
       <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
-      <ContratoEstadoBanner estado={(contratoEstado?.estado as ContratoEstado) ?? "sin_contrato"} />
+      <ContratoEstadoBanner
+        resumen={
+          contratoEstado
+            ? {
+                estado: contratoEstado.estado as ContratoResumen["estado"],
+                faltantes: contratoEstado.faltantes ?? [],
+                desactualizados: contratoEstado.desactualizados ?? [],
+              }
+            : resumenVacio()
+        }
+      />
 
       {yaHizoCheckin ? (
         <div className="rounded-lg border border-n-200 bg-n-50 p-4">

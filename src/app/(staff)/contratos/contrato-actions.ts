@@ -8,9 +8,17 @@ const BUCKET = "perros-archivos";
 
 export type EstadoGenerarContrato = { error: string | null; contratoId?: string };
 
-export async function generarContrato(perroId: string): Promise<EstadoGenerarContrato> {
+// El negocio maneja varios contratos a la vez (guardería, hotel, …), así
+// que generar uno exige decir cuál — nunca "el" contrato.
+export async function generarContrato(
+  perroId: string,
+  tipoContratoId: string
+): Promise<EstadoGenerarContrato> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.rpc("generar_contrato", { p_perro_id: perroId });
+  const { data, error } = await supabase.rpc("generar_contrato", {
+    p_perro_id: perroId,
+    p_tipo_contrato_id: tipoContratoId,
+  });
 
   if (error) return { error: traducirError(error) };
 

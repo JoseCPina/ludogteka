@@ -410,6 +410,10 @@ export default async function ReportesPage({
             </div>
             <div className="rounded-lg border border-n-200 bg-white p-4">
               <p className="text-sm font-bold text-n-900">Contratos</p>
+              <p className="mt-0.5 text-xs text-n-500">
+                Perros, contando todos los contratos que les aplican. No entran los que todavía no
+                usan ningún servicio con contrato.
+              </p>
               <div className="mt-2 flex flex-col gap-1 text-sm">
                 <span className="text-verde-oscuro">Vigente: {estadoActual.contrato_vigente}</span>
                 <span className="text-azul-oscuro">Requiere actualización: {estadoActual.contrato_requiere_actualizacion}</span>

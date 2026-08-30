@@ -15,10 +15,14 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 
 export function FirmarContrato({
   contratoId,
+  tipoNombre,
   estado,
   storagePath,
 }: {
   contratoId: string;
+  // El negocio maneja varios contratos (guardería, hotel, …): el dueño
+  // tiene que saber cuál está firmando, no solo que hay "un" contrato.
+  tipoNombre: string;
   estado: string;
   storagePath: string | null;
 }) {
@@ -131,9 +135,12 @@ export function FirmarContrato({
   if (estado !== "pendiente_firma") {
     return (
       <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
-        <span className="w-fit rounded-full bg-verde-suave px-2.5 py-1 text-xs font-semibold text-verde-oscuro">
-          {ETIQUETA_ESTADO[estado] ?? estado}
-        </span>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="font-semibold text-n-900">{tipoNombre}</span>
+          <span className="w-fit rounded-full bg-verde-suave px-2.5 py-1 text-xs font-semibold text-verde-oscuro">
+            {ETIQUETA_ESTADO[estado] ?? estado}
+          </span>
+        </div>
         {urlFirmado && (
           <a href={urlFirmado} target="_blank" rel="noreferrer" className="text-sm font-semibold text-azul hover:underline">
             Ver contrato firmado →
@@ -145,7 +152,7 @@ export function FirmarContrato({
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-amarillo bg-amarillo-suave p-4">
-      <p className="font-bold text-amarillo-oscuro">Tienes un contrato pendiente de firma</p>
+      <p className="font-bold text-amarillo-oscuro">{tipoNombre} · pendiente de firma</p>
 
       {error && (
         <Alert variante="error" titulo="No se pudo firmar">

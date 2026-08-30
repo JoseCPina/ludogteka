@@ -15,7 +15,7 @@ import { AlertaCriticaBanner } from "../alerta-critica-banner";
 import { AlertasManejo, type CatalogoAlertaOpcion, type AlertaActivaFila } from "../alertas-manejo";
 import { AlergiasSeccion, type AlergiaFila } from "../alergias-seccion";
 import { formatearDiasSemana } from "@/app/(staff)/reservas/series/dias-semana";
-import { ContratoSeccion, type ContratoFila } from "../contrato-seccion";
+import { ContratoSeccion, type ContratoFila, type TipoContratoFila } from "../contrato-seccion";
 import { BitacoraSeccion, type EntradaBitacora } from "../bitacora-seccion";
 import { MedicamentosSeccion, type MedicamentoFila } from "../medicamentos-seccion";
 
@@ -104,11 +104,32 @@ export default async function PerroPage({
     .eq("perro_id", id)
     .is("deleted_at", null);
 
+  // El nombre y la versión vienen de la plantilla con la que se firmó,
+  // no del tipo "de ahora": si el contrato se renombró después, el
+  // historial sigue diciendo con cuál se firmó en su momento.
   const { data: contratosCrudo } = await supabase
     .from("contratos")
-    .select("id, estado, storage_path, fecha_firma, created_at, motivo_cancelacion")
+    .select(
+      "id, estado, storage_path, fecha_firma, created_at, motivo_cancelacion, plantillas_contrato(version, tipo_contrato_id, tipos_contrato(nombre))"
+    )
     .eq("perro_id", id)
     .order("created_at", { ascending: false });
+
+  // Tipos que se le pueden generar (los que tienen versión publicada y no
+  // están archivados) y en qué estado va este perro con cada uno.
+  const [{ data: tiposCrudo }, { data: estadoPorTipo }] = await Promise.all([
+    supabase
+      .from("tipos_contrato")
+      .select("id, nombre, plantillas_contrato!inner(id)")
+      .is("deleted_at", null)
+      .eq("plantillas_contrato.activa", true)
+      .order("orden")
+      .order("nombre"),
+    supabase
+      .from("perros_contrato_estado")
+      .select("tipo_contrato_id, estado")
+      .eq("perro_id", id),
+  ]);
 
   const { data: bitacoraCrudo } = await supabase
     .from("bitacora_entradas")
@@ -180,13 +201,39 @@ export default async function PerroPage({
   const actualizarConId = actualizarPerro.bind(null, id);
   const soloLectura = sesion.rol === "estetica";
 
-  const contratos: ContratoFila[] = (contratosCrudo ?? []).map((c) => ({
-    id: c.id,
-    estado: c.estado,
-    storagePath: c.storage_path,
-    fechaFirma: c.fecha_firma,
-    createdAt: c.created_at,
-    motivoCancelacion: c.motivo_cancelacion,
+  const contratos: ContratoFila[] = (contratosCrudo ?? []).map((c) => {
+    const plantilla = (Array.isArray(c.plantillas_contrato)
+      ? c.plantillas_contrato[0]
+      : c.plantillas_contrato) as unknown as
+      | { version: number; tipo_contrato_id: string; tipos_contrato: { nombre: string } | { nombre: string }[] | null }
+      | null;
+    const tipo = Array.isArray(plantilla?.tipos_contrato)
+      ? plantilla?.tipos_contrato[0]
+      : plantilla?.tipos_contrato;
+    return {
+      id: c.id,
+      estado: c.estado,
+      storagePath: c.storage_path,
+      fechaFirma: c.fecha_firma,
+      createdAt: c.created_at,
+      motivoCancelacion: c.motivo_cancelacion,
+      tipoContratoId: plantilla?.tipo_contrato_id ?? null,
+      tipoNombre: tipo?.nombre ?? "Contrato",
+      version: plantilla?.version ?? null,
+    };
+  });
+
+  const estadoContratoPorTipo = new Map(
+    (estadoPorTipo ?? []).map((e) => [e.tipo_contrato_id as string, e.estado as string])
+  );
+  const tiposContrato: TipoContratoFila[] = (tiposCrudo ?? []).map((t) => ({
+    id: t.id,
+    nombre: t.nombre,
+    // Aparecer en perros_contrato_estado ES la definición de "a este
+    // perro se le pide": la vista ya filtró por las categorías de
+    // servicio que el perro de verdad usa.
+    aplica: estadoContratoPorTipo.has(t.id),
+    estado: (estadoContratoPorTipo.get(t.id) ?? null) as TipoContratoFila["estado"],
   }));
 
   const entradasBitacora: EntradaBitacora[] = await Promise.all(
@@ -329,7 +376,12 @@ export default async function PerroPage({
       {!soloLectura && perro.cliente_id && (
         <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
           <h2 className="text-lg font-bold text-n-900">Contrato</h2>
-          <ContratoSeccion perroId={id} clienteId={perro.cliente_id} contratos={contratos} />
+          <ContratoSeccion
+            perroId={id}
+            clienteId={perro.cliente_id}
+            tipos={tiposContrato}
+            contratos={contratos}
+          />
         </div>
       )}
 

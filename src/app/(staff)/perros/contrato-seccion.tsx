@@ -38,6 +38,20 @@ export type ContratoFila = {
   fechaFirma: string | null;
   createdAt: string;
   motivoCancelacion: string | null;
+  tipoContratoId: string | null;
+  tipoNombre: string;
+  version: number | null;
+};
+
+// Un contrato por tipo: el perro puede tener firmado el de guardería y
+// deberle el de hotel. `aplica` dice si el negocio se lo pide (usa ese
+// servicio) — los que no aplican siguen siendo generables a mano, por si
+// recepción quiere adelantarse a una estancia que todavía no existe.
+export type TipoContratoFila = {
+  id: string;
+  nombre: string;
+  aplica: boolean;
+  estado: "vigente" | "sin_contrato" | "requiere_actualizacion" | null;
 };
 
 async function calcularHashArchivo(archivo: File): Promise<string> {
@@ -48,25 +62,144 @@ async function calcularHashArchivo(archivo: File): Promise<string> {
     .join("");
 }
 
-export function ContratoSeccion({ perroId, clienteId, contratos }: { perroId: string; clienteId: string; contratos: ContratoFila[] }) {
+function PastillaEstadoTipo({ tipo }: { tipo: TipoContratoFila }) {
+  if (!tipo.aplica) {
+    return (
+      <span className="rounded-full bg-n-100 px-2.5 py-1 text-xs font-semibold text-n-500">
+        No se le pide
+      </span>
+    );
+  }
+  if (tipo.estado === "vigente") {
+    return (
+      <span className="rounded-full bg-verde-suave px-2.5 py-1 text-xs font-semibold text-verde-oscuro">
+        Al día
+      </span>
+    );
+  }
+  if (tipo.estado === "requiere_actualizacion") {
+    return (
+      <span className="rounded-full bg-azul-suave px-2.5 py-1 text-xs font-semibold text-azul-oscuro">
+        Requiere actualización
+      </span>
+    );
+  }
+  return (
+    <span className="rounded-full bg-amarillo-suave px-2.5 py-1 text-xs font-semibold text-amarillo-oscuro">
+      Falta firmar
+    </span>
+  );
+}
+
+function AccionesPendiente({
+  contrato,
+  subiendo,
+  subiendoParaId,
+  cancelandoId,
+  motivoCancelar,
+  cancelando,
+  onSubirPapel,
+  onIniciarCancelar,
+  onCambiarMotivo,
+  onConfirmarCancelar,
+}: {
+  contrato: ContratoFila;
+  subiendo: boolean;
+  subiendoParaId: string | null;
+  cancelandoId: string | null;
+  motivoCancelar: string;
+  cancelando: boolean;
+  onSubirPapel: (contratoId: string) => void;
+  onIniciarCancelar: (contratoId: string | null) => void;
+  onCambiarMotivo: (motivo: string) => void;
+  onConfirmarCancelar: (contratoId: string) => void;
+}) {
+  return (
+    <div className="mt-3">
+      <div className="flex flex-wrap gap-2">
+        <a href={`/api/contratos/${contrato.id}/preview`} target="_blank" rel="noreferrer">
+          <Button type="button" variante="secundario">
+            Ver borrador
+          </Button>
+        </a>
+        <Button
+          type="button"
+          variante="secundario"
+          disabled={subiendo}
+          onClick={() => onSubirPapel(contrato.id)}
+        >
+          {subiendo && subiendoParaId === contrato.id ? "Subiendo…" : "Subir firmado en papel"}
+        </Button>
+        {cancelandoId !== contrato.id && (
+          <Button type="button" variante="peligro" onClick={() => onIniciarCancelar(contrato.id)}>
+            Cancelar
+          </Button>
+        )}
+      </div>
+      {cancelandoId === contrato.id && (
+        <div className="mt-3 flex flex-col gap-2 border-t border-n-200 pt-3">
+          <Field
+            label="Motivo de la cancelación"
+            value={motivoCancelar}
+            onChange={(e) => onCambiarMotivo(e.target.value)}
+            placeholder="ej. Se generó por error"
+          />
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variante="peligro"
+              disabled={cancelando}
+              onClick={() => onConfirmarCancelar(contrato.id)}
+            >
+              {cancelando ? "Cancelando…" : "Confirmar cancelación"}
+            </Button>
+            <Button type="button" variante="secundario" onClick={() => onIniciarCancelar(null)}>
+              No
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function ContratoSeccion({
+  perroId,
+  clienteId,
+  tipos,
+  contratos,
+}: {
+  perroId: string;
+  clienteId: string;
+  tipos: TipoContratoFila[];
+  contratos: ContratoFila[];
+}) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
-  const [generando, setGenerando] = useState(false);
+  const [generandoTipoId, setGenerandoTipoId] = useState<string | null>(null);
   const [subiendo, setSubiendo] = useState(false);
   const [subiendoParaId, setSubiendoParaId] = useState<string | null>(null);
   const [cancelandoId, setCancelandoId] = useState<string | null>(null);
   const [motivoCancelar, setMotivoCancelar] = useState("");
   const [cancelando, setCancelando] = useState(false);
 
-  const pendiente = contratos.find((c) => c.estado === "pendiente_firma") ?? null;
-  const historial = contratos.filter((c) => c.id !== pendiente?.id);
+  const pendientes = contratos.filter((c) => c.estado === "pendiente_firma");
+  const historial = contratos.filter((c) => c.estado !== "pendiente_firma");
+  const pendientePorTipo = new Map(
+    pendientes.filter((c) => c.tipoContratoId).map((c) => [c.tipoContratoId as string, c])
+  );
+  // Un pendiente cuyo tipo ya se archivó: sigue existiendo y hay que
+  // poder firmarlo o cancelarlo, aunque su tipo ya no aparezca arriba.
+  const pendientesHuerfanos = pendientes.filter(
+    (c) => !c.tipoContratoId || !tipos.some((t) => t.id === c.tipoContratoId)
+  );
 
-  async function accionGenerar() {
-    setGenerando(true);
+  async function accionGenerar(tipoId: string) {
+    setGenerandoTipoId(tipoId);
     setError(null);
-    const res = await generarContrato(perroId);
-    setGenerando(false);
+    const res = await generarContrato(perroId, tipoId);
+    setGenerandoTipoId(null);
     if (res.error) {
       setError(res.error);
       return;
@@ -148,61 +281,81 @@ export function ContratoSeccion({ perroId, clienteId, contratos }: { perroId: st
         </Alert>
       )}
 
-      {!pendiente ? (
-        <Button type="button" disabled={generando} onClick={accionGenerar} className="self-start">
-          {generando ? "Generando…" : "Generar contrato"}
-        </Button>
+      {tipos.length === 0 ? (
+        <Alert variante="advertencia" titulo="Sin contratos configurados">
+          No hay ninguna plantilla de contrato publicada. Un admin tiene que crear la primera en
+          Contratos antes de poder generarle uno a este perro.
+        </Alert>
       ) : (
-        <div className="rounded-lg border border-n-200 bg-white p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${ESTILO_ESTADO[pendiente.estado]}`}>
-              {ETIQUETA_ESTADO[pendiente.estado]}
-            </span>
-            <span className="text-xs text-n-500">Generado {formatearFecha(pendiente.createdAt)}</span>
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <a href={`/api/contratos/${pendiente.id}/preview`} target="_blank" rel="noreferrer">
-              <Button type="button" variante="secundario">
-                Ver borrador
-              </Button>
-            </a>
-            <Button
-              type="button"
-              variante="secundario"
-              disabled={subiendo}
-              onClick={() => abrirSelectorPapel(pendiente.id)}
-            >
-              {subiendo ? "Subiendo…" : "Subir firmado en papel"}
-            </Button>
-            {cancelandoId !== pendiente.id ? (
-              <Button type="button" variante="peligro" onClick={() => setCancelandoId(pendiente.id)}>
-                Cancelar
-              </Button>
-            ) : null}
-          </div>
-          {cancelandoId === pendiente.id && (
-            <div className="mt-3 flex flex-col gap-2 border-t border-n-200 pt-3">
-              <Field
-                label="Motivo de la cancelación"
-                value={motivoCancelar}
-                onChange={(e) => setMotivoCancelar(e.target.value)}
-                placeholder="ej. Se generó por error"
-              />
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variante="peligro"
-                  disabled={cancelando}
-                  onClick={() => confirmarCancelar(pendiente.id)}
-                >
-                  {cancelando ? "Cancelando…" : "Confirmar cancelación"}
-                </Button>
-                <Button type="button" variante="secundario" onClick={() => setCancelandoId(null)}>
-                  No
-                </Button>
-              </div>
-            </div>
-          )}
+        <ul className="flex flex-col gap-3">
+          {tipos.map((tipo) => {
+            const pendiente = pendientePorTipo.get(tipo.id) ?? null;
+            return (
+              <li key={tipo.id} className="rounded-lg border border-n-200 bg-white p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-n-900">{tipo.nombre}</span>
+                    <PastillaEstadoTipo tipo={tipo} />
+                  </span>
+                  {pendiente ? (
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${ESTILO_ESTADO.pendiente_firma}`}>
+                      Pendiente de firma · generado {formatearFecha(pendiente.createdAt)}
+                    </span>
+                  ) : (
+                    <Button
+                      type="button"
+                      variante="secundario"
+                      disabled={generandoTipoId === tipo.id}
+                      onClick={() => accionGenerar(tipo.id)}
+                    >
+                      {generandoTipoId === tipo.id ? "Generando…" : "Generar contrato"}
+                    </Button>
+                  )}
+                </div>
+                {pendiente && (
+                  <AccionesPendiente
+                    contrato={pendiente}
+                    subiendo={subiendo}
+                    subiendoParaId={subiendoParaId}
+                    cancelandoId={cancelandoId}
+                    motivoCancelar={motivoCancelar}
+                    cancelando={cancelando}
+                    onSubirPapel={abrirSelectorPapel}
+                    onIniciarCancelar={setCancelandoId}
+                    onCambiarMotivo={setMotivoCancelar}
+                    onConfirmarCancelar={confirmarCancelar}
+                  />
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {pendientesHuerfanos.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <p className="text-sm font-bold uppercase tracking-wide text-n-600">
+            Pendientes de un contrato archivado
+          </p>
+          <ul className="flex flex-col gap-3">
+            {pendientesHuerfanos.map((c) => (
+              <li key={c.id} className="rounded-lg border border-n-200 bg-white p-4">
+                <span className="font-semibold text-n-900">{c.tipoNombre}</span>
+                <AccionesPendiente
+                  contrato={c}
+                  subiendo={subiendo}
+                  subiendoParaId={subiendoParaId}
+                  cancelandoId={cancelandoId}
+                  motivoCancelar={motivoCancelar}
+                  cancelando={cancelando}
+                  onSubirPapel={abrirSelectorPapel}
+                  onIniciarCancelar={setCancelandoId}
+                  onCambiarMotivo={setMotivoCancelar}
+                  onConfirmarCancelar={confirmarCancelar}
+                />
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -216,7 +369,9 @@ export function ContratoSeccion({ perroId, clienteId, contratos }: { perroId: st
                   <span className={`mr-2 rounded-full px-2 py-0.5 text-xs font-semibold ${ESTILO_ESTADO[c.estado]}`}>
                     {ETIQUETA_ESTADO[c.estado]}
                   </span>
+                  <span className="font-semibold text-n-900">{c.tipoNombre}</span>
                   <span className="text-n-600">
+                    {c.version !== null ? ` · versión ${c.version}` : ""} ·{" "}
                     {c.fechaFirma ? formatearFecha(c.fechaFirma) : formatearFecha(c.createdAt)}
                   </span>
                   {c.motivoCancelacion && <p className="mt-1 text-xs text-n-500">{c.motivoCancelacion}</p>}
