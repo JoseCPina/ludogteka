@@ -6,7 +6,8 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "desplegar": "node scripts/desplegar-produccion.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.3",
@@ -23,6 +24,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
+    "pg": "^8.23.0",
     "supabase": "^2.110.0",
     "tailwindcss": "^4",
     "typescript": "^5"
