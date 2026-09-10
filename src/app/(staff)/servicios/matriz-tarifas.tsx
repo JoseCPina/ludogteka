@@ -39,6 +39,7 @@ export function MatrizTarifas({
   dependeTamano,
   dependePelaje,
   dependeCantidad,
+  aceptaPeloMaltratado,
   grupos,
   tamanos,
   pelajes,
@@ -49,6 +50,9 @@ export function MatrizTarifas({
   dependeTamano: boolean;
   dependePelaje: boolean;
   dependeCantidad: boolean;
+  // El servicio se cobra distinto cuando el perro llega enredado: cada
+  // celda pide un segundo número, como en el cartel.
+  aceptaPeloMaltratado: boolean;
   grupos: GrupoRaza[];
   tamanos: OpcionDimension[];
   pelajes: OpcionDimension[];
@@ -90,11 +94,18 @@ export function MatrizTarifas({
   const [exito, setExito] = useState(false);
 
   const baselineMap = useMemo(() => {
-    const m = new Map<string, { precio: number | null; no_aplica: boolean }>();
+    const m = new Map<
+      string,
+      { precio: number | null; precioMaltratado: number | null; no_aplica: boolean }
+    >();
     for (const v of vigentes) {
       m.set(
         claveCelda(v.cantidad_desde, v.cantidad_hasta, v.grupo_raza_id, v.tamano_id, v.pelaje_id),
-        { precio: v.precio, no_aplica: v.no_aplica }
+        {
+          precio: v.precio,
+          precioMaltratado: v.precio_pelo_maltratado ?? null,
+          no_aplica: v.no_aplica,
+        }
       );
     }
     return m;
@@ -104,10 +115,18 @@ export function MatrizTarifas({
     const baseline = baselineMap.get(
       claveCelda(tramo.desde, tramo.hasta, fila.grupo_raza_id, fila.tamano_id, pelajeId || null)
     );
-    if (!baseline) return { estado: "sin_tarifa" as const, precio: null as number | null, no_aplica: false };
+    if (!baseline) {
+      return {
+        estado: "sin_tarifa" as const,
+        precio: null as number | null,
+        precioMaltratado: null as number | null,
+        no_aplica: false,
+      };
+    }
     return {
       estado: (baseline.no_aplica ? "no_aplica" : "disponible") as "no_aplica" | "disponible",
       precio: baseline.precio,
+      precioMaltratado: baseline.precioMaltratado,
       no_aplica: baseline.no_aplica,
     };
   }
@@ -116,9 +135,12 @@ export function MatrizTarifas({
     const tocado = valores.get(claveValor(tramo.clientId, fila.key, pelajeId));
     if (tocado) return tocado;
     const base = obtenerBaseline(tramo, fila, pelajeId);
-    if (base.estado === "no_aplica") return { precio: "", no_aplica: true };
-    if (base.estado === "disponible") return { precio: String(base.precio), no_aplica: false };
-    return { precio: "", no_aplica: false };
+    const maltratado = base.precioMaltratado === null ? "" : String(base.precioMaltratado);
+    if (base.estado === "no_aplica") return { precio: "", no_aplica: true, precioMaltratado: "" };
+    if (base.estado === "disponible") {
+      return { precio: String(base.precio), no_aplica: false, precioMaltratado: maltratado };
+    }
+    return { precio: "", no_aplica: false, precioMaltratado: "" };
   }
 
   function setValor(tramoId: string, filaKey: string, pelajeId: string, nuevo: ValorCelda) {
@@ -152,13 +174,22 @@ export function MatrizTarifas({
   function rellenarFila(tramoId: string, filaKey: string) {
     const valor = rellenos.get(`fila-${tramoId}-${filaKey}`) ?? "";
     if (!valor) return;
-    for (const col of columnas) setValor(tramoId, filaKey, col.id, { precio: valor, no_aplica: false });
+    for (const col of columnas) {
+      const tramo = tramos.find((t) => t.clientId === tramoId)!;
+      const fila = filas.find((f) => f.key === filaKey)!;
+      const actual = obtenerValor(tramo, fila, col.id);
+      setValor(tramoId, filaKey, col.id, { ...actual, precio: valor, no_aplica: false });
+    }
   }
 
   function rellenarColumna(tramoId: string, pelajeId: string) {
     const valor = rellenos.get(`col-${tramoId}-${pelajeId}`) ?? "";
     if (!valor) return;
-    for (const fila of filas) setValor(tramoId, fila.key, pelajeId, { precio: valor, no_aplica: false });
+    for (const fila of filas) {
+      const tramo = tramos.find((t) => t.clientId === tramoId)!;
+      const actual = obtenerValor(tramo, fila, pelajeId);
+      setValor(tramoId, fila.key, pelajeId, { ...actual, precio: valor, no_aplica: false });
+    }
   }
 
   function aplicarIncrementoMasivo() {
@@ -174,9 +205,25 @@ export function MatrizTarifas({
             incremento.unidad === "porcentaje"
               ? base.precio * (1 + monto / 100)
               : base.precio + monto;
+          // El precio alternativo sube en la misma proporción: es el
+          // mismo servicio, y dejarlo quieto lo iría acercando al normal
+          // hasta que dejaran de tener sentido los dos números.
+          const maltratado =
+            base.precioMaltratado === null
+              ? ""
+              : Math.max(
+                  0,
+                  Number(
+                    (incremento.unidad === "porcentaje"
+                      ? base.precioMaltratado * (1 + monto / 100)
+                      : base.precioMaltratado + monto
+                    ).toFixed(2)
+                  )
+                ).toString();
           nuevasValores.set(claveValor(tramo.clientId, fila.key, col.id), {
             precio: Math.max(0, Number(nuevo.toFixed(2))).toString(),
             no_aplica: false,
+            precioMaltratado: maltratado,
           });
         }
       }
@@ -197,11 +244,13 @@ export function MatrizTarifas({
           const valor = obtenerValor(tramo, fila, col.id);
           const base = obtenerBaseline(tramo, fila, col.id);
 
+          const maltratadoBase = base.precioMaltratado === null ? "" : String(base.precioMaltratado);
           const sinCambio =
             (base.estado === "disponible" &&
               !valor.no_aplica &&
               valor.precio !== "" &&
-              Number(valor.precio) === base.precio) ||
+              Number(valor.precio) === base.precio &&
+              (valor.precioMaltratado ?? "") === maltratadoBase) ||
             (base.estado === "no_aplica" && valor.no_aplica) ||
             (base.estado === "sin_tarifa" && !valor.no_aplica && valor.precio === "");
 
@@ -222,6 +271,8 @@ export function MatrizTarifas({
             tamano_id: fila.tamano_id,
             pelaje_id: col.id || null,
             precio: valor.no_aplica ? null : Number(valor.precio),
+            precio_pelo_maltratado:
+              valor.no_aplica || !valor.precioMaltratado ? null : Number(valor.precioMaltratado),
             no_aplica: valor.no_aplica,
             tramoEtiqueta: etiquetaTramo(tramo),
             filaEtiqueta: etiquetaFila(fila),
@@ -316,6 +367,11 @@ export function MatrizTarifas({
                   </td>
                   <td className="border-b border-n-200 px-4 py-2 tabular-nums font-semibold text-n-900">
                     {c.no_aplica ? "No aplica" : `$${c.precio!.toFixed(2)}`}
+                    {c.precio_pelo_maltratado !== null && (
+                      <span className="block text-xs font-normal text-n-600">
+                        maltratado ${c.precio_pelo_maltratado.toFixed(2)}
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -530,6 +586,7 @@ export function MatrizTarifas({
                           <CeldaTarifa
                             estadoBase={obtenerBaseline(tramo, fila, col.id).estado}
                             valor={obtenerValor(tramo, fila, col.id)}
+                            pidePeloMaltratado={aceptaPeloMaltratado}
                             onChange={(nuevo) => setValor(tramo.clientId, fila.key, col.id, nuevo)}
                           />
                         </td>

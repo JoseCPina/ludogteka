@@ -12,13 +12,18 @@
  * `tipos_contrato_de_alta()`. Estas categorías son las mismas que usa esa
  * función, y están aquí solo para que la pantalla pueda decir de qué
  * habla.
+ *
+ * En estética NO hay contrato: el contrato cubre dejar al perro a cargo
+ * del negocio, no traerlo a bañar y llevárselo en dos horas. Por eso ese
+ * flujo no habla de firmar nada — y la base tampoco le genera ninguno.
  */
 export const TIPOS_LINK_ALTA = {
   guarderia_hotel: {
     etiqueta: "Guardería y hotel",
-    descripcion: "Expediente completo: veterinario, contacto de emergencia y alimentación.",
+    descripcion: "Expediente completo (veterinario, emergencia, alimentación) y su contrato.",
     categorias: ["guarderia", "hotel"] as const,
     expedienteCompleto: true,
+    llevaContrato: true,
     muestraPrecioEstetica: false,
     mensajeWhatsApp: (nombre: string, url: string) =>
       `Hola ${nombre}, aquí puedes darte de alta en Ludogteka y registrar a tu perro para guardería u hotel: ${url}`,
@@ -27,14 +32,15 @@ export const TIPOS_LINK_ALTA = {
   },
   estetica: {
     etiqueta: "Estética",
-    descripcion: "Lo básico más el precio estimado del baño según la raza.",
+    descripcion: "Lo básico más los precios del baño según la raza. Sin contrato.",
     categorias: ["estetica"] as const,
     expedienteCompleto: false,
+    llevaContrato: false,
     muestraPrecioEstetica: true,
     mensajeWhatsApp: (nombre: string, url: string) =>
       `Hola ${nombre}, aquí puedes registrar a tu perro para su baño en Ludogteka y ver el precio estimado: ${url}`,
     mensajeComplemento: (nombre: string, url: string) =>
-      `Hola ${nombre}, para el baño de tu perro nos falta que firmes el contrato de estética y completar un par de datos. Aquí: ${url}`,
+      `Hola ${nombre}, para el baño de tu perro nos falta completar un par de datos suyos. Es rápido, aquí: ${url}`,
   },
 } as const;
 

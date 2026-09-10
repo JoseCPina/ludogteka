@@ -86,7 +86,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
   // grupo aunque no se pinte sería dejarlo servido en el HTML.
   const [razas, { data: tamanos }, { data: pelajes }] = await Promise.all([
     cargarRazas(admin),
-    admin.from("tamanos_categoria").select("id, clave, etiqueta").is("deleted_at", null).order("orden"),
+    admin.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
     admin.from("tipos_pelaje").select("id, etiqueta").is("deleted_at", null).order("orden"),
   ]);
 
@@ -95,20 +95,23 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
     ? await cargarCotizacionEstetica(admin)
     : null;
 
-  // En el flujo de estética no se ofrecen tallas que el negocio no puede
-  // cotizar. Hoy eso deja fuera la gigante, que el cartel no menciona y
-  // quedó deliberadamente sin tarifa: ofrecerla sería dejar que alguien
-  // escoja la única opción para la que la app no tiene precio. En cuanto
-  // se capture esa tarifa, la talla reaparece sola.
-  const tamanosTodos = (tamanos as { id: string; clave: string; etiqueta: string }[]) ?? [];
-  const tamanosOfrecidos =
-    cotizacion && cotizacion.predeterminado.porTalla
-      ? tamanosTodos.filter((t) => cotizacion.predeterminado.porTalla?.[t.id] !== undefined)
-      : tamanosTodos;
+  // Qué tallas se le ofrecen al dueño en el flujo de estética. La
+  // distinción importa y ya viene resuelta en la cotización:
+  //
+  //   no_aplica  -> el negocio no la ofrece: se oculta.
+  //   sin_tarifa -> falta capturar ese precio: SE SIGUE OFRECIENDO. Si se
+  //                 ocultara, el dueño no podría escoger el tamaño de su
+  //                 perro y el olvido de captura desaparecería de la
+  //                 vista — en la matriz un hueco sale alarmante, aquí se
+  //                 iría en silencio. El panel de admin lo reporta.
+  const tamanosTodos = (tamanos as { id: string; etiqueta: string }[]) ?? [];
+  const tamanosOfrecidos = cotizacion
+    ? cotizacion.tallas.map((t) => ({ id: t.id, etiqueta: t.etiqueta }))
+    : tamanosTodos;
 
   const catalogos = {
     razas,
-    tamanos: tamanosOfrecidos.map((t) => ({ id: t.id, etiqueta: t.etiqueta })),
+    tamanos: tamanosOfrecidos,
     pelajes: (pelajes as { id: string; etiqueta: string }[]) ?? [],
     cotizacion,
   };

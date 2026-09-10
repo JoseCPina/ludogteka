@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { Select } from "@/components/ui/select";
 import { SelectorRaza, type RazaOpcion } from "@/components/selector-raza";
-import { estimadoDeRaza, type CotizacionEstetica } from "@/lib/estetica/cotizacion";
+import { cotizarPerro, type CotizacionEstetica } from "@/lib/estetica/cotizacion";
 import { asignarRazasEnLote, type AsignacionRaza } from "./acciones";
 
 export type PerroSinRaza = {
@@ -138,13 +138,18 @@ export function NormalizarRazas({
     router.refresh();
   }
 
+  // El precio que se compara es el del baño estético completo: es el que
+  // más se mueve entre grupos y el que hace ver lo que está en juego.
   function precios(perro: PerroSinRaza, eleccion: Eleccion) {
     if (!cotizacion) return null;
-    const antes = estimadoDeRaza(cotizacion, null, "x", perro.tamano_id ?? "");
-    const despues = eleccion.raza_id
-      ? estimadoDeRaza(cotizacion, eleccion.raza_id, "x", eleccion.tamano_id)
-      : null;
-    return { antes, despues };
+    const delCompleto = (razaId: string | null, tamanoId: string) =>
+      cotizarPerro(cotizacion, razaId, "x", tamanoId)?.servicios.find(
+        (s) => s.clave === "estetica_estetico"
+      ) ?? null;
+    return {
+      antes: delCompleto(null, perro.tamano_id ?? ""),
+      despues: eleccion.raza_id ? delCompleto(eleccion.raza_id, eleccion.tamano_id) : null,
+    };
   }
 
   return (
@@ -247,13 +252,13 @@ export function NormalizarRazas({
 
               {p && (
                 <p className="text-sm text-n-600">
-                  Baño estético: hoy <strong>{pesos(p.antes?.desde ?? null)}</strong> (grupo por
-                  defecto)
+                  Baño estético completo: hoy <strong>{pesos(p.antes?.precio ?? null)}</strong>{" "}
+                  (por talla, sin grupo)
                   {p.despues && (
                     <>
                       {" → "}
-                      <strong className="text-n-900">{pesos(p.despues.desde)}</strong>{" "}
-                      con {raza?.nombre}
+                      <strong className="text-n-900">{pesos(p.despues.precio)}</strong> con{" "}
+                      {raza?.nombre}
                     </>
                   )}
                 </p>

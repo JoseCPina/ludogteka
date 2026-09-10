@@ -225,10 +225,12 @@ export function AltaForm({
           {perros.map((p) => p.nombre.trim()).filter(Boolean).join(", ") || "tu perro"}. Puedes
           agendar por WhatsApp o pasando al mostrador.
         </Alert>
-        <p className="text-n-600">
-          Cuando llegues, recepción te va a pedir que firmes el contrato de{" "}
-          {definicion.etiqueta.toLowerCase()}.
-        </p>
+        {definicion.llevaContrato && (
+          <p className="text-n-600">
+            Cuando llegues, recepción te va a pedir que firmes el contrato de{" "}
+            {definicion.etiqueta.toLowerCase()}.
+          </p>
+        )}
         <p className="text-n-600">
           Si después quieres ver a tu perro desde tu celular, pídele a recepción que te abra tu
           cuenta: se usa este mismo teléfono.

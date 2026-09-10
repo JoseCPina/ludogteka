@@ -8,6 +8,7 @@ export type EstadoAccion = { error: string | null };
 export type EstadoCrearCita = { error: string | null; citaId?: string };
 
 export async function crearCita(datos: {
+  peloMaltratado?: boolean;
   perroId: string;
   servicioId: string;
   empleadoId: string;
@@ -41,6 +42,10 @@ export async function crearCita(datos: {
       reserva_id: reservaCreada.id,
       perro_id: datos.perroId,
       servicio_id: datos.servicioId,
+      // Lo marca quien recibe al perro. No agrega un cargo: cambia el
+      // precio al alternativo del MISMO servicio, y de eso se encarga el
+      // trigger al cotizar.
+      pelo_maltratado: datos.peloMaltratado ?? false,
       empleado_id: datos.empleadoId,
       inicio: datos.inicio,
       estancia_id: datos.estanciaId,

@@ -30,6 +30,7 @@ export type Catalogos = {
 
 export type CeldaVigente = {
   grupo_raza_id: string | null;
+  precio_pelo_maltratado?: number | null;
   tamano_id: string | null;
   pelaje_id: string | null;
   cantidad_desde: number;

@@ -1,6 +1,6 @@
 "use client";
 
-export type ValorCelda = { precio: string; no_aplica: boolean };
+export type ValorCelda = { precio: string; no_aplica: boolean; precioMaltratado?: string };
 export type EstadoBase = "disponible" | "no_aplica" | "sin_tarifa";
 
 // Una celda en blanco es un servicio que no se puede cobrar y nadie se va
@@ -12,11 +12,16 @@ export function CeldaTarifa({
   valor,
   onChange,
   disabled,
+  pidePeloMaltratado = false,
 }: {
   estadoBase: EstadoBase;
   valor: ValorCelda;
   onChange: (nuevo: ValorCelda) => void;
   disabled?: boolean;
+  // Solo en los servicios que se cobran distinto cuando el perro llega
+  // enredado. Es el segundo número de la misma celda del cartel, no otra
+  // celda: dejarlo vacío significa que ese grupo no cobra distinto.
+  pidePeloMaltratado?: boolean;
 }) {
   const sinCapturarAun = estadoBase === "sin_tarifa" && !valor.no_aplica && valor.precio === "";
 
@@ -39,12 +44,28 @@ export function CeldaTarifa({
           sinCapturarAun ? "border-naranja-oscuro placeholder:text-naranja-oscuro placeholder:font-semibold" : "border-n-300"
         }`}
       />
+      {pidePeloMaltratado && !valor.no_aplica && (
+        <label className="flex flex-col gap-0.5 text-xs text-n-600">
+          Si llega maltratado
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.01"
+            min="0"
+            placeholder="mismo precio"
+            value={valor.precioMaltratado ?? ""}
+            disabled={disabled}
+            onChange={(e) => onChange({ ...valor, precioMaltratado: e.target.value })}
+            className="w-full rounded border-[1.5px] border-n-300 px-2 py-1 text-sm tabular-nums focus:border-azul focus:outline-none"
+          />
+        </label>
+      )}
       <label className="flex items-center gap-1.5 text-xs text-n-600">
         <input
           type="checkbox"
           checked={valor.no_aplica}
           disabled={disabled}
-          onChange={(e) => onChange({ precio: "", no_aplica: e.target.checked })}
+          onChange={(e) => onChange({ precio: "", no_aplica: e.target.checked, precioMaltratado: "" })}
           className="h-3.5 w-3.5"
         />
         No aplica

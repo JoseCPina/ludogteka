@@ -10,6 +10,10 @@ export type FilaTarifaGuardar = {
   tamano_id: string | null;
   pelaje_id: string | null;
   precio: number | null;
+  // El segundo número de la misma celda: el mismo servicio cobrado
+  // distinto si el perro llega enredado. Null = ese grupo no cobra
+  // distinto por eso.
+  precio_pelo_maltratado: number | null;
   no_aplica: boolean;
 };
 
@@ -78,6 +82,7 @@ export async function guardarTarifas(
     cantidad_hasta: f.cantidad_hasta,
     vigencia_desde: vigenciaDesde,
     precio: f.no_aplica ? null : f.precio,
+    precio_pelo_maltratado: f.no_aplica ? null : f.precio_pelo_maltratado,
     no_aplica: f.no_aplica,
   }));
 

@@ -47,6 +47,19 @@ export default async function AgendarPage() {
     return { id: e.id as string, perroId: e.perro_id as string, servicioNombre: servicio?.nombre ?? "—" };
   });
 
+  // Qué servicios tienen capturado un precio alternativo para pelo
+  // maltratado. Solo en esos se le ofrece la casilla a quien agenda: en
+  // los demás no haría nada y sería una pregunta de más en el mostrador.
+  const { data: conMaltratado } = await supabase
+    .from("tarifas_vigentes")
+    .select("servicio_id, precio_pelo_maltratado")
+    .not("precio_pelo_maltratado", "is", null);
+  const claves = new Set((conMaltratado ?? []).map((t) => t.servicio_id as string));
+  const serviciosConMarca = (servicios ?? []).map((s) => ({
+    ...s,
+    tiene_precio_maltratado: claves.has(s.id as string),
+  }));
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -62,7 +75,7 @@ export default async function AgendarPage() {
         <AgendarForm
           clientes={clientes ?? []}
           perros={perros ?? []}
-          servicios={servicios ?? []}
+          servicios={serviciosConMarca}
           empleados={empleados ?? []}
           estanciasEnCurso={estanciasLista}
           rolActual={sesion?.rol ?? "cliente"}

@@ -1,168 +1,243 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
- * El precio estimado del baño estético, listo para enseñárselo a alguien
- * que todavía no es cliente.
+ * Los precios de estética, listos para enseñárselos a alguien que
+ * todavía no es cliente.
  *
- * Lo que viaja al navegador es un precio por RAZA, nunca el grupo. El
- * dueño escoge "shih tzu" y ve un número; que ese número lo compartan
- * varias razas no le dice a qué cajón de precio del negocio pertenece su
- * perro, y el nombre del grupo no sale de aquí.
+ * Son TRES servicios distintos, no variantes de precio del mismo: cada
+ * uno incluye cosas diferentes, y esa lista es lo que hace entendible la
+ * diferencia entre $190 y $390. Por eso viajan con su `incluye`.
  *
- * `esDesconocida` sí viaja, y no es un descuido: es lo que permite
- * avisarle distinto a quien contestó "no sé / mestizo". Ese perro cotiza
- * como pelo corto, y si resulta tener manto largo el precio real puede
- * ser bastante mayor. Un "desde $250" sin ese aviso es la manera de que
- * llegue esperando $250 y le cobren $450 — que es exactamente lo que un
- * precio estimado debe evitar, no provocar.
- *
- * Ojo con la distinción, que ya se equivocó una vez: "no sé" NO es lo
- * mismo que "cae en el grupo predeterminado". El grupo predeterminado es
- * el de pelo corto, donde viven el labrador y el bóxer, y un labrador
- * grande cuesta $490 con toda certeza. Confundirlas ponía el aviso de
- * "como no nos dijiste la raza" encima de una cotización correcta.
+ * Lo que viaja al navegador va indexado por identificadores opacos, nunca
+ * por el nombre del grupo de precio. El dueño escoge "shih tzu" y ve
+ * números; que su perro comparta cajón con un cocker es cosa del negocio.
  */
-export type PrecioRaza = {
-  // El mínimo de lo capturado para ese perro. null = no hay tarifa: la
-  // pantalla no inventa un número, dice que recepción lo cotiza.
-  desde: number | null;
-  // Solo cuando el precio de ese perro depende de su talla. La pantalla
-  // afina el estimado en cuanto el dueño escoge tamaño.
-  porTalla: Record<string, number> | null;
-  // El dueño no identificó el pelo de su perro: escogió "no sé / mestizo"
-  // o escribió una raza que no está en el catálogo.
-  esDesconocida: boolean;
+export type EstadoCelda = "disponible" | "no_aplica" | "sin_tarifa";
+
+export type CeldaPrecio = {
+  estado: EstadoCelda;
+  precio: number | null;
+  // Precio alternativo del MISMO servicio cuando el perro llega enredado.
+  // Solo el baño estético completo lo tiene, y solo en los grupos donde el
+  // negocio cobra distinto por eso.
+  precioPeloMaltratado: number | null;
+};
+
+export type ServicioEstetica = {
+  clave: string;
+  nombre: string;
+  incluye: string[];
 };
 
 export type CotizacionEstetica = {
-  servicioNombre: string;
-  incluye: string[];
-  // Lo más caro que el negocio cobra hoy por este servicio. Solo se usa
-  // para el aviso de "no sé / mestizo": decirle "puede llegar a $790" con
-  // el número real del cartel es más honesto —y más útil— que un "puede
-  // subir" que nadie sabe cuánto significa.
+  servicios: ServicioEstetica[];
+  // grupoId -> clave de servicio -> celda, para los grupos con precio
+  // único sin importar el tamaño del perro.
+  precios: Record<string, Record<string, CeldaPrecio>>;
+  // Igual, pero para el grupo que cobra por talla: una capa más.
+  preciosPorTalla: Record<string, Record<string, Record<string, CeldaPrecio>>>;
+  // razaId -> grupoId. El grupo es un uuid opaco: sin su nombre, saber que
+  // dos razas comparten cajón no le dice nada a nadie.
+  grupoDeRaza: Record<string, string>;
+  grupoPredeterminado: string;
+  gruposPorTalla: string[];
+  // Las razas que significan "no sé": disparan el aviso fuerte.
+  razasDesconocidas: string[];
+  // Lo más caro que el negocio cobra hoy, para poder decir hasta dónde
+  // puede llegar un estimado incierto con un número real y no con un
+  // "puede subir" que nadie sabe cuánto significa.
   topeConocido: number | null;
-  porRaza: Record<string, PrecioRaza>;
-  // Para quien escribe una raza que no está en el catálogo: cotiza igual
-  // que el "no sé / mestizo".
-  predeterminado: PrecioRaza;
+  // Las tallas que se le pueden ofrecer al dueño, y con qué estado.
+  tallas: { id: string; etiqueta: string; estado: EstadoCelda }[];
 };
 
-const CLAVE_SERVICIO = "estetica_estetico";
+const CLAVES = ["estetica_estetico", "estetica_rapado", "estetica_expres"];
 
 export async function cargarCotizacionEstetica(
   supabase: SupabaseClient
 ): Promise<CotizacionEstetica | null> {
-  const { data: servicio } = await supabase
-    .from("servicios")
-    .select("id, nombre, incluye")
-    .eq("clave", CLAVE_SERVICIO)
-    .is("deleted_at", null)
-    .maybeSingle();
+  const [{ data: servicios }, { data: grupos }, { data: razas }, { data: tamanos }] =
+    await Promise.all([
+      supabase
+        .from("servicios")
+        .select("id, clave, nombre, incluye, orden")
+        .in("clave", CLAVES)
+        .is("deleted_at", null)
+        .order("orden"),
+      supabase
+        .from("grupos_raza")
+        .select("id, depende_tamano, es_predeterminado")
+        .is("deleted_at", null),
+      supabase.from("razas").select("id, grupo_raza_id, es_desconocida").is("deleted_at", null),
+      supabase
+        .from("tamanos_categoria")
+        .select("id, etiqueta")
+        .is("deleted_at", null)
+        .order("orden"),
+    ]);
 
-  if (!servicio) return null;
+  if (!servicios || servicios.length === 0) return null;
 
-  const [{ data: grupos }, { data: razas }, { data: tarifas }] = await Promise.all([
-    supabase.from("grupos_raza").select("id, depende_tamano, es_predeterminado").is("deleted_at", null),
-    supabase.from("razas").select("id, grupo_raza_id, es_desconocida").is("deleted_at", null),
-    supabase
-      .from("tarifas_vigentes")
-      .select("grupo_raza_id, tamano_id, precio, no_aplica")
-      .eq("servicio_id", servicio.id),
-  ]);
-
-  const precioPorGrupo = new Map<string, PrecioRaza>();
-  for (const grupo of grupos ?? []) {
-    const suyas = (tarifas ?? []).filter(
-      (t) => t.grupo_raza_id === grupo.id && !t.no_aplica && t.precio !== null
+  const { data: tarifas } = await supabase
+    .from("tarifas_vigentes")
+    .select("servicio_id, grupo_raza_id, tamano_id, precio, precio_pelo_maltratado, no_aplica")
+    .in(
+      "servicio_id",
+      servicios.map((s) => s.id)
     );
 
-    let porTalla: Record<string, number> | null = null;
+  const grupoPredeterminado = (grupos ?? []).find((g) => g.es_predeterminado);
+  if (!grupoPredeterminado) return null;
+
+  type FilaTarifa = {
+    servicio_id: string;
+    grupo_raza_id: string | null;
+    tamano_id: string | null;
+    precio: number | null;
+    precio_pelo_maltratado: number | null;
+    no_aplica: boolean;
+  };
+  const filas = (tarifas ?? []) as unknown as FilaTarifa[];
+
+  const celda = (t: FilaTarifa | undefined): CeldaPrecio => {
+    if (!t) return { estado: "sin_tarifa", precio: null, precioPeloMaltratado: null };
+    if (t.no_aplica) return { estado: "no_aplica", precio: null, precioPeloMaltratado: null };
+    return {
+      estado: "disponible",
+      precio: Number(t.precio),
+      precioPeloMaltratado:
+        t.precio_pelo_maltratado === null ? null : Number(t.precio_pelo_maltratado),
+    };
+  };
+
+  const precios: CotizacionEstetica["precios"] = {};
+  const preciosPorTalla: CotizacionEstetica["preciosPorTalla"] = {};
+
+  for (const grupo of grupos ?? []) {
+    const suyas = filas.filter((t) => t.grupo_raza_id === grupo.id);
     if (grupo.depende_tamano) {
-      porTalla = {};
-      for (const t of suyas) {
-        if (t.tamano_id) porTalla[t.tamano_id] = Number(t.precio);
+      preciosPorTalla[grupo.id] = {};
+      for (const s of servicios) {
+        const porTalla: Record<string, CeldaPrecio> = {};
+        for (const talla of tamanos ?? []) {
+          porTalla[talla.id] = celda(
+            suyas.find((t) => t.servicio_id === s.id && t.tamano_id === talla.id)
+          );
+        }
+        preciosPorTalla[grupo.id][s.clave as string] = porTalla;
       }
-      if (Object.keys(porTalla).length === 0) porTalla = null;
+    } else {
+      precios[grupo.id] = {};
+      for (const s of servicios) {
+        precios[grupo.id][s.clave as string] = celda(suyas.find((t) => t.servicio_id === s.id));
+      }
     }
-
-    const precios = suyas.map((t) => Number(t.precio));
-    precioPorGrupo.set(grupo.id, {
-      desde: precios.length > 0 ? Math.min(...precios) : null,
-      porTalla,
-      esDesconocida: false,
-    });
   }
 
-  const sinTarifa: PrecioRaza = { desde: null, porTalla: null, esDesconocida: false };
-  const grupoDefecto = (grupos ?? []).find((g) => g.es_predeterminado);
+  const todos = filas.filter((t) => !t.no_aplica && t.precio !== null).map((t) => Number(t.precio));
 
-  const porRaza: Record<string, PrecioRaza> = {};
-  for (const raza of razas ?? []) {
-    const base = precioPorGrupo.get(raza.grupo_raza_id) ?? sinTarifa;
-    porRaza[raza.id] = { ...base, esDesconocida: Boolean(raza.es_desconocida) };
-  }
-
-  const todos = (tarifas ?? [])
-    .filter((t) => !t.no_aplica && t.precio !== null)
-    .map((t) => Number(t.precio));
+  // Qué tallas se le ofrecen al dueño, y la diferencia que importa:
+  //
+  //   no_aplica   -> el negocio no la ofrece. Se oculta: enseñar una
+  //                  opción que va a rebotar no ayuda a nadie.
+  //   sin_tarifa  -> a alguien se le olvidó capturar ese precio. NO se
+  //                  oculta: si desapareciera, el dueño dejaría de poder
+  //                  escoger el tamaño de su perro y nadie se enteraría
+  //                  del olvido — en la matriz un hueco sale alarmante,
+  //                  aquí desaparecería en silencio. Se muestra, y el
+  //                  panel de admin lo reporta.
+  const porTallaDefecto = preciosPorTalla[grupoPredeterminado.id]?.["estetica_estetico"] ?? {};
+  const tallas = (tamanos ?? [])
+    .map((t) => ({
+      id: t.id as string,
+      etiqueta: t.etiqueta as string,
+      estado: (porTallaDefecto[t.id]?.estado ?? "sin_tarifa") as EstadoCelda,
+    }))
+    .filter((t) => t.estado !== "no_aplica");
 
   return {
-    servicioNombre: servicio.nombre,
-    incluye: (servicio.incluye as string[] | null) ?? [],
+    servicios: servicios.map((s) => ({
+      clave: s.clave as string,
+      nombre: s.nombre as string,
+      incluye: (s.incluye as string[] | null) ?? [],
+    })),
+    precios,
+    preciosPorTalla,
+    grupoDeRaza: Object.fromEntries(
+      (razas ?? []).map((r) => [r.id as string, r.grupo_raza_id as string])
+    ),
+    grupoPredeterminado: grupoPredeterminado.id as string,
+    gruposPorTalla: (grupos ?? []).filter((g) => g.depende_tamano).map((g) => g.id as string),
+    razasDesconocidas: (razas ?? []).filter((r) => r.es_desconocida).map((r) => r.id as string),
     topeConocido: todos.length > 0 ? Math.max(...todos) : null,
-    porRaza,
-    // Una raza escrita a mano y fuera del catálogo cotiza igual que "no
-    // sé": no sabemos su pelo, y eso es lo que decide el precio.
-    predeterminado: {
-      ...(grupoDefecto ? (precioPorGrupo.get(grupoDefecto.id) ?? sinTarifa) : sinTarifa),
-      esDesconocida: true,
-    },
+    tallas,
   };
 }
 
 /**
- * El estimado que se pinta, dado lo que el dueño lleva contestado.
+ * Los tres servicios ya resueltos para un perro concreto.
  *
- * Devuelve el número y, sobre todo, qué tan firme es. Un estimado que no
- * dice cuánto puede moverse es peor que no darlo: la persona lo lee como
- * un precio y llega con ese billete en la mano.
+ * `firmeza` dice qué tan confiable es el número, y es la parte que más
+ * importa: un estimado que no dice cuánto puede moverse se lee como un
+ * precio, y la persona llega con ese billete en la mano.
  */
-export type Estimado = {
-  desde: number | null;
-  // 'afinado'  — el precio de su perro, con su talla ya escogida
-  // 'rango'    — depende de la talla y todavía no la sabemos
-  // 'incierto' — cotiza con el grupo por defecto ("no sé"/mestizo o fuera
-  //              del catálogo): puede subir bastante si tiene manto largo
-  // 'sin_dato' — no hay tarifa capturada para ese perro
-  firmeza: "afinado" | "rango" | "incierto" | "sin_dato";
+export type Firmeza = "afinado" | "rango" | "incierto" | "sin_dato";
+
+export type PrecioDeServicio = ServicioEstetica & CeldaPrecio;
+
+export type CotizacionDePerro = {
+  servicios: PrecioDeServicio[];
+  firmeza: Firmeza;
 };
 
-export function estimadoDeRaza(
+const SIN_TARIFA: CeldaPrecio = { estado: "sin_tarifa", precio: null, precioPeloMaltratado: null };
+
+export function cotizarPerro(
   cotizacion: CotizacionEstetica,
   razaId: string | null,
   razaEscrita: string,
   tamanoId: string
-): Estimado | null {
+): CotizacionDePerro | null {
   if (!razaEscrita.trim()) return null;
 
-  const precio = razaId ? cotizacion.porRaza[razaId] : cotizacion.predeterminado;
-  if (!precio) return null;
-  if (precio.desde === null) return { desde: null, firmeza: "sin_dato" };
+  // Sin raza del catálogo el perro cae al grupo por defecto: lo mismo que
+  // hace la vista perro_grupo_raza del lado de la base.
+  const grupoId =
+    (razaId ? cotizacion.grupoDeRaza[razaId] : null) ?? cotizacion.grupoPredeterminado;
+  const desconocida = !razaId || cotizacion.razasDesconocidas.includes(razaId);
+  const porTalla = cotizacion.gruposPorTalla.includes(grupoId);
 
-  if (precio.esDesconocida) {
-    // Aun con talla escogida el estimado sigue siendo incierto: lo que no
-    // sabemos de este perro no es su tamaño, es su pelo.
-    const conTalla = precio.porTalla?.[tamanoId];
-    return { desde: conTalla ?? precio.desde, firmeza: "incierto" };
-  }
+  const servicios: PrecioDeServicio[] = cotizacion.servicios.map((s) => {
+    if (!porTalla) {
+      return { ...s, ...(cotizacion.precios[grupoId]?.[s.clave] ?? SIN_TARIFA) };
+    }
+    const mapa = cotizacion.preciosPorTalla[grupoId]?.[s.clave] ?? {};
+    if (tamanoId) return { ...s, ...(mapa[tamanoId] ?? SIN_TARIFA) };
 
-  if (precio.porTalla) {
-    const conTalla = precio.porTalla[tamanoId];
-    return conTalla !== undefined
-      ? { desde: conTalla, firmeza: "afinado" }
-      : { desde: precio.desde, firmeza: "rango" };
-  }
+    // Sin tamaño escogido se enseña el más barato del grupo, que es
+    // literalmente el "desde".
+    const disponibles = Object.values(mapa)
+      .filter((c) => c.estado === "disponible")
+      .sort((a, b) => (a.precio ?? 0) - (b.precio ?? 0));
+    if (disponibles.length > 0) return { ...s, ...disponibles[0] };
+    // Si ninguna talla tiene precio, el estado que manda es el que
+    // comparten: no_aplica si el negocio no lo ofrece, hueco si falta.
+    const algunNoAplica = Object.values(mapa).some((c) => c.estado === "no_aplica");
+    return {
+      ...s,
+      ...(algunNoAplica
+        ? { estado: "no_aplica" as const, precio: null, precioPeloMaltratado: null }
+        : SIN_TARIFA),
+    };
+  });
 
-  return { desde: precio.desde, firmeza: "afinado" };
+  const hayAlguno = servicios.some((s) => s.estado === "disponible");
+
+  let firmeza: Firmeza;
+  if (!hayAlguno) firmeza = "sin_dato";
+  else if (desconocida) firmeza = "incierto";
+  else if (porTalla && !tamanoId) firmeza = "rango";
+  else firmeza = "afinado";
+
+  return { servicios, firmeza };
 }

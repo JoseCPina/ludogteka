@@ -12,7 +12,13 @@ import { crearCita } from "../agenda-actions";
 
 type Cliente = { id: string; nombre: string; telefono: string };
 type Perro = { id: string; cliente_id: string; nombre: string };
-type Servicio = { id: string; nombre: string };
+type Servicio = {
+  id: string;
+  nombre: string;
+  // Si este servicio tiene capturado un precio alternativo para pelo
+  // maltratado en algún grupo. Lo resuelve la pantalla, no el formulario.
+  tiene_precio_maltratado?: boolean;
+};
 type Empleado = { id: string; nombre_completo: string | null };
 type EstanciaEnCurso = { id: string; perroId: string; servicioNombre: string };
 
@@ -49,6 +55,7 @@ export function AgendarForm({
   const [empleadoId, setEmpleadoId] = useState(rolActual === "estetica" ? userIdActual : empleados[0]?.id ?? "");
   const [fechaHora, setFechaHora] = useState(`${hoyNegocio()}T10:00`);
   const [estanciaId, setEstanciaId] = useState("");
+  const [peloMaltratado, setPeloMaltratado] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,6 +82,7 @@ export function AgendarForm({
     const res = await crearCita({
       perroId,
       servicioId,
+      peloMaltratado,
       empleadoId,
       inicio: localAUtc(fechaHora),
       estanciaId: estanciaId || null,
@@ -189,6 +197,26 @@ export function AgendarForm({
               ))}
             </Select>
           </div>
+
+          {/* Solo se ofrece en el servicio que de verdad tiene precio
+              alternativo. En los demás la casilla no haría nada y sería
+              una pregunta de más en el mostrador. */}
+          {servicios.find((s) => s.id === servicioId)?.tiene_precio_maltratado && (
+            <label className="flex items-start gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3 text-n-900">
+              <input
+                type="checkbox"
+                checked={peloMaltratado}
+                onChange={(e) => setPeloMaltratado(e.target.checked)}
+                className="mt-1 h-4 w-4"
+              />
+              <span>
+                Llegó con el pelo maltratado
+                <span className="block text-sm text-n-600">
+                  Cobra el precio alternativo de este mismo baño, no un cargo aparte.
+                </span>
+              </span>
+            </label>
+          )}
 
           <Field
             label="Fecha y hora"
