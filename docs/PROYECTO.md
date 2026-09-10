@@ -766,9 +766,123 @@ Se revisó el lado del cliente buscando la misma clase de error con `undefined`/
 - **Igualdad laxa**: un solo `!=` en todo `src/`, y es `distanciaClienteKm != null`, el idioma correcto para "ni null ni undefined".
 
 
+## Fase 14 — completa (precios de estética por grupo de raza)
+
+El cartel impreso del negocio cobra el baño por GRUPO DE RAZA, no por
+tamaño. Un shih tzu chico y un chihuahua chico pagan distinto, y la
+matriz de tarifas de Fase 3 (tamaño × pelaje) no tenía cómo decirlo.
+
+**Dos tablas, no una.** `grupos_raza` son los siete cajones de precio del
+cartel; `razas` es el catálogo que el cliente busca (72 entradas con
+alias). El dueño escoge su RAZA y **nunca ve el grupo**: "poodle" es algo
+que sabe de su perro, "grupo 1 de precio" no. La vista
+`perro_grupo_raza` deriva el grupo, y un perro sin raza del catálogo cae
+al predeterminado (pelo corto) diciendo que fue por defecto.
+
+**Una dimensión más, no un sistema paralelo.** `tarifas.grupo_raza_id`
+entra a la misma tabla, el mismo `resolver_precio`, el mismo snapshot al
+reservar y el mismo candado de "sin tarifa capturada no se cobra". El
+sexto parámetro de `resolver_precio` va al final y con default, así que
+las llamadas de cinco argumentos de estancias y cargos siguen intactas —
+y la versión de cinco se eliminó para que no quedara una función zombi
+cotizando contra las tarifas sin grupo.
+
+**El tamaño lo manda el GRUPO, no el servicio.** Solo el grupo de pelo
+corto se cobra por talla; los otros seis tienen un precio por grupo.
+`validar_cita_estetica` pasa o anula el tamaño según
+`grupos_raza.depende_tamano`, no según `servicios.depende_tamano` —
+marcar el servicio obligaría a capturar precio por talla en los siete.
+
+**Pelo maltratado: precio alternativo, no recargo.** Se capturó primero
+como un cargo de $450 sumado al baño; el dueño lo corrigió: en su cartel
+$450 es el precio TOTAL cuando el perro llega enredado. Como cargo, la
+app habría cobrado $840. Quedó como una variante más del servicio
+(`estetica_pelo_maltratado`), al lado de estético, rapado y exprés, que
+es como el cartel lo lista. El cargo se dio de baja lógica.
+
+**Huecos deliberados vs. olvidos.** La talla gigante de pelo corto se
+queda SIN tarifa a propósito, por instrucción del dueño ("prefiero que
+salga alarmante a inventar un precio"). Lo que el negocio no ofrece va
+como `no_aplica`, que la matriz pinta distinto. La lista de servicios
+cuenta los huecos reales por servicio y liga a sus tarifas: un servicio a
+medio capturar ya no se descubre con el cliente enfrente.
+
+`src/lib/tarifas/matriz.ts` calcula la forma de la matriz una sola vez
+para las dos pantallas — si cada una derivara las combinaciones por su
+cuenta, el aviso diría "2 sin tarifa" y la matriz mostraría tres.
+
+**Error propio, corregido:** al reconstruir el EXCLUDE de traslape copié
+la restricción de la migración de CREACIÓN en vez de la vigente, y con
+ella regresó el desbordamiento de `int4range(..., 2147483647, '[]')` que
+Fase 3 ya había arreglado ("integer out of range"). Diagnosticado
+reproduciéndolo dentro de una transacción revertida contra producción.
+
+## Fase 15 — completa (dos flujos de alta por link, con contrato)
+
+El link de alta era uno y pedía el expediente completo. Quien va a dejar
+a su perro a dormir contesta eso; quien viene dos horas a bañarlo cierra
+la pestaña en la pregunta del veterinario.
+
+**`invitaciones_cliente.tipo`** parte el flujo en dos:
+`guarderia_hotel` (expediente completo) y `estetica` (lo básico más el
+precio estimado). Y `cliente_id` pasa a tener dos momentos: nulo al
+crearse y lleno al usarse es un alta nueva; lleno desde el principio es
+un **complemento** de un expediente que ya existe. Eso obligó a cambiar
+el check original `(usada_at is null) = (cliente_id is null)`, que
+prohibía exactamente la forma de un complemento; lo que sigue siendo
+cierto es que una invitación usada siempre dice qué expediente salió de
+ella.
+
+**El contrato del flujo se genera en la misma transacción** que crea el
+expediente y se firma antes de que el dueño salga de la pantalla, con la
+sesión ya abierta (el bloque de auditoría del PDF lo sella el servidor).
+Cuál le toca sale de `tipos_contrato.categorias_servicio` — el concepto
+de Fase 11 — vía `tipos_contrato_de_alta()`, no de una lista nueva.
+
+**`completar_expediente_cliente` SOLO RELLENA HUECOS.** Es un formulario
+público cuya única llave es un link que pudo reenviarse en un chat
+familiar: que no pueda sobreescribir un dato ya capturado es una regla de
+integridad, no una comodidad. La única excepción es la raza, donde sí
+entra la elección del dueño sobre un texto escrito a mano (es lo que hace
+que su perro deje de cotizar con el grupo por defecto) — y ahí el texto
+sigue al id, para que la ficha no diga una cosa y el precio salga de
+otra. Además pide la contraseña del dueño: el link dice de qué expediente
+hablamos, no abre el de nadie por sí solo.
+
+**El precio estimado avisa según qué tan firme es.** `afinado` (el precio
+de su raza), `rango` (falta escoger tamaño), `sin_dato` (no hay tarifa
+capturada) e `incierto`. El caso `incierto` es el que importa: quien
+contesta "no sé / mestizo" cotiza como pelo corto, el grupo más barato, y
+si su perro tiene manto largo el precio real puede ser el doble. Ahí el
+aviso se pone naranja, dice que el número puede quedarse corto y hasta
+cuánto puede llegar, con el tope real del cartel.
+
+**Bug encontrado probándolo en el navegador, no leyendo el código:** el
+aviso fuerte salía también para un labrador. La condición estaba escrita
+sobre `grupos_raza.es_predeterminado`, y el grupo predeterminado es el de
+pelo corto — un grupo real, con precios reales, donde viven el labrador y
+el bóxer. "El dueño no sabe la raza" y "su raza cae en el grupo que sirve
+de destino por defecto" son cosas distintas: se separaron con
+`razas.es_desconocida`.
+
+**`servicios.incluye`** guarda lo que trae cada servicio, un renglón por
+concepto, para que el precio no llegue solo. Se edita desde la pantalla
+del servicio, no está incrustado en el código.
+
+**Constantes compartidas entre servidor y cliente:** `CAMPOS_BASE` y
+`CAMPOS_EXPEDIENTE` viven en `src/lib/alta/campos-perro.ts` y no dentro
+del componente. Importar una constante desde un módulo `"use client"` no
+devuelve el arreglo sino una referencia al cliente, y el componente de
+servidor truena al recorrerla ("CAMPOS_BASE is not iterable").
+
+Botón de **"Nuevo cliente"** dentro de Guardería, Hotel y Estética, con
+las dos salidas (mandar link / capturarlo yo) y el tipo de link decidido
+por el módulo.
+
+
 ## Estado actual
 
-Fase 0, Fase 1, Fase 2, Fase 3 y Fase 4 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 5 (POS) construida en sus cuatro bloques (cobros/devoluciones, bonos, descuentos, caja/arqueo) más la decisión de Bloque E, pendiente de que el negocio termine de probarla para cerrarla formalmente. Fase 6 (contratos) completa en sus tres bloques (plantillas y versionado, generación/firma/papel, visibilidad operativa y vigencia). Fase 7 (inventario) completa en sus tres bloques (catálogo y existencias; movimientos: entradas, salidas, mermas, ajustes; consumo automático por receta al finalizar un servicio de estética, con el enlace a la cita ya listo para que Fase 8 calcule el costo real por servicio). Fase 8 (reportes) completa en sus tres bloques (financiero por periodo con ingreso reconocido vs. neto de caja; costos y margen de estética; operativo con ocupación/servicios del periodo y una fotografía del estado actual de cumplimiento sanitario, contratos e inventario). Fase 9 (bitácora diaria y medicamentos) completa en sus dos bloques: Bloque A (fotos, notas e incidencias, con aviso por WhatsApp vía enlace `wa.me`) y Bloque B (régimen y registro de dosis administradas, referenciando `perro_medicamentos.id` tal como quedó planteado desde Fase 2). Con esto quedan completas las diez fases (0 a 9) del roadmap original. Fase 10 (recolección a domicilio, cotizador por distancia con Google Maps) completa — reutiliza tarifas/`resolver_precio`/`cargos_aplicados` de Fase 3/4 sin mecanismo de cobro nuevo; pendiente de que el negocio capture direcciones reales (base y Ludogteka), tarifas por km, y la llave de Google Maps antes de salir de modo simulación. Fase 11 (varias plantillas de contrato a la vez, cada una con nombre, versionado y aplicabilidad por servicio propios) completa — el estado de contrato dejó de ser un sí/no por perro y pasó a ser por tipo, y los avisos dicen cuál falta. Fase 12 (Guardería y Hotel como módulos separados en la navegación, Agenda renombrada a Estética) completa, sin migraciones: `estancias` sigue unificada y la ocupación que muestran los dos módulos es la de toda la casa. Fase 13 (alta de clientes por link: recepción manda una invitación por WhatsApp y el dueño captura sus datos y los de sus perros; el expediente nace ligado a su cuenta sin pasar por vinculación) completa.
+Fase 0, Fase 1, Fase 2, Fase 3 y Fase 4 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 5 (POS) construida en sus cuatro bloques (cobros/devoluciones, bonos, descuentos, caja/arqueo) más la decisión de Bloque E, pendiente de que el negocio termine de probarla para cerrarla formalmente. Fase 6 (contratos) completa en sus tres bloques (plantillas y versionado, generación/firma/papel, visibilidad operativa y vigencia). Fase 7 (inventario) completa en sus tres bloques (catálogo y existencias; movimientos: entradas, salidas, mermas, ajustes; consumo automático por receta al finalizar un servicio de estética, con el enlace a la cita ya listo para que Fase 8 calcule el costo real por servicio). Fase 8 (reportes) completa en sus tres bloques (financiero por periodo con ingreso reconocido vs. neto de caja; costos y margen de estética; operativo con ocupación/servicios del periodo y una fotografía del estado actual de cumplimiento sanitario, contratos e inventario). Fase 9 (bitácora diaria y medicamentos) completa en sus dos bloques: Bloque A (fotos, notas e incidencias, con aviso por WhatsApp vía enlace `wa.me`) y Bloque B (régimen y registro de dosis administradas, referenciando `perro_medicamentos.id` tal como quedó planteado desde Fase 2). Con esto quedan completas las diez fases (0 a 9) del roadmap original. Fase 10 (recolección a domicilio, cotizador por distancia con Google Maps) completa — reutiliza tarifas/`resolver_precio`/`cargos_aplicados` de Fase 3/4 sin mecanismo de cobro nuevo; pendiente de que el negocio capture direcciones reales (base y Ludogteka), tarifas por km, y la llave de Google Maps antes de salir de modo simulación. Fase 11 (varias plantillas de contrato a la vez, cada una con nombre, versionado y aplicabilidad por servicio propios) completa — el estado de contrato dejó de ser un sí/no por perro y pasó a ser por tipo, y los avisos dicen cuál falta. Fase 12 (Guardería y Hotel como módulos separados en la navegación, Agenda renombrada a Estética) completa, sin migraciones: `estancias` sigue unificada y la ocupación que muestran los dos módulos es la de toda la casa. Fase 13 (alta de clientes por link: recepción manda una invitación por WhatsApp y el dueño captura sus datos y los de sus perros; el expediente nace ligado a su cuenta sin pasar por vinculación) completa. Fase 14 (precios de estética por grupo de raza: catálogo de razas buscable, el grupo se deriva y el cliente nunca lo ve, y `tarifas` gana la dimensión de grupo sin sistema de precios paralelo) completa. Fase 15 (dos flujos de alta por link —guardería/hotel y estética—, cada uno con su contrato firmado dentro del alta, y un link de complemento que solo pide lo que falta) completa. **Pendiente del negocio**: publicar el contrato de estética desde la pantalla de Contratos; hoy producción solo tiene “Contrato general” y “Contrato GUARDERÍA”, así que un alta de estética genera únicamente el general.
 
 ## Invite server-side de staff
 
