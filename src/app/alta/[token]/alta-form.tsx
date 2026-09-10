@@ -8,7 +8,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
-import { completarAlta, subirFotoAlta } from "../acciones";
+import { completarAlta, subirFotoAlta, calcularDistanciaAlta } from "../acciones";
 import { perroVacio, type PerroAlta } from "../tipos";
 
 type Catalogo = { id: string; etiqueta: string };
@@ -196,6 +196,7 @@ export function AltaForm({
   const [paso, setPaso] = useState(0);
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [direccion, setDireccion] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmacion, setConfirmacion] = useState("");
@@ -245,6 +246,7 @@ export function AltaForm({
     const res = await completarAlta(token, {
       nombre,
       telefono,
+      direccion,
       email,
       password,
       perros,
@@ -256,8 +258,15 @@ export function AltaForm({
       return;
     }
 
-    // Las fotos van después del alta y no la bloquean: si una falla, el
-    // expediente ya quedó bien y recepción puede subirla luego.
+    // La distancia y las fotos van después del alta y no la bloquean: si
+    // fallan, el expediente ya quedó bien. La distancia ni siquiera se le
+    // reporta al dueño — no hay nada que él pueda hacer si Google no
+    // contesta, y recepción la ajusta a mano desde la ficha.
+    if (direccion.trim()) {
+      setAviso("Calculando la distancia a tu domicilio…");
+      await calcularDistanciaAlta(token);
+    }
+
     setAviso("Guardando tus fotos…");
     const creados = res.perros ?? [];
     let fallaronFotos = 0;
@@ -321,6 +330,13 @@ export function AltaForm({
             value={telefono}
             onChange={(e) => setTelefono(e.target.value)}
             placeholder="444 123 4567"
+          />
+          <Field
+            label="Tu dirección (opcional)"
+            value={direccion}
+            onChange={(e) => setDireccion(e.target.value)}
+            placeholder="Calle, número, colonia y ciudad"
+            ayuda="Solo si te interesa que pasemos por tu perro a domicilio: con ella calculamos la distancia para cotizarlo. La puedes dar después."
           />
           <div className="flex justify-end">
             <Button type="button" onClick={siguiente}>

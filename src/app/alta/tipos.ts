@@ -20,6 +20,7 @@ export type PerroAlta = {
 export type DatosAlta = {
   nombre: string;
   telefono: string;
+  direccion: string;
   email: string;
   password: string;
   perros: PerroAlta[];

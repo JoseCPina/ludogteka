@@ -11,7 +11,7 @@ export default function NuevoClientePage() {
           otra fase.
         </p>
       </div>
-      <ClienteForm action={crearCliente} textoBoton="Crear cliente" />
+      <ClienteForm pedirDireccion action={crearCliente} textoBoton="Crear cliente" />
     </div>
   );
 }

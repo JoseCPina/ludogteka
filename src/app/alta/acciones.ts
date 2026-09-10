@@ -2,6 +2,7 @@
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { normalizarTelefono } from "@/lib/telefono";
+import { geocodificarYCalcularDistancia } from "@/lib/google-maps/distancia-cliente";
 import type { DatosAlta, PerroCreado, ResultadoAlta } from "./tipos";
 
 const BUCKET = "perros-archivos";
@@ -80,7 +81,7 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
   const { data: resultado, error: errorAlta } = await admin.rpc("completar_alta_cliente", {
     p_token: token,
     p_user_id: userId,
-    p_cliente: { nombre, telefono, email },
+    p_cliente: { nombre, telefono, email, direccion: datos.direccion.trim() },
     p_perros: datos.perros.map((p) => ({
       nombre: p.nombre.trim(),
       raza: p.raza,
@@ -113,6 +114,42 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
     clienteId: salida?.cliente_id,
     perros: salida?.perros ?? [],
   };
+}
+
+// La distancia se calcula justo después del alta, no dentro: geocodificar
+// y medir la ruta son llamadas HTTP a Google, y meterlas en la transacción
+// que crea el expediente haría que un timeout de un servicio ajeno tumbe
+// un alta completa. Aquí, si falla, el expediente ya quedó bien: la
+// dirección está guardada y recepción ajusta la distancia a mano desde la
+// ficha. Por eso ni siquiera devuelve error a la pantalla del dueño — no
+// hay nada que él pueda hacer al respecto.
+//
+// Autorización por el mismo token, acotada al expediente que ESA
+// invitación creó: con el token de otra persona no se le puede recalcular
+// (ni cobrar cuota de Google) sobre un cliente ajeno.
+export async function calcularDistanciaAlta(token: string): Promise<{ error: string | null }> {
+  const admin = createSupabaseAdminClient();
+
+  const { data: invitacion } = await admin
+    .from("invitaciones_cliente")
+    .select("cliente_id")
+    .eq("token", token)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!invitacion?.cliente_id) return { error: "Este link no tiene un alta completada." };
+
+  const { data: cliente } = await admin
+    .from("clientes")
+    .select("direccion")
+    .eq("id", invitacion.cliente_id)
+    .maybeSingle();
+
+  const direccion = (cliente?.direccion as string | null) ?? "";
+  if (!direccion.trim()) return { error: null };
+
+  const resultado = await geocodificarYCalcularDistancia(admin, invitacion.cliente_id, direccion);
+  return { error: resultado.error };
 }
 
 // La foto va aparte del alta y después: pesa, y si falla la subida no
