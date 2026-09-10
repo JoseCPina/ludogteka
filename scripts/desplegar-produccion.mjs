@@ -113,6 +113,18 @@ function supabase(...argumentos) {
 // columna de estado por stderr. El renglón bueno es el que trae las dos
 // cosas; quedarse con la primera línea que tenga una URL daba siempre
 // "Building", aunque el deploy llevara rato Ready.
+//
+// Si esto empieza a decir que la sesión caducó y a pedir login por
+// dispositivo, revisa PRIMERO dónde guarda la credencial la versión del
+// CLI que bajó npx, antes de gastar un login: la 58 la dejaba en
+// "%APPDATA%/xdg.data/com.vercel.cli/auth.json" y la 59 la busca en
+// "%APPDATA%/com.vercel.cli/Data/auth.json". Cuando npx saltó de una a
+// otra, el CLI se declaró deslogueado teniendo la credencial completa
+// (con su refreshToken, que se renueva solo) una carpeta más allá;
+// copiar el auth.json a la carpeta nueva lo dejó como estaba. El
+// currentTeam vive en el config.json de al lado y también hay que
+// llevárselo, o `vercel ls ludogteka` busca el proyecto en la cuenta
+// personal en vez de en el equipo.
 function ultimoDeploy() {
   // Comando completo en una sola cadena: con shell y arreglo de
   // argumentos, node avisa (DEP0190) que los concatena sin escapar. Aquí
