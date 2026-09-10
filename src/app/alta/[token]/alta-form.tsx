@@ -4,22 +4,23 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Field } from "@/components/ui/field";
-import { Select } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
-import { SelectorRaza, type RazaOpcion } from "@/components/selector-raza";
+import { FirmarContrato } from "@/components/firmar-contrato";
+import type { RazaOpcion } from "@/components/selector-raza";
+import type { CotizacionEstetica } from "@/lib/estetica/cotizacion";
+import { TIPOS_LINK_ALTA, type TipoLinkAlta } from "@/lib/alta/tipos-link";
 import { completarAlta, subirFotoAlta, calcularDistanciaAlta } from "../acciones";
-import { perroVacio, type PerroAlta } from "../tipos";
+import { perroVacio, type ContratoPendiente, type PerroAlta } from "../tipos";
+import { camposDeTipo } from "@/lib/alta/campos-perro";
+import { TarjetaPerro, type Catalogo } from "./tarjeta-perro";
 
-type Catalogo = { id: string; etiqueta: string };
+const PASOS = ["Tus datos", "Tus perros", "Tu cuenta", "Tu contrato"];
 
-const PASOS = ["Tus datos", "Tus perros", "Tu cuenta"];
-
-function Progreso({ paso }: { paso: number }) {
+function Progreso({ paso, total }: { paso: number; total: number }) {
   return (
     <ol className="flex gap-2" aria-label="Progreso del alta">
-      {PASOS.map((etiqueta, i) => (
+      {PASOS.slice(0, total).map((etiqueta, i) => (
         <li key={etiqueta} className="flex flex-1 flex-col gap-1">
           <span
             className={`h-1.5 rounded-full ${i <= paso ? "bg-azul" : "bg-n-200"}`}
@@ -34,172 +35,25 @@ function Progreso({ paso }: { paso: number }) {
   );
 }
 
-function TarjetaPerro({
-  perro,
-  indice,
-  total,
-  razas,
-  tamanos,
-  pelajes,
-  foto,
-  onCambio,
-  onFoto,
-  onQuitar,
-}: {
-  perro: PerroAlta;
-  indice: number;
-  total: number;
-  razas: RazaOpcion[];
-  tamanos: Catalogo[];
-  pelajes: Catalogo[];
-  foto: File | null;
-  onCambio: (cambios: Partial<PerroAlta>) => void;
-  onFoto: (archivo: File | null) => void;
-  onQuitar: () => void;
-}) {
-  return (
-    <div className="flex flex-col gap-4 rounded-lg border-[1.5px] border-n-200 bg-white p-4">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="font-bold text-n-900">
-          {perro.nombre.trim() || `Perro ${indice + 1}`}
-        </h3>
-        {total > 1 && (
-          <Button type="button" variante="secundario" onClick={onQuitar}>
-            Quitar
-          </Button>
-        )}
-      </div>
-
-      <Field
-        label="¿Cómo se llama?"
-        value={perro.nombre}
-        onChange={(e) => onCambio({ nombre: e.target.value })}
-        required
-      />
-      <SelectorRaza
-        razas={razas}
-        label="¿De qué raza es?"
-        valorId={perro.raza_id}
-        valorTexto={perro.raza}
-        onCambio={(v) => onCambio({ raza: v.raza, raza_id: v.raza_id })}
-        ayuda="Si no sabes o es mestizo, escribe «mestizo» y escógelo de la lista."
-      />
-
-      <div className="grid grid-cols-2 gap-3">
-        <Select label="Sexo" value={perro.sexo} onChange={(e) => onCambio({ sexo: e.target.value })}>
-          <option value="">Prefiero no decir</option>
-          <option value="macho">Macho</option>
-          <option value="hembra">Hembra</option>
-        </Select>
-        <Field
-          label="Fecha de nacimiento"
-          type="date"
-          value={perro.fecha_nacimiento}
-          onChange={(e) => onCambio({ fecha_nacimiento: e.target.value })}
-          ayuda="Aproximada está bien."
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <Select
-          label="Tamaño"
-          value={perro.tamano_id}
-          onChange={(e) => onCambio({ tamano_id: e.target.value })}
-        >
-          <option value="">No sé</option>
-          {tamanos.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.etiqueta}
-            </option>
-          ))}
-        </Select>
-        <Select
-          label="Pelaje"
-          value={perro.pelaje_id}
-          onChange={(e) => onCambio({ pelaje_id: e.target.value })}
-        >
-          <option value="">No sé</option>
-          {pelajes.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.etiqueta}
-            </option>
-          ))}
-        </Select>
-      </div>
-
-      <Textarea
-        label="Alimentación"
-        value={perro.alimentacion_notas}
-        onChange={(e) => onCambio({ alimentacion_notas: e.target.value })}
-        placeholder="Qué come, cuánto y a qué horas. Si trae su propia comida, dínoslo aquí."
-        rows={3}
-      />
-
-      <fieldset className="flex flex-col gap-3 rounded-md border border-n-200 p-3">
-        <legend className="px-1 text-sm font-bold text-n-700">Contacto de emergencia</legend>
-        <p className="text-sm text-n-600">
-          A quién le hablamos si no te localizamos a ti.
-        </p>
-        <Field
-          label="Nombre"
-          value={perro.contacto_emergencia_nombre}
-          onChange={(e) => onCambio({ contacto_emergencia_nombre: e.target.value })}
-        />
-        <Field
-          label="Teléfono"
-          inputMode="tel"
-          value={perro.contacto_emergencia_telefono}
-          onChange={(e) => onCambio({ contacto_emergencia_telefono: e.target.value })}
-        />
-      </fieldset>
-
-      <fieldset className="flex flex-col gap-3 rounded-md border border-n-200 p-3">
-        <legend className="px-1 text-sm font-bold text-n-700">Su veterinario</legend>
-        <Field
-          label="Nombre del veterinario"
-          value={perro.veterinario_nombre}
-          onChange={(e) => onCambio({ veterinario_nombre: e.target.value })}
-        />
-        <Field
-          label="Clínica"
-          value={perro.veterinario_clinica}
-          onChange={(e) => onCambio({ veterinario_clinica: e.target.value })}
-        />
-        <Field
-          label="Teléfono"
-          inputMode="tel"
-          value={perro.veterinario_telefono}
-          onChange={(e) => onCambio({ veterinario_telefono: e.target.value })}
-        />
-      </fieldset>
-
-      <div>
-        <label className="mb-1.5 block text-sm font-semibold text-n-800">Foto (opcional)</label>
-        <input
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={(e) => onFoto(e.target.files?.[0] ?? null)}
-          className="w-full rounded-md border-[1.5px] border-n-400 bg-white p-2.5 text-sm text-n-700"
-        />
-        {foto && <p className="mt-1 text-sm text-verde-oscuro">Foto lista: {foto.name}</p>}
-      </div>
-    </div>
-  );
-}
-
 export function AltaForm({
   token,
+  tipo,
   razas,
   tamanos,
   pelajes,
+  cotizacion,
 }: {
   token: string;
+  tipo: TipoLinkAlta;
   razas: RazaOpcion[];
   tamanos: Catalogo[];
   pelajes: Catalogo[];
+  cotizacion: CotizacionEstetica | null;
 }) {
   const router = useRouter();
+  const definicion = TIPOS_LINK_ALTA[tipo];
+  const campos = camposDeTipo(definicion.expedienteCompleto);
+
   const [paso, setPaso] = useState(0);
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -212,6 +66,13 @@ export function AltaForm({
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+
+  // Los contratos llegan del alta ya generados, y el paso de firma solo
+  // existe si hay alguno: si el negocio todavía no publica el contrato de
+  // este flujo, la barra de progreso enseña tres pasos y no cuatro, en vez
+  // de prometer una pantalla que no va a aparecer.
+  const [contratos, setContratos] = useState<ContratoPendiente[]>([]);
+  const [firmados, setFirmados] = useState<Set<string>>(new Set());
 
   function actualizarPerro(i: number, cambios: Partial<PerroAlta>) {
     setPerros((prev) => prev.map((p, j) => (i === j ? { ...p, ...cambios } : p)));
@@ -231,7 +92,7 @@ export function AltaForm({
     setError(null);
     if (paso === 0) {
       if (!nombre.trim()) return setError("Escribe tu nombre.");
-      if (telefono.replace(/\D/g, "").length !== 10) {
+      if (telefono.replace(/[^0-9]/g, "").length !== 10) {
         return setError("El teléfono debe tener 10 dígitos.");
       }
     }
@@ -269,7 +130,7 @@ export function AltaForm({
     // perros existen y la cuenta existe. Nada de lo que sigue puede dejar
     // al dueño mirando un botón que no avanza — que es justo lo que
     // pasaba: si cualquiera de estos pasos lanzaba, no había try/catch,
-    // el `setEnviando(false)` nunca corría y la pantalla se quedaba en
+    // el setEnviando(false) nunca corría y la pantalla se quedaba en
     // "Guardando tus fotos…" sin decir nada, con el alta ya completada
     // del otro lado.
     let fallaronFotos = 0;
@@ -297,7 +158,7 @@ export function AltaForm({
         if (resFoto.error) fallaronFotos += 1;
       }
 
-      setAviso("Entrando a tu portal…");
+      setAviso("Abriendo tu sesión…");
       const supabase = createSupabaseBrowserClient();
       const { error: errorSesion } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
@@ -311,14 +172,7 @@ export function AltaForm({
       sesionAbierta = false;
     } finally {
       setEnviando(false);
-    }
-
-    if (!sesionAbierta) {
       setAviso(null);
-      setError(
-        "¡Tu alta quedó lista! Solo no pudimos abrirte la sesión automáticamente: entra con tu correo y tu contraseña."
-      );
-      return;
     }
 
     if (fallaronFotos > 0) {
@@ -327,13 +181,32 @@ export function AltaForm({
       console.warn(`${fallaronFotos} foto(s) no se pudieron subir`);
     }
 
-    router.push("/portal");
-    router.refresh();
+    if (!sesionAbierta) {
+      setError(
+        "¡Tu alta quedó lista! Solo no pudimos abrirte la sesión automáticamente: entra con tu correo y tu contraseña."
+      );
+      return;
+    }
+
+    // La firma necesita la sesión abierta: el PDF lleva quién firmó,
+    // cuándo y desde qué IP, y eso lo sella el servidor con la sesión
+    // real, no con lo que la pantalla diga de sí misma.
+    const pendientes = res.contratos ?? [];
+    if (pendientes.length === 0) {
+      router.push("/portal");
+      router.refresh();
+      return;
+    }
+    setContratos(pendientes);
+    setPaso(3);
   }
+
+  const totalPasos = contratos.length > 0 ? 4 : 3;
+  const faltanFirmas = contratos.filter((c) => !firmados.has(c.id));
 
   return (
     <div className="flex flex-col gap-6">
-      <Progreso paso={paso} />
+      <Progreso paso={paso} total={totalPasos} />
 
       {error && (
         <Alert variante="error" titulo="Revisa esto">
@@ -381,15 +254,16 @@ export function AltaForm({
             <TarjetaPerro
               key={i}
               perro={perro}
-              indice={i}
-              total={perros.length}
+              titulo={perro.nombre.trim() || `Perro ${i + 1}`}
+              campos={campos}
               razas={razas}
               tamanos={tamanos}
               pelajes={pelajes}
+              cotizacion={cotizacion}
               foto={fotos[i] ?? null}
               onCambio={(cambios) => actualizarPerro(i, cambios)}
               onFoto={(archivo) => setFotos((prev) => prev.map((f, j) => (i === j ? archivo : f)))}
-              onQuitar={() => quitarPerro(i)}
+              onQuitar={perros.length > 1 ? () => quitarPerro(i) : null}
             />
           ))}
 
@@ -419,27 +293,25 @@ export function AltaForm({
           <Field
             label="Tu correo"
             type="email"
-            autoComplete="email"
+            inputMode="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
           <Field
-            label="Contraseña"
+            label="Tu contraseña"
             type="password"
-            autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             ayuda="Al menos 6 caracteres."
           />
           <Field
-            label="Repite la contraseña"
+            label="Repite tu contraseña"
             type="password"
-            autoComplete="new-password"
             value={confirmacion}
             onChange={(e) => setConfirmacion(e.target.value)}
           />
 
-          {aviso && <p className="text-sm font-semibold text-azul">{aviso}</p>}
+          {aviso && <Alert variante="advertencia" titulo={aviso} />}
 
           <div className="flex justify-between">
             <Button
@@ -451,8 +323,47 @@ export function AltaForm({
               Atrás
             </Button>
             <Button type="button" disabled={enviando} onClick={enviar}>
-              {enviando ? "Creando tu cuenta…" : "Terminar mi alta"}
+              {enviando ? "Guardando…" : "Terminar mi alta"}
             </Button>
+          </div>
+        </div>
+      )}
+
+      {paso === 3 && (
+        <div className="flex flex-col gap-4">
+          <Alert variante="exito" titulo="Tu alta ya quedó">
+            Falta lo último: firmar {contratos.length === 1 ? "el contrato" : "los contratos"} de{" "}
+            {definicion.etiqueta.toLowerCase()}. Puedes leerlo completo antes de firmar.
+          </Alert>
+
+          {contratos.map((contrato) => (
+            <FirmarContrato
+              key={contrato.id}
+              contratoId={contrato.id}
+              tipoNombre={contrato.tipo_nombre}
+              subtitulo={contrato.perro_nombre}
+              estado={firmados.has(contrato.id) ? "firmado_digital" : "pendiente_firma"}
+              storagePath={null}
+              onFirmado={() => setFirmados((prev) => new Set(prev).add(contrato.id))}
+            />
+          ))}
+
+          <div className="flex flex-col gap-2">
+            <Button
+              type="button"
+              onClick={() => {
+                router.push("/portal");
+                router.refresh();
+              }}
+            >
+              {faltanFirmas.length === 0 ? "Entrar a mi portal" : "Entrar y firmar después"}
+            </Button>
+            {faltanFirmas.length > 0 && (
+              <p className="text-sm text-n-600">
+                Si prefieres leerlo con calma, entra a tu portal: el contrato te va a estar
+                esperando ahí. Recepción también te lo puede dar en papel cuando llegues.
+              </p>
+            )}
           </div>
         </div>
       )}

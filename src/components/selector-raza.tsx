@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 
 export type RazaOpcion = {
   id: string;
@@ -85,19 +85,22 @@ export function SelectorRaza({
   const [consulta, setConsulta] = useState("");
   const [abierto, setAbierto] = useState(false);
   const [resaltado, setResaltado] = useState(0);
-  const [porEnfocar, setPorEnfocar] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const porEnfocar = useRef(false);
   const idBase = useId();
 
-  // Al darle "Cambiar" el buscador todavía no existe en el DOM: la
-  // etiqueta con la raza elegida es lo que está pintado, y el input
-  // aparece hasta el render siguiente. Enfocar dentro del click no hace
-  // nada — hay que esperar a que exista, o quien captura teclea al vacío.
-  useEffect(() => {
-    if (!porEnfocar) return;
-    inputRef.current?.focus();
-    setPorEnfocar(false);
-  }, [porEnfocar]);
+  // Al darle "Cambiar" el buscador todavía no existe en el DOM: lo
+  // pintado es la etiqueta con la raza elegida, y el input aparece hasta
+  // el render siguiente. Enfocar dentro del click no hace nada — quien
+  // captura teclea al vacío. Se enfoca desde el ref del propio input, que
+  // corre justo cuando el elemento entra al DOM.
+  function refInput(el: HTMLInputElement | null) {
+    inputRef.current = el;
+    if (el && porEnfocar.current) {
+      porEnfocar.current = false;
+      el.focus();
+    }
+  }
 
   const elegida = useMemo(() => razas.find((r) => r.id === razaId) ?? null, [razas, razaId]);
   const sugerencias = useMemo(() => buscar(razas, consulta), [razas, consulta]);
@@ -133,7 +136,7 @@ export function SelectorRaza({
     emitir(null, "");
     setConsulta("");
     setAbierto(true);
-    setPorEnfocar(true);
+    porEnfocar.current = true;
   }
 
   function alTeclear(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -193,7 +196,7 @@ export function SelectorRaza({
       ) : (
         <div className="relative">
           <input
-            ref={inputRef}
+            ref={refInput}
             id={`${idBase}-input`}
             type="text"
             role="combobox"

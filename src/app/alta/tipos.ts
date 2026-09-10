@@ -32,10 +32,46 @@ export type DatosAlta = {
 
 export type PerroCreado = { id: string; nombre: string };
 
+// El contrato del flujo por el que entro el cliente, generado por la misma
+// transaccion que crea el expediente y devuelto para que la ultima
+// pantalla del alta se lo ponga enfrente. Si se generara despues, o si la
+// pantalla tuviera que salir a buscarlo, habria una ventana en la que el
+// dueno ya se fue y el contrato quedo sin firmar.
+export type ContratoPendiente = {
+  id: string;
+  perro_id: string;
+  perro_nombre: string;
+  tipo_nombre: string;
+};
+
 export type ResultadoAlta = {
   error: string | null;
   clienteId?: string;
   perros?: PerroCreado[];
+  contratos?: ContratoPendiente[];
+};
+
+// Lo que manda el formulario de complemento: un cliente que ya existe y
+// entra por el otro flujo. Los campos de los perros van parciales a
+// proposito — solo viaja lo que la pantalla le pidio, que es solo lo que
+// le faltaba.
+export type PerroComplemento = Partial<PerroAlta> & { id: string };
+
+export type DatosComplemento = {
+  direccion: string;
+  // Solo cuando el expediente todavia no tiene cuenta (lo capturo
+  // recepcion a mano y la persona nunca se registro).
+  email: string;
+  password: string;
+  perros: PerroComplemento[];
+  perrosNuevos: PerroAlta[];
+};
+
+export type ResultadoComplemento = {
+  error: string | null;
+  clienteId?: string;
+  perros?: PerroCreado[];
+  contratos?: ContratoPendiente[];
 };
 
 export function perroVacio(): PerroAlta {

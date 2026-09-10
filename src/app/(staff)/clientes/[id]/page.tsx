@@ -18,6 +18,7 @@ import {
 } from "../../perros/contrato-estado-banner";
 import { BonosCliente, type BonoCatalogo, type BonoFila } from "../bonos-cliente";
 import { DistanciaSeccion } from "./distancia-seccion";
+import { LinkComplemento, type LinkPendiente } from "./link-complemento";
 
 export default async function EditarClientePage({
   params,
@@ -40,6 +41,12 @@ export default async function EditarClientePage({
     .single();
 
   if (!cliente) notFound();
+
+  const { data: linksPendientes } = await supabase
+    .from("invitaciones_cliente_estado")
+    .select("id, tipo, expira_at")
+    .eq("cliente_id", id)
+    .eq("estado", "pendiente");
 
   const { data: perros } = await supabase
     .from("perros")
@@ -233,6 +240,13 @@ export default async function EditarClientePage({
           </ul>
         )}
       </div>
+
+      <LinkComplemento
+        clienteId={id}
+        clienteNombre={cliente.nombre}
+        clienteTelefono={cliente.telefono}
+        pendientes={(linksPendientes as LinkPendiente[]) ?? []}
+      />
 
       <DistanciaSeccion
         clienteId={id}

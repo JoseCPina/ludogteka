@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { BotonNuevoCliente } from "@/components/boton-nuevo-cliente";
 import {
   formatearFechaCalendario,
   formatearDiaSemana,
@@ -141,6 +142,7 @@ export default async function AgendaPage({
               Semana
             </Button>
           </Link>
+          <BotonNuevoCliente tipo="estetica" />
           <Link href="/estetica/nueva">
             <Button type="button">Agendar</Button>
           </Link>

@@ -3,7 +3,15 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { normalizarTelefono } from "@/lib/telefono";
 import { geocodificarYCalcularDistancia } from "@/lib/google-maps/distancia-cliente";
-import type { DatosAlta, PerroCreado, ResultadoAlta } from "./tipos";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type {
+  ContratoPendiente,
+  DatosAlta,
+  DatosComplemento,
+  PerroCreado,
+  ResultadoAlta,
+  ResultadoComplemento,
+} from "./tipos";
 
 const BUCKET = "perros-archivos";
 
@@ -109,11 +117,152 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
     return { error: errorAlta.message || "No pudimos completar tu alta. Intenta de nuevo." };
   }
 
-  const salida = resultado as { cliente_id: string; perros: PerroCreado[] } | null;
+  const salida = resultado as {
+    cliente_id: string;
+    perros: PerroCreado[];
+    contratos: ContratoPendiente[];
+  } | null;
   return {
     error: null,
     clienteId: salida?.cliente_id,
     perros: salida?.perros ?? [],
+    contratos: salida?.contratos ?? [],
+  };
+}
+
+// El otro flujo: un cliente que YA tiene expediente y ahora entra por el
+// otro servicio. Aquí no se crea nada de cero — se rellena lo que falta y
+// se genera el contrato que no ha firmado.
+//
+// La autorización tiene dos llaves, no una: el token del link dice de qué
+// expediente hablamos, y la sesión del propio dueño dice que es él. El
+// alta nueva no puede pedir sesión (todavía no existe la cuenta), pero un
+// complemento sí, y ahí no hay razón para conformarse con menos: un link
+// reenviado en un chat familiar no debería alcanzar para tocar el
+// expediente de nadie.
+export async function completarExpediente(
+  token: string,
+  datos: DatosComplemento
+): Promise<ResultadoComplemento> {
+  const admin = createSupabaseAdminClient();
+
+  const { data: invitacion } = await admin
+    .from("invitaciones_cliente")
+    .select("id, cliente_id, usada_at, cancelada_at, expira_at")
+    .eq("token", token)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (!invitacion) return { error: "Este link no existe." };
+  if (invitacion.cancelada_at) {
+    return { error: "Este link fue cancelado. Pídele uno nuevo a recepción." };
+  }
+  if (invitacion.usada_at) return { error: "Este link ya se usó." };
+  if (new Date(invitacion.expira_at as string) <= new Date()) {
+    return { error: "Este link ya venció. Pídele uno nuevo a recepción." };
+  }
+  if (!invitacion.cliente_id) {
+    return { error: "Este link es para un alta nueva, no para completar un expediente." };
+  }
+
+  // ¿Ya hay cuenta ligada a este expediente?
+  const { data: perfil } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("cliente_id", invitacion.cliente_id)
+    .limit(1)
+    .maybeSingle();
+
+  let userId: string | null = null;
+  let creadoAqui = false;
+
+  if (perfil) {
+    // La sesión se lee del servidor, no de lo que mande la pantalla: el
+    // id del usuario es justo el dato que no puede venir del cliente.
+    const supabase = await createSupabaseServerClient();
+    const { data: sesion } = await supabase.auth.getUser();
+    if (!sesion.user) {
+      return { error: "Inicia sesión con tu correo y contraseña para continuar." };
+    }
+    if (sesion.user.id !== perfil.id) {
+      return { error: "Esa cuenta no es la de este expediente." };
+    }
+    userId = null; // ya está ligada: la función no tiene que ligar nada
+  } else {
+    const email = datos.email.trim().toLowerCase();
+    if (!email.includes("@")) return { error: "Escribe un correo válido." };
+    if (datos.password.length < 6) {
+      return { error: "La contraseña debe tener al menos 6 caracteres." };
+    }
+
+    const { data: creado, error: errorCuenta } = await admin.auth.admin.createUser({
+      email,
+      password: datos.password,
+      email_confirm: true,
+    });
+
+    if (errorCuenta || !creado.user) {
+      const mensaje = errorCuenta?.message ?? "";
+      if (/already|registered|exists/i.test(mensaje)) {
+        return {
+          error:
+            "Ya existe una cuenta con ese correo. Si es tuya, inicia sesión; si no, usa otro correo o avísale a recepción.",
+        };
+      }
+      return { error: "No pudimos crear tu cuenta. Intenta de nuevo." };
+    }
+    userId = creado.user.id;
+    creadoAqui = true;
+  }
+
+  const { data: resultado, error } = await admin.rpc("completar_expediente_cliente", {
+    p_token: token,
+    p_user_id: userId,
+    p_cliente: { direccion: datos.direccion.trim(), email: datos.email.trim().toLowerCase() },
+    // Los teléfonos se normalizan igual que en el alta nueva, aquí y en
+    // los perros nuevos: si no, el mismo número entra con guiones desde
+    // un flujo y sin ellos desde el otro, y buscar por teléfono deja de
+    // encontrarlo.
+    p_perros: datos.perros.map((p) => ({
+      ...p,
+      ...(p.contacto_emergencia_telefono !== undefined && {
+        contacto_emergencia_telefono:
+          normalizarTelefono(p.contacto_emergencia_telefono) ?? p.contacto_emergencia_telefono,
+      }),
+      ...(p.veterinario_telefono !== undefined && {
+        veterinario_telefono:
+          normalizarTelefono(p.veterinario_telefono) ?? p.veterinario_telefono,
+      }),
+    })),
+    p_perros_nuevos: datos.perrosNuevos.map((p) => ({
+      ...p,
+      contacto_emergencia_telefono:
+        normalizarTelefono(p.contacto_emergencia_telefono) ?? p.contacto_emergencia_telefono,
+      veterinario_telefono:
+        normalizarTelefono(p.veterinario_telefono) ?? p.veterinario_telefono,
+    })),
+  });
+
+  if (error) {
+    // Misma compensación que el alta nueva: Auth es otro sistema y no
+    // entra en la transacción de la base. Si el expediente no se pudo
+    // completar, la cuenta recién creada se deshace — si no, queda una
+    // cuenta huérfana que además bloquea ese correo para el siguiente
+    // intento. La cuenta que YA existía nunca se toca.
+    if (creadoAqui && userId) await admin.auth.admin.deleteUser(userId);
+    return { error: error.message || "No pudimos completar tu expediente. Intenta de nuevo." };
+  }
+
+  const salida = resultado as {
+    cliente_id: string;
+    perros: PerroCreado[];
+    contratos: ContratoPendiente[];
+  } | null;
+  return {
+    error: null,
+    clienteId: salida?.cliente_id,
+    perros: salida?.perros ?? [],
+    contratos: salida?.contratos ?? [],
   };
 }
 

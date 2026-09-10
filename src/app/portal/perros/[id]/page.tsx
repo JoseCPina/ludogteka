@@ -8,7 +8,7 @@ import { PerroFoto } from "@/app/(staff)/perros/perro-foto";
 import { ResumenSanitario, type EstadoRequisitoItem } from "@/app/(staff)/perros/resumen-sanitario";
 import { MiPerroForm } from "../../mi-perro-form";
 import { RecordatorioSanitario } from "../../recordatorio-sanitario";
-import { FirmarContrato } from "./firmar-contrato";
+import { FirmarContrato } from "@/components/firmar-contrato";
 import { BitacoraCliente, type EntradaBitacoraCliente } from "./bitacora-cliente";
 import { MedicamentosCliente, type MedicamentoFilaCliente } from "./medicamentos-cliente";
 

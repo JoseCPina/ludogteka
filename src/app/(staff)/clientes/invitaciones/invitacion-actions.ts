@@ -5,12 +5,14 @@ import { headers } from "next/headers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../../reservas/traducir-error";
 import { normalizarTelefono } from "@/lib/telefono";
+import { TIPOS_LINK_ALTA, esTipoLinkAlta, type TipoLinkAlta } from "@/lib/alta/tipos-link";
 
 export type EstadoInvitacion = {
   error: string | null;
   url?: string;
   urlWhatsApp?: string;
   expiraAt?: string;
+  tipo?: TipoLinkAlta;
 };
 
 // El link se arma con el host del request, no con una variable de entorno:
@@ -33,7 +35,12 @@ function enlaceWhatsApp(telefono: string, mensaje: string) {
 export async function crearInvitacion(
   nombreReferencia: string,
   telefonoCrudo: string,
-  diasVigencia: number
+  diasVigencia: number,
+  tipo: TipoLinkAlta = "guarderia_hotel",
+  // Cuando viene, el link no es un alta nueva: es para completar el
+  // expediente de alguien que ya existe. Lo manda el botón de la ficha
+  // del cliente, no el formulario de esta pantalla.
+  clienteId: string | null = null
 ): Promise<EstadoInvitacion> {
   if (!nombreReferencia.trim()) {
     return { error: "Escribe un nombre para reconocer la invitación (ej. Ana, la del labrador)." };
@@ -42,12 +49,15 @@ export async function crearInvitacion(
   if (!telefono) {
     return { error: "El teléfono debe tener 10 dígitos. Puedes escribirlo con espacios o guiones." };
   }
+  if (!esTipoLinkAlta(tipo)) return { error: "Ese tipo de link no existe." };
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("crear_invitacion_cliente", {
     p_nombre_referencia: nombreReferencia,
     p_telefono: telefono,
     p_dias_vigencia: diasVigencia,
+    p_tipo: tipo,
+    p_cliente_id: clienteId,
   });
 
   if (error) return { error: traducirError(error) };
@@ -56,15 +66,19 @@ export async function crearInvitacion(
   if (!fila?.token) return { error: "No pudimos generar el link. Intenta de nuevo." };
 
   const url = `${await urlBase()}/alta/${fila.token}`;
-  const mensaje =
-    `Hola ${nombreReferencia.trim()}, aquí puedes darte de alta en Ludogteka y registrar a tu perro: ${url}`;
+  const definicion = TIPOS_LINK_ALTA[tipo];
+  const mensaje = clienteId
+    ? definicion.mensajeComplemento(nombreReferencia.trim(), url)
+    : definicion.mensajeWhatsApp(nombreReferencia.trim(), url);
 
   revalidatePath("/clientes/invitaciones");
+  if (clienteId) revalidatePath(`/clientes/${clienteId}`);
   return {
     error: null,
     url,
     urlWhatsApp: enlaceWhatsApp(telefono, mensaje),
     expiraAt: fila.expira_at as string,
+    tipo,
   };
 }
 
@@ -77,7 +91,7 @@ export async function enlaceParaReenviar(
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("invitaciones_cliente")
-    .select("token, telefono, nombre_referencia, usada_at, cancelada_at, expira_at")
+    .select("token, telefono, nombre_referencia, tipo, cliente_id, usada_at, cancelada_at, expira_at")
     .eq("id", invitacionId)
     .single();
 
@@ -89,8 +103,13 @@ export async function enlaceParaReenviar(
   }
 
   const url = `${await urlBase()}/alta/${data.token}`;
-  const mensaje =
-    `Hola ${data.nombre_referencia}, aquí puedes darte de alta en Ludogteka y registrar a tu perro: ${url}`;
+  const tipo: TipoLinkAlta = esTipoLinkAlta(data.tipo as string)
+    ? (data.tipo as TipoLinkAlta)
+    : "guarderia_hotel";
+  const definicion = TIPOS_LINK_ALTA[tipo];
+  const mensaje = data.cliente_id
+    ? definicion.mensajeComplemento(data.nombre_referencia as string, url)
+    : definicion.mensajeWhatsApp(data.nombre_referencia as string, url);
 
   return { error: null, url, urlWhatsApp: enlaceWhatsApp(data.telefono as string, mensaje) };
 }

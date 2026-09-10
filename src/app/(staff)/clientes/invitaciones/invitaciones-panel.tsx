@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
 import { formatearTelefono } from "@/lib/telefono";
+import { TIPOS_LINK_ALTA, TIPOS_LINK_ALTA_LISTA, type TipoLinkAlta } from "@/lib/alta/tipos-link";
 import {
   crearInvitacion,
   enlaceParaReenviar,
@@ -20,6 +21,8 @@ export type InvitacionFila = {
   id: string;
   nombre_referencia: string;
   telefono: string;
+  tipo: string;
+  es_complemento: boolean;
   expira_at: string;
   usada_at: string | null;
   cancelada_at: string | null;
@@ -121,6 +124,17 @@ function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
             <span className="font-normal text-n-600">· {formatearTelefono(invitacion.telefono)}</span>
           </p>
           <p className="text-sm text-n-600">
+            {TIPOS_LINK_ALTA[invitacion.tipo as TipoLinkAlta]?.etiqueta ?? invitacion.tipo}
+            {invitacion.es_complemento && (
+              <>
+                {" · "}
+                <span className="font-semibold text-azul">
+                  Completar expediente de {invitacion.cliente_nombre ?? "un cliente"}
+                </span>
+              </>
+            )}
+          </p>
+          <p className="text-sm text-n-600">
             {invitacion.estado === "usada" && invitacion.cliente_id ? (
               <>
                 Se dio de alta el {formatearFecha(invitacion.usada_at as string)} ·{" "}
@@ -179,10 +193,17 @@ function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
   );
 }
 
-export function InvitacionesPanel({ invitaciones }: { invitaciones: InvitacionFila[] }) {
+export function InvitacionesPanel({
+  invitaciones,
+  tipoInicial = "guarderia_hotel",
+}: {
+  invitaciones: InvitacionFila[];
+  tipoInicial?: TipoLinkAlta;
+}) {
   const router = useRouter();
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [tipo, setTipo] = useState<TipoLinkAlta>(tipoInicial);
   const [dias, setDias] = useState("7");
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -191,7 +212,7 @@ export function InvitacionesPanel({ invitaciones }: { invitaciones: InvitacionFi
   async function generar() {
     setEnviando(true);
     setError(null);
-    const res = await crearInvitacion(nombre, telefono, Number(dias));
+    const res = await crearInvitacion(nombre, telefono, Number(dias), tipo);
     setEnviando(false);
     if (res.error) {
       setError(res.error);
@@ -212,8 +233,9 @@ export function InvitacionesPanel({ invitaciones }: { invitaciones: InvitacionFi
         <div>
           <h2 className="text-lg font-bold text-n-900">Mandar un link de alta</h2>
           <p className="mt-1 text-sm text-n-600">
-            El cliente captura sus datos y los de sus perros desde su celular, y el expediente
-            aparece aquí ya ligado a su cuenta — sin pasar por vinculación.
+            El cliente captura sus datos y los de sus perros desde su celular, firma el contrato
+            que le toca, y el expediente aparece aquí ya ligado a su cuenta — sin pasar por
+            vinculación.
           </p>
         </div>
 
@@ -237,6 +259,20 @@ export function InvitacionesPanel({ invitaciones }: { invitaciones: InvitacionFi
           placeholder="444 123 4567"
           inputMode="tel"
         />
+        <div>
+          <Select
+            label="¿Para qué viene?"
+            value={tipo}
+            onChange={(e) => setTipo(e.target.value as TipoLinkAlta)}
+          >
+            {TIPOS_LINK_ALTA_LISTA.map((t) => (
+              <option key={t.clave} value={t.clave}>
+                {t.etiqueta}
+              </option>
+            ))}
+          </Select>
+          <p className="mt-1.5 text-sm text-n-600">{TIPOS_LINK_ALTA[tipo].descripcion}</p>
+        </div>
         <Select label="Vigencia del link" value={dias} onChange={(e) => setDias(e.target.value)}>
           <option value="1">1 día</option>
           <option value="3">3 días</option>

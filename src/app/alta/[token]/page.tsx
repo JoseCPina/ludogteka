@@ -2,7 +2,11 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
 import { cargarRazas } from "@/lib/razas";
+import { cargarCotizacionEstetica } from "@/lib/estetica/cotizacion";
+import { TIPOS_LINK_ALTA, esTipoLinkAlta, type TipoLinkAlta } from "@/lib/alta/tipos-link";
 import { AltaForm } from "./alta-form";
+import { CompletarForm, type PerroExistente } from "./completar-form";
+import { CAMPOS_BASE, CAMPOS_EXPEDIENTE, type CampoPerro } from "@/lib/alta/campos-perro";
 
 // Pantalla pública: no hay sesión todavía (la cuenta se crea al final) y
 // por eso NO está en las zonas protegidas del middleware. Lo único que la
@@ -10,16 +14,40 @@ import { AltaForm } from "./alta-form";
 //
 // Los catálogos se leen con la secret key porque sus políticas de RLS son
 // `to authenticated` y aquí no hay nadie autenticado. Son catálogos
-// (tamaños y tipos de pelaje), no datos de nadie: lo que se expone es la
-// misma lista que ve cualquier empleado, sin tocar el RLS de las tablas
-// que sí traen información de clientes.
+// (razas, tamaños y tipos de pelaje), no datos de nadie: lo que se expone
+// es la misma lista que ve cualquier empleado, sin tocar el RLS de las
+// tablas que sí traen información de clientes.
+
+// Qué le falta a un perro que ya existe. "Falta" es literalmente estar
+// vacío: este formulario público nunca reescribe un dato capturado, así
+// que preguntar por algo que ya está sería pedirle a alguien que teclee
+// para nada.
+function camposFaltantes(
+  perro: Record<string, unknown>,
+  expedienteCompleto: boolean
+): CampoPerro[] {
+  const vacio = (v: unknown) => v === null || v === undefined || String(v).trim() === "";
+  const candidatos: CampoPerro[] = expedienteCompleto
+    ? [...CAMPOS_BASE, ...CAMPOS_EXPEDIENTE]
+    : [...CAMPOS_BASE];
+
+  return candidatos.filter((campo) => {
+    // La raza es el caso especial: un perro capturado antes del catálogo
+    // tiene el texto escrito a mano y raza_id vacío. Ese perro cotiza con
+    // el grupo por defecto, y su dueño es justamente quien puede
+    // arreglarlo — así que se le pregunta aunque el texto esté lleno.
+    if (campo === "raza") return vacio(perro.raza_id);
+    return vacio(perro[campo]);
+  });
+}
+
 export default async function AltaPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const admin = createSupabaseAdminClient();
 
   const { data: invitacion } = await admin
     .from("invitaciones_cliente")
-    .select("id, nombre_referencia, expira_at, usada_at, cancelada_at")
+    .select("id, nombre_referencia, tipo, cliente_id, expira_at, usada_at, cancelada_at")
     .eq("token", token)
     .is("deleted_at", null)
     .maybeSingle();
@@ -48,6 +76,11 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
     );
   }
 
+  const tipo: TipoLinkAlta = esTipoLinkAlta(invitacion!.tipo as string)
+    ? (invitacion!.tipo as TipoLinkAlta)
+    : "guarderia_hotel";
+  const definicion = TIPOS_LINK_ALTA[tipo];
+
   // El catálogo de razas viaja SIN el grupo de precio: el dueño escoge la
   // raza de su perro, no el cajón en el que el negocio lo cobra. Mandar el
   // grupo aunque no se pinte sería dejarlo servido en el HTML.
@@ -57,12 +90,90 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
     admin.from("tipos_pelaje").select("id, etiqueta").is("deleted_at", null).order("orden"),
   ]);
 
+  // La cotización solo se carga —y solo viaja— en el flujo que la usa.
+  const cotizacion = definicion.muestraPrecioEstetica
+    ? await cargarCotizacionEstetica(admin)
+    : null;
+
+  const catalogos = {
+    razas,
+    tamanos: (tamanos as { id: string; etiqueta: string }[]) ?? [],
+    pelajes: (pelajes as { id: string; etiqueta: string }[]) ?? [],
+    cotizacion,
+  };
+
+  // ───── Complemento: el expediente ya existe ─────
+  if (invitacion!.cliente_id) {
+    const clienteId = invitacion!.cliente_id as string;
+
+    const [{ data: cliente }, { data: perrosCrudo }, { data: perfil }] = await Promise.all([
+      admin.from("clientes").select("id, nombre, email, direccion").eq("id", clienteId).single(),
+      admin
+        .from("perros")
+        .select(
+          "id, nombre, raza, raza_id, sexo, fecha_nacimiento, tamano_id, pelaje_id, alimentacion_notas, contacto_emergencia_nombre, contacto_emergencia_telefono, veterinario_nombre, veterinario_telefono, veterinario_clinica"
+        )
+        .eq("cliente_id", clienteId)
+        .is("deleted_at", null)
+        .order("nombre"),
+      admin.from("profiles").select("id").eq("cliente_id", clienteId).limit(1).maybeSingle(),
+    ]);
+
+    if (!cliente) {
+      return (
+        <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-4 p-6">
+          <Alert variante="advertencia" titulo="No podemos abrir este link">
+            No encontramos tu expediente. Avísale a recepción.
+          </Alert>
+        </main>
+      );
+    }
+
+    const perros: PerroExistente[] = (perrosCrudo ?? []).map((p) => ({
+      id: p.id as string,
+      nombre: p.nombre as string,
+      raza: (p.raza as string | null) ?? "",
+      raza_id: (p.raza_id as string | null) ?? null,
+      campos: camposFaltantes(p as Record<string, unknown>, definicion.expedienteCompleto),
+    }));
+
+    return (
+      <main className="mx-auto flex min-h-screen max-w-lg flex-col gap-6 p-6">
+        <header>
+          <h1 className="text-2xl font-bold text-n-900">Hola de nuevo, {cliente.nombre}</h1>
+          <p className="mt-1 text-n-600">
+            Ya te tenemos registrado. Para {definicion.etiqueta.toLowerCase()} solo nos falta lo que
+            no nos habías dicho y que firmes ese contrato — no vamos a volver a preguntarte todo.
+          </p>
+          <p className="mt-2 text-sm text-n-500">
+            Este link es tuyo y de un solo uso. Vence el{" "}
+            {formatearFecha(invitacion!.expira_at as string)}.
+          </p>
+        </header>
+
+        <CompletarForm
+          token={token}
+          tipo={tipo}
+          clienteNombre={cliente.nombre as string}
+          clienteEmail={(cliente.email as string | null) ?? ""}
+          faltaDireccion={!((cliente.direccion as string | null) ?? "").trim()}
+          tieneCuenta={Boolean(perfil)}
+          perros={perros}
+          {...catalogos}
+        />
+      </main>
+    );
+  }
+
+  // ───── Alta nueva ─────
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col gap-6 p-6">
       <header>
         <h1 className="text-2xl font-bold text-n-900">Bienvenido a Ludogteka</h1>
         <p className="mt-1 text-n-600">
-          Regístrate y cuéntanos de tu perro. Toma unos minutos y lo puedes hacer desde el celular.
+          {definicion.muestraPrecioEstetica
+            ? "Regístrate y cuéntanos de tu perro: conforme lo hagas te vamos diciendo cuánto cuesta su baño."
+            : "Regístrate y cuéntanos de tu perro. Toma unos minutos y lo puedes hacer desde el celular."}
         </p>
         <p className="mt-2 text-sm text-n-500">
           Este link es tuyo y de un solo uso. Vence el{" "}
@@ -70,12 +181,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
         </p>
       </header>
 
-      <AltaForm
-        token={token}
-        razas={razas}
-        tamanos={(tamanos as { id: string; etiqueta: string }[]) ?? []}
-        pelajes={(pelajes as { id: string; etiqueta: string }[]) ?? []}
-      />
+      <AltaForm token={token} tipo={tipo} {...catalogos} />
     </main>
   );
 }

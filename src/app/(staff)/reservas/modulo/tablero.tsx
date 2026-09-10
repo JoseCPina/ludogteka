@@ -4,6 +4,8 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { formatearFechaCalendario, hoyNegocio, sumarDiasFecha } from "@/lib/formato";
 import type { ModuloEstancia } from "@/lib/modulos";
+import { BotonNuevoCliente } from "@/components/boton-nuevo-cliente";
+import { tipoLinkDeModulo } from "@/lib/alta/tipos-link";
 import { TablaOcupacion, type FilaCalendario } from "./tabla-ocupacion";
 
 const DIAS_CALENDARIO = 14;
@@ -86,6 +88,7 @@ export async function TableroModulo({ modulo }: { modulo: ModuloEstancia }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
+          <BotonNuevoCliente tipo={tipoLinkDeModulo(modulo.categoria)} />
           <Link href={`${modulo.base}/checkin`}>
             <Button type="button" variante="secundario">
               Check-in

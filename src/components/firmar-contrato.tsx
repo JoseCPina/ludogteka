@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
-import { firmarContratoDigital, obtenerUrlContrato } from "../../contrato-actions";
+import { firmarContratoDigital, obtenerUrlContrato } from "@/app/portal/contrato-actions";
 
 const ETIQUETA_ESTADO: Record<string, string> = {
   pendiente_firma: "Pendiente de firma",
@@ -13,13 +13,26 @@ const ETIQUETA_ESTADO: Record<string, string> = {
   cancelado: "Cancelado",
 };
 
+// Se usa en dos lugares y por eso vive aquí y no en el portal: la ficha
+// del perro (contratos que aparecieron después) y la última pantalla del
+// alta por link, donde el dueño firma el contrato de su flujo antes de
+// salir. La firma pasa por la misma server action en los dos casos, con
+// la sesión del dueño ya abierta: el bloque de auditoría del PDF (quién,
+// cuándo, desde qué IP) sale del servidor, no de lo que el firmante
+// quiera reportar de sí mismo.
 export function FirmarContrato({
   contratoId,
   tipoNombre,
+  subtitulo,
   estado,
   storagePath,
+  onFirmado,
 }: {
   contratoId: string;
+  // De qué perro es, cuando en la misma pantalla hay varios contratos
+  // (el alta con dos perros muestra dos, uno por cada uno).
+  subtitulo?: string;
+  onFirmado?: () => void;
   // El negocio maneja varios contratos (guardería, hotel, …): el dueño
   // tiene que saber cuál está firmando, no solo que hay "un" contrato.
   tipoNombre: string;
@@ -129,14 +142,18 @@ export function FirmarContrato({
       return;
     }
     setFirmando(false);
-    router.refresh();
+    if (onFirmado) onFirmado();
+    else router.refresh();
   }
 
   if (estado !== "pendiente_firma") {
     return (
       <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="font-semibold text-n-900">{tipoNombre}</span>
+          <span className="font-semibold text-n-900">
+            {tipoNombre}
+            {subtitulo && <span className="font-normal text-n-600"> · {subtitulo}</span>}
+          </span>
           <span className="w-fit rounded-full bg-verde-suave px-2.5 py-1 text-xs font-semibold text-verde-oscuro">
             {ETIQUETA_ESTADO[estado] ?? estado}
           </span>
@@ -152,7 +169,10 @@ export function FirmarContrato({
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-amarillo bg-amarillo-suave p-4">
-      <p className="font-bold text-amarillo-oscuro">{tipoNombre} · pendiente de firma</p>
+      <p className="font-bold text-amarillo-oscuro">
+        {tipoNombre}
+        {subtitulo && ` · ${subtitulo}`} · pendiente de firma
+      </p>
 
       {error && (
         <Alert variante="error" titulo="No se pudo firmar">
