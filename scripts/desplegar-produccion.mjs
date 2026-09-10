@@ -73,6 +73,15 @@ function corre(cmd, argumentos, opciones = {}) {
     shell: necesitaShell,
     encoding: "utf8",
     maxBuffer: 32 * 1024 * 1024,
+    // stdin cerrado y tope de tiempo: sin esto, un comando que decide
+    // preguntar algo se queda esperando una respuesta que nunca llega y
+    // cuelga el despliegue entero. Pasó de verdad: npx bajó una versión
+    // nueva del CLI de Vercel que había perdido la sesión y abrió un
+    // login por dispositivo — el script se quedó diez minutos mirando un
+    // código de verificación que nadie iba a teclear. Con stdin cerrado
+    // el mismo comando falla en un segundo y se puede manejar.
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: 180000,
     ...opciones,
   });
   const salida = (r.stdout || "") + (r.stderr || "");
@@ -371,14 +380,25 @@ try {
 // ---------------------------------------------------------------- 7
 titulo("Esperando el build de Vercel");
 
-const limite = Date.now() + 6 * 60 * 1000;
+const limite = Date.now() + 8 * 60 * 1000;
 let listo = false;
+let fallosSeguidos = 0;
+let ultimoError = "";
+
 while (Date.now() < limite && !listo) {
-  await new Promise((r) => setTimeout(r, 15000));
+  await new Promise((r) => setTimeout(r, 10000));
   let d;
   try {
     d = ultimoDeploy();
-  } catch {
+    fallosSeguidos = 0;
+  } catch (e) {
+    // Que no se pueda CONSULTAR el estado no significa que el deploy haya
+    // fallado: el código ya está empujado y Vercel construye por su
+    // cuenta. Se avisa y se sale bien, en vez de reportar un fracaso que
+    // no ocurrió — o peor, quedarse colgado reintentando.
+    fallosSeguidos += 1;
+    ultimoError = sinSecreto(e.salida || e.message).split("\n").filter(Boolean).slice(-2).join(" ");
+    if (fallosSeguidos >= 2) break;
     continue;
   }
   if (!d.url) continue;
@@ -392,9 +412,19 @@ while (Date.now() < limite && !listo) {
 }
 
 if (!listo) {
-  console.log("\n   El build no quedó Ready dentro del tiempo de espera. Revísalo en Vercel:");
-  console.log("   npx vercel ls ludogteka --prod");
-  process.exit(1);
+  console.log(`\n${"=".repeat(72)}`);
+  console.log("El código YA se empujó y Vercel está construyendo; lo que no se pudo fue");
+  console.log("seguir el estado del build desde aquí.");
+  if (fallosSeguidos >= 2) {
+    console.log(`\nMotivo: ${ultimoError}`);
+    console.log("Si dice que la sesión no existe, es el CLI de Vercel: corre `npx vercel login`");
+    console.log("una vez y el próximo despliegue ya va a poder reportar el build.");
+  } else {
+    console.log("\nMotivo: el build no quedó Ready dentro del tiempo de espera.");
+  }
+  console.log("\nRevísalo con:  npx vercel ls ludogteka --prod");
+  console.log(`${"=".repeat(72)}\n`);
+  process.exit(0);
 }
 
 console.log(`\n${"=".repeat(72)}`);
