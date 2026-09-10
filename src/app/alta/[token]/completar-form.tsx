@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { iniciarSesionPorTelefono } from "../acciones";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -45,7 +45,7 @@ export function CompletarForm({
   token,
   tipo,
   clienteNombre,
-  clienteEmail,
+  clienteTelefono,
   faltaDireccion,
   tieneCuenta,
   perros,
@@ -57,7 +57,7 @@ export function CompletarForm({
   token: string;
   tipo: TipoLinkAlta;
   clienteNombre: string;
-  clienteEmail: string;
+  clienteTelefono: string;
   faltaDireccion: boolean;
   tieneCuenta: boolean;
   perros: PerroExistente[];
@@ -74,7 +74,9 @@ export function CompletarForm({
   const hayAlgoQuePedir = faltaDireccion || conHuecos.length > 0;
 
   const [fase, setFase] = useState<Fase>("cuenta");
-  const [email, setEmail] = useState(clienteEmail);
+  // No se edita: el expediente ya lo trae, y dejar que se cambie desde un
+  // formulario público sería dejar que alguien se mueva de identidad.
+  const telefono = clienteTelefono;
   const [password, setPassword] = useState("");
   const [confirmacion, setConfirmacion] = useState("");
   const [direccion, setDireccion] = useState("");
@@ -95,22 +97,15 @@ export function CompletarForm({
 
   async function entrar() {
     setError(null);
-    if (!email.trim().includes("@")) return setError("Escribe un correo válido.");
     if (password.length < 6) return setError("La contraseña debe tener al menos 6 caracteres.");
 
     if (tieneCuenta) {
       setEnviando(true);
-      const supabase = createSupabaseBrowserClient();
-      const { error: errorSesion } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      });
+      // El teléfono ya lo sabemos: es el del expediente que abrió este
+      // link. Solo falta que demuestre que la cuenta es suya.
+      const res = await iniciarSesionPorTelefono(telefono, password);
       setEnviando(false);
-      if (errorSesion) {
-        return setError(
-          "Ese correo y contraseña no coinciden. Si no la recuerdas, avísale a recepción."
-        );
-      }
+      if (res.error) return setError(res.error);
     } else {
       if (password !== confirmacion) return setError("Las dos contraseñas no coinciden.");
     }
@@ -139,7 +134,6 @@ export function CompletarForm({
 
     const res = await completarExpediente(token, {
       direccion: faltaDireccion ? direccion : "",
-      email: email.trim().toLowerCase(),
       password,
       perros: perrosAMandar,
       perrosNuevos: nuevos,
@@ -174,12 +168,8 @@ export function CompletarForm({
 
       if (!tieneCuenta) {
         setAviso("Abriendo tu sesión…");
-        const supabase = createSupabaseBrowserClient();
-        const { error: errorSesion } = await supabase.auth.signInWithPassword({
-          email: email.trim().toLowerCase(),
-          password,
-        });
-        sesionAbierta = !errorSesion;
+        const res = await iniciarSesionPorTelefono(telefono, password);
+        sesionAbierta = !res.error;
       }
     } catch {
       sesionAbierta = tieneCuenta;
@@ -256,13 +246,9 @@ export function CompletarForm({
                 Entra con tu cuenta para continuar. Es la misma con la que ves a tus perros en el
                 portal.
               </p>
-              <Field
-                label="Tu correo"
-                type="email"
-                inputMode="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+              <p className="text-sm text-n-600">
+                Entras con tu teléfono <strong>{telefono}</strong>.
+              </p>
               <Field
                 label="Tu contraseña"
                 type="password"
@@ -277,19 +263,16 @@ export function CompletarForm({
                 {clienteNombre}, todavía no tienes cuenta para entrar al portal. Créala aquí y con
                 ella vas a poder ver a tus perros desde tu celular.
               </p>
-              <Field
-                label="Tu correo"
-                type="email"
-                inputMode="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+              <p className="text-sm text-n-600">
+                Vas a entrar con tu teléfono <strong>{telefono}</strong> y la contraseña que
+                escojas aquí.
+              </p>
               <Field
                 label="Tu contraseña"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                ayuda="Al menos 6 caracteres."
+                ayuda="Al menos 6 caracteres. Si se te olvida, recepción te la restablece por WhatsApp."
               />
               <Field
                 label="Repite tu contraseña"

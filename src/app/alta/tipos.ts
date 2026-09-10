@@ -23,9 +23,17 @@ export type PerroAlta = {
 
 export type DatosAlta = {
   nombre: string;
+  // La identidad del cliente. Con esto entra al portal, y con esto se
+  // decide si ya existe un expediente suyo.
   telefono: string;
   direccion: string;
+  // Opcional: un dato de contacto mas, no con lo que entra. La mayoria de
+  // los clientes de este negocio no lo tiene ni lo quiere teclear.
   email: string;
+  // La cuenta es opcional en el flujo de estetica: quien viene dos horas a
+  // banar a su perro no necesariamente quiere un portal. Sin cuenta el
+  // expediente queda igual de completo.
+  crearCuenta: boolean;
   password: string;
   perros: PerroAlta[];
 };
@@ -60,8 +68,8 @@ export type PerroComplemento = Partial<PerroAlta> & { id: string };
 export type DatosComplemento = {
   direccion: string;
   // Solo cuando el expediente todavia no tiene cuenta (lo capturo
-  // recepcion a mano y la persona nunca se registro).
-  email: string;
+  // recepcion a mano y la persona nunca se registro). El correo no se
+  // pide: la cuenta se arma con el telefono que ya trae el expediente.
   password: string;
   perros: PerroComplemento[];
   perrosNuevos: PerroAlta[];

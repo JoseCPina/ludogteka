@@ -44,6 +44,16 @@ export async function crearCliente(
 
   if (error) {
     if (error.code === "23505") {
+      // Desde que el teléfono es la identidad del cliente hay DOS índices
+      // únicos, y decirle a recepción que el problema es el correo cuando
+      // el repetido era el teléfono la manda a revisar el campo
+      // equivocado.
+      if (error.message.includes("telefono")) {
+        return {
+          error:
+            "Ya hay un cliente activo con ese teléfono. Búscalo en la lista: si es la misma persona, edítalo en vez de crear otro.",
+        };
+      }
       return { error: "Ya existe un cliente activo con ese correo." };
     }
     return { error: "No pudimos guardar al cliente. Intenta de nuevo." };
@@ -80,6 +90,16 @@ export async function actualizarCliente(
 
   if (error) {
     if (error.code === "23505") {
+      // Desde que el teléfono es la identidad del cliente hay DOS índices
+      // únicos, y decirle a recepción que el problema es el correo cuando
+      // el repetido era el teléfono la manda a revisar el campo
+      // equivocado.
+      if (error.message.includes("telefono")) {
+        return {
+          error:
+            "Ya hay un cliente activo con ese teléfono. Búscalo en la lista: si es la misma persona, edítalo en vez de crear otro.",
+        };
+      }
       return { error: "Ya existe un cliente activo con ese correo." };
     }
     return { error: "No pudimos guardar los cambios. Intenta de nuevo." };

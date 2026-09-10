@@ -86,7 +86,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
   // grupo aunque no se pinte sería dejarlo servido en el HTML.
   const [razas, { data: tamanos }, { data: pelajes }] = await Promise.all([
     cargarRazas(admin),
-    admin.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
+    admin.from("tamanos_categoria").select("id, clave, etiqueta").is("deleted_at", null).order("orden"),
     admin.from("tipos_pelaje").select("id, etiqueta").is("deleted_at", null).order("orden"),
   ]);
 
@@ -95,9 +95,20 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
     ? await cargarCotizacionEstetica(admin)
     : null;
 
+  // En el flujo de estética no se ofrecen tallas que el negocio no puede
+  // cotizar. Hoy eso deja fuera la gigante, que el cartel no menciona y
+  // quedó deliberadamente sin tarifa: ofrecerla sería dejar que alguien
+  // escoja la única opción para la que la app no tiene precio. En cuanto
+  // se capture esa tarifa, la talla reaparece sola.
+  const tamanosTodos = (tamanos as { id: string; clave: string; etiqueta: string }[]) ?? [];
+  const tamanosOfrecidos =
+    cotizacion && cotizacion.predeterminado.porTalla
+      ? tamanosTodos.filter((t) => cotizacion.predeterminado.porTalla?.[t.id] !== undefined)
+      : tamanosTodos;
+
   const catalogos = {
     razas,
-    tamanos: (tamanos as { id: string; etiqueta: string }[]) ?? [],
+    tamanos: tamanosOfrecidos.map((t) => ({ id: t.id, etiqueta: t.etiqueta })),
     pelajes: (pelajes as { id: string; etiqueta: string }[]) ?? [],
     cotizacion,
   };
@@ -107,7 +118,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
     const clienteId = invitacion!.cliente_id as string;
 
     const [{ data: cliente }, { data: perrosCrudo }, { data: perfil }] = await Promise.all([
-      admin.from("clientes").select("id, nombre, email, direccion").eq("id", clienteId).single(),
+      admin.from("clientes").select("id, nombre, telefono, direccion").eq("id", clienteId).single(),
       admin
         .from("perros")
         .select(
@@ -155,7 +166,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
           token={token}
           tipo={tipo}
           clienteNombre={cliente.nombre as string}
-          clienteEmail={(cliente.email as string | null) ?? ""}
+          clienteTelefono={(cliente.telefono as string | null) ?? ""}
           faltaDireccion={!((cliente.direccion as string | null) ?? "").trim()}
           tieneCuenta={Boolean(perfil)}
           perros={perros}

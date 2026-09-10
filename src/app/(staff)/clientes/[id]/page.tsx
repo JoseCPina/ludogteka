@@ -19,6 +19,7 @@ import {
 import { BonosCliente, type BonoCatalogo, type BonoFila } from "../bonos-cliente";
 import { DistanciaSeccion } from "./distancia-seccion";
 import { LinkComplemento, type LinkPendiente } from "./link-complemento";
+import { RestablecerPassword } from "./restablecer-password";
 
 export default async function EditarClientePage({
   params,
@@ -41,6 +42,13 @@ export default async function EditarClientePage({
     .single();
 
   if (!cliente) notFound();
+
+  const { data: cuentaCliente } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("cliente_id", id)
+    .limit(1)
+    .maybeSingle();
 
   const { data: linksPendientes } = await supabase
     .from("invitaciones_cliente_estado")
@@ -240,6 +248,12 @@ export default async function EditarClientePage({
           </ul>
         )}
       </div>
+
+      <RestablecerPassword
+        clienteId={id}
+        clienteNombre={cliente.nombre}
+        tieneCuenta={Boolean(cuentaCliente)}
+      />
 
       <LinkComplemento
         clienteId={id}

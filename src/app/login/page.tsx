@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { rutaPorRol } from "@/lib/auth/rutas";
 import { LoginForm } from "./login-form";
 
@@ -22,6 +23,14 @@ export default async function LoginPage({
     redirect(rutaPorRol(perfil?.rol));
   }
 
+  // El teléfono de recepción se lee con la secret key: esta pantalla es
+  // pública y quien la abre no tiene sesión, pero es justo quien necesita
+  // el número. La función que se llama devuelve SOLO ese dato, nada más
+  // de la configuración del negocio.
+  const { data: telefonoRecepcion } = await createSupabaseAdminClient().rpc(
+    "telefono_recepcion_publico"
+  );
+
   const { error } = await searchParams;
   const errorInicial =
     error === "invitacion_invalida"
@@ -35,7 +44,10 @@ export default async function LoginPage({
           Ludogteka
         </h1>
         <p className="mb-8 text-center text-n-600">Inicia sesión para continuar</p>
-        <LoginForm errorInicial={errorInicial} />
+        <LoginForm
+          errorInicial={errorInicial}
+          telefonoRecepcion={(telefonoRecepcion as string | null) ?? null}
+        />
       </div>
     </main>
   );

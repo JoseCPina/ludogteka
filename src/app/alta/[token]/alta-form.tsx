@@ -9,6 +9,7 @@ import { Alert } from "@/components/ui/alert";
 import { FirmarContrato } from "@/components/firmar-contrato";
 import type { RazaOpcion } from "@/components/selector-raza";
 import type { CotizacionEstetica } from "@/lib/estetica/cotizacion";
+import { correoSinteticoDeTelefono } from "@/lib/auth/identidad";
 import { TIPOS_LINK_ALTA, type TipoLinkAlta } from "@/lib/alta/tipos-link";
 import { completarAlta, subirFotoAlta, calcularDistanciaAlta } from "../acciones";
 import { perroVacio, type ContratoPendiente, type PerroAlta } from "../tipos";
@@ -54,11 +55,19 @@ export function AltaForm({
   const definicion = TIPOS_LINK_ALTA[tipo];
   const campos = camposDeTipo(definicion.expedienteCompleto);
 
+  // La cuenta es obligatoria para quien va a dejar a su perro —el portal es
+  // donde ve sus fotos y sus reservas— y opcional para quien solo viene a
+  // bañarlo: pedirle una contraseña a esa persona es un trámite más entre
+  // ella y agendar.
+  const cuentaOpcional = !definicion.expedienteCompleto;
+
   const [paso, setPaso] = useState(0);
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
-  const [direccion, setDireccion] = useState("");
   const [email, setEmail] = useState("");
+  const [quiereRecoleccion, setQuiereRecoleccion] = useState(false);
+  const [direccion, setDireccion] = useState("");
+  const [crearCuenta, setCrearCuenta] = useState(!cuentaOpcional);
   const [password, setPassword] = useState("");
   const [confirmacion, setConfirmacion] = useState("");
   const [perros, setPerros] = useState<PerroAlta[]>([perroVacio()]);
@@ -67,12 +76,9 @@ export function AltaForm({
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
-  // Los contratos llegan del alta ya generados, y el paso de firma solo
-  // existe si hay alguno: si el negocio todavía no publica el contrato de
-  // este flujo, la barra de progreso enseña tres pasos y no cuatro, en vez
-  // de prometer una pantalla que no va a aparecer.
   const [contratos, setContratos] = useState<ContratoPendiente[]>([]);
   const [firmados, setFirmados] = useState<Set<string>>(new Set());
+  const [terminadoSinCuenta, setTerminadoSinCuenta] = useState(false);
 
   function actualizarPerro(i: number, cambios: Partial<PerroAlta>) {
     setPerros((prev) => prev.map((p, j) => (i === j ? { ...p, ...cambios } : p)));
@@ -95,6 +101,9 @@ export function AltaForm({
       if (telefono.replace(/[^0-9]/g, "").length !== 10) {
         return setError("El teléfono debe tener 10 dígitos.");
       }
+      if (email.trim() && !email.includes("@")) {
+        return setError("Ese correo no se ve bien. Revísalo o déjalo vacío.");
+      }
     }
     if (paso === 1) {
       if (perros.some((p) => !p.nombre.trim())) {
@@ -106,16 +115,20 @@ export function AltaForm({
 
   async function enviar() {
     setError(null);
-    if (!email.trim().includes("@")) return setError("Escribe un correo válido.");
-    if (password.length < 6) return setError("La contraseña debe tener al menos 6 caracteres.");
-    if (password !== confirmacion) return setError("Las dos contraseñas no coinciden.");
+    if (crearCuenta) {
+      if (password.length < 6) return setError("La contraseña debe tener al menos 6 caracteres.");
+      if (password !== confirmacion) return setError("Las dos contraseñas no coinciden.");
+    }
+
+    const direccionFinal = quiereRecoleccion ? direccion : "";
 
     setEnviando(true);
     const res = await completarAlta(token, {
       nombre,
       telefono,
-      direccion,
+      direccion: direccionFinal,
       email,
+      crearCuenta,
       password,
       perros,
     });
@@ -126,18 +139,14 @@ export function AltaForm({
       return;
     }
 
-    // A partir de aquí el alta YA ESTÁ HECHA: el expediente existe, los
-    // perros existen y la cuenta existe. Nada de lo que sigue puede dejar
-    // al dueño mirando un botón que no avanza — que es justo lo que
-    // pasaba: si cualquiera de estos pasos lanzaba, no había try/catch,
-    // el setEnviando(false) nunca corría y la pantalla se quedaba en
-    // "Guardando tus fotos…" sin decir nada, con el alta ya completada
-    // del otro lado.
+    // A partir de aquí el alta YA ESTÁ HECHA: el expediente existe y los
+    // perros existen. Nada de lo que sigue puede dejar al dueño mirando un
+    // botón que no avanza — que es justo lo que pasaba antes del try/catch.
     let fallaronFotos = 0;
     let sesionAbierta = false;
 
     try {
-      if (direccion.trim()) {
+      if (direccionFinal.trim()) {
         setAviso("Calculando la distancia a tu domicilio…");
         await calcularDistanciaAlta(token);
       }
@@ -158,17 +167,21 @@ export function AltaForm({
         if (resFoto.error) fallaronFotos += 1;
       }
 
-      setAviso("Abriendo tu sesión…");
-      const supabase = createSupabaseBrowserClient();
-      const { error: errorSesion } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      });
-      sesionAbierta = !errorSesion;
+      if (crearCuenta) {
+        setAviso("Abriendo tu sesión…");
+        const supabase = createSupabaseBrowserClient();
+        // Entra con el mismo teléfono que acaba de registrar. El correo
+        // interno con el que Auth lo conoce se deriva de ese número —
+        // nunca se le enseña ni se le pide.
+        const { error: errorSesion } = await supabase.auth.signInWithPassword({
+          email: correoSinteticoDeTelefono(telefono),
+          password,
+        });
+        sesionAbierta = !errorSesion;
+      }
     } catch {
       // Se traga el error a propósito: el alta ya quedó y no hay nada que
-      // el dueño pueda hacer con un mensaje técnico. Abajo se le manda a
-      // iniciar sesión, que es la salida buena.
+      // el dueño pueda hacer con un mensaje técnico.
       sesionAbierta = false;
     } finally {
       setEnviando(false);
@@ -176,21 +189,24 @@ export function AltaForm({
     }
 
     if (fallaronFotos > 0) {
-      // No se le pide que repita nada: ya está adentro y recepción ve al
-      // perro sin foto, que es un detalle, no un problema.
       console.warn(`${fallaronFotos} foto(s) no se pudieron subir`);
+    }
+
+    // Sin cuenta no hay firma posible: el PDF lleva quién firmó y desde
+    // dónde, y eso lo sella el servidor con una sesión real. El contrato
+    // queda pendiente y recepción lo resuelve en el mostrador.
+    if (!crearCuenta) {
+      setTerminadoSinCuenta(true);
+      return;
     }
 
     if (!sesionAbierta) {
       setError(
-        "¡Tu alta quedó lista! Solo no pudimos abrirte la sesión automáticamente: entra con tu correo y tu contraseña."
+        "¡Tu alta quedó lista! Solo no pudimos abrirte la sesión automáticamente: entra con tu teléfono y tu contraseña."
       );
       return;
     }
 
-    // La firma necesita la sesión abierta: el PDF lleva quién firmó,
-    // cuándo y desde qué IP, y eso lo sella el servidor con la sesión
-    // real, no con lo que la pantalla diga de sí misma.
     const pendientes = res.contratos ?? [];
     if (pendientes.length === 0) {
       router.push("/portal");
@@ -199,6 +215,26 @@ export function AltaForm({
     }
     setContratos(pendientes);
     setPaso(3);
+  }
+
+  if (terminadoSinCuenta) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Alert variante="exito" titulo="Listo, ya estás registrado">
+          Ya tenemos los datos de{" "}
+          {perros.map((p) => p.nombre.trim()).filter(Boolean).join(", ") || "tu perro"}. Puedes
+          agendar por WhatsApp o pasando al mostrador.
+        </Alert>
+        <p className="text-n-600">
+          Cuando llegues, recepción te va a pedir que firmes el contrato de{" "}
+          {definicion.etiqueta.toLowerCase()}.
+        </p>
+        <p className="text-n-600">
+          Si después quieres ver a tu perro desde tu celular, pídele a recepción que te abra tu
+          cuenta: se usa este mismo teléfono.
+        </p>
+      </div>
+    );
   }
 
   const totalPasos = contratos.length > 0 ? 4 : 3;
@@ -228,14 +264,44 @@ export function AltaForm({
             value={telefono}
             onChange={(e) => setTelefono(e.target.value)}
             placeholder="444 123 4567"
+            ayuda="Con este número te reconocemos, y con él entras a tu portal."
           />
           <Field
-            label="Tu dirección (opcional)"
-            value={direccion}
-            onChange={(e) => setDireccion(e.target.value)}
-            placeholder="Calle, número, colonia y ciudad"
-            ayuda="Solo si te interesa que pasemos por tu perro a domicilio: con ella calculamos la distancia para cotizarlo. La puedes dar después."
+            label="Tu correo (opcional)"
+            type="email"
+            inputMode="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            ayuda="Solo si lo quieres dar. No hace falta para nada de esto."
           />
+
+          {/* La dirección solo le sirve a quien quiere que pasemos por su
+              perro. Preguntársela a todos es un campo largo, en un celular,
+              que la mayoría no va a usar. */}
+          <label className="flex items-start gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3 text-n-900">
+            <input
+              type="checkbox"
+              checked={quiereRecoleccion}
+              onChange={(e) => setQuiereRecoleccion(e.target.checked)}
+              className="mt-1 h-4 w-4"
+            />
+            <span>
+              Me interesa que pasen por mi perro a domicilio
+              <span className="block text-sm text-n-600">
+                Con tu dirección calculamos la distancia para cotizarlo. La puedes dar después.
+              </span>
+            </span>
+          </label>
+
+          {quiereRecoleccion && (
+            <Field
+              label="Tu dirección"
+              value={direccion}
+              onChange={(e) => setDireccion(e.target.value)}
+              placeholder="Calle, número, colonia y ciudad"
+            />
+          )}
+
           <div className="flex justify-end">
             <Button type="button" onClick={siguiente}>
               Siguiente
@@ -246,9 +312,14 @@ export function AltaForm({
 
       {paso === 1 && (
         <div className="flex flex-col gap-4">
-          <Alert variante="advertencia" titulo="Las vacunas no se capturan aquí">
-            Recepción las revisa con tu carnet físico cuando lleguen. No te preocupes por eso ahora.
-          </Alert>
+          {/* El aviso de vacunas es de quien va a dejar a su perro: a un
+              baño de dos horas no se le revisa el carnet. */}
+          {definicion.expedienteCompleto && (
+            <Alert variante="advertencia" titulo="Las vacunas no se capturan aquí">
+              Recepción las revisa con tu carnet físico cuando lleguen. No te preocupes por eso
+              ahora.
+            </Alert>
+          )}
 
           {perros.map((perro, i) => (
             <TarjetaPerro
@@ -284,32 +355,50 @@ export function AltaForm({
 
       {paso === 2 && (
         <div className="flex flex-col gap-4">
-          <p className="text-n-600">
-            Con esta cuenta vas a poder ver a{" "}
-            {perros.map((p) => p.nombre.trim()).filter(Boolean).join(", ") || "tu perro"} desde tu
-            celular: sus fotos del día, sus reservas y sus contratos.
-          </p>
+          {cuentaOpcional ? (
+            <label className="flex items-start gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3 text-n-900">
+              <input
+                type="checkbox"
+                checked={crearCuenta}
+                onChange={(e) => setCrearCuenta(e.target.checked)}
+                className="mt-1 h-4 w-4"
+              />
+              <span>
+                Quiero mi cuenta para ver a mi perro desde el celular
+                <span className="block text-sm text-n-600">
+                  Sus fotos del día, sus citas y sus contratos. Si no la quieres ahora, tu registro
+                  queda igual y la puedes abrir después.
+                </span>
+              </span>
+            </label>
+          ) : (
+            <p className="text-n-600">
+              Con tu cuenta vas a poder ver a{" "}
+              {perros.map((p) => p.nombre.trim()).filter(Boolean).join(", ") || "tu perro"} desde tu
+              celular: sus fotos del día, sus reservas y sus contratos.
+            </p>
+          )}
 
-          <Field
-            label="Tu correo"
-            type="email"
-            inputMode="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <Field
-            label="Tu contraseña"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            ayuda="Al menos 6 caracteres."
-          />
-          <Field
-            label="Repite tu contraseña"
-            type="password"
-            value={confirmacion}
-            onChange={(e) => setConfirmacion(e.target.value)}
-          />
+          {crearCuenta && (
+            <>
+              <p className="text-sm text-n-600">
+                Vas a entrar con tu teléfono <strong>{telefono || "…"}</strong> y esta contraseña.
+              </p>
+              <Field
+                label="Tu contraseña"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                ayuda="Al menos 6 caracteres. Si se te olvida, recepción te la restablece por WhatsApp."
+              />
+              <Field
+                label="Repite tu contraseña"
+                type="password"
+                value={confirmacion}
+                onChange={(e) => setConfirmacion(e.target.value)}
+              />
+            </>
+          )}
 
           {aviso && <Alert variante="advertencia" titulo={aviso} />}
 

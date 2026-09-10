@@ -4,14 +4,19 @@ import { InvitarStaff } from "./invitar-staff";
 import { ListaCuentas, type Cuenta } from "./lista-cuentas";
 import { DescuentoConfig } from "./descuento-config";
 import { DiagnosticoGoogle } from "./diagnostico-google";
+import { ConfiguracionNegocio, type ConfiguracionVigente } from "./configuracion-negocio";
 
 export default async function AdminPage() {
   const supabase = await createSupabaseServerClient();
-  const [{ data, error }, { data: topeData }] = await Promise.all([
+  const [{ data, error }, { data: topeData }, { data: configData }] = await Promise.all([
     supabase.rpc("listar_cuentas"),
     supabase.rpc("resolver_tope_descuento_recepcion"),
+    supabase.rpc("resolver_cupo_configuracion"),
   ]);
   const topeFila = Array.isArray(topeData) ? topeData[0] : topeData;
+  const configVigente = (Array.isArray(configData) ? configData[0] : configData) as
+    | ConfiguracionVigente
+    | null;
 
   return (
     <div className="flex flex-col gap-8">
@@ -19,6 +24,11 @@ export default async function AdminPage() {
         <h1 className="text-2xl font-bold text-n-900">Panel de admin</h1>
         <p className="mt-1 text-n-600">Invita personal y revisa quién tiene cuenta.</p>
       </div>
+
+      <section className="rounded-lg border border-n-200 bg-white p-5">
+        <h2 className="mb-4 text-lg font-bold text-n-900">Configuración del negocio</h2>
+        <ConfiguracionNegocio vigente={configVigente} />
+      </section>
 
       <section className="rounded-lg border border-n-200 bg-white p-5">
         <h2 className="mb-4 text-lg font-bold text-n-900">Invitar personal</h2>

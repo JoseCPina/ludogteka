@@ -31,6 +31,15 @@ export async function actualizarMisDatos(
 
   if (error) {
     if (error.code === "23505") {
+      // El teléfono es con lo que entra: si ya es de otro expediente, no
+      // se puede tomar. Decirle que el problema es el correo lo manda a
+      // revisar el campo equivocado.
+      if (error.message.includes("telefono")) {
+        return {
+          error:
+            "Ese teléfono ya está registrado con otra cuenta. Si te cambiaste de número y el viejo era tuyo, avísale a recepción.",
+        };
+      }
       return { error: "Ya existe un cliente activo con ese correo." };
     }
     return { error: "No pudimos guardar los cambios. Intenta de nuevo." };

@@ -2,6 +2,7 @@
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { normalizarTelefono } from "@/lib/telefono";
+import { correoSinteticoDeTelefono } from "@/lib/auth/identidad";
 import { geocodificarYCalcularDistancia } from "@/lib/google-maps/distancia-cliente";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type {
@@ -30,8 +31,10 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
   if (!telefono) {
     return { error: "El teléfono debe tener 10 dígitos. Puedes escribirlo con espacios o guiones." };
   }
-  if (!email || !email.includes("@")) return { error: "Escribe un correo válido." };
-  if (datos.password.length < 6) {
+  // El correo dejó de ser obligatorio: es un dato de contacto más. Si lo
+  // escriben, tiene que ser uno de verdad; si no, no se pide.
+  if (email && !email.includes("@")) return { error: "Ese correo no se ve bien. Revísalo o déjalo vacío." };
+  if (datos.crearCuenta && datos.password.length < 6) {
     return { error: "La contraseña debe tener al menos 6 caracteres." };
   }
   if (datos.perros.length === 0) return { error: "Agrega al menos un perro." };
@@ -62,29 +65,56 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
     return { error: "Este link ya venció. Pídele uno nuevo a recepción." };
   }
 
+  // El teléfono no se verifica (decisión del negocio: nada de SMS), así
+  // que esta es la única barrera contra que dos personas terminen
+  // peleándose un expediente. Se pregunta ANTES de crear la cuenta de
+  // Auth, aunque completar_alta_cliente lo vuelva a decidir dentro de su
+  // transacción: sin esto, un teléfono ya registrado dejaría atrás una
+  // cuenta huérfana en cada intento.
+  const { data: estadoTel } = await admin.rpc("estado_telefono_alta", {
+    p_telefono: telefono,
+  });
+  const estado = (Array.isArray(estadoTel) ? estadoTel[0] : estadoTel) as
+    | { existe_cliente: boolean; tiene_cuenta: boolean; nombre: string | null }
+    | null;
+
+  if (estado?.tiene_cuenta) {
+    return {
+      error:
+        "Ya hay una cuenta registrada con ese teléfono. Si es tuya, inicia sesión; si no la recuerdas, pídele a recepción que te la restablezca desde el mismo WhatsApp.",
+    };
+  }
+
   // email_confirm: true a propósito. La persona no llegó por un correo
   // que haya que verificar: llegó por un link que recepción le mandó a su
   // WhatsApp y está capturando frente a la pantalla. Pedirle además que
   // salga a confirmar un correo para poder entrar rompería el alta justo
   // en el último paso, que es donde más gente se cae.
-  const { data: creado, error: errorCuenta } = await admin.auth.admin.createUser({
-    email,
-    password: datos.password,
-    email_confirm: true,
-  });
+  let userId: string | null = null;
 
-  if (errorCuenta || !creado?.user) {
-    const mensaje = errorCuenta?.message ?? "";
-    if (/already|registered|exists/i.test(mensaje)) {
-      return {
-        error:
-          "Ya existe una cuenta con ese correo. Si es tuya, inicia sesión; si no, usa otro correo o avísale a recepción.",
-      };
+  if (datos.crearCuenta) {
+    // La cuenta se registra con un correo derivado del teléfono, no con el
+    // correo que la persona haya escrito: así el login por teléfono
+    // funciona siempre, y el correo de contacto puede cambiar (o no
+    // existir) sin tocar la forma de entrar. Ver src/lib/auth/identidad.ts.
+    const { data: creado, error: errorCuenta } = await admin.auth.admin.createUser({
+      email: correoSinteticoDeTelefono(telefono),
+      password: datos.password,
+      email_confirm: true,
+    });
+
+    if (errorCuenta || !creado.user) {
+      const mensaje = errorCuenta?.message ?? "";
+      if (/already|registered|exists/i.test(mensaje)) {
+        return {
+          error:
+            "Ya hay una cuenta registrada con ese teléfono. Si es tuya, inicia sesión; si no la recuerdas, pídele a recepción que te la restablezca.",
+        };
+      }
+      return { error: "No pudimos crear tu cuenta. Intenta de nuevo." };
     }
-    return { error: "No pudimos crear tu cuenta. Intenta de nuevo." };
+    userId = creado.user.id;
   }
-
-  const userId = creado.user.id;
 
   const { data: resultado, error: errorAlta } = await admin.rpc("completar_alta_cliente", {
     p_token: token,
@@ -113,7 +143,7 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
     // hay que deshacerla a mano. Si no, queda una cuenta sin expediente
     // — exactamente la cuenta huérfana que este flujo viene a evitar, y
     // encima bloqueando ese correo para el siguiente intento.
-    await admin.auth.admin.deleteUser(userId);
+    if (userId) await admin.auth.admin.deleteUser(userId);
     return { error: errorAlta.message || "No pudimos completar tu alta. Intenta de nuevo." };
   }
 
@@ -189,14 +219,25 @@ export async function completarExpediente(
     }
     userId = null; // ya está ligada: la función no tiene que ligar nada
   } else {
-    const email = datos.email.trim().toLowerCase();
-    if (!email.includes("@")) return { error: "Escribe un correo válido." };
     if (datos.password.length < 6) {
       return { error: "La contraseña debe tener al menos 6 caracteres." };
     }
 
+    // El teléfono sale del expediente, no de lo que mande la pantalla: es
+    // el mismo con el que va a entrar, y no hay razón para volver a
+    // pedírselo ni para dejar que lo cambie desde un formulario público.
+    const { data: clienteDatos } = await admin
+      .from("clientes")
+      .select("telefono")
+      .eq("id", invitacion.cliente_id)
+      .single();
+    const telefono = normalizarTelefono((clienteDatos?.telefono as string | null) ?? "");
+    if (!telefono) {
+      return { error: "Tu expediente no tiene un teléfono válido. Avísale a recepción." };
+    }
+
     const { data: creado, error: errorCuenta } = await admin.auth.admin.createUser({
-      email,
+      email: correoSinteticoDeTelefono(telefono),
       password: datos.password,
       email_confirm: true,
     });
@@ -206,7 +247,7 @@ export async function completarExpediente(
       if (/already|registered|exists/i.test(mensaje)) {
         return {
           error:
-            "Ya existe una cuenta con ese correo. Si es tuya, inicia sesión; si no, usa otro correo o avísale a recepción.",
+            "Ya hay una cuenta con tu teléfono. Inicia sesión; si no recuerdas la contraseña, pídele a recepción que te la restablezca.",
         };
       }
       return { error: "No pudimos crear tu cuenta. Intenta de nuevo." };
@@ -218,7 +259,7 @@ export async function completarExpediente(
   const { data: resultado, error } = await admin.rpc("completar_expediente_cliente", {
     p_token: token,
     p_user_id: userId,
-    p_cliente: { direccion: datos.direccion.trim(), email: datos.email.trim().toLowerCase() },
+    p_cliente: { direccion: datos.direccion.trim() },
     // Los teléfonos se normalizan igual que en el alta nueva, aquí y en
     // los perros nuevos: si no, el mismo número entra con guiones desde
     // un flujo y sin ellos desde el otro, y buscar por teléfono deja de
@@ -360,5 +401,39 @@ export async function subirFotoAlta(
 
   if (errorPerro) return { error: "No pudimos guardar la foto." };
 
+  return { error: null };
+}
+
+/**
+ * Iniciar sesión con teléfono desde una pantalla pública.
+ *
+ * La usa el link de complemento: ese link ya dice de qué expediente
+ * hablamos, pero eso no basta para dejar entrar a nadie — la contraseña
+ * es lo que prueba que quien lo abrió es el dueño. Se firma del lado del
+ * servidor para que la cookie de sesión quede puesta antes de tocar el
+ * expediente.
+ */
+export async function iniciarSesionPorTelefono(
+  telefonoCrudo: string,
+  password: string
+): Promise<{ error: string | null }> {
+  const telefono = normalizarTelefono(telefonoCrudo);
+  if (!telefono) return { error: "Ese teléfono no se ve bien. Avísale a recepción." };
+  if (!password) return { error: "Escribe tu contraseña." };
+
+  const admin = createSupabaseAdminClient();
+  const { data } = await admin.rpc("email_de_login_por_telefono", { p_telefono: telefono });
+  const email = data as string | null;
+  if (!email) {
+    return { error: "Ese teléfono todavía no tiene cuenta. Créala aquí mismo." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    return {
+      error: "Esa contraseña no coincide. Si no la recuerdas, pídele a recepción que te la restablezca.",
+    };
+  }
   return { error: null };
 }
