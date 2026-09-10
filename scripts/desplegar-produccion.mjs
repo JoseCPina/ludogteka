@@ -118,7 +118,12 @@ function ultimoDeploy() {
   // argumentos, node avisa (DEP0190) que los concatena sin escapar. Aquí
   // no hay ningún secreto que escapar, pero el aviso ensucia la salida
   // del despliegue justo cuando uno la está leyendo.
-  const salida = corre("npx vercel ls ludogteka --prod", []);
+  // 45 segundos, no los 180 de default: un listado de deploys responde en
+  // segundos o no va a responder. Cerrar stdin no basta para el login por
+  // dispositivo de Vercel — ese no lee del teclado, imprime un código y se
+  // queda esperando en el navegador — así que aquí el tope de tiempo es lo
+  // único que corta.
+  const salida = corre("npx vercel ls ludogteka --prod", [], { timeout: 45000 });
   const renglon = salida
     .split("\n")
     .find((l) => /vercel\.app/.test(l) && /(Ready|Building|Queued|Error|Canceled)/.test(l));
@@ -360,7 +365,7 @@ if (!pendientes) {
 
 let deployPrevio = "";
 try {
-  deployPrevio = ultimoDeploy().url;
+  deployPrevio = ultimoDeploy().url;  // mismo tope corto de tiempo
   console.log(`   deploy actual en producción: ${deployPrevio || "(ninguno)"}`);
 } catch {
   console.log("   (no se pudo leer el estado previo de Vercel; se sigue de todos modos)");
@@ -384,6 +389,7 @@ const limite = Date.now() + 8 * 60 * 1000;
 let listo = false;
 let fallosSeguidos = 0;
 let ultimoError = "";
+let sesionVercelCaducada = false;
 
 while (Date.now() < limite && !listo) {
   await new Promise((r) => setTimeout(r, 10000));
@@ -397,7 +403,15 @@ while (Date.now() < limite && !listo) {
     // cuenta. Se avisa y se sale bien, en vez de reportar un fracaso que
     // no ocurrió — o peor, quedarse colgado reintentando.
     fallosSeguidos += 1;
-    ultimoError = sinSecreto(e.salida || e.message).split("\n").filter(Boolean).slice(-2).join(" ");
+    const detalle = sinSecreto(e.salida || e.message);
+    ultimoError = detalle.split("\n").filter(Boolean).slice(-2).join(" ");
+    // Sesión caducada: no se va a arreglar sola en diez segundos, así que
+    // se corta al primer intento en vez de gastar otro tope de tiempo
+    // completo esperando lo mismo.
+    if (/oauth\/device|Waiting for authentication|Logged out|vercel login/i.test(detalle)) {
+      sesionVercelCaducada = true;
+      break;
+    }
     if (fallosSeguidos >= 2) break;
     continue;
   }
@@ -415,10 +429,12 @@ if (!listo) {
   console.log(`\n${"=".repeat(72)}`);
   console.log("El código YA se empujó y Vercel está construyendo; lo que no se pudo fue");
   console.log("seguir el estado del build desde aquí.");
-  if (fallosSeguidos >= 2) {
+  if (sesionVercelCaducada) {
+    console.log("\nMotivo: la sesión del CLI de Vercel caducó (pidió login por dispositivo).");
+    console.log("Corre `npx vercel login` una vez y el próximo despliegue ya va a poder");
+    console.log("reportar el estado del build. El deploy de este no se ve afectado.");
+  } else if (fallosSeguidos >= 2) {
     console.log(`\nMotivo: ${ultimoError}`);
-    console.log("Si dice que la sesión no existe, es el CLI de Vercel: corre `npx vercel login`");
-    console.log("una vez y el próximo despliegue ya va a poder reportar el build.");
   } else {
     console.log("\nMotivo: el build no quedó Ready dentro del tiempo de espera.");
   }
