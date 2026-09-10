@@ -4,7 +4,11 @@
 
 export type PerroAlta = {
   nombre: string;
+  // Las dos, no una: `raza` es lo que el dueño ve escrito, `raza_id` es
+  // lo que decide el precio de estética. Cuando escoge del catálogo van
+  // las dos; cuando escribe una raza que no está, solo el texto.
   raza: string;
+  raza_id: string | null;
   sexo: string;
   fecha_nacimiento: string;
   tamano_id: string;
@@ -38,6 +42,7 @@ export function perroVacio(): PerroAlta {
   return {
     nombre: "",
     raza: "",
+    raza_id: null,
     sexo: "",
     fecha_nacimiento: "",
     tamano_id: "",

@@ -9,6 +9,12 @@ export type EstadoPerroForm = { error: string | null; ok?: boolean };
 function leerCampos(formData: FormData) {
   const nombre = String(formData.get("nombre") ?? "").trim();
   const raza = String(formData.get("raza") ?? "").trim();
+  // El buscador manda las dos cosas: el id del catálogo, que es lo que
+  // decide el precio de estética, y el texto, que es lo que se lee en la
+  // ficha. Cuando la raza no está en el catálogo llega solo el texto y el
+  // perro cotiza con el grupo por defecto — a propósito, para no obligar
+  // a nadie a escoger una raza que no es.
+  const raza_id = String(formData.get("raza_id") ?? "").trim();
   const sexo = String(formData.get("sexo") ?? "");
   const esterilizado = String(formData.get("esterilizado") ?? "");
   const fecha_nacimiento = String(formData.get("fecha_nacimiento") ?? "");
@@ -20,6 +26,7 @@ function leerCampos(formData: FormData) {
   return {
     nombre,
     raza: raza || null,
+    raza_id: raza_id || null,
     sexo: sexo || null,
     esterilizado: esterilizado === "" ? null : esterilizado === "si",
     fecha_nacimiento: fecha_nacimiento || null,

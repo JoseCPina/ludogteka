@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { cargarRazas } from "@/lib/razas";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { PerroForm } from "../perro-form";
@@ -35,6 +36,7 @@ export default async function PerroPage({
   const supabase = await createSupabaseServerClient();
   const [
     { data: perro },
+    razas,
     { data: tamanos },
     { data: pelajes },
     { data: estadoSanitario },
@@ -48,11 +50,12 @@ export default async function PerroPage({
     supabase
       .from("perros")
       .select(
-        "id, nombre, raza, sexo, esterilizado, fecha_nacimiento, tamano_id, pelaje_id, alimentacion_notas, temperamento_notas, fallecido, foto_path, cliente_id, clientes(nombre)"
+        "id, nombre, raza, raza_id, sexo, esterilizado, fecha_nacimiento, tamano_id, pelaje_id, alimentacion_notas, temperamento_notas, fallecido, foto_path, cliente_id, clientes(nombre)"
       )
       .eq("id", id)
       .is("deleted_at", null)
       .single(),
+    cargarRazas(supabase, { conGrupo: true }),
     supabase
       .from("tamanos_categoria")
       .select("id, etiqueta")
@@ -322,11 +325,13 @@ export default async function PerroPage({
 
       <PerroForm
         action={actualizarConId}
+        razas={razas}
         tamanos={tamanos ?? []}
         pelajes={pelajes ?? []}
         valoresIniciales={{
           nombre: perro.nombre,
           raza: perro.raza,
+          raza_id: perro.raza_id,
           sexo: perro.sexo,
           esterilizado: perro.esterilizado,
           fecha_nacimiento: perro.fecha_nacimiento,

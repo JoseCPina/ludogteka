@@ -85,6 +85,7 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
     p_perros: datos.perros.map((p) => ({
       nombre: p.nombre.trim(),
       raza: p.raza,
+      raza_id: p.raza_id,
       sexo: p.sexo,
       fecha_nacimiento: p.fecha_nacimiento,
       tamano_id: p.tamano_id,

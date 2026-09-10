@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PerroForm } from "@/app/(staff)/perros/perro-form";
 import { crearPerro } from "@/app/(staff)/perros/actions";
+import { cargarRazas } from "@/lib/razas";
 
 export default async function NuevoPerroPage({
   params,
@@ -12,8 +13,9 @@ export default async function NuevoPerroPage({
   const { id } = await params;
 
   const supabase = await createSupabaseServerClient();
-  const [{ data: cliente }, { data: tamanos }, { data: pelajes }] = await Promise.all([
+  const [{ data: cliente }, razas, { data: tamanos }, { data: pelajes }] = await Promise.all([
     supabase.from("clientes").select("id, nombre").eq("id", id).is("deleted_at", null).single(),
+    cargarRazas(supabase, { conGrupo: true }),
     supabase
       .from("tamanos_categoria")
       .select("id, etiqueta")
@@ -38,6 +40,7 @@ export default async function NuevoPerroPage({
 
       <PerroForm
         action={crearConCliente}
+        razas={razas}
         tamanos={tamanos ?? []}
         pelajes={pelajes ?? []}
         textoBoton="Guardar perro"

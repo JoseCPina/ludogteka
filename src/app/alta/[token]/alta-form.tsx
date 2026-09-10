@@ -8,6 +8,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { SelectorRaza, type RazaOpcion } from "@/components/selector-raza";
 import { completarAlta, subirFotoAlta, calcularDistanciaAlta } from "../acciones";
 import { perroVacio, type PerroAlta } from "../tipos";
 
@@ -37,6 +38,7 @@ function TarjetaPerro({
   perro,
   indice,
   total,
+  razas,
   tamanos,
   pelajes,
   foto,
@@ -47,6 +49,7 @@ function TarjetaPerro({
   perro: PerroAlta;
   indice: number;
   total: number;
+  razas: RazaOpcion[];
   tamanos: Catalogo[];
   pelajes: Catalogo[];
   foto: File | null;
@@ -73,11 +76,13 @@ function TarjetaPerro({
         onChange={(e) => onCambio({ nombre: e.target.value })}
         required
       />
-      <Field
-        label="Raza (opcional)"
-        value={perro.raza}
-        onChange={(e) => onCambio({ raza: e.target.value })}
-        placeholder="ej. Labrador, mestizo"
+      <SelectorRaza
+        razas={razas}
+        label="¿De qué raza es?"
+        valorId={perro.raza_id}
+        valorTexto={perro.raza}
+        onCambio={(v) => onCambio({ raza: v.raza, raza_id: v.raza_id })}
+        ayuda="Si no sabes o es mestizo, escribe «mestizo» y escógelo de la lista."
       />
 
       <div className="grid grid-cols-2 gap-3">
@@ -185,10 +190,12 @@ function TarjetaPerro({
 
 export function AltaForm({
   token,
+  razas,
   tamanos,
   pelajes,
 }: {
   token: string;
+  razas: RazaOpcion[];
   tamanos: Catalogo[];
   pelajes: Catalogo[];
 }) {
@@ -376,6 +383,7 @@ export function AltaForm({
               perro={perro}
               indice={i}
               total={perros.length}
+              razas={razas}
               tamanos={tamanos}
               pelajes={pelajes}
               foto={fotos[i] ?? null}

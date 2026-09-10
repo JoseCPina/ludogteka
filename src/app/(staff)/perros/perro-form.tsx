@@ -6,6 +6,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { SelectorRaza, type RazaOpcion } from "@/components/selector-raza";
 import type { EstadoPerroForm } from "./actions";
 
 const ESTADO_INICIAL: EstadoPerroForm = { error: null };
@@ -14,6 +15,7 @@ export type CategoriaOpcion = { id: string; etiqueta: string };
 
 export function PerroForm({
   action,
+  razas,
   tamanos,
   pelajes,
   valoresIniciales,
@@ -21,11 +23,13 @@ export function PerroForm({
   soloLectura = false,
 }: {
   action: (estadoPrevio: EstadoPerroForm, formData: FormData) => Promise<EstadoPerroForm>;
+  razas: RazaOpcion[];
   tamanos: CategoriaOpcion[];
   pelajes: CategoriaOpcion[];
   valoresIniciales?: {
     nombre: string;
     raza: string | null;
+    raza_id: string | null;
     sexo: string | null;
     esterilizado: boolean | null;
     fecha_nacimiento: string | null;
@@ -61,11 +65,14 @@ export function PerroForm({
         disabled={deshabilitado}
         defaultValue={valoresIniciales?.nombre}
       />
-      <Field
-        label="Raza (opcional)"
-        name="raza"
+      <SelectorRaza
+        razas={razas}
+        label="Raza"
         disabled={deshabilitado}
-        defaultValue={valoresIniciales?.raza ?? ""}
+        mostrarGrupo
+        valorId={valoresIniciales?.raza_id ?? null}
+        valorTexto={valoresIniciales?.raza ?? ""}
+        ayuda="De aquí sale el precio de estética. Si no está en la lista, escríbela igual: cotiza con el grupo por defecto."
       />
 
       <div className="grid grid-cols-2 gap-4">

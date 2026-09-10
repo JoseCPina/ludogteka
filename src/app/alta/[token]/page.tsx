@@ -1,6 +1,7 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
+import { cargarRazas } from "@/lib/razas";
 import { AltaForm } from "./alta-form";
 
 // Pantalla pública: no hay sesión todavía (la cuenta se crea al final) y
@@ -47,7 +48,11 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
     );
   }
 
-  const [{ data: tamanos }, { data: pelajes }] = await Promise.all([
+  // El catálogo de razas viaja SIN el grupo de precio: el dueño escoge la
+  // raza de su perro, no el cajón en el que el negocio lo cobra. Mandar el
+  // grupo aunque no se pinte sería dejarlo servido en el HTML.
+  const [razas, { data: tamanos }, { data: pelajes }] = await Promise.all([
+    cargarRazas(admin),
     admin.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
     admin.from("tipos_pelaje").select("id, etiqueta").is("deleted_at", null).order("orden"),
   ]);
@@ -67,6 +72,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
 
       <AltaForm
         token={token}
+        razas={razas}
         tamanos={(tamanos as { id: string; etiqueta: string }[]) ?? []}
         pelajes={(pelajes as { id: string; etiqueta: string }[]) ?? []}
       />
