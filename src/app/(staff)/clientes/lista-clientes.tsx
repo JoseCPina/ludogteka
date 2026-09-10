@@ -12,6 +12,8 @@ export type ClienteFila = {
   telefono: string;
   email: string | null;
   created_at: string;
+  alta_por_cliente: boolean;
+  datos_revisados_at: string | null;
 };
 
 export function ListaClientes({ clientes }: { clientes: ClienteFila[] }) {
@@ -77,6 +79,14 @@ export function ListaClientes({ clientes }: { clientes: ClienteFila[] }) {
                   >
                     {cliente.nombre}
                   </Link>
+                  {cliente.alta_por_cliente && !cliente.datos_revisados_at && (
+                    <span
+                      className="ml-2 whitespace-nowrap rounded-full bg-azul-suave px-2 py-0.5 text-xs font-semibold text-azul-oscuro"
+                      title="Estos datos los capturo el dueno desde su celular: conviene revisarlos"
+                    >
+                      Alta del cliente · sin revisar
+                    </span>
+                  )}
                 </td>
                 <td className="border-b border-n-200 px-4 py-3 tabular-nums text-n-900">
                   {formatearTelefono(cliente.telefono)}

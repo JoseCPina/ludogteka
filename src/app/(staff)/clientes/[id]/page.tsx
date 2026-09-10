@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { formatearTelefono } from "@/lib/telefono";
 import { ClienteForm } from "../cliente-form";
 import { BajaClienteBoton } from "../baja-cliente-boton";
+import { AltaClienteBanner } from "../alta-cliente-banner";
 import { actualizarCliente, darDeBajaCliente } from "../actions";
 import { PerroFoto } from "../../perros/perro-foto";
 import { ResumenSanitario, type EstadoRequisitoItem } from "../../perros/resumen-sanitario";
@@ -32,7 +33,7 @@ export default async function EditarClientePage({
   const { data: cliente } = await supabase
     .from("clientes")
     .select(
-      "id, nombre, telefono, email, direccion, distancia_base_km, distancia_calculada_at, distancia_ajustada_manualmente"
+      "id, nombre, telefono, email, direccion, distancia_base_km, distancia_calculada_at, distancia_ajustada_manualmente, alta_por_cliente, datos_revisados_at"
     )
     .eq("id", id)
     .is("deleted_at", null)
@@ -152,6 +153,13 @@ export default async function EditarClientePage({
       </div>
 
       {creado === "1" && <Alert variante="exito" titulo="Cliente creado correctamente" />}
+
+      {cliente.alta_por_cliente && (
+        <AltaClienteBanner
+          clienteId={cliente.id}
+          revisadoAt={cliente.datos_revisados_at as string | null}
+        />
+      )}
 
       <ClienteForm
         action={actualizarConId}
