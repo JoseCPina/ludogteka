@@ -42,6 +42,10 @@ Antes de trabajar, lee docs/PROYECTO.md: ahí está el detalle de roles, roadmap
 
 \## Reglas
 
+\- \*\*Un guardia de rol nunca se escribe contra un valor que pueda ser NULL.\*\* `current_rol()` devolvía NULL para un llamador anónimo, y `null not in ('admin','recepcion')` es NULL, no TRUE: el `if` no se dispara y el guardia deja pasar. Así estuvieron abiertos 39 guardias desde Fase 1 hasta que se encontró en Fase 13. Hoy `current_rol()` devuelve `'anonimo'` y `is_admin()`/`is_staff()` van con `coalesce(..., false)`, así que el idioma de siempre ya es seguro — pero cualquier guardia nuevo se prueba \*\*también con la llave anónima pelada\*\*, no solo con un JWT de cada rol: es el caso que ninguna prueba con sesión puede ver.
+
+\- \*\*`revoke execute ... from public` NO le quita el permiso a `anon` en Supabase.\*\* El proyecto trae ALTER DEFAULT PRIVILEGES que le concede EXECUTE a anon/authenticated/service_role sobre cada función nueva, y eso es una concesión directa al rol: hay que nombrar a `anon` explícitamente para revocárselo.
+
 \- Nada de SQL manual por copy-paste: todo cambio de esquema va como migración.
 
 \- RLS obligatorio en toda tabla nueva. Verificar aislamiento con llamadas REST directas, no solo por UI.

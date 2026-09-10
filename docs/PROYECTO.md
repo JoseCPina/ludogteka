@@ -681,6 +681,38 @@ Captura sus datos y, por cada perro, nombre, raza, sexo, tamaño, pelaje, fecha 
 
 `gen_random_bytes()` es de pgcrypto, que en Supabase vive en el esquema `extensions`, y estas funciones corren con `set search_path = ''`: no se encontraba. `gen_random_uuid()` sí funcionaba (es del core desde PG13), por eso la tabla se creó bien y solo tronaba al generar el token. Se resolvió sin depender de la extensión: dos `gen_random_uuid()` concatenados dan 64 caracteres hex y 244 bits del mismo generador criptográfico del sistema, sin atar la función a en qué esquema quedó pgcrypto.
 
+### Agujero de seguridad encontrado de paso (y que llevaba desde Fase 1)
+
+Probando el alta con la llave anónima —la que viaja en el bundle del navegador y por tanto es pública— salió que **cualquiera podía ejecutar los RPC de staff sin ninguna sesión**. Con la anon key y sin login se pudo crear un tipo de contrato, leer `reporte_estado_operativo_actual()` con las cifras del negocio, y generar un link de alta de cliente válido.
+
+La causa es una trampa de SQL en el idioma estándar del proyecto para los guardias de rol:
+
+```
+current_rol()  ->  select rol from profiles where id = auth.uid()
+```
+
+Para un llamador anónimo `auth.uid()` es null, no hay fila, y la función devuelve **NULL**. Y en SQL NULL no significa "distinto de admin", significa desconocido:
+
+```
+null not in ('admin','recepcion')  ->  NULL   (no TRUE)
+not null                           ->  NULL
+```
+
+Un `if <NULL> then raise ...` **no se dispara**. Los 39 guardias repartidos en 23 migraciones dejaban pasar justo al llamador con menos permisos de todos. Los guardias funcionaban perfecto para clientes y para staff (que sí tienen `profiles.rol`), que es por qué ninguna prueba anterior lo vio: todas se hicieron con JWT real de algún rol, nunca con la llave anónima pelada.
+
+**El RLS nunca estuvo comprometido**: una política `using (public.is_staff())` evalúa NULL y Postgres trata NULL como "no" al filtrar filas. Lo que fallaba eran los guardias en plpgsql, donde NULL quiere decir "no entres al if".
+
+El arreglo va en la raíz, no en los 39 guardias: `current_rol()` ahora devuelve `'anonimo'` en vez de NULL (un centinela que no está en el CHECK de `profiles.rol` y no puede coincidir con ninguna lista de permitidos), e `is_admin()`/`is_staff()` se blindan con `coalesce(..., false)`. Corregir función por función habría dejado el mismo idioma frágil esperando a la número 40.
+
+**Dos funciones internas dependían del bug para trabajar**, y solo se supo al correr la regresión completa antes de desplegar:
+
+- `vincular_cliente_por_email()` (Fase 1) corre desde un trigger de `auth.users` donde no hay `auth.uid()`, y el trigger `proteger_columnas_sensibles_profile()` exige admin/recepción para tocar `cliente_id`. Peor: esa función captura `when others` y solo hace `raise warning`, así que **habría dejado de vincular en silencio**.
+- `completar_alta_cliente()` de esta misma fase, que corre con la secret key. Esa sí tronaba de frente.
+
+En vez de aflojar el trigger se le dio a lo interno una puerta con nombre: `app.vinculacion_interna`, puesta con `set_config(..., true)` — local a la transacción, desaparece al terminar. Un cliente no puede encenderla: necesitaría ejecutar `set_config` y el UPDATE en la misma transacción, y por PostgREST cada petición es su propia transacción; ninguna función expuesta llama a `set_config`. Verificado: un cliente editando su propio profile sigue sin poder cambiarse el `cliente_id`.
+
+Verificado después del arreglo: los cuatro RPC que antes pasaban ahora responden "Solo un admin…"/"Solo admin o recepción…" al llamador anónimo; admin y recepción siguen haciendo exactamente lo mismo que antes; recepción sigue sin poder lo que es de admin; la vinculación automática por correo al registrarse sigue funcionando y sigue quedando en la bitácora.
+
 ### Verificado con JWT real y renders reales
 
 Recepción genera el link; con la llave anónima no se lee la invitación ni se ejecuta la función de alta; un alta que falla no deja cliente ni perro ni quema el link; el alta buena crea expediente y dos perros con todos sus campos en una transacción, deja `profiles.cliente_id` apuntando al expediente y **no aparece en la cola de `/vinculacion`**; el perro queda con sus 4 requisitos sanitarios en `sin_registro`; el mismo link ya no sirve una segunda vez; los links vencido y cancelado se rechazan con su mensaje; recepción marca el expediente como revisado y el aviso se apaga; el dueño recién creado ve sus 2 perros y solo su propio expediente, y no puede generar links. En pantalla: `/alta/<token>` abre sin sesión con la caducidad visible, y los estados usado/cancelado/inventado explican en vez de tronar.
