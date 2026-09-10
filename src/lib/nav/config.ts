@@ -14,18 +14,20 @@ export type ItemNav = {
 // tocar el layout. `roles` respeta lo que cada rol puede ver según
 // docs/PROYECTO.md (recepción no ve dinero/reportes, estética no ve dinero).
 export const SECCIONES_STAFF: ItemNav[] = [
-  // Guardería y hotel comparten tabla (`estancias`) y comparten cupo, pero
-  // el staff los atiende como dos servicios distintos: cada uno con sus
-  // reservas, su check-in/check-out y su lista del día. La ocupación que
-  // se muestra en ambos es la de toda la casa — ver src/lib/modulos.ts.
+  // Los tres servicios del negocio, juntos y primero: es como los piensa
+  // el staff y es donde pasa el día. Guardería y hotel comparten tabla
+  // (`estancias`) y comparten cupo, pero se atienden por separado: cada
+  // uno con sus reservas, su check-in/check-out y su lista del día. La
+  // ocupación que se muestra en ambos es la de toda la casa — ver
+  // src/lib/modulos.ts.
   { etiqueta: "Guardería", href: "/guarderia", roles: ["admin", "recepcion"] },
   { etiqueta: "Hotel", href: "/hotel", roles: ["admin", "recepcion"] },
+  { etiqueta: "Estética", href: "/estetica", roles: ["admin", "recepcion", "estetica"] },
   { etiqueta: "Servicios", href: "/servicios", roles: ["admin"] },
   { etiqueta: "Clientes", href: "/clientes", roles: ["admin", "recepcion"] },
   { etiqueta: "Vinculación", href: "/vinculacion", roles: ["admin", "recepcion"] },
   { etiqueta: "Caja", href: "/caja", roles: ["admin", "recepcion"] },
   { etiqueta: "Contratos", href: "/contratos", roles: ["admin", "recepcion"] },
-  { etiqueta: "Estética", href: "/estetica", roles: ["admin", "recepcion", "estetica"] },
   { etiqueta: "Inventario", href: "/inventario", roles: ["admin", "recepcion", "estetica"] },
   { etiqueta: "Reportes", href: "/reportes", roles: ["admin"] },
 ];
