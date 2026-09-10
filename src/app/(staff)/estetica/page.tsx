@@ -4,6 +4,8 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { BotonNuevoCliente } from "@/components/boton-nuevo-cliente";
+import { contarPerrosSinRazaCatalogo } from "@/lib/razas";
+import { AvisoRazasSinCatalogar } from "@/components/aviso-razas-sin-catalogar";
 import {
   formatearFechaCalendario,
   formatearDiaSemana,
@@ -64,8 +66,11 @@ export default async function AgendaPage({
   const desdeConsulta = sumarDiasFecha(desde, -1);
   const hastaConsulta = sumarDiasFecha(hasta, 2);
 
-  const [{ data: empleados, error: errorEmpleados }, { data: citasCrudo, error: errorCitas }] =
-    await Promise.all([
+  const [
+    { data: empleados, error: errorEmpleados },
+    { data: citasCrudo, error: errorCitas },
+    perrosSinRaza,
+  ] = await Promise.all([
       supabase
         .from("profiles")
         .select("id, nombre_completo, rol")
@@ -79,6 +84,7 @@ export default async function AgendaPage({
         .gte("inicio", desdeConsulta)
         .lt("inicio", hastaConsulta)
         .order("inicio"),
+      contarPerrosSinRazaCatalogo(supabase),
     ]);
 
   const error = errorEmpleados ?? errorCitas;
@@ -148,6 +154,8 @@ export default async function AgendaPage({
           </Link>
         </div>
       </div>
+
+      <AvisoRazasSinCatalogar cuantos={perrosSinRaza} />
 
       {error ? (
         <Alert variante="error" titulo="No pudimos cargar la agenda">

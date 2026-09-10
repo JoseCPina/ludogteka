@@ -1,30 +1,25 @@
 "use client";
 
 import { useId, useMemo, useRef, useState } from "react";
+import { normalizarTextoRaza } from "@/lib/razas";
 
 export type RazaOpcion = {
   id: string;
   nombre: string;
   alias: string[];
+  // Esta entrada significa "el dueno no sabe la raza", no una raza
+  // concreta. La usa el precio estimado para avisar distinto.
+  es_desconocida?: boolean;
+  // Solo viajan cuando quien mira es del negocio (cargarRazas con
+  // conGrupo). En la pantalla del cliente no se mandan.
   grupo_nombre?: string;
+  grupo_depende_tamano?: boolean;
 };
-
-// "Bóxer" y "boxer", "shih tzu" y "shitzu": quien captura escribe como se
-// dice, no como se escribe. Sin quitar acentos ni bajar a minúsculas, la
-// búsqueda falla justo con las razas que más se teclean mal y el dueño
-// acaba escogiendo "no sé" — que cotiza distinto.
-function normalizar(texto: string): string {
-  return texto
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-}
 
 const MAXIMO_SUGERENCIAS = 8;
 
 function buscar(razas: RazaOpcion[], consulta: string): RazaOpcion[] {
-  const q = normalizar(consulta);
+  const q = normalizarTextoRaza(consulta);
   if (!q) return razas.slice(0, MAXIMO_SUGERENCIAS);
 
   // Las que EMPIEZAN con lo tecleado van primero: quien escribe "pas"
@@ -32,7 +27,7 @@ function buscar(razas: RazaOpcion[], consulta: string): RazaOpcion[] {
   const empiezan: RazaOpcion[] = [];
   const contienen: RazaOpcion[] = [];
   for (const raza of razas) {
-    const candidatos = [raza.nombre, ...raza.alias].map(normalizar);
+    const candidatos = [raza.nombre, ...raza.alias].map(normalizarTextoRaza);
     if (candidatos.some((c) => c.startsWith(q))) empiezan.push(raza);
     else if (candidatos.some((c) => c.includes(q))) contienen.push(raza);
   }
@@ -160,7 +155,7 @@ export function SelectorRaza({
 
   const idLista = `${idBase}-lista`;
   const hayTexto = consulta.trim().length > 0;
-  const coincideExacto = sugerencias.some((r) => normalizar(r.nombre) === normalizar(consulta));
+  const coincideExacto = sugerencias.some((r) => normalizarTextoRaza(r.nombre) === normalizarTextoRaza(consulta));
 
   return (
     <div>

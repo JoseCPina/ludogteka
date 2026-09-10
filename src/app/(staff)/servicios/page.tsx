@@ -3,6 +3,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { contarSinTarifa, type CeldaVigente } from "@/lib/tarifas/matriz";
+import { contarPerrosSinRazaCatalogo } from "@/lib/razas";
+import { AvisoRazasSinCatalogar } from "@/components/aviso-razas-sin-catalogar";
 
 const ETIQUETA_CATEGORIA: Record<string, string> = {
   guarderia: "Guardería",
@@ -17,8 +19,14 @@ export default async function ServiciosPage() {
   // Sin filtrar deleted_at: esta pantalla ES el histórico del catálogo.
   // Quien arme un selector para cobrar (Fase 4/5) sí debe filtrar
   // deleted_at is null — aquí un servicio inactivo se ve, solo marcado.
-  const [{ data: servicios, error }, { data: grupos }, { data: tamanos }, { data: pelajes }, { data: vigentes }] =
-    await Promise.all([
+  const [
+    { data: servicios, error },
+    { data: grupos },
+    { data: tamanos },
+    { data: pelajes },
+    { data: vigentes },
+    perrosSinRaza,
+  ] = await Promise.all([
       supabase
         .from("servicios")
         .select(
@@ -31,6 +39,7 @@ export default async function ServiciosPage() {
       supabase
         .from("tarifas_vigentes")
         .select("servicio_id, grupo_raza_id, tamano_id, pelaje_id, cantidad_desde, cantidad_hasta, precio, no_aplica"),
+      contarPerrosSinRazaCatalogo(supabase),
     ]);
 
   // Un servicio a medio capturar no se nota hasta que alguien intenta
@@ -68,6 +77,8 @@ export default async function ServiciosPage() {
           <Button type="button">Nuevo servicio</Button>
         </Link>
       </div>
+
+      <AvisoRazasSinCatalogar cuantos={perrosSinRaza} />
 
       {serviciosConHuecos > 0 && (
         <Alert
