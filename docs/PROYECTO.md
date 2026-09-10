@@ -718,6 +718,54 @@ Verificado después del arreglo: los cuatro RPC que antes pasaban ahora responde
 Recepción genera el link; con la llave anónima no se lee la invitación ni se ejecuta la función de alta; un alta que falla no deja cliente ni perro ni quema el link; el alta buena crea expediente y dos perros con todos sus campos en una transacción, deja `profiles.cliente_id` apuntando al expediente y **no aparece en la cola de `/vinculacion`**; el perro queda con sus 4 requisitos sanitarios en `sin_registro`; el mismo link ya no sirve una segunda vez; los links vencido y cancelado se rechazan con su mensaje; recepción marca el expediente como revisado y el aviso se apaga; el dueño recién creado ve sus 2 perros y solo su propio expediente, y no puede generar links. En pantalla: `/alta/<token>` abre sin sesión con la caducidad visible, y los estados usado/cancelado/inventado explican en vez de tronar.
 
 
+## Barrido de comparaciones que evalúan a NULL (septiembre 2026)
+
+Después de encontrar en Fase 13 que un llamador anónimo burlaba los 39 guardias de rol (`null not in (...)` es NULL, no TRUE, y el `if` no entra), se barrió el proyecto entero buscando la misma clase de error. Mismo método que el barrido de zonas horarias: buscar el patrón, no el síntoma.
+
+### Prueba dinámica: los 56 RPC con la llave anónima pelada
+
+`PostgREST` expone **56 funciones** de las 72 vigentes (las otras son de trigger o helpers no invocables). Se llamaron **las 56**, sin sesión, con la anon key — que viaja en el bundle del navegador y por tanto es pública. Dos pasadas: una con argumentos inventados y otra, para las que se quedaban en "no encontrado", **con IDs reales de la base**, que es la única forma de distinguir "el guardia me paró" de "el id no existía".
+
+**Antes del arreglo**, con la anon key y sin ninguna sesión: `crear_tipo_contrato` creó un tipo de contrato real y devolvió su id; `reporte_estado_operativo_actual` devolvió las cifras del negocio; `crear_invitacion_cliente` devolvió un token de alta válido; `vincular_cliente_por_email` se ejecutó con 204; `marcar_datos_revisados` y `cancelar_invitacion_cliente` llegaron hasta su UPDATE.
+
+**Después**: 51 de 56 no se pueden ni llamar, y las 5 que quedan son helpers que se conservan a propósito porque los evalúan políticas de RLS y vistas (`current_rol`, `is_admin`, `is_staff`, `fecha_negocio`, `hora_negocio`). Si anon no pudiera ejecutarlos, una consulta anónima a una tabla protegida devolvería "permission denied for function is_staff" en vez de cero filas — un error crudo donde hoy hay un vacío limpio. Lo que devuelven no es información de nadie: el rol del propio llamador (`'anonimo'`), dos booleanos sobre sí mismo, y la fecha y hora del negocio. Ninguna llamada anónima del barrido cambió el conteo de ninguna tabla.
+
+### Los dos caminos por los que `anon` tenía EXECUTE
+
+Cerrarlo tomó dos migraciones porque hay **dos** concesiones distintas, y quitar una no toca la otra:
+
+1. **El default de Postgres**: al crear una función, se le concede EXECUTE a `PUBLIC`, y `anon` es miembro de PUBLIC. `revoke ... from anon` no sirve si PUBLIC lo sigue teniendo.
+2. **El `ALTER DEFAULT PRIVILEGES` de Supabase**, que además da un grant **directo** a anon/authenticated/service_role. Ese no se quita revocándole a `public`.
+
+O sea que las dos formas que uno intentaría por separado fallan cada una por su lado. El caso que lo ilustra es `existe_usuario_por_email` (Fase 1): su comentario decía "Solo `service_role` la puede llamar (no `anon`/`authenticated`): expone si un correo está registrado, así que no debe quedar abierta a enumeración" e hizo `revoke ... from public`. La intención era exactamente la correcta; el `revoke` no la logró, y quedó un oráculo de enumeración de correos abierto a internet hasta este barrido.
+
+Al revocar a PUBLIC hay que **preservar lo que `authenticated` sí podía ejecutar**: la migración consulta el privilegio antes de revocar y se lo vuelve a conceder función por función. Sin eso, quitarle a PUBLIC habría dejado media app rota para el staff.
+
+### Prueba estática: 113 condiciones revisadas
+
+Se buscaron en las migraciones todas las condiciones `if`/`elsif` con operadores que propagan NULL (`not in`, `<>`, `!=`, `not (...)`, `not funcion()`): **113 en total**, que acotadas a la **definición vigente** de cada función (lo único que corre hoy) son **60**. De esas:
+
+- **13** ya estaban escritas a prueba de NULL (`is null or …`, `is distinct from`, `coalesce`) — la convención del proyecto era la correcta, estas seis eran la excepción.
+- **42** tienen todos sus operandos garantizados no-nulos, verificado contra el esquema: helpers de rol (ya blindados con `coalesce`), columnas `NOT NULL` con default (`estado`, `bloqueo_sanitario_superado`) y `servicios.categoria`, que es `NOT NULL` y llega por FK.
+- **11** quedaron por revisar una por una. De esas, 2 se descartaron por columnas `NOT NULL` (`turnos_caja.estado` y `abierto_por`), 3 más resultaron protegidas por un `is null` previo en la misma función, y **6 eran reales**.
+
+### Las 6 reales, y por qué no todas importan igual
+
+Las seis validan un parámetro contra una lista cerrada con `not in`, y el valor llega del cliente (parámetro de la función o campo de un `jsonb`). Comprobado en desarrollo con sesión de admin: `aplicar_descuento` con `p_tipo` null pasó de largo su validación y llegó hasta "Motivo de descuento no encontrado"; `consumir_bono` con `p_item_tipo` null llegó hasta "Bono no encontrado"; `registrar_cobro` con `{"metodo": null}` llegó hasta la revisión del turno de caja.
+
+**Solo una podía escribir basura**: `consumir_bono`. `movimientos_bono.item_tipo` es nullable a propósito (un movimiento de `'venta'` no tiene item), así que su CHECK no atrapa el NULL — se habría guardado un consumo de bono sin decir contra qué se consumió. Las otras cinco chocaban con el `NOT NULL + CHECK` de su columna (`cobro_metodos.metodo`, `devolucion_metodos.metodo`, `descuentos_aplicados.tipo`, `movimientos_inventario.tipo`): el dato nunca llegó a guardarse mal, lo que se rompía era el mensaje — en vez de "Método de pago inválido" salía un error crudo de constraint, o peor, uno que apunta a otra cosa. Ninguna era alcanzable sin sesión de staff.
+
+Las seis se corrigieron con `is null or …` **generando la migración a partir del texto vigente de cada función**, no reescribiéndolas a mano: lo que se publicó es el mismo cuerpo que ya corría, con un cambio quirúrgico en una línea.
+
+### TypeScript: sin equivalentes
+
+Se revisó el lado del cliente buscando la misma clase de error con `undefined`/`NaN`:
+
+- **Validaciones numéricas**: las 8 usan `Number.isFinite(x)` antes de comparar, o `Number(x) || 0`. La trampa equivalente (`Number("abc") <= 0` es `false` porque NaN pierde toda comparación, y la validación pasaría) está cubierta en todas.
+- **Guardias de permiso**: los 18 están escritos en positivo (`=== "admin"` para conceder) o niegan al no coincidir (`!== "admin"` → rechaza). Con `undefined` todos caen del lado restrictivo. El middleware hace `perfil?.rol ?? "cliente"`: ante la duda, el rol con menos permisos.
+- **Igualdad laxa**: un solo `!=` en todo `src/`, y es `distanciaClienteKm != null`, el idioma correcto para "ni null ni undefined".
+
+
 ## Estado actual
 
 Fase 0, Fase 1, Fase 2, Fase 3 y Fase 4 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 5 (POS) construida en sus cuatro bloques (cobros/devoluciones, bonos, descuentos, caja/arqueo) más la decisión de Bloque E, pendiente de que el negocio termine de probarla para cerrarla formalmente. Fase 6 (contratos) completa en sus tres bloques (plantillas y versionado, generación/firma/papel, visibilidad operativa y vigencia). Fase 7 (inventario) completa en sus tres bloques (catálogo y existencias; movimientos: entradas, salidas, mermas, ajustes; consumo automático por receta al finalizar un servicio de estética, con el enlace a la cita ya listo para que Fase 8 calcule el costo real por servicio). Fase 8 (reportes) completa en sus tres bloques (financiero por periodo con ingreso reconocido vs. neto de caja; costos y margen de estética; operativo con ocupación/servicios del periodo y una fotografía del estado actual de cumplimiento sanitario, contratos e inventario). Fase 9 (bitácora diaria y medicamentos) completa en sus dos bloques: Bloque A (fotos, notas e incidencias, con aviso por WhatsApp vía enlace `wa.me`) y Bloque B (régimen y registro de dosis administradas, referenciando `perro_medicamentos.id` tal como quedó planteado desde Fase 2). Con esto quedan completas las diez fases (0 a 9) del roadmap original. Fase 10 (recolección a domicilio, cotizador por distancia con Google Maps) completa — reutiliza tarifas/`resolver_precio`/`cargos_aplicados` de Fase 3/4 sin mecanismo de cobro nuevo; pendiente de que el negocio capture direcciones reales (base y Ludogteka), tarifas por km, y la llave de Google Maps antes de salir de modo simulación. Fase 11 (varias plantillas de contrato a la vez, cada una con nombre, versionado y aplicabilidad por servicio propios) completa — el estado de contrato dejó de ser un sí/no por perro y pasó a ser por tipo, y los avisos dicen cuál falta. Fase 12 (Guardería y Hotel como módulos separados en la navegación, Agenda renombrada a Estética) completa, sin migraciones: `estancias` sigue unificada y la ocupación que muestran los dos módulos es la de toda la casa. Fase 13 (alta de clientes por link: recepción manda una invitación por WhatsApp y el dueño captura sus datos y los de sus perros; el expediente nace ligado a su cuenta sin pasar por vinculación) completa.
