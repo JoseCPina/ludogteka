@@ -81,7 +81,7 @@ async function probarGeocoding(direccion: string, key: string | undefined): Prom
   url.searchParams.set("key", key);
 
   try {
-    const r = await fetch(url, { method: "GET" });
+    const r = await fetch(url, { method: "GET", signal: AbortSignal.timeout(12000) });
     const datos = await r.json();
     const ms = Date.now() - t0;
     const status = String(datos.status ?? `HTTP ${r.status}`);
@@ -153,6 +153,7 @@ async function probarRoutes(
         intermediates: [punto(intermedio)],
         travelMode: "DRIVE",
       }),
+      signal: AbortSignal.timeout(12000),
     });
     const cuerpo = await r.text();
     const ms = Date.now() - t0;

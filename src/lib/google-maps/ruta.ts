@@ -41,9 +41,18 @@ export async function calcularDistanciaRuta(
         intermediates: [punto(domicilio)],
         travelMode: "DRIVE",
       }),
+      // Ver el comentario de geocodificar.ts: sin timeout explícito, un
+      // Google lento deja la pantalla girando indefinidamente.
+      signal: AbortSignal.timeout(12000),
     });
-  } catch {
-    return { ok: false, error: "No se pudo contactar a Google Maps. Intenta de nuevo." };
+  } catch (e) {
+    const expiro = e instanceof Error && e.name === "TimeoutError";
+    return {
+      ok: false,
+      error: expiro
+        ? "Google Maps tardó demasiado en contestar. Intenta de nuevo o ajusta la distancia a mano."
+        : "No se pudo contactar a Google Maps. Intenta de nuevo.",
+    };
   }
 
   if (!respuesta.ok) {

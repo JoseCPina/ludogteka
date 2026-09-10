@@ -27,9 +27,19 @@ export async function geocodificarDireccion(direccion: string): Promise<Resultad
 
   let respuesta: Response;
   try {
-    respuesta = await fetch(url, { method: "GET" });
-  } catch {
-    return { ok: false, error: "No se pudo contactar a Google Maps. Intenta de nuevo." };
+    // Timeout explícito: fetch de Node NO trae uno por defecto. Sin esto,
+    // si Google tarda en contestar la server action nunca regresa y la
+    // pantalla se queda en "Calculando…" para siempre — que es justo el
+    // bug que se reportó desde la ficha del cliente.
+    respuesta = await fetch(url, { method: "GET", signal: AbortSignal.timeout(12000) });
+  } catch (e) {
+    const expiro = e instanceof Error && e.name === "TimeoutError";
+    return {
+      ok: false,
+      error: expiro
+        ? "Google Maps tardó demasiado en contestar. Intenta de nuevo o ajusta la distancia a mano."
+        : "No se pudo contactar a Google Maps. Intenta de nuevo.",
+    };
   }
 
   const datos = await respuesta.json();

@@ -35,41 +35,58 @@ export function DistanciaSeccion({
   const [kmManual, setKmManual] = useState("");
   const [guardandoAjuste, setGuardandoAjuste] = useState(false);
 
+  // try/finally, no solo await: si la acción lanza (red caída, servidor
+  // reiniciándose, un error inesperado del servidor), sin el finally el
+  // `setGuardando(false)` nunca corre y el botón se queda en "Calculando…"
+  // para siempre, sin decir nada. Es exactamente el bug que se reportó
+  // desde la ficha del cliente.
   async function guardarDireccion() {
     setGuardando(true);
     setError(null);
     setSimulado(false);
-    const res = await actualizarDireccionYCalcular(clienteId, direccion);
-    setGuardando(false);
-    if (res.error) {
-      setError(res.error);
-      return;
+    try {
+      const res = await actualizarDireccionYCalcular(clienteId, direccion);
+      if (res.error) {
+        setError(res.error);
+        return;
+      }
+      if (res.distanciaKm !== undefined) {
+        setDistanciaKm(res.distanciaKm);
+        setCalculadaAt(new Date().toISOString());
+        setAjustadaManualmente(false);
+        setSimulado(res.simulado ?? false);
+      }
+      router.refresh();
+    } catch {
+      setError(
+        "No pudimos calcular la distancia: se cortó la conexión con el servidor. Intenta de nuevo, o ajústala a mano aquí abajo."
+      );
+    } finally {
+      setGuardando(false);
     }
-    if (res.distanciaKm !== undefined) {
-      setDistanciaKm(res.distanciaKm);
-      setCalculadaAt(new Date().toISOString());
-      setAjustadaManualmente(false);
-      setSimulado(res.simulado ?? false);
-    }
-    router.refresh();
   }
 
   async function guardarAjuste() {
     const km = Number(kmManual);
     setGuardandoAjuste(true);
     setError(null);
-    const res = await ajustarDistanciaManual(clienteId, km);
-    setGuardandoAjuste(false);
-    if (res.error) {
-      setError(res.error);
-      return;
+    try {
+      const res = await ajustarDistanciaManual(clienteId, km);
+      if (res.error) {
+        setError(res.error);
+        return;
+      }
+      setDistanciaKm(res.distanciaKm ?? km);
+      setCalculadaAt(new Date().toISOString());
+      setAjustadaManualmente(true);
+      setAjustando(false);
+      setKmManual("");
+      router.refresh();
+    } catch {
+      setError("No pudimos guardar el ajuste: se cortó la conexión con el servidor. Intenta de nuevo.");
+    } finally {
+      setGuardandoAjuste(false);
     }
-    setDistanciaKm(res.distanciaKm ?? km);
-    setCalculadaAt(new Date().toISOString());
-    setAjustadaManualmente(true);
-    setAjustando(false);
-    setKmManual("");
-    router.refresh();
   }
 
   return (

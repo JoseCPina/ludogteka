@@ -258,40 +258,58 @@ export function AltaForm({
       return;
     }
 
-    // La distancia y las fotos van después del alta y no la bloquean: si
-    // fallan, el expediente ya quedó bien. La distancia ni siquiera se le
-    // reporta al dueño — no hay nada que él pueda hacer si Google no
-    // contesta, y recepción la ajusta a mano desde la ficha.
-    if (direccion.trim()) {
-      setAviso("Calculando la distancia a tu domicilio…");
-      await calcularDistanciaAlta(token);
-    }
-
-    setAviso("Guardando tus fotos…");
-    const creados = res.perros ?? [];
+    // A partir de aquí el alta YA ESTÁ HECHA: el expediente existe, los
+    // perros existen y la cuenta existe. Nada de lo que sigue puede dejar
+    // al dueño mirando un botón que no avanza — que es justo lo que
+    // pasaba: si cualquiera de estos pasos lanzaba, no había try/catch,
+    // el `setEnviando(false)` nunca corría y la pantalla se quedaba en
+    // "Guardando tus fotos…" sin decir nada, con el alta ya completada
+    // del otro lado.
     let fallaronFotos = 0;
-    for (let i = 0; i < creados.length; i += 1) {
-      const archivo = fotos[i];
-      if (!archivo) continue;
-      const datosFoto = new FormData();
-      datosFoto.append("foto", archivo);
-      const resFoto = await subirFotoAlta(token, creados[i].id, datosFoto);
-      if (resFoto.error) fallaronFotos += 1;
+    let sesionAbierta = false;
+
+    try {
+      if (direccion.trim()) {
+        setAviso("Calculando la distancia a tu domicilio…");
+        await calcularDistanciaAlta(token);
+      }
+
+      const creados = res.perros ?? [];
+      const conFoto = creados.filter((_, i) => fotos[i]).length;
+      let subidas = 0;
+      for (let i = 0; i < creados.length; i += 1) {
+        const archivo = fotos[i];
+        if (!archivo) continue;
+        subidas += 1;
+        // El contador avanza a la vista: una foto de celular puede tardar,
+        // y una pantalla que no se mueve se lee como colgada.
+        setAviso(`Guardando la foto de ${creados[i].nombre} (${subidas} de ${conFoto})…`);
+        const datosFoto = new FormData();
+        datosFoto.append("foto", archivo);
+        const resFoto = await subirFotoAlta(token, creados[i].id, datosFoto);
+        if (resFoto.error) fallaronFotos += 1;
+      }
+
+      setAviso("Entrando a tu portal…");
+      const supabase = createSupabaseBrowserClient();
+      const { error: errorSesion } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      sesionAbierta = !errorSesion;
+    } catch {
+      // Se traga el error a propósito: el alta ya quedó y no hay nada que
+      // el dueño pueda hacer con un mensaje técnico. Abajo se le manda a
+      // iniciar sesión, que es la salida buena.
+      sesionAbierta = false;
+    } finally {
+      setEnviando(false);
     }
 
-    setAviso("Entrando a tu portal…");
-    const supabase = createSupabaseBrowserClient();
-    const { error: errorSesion } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
-    });
-
-    setEnviando(false);
-
-    if (errorSesion) {
+    if (!sesionAbierta) {
       setAviso(null);
       setError(
-        "Tu alta quedó lista, pero no pudimos abrir tu sesión automáticamente. Entra con tu correo y contraseña."
+        "¡Tu alta quedó lista! Solo no pudimos abrirte la sesión automáticamente: entra con tu correo y tu contraseña."
       );
       return;
     }
