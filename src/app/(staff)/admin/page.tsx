@@ -3,6 +3,7 @@ import { Alert } from "@/components/ui/alert";
 import { InvitarStaff } from "./invitar-staff";
 import { ListaCuentas, type Cuenta } from "./lista-cuentas";
 import { DescuentoConfig } from "./descuento-config";
+import { DiagnosticoGoogle } from "./diagnostico-google";
 
 export default async function AdminPage() {
   const supabase = await createSupabaseServerClient();
@@ -30,6 +31,11 @@ export default async function AdminPage() {
           topeActual={topeFila?.estado === "configurado" ? Number(topeFila.tope_recepcion) : null}
           vigenteDesde={topeFila?.vigencia_desde ?? null}
         />
+      </section>
+
+      <section className="rounded-lg border border-n-200 bg-white p-5">
+        <h2 className="mb-4 text-lg font-bold text-n-900">Conexión con Google Maps</h2>
+        <DiagnosticoGoogle />
       </section>
 
       <section>
