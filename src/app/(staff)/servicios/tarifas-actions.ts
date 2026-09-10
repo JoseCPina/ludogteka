@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export type FilaTarifaGuardar = {
   cantidad_desde: number;
   cantidad_hasta: number | null;
+  grupo_raza_id: string | null;
   tamano_id: string | null;
   pelaje_id: string | null;
   precio: number | null;
@@ -28,15 +29,16 @@ function seTraslapan(
 }
 
 // Traslape dentro del mismo lote que se está guardando (misma
-// tamano_id/pelaje_id): agrupado así porque el traslape solo importa
+// grupo/tamano/pelaje): agrupado así porque el traslape solo importa
 // dentro de la misma combinación — dos tramos de tamaños distintos nunca
-// compiten entre sí. Un traslape contra un tramo VIEJO que no se está
-// tocando en este guardado lo atrapa la restricción de la base (EXCLUDE),
-// que se traduce más abajo si llega a pasar.
+// compiten entre sí, y desde que existe el grupo de raza, tampoco
+// compiten dos tramos de grupos distintos. Un traslape contra un tramo
+// VIEJO que no se está tocando en este guardado lo atrapa la restricción
+// de la base (EXCLUDE), que se traduce más abajo si llega a pasar.
 function validarTraslapes(filas: FilaTarifaGuardar[]): string | null {
   const porGrupo = new Map<string, FilaTarifaGuardar[]>();
   for (const f of filas) {
-    const key = `${f.tamano_id ?? ""}|${f.pelaje_id ?? ""}`;
+    const key = `${f.grupo_raza_id ?? ""}|${f.tamano_id ?? ""}|${f.pelaje_id ?? ""}`;
     const lista = porGrupo.get(key) ?? [];
     lista.push(f);
     porGrupo.set(key, lista);
@@ -69,6 +71,7 @@ export async function guardarTarifas(
   const supabase = await createSupabaseServerClient();
   const filasInsert = filas.map((f) => ({
     servicio_id: servicioId,
+    grupo_raza_id: f.grupo_raza_id,
     tamano_id: f.tamano_id,
     pelaje_id: f.pelaje_id,
     cantidad_desde: f.cantidad_desde,
@@ -84,7 +87,7 @@ export async function guardarTarifas(
     if (error.code === "23P01") {
       return {
         error:
-          "Dos de los tramos que capturaste se traslapan en cantidad para el mismo tamaño/pelaje. Revisa los rangos e intenta de nuevo.",
+          "Dos de los tramos que capturaste se traslapan en cantidad para la misma combinación de grupo, tamaño y pelaje. Revisa los rangos e intenta de nuevo.",
       };
     }
     return { error: "No pudimos guardar las tarifas. Intenta de nuevo." };

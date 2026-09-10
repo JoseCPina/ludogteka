@@ -6,47 +6,25 @@ import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
+import {
+  claveCelda,
+  columnasDeMatriz,
+  etiquetaFila,
+  etiquetaTramo,
+  filasDeMatriz,
+  tramosDeMatriz,
+  type CeldaVigente,
+  type FilaMatriz,
+  type GrupoRaza,
+  type OpcionDimension,
+} from "@/lib/tarifas/matriz";
 import { CeldaTarifa, type ValorCelda } from "./celda-tarifa";
 import { guardarTarifas, type FilaTarifaGuardar } from "./tarifas-actions";
 
-type Opcion = { id: string; etiqueta: string };
-type FilaVigente = {
-  tamano_id: string | null;
-  pelaje_id: string | null;
-  cantidad_desde: number;
-  cantidad_hasta: number | null;
-  precio: number;
-  no_aplica: boolean;
-};
 type Tramo = { clientId: string; desde: number; hasta: number | null };
 
-function claveBaseline(
-  desde: number,
-  hasta: number | null,
-  tamanoId: string | null,
-  pelajeId: string | null
-): string {
-  return `${desde}|${hasta ?? ""}|${tamanoId ?? ""}|${pelajeId ?? ""}`;
-}
-
-function claveValor(tramoId: string, tamanoId: string | null, pelajeId: string | null): string {
-  return `${tramoId}|${tamanoId ?? ""}|${pelajeId ?? ""}`;
-}
-
-function etiquetaTramo(t: { desde: number; hasta: number | null }): string {
-  return t.hasta ? `${t.desde}–${t.hasta}` : `${t.desde}+`;
-}
-
-function derivarTramosIniciales(vigentes: FilaVigente[]): Tramo[] {
-  const vistos = new Map<string, Tramo>();
-  for (const v of vigentes) {
-    const key = `${v.cantidad_desde}|${v.cantidad_hasta ?? ""}`;
-    if (!vistos.has(key)) {
-      vistos.set(key, { clientId: key, desde: v.cantidad_desde, hasta: v.cantidad_hasta });
-    }
-  }
-  const lista = Array.from(vistos.values()).sort((a, b) => a.desde - b.desde);
-  return lista.length > 0 ? lista : [{ clientId: "tramo-1", desde: 1, hasta: null }];
+function claveValor(tramoId: string, filaKey: string, pelajeId: string): string {
+  return `${tramoId}|${filaKey}|${pelajeId}`;
 }
 
 function tramosSeTraslapan(a: Tramo, b: Tramo): boolean {
@@ -57,26 +35,50 @@ function tramosSeTraslapan(a: Tramo, b: Tramo): boolean {
 
 export function MatrizTarifas({
   servicioId,
+  dependeGrupoRaza,
   dependeTamano,
   dependePelaje,
   dependeCantidad,
+  grupos,
   tamanos,
   pelajes,
   vigentes,
 }: {
   servicioId: string;
+  dependeGrupoRaza: boolean;
   dependeTamano: boolean;
   dependePelaje: boolean;
   dependeCantidad: boolean;
-  tamanos: Opcion[];
-  pelajes: Opcion[];
-  vigentes: FilaVigente[];
+  grupos: GrupoRaza[];
+  tamanos: OpcionDimension[];
+  pelajes: OpcionDimension[];
+  vigentes: CeldaVigente[];
 }) {
   const router = useRouter();
-  const filas = dependeTamano ? tamanos : [{ id: "", etiqueta: "—" }];
-  const columnas = dependePelaje ? pelajes : [{ id: "", etiqueta: "—" }];
+  const dimensiones = {
+    depende_grupo_raza: dependeGrupoRaza,
+    depende_tamano: dependeTamano,
+    depende_pelaje: dependePelaje,
+    depende_cantidad: dependeCantidad,
+  };
+  const filas = useMemo(
+    () => filasDeMatriz(dimensiones, { grupos, tamanos }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dependeGrupoRaza, dependeTamano, grupos, tamanos]
+  );
+  const columnas = useMemo(
+    () => columnasDeMatriz(dimensiones, pelajes),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dependePelaje, pelajes]
+  );
 
-  const [tramos, setTramos] = useState<Tramo[]>(() => derivarTramosIniciales(vigentes));
+  const [tramos, setTramos] = useState<Tramo[]>(() =>
+    tramosDeMatriz(dimensiones, vigentes).map((t) => ({
+      clientId: t.key,
+      desde: t.desde,
+      hasta: t.hasta,
+    }))
+  );
   const [valores, setValores] = useState<Map<string, ValorCelda>>(new Map());
   const [vigenciaDesde, setVigenciaDesde] = useState(hoyNegocio());
   const [errorTramos, setErrorTramos] = useState<string | null>(null);
@@ -88,19 +90,19 @@ export function MatrizTarifas({
   const [exito, setExito] = useState(false);
 
   const baselineMap = useMemo(() => {
-    const m = new Map<string, { precio: number; no_aplica: boolean }>();
+    const m = new Map<string, { precio: number | null; no_aplica: boolean }>();
     for (const v of vigentes) {
-      m.set(claveBaseline(v.cantidad_desde, v.cantidad_hasta, v.tamano_id, v.pelaje_id), {
-        precio: v.precio,
-        no_aplica: v.no_aplica,
-      });
+      m.set(
+        claveCelda(v.cantidad_desde, v.cantidad_hasta, v.grupo_raza_id, v.tamano_id, v.pelaje_id),
+        { precio: v.precio, no_aplica: v.no_aplica }
+      );
     }
     return m;
   }, [vigentes]);
 
-  function obtenerBaseline(tramo: Tramo, tamanoId: string, pelajeId: string) {
+  function obtenerBaseline(tramo: Tramo, fila: FilaMatriz, pelajeId: string) {
     const baseline = baselineMap.get(
-      claveBaseline(tramo.desde, tramo.hasta, tamanoId || null, pelajeId || null)
+      claveCelda(tramo.desde, tramo.hasta, fila.grupo_raza_id, fila.tamano_id, pelajeId || null)
     );
     if (!baseline) return { estado: "sin_tarifa" as const, precio: null as number | null, no_aplica: false };
     return {
@@ -110,23 +112,17 @@ export function MatrizTarifas({
     };
   }
 
-  function obtenerValor(tramoId: string, tamanoId: string, pelajeId: string): ValorCelda {
-    const key = claveValor(tramoId, tamanoId, pelajeId);
-    const tocado = valores.get(key);
+  function obtenerValor(tramo: Tramo, fila: FilaMatriz, pelajeId: string): ValorCelda {
+    const tocado = valores.get(claveValor(tramo.clientId, fila.key, pelajeId));
     if (tocado) return tocado;
-    const tramo = tramos.find((t) => t.clientId === tramoId)!;
-    const base = obtenerBaseline(tramo, tamanoId, pelajeId);
+    const base = obtenerBaseline(tramo, fila, pelajeId);
     if (base.estado === "no_aplica") return { precio: "", no_aplica: true };
     if (base.estado === "disponible") return { precio: String(base.precio), no_aplica: false };
     return { precio: "", no_aplica: false };
   }
 
-  function setValor(tramoId: string, tamanoId: string, pelajeId: string, nuevo: ValorCelda) {
-    setValores((prev) => {
-      const copia = new Map(prev);
-      copia.set(claveValor(tramoId, tamanoId, pelajeId), nuevo);
-      return copia;
-    });
+  function setValor(tramoId: string, filaKey: string, pelajeId: string, nuevo: ValorCelda) {
+    setValores((prev) => new Map(prev).set(claveValor(tramoId, filaKey, pelajeId), nuevo));
   }
 
   function agregarTramo() {
@@ -153,20 +149,16 @@ export function MatrizTarifas({
     setTramos(nuevos);
   }
 
-  function rellenarFila(tramoId: string, tamanoId: string) {
-    const valor = rellenos.get(`fila-${tramoId}-${tamanoId}`) ?? "";
+  function rellenarFila(tramoId: string, filaKey: string) {
+    const valor = rellenos.get(`fila-${tramoId}-${filaKey}`) ?? "";
     if (!valor) return;
-    for (const col of columnas) {
-      setValor(tramoId, tamanoId, col.id, { precio: valor, no_aplica: false });
-    }
+    for (const col of columnas) setValor(tramoId, filaKey, col.id, { precio: valor, no_aplica: false });
   }
 
   function rellenarColumna(tramoId: string, pelajeId: string) {
     const valor = rellenos.get(`col-${tramoId}-${pelajeId}`) ?? "";
     if (!valor) return;
-    for (const fila of filas) {
-      setValor(tramoId, fila.id, pelajeId, { precio: valor, no_aplica: false });
-    }
+    for (const fila of filas) setValor(tramoId, fila.key, pelajeId, { precio: valor, no_aplica: false });
   }
 
   function aplicarIncrementoMasivo() {
@@ -176,13 +168,13 @@ export function MatrizTarifas({
     for (const tramo of tramos) {
       for (const fila of filas) {
         for (const col of columnas) {
-          const base = obtenerBaseline(tramo, fila.id, col.id);
+          const base = obtenerBaseline(tramo, fila, col.id);
           if (base.estado !== "disponible" || base.precio === null) continue;
           const nuevo =
             incremento.unidad === "porcentaje"
               ? base.precio * (1 + monto / 100)
               : base.precio + monto;
-          nuevasValores.set(claveValor(tramo.clientId, fila.id, col.id), {
+          nuevasValores.set(claveValor(tramo.clientId, fila.key, col.id), {
             precio: Math.max(0, Number(nuevo.toFixed(2))).toString(),
             no_aplica: false,
           });
@@ -195,15 +187,15 @@ export function MatrizTarifas({
   const cambios = useMemo(() => {
     const lista: (FilaTarifaGuardar & {
       tramoEtiqueta: string;
-      tamanoEtiqueta: string;
+      filaEtiqueta: string;
       pelajeEtiqueta: string;
       anterior: string;
     })[] = [];
     for (const tramo of tramos) {
       for (const fila of filas) {
         for (const col of columnas) {
-          const valor = obtenerValor(tramo.clientId, fila.id, col.id);
-          const base = obtenerBaseline(tramo, fila.id, col.id);
+          const valor = obtenerValor(tramo, fila, col.id);
+          const base = obtenerBaseline(tramo, fila, col.id);
 
           const sinCambio =
             (base.estado === "disponible" &&
@@ -226,12 +218,13 @@ export function MatrizTarifas({
           lista.push({
             cantidad_desde: tramo.desde,
             cantidad_hasta: tramo.hasta,
-            tamano_id: fila.id || null,
+            grupo_raza_id: fila.grupo_raza_id,
+            tamano_id: fila.tamano_id,
             pelaje_id: col.id || null,
             precio: valor.no_aplica ? null : Number(valor.precio),
             no_aplica: valor.no_aplica,
             tramoEtiqueta: etiquetaTramo(tramo),
-            tamanoEtiqueta: fila.etiqueta,
+            filaEtiqueta: etiquetaFila(fila),
             pelajeEtiqueta: col.etiqueta,
             anterior,
           });
@@ -241,6 +234,30 @@ export function MatrizTarifas({
     return lista;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tramos, valores, baselineMap, filas, columnas]);
+
+  // Un hueco de captura no se ve hasta que alguien baja la vista hasta la
+  // celda naranja. Contarlos arriba es lo que hace que un servicio a medio
+  // capturar no pase inadvertido, que es justo cuando duele: la cita se
+  // rechaza con el cliente enfrente.
+  const huecos = useMemo(() => {
+    let total = 0;
+    for (const tramo of tramos) {
+      for (const fila of filas) {
+        for (const col of columnas) {
+          const valor = obtenerValor(tramo, fila, col.id);
+          if (
+            obtenerBaseline(tramo, fila, col.id).estado === "sin_tarifa" &&
+            !valor.no_aplica &&
+            valor.precio === ""
+          ) {
+            total += 1;
+          }
+        }
+      }
+    }
+    return total;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tramos, filas, columnas, valores, baselineMap]);
 
   async function confirmarGuardado() {
     setGuardando(true);
@@ -290,7 +307,7 @@ export function MatrizTarifas({
               {cambios.map((c, i) => (
                 <tr key={i}>
                   <td className="border-b border-n-200 px-4 py-2 text-n-900">
-                    {[c.tamanoEtiqueta, c.pelajeEtiqueta, dependeCantidad ? c.tramoEtiqueta : null]
+                    {[c.filaEtiqueta, c.pelajeEtiqueta, dependeCantidad ? c.tramoEtiqueta : null]
                       .filter((v) => v && v !== "—")
                       .join(" · ")}
                   </td>
@@ -320,6 +337,18 @@ export function MatrizTarifas({
   return (
     <div className="flex flex-col gap-6">
       {exito && <Alert variante="exito" titulo="Tarifas guardadas" />}
+
+      {huecos > 0 && (
+        <Alert
+          variante="advertencia"
+          titulo={`${huecos} ${huecos === 1 ? "celda sin tarifa" : "celdas sin tarifa"}`}
+        >
+          Están marcadas en naranja más abajo. Mientras sigan así, este servicio no se puede
+          reservar ni cobrar en esa combinación: la app lo rechaza en el mostrador. Si el negocio
+          no lo ofrece, márcalo como <strong>No aplica</strong> — es distinto de un olvido de
+          captura, y la app trata las dos cosas distinto.
+        </Alert>
+      )}
 
       <div className="flex flex-wrap items-end gap-4 rounded-lg border border-n-200 bg-white p-4">
         <Field
@@ -361,6 +390,14 @@ export function MatrizTarifas({
           vigencia que regrese al precio normal — si no, se queda cobrando este precio para
           siempre.
         </Alert>
+      )}
+
+      {dependeGrupoRaza && (
+        <p className="text-sm text-n-600">
+          Este servicio se cobra por <strong>grupo de raza</strong>. El cliente escoge la raza de su
+          perro y la app deriva el grupo sola; el tamaño solo abre renglones en los grupos que se
+          cobran por talla.
+        </p>
       )}
 
       {dependeCantidad && (
@@ -426,18 +463,25 @@ export function MatrizTarifas({
           <div className="overflow-x-auto">
             <table className="border-collapse">
               <thead>
-                <tr>
-                  <th></th>
-                  {columnas.map((col) => (
-                    <th key={col.id || "unica"} className="px-2 pb-1 text-center text-xs font-bold uppercase text-n-600">
-                      {col.etiqueta}
-                    </th>
-                  ))}
-                  {dependePelaje && <th></th>}
-                </tr>
+                {/* Sin pelaje hay una sola columna sin nombre: un "—"
+                    suelto encima de los precios se lee como si faltara
+                    algo. Mejor no encabezar nada. */}
                 {dependePelaje && (
                   <tr>
                     <th></th>
+                    {dependeGrupoRaza && <th></th>}
+                    {columnas.map((col) => (
+                      <th key={col.id || "unica"} className="px-2 pb-1 text-center text-xs font-bold uppercase text-n-600">
+                        {col.etiqueta}
+                      </th>
+                    ))}
+                    <th></th>
+                  </tr>
+                )}
+                {dependePelaje && (
+                  <tr>
+                    <th></th>
+                    {dependeGrupoRaza && <th></th>}
                     {columnas.map((col) => (
                       <th key={col.id || "unica"} className="px-2 pb-2">
                         <div className="flex gap-1">
@@ -468,45 +512,56 @@ export function MatrizTarifas({
                 )}
               </thead>
               <tbody>
-                {filas.map((fila) => (
-                  <tr key={fila.id || "unica"}>
-                    <td className="pr-2 text-sm font-semibold text-n-900">{fila.etiqueta}</td>
-                    {columnas.map((col) => (
-                      <td key={col.id || "unica"} className="p-1">
-                        <CeldaTarifa
-                          estadoBase={obtenerBaseline(tramo, fila.id, col.id).estado}
-                          valor={obtenerValor(tramo.clientId, fila.id, col.id)}
-                          onChange={(nuevo) => setValor(tramo.clientId, fila.id, col.id, nuevo)}
-                        />
+                {filas.map((fila, i) => {
+                  // El nombre del grupo se escribe una sola vez aunque abra
+                  // varios renglones por talla: repetirlo cuatro veces se
+                  // lee como si fueran grupos distintos.
+                  const abreGrupo = i === 0 || filas[i - 1].etiqueta !== fila.etiqueta;
+                  return (
+                    <tr key={fila.key} className={abreGrupo && i > 0 ? "border-t border-n-200" : ""}>
+                      <td className="py-1 pr-3 align-middle text-sm font-semibold text-n-900">
+                        {abreGrupo ? fila.etiqueta : ""}
                       </td>
-                    ))}
-                    {dependeTamano && (
-                      <td className="pl-2">
-                        <div className="flex gap-1">
-                          <input
-                            type="number"
-                            step="0.01"
-                            placeholder="valor"
-                            className="w-16 rounded border border-n-300 px-1 py-1 text-xs"
-                            onChange={(e) =>
-                              setRellenos((prev) =>
-                                new Map(prev).set(`fila-${tramo.clientId}-${fila.id}`, e.target.value)
-                              )
-                            }
+                      {dependeGrupoRaza && (
+                        <td className="py-1 pr-2 align-middle text-sm text-n-600">{fila.sub ?? ""}</td>
+                      )}
+                      {columnas.map((col) => (
+                        <td key={col.id || "unica"} className="p-1">
+                          <CeldaTarifa
+                            estadoBase={obtenerBaseline(tramo, fila, col.id).estado}
+                            valor={obtenerValor(tramo, fila, col.id)}
+                            onChange={(nuevo) => setValor(tramo.clientId, fila.key, col.id, nuevo)}
                           />
-                          <button
-                            type="button"
-                            title="Rellenar fila"
-                            onClick={() => rellenarFila(tramo.clientId, fila.id)}
-                            className="rounded border border-n-300 px-1.5 text-xs text-n-600 hover:bg-n-100"
-                          >
-                            →
-                          </button>
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                ))}
+                        </td>
+                      ))}
+                      {columnas.length > 1 && (
+                        <td className="pl-2">
+                          <div className="flex gap-1">
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="valor"
+                              className="w-16 rounded border border-n-300 px-1 py-1 text-xs"
+                              onChange={(e) =>
+                                setRellenos((prev) =>
+                                  new Map(prev).set(`fila-${tramo.clientId}-${fila.key}`, e.target.value)
+                                )
+                              }
+                            />
+                            <button
+                              type="button"
+                              title="Rellenar renglón"
+                              onClick={() => rellenarFila(tramo.clientId, fila.key)}
+                              className="rounded border border-n-300 px-1.5 text-xs text-n-600 hover:bg-n-100"
+                            >
+                              →
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

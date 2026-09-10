@@ -2,6 +2,7 @@ import { formatearFechaCalendario, formatearFecha } from "@/lib/formato";
 
 export type FilaHistorial = {
   id: string;
+  grupo_etiqueta: string;
   tamano_etiqueta: string;
   pelaje_etiqueta: string;
   cantidad_desde: number;
@@ -48,6 +49,7 @@ export function HistorialTarifas({ filas }: { filas: FilaHistorial[] }) {
             <tr key={f.id}>
               <td className="border-b border-n-200 px-4 py-3 text-n-900">
                 {[
+                  f.grupo_etiqueta,
                   f.tamano_etiqueta,
                   f.pelaje_etiqueta,
                   f.cantidad_hasta ? `${f.cantidad_desde}–${f.cantidad_hasta}` : `${f.cantidad_desde}+`,

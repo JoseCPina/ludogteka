@@ -12,29 +12,45 @@ export default async function TarifasServicioPage({
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
 
-  const [{ data: servicio }, { data: tamanos }, { data: pelajes }, { data: vigentes }, { data: historialCrudo }] =
-    await Promise.all([
-      supabase
-        .from("servicios")
-        .select("id, nombre, categoria, unidad, depende_tamano, depende_pelaje, depende_cantidad, deleted_at")
-        .eq("id", id)
-        .single(),
-      supabase.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
-      supabase.from("tipos_pelaje").select("id, etiqueta").is("deleted_at", null).order("orden"),
-      supabase
-        .from("tarifas_vigentes")
-        .select("tamano_id, pelaje_id, cantidad_desde, cantidad_hasta, precio, no_aplica")
-        .eq("servicio_id", id),
-      supabase
-        .from("tarifas")
-        .select("id, tamano_id, pelaje_id, cantidad_desde, cantidad_hasta, precio, no_aplica, vigencia_desde, created_at, created_by")
-        .eq("servicio_id", id)
-        .order("vigencia_desde", { ascending: false })
-        .order("created_at", { ascending: false }),
-    ]);
+  const [
+    { data: servicio },
+    { data: grupos },
+    { data: tamanos },
+    { data: pelajes },
+    { data: vigentes },
+    { data: historialCrudo },
+  ] = await Promise.all([
+    supabase
+      .from("servicios")
+      .select(
+        "id, nombre, categoria, unidad, depende_grupo_raza, depende_tamano, depende_pelaje, depende_cantidad, deleted_at"
+      )
+      .eq("id", id)
+      .single(),
+    supabase
+      .from("grupos_raza")
+      .select("id, nombre, depende_tamano")
+      .is("deleted_at", null)
+      .order("orden"),
+    supabase.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
+    supabase.from("tipos_pelaje").select("id, etiqueta").is("deleted_at", null).order("orden"),
+    supabase
+      .from("tarifas_vigentes")
+      .select("grupo_raza_id, tamano_id, pelaje_id, cantidad_desde, cantidad_hasta, precio, no_aplica")
+      .eq("servicio_id", id),
+    supabase
+      .from("tarifas")
+      .select(
+        "id, grupo_raza_id, tamano_id, pelaje_id, cantidad_desde, cantidad_hasta, precio, no_aplica, vigencia_desde, created_at, created_by"
+      )
+      .eq("servicio_id", id)
+      .order("vigencia_desde", { ascending: false })
+      .order("created_at", { ascending: false }),
+  ]);
 
   if (!servicio) notFound();
 
+  const grupoNombre = new Map((grupos ?? []).map((g) => [g.id, g.nombre]));
   const tamanoEtiqueta = new Map((tamanos ?? []).map((t) => [t.id, t.etiqueta]));
   const pelajeEtiqueta = new Map((pelajes ?? []).map((p) => [p.id, p.etiqueta]));
 
@@ -52,6 +68,7 @@ export default async function TarifasServicioPage({
 
   const historial: FilaHistorial[] = (historialCrudo ?? []).map((f) => ({
     id: f.id,
+    grupo_etiqueta: f.grupo_raza_id ? (grupoNombre.get(f.grupo_raza_id) ?? "—") : "—",
     tamano_etiqueta: f.tamano_id ? (tamanoEtiqueta.get(f.tamano_id) ?? "—") : "—",
     pelaje_etiqueta: f.pelaje_id ? (pelajeEtiqueta.get(f.pelaje_id) ?? "—") : "—",
     cantidad_desde: f.cantidad_desde,
@@ -77,9 +94,11 @@ export default async function TarifasServicioPage({
 
       <MatrizTarifas
         servicioId={id}
+        dependeGrupoRaza={servicio.depende_grupo_raza}
         dependeTamano={servicio.depende_tamano}
         dependePelaje={servicio.depende_pelaje}
         dependeCantidad={servicio.depende_cantidad}
+        grupos={grupos ?? []}
         tamanos={tamanos ?? []}
         pelajes={pelajes ?? []}
         vigentes={vigentes ?? []}

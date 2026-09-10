@@ -14,6 +14,7 @@ function leerCampos(formData: FormData) {
   const nombre = String(formData.get("nombre") ?? "").trim();
   const categoria = String(formData.get("categoria") ?? "");
   const unidad = String(formData.get("unidad") ?? "");
+  const depende_grupo_raza = formData.get("depende_grupo_raza") === "on";
   const depende_tamano = formData.get("depende_tamano") === "on";
   const depende_pelaje = formData.get("depende_pelaje") === "on";
   const depende_cantidad = formData.get("depende_cantidad") === "on";
@@ -27,6 +28,7 @@ function leerCampos(formData: FormData) {
     nombre,
     categoria,
     unidad,
+    depende_grupo_raza,
     depende_tamano,
     depende_pelaje,
     depende_cantidad,
@@ -45,6 +47,14 @@ function validar(campos: ReturnType<typeof leerCampos>): string | null {
   }
   if (!UNIDADES.includes(campos.unidad as (typeof UNIDADES)[number])) {
     return "Elige una unidad válida.";
+  }
+  // El grupo de raza YA decide por su cuenta si el tamaño cuenta
+  // (grupos_raza.depende_tamano). Marcar las dos casillas pediría una
+  // celda por grupo Y por talla en los siete grupos, y ninguna de esas
+  // celdas empataría con lo que la base busca al cotizar: todo saldría
+  // "sin tarifa" con los precios capturados.
+  if (campos.depende_grupo_raza && campos.depende_tamano) {
+    return "Un servicio que cotiza por grupo de raza no lleva además la dimensión de tamaño: cada grupo ya decide si se cobra por talla.";
   }
   if (campos.categoria === "bono") {
     if (!campos.servicio_incluido_id) return "Un bono debe indicar a qué servicio da acceso.";

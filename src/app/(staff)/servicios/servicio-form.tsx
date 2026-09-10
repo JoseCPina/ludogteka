@@ -24,6 +24,7 @@ export function ServicioForm({
     nombre: string;
     categoria: string;
     unidad: string;
+    depende_grupo_raza: boolean;
     depende_tamano: boolean;
     depende_pelaje: boolean;
     depende_cantidad: boolean;
@@ -100,6 +101,23 @@ export function ServicioForm({
           Dimensiones de precio — determinan cuántas celdas tiene la matriz de tarifas
         </p>
         <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3">
+          <label className="flex flex-col gap-1 text-n-900">
+            <span className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="depende_grupo_raza"
+                disabled={enviando}
+                defaultChecked={valoresIniciales?.depende_grupo_raza ?? false}
+                className="h-4 w-4"
+              />
+              Depende del grupo de raza (precios de estética)
+            </span>
+            <span className="pl-6 text-sm text-n-600">
+              El precio sale del grupo al que pertenece la raza del perro. Dentro de esa matriz, el
+              tamaño solo cuenta en los grupos que se cobran por talla, así que no hace falta marcar
+              también la casilla de tamaño.
+            </span>
+          </label>
           <label className="flex items-center gap-2 text-n-900">
             <input
               type="checkbox"
