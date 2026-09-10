@@ -79,8 +79,8 @@ export default async function CitaDetallePage({
 
   return (
     <div className="flex flex-col gap-6">
-      <Link href="/agenda" className="text-sm font-semibold text-azul hover:underline">
-        ← Agenda
+      <Link href="/estetica" className="text-sm font-semibold text-azul hover:underline">
+        ← Estética
       </Link>
 
       <div>

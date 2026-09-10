@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidarModulosEstancia } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
 
@@ -62,7 +63,7 @@ export async function confirmarCheckin(
 
   if (error) return { error: traducirError(error) };
 
-  revalidatePath("/reservas");
+  revalidarModulosEstancia();
   revalidatePath(`/reservas/estancias/${estanciaId}/checkin`);
   return { error: null };
 }
@@ -126,7 +127,7 @@ export async function confirmarCheckout(
 
   if (error) return { error: traducirError(error) };
 
-  revalidatePath("/reservas");
+  revalidarModulosEstancia();
   revalidatePath(`/reservas/estancias/${estanciaId}/checkout`);
   return { error: null };
 }

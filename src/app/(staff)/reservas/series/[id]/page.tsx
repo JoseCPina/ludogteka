@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { hoyNegocio } from "@/lib/formato";
+import { moduloDeCategoria } from "@/lib/modulos";
 import { SerieDetalle } from "./serie-detalle";
 
 export default async function SerieDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -17,7 +18,7 @@ export default async function SerieDetallePage({ params }: { params: Promise<{ i
   const { data: serie, error: errorSerie } = await supabase
     .from("series_recurrentes")
     .select(
-      "id, perro_id, servicio_id, dias_semana, fecha_inicio, fecha_fin, deleted_at, perros(nombre), servicios(nombre)"
+      "id, perro_id, servicio_id, dias_semana, fecha_inicio, fecha_fin, deleted_at, perros(nombre), servicios(nombre, categoria)"
     )
     .eq("id", id)
     .single();
@@ -25,6 +26,8 @@ export default async function SerieDetallePage({ params }: { params: Promise<{ i
   if (errorSerie || !serie) notFound();
 
   const perro = Array.isArray(serie.perros) ? serie.perros[0] : serie.perros;
+  const servicioSerie = Array.isArray(serie.servicios) ? serie.servicios[0] : serie.servicios;
+  const modulo = moduloDeCategoria(servicioSerie?.categoria as string | undefined);
 
   const [{ data: estancias, error: errorEstancias }, { data: pausas, error: errorPausas }, { data: servicios }] =
     await Promise.all([
@@ -53,8 +56,11 @@ export default async function SerieDetallePage({ params }: { params: Promise<{ i
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/reservas/series" className="text-sm font-semibold text-azul hover:underline">
-          ← Series recurrentes
+        <Link
+          href={modulo ? `${modulo.base}/series` : "/reservas"}
+          className="text-sm font-semibold text-azul hover:underline"
+        >
+          ← Series recurrentes{modulo ? ` de ${modulo.etiqueta.toLowerCase()}` : ""}
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">{perro?.nombre ?? "—"}</h1>
         {serie.perro_id && (

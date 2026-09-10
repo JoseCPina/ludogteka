@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidarModulosEstancia } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
 
@@ -80,7 +81,7 @@ export async function crearReserva(
     return { error: null, resultados };
   }
 
-  revalidatePath("/reservas");
+  revalidarModulosEstancia();
   return { error: null, reservaId: reserva.id, resultados };
 }
 
@@ -92,7 +93,7 @@ export async function agregarEstanciaAReserva(
   linea: LineaReserva
 ): Promise<ResultadoLinea> {
   const resultado = await insertarEstancia(reservaId, linea);
-  if (resultado.exito) revalidatePath("/reservas");
+  if (resultado.exito) revalidarModulosEstancia();
   return resultado;
 }
 
@@ -106,7 +107,7 @@ export async function cancelarEstancia(estanciaId: string): Promise<EstadoAccion
     .eq("id", estanciaId);
 
   if (error) return { error: traducirError(error) };
-  revalidatePath("/reservas");
+  revalidarModulosEstancia();
   return { error: null };
 }
 
@@ -118,7 +119,7 @@ export async function marcarNoLlego(estanciaId: string): Promise<EstadoAccionEst
     .eq("id", estanciaId);
 
   if (error) return { error: traducirError(error) };
-  revalidatePath("/reservas");
+  revalidarModulosEstancia();
   return { error: null };
 }
 
@@ -134,7 +135,7 @@ export async function moverFechas(
     .eq("id", estanciaId);
 
   if (error) return { error: traducirError(error) };
-  revalidatePath("/reservas");
+  revalidarModulosEstancia();
   return { error: null };
 }
 
@@ -165,7 +166,7 @@ export async function cancelarReserva(reservaId: string): Promise<ResultadoCance
     if (!error) canceladas++;
   }
 
-  revalidatePath("/reservas");
+  revalidarModulosEstancia();
   revalidatePath(`/reservas/${reservaId}`);
   return { error: null, canceladas, noCancelables };
 }

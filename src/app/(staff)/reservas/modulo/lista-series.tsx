@@ -3,9 +3,14 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
-import { formatearDiasSemana } from "./dias-semana";
+import type { ModuloEstancia } from "@/lib/modulos";
+import { formatearDiasSemana } from "../series/dias-semana";
 
-export default async function SeriesPage() {
+// Las series se filtran por la categoría del servicio de la propia serie:
+// una serie de guardería (el perro que viene todos los martes) no tiene
+// nada que hacer en la lista de hotel, aunque las dos vivan en la misma
+// tabla.
+export async function ListaSeries({ modulo }: { modulo: ModuloEstancia }) {
   const supabase = await createSupabaseServerClient();
 
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
@@ -13,7 +18,8 @@ export default async function SeriesPage() {
 
   const { data: series, error } = await supabase
     .from("series_recurrentes")
-    .select("id, dias_semana, fecha_inicio, fecha_fin, perros(nombre), servicios(nombre)")
+    .select("id, dias_semana, fecha_inicio, fecha_fin, perros(nombre), servicios!inner(nombre, categoria)")
+    .eq("servicios.categoria", modulo.categoria)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
@@ -40,10 +46,17 @@ export default async function SeriesPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-n-900">Series recurrentes</h1>
-          <p className="mt-1 text-n-600">Perros que vienen en un patrón fijo — guardería u hotel.</p>
+          <Link href={modulo.base} className="text-sm font-semibold text-azul hover:underline">
+            ← {modulo.etiqueta}
+          </Link>
+          <h1 className="mt-1 text-2xl font-bold text-n-900">
+            Series recurrentes — {modulo.etiqueta}
+          </h1>
+          <p className="mt-1 text-n-600">
+            Perros que vienen a {modulo.etiqueta.toLowerCase()} en un patrón fijo.
+          </p>
         </div>
-        <Link href="/reservas/series/nueva">
+        <Link href={`${modulo.base}/series/nueva`}>
           <Button type="button">Nueva serie</Button>
         </Link>
       </div>
@@ -53,7 +66,9 @@ export default async function SeriesPage() {
           Recarga la página. Si el problema sigue, avísale al equipo técnico.
         </Alert>
       ) : !series || series.length === 0 ? (
-        <p className="text-n-600">No hay series recurrentes activas todavía.</p>
+        <p className="text-n-600">
+          No hay series recurrentes de {modulo.etiqueta.toLowerCase()} activas todavía.
+        </p>
       ) : (
         <div className="overflow-hidden rounded-lg border border-n-200 bg-white">
           <ul className="divide-y divide-n-200">

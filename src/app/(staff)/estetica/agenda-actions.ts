@@ -53,7 +53,7 @@ export async function crearCita(datos: {
     return { error: traducirError(error) };
   }
 
-  revalidatePath("/agenda");
+  revalidatePath("/estetica");
   return { error: null, citaId: data.id };
 }
 
@@ -65,7 +65,7 @@ export async function reagendarCita(citaId: string, nuevoInicio: string): Promis
     .eq("id", citaId);
 
   if (error) return { error: traducirError(error) };
-  revalidatePath("/agenda");
+  revalidatePath("/estetica");
   return { error: null };
 }
 
@@ -77,7 +77,7 @@ export async function cancelarCita(citaId: string): Promise<EstadoAccion> {
     .eq("id", citaId);
 
   if (error) return { error: traducirError(error) };
-  revalidatePath("/agenda");
+  revalidatePath("/estetica");
   return { error: null };
 }
 
@@ -89,7 +89,7 @@ export async function marcarCitaNoLlego(citaId: string): Promise<EstadoAccion> {
     .eq("id", citaId);
 
   if (error) return { error: traducirError(error) };
-  revalidatePath("/agenda");
+  revalidatePath("/estetica");
   return { error: null };
 }
 
@@ -109,7 +109,7 @@ export async function iniciarCita(
     .eq("id", citaId);
 
   if (error) return { error: traducirError(error) };
-  revalidatePath("/agenda");
+  revalidatePath("/estetica");
   return { error: null };
 }
 
@@ -132,6 +132,6 @@ export async function finalizarCita(
   });
 
   if (error) return { error: traducirError(error) };
-  revalidatePath("/agenda");
+  revalidatePath("/estetica");
   return { error: null };
 }

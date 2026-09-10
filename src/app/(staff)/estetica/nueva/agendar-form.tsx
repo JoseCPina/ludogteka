@@ -84,7 +84,7 @@ export function AgendarForm({
       setError(res.error);
       return;
     }
-    router.push(`/agenda/${res.citaId}`);
+    router.push(`/estetica/${res.citaId}`);
   }
 
   if (!clienteElegido) {

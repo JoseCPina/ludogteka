@@ -7,14 +7,14 @@ import {
   resumenVacio,
   type ContratoResumen,
 } from "@/app/(staff)/perros/contrato-estado-banner";
+import type { ModuloEstancia } from "@/lib/modulos";
 
-const ETIQUETA_CATEGORIA: Record<string, string> = { guarderia: "Guardería", hotel: "Hotel" };
-
-export default async function CheckinListaPage() {
+export async function ListaCheckin({ modulo }: { modulo: ModuloEstancia }) {
   const supabase = await createSupabaseServerClient();
   const { data: llegadas, error } = await supabase
     .from("llegadas_hoy")
     .select("estancia_id, perro_id, perro_nombre, categoria, servicio_nombre")
+    .eq("categoria", modulo.categoria)
     .order("perro_nombre");
 
   const perroIds = [...new Set((llegadas ?? []).map((l) => l.perro_id))];
@@ -39,10 +39,15 @@ export default async function CheckinListaPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-n-900">Check-in</h1>
-          <p className="mt-1 text-n-600">Perros que llegan hoy y todavía no hacen check-in.</p>
+          <Link href={modulo.base} className="text-sm font-semibold text-azul hover:underline">
+            ← {modulo.etiqueta}
+          </Link>
+          <h1 className="mt-1 text-2xl font-bold text-n-900">Check-in — {modulo.etiqueta}</h1>
+          <p className="mt-1 text-n-600">
+            Perros de {modulo.etiqueta.toLowerCase()} que llegan hoy y todavía no hacen check-in.
+          </p>
         </div>
-        <Link href="/reservas/checkin/walkin">
+        <Link href={`${modulo.base}/walkin`}>
           <Button type="button" variante="secundario">
             Walk-in (sin reserva)
           </Button>
@@ -54,7 +59,7 @@ export default async function CheckinListaPage() {
           Recarga la página. Si el problema sigue, avísale al equipo técnico.
         </Alert>
       ) : !llegadas || llegadas.length === 0 ? (
-        <p className="text-n-600">Nadie más por llegar hoy.</p>
+        <p className="text-n-600">Nadie más por llegar hoy a {modulo.etiqueta.toLowerCase()}.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {llegadas.map((l) => (
@@ -71,9 +76,7 @@ export default async function CheckinListaPage() {
                     mostrarVigente={false}
                   />
                 </span>
-                <span className="rounded-full bg-azul-suave px-2 py-0.5 text-xs font-semibold text-azul">
-                  {ETIQUETA_CATEGORIA[l.categoria] ?? l.categoria}
-                </span>
+                <span className="text-xs text-n-500">{l.servicio_nombre}</span>
               </Link>
             </li>
           ))}

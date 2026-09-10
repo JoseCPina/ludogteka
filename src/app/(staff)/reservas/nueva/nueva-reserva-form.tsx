@@ -51,6 +51,7 @@ export function NuevaReservaForm({
   seriesActivas,
   esAdmin,
   hoy,
+  base,
 }: {
   clientes: Cliente[];
   perros: Perro[];
@@ -58,6 +59,10 @@ export function NuevaReservaForm({
   seriesActivas: SerieActiva[];
   esAdmin: boolean;
   hoy: string;
+  // Modulo desde el que se abrio el formulario ("/guarderia" u "/hotel"):
+  // los enlaces de despues de guardar tienen que regresar al mismo lado,
+  // no a un modulo que el usuario no eligio.
+  base: string;
 }) {
   const [busqueda, setBusqueda] = useState("");
   const [clienteId, setClienteId] = useState<string | null>(null);
@@ -274,7 +279,7 @@ export function NuevaReservaForm({
               <Button type="button">Ver reserva</Button>
             </Link>
           )}
-          <Link href="/reservas/nueva">
+          <Link href={`${base}/nueva`}>
             <Button type="button" variante="secundario">
               Nueva reserva
             </Button>

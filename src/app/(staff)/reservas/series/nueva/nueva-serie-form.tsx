@@ -22,12 +22,15 @@ export function NuevaSerieForm({
   servicios,
   seriesActivas,
   hoy,
+  base,
 }: {
   clientes: Cliente[];
   perros: Perro[];
   servicios: Servicio[];
   seriesActivas: SerieActiva[];
   hoy: string;
+  // Modulo desde el que se abrio ("/guarderia" u "/hotel").
+  base: string;
 }) {
   const [busqueda, setBusqueda] = useState("");
   const [clienteId, setClienteId] = useState<string | null>(null);
@@ -149,7 +152,7 @@ export function NuevaSerieForm({
               <Button type="button">Ver serie</Button>
             </Link>
           )}
-          <Link href="/reservas/series">
+          <Link href={`${base}/series`}>
             <Button type="button" variante="secundario">
               Volver al listado
             </Button>

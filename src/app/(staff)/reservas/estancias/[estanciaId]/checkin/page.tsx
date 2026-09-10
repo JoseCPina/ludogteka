@@ -9,6 +9,7 @@ import {
   type ContratoResumen,
 } from "@/app/(staff)/perros/contrato-estado-banner";
 import { formatearFechaCalendario, formatearFecha } from "@/lib/formato";
+import { moduloDeCategoria } from "@/lib/modulos";
 import { CheckinForm } from "./checkin-form";
 
 export default async function CheckinEstanciaPage({
@@ -78,11 +79,19 @@ export default async function CheckinEstanciaPage({
 
   const yaHizoCheckin = estancia.estado !== "reservada" && estancia.estado !== "confirmada";
   const esGuarderia = servicio?.categoria === "guarderia";
+  // Esta pantalla es de una estancia concreta y se llega a ella desde
+  // cualquiera de los dos modulos: a cual regresar lo dice la categoria
+  // del propio servicio, no un parametro en la URL que se pierde al
+  // recargar o al llegar por un enlace pegado.
+  const modulo = moduloDeCategoria(servicio?.categoria);
 
   return (
     <div className="flex flex-col gap-6">
-      <Link href="/reservas/checkin" className="text-sm font-semibold text-azul hover:underline">
-        ← Check-in
+      <Link
+        href={modulo ? `${modulo.base}/checkin` : "/reservas"}
+        className="text-sm font-semibold text-azul hover:underline"
+      >
+        ← Check-in{modulo ? ` de ${modulo.etiqueta.toLowerCase()}` : ""}
       </Link>
 
       <div>

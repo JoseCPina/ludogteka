@@ -7,7 +7,9 @@ import { rutaPorRol } from "@/lib/auth/rutas";
 const ZONAS_PROTEGIDAS: { prefijo: string; rolesPermitidos: string[] }[] = [
   { prefijo: "/admin", rolesPermitidos: ["admin"] },
   { prefijo: "/recepcion", rolesPermitidos: ["recepcion", "admin"] },
-  { prefijo: "/estetica", rolesPermitidos: ["estetica", "admin"] },
+  // /estetica es a la vez el aterrizaje del rol de estética y el módulo de
+  // la agenda (antes /agenda), así que recepción también entra.
+  { prefijo: "/estetica", rolesPermitidos: ["admin", "recepcion", "estetica"] },
   { prefijo: "/portal", rolesPermitidos: ["cliente"] },
   { prefijo: "/clientes", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/vinculacion", rolesPermitidos: ["admin", "recepcion"] },
@@ -16,9 +18,10 @@ const ZONAS_PROTEGIDAS: { prefijo: string; rolesPermitidos: string[] }[] = [
   { prefijo: "/perros", rolesPermitidos: ["admin", "recepcion", "estetica"] },
   { prefijo: "/servicios", rolesPermitidos: ["admin"] },
   { prefijo: "/reservas", rolesPermitidos: ["admin", "recepcion"] },
+  { prefijo: "/guarderia", rolesPermitidos: ["admin", "recepcion"] },
+  { prefijo: "/hotel", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/caja", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/contratos", rolesPermitidos: ["admin", "recepcion"] },
-  { prefijo: "/agenda", rolesPermitidos: ["admin", "recepcion", "estetica"] },
   { prefijo: "/inventario", rolesPermitidos: ["admin", "recepcion", "estetica"] },
   { prefijo: "/reportes", rolesPermitidos: ["admin"] },
 ];

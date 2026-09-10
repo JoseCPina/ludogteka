@@ -14,13 +14,18 @@ export type ItemNav = {
 // tocar el layout. `roles` respeta lo que cada rol puede ver según
 // docs/PROYECTO.md (recepción no ve dinero/reportes, estética no ve dinero).
 export const SECCIONES_STAFF: ItemNav[] = [
-  { etiqueta: "Reservas", href: "/reservas", roles: ["admin", "recepcion"] },
+  // Guardería y hotel comparten tabla (`estancias`) y comparten cupo, pero
+  // el staff los atiende como dos servicios distintos: cada uno con sus
+  // reservas, su check-in/check-out y su lista del día. La ocupación que
+  // se muestra en ambos es la de toda la casa — ver src/lib/modulos.ts.
+  { etiqueta: "Guardería", href: "/guarderia", roles: ["admin", "recepcion"] },
+  { etiqueta: "Hotel", href: "/hotel", roles: ["admin", "recepcion"] },
   { etiqueta: "Servicios", href: "/servicios", roles: ["admin"] },
   { etiqueta: "Clientes", href: "/clientes", roles: ["admin", "recepcion"] },
   { etiqueta: "Vinculación", href: "/vinculacion", roles: ["admin", "recepcion"] },
   { etiqueta: "Caja", href: "/caja", roles: ["admin", "recepcion"] },
   { etiqueta: "Contratos", href: "/contratos", roles: ["admin", "recepcion"] },
-  { etiqueta: "Agenda", href: "/agenda", roles: ["admin", "recepcion", "estetica"] },
+  { etiqueta: "Estética", href: "/estetica", roles: ["admin", "recepcion", "estetica"] },
   { etiqueta: "Inventario", href: "/inventario", roles: ["admin", "recepcion", "estetica"] },
   { etiqueta: "Reportes", href: "/reportes", roles: ["admin"] },
 ];
@@ -31,8 +36,12 @@ export const SECCIONES_STAFF: ItemNav[] = [
 export const SECCIONES_PORTAL: ItemNav[] = [];
 
 export function navStaffPara(rol: string): ItemNav[] {
+  const inicio = rutaPorRol(rol);
   return [
-    { etiqueta: "Inicio", href: rutaPorRol(rol), roles: [rol] },
-    ...SECCIONES_STAFF.filter((seccion) => seccion.roles.includes(rol)),
+    { etiqueta: "Inicio", href: inicio, roles: [rol] },
+    // El rol de estética aterriza justamente en /estetica, que además es
+    // una sección del menú: sin este filtro saldría dos veces seguidas,
+    // "Inicio" y "Estética", apuntando al mismo lugar.
+    ...SECCIONES_STAFF.filter((seccion) => seccion.roles.includes(rol) && seccion.href !== inicio),
   ];
 }

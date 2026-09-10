@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidarModulosEstancia } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
 
@@ -28,7 +28,7 @@ export async function aplicarCargo(
 
   if (error) return { error: traducirError(error), cargo: null };
 
-  revalidatePath("/reservas");
+  revalidarModulosEstancia();
   return { error: null, cargo: { id: data.id, precio: data.precio } };
 }
 
@@ -46,6 +46,6 @@ export async function cancelarCargo(cargoId: string, motivo: string): Promise<Es
 
   if (error) return { error: traducirError(error) };
 
-  revalidatePath("/reservas");
+  revalidarModulosEstancia();
   return { error: null };
 }

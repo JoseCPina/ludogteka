@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { formatearTelefono } from "@/lib/telefono";
+import { moduloDeCategoria } from "@/lib/modulos";
 import { EstanciaFila } from "./estancia-fila";
 import { CancelarReservaBoton } from "./cancelar-reserva-boton";
 import type { Cargo, ServicioCargo } from "../cargos-seccion";
@@ -52,6 +53,12 @@ export default async function DetalleReservaPage({
 
   const cancelables = filas.filter((f) => f.estado === "reservada" || f.estado === "confirmada").length;
 
+  // Una reserva puede mezclar categorías (una familia que deja un perro
+  // en guardería y otro en hotel el mismo día): ahí ningún módulo es el
+  // dueño y el "volver" va a la pantalla que ofrece los dos.
+  const categorias = [...new Set(filas.map((f) => f.categoria).filter(Boolean))];
+  const moduloUnico = categorias.length === 1 ? moduloDeCategoria(categorias[0]) : null;
+
   const estanciaIds = filas.map((f) => f.id);
   const [{ data: serviciosCargo }, { data: cargosCrudo }] = await Promise.all([
     supabase
@@ -97,8 +104,11 @@ export default async function DetalleReservaPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/reservas" className="text-sm font-semibold text-azul hover:underline">
-          ← Reservas
+        <Link
+          href={moduloUnico ? moduloUnico.base : "/reservas"}
+          className="text-sm font-semibold text-azul hover:underline"
+        >
+          ← {moduloUnico ? moduloUnico.etiqueta : "Reservas"}
         </Link>
         <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
           <div>

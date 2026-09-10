@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidarModulosEstancia, revalidarSeriesModulos } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
 
@@ -44,7 +45,8 @@ export async function crearSerie(
     p_serie_id: serie.id,
   });
 
-  revalidatePath("/reservas/series");
+  revalidarSeriesModulos();
+  revalidarModulosEstancia();
   return {
     error: errorGen ? traducirError(errorGen) : null,
     serieId: serie.id,
@@ -202,7 +204,8 @@ export async function cancelarSerie(serieId: string): Promise<EstadoCancelarSeri
     if (!error) canceladas++;
   }
 
-  revalidatePath("/reservas/series");
+  revalidarSeriesModulos();
+  revalidarModulosEstancia();
   revalidatePath(`/reservas/series/${serieId}`);
   return { error: null, canceladas };
 }

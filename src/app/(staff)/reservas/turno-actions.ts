@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidarModulosEstancia } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
 
@@ -30,7 +31,7 @@ export async function abrirTurno(fondoInicial: number, notas: string): Promise<E
     return { error: traducirError(error) };
   }
 
-  revalidatePath("/reservas");
+  revalidarModulosEstancia();
   revalidatePath("/caja");
   return { error: null, turnoId: data.id };
 }

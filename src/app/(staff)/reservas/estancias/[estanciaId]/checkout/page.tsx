@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { AlertaCriticaBanner } from "@/app/(staff)/perros/alerta-critica-banner";
 import { formatearFechaCalendario, formatearFecha, hoyNegocio } from "@/lib/formato";
+import { moduloDeCategoria } from "@/lib/modulos";
 import { CheckoutForm } from "./checkout-form";
 import { CargosSeccion, type Cargo, type ServicioCargo } from "../../../cargos-seccion";
 
@@ -115,6 +116,7 @@ export default async function CheckoutEstanciaPage({
     .map((a) => ({ id: a.id as string, alergeno: a.alergeno as string }));
 
   const esHotel = servicio?.categoria === "hotel";
+  const modulo = moduloDeCategoria(servicio?.categoria);
   const puedeCheckout = estancia.estado === "en_curso";
   // precio_unitario es tarifa por noche/día, no el total (ver tarifas:
   // "el total es N × precio del tramo") — hay que multiplicar por noches.
@@ -124,8 +126,11 @@ export default async function CheckoutEstanciaPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <Link href="/reservas/checkout" className="text-sm font-semibold text-azul hover:underline">
-        ← Check-out
+      <Link
+        href={modulo ? `${modulo.base}/checkout` : "/reservas"}
+        className="text-sm font-semibold text-azul hover:underline"
+      >
+        ← Check-out{modulo ? ` de ${modulo.etiqueta.toLowerCase()}` : ""}
       </Link>
 
       <div>

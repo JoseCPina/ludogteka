@@ -1,12 +1,12 @@
+import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { hoyNegocio } from "@/lib/formato";
-import { NuevaReservaForm } from "./nueva-reserva-form";
+import type { ModuloEstancia } from "@/lib/modulos";
+import { NuevaSerieForm } from "../series/nueva/nueva-serie-form";
 
-export default async function NuevaReservaPage() {
+export async function PaginaNuevaSerie({ modulo }: { modulo: ModuloEstancia }) {
   const supabase = await createSupabaseServerClient();
-  const sesion = await obtenerSesionConRol();
 
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
   const hoy = (hoyData as string | null) ?? hoyNegocio();
@@ -27,10 +27,13 @@ export default async function NuevaReservaPage() {
     supabase
       .from("servicios")
       .select("id, nombre, categoria")
-      .in("categoria", ["guarderia", "hotel"])
+      .eq("categoria", modulo.categoria)
       .is("deleted_at", null)
       .order("orden"),
-    supabase.from("series_recurrentes").select("perro_id, dias_semana, servicios(nombre)").is("deleted_at", null),
+    supabase
+      .from("series_recurrentes")
+      .select("perro_id, dias_semana, servicios(nombre)")
+      .is("deleted_at", null),
   ]);
 
   const error = errorClientes ?? errorPerros ?? errorServicios ?? errorSeries;
@@ -44,12 +47,19 @@ export default async function NuevaReservaPage() {
     };
   });
 
+  const sinServicios = !error && (servicios ?? []).length === 0;
+
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold text-n-900">Nueva reserva</h1>
+        <Link href={`${modulo.base}/series`} className="text-sm font-semibold text-azul hover:underline">
+          ← Series de {modulo.etiqueta.toLowerCase()}
+        </Link>
+        <h1 className="mt-1 text-2xl font-bold text-n-900">
+          Nueva serie recurrente — {modulo.etiqueta}
+        </h1>
         <p className="mt-1 text-n-600">
-          Guardería u hotel, uno o varios perros de la misma familia en la misma reserva.
+          Un perro que viene siempre los mismos días — se genera un horizonte de 8 semanas.
         </p>
       </div>
 
@@ -57,14 +67,18 @@ export default async function NuevaReservaPage() {
         <Alert variante="error" titulo="No pudimos cargar la información">
           Recarga la página. Si el problema sigue, avísale al equipo técnico.
         </Alert>
+      ) : sinServicios ? (
+        <Alert variante="advertencia" titulo={`No hay servicios de ${modulo.etiqueta.toLowerCase()} dados de alta`}>
+          Un admin tiene que crear el servicio en Servicios antes de poder armar una serie aquí.
+        </Alert>
       ) : (
-        <NuevaReservaForm
+        <NuevaSerieForm
           clientes={clientes ?? []}
           perros={perros ?? []}
           servicios={servicios ?? []}
           seriesActivas={seriesActivasLista}
-          esAdmin={sesion?.rol === "admin"}
           hoy={hoy}
+          base={modulo.base}
         />
       )}
     </div>

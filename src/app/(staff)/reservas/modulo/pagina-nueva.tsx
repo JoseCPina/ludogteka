@@ -1,14 +1,27 @@
+import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { hoyNegocio } from "@/lib/formato";
-import { NuevaReservaForm } from "../../nueva/nueva-reserva-form";
+import type { ModuloEstancia } from "@/lib/modulos";
+import { NuevaReservaForm } from "../nueva/nueva-reserva-form";
 
-// Punto 3 (walk-in): el perro que llega sin reserva pasa por el MISMO
-// formulario y las mismas validaciones (cupo, sanitario, precio) que
-// cualquier otra reserva — la única diferencia es el punto de entrada y
-// que de aquí se sigue derecho a check-in, no a la ficha de la reserva.
-export default async function WalkinPage() {
+// Sirve a los dos puntos de entrada del mismo formulario: la reserva
+// normal y el walk-in (el perro ya está en la puerta). La única
+// diferencia entre ambos sigue siendo el punto de entrada y a dónde se
+// sigue después, igual que cuando eran una sola pantalla.
+//
+// Los servicios se filtran a la categoría del módulo: en Guardería no
+// tiene por qué aparecer "Hotel noche" en el selector. Eso es lo único
+// que hace de este formulario un formulario "de guardería" — el modelo
+// de datos no cambia, sigue creando una fila de `estancias`.
+export async function PaginaNuevaReserva({
+  modulo,
+  esWalkin = false,
+}: {
+  modulo: ModuloEstancia;
+  esWalkin?: boolean;
+}) {
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
 
@@ -31,7 +44,7 @@ export default async function WalkinPage() {
     supabase
       .from("servicios")
       .select("id, nombre, categoria")
-      .in("categoria", ["guarderia", "hotel"])
+      .eq("categoria", modulo.categoria)
       .is("deleted_at", null)
       .order("orden"),
     supabase.from("series_recurrentes").select("perro_id, dias_semana, servicios(nombre)").is("deleted_at", null),
@@ -48,19 +61,31 @@ export default async function WalkinPage() {
     };
   });
 
+  const sinServicios = !error && (servicios ?? []).length === 0;
+
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold text-n-900">Walk-in</h1>
+        <Link href={modulo.base} className="text-sm font-semibold text-azul hover:underline">
+          ← {modulo.etiqueta}
+        </Link>
+        <h1 className="mt-1 text-2xl font-bold text-n-900">
+          {esWalkin ? `Walk-in — ${modulo.etiqueta}` : `Nueva reserva — ${modulo.etiqueta}`}
+        </h1>
         <p className="mt-1 text-n-600">
-          El perro ya está en la puerta. Elige su dueño, marca el servicio y las fechas, y sigue
-          directo al check-in.
+          {esWalkin
+            ? "El perro ya está en la puerta. Elige su dueño, marca el servicio y las fechas, y sigue directo al check-in."
+            : `Uno o varios perros de la misma familia en la misma reserva. Solo servicios de ${modulo.etiqueta.toLowerCase()}.`}
         </p>
       </div>
 
       {error ? (
         <Alert variante="error" titulo="No pudimos cargar la información">
           Recarga la página. Si el problema sigue, avísale al equipo técnico.
+        </Alert>
+      ) : sinServicios ? (
+        <Alert variante="advertencia" titulo={`No hay servicios de ${modulo.etiqueta.toLowerCase()} dados de alta`}>
+          Un admin tiene que crear el servicio en Servicios antes de poder reservar aquí.
         </Alert>
       ) : (
         <NuevaReservaForm
@@ -70,6 +95,7 @@ export default async function WalkinPage() {
           seriesActivas={seriesActivasLista}
           esAdmin={sesion?.rol === "admin"}
           hoy={hoy}
+          base={modulo.base}
         />
       )}
     </div>
