@@ -880,9 +880,80 @@ las dos salidas (mandar link / capturarlo yo) y el tipo de link decidido
 por el módulo.
 
 
+## Fase 16 — completa (el cliente entra con su teléfono)
+
+De 15 clientes en producción, 14 no tenían cuenta y la mayoría no tiene
+correo. Todos tienen WhatsApp. El correo era el dato que menos recuerdan
+y el que más se teclea mal, y estaba puesto como requisito para entrar.
+
+**Auth sigue por correo, por debajo.** Habilitar teléfono de verdad en
+Supabase exige contratar un proveedor de SMS, y el negocio decidió no
+verificar números. Así que el teléfono se traduce: las cuentas nuevas
+llevan un correo sintético derivado del número
+(`t4441234567@telefono.ludogteka.mx`), que nadie ve ni teclea. Vive en
+`src/lib/auth/identidad.ts`.
+
+**Las cuentas viejas no se migraron, y no hacía falta.**
+`email_de_login_por_telefono` busca el correo REGISTRADO en vez de
+calcularlo: quien ya entraba con su correo sigue entrando con él, y
+además ahora puede entrar con su teléfono. Un solo campo en la pantalla
+—"Teléfono o correo"— porque el cliente sabe su número y el staff su
+correo, y ninguno debería tener que elegir pestaña.
+
+**Sin verificación, la regla del alta es la única barrera.** Va dentro de
+la transacción que crea el expediente, no en el servidor de la app:
+
+  * teléfono con cuenta  → se rechaza el registro. Sin verificar el
+    número no se distingue al dueño de alguien que se equivocó de dígito,
+    y una segunda cuenta partiría en dos el historial del perro.
+  * teléfono sin cuenta  → la cuenta se le pone a ESE expediente. Es el
+    caso normal aquí: recepción capturó al cliente hace meses. Crear uno
+    nuevo dejaría sus perros y sus cobros del otro lado.
+  * teléfono nuevo       → se crea.
+
+Y un índice único parcial sobre `clientes.telefono`: sin él, "de quién es
+esta cuenta" deja de tener respuesta. Verificado contra producción antes
+de escribirlo (15 clientes, cero repetidos, todos a diez dígitos);
+desarrollo sí tenía repetidos, todos residuo de pruebas, renumerados ahí.
+
+**Recuperación por WhatsApp.** No hay correo que mandar, así que la
+pantalla de entrada abre el chat de recepción con el mensaje escrito, y
+recepción restablece desde la ficha del cliente (contraseña temporal de
+un solo vistazo, con enlace de WhatsApp para dictársela). Quién puede
+hacerlo y sobre quién lo decide
+`cuenta_de_cliente_para_restablecer` en la base, no el servidor: staff
+nunca puede tocar la cuenta de otro miembro del staff.
+
+**El número de recepción es configurable**, en `cupo_configuracion` junto
+al cupo, con su pantalla en el panel de admin — antes no había ninguna
+para esa tabla y "configurable" habría significado SQL a mano. Si está
+vacío, la pantalla de entrada no ofrece un botón muerto: dice que llame o
+se pase al mostrador.
+
+**Correo y cuenta, ambos opcionales.** El correo es un dato de contacto
+más. La cuenta es opcional en el flujo de estética: sin ella el
+expediente queda igual de completo, y el contrato se firma en el
+mostrador — el PDF lleva quién firmó y desde dónde, y eso sale de una
+sesión real, no de lo que la pantalla diga de sí misma.
+
+**Error propio, encontrado probando:** `guardar_configuracion_negocio`
+borraba las coordenadas de la base cada vez que se guardaba sin mandar
+dirección — comparaba contra el parámetro vacío en vez de contra una
+dirección nueva. Con eso, cambiar el teléfono de recepción dejaba de
+funcionar el cotizador de recolección. Y el portal saludaba al cliente
+con su correo sintético; ahora saluda con su nombre, o con su teléfono.
+
+**En el alta de estética, además:** la dirección solo se pide a quien
+marca que quiere recolección, se quitó el aviso de vacunas (a un baño de
+dos horas no se le revisa el carnet) y no se ofrece la talla gigante. Esa
+última no está codificada por nombre: se ocultan las tallas sin precio
+capturado en el grupo predeterminado, que hoy es exactamente la gigante.
+En cuanto el negocio capture esa tarifa, la talla reaparece sola.
+
+
 ## Estado actual
 
-Fase 0, Fase 1, Fase 2, Fase 3 y Fase 4 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 5 (POS) construida en sus cuatro bloques (cobros/devoluciones, bonos, descuentos, caja/arqueo) más la decisión de Bloque E, pendiente de que el negocio termine de probarla para cerrarla formalmente. Fase 6 (contratos) completa en sus tres bloques (plantillas y versionado, generación/firma/papel, visibilidad operativa y vigencia). Fase 7 (inventario) completa en sus tres bloques (catálogo y existencias; movimientos: entradas, salidas, mermas, ajustes; consumo automático por receta al finalizar un servicio de estética, con el enlace a la cita ya listo para que Fase 8 calcule el costo real por servicio). Fase 8 (reportes) completa en sus tres bloques (financiero por periodo con ingreso reconocido vs. neto de caja; costos y margen de estética; operativo con ocupación/servicios del periodo y una fotografía del estado actual de cumplimiento sanitario, contratos e inventario). Fase 9 (bitácora diaria y medicamentos) completa en sus dos bloques: Bloque A (fotos, notas e incidencias, con aviso por WhatsApp vía enlace `wa.me`) y Bloque B (régimen y registro de dosis administradas, referenciando `perro_medicamentos.id` tal como quedó planteado desde Fase 2). Con esto quedan completas las diez fases (0 a 9) del roadmap original. Fase 10 (recolección a domicilio, cotizador por distancia con Google Maps) completa — reutiliza tarifas/`resolver_precio`/`cargos_aplicados` de Fase 3/4 sin mecanismo de cobro nuevo; pendiente de que el negocio capture direcciones reales (base y Ludogteka), tarifas por km, y la llave de Google Maps antes de salir de modo simulación. Fase 11 (varias plantillas de contrato a la vez, cada una con nombre, versionado y aplicabilidad por servicio propios) completa — el estado de contrato dejó de ser un sí/no por perro y pasó a ser por tipo, y los avisos dicen cuál falta. Fase 12 (Guardería y Hotel como módulos separados en la navegación, Agenda renombrada a Estética) completa, sin migraciones: `estancias` sigue unificada y la ocupación que muestran los dos módulos es la de toda la casa. Fase 13 (alta de clientes por link: recepción manda una invitación por WhatsApp y el dueño captura sus datos y los de sus perros; el expediente nace ligado a su cuenta sin pasar por vinculación) completa. Fase 14 (precios de estética por grupo de raza: catálogo de razas buscable, el grupo se deriva y el cliente nunca lo ve, y `tarifas` gana la dimensión de grupo sin sistema de precios paralelo) completa. Fase 15 (dos flujos de alta por link —guardería/hotel y estética—, cada uno con su contrato firmado dentro del alta, y un link de complemento que solo pide lo que falta) completa. **Pendiente del negocio**: publicar el contrato de estética desde la pantalla de Contratos; hoy producción solo tiene “Contrato general” y “Contrato GUARDERÍA”, así que un alta de estética genera únicamente el general.
+Fase 0, Fase 1, Fase 2, Fase 3 y Fase 4 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 5 (POS) construida en sus cuatro bloques (cobros/devoluciones, bonos, descuentos, caja/arqueo) más la decisión de Bloque E, pendiente de que el negocio termine de probarla para cerrarla formalmente. Fase 6 (contratos) completa en sus tres bloques (plantillas y versionado, generación/firma/papel, visibilidad operativa y vigencia). Fase 7 (inventario) completa en sus tres bloques (catálogo y existencias; movimientos: entradas, salidas, mermas, ajustes; consumo automático por receta al finalizar un servicio de estética, con el enlace a la cita ya listo para que Fase 8 calcule el costo real por servicio). Fase 8 (reportes) completa en sus tres bloques (financiero por periodo con ingreso reconocido vs. neto de caja; costos y margen de estética; operativo con ocupación/servicios del periodo y una fotografía del estado actual de cumplimiento sanitario, contratos e inventario). Fase 9 (bitácora diaria y medicamentos) completa en sus dos bloques: Bloque A (fotos, notas e incidencias, con aviso por WhatsApp vía enlace `wa.me`) y Bloque B (régimen y registro de dosis administradas, referenciando `perro_medicamentos.id` tal como quedó planteado desde Fase 2). Con esto quedan completas las diez fases (0 a 9) del roadmap original. Fase 10 (recolección a domicilio, cotizador por distancia con Google Maps) completa — reutiliza tarifas/`resolver_precio`/`cargos_aplicados` de Fase 3/4 sin mecanismo de cobro nuevo; pendiente de que el negocio capture direcciones reales (base y Ludogteka), tarifas por km, y la llave de Google Maps antes de salir de modo simulación. Fase 11 (varias plantillas de contrato a la vez, cada una con nombre, versionado y aplicabilidad por servicio propios) completa — el estado de contrato dejó de ser un sí/no por perro y pasó a ser por tipo, y los avisos dicen cuál falta. Fase 12 (Guardería y Hotel como módulos separados en la navegación, Agenda renombrada a Estética) completa, sin migraciones: `estancias` sigue unificada y la ocupación que muestran los dos módulos es la de toda la casa. Fase 13 (alta de clientes por link: recepción manda una invitación por WhatsApp y el dueño captura sus datos y los de sus perros; el expediente nace ligado a su cuenta sin pasar por vinculación) completa. Fase 14 (precios de estética por grupo de raza: catálogo de razas buscable, el grupo se deriva y el cliente nunca lo ve, y `tarifas` gana la dimensión de grupo sin sistema de precios paralelo) completa. Fase 15 (dos flujos de alta por link —guardería/hotel y estética—, cada uno con su contrato firmado dentro del alta, y un link de complemento que solo pide lo que falta) completa. **Pendiente del negocio**: publicar el contrato de estética desde la pantalla de Contratos; hoy producción solo tiene “Contrato general” y “Contrato GUARDERÍA”, así que un alta de estética genera únicamente el general. Fase 16 (el cliente entra con su teléfono y contraseña, no con correo: correo y cuenta pasan a opcionales, un teléfono ya registrado no se puede volver a dar de alta y uno que existe como cliente sin cuenta se vincula en vez de duplicarse; la recuperación de contraseña es por WhatsApp a recepción, con el número configurable desde el panel) completa. Las cuentas que ya existían con correo siguen entrando igual, sin migración.
 
 ## Invite server-side de staff
 
