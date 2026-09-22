@@ -368,8 +368,8 @@ export function AltaForm({
               <span>
                 Quiero mi cuenta para ver a mi perro desde el celular
                 <span className="block text-sm text-n-600">
-                  Sus fotos del día, sus citas y sus contratos. Si no la quieres ahora, tu registro
-                  queda igual y la puedes abrir después.
+                  Sus fotos del día y sus citas. Si no la quieres ahora, tu registro queda igual y
+                  la puedes abrir después.
                 </span>
               </span>
             </label>

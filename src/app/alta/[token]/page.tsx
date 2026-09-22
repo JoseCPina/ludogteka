@@ -199,7 +199,9 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
           <h1 className="text-2xl font-bold text-n-900">Hola de nuevo, {cliente.nombre}</h1>
           <p className="mt-1 text-n-600">
             Ya te tenemos registrado. Para {definicion.etiqueta.toLowerCase()} solo nos falta lo que
-            no nos habías dicho y que firmes ese contrato — no vamos a volver a preguntarte todo.
+            no nos habías dicho
+            {definicion.llevaContrato ? " y que firmes ese contrato" : ""} — no vamos a volver a
+            preguntarte todo.
           </p>
           <p className="mt-2 text-sm text-n-500">
             Este link es tuyo y de un solo uso. Vence el{" "}
