@@ -18,8 +18,10 @@ import {
   type ResultadoFecha,
 } from "../../series-actions";
 import { DIAS_SEMANA, formatearDiasSemana } from "../dias-semana";
+import type { ServicioOfrecible } from "@/lib/servicios/ofrecibles";
+import { OpcionesServicio, AvisoServiciosSinPrecio } from "@/components/servicios/opciones-servicio";
 
-type Servicio = { id: string; nombre: string; categoria: string };
+type Servicio = ServicioOfrecible;
 type Estancia = { id: string; fechaEntrada: string; estado: string };
 type Pausa = { id: string; desde: string; hasta: string; motivo: string | null };
 
@@ -316,12 +318,9 @@ export function SerieDetalle({
             El perro y la fecha de inicio no se pueden cambiar — para eso, cancela esta serie y crea una nueva.
           </p>
 
+          <AvisoServiciosSinPrecio servicios={servicios} />
           <Select label="Servicio" value={servicioEdit} onChange={(e) => setServicioEdit(e.target.value)}>
-            {servicios.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.nombre}
-              </option>
-            ))}
+            <OpcionesServicio servicios={servicios} />
           </Select>
 
           <div>

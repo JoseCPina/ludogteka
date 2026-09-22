@@ -19,6 +19,8 @@ import { formatearDiasSemana } from "@/app/(staff)/reservas/series/dias-semana";
 import { ContratoSeccion, type ContratoFila, type TipoContratoFila } from "../contrato-seccion";
 import { BitacoraSeccion, type EntradaBitacora } from "../bitacora-seccion";
 import { MedicamentosSeccion, type MedicamentoFila } from "../medicamentos-seccion";
+import { RequisitosEstancia } from "../requisitos-estancia";
+import { hoyNegocio } from "@/lib/formato";
 
 export default async function PerroPage({
   params,
@@ -50,7 +52,7 @@ export default async function PerroPage({
     supabase
       .from("perros")
       .select(
-        "id, nombre, raza, raza_id, sexo, esterilizado, fecha_nacimiento, tamano_id, pelaje_id, alimentacion_notas, temperamento_notas, fallecido, foto_path, cliente_id, clientes(nombre)"
+        "id, nombre, raza, raza_id, sexo, esterilizado, fecha_nacimiento, tamano_id, pelaje_id, alimentacion_notas, temperamento_notas, fallecido, foto_path, cliente_id, en_celo, gestante, evaluacion_comportamiento_fecha, evaluacion_comportamiento_por, evaluacion_comportamiento_notas, clientes(nombre)"
       )
       .eq("id", id)
       .is("deleted_at", null)
@@ -86,7 +88,7 @@ export default async function PerroPage({
       .is("deleted_at", null)
       .order("fecha", { ascending: false })
       .order("created_at", { ascending: false }),
-    supabase.from("catalogo_alertas").select("id, etiqueta").is("deleted_at", null).order("orden"),
+    supabase.from("catalogo_alertas").select("id, etiqueta, bloquea_estancia").is("deleted_at", null).order("orden"),
     supabase
       .from("perro_alertas")
       .select("id, alerta_id, notas, activa, catalogo_alertas(etiqueta)")
@@ -203,6 +205,23 @@ export default async function PerroPage({
   const cliente = perro.clientes as unknown as { nombre: string } | null;
   const actualizarConId = actualizarPerro.bind(null, id);
   const soloLectura = sesion.rol === "estetica";
+
+  // Requisitos de estancia: quién registró la evaluación (nombre, no
+  // uuid) y qué alertas activas bloquean guardería/hotel según el
+  // catálogo — la misma regla que aplica el trigger de estancias.
+  const evaluadoPorId = perro.evaluacion_comportamiento_por as string | null;
+  const { data: evaluador } = evaluadoPorId
+    ? await supabase.from("profiles").select("nombre_completo").eq("id", evaluadoPorId).maybeSingle()
+    : { data: null };
+  const bloqueaPorAlertaId = new Map(
+    (catalogoAlertas ?? []).map((c) => [c.id as string, Boolean(c.bloquea_estancia)])
+  );
+  const alertasBloqueantes = (alertasCrudo ?? [])
+    .filter((a) => bloqueaPorAlertaId.get(a.alerta_id as string))
+    .map((a) => {
+      const catalogo = a.catalogo_alertas as unknown as { etiqueta: string } | null;
+      return catalogo?.etiqueta ?? "—";
+    });
 
   const contratos: ContratoFila[] = (contratosCrudo ?? []).map((c) => {
     const plantilla = (Array.isArray(c.plantillas_contrato)
@@ -343,6 +362,26 @@ export default async function PerroPage({
         textoBoton="Guardar cambios"
         soloLectura={soloLectura}
       />
+
+      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+        <h2 className="text-lg font-bold text-n-900">Requisitos para guardería y hotel</h2>
+        <RequisitosEstancia
+          perroId={id}
+          clienteId={perro.cliente_id ?? null}
+          hoy={hoyNegocio()}
+          datos={{
+            sexo: perro.sexo,
+            en_celo: Boolean(perro.en_celo),
+            gestante: Boolean(perro.gestante),
+            evaluacion_comportamiento_fecha: perro.evaluacion_comportamiento_fecha,
+            evaluacion_comportamiento_notas: perro.evaluacion_comportamiento_notas,
+            evaluadoPorNombre: evaluador?.nombre_completo ?? null,
+            alertasBloqueantes,
+          }}
+          soloLectura={soloLectura}
+          esAdmin={sesion.rol === "admin"}
+        />
+      </div>
 
       <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Requisitos sanitarios</h2>

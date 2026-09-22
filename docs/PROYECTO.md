@@ -1088,9 +1088,178 @@ columna no distingue el código de estado — así estuvieron a punto de
 darse por pendientes migraciones que ya estaban aplicadas.
 
 
+## Fase 17 — completa (precios y requisitos de guardería y hotel, del cartel)
+
+Dictado por el negocio contra sus carteles el 21 de septiembre de 2026.
+Tres migraciones: estructura y reglas (`20260922060141`), bonos
+ilimitados (`20260922060145`) y los datos del cartel (`20260922060148`) —
+separadas a propósito para que se lea qué es regla y qué es captura.
+Verificado en producción antes de escribir: cero estancias, cero bonos,
+cero cargos aplicados y cero tarifas de guardería/hotel; nada de lo que
+se retira había cobrado nunca.
+
+**Hotel por noche, por talla**: chica y mediana $270, grande $300. "Extra
+grande" cobra igual que grande, así que la talla gigante no se revive.
+`hotel_noche` conserva la dimensión de cantidad (tramos por noches) con un
+solo tramo 1+.
+
+**Guardería ocasional por hora, $35, sin talla.** Servicio propio
+`guarderia_hora` con `unidad = 'hora'` (valor nuevo del check) y la
+dimensión de cantidad que ya existía: cantidad = horas, tramo 1+. No es un
+sistema aparte. Una estancia por horas sigue siendo una estancia (mismo
+cupo diurno, mismo check-in, misma cuenta): ocupa su día del calendario y
+además lleva `estancias.horas` — obligatorias para ese servicio,
+prohibidas para el resto. Se reserva con un estimado y **al check-out
+suben a las reales si fueron más** (`ceil` de las horas entre check-in y
+salida); hacia abajo no, lo reservado se respeta. `cuenta_lineas_reserva`
+cobra `horas × precio` cuando la unidad es hora. Las series recurrentes
+son de días completos: la pantalla de series excluye la unidad hora
+porque `generar_estancias_serie` no sabe de horas ni tiene por qué.
+
+**El trigger de estancias tiene ahora dos banderas en vez de una**:
+`v_recotizar` (cambió algo que mueve el precio: servicio, perro, fechas,
+horas) y `v_revalidar` (cambió algo que mueve los requisitos: servicio,
+perro, fechas). Antes eran la misma. Con las horas ya no pueden serlo: al
+check-out las horas suben y hay que recotizar, pero no volver a exigirle
+vacunas a un perro que ya va de salida.
+
+**Day pass y mensualidad, con el mecanismo de bonos de Fase 5.** Tres
+pases (`bono_pases_10/15/20`: $1,150 / $1,380 / $1,610 con 20 / 30 / 40
+días de vigencia), cada pase un día completo de `guarderia_dia`. La
+mensualidad ($1,950, 30 días, ilimitado de lunes a viernes) es un bono
+con `servicios.ilimitado = true`: sin tope de días, vigencia obligatoria,
+`cantidad_incluida` en null (check `servicios_bono_coherente`, que
+reemplaza al anónimo original buscándolo por lo que dice). Cómo se
+modela sin romper la contabilidad de Fase 5: `bonos_clientes.cantidad_total`
+no es un tope inventado sino el **máximo físico** — un perro no puede
+asistir más de una vez por día y solo hay servicio de lunes a viernes,
+así que `comprar_bono` la calcula como los días hábiles de la vigencia
+(22 en la prueba). Con eso la fórmula de reconocimiento
+(`precio_pagado / cantidad_total` por consumo) sigue exacta: cada día
+asistido reconoce $88.64 de los $1,950; lo no asistido queda como ingreso
+diferido que vence con el bono, igual que un pase no usado.
+`bonos_clientes_estado` expone `ilimitado` y las pantallas dicen
+"ilimitado de lunes a viernes · N días usados" en vez de "22/22".
+
+**Lo que no existe y se retiró (baja lógica, tarifas primero)**:
+`cargo_recogida_tardia` — no hay tal cargo: si un perro de guardería sigue
+después del cierre, **pasa a hotel y se cobra como noche a su tarifa**.
+RPC `convertir_estancia_a_hotel(p_estancia_id)`: la MISMA estancia (en
+curso, de guardería) cambia de servicio al primer hotel cotizable; el
+trigger recotiza por talla, revisa cupo nocturno y requisitos como si se
+hubiera reservado hotel desde el principio; `horas` se limpia. El
+check-out cambió la sugerencia: en vez de "aplicar recogida tardía",
+"convertir en noche de hotel" (`convertir-hotel.tsx`), calculando los
+minutos en la base (`minutos_retraso_cierre`) como antes, y con el aviso
+de qué falta si ningún hotel tiene tarifa. `cargo_dia_extra` — extender
+es otra noche a su tarifa, que ya hace "Extender 1 noche".
+`cargo_medicamento` — no se administran medicamentos como servicio; la
+bitácora de medicamentos de Fase 9 se queda para los casos excepcionales,
+sin cobro. El bono de ejemplo de Fase 3 (`bono_guarderia_10dias`,
+valores supuestos) se retira si nadie lo compró; solo existía en
+desarrollo.
+
+**Requisitos de estancia (guardería y hotel, no estética):**
+
+- *Vigencias del cartel*: bordetella 6 meses (era 12), desparasitación 3
+  (era 6). Solo cambia el catálogo: cada aplicación registrada lleva su
+  `vigencia_meses_aplicado` congelado desde que existe la tabla, así que
+  las ya registradas conservan la que tenían (probado: las viejas de
+  bordetella siguen en 12) y solo las nuevas toman estos valores.
+- *Evaluación previa de comportamiento*: en `perros`
+  (`evaluacion_comportamiento_fecha`, `_por`, `_notas`). La marca
+  recepción por RPC `marcar_evaluacion_comportamiento(perro, fecha, notas)`
+  — quién la hizo lo pone la base desde `auth.uid()`, nunca la pantalla;
+  fecha futura rechazada; quitarla es de admin
+  (`quitar_evaluacion_comportamiento`). Sin ella la reserva se rechaza
+  con aviso y **solo admin puede pasar por encima con motivo**, con el
+  mismo contrato que la sanitaria (`estancias.bloqueo_comportamiento_superado`
+  + `motivo_excepcion_comportamiento`, check con motivo obligatorio,
+  `autorizado_por` lo llena el trigger). La pantalla de reserva reconoce
+  el rechazo por el mensaje y ofrece el mismo reintento con excepción que
+  el sanitario.
+- *Celo y gestación*: `perros.en_celo` / `perros.gestante`, solo hembras
+  (check `perros_estado_reproductivo_solo_hembras`; marcarlo en un macho
+  lo rechaza la base). Bloqueo **sin excepción** mientras esté prendido:
+  no es un trámite que falte, es una condición del perro. Recepción lo
+  prende y apaga desde el expediente.
+- *Agresividad*: ya existía como alerta de manejo; lo que faltaba era
+  que una alerta pudiera bloquear, y eso es un atributo del **catálogo**
+  (`catalogo_alertas.bloquea_estancia`), no un nombre codificado en el
+  trigger. Bloquean "Muerde" y la nueva "Agresivo"; "Agresivo con la
+  comida" no. Sin excepción. Estética no se ve afectada (el trigger es de
+  estancias).
+- *Expediente del perro*: sección "Requisitos para guardería y hotel"
+  (`requisitos-estancia.tsx`) que dice qué está bloqueando hoy y por qué,
+  con la evaluación (fecha, quién, notas), las marcas de celo/gestante
+  para hembras y las alertas bloqueantes activas — para que recepción se
+  entere antes del mostrador.
+- *Alta por link de guardería/hotel*: bloque "Lo que le vamos a pedir a
+  tu perro" (`requisitos-guarderia-hotel.tsx`) con las vacunas y
+  vigencias **reales del catálogo**, la evaluación, celo/gestante,
+  agresividad y el horario de guardería resumido desde `horario_semana`
+  ("lunes a viernes de 09:00 a 19:00; sábado de 10:00 a 14:00" en
+  producción, tal como está configurado — no se inventa uno), más la
+  regla de que después del cierre se queda a dormir. Solo en el flujo
+  que lleva contrato; estética no lo ve.
+
+**Pantallas de reserva: lo que no se puede cobrar no se ofrece, pero
+tampoco se esconde.** `src/lib/servicios/ofrecibles.ts` cruza
+`servicios` con `servicios_cotizables` y cada servicio viaja con su
+`cotizable`; `OpcionesServicio` pinta el que no lo es como `<option
+disabled>` "— sin precio capturado" y `AvisoServiciosSinPrecio` le dice a
+recepción que falta capturar la tarifa en Servicios, con link. Aplica a
+nueva reserva, nueva serie y edición de serie; el check-out lee los
+cargos directo de la vista (ahí no hay a quién avisar, y un cargo sin
+tarifa truena al aplicarse). Es a propósito lo contrario de estética,
+que lee solo de la vista: ahí el catálogo lo escoge el dueño desde su
+celular.
+
+**La única celda sin tarifa, y por qué**: `guarderia_dia` ("Guardería
+(día completo)", ya sin depender de la talla — un pase es un pase, del
+perro que sea). El cartel no trae precio de día suelto: el ocasional es
+por hora y el día completo solo se vende en pases y mensualidad. La
+comprobación final de la migración de datos exige que todo servicio vivo
+de guardería, hotel y bono sea cotizable **excepto ese**, y se cae
+nombrando cualquier otro hueco. Consecuencia mientras el negocio no lo
+capture por la UI: los pases y la mensualidad se venden, pero el día que
+consumen no se puede reservar (el trigger exige tarifa para crear la
+estancia). Si el negocio no quiere un precio de día suelto, la
+referencia natural es 10 h × $35 = $350, que es lo que pagaría alguien
+sin pase por el día completo — pero eso lo decide y lo captura el
+negocio, no una migración.
+
+**Verificado en desarrollo con sesión real de admin** (magic link
+generado y verificado por la Admin API, sin tocar su contraseña; el
+primer intento con un usuario de prueba nuevo chocó con
+`proteger_columnas_sensibles_profile`, que no deja cambiar `rol` ni con la
+secret key — ver el hallazgo de abajo): evaluación faltante rechazada
+con su mensaje, marcada por RPC con `auth.uid()` correcto y fecha futura
+rechazada; por hora sin horas rechazada, con 3 h a $35 y cuenta 3 × 35 =
+105; check-in y conversión a hotel de la misma estancia a $270 por talla
+chica con `horas` en null, y una segunda conversión rechazada; check-out
+por hora que no baja el estimado; celo y gestante rechazados con su
+mensaje y el check de solo-hembras rechazando a un macho; alerta
+"Agresivo" bloquea y "Agresivo con la comida" no; mensualidad vendida
+como ilimitada con 22 días hábiles, un consumo de $88.64 y la línea del
+día cubierta por su valor de lista; los cuatro servicios retirados con
+`deleted_at`; vigencias 6/3 con las aplicaciones viejas intactas; y la
+llave anónima pelada bloqueada en las tres RPC nuevas (`permission
+denied`) y con cero filas en `perros`. `tsc`, `eslint` y `next build`
+limpios.
+
+**Hallazgo colateral, sin corregir aquí**: `POST /api/staff/invite`
+actualiza `profiles.rol` con la secret key, y desde el arreglo de
+guardias del 10 de septiembre (`current_rol()` devuelve `'anonimo'` sin
+sesión) el trigger `proteger_columnas_sensibles_profile` lo rechaza con
+"Solo un admin puede modificar el rol de un profile". Es decir: invitar
+staff está roto en producción desde esa fecha, con 500. El arreglo es
+darle a esa ruta una puerta con nombre, como `app.vinculacion_interna`,
+no aflojar el guardia. Queda como siguiente pendiente.
+
 ## Estado actual
 
-Fase 0, Fase 1, Fase 2, Fase 3 y Fase 4 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 5 (POS) construida en sus cuatro bloques (cobros/devoluciones, bonos, descuentos, caja/arqueo) más la decisión de Bloque E, pendiente de que el negocio termine de probarla para cerrarla formalmente. Fase 6 (contratos) completa en sus tres bloques (plantillas y versionado, generación/firma/papel, visibilidad operativa y vigencia). Fase 7 (inventario) completa en sus tres bloques (catálogo y existencias; movimientos: entradas, salidas, mermas, ajustes; consumo automático por receta al finalizar un servicio de estética, con el enlace a la cita ya listo para que Fase 8 calcule el costo real por servicio). Fase 8 (reportes) completa en sus tres bloques (financiero por periodo con ingreso reconocido vs. neto de caja; costos y margen de estética; operativo con ocupación/servicios del periodo y una fotografía del estado actual de cumplimiento sanitario, contratos e inventario). Fase 9 (bitácora diaria y medicamentos) completa en sus dos bloques: Bloque A (fotos, notas e incidencias, con aviso por WhatsApp vía enlace `wa.me`) y Bloque B (régimen y registro de dosis administradas, referenciando `perro_medicamentos.id` tal como quedó planteado desde Fase 2). Con esto quedan completas las diez fases (0 a 9) del roadmap original. Fase 10 (recolección a domicilio, cotizador por distancia con Google Maps) completa — reutiliza tarifas/`resolver_precio`/`cargos_aplicados` de Fase 3/4 sin mecanismo de cobro nuevo; pendiente de que el negocio capture direcciones reales (base y Ludogteka), tarifas por km, y la llave de Google Maps antes de salir de modo simulación. Fase 11 (varias plantillas de contrato a la vez, cada una con nombre, versionado y aplicabilidad por servicio propios) completa — el estado de contrato dejó de ser un sí/no por perro y pasó a ser por tipo, y los avisos dicen cuál falta. Fase 12 (Guardería y Hotel como módulos separados en la navegación, Agenda renombrada a Estética) completa, sin migraciones: `estancias` sigue unificada y la ocupación que muestran los dos módulos es la de toda la casa. Fase 13 (alta de clientes por link: recepción manda una invitación por WhatsApp y el dueño captura sus datos y los de sus perros; el expediente nace ligado a su cuenta sin pasar por vinculación) completa. Fase 14 (precios de estética por grupo de raza: catálogo de razas buscable, el grupo se deriva y el cliente nunca lo ve, y `tarifas` gana la dimensión de grupo sin sistema de precios paralelo) completa. Fase 15 (dos flujos de alta por link —guardería/hotel y estética—, cada uno con su contrato firmado dentro del alta, y un link de complemento que solo pide lo que falta) completa. Fase 16 (el cliente entra con su teléfono y contraseña, no con correo: correo y cuenta pasan a opcionales, un teléfono ya registrado no se puede volver a dar de alta y uno que existe como cliente sin cuenta se vincula en vez de duplicarse; la recuperación de contraseña es por WhatsApp a recepción, con el número configurable desde el panel) completa. Las cuentas que ya existían con correo siguen entrando igual, sin migración. Corrección de estética contra el cartel (10 de septiembre): tres precios corregidos, tres servicios de baño con lo que incluye cada uno, pelo maltratado como precio alternativo del baño completo (`tarifas.precio_pelo_maltratado`, marcado en la cita), talla gigante retirada, y **en estética no hay contratos** (candado en `tipos_contrato`; el pendiente de publicar uno de estética ya no aplica). Retiro de los siete servicios de estética de Fase 3 que quedaron sin tarifa (21 de septiembre): vista `servicios_cotizables`, de la que lee `/estetica/nueva`, y comprobación sobre todo servicio de estética vivo — probada en desarrollo, **pendiente de aplicar a producción con `npm run desplegar`**.
+Fase 0, Fase 1, Fase 2, Fase 3 y Fase 4 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 5 (POS) construida en sus cuatro bloques (cobros/devoluciones, bonos, descuentos, caja/arqueo) más la decisión de Bloque E, pendiente de que el negocio termine de probarla para cerrarla formalmente. Fase 6 (contratos) completa en sus tres bloques (plantillas y versionado, generación/firma/papel, visibilidad operativa y vigencia). Fase 7 (inventario) completa en sus tres bloques (catálogo y existencias; movimientos: entradas, salidas, mermas, ajustes; consumo automático por receta al finalizar un servicio de estética, con el enlace a la cita ya listo para que Fase 8 calcule el costo real por servicio). Fase 8 (reportes) completa en sus tres bloques (financiero por periodo con ingreso reconocido vs. neto de caja; costos y margen de estética; operativo con ocupación/servicios del periodo y una fotografía del estado actual de cumplimiento sanitario, contratos e inventario). Fase 9 (bitácora diaria y medicamentos) completa en sus dos bloques: Bloque A (fotos, notas e incidencias, con aviso por WhatsApp vía enlace `wa.me`) y Bloque B (régimen y registro de dosis administradas, referenciando `perro_medicamentos.id` tal como quedó planteado desde Fase 2). Con esto quedan completas las diez fases (0 a 9) del roadmap original. Fase 10 (recolección a domicilio, cotizador por distancia con Google Maps) completa — reutiliza tarifas/`resolver_precio`/`cargos_aplicados` de Fase 3/4 sin mecanismo de cobro nuevo; pendiente de que el negocio capture direcciones reales (base y Ludogteka), tarifas por km, y la llave de Google Maps antes de salir de modo simulación. Fase 11 (varias plantillas de contrato a la vez, cada una con nombre, versionado y aplicabilidad por servicio propios) completa — el estado de contrato dejó de ser un sí/no por perro y pasó a ser por tipo, y los avisos dicen cuál falta. Fase 12 (Guardería y Hotel como módulos separados en la navegación, Agenda renombrada a Estética) completa, sin migraciones: `estancias` sigue unificada y la ocupación que muestran los dos módulos es la de toda la casa. Fase 13 (alta de clientes por link: recepción manda una invitación por WhatsApp y el dueño captura sus datos y los de sus perros; el expediente nace ligado a su cuenta sin pasar por vinculación) completa. Fase 14 (precios de estética por grupo de raza: catálogo de razas buscable, el grupo se deriva y el cliente nunca lo ve, y `tarifas` gana la dimensión de grupo sin sistema de precios paralelo) completa. Fase 15 (dos flujos de alta por link —guardería/hotel y estética—, cada uno con su contrato firmado dentro del alta, y un link de complemento que solo pide lo que falta) completa. Fase 16 (el cliente entra con su teléfono y contraseña, no con correo: correo y cuenta pasan a opcionales, un teléfono ya registrado no se puede volver a dar de alta y uno que existe como cliente sin cuenta se vincula en vez de duplicarse; la recuperación de contraseña es por WhatsApp a recepción, con el número configurable desde el panel) completa. Las cuentas que ya existían con correo siguen entrando igual, sin migración. Corrección de estética contra el cartel (10 de septiembre): tres precios corregidos, tres servicios de baño con lo que incluye cada uno, pelo maltratado como precio alternativo del baño completo (`tarifas.precio_pelo_maltratado`, marcado en la cita), talla gigante retirada, y **en estética no hay contratos** (candado en `tipos_contrato`; el pendiente de publicar uno de estética ya no aplica). Retiro de los siete servicios de estética de Fase 3 que quedaron sin tarifa (21 de septiembre): vista `servicios_cotizables`, de la que lee `/estetica/nueva`, y comprobación sobre todo servicio de estética vivo — aplicada a producción el mismo día con `npm run desplegar`. Fase 17 (precios y requisitos de guardería y hotel, del cartel: hotel $270/$300 por talla; guardería ocasional por hora a $35 con `estancias.horas` y ajuste a horas reales al check-out; day pass de 10/15/20 y mensualidad como bono ilimitado por días hábiles; recogida tardía, día extra y medicamento retirados, con "convertir en noche de hotel" en el check-out; evaluación previa de comportamiento con excepción de admin, celo/gestante y alertas bloqueantes sin excepción; vigencias bordetella 6 y desparasitación 3 solo para aplicaciones nuevas; los requisitos se muestran en el alta; las pantallas de reserva muestran deshabilitado lo que no tiene precio) completa. **Única celda sin tarifa, deliberada: `guarderia_dia`** — el cartel no trae precio de día suelto; hasta que el negocio lo capture por la UI, los pases y la mensualidad se venden pero el día que consumen no se puede reservar. **Pendiente encontrado**: `/api/staff/invite` no puede cambiar `profiles.rol` desde el arreglo de guardias del 10 de septiembre (ver Fase 17).
 
 ## Invite server-side de staff
 

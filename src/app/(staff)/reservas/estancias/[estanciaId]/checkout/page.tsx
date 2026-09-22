@@ -5,6 +5,7 @@ import { AlertaCriticaBanner } from "@/app/(staff)/perros/alerta-critica-banner"
 import { formatearFechaCalendario, formatearFecha, hoyNegocio } from "@/lib/formato";
 import { moduloDeCategoria } from "@/lib/modulos";
 import { CheckoutForm } from "./checkout-form";
+import { ConvertirHotel, type SugerenciaHotel } from "./convertir-hotel";
 import { CargosSeccion, type Cargo, type ServicioCargo } from "../../../cargos-seccion";
 
 export default async function CheckoutEstanciaPage({
@@ -18,7 +19,7 @@ export default async function CheckoutEstanciaPage({
   const { data: estancia, error } = await supabase
     .from("estancias")
     .select(
-      "id, perro_id, fecha_entrada, fecha_salida, estado, precio_unitario, hora_entrada_real, hora_salida_real, recogido_por_nombre, recogido_por_es_dueno, perros(nombre, clientes(distancia_base_km)), servicios(nombre, categoria)"
+      "id, perro_id, fecha_entrada, fecha_salida, estado, precio_unitario, horas, hora_entrada_real, hora_salida_real, recogido_por_nombre, recogido_por_es_dueno, perros(nombre, clientes(distancia_base_km)), servicios(nombre, categoria, unidad)"
     )
     .eq("id", estanciaId)
     .single();
@@ -56,7 +57,9 @@ export default async function CheckoutEstanciaPage({
       .eq("estancia_id", estanciaId)
       .is("deleted_at", null)
       .order("created_at"),
-    supabase.from("servicios").select("id, nombre, clave").eq("categoria", "cargo").is("deleted_at", null).order("orden"),
+    // Solo los cargos que se pueden cobrar: uno sin tarifa truena al
+    // aplicarse, y en el mostrador no es momento de descubrirlo.
+    supabase.from("servicios_cotizables").select("id, nombre, clave").eq("categoria", "cargo").order("orden"),
     supabase
       .from("cargos_aplicados")
       .select("id, cantidad, precio, cancelado, motivo_cancelacion, servicios(nombre)")
@@ -67,24 +70,32 @@ export default async function CheckoutEstanciaPage({
 
   const hoy = (hoyData as string | null) ?? hoyNegocio();
 
-  // Punto 1 (recogida tardía): sugerida, nunca aplicada sola. Se calcula
-  // en la base (minutos_retraso_cierre), no comparando horas a mano aquí
-  // — mismo tipo de bug que ya mordió dos veces con la zona horaria.
-  const cargoTardio = (serviciosCargo ?? []).find((s) => s.clave === "cargo_recogida_tardia");
-  let sugerenciaRetraso: { servicioId: string; servicioNombre: string; minutos: number; horaCierre: string } | null = null;
-  if (cargoTardio && estancia.estado === "en_curso") {
-    const [{ data: minutosData }, { data: cupoData }] = await Promise.all([
+  const esHotel = servicio?.categoria === "hotel";
+  const esGuarderia = servicio?.categoria === "guarderia";
+  const porHora = servicio?.unidad === "hora";
+  const modulo = moduloDeCategoria(servicio?.categoria);
+  const puedeCheckout = estancia.estado === "en_curso";
+
+  // No hay "recogida tardía": si el perro de guardería sigue aquí después
+  // del cierre, se queda a dormir y se cobra como noche de hotel. Se
+  // sugiere, nunca se aplica solo — y los minutos se calculan en la base
+  // (minutos_retraso_cierre), no comparando horas a mano aquí, mismo
+  // tipo de bug que ya mordió dos veces con la zona horaria.
+  let sugerenciaHotel: SugerenciaHotel | null = null;
+  if (esGuarderia && puedeCheckout) {
+    const [{ data: minutosData }, { data: cupoData }, { data: hotelCotizable }] = await Promise.all([
       supabase.rpc("minutos_retraso_cierre", { p_fecha: hoy }),
       supabase.rpc("resolver_cupo_configuracion", { p_fecha: hoy }),
+      supabase.from("servicios_cotizables").select("id, nombre").eq("categoria", "hotel").order("orden").limit(1),
     ]);
     const minutos = minutosData as number | null;
     const cupo = Array.isArray(cupoData) ? cupoData[0] : cupoData;
+    const hotel = hotelCotizable?.[0];
     if (minutos !== null && minutos > 0 && cupo?.hora_cierre) {
-      sugerenciaRetraso = {
-        servicioId: cargoTardio.id,
-        servicioNombre: cargoTardio.nombre,
+      sugerenciaHotel = {
         minutos,
         horaCierre: String(cupo.hora_cierre).slice(0, 5),
+        hotelNombre: hotel?.nombre ?? null,
       };
     }
   }
@@ -115,14 +126,13 @@ export default async function CheckoutEstanciaPage({
     .filter((a) => a.gravedad === "grave")
     .map((a) => ({ id: a.id as string, alergeno: a.alergeno as string }));
 
-  const esHotel = servicio?.categoria === "hotel";
-  const modulo = moduloDeCategoria(servicio?.categoria);
-  const puedeCheckout = estancia.estado === "en_curso";
-  // precio_unitario es tarifa por noche/día, no el total (ver tarifas:
-  // "el total es N × precio del tramo") — hay que multiplicar por noches.
+  // precio_unitario es tarifa por noche/día/hora, no el total (ver
+  // tarifas: "el total es N × precio del tramo") — hay que multiplicar
+  // por noches, o por horas si el servicio es por hora.
   const noches = Math.round(
     (new Date(estancia.fecha_salida).getTime() - new Date(estancia.fecha_entrada).getTime()) / 86400000
   );
+  const cantidad = porHora ? ((estancia.horas as number | null) ?? 1) : noches;
 
   return (
     <div className="flex flex-col gap-6">
@@ -137,10 +147,18 @@ export default async function CheckoutEstanciaPage({
         <h1 className="text-2xl font-bold text-n-900">Check-out — {perro.nombre}</h1>
         <p className="mt-1 text-n-600">
           {servicio?.nombre} · Salida programada: {formatearFechaCalendario(estancia.fecha_salida)}
+          {porHora ? ` · ${cantidad} hora${cantidad === 1 ? "" : "s"} estimada${cantidad === 1 ? "" : "s"}` : ""}
         </p>
+        {porHora && puedeCheckout && (
+          <p className="mt-1 text-sm text-n-500">
+            Al confirmar la salida se cobran las horas reales desde el check-in, si fueron más que las estimadas.
+          </p>
+        )}
       </div>
 
       <AlertaCriticaBanner alertas={alertasActivas} alergiasGraves={alergiasGraves} tamano="grande" />
+
+      {sugerenciaHotel && <ConvertirHotel estanciaId={estanciaId} sugerencia={sugerenciaHotel} />}
 
       {!puedeCheckout ? (
         <div className="rounded-lg border border-n-200 bg-n-50 p-4">
@@ -176,8 +194,7 @@ export default async function CheckoutEstanciaPage({
           estanciaId={estanciaId}
           cargosIniciales={cargos}
           serviciosCargo={puedeCheckout ? serviciosCargoLista : []}
-          sugerenciaRetraso={sugerenciaRetraso}
-          precioBase={estancia.precio_unitario * noches}
+          precioBase={estancia.precio_unitario * cantidad}
           distanciaClienteKm={distanciaClienteKm}
         />
       </div>

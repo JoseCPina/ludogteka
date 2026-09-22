@@ -17,6 +17,10 @@ export type FilaEstancia = {
   fechaSalida: string;
   estado: string;
   precioUnitario: number;
+  // Guardería por hora: la unidad es "hora" y `horas` es lo que se
+  // cobra (estimado al reservar, real al check-out).
+  unidad: string;
+  horas: number | null;
 };
 
 const ETIQUETA_CATEGORIA: Record<string, string> = { guarderia: "Guardería", hotel: "Hotel" };
@@ -62,13 +66,16 @@ export function EstanciaFila({
   const [error, setError] = useState<string | null>(null);
 
   const esGuarderia = fila.categoria === "guarderia";
+  const porHora = fila.unidad === "hora";
   const editable = estado === "reservada" || estado === "confirmada";
-  // precioUnitario es tarifa POR NOCHE/DÍA, no el total de la estancia
-  // (ver tarifas: "el total es N × precio del tramo") — para guardería
-  // noches siempre da 1, así que ahí no cambia nada visible.
+  // precioUnitario es tarifa POR NOCHE/DÍA/HORA, no el total de la
+  // estancia (ver tarifas: "el total es N × precio del tramo"). Para
+  // guardería por día noches siempre da 1; por hora, la cantidad son las
+  // horas.
   const noches = Math.round(
     (new Date(fechaSalida).getTime() - new Date(fechaEntrada).getTime()) / 86400000
   );
+  const cantidad = porHora ? (fila.horas ?? 1) : noches;
 
   async function accionCancelar() {
     setCargando(true);
@@ -137,10 +144,15 @@ export function EstanciaFila({
           </span>
         )}
         <span>
-          {esGuarderia ? "Precio" : `Precio por noche × ${noches}`}:{" "}
+          {porHora
+            ? `Precio por hora × ${cantidad}`
+            : esGuarderia
+              ? "Precio"
+              : `Precio por noche × ${noches}`}
+          :{" "}
           <span className="font-semibold text-n-900">
             ${fila.precioUnitario.toFixed(2)}
-            {!esGuarderia && ` = $${(fila.precioUnitario * noches).toFixed(2)}`}
+            {(porHora || !esGuarderia) && ` = $${(fila.precioUnitario * cantidad).toFixed(2)}`}
           </span>
         </span>
       </div>
@@ -238,7 +250,7 @@ export function EstanciaFila({
           estanciaId={fila.id}
           cargosIniciales={cargosIniciales}
           serviciosCargo={estado === "cancelada" || estado === "no_llego" ? [] : serviciosCargo}
-          precioBase={fila.precioUnitario * noches}
+          precioBase={fila.precioUnitario * cantidad}
           distanciaClienteKm={distanciaClienteKm}
         />
       </div>

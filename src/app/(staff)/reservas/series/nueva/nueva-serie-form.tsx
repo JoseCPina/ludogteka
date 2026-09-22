@@ -8,12 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { formatearFechaCalendario } from "@/lib/formato";
 import { formatearTelefono } from "@/lib/telefono";
+import { primerCotizable, type ServicioOfrecible } from "@/lib/servicios/ofrecibles";
+import { OpcionesServicio, AvisoServiciosSinPrecio } from "@/components/servicios/opciones-servicio";
 import { DIAS_SEMANA, formatearDiasSemana } from "../dias-semana";
 import { crearSerie, type ResultadoFecha } from "../../series-actions";
 
 type Cliente = { id: string; nombre: string; telefono: string };
 type Perro = { id: string; cliente_id: string; nombre: string };
-type Servicio = { id: string; nombre: string; categoria: string };
+type Servicio = ServicioOfrecible;
 type SerieActiva = { perroId: string; diasSemana: number[]; servicioNombre: string };
 
 export function NuevaSerieForm({
@@ -35,7 +37,7 @@ export function NuevaSerieForm({
   const [busqueda, setBusqueda] = useState("");
   const [clienteId, setClienteId] = useState<string | null>(null);
   const [perroId, setPerroId] = useState("");
-  const [servicioId, setServicioId] = useState(servicios[0]?.id ?? "");
+  const [servicioId, setServicioId] = useState(primerCotizable(servicios)?.id ?? "");
   const [diasSemana, setDiasSemana] = useState<number[]>([]);
   const [fechaInicio, setFechaInicio] = useState(hoy);
   const [tieneFin, setTieneFin] = useState(false);
@@ -200,12 +202,9 @@ export function NuevaSerieForm({
 
           {perroId && (
             <>
+              <AvisoServiciosSinPrecio servicios={servicios} />
               <Select label="Servicio" value={servicioId} onChange={(e) => setServicioId(e.target.value)}>
-                {servicios.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.nombre}
-                  </option>
-                ))}
+                <OpcionesServicio servicios={servicios} />
               </Select>
 
               <div>

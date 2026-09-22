@@ -154,7 +154,7 @@ export default async function EditarClientePage({
     supabase
       .from("bonos_clientes_estado")
       .select(
-        "id, servicio_nombre, servicio_incluido_nombre, cantidad_total, cantidad_disponible, precio_pagado, fecha_compra, fecha_vencimiento, estado"
+        "id, servicio_nombre, servicio_incluido_nombre, cantidad_total, cantidad_disponible, precio_pagado, fecha_compra, fecha_vencimiento, estado, ilimitado"
       )
       .eq("cliente_id", id)
       .order("fecha_compra", { ascending: false }),

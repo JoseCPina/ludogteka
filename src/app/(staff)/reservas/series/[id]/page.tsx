@@ -29,27 +29,46 @@ export default async function SerieDetallePage({ params }: { params: Promise<{ i
   const servicioSerie = Array.isArray(serie.servicios) ? serie.servicios[0] : serie.servicios;
   const modulo = moduloDeCategoria(servicioSerie?.categoria as string | undefined);
 
-  const [{ data: estancias, error: errorEstancias }, { data: pausas, error: errorPausas }, { data: servicios }] =
-    await Promise.all([
-      supabase
-        .from("estancias")
-        .select("id, fecha_entrada, estado")
-        .eq("serie_id", id)
-        .is("deleted_at", null)
-        .order("fecha_entrada"),
-      supabase
-        .from("series_pausas")
-        .select("id, desde, hasta, motivo")
-        .eq("serie_id", id)
-        .is("deleted_at", null)
-        .order("desde"),
-      supabase
-        .from("servicios")
-        .select("id, nombre, categoria")
-        .in("categoria", ["guarderia", "hotel"])
-        .is("deleted_at", null)
-        .order("orden"),
-    ]);
+  const [
+    { data: estancias, error: errorEstancias },
+    { data: pausas, error: errorPausas },
+    { data: serviciosCrudo },
+    { data: cotizablesCrudo },
+  ] = await Promise.all([
+    supabase
+      .from("estancias")
+      .select("id, fecha_entrada, estado")
+      .eq("serie_id", id)
+      .is("deleted_at", null)
+      .order("fecha_entrada"),
+    supabase
+      .from("series_pausas")
+      .select("id, desde, hasta, motivo")
+      .eq("serie_id", id)
+      .is("deleted_at", null)
+      .order("desde"),
+    supabase
+      .from("servicios")
+      .select("id, nombre, categoria, unidad")
+      .in("categoria", ["guarderia", "hotel"])
+      .is("deleted_at", null)
+      .order("orden"),
+    supabase.from("servicios_cotizables").select("id").in("categoria", ["guarderia", "hotel"]),
+  ]);
+
+  // Días completos nada más (la guardería por hora no va en serie), y
+  // cada uno con la marca de si se puede cobrar: el que no, se ve
+  // deshabilitado en el selector con la razón.
+  const idsCotizables = new Set((cotizablesCrudo ?? []).map((c) => c.id as string));
+  const servicios = (serviciosCrudo ?? [])
+    .filter((s) => s.unidad !== "hora")
+    .map((s) => ({
+      id: s.id as string,
+      nombre: s.nombre as string,
+      categoria: s.categoria as string,
+      unidad: s.unidad as string,
+      cotizable: idsCotizables.has(s.id as string),
+    }));
 
   const error = errorEstancias ?? errorPausas;
 

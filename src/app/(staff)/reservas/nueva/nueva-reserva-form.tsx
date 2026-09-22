@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { sumarDiasFecha } from "@/lib/formato";
 import { formatearTelefono } from "@/lib/telefono";
+import { primerCotizable, type ServicioOfrecible } from "@/lib/servicios/ofrecibles";
+import { OpcionesServicio, AvisoServiciosSinPrecio } from "@/components/servicios/opciones-servicio";
 import { formatearDiasSemana } from "../series/dias-semana";
 import {
   crearReserva,
@@ -19,7 +21,7 @@ import {
 
 type Cliente = { id: string; nombre: string; telefono: string };
 type Perro = { id: string; cliente_id: string; nombre: string };
-type Servicio = { id: string; nombre: string; categoria: string };
+type Servicio = ServicioOfrecible;
 type SerieActiva = { perroId: string; diasSemana: number[]; servicioNombre: string };
 
 type Linea = {
@@ -28,20 +30,40 @@ type Linea = {
   servicioId: string;
   fechaEntrada: string;
   fechaSalida: string;
+  horas: string;
   bloqueoSanitarioSuperado: boolean;
   motivoExcepcionSanitaria: string;
+  bloqueoComportamientoSuperado: boolean;
+  motivoExcepcionComportamiento: string;
 };
 
 function lineaAPayload(linea: Linea, servicios: Servicio[]): LineaReserva {
-  const esGuarderia = servicios.find((s) => s.id === linea.servicioId)?.categoria === "guarderia";
+  const servicio = servicios.find((s) => s.id === linea.servicioId);
+  const esGuarderia = servicio?.categoria === "guarderia";
+  const porHora = servicio?.unidad === "hora";
   return {
     perroId: linea.perroId,
     servicioId: linea.servicioId,
     fechaEntrada: linea.fechaEntrada,
     fechaSalida: esGuarderia ? sumarDiasFecha(linea.fechaEntrada, 1) : linea.fechaSalida,
+    horas: porHora ? Math.max(1, Math.round(Number(linea.horas) || 1)) : null,
     bloqueoSanitarioSuperado: linea.bloqueoSanitarioSuperado,
     motivoExcepcionSanitaria: linea.motivoExcepcionSanitaria,
+    bloqueoComportamientoSuperado: linea.bloqueoComportamientoSuperado,
+    motivoExcepcionComportamiento: linea.motivoExcepcionComportamiento,
   };
+}
+
+// Qué bloqueo trae un rechazo de la base, leído del mensaje del trigger.
+// Solo los dos con excepción de admin se ofrecen para reintentar; celo,
+// gestación y agresividad no tienen excepción y se quedan como rechazo.
+function tipoDeBloqueo(motivo: string | null): "sanitario" | "comportamiento" | null {
+  const m = (motivo ?? "").toLowerCase();
+  if (m.includes("sanitario")) return "sanitario";
+  if (m.includes("evaluación previa de comportamiento") || m.includes("evaluacion previa de comportamiento")) {
+    return "comportamiento";
+  }
+  return null;
 }
 
 export function NuevaReservaForm({
@@ -110,7 +132,9 @@ export function NuevaReservaForm({
     setLineas((prev) => {
       const existe = prev.some((l) => l.perroId === perro.id);
       if (existe) return prev.filter((l) => l.perroId !== perro.id);
-      const primerServicio = servicios[0];
+      // El primero que se pueda cobrar, no el primero de la lista: uno
+      // sin precio se ve pero no se puede elegir.
+      const primerServicio = primerCotizable(servicios);
       return [
         ...prev,
         {
@@ -119,8 +143,11 @@ export function NuevaReservaForm({
           servicioId: primerServicio?.id ?? "",
           fechaEntrada: hoy,
           fechaSalida: sumarDiasFecha(hoy, 1),
+          horas: "1",
           bloqueoSanitarioSuperado: false,
           motivoExcepcionSanitaria: "",
+          bloqueoComportamientoSuperado: false,
+          motivoExcepcionComportamiento: "",
         },
       ];
     });
@@ -203,7 +230,9 @@ export function NuevaReservaForm({
         <ul className="flex flex-col gap-3">
           {resultados.map((r) => {
             const linea = lineas.find((l) => l.perroId === r.perroId);
-            const esBloqueoSanitario = !r.exito && r.motivo?.toLowerCase().includes("sanitario");
+            const bloqueo = r.exito ? null : tipoDeBloqueo(r.motivo);
+            const esBloqueoSanitario = bloqueo === "sanitario";
+            const esBloqueoComportamiento = bloqueo === "comportamiento";
             return (
               <li
                 key={r.perroId}
@@ -258,7 +287,42 @@ export function NuevaReservaForm({
                     )}
                   </div>
                 )}
-                {!r.exito && !esBloqueoSanitario && (
+                {esBloqueoComportamiento && esAdmin && linea && (
+                  <div className="mt-3 flex flex-col gap-2 border-t border-naranja pt-3">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-naranja-oscuro">
+                      <input
+                        type="checkbox"
+                        checked={linea.bloqueoComportamientoSuperado}
+                        onChange={(e) =>
+                          actualizarLinea(r.perroId, { bloqueoComportamientoSuperado: e.target.checked })
+                        }
+                      />
+                      Reservar sin evaluación de comportamiento (solo admin)
+                    </label>
+                    {linea.bloqueoComportamientoSuperado && (
+                      <>
+                        <Field
+                          label="Motivo de la excepción"
+                          value={linea.motivoExcepcionComportamiento}
+                          onChange={(e) =>
+                            actualizarLinea(r.perroId, { motivoExcepcionComportamiento: e.target.value })
+                          }
+                          placeholder="ej. Se evalúa hoy al llegar, autoriza admin"
+                        />
+                        <Button
+                          type="button"
+                          variante="secundario"
+                          disabled={!linea.motivoExcepcionComportamiento.trim() || reintentando[r.perroId]}
+                          onClick={() => reintentar(r.perroId)}
+                          className="self-start"
+                        >
+                          {reintentando[r.perroId] ? "Reintentando…" : "Reintentar con excepción"}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )}
+                {!r.exito && !esBloqueoSanitario && !esBloqueoComportamiento && (
                   <Button
                     type="button"
                     variante="secundario"
@@ -302,6 +366,8 @@ export function NuevaReservaForm({
         </Button>
       </div>
 
+      <AvisoServiciosSinPrecio servicios={servicios} />
+
       {perrosDelCliente.length === 0 ? (
         <Alert variante="advertencia" titulo="Este cliente no tiene perros registrados">
           Da de alta al perro antes de poder reservarle algo.
@@ -344,11 +410,7 @@ export function NuevaReservaForm({
                       value={linea.servicioId}
                       onChange={(e) => actualizarLinea(perro.id, { servicioId: e.target.value })}
                     >
-                      {servicios.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.nombre}
-                        </option>
-                      ))}
+                      <OpcionesServicio servicios={servicios} />
                     </Select>
                     <Field
                       label={esGuarderia ? "Fecha" : "Entrada"}
@@ -356,6 +418,17 @@ export function NuevaReservaForm({
                       value={linea.fechaEntrada}
                       onChange={(e) => actualizarLinea(perro.id, { fechaEntrada: e.target.value })}
                     />
+                    {servicioActual?.unidad === "hora" && (
+                      <Field
+                        label="Horas (estimado)"
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={linea.horas}
+                        onChange={(e) => actualizarLinea(perro.id, { horas: e.target.value })}
+                        ayuda="Al check-out se cobran las reales si fueron más."
+                      />
+                    )}
                     {!esGuarderia && (
                       <Field
                         label="Salida"

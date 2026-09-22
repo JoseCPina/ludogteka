@@ -131,3 +131,18 @@ export async function confirmarCheckout(
   revalidatePath(`/reservas/estancias/${estanciaId}/checkout`);
   return { error: null };
 }
+
+// Guardería que no recogen antes del cierre → noche de hotel. La RPC
+// cambia el servicio de la misma estancia; el trigger recotiza por talla
+// y valida cupo nocturno y requisitos. Si algo no cuadra, el mensaje de
+// la base dice qué.
+export async function convertirEnNocheHotel(estanciaId: string): Promise<EstadoAccion> {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("convertir_estancia_a_hotel", { p_estancia_id: estanciaId });
+
+  if (error) return { error: traducirError(error) };
+
+  revalidarModulosEstancia();
+  revalidatePath(`/reservas/estancias/${estanciaId}/checkout`);
+  return { error: null };
+}

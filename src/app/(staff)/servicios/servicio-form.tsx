@@ -31,12 +31,14 @@ export function ServicioForm({
     servicio_incluido_id: string | null;
     cantidad_incluida: number | null;
     vigencia_dias: number | null;
+    ilimitado?: boolean;
     orden: number;
   };
   textoBoton: string;
 }) {
   const [estado, formAction, enviando] = useActionState(action, ESTADO_INICIAL);
   const [categoria, setCategoria] = useState(valoresIniciales?.categoria ?? "guarderia");
+  const [ilimitado, setIlimitado] = useState(valoresIniciales?.ilimitado ?? false);
   const esBono = categoria === "bono";
 
   return (
@@ -93,6 +95,7 @@ export function ServicioForm({
           <option value="sesion">Sesión</option>
           <option value="evento">Evento</option>
           <option value="km">Kilómetro</option>
+          <option value="hora">Hora</option>
         </Select>
       </div>
 
@@ -168,24 +171,42 @@ export function ServicioForm({
               </option>
             ))}
           </Select>
+          <label className="flex flex-col gap-1 text-n-900">
+            <span className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                name="ilimitado"
+                disabled={enviando}
+                checked={ilimitado}
+                onChange={(e) => setIlimitado(e.target.checked)}
+                className="h-4 w-4"
+              />
+              Consumo ilimitado durante la vigencia (mensualidad)
+            </span>
+            <span className="pl-6 text-sm text-n-600">
+              Sin tope de unidades: cada día que asista se registra como consumo. La vigencia es
+              obligatoria y el ingreso se reconoce por día hábil de esa vigencia.
+            </span>
+          </label>
           <div className="grid grid-cols-2 gap-4">
             <Field
-              label="Unidades incluidas"
+              label={ilimitado ? "Unidades incluidas (no aplica)" : "Unidades incluidas"}
               name="cantidad_incluida"
               type="number"
               min="1"
-              required={esBono}
-              disabled={enviando}
+              required={esBono && !ilimitado}
+              disabled={enviando || ilimitado}
               defaultValue={valoresIniciales?.cantidad_incluida ?? ""}
             />
             <Field
-              label="Vigencia (días, opcional)"
+              label={ilimitado ? "Vigencia (días)" : "Vigencia (días, opcional)"}
               name="vigencia_dias"
               type="number"
               min="1"
+              required={esBono && ilimitado}
               disabled={enviando}
               defaultValue={valoresIniciales?.vigencia_dias ?? ""}
-              ayuda="Vacío = sin vencimiento."
+              ayuda={ilimitado ? "Obligatoria para un bono ilimitado." : "Vacío = sin vencimiento."}
             />
           </div>
         </div>

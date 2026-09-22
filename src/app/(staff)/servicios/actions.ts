@@ -7,7 +7,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export type EstadoServicioForm = { error: string | null; ok?: boolean };
 
 const CATEGORIAS = ["guarderia", "hotel", "estetica", "cargo", "bono"] as const;
-const UNIDADES = ["dia", "noche", "sesion", "evento", "km"] as const;
+const UNIDADES = ["dia", "noche", "sesion", "evento", "km", "hora"] as const;
 
 function leerCampos(formData: FormData) {
   const clave = String(formData.get("clave") ?? "").trim();
@@ -19,6 +19,10 @@ function leerCampos(formData: FormData) {
   const depende_pelaje = formData.get("depende_pelaje") === "on";
   const depende_cantidad = formData.get("depende_cantidad") === "on";
   const servicio_incluido_id = String(formData.get("servicio_incluido_id") ?? "").trim() || null;
+  // Ilimitado: consumo sin tope dentro de la vigencia (la mensualidad).
+  // Un bono así no lleva cantidad incluida; la base la calcula al vender
+  // como los días hábiles de la vigencia.
+  const ilimitado = categoria === "bono" && formData.get("ilimitado") === "on";
   const cantidadCrudo = String(formData.get("cantidad_incluida") ?? "").trim();
   const vigenciaCrudo = String(formData.get("vigencia_dias") ?? "").trim();
   const ordenCrudo = String(formData.get("orden") ?? "").trim();
@@ -33,7 +37,8 @@ function leerCampos(formData: FormData) {
     depende_pelaje,
     depende_cantidad,
     servicio_incluido_id,
-    cantidad_incluida: cantidadCrudo ? Number(cantidadCrudo) : null,
+    ilimitado,
+    cantidad_incluida: cantidadCrudo && !ilimitado ? Number(cantidadCrudo) : null,
     vigencia_dias: vigenciaCrudo ? Number(vigenciaCrudo) : null,
     orden: ordenCrudo ? Number(ordenCrudo) : 0,
   };
@@ -58,8 +63,12 @@ function validar(campos: ReturnType<typeof leerCampos>): string | null {
   }
   if (campos.categoria === "bono") {
     if (!campos.servicio_incluido_id) return "Un bono debe indicar a qué servicio da acceso.";
-    if (!campos.cantidad_incluida || campos.cantidad_incluida <= 0) {
-      return "Un bono debe indicar cuántas unidades incluye.";
+    if (campos.ilimitado) {
+      if (!campos.vigencia_dias || campos.vigencia_dias <= 0) {
+        return "Un bono ilimitado necesita vigencia: sin tope de unidades, lo único que lo acota es el tiempo.";
+      }
+    } else if (!campos.cantidad_incluida || campos.cantidad_incluida <= 0) {
+      return "Un bono debe indicar cuántas unidades incluye, o marcarse como ilimitado.";
     }
   } else if (campos.servicio_incluido_id || campos.cantidad_incluida) {
     return "Solo un bono puede tener servicio incluido o cantidad incluida.";

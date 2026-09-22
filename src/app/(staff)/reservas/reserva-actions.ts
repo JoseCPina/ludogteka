@@ -10,8 +10,14 @@ export type LineaReserva = {
   servicioId: string;
   fechaEntrada: string;
   fechaSalida: string;
+  // Solo para servicios que se cobran por hora (guardería ocasional): el
+  // estimado con el que se reserva. Al check-out sube a las reales.
+  horas?: number | null;
   bloqueoSanitarioSuperado?: boolean;
   motivoExcepcionSanitaria?: string;
+  // Misma forma que la sanitaria: solo admin, siempre con motivo.
+  bloqueoComportamientoSuperado?: boolean;
+  motivoExcepcionComportamiento?: string;
 };
 
 export type ResultadoLinea = {
@@ -37,8 +43,11 @@ async function insertarEstancia(reservaId: string, linea: LineaReserva): Promise
       servicio_id: linea.servicioId,
       fecha_entrada: linea.fechaEntrada,
       fecha_salida: linea.fechaSalida,
+      horas: linea.horas ?? null,
       bloqueo_sanitario_superado: linea.bloqueoSanitarioSuperado ?? false,
       motivo_excepcion_sanitaria: linea.motivoExcepcionSanitaria || null,
+      bloqueo_comportamiento_superado: linea.bloqueoComportamientoSuperado ?? false,
+      motivo_excepcion_comportamiento: linea.motivoExcepcionComportamiento || null,
     })
     .select("id")
     .single();

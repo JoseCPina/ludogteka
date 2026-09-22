@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { hoyNegocio } from "@/lib/formato";
 import type { ModuloEstancia } from "@/lib/modulos";
+import { cargarServiciosOfrecibles } from "@/lib/servicios/ofrecibles";
 import { NuevaSerieForm } from "../series/nueva/nueva-serie-form";
 
 export async function PaginaNuevaSerie({ modulo }: { modulo: ModuloEstancia }) {
@@ -14,7 +15,7 @@ export async function PaginaNuevaSerie({ modulo }: { modulo: ModuloEstancia }) {
   const [
     { data: clientes, error: errorClientes },
     { data: perros, error: errorPerros },
-    { data: servicios, error: errorServicios },
+    { servicios, error: errorServicios },
     { data: seriesActivas, error: errorSeries },
   ] = await Promise.all([
     supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).order("nombre"),
@@ -24,12 +25,9 @@ export async function PaginaNuevaSerie({ modulo }: { modulo: ModuloEstancia }) {
       .is("deleted_at", null)
       .eq("fallecido", false)
       .order("nombre"),
-    supabase
-      .from("servicios")
-      .select("id, nombre, categoria")
-      .eq("categoria", modulo.categoria)
-      .is("deleted_at", null)
-      .order("orden"),
+    // Una serie es de días completos: la guardería por hora se queda
+    // fuera (generar_estancias_serie no sabe de horas, y no tiene por qué).
+    cargarServiciosOfrecibles(supabase, [modulo.categoria], { excluirUnidades: ["hora"] }),
     supabase
       .from("series_recurrentes")
       .select("perro_id, dias_semana, servicios(nombre)")

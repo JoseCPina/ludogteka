@@ -39,6 +39,7 @@ export type BonoDisponible = {
   servicioIncluidoId: string | null;
   servicioNombre: string;
   cantidadDisponible: number;
+  ilimitado?: boolean;
 };
 
 export type MotivoDescuento = { id: string; etiqueta: string };
@@ -433,7 +434,8 @@ export function CuentaCobro({
               <Select label="Bono" value={bonoElegidoId} onChange={(e) => setBonoElegidoId(e.target.value)}>
                 {bonosParaLinea(lineas[aplicandoBonoIdx]).map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.servicioNombre} ({b.cantidadDisponible} disponibles)
+                    {b.servicioNombre}{" "}
+                    {b.ilimitado ? "(ilimitado, vigente)" : `(${b.cantidadDisponible} disponibles)`}
                   </option>
                 ))}
               </Select>

@@ -18,34 +18,27 @@ export type Cargo = {
 
 export type ServicioCargo = { id: string; nombre: string; clave?: string };
 
-export type SugerenciaRetraso = {
-  servicioId: string;
-  servicioNombre: string;
-  minutos: number;
-  horaCierre: string;
-};
-
 function formatoDinero(valor: number): string {
   return `$${valor.toFixed(2)}`;
 }
 
+// La "recogida tardía" que antes se sugería aquí ya no existe como cargo:
+// un perro de guardería que sigue después del cierre pasa a noche de
+// hotel (ver convertir-hotel.tsx en el check-out).
 export function CargosSeccion({
   estanciaId,
   cargosIniciales,
   serviciosCargo,
-  sugerenciaRetraso,
   precioBase,
   distanciaClienteKm,
 }: {
   estanciaId: string;
   cargosIniciales: Cargo[];
   serviciosCargo: ServicioCargo[];
-  sugerenciaRetraso?: SugerenciaRetraso | null;
   precioBase?: number;
   distanciaClienteKm?: number | null;
 }) {
   const [cargos, setCargos] = useState(cargosIniciales);
-  const [sugerenciaOmitida, setSugerenciaOmitida] = useState(false);
 
   const [servicioId, setServicioId] = useState(serviciosCargo[0]?.id ?? "");
   const [cantidad, setCantidad] = useState("1");
@@ -90,30 +83,6 @@ export function CargosSeccion({
     setCantidad("1");
   }
 
-  async function aplicarSugerencia() {
-    if (!sugerenciaRetraso) return;
-    setAplicando(true);
-    setError(null);
-    const res = await aplicarCargo(estanciaId, sugerenciaRetraso.servicioId, 1, "");
-    setAplicando(false);
-    if (res.error || !res.cargo) {
-      setError(res.error);
-      return;
-    }
-    setCargos((prev) => [
-      ...prev,
-      {
-        id: res.cargo!.id,
-        servicioNombre: sugerenciaRetraso.servicioNombre,
-        cantidad: 1,
-        precio: res.cargo!.precio,
-        cancelado: false,
-        motivoCancelacion: null,
-      },
-    ]);
-    setSugerenciaOmitida(true);
-  }
-
   async function confirmarCancelar(cargoId: string) {
     if (!motivoCancelar.trim()) {
       setError("Escribe el motivo de la cancelación.");
@@ -137,28 +106,6 @@ export function CargosSeccion({
 
   return (
     <div className="flex flex-col gap-4">
-      {sugerenciaRetraso && sugerenciaRetraso.minutos > 0 && !sugerenciaOmitida && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border-2 border-amarillo bg-amarillo-suave p-4">
-          <div>
-            <p className="font-bold text-amarillo-oscuro">
-              Recogida tardía: {sugerenciaRetraso.minutos} minuto{sugerenciaRetraso.minutos === 1 ? "" : "s"} después
-              del cierre ({sugerenciaRetraso.horaCierre})
-            </p>
-            <p className="text-sm text-amarillo-oscuro">
-              Tú decides si se cobra o se perdona — no se aplica solo.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button type="button" disabled={aplicando} onClick={aplicarSugerencia}>
-              {aplicando ? "Aplicando…" : `Aplicar ${sugerenciaRetraso.servicioNombre}`}
-            </Button>
-            <Button type="button" variante="secundario" onClick={() => setSugerenciaOmitida(true)}>
-              Omitir
-            </Button>
-          </div>
-        </div>
-      )}
-
       <div className="flex flex-col gap-2">
         <p className="text-sm font-bold uppercase tracking-wide text-n-600">Cargos aplicados</p>
         {cargos.length === 0 ? (

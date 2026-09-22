@@ -30,7 +30,7 @@ export default async function DetalleReservaPage({
   const { data: estancias, error: errorEstancias } = await supabase
     .from("estancias")
     .select(
-      "id, perro_id, servicio_id, fecha_entrada, fecha_salida, estado, precio_unitario, perros(nombre), servicios(nombre, categoria)"
+      "id, perro_id, servicio_id, fecha_entrada, fecha_salida, estado, precio_unitario, horas, perros(nombre), servicios(nombre, categoria, unidad)"
     )
     .eq("reserva_id", id)
     .is("deleted_at", null)
@@ -48,6 +48,8 @@ export default async function DetalleReservaPage({
       fechaSalida: e.fecha_salida as string,
       estado: e.estado as string,
       precioUnitario: e.precio_unitario as number,
+      unidad: (servicio?.unidad as string) ?? "dia",
+      horas: (e.horas as number | null) ?? null,
     };
   });
 

@@ -6,6 +6,11 @@ import { cargarCotizacionEstetica } from "@/lib/estetica/cotizacion";
 import { TIPOS_LINK_ALTA, esTipoLinkAlta, type TipoLinkAlta } from "@/lib/alta/tipos-link";
 import { AltaForm } from "./alta-form";
 import { CompletarForm, type PerroExistente } from "./completar-form";
+import {
+  RequisitosGuarderiaHotel,
+  type RequisitoSanitarioPublico,
+  type HorarioDia,
+} from "./requisitos-guarderia-hotel";
 import { CAMPOS_BASE, CAMPOS_EXPEDIENTE, type CampoPerro } from "@/lib/alta/campos-perro";
 
 // Pantalla pública: no hay sesión todavía (la cuenta se crea al final) y
@@ -84,11 +89,48 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
   // El catálogo de razas viaja SIN el grupo de precio: el dueño escoge la
   // raza de su perro, no el cajón en el que el negocio lo cobra. Mandar el
   // grupo aunque no se pinte sería dejarlo servido en el HTML.
-  const [razas, { data: tamanos }, { data: pelajes }] = await Promise.all([
-    cargarRazas(admin),
-    admin.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
-    admin.from("tipos_pelaje").select("id, etiqueta").is("deleted_at", null).order("orden"),
-  ]);
+  const [razas, { data: tamanos }, { data: pelajes }, { data: requisitosCrudo }, { data: horarioCrudo }] =
+    await Promise.all([
+      cargarRazas(admin),
+      admin.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
+      admin.from("tipos_pelaje").select("id, etiqueta").is("deleted_at", null).order("orden"),
+      // Lo que se le va a pedir al perro en guardería/hotel, dicho desde
+      // el registro: las vacunas y vigencias reales del catálogo, y el
+      // horario configurado. Catálogo y configuración, no datos de nadie.
+      definicion.llevaContrato
+        ? admin
+            .from("tipos_requisito_sanitario")
+            .select("etiqueta, vigencia_meses")
+            .eq("obligatoria", true)
+            .is("deleted_at", null)
+            .order("orden")
+        : Promise.resolve({ data: null }),
+      definicion.llevaContrato
+        ? admin
+            .from("horario_semana")
+            .select("dia_semana, hora_apertura, hora_cierre, cupo_configuracion!inner(vigencia_desde, deleted_at)")
+            .is("deleted_at", null)
+            .order("dia_semana")
+        : Promise.resolve({ data: null }),
+    ]);
+
+  // Solo el horario de la configuración vigente (la de vigencia más
+  // reciente que ya aplica); las anteriores siguen en la tabla.
+  const hoyISO = new Date().toISOString().slice(0, 10);
+  const filasHorario = ((horarioCrudo ?? []) as unknown as (HorarioDia & {
+    cupo_configuracion: { vigencia_desde: string; deleted_at: string | null } | null;
+  })[]).filter((h) => h.cupo_configuracion && !h.cupo_configuracion.deleted_at && h.cupo_configuracion.vigencia_desde <= hoyISO);
+  const vigenciaMasReciente = filasHorario.reduce<string | null>(
+    (max, h) => (max === null || (h.cupo_configuracion?.vigencia_desde ?? "") > max ? h.cupo_configuracion?.vigencia_desde ?? max : max),
+    null
+  );
+  const horario: HorarioDia[] = filasHorario
+    .filter((h) => h.cupo_configuracion?.vigencia_desde === vigenciaMasReciente)
+    .map((h) => ({ dia_semana: h.dia_semana, hora_apertura: h.hora_apertura, hora_cierre: h.hora_cierre }));
+  const requisitos: RequisitoSanitarioPublico[] = (requisitosCrudo ?? []) as RequisitoSanitarioPublico[];
+  const bloqueRequisitos = definicion.llevaContrato ? (
+    <RequisitosGuarderiaHotel requisitos={requisitos} horario={horario} />
+  ) : null;
 
   // La cotización solo se carga —y solo viaja— en el flujo que la usa.
   const cotizacion = definicion.muestraPrecioEstetica
@@ -165,6 +207,8 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
           </p>
         </header>
 
+        {bloqueRequisitos}
+
         <CompletarForm
           token={token}
           tipo={tipo}
@@ -194,6 +238,8 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
           {formatearFecha(invitacion!.expira_at as string)}.
         </p>
       </header>
+
+      {bloqueRequisitos}
 
       <AltaForm token={token} tipo={tipo} {...catalogos} />
     </main>

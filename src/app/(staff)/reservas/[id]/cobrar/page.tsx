@@ -46,7 +46,7 @@ export default async function CobrarReservaPage({ params }: { params: Promise<{ 
       .order("created_at"),
     supabase
       .from("bonos_clientes_estado")
-      .select("id, servicio_incluido_id, servicio_nombre, cantidad_disponible, estado")
+      .select("id, servicio_incluido_id, servicio_nombre, cantidad_disponible, estado, ilimitado")
       .eq("cliente_id", reserva.cliente_id)
       .eq("estado", "activo"),
     supabase.from("catalogo_descuentos").select("id, etiqueta").is("deleted_at", null).order("orden"),
@@ -122,6 +122,7 @@ export default async function CobrarReservaPage({ params }: { params: Promise<{ 
     servicioIncluidoId: b.servicio_incluido_id as string | null,
     servicioNombre: b.servicio_nombre as string,
     cantidadDisponible: b.cantidad_disponible as number,
+    ilimitado: Boolean(b.ilimitado),
   }));
 
   const catalogoDescuentos: MotivoDescuento[] = (catalogoDescuentosCrudo ?? []).map((c) => ({

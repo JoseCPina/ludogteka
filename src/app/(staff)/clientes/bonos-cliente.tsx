@@ -23,6 +23,10 @@ export type BonoFila = {
   fecha_compra: string;
   fecha_vencimiento: string | null;
   estado: string;
+  // Mensualidad: sin tope de días. cantidad_total ahí es el número de
+  // días hábiles de la vigencia, no un tope comercial — por eso no se
+  // muestra como "22/22 disponibles".
+  ilimitado?: boolean;
 };
 
 const ETIQUETA_ESTADO: Record<string, string> = {
@@ -101,8 +105,11 @@ export function BonosCliente({
                 </span>
               </div>
               <p className="text-sm text-n-600">
-                {b.servicio_incluido_nombre ?? "—"} · {b.cantidad_disponible}/{b.cantidad_total} disponibles ·
-                pagado ${b.precio_pagado.toFixed(2)}
+                {b.servicio_incluido_nombre ?? "—"} ·{" "}
+                {b.ilimitado
+                  ? `ilimitado de lunes a viernes · ${b.cantidad_total - b.cantidad_disponible} día${b.cantidad_total - b.cantidad_disponible === 1 ? "" : "s"} usado${b.cantidad_total - b.cantidad_disponible === 1 ? "" : "s"}`
+                  : `${b.cantidad_disponible}/${b.cantidad_total} disponibles`}{" "}
+                · pagado ${b.precio_pagado.toFixed(2)}
               </p>
               <p className="text-xs text-n-500">
                 Comprado {formatearFechaCalendario(b.fecha_compra)}

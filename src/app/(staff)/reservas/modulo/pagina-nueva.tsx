@@ -4,6 +4,7 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { hoyNegocio } from "@/lib/formato";
 import type { ModuloEstancia } from "@/lib/modulos";
+import { cargarServiciosOfrecibles } from "@/lib/servicios/ofrecibles";
 import { NuevaReservaForm } from "../nueva/nueva-reserva-form";
 
 // Sirve a los dos puntos de entrada del mismo formulario: la reserva
@@ -31,7 +32,7 @@ export async function PaginaNuevaReserva({
   const [
     { data: clientes, error: errorClientes },
     { data: perros, error: errorPerros },
-    { data: servicios, error: errorServicios },
+    { servicios, error: errorServicios },
     { data: seriesActivas, error: errorSeries },
   ] = await Promise.all([
     supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).order("nombre"),
@@ -41,12 +42,9 @@ export async function PaginaNuevaReserva({
       .is("deleted_at", null)
       .eq("fallecido", false)
       .order("nombre"),
-    supabase
-      .from("servicios")
-      .select("id, nombre, categoria")
-      .eq("categoria", modulo.categoria)
-      .is("deleted_at", null)
-      .order("orden"),
+    // Todos los del módulo, con la marca de cuál se puede cobrar: el que
+    // no tiene precio se muestra deshabilitado, no se esconde.
+    cargarServiciosOfrecibles(supabase, [modulo.categoria]),
     supabase.from("series_recurrentes").select("perro_id, dias_semana, servicios(nombre)").is("deleted_at", null),
   ]);
 
