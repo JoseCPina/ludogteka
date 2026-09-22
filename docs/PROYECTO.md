@@ -949,11 +949,148 @@ dos horas no se le revisa el carnet) y no se ofrece la talla gigante. Esa
 última no está codificada por nombre: se ocultan las tallas sin precio
 capturado en el grupo predeterminado, que hoy es exactamente la gigante.
 En cuanto el negocio capture esa tarifa, la talla reaparece sola.
+*(Superado el 10 de septiembre, ver la sección siguiente: la gigante se
+retiró del catálogo y la regla de ocultar cambió — `no_aplica` se oculta,
+`sin_tarifa` se sigue ofreciendo y el panel de admin lo reporta.)*
+
+
+## Corrección de estética contra el cartel (10 de septiembre de 2026) y retiro de los servicios de Fase 3
+
+Commit `30c089a`, dictado por el negocio contra el cartel impreso, con
+cinco migraciones (`20260910190118` a `20260910191532`). Desplegado a
+producción el mismo día (deployment `ameacydbc`, 13:29:38, 29 segundos
+después del commit). Quedó sin documentar aquí hasta el 21 de septiembre,
+y ese hueco es lo que hizo que la primera lectura de "qué sigue" fuera
+"desplegar 30c089a" — cuando ya estaba desplegado. La verificación contra
+la base lo aclaró; los docs no.
+
+**Tres errores de lectura, todos de precio.** Shih tzu a $450 cuando su
+base es $390 (el cartel lo muestra así porque suelen llegar maltratados),
+rapado de shih tzu marcado como no ofrecido cuando cuesta $320, y exprés
+de pastor de pelo largo marcado como no ofrecido cuando cuesta $370. Nada
+se había cobrado con ellos: cero citas y cero cargos en producción.
+
+**Los tipos de baño son TRES servicios, no variantes de precio del
+mismo**: `estetica_estetico` "Baño estético completo" (120 min),
+`estetica_rapado` "Baño estético rapado" (90 min) y `estetica_expres`
+"Baño exprés" (45 min), cada uno con su lista `incluye`, porque esa lista
+es lo que explica la diferencia entre $190 y $390 y se le enseña al
+cliente antes de agendar. El "pelo maltratado" que se había hecho servicio
+aparte se dio de baja (`estetica_pelo_maltratado`, con sus tarifas).
+
+**Pelo maltratado es un precio alternativo, no un servicio ni un cargo.**
+`tarifas.precio_pelo_maltratado` (null = ese grupo no cobra distinto),
+dos números en la misma celda como en el cartel. Se marca en la cita
+(`citas_estetica.pelo_maltratado`) por quien recibe al perro, nunca lo
+contesta el dueño. `resolver_precio` gana un séptimo parámetro con
+default y devuelve el alternativo aparte del efectivo; donde el grupo no
+cobra distinto, marcar la casilla no inventa un recargo. La marca entra a
+lo que obliga a recotizar en `validar_cita_estetica`.
+`servicios.acepta_pelo_maltratado` dice en qué servicio pinta la matriz
+el segundo campo (solo el baño completo): sin esa bandera a nivel de
+servicio, el precio solo se podría capturar por migración, y los datos
+del negocio se capturan por la UI. Un aumento masivo lo sube en la misma
+proporción — dejarlo quieto lo iría acercando al normal.
+
+**La matriz completa quedó en 27 celdas**, con una comprobación dentro
+de la misma migración (`do $$ ... if v_celdas <> 27 then raise`) para no
+dejarla a medias. La talla gigante se retiró del catálogo (baja lógica
+del tamaño y de sus tarifas; cero perros la tenían): no existe en ningún
+cartel, así que no es un pendiente de captura. El grupo por defecto se
+renombró a "Por talla (perros sin grupo de raza)" porque ahí cae
+cualquier perro sin raza del catálogo, tenga el pelo que tenga.
+
+**En estética NO hay contratos**, y estaba mal en tres lugares: se
+generaban en el alta, se pedía firmarlos, y un perro que solo se baña
+aparecía como "sin contrato" porque el Contrato general tenía categorías
+vacías. Ahora `tipos_contrato.categorias_servicio` lleva `check (... <@
+array['guarderia','hotel'])` — la tabla no deja ni crear uno de estética
+—, `perro_categorias_servicio` ya no cuenta citas de estética, "categorías
+vacías" pasó a significar "todo perro que use guardería u hotel" (antes:
+todo perro vivo, tenga o no actividad), y `tipos_contrato_de_alta` devuelve
+cero filas para el alta de estética. **Consecuencia visible en
+producción**: `perros_contrato_resumen` da hoy 16 `no_aplica` donde
+recepción veía 15 "sin contrato"; la lista se llena sola conforme haya
+estancias de guardería u hotel. Y el "pendiente del negocio" de publicar
+un contrato de estética que decía esta documentación **ya no aplica**: se
+borró, no se cumplió.
+
+**Tallas ocultas: se distinguen los dos casos.** `no_aplica` se oculta
+del alta; `sin_tarifa` se sigue ofreciendo, y el panel de admin lo
+reporta (`TarifasFaltantes`, contando con `contarSinTarifa` del mismo
+módulo `src/lib/tarifas/matriz.ts` que dibuja la matriz, para que el aviso
+y la matriz digan el mismo número). Si no, un olvido de captura haría
+desaparecer una talla en silencio y el dueño no podría escoger el tamaño
+de su perro.
+
+### Lo que la comprobación de 27 celdas no vio (21 de septiembre de 2026)
+
+Verificación de datos reales contra producción antes de un despliegue
+que resultó innecesario: 15 clientes, 16 perros, 1 contrato pendiente de
+firma, y **cero** estancias, reservas, citas y cobros — el negocio
+todavía no opera la app. La llave anónima pelada contra doce tablas: cero
+filas en todas.
+
+**Hallazgo**: siete servicios de estética de Fase 3 seguían vivos en
+producción con cero tarifas (`estetica_bano`, `estetica_corte`,
+`estetica_deslanado`, `estetica_unas`, `estetica_oidos`,
+`estetica_combo_bano_corte`, `estetica_combo_completo`). `/estetica/nueva`
+los listaba (filtraba solo por categoría y `deleted_at`), así que
+recepción veía diez opciones y siete tronaban al guardar con "No hay
+tarifa capturada para este servicio en esta fecha". La comprobación de
+"ni una celda vacía" de `20260910190123` contaba solo tarifas con
+`grupo_raza_id`; estos siete cotizan por talla y pelaje, sin grupo, y
+quedaron fuera del conteo y del barrido. El panel de admin sí los
+reportaba como "sin capturar", pero reportar no es dejar de ofrecer.
+
+**Migración `20260922042533_baja_servicios_estetica_fase3_y_servicios_cotizables`**:
+
+- Candado primero: si hay citas abiertas (`reservada`, `confirmada`,
+  `en_curso`) con alguno de los siete, la migración se cae con el conteo.
+  Una cita abierta vuelve a pasar por `validar_cita_estetica` al editarse
+  y ese trigger exige el servicio vivo; darlo de baja la dejaría
+  ineditable. Las finalizadas y canceladas se quedan apuntando al servicio
+  dado de baja: es el historial que la baja lógica conserva. En
+  desarrollo el candado se disparó de verdad —una cita `en_curso` de
+  pruebas del 30 de julio— y se canceló por la API antes de reintentar; en
+  producción no hay ninguna.
+- Baja lógica de los siete, tarifas primero. Nunca DELETE.
+- **Vista `servicios_cotizables`** (`security_invoker`): servicios vivos
+  con al menos un precio vigente que no sea `no_aplica`. Es a propósito el
+  criterio mínimo y no "matriz completa": desde 30c089a una celda
+  `sin_tarifa` se sigue ofreciendo, así que un servicio con huecos sigue
+  siendo cotizable; uno sin nada con qué cobrar, no. La forma completa de
+  la matriz sigue viviendo en un solo lugar (`matriz.ts`); duplicarla en
+  SQL daría dos fuentes que se separan con el tiempo.
+- La comprobación que faltaba, sobre **todo** servicio de estética vivo,
+  tenga o no grupo: si alguno no está en `servicios_cotizables`, la
+  migración se cae nombrándolo.
+- `/estetica/nueva` lee de `servicios_cotizables` y no de `servicios`:
+  lo que no se puede cobrar no se ofrece. Es la vista, no la pantalla, lo
+  que impide que vuelva a pasar con el próximo servicio que alguien dé de
+  alta sin precio.
+
+Verificado en desarrollo por REST: `servicios_cotizables` devuelve
+exactamente tres de estética (completo, rapado, exprés) más guardería,
+hotel y los cargos con tarifa; los siete con `deleted_at`; ningún
+servicio de estética vivo fuera de la vista; la llave anónima contra la
+vista, cero filas.
+
+**Cómo se leyó producción sin la contraseña de Postgres** (queda también
+en `CLAUDE.md`): el CLI de Supabase tiene sesión en esta máquina (token
+en el Administrador de credenciales de Windows, no en archivo) y
+`projects api-keys --project-ref xdsxjhytggpsgrmfuuff -o json` devuelve
+las llaves de la API REST, con las que se lee todo sin escribir nada. La
+llave `sb_secret_` que devuelve viene **truncada** (41 caracteres) y da
+`401 Invalid API key`; la que sirve es la `service_role` de tipo legacy
+(JWT). Ese 401 se disfraza de "la columna no existe" si una sonda por
+columna no distingue el código de estado — así estuvieron a punto de
+darse por pendientes migraciones que ya estaban aplicadas.
 
 
 ## Estado actual
 
-Fase 0, Fase 1, Fase 2, Fase 3 y Fase 4 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 5 (POS) construida en sus cuatro bloques (cobros/devoluciones, bonos, descuentos, caja/arqueo) más la decisión de Bloque E, pendiente de que el negocio termine de probarla para cerrarla formalmente. Fase 6 (contratos) completa en sus tres bloques (plantillas y versionado, generación/firma/papel, visibilidad operativa y vigencia). Fase 7 (inventario) completa en sus tres bloques (catálogo y existencias; movimientos: entradas, salidas, mermas, ajustes; consumo automático por receta al finalizar un servicio de estética, con el enlace a la cita ya listo para que Fase 8 calcule el costo real por servicio). Fase 8 (reportes) completa en sus tres bloques (financiero por periodo con ingreso reconocido vs. neto de caja; costos y margen de estética; operativo con ocupación/servicios del periodo y una fotografía del estado actual de cumplimiento sanitario, contratos e inventario). Fase 9 (bitácora diaria y medicamentos) completa en sus dos bloques: Bloque A (fotos, notas e incidencias, con aviso por WhatsApp vía enlace `wa.me`) y Bloque B (régimen y registro de dosis administradas, referenciando `perro_medicamentos.id` tal como quedó planteado desde Fase 2). Con esto quedan completas las diez fases (0 a 9) del roadmap original. Fase 10 (recolección a domicilio, cotizador por distancia con Google Maps) completa — reutiliza tarifas/`resolver_precio`/`cargos_aplicados` de Fase 3/4 sin mecanismo de cobro nuevo; pendiente de que el negocio capture direcciones reales (base y Ludogteka), tarifas por km, y la llave de Google Maps antes de salir de modo simulación. Fase 11 (varias plantillas de contrato a la vez, cada una con nombre, versionado y aplicabilidad por servicio propios) completa — el estado de contrato dejó de ser un sí/no por perro y pasó a ser por tipo, y los avisos dicen cuál falta. Fase 12 (Guardería y Hotel como módulos separados en la navegación, Agenda renombrada a Estética) completa, sin migraciones: `estancias` sigue unificada y la ocupación que muestran los dos módulos es la de toda la casa. Fase 13 (alta de clientes por link: recepción manda una invitación por WhatsApp y el dueño captura sus datos y los de sus perros; el expediente nace ligado a su cuenta sin pasar por vinculación) completa. Fase 14 (precios de estética por grupo de raza: catálogo de razas buscable, el grupo se deriva y el cliente nunca lo ve, y `tarifas` gana la dimensión de grupo sin sistema de precios paralelo) completa. Fase 15 (dos flujos de alta por link —guardería/hotel y estética—, cada uno con su contrato firmado dentro del alta, y un link de complemento que solo pide lo que falta) completa. **Pendiente del negocio**: publicar el contrato de estética desde la pantalla de Contratos; hoy producción solo tiene “Contrato general” y “Contrato GUARDERÍA”, así que un alta de estética genera únicamente el general. Fase 16 (el cliente entra con su teléfono y contraseña, no con correo: correo y cuenta pasan a opcionales, un teléfono ya registrado no se puede volver a dar de alta y uno que existe como cliente sin cuenta se vincula en vez de duplicarse; la recuperación de contraseña es por WhatsApp a recepción, con el número configurable desde el panel) completa. Las cuentas que ya existían con correo siguen entrando igual, sin migración.
+Fase 0, Fase 1, Fase 2, Fase 3 y Fase 4 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 5 (POS) construida en sus cuatro bloques (cobros/devoluciones, bonos, descuentos, caja/arqueo) más la decisión de Bloque E, pendiente de que el negocio termine de probarla para cerrarla formalmente. Fase 6 (contratos) completa en sus tres bloques (plantillas y versionado, generación/firma/papel, visibilidad operativa y vigencia). Fase 7 (inventario) completa en sus tres bloques (catálogo y existencias; movimientos: entradas, salidas, mermas, ajustes; consumo automático por receta al finalizar un servicio de estética, con el enlace a la cita ya listo para que Fase 8 calcule el costo real por servicio). Fase 8 (reportes) completa en sus tres bloques (financiero por periodo con ingreso reconocido vs. neto de caja; costos y margen de estética; operativo con ocupación/servicios del periodo y una fotografía del estado actual de cumplimiento sanitario, contratos e inventario). Fase 9 (bitácora diaria y medicamentos) completa en sus dos bloques: Bloque A (fotos, notas e incidencias, con aviso por WhatsApp vía enlace `wa.me`) y Bloque B (régimen y registro de dosis administradas, referenciando `perro_medicamentos.id` tal como quedó planteado desde Fase 2). Con esto quedan completas las diez fases (0 a 9) del roadmap original. Fase 10 (recolección a domicilio, cotizador por distancia con Google Maps) completa — reutiliza tarifas/`resolver_precio`/`cargos_aplicados` de Fase 3/4 sin mecanismo de cobro nuevo; pendiente de que el negocio capture direcciones reales (base y Ludogteka), tarifas por km, y la llave de Google Maps antes de salir de modo simulación. Fase 11 (varias plantillas de contrato a la vez, cada una con nombre, versionado y aplicabilidad por servicio propios) completa — el estado de contrato dejó de ser un sí/no por perro y pasó a ser por tipo, y los avisos dicen cuál falta. Fase 12 (Guardería y Hotel como módulos separados en la navegación, Agenda renombrada a Estética) completa, sin migraciones: `estancias` sigue unificada y la ocupación que muestran los dos módulos es la de toda la casa. Fase 13 (alta de clientes por link: recepción manda una invitación por WhatsApp y el dueño captura sus datos y los de sus perros; el expediente nace ligado a su cuenta sin pasar por vinculación) completa. Fase 14 (precios de estética por grupo de raza: catálogo de razas buscable, el grupo se deriva y el cliente nunca lo ve, y `tarifas` gana la dimensión de grupo sin sistema de precios paralelo) completa. Fase 15 (dos flujos de alta por link —guardería/hotel y estética—, cada uno con su contrato firmado dentro del alta, y un link de complemento que solo pide lo que falta) completa. Fase 16 (el cliente entra con su teléfono y contraseña, no con correo: correo y cuenta pasan a opcionales, un teléfono ya registrado no se puede volver a dar de alta y uno que existe como cliente sin cuenta se vincula en vez de duplicarse; la recuperación de contraseña es por WhatsApp a recepción, con el número configurable desde el panel) completa. Las cuentas que ya existían con correo siguen entrando igual, sin migración. Corrección de estética contra el cartel (10 de septiembre): tres precios corregidos, tres servicios de baño con lo que incluye cada uno, pelo maltratado como precio alternativo del baño completo (`tarifas.precio_pelo_maltratado`, marcado en la cita), talla gigante retirada, y **en estética no hay contratos** (candado en `tipos_contrato`; el pendiente de publicar uno de estética ya no aplica). Retiro de los siete servicios de estética de Fase 3 que quedaron sin tarifa (21 de septiembre): vista `servicios_cotizables`, de la que lee `/estetica/nueva`, y comprobación sobre todo servicio de estética vivo — probada en desarrollo, **pendiente de aplicar a producción con `npm run desplegar`**.
 
 ## Invite server-side de staff
 

@@ -21,11 +21,14 @@ export default async function AgendarPage() {
       .is("deleted_at", null)
       .eq("fallecido", false)
       .order("nombre"),
+    // De servicios_cotizables y no de servicios: un servicio vivo sin
+    // ningún precio con el que cobrar no se ofrece, porque la cita truena
+    // al guardar. Así quedaron siete servicios viejos en producción hasta
+    // que se retiraron; la vista es lo que impide que vuelva a pasar.
     supabase
-      .from("servicios")
+      .from("servicios_cotizables")
       .select("id, nombre")
       .eq("categoria", "estetica")
-      .is("deleted_at", null)
       .order("orden"),
     supabase
       .from("profiles")
