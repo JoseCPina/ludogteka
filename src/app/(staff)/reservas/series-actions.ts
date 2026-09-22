@@ -5,7 +5,17 @@ import { revalidarModulosEstancia, revalidarSeriesModulos } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
 
-export type ResultadoFecha = { fecha: string; exito: boolean; motivo: string | null };
+import type { BonoAplicadoResumen } from "@/lib/bonos/descripcion";
+
+// `bono`: qué pasó con el pase en esa fecha (lo aplica la base al generar
+// cada estancia, con la regla del que vence primero). Null en fechas que
+// no se pudieron crear.
+export type ResultadoFecha = {
+  fecha: string;
+  exito: boolean;
+  motivo: string | null;
+  bono?: BonoAplicadoResumen | null;
+};
 
 async function obtenerHoy(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>): Promise<string> {
   const { data } = await supabase.rpc("fecha_negocio");

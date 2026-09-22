@@ -93,11 +93,15 @@ export default async function CheckinEstanciaPage({
     );
     const { data: consumos } = await supabase
       .from("movimientos_bono")
-      .select("bono_cliente_id, cantidad")
-      .eq("tipo", "consumo")
+      .select("bono_cliente_id, cantidad, tipo")
+      .in("tipo", ["consumo", "devolucion"])
       .eq("item_tipo", "estancia")
       .eq("item_id", estanciaId);
-    const cubierto = (consumos ?? []).reduce((s, m) => s + (m.cantidad as number), 0);
+    // Neto: consumos menos devoluciones.
+    const cubierto = (consumos ?? []).reduce(
+      (s, m) => s + (m.tipo === "devolucion" ? -1 : 1) * (m.cantidad as number),
+      0
+    );
     const columnasBono =
       "id, servicio_nombre, servicio_incluido_id, cantidad_total, cantidad_disponible, fecha_vencimiento, estado, ilimitado";
     if (cubierto >= dias && consumos && consumos.length > 0) {

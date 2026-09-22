@@ -85,14 +85,20 @@ export default async function CobrarReservaPage({ params }: { params: Promise<{ 
   const { data: movimientosCrudo } = idsLineasBono.length
     ? await supabase
         .from("movimientos_bono")
-        .select("item_id, cantidad")
-        .eq("tipo", "consumo")
+        .select("item_id, cantidad, tipo")
+        .in("tipo", ["consumo", "devolucion"])
         .in("item_id", idsLineasBono)
-    : { data: [] as { item_id: string; cantidad: number }[] };
+    : { data: [] as { item_id: string; cantidad: number; tipo: string }[] };
 
+  // Cobertura neta: consumos menos devoluciones (un pase devuelto al
+  // cancelar ya no cubre nada).
   const cubiertoPorItem = new Map<string, number>();
   for (const m of movimientosCrudo ?? []) {
-    cubiertoPorItem.set(m.item_id as string, (cubiertoPorItem.get(m.item_id as string) ?? 0) + (m.cantidad as number));
+    const signo = m.tipo === "devolucion" ? -1 : 1;
+    cubiertoPorItem.set(
+      m.item_id as string,
+      (cubiertoPorItem.get(m.item_id as string) ?? 0) + signo * (m.cantidad as number)
+    );
   }
 
   const lineas: LineaCuenta[] = lineasCrudas.map((l) => ({

@@ -1410,11 +1410,65 @@ restantes, total y vencimiento.
   usados (ilimitado L–V)", nunca como saldo que se agota; vencido "· 7
   pases sin usar se perdieron"; agotado "Se acabaron los 10 pases".
 
-**Lo que NO hace**: cancelar una estancia no devuelve el pase consumido
-(el consumo de Fase 5 no tiene reverso); si pasa, se resuelve por caja.
-Las series recurrentes no aplican pases solas al generarse — el check-in
-lo ofrece. Un cliente con dos perros el mismo día usa dos pases, uno por
-estancia.
+Un cliente con dos perros el mismo día usa dos pases, uno por estancia.
+
+### Devolver el pase al cancelar, y series con pase (23 de septiembre de 2026)
+
+Los dos huecos que quedaron anotados el día anterior, cerrados en
+`20260923000000_devolver_pases_al_cancelar_y_series_con_pase`.
+
+**El ledger admite devoluciones.** `movimientos_bono.tipo` gana
+`'devolucion'` (con `motivo` obligatorio) y las restricciones anónimas
+originales se reemplazan por tres con nombre. Nada se borra: un pase que
+va y viene son dos filas, consumo y devolución, cada una con quién y
+cuándo. **Toda lectura de cobertura pasa por la resta**
+(`cobertura_bono_de_item(tipo, id)` = consumos − devoluciones):
+`consumir_bono`, `aplicar_bono_a_estancia`, `cuenta_totales_reserva`
+(recreada con CTEs; `total_bono` y `saldo` netos), el reporte financiero
+(`bonos_consumidos` = reconocido neto, así una devolución resta del mes
+en que ocurre), la pantalla de cobro y el check-in. Sumar solo consumos
+volvería a contar pases ya devueltos.
+
+**`devolver_bono_de_item(tipo, id, motivo)`** devuelve por bono lo que
+la línea tenga cubierto neto: suma el saldo, escribe la devolución con
+el mismo monto que reconoció el consumo (así el reconocimiento se
+revierte exacto), el motivo y `auth.uid()`. **Un bono ya vencido no
+recibe nada**: el resultado lo dice con la fecha ("1 pase de Day pass —
+10 no se devolvió: el bono venció el 21 de septiembre") en vez de
+devolver un pase inservible. **Trigger `devolver_bono_al_cancelar_estancia`**
+(after update of estado): cualquier camino que ponga una estancia en
+`cancelada` —una suelta, toda la reserva, editar o cancelar una serie,
+pausarla— devuelve el pase. **"No llegó" no devuelve**: el día se
+reservó y se apartó el lugar; eso lo decide el negocio caso por caso.
+Las acciones de cancelar leen el ledger después y lo dicen: "Se devolvió
+1 pase a Day pass — 10 pases (quedan 9)" en la fila de la estancia y en
+el botón de cancelar toda la reserva.
+
+**Las series aplican el pase al generar cada estancia.**
+`generar_estancias_serie` gana la columna `bono jsonb` (por eso se
+recrea con `drop function`) y, tras insertar cada estancia, llama a
+`aplicar_bono_a_estancia` dentro de su propio bloque de excepción: la
+regla es la misma (vigente el día de la estancia, el que vence primero),
+y donde no hay saldo o el bono no alcanza esa fecha, la estancia queda
+como día suelto con `motivo: sin_bono` **sin abortar la serie**. Las
+pantallas de serie nueva y de detalle listan cada fecha con lo que pasó
+("Usó 1 pase…: le quedan 7 de 10", "Sin pases vigentes para esa fecha:
+paga el día suelto") y el conteo "8 con pase · 17 de día suelto".
+Cancelar una fecha de la serie devuelve su pase (mismo trigger); editar
+el patrón cancela las futuras (devuelve) y regenera (vuelve a aplicar).
+
+Probado en desarrollo con sesión real de admin: cancelar devuelve el
+pase (9 → 10) con consumo + devolución en el ledger (motivo "Estancia
+cancelada", `created_by` del admin, mismo monto), cobertura neta 0,
+`cuenta_totales` sin cobertura, y la estancia cancelada ya no consume;
+`no_llego` conserva el consumo y un update sin cambio de estado no toca
+el saldo; con el bono vencido, `devolver_bono_de_item` reporta
+`perdidos: 1` con la fecha y cancelar no escribe devolución; una serie
+L–V con 8 pases restantes usó exactamente los 8 en las primeras 8 fechas
+dentro de la vigencia y dejó 17 como día suelto con `sin_bono` — 5
+fechas chocaron con residuo de pruebas (traslape) y la serie siguió, que
+es justo lo que se pedía; cancelar una fecha de la serie devolvió 1;
+anon bloqueado en la RPC nueva. `tsc` y `eslint` limpios.
 
 Probado en desarrollo con sesión real de admin (RPC por REST y pantallas
 por el dev server con cookies): sin bono → `sin_bono`; con pase vendido

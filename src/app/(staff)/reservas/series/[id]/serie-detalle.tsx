@@ -18,6 +18,7 @@ import {
   type ResultadoFecha,
 } from "../../series-actions";
 import { DIAS_SEMANA, formatearDiasSemana } from "../dias-semana";
+import { describirBonoAplicado } from "@/lib/bonos/descripcion";
 import type { ServicioOfrecible } from "@/lib/servicios/ofrecibles";
 import { OpcionesServicio, AvisoServiciosSinPrecio } from "@/components/servicios/opciones-servicio";
 
@@ -52,10 +53,21 @@ function ResumenGeneracion({ resultados }: { resultados: ResultadoFecha[] }) {
   return (
     <div className="flex flex-col gap-2">
       {creadas.length > 0 && (
-        <p className="text-sm text-verde-oscuro">
-          Se generaron {creadas.length} fecha{creadas.length === 1 ? "" : "s"}:{" "}
-          {creadas.map((r) => formatearFechaCalendario(r.fecha)).join(", ")}
-        </p>
+        <div className="text-sm text-verde-oscuro">
+          <p>
+            Se generaron {creadas.length} fecha{creadas.length === 1 ? "" : "s"} —{" "}
+            {creadas.filter((r) => r.bono?.aplicado).length} con pase,{" "}
+            {creadas.filter((r) => !r.bono?.aplicado).length} de día suelto:
+          </p>
+          <ul className="mt-1 flex flex-col gap-0.5">
+            {creadas.map((r) => (
+              <li key={r.fecha}>
+                <span className="font-semibold">{formatearFechaCalendario(r.fecha)}</span>
+                <span className="text-n-600"> · {describirBonoAplicado(r.bono) ?? "Día suelto."}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
       {noCupieron.length > 0 && (
         <div className="rounded-md border-[1.5px] border-naranja bg-naranja-suave p-3">

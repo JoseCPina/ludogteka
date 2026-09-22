@@ -26,11 +26,11 @@ export function CancelarReservaBoton({
       setMensaje(res.error);
       return;
     }
-    setMensaje(
+    const base =
       res.noCancelables > 0
         ? `Se cancelaron ${res.canceladas}. ${res.noCancelables} ya no se podían cancelar (revisa su estado, p. ej. ya hicieron check-in) y no se tocaron.`
-        : `Se cancelaron ${res.canceladas}.`
-    );
+        : `Se cancelaron ${res.canceladas}.`;
+    setMensaje([base, ...(res.avisos ?? [])].join(" "));
     router.refresh();
   }
 

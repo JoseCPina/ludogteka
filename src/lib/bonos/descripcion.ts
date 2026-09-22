@@ -55,6 +55,55 @@ export function describirPaquete(p: {
   return `${p.nombre} — ${p.cantidad_incluida ?? "?"} pases, ${dura}`;
 }
 
+// Qué pasó con el pase al crear una estancia (reserva suelta o serie):
+// lo que devuelve aplicar_bono_a_estancia, en una frase.
+export type BonoAplicadoResumen = {
+  aplicado: boolean;
+  motivo?: string;
+  nombre?: string;
+  ilimitado?: boolean;
+  usados?: number;
+  total?: number;
+  restantes?: number;
+  vence?: string | null;
+};
+
+export function describirBonoAplicado(b: BonoAplicadoResumen | null | undefined): string | null {
+  if (!b) return null;
+  if (b.aplicado) {
+    const vence = b.vence ? formatearFechaCalendario(b.vence) : null;
+    if (b.ilimitado) return `Cubierto con ${b.nombre}: activa${vence ? ` hasta el ${vence}` : ""}.`;
+    return `Usó ${b.usados} ${b.usados === 1 ? "pase" : "pases"} de ${b.nombre}: le quedan ${b.restantes} de ${b.total}${vence ? ` · vence el ${vence}` : ""}.`;
+  }
+  if (b.motivo === "sin_bono") return "Sin pases vigentes para esa fecha: paga el día suelto.";
+  if (b.motivo === "error") return "No se pudo aplicar el pase: paga el día suelto (se puede aplicar desde el check-in).";
+  return null;
+}
+
+// Qué pasó con el pase al cancelar: lo que devuelve devolver_bono_de_item.
+export type DevolucionResumen = {
+  devueltos: number;
+  perdidos: number;
+  detalle: { bono: string; pases: number; devuelto: boolean; vencio?: string | null; restantes?: number }[];
+};
+
+export function describirDevolucion(d: DevolucionResumen | null | undefined): string | null {
+  if (!d || (d.devueltos === 0 && d.perdidos === 0)) return null;
+  const partes: string[] = [];
+  for (const x of d.detalle) {
+    if (x.devuelto) {
+      partes.push(
+        `Se ${x.pases === 1 ? "devolvió 1 pase" : `devolvieron ${x.pases} pases`} a ${x.bono}${x.restantes != null ? ` (quedan ${x.restantes})` : ""}`
+      );
+    } else {
+      partes.push(
+        `${x.pases === 1 ? "1 pase" : `${x.pases} pases`} de ${x.bono} no se ${x.pases === 1 ? "devolvió" : "devolvieron"}: el bono venció${x.vencio ? ` el ${formatearFechaCalendario(x.vencio)}` : ""}`
+      );
+    }
+  }
+  return partes.join(". ") + ".";
+}
+
 export function diasParaVencer(fechaVencimiento: string | null, hoy: string): number | null {
   if (!fechaVencimiento) return null;
   const a = new Date(fechaVencimiento + "T12:00:00Z").getTime();

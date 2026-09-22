@@ -64,6 +64,8 @@ export function EstanciaFila({
   const [nuevaSalida, setNuevaSalida] = useState(fila.fechaSalida);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Qué pasó con el pase al cancelar (se devolvió, o venció y no).
+  const [avisoBono, setAvisoBono] = useState<string | null>(null);
 
   const esGuarderia = fila.categoria === "guarderia";
   const porHora = fila.unidad === "hora";
@@ -87,6 +89,7 @@ export function EstanciaFila({
       return;
     }
     setEstado("cancelada");
+    setAvisoBono(res.aviso ?? null);
     setConfirmandoCancelar(false);
   }
 
@@ -160,6 +163,12 @@ export function EstanciaFila({
       {error && (
         <Alert variante="error" titulo="No se pudo completar la acción">
           {error}
+        </Alert>
+      )}
+
+      {avisoBono && (
+        <Alert variante="advertencia" titulo="Pase de esta estancia">
+          {avisoBono}
         </Alert>
       )}
 

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { formatearFechaCalendario } from "@/lib/formato";
 import { formatearTelefono } from "@/lib/telefono";
+import { describirBonoAplicado } from "@/lib/bonos/descripcion";
 import { primerCotizable, type ServicioOfrecible } from "@/lib/servicios/ofrecibles";
 import { OpcionesServicio, AvisoServiciosSinPrecio } from "@/components/servicios/opciones-servicio";
 import { DIAS_SEMANA, formatearDiasSemana } from "../dias-semana";
@@ -139,10 +140,21 @@ export function NuevaSerieForm({
         {creadas.length > 0 && (
           <div className="rounded-lg border border-n-200 bg-white p-4">
             <p className="font-semibold text-n-900">Fechas generadas</p>
-            <ul className="mt-2 flex flex-wrap gap-2 text-sm text-n-700">
+            <p className="mt-0.5 text-sm text-n-600">
+              {creadas.filter((r) => r.bono?.aplicado).length} con pase ·{" "}
+              {creadas.filter((r) => !r.bono?.aplicado).length} de día suelto
+            </p>
+            <ul className="mt-2 flex flex-col gap-1 text-sm text-n-700">
               {creadas.map((r) => (
-                <li key={r.fecha} className="rounded-full bg-verde-suave px-2.5 py-1 text-verde-oscuro">
-                  {formatearFechaCalendario(r.fecha)}
+                <li key={r.fecha} className="flex flex-wrap items-baseline gap-2">
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 font-semibold ${
+                      r.bono?.aplicado ? "bg-verde-suave text-verde-oscuro" : "bg-n-100 text-n-700"
+                    }`}
+                  >
+                    {formatearFechaCalendario(r.fecha)}
+                  </span>
+                  <span className="text-xs text-n-600">{describirBonoAplicado(r.bono) ?? "Día suelto."}</span>
                 </li>
               ))}
             </ul>
