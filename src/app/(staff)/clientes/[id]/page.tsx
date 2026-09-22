@@ -147,7 +147,7 @@ export default async function EditarClientePage({
   const [{ data: catalogoBonos }, { data: bonosCliente }] = await Promise.all([
     supabase
       .from("servicios")
-      .select("id, nombre")
+      .select("id, nombre, cantidad_incluida, vigencia_dias, ilimitado")
       .eq("categoria", "bono")
       .is("deleted_at", null)
       .order("orden"),

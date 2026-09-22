@@ -58,4 +58,27 @@ export async function consumirBono(
   return { error: null, movimientoId: data as string };
 }
 
+// Aplica el bono del dueño a una estancia de guardería que quedó pagando
+// el día suelto (p. ej. se vendió el paquete después de reservar). La
+// base elige cuál (el que vence primero) y dice qué queda.
+export type ResultadoAplicarBonoEstancia = {
+  error: string | null;
+  aplicado?: boolean;
+  motivo?: string;
+  nombre?: string;
+  ilimitado?: boolean;
+  restantes?: number;
+  total?: number;
+  vence?: string | null;
+};
+
+export async function aplicarBonoAEstancia(estanciaId: string): Promise<ResultadoAplicarBonoEstancia> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("aplicar_bono_a_estancia", { p_estancia_id: estanciaId });
+  if (error) return { error: traducirError(error) };
+
+  revalidatePath(`/reservas/estancias/${estanciaId}/checkin`);
+  return { error: null, ...(data as Omit<ResultadoAplicarBonoEstancia, "error">) };
+}
+
 export type { MetodoPago };

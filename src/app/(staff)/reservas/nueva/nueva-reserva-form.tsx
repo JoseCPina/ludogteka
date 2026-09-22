@@ -7,7 +7,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
-import { sumarDiasFecha } from "@/lib/formato";
+import { formatearFechaCalendario, sumarDiasFecha } from "@/lib/formato";
 import { formatearTelefono } from "@/lib/telefono";
 import { primerCotizable, type ServicioOfrecible } from "@/lib/servicios/ofrecibles";
 import { OpcionesServicio, AvisoServiciosSinPrecio } from "@/components/servicios/opciones-servicio";
@@ -243,6 +243,17 @@ export function NuevaReservaForm({
                 <p className={`font-bold ${r.exito ? "text-verde-oscuro" : "text-naranja-oscuro"}`}>
                   {linea?.perroNombre ?? "Perro"} — {r.exito ? "Reservado" : "No se pudo reservar"}
                 </p>
+                {r.exito && r.bono && (
+                  <p className="mt-1 text-sm text-verde-oscuro">
+                    {r.bono.aplicado
+                      ? r.bono.ilimitado
+                        ? `Cubierto con ${r.bono.nombre}: activa${r.bono.vence ? ` hasta el ${formatearFechaCalendario(r.bono.vence)}` : ""}.`
+                        : `Usó ${r.bono.usados} ${r.bono.usados === 1 ? "pase" : "pases"} de ${r.bono.nombre}: le quedan ${r.bono.restantes} de ${r.bono.total}${r.bono.vence ? ` · vence el ${formatearFechaCalendario(r.bono.vence)}` : ""}.`
+                      : r.bono.motivo === "sin_bono"
+                        ? "Sin pases vigentes: paga el día suelto."
+                        : null}
+                  </p>
+                )}
                 {r.exito && r.estanciaId && (
                   <Link
                     href={`/reservas/estancias/${r.estanciaId}/checkin`}

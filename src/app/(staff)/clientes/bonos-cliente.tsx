@@ -10,8 +10,15 @@ import { Alert } from "@/components/ui/alert";
 import { formatearFechaCalendario } from "@/lib/formato";
 import { comprarBono } from "../reservas/bono-actions";
 import type { MetodoPago } from "../reservas/cobro-actions";
+import { describirBono, describirPaquete } from "@/lib/bonos/descripcion";
 
-export type BonoCatalogo = { id: string; nombre: string };
+export type BonoCatalogo = {
+  id: string;
+  nombre: string;
+  cantidad_incluida?: number | null;
+  vigencia_dias?: number | null;
+  ilimitado?: boolean | null;
+};
 
 export type BonoFila = {
   id: string;
@@ -104,12 +111,9 @@ export function BonosCliente({
                   {ETIQUETA_ESTADO[b.estado] ?? b.estado}
                 </span>
               </div>
+              <p className="text-sm text-n-700">{describirBono(b)}</p>
               <p className="text-sm text-n-600">
-                {b.servicio_incluido_nombre ?? "—"} ·{" "}
-                {b.ilimitado
-                  ? `ilimitado de lunes a viernes · ${b.cantidad_total - b.cantidad_disponible} día${b.cantidad_total - b.cantidad_disponible === 1 ? "" : "s"} usado${b.cantidad_total - b.cantidad_disponible === 1 ? "" : "s"}`
-                  : `${b.cantidad_disponible}/${b.cantidad_total} disponibles`}{" "}
-                · pagado ${b.precio_pagado.toFixed(2)}
+                {b.servicio_incluido_nombre ?? "—"} · pagado ${b.precio_pagado.toFixed(2)}
               </p>
               <p className="text-xs text-n-500">
                 Comprado {formatearFechaCalendario(b.fecha_compra)}
@@ -134,10 +138,15 @@ export function BonosCliente({
         </Button>
       ) : (
         <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
-          <Select label="Bono" value={servicioId} onChange={(e) => setServicioId(e.target.value)}>
+          <Select label="Paquete" value={servicioId} onChange={(e) => setServicioId(e.target.value)}>
             {catalogo.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.nombre}
+                {describirPaquete({
+                  nombre: c.nombre,
+                  cantidad_incluida: c.cantidad_incluida ?? null,
+                  vigencia_dias: c.vigencia_dias ?? null,
+                  ilimitado: c.ilimitado,
+                })}
               </option>
             ))}
           </Select>

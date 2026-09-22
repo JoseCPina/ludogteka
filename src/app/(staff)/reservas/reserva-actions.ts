@@ -20,11 +20,25 @@ export type LineaReserva = {
   motivoExcepcionComportamiento?: string;
 };
 
+// Qué pasó con el bono al reservar guardería: si se usó uno (cuál y qué le
+// queda) o si el día se paga suelto.
+export type BonoAplicado = {
+  aplicado: boolean;
+  motivo?: string;
+  nombre?: string;
+  ilimitado?: boolean;
+  usados?: number;
+  total?: number;
+  restantes?: number;
+  vence?: string | null;
+};
+
 export type ResultadoLinea = {
   perroId: string;
   exito: boolean;
   motivo: string | null;
   estanciaId: string | null;
+  bono?: BonoAplicado | null;
 };
 
 export type EstadoCrearReserva = {
@@ -55,7 +69,16 @@ async function insertarEstancia(reservaId: string, linea: LineaReserva): Promise
   if (error) {
     return { perroId: linea.perroId, exito: false, motivo: traducirError(error), estanciaId: null };
   }
-  return { perroId: linea.perroId, exito: true, motivo: null, estanciaId: data.id };
+
+  // Guardería de día completo: si el dueño tiene pases o mensualidad
+  // vigentes, la base los usa sola (el que vence primero) y dice qué
+  // queda. Para hotel o por hora responde no_aplica y no pasa nada.
+  // Si esto falla, la estancia ya quedó creada: se reporta el día como
+  // pagado suelto y el pase se puede aplicar después desde el check-in.
+  const { data: bonoData } = await supabase.rpc("aplicar_bono_a_estancia", { p_estancia_id: data.id });
+  const bono = (bonoData as BonoAplicado | null) ?? null;
+
+  return { perroId: linea.perroId, exito: true, motivo: null, estanciaId: data.id, bono };
 }
 
 export async function crearReserva(

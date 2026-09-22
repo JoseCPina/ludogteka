@@ -11,6 +11,8 @@ import {
 import { formatearFechaCalendario, formatearFecha } from "@/lib/formato";
 import { moduloDeCategoria } from "@/lib/modulos";
 import { CheckinForm } from "./checkin-form";
+import { PaseCheckin, type EstadoPaseCheckin } from "./pase-checkin";
+import { describirBono } from "@/lib/bonos/descripcion";
 
 export default async function CheckinEstanciaPage({
   params,
@@ -23,7 +25,7 @@ export default async function CheckinEstanciaPage({
   const { data: estancia, error } = await supabase
     .from("estancias")
     .select(
-      "id, perro_id, fecha_entrada, fecha_salida, estado, entregado_por_nombre, entregado_por_telefono, estado_llegada, foto_llegada_path, hora_entrada_real, perros(nombre, cliente_id), servicios(nombre, categoria)"
+      "id, perro_id, servicio_id, fecha_entrada, fecha_salida, estado, precio_unitario, entregado_por_nombre, entregado_por_telefono, estado_llegada, foto_llegada_path, hora_entrada_real, perros(nombre, cliente_id), servicios(nombre, categoria, unidad)"
     )
     .eq("id", estanciaId)
     .single();
@@ -79,6 +81,58 @@ export default async function CheckinEstanciaPage({
 
   const yaHizoCheckin = estancia.estado !== "reservada" && estancia.estado !== "confirmada";
   const esGuarderia = servicio?.categoria === "guarderia";
+
+  // ¿Viene con pase o paga el día? Solo para guardería de día completo:
+  // lo que ya cubrió un bono (movimientos_bono) y, si no hay nada, si el
+  // dueño tiene alguno vigente que incluya este servicio.
+  let estadoPase: EstadoPaseCheckin = { tipo: "no_aplica" };
+  if (esGuarderia && servicio?.unidad === "dia") {
+    const dias = Math.max(
+      1,
+      Math.round((new Date(estancia.fecha_salida).getTime() - new Date(estancia.fecha_entrada).getTime()) / 86400000)
+    );
+    const { data: consumos } = await supabase
+      .from("movimientos_bono")
+      .select("bono_cliente_id, cantidad")
+      .eq("tipo", "consumo")
+      .eq("item_tipo", "estancia")
+      .eq("item_id", estanciaId);
+    const cubierto = (consumos ?? []).reduce((s, m) => s + (m.cantidad as number), 0);
+    const columnasBono =
+      "id, servicio_nombre, servicio_incluido_id, cantidad_total, cantidad_disponible, fecha_vencimiento, estado, ilimitado";
+    if (cubierto >= dias && consumos && consumos.length > 0) {
+      const { data: bono } = await supabase
+        .from("bonos_clientes_estado")
+        .select(columnasBono)
+        .eq("id", consumos[0].bono_cliente_id as string)
+        .maybeSingle();
+      estadoPase = {
+        tipo: "cubierto",
+        descripcion: bono ? `${bono.servicio_nombre}: ${describirBono(bono)}` : "Cubierto con bono",
+      };
+    } else {
+      const { data: disponibles } = await supabase
+        .from("bonos_clientes_estado")
+        .select(columnasBono)
+        .eq("cliente_id", perro.cliente_id)
+        .eq("estado", "activo")
+        .eq("servicio_incluido_id", estancia.servicio_id)
+        // Vigente el día de la estancia, no solo hoy: misma regla que
+        // aplicar_bono_a_estancia.
+        .or(`fecha_vencimiento.is.null,fecha_vencimiento.gte.${estancia.fecha_entrada}`)
+        .gte("cantidad_disponible", dias - cubierto)
+        .order("fecha_vencimiento", { ascending: true, nullsFirst: false })
+        .limit(1);
+      const bono = disponibles?.[0];
+      estadoPase = bono
+        ? {
+            tipo: "disponible",
+            descripcion: `${bono.servicio_nombre}: ${describirBono(bono)}`,
+            precioDia: Number(estancia.precio_unitario) * dias,
+          }
+        : { tipo: "paga", precioDia: Number(estancia.precio_unitario) * dias };
+    }
+  }
   // Esta pantalla es de una estancia concreta y se llega a ella desde
   // cualquiera de los dos modulos: a cual regresar lo dice la categoria
   // del propio servicio, no un parametro en la URL que se pierde al
@@ -100,6 +154,8 @@ export default async function CheckinEstanciaPage({
           {servicio?.nombre} · {esGuarderia ? formatearFechaCalendario(estancia.fecha_entrada) : `${formatearFechaCalendario(estancia.fecha_entrada)} — ${formatearFechaCalendario(estancia.fecha_salida)}`}
         </p>
       </div>
+
+      <PaseCheckin estanciaId={estanciaId} estado={estadoPase} />
 
       <AlertaCriticaBanner alertas={alertasActivas} alergiasGraves={alergiasGraves} tamano="grande" />
       <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
