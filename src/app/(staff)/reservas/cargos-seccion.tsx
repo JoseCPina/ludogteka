@@ -14,9 +14,13 @@ export type Cargo = {
   precio: number;
   cancelado: boolean;
   motivoCancelacion: string | null;
+  // Qué se le dio, en cargos de monto libre (comida especial).
+  descripcion?: string | null;
 };
 
-export type ServicioCargo = { id: string; nombre: string; clave?: string };
+// montoLibre: sin celda en la matriz; recepción captura importe y
+// descripción al aplicarlo (comida especial).
+export type ServicioCargo = { id: string; nombre: string; clave?: string; montoLibre?: boolean };
 
 function formatoDinero(valor: number): string {
   return `$${valor.toFixed(2)}`;
@@ -43,6 +47,8 @@ export function CargosSeccion({
   const [servicioId, setServicioId] = useState(serviciosCargo[0]?.id ?? "");
   const [cantidad, setCantidad] = useState("1");
   const [notas, setNotas] = useState("");
+  const [importe, setImporte] = useState("");
+  const [descripcion, setDescripcion] = useState("");
   const [aplicando, setAplicando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,17 +58,24 @@ export function CargosSeccion({
 
   const servicioSeleccionado = serviciosCargo.find((s) => s.id === servicioId);
   const esRecoleccion = servicioSeleccionado?.clave === "recoleccion";
+  const esMontoLibre = Boolean(servicioSeleccionado?.montoLibre);
 
   const acumuladoCargos = cargos
     .filter((c) => !c.cancelado)
     .reduce((sum, c) => sum + c.precio * c.cantidad, 0);
 
   async function enviarAplicar() {
-    const cant = Number(cantidad);
+    const cant = esMontoLibre ? 1 : Number(cantidad);
     const servicio = serviciosCargo.find((s) => s.id === servicioId);
     setAplicando(true);
     setError(null);
-    const res = await aplicarCargo(estanciaId, servicioId, cant, notas);
+    const res = await aplicarCargo(
+      estanciaId,
+      servicioId,
+      cant,
+      notas,
+      esMontoLibre ? { importe: Number(importe), descripcion } : undefined
+    );
     setAplicando(false);
     if (res.error || !res.cargo) {
       setError(res.error);
@@ -77,10 +90,13 @@ export function CargosSeccion({
         precio: res.cargo!.precio,
         cancelado: false,
         motivoCancelacion: null,
+        descripcion: esMontoLibre ? descripcion.trim() : null,
       },
     ]);
     setNotas("");
     setCantidad("1");
+    setImporte("");
+    setDescripcion("");
   }
 
   async function confirmarCancelar(cargoId: string) {
@@ -134,6 +150,9 @@ export function CargosSeccion({
                     )}
                   </div>
                 </div>
+                {c.descripcion && (
+                  <p className={`mt-1 text-xs ${c.cancelado ? "text-n-500" : "text-n-600"}`}>{c.descripcion}</p>
+                )}
                 {c.cancelado && c.motivoCancelacion && (
                   <p className="mt-1 text-xs text-n-500">Cancelado: {c.motivoCancelacion}</p>
                 )}
@@ -206,16 +225,40 @@ export function CargosSeccion({
               ))}
             </Select>
           </div>
-          <div className="w-24">
-            <Field
-              label="Cantidad"
-              type="number"
-              min="1"
-              value={cantidad}
-              onChange={(e) => setCantidad(e.target.value)}
-              ayuda={esRecoleccion ? "km" : undefined}
-            />
-          </div>
+          {esMontoLibre ? (
+            <>
+              <div className="w-32">
+                <Field
+                  label="Importe"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={importe}
+                  onChange={(e) => setImporte(e.target.value)}
+                  ayuda="Según lo que se le dio"
+                />
+              </div>
+              <div className="min-w-[220px] flex-1">
+                <Field
+                  label="Qué se le dio"
+                  value={descripcion}
+                  onChange={(e) => setDescripcion(e.target.value)}
+                  placeholder="ej. Pollo hervido con arroz, 3 días"
+                />
+              </div>
+            </>
+          ) : (
+            <div className="w-24">
+              <Field
+                label="Cantidad"
+                type="number"
+                min="1"
+                value={cantidad}
+                onChange={(e) => setCantidad(e.target.value)}
+                ayuda={esRecoleccion ? "km" : undefined}
+              />
+            </div>
+          )}
           {esRecoleccion && distanciaClienteKm != null && (
             <button
               type="button"

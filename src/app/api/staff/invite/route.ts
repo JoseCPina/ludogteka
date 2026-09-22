@@ -84,13 +84,21 @@ export async function POST(request: Request) {
 
   const nuevoUserId = linkData.user.id;
 
-  const { error: profileUpdateError } = await admin
-    .from("profiles")
-    .update({ rol, nombre_completo: body.nombre_completo ?? null })
-    .eq("id", nuevoUserId);
+  // El rol NO se pone con un UPDATE directo: desde el arreglo de guardias
+  // (10 de septiembre de 2026) el trigger proteger_columnas_sensibles_profile
+  // rechaza cambiar `rol` sin sesión de admin, y la secret key no tiene
+  // sesión. Antes pasaba porque el guardia evaluaba a NULL. La RPC
+  // asignar_rol_staff es la puerta con nombre: solo service_role puede
+  // ejecutarla, solo asigna recepcion/estetica, y solo sobre una cuenta
+  // que todavía es 'cliente' (la que se acaba de crear).
+  const { error: rolError } = await admin.rpc("asignar_rol_staff", {
+    p_user_id: nuevoUserId,
+    p_rol: rol,
+    p_nombre_completo: body.nombre_completo ?? null,
+  });
 
-  if (profileUpdateError) {
-    return NextResponse.json({ error: profileUpdateError.message }, { status: 500 });
+  if (rolError) {
+    return NextResponse.json({ error: rolError.message }, { status: 500 });
   }
 
   // El link apunta a nuestra propia app (/auth/callback), no al

@@ -25,8 +25,11 @@ export default async function AdminPage() {
     supabase.rpc("resolver_cupo_configuracion"),
     supabase
       .from("servicios")
-      .select("id, nombre, depende_grupo_raza, depende_tamano, depende_pelaje, depende_cantidad")
+      .select("id, nombre, depende_grupo_raza, depende_tamano, depende_pelaje, depende_cantidad, monto_libre")
       .is("deleted_at", null)
+      // Un cargo de monto libre no tiene celda que capturar: el importe
+      // se pone al aplicarlo. No es un hueco.
+      .eq("monto_libre", false)
       .order("orden"),
     supabase.from("grupos_raza").select("id, nombre, depende_tamano").is("deleted_at", null).order("orden"),
     supabase.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),

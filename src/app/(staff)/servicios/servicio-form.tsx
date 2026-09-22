@@ -32,6 +32,7 @@ export function ServicioForm({
     cantidad_incluida: number | null;
     vigencia_dias: number | null;
     ilimitado?: boolean;
+    monto_libre?: boolean;
     orden: number;
   };
   textoBoton: string;
@@ -40,6 +41,7 @@ export function ServicioForm({
   const [categoria, setCategoria] = useState(valoresIniciales?.categoria ?? "guarderia");
   const [ilimitado, setIlimitado] = useState(valoresIniciales?.ilimitado ?? false);
   const esBono = categoria === "bono";
+  const esCargo = categoria === "cargo";
 
   return (
     <form action={formAction} className="flex max-w-lg flex-col gap-4">
@@ -153,6 +155,25 @@ export function ServicioForm({
           </label>
         </div>
       </div>
+
+      {esCargo && (
+        <label className="flex flex-col gap-1 rounded-md border-[1.5px] border-n-200 bg-white p-3 text-n-900">
+          <span className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              name="monto_libre"
+              disabled={enviando}
+              defaultChecked={valoresIniciales?.monto_libre ?? false}
+              className="h-4 w-4"
+            />
+            Monto libre: se cobra caso por caso (ej. comida especial)
+          </span>
+          <span className="pl-6 text-sm text-n-600">
+            Sin precio en la matriz. Al aplicarlo, recepción captura el importe y qué se le dio; queda
+            registrado quién y por cuánto, y se cancela con motivo como cualquier cargo.
+          </span>
+        </label>
+      )}
 
       {esBono && (
         <div className="flex flex-col gap-4 rounded-md border-[1.5px] border-turquesa bg-turquesa-suave p-3">

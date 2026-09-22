@@ -23,7 +23,7 @@ export default async function TarifasServicioPage({
     supabase
       .from("servicios")
       .select(
-        "id, nombre, categoria, unidad, depende_grupo_raza, depende_tamano, depende_pelaje, depende_cantidad, acepta_pelo_maltratado, deleted_at"
+        "id, nombre, categoria, unidad, depende_grupo_raza, depende_tamano, depende_pelaje, depende_cantidad, acepta_pelo_maltratado, monto_libre, deleted_at"
       )
       .eq("id", id)
       .single(),
@@ -93,6 +93,13 @@ export default async function TarifasServicioPage({
           Solo se guardan las celdas que cambien. Nunca se sobreescribe un precio anterior.
         </p>
       </div>
+
+      {servicio.monto_libre && (
+        <p className="rounded-md border-[1.5px] border-amarillo bg-amarillo-suave px-3 py-2 text-sm text-amarillo-oscuro">
+          Este cargo es de <strong>monto libre</strong>: no tiene precio fijo. El importe y qué se le
+          dio se capturan al aplicarlo en la estancia. Lo que captures aquí no se usa.
+        </p>
+      )}
 
       <MatrizTarifas
         servicioId={id}

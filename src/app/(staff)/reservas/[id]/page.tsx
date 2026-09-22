@@ -63,16 +63,17 @@ export default async function DetalleReservaPage({
 
   const estanciaIds = filas.map((f) => f.id);
   const [{ data: serviciosCargo }, { data: cargosCrudo }] = await Promise.all([
+    // Solo los cargos que se pueden cobrar (con tarifa o de monto libre):
+    // uno sin tarifa truena al aplicarse.
     supabase
-      .from("servicios")
-      .select("id, nombre, clave")
+      .from("servicios_cotizables")
+      .select("id, nombre, clave, monto_libre")
       .eq("categoria", "cargo")
-      .is("deleted_at", null)
       .order("orden"),
     estanciaIds.length > 0
       ? supabase
           .from("cargos_aplicados")
-          .select("id, estancia_id, cantidad, precio, cancelado, motivo_cancelacion, servicios(nombre)")
+          .select("id, estancia_id, cantidad, precio, cancelado, motivo_cancelacion, descripcion, servicios(nombre)")
           .in("estancia_id", estanciaIds)
           .order("created_at")
       : Promise.resolve({ data: [] as never[] }),
@@ -89,6 +90,7 @@ export default async function DetalleReservaPage({
       precio: c.precio as number,
       cancelado: c.cancelado as boolean,
       motivoCancelacion: c.motivo_cancelacion as string | null,
+      descripcion: (c.descripcion as string | null) ?? null,
     });
     cargosPorEstancia.set(c.estancia_id as string, lista);
   }
@@ -97,6 +99,7 @@ export default async function DetalleReservaPage({
     id: s.id as string,
     nombre: s.nombre as string,
     clave: s.clave as string,
+    montoLibre: Boolean(s.monto_libre),
   }));
 
   const { data: totalesCrudo } = await supabase.rpc("cuenta_totales_reserva", { p_reserva_id: id });

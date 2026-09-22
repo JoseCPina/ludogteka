@@ -59,10 +59,14 @@ export default async function CheckoutEstanciaPage({
       .order("created_at"),
     // Solo los cargos que se pueden cobrar: uno sin tarifa truena al
     // aplicarse, y en el mostrador no es momento de descubrirlo.
-    supabase.from("servicios_cotizables").select("id, nombre, clave").eq("categoria", "cargo").order("orden"),
+    supabase
+      .from("servicios_cotizables")
+      .select("id, nombre, clave, monto_libre")
+      .eq("categoria", "cargo")
+      .order("orden"),
     supabase
       .from("cargos_aplicados")
-      .select("id, cantidad, precio, cancelado, motivo_cancelacion, servicios(nombre)")
+      .select("id, cantidad, precio, cancelado, motivo_cancelacion, descripcion, servicios(nombre)")
       .eq("estancia_id", estanciaId)
       .order("created_at"),
     supabase.rpc("fecha_negocio"),
@@ -109,6 +113,7 @@ export default async function CheckoutEstanciaPage({
       precio: c.precio as number,
       cancelado: c.cancelado as boolean,
       motivoCancelacion: c.motivo_cancelacion as string | null,
+      descripcion: (c.descripcion as string | null) ?? null,
     };
   });
 
@@ -116,6 +121,7 @@ export default async function CheckoutEstanciaPage({
     id: s.id as string,
     nombre: s.nombre as string,
     clave: s.clave as string,
+    montoLibre: Boolean(s.monto_libre),
   }));
 
   const alertasActivas = (alertasCrudo ?? []).map((a) => {

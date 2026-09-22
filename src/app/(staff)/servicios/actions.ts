@@ -23,6 +23,9 @@ function leerCampos(formData: FormData) {
   // Un bono así no lleva cantidad incluida; la base la calcula al vender
   // como los días hábiles de la vigencia.
   const ilimitado = categoria === "bono" && formData.get("ilimitado") === "on";
+  // Monto libre: solo cargos. Sin celda en la matriz; el importe se
+  // captura al aplicarlo (comida especial).
+  const monto_libre = categoria === "cargo" && formData.get("monto_libre") === "on";
   const cantidadCrudo = String(formData.get("cantidad_incluida") ?? "").trim();
   const vigenciaCrudo = String(formData.get("vigencia_dias") ?? "").trim();
   const ordenCrudo = String(formData.get("orden") ?? "").trim();
@@ -38,6 +41,7 @@ function leerCampos(formData: FormData) {
     depende_cantidad,
     servicio_incluido_id,
     ilimitado,
+    monto_libre,
     cantidad_incluida: cantidadCrudo && !ilimitado ? Number(cantidadCrudo) : null,
     vigencia_dias: vigenciaCrudo ? Number(vigenciaCrudo) : null,
     orden: ordenCrudo ? Number(ordenCrudo) : 0,

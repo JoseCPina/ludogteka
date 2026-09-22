@@ -1248,18 +1248,78 @@ llave anónima pelada bloqueada en las tres RPC nuevas (`permission
 denied`) y con cero filas en `perros`. `tsc`, `eslint` y `next build`
 limpios.
 
-**Hallazgo colateral, sin corregir aquí**: `POST /api/staff/invite`
-actualiza `profiles.rol` con la secret key, y desde el arreglo de
-guardias del 10 de septiembre (`current_rol()` devuelve `'anonimo'` sin
-sesión) el trigger `proteger_columnas_sensibles_profile` lo rechaza con
-"Solo un admin puede modificar el rol de un profile". Es decir: invitar
-staff está roto en producción desde esa fecha, con 500. El arreglo es
-darle a esa ruta una puerta con nombre, como `app.vinculacion_interna`,
-no aflojar el guardia. Queda como siguiente pendiente.
+**Hallazgo colateral, corregido el mismo día (ver el bloque siguiente)**:
+`POST /api/staff/invite` actualizaba `profiles.rol` con la secret key, y
+desde el arreglo de guardias del 10 de septiembre (`current_rol()`
+devuelve `'anonimo'` sin sesión) el trigger
+`proteger_columnas_sensibles_profile` lo rechazaba con "Solo un admin
+puede modificar el rol de un profile". Invitar staff estuvo roto en
+producción desde esa fecha, con 500, sin que nadie lo notara porque no
+se invitó a nadie en ese lapso.
+
+### Ajustes del 22 de septiembre: día completo $350, comida especial de monto libre, invitar staff
+
+Tres migraciones más (`20260922064415` y `20260922064418`), dictadas por
+el negocio y desplegadas el mismo día.
+
+**Guardería día completo: $350.** Se capturó la tarifa de
+`guarderia_dia` — la única celda que había quedado vacía. Con eso los
+pases y la mensualidad ya se consumen: la estancia del día se crea a
+$350 de lista, y cada día cubierto por un pase se muestra valuado a
+ese precio (probado: estancia de día completo creada a $350, que antes
+no se podía).
+
+**Comida especial: cargo de monto libre.** Sí existe, pero no tiene
+precio fijo: se cobra según lo que coma cada perro. `servicios.monto_libre`
+(check: solo cargos) y `cargos_aplicados.descripcion`. El trigger
+`validar_cargo_aplicado` gana la rama de monto libre: el precio VIENE en
+la fila (lo capturó recepción), se exige importe > 0 y descripción, y
+una vez aplicado el importe no se cambia — se cancela con motivo y se
+aplica otro. Quién lo aplicó (`created_by`) y por cuánto (`precio`)
+quedan igual que en cualquier cargo; cancelar con motivo sigue por
+`marcar_cargo_cancelado`, y borrar no se puede: `cargos_aplicados` no
+tiene política de DELETE (probado: el DELETE devuelve 204 y la fila
+sigue). Un cargo normal sigue ignorando cualquier precio que le manden
+y resolviendo de la matriz (probado con recolección: mandé $999, quedó
+$12/km). `servicios_cotizables` incluye a los de monto libre sin
+tarifa, así el check-out y el detalle de la reserva lo ofrecen; la
+comprobación de "celdas sin tarifa" (panel de admin, lista de
+servicios, y la de la migración, ya sin excepciones) lo salta porque no
+tiene celda que capturar. En la pantalla de cargos, al elegirlo
+aparecen "Importe" y "Qué se le dio" en vez de cantidad; la matriz de
+tarifas de ese servicio avisa que lo que se capture ahí no se usa. El
+formulario de servicios tiene la casilla "Monto libre" para cargos.
+
+**Invitar staff, arreglado con una puerta con nombre** (misma idea que
+`app.vinculacion_interna`, sin aflojar el guardia): RPC
+`asignar_rol_staff(p_user_id, p_rol, p_nombre_completo)`, ejecutable
+SOLO por `service_role` (revocada explícitamente a `anon` y
+`authenticated`), que prende `app.asignacion_rol_interna` con
+`set_config(..., true)` — local a la transacción — y hace el UPDATE ahí
+mismo. Es deliberadamente estrecha: solo `recepcion`/`estetica`, y solo
+sobre una cuenta que todavía es `cliente` (la recién creada); a quien
+ya es staff no lo toca. La ruta llama a la RPC en vez del UPDATE. El
+trigger acepta el cambio de rol con la puerta prendida y sigue exigiendo
+admin en cualquier otro caso.
+
+Probado de punta a punta contra el dev server, por el camino real
+(sesión de admin obtenida por `/auth/callback`, con cookies, que es lo
+que el middleware exige en `/api/staff`): invitar a una recepcionista de
+prueba → 200 con `invite_link`; su profile con rol `recepcion` y nombre;
+entrar con el link → el callback verifica el token y redirige a
+`/auth/nueva-password` con sesión; invitar el mismo correo otra vez →
+409 y el rol intacto; con su sesión ve clientes y perros, y NO puede
+listar cuentas, capturar tarifas, ejecutar `asignar_rol_staff`
+(`permission denied`), subirse a admin ("Solo un admin puede modificar
+el rol") ni invitar staff (403); `anon` y un admin con sesión tampoco
+ejecutan la RPC por REST; la puerta rechaza reasignar a quien ya es
+staff. Borrada al terminar (auth y profile). Nota para la próxima
+prueba: `/api/staff` se protege por cookies en `middleware.ts`; el
+Bearer de `caller.ts` nunca llega a la ruta.
 
 ## Estado actual
 
-Fase 0, Fase 1, Fase 2, Fase 3 y Fase 4 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 5 (POS) construida en sus cuatro bloques (cobros/devoluciones, bonos, descuentos, caja/arqueo) más la decisión de Bloque E, pendiente de que el negocio termine de probarla para cerrarla formalmente. Fase 6 (contratos) completa en sus tres bloques (plantillas y versionado, generación/firma/papel, visibilidad operativa y vigencia). Fase 7 (inventario) completa en sus tres bloques (catálogo y existencias; movimientos: entradas, salidas, mermas, ajustes; consumo automático por receta al finalizar un servicio de estética, con el enlace a la cita ya listo para que Fase 8 calcule el costo real por servicio). Fase 8 (reportes) completa en sus tres bloques (financiero por periodo con ingreso reconocido vs. neto de caja; costos y margen de estética; operativo con ocupación/servicios del periodo y una fotografía del estado actual de cumplimiento sanitario, contratos e inventario). Fase 9 (bitácora diaria y medicamentos) completa en sus dos bloques: Bloque A (fotos, notas e incidencias, con aviso por WhatsApp vía enlace `wa.me`) y Bloque B (régimen y registro de dosis administradas, referenciando `perro_medicamentos.id` tal como quedó planteado desde Fase 2). Con esto quedan completas las diez fases (0 a 9) del roadmap original. Fase 10 (recolección a domicilio, cotizador por distancia con Google Maps) completa — reutiliza tarifas/`resolver_precio`/`cargos_aplicados` de Fase 3/4 sin mecanismo de cobro nuevo; pendiente de que el negocio capture direcciones reales (base y Ludogteka), tarifas por km, y la llave de Google Maps antes de salir de modo simulación. Fase 11 (varias plantillas de contrato a la vez, cada una con nombre, versionado y aplicabilidad por servicio propios) completa — el estado de contrato dejó de ser un sí/no por perro y pasó a ser por tipo, y los avisos dicen cuál falta. Fase 12 (Guardería y Hotel como módulos separados en la navegación, Agenda renombrada a Estética) completa, sin migraciones: `estancias` sigue unificada y la ocupación que muestran los dos módulos es la de toda la casa. Fase 13 (alta de clientes por link: recepción manda una invitación por WhatsApp y el dueño captura sus datos y los de sus perros; el expediente nace ligado a su cuenta sin pasar por vinculación) completa. Fase 14 (precios de estética por grupo de raza: catálogo de razas buscable, el grupo se deriva y el cliente nunca lo ve, y `tarifas` gana la dimensión de grupo sin sistema de precios paralelo) completa. Fase 15 (dos flujos de alta por link —guardería/hotel y estética—, cada uno con su contrato firmado dentro del alta, y un link de complemento que solo pide lo que falta) completa. Fase 16 (el cliente entra con su teléfono y contraseña, no con correo: correo y cuenta pasan a opcionales, un teléfono ya registrado no se puede volver a dar de alta y uno que existe como cliente sin cuenta se vincula en vez de duplicarse; la recuperación de contraseña es por WhatsApp a recepción, con el número configurable desde el panel) completa. Las cuentas que ya existían con correo siguen entrando igual, sin migración. Corrección de estética contra el cartel (10 de septiembre): tres precios corregidos, tres servicios de baño con lo que incluye cada uno, pelo maltratado como precio alternativo del baño completo (`tarifas.precio_pelo_maltratado`, marcado en la cita), talla gigante retirada, y **en estética no hay contratos** (candado en `tipos_contrato`; el pendiente de publicar uno de estética ya no aplica). Retiro de los siete servicios de estética de Fase 3 que quedaron sin tarifa (21 de septiembre): vista `servicios_cotizables`, de la que lee `/estetica/nueva`, y comprobación sobre todo servicio de estética vivo — aplicada a producción el mismo día con `npm run desplegar`. Fase 17 (precios y requisitos de guardería y hotel, del cartel: hotel $270/$300 por talla; guardería ocasional por hora a $35 con `estancias.horas` y ajuste a horas reales al check-out; day pass de 10/15/20 y mensualidad como bono ilimitado por días hábiles; recogida tardía, día extra y medicamento retirados, con "convertir en noche de hotel" en el check-out; evaluación previa de comportamiento con excepción de admin, celo/gestante y alertas bloqueantes sin excepción; vigencias bordetella 6 y desparasitación 3 solo para aplicaciones nuevas; los requisitos se muestran en el alta; las pantallas de reserva muestran deshabilitado lo que no tiene precio) completa. **Única celda sin tarifa, deliberada: `guarderia_dia`** — el cartel no trae precio de día suelto; hasta que el negocio lo capture por la UI, los pases y la mensualidad se venden pero el día que consumen no se puede reservar. **Pendiente encontrado**: `/api/staff/invite` no puede cambiar `profiles.rol` desde el arreglo de guardias del 10 de septiembre (ver Fase 17).
+Fase 0, Fase 1, Fase 2, Fase 3 y Fase 4 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 5 (POS) construida en sus cuatro bloques (cobros/devoluciones, bonos, descuentos, caja/arqueo) más la decisión de Bloque E, pendiente de que el negocio termine de probarla para cerrarla formalmente. Fase 6 (contratos) completa en sus tres bloques (plantillas y versionado, generación/firma/papel, visibilidad operativa y vigencia). Fase 7 (inventario) completa en sus tres bloques (catálogo y existencias; movimientos: entradas, salidas, mermas, ajustes; consumo automático por receta al finalizar un servicio de estética, con el enlace a la cita ya listo para que Fase 8 calcule el costo real por servicio). Fase 8 (reportes) completa en sus tres bloques (financiero por periodo con ingreso reconocido vs. neto de caja; costos y margen de estética; operativo con ocupación/servicios del periodo y una fotografía del estado actual de cumplimiento sanitario, contratos e inventario). Fase 9 (bitácora diaria y medicamentos) completa en sus dos bloques: Bloque A (fotos, notas e incidencias, con aviso por WhatsApp vía enlace `wa.me`) y Bloque B (régimen y registro de dosis administradas, referenciando `perro_medicamentos.id` tal como quedó planteado desde Fase 2). Con esto quedan completas las diez fases (0 a 9) del roadmap original. Fase 10 (recolección a domicilio, cotizador por distancia con Google Maps) completa — reutiliza tarifas/`resolver_precio`/`cargos_aplicados` de Fase 3/4 sin mecanismo de cobro nuevo; pendiente de que el negocio capture direcciones reales (base y Ludogteka), tarifas por km, y la llave de Google Maps antes de salir de modo simulación. Fase 11 (varias plantillas de contrato a la vez, cada una con nombre, versionado y aplicabilidad por servicio propios) completa — el estado de contrato dejó de ser un sí/no por perro y pasó a ser por tipo, y los avisos dicen cuál falta. Fase 12 (Guardería y Hotel como módulos separados en la navegación, Agenda renombrada a Estética) completa, sin migraciones: `estancias` sigue unificada y la ocupación que muestran los dos módulos es la de toda la casa. Fase 13 (alta de clientes por link: recepción manda una invitación por WhatsApp y el dueño captura sus datos y los de sus perros; el expediente nace ligado a su cuenta sin pasar por vinculación) completa. Fase 14 (precios de estética por grupo de raza: catálogo de razas buscable, el grupo se deriva y el cliente nunca lo ve, y `tarifas` gana la dimensión de grupo sin sistema de precios paralelo) completa. Fase 15 (dos flujos de alta por link —guardería/hotel y estética—, cada uno con su contrato firmado dentro del alta, y un link de complemento que solo pide lo que falta) completa. Fase 16 (el cliente entra con su teléfono y contraseña, no con correo: correo y cuenta pasan a opcionales, un teléfono ya registrado no se puede volver a dar de alta y uno que existe como cliente sin cuenta se vincula en vez de duplicarse; la recuperación de contraseña es por WhatsApp a recepción, con el número configurable desde el panel) completa. Las cuentas que ya existían con correo siguen entrando igual, sin migración. Corrección de estética contra el cartel (10 de septiembre): tres precios corregidos, tres servicios de baño con lo que incluye cada uno, pelo maltratado como precio alternativo del baño completo (`tarifas.precio_pelo_maltratado`, marcado en la cita), talla gigante retirada, y **en estética no hay contratos** (candado en `tipos_contrato`; el pendiente de publicar uno de estética ya no aplica). Retiro de los siete servicios de estética de Fase 3 que quedaron sin tarifa (21 de septiembre): vista `servicios_cotizables`, de la que lee `/estetica/nueva`, y comprobación sobre todo servicio de estética vivo — aplicada a producción el mismo día con `npm run desplegar`. Fase 17 (precios y requisitos de guardería y hotel, del cartel: hotel $270/$300 por talla; guardería ocasional por hora a $35 con `estancias.horas` y ajuste a horas reales al check-out; day pass de 10/15/20 y mensualidad como bono ilimitado por días hábiles; recogida tardía, día extra y medicamento retirados, con "convertir en noche de hotel" en el check-out; evaluación previa de comportamiento con excepción de admin, celo/gestante y alertas bloqueantes sin excepción; vigencias bordetella 6 y desparasitación 3 solo para aplicaciones nuevas; los requisitos se muestran en el alta; las pantallas de reserva muestran deshabilitado lo que no tiene precio) completa. Ajustes del 22 de septiembre: `guarderia_dia` a $350 (la matriz de guardería/hotel quedó sin ninguna celda vacía; pases y mensualidad ya se consumen), comida especial como cargo de **monto libre** (`servicios.monto_libre`, importe y descripción capturados al aplicarlo, inmutable, cancelable con motivo, nunca borrable, fuera de la validación de celdas), e **invitar staff arreglado** con la puerta con nombre `asignar_rol_staff` (solo `service_role`, solo recepción/estética, solo cuentas recién creadas) — probado de punta a punta con una recepcionista de prueba, borrada al terminar.
 
 ## Invite server-side de staff
 

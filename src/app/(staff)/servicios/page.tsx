@@ -30,7 +30,7 @@ export default async function ServiciosPage() {
       supabase
         .from("servicios")
         .select(
-          "id, nombre, categoria, unidad, depende_grupo_raza, depende_tamano, depende_pelaje, depende_cantidad, deleted_at"
+          "id, nombre, categoria, unidad, depende_grupo_raza, depende_tamano, depende_pelaje, depende_cantidad, monto_libre, deleted_at"
         )
         .order("orden"),
       supabase.from("grupos_raza").select("id, nombre, depende_tamano").is("deleted_at", null).order("orden"),
@@ -60,6 +60,12 @@ export default async function ServiciosPage() {
   const huecos = new Map<string, number>();
   for (const s of servicios ?? []) {
     if (s.deleted_at) continue;
+    // Monto libre (comida especial): sin celda que capturar, el importe
+    // se pone al aplicarlo. Cero huecos por definición.
+    if (s.monto_libre) {
+      huecos.set(s.id, 0);
+      continue;
+    }
     huecos.set(s.id, contarSinTarifa(s, catalogos, vigentesPorServicio.get(s.id) ?? []));
   }
   const serviciosConHuecos = Array.from(huecos.values()).filter((n) => n > 0).length;
