@@ -45,9 +45,16 @@ export function LoginForm({
         <Field
           label="Teléfono o correo"
           name="identificador"
+          // Texto normal a propósito: con inputMode="tel" el celular
+          // abría el teclado numérico y no había forma de escribir un
+          // correo. Es un solo campo para las dos cosas, así que el
+          // teclado tiene que ser el completo.
           type="text"
-          inputMode="tel"
+          inputMode="text"
           autoComplete="username"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           autoFocus
           required
           ayuda="Si eres cliente, tu teléfono a diez dígitos."
