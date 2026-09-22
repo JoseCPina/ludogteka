@@ -18,18 +18,19 @@
 // contra los docs.
 //
 // Uso:
-//   LUDOGTEKA_PROD_DB_URL="postgresql://..." node scripts/desplegar-produccion.mjs --revisar
-//   LUDOGTEKA_PROD_DB_URL="postgresql://..." node scripts/desplegar-produccion.mjs --aplicar
+//   npm run desplegar -- --revisar
+//   npm run desplegar -- --aplicar
 //
 // --revisar  no escribe nada: estado real de producción + qué
 //            migraciones se aplicarían. Es el paso obligatorio previo.
 // --aplicar  hace lo mismo y luego migra, verifica y despliega.
 //
-// La cadena de conexión NUNCA se guarda en el repo ni en .env.local
-// (ver CLAUDE.md, sección Entornos): se pasa por variable de entorno en
-// el momento de correrlo.
+// La cadena de conexión NUNCA va en el repo ni en .env.local (ver
+// CLAUDE.md, sección Entornos): se lee de C:/proyectos/.ludogteka-prod-db,
+// fuera del repo y permanente, o de LUDOGTEKA_PROD_DB_URL si viene puesta.
 
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import pg from "pg";
 
 const PROY_PROD = "xdsxjhytggpsgrmfuuff";
@@ -151,14 +152,28 @@ function sinSecreto(texto) {
   return String(texto).replace(/postgresql:\/\/[^\s"']+/g, "postgresql://[oculto]");
 }
 
-const DB_URL = process.env.LUDOGTEKA_PROD_DB_URL;
+// La cadena de conexión vive en un archivo FUERA del repo, permanente
+// (decisión del 21 de septiembre de 2026, ver CLAUDE.md > Entornos): el
+// despliegue lo corre el agente sin pedir nada, y para eso la cadena
+// tiene que estar en la máquina. La variable de entorno sigue mandando
+// si viene puesta, por si algún día hay que apuntar a otro lado.
+const ARCHIVO_DB_URL = "C:/proyectos/.ludogteka-prod-db";
+function leerDbUrl() {
+  if (process.env.LUDOGTEKA_PROD_DB_URL) return process.env.LUDOGTEKA_PROD_DB_URL;
+  try {
+    return readFileSync(ARCHIVO_DB_URL, "utf8").trim();
+  } catch {
+    return "";
+  }
+}
+
+const DB_URL = leerDbUrl();
 if (!DB_URL) {
   abortar(
-    "falta LUDOGTEKA_PROD_DB_URL",
-    "Pásala en el momento de correr el script, nunca en un archivo del repo:\n" +
-      '  LUDOGTEKA_PROD_DB_URL="postgresql://postgres.' + PROY_PROD +
-      ':<password>@aws-0-us-east-1.pooler.supabase.com:5432/postgres" \\\n' +
-      "    node scripts/desplegar-produccion.mjs --revisar"
+    `falta la cadena de producción: ni LUDOGTEKA_PROD_DB_URL ni ${ARCHIVO_DB_URL}`,
+    "El archivo lleva una sola línea, la cadena completa, y NO se borra al terminar:\n" +
+      "  postgresql://postgres." + PROY_PROD +
+      ":<password>@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
   );
 }
 if (!DB_URL.includes(PROY_PROD)) {
