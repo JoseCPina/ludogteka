@@ -7,6 +7,7 @@ import { DiagnosticoGoogle } from "./diagnostico-google";
 import { ConfiguracionNegocio, type ConfiguracionVigente } from "./configuracion-negocio";
 import { TarifasFaltantes, type ServicioConHuecos } from "./tarifas-faltantes";
 import { contarSinTarifa, type CeldaVigente } from "@/lib/tarifas/matriz";
+import { TableroDia } from "../tablero-dia";
 
 export default async function AdminPage() {
   const supabase = await createSupabaseServerClient();
@@ -69,8 +70,15 @@ export default async function AdminPage() {
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl font-bold text-n-900">Panel de admin</h1>
-        <p className="mt-1 text-n-600">Invita personal y revisa quién tiene cuenta.</p>
+        <p className="mt-1 text-n-600">
+          Cómo va el día, qué falta por capturar, y la configuración del negocio.
+        </p>
       </div>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="text-lg font-bold text-n-900">Hoy</h2>
+        <TableroDia compacto />
+      </section>
 
       <section className="rounded-lg border border-n-200 bg-white p-5">
         <h2 className="mb-4 text-lg font-bold text-n-900">Configuración del negocio</h2>
