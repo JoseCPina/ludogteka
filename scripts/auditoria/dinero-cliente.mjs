@@ -1,5 +1,6 @@
 // Uso: node scripts/auditoria/dinero-cliente.mjs  (contra DESARROLLO, lee .env.local)
-// Sale con código 1 si algún cliente alcanza un monto.
+// Sale con código 1 si algún cliente alcanza un monto, o cualquier fila de
+// lo que es solo del staff (SOLO_STAFF / RPC_SOLO_STAFF).
 // Verificación final: con el JWT real de CADA cliente de desarrollo, tabla
 // por tabla y vista por vista de la API REST, ¿alcanza alguna columna de
 // dinero con valor? Y las RPC que tocan dinero, con sus propios ids.
@@ -11,6 +12,22 @@ const NO_ES_DINERO = new Set([
   "servicios.monto_libre", "servicios_cotizables.monto_libre", // sí/no: el importe se captura al aplicar
   "perros.tope_gasto_autorizado", // lo autoriza el propio dueño y va en su contrato: le corresponde
 ]);
+
+// Del negocio, no del cliente: ningún cliente debe recibir UNA sola fila,
+// con o sin columnas de dinero (23 de septiembre de 2026).
+const SOLO_STAFF = [
+  // Con dinero
+  "estancias", "citas_estetica", "cargos_aplicados", "cobros", "cobro_metodos", "bonos_clientes",
+  "bonos_clientes_estado", "movimientos_bono", "descuentos_aplicados", "devoluciones",
+  "devolucion_metodos", "mp_ordenes", "mp_ordenes_estado", "reservas", "tarifas", "tarifas_dia_semana",
+  "tarifas_vigentes", "turnos_caja", "cortes_caja", "corte_metodos", "movimientos_caja",
+  "compras_insumos", "insumos", "movimientos_inventario",
+  // Catálogos internos y operación de la casa
+  "categorias_insumo", "unidades_medida", "catalogo_descuentos", "cupo_configuracion",
+  "llegadas_hoy", "quienes_estan_adentro",
+];
+// RPC que un cliente con sesión no debe poder llamar (tienen que rechazarlo).
+const RPC_SOLO_STAFF = ["calendario_ocupacion"];
 
 const spec = await (await fetch(URL + "/rest/v1/", { headers: { apikey: env.SUPABASE_SECRET_KEY, Authorization: `Bearer ${env.SUPABASE_SECRET_KEY}` } })).json();
 const relaciones = Object.keys(spec.definitions).sort();
@@ -70,12 +87,17 @@ for (const cli of clientes) {
     ["reporte_estado_operativo_actual", {}],
     ["listar_cuentas", {}],
     ["mis_visitas", {}],
+    ["calendario_ocupacion", { p_desde: "2026-09-01", p_hasta: "2026-09-30" }],
   ];
   for (const [fn, args] of sondas) {
     const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(args) });
     llamadas++;
     const cuerpo = await r.json().catch(() => null);
     let veredicto = r.ok ? "sin dinero" : `rechazada ${r.status}`;
+    if (r.ok && RPC_SOLO_STAFF.includes(fn)) {
+      veredicto = "RESPONDE A UN CLIENTE";
+      hallazgos.push(`rpc ${fn}: solo staff, pero le respondió al cliente ${cli.cliente_id.slice(0, 8)}`);
+    }
     if (r.ok) {
       const claves = new Set();
       const ver = (x) => { if (x && typeof x === "object") for (const [k, v] of Object.entries(x)) { if (DINERO.test(k) && v !== null && Number(v) !== 0) claves.add(`${k}=${v}`); ver(v); } };
@@ -96,6 +118,11 @@ console.log("\nrelaciones que algún cliente todavía lee (filas vistas en total
 console.log([...alcanzablesPorCliente].filter(([, n]) => n > 0).map(([r, n]) => `${r}(${n})${columnasDinero.has(r) ? "*" : ""}`).join(", "));
 console.log("\nRPC:");
 for (const [fn, v] of rpcDinero) console.log(" ", fn.padEnd(36), JSON.stringify(v));
-console.log(`\nHALLAZGOS DE DINERO ALCANZABLE: ${hallazgos.length}`);
+for (const rel of SOLO_STAFF) {
+  if (!relaciones.includes(rel)) hallazgos.push(`${rel}: está en SOLO_STAFF pero la API ya no la expone (¿se renombró?)`);
+  else if ((alcanzablesPorCliente.get(rel) ?? 0) > 0) hallazgos.push(`${rel}: solo staff, pero algún cliente lee ${alcanzablesPorCliente.get(rel)} filas`);
+}
+console.log(`\nsolo staff revisadas: ${SOLO_STAFF.length} relaciones y ${RPC_SOLO_STAFF.length} RPC`);
+console.log(`\nHALLAZGOS: ${hallazgos.length}`);
 for (const h of [...new Set(hallazgos)].slice(0, 40)) console.log("  ", h);
 if (hallazgos.length) process.exit(1);
