@@ -7,6 +7,7 @@ import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { Select } from "@/components/ui/select";
 import {
   crearTipoContrato,
   actualizarTipoContrato,
@@ -14,7 +15,9 @@ import {
   reactivarTipoContrato,
   publicarPlantilla,
   marcarRequiereRefirma,
+  definirMomentoContrato,
   type CategoriaServicioContrato,
+  type MomentoContrato,
 } from "./plantilla-actions";
 
 const TOKENS_DISPONIBLES = [
@@ -33,6 +36,13 @@ const TOKENS_DISPONIBLES = [
   "servicios_disponibles",
   "fecha_firma",
   "horario_guarderia",
+  "contacto_emergencia",
+  // Estos cuatro salen de la compra del paquete: solo tienen valor en un
+  // contrato que se genera al comprar un paquete de guardería.
+  "paquete_guarderia",
+  "numero_day_pass",
+  "vigencia_inicio",
+  "vigencia_fin",
 ];
 
 const CATEGORIAS: { clave: CategoriaServicioContrato; etiqueta: string }[] = [
@@ -54,6 +64,7 @@ export type TipoContratoVista = {
   id: string;
   nombre: string;
   categorias: CategoriaServicioContrato[];
+  seGeneraAl: MomentoContrato;
   archivado: boolean;
   versiones: VersionPlantilla[];
 };
@@ -282,12 +293,32 @@ function FormularioDatosTipo({
   const router = useRouter();
   const [nombre, setNombre] = useState(tipo.nombre);
   const [categorias, setCategorias] = useState<CategoriaServicioContrato[]>(tipo.categorias);
+  const [momento, setMomento] = useState<MomentoContrato>(tipo.seGeneraAl);
   const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
 
+  // Solo un contrato exclusivo de guardería se puede colgar de la compra
+  // de un paquete (la base lo exige igual).
+  const soloGuarderia = categorias.length === 1 && categorias[0] === "guarderia";
+  const momentoFinal: MomentoContrato = soloGuarderia ? momento : "alta";
+
   async function guardar() {
     setError(null);
-    const res = await enviando.ejecutar(() => actualizarTipoContrato(tipo.id, nombre, categorias));
+    // El orden importa: la base no deja un contrato "de paquete" que
+    // aplique a algo más que guardería. Si pasa a "alta", se cambia antes
+    // que las categorías; si pasa a "paquete", después.
+    const res = await enviando.ejecutar(async () => {
+      if (momentoFinal === "alta" && tipo.seGeneraAl !== "alta") {
+        const r = await definirMomentoContrato(tipo.id, "alta");
+        if (r.error) return r;
+      }
+      const r = await actualizarTipoContrato(tipo.id, nombre, categorias);
+      if (r.error) return r;
+      if (momentoFinal === "compra_paquete" && tipo.seGeneraAl !== "compra_paquete") {
+        return definirMomentoContrato(tipo.id, "compra_paquete");
+      }
+      return { error: null };
+    });
     if (res.error) {
       setError(res.error);
       return;
@@ -309,6 +340,20 @@ function FormularioDatosTipo({
       </p>
       <Field label="Nombre del contrato" value={nombre} onChange={(e) => setNombre(e.target.value)} />
       <SelectorCategorias seleccionadas={categorias} onCambio={setCategorias} />
+      <Select
+        label="Cuándo se genera"
+        value={momentoFinal}
+        disabled={!soloGuarderia}
+        onChange={(e) => setMomento(e.target.value as MomentoContrato)}
+      >
+        <option value="alta">Al darse de alta (se firma dentro del alta por link)</option>
+        <option value="compra_paquete">Al comprar un paquete de guardería (se firma desde el portal)</option>
+      </Select>
+      {!soloGuarderia && (
+        <p className="-mt-2 text-sm text-n-600">
+          Solo un contrato que aplica únicamente a guardería se puede generar al comprar un paquete.
+        </p>
+      )}
       <div className="flex gap-2">
         <Button type="button" cargando={enviando.cargando} onClick={guardar}>
           {enviando ? "Guardando…" : "Guardar"}
@@ -377,6 +422,11 @@ function TarjetaTipo({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin: bool
                 </span>
               ))
             )}
+            <span className="rounded-full bg-turquesa-suave px-2 py-0.5 text-xs font-semibold text-turquesa-oscuro">
+              {tipo.seGeneraAl === "compra_paquete"
+                ? "Se genera al comprar un paquete · se firma en el portal"
+                : "Se firma en el alta"}
+            </span>
           </div>
         </div>
         <p className="text-sm text-n-600">

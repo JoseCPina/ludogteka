@@ -53,7 +53,8 @@ export function ConvertirHotel({
           </p>
           <p className="text-sm text-amarillo-oscuro">
             No hay cargo por recogida tardía: si se queda, la estancia se convierte en noche de hotel y
-            se cobra a su tarifa. Tú decides — no se aplica solo.
+            se cobra a su tarifa. La salida queda para el siguiente día que abrimos (el de sábado se entrega
+            el lunes: dos noches). Tú decides, no se aplica solo.
           </p>
         </div>
         <div className="flex gap-2">

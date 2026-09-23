@@ -6,6 +6,8 @@ import { DescuentoConfig } from "./descuento-config";
 import { DiagnosticoGoogle } from "./diagnostico-google";
 import { DiagnosticoMercadoPago } from "./diagnostico-mercadopago";
 import { ConfiguracionNegocio, type ConfiguracionVigente } from "./configuracion-negocio";
+import { HorarioNegocio } from "./horario-negocio";
+import type { DiaHorario } from "./configuracion-actions";
 import { TarifasFaltantes, type ServicioConHuecos } from "./tarifas-faltantes";
 import { contarSinTarifa, type CeldaVigente } from "@/lib/tarifas/matriz";
 import { TableroDia } from "../tablero-dia";
@@ -21,6 +23,7 @@ export default async function AdminPage() {
     { data: tamanosCat },
     { data: pelajesCat },
     { data: vigentesCat },
+    { data: horarioVigente },
   ] = await Promise.all([
     supabase.rpc("listar_cuentas"),
     supabase.rpc("resolver_tope_descuento_recepcion"),
@@ -39,6 +42,7 @@ export default async function AdminPage() {
     supabase
       .from("tarifas_vigentes")
       .select("servicio_id, grupo_raza_id, tamano_id, pelaje_id, cantidad_desde, cantidad_hasta, precio, no_aplica"),
+    supabase.rpc("horario_semana_vigente"),
   ]);
 
   // Mismo cálculo que la matriz, del mismo módulo: si cada pantalla
@@ -84,6 +88,11 @@ export default async function AdminPage() {
       <section className="rounded-lg border border-n-200 bg-white p-5">
         <h2 className="mb-4 text-lg font-bold text-n-900">Configuración del negocio</h2>
         <ConfiguracionNegocio vigente={configVigente} />
+      </section>
+
+      <section className="rounded-lg border border-n-200 bg-white p-5">
+        <h2 className="mb-4 text-lg font-bold text-n-900">Horario de atención</h2>
+        <HorarioNegocio vigente={(horarioVigente ?? []) as DiaHorario[]} />
       </section>
 
       <section className="rounded-lg border border-n-200 bg-white p-5">

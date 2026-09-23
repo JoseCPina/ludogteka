@@ -121,7 +121,7 @@ export function ConfiguracionNegocio({ vigente }: { vigente: ConfiguracionVigent
 
       <p className="text-sm text-n-600">
         Se guarda como una versión nueva con la fecha de hoy; la anterior queda en el historial. El
-        horario por día de la semana no se toca aquí y se conserva tal cual.
+        horario de atención se edita abajo y se conserva tal cual al guardar esto.
       </p>
     </div>
   );

@@ -129,27 +129,17 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
             .order("orden")
         : Promise.resolve({ data: null }),
       definicion.llevaContrato
-        ? admin
-            .from("horario_semana")
-            .select("dia_semana, hora_apertura, hora_cierre, cupo_configuracion!inner(vigencia_desde, deleted_at)")
-            .is("deleted_at", null)
-            .order("dia_semana")
+        ? admin.rpc("horario_semana_vigente")
         : Promise.resolve({ data: null }),
     ]);
 
-  // Solo el horario de la configuración vigente (la de vigencia más
-  // reciente que ya aplica); las anteriores siguen en la tabla.
-  const hoyISO = new Date().toISOString().slice(0, 10);
-  const filasHorario = ((horarioCrudo ?? []) as unknown as (HorarioDia & {
-    cupo_configuracion: { vigencia_desde: string; deleted_at: string | null } | null;
-  })[]).filter((h) => h.cupo_configuracion && !h.cupo_configuracion.deleted_at && h.cupo_configuracion.vigencia_desde <= hoyISO);
-  const vigenciaMasReciente = filasHorario.reduce<string | null>(
-    (max, h) => (max === null || (h.cupo_configuracion?.vigencia_desde ?? "") > max ? h.cupo_configuracion?.vigencia_desde ?? max : max),
-    null
-  );
-  const horario: HorarioDia[] = filasHorario
-    .filter((h) => h.cupo_configuracion?.vigencia_desde === vigenciaMasReciente)
-    .map((h) => ({ dia_semana: h.dia_semana, hora_apertura: h.hora_apertura, hora_cierre: h.hora_cierre }));
+  // El horario vigente lo decide la base (horario_semana_vigente): la
+  // misma generación de configuración que usan las reservas.
+  const horario: HorarioDia[] = ((horarioCrudo ?? []) as HorarioDia[]).map((h) => ({
+    dia_semana: h.dia_semana,
+    hora_apertura: h.hora_apertura,
+    hora_cierre: h.hora_cierre,
+  }));
   const requisitos: RequisitoSanitarioPublico[] = (requisitosCrudo ?? []) as RequisitoSanitarioPublico[];
   const bloqueRequisitos = definicion.llevaContrato ? (
     <RequisitosGuarderiaHotel requisitos={requisitos} horario={horario} />

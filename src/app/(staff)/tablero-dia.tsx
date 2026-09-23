@@ -125,6 +125,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     { data: turnoAbierto },
     comprobantes,
     { data: finalizadasRecientes },
+    { data: contratosPorAtender },
   ] = await Promise.all([
     supabase.from("llegadas_hoy").select(columnas).order("perro_nombre"),
     supabase.from("salidas_hoy").select(columnas).order("perro_nombre"),
@@ -165,6 +166,9 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       .gte("hora_salida_real", sumarDiasFecha(hoy, -2))
       .order("hora_salida_real", { ascending: false })
       .limit(30),
+    // Contratos que el dueño debe firmar en su portal (el de guardería se
+    // genera al vender un paquete) o que hay que volver a generar.
+    supabase.from("contratos_por_atender").select("situacion"),
   ]);
 
   const error = e1 ?? e2 ?? e3 ?? e4 ?? e5;
@@ -306,6 +310,26 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       texto: `${comprobantesPorRevisar} ${comprobantesPorRevisar === 1 ? "comprobante sanitario espera" : "comprobantes sanitarios esperan"} revisión`,
       detalle: "Lo mandó el dueño desde su portal; no cuenta hasta que lo confirmes contra el documento",
       href: "/recepcion/comprobantes",
+    });
+  }
+
+  const filasContratos = (contratosPorAtender ?? []) as { situacion: string }[];
+  const contratosRegenerar = filasContratos.filter((c) => c.situacion === "por_regenerar").length;
+  const contratosFirmar = filasContratos.filter((c) => c.situacion === "por_firmar").length;
+  if (contratosRegenerar > 0) {
+    atencion.push({
+      clave: "contratos-regenerar",
+      texto: `${contratosRegenerar} ${contratosRegenerar === 1 ? "contrato firmado hay" : "contratos firmados hay"} que volver a generar`,
+      detalle: "Se firmaron con campos sin llenar en el PDF; el firmado se conserva",
+      href: "/recepcion/contratos",
+    });
+  }
+  if (contratosFirmar > 0) {
+    atencion.push({
+      clave: "contratos-firmar",
+      texto: `${contratosFirmar} ${contratosFirmar === 1 ? "contrato espera" : "contratos esperan"} la firma del dueño`,
+      detalle: "Se firman desde el portal; recuérdaselo por WhatsApp",
+      href: "/recepcion/contratos",
     });
   }
 

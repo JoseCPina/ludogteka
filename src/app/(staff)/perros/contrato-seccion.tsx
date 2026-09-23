@@ -43,6 +43,11 @@ export type ContratoFila = {
   tipoContratoId: string | null;
   tipoNombre: string;
   version: number | null;
+  // Firmado con defecto: recepción lo vuelve a generar desde
+  // /recepcion/contratos; el firmado se conserva.
+  regenerarMotivo: string | null;
+  // Day pass o mensualidad de cuya compra salió el contrato.
+  paqueteNombre: string | null;
 };
 
 // Un contrato por tipo: el perro puede tener firmado el de guardería y
@@ -378,7 +383,16 @@ export function ContratoSeccion({
                     {c.version !== null ? ` · versión ${c.version}` : ""} ·{" "}
                     {c.fechaFirma ? formatearFecha(c.fechaFirma) : formatearFecha(c.createdAt)}
                   </span>
+                  {c.paqueteNombre && <span className="text-n-600"> · {c.paqueteNombre}</span>}
                   {c.motivoCancelacion && <p className="mt-1 text-xs text-n-500">{c.motivoCancelacion}</p>}
+                  {c.regenerarMotivo && (
+                    <p className="mt-1 text-xs font-semibold text-naranja-oscuro">
+                      {c.regenerarMotivo}{" "}
+                      <a href="/recepcion/contratos" className="underline">
+                        Volver a generarlo
+                      </a>
+                    </p>
+                  )}
                 </div>
                 {c.storagePath && (
                   <Button type="button" variante="secundario" onClick={() => verFirmado(c.storagePath!)}>

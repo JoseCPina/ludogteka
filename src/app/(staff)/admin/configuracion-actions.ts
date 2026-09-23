@@ -47,3 +47,25 @@ export async function guardarConfiguracionNegocio(datos: {
   revalidatePath("/login");
   return { error: null };
 }
+
+// Un día cerrado va con las dos horas vacías. 0 = domingo … 6 = sábado,
+// igual que horario_semana.
+export type DiaHorario = { dia_semana: number; hora_apertura: string | null; hora_cierre: string | null };
+
+export type EstadoHorario = { error: string | null; reservasEnDiasCerrados?: number };
+
+export async function guardarHorarioSemana(dias: DiaHorario[]): Promise<EstadoHorario> {
+  for (const d of dias) {
+    if (Boolean(d.hora_apertura) !== Boolean(d.hora_cierre)) {
+      return { error: "Cada día abierto necesita hora de apertura y de cierre." };
+    }
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("guardar_horario_semana", { p_dias: dias });
+  if (error) return { error: traducirError(error) };
+
+  revalidatePath("/admin");
+  const salida = data as { reservas_en_dias_cerrados?: number } | null;
+  return { error: null, reservasEnDiasCerrados: salida?.reservas_en_dias_cerrados ?? 0 };
+}

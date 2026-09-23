@@ -12,7 +12,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
   const { data: contrato, error } = await supabase
     .from("contratos")
-    .select("perro_id, plantillas_contrato(titulo, cuerpo)")
+    .select("id, plantillas_contrato(titulo, cuerpo)")
     .eq("id", id)
     .single();
 
@@ -27,8 +27,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Plantilla no encontrada." }, { status: 404 });
   }
 
-  const { data: campos, error: errorCampos } = await supabase.rpc("resolver_campos_contrato", {
-    p_perro_id: contrato.perro_id,
+  const { data: campos, error: errorCampos } = await supabase.rpc("resolver_campos_de_contrato", {
+    p_contrato_id: id,
   });
   if (errorCampos || !campos) {
     return NextResponse.json({ error: "No pudimos leer los datos del expediente." }, { status: 500 });

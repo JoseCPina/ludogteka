@@ -38,8 +38,10 @@ export async function firmarContratoDigital(
     : contrato.plantillas_contrato;
   if (!plantilla) return { error: "No pudimos leer la plantilla de este contrato." };
 
-  const { data: campos, error: errorCampos } = await supabase.rpc("resolver_campos_contrato", {
-    p_perro_id: contrato.perro_id,
+  // Por contrato, no por perro: el de guardería trae el paquete, los
+  // pases y la vigencia de la compra de la que salió.
+  const { data: campos, error: errorCampos } = await supabase.rpc("resolver_campos_de_contrato", {
+    p_contrato_id: contrato.id,
   });
   if (errorCampos || !campos) return { error: "No pudimos leer los datos del expediente." };
 

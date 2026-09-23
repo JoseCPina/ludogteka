@@ -127,7 +127,7 @@ export default async function PerroPage({
   const { data: contratosCrudo } = await supabase
     .from("contratos")
     .select(
-      "id, estado, storage_path, fecha_firma, created_at, motivo_cancelacion, plantillas_contrato(version, tipo_contrato_id, tipos_contrato(nombre))"
+      "id, estado, storage_path, fecha_firma, created_at, motivo_cancelacion, regenerar_motivo, plantillas_contrato(version, tipo_contrato_id, tipos_contrato(nombre)), bonos_clientes(servicios(nombre))"
     )
     .eq("perro_id", id)
     .order("created_at", { ascending: false });
@@ -235,6 +235,14 @@ export default async function PerroPage({
       return catalogo?.etiqueta ?? "—";
     });
 
+  // El paquete (day pass o mensualidad) del que salió el contrato, si salió
+  // de una compra.
+  function nombrePaquete(b: unknown): string | null {
+    const bono = (Array.isArray(b) ? b[0] : b) as { servicios: { nombre: string } | { nombre: string }[] | null } | null;
+    const s = Array.isArray(bono?.servicios) ? bono?.servicios[0] : bono?.servicios;
+    return s?.nombre ?? null;
+  }
+
   const contratos: ContratoFila[] = (contratosCrudo ?? []).map((c) => {
     const plantilla = (Array.isArray(c.plantillas_contrato)
       ? c.plantillas_contrato[0]
@@ -254,6 +262,8 @@ export default async function PerroPage({
       tipoContratoId: plantilla?.tipo_contrato_id ?? null,
       tipoNombre: tipo?.nombre ?? "Contrato",
       version: plantilla?.version ?? null,
+      regenerarMotivo: (c.regenerar_motivo as string | null) ?? null,
+      paqueteNombre: nombrePaquete(c.bonos_clientes),
     };
   });
 

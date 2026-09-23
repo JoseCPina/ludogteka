@@ -101,3 +101,49 @@ export async function guardarTarifas(
   revalidatePath(`/servicios/${servicioId}/tarifas`);
   return { error: null, ok: true };
 }
+
+// Precio distinto para un día de la semana (guardería día completo en
+// sábado). Reemplaza el precio de la celda ese día, para todas las tallas.
+// Insert-only con vigencia, igual que la matriz: cambiarlo es capturar uno
+// nuevo con su fecha, nunca reescribir el anterior.
+export async function guardarPrecioPorDia(
+  servicioId: string,
+  diaSemana: number,
+  precio: number,
+  vigenciaDesde: string
+): Promise<EstadoGuardarTarifas> {
+  if (!Number.isInteger(diaSemana) || diaSemana < 1 || diaSemana > 7) return { error: "Elige el día de la semana." };
+  if (!Number.isFinite(precio) || precio < 0) return { error: "Escribe un precio de cero para arriba." };
+  if (!vigenciaDesde) return { error: "Elige desde qué fecha aplica." };
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.from("tarifas_dia_semana").insert({
+    servicio_id: servicioId,
+    dia_semana: diaSemana,
+    precio,
+    vigencia_desde: vigenciaDesde,
+  });
+  if (error) {
+    if (error.code === "23505") {
+      return { error: "Ya hay un precio para ese día con esa misma fecha de vigencia. Usa otra fecha o quítalo primero." };
+    }
+    return { error: "No pudimos guardar el precio. Intenta de nuevo." };
+  }
+
+  revalidatePath(`/servicios/${servicioId}/tarifas`);
+  return { error: null, ok: true };
+}
+
+// Quitar = baja lógica: el precio deja de aplicar desde ya y la fila queda
+// en la tabla como historial.
+export async function quitarPrecioPorDia(id: string, servicioId: string): Promise<EstadoGuardarTarifas> {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("tarifas_dia_semana")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) return { error: "No pudimos quitar el precio. Intenta de nuevo." };
+
+  revalidatePath(`/servicios/${servicioId}/tarifas`);
+  return { error: null, ok: true };
+}

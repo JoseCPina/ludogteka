@@ -45,6 +45,15 @@ export default async function PortalPage() {
     .is("deleted_at", null)
     .order("nombre");
 
+  // Contratos que el dueño tiene que firmar (el de guardería llega al
+  // comprar un paquete): se ven arriba, con liga a la ficha del perro,
+  // que es donde se firma.
+  const { data: porFirmar } = await supabase
+    .from("contratos_por_atender")
+    .select("contrato_id, perro_id, perro_nombre, tipo_nombre, paquete_nombre")
+    .eq("situacion", "por_firmar")
+    .order("created_at");
+
   const urlsFotos = new Map<string, string>();
   await Promise.all(
     (perros ?? [])
@@ -63,6 +72,25 @@ export default async function PortalPage() {
         <h1 className="text-2xl font-bold text-n-900">Hola, {cliente.nombre}</h1>
         <p className="mt-1 text-n-600">Este es tu portal.</p>
       </div>
+
+      {(porFirmar ?? []).length > 0 && (
+        <Alert
+          variante="advertencia"
+          titulo={(porFirmar ?? []).length === 1 ? "Tienes un contrato por firmar" : `Tienes ${(porFirmar ?? []).length} contratos por firmar`}
+        >
+          <ul className="mt-1 flex flex-col gap-1">
+            {(porFirmar ?? []).map((c) => (
+              <li key={c.contrato_id}>
+                {c.tipo_nombre} de {c.perro_nombre}
+                {c.paquete_nombre ? ` (${c.paquete_nombre})` : ""}:{" "}
+                <Link href={`/portal/perros/${c.perro_id}`} className="font-semibold text-azul underline">
+                  firmarlo
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Alert>
+      )}
 
       <MisDatosForm nombre={cliente.nombre} telefono={cliente.telefono} email={cliente.email} />
 

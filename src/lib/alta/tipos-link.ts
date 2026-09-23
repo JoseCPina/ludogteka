@@ -20,7 +20,9 @@
 export const TIPOS_LINK_ALTA = {
   guarderia_hotel: {
     etiqueta: "Guardería y hotel",
-    descripcion: "Expediente completo (veterinario, emergencia, alimentación) y su contrato.",
+    // El contrato de guardería NO se firma aquí: se genera al comprar un
+    // paquete (ver tipos_contrato.se_genera_al). Aquí va el general/hotel.
+    descripcion: "Expediente completo (veterinario, emergencia, alimentación) y el contrato general. El de guardería se firma al comprar un paquete.",
     categorias: ["guarderia", "hotel"] as const,
     expedienteCompleto: true,
     llevaContrato: true,

@@ -58,6 +58,21 @@ export async function actualizarTipoContrato(
   return { error: null };
 }
 
+// Cuándo se genera el contrato: en el alta por link, o al vender un
+// paquete de guardería (day pass o mensualidad), ligado a esa compra.
+export type MomentoContrato = "alta" | "compra_paquete";
+
+export async function definirMomentoContrato(tipoId: string, momento: MomentoContrato): Promise<EstadoAccion> {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("definir_momento_tipo_contrato", {
+    p_tipo_id: tipoId,
+    p_se_genera_al: momento,
+  });
+  if (error) return { error: traducirError(error) };
+  revalidatePath("/contratos");
+  return { error: null };
+}
+
 export async function archivarTipoContrato(tipoId: string): Promise<EstadoAccion> {
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("archivar_tipo_contrato", { p_tipo_id: tipoId });

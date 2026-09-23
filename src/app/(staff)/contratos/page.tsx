@@ -2,7 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { PlantillasContrato, type TipoContratoVista } from "./plantillas-contrato";
-import type { CategoriaServicioContrato } from "./plantilla-actions";
+import type { CategoriaServicioContrato, MomentoContrato } from "./plantilla-actions";
 
 export default async function ContratosPage() {
   const supabase = await createSupabaseServerClient();
@@ -11,7 +11,7 @@ export default async function ContratosPage() {
   const [{ data: tipos, error }, { data: versiones }] = await Promise.all([
     supabase
       .from("tipos_contrato")
-      .select("id, nombre, categorias_servicio, orden, deleted_at")
+      .select("id, nombre, categorias_servicio, se_genera_al, orden, deleted_at")
       .order("orden")
       .order("nombre"),
     supabase
@@ -38,6 +38,7 @@ export default async function ContratosPage() {
     id: t.id,
     nombre: t.nombre,
     categorias: (t.categorias_servicio ?? []) as CategoriaServicioContrato[],
+    seGeneraAl: (t.se_genera_al as MomentoContrato) ?? "alta",
     archivado: t.deleted_at !== null,
     versiones: versionesPorTipo.get(t.id) ?? [],
   }));

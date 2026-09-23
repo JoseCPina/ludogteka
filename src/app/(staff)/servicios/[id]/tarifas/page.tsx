@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { MatrizTarifas } from "../../matriz-tarifas";
 import { HistorialTarifas, type FilaHistorial } from "../../historial-tarifas";
+import { PreciosPorDia, type PrecioDia } from "../../precios-por-dia";
 
 export default async function TarifasServicioPage({
   params,
@@ -19,6 +20,8 @@ export default async function TarifasServicioPage({
     { data: pelajes },
     { data: vigentes },
     { data: historialCrudo },
+    { data: preciosDia },
+    { data: hoyData },
   ] = await Promise.all([
     supabase
       .from("servicios")
@@ -48,6 +51,13 @@ export default async function TarifasServicioPage({
       .eq("servicio_id", id)
       .order("vigencia_desde", { ascending: false })
       .order("created_at", { ascending: false }),
+    supabase
+      .from("tarifas_dia_semana")
+      .select("id, dia_semana, precio, vigencia_desde")
+      .eq("servicio_id", id)
+      .is("deleted_at", null)
+      .order("dia_semana"),
+    supabase.rpc("fecha_negocio"),
   ]);
 
   if (!servicio) notFound();
@@ -113,6 +123,23 @@ export default async function TarifasServicioPage({
         pelajes={pelajes ?? []}
         vigentes={vigentes ?? []}
       />
+
+      {!servicio.monto_libre && (
+        <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+          <div>
+            <h2 className="text-lg font-bold text-n-900">Precio distinto por día de la semana</h2>
+            <p className="mt-1 text-n-600">
+              Reemplaza el precio de arriba ese día, para todas las tallas. Por ejemplo: guardería día
+              completo en sábado, que es medio día.
+            </p>
+          </div>
+          <PreciosPorDia
+            servicioId={id}
+            precios={(preciosDia ?? []) as PrecioDia[]}
+            hoy={(hoyData as string | null) ?? new Date().toISOString().slice(0, 10)}
+          />
+        </div>
+      )}
 
       <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Historial de precios</h2>
