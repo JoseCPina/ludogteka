@@ -123,6 +123,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     { data: minutosData },
     { data: proximas },
     { data: turnoAbierto },
+    comprobantes,
     { data: finalizadasRecientes },
   ] = await Promise.all([
     supabase.from("llegadas_hoy").select(columnas).order("perro_nombre"),
@@ -149,6 +150,13 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       .lte("fecha_entrada", sumarDiasFecha(hoy, DIAS_ADELANTE))
       .order("fecha_entrada"),
     supabase.from("turnos_caja").select("id").eq("estado", "abierto").is("deleted_at", null).limit(1),
+    // Comprobantes que los dueños mandaron desde el portal y nadie ha
+    // revisado: no cuentan hasta que recepción los confirme.
+    supabase
+      .from("requisitos_sanitarios_propuestos")
+      .select("id", { count: "exact", head: true })
+      .eq("estado", "pendiente")
+      .is("deleted_at", null),
     supabase
       .from("estancias")
       .select("reserva_id, perros(nombre)")
@@ -288,6 +296,16 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
           href: `/reservas/${e.reserva_id}/cobrar`,
         });
       }
+    });
+  }
+
+  const comprobantesPorRevisar = comprobantes.count ?? 0;
+  if (comprobantesPorRevisar > 0) {
+    atencion.push({
+      clave: "comprobantes",
+      texto: `${comprobantesPorRevisar} ${comprobantesPorRevisar === 1 ? "comprobante sanitario espera" : "comprobantes sanitarios esperan"} revisión`,
+      detalle: "Lo mandó el dueño desde su portal; no cuenta hasta que lo confirmes contra el documento",
+      href: "/recepcion/comprobantes",
     });
   }
 

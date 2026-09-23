@@ -7,7 +7,11 @@ import { formatearFechaCalendario } from "@/lib/formato";
 import { PerroFoto } from "@/app/(staff)/perros/perro-foto";
 import { ResumenSanitario, type EstadoRequisitoItem } from "@/app/(staff)/perros/resumen-sanitario";
 import { MiPerroForm } from "../../mi-perro-form";
-import { RecordatorioSanitario } from "../../recordatorio-sanitario";
+import {
+  RecordatorioSanitario,
+  type PropuestaCliente,
+  type TipoRequisitoCliente,
+} from "../../recordatorio-sanitario";
 import { FirmarContrato } from "@/components/firmar-contrato";
 import { BitacoraCliente, type EntradaBitacoraCliente } from "./bitacora-cliente";
 import { MedicamentosCliente, type MedicamentoFilaCliente } from "./medicamentos-cliente";
@@ -26,7 +30,8 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
 
   const supabase = await createSupabaseServerClient();
 
-  const [{ data: perro }, { data: estadoSanitario }, { data: alergias }] = await Promise.all([
+  const [{ data: perro }, { data: estadoSanitario }, { data: alergias }, { data: propuestas }, { data: tiposRequisito }] =
+    await Promise.all([
     supabase
       .from("perros")
       .select(
@@ -50,6 +55,16 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
       .eq("perro_id", id)
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
+    // Lo que el dueño ya mandó desde aquí: para decirle "lo estamos
+    // revisando" o por qué se rechazó, en vez de dejarlo mandar lo mismo
+    // dos veces.
+    supabase
+      .from("requisitos_sanitarios_propuestos")
+      .select("id, tipo_requisito_id, fecha_aplicacion, estado, motivo_rechazo, created_at, revisado_at")
+      .eq("perro_id", id)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false }),
+    supabase.from("tipos_requisito_sanitario").select("id, categoria").is("deleted_at", null),
   ]);
 
   if (!perro) notFound();
@@ -225,7 +240,13 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
       <div className="flex flex-col gap-3">
         <h2 className="text-lg font-bold text-n-900">Estado de salud</h2>
         <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
-        <RecordatorioSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} />
+        <RecordatorioSanitario
+          items={(estadoSanitario as EstadoRequisitoItem[]) ?? []}
+          perroId={id}
+          puedeProponer={esPropio && !perro.fallecido}
+          propuestas={(propuestas as PropuestaCliente[]) ?? []}
+          tipos={(tiposRequisito as TipoRequisitoCliente[]) ?? []}
+        />
       </div>
 
       {esPropio && contratos.length > 0 && (

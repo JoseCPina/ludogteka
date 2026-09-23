@@ -20,7 +20,7 @@ import { ContratoSeccion, type ContratoFila, type TipoContratoFila } from "../co
 import { BitacoraSeccion, type EntradaBitacora } from "../bitacora-seccion";
 import { MedicamentosSeccion, type MedicamentoFila } from "../medicamentos-seccion";
 import { RequisitosEstancia } from "../requisitos-estancia";
-import { hoyNegocio } from "@/lib/formato";
+import { hoyNegocio, formatearFechaCalendario } from "@/lib/formato";
 
 export default async function PerroPage({
   params,
@@ -48,6 +48,7 @@ export default async function PerroPage({
     { data: catalogoAlertas },
     { data: alertasCrudo },
     { data: alergias },
+    { data: propuestasPendientes },
   ] = await Promise.all([
     supabase
       .from("perros")
@@ -101,6 +102,13 @@ export default async function PerroPage({
       .eq("perro_id", id)
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("requisitos_sanitarios_propuestos")
+      .select("id, fecha_aplicacion, created_at, tipos_requisito_sanitario(etiqueta)")
+      .eq("perro_id", id)
+      .eq("estado", "pendiente")
+      .is("deleted_at", null)
+      .order("created_at"),
   ]);
 
   const { data: seriesActivas } = await supabase
@@ -385,6 +393,24 @@ export default async function PerroPage({
 
       <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Requisitos sanitarios</h2>
+
+        {propuestasPendientes && propuestasPendientes.length > 0 && (
+          <Alert variante="advertencia" titulo="El dueño mandó comprobantes desde su portal">
+            {propuestasPendientes.map((p) => {
+              const tipo = (Array.isArray(p.tipos_requisito_sanitario)
+                ? p.tipos_requisito_sanitario[0]
+                : p.tipos_requisito_sanitario) as unknown as { etiqueta: string } | null;
+              return (
+                <span key={p.id as string} className="block">
+                  {tipo?.etiqueta ?? "Requisito"} · aplicación del {formatearFechaCalendario(p.fecha_aplicacion as string)}
+                </span>
+              );
+            })}
+            <Link href="/recepcion/comprobantes" className="mt-1 block font-semibold text-azul hover:underline">
+              Revisarlos en la bandeja de comprobantes →
+            </Link>
+          </Alert>
+        )}
 
         {!soloLectura && (
           <RequisitoForm
