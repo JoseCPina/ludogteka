@@ -59,9 +59,13 @@ export function AltaForm({
   const campos = camposDeTipo(definicion.expedienteCompleto);
 
   // La cuenta es obligatoria para quien va a dejar a su perro —el portal es
-  // donde ve sus fotos y sus reservas— y opcional para quien solo viene a
-  // bañarlo: pedirle una contraseña a esa persona es un trámite más entre
-  // ella y agendar.
+  // donde ve sus fotos, su salud y sus contratos— y opcional para quien solo
+  // viene a bañarlo: pedirle una contraseña a esa persona es un trámite más
+  // entre ella y agendar.
+  //
+  // OJO con lo que se promete aquí: el portal NO muestra citas ni
+  // reservas (23 de septiembre de 2026). Si algún día las muestra, se
+  // puede decir; mientras, prometerlas es mentirle al dueño.
   const cuentaOpcional = !definicion.expedienteCompleto;
 
   const [paso, setPaso] = useState(0);
@@ -204,7 +208,7 @@ export function AltaForm({
 
     if (!sesionAbierta) {
       setError(
-        "¡Tu alta quedó lista! Solo no pudimos abrirte la sesión automáticamente: entra con tu teléfono y tu contraseña."
+        "¡Tu registro quedó listo! Solo que no pudimos entrar a tu cuenta automáticamente: entra tú con tu teléfono y tu contraseña."
       );
       return;
     }
@@ -234,8 +238,7 @@ export function AltaForm({
           </p>
         )}
         <p className="text-n-600">
-          Si después quieres ver a tu perro desde tu celular, pídele a recepción que te abra tu
-          cuenta: se usa este mismo teléfono.
+          Si después quieres tu cuenta, pídela en recepción. Entras con este mismo teléfono.
         </p>
       </div>
     );
@@ -268,7 +271,11 @@ export function AltaForm({
             value={telefono}
             onChange={(e) => setTelefono(e.target.value)}
             placeholder="444 123 4567"
-            ayuda="Con este número te reconocemos, y con él entras a tu portal."
+            ayuda={
+              cuentaOpcional
+                ? "Con este número te identificamos. Si abres tu cuenta, también entras con él."
+                : "Con este número te identificamos y con él entras a tu cuenta."
+            }
           />
           <Field
             label="Tu correo (opcional)"
@@ -276,7 +283,7 @@ export function AltaForm({
             inputMode="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            ayuda="Solo si lo quieres dar. No hace falta para nada de esto."
+            ayuda="Opcional. No lo necesitas para registrarte."
           />
 
           {/* La dirección solo le sirve a quien quiere que pasemos por su
@@ -290,9 +297,10 @@ export function AltaForm({
               className="mt-1 h-4 w-4"
             />
             <span>
-              Me interesa que pasen por mi perro a domicilio
+              Quiero que pasen por mi perro a mi casa
               <span className="block text-sm text-n-600">
-                Con tu dirección calculamos la distancia para cotizarlo. La puedes dar después.
+                Con tu dirección calculamos cuánto cuesta el traslado. También la puedes dar
+                después.
               </span>
             </span>
           </label>
@@ -360,26 +368,31 @@ export function AltaForm({
       {paso === 2 && (
         <div className="flex flex-col gap-4">
           {cuentaOpcional ? (
-            <label className="flex items-start gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3 text-n-900">
-              <input
-                type="checkbox"
-                checked={crearCuenta}
-                onChange={(e) => setCrearCuenta(e.target.checked)}
-                className="mt-1 h-4 w-4"
-              />
-              <span>
-                Quiero mi cuenta para ver a mi perro desde el celular
-                <span className="block text-sm text-n-600">
-                  Sus fotos del día y sus citas. Si no la quieres ahora, tu registro queda igual y
-                  la puedes abrir después.
-                </span>
-              </span>
-            </label>
+            <div className="flex flex-col gap-3 rounded-md border-[1.5px] border-n-200 bg-white p-4 text-n-900">
+              <div>
+                <p className="font-bold">¿Quieres una cuenta para ver a tu perro desde tu celular?</p>
+                <p className="mt-1 text-sm text-n-600">
+                  Ves su ficha y las fotos o notas que le dejemos durante su visita, y puedes cambiarle
+                  su foto. Las citas te las seguimos confirmando por WhatsApp. Si no la quieres ahora,
+                  tu registro queda completo igual y la puedes pedir en recepción cuando quieras.
+                </p>
+              </div>
+              <label className="flex items-center gap-2 font-semibold">
+                <input
+                  type="checkbox"
+                  checked={crearCuenta}
+                  onChange={(e) => setCrearCuenta(e.target.checked)}
+                  className="h-4 w-4"
+                />
+                Sí, quiero mi cuenta
+              </label>
+            </div>
           ) : (
             <p className="text-n-600">
               Con tu cuenta vas a poder ver a{" "}
               {perros.map((p) => p.nombre.trim()).filter(Boolean).join(", ") || "tu perro"} desde tu
-              celular: sus fotos del día, sus reservas y sus contratos.
+              celular: las fotos y notas que le dejemos cuando se quede con nosotros, su estado de
+              salud y tus contratos.
             </p>
           )}
 
@@ -416,7 +429,7 @@ export function AltaForm({
               Atrás
             </Button>
             <Button type="button" cargando={enviando.cargando} onClick={enviar}>
-              {enviando.cargando ? "Guardando…" : "Terminar mi alta"}
+              {enviando.cargando ? "Guardando…" : "Terminar mi registro"}
             </Button>
           </AccionesFormulario>
         </div>
@@ -424,7 +437,7 @@ export function AltaForm({
 
       {paso === 3 && (
         <div className="flex flex-col gap-4">
-          <Alert variante="exito" titulo="Tu alta ya quedó">
+          <Alert variante="exito" titulo="Tu registro ya quedó">
             Falta lo último: firmar {contratos.length === 1 ? "el contrato" : "los contratos"} de{" "}
             {definicion.etiqueta.toLowerCase()}. Puedes leerlo completo antes de firmar.
           </Alert>

@@ -108,8 +108,8 @@ export function PrecioEstetica({
 
       {cotizado.firmeza === "sin_dato" && (
         <p className="text-sm text-n-700">
-          Todavía no tenemos capturado el precio para un perro como el tuyo. Recepción te lo
-          confirma cuando lo lleves; regístralo sin problema.
+          Todavía no tenemos precio para un perro como el tuyo. Regístralo igual: recepción te
+          dice el precio cuando lo lleves.
         </p>
       )}
 

@@ -211,10 +211,9 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
         <header>
           <h1 className="text-2xl font-bold text-n-900">Hola de nuevo, {cliente.nombre}</h1>
           <p className="mt-1 text-n-600">
-            Ya te tenemos registrado. Para {definicion.etiqueta.toLowerCase()} solo nos falta lo que
-            no nos habías dicho
-            {definicion.llevaContrato ? " y que firmes ese contrato" : ""} — no vamos a volver a
-            preguntarte todo.
+            Ya te tenemos registrado. Para {definicion.etiqueta.toLowerCase()} solo te pedimos los
+            datos que faltan{definicion.llevaContrato ? " y la firma del contrato" : ""}. Lo que ya
+            nos diste no lo vuelves a llenar.
           </p>
           <p className="mt-2 text-sm text-n-500">
             {invitacion!.alta_completada_at
@@ -246,7 +245,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
         <h1 className="text-2xl font-bold text-n-900">Bienvenido a Ludogteka</h1>
         <p className="mt-1 text-n-600">
           {definicion.muestraPrecioEstetica
-            ? "Regístrate y cuéntanos de tu perro: conforme lo hagas te vamos diciendo cuánto cuesta su baño."
+            ? "Regístrate y cuéntanos de tu perro. Con su raza te decimos cuánto cuesta su baño."
             : "Regístrate y cuéntanos de tu perro. Toma unos minutos y lo puedes hacer desde el celular."}
         </p>
         <p className="mt-2 text-sm text-n-500">
@@ -284,9 +283,9 @@ async function LinkCumplido({ clienteId }: { clienteId: string | null }) {
       <h1 className="text-2xl font-bold text-n-900">Ya quedó todo</h1>
       {perfil ? (
         <>
-          <Alert variante="exito" titulo="Este link ya cumplió">
-            Tu registro está completo y no te falta nada por firmar. Lo que sigue lo haces desde
-            tu portal: ahí ves a tus perros, sus contratos y sus visitas.
+          <Alert variante="exito" titulo="Ya terminaste tu registro">
+            No te falta nada por llenar ni por firmar. En tu cuenta ves a tus perros, sus fotos y
+            notas, su estado de salud y tus contratos.
           </Alert>
           <a
             href={sesionEsDelDueno ? "/portal" : "/login"}
@@ -303,12 +302,12 @@ async function LinkCumplido({ clienteId }: { clienteId: string | null }) {
         </>
       ) : (
         <>
-          <Alert variante="exito" titulo="Este link ya cumplió">
-            Tu registro está completo. Puedes agendar por WhatsApp o pasando al mostrador.
+          <Alert variante="exito" titulo="Ya terminaste tu registro">
+            Puedes agendar por WhatsApp o pasando al mostrador.
           </Alert>
           <p className="text-sm text-n-600">
-            Si quieres ver a tu perro desde tu celular, pídele a recepción que te abra tu cuenta:
-            se usa este mismo teléfono.
+            Si quieres una cuenta para ver a tu perro desde tu celular, pídela en recepción. Entras
+            con este mismo teléfono.
           </p>
         </>
       )}

@@ -64,7 +64,10 @@ Antes de trabajar, lee docs/PROYECTO.md: ahí está el detalle de roles, roadmap
 
 \- \*\*Todo buscador de clientes usa `<BuscadorClientes>`\*\* (`src/components/buscador-clientes.tsx`) con filas de `src/lib/clientes/buscables.ts`: busca por perro, dueño o teléfono y muestra el perro con su dueño. Nunca un `useMemo` con `nombre.includes(q)` a mano en la pantalla: así había seis copias que no sabían buscar por perro (23 de septiembre de 2026). La lista de /clientes en `next dev` no se hidrata (por su `loading.tsx`); se prueba con `next build` + `next start`.
 
-\- Nada de SQL manual por copy-paste: todo cambio de esquema va como migración.
+\- **Todo mensaje de "sin precio" dice QUÉ falta** y enlaza a donde se resuelve: los triggers lanzan `describir_precio_faltante(...)` con los mismos parámetros que le pasaron a `resolver_precio` (0 noches, tramo sin cubrir, precio con vigencia posterior, celda vacía con servicio/talla/grupo/pelaje, o "no aplica"), y la talla faltante manda a `/perros/<id>`. El texto termina con la ruta; `Alert`, `AccionesFormulario` y `TextoConEnlaces` (`src/components/ui/texto-con-enlaces.tsx`) la vuelven enlace. Nunca otra vez "No hay tarifa capturada para este servicio": así se mandó a capturar un precio de hotel que ya existía cuando lo que pasaba era salida = entrada (23 de septiembre de 2026).
+- **`<BuscadorClientes>` es de cliente: desde una página de servidor no se le pasa `hrefDe` (una función)**, se usa `rutaAlElegir="/ruta"`. `/caja/cargo` y `/caja/pases` tronaban con 500 por eso. Toda pantalla donde se busca a alguien para agendar, reservar, cobrar o vender lleva `nuevoCliente` (el tipo de link que le toca, o `"cualquiera"` en Caja): "Capturarlo yo" pasa por el alta del dueño y de su perro y regresa con `?cliente=` (rutas de regreso validadas en `src/lib/clientes/volver.ts`).
+- **El portal del cliente NO muestra citas ni reservas** (23 de septiembre de 2026): muestra perros, foto, salud/comprobantes, bitácora, medicamentos, alergias y contratos. Ningún texto (alta, portal, landing) promete citas en el portal hasta que existan.
+- Nada de SQL manual por copy-paste: todo cambio de esquema va como migración.
 
 \- RLS obligatorio en toda tabla nueva. Verificar aislamiento con llamadas REST directas, no solo por UI.
 
