@@ -248,8 +248,7 @@ export function CompletarForm({
           {tieneCuenta ? (
             <>
               <p className="text-n-600">
-                Entra con tu cuenta para continuar. Es la misma con la que ves a tus perros en el
-                portal.
+                Entra con tu cuenta para continuar: la misma con la que ves la ficha de tus perros.
               </p>
               <p className="text-sm text-n-600">
                 Entras con tu teléfono <strong>{telefono}</strong>.
@@ -265,8 +264,8 @@ export function CompletarForm({
           ) : (
             <>
               <p className="text-n-600">
-                {clienteNombre}, todavía no tienes cuenta para entrar al portal. Créala aquí y con
-                ella vas a poder ver a tus perros desde tu celular.
+                {clienteNombre}, todavía no tienes cuenta. Créala aquí: en ella ves{" "}
+                {definicion.cuentaMuestra}.
               </p>
               <p className="text-sm text-n-600">
                 Vas a entrar con tu teléfono <strong>{telefono}</strong> y la contraseña que

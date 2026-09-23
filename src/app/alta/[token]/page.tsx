@@ -79,7 +79,8 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
   }
 
   if (invitacion && !invitacion.cancelada_at && completo) {
-    return <LinkCumplido clienteId={invitacion.cliente_id as string | null} />;
+    const tipoCumplido: TipoLinkAlta = esTipoLinkAlta(invitacion.tipo as string) ? (invitacion.tipo as TipoLinkAlta) : "guarderia_hotel";
+    return <LinkCumplido clienteId={invitacion.cliente_id as string | null} tipo={tipoCumplido} />;
   }
 
   const problema = !invitacion
@@ -265,7 +266,8 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
 // directo si ya tiene la sesión abierta en este navegador, y si no, al
 // login con su teléfono. Si el expediente no tiene cuenta (estética sin
 // portal), se le dice que su registro quedó y cómo abrir una.
-async function LinkCumplido({ clienteId }: { clienteId: string | null }) {
+async function LinkCumplido({ clienteId, tipo }: { clienteId: string | null; tipo: TipoLinkAlta }) {
+  const definicion = TIPOS_LINK_ALTA[tipo];
   const admin = createSupabaseAdminClient();
   const { data: perfil } = clienteId
     ? await admin.from("profiles").select("id").eq("cliente_id", clienteId).limit(1).maybeSingle()
@@ -284,8 +286,7 @@ async function LinkCumplido({ clienteId }: { clienteId: string | null }) {
       {perfil ? (
         <>
           <Alert variante="exito" titulo="Ya terminaste tu registro">
-            No te falta nada por llenar ni por firmar. En tu cuenta ves a tus perros, sus fotos y
-            notas, su estado de salud y tus contratos.
+            No te falta nada por llenar ni por firmar. En tu cuenta ves {definicion.cuentaMuestra}.
           </Alert>
           <a
             href={sesionEsDelDueno ? "/portal" : "/login"}
@@ -306,7 +307,7 @@ async function LinkCumplido({ clienteId }: { clienteId: string | null }) {
             Puedes agendar por WhatsApp o pasando al mostrador.
           </Alert>
           <p className="text-sm text-n-600">
-            Si quieres una cuenta para ver a tu perro desde tu celular, pídela en recepción. Entras
+            Si quieres una cuenta para ver {definicion.cuentaMuestra}, pídela en recepción. Entras
             con este mismo teléfono.
           </p>
         </>

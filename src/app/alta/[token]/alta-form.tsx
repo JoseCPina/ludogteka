@@ -238,7 +238,8 @@ export function AltaForm({
           </p>
         )}
         <p className="text-n-600">
-          Si después quieres tu cuenta, pídela en recepción. Entras con este mismo teléfono.
+          Si después quieres una cuenta para ver {definicion.cuentaMuestra}, pídela en recepción.
+          Entras con este mismo teléfono.
         </p>
       </div>
     );
@@ -370,11 +371,11 @@ export function AltaForm({
           {cuentaOpcional ? (
             <div className="flex flex-col gap-3 rounded-md border-[1.5px] border-n-200 bg-white p-4 text-n-900">
               <div>
-                <p className="font-bold">¿Quieres una cuenta para ver a tu perro desde tu celular?</p>
+                <p className="font-bold">¿Quieres una cuenta en Ludogteka?</p>
                 <p className="mt-1 text-sm text-n-600">
-                  Ves su ficha y las fotos o notas que le dejemos durante su visita, y puedes cambiarle
-                  su foto. Las citas te las seguimos confirmando por WhatsApp. Si no la quieres ahora,
-                  tu registro queda completo igual y la puedes pedir en recepción cuando quieras.
+                  En ella ves {definicion.cuentaMuestra}. {definicion.seConfirmaPorWhatsApp} te las
+                  seguimos confirmando por WhatsApp. Si no la quieres ahora, tu registro queda completo
+                  igual y la puedes pedir en recepción cuando quieras.
                 </p>
               </div>
               <label className="flex items-center gap-2 font-semibold">
@@ -389,10 +390,8 @@ export function AltaForm({
             </div>
           ) : (
             <p className="text-n-600">
-              Con tu cuenta vas a poder ver a{" "}
-              {perros.map((p) => p.nombre.trim()).filter(Boolean).join(", ") || "tu perro"} desde tu
-              celular: las fotos y notas que le dejemos cuando se quede con nosotros, su estado de
-              salud y tus contratos.
+              En tu cuenta ves {definicion.cuentaMuestra}. {definicion.seConfirmaPorWhatsApp} te las
+              seguimos confirmando por WhatsApp.
             </p>
           )}
 

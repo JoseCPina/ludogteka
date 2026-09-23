@@ -23,6 +23,13 @@ export const TIPOS_LINK_ALTA = {
     // El contrato de guardería NO se firma aquí: se genera al comprar un
     // paquete (ver tipos_contrato.se_genera_al). Aquí va el general/hotel.
     descripcion: "Expediente completo (veterinario, emergencia, alimentación) y el contrato general. El de guardería se firma al comprar un paquete.",
+    // Lo que el dueño ve en su cuenta, dicho como se lo diríamos en el
+    // mostrador. Tiene que ser VERDAD hoy: el portal no muestra citas ni
+    // reservas (23 de septiembre de 2026), así que ningún texto las
+    // promete; esas se confirman por WhatsApp.
+    cuentaMuestra:
+      "la ficha de tu perro, las fotos y notas que le dejemos mientras se queda con nosotros, sus vacunas y comprobantes, y tus contratos",
+    seConfirmaPorWhatsApp: "Las reservas",
     categorias: ["guarderia", "hotel"] as const,
     expedienteCompleto: true,
     llevaContrato: true,
@@ -35,6 +42,9 @@ export const TIPOS_LINK_ALTA = {
   estetica: {
     etiqueta: "Estética",
     descripcion: "Lo básico más los precios del baño según la raza. Sin contrato.",
+    cuentaMuestra:
+      "la ficha de tu perro con su foto (la puedes cambiar tú) y las fotos y notas que le dejemos cuando viene a estética",
+    seConfirmaPorWhatsApp: "Las citas",
     categorias: ["estetica"] as const,
     expedienteCompleto: false,
     llevaContrato: false,
