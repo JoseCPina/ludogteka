@@ -43,7 +43,15 @@ export async function firmarContratoDigital(
   const { data: campos, error: errorCampos } = await supabase.rpc("resolver_campos_de_contrato", {
     p_contrato_id: contrato.id,
   });
-  if (errorCampos || !campos) return { error: "No pudimos leer los datos del expediente." };
+  if (errorCampos || !campos) {
+    // El detalle a los logs: sin él, el 23 de septiembre de 2026 no se veía
+    // que la causa era 'record "v_bono" is not assigned yet' en la base.
+    console.error("[firmar contrato] resolver_campos_de_contrato", contrato.id, errorCampos?.code, errorCampos?.message);
+    return {
+      error:
+        "No pudimos preparar tu contrato para firmarlo. Intenta de nuevo en unos minutos; si sigue igual, escríbenos por WhatsApp o fírmalo en papel en recepción.",
+    };
+  }
 
   const { data: clienteRow } = await supabase
     .from("clientes")
