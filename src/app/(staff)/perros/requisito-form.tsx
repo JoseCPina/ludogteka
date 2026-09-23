@@ -160,11 +160,13 @@ export function RequisitoForm({
 
       <div>
         <p className="mb-1.5 text-sm font-semibold text-n-800">Foto del comprobante (opcional)</p>
+        {/* Sin `capture`: es un comprobante, no el perro. Puede venir del carnet
+            en el mostrador o de una foto que el dueño mandó por WhatsApp; el
+            selector normal ofrece cámara y archivos. */}
         <input
           ref={inputArchivoRef}
           type="file"
           accept="image/*"
-          capture="environment"
           className="hidden"
           onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
         />

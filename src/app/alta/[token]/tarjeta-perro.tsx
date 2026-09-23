@@ -204,10 +204,12 @@ export function TarjetaPerro({
       {onFoto && (
         <div>
           <label className="mb-1.5 block text-sm font-semibold text-n-800">Foto (opcional)</label>
+          {/* Sin `capture`: aquí captura el dueño desde su casa y la foto del
+              perro normalmente ya está en su galería. `capture` solo tiene sentido
+              donde el perro está enfrente (check-in, bitácora, ficha en mostrador). */}
           <input
             type="file"
             accept="image/*"
-            capture="environment"
             onChange={(e) => onFoto(e.target.files?.[0] ?? null)}
             className="w-full rounded-md border-[1.5px] border-n-400 bg-white p-2.5 text-sm text-n-700"
           />

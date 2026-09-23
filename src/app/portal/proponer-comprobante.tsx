@@ -100,11 +100,13 @@ export function ProponerComprobante({
 
       <div>
         <p className="mb-1.5 text-sm font-semibold text-n-800">Foto del comprobante</p>
+        {/* Sin `capture`: es un documento, y el dueño casi siempre ya tiene la
+            foto del carnet en su galería. Con `capture` el celular abre SOLO la
+            cámara y no deja escoger de archivos. */}
         <input
           ref={inputArchivoRef}
           type="file"
           accept="image/*"
-          capture="environment"
           className="hidden"
           onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
         />

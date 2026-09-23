@@ -56,6 +56,8 @@ Antes de trabajar, lee docs/PROYECTO.md: ahí está el detalle de roles, roadmap
 
 \- \*\*`revoke execute ... from public` NO le quita el permiso a `anon` en Supabase.\*\* El proyecto trae ALTER DEFAULT PRIVILEGES que le concede EXECUTE a anon/authenticated/service_role sobre cada función nueva, y eso es una concesión directa al rol: hay que nombrar a `anon` explícitamente para revocárselo.
 
+\- \*\*`capture="environment"` solo en inputs de foto donde el perro está enfrente\*\* (foto de llegada en el check-in, bitácora, foto del perro en la ficha de mostrador). En todo lo que sea documento o comprobante (carnet, comprobante sanitario, contrato en papel) y en todo lo que capture el dueño desde su casa (alta por link, portal) va SIN `capture`: con él, el celular abre solo la cámara y no deja escoger de la galería, donde el dueño ya tiene la foto (23 de septiembre de 2026).
+
 \- Nada de SQL manual por copy-paste: todo cambio de esquema va como migración.
 
 \- RLS obligatorio en toda tabla nueva. Verificar aislamiento con llamadas REST directas, no solo por UI.
