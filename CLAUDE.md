@@ -60,6 +60,8 @@ Antes de trabajar, lee docs/PROYECTO.md: ahí está el detalle de roles, roadmap
 
 \- \*\*`capture="environment"` solo en inputs de foto donde el perro está enfrente\*\* (foto de llegada en el check-in, bitácora, foto del perro en la ficha de mostrador). En todo lo que sea documento o comprobante (carnet, comprobante sanitario, contrato en papel) y en todo lo que capture el dueño desde su casa (alta por link, portal) va SIN `capture`: con él, el celular abre solo la cámara y no deja escoger de la galería, donde el dueño ya tiene la foto (23 de septiembre de 2026).
 
+\- \*\*Recepción no puede leer `profiles` del staff\*\* (RLS: solo su fila y las de clientes). Cualquier pantalla que necesite nombres o ids del personal (agenda, responsable de una cita, selector de empleado) los pide por `listar_personal_estetica()` o una RPC equivalente, nunca con `from("profiles").in("rol", …)`: así salió vacío el selector de empleado de estética (23 de septiembre de 2026).
+
 \- \*\*Todo buscador de clientes usa `<BuscadorClientes>`\*\* (`src/components/buscador-clientes.tsx`) con filas de `src/lib/clientes/buscables.ts`: busca por perro, dueño o teléfono y muestra el perro con su dueño. Nunca un `useMemo` con `nombre.includes(q)` a mano en la pantalla: así había seis copias que no sabían buscar por perro (23 de septiembre de 2026). La lista de /clientes en `next dev` no se hidrata (por su `loading.tsx`); se prueba con `next build` + `next start`.
 
 \- Nada de SQL manual por copy-paste: todo cambio de esquema va como migración.

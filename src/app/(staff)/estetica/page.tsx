@@ -71,12 +71,15 @@ export default async function AgendaPage({
     { data: citasCrudo, error: errorCitas },
     perrosSinRaza,
   ] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id, nombre_completo, rol")
-        .in("rol", ["estetica", "admin"])
-        .is("deleted_at", null)
-        .order("nombre_completo"),
+      // Por la RPC: recepción no puede leer los perfiles del personal.
+      supabase.rpc("listar_personal_estetica").then((r) => ({
+        data: ((r.data ?? []) as { id: string; nombre: string; rol: string }[]).map((e) => ({
+          id: e.id,
+          nombre_completo: e.nombre,
+          rol: e.rol,
+        })),
+        error: r.error,
+      })),
       supabase
         .from("citas_estetica")
         .select("id, inicio, estado, fuera_de_horario, empleado_id, perros(nombre), servicios(nombre)")

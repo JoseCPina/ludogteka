@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useMemo, useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
@@ -158,6 +160,16 @@ export function AgendarForm({
             </Select>
           </div>
 
+          {empleados.length === 0 && (
+            <Alert variante="advertencia" titulo="No hay nadie que pueda quedar como responsable de la cita">
+              No hay ninguna cuenta con rol de estética (ni de admin) dada de alta. La cita necesita un responsable, así
+              que no se puede agendar todavía.{" "}
+              <Link href="/admin" className="font-semibold underline">
+                Invita al personal de estética desde el panel de admin →
+              </Link>
+            </Alert>
+          )}
+
           {/* Solo se ofrece en el servicio que de verdad tiene precio
               alternativo. En los demás la casilla no haría nada y sería
               una pregunta de más en el mostrador. */}
@@ -191,7 +203,7 @@ export function AgendarForm({
             </Alert>
           )}
 
-          <Button type="button" disabled={enviando.cargando || !perroId} onClick={enviar} className="self-start">
+          <Button type="button" disabled={enviando.cargando || !perroId || !empleadoId} onClick={enviar} className="self-start">
             {enviando.cargando ? "Agendando…" : "Agendar cita"}
           </Button>
         </>

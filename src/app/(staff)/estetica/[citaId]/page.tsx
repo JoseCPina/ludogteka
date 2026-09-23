@@ -43,7 +43,11 @@ export default async function CitaDetallePage({
         .eq("perro_id", cita.perro_id)
         .eq("activa", true),
       supabase.from("perro_alergias").select("id, alergeno, gravedad").eq("perro_id", cita.perro_id).is("deleted_at", null),
-      supabase.from("profiles").select("nombre_completo").eq("id", cita.empleado_id).single(),
+      supabase.rpc("listar_personal_estetica").then((r) => ({
+        data: ((r.data ?? []) as { id: string; nombre: string }[])
+          .filter((e) => e.id === cita.empleado_id)
+          .map((e) => ({ nombre_completo: e.nombre }))[0] ?? null,
+      })),
     ]);
 
   let recetaItems: RecetaItem[] = [];

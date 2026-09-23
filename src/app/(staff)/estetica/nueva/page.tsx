@@ -31,12 +31,9 @@ export default async function AgendarPage() {
       .select("id, nombre")
       .eq("categoria", "estetica")
       .order("orden"),
-    supabase
-      .from("profiles")
-      .select("id, nombre_completo")
-      .in("rol", ["estetica", "admin"])
-      .is("deleted_at", null)
-      .order("nombre_completo"),
+    // Por la RPC, no por profiles: el RLS de profiles no le deja a
+    // recepción leer al personal, y el selector salía vacío.
+    supabase.rpc("listar_personal_estetica"),
     supabase
       .from("estancias")
       .select("id, perro_id, servicios(nombre)")
@@ -80,7 +77,10 @@ export default async function AgendarPage() {
           clientes={armarClientesBuscables((clientes ?? []) as { id: string; nombre: string; telefono: string }[], (perros ?? []) as { id: string; cliente_id: string; nombre: string }[])}
           perros={perros ?? []}
           servicios={serviciosConMarca}
-          empleados={empleados ?? []}
+          empleados={((empleados ?? []) as { id: string; nombre: string; rol: string }[]).map((e) => ({
+            id: e.id,
+            nombre_completo: e.rol === "admin" ? `${e.nombre} (admin)` : e.nombre,
+          }))}
           estanciasEnCurso={estanciasLista}
           rolActual={sesion?.rol ?? "cliente"}
           userIdActual={sesion?.user.id ?? ""}
