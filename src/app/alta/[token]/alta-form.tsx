@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { FirmarContrato } from "@/components/firmar-contrato";
 import type { RazaOpcion } from "@/components/selector-raza";
@@ -405,7 +406,7 @@ export function AltaForm({
 
           {aviso && <Alert variante="advertencia" titulo={aviso} />}
 
-          <div className="flex justify-between">
+          <AccionesFormulario error={error} className="[&>div]:justify-between">
             <Button
               type="button"
               variante="secundario"
@@ -417,7 +418,7 @@ export function AltaForm({
             <Button type="button" cargando={enviando.cargando} onClick={enviar}>
               {enviando.cargando ? "Guardando…" : "Terminar mi alta"}
             </Button>
-          </div>
+          </AccionesFormulario>
         </div>
       )}
 

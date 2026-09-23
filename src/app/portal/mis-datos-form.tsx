@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { formatearTelefono } from "@/lib/telefono";
 import { actualizarMisDatos, type EstadoMisDatos } from "./actions";
@@ -59,9 +60,11 @@ export function MisDatosForm({
           defaultValue={email ?? ""}
         />
 
-        <Button type="submit" cargando={enviando} className="self-start">
-          {enviando ? "Guardando…" : "Guardar cambios"}
-        </Button>
+        <AccionesFormulario error={estado.error} exito={estado.ok && "Cambios guardados"}>
+          <Button type="submit" cargando={enviando}>
+            {enviando ? "Guardando…" : "Guardar cambios"}
+          </Button>
+        </AccionesFormulario>
       </form>
     </div>
   );

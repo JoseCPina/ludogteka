@@ -5,6 +5,7 @@ import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { actualizarTopeDescuento } from "./descuento-config-actions";
 
@@ -67,12 +68,14 @@ export function DescuentoConfig({
             onChange={(e) => setTope(e.target.value)}
             autoFocus
           />
-          <Button type="button" cargando={enviando.cargando} onClick={guardar}>
-            {enviando.cargando ? "Guardando…" : "Guardar"}
-          </Button>
-          <Button type="button" variante="secundario" onClick={() => setEditando(false)}>
-            Cancelar
-          </Button>
+          <AccionesFormulario error={error}>
+            <Button type="button" cargando={enviando.cargando} onClick={guardar}>
+              {enviando.cargando ? "Guardando…" : "Guardar"}
+            </Button>
+            <Button type="button" variante="secundario" onClick={() => setEditando(false)}>
+              Cancelar
+            </Button>
+          </AccionesFormulario>
         </div>
       )}
     </div>

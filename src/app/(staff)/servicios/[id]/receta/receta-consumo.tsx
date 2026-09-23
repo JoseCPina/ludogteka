@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Select } from "@/components/ui/select";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { crearLineaReceta, darDeBajaLineaReceta } from "./actions";
 
@@ -141,9 +142,11 @@ export function RecetaConsumo({
             disabled={enviando.cargando}
             className="w-32"
           />
-          <Button type="button" disabled={enviando.cargando || !tamanoId || !insumoId || !cantidad} onClick={agregar}>
-            {enviando.cargando ? "Guardando…" : "Agregar línea"}
-          </Button>
+          <AccionesFormulario error={error}>
+            <Button type="button" disabled={enviando.cargando || !tamanoId || !insumoId || !cantidad} onClick={agregar}>
+              {enviando.cargando ? "Guardando…" : "Agregar línea"}
+            </Button>
+          </AccionesFormulario>
         </div>
       )}
     </div>

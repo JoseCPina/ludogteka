@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { CampoCopiable } from "@/components/ui/campo-copiable";
 import { Alert } from "@/components/ui/alert";
 
@@ -126,9 +127,11 @@ export function InvitarStaff() {
         </Select>
       </div>
 
-      <Button type="submit" cargando={cargando} className="self-start">
-        {cargando ? "Invitando…" : "Invitar"}
-      </Button>
+      <AccionesFormulario error={resultado.estado === "error" && resultado.mensaje}>
+        <Button type="submit" cargando={cargando}>
+          {cargando ? "Invitando…" : "Invitar"}
+        </Button>
+      </AccionesFormulario>
     </form>
   );
 }

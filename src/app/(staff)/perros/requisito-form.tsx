@@ -7,6 +7,7 @@ import { Select } from "@/components/ui/select";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { comprimirImagen } from "@/lib/imagen";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -180,9 +181,11 @@ export function RequisitoForm({
         </Button>
       </div>
 
-      <Button type="submit" cargando={enviando.cargando} className="self-start">
-        {enviando.cargando ? "Guardando…" : "Registrar aplicación"}
-      </Button>
+      <AccionesFormulario error={error} exito={exito && "Registro guardado"}>
+        <Button type="submit" cargando={enviando.cargando}>
+          {enviando.cargando ? "Guardando…" : "Registrar aplicación"}
+        </Button>
+      </AccionesFormulario>
     </form>
   );
 }

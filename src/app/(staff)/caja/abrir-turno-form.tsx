@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { abrirTurno } from "../reservas/turno-actions";
 
@@ -52,9 +53,11 @@ export function AbrirTurnoForm() {
       />
       <Textarea label="Notas (opcional)" value={notas} onChange={(e) => setNotas(e.target.value)} />
 
-      <Button type="button" cargando={cargando.cargando} onClick={abrir} className="self-start">
-        {cargando.cargando ? "Abriendo…" : "Abrir turno"}
-      </Button>
+      <AccionesFormulario error={error}>
+        <Button type="button" cargando={cargando.cargando} onClick={abrir}>
+          {cargando.cargando ? "Abriendo…" : "Abrir turno"}
+        </Button>
+      </AccionesFormulario>
     </div>
   );
 }

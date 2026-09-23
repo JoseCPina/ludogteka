@@ -5,6 +5,7 @@ import { useEspera, useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { formatearFechaCalendario } from "@/lib/formato";
 import {
@@ -147,14 +148,14 @@ export function RequisitosEstancia({
                   <Field label="Fecha de la evaluación" name="fecha" type="date" defaultValue={hoy} max={hoy} required />
                 </div>
                 <Textarea label="Notas (opcional)" name="notas" placeholder="Cómo se comportó, con quién se evaluó" />
-                <div className="flex gap-2">
+                <AccionesFormulario error={estadoEval.error}>
                   <Button type="submit" cargando={enviandoEval}>
                     {enviandoEval ? "Guardando…" : "Guardar evaluación"}
                   </Button>
                   <Button type="button" variante="secundario" onClick={() => setCapturando(false)}>
                     Cancelar
                   </Button>
-                </div>
+                </AccionesFormulario>
               </form>
             )}
           </>

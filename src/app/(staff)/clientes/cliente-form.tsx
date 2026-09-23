@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import type { EstadoClienteForm } from "./actions";
 
@@ -67,9 +68,11 @@ export function ClienteForm({
         />
       )}
 
-      <Button type="submit" cargando={enviando} className="self-start">
-        {enviando ? "Guardando…" : textoBoton}
-      </Button>
+      <AccionesFormulario error={estado.error} exito={estado.ok && "Cambios guardados"}>
+        <Button type="submit" cargando={enviando}>
+          {enviando ? "Guardando…" : textoBoton}
+        </Button>
+      </AccionesFormulario>
     </form>
   );
 }

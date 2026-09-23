@@ -6,6 +6,7 @@ import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { formatearFechaCalendario, sumarDiasFecha } from "@/lib/formato";
 import { alternarPertenencia, confirmarCheckout } from "../../../checkin-actions";
@@ -193,9 +194,11 @@ export function CheckoutForm({
         </Alert>
       )}
 
-      <Button type="button" cargando={enviando.cargando} onClick={enviarCheckout} className="self-start">
-        {enviando.cargando ? "Guardando…" : "Confirmar salida"}
-      </Button>
+      <AccionesFormulario error={error}>
+        <Button type="button" cargando={enviando.cargando} onClick={enviarCheckout}>
+          {enviando.cargando ? "Guardando…" : "Confirmar salida"}
+        </Button>
+      </AccionesFormulario>
     </div>
   );
 }

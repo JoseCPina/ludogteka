@@ -6,6 +6,7 @@ import { useAccionConTope } from "@/hooks/use-espera";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { activarAlerta, desactivarAlerta, type EstadoAlertaForm } from "./alertas-actions";
 
@@ -61,9 +62,11 @@ export function AlertasManejo({
             ))}
           </Select>
           <Textarea label="Notas" name="notas" disabled={enviando} rows={2} />
-          <Button type="submit" cargando={enviando} className="self-start">
-            {enviando ? "Guardando…" : "Registrar alerta"}
-          </Button>
+          <AccionesFormulario error={estado.error} exito={estado.ok && "Alerta registrada"}>
+            <Button type="submit" cargando={enviando}>
+              {enviando ? "Guardando…" : "Registrar alerta"}
+            </Button>
+          </AccionesFormulario>
         </form>
       )}
     </div>

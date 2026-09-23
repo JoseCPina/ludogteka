@@ -5,6 +5,7 @@ import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { formatearTelefono } from "@/lib/telefono";
 import { guardarConfiguracionNegocio } from "./configuracion-actions";
@@ -112,9 +113,11 @@ export function ConfiguracionNegocio({ vigente }: { vigente: ConfiguracionVigent
         ayuda="Desde aquí se mide la ruta para cotizar la recolección a domicilio."
       />
 
-      <Button type="button" cargando={guardando.cargando} onClick={guardar} className="self-start">
-        {guardando.cargando ? "Guardando…" : "Guardar configuración"}
-      </Button>
+      <AccionesFormulario error={error} exito={ok && "Configuración guardada"}>
+        <Button type="button" cargando={guardando.cargando} onClick={guardar}>
+          {guardando.cargando ? "Guardando…" : "Guardar configuración"}
+        </Button>
+      </AccionesFormulario>
 
       <p className="text-sm text-n-600">
         Se guarda como una versión nueva con la fecha de hoy; la anterior queda en el historial. El

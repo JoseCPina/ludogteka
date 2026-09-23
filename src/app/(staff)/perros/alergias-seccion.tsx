@@ -6,6 +6,7 @@ import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { registrarAlergia, type EstadoAlertaForm } from "./alertas-actions";
 
@@ -77,9 +78,11 @@ export function AlergiasSeccion({
         </Select>
         <Textarea label="Notas" name="notas" disabled={enviando} rows={2} />
 
-        <Button type="submit" cargando={enviando} className="self-start">
-          {enviando ? "Guardando…" : "Registrar alergia"}
-        </Button>
+        <AccionesFormulario error={estado.error} exito={estado.ok && "Alergia registrada"}>
+          <Button type="submit" cargando={enviando}>
+            {enviando ? "Guardando…" : "Registrar alergia"}
+          </Button>
+        </AccionesFormulario>
       </form>
     </div>
   );

@@ -5,6 +5,7 @@ import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import type { EstadoServicioForm } from "./actions";
 
@@ -242,9 +243,11 @@ export function ServicioForm({
         defaultValue={valoresIniciales?.orden ?? 0}
       />
 
-      <Button type="submit" cargando={enviando} className="self-start">
-        {enviando ? "Guardando…" : textoBoton}
-      </Button>
+      <AccionesFormulario error={estado.error} exito={estado.ok && "Cambios guardados"}>
+        <Button type="submit" cargando={enviando}>
+          {enviando ? "Guardando…" : textoBoton}
+        </Button>
+      </AccionesFormulario>
     </form>
   );
 }

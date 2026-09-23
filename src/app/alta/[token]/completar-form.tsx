@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { iniciarSesionPorTelefono } from "../acciones";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { FirmarContrato } from "@/components/firmar-contrato";
 import type { RazaOpcion } from "@/components/selector-raza";
@@ -287,11 +288,11 @@ export function CompletarForm({
             </>
           )}
 
-          <div className="flex justify-end">
+          <AccionesFormulario error={error} className="[&>div]:justify-end">
             <Button type="button" cargando={enviando.cargando} onClick={entrar}>
               {enviando.cargando ? "Un momento…" : hayAlgoQuePedir ? "Continuar" : "Continuar al contrato"}
             </Button>
-          </div>
+          </AccionesFormulario>
         </div>
       )}
 
@@ -365,7 +366,7 @@ export function CompletarForm({
             Tengo otro perro que no está aquí
           </Button>
 
-          <div className="flex justify-end">
+          <AccionesFormulario error={error} className="[&>div]:justify-end">
             <Button
               type="button"
               cargando={enviando.cargando}
@@ -379,7 +380,7 @@ export function CompletarForm({
             >
               {enviando.cargando ? "Guardando…" : "Guardar y continuar"}
             </Button>
-          </div>
+          </AccionesFormulario>
         </div>
       )}
     </div>

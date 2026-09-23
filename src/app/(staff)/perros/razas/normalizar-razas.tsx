@@ -5,6 +5,7 @@ import { useEspera } from "@/hooks/use-espera";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { Select } from "@/components/ui/select";
 import { SelectorRaza, type RazaOpcion } from "@/components/selector-raza";
@@ -268,6 +269,7 @@ export function NormalizarRazas({
       </div>
 
       <div className="flex flex-wrap items-center gap-3 border-t border-n-200 pt-4">
+        <AccionesFormulario error={error} exito={resultado}>
         <Button
           type="button"
           disabled={soloLectura || listos.length === 0 || guardando.cargando}
@@ -279,6 +281,7 @@ export function NormalizarRazas({
               ? "Nada que guardar todavía"
               : `Guardar ${listos.length} ${listos.length === 1 ? "raza" : "razas"}`}
         </Button>
+        </AccionesFormulario>
         <p className="text-sm text-n-600">
           Se guardan solo los que asignaste. Los que dejes sin tocar siguen aquí para después.
         </p>

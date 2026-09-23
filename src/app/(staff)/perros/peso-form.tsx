@@ -5,6 +5,7 @@ import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { hoyNegocio } from "@/lib/formato";
 import { registrarPeso, type EstadoPesoForm } from "./peso-actions";
@@ -47,9 +48,11 @@ export function PesoForm({ perroId }: { perroId: string }) {
       </div>
       <Textarea label="Notas (opcional)" name="notas" disabled={enviando} rows={2} />
 
-      <Button type="submit" cargando={enviando} className="self-start">
-        {enviando ? "Guardando…" : "Registrar peso"}
-      </Button>
+      <AccionesFormulario error={estado.error} exito={estado.ok && "Peso registrado"}>
+        <Button type="submit" cargando={enviando}>
+          {enviando ? "Guardando…" : "Registrar peso"}
+        </Button>
+      </AccionesFormulario>
     </form>
   );
 }

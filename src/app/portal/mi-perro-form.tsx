@@ -5,6 +5,7 @@ import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { formatearTelefono } from "@/lib/telefono";
 import { actualizarMiPerro, type EstadoMiPerroForm } from "./perro-actions";
@@ -104,9 +105,11 @@ export function MiPerroForm({
         defaultValue={valoresIniciales.alimentacion_notas ?? ""}
       />
 
-      <Button type="submit" cargando={enviando} className="self-start">
-        {enviando ? "Guardando…" : "Guardar cambios"}
-      </Button>
+      <AccionesFormulario error={estado.error} exito={estado.ok && "Cambios guardados"}>
+        <Button type="submit" cargando={enviando}>
+          {enviando ? "Guardando…" : "Guardar cambios"}
+        </Button>
+      </AccionesFormulario>
     </form>
   );
 }

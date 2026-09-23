@@ -5,6 +5,7 @@ import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
 import {
@@ -377,14 +378,14 @@ export function MatrizTarifas({
             </tbody>
           </table>
         </div>
-        <div className="flex gap-3">
+        <AccionesFormulario error={error} exito={exito && "Tarifas guardadas"}>
           <Button type="button" cargando={guardando.cargando} onClick={confirmarGuardado}>
             {guardando.cargando ? "Guardando…" : "Confirmar y guardar"}
           </Button>
           <Button type="button" variante="secundario" cargando={guardando.cargando} onClick={() => setPrevisualizando(false)}>
             Seguir editando
           </Button>
-        </div>
+        </AccionesFormulario>
       </div>
     );
   }

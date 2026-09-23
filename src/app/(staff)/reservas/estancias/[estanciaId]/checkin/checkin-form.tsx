@@ -8,6 +8,7 @@ import { comprimirImagen } from "@/lib/imagen";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import {
   confirmarCheckin,
@@ -204,9 +205,11 @@ export function CheckinForm({
         </Alert>
       )}
 
-      <Button type="button" cargando={enviando.cargando} onClick={confirmar} className="self-start">
-        {enviando.cargando ? "Guardando…" : "Confirmar check-in"}
-      </Button>
+      <AccionesFormulario error={error}>
+        <Button type="button" cargando={enviando.cargando} onClick={confirmar}>
+          {enviando.cargando ? "Guardando…" : "Confirmar check-in"}
+        </Button>
+      </AccionesFormulario>
     </div>
   );
 }

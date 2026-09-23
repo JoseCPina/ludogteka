@@ -5,6 +5,7 @@ import { useAccionConTope } from "@/hooks/use-espera";
 import { iniciarSesion, type EstadoLogin } from "./actions";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 
 /**
@@ -67,9 +68,11 @@ export function LoginForm({
           autoComplete="current-password"
           required
         />
-        <Button type="submit" cargando={enviando} className="w-full">
-          {enviando ? "Entrando…" : "Entrar"}
-        </Button>
+        <AccionesFormulario error={estado.error}>
+          <Button type="submit" cargando={enviando} className="w-full">
+            {enviando ? "Entrando…" : "Entrar"}
+          </Button>
+        </AccionesFormulario>
       </form>
 
       <button

@@ -6,6 +6,7 @@ import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { SelectorRaza, type RazaOpcion } from "@/components/selector-raza";
 import type { EstadoPerroForm } from "./actions";
@@ -158,9 +159,11 @@ export function PerroForm({
       />
 
       {!soloLectura && (
-        <Button type="submit" cargando={enviando} className="self-start">
-          {enviando ? "Guardando…" : textoBoton}
-        </Button>
+        <AccionesFormulario error={estado.error} exito={estado.ok && "Cambios guardados"}>
+          <Button type="submit" cargando={enviando}>
+            {enviando ? "Guardando…" : textoBoton}
+          </Button>
+        </AccionesFormulario>
       )}
     </form>
   );
