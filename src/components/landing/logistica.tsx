@@ -117,7 +117,7 @@ export function Logistica() {
                 <dt className="font-bold text-n-900">Hotel y estética</dt>
                 <dd className="mt-0.5 text-n-700">
                   Con cita. Escríbenos y acordamos la hora de entrega y de recogida. El hotel no
-                  entrega perros los domingos.
+                  recibe ni entrega perros los domingos.
                 </dd>
               </div>
             </dl>

@@ -57,7 +57,7 @@ export function Hotel() {
               </li>
               <li className="flex items-start gap-2">
                 <Info size={18} weight="bold" className="mt-0.5 shrink-0 text-azul" aria-hidden />
-                No entregamos perros de hotel los domingos.
+                No recibimos ni entregamos perros de hotel los domingos.
               </li>
             </ul>
 
