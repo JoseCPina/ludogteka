@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { restablecerPasswordCliente, type EstadoRestablecer } from "./password-actions";
@@ -15,16 +16,14 @@ export function RestablecerPassword({
   tieneCuenta: boolean;
 }) {
   const [confirmando, setConfirmando] = useState(false);
-  const [ocupado, setOcupado] = useState(false);
+  const ocupado = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<EstadoRestablecer | null>(null);
   const [copiado, setCopiado] = useState(false);
 
   async function restablecer() {
-    setOcupado(true);
     setError(null);
-    const res = await restablecerPasswordCliente(clienteId);
-    setOcupado(false);
+    const res = await ocupado.ejecutar(() => restablecerPasswordCliente(clienteId));
     if (res.error) {
       setError(res.error);
       return;
@@ -93,8 +92,8 @@ export function RestablecerPassword({
                 La contraseña actual de {clienteNombre} deja de servir en ese momento. Si no era él
                 quien la pidió, se queda fuera de su portal hasta que le pases la nueva.
               </p>
-              <Button type="button" disabled={ocupado} onClick={restablecer}>
-                {ocupado ? "Restableciendo…" : "Sí, restablecer"}
+              <Button type="button" cargando={ocupado.cargando} onClick={restablecer}>
+                {ocupado.cargando ? "Restableciendo…" : "Sí, restablecer"}
               </Button>
               <Button type="button" variante="secundario" onClick={() => setConfirmando(false)}>
                 No

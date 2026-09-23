@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
@@ -147,14 +148,12 @@ function FormularioNuevoTipo({ onListo }: { onListo: () => void }) {
   const [categorias, setCategorias] = useState<CategoriaServicioContrato[]>([]);
   const [titulo, setTitulo] = useState("");
   const [cuerpo, setCuerpo] = useState("");
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   async function guardar() {
-    setEnviando(true);
     setError(null);
-    const res = await crearTipoContrato(nombre, categorias, titulo, cuerpo);
-    setEnviando(false);
+    const res = await enviando.ejecutar(() => crearTipoContrato(nombre, categorias, titulo, cuerpo));
     if (res.error) {
       setError(res.error);
       return;
@@ -198,7 +197,7 @@ function FormularioNuevoTipo({ onListo }: { onListo: () => void }) {
       <AyudaTokens />
 
       <div className="flex gap-2">
-        <Button type="button" disabled={enviando} onClick={guardar}>
+        <Button type="button" cargando={enviando.cargando} onClick={guardar}>
           {enviando ? "Creando…" : "Crear y publicar versión 1"}
         </Button>
         <Button type="button" variante="secundario" onClick={onListo}>
@@ -221,14 +220,12 @@ function FormularioNuevaVersion({
   const [titulo, setTitulo] = useState(activa?.titulo ?? "");
   const [cuerpo, setCuerpo] = useState(activa?.cuerpo ?? "");
   const [requiereRefirma, setRequiereRefirma] = useState(false);
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   async function guardar() {
-    setEnviando(true);
     setError(null);
-    const res = await publicarPlantilla(tipo.id, titulo, cuerpo, requiereRefirma);
-    setEnviando(false);
+    const res = await enviando.ejecutar(() => publicarPlantilla(tipo.id, titulo, cuerpo, requiereRefirma));
     if (res.error) {
       setError(res.error);
       return;
@@ -263,7 +260,7 @@ function FormularioNuevaVersion({
       <CasillaRefirma valor={requiereRefirma} onCambio={setRequiereRefirma} />
 
       <div className="flex gap-2">
-        <Button type="button" disabled={enviando} onClick={guardar}>
+        <Button type="button" cargando={enviando.cargando} onClick={guardar}>
           {enviando ? "Publicando…" : "Publicar nueva versión"}
         </Button>
         <Button type="button" variante="secundario" onClick={onListo}>
@@ -284,14 +281,12 @@ function FormularioDatosTipo({
   const router = useRouter();
   const [nombre, setNombre] = useState(tipo.nombre);
   const [categorias, setCategorias] = useState<CategoriaServicioContrato[]>(tipo.categorias);
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   async function guardar() {
-    setEnviando(true);
     setError(null);
-    const res = await actualizarTipoContrato(tipo.id, nombre, categorias);
-    setEnviando(false);
+    const res = await enviando.ejecutar(() => actualizarTipoContrato(tipo.id, nombre, categorias));
     if (res.error) {
       setError(res.error);
       return;
@@ -314,7 +309,7 @@ function FormularioDatosTipo({
       <Field label="Nombre del contrato" value={nombre} onChange={(e) => setNombre(e.target.value)} />
       <SelectorCategorias seleccionadas={categorias} onCambio={setCategorias} />
       <div className="flex gap-2">
-        <Button type="button" disabled={enviando} onClick={guardar}>
+        <Button type="button" cargando={enviando.cargando} onClick={guardar}>
           {enviando ? "Guardando…" : "Guardar"}
         </Button>
         <Button type="button" variante="secundario" onClick={onListo}>
@@ -330,17 +325,15 @@ function TarjetaTipo({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin: bool
   const [editandoTexto, setEditandoTexto] = useState(false);
   const [editandoDatos, setEditandoDatos] = useState(false);
   const [confirmandoArchivo, setConfirmandoArchivo] = useState(false);
-  const [ocupado, setOcupado] = useState(false);
+  const ocupado = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   const activa = tipo.versiones.find((v) => v.activa) ?? null;
   const historial = tipo.versiones.filter((v) => !v.activa);
 
   async function alternarRefirma(version: VersionPlantilla) {
-    setOcupado(true);
     setError(null);
-    const res = await marcarRequiereRefirma(version.id, !version.requiere_refirma);
-    setOcupado(false);
+    const res = await ocupado.ejecutar(() => marcarRequiereRefirma(version.id, !version.requiere_refirma));
     if (res.error) {
       setError(res.error);
       return;
@@ -349,10 +342,8 @@ function TarjetaTipo({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin: bool
   }
 
   async function archivar() {
-    setOcupado(true);
     setError(null);
-    const res = await archivarTipoContrato(tipo.id);
-    setOcupado(false);
+    const res = await ocupado.ejecutar(() => archivarTipoContrato(tipo.id));
     if (res.error) {
       setError(res.error);
       return;
@@ -434,7 +425,7 @@ function TarjetaTipo({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin: bool
             en el expediente de cada perro, con su texto intacto. Se puede reactivar después.
           </p>
           <div className="flex gap-2">
-            <Button type="button" variante="peligro" disabled={ocupado} onClick={archivar}>
+            <Button type="button" variante="peligro" cargando={ocupado.cargando} onClick={archivar}>
               {ocupado ? "Archivando…" : "Sí, archivar"}
             </Button>
             <Button type="button" variante="secundario" onClick={() => setConfirmandoArchivo(false)}>
@@ -464,7 +455,7 @@ function TarjetaTipo({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin: bool
                       <input
                         type="checkbox"
                         checked={v.requiere_refirma}
-                        disabled={ocupado}
+                        disabled={ocupado.cargando}
                         onChange={() => alternarRefirma(v)}
                         className="h-4 w-4"
                       />
@@ -488,14 +479,12 @@ function TarjetaTipo({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin: bool
 
 function TarjetaArchivado({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin: boolean }) {
   const router = useRouter();
-  const [ocupado, setOcupado] = useState(false);
+  const ocupado = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   async function reactivar() {
-    setOcupado(true);
     setError(null);
-    const res = await reactivarTipoContrato(tipo.id);
-    setOcupado(false);
+    const res = await ocupado.ejecutar(() => reactivarTipoContrato(tipo.id));
     if (res.error) {
       setError(res.error);
       return;
@@ -511,7 +500,7 @@ function TarjetaArchivado({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin:
       </span>
       {error && <span className="text-sm text-naranja-oscuro">{error}</span>}
       {esAdmin && (
-        <Button type="button" variante="secundario" disabled={ocupado} onClick={reactivar}>
+        <Button type="button" variante="secundario" cargando={ocupado.cargando} onClick={reactivar}>
           {ocupado ? "Reactivando…" : "Reactivar"}
         </Button>
       )}

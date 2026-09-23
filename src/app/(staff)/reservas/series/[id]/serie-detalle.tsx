@@ -1,6 +1,8 @@
 "use client";
+import { esperarConTope } from "@/lib/ui/espera";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
@@ -110,7 +112,7 @@ export function SerieDetalle({
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [cargando, setCargando] = useState(false);
+  const cargando = useEspera();
 
   const [resultadosRenovar, setResultadosRenovar] = useState<ResultadoFecha[] | null>(null);
 
@@ -144,10 +146,8 @@ export function SerieDetalle({
   }
 
   async function accionRenovar() {
-    setCargando(true);
     setError(null);
-    const res = await renovarHorizonte(serieId);
-    setCargando(false);
+    const res = await cargando.ejecutar(() => renovarHorizonte(serieId));
     if (res.error) {
       setError(res.error);
       return;
@@ -157,10 +157,8 @@ export function SerieDetalle({
   }
 
   async function accionGuardarEdicion() {
-    setCargando(true);
     setError(null);
-    const res = await editarSerie(serieId, diasEdit, servicioEdit, tieneFinEdit ? fechaFinEdit : null);
-    setCargando(false);
+    const res = await cargando.ejecutar(() => editarSerie(serieId, diasEdit, servicioEdit, tieneFinEdit ? fechaFinEdit : null));
     if (res.error) {
       setError(res.error);
       return;
@@ -172,10 +170,8 @@ export function SerieDetalle({
   }
 
   async function accionPausar() {
-    setCargando(true);
     setError(null);
-    const res = await pausarSerie(serieId, pausaDesde, pausaHasta, pausaMotivo);
-    setCargando(false);
+    const res = await cargando.ejecutar(() => pausarSerie(serieId, pausaDesde, pausaHasta, pausaMotivo));
     if (res.error) {
       setError(res.error);
       return;
@@ -186,10 +182,8 @@ export function SerieDetalle({
   }
 
   async function accionQuitarPausa(pausaId: string) {
-    setCargando(true);
     setError(null);
-    const res = await quitarPausa(serieId, pausaId);
-    setCargando(false);
+    const res = await cargando.ejecutar(() => quitarPausa(serieId, pausaId));
     if (res.error) {
       setError(res.error);
       return;
@@ -198,10 +192,8 @@ export function SerieDetalle({
   }
 
   async function accionCancelarSerie() {
-    setCargando(true);
     setError(null);
-    const res = await cancelarSerie(serieId);
-    setCargando(false);
+    const res = await cargando.ejecutar(() => cancelarSerie(serieId));
     if (res.error) {
       setError(res.error);
       return;
@@ -214,7 +206,7 @@ export function SerieDetalle({
   async function accionCancelarDia(estanciaId: string) {
     setCancelandoDia(estanciaId);
     setError(null);
-    const res = await cancelarEstancia(estanciaId);
+    const res = await esperarConTope(() => cancelarEstancia(estanciaId));
     setCancelandoDia(null);
     if (res.error) {
       setError(res.error);
@@ -261,7 +253,7 @@ export function SerieDetalle({
                   {formatearFechaCalendario(p.desde)} – {formatearFechaCalendario(p.hasta)}
                   {p.motivo ? ` · ${p.motivo}` : ""}
                 </span>
-                <Button type="button" variante="secundario" disabled={cargando} onClick={() => accionQuitarPausa(p.id)}>
+                <Button type="button" variante="secundario" cargando={cargando.cargando} onClick={() => accionQuitarPausa(p.id)}>
                   Quitar pausa
                 </Button>
               </li>
@@ -272,8 +264,8 @@ export function SerieDetalle({
 
       {!serieCancelada && (
         <div className="flex flex-wrap gap-3">
-          <Button type="button" disabled={cargando} onClick={accionRenovar}>
-            {cargando ? "Renovando…" : "Renovar horizonte (8 semanas)"}
+          <Button type="button" cargando={cargando.cargando} onClick={accionRenovar}>
+            {cargando.cargando ? "Renovando…" : "Renovar horizonte (8 semanas)"}
           </Button>
           <Button type="button" variante="secundario" onClick={() => setEditando((v) => !v)}>
             {editando ? "Cancelar edición" : "Editar patrón"}
@@ -313,8 +305,8 @@ export function SerieDetalle({
             ya tienen check-in o ya pasaron no se tocan.
           </p>
           <div className="flex gap-2">
-            <Button type="button" variante="peligro" disabled={cargando} onClick={accionCancelarSerie}>
-              {cargando ? "Cancelando…" : "Sí, cancelar la serie"}
+            <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={accionCancelarSerie}>
+              {cargando.cargando ? "Cancelando…" : "Sí, cancelar la serie"}
             </Button>
             <Button type="button" variante="secundario" onClick={() => setConfirmandoCancelarSerie(false)}>
               No
@@ -388,8 +380,8 @@ export function SerieDetalle({
                 nuevo. Las que ya tienen check-in o ya pasaron no se tocan. ¿Continuar?
               </p>
               <div className="flex gap-2">
-                <Button type="button" disabled={cargando} onClick={accionGuardarEdicion}>
-                  {cargando ? "Guardando…" : "Sí, guardar y regenerar"}
+                <Button type="button" cargando={cargando.cargando} onClick={accionGuardarEdicion}>
+                  {cargando.cargando ? "Guardando…" : "Sí, guardar y regenerar"}
                 </Button>
                 <Button type="button" variante="secundario" onClick={() => setConfirmandoEditar(false)}>
                   No
@@ -417,8 +409,8 @@ export function SerieDetalle({
             />
           </div>
           <Textarea label="Motivo (opcional)" value={pausaMotivo} onChange={(e) => setPausaMotivo(e.target.value)} />
-          <Button type="button" disabled={cargando} onClick={accionPausar} className="self-start">
-            {cargando ? "Guardando…" : "Registrar pausa"}
+          <Button type="button" cargando={cargando.cargando} onClick={accionPausar} className="self-start">
+            {cargando.cargando ? "Guardando…" : "Registrar pausa"}
           </Button>
         </div>
       )}

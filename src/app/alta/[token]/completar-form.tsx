@@ -1,6 +1,8 @@
 "use client";
+import { conTope } from "@/lib/ui/espera";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { iniciarSesionPorTelefono } from "../acciones";
 import { Field } from "@/components/ui/field";
@@ -85,7 +87,7 @@ export function CompletarForm({
   );
   const [nuevos, setNuevos] = useState<PerroAlta[]>([]);
   const [fotosNuevos, setFotosNuevos] = useState<(File | null)[]>([]);
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [contratos, setContratos] = useState<ContratoPendiente[]>([]);
@@ -100,11 +102,9 @@ export function CompletarForm({
     if (password.length < 6) return setError("La contraseña debe tener al menos 6 caracteres.");
 
     if (tieneCuenta) {
-      setEnviando(true);
       // El teléfono ya lo sabemos: es el del expediente que abrió este
       // link. Solo falta que demuestre que la cuenta es suya.
-      const res = await iniciarSesionPorTelefono(telefono, password);
-      setEnviando(false);
+      const res = await enviando.ejecutar(() => iniciarSesionPorTelefono(telefono, password));
       if (res.error) return setError(res.error);
     } else {
       if (password !== confirmacion) return setError("Las dos contraseñas no coinciden.");
@@ -116,7 +116,6 @@ export function CompletarForm({
 
   async function guardar() {
     setError(null);
-    setEnviando(true);
 
     // Solo viajan los campos que se pintaron. Mandar el objeto completo
     // haría que un campo vacío en pantalla pareciera una respuesta, y del
@@ -132,15 +131,14 @@ export function CompletarForm({
       return parcial;
     });
 
-    const res = await completarExpediente(token, {
+    const res = await enviando.ejecutar(() => completarExpediente(token, {
       direccion: faltaDireccion ? direccion : "",
       password,
       perros: perrosAMandar,
       perrosNuevos: nuevos,
-    });
+    }));
 
     if (res.error) {
-      setEnviando(false);
       setError(res.error);
       return;
     }
@@ -149,7 +147,7 @@ export function CompletarForm({
     try {
       if (faltaDireccion && direccion.trim()) {
         setAviso("Calculando la distancia a tu domicilio…");
-        await calcularDistanciaAlta(token);
+        await conTope(calcularDistanciaAlta(token));
       }
 
       // Las fotos son solo de los perros nuevos: a los que ya existen no
@@ -163,18 +161,17 @@ export function CompletarForm({
         setAviso(`Guardando la foto de ${creados[i].nombre}…`);
         const datosFoto = new FormData();
         datosFoto.append("foto", archivo);
-        await subirFotoAlta(token, creados[i].id, datosFoto);
+        await conTope(subirFotoAlta(token, creados[i].id, datosFoto), 60_000);
       }
 
       if (!tieneCuenta) {
         setAviso("Abriendo tu sesión…");
-        const res = await iniciarSesionPorTelefono(telefono, password);
+        const res = await conTope(iniciarSesionPorTelefono(telefono, password));
         sesionAbierta = !res.error;
       }
     } catch {
       sesionAbierta = tieneCuenta;
     } finally {
-      setEnviando(false);
       setAviso(null);
     }
 
@@ -284,8 +281,8 @@ export function CompletarForm({
           )}
 
           <div className="flex justify-end">
-            <Button type="button" disabled={enviando} onClick={entrar}>
-              {enviando ? "Un momento…" : hayAlgoQuePedir ? "Continuar" : "Continuar al contrato"}
+            <Button type="button" cargando={enviando.cargando} onClick={entrar}>
+              {enviando.cargando ? "Un momento…" : hayAlgoQuePedir ? "Continuar" : "Continuar al contrato"}
             </Button>
           </div>
         </div>
@@ -364,7 +361,7 @@ export function CompletarForm({
           <div className="flex justify-end">
             <Button
               type="button"
-              disabled={enviando}
+              cargando={enviando.cargando}
               onClick={() => {
                 if (nuevos.some((p) => !p.nombre.trim())) {
                   setError("El perro que agregaste necesita un nombre.");
@@ -373,7 +370,7 @@ export function CompletarForm({
                 guardar();
               }}
             >
-              {enviando ? "Guardando…" : "Guardar y continuar"}
+              {enviando.cargando ? "Guardando…" : "Guardar y continuar"}
             </Button>
           </div>
         </div>

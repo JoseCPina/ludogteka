@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,7 +42,7 @@ export function PerroForm({
   textoBoton: string;
   soloLectura?: boolean;
 }) {
-  const [estado, formAction, enviando] = useActionState(action, ESTADO_INICIAL);
+  const [estado, formAction, enviando] = useActionState(useAccionConTope(action), ESTADO_INICIAL);
   const deshabilitado = enviando || soloLectura;
 
   return (
@@ -157,7 +158,7 @@ export function PerroForm({
       />
 
       {!soloLectura && (
-        <Button type="submit" disabled={enviando} className="self-start">
+        <Button type="submit" cargando={enviando} className="self-start">
           {enviando ? "Guardando…" : textoBoton}
         </Button>
       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { comprimirImagen } from "@/lib/imagen";
@@ -38,13 +39,14 @@ export function CheckinForm({
   const [estadoLlegada, setEstadoLlegada] = useState("");
   const [fotoPath, setFotoPath] = useState<string | null>(null);
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
-  const [subiendoFoto, setSubiendoFoto] = useState(false);
+  // Una foto de celular puede tardar: tope más largo que el de un botón.
+  const subiendoFoto = useEspera({ tope: 60_000 });
 
   const [pertenencias, setPertenencias] = useState<Pertenencia[]>(pertenenciasIniciales);
   const [nuevaPertenencia, setNuevaPertenencia] = useState("");
-  const [agregandoPertenencia, setAgregandoPertenencia] = useState(false);
+  const agregandoPertenencia = useEspera();
 
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   async function subirFoto(evento: React.ChangeEvent<HTMLInputElement>) {
@@ -52,36 +54,33 @@ export function CheckinForm({
     evento.target.value = "";
     if (!archivo) return;
 
-    setSubiendoFoto(true);
     setError(null);
-    try {
+    const r = await subiendoFoto.correr(async () => {
       const blob = await comprimirImagen(archivo);
       const path = await prepararRutaFotoLlegada(clienteId, perroId, estanciaId);
       const supabase = createSupabaseBrowserClient();
       const { error: subidaError } = await supabase.storage
         .from(BUCKET)
         .upload(path, blob, { upsert: true, contentType: "image/jpeg" });
+      if (subidaError) return { error: "No pudimos subir la foto. Intenta de nuevo.", path, url: null };
+      return { error: null, path, url: await obtenerUrlFotoLlegada(path) };
+    });
 
-      if (subidaError) {
-        setError("No pudimos subir la foto. Intenta de nuevo.");
-        return;
-      }
-
-      const url = await obtenerUrlFotoLlegada(path);
-      setFotoPath(path);
-      setFotoUrl(url);
-    } catch {
-      setError("No pudimos procesar esa foto. Intenta con otra.");
-    } finally {
-      setSubiendoFoto(false);
+    if (!r.ok) {
+      setError(r.error);
+      return;
     }
+    if (r.valor.error) {
+      setError(r.valor.error);
+      return;
+    }
+    setFotoPath(r.valor.path);
+    setFotoUrl(r.valor.url);
   }
 
   async function agregarItem() {
     if (!nuevaPertenencia.trim()) return;
-    setAgregandoPertenencia(true);
-    const res = await agregarPertenencia(estanciaId, nuevaPertenencia);
-    setAgregandoPertenencia(false);
+    const res = await agregandoPertenencia.ejecutar(() => agregarPertenencia(estanciaId, nuevaPertenencia));
     if (res.error || !res.id) {
       setError(res.error);
       return;
@@ -95,15 +94,13 @@ export function CheckinForm({
       setError("Registra quién entrega al perro.");
       return;
     }
-    setEnviando(true);
     setError(null);
-    const res = await confirmarCheckin(estanciaId, {
+    const res = await enviando.ejecutar(() => confirmarCheckin(estanciaId, {
       entregadoPorNombre: entregadoNombre,
       entregadoPorTelefono: entregadoTelefono,
       estadoLlegada,
       fotoLlegadaPath: fotoPath,
-    });
-    setEnviando(false);
+    }));
     if (res.error) {
       setError(res.error);
       return;
@@ -154,10 +151,10 @@ export function CheckinForm({
           <Button
             type="button"
             variante="secundario"
-            disabled={subiendoFoto}
+            cargando={subiendoFoto.cargando}
             onClick={() => inputFotoRef.current?.click()}
           >
-            {subiendoFoto ? "Subiendo…" : fotoUrl ? "Reemplazar foto" : "Tomar/subir foto"}
+            {subiendoFoto.cargando ? "Subiendo…" : fotoUrl ? "Reemplazar foto" : "Tomar/subir foto"}
           </Button>
         </div>
       </div>
@@ -195,8 +192,8 @@ export function CheckinForm({
               }}
             />
           </div>
-          <Button type="button" variante="secundario" disabled={agregandoPertenencia} onClick={agregarItem}>
-            {agregandoPertenencia ? "Agregando…" : "Agregar"}
+          <Button type="button" variante="secundario" cargando={agregandoPertenencia.cargando} onClick={agregarItem}>
+            {agregandoPertenencia.cargando ? "Agregando…" : "Agregar"}
           </Button>
         </div>
       </div>
@@ -207,8 +204,8 @@ export function CheckinForm({
         </Alert>
       )}
 
-      <Button type="button" disabled={enviando} onClick={confirmar} className="self-start">
-        {enviando ? "Guardando…" : "Confirmar check-in"}
+      <Button type="button" cargando={enviando.cargando} onClick={confirmar} className="self-start">
+        {enviando.cargando ? "Guardando…" : "Confirmar check-in"}
       </Button>
     </div>
   );

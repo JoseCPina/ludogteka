@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
@@ -58,7 +59,7 @@ export function MovimientosInsumo({
 }) {
   const router = useRouter();
   const [formularioAbierto, setFormularioAbierto] = useState<"entrada" | "salida" | "ajuste" | null>(null);
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   // Entrada
@@ -83,16 +84,14 @@ export function MovimientosInsumo({
   }
 
   async function enviarEntrada() {
-    setEnviando(true);
     setError(null);
-    const res = await registrarEntradaCompra(
+    const res = await enviando.ejecutar(() => registrarEntradaCompra(
       insumoId,
       proveedorId,
       Number(cantidadCompra),
       Number(costoUnitario),
       requiereCaducidad ? fechaCaducidad || null : null
-    );
-    setEnviando(false);
+    ));
     if (res.error) {
       setError(res.error);
       return;
@@ -106,10 +105,8 @@ export function MovimientosInsumo({
   }
 
   async function enviarSalida() {
-    setEnviando(true);
     setError(null);
-    const res = await registrarSalida(insumoId, Number(cantidadSalida), tipoSalida, motivoSalida || null);
-    setEnviando(false);
+    const res = await enviando.ejecutar(() => registrarSalida(insumoId, Number(cantidadSalida), tipoSalida, motivoSalida || null));
     if (res.error) {
       setError(res.error);
       return;
@@ -121,10 +118,8 @@ export function MovimientosInsumo({
   }
 
   async function enviarAjuste() {
-    setEnviando(true);
     setError(null);
-    const res = await registrarAjuste(insumoId, Number(cantidadAjuste), sentidoAjuste, motivoAjuste);
-    setEnviando(false);
+    const res = await enviando.ejecutar(() => registrarAjuste(insumoId, Number(cantidadAjuste), sentidoAjuste, motivoAjuste));
     if (res.error) {
       setError(res.error);
       return;
@@ -171,7 +166,7 @@ export function MovimientosInsumo({
 
       {formularioAbierto === "entrada" && (
         <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
-          <Select label="Proveedor" value={proveedorId} onChange={(e) => setProveedorId(e.target.value)} disabled={enviando}>
+          <Select label="Proveedor" value={proveedorId} onChange={(e) => setProveedorId(e.target.value)} disabled={enviando.cargando}>
             <option value="">Elige un proveedor</option>
             {proveedores.map((p) => (
               <option key={p.id} value={p.id}>
@@ -187,7 +182,7 @@ export function MovimientosInsumo({
               min="0"
               value={cantidadCompra}
               onChange={(e) => setCantidadCompra(e.target.value)}
-              disabled={enviando}
+              disabled={enviando.cargando}
             />
             <Field
               label={`Costo por ${unidadCompraEtiqueta}`}
@@ -196,7 +191,7 @@ export function MovimientosInsumo({
               min="0"
               value={costoUnitario}
               onChange={(e) => setCostoUnitario(e.target.value)}
-              disabled={enviando}
+              disabled={enviando.cargando}
             />
           </div>
           {requiereCaducidad && (
@@ -205,14 +200,14 @@ export function MovimientosInsumo({
               type="date"
               value={fechaCaducidad}
               onChange={(e) => setFechaCaducidad(e.target.value)}
-              disabled={enviando}
+              disabled={enviando.cargando}
             />
           )}
           <div className="flex gap-2">
-            <Button type="button" disabled={enviando || !proveedorId || !cantidadCompra || !costoUnitario} onClick={enviarEntrada}>
-              {enviando ? "Guardando…" : "Registrar entrada"}
+            <Button type="button" disabled={enviando.cargando || !proveedorId || !cantidadCompra || !costoUnitario} onClick={enviarEntrada}>
+              {enviando.cargando ? "Guardando…" : "Registrar entrada"}
             </Button>
-            <Button type="button" variante="secundario" onClick={cerrarFormulario} disabled={enviando}>
+            <Button type="button" variante="secundario" onClick={cerrarFormulario} cargando={enviando.cargando}>
               Cancelar
             </Button>
           </div>
@@ -221,7 +216,7 @@ export function MovimientosInsumo({
 
       {formularioAbierto === "salida" && (
         <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
-          <Select label="Tipo" value={tipoSalida} onChange={(e) => setTipoSalida(e.target.value as "consumo" | "merma")} disabled={enviando}>
+          <Select label="Tipo" value={tipoSalida} onChange={(e) => setTipoSalida(e.target.value as "consumo" | "merma")} disabled={enviando.cargando}>
             <option value="consumo">Consumo</option>
             <option value="merma">Merma</option>
           </Select>
@@ -232,19 +227,19 @@ export function MovimientosInsumo({
             min="0"
             value={cantidadSalida}
             onChange={(e) => setCantidadSalida(e.target.value)}
-            disabled={enviando}
+            disabled={enviando.cargando}
           />
           <Field
             label={tipoSalida === "merma" ? "Motivo" : "Motivo (opcional)"}
             value={motivoSalida}
             onChange={(e) => setMotivoSalida(e.target.value)}
-            disabled={enviando}
+            disabled={enviando.cargando}
           />
           <div className="flex gap-2">
-            <Button type="button" disabled={enviando || !cantidadSalida} onClick={enviarSalida}>
-              {enviando ? "Guardando…" : "Registrar salida"}
+            <Button type="button" disabled={enviando.cargando || !cantidadSalida} onClick={enviarSalida}>
+              {enviando.cargando ? "Guardando…" : "Registrar salida"}
             </Button>
-            <Button type="button" variante="secundario" onClick={cerrarFormulario} disabled={enviando}>
+            <Button type="button" variante="secundario" onClick={cerrarFormulario} cargando={enviando.cargando}>
               Cancelar
             </Button>
           </div>
@@ -257,7 +252,7 @@ export function MovimientosInsumo({
             label="Sentido"
             value={sentidoAjuste}
             onChange={(e) => setSentidoAjuste(e.target.value as "positivo" | "negativo")}
-            disabled={enviando}
+            disabled={enviando.cargando}
           >
             <option value="positivo">Sobra respecto al sistema (+)</option>
             <option value="negativo">Falta respecto al sistema (−)</option>
@@ -269,14 +264,14 @@ export function MovimientosInsumo({
             min="0"
             value={cantidadAjuste}
             onChange={(e) => setCantidadAjuste(e.target.value)}
-            disabled={enviando}
+            disabled={enviando.cargando}
           />
-          <Field label="Motivo" value={motivoAjuste} onChange={(e) => setMotivoAjuste(e.target.value)} disabled={enviando} />
+          <Field label="Motivo" value={motivoAjuste} onChange={(e) => setMotivoAjuste(e.target.value)} disabled={enviando.cargando} />
           <div className="flex gap-2">
-            <Button type="button" disabled={enviando || !cantidadAjuste || !motivoAjuste} onClick={enviarAjuste}>
-              {enviando ? "Guardando…" : "Registrar ajuste"}
+            <Button type="button" disabled={enviando.cargando || !cantidadAjuste || !motivoAjuste} onClick={enviarAjuste}>
+              {enviando.cargando ? "Guardando…" : "Registrar ajuste"}
             </Button>
-            <Button type="button" variante="secundario" onClick={cerrarFormulario} disabled={enviando}>
+            <Button type="button" variante="secundario" onClick={cerrarFormulario} cargando={enviando.cargando}>
               Cancelar
             </Button>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useAccionConTope } from "@/hooks/use-espera";
 import { definirPassword, type EstadoNuevaPassword } from "./actions";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { Alert } from "@/components/ui/alert";
 const estadoInicial: EstadoNuevaPassword = { error: null };
 
 export function NuevaPasswordForm() {
-  const [estado, formAction, enviando] = useActionState(definirPassword, estadoInicial);
+  const [estado, formAction, enviando] = useActionState(useAccionConTope(definirPassword), estadoInicial);
 
   return (
     <form action={formAction} noValidate className="flex flex-col gap-5">
@@ -34,7 +35,7 @@ export function NuevaPasswordForm() {
         autoComplete="new-password"
         required
       />
-      <Button type="submit" disabled={enviando} className="w-full">
+      <Button type="submit" cargando={enviando} className="w-full">
         {enviando ? "Guardando…" : "Guardar y entrar"}
       </Button>
     </form>

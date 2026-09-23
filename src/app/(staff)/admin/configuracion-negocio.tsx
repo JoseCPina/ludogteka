@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
@@ -32,21 +33,19 @@ export function ConfiguracionNegocio({ vigente }: { vigente: ConfiguracionVigent
   const [cupoNocturno, setCupoNocturno] = useState(String(vigente?.cupo_nocturno ?? ""));
   const [telefono, setTelefono] = useState(vigente?.telefono_recepcion ?? "");
   const [baseDireccion, setBaseDireccion] = useState(vigente?.base_direccion ?? "");
-  const [guardando, setGuardando] = useState(false);
+  const guardando = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
 
   async function guardar() {
     setError(null);
     setOk(false);
-    setGuardando(true);
-    const res = await guardarConfiguracionNegocio({
+    const res = await guardando.ejecutar(() => guardarConfiguracionNegocio({
       cupoDiurno: Number(cupoDiurno),
       cupoNocturno: Number(cupoNocturno),
       telefonoRecepcion: telefono,
       baseDireccion,
-    });
-    setGuardando(false);
+    }));
     if (res.error) {
       setError(res.error);
       return;
@@ -113,8 +112,8 @@ export function ConfiguracionNegocio({ vigente }: { vigente: ConfiguracionVigent
         ayuda="Desde aquí se mide la ruta para cotizar la recolección a domicilio."
       />
 
-      <Button type="button" disabled={guardando} onClick={guardar} className="self-start">
-        {guardando ? "Guardando…" : "Guardar configuración"}
+      <Button type="button" cargando={guardando.cargando} onClick={guardar} className="self-start">
+        {guardando.cargando ? "Guardando…" : "Guardar configuración"}
       </Button>
 
       <p className="text-sm text-n-600">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ export function ServicioForm({
   };
   textoBoton: string;
 }) {
-  const [estado, formAction, enviando] = useActionState(action, ESTADO_INICIAL);
+  const [estado, formAction, enviando] = useActionState(useAccionConTope(action), ESTADO_INICIAL);
   const [categoria, setCategoria] = useState(valoresIniciales?.categoria ?? "guarderia");
   const [ilimitado, setIlimitado] = useState(valoresIniciales?.ilimitado ?? false);
   const esBono = categoria === "bono";
@@ -241,7 +242,7 @@ export function ServicioForm({
         defaultValue={valoresIniciales?.orden ?? 0}
       />
 
-      <Button type="submit" disabled={enviando} className="self-start">
+      <Button type="submit" cargando={enviando} className="self-start">
         {enviando ? "Guardando…" : textoBoton}
       </Button>
     </form>

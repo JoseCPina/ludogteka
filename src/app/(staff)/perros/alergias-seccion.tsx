@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,7 +32,7 @@ export function AlergiasSeccion({
   alergias: AlergiaFila[];
 }) {
   const registrarConId = registrarAlergia.bind(null, perroId);
-  const [estado, formAction, enviando] = useActionState(registrarConId, ESTADO_INICIAL);
+  const [estado, formAction, enviando] = useActionState(useAccionConTope(registrarConId), ESTADO_INICIAL);
 
   return (
     <div className="flex flex-col gap-4">
@@ -76,7 +77,7 @@ export function AlergiasSeccion({
         </Select>
         <Textarea label="Notas" name="notas" disabled={enviando} rows={2} />
 
-        <Button type="submit" disabled={enviando} className="self-start">
+        <Button type="submit" cargando={enviando} className="self-start">
           {enviando ? "Guardando…" : "Registrar alergia"}
         </Button>
       </form>

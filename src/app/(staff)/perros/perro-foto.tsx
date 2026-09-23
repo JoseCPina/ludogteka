@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { comprimirImagen } from "@/lib/imagen";
 import { Button } from "@/components/ui/button";
@@ -46,7 +47,8 @@ export function PerroFoto({
   const inputRef = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState(urlInicial);
   const [hayFoto, setHayFoto] = useState(tieneFotoInicial);
-  const [subiendo, setSubiendo] = useState(false);
+  // Una foto de celular puede tardar: tope más largo que el de un botón.
+  const subiendo = useEspera({ tope: 60_000 });
   const [error, setError] = useState<string | null>(null);
 
   // Las URLs firmadas caducan (una hora, ver foto-actions.ts). Una pestaña
@@ -54,7 +56,7 @@ export function PerroFoto({
   // falla al cargar no es necesariamente que ya no exista: se pide una
   // firma nueva antes de rendirse y mostrar el placeholder.
   async function manejarErrorImagen() {
-    const nueva = await obtenerUrlFotoPerro(perroId);
+    const nueva = await obtenerUrlFotoPerro(perroId).catch(() => null);
     if (nueva) {
       setUrl(nueva);
     } else {
@@ -69,39 +71,33 @@ export function PerroFoto({
     if (!archivo) return;
 
     setError(null);
-    setSubiendo(true);
-    try {
+    const r = await subiendo.correr(async () => {
       const blob = await comprimirImagen(archivo);
       const path = await prepararRutaFotoPerro(perroId);
-      if (!path) {
-        setError("No encontramos el perro. Recarga la página.");
-        return;
-      }
+      if (!path) return { error: "No encontramos el perro. Recarga la página.", nuevaUrl: null };
 
       const supabase = createSupabaseBrowserClient();
       const { error: subidaError } = await supabase.storage
         .from(BUCKET)
         .upload(path, blob, { upsert: true, contentType: "image/jpeg" });
-
-      if (subidaError) {
-        setError("No pudimos subir la foto. Intenta de nuevo.");
-        return;
-      }
+      if (subidaError) return { error: "No pudimos subir la foto. Intenta de nuevo.", nuevaUrl: null };
 
       const { error: guardarError } = await guardarFotoPerro(perroId, path);
-      if (guardarError) {
-        setError(guardarError);
-        return;
-      }
+      if (guardarError) return { error: guardarError, nuevaUrl: null };
 
-      const nuevaUrl = await obtenerUrlFotoPerro(perroId);
-      setHayFoto(true);
-      setUrl(nuevaUrl);
-    } catch {
-      setError("No pudimos procesar esa imagen. Intenta con otra foto.");
-    } finally {
-      setSubiendo(false);
+      return { error: null, nuevaUrl: await obtenerUrlFotoPerro(perroId) };
+    });
+
+    if (!r.ok) {
+      setError(r.error);
+      return;
     }
+    if (r.valor.error) {
+      setError(r.valor.error);
+      return;
+    }
+    setHayFoto(true);
+    setUrl(r.valor.nuevaUrl);
   }
 
   const esGrande = tamano === "grande";
@@ -146,11 +142,11 @@ export function PerroFoto({
           <Button
             type="button"
             variante="secundario"
-            disabled={subiendo}
+            cargando={subiendo.cargando}
             onClick={() => inputRef.current?.click()}
             className="self-start"
           >
-            {subiendo ? "Subiendo…" : hayFoto ? "Reemplazar foto" : "Subir foto"}
+            {subiendo.cargando ? "Subiendo…" : hayFoto ? "Reemplazar foto" : "Subir foto"}
           </Button>
         </div>
       )}

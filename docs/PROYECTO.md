@@ -1480,6 +1480,67 @@ su vencimiento; anon bloqueado; `/guarderia`, `/guarderia/pases`, el
 check-in ("Viene con pase" / "Paga el día suelto") y la ficha ("se
 perdieron", "Mensualidad activa") renderizan.
 
+## Espera con tope en toda la app (23 de septiembre de 2026)
+
+**El defecto**: "Mandarle un link para completar" en la ficha del cliente
+se quedaba en "Generando…" para siempre, sin error y sin salida. El
+patrón era `setCargando(true)` → `await serverAction()` →
+`setCargando(false)`: si la acción lanza (en vez de devolver `{ error }`)
+o nunca contesta, el `false` no llega. Ya se había parcheado a mano dos
+veces (ficha, alta) con `try/finally`, pero sin tope de tiempo, y el
+patrón seguía repetido en el resto de la app.
+
+**Cuántos había**: 51 banderas de carga a mano en 40 componentes de
+cliente, 13 formularios con `useActionState` sin tope, 1 `fetch` de
+cliente sin tope, y 9 esperas sueltas sin bandera (toggles, reintentos,
+pasos posteriores al alta). Solo 6 componentes tenían `try/finally`;
+ninguno tenía tope. Total: **57 archivos**, 86 esperas envueltas por el
+codemod y 14 a mano.
+
+**La pieza compartida** (para que el próximo botón la herede en vez de
+repetir el patrón):
+
+- `src/lib/ui/espera.ts` — `TOPE_MS` (20 s), `conTope(promesa, ms)`,
+  `esperarConTope(fn)`: devuelve el resultado de la acción o, si truena
+  o se agota el tiempo, `{ error: <mensaje en español> }` con la MISMA
+  forma que devuelven todas las server actions, así el `if (res.error)`
+  que cada pantalla ya tenía lo muestra sin más. Los dos mensajes dicen
+  qué hacer ("Revisa tu conexión e intenta de nuevo. Si crees que sí se
+  guardó, recarga la página antes de repetirlo para no duplicarlo").
+  `conTopeAccion(accion)` es lo mismo para acciones de formulario.
+- `src/hooks/use-espera.ts` — `useEspera()` → `{ cargando, ejecutar,
+  correr }`. `ejecutar(fn)` para acciones que devuelven `{ error }`;
+  `correr(fn)` para flujos de varios pasos (comprimir, subir a Storage,
+  guardar) que devuelven `{ ok, valor } | { ok: false, error }`.
+  `cargando` SIEMPRE vuelve a `false` (finally, y no toca el estado si
+  el componente ya se desmontó). `useAccionConTope(accion)` para
+  `useActionState`. Las subidas de foto usan tope de 60 s.
+- `Button` gana `cargando`: se deshabilita y muestra `Spinner`
+  (`src/components/ui/spinner.tsx`) junto al texto. Es la única forma de
+  "cargando" de la app: un texto quieto ("Generando…") no le dice a
+  nadie si sigue trabajando o se colgó.
+
+**El barrido** se hizo con un codemod (bandera booleana con
+`setX(true)`… `await` … `setX(false)` → `useEspera`), con dos cuidados
+que salieron al correrlo: solo convierte banderas que de verdad
+envuelven un `await` (las de modo —`confirmando`, `editando`— se
+quedan), y normaliza CRLF (cuatro archivos venían con `\r\n` y el codemod
+los saltó en silencio la primera vez). A mano: los flujos con subida a
+Storage (foto del perro, comprobante, bitácora, check-in, contrato en
+papel), `turno-abierto` y `plantillas-contrato` (varias banderas por
+archivo, el codemod los rompió y se revirtieron), `firmar-contrato`, el
+`fetch` de invitar staff (`AbortSignal.timeout`), los toggles sin botón
+(pertenencia entregada, medicamento activo, alerta, quitar línea de
+receta), el reintento por perro de la reserva, cancelar un día de la
+serie, y los pasos posteriores al alta (distancia, fotos, sesión).
+
+Verificado: `tsc`, `eslint` y `next build` limpios; prueba directa del
+helper (nunca contesta → mensaje de tope a los 155 ms; truena → mensaje
+en español; resuelve → passthrough; error propio de la acción → se
+conserva; acción de formulario → tope); y barrido final por script: cero
+`setX(true)` seguidos de un `await` sin envolver en los componentes de
+cliente.
+
 ## Estado actual
 
 Fase 0, Fase 1, Fase 2, Fase 3 y Fase 4 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 5 (POS) construida en sus cuatro bloques (cobros/devoluciones, bonos, descuentos, caja/arqueo) más la decisión de Bloque E, pendiente de que el negocio termine de probarla para cerrarla formalmente. Fase 6 (contratos) completa en sus tres bloques (plantillas y versionado, generación/firma/papel, visibilidad operativa y vigencia). Fase 7 (inventario) completa en sus tres bloques (catálogo y existencias; movimientos: entradas, salidas, mermas, ajustes; consumo automático por receta al finalizar un servicio de estética, con el enlace a la cita ya listo para que Fase 8 calcule el costo real por servicio). Fase 8 (reportes) completa en sus tres bloques (financiero por periodo con ingreso reconocido vs. neto de caja; costos y margen de estética; operativo con ocupación/servicios del periodo y una fotografía del estado actual de cumplimiento sanitario, contratos e inventario). Fase 9 (bitácora diaria y medicamentos) completa en sus dos bloques: Bloque A (fotos, notas e incidencias, con aviso por WhatsApp vía enlace `wa.me`) y Bloque B (régimen y registro de dosis administradas, referenciando `perro_medicamentos.id` tal como quedó planteado desde Fase 2). Con esto quedan completas las diez fases (0 a 9) del roadmap original. Fase 10 (recolección a domicilio, cotizador por distancia con Google Maps) completa — reutiliza tarifas/`resolver_precio`/`cargos_aplicados` de Fase 3/4 sin mecanismo de cobro nuevo; pendiente de que el negocio capture direcciones reales (base y Ludogteka), tarifas por km, y la llave de Google Maps antes de salir de modo simulación. Fase 11 (varias plantillas de contrato a la vez, cada una con nombre, versionado y aplicabilidad por servicio propios) completa — el estado de contrato dejó de ser un sí/no por perro y pasó a ser por tipo, y los avisos dicen cuál falta. Fase 12 (Guardería y Hotel como módulos separados en la navegación, Agenda renombrada a Estética) completa, sin migraciones: `estancias` sigue unificada y la ocupación que muestran los dos módulos es la de toda la casa. Fase 13 (alta de clientes por link: recepción manda una invitación por WhatsApp y el dueño captura sus datos y los de sus perros; el expediente nace ligado a su cuenta sin pasar por vinculación) completa. Fase 14 (precios de estética por grupo de raza: catálogo de razas buscable, el grupo se deriva y el cliente nunca lo ve, y `tarifas` gana la dimensión de grupo sin sistema de precios paralelo) completa. Fase 15 (dos flujos de alta por link —guardería/hotel y estética—, cada uno con su contrato firmado dentro del alta, y un link de complemento que solo pide lo que falta) completa. Fase 16 (el cliente entra con su teléfono y contraseña, no con correo: correo y cuenta pasan a opcionales, un teléfono ya registrado no se puede volver a dar de alta y uno que existe como cliente sin cuenta se vincula en vez de duplicarse; la recuperación de contraseña es por WhatsApp a recepción, con el número configurable desde el panel) completa. Las cuentas que ya existían con correo siguen entrando igual, sin migración. Corrección de estética contra el cartel (10 de septiembre): tres precios corregidos, tres servicios de baño con lo que incluye cada uno, pelo maltratado como precio alternativo del baño completo (`tarifas.precio_pelo_maltratado`, marcado en la cita), talla gigante retirada, y **en estética no hay contratos** (candado en `tipos_contrato`; el pendiente de publicar uno de estética ya no aplica). Retiro de los siete servicios de estética de Fase 3 que quedaron sin tarifa (21 de septiembre): vista `servicios_cotizables`, de la que lee `/estetica/nueva`, y comprobación sobre todo servicio de estética vivo — aplicada a producción el mismo día con `npm run desplegar`. Fase 17 (precios y requisitos de guardería y hotel, del cartel: hotel $270/$300 por talla; guardería ocasional por hora a $35 con `estancias.horas` y ajuste a horas reales al check-out; day pass de 10/15/20 y mensualidad como bono ilimitado por días hábiles; recogida tardía, día extra y medicamento retirados, con "convertir en noche de hotel" en el check-out; evaluación previa de comportamiento con excepción de admin, celo/gestante y alertas bloqueantes sin excepción; vigencias bordetella 6 y desparasitación 3 solo para aplicaciones nuevas; los requisitos se muestran en el alta; las pantallas de reserva muestran deshabilitado lo que no tiene precio) completa. Ajustes del 22 de septiembre: `guarderia_dia` a $350 (la matriz de guardería/hotel quedó sin ninguna celda vacía; pases y mensualidad ya se consumen), comida especial como cargo de **monto libre** (`servicios.monto_libre`, importe y descripción capturados al aplicarlo, inmutable, cancelable con motivo, nunca borrable, fuera de la validación de celdas), e **invitar staff arreglado** con la puerta con nombre `asignar_rol_staff` (solo `service_role`, solo recepción/estética, solo cuentas recién creadas) — probado de punta a punta con una recepcionista de prueba, borrada al terminar.

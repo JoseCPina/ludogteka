@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -18,7 +19,7 @@ export function MisDatosForm({
   telefono: string;
   email: string | null;
 }) {
-  const [estado, formAction, enviando] = useActionState(actualizarMisDatos, ESTADO_INICIAL);
+  const [estado, formAction, enviando] = useActionState(useAccionConTope(actualizarMisDatos), ESTADO_INICIAL);
 
   return (
     <div className="max-w-lg rounded-lg border border-n-200 bg-white p-5">
@@ -58,7 +59,7 @@ export function MisDatosForm({
           defaultValue={email ?? ""}
         />
 
-        <Button type="submit" disabled={enviando} className="self-start">
+        <Button type="submit" cargando={enviando} className="self-start">
           {enviando ? "Guardando…" : "Guardar cambios"}
         </Button>
       </form>

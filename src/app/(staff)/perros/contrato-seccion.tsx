@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
+import { conTope, esperarConTope, mensajeDeFallo } from "@/lib/ui/espera";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Field } from "@/components/ui/field";
@@ -126,6 +128,7 @@ function AccionesPendiente({
           type="button"
           variante="secundario"
           disabled={subiendo}
+          cargando={subiendo && subiendoParaId === contrato.id}
           onClick={() => onSubirPapel(contrato.id)}
         >
           {subiendo && subiendoParaId === contrato.id ? "Subiendo…" : "Subir firmado en papel"}
@@ -148,7 +151,7 @@ function AccionesPendiente({
             <Button
               type="button"
               variante="peligro"
-              disabled={cancelando}
+              cargando={cancelando}
               onClick={() => onConfirmarCancelar(contrato.id)}
             >
               {cancelando ? "Cancelando…" : "Confirmar cancelación"}
@@ -178,11 +181,12 @@ export function ContratoSeccion({
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [generandoTipoId, setGenerandoTipoId] = useState<string | null>(null);
-  const [subiendo, setSubiendo] = useState(false);
+  // Un PDF o foto del contrato puede tardar: tope más largo.
+  const subiendo = useEspera({ tope: 60_000 });
   const [subiendoParaId, setSubiendoParaId] = useState<string | null>(null);
   const [cancelandoId, setCancelandoId] = useState<string | null>(null);
   const [motivoCancelar, setMotivoCancelar] = useState("");
-  const [cancelando, setCancelando] = useState(false);
+  const cancelando = useEspera();
 
   const pendientes = contratos.filter((c) => c.estado === "pendiente_firma");
   const historial = contratos.filter((c) => c.estado !== "pendiente_firma");
@@ -198,7 +202,7 @@ export function ContratoSeccion({
   async function accionGenerar(tipoId: string) {
     setGenerandoTipoId(tipoId);
     setError(null);
-    const res = await generarContrato(perroId, tipoId);
+    const res = await esperarConTope(() => generarContrato(perroId, tipoId));
     setGenerandoTipoId(null);
     if (res.error) {
       setError(res.error);
@@ -219,9 +223,8 @@ export function ContratoSeccion({
     const contratoId = subiendoParaId;
     if (!archivo || !contratoId) return;
 
-    setSubiendo(true);
     setError(null);
-    try {
+    const r = await subiendo.correr(async () => {
       const hash = await calcularHashArchivo(archivo);
       const path = await prepararRutaContratoPapel(contratoId, perroId, clienteId);
 
@@ -229,23 +232,20 @@ export function ContratoSeccion({
       const { error: errorSubida } = await supabase.storage
         .from(BUCKET)
         .upload(path, archivo, { upsert: false, contentType: archivo.type || "application/pdf" });
-      if (errorSubida) {
-        setError("No pudimos subir el archivo. Intenta de nuevo.");
-        return;
-      }
+      if (errorSubida) return { error: "No pudimos subir el archivo. Intenta de nuevo." };
 
-      const res = await registrarContratoPapel(contratoId, path, hash);
-      if (res.error) {
-        setError(res.error);
-        return;
-      }
-      router.refresh();
-    } catch {
-      setError("No pudimos procesar ese archivo.");
-    } finally {
-      setSubiendo(false);
-      setSubiendoParaId(null);
+      return registrarContratoPapel(contratoId, path, hash);
+    });
+    setSubiendoParaId(null);
+    if (!r.ok) {
+      setError(r.error);
+      return;
     }
+    if (r.valor.error) {
+      setError(r.valor.error);
+      return;
+    }
+    router.refresh();
   }
 
   async function confirmarCancelar(contratoId: string) {
@@ -253,10 +253,8 @@ export function ContratoSeccion({
       setError("Escribe el motivo de la cancelación.");
       return;
     }
-    setCancelando(true);
     setError(null);
-    const res = await cancelarContrato(contratoId, motivoCancelar);
-    setCancelando(false);
+    const res = await cancelando.ejecutar(() => cancelarContrato(contratoId, motivoCancelar));
     if (res.error) {
       setError(res.error);
       return;
@@ -267,8 +265,14 @@ export function ContratoSeccion({
   }
 
   async function verFirmado(storagePath: string) {
-    const url = await obtenerUrlContratoStaff(storagePath);
-    if (url) window.open(url, "_blank");
+    setError(null);
+    try {
+      const url = await conTope(obtenerUrlContratoStaff(storagePath));
+      if (url) window.open(url, "_blank");
+      else setError("No pudimos abrir el contrato firmado. Intenta de nuevo.");
+    } catch (e) {
+      setError(mensajeDeFallo(e));
+    }
   }
 
   return (
@@ -305,7 +309,7 @@ export function ContratoSeccion({
                     <Button
                       type="button"
                       variante="secundario"
-                      disabled={generandoTipoId === tipo.id}
+                      cargando={generandoTipoId === tipo.id}
                       onClick={() => accionGenerar(tipo.id)}
                     >
                       {generandoTipoId === tipo.id ? "Generando…" : "Generar contrato"}
@@ -315,11 +319,11 @@ export function ContratoSeccion({
                 {pendiente && (
                   <AccionesPendiente
                     contrato={pendiente}
-                    subiendo={subiendo}
+                    subiendo={subiendo.cargando}
                     subiendoParaId={subiendoParaId}
                     cancelandoId={cancelandoId}
                     motivoCancelar={motivoCancelar}
-                    cancelando={cancelando}
+                    cancelando={cancelando.cargando}
                     onSubirPapel={abrirSelectorPapel}
                     onIniciarCancelar={setCancelandoId}
                     onCambiarMotivo={setMotivoCancelar}
@@ -343,11 +347,11 @@ export function ContratoSeccion({
                 <span className="font-semibold text-n-900">{c.tipoNombre}</span>
                 <AccionesPendiente
                   contrato={c}
-                  subiendo={subiendo}
+                  subiendo={subiendo.cargando}
                   subiendoParaId={subiendoParaId}
                   cancelandoId={cancelandoId}
                   motivoCancelar={motivoCancelar}
-                  cancelando={cancelando}
+                  cancelando={cancelando.cargando}
                   onSubirPapel={abrirSelectorPapel}
                   onIniciarCancelar={setCancelandoId}
                   onCambiarMotivo={setMotivoCancelar}

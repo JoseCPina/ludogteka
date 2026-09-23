@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
@@ -56,7 +57,7 @@ export function AgendarForm({
   const [fechaHora, setFechaHora] = useState(`${hoyNegocio()}T10:00`);
   const [estanciaId, setEstanciaId] = useState("");
   const [peloMaltratado, setPeloMaltratado] = useState(false);
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   const clientesFiltrados = useMemo(() => {
@@ -77,17 +78,15 @@ export function AgendarForm({
       setError("Elige un perro.");
       return;
     }
-    setEnviando(true);
     setError(null);
-    const res = await crearCita({
+    const res = await enviando.ejecutar(() => crearCita({
       perroId,
       servicioId,
       peloMaltratado,
       empleadoId,
       inicio: localAUtc(fechaHora),
       estanciaId: estanciaId || null,
-    });
-    setEnviando(false);
+    }));
     if (res.error) {
       setError(res.error);
       return;
@@ -231,8 +230,8 @@ export function AgendarForm({
             </Alert>
           )}
 
-          <Button type="button" disabled={enviando || !perroId} onClick={enviar} className="self-start">
-            {enviando ? "Agendando…" : "Agendar cita"}
+          <Button type="button" disabled={enviando.cargando || !perroId} onClick={enviar} className="self-start">
+            {enviando.cargando ? "Agendando…" : "Agendar cita"}
           </Button>
         </>
       )}

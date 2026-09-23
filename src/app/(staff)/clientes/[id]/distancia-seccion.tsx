@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
@@ -28,24 +29,23 @@ export function DistanciaSeccion({
   const [ajustadaManualmente, setAjustadaManualmente] = useState(ajustadaManualmenteInicial);
   const [simulado, setSimulado] = useState(false);
 
-  const [guardando, setGuardando] = useState(false);
+  const guardando = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   const [ajustando, setAjustando] = useState(false);
   const [kmManual, setKmManual] = useState("");
-  const [guardandoAjuste, setGuardandoAjuste] = useState(false);
+  const guardandoAjuste = useEspera();
 
   // try/finally, no solo await: si la acción lanza (red caída, servidor
   // reiniciándose, un error inesperado del servidor), sin el finally el
-  // `setGuardando(false)` nunca corre y el botón se queda en "Calculando…"
+  // `` nunca corre y el botón se queda en "Calculando…"
   // para siempre, sin decir nada. Es exactamente el bug que se reportó
   // desde la ficha del cliente.
   async function guardarDireccion() {
-    setGuardando(true);
     setError(null);
     setSimulado(false);
     try {
-      const res = await actualizarDireccionYCalcular(clienteId, direccion);
+      const res = await guardando.ejecutar(() => actualizarDireccionYCalcular(clienteId, direccion));
       if (res.error) {
         setError(res.error);
         return;
@@ -62,16 +62,14 @@ export function DistanciaSeccion({
         "No pudimos calcular la distancia: se cortó la conexión con el servidor. Intenta de nuevo, o ajústala a mano aquí abajo."
       );
     } finally {
-      setGuardando(false);
     }
   }
 
   async function guardarAjuste() {
     const km = Number(kmManual);
-    setGuardandoAjuste(true);
     setError(null);
     try {
-      const res = await ajustarDistanciaManual(clienteId, km);
+      const res = await guardandoAjuste.ejecutar(() => ajustarDistanciaManual(clienteId, km));
       if (res.error) {
         setError(res.error);
         return;
@@ -85,7 +83,6 @@ export function DistanciaSeccion({
     } catch {
       setError("No pudimos guardar el ajuste: se cortó la conexión con el servidor. Intenta de nuevo.");
     } finally {
-      setGuardandoAjuste(false);
     }
   }
 
@@ -110,12 +107,12 @@ export function DistanciaSeccion({
             label="Dirección"
             value={direccion}
             onChange={(e) => setDireccion(e.target.value)}
-            disabled={guardando}
+            disabled={guardando.cargando}
             placeholder="Calle, número, colonia, ciudad"
           />
         </div>
-        <Button type="button" disabled={guardando || !direccion.trim()} onClick={guardarDireccion}>
-          {guardando ? "Calculando…" : "Guardar y calcular"}
+        <Button type="button" disabled={guardando.cargando || !direccion.trim()} onClick={guardarDireccion}>
+          {guardando.cargando ? "Calculando…" : "Guardar y calcular"}
         </Button>
       </div>
 
@@ -146,13 +143,13 @@ export function DistanciaSeccion({
                 min="0"
                 value={kmManual}
                 onChange={(e) => setKmManual(e.target.value)}
-                disabled={guardandoAjuste}
+                disabled={guardandoAjuste.cargando}
                 ayuda="Úsalo cuando Google geocodifique mal la colonia — queda registrado como ajuste manual."
               />
             </div>
             <div className="flex gap-2">
-              <Button type="button" disabled={guardandoAjuste || !kmManual} onClick={guardarAjuste}>
-                {guardandoAjuste ? "Guardando…" : "Guardar ajuste"}
+              <Button type="button" disabled={guardandoAjuste.cargando || !kmManual} onClick={guardarAjuste}>
+                {guardandoAjuste.cargando ? "Guardando…" : "Guardar ajuste"}
               </Button>
               <Button type="button" variante="secundario" onClick={() => setAjustando(false)}>
                 Cancelar

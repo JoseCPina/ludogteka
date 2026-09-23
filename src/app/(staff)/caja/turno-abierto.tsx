@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,7 +49,7 @@ export function TurnoAbierto({
   const [registrandoRetiro, setRegistrandoRetiro] = useState(false);
   const [montoRetiro, setMontoRetiro] = useState("");
   const [motivoRetiro, setMotivoRetiro] = useState("");
-  const [guardandoRetiro, setGuardandoRetiro] = useState(false);
+  const guardandoRetiro = useEspera();
 
   const [cerrando, setCerrando] = useState(false);
   const [conteoEfectivo, setConteoEfectivo] = useState("");
@@ -64,7 +65,7 @@ export function TurnoAbierto({
     diferenciaTerminal: number;
     diferenciaTransferencia: number;
   } | null>(null);
-  const [guardandoCierre, setGuardandoCierre] = useState(false);
+  const guardandoCierre = useEspera();
 
   const totalRetiros = retiros.reduce((sum, r) => sum + r.monto, 0);
 
@@ -78,10 +79,8 @@ export function TurnoAbierto({
       setError("Escribe el motivo del retiro.");
       return;
     }
-    setGuardandoRetiro(true);
     setError(null);
-    const res = await registrarRetiro(monto, motivoRetiro);
-    setGuardandoRetiro(false);
+    const res = await guardandoRetiro.ejecutar(() => registrarRetiro(monto, motivoRetiro));
     if (res.error) {
       setError(res.error);
       return;
@@ -120,10 +119,10 @@ export function TurnoAbierto({
       setError("Captura el conteo de los tres métodos (puede ser 0).");
       return;
     }
-    setGuardandoCierre(true);
     setError(null);
-    const res = await cerrarTurno(turnoId, efectivo, terminal, transferencia, "", notasCierre);
-    setGuardandoCierre(false);
+    const res = await guardandoCierre.ejecutar(() =>
+      cerrarTurno(turnoId, efectivo, terminal, transferencia, "", notasCierre)
+    );
     if (res.error) {
       setError(res.error);
       return;
@@ -148,17 +147,17 @@ export function TurnoAbierto({
       setError("Escribe la explicación de la diferencia.");
       return;
     }
-    setGuardandoCierre(true);
     setError(null);
-    const res = await cerrarTurno(
-      turnoId,
-      Number(conteoEfectivo),
-      Number(conteoTerminal),
-      Number(conteoTransferencia),
-      explicacion,
-      notasCierre
+    const res = await guardandoCierre.ejecutar(() =>
+      cerrarTurno(
+        turnoId,
+        Number(conteoEfectivo),
+        Number(conteoTerminal),
+        Number(conteoTransferencia),
+        explicacion,
+        notasCierre
+      )
     );
-    setGuardandoCierre(false);
     if (res.error) {
       setError(res.error);
       return;
@@ -213,8 +212,8 @@ export function TurnoAbierto({
               placeholder="ej. Pago a proveedor de alimento"
             />
           </div>
-          <Button type="button" disabled={guardandoRetiro} onClick={enviarRetiro}>
-            {guardandoRetiro ? "Guardando…" : "Confirmar retiro"}
+          <Button type="button" cargando={guardandoRetiro.cargando} onClick={enviarRetiro}>
+            {guardandoRetiro.cargando ? "Guardando…" : "Confirmar retiro"}
           </Button>
         </div>
       )}
@@ -278,8 +277,8 @@ export function TurnoAbierto({
               </div>
               <Textarea label="Notas de cierre (opcional)" value={notasCierre} onChange={(e) => setNotasCierre(e.target.value)} />
               <div className="flex gap-2">
-                <Button type="button" disabled={guardandoCierre} onClick={enviarConteo}>
-                  {guardandoCierre ? "Comparando…" : "Enviar conteo"}
+                <Button type="button" cargando={guardandoCierre.cargando} onClick={enviarConteo}>
+                  {guardandoCierre.cargando ? "Comparando…" : "Enviar conteo"}
                 </Button>
                 <Button type="button" variante="secundario" onClick={() => setCerrando(false)}>
                   Cancelar
@@ -347,8 +346,8 @@ export function TurnoAbierto({
                 placeholder="ej. Faltaron $50 en efectivo, no se encontró la causa"
               />
               <div className="flex gap-2">
-                <Button type="button" disabled={guardandoCierre} onClick={confirmarConExplicacion}>
-                  {guardandoCierre ? "Cerrando…" : "Confirmar cierre"}
+                <Button type="button" cargando={guardandoCierre.cargando} onClick={confirmarConExplicacion}>
+                  {guardandoCierre.cargando ? "Cerrando…" : "Confirmar cierre"}
                 </Button>
                 <Button type="button" variante="secundario" onClick={() => setCerrando(false)}>
                   Cancelar

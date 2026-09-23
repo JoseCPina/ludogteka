@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
@@ -90,7 +91,7 @@ export function MatrizTarifas({
   const [incremento, setIncremento] = useState({ valor: "", unidad: "porcentaje" as "porcentaje" | "monto" });
   const [previsualizando, setPrevisualizando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [guardando, setGuardando] = useState(false);
+  const guardando = useEspera();
   const [exito, setExito] = useState(false);
 
   const baselineMap = useMemo(() => {
@@ -311,10 +312,8 @@ export function MatrizTarifas({
   }, [tramos, filas, columnas, valores, baselineMap]);
 
   async function confirmarGuardado() {
-    setGuardando(true);
     setError(null);
-    const resultado = await guardarTarifas(servicioId, vigenciaDesde, cambios);
-    setGuardando(false);
+    const resultado = await guardando.ejecutar(() => guardarTarifas(servicioId, vigenciaDesde, cambios));
     if (resultado.error) {
       setError(resultado.error);
       return;
@@ -379,10 +378,10 @@ export function MatrizTarifas({
           </table>
         </div>
         <div className="flex gap-3">
-          <Button type="button" disabled={guardando} onClick={confirmarGuardado}>
-            {guardando ? "Guardando…" : "Confirmar y guardar"}
+          <Button type="button" cargando={guardando.cargando} onClick={confirmarGuardado}>
+            {guardando.cargando ? "Guardando…" : "Confirmar y guardar"}
           </Button>
-          <Button type="button" variante="secundario" disabled={guardando} onClick={() => setPrevisualizando(false)}>
+          <Button type="button" variante="secundario" cargando={guardando.cargando} onClick={() => setPrevisualizando(false)}>
             Seguir editando
           </Button>
         </div>

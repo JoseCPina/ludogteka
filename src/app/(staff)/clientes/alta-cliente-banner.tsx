@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ export function AltaClienteBanner({
   revisadoAt: string | null;
 }) {
   const router = useRouter();
-  const [ocupado, setOcupado] = useState(false);
+  const ocupado = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   if (revisadoAt) {
@@ -32,10 +33,8 @@ export function AltaClienteBanner({
   }
 
   async function marcar() {
-    setOcupado(true);
     setError(null);
-    const res = await marcarDatosRevisados(clienteId);
-    setOcupado(false);
+    const res = await ocupado.ejecutar(() => marcarDatosRevisados(clienteId));
     if (res.error) {
       setError(res.error);
       return;
@@ -52,8 +51,8 @@ export function AltaClienteBanner({
       </span>
       {error && <span className="mt-2 block font-semibold text-naranja-oscuro">{error}</span>}
       <span className="mt-3 block">
-        <Button type="button" variante="secundario" disabled={ocupado} onClick={marcar}>
-          {ocupado ? "Guardando…" : "Ya lo revisé"}
+        <Button type="button" variante="secundario" cargando={ocupado.cargando} onClick={marcar}>
+          {ocupado.cargando ? "Guardando…" : "Ya lo revisé"}
         </Button>
       </span>
     </Alert>

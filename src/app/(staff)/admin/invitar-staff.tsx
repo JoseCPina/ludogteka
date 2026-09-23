@@ -1,4 +1,5 @@
 "use client";
+import { TOPE_MS, mensajeDeFallo } from "@/lib/ui/espera";
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -47,6 +48,9 @@ export function InvitarStaff() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, rol }),
+        // Sin esto, un servidor que no contesta deja el formulario en
+        // "cargando" para siempre.
+        signal: AbortSignal.timeout(TOPE_MS),
       });
       const cuerpo = await respuesta.json().catch(() => null);
 
@@ -62,8 +66,8 @@ export function InvitarStaff() {
         inviteLink: cuerpo.invite_link,
       });
       router.refresh();
-    } catch {
-      setResultado({ estado: "error", mensaje: "No pudimos completar la invitación. Revisa tu conexión." });
+    } catch (e) {
+      setResultado({ estado: "error", mensaje: mensajeDeFallo(e) });
     }
   }
 
@@ -142,7 +146,7 @@ export function InvitarStaff() {
         </Select>
       </div>
 
-      <Button type="submit" disabled={cargando} className="self-start">
+      <Button type="submit" cargando={cargando} className="self-start">
         {cargando ? "Invitando…" : "Invitar"}
       </Button>
     </form>

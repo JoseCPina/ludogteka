@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cancelarReserva } from "../reserva-actions";
@@ -14,13 +15,11 @@ export function CancelarReservaBoton({
 }) {
   const router = useRouter();
   const [confirmando, setConfirmando] = useState(false);
-  const [cargando, setCargando] = useState(false);
+  const cargando = useEspera();
   const [mensaje, setMensaje] = useState<string | null>(null);
 
   async function confirmar() {
-    setCargando(true);
-    const res = await cancelarReserva(reservaId);
-    setCargando(false);
+    const res = await cargando.ejecutar(() => cancelarReserva(reservaId));
     setConfirmando(false);
     if (res.error) {
       setMensaje(res.error);
@@ -52,8 +51,8 @@ export function CancelarReservaBoton({
         ¿Cancelar los {cancelables} perro(s) que todavía se pueden cancelar de esta reserva?
       </p>
       <div className="flex gap-2">
-        <Button type="button" variante="peligro" disabled={cargando} onClick={confirmar}>
-          {cargando ? "Cancelando…" : "Sí, cancelar todo"}
+        <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={confirmar}>
+          {cargando.cargando ? "Cancelando…" : "Sí, cancelar todo"}
         </Button>
         <Button type="button" variante="secundario" onClick={() => setConfirmando(false)}>
           No

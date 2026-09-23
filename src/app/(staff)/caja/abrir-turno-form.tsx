@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,7 +13,7 @@ export function AbrirTurnoForm() {
   const router = useRouter();
   const [fondoInicial, setFondoInicial] = useState("");
   const [notas, setNotas] = useState("");
-  const [cargando, setCargando] = useState(false);
+  const cargando = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   async function abrir() {
@@ -21,10 +22,8 @@ export function AbrirTurnoForm() {
       setError("El fondo inicial debe ser un número mayor o igual a cero.");
       return;
     }
-    setCargando(true);
     setError(null);
-    const res = await abrirTurno(fondo, notas);
-    setCargando(false);
+    const res = await cargando.ejecutar(() => abrirTurno(fondo, notas));
     if (res.error) {
       setError(res.error);
       return;
@@ -53,8 +52,8 @@ export function AbrirTurnoForm() {
       />
       <Textarea label="Notas (opcional)" value={notas} onChange={(e) => setNotas(e.target.value)} />
 
-      <Button type="button" disabled={cargando} onClick={abrir} className="self-start">
-        {cargando ? "Abriendo…" : "Abrir turno"}
+      <Button type="button" cargando={cargando.cargando} onClick={abrir} className="self-start">
+        {cargando.cargando ? "Abriendo…" : "Abrir turno"}
       </Button>
     </div>
   );

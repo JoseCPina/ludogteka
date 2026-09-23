@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -27,16 +28,14 @@ export function ConvertirHotel({
 }) {
   const router = useRouter();
   const [omitida, setOmitida] = useState(false);
-  const [convirtiendo, setConvirtiendo] = useState(false);
+  const convirtiendo = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   if (omitida) return null;
 
   async function convertir() {
-    setConvirtiendo(true);
     setError(null);
-    const res = await convertirEnNocheHotel(estanciaId);
-    setConvirtiendo(false);
+    const res = await convirtiendo.ejecutar(() => convertirEnNocheHotel(estanciaId));
     if (res.error) {
       setError(res.error);
       return;
@@ -59,8 +58,8 @@ export function ConvertirHotel({
         </div>
         <div className="flex gap-2">
           {sugerencia.hotelNombre ? (
-            <Button type="button" disabled={convirtiendo} onClick={convertir}>
-              {convirtiendo ? "Convirtiendo…" : "Convertir en noche de hotel"}
+            <Button type="button" cargando={convirtiendo.cargando} onClick={convertir}>
+              {convirtiendo.cargando ? "Convirtiendo…" : "Convertir en noche de hotel"}
             </Button>
           ) : (
             <span className="text-sm font-semibold text-amarillo-oscuro">

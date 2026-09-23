@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
+import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,7 @@ export function InsumoForm({
   };
   textoBoton: string;
 }) {
-  const [estado, formAction, enviando] = useActionState(action, ESTADO_INICIAL);
+  const [estado, formAction, enviando] = useActionState(useAccionConTope(action), ESTADO_INICIAL);
   const [unidadCompraId, setUnidadCompraId] = useState(valoresIniciales?.unidad_compra_id ?? "");
   const [requiereCaducidad, setRequiereCaducidad] = useState(valoresIniciales?.requiere_caducidad ?? false);
 
@@ -157,7 +158,7 @@ export function InsumoForm({
         )}
       </div>
 
-      <Button type="submit" disabled={enviando} className="self-start">
+      <Button type="submit" cargando={enviando} className="self-start">
         {enviando ? "Guardando…" : textoBoton}
       </Button>
     </form>

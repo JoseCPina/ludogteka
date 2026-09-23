@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
@@ -82,16 +83,14 @@ function EnlaceGenerado({ resultado }: { resultado: EstadoInvitacion }) {
 
 function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
   const router = useRouter();
-  const [ocupado, setOcupado] = useState(false);
+  const ocupado = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [reenvio, setReenvio] = useState<{ url: string; urlWhatsApp: string } | null>(null);
   const [confirmando, setConfirmando] = useState(false);
 
   async function reenviar() {
-    setOcupado(true);
     setError(null);
-    const res = await enlaceParaReenviar(invitacion.id);
-    setOcupado(false);
+    const res = await ocupado.ejecutar(() => enlaceParaReenviar(invitacion.id));
     if (res.error || !res.url || !res.urlWhatsApp) {
       setError(res.error ?? "No pudimos rearmar el link.");
       return;
@@ -101,10 +100,8 @@ function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
   }
 
   async function cancelar() {
-    setOcupado(true);
     setError(null);
-    const res = await cancelarInvitacion(invitacion.id);
-    setOcupado(false);
+    const res = await ocupado.ejecutar(() => cancelarInvitacion(invitacion.id));
     if (res.error) {
       setError(res.error);
       return;
@@ -157,8 +154,8 @@ function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
           </span>
           {pendiente && !confirmando && (
             <>
-              <Button type="button" variante="secundario" disabled={ocupado} onClick={reenviar}>
-                {ocupado ? "…" : "Reenviar"}
+              <Button type="button" variante="secundario" cargando={ocupado.cargando} onClick={reenviar}>
+                {ocupado.cargando ? "…" : "Reenviar"}
               </Button>
               <Button type="button" variante="peligro" onClick={() => setConfirmando(true)}>
                 Cancelar
@@ -173,8 +170,8 @@ function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
           <p className="text-sm text-n-700">
             Cancelar deja el link inservible. El historial se queda para saber qué se mandó.
           </p>
-          <Button type="button" variante="peligro" disabled={ocupado} onClick={cancelar}>
-            {ocupado ? "Cancelando…" : "Sí, cancelar"}
+          <Button type="button" variante="peligro" cargando={ocupado.cargando} onClick={cancelar}>
+            {ocupado.cargando ? "Cancelando…" : "Sí, cancelar"}
           </Button>
           <Button type="button" variante="secundario" onClick={() => setConfirmando(false)}>
             No
@@ -205,15 +202,13 @@ export function InvitacionesPanel({
   const [telefono, setTelefono] = useState("");
   const [tipo, setTipo] = useState<TipoLinkAlta>(tipoInicial);
   const [dias, setDias] = useState("7");
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<EstadoInvitacion | null>(null);
 
   async function generar() {
-    setEnviando(true);
     setError(null);
-    const res = await crearInvitacion(nombre, telefono, Number(dias), tipo);
-    setEnviando(false);
+    const res = await enviando.ejecutar(() => crearInvitacion(nombre, telefono, Number(dias), tipo));
     if (res.error) {
       setError(res.error);
       return;
@@ -281,8 +276,8 @@ export function InvitacionesPanel({
           <option value="30">30 días</option>
         </Select>
 
-        <Button type="button" disabled={enviando} onClick={generar} className="self-start">
-          {enviando ? "Generando…" : "Generar link"}
+        <Button type="button" cargando={enviando.cargando} onClick={generar} className="self-start">
+          {enviando.cargando ? "Generando…" : "Generar link"}
         </Button>
 
         {resultado && <EnlaceGenerado resultado={resultado} />}

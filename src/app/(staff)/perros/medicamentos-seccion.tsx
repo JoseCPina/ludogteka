@@ -1,6 +1,8 @@
 "use client";
+import { esperarConTope } from "@/lib/ui/espera";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,7 +36,7 @@ export function MedicamentosSeccion({
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [agregando, setAgregando] = useState(false);
   const [registrandoDosisPara, setRegistrandoDosisPara] = useState<string | null>(null);
   const [omitida, setOmitida] = useState(false);
@@ -48,10 +50,8 @@ export function MedicamentosSeccion({
   const [notas, setNotas] = useState("");
 
   async function agregar() {
-    setEnviando(true);
     setError(null);
-    const res = await crearMedicamento(perroId, { medicamento, dosis, horario, fechaInicio, fechaFin, notas });
-    setEnviando(false);
+    const res = await enviando.ejecutar(() => crearMedicamento(perroId, { medicamento, dosis, horario, fechaInicio, fechaFin, notas }));
     if (res.error) {
       setError(res.error);
       return;
@@ -68,16 +68,14 @@ export function MedicamentosSeccion({
 
   async function toggleActivo(id: string, activoActual: boolean) {
     setError(null);
-    const res = await toggleActivoMedicamento(id, perroId, !activoActual);
+    const res = await esperarConTope(() => toggleActivoMedicamento(id, perroId, !activoActual));
     if (res.error) setError(res.error);
     router.refresh();
   }
 
   async function confirmarDosis(perroMedicamentoId: string) {
-    setEnviando(true);
     setError(null);
-    const res = await registrarDosis(perroMedicamentoId, perroId, omitida, notasDosis);
-    setEnviando(false);
+    const res = await enviando.ejecutar(() => registrarDosis(perroMedicamentoId, perroId, omitida, notasDosis));
     if (res.error) {
       setError(res.error);
       return;
@@ -153,11 +151,11 @@ export function MedicamentosSeccion({
                     value={notasDosis}
                     onChange={(e) => setNotasDosis(e.target.value)}
                     rows={2}
-                    disabled={enviando}
+                    disabled={enviando.cargando}
                   />
                   <div className="flex gap-2">
-                    <Button type="button" disabled={enviando} onClick={() => confirmarDosis(m.id)}>
-                      {enviando ? "Guardando…" : "Confirmar"}
+                    <Button type="button" cargando={enviando.cargando} onClick={() => confirmarDosis(m.id)}>
+                      {enviando.cargando ? "Guardando…" : "Confirmar"}
                     </Button>
                     <Button
                       type="button"
@@ -197,23 +195,23 @@ export function MedicamentosSeccion({
       {puedeEscribir &&
         (agregando ? (
           <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
-            <Field label="Medicamento" value={medicamento} onChange={(e) => setMedicamento(e.target.value)} disabled={enviando} />
-            <Field label="Dosis" value={dosis} onChange={(e) => setDosis(e.target.value)} disabled={enviando} />
+            <Field label="Medicamento" value={medicamento} onChange={(e) => setMedicamento(e.target.value)} disabled={enviando.cargando} />
+            <Field label="Dosis" value={dosis} onChange={(e) => setDosis(e.target.value)} disabled={enviando.cargando} />
             <Field
               label="Horario (opcional)"
               value={horario}
               onChange={(e) => setHorario(e.target.value)}
               placeholder="ej. cada 8 horas"
-              disabled={enviando}
+              disabled={enviando.cargando}
             />
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Desde" type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} disabled={enviando} />
-              <Field label="Hasta (opcional)" type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} disabled={enviando} />
+              <Field label="Desde" type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} disabled={enviando.cargando} />
+              <Field label="Hasta (opcional)" type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} disabled={enviando.cargando} />
             </div>
-            <Textarea label="Notas (opcional)" value={notas} onChange={(e) => setNotas(e.target.value)} rows={2} disabled={enviando} />
+            <Textarea label="Notas (opcional)" value={notas} onChange={(e) => setNotas(e.target.value)} rows={2} disabled={enviando.cargando} />
             <div className="flex gap-2">
-              <Button type="button" disabled={enviando} onClick={agregar}>
-                {enviando ? "Guardando…" : "Agregar medicamento"}
+              <Button type="button" cargando={enviando.cargando} onClick={agregar}>
+                {enviando.cargando ? "Guardando…" : "Agregar medicamento"}
               </Button>
               <Button type="button" variante="secundario" onClick={() => setAgregando(false)}>
                 Cancelar

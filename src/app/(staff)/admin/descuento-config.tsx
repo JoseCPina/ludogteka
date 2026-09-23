@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
@@ -17,14 +18,12 @@ export function DescuentoConfig({
   const router = useRouter();
   const [editando, setEditando] = useState(false);
   const [tope, setTope] = useState(String(topeActual ?? ""));
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   async function guardar() {
-    setEnviando(true);
     setError(null);
-    const res = await actualizarTopeDescuento(Number(tope));
-    setEnviando(false);
+    const res = await enviando.ejecutar(() => actualizarTopeDescuento(Number(tope)));
     if (res.error) {
       setError(res.error);
       return;
@@ -68,8 +67,8 @@ export function DescuentoConfig({
             onChange={(e) => setTope(e.target.value)}
             autoFocus
           />
-          <Button type="button" disabled={enviando} onClick={guardar}>
-            {enviando ? "Guardando…" : "Guardar"}
+          <Button type="button" cargando={enviando.cargando} onClick={guardar}>
+            {enviando.cargando ? "Guardando…" : "Guardar"}
           </Button>
           <Button type="button" variante="secundario" onClick={() => setEditando(false)}>
             Cancelar

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { aplicarBonoAEstancia } from "../../../bono-actions";
@@ -16,16 +17,14 @@ export type EstadoPaseCheckin =
 // aplicar (compró después de reservar), aplicarlos aquí mismo.
 export function PaseCheckin({ estanciaId, estado }: { estanciaId: string; estado: EstadoPaseCheckin }) {
   const router = useRouter();
-  const [aplicando, setAplicando] = useState(false);
+  const aplicando = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   if (estado.tipo === "no_aplica") return null;
 
   async function aplicar() {
-    setAplicando(true);
     setError(null);
-    const res = await aplicarBonoAEstancia(estanciaId);
-    setAplicando(false);
+    const res = await aplicando.ejecutar(() => aplicarBonoAEstancia(estanciaId));
     if (res.error) {
       setError(res.error);
       return;
@@ -52,8 +51,8 @@ export function PaseCheckin({ estanciaId, estado }: { estanciaId: string; estado
           </p>
           {error && <p className="mt-1 text-sm font-semibold text-naranja-oscuro">{error}</p>}
         </div>
-        <Button type="button" disabled={aplicando} onClick={aplicar}>
-          {aplicando ? "Aplicando…" : "Usar el pase para hoy"}
+        <Button type="button" cargando={aplicando.cargando} onClick={aplicar}>
+          {aplicando.cargando ? "Aplicando…" : "Usar el pase para hoy"}
         </Button>
       </div>
     );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -46,13 +47,13 @@ export function FirmarContrato({
 
   const [firmando, setFirmando] = useState(false);
   const [vacio, setVacio] = useState(true);
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [urlFirmado, setUrlFirmado] = useState<string | null>(null);
 
   useEffect(() => {
     if (estado !== "pendiente_firma" && storagePath) {
-      obtenerUrlContrato(storagePath).then(setUrlFirmado);
+      obtenerUrlContrato(storagePath).then(setUrlFirmado).catch(() => setUrlFirmado(null));
     }
   }, [estado, storagePath]);
 
@@ -132,11 +133,9 @@ export function FirmarContrato({
       setError("Dibuja tu firma antes de confirmar.");
       return;
     }
-    setEnviando(true);
     setError(null);
     const dataUrl = canvas.toDataURL("image/png");
-    const res = await firmarContratoDigital(contratoId, dataUrl);
-    setEnviando(false);
+    const res = await enviando.ejecutar(() => firmarContratoDigital(contratoId, dataUrl));
     if (res.error) {
       setError(res.error);
       return;
@@ -204,13 +203,13 @@ export function FirmarContrato({
             onPointerLeave={terminarTrazo}
           />
           <div className="flex flex-wrap gap-2">
-            <Button type="button" disabled={vacio || enviando} onClick={confirmarFirma}>
-              {enviando ? "Firmando…" : "Confirmar firma"}
+            <Button type="button" disabled={vacio} cargando={enviando.cargando} onClick={confirmarFirma}>
+              {enviando.cargando ? "Firmando…" : "Confirmar firma"}
             </Button>
-            <Button type="button" variante="secundario" onClick={limpiar} disabled={enviando}>
+            <Button type="button" variante="secundario" onClick={limpiar} disabled={enviando.cargando}>
               Borrar
             </Button>
-            <Button type="button" variante="secundario" onClick={() => setFirmando(false)} disabled={enviando}>
+            <Button type="button" variante="secundario" onClick={() => setFirmando(false)} disabled={enviando.cargando}>
               Cancelar
             </Button>
           </div>

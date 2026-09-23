@@ -1,6 +1,8 @@
 "use client";
+import { esperarConTope } from "@/lib/ui/espera";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
@@ -27,14 +29,14 @@ export function CheckoutForm({
   const router = useRouter();
   const [pertenencias, setPertenencias] = useState(pertenenciasIniciales);
   const [salidaActual, setSalidaActual] = useState(fechaSalida);
-  const [extendiendo, setExtendiendo] = useState(false);
+  const extendiendo = useEspera();
 
   const [recogidoNombre, setRecogidoNombre] = useState("");
   const [recogidoTelefono, setRecogidoTelefono] = useState("");
   const [esDueno, setEsDueno] = useState<boolean | null>(null);
 
   const [confirmandoConPendientes, setConfirmandoConPendientes] = useState(false);
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   const pendientes = pertenencias.filter((p) => !p.devuelto);
@@ -42,15 +44,17 @@ export function CheckoutForm({
   async function toggle(p: Pertenencia) {
     const nuevoValor = !p.devuelto;
     setPertenencias((prev) => prev.map((x) => (x.id === p.id ? { ...x, devuelto: nuevoValor } : x)));
-    await alternarPertenencia(p.id, nuevoValor);
+    const res = await esperarConTope(() => alternarPertenencia(p.id, nuevoValor));
+    if (res.error) {
+      setPertenencias((prev) => prev.map((x) => (x.id === p.id ? { ...x, devuelto: !nuevoValor } : x)));
+      setError(res.error);
+    }
   }
 
   async function extenderEstancia() {
-    setExtendiendo(true);
     setError(null);
     const nuevaSalida = sumarDiasFecha(salidaActual, 1);
-    const res = await moverFechas(estanciaId, fechaEntrada, nuevaSalida);
-    setExtendiendo(false);
+    const res = await extendiendo.ejecutar(() => moverFechas(estanciaId, fechaEntrada, nuevaSalida));
     if (res.error) {
       setError(res.error);
       return;
@@ -72,14 +76,12 @@ export function CheckoutForm({
       return;
     }
 
-    setEnviando(true);
     setError(null);
-    const res = await confirmarCheckout(estanciaId, {
+    const res = await enviando.ejecutar(() => confirmarCheckout(estanciaId, {
       recogidoPorNombre: recogidoNombre,
       recogidoPorTelefono: recogidoTelefono,
       recogidoPorEsDueno: esDueno,
-    });
-    setEnviando(false);
+    }));
     if (res.error) {
       setError(res.error);
       return;
@@ -95,8 +97,8 @@ export function CheckoutForm({
             <p className="text-sm text-n-600">Salida programada</p>
             <p className="font-bold text-n-900">{formatearFechaCalendario(salidaActual)}</p>
           </div>
-          <Button type="button" variante="secundario" disabled={extendiendo} onClick={extenderEstancia}>
-            {extendiendo ? "Extendiendo…" : "Extender 1 noche"}
+          <Button type="button" variante="secundario" cargando={extendiendo.cargando} onClick={extenderEstancia}>
+            {extendiendo.cargando ? "Extendiendo…" : "Extender 1 noche"}
           </Button>
           <p className="text-sm text-n-600">
             El dueño no llega todavía y el cupo de esta noche ya se liberó — usa este botón antes
@@ -191,8 +193,8 @@ export function CheckoutForm({
         </Alert>
       )}
 
-      <Button type="button" disabled={enviando} onClick={enviarCheckout} className="self-start">
-        {enviando ? "Guardando…" : "Confirmar salida"}
+      <Button type="button" cargando={enviando.cargando} onClick={enviarCheckout} className="self-start">
+        {enviando.cargando ? "Guardando…" : "Confirmar salida"}
       </Button>
     </div>
   );

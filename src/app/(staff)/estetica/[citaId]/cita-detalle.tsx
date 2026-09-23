@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,7 @@ export function CitaDetalle({
   const router = useRouter();
   const [estado, setEstado] = useState(estadoInicial);
   const [error, setError] = useState<string | null>(null);
-  const [cargando, setCargando] = useState(false);
+  const cargando = useEspera();
 
   const [reagendando, setReagendando] = useState(false);
   const [nuevoInicio, setNuevoInicio] = useState(aDatetimeLocal(inicio));
@@ -84,10 +85,8 @@ export function CitaDetalle({
   );
 
   async function accionReagendar() {
-    setCargando(true);
     setError(null);
-    const res = await reagendarCita(citaId, localAUtc(nuevoInicio));
-    setCargando(false);
+    const res = await cargando.ejecutar(() => reagendarCita(citaId, localAUtc(nuevoInicio)));
     if (res.error) {
       setError(res.error);
       return;
@@ -97,10 +96,8 @@ export function CitaDetalle({
   }
 
   async function accionCancelar() {
-    setCargando(true);
     setError(null);
-    const res = await cancelarCita(citaId);
-    setCargando(false);
+    const res = await cargando.ejecutar(() => cancelarCita(citaId));
     if (res.error) {
       setError(res.error);
       return;
@@ -109,10 +106,8 @@ export function CitaDetalle({
   }
 
   async function accionNoLlego() {
-    setCargando(true);
     setError(null);
-    const res = await marcarCitaNoLlego(citaId);
-    setCargando(false);
+    const res = await cargando.ejecutar(() => marcarCitaNoLlego(citaId));
     if (res.error) {
       setError(res.error);
       return;
@@ -125,14 +120,12 @@ export function CitaDetalle({
       setError("Registra quién entrega al perro.");
       return;
     }
-    setCargando(true);
     setError(null);
-    const res = await iniciarCita(
+    const res = await cargando.ejecutar(() => iniciarCita(
       citaId,
       esStandalone ? entregadoNombre : null,
       esStandalone ? entregadoTelefono || null : null
-    );
-    setCargando(false);
+    ));
     if (res.error) {
       setError(res.error);
       return;
@@ -146,20 +139,18 @@ export function CitaDetalle({
       setError("Registra quién recoge al perro e indica si es el dueño.");
       return;
     }
-    setCargando(true);
     setError(null);
     const ajustes: AjusteConsumo[] = recetaItems.map((r) => ({
       insumo_id: r.insumo_id,
       cantidad: Number(cantidadesConsumo[r.insumo_id] ?? r.cantidad_sugerida),
     }));
-    const res = await finalizarCita(
+    const res = await cargando.ejecutar(() => finalizarCita(
       citaId,
       esStandalone ? recogidoNombre : null,
       esStandalone ? recogidoTelefono || null : null,
       esStandalone ? esDueno : null,
       ajustes
-    );
-    setCargando(false);
+    ));
     if (res.error) {
       setError(res.error);
       return;
@@ -207,8 +198,8 @@ export function CitaDetalle({
                 value={nuevoInicio}
                 onChange={(e) => setNuevoInicio(e.target.value)}
               />
-              <Button type="button" disabled={cargando} onClick={accionReagendar}>
-                {cargando ? "Guardando…" : "Guardar"}
+              <Button type="button" cargando={cargando.cargando} onClick={accionReagendar}>
+                {cargando.cargando ? "Guardando…" : "Guardar"}
               </Button>
               <Button type="button" variante="secundario" onClick={() => setReagendando(false)}>
                 Cancelar
@@ -218,8 +209,8 @@ export function CitaDetalle({
             <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-naranja bg-naranja-suave p-3">
               <p className="text-sm font-semibold text-naranja-oscuro">¿Cancelar esta cita?</p>
               <div className="flex gap-2">
-                <Button type="button" variante="peligro" disabled={cargando} onClick={accionCancelar}>
-                  {cargando ? "Cancelando…" : "Sí, cancelar"}
+                <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={accionCancelar}>
+                  {cargando.cargando ? "Cancelando…" : "Sí, cancelar"}
                 </Button>
                 <Button type="button" variante="secundario" onClick={() => setConfirmandoCancelar(false)}>
                   No
@@ -232,8 +223,8 @@ export function CitaDetalle({
                 ¿Marcar que {perroNombre} no llegó?
               </p>
               <div className="flex gap-2">
-                <Button type="button" variante="peligro" disabled={cargando} onClick={accionNoLlego}>
-                  {cargando ? "Guardando…" : "Sí, no llegó"}
+                <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={accionNoLlego}>
+                  {cargando.cargando ? "Guardando…" : "Sí, no llegó"}
                 </Button>
                 <Button type="button" variante="secundario" onClick={() => setConfirmandoNoLlego(false)}>
                   No
@@ -260,8 +251,8 @@ export function CitaDetalle({
                 <p className="text-sm text-n-600">El perro ya está adentro (estancia ligada).</p>
               )}
               <div className="flex gap-2">
-                <Button type="button" disabled={cargando} onClick={accionIniciar}>
-                  {cargando ? "Guardando…" : "Confirmar inicio"}
+                <Button type="button" cargando={cargando.cargando} onClick={accionIniciar}>
+                  {cargando.cargando ? "Guardando…" : "Confirmar inicio"}
                 </Button>
                 <Button type="button" variante="secundario" onClick={() => setIniciando(false)}>
                   Cancelar
@@ -357,8 +348,8 @@ export function CitaDetalle({
               )}
 
               <div className="flex gap-2">
-                <Button type="button" disabled={cargando} onClick={accionFinalizar}>
-                  {cargando ? "Guardando…" : "Confirmar cierre"}
+                <Button type="button" cargando={cargando.cargando} onClick={accionFinalizar}>
+                  {cargando.cargando ? "Guardando…" : "Confirmar cierre"}
                 </Button>
                 <Button type="button" variante="secundario" onClick={() => setFinalizando(false)}>
                   Cancelar

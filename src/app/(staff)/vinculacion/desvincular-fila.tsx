@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -12,14 +13,12 @@ import type { CuentaVinculada } from "./tipos";
 export function DesvincularFila({ cuenta }: { cuenta: CuentaVinculada }) {
   const router = useRouter();
   const [confirmando, setConfirmando] = useState(false);
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   async function confirmar() {
-    setEnviando(true);
     setError(null);
-    const resultado = await desvincularCuenta(cuenta.profile_id, cuenta.cliente_id);
-    setEnviando(false);
+    const resultado = await enviando.ejecutar(() => desvincularCuenta(cuenta.profile_id, cuenta.cliente_id));
     if (resultado.error) {
       setError(resultado.error);
       return;
@@ -64,13 +63,13 @@ export function DesvincularFila({ cuenta }: { cuenta: CuentaVinculada }) {
             ¿Quitarle a {cuenta.email} el acceso al expediente de {cuenta.cliente_nombre}?
           </p>
           <div className="flex flex-wrap gap-3">
-            <Button type="button" variante="peligro" disabled={enviando} onClick={confirmar}>
-              {enviando ? "Desvinculando…" : "Sí, desvincular"}
+            <Button type="button" variante="peligro" cargando={enviando.cargando} onClick={confirmar}>
+              {enviando.cargando ? "Desvinculando…" : "Sí, desvincular"}
             </Button>
             <Button
               type="button"
               variante="secundario"
-              disabled={enviando}
+              cargando={enviando.cargando}
               onClick={() => setConfirmando(false)}
             >
               Cancelar

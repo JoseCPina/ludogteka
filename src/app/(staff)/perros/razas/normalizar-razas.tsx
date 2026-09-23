@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -51,7 +52,7 @@ export function NormalizarRazas({
       ])
     )
   );
-  const [guardando, setGuardando] = useState(false);
+  const guardando = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<string | null>(null);
 
@@ -115,16 +116,14 @@ export function NormalizarRazas({
       return;
     }
 
-    setGuardando(true);
-    const res = await asignarRazasEnLote(
+    const res = await guardando.ejecutar(() => asignarRazasEnLote(
       listos.map(({ perro_id, raza_id, raza, tamano_id }) => ({
         perro_id,
         raza_id,
         raza,
         tamano_id,
       }))
-    );
-    setGuardando(false);
+    ));
 
     if (res.error) {
       setError(res.error);
@@ -271,10 +270,10 @@ export function NormalizarRazas({
       <div className="flex flex-wrap items-center gap-3 border-t border-n-200 pt-4">
         <Button
           type="button"
-          disabled={soloLectura || listos.length === 0 || guardando}
+          disabled={soloLectura || listos.length === 0 || guardando.cargando}
           onClick={guardar}
         >
-          {guardando
+          {guardando.cargando
             ? "Guardando…"
             : listos.length === 0
               ? "Nada que guardar todavía"

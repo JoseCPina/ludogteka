@@ -1,6 +1,8 @@
 "use client";
+import { esperarConTope } from "@/lib/ui/espera";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Select } from "@/components/ui/select";
 import { Field } from "@/components/ui/field";
@@ -38,14 +40,12 @@ export function RecetaConsumo({
   const [tamanoId, setTamanoId] = useState("");
   const [insumoId, setInsumoId] = useState("");
   const [cantidad, setCantidad] = useState("");
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   async function agregar() {
-    setEnviando(true);
     setError(null);
-    const res = await crearLineaReceta(servicioId, tamanoId, insumoId, Number(cantidad));
-    setEnviando(false);
+    const res = await enviando.ejecutar(() => crearLineaReceta(servicioId, tamanoId, insumoId, Number(cantidad)));
     if (res.error) {
       setError(res.error);
       return;
@@ -57,7 +57,14 @@ export function RecetaConsumo({
   }
 
   async function quitar(lineaId: string) {
-    await darDeBajaLineaReceta(servicioId, lineaId);
+    const res = await esperarConTope(async () => {
+      await darDeBajaLineaReceta(servicioId, lineaId);
+      return { error: null };
+    });
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
     router.refresh();
   }
 
@@ -108,7 +115,7 @@ export function RecetaConsumo({
 
       {esAdmin && (
         <div className="flex flex-wrap items-end gap-3 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
-          <Select label="Tamaño" value={tamanoId} onChange={(e) => setTamanoId(e.target.value)} disabled={enviando}>
+          <Select label="Tamaño" value={tamanoId} onChange={(e) => setTamanoId(e.target.value)} disabled={enviando.cargando}>
             <option value="">Elige un tamaño</option>
             {tamanos.map((t) => (
               <option key={t.id} value={t.id}>
@@ -116,7 +123,7 @@ export function RecetaConsumo({
               </option>
             ))}
           </Select>
-          <Select label="Insumo" value={insumoId} onChange={(e) => setInsumoId(e.target.value)} disabled={enviando}>
+          <Select label="Insumo" value={insumoId} onChange={(e) => setInsumoId(e.target.value)} disabled={enviando.cargando}>
             <option value="">Elige un insumo</option>
             {insumos.map((i) => (
               <option key={i.id} value={i.id}>
@@ -131,11 +138,11 @@ export function RecetaConsumo({
             min="0"
             value={cantidad}
             onChange={(e) => setCantidad(e.target.value)}
-            disabled={enviando}
+            disabled={enviando.cargando}
             className="w-32"
           />
-          <Button type="button" disabled={enviando || !tamanoId || !insumoId || !cantidad} onClick={agregar}>
-            {enviando ? "Guardando…" : "Agregar línea"}
+          <Button type="button" disabled={enviando.cargando || !tamanoId || !insumoId || !cantidad} onClick={agregar}>
+            {enviando.cargando ? "Guardando…" : "Agregar línea"}
           </Button>
         </div>
       )}

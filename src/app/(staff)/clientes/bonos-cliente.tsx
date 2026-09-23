@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
@@ -66,7 +67,7 @@ export function BonosCliente({
   const [servicioId, setServicioId] = useState(catalogo[0]?.id ?? "");
   const [notas, setNotas] = useState("");
   const [metodos, setMetodos] = useState<FilaMetodo[]>([{ metodo: "efectivo", monto: "", propina: "0" }]);
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   function actualizarMetodo(i: number, cambios: Partial<FilaMetodo>) {
@@ -83,10 +84,8 @@ export function BonosCliente({
       setError("Cada método debe tener un monto mayor a cero.");
       return;
     }
-    setEnviando(true);
     setError(null);
-    const res = await comprarBono(clienteId, servicioId, notas, payload);
-    setEnviando(false);
+    const res = await enviando.ejecutar(() => comprarBono(clienteId, servicioId, notas, payload));
     if (res.error) {
       setError(res.error);
       return;
@@ -207,8 +206,8 @@ export function BonosCliente({
           <Textarea label="Notas (opcional)" value={notas} onChange={(e) => setNotas(e.target.value)} />
 
           <div className="flex gap-2">
-            <Button type="button" disabled={enviando} onClick={enviar}>
-              {enviando ? "Vendiendo…" : "Confirmar venta"}
+            <Button type="button" cargando={enviando.cargando} onClick={enviar}>
+              {enviando.cargando ? "Vendiendo…" : "Confirmar venta"}
             </Button>
             <Button type="button" variante="secundario" onClick={() => setVendiendo(false)}>
               Cancelar

@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
+import { conTope, mensajeDeFallo } from "@/lib/ui/espera";
 import Link from "next/link";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
@@ -93,7 +95,7 @@ export function NuevaReservaForm({
   const [lineas, setLineas] = useState<Linea[]>([]);
   const [resultados, setResultados] = useState<ResultadoLinea[] | null>(null);
   const [reservaId, setReservaId] = useState<string | null>(null);
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [reintentando, setReintentando] = useState<Record<string, boolean>>({});
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
 
@@ -160,11 +162,9 @@ export function NuevaReservaForm({
 
   async function enviar() {
     if (!clienteId) return;
-    setEnviando(true);
     setErrorGeneral(null);
     const payload = lineas.map((l) => lineaAPayload(l, servicios));
-    const res = await crearReserva(clienteId, notas, payload);
-    setEnviando(false);
+    const res = await enviando.ejecutar(() => crearReserva(clienteId, notas, payload));
     if (res.error) {
       setErrorGeneral(res.error);
       return;
@@ -178,7 +178,12 @@ export function NuevaReservaForm({
     const linea = lineas.find((l) => l.perroId === perroId);
     if (!linea) return;
     setReintentando((prev) => ({ ...prev, [perroId]: true }));
-    const resultado = await agregarEstanciaAReserva(reservaId, lineaAPayload(linea, servicios));
+    let resultado: ResultadoLinea;
+    try {
+      resultado = await conTope(agregarEstanciaAReserva(reservaId, lineaAPayload(linea, servicios)));
+    } catch (e) {
+      resultado = { perroId, exito: false, motivo: mensajeDeFallo(e), estanciaId: null };
+    }
     setReintentando((prev) => ({ ...prev, [perroId]: false }));
     setResultados((prev) => (prev ? prev.map((r) => (r.perroId === perroId ? resultado : r)) : [resultado]));
   }
@@ -281,7 +286,8 @@ export function NuevaReservaForm({
                         <Button
                           type="button"
                           variante="secundario"
-                          disabled={!linea.motivoExcepcionSanitaria.trim() || reintentando[r.perroId]}
+                          disabled={!linea.motivoExcepcionSanitaria.trim()}
+                          cargando={reintentando[r.perroId]}
                           onClick={() => reintentar(r.perroId)}
                           className="self-start"
                         >
@@ -316,7 +322,8 @@ export function NuevaReservaForm({
                         <Button
                           type="button"
                           variante="secundario"
-                          disabled={!linea.motivoExcepcionComportamiento.trim() || reintentando[r.perroId]}
+                          disabled={!linea.motivoExcepcionComportamiento.trim()}
+                          cargando={reintentando[r.perroId]}
                           onClick={() => reintentar(r.perroId)}
                           className="self-start"
                         >
@@ -330,7 +337,7 @@ export function NuevaReservaForm({
                   <Button
                     type="button"
                     variante="secundario"
-                    disabled={reintentando[r.perroId]}
+                    cargando={reintentando[r.perroId]}
                     onClick={() => reintentar(r.perroId)}
                     className="mt-3"
                   >
@@ -465,11 +472,11 @@ export function NuevaReservaForm({
 
       <Button
         type="button"
-        disabled={lineas.length === 0 || enviando}
+        disabled={lineas.length === 0 || enviando.cargando}
         onClick={enviar}
         className="self-start"
       >
-        {enviando ? "Guardando…" : "Crear reserva"}
+        {enviando.cargando ? "Guardando…" : "Crear reserva"}
       </Button>
     </div>
   );

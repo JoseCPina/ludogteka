@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import Link from "next/link";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
@@ -43,7 +44,7 @@ export function NuevaSerieForm({
   const [fechaInicio, setFechaInicio] = useState(hoy);
   const [tieneFin, setTieneFin] = useState(false);
   const [fechaFin, setFechaFin] = useState(hoy);
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [resultados, setResultados] = useState<ResultadoFecha[] | null>(null);
   const [serieId, setSerieId] = useState<string | null>(null);
@@ -66,10 +67,8 @@ export function NuevaSerieForm({
   }
 
   async function enviar() {
-    setEnviando(true);
     setError(null);
-    const res = await crearSerie(perroId, servicioId, diasSemana, fechaInicio, tieneFin ? fechaFin : null);
-    setEnviando(false);
+    const res = await enviando.ejecutar(() => crearSerie(perroId, servicioId, diasSemana, fechaInicio, tieneFin ? fechaFin : null));
     if (res.error && !res.serieId) {
       setError(res.error);
       return;
@@ -272,11 +271,11 @@ export function NuevaSerieForm({
 
               <Button
                 type="button"
-                disabled={diasSemana.length === 0 || !servicioId || enviando}
+                disabled={diasSemana.length === 0 || !servicioId || enviando.cargando}
                 onClick={enviar}
                 className="self-start"
               >
-                {enviando ? "Creando…" : "Crear serie y generar horizonte"}
+                {enviando.cargando ? "Creando…" : "Crear serie y generar horizonte"}
               </Button>
             </>
           )}

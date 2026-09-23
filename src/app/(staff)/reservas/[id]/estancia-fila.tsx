@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Alert } from "@/components/ui/alert";
@@ -62,7 +63,7 @@ export function EstanciaFila({
   const [moviendoFechas, setMoviendoFechas] = useState(false);
   const [nuevaEntrada, setNuevaEntrada] = useState(fila.fechaEntrada);
   const [nuevaSalida, setNuevaSalida] = useState(fila.fechaSalida);
-  const [cargando, setCargando] = useState(false);
+  const cargando = useEspera();
   const [error, setError] = useState<string | null>(null);
   // Qué pasó con el pase al cancelar (se devolvió, o venció y no).
   const [avisoBono, setAvisoBono] = useState<string | null>(null);
@@ -80,10 +81,8 @@ export function EstanciaFila({
   const cantidad = porHora ? (fila.horas ?? 1) : noches;
 
   async function accionCancelar() {
-    setCargando(true);
     setError(null);
-    const res = await cancelarEstancia(fila.id);
-    setCargando(false);
+    const res = await cargando.ejecutar(() => cancelarEstancia(fila.id));
     if (res.error) {
       setError(res.error);
       return;
@@ -94,10 +93,8 @@ export function EstanciaFila({
   }
 
   async function accionNoLlego() {
-    setCargando(true);
     setError(null);
-    const res = await marcarNoLlego(fila.id);
-    setCargando(false);
+    const res = await cargando.ejecutar(() => marcarNoLlego(fila.id));
     if (res.error) {
       setError(res.error);
       return;
@@ -107,11 +104,9 @@ export function EstanciaFila({
   }
 
   async function accionMoverFechas() {
-    setCargando(true);
     setError(null);
     const salidaFinal = esGuarderia ? sumarDiasFecha(nuevaEntrada, 1) : nuevaSalida;
-    const res = await moverFechas(fila.id, nuevaEntrada, salidaFinal);
-    setCargando(false);
+    const res = await cargando.ejecutar(() => moverFechas(fila.id, nuevaEntrada, salidaFinal));
     if (res.error) {
       setError(res.error);
       return;
@@ -195,8 +190,8 @@ export function EstanciaFila({
                   onChange={(e) => setNuevaSalida(e.target.value)}
                 />
               )}
-              <Button type="button" disabled={cargando} onClick={accionMoverFechas}>
-                {cargando ? "Guardando…" : "Guardar fechas"}
+              <Button type="button" cargando={cargando.cargando} onClick={accionMoverFechas}>
+                {cargando.cargando ? "Guardando…" : "Guardar fechas"}
               </Button>
               <Button
                 type="button"
@@ -216,8 +211,8 @@ export function EstanciaFila({
                 ¿Cancelar la estancia de {fila.perroNombre}?
               </p>
               <div className="flex gap-2">
-                <Button type="button" variante="peligro" disabled={cargando} onClick={accionCancelar}>
-                  {cargando ? "Cancelando…" : "Sí, cancelar"}
+                <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={accionCancelar}>
+                  {cargando.cargando ? "Cancelando…" : "Sí, cancelar"}
                 </Button>
                 <Button type="button" variante="secundario" onClick={() => setConfirmandoCancelar(false)}>
                   No
@@ -230,8 +225,8 @@ export function EstanciaFila({
                 ¿Marcar que {fila.perroNombre} no llegó?
               </p>
               <div className="flex gap-2">
-                <Button type="button" variante="peligro" disabled={cargando} onClick={accionNoLlego}>
-                  {cargando ? "Guardando…" : "Sí, no llegó"}
+                <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={accionNoLlego}>
+                  {cargando.cargando ? "Guardando…" : "Sí, no llegó"}
                 </Button>
                 <Button type="button" variante="secundario" onClick={() => setConfirmandoNoLlego(false)}>
                   No

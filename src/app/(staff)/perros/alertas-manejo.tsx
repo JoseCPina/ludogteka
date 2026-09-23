@@ -1,6 +1,8 @@
 "use client";
+import { esperarConTope } from "@/lib/ui/espera";
 
 import { useActionState, useState, useTransition } from "react";
+import { useAccionConTope } from "@/hooks/use-espera";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -22,7 +24,7 @@ export function AlertasManejo({
   activas: AlertaActivaFila[];
 }) {
   const activarConId = activarAlerta.bind(null, perroId);
-  const [estado, formAction, enviando] = useActionState(activarConId, ESTADO_INICIAL);
+  const [estado, formAction, enviando] = useActionState(useAccionConTope(activarConId), ESTADO_INICIAL);
 
   const idsActivas = new Set(activas.map((a) => a.alerta_id));
   const disponibles = catalogo.filter((c) => !idsActivas.has(c.id));
@@ -59,7 +61,7 @@ export function AlertasManejo({
             ))}
           </Select>
           <Textarea label="Notas" name="notas" disabled={enviando} rows={2} />
-          <Button type="submit" disabled={enviando} className="self-start">
+          <Button type="submit" cargando={enviando} className="self-start">
             {enviando ? "Guardando…" : "Registrar alerta"}
           </Button>
         </form>
@@ -83,7 +85,7 @@ function AlertaFila({
   function desactivar() {
     setError(null);
     startTransition(async () => {
-      const resultado = await desactivarAlerta(alerta.id, perroId, motivo);
+      const resultado = await esperarConTope(() => desactivarAlerta(alerta.id, perroId, motivo));
       if (resultado.error) {
         setError(resultado.error);
         return;

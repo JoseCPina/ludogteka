@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ export function VincularFila({
   const [buscando, setBuscando] = useState(false);
   const [busqueda, setBusqueda] = useState("");
   const [seleccionado, setSeleccionado] = useState<ClienteBusqueda | null>(null);
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   const resultados = useMemo(() => {
@@ -46,10 +47,8 @@ export function VincularFila({
 
   async function confirmar() {
     if (!seleccionado) return;
-    setEnviando(true);
     setError(null);
-    const resultado = await vincularCuenta(cuenta.id, seleccionado.id);
-    setEnviando(false);
+    const resultado = await enviando.ejecutar(() => vincularCuenta(cuenta.id, seleccionado.id));
     if (resultado.error) {
       setError(resultado.error);
       return;
@@ -73,10 +72,10 @@ export function VincularFila({
           .
         </p>
         <div className="flex flex-wrap gap-3">
-          <Button type="button" disabled={enviando} onClick={confirmar}>
-            {enviando ? "Vinculando…" : "Sí, vincular"}
+          <Button type="button" cargando={enviando.cargando} onClick={confirmar}>
+            {enviando.cargando ? "Vinculando…" : "Sí, vincular"}
           </Button>
-          <Button type="button" variante="secundario" disabled={enviando} onClick={cancelar}>
+          <Button type="button" variante="secundario" cargando={enviando.cargando} onClick={cancelar}>
             Cancelar
           </Button>
         </div>

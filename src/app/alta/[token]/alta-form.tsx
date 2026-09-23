@@ -1,6 +1,8 @@
 "use client";
+import { conTope } from "@/lib/ui/espera";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Field } from "@/components/ui/field";
@@ -72,7 +74,7 @@ export function AltaForm({
   const [confirmacion, setConfirmacion] = useState("");
   const [perros, setPerros] = useState<PerroAlta[]>([perroVacio()]);
   const [fotos, setFotos] = useState<(File | null)[]>([null]);
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
@@ -122,8 +124,7 @@ export function AltaForm({
 
     const direccionFinal = quiereRecoleccion ? direccion : "";
 
-    setEnviando(true);
-    const res = await completarAlta(token, {
+    const res = await enviando.ejecutar(() => completarAlta(token, {
       nombre,
       telefono,
       direccion: direccionFinal,
@@ -131,10 +132,9 @@ export function AltaForm({
       crearCuenta,
       password,
       perros,
-    });
+    }));
 
     if (res.error) {
-      setEnviando(false);
       setError(res.error);
       return;
     }
@@ -148,7 +148,7 @@ export function AltaForm({
     try {
       if (direccionFinal.trim()) {
         setAviso("Calculando la distancia a tu domicilio…");
-        await calcularDistanciaAlta(token);
+        await conTope(calcularDistanciaAlta(token));
       }
 
       const creados = res.perros ?? [];
@@ -163,7 +163,7 @@ export function AltaForm({
         setAviso(`Guardando la foto de ${creados[i].nombre} (${subidas} de ${conFoto})…`);
         const datosFoto = new FormData();
         datosFoto.append("foto", archivo);
-        const resFoto = await subirFotoAlta(token, creados[i].id, datosFoto);
+        const resFoto = await conTope(subirFotoAlta(token, creados[i].id, datosFoto), 60_000);
         if (resFoto.error) fallaronFotos += 1;
       }
 
@@ -173,10 +173,12 @@ export function AltaForm({
         // Entra con el mismo teléfono que acaba de registrar. El correo
         // interno con el que Auth lo conoce se deriva de ese número —
         // nunca se le enseña ni se le pide.
-        const { error: errorSesion } = await supabase.auth.signInWithPassword({
-          email: correoSinteticoDeTelefono(telefono),
-          password,
-        });
+        const { error: errorSesion } = await conTope(
+          supabase.auth.signInWithPassword({
+            email: correoSinteticoDeTelefono(telefono),
+            password,
+          })
+        );
         sesionAbierta = !errorSesion;
       }
     } catch {
@@ -184,7 +186,6 @@ export function AltaForm({
       // el dueño pueda hacer con un mensaje técnico.
       sesionAbierta = false;
     } finally {
-      setEnviando(false);
       setAviso(null);
     }
 
@@ -408,13 +409,13 @@ export function AltaForm({
             <Button
               type="button"
               variante="secundario"
-              disabled={enviando}
+              cargando={enviando.cargando}
               onClick={() => setPaso(1)}
             >
               Atrás
             </Button>
-            <Button type="button" disabled={enviando} onClick={enviar}>
-              {enviando ? "Guardando…" : "Terminar mi alta"}
+            <Button type="button" cargando={enviando.cargando} onClick={enviar}>
+              {enviando.cargando ? "Guardando…" : "Terminar mi alta"}
             </Button>
           </div>
         </div>

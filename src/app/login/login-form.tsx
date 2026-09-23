@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useAccionConTope } from "@/hooks/use-espera";
 import { iniciarSesion, type EstadoLogin } from "./actions";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ export function LoginForm({
   telefonoRecepcion: string | null;
 }) {
   const estadoInicial: EstadoLogin = { error: errorInicial };
-  const [estado, formAction, enviando] = useActionState(iniciarSesion, estadoInicial);
+  const [estado, formAction, enviando] = useActionState(useAccionConTope(iniciarSesion), estadoInicial);
   const [ayuda, setAyuda] = useState(false);
 
   const mensaje =
@@ -66,7 +67,7 @@ export function LoginForm({
           autoComplete="current-password"
           required
         />
-        <Button type="submit" disabled={enviando} className="w-full">
+        <Button type="submit" cargando={enviando} className="w-full">
           {enviando ? "Entrando…" : "Entrar"}
         </Button>
       </form>

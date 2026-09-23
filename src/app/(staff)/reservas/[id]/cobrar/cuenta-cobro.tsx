@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
@@ -128,7 +129,7 @@ export function CuentaCobro({
   const [aplicandoBonoIdx, setAplicandoBonoIdx] = useState<number | null>(null);
   const [bonoElegidoId, setBonoElegidoId] = useState("");
   const [cantidadBono, setCantidadBono] = useState("1");
-  const [aplicandoBono, setAplicandoBono] = useState(false);
+  const aplicandoBono = useEspera();
 
   function restantePorCubrir(l: LineaCuenta) {
     return l.cantidad - l.cantidadCubiertaPorBono;
@@ -162,16 +163,14 @@ export function CuentaCobro({
       setError(`Esa línea solo tiene ${restantePorCubrir(linea)} unidad(es) sin cubrir.`);
       return;
     }
-    setAplicandoBono(true);
     setError(null);
-    const res = await consumirBono(
+    const res = await aplicandoBono.ejecutar(() => consumirBono(
       reservaId,
       bonoElegidoId,
       linea.tipo as ItemTipoBono,
       linea.origenId,
       cantidad
-    );
-    setAplicandoBono(false);
+    ));
     if (res.error) {
       setError(res.error);
       return;
@@ -185,7 +184,7 @@ export function CuentaCobro({
   const [tipoDescuento, setTipoDescuento] = useState<TipoDescuento>("porcentaje");
   const [valorDescuento, setValorDescuento] = useState("");
   const [motivoAdicionalDescuento, setMotivoAdicionalDescuento] = useState("");
-  const [guardandoDescuento, setGuardandoDescuento] = useState(false);
+  const guardandoDescuento = useEspera();
 
   const totalDescontadoActivo = descuentos
     .filter((d) => !d.cancelado)
@@ -215,16 +214,14 @@ export function CuentaCobro({
       setError("Un descuento arriba del tope necesita un motivo por escrito.");
       return;
     }
-    setGuardandoDescuento(true);
     setError(null);
-    const res = await aplicarDescuento(
+    const res = await guardandoDescuento.ejecutar(() => aplicarDescuento(
       reservaId,
       catalogoDescuentoId,
       tipoDescuento,
       valorNumDescuento,
       motivoAdicionalDescuento
-    );
-    setGuardandoDescuento(false);
+    ));
     if (res.error) {
       setError(res.error);
       return;
@@ -237,7 +234,7 @@ export function CuentaCobro({
 
   const [cancelandoDescuentoId, setCancelandoDescuentoId] = useState<string | null>(null);
   const [motivoCancelarDescuento, setMotivoCancelarDescuento] = useState("");
-  const [cancelandoDescuento, setCancelandoDescuento] = useState(false);
+  const cancelandoDescuento = useEspera();
 
   async function confirmarCancelarDescuento() {
     if (!cancelandoDescuentoId) return;
@@ -245,10 +242,8 @@ export function CuentaCobro({
       setError("Escribe el motivo de la cancelación.");
       return;
     }
-    setCancelandoDescuento(true);
     setError(null);
-    const res = await cancelarDescuento(reservaId, cancelandoDescuentoId, motivoCancelarDescuento);
-    setCancelandoDescuento(false);
+    const res = await cancelandoDescuento.ejecutar(() => cancelarDescuento(reservaId, cancelandoDescuentoId, motivoCancelarDescuento));
     if (res.error) {
       setError(res.error);
       return;
@@ -263,18 +258,18 @@ export function CuentaCobro({
   const [abriendoTurno, setAbriendoTurno] = useState(false);
   const [fondoInicial, setFondoInicial] = useState("");
   const [notasApertura, setNotasApertura] = useState("");
-  const [cargandoTurno, setCargandoTurno] = useState(false);
+  const cargandoTurno = useEspera();
 
   const [notasCobro, setNotasCobro] = useState("");
   const [metodos, setMetodos] = useState<FilaMetodo[]>([NuevaFilaMetodo()]);
-  const [cobrando, setCobrando] = useState(false);
+  const cobrando = useEspera();
 
   const [devolviendoCobroId, setDevolviendoCobroId] = useState<string | null>(null);
   const [motivoDevolucion, setMotivoDevolucion] = useState("");
   const [metodosDevolucion, setMetodosDevolucion] = useState<{ metodo: MetodoPago; monto: string }[]>([
     { metodo: "efectivo", monto: "" },
   ]);
-  const [devolviendo, setDevolviendo] = useState(false);
+  const devolviendo = useEspera();
 
   const totalMetodos = metodos.reduce((sum, m) => sum + (Number(m.monto) || 0), 0);
 
@@ -284,10 +279,8 @@ export function CuentaCobro({
       setError("El fondo inicial debe ser un número mayor o igual a cero.");
       return;
     }
-    setCargandoTurno(true);
     setError(null);
-    const res = await abrirTurno(fondo, notasApertura);
-    setCargandoTurno(false);
+    const res = await cargandoTurno.ejecutar(() => abrirTurno(fondo, notasApertura));
     if (res.error) {
       setError(res.error);
       return;
@@ -310,10 +303,8 @@ export function CuentaCobro({
       setError("Cada método debe tener un monto mayor a cero.");
       return;
     }
-    setCobrando(true);
     setError(null);
-    const res = await registrarCobro(reservaId, notasCobro, payload);
-    setCobrando(false);
+    const res = await cobrando.ejecutar(() => registrarCobro(reservaId, notasCobro, payload));
     if (res.error) {
       setError(res.error);
       return;
@@ -334,10 +325,8 @@ export function CuentaCobro({
       setError("Escribe el motivo de la devolución.");
       return;
     }
-    setDevolviendo(true);
     setError(null);
-    const res = await registrarDevolucion(reservaId, devolviendoCobroId, motivoDevolucion, payload);
-    setDevolviendo(false);
+    const res = await devolviendo.ejecutar(() => registrarDevolucion(reservaId, devolviendoCobroId, motivoDevolucion, payload));
     if (res.error) {
       setError(res.error);
       return;
@@ -451,8 +440,8 @@ export function CuentaCobro({
                 ayuda={`Máx. ${restantePorCubrir(lineas[aplicandoBonoIdx])}`}
               />
             </div>
-            <Button type="button" disabled={aplicandoBono} onClick={confirmarAplicarBono}>
-              {aplicandoBono ? "Aplicando…" : "Confirmar"}
+            <Button type="button" cargando={aplicandoBono.cargando} onClick={confirmarAplicarBono}>
+              {aplicandoBono.cargando ? "Aplicando…" : "Confirmar"}
             </Button>
             <Button type="button" variante="secundario" onClick={() => setAplicandoBonoIdx(null)}>
               Cancelar
@@ -549,10 +538,10 @@ export function CuentaCobro({
             <div className="flex gap-2">
               <Button
                 type="button"
-                disabled={guardandoDescuento || (pasaTope && !esAdmin)}
+                disabled={guardandoDescuento.cargando || (pasaTope && !esAdmin)}
                 onClick={enviarDescuento}
               >
-                {guardandoDescuento ? "Aplicando…" : "Confirmar descuento"}
+                {guardandoDescuento.cargando ? "Aplicando…" : "Confirmar descuento"}
               </Button>
               <Button type="button" variante="secundario" onClick={() => setAplicandoDescuento(false)}>
                 Cancelar
@@ -605,10 +594,10 @@ export function CuentaCobro({
                       <Button
                         type="button"
                         variante="peligro"
-                        disabled={cancelandoDescuento}
+                        cargando={cancelandoDescuento.cargando}
                         onClick={confirmarCancelarDescuento}
                       >
-                        {cancelandoDescuento ? "Cancelando…" : "Confirmar cancelación"}
+                        {cancelandoDescuento.cargando ? "Cancelando…" : "Confirmar cancelación"}
                       </Button>
                       <Button
                         type="button"
@@ -655,8 +644,8 @@ export function CuentaCobro({
                 value={notasApertura}
                 onChange={(e) => setNotasApertura(e.target.value)}
               />
-              <Button type="button" disabled={cargandoTurno} onClick={accionAbrirTurno}>
-                {cargandoTurno ? "Abriendo…" : "Confirmar apertura"}
+              <Button type="button" cargando={cargandoTurno.cargando} onClick={accionAbrirTurno}>
+                {cargandoTurno.cargando ? "Abriendo…" : "Confirmar apertura"}
               </Button>
               <Button type="button" variante="secundario" onClick={() => setAbriendoTurno(false)}>
                 Cancelar
@@ -726,8 +715,8 @@ export function CuentaCobro({
             Total de este cobro: <span className="font-semibold text-n-900">{dinero(totalMetodos)}</span>
           </p>
 
-          <Button type="button" disabled={cobrando} onClick={enviarCobro} className="self-start">
-            {cobrando ? "Cobrando…" : "Registrar cobro"}
+          <Button type="button" cargando={cobrando.cargando} onClick={enviarCobro} className="self-start">
+            {cobrando.cargando ? "Cobrando…" : "Registrar cobro"}
           </Button>
         </div>
       )}
@@ -838,8 +827,8 @@ export function CuentaCobro({
                             placeholder="ej. Se canceló una noche ya cobrada"
                           />
                           <div className="flex gap-2">
-                            <Button type="button" variante="peligro" disabled={devolviendo} onClick={enviarDevolucion}>
-                              {devolviendo ? "Guardando…" : "Confirmar devolución"}
+                            <Button type="button" variante="peligro" cargando={devolviendo.cargando} onClick={enviarDevolucion}>
+                              {devolviendo.cargando ? "Guardando…" : "Confirmar devolución"}
                             </Button>
                             <Button type="button" variante="secundario" onClick={() => setDevolviendoCobroId(null)}>
                               Cancelar

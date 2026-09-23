@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Select } from "@/components/ui/select";
 import { Field } from "@/components/ui/field";
@@ -41,7 +42,8 @@ export function RequisitoForm({
   const [tipoId, setTipoId] = useState(tipos[0]?.id ?? "");
   const [fecha, setFecha] = useState(hoyNegocio());
   const [archivo, setArchivo] = useState<File | null>(null);
-  const [enviando, setEnviando] = useState(false);
+  // Puede llevar foto del carnet: tope más largo que el de un botón.
+  const enviando = useEspera({ tope: 60_000 });
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState(false);
   const [avisoFechaAntigua, setAvisoFechaAntigua] = useState(false);
@@ -67,18 +69,15 @@ export function RequisitoForm({
     const detalle = String(formData.get("detalle") ?? "").trim() || null;
     const notas = String(formData.get("notas") ?? "").trim() || null;
 
-    setEnviando(true);
-    try {
+    const r = await enviando.correr(async () => {
       const resultado = await crearRequisitoAplicado(perroId, {
         tipoRequisitoId: tipoId,
         fechaAplicacion: fecha,
         detalle,
         notas,
       });
-
       if (resultado.error || !resultado.id) {
-        setError(resultado.error ?? "No pudimos guardar el registro.");
-        return;
+        return { error: resultado.error ?? "No pudimos guardar el registro." };
       }
 
       if (archivo) {
@@ -88,34 +87,30 @@ export function RequisitoForm({
         const { error: subidaError } = await supabase.storage
           .from(BUCKET)
           .upload(path, blob, { upsert: true, contentType: "image/jpeg" });
-
         if (subidaError) {
-          setError("Guardamos el registro, pero no pudimos subir el comprobante.");
-          return;
+          return { error: "Guardamos el registro, pero no pudimos subir el comprobante." };
         }
-
-        const { error: guardarError } = await guardarComprobanteRequisito(
-          resultado.id,
-          perroId,
-          path
-        );
-        if (guardarError) {
-          setError(guardarError);
-          return;
-        }
+        const { error: guardarError } = await guardarComprobanteRequisito(resultado.id, perroId, path);
+        if (guardarError) return { error: guardarError };
       }
+      return { error: null };
+    });
 
-      setExito(true);
-      formRef.current?.reset();
-      setFecha(hoyNegocio());
-      setAvisoFechaAntigua(false);
-      setArchivo(null);
-      router.refresh();
-    } catch {
-      setError("No pudimos procesar el comprobante. Intenta con otra foto.");
-    } finally {
-      setEnviando(false);
+    if (!r.ok) {
+      setError(r.error);
+      return;
     }
+    if (r.valor.error) {
+      setError(r.valor.error);
+      return;
+    }
+
+    setExito(true);
+    formRef.current?.reset();
+    setFecha(hoyNegocio());
+    setAvisoFechaAntigua(false);
+    setArchivo(null);
+    router.refresh();
   }
 
   return (
@@ -131,7 +126,7 @@ export function RequisitoForm({
         label="Tipo de requisito"
         name="tipo_requisito_id"
         required
-        disabled={enviando}
+        disabled={enviando.cargando}
         value={tipoId}
         onChange={(e) => setTipoId(e.target.value)}
       >
@@ -148,7 +143,7 @@ export function RequisitoForm({
           name="fecha_aplicacion"
           type="date"
           required
-          disabled={enviando}
+          disabled={enviando.cargando}
           max={hoyNegocio()}
           value={fecha}
           onChange={(e) => manejarCambioFecha(e.target.value)}
@@ -160,8 +155,8 @@ export function RequisitoForm({
         )}
       </div>
 
-      <Field label={etiquetaDetalle} name="detalle" disabled={enviando} ayuda="Opcional." />
-      <Textarea label="Notas" name="notas" disabled={enviando} />
+      <Field label={etiquetaDetalle} name="detalle" disabled={enviando.cargando} ayuda="Opcional." />
+      <Textarea label="Notas" name="notas" disabled={enviando.cargando} />
 
       <div>
         <p className="mb-1.5 text-sm font-semibold text-n-800">Foto del comprobante (opcional)</p>
@@ -176,15 +171,15 @@ export function RequisitoForm({
         <Button
           type="button"
           variante="secundario"
-          disabled={enviando}
+          cargando={enviando.cargando}
           onClick={() => inputArchivoRef.current?.click()}
         >
           {archivo ? archivo.name : "Elegir foto"}
         </Button>
       </div>
 
-      <Button type="submit" disabled={enviando} className="self-start">
-        {enviando ? "Guardando…" : "Registrar aplicación"}
+      <Button type="submit" cargando={enviando.cargando} className="self-start">
+        {enviando.cargando ? "Guardando…" : "Registrar aplicación"}
       </Button>
     </form>
   );

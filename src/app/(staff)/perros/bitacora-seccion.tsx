@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { comprimirImagen } from "@/lib/imagen";
@@ -33,19 +34,17 @@ export function BitacoraSeccion({ perroId, entradas }: { perroId: string; entrad
   const [tipo, setTipo] = useState<"actualizacion" | "incidencia">("actualizacion");
   const [nota, setNota] = useState("");
   const [archivo, setArchivo] = useState<File | null>(null);
-  const [enviando, setEnviando] = useState(false);
+  // Puede llevar foto: tope más largo que el de un botón.
+  const enviando = useEspera({ tope: 60_000 });
+  const notificando = useEspera();
   const [notificandoId, setNotificandoId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function agregar() {
-    setEnviando(true);
     setError(null);
-    try {
+    const r = await enviando.correr(async () => {
       const prep = await prepararEntradaBitacora(perroId);
-      if (!prep) {
-        setError("No encontramos el perro. Recarga la página.");
-        return;
-      }
+      if (!prep) return { error: "No encontramos el perro. Recarga la página." };
 
       let fotoPath: string | null = null;
       if (archivo) {
@@ -54,47 +53,38 @@ export function BitacoraSeccion({ perroId, entradas }: { perroId: string; entrad
         const { error: subidaError } = await supabase.storage
           .from(BUCKET)
           .upload(prep.path, blob, { contentType: "image/jpeg" });
-        if (subidaError) {
-          setError("No pudimos subir la foto. Intenta de nuevo.");
-          return;
-        }
+        if (subidaError) return { error: "No pudimos subir la foto. Intenta de nuevo." };
         fotoPath = prep.path;
       }
 
-      const res = await crearEntradaBitacora({
-        entradaId: prep.entradaId,
-        perroId,
-        tipo,
-        nota,
-        fotoPath,
-      });
-      if (res.error) {
-        setError(res.error);
-        return;
-      }
+      return crearEntradaBitacora({ entradaId: prep.entradaId, perroId, tipo, nota, fotoPath });
+    });
 
-      setNota("");
-      setArchivo(null);
-      setTipo("actualizacion");
-      router.refresh();
-    } catch {
-      setError("No pudimos procesar esa foto. Intenta con otra.");
-    } finally {
-      setEnviando(false);
+    if (!r.ok) {
+      setError(r.error);
+      return;
     }
+    if (r.valor.error) {
+      setError(r.valor.error);
+      return;
+    }
+    setNota("");
+    setArchivo(null);
+    setTipo("actualizacion");
+    router.refresh();
   }
 
   async function notificar(entradaId: string) {
     setNotificandoId(entradaId);
     setError(null);
-    const res = await construirEnlaceWhatsApp(entradaId);
+    const res = await notificando.ejecutar(() => construirEnlaceWhatsApp(entradaId));
     if (res.error || !res.url) {
       setError(res.error ?? "No pudimos generar el enlace de WhatsApp.");
       setNotificandoId(null);
       return;
     }
     window.open(res.url, "_blank", "noopener,noreferrer");
-    await marcarBitacoraNotificada(entradaId, perroId);
+    await notificando.ejecutar(() => marcarBitacoraNotificada(entradaId, perroId));
     setNotificandoId(null);
     router.refresh();
   }
@@ -108,7 +98,7 @@ export function BitacoraSeccion({ perroId, entradas }: { perroId: string; entrad
       )}
 
       <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
-        <Select label="Tipo" value={tipo} onChange={(e) => setTipo(e.target.value as "actualizacion" | "incidencia")} disabled={enviando}>
+        <Select label="Tipo" value={tipo} onChange={(e) => setTipo(e.target.value as "actualizacion" | "incidencia")} disabled={enviando.cargando}>
           <option value="actualizacion">Actualización (foto, nota del día)</option>
           <option value="incidencia">Incidencia (mordida, escape, enfermedad)</option>
         </Select>
@@ -117,7 +107,7 @@ export function BitacoraSeccion({ perroId, entradas }: { perroId: string; entrad
           value={nota}
           onChange={(e) => setNota(e.target.value)}
           rows={3}
-          disabled={enviando}
+          disabled={enviando.cargando}
         />
         <div className="flex flex-wrap items-center gap-2">
           <input
@@ -128,13 +118,13 @@ export function BitacoraSeccion({ perroId, entradas }: { perroId: string; entrad
             className="hidden"
             onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
           />
-          <Button type="button" variante="secundario" disabled={enviando} onClick={() => inputRef.current?.click()}>
+          <Button type="button" variante="secundario" cargando={enviando.cargando} onClick={() => inputRef.current?.click()}>
             {archivo ? "Cambiar foto" : "Agregar foto"}
           </Button>
           {archivo && <span className="text-sm text-n-600">{archivo.name}</span>}
         </div>
-        <Button type="button" disabled={enviando} onClick={agregar} className="self-start">
-          {enviando ? "Guardando…" : "Agregar a la bitácora"}
+        <Button type="button" cargando={enviando.cargando} onClick={agregar} className="self-start">
+          {enviando.cargando ? "Guardando…" : "Agregar a la bitácora"}
         </Button>
       </div>
 
@@ -168,7 +158,7 @@ export function BitacoraSeccion({ perroId, entradas }: { perroId: string; entrad
                 <Button
                   type="button"
                   variante="secundario"
-                  disabled={notificandoId === e.id}
+                  cargando={notificandoId === e.id && notificando.cargando}
                   onClick={() => notificar(e.id)}
                 >
                   {notificandoId === e.id ? "Abriendo…" : "Notificar por WhatsApp"}

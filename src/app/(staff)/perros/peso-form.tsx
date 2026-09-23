@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ const ESTADO_INICIAL: EstadoPesoForm = { error: null };
 
 export function PesoForm({ perroId }: { perroId: string }) {
   const registrarConId = registrarPeso.bind(null, perroId);
-  const [estado, formAction, enviando] = useActionState(registrarConId, ESTADO_INICIAL);
+  const [estado, formAction, enviando] = useActionState(useAccionConTope(registrarConId), ESTADO_INICIAL);
 
   return (
     <form action={formAction} className="flex max-w-sm flex-col gap-4">
@@ -46,7 +47,7 @@ export function PesoForm({ perroId }: { perroId: string }) {
       </div>
       <Textarea label="Notas (opcional)" name="notas" disabled={enviando} rows={2} />
 
-      <Button type="submit" disabled={enviando} className="self-start">
+      <Button type="submit" cargando={enviando} className="self-start">
         {enviando ? "Guardando…" : "Registrar peso"}
       </Button>
     </form>

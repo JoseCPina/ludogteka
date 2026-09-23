@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -36,16 +37,14 @@ export function LinkComplemento({
 }) {
   const router = useRouter();
   const [tipo, setTipo] = useState<TipoLinkAlta>("guarderia_hotel");
-  const [enviando, setEnviando] = useState(false);
+  const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<EstadoInvitacion | null>(null);
 
   async function generar() {
-    setEnviando(true);
     setError(null);
     setResultado(null);
-    const res = await crearInvitacion(clienteNombre, clienteTelefono, 7, tipo, clienteId);
-    setEnviando(false);
+    const res = await enviando.ejecutar(() => crearInvitacion(clienteNombre, clienteTelefono, 7, tipo, clienteId));
     if (res.error) {
       setError(res.error);
       return;
@@ -105,8 +104,8 @@ export function LinkComplemento({
             ))}
           </select>
         </div>
-        <Button type="button" disabled={enviando} onClick={generar}>
-          {enviando ? "Generando…" : "Generar link"}
+        <Button type="button" cargando={enviando.cargando} onClick={generar}>
+          {enviando.cargando ? "Generando…" : "Generar link"}
         </Button>
       </div>
 

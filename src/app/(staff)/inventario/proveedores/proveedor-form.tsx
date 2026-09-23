@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,7 @@ export function ProveedorForm({
   };
   textoBoton: string;
 }) {
-  const [estado, formAction, enviando] = useActionState(action, ESTADO_INICIAL);
+  const [estado, formAction, enviando] = useActionState(useAccionConTope(action), ESTADO_INICIAL);
 
   return (
     <form action={formAction} className="flex max-w-lg flex-col gap-4">
@@ -55,7 +56,7 @@ export function ProveedorForm({
         defaultValue={valoresIniciales?.notas ?? ""}
       />
 
-      <Button type="submit" disabled={enviando} className="self-start">
+      <Button type="submit" cargando={enviando} className="self-start">
         {enviando ? "Guardando…" : textoBoton}
       </Button>
     </form>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useEspera, useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -52,10 +53,10 @@ export function RequisitosEstancia({
   esAdmin: boolean;
 }) {
   const marcarConIds = marcarEvaluacionComportamiento.bind(null, perroId, clienteId);
-  const [estadoEval, accionEval, enviandoEval] = useActionState(marcarConIds, ESTADO_INICIAL);
+  const [estadoEval, accionEval, enviandoEval] = useActionState(useAccionConTope(marcarConIds), ESTADO_INICIAL);
   const [capturando, setCapturando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [cargando, setCargando] = useState(false);
+  const cargando = useEspera();
   const [enCelo, setEnCelo] = useState(datos.en_celo);
   const [gestante, setGestante] = useState(datos.gestante);
 
@@ -68,10 +69,8 @@ export function RequisitosEstancia({
   for (const a of datos.alertasBloqueantes) bloqueos.push(`tiene activa la alerta "${a}"`);
 
   async function cambiarReproductivo(cambios: { en_celo?: boolean; gestante?: boolean }) {
-    setCargando(true);
     setError(null);
-    const res = await marcarEstadoReproductivo(perroId, clienteId, cambios);
-    setCargando(false);
+    const res = await cargando.ejecutar(() => marcarEstadoReproductivo(perroId, clienteId, cambios));
     if (res.error) {
       setError(res.error);
       return;
@@ -81,10 +80,8 @@ export function RequisitosEstancia({
   }
 
   async function quitarEvaluacion() {
-    setCargando(true);
     setError(null);
-    const res = await quitarEvaluacionComportamiento(perroId, clienteId);
-    setCargando(false);
+    const res = await cargando.ejecutar(() => quitarEvaluacionComportamiento(perroId, clienteId));
     if (res.error) setError(res.error);
   }
 
@@ -121,7 +118,7 @@ export function RequisitosEstancia({
                 type="button"
                 variante="secundario"
                 className="mt-3"
-                disabled={cargando}
+                cargando={cargando.cargando}
                 onClick={quitarEvaluacion}
               >
                 Quitar evaluación (solo admin)
@@ -151,7 +148,7 @@ export function RequisitosEstancia({
                 </div>
                 <Textarea label="Notas (opcional)" name="notas" placeholder="Cómo se comportó, con quién se evaluó" />
                 <div className="flex gap-2">
-                  <Button type="submit" disabled={enviandoEval}>
+                  <Button type="submit" cargando={enviandoEval}>
                     {enviandoEval ? "Guardando…" : "Guardar evaluación"}
                   </Button>
                   <Button type="button" variante="secundario" onClick={() => setCapturando(false)}>
@@ -177,7 +174,7 @@ export function RequisitosEstancia({
                 type="checkbox"
                 className="h-4 w-4"
                 checked={enCelo}
-                disabled={soloLectura || cargando}
+                disabled={soloLectura || cargando.cargando}
                 onChange={(e) => cambiarReproductivo({ en_celo: e.target.checked })}
               />
               En celo
@@ -187,7 +184,7 @@ export function RequisitosEstancia({
                 type="checkbox"
                 className="h-4 w-4"
                 checked={gestante}
-                disabled={soloLectura || cargando}
+                disabled={soloLectura || cargando.cargando}
                 onChange={(e) => cambiarReproductivo({ gestante: e.target.checked })}
               />
               Gestante

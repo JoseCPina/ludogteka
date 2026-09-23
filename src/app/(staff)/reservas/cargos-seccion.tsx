@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -49,12 +50,12 @@ export function CargosSeccion({
   const [notas, setNotas] = useState("");
   const [importe, setImporte] = useState("");
   const [descripcion, setDescripcion] = useState("");
-  const [aplicando, setAplicando] = useState(false);
+  const aplicando = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   const [cancelandoId, setCancelandoId] = useState<string | null>(null);
   const [motivoCancelar, setMotivoCancelar] = useState("");
-  const [cancelando, setCancelando] = useState(false);
+  const cancelando = useEspera();
 
   const servicioSeleccionado = serviciosCargo.find((s) => s.id === servicioId);
   const esRecoleccion = servicioSeleccionado?.clave === "recoleccion";
@@ -67,16 +68,14 @@ export function CargosSeccion({
   async function enviarAplicar() {
     const cant = esMontoLibre ? 1 : Number(cantidad);
     const servicio = serviciosCargo.find((s) => s.id === servicioId);
-    setAplicando(true);
     setError(null);
-    const res = await aplicarCargo(
+    const res = await aplicando.ejecutar(() => aplicarCargo(
       estanciaId,
       servicioId,
       cant,
       notas,
       esMontoLibre ? { importe: Number(importe), descripcion } : undefined
-    );
-    setAplicando(false);
+    ));
     if (res.error || !res.cargo) {
       setError(res.error);
       return;
@@ -104,10 +103,8 @@ export function CargosSeccion({
       setError("Escribe el motivo de la cancelación.");
       return;
     }
-    setCancelando(true);
     setError(null);
-    const res = await cancelarCargo(cargoId, motivoCancelar);
-    setCancelando(false);
+    const res = await cancelando.ejecutar(() => cancelarCargo(cargoId, motivoCancelar));
     if (res.error) {
       setError(res.error);
       return;
@@ -168,10 +165,10 @@ export function CargosSeccion({
                       <Button
                         type="button"
                         variante="peligro"
-                        disabled={cancelando}
+                        cargando={cancelando.cargando}
                         onClick={() => confirmarCancelar(c.id)}
                       >
-                        {cancelando ? "Cancelando…" : "Confirmar cancelación"}
+                        {cancelando.cargando ? "Cancelando…" : "Confirmar cancelación"}
                       </Button>
                       <Button
                         type="button"
@@ -276,8 +273,8 @@ export function CargosSeccion({
               placeholder="ej. Se dejó comida especial 3 días"
             />
           </div>
-          <Button type="button" disabled={aplicando} onClick={enviarAplicar}>
-            {aplicando ? "Aplicando…" : "Aplicar"}
+          <Button type="button" cargando={aplicando.cargando} onClick={enviarAplicar}>
+            {aplicando.cargando ? "Aplicando…" : "Aplicar"}
           </Button>
         </div>
       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { probarConexionGoogle, type EstadoDiagnostico } from "./diagnostico-google-actions";
@@ -71,12 +72,10 @@ function Resultado({ estado }: { estado: EstadoDiagnostico }) {
 
 export function DiagnosticoGoogle() {
   const [estado, setEstado] = useState<EstadoDiagnostico | null>(null);
-  const [corriendo, setCorriendo] = useState(false);
+  const corriendo = useEspera();
 
   async function correr() {
-    setCorriendo(true);
-    const res = await probarConexionGoogle();
-    setCorriendo(false);
+    const res = await corriendo.ejecutar(() => probarConexionGoogle());
     setEstado(res);
   }
 
@@ -94,8 +93,8 @@ export function DiagnosticoGoogle() {
         sirve al configurar la llave, al cambiarla, o cuando a recepción le empiece a fallar.
       </p>
 
-      <Button type="button" disabled={corriendo} onClick={correr} className="self-start">
-        {corriendo ? "Probando…" : "Probar conexión con Google"}
+      <Button type="button" cargando={corriendo.cargando} onClick={correr} className="self-start">
+        {corriendo.cargando ? "Probando…" : "Probar conexión con Google"}
       </Button>
 
       {estado && <Resultado estado={estado} />}
