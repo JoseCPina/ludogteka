@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -64,7 +65,11 @@ export function ConvertirHotel({
             </Button>
           ) : (
             <span className="text-sm font-semibold text-amarillo-oscuro">
-              Ningún servicio de hotel tiene tarifa capturada: captúrala en Servicios para poder convertir.
+              Ningún servicio de hotel tiene precio capturado. Captúralo en{" "}
+              <Link href="/servicios" className="underline">
+                Servicios
+              </Link>{" "}
+              para poder convertir.
             </span>
           )}
           <Button type="button" variante="secundario" onClick={() => setOmitida(true)}>

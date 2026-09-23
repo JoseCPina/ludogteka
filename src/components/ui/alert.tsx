@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { conEnlaces } from "./texto-con-enlaces";
 
 type Variante = "error" | "advertencia" | "exito";
 
@@ -25,7 +26,7 @@ export function Alert({
     >
       <div>
         <strong className={`block ${s.texto}`}>{titulo}</strong>
-        {children && <span className="text-sm text-n-700">{children}</span>}
+        {children && <span className="text-sm text-n-700">{conEnlaces(children)}</span>}
       </div>
     </div>
   );

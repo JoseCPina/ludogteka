@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { TextoConEnlaces } from "@/components/ui/texto-con-enlaces";
 import { sumarDiasFecha } from "@/lib/formato";
 import { describirBonoAplicado } from "@/lib/bonos/descripcion";
 import { BuscadorClientes } from "@/components/buscador-clientes";
@@ -181,7 +182,7 @@ export function NuevaReservaForm({
   if (!clienteElegido) {
     return (
       <div className="flex flex-col gap-4">
-        <BuscadorClientes clientes={clientes} onElegir={(c) => elegirCliente(c.id)} autoFocus />
+        <BuscadorClientes clientes={clientes} onElegir={(c) => elegirCliente(c.id)} nuevoCliente="guarderia_hotel" autoFocus />
       </div>
     );
   }
@@ -220,7 +221,7 @@ export function NuevaReservaForm({
                     Hacer check-in ahora →
                   </Link>
                 )}
-                {!r.exito && <p className="mt-1 text-sm text-naranja-oscuro">{r.motivo}</p>}
+                {!r.exito && r.motivo && <p className="mt-1 text-sm text-naranja-oscuro"><TextoConEnlaces texto={r.motivo} /></p>}
                 {esBloqueoSanitario && esAdmin && linea && (
                   <div className="mt-3 flex flex-col gap-2 border-t border-naranja pt-3">
                     <label className="flex items-center gap-2 text-sm font-semibold text-naranja-oscuro">
@@ -387,7 +388,19 @@ export function NuevaReservaForm({
                       label={esGuarderia ? "Fecha" : "Entrada"}
                       type="date"
                       value={linea.fechaEntrada}
-                      onChange={(e) => actualizarLinea(perro.id, { fechaEntrada: e.target.value })}
+                      onChange={(e) => {
+                        // El hotel se cobra por noche: si la entrada alcanza a la
+                        // salida, la salida se recorre a la mañana siguiente. Con
+                        // entrada = salida eran 0 noches y la base lo rechazaba
+                        // como "sin tarifa" (Galleta, 23 de septiembre de 2026).
+                        const entrada = e.target.value;
+                        actualizarLinea(perro.id, {
+                          fechaEntrada: entrada,
+                          ...(!esGuarderia && entrada && linea.fechaSalida <= entrada
+                            ? { fechaSalida: sumarDiasFecha(entrada, 1) }
+                            : {}),
+                        });
+                      }}
                     />
                     {servicioActual?.unidad === "hora" && (
                       <Field
@@ -405,7 +418,7 @@ export function NuevaReservaForm({
                         label="Salida"
                         type="date"
                         value={linea.fechaSalida}
-                        min={linea.fechaEntrada}
+                        min={linea.fechaEntrada ? sumarDiasFecha(linea.fechaEntrada, 1) : undefined}
                         onChange={(e) => actualizarLinea(perro.id, { fechaSalida: e.target.value })}
                       />
                     )}

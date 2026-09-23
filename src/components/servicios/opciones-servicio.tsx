@@ -25,12 +25,17 @@ export function AvisoServiciosSinPrecio({ servicios }: { servicios: ServicioOfre
   return (
     <p className="rounded-md border-[1.5px] border-amarillo bg-amarillo-suave px-3 py-2 text-sm text-amarillo-oscuro">
       {sinPrecio.length === 1 ? "Hay un servicio" : `Hay ${sinPrecio.length} servicios`} sin precio
-      capturado ({sinPrecio.map((s) => s.nombre).join(", ")}). No es que no exista: falta capturar
-      su tarifa en{" "}
-      <Link href="/servicios" className="font-semibold underline">
-        Servicios
-      </Link>{" "}
-      para poder reservarlo.
+      capturado. No es que no exista{sinPrecio.length === 1 ? "" : "n"}: falta capturar su tarifa para
+      poder reservarlo{sinPrecio.length === 1 ? "" : "s"}:{" "}
+      {sinPrecio.map((s, i) => (
+        <span key={s.id}>
+          {i > 0 && ", "}
+          <Link href={`/servicios/${s.id}/tarifas`} className="font-semibold underline">
+            {s.nombre}
+          </Link>
+        </span>
+      ))}
+      .
     </p>
   );
 }

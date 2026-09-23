@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { conEnlaces } from "./texto-con-enlaces";
 
 /**
  * El pie de todo formulario: los botones y, junto a ellos, la
@@ -41,7 +42,7 @@ export function AccionesFormulario({
             role="alert"
             className="inline-flex min-h-11 items-center rounded-md border-l-4 border-naranja bg-naranja-suave px-3 py-1.5 text-sm font-semibold text-naranja-oscuro"
           >
-            {error}
+            <span>{conEnlaces(error)}</span>
           </span>
         ) : textoExito ? (
           <span
