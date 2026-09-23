@@ -168,7 +168,7 @@ export function MostradorCaja({
             </div>
           </div>
         ) : (
-          <BuscadorClientes clientes={clientes} onElegir={setCliente} listarSinBusqueda={false} autoFocus />
+          <BuscadorClientes clientes={clientes} onElegir={setCliente} listarSinBusqueda={false} nuevoCliente="cualquiera" autoFocus />
         )}
       </section>
 

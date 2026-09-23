@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { normalizarTelefono } from "@/lib/telefono";
 import { geocodificarYCalcularDistancia } from "@/lib/google-maps/distancia-cliente";
+import { rutaDeVuelta } from "@/lib/clientes/volver";
 
 export type EstadoClienteForm = { error: string | null; ok?: boolean };
 
@@ -31,6 +32,21 @@ export async function crearCliente(
   _estadoPrevio: EstadoClienteForm,
   formData: FormData
 ): Promise<EstadoClienteForm> {
+  return altaCliente(formData, null);
+}
+
+// "Nuevo cliente → Capturarlo yo" desde un buscador (agendar, reservar,
+// cobrar): del dueño se sigue directo a registrar su perro, y de ahí de
+// vuelta a la pantalla de origen con el cliente elegido.
+export async function crearClienteYVolver(
+  volver: string,
+  _estadoPrevio: EstadoClienteForm,
+  formData: FormData
+): Promise<EstadoClienteForm> {
+  return altaCliente(formData, rutaDeVuelta(volver));
+}
+
+async function altaCliente(formData: FormData, volver: string | null): Promise<EstadoClienteForm> {
   const { nombre, telefonoCrudo, email, direccion } = leerCampos(formData);
   const validado = validar(nombre, telefonoCrudo);
   if (validado.error) return validado;
@@ -70,6 +86,7 @@ export async function crearCliente(
   }
 
   revalidatePath("/clientes");
+  if (volver) redirect(`/clientes/${data.id}/perros/nuevo?volver=${encodeURIComponent(volver)}`);
   redirect(`/clientes/${data.id}?creado=1`);
 }
 

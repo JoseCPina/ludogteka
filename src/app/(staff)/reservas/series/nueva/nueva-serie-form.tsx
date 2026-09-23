@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import Link from "next/link";
 import { Field } from "@/components/ui/field";
+import { TextoConEnlaces } from "@/components/ui/texto-con-enlaces";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -75,7 +76,7 @@ export function NuevaSerieForm({
   if (!clienteElegido) {
     return (
       <div className="flex flex-col gap-4">
-        <BuscadorClientes clientes={clientes} onElegir={(c) => setClienteId(c.id)} autoFocus />
+        <BuscadorClientes clientes={clientes} onElegir={(c) => setClienteId(c.id)} nuevoCliente="guarderia_hotel" autoFocus />
       </div>
     );
   }
@@ -96,7 +97,7 @@ export function NuevaSerieForm({
             <ul className="mt-2 flex flex-col gap-1 text-sm text-naranja-oscuro">
               {noCupieron.map((r) => (
                 <li key={r.fecha}>
-                  {formatearFechaCalendario(r.fecha)}: {r.motivo}
+                  {formatearFechaCalendario(r.fecha)}: {r.motivo ? <TextoConEnlaces texto={r.motivo} /> : null}
                 </li>
               ))}
             </ul>

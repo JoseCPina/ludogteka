@@ -1,7 +1,15 @@
 import { ClienteForm } from "../cliente-form";
-import { crearCliente } from "../actions";
+import { crearCliente, crearClienteYVolver } from "../actions";
+import { rutaDeVuelta } from "@/lib/clientes/volver";
 
-export default function NuevoClientePage() {
+// Con `?volver=` se llega desde el "Nuevo cliente" de un buscador: al
+// guardar se sigue con su perro y de ahí se regresa a esa pantalla.
+export default async function NuevoClientePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ volver?: string }>;
+}) {
+  const volver = rutaDeVuelta((await searchParams).volver);
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -11,7 +19,11 @@ export default function NuevoClientePage() {
           otra fase.
         </p>
       </div>
-      <ClienteForm pedirDireccion action={crearCliente} textoBoton="Crear cliente" />
+      <ClienteForm
+        pedirDireccion
+        action={volver ? crearClienteYVolver.bind(null, volver) : crearCliente}
+        textoBoton={volver ? "Crear cliente y seguir con su perro" : "Crear cliente"}
+      />
     </div>
   );
 }

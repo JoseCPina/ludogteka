@@ -79,7 +79,7 @@ export default async function PasesCajaPage({ searchParams }: { searchParams: Pr
       )}
 
       {!clienteElegido ? (
-        <BuscadorClientes clientes={clientes} hrefDe={(c) => `/caja/pases?cliente=${c.id}`} autoFocus />
+        <BuscadorClientes clientes={clientes} rutaAlElegir="/caja/pases" nuevoCliente="guarderia_hotel" autoFocus />
       ) : (
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-n-200 bg-n-50 p-4">

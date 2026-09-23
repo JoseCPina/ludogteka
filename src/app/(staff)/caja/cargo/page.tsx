@@ -41,7 +41,7 @@ export default async function CargoSueltoPage({ searchParams }: { searchParams: 
       </div>
 
       {!clienteElegido ? (
-        <BuscadorClientes clientes={clientes} hrefDe={(c) => `/caja/cargo?cliente=${c.id}`} autoFocus />
+        <BuscadorClientes clientes={clientes} rutaAlElegir="/caja/cargo" nuevoCliente="cualquiera" autoFocus />
       ) : (
         <div className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-n-200 bg-n-50 p-4">

@@ -94,7 +94,7 @@ export function AgendarForm({
   if (!clienteElegido) {
     return (
       <div className="flex flex-col gap-4">
-        <BuscadorClientes clientes={clientes} onElegir={(c) => setClienteId(c.id)} autoFocus />
+        <BuscadorClientes clientes={clientes} onElegir={(c) => setClienteId(c.id)} nuevoCliente="estetica" autoFocus />
       </div>
     );
   }

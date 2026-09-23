@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { hrefDeVuelta, rutaDeVuelta } from "@/lib/clientes/volver";
 
 export type EstadoPerroForm = { error: string | null; ok?: boolean };
 
@@ -42,6 +43,22 @@ export async function crearPerro(
   _estadoPrevio: EstadoPerroForm,
   formData: FormData
 ): Promise<EstadoPerroForm> {
+  return altaPerro(clienteId, formData, null);
+}
+
+// Segundo paso de "Nuevo cliente → Capturarlo yo" desde un buscador: con
+// el perro guardado se regresa a la pantalla de origen con el dueño ya
+// elegido (ver src/lib/clientes/volver.ts).
+export async function crearPerroYVolver(
+  clienteId: string,
+  volver: string,
+  _estadoPrevio: EstadoPerroForm,
+  formData: FormData
+): Promise<EstadoPerroForm> {
+  return altaPerro(clienteId, formData, rutaDeVuelta(volver));
+}
+
+async function altaPerro(clienteId: string, formData: FormData, volver: string | null): Promise<EstadoPerroForm> {
   const campos = leerCampos(formData);
   if (!campos.nombre) return { error: "Escribe el nombre del perro." };
 
@@ -57,6 +74,7 @@ export async function crearPerro(
   }
 
   revalidatePath(`/clientes/${clienteId}`);
+  if (volver) redirect(hrefDeVuelta(volver, clienteId));
   redirect(`/perros/${data.id}?creado=1`);
 }
 
