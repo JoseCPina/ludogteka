@@ -1,80 +1,81 @@
 import Image from "next/image";
 import { Info, Moon } from "@phosphor-icons/react/dist/ssr";
-import { BotonWhatsApp } from "./comunes";
+import { BotonWhatsApp, Ola, Rotulo } from "./comunes";
 import { HOTEL, MENSAJES, pesos } from "@/lib/landing/negocio";
-import fotoHotel from "./fotos/hotel.jpg";
+import fotoCamita from "./fotos/lugar/hotel-camita.jpg";
 
+// Hotel en la franja turquesa: los precios como llaveros de habitación.
 export function Hotel() {
   return (
-    <section id="hotel" className="bg-white py-20 lg:py-28">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="relative">
-          <div className="lp-revela relative h-[22rem] overflow-hidden rounded-[2rem] sm:h-[28rem] lg:h-[42rem]">
-            <Image
-              src={fotoHotel}
-              alt="Perro acostado en su cama con una cobija, tranquilo y mirando a la cámara"
-              placeholder="blur"
-              sizes="(min-width: 1280px) 1216px, 100vw"
-              className="lp-paralaje absolute inset-0 size-full object-cover object-[50%_60%]"
-            />
-          </div>
-
-          {/* La tarjeta se monta sobre la foto en escritorio y queda debajo
-              en celular, donde encima taparía al perro. */}
-          <div className="lp-revela relative z-[1] -mt-16 mx-3 rounded-3xl border border-n-200 bg-white p-6 shadow-[0_30px_60px_-30px_rgb(20_22_31/0.35)] sm:mx-8 sm:p-8 lg:absolute lg:bottom-10 lg:right-10 lg:mx-0 lg:mt-0 lg:w-[30rem]">
-            <p className="inline-flex items-center gap-2 rounded-full bg-azul-suave px-3.5 py-1.5 text-[0.9375rem] font-bold text-azul">
-              <Moon size={18} weight="fill" aria-hidden />
+    <section id="hotel" className="relative">
+      <Ola color="var(--lp-turquesa)" className="-mb-px" />
+      <div className="lp-franja-turquesa pb-20 pt-6 lg:pb-28">
+        <div className="mx-auto grid max-w-7xl items-center gap-14 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">
+          <div className="lg:col-span-7">
+            <p className="lp-revela lp-display inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-lg font-bold text-[var(--lp-indigo)]">
+              <Moon size={20} weight="fill" aria-hidden />
               Hotel por noche
             </p>
-            <h2 className="mt-4 text-balance text-4xl font-extrabold leading-[1.1] tracking-[-0.025em] text-n-900">
-              Noches tranquilas, como en casa.
-            </h2>
-            <p className="mt-3 text-lg leading-relaxed text-n-700">
-              Si sales de viaje, se queda con nosotros, con monitoreo las
-              24 horas.
+            <Rotulo className="lp-revela mt-5 text-5xl sm:text-6xl">Noches tranquilas, como en casa.</Rotulo>
+            <p className="lp-revela mt-5 max-w-[46ch] text-lg font-semibold leading-relaxed text-[var(--lp-tinta)]">
+              Si sales de viaje, se queda con nosotros, con monitoreo las 24 horas.
             </p>
 
-            <dl className="mt-6 grid grid-cols-2 gap-3">
-              {HOTEL.map((h) => (
-                <div key={h.talla} className="rounded-2xl bg-n-50 p-4">
-                  <dt className="text-[0.9375rem] font-semibold leading-snug text-n-700">
-                    Talla {h.talla.toLowerCase()}
-                  </dt>
-                  <dd className="mt-2 tabular-nums">
-                    <span className="text-3xl font-extrabold tracking-[-0.02em] text-n-900">
-                      {pesos(h.precio)}
-                    </span>
-                    <span className="block text-[0.9375rem] font-semibold text-n-600 sm:ml-1 sm:inline">por noche</span>
-                  </dd>
-                </div>
+            <ul className="mt-10 flex flex-wrap gap-5">
+              {HOTEL.map((h, i) => (
+                <li key={h.talla} className="lp-revela-giro" style={{ "--i": i } as React.CSSProperties}>
+                  {/* Llavero de habitación: pastilla blanca con su ojillo. */}
+                  <div className="relative flex min-w-[15rem] items-center gap-4 rounded-[1.5rem] rounded-l-[3rem] bg-white py-5 pl-12 pr-7 shadow-[0_6px_0_var(--lp-turquesa-hondo)]">
+                    <span className="absolute left-4 top-1/2 size-4 -translate-y-1/2 rounded-full border-[3px] border-[var(--lp-turquesa-hondo)] bg-[var(--lp-turquesa)]" aria-hidden />
+                    <div>
+                      <p className="lp-display text-lg font-bold leading-tight text-[var(--lp-indigo)]">Talla {h.talla.toLowerCase()}</p>
+                      <p className="lp-display tabular-nums">
+                        <span className="text-5xl font-bold text-[var(--lp-tinta)]">{pesos(h.precio)}</span>
+                        <span className="ml-1 text-base font-semibold text-[var(--lp-tinta)]/70">por noche</span>
+                      </p>
+                    </div>
+                  </div>
+                </li>
               ))}
-            </dl>
+            </ul>
 
-            <ul className="mt-4 space-y-1.5 text-[0.9375rem] font-semibold leading-snug text-n-800">
-              <li className="flex items-start gap-2">
-                <Info size={18} weight="bold" className="mt-0.5 shrink-0 text-azul" aria-hidden />
+            <ul className="lp-revela mt-8 flex flex-col gap-2 text-lg font-bold text-[var(--lp-tinta)]">
+              <li className="flex items-center gap-2">
+                <Info size={22} weight="bold" className="shrink-0 text-[var(--lp-tinta)]" aria-hidden />
                 No incluye servicios extra.
               </li>
-              <li className="flex items-start gap-2">
-                <Info size={18} weight="bold" className="mt-0.5 shrink-0 text-azul" aria-hidden />
+              <li className="flex items-center gap-2">
+                <Info size={22} weight="bold" className="shrink-0 text-[var(--lp-tinta)]" aria-hidden />
                 No recibimos ni entregamos perros de hotel los domingos.
+              </li>
+              <li className="flex items-center gap-2">
+                <Info size={22} weight="bold" className="shrink-0 text-[var(--lp-tinta)]" aria-hidden />
+                Aplican los mismos requisitos que en guardería.
               </li>
             </ul>
 
-            <p className="mt-3 text-[0.9375rem] leading-snug text-n-600">
-              Aplican los mismos{" "}
-              <a href="#requisitos" className="font-bold text-azul underline decoration-2 underline-offset-4 hover:text-azul-oscuro">
-                requisitos
-              </a>{" "}
-              que en guardería.
-            </p>
-
-            <BotonWhatsApp mensaje={MENSAJES.hotel} className="mt-6 w-full sm:w-auto">
-              Apartar hotel
-            </BotonWhatsApp>
+            <div className="lp-revela mt-10">
+              <BotonWhatsApp mensaje={MENSAJES.hotel} variante="blanco">
+                Apartar hotel
+              </BotonWhatsApp>
+            </div>
           </div>
+
+          <figure className="lp-revela lp-polaroid mx-auto w-[82%] rotate-3 sm:w-[60%] lg:col-span-5 lg:w-full">
+            <Image
+              src={fotoCamita}
+              alt="Perrita café con naranja echada en su cobija, con una pelota de tenis entre las patas"
+              placeholder="blur"
+              sizes="(min-width: 1024px) 420px, 80vw"
+              className="aspect-[4/5] w-full object-cover"
+            />
+            <figcaption className="lp-display absolute inset-x-0 bottom-2 text-center text-lg font-bold text-[var(--lp-indigo)]">
+              Lista para dormir
+            </figcaption>
+          </figure>
         </div>
       </div>
+      <Ola color="var(--lp-turquesa)" invertida className="-mt-px" />
     </section>
   );
 }

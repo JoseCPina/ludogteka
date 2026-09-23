@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
+import { Fredoka } from "next/font/google";
 import { Encabezado } from "@/components/landing/encabezado";
-import { FranjaConfianza, Hero } from "@/components/landing/hero";
+import { Hero } from "@/components/landing/hero";
+import { Servicios } from "@/components/landing/servicios";
+import { BandaPerritos } from "@/components/landing/comunes";
 import { Guarderia } from "@/components/landing/guarderia";
 import { Hotel } from "@/components/landing/hotel";
 import { Estetica } from "@/components/landing/estetica";
-import { Logistica } from "@/components/landing/logistica";
-import { LlamadoFinal, Pie, Requisitos, WhatsAppFlotante } from "@/components/landing/cierre";
+import { Recoleccion } from "@/components/landing/recoleccion";
+import { Patio } from "@/components/landing/patio";
+import { Requisitos } from "@/components/landing/requisitos";
+import { Ubicacion } from "@/components/landing/ubicacion";
+import { LlamadoFinal, Pie, WhatsAppFlotante } from "@/components/landing/cierre";
+import { patronHuesos } from "@/components/landing/patron";
 import {
   DIRECCION,
   GUARDERIA,
@@ -18,6 +25,22 @@ import "@/components/landing/landing.css";
 // La raíz es la landing pública del negocio: estática, sin sesión y sin
 // consultar la base. El acceso al sistema es el botón "Entrar" (/login,
 // que ya manda a cada quien a su zona si tiene sesión).
+
+// Letra redonda y gruesa para títulos, como la de la rotulación de la
+// camioneta. Solo la carga la landing; la app sigue con Nunito.
+const fredoka = Fredoka({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-fredoka",
+  display: "swap",
+});
+
+// Los patrones de huesos y huellas de las franjas, con el tono un poco más
+// oscuro que el fondo, como en la lona.
+const PATRONES = {
+  "--lp-patron-turquesa": patronHuesos("#2cb5b1"),
+  "--lp-patron-amarillo": patronHuesos("#f0bb24"),
+} as React.CSSProperties;
 
 const TITULO = "Ludogteka | Guardería, hotel y estética canina en San Luis Potosí";
 const DESCRIPCION = `Guardería de lunes a sábado desde $${GUARDERIA.ocasionalHora} la hora, hotel por noche y estética canina en SLP. Monitoreo 24 horas. Escríbenos por WhatsApp: ${TELEFONO_VISIBLE}.`;
@@ -70,7 +93,7 @@ const DATOS_ESTRUCTURADOS = {
 
 export default function Landing() {
   return (
-    <div className="lp flex min-h-full flex-col bg-white">
+    <div className={`lp ${fredoka.variable} flex min-h-full flex-col bg-[var(--lp-crema)]`} style={PATRONES}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(DATOS_ESTRUCTURADOS) }}
@@ -78,12 +101,17 @@ export default function Landing() {
       <Encabezado />
       <main className="flex-1">
         <Hero />
-        <FranjaConfianza />
+        <Servicios />
+        <BandaPerritos
+          frases={["Precaución, perritos a bordo", "Guardería", "Hotel", "Estética", "Recolección a domicilio", "Monitoreo 24 horas"]}
+        />
         <Guarderia />
         <Hotel />
         <Estetica />
-        <Logistica />
+        <Recoleccion />
+        <Patio />
         <Requisitos />
+        <Ubicacion />
         <LlamadoFinal />
       </main>
       <Pie />

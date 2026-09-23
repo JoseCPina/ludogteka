@@ -1,116 +1,236 @@
 /*
- * Movimiento de la landing (ludogteka.mx). Todo es CSS — cero JavaScript
- * de animación: corre fuera del hilo principal y aguanta un celular de
- * gama media mientras la página todavía está cargando.
+ * Landing de ludogteka.mx con el lenguaje de la rotulación de la
+ * camioneta: franjas turquesa y amarilla con huesos y huellas, perros
+ * recortados que se asoman de tarjetas blancas con degradado menta, su
+ * nombre en un hueso amarillo, cintas índigo con letra blanca y títulos
+ * blancos con contorno índigo.
  *
- * Tres familias, cada una con su porqué:
- *  - Entrada del hero: jerarquía. Primero el mensaje, luego la foto, luego
- *    el aviso de monitoreo 24 horas.
- *  - Revelado al hacer scroll (animation-timeline: view()): acompaña la
- *    lectura sección por sección. Donde el navegador no lo soporta, el
- *    contenido simplemente está ahí — nunca se esconde esperando JS.
- *  - La ruta de la recolección se dibuja: explica que vamos por el perro
- *    y lo regresamos.
+ * Colores tomados de la lona (no de la paleta de la app): el turquesa y
+ * el índigo de la rotulación son más suaves que los de la interfaz.
  *
- * Capas (z-index): encabezado 30, botón flotante de WhatsApp 40.
+ * Movimiento, todo en CSS (cero JavaScript de animación):
+ *  - Los perros del hero se asoman por detrás de la ola al cargar (una
+ *    vez, es la bienvenida).
+ *  - Las secciones se revelan al hacer scroll (animation-timeline).
+ *  - La banda "perritos a bordo" corre como la camioneta en movimiento.
+ *  - La camioneta recorre el camino de la recolección con el scroll.
+ * Con prefers-reduced-motion todo queda quieto y visible.
+ *
+ * Capas (z-index): encabezado 30, botón flotante 40.
  */
 
 .lp {
+  --lp-turquesa: #30bfbb;
+  --lp-turquesa-hueso: #29aba7;
+  --lp-turquesa-hondo: #1f8f8b;
+  --lp-menta: #d6f3ea;
+  --lp-amarillo: #f7c531;
+  --lp-amarillo-hueso: #ecb41c;
+  --lp-indigo: #4458a7;
+  --lp-indigo-hondo: #34457f;
+  --lp-naranja: #ef5025;
+  --lp-tinta: #1b2140;
+  --lp-crema: #fffaf0;
   --lp-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --lp-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --lp-ease-rebote: cubic-bezier(0.34, 1.4, 0.64, 1);
   scroll-behavior: smooth;
+  color: var(--lp-tinta);
 }
 
-/* Anclas: que el encabezado fijo no tape el título al saltar. */
 .lp section[id] {
   scroll-margin-top: 5rem;
 }
 
-/* Cinta de marca: los cinco colores del logo. */
-.lp-cinta {
-  background: linear-gradient(
-    90deg,
-    var(--color-azul) 0 20%,
-    var(--color-turquesa) 20% 40%,
-    var(--color-verde) 40% 60%,
-    var(--color-amarillo) 60% 80%,
-    var(--color-naranja) 80% 100%
-  );
+.lp-display {
+  font-family: var(--font-fredoka), var(--font-nunito), system-ui, sans-serif;
+  letter-spacing: -0.01em;
 }
 
-/* Botón con presión física. Hover solo con puntero fino: en touch, el
-   hover se queda "pegado" después del tap. */
+/* Rótulo: blanco con contorno índigo, como "Transporte y recolección de
+   perritos" en la lona. paint-order pone el contorno detrás del relleno
+   para que la letra no adelgace. */
+.lp-rotulo {
+  font-family: var(--font-fredoka), var(--font-nunito), system-ui, sans-serif;
+  font-weight: 700;
+  color: #fff;
+  -webkit-text-stroke: 0.16em var(--lp-indigo);
+  paint-order: stroke fill;
+  text-shadow: 0 0.09em 0 var(--lp-indigo-hondo);
+  line-height: 1.1;
+}
+
+/* Cinta índigo con letra blanca (Guardería / Hotel / Estética). */
+.lp-cinta {
+  background: var(--lp-indigo);
+  color: #fff;
+  font-family: var(--font-fredoka), var(--font-nunito), system-ui, sans-serif;
+  font-weight: 700;
+  box-shadow: 0 4px 0 var(--lp-indigo-hondo);
+}
+
+/* Hueso amarillo con el nombre del perro: una pastilla con dos bolitas
+   en cada punta. */
+.lp-hueso {
+  position: relative;
+  display: inline-block;
+  background: var(--lp-amarillo);
+  color: var(--lp-tinta);
+  font-family: var(--font-fredoka), var(--font-nunito), system-ui, sans-serif;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.4em 0.95em;
+  border-radius: 0.45em;
+  filter: drop-shadow(0 2px 0 rgb(0 0 0 / 0.18));
+}
+.lp-hueso::before,
+.lp-hueso::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 0.95em;
+  height: 1.9em;
+  translate: 0 -50%;
+  background:
+    radial-gradient(circle at 50% 27%, var(--lp-amarillo) 0.44em, transparent 0.46em),
+    radial-gradient(circle at 50% 73%, var(--lp-amarillo) 0.44em, transparent 0.46em);
+}
+.lp-hueso::before {
+  left: -0.55em;
+}
+.lp-hueso::after {
+  right: -0.55em;
+}
+
+/* Franjas con patrón de huesos y huellas. */
+.lp-franja-turquesa {
+  background-color: var(--lp-turquesa);
+  background-image: var(--lp-patron-turquesa);
+  background-size: 190px 190px;
+}
+.lp-franja-amarilla {
+  background-color: var(--lp-amarillo);
+  background-image: var(--lp-patron-amarillo);
+  background-size: 190px 190px;
+}
+
+/* Tarjeta de perro: marco blanco, degradado menta; el recorte se ancla
+   abajo y es más alto que el fondo, así la cabeza rebasa el marco. */
+.lp-tarjeta {
+  position: relative;
+  border-radius: 1.75rem;
+  background: #fff;
+  padding: 0.5rem;
+  box-shadow: 0 18px 30px -18px rgb(27 33 64 / 0.45);
+}
+.lp-tarjeta-fondo {
+  position: relative;
+  border-radius: 1.35rem;
+  background: linear-gradient(180deg, #e8f8f2 0%, #aee5d7 55%, var(--lp-turquesa) 100%);
+}
+.lp-tarjeta-perro {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin-inline: auto;
+  transform-origin: 50% 100%;
+  transition: transform 450ms var(--lp-ease-rebote);
+  -webkit-mask-image: linear-gradient(to top, transparent 0, #000 0.35rem);
+  mask-image: linear-gradient(to top, transparent 0, #000 0.35rem);
+}
+@media (hover: hover) and (pointer: fine) {
+  .lp-tarjeta:hover .lp-tarjeta-perro {
+    transform: translateY(-6px) rotate(-1.5deg);
+  }
+}
+
+/* Botones "de lona": sombra dura abajo, se hunden al apretar. */
 .lp-boton {
   transition:
     transform 160ms var(--lp-ease-out),
-    background-color 200ms ease,
-    box-shadow 200ms ease;
+    box-shadow 160ms var(--lp-ease-out),
+    background-color 200ms ease;
+}
+.lp-boton-indigo {
+  background: var(--lp-indigo);
+  color: #fff;
+  box-shadow: 0 5px 0 var(--lp-indigo-hondo);
+}
+.lp-boton-indigo:hover {
+  background: #3d4f98;
+}
+.lp-boton-blanco {
+  background: #fff;
+  color: var(--lp-indigo);
+  box-shadow: 0 5px 0 rgb(27 33 64 / 0.28);
 }
 .lp-boton:active {
-  transform: scale(0.97);
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--lp-indigo-hondo);
 }
 @media (hover: hover) and (pointer: fine) {
   .lp-boton:hover {
     transform: translateY(-2px);
   }
   .lp-boton:hover:active {
-    transform: scale(0.97);
+    transform: translateY(4px);
   }
 }
 
-/* Foto con un zoom leve al pasar el mouse (solo puntero fino). */
-.lp-zoom img {
-  transition: transform 700ms var(--lp-ease-out);
+/* Boletos (day pass): mordidas a los lados, como un boleto de feria. */
+.lp-boleto {
+  -webkit-mask:
+    radial-gradient(circle at 0 50%, transparent 0.8rem, #000 0.83rem) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, transparent 0.8rem, #000 0.83rem) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle at 0 50%, transparent 0.8rem, #000 0.83rem) left / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, transparent 0.8rem, #000 0.83rem) right / 51% 100% no-repeat;
+}
+
+/* Polaroid con cinta adhesiva amarilla. */
+.lp-polaroid {
+  position: relative;
+  background: #fff;
+  padding: 0.6rem 0.6rem 2.8rem;
+  box-shadow: 0 20px 34px -20px rgb(27 33 64 / 0.55);
+  transition: transform 450ms var(--lp-ease-rebote);
+}
+.lp-polaroid::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  top: -0.7rem;
+  left: 50%;
+  width: 5.5rem;
+  height: 1.6rem;
+  translate: -50% 0;
+  rotate: -3deg;
+  background: rgb(247 197 49 / 0.88);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
 }
 @media (hover: hover) and (pointer: fine) {
-  .lp-zoom:hover img {
-    transform: scale(1.04);
+  .lp-polaroid:hover {
+    transform: rotate(0deg) scale(1.03);
   }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* ---- Entrada del hero ------------------------------------------- */
-  /* El titular y la foto entran sin desvanecerse: un elemento en
-     opacidad 0 no cuenta como "pintado" y retrasaría el LCP en celular.
-     Se mueven, pero están visibles desde el primer cuadro. */
-  .lp-entra-titular {
-    animation: lp-entra-titular 900ms var(--lp-ease-out) both;
+  .lp-asoma {
+    animation: lp-asoma 950ms var(--lp-ease-rebote) both;
+    animation-delay: calc(250ms + var(--d, 0) * 140ms);
   }
   .lp-entra {
-    animation: lp-entra 800ms var(--lp-ease-out) both;
-    animation-delay: calc(var(--d, 0) * 90ms + 60ms);
-  }
-  .lp-entra-foto {
-    animation: lp-entra-foto 1100ms var(--lp-ease-out) both;
-    animation-delay: 180ms;
-  }
-  .lp-entra-aviso {
     animation: lp-entra 700ms var(--lp-ease-out) both;
-    animation-delay: 750ms;
+    animation-delay: calc(var(--d, 0) * 90ms);
   }
-
-  /* Figuras de color detrás de la foto: flotan despacio. Movimiento
-     ambiental, lento y de poca amplitud, para que no compita con leer. */
-  .lp-flota {
-    animation: lp-flota 9s var(--lp-ease-in-out) infinite alternate;
+  .lp-banda-pista {
+    animation: lp-banda 40s linear infinite;
   }
-  .lp-flota-2 {
-    animation: lp-flota-2 11s var(--lp-ease-in-out) infinite alternate;
+  .lp-banda:hover .lp-banda-pista {
+    animation-play-state: paused;
   }
-
-  /* ---- Botón flotante --------------------------------------------- */
   .lp-flotante {
-    animation: lp-entra-flotante 500ms var(--lp-ease-out) 1.1s backwards;
-  }
-  /* Dos llamadas de atención al llegar y ya: un pulso infinito cansa. */
-  .lp-flotante::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    box-shadow: 0 0 0 0 rgb(27 122 66 / 0.45);
-    animation: lp-pulso 1.6s var(--lp-ease-out) 2s 2;
-    pointer-events: none;
+    animation: lp-entra 500ms var(--lp-ease-out) 1.2s backwards;
   }
 }
 
@@ -120,113 +240,72 @@
       animation: lp-revela linear both;
       animation-timing-function: var(--lp-ease-out);
       animation-timeline: view();
-      /* Escalonado dentro de una rejilla: cada hijo con su --i. */
-      animation-range: entry calc(var(--i, 0) * 6%) entry calc(55% + var(--i, 0) * 6%);
+      animation-range: entry calc(var(--i, 0) * 7%) entry calc(55% + var(--i, 0) * 7%);
     }
-
-    .lp-ruta {
-      transform-origin: left center;
-      animation: lp-ruta linear both;
+    .lp-revela-giro {
+      animation: lp-revela-giro linear both;
+      animation-timing-function: var(--lp-ease-out);
       animation-timeline: view();
-      animation-range: entry 30% cover 55%;
+      animation-range: entry calc(var(--i, 0) * 8%) entry calc(60% + var(--i, 0) * 8%);
     }
-    @media (max-width: 767px) {
-      .lp-ruta {
-        transform-origin: center top;
-        animation-name: lp-ruta-vertical;
-      }
-    }
-
-    /* La foto del hotel se desplaza un poco más lento que la página. */
-    .lp-paralaje {
-      animation: lp-paralaje linear both;
+    /* La camioneta avanza por el camino mientras la sección cruza la
+       pantalla: de la casa del perro a Ludogteka. */
+    .lp-camioneta {
+      animation: lp-camioneta linear both;
       animation-timeline: view();
+      animation-range: cover 15% cover 65%;
     }
   }
 }
 
-/* Movimiento reducido: sin desplazamientos, solo la opacidad que ayuda
-   a entender qué apareció. */
 @media (prefers-reduced-motion: reduce) {
   .lp {
     scroll-behavior: auto;
   }
-  .lp-entra,
-  .lp-entra-aviso,
-  .lp-flotante {
-    animation: lp-aparece 200ms ease both;
-  }
   .lp-boton,
   .lp-boton:active,
-  .lp-zoom img {
+  .lp-tarjeta-perro,
+  .lp-polaroid {
     transition: background-color 200ms ease;
     transform: none !important;
   }
 }
 
+@keyframes lp-asoma {
+  from {
+    transform: translateY(60%);
+  }
+}
 @keyframes lp-entra {
   from {
     opacity: 0;
-    transform: translateY(16px);
-  }
-}
-@keyframes lp-entra-titular {
-  from {
-    transform: translateY(18px);
-  }
-}
-@keyframes lp-entra-foto {
-  from {
-    transform: scale(0.94) rotate(-2deg);
-  }
-}
-@keyframes lp-entra-flotante {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.9);
-  }
-}
-@keyframes lp-aparece {
-  from {
-    opacity: 0;
+    transform: translateY(14px);
   }
 }
 @keyframes lp-revela {
   from {
     opacity: 0;
-    transform: translateY(28px);
+    transform: translateY(30px);
   }
 }
-@keyframes lp-ruta {
+@keyframes lp-revela-giro {
   from {
-    transform: scaleX(0);
+    opacity: 0;
+    transform: translateY(40px) rotate(-3deg);
   }
 }
-@keyframes lp-ruta-vertical {
+@keyframes lp-banda {
+  to {
+    transform: translateX(-50%);
+  }
+}
+/* El camino es un contenedor (container-type: inline-size): la
+   camioneta recorre su ancho con transform, no con left. */
+@keyframes lp-camioneta {
   from {
-    transform: scaleY(0);
-  }
-}
-@keyframes lp-paralaje {
-  from {
-    transform: translateY(-6%) scale(1.12);
+    transform: translateX(0);
   }
   to {
-    transform: translateY(6%) scale(1.12);
-  }
-}
-@keyframes lp-flota {
-  to {
-    transform: translate(10px, -14px) rotate(6deg);
-  }
-}
-@keyframes lp-flota-2 {
-  to {
-    transform: translate(-12px, 10px) rotate(-8deg);
-  }
-}
-@keyframes lp-pulso {
-  to {
-    box-shadow: 0 0 0 18px rgb(27 122 66 / 0);
+    transform: translateX(calc(100cqw - 100%));
   }
 }

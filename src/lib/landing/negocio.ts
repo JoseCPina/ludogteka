@@ -61,6 +61,8 @@ export const ZONAS_COBERTURA: { nombre: string; nota?: string }[] = [];
 export const GUARDERIA = {
   ocasionalHora: 35,
   diaCompleto: 350,
+  // Sábado (10:00 a 14:00) es medio día: mismo precio que tarifas_dia_semana.
+  diaCompletoSabado: 140,
   mensualidad: 1950,
   pases: [
     { pases: 10, precio: 1150, vigenciaDias: 20 },

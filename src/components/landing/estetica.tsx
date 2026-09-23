@@ -1,6 +1,6 @@
-import Image from "next/image";
-import { Check, Info, Scissors } from "@phosphor-icons/react/dist/ssr";
-import { BotonWhatsApp } from "./comunes";
+import { Info, PawPrint, Scissors } from "@phosphor-icons/react/dist/ssr";
+import { BotonWhatsApp, Cinta, TarjetaPerro } from "./comunes";
+import { PERROS } from "./perros";
 import {
   ESTETICA_EXPRES_INCLUYE,
   ESTETICA_GRUPOS,
@@ -11,122 +11,92 @@ import {
   MENSAJES,
   pesos,
 } from "@/lib/landing/negocio";
-import fotoEstetica from "./fotos/estetica.jpg";
-import fotoBano from "./fotos/estetica-bano.jpg";
 
-function FilaPrecio({ servicio, monto }: { servicio: string; monto?: number }) {
+function Fila({ servicio, monto }: { servicio: string; monto?: number }) {
   if (monto == null) return null;
   return (
-    <div className="flex items-baseline justify-between gap-3 py-1.5">
-      <dt className="text-base text-n-600">{servicio}</dt>
-      <dd className="text-xl font-extrabold tabular-nums text-n-900">{pesos(monto)}</dd>
+    <div className="flex items-baseline gap-2 py-1.5">
+      <dt className="text-base font-semibold text-[var(--lp-tinta)]/75">{servicio}</dt>
+      <span className="flex-1 border-b-2 border-dotted border-[var(--lp-tinta)]/20" aria-hidden />
+      <dd className="lp-display text-2xl font-bold tabular-nums text-[var(--lp-tinta)]">{pesos(monto)}</dd>
     </div>
   );
 }
 
+// Estética como la pizarra de precios de una estética de barrio: cada
+// grupo de raza con su cinta índigo y sus precios con puntitos.
 export function Estetica() {
   return (
-    <section id="estetica" className="relative overflow-hidden bg-amarillo-suave py-20 lg:py-28">
+    <section id="estetica" className="relative bg-[var(--lp-crema)] py-20 lg:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid items-center gap-14 lg:grid-cols-12">
+        <div className="grid gap-10 lg:grid-cols-12">
           <div className="lg:col-span-6">
-            <h2 className="lp-revela text-balance text-4xl font-extrabold leading-[1.1] tracking-[-0.025em] text-n-900 sm:text-5xl">
-              Estética: sale limpio, peinado y feliz.
+            <Cinta className="lp-revela gap-2 text-2xl">
+              <Scissors size={24} weight="bold" aria-hidden />
+              Estética
+            </Cinta>
+            <h2 className="lp-revela lp-display mt-5 text-balance text-4xl font-bold leading-[1.05] text-[var(--lp-indigo)] sm:text-5xl">
+              Sale limpio, peinado y feliz.
             </h2>
-            <p className="lp-revela mt-5 max-w-[48ch] text-lg leading-relaxed text-n-700">
-              El baño estético completo incluye todo esto:
-            </p>
-            <ul className="mt-6 grid gap-x-6 gap-y-3 sm:grid-cols-2">
-              {ESTETICA_INCLUYE.map((item, i) => (
-                <li
-                  key={item}
-                  className="lp-revela flex items-start gap-3 text-base font-semibold text-n-800"
-                  style={{ "--i": i % 2 } as React.CSSProperties}
-                >
-                  <span className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-verde text-n-900">
-                    <Check size={14} weight="bold" aria-hidden />
-                  </span>
+            <TarjetaPerro
+              foto={PERROS.miel.foto}
+              alt={PERROS.miel.alt}
+              alto="h-56"
+              altoPerro={PERROS.miel.altoEnTarjeta}
+              sizes="(min-width: 1024px) 320px, 70vw"
+              className="lp-revela-giro mt-20 w-[78%] max-w-sm rotate-[-2deg] sm:w-[55%] lg:w-[62%]"
+            />
+          </div>
+          <div className="lp-revela rounded-[1.75rem] border-[3px] border-dashed border-[var(--lp-turquesa)] bg-white p-6 lg:col-span-6">
+            <p className="lp-display text-xl font-bold text-[var(--lp-indigo)]">El baño estético incluye</p>
+            <ul className="mt-3 grid gap-x-5 gap-y-2 sm:grid-cols-2">
+              {ESTETICA_INCLUYE.map((item) => (
+                <li key={item} className="flex items-start gap-2 text-base font-semibold">
+                  <PawPrint size={18} weight="fill" className="mt-0.5 shrink-0 text-[var(--lp-turquesa-hondo)]" aria-hidden />
                   {item}
                 </li>
               ))}
             </ul>
-            <dl className="lp-revela mt-8 grid gap-3 text-base sm:grid-cols-2">
-              <div className="rounded-2xl bg-white/70 p-4">
-                <dt className="font-bold text-n-900">Rapado</dt>
-                <dd className="mt-1 text-n-600">{ESTETICA_RAPADO_DIFERENCIA}</dd>
+            <dl className="mt-4 grid gap-2 border-t-2 border-[var(--lp-menta)] pt-4 text-base sm:grid-cols-2">
+              <div>
+                <dt className="lp-display font-bold text-[var(--lp-indigo)]">Rapado</dt>
+                <dd className="text-[var(--lp-tinta)]/80">{ESTETICA_RAPADO_DIFERENCIA}</dd>
               </div>
-              <div className="rounded-2xl bg-white/70 p-4">
-                <dt className="font-bold text-n-900">Exprés</dt>
-                <dd className="mt-1 text-n-600">{ESTETICA_EXPRES_INCLUYE}</dd>
+              <div>
+                <dt className="lp-display font-bold text-[var(--lp-indigo)]">Exprés</dt>
+                <dd className="text-[var(--lp-tinta)]/80">{ESTETICA_EXPRES_INCLUYE}</dd>
               </div>
             </dl>
           </div>
-
-          {/* Dos fotos encimadas, un poco giradas: se lee como álbum, no
-              como catálogo. */}
-          <div className="relative mx-auto w-full max-w-md lg:col-span-6 lg:max-w-none">
-            <div className="lp-revela relative ml-auto w-[78%] rotate-2 overflow-hidden rounded-[2rem] border-[6px] border-white shadow-[0_30px_60px_-30px_rgb(138_99_0/0.55)]">
-              <Image
-                src={fotoEstetica}
-                alt="Pomerania con una toalla en la cabeza mientras le cepillan el pelo"
-                placeholder="blur"
-                sizes="(min-width: 1024px) 460px, 78vw"
-                className="aspect-[4/3] w-full object-cover"
-              />
-            </div>
-            <div
-              className="lp-revela relative -mt-24 w-[48%] -rotate-3 overflow-hidden rounded-[2rem] border-[6px] border-white shadow-[0_30px_60px_-30px_rgb(138_99_0/0.55)] sm:-mt-32"
-              style={{ "--i": 2 } as React.CSSProperties}
-            >
-              <Image
-                src={fotoBano}
-                alt="Perro mojado recién bañado, secándose con un guante de toalla"
-                placeholder="blur"
-                sizes="(min-width: 1024px) 290px, 48vw"
-                className="aspect-[4/5] w-full object-cover"
-              />
-            </div>
-            <div
-              className="lp-flota absolute -right-4 bottom-8 grid size-20 place-items-center rounded-full bg-naranja text-white sm:size-24"
-              aria-hidden
-            >
-              <Scissors size={36} weight="bold" />
-            </div>
-          </div>
         </div>
 
-        <h3 className="lp-revela mt-20 text-3xl font-extrabold tracking-[-0.02em] text-n-900 sm:text-4xl">
-          Precios por raza
-        </h3>
-        <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {ESTETICA_GRUPOS.map((g, i) => (
             <li
               key={g.nombre}
-              className="lp-revela flex flex-col rounded-3xl bg-white p-6 shadow-[0_1px_0_rgb(138_99_0/0.08)]"
+              className="lp-revela flex flex-col overflow-hidden rounded-[1.5rem] bg-white shadow-[0_6px_0_rgb(27_33_64/0.12)]"
               style={{ "--i": i % 3 } as React.CSSProperties}
             >
-              <p className="text-lg font-bold leading-snug text-n-900">{g.nombre}</p>
-              <dl className="mt-auto divide-y divide-n-100 pt-4">
-                <FilaPrecio servicio="Baño estético" monto={g.bano} />
-                <FilaPrecio servicio="Rapado" monto={g.rapado} />
-                <FilaPrecio servicio="Exprés" monto={g.expres} />
+              <p className="lp-display bg-[var(--lp-indigo)] px-5 py-3 text-lg font-bold leading-snug text-white">{g.nombre}</p>
+              <dl className="flex flex-1 flex-col justify-end px-5 py-4">
+                <Fila servicio="Baño estético" monto={g.bano} />
+                <Fila servicio="Rapado" monto={g.rapado} />
+                <Fila servicio="Exprés" monto={g.expres} />
               </dl>
             </li>
           ))}
-          <li className="lp-revela rounded-3xl bg-white p-6 sm:col-span-2 lg:col-span-3">
-            <p className="text-lg font-bold text-n-900">
-              Por talla, solo para perros de{" "}
-              <span className="underline decoration-amarillo decoration-4 underline-offset-4">pelo corto</span> sin
-              grupo de raza
+          <li className="lp-revela overflow-hidden rounded-[1.5rem] bg-white shadow-[0_6px_0_rgb(27_33_64/0.12)] sm:col-span-2 lg:col-span-3">
+            <p className="lp-display bg-[var(--lp-turquesa-hondo)] px-5 py-3 text-lg font-bold text-white">
+              Por talla, solo para perros de pelo corto sin grupo de raza
             </p>
-            <dl className="mt-4 grid gap-x-8 gap-y-2 sm:grid-cols-3">
+            <dl className="grid gap-x-8 px-5 py-4 sm:grid-cols-3">
               {ESTETICA_POR_TALLA.map((t) => (
-                <div key={t.talla} className="rounded-2xl bg-n-50 p-4">
-                  <dt className="text-base font-bold text-n-800">{t.talla}</dt>
-                  <dd className="mt-2">
-                    <dl className="divide-y divide-n-200">
-                      <FilaPrecio servicio="Baño estético" monto={t.bano} />
-                      <FilaPrecio servicio="Exprés" monto={t.expres} />
+                <div key={t.talla}>
+                  <dt className="lp-display text-lg font-bold text-[var(--lp-indigo)]">{t.talla}</dt>
+                  <dd>
+                    <dl>
+                      <Fila servicio="Baño estético" monto={t.bano} />
+                      <Fila servicio="Exprés" monto={t.expres} />
                     </dl>
                   </dd>
                 </div>
@@ -135,18 +105,18 @@ export function Estetica() {
           </li>
         </ul>
 
-        <div className="lp-revela mt-6 flex items-start gap-3 rounded-2xl border-l-4 border-amarillo bg-white p-5 text-base leading-relaxed text-n-700">
-          <Info size={24} weight="duotone" className="mt-0.5 shrink-0 text-amarillo-oscuro" aria-hidden />
+        <div className="lp-revela mt-6 flex items-start gap-3 rounded-[1.25rem] bg-[var(--lp-amarillo)] p-5 text-lg">
+          <Info size={26} weight="bold" className="mt-0.5 shrink-0 text-[var(--lp-indigo)]" aria-hidden />
           <p>
-            <strong className="text-n-900">El precio puede aumentar según el tipo de pelo y el cuidado previo.</strong>{" "}
-            En razas chicas con pelo maltratado, el baño estético es de{" "}
-            <strong className="tabular-nums text-n-900">{pesos(ESTETICA_PELO_MALTRATADO)}</strong>.
+            <strong>El precio puede aumentar según el tipo de pelo y el cuidado previo.</strong> En razas
+            chicas con pelo maltratado, el baño estético es de{" "}
+            <strong className="tabular-nums">{pesos(ESTETICA_PELO_MALTRATADO)}</strong>.
           </p>
         </div>
 
-        <div className="lp-revela mt-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+        <div className="lp-revela mt-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
           <BotonWhatsApp mensaje={MENSAJES.estetica}>Agendar estética</BotonWhatsApp>
-          <p className="text-base text-n-700">Estética no pide los requisitos de guardería.</p>
+          <p className="text-lg font-semibold text-[var(--lp-tinta)]/75">Estética no pide los requisitos de guardería.</p>
         </div>
       </div>
     </section>
