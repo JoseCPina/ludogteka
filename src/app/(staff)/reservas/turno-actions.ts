@@ -33,5 +33,6 @@ export async function abrirTurno(fondoInicial: number, notas: string): Promise<E
 
   revalidarModulosEstancia();
   revalidatePath("/caja");
+  revalidatePath("/caja/turno");
   return { error: null, turnoId: data.id };
 }

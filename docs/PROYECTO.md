@@ -1832,9 +1832,106 @@ complemento). Los formularios cuyo error ya vivía pegado al botón
 (reserva nueva, serie, cita de estética, secciones cortas) se quedaron
 como estaban.
 
+## Fase 18 — Caja como mostrador y Mercado Pago (23 de septiembre de 2026)
+
+### Parte 1: Caja como mostrador de cobro
+
+Caja tenía turno, retiros y arqueo; el cobro vivía escondido dentro de
+cada reserva. Ahora `/caja` es el mostrador y `/caja/turno` el turno.
+
+- `/caja`: banner del turno (o aviso para abrirlo), pagos de Mercado Pago
+  que llegaron sin turno (con botón para registrarlos), **buscador
+  compartido** (perro, dueño o teléfono) que al elegir muestra las
+  cuentas abiertas del cliente y los accesos a cargo suelto, pases y
+  expediente; **cuentas abiertas de hoy** con su saldo (un clic → cobro)
+  y las demás con saldo a ±30 días.
+- `/caja/cobrar/[reservaId]`: el MISMO cobro de la reserva
+  (`PantallaCobro`, extraído de `/reservas/[id]/cobrar`), con "← Caja".
+  Cobro manual, bono, descuento, devolución y Mercado Pago, todo ahí.
+- `/caja/pases`: venta de day pass / mensualidad con todos los paquetes
+  cotizables (no solo los de guardería), reusando `BonosCliente`.
+- `/caja/cargo`: **cargo suelto** sin reserva de por medio. Migración
+  `20260923060000_caja_mostrador`: `cargos_aplicados.estancia_id` pasa a
+  opcional, gana `reserva_id` (se copia de la estancia cuando la hay;
+  backfill de las filas viejas) y `perro_id` informativo; el trigger
+  admite cargos sin estancia solo si no dependen del tamaño o son de
+  monto libre; `crear_cargo_suelto` crea la cuenta y el cargo en una
+  transacción y manda directo a cobrar. `cuenta_lineas_reserva` y
+  `cuenta_totales_reserva` leen cargos por `reserva_id`.
+- `/caja/turno`: apertura, retiros, arqueo ciego (sin cambios) y
+  **movimientos del turno** (`movimientos_turno`: cobros, ventas de bono,
+  devoluciones, retiros) con el acumulado por método (`resumen_turno`)
+  separando "por la app" (Mercado Pago) de "a mano".
+- `cuentas_abiertas(p_dias)`: reservas con saldo > 0 cuya fecha de
+  actividad (estancia/cita más cercana a hoy; si no hay, creación) cae en
+  ±p_dias. Usa `cuenta_totales_reserva` por fila: una sola definición de
+  saldo.
+- `cobros.origen`: `manual` | `mercadopago_point` | `mercadopago_link`.
+
+### Parte 2: Mercado Pago (terminal Point por Orders API y links de pago)
+
+Guía de configuración para el negocio en `docs/MERCADO-PAGO.md` (qué
+hacer en Mercado Pago, variables de Vercel, cómo funciona por dentro,
+simulación). Resumen técnico:
+
+- Migración `20260923070000_mercadopago`: `mp_ordenes` (intento de cobro
+  por MP sobre una cuenta: tipo point/link, monto, estado creada →
+  en_terminal → pagada | cancelada | expirada | fallida | reembolsada,
+  ids de MP, `installments`, `cobro_id`, `simulado`), vista
+  `mp_ordenes_estado`, RPC `registrar_pago_mercadopago` (solo
+  `service_role` por `auth.role()`; **idempotente**: una orden = un
+  cobro; el mismo `mp_payment_id` no puede apuntar a dos órdenes) y
+  trigger `registrar_pagos_mp_pendientes` (pagos confirmados sin turno se
+  registran al abrir el siguiente).
+- `src/lib/mercadopago/`: `config` (variables, simulación, URL pública),
+  `api` (fetch con tope 15 s y traducción), `errores` (401/403/404/409/
+  modo PDV/… → qué revisar; status_detail → español), `point` (POST
+  /v1/orders type point con X-Idempotency-Key, expiration PT3M,
+  `config.payment_method.default_installments` + `installments_cost:
+  seller` para MSI; GET/cancel; terminals list/setup; simulación por
+  tiempo: 8 s pagado, centavos .13 cancelado a 4 s, .77 nunca contesta),
+  `links` (POST /checkout/preferences con external_reference,
+  notification_url, vigencia 7 días; GET /v1/payments), `webhook`
+  (HMAC-SHA256 del manifiesto `id:…;request-id:…;ts:…;`, comparación en
+  tiempo constante, ventana de 6 h), `registro` (sincronizar una orden con
+  MP o la simulación y registrar), `diagnostico`.
+- `POST /api/mercadopago/webhook` (público): sin secreto → 200 e
+  ignorado con log; firma inválida → 401; `type=order` → GET
+  /v1/orders/{id} y registra; `type=payment` → GET /v1/payments/{id},
+  toma `external_reference` y registra. Nunca confía en el cuerpo. Error
+  → 500 para que MP reintente (idempotente).
+- Pantalla (`CobroMercadoPago`, dentro de `CuentaCobro`): "Cobrar con
+  terminal" (monto = saldo, plazos 1/3/6/9/12) → consulta cada 3 s hasta
+  120 s; pagado → cobro registrado solo (método terminal, origen
+  mercadopago_point, plazo en las notas y en la orden); cancelado/
+  rechazado/vencido → mensaje en español y la cuenta no queda a medias;
+  tope agotado → "Cancelar y registrar a mano" (cancela en MP si aún se
+  puede, cierra la orden; si el cliente sí pagó, el webhook lo registra
+  igual después). "Mandar link de pago" → `CampoCopiable` + botón
+  WhatsApp (wa.me con el mensaje); al pagar, cobro con método
+  transferencia y origen mercadopago_link. Lista de órdenes de la cuenta.
+- `/admin`: "Conexión con Mercado Pago": credencial (`/users/me`),
+  terminal (lista, la configurada, modo PDV, botón "Poner en modo PDV"),
+  webhook (secreto + URL a copiar). Traducido a qué revisar.
+- Corte: los cobros MP entran al esperado de su método en `cerrar_turno`
+  sin cambios; `/caja/turno` muestra por método "por la app" vs "a mano"
+  para conciliar lo primero contra Mercado Pago y lo segundo contra el
+  reporte de la terminal.
+
+Probado en desarrollo (simulación): guardias REST (anon 401 en las cinco
+RPC nuevas y en `mp_ordenes`; cliente y admin sin permiso en
+`registrar_pago_mercadopago`; cliente rechazado en `crear_cargo_suelto`);
+webhook sin firma / firma mala → 401, firma buena con orden desconocida →
+200 `orden_desconocida`; cargo suelto → cobro → terminal $120 aprobada a
+los 8 s con cobro registrado y saldo 0; link $50 abierto → pagado, cobro
+transferencia; terminal $10.13 → "El pago se canceló en la terminal";
+RPC repetida → `repetido: true` y webhook firmado de la misma orden →
+sin cobro duplicado (2 cobros antes y después); `/caja/turno` con
+terminal $120 y transferencia $50 "por la app". Residuo borrado.
+
 ## Estado actual
 
-Fase 0, Fase 1, Fase 2, Fase 3 y Fase 4 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 5 (POS) construida en sus cuatro bloques (cobros/devoluciones, bonos, descuentos, caja/arqueo) más la decisión de Bloque E, pendiente de que el negocio termine de probarla para cerrarla formalmente. Fase 6 (contratos) completa en sus tres bloques (plantillas y versionado, generación/firma/papel, visibilidad operativa y vigencia). Fase 7 (inventario) completa en sus tres bloques (catálogo y existencias; movimientos: entradas, salidas, mermas, ajustes; consumo automático por receta al finalizar un servicio de estética, con el enlace a la cita ya listo para que Fase 8 calcule el costo real por servicio). Fase 8 (reportes) completa en sus tres bloques (financiero por periodo con ingreso reconocido vs. neto de caja; costos y margen de estética; operativo con ocupación/servicios del periodo y una fotografía del estado actual de cumplimiento sanitario, contratos e inventario). Fase 9 (bitácora diaria y medicamentos) completa en sus dos bloques: Bloque A (fotos, notas e incidencias, con aviso por WhatsApp vía enlace `wa.me`) y Bloque B (régimen y registro de dosis administradas, referenciando `perro_medicamentos.id` tal como quedó planteado desde Fase 2). Con esto quedan completas las diez fases (0 a 9) del roadmap original. Fase 10 (recolección a domicilio, cotizador por distancia con Google Maps) completa — reutiliza tarifas/`resolver_precio`/`cargos_aplicados` de Fase 3/4 sin mecanismo de cobro nuevo; pendiente de que el negocio capture direcciones reales (base y Ludogteka), tarifas por km, y la llave de Google Maps antes de salir de modo simulación. Fase 11 (varias plantillas de contrato a la vez, cada una con nombre, versionado y aplicabilidad por servicio propios) completa — el estado de contrato dejó de ser un sí/no por perro y pasó a ser por tipo, y los avisos dicen cuál falta. Fase 12 (Guardería y Hotel como módulos separados en la navegación, Agenda renombrada a Estética) completa, sin migraciones: `estancias` sigue unificada y la ocupación que muestran los dos módulos es la de toda la casa. Fase 13 (alta de clientes por link: recepción manda una invitación por WhatsApp y el dueño captura sus datos y los de sus perros; el expediente nace ligado a su cuenta sin pasar por vinculación) completa. Fase 14 (precios de estética por grupo de raza: catálogo de razas buscable, el grupo se deriva y el cliente nunca lo ve, y `tarifas` gana la dimensión de grupo sin sistema de precios paralelo) completa. Fase 15 (dos flujos de alta por link —guardería/hotel y estética—, cada uno con su contrato firmado dentro del alta, y un link de complemento que solo pide lo que falta) completa. Fase 16 (el cliente entra con su teléfono y contraseña, no con correo: correo y cuenta pasan a opcionales, un teléfono ya registrado no se puede volver a dar de alta y uno que existe como cliente sin cuenta se vincula en vez de duplicarse; la recuperación de contraseña es por WhatsApp a recepción, con el número configurable desde el panel) completa. Las cuentas que ya existían con correo siguen entrando igual, sin migración. Corrección de estética contra el cartel (10 de septiembre): tres precios corregidos, tres servicios de baño con lo que incluye cada uno, pelo maltratado como precio alternativo del baño completo (`tarifas.precio_pelo_maltratado`, marcado en la cita), talla gigante retirada, y **en estética no hay contratos** (candado en `tipos_contrato`; el pendiente de publicar uno de estética ya no aplica). Retiro de los siete servicios de estética de Fase 3 que quedaron sin tarifa (21 de septiembre): vista `servicios_cotizables`, de la que lee `/estetica/nueva`, y comprobación sobre todo servicio de estética vivo — aplicada a producción el mismo día con `npm run desplegar`. Fase 17 (precios y requisitos de guardería y hotel, del cartel: hotel $270/$300 por talla; guardería ocasional por hora a $35 con `estancias.horas` y ajuste a horas reales al check-out; day pass de 10/15/20 y mensualidad como bono ilimitado por días hábiles; recogida tardía, día extra y medicamento retirados, con "convertir en noche de hotel" en el check-out; evaluación previa de comportamiento con excepción de admin, celo/gestante y alertas bloqueantes sin excepción; vigencias bordetella 6 y desparasitación 3 solo para aplicaciones nuevas; los requisitos se muestran en el alta; las pantallas de reserva muestran deshabilitado lo que no tiene precio) completa. Ajustes del 22 de septiembre: `guarderia_dia` a $350 (la matriz de guardería/hotel quedó sin ninguna celda vacía; pases y mensualidad ya se consumen), comida especial como cargo de **monto libre** (`servicios.monto_libre`, importe y descripción capturados al aplicarlo, inmutable, cancelable con motivo, nunca borrable, fuera de la validación de celdas), e **invitar staff arreglado** con la puerta con nombre `asignar_rol_staff` (solo `service_role`, solo recepción/estética, solo cuentas recién creadas) — probado de punta a punta con una recepcionista de prueba, borrada al terminar. **El link de alta/complemento vive hasta que el cliente termine todo** (23 de septiembre): `alta_completada_at` (en curso: ya guardó, falta firmar) y `usada_at` (todo listo) son marcas distintas, al reabrirlo se reconoce al dueño y se le ofrecen los contratos pendientes sin duplicarlos, y si ya cumplió se le manda a su portal; `cerrar_invitacion_si_completa` lo cierra con la última firma. **Comprobantes sanitarios desde el portal** (23 de septiembre): el dueño sube la foto del carnet con tipo y fecha, queda como propuesta (`requisitos_sanitarios_propuestos`, sin efecto sobre el estado sanitario ni el bloqueo de reserva) y recepción la confirma o rechaza con motivo desde `/recepcion/comprobantes`; al confirmar se registra la aplicación real con la vigencia del catálogo. **Foto del perro desde el portal** (23 de septiembre): el dueño principal la sube o reemplaza directo (`actualizar_foto_mi_perro`), sin revisión; acceso compartido y perros fallecidos no. **Buscar clientes por el nombre del perro** (23 de septiembre): un solo `<BuscadorClientes>` (perro, dueño o teléfono; resultados con el perro y su dueño juntos) en los seis buscadores.
+Fase 0, Fase 1, Fase 2, Fase 3 y Fase 4 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 5 (POS) construida en sus cuatro bloques (cobros/devoluciones, bonos, descuentos, caja/arqueo) más la decisión de Bloque E, pendiente de que el negocio termine de probarla para cerrarla formalmente. Fase 6 (contratos) completa en sus tres bloques (plantillas y versionado, generación/firma/papel, visibilidad operativa y vigencia). Fase 7 (inventario) completa en sus tres bloques (catálogo y existencias; movimientos: entradas, salidas, mermas, ajustes; consumo automático por receta al finalizar un servicio de estética, con el enlace a la cita ya listo para que Fase 8 calcule el costo real por servicio). Fase 8 (reportes) completa en sus tres bloques (financiero por periodo con ingreso reconocido vs. neto de caja; costos y margen de estética; operativo con ocupación/servicios del periodo y una fotografía del estado actual de cumplimiento sanitario, contratos e inventario). Fase 9 (bitácora diaria y medicamentos) completa en sus dos bloques: Bloque A (fotos, notas e incidencias, con aviso por WhatsApp vía enlace `wa.me`) y Bloque B (régimen y registro de dosis administradas, referenciando `perro_medicamentos.id` tal como quedó planteado desde Fase 2). Con esto quedan completas las diez fases (0 a 9) del roadmap original. Fase 10 (recolección a domicilio, cotizador por distancia con Google Maps) completa — reutiliza tarifas/`resolver_precio`/`cargos_aplicados` de Fase 3/4 sin mecanismo de cobro nuevo; pendiente de que el negocio capture direcciones reales (base y Ludogteka), tarifas por km, y la llave de Google Maps antes de salir de modo simulación. Fase 11 (varias plantillas de contrato a la vez, cada una con nombre, versionado y aplicabilidad por servicio propios) completa — el estado de contrato dejó de ser un sí/no por perro y pasó a ser por tipo, y los avisos dicen cuál falta. Fase 12 (Guardería y Hotel como módulos separados en la navegación, Agenda renombrada a Estética) completa, sin migraciones: `estancias` sigue unificada y la ocupación que muestran los dos módulos es la de toda la casa. Fase 13 (alta de clientes por link: recepción manda una invitación por WhatsApp y el dueño captura sus datos y los de sus perros; el expediente nace ligado a su cuenta sin pasar por vinculación) completa. Fase 14 (precios de estética por grupo de raza: catálogo de razas buscable, el grupo se deriva y el cliente nunca lo ve, y `tarifas` gana la dimensión de grupo sin sistema de precios paralelo) completa. Fase 15 (dos flujos de alta por link —guardería/hotel y estética—, cada uno con su contrato firmado dentro del alta, y un link de complemento que solo pide lo que falta) completa. Fase 16 (el cliente entra con su teléfono y contraseña, no con correo: correo y cuenta pasan a opcionales, un teléfono ya registrado no se puede volver a dar de alta y uno que existe como cliente sin cuenta se vincula en vez de duplicarse; la recuperación de contraseña es por WhatsApp a recepción, con el número configurable desde el panel) completa. Las cuentas que ya existían con correo siguen entrando igual, sin migración. Corrección de estética contra el cartel (10 de septiembre): tres precios corregidos, tres servicios de baño con lo que incluye cada uno, pelo maltratado como precio alternativo del baño completo (`tarifas.precio_pelo_maltratado`, marcado en la cita), talla gigante retirada, y **en estética no hay contratos** (candado en `tipos_contrato`; el pendiente de publicar uno de estética ya no aplica). Retiro de los siete servicios de estética de Fase 3 que quedaron sin tarifa (21 de septiembre): vista `servicios_cotizables`, de la que lee `/estetica/nueva`, y comprobación sobre todo servicio de estética vivo — aplicada a producción el mismo día con `npm run desplegar`. Fase 17 (precios y requisitos de guardería y hotel, del cartel: hotel $270/$300 por talla; guardería ocasional por hora a $35 con `estancias.horas` y ajuste a horas reales al check-out; day pass de 10/15/20 y mensualidad como bono ilimitado por días hábiles; recogida tardía, día extra y medicamento retirados, con "convertir en noche de hotel" en el check-out; evaluación previa de comportamiento con excepción de admin, celo/gestante y alertas bloqueantes sin excepción; vigencias bordetella 6 y desparasitación 3 solo para aplicaciones nuevas; los requisitos se muestran en el alta; las pantallas de reserva muestran deshabilitado lo que no tiene precio) completa. Ajustes del 22 de septiembre: `guarderia_dia` a $350 (la matriz de guardería/hotel quedó sin ninguna celda vacía; pases y mensualidad ya se consumen), comida especial como cargo de **monto libre** (`servicios.monto_libre`, importe y descripción capturados al aplicarlo, inmutable, cancelable con motivo, nunca borrable, fuera de la validación de celdas), e **invitar staff arreglado** con la puerta con nombre `asignar_rol_staff` (solo `service_role`, solo recepción/estética, solo cuentas recién creadas) — probado de punta a punta con una recepcionista de prueba, borrada al terminar. **El link de alta/complemento vive hasta que el cliente termine todo** (23 de septiembre): `alta_completada_at` (en curso: ya guardó, falta firmar) y `usada_at` (todo listo) son marcas distintas, al reabrirlo se reconoce al dueño y se le ofrecen los contratos pendientes sin duplicarlos, y si ya cumplió se le manda a su portal; `cerrar_invitacion_si_completa` lo cierra con la última firma. **Comprobantes sanitarios desde el portal** (23 de septiembre): el dueño sube la foto del carnet con tipo y fecha, queda como propuesta (`requisitos_sanitarios_propuestos`, sin efecto sobre el estado sanitario ni el bloqueo de reserva) y recepción la confirma o rechaza con motivo desde `/recepcion/comprobantes`; al confirmar se registra la aplicación real con la vigencia del catálogo. **Foto del perro desde el portal** (23 de septiembre): el dueño principal la sube o reemplaza directo (`actualizar_foto_mi_perro`), sin revisión; acceso compartido y perros fallecidos no. **Buscar clientes por el nombre del perro** (23 de septiembre): un solo `<BuscadorClientes>` (perro, dueño o teléfono; resultados con el perro y su dueño juntos) en los seis buscadores. **Fase 18** (23 de septiembre): Caja como mostrador (`/caja` cuentas abiertas + buscador + cargo suelto + pases; `/caja/turno` con movimientos por método y origen) y **Mercado Pago** (terminal Point por Orders API y links de pago por Checkout Pro, webhook firmado, registro idempotente, simulación sin llave, diagnóstico en /admin). Guía en `docs/MERCADO-PAGO.md`.
 
 ## Invite server-side de staff
 

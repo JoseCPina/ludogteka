@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
-import { abrirTurno } from "../reservas/turno-actions";
+import { abrirTurno } from "../../reservas/turno-actions";
 
 export function AbrirTurnoForm() {
   const router = useRouter();

@@ -16,6 +16,7 @@ export async function registrarRetiro(monto: number, motivo: string): Promise<Es
   if (error) return { error: traducirError(error) };
 
   revalidatePath("/caja");
+  revalidatePath("/caja/turno");
   return { error: null, retiroId: data as string };
 }
 
@@ -67,6 +68,7 @@ export async function cerrarTurno(
 
   if (fila.cerrado) {
     revalidatePath("/caja");
+    revalidatePath("/caja/turno");
   }
 
   return {

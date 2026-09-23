@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
-import { registrarRetiro, cerrarTurno } from "./caja-actions";
+import { registrarRetiro, cerrarTurno } from "../caja-actions";
 
 export type Retiro = {
   id: string;

@@ -11,6 +11,8 @@ import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
 import { abrirTurno } from "../../turno-actions";
 import { registrarCobro, registrarDevolucion, type MetodoPago } from "../../cobro-actions";
+import { CobroMercadoPago, type OrdenMpFila } from "./mercadopago-cobro";
+import type { EstadoMpDisponible } from "@/app/(staff)/caja/mercadopago-actions";
 import { consumirBono, type ItemTipoBono } from "../../bono-actions";
 import { aplicarDescuento, cancelarDescuento, type TipoDescuento } from "../../descuento-actions";
 
@@ -110,6 +112,7 @@ export function CuentaCobro({
   descuentos,
   topeRecepcion,
   esAdmin,
+  mp,
 }: {
   reservaId: string;
   lineas: LineaCuenta[];
@@ -122,6 +125,7 @@ export function CuentaCobro({
   descuentos: DescuentoHistorial[];
   topeRecepcion: number;
   esAdmin: boolean;
+  mp: { disponible: EstadoMpDisponible; ordenes: OrdenMpFila[]; clienteTelefono: string | null };
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -617,6 +621,15 @@ export function CuentaCobro({
           </ul>
         )}
       </div>
+
+      <CobroMercadoPago
+        reservaId={reservaId}
+        saldo={totales.saldo}
+        turnoAbierto={turnoAbierto}
+        disponible={mp.disponible}
+        ordenes={mp.ordenes}
+        clienteTelefono={mp.clienteTelefono}
+      />
 
       {!turnoAbierto ? (
         <div className="rounded-lg border-[1.5px] border-amarillo bg-amarillo-suave p-4">
