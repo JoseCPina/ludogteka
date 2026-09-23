@@ -5,6 +5,7 @@ import { useEspera } from "@/hooks/use-espera";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { CampoCopiable } from "@/components/ui/campo-copiable";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
 import { TIPOS_LINK_ALTA, TIPOS_LINK_ALTA_LISTA, type TipoLinkAlta } from "@/lib/alta/tipos-link";
@@ -112,9 +113,7 @@ export function LinkComplemento({
       {resultado?.url && (
         <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-verde bg-verde-suave p-4">
           <p className="font-bold text-verde-oscuro">Link listo para mandar</p>
-          <p className="break-all rounded-md bg-white px-3 py-2 text-sm text-n-700">
-            {resultado.url}
-          </p>
+          <CampoCopiable valor={resultado.url} textoBoton="Copiar link" />
           <p className="text-sm text-verde-oscuro">
             Vence el {resultado.expiraAt ? formatearFecha(resultado.expiraAt) : "—"}. Le va a pedir
             su contraseña para entrar: el link solo dice de qué expediente hablamos, no abre el de

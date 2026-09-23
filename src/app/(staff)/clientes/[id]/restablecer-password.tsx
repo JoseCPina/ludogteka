@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
+import { CampoCopiable } from "@/components/ui/campo-copiable";
 import { Alert } from "@/components/ui/alert";
 import { restablecerPasswordCliente, type EstadoRestablecer } from "./password-actions";
 
@@ -19,7 +20,6 @@ export function RestablecerPassword({
   const ocupado = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<EstadoRestablecer | null>(null);
-  const [copiado, setCopiado] = useState(false);
 
   async function restablecer() {
     setError(null);
@@ -32,16 +32,6 @@ export function RestablecerPassword({
     setResultado(res);
   }
 
-  async function copiar() {
-    if (!resultado?.password) return;
-    try {
-      await navigator.clipboard.writeText(resultado.password);
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2500);
-    } catch {
-      setCopiado(false);
-    }
-  }
 
   return (
     <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
@@ -68,9 +58,7 @@ export function RestablecerPassword({
           {resultado?.password ? (
             <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-verde bg-verde-suave p-4">
               <p className="font-bold text-verde-oscuro">Contraseña temporal</p>
-              <p className="rounded-md bg-white px-3 py-2 font-mono text-lg tracking-wider text-n-900">
-                {resultado.password}
-              </p>
+              <CampoCopiable valor={resultado.password} monoespaciado textoCopiado="Copiada" />
               <p className="text-sm text-verde-oscuro">
                 Esto se muestra una sola vez: si cierras la pantalla ya no la puedes volver a ver,
                 tendrías que generar otra. Dile que la cambie desde su portal en cuanto entre.
@@ -81,9 +69,6 @@ export function RestablecerPassword({
                     <Button type="button">Mandársela por WhatsApp</Button>
                   </a>
                 )}
-                <Button type="button" variante="secundario" onClick={copiar}>
-                  {copiado ? "Copiada" : "Copiar"}
-                </Button>
               </div>
             </div>
           ) : confirmando ? (

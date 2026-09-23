@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { CampoCopiable } from "@/components/ui/campo-copiable";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
 import { formatearTelefono } from "@/lib/telefono";
@@ -48,23 +49,10 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 };
 
 function EnlaceGenerado({ resultado }: { resultado: EstadoInvitacion }) {
-  const [copiado, setCopiado] = useState(false);
-
-  async function copiar() {
-    if (!resultado.url) return;
-    try {
-      await navigator.clipboard.writeText(resultado.url);
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2500);
-    } catch {
-      setCopiado(false);
-    }
-  }
-
   return (
     <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-verde bg-verde-suave p-4">
       <p className="font-bold text-verde-oscuro">Link listo para mandar</p>
-      <p className="break-all rounded-md bg-white px-3 py-2 text-sm text-n-700">{resultado.url}</p>
+      <CampoCopiable valor={resultado.url ?? ""} textoBoton="Copiar link" />
       <p className="text-sm text-verde-oscuro">
         Vence el {resultado.expiraAt ? formatearFecha(resultado.expiraAt) : "—"}. Es de un solo uso:
         en cuanto el cliente termine su alta, deja de servir.
@@ -73,9 +61,6 @@ function EnlaceGenerado({ resultado }: { resultado: EstadoInvitacion }) {
         <a href={resultado.urlWhatsApp} target="_blank" rel="noreferrer">
           <Button type="button">Abrir WhatsApp</Button>
         </a>
-        <Button type="button" variante="secundario" onClick={copiar}>
-          {copiado ? "Copiado" : "Copiar link"}
-        </Button>
       </div>
     </div>
   );
@@ -180,9 +165,10 @@ function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
       )}
 
       {reenvio && (
-        <p className="break-all rounded-md bg-n-50 px-3 py-2 text-xs text-n-600">
-          Es el mismo link de siempre, no uno nuevo: {reenvio.url}
-        </p>
+        <div className="flex flex-col gap-1 rounded-md bg-n-50 p-3">
+          <p className="text-xs text-n-600">Es el mismo link de siempre, no uno nuevo:</p>
+          <CampoCopiable valor={reenvio.url} textoBoton="Copiar link" />
+        </div>
       )}
 
       {error && <p className="text-sm font-semibold text-naranja-oscuro">{error}</p>}

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { CampoCopiable } from "@/components/ui/campo-copiable";
 import { Alert } from "@/components/ui/alert";
 
 type Resultado =
@@ -33,7 +34,6 @@ function mensajeError(status: number, cuerpo: { error?: string } | null): string
 export function InvitarStaff() {
   const router = useRouter();
   const [resultado, setResultado] = useState<Resultado>({ estado: "formulario" });
-  const [copiado, setCopiado] = useState(false);
 
   async function enviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
@@ -71,11 +71,6 @@ export function InvitarStaff() {
     }
   }
 
-  async function copiarLink(link: string) {
-    await navigator.clipboard.writeText(link);
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2000);
-  }
 
   if (resultado.estado === "exito") {
     return (
@@ -95,22 +90,7 @@ export function InvitarStaff() {
             (y esa vez el correo ya estará registrado, así que tampoco funcionará). Cópialo antes de
             seguir.
           </p>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <input
-              readOnly
-              value={resultado.inviteLink}
-              onFocus={(e) => e.currentTarget.select()}
-              className="min-h-12 w-full flex-1 rounded-md border-[1.5px] border-n-400 bg-white px-3.5 text-sm text-n-900"
-            />
-            <Button
-              type="button"
-              variante="primario"
-              className="flex-none"
-              onClick={() => copiarLink(resultado.inviteLink)}
-            >
-              {copiado ? "Copiado" : "Copiar link"}
-            </Button>
-          </div>
+          <CampoCopiable valor={resultado.inviteLink} textoBoton="Copiar link" />
         </div>
 
         <Button
