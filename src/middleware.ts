@@ -37,9 +37,23 @@ function conCookiesDe(origen: NextResponse, destino: NextResponse) {
   return destino;
 }
 
+// Páginas públicas que no necesitan saber quién es el visitante: la
+// landing y los archivos de metadatos (Open Graph, robots, sitemap). Se
+// sueltan antes de crear el cliente de Supabase para no pagar la vuelta a
+// Auth en la primera carga de ludogteka.mx. Es una lista EXACTA, no de
+// prefijos: "/" como prefijo abriría todo.
+const RUTAS_PUBLICAS_EXACTAS = new Set([
+  "/",
+  "/opengraph-image.jpg",
+  "/robots.txt",
+  "/sitemap.xml",
+]);
+
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request });
   const { pathname } = request.nextUrl;
+  if (RUTAS_PUBLICAS_EXACTAS.has(pathname)) return NextResponse.next();
+
+  let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

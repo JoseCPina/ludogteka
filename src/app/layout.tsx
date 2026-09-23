@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Nunito } from "next/font/google";
+import { URL_PUBLICA } from "@/lib/landing/negocio";
 import "./globals.css";
 
 const nunito = Nunito({
@@ -9,6 +10,9 @@ const nunito = Nunito({
 });
 
 export const metadata: Metadata = {
+  // Base de las URLs absolutas de Open Graph (la imagen que enseña
+  // WhatsApp al compartir el link).
+  metadataBase: new URL(URL_PUBLICA),
   title: "Ludogteka",
   description:
     "App interna y portal de clientes — guardería, hotel y estética canina en San Luis Potosí.",

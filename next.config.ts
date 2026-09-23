@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // AVIF primero: en las fotos de la landing pesa ~40% menos que WebP, y
+  // la landing se abre sobre todo desde el celular (link por WhatsApp).
+  images: { formats: ["image/avif", "image/webp"], qualities: [60, 75] },
   async redirects() {
     return [
       // La sección "Agenda" pasó a llamarse "Estética" y se movió de /agenda
