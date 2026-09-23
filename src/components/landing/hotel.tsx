@@ -64,13 +64,13 @@ export function Hotel() {
           <figure className="lp-revela lp-polaroid mx-auto w-[82%] rotate-3 sm:w-[60%] lg:col-span-5 lg:w-full">
             <Image
               src={fotoCamita}
-              alt="Perrita café con naranja echada en su cobija, con una pelota de tenis entre las patas"
+              alt="Greta, perrita café con naranja, echada en su cobija, con una pelota de tenis entre las patas"
               placeholder="blur"
               sizes="(min-width: 1024px) 420px, 80vw"
               className="aspect-[4/5] w-full object-cover"
             />
             <figcaption className="lp-display absolute inset-x-0 bottom-2 text-center text-lg font-bold text-[var(--lp-indigo)]">
-              Lista para dormir
+              Greta, lista para dormir
             </figcaption>
           </figure>
         </div>

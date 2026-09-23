@@ -4,8 +4,8 @@ import { PERROS } from "./perros";
 // Las tres tarjetas de la lona (Guardería / Hotel / Estética), cada una
 // con un cliente real asomándose, y cada una lleva a su sección.
 const TARJETAS = [
-  { href: "#guarderia", servicio: "Guardería", perro: PERROS.malinois, detalle: "Juego, socialización y siesta, de lunes a sábado." },
-  { href: "#hotel", servicio: "Hotel", perro: PERROS.dasha, detalle: "Noches tranquilas cuando sales de viaje." },
+  { href: "#guarderia", servicio: "Guardería", perro: PERROS.dasha, detalle: "Juego, socialización y siesta, de lunes a sábado." },
+  { href: "#hotel", servicio: "Hotel", perro: PERROS.dante, detalle: "Noches tranquilas cuando sales de viaje." },
   { href: "#estetica", servicio: "Estética", perro: PERROS.simon, detalle: "Baño, corte y consentida de pies a cabeza." },
 ];
 

@@ -6,7 +6,7 @@ import { DIRECCION_UNA_LINEA, MENSAJES, TELEFONO_VISIBLE, linkWhatsApp } from "@
 import { PERROS } from "./perros";
 
 // La banda completa, sentada en el borde del pie: los clientes de la lona.
-const BANDA = [PERROS.dasha, PERROS.simon, PERROS.granDanes, PERROS.zuki, PERROS.galleta, PERROS.malinois];
+const BANDA = [PERROS.dante, PERROS.simon, PERROS.aquiles, PERROS.zuki, PERROS.galleta, PERROS.dasha];
 
 export function LlamadoFinal() {
   return (
