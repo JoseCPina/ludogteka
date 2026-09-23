@@ -24,12 +24,12 @@ export const TIPOS_LINK_ALTA = {
     // paquete (ver tipos_contrato.se_genera_al). Aquí va el general/hotel.
     descripcion: "Expediente completo (veterinario, emergencia, alimentación) y el contrato general. El de guardería se firma al comprar un paquete.",
     // Lo que el dueño ve en su cuenta, dicho como se lo diríamos en el
-    // mostrador. Tiene que ser VERDAD hoy: el portal no muestra citas ni
-    // reservas (23 de septiembre de 2026), así que ningún texto las
-    // promete; esas se confirman por WhatsApp.
+    // mostrador. Tiene que ser VERDAD: sale de lo que el portal muestra hoy
+    // (desde el 23 de septiembre de 2026, citas y reservas con su historial
+    // vía mis_visitas()). Si el portal cambia, se cambia aquí.
     cuentaMuestra:
-      "la ficha de tu perro, las fotos y notas que le dejemos mientras se queda con nosotros, sus vacunas y comprobantes, y tus contratos",
-    seConfirmaPorWhatsApp: "Las reservas",
+      "las próximas reservas de guardería y hotel de tu perro y las que ya pasaron, las fotos y notas que le dejemos mientras se queda con nosotros, sus vacunas y comprobantes, y tus contratos",
+    comoSeAgenda: "Para reservar, cambiar o cancelar nos escribes por WhatsApp.",
     categorias: ["guarderia", "hotel"] as const,
     expedienteCompleto: true,
     llevaContrato: true,
@@ -43,8 +43,8 @@ export const TIPOS_LINK_ALTA = {
     etiqueta: "Estética",
     descripcion: "Lo básico más los precios del baño según la raza. Sin contrato.",
     cuentaMuestra:
-      "la ficha de tu perro con su foto (la puedes cambiar tú) y las fotos y notas que le dejemos cuando viene a estética",
-    seConfirmaPorWhatsApp: "Las citas",
+      "las próximas citas de estética de tu perro y el historial de sus baños, su ficha con su foto (la puedes cambiar tú) y las fotos y notas que le dejemos cuando viene",
+    comoSeAgenda: "Para agendar, cambiar o cancelar una cita nos escribes por WhatsApp.",
     categorias: ["estetica"] as const,
     expedienteCompleto: false,
     llevaContrato: false,

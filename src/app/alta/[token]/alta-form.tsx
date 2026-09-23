@@ -63,9 +63,9 @@ export function AltaForm({
   // viene a bañarlo: pedirle una contraseña a esa persona es un trámite más
   // entre ella y agendar.
   //
-  // OJO con lo que se promete aquí: el portal NO muestra citas ni
-  // reservas (23 de septiembre de 2026). Si algún día las muestra, se
-  // puede decir; mientras, prometerlas es mentirle al dueño.
+  // Lo que se promete aquí sale de TIPOS_LINK_ALTA[tipo].cuentaMuestra, que
+  // describe lo que el portal muestra de verdad: prometer de más es
+  // mentirle al dueño.
   const cuentaOpcional = !definicion.expedienteCompleto;
 
   const [paso, setPaso] = useState(0);
@@ -371,11 +371,11 @@ export function AltaForm({
           {cuentaOpcional ? (
             <div className="flex flex-col gap-3 rounded-md border-[1.5px] border-n-200 bg-white p-4 text-n-900">
               <div>
-                <p className="font-bold">¿Quieres una cuenta en Ludogteka?</p>
+                <p className="font-bold">¿Quieres una cuenta para ver las citas de tu perro?</p>
                 <p className="mt-1 text-sm text-n-600">
-                  En ella ves {definicion.cuentaMuestra}. {definicion.seConfirmaPorWhatsApp} te las
-                  seguimos confirmando por WhatsApp. Si no la quieres ahora, tu registro queda completo
-                  igual y la puedes pedir en recepción cuando quieras.
+                  Desde tu celular ves {definicion.cuentaMuestra}. {definicion.comoSeAgenda} Si no la
+                  quieres ahora, tu registro queda completo igual y la puedes pedir en recepción cuando
+                  quieras.
                 </p>
               </div>
               <label className="flex items-center gap-2 font-semibold">
@@ -390,8 +390,7 @@ export function AltaForm({
             </div>
           ) : (
             <p className="text-n-600">
-              En tu cuenta ves {definicion.cuentaMuestra}. {definicion.seConfirmaPorWhatsApp} te las
-              seguimos confirmando por WhatsApp.
+              En tu cuenta ves {definicion.cuentaMuestra}. {definicion.comoSeAgenda}
             </p>
           )}
 

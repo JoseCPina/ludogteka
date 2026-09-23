@@ -4,6 +4,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { PerroFoto } from "@/app/(staff)/perros/perro-foto";
 import { MisDatosForm } from "./mis-datos-form";
+import { MisVisitas } from "./mis-visitas";
+import { hoyNegocio } from "@/lib/formato";
 
 export default async function PortalPage() {
   const sesion = await obtenerSesionConRol();
@@ -54,6 +56,9 @@ export default async function PortalPage() {
     .eq("situacion", "por_firmar")
     .order("created_at");
 
+  const { data: hoyData } = await supabase.rpc("fecha_negocio");
+  const hoy = (hoyData as string | null) ?? hoyNegocio();
+
   const urlsFotos = new Map<string, string>();
   await Promise.all(
     (perros ?? [])
@@ -91,6 +96,8 @@ export default async function PortalPage() {
           </ul>
         </Alert>
       )}
+
+      <MisVisitas supabase={supabase} hoy={hoy} />
 
       <MisDatosForm nombre={cliente.nombre} telefono={cliente.telefono} email={cliente.email} />
 
