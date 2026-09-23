@@ -7,11 +7,11 @@ import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
-import { formatearTelefono } from "@/lib/telefono";
+import { BuscadorClientes } from "@/components/buscador-clientes";
+import type { ClienteBuscable } from "@/lib/clientes/buscables";
 import { hoyNegocio } from "@/lib/formato";
 import { crearCita } from "../agenda-actions";
 
-type Cliente = { id: string; nombre: string; telefono: string };
 type Perro = { id: string; cliente_id: string; nombre: string };
 type Servicio = {
   id: string;
@@ -40,7 +40,7 @@ export function AgendarForm({
   rolActual,
   userIdActual,
 }: {
-  clientes: Cliente[];
+  clientes: ClienteBuscable[];
   perros: Perro[];
   servicios: Servicio[];
   empleados: Empleado[];
@@ -49,7 +49,6 @@ export function AgendarForm({
   userIdActual: string;
 }) {
   const router = useRouter();
-  const [busqueda, setBusqueda] = useState("");
   const [clienteId, setClienteId] = useState<string | null>(null);
   const [perroId, setPerroId] = useState("");
   const [servicioId, setServicioId] = useState(servicios[0]?.id ?? "");
@@ -59,15 +58,6 @@ export function AgendarForm({
   const [peloMaltratado, setPeloMaltratado] = useState(false);
   const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
-
-  const clientesFiltrados = useMemo(() => {
-    const q = busqueda.trim().toLowerCase();
-    if (!q) return clientes;
-    const qDigitos = q.replace(/\D/g, "");
-    return clientes.filter(
-      (c) => c.nombre.toLowerCase().includes(q) || (qDigitos && c.telefono.includes(qDigitos))
-    );
-  }, [clientes, busqueda]);
 
   const clienteElegido = clientes.find((c) => c.id === clienteId) ?? null;
   const perrosDelCliente = useMemo(() => perros.filter((p) => p.cliente_id === clienteId), [perros, clienteId]);
@@ -97,36 +87,7 @@ export function AgendarForm({
   if (!clienteElegido) {
     return (
       <div className="flex flex-col gap-4">
-        <div className="max-w-sm">
-          <Field
-            label="Buscar cliente por nombre o teléfono"
-            type="search"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="ej. Ana o 444 123"
-            autoFocus
-          />
-        </div>
-        <div className="overflow-hidden rounded-lg border border-n-200 bg-white">
-          {clientesFiltrados.length === 0 ? (
-            <p className="p-6 text-center text-n-600">Ningún cliente coincide con la búsqueda.</p>
-          ) : (
-            <ul className="divide-y divide-n-200">
-              {clientesFiltrados.slice(0, 30).map((c) => (
-                <li key={c.id}>
-                  <button
-                    type="button"
-                    onClick={() => setClienteId(c.id)}
-                    className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul-suave"
-                  >
-                    <span className="font-semibold text-n-900">{c.nombre}</span>
-                    <span className="tabular-nums text-n-600">{formatearTelefono(c.telefono)}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <BuscadorClientes clientes={clientes} onElegir={(c) => setClienteId(c.id)} autoFocus />
       </div>
     );
   }

@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { BonosCliente, type BonoCatalogo, type BonoFila } from "@/app/(staff)/clientes/bonos-cliente";
 import { BuscadorCliente } from "./buscador-cliente";
+import { cargarClientesBuscables } from "@/lib/clientes/buscables";
 
 // Vender y consultar day pass desde Guardería, sin salirse a Clientes ni a
 // Caja. Los bonos son del CLIENTE (bonos_clientes.cliente_id): cualquiera
@@ -17,9 +18,9 @@ export default async function PasesGuarderiaPage({
   const { cliente: clienteId } = await searchParams;
   const supabase = await createSupabaseServerClient();
 
-  const [{ data: clientes }, { data: bonosCatalogo }, { data: serviciosGuarderia }, { data: turno }] =
+  const [{ clientes }, { data: bonosCatalogo }, { data: serviciosGuarderia }, { data: turno }] =
     await Promise.all([
-      supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).order("nombre"),
+      cargarClientesBuscables(supabase),
       supabase
         .from("servicios_cotizables")
         .select("id, nombre, orden")
@@ -87,7 +88,7 @@ export default async function PasesGuarderiaPage({
       )}
 
       {!clienteElegido ? (
-        <BuscadorCliente clientes={(clientes ?? []) as { id: string; nombre: string; telefono: string }[]} />
+        <BuscadorCliente clientes={clientes} />
       ) : (
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between gap-3 rounded-lg border border-n-200 bg-n-50 p-4">

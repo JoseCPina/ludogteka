@@ -6,11 +6,25 @@ import { ListaClientes, type ClienteFila } from "./lista-clientes";
 
 export default async function ClientesPage() {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("clientes")
-    .select("id, nombre, telefono, email, created_at, alta_por_cliente, datos_revisados_at")
-    .is("deleted_at", null)
-    .order("nombre");
+  const [{ data, error }, { data: perros }] = await Promise.all([
+    supabase
+      .from("clientes")
+      .select("id, nombre, telefono, email, created_at, alta_por_cliente, datos_revisados_at")
+      .is("deleted_at", null)
+      .order("nombre"),
+    // Para buscar por nombre del perro, como en todos los buscadores.
+    supabase.from("perros").select("id, cliente_id, nombre").is("deleted_at", null).eq("fallecido", false).order("nombre"),
+  ]);
+  const perrosPorCliente = new Map<string, { id: string; nombre: string }[]>();
+  for (const p of perros ?? []) {
+    const lista = perrosPorCliente.get(p.cliente_id as string) ?? [];
+    lista.push({ id: p.id as string, nombre: p.nombre as string });
+    perrosPorCliente.set(p.cliente_id as string, lista);
+  }
+  const filas: ClienteFila[] = ((data ?? []) as Omit<ClienteFila, "perros">[]).map((c) => ({
+    ...c,
+    perros: perrosPorCliente.get(c.id) ?? [],
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -39,7 +53,7 @@ export default async function ClientesPage() {
           Recarga la página. Si el problema sigue, avísale al equipo técnico.
         </Alert>
       ) : (
-        <ListaClientes clientes={(data as ClienteFila[]) ?? []} />
+        <ListaClientes clientes={filas} />
       )}
     </div>
   );

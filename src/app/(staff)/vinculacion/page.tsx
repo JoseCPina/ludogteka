@@ -2,7 +2,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { VincularFila } from "./vincular-fila";
 import { DesvincularFila } from "./desvincular-fila";
-import type { CuentaPendiente, CuentaVinculada, ClienteBusqueda } from "./tipos";
+import type { CuentaPendiente, CuentaVinculada } from "./tipos";
+import { cargarClientesBuscables } from "@/lib/clientes/buscables";
 
 export default async function VinculacionPage() {
   const supabase = await createSupabaseServerClient();
@@ -10,12 +11,12 @@ export default async function VinculacionPage() {
   const [pendientesRes, vinculadasRes, clientesRes] = await Promise.all([
     supabase.rpc("listar_cuentas_sin_vincular"),
     supabase.rpc("listar_cuentas_vinculadas"),
-    supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).order("nombre"),
+    cargarClientesBuscables(supabase),
   ]);
 
   const pendientes = (pendientesRes.data as CuentaPendiente[] | null) ?? [];
   const vinculadas = (vinculadasRes.data as CuentaVinculada[] | null) ?? [];
-  const clientes = (clientesRes.data as ClienteBusqueda[] | null) ?? [];
+  const clientes = clientesRes.clientes;
 
   return (
     <div className="flex flex-col gap-8">

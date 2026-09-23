@@ -5,11 +5,10 @@ import Link from "next/link";
 import { Field } from "@/components/ui/field";
 import { formatearFecha } from "@/lib/formato";
 import { formatearTelefono } from "@/lib/telefono";
+import { ETIQUETA_BUSCAR_CLIENTES } from "@/components/buscador-clientes";
+import { filtrarClientesBuscables, type ClienteBuscable } from "@/lib/clientes/buscables";
 
-export type ClienteFila = {
-  id: string;
-  nombre: string;
-  telefono: string;
+export type ClienteFila = ClienteBuscable & {
   email: string | null;
   created_at: string;
   alta_por_cliente: boolean;
@@ -19,16 +18,11 @@ export type ClienteFila = {
 export function ListaClientes({ clientes }: { clientes: ClienteFila[] }) {
   const [busqueda, setBusqueda] = useState("");
 
-  const filtrados = useMemo(() => {
-    const q = busqueda.trim().toLowerCase();
-    if (!q) return clientes;
-    const qDigitos = q.replace(/\D/g, "");
-    return clientes.filter((c) => {
-      const porNombre = c.nombre.toLowerCase().includes(q);
-      const porTelefono = qDigitos.length > 0 && c.telefono.includes(qDigitos);
-      return porNombre || porTelefono;
-    });
-  }, [clientes, busqueda]);
+  // Mismo filtro que todos los buscadores: perro, dueño o teléfono.
+  const filtrados = useMemo(
+    () => filtrarClientesBuscables(clientes, busqueda).map((c) => ({ ...(c.cliente as ClienteFila), coincidentes: new Set(c.perrosCoincidentes.map((p) => p.id)) })),
+    [clientes, busqueda]
+  );
 
   if (clientes.length === 0) {
     return (
@@ -43,20 +37,23 @@ export function ListaClientes({ clientes }: { clientes: ClienteFila[] }) {
     <div className="flex flex-col gap-4">
       <div className="max-w-xs">
         <Field
-          label="Buscar por nombre o teléfono"
+          label={ETIQUETA_BUSCAR_CLIENTES}
           type="search"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
-          placeholder="ej. Ana o 444 123"
+          placeholder="ej. Motita, Ana o 444 123"
         />
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-        <table className="w-full min-w-[560px] border-collapse">
+        <table className="w-full min-w-[720px] border-collapse">
           <thead>
             <tr>
               <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
                 Nombre
+              </th>
+              <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+                Perros
               </th>
               <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
                 Teléfono
@@ -87,6 +84,20 @@ export function ListaClientes({ clientes }: { clientes: ClienteFila[] }) {
                       Alta del cliente · sin revisar
                     </span>
                   )}
+                </td>
+                <td className="border-b border-n-200 px-4 py-3 text-n-700">
+                  {cliente.perros.length === 0
+                    ? <span className="text-n-400">—</span>
+                    : cliente.perros.map((p, i) => (
+                        <span key={p.id}>
+                          {i > 0 && ", "}
+                          {cliente.coincidentes.has(p.id) ? (
+                            <strong className="rounded bg-amarillo-suave px-1 text-n-900">{p.nombre}</strong>
+                          ) : (
+                            p.nombre
+                          )}
+                        </span>
+                      ))}
                 </td>
                 <td className="border-b border-n-200 px-4 py-3 tabular-nums text-n-900">
                   {formatearTelefono(cliente.telefono)}

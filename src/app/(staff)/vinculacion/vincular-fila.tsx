@@ -1,46 +1,32 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
-import { Field } from "@/components/ui/field";
+import { BuscadorClientes } from "@/components/buscador-clientes";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { formatearTelefono } from "@/lib/telefono";
 import { formatearFecha } from "@/lib/formato";
 import { vincularCuenta } from "./actions";
-import type { CuentaPendiente, ClienteBusqueda } from "./tipos";
+import type { CuentaPendiente } from "./tipos";
+import type { ClienteBuscable } from "@/lib/clientes/buscables";
 
 export function VincularFila({
   cuenta,
   clientes,
 }: {
   cuenta: CuentaPendiente;
-  clientes: ClienteBusqueda[];
+  clientes: ClienteBuscable[];
 }) {
   const router = useRouter();
   const [buscando, setBuscando] = useState(false);
-  const [busqueda, setBusqueda] = useState("");
-  const [seleccionado, setSeleccionado] = useState<ClienteBusqueda | null>(null);
+  const [seleccionado, setSeleccionado] = useState<ClienteBuscable | null>(null);
   const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
 
-  const resultados = useMemo(() => {
-    const q = busqueda.trim().toLowerCase();
-    if (!q) return [];
-    const qDigitos = q.replace(/\D/g, "");
-    return clientes
-      .filter(
-        (c) =>
-          c.nombre.toLowerCase().includes(q) ||
-          (qDigitos.length > 0 && c.telefono.includes(qDigitos))
-      )
-      .slice(0, 8);
-  }, [clientes, busqueda]);
-
   function cancelar() {
     setBuscando(false);
-    setBusqueda("");
     setSeleccionado(null);
     setError(null);
   }
@@ -86,33 +72,14 @@ export function VincularFila({
   if (buscando) {
     return (
       <div className="flex flex-col gap-3 border-b border-n-200 bg-n-50 p-4">
-        <Field
-          label={`Buscar cliente para vincular con ${cuenta.email}`}
-          type="search"
+        <BuscadorClientes
+          clientes={clientes}
+          etiqueta={`Buscar por perro, dueño o teléfono para vincular con ${cuenta.email}`}
+          onElegir={(c) => setSeleccionado(c)}
+          listarSinBusqueda={false}
+          maximo={8}
           autoFocus
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          placeholder="Nombre o teléfono"
         />
-        {busqueda.trim() && (
-          <ul className="flex flex-col divide-y divide-n-200 rounded-md border border-n-200 bg-white">
-            {resultados.length === 0 && (
-              <li className="p-3 text-sm text-n-600">Ningún cliente coincide.</li>
-            )}
-            {resultados.map((c) => (
-              <li key={c.id}>
-                <button
-                  type="button"
-                  onClick={() => setSeleccionado(c)}
-                  className="flex min-h-11 w-full items-center justify-between gap-4 px-3 text-left hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul"
-                >
-                  <span className="font-semibold text-n-900">{c.nombre}</span>
-                  <span className="tabular-nums text-n-600">{formatearTelefono(c.telefono)}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
         <Button type="button" variante="secundario" className="self-start" onClick={cancelar}>
           Cancelar
         </Button>

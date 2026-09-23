@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
+import { armarClientesBuscables } from "@/lib/clientes/buscables";
 import { AgendarForm } from "./agendar-form";
 
 export default async function AgendarPage() {
@@ -76,7 +77,7 @@ export default async function AgendarPage() {
         </Alert>
       ) : (
         <AgendarForm
-          clientes={clientes ?? []}
+          clientes={armarClientesBuscables((clientes ?? []) as { id: string; nombre: string; telefono: string }[], (perros ?? []) as { id: string; cliente_id: string; nombre: string }[])}
           perros={perros ?? []}
           servicios={serviciosConMarca}
           empleados={empleados ?? []}

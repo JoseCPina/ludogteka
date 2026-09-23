@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
+import { armarClientesBuscables } from "@/lib/clientes/buscables";
 import { hoyNegocio } from "@/lib/formato";
 import type { ModuloEstancia } from "@/lib/modulos";
 import { cargarServiciosOfrecibles } from "@/lib/servicios/ofrecibles";
@@ -71,7 +72,7 @@ export async function PaginaNuevaSerie({ modulo }: { modulo: ModuloEstancia }) {
         </Alert>
       ) : (
         <NuevaSerieForm
-          clientes={clientes ?? []}
+          clientes={armarClientesBuscables((clientes ?? []) as { id: string; nombre: string; telefono: string }[], (perros ?? []) as { id: string; cliente_id: string; nombre: string }[])}
           perros={perros ?? []}
           servicios={servicios ?? []}
           seriesActivas={seriesActivasLista}

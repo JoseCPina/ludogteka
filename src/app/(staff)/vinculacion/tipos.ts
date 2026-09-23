@@ -15,8 +15,4 @@ export type CuentaVinculada = {
   automatico: boolean | null;
 };
 
-export type ClienteBusqueda = {
-  id: string;
-  nombre: string;
-  telefono: string;
-};
+// La búsqueda de cliente usa ClienteBuscable (src/lib/clientes/buscables.ts).

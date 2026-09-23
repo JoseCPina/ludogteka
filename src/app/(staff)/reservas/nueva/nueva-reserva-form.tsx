@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { sumarDiasFecha } from "@/lib/formato";
 import { describirBonoAplicado } from "@/lib/bonos/descripcion";
-import { formatearTelefono } from "@/lib/telefono";
+import { BuscadorClientes } from "@/components/buscador-clientes";
+import type { ClienteBuscable } from "@/lib/clientes/buscables";
 import { primerCotizable, type ServicioOfrecible } from "@/lib/servicios/ofrecibles";
 import { OpcionesServicio, AvisoServiciosSinPrecio } from "@/components/servicios/opciones-servicio";
 import { formatearDiasSemana } from "../series/dias-semana";
@@ -22,7 +23,6 @@ import {
   type ResultadoLinea,
 } from "../reserva-actions";
 
-type Cliente = { id: string; nombre: string; telefono: string };
 type Perro = { id: string; cliente_id: string; nombre: string };
 type Servicio = ServicioOfrecible;
 type SerieActiva = { perroId: string; diasSemana: number[]; servicioNombre: string };
@@ -78,7 +78,7 @@ export function NuevaReservaForm({
   hoy,
   base,
 }: {
-  clientes: Cliente[];
+  clientes: ClienteBuscable[];
   perros: Perro[];
   servicios: Servicio[];
   seriesActivas: SerieActiva[];
@@ -89,7 +89,6 @@ export function NuevaReservaForm({
   // no a un modulo que el usuario no eligio.
   base: string;
 }) {
-  const [busqueda, setBusqueda] = useState("");
   const [clienteId, setClienteId] = useState<string | null>(null);
   const [notas, setNotas] = useState("");
   const [lineas, setLineas] = useState<Linea[]>([]);
@@ -98,15 +97,6 @@ export function NuevaReservaForm({
   const enviando = useEspera();
   const [reintentando, setReintentando] = useState<Record<string, boolean>>({});
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
-
-  const clientesFiltrados = useMemo(() => {
-    const q = busqueda.trim().toLowerCase();
-    if (!q) return clientes;
-    const qDigitos = q.replace(/\D/g, "");
-    return clientes.filter(
-      (c) => c.nombre.toLowerCase().includes(q) || (qDigitos && c.telefono.includes(qDigitos))
-    );
-  }, [clientes, busqueda]);
 
   const clienteElegido = clientes.find((c) => c.id === clienteId) ?? null;
   const perrosDelCliente = useMemo(
@@ -124,7 +114,6 @@ export function NuevaReservaForm({
 
   function cambiarCliente() {
     setClienteId(null);
-    setBusqueda("");
     setLineas([]);
     setResultados(null);
     setReservaId(null);
@@ -192,36 +181,7 @@ export function NuevaReservaForm({
   if (!clienteElegido) {
     return (
       <div className="flex flex-col gap-4">
-        <div className="max-w-sm">
-          <Field
-            label="Buscar cliente por nombre o teléfono"
-            type="search"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="ej. Ana o 444 123"
-            autoFocus
-          />
-        </div>
-        <div className="overflow-hidden rounded-lg border border-n-200 bg-white">
-          {clientesFiltrados.length === 0 ? (
-            <p className="p-6 text-center text-n-600">Ningún cliente coincide con la búsqueda.</p>
-          ) : (
-            <ul className="divide-y divide-n-200">
-              {clientesFiltrados.slice(0, 30).map((c) => (
-                <li key={c.id}>
-                  <button
-                    type="button"
-                    onClick={() => elegirCliente(c.id)}
-                    className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul-suave"
-                  >
-                    <span className="font-semibold text-n-900">{c.nombre}</span>
-                    <span className="tabular-nums text-n-600">{formatearTelefono(c.telefono)}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <BuscadorClientes clientes={clientes} onElegir={(c) => elegirCliente(c.id)} autoFocus />
       </div>
     );
   }
