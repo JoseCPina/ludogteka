@@ -83,8 +83,9 @@ export default async function CheckinEstanciaPage({
   const esGuarderia = servicio?.categoria === "guarderia";
 
   // ¿Viene con pase o paga el día? Solo para guardería de día completo:
-  // lo que ya cubrió un bono (movimientos_bono) y, si no hay nada, si el
-  // dueño tiene alguno vigente que incluya este servicio.
+  // lo que ya cubrió un bono (movimientos_bono) y, si no hay nada, si ESTE
+  // perro tiene alguno vigente que incluya este servicio (el paquete es
+  // del perro, no del dueño: el de su hermano no le sirve).
   let estadoPase: EstadoPaseCheckin = { tipo: "no_aplica" };
   if (esGuarderia && servicio?.unidad === "dia") {
     const dias = Math.max(
@@ -118,7 +119,7 @@ export default async function CheckinEstanciaPage({
       const { data: disponibles } = await supabase
         .from("bonos_clientes_estado")
         .select(columnasBono)
-        .eq("cliente_id", perro.cliente_id)
+        .eq("perro_id", estancia.perro_id)
         .eq("estado", "activo")
         .eq("servicio_incluido_id", estancia.servicio_id)
         // Vigente el día de la estancia, no solo hoy: misma regla que

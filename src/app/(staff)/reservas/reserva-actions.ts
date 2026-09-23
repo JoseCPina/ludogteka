@@ -71,7 +71,7 @@ async function insertarEstancia(reservaId: string, linea: LineaReserva): Promise
     return { perroId: linea.perroId, exito: false, motivo: traducirError(error), estanciaId: null };
   }
 
-  // Guardería de día completo: si el dueño tiene pases o mensualidad
+  // Guardería de día completo: si el perro tiene pases o mensualidad
   // vigentes, la base los usa sola (el que vence primero) y dice qué
   // queda. Para hotel o por hora responde no_aplica y no pasa nada.
   // Si esto falla, la estancia ya quedó creada: se reporta el día como

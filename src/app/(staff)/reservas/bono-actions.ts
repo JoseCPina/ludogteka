@@ -7,8 +7,10 @@ import type { LineaMetodo } from "./cobro-actions";
 
 export type EstadoComprarBono = { error: string | null; bonoId?: string; reservaId?: string };
 
+// El paquete se vende para UN perro (solo él lo consume); el dueño que lo
+// paga lo deduce la base del perro.
 export async function comprarBono(
-  clienteId: string,
+  perroId: string,
   servicioId: string,
   notas: string,
   metodos: LineaMetodo[]
@@ -20,7 +22,7 @@ export async function comprarBono(
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("comprar_bono", {
-    p_cliente_id: clienteId,
+    p_perro_id: perroId,
     p_servicio_id: servicioId,
     p_notas: notas,
     p_metodos: metodos,
@@ -28,7 +30,10 @@ export async function comprarBono(
 
   if (error) return { error: traducirError(error) };
 
-  revalidatePath(`/clientes/${clienteId}`);
+  revalidatePath(`/perros/${perroId}`);
+  revalidatePath("/clientes", "layout");
+  revalidatePath("/guarderia/pases");
+  revalidatePath("/caja/pases");
   return { error: null, bonoId: data as string };
 }
 
@@ -58,7 +63,7 @@ export async function consumirBono(
   return { error: null, movimientoId: data as string };
 }
 
-// Aplica el bono del dueño a una estancia de guardería que quedó pagando
+// Aplica un paquete del perro a una estancia de guardería que quedó pagando
 // el día suelto (p. ej. se vendió el paquete después de reservar). La
 // base elige cuál (el que vence primero) y dice qué queda.
 export type ResultadoAplicarBonoEstancia = {

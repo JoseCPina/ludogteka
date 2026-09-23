@@ -13,8 +13,9 @@ export type EstadoPaseCheckin =
   | { tipo: "no_aplica" };
 
 // Lo primero que recepción necesita saber al recibir a un perro de
-// guardería: viene con pase o paga el día. Y si el dueño tiene pases sin
-// aplicar (compró después de reservar), aplicarlos aquí mismo.
+// guardería: viene con pase o paga el día. Y si ESTE perro tiene pases sin
+// aplicar (se compraron después de reservar), aplicarlos aquí mismo. El
+// paquete es por perro: el de otro perro del mismo dueño no cuenta.
 export function PaseCheckin({ estanciaId, estado }: { estanciaId: string; estado: EstadoPaseCheckin }) {
   const router = useRouter();
   const aplicando = useEspera();
@@ -61,7 +62,7 @@ export function PaseCheckin({ estanciaId, estado }: { estanciaId: string; estado
   return (
     <div className="rounded-lg border-l-4 border-n-300 bg-n-50 px-4 py-3">
       <p className="font-bold text-n-900">Paga el día suelto: ${estado.precioDia.toFixed(2)}</p>
-      <p className="text-sm text-n-600">El dueño no tiene pases ni mensualidad vigentes.</p>
+      <p className="text-sm text-n-600">Este perro no tiene pases ni mensualidad vigentes (el paquete es por perro).</p>
     </div>
   );
 }

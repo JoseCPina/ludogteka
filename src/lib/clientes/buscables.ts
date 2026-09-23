@@ -4,8 +4,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * Lo que necesita cualquier buscador de clientes de la app: el dueño, su
  * teléfono y los nombres de sus perros. El staff sabe el nombre del perro
  * mucho más seguido que el del dueño, así que se busca por los tres; lo
- * que se elige sigue siendo el CLIENTE, porque de él cuelgan los pases y
- * las reservas.
+ * que se elige sigue siendo el CLIENTE, porque de él cuelgan las reservas
+ * (los pases son de cada perro y se escogen después).
  *
  * Todo buscador de clientes (reserva nueva, walk-in, serie, cita de
  * estética, pases, vinculación, lista de clientes) arma sus filas con

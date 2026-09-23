@@ -166,7 +166,7 @@ export default async function EditarClientePage({
     supabase
       .from("bonos_clientes_estado")
       .select(
-        "id, servicio_nombre, servicio_incluido_nombre, cantidad_total, cantidad_disponible, precio_pagado, fecha_compra, fecha_vencimiento, estado, ilimitado"
+        "id, servicio_nombre, servicio_incluido_nombre, cantidad_total, cantidad_disponible, precio_pagado, fecha_compra, fecha_vencimiento, estado, ilimitado, perro_id, perro_nombre"
       )
       .eq("cliente_id", id)
       .order("fecha_compra", { ascending: false }),
@@ -287,11 +287,12 @@ export default async function EditarClientePage({
       />
 
       <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Bonos prepagados</h2>
+        <h2 className="text-lg font-bold text-n-900">Paquetes (day pass y mensualidad)</h2>
+        <p className="-mt-1 text-sm text-n-600">Cada paquete es de un perro: solo ese perro lo usa.</p>
         <BonosCliente
-          clienteId={id}
           catalogo={(catalogoBonos as BonoCatalogo[]) ?? []}
           bonos={(bonosCliente as BonoFila[]) ?? []}
+          perros={(perros ?? []).filter((p) => !p.fallecido).map((p) => ({ id: p.id as string, nombre: p.nombre as string }))}
         />
       </div>
 

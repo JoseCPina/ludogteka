@@ -25,6 +25,8 @@ export type LineaCuenta = {
   precioUnitario: number;
   total: number;
   cantidadCubiertaPorBono: number;
+  // El perro de la línea: un paquete solo cubre líneas de SU perro.
+  perroId: string | null;
 };
 
 export type Totales = {
@@ -43,6 +45,8 @@ export type BonoDisponible = {
   servicioNombre: string;
   cantidadDisponible: number;
   ilimitado?: boolean;
+  perroId: string | null;
+  perroNombre: string | null;
 };
 
 export type MotivoDescuento = { id: string; etiqueta: string };
@@ -141,7 +145,9 @@ export function CuentaCobro({
 
   function bonosParaLinea(l: LineaCuenta) {
     if (restantePorCubrir(l) <= 0) return [];
-    return bonosDisponibles.filter((b) => b.servicioIncluidoId === l.servicioId && b.cantidadDisponible > 0);
+    return bonosDisponibles.filter(
+      (b) => b.servicioIncluidoId === l.servicioId && b.cantidadDisponible > 0 && b.perroId !== null && b.perroId === l.perroId
+    );
   }
 
   function abrirAplicarBono(i: number) {
@@ -427,7 +433,8 @@ export function CuentaCobro({
               <Select label="Bono" value={bonoElegidoId} onChange={(e) => setBonoElegidoId(e.target.value)}>
                 {bonosParaLinea(lineas[aplicandoBonoIdx]).map((b) => (
                   <option key={b.id} value={b.id}>
-                    {b.servicioNombre}{" "}
+                    {b.servicioNombre}
+                    {b.perroNombre ? ` de ${b.perroNombre}` : ""}{" "}
                     {b.ilimitado ? "(ilimitado, vigente)" : `(${b.cantidadDisponible} disponibles)`}
                   </option>
                 ))}

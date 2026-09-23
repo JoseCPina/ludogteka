@@ -7,6 +7,8 @@ type Fila = {
   id: string;
   cliente_id: string;
   cliente_nombre: string;
+  perro_id: string | null;
+  perro_nombre: string | null;
   servicio_nombre: string;
   cantidad_total: number;
   cantidad_disponible: number;
@@ -34,11 +36,12 @@ function Lista({ titulo, items, vacio }: { titulo: string; items: Fila[]; vacio:
           {items.map((f) => (
             <li key={f.id}>
               <Link
-                href={`/guarderia/pases?cliente=${f.cliente_id}`}
+                href={`/guarderia/pases?cliente=${f.cliente_id}${f.perro_id ? `&perro=${f.perro_id}` : ""}`}
                 className="flex flex-col rounded-md border border-n-200 bg-white px-3 py-2 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul-suave"
               >
                 <span className="font-semibold text-n-900">
-                  {f.cliente_nombre} · {f.servicio_nombre}
+                  {f.perro_nombre ?? "—"} <span className="font-normal text-n-600">({f.cliente_nombre})</span> ·{" "}
+                  {f.servicio_nombre}
                 </span>
                 <span className="text-xs text-n-600">{describirBono(f)}</span>
               </Link>
@@ -55,7 +58,7 @@ export async function PasesTablero({ hoy }: { hoy: string }) {
   const { data } = await supabase
     .from("bonos_clientes_estado")
     .select(
-      "id, cliente_id, cliente_nombre, servicio_nombre, cantidad_total, cantidad_disponible, fecha_vencimiento, fecha_compra, estado, ilimitado"
+      "id, cliente_id, cliente_nombre, perro_id, perro_nombre, servicio_nombre, cantidad_total, cantidad_disponible, fecha_vencimiento, fecha_compra, estado, ilimitado"
     )
     .in("estado", ["activo", "agotado", "vencido"])
     .order("fecha_vencimiento", { ascending: true, nullsFirst: false });

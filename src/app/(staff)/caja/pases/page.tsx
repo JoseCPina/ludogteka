@@ -9,8 +9,8 @@ import { formatearTelefono } from "@/lib/telefono";
 // Vender day pass o mensualidad desde Caja, no solo desde Guardería.
 // Aquí se ofrecen TODOS los paquetes cotizables (no solo los que dan
 // guardería): el mostrador vende lo que haya.
-export default async function PasesCajaPage({ searchParams }: { searchParams: Promise<{ cliente?: string }> }) {
-  const { cliente: clienteId } = await searchParams;
+export default async function PasesCajaPage({ searchParams }: { searchParams: Promise<{ cliente?: string; perro?: string }> }) {
+  const { cliente: clienteId, perro: perroInicial } = await searchParams;
   const supabase = await createSupabaseServerClient();
 
   const [{ clientes }, { data: bonosCatalogo }, { data: turno }] = await Promise.all([
@@ -40,11 +40,21 @@ export default async function PasesCajaPage({ searchParams }: { searchParams: Pr
     ? await supabase
         .from("bonos_clientes_estado")
         .select(
-          "id, servicio_nombre, servicio_incluido_nombre, cantidad_total, cantidad_disponible, precio_pagado, fecha_compra, fecha_vencimiento, estado, ilimitado"
+          "id, servicio_nombre, servicio_incluido_nombre, cantidad_total, cantidad_disponible, precio_pagado, fecha_compra, fecha_vencimiento, estado, ilimitado, perro_id, perro_nombre"
         )
         .eq("cliente_id", clienteElegido.id)
         .order("fecha_compra", { ascending: false })
     : { data: [] as never[] };
+
+  const { data: perrosCliente } = clienteElegido
+    ? await supabase
+        .from("perros")
+        .select("id, nombre")
+        .eq("cliente_id", clienteElegido.id)
+        .is("deleted_at", null)
+        .eq("fallecido", false)
+        .order("nombre")
+    : { data: [] as { id: string; nombre: string }[] };
 
   const hayTurno = (turno ?? []).length > 0;
 
@@ -55,7 +65,7 @@ export default async function PasesCajaPage({ searchParams }: { searchParams: Pr
           ← Caja
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Vender pase o mensualidad</h1>
-        <p className="mt-1 text-n-600">Los pases son del dueño: cualquiera de sus perros los usa, y la reserva los toma sola.</p>
+        <p className="mt-1 text-n-600">Cada paquete es de un perro: solo ese perro lo usa (un dueño con dos perros compra dos), y la reserva lo toma sola.</p>
       </div>
 
       {!hayTurno && (
@@ -87,7 +97,12 @@ export default async function PasesCajaPage({ searchParams }: { searchParams: Pr
               Cambiar cliente
             </Link>
           </div>
-          <BonosCliente clienteId={clienteElegido.id} catalogo={catalogo} bonos={(bonos ?? []) as BonoFila[]} />
+          <BonosCliente
+            catalogo={catalogo}
+            bonos={(bonos ?? []) as BonoFila[]}
+            perros={(perrosCliente ?? []) as { id: string; nombre: string }[]}
+            perroInicial={perroInicial ?? null}
+          />
         </div>
       )}
     </div>

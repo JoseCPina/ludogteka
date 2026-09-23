@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { describirBono } from "@/lib/bonos/descripcion";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarRazas } from "@/lib/razas";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -217,6 +218,30 @@ export default async function PerroPage({
   const cliente = perro.clientes as unknown as { nombre: string } | null;
   const actualizarConId = actualizarPerro.bind(null, id);
   const soloLectura = sesion.rol === "estetica";
+
+  // Los paquetes de ESTE perro (el paquete es por perro: solo él lo usa).
+  // Estética no ve saldos ni vende: es información de caja.
+  const { data: paquetesCrudo } = soloLectura
+    ? { data: [] as never[] }
+    : await supabase
+        .from("bonos_clientes_estado")
+        .select(
+          "id, servicio_nombre, cantidad_total, cantidad_disponible, fecha_compra, fecha_vencimiento, estado, ilimitado"
+        )
+        .eq("perro_id", id)
+        .in("estado", ["activo", "agotado", "vencido"])
+        .order("fecha_compra", { ascending: false })
+        .limit(10);
+  const paquetes = (paquetesCrudo ?? []) as {
+    id: string;
+    servicio_nombre: string;
+    cantidad_total: number;
+    cantidad_disponible: number;
+    fecha_compra: string;
+    fecha_vencimiento: string | null;
+    estado: string;
+    ilimitado: boolean;
+  }[];
 
   // Requisitos de estancia: quién registró la evaluación (nombre, no
   // uuid) y qué alertas activas bloquean guardería/hotel según el
@@ -471,6 +496,46 @@ export default async function PerroPage({
             tipos={tiposContrato}
             contratos={contratos}
           />
+        </div>
+      )}
+
+      {!soloLectura && perro.cliente_id && (
+        <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-bold text-n-900">Day pass y mensualidad</h2>
+            {!perro.fallecido && (
+              <Link
+                href={`/guarderia/pases?cliente=${perro.cliente_id}&perro=${id}`}
+                className="text-sm font-semibold text-azul hover:underline"
+              >
+                Vender paquete para {perro.nombre}
+              </Link>
+            )}
+          </div>
+          {paquetes.length === 0 ? (
+            <p className="text-n-600">
+              {perro.nombre} no tiene paquetes. Los paquetes son por perro: el de otro perro del mismo
+              dueño no le sirve.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {paquetes.map((b) => (
+                <li key={b.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-n-200 bg-white px-4 py-3">
+                  <span>
+                    <span className="font-semibold text-n-900">{b.servicio_nombre}</span>
+                    <span className="block text-sm text-n-700">{describirBono(b)}</span>
+                  </span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                      b.estado === "activo" ? "bg-verde-suave text-verde-oscuro" : b.estado === "vencido" ? "bg-naranja-suave text-naranja-oscuro" : "bg-n-100 text-n-600"
+                    }`}
+                  >
+                    {b.estado === "activo" ? "Activo" : b.estado === "vencido" ? "Vencido" : "Agotado"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 

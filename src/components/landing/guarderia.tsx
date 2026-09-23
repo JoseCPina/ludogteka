@@ -82,7 +82,7 @@ export function Guarderia() {
           </h3>
           <p className="lp-revela mt-2 max-w-[52ch] text-base leading-relaxed text-n-600">
             Paquetes de días completos para usar cuando quieras dentro de la vigencia.
-            Sirven para cualquiera de tus perros.
+            Cada paquete es para un perro.
           </p>
           <ul className="mt-6 grid gap-3 sm:grid-cols-3">
             {GUARDERIA.pases.map((p, i) => (

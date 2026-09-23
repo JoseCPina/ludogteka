@@ -63,7 +63,7 @@ export async function PantallaCobro({
       .order("created_at"),
     supabase
       .from("bonos_clientes_estado")
-      .select("id, servicio_incluido_id, servicio_nombre, cantidad_disponible, estado, ilimitado")
+      .select("id, servicio_incluido_id, servicio_nombre, cantidad_disponible, estado, ilimitado, perro_id, perro_nombre")
       .eq("cliente_id", reserva.cliente_id)
       .eq("estado", "activo"),
     supabase.from("catalogo_descuentos").select("id, etiqueta").is("deleted_at", null).order("orden"),
@@ -131,6 +131,29 @@ export async function PantallaCobro({
         .in("item_id", idsLineasBono)
     : { data: [] as { item_id: string; cantidad: number; tipo: string }[] };
 
+  // De qué perro es cada línea: el paquete es por perro y solo cubre las
+  // líneas de su perro (una reserva puede traer a dos perros del mismo
+  // dueño). Un cargo suelto sin estancia no tiene perro.
+  const idsPorTipo = (t: string) => lineasCrudas.filter((l) => l.tipo === t).map((l) => l.origen_id);
+  const [{ data: perrosEstancias }, { data: perrosCitas }, { data: perrosCargos }] = await Promise.all([
+    idsPorTipo("estancia").length
+      ? supabase.from("estancias").select("id, perro_id").in("id", idsPorTipo("estancia"))
+      : Promise.resolve({ data: [] as { id: string; perro_id: string }[] }),
+    idsPorTipo("estetica").length
+      ? supabase.from("citas_estetica").select("id, perro_id").in("id", idsPorTipo("estetica"))
+      : Promise.resolve({ data: [] as { id: string; perro_id: string }[] }),
+    idsPorTipo("cargo").length
+      ? supabase.from("cargos_aplicados").select("id, estancias(perro_id)").in("id", idsPorTipo("cargo"))
+      : Promise.resolve({ data: [] as { id: string; estancias: unknown }[] }),
+  ]);
+  const perroPorItem = new Map<string, string>();
+  for (const e of perrosEstancias ?? []) perroPorItem.set(e.id as string, e.perro_id as string);
+  for (const c of perrosCitas ?? []) perroPorItem.set(c.id as string, c.perro_id as string);
+  for (const c of perrosCargos ?? []) {
+    const est = (Array.isArray(c.estancias) ? c.estancias[0] : c.estancias) as { perro_id: string } | null;
+    if (est?.perro_id) perroPorItem.set(c.id as string, est.perro_id);
+  }
+
   // Cobertura neta: consumos menos devoluciones (un pase devuelto al
   // cancelar ya no cubre nada).
   const cubiertoPorItem = new Map<string, number>();
@@ -151,6 +174,7 @@ export async function PantallaCobro({
     precioUnitario: Number(l.precio_unitario),
     total: Number(l.total),
     cantidadCubiertaPorBono: cubiertoPorItem.get(l.origen_id) ?? 0,
+    perroId: perroPorItem.get(l.origen_id) ?? null,
   }));
 
   const totalesFila = Array.isArray(totalesCrudo) ? totalesCrudo[0] : totalesCrudo;
@@ -170,6 +194,8 @@ export async function PantallaCobro({
     servicioNombre: b.servicio_nombre as string,
     cantidadDisponible: b.cantidad_disponible as number,
     ilimitado: Boolean(b.ilimitado),
+    perroId: (b.perro_id as string | null) ?? null,
+    perroNombre: (b.perro_nombre as string | null) ?? null,
   }));
 
   const catalogoDescuentos: MotivoDescuento[] = (catalogoDescuentosCrudo ?? []).map((c) => ({

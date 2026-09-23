@@ -18,7 +18,7 @@ export const ETIQUETA_BUSCAR_CLIENTES = "Buscar por perro, dueño o teléfono";
  * Busca por nombre del perro, del dueño o por teléfono, y pinta cada
  * resultado con el perro y su dueño juntos: cuando dos perros se llaman
  * igual, el dueño y el teléfono son lo que los distingue. Lo que se elige
- * es el CLIENTE (de él cuelgan pases y reservas); el perro se escoge
+ * es el CLIENTE (de él cuelgan las reservas); el perro se escoge
  * después, en la pantalla que lo necesite.
  *
  * Dos formas de elegir: `onElegir` (el formulario sigue en la misma
