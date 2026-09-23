@@ -208,7 +208,7 @@ export function ServicioForm({
             </span>
             <span className="pl-6 text-sm text-n-600">
               Sin tope de unidades: cada día que asista se registra como consumo. La vigencia es
-              obligatoria y el ingreso se reconoce por día hábil de esa vigencia.
+              obligatoria y el ingreso se reconoce por cada día que abre guardería en esa vigencia.
             </span>
           </label>
           <div className="grid grid-cols-2 gap-4">

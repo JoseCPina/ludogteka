@@ -19,7 +19,8 @@ import {
   cancelarSerie,
   type ResultadoFecha,
 } from "../../series-actions";
-import { DIAS_SEMANA, formatearDiasSemana } from "../dias-semana";
+import { formatearDiasSemana } from "../dias-semana";
+import { SelectorDias } from "../selector-dias";
 import { describirBonoAplicado } from "@/lib/bonos/descripcion";
 import type { ServicioOfrecible } from "@/lib/servicios/ofrecibles";
 import { OpcionesServicio, AvisoServiciosSinPrecio } from "@/components/servicios/opciones-servicio";
@@ -98,6 +99,7 @@ export function SerieDetalle({
   estancias,
   pausas,
   hoy,
+  diasSinGuarderia,
 }: {
   serieId: string;
   servicioId: string;
@@ -109,6 +111,8 @@ export function SerieDetalle({
   estancias: Estancia[];
   pausas: Pausa[];
   hoy: string;
+  // Días de la semana (1 = lunes … 7 = domingo) en que guardería no abre.
+  diasSinGuarderia: number[];
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -327,25 +331,11 @@ export function SerieDetalle({
             <OpcionesServicio servicios={servicios} />
           </Select>
 
-          <div>
-            <p className="mb-1.5 text-sm font-semibold text-n-800">Días de la semana</p>
-            <div className="flex flex-wrap gap-2">
-              {DIAS_SEMANA.map((d) => (
-                <button
-                  key={d.valor}
-                  type="button"
-                  onClick={() => alternarDiaEdit(d.valor)}
-                  className={`rounded-full border-[1.5px] px-3 py-1.5 text-sm font-semibold transition-colors ${
-                    diasEdit.includes(d.valor)
-                      ? "border-azul bg-azul-suave text-azul"
-                      : "border-n-200 bg-white text-n-600 hover:border-n-300"
-                  }`}
-                >
-                  {d.corta}
-                </button>
-              ))}
-            </div>
-          </div>
+          <SelectorDias
+            dias={diasEdit}
+            onAlternar={alternarDiaEdit}
+            diasCerrados={servicios.find((s) => s.id === servicioEdit)?.categoria === "guarderia" ? diasSinGuarderia : []}
+          />
 
           <div className="flex flex-col gap-1.5">
             <label className="flex items-center gap-2 text-sm font-semibold text-n-800">

@@ -27,6 +27,8 @@ export type ServicioEstetica = {
   clave: string;
   nombre: string;
   incluye: string[];
+  // Lo que NO trae, dicho explícito (el exprés): null si no hace falta.
+  noIncluye: string | null;
 };
 
 export type CotizacionEstetica = {
@@ -60,7 +62,7 @@ export async function cargarCotizacionEstetica(
     await Promise.all([
       supabase
         .from("servicios")
-        .select("id, clave, nombre, incluye, orden")
+        .select("id, clave, nombre, incluye, no_incluye, orden")
         .in("clave", CLAVES)
         .is("deleted_at", null)
         .order("orden"),
@@ -160,6 +162,7 @@ export async function cargarCotizacionEstetica(
       clave: s.clave as string,
       nombre: s.nombre as string,
       incluye: (s.incluye as string[] | null) ?? [],
+      noIncluye: (s.no_incluye as string | null) ?? null,
     })),
     precios,
     preciosPorTalla,

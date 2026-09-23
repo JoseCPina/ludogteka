@@ -20,7 +20,7 @@ export const MENSAJES = {
   guarderia: "Hola, Ludogteka. Quiero reservar guardería para mi perro.",
   hotel: "Hola, Ludogteka. Quiero apartar hotel para mi perro. Las fechas son:",
   estetica: "Hola, Ludogteka. Quiero agendar estética para mi perro. Su raza es:",
-  recoleccion: "Hola, Ludogteka. Quiero cotizar recolección a domicilio. Mi colonia es:",
+  recoleccion: "Hola, Ludogteka. Quiero cotizar recolección a domicilio. Mi colonia y el día que la necesito:",
   requisitos: "Hola, Ludogteka. Quiero agendar la evaluación de comportamiento de mi perro.",
 } as const;
 
@@ -39,9 +39,19 @@ export const MAPA_EMBED = `https://maps.google.com/maps?q=${DESTINO}&z=16&output
 export const COMO_LLEGAR_GOOGLE = `https://www.google.com/maps/dir/?api=1&destination=${DESTINO}`;
 export const COMO_LLEGAR_WAZE = `https://waze.com/ul?q=${DESTINO}&navigate=yes`;
 
-export const HORARIO_GUARDERIA = { dias: "Lunes a viernes", horas: "9:00 a 19:00" };
+// Mismo horario que horario_semana en la app (guardería abre en todo el
+// horario del negocio). Domingo cerrado.
+export const HORARIO = [
+  { dias: "Lunes a viernes", horas: "9:00 a 19:00", abre: "09:00", cierra: "19:00", schema: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] },
+  { dias: "Sábado", horas: "10:00 a 14:00", abre: "10:00", cierra: "14:00", schema: ["Saturday"] },
+];
 
 export const PRECIO_KM_RECOLECCION = 12;
+export const RECOLECCION_REGLAS = [
+  "De lunes a viernes.",
+  "Se agenda con 24 horas de anticipación.",
+  "Para estética, la recolección es solo los martes.",
+];
 
 // Zonas de cobertura de la recolección. Vacío = todavía no definidas: la
 // sección invita a preguntar por WhatsApp. En cuanto el negocio las
@@ -64,18 +74,19 @@ export const HOTEL = [
   { talla: "Grande y extra grande", precio: 300 },
 ];
 
-// Mismas listas que `servicios.incluye` de los tres baños (migración
-// 20260910190118): la diferencia entre $190 y $390 es lo que incluyen.
+// Mismas listas que `servicios.incluye` / `no_incluye` de los tres baños
+// (migraciones 20260910190118 y 20260923152350): la diferencia entre $190
+// y $390 es lo que incluyen.
 export const ESTETICA_INCLUYE = [
   "Baño",
-  "Cepillado, deslanado y corte de pelo",
+  "Cepillado, deslanado o corte de pelo",
   "Corte de uñas",
   "Limpieza de orejas y dientes",
   "Corte higiénico",
   "Hidratación de nariz y huellitas",
 ];
 export const ESTETICA_RAPADO_DIFERENCIA = "Igual que el estético, con corte rapado.";
-export const ESTETICA_EXPRES_INCLUYE = "Baño con shampoo y secado.";
+export const ESTETICA_EXPRES_INCLUYE = "Solo baño con shampoo y secado. No incluye cepillado ni ningún otro servicio.";
 
 export type GrupoEstetica = {
   nombre: string;
@@ -117,8 +128,8 @@ const fmt = new Intl.NumberFormat("es-MX", {
   minimumFractionDigits: 0,
 });
 
-// "$1,950" / "$80.50": sin ".00" en los redondos, con centavos en los que
-// los tienen (el precio por día de un pase).
+// "$1,950": sin ".00" en los redondos, con centavos si algún precio los
+// llega a tener.
 export function pesos(n: number) {
   return Number.isInteger(n) ? fmt.format(n) : fmt.format(n).replace(/(\.\d)$/, "$10");
 }

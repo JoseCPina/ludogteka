@@ -41,6 +41,10 @@ function TarjetaServicio({ servicio }: { servicio: PrecioDeServicio }) {
           ))}
         </ul>
       )}
+
+      {servicio.noIncluye && (
+        <p className="mt-1.5 text-sm font-semibold text-n-800">{servicio.noIncluye}</p>
+      )}
     </div>
   );
 }

@@ -2,11 +2,11 @@ import Image from "next/image";
 import {
   Car,
   Clock,
-  SecurityCamera,
+  Eye,
   ShieldCheck,
 } from "@phosphor-icons/react/dist/ssr";
 import { BotonWhatsApp } from "./comunes";
-import { HORARIO_GUARDERIA, MENSAJES } from "@/lib/landing/negocio";
+import { MENSAJES } from "@/lib/landing/negocio";
 import fotoGrupo from "./fotos/guarderia-grupo.jpg";
 
 export function Hero() {
@@ -31,7 +31,7 @@ export function Hero() {
             style={{ "--d": 1 } as React.CSSProperties}
           >
             Guardería, hotel y estética canina en San Luis Potosí, con
-            videovigilancia de circuito cerrado las 24 horas.
+            monitoreo las 24 horas.
           </p>
           <div
             className="lp-entra mt-8 flex flex-col gap-3 sm:flex-row sm:items-center"
@@ -78,11 +78,11 @@ export function Hero() {
 
           <div className="lp-entra-aviso absolute -bottom-7 left-4 flex max-w-[calc(100%-6rem)] sm:left-auto sm:right-8 sm:max-w-[20rem] items-center gap-3 rounded-3xl border border-n-200 bg-white/95 p-3.5 pr-5 shadow-[0_16px_40px_-18px_rgb(20_22_31/0.35)] backdrop-blur">
             <span className="grid size-11 shrink-0 place-items-center rounded-full bg-azul-suave text-azul">
-              <SecurityCamera size={24} weight="duotone" aria-hidden />
+              <Eye size={24} weight="duotone" aria-hidden />
             </span>
             <span className="text-[0.9375rem] leading-snug">
-              <span className="block font-bold text-n-900">Vigilado 24/7</span>
-              <span className="text-n-600">Cámaras de circuito cerrado</span>
+              <span className="block font-bold text-n-900">Monitoreo 24 horas</span>
+              <span className="text-n-600">De día y de noche</span>
             </span>
           </div>
         </div>
@@ -93,9 +93,9 @@ export function Hero() {
 
 const CONFIANZA = [
   {
-    icono: SecurityCamera,
+    icono: Eye,
     titulo: "Siempre a la vista",
-    texto: "Videovigilancia de circuito cerrado día y noche.",
+    texto: "Monitoreo 24 horas, de día y de noche.",
     color: "bg-azul-suave text-azul",
   },
   {
@@ -106,14 +106,14 @@ const CONFIANZA = [
   },
   {
     icono: Clock,
-    titulo: `${HORARIO_GUARDERIA.dias}`,
-    texto: `Guardería de ${HORARIO_GUARDERIA.horas}.`,
+    titulo: "Lunes a sábado",
+    texto: "Guardería entre semana de 9:00 a 19:00 y sábado de 10:00 a 14:00.",
     color: "bg-turquesa-suave text-turquesa-oscuro",
   },
   {
     icono: Car,
     titulo: "Vamos por él",
-    texto: "Recolección a domicilio: lo recogemos y lo regresamos.",
+    texto: "Recolección a domicilio de lunes a viernes: lo recogemos y lo regresamos.",
     color: "bg-amarillo-suave text-amarillo-oscuro",
   },
 ];

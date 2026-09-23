@@ -5,6 +5,7 @@ import { armarClientesBuscables } from "@/lib/clientes/buscables";
 import { hoyNegocio } from "@/lib/formato";
 import type { ModuloEstancia } from "@/lib/modulos";
 import { cargarServiciosOfrecibles } from "@/lib/servicios/ofrecibles";
+import { diasSinGuarderia } from "@/lib/horario";
 import { NuevaSerieForm } from "../series/nueva/nueva-serie-form";
 
 export async function PaginaNuevaSerie({ modulo }: { modulo: ModuloEstancia }) {
@@ -18,6 +19,7 @@ export async function PaginaNuevaSerie({ modulo }: { modulo: ModuloEstancia }) {
     { data: perros, error: errorPerros },
     { servicios, error: errorServicios },
     { data: seriesActivas, error: errorSeries },
+    cerrados,
   ] = await Promise.all([
     supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).order("nombre"),
     supabase
@@ -33,6 +35,7 @@ export async function PaginaNuevaSerie({ modulo }: { modulo: ModuloEstancia }) {
       .from("series_recurrentes")
       .select("perro_id, dias_semana, servicios(nombre)")
       .is("deleted_at", null),
+    diasSinGuarderia(supabase, hoy),
   ]);
 
   const error = errorClientes ?? errorPerros ?? errorServicios ?? errorSeries;
@@ -78,6 +81,7 @@ export async function PaginaNuevaSerie({ modulo }: { modulo: ModuloEstancia }) {
           seriesActivas={seriesActivasLista}
           hoy={hoy}
           base={modulo.base}
+          diasSinGuarderia={cerrados}
         />
       )}
     </div>

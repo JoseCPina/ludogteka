@@ -1,6 +1,7 @@
 import Image from "next/image";
 import {
   ArrowSquareOut,
+  CalendarCheck,
   Car,
   ChatCircleText,
   Clock,
@@ -14,10 +15,11 @@ import {
   COMO_LLEGAR_GOOGLE,
   COMO_LLEGAR_WAZE,
   DIRECCION,
-  HORARIO_GUARDERIA,
+  HORARIO,
   MAPA_EMBED,
   MENSAJES,
   PRECIO_KM_RECOLECCION,
+  RECOLECCION_REGLAS,
   ZONAS_COBERTURA,
   pesos,
 } from "@/lib/landing/negocio";
@@ -27,7 +29,7 @@ const PASOS_RECOLECCION = [
   {
     icono: ChatCircleText,
     titulo: "Nos escribes",
-    texto: "Mándanos por WhatsApp tu dirección y el día.",
+    texto: "Mándanos por WhatsApp tu dirección y el día, con 24 horas de anticipación.",
   },
   {
     icono: Path,
@@ -101,18 +103,21 @@ export function Logistica() {
             </span>
             <h3 className="mt-5 text-2xl font-bold text-n-900">Horarios</h3>
             <dl className="mt-5 space-y-5 text-base">
+              {HORARIO.map((h) => (
+                <div key={h.dias}>
+                  <dt className="font-bold text-n-900">{h.dias}</dt>
+                  <dd className="text-2xl font-extrabold tabular-nums text-n-900">{h.horas}</dd>
+                </div>
+              ))}
               <div>
-                <dt className="font-bold text-n-900">Guardería</dt>
-                <dd className="mt-0.5 text-n-700">
-                  {HORARIO_GUARDERIA.dias}
-                  <br />
-                  <span className="text-2xl font-extrabold tabular-nums text-n-900">{HORARIO_GUARDERIA.horas}</span>
-                </dd>
+                <dt className="font-bold text-n-900">Domingo</dt>
+                <dd className="text-n-700">Cerrado</dd>
               </div>
               <div>
                 <dt className="font-bold text-n-900">Hotel y estética</dt>
                 <dd className="mt-0.5 text-n-700">
-                  Con cita. Escríbenos y acordamos la hora de entrega y de recogida.
+                  Con cita. Escríbenos y acordamos la hora de entrega y de recogida. El hotel no
+                  entrega perros los domingos.
                 </dd>
               </div>
             </dl>
@@ -165,6 +170,15 @@ export function Logistica() {
                   ))}
                 </ol>
 
+                <ul className="mt-9 grid gap-2 sm:grid-cols-3">
+                  {RECOLECCION_REGLAS.map((r) => (
+                    <li key={r} className="flex items-start gap-2 rounded-2xl bg-white/70 p-3.5 text-base font-semibold leading-snug text-n-900">
+                      <CalendarCheck size={22} weight="duotone" className="mt-px shrink-0 text-verde-oscuro" aria-hidden />
+                      {r}
+                    </li>
+                  ))}
+                </ul>
+
                 <ZonasCobertura />
 
                 <BotonWhatsApp mensaje={MENSAJES.recoleccion} className="mt-8">
@@ -184,7 +198,7 @@ export function Logistica() {
 function ZonasCobertura() {
   if (ZONAS_COBERTURA.length === 0) {
     return (
-      <p className="mt-9 rounded-2xl bg-white/70 p-4 text-base leading-relaxed text-n-700">
+      <p className="mt-4 rounded-2xl bg-white/70 p-4 text-base leading-relaxed text-n-700">
         <strong className="text-n-900">¿Llegamos a tu colonia?</strong> Pregúntanos por WhatsApp
         y te decimos si te cubrimos y cuánto sale.
       </p>

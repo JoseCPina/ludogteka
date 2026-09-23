@@ -114,7 +114,11 @@ export function Estetica() {
             </li>
           ))}
           <li className="lp-revela rounded-3xl bg-white p-6 sm:col-span-2 lg:col-span-3">
-            <p className="text-lg font-bold text-n-900">Por talla, para perros sin grupo de raza</p>
+            <p className="text-lg font-bold text-n-900">
+              Por talla, solo para perros de{" "}
+              <span className="underline decoration-amarillo decoration-4 underline-offset-4">pelo corto</span> sin
+              grupo de raza
+            </p>
             <dl className="mt-4 grid gap-x-8 gap-y-2 sm:grid-cols-3">
               {ESTETICA_POR_TALLA.map((t) => (
                 <div key={t.talla} className="rounded-2xl bg-n-50 p-4">

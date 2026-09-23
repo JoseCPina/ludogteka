@@ -32,6 +32,7 @@ const TOKENS_DISPONIBLES = [
   "consentimiento_imagen",
   "servicios_disponibles",
   "fecha_firma",
+  "horario_guarderia",
 ];
 
 const CATEGORIAS: { clave: CategoriaServicioContrato; etiqueta: string }[] = [

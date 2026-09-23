@@ -5,7 +5,7 @@
  *
  * Tres familias, cada una con su porqué:
  *  - Entrada del hero: jerarquía. Primero el mensaje, luego la foto, luego
- *    el aviso de videovigilancia.
+ *    el aviso de monitoreo 24 horas.
  *  - Revelado al hacer scroll (animation-timeline: view()): acompaña la
  *    lectura sección por sección. Donde el navegador no lo soporta, el
  *    contenido simplemente está ahí — nunca se esconde esperando JS.

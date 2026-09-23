@@ -13,7 +13,8 @@ import type { ClienteBuscable } from "@/lib/clientes/buscables";
 import { describirBonoAplicado } from "@/lib/bonos/descripcion";
 import { primerCotizable, type ServicioOfrecible } from "@/lib/servicios/ofrecibles";
 import { OpcionesServicio, AvisoServiciosSinPrecio } from "@/components/servicios/opciones-servicio";
-import { DIAS_SEMANA, formatearDiasSemana } from "../dias-semana";
+import { formatearDiasSemana } from "../dias-semana";
+import { SelectorDias } from "../selector-dias";
 import { crearSerie, type ResultadoFecha } from "../../series-actions";
 
 type Perro = { id: string; cliente_id: string; nombre: string };
@@ -27,6 +28,7 @@ export function NuevaSerieForm({
   seriesActivas,
   hoy,
   base,
+  diasSinGuarderia,
 }: {
   clientes: ClienteBuscable[];
   perros: Perro[];
@@ -35,6 +37,8 @@ export function NuevaSerieForm({
   hoy: string;
   // Modulo desde el que se abrio ("/guarderia" u "/hotel").
   base: string;
+  // Días de la semana (1 = lunes … 7 = domingo) en que guardería no abre.
+  diasSinGuarderia: number[];
 }) {
   const [clienteId, setClienteId] = useState<string | null>(null);
   const [perroId, setPerroId] = useState("");
@@ -51,6 +55,7 @@ export function NuevaSerieForm({
   const clienteElegido = clientes.find((c) => c.id === clienteId) ?? null;
   const perrosDelCliente = useMemo(() => perros.filter((p) => p.cliente_id === clienteId), [perros, clienteId]);
   const seriesDelPerro = seriesActivas.filter((s) => s.perroId === perroId);
+  const servicioElegido = servicios.find((s) => s.id === servicioId) ?? null;
 
   function alternarDia(dia: number) {
     setDiasSemana((prev) => (prev.includes(dia) ? prev.filter((d) => d !== dia) : [...prev, dia].sort()));
@@ -179,25 +184,11 @@ export function NuevaSerieForm({
                 <OpcionesServicio servicios={servicios} />
               </Select>
 
-              <div>
-                <p className="mb-1.5 text-sm font-semibold text-n-800">Días de la semana</p>
-                <div className="flex flex-wrap gap-2">
-                  {DIAS_SEMANA.map((d) => (
-                    <button
-                      key={d.valor}
-                      type="button"
-                      onClick={() => alternarDia(d.valor)}
-                      className={`rounded-full border-[1.5px] px-3 py-1.5 text-sm font-semibold transition-colors ${
-                        diasSemana.includes(d.valor)
-                          ? "border-azul bg-azul-suave text-azul"
-                          : "border-n-200 bg-white text-n-600 hover:border-n-300"
-                      }`}
-                    >
-                      {d.corta}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <SelectorDias
+                dias={diasSemana}
+                onAlternar={alternarDia}
+                diasCerrados={servicioElegido?.categoria === "guarderia" ? diasSinGuarderia : []}
+              />
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field

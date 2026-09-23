@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { CalendarCheck, Clock, InfinityIcon, Ticket } from "@phosphor-icons/react/dist/ssr";
 import { BotonWhatsApp, Precio } from "./comunes";
-import { GUARDERIA, HORARIO_GUARDERIA, MENSAJES, pesos } from "@/lib/landing/negocio";
+import { GUARDERIA, HORARIO, MENSAJES, pesos } from "@/lib/landing/negocio";
 import fotoJuego from "./fotos/guarderia-juego.jpg";
 
 export function Guarderia() {
@@ -26,13 +26,19 @@ export function Guarderia() {
           </h2>
           <p className="lp-revela mt-5 max-w-[52ch] text-lg leading-relaxed text-n-700">
             Lo dejas en la mañana y lo recoges cansado y feliz. Socializa con
-            perros evaluados, juega y descansa bajo la mirada del equipo y de
-            las cámaras.
+            perros evaluados, juega y descansa con monitoreo las 24 horas.
           </p>
-          <p className="lp-revela mt-5 inline-flex items-center gap-2 rounded-full bg-turquesa-suave px-4 py-2 text-base font-bold text-turquesa-oscuro">
-            <Clock size={20} weight="bold" aria-hidden />
-            {HORARIO_GUARDERIA.dias}, {HORARIO_GUARDERIA.horas}
-          </p>
+          <ul className="lp-revela mt-5 flex flex-wrap gap-2">
+            {HORARIO.map((h) => (
+              <li
+                key={h.dias}
+                className="inline-flex items-center gap-2 rounded-full bg-turquesa-suave px-4 py-2 text-base font-bold text-turquesa-oscuro"
+              >
+                <Clock size={20} weight="bold" aria-hidden />
+                {h.dias}, {h.horas}
+              </li>
+            ))}
+          </ul>
 
           <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-4">
             <div className="lp-revela rounded-3xl border border-n-200 bg-white p-5 sm:p-6" style={{ "--i": 0 } as React.CSSProperties}>
@@ -42,7 +48,7 @@ export function Guarderia() {
             </div>
             <div className="lp-revela rounded-3xl border border-n-200 bg-white p-5 sm:p-6" style={{ "--i": 1 } as React.CSSProperties}>
               <p className="text-lg font-bold text-n-900">Día completo</p>
-              <p className="mt-1 text-base text-n-600">De 9:00 a 19:00, todo el día.</p>
+              <p className="mt-1 text-base text-n-600">Todo el horario de ese día.</p>
               <Precio monto={pesos(GUARDERIA.diaCompleto)} unidad="por día" className="mt-4 block text-[2rem] sm:text-4xl" />
             </div>
 
@@ -59,7 +65,7 @@ export function Guarderia() {
                     Mensualidad
                   </p>
                   <p className="mt-1 max-w-[30ch] text-base text-white/85">
-                    Días ilimitados de lunes a viernes. Para el perro que viene diario.
+                    Días ilimitados de lunes a sábado. Para el perro que viene diario.
                   </p>
                 </div>
                 <p className="tabular-nums">
@@ -89,10 +95,7 @@ export function Guarderia() {
                   <span className="tabular-nums">{p.pases}</span> pases
                 </p>
                 <Precio monto={pesos(p.precio)} className="mt-3 block text-3xl" />
-                <p className="mt-3 text-[0.9375rem] font-semibold text-verde-oscuro tabular-nums">
-                  {pesos(p.precio / p.pases)} por día
-                </p>
-                <p className="mt-1 inline-flex items-center gap-1.5 text-[0.9375rem] text-n-600 tabular-nums">
+                <p className="mt-3 inline-flex items-center gap-1.5 text-[0.9375rem] text-n-600 tabular-nums">
                   <CalendarCheck size={18} aria-hidden />
                   Vigencia de {p.vigenciaDias} días
                 </p>

@@ -5,7 +5,7 @@ import { formatearFechaCalendario } from "@/lib/formato";
  *
  * Un day pass es un saldo que se agota: "7 de 10 pases · vence el 12 de
  * octubre". La mensualidad no: es "activa hasta el 22 de octubre · 4 días
- * usados", porque su cantidad_total son los días hábiles de la vigencia,
+ * usados", porque su cantidad_total son los días que abre guardería en la vigencia,
  * no un tope comercial (ver Fase 17). Y un pase vencido con días sin usar
  * dice cuántos se perdieron — que se vea, no que desaparezca.
  */
@@ -30,7 +30,7 @@ export function describirBono(b: BonoResumen): string {
     if (b.estado === "vencido") {
       return `Mensualidad vencida el ${vence} · ${usados} ${usados === 1 ? "día usado" : "días usados"}`;
     }
-    return `Mensualidad activa${vence ? ` hasta el ${vence}` : ""} · ${usados} ${usados === 1 ? "día usado" : "días usados"} (ilimitado L–V)`;
+    return `Mensualidad activa${vence ? ` hasta el ${vence}` : ""} · ${usados} ${usados === 1 ? "día usado" : "días usados"} (ilimitada)`;
   }
 
   if (b.estado === "vencido") {
@@ -51,7 +51,7 @@ export function describirPaquete(p: {
   ilimitado?: boolean | null;
 }): string {
   const dura = p.vigencia_dias ? `vence a los ${p.vigencia_dias} días` : "sin vencimiento";
-  if (p.ilimitado) return `${p.nombre} — ilimitado L–V, ${dura}`;
+  if (p.ilimitado) return `${p.nombre} — días ilimitados, ${dura}`;
   return `${p.nombre} — ${p.cantidad_incluida ?? "?"} pases, ${dura}`;
 }
 

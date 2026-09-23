@@ -21,7 +21,7 @@ function leerCampos(formData: FormData) {
   const servicio_incluido_id = String(formData.get("servicio_incluido_id") ?? "").trim() || null;
   // Ilimitado: consumo sin tope dentro de la vigencia (la mensualidad).
   // Un bono así no lleva cantidad incluida; la base la calcula al vender
-  // como los días hábiles de la vigencia.
+  // como los días que abre guardería en la vigencia (según el horario).
   const ilimitado = categoria === "bono" && formData.get("ilimitado") === "on";
   // Monto libre: solo cargos. Sin celda en la matriz; el importe se
   // captura al aplicarlo (comida especial).

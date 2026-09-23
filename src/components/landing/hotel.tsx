@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Moon } from "@phosphor-icons/react/dist/ssr";
+import { Info, Moon } from "@phosphor-icons/react/dist/ssr";
 import { BotonWhatsApp } from "./comunes";
 import { HOTEL, MENSAJES, pesos } from "@/lib/landing/negocio";
 import fotoHotel from "./fotos/hotel.jpg";
@@ -9,7 +9,7 @@ export function Hotel() {
     <section id="hotel" className="bg-white py-20 lg:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="relative">
-          <div className="lp-revela relative h-[22rem] overflow-hidden rounded-[2rem] sm:h-[28rem] lg:h-[38rem]">
+          <div className="lp-revela relative h-[22rem] overflow-hidden rounded-[2rem] sm:h-[28rem] lg:h-[42rem]">
             <Image
               src={fotoHotel}
               alt="Perro acostado en su cama con una cobija, tranquilo y mirando a la cámara"
@@ -30,8 +30,8 @@ export function Hotel() {
               Noches tranquilas, como en casa.
             </h2>
             <p className="mt-3 text-lg leading-relaxed text-n-700">
-              Si sales de viaje, se queda con nosotros. Con cámaras de
-              circuito cerrado también de noche.
+              Si sales de viaje, se queda con nosotros, con monitoreo las
+              24 horas.
             </p>
 
             <dl className="mt-6 grid grid-cols-2 gap-3">
@@ -50,7 +50,18 @@ export function Hotel() {
               ))}
             </dl>
 
-            <p className="mt-4 text-[0.9375rem] leading-snug text-n-600">
+            <ul className="mt-4 space-y-1.5 text-[0.9375rem] font-semibold leading-snug text-n-800">
+              <li className="flex items-start gap-2">
+                <Info size={18} weight="bold" className="mt-0.5 shrink-0 text-azul" aria-hidden />
+                No incluye servicios extra.
+              </li>
+              <li className="flex items-start gap-2">
+                <Info size={18} weight="bold" className="mt-0.5 shrink-0 text-azul" aria-hidden />
+                No entregamos perros de hotel los domingos.
+              </li>
+            </ul>
+
+            <p className="mt-3 text-[0.9375rem] leading-snug text-n-600">
               Aplican los mismos{" "}
               <a href="#requisitos" className="font-bold text-azul underline decoration-2 underline-offset-4 hover:text-azul-oscuro">
                 requisitos

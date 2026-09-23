@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { hoyNegocio } from "@/lib/formato";
 import { moduloDeCategoria } from "@/lib/modulos";
+import { diasSinGuarderia } from "@/lib/horario";
 import { SerieDetalle } from "./serie-detalle";
 
 export default async function SerieDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -34,6 +35,7 @@ export default async function SerieDetallePage({ params }: { params: Promise<{ i
     { data: pausas, error: errorPausas },
     { data: serviciosCrudo },
     { data: cotizablesCrudo },
+    cerrados,
   ] = await Promise.all([
     supabase
       .from("estancias")
@@ -54,6 +56,7 @@ export default async function SerieDetallePage({ params }: { params: Promise<{ i
       .is("deleted_at", null)
       .order("orden"),
     supabase.from("servicios_cotizables").select("id").in("categoria", ["guarderia", "hotel"]),
+    diasSinGuarderia(supabase, hoy),
   ]);
 
   // Días completos nada más (la guardería por hora no va en serie), y
@@ -114,6 +117,7 @@ export default async function SerieDetallePage({ params }: { params: Promise<{ i
             motivo: p.motivo as string | null,
           }))}
           hoy={hoy}
+          diasSinGuarderia={cerrados}
         />
       )}
     </div>

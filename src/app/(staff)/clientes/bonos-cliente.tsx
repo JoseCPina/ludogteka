@@ -32,7 +32,7 @@ export type BonoFila = {
   fecha_vencimiento: string | null;
   estado: string;
   // Mensualidad: sin tope de días. cantidad_total ahí es el número de
-  // días hábiles de la vigencia, no un tope comercial — por eso no se
+  // días que abre guardería en la vigencia, no un tope comercial — por eso no se
   // muestra como "22/22 disponibles".
   ilimitado?: boolean;
 };

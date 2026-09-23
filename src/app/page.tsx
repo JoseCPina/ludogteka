@@ -9,7 +9,7 @@ import { LlamadoFinal, Pie, Requisitos, WhatsAppFlotante } from "@/components/la
 import {
   DIRECCION,
   GUARDERIA,
-  HORARIO_GUARDERIA,
+  HORARIO,
   TELEFONO_VISIBLE,
   URL_PUBLICA,
 } from "@/lib/landing/negocio";
@@ -20,7 +20,7 @@ import "@/components/landing/landing.css";
 // que ya manda a cada quien a su zona si tiene sesión).
 
 const TITULO = "Ludogteka | Guardería, hotel y estética canina en San Luis Potosí";
-const DESCRIPCION = `Guardería de ${HORARIO_GUARDERIA.dias.toLowerCase()} desde $${GUARDERIA.ocasionalHora} la hora, hotel por noche y estética canina en SLP. Videovigilancia de circuito cerrado 24/7. Escríbenos por WhatsApp: ${TELEFONO_VISIBLE}.`;
+const DESCRIPCION = `Guardería de lunes a sábado desde $${GUARDERIA.ocasionalHora} la hora, hotel por noche y estética canina en SLP. Monitoreo 24 horas. Escríbenos por WhatsApp: ${TELEFONO_VISIBLE}.`;
 
 export const metadata: Metadata = {
   title: { absolute: TITULO },
@@ -33,12 +33,12 @@ export const metadata: Metadata = {
     siteName: "Ludogteka",
     title: "Ludogteka: guardería, hotel y estética canina",
     description:
-      "Tu perro juega, descansa y sale guapo. Vigilado 24/7 con circuito cerrado en San Luis Potosí.",
+      "Tu perro juega, descansa y sale guapo. Monitoreo 24 horas en San Luis Potosí.",
   },
   twitter: {
     card: "summary_large_image",
     title: "Ludogteka: guardería, hotel y estética canina",
-    description: "Tu perro juega, descansa y sale guapo. Vigilado 24/7 en San Luis Potosí.",
+    description: "Tu perro juega, descansa y sale guapo. Monitoreo 24 horas en San Luis Potosí.",
   },
 };
 
@@ -60,14 +60,12 @@ const DATOS_ESTRUCTURADOS = {
     postalCode: DIRECCION.cp,
     addressCountry: "MX",
   },
-  openingHoursSpecification: [
-    {
-      "@type": "OpeningHoursSpecification",
-      dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-      opens: "09:00",
-      closes: "19:00",
-    },
-  ],
+  openingHoursSpecification: HORARIO.map((h) => ({
+    "@type": "OpeningHoursSpecification",
+    dayOfWeek: h.schema,
+    opens: h.abre,
+    closes: h.cierra,
+  })),
 };
 
 export default function Landing() {
