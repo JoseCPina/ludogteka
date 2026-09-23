@@ -1,3 +1,5 @@
+import { cargarPendientesEstancia } from "@/lib/perros/pendientes-estancia";
+import { PendientesEstancia } from "../pendientes-estancia";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { describirBono } from "@/lib/bonos/descripcion";
@@ -56,7 +58,7 @@ export default async function PerroPage({
     supabase
       .from("perros")
       .select(
-        "id, nombre, raza, raza_id, sexo, esterilizado, fecha_nacimiento, tamano_id, pelaje_id, alimentacion_notas, temperamento_notas, fallecido, foto_path, cliente_id, en_celo, gestante, evaluacion_comportamiento_fecha, evaluacion_comportamiento_por, evaluacion_comportamiento_notas, clientes(nombre)"
+        "id, nombre, raza, raza_id, sexo, esterilizado, fecha_nacimiento, tamano_id, pelaje_id, alimentacion_notas, temperamento_notas, contacto_emergencia_nombre, contacto_emergencia_telefono, veterinario_nombre, veterinario_telefono, veterinario_clinica, fallecido, foto_path, cliente_id, en_celo, gestante, evaluacion_comportamiento_fecha, evaluacion_comportamiento_por, evaluacion_comportamiento_notas, clientes(nombre)"
       )
       .eq("id", id)
       .is("deleted_at", null)
@@ -115,6 +117,12 @@ export default async function PerroPage({
     supabase.from("perros_con_guarderia_hotel").select("perro_id").eq("perro_id", id).maybeSingle(),
   ]);
   const aplicanRequisitos = Boolean(usaGuarderiaHotel);
+  // Qué le falta para guardería y hotel, aunque hoy solo use estética: es
+  // justo el perro que llega a pedir guardería por primera vez.
+  const pendientesEstancia = (await cargarPendientesEstancia(supabase, [id])).get(id) ?? [];
+  const tiposContratoPendientes = new Set(
+    pendientesEstancia.filter((p) => p.tipoContratoId).map((p) => p.tipoContratoId as string)
+  );
 
   const { data: seriesActivas } = await supabase
     .from("series_recurrentes")
@@ -301,7 +309,10 @@ export default async function PerroPage({
     // Aparecer en perros_contrato_estado ES la definición de "a este
     // perro se le pide": la vista ya filtró por las categorías de
     // servicio que el perro de verdad usa.
-    aplica: estadoContratoPorTipo.has(t.id),
+    // O que le falta para guardería y hotel: el perro que viene de
+    // estética todavía no "usa" guardería, pero es el contrato que va a
+    // firmar en el mostrador.
+    aplica: estadoContratoPorTipo.has(t.id) || tiposContratoPendientes.has(t.id),
     estado: (estadoContratoPorTipo.get(t.id) ?? null) as TipoContratoFila["estado"],
   }));
 
@@ -377,6 +388,18 @@ export default async function PerroPage({
         <NotaSoloEstetica />
       )}
 
+      {!perro.fallecido && (
+        <PendientesEstancia
+          perroId={id}
+          perroNombre={perro.nombre}
+          clienteId={perro.cliente_id ?? null}
+          pendientes={pendientesEstancia}
+          catalogos={{ razas, tamanos: tamanos ?? [], pelajes: pelajes ?? [] }}
+          enSuExpediente
+          puedeEscribir={!soloLectura}
+        />
+      )}
+
       {perro.fallecido && (
         <Alert variante="advertencia" titulo="Este perro falleció">
           El expediente se conserva como parte del historial del cliente.
@@ -409,12 +432,17 @@ export default async function PerroPage({
           pelaje_id: perro.pelaje_id,
           alimentacion_notas: perro.alimentacion_notas,
           temperamento_notas: perro.temperamento_notas,
+          contacto_emergencia_nombre: perro.contacto_emergencia_nombre,
+          contacto_emergencia_telefono: perro.contacto_emergencia_telefono,
+          veterinario_nombre: perro.veterinario_nombre,
+          veterinario_telefono: perro.veterinario_telefono,
+          veterinario_clinica: perro.veterinario_clinica,
         }}
         textoBoton="Guardar cambios"
         soloLectura={soloLectura}
       />
 
-      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+      <div id="requisitos-estancia" className="flex scroll-mt-6 flex-col gap-4 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Requisitos para guardería y hotel</h2>
         <RequisitosEstancia
           perroId={id}
@@ -435,7 +463,7 @@ export default async function PerroPage({
         />
       </div>
 
-      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+      <div id="sanitarios" className="flex scroll-mt-6 flex-col gap-4 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Requisitos sanitarios</h2>
 
         {propuestasPendientes && propuestasPendientes.length > 0 && (
@@ -488,7 +516,7 @@ export default async function PerroPage({
       </div>
 
       {!soloLectura && perro.cliente_id && (
-        <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+        <div id="contrato" className="flex scroll-mt-6 flex-col gap-4 border-t border-n-200 pt-6">
           <h2 className="text-lg font-bold text-n-900">Contrato</h2>
           <ContratoSeccion
             perroId={id}

@@ -23,6 +23,7 @@ function leerCampos(formData: FormData) {
   const pelaje_id = String(formData.get("pelaje_id") ?? "");
   const alimentacion_notas = String(formData.get("alimentacion_notas") ?? "").trim();
   const temperamento_notas = String(formData.get("temperamento_notas") ?? "").trim();
+  const texto = (clave: string) => String(formData.get(clave) ?? "").trim() || null;
 
   return {
     nombre,
@@ -35,7 +36,67 @@ function leerCampos(formData: FormData) {
     pelaje_id: pelaje_id || null,
     alimentacion_notas: alimentacion_notas || null,
     temperamento_notas: temperamento_notas || null,
+    contacto_emergencia_nombre: texto("contacto_emergencia_nombre"),
+    contacto_emergencia_telefono: texto("contacto_emergencia_telefono"),
+    veterinario_nombre: texto("veterinario_nombre"),
+    veterinario_telefono: texto("veterinario_telefono"),
+    veterinario_clinica: texto("veterinario_clinica"),
   };
+}
+
+// Lo que se puede llenar desde "Capturar ahora" (pendientes para guardería
+// y hotel). Es la talla más los campos que pide el alta de guardería y
+// hotel: los mismos de pendientes_para_estancia().
+const CAMPOS_COMPLETABLES = [
+  "raza",
+  "raza_id",
+  "sexo",
+  "fecha_nacimiento",
+  "tamano_id",
+  "pelaje_id",
+  "alimentacion_notas",
+  "contacto_emergencia_nombre",
+  "contacto_emergencia_telefono",
+  "veterinario_nombre",
+  "veterinario_telefono",
+  "veterinario_clinica",
+] as const;
+
+/**
+ * "Capturar ahora": recepción llena en el mostrador lo que le falta a un
+ * perro para guardería u hotel, con el dueño enfrente. Solo escribe los
+ * campos que vienen llenos en el formulario (que solo pinta los vacíos):
+ * nunca borra un dato que ya estaba.
+ */
+export async function completarParaEstancia(
+  perroId: string,
+  _estadoPrevio: EstadoPerroForm,
+  formData: FormData
+): Promise<EstadoPerroForm> {
+  const cambios: Record<string, string> = {};
+  for (const clave of CAMPOS_COMPLETABLES) {
+    const valor = String(formData.get(clave) ?? "").trim();
+    if (valor) cambios[clave] = valor;
+  }
+  if (Object.keys(cambios).length === 0) {
+    return { error: "No capturaste nada. Llena al menos un dato." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("perros")
+    .update(cambios)
+    .eq("id", perroId)
+    .select("cliente_id")
+    .single();
+
+  if (error) {
+    return { error: "No pudimos guardar los datos. Intenta de nuevo." };
+  }
+
+  revalidatePath(`/perros/${perroId}`);
+  if (data?.cliente_id) revalidatePath(`/clientes/${data.cliente_id}`);
+  return { error: null, ok: true };
 }
 
 export async function crearPerro(

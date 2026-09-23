@@ -55,7 +55,7 @@ export function LinkComplemento({
   }
 
   return (
-    <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
+    <div id="link-complemento" className="flex scroll-mt-6 flex-col gap-3 border-t border-n-200 pt-6">
       <h2 className="text-lg font-bold text-n-900">Mandarle un link para completar</h2>
       <p className="text-n-600">
         Si {clienteNombre} va a usar un servicio nuevo, este link le pide{" "}

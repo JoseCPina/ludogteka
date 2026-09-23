@@ -21,6 +21,9 @@ import { BonosCliente, type BonoCatalogo, type BonoFila } from "../bonos-cliente
 import { DistanciaSeccion } from "./distancia-seccion";
 import { LinkComplemento, type LinkPendiente } from "./link-complemento";
 import { RestablecerPassword } from "./restablecer-password";
+import { cargarPendientesEstancia } from "@/lib/perros/pendientes-estancia";
+import { PendientesEstancia, type CatalogosPerro } from "../../perros/pendientes-estancia";
+import { cargarRazas } from "@/lib/razas";
 
 export default async function EditarClientePage({
   params,
@@ -153,6 +156,24 @@ export default async function EditarClientePage({
     }
   }
 
+  // Qué le falta a cada perro para guardería y hotel, con el botón de
+  // capturarlo en el mostrador. Los catálogos solo se cargan si hay algo
+  // que capturar.
+  const perrosVivos = (perros ?? []).filter((p) => !p.fallecido);
+  const pendientesPorPerro = await cargarPendientesEstancia(
+    supabase,
+    perrosVivos.map((p) => p.id as string)
+  );
+  let catalogos: CatalogosPerro = { razas: [], tamanos: [], pelajes: [] };
+  if ([...pendientesPorPerro.values()].some((l) => l.some((p) => p.clave === "talla" || p.clave.startsWith("campo:")))) {
+    const [razas, { data: tamanos }, { data: pelajes }] = await Promise.all([
+      cargarRazas(supabase, { conGrupo: true }),
+      supabase.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
+      supabase.from("tipos_pelaje").select("id, etiqueta").is("deleted_at", null).order("orden"),
+    ]);
+    catalogos = { razas, tamanos: tamanos ?? [], pelajes: pelajes ?? [] };
+  }
+
   const actualizarConId = actualizarCliente.bind(null, id);
   const bajaConId = darDeBajaCliente.bind(null, id);
 
@@ -264,6 +285,28 @@ export default async function EditarClientePage({
           </ul>
         )}
       </div>
+
+      {perrosVivos.length > 0 && (
+        <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
+          <h2 className="text-lg font-bold text-n-900">Para guardería y hotel</h2>
+          <p className="text-sm text-n-600">
+            Lo que le falta a cada perro para poder reservarle. Si el dueño está enfrente, captúralo
+            aquí; si no, mándale el link de abajo.
+          </p>
+          {perrosVivos.map((p) => (
+            <PendientesEstancia
+              key={p.id}
+              perroId={p.id as string}
+              perroNombre={p.nombre as string}
+              clienteId={id}
+              pendientes={pendientesPorPerro.get(p.id as string) ?? []}
+              catalogos={catalogos}
+              enSuExpediente={false}
+              puedeEscribir
+            />
+          ))}
+        </div>
+      )}
 
       <RestablecerPassword
         clienteId={id}

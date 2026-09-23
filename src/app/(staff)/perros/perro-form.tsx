@@ -39,6 +39,11 @@ export function PerroForm({
     pelaje_id: string | null;
     alimentacion_notas: string | null;
     temperamento_notas: string | null;
+    contacto_emergencia_nombre?: string | null;
+    contacto_emergencia_telefono?: string | null;
+    veterinario_nombre?: string | null;
+    veterinario_telefono?: string | null;
+    veterinario_clinica?: string | null;
   };
   textoBoton: string;
   soloLectura?: boolean;
@@ -156,6 +161,43 @@ export function PerroForm({
         disabled={deshabilitado}
         defaultValue={valoresIniciales?.temperamento_notas ?? ""}
         ayuda="Descripción general. Las alertas de manejo (muerde, se escapa, etc.) van aparte."
+      />
+
+      {/* Los pide el alta de guardería y hotel. Antes solo entraban por el
+          link del dueño: recepción no tenía dónde capturarlos. */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field
+          label="Contacto de emergencia"
+          name="contacto_emergencia_nombre"
+          disabled={deshabilitado}
+          defaultValue={valoresIniciales?.contacto_emergencia_nombre ?? ""}
+        />
+        <Field
+          label="Teléfono de emergencia"
+          name="contacto_emergencia_telefono"
+          inputMode="tel"
+          disabled={deshabilitado}
+          defaultValue={valoresIniciales?.contacto_emergencia_telefono ?? ""}
+        />
+        <Field
+          label="Veterinario"
+          name="veterinario_nombre"
+          disabled={deshabilitado}
+          defaultValue={valoresIniciales?.veterinario_nombre ?? ""}
+        />
+        <Field
+          label="Teléfono del veterinario"
+          name="veterinario_telefono"
+          inputMode="tel"
+          disabled={deshabilitado}
+          defaultValue={valoresIniciales?.veterinario_telefono ?? ""}
+        />
+      </div>
+      <Field
+        label="Clínica del veterinario"
+        name="veterinario_clinica"
+        disabled={deshabilitado}
+        defaultValue={valoresIniciales?.veterinario_clinica ?? ""}
       />
 
       {!soloLectura && (
