@@ -39,12 +39,24 @@ export function conTope<T>(promesa: Promise<T>, ms: number = TOPE_MS): Promise<T
   });
 }
 
+// El genérico solo cuando de verdad no hay más información. Si la
+// excepción trae un mensaje propio, se muestra; y si es el error opaco
+// con el que Next tapa las excepciones del servidor en producción, se
+// muestra la referencia (digest), que es lo que se busca en los logs de
+// Vercel para encontrar el error real. Un mensaje que no dice nada deja
+// al usuario igual que el spinner eterno.
 export function mensajeDeFallo(e: unknown): string {
   if (e instanceof TiempoAgotado) return MENSAJE_TIEMPO_AGOTADO;
   if (e instanceof Error && (e.name === "TimeoutError" || e.name === "AbortError")) {
     return MENSAJE_TIEMPO_AGOTADO;
   }
-  return MENSAJE_FALLO_INESPERADO;
+  const digest = typeof e === "object" && e !== null && "digest" in e ? String((e as { digest?: unknown }).digest ?? "") : "";
+  const mensaje = e instanceof Error ? e.message.trim() : typeof e === "string" ? e.trim() : "";
+  const esOpacoDeNext =
+    !mensaje ||
+    /Server Components render|Server Action|omitted in production|digest property/i.test(mensaje);
+  if (!esOpacoDeNext) return mensaje;
+  return digest ? `${MENSAJE_FALLO_INESPERADO} Referencia del error: ${digest}.` : MENSAJE_FALLO_INESPERADO;
 }
 
 // Toda server action de esta app devuelve `{ error: string | null, ... }`.

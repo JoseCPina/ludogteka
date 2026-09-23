@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
-import type { MetodoPago, LineaMetodo } from "./cobro-actions";
+import type { LineaMetodo } from "./cobro-actions";
 
 export type EstadoComprarBono = { error: string | null; bonoId?: string; reservaId?: string };
 
@@ -81,4 +81,11 @@ export async function aplicarBonoAEstancia(estanciaId: string): Promise<Resultad
   return { error: null, ...(data as Omit<ResultadoAplicarBonoEstancia, "error">) };
 }
 
-export type { MetodoPago };
+// NUNCA re-exportar tipos desde un archivo "use server" (`export type {
+// X }`): el build de producción de Next lo deja como un export en tiempo
+// de ejecución de un nombre que TypeScript ya borró, y el módulo entero
+// truena al cargarse ("ReferenceError: MetodoPago is not defined") —
+// con él, TODA server action invocada desde la página que lo importe.
+// Así estuvo rota la ficha del cliente en producción (link de
+// complemento, restablecer contraseña) mientras en desarrollo funcionaba.
+// Los tipos se importan de donde se definen (cobro-actions).

@@ -1541,6 +1541,56 @@ conserva; acción de formulario → tope); y barrido final por script: cero
 `setX(true)` seguidos de un `await` sin envolver en los componentes de
 cliente.
 
+## El error real detrás del link de complemento (23 de septiembre de 2026)
+
+Con la espera con tope ya puesta, "Mandarle un link para completar" en
+la ficha de Aaron Aguilar Canedo dejó de colgarse y pasó a decir el
+mensaje genérico. El genérico solo sale cuando la acción LANZA (no cuando
+devuelve `{ error }`), así que había una excepción real tapada.
+
+**Lo que decían los logs de Vercel** (`npx vercel logs <deployment>`):
+
+    error λ POST /clientes/137f7109-…
+    ReferenceError: MetodoPago is not defined
+        at module evaluation (.next/server/chunks/ssr/_0pt2jla._.js)
+
+La server action no llegaba ni a ejecutarse: el MÓDULO de acciones
+tronaba al cargarse. `bono-actions.ts` (archivo `"use server"`) tenía al
+final `export type { MetodoPago };` — un re-export de un tipo importado.
+En desarrollo TypeScript lo borra; en el build de producción de Next
+queda como un export en tiempo de ejecución de un nombre inexistente, y
+cae la evaluación del chunk entero. La ficha del cliente importa
+`BonosCliente` → `bono-actions`, así que TODA acción disparada desde esa
+página (link de complemento, restablecer contraseña, marcar revisado,
+distancia…) fallaba en producción, mientras en desarrollo todo
+funcionaba. El re-export existía desde Fase 5 (29 de julio): también
+`/reservas/[id]/cobrar`, `/guarderia/pases` y el check-in cargan ese
+módulo. Era el mismo defecto que antes se veía como spinner eterno: la
+acción rechazaba y nadie apagaba la carga.
+
+**No era el caso del cliente sin cuenta**: Aaron existe, no tiene cuenta
+y no tenía links vivos; la RPC `crear_invitacion_cliente` está en
+producción con su firma de cinco parámetros. Nada de la base bloqueaba.
+
+**Arreglo**: se quitó el re-export (nadie lo importaba) y queda la
+regla en `CLAUDE.md`: un archivo `"use server"` solo exporta funciones
+async. Barrido: era el único re-export en los archivos de acciones.
+
+**Y el genérico ya no tapa nada**: `mensajeDeFallo` muestra el mensaje
+propio de la excepción cuando lo hay, y cuando es el error opaco con el
+que Next esconde las excepciones del servidor en producción, agrega
+"Referencia del error: <digest>" — que es exactamente lo que se busca en
+los logs de Vercel. El error propio de la acción (`{ error }`) siempre
+se mostró tal cual; el genérico solo sale sin más información.
+
+**Verificado con el build de producción local** (`next build` + `next
+start`, contra la base de desarrollo, sesión de admin por el callback,
+Chrome): en la ficha de un cliente sin cuenta y sin link vivo, "Generar
+link" → "Link listo para mandar" con su URL; segundo clic → "Ya hay un
+link de este tipo esperando a ese cliente…", el mensaje propio de la
+RPC, tal cual. Es el mismo camino que falla en producción (Turbopack
+build), no el de desarrollo.
+
 ## Estado actual
 
 Fase 0, Fase 1, Fase 2, Fase 3 y Fase 4 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 5 (POS) construida en sus cuatro bloques (cobros/devoluciones, bonos, descuentos, caja/arqueo) más la decisión de Bloque E, pendiente de que el negocio termine de probarla para cerrarla formalmente. Fase 6 (contratos) completa en sus tres bloques (plantillas y versionado, generación/firma/papel, visibilidad operativa y vigencia). Fase 7 (inventario) completa en sus tres bloques (catálogo y existencias; movimientos: entradas, salidas, mermas, ajustes; consumo automático por receta al finalizar un servicio de estética, con el enlace a la cita ya listo para que Fase 8 calcule el costo real por servicio). Fase 8 (reportes) completa en sus tres bloques (financiero por periodo con ingreso reconocido vs. neto de caja; costos y margen de estética; operativo con ocupación/servicios del periodo y una fotografía del estado actual de cumplimiento sanitario, contratos e inventario). Fase 9 (bitácora diaria y medicamentos) completa en sus dos bloques: Bloque A (fotos, notas e incidencias, con aviso por WhatsApp vía enlace `wa.me`) y Bloque B (régimen y registro de dosis administradas, referenciando `perro_medicamentos.id` tal como quedó planteado desde Fase 2). Con esto quedan completas las diez fases (0 a 9) del roadmap original. Fase 10 (recolección a domicilio, cotizador por distancia con Google Maps) completa — reutiliza tarifas/`resolver_precio`/`cargos_aplicados` de Fase 3/4 sin mecanismo de cobro nuevo; pendiente de que el negocio capture direcciones reales (base y Ludogteka), tarifas por km, y la llave de Google Maps antes de salir de modo simulación. Fase 11 (varias plantillas de contrato a la vez, cada una con nombre, versionado y aplicabilidad por servicio propios) completa — el estado de contrato dejó de ser un sí/no por perro y pasó a ser por tipo, y los avisos dicen cuál falta. Fase 12 (Guardería y Hotel como módulos separados en la navegación, Agenda renombrada a Estética) completa, sin migraciones: `estancias` sigue unificada y la ocupación que muestran los dos módulos es la de toda la casa. Fase 13 (alta de clientes por link: recepción manda una invitación por WhatsApp y el dueño captura sus datos y los de sus perros; el expediente nace ligado a su cuenta sin pasar por vinculación) completa. Fase 14 (precios de estética por grupo de raza: catálogo de razas buscable, el grupo se deriva y el cliente nunca lo ve, y `tarifas` gana la dimensión de grupo sin sistema de precios paralelo) completa. Fase 15 (dos flujos de alta por link —guardería/hotel y estética—, cada uno con su contrato firmado dentro del alta, y un link de complemento que solo pide lo que falta) completa. Fase 16 (el cliente entra con su teléfono y contraseña, no con correo: correo y cuenta pasan a opcionales, un teléfono ya registrado no se puede volver a dar de alta y uno que existe como cliente sin cuenta se vincula en vez de duplicarse; la recuperación de contraseña es por WhatsApp a recepción, con el número configurable desde el panel) completa. Las cuentas que ya existían con correo siguen entrando igual, sin migración. Corrección de estética contra el cartel (10 de septiembre): tres precios corregidos, tres servicios de baño con lo que incluye cada uno, pelo maltratado como precio alternativo del baño completo (`tarifas.precio_pelo_maltratado`, marcado en la cita), talla gigante retirada, y **en estética no hay contratos** (candado en `tipos_contrato`; el pendiente de publicar uno de estética ya no aplica). Retiro de los siete servicios de estética de Fase 3 que quedaron sin tarifa (21 de septiembre): vista `servicios_cotizables`, de la que lee `/estetica/nueva`, y comprobación sobre todo servicio de estética vivo — aplicada a producción el mismo día con `npm run desplegar`. Fase 17 (precios y requisitos de guardería y hotel, del cartel: hotel $270/$300 por talla; guardería ocasional por hora a $35 con `estancias.horas` y ajuste a horas reales al check-out; day pass de 10/15/20 y mensualidad como bono ilimitado por días hábiles; recogida tardía, día extra y medicamento retirados, con "convertir en noche de hotel" en el check-out; evaluación previa de comportamiento con excepción de admin, celo/gestante y alertas bloqueantes sin excepción; vigencias bordetella 6 y desparasitación 3 solo para aplicaciones nuevas; los requisitos se muestran en el alta; las pantallas de reserva muestran deshabilitado lo que no tiene precio) completa. Ajustes del 22 de septiembre: `guarderia_dia` a $350 (la matriz de guardería/hotel quedó sin ninguna celda vacía; pases y mensualidad ya se consumen), comida especial como cargo de **monto libre** (`servicios.monto_libre`, importe y descripción capturados al aplicarlo, inmutable, cancelable con motivo, nunca borrable, fuera de la validación de celdas), e **invitar staff arreglado** con la puerta con nombre `asignar_rol_staff` (solo `service_role`, solo recepción/estética, solo cuentas recién creadas) — probado de punta a punta con una recepcionista de prueba, borrada al terminar.
