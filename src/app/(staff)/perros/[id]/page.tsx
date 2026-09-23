@@ -20,6 +20,7 @@ import { ContratoSeccion, type ContratoFila, type TipoContratoFila } from "../co
 import { BitacoraSeccion, type EntradaBitacora } from "../bitacora-seccion";
 import { MedicamentosSeccion, type MedicamentoFila } from "../medicamentos-seccion";
 import { RequisitosEstancia } from "../requisitos-estancia";
+import { NotaSoloEstetica } from "../nota-solo-estetica";
 import { hoyNegocio, formatearFechaCalendario } from "@/lib/formato";
 
 export default async function PerroPage({
@@ -49,6 +50,7 @@ export default async function PerroPage({
     { data: alertasCrudo },
     { data: alergias },
     { data: propuestasPendientes },
+    { data: usaGuarderiaHotel },
   ] = await Promise.all([
     supabase
       .from("perros")
@@ -109,7 +111,9 @@ export default async function PerroPage({
       .eq("estado", "pendiente")
       .is("deleted_at", null)
       .order("created_at"),
+    supabase.from("perros_con_guarderia_hotel").select("perro_id").eq("perro_id", id).maybeSingle(),
   ]);
+  const aplicanRequisitos = Boolean(usaGuarderiaHotel);
 
   const { data: seriesActivas } = await supabase
     .from("series_recurrentes")
@@ -332,7 +336,11 @@ export default async function PerroPage({
         </div>
       )}
 
-      <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
+      {aplicanRequisitos ? (
+        <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
+      ) : (
+        <NotaSoloEstetica />
+      )}
 
       {perro.fallecido && (
         <Alert variante="advertencia" titulo="Este perro falleció">
@@ -377,6 +385,7 @@ export default async function PerroPage({
           perroId={id}
           clienteId={perro.cliente_id ?? null}
           hoy={hoyNegocio()}
+          aplica={aplicanRequisitos}
           datos={{
             sexo: perro.sexo,
             en_celo: Boolean(perro.en_celo),

@@ -37,6 +37,7 @@ export function RecordatorioSanitario({
   puedeProponer,
   propuestas = [],
   tipos = [],
+  aplica = true,
 }: {
   items: EstadoRequisitoItem[];
   perroId: string;
@@ -44,8 +45,24 @@ export function RecordatorioSanitario({
   puedeProponer: boolean;
   propuestas?: PropuestaCliente[];
   tipos?: TipoRequisitoCliente[];
+  // false = el perro solo viene a estética: los requisitos son de
+  // guardería y hotel, así que no se le reclaman; solo se le avisa y se
+  // le deja adelantarlos si quiere.
+  aplica?: boolean;
 }) {
   const pendientes = items.filter((i) => i.estado !== "vigente");
+
+  if (!aplica) {
+    return (
+      <NotaEstetica
+        pendientes={pendientes}
+        perroId={perroId}
+        puedeProponer={puedeProponer}
+        propuestas={propuestas}
+        tipos={tipos}
+      />
+    );
+  }
 
   if (pendientes.length === 0) {
     return <p className="text-sm text-verde-oscuro">Vacunas y desparasitación al día.</p>;
@@ -95,6 +112,76 @@ export function RecordatorioSanitario({
           );
         })}
       </ul>
+    </div>
+  );
+}
+
+// La versión para un perro que solo viene a estética: nada en rojo, nada
+// que "falte". Una nota discreta y, si quiere, adelantar las vacunas
+// desde aquí mismo con el mismo mecanismo de comprobantes.
+function NotaEstetica({
+  pendientes,
+  perroId,
+  puedeProponer,
+  propuestas,
+  tipos,
+}: {
+  pendientes: EstadoRequisitoItem[];
+  perroId: string;
+  puedeProponer: boolean;
+  propuestas: PropuestaCliente[];
+  tipos: TipoRequisitoCliente[];
+}) {
+  const ultimaPorTipo = new Map<string, PropuestaCliente>();
+  for (const p of [...propuestas].sort((a, b) => b.created_at.localeCompare(a.created_at))) {
+    if (!ultimaPorTipo.has(p.tipo_requisito_id)) ultimaPorTipo.set(p.tipo_requisito_id, p);
+  }
+  const categoriaDe = (tipoId: string) => tipos.find((t) => t.id === tipoId)?.categoria ?? "vacuna";
+  const enRevision = pendientes.filter((i) => ultimaPorTipo.get(i.tipo_requisito_id)?.estado === "pendiente");
+
+  return (
+    <div className="rounded-md border border-n-200 bg-n-50 p-3 text-sm text-n-600">
+      <p>
+        Por ahora viene solo a estética, así que no le pedimos vacunas ni desparasitación: puedes dejar esto en
+        blanco. Si algún día quieres traerlo a guardería u hotel, ese día sí se las vamos a pedir
+        {pendientes.length > 0 ? " (" + pendientes.map((i) => i.etiqueta.toLowerCase()).join(", ") + ")" : ""}.
+      </p>
+      {enRevision.length > 0 && (
+        <p className="mt-2 font-semibold text-n-700">
+          Ya nos mandaste {enRevision.length === 1 ? "el comprobante de " : "comprobantes de "}
+          {enRevision.map((i) => i.etiqueta.toLowerCase()).join(", ")}; recepción lo está revisando.
+        </p>
+      )}
+      {puedeProponer && pendientes.length > 0 && (
+        <details className="mt-2">
+          <summary className="cursor-pointer font-semibold text-azul hover:underline">
+            Adelantarlo ahora: subir sus comprobantes
+          </summary>
+          <ul className="mt-2 flex flex-col gap-3 pl-1">
+            {pendientes.map((item) => {
+              const propuesta = ultimaPorTipo.get(item.tipo_requisito_id);
+              if (propuesta?.estado === "pendiente") return null;
+              return (
+                <li key={item.tipo_requisito_id}>
+                  <span className="font-semibold text-n-800">{item.etiqueta}</span>
+                  {propuesta?.estado === "rechazado" && (
+                    <span className="block text-amarillo-oscuro">
+                      Recepción no pudo confirmar el que mandaste: {propuesta.motivo_rechazo}.
+                    </span>
+                  )}
+                  <ProponerComprobante
+                    perroId={perroId}
+                    tipoRequisitoId={item.tipo_requisito_id}
+                    etiqueta={item.etiqueta}
+                    categoria={categoriaDe(item.tipo_requisito_id)}
+                    textoBoton={propuesta?.estado === "rechazado" ? "Mandar otro comprobante" : "Subir comprobante"}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        </details>
+      )}
     </div>
   );
 }

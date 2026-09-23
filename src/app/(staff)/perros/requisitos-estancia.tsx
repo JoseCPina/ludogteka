@@ -45,6 +45,7 @@ export function RequisitosEstancia({
   datos,
   soloLectura,
   esAdmin,
+  aplica = true,
 }: {
   perroId: string;
   clienteId: string | null;
@@ -52,6 +53,9 @@ export function RequisitosEstancia({
   datos: RequisitosEstanciaPerro;
   soloLectura: boolean;
   esAdmin: boolean;
+  // false = viene solo a estética: lo que falte no bloquea nada hoy, así
+  // que se dice en neutro, no en rojo. Se puede capturar igual.
+  aplica?: boolean;
 }) {
   const marcarConIds = marcarEvaluacionComportamiento.bind(null, perroId, clienteId);
   const [estadoEval, accionEval, enviandoEval] = useActionState(useAccionConTope(marcarConIds), ESTADO_INICIAL);
@@ -88,7 +92,14 @@ export function RequisitosEstancia({
 
   return (
     <div className="flex flex-col gap-4">
-      {bloqueos.length === 0 ? (
+      {!aplica ? (
+        <p className="rounded-md border border-n-200 bg-n-50 px-3 py-2 text-sm text-n-600">
+          Viene solo a estética: estos requisitos no le aplican hoy.
+          {bloqueos.length > 0
+            ? " Si algún día reserva guardería u hotel, ese día se le van a pedir (" + bloqueos.join("; ") + ")."
+            : " Si algún día reserva guardería u hotel, ya los tendría cubiertos."}
+        </p>
+      ) : bloqueos.length === 0 ? (
         <p className="rounded-md border-[1.5px] border-verde bg-verde-suave px-3 py-2 text-sm font-semibold text-verde-oscuro">
           Nada bloquea una reserva de guardería u hotel por estos requisitos.
         </p>

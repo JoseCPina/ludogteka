@@ -10,6 +10,7 @@ import { AltaClienteBanner } from "../alta-cliente-banner";
 import { actualizarCliente, darDeBajaCliente } from "../actions";
 import { PerroFoto } from "../../perros/perro-foto";
 import { ResumenSanitario, type EstadoRequisitoItem } from "../../perros/resumen-sanitario";
+import { NotaSoloEstetica } from "../../perros/nota-solo-estetica";
 import { AlertaCriticaBanner } from "../../perros/alerta-critica-banner";
 import {
   ContratoEstadoBanner,
@@ -74,6 +75,17 @@ export default async function EditarClientePage({
         if (data?.signedUrl) urlsFotos.set(p.id, data.signedUrl);
       })
   );
+
+  // Qué perros usan guardería u hotel: a los de solo estética no se les
+  // pintan los requisitos en rojo (no les aplican).
+  const usanGuarderiaHotel = new Set<string>();
+  if (perros && perros.length > 0) {
+    const { data: conGh } = await supabase
+      .from("perros_con_guarderia_hotel")
+      .select("perro_id")
+      .in("perro_id", perros.map((p) => p.id));
+    for (const fila of conGh ?? []) usanGuarderiaHotel.add(fila.perro_id as string);
+  }
 
   const estadoSanitarioPorPerro = new Map<string, EstadoRequisitoItem[]>();
   if (perros && perros.length > 0) {
@@ -233,10 +245,14 @@ export default async function EditarClientePage({
                       alergiasGraves={alergiasGravesPorPerro.get(perro.id) ?? []}
                       tamano="compacto"
                     />
-                    <ResumenSanitario
-                      items={estadoSanitarioPorPerro.get(perro.id) ?? []}
-                      tamano="compacto"
-                    />
+                    {usanGuarderiaHotel.has(perro.id) ? (
+                      <ResumenSanitario
+                        items={estadoSanitarioPorPerro.get(perro.id) ?? []}
+                        tamano="compacto"
+                      />
+                    ) : (
+                      <NotaSoloEstetica tamano="compacto" />
+                    )}
                     <ContratoEstadoBanner
                       resumen={contratoPorPerro.get(perro.id) ?? resumenVacio()}
                       tamano="compacto"

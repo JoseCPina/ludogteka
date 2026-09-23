@@ -31,7 +31,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
 
   const supabase = await createSupabaseServerClient();
 
-  const [{ data: perro }, { data: estadoSanitario }, { data: alergias }, { data: propuestas }, { data: tiposRequisito }] =
+  const [{ data: perro }, { data: estadoSanitario }, { data: alergias }, { data: propuestas }, { data: tiposRequisito }, { data: usaGuarderiaHotel }] =
     await Promise.all([
     supabase
       .from("perros")
@@ -66,6 +66,9 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
     supabase.from("tipos_requisito_sanitario").select("id, categoria").is("deleted_at", null),
+    // ¿Usa guardería u hotel? Si solo viene a estética, los requisitos
+    // sanitarios no se le reclaman (son de guardería y hotel).
+    supabase.from("perros_con_guarderia_hotel").select("perro_id").eq("perro_id", id).maybeSingle(),
   ]);
 
   if (!perro) notFound();
@@ -245,13 +248,16 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
 
       <div className="flex flex-col gap-3">
         <h2 className="text-lg font-bold text-n-900">Estado de salud</h2>
-        <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
+        {Boolean(usaGuarderiaHotel) && (
+          <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
+        )}
         <RecordatorioSanitario
           items={(estadoSanitario as EstadoRequisitoItem[]) ?? []}
           perroId={id}
           puedeProponer={esPropio && !perro.fallecido}
           propuestas={(propuestas as PropuestaCliente[]) ?? []}
           tipos={(tiposRequisito as TipoRequisitoCliente[]) ?? []}
+          aplica={Boolean(usaGuarderiaHotel)}
         />
       </div>
 
