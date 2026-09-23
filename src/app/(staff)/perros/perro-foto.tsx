@@ -31,18 +31,35 @@ function IconoPerro({ className = "" }: { className?: string }) {
   );
 }
 
+// Quién sube la foto decide el camino. Recepción (default) la sube desde
+// el navegador con su propia sesión: tiene política de escritura en el
+// bucket. El dueño, desde el portal, no la tiene: la manda a una server
+// action (`subirConAccion`) que comprueba que es el dueño principal y la
+// sube con la secret key. La compresión y la corrección EXIF son las
+// mismas en los dos casos.
+export type SubirFotoConAccion = (
+  perroId: string,
+  formData: FormData
+) => Promise<{ error: string | null; url?: string | null }>;
+
 export function PerroFoto({
   perroId,
   urlInicial,
   tieneFotoInicial,
   soloLectura = false,
   tamano = "grande",
+  subirConAccion,
+  // `capture` abre solo la cámara: sirve en mostrador con el perro
+  // enfrente; el dueño en su casa escoge de la galería (false).
+  capture = true,
 }: {
   perroId: string;
   urlInicial: string | null;
   tieneFotoInicial: boolean;
   soloLectura?: boolean;
   tamano?: "grande" | "miniatura";
+  subirConAccion?: SubirFotoConAccion;
+  capture?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState(urlInicial);
@@ -73,6 +90,15 @@ export function PerroFoto({
     setError(null);
     const r = await subiendo.correr(async () => {
       const blob = await comprimirImagen(archivo);
+
+      if (subirConAccion) {
+        const datos = new FormData();
+        datos.append("foto", new File([blob], "foto.jpg", { type: "image/jpeg" }));
+        const res = await subirConAccion(perroId, datos);
+        if (res.error) return { error: res.error, nuevaUrl: null };
+        return { error: null, nuevaUrl: res.url ?? null };
+      }
+
       const path = await prepararRutaFotoPerro(perroId);
       if (!path) return { error: "No encontramos el perro. Recarga la página.", nuevaUrl: null };
 
@@ -130,7 +156,7 @@ export function PerroFoto({
             ref={inputRef}
             type="file"
             accept="image/*"
-            capture="environment"
+            capture={capture ? "environment" : undefined}
             className="hidden"
             onChange={manejarArchivo}
           />

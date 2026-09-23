@@ -7,6 +7,7 @@ import { formatearFechaCalendario } from "@/lib/formato";
 import { PerroFoto } from "@/app/(staff)/perros/perro-foto";
 import { ResumenSanitario, type EstadoRequisitoItem } from "@/app/(staff)/perros/resumen-sanitario";
 import { MiPerroForm } from "../../mi-perro-form";
+import { subirFotoMiPerro } from "../../foto-mi-perro-actions";
 import {
   RecordatorioSanitario,
   type PropuestaCliente,
@@ -190,11 +191,16 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
         )}
       </div>
 
+      {/* El dueño principal sube o reemplaza la foto directo (es
+          identificación, no un documento que revise recepción); un acceso
+          compartido solo la ve, y la de un perro fallecido se queda. */}
       <PerroFoto
         perroId={id}
         urlInicial={urlFoto}
         tieneFotoInicial={Boolean(perro.foto_path)}
-        soloLectura
+        soloLectura={!esPropio || Boolean(perro.fallecido)}
+        subirConAccion={subirFotoMiPerro}
+        capture={false}
         tamano="grande"
       />
 
