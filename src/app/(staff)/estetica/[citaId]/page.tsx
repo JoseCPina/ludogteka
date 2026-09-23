@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { AlertaCriticaBanner } from "@/app/(staff)/perros/alerta-critica-banner";
 import { ResumenSanitario, type EstadoRequisitoItem } from "@/app/(staff)/perros/resumen-sanitario";
+import { NotaSoloEstetica } from "@/app/(staff)/perros/nota-solo-estetica";
 import { formatearFechaCalendario, horaLocalDeInstante } from "@/lib/formato";
 import { CitaDetalle, type RecetaItem } from "./cita-detalle";
 
@@ -31,7 +32,7 @@ export default async function CitaDetallePage({
 
   if (!perro) notFound();
 
-  const [{ data: estadoSanitario }, { data: alertasCrudo }, { data: alergias }, { data: empleado }] =
+  const [{ data: estadoSanitario }, { data: alertasCrudo }, { data: alergias }, { data: empleado }, { data: usaGh }] =
     await Promise.all([
       supabase
         .from("perro_requisitos_sanitarios_estado")
@@ -48,7 +49,12 @@ export default async function CitaDetallePage({
           .filter((e) => e.id === cita.empleado_id)
           .map((e) => ({ nombre_completo: e.nombre }))[0] ?? null,
       })),
+      supabase.from("perros_con_guarderia_hotel").select("perro_id").eq("perro_id", cita.perro_id).maybeSingle(),
     ]);
+  const aplicanRequisitos = Boolean(usaGh);
+  const traePendientes = ((estadoSanitario ?? []) as EstadoRequisitoItem[]).some((i) =>
+    ["vencida", "sin_registro"].includes(i.estado)
+  );
 
   let recetaItems: RecetaItem[] = [];
   if (cita.tamano_id) {
@@ -103,7 +109,19 @@ export default async function CitaDetallePage({
       </div>
 
       <AlertaCriticaBanner alertas={alertasActivas} alergiasGraves={alergiasGraves} tamano="grande" />
-      <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
+      {aplicanRequisitos ? (
+        <>
+          <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
+          {traePendientes && (
+            <p className="rounded-md border-[1.5px] border-amarillo bg-amarillo-suave px-3 py-2 text-sm text-amarillo-oscuro">
+              Trae requisitos vencidos o sin registro. No detienen esta cita (las vacunas se exigen en guardería y
+              hotel), pero sí sus estancias: conviene ponerlo al día.
+            </p>
+          )}
+        </>
+      ) : (
+        <NotaSoloEstetica />
+      )}
 
       {cita.estancia_id && (
         <p className="rounded-md border border-n-200 bg-n-50 px-3 py-2 text-sm text-n-700">

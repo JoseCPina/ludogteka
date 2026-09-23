@@ -41,12 +41,17 @@ export function AgendarForm({
   estanciasEnCurso,
   rolActual,
   userIdActual,
+  perrosConAvisoSanitario,
 }: {
   clientes: ClienteBuscable[];
   perros: Perro[];
   servicios: Servicio[];
   empleados: Empleado[];
   estanciasEnCurso: EstanciaEnCurso[];
+  // Perros que usan guardería u hotel y traen requisitos sanitarios
+  // vencidos o sin registro: la cita de estética se agenda igual (a ellos
+  // se les exige en la estancia, no aquí), pero se avisa.
+  perrosConAvisoSanitario: string[];
   rolActual: string;
   userIdActual: string;
 }) {
@@ -120,6 +125,13 @@ export function AgendarForm({
               </option>
             ))}
           </Select>
+
+          {perroId && perrosConAvisoSanitario.includes(perroId) && (
+            <Alert variante="advertencia" titulo="Trae requisitos sanitarios vencidos o sin registro">
+              La cita de estética se agenda igual: las vacunas se exigen en guardería y hotel, no en el baño. Pero este
+              perro sí usa guardería u hotel, y ahí sí lo van a detener: conviene ponerlo al día.
+            </Alert>
+          )}
 
           {estanciasDelPerro.length > 0 && (
             <Select

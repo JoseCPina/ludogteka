@@ -14,6 +14,8 @@ export default async function AgendarPage() {
     { data: servicios, error: errorServicios },
     { data: empleados, error: errorEmpleados },
     { data: estanciasEnCurso, error: errorEstancias },
+    { data: conGuarderiaHotel },
+    { data: conRequisitoPendiente },
   ] = await Promise.all([
     supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).order("nombre"),
     supabase
@@ -39,7 +41,19 @@ export default async function AgendarPage() {
       .select("id, perro_id, servicios(nombre)")
       .eq("estado", "en_curso")
       .is("deleted_at", null),
+    // Aviso (no bloqueo) para el caso mixto: el perro sí usa guardería u
+    // hotel y trae requisitos vencidos. La cita se agenda igual; el
+    // bloqueo real está en la estancia.
+    supabase.from("perros_con_guarderia_hotel").select("perro_id"),
+    supabase
+      .from("perro_requisitos_sanitarios_estado")
+      .select("perro_id")
+      .in("estado", ["vencida", "sin_registro"]),
   ]);
+  const usanGh = new Set((conGuarderiaHotel ?? []).map((r) => r.perro_id as string));
+  const perrosConAvisoSanitario = Array.from(
+    new Set((conRequisitoPendiente ?? []).map((r) => r.perro_id as string).filter((id) => usanGh.has(id)))
+  );
 
   const error = errorClientes ?? errorPerros ?? errorServicios ?? errorEmpleados ?? errorEstancias;
 
@@ -82,6 +96,7 @@ export default async function AgendarPage() {
             nombre_completo: e.rol === "admin" ? `${e.nombre} (admin)` : e.nombre,
           }))}
           estanciasEnCurso={estanciasLista}
+          perrosConAvisoSanitario={perrosConAvisoSanitario}
           rolActual={sesion?.rol ?? "cliente"}
           userIdActual={sesion?.user.id ?? ""}
         />
