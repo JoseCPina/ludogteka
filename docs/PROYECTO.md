@@ -1609,9 +1609,74 @@ ya tenían un `navigator.clipboard` a mano lo pierden: un solo lugar lo
 hace. Regla en `CLAUDE.md`. Probado en el navegador: generar el link de
 complemento → campo copiable → "Copiar link" → "Copiado".
 
+## El link de alta vive hasta que el cliente termine todo (23 de septiembre de 2026)
+
+Cómo estaba: `completar_alta_cliente` y `completar_expediente_cliente`
+marcaban `usada_at` en cuanto se guardaban los datos, ANTES de la firma.
+Si el dueño cerraba el celular con el contrato enfrente y volvía a abrir
+su link, se encontraba "Este link ya se usó" y tenía que pedir otro; y
+recepción no podía generarle otro de complemento sin cancelar el que "ya
+se usó". Si de verdad ya había terminado, el mismo mensaje seco (y
+diciendo "entra con tu correo", cuando el login es por teléfono).
+
+Cómo queda (migración `20260923020000_link_alta_vive_hasta_completarse`):
+
+- Dos marcas en `invitaciones_cliente`. `alta_completada_at`: el dueño ya
+  guardó lo que el link le pedía (expediente creado o huecos rellenados,
+  contratos generados) — el link está **en curso**. `usada_at`: ya no
+  queda NADA (datos y, si el flujo lleva contrato, todos los contratos de
+  todos sus perros firmados) — solo entonces deja de servir. Restricciones:
+  usada implica completada; completada implica `cliente_id`. Las filas
+  viejas se rellenaron con `alta_completada_at = usada_at`.
+- `es_complemento` es columna real (la ponía la vista deduciéndola de
+  `cliente_id` + `usada_at`, y con un alta nueva en curso eso ya mentía);
+  `crear_invitacion_cliente` la marca al nacer y las filas viejas se
+  dedujeron del orden de creación (expediente más viejo que el link).
+- Las dos funciones de completar ya no rechazan un link en curso; ponen
+  `alta_completada_at` y `usada_at` solo si no queda nada que firmar.
+  `completar_expediente_cliente` devuelve TODOS los contratos del flujo
+  pendientes de firma (los de esta vez y los que quedaron de la anterior,
+  vía `contratos_pendientes_de_alta(cliente, tipo)`), no solo los recién
+  creados: así al reabrir se ofrecen para firmar en vez de mandar al
+  portal con la firma pendiente. Un link en curso **no vence** para
+  terminar lo que empezó; solo vence el que nunca se usó.
+- `cerrar_invitacion_si_completa(token)` (solo `service_role`): cierra el
+  link si ya no le falta nada. La pantalla del link la llama al abrirse
+  en curso (por si firmó desde el portal), y la app después de cada firma
+  (`cerrarLinkSiCompleto`), para que recepción vea "Completado" en cuanto
+  cae la última firma. Nunca cierra un link al que le falte algo ni toca
+  uno cancelado.
+- Pantalla `/alta/[token]`: link cumplido → "Ya quedó todo" con botón a
+  `/portal` (si la sesión abierta es la del dueño) o a `/login` con el
+  teléfono; sin cuenta (estética sin portal) dice que el registro quedó y
+  cómo abrirla. En curso → la rama de complemento (entra con su teléfono
+  y contraseña, rellena lo que siga vacío, firma lo pendiente). El texto
+  "de un solo uso" desapareció de las dos ramas y del panel.
+- Recepción: estado `en_curso` en `invitaciones_cliente_estado`, ANTES de
+  vencida a propósito (etiqueta "Registrado, falta firmar", con reenviar y
+  cancelar como uno pendiente; "usada" ahora dice "Completado" / "Completó
+  su expediente"); la ficha del cliente lo cuenta como link esperando y
+  `crear_invitacion_cliente` no genera otro del mismo tipo mientras haya
+  uno en curso (aunque haya vencido).
+- Textos "entra con tu correo y contraseña" → teléfono en los tres lugares
+  que quedaban (pantalla del link, formulario de complemento,
+  `completarExpediente`). Los demás "correo" son legítimos: invitar staff
+  (que sí es por correo), el login que acepta ambos, el correo opcional.
+
+Probado en desarrollo, en el navegador: alta nueva de guardería con
+cuenta → 3 contratos pendientes → cerrar sin firmar → estado `en_curso` →
+reabrir el link → "Hola de nuevo" con contraseña → mismos 3 contratos (no
+se duplican) → una firma deja `en_curso` → la tercera cierra el link
+(`usada`) y la pantalla pasa a "Ya quedó todo → Entrar a mi portal".
+Complemento de cliente sin cuenta: crea la cuenta, genera contratos, queda
+`en_curso`; con `expira_at` en el pasado sigue abriendo y reconociendo la
+cuenta. Panel: "Registrado, falta firmar" con Reenviar/Cancelar; ficha:
+"ya guardó sus datos, le falta firmar". `anon` sin permiso sobre las dos
+funciones nuevas (42501). Residuo de prueba dado de baja.
+
 ## Estado actual
 
-Fase 0, Fase 1, Fase 2, Fase 3 y Fase 4 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 5 (POS) construida en sus cuatro bloques (cobros/devoluciones, bonos, descuentos, caja/arqueo) más la decisión de Bloque E, pendiente de que el negocio termine de probarla para cerrarla formalmente. Fase 6 (contratos) completa en sus tres bloques (plantillas y versionado, generación/firma/papel, visibilidad operativa y vigencia). Fase 7 (inventario) completa en sus tres bloques (catálogo y existencias; movimientos: entradas, salidas, mermas, ajustes; consumo automático por receta al finalizar un servicio de estética, con el enlace a la cita ya listo para que Fase 8 calcule el costo real por servicio). Fase 8 (reportes) completa en sus tres bloques (financiero por periodo con ingreso reconocido vs. neto de caja; costos y margen de estética; operativo con ocupación/servicios del periodo y una fotografía del estado actual de cumplimiento sanitario, contratos e inventario). Fase 9 (bitácora diaria y medicamentos) completa en sus dos bloques: Bloque A (fotos, notas e incidencias, con aviso por WhatsApp vía enlace `wa.me`) y Bloque B (régimen y registro de dosis administradas, referenciando `perro_medicamentos.id` tal como quedó planteado desde Fase 2). Con esto quedan completas las diez fases (0 a 9) del roadmap original. Fase 10 (recolección a domicilio, cotizador por distancia con Google Maps) completa — reutiliza tarifas/`resolver_precio`/`cargos_aplicados` de Fase 3/4 sin mecanismo de cobro nuevo; pendiente de que el negocio capture direcciones reales (base y Ludogteka), tarifas por km, y la llave de Google Maps antes de salir de modo simulación. Fase 11 (varias plantillas de contrato a la vez, cada una con nombre, versionado y aplicabilidad por servicio propios) completa — el estado de contrato dejó de ser un sí/no por perro y pasó a ser por tipo, y los avisos dicen cuál falta. Fase 12 (Guardería y Hotel como módulos separados en la navegación, Agenda renombrada a Estética) completa, sin migraciones: `estancias` sigue unificada y la ocupación que muestran los dos módulos es la de toda la casa. Fase 13 (alta de clientes por link: recepción manda una invitación por WhatsApp y el dueño captura sus datos y los de sus perros; el expediente nace ligado a su cuenta sin pasar por vinculación) completa. Fase 14 (precios de estética por grupo de raza: catálogo de razas buscable, el grupo se deriva y el cliente nunca lo ve, y `tarifas` gana la dimensión de grupo sin sistema de precios paralelo) completa. Fase 15 (dos flujos de alta por link —guardería/hotel y estética—, cada uno con su contrato firmado dentro del alta, y un link de complemento que solo pide lo que falta) completa. Fase 16 (el cliente entra con su teléfono y contraseña, no con correo: correo y cuenta pasan a opcionales, un teléfono ya registrado no se puede volver a dar de alta y uno que existe como cliente sin cuenta se vincula en vez de duplicarse; la recuperación de contraseña es por WhatsApp a recepción, con el número configurable desde el panel) completa. Las cuentas que ya existían con correo siguen entrando igual, sin migración. Corrección de estética contra el cartel (10 de septiembre): tres precios corregidos, tres servicios de baño con lo que incluye cada uno, pelo maltratado como precio alternativo del baño completo (`tarifas.precio_pelo_maltratado`, marcado en la cita), talla gigante retirada, y **en estética no hay contratos** (candado en `tipos_contrato`; el pendiente de publicar uno de estética ya no aplica). Retiro de los siete servicios de estética de Fase 3 que quedaron sin tarifa (21 de septiembre): vista `servicios_cotizables`, de la que lee `/estetica/nueva`, y comprobación sobre todo servicio de estética vivo — aplicada a producción el mismo día con `npm run desplegar`. Fase 17 (precios y requisitos de guardería y hotel, del cartel: hotel $270/$300 por talla; guardería ocasional por hora a $35 con `estancias.horas` y ajuste a horas reales al check-out; day pass de 10/15/20 y mensualidad como bono ilimitado por días hábiles; recogida tardía, día extra y medicamento retirados, con "convertir en noche de hotel" en el check-out; evaluación previa de comportamiento con excepción de admin, celo/gestante y alertas bloqueantes sin excepción; vigencias bordetella 6 y desparasitación 3 solo para aplicaciones nuevas; los requisitos se muestran en el alta; las pantallas de reserva muestran deshabilitado lo que no tiene precio) completa. Ajustes del 22 de septiembre: `guarderia_dia` a $350 (la matriz de guardería/hotel quedó sin ninguna celda vacía; pases y mensualidad ya se consumen), comida especial como cargo de **monto libre** (`servicios.monto_libre`, importe y descripción capturados al aplicarlo, inmutable, cancelable con motivo, nunca borrable, fuera de la validación de celdas), e **invitar staff arreglado** con la puerta con nombre `asignar_rol_staff` (solo `service_role`, solo recepción/estética, solo cuentas recién creadas) — probado de punta a punta con una recepcionista de prueba, borrada al terminar.
+Fase 0, Fase 1, Fase 2, Fase 3 y Fase 4 completas (esquema, RLS, Storage y UI, verificado con JWTs reales). Fase 5 (POS) construida en sus cuatro bloques (cobros/devoluciones, bonos, descuentos, caja/arqueo) más la decisión de Bloque E, pendiente de que el negocio termine de probarla para cerrarla formalmente. Fase 6 (contratos) completa en sus tres bloques (plantillas y versionado, generación/firma/papel, visibilidad operativa y vigencia). Fase 7 (inventario) completa en sus tres bloques (catálogo y existencias; movimientos: entradas, salidas, mermas, ajustes; consumo automático por receta al finalizar un servicio de estética, con el enlace a la cita ya listo para que Fase 8 calcule el costo real por servicio). Fase 8 (reportes) completa en sus tres bloques (financiero por periodo con ingreso reconocido vs. neto de caja; costos y margen de estética; operativo con ocupación/servicios del periodo y una fotografía del estado actual de cumplimiento sanitario, contratos e inventario). Fase 9 (bitácora diaria y medicamentos) completa en sus dos bloques: Bloque A (fotos, notas e incidencias, con aviso por WhatsApp vía enlace `wa.me`) y Bloque B (régimen y registro de dosis administradas, referenciando `perro_medicamentos.id` tal como quedó planteado desde Fase 2). Con esto quedan completas las diez fases (0 a 9) del roadmap original. Fase 10 (recolección a domicilio, cotizador por distancia con Google Maps) completa — reutiliza tarifas/`resolver_precio`/`cargos_aplicados` de Fase 3/4 sin mecanismo de cobro nuevo; pendiente de que el negocio capture direcciones reales (base y Ludogteka), tarifas por km, y la llave de Google Maps antes de salir de modo simulación. Fase 11 (varias plantillas de contrato a la vez, cada una con nombre, versionado y aplicabilidad por servicio propios) completa — el estado de contrato dejó de ser un sí/no por perro y pasó a ser por tipo, y los avisos dicen cuál falta. Fase 12 (Guardería y Hotel como módulos separados en la navegación, Agenda renombrada a Estética) completa, sin migraciones: `estancias` sigue unificada y la ocupación que muestran los dos módulos es la de toda la casa. Fase 13 (alta de clientes por link: recepción manda una invitación por WhatsApp y el dueño captura sus datos y los de sus perros; el expediente nace ligado a su cuenta sin pasar por vinculación) completa. Fase 14 (precios de estética por grupo de raza: catálogo de razas buscable, el grupo se deriva y el cliente nunca lo ve, y `tarifas` gana la dimensión de grupo sin sistema de precios paralelo) completa. Fase 15 (dos flujos de alta por link —guardería/hotel y estética—, cada uno con su contrato firmado dentro del alta, y un link de complemento que solo pide lo que falta) completa. Fase 16 (el cliente entra con su teléfono y contraseña, no con correo: correo y cuenta pasan a opcionales, un teléfono ya registrado no se puede volver a dar de alta y uno que existe como cliente sin cuenta se vincula en vez de duplicarse; la recuperación de contraseña es por WhatsApp a recepción, con el número configurable desde el panel) completa. Las cuentas que ya existían con correo siguen entrando igual, sin migración. Corrección de estética contra el cartel (10 de septiembre): tres precios corregidos, tres servicios de baño con lo que incluye cada uno, pelo maltratado como precio alternativo del baño completo (`tarifas.precio_pelo_maltratado`, marcado en la cita), talla gigante retirada, y **en estética no hay contratos** (candado en `tipos_contrato`; el pendiente de publicar uno de estética ya no aplica). Retiro de los siete servicios de estética de Fase 3 que quedaron sin tarifa (21 de septiembre): vista `servicios_cotizables`, de la que lee `/estetica/nueva`, y comprobación sobre todo servicio de estética vivo — aplicada a producción el mismo día con `npm run desplegar`. Fase 17 (precios y requisitos de guardería y hotel, del cartel: hotel $270/$300 por talla; guardería ocasional por hora a $35 con `estancias.horas` y ajuste a horas reales al check-out; day pass de 10/15/20 y mensualidad como bono ilimitado por días hábiles; recogida tardía, día extra y medicamento retirados, con "convertir en noche de hotel" en el check-out; evaluación previa de comportamiento con excepción de admin, celo/gestante y alertas bloqueantes sin excepción; vigencias bordetella 6 y desparasitación 3 solo para aplicaciones nuevas; los requisitos se muestran en el alta; las pantallas de reserva muestran deshabilitado lo que no tiene precio) completa. Ajustes del 22 de septiembre: `guarderia_dia` a $350 (la matriz de guardería/hotel quedó sin ninguna celda vacía; pases y mensualidad ya se consumen), comida especial como cargo de **monto libre** (`servicios.monto_libre`, importe y descripción capturados al aplicarlo, inmutable, cancelable con motivo, nunca borrable, fuera de la validación de celdas), e **invitar staff arreglado** con la puerta con nombre `asignar_rol_staff` (solo `service_role`, solo recepción/estética, solo cuentas recién creadas) — probado de punta a punta con una recepcionista de prueba, borrada al terminar. **El link de alta/complemento vive hasta que el cliente termine todo** (23 de septiembre): `alta_completada_at` (en curso: ya guardó, falta firmar) y `usada_at` (todo listo) son marcas distintas, al reabrirlo se reconoce al dueño y se le ofrecen los contratos pendientes sin duplicarlos, y si ya cumplió se le manda a su portal; `cerrar_invitacion_si_completa` lo cierra con la última firma.
 
 ## Invite server-side de staff
 

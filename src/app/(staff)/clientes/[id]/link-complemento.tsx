@@ -11,7 +11,7 @@ import { formatearFecha } from "@/lib/formato";
 import { TIPOS_LINK_ALTA, TIPOS_LINK_ALTA_LISTA, type TipoLinkAlta } from "@/lib/alta/tipos-link";
 import { crearInvitacion, type EstadoInvitacion } from "../invitaciones/invitacion-actions";
 
-export type LinkPendiente = { id: string; tipo: string; expira_at: string };
+export type LinkPendiente = { id: string; tipo: string; expira_at: string; estado: string };
 
 /**
  * Mandarle a un cliente que YA existe el link del otro flujo.
@@ -73,8 +73,11 @@ export function LinkComplemento({
         <Alert variante="advertencia" titulo="Ya tiene un link esperando">
           {pendientes.map((p) => (
             <p key={p.id}>
-              {TIPOS_LINK_ALTA[p.tipo as TipoLinkAlta]?.etiqueta ?? p.tipo} · vence el{" "}
-              {formatearFecha(p.expira_at)}. Reenvíalo o cancélalo desde{" "}
+              {TIPOS_LINK_ALTA[p.tipo as TipoLinkAlta]?.etiqueta ?? p.tipo}
+              {p.estado === "en_curso"
+                ? " · ya guardó sus datos, le falta firmar: el mismo link le sirve para volver"
+                : ` · vence el ${formatearFecha(p.expira_at)}`}
+              . Reenvíalo o cancélalo desde{" "}
               <Link href="/clientes/invitaciones" className="font-semibold text-azul hover:underline">
                 Altas por link
               </Link>

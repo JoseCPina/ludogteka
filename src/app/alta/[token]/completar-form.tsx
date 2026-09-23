@@ -12,7 +12,7 @@ import { FirmarContrato } from "@/components/firmar-contrato";
 import type { RazaOpcion } from "@/components/selector-raza";
 import type { CotizacionEstetica } from "@/lib/estetica/cotizacion";
 import { TIPOS_LINK_ALTA, type TipoLinkAlta } from "@/lib/alta/tipos-link";
-import { completarExpediente, subirFotoAlta, calcularDistanciaAlta } from "../acciones";
+import { completarExpediente, subirFotoAlta, calcularDistanciaAlta, cerrarLinkSiCompleto } from "../acciones";
 import {
   perroVacio,
   type ContratoPendiente,
@@ -177,7 +177,7 @@ export function CompletarForm({
 
     if (!sesionAbierta) {
       setError(
-        "¡Listo! Solo no pudimos abrirte la sesión automáticamente: entra con tu correo y tu contraseña."
+        "¡Listo! Solo no pudimos abrirte la sesión automáticamente: entra con tu teléfono y tu contraseña."
       );
       return;
     }
@@ -198,7 +198,8 @@ export function CompletarForm({
       <div className="flex flex-col gap-4">
         <Alert variante="exito" titulo="Ya quedó lo que faltaba">
           Solo resta firmar {contratos.length === 1 ? "el contrato" : "los contratos"} de{" "}
-          {definicion.etiqueta.toLowerCase()}. Puedes leerlo completo antes de firmar.
+          {definicion.etiqueta.toLowerCase()}. Puedes leerlo completo antes de firmar. Si lo dejas
+          para después, este mismo link te trae de vuelta aquí.
         </Alert>
 
         {contratos.map((contrato) => (
@@ -209,7 +210,13 @@ export function CompletarForm({
             subtitulo={contrato.perro_nombre}
             estado={firmados.has(contrato.id) ? "firmado_digital" : "pendiente_firma"}
             storagePath={null}
-            onFirmado={() => setFirmados((prev) => new Set(prev).add(contrato.id))}
+            onFirmado={() => {
+              setFirmados((prev) => new Set(prev).add(contrato.id));
+              // Si con esta firma ya no falta nada, el link se cierra ya.
+              // Si falla, no pasa nada: la próxima vez que se abra el link
+              // (o firme desde el portal) se cierra solo.
+              void conTope(cerrarLinkSiCompleto(token)).catch(() => undefined);
+            }}
           />
         ))}
 

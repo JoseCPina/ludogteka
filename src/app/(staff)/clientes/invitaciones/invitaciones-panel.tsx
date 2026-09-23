@@ -26,6 +26,7 @@ export type InvitacionFila = {
   tipo: string;
   es_complemento: boolean;
   expira_at: string;
+  alta_completada_at: string | null;
   usada_at: string | null;
   cancelada_at: string | null;
   cliente_id: string | null;
@@ -36,14 +37,19 @@ export type InvitacionFila = {
 
 const ESTILO_ESTADO: Record<string, string> = {
   pendiente: "bg-amarillo-suave text-amarillo-oscuro",
+  en_curso: "bg-azul-suave text-azul",
   usada: "bg-verde-suave text-verde-oscuro",
   vencida: "bg-n-100 text-n-500",
   cancelada: "bg-n-100 text-n-500",
 };
 
+// "en_curso": el dueño ya guardó sus datos pero todavía no firma el
+// contrato. El link le sigue sirviendo para volver a firmar, así que no
+// se le manda otro: se reenvía este.
 const ETIQUETA_ESTADO: Record<string, string> = {
   pendiente: "Pendiente",
-  usada: "Se dio de alta",
+  en_curso: "Registrado, falta firmar",
+  usada: "Completado",
   vencida: "Venció",
   cancelada: "Cancelada",
 };
@@ -54,8 +60,9 @@ function EnlaceGenerado({ resultado }: { resultado: EstadoInvitacion }) {
       <p className="font-bold text-verde-oscuro">Link listo para mandar</p>
       <CampoCopiable valor={resultado.url ?? ""} textoBoton="Copiar link" />
       <p className="text-sm text-verde-oscuro">
-        Vence el {resultado.expiraAt ? formatearFecha(resultado.expiraAt) : "—"}. Es de un solo uso:
-        en cuanto el cliente termine su alta, deja de servir.
+        Vence el {resultado.expiraAt ? formatearFecha(resultado.expiraAt) : "—"}. Le sirve al
+        cliente hasta que termine todo (datos y firma): si lo deja a medias, lo vuelve a abrir y
+        continúa. En cuanto no le falte nada, deja de servir.
       </p>
       <div className="flex flex-wrap gap-2">
         <a href={resultado.urlWhatsApp} target="_blank" rel="noreferrer">
@@ -95,7 +102,9 @@ function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
     router.refresh();
   }
 
-  const pendiente = invitacion.estado === "pendiente";
+  // Un link en curso se reenvía y se cancela igual que uno pendiente:
+  // sigue vivo hasta que el dueño firme.
+  const pendiente = invitacion.estado === "pendiente" || invitacion.estado === "en_curso";
 
   return (
     <li className="flex flex-col gap-2 px-4 py-3">
@@ -119,7 +128,16 @@ function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
           <p className="text-sm text-n-600">
             {invitacion.estado === "usada" && invitacion.cliente_id ? (
               <>
-                Se dio de alta el {formatearFecha(invitacion.usada_at as string)} ·{" "}
+                {invitacion.es_complemento ? "Completó su expediente el " : "Se dio de alta el "}
+                {formatearFecha(invitacion.usada_at as string)} ·{" "}
+                <Link href={`/clientes/${invitacion.cliente_id}`} className="font-semibold text-azul hover:underline">
+                  Ver expediente de {invitacion.cliente_nombre ?? "el cliente"} →
+                </Link>
+              </>
+            ) : invitacion.estado === "en_curso" && invitacion.cliente_id ? (
+              <>
+                Guardó sus datos el {formatearFecha(invitacion.alta_completada_at as string)}; le
+                falta firmar el contrato. El mismo link le sirve para volver ·{" "}
                 <Link href={`/clientes/${invitacion.cliente_id}`} className="font-semibold text-azul hover:underline">
                   Ver expediente de {invitacion.cliente_nombre ?? "el cliente"} →
                 </Link>
@@ -205,8 +223,8 @@ export function InvitacionesPanel({
     router.refresh();
   }
 
-  const pendientes = invitaciones.filter((i) => i.estado === "pendiente");
-  const resto = invitaciones.filter((i) => i.estado !== "pendiente");
+  const pendientes = invitaciones.filter((i) => i.estado === "pendiente" || i.estado === "en_curso");
+  const resto = invitaciones.filter((i) => i.estado !== "pendiente" && i.estado !== "en_curso");
 
   return (
     <div className="flex flex-col gap-8">

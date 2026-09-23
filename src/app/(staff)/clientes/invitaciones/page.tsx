@@ -20,7 +20,7 @@ export default async function InvitacionesPage({
   const { data, error } = await supabase
     .from("invitaciones_cliente_estado")
     .select(
-      "id, nombre_referencia, telefono, tipo, es_complemento, expira_at, usada_at, cancelada_at, cliente_id, cliente_nombre, created_at, estado"
+      "id, nombre_referencia, telefono, tipo, es_complemento, expira_at, alta_completada_at, usada_at, cancelada_at, cliente_id, cliente_nombre, created_at, estado"
     )
     .order("created_at", { ascending: false });
 

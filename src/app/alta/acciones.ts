@@ -51,7 +51,7 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
   // esta es solo para no ensuciar por adelantado.
   const { data: invitacion } = await admin
     .from("invitaciones_cliente")
-    .select("id, usada_at, cancelada_at, expira_at")
+    .select("id, cliente_id, usada_at, cancelada_at, expira_at")
     .eq("token", token)
     .is("deleted_at", null)
     .maybeSingle();
@@ -60,7 +60,12 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
   if (invitacion.cancelada_at) {
     return { error: "Este link fue cancelado. Pídele uno nuevo a recepción." };
   }
-  if (invitacion.usada_at) return { error: "Este link ya se usó." };
+  if (invitacion.usada_at) {
+    return { error: "Este link ya cumplió: ya quedó todo. Entra a tu portal con tu teléfono y contraseña." };
+  }
+  if (invitacion.cliente_id) {
+    return { error: "Tu registro ya quedó guardado. Vuelve a abrir el link para continuar donde te quedaste." };
+  }
   if (new Date(invitacion.expira_at as string) <= new Date()) {
     return { error: "Este link ya venció. Pídele uno nuevo a recepción." };
   }
@@ -178,7 +183,7 @@ export async function completarExpediente(
 
   const { data: invitacion } = await admin
     .from("invitaciones_cliente")
-    .select("id, cliente_id, usada_at, cancelada_at, expira_at")
+    .select("id, cliente_id, usada_at, alta_completada_at, cancelada_at, expira_at")
     .eq("token", token)
     .is("deleted_at", null)
     .maybeSingle();
@@ -187,8 +192,12 @@ export async function completarExpediente(
   if (invitacion.cancelada_at) {
     return { error: "Este link fue cancelado. Pídele uno nuevo a recepción." };
   }
-  if (invitacion.usada_at) return { error: "Este link ya se usó." };
-  if (new Date(invitacion.expira_at as string) <= new Date()) {
+  if (invitacion.usada_at) {
+    return { error: "Este link ya cumplió: ya quedó todo. Entra a tu portal con tu teléfono y contraseña." };
+  }
+  // Un link en curso (ya se registró, falta firmar) no vence para
+  // terminar: lo que falta es del dueño. Solo vence el que nunca se usó.
+  if (new Date(invitacion.expira_at as string) <= new Date() && !invitacion.alta_completada_at) {
     return { error: "Este link ya venció. Pídele uno nuevo a recepción." };
   }
   if (!invitacion.cliente_id) {
@@ -212,7 +221,7 @@ export async function completarExpediente(
     const supabase = await createSupabaseServerClient();
     const { data: sesion } = await supabase.auth.getUser();
     if (!sesion.user) {
-      return { error: "Inicia sesión con tu correo y contraseña para continuar." };
+      return { error: "Inicia sesión con tu teléfono y contraseña para continuar." };
     }
     if (sesion.user.id !== perfil.id) {
       return { error: "Esa cuenta no es la de este expediente." };
@@ -305,6 +314,21 @@ export async function completarExpediente(
     perros: salida?.perros ?? [],
     contratos: salida?.contratos ?? [],
   };
+}
+
+/**
+ * Cerrar el link si ya no le falta nada.
+ *
+ * Se llama después de cada firma: el link queda "usado" en cuanto el
+ * último contrato del flujo quede firmado, y recepción lo ve completado
+ * en ese momento, no hasta que el dueño vuelva a abrirlo. La base es la
+ * que decide si de verdad no queda nada; aquí solo se le pregunta.
+ */
+export async function cerrarLinkSiCompleto(token: string): Promise<{ error: string | null; completo?: boolean }> {
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin.rpc("cerrar_invitacion_si_completa", { p_token: token });
+  if (error) return { error: error.message };
+  return { error: null, completo: Boolean((data as { completa?: boolean } | null)?.completa) };
 }
 
 // La distancia se calcula justo después del alta, no dentro: geocodificar

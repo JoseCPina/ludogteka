@@ -52,9 +52,9 @@ export default async function EditarClientePage({
 
   const { data: linksPendientes } = await supabase
     .from("invitaciones_cliente_estado")
-    .select("id, tipo, expira_at")
+    .select("id, tipo, expira_at, estado")
     .eq("cliente_id", id)
-    .eq("estado", "pendiente");
+    .in("estado", ["pendiente", "en_curso"]);
 
   const { data: perros } = await supabase
     .from("perros")

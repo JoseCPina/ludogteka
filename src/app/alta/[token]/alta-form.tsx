@@ -13,7 +13,7 @@ import type { RazaOpcion } from "@/components/selector-raza";
 import type { CotizacionEstetica } from "@/lib/estetica/cotizacion";
 import { correoSinteticoDeTelefono } from "@/lib/auth/identidad";
 import { TIPOS_LINK_ALTA, type TipoLinkAlta } from "@/lib/alta/tipos-link";
-import { completarAlta, subirFotoAlta, calcularDistanciaAlta } from "../acciones";
+import { completarAlta, subirFotoAlta, calcularDistanciaAlta, cerrarLinkSiCompleto } from "../acciones";
 import { perroVacio, type ContratoPendiente, type PerroAlta } from "../tipos";
 import { camposDeTipo } from "@/lib/alta/campos-perro";
 import { TarjetaPerro, type Catalogo } from "./tarjeta-perro";
@@ -436,7 +436,12 @@ export function AltaForm({
               subtitulo={contrato.perro_nombre}
               estado={firmados.has(contrato.id) ? "firmado_digital" : "pendiente_firma"}
               storagePath={null}
-              onFirmado={() => setFirmados((prev) => new Set(prev).add(contrato.id))}
+              onFirmado={() => {
+                setFirmados((prev) => new Set(prev).add(contrato.id));
+                // Con la última firma el link queda cumplido. Si falla, se
+                // cierra solo la próxima vez que se abra.
+                void conTope(cerrarLinkSiCompleto(token)).catch(() => undefined);
+              }}
             />
           ))}
 
@@ -453,7 +458,8 @@ export function AltaForm({
             {faltanFirmas.length > 0 && (
               <p className="text-sm text-n-600">
                 Si prefieres leerlo con calma, entra a tu portal: el contrato te va a estar
-                esperando ahí. Recepción también te lo puede dar en papel cuando llegues.
+                esperando ahí, y este mismo link también te trae de vuelta a firmarlo. Recepción
+                te lo puede dar en papel cuando llegues.
               </p>
             )}
           </div>

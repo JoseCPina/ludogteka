@@ -1,4 +1,5 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
 import { cargarRazas } from "@/lib/razas";
@@ -52,20 +53,42 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
 
   const { data: invitacion } = await admin
     .from("invitaciones_cliente")
-    .select("id, nombre_referencia, tipo, cliente_id, expira_at, usada_at, cancelada_at")
+    .select(
+      "id, nombre_referencia, tipo, cliente_id, expira_at, alta_completada_at, usada_at, cancelada_at"
+    )
     .eq("token", token)
     .is("deleted_at", null)
     .maybeSingle();
+
+  // El link vive hasta que el dueño termine TODO lo que le pedía, no se
+  // consume en el primer paso. Estados, en orden:
+  //
+  //   sin fila / cancelado   -> no se abre.
+  //   en curso               -> ya guardó sus datos; la base revisa si ya
+  //                             no le falta nada (p. ej. firmó desde el
+  //                             portal) y en ese caso lo cierra aquí mismo.
+  //   usado (todo completo)  -> se le reconoce y se le manda a su portal,
+  //                             no "no podemos abrir este link".
+  //   vencido sin usarse     -> pide otro. Un link en curso NO vence para
+  //                             terminar lo que empezó.
+  //   pendiente              -> el formulario que le toque.
+  let completo = Boolean(invitacion?.usada_at);
+  if (invitacion && !invitacion.cancelada_at && !completo && invitacion.alta_completada_at) {
+    const { data: cierre } = await admin.rpc("cerrar_invitacion_si_completa", { p_token: token });
+    completo = Boolean((cierre as { completa?: boolean } | null)?.completa);
+  }
+
+  if (invitacion && !invitacion.cancelada_at && completo) {
+    return <LinkCumplido clienteId={invitacion.cliente_id as string | null} />;
+  }
 
   const problema = !invitacion
     ? "Este link no existe. Revisa que lo hayas copiado completo, o pídele uno nuevo a recepción."
     : invitacion.cancelada_at
       ? "Este link fue cancelado. Pídele uno nuevo a recepción."
-      : invitacion.usada_at
-        ? "Este link ya se usó. Si ya te diste de alta, entra con tu correo y contraseña."
-        : new Date(invitacion.expira_at as string) <= new Date()
-          ? "Este link ya venció. Pídele uno nuevo a recepción."
-          : null;
+      : new Date(invitacion.expira_at as string) <= new Date() && !invitacion.alta_completada_at
+        ? "Este link ya venció. Pídele uno nuevo a recepción."
+        : null;
 
   if (problema) {
     return (
@@ -204,8 +227,9 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
             preguntarte todo.
           </p>
           <p className="mt-2 text-sm text-n-500">
-            Este link es tuyo y de un solo uso. Vence el{" "}
-            {formatearFecha(invitacion!.expira_at as string)}.
+            {invitacion!.alta_completada_at
+              ? "Este link es tuyo: puedes abrirlo las veces que necesites hasta terminar."
+              : `Este link es tuyo. Vence el ${formatearFecha(invitacion!.expira_at as string)}, y si lo dejas a medias puedes volver a abrirlo para terminar.`}
           </p>
         </header>
 
@@ -236,14 +260,68 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
             : "Regístrate y cuéntanos de tu perro. Toma unos minutos y lo puedes hacer desde el celular."}
         </p>
         <p className="mt-2 text-sm text-n-500">
-          Este link es tuyo y de un solo uso. Vence el{" "}
-          {formatearFecha(invitacion!.expira_at as string)}.
+          Este link es tuyo. Vence el {formatearFecha(invitacion!.expira_at as string)}, y si lo
+          dejas a medias puedes volver a abrirlo para terminar.
         </p>
       </header>
 
       {bloqueRequisitos}
 
       <AltaForm token={token} tipo={tipo} {...catalogos} />
+    </main>
+  );
+}
+
+// Ya no queda nada por hacer con este link. Se le manda a su portal —
+// directo si ya tiene la sesión abierta en este navegador, y si no, al
+// login con su teléfono. Si el expediente no tiene cuenta (estética sin
+// portal), se le dice que su registro quedó y cómo abrir una.
+async function LinkCumplido({ clienteId }: { clienteId: string | null }) {
+  const admin = createSupabaseAdminClient();
+  const { data: perfil } = clienteId
+    ? await admin.from("profiles").select("id").eq("cliente_id", clienteId).limit(1).maybeSingle()
+    : { data: null };
+
+  let sesionEsDelDueno = false;
+  if (perfil) {
+    const supabase = await createSupabaseServerClient();
+    const { data: sesion } = await supabase.auth.getUser();
+    sesionEsDelDueno = sesion.user?.id === perfil.id;
+  }
+
+  return (
+    <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-4 p-6">
+      <h1 className="text-2xl font-bold text-n-900">Ya quedó todo</h1>
+      {perfil ? (
+        <>
+          <Alert variante="exito" titulo="Este link ya cumplió">
+            Tu registro está completo y no te falta nada por firmar. Lo que sigue lo haces desde
+            tu portal: ahí ves a tus perros, sus contratos y sus visitas.
+          </Alert>
+          <a
+            href={sesionEsDelDueno ? "/portal" : "/login"}
+            className="inline-flex min-h-12 items-center justify-center rounded-md bg-azul px-5 font-bold text-white hover:opacity-90"
+          >
+            {sesionEsDelDueno ? "Entrar a mi portal →" : "Entrar con mi teléfono →"}
+          </a>
+          {!sesionEsDelDueno && (
+            <p className="text-sm text-n-600">
+              Entras con tu teléfono y la contraseña que escogiste. Si no la recuerdas, pídele a
+              recepción que te la restablezca por WhatsApp.
+            </p>
+          )}
+        </>
+      ) : (
+        <>
+          <Alert variante="exito" titulo="Este link ya cumplió">
+            Tu registro está completo. Puedes agendar por WhatsApp o pasando al mostrador.
+          </Alert>
+          <p className="text-sm text-n-600">
+            Si quieres ver a tu perro desde tu celular, pídele a recepción que te abra tu cuenta:
+            se usa este mismo teléfono.
+          </p>
+        </>
+      )}
     </main>
   );
 }
