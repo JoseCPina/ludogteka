@@ -17,6 +17,8 @@ import { OpcionesServicio, AvisoServiciosSinPrecio } from "@/components/servicio
 import { formatearDiasSemana } from "../dias-semana";
 import { SelectorDias } from "../selector-dias";
 import { crearSerie, type ResultadoFecha } from "../../series-actions";
+import { paseParaFecha, type PaqueteDePerro } from "@/lib/bonos/pase-para-fecha";
+import { ElegirPase } from "@/components/bonos/elegir-pase";
 
 type Perro = { id: string; cliente_id: string; nombre: string };
 type Servicio = ServicioOfrecible;
@@ -27,6 +29,7 @@ export function NuevaSerieForm({
   perros,
   servicios,
   seriesActivas,
+  paquetes,
   hoy,
   base,
   diasSinGuarderia,
@@ -35,6 +38,7 @@ export function NuevaSerieForm({
   perros: Perro[];
   servicios: Servicio[];
   seriesActivas: SerieActiva[];
+  paquetes: PaqueteDePerro[];
   hoy: string;
   // Modulo desde el que se abrio ("/guarderia" u "/hotel").
   base: string;
@@ -48,6 +52,7 @@ export function NuevaSerieForm({
   const [fechaInicio, setFechaInicio] = useState(hoy);
   const [tieneFin, setTieneFin] = useState(false);
   const [fechaFin, setFechaFin] = useState(hoy);
+  const [usarPase, setUsarPase] = useState(true);
   const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [resultados, setResultados] = useState<ResultadoFecha[] | null>(null);
@@ -64,7 +69,7 @@ export function NuevaSerieForm({
 
   async function enviar() {
     setError(null);
-    const res = await enviando.ejecutar(() => crearSerie(perroId, servicioId, diasSemana, fechaInicio, tieneFin ? fechaFin : null));
+    const res = await enviando.ejecutar(() => crearSerie(perroId, servicioId, diasSemana, fechaInicio, tieneFin ? fechaFin : null, usarPase));
     if (res.error && !res.serieId) {
       setError(res.error);
       return;
@@ -215,6 +220,14 @@ export function NuevaSerieForm({
                   )}
                 </div>
               </div>
+
+              <ElegirPase
+                pase={paseParaFecha(paquetes, perroId, servicioElegido ?? undefined, fechaInicio, hoy)}
+                fecha={fechaInicio}
+                usarPase={usarPase}
+                onCambio={setUsarPase}
+                enSerie
+              />
 
               {error && (
                 <Alert variante="error" titulo="No pudimos crear la serie">

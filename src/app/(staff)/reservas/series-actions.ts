@@ -29,7 +29,9 @@ export async function crearSerie(
   servicioId: string,
   diasSemana: number[],
   fechaInicio: string,
-  fechaFin: string | null
+  fechaFin: string | null,
+  // false = cada día se cobra suelto aunque el perro tenga pases.
+  usarPase = true
 ): Promise<EstadoCrearSerie> {
   if (!perroId) return { error: "Elige un perro." };
   if (diasSemana.length === 0) return { error: "Elige al menos un día de la semana." };
@@ -43,6 +45,7 @@ export async function crearSerie(
       dias_semana: diasSemana,
       fecha_inicio: fechaInicio,
       fecha_fin: fechaFin,
+      usar_pase: usarPase,
     })
     .select("id")
     .single();

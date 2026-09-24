@@ -7,6 +7,7 @@ import type { ModuloEstancia } from "@/lib/modulos";
 import { cargarServiciosOfrecibles } from "@/lib/servicios/ofrecibles";
 import { diasSinGuarderia } from "@/lib/horario";
 import { NuevaSerieForm } from "../series/nueva/nueva-serie-form";
+import { cargarPaquetesDePerros } from "@/lib/bonos/cargar-paquetes";
 
 export async function PaginaNuevaSerie({ modulo }: { modulo: ModuloEstancia }) {
   const supabase = await createSupabaseServerClient();
@@ -37,6 +38,7 @@ export async function PaginaNuevaSerie({ modulo }: { modulo: ModuloEstancia }) {
       .is("deleted_at", null),
     diasSinGuarderia(supabase, hoy),
   ]);
+  const paquetes = await cargarPaquetesDePerros(supabase);
 
   const error = errorClientes ?? errorPerros ?? errorServicios ?? errorSeries;
 
@@ -79,6 +81,7 @@ export async function PaginaNuevaSerie({ modulo }: { modulo: ModuloEstancia }) {
           perros={perros ?? []}
           servicios={servicios ?? []}
           seriesActivas={seriesActivasLista}
+          paquetes={paquetes}
           hoy={hoy}
           base={modulo.base}
           diasSinGuarderia={cerrados}

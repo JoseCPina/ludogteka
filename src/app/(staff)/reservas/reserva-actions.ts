@@ -19,6 +19,8 @@ export type LineaReserva = {
   // Misma forma que la sanitaria: solo admin, siempre con motivo.
   bloqueoComportamientoSuperado?: boolean;
   motivoExcepcionComportamiento?: string;
+  // false = recepción escogió pagar el día suelto aunque tenga pases.
+  usarPase?: boolean;
 };
 
 // Qué pasó con el bono al reservar guardería: si se usó uno (cuál y qué le
@@ -76,6 +78,15 @@ async function insertarEstancia(reservaId: string, linea: LineaReserva): Promise
   // queda. Para hotel o por hora responde no_aplica y no pasa nada.
   // Si esto falla, la estancia ya quedó creada: se reporta el día como
   // pagado suelto y el pase se puede aplicar después desde el check-in.
+  if (linea.usarPase === false) {
+    return {
+      perroId: linea.perroId,
+      exito: true,
+      motivo: null,
+      estanciaId: data.id,
+      bono: { aplicado: false, motivo: "elegido_suelto" },
+    };
+  }
   const { data: bonoData } = await supabase.rpc("aplicar_bono_a_estancia", { p_estancia_id: data.id });
   const bono = (bonoData as BonoAplicado | null) ?? null;
 

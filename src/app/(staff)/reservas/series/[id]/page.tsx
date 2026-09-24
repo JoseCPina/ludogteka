@@ -19,7 +19,7 @@ export default async function SerieDetallePage({ params }: { params: Promise<{ i
   const { data: serie, error: errorSerie } = await supabase
     .from("series_recurrentes")
     .select(
-      "id, perro_id, servicio_id, dias_semana, fecha_inicio, fecha_fin, deleted_at, perros(nombre), servicios(nombre, categoria)"
+      "id, perro_id, servicio_id, dias_semana, fecha_inicio, fecha_fin, deleted_at, usar_pase, perros(nombre), servicios(nombre, categoria)"
     )
     .eq("id", id)
     .single();
@@ -89,6 +89,13 @@ export default async function SerieDetallePage({ params }: { params: Promise<{ i
           <Link href={`/perros/${serie.perro_id}`} className="text-sm text-azul hover:underline">
             Ver expediente del perro →
           </Link>
+        )}
+        {servicioSerie?.categoria === "guarderia" && (
+          <p className="mt-2 text-sm text-n-700">
+            {serie.usar_pase
+              ? "Usa los pases del perro en cada fecha mientras le queden; las que no alcancen se cobran sueltas."
+              : "Cada día se cobra suelto: se escogió no usar pases."}
+          </p>
         )}
       </div>
 

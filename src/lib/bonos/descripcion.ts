@@ -76,6 +76,7 @@ export function describirBonoAplicado(b: BonoAplicadoResumen | null | undefined)
     return `Usó ${b.usados} ${b.usados === 1 ? "pase" : "pases"} de ${b.nombre}: le quedan ${b.restantes} de ${b.total}${vence ? ` · vence el ${vence}` : ""}.`;
   }
   if (b.motivo === "sin_bono") return "Sin pases vigentes para esa fecha: paga el día suelto.";
+  if (b.motivo === "elegido_suelto") return "Se cobra el día suelto, como se escogió: no se descontó ningún pase.";
   if (b.motivo === "error") return "No se pudo aplicar el pase: paga el día suelto (se puede aplicar desde el check-in).";
   return null;
 }

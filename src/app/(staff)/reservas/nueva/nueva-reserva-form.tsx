@@ -12,6 +12,8 @@ import { Alert } from "@/components/ui/alert";
 import { TextoConEnlaces } from "@/components/ui/texto-con-enlaces";
 import { sumarDiasFecha } from "@/lib/formato";
 import { describirBonoAplicado } from "@/lib/bonos/descripcion";
+import { paseParaFecha, type PaqueteDePerro } from "@/lib/bonos/pase-para-fecha";
+import { ElegirPase } from "@/components/bonos/elegir-pase";
 import { BuscadorClientes } from "@/components/buscador-clientes";
 import type { ClienteBuscable } from "@/lib/clientes/buscables";
 import { primerCotizable, type ServicioOfrecible } from "@/lib/servicios/ofrecibles";
@@ -39,6 +41,9 @@ type Linea = {
   motivoExcepcionSanitaria: string;
   bloqueoComportamientoSuperado: boolean;
   motivoExcepcionComportamiento: string;
+  // Guardería de día completo con pases: usar uno (lo normal) o pagar el
+  // día suelto. En lo demás no tiene efecto.
+  usarPase: boolean;
 };
 
 function lineaAPayload(linea: Linea, servicios: Servicio[]): LineaReserva {
@@ -55,6 +60,7 @@ function lineaAPayload(linea: Linea, servicios: Servicio[]): LineaReserva {
     motivoExcepcionSanitaria: linea.motivoExcepcionSanitaria,
     bloqueoComportamientoSuperado: linea.bloqueoComportamientoSuperado,
     motivoExcepcionComportamiento: linea.motivoExcepcionComportamiento,
+    usarPase: linea.usarPase,
   };
 }
 
@@ -75,6 +81,7 @@ export function NuevaReservaForm({
   perros,
   servicios,
   seriesActivas,
+  paquetes,
   esAdmin,
   hoy,
   base,
@@ -83,6 +90,9 @@ export function NuevaReservaForm({
   perros: Perro[];
   servicios: Servicio[];
   seriesActivas: SerieActiva[];
+  // Day pass y mensualidades de los perros, para decir al marcar uno si
+  // tiene pases y dejar escoger usarlo o pagar suelto.
+  paquetes: PaqueteDePerro[];
   esAdmin: boolean;
   hoy: string;
   // Modulo desde el que se abrio el formulario ("/guarderia" u "/hotel"):
@@ -141,6 +151,7 @@ export function NuevaReservaForm({
           motivoExcepcionSanitaria: "",
           bloqueoComportamientoSuperado: false,
           motivoExcepcionComportamiento: "",
+          usarPase: true,
         },
       ];
     });
@@ -422,6 +433,16 @@ export function NuevaReservaForm({
                         onChange={(e) => actualizarLinea(perro.id, { fechaSalida: e.target.value })}
                       />
                     )}
+                  </div>
+                )}
+                {linea && (
+                  <div className="mt-3">
+                    <ElegirPase
+                      pase={paseParaFecha(paquetes, perro.id, servicioActual, linea.fechaEntrada, hoy)}
+                      fecha={linea.fechaEntrada}
+                      usarPase={linea.usarPase}
+                      onCambio={(usar) => actualizarLinea(perro.id, { usarPase: usar })}
+                    />
                   </div>
                 )}
               </div>
