@@ -3,6 +3,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { BotonNuevoCliente } from "@/components/boton-nuevo-cliente";
+import { Antiguedad } from "@/components/ui/antiguedad";
+import { desdeCuando, diasDesde, esMuyViejo, haceCuanto } from "@/lib/antiguedad";
+import { cargarSaldosDeSalidas } from "@/lib/tablero/saldos-de-salidas";
 import {
   fechaLocalDeInstante,
   formatearFechaCalendario,
@@ -54,7 +57,23 @@ type Cita = {
   fecha_local: string;
 };
 
-type Atencion = { clave: string; texto: string; href: string; detalle?: string };
+// `dias` es cuánto lleva esperando (o vencido) lo que avisa; `antiguedad`,
+// cómo se dice. Con más de una semana, el aviso se resalta.
+type Atencion = { clave: string; texto: string; href: string; detalle?: string; dias?: number; antiguedad?: string };
+
+// "2 contratos esperan la firma del dueño · el más viejo desde hace 3 días".
+function masViejo(fechas: string[], hoy: string, genero: "o" | "a" = "o") {
+  const dias = Math.max(...fechas.map((f) => diasDesde(f, hoy)));
+  const antiguedad = fechas.length === 1 ? `Esperando ${desdeCuando(dias)}` : `${genero === "o" ? "El" : "La"} más viej${genero} ${desdeCuando(dias)}`;
+  return { dias, antiguedad };
+}
+
+function duracion(minutos: number) {
+  if (minutos < 60) return `${minutos} min`;
+  const h = Math.floor(minutos / 60);
+  const m = minutos % 60;
+  return m ? `${h} h ${m} min` : `${h} h`;
+}
 
 const ETIQUETA_CATEGORIA: Record<string, string> = { guarderia: "Guardería", hotel: "Hotel" };
 const ETIQUETA_ESTADO_CITA: Record<string, string> = {
@@ -123,8 +142,8 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     { data: minutosData },
     { data: proximas },
     { data: turnoAbierto },
-    comprobantes,
-    { data: finalizadasRecientes },
+    { data: comprobantes },
+    { data: ultimoTurno },
     { data: contratosPorAtender },
   ] = await Promise.all([
     supabase.from("llegadas_hoy").select(columnas).order("perro_nombre"),
@@ -144,7 +163,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     // una evaluación faltante se vuelve un problema con fecha.
     supabase
       .from("estancias")
-      .select("id, perro_id, fecha_entrada, reserva_id, perros(nombre, evaluacion_comportamiento_fecha)")
+      .select("id, perro_id, fecha_entrada, reserva_id, created_at, perros(nombre, evaluacion_comportamiento_fecha)")
       .in("estado", ["reservada", "confirmada"])
       .is("deleted_at", null)
       .gte("fecha_entrada", hoy)
@@ -155,20 +174,20 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     // revisado: no cuentan hasta que recepción los confirme.
     supabase
       .from("requisitos_sanitarios_propuestos")
-      .select("id", { count: "exact", head: true })
+      .select("created_at")
       .eq("estado", "pendiente")
       .is("deleted_at", null),
+    // El último turno cerrado: si no hay abierto, cuánto lleva la caja sin turno.
     supabase
-      .from("estancias")
-      .select("reserva_id, perros(nombre)")
-      .eq("estado", "finalizada")
+      .from("turnos_caja")
+      .select("cerrado_at")
+      .eq("estado", "cerrado")
       .is("deleted_at", null)
-      .gte("hora_salida_real", sumarDiasFecha(hoy, -2))
-      .order("hora_salida_real", { ascending: false })
-      .limit(30),
+      .order("cerrado_at", { ascending: false })
+      .limit(1),
     // Contratos que el dueño debe firmar en su portal (el de guardería se
     // genera al vender un paquete) o que hay que volver a generar.
-    supabase.from("contratos_por_atender").select("situacion"),
+    supabase.from("contratos_por_atender").select("situacion, espera_desde"),
   ]);
 
   const error = e1 ?? e2 ?? e3 ?? e4 ?? e5;
@@ -210,7 +229,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     const [{ data: sanitario }, { data: contratos }] = await Promise.all([
       supabase
         .from("perro_requisitos_sanitarios_estado")
-        .select("perro_id, etiqueta, estado")
+        .select("perro_id, etiqueta, estado, fecha_vencimiento")
         .in("perro_id", idsProximos)
         .in("estado", ["vencida", "sin_registro"]),
       supabase
@@ -220,10 +239,21 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
         .in("estado", ["sin_contrato", "requiere_actualizacion"]),
     ]);
     const bloqueosSanitarios = new Map<string, string[]>();
+    // La vencida más vieja de cada perro: "vencida hace 12 días".
+    const vencidaDesde = new Map<string, string>();
     for (const s of sanitario ?? []) {
       const lista = bloqueosSanitarios.get(s.perro_id as string) ?? [];
-      lista.push(`${s.etiqueta} ${s.estado === "vencida" ? "vencida" : "sin registro"}`);
+      const venc = s.fecha_vencimiento as string | null;
+      lista.push(
+        s.estado === "vencida"
+          ? `${s.etiqueta} vencida${venc ? ` el ${formatearFechaCalendario(venc)}` : ""}`
+          : `${s.etiqueta} sin registro`
+      );
       bloqueosSanitarios.set(s.perro_id as string, lista);
+      if (s.estado === "vencida" && venc) {
+        const previa = vencidaDesde.get(s.perro_id as string);
+        if (!previa || venc < previa) vencidaDesde.set(s.perro_id as string, venc);
+      }
     }
     const contratoPorPerro = new Map((contratos ?? []).map((c) => [c.perro_id as string, c]));
     const vistos = new Set<string>();
@@ -237,13 +267,21 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       } | null;
       const nombre = perro?.nombre ?? "Perro";
       const cuando = formatearFechaCalendario(p.fecha_entrada as string);
+      // Lo que falta para la estancia espera desde que se reservó.
+      const diasReservado = diasDesde(p.created_at as string, hoy);
+      const esperaReserva = { dias: diasReservado, antiguedad: `Pendiente desde que se reservó, ${haceCuanto(diasReservado)}` };
       const sanit = bloqueosSanitarios.get(perroId);
       if (sanit) {
+        const venc = vencidaDesde.get(perroId);
+        const diasVencida = venc ? diasDesde(venc, hoy) : null;
         atencion.push({
           clave: `san-${perroId}`,
           texto: `${nombre} llega el ${cuando} con requisito sanitario pendiente`,
           detalle: sanit.join(", "),
           href: `/perros/${perroId}`,
+          ...(diasVencida !== null
+            ? { dias: diasVencida, antiguedad: diasVencida === 0 ? "Vencida hoy" : `Vencida ${haceCuanto(diasVencida)}` }
+            : esperaReserva),
         });
       }
       if (perro && !perro.evaluacion_comportamiento_fecha) {
@@ -251,6 +289,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
           clave: `eval-${perroId}`,
           texto: `${nombre} llega el ${cuando} sin evaluación de comportamiento`,
           href: `/perros/${perroId}`,
+          ...esperaReserva,
         });
       }
       const contrato = contratoPorPerro.get(perroId);
@@ -261,6 +300,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
           texto: `${nombre} llega el ${cuando} ${contrato.estado === "sin_contrato" ? "sin firmar" : "con contrato desactualizado"}`,
           detalle: faltantes.length > 0 ? faltantes.join(", ") : undefined,
           href: `/perros/${perroId}`,
+          ...esperaReserva,
         });
       }
     }
@@ -276,52 +316,54 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
         texto: `${f.perro_nombre} sigue en guardería después del cierre`,
         detalle: "Convertir en noche de hotel o hacer su check-out",
         href: `/reservas/estancias/${f.estancia_id}/checkout`,
+        dias: 0,
+        antiguedad: `Lleva ${duracion(minutos)} después del cierre`,
       });
     }
   }
 
-  // Cuentas con saldo de estancias que ya salieron.
-  const reservasRecientes = Array.from(
-    new Map((finalizadasRecientes ?? []).map((e) => [e.reserva_id as string, e])).values()
-  ).slice(0, 15);
-  if (reservasRecientes.length > 0) {
-    const totales = await Promise.all(
-      reservasRecientes.map((e) => supabase.rpc("cuenta_totales_reserva", { p_reserva_id: e.reserva_id as string }))
-    );
-    reservasRecientes.forEach((e, i) => {
-      const fila = Array.isArray(totales[i].data) ? totales[i].data[0] : totales[i].data;
-      const saldo = Number(fila?.saldo ?? 0);
-      if (saldo > 0) {
-        const perro = (Array.isArray(e.perros) ? e.perros[0] : e.perros) as unknown as { nombre: string } | null;
-        atencion.push({
-          clave: `saldo-${e.reserva_id}`,
-          texto: `${perro?.nombre ?? "Reserva"} ya salió y su cuenta tiene saldo pendiente`,
-          detalle: `$${saldo.toFixed(2)} por cobrar`,
-          href: `/reservas/${e.reserva_id}/cobrar`,
-        });
-      }
+  // Cuentas con saldo de perros que ya se fueron (estancia o cita
+  // terminada), sin tope de dos días: la que lleva semanas es la que más
+  // importa que no se pierda.
+  const saldos = await cargarSaldosDeSalidas(supabase, hoy);
+  if (saldos.length > 0) {
+    const total = saldos.reduce((suma, c) => suma + c.saldo, 0);
+    atencion.push({
+      clave: "saldos",
+      texto:
+        saldos.length === 1
+          ? `${saldos[0].perros || "Una cuenta"} ya se fue y su cuenta tiene saldo pendiente`
+          : `${saldos.length} cuentas de perros que ya se fueron tienen saldo pendiente`,
+      detalle: `$${total.toFixed(2)} por cobrar`,
+      href: saldos.length === 1 ? `/caja/cobrar/${saldos[0].reservaId}` : "/recepcion/saldos",
+      ...masViejo(saldos.map((c) => c.salioEl), hoy, "a"),
     });
   }
 
-  const comprobantesPorRevisar = comprobantes.count ?? 0;
+  const fechasComprobantes = (comprobantes ?? []).map((c) => c.created_at as string);
+  const comprobantesPorRevisar = fechasComprobantes.length;
   if (comprobantesPorRevisar > 0) {
     atencion.push({
       clave: "comprobantes",
       texto: `${comprobantesPorRevisar} ${comprobantesPorRevisar === 1 ? "comprobante sanitario espera" : "comprobantes sanitarios esperan"} revisión`,
       detalle: "Lo mandó el dueño desde su portal; no cuenta hasta que lo confirmes contra el documento",
       href: "/recepcion/comprobantes",
+      ...masViejo(fechasComprobantes, hoy),
     });
   }
 
-  const filasContratos = (contratosPorAtender ?? []) as { situacion: string }[];
-  const contratosRegenerar = filasContratos.filter((c) => c.situacion === "por_regenerar").length;
-  const contratosFirmar = filasContratos.filter((c) => c.situacion === "por_firmar").length;
+  const filasContratos = (contratosPorAtender ?? []) as { situacion: string; espera_desde: string }[];
+  const fechasRegenerar = filasContratos.filter((c) => c.situacion === "por_regenerar").map((c) => c.espera_desde);
+  const fechasFirmar = filasContratos.filter((c) => c.situacion === "por_firmar").map((c) => c.espera_desde);
+  const contratosRegenerar = fechasRegenerar.length;
+  const contratosFirmar = fechasFirmar.length;
   if (contratosRegenerar > 0) {
     atencion.push({
       clave: "contratos-regenerar",
       texto: `${contratosRegenerar} ${contratosRegenerar === 1 ? "contrato firmado hay" : "contratos firmados hay"} que volver a generar`,
       detalle: "Se firmaron con campos sin llenar en el PDF; el firmado se conserva",
       href: "/recepcion/contratos",
+      ...masViejo(fechasRegenerar, hoy),
     });
   }
   if (contratosFirmar > 0) {
@@ -330,15 +372,18 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       texto: `${contratosFirmar} ${contratosFirmar === 1 ? "contrato espera" : "contratos esperan"} la firma del dueño`,
       detalle: "Se firman desde el portal; recuérdaselo por WhatsApp",
       href: "/recepcion/contratos",
+      ...masViejo(fechasFirmar, hoy),
     });
   }
 
-  const pendientesVincular = Array.isArray(sinVincular) ? sinVincular.length : 0;
+  const cuentasSinVincular = (Array.isArray(sinVincular) ? sinVincular : []) as { creado_en: string }[];
+  const pendientesVincular = cuentasSinVincular.length;
   if (pendientesVincular > 0) {
     atencion.push({
       clave: "vincular",
       texto: `${pendientesVincular} ${pendientesVincular === 1 ? "cuenta nueva espera" : "cuentas nuevas esperan"} vincularse a su expediente`,
       href: "/vinculacion",
+      ...masViejo(cuentasSinVincular.map((c) => c.creado_en), hoy, "a"),
     });
   }
   if (!turnoAbierto || turnoAbierto.length === 0) {
@@ -347,6 +392,9 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       texto: "No hay turno de caja abierto",
       detalle: "Sin turno no se puede cobrar ni vender bonos",
       href: "/caja",
+      ...(ultimoTurno?.[0]?.cerrado_at
+        ? { dias: diasDesde(ultimoTurno[0].cerrado_at as string, hoy), antiguedad: `El último se cerró ${haceCuanto(diasDesde(ultimoTurno[0].cerrado_at as string, hoy))}` }
+        : {}),
     });
   }
 
@@ -374,17 +422,23 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
         <p className="text-sm text-verde-oscuro">Nada pendiente por ahora.</p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {atencion.map((a) => (
-            <li key={a.clave}>
-              <Link
-                href={a.href}
-                className="flex flex-col rounded-md border-l-4 border-amarillo bg-white px-3 py-2 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul-suave"
-              >
-                <span className="font-semibold text-n-900">{a.texto}</span>
-                {a.detalle && <span className="text-xs text-n-600">{a.detalle}</span>}
-              </Link>
-            </li>
-          ))}
+          {atencion.map((a) => {
+            const viejo = a.dias !== undefined && esMuyViejo(a.dias);
+            return (
+              <li key={a.clave}>
+                <Link
+                  href={a.href}
+                  className={`flex flex-col gap-1 rounded-md border-l-4 px-3 py-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul-suave ${
+                    viejo ? "border-naranja bg-naranja-suave/40 hover:bg-naranja-suave/60" : "border-amarillo bg-white hover:bg-n-50"
+                  }`}
+                >
+                  <span className="font-semibold text-n-900">{a.texto}</span>
+                  {a.detalle && <span className="text-xs text-n-600">{a.detalle}</span>}
+                  {a.dias !== undefined && a.antiguedad && <Antiguedad dias={a.dias} texto={a.antiguedad} />}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>

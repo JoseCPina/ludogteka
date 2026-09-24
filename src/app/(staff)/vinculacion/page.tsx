@@ -4,15 +4,20 @@ import { VincularFila } from "./vincular-fila";
 import { DesvincularFila } from "./desvincular-fila";
 import type { CuentaPendiente, CuentaVinculada } from "./tipos";
 import { cargarClientesBuscables } from "@/lib/clientes/buscables";
+import { diasDesde } from "@/lib/antiguedad";
+import { hoyNegocio } from "@/lib/formato";
 
 export default async function VinculacionPage() {
   const supabase = await createSupabaseServerClient();
 
-  const [pendientesRes, vinculadasRes, clientesRes] = await Promise.all([
+  const [pendientesRes, vinculadasRes, clientesRes, { data: hoyData }] = await Promise.all([
+    // Viene de la más vieja a la más nueva (order by created_at).
     supabase.rpc("listar_cuentas_sin_vincular"),
     supabase.rpc("listar_cuentas_vinculadas"),
     cargarClientesBuscables(supabase),
+    supabase.rpc("fecha_negocio"),
   ]);
+  const hoy = (hoyData as string | null) ?? hoyNegocio();
 
   const pendientes = (pendientesRes.data as CuentaPendiente[] | null) ?? [];
   const vinculadas = (vinculadasRes.data as CuentaVinculada[] | null) ?? [];
@@ -41,7 +46,7 @@ export default async function VinculacionPage() {
         ) : (
           <div className="overflow-hidden rounded-lg border border-n-200 bg-white">
             {pendientes.map((cuenta) => (
-              <VincularFila key={cuenta.id} cuenta={cuenta} clientes={clientes} />
+              <VincularFila key={cuenta.id} cuenta={cuenta} clientes={clientes} diasEsperando={diasDesde(cuenta.creado_en, hoy)} />
             ))}
           </div>
         )}

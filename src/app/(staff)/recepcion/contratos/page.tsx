@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
-import { formatearFecha } from "@/lib/formato";
+import { formatearFecha, hoyNegocio } from "@/lib/formato";
+import { diasDesde } from "@/lib/antiguedad";
+import { Antiguedad } from "@/components/ui/antiguedad";
 import { urlPublica } from "@/lib/mercadopago/config";
 import { BotonRegenerar } from "./boton-regenerar";
 
@@ -17,6 +19,7 @@ type Fila = {
   created_at: string;
   fecha_firma: string | null;
   regenerar_motivo: string | null;
+  espera_desde: string;
 };
 
 // El recordatorio sale con el link del portal, que es donde se firma: el
@@ -33,15 +36,20 @@ function recordatorioWhatsApp(f: Fila): string | null {
 
 // Contratos que esperan algo: los que el dueño no ha firmado (el de
 // guardería se genera al vender un paquete y se firma en el portal) y los
-// firmados con defecto que hay que volver a generar.
+// firmados con defecto que hay que volver a generar. Del que lleva más
+// tiempo esperando al más reciente, con la antigüedad en cada fila.
 export default async function ContratosPorAtenderPage() {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("contratos_por_atender")
-    .select(
-      "situacion, contrato_id, perro_id, perro_nombre, cliente_nombre, cliente_telefono, tipo_nombre, paquete_nombre, created_at, fecha_firma, regenerar_motivo"
-    )
-    .order("created_at");
+  const [{ data, error }, { data: hoyData }] = await Promise.all([
+    supabase
+      .from("contratos_por_atender")
+      .select(
+        "situacion, contrato_id, perro_id, perro_nombre, cliente_nombre, cliente_telefono, tipo_nombre, paquete_nombre, created_at, fecha_firma, regenerar_motivo, espera_desde"
+      )
+      .order("espera_desde"),
+    supabase.rpc("fecha_negocio"),
+  ]);
+  const hoy = (hoyData as string | null) ?? hoyNegocio();
 
   const filas = (data ?? []) as Fila[];
   const porRegenerar = filas.filter((f) => f.situacion === "por_regenerar");
@@ -80,6 +88,9 @@ export default async function ContratosPorAtenderPage() {
                       {f.fecha_firma ? ` · firmado el ${formatearFecha(f.fecha_firma)}` : ""}
                     </p>
                     <p className="mt-2 text-sm text-naranja-oscuro">{f.regenerar_motivo}</p>
+                    <div className="mt-2">
+                      <Antiguedad dias={diasDesde(f.espera_desde, hoy)} prefijo="Por regenerar" />
+                    </div>
                     <div className="mt-3 flex flex-wrap items-center gap-3">
                       <BotonRegenerar contratoId={f.contrato_id} />
                       <Link href={`/perros/${f.perro_id}`} className="text-sm font-semibold text-azul hover:underline">
@@ -105,14 +116,15 @@ export default async function ContratosPorAtenderPage() {
                   const wa = recordatorioWhatsApp(f);
                   return (
                     <li key={f.contrato_id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-                      <div>
+                      <div className="flex flex-col gap-1">
                         <p className="font-semibold text-n-900">
                           {f.perro_nombre} · <span className="font-normal">{f.cliente_nombre}</span>
                         </p>
                         <p className="text-sm text-n-600">
                           {f.tipo_nombre}
-                          {f.paquete_nombre ? ` · ${f.paquete_nombre}` : ""} · desde el {formatearFecha(f.created_at)}
+                          {f.paquete_nombre ? ` · ${f.paquete_nombre}` : ""} · generado el {formatearFecha(f.created_at)}
                         </p>
+                        <Antiguedad dias={diasDesde(f.espera_desde, hoy)} prefijo="Espera la firma" />
                       </div>
                       <div className="flex flex-wrap items-center gap-3">
                         {wa && (

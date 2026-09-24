@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
-import { formatearFecha, formatearFechaCalendario } from "@/lib/formato";
+import { formatearFecha, formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
+import { diasDesde } from "@/lib/antiguedad";
 import { BandejaComprobantes, type ComprobantePendiente } from "./bandeja-comprobantes";
 
 const BUCKET = "perros-archivos";
@@ -13,7 +14,7 @@ const BUCKET = "perros-archivos";
 export default async function ComprobantesPage() {
   const supabase = await createSupabaseServerClient();
 
-  const [{ data: pendientesCrudo, error }, { data: revisadosCrudo }] = await Promise.all([
+  const [{ data: pendientesCrudo, error }, { data: revisadosCrudo }, { data: hoyData }] = await Promise.all([
     supabase
       .from("requisitos_sanitarios_propuestos")
       .select(
@@ -29,7 +30,9 @@ export default async function ComprobantesPage() {
       .is("deleted_at", null)
       .order("revisado_at", { ascending: false })
       .limit(20),
+    supabase.rpc("fecha_negocio"),
   ]);
+  const hoy = (hoyData as string | null) ?? hoyNegocio();
 
   const idsPerros = Array.from(new Set((pendientesCrudo ?? []).map((p) => p.perro_id as string)));
   const { data: estados } = idsPerros.length
@@ -65,6 +68,7 @@ export default async function ComprobantesPage() {
         fecha_aplicacion: p.fecha_aplicacion as string,
         detalle: (p.detalle as string | null) ?? null,
         created_at: p.created_at as string,
+        dias_esperando: diasDesde(p.created_at as string, hoy),
         foto_url: firmada?.signedUrl ?? null,
         estado_actual: estadoActual?.estado ?? null,
       };

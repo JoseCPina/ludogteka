@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { formatearFecha, formatearFechaCalendario } from "@/lib/formato";
+import { Antiguedad } from "@/components/ui/antiguedad";
 import { revisarComprobante } from "./comprobantes-actions";
 
 export type ComprobantePendiente = {
@@ -21,6 +22,8 @@ export type ComprobantePendiente = {
   fecha_aplicacion: string;
   detalle: string | null;
   created_at: string;
+  // Días desde que el dueño lo mandó (la bandeja va del más viejo al más nuevo).
+  dias_esperando: number;
   foto_url: string | null;
   // Cómo está ese requisito HOY para ese perro, para que recepción vea
   // qué va a cambiar al confirmar (p. ej. "sin registro" → vigente).
@@ -88,6 +91,7 @@ function Tarjeta({ item }: { item: ComprobantePendiente }) {
           <p className="text-lg font-bold text-n-900">
             {item.tipo_etiqueta} · {item.perro_nombre}
           </p>
+          <Antiguedad dias={item.dias_esperando} prefijo="Esperando revisión" />
           <p className="text-sm text-n-600">
             Dueño:{" "}
             <Link href={`/clientes/${item.cliente_id}`} className="font-semibold text-azul hover:underline">
