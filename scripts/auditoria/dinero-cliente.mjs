@@ -62,6 +62,9 @@ for (const cli of clientes) {
 const { data: turno } = await A.from("turnos_caja").select("id").limit(1).maybeSingle();
 const { data: tarifa } = await A.from("tarifas").select("servicio_id, tamano_id").is("deleted_at", null).limit(1).single();
 const { data: insumo } = await A.from("insumos").select("id").limit(1).maybeSingle();
+// Sin datos reales, un uuid cualquiera: con un id vacío PostgREST responde
+// 404 (firma no encontrada) y la función ni se llega a llamar.
+const ID_VACIO = "00000000-0000-0000-0000-000000000001";
 const rpcDinero = new Map();
 let llamadas = 0;
 for (const cli of clientes) {
@@ -73,11 +76,11 @@ for (const cli of clientes) {
   const sondas = [
     ...(reservas ?? []).flatMap((r) => [["cuenta_lineas_reserva", { p_reserva_id: r.id }], ["cuenta_totales_reserva", { p_reserva_id: r.id }]]),
     ["cuentas_abiertas", { p_dias: 400 }],
-    ["movimientos_turno", { p_turno_id: turno?.id }],
-    ["resumen_turno", { p_turno_id: turno?.id }],
-    ["cobertura_bono_de_item", { p_item_tipo: "estancia", p_item_id: est?.id }],
-    ["costo_promedio_base_insumo", { p_insumo_id: insumo?.id, p_hasta: "2026-09-23" }],
-    ["existencia_actual_insumo", { p_insumo_id: insumo?.id }],
+    ["movimientos_turno", { p_turno_id: turno?.id ?? ID_VACIO }],
+    ["resumen_turno", { p_turno_id: turno?.id ?? ID_VACIO }],
+    ["cobertura_bono_de_item", { p_item_tipo: "estancia", p_item_id: est?.id ?? ID_VACIO }],
+    ["costo_promedio_base_insumo", { p_insumo_id: insumo?.id ?? ID_VACIO, p_hasta: "2026-09-23" }],
+    ["existencia_actual_insumo", { p_insumo_id: insumo?.id ?? ID_VACIO }],
     ["resolver_precio", { p_servicio_id: tarifa.servicio_id, p_tamano_id: tarifa.tamano_id, p_pelaje_id: null, p_cantidad: 1, p_fecha: "2026-09-23" }],
     ["resolver_tope_descuento_recepcion", {}],
     ["reporte_financiero_periodo", { p_desde: "2026-01-01", p_hasta: "2027-12-31" }],
@@ -94,6 +97,10 @@ for (const cli of clientes) {
     llamadas++;
     const cuerpo = await r.json().catch(() => null);
     let veredicto = r.ok ? "sin dinero" : `rechazada ${r.status}`;
+    if (r.status === 404) {
+      veredicto = "NO SE PROBÓ (404)";
+      hallazgos.push(`rpc ${fn}: respondió 404, la llamada no llegó a la función (revisa los parámetros del script)`);
+    }
     if (r.ok && RPC_SOLO_STAFF.includes(fn)) {
       veredicto = "RESPONDE A UN CLIENTE";
       hallazgos.push(`rpc ${fn}: solo staff, pero le respondió al cliente ${cli.cliente_id.slice(0, 8)}`);
