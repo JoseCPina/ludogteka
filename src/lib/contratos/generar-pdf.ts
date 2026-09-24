@@ -108,8 +108,6 @@ export async function generarPdfContrato(opciones: OpcionesPdfContrato): Promise
   return pdfDoc.save();
 }
 
-export function resolverTokens(texto: string, campos: Record<string, string>): string {
-  return texto.replace(/\{\{(\w+)\}\}/g, (coincidencia, clave: string) =>
-    Object.prototype.hasOwnProperty.call(campos, clave) ? campos[clave] : coincidencia
-  );
-}
+// El reemplazo de variables vive en src/lib/contratos/plantilla.ts
+// (resolverPlantilla): tolera variables escritas a mano, limpia lo pegado
+// desde tablas y llena las rayitas con etiqueta.

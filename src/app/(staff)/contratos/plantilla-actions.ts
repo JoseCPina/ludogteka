@@ -1,5 +1,6 @@
 "use server";
 
+import { variablesDesconocidas } from "@/lib/contratos/plantilla";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../reservas/traducir-error";
@@ -23,6 +24,12 @@ export async function crearTipoContrato(
   if (!nombre.trim()) return { error: "Ponle un nombre al contrato (por ejemplo: Contrato de hotel)." };
   if (!titulo.trim()) return { error: "El título no puede estar vacío." };
   if (!cuerpo.trim()) return { error: "El cuerpo del contrato no puede estar vacío." };
+  const desconocidas = variablesDesconocidas(`${titulo}\n${cuerpo}`);
+  if (desconocidas.length) {
+    return {
+      error: `El texto trae variables que el sistema no sabe llenar: ${desconocidas.join(", ")}. Cámbialas por un campo de la lista o quítales las llaves.`,
+    };
+  }
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("crear_tipo_contrato", {
@@ -103,6 +110,12 @@ export async function publicarPlantilla(
 ): Promise<EstadoPublicarPlantilla> {
   if (!titulo.trim()) return { error: "El título no puede estar vacío." };
   if (!cuerpo.trim()) return { error: "El cuerpo del contrato no puede estar vacío." };
+  const desconocidas = variablesDesconocidas(`${titulo}\n${cuerpo}`);
+  if (desconocidas.length) {
+    return {
+      error: `El texto trae ${desconocidas.length === 1 ? "una variable" : "variables"} que el sistema no sabe llenar y ${desconocidas.length === 1 ? "saldría" : "saldrían"} con llaves en el contrato: ${desconocidas.join(", ")}. Cámbialas por un campo de la lista o quítales las llaves.`,
+    };
+  }
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("publicar_plantilla", {

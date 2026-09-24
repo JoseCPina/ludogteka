@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { generarPdfContrato, resolverTokens } from "@/lib/contratos/generar-pdf";
+import { generarPdfContrato } from "@/lib/contratos/generar-pdf";
+import { resolverPlantilla } from "@/lib/contratos/plantilla";
 import { paginaDeError } from "@/lib/http/pagina-de-error";
 
 // Vista previa del contrato SIN firmar, generada al vuelo — nunca se
@@ -66,8 +67,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
     const camposTexto = campos as Record<string, string>;
     const pdfBytes = await generarPdfContrato({
-      titulo: resolverTokens(plantilla.titulo, camposTexto),
-      cuerpo: resolverTokens(plantilla.cuerpo, camposTexto),
+      titulo: resolverPlantilla(plantilla.titulo, camposTexto),
+      cuerpo: resolverPlantilla(plantilla.cuerpo, camposTexto),
     });
 
     return new NextResponse(Buffer.from(pdfBytes), {

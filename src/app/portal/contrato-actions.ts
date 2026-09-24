@@ -4,7 +4,8 @@ import crypto from "node:crypto";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { generarPdfContrato, resolverTokens } from "@/lib/contratos/generar-pdf";
+import { generarPdfContrato } from "@/lib/contratos/generar-pdf";
+import { resolverPlantilla } from "@/lib/contratos/plantilla";
 import { fechaLocalDeInstante, horaLocalDeInstante } from "@/lib/formato";
 
 const BUCKET = "perros-archivos";
@@ -73,8 +74,8 @@ export async function firmarContratoDigital(
 
   const camposTexto = campos as Record<string, string>;
   const pdfBytes = await generarPdfContrato({
-    titulo: resolverTokens(plantilla.titulo, camposTexto),
-    cuerpo: resolverTokens(plantilla.cuerpo, camposTexto),
+    titulo: resolverPlantilla(plantilla.titulo, camposTexto),
+    cuerpo: resolverPlantilla(plantilla.cuerpo, camposTexto),
     firma: {
       pngBytes,
       firmanteNombre: clienteRow?.nombre ?? "—",

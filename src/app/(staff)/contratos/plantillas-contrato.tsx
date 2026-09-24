@@ -5,6 +5,13 @@ import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  CAMPOS_CONTRATO,
+  camposDeEjemplo,
+  resolverPlantilla,
+  variablesDesconocidas,
+  variablesToleradas,
+} from "@/lib/contratos/plantilla";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { Select } from "@/components/ui/select";
@@ -20,30 +27,6 @@ import {
   type MomentoContrato,
 } from "./plantilla-actions";
 
-const TOKENS_DISPONIBLES = [
-  "cliente_nombre",
-  "cliente_telefono",
-  "cliente_email",
-  "cliente_rfc",
-  "perro_nombre",
-  "perro_raza",
-  "perro_sexo",
-  "perro_fecha_nacimiento",
-  "perro_tamano",
-  "autorizacion_medica_notas",
-  "tope_gasto_autorizado",
-  "consentimiento_imagen",
-  "servicios_disponibles",
-  "fecha_firma",
-  "horario_guarderia",
-  "contacto_emergencia",
-  // Estos cuatro salen de la compra del paquete: solo tienen valor en un
-  // contrato que se genera al comprar un paquete de guardería.
-  "paquete_guarderia",
-  "numero_day_pass",
-  "vigencia_inicio",
-  "vigencia_fin",
-];
 
 const CATEGORIAS: { clave: CategoriaServicioContrato; etiqueta: string }[] = [
   { clave: "guarderia", etiqueta: "Guardería" },
@@ -115,14 +98,62 @@ function SelectorCategorias({
 function AyudaTokens() {
   return (
     <div className="rounded-md border border-n-200 bg-white p-3">
-      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-n-600">Campos disponibles</p>
-      <div className="flex flex-wrap gap-1.5">
-        {TOKENS_DISPONIBLES.map((t) => (
-          <code key={t} className="rounded bg-n-100 px-1.5 py-0.5 text-xs text-n-700">
-            {`{{${t}}}`}
-          </code>
+      <p className="mb-2 text-xs font-bold uppercase tracking-wide text-n-600">Campos que se llenan solos</p>
+      <ul className="grid gap-x-4 gap-y-1 text-xs text-n-700 sm:grid-cols-2">
+        {CAMPOS_CONTRATO.map((c) => (
+          <li key={c.clave}>
+            <code className="rounded bg-n-100 px-1.5 py-0.5">{`{{${c.clave}}}`}</code> {c.etiqueta}
+            {c.soloPaquete ? " (solo en el contrato de un paquete)" : ""}
+          </li>
         ))}
+      </ul>
+      <p className="mt-2 text-xs text-n-600">
+        También se llenan los renglones con rayitas cuya etiqueta se reconoce, por ejemplo «Teléfono de
+        emergencia: ______» u «Observaciones de ingreso: ______».
+      </p>
+    </div>
+  );
+}
+
+// Antes de publicar: qué variables no se van a poder llenar (y por eso
+// saldrían con llaves en el contrato), cuáles se reconocen aunque estén
+// escritas a mano, y el contrato armado con datos de ejemplo.
+function RevisionPlantilla({ titulo, cuerpo }: { titulo: string; cuerpo: string }) {
+  const [verPrevia, setVerPrevia] = useState(false);
+  const texto = `${titulo}\n${cuerpo}`;
+  const desconocidas = variablesDesconocidas(texto);
+  const toleradas = variablesToleradas(texto);
+  if (!cuerpo.trim()) return null;
+  return (
+    <div className="flex flex-col gap-3">
+      {desconocidas.length > 0 ? (
+        <Alert variante="error" titulo="Hay variables que el sistema no sabe llenar">
+          {desconocidas.join(", ")}. Saldrían con llaves en el contrato: cámbialas por un campo de la
+          lista o quítales las llaves. Hasta entonces no se puede publicar.
+        </Alert>
+      ) : (
+        <p className="text-sm font-semibold text-verde-oscuro">Todas las variables del texto se pueden llenar.</p>
+      )}
+      {toleradas.length > 0 && (
+        <p className="text-sm text-n-600">
+          Se reconocen aunque no estén escritas como la lista:{" "}
+          {toleradas.map((t) => `${t.escrito} → {{${t.clave}}}`).join(", ")}.
+        </p>
+      )}
+      <div>
+        <Button type="button" variante="secundario" onClick={() => setVerPrevia((v) => !v)}>
+          {verPrevia ? "Ocultar vista previa" : "Ver vista previa con datos de ejemplo"}
+        </Button>
       </div>
+      {verPrevia && (
+        <div className="max-h-[32rem] overflow-y-auto rounded-md border border-n-200 bg-white p-5">
+          <p className="text-xs font-bold uppercase tracking-wide text-n-500">Vista previa · datos de ejemplo</p>
+          <p className="mt-2 text-lg font-bold text-n-900">{resolverPlantilla(titulo, camposDeEjemplo())}</p>
+          <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-n-800">
+            {resolverPlantilla(cuerpo, camposDeEjemplo())}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -207,10 +238,11 @@ function FormularioNuevoTipo({ onListo }: { onListo: () => void }) {
         ayuda="Usa {{token}} para los campos que se llenan solos — lista abajo."
       />
       <AyudaTokens />
+      <RevisionPlantilla titulo={titulo} cuerpo={cuerpo} />
 
       <div className="flex gap-2">
         <Button type="button" cargando={enviando.cargando} onClick={guardar}>
-          {enviando ? "Creando…" : "Crear y publicar versión 1"}
+          {enviando.cargando ? "Creando…" : "Crear y publicar versión 1"}
         </Button>
         <Button type="button" variante="secundario" onClick={onListo}>
           Cancelar
@@ -269,11 +301,12 @@ function FormularioNuevaVersion({
         ayuda="Usa {{token}} para los campos que se llenan solos — lista abajo."
       />
       <AyudaTokens />
+      <RevisionPlantilla titulo={titulo} cuerpo={cuerpo} />
       <CasillaRefirma valor={requiereRefirma} onCambio={setRequiereRefirma} />
 
       <div className="flex gap-2">
         <Button type="button" cargando={enviando.cargando} onClick={guardar}>
-          {enviando ? "Publicando…" : "Publicar nueva versión"}
+          {enviando.cargando ? "Publicando…" : "Publicar nueva versión"}
         </Button>
         <Button type="button" variante="secundario" onClick={onListo}>
           Cancelar
@@ -356,7 +389,7 @@ function FormularioDatosTipo({
       )}
       <div className="flex gap-2">
         <Button type="button" cargando={enviando.cargando} onClick={guardar}>
-          {enviando ? "Guardando…" : "Guardar"}
+          {enviando.cargando ? "Guardando…" : "Guardar"}
         </Button>
         <Button type="button" variante="secundario" onClick={onListo}>
           Cancelar
@@ -477,7 +510,7 @@ function TarjetaTipo({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin: bool
           </p>
           <div className="flex gap-2">
             <Button type="button" variante="peligro" cargando={ocupado.cargando} onClick={archivar}>
-              {ocupado ? "Archivando…" : "Sí, archivar"}
+              {ocupado.cargando ? "Archivando…" : "Sí, archivar"}
             </Button>
             <Button type="button" variante="secundario" onClick={() => setConfirmandoArchivo(false)}>
               No
@@ -552,7 +585,7 @@ function TarjetaArchivado({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin:
       {error && <span className="text-sm text-naranja-oscuro">{error}</span>}
       {esAdmin && (
         <Button type="button" variante="secundario" cargando={ocupado.cargando} onClick={reactivar}>
-          {ocupado ? "Reactivando…" : "Reactivar"}
+          {ocupado.cargando ? "Reactivando…" : "Reactivar"}
         </Button>
       )}
     </li>
