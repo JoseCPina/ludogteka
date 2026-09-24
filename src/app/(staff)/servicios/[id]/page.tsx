@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -14,6 +16,11 @@ export default async function EditarServicioPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ creado?: string }>;
 }) {
+  // Crear y editar servicios es de admin. Quien entra por el permiso de
+  // tarifas va directo a la matriz de precios de este servicio.
+  const sesionServicio = await obtenerSesionConRol();
+  if (sesionServicio?.rol !== "admin") redirect(`/servicios/${(await params).id}/tarifas`);
+
   const { id } = await params;
   const { creado } = await searchParams;
 

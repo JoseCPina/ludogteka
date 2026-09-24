@@ -1,6 +1,7 @@
 // Uso: node scripts/auditoria/dinero-cliente.mjs  (contra DESARROLLO, lee .env.local)
-// Sale con código 1 si algún cliente alcanza un monto, o cualquier fila de
-// lo que es solo del staff (SOLO_STAFF / RPC_SOLO_STAFF).
+// Sale con código 1 si algún cliente alcanza un monto, cualquier fila de
+// lo que es solo del staff (SOLO_STAFF / RPC_SOLO_STAFF), o si alguien del
+// personal sin el permiso de costos alcanza un costo.
 // Verificación final: con el JWT real de CADA cliente de desarrollo, tabla
 // por tabla y vista por vista de la API REST, ¿alcanza alguna columna de
 // dinero con valor? Y las RPC que tocan dinero, con sus propios ids.
@@ -25,6 +26,8 @@ const SOLO_STAFF = [
   // Catálogos internos y operación de la casa
   "categorias_insumo", "unidades_medida", "catalogo_descuentos", "cupo_configuracion",
   "llegadas_hoy", "quienes_estan_adentro",
+  // Permisos del personal: el cliente no tiene ninguno y no ve los de nadie.
+  "permisos_staff",
 ];
 // RPC que un cliente con sesión no debe poder llamar (tienen que rechazarlo).
 const RPC_SOLO_STAFF = ["calendario_ocupacion"];
@@ -125,6 +128,42 @@ console.log("\nrelaciones que algún cliente todavía lee (filas vistas en total
 console.log([...alcanzablesPorCliente].filter(([, n]) => n > 0).map(([r, n]) => `${r}(${n})${columnasDinero.has(r) ? "*" : ""}`).join(", "));
 console.log("\nRPC:");
 for (const [fn, v] of rpcDinero) console.log(" ", fn.padEnd(36), JSON.stringify(v));
+// ── Personal sin el permiso de costos (24 de septiembre de 2026) ──────
+// Recepción sin «Costos y compras de inventario» y estética no alcanzan
+// ningún costo: ni las compras, ni el costo promedio de un insumo, ni los
+// reportes de costos y margen (salvo que tengan «Reportes financieros»).
+// Control positivo: tiene que haber compras con costo en la base; si no,
+// la prueba no demostraría nada.
+const { count: comprasTotales } = await A.from("compras_insumos").select("id", { count: "exact", head: true });
+if (!comprasTotales) hallazgos.push("costos: no hay ninguna compra de insumos en desarrollo; corre scripts/auditoria/permisos-staff.mjs (crea una) y repite");
+const { data: insumosIds } = await A.from("insumos").select("id").limit(20);
+const { data: staffSinCostos } = await A.from("profiles").select("id, rol, nombre_completo").in("rol", ["recepcion", "estetica"]).is("deleted_at", null);
+const { data: permisosVigentes } = await A.from("permisos_staff").select("profile_id, permiso").is("revocado_at", null).is("deleted_at", null);
+const permisosDe = (id) => new Set((permisosVigentes ?? []).filter((x) => x.profile_id === id).map((x) => x.permiso));
+let staffRevisado = 0;
+for (const persona of staffSinCostos ?? []) {
+  const suyos = permisosDe(persona.id);
+  if (persona.rol === "recepcion" && suyos.has("inventario_costos")) continue;
+  staffRevisado++;
+  const token = await tokenDe(persona.id);
+  const h = { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+  const quien = `${persona.rol} ${persona.nombre_completo ?? persona.id.slice(0, 8)}`;
+  const compras = await (await fetch(`${URL}/rest/v1/compras_insumos?select=*`, { headers: h })).json();
+  if (!Array.isArray(compras) || compras.length > 0) hallazgos.push(`costos: ${quien} lee ${Array.isArray(compras) ? compras.length : "?"} compras sin el permiso`);
+  for (const ins of insumosIds ?? []) {
+    const r = await fetch(`${URL}/rest/v1/rpc/costo_promedio_base_insumo`, { method: "POST", headers: h, body: JSON.stringify({ p_insumo_id: ins.id }) });
+    const v = await r.json().catch(() => null);
+    if (r.ok && v !== null) hallazgos.push(`costos: ${quien} obtiene el costo promedio de un insumo (${v}) sin el permiso`);
+  }
+  if (!suyos.has("reportes_financieros")) {
+    for (const fn of ["reporte_costos_periodo", "reporte_margen_por_servicio_periodo"]) {
+      const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: h, body: JSON.stringify({ p_desde: "2026-01-01", p_hasta: "2027-12-31" }) });
+      if (r.ok) hallazgos.push(`costos: ${quien} puede llamar ${fn} sin permiso`);
+    }
+  }
+}
+console.log(`\npersonal sin permiso de costos revisado: ${staffRevisado} (compras con costo en la base: ${comprasTotales ?? 0})`);
+
 for (const rel of SOLO_STAFF) {
   if (!relaciones.includes(rel)) hallazgos.push(`${rel}: está en SOLO_STAFF pero la API ya no la expone (¿se renombró?)`);
   else if ((alcanzablesPorCliente.get(rel) ?? 0) > 0) hallazgos.push(`${rel}: solo staff, pero algún cliente lee ${alcanzablesPorCliente.get(rel)} filas`);

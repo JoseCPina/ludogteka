@@ -91,7 +91,7 @@ export default async function ReportesPage({
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold text-n-900">Reportes</h1>
-        <p className="mt-1 text-n-600">Financiero y operativo. Solo visible para admin.</p>
+        <p className="mt-1 text-n-600">Financiero y operativo. Solo para admin y para quien tenga el permiso «Reportes financieros».</p>
       </div>
 
       <form className="flex flex-wrap items-end gap-3 rounded-lg border border-n-200 bg-white p-4">

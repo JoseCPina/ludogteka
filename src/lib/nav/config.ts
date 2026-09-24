@@ -4,6 +4,9 @@ export type ItemNav = {
   etiqueta: string;
   href: string;
   roles: string[];
+  // Recepción con cualquiera de estos permisos extra también la ve
+  // (permisos_staff; la base y el middleware aplican lo mismo).
+  permisos?: string[];
   // Sin ruta real todavía: se muestra deshabilitado, sin link. Cuando la
   // sección exista, basta con quitar esta bandera (o mover la entrada,
   // si cambia de lugar en el flujo).
@@ -23,13 +26,17 @@ export const SECCIONES_STAFF: ItemNav[] = [
   { etiqueta: "Guardería", href: "/guarderia", roles: ["admin", "recepcion"] },
   { etiqueta: "Hotel", href: "/hotel", roles: ["admin", "recepcion"] },
   { etiqueta: "Estética", href: "/estetica", roles: ["admin", "recepcion", "estetica"] },
-  { etiqueta: "Servicios", href: "/servicios", roles: ["admin"] },
+  { etiqueta: "Servicios", href: "/servicios", roles: ["admin"], permisos: ["tarifas"] },
   { etiqueta: "Clientes", href: "/clientes", roles: ["admin", "recepcion"] },
   { etiqueta: "Vinculación", href: "/vinculacion", roles: ["admin", "recepcion"] },
   { etiqueta: "Caja", href: "/caja", roles: ["admin", "recepcion"] },
   { etiqueta: "Contratos", href: "/contratos", roles: ["admin", "recepcion"] },
   { etiqueta: "Inventario", href: "/inventario", roles: ["admin", "recepcion", "estetica"] },
-  { etiqueta: "Reportes", href: "/reportes", roles: ["admin"] },
+  { etiqueta: "Reportes", href: "/reportes", roles: ["admin"], permisos: ["reportes_financieros"] },
+  // Admin aterriza en /admin (su "Inicio"); esta entrada es para recepción
+  // con permisos de personal o de configuración.
+  { etiqueta: "Administración", href: "/admin", roles: ["admin"], permisos: ["personal", "configuracion_negocio", "tarifas"] },
+  { etiqueta: "Permisos", href: "/admin/permisos", roles: ["admin"] },
 ];
 
 // Vacío por ahora — Fase 2/6/9 agregan aquí Mis perros, Mis reservas,
@@ -37,13 +44,18 @@ export const SECCIONES_STAFF: ItemNav[] = [
 // en cuanto tenga elementos.
 export const SECCIONES_PORTAL: ItemNav[] = [];
 
-export function navStaffPara(rol: string): ItemNav[] {
+export function navStaffPara(rol: string, permisos: string[] = []): ItemNav[] {
   const inicio = rutaPorRol(rol);
   return [
     { etiqueta: "Inicio", href: inicio, roles: [rol] },
     // El rol de estética aterriza justamente en /estetica, que además es
     // una sección del menú: sin este filtro saldría dos veces seguidas,
     // "Inicio" y "Estética", apuntando al mismo lugar.
-    ...SECCIONES_STAFF.filter((seccion) => seccion.roles.includes(rol) && seccion.href !== inicio),
+    ...SECCIONES_STAFF.filter(
+      (seccion) =>
+        (seccion.roles.includes(rol) ||
+          (rol === "recepcion" && (seccion.permisos ?? []).some((p) => permisos.includes(p)))) &&
+        seccion.href !== inicio
+    ),
   ];
 }

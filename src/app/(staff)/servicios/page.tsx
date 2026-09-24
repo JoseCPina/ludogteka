@@ -1,3 +1,4 @@
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,8 @@ const ETIQUETA_CATEGORIA: Record<string, string> = {
 };
 
 export default async function ServiciosPage() {
+  const sesion = await obtenerSesionConRol();
+  const esAdmin = sesion?.rol === "admin";
   const supabase = await createSupabaseServerClient();
   // Sin filtrar deleted_at: esta pantalla ES el histórico del catálogo.
   // Quien arme un selector para cobrar (Fase 4/5) sí debe filtrar
@@ -79,9 +82,11 @@ export default async function ServiciosPage() {
             Catálogo de guardería, hotel, estética, cargos adicionales y bonos.
           </p>
         </div>
-        <Link href="/servicios/nuevo">
-          <Button type="button">Nuevo servicio</Button>
-        </Link>
+        {esAdmin && (
+          <Link href="/servicios/nuevo">
+            <Button type="button">Nuevo servicio</Button>
+          </Link>
+        )}
       </div>
 
       <AvisoRazasSinCatalogar cuantos={perrosSinRaza} />
@@ -136,7 +141,7 @@ export default async function ServiciosPage() {
                   <tr key={s.id} className={s.deleted_at ? "opacity-60" : ""}>
                     <td className="border-b border-n-200 px-4 py-3">
                       <Link
-                        href={`/servicios/${s.id}`}
+                        href={esAdmin ? `/servicios/${s.id}` : `/servicios/${s.id}/tarifas`}
                         className="rounded font-semibold text-azul hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul"
                       >
                         {s.nombre}

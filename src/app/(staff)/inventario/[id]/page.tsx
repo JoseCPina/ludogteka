@@ -1,3 +1,4 @@
+import { tienePermiso } from "@/lib/auth/permisos";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -11,7 +12,8 @@ export default async function EditarInsumoPage({ params }: { params: Promise<{ i
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
-  const esAdmin = sesion?.rol === "admin";
+  // Compras y costos: admin o recepción con «Costos y compras de inventario».
+  const puedeCostos = tienePermiso(sesion, "inventario_costos");
 
   const [{ data: insumo }, { data: categorias }, { data: unidades }, { data: movimientosCrudo }] =
     await Promise.all([
@@ -42,7 +44,7 @@ export default async function EditarInsumoPage({ params }: { params: Promise<{ i
     { proveedor_nombre: string; cantidad_compra: number; costo_unitario: number; costo_total: number }
   >();
   let proveedores: { id: string; nombre: string }[] = [];
-  if (esAdmin) {
+  if (puedeCostos) {
     const [{ data: compras }, { data: proveedoresData }] = await Promise.all([
       supabase
         .from("compras_insumos")
@@ -119,7 +121,7 @@ export default async function EditarInsumoPage({ params }: { params: Promise<{ i
         <h2 className="text-lg font-bold text-n-900">Movimientos</h2>
         <MovimientosInsumo
           insumoId={id}
-          esAdmin={esAdmin}
+          esAdmin={puedeCostos}
           unidadCompraEtiqueta={unidadCompra?.etiqueta ?? "—"}
           unidadConsumoEtiqueta={unidadConsumo?.etiqueta ?? "—"}
           equivalenciaConsumo={equivalencia}

@@ -1,3 +1,4 @@
+import { tienePermiso } from "@/lib/auth/permisos";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
@@ -61,7 +62,7 @@ export default async function ContratosPage() {
         <PlantillasContrato
           tipos={vistas.filter((t) => !t.archivado)}
           archivados={vistas.filter((t) => t.archivado)}
-          esAdmin={sesion?.rol === "admin"}
+          esAdmin={tienePermiso(sesion, "plantillas_contrato")}
         />
       )}
     </div>

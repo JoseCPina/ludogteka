@@ -29,9 +29,25 @@ export async function POST(request: Request) {
     .eq("id", caller.id)
     .single();
 
-  if (callerProfileError || callerProfile?.rol !== "admin") {
+  // Admin, o alguien de recepción con el permiso «Personal» (permisos_staff,
+  // misma regla que tiene_permiso() en la base). Los roles que se pueden
+  // invitar siguen siendo solo recepción y estética: con el permiso nadie
+  // puede crear un admin.
+  let puedeInvitar = !callerProfileError && callerProfile?.rol === "admin";
+  if (!puedeInvitar && !callerProfileError && callerProfile?.rol === "recepcion") {
+    const { data: permiso } = await admin
+      .from("permisos_staff")
+      .select("id")
+      .eq("profile_id", caller.id)
+      .eq("permiso", "personal")
+      .is("revocado_at", null)
+      .is("deleted_at", null)
+      .maybeSingle();
+    puedeInvitar = Boolean(permiso);
+  }
+  if (!puedeInvitar) {
     return NextResponse.json(
-      { error: "Solo un admin puede invitar staff." },
+      { error: "Solo un admin, o quien tenga el permiso «Personal», puede invitar personal." },
       { status: 403 }
     );
   }

@@ -1,3 +1,4 @@
+import { tienePermiso } from "@/lib/auth/permisos";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -95,7 +96,7 @@ export async function PaginaNuevaReserva({
           servicios={servicios ?? []}
           seriesActivas={seriesActivasLista}
           paquetes={paquetes}
-          esAdmin={sesion?.rol === "admin"}
+          esAdmin={tienePermiso(sesion, "excepciones_reserva")}
           hoy={hoy}
           base={modulo.base}
         />

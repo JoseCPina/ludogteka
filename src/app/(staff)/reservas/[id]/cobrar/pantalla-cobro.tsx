@@ -1,3 +1,4 @@
+import { tienePermiso } from "@/lib/auth/permisos";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -279,6 +280,7 @@ export async function PantallaCobro({
           descuentos={descuentos}
           topeRecepcion={topeRecepcion}
           esAdmin={sesion?.rol === "admin"}
+          puedeSinTope={tienePermiso(sesion, "descuentos_sin_tope")}
           mp={{ disponible: mpDisponible, ordenes: ordenesMp, clienteTelefono: (cliente?.telefono as string | null) ?? null }}
         />
       )}

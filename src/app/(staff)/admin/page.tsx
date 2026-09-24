@@ -11,9 +11,22 @@ import type { DiaHorario } from "./configuracion-actions";
 import { TarifasFaltantes, type ServicioConHuecos } from "./tarifas-faltantes";
 import { contarSinTarifa, type CeldaVigente } from "@/lib/tarifas/matriz";
 import { TableroDia } from "../tablero-dia";
+import Link from "next/link";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { tienePermiso } from "@/lib/auth/permisos";
+import { ListaPersonal, type PersonaStaff } from "./lista-personal";
 
+// Admin ve todo. Una persona de recepción con permisos extra llega aquí
+// solo con las secciones que le tocan (el middleware la deja entrar con
+// personal, configuración o tarifas); lo demás es de admin y ni se consulta.
 export default async function AdminPage() {
   const supabase = await createSupabaseServerClient();
+  const sesion = await obtenerSesionConRol();
+  const esAdmin = sesion?.rol === "admin";
+  const puedeConfig = tienePermiso(sesion, "configuracion_negocio");
+  const puedeTarifas = tienePermiso(sesion, "tarifas");
+  const puedePersonal = tienePermiso(sesion, "personal");
+  const nada = Promise.resolve({ data: null, error: null });
   const [
     { data, error },
     { data: topeData },
@@ -25,8 +38,8 @@ export default async function AdminPage() {
     { data: vigentesCat },
     { data: horarioVigente },
   ] = await Promise.all([
-    supabase.rpc("listar_cuentas"),
-    supabase.rpc("resolver_tope_descuento_recepcion"),
+    esAdmin ? supabase.rpc("listar_cuentas") : nada,
+    esAdmin ? supabase.rpc("resolver_tope_descuento_recepcion") : nada,
     supabase.rpc("resolver_cupo_configuracion"),
     supabase
       .from("servicios")
@@ -44,6 +57,7 @@ export default async function AdminPage() {
       .select("servicio_id, grupo_raza_id, tamano_id, pelaje_id, cantidad_desde, cantidad_hasta, precio, no_aplica"),
     supabase.rpc("horario_semana_vigente"),
   ]);
+  const { data: personal } = !esAdmin && puedePersonal ? await supabase.rpc("listar_personal") : { data: null };
 
   // Mismo cálculo que la matriz, del mismo módulo: si cada pantalla
   // derivara las combinaciones por su cuenta, el aviso y la matriz
@@ -74,9 +88,11 @@ export default async function AdminPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-2xl font-bold text-n-900">Panel de admin</h1>
+        <h1 className="text-2xl font-bold text-n-900">{esAdmin ? "Panel de admin" : "Administración"}</h1>
         <p className="mt-1 text-n-600">
-          Cómo va el día, qué falta por capturar, y la configuración del negocio.
+          {esAdmin
+            ? "Cómo va el día, qué falta por capturar, y la configuración del negocio."
+            : "Lo que admin te dio permiso de administrar."}
         </p>
       </div>
 
@@ -85,26 +101,57 @@ export default async function AdminPage() {
         <TableroDia compacto />
       </section>
 
-      <section className="rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="mb-4 text-lg font-bold text-n-900">Configuración del negocio</h2>
-        <ConfiguracionNegocio vigente={configVigente} />
-      </section>
+      {esAdmin && (
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-n-200 bg-white p-5">
+          <div>
+            <h2 className="text-lg font-bold text-n-900">Permisos de recepción</h2>
+            <p className="mt-1 text-sm text-n-600">
+              Dale a una persona de recepción permisos extra para que te ayude a administrar.
+            </p>
+          </div>
+          <Link href="/admin/permisos" className="font-semibold text-azul hover:underline">
+            Administrar permisos →
+          </Link>
+        </section>
+      )}
 
-      <section className="rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="mb-4 text-lg font-bold text-n-900">Horario de atención</h2>
-        <HorarioNegocio vigente={(horarioVigente ?? []) as DiaHorario[]} />
-      </section>
+      {puedeConfig && (
+        <section className="rounded-lg border border-n-200 bg-white p-5">
+          <h2 className="mb-4 text-lg font-bold text-n-900">Configuración del negocio</h2>
+          <ConfiguracionNegocio vigente={configVigente} />
+        </section>
+      )}
 
-      <section className="rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="mb-4 text-lg font-bold text-n-900">Precios sin capturar</h2>
-        <TarifasFaltantes servicios={serviciosSinTarifa} />
-      </section>
+      {puedeConfig && (
+        <section className="rounded-lg border border-n-200 bg-white p-5">
+          <h2 className="mb-4 text-lg font-bold text-n-900">Horario de atención</h2>
+          <HorarioNegocio vigente={(horarioVigente ?? []) as DiaHorario[]} />
+        </section>
+      )}
 
-      <section className="rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="mb-4 text-lg font-bold text-n-900">Invitar personal</h2>
-        <InvitarStaff />
-      </section>
+      {puedeTarifas && (
+        <section className="rounded-lg border border-n-200 bg-white p-5">
+          <h2 className="mb-4 text-lg font-bold text-n-900">Precios sin capturar</h2>
+          <TarifasFaltantes servicios={serviciosSinTarifa} />
+        </section>
+      )}
 
+      {puedePersonal && (
+        <section className="rounded-lg border border-n-200 bg-white p-5">
+          <h2 className="mb-4 text-lg font-bold text-n-900">Invitar personal</h2>
+          <InvitarStaff />
+        </section>
+      )}
+
+      {!esAdmin && puedePersonal && (
+        <section className="rounded-lg border border-n-200 bg-white p-5">
+          <h2 className="mb-4 text-lg font-bold text-n-900">Personal</h2>
+          <ListaPersonal personas={(personal as PersonaStaff[] | null) ?? []} />
+        </section>
+      )}
+
+      {esAdmin && (
+      <>
       <section className="rounded-lg border border-n-200 bg-white p-5">
         <h2 className="mb-4 text-lg font-bold text-n-900">Tope de descuentos de recepción</h2>
         <DescuentoConfig
@@ -122,7 +169,10 @@ export default async function AdminPage() {
         <h2 className="mb-4 text-lg font-bold text-n-900">Conexión con Google Maps</h2>
         <DiagnosticoGoogle />
       </section>
+      </>
+      )}
 
+      {esAdmin && (
       <section>
         <h2 className="mb-4 text-lg font-bold text-n-900">Cuentas</h2>
         {error ? (
@@ -133,6 +183,7 @@ export default async function AdminPage() {
           <ListaCuentas cuentas={(data as Cuenta[]) ?? []} />
         )}
       </section>
+      )}
     </div>
   );
 }

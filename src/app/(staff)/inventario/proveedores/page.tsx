@@ -1,3 +1,4 @@
+import { tienePermiso } from "@/lib/auth/permisos";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -12,7 +13,7 @@ export default async function ProveedoresPage({
   const { creado } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
-  const esAdmin = sesion?.rol === "admin";
+  const esAdmin = tienePermiso(sesion, "inventario_costos");
 
   const { data: proveedores, error } = await supabase
     .from("proveedores")

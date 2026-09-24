@@ -17,9 +17,21 @@ export const obtenerSesionConRol = cache(async () => {
     .eq("id", user.id)
     .single();
 
+  const rol = (perfil?.rol as string | undefined) ?? "cliente";
+
+  // Permisos extra de recepción (admin los tiene todos por definición). La
+  // base es la que manda: esto solo sirve para la navegación y para no
+  // mostrar botones que la base va a rechazar.
+  let permisos: string[] = [];
+  if (rol === "recepcion" || rol === "admin") {
+    const { data } = await supabase.rpc("mis_permisos");
+    permisos = ((data as string[] | null) ?? []).map(String);
+  }
+
   return {
     user,
-    rol: (perfil?.rol as string | undefined) ?? "cliente",
+    rol,
+    permisos,
     nombreCompleto: (perfil?.nombre_completo as string | null | undefined) ?? null,
     clienteId: (perfil?.cliente_id as string | null | undefined) ?? null,
   };

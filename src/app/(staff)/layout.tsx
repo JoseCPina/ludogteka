@@ -12,7 +12,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
       rol={sesion.rol}
       email={sesion.user.email ?? ""}
       nombreCompleto={sesion.nombreCompleto}
-      items={navStaffPara(sesion.rol)}
+      items={navStaffPara(sesion.rol, sesion.permisos)}
     >
       {children}
     </StaffShell>

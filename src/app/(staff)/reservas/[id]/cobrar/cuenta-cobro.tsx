@@ -116,6 +116,7 @@ export function CuentaCobro({
   descuentos,
   topeRecepcion,
   esAdmin,
+  puedeSinTope,
   mp,
 }: {
   reservaId: string;
@@ -129,6 +130,8 @@ export function CuentaCobro({
   descuentos: DescuentoHistorial[];
   topeRecepcion: number;
   esAdmin: boolean;
+  // Admin o recepción con «Descuentos sin tope». Devoluciones: solo admin.
+  puedeSinTope: boolean;
   mp: { disponible: EstadoMpDisponible; ordenes: OrdenMpFila[]; clienteTelefono: string | null };
 }) {
   const router = useRouter();
@@ -214,7 +217,7 @@ export function CuentaCobro({
       setError("El valor del descuento debe ser mayor a cero.");
       return;
     }
-    if (pasaTope && !esAdmin) {
+    if (pasaTope && !puedeSinTope) {
       setError(
         `Este descuento ($${montoEstimadoDescuento.toFixed(2)}) pasa el tope de recepción ($${topeRecepcion.toFixed(2)}). Pide a un admin que lo aplique.`
       );
@@ -532,7 +535,7 @@ export function CuentaCobro({
               <p className={`text-sm ${pasaTope ? "font-semibold text-naranja-oscuro" : "text-n-600"}`}>
                 Equivale a {dinero(montoEstimadoDescuento)}
                 {pasaTope
-                  ? ` — pasa el tope de recepción (${dinero(topeRecepcion)}). ${esAdmin ? "Necesita motivo." : "Solo un admin puede aplicarlo."}`
+                  ? ` — pasa el tope de recepción (${dinero(topeRecepcion)}). ${puedeSinTope ? "Necesita motivo." : "Solo un admin, o quien tenga el permiso «Descuentos sin tope», puede aplicarlo."}`
                   : ""}
               </p>
             )}
@@ -549,7 +552,7 @@ export function CuentaCobro({
             <div className="flex gap-2">
               <Button
                 type="button"
-                disabled={guardandoDescuento.cargando || (pasaTope && !esAdmin)}
+                disabled={guardandoDescuento.cargando || (pasaTope && !puedeSinTope)}
                 onClick={enviarDescuento}
               >
                 {guardandoDescuento.cargando ? "Aplicando…" : "Confirmar descuento"}

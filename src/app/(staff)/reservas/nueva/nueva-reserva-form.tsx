@@ -243,7 +243,7 @@ export function NuevaReservaForm({
                           actualizarLinea(r.perroId, { bloqueoSanitarioSuperado: e.target.checked })
                         }
                       />
-                      Autorizar excepción (solo admin)
+                      Autorizar excepción (admin o con permiso)
                     </label>
                     {linea.bloqueoSanitarioSuperado && (
                       <>
@@ -279,7 +279,7 @@ export function NuevaReservaForm({
                           actualizarLinea(r.perroId, { bloqueoComportamientoSuperado: e.target.checked })
                         }
                       />
-                      Reservar sin evaluación de comportamiento (solo admin)
+                      Reservar sin evaluación de comportamiento (admin o con permiso)
                     </label>
                     {linea.bloqueoComportamientoSuperado && (
                       <>

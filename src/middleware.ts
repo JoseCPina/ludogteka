@@ -4,8 +4,16 @@ import { rutaPorRol } from "@/lib/auth/rutas";
 
 // Zonas de página: si el rol no está permitido, se redirige a la zona que
 // sí le toca (nunca a /login con sesión activa — eso se lee como un bug).
-const ZONAS_PROTEGIDAS: { prefijo: string; rolesPermitidos: string[] }[] = [
-  { prefijo: "/admin", rolesPermitidos: ["admin"] },
+//
+// `permisos`: una persona de recepción con CUALQUIERA de esos permisos
+// extra (permisos_staff, 24 de septiembre de 2026) también entra. El orden
+// importa: gana el primer prefijo que coincide, así que lo más específico
+// va primero (/admin/permisos antes de /admin).
+type Zona = { prefijo: string; rolesPermitidos: string[]; permisos?: string[] };
+const ZONAS_PROTEGIDAS: Zona[] = [
+  // Dar y quitar permisos nunca se delega.
+  { prefijo: "/admin/permisos", rolesPermitidos: ["admin"] },
+  { prefijo: "/admin", rolesPermitidos: ["admin"], permisos: ["personal", "configuracion_negocio", "tarifas"] },
   { prefijo: "/recepcion", rolesPermitidos: ["recepcion", "admin"] },
   // /estetica es a la vez el aterrizaje del rol de estética y el módulo de
   // la agenda (antes /agenda), así que recepción también entra.
@@ -16,20 +24,22 @@ const ZONAS_PROTEGIDAS: { prefijo: string; rolesPermitidos: string[] }[] = [
   // Estética entra también: escribe peso/alergias/alertas del perro, aunque
   // no pueda tocar los datos base (eso lo filtra RLS, no esta zona).
   { prefijo: "/perros", rolesPermitidos: ["admin", "recepcion", "estetica"] },
-  { prefijo: "/servicios", rolesPermitidos: ["admin"] },
+  // Con el permiso de tarifas solo le sirven las matrices de precios: la
+  // página de cada servicio la manda ahí (crear y editar servicios es de admin).
+  { prefijo: "/servicios", rolesPermitidos: ["admin"], permisos: ["tarifas"] },
   { prefijo: "/reservas", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/guarderia", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/hotel", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/caja", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/contratos", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/inventario", rolesPermitidos: ["admin", "recepcion", "estetica"] },
-  { prefijo: "/reportes", rolesPermitidos: ["admin"] },
+  { prefijo: "/reportes", rolesPermitidos: ["admin"], permisos: ["reportes_financieros"] },
 ];
 
 // Zonas de API: nunca redirige (un fetch no sabe qué hacer con un 302 a
 // HTML) — responde 401/403 directo.
-const ZONAS_API_PROTEGIDAS: { prefijo: string; rolesPermitidos: string[] }[] = [
-  { prefijo: "/api/staff", rolesPermitidos: ["admin"] },
+const ZONAS_API_PROTEGIDAS: Zona[] = [
+  { prefijo: "/api/staff", rolesPermitidos: ["admin"], permisos: ["personal"] },
 ];
 
 function conCookiesDe(origen: NextResponse, destino: NextResponse) {
@@ -106,7 +116,16 @@ export async function middleware(request: NextRequest) {
 
   const rol = perfil?.rol ?? "cliente";
 
-  if (!zona.rolesPermitidos.includes(rol)) {
+  // Recepción con un permiso extra que abre esta zona. La base vuelve a
+  // revisar el permiso en cada operación: esto solo decide si se ve la página.
+  let entraPorPermiso = false;
+  if (!zona.rolesPermitidos.includes(rol) && rol === "recepcion" && zona.permisos?.length) {
+    const { data: mios } = await supabase.rpc("mis_permisos");
+    const propios = new Set(((mios as string[] | null) ?? []).map(String));
+    entraPorPermiso = zona.permisos.some((p) => propios.has(p));
+  }
+
+  if (!zona.rolesPermitidos.includes(rol) && !entraPorPermiso) {
     if (zonaApi) {
       return conCookiesDe(
         response,
