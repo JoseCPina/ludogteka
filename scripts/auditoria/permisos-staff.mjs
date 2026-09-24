@@ -35,11 +35,11 @@ const quitarTodos = async () => { for (const p of PERMISOS) await ADM.rpc("revoc
 const dar = async (p) => { const { error } = await ADM.rpc("otorgar_permiso", { p_profile_id: rec.id, p_permiso: p }); if (error) throw error; };
 
 // ── Datos de prueba ──────────────────────────────────────────────────
-const { data: categoria } = await A.from("categorias_insumo").select("id").limit(1).single();
+const { data: areaInv } = await A.from("areas_inventario").select("id").is("deleted_at", null).limit(1).single();
 const { data: unidad } = await A.from("unidades_medida").select("id").limit(1).single();
 let { data: insumo } = await A.from("insumos").select("id").eq("nombre", "Prueba de permisos").maybeSingle();
 if (!insumo) {
-  const r = await A.from("insumos").insert({ nombre: "Prueba de permisos", categoria_id: categoria.id, unidad_compra_id: unidad.id, unidad_consumo_id: unidad.id }).select("id").single();
+  const r = await A.from("insumos").insert({ nombre: "Prueba de permisos", area_id: areaInv.id, unidad_compra_id: unidad.id, unidad_consumo_id: unidad.id }).select("id").single();
   if (r.error) throw new Error("insumo de prueba: " + r.error.message);
   insumo = r.data;
 }
@@ -55,16 +55,22 @@ const { data: plantilla } = await A.from("plantillas_contrato").select("id, requ
 // bloqueos) para probar descuentos arriba del tope.
 const { data: perroPrueba } = await A.from("perros").select("id, cliente_id").is("deleted_at", null).eq("fallecido", false).not("tamano_id", "is", null).limit(1).single();
 const { data: servDia } = await A.from("servicios").select("id").eq("categoria", "guarderia").eq("unidad", "dia").is("deleted_at", null).limit(1).single();
+// Cada corrida deja su estancia (cancelada) y el perro no puede traslapar:
+// se busca el primer día hábil libre a partir de 40 días.
 let fechaPrueba = new Date(Date.now() + 40 * 86400000);
-while ([0, 6].includes(fechaPrueba.getUTCDay())) fechaPrueba = new Date(fechaPrueba.getTime() + 86400000);
-const fecha = fechaPrueba.toISOString().slice(0, 10);
-const masUno = new Date(fechaPrueba.getTime() + 86400000).toISOString().slice(0, 10);
 const { data: reservaDesc } = await ADM.from("reservas").insert({ cliente_id: perroPrueba.cliente_id, notas: "Prueba de permisos (descuento)" }).select("id").single();
-const estDesc = await ADM.from("estancias").insert({
-  reserva_id: reservaDesc.id, perro_id: perroPrueba.id, servicio_id: servDia.id, fecha_entrada: fecha, fecha_salida: masUno,
-  bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: "prueba de permisos",
-  bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: "prueba de permisos",
-}).select("id").single();
+let estDesc, fecha;
+for (let intento = 0; intento < 60; intento++, fechaPrueba = new Date(fechaPrueba.getTime() + 86400000)) {
+  if ([0, 6].includes(fechaPrueba.getUTCDay())) continue;
+  fecha = fechaPrueba.toISOString().slice(0, 10);
+  const masUno = new Date(fechaPrueba.getTime() + 86400000).toISOString().slice(0, 10);
+  estDesc = await ADM.from("estancias").insert({
+    reserva_id: reservaDesc.id, perro_id: perroPrueba.id, servicio_id: servDia.id, fecha_entrada: fecha, fecha_salida: masUno,
+    bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: "prueba de permisos",
+    bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: "prueba de permisos",
+  }).select("id").single();
+  if (!estDesc.error || !/traslape/.test(estDesc.error.message)) break;
+}
 if (estDesc.error) throw new Error("estancia de prueba: " + estDesc.error.message);
 const { data: tope } = await A.rpc("resolver_tope_descuento_recepcion", { p_fecha: fecha });
 const topeRec = Number(tope?.[0]?.tope_recepcion ?? 0);
@@ -77,7 +83,13 @@ const pruebas = {
     const { data: compras } = await R.from("compras_insumos").select("id");
     const { data: costo } = await R.rpc("costo_promedio_base_insumo", { p_insumo_id: insumo.id });
     const prov = await R.from("proveedores").update({ nombre: "Proveedor de prueba de permisos" }).eq("id", proveedor.id).select("id");
-    return { dejo: !compra.error, ve: (compras ?? []).length > 0 && costo !== null && (prov.data ?? []).length === 1, detalle: compra.error?.message };
+    const ref = await R.from("insumos_costos").upsert({ insumo_id: insumo.id, costo_unitario_compra: 10 }, { onConflict: "insumo_id" }).select("id");
+    const sinCosto = await R.rpc("insumos_sin_costo");
+    return {
+      dejo: !compra.error && (ref.data ?? []).length === 1,
+      ve: (compras ?? []).length > 0 && costo !== null && (prov.data ?? []).length === 1 && !sinCosto.error,
+      detalle: compra.error?.message ?? ref.error?.message ?? sinCosto.error?.message,
+    };
   },
   async tarifas() {
     const r = await R.from("tarifas").update({ precio: tarifa.precio }).eq("id", tarifa.id).select("id");

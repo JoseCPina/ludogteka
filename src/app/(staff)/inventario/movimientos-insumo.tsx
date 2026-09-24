@@ -87,7 +87,7 @@ export function MovimientosInsumo({
     setError(null);
     const res = await enviando.ejecutar(() => registrarEntradaCompra(
       insumoId,
-      proveedorId,
+      proveedorId || null,
       Number(cantidadCompra),
       Number(costoUnitario),
       requiereCaducidad ? fechaCaducidad || null : null
@@ -166,8 +166,13 @@ export function MovimientosInsumo({
 
       {formularioAbierto === "entrada" && (
         <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
-          <Select label="Proveedor" value={proveedorId} onChange={(e) => setProveedorId(e.target.value)} disabled={enviando.cargando}>
-            <option value="">Elige un proveedor</option>
+          <Select
+            label="Proveedor (opcional)"
+            value={proveedorId}
+            onChange={(e) => setProveedorId(e.target.value)}
+            disabled={enviando.cargando}
+          >
+            <option value="">Sin proveedor</option>
             {proveedores.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.nombre}
@@ -204,7 +209,7 @@ export function MovimientosInsumo({
             />
           )}
           <div className="flex gap-2">
-            <Button type="button" disabled={enviando.cargando || !proveedorId || !cantidadCompra || !costoUnitario} onClick={enviarEntrada}>
+            <Button type="button" disabled={enviando.cargando || !cantidadCompra || !costoUnitario} onClick={enviarEntrada}>
               {enviando.cargando ? "Guardando…" : "Registrar entrada"}
             </Button>
             <Button type="button" variante="secundario" onClick={cerrarFormulario} cargando={enviando.cargando}>
@@ -303,7 +308,7 @@ export function MovimientosInsumo({
                 )}
                 {esAdmin && m.compra && (
                   <p className="mt-1 text-n-600">
-                    {m.compra.proveedor_nombre} · {m.compra.cantidad_compra} × ${m.compra.costo_unitario.toFixed(2)} = $
+                    {m.compra.proveedor_nombre || "Sin proveedor"} · {m.compra.cantidad_compra} × ${m.compra.costo_unitario.toFixed(2)} = $
                     {m.compra.costo_total.toFixed(2)}
                   </p>
                 )}

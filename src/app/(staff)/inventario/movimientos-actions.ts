@@ -8,7 +8,7 @@ export type EstadoMovimiento = { error: string | null; ok?: boolean };
 
 export async function registrarEntradaCompra(
   insumoId: string,
-  proveedorId: string,
+  proveedorId: string | null,
   cantidadCompra: number,
   costoUnitario: number,
   fechaCaducidad: string | null

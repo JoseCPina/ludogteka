@@ -22,7 +22,9 @@ const SOLO_STAFF = [
   "bonos_clientes_estado", "movimientos_bono", "descuentos_aplicados", "devoluciones",
   "devolucion_metodos", "mp_ordenes", "mp_ordenes_estado", "reservas", "tarifas", "tarifas_dia_semana",
   "tarifas_vigentes", "turnos_caja", "cortes_caja", "corte_metodos", "movimientos_caja",
-  "compras_insumos", "insumos", "movimientos_inventario",
+  "compras_insumos", "insumos", "insumos_costos", "movimientos_inventario",
+  // Inventario de equipo y áreas
+  "equipos", "equipos_estado", "equipo_eventos", "areas_inventario",
   // Catálogos internos y operación de la casa
   "categorias_insumo", "unidades_medida", "catalogo_descuentos", "cupo_configuracion",
   "llegadas_hoy", "quienes_estan_adentro",
@@ -30,7 +32,7 @@ const SOLO_STAFF = [
   "permisos_staff",
 ];
 // RPC que un cliente con sesión no debe poder llamar (tienen que rechazarlo).
-const RPC_SOLO_STAFF = ["calendario_ocupacion"];
+const RPC_SOLO_STAFF = ["calendario_ocupacion", "insumos_sin_costo"];
 
 const spec = await (await fetch(URL + "/rest/v1/", { headers: { apikey: env.SUPABASE_SECRET_KEY, Authorization: `Bearer ${env.SUPABASE_SECRET_KEY}` } })).json();
 const relaciones = Object.keys(spec.definitions).sort();
@@ -94,6 +96,7 @@ for (const cli of clientes) {
     ["listar_cuentas", {}],
     ["mis_visitas", {}],
     ["calendario_ocupacion", { p_desde: "2026-09-01", p_hasta: "2026-09-30" }],
+    ["insumos_sin_costo", {}],
   ];
   for (const [fn, args] of sondas) {
     const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(args) });
@@ -150,6 +153,10 @@ for (const persona of staffSinCostos ?? []) {
   const quien = `${persona.rol} ${persona.nombre_completo ?? persona.id.slice(0, 8)}`;
   const compras = await (await fetch(`${URL}/rest/v1/compras_insumos?select=*`, { headers: h })).json();
   if (!Array.isArray(compras) || compras.length > 0) hallazgos.push(`costos: ${quien} lee ${Array.isArray(compras) ? compras.length : "?"} compras sin el permiso`);
+  const referencias = await (await fetch(`${URL}/rest/v1/insumos_costos?select=*`, { headers: h })).json();
+  if (!Array.isArray(referencias) || referencias.length > 0) hallazgos.push(`costos: ${quien} lee ${Array.isArray(referencias) ? referencias.length : "?"} costos de referencia sin el permiso`);
+  const sinCosto = await fetch(`${URL}/rest/v1/rpc/insumos_sin_costo`, { method: "POST", headers: h, body: "{}" });
+  if (sinCosto.ok) hallazgos.push(`costos: ${quien} ve la lista de consumibles sin costo sin el permiso`);
   for (const ins of insumosIds ?? []) {
     const r = await fetch(`${URL}/rest/v1/rpc/costo_promedio_base_insumo`, { method: "POST", headers: h, body: JSON.stringify({ p_insumo_id: ins.id }) });
     const v = await r.json().catch(() => null);

@@ -24,7 +24,7 @@ async function convertirABase(
 function leerCampos(formData: FormData) {
   return {
     nombre: String(formData.get("nombre") ?? "").trim(),
-    categoria_id: String(formData.get("categoria_id") ?? ""),
+    area_id: String(formData.get("area_id") ?? ""),
     unidad_compra_id: String(formData.get("unidad_compra_id") ?? ""),
     unidad_consumo_id: String(formData.get("unidad_consumo_id") ?? ""),
     stock_minimo_consumo: Number(formData.get("stock_minimo_consumo") ?? 0),
@@ -36,7 +36,7 @@ function leerCampos(formData: FormData) {
 
 function validar(campos: ReturnType<typeof leerCampos>): string | null {
   if (!campos.nombre) return "Escribe un nombre.";
-  if (!campos.categoria_id) return "Elige una categoría.";
+  if (!campos.area_id) return "Elige el área.";
   if (!campos.unidad_compra_id) return "Elige la unidad de compra.";
   if (!campos.unidad_consumo_id) return "Elige la unidad de consumo.";
   if (campos.stock_minimo_consumo < 0) return "El stock mínimo no puede ser negativo.";
@@ -73,7 +73,7 @@ export async function crearInsumo(
 
   const { error: dbError } = await supabase.from("insumos").insert({
     nombre: campos.nombre,
-    categoria_id: campos.categoria_id,
+    area_id: campos.area_id,
     unidad_compra_id: campos.unidad_compra_id,
     unidad_consumo_id: campos.unidad_consumo_id,
     stock_minimo: stockMinimoBase,
@@ -85,7 +85,7 @@ export async function crearInsumo(
   if (dbError) return { error: traducirError(dbError) };
 
   revalidatePath("/inventario");
-  redirect(`/inventario?creado=1`);
+  redirect(`/inventario?creado=consumible`);
 }
 
 export async function actualizarInsumo(
@@ -113,7 +113,7 @@ export async function actualizarInsumo(
     .from("insumos")
     .update({
       nombre: campos.nombre,
-      categoria_id: campos.categoria_id,
+      area_id: campos.area_id,
       unidad_compra_id: campos.unidad_compra_id,
       unidad_consumo_id: campos.unidad_consumo_id,
       stock_minimo: stockMinimoBase,

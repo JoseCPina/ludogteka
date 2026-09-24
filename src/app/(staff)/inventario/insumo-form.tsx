@@ -11,22 +11,23 @@ import type { EstadoInsumoForm } from "./actions";
 
 const ESTADO_INICIAL: EstadoInsumoForm = { error: null };
 
-export type CategoriaOpcion = { id: string; etiqueta: string };
+export type AreaOpcion = { id: string; nombre: string };
 export type UnidadOpcion = { id: string; etiqueta: string; magnitud: string };
 
 export function InsumoForm({
   action,
-  categorias,
+  areas,
   unidades,
   valoresIniciales,
   textoBoton,
+  soloLectura = false,
 }: {
   action: (estadoPrevio: EstadoInsumoForm, formData: FormData) => Promise<EstadoInsumoForm>;
-  categorias: CategoriaOpcion[];
+  areas: AreaOpcion[];
   unidades: UnidadOpcion[];
   valoresIniciales?: {
     nombre: string;
-    categoria_id: string;
+    area_id: string;
     unidad_compra_id: string;
     unidad_consumo_id: string;
     stock_minimo_consumo: number;
@@ -35,8 +36,11 @@ export function InsumoForm({
     dias_aviso_caducidad: number | null;
   };
   textoBoton: string;
+  // Estética lo ve pero no lo edita (dar de alta y editar es de admin y recepción).
+  soloLectura?: boolean;
 }) {
-  const [estado, formAction, enviando] = useActionState(useAccionConTope(action), ESTADO_INICIAL);
+  const [estado, formAction, enviandoForm] = useActionState(useAccionConTope(action), ESTADO_INICIAL);
+  const enviando = enviandoForm || soloLectura;
   const [unidadCompraId, setUnidadCompraId] = useState(valoresIniciales?.unidad_compra_id ?? "");
   const [requiereCaducidad, setRequiereCaducidad] = useState(valoresIniciales?.requiere_caducidad ?? false);
 
@@ -64,16 +68,16 @@ export function InsumoForm({
       />
 
       <Select
-        label="Categoría"
-        name="categoria_id"
+        label="Área"
+        name="area_id"
         required
         disabled={enviando}
-        defaultValue={valoresIniciales?.categoria_id ?? ""}
+        defaultValue={valoresIniciales?.area_id ?? ""}
       >
-        <option value="">Elige una categoría</option>
-        {categorias.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.etiqueta}
+        <option value="">Elige el área</option>
+        {areas.map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.nombre}
           </option>
         ))}
       </Select>
@@ -159,11 +163,13 @@ export function InsumoForm({
         )}
       </div>
 
-      <AccionesFormulario error={estado.error} exito={estado.ok && "Cambios guardados"}>
-        <Button type="submit" cargando={enviando}>
-          {enviando ? "Guardando…" : textoBoton}
-        </Button>
-      </AccionesFormulario>
+      {!soloLectura && (
+        <AccionesFormulario error={estado.error} exito={estado.ok && "Cambios guardados"}>
+          <Button type="submit" cargando={enviandoForm}>
+            {enviandoForm ? "Guardando…" : textoBoton}
+          </Button>
+        </AccionesFormulario>
+      )}
     </form>
   );
 }
