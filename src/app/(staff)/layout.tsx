@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { navStaffPara } from "@/lib/nav/config";
 import { StaffShell } from "@/components/chrome/staff-shell";
+import { negocioActual } from "@/lib/negocio/actual";
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const sesion = await obtenerSesionConRol();
@@ -9,6 +10,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
 
   return (
     <StaffShell
+      nombreNegocio={(await negocioActual()).nombre}
       rol={sesion.rol}
       email={sesion.user.email ?? ""}
       nombreCompleto={sesion.nombreCompleto}

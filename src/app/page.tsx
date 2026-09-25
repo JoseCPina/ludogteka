@@ -12,19 +12,19 @@ import { Patio } from "@/components/landing/patio";
 import { Requisitos } from "@/components/landing/requisitos";
 import { Ubicacion } from "@/components/landing/ubicacion";
 import { LlamadoFinal, Pie, WhatsAppFlotante } from "@/components/landing/cierre";
+import { LandingBasica } from "@/components/landing/basica";
 import { patronHuesos } from "@/components/landing/patron";
-import {
-  DIRECCION,
-  GUARDERIA,
-  HORARIO,
-  TELEFONO_VISIBLE,
-  URL_PUBLICA,
-} from "@/lib/landing/negocio";
+import { cargarNegocioLanding, datosLanding } from "@/lib/landing/negocio";
 import "@/components/landing/landing.css";
 
-// La raíz es la landing pública del negocio: estática, sin sesión y sin
-// consultar la base. El acceso al sistema es el botón "Entrar" (/login,
-// que ya manda a cada quien a su zona si tiene sesión).
+// La raíz es la landing pública del negocio del dominio: sin sesión. El
+// acceso al sistema es el botón "Entrar" (/login, que ya manda a cada quien
+// a su zona si tiene sesión).
+//
+// PeluDesk: el contenido sale de `negocios.landing`. El tema "ludogteka"
+// es la landing con la rotulación de la camioneta y las fotos reales de
+// Ludogteka; cualquier otro negocio (o uno sin landing capturada) ve la
+// básica, sin fotos de nadie.
 
 // Letra redonda y gruesa para títulos, como la de la rotulación de la
 // camioneta. Solo la carga la landing; la app sigue con Nunito.
@@ -42,69 +42,90 @@ const PATRONES = {
   "--lp-patron-amarillo": patronHuesos("#f0bb24"),
 } as React.CSSProperties;
 
-const TITULO = "Ludogteka | Guardería, hotel y estética canina en San Luis Potosí";
-const DESCRIPCION = `Guardería de lunes a sábado desde $${GUARDERIA.ocasionalHora} la hora, hotel por noche y estética canina en SLP. Monitoreo 24 horas. Escríbenos por WhatsApp: ${TELEFONO_VISIBLE}.`;
+async function temaLudogteka(): Promise<boolean> {
+  return (await cargarNegocioLanding()).landing?.tema === "ludogteka";
+}
 
-export const metadata: Metadata = {
-  title: { absolute: TITULO },
-  description: DESCRIPCION,
-  alternates: { canonical: "/" },
-  openGraph: {
-    type: "website",
-    locale: "es_MX",
-    url: "/",
-    siteName: "Ludogteka",
-    title: "Ludogteka: guardería, hotel y estética canina",
-    description:
-      "Tu perro juega, descansa y sale guapo. Monitoreo 24 horas en San Luis Potosí.",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Ludogteka: guardería, hotel y estética canina",
-    description: "Tu perro juega, descansa y sale guapo. Monitoreo 24 horas en San Luis Potosí.",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const negocio = await cargarNegocioLanding();
+  if (!negocio.landing) {
+    return {
+      title: { absolute: negocio.nombre },
+      description: `${negocio.nombre}: guardería, hotel y estética canina${negocio.ciudad ? ` en ${negocio.ciudad}` : ""}.`,
+      alternates: { canonical: "/" },
+    };
+  }
+  const { NOMBRE, SEO, URL_PUBLICA } = await datosLanding();
+  const imagen = SEO.imagen && (await temaLudogteka())
+    ? [{ url: SEO.imagen, width: 1200, height: 630, alt: SEO.imagen_alt ?? SEO.og_titulo ?? NOMBRE, type: "image/jpeg" }]
+    : undefined;
+  return {
+    metadataBase: new URL(URL_PUBLICA),
+    title: { absolute: SEO.titulo ?? NOMBRE },
+    description: SEO.descripcion,
+    alternates: { canonical: "/" },
+    openGraph: {
+      type: "website",
+      locale: "es_MX",
+      url: "/",
+      siteName: NOMBRE,
+      title: SEO.og_titulo ?? NOMBRE,
+      description: SEO.og_descripcion ?? SEO.descripcion,
+      images: imagen,
+    },
+    twitter: {
+      card: imagen ? "summary_large_image" : "summary",
+      title: SEO.og_titulo ?? NOMBRE,
+      description: SEO.og_descripcion ?? SEO.descripcion,
+      images: imagen,
+    },
+  };
+}
 
-const DATOS_ESTRUCTURADOS = {
-  "@context": "https://schema.org",
-  "@type": "LocalBusiness",
-  "@id": `${URL_PUBLICA}/#negocio`,
-  name: "Ludogteka",
-  description: "Guardería, hotel y estética canina en San Luis Potosí.",
-  url: URL_PUBLICA,
-  telephone: "+52 444 234 1355",
-  image: `${URL_PUBLICA}/opengraph-image.jpg`,
-  priceRange: "$$",
-  address: {
-    "@type": "PostalAddress",
-    streetAddress: DIRECCION.calle,
-    addressLocality: DIRECCION.ciudad,
-    addressRegion: DIRECCION.estado,
-    postalCode: DIRECCION.cp,
-    addressCountry: "MX",
-  },
-  openingHoursSpecification: HORARIO.map((h) => ({
-    "@type": "OpeningHoursSpecification",
-    dayOfWeek: h.schema,
-    opens: h.abre,
-    closes: h.cierra,
-  })),
-};
+async function datosEstructurados() {
+  const { DIRECCION, HORARIO, NOMBRE, SEO, TELEFONO_SCHEMA, TEXTOS, URL_PUBLICA } = await datosLanding();
+  return {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "@id": `${URL_PUBLICA}/#negocio`,
+    name: NOMBRE,
+    description: TEXTOS.lema ?? SEO.descripcion,
+    url: URL_PUBLICA,
+    telephone: TELEFONO_SCHEMA,
+    ...(SEO.imagen ? { image: `${URL_PUBLICA}${SEO.imagen}` } : {}),
+    priceRange: "$$",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: DIRECCION.calle,
+      addressLocality: DIRECCION.ciudad,
+      addressRegion: DIRECCION.estado,
+      postalCode: DIRECCION.cp,
+      addressCountry: "MX",
+    },
+    openingHoursSpecification: HORARIO.map((h) => ({
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: h.schema,
+      opens: h.abre,
+      closes: h.cierra,
+    })),
+  };
+}
 
-export default function Landing() {
+export default async function Landing() {
+  if (!(await temaLudogteka())) return <LandingBasica />;
+
+  const { TEXTOS } = await datosLanding();
   return (
     <div className={`lp ${fredoka.variable} flex min-h-full flex-col bg-[var(--lp-crema)]`} style={PATRONES}>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(DATOS_ESTRUCTURADOS) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(await datosEstructurados()) }}
       />
       <Encabezado />
       <main className="flex-1">
         <Hero />
         <Servicios />
-        <BandaPerritos
-          frases={["Precaución, perritos a bordo", "Guardería", "Hotel", "Estética", "Recolección a domicilio", "Monitoreo 24 horas"]}
-        />
+        {TEXTOS.banda && <BandaPerritos frases={TEXTOS.banda} />}
         <Guarderia />
         <Hotel />
         <Estetica />

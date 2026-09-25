@@ -4,7 +4,7 @@ import { Alert } from "@/components/ui/alert";
 import { formatearFecha, hoyNegocio } from "@/lib/formato";
 import { diasDesde } from "@/lib/antiguedad";
 import { Antiguedad } from "@/components/ui/antiguedad";
-import { urlPublica } from "@/lib/mercadopago/config";
+import { urlDelNegocioActual } from "@/lib/negocio/actual";
 import { BotonRegenerar } from "./boton-regenerar";
 
 type Fila = {
@@ -24,13 +24,13 @@ type Fila = {
 
 // El recordatorio sale con el link del portal, que es donde se firma: el
 // contrato de guardería ya no se firma en el alta.
-function recordatorioWhatsApp(f: Fila): string | null {
+function recordatorioWhatsApp(f: Fila, urlPublica: string): string | null {
   const telefono = (f.cliente_telefono ?? "").replace(/\D/g, "");
   if (telefono.length !== 10) return null;
   const mensaje =
     `Hola ${f.cliente_nombre}, tienes pendiente de firmar el ${f.tipo_nombre.toLowerCase()} de ${f.perro_nombre}` +
     `${f.paquete_nombre ? ` (${f.paquete_nombre})` : ""}. Lo firmas desde tu portal, en la ficha de ${f.perro_nombre}: ` +
-    `${urlPublica()}/portal`;
+    `${urlPublica}/portal`;
   return `https://wa.me/52${telefono}?text=${encodeURIComponent(mensaje)}`;
 }
 
@@ -39,6 +39,7 @@ function recordatorioWhatsApp(f: Fila): string | null {
 // firmados con defecto que hay que volver a generar. Del que lleva más
 // tiempo esperando al más reciente, con la antigüedad en cada fila.
 export default async function ContratosPorAtenderPage() {
+  const urlPublica = await urlDelNegocioActual();
   const supabase = await createSupabaseServerClient();
   const [{ data, error }, { data: hoyData }] = await Promise.all([
     supabase
@@ -113,7 +114,7 @@ export default async function ContratosPorAtenderPage() {
             ) : (
               <ul className="divide-y divide-n-200 rounded-lg border border-n-200 bg-white">
                 {porFirmar.map((f) => {
-                  const wa = recordatorioWhatsApp(f);
+                  const wa = recordatorioWhatsApp(f, urlPublica);
                   return (
                     <li key={f.contrato_id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                       <div className="flex flex-col gap-1">

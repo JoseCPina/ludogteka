@@ -19,7 +19,9 @@ import { Alert } from "@/components/ui/alert";
 export function LoginForm({
   errorInicial = null,
   telefonoRecepcion,
+  nombreNegocio,
 }: {
+  nombreNegocio: string;
   errorInicial?: string | null;
   // Null cuando el negocio todavía no lo captura: en ese caso no se
   // ofrece un botón de WhatsApp que llevaría a ningún lado, se dice qué
@@ -31,7 +33,7 @@ export function LoginForm({
   const [ayuda, setAyuda] = useState(false);
 
   const mensaje =
-    "Hola, soy cliente de Ludogteka y olvidé mi contraseña del portal. ¿Me la pueden restablecer? Mi teléfono es el de este WhatsApp.";
+    `Hola, soy cliente de ${nombreNegocio} y olvidé mi contraseña del portal. ¿Me la pueden restablecer? Mi teléfono es el de este WhatsApp.`;
   const urlWhatsApp = telefonoRecepcion
     ? `https://wa.me/52${telefonoRecepcion}?text=${encodeURIComponent(mensaje)}`
     : null;

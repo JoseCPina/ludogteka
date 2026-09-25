@@ -1,11 +1,12 @@
 import Image from "next/image";
 import { Info, Moon } from "@phosphor-icons/react/dist/ssr";
 import { BotonWhatsApp, Ola, Rotulo } from "./comunes";
-import { HOTEL, MENSAJES, pesos } from "@/lib/landing/negocio";
+import { datosLanding, pesos } from "@/lib/landing/negocio";
 import fotoCamita from "./fotos/lugar/hotel-camita.jpg";
 
 // Hotel en la franja turquesa: los precios como llaveros de habitación.
-export function Hotel() {
+export async function Hotel() {
+  const { HOTEL, MENSAJES } = await datosLanding();
   return (
     <section id="hotel" className="relative">
       <Ola color="var(--lp-turquesa)" className="-mb-px" />

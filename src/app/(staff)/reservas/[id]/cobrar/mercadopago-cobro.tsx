@@ -174,6 +174,9 @@ export function CobroMercadoPago({
 
   const historial = ordenes.filter((o) => o.id !== ordenActiva);
 
+  // PeluDesk: en un negocio sin Mercado Pago activado no se ofrece.
+  if (!disponible.activo) return null;
+
   return (
     <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-azul bg-azul-suave/40 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">

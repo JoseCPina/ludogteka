@@ -34,9 +34,9 @@ export const TIPOS_LINK_ALTA = {
     expedienteCompleto: true,
     llevaContrato: true,
     muestraPrecioEstetica: false,
-    mensajeWhatsApp: (nombre: string, url: string) =>
-      `Hola ${nombre}, aquí puedes darte de alta en Ludogteka y registrar a tu perro para guardería u hotel: ${url}`,
-    mensajeComplemento: (nombre: string, url: string) =>
+    mensajeWhatsApp: (nombre: string, url: string, negocio: string) =>
+      `Hola ${nombre}, aquí puedes darte de alta en ${negocio} y registrar a tu perro para guardería u hotel: ${url}`,
+    mensajeComplemento: (nombre: string, url: string, negocio: string) =>
       `Hola ${nombre}, para dejarnos a tu perro en guardería u hotel nos falta completar unos datos suyos y que firmes el contrato. Es rápido, aquí: ${url}`,
   },
   estetica: {
@@ -49,9 +49,9 @@ export const TIPOS_LINK_ALTA = {
     expedienteCompleto: false,
     llevaContrato: false,
     muestraPrecioEstetica: true,
-    mensajeWhatsApp: (nombre: string, url: string) =>
-      `Hola ${nombre}, aquí puedes registrar a tu perro para su baño en Ludogteka y ver el precio estimado: ${url}`,
-    mensajeComplemento: (nombre: string, url: string) =>
+    mensajeWhatsApp: (nombre: string, url: string, negocio: string) =>
+      `Hola ${nombre}, aquí puedes registrar a tu perro para su baño en ${negocio} y ver el precio estimado: ${url}`,
+    mensajeComplemento: (nombre: string, url: string, negocio: string) =>
       `Hola ${nombre}, para el baño de tu perro nos falta completar un par de datos suyos. Es rápido, aquí: ${url}`,
   },
 } as const;

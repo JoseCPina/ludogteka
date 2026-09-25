@@ -1,10 +1,12 @@
 import Image from "next/image";
 import { Clock, InfinityIcon } from "@phosphor-icons/react/dist/ssr";
 import { BotonWhatsApp, Cinta } from "./comunes";
-import { GUARDERIA, HORARIO, MENSAJES, pesos } from "@/lib/landing/negocio";
+import { datosLanding, pesos } from "@/lib/landing/negocio";
 import fotoPelotas from "./fotos/lugar/patio-pelotas.jpg";
 
-export function Guarderia() {
+export async function Guarderia() {
+  const { GUARDERIA, HORARIO, MENSAJES } = await datosLanding();
+  if (!GUARDERIA) return null;
   return (
     <section id="guarderia" className="relative bg-[var(--lp-crema)] py-20 lg:py-28">
       <div className="mx-auto grid max-w-7xl gap-14 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">

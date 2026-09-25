@@ -1,13 +1,14 @@
 import Image from "next/image";
 import { Eye, PawPrint } from "@phosphor-icons/react/dist/ssr";
 import { BotonWhatsApp, Hueso, Ola, Rotulo } from "./comunes";
-import { MENSAJES } from "@/lib/landing/negocio";
+import { datosLanding } from "@/lib/landing/negocio";
 import { PERROS } from "./perros";
 
 // La franja turquesa de la lona, con la banda asomándose por encima de la
 // ola amarilla. Los tres perros son clientes reales (los mismos de la
 // camioneta).
-export function Hero() {
+export async function Hero() {
+  const { MENSAJES, TEXTOS } = await datosLanding();
   return (
     <section id="inicio" className="lp-franja-turquesa relative overflow-hidden">
       <div className="mx-auto grid max-w-7xl items-end gap-6 px-4 pt-10 sm:px-6 md:pt-14 lg:grid-cols-12 lg:gap-4 lg:px-8 lg:pt-16">
@@ -17,7 +18,7 @@ export function Hero() {
             style={{ "--d": 0 } as React.CSSProperties}
           >
             <Eye size={20} weight="bold" aria-hidden />
-            Monitoreo 24 horas · San Luis Potosí
+            {TEXTOS.etiqueta_hero}
           </p>
           <Rotulo como="h1" className="mt-6 text-[2.75rem] sm:text-6xl lg:text-[4.4rem]">
             Aquí tu perro juega, duerme y sale guapo.

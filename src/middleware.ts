@@ -1,6 +1,25 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { rutaPorRol } from "@/lib/auth/rutas";
+import { ENCABEZADOS_NEGOCIO, resolverNegocio, type NegocioBasico } from "@/lib/negocio/resolver";
+import { ENCABEZADO_FIRMA, firmaValida, firmarNegocio } from "@/lib/negocio/firma";
+
+// Los encabezados de negocio que puso este mismo middleware (firmados).
+// Solo los trae la petición interna con la que Next pinta el destino de
+// un redirect() de una acción de servidor (ver lib/negocio/firma.ts).
+async function negocioFirmado(h: Headers): Promise<NegocioBasico | null> {
+  const id = h.get(ENCABEZADOS_NEGOCIO.id);
+  if (!id) return null;
+  const n: NegocioBasico = {
+    id,
+    slug: h.get(ENCABEZADOS_NEGOCIO.slug) ?? "",
+    nombre: decodeURIComponent(h.get(ENCABEZADOS_NEGOCIO.nombre) ?? ""),
+    dominio: h.get(ENCABEZADOS_NEGOCIO.dominio) || null,
+    url_publica: h.get(ENCABEZADOS_NEGOCIO.url) || null,
+    zona_horaria: h.get(ENCABEZADOS_NEGOCIO.zona) ?? "",
+  };
+  return (await firmaValida(n, h.get(ENCABEZADO_FIRMA))) ? n : null;
+}
 
 // Zonas de página: si el rol no está permitido, se redirige a la zona que
 // sí le toca (nunca a /login con sesión activa — eso se lee como un bug).
@@ -61,8 +80,9 @@ function conCookiesDe(origen: NextResponse, destino: NextResponse) {
 // Páginas públicas que no necesitan saber quién es el visitante: la
 // landing y los archivos de metadatos (Open Graph, robots, sitemap). Se
 // sueltan antes de crear el cliente de Supabase para no pagar la vuelta a
-// Auth en la primera carga de ludogteka.mx. Es una lista EXACTA, no de
-// prefijos: "/" como prefijo abriría todo.
+// Auth en la primera carga. Es una lista EXACTA, no de prefijos: "/" como
+// prefijo abriría todo. (Sí llevan negocio: la landing es la de ESTE
+// negocio.)
 const RUTAS_PUBLICAS_EXACTAS = new Set([
   "/",
   "/opengraph-image.jpg",
@@ -72,21 +92,55 @@ const RUTAS_PUBLICAS_EXACTAS = new Set([
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (RUTAS_PUBLICAS_EXACTAS.has(pathname)) return NextResponse.next();
 
-  let response = NextResponse.next({ request });
+  // El negocio lo decide el DOMINIO, nunca el navegador: los encabezados
+  // x-negocio-* que vengan de afuera se tiran antes de poner los nuestros.
+  // (Salvo los que firmó este middleware: ver negocioFirmado.)
+  const firmado = await negocioFirmado(request.headers);
+  const cabeceras = new Headers(request.headers);
+  for (const nombre of Object.values(ENCABEZADOS_NEGOCIO)) cabeceras.delete(nombre);
+  cabeceras.delete(ENCABEZADO_FIRMA);
+
+  if (pathname === "/negocio-no-encontrado") return NextResponse.next({ request: { headers: cabeceras } });
+
+  let negocio: NegocioBasico | null = firmado;
+  try {
+    negocio ??= await resolverNegocio(request.headers.get("host"));
+  } catch {
+    return new NextResponse("No pudimos cargar este sitio. Intenta de nuevo en un momento.", { status: 503 });
+  }
+  if (!negocio) {
+    return NextResponse.rewrite(new URL("/negocio-no-encontrado", request.url), {
+      request: { headers: cabeceras },
+      status: 404,
+    });
+  }
+  cabeceras.set(ENCABEZADOS_NEGOCIO.id, negocio.id);
+  cabeceras.set(ENCABEZADOS_NEGOCIO.slug, negocio.slug);
+  cabeceras.set(ENCABEZADOS_NEGOCIO.nombre, encodeURIComponent(negocio.nombre));
+  cabeceras.set(ENCABEZADOS_NEGOCIO.dominio, negocio.dominio ?? "");
+  cabeceras.set(ENCABEZADOS_NEGOCIO.url, negocio.url_publica ?? "");
+  cabeceras.set(ENCABEZADOS_NEGOCIO.zona, negocio.zona_horaria);
+  cabeceras.set(ENCABEZADO_FIRMA, await firmarNegocio(negocio));
+  const siguiente = () => NextResponse.next({ request: { headers: cabeceras } });
+
+  if (RUTAS_PUBLICAS_EXACTAS.has(pathname)) return siguiente();
+
+  let response = siguiente();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      global: { headers: { [ENCABEZADOS_NEGOCIO.id]: negocio.id } },
       cookies: {
         getAll() {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request });
+          cabeceras.set("cookie", request.headers.get("cookie") ?? "");
+          response = siguiente();
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           );
@@ -117,15 +171,18 @@ export async function middleware(request: NextRequest) {
     return conCookiesDe(response, NextResponse.redirect(new URL("/login", request.url)));
   }
 
-  // El rol se lee de la base en cada request — nunca de un claim que el
-  // cliente pudiera manipular ni de estado guardado en el navegador.
-  const { data: perfil } = await supabase
-    .from("profiles")
-    .select("rol")
-    .eq("id", user.id)
-    .single();
-
-  const rol = perfil?.rol ?? "cliente";
+  // El rol es el de la MEMBRESÍA en este negocio, leído de la base en cada
+  // request — nunca de un claim ni de estado guardado en el navegador.
+  // Sin membresía aquí ("anonimo"), la cuenta existe pero no es de este
+  // negocio.
+  const { data: rolData } = await supabase.rpc("current_rol");
+  const rol = (rolData as string | null) ?? "anonimo";
+  if (rol === "anonimo") {
+    if (zonaApi) {
+      return conCookiesDe(response, NextResponse.json({ error: "Tu cuenta no es de este negocio." }, { status: 403 }));
+    }
+    return conCookiesDe(response, NextResponse.redirect(new URL("/sin-acceso", request.url)));
+  }
 
   // Recepción con un permiso extra que abre esta zona. La base vuelve a
   // revisar el permiso en cada operación: esto solo decide si se ve la página.

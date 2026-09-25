@@ -15,6 +15,8 @@ import Link from "next/link";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { ListaPersonal, type PersonaStaff } from "./lista-personal";
+import { negocioActual } from "@/lib/negocio/actual";
+import { usaIntegracionesDelEntorno } from "@/lib/negocio/integraciones";
 
 // Admin ve todo. Una persona de recepción con permisos extra llega aquí
 // solo con las secciones que le tocan (el middleware la deja entrar con
@@ -26,6 +28,9 @@ export default async function AdminPage() {
   const puedeConfig = tienePermiso(sesion, "configuracion_negocio");
   const puedeTarifas = tienePermiso(sesion, "tarifas");
   const puedePersonal = tienePermiso(sesion, "personal");
+  // PeluDesk: Mercado Pago y Google Maps solo existen, por ahora, para el
+  // negocio dueño de las llaves del entorno.
+  const conIntegraciones = usaIntegracionesDelEntorno(await negocioActual());
   const nada = Promise.resolve({ data: null, error: null });
   const [
     { data, error },
@@ -160,15 +165,23 @@ export default async function AdminPage() {
         />
       </section>
 
-      <section className="rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="mb-4 text-lg font-bold text-n-900">Conexión con Mercado Pago (terminal y links de pago)</h2>
-        <DiagnosticoMercadoPago />
-      </section>
+      {conIntegraciones ? (
+        <>
+          <section className="rounded-lg border border-n-200 bg-white p-5">
+            <h2 className="mb-4 text-lg font-bold text-n-900">Conexión con Mercado Pago (terminal y links de pago)</h2>
+            <DiagnosticoMercadoPago />
+          </section>
 
-      <section className="rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="mb-4 text-lg font-bold text-n-900">Conexión con Google Maps</h2>
-        <DiagnosticoGoogle />
-      </section>
+          <section className="rounded-lg border border-n-200 bg-white p-5">
+            <h2 className="mb-4 text-lg font-bold text-n-900">Conexión con Google Maps</h2>
+            <DiagnosticoGoogle />
+          </section>
+        </>
+      ) : (
+        <Alert variante="advertencia" titulo="Mercado Pago y Google Maps todavía no están activados para tu negocio">
+          Mientras tanto, los cobros se registran a mano en Caja y la distancia de cada cliente se captura en su ficha.
+        </Alert>
+      )}
       </>
       )}
 

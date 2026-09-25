@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { negocioIdActual } from "@/lib/negocio/actual";
 import { mensajeDeError } from "@/lib/empleados/errores";
 import type { ResultadoAccion } from "@/lib/empleados/tipos";
 import { rangoMes } from "@/lib/gastos/textos";
@@ -37,14 +38,17 @@ async function subirComprobante(fd: FormData): Promise<{ path: string | null; er
   const { data: puede } = await supabase.rpc("tiene_permiso", { p_permiso: "gastos" });
   if (!puede) return { path: null, error: "No tienes permiso para registrar gastos." };
   const { data: hoy } = await supabase.rpc("fecha_negocio");
-  const path = `gastos/${String(hoy).slice(0, 7)}/${crypto.randomUUID()}.jpg`;
-  const { error } = await createSupabaseAdminClient().storage.from(BUCKET).upload(path, archivo, { upsert: false, contentType: archivo.type });
+  // PeluDesk: la ruta empieza con el negocio; la base rechaza cualquier
+  // comprobante fuera de `{negocio}/gastos/`.
+  const negocioId = await negocioIdActual();
+  const path = `${negocioId}/gastos/${String(hoy).slice(0, 7)}/${crypto.randomUUID()}.jpg`;
+  const { error } = await createSupabaseAdminClient(negocioId).storage.from(BUCKET).upload(path, archivo, { upsert: false, contentType: archivo.type });
   if (error) return { path: null, error: "No pudimos guardar la foto. Intenta de nuevo." };
   return { path };
 }
 
 async function quitarFoto(path: string | null) {
-  if (path) await createSupabaseAdminClient().storage.from(BUCKET).remove([path]);
+  if (path) await createSupabaseAdminClient(await negocioIdActual()).storage.from(BUCKET).remove([path]);
 }
 
 function refrescar() {

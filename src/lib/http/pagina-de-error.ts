@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { linkWhatsApp } from "@/lib/landing/negocio";
+import { cargarNegocioLanding, whatsAppDelNegocio } from "@/lib/landing/negocio";
 
 // Lo que ve una persona cuando una ruta /api que se abre en el navegador
 // (la vista previa del contrato) falla. Nunca JSON crudo: así vio Ronith
@@ -13,7 +13,7 @@ function escapar(texto: string) {
   return texto.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
 }
 
-export function paginaDeError({
+export async function paginaDeError({
   titulo,
   que,
   queHacer,
@@ -24,13 +24,15 @@ export function paginaDeError({
   queHacer: string[];
   status: number;
 }) {
-  const whatsapp = linkWhatsApp("Hola, Ludogteka. No pude abrir mi contrato en la app.");
+  // PeluDesk: el nombre y el WhatsApp son los del negocio del dominio.
+  const nombre = (await cargarNegocioLanding()).nombre;
+  const whatsapp = await whatsAppDelNegocio("contrato_error", (n) => `Hola, ${n}. No pude abrir mi contrato en la app.`);
   const html = `<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escapar(titulo)} · Ludogteka</title>
+<title>${escapar(titulo)} · ${escapar(nombre)}</title>
 <style>
   body{margin:0;background:#f5f6fa;color:#1f2937;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5}
   main{max-width:30rem;margin:3rem auto;padding:0 1rem}
@@ -45,12 +47,12 @@ export function paginaDeError({
 </head>
 <body>
 <main>
-  <p class="marca">ludogteka</p>
+  <p class="marca">${escapar(nombre)}</p>
   <div class="tarjeta">
     <h1>${escapar(titulo)}</h1>
     <p>${escapar(que)}</p>
     <ul>${queHacer.map((q) => `<li>${escapar(q)}</li>`).join("")}</ul>
-    <a class="boton" href="${whatsapp}" target="_blank" rel="noopener noreferrer">Escribirnos por WhatsApp</a>
+    ${whatsapp ? `<a class="boton" href="${escapar(whatsapp)}" target="_blank" rel="noopener noreferrer">Escribirnos por WhatsApp</a>` : ""}
   </div>
 </main>
 </body>

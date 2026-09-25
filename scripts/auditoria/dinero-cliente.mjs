@@ -5,7 +5,7 @@
 // Verificación final: con el JWT real de CADA cliente de desarrollo, tabla
 // por tabla y vista por vista de la API REST, ¿alcanza alguna columna de
 // dinero con valor? Y las RPC que tocan dinero, con sus propios ids.
-import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { A, NEGOCIO, URL, env, tokenDe } from "./sesiones-dev.mjs";
 
 const DINERO = /precio|monto|costo|total|importe|pagad|saldo|descuento|tarifa|pago|efectivo|retiro|fondo|arqueo|diferencia|ingreso|margen|valor|subtotal|comision|tope|reconoc|adeudo|propina|cobrado/i;
 // Columnas cuyo nombre suena a dinero pero no lo son (revisadas a mano).
@@ -41,7 +41,7 @@ const RPC_SOLO_STAFF = ["calendario_ocupacion", "insumos_sin_costo", "asistencia
 
 const spec = await (await fetch(URL + "/rest/v1/", { headers: { apikey: env.SUPABASE_SECRET_KEY, Authorization: `Bearer ${env.SUPABASE_SECRET_KEY}` } })).json();
 const relaciones = Object.keys(spec.definitions).sort();
-const { data: clientes } = await A.from("profiles").select("id, cliente_id").eq("rol", "cliente").not("cliente_id", "is", null);
+const { data: clientes } = await A.from("membresias").select("id:profile_id, cliente_id").eq("negocio_id", NEGOCIO).eq("rol", "cliente").not("cliente_id", "is", null).is("deleted_at", null);
 
 const hallazgos = [];
 let consultas = 0;
@@ -154,7 +154,7 @@ for (const [fn, v] of rpcDinero) console.log(" ", fn.padEnd(36), JSON.stringify(
 const { count: comprasTotales } = await A.from("compras_insumos").select("id", { count: "exact", head: true });
 if (!comprasTotales) hallazgos.push("costos: no hay ninguna compra de insumos en desarrollo; corre scripts/auditoria/permisos-staff.mjs (crea una) y repite");
 const { data: insumosIds } = await A.from("insumos").select("id").limit(20);
-const { data: staffSinCostos } = await A.from("profiles").select("id, rol, nombre_completo").in("rol", ["recepcion", "estetica"]).is("deleted_at", null);
+const { data: staffSinCostos } = await A.from("membresias").select("id:profile_id, rol").eq("negocio_id", NEGOCIO).in("rol", ["recepcion", "estetica"]).is("deleted_at", null);
 const { data: permisosVigentes } = await A.from("permisos_staff").select("profile_id, permiso").is("revocado_at", null).is("deleted_at", null);
 const permisosDe = (id) => new Set((permisosVigentes ?? []).filter((x) => x.profile_id === id).map((x) => x.permiso));
 let staffRevisado = 0;

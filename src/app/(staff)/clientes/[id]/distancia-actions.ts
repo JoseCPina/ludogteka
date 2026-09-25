@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { negocioActual } from "@/lib/negocio/actual";
 import {
   geocodificarYCalcularDistancia,
   type ResultadoDistancia,
@@ -19,7 +20,7 @@ export async function actualizarDireccionYCalcular(
   direccionNueva: string
 ): Promise<EstadoDistancia> {
   const supabase = await createSupabaseServerClient();
-  const resultado = await geocodificarYCalcularDistancia(supabase, clienteId, direccionNueva);
+  const resultado = await geocodificarYCalcularDistancia(supabase, clienteId, direccionNueva, await negocioActual());
   revalidatePath(`/clientes/${clienteId}`);
   return resultado;
 }

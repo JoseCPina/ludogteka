@@ -3,6 +3,8 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { probarGoogleMaps, type PruebaApi } from "@/lib/google-maps/diagnostico";
+import { negocioActual } from "@/lib/negocio/actual";
+import { usaIntegracionesDelEntorno } from "@/lib/negocio/integraciones";
 
 export type EstadoDiagnostico = {
   error: string | null;
@@ -17,6 +19,10 @@ export async function probarConexionGoogle(): Promise<EstadoDiagnostico> {
   const sesion = await obtenerSesionConRol();
   if (sesion?.rol !== "admin") {
     return { error: "Solo un admin puede correr esta prueba." };
+  }
+  const negocio = await negocioActual();
+  if (!usaIntegracionesDelEntorno(negocio)) {
+    return { error: "Google Maps todavía no está activado para tu negocio." };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -34,7 +40,7 @@ export async function probarConexionGoogle(): Promise<EstadoDiagnostico> {
   if (!sucursal?.lat || !sucursal?.lng) {
     return {
       error:
-        "La sucursal no tiene coordenadas guardadas todavía. Captura la dirección de Ludogteka antes de probar la conexión.",
+        `La sucursal no tiene coordenadas guardadas todavía. Captura la dirección de ${negocio.nombre} antes de probar la conexión.`,
     };
   }
   if (!cupo?.base_lat || !cupo?.base_lng) {
@@ -47,7 +53,7 @@ export async function probarConexionGoogle(): Promise<EstadoDiagnostico> {
   // Se geocodifica la dirección de la propia sucursal: es una dirección
   // real y conocida, así que si Google contesta "no la encuentro" el
   // problema es de la llave o de la API, no del texto.
-  const direccion = (sucursal.direccion as string | null) ?? "Ludogteka, San Luis Potosí";
+  const direccion = (sucursal.direccion as string | null) ?? negocio.nombre;
 
   const pruebas = await probarGoogleMaps(
     direccion,

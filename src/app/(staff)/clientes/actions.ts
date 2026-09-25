@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { negocioActual } from "@/lib/negocio/actual";
 import { normalizarTelefono } from "@/lib/telefono";
 import { geocodificarYCalcularDistancia } from "@/lib/google-maps/distancia-cliente";
 import { rutaDeVuelta } from "@/lib/clientes/volver";
@@ -82,7 +83,7 @@ async function altaCliente(formData: FormData, volver: string | null): Promise<E
   // por un servicio externo, y recepción ajusta la distancia a mano
   // desde la ficha.
   if (direccion) {
-    await geocodificarYCalcularDistancia(supabase, data.id, direccion);
+    await geocodificarYCalcularDistancia(supabase, data.id, direccion, await negocioActual());
   }
 
   revalidatePath("/clientes");

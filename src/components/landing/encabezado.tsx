@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SignIn } from "@phosphor-icons/react/dist/ssr";
 import { Marca } from "./comunes";
+import { cargarNegocioLanding } from "@/lib/landing/negocio";
 
 const SECCIONES = [
   { href: "#guarderia", texto: "Guardería" },
@@ -10,11 +11,12 @@ const SECCIONES = [
   { href: "#ubicacion", texto: "Ubicación" },
 ];
 
-export function Encabezado() {
+export async function Encabezado() {
+  const { nombre } = await cargarNegocioLanding();
   return (
     <header className="sticky top-0 z-30 border-b-4 border-[var(--lp-amarillo)] bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <a href="#inicio" aria-label="Ludogteka, ir al inicio" className="rounded-lg focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--lp-indigo)]">
+        <a href="#inicio" aria-label={`${nombre}, ir al inicio`} className="rounded-lg focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--lp-indigo)]">
           <Marca />
         </a>
         <nav aria-label="Secciones" className="hidden lg:block">

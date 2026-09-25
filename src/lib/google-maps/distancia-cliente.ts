@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { geocodificarDireccion } from "./geocodificar";
 import { calcularDistanciaRuta } from "./ruta";
+import type { NegocioBasico } from "@/lib/negocio/resolver";
+import { usaIntegracionesDelEntorno } from "@/lib/negocio/integraciones";
 
 export type ResultadoDistancia = {
   error: string | null;
@@ -23,7 +25,11 @@ export type ResultadoDistancia = {
 export async function geocodificarYCalcularDistancia(
   supabase: SupabaseClient,
   clienteId: string,
-  direccionNueva: string
+  direccionNueva: string,
+  // PeluDesk: todo se filtra por este negocio a mano, porque el alta por
+  // link llega aquí con la secret key (salta la RLS: sin el filtro, la
+  // sucursal podría ser la de otro negocio).
+  negocio: Pick<NegocioBasico, "id">
 ): Promise<ResultadoDistancia> {
   const direccion = direccionNueva.trim();
   if (!direccion) return { error: "Escribe la dirección del cliente." };
@@ -32,6 +38,7 @@ export async function geocodificarYCalcularDistancia(
     .from("clientes")
     .select("direccion, direccion_lat, direccion_lng, distancia_base_km")
     .eq("id", clienteId)
+    .eq("negocio_id", negocio.id)
     .single();
   if (errorCliente || !cliente) return { error: "No se encontró al cliente." };
 
@@ -46,7 +53,13 @@ export async function geocodificarYCalcularDistancia(
   // La dirección se guarda aunque falle lo de abajo — no se pierde lo que
   // ya se tecleó solo porque Google no pudo geocodificarla, y recepción
   // puede ajustar la distancia a mano sobre esa misma dirección.
-  await supabase.from("clientes").update({ direccion }).eq("id", clienteId);
+  await supabase.from("clientes").update({ direccion }).eq("id", clienteId).eq("negocio_id", negocio.id);
+
+  // Las llaves de Google del entorno son de un solo negocio; en los demás
+  // la distancia se captura a mano (una simulada cotizaría viajes mal).
+  if (!usaIntegracionesDelEntorno(negocio)) {
+    return { error: "El cálculo automático de distancia no está activado para este negocio. Captura la distancia a mano." };
+  }
 
   const geocodificado = await geocodificarDireccion(direccion);
   if (!geocodificado.ok) {
@@ -55,7 +68,7 @@ export async function geocodificarYCalcularDistancia(
 
   const [{ data: cupoData }, { data: sucursal }] = await Promise.all([
     supabase.rpc("resolver_cupo_configuracion"),
-    supabase.from("sucursales").select("lat, lng").is("deleted_at", null).limit(1).single(),
+    supabase.from("sucursales").select("lat, lng").eq("negocio_id", negocio.id).is("deleted_at", null).limit(1).single(),
   ]);
   const cupo = (Array.isArray(cupoData) ? cupoData[0] : cupoData) as {
     base_lat: number | null;
@@ -68,7 +81,7 @@ export async function geocodificarYCalcularDistancia(
     };
   }
   if (!sucursal?.lat || !sucursal?.lng) {
-    return { error: "Falta configurar la dirección de Ludogteka. Avísale a soporte." };
+    return { error: "Falta configurar la dirección del negocio. Avísale a soporte." };
   }
 
   const ruta = await calcularDistanciaRuta(
@@ -90,7 +103,8 @@ export async function geocodificarYCalcularDistancia(
       distancia_calculada_at: new Date().toISOString(),
       distancia_ajustada_manualmente: false,
     })
-    .eq("id", clienteId);
+    .eq("id", clienteId)
+    .eq("negocio_id", negocio.id);
 
   if (errorUpdate) return { error: "No pudimos guardar la distancia calculada. Intenta de nuevo." };
 

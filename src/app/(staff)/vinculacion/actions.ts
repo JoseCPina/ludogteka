@@ -15,14 +15,17 @@ export async function vincularCuenta(
   } = await supabase.auth.getUser();
   if (!user) return { error: "Tu sesión expiró. Recarga la página." };
 
-  // .is("cliente_id", null): no reescribe una vinculación existente de esa
-  // cuenta. El índice único sobre profiles.cliente_id (Migración 2) cubre
-  // el otro sentido: que ese cliente ya esté tomado por alguien más.
+  // La vinculación vive en la membresía de cliente de ESTE negocio (la
+  // base la limita al negocio del dominio). .is("cliente_id", null): no
+  // reescribe una vinculación existente; el índice único de
+  // membresias.cliente_id cubre el otro sentido (cliente ya tomado).
   const { data, error } = await supabase
-    .from("profiles")
+    .from("membresias")
     .update({ cliente_id: clienteId })
-    .eq("id", profileId)
+    .eq("profile_id", profileId)
+    .eq("rol", "cliente")
     .is("cliente_id", null)
+    .is("deleted_at", null)
     .select("id")
     .maybeSingle();
 
@@ -60,10 +63,11 @@ export async function desvincularCuenta(
   if (!user) return { error: "Tu sesión expiró. Recarga la página." };
 
   const { data, error } = await supabase
-    .from("profiles")
+    .from("membresias")
     .update({ cliente_id: null })
-    .eq("id", profileId)
+    .eq("profile_id", profileId)
     .eq("cliente_id", clienteId)
+    .is("deleted_at", null)
     .select("id")
     .maybeSingle();
 

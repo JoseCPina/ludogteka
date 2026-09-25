@@ -3,13 +3,17 @@
 // Crea datos de prueba en desarrollo (empleados "Prueba nómina …", una
 // cita y un cobro con propina); nunca correr contra producción.
 import { createClient } from "@supabase/supabase-js";
-import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { A, NEGOCIO, URL, env, tokenDe } from "./sesiones-dev.mjs";
 
 const conToken = (t) => createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
   global: { headers: { Authorization: `Bearer ${t}` } },
 });
-const perfil = async (rol, salto = 0) => (await A.from("profiles").select("id").eq("rol", rol).is("deleted_at", null).order("created_at").range(salto, salto).single()).data;
+// PeluDesk: el rol es la membresía en el negocio auditado (NEGOCIO).
+const perfil = async (rol, salto = 0) => {
+  const { data } = await A.from("membresias").select("id:profile_id, created_at, profiles(nombre_completo)").eq("negocio_id", NEGOCIO).eq("rol", rol).is("deleted_at", null).order("created_at").range(salto, salto).single();
+  return data ? { id: data.id, nombre_completo: data.profiles?.nombre_completo ?? null } : null;
+};
 const [rec, est, adm] = [await perfil("recepcion"), await perfil("estetica"), await perfil("admin")];
 const REC = conToken(await tokenDe(rec.id));
 const EST = conToken(await tokenDe(est.id));
@@ -46,7 +50,7 @@ const E1 = await alta(`Prueba nómina estilista ${sello}`, "Estilista", est.id);
 const E2 = await alta(`Prueba nómina limpieza ${sello}`, "Limpieza", null);
 const E3 = await alta(`Prueba nómina recepción ${sello}`, "Recepción", rec.id);
 ok(Boolean(E1 && E2 && E3), "admin da de alta 3 empleados (dos con cuenta, uno sin)");
-const { data: cli } = await A.from("profiles").select("id").eq("rol", "cliente").limit(1).single();
+const cli = await perfil("cliente");
 const ligaCliente = await ADM.from("empleados").insert({ nombre: `Prueba nómina cliente ${sello}`, puesto: "x", fecha_ingreso: hoy, profile_id: cli.id }).select("id");
 ok(Boolean(ligaCliente.error), "no se puede ligar una cuenta de cliente a un empleado");
 

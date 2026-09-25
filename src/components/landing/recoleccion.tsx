@@ -1,13 +1,15 @@
 import Image from "next/image";
 import { CalendarCheck, CarProfile, HouseLine, MapPin } from "@phosphor-icons/react/dist/ssr";
 import { BotonWhatsApp, Rotulo } from "./comunes";
-import { MENSAJES, PRECIO_KM_RECOLECCION, RECOLECCION_REGLAS, ZONAS_COBERTURA, pesos } from "@/lib/landing/negocio";
+import { datosLanding, pesos } from "@/lib/landing/negocio";
 import fotoCoche from "./fotos/lugar/recoleccion-coche.jpg";
 
 // "Transporte y recolección de perritos", como dice la lona. El camino de
 // abajo es la explicación: la camioneta sale de tu casa y llega a
 // Ludogteka mientras lees (animación ligada al scroll).
-export function Recoleccion() {
+export async function Recoleccion() {
+  const { MENSAJES, NOMBRE, PRECIO_KM_RECOLECCION, RECOLECCION_REGLAS, ZONAS_COBERTURA } = await datosLanding();
+  if (PRECIO_KM_RECOLECCION == null) return null;
   return (
     <section id="recoleccion" className="lp-franja-amarilla relative py-20 lg:py-28">
       <div className="mx-auto grid max-w-7xl items-center gap-14 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">
@@ -46,7 +48,7 @@ export function Recoleccion() {
                 Tu casa
               </span>
               <span className="inline-flex items-center gap-1.5">
-                Ludogteka
+                {NOMBRE}
                 <MapPin size={22} weight="fill" aria-hidden />
               </span>
             </div>
@@ -75,7 +77,7 @@ export function Recoleccion() {
             ))}
           </ul>
 
-          <ZonasCobertura />
+          <ZonasCobertura zonas={ZONAS_COBERTURA} />
 
           <div className="lp-revela mt-8">
             <BotonWhatsApp mensaje={MENSAJES.recoleccion}>Cotizar recolección</BotonWhatsApp>
@@ -88,7 +90,7 @@ export function Recoleccion() {
 
 // Preparado para cuando el negocio defina sus zonas: con la lista vacía
 // invita a preguntar; con zonas, las enseña.
-function ZonasCobertura() {
+function ZonasCobertura({ zonas: ZONAS_COBERTURA }: { zonas: { nombre: string; nota?: string }[] }) {
   if (ZONAS_COBERTURA.length === 0) {
     return (
       <p className="lp-revela mt-4 text-lg text-[var(--lp-tinta)]">

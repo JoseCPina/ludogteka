@@ -3,6 +3,7 @@ import { consultarOrdenPoint, leerPagoDeOrden, simularOrdenPoint, type OrdenPoin
 import { comisionDePago, consultarPago, type PagoMp } from "./links";
 import { modoSimulacion } from "./config";
 import { describirEstadoOrden, ErrorMercadoPago } from "./errores";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Sincronizar una orden nuestra con lo que Mercado Pago dice de ella y,
@@ -52,11 +53,14 @@ const ESTADO_POR_MP: Record<string, string> = {
   refunded: "reembolsada",
 };
 
-export async function leerOrdenLocal(admin: SupabaseClient, ordenId: string): Promise<OrdenLocal | null> {
+// PeluDesk: `admin` salta la RLS; la orden se busca SOLO en el negocio
+// de quien pregunta.
+export async function leerOrdenLocal(admin: SupabaseClient, ordenId: string, negocioId: string): Promise<OrdenLocal | null> {
   const { data } = await admin
     .from("mp_ordenes")
     .select("id, tipo, estado, monto, mp_order_id, mp_payment_id, installments, simulado, created_at, cobro_id, expira_at")
     .eq("id", ordenId)
+    .eq("negocio_id", negocioId)
     .is("deleted_at", null)
     .maybeSingle();
   return data ? ({ ...data, monto: Number(data.monto) } as OrdenLocal) : null;
@@ -203,11 +207,35 @@ export async function aplicarPagoLink(admin: SupabaseClient, orden: OrdenLocal, 
   return { estado: orden.estado, pagada: false, registrado: false, sinTurno: false, detalle: null, installments: null };
 }
 
-export async function sincronizarPagoPorId(admin: SupabaseClient, paymentId: string): Promise<ResultadoSincronizacion | null> {
+/**
+ * PeluDesk: una notificación de Mercado Pago (o el link simulado) no trae
+ * negocio — llega sin sesión y sin dominio de negocio que valga. El negocio
+ * se deduce de LA ORDEN (esa única lectura va sin encabezado), y todo lo
+ * demás corre con un cliente atado al negocio de la orden: la RPC que
+ * registra el cobro solo ve ese negocio.
+ */
+export async function contextoDeOrden(
+  filtro: { id: string } | { mp_order_id: string }
+): Promise<{ admin: SupabaseClient; orden: OrdenLocal } | null> {
+  const [columna, valor] = "id" in filtro ? ["id", filtro.id] : ["mp_order_id", filtro.mp_order_id];
+  if ("id" in filtro && !/^[0-9a-f-]{36}$/i.test(valor)) return null;
+  const { data: fila } = await createSupabaseAdminClient()
+    .from("mp_ordenes")
+    .select("id, negocio_id")
+    .eq(columna, valor)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (!fila) return null;
+  const admin = createSupabaseAdminClient(fila.negocio_id as string);
+  const orden = await leerOrdenLocal(admin, fila.id as string, fila.negocio_id as string);
+  return orden ? { admin, orden } : null;
+}
+
+export async function sincronizarPagoPorId(paymentId: string): Promise<ResultadoSincronizacion | null> {
   const pago = await consultarPago(paymentId);
   const ref = pago.external_reference;
   if (!ref) return null;
-  const orden = await leerOrdenLocal(admin, ref);
-  if (!orden) return null;
-  return orden.tipo === "link" ? aplicarPagoLink(admin, orden, pago) : sincronizarOrdenPoint(admin, orden);
+  const ctx = await contextoDeOrden({ id: ref });
+  if (!ctx) return null;
+  return ctx.orden.tipo === "link" ? aplicarPagoLink(ctx.admin, ctx.orden, pago) : sincronizarOrdenPoint(ctx.admin, ctx.orden);
 }

@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PerroForm } from "@/app/(staff)/perros/perro-form";
 import { crearPerro, crearPerroYVolver } from "@/app/(staff)/perros/actions";
 import { cargarRazas } from "@/lib/razas";
+import { negocioIdActual } from "@/lib/negocio/actual";
 import { Alert } from "@/components/ui/alert";
 import { hrefDeVuelta, rutaDeVuelta } from "@/lib/clientes/volver";
 
@@ -20,7 +21,7 @@ export default async function NuevoPerroPage({
   const supabase = await createSupabaseServerClient();
   const [{ data: cliente }, razas, { data: tamanos }, { data: pelajes }] = await Promise.all([
     supabase.from("clientes").select("id, nombre").eq("id", id).is("deleted_at", null).single(),
-    cargarRazas(supabase, { conGrupo: true }),
+    cargarRazas(supabase, await negocioIdActual(), { conGrupo: true }),
     supabase
       .from("tamanos_categoria")
       .select("id, etiqueta")

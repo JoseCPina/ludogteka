@@ -1,16 +1,7 @@
 import { Info, PawPrint, Scissors } from "@phosphor-icons/react/dist/ssr";
 import { BotonWhatsApp, Cinta, TarjetaPerro } from "./comunes";
 import { PERROS } from "./perros";
-import {
-  ESTETICA_EXPRES_INCLUYE,
-  ESTETICA_GRUPOS,
-  ESTETICA_INCLUYE,
-  ESTETICA_PELO_MALTRATADO,
-  ESTETICA_POR_TALLA,
-  ESTETICA_RAPADO_DIFERENCIA,
-  MENSAJES,
-  pesos,
-} from "@/lib/landing/negocio";
+import { datosLanding, pesos } from "@/lib/landing/negocio";
 
 function Fila({ servicio, monto }: { servicio: string; monto?: number }) {
   if (monto == null) return null;
@@ -25,7 +16,16 @@ function Fila({ servicio, monto }: { servicio: string; monto?: number }) {
 
 // Estética como la pizarra de precios de una estética de barrio: cada
 // grupo de raza con su cinta índigo y sus precios con puntitos.
-export function Estetica() {
+export async function Estetica() {
+  const {
+    ESTETICA_EXPRES_INCLUYE,
+    ESTETICA_GRUPOS,
+    ESTETICA_INCLUYE,
+    ESTETICA_PELO_MALTRATADO,
+    ESTETICA_POR_TALLA,
+    ESTETICA_RAPADO_DIFERENCIA,
+    MENSAJES,
+  } = await datosLanding();
   return (
     <section id="estetica" className="relative bg-[var(--lp-crema)] py-20 lg:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -105,14 +105,14 @@ export function Estetica() {
           </li>
         </ul>
 
-        <div className="lp-revela mt-6 flex items-start gap-3 rounded-[1.25rem] bg-[var(--lp-amarillo)] p-5 text-lg">
+        {ESTETICA_PELO_MALTRATADO != null && <div className="lp-revela mt-6 flex items-start gap-3 rounded-[1.25rem] bg-[var(--lp-amarillo)] p-5 text-lg">
           <Info size={26} weight="bold" className="mt-0.5 shrink-0 text-[var(--lp-indigo)]" aria-hidden />
           <p>
             <strong>El precio puede aumentar según el tipo de pelo y el cuidado previo.</strong> En razas
             chicas con pelo maltratado, el baño estético es de{" "}
             <strong className="tabular-nums">{pesos(ESTETICA_PELO_MALTRATADO)}</strong>.
           </p>
-        </div>
+        </div>}
 
         <div className="lp-revela mt-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
           <BotonWhatsApp mensaje={MENSAJES.estetica}>Agendar estética</BotonWhatsApp>

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { negocioActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 
 const BUCKET = "perros-archivos";
@@ -80,7 +81,8 @@ export async function proponerComprobante(perroId: string, formData: FormData): 
 
   const id = crypto.randomUUID();
   const path = `${perro.cliente_id}/${perroId}/requisitos-propuestos/${id}/comprobante.jpg`;
-  const admin = createSupabaseAdminClient();
+  const negocio = await negocioActual();
+  const admin = createSupabaseAdminClient(negocio.id);
 
   const { error: errorSubida } = await admin.storage
     .from(BUCKET)

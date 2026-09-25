@@ -1,8 +1,8 @@
 "use server";
 
+import { negocioActual, urlDelNegocio } from "@/lib/negocio/actual";
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../reservas/traducir-error";
 
@@ -111,14 +111,12 @@ export async function construirEnlaceWhatsApp(
     return { url: null, error: "Este cliente no tiene teléfono registrado." };
   }
 
-  const hdrs = await headers();
-  const host = hdrs.get("host");
-  const protocolo = hdrs.get("x-forwarded-proto") || "https";
-  const urlPortal = host ? `${protocolo}://${host}/portal/perros/${entrada.perro_id}` : "";
+  const negocio = await negocioActual();
+  const urlPortal = `${urlDelNegocio(negocio)}/portal/perros/${entrada.perro_id}`;
 
   const saludo = entrada.tipo === "incidencia" ? "Te avisamos sobre" : "Te compartimos una actualización de";
   const mensaje =
-    `Hola ${cliente.nombre}, ${saludo} ${perro?.nombre ?? "tu perro"} en Ludogteka` +
+    `Hola ${cliente.nombre}, ${saludo} ${perro?.nombre ?? "tu perro"} en ${negocio.nombre}` +
     (entrada.nota ? `: ${entrada.nota}.` : ".") +
     (urlPortal ? ` Puedes ver las fotos en tu portal: ${urlPortal}` : "");
 

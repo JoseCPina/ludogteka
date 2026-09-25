@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { negocioActual } from "@/lib/negocio/actual";
+import { NEGOCIO_ORIGINAL_ID } from "@/lib/negocio/legado";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -60,9 +62,15 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   const gastos = (delMes ?? []) as unknown as GastoFila[];
 
   // Comprobantes: los firma el servidor (el bucket no tiene políticas).
-  const conFoto = gastos.filter((g) => g.comprobante_path);
+  // PeluDesk: la secret key firma cualquier ruta, así que solo se firman
+  // las de ESTE negocio (`{negocio}/gastos/…`; las `gastos/…` de antes de
+  // PeluDesk son todas de Ludogteka).
+  const negocio = await negocioActual();
+  const esDeEsteNegocio = (ruta: string) =>
+    ruta.startsWith(`${negocio.id}/gastos/`) || (ruta.startsWith("gastos/") && negocio.id === NEGOCIO_ORIGINAL_ID);
+  const conFoto = gastos.filter((g) => g.comprobante_path && esDeEsteNegocio(g.comprobante_path as string));
   const firmadas = conFoto.length
-    ? await createSupabaseAdminClient().storage.from("gastos-comprobantes").createSignedUrls(conFoto.map((g) => g.comprobante_path as string), 3600)
+    ? await createSupabaseAdminClient(negocio.id).storage.from("gastos-comprobantes").createSignedUrls(conFoto.map((g) => g.comprobante_path as string), 3600)
     : { data: [] };
   const urlDe = new Map((firmadas.data ?? []).map((f) => [f.path, f.signedUrl]));
   const ajustesDe = (id: string) => gastos.filter((g) => g.ajuste_de === id && g.estado === "pagado");

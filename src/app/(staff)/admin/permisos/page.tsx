@@ -12,17 +12,19 @@ import { CasillasPermisos } from "./casillas-permisos";
 export default async function PermisosPage() {
   const supabase = await createSupabaseServerClient();
   const [{ data: recepcion, error }, { data: filas }, { data: nombres }] = await Promise.all([
-    supabase.from("profiles").select("id, nombre_completo").eq("rol", "recepcion").is("deleted_at", null).order("nombre_completo"),
+    // Recepción de ESTE negocio (el rol vive en la membresía).
+    supabase.from("membresias").select("id:profile_id, profiles(nombre_completo)").eq("rol", "recepcion").is("deleted_at", null),
     supabase
       .from("permisos_staff")
       .select("id, profile_id, permiso, created_at, created_by, revocado_at, revocado_por")
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
-    supabase.from("profiles").select("id, nombre_completo").in("rol", ["admin", "recepcion"]),
+    supabase.from("membresias").select("id:profile_id, profiles(nombre_completo)").in("rol", ["admin", "recepcion"]),
   ]);
   const { data: cuentas } = await supabase.rpc("listar_cuentas");
   const correo = new Map(((cuentas as { id: string; email: string }[] | null) ?? []).map((c) => [c.id, c.email]));
-  const nombre = new Map((nombres ?? []).map((n) => [n.id as string, (n.nombre_completo as string | null) ?? correo.get(n.id as string) ?? "—"]));
+  const nombreDe = (n: { profiles: unknown }) => ((n.profiles as { nombre_completo: string | null } | null)?.nombre_completo ?? null);
+  const nombre = new Map((nombres ?? []).map((n) => [n.id as string, nombreDe(n) ?? correo.get(n.id as string) ?? "—"]));
 
   const activosDe = (id: string) =>
     (filas ?? []).filter((f) => f.profile_id === id && !f.revocado_at).map((f) => f.permiso as string);

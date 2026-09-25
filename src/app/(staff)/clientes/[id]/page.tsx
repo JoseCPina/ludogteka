@@ -24,6 +24,7 @@ import { RestablecerPassword } from "./restablecer-password";
 import { cargarPendientesEstancia } from "@/lib/perros/pendientes-estancia";
 import { PendientesEstancia, type CatalogosPerro } from "../../perros/pendientes-estancia";
 import { cargarRazas } from "@/lib/razas";
+import { negocioIdActual } from "@/lib/negocio/actual";
 
 export default async function EditarClientePage({
   params,
@@ -47,10 +48,12 @@ export default async function EditarClientePage({
 
   if (!cliente) notFound();
 
+  // La cuenta de este expediente es la membresía de cliente en ESTE negocio.
   const { data: cuentaCliente } = await supabase
-    .from("profiles")
-    .select("id")
+    .from("membresias")
+    .select("id:profile_id")
     .eq("cliente_id", id)
+    .is("deleted_at", null)
     .limit(1)
     .maybeSingle();
 
@@ -167,7 +170,7 @@ export default async function EditarClientePage({
   let catalogos: CatalogosPerro = { razas: [], tamanos: [], pelajes: [] };
   if ([...pendientesPorPerro.values()].some((l) => l.some((p) => p.clave === "talla" || p.clave.startsWith("campo:")))) {
     const [razas, { data: tamanos }, { data: pelajes }] = await Promise.all([
-      cargarRazas(supabase, { conGrupo: true }),
+      cargarRazas(supabase, await negocioIdActual(), { conGrupo: true }),
       supabase.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
       supabase.from("tipos_pelaje").select("id, etiqueta").is("deleted_at", null).order("orden"),
     ]);

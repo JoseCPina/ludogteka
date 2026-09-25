@@ -56,7 +56,10 @@ export type CotizacionEstetica = {
 const CLAVES = ["estetica_estetico", "estetica_rapado", "estetica_expres"];
 
 export async function cargarCotizacionEstetica(
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  // PeluDesk: servicios, grupos y el grupo de cada raza son del negocio.
+  // Se filtra a mano porque el alta pública llega con la secret key.
+  negocioId: string
 ): Promise<CotizacionEstetica | null> {
   const [{ data: servicios }, { data: grupos }, { data: razas }, { data: tamanos }] =
     await Promise.all([
@@ -64,13 +67,15 @@ export async function cargarCotizacionEstetica(
         .from("servicios")
         .select("id, clave, nombre, incluye, no_incluye, orden")
         .in("clave", CLAVES)
+        .eq("negocio_id", negocioId)
         .is("deleted_at", null)
         .order("orden"),
       supabase
         .from("grupos_raza")
         .select("id, depende_tamano, es_predeterminado")
+        .eq("negocio_id", negocioId)
         .is("deleted_at", null),
-      supabase.from("razas").select("id, grupo_raza_id, es_desconocida").is("deleted_at", null),
+      supabase.from("razas").select("id, es_desconocida").is("deleted_at", null),
       supabase
         .from("tamanos_categoria")
         .select("id, etiqueta")
@@ -79,6 +84,12 @@ export async function cargarCotizacionEstetica(
     ]);
 
   if (!servicios || servicios.length === 0) return null;
+
+  const { data: gruposDeRaza } = await supabase
+    .from("razas_grupo")
+    .select("raza_id, grupo_raza_id")
+    .eq("negocio_id", negocioId)
+    .is("deleted_at", null);
 
   const { data: tarifas } = await supabase
     .from("tarifas_vigentes")
@@ -167,7 +178,7 @@ export async function cargarCotizacionEstetica(
     precios,
     preciosPorTalla,
     grupoDeRaza: Object.fromEntries(
-      (razas ?? []).map((r) => [r.id as string, r.grupo_raza_id as string])
+      (gruposDeRaza ?? []).map((r) => [r.raza_id as string, r.grupo_raza_id as string])
     ),
     grupoPredeterminado: grupoPredeterminado.id as string,
     gruposPorTalla: (grupos ?? []).filter((g) => g.depende_tamano).map((g) => g.id as string),

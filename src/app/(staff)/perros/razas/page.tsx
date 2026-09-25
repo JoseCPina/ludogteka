@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { cargarRazas, sugerirRaza } from "@/lib/razas";
+import { negocioIdActual } from "@/lib/negocio/actual";
 import { cargarCotizacionEstetica } from "@/lib/estetica/cotizacion";
 import { NormalizarRazas, type PerroSinRaza } from "./normalizar-razas";
 
@@ -24,8 +25,8 @@ export default async function NormalizarRazasPage() {
   const soloLectura = !['admin', 'recepcion'].includes(sesion?.rol ?? '');
 
   const [razas, cotizacion, { data: perrosCrudo }, { data: tamanos }] = await Promise.all([
-    cargarRazas(supabase, { conGrupo: true }),
-    cargarCotizacionEstetica(supabase),
+    cargarRazas(supabase, await negocioIdActual(), { conGrupo: true }),
+    cargarCotizacionEstetica(supabase, await negocioIdActual()),
     supabase
       .from("perros")
       .select("id, nombre, raza, tamano_id, cliente_id, clientes(nombre)")

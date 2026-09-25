@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { rutaPorRol } from "@/lib/auth/rutas";
 import { clasificarIdentificador } from "@/lib/auth/identidad";
+import { negocioActual } from "@/lib/negocio/actual";
 
 export type EstadoLogin = { error: string | null };
 
@@ -33,7 +34,8 @@ export async function iniciarSesion(
     // cuenta se trata. Se hace con la secret key y del lado del servidor
     // — el correo resuelto nunca llega al navegador, ni siquiera al del
     // dueño de la cuenta.
-    const admin = createSupabaseAdminClient();
+    // Solo entre los clientes de ESTE negocio (el del dominio).
+    const admin = createSupabaseAdminClient((await negocioActual()).id);
     const { data } = await admin.rpc("email_de_login_por_telefono", {
       p_telefono: quien.telefono,
     });
@@ -49,7 +51,7 @@ export async function iniciarSesion(
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     if (error.code === "email_not_confirmed") {
@@ -66,11 +68,13 @@ export async function iniciarSesion(
     return { error: "No pudimos iniciar sesión. Intenta de nuevo en un momento." };
   }
 
-  const { data: perfil } = await supabase
-    .from("profiles")
-    .select("rol")
-    .eq("id", data.user.id)
-    .single();
-
-  redirect(rutaPorRol(perfil?.rol));
+  // El rol es el de su membresía EN ESTE negocio. Una cuenta que existe
+  // (por ejemplo, de otro negocio) pero no es de este, no entra aquí.
+  const { data: rol } = await supabase.rpc("current_rol");
+  if (!rol || rol === "anonimo") {
+    await supabase.auth.signOut();
+    const negocio = await negocioActual();
+    return { error: `Tu cuenta no tiene acceso a ${negocio.nombre}. Si eres cliente, pídele a recepción tu link de registro.` };
+  }
+  redirect(rutaPorRol(rol as string));
 }

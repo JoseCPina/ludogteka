@@ -5,6 +5,7 @@ import { normalizarTelefono } from "@/lib/telefono";
 import { correoSinteticoDeTelefono } from "@/lib/auth/identidad";
 import { geocodificarYCalcularDistancia } from "@/lib/google-maps/distancia-cliente";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { negocioActual } from "@/lib/negocio/actual";
 import type {
   ContratoPendiente,
   DatosAlta,
@@ -22,6 +23,36 @@ const BUCKET = "perros-archivos";
 // perros— no puede quedar al alcance de quien tenga el link y sepa abrir
 // la consola del navegador. El token autoriza a llamar a esta acción; la
 // acción es la que decide qué se escribe.
+//
+// PeluDesk: el negocio es el del dominio en el que se abrió el link. La
+// secret key salta la RLS, así que cada consulta de aquí filtra ese negocio
+// a mano (un token de otro negocio abierto aquí "no existe"), y las
+// funciones de la base reciben el negocio en el encabezado.
+
+// La cuenta de una persona se busca en TODA la plataforma: el mismo dueño
+// puede ya ser cliente de otro negocio. En ese caso no se le crea otra
+// cuenta: la contraseña que escribió tiene que ser la suya, y con ella se
+// liga a este negocio.
+async function cuentaExistentePorTelefono(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  telefono: string,
+  password: string
+): Promise<{ userId: string | null; error: string | null; existe: boolean }> {
+  const { data: email } = await admin.rpc("email_de_persona_por_telefono", { p_telefono: telefono });
+  if (!email) return { userId: null, error: null, existe: false };
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.auth.signInWithPassword({ email: email as string, password });
+  if (error || !data.user) {
+    return {
+      userId: null,
+      existe: true,
+      error:
+        "Ya tienes una cuenta con ese teléfono (la usas en otro negocio). Escribe la contraseña que ya usas para ligarla aquí; si no la recuerdas, pídele al negocio donde ya eres cliente que te la restablezca.",
+    };
+  }
+  return { userId: data.user.id, error: null, existe: true };
+}
+
 export async function completarAlta(token: string, datos: DatosAlta): Promise<ResultadoAlta> {
   const nombre = datos.nombre.trim();
   const email = datos.email.trim().toLowerCase();
@@ -42,7 +73,8 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
     return { error: "Cada perro necesita un nombre." };
   }
 
-  const admin = createSupabaseAdminClient();
+  const negocio = await negocioActual();
+  const admin = createSupabaseAdminClient(negocio.id);
 
   // Se valida el token ANTES de crear la cuenta, aunque
   // completar_alta_cliente lo vuelva a validar dentro de su transacción:
@@ -53,6 +85,7 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
     .from("invitaciones_cliente")
     .select("id, cliente_id, usada_at, cancelada_at, expira_at")
     .eq("token", token)
+    .eq("negocio_id", negocio.id)
     .is("deleted_at", null)
     .maybeSingle();
 
@@ -96,8 +129,15 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
   // salga a confirmar un correo para poder entrar rompería el alta justo
   // en el último paso, que es donde más gente se cae.
   let userId: string | null = null;
+  let creadoAqui = false;
 
   if (datos.crearCuenta) {
+    const existente = await cuentaExistentePorTelefono(admin, telefono, datos.password);
+    if (existente.error) return { error: existente.error };
+    userId = existente.userId;
+  }
+
+  if (datos.crearCuenta && !userId) {
     // La cuenta se registra con un correo derivado del teléfono, no con el
     // correo que la persona haya escrito: así el login por teléfono
     // funciona siempre, y el correo de contacto puede cambiar (o no
@@ -119,6 +159,7 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
       return { error: "No pudimos crear tu cuenta. Intenta de nuevo." };
     }
     userId = creado.user.id;
+    creadoAqui = true;
   }
 
   const { data: resultado, error: errorAlta } = await admin.rpc("completar_alta_cliente", {
@@ -148,7 +189,8 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
     // hay que deshacerla a mano. Si no, queda una cuenta sin expediente
     // — exactamente la cuenta huérfana que este flujo viene a evitar, y
     // encima bloqueando ese correo para el siguiente intento.
-    if (userId) await admin.auth.admin.deleteUser(userId);
+    // La cuenta que ya existía (de otro negocio) nunca se toca.
+    if (creadoAqui && userId) await admin.auth.admin.deleteUser(userId);
     return { error: errorAlta.message || "No pudimos completar tu alta. Intenta de nuevo." };
   }
 
@@ -179,12 +221,14 @@ export async function completarExpediente(
   token: string,
   datos: DatosComplemento
 ): Promise<ResultadoComplemento> {
-  const admin = createSupabaseAdminClient();
+  const negocio = await negocioActual();
+  const admin = createSupabaseAdminClient(negocio.id);
 
   const { data: invitacion } = await admin
     .from("invitaciones_cliente")
     .select("id, cliente_id, usada_at, alta_completada_at, cancelada_at, expira_at")
     .eq("token", token)
+    .eq("negocio_id", negocio.id)
     .is("deleted_at", null)
     .maybeSingle();
 
@@ -204,11 +248,14 @@ export async function completarExpediente(
     return { error: "Este link es para un alta nueva, no para completar un expediente." };
   }
 
-  // ¿Ya hay cuenta ligada a este expediente?
+  // ¿Ya hay cuenta ligada a este expediente? (su membresía de cliente
+  // en este negocio)
   const { data: perfil } = await admin
-    .from("profiles")
-    .select("id")
+    .from("membresias")
+    .select("id:profile_id")
     .eq("cliente_id", invitacion.cliente_id)
+    .eq("negocio_id", negocio.id)
+    .is("deleted_at", null)
     .limit(1)
     .maybeSingle();
 
@@ -239,30 +286,37 @@ export async function completarExpediente(
       .from("clientes")
       .select("telefono")
       .eq("id", invitacion.cliente_id)
+      .eq("negocio_id", negocio.id)
       .single();
     const telefono = normalizarTelefono((clienteDatos?.telefono as string | null) ?? "");
     if (!telefono) {
       return { error: "Tu expediente no tiene un teléfono válido. Avísale a recepción." };
     }
 
-    const { data: creado, error: errorCuenta } = await admin.auth.admin.createUser({
-      email: correoSinteticoDeTelefono(telefono),
-      password: datos.password,
-      email_confirm: true,
-    });
+    const existente = await cuentaExistentePorTelefono(admin, telefono, datos.password);
+    if (existente.error) return { error: existente.error };
+    if (existente.userId) {
+      userId = existente.userId;
+    } else {
+      const { data: creado, error: errorCuenta } = await admin.auth.admin.createUser({
+        email: correoSinteticoDeTelefono(telefono),
+        password: datos.password,
+        email_confirm: true,
+      });
 
-    if (errorCuenta || !creado.user) {
-      const mensaje = errorCuenta?.message ?? "";
-      if (/already|registered|exists/i.test(mensaje)) {
-        return {
-          error:
-            "Ya hay una cuenta con tu teléfono. Inicia sesión; si no recuerdas la contraseña, pídele a recepción que te la restablezca.",
-        };
+      if (errorCuenta || !creado.user) {
+        const mensaje = errorCuenta?.message ?? "";
+        if (/already|registered|exists/i.test(mensaje)) {
+          return {
+            error:
+              "Ya hay una cuenta con tu teléfono. Inicia sesión; si no recuerdas la contraseña, pídele a recepción que te la restablezca.",
+          };
+        }
+        return { error: "No pudimos crear tu cuenta. Intenta de nuevo." };
       }
-      return { error: "No pudimos crear tu cuenta. Intenta de nuevo." };
+      userId = creado.user.id;
+      creadoAqui = true;
     }
-    userId = creado.user.id;
-    creadoAqui = true;
   }
 
   const { data: resultado, error } = await admin.rpc("completar_expediente_cliente", {
@@ -325,7 +379,7 @@ export async function completarExpediente(
  * que decide si de verdad no queda nada; aquí solo se le pregunta.
  */
 export async function cerrarLinkSiCompleto(token: string): Promise<{ error: string | null; completo?: boolean }> {
-  const admin = createSupabaseAdminClient();
+  const admin = createSupabaseAdminClient((await negocioActual()).id);
   const { data, error } = await admin.rpc("cerrar_invitacion_si_completa", { p_token: token });
   if (error) return { error: error.message };
   return { error: null, completo: Boolean((data as { completa?: boolean } | null)?.completa) };
@@ -343,12 +397,14 @@ export async function cerrarLinkSiCompleto(token: string): Promise<{ error: stri
 // invitación creó: con el token de otra persona no se le puede recalcular
 // (ni cobrar cuota de Google) sobre un cliente ajeno.
 export async function calcularDistanciaAlta(token: string): Promise<{ error: string | null }> {
-  const admin = createSupabaseAdminClient();
+  const negocio = await negocioActual();
+  const admin = createSupabaseAdminClient(negocio.id);
 
   const { data: invitacion } = await admin
     .from("invitaciones_cliente")
     .select("cliente_id")
     .eq("token", token)
+    .eq("negocio_id", negocio.id)
     .is("deleted_at", null)
     .maybeSingle();
 
@@ -358,12 +414,13 @@ export async function calcularDistanciaAlta(token: string): Promise<{ error: str
     .from("clientes")
     .select("direccion")
     .eq("id", invitacion.cliente_id)
+    .eq("negocio_id", negocio.id)
     .maybeSingle();
 
   const direccion = (cliente?.direccion as string | null) ?? "";
   if (!direccion.trim()) return { error: null };
 
-  const resultado = await geocodificarYCalcularDistancia(admin, invitacion.cliente_id, direccion);
+  const resultado = await geocodificarYCalcularDistancia(admin, invitacion.cliente_id, direccion, negocio);
   return { error: resultado.error };
 }
 
@@ -388,12 +445,14 @@ export async function subirFotoAlta(
     return { error: "Ese archivo no es una imagen." };
   }
 
-  const admin = createSupabaseAdminClient();
+  const negocio = await negocioActual();
+  const admin = createSupabaseAdminClient(negocio.id);
 
   const { data: invitacion } = await admin
     .from("invitaciones_cliente")
     .select("cliente_id")
     .eq("token", token)
+    .eq("negocio_id", negocio.id)
     .is("deleted_at", null)
     .maybeSingle();
 
@@ -403,6 +462,7 @@ export async function subirFotoAlta(
     .from("perros")
     .select("id, cliente_id")
     .eq("id", perroId)
+    .eq("negocio_id", negocio.id)
     .maybeSingle();
 
   if (!perro || perro.cliente_id !== invitacion.cliente_id) {
@@ -421,7 +481,8 @@ export async function subirFotoAlta(
   const { error: errorPerro } = await admin
     .from("perros")
     .update({ foto_path: ruta })
-    .eq("id", perroId);
+    .eq("id", perroId)
+    .eq("negocio_id", negocio.id);
 
   if (errorPerro) return { error: "No pudimos guardar la foto." };
 
@@ -445,9 +506,12 @@ export async function iniciarSesionPorTelefono(
   if (!telefono) return { error: "Ese teléfono no se ve bien. Avísale a recepción." };
   if (!password) return { error: "Escribe tu contraseña." };
 
-  const admin = createSupabaseAdminClient();
+  const admin = createSupabaseAdminClient((await negocioActual()).id);
   const { data } = await admin.rpc("email_de_login_por_telefono", { p_telefono: telefono });
-  const email = data as string | null;
+  // Si no es cliente de este negocio todavía, puede ser la misma persona
+  // de otro negocio (su cuenta de siempre).
+  const { data: dePersona } = data ? { data: null } : await admin.rpc("email_de_persona_por_telefono", { p_telefono: telefono });
+  const email = (data as string | null) ?? (dePersona as string | null);
   if (!email) {
     return { error: "Ese teléfono todavía no tiene cuenta. Créala aquí mismo." };
   }

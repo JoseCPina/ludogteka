@@ -5,7 +5,7 @@ import {
   formatearFechaCalendario,
   horaLocalDeInstante,
 } from "@/lib/formato";
-import { linkWhatsApp } from "@/lib/landing/negocio";
+import { whatsAppDelNegocio } from "@/lib/landing/negocio";
 
 // Las citas de estética y las estancias de guardería y hotel, tal como las
 // da mis_visitas() en la base: sin precios (el dueño nunca ve información
@@ -107,6 +107,7 @@ function Fila({ v, enHistorial = false }: { v: Visita; enHistorial?: boolean }) 
 
 export async function MisVisitas({ supabase, hoy }: { supabase: SupabaseClient; hoy: string }) {
   const { data, error } = await supabase.rpc("mis_visitas");
+  const whatsapp = await whatsAppDelNegocio("portal_citas", (n) => `Hola, ${n}. Quiero agendar o cambiar una cita de mi perro.`);
   const visitas = (data ?? []) as Visita[];
 
   const proximas = visitas.filter((v) => esProxima(v, hoy)).sort((a, b) => fechaDe(a).localeCompare(fechaDe(b)) || (a.inicio ?? "").localeCompare(b.inicio ?? ""));
@@ -120,14 +121,13 @@ export async function MisVisitas({ supabase, hoy }: { supabase: SupabaseClient; 
         <h2 className="text-lg font-bold text-n-900">Citas y reservas</h2>
         <p className="mt-1 text-sm text-n-600">
           Para agendar, cambiar o cancelar,{" "}
-          <a
-            href={linkWhatsApp("Hola, Ludogteka. Quiero agendar o cambiar una cita de mi perro.")}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-azul underline"
-          >
-            escríbenos por WhatsApp
-          </a>
+          {whatsapp ? (
+            <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="font-semibold text-azul underline">
+              escríbenos por WhatsApp
+            </a>
+          ) : (
+            "escríbenos por WhatsApp"
+          )}
           .
         </p>
       </div>

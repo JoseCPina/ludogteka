@@ -4,7 +4,6 @@ import { conTope } from "@/lib/ui/espera";
 import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
@@ -12,9 +11,8 @@ import { Alert } from "@/components/ui/alert";
 import { FirmarContrato } from "@/components/firmar-contrato";
 import type { RazaOpcion } from "@/components/selector-raza";
 import type { CotizacionEstetica } from "@/lib/estetica/cotizacion";
-import { correoSinteticoDeTelefono } from "@/lib/auth/identidad";
 import { TIPOS_LINK_ALTA, type TipoLinkAlta } from "@/lib/alta/tipos-link";
-import { completarAlta, subirFotoAlta, calcularDistanciaAlta, cerrarLinkSiCompleto } from "../acciones";
+import { completarAlta, subirFotoAlta, calcularDistanciaAlta, cerrarLinkSiCompleto, iniciarSesionPorTelefono } from "../acciones";
 import { perroVacio, type ContratoPendiente, type PerroAlta } from "../tipos";
 import { camposDeTipo } from "@/lib/alta/campos-perro";
 import { TarjetaPerro, type Catalogo } from "./tarjeta-perro";
@@ -174,17 +172,12 @@ export function AltaForm({
 
       if (crearCuenta) {
         setAviso("Abriendo tu sesión…");
-        const supabase = createSupabaseBrowserClient();
-        // Entra con el mismo teléfono que acaba de registrar. El correo
-        // interno con el que Auth lo conoce se deriva de ese número —
-        // nunca se le enseña ni se le pide.
-        const { error: errorSesion } = await conTope(
-          supabase.auth.signInWithPassword({
-            email: correoSinteticoDeTelefono(telefono),
-            password,
-          })
-        );
-        sesionAbierta = !errorSesion;
+        // Entra con el mismo teléfono que acaba de registrar. El correo con
+        // el que Auth lo conoce lo resuelve el servidor (derivado del
+        // número, o el de su cuenta de antes si ya era cliente de otro
+        // negocio de PeluDesk) — nunca se le enseña ni se le pide.
+        const res = await conTope(iniciarSesionPorTelefono(telefono, password));
+        sesionAbierta = !res.error;
       }
     } catch {
       // Se traga el error a propósito: el alta ya quedó y no hay nada que

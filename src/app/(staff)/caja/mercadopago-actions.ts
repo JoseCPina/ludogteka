@@ -9,13 +9,27 @@ import { crearOrdenPoint, cancelarOrdenPoint } from "@/lib/mercadopago/point";
 import { crearLinkPago as crearPreferenciaMp, vigenciaLink } from "@/lib/mercadopago/links";
 import { leerOrdenLocal, sincronizarOrdenPoint, type ResultadoSincronizacion } from "@/lib/mercadopago/registro";
 import { ErrorMercadoPago } from "@/lib/mercadopago/errores";
+import { negocioActual } from "@/lib/negocio/actual";
+import { usaIntegracionesDelEntorno } from "@/lib/negocio/integraciones";
 
 // Todas las acciones de Mercado Pago comparten esto: solo admin o
 // recepción, y el error se traduce a qué revisar.
+//
+// PeluDesk: la cuenta de Mercado Pago de las variables de entorno es de
+// UN negocio (ver lib/negocio/integraciones.ts). En cualquier otro, la
+// integración está apagada — ni cuenta real ni simulación.
 async function exigirCaja(): Promise<string | null> {
   const sesion = await obtenerSesionConRol();
   if (!sesion || !["admin", "recepcion"].includes(sesion.rol)) return "Solo admin o recepción pueden cobrar.";
+  if (!usaIntegracionesDelEntorno(await negocioActual())) return "Mercado Pago todavía no está activado para tu negocio.";
   return null;
+}
+
+// La secret key salta la RLS: todo lo de mp_ordenes se filtra por el
+// negocio a mano, y la base recibe el negocio en el encabezado.
+async function adminDelNegocio() {
+  const negocio = await negocioActual();
+  return { negocio, admin: createSupabaseAdminClient(negocio.id) };
 }
 
 function mensajeDe(e: unknown): string {
@@ -31,13 +45,20 @@ function revalidarCuenta(reservaId: string) {
 }
 
 export type EstadoMpDisponible = {
+  activo: boolean;
   simulado: boolean;
   terminal: boolean;
   esperaSegundos: number;
 };
 
 export async function estadoMercadoPago(): Promise<EstadoMpDisponible> {
-  return { simulado: modoSimulacion(), terminal: modoSimulacion() || Boolean(terminalIdConfigurada()), esperaSegundos: TERMINAL_ESPERA_SEGUNDOS };
+  const activo = usaIntegracionesDelEntorno(await negocioActual());
+  return {
+    activo,
+    simulado: modoSimulacion(),
+    terminal: activo && (modoSimulacion() || Boolean(terminalIdConfigurada())),
+    esperaSegundos: TERMINAL_ESPERA_SEGUNDOS,
+  };
 }
 
 export type ResultadoIniciarTerminal = { error: string | null; ordenId?: string; simulado?: boolean };
@@ -69,10 +90,13 @@ export async function iniciarCobroTerminal(
 
   // Una orden viva por cuenta a la vez: dos montos en la terminal al mismo
   // tiempo es justo lo que confunde en el mostrador.
-  const admin = createSupabaseAdminClient();
+  const { negocio, admin } = await adminDelNegocio();
+  const { data: reservaDelNegocio } = await admin.from("reservas").select("id").eq("id", reservaId).eq("negocio_id", negocio.id).maybeSingle();
+  if (!reservaDelNegocio) return { error: "Cuenta no encontrada." };
   const { data: viva } = await admin
     .from("mp_ordenes")
     .select("id")
+    .eq("negocio_id", negocio.id)
     .eq("reserva_id", reservaId)
     .eq("tipo", "point")
     .in("estado", ["creada", "en_terminal"])
@@ -84,6 +108,7 @@ export async function iniciarCobroTerminal(
   const { data: orden, error: errorOrden } = await admin
     .from("mp_ordenes")
     .insert({
+      negocio_id: negocio.id,
       tipo: "point",
       reserva_id: reservaId,
       monto: Math.round(monto * 100) / 100,
@@ -110,9 +135,10 @@ export async function iniciarCobroTerminal(
     await admin
       .from("mp_ordenes")
       .update({ mp_order_id: remota.id, estado: remota.status === "at_terminal" ? "en_terminal" : "creada", ultimo_evento: remota })
-      .eq("id", orden.id);
+      .eq("id", orden.id)
+      .eq("negocio_id", negocio.id);
   } catch (e) {
-    await admin.from("mp_ordenes").update({ estado: "fallida", detalle_error: mensajeDe(e) }).eq("id", orden.id);
+    await admin.from("mp_ordenes").update({ estado: "fallida", detalle_error: mensajeDe(e) }).eq("id", orden.id).eq("negocio_id", negocio.id);
     return { error: mensajeDe(e), ordenId: orden.id as string };
   }
 
@@ -128,13 +154,13 @@ export type ResultadoConsulta = { error: string | null } & Partial<ResultadoSinc
 export async function consultarCobroTerminal(ordenId: string): Promise<ResultadoConsulta> {
   const rechazo = await exigirCaja();
   if (rechazo) return { error: rechazo };
-  const admin = createSupabaseAdminClient();
-  const orden = await leerOrdenLocal(admin, ordenId);
+  const { negocio, admin } = await adminDelNegocio();
+  const orden = await leerOrdenLocal(admin, ordenId, negocio.id);
   if (!orden) return { error: "Orden no encontrada." };
   try {
     const r = await sincronizarOrdenPoint(admin, orden);
     if (r.pagada || ["cancelada", "expirada", "fallida"].includes(r.estado)) {
-      const { data } = await admin.from("mp_ordenes").select("reserva_id").eq("id", ordenId).single();
+      const { data } = await admin.from("mp_ordenes").select("reserva_id").eq("id", ordenId).eq("negocio_id", negocio.id).single();
       if (data) revalidarCuenta(data.reserva_id as string);
     }
     return { error: null, ...r };
@@ -150,8 +176,8 @@ export async function consultarCobroTerminal(ordenId: string): Promise<Resultado
 export async function cancelarCobroTerminal(ordenId: string, motivo: string): Promise<{ error: string | null; aviso?: string }> {
   const rechazo = await exigirCaja();
   if (rechazo) return { error: rechazo };
-  const admin = createSupabaseAdminClient();
-  const orden = await leerOrdenLocal(admin, ordenId);
+  const { negocio, admin } = await adminDelNegocio();
+  const orden = await leerOrdenLocal(admin, ordenId, negocio.id);
   if (!orden) return { error: "Orden no encontrada." };
   if (orden.estado === "pagada" || orden.cobro_id) return { error: "Este cobro ya se pagó; si hay que devolverlo, usa una devolución." };
 
@@ -169,8 +195,9 @@ export async function cancelarCobroTerminal(ordenId: string, motivo: string): Pr
   await admin
     .from("mp_ordenes")
     .update({ estado: "cancelada", detalle_error: motivo || "Cancelado desde la app", notificado_at: new Date().toISOString() })
-    .eq("id", ordenId);
-  const { data } = await admin.from("mp_ordenes").select("reserva_id").eq("id", ordenId).single();
+    .eq("id", ordenId)
+    .eq("negocio_id", negocio.id);
+  const { data } = await admin.from("mp_ordenes").select("reserva_id").eq("id", ordenId).eq("negocio_id", negocio.id).single();
   if (data) revalidarCuenta(data.reserva_id as string);
   return { error: null, aviso };
 }
@@ -194,13 +221,14 @@ export async function crearLinkPago(reservaId: string, monto: number, concepto: 
   if (!reserva) return { error: "Cuenta no encontrada." };
   const cliente = (Array.isArray(reserva.clientes) ? reserva.clientes[0] : reserva.clientes) as { nombre: string; telefono: string | null } | null;
 
-  const admin = createSupabaseAdminClient();
+  const { negocio, admin } = await adminDelNegocio();
   const sesion = await obtenerSesionConRol();
   const expira = vigenciaLink();
-  const titulo = concepto.trim() || "Pago a Ludogteka";
+  const titulo = concepto.trim() || `Pago a ${negocio.nombre}`;
   const { data: orden, error: errorOrden } = await admin
     .from("mp_ordenes")
     .insert({
+      negocio_id: negocio.id,
       tipo: "link",
       reserva_id: reservaId,
       monto: Math.round(monto * 100) / 100,
@@ -226,10 +254,11 @@ export async function crearLinkPago(reservaId: string, monto: number, concepto: 
     await admin
       .from("mp_ordenes")
       .update({ mp_preference_id: pref.id, url_pago: pref.init_point, ultimo_evento: pref })
-      .eq("id", orden.id);
+      .eq("id", orden.id)
+      .eq("negocio_id", negocio.id);
 
     const mensaje =
-      `Hola ${cliente?.nombre ?? ""}, te mandamos el link para pagar ${titulo.toLowerCase()} en Ludogteka: $${monto.toFixed(2)}. ` +
+      `Hola ${cliente?.nombre ?? ""}, te mandamos el link para pagar ${titulo.toLowerCase()} en ${negocio.nombre}: $${monto.toFixed(2)}. ` +
       `Puedes pagar con tarjeta o desde tu cuenta de Mercado Pago aquí: ${pref.init_point} ` +
       `(vence en 7 días). ¡Gracias!`;
     const telefono = cliente?.telefono?.replace(/\D/g, "") ?? "";
@@ -238,7 +267,7 @@ export async function crearLinkPago(reservaId: string, monto: number, concepto: 
     revalidarCuenta(reservaId);
     return { error: null, ordenId: orden.id as string, url: pref.init_point, urlWhatsApp, simulado: modoSimulacion() };
   } catch (e) {
-    await admin.from("mp_ordenes").update({ estado: "fallida", detalle_error: mensajeDe(e) }).eq("id", orden.id);
+    await admin.from("mp_ordenes").update({ estado: "fallida", detalle_error: mensajeDe(e) }).eq("id", orden.id).eq("negocio_id", negocio.id);
     return { error: mensajeDe(e) };
   }
 }
@@ -251,10 +280,11 @@ export async function crearLinkPago(reservaId: string, monto: number, concepto: 
 export async function registrarPagosMpPendientes(): Promise<{ error: string | null; registrados: number }> {
   const rechazo = await exigirCaja();
   if (rechazo) return { error: rechazo, registrados: 0 };
-  const admin = createSupabaseAdminClient();
+  const { negocio, admin } = await adminDelNegocio();
   const { data: pendientes } = await admin
     .from("mp_ordenes")
     .select("id, mp_payment_id, monto, installments, mp_payment_type")
+    .eq("negocio_id", negocio.id)
     .eq("estado", "pagada")
     .is("cobro_id", null)
     .is("deleted_at", null);

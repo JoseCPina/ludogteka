@@ -34,11 +34,6 @@ export async function definirPassword(
     return { error: "No pudimos guardar tu contraseña. Intenta de nuevo en un momento." };
   }
 
-  const { data: perfil } = await supabase
-    .from("profiles")
-    .select("rol")
-    .eq("id", user.id)
-    .single();
-
-  redirect(rutaPorRol(perfil?.rol));
+  const { data: rol } = await supabase.rpc("current_rol");
+  redirect(rol && rol !== "anonimo" ? rutaPorRol(rol as string) : "/sin-acceso");
 }

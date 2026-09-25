@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button";
 import { SECCIONES_PORTAL } from "@/lib/nav/config";
 
 export function PortalShell({
+  nombreNegocio,
   identidad,
   nombreCompleto,
   children,
 }: {
+  nombreNegocio: string;
   // Cómo se llama quien está viendo esto. NUNCA el correo con el que Auth
   // lo conoce: desde que la cuenta se arma con el teléfono, ese correo es
   // sintético (t4441234567@telefono.ludogteka.mx) y enseñárselo al dueño
@@ -26,7 +28,7 @@ export function PortalShell({
     <div className="flex min-h-full flex-1 flex-col">
       <header className="flex flex-none flex-col gap-3 border-b border-n-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between md:px-8">
         <div>
-          <span className="text-lg font-extrabold tracking-tight text-azul">Ludogteka</span>
+          <span className="text-lg font-extrabold tracking-tight text-azul">{nombreNegocio}</span>
           <p className="text-sm text-n-600">Hola, {nombreCompleto ?? identidad}</p>
         </div>
         <form action={cerrarSesion}>

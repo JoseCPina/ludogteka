@@ -1,6 +1,6 @@
 import Image, { type StaticImageData } from "next/image";
 import { PawPrint, WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
-import { linkWhatsApp } from "@/lib/landing/negocio";
+import { datosLanding } from "@/lib/landing/negocio";
 
 // Piezas del lenguaje de la camioneta. Todo es Server Component: la
 // landing no manda JavaScript propio al navegador.
@@ -23,7 +23,7 @@ export function Marca({ className = "", grande = false }: { className?: string; 
 
 // El único botón de contacto de la página: siempre WhatsApp, siempre con
 // el mensaje de la sección ya escrito.
-export function BotonWhatsApp({
+export async function BotonWhatsApp({
   mensaje,
   children,
   className = "",
@@ -36,6 +36,7 @@ export function BotonWhatsApp({
   tamano?: "normal" | "grande";
   variante?: "indigo" | "blanco";
 }) {
+  const { linkWhatsApp } = await datosLanding();
   const alto = tamano === "grande" ? "min-h-14 px-7 text-lg" : "min-h-12 px-6 text-base";
   return (
     <a

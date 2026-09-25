@@ -1,9 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { modoSimulacion, webhookSecret } from "@/lib/mercadopago/config";
 import { validarFirmaWebhook } from "@/lib/mercadopago/webhook";
 import { consultarOrdenPoint } from "@/lib/mercadopago/point";
-import { leerOrdenLocal, sincronizarOrdenPoint, sincronizarPagoPorId } from "@/lib/mercadopago/registro";
+import { contextoDeOrden, sincronizarOrdenPoint, sincronizarPagoPorId } from "@/lib/mercadopago/registro";
 
 // Webhook de Mercado Pago. Público (no hay sesión: llama Mercado Pago),
 // pero NADA se registra sin firma válida: el secreto del panel es lo que
@@ -50,21 +49,19 @@ export async function POST(request: NextRequest) {
   }
   if (!dataId) return NextResponse.json({ ok: true, motivo: "sin_id" });
 
-  const admin = createSupabaseAdminClient();
   try {
     if (tipo === "order" || tipo === "orders") {
-      // Point: data.id es el id de la orden en Mercado Pago (ORD…).
-      const { data: fila } = await admin.from("mp_ordenes").select("id").eq("mp_order_id", dataId).maybeSingle();
-      if (!fila) return NextResponse.json({ ok: true, motivo: "orden_desconocida" });
-      const orden = await leerOrdenLocal(admin, fila.id as string);
-      if (!orden) return NextResponse.json({ ok: true });
+      // Point: data.id es el id de la orden en Mercado Pago (ORD…). El
+      // negocio sale de la orden (la notificación no lo trae).
+      const ctx = await contextoDeOrden({ mp_order_id: dataId });
+      if (!ctx) return NextResponse.json({ ok: true, motivo: "orden_desconocida" });
       // En simulación no hay API a la que preguntar: la orden se resuelve sola.
       const remota = modoSimulacion() ? undefined : await consultarOrdenPoint(dataId);
-      const r = await sincronizarOrdenPoint(admin, orden, remota);
+      const r = await sincronizarOrdenPoint(ctx.admin, ctx.orden, remota);
       return NextResponse.json({ ok: true, estado: r.estado, registrado: r.registrado });
     }
     if (tipo === "payment") {
-      const r = await sincronizarPagoPorId(admin, dataId);
+      const r = await sincronizarPagoPorId(dataId);
       return NextResponse.json({ ok: true, estado: r?.estado ?? "ignorado", registrado: r?.registrado ?? false });
     }
     return NextResponse.json({ ok: true, motivo: "tipo_ignorado", tipo });

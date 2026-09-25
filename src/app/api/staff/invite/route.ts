@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getCallerUser } from "@/lib/supabase/caller";
+import { negocioActual, urlDelNegocio } from "@/lib/negocio/actual";
 
 // Whitelist server-side: este endpoint nunca puede crear 'admin' ni
 // 'cliente', pase lo que pase en el body. Alta de admins es procedimiento
@@ -21,13 +22,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No autenticado." }, { status: 401 });
   }
 
-  const admin = createSupabaseAdminClient();
+  // Todo en ESTE negocio (el del dominio): el rol de quien invita, su
+  // permiso, y la membresía que se crea.
+  const negocio = await negocioActual();
+  const admin = createSupabaseAdminClient(negocio.id);
 
   const { data: callerProfile, error: callerProfileError } = await admin
-    .from("profiles")
+    .from("membresias")
     .select("rol")
-    .eq("id", caller.id)
-    .single();
+    .eq("profile_id", caller.id)
+    .eq("negocio_id", negocio.id)
+    .is("deleted_at", null)
+    .maybeSingle();
 
   // Admin, o alguien de recepción con el permiso «Personal» (permisos_staff,
   // misma regla que tiene_permiso() en la base). Los roles que se pueden
@@ -39,6 +45,7 @@ export async function POST(request: Request) {
       .from("permisos_staff")
       .select("id")
       .eq("profile_id", caller.id)
+      .eq("negocio_id", negocio.id)
       .eq("permiso", "personal")
       .is("revocado_at", null)
       .is("deleted_at", null)
@@ -75,18 +82,29 @@ export async function POST(request: Request) {
   // generateLink({type:"invite"}) NO rechaza un correo ya registrado si esa
   // cuenta sigue sin confirmar: la reutiliza y regenera el link. Por eso la
   // verificación de "correo nuevo" va explícita, antes de llamarla.
-  const { data: yaExiste, error: existeError } = await admin.rpc(
-    "existe_usuario_por_email",
-    { p_email: email }
-  );
+  const { data: existenteId, error: existeError } = await admin.rpc("usuario_por_email", { p_email: email });
   if (existeError) {
     return NextResponse.json({ error: existeError.message }, { status: 500 });
   }
-  if (yaExiste) {
-    return NextResponse.json(
-      { error: "Ya existe una cuenta con ese correo." },
-      { status: 409 }
-    );
+  if (existenteId) {
+    // Ya es una persona con cuenta (por ejemplo, trabaja en otro negocio de
+    // PeluDesk): no se crea otra; se le da acceso a ESTE negocio y entra
+    // con su misma contraseña.
+    const { error: rolError } = await admin.rpc("asignar_rol_staff", {
+      p_user_id: existenteId as string,
+      p_rol: rol,
+      p_nombre_completo: body.nombre_completo ?? null,
+    });
+    if (rolError) {
+      return NextResponse.json({ error: rolError.message }, { status: 409 });
+    }
+    return NextResponse.json({
+      email,
+      rol,
+      invite_link: null,
+      ya_tenia_cuenta: true,
+      mensaje: `Ese correo ya tenía cuenta: se le dio acceso a ${negocio.nombre}. Entra en ${urlDelNegocio(negocio)} con su misma contraseña.`,
+    });
   }
 
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
@@ -119,8 +137,7 @@ export async function POST(request: Request) {
 
   // El link apunta a nuestra propia app (/auth/callback), no al
   // action_link crudo de Supabase — ver comentario en esa ruta.
-  const origin = new URL(request.url).origin;
-  const inviteLink = `${origin}/auth/callback?token_hash=${linkData.properties.hashed_token}&type=invite`;
+  const inviteLink = `${urlDelNegocio(negocio)}/auth/callback?token_hash=${linkData.properties.hashed_token}&type=invite`;
 
   return NextResponse.json({
     email,

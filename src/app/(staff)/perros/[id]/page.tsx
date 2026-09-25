@@ -5,6 +5,7 @@ import Link from "next/link";
 import { describirBono } from "@/lib/bonos/descripcion";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarRazas } from "@/lib/razas";
+import { negocioIdActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { PerroForm } from "../perro-form";
@@ -63,7 +64,7 @@ export default async function PerroPage({
       .eq("id", id)
       .is("deleted_at", null)
       .single(),
-    cargarRazas(supabase, { conGrupo: true }),
+    cargarRazas(supabase, await negocioIdActual(), { conGrupo: true }),
     supabase
       .from("tamanos_categoria")
       .select("id, etiqueta")

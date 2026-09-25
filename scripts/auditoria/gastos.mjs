@@ -2,13 +2,17 @@
 // (DESARROLLO). Uso: node scripts/auditoria/gastos.mjs
 // Crea gastos "Prueba gastos …" en desarrollo; nunca correr contra producción.
 import { createClient } from "@supabase/supabase-js";
-import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { A, NEGOCIO, URL, env, tokenDe } from "./sesiones-dev.mjs";
 
 const conToken = (t) => createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
   global: { headers: { Authorization: `Bearer ${t}` } },
 });
-const perfil = async (rol) => (await A.from("profiles").select("id").eq("rol", rol).is("deleted_at", null).order("created_at").range(0, 0).single()).data;
+// PeluDesk: el rol es la membresía en el negocio auditado (NEGOCIO).
+const perfil = async (rol, salto = 0) => {
+  const { data } = await A.from("membresias").select("id:profile_id, created_at, profiles(nombre_completo)").eq("negocio_id", NEGOCIO).eq("rol", rol).is("deleted_at", null).order("created_at").range(salto, salto).single();
+  return data ? { id: data.id, nombre_completo: data.profiles?.nombre_completo ?? null } : null;
+};
 const [rec, est, adm] = [await perfil("recepcion"), await perfil("estetica"), await perfil("admin")];
 const REC = conToken(await tokenDe(rec.id));
 const EST = conToken(await tokenDe(est.id));

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { negocioActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { PortalShell } from "@/components/chrome/portal-shell";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -15,23 +16,17 @@ export default async function PortalLayout({ children }: { children: React.React
   const correo = sesion.user.email ?? "";
   let identidad = correo;
   if (esCorreoSintetico(correo)) {
+    // El expediente de ESTE negocio (la membresía de cliente aquí).
     const supabase = await createSupabaseServerClient();
-    const { data: perfil } = await supabase
-      .from("profiles")
-      .select("clientes(telefono)")
-      .eq("id", sesion.user.id)
-      .maybeSingle();
-    const relacion = perfil?.clientes as unknown as
-      | { telefono: string | null }
-      | { telefono: string | null }[]
-      | null;
-    const fila = Array.isArray(relacion) ? relacion[0] : relacion;
-    const telefono = fila?.telefono ?? null;
+    const { data: cliente } = sesion.clienteId
+      ? await supabase.from("clientes").select("telefono").eq("id", sesion.clienteId).maybeSingle()
+      : { data: null };
+    const telefono = (cliente?.telefono as string | null | undefined) ?? null;
     identidad = telefono ? formatearTelefono(telefono) : "";
   }
 
   return (
-    <PortalShell identidad={identidad} nombreCompleto={sesion.nombreCompleto}>
+    <PortalShell nombreNegocio={(await negocioActual()).nombre} identidad={identidad} nombreCompleto={sesion.nombreCompleto}>
       {children}
     </PortalShell>
   );

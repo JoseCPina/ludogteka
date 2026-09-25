@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { modoSimulacion } from "@/lib/mercadopago/config";
-import { aplicarPagoLink, leerOrdenLocal } from "@/lib/mercadopago/registro";
+import { aplicarPagoLink, contextoDeOrden } from "@/lib/mercadopago/registro";
 
 // El "checkout" de un link de pago SIMULADO: en desarrollo, el link que
 // se le mandaría al cliente apunta aquí, y abrirlo equivale a pagarlo.
@@ -13,12 +12,12 @@ export async function GET(_request: NextRequest, contexto: { params: Promise<{ o
     return new NextResponse("Esta ruta solo existe en modo simulación.", { status: 404 });
   }
   const { ordenId } = await contexto.params;
-  const admin = createSupabaseAdminClient();
-  const orden = await leerOrdenLocal(admin, ordenId);
-  if (!orden || orden.tipo !== "link") {
+  const ctx = await contextoDeOrden({ id: ordenId });
+  const orden = ctx?.orden;
+  if (!ctx || !orden || orden.tipo !== "link") {
     return new NextResponse("Link de pago simulado no encontrado.", { status: 404 });
   }
-  const r = await aplicarPagoLink(admin, orden, {
+  const r = await aplicarPagoLink(ctx.admin, orden, {
     id: `SIM-PAY-${ordenId.slice(0, 8)}`,
     status: "approved",
     status_detail: "accredited",

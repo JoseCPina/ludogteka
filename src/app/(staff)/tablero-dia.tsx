@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { negocioActual } from "@/lib/negocio/actual";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { BotonNuevoCliente } from "@/components/boton-nuevo-cliente";
@@ -128,6 +129,7 @@ function Cifra({ etiqueta, valor, sub }: { etiqueta: string; valor: string; sub?
 }
 
 export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
+  const negocio = await negocioActual();
   const supabase = await createSupabaseServerClient();
 
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
@@ -496,7 +498,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-n-900">Hoy en Ludogteka</h1>
+          <h1 className="text-2xl font-bold text-n-900">Hoy en {negocio.nombre}</h1>
           <p className="mt-1 text-n-600">{formatearFechaCalendario(hoy)} — toda la casa en una pantalla.</p>
         </div>
         <div className="flex flex-wrap gap-3">

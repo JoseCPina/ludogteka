@@ -1,5 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { negocioActual } from "@/lib/negocio/actual";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
 import { cargarRazas } from "@/lib/razas";
@@ -49,7 +50,10 @@ function camposFaltantes(
 
 export default async function AltaPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const admin = createSupabaseAdminClient();
+  // PeluDesk: el link es del negocio del dominio. La secret key salta la
+  // RLS, así que todo lo que es del negocio se filtra aquí a mano.
+  const negocio = await negocioActual();
+  const admin = createSupabaseAdminClient(negocio.id);
 
   const { data: invitacion } = await admin
     .from("invitaciones_cliente")
@@ -57,6 +61,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
       "id, nombre_referencia, tipo, cliente_id, expira_at, alta_completada_at, usada_at, cancelada_at"
     )
     .eq("token", token)
+    .eq("negocio_id", negocio.id)
     .is("deleted_at", null)
     .maybeSingle();
 
@@ -94,7 +99,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
   if (problema) {
     return (
       <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-4 p-6">
-        <h1 className="text-2xl font-bold text-n-900">Alta en Ludogteka</h1>
+        <h1 className="text-2xl font-bold text-n-900">Alta en {negocio.nombre}</h1>
         <Alert variante="advertencia" titulo="No podemos abrir este link">
           {problema}
         </Alert>
@@ -115,7 +120,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
   // grupo aunque no se pinte sería dejarlo servido en el HTML.
   const [razas, { data: tamanos }, { data: pelajes }, { data: requisitosCrudo }, { data: horarioCrudo }] =
     await Promise.all([
-      cargarRazas(admin),
+      cargarRazas(admin, negocio.id),
       admin.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
       admin.from("tipos_pelaje").select("id, etiqueta").is("deleted_at", null).order("orden"),
       // Lo que se le va a pedir al perro en guardería/hotel, dicho desde
@@ -125,6 +130,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
         ? admin
             .from("tipos_requisito_sanitario")
             .select("etiqueta, vigencia_meses")
+            .eq("negocio_id", negocio.id)
             .eq("obligatoria", true)
             .is("deleted_at", null)
             .order("orden")
@@ -148,7 +154,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
 
   // La cotización solo se carga —y solo viaja— en el flujo que la usa.
   const cotizacion = definicion.muestraPrecioEstetica
-    ? await cargarCotizacionEstetica(admin)
+    ? await cargarCotizacionEstetica(admin, negocio.id)
     : null;
 
   // Qué tallas se le ofrecen al dueño en el flujo de estética. La
@@ -177,16 +183,17 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
     const clienteId = invitacion!.cliente_id as string;
 
     const [{ data: cliente }, { data: perrosCrudo }, { data: perfil }] = await Promise.all([
-      admin.from("clientes").select("id, nombre, telefono, direccion").eq("id", clienteId).single(),
+      admin.from("clientes").select("id, nombre, telefono, direccion").eq("id", clienteId).eq("negocio_id", negocio.id).single(),
       admin
         .from("perros")
         .select(
           "id, nombre, raza, raza_id, sexo, fecha_nacimiento, tamano_id, pelaje_id, alimentacion_notas, contacto_emergencia_nombre, contacto_emergencia_telefono, veterinario_nombre, veterinario_telefono, veterinario_clinica"
         )
         .eq("cliente_id", clienteId)
+        .eq("negocio_id", negocio.id)
         .is("deleted_at", null)
         .order("nombre"),
-      admin.from("profiles").select("id").eq("cliente_id", clienteId).limit(1).maybeSingle(),
+      admin.from("membresias").select("id:profile_id").eq("cliente_id", clienteId).eq("negocio_id", negocio.id).is("deleted_at", null).limit(1).maybeSingle(),
     ]);
 
     if (!cliente) {
@@ -243,7 +250,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col gap-6 p-6">
       <header>
-        <h1 className="text-2xl font-bold text-n-900">Bienvenido a Ludogteka</h1>
+        <h1 className="text-2xl font-bold text-n-900">Bienvenido a {negocio.nombre}</h1>
         <p className="mt-1 text-n-600">
           {definicion.muestraPrecioEstetica
             ? "Regístrate y cuéntanos de tu perro. Con su raza te decimos cuánto cuesta su baño."
@@ -268,9 +275,10 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
 // portal), se le dice que su registro quedó y cómo abrir una.
 async function LinkCumplido({ clienteId, tipo }: { clienteId: string | null; tipo: TipoLinkAlta }) {
   const definicion = TIPOS_LINK_ALTA[tipo];
-  const admin = createSupabaseAdminClient();
+  const negocio = await negocioActual();
+  const admin = createSupabaseAdminClient(negocio.id);
   const { data: perfil } = clienteId
-    ? await admin.from("profiles").select("id").eq("cliente_id", clienteId).limit(1).maybeSingle()
+    ? await admin.from("membresias").select("id:profile_id").eq("cliente_id", clienteId).eq("negocio_id", negocio.id).is("deleted_at", null).limit(1).maybeSingle()
     : { data: null };
 
   let sesionEsDelDueno = false;

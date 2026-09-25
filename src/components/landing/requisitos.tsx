@@ -2,11 +2,12 @@ import { PawPrint, Prohibit } from "@phosphor-icons/react/dist/ssr";
 import Image from "next/image";
 import { BotonWhatsApp, Cinta } from "./comunes";
 import { PERROS } from "./perros";
-import { MENSAJES, REQUISITOS } from "@/lib/landing/negocio";
+import { datosLanding } from "@/lib/landing/negocio";
 
 // Requisitos de guardería y hotel, en dos "etiquetas de collar": lo que
 // necesitamos y lo que no podemos recibir.
-export function Requisitos() {
+export async function Requisitos() {
+  const { MENSAJES, REQUISITOS } = await datosLanding();
   const si = REQUISITOS.filter((r) => r.tipo === "si");
   const no = REQUISITOS.filter((r) => r.tipo === "no");
   return (

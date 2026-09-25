@@ -9,7 +9,7 @@
 // un proveedor, una compra, una reserva cancelada): nunca correr contra
 // producción.
 import { createClient } from "@supabase/supabase-js";
-import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { A, NEGOCIO, URL, env, tokenDe } from "./sesiones-dev.mjs";
 
 const PERMISOS = [
   "inventario_costos", "tarifas", "reportes_financieros", "personal", "nomina", "gastos",
@@ -20,7 +20,11 @@ const conToken = (t) => createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
   global: { headers: { Authorization: `Bearer ${t}` } },
 });
-const perfil = async (rol) => (await A.from("profiles").select("id, nombre_completo").eq("rol", rol).limit(1).single()).data;
+// PeluDesk: el rol es la membresía en el negocio auditado (NEGOCIO).
+const perfil = async (rol, salto = 0) => {
+  const { data } = await A.from("membresias").select("id:profile_id, created_at, profiles(nombre_completo)").eq("negocio_id", NEGOCIO).eq("rol", rol).is("deleted_at", null).order("created_at").range(salto, salto).single();
+  return data ? { id: data.id, nombre_completo: data.profiles?.nombre_completo ?? null } : null;
+};
 
 const rec = await perfil("recepcion");
 const adm = await perfil("admin");
@@ -174,13 +178,17 @@ const autoOtorgar = await R.rpc("otorgar_permiso", { p_profile_id: rec.id, p_per
 ok(Boolean(autoOtorgar.error), `no puede darse ni dar permisos (${autoOtorgar.error?.message ?? "¡lo dejó!"})`);
 const autoRevocar = await R.rpc("revocar_permiso", { p_profile_id: rec.id, p_permiso: "tarifas" });
 ok(Boolean(autoRevocar.error), "no puede quitar permisos");
-const hacerseAdmin = await R.from("profiles").update({ rol: "admin" }).eq("id", rec.id).select("rol");
-const { data: rolDespues } = await A.from("profiles").select("rol").eq("id", rec.id).single();
-ok(rolDespues.rol === "recepcion", `no puede cambiarse el rol a admin (${hacerseAdmin.error?.message ?? "sin error, pero el rol no cambió"})`);
-const cambiarOtro = await R.from("profiles").update({ rol: "admin" }).eq("id", est.id).select("rol");
-const { data: rolEst } = await A.from("profiles").select("rol").eq("id", est.id).single();
-ok(rolEst.rol === "estetica", `no puede cambiarle el rol a otra persona (${cambiarOtro.error?.message ?? "sin error, pero no cambió"})`);
-const asignar = await R.rpc("asignar_rol_staff", { p_profile_id: est.id, p_rol: "recepcion" });
+// El rol vive en la membresía (PeluDesk); profiles.rol es legado y
+// también se prueba.
+const rolEn = async (id) => (await A.from("membresias").select("rol").eq("negocio_id", NEGOCIO).eq("profile_id", id).is("deleted_at", null).single()).data?.rol;
+const hacerseAdmin = await R.from("membresias").update({ rol: "admin" }).eq("negocio_id", NEGOCIO).eq("profile_id", rec.id).select("rol");
+ok((await rolEn(rec.id)) === "recepcion", `no puede cambiarse el rol a admin (${hacerseAdmin.error?.message ?? "sin error, pero el rol no cambió"})`);
+const hacerseAdminLegado = await R.from("profiles").update({ rol: "admin" }).eq("id", rec.id).select("rol");
+const { data: rolLegado } = await A.from("profiles").select("rol").eq("id", rec.id).single();
+ok(rolLegado.rol !== "admin", `tampoco en la columna legado profiles.rol (${hacerseAdminLegado.error?.message ?? "sin error, pero no cambió"})`);
+const cambiarOtro = await R.from("membresias").update({ rol: "admin" }).eq("negocio_id", NEGOCIO).eq("profile_id", est.id).select("rol");
+ok((await rolEn(est.id)) === "estetica", `no puede cambiarle el rol a otra persona (${cambiarOtro.error?.message ?? "sin error, pero no cambió"})`);
+const asignar = await R.rpc("asignar_rol_staff", { p_user_id: est.id, p_rol: "recepcion" });
 ok(Boolean(asignar.error), "no puede usar asignar_rol_staff");
 const tope2 = await R.from("configuracion_descuentos").insert({ tope_recepcion: 999999 }).select("id");
 ok(Boolean(tope2.error) || (tope2.data ?? []).length === 0, "no puede subirse el tope de descuentos de recepción");

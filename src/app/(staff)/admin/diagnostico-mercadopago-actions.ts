@@ -5,6 +5,12 @@ import { probarMercadoPago, type PruebaMp } from "@/lib/mercadopago/diagnostico"
 import { ponerTerminalEnPdv } from "@/lib/mercadopago/point";
 import { ErrorMercadoPago } from "@/lib/mercadopago/errores";
 import { modoSimulacion, urlWebhook } from "@/lib/mercadopago/config";
+import { negocioActual } from "@/lib/negocio/actual";
+import { usaIntegracionesDelEntorno } from "@/lib/negocio/integraciones";
+
+async function mpDelNegocio(): Promise<boolean> {
+  return usaIntegracionesDelEntorno(await negocioActual());
+}
 
 export type EstadoDiagnosticoMp = {
   error: string | null;
@@ -17,6 +23,7 @@ export type EstadoDiagnosticoMp = {
 export async function probarConexionMercadoPago(): Promise<EstadoDiagnosticoMp> {
   const sesion = await obtenerSesionConRol();
   if (sesion?.rol !== "admin") return { error: "Solo un admin puede correr esta prueba." };
+  if (!(await mpDelNegocio())) return { error: "Mercado Pago todavía no está activado para tu negocio." };
   try {
     const r = await probarMercadoPago();
     return { error: null, ...r, urlWebhook: urlWebhook(), simulado: modoSimulacion() };
@@ -28,6 +35,7 @@ export async function probarConexionMercadoPago(): Promise<EstadoDiagnosticoMp> 
 export async function ponerTerminalPdv(terminalId: string): Promise<{ error: string | null }> {
   const sesion = await obtenerSesionConRol();
   if (sesion?.rol !== "admin") return { error: "Solo un admin puede cambiar el modo de la terminal." };
+  if (!(await mpDelNegocio())) return { error: "Mercado Pago todavía no está activado para tu negocio." };
   try {
     await ponerTerminalEnPdv(terminalId);
     return { error: null };

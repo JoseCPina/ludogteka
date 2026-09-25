@@ -14,12 +14,14 @@ const ETIQUETAS_ROL: Record<string, string> = {
 };
 
 export function StaffShell({
+  nombreNegocio,
   rol,
   email,
   nombreCompleto,
   items,
   children,
 }: {
+  nombreNegocio: string;
   rol: string;
   email: string;
   nombreCompleto: string | null;
@@ -57,7 +59,7 @@ export function StaffShell({
               <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
-          <span className="text-lg font-extrabold tracking-tight text-azul">Ludogteka</span>
+          <span className="text-lg font-extrabold tracking-tight text-azul">{nombreNegocio}</span>
           <span className="hidden text-n-400 md:inline">/</span>
           <span className="hidden font-semibold text-n-800 md:inline">
             {activo?.etiqueta ?? "Inicio"}

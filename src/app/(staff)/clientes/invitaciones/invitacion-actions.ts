@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../../reservas/traducir-error";
 import { normalizarTelefono } from "@/lib/telefono";
+import { negocioActual, urlDelNegocioActual } from "@/lib/negocio/actual";
 import { TIPOS_LINK_ALTA, esTipoLinkAlta, type TipoLinkAlta } from "@/lib/alta/tipos-link";
 
 export type EstadoInvitacion = {
@@ -15,15 +15,11 @@ export type EstadoInvitacion = {
   tipo?: TipoLinkAlta;
 };
 
-// El link se arma con el host del request, no con una variable de entorno:
-// así funciona igual en desarrollo (localhost:3001) y en producción sin
-// tener que acordarse de configurar nada, y sin riesgo de mandarle a un
-// cliente real un link que apunte a la máquina de alguien.
+// El link lleva el dominio DEL NEGOCIO (su dominio propio o su
+// subdominio de PeluDesk), no el host con el que entró quien lo genera:
+// el dueño lo abre en el negocio correcto aunque recepción esté en otro.
 async function urlBase(): Promise<string> {
-  const hdrs = await headers();
-  const host = hdrs.get("host") ?? "";
-  const protocolo = hdrs.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
-  return `${protocolo}://${host}`;
+  return urlDelNegocioActual();
 }
 
 // 52 + 10 dígitos, mismo formato que ya usa el aviso de bitácora por
@@ -68,8 +64,8 @@ export async function crearInvitacion(
   const url = `${await urlBase()}/alta/${fila.token}`;
   const definicion = TIPOS_LINK_ALTA[tipo];
   const mensaje = clienteId
-    ? definicion.mensajeComplemento(nombreReferencia.trim(), url)
-    : definicion.mensajeWhatsApp(nombreReferencia.trim(), url);
+    ? definicion.mensajeComplemento(nombreReferencia.trim(), url, (await negocioActual()).nombre)
+    : definicion.mensajeWhatsApp(nombreReferencia.trim(), url, (await negocioActual()).nombre);
 
   revalidatePath("/clientes/invitaciones");
   if (clienteId) revalidatePath(`/clientes/${clienteId}`);
@@ -108,8 +104,8 @@ export async function enlaceParaReenviar(
     : "guarderia_hotel";
   const definicion = TIPOS_LINK_ALTA[tipo];
   const mensaje = data.cliente_id
-    ? definicion.mensajeComplemento(data.nombre_referencia as string, url)
-    : definicion.mensajeWhatsApp(data.nombre_referencia as string, url);
+    ? definicion.mensajeComplemento(data.nombre_referencia as string, url, (await negocioActual()).nombre)
+    : definicion.mensajeWhatsApp(data.nombre_referencia as string, url, (await negocioActual()).nombre);
 
   return { error: null, url, urlWhatsApp: enlaceWhatsApp(data.telefono as string, mensaje) };
 }

@@ -13,7 +13,7 @@ import { Alert } from "@/components/ui/alert";
 type Resultado =
   | { estado: "formulario" }
   | { estado: "cargando" }
-  | { estado: "exito"; email: string; rol: string; inviteLink: string }
+  | { estado: "exito"; email: string; rol: string; inviteLink: string | null; mensaje: string | null }
   | { estado: "error"; mensaje: string };
 
 function mensajeError(status: number, cuerpo: { error?: string } | null): string {
@@ -64,7 +64,8 @@ export function InvitarStaff() {
         estado: "exito",
         email: cuerpo.email,
         rol: cuerpo.rol,
-        inviteLink: cuerpo.invite_link,
+        inviteLink: cuerpo.invite_link ?? null,
+        mensaje: cuerpo.mensaje ?? null,
       });
       router.refresh();
     } catch (e) {
@@ -72,6 +73,21 @@ export function InvitarStaff() {
     }
   }
 
+
+  if (resultado.estado === "exito" && !resultado.inviteLink) {
+    // Ya tenía cuenta (trabaja en otro negocio de PeluDesk): se le dio
+    // acceso aquí; no hay link que copiar.
+    return (
+      <div className="flex flex-col gap-4">
+        <Alert variante="exito" titulo="Acceso dado">
+          {resultado.mensaje}
+        </Alert>
+        <Button type="button" variante="secundario" className="self-start" onClick={() => setResultado({ estado: "formulario" })}>
+          Invitar a alguien más
+        </Button>
+      </div>
+    );
+  }
 
   if (resultado.estado === "exito") {
     return (
@@ -91,7 +107,7 @@ export function InvitarStaff() {
             (y esa vez el correo ya estará registrado, así que tampoco funcionará). Cópialo antes de
             seguir.
           </p>
-          <CampoCopiable valor={resultado.inviteLink} textoBoton="Copiar link" />
+          <CampoCopiable valor={resultado.inviteLink ?? ""} textoBoton="Copiar link" />
         </div>
 
         <Button

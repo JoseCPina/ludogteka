@@ -2,13 +2,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
 import { Hueso, Marca, Rotulo } from "./comunes";
-import { DIRECCION_UNA_LINEA, MENSAJES, TELEFONO_VISIBLE, linkWhatsApp } from "@/lib/landing/negocio";
+import { datosLanding } from "@/lib/landing/negocio";
 import { PERROS } from "./perros";
 
 // La banda completa, sentada en el borde del pie: los clientes de la lona.
 const BANDA = [PERROS.dante, PERROS.simon, PERROS.aquiles, PERROS.zuki, PERROS.galleta, PERROS.dasha];
 
-export function LlamadoFinal() {
+export async function LlamadoFinal() {
+  const { MENSAJES, TELEFONO_VISIBLE, linkWhatsApp } = await datosLanding();
   return (
     <section className="lp-franja-amarilla relative overflow-hidden pt-20">
       <div className="mx-auto flex max-w-4xl flex-col items-center px-4 text-center sm:px-6">
@@ -46,7 +47,8 @@ export function LlamadoFinal() {
   );
 }
 
-export function Pie() {
+export async function Pie() {
+  const { DIRECCION_UNA_LINEA, MENSAJES, NOMBRE, TELEFONO_VISIBLE, TEXTOS, linkWhatsApp } = await datosLanding();
   return (
     <footer className="relative bg-[var(--lp-indigo)] pb-28 text-white lg:pb-12">
       <p className="lp-display bg-[var(--lp-indigo-hondo)] py-3 text-center text-lg font-bold uppercase tracking-wide sm:text-2xl">
@@ -57,7 +59,7 @@ export function Pie() {
           <span className="inline-block rounded-2xl bg-white px-4 py-2">
             <Marca />
           </span>
-          <p className="mt-3 max-w-[36ch] text-base text-white/85">Guardería, hotel y estética canina en San Luis Potosí.</p>
+          {TEXTOS.lema && <p className="mt-3 max-w-[36ch] text-base text-white/85">{TEXTOS.lema}</p>}
         </div>
         <address className="text-base not-italic leading-relaxed text-white/90">
           {DIRECCION_UNA_LINEA}
@@ -74,7 +76,7 @@ export function Pie() {
         </address>
       </div>
       <div className="mx-auto mt-10 flex max-w-7xl items-center justify-between gap-4 border-t border-white/20 px-4 pt-6 text-[0.9375rem] text-white sm:px-6 lg:px-8">
-        <p>© {new Date().getFullYear()} Ludogteka</p>
+        <p>© {new Date().getFullYear()} {NOMBRE}</p>
         <Link href="/login" className="font-semibold hover:text-white hover:underline">
           Entrar al sistema
         </Link>
@@ -85,7 +87,8 @@ export function Pie() {
 
 // Siempre visible, abajo a la derecha: índigo con aro amarillo, como las
 // cintas de la lona.
-export function WhatsAppFlotante() {
+export async function WhatsAppFlotante() {
+  const { MENSAJES, linkWhatsApp } = await datosLanding();
   return (
     <a
       href={linkWhatsApp(MENSAJES.general)}

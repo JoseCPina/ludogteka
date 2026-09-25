@@ -17,20 +17,39 @@ import type { RazaOpcion } from "@/components/selector-raza";
  */
 export async function cargarRazas(
   supabase: SupabaseClient,
+  // PeluDesk: el catálogo de razas es de toda la plataforma, pero el grupo
+  // de precio de cada raza es de cada negocio (razas_grupo). Se filtra a
+  // mano porque el alta pública llega aquí con la secret key.
+  negocioId: string,
   opciones: { conGrupo?: boolean } = {}
 ): Promise<RazaOpcion[]> {
-  const { data } = await supabase
-    .from("razas")
-    .select("id, nombre, alias, es_desconocida, grupos_raza(nombre, depende_tamano)")
-    .is("deleted_at", null)
-    .order("nombre");
+  const [{ data }, { data: gruposCrudo }] = await Promise.all([
+    supabase
+      .from("razas")
+      .select("id, nombre, alias, es_desconocida")
+      .is("deleted_at", null)
+      .order("nombre"),
+    opciones.conGrupo
+      ? supabase
+          .from("razas_grupo")
+          .select("raza_id, grupos_raza(nombre, depende_tamano)")
+          .eq("negocio_id", negocioId)
+          .is("deleted_at", null)
+      : Promise.resolve({ data: null }),
+  ]);
+
+  const grupoDe = new Map(
+    ((gruposCrudo ?? []) as unknown as {
+      raza_id: string;
+      grupos_raza: { nombre: string; depende_tamano: boolean } | null;
+    }[]).map((g) => [g.raza_id, g.grupos_raza])
+  );
 
   return ((data ?? []) as unknown as {
     id: string;
     nombre: string;
     alias: string[] | null;
     es_desconocida: boolean | null;
-    grupos_raza: { nombre: string; depende_tamano: boolean } | null;
   }[]).map((r) => ({
     id: r.id,
     nombre: r.nombre,
@@ -41,8 +60,8 @@ export async function cargarRazas(
     // en qué cajón de precio cae su perro, y mandarlo invita a enseñarlo.
     ...(opciones.conGrupo
       ? {
-          grupo_nombre: r.grupos_raza?.nombre,
-          grupo_depende_tamano: r.grupos_raza?.depende_tamano ?? false,
+          grupo_nombre: grupoDe.get(r.id)?.nombre,
+          grupo_depende_tamano: grupoDe.get(r.id)?.depende_tamano ?? false,
         }
       : {}),
   }));

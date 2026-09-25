@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { generarPasswordTemporal } from "@/lib/auth/identidad";
 import { traducirError } from "../../reservas/traducir-error";
+import { negocioActual } from "@/lib/negocio/actual";
 
 export type EstadoRestablecer = {
   error: string | null;
@@ -46,7 +47,11 @@ export async function restablecerPasswordCliente(
 
   // La Admin API es el único camino: la contraseña no vive en una tabla
   // que una función de la base pueda tocar.
-  const admin = createSupabaseAdminClient();
+  // (La Admin API de Auth no toca tablas: el negocio no aplica aquí. Que
+  // la cuenta sea de un cliente de ESTE negocio y de ningún otro ya lo
+  // comprobó cuenta_de_cliente_para_restablecer.)
+  const negocio = await negocioActual();
+  const admin = createSupabaseAdminClient(negocio.id);
   const { error: errorAuth } = await admin.auth.admin.updateUserById(userId as string, {
     password,
   });
@@ -57,7 +62,7 @@ export async function restablecerPasswordCliente(
   const nombre = (cliente?.nombre as string | null) ?? "";
   const telefono = (cliente?.telefono as string | null) ?? "";
   const mensaje =
-    `Hola ${nombre}, te restablecimos tu contraseña de Ludogteka.\n\n` +
+    `Hola ${nombre}, te restablecimos tu contraseña de ${negocio.nombre}.\n\n` +
     `Entra con tu teléfono (${telefono}) y esta contraseña: ${password}\n\n` +
     `Cámbiala desde tu portal en cuanto entres.`;
 
