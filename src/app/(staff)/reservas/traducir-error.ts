@@ -9,7 +9,10 @@
 // tal cual. Lo que sí necesita traducción es el texto crudo de Postgres
 // para restricciones que el trigger no controla directamente (el EXCLUDE
 // de traslape de perro/empleado).
+import { esErrorSoloLectura, MENSAJE_SOLO_LECTURA } from "@/lib/solo-lectura";
+
 export function traducirError(error: { code?: string; message: string }): string {
+  if (esErrorSoloLectura(error)) return MENSAJE_SOLO_LECTURA;
   if (error.code === "23P01") {
     return "Este perro ya tiene una reserva en fechas que se traslapan con estas. Revisa el calendario antes de intentar de nuevo.";
   }

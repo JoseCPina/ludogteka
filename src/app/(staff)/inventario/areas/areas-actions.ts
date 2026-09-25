@@ -1,5 +1,6 @@
 "use server";
 
+import { esErrorSoloLectura, MENSAJE_SOLO_LECTURA } from "@/lib/solo-lectura";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../../reservas/traducir-error";
@@ -24,7 +25,7 @@ export async function crearArea(nombre: string): Promise<EstadoArea> {
   const { error } = await supabase
     .from("areas_inventario")
     .insert({ nombre: limpio, clave: `${claveDe(limpio)}_${Date.now().toString(36)}`, orden: (ultima?.orden ?? 0) + 1 });
-  if (error) return { error: error.code === "42501" ? "Solo un admin puede editar las áreas." : traducirError(error) };
+  if (error) return { error: esErrorSoloLectura(error) ? MENSAJE_SOLO_LECTURA : error.code === "42501" ? "Solo un admin puede editar las áreas." : traducirError(error) };
   revalidatePath("/inventario");
   revalidatePath("/inventario/areas");
   return { error: null, ok: true };

@@ -122,14 +122,14 @@ export default async function AdminPage() {
       )}
 
       {puedeConfig && (
-        <section className="rounded-lg border border-n-200 bg-white p-5">
+        <section id="configuracion" className="scroll-mt-20 rounded-lg border border-n-200 bg-white p-5">
           <h2 className="mb-4 text-lg font-bold text-n-900">Configuración del negocio</h2>
           <ConfiguracionNegocio vigente={configVigente} />
         </section>
       )}
 
       {puedeConfig && (
-        <section className="rounded-lg border border-n-200 bg-white p-5">
+        <section id="horario" className="scroll-mt-20 rounded-lg border border-n-200 bg-white p-5">
           <h2 className="mb-4 text-lg font-bold text-n-900">Horario de atención</h2>
           <HorarioNegocio vigente={(horarioVigente ?? []) as DiaHorario[]} />
         </section>
@@ -143,7 +143,7 @@ export default async function AdminPage() {
       )}
 
       {puedePersonal && (
-        <section className="rounded-lg border border-n-200 bg-white p-5">
+        <section id="invitar" className="scroll-mt-20 rounded-lg border border-n-200 bg-white p-5">
           <h2 className="mb-4 text-lg font-bold text-n-900">Invitar personal</h2>
           <InvitarStaff />
         </section>

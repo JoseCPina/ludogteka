@@ -1,0 +1,45 @@
+/* Landing de PeluDesk (peludesk.mx). Solo lo que Tailwind no da. */
+
+/* Aparición al hacer scroll (components/peludesk/revelar.tsx). */
+.pd-revelar {
+  transition:
+    opacity 500ms cubic-bezier(0.23, 1, 0.32, 1) var(--pd-retraso, 0ms),
+    transform 500ms cubic-bezier(0.23, 1, 0.32, 1) var(--pd-retraso, 0ms);
+}
+.pd-revelar[data-revelar="oculto"] {
+  opacity: 0;
+  transform: translateY(12px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pd-revelar {
+    transition: none;
+  }
+}
+
+/* Botones: presión al tocar; el levantón solo con mouse. */
+.pd-boton {
+  transition:
+    background-color 150ms ease,
+    transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.pd-boton:active {
+  transform: scale(0.98);
+}
+
+/* Captura: marco sin barra de navegador, sombra teñida de morado. */
+.pd-captura {
+  box-shadow:
+    0 1px 2px rgb(75 63 114 / 0.08),
+    0 12px 32px -8px rgb(75 63 114 / 0.22);
+}
+
+/* Los puntos del sistema gráfico de la marca (lámina 03): menta, coral, morado. */
+.pd-puntos {
+  background-image:
+    radial-gradient(circle at 12px 12px, #a7d8c8 11px, transparent 12px),
+    radial-gradient(circle at 36px 8px, #f28c82 7px, transparent 8px),
+    radial-gradient(circle at 44px 30px, #4b3f72 9px, transparent 10px);
+  background-repeat: no-repeat;
+  width: 56px;
+  height: 42px;
+}

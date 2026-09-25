@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { rutaPorRol } from "@/lib/auth/rutas";
-import { clasificarIdentificador } from "@/lib/auth/identidad";
+import { clasificarIdentificador, correoSinteticoDeTelefono } from "@/lib/auth/identidad";
 import { negocioActual } from "@/lib/negocio/actual";
 
 export type EstadoLogin = { error: string | null };
@@ -39,15 +39,11 @@ export async function iniciarSesion(
     const { data } = await admin.rpc("email_de_login_por_telefono", {
       p_telefono: quien.telefono,
     });
-    const resuelto = data as string | null;
-
-    if (!resuelto) {
-      // A propósito el MISMO mensaje que una contraseña equivocada: si
-      // dijera "ese número no está registrado", cualquiera podría probar
-      // números hasta encontrar los que sí son clientes del negocio.
-      return { error: "Teléfono o contraseña incorrectos." };
-    }
-    email = resuelto;
+    // Si no es de un cliente: quien abrió su negocio en peludesk.mx se
+    // registró con su teléfono, y su cuenta es la del correo interno de
+    // ese teléfono. Si no existe, o no es de este negocio, falla igual que
+    // una contraseña equivocada (abajo), sin decir cuál de las dos fue.
+    email = (data as string | null) ?? correoSinteticoDeTelefono(quien.telefono);
   }
 
   const supabase = await createSupabaseServerClient();

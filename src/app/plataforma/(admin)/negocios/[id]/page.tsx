@@ -5,11 +5,11 @@ import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { ZONAS_MEXICO } from "@/lib/plataforma/tipos";
 import { urlDelNegocio } from "@/lib/negocio/actual";
-import { actualizarNegocio, agregarAdmin } from "../../../acciones";
+import { actualizarNegocio, agregarAdmin, cambiarPlan } from "../../../acciones";
 
 type Fila = {
   id: string; slug: string; nombre: string; dominio: string | null; url_publica: string | null; zona_horaria: string;
-  ciudad: string | null; activo: boolean; marca: { color?: string | null; favicon?: string | null; logo?: string | null } | null; admins: string[] | null;
+  ciudad: string | null; activo: boolean; plan: "activo" | "prueba" | "demo"; prueba_termina_at: string | null; marca: { color?: string | null; favicon?: string | null; logo?: string | null } | null; admins: string[] | null;
 };
 
 export default async function NegocioPlataforma({ params }: { params: Promise<{ id: string }> }) {
@@ -49,6 +49,22 @@ export default async function NegocioPlataforma({ params }: { params: Promise<{ 
           </label>
         </section>
       </FormularioPlataforma>
+
+      <section className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
+        <h2 className="font-bold text-n-900">Plan</h2>
+        <p className="-mt-2 text-sm text-n-600">
+          Una prueba vencida queda en solo lectura. Al activarlo, el negocio vuelve a poder guardar. Queda en la bitácora con el motivo.
+        </p>
+        <FormularioPlataforma accion={cambiarPlan.bind(null, n.id)} textoBoton="Guardar plan" variante="secundario">
+          <Select label="Plan" name="plan" defaultValue={n.plan}>
+            <option value="activo">Activo (cliente que paga)</option>
+            <option value="prueba">Prueba gratis</option>
+            <option value="demo">Demo (negocio de muestra)</option>
+          </Select>
+          <Field label="Prueba hasta (solo si es prueba)" name="prueba_hasta" type="date" defaultValue={n.prueba_termina_at ? new Date(n.prueba_termina_at).toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }) : ""} />
+          <Field label="Motivo" name="motivo" required placeholder="Pagó octubre por transferencia" />
+        </FormularioPlataforma>
+      </section>
 
       <section className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
         <h2 className="font-bold text-n-900">Admins</h2>

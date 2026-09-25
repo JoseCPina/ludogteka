@@ -36,6 +36,8 @@ const ZONAS_PROTEGIDAS: Zona[] = [
   { prefijo: "/admin/permisos", rolesPermitidos: ["admin"] },
   { prefijo: "/admin", rolesPermitidos: ["admin"], permisos: ["personal", "configuracion_negocio", "tarifas"] },
   { prefijo: "/recepcion", rolesPermitidos: ["recepcion", "admin"] },
+  // Los primeros pasos de un negocio recién abierto en peludesk.mx.
+  { prefijo: "/bienvenida", rolesPermitidos: ["admin"] },
   // /estetica es a la vez el aterrizaje del rol de estética y el módulo de
   // la agenda (antes /agenda), así que recepción también entra.
   { prefijo: "/estetica", rolesPermitidos: ["admin", "recepcion", "estetica"] },
@@ -114,8 +116,8 @@ export async function middleware(request: NextRequest) {
   if (!firmado && (plataformaInterna || esHostPlataforma(request.headers.get("host")))) {
     return plataforma(request, cabeceras);
   }
-  // Y en el dominio de un negocio, /plataforma no existe.
-  if (pathname === "/plataforma" || pathname.startsWith("/plataforma/")) {
+  // Y en el dominio de un negocio, /plataforma (ni la landing de PeluDesk) no existe.
+  if (pathname === "/plataforma" || pathname.startsWith("/plataforma/") || pathname === "/peludesk" || pathname.startsWith("/peludesk/")) {
     return NextResponse.rewrite(new URL("/negocio-no-encontrado", request.url), { request: { headers: cabeceras }, status: 404 });
   }
 
@@ -227,14 +229,23 @@ export async function middleware(request: NextRequest) {
 // entrar (link de invitación y escoger contraseña).
 const RUTAS_PLATAFORMA = ["/plataforma", "/auth/callback", "/auth/nueva-password", "/robots.txt", "/icono-negocio", "/marca", "/iconos"];
 
+// Las páginas públicas de PeluDesk (landing y registro de prueba): viven
+// en /peludesk/* y se sirven en la raíz del dominio de la plataforma.
+const PUBLICAS_PLATAFORMA: Record<string, string> = {
+  "/": "/peludesk",
+  "/registro": "/peludesk/registro",
+};
+
 async function plataforma(request: NextRequest, cabeceras: Headers) {
   const { pathname } = request.nextUrl;
-  if (pathname === "/") return NextResponse.redirect(new URL("/plataforma", request.url));
-  const permitida = RUTAS_PLATAFORMA.some((r) => pathname === r || pathname.startsWith(`${r}/`));
-  if (!permitida) return NextResponse.redirect(new URL("/plataforma", request.url));
-
   cabeceras.set(ENCABEZADO_PLATAFORMA, "1");
   cabeceras.set(ENCABEZADO_FIRMA, await firmarPlataforma());
+  const publica = PUBLICAS_PLATAFORMA[pathname];
+  if (publica) return NextResponse.rewrite(new URL(publica, request.url), { request: { headers: cabeceras } });
+  if (pathname === "/peludesk" || pathname.startsWith("/peludesk/")) return NextResponse.redirect(new URL("/", request.url));
+  const permitida = RUTAS_PLATAFORMA.some((r) => pathname === r || pathname.startsWith(`${r}/`));
+  if (!permitida) return NextResponse.redirect(new URL("/", request.url));
+
   const siguiente = () => NextResponse.next({ request: { headers: cabeceras } });
   let response = siguiente();
   // Solo para refrescar la sesión (cookies). Sin negocio: nada de un

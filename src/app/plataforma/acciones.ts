@@ -231,3 +231,23 @@ export async function guardarEtiqueta(tabla: string, fd: FormData): Promise<Resu
   revalidatePath("/plataforma/catalogos");
   return { error: null, exito: "Guardado." };
 }
+
+// El plan del negocio: activarlo cuando paga, extender su prueba o pasarlo
+// a prueba/demo. La fecha llega como día (fin del día en la hora del centro de México).
+export async function cambiarPlan(negocioId: string, fd: FormData): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const plan = texto(fd, "plan");
+  const fin = texto(fd, "prueba_hasta");
+  if (plan === "prueba" && !/^\d{4}-\d{2}-\d{2}$/.test(fin)) return { error: "Pon hasta qué día dura la prueba." };
+  const { error } = await s.supabase.rpc("plataforma_cambiar_plan", {
+    p_negocio_id: negocioId,
+    p_plan: plan,
+    p_prueba_termina_at: plan === "prueba" ? `${fin}T23:59:59-06:00` : null,
+    p_motivo: texto(fd, "motivo"),
+  });
+  if (error) return { error: error.message };
+  revalidatePath(`/plataforma/negocios/${negocioId}`);
+  revalidatePath("/plataforma");
+  return { error: null, exito: "Plan guardado." };
+}

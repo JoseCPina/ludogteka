@@ -17,6 +17,7 @@ const ETIQUETAS_ROL: Record<string, string> = {
 
 export function StaffShell({
   marca,
+  aviso,
   rol,
   email,
   nombreCompleto,
@@ -26,6 +27,8 @@ export function StaffShell({
   // La marca del negocio (MarcaDelNegocio, la arma el layout del servidor):
   // el staff trabaja en SU negocio; PeluDesk solo firma al pie del menú.
   marca: ReactNode;
+  // El aviso del plan (demo, prueba, solo lectura): components/aviso-plan.tsx.
+  aviso?: ReactNode;
   rol: string;
   email: string;
   nombreCompleto: string | null;
@@ -38,6 +41,7 @@ export function StaffShell({
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
+      {aviso}
       <header className="flex h-16 flex-none items-center justify-between border-b border-n-200 bg-white px-4 md:px-6">
         <div className="flex items-center gap-3">
           <button

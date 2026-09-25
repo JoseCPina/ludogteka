@@ -34,7 +34,9 @@ export default async function LoginPage({
   const errorInicial =
     error === "invitacion_invalida"
       ? "Tu link de invitación ya no es válido — expiró o ya se usó. Pide uno nuevo."
-      : null;
+      : error === "link_vencido"
+        ? "Ese link para entrar ya se usó o venció. Entra con tu teléfono y la contraseña que escogiste al registrarte."
+        : null;
 
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-12">

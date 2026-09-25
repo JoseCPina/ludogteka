@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { MarcaDelNegocio } from "@/components/marca/marca-negocio";
+import { AvisoPlan } from "@/components/aviso-plan";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { PortalShell } from "@/components/chrome/portal-shell";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -28,7 +29,7 @@ export default async function PortalLayout({ children }: { children: React.React
   }
 
   return (
-    <PortalShell marca={<MarcaDelNegocio nombre={negocio.nombre} marca={negocio.marca} />} identidad={identidad} nombreCompleto={sesion.nombreCompleto}>
+    <PortalShell marca={<MarcaDelNegocio nombre={negocio.nombre} marca={negocio.marca} />} aviso={<AvisoPlan esPersonal={false} />} identidad={identidad} nombreCompleto={sesion.nombreCompleto}>
       {children}
     </PortalShell>
   );

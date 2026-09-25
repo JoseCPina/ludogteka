@@ -11,6 +11,8 @@ import { leerOrdenLocal, sincronizarOrdenPoint, type ResultadoSincronizacion } f
 import { ErrorMercadoPago } from "@/lib/mercadopago/errores";
 import { negocioActual } from "@/lib/negocio/actual";
 import { usaIntegracionesDelEntorno } from "@/lib/negocio/integraciones";
+import { cargarNegocioLanding } from "@/lib/landing/negocio";
+import { MENSAJE_SOLO_LECTURA } from "@/lib/solo-lectura";
 
 // Todas las acciones de Mercado Pago comparten esto: solo admin o
 // recepción, y el error se traduce a qué revisar.
@@ -21,6 +23,7 @@ import { usaIntegracionesDelEntorno } from "@/lib/negocio/integraciones";
 async function exigirCaja(): Promise<string | null> {
   const sesion = await obtenerSesionConRol();
   if (!sesion || !["admin", "recepcion"].includes(sesion.rol)) return "Solo admin o recepción pueden cobrar.";
+  if ((await cargarNegocioLanding()).plan === "demo") return MENSAJE_SOLO_LECTURA;
   if (!usaIntegracionesDelEntorno(await negocioActual())) return "Mercado Pago todavía no está activado para tu negocio.";
   return null;
 }
@@ -52,6 +55,11 @@ export type EstadoMpDisponible = {
 };
 
 export async function estadoMercadoPago(): Promise<EstadoMpDisponible> {
+  // El demo enseña la terminal y el link como en un negocio con Mercado
+  // Pago, marcados como simulación; cobrar lo rechaza exigirCaja.
+  if ((await cargarNegocioLanding()).plan === "demo") {
+    return { activo: true, simulado: true, terminal: true, esperaSegundos: TERMINAL_ESPERA_SEGUNDOS };
+  }
   const activo = usaIntegracionesDelEntorno(await negocioActual());
   return {
     activo,

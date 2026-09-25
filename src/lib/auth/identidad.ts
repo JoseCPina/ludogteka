@@ -25,6 +25,14 @@ export function correoSinteticoDeTelefono(telefono: string): string {
   return `t${digitos}@${DOMINIO_SINTETICO}`;
 }
 
+// El teléfono de una cuenta que entra con teléfono (null si es de correo real).
+export function telefonoDeCorreoSintetico(email: string | null | undefined): string | null {
+  const correo = email?.toLowerCase() ?? "";
+  if (!correo.endsWith(`@${DOMINIO_SINTETICO}`)) return null;
+  const local = correo.slice(0, -(DOMINIO_SINTETICO.length + 1));
+  return /^t\d{10}$/.test(local) ? local.slice(1) : null;
+}
+
 export function esCorreoSintetico(email: string | null | undefined): boolean {
   return Boolean(email?.toLowerCase().endsWith(`@${DOMINIO_SINTETICO}`));
 }

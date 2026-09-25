@@ -16,7 +16,7 @@ export const NEGOCIO_POR_OMISION = (process.env.NEGOCIO_POR_OMISION ?? "ludogtek
 
 // Subdominios de la plataforma que no son negocios (la base tampoco deja
 // usarlos de slug).
-export const SLUGS_RESERVADOS = new Set(["www", "app", "api", "admin", "mail", "static", "plataforma", "soporte"]);
+export const SLUGS_RESERVADOS = new Set(["www", "app", "api", "admin", "mail", "static", "plataforma", "soporte", "demo", "registro", "ayuda", "blog", "precios"]);
 const RESERVADOS = SLUGS_RESERVADOS;
 
 /**

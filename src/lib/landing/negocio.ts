@@ -76,6 +76,9 @@ export type NegocioLanding = {
   ciudad: string | null;
   landing: DatosLanding | null;
   marca: MarcaNegocio;
+  // activo | prueba | demo, y cuándo termina la prueba.
+  plan: string;
+  prueba_termina_at: string | null;
 };
 
 // La marca del negocio (negocios.marca), la que va ENCIMA del diseño base
@@ -99,7 +102,7 @@ export const cargarNegocioLanding = cache(async (): Promise<NegocioLanding> => {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.rpc("negocio_publico");
   const fila = (Array.isArray(data) ? data[0] : data) as
-    | { ciudad: string | null; landing: DatosLanding | null; marca: MarcaNegocio | null }
+    | { ciudad: string | null; landing: DatosLanding | null; marca: MarcaNegocio | null; plan: string | null; prueba_termina_at: string | null }
     | null
     | undefined;
   return {
@@ -111,6 +114,8 @@ export const cargarNegocioLanding = cache(async (): Promise<NegocioLanding> => {
     ciudad: fila?.ciudad ?? null,
     landing: fila?.landing ?? null,
     marca: fila?.marca ?? {},
+    plan: fila?.plan ?? "activo",
+    prueba_termina_at: fila?.prueba_termina_at ?? null,
   };
 });
 
