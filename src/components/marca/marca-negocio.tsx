@@ -1,9 +1,5 @@
-import { Fredoka } from "next/font/google";
+import { fredoka } from "@/fuentes";
 import type { MarcaNegocio as Marca } from "@/lib/landing/negocio";
-
-// Fredoka solo para los negocios cuyo logotipo de palabras la pide (el de
-// Ludogteka). Sin precarga: el navegador la baja solo si se usa.
-const fredoka = Fredoka({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-fredoka-marca", preload: false });
 
 /**
  * La marca DEL NEGOCIO encima del diseño base de PeluDesk: en el
@@ -31,7 +27,7 @@ export function MarcaDelNegocio({
     return <img src={marca.logo} alt={nombre} style={{ height: alto }} className={`w-auto ${className}`} />;
   }
   if (marca?.logo_texto?.length) {
-    const letra = marca.logo_fuente === "fredoka" ? `${fredoka.variable} font-[family-name:var(--font-fredoka-marca)]` : "";
+    const letra = marca.logo_fuente === "fredoka" ? `${fredoka.variable} font-[family-name:var(--font-fredoka)]` : "";
     return (
       <span
         role="img"

@@ -1,18 +1,13 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
 import { headers } from "next/headers";
 import { ENCABEZADOS_NEGOCIO, ENCABEZADO_PLATAFORMA } from "@/lib/negocio/resolver";
 import { urlDelNegocio } from "@/lib/negocio/actual";
 import { ProveedorZonaNegocio } from "@/components/zona-negocio";
+import { outfit } from "@/fuentes";
 import "./globals.css";
 
-// Outfit: la letra de PeluDesk (UI kit), base de toda la app. La landing
-// de Ludogteka conserva la suya (Nunito + Fredoka, src/app/page.tsx).
-const outfit = Outfit({
-  variable: "--font-outfit",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-});
+// Outfit (src/fuentes): la letra de PeluDesk, base de toda la app. La
+// landing de Ludogteka conserva la suya (Nunito + Fredoka, src/app/page.tsx).
 
 // Título, ícono y dirección base de este negocio (lo resolvió el
 // middleware por el dominio). La base de las URLs absolutas es la de Open

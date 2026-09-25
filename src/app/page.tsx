@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fredoka, Nunito } from "next/font/google";
+import { fredoka, nunito } from "@/fuentes";
 import { Encabezado } from "@/components/landing/encabezado";
 import { Hero } from "@/components/landing/hero";
 import { Servicios } from "@/components/landing/servicios";
@@ -26,24 +26,9 @@ import "@/components/landing/landing.css";
 // Ludogteka; cualquier otro negocio (o uno sin landing capturada) ve la
 // básica, sin fotos de nadie.
 
-// Letra redonda y gruesa para títulos, como la de la rotulación de la
-// camioneta. Solo la carga la landing; la app sigue con Nunito.
-const fredoka = Fredoka({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  variable: "--font-fredoka",
-  display: "swap",
-});
-
-// El texto de la landing de Ludogteka es Nunito, como siempre (la app pasó
-// a Outfit, la letra de PeluDesk): misma configuración de antes, para que
-// se vea idéntica.
-const nunito = Nunito({
-  variable: "--font-nunito",
-  subsets: ["latin"],
-  weight: ["400", "600", "700", "800"],
-});
-
+// Fredoka para títulos, como la rotulación de la camioneta, y Nunito para
+// el texto, como siempre (la app pasó a Outfit): src/fuentes, los mismos
+// archivos que servía la landing.
 // Los patrones de huesos y huellas de las franjas, con el tono un poco más
 // oscuro que el fondo, como en la lona.
 const PATRONES = {
