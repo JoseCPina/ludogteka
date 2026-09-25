@@ -24,13 +24,26 @@ export default async function ReportesPage({
     { data: margenPorServicio, error: errorMargen },
     { data: operativoData, error: errorOperativo },
     { data: estadoActualData, error: errorEstadoActual },
+    { data: utilidadData, error: errorUtilidad },
   ] = await Promise.all([
     supabase.rpc("reporte_financiero_periodo", { p_desde: desde, p_hasta: hasta }).single(),
     supabase.rpc("reporte_costos_periodo", { p_desde: desde, p_hasta: hasta }).single(),
     supabase.rpc("reporte_margen_por_servicio_periodo", { p_desde: desde, p_hasta: hasta }),
     supabase.rpc("reporte_operativo_periodo", { p_desde: desde, p_hasta: hasta }).single(),
     supabase.rpc("reporte_estado_operativo_actual").single(),
+    supabase.rpc("reporte_utilidad_periodo", { p_desde: desde, p_hasta: hasta }).single(),
   ]);
+
+  // Utilidad = ingreso reconocido − consumo de insumos − costo de nómina.
+  const utilidad = utilidadData as {
+    ingreso_reconocido: number;
+    costo_insumos: number;
+    nomina_costo: number;
+    nomina_pagada: number;
+    propinas_repartidas: number;
+    adelantos_pendientes: number;
+    utilidad: number;
+  } | null;
 
   const reporte = data as {
     cobros_efectivo: number;
@@ -66,6 +79,8 @@ export default async function ReportesPage({
     ingreso: number;
     costo_consumo: number;
     margen: number;
+    comision: number;
+    margen_con_comision: number;
   }[];
 
   const operativo = operativoData as {
@@ -121,6 +136,40 @@ export default async function ReportesPage({
         </div>
         <Button type="submit">Actualizar</Button>
       </form>
+
+      {errorUtilidad || !utilidad ? (
+        <Alert variante="error" titulo="No pudimos calcular la utilidad">
+          Recarga la página. Si el problema sigue, avísale al equipo técnico.
+        </Alert>
+      ) : (
+        <div className="rounded-lg border-[1.5px] border-n-300 bg-white p-5">
+          <p className="text-sm font-bold uppercase tracking-wide text-n-600">Utilidad del periodo</p>
+          <p className={`mt-1 text-3xl font-extrabold ${Number(utilidad.utilidad) < 0 ? "text-naranja-oscuro" : "text-n-900"}`}>
+            {formatearMoneda(Number(utilidad.utilidad))}
+          </p>
+          <div className="mt-3 grid gap-1 text-sm text-n-700 sm:max-w-md">
+            <p className="flex justify-between">
+              <span>Ingreso reconocido</span>
+              <span className="tabular-nums">{formatearMoneda(Number(utilidad.ingreso_reconocido))}</span>
+            </p>
+            <p className="flex justify-between">
+              <span>− Insumos consumidos (incluye merma)</span>
+              <span className="tabular-nums">{formatearMoneda(Number(utilidad.costo_insumos))}</span>
+            </p>
+            <p className="flex justify-between">
+              <span>− Nómina</span>
+              <span className="tabular-nums">{formatearMoneda(Number(utilidad.nomina_costo))}</span>
+            </p>
+          </div>
+          <p className="mt-3 text-xs text-n-500">
+            La nómina entra por la fecha en que se pagó (con sus reversos): sueldos, pago por día y comisiones, con los adelantos que
+            ese pago descontó. Las propinas no cuentan ({formatearMoneda(Number(utilidad.propinas_repartidas))} repartidas en el periodo):
+            las deja el cliente para quien lo atendió y tampoco entran como ingreso.
+            {Number(utilidad.adelantos_pendientes) > 0 &&
+              ` Hay ${formatearMoneda(Number(utilidad.adelantos_pendientes))} en adelantos entregados que todavía no se descuentan de un pago: entran cuando se pague.`}
+          </p>
+        </div>
+      )}
 
       {error || !reporte ? (
         <Alert variante="error" titulo="No pudimos cargar el reporte">
@@ -268,7 +317,8 @@ export default async function ReportesPage({
                   {formatearMoneda(costos.margen_estetica)}
                 </p>
                 <p className="mt-2 text-sm text-n-700">
-                  Ingreso de citas finalizadas del periodo menos el costo real de su consumo ligado.
+                  Ingreso de citas finalizadas del periodo menos el costo real de su consumo ligado. En la tabla de abajo,
+                  además, la comisión del estilista que atendió cada cita.
                 </p>
               </div>
               <div className="rounded-lg border border-n-200 bg-white p-5">
@@ -300,7 +350,7 @@ export default async function ReportesPage({
 
             {margenServicios.length > 0 && (
               <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-                <table className="w-full min-w-[560px] border-collapse">
+                <table className="w-full min-w-[760px] border-collapse">
                   <thead>
                     <tr>
                       <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
@@ -317,6 +367,12 @@ export default async function ReportesPage({
                       </th>
                       <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
                         Margen
+                      </th>
+                      <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+                        Comisión
+                      </th>
+                      <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+                        Margen tras comisión
                       </th>
                     </tr>
                   </thead>
@@ -337,6 +393,12 @@ export default async function ReportesPage({
                         </td>
                         <td className="border-b border-n-200 px-4 py-2.5 text-right font-semibold text-n-900">
                           {formatearMoneda(s.margen)}
+                        </td>
+                        <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                          {formatearMoneda(Number(s.comision))}
+                        </td>
+                        <td className="border-b border-n-200 px-4 py-2.5 text-right font-semibold text-n-900">
+                          {formatearMoneda(Number(s.margen_con_comision))}
                         </td>
                       </tr>
                     ))}

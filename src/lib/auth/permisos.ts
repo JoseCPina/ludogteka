@@ -59,6 +59,12 @@ export const PERMISOS = [
     implica:
       "Crea, edita, archiva y publica versiones de los contratos, y decide cuándo se genera cada uno.",
   },
+  {
+    clave: "nomina",
+    etiqueta: "Nómina",
+    implica:
+      "Da de alta empleados y su horario, ve y captura sueldos, comisiones y adelantos, calcula la nómina y la marca pagada. Corregir asistencia y aprobar ausencias sigue siendo de admin. «Costos y compras de inventario» no da acceso a esto.",
+  },
 ] as const;
 
 export type ClavePermiso = (typeof PERMISOS)[number]["clave"];

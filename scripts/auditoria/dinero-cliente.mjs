@@ -23,6 +23,9 @@ const SOLO_STAFF = [
   "devolucion_metodos", "mp_ordenes", "mp_ordenes_estado", "reservas", "tarifas", "tarifas_dia_semana",
   "tarifas_vigentes", "turnos_caja", "cortes_caja", "corte_metodos", "movimientos_caja",
   "compras_insumos", "insumos", "insumos_costos", "movimientos_inventario",
+  // Empleados: asistencia, ausencias y nómina (24 de septiembre de 2026)
+  "empleados", "empleados_horario", "asistencias", "asistencia_correcciones", "ausencias",
+  "vacaciones_movimientos", "esquemas_pago", "comisiones_servicio", "adelantos", "nomina_pagos",
   // Inventario de equipo y áreas
   "equipos", "equipos_estado", "equipo_eventos", "areas_inventario",
   // Catálogos internos y operación de la casa
@@ -32,7 +35,7 @@ const SOLO_STAFF = [
   "permisos_staff",
 ];
 // RPC que un cliente con sesión no debe poder llamar (tienen que rechazarlo).
-const RPC_SOLO_STAFF = ["calendario_ocupacion", "insumos_sin_costo"];
+const RPC_SOLO_STAFF = ["calendario_ocupacion", "insumos_sin_costo", "asistencia_periodo", "calcular_nomina", "reporte_utilidad_periodo", "cuentas_para_empleado"];
 
 const spec = await (await fetch(URL + "/rest/v1/", { headers: { apikey: env.SUPABASE_SECRET_KEY, Authorization: `Bearer ${env.SUPABASE_SECRET_KEY}` } })).json();
 const relaciones = Object.keys(spec.definitions).sort();
@@ -47,6 +50,8 @@ for (const rel of relaciones) {
 }
 const alcanzablesPorCliente = new Map(); // rel -> filas totales vistas
 
+const { data: empleadoFila } = await A.from("empleados").select("id").is("deleted_at", null).limit(1).maybeSingle();
+const empleadoCualquiera = empleadoFila?.id ?? null;
 for (const cli of clientes) {
   const token = await tokenDe(cli.id);
   for (const rel of relaciones) {
@@ -97,6 +102,11 @@ for (const cli of clientes) {
     ["mis_visitas", {}],
     ["calendario_ocupacion", { p_desde: "2026-09-01", p_hasta: "2026-09-30" }],
     ["insumos_sin_costo", {}],
+    ["asistencia_periodo", { p_desde: "2026-09-01", p_hasta: "2026-09-30" }],
+    ["calcular_nomina", { p_empleado_id: empleadoCualquiera ?? ID_VACIO, p_desde: "2026-09-01", p_hasta: "2026-09-15" }],
+    ["reporte_utilidad_periodo", { p_desde: "2026-01-01", p_hasta: "2027-12-31" }],
+    ["cuentas_para_empleado", {}],
+    ["saldo_vacaciones", { p_empleado_id: empleadoCualquiera ?? ID_VACIO }],
   ];
   for (const [fn, args] of sondas) {
     const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(args) });
@@ -170,6 +180,50 @@ for (const persona of staffSinCostos ?? []) {
   }
 }
 console.log(`\npersonal sin permiso de costos revisado: ${staffRevisado} (compras con costo en la base: ${comprasTotales ?? 0})`);
+
+// ── Personal sin el permiso de nómina (24 de septiembre de 2026) ──────
+// Recepción sin «Nómina» (aunque tenga «Costos y compras de inventario») y
+// estética no alcanzan sueldos, comisiones ni pagos de nadie más: solo los
+// suyos si son empleados. Control positivo: tiene que haber pagos de
+// nómina en la base; si no, esto no demostraría nada.
+const { data: pagosNomina } = await A.from("nomina_pagos").select("id, empleado_id");
+const { count: esquemasTotales } = await A.from("esquemas_pago").select("id", { count: "exact", head: true });
+if (!pagosNomina?.length || !esquemasTotales) hallazgos.push("nómina: no hay pagos ni esquemas en desarrollo; corre scripts/auditoria/empleados.mjs (los crea) y repite");
+const { data: empleadosCuenta } = await A.from("empleados").select("id, profile_id").is("deleted_at", null).not("profile_id", "is", null);
+const empleadoDe = new Map((empleadosCuenta ?? []).map((e) => [e.profile_id, e.id]));
+let staffSinNomina = 0;
+for (const persona of staffSinCostos ?? []) {
+  if (persona.rol === "recepcion" && permisosDe(persona.id).has("nomina")) continue;
+  staffSinNomina++;
+  const token = await tokenDe(persona.id);
+  const h = { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+  const quien = `${persona.rol} ${persona.nombre_completo ?? persona.id.slice(0, 8)}`;
+  const propio = empleadoDe.get(persona.id) ?? null;
+  for (const t of ["esquemas_pago", "comisiones_servicio"]) {
+    const filas = await (await fetch(`${URL}/rest/v1/${t}?select=id`, { headers: h })).json();
+    if (!Array.isArray(filas) || filas.length > 0) hallazgos.push(`nómina: ${quien} lee ${Array.isArray(filas) ? filas.length : "?"} filas de ${t} sin el permiso`);
+  }
+  for (const t of ["nomina_pagos", "adelantos", "vacaciones_movimientos"]) {
+    const filas = await (await fetch(`${URL}/rest/v1/${t}?select=empleado_id`, { headers: h })).json();
+    const ajenas = Array.isArray(filas) ? filas.filter((f) => f.empleado_id !== propio).length : "?";
+    if (ajenas !== 0) hallazgos.push(`nómina: ${quien} lee ${ajenas} filas AJENAS de ${t}`);
+  }
+  for (const [fn, args] of [
+    ["calcular_nomina", { p_empleado_id: pagosNomina?.[0]?.empleado_id ?? ID_VACIO, p_desde: "2026-09-01", p_hasta: "2026-09-15" }],
+    ["registrar_pago_nomina", { p_empleado_id: pagosNomina?.[0]?.empleado_id ?? ID_VACIO, p_desde: "2020-01-01", p_hasta: "2020-01-01", p_metodo: "efectivo", p_fecha_pago: "2020-01-01", p_notas: null }],
+    ["registrar_adelanto", { p_empleado_id: pagosNomina?.[0]?.empleado_id ?? ID_VACIO, p_monto: 1, p_fecha: "2020-01-01", p_metodo: "efectivo", p_motivo: null }],
+    ["cuentas_para_empleado", {}],
+  ]) {
+    const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: h, body: JSON.stringify(args) });
+    if (r.ok) hallazgos.push(`nómina: ${quien} puede llamar ${fn} sin el permiso`);
+    if (r.status === 404) hallazgos.push(`nómina: ${fn} respondió 404 (revisa los parámetros del script)`);
+  }
+  if (!permisosDe(persona.id).has("reportes_financieros")) {
+    const r = await fetch(`${URL}/rest/v1/rpc/reporte_utilidad_periodo`, { method: "POST", headers: h, body: JSON.stringify({ p_desde: "2026-01-01", p_hasta: "2027-12-31" }) });
+    if (r.ok) hallazgos.push(`nómina: ${quien} ve la utilidad (con la nómina) sin «Reportes financieros»`);
+  }
+}
+console.log(`personal sin permiso de nómina revisado: ${staffSinNomina} (pagos de nómina en la base: ${pagosNomina?.length ?? 0})`);
 
 for (const rel of SOLO_STAFF) {
   if (!relaciones.includes(rel)) hallazgos.push(`${rel}: está en SOLO_STAFF pero la API ya no la expone (¿se renombró?)`);

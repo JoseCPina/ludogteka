@@ -34,6 +34,14 @@ const ZONAS_PROTEGIDAS: Zona[] = [
   { prefijo: "/contratos", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/inventario", rolesPermitidos: ["admin", "recepcion", "estetica"] },
   { prefijo: "/reportes", rolesPermitidos: ["admin"], permisos: ["reportes_financieros"] },
+  // Empleados: el dinero (nómina, comisiones) y el alta, solo con «Nómina»;
+  // lo específico antes que /empleados.
+  { prefijo: "/empleados/nomina", rolesPermitidos: ["admin"], permisos: ["nomina"] },
+  { prefijo: "/empleados/comisiones", rolesPermitidos: ["admin"], permisos: ["nomina"] },
+  { prefijo: "/empleados/nuevo", rolesPermitidos: ["admin"], permisos: ["nomina"] },
+  { prefijo: "/empleados", rolesPermitidos: ["admin", "recepcion"] },
+  // Lo de cada quien: su asistencia, ausencias y pagos.
+  { prefijo: "/mi-trabajo", rolesPermitidos: ["admin", "recepcion", "estetica"] },
 ];
 
 // Zonas de API: nunca redirige (un fetch no sabe qué hacer con un 302 a

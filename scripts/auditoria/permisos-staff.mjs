@@ -12,7 +12,7 @@ import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
 
 const PERMISOS = [
-  "inventario_costos", "tarifas", "reportes_financieros", "personal",
+  "inventario_costos", "tarifas", "reportes_financieros", "personal", "nomina",
   "configuracion_negocio", "excepciones_reserva", "descuentos_sin_tope", "plantillas_contrato",
 ];
 
@@ -90,6 +90,15 @@ const pruebas = {
       ve: (compras ?? []).length > 0 && costo !== null && (prov.data ?? []).length === 1 && !sinCosto.error,
       detalle: compra.error?.message ?? ref.error?.message ?? sinCosto.error?.message,
     };
+  },
+  // «Nómina»: calcular y leer los pagos de TODOS (no solo los propios).
+  async nomina() {
+    const { data: emp } = await A.from("empleados").select("id").is("deleted_at", null).is("profile_id", null).limit(1).maybeSingle();
+    if (!emp) return { dejo: false, ve: false, detalle: "no hay empleados sin cuenta en desarrollo: corre scripts/auditoria/empleados.mjs" };
+    const calc = await R.rpc("calcular_nomina", { p_empleado_id: emp.id, p_desde: "2026-09-01", p_hasta: "2026-09-15" });
+    const { data: esq } = await R.from("esquemas_pago").select("id");
+    const { count: total } = await A.from("esquemas_pago").select("id", { count: "exact", head: true });
+    return { dejo: !calc.error, ve: (esq ?? []).length === total && (total ?? 0) > 0, detalle: calc.error?.message };
   },
   async tarifas() {
     const r = await R.from("tarifas").update({ precio: tarifa.precio }).eq("id", tarifa.id).select("id");
