@@ -3,7 +3,7 @@ import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ESTADOS_AUSENCIA, TIPOS_AUSENCIA } from "@/lib/empleados/textos";
-import { BotonAccion, Desplegable, FormularioAccion } from "./formulario-accion";
+import { BotonAccion, Desplegable, FormularioAccion } from "@/components/formulario-accion";
 import { aprobarAusencia, cancelarAusencia, rechazarAusencia, solicitarAusencia } from "./ausencias-actions";
 
 export type Ausencia = {

@@ -8,7 +8,7 @@ import { hoyNegocio, horaLocalDeInstante, formatearFechaCalendario } from "@/lib
 import { ESTADOS_DIA, MINUTOS_TOLERANCIA, ORIGEN_REGISTRO, TIPOS_AUSENCIA, hora, horaCampo, minutos } from "@/lib/empleados/textos";
 import type { DiaAsistencia } from "@/lib/empleados/tipos";
 import { SubnavEmpleados } from "./subnav";
-import { BotonAccion } from "./formulario-accion";
+import { BotonAccion } from "@/components/formulario-accion";
 import { registrarEntrada, registrarSalida } from "./asistencia-actions";
 
 // Asistencia de hoy de toda la casa, y la lista del personal. Recepción

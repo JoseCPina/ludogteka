@@ -4,7 +4,7 @@ import { Alert } from "@/components/ui/alert";
 import { formatearFechaCalendario, horaLocalDeInstante, hoyNegocio, sumarDiasFecha } from "@/lib/formato";
 import { METODOS_PAGO, MINUTOS_TOLERANCIA, hora, minutos, moneda } from "@/lib/empleados/textos";
 import type { DiaAsistencia, PagoNomina } from "@/lib/empleados/tipos";
-import { BotonAccion } from "../empleados/formulario-accion";
+import { BotonAccion } from "@/components/formulario-accion";
 import { registrarEntrada, registrarSalida } from "../empleados/asistencia-actions";
 import { ResumenAsistencia, TablaAsistencia } from "../empleados/tabla-asistencia";
 import { COLUMNAS_AUSENCIA, FormularioSolicitarAusencia, ListaAusencias, type Ausencia } from "../empleados/ausencias-lista";

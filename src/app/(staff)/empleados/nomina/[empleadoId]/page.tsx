@@ -10,7 +10,7 @@ import { Select } from "@/components/ui/select";
 import { formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
 import { METODOS_PAGO, moneda, quincenaDe } from "@/lib/empleados/textos";
 import type { Desglose, PagoNomina } from "@/lib/empleados/tipos";
-import { FormularioAccion } from "../../formulario-accion";
+import { FormularioAccion } from "@/components/formulario-accion";
 import { ListaPagos, VistaDesglose } from "../../nomina-vistas";
 import { registrarPago } from "../../nomina-actions";
 

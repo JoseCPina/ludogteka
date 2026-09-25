@@ -6,7 +6,7 @@ import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { moneda } from "@/lib/empleados/textos";
 import { SubnavEmpleados } from "../subnav";
-import { BotonAccion, FormularioAccion } from "../formulario-accion";
+import { BotonAccion, FormularioAccion } from "@/components/formulario-accion";
 import { guardarComision, quitarComision } from "../nomina-actions";
 
 // Reglas de comisión por servicio de estética. La comisión sale sola de

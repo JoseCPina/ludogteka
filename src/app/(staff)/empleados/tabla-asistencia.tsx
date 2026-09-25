@@ -3,7 +3,7 @@ import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { ESTADOS_DIA, ORIGEN_REGISTRO, TIPOS_AUSENCIA, hora, minutos } from "@/lib/empleados/textos";
 import type { DiaAsistencia } from "@/lib/empleados/tipos";
-import { Desplegable, FormularioAccion } from "./formulario-accion";
+import { Desplegable, FormularioAccion } from "@/components/formulario-accion";
 import { corregirAsistencia } from "./asistencia-actions";
 
 export type Correccion = {

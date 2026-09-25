@@ -36,6 +36,9 @@ const ZONAS_PROTEGIDAS: Zona[] = [
   { prefijo: "/reportes", rolesPermitidos: ["admin"], permisos: ["reportes_financieros"] },
   // Empleados: el dinero (nómina, comisiones) y el alta, solo con «Nómina»;
   // lo específico antes que /empleados.
+  // Gastos del local: con «Gastos»; las categorías, solo admin.
+  { prefijo: "/gastos/categorias", rolesPermitidos: ["admin"] },
+  { prefijo: "/gastos", rolesPermitidos: ["admin"], permisos: ["gastos"] },
   { prefijo: "/empleados/nomina", rolesPermitidos: ["admin"], permisos: ["nomina"] },
   { prefijo: "/empleados/comisiones", rolesPermitidos: ["admin"], permisos: ["nomina"] },
   { prefijo: "/empleados/nuevo", rolesPermitidos: ["admin"], permisos: ["nomina"] },

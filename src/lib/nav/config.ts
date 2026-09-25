@@ -34,6 +34,7 @@ export const SECCIONES_STAFF: ItemNav[] = [
   { etiqueta: "Inventario", href: "/inventario", roles: ["admin", "recepcion", "estetica"] },
   { etiqueta: "Reportes", href: "/reportes", roles: ["admin"], permisos: ["reportes_financieros"] },
   { etiqueta: "Empleados", href: "/empleados", roles: ["admin", "recepcion"] },
+  { etiqueta: "Gastos", href: "/gastos", roles: ["admin"], permisos: ["gastos"] },
   { etiqueta: "Mi asistencia", href: "/mi-trabajo", roles: ["recepcion", "estetica"] },
   // Admin aterriza en /admin (su "Inicio"); esta entrada es para recepción
   // con permisos de personal o de configuración.

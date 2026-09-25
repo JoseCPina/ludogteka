@@ -1,7 +1,8 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { hoyNegocio } from "@/lib/formato";
+import { formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
+import { periodoAnterior } from "@/lib/gastos/textos";
 
 function formatearMoneda(n: number): string {
   return n.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
@@ -17,6 +18,9 @@ export default async function ReportesPage({
   const desde = params.desde || `${hoy.slice(0, 7)}-01`;
   const hasta = params.hasta || hoy;
 
+  // Con qué se compara: el mes anterior si el rango es un mes completo; si
+  // no, los mismos días justo antes.
+  const anterior = periodoAnterior(desde, hasta);
   const supabase = await createSupabaseServerClient();
   const [
     { data, error },
@@ -25,6 +29,9 @@ export default async function ReportesPage({
     { data: operativoData, error: errorOperativo },
     { data: estadoActualData, error: errorEstadoActual },
     { data: utilidadData, error: errorUtilidad },
+    { data: utilidadAnteriorData },
+    { data: gastosCategoria },
+    { data: gastosCategoriaAnterior },
   ] = await Promise.all([
     supabase.rpc("reporte_financiero_periodo", { p_desde: desde, p_hasta: hasta }).single(),
     supabase.rpc("reporte_costos_periodo", { p_desde: desde, p_hasta: hasta }).single(),
@@ -32,6 +39,9 @@ export default async function ReportesPage({
     supabase.rpc("reporte_operativo_periodo", { p_desde: desde, p_hasta: hasta }).single(),
     supabase.rpc("reporte_estado_operativo_actual").single(),
     supabase.rpc("reporte_utilidad_periodo", { p_desde: desde, p_hasta: hasta }).single(),
+    supabase.rpc("reporte_utilidad_periodo", { p_desde: anterior.desde, p_hasta: anterior.hasta }).single(),
+    supabase.rpc("gastos_por_categoria_periodo", { p_desde: desde, p_hasta: hasta }),
+    supabase.rpc("gastos_por_categoria_periodo", { p_desde: anterior.desde, p_hasta: anterior.hasta }),
   ]);
 
   // Utilidad = ingreso reconocido − consumo de insumos − costo de nómina.
@@ -42,8 +52,17 @@ export default async function ReportesPage({
     nomina_pagada: number;
     propinas_repartidas: number;
     adelantos_pendientes: number;
+    gastos_local: number;
     utilidad: number;
   } | null;
+  const utilidadAnterior = utilidadAnteriorData as typeof utilidad;
+  const categoriasGasto = ((gastosCategoria ?? []) as { categoria_id: string; categoria: string; monto: number }[])
+    .map((c) => ({
+      ...c,
+      monto: Number(c.monto),
+      anterior: Number(((gastosCategoriaAnterior ?? []) as { categoria_id: string; monto: number }[]).find((a) => a.categoria_id === c.categoria_id)?.monto ?? 0),
+    }))
+    .filter((c) => c.monto || c.anterior);
 
   const reporte = data as {
     cobros_efectivo: number;
@@ -142,26 +161,84 @@ export default async function ReportesPage({
           Recarga la página. Si el problema sigue, avísale al equipo técnico.
         </Alert>
       ) : (
-        <div className="rounded-lg border-[1.5px] border-n-300 bg-white p-5">
-          <p className="text-sm font-bold uppercase tracking-wide text-n-600">Utilidad del periodo</p>
-          <p className={`mt-1 text-3xl font-extrabold ${Number(utilidad.utilidad) < 0 ? "text-naranja-oscuro" : "text-n-900"}`}>
-            {formatearMoneda(Number(utilidad.utilidad))}
-          </p>
-          <div className="mt-3 grid gap-1 text-sm text-n-700 sm:max-w-md">
-            <p className="flex justify-between">
-              <span>Ingreso reconocido</span>
-              <span className="tabular-nums">{formatearMoneda(Number(utilidad.ingreso_reconocido))}</span>
-            </p>
-            <p className="flex justify-between">
-              <span>− Insumos consumidos (incluye merma)</span>
-              <span className="tabular-nums">{formatearMoneda(Number(utilidad.costo_insumos))}</span>
-            </p>
-            <p className="flex justify-between">
-              <span>− Nómina</span>
-              <span className="tabular-nums">{formatearMoneda(Number(utilidad.nomina_costo))}</span>
+        <div className="flex flex-col gap-4 rounded-lg border-[1.5px] border-n-300 bg-white p-5">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-wide text-n-600">Utilidad del periodo</p>
+            <p className={`mt-1 text-3xl font-extrabold ${Number(utilidad.utilidad) < 0 ? "text-naranja-oscuro" : "text-n-900"}`}>
+              {formatearMoneda(Number(utilidad.utilidad))}
             </p>
           </div>
-          <p className="mt-3 text-xs text-n-500">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[480px] border-collapse text-sm">
+              <thead>
+                <tr className="text-left text-xs font-bold uppercase tracking-wide text-n-500">
+                  <th className="py-1.5 pr-3" />
+                  <th className="py-1.5 pr-3 text-right">Este periodo</th>
+                  <th className="py-1.5 pr-3 text-right">
+                    Anterior ({formatearFechaCalendario(anterior.desde)} – {formatearFechaCalendario(anterior.hasta)})
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="text-n-800">
+                {(
+                  [
+                    ["Ingreso reconocido", "ingreso_reconocido", 1],
+                    ["− Insumos consumidos (incluye merma)", "costo_insumos", -1],
+                    ["− Nómina", "nomina_costo", -1],
+                    ["− Gastos del local", "gastos_local", -1],
+                  ] as const
+                ).map(([etiqueta, clave]) => (
+                  <tr key={clave} className="border-t border-n-200">
+                    <td className="py-1.5 pr-3">{etiqueta}</td>
+                    <td className="py-1.5 pr-3 text-right tabular-nums">{formatearMoneda(Number(utilidad[clave]))}</td>
+                    <td className="py-1.5 pr-3 text-right tabular-nums text-n-600">{utilidadAnterior ? formatearMoneda(Number(utilidadAnterior[clave])) : "—"}</td>
+                  </tr>
+                ))}
+                <tr className="border-t-2 border-n-300 font-bold">
+                  <td className="py-1.5 pr-3">Utilidad</td>
+                  <td className="py-1.5 pr-3 text-right tabular-nums">{formatearMoneda(Number(utilidad.utilidad))}</td>
+                  <td className="py-1.5 pr-3 text-right tabular-nums text-n-600">{utilidadAnterior ? formatearMoneda(Number(utilidadAnterior.utilidad)) : "—"}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {categoriasGasto.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-bold text-n-900">Gastos del local, por categoría</p>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[480px] border-collapse text-sm">
+                  <thead>
+                    <tr className="text-left text-xs font-bold uppercase tracking-wide text-n-500">
+                      <th className="py-1.5 pr-3">Categoría</th>
+                      <th className="py-1.5 pr-3 text-right">Este periodo</th>
+                      <th className="py-1.5 pr-3 text-right">Anterior</th>
+                      <th className="py-1.5 pr-3 text-right">Diferencia</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-n-800">
+                    {categoriasGasto.map((c) => {
+                      const dif = c.monto - c.anterior;
+                      return (
+                        <tr key={c.categoria_id} className="border-t border-n-200">
+                          <td className="py-1.5 pr-3">{c.categoria}</td>
+                          <td className="py-1.5 pr-3 text-right tabular-nums">{formatearMoneda(c.monto)}</td>
+                          <td className="py-1.5 pr-3 text-right tabular-nums text-n-600">{formatearMoneda(c.anterior)}</td>
+                          <td className={`py-1.5 pr-3 text-right tabular-nums ${dif > 0 ? "text-naranja-oscuro" : "text-verde-oscuro"}`}>
+                            {dif > 0 ? "+" : ""}
+                            {formatearMoneda(dif)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <p className="text-xs text-n-500">
+            Los gastos del local cuentan en los meses que cubren, repartidos por días (la luz bimestral carga la mitad en cada mes).
             La nómina entra por la fecha en que se pagó (con sus reversos): sueldos, pago por día y comisiones, con los adelantos que
             ese pago descontó. Las propinas no cuentan ({formatearMoneda(Number(utilidad.propinas_repartidas))} repartidas en el periodo):
             las deja el cliente para quien lo atendió y tampoco entran como ingreso.

@@ -6,6 +6,8 @@ import { BotonNuevoCliente } from "@/components/boton-nuevo-cliente";
 import { Antiguedad } from "@/components/ui/antiguedad";
 import { desdeCuando, diasDesde, esMuyViejo, haceCuanto } from "@/lib/antiguedad";
 import { cargarSaldosDeSalidas } from "@/lib/tablero/saldos-de-salidas";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { tienePermiso } from "@/lib/auth/permisos";
 import {
   fechaLocalDeInstante,
   formatearFechaCalendario,
@@ -338,6 +340,40 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       href: saldos.length === 1 ? `/caja/cobrar/${saldos[0].reservaId}` : "/recepcion/saldos",
       ...masViejo(saldos.map((c) => c.salioEl), hoy, "a"),
     });
+  }
+
+  // Gastos del local vencidos o por vencer (con montos: solo para quien
+  // tiene «Gastos»). La lista a la que manda va del vencimiento más viejo
+  // al más nuevo.
+  const sesion = await obtenerSesionConRol();
+  if (tienePermiso(sesion, "gastos")) {
+    const { data: porPagar } = await supabase.rpc("gastos_por_atender");
+    const lista = (porPagar ?? []) as { concepto: string; vencimiento: string; dias: number; vencido: boolean }[];
+    const vencidos = lista.filter((g) => g.vencido);
+    const proximos = lista.filter((g) => !g.vencido);
+    if (vencidos.length > 0) {
+      const dias = Math.max(...vencidos.map((g) => g.dias));
+      atencion.push({
+        clave: "gastos-vencidos",
+        texto: vencidos.length === 1 ? `${vencidos[0].concepto} venció sin pagar` : `${vencidos.length} gastos del local vencieron sin pagar`,
+        detalle: vencidos.length > 1 ? vencidos.map((g) => g.concepto).slice(0, 4).join(", ") : undefined,
+        href: "/gastos",
+        dias,
+        antiguedad: vencidos.length === 1 ? `Vencido ${haceCuanto(dias)}` : `El más viejo venció ${haceCuanto(dias)}`,
+      });
+    }
+    if (proximos.length > 0) {
+      const primero = Math.min(...proximos.map((g) => g.dias));
+      const cuando = primero === 0 ? "hoy" : primero === 1 ? "mañana" : `en ${primero} días`;
+      atencion.push({
+        clave: "gastos-proximos",
+        texto: proximos.length === 1 ? `${proximos[0].concepto} vence ${cuando}` : `${proximos.length} gastos del local vencen esta semana`,
+        detalle: proximos.length > 1 ? proximos.map((g) => g.concepto).slice(0, 4).join(", ") : undefined,
+        href: "/gastos",
+        dias: 0,
+        antiguedad: proximos.length === 1 ? `Vence ${cuando}` : `El primero vence ${cuando}`,
+      });
+    }
   }
 
   const fechasComprobantes = (comprobantes ?? []).map((c) => c.created_at as string);

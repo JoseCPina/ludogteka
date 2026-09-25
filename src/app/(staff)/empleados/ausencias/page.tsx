@@ -5,7 +5,7 @@ import { Select } from "@/components/ui/select";
 import { hoyNegocio } from "@/lib/formato";
 import { SubnavEmpleados } from "../subnav";
 import { COLUMNAS_AUSENCIA, ListaAusencias, type Ausencia } from "../ausencias-lista";
-import { FormularioAccion } from "../formulario-accion";
+import { FormularioAccion } from "@/components/formulario-accion";
 import { solicitarAusenciaPor } from "./pedir-actions";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";

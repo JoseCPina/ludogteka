@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatearFecha, formatearFechaCalendario, hoyNegocio, sumarDiasFecha } from "@/lib/formato";
 import { DIAS_SEMANA, METODOS_PAGO, PERIODICIDADES, hora, horaCampo, moneda, textoEsquema } from "@/lib/empleados/textos";
 import type { DiaAsistencia, PagoNomina } from "@/lib/empleados/tipos";
-import { BotonAccion, Desplegable, FormularioAccion } from "../formulario-accion";
+import { BotonAccion, Desplegable, FormularioAccion } from "@/components/formulario-accion";
 import { CamposEmpleado, type CuentaLigable } from "../campos-empleado";
 import { ResumenAsistencia, TablaAsistencia, type Correccion } from "../tabla-asistencia";
 import { COLUMNAS_AUSENCIA, FormularioSolicitarAusencia, ListaAusencias, type Ausencia } from "../ausencias-lista";

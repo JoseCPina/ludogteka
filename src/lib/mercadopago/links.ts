@@ -21,7 +21,18 @@ export type PagoMp = {
   installments?: number;
   date_approved?: string;
   live_mode?: boolean;
+  // Lo que Mercado Pago retuvo del cobro (su comisión, impuestos de la
+  // comisión, financiamiento…). fee_payer "collector" = lo pagó el negocio.
+  fee_details?: { type?: string; amount?: number; fee_payer?: string }[];
 };
+
+// La comisión que le costó al negocio este pago (0 si la API no la trae).
+export function comisionDePago(pago: PagoMp): number {
+  const total = (pago.fee_details ?? [])
+    .filter((f) => (f.fee_payer ?? "collector") !== "payer")
+    .reduce((s, f) => s + (Number(f.amount) || 0), 0);
+  return Math.round(total * 100) / 100;
+}
 
 export async function crearLinkPago(args: {
   ordenId: string;

@@ -12,7 +12,7 @@ import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
 
 const PERMISOS = [
-  "inventario_costos", "tarifas", "reportes_financieros", "personal", "nomina",
+  "inventario_costos", "tarifas", "reportes_financieros", "personal", "nomina", "gastos",
   "configuracion_negocio", "excepciones_reserva", "descuentos_sin_tope", "plantillas_contrato",
 ];
 
@@ -99,6 +99,13 @@ const pruebas = {
     const { data: esq } = await R.from("esquemas_pago").select("id");
     const { count: total } = await A.from("esquemas_pago").select("id", { count: "exact", head: true });
     return { dejo: !calc.error, ve: (esq ?? []).length === total && (total ?? 0) > 0, detalle: calc.error?.message };
+  },
+  // «Gastos»: ver los pendientes y leer TODOS los gastos.
+  async gastos() {
+    const r = await R.rpc("gastos_por_atender");
+    const { data: vistos } = await R.from("gastos").select("id");
+    const { count: total } = await A.from("gastos").select("id", { count: "exact", head: true });
+    return { dejo: !r.error, ve: (vistos ?? []).length === total && (total ?? 0) > 0, detalle: r.error?.message ?? (total ? undefined : "no hay gastos en desarrollo: corre scripts/auditoria/gastos.mjs") };
   },
   async tarifas() {
     const r = await R.from("tarifas").update({ precio: tarifa.precio }).eq("id", tarifa.id).select("id");

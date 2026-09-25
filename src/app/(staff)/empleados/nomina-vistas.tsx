@@ -2,7 +2,7 @@ import { formatearFecha, formatearFechaCalendario } from "@/lib/formato";
 import { Textarea } from "@/components/ui/textarea";
 import { METODOS_PAGO, PERIODICIDADES, moneda, plural } from "@/lib/empleados/textos";
 import type { Desglose, PagoNomina } from "@/lib/empleados/tipos";
-import { Desplegable, FormularioAccion } from "./formulario-accion";
+import { Desplegable, FormularioAccion } from "@/components/formulario-accion";
 import { revertirPago } from "./nomina-actions";
 
 function Renglon({ etiqueta, detalle, valor, signo = "+" }: { etiqueta: string; detalle?: string; valor: number; signo?: "+" | "−" }) {

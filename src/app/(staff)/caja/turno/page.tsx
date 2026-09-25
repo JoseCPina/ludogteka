@@ -24,8 +24,10 @@ export default async function TurnoCajaPage() {
     ? await Promise.all([
         supabase
           .from("movimientos_caja")
+          // Un retiro dado de baja (gasto cancelado con el turno abierto) no cuenta.
           .select("id, monto, motivo, created_at, created_by")
           .eq("turno_id", turnoAbierto.id)
+          .is("deleted_at", null)
           .order("created_at"),
         supabase.rpc("movimientos_turno", { p_turno_id: turnoAbierto.id }),
         supabase.rpc("resumen_turno", { p_turno_id: turnoAbierto.id }),

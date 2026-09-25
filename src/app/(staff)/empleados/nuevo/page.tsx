@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { hoyNegocio } from "@/lib/formato";
-import { FormularioAccion } from "../formulario-accion";
+import { FormularioAccion } from "@/components/formulario-accion";
 import { CamposEmpleado, type CuentaLigable } from "../campos-empleado";
 import { crearEmpleado } from "../empleados-actions";
 

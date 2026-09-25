@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { consultarOrdenPoint, leerPagoDeOrden, simularOrdenPoint, type OrdenPoint } from "./point";
-import { consultarPago, type PagoMp } from "./links";
+import { comisionDePago, consultarPago, type PagoMp } from "./links";
 import { modoSimulacion } from "./config";
 import { describirEstadoOrden, ErrorMercadoPago } from "./errores";
 
@@ -62,11 +62,41 @@ export async function leerOrdenLocal(admin: SupabaseClient, ordenId: string): Pr
   return data ? ({ ...data, monto: Number(data.monto) } as OrdenLocal) : null;
 }
 
+// La comisión de Mercado Pago de un cobro ya registrado entra sola como
+// gasto del local (categoría Comisiones), una vez por orden. Si la API no
+// la trae, o algo falla aquí, el cobro NO se afecta: queda para captura
+// manual.
+async function registrarComision(admin: SupabaseClient, orden: OrdenLocal, pago: PagoMp | null) {
+  try {
+    if (!pago || orden.simulado || modoSimulacion()) return;
+    const monto = comisionDePago(pago);
+    if (!(monto > 0)) return;
+    const tipo = orden.tipo === "point" ? "terminal" : "link de pago";
+    const detalle = `Cobro por ${tipo}, pago ${pago.id}: ${(pago.fee_details ?? []).map((f) => `${f.type ?? "comisión"} ${f.amount}`).join(", ")}`;
+    const { error } = await admin.rpc("registrar_comision_mercadopago", { p_orden_id: orden.id, p_monto: monto, p_detalle: detalle });
+    if (error) console.error("[mercadopago] comisión no registrada", orden.id, error.message);
+  } catch (e) {
+    console.error("[mercadopago] comisión no registrada", orden.id, e);
+  }
+}
+
+// En la terminal (API de Orders) la comisión no viene en la orden: se
+// intenta leer el pago con la API de pagos, solo si su id es de esa API.
+async function pagoDeTerminal(paymentId: string | null): Promise<PagoMp | null> {
+  if (!paymentId || !/^\d+$/.test(paymentId)) return null;
+  try {
+    return await consultarPago(paymentId);
+  } catch {
+    return null;
+  }
+}
+
 async function registrar(
   admin: SupabaseClient,
   orden: OrdenLocal,
   pago: { paymentId: string | null; monto: number | null; installments: number | null; tipo: string | null },
-  evento: unknown
+  evento: unknown,
+  pagoMp: PagoMp | null = null
 ): Promise<ResultadoSincronizacion> {
   const { data, error } = await admin.rpc("registrar_pago_mercadopago", {
     p_orden_id: orden.id,
@@ -78,6 +108,10 @@ async function registrar(
   });
   if (error) throw new ErrorMercadoPago(error.message, 0, null, null);
   const r = data as { registrado: boolean; sin_turno?: boolean; cobro_id: string | null };
+  if (r.registrado) {
+    const conComision = pagoMp ?? (orden.tipo === "point" && !orden.simulado && !modoSimulacion() ? await pagoDeTerminal(pago.paymentId) : null);
+    await registrarComision(admin, orden, conComision);
+  }
   return {
     estado: "pagada",
     pagada: true,
@@ -153,6 +187,7 @@ export async function aplicarPagoLink(admin: SupabaseClient, orden: OrdenLocal, 
         installments: Number(pago.installments ?? 1) || 1,
         tipo: pago.payment_type_id ?? null,
       },
+      pago,
       pago
     );
   }

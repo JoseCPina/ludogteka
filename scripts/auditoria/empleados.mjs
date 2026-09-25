@@ -245,8 +245,8 @@ console.log("\n── Reportes: la nómina resta en la utilidad; la comisión en
 const { data: util } = await ADM.rpc("reporte_utilidad_periodo", { p_desde: desde, p_hasta: hoy }).single();
 const { data: pagosPeriodo } = await A.from("nomina_pagos").select("costo").gte("fecha_pago", desde).lte("fecha_pago", hoy).is("deleted_at", null);
 const costoNomina = Math.round(pagosPeriodo.reduce((s, p) => s + Number(p.costo), 0) * 100) / 100;
-ok(util && Number(util.nomina_costo) === costoNomina && Math.abs(Number(util.utilidad) - (Number(util.ingreso_reconocido) - Number(util.costo_insumos) - costoNomina)) < 0.01,
-  `utilidad = ingreso ${util?.ingreso_reconocido} − insumos ${util?.costo_insumos} − nómina ${util?.nomina_costo} = ${util?.utilidad}`);
+ok(util && Number(util.nomina_costo) === costoNomina && Math.abs(Number(util.utilidad) - (Number(util.ingreso_reconocido) - Number(util.costo_insumos) - costoNomina - Number(util.gastos_local))) < 0.01,
+  `utilidad = ingreso ${util?.ingreso_reconocido} − insumos ${util?.costo_insumos} − nómina ${util?.nomina_costo} − gastos ${util?.gastos_local} = ${util?.utilidad}`);
 const { data: margen } = await ADM.rpc("reporte_margen_por_servicio_periodo", { p_desde: hoy, p_hasta: hoy });
 const fila = (margen ?? []).find((m) => m.servicio_id === cita.servicio_id);
 ok(fila && Number(fila.comision) >= 55 && Number(fila.margen_con_comision) === Number(fila.margen) - Number(fila.comision), `margen del servicio con comisión: ${fila?.margen} − ${fila?.comision} = ${fila?.margen_con_comision}`);

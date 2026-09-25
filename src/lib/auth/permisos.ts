@@ -65,6 +65,12 @@ export const PERMISOS = [
     implica:
       "Da de alta empleados y su horario, ve y captura sueldos, comisiones y adelantos, calcula la nómina y la marca pagada. Corregir asistencia y aprobar ausencias sigue siendo de admin. «Costos y compras de inventario» no da acceso a esto.",
   },
+  {
+    clave: "gastos",
+    etiqueta: "Gastos del local",
+    implica:
+      "Registra y ve los gastos del local (renta, luz, camioneta…), los marca pagados, los cancela o corrige, y maneja los gastos recurrentes. Editar las categorías sigue siendo de admin. Ni «Costos y compras de inventario» ni «Nómina» dan acceso a esto.",
+  },
 ] as const;
 
 export type ClavePermiso = (typeof PERMISOS)[number]["clave"];
