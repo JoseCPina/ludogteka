@@ -9,6 +9,7 @@ import { Alert } from "@/components/ui/alert";
 import { comprimirImagen } from "@/lib/imagen";
 import { hoyNegocio } from "@/lib/formato";
 import { proponerComprobante } from "./comprobante-actions";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 /**
  * El botón "Subir comprobante" de cada requisito pendiente en el portal,
@@ -29,10 +30,11 @@ export function ProponerComprobante({
   categoria: "vacuna" | "desparasitacion";
   textoBoton?: string;
 }) {
+  const zona = useZonaNegocio();
   const router = useRouter();
   const inputArchivoRef = useRef<HTMLInputElement>(null);
   const [abierto, setAbierto] = useState(false);
-  const [fecha, setFecha] = useState(hoyNegocio());
+  const [fecha, setFecha] = useState(hoyNegocio(zona));
   const [detalle, setDetalle] = useState("");
   const [archivo, setArchivo] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +88,7 @@ export function ProponerComprobante({
       <Field
         label="Fecha en que se aplicó"
         type="date"
-        max={hoyNegocio()}
+        max={hoyNegocio(zona)}
         value={fecha}
         onChange={(e) => setFecha(e.target.value)}
         disabled={enviando.cargando}

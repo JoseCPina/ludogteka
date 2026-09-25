@@ -10,16 +10,18 @@ import { solicitarAusenciaPor } from "./pedir-actions";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { TIPOS_AUSENCIA } from "@/lib/empleados/textos";
+import { zonaActual } from "@/lib/negocio/actual";
 
 // Las que esperan aprobación primero (de la más vieja a la más nueva), y
 // abajo las próximas y recientes.
 export default async function AusenciasPage() {
+  const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
   const esAdmin = sesion?.rol === "admin";
   const puedeNomina = tienePermiso(sesion, "nomina");
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
 
   const [{ data: porAprobar }, { data: resto }, { data: empleados }] = await Promise.all([
     supabase.from("ausencias").select(COLUMNAS_AUSENCIA).eq("estado", "solicitada").is("deleted_at", null).order("created_at"),
@@ -41,7 +43,7 @@ export default async function AusenciasPage() {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-bold text-n-900">Por aprobar</h2>
-        <ListaAusencias
+        <ListaAusencias zona={zona}
           ausencias={(porAprobar ?? []) as unknown as Ausencia[]}
           esAdmin={esAdmin}
           puedeCancelarSolicitadas={false}
@@ -85,7 +87,7 @@ export default async function AusenciasPage() {
 
       <section className="flex flex-col gap-3 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Aprobadas y resueltas</h2>
-        <ListaAusencias
+        <ListaAusencias zona={zona}
           ausencias={(resto ?? []) as unknown as Ausencia[]}
           esAdmin={esAdmin}
           puedeCancelarSolicitadas={false}

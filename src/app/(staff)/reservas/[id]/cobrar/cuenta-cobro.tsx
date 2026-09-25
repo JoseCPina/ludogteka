@@ -15,6 +15,7 @@ import { CobroMercadoPago, type OrdenMpFila } from "./mercadopago-cobro";
 import type { EstadoMpDisponible } from "@/app/(staff)/caja/mercadopago-actions";
 import { consumirBono, type ItemTipoBono } from "../../bono-actions";
 import { aplicarDescuento, cancelarDescuento, type TipoDescuento } from "../../descuento-actions";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 export type LineaCuenta = {
   tipo: string;
@@ -134,6 +135,7 @@ export function CuentaCobro({
   puedeSinTope: boolean;
   mp: { disponible: EstadoMpDisponible; ordenes: OrdenMpFila[]; clienteTelefono: string | null };
 }) {
+  const zona = useZonaNegocio();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
@@ -766,7 +768,7 @@ export function CuentaCobro({
                       {totalPropina > 0 ? ` + ${dinero(totalPropina)} propina` : ""}
                     </p>
                     <p className="text-xs text-n-500">
-                      {formatearFecha(c.creadoEn)} · {c.creadoPorNombre}
+                      {formatearFecha(c.creadoEn, zona)} · {c.creadoPorNombre}
                     </p>
                   </div>
                   <p className="mt-1 text-sm text-n-600">
@@ -786,7 +788,7 @@ export function CuentaCobro({
                       {devolucionesDeEste.map((d) => (
                         <p key={d.id} className="text-sm text-naranja-oscuro">
                           Devuelto {dinero(d.metodos.reduce((s, m) => s + m.monto, 0))} — {d.motivo} (autorizó{" "}
-                          {d.autorizadoPorNombre}, {formatearFecha(d.creadoEn)})
+                          {d.autorizadoPorNombre}, {formatearFecha(d.creadoEn, zona)})
                         </p>
                       ))}
                     </div>

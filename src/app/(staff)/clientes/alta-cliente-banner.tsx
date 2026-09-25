@@ -7,6 +7,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { formatearFecha } from "@/lib/formato";
 import { marcarDatosRevisados } from "./invitaciones/invitacion-actions";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 // Aviso de procedencia, no de error: los datos los tecleó el dueño desde
 // su celular, así que conviene contrastarlos en el mostrador (el nombre
@@ -20,6 +21,7 @@ export function AltaClienteBanner({
   clienteId: string;
   revisadoAt: string | null;
 }) {
+  const zona = useZonaNegocio();
   const router = useRouter();
   const ocupado = useEspera();
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export function AltaClienteBanner({
   if (revisadoAt) {
     return (
       <p className="text-sm text-n-500">
-        Alta hecha por el cliente · revisada el {formatearFecha(revisadoAt)}
+        Alta hecha por el cliente · revisada el {formatearFecha(revisadoAt, zona)}
       </p>
     );
   }

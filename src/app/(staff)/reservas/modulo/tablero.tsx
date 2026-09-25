@@ -8,6 +8,7 @@ import { BotonNuevoCliente } from "@/components/boton-nuevo-cliente";
 import { tipoLinkDeModulo } from "@/lib/alta/tipos-link";
 import { TablaOcupacion, type FilaCalendario } from "./tabla-ocupacion";
 import { PasesTablero } from "./pases-tablero";
+import { zonaActual } from "@/lib/negocio/actual";
 
 const DIAS_CALENDARIO = 14;
 
@@ -54,10 +55,11 @@ function ListaPerros({
 // en su lista de llegadas), pero la ocupación de abajo es de toda la casa
 // — ver el comentario de TablaOcupacion.
 export async function TableroModulo({ modulo }: { modulo: ModuloEstancia }) {
+  const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
 
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
   const hasta = sumarDiasFecha(hoy, DIAS_CALENDARIO - 1);
 
   const columnas = "estancia_id, reserva_id, perro_id, perro_nombre, categoria, servicio_nombre";

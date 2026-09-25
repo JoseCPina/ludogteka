@@ -9,10 +9,12 @@ import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { hoyNegocio } from "@/lib/formato";
 import { registrarPeso, type EstadoPesoForm } from "./peso-actions";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 const ESTADO_INICIAL: EstadoPesoForm = { error: null };
 
 export function PesoForm({ perroId }: { perroId: string }) {
+  const zona = useZonaNegocio();
   const registrarConId = registrarPeso.bind(null, perroId);
   const [estado, formAction, enviando] = useActionState(useAccionConTope(registrarConId), ESTADO_INICIAL);
 
@@ -40,8 +42,8 @@ export function PesoForm({ perroId }: { perroId: string }) {
           label="Fecha"
           name="fecha"
           type="date"
-          max={hoyNegocio()}
-          defaultValue={hoyNegocio()}
+          max={hoyNegocio(zona)}
+          defaultValue={hoyNegocio(zona)}
           required
           disabled={enviando}
         />

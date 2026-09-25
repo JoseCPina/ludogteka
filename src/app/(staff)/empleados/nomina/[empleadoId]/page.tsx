@@ -13,6 +13,7 @@ import type { Desglose, PagoNomina } from "@/lib/empleados/tipos";
 import { FormularioAccion } from "@/components/formulario-accion";
 import { ListaPagos, VistaDesglose } from "../../nomina-vistas";
 import { registrarPago } from "../../nomina-actions";
+import { zonaActual } from "@/lib/negocio/actual";
 
 // El periodo de un empleado: desglose visible, y admin (o quien tenga
 // «Nómina») lo marca pagado con método y fecha. Lo que se guarda es el
@@ -24,13 +25,14 @@ export default async function NominaEmpleadoPage({
   params: Promise<{ empleadoId: string }>;
   searchParams: Promise<{ desde?: string; hasta?: string }>;
 }) {
+  const zona = await zonaActual();
   const sesion = await obtenerSesionConRol();
   if (!tienePermiso(sesion, "nomina")) redirect("/empleados");
   const { empleadoId } = await params;
   const sp = await searchParams;
   const supabase = await createSupabaseServerClient();
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
   const q = quincenaDe(hoy);
   const desde = sp.desde || q.desde;
   const hasta = sp.hasta || q.hasta;
@@ -113,7 +115,7 @@ export default async function NominaEmpleadoPage({
 
       <section className="flex flex-col gap-3 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Pagos registrados</h2>
-        <ListaPagos pagos={(pagos ?? []) as PagoNomina[]} puedeRevertir />
+        <ListaPagos zona={zona} pagos={(pagos ?? []) as PagoNomina[]} puedeRevertir />
       </section>
     </div>
   );

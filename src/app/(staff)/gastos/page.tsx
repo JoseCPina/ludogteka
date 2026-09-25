@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { negocioActual } from "@/lib/negocio/actual";
+import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { NEGOCIO_ORIGINAL_ID } from "@/lib/negocio/legado";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
@@ -27,11 +27,12 @@ const nombreMes = (mes: string) =>
 // Gastos del local: lo que hay que pagar, registrar un gasto, y en qué se
 // fue el dinero del mes (repartido por el periodo que cubre cada gasto).
 export default async function GastosPage({ searchParams }: { searchParams: Promise<{ mes?: string; cancelado?: string }> }) {
+  const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
   const esAdmin = sesion?.rol === "admin";
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
   const sp = await searchParams;
   const mes = /^\d{4}-\d{2}$/.test(sp.mes ?? "") ? (sp.mes as string) : hoy.slice(0, 7);
   const { desde, hasta } = rangoMes(mes);

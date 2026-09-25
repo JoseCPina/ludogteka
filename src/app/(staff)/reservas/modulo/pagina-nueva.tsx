@@ -9,6 +9,7 @@ import type { ModuloEstancia } from "@/lib/modulos";
 import { cargarServiciosOfrecibles } from "@/lib/servicios/ofrecibles";
 import { NuevaReservaForm } from "../nueva/nueva-reserva-form";
 import { cargarPaquetesDePerros } from "@/lib/bonos/cargar-paquetes";
+import { zonaActual } from "@/lib/negocio/actual";
 
 // Sirve a los dos puntos de entrada del mismo formulario: la reserva
 // normal y el walk-in (el perro ya está en la puerta). La única
@@ -26,11 +27,12 @@ export async function PaginaNuevaReserva({
   modulo: ModuloEstancia;
   esWalkin?: boolean;
 }) {
+  const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
 
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
 
   const [
     { data: clientes, error: errorClientes },

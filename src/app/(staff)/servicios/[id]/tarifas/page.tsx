@@ -4,12 +4,15 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { MatrizTarifas } from "../../matriz-tarifas";
 import { HistorialTarifas, type FilaHistorial } from "../../historial-tarifas";
 import { PreciosPorDia, type PrecioDia } from "../../precios-por-dia";
+import { zonaActual } from "@/lib/negocio/actual";
+import { hoyNegocio } from "@/lib/formato";
 
 export default async function TarifasServicioPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const zona = await zonaActual();
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
 
@@ -136,14 +139,14 @@ export default async function TarifasServicioPage({
           <PreciosPorDia
             servicioId={id}
             precios={(preciosDia ?? []) as PrecioDia[]}
-            hoy={(hoyData as string | null) ?? new Date().toISOString().slice(0, 10)}
+            hoy={(hoyData as string | null) ?? hoyNegocio(zona)}
           />
         </div>
       )}
 
       <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Historial de precios</h2>
-        <HistorialTarifas filas={historial} />
+        <HistorialTarifas zona={zona} filas={historial} />
       </div>
     </div>
   );

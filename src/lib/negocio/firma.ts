@@ -34,13 +34,23 @@ function llaveHmac(): Promise<CryptoKey> {
 }
 
 function contenido(n: NegocioBasico): string {
-  return [n.id, n.slug, n.nombre, n.dominio ?? "", n.url_publica ?? "", n.zona_horaria].join("|");
+  return [n.id, n.slug, n.nombre, n.dominio ?? "", n.url_publica ?? "", n.zona_horaria, n.icono ?? ""].join("|");
 }
 
 const aHex = (b: ArrayBuffer) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
 
 export async function firmarNegocio(n: NegocioBasico): Promise<string> {
   return aHex(await crypto.subtle.sign("HMAC", await llaveHmac(), new TextEncoder().encode(contenido(n))));
+}
+
+// La petición interna de un redirect() en el dominio de la plataforma
+// también llega a localhost: la marca de "plataforma" viaja firmada igual.
+const PLATAFORMA: NegocioBasico = { id: "plataforma", slug: "plataforma", nombre: "PeluDesk", dominio: null, zona_horaria: "" };
+export async function firmarPlataforma(): Promise<string> {
+  return firmarNegocio(PLATAFORMA);
+}
+export async function plataformaFirmada(firma: string | null): Promise<boolean> {
+  return firmaValida(PLATAFORMA, firma);
 }
 
 export async function firmaValida(n: NegocioBasico, firma: string | null): Promise<boolean> {

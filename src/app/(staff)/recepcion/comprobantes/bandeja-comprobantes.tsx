@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { formatearFecha, formatearFechaCalendario } from "@/lib/formato";
 import { Antiguedad } from "@/components/ui/antiguedad";
 import { revisarComprobante } from "./comprobantes-actions";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 export type ComprobantePendiente = {
   id: string;
@@ -38,6 +39,7 @@ const ETIQUETA_ESTADO_ACTUAL: Record<string, string> = {
 };
 
 function Tarjeta({ item }: { item: ComprobantePendiente }) {
+  const zona = useZonaNegocio();
   const router = useRouter();
   const revisando = useEspera();
   const [rechazando, setRechazando] = useState(false);
@@ -122,7 +124,7 @@ function Tarjeta({ item }: { item: ComprobantePendiente }) {
           </div>
           <div>
             <dt className="text-xs font-bold uppercase tracking-wide text-n-600">Enviado</dt>
-            <dd className="text-n-900">{formatearFecha(item.created_at)}</dd>
+            <dd className="text-n-900">{formatearFecha(item.created_at, zona)}</dd>
           </div>
           {item.detalle && (
             <div className="col-span-2 sm:col-span-3">

@@ -10,19 +10,21 @@ import type { DiaAsistencia } from "@/lib/empleados/tipos";
 import { SubnavEmpleados } from "./subnav";
 import { BotonAccion } from "@/components/formulario-accion";
 import { registrarEntrada, registrarSalida } from "./asistencia-actions";
+import { zonaActual } from "@/lib/negocio/actual";
 
 // Asistencia de hoy de toda la casa, y la lista del personal. Recepción
 // registra la entrada y salida de quien no tiene cuenta en la app; quien
 // sí la tiene lo registra desde su sesión (Mi asistencia).
 export default async function EmpleadosPage() {
+  const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
   const puedeNomina = tienePermiso(sesion, "nomina");
   const esAdmin = sesion?.rol === "admin";
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
   // "HH:MM" en la hora del negocio, para comparar contra su horario.
-  const ahora = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Mexico_City", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
+  const ahora = new Intl.DateTimeFormat("en-GB", { timeZone: zona, hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date());
 
   const [{ data: dias, error }, { data: empleados }, { count: porAprobar }] = await Promise.all([
     supabase.rpc("asistencia_periodo", { p_desde: hoy, p_hasta: hoy }),
@@ -83,8 +85,8 @@ export default async function EmpleadosPage() {
                   </span>
                   {d?.entrada_at && (
                     <span className="text-xs text-n-600">
-                      Entró {horaLocalDeInstante(d.entrada_at)} ({ORIGEN_REGISTRO[d.entrada_origen ?? ""] ?? ""})
-                      {d.salida_at && ` · salió ${horaLocalDeInstante(d.salida_at)} (${ORIGEN_REGISTRO[d.salida_origen ?? ""] ?? ""})`}
+                      Entró {horaLocalDeInstante(d.entrada_at, zona)} ({ORIGEN_REGISTRO[d.entrada_origen ?? ""] ?? ""})
+                      {d.salida_at && ` · salió ${horaLocalDeInstante(d.salida_at, zona)} (${ORIGEN_REGISTRO[d.salida_origen ?? ""] ?? ""})`}
                     </span>
                   )}
                 </div>

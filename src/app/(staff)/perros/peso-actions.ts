@@ -19,8 +19,8 @@ export async function registrarPeso(
   }
 
   const supabase = await createSupabaseServerClient();
-  // fecha_negocio(), no new Date() — "hoy" es la fecha de San Luis
-  // Potosí, no la del servidor (barrido de zona horaria, Fase 4).
+  // fecha_negocio(), no new Date() — "hoy" es la fecha del negocio (su
+  // zona horaria), no la del servidor (barrido de zona horaria, Fase 4).
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
   const hoy = hoyData as string;
   const fecha = String(formData.get("fecha") ?? "") || hoy;

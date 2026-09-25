@@ -4,6 +4,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
 import { mesAnterior, periodoAnterior, rangoMes } from "@/lib/gastos/textos";
+import { zonaActual } from "@/lib/negocio/actual";
 
 function formatearMoneda(n: number): string {
   return n.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
@@ -14,8 +15,9 @@ export default async function ReportesPage({
 }: {
   searchParams: Promise<{ desde?: string; hasta?: string }>;
 }) {
+  const zona = await zonaActual();
   const params = await searchParams;
-  const hoy = hoyNegocio();
+  const hoy = hoyNegocio(zona);
   // Por omisión, el ÚLTIMO MES COMPLETO: a mitad de mes los gastos fijos
   // salen prorrateados a los días transcurridos y la utilidad se ve mejor
   // de lo que va a ser.

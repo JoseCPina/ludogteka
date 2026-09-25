@@ -31,16 +31,19 @@ async function cookieDe(profileId) {
   return trozos.length === 1 ? `${nombre}=${valor}` : trozos.map((t, i) => `${nombre}.${i}=${t}`).join("; ");
 }
 
-const { data: unCliente } = await A.from("clientes").select("id, nombre").eq("negocio_id", negocio.id).is("deleted_at", null).order("created_at").limit(1).single();
-const { data: unPerro } = await A.from("perros").select("id, nombre").eq("negocio_id", negocio.id).is("deleted_at", null).order("created_at").limit(1).single();
+// Un negocio recién dado de alta no tiene clientes ni perros: esas dos
+// pantallas se saltan (y se dice).
+const { data: unCliente } = await A.from("clientes").select("id, nombre").eq("negocio_id", negocio.id).is("deleted_at", null).order("created_at").limit(1).maybeSingle();
+const { data: unPerro } = await A.from("perros").select("id, nombre").eq("negocio_id", negocio.id).is("deleted_at", null).order("created_at").limit(1).maybeSingle();
+if (!unCliente || !unPerro) console.log("  · sin clientes o perros todavía: se saltan la ficha del cliente y la del perro");
 
 const RUTAS = {
   admin: ["/admin", "/reportes", "/servicios", "/empleados", "/gastos", "/admin/permisos", "/inventario"],
-  recepcion: ["/recepcion", "/clientes", `/clientes/${unCliente.id}`, `/perros/${unPerro.id}`, "/caja", "/caja/turno", "/guarderia", "/hotel", "/estetica", "/recepcion/contratos", "/vinculacion", "/clientes/invitaciones"],
+  recepcion: ["/recepcion", "/clientes", ...(unCliente ? [`/clientes/${unCliente.id}`] : []), ...(unPerro ? [`/perros/${unPerro.id}`] : []), "/caja", "/caja/turno", "/guarderia", "/hotel", "/estetica", "/recepcion/contratos", "/vinculacion", "/clientes/invitaciones"],
   estetica: ["/estetica"],
   cliente: ["/portal"],
 };
-const MARCADORES = { recepcion: { "/clientes": unCliente.nombre } };
+const MARCADORES = { recepcion: unCliente ? { "/clientes": unCliente.nombre } : {} };
 
 // Node no resuelve *.localhost y fetch no deja fijar Host: se va a
 // 127.0.0.1 con http.request y el Host del negocio.

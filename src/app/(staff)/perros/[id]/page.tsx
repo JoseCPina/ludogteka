@@ -5,7 +5,7 @@ import Link from "next/link";
 import { describirBono } from "@/lib/bonos/descripcion";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarRazas } from "@/lib/razas";
-import { negocioIdActual } from "@/lib/negocio/actual";
+import { negocioIdActual, zonaActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { PerroForm } from "../perro-form";
@@ -34,6 +34,7 @@ export default async function PerroPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ creado?: string }>;
 }) {
+  const zona = await zonaActual();
   const { id } = await params;
   const { creado } = await searchParams;
 
@@ -448,7 +449,7 @@ export default async function PerroPage({
         <RequisitosEstancia
           perroId={id}
           clienteId={perro.cliente_id ?? null}
-          hoy={hoyNegocio()}
+          hoy={hoyNegocio(zona)}
           aplica={aplicanRequisitos}
           datos={{
             sexo: perro.sexo,

@@ -16,6 +16,7 @@ import {
   crearRequisitoAplicado,
   guardarComprobanteRequisito,
 } from "./requisitos-actions";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 const BUCKET = "perros-archivos";
 const DOS_ANIOS_MS = 2 * 365 * 24 * 60 * 60 * 1000;
@@ -36,12 +37,13 @@ export function RequisitoForm({
   clienteId: string;
   tipos: TipoRequisitoOpcion[];
 }) {
+  const zona = useZonaNegocio();
   const router = useRouter();
   const inputArchivoRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   const [tipoId, setTipoId] = useState(tipos[0]?.id ?? "");
-  const [fecha, setFecha] = useState(hoyNegocio());
+  const [fecha, setFecha] = useState(hoyNegocio(zona));
   const [archivo, setArchivo] = useState<File | null>(null);
   // Puede llevar foto del carnet: tope más largo que el de un botón.
   const enviando = useEspera({ tope: 60_000 });
@@ -108,7 +110,7 @@ export function RequisitoForm({
 
     setExito(true);
     formRef.current?.reset();
-    setFecha(hoyNegocio());
+    setFecha(hoyNegocio(zona));
     setAvisoFechaAntigua(false);
     setArchivo(null);
     router.refresh();
@@ -145,7 +147,7 @@ export function RequisitoForm({
           type="date"
           required
           disabled={enviando.cargando}
-          max={hoyNegocio()}
+          max={hoyNegocio(zona)}
           value={fecha}
           onChange={(e) => manejarCambioFecha(e.target.value)}
         />

@@ -9,17 +9,19 @@ import { registrarEntrada, registrarSalida } from "../empleados/asistencia-actio
 import { ResumenAsistencia, TablaAsistencia } from "../empleados/tabla-asistencia";
 import { COLUMNAS_AUSENCIA, FormularioSolicitarAusencia, ListaAusencias, type Ausencia } from "../empleados/ausencias-lista";
 import { ListaPagos } from "../empleados/nomina-vistas";
+import { zonaActual } from "@/lib/negocio/actual";
 
 // Lo de cada quien: su entrada y salida, su asistencia, sus ausencias y
 // sus pagos. Nunca lo de otra persona (lo aplica la base: RLS y las
 // funciones solo devuelven lo suyo).
 export default async function MiTrabajoPage() {
+  const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
   const { data: miId } = await supabase.rpc("mi_empleado_id");
   const empleadoId = miId as string | null;
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
 
   if (!empleadoId) {
     return (
@@ -62,12 +64,12 @@ export default async function MiTrabajoPage() {
         </p>
         {deHoy?.entrada_at && (
           <p className="text-n-700">
-            Entraste a las <strong>{horaLocalDeInstante(deHoy.entrada_at)}</strong>
+            Entraste a las <strong>{horaLocalDeInstante(deHoy.entrada_at, zona)}</strong>
             {deHoy.estado === "retardo" && ` (${minutos(deHoy.minutos_retardo)} tarde)`}
             {deHoy.salida_at && (
               <>
                 {" "}
-                y saliste a las <strong>{horaLocalDeInstante(deHoy.salida_at)}</strong>
+                y saliste a las <strong>{horaLocalDeInstante(deHoy.salida_at, zona)}</strong>
               </>
             )}
           </p>
@@ -83,7 +85,7 @@ export default async function MiTrabajoPage() {
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-bold text-n-900">Últimos 30 días</h2>
         <ResumenAsistencia dias={diasAsistencia} />
-        <TablaAsistencia dias={diasAsistencia} empleadoId={empleadoId} puedeCorregir={false} correcciones={[]} />
+        <TablaAsistencia zona={zona} dias={diasAsistencia} empleadoId={empleadoId} puedeCorregir={false} correcciones={[]} />
         <p className="text-xs text-n-500">Si un registro está mal, pídele a un admin que lo corrija.</p>
       </section>
 
@@ -92,7 +94,7 @@ export default async function MiTrabajoPage() {
         <p className="text-n-800">
           Saldo de vacaciones: <strong>{Number(saldo ?? 0)} {Number(saldo ?? 0) === 1 ? "día" : "días"}</strong>
         </p>
-        <ListaAusencias ausencias={(ausencias ?? []) as unknown as Ausencia[]} esAdmin={false} puedeCancelarSolicitadas vacio="No has pedido ausencias." />
+        <ListaAusencias zona={zona} ausencias={(ausencias ?? []) as unknown as Ausencia[]} esAdmin={false} puedeCancelarSolicitadas vacio="No has pedido ausencias." />
         <div className="rounded-lg border border-n-200 bg-white p-4">
           <h3 className="mb-3 font-bold text-n-900">Pedir una ausencia</h3>
           <FormularioSolicitarAusencia empleadoId={null} hoy={hoy} />
@@ -101,7 +103,7 @@ export default async function MiTrabajoPage() {
 
       <section className="flex flex-col gap-3 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Mis pagos</h2>
-        <ListaPagos pagos={(pagos ?? []) as PagoNomina[]} puedeRevertir={false} />
+        <ListaPagos zona={zona} pagos={(pagos ?? []) as PagoNomina[]} puedeRevertir={false} />
         {(adelantos ?? []).length > 0 && (
           <>
             <h3 className="font-bold text-n-900">Mis adelantos</h3>

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { rutaPorRol } from "@/lib/auth/rutas";
+import { esPlataforma } from "@/lib/negocio/actual";
 
 export type EstadoNuevaPassword = { error: string | null };
 
@@ -33,6 +34,9 @@ export async function definirPassword(
   if (error) {
     return { error: "No pudimos guardar tu contraseña. Intenta de nuevo en un momento." };
   }
+
+  // En el dominio de la plataforma no hay negocio ni rol de negocio.
+  if (await esPlataforma()) redirect("/plataforma");
 
   const { data: rol } = await supabase.rpc("current_rol");
   redirect(rol && rol !== "anonimo" ? rutaPorRol(rol as string) : "/sin-acceso");

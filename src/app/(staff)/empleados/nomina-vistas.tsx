@@ -114,7 +114,7 @@ export function VistaDesglose({ d }: { d: Desglose }) {
 
 // Pagos registrados. Un pago nunca se borra: se revierte con un movimiento
 // inverso y el periodo se vuelve a pagar.
-export function ListaPagos({ pagos, puedeRevertir }: { pagos: PagoNomina[]; puedeRevertir: boolean }) {
+export function ListaPagos({ pagos, puedeRevertir, zona }: { pagos: PagoNomina[]; puedeRevertir: boolean; zona: string }) {
   if (pagos.length === 0) return <p className="text-sm text-n-600">Todavía no hay pagos registrados.</p>;
   const revertidos = new Set(pagos.filter((p) => p.reverso_de).map((p) => p.reverso_de));
   return (
@@ -143,7 +143,7 @@ export function ListaPagos({ pagos, puedeRevertir }: { pagos: PagoNomina[]; pued
                 <summary className="cursor-pointer font-semibold text-azul">Ver desglose</summary>
                 <div className="mt-2">
                   <VistaDesglose d={p.desglose} />
-                  <p className="mt-2 text-xs text-n-500">Capturado el {formatearFecha(p.created_at)}.</p>
+                  <p className="mt-2 text-xs text-n-500">Capturado el {formatearFecha(p.created_at, zona)}.</p>
                 </div>
               </details>
             )}

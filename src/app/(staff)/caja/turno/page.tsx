@@ -6,11 +6,13 @@ import { TurnoAbierto, type Retiro } from "./turno-abierto";
 import { AbrirTurnoForm } from "./abrir-turno-form";
 import { HistorialTurnos, type TurnoCerrado } from "./historial-turnos";
 import { MovimientosTurno, type MovimientoTurno, type ResumenMetodo } from "./movimientos-turno";
+import { zonaActual } from "@/lib/negocio/actual";
 
 // El turno de caja: apertura, movimientos en curso con el acumulado por
 // método (y por origen: por la app o a mano), retiros, arqueo ciego e
 // historial. El cobro en sí vive en /caja (mostrador).
 export default async function TurnoCajaPage() {
+  const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
 
@@ -137,7 +139,7 @@ export default async function TurnoCajaPage() {
           />
           <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
             <h2 className="text-lg font-bold text-n-900">Movimientos de este turno</h2>
-            <MovimientosTurno movimientos={movimientos} resumen={resumen} />
+            <MovimientosTurno zona={zona} movimientos={movimientos} resumen={resumen} />
           </div>
         </>
       )}
@@ -146,7 +148,7 @@ export default async function TurnoCajaPage() {
         <h2 className="mb-3 text-lg font-bold text-n-900">
           {sesion?.rol === "admin" ? "Turnos cerrados" : "Tus turnos cerrados"}
         </h2>
-        <HistorialTurnos turnos={turnosCerrados} />
+        <HistorialTurnos zona={zona} turnos={turnosCerrados} />
       </div>
     </div>
   );

@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { hoyNegocio, formatearFecha } from "@/lib/formato";
 import { cargarClientesBuscables } from "@/lib/clientes/buscables";
 import { MostradorCaja, type CuentaAbierta, type PagoMpPendiente } from "./mostrador-caja";
+import { zonaActual } from "@/lib/negocio/actual";
 
 // Caja es el mostrador de cobro: cuentas abiertas, buscador, pases,
 // cargos sueltos y el cobro mismo (que sigue siendo el de la reserva,
 // visto desde aquí). El turno, sus movimientos y el arqueo viven en
 // /caja/turno.
 export default async function CajaPage() {
+  const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
 
   const [{ data: turno, error: errorTurno }, { data: cuentasCrudo, error: errorCuentas }, { clientes }, { data: pendientesCrudo }] =
@@ -30,7 +32,7 @@ export default async function CajaPage() {
     ]);
 
   const error = errorTurno ?? errorCuentas;
-  const hoy = hoyNegocio();
+  const hoy = hoyNegocio(zona);
 
   const cuentas: CuentaAbierta[] = ((cuentasCrudo ?? []) as Record<string, unknown>[]).map((c) => ({
     reservaId: c.reserva_id as string,
@@ -76,7 +78,7 @@ export default async function CajaPage() {
       {turno ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-verde bg-verde-suave px-4 py-3 text-sm text-verde-oscuro">
           <span>
-            Turno abierto desde el {formatearFecha(turno.abierto_at as string)} · fondo ${Number(turno.fondo_inicial).toFixed(2)}
+            Turno abierto desde el {formatearFecha(turno.abierto_at as string, zona)} · fondo ${Number(turno.fondo_inicial).toFixed(2)}
           </span>
           <span>
             Pendiente de cobrar hoy: <strong>${totalHoy.toFixed(2)}</strong>

@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { ENCABEZADOS_NEGOCIO, type NegocioBasico } from "./resolver";
+import { ENCABEZADOS_NEGOCIO, ENCABEZADO_PLATAFORMA, type NegocioBasico } from "./resolver";
 
 /**
  * El negocio de esta petición, como lo resolvió el middleware por el
@@ -17,6 +17,7 @@ export async function negocioActual(): Promise<NegocioBasico> {
     nombre: decodeURIComponent(h.get(ENCABEZADOS_NEGOCIO.nombre) ?? ""),
     dominio: h.get(ENCABEZADOS_NEGOCIO.dominio) || null,
     url_publica: h.get(ENCABEZADOS_NEGOCIO.url) || null,
+    icono: h.get(ENCABEZADOS_NEGOCIO.icono) || null,
     zona_horaria: h.get(ENCABEZADOS_NEGOCIO.zona) ?? "America/Mexico_City",
   };
 }
@@ -44,4 +45,17 @@ export function urlDelNegocio(n: Pick<NegocioBasico, "slug" | "dominio" | "url_p
 
 export async function urlDelNegocioActual(): Promise<string> {
   return urlDelNegocio(await negocioActual());
+}
+
+/**
+ * La zona horaria del negocio de la petición, para todo lo que convierte un
+ * instante en fecha u hora del lado del servidor (src/lib/formato.ts).
+ */
+export async function zonaActual(): Promise<string> {
+  return (await negocioActual()).zona_horaria;
+}
+
+/** ¿La petición es del dominio de la plataforma (administración de PeluDesk)? */
+export async function esPlataforma(): Promise<boolean> {
+  return (await headers()).get(ENCABEZADO_PLATAFORMA) === "1";
 }

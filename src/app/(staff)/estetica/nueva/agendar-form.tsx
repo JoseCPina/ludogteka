@@ -11,8 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { BuscadorClientes } from "@/components/buscador-clientes";
 import type { ClienteBuscable } from "@/lib/clientes/buscables";
-import { hoyNegocio } from "@/lib/formato";
+import { hoyNegocio, instanteDeHoraLocal } from "@/lib/formato";
 import { crearCita } from "../agenda-actions";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 type Perro = { id: string; cliente_id: string; nombre: string };
 type Servicio = {
@@ -24,14 +25,6 @@ type Servicio = {
 };
 type Empleado = { id: string; nombre_completo: string | null };
 type EstanciaEnCurso = { id: string; perroId: string; servicioNombre: string };
-
-// datetime-local no trae huso horario — se ancla explícito a -06:00 (San
-// Luis Potosí, sin horario de verano) en vez de confiar en la del
-// navegador. Mismo cuidado del barrido de zona horaria, aplicado aquí
-// porque es el único punto de la app donde el staff teclea una hora.
-function localAUtc(valorDatetimeLocal: string): string {
-  return new Date(`${valorDatetimeLocal}:00-06:00`).toISOString();
-}
 
 export function AgendarForm({
   clientes,
@@ -55,12 +48,13 @@ export function AgendarForm({
   rolActual: string;
   userIdActual: string;
 }) {
+  const zona = useZonaNegocio();
   const router = useRouter();
   const [clienteId, setClienteId] = useState<string | null>(null);
   const [perroId, setPerroId] = useState("");
   const [servicioId, setServicioId] = useState(servicios[0]?.id ?? "");
   const [empleadoId, setEmpleadoId] = useState(rolActual === "estetica" ? userIdActual : empleados[0]?.id ?? "");
-  const [fechaHora, setFechaHora] = useState(`${hoyNegocio()}T10:00`);
+  const [fechaHora, setFechaHora] = useState(`${hoyNegocio(zona)}T10:00`);
   const [estanciaId, setEstanciaId] = useState("");
   const [peloMaltratado, setPeloMaltratado] = useState(false);
   const enviando = useEspera();
@@ -81,7 +75,9 @@ export function AgendarForm({
       servicioId,
       peloMaltratado,
       empleadoId,
-      inicio: localAUtc(fechaHora),
+      // datetime-local no trae huso horario: la hora tecleada es la del
+      // negocio (su zona), no la del navegador.
+      inicio: instanteDeHoraLocal(fechaHora, zona),
       estanciaId: estanciaId || null,
     }));
     if (res.error) {

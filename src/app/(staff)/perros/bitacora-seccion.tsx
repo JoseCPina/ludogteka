@@ -16,6 +16,7 @@ import {
   marcarBitacoraNotificada,
   construirEnlaceWhatsApp,
 } from "./bitacora-actions";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 const BUCKET = "perros-archivos";
 
@@ -29,6 +30,7 @@ export type EntradaBitacora = {
 };
 
 export function BitacoraSeccion({ perroId, entradas }: { perroId: string; entradas: EntradaBitacora[] }) {
+  const zona = useZonaNegocio();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [tipo, setTipo] = useState<"actualizacion" | "incidencia">("actualizacion");
@@ -147,7 +149,7 @@ export function BitacoraSeccion({ perroId, entradas }: { perroId: string; entrad
                 >
                   {e.tipo === "incidencia" ? "Incidencia" : "Actualización"}
                 </span>
-                <span className="text-sm text-n-500">{formatearFecha(e.created_at)}</span>
+                <span className="text-sm text-n-500">{formatearFecha(e.created_at, zona)}</span>
               </div>
               {e.nota && <p className="mt-2 text-n-800">{e.nota}</p>}
               {e.foto_url && (
@@ -164,7 +166,7 @@ export function BitacoraSeccion({ perroId, entradas }: { perroId: string; entrad
                   {notificandoId === e.id ? "Abriendo…" : "Notificar por WhatsApp"}
                 </Button>
                 {e.notificado_whatsapp_at && (
-                  <span className="text-xs text-n-500">Avisado el {formatearFecha(e.notificado_whatsapp_at)}</span>
+                  <span className="text-xs text-n-500">Avisado el {formatearFecha(e.notificado_whatsapp_at, zona)}</span>
                 )}
               </div>
             </li>

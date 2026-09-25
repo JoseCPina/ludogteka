@@ -8,8 +8,10 @@ import { AVISOS_EQUIPO, ESTADOS_EQUIPO, cargarAreas, puedeDarDeAlta } from "../.
 import { EquipoForm } from "../equipo-form";
 import { EventosEquipo } from "../eventos-equipo";
 import { actualizarEquipo, darDeBajaEquipo } from "../equipo-actions";
+import { zonaActual } from "@/lib/negocio/actual";
 
 export default async function EquipoPage({ params }: { params: Promise<{ id: string }> }) {
+  const zona = await zonaActual();
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
@@ -27,7 +29,7 @@ export default async function EquipoPage({ params }: { params: Promise<{ id: str
     supabase.rpc("fecha_negocio"),
   ]);
   if (!equipo) notFound();
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
 
   const estado = ESTADOS_EQUIPO[equipo.estado as string];
   const aviso = equipo.aviso ? AVISOS_EQUIPO[equipo.aviso as string] : null;
@@ -106,7 +108,7 @@ export default async function EquipoPage({ params }: { params: Promise<{ id: str
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-semibold text-n-900">{describir(e)}</span>
                   <span className="text-n-500">
-                    {formatearFechaCalendario(e.fecha as string)} · registrado {formatearFecha(e.created_at as string)}
+                    {formatearFechaCalendario(e.fecha as string)} · registrado {formatearFecha(e.created_at as string, zona)}
                   </span>
                 </div>
                 {e.nota && <p className="mt-1 text-n-600">{e.nota}</p>}

@@ -7,12 +7,14 @@ import { moduloDeCategoria } from "@/lib/modulos";
 import { CheckoutForm } from "./checkout-form";
 import { ConvertirHotel, type SugerenciaHotel } from "./convertir-hotel";
 import { CargosSeccion, type Cargo, type ServicioCargo } from "../../../cargos-seccion";
+import { zonaActual } from "@/lib/negocio/actual";
 
 export default async function CheckoutEstanciaPage({
   params,
 }: {
   params: Promise<{ estanciaId: string }>;
 }) {
+  const zona = await zonaActual();
   const { estanciaId } = await params;
   const supabase = await createSupabaseServerClient();
 
@@ -72,7 +74,7 @@ export default async function CheckoutEstanciaPage({
     supabase.rpc("fecha_negocio"),
   ]);
 
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
 
   const esHotel = servicio?.categoria === "hotel";
   const esGuarderia = servicio?.categoria === "guarderia";
@@ -172,7 +174,7 @@ export default async function CheckoutEstanciaPage({
             <>
               <p className="font-semibold text-n-900">
                 Este perro ya salió
-                {estancia.hora_salida_real ? ` el ${formatearFecha(estancia.hora_salida_real)}` : ""}.
+                {estancia.hora_salida_real ? ` el ${formatearFecha(estancia.hora_salida_real, zona)}` : ""}.
               </p>
               <p className="mt-1 text-sm text-n-600">
                 Recogió: {estancia.recogido_por_nombre ?? "—"}

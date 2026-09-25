@@ -18,6 +18,7 @@ import {
   crearLinkPago,
   type EstadoMpDisponible,
 } from "@/app/(staff)/caja/mercadopago-actions";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 export type OrdenMpFila = {
   id: string;
@@ -69,6 +70,7 @@ export function CobroMercadoPago({
   ordenes: OrdenMpFila[];
   clienteTelefono: string | null;
 }) {
+  const zona = useZonaNegocio();
   const router = useRouter();
   const [modo, setModo] = useState<"ninguno" | "terminal" | "link">("ninguno");
   const [monto, setMonto] = useState(saldo > 0 ? saldo.toFixed(2) : "");
@@ -311,7 +313,7 @@ export function CobroMercadoPago({
               <span className="text-n-700">
                 {o.tipo === "point" ? "Terminal" : "Link"} · {dinero(o.monto)}
                 {o.installments && o.installments > 1 ? ` · ${o.installments} meses` : ""}
-                {o.descripcion ? ` · ${o.descripcion}` : ""} · {formatearFecha(o.created_at)}
+                {o.descripcion ? ` · ${o.descripcion}` : ""} · {formatearFecha(o.created_at, zona)}
                 {o.simulado ? " · simulado" : ""}
                 {o.detalle_error && o.estado !== "pagada" ? ` · ${o.detalle_error}` : ""}
               </span>

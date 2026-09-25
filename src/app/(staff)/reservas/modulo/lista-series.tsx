@@ -5,16 +5,18 @@ import { Button } from "@/components/ui/button";
 import { formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
 import type { ModuloEstancia } from "@/lib/modulos";
 import { formatearDiasSemana } from "../series/dias-semana";
+import { zonaActual } from "@/lib/negocio/actual";
 
 // Las series se filtran por la categoría del servicio de la propia serie:
 // una serie de guardería (el perro que viene todos los martes) no tiene
 // nada que hacer en la lista de hotel, aunque las dos vivan en la misma
 // tabla.
 export async function ListaSeries({ modulo }: { modulo: ModuloEstancia }) {
+  const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
 
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
 
   const { data: series, error } = await supabase
     .from("series_recurrentes")

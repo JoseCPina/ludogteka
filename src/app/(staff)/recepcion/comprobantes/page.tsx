@@ -4,6 +4,7 @@ import { Alert } from "@/components/ui/alert";
 import { formatearFecha, formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
 import { diasDesde } from "@/lib/antiguedad";
 import { BandejaComprobantes, type ComprobantePendiente } from "./bandeja-comprobantes";
+import { zonaActual } from "@/lib/negocio/actual";
 
 const BUCKET = "perros-archivos";
 
@@ -12,6 +13,7 @@ const BUCKET = "perros-archivos";
 // contra el documento (y entonces se registra la aplicación real con la
 // vigencia del catálogo) o lo rechaza con un motivo que el dueño lee.
 export default async function ComprobantesPage() {
+  const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
 
   const [{ data: pendientesCrudo, error }, { data: revisadosCrudo }, { data: hoyData }] = await Promise.all([
@@ -32,7 +34,7 @@ export default async function ComprobantesPage() {
       .limit(20),
     supabase.rpc("fecha_negocio"),
   ]);
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
 
   const idsPerros = Array.from(new Set((pendientesCrudo ?? []).map((p) => p.perro_id as string)));
   const { data: estados } = idsPerros.length
@@ -68,7 +70,7 @@ export default async function ComprobantesPage() {
         fecha_aplicacion: p.fecha_aplicacion as string,
         detalle: (p.detalle as string | null) ?? null,
         created_at: p.created_at as string,
-        dias_esperando: diasDesde(p.created_at as string, hoy),
+        dias_esperando: diasDesde(p.created_at as string, hoy, zona),
         foto_url: firmada?.signedUrl ?? null,
         estado_actual: estadoActual?.estado ?? null,
       };
@@ -129,7 +131,7 @@ export default async function ComprobantesPage() {
                     r.estado === "confirmado" ? "bg-verde-suave text-verde-oscuro" : "bg-n-100 text-n-600"
                   }`}
                 >
-                  {r.estado === "confirmado" ? "Confirmado" : "Rechazado"} · {formatearFecha(r.revisado_at)}
+                  {r.estado === "confirmado" ? "Confirmado" : "Rechazado"} · {formatearFecha(r.revisado_at, zona)}
                 </span>
               </li>
             ))}

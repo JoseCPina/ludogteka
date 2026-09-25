@@ -9,6 +9,9 @@ export type NegocioBasico = {
   // cuando no es simplemente https://<dominio>.
   url_publica?: string | null;
   zona_horaria: string;
+  // El ícono de la pestaña: negocios.marca.favicon, o el que se arma con
+  // la inicial y el color del negocio (/icono-negocio).
+  icono?: string | null;
 };
 
 // Los encabezados con los que el middleware le pasa el negocio al resto de
@@ -21,7 +24,19 @@ export const ENCABEZADOS_NEGOCIO = {
   dominio: "x-negocio-dominio",
   url: "x-negocio-url",
   zona: "x-negocio-zona",
+  icono: "x-negocio-icono",
 } as const;
+
+// La petición es de la administración de PeluDesk (sin negocio).
+export const ENCABEZADO_PLATAFORMA = "x-plataforma";
+
+// Un ícono de la configuración del negocio: una ruta del propio sitio
+// (/iconos/…) o una dirección https. Cualquier otra cosa, el generado.
+function iconoValido(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  if (/^\/(?!\/)[\w\-./]+$/.test(v) || /^https:\/\/[^\s"'<>]+$/.test(v)) return v;
+  return null;
+}
 
 // Caché por instancia: el dominio de un negocio casi nunca cambia, y el
 // middleware corre en cada petición.
@@ -46,8 +61,19 @@ export async function resolverNegocio(host: string | null): Promise<NegocioBasic
     signal: AbortSignal.timeout(5_000),
   });
   if (!r.ok) throw new Error(`No se pudo resolver el negocio (${r.status})`);
-  const filas = (await r.json()) as NegocioBasico[];
-  const valor = filas[0] ?? null;
+  const filas = (await r.json()) as (NegocioBasico & { marca?: { favicon?: string } | null })[];
+  const fila = filas[0] ?? null;
+  const valor: NegocioBasico | null = fila
+    ? {
+        id: fila.id,
+        slug: fila.slug,
+        nombre: fila.nombre,
+        dominio: fila.dominio,
+        url_publica: fila.url_publica ?? null,
+        zona_horaria: fila.zona_horaria,
+        icono: iconoValido(fila.marca?.favicon),
+      }
+    : null;
   CACHE.set(llave, { valor, hasta: Date.now() + VIDA_MS });
   return valor;
 }

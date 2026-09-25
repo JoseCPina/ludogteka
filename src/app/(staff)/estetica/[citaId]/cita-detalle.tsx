@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
-import { fechaLocalDeInstante } from "@/lib/formato";
+import { horaLocalParaInput, instanteDeHoraLocal } from "@/lib/formato";
+import { useZonaNegocio } from "@/components/zona-negocio";
 import {
   reagendarCita,
   cancelarCita,
@@ -22,21 +23,6 @@ export type RecetaItem = {
   unidad_etiqueta: string;
   cantidad_sugerida: number;
 };
-
-function localAUtc(valorDatetimeLocal: string): string {
-  return new Date(`${valorDatetimeLocal}:00-06:00`).toISOString();
-}
-
-function aDatetimeLocal(iso: string): string {
-  // Solo para precargar el input — el propio input trabaja en hora del
-  // navegador, así que esto es una aproximación de despliegue inicial,
-  // no la fuente de verdad (esa es localAUtc al enviar).
-  const fecha = fechaLocalDeInstante(iso);
-  const horaUtc = new Date(iso);
-  const horas = String((horaUtc.getUTCHours() + 24 - 6) % 24).padStart(2, "0");
-  const minutos = String(horaUtc.getUTCMinutes()).padStart(2, "0");
-  return `${fecha}T${horas}:${minutos}`;
-}
 
 export function CitaDetalle({
   citaId,
@@ -61,13 +47,16 @@ export function CitaDetalle({
   recogidoPorEsDueno: boolean | null;
   recetaItems: RecetaItem[];
 }) {
+  const zona = useZonaNegocio();
   const router = useRouter();
   const [estado, setEstado] = useState(estadoInicial);
   const [error, setError] = useState<string | null>(null);
   const cargando = useEspera();
 
   const [reagendando, setReagendando] = useState(false);
-  const [nuevoInicio, setNuevoInicio] = useState(aDatetimeLocal(inicio));
+  // El datetime-local no trae huso horario: lo que se precarga y lo que se
+  // teclea es la hora EN EL NEGOCIO (su zona), no la del navegador.
+  const [nuevoInicio, setNuevoInicio] = useState(horaLocalParaInput(inicio, zona));
 
   const [confirmandoCancelar, setConfirmandoCancelar] = useState(false);
   const [confirmandoNoLlego, setConfirmandoNoLlego] = useState(false);
@@ -86,7 +75,7 @@ export function CitaDetalle({
 
   async function accionReagendar() {
     setError(null);
-    const res = await cargando.ejecutar(() => reagendarCita(citaId, localAUtc(nuevoInicio)));
+    const res = await cargando.ejecutar(() => reagendarCita(citaId, instanteDeHoraLocal(nuevoInicio, zona)));
     if (res.error) {
       setError(res.error);
       return;

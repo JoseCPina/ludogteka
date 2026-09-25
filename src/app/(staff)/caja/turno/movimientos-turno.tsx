@@ -40,7 +40,15 @@ function dinero(v: number): string {
  * de lo capturado a mano: al cortar, lo de la app se coteja contra
  * Mercado Pago y lo manual contra el reporte de la terminal.
  */
-export function MovimientosTurno({ movimientos, resumen }: { movimientos: MovimientoTurno[]; resumen: ResumenMetodo[] }) {
+export function MovimientosTurno({
+  movimientos,
+  resumen,
+  zona,
+}: {
+  movimientos: MovimientoTurno[];
+  resumen: ResumenMetodo[];
+  zona: string;
+}) {
   const porMetodo = ["efectivo", "terminal", "transferencia"].map((m) => {
     const filas = resumen.filter((r) => r.metodo === m);
     const manual = filas.find((r) => r.origen === "manual");
@@ -89,7 +97,7 @@ export function MovimientosTurno({ movimientos, resumen }: { movimientos: Movimi
             <tbody>
               {movimientos.map((m) => (
                 <tr key={`${m.tipo}-${m.id}`}>
-                  <td className="border-b border-n-200 px-3 py-2 tabular-nums text-n-600">{formatearFecha(m.fecha)}</td>
+                  <td className="border-b border-n-200 px-3 py-2 tabular-nums text-n-600">{formatearFecha(m.fecha, zona)}</td>
                   <td className="border-b border-n-200 px-3 py-2 text-n-900">
                     {ETIQUETA_TIPO[m.tipo] ?? m.tipo}
                     {m.origen !== "manual" && <span className="ml-2 rounded-full bg-azul-suave px-2 py-0.5 text-xs font-semibold text-azul">{ETIQUETA_ORIGEN[m.origen]}</span>}

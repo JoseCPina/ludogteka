@@ -18,6 +18,7 @@ import {
   cancelarInvitacion,
   type EstadoInvitacion,
 } from "./invitacion-actions";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 export type InvitacionFila = {
   id: string;
@@ -55,12 +56,13 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 };
 
 function EnlaceGenerado({ resultado }: { resultado: EstadoInvitacion }) {
+  const zona = useZonaNegocio();
   return (
     <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-verde bg-verde-suave p-4">
       <p className="font-bold text-verde-oscuro">Link listo para mandar</p>
       <CampoCopiable valor={resultado.url ?? ""} textoBoton="Copiar link" />
       <p className="text-sm text-verde-oscuro">
-        Vence el {resultado.expiraAt ? formatearFecha(resultado.expiraAt) : "—"}. Le sirve al
+        Vence el {resultado.expiraAt ? formatearFecha(resultado.expiraAt, zona) : "—"}. Le sirve al
         cliente hasta que termine todo (datos y firma): si lo deja a medias, lo vuelve a abrir y
         continúa. En cuanto no le falte nada, deja de servir.
       </p>
@@ -74,6 +76,7 @@ function EnlaceGenerado({ resultado }: { resultado: EstadoInvitacion }) {
 }
 
 function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
+  const zona = useZonaNegocio();
   const router = useRouter();
   const ocupado = useEspera();
   const [error, setError] = useState<string | null>(null);
@@ -129,25 +132,25 @@ function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
             {invitacion.estado === "usada" && invitacion.cliente_id ? (
               <>
                 {invitacion.es_complemento ? "Completó su expediente el " : "Se dio de alta el "}
-                {formatearFecha(invitacion.usada_at as string)} ·{" "}
+                {formatearFecha(invitacion.usada_at as string, zona)} ·{" "}
                 <Link href={`/clientes/${invitacion.cliente_id}`} className="font-semibold text-azul hover:underline">
                   Ver expediente de {invitacion.cliente_nombre ?? "el cliente"} →
                 </Link>
               </>
             ) : invitacion.estado === "en_curso" && invitacion.cliente_id ? (
               <>
-                Guardó sus datos el {formatearFecha(invitacion.alta_completada_at as string)}; le
+                Guardó sus datos el {formatearFecha(invitacion.alta_completada_at as string, zona)}; le
                 falta firmar el contrato. El mismo link le sirve para volver ·{" "}
                 <Link href={`/clientes/${invitacion.cliente_id}`} className="font-semibold text-azul hover:underline">
                   Ver expediente de {invitacion.cliente_nombre ?? "el cliente"} →
                 </Link>
               </>
             ) : invitacion.estado === "pendiente" ? (
-              `Vence el ${formatearFecha(invitacion.expira_at)}`
+              `Vence el ${formatearFecha(invitacion.expira_at, zona)}`
             ) : invitacion.estado === "vencida" ? (
-              `Venció el ${formatearFecha(invitacion.expira_at)} sin usarse`
+              `Venció el ${formatearFecha(invitacion.expira_at, zona)} sin usarse`
             ) : (
-              `Cancelada el ${formatearFecha(invitacion.cancelada_at as string)}`
+              `Cancelada el ${formatearFecha(invitacion.cancelada_at as string, zona)}`
             )}
           </p>
         </div>

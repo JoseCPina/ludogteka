@@ -16,8 +16,6 @@ export type Correccion = {
   created_at: string;
 };
 
-const h = (i: string | null) => (i ? horaLocalDeInstante(i) : "—");
-
 export function ResumenAsistencia({ dias }: { dias: DiaAsistencia[] }) {
   const cuenta = (e: string) => dias.filter((d) => d.estado === e).length;
   const tarde = dias.reduce((s, d) => s + (d.estado === "retardo" ? d.minutos_retardo ?? 0 : 0), 0);
@@ -47,12 +45,15 @@ export function TablaAsistencia({
   empleadoId,
   puedeCorregir,
   correcciones,
+  zona,
 }: {
   dias: DiaAsistencia[];
   empleadoId: string;
   puedeCorregir: boolean;
   correcciones: Correccion[];
+  zona: string;
 }) {
+  const h = (i: string | null) => (i ? horaLocalDeInstante(i, zona) : "—");
   const visibles = [...dias].reverse().filter((d) => d.estado !== "descanso" || d.asistencia_id);
   if (visibles.length === 0) return <p className="text-sm text-n-600">No hay días que le tocara trabajar en este periodo.</p>;
   return (
@@ -88,7 +89,7 @@ export function TablaAsistencia({
               <ul className="rounded-md bg-n-50 px-3 py-2 text-xs text-n-600">
                 {suyas.map((c) => (
                   <li key={c.created_at}>
-                    {formatearFecha(c.created_at)}: {c.entrada_anterior || c.salida_anterior ? `antes ${h(c.entrada_anterior)}–${h(c.salida_anterior)}` : "no había registro"}
+                    {formatearFecha(c.created_at, zona)}: {c.entrada_anterior || c.salida_anterior ? `antes ${h(c.entrada_anterior)}–${h(c.salida_anterior)}` : "no había registro"}
                     {" → "}
                     {c.entrada_nueva ? `${h(c.entrada_nueva)}–${h(c.salida_nueva)}` : "anulado"} · «{c.motivo}»
                   </li>

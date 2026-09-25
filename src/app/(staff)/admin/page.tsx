@@ -15,13 +15,14 @@ import Link from "next/link";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { ListaPersonal, type PersonaStaff } from "./lista-personal";
-import { negocioActual } from "@/lib/negocio/actual";
+import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { usaIntegracionesDelEntorno } from "@/lib/negocio/integraciones";
 
 // Admin ve todo. Una persona de recepción con permisos extra llega aquí
 // solo con las secciones que le tocan (el middleware la deja entrar con
 // personal, configuración o tarifas); lo demás es de admin y ni se consulta.
 export default async function AdminPage() {
+  const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
   const esAdmin = sesion?.rol === "admin";
@@ -151,7 +152,7 @@ export default async function AdminPage() {
       {!esAdmin && puedePersonal && (
         <section className="rounded-lg border border-n-200 bg-white p-5">
           <h2 className="mb-4 text-lg font-bold text-n-900">Personal</h2>
-          <ListaPersonal personas={(personal as PersonaStaff[] | null) ?? []} />
+          <ListaPersonal zona={zona} personas={(personal as PersonaStaff[] | null) ?? []} />
         </section>
       )}
 

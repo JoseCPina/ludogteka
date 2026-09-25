@@ -21,7 +21,7 @@ function dinero(v: number): string {
   return `$${v.toFixed(2)}`;
 }
 
-export function HistorialTurnos({ turnos }: { turnos: TurnoCerrado[] }) {
+export function HistorialTurnos({ turnos, zona }: { turnos: TurnoCerrado[]; zona: string }) {
   if (turnos.length === 0) {
     return <p className="text-n-600">Todavía no hay turnos cerrados.</p>;
   }
@@ -34,7 +34,7 @@ export function HistorialTurnos({ turnos }: { turnos: TurnoCerrado[] }) {
           <li key={t.id} className="rounded-lg border border-n-200 bg-white p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="font-semibold text-n-900">
-                {formatearFecha(t.abiertoEn)} – {formatearFecha(t.cerradoEn)}
+                {formatearFecha(t.abiertoEn, zona)} – {formatearFecha(t.cerradoEn, zona)}
               </p>
               {hayDiferencia ? (
                 <span className="rounded-full bg-naranja-suave px-2 py-0.5 text-xs font-semibold text-naranja-oscuro">

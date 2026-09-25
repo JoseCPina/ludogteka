@@ -13,7 +13,7 @@ export type MedicamentoFilaCliente = {
   dosisRegistradas: DosisFilaCliente[];
 };
 
-export function MedicamentosCliente({ medicamentos }: { medicamentos: MedicamentoFilaCliente[] }) {
+export function MedicamentosCliente({ medicamentos, zona }: { medicamentos: MedicamentoFilaCliente[]; zona: string }) {
   if (medicamentos.length === 0) {
     return <p className="text-n-600">Tu perro no tiene medicamentos registrados.</p>;
   }
@@ -49,7 +49,7 @@ export function MedicamentosCliente({ medicamentos }: { medicamentos: Medicament
             <ul className="mt-3 flex flex-col gap-1 border-t border-n-200 pt-2">
               {m.dosisRegistradas.map((d) => (
                 <li key={d.id} className="flex flex-wrap items-center gap-2 text-sm">
-                  <span className="text-n-600">{formatearFecha(d.administrado_at)}</span>
+                  <span className="text-n-600">{formatearFecha(d.administrado_at, zona)}</span>
                   {d.omitida && (
                     <span className="rounded-full bg-naranja-suave px-2 py-0.5 text-xs font-semibold text-naranja-oscuro">
                       Omitida

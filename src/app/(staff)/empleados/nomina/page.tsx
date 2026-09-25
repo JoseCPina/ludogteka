@@ -9,16 +9,18 @@ import { formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
 import { moneda, quincenaDe } from "@/lib/empleados/textos";
 import type { Desglose } from "@/lib/empleados/tipos";
 import { SubnavEmpleados } from "../subnav";
+import { zonaActual } from "@/lib/negocio/actual";
 
 // La nómina del periodo: cuánto le toca a cada quien y si ya se le pagó.
 // El detalle y el "marcar pagado" están en la página de cada empleado.
 export default async function NominaPage({ searchParams }: { searchParams: Promise<{ desde?: string; hasta?: string }> }) {
+  const zona = await zonaActual();
   const sesion = await obtenerSesionConRol();
   if (!tienePermiso(sesion, "nomina")) redirect("/empleados");
   const supabase = await createSupabaseServerClient();
   const sp = await searchParams;
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
   const q = quincenaDe(hoy);
   const desde = sp.desde || q.desde;
   const hasta = sp.hasta || q.hasta;

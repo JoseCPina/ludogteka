@@ -1,8 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { rutaPorRol } from "@/lib/auth/rutas";
-import { ENCABEZADOS_NEGOCIO, resolverNegocio, type NegocioBasico } from "@/lib/negocio/resolver";
-import { ENCABEZADO_FIRMA, firmaValida, firmarNegocio } from "@/lib/negocio/firma";
+import { ENCABEZADOS_NEGOCIO, ENCABEZADO_PLATAFORMA, resolverNegocio, type NegocioBasico } from "@/lib/negocio/resolver";
+import { ENCABEZADO_FIRMA, firmaValida, firmarNegocio, firmarPlataforma, plataformaFirmada } from "@/lib/negocio/firma";
+import { esHostPlataforma } from "@/lib/negocio/host";
 
 // Los encabezados de negocio que puso este mismo middleware (firmados).
 // Solo los trae la petición interna con la que Next pinta el destino de
@@ -17,6 +18,7 @@ async function negocioFirmado(h: Headers): Promise<NegocioBasico | null> {
     dominio: h.get(ENCABEZADOS_NEGOCIO.dominio) || null,
     url_publica: h.get(ENCABEZADOS_NEGOCIO.url) || null,
     zona_horaria: h.get(ENCABEZADOS_NEGOCIO.zona) ?? "",
+    icono: h.get(ENCABEZADOS_NEGOCIO.icono) || null,
   };
   return (await firmaValida(n, h.get(ENCABEZADO_FIRMA))) ? n : null;
 }
@@ -97,11 +99,25 @@ export async function middleware(request: NextRequest) {
   // x-negocio-* que vengan de afuera se tiran antes de poner los nuestros.
   // (Salvo los que firmó este middleware: ver negocioFirmado.)
   const firmado = await negocioFirmado(request.headers);
+  const plataformaInterna =
+    request.headers.get(ENCABEZADO_PLATAFORMA) === "1" && (await plataformaFirmada(request.headers.get(ENCABEZADO_FIRMA)));
   const cabeceras = new Headers(request.headers);
   for (const nombre of Object.values(ENCABEZADOS_NEGOCIO)) cabeceras.delete(nombre);
   cabeceras.delete(ENCABEZADO_FIRMA);
+  cabeceras.delete(ENCABEZADO_PLATAFORMA);
 
   if (pathname === "/negocio-no-encontrado") return NextResponse.next({ request: { headers: cabeceras } });
+
+  // ── El dominio de la plataforma: la administración de PeluDesk ──
+  // Sin negocio. Solo /plataforma y lo de Auth; quién entra lo decide la
+  // base (es_admin_plataforma), en cada página y en cada función.
+  if (!firmado && (plataformaInterna || esHostPlataforma(request.headers.get("host")))) {
+    return plataforma(request, cabeceras);
+  }
+  // Y en el dominio de un negocio, /plataforma no existe.
+  if (pathname === "/plataforma" || pathname.startsWith("/plataforma/")) {
+    return NextResponse.rewrite(new URL("/negocio-no-encontrado", request.url), { request: { headers: cabeceras }, status: 404 });
+  }
 
   let negocio: NegocioBasico | null = firmado;
   try {
@@ -121,6 +137,7 @@ export async function middleware(request: NextRequest) {
   cabeceras.set(ENCABEZADOS_NEGOCIO.dominio, negocio.dominio ?? "");
   cabeceras.set(ENCABEZADOS_NEGOCIO.url, negocio.url_publica ?? "");
   cabeceras.set(ENCABEZADOS_NEGOCIO.zona, negocio.zona_horaria);
+  cabeceras.set(ENCABEZADOS_NEGOCIO.icono, negocio.icono ?? "");
   cabeceras.set(ENCABEZADO_FIRMA, await firmarNegocio(negocio));
   const siguiente = () => NextResponse.next({ request: { headers: cabeceras } });
 
@@ -203,6 +220,39 @@ export async function middleware(request: NextRequest) {
     return conCookiesDe(response, NextResponse.redirect(new URL(rutaPorRol(rol), request.url)));
   }
 
+  return response;
+}
+
+// Rutas de la plataforma: la administración y lo que Auth necesita para
+// entrar (link de invitación y escoger contraseña).
+const RUTAS_PLATAFORMA = ["/plataforma", "/auth/callback", "/auth/nueva-password", "/robots.txt", "/icono-negocio"];
+
+async function plataforma(request: NextRequest, cabeceras: Headers) {
+  const { pathname } = request.nextUrl;
+  if (pathname === "/") return NextResponse.redirect(new URL("/plataforma", request.url));
+  const permitida = RUTAS_PLATAFORMA.some((r) => pathname === r || pathname.startsWith(`${r}/`));
+  if (!permitida) return NextResponse.redirect(new URL("/plataforma", request.url));
+
+  cabeceras.set(ENCABEZADO_PLATAFORMA, "1");
+  cabeceras.set(ENCABEZADO_FIRMA, await firmarPlataforma());
+  const siguiente = () => NextResponse.next({ request: { headers: cabeceras } });
+  let response = siguiente();
+  // Solo para refrescar la sesión (cookies). Sin negocio: nada de un
+  // negocio se ve desde aquí.
+  const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        cabeceras.set("cookie", request.headers.get("cookie") ?? "");
+        response = siguiente();
+        cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+      },
+    },
+  });
+  await supabase.auth.getUser();
   return response;
 }
 

@@ -15,6 +15,7 @@ import {
   sumarDiasFecha,
   inicioSemana,
 } from "@/lib/formato";
+import { zonaActual } from "@/lib/negocio/actual";
 
 const ETIQUETA_ESTADO: Record<string, string> = {
   reservada: "Reservada",
@@ -50,12 +51,13 @@ export default async function AgendaPage({
 }: {
   searchParams: Promise<{ vista?: string; fecha?: string }>;
 }) {
+  const zona = await zonaActual();
   const { vista: vistaParam, fecha: fechaParam } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
 
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
   const vista = vistaParam === "semana" ? "semana" : "dia";
   const fechaAncla = fechaParam && /^\d{4}-\d{2}-\d{2}$/.test(fechaParam) ? fechaParam : hoy;
 
@@ -104,7 +106,7 @@ export default async function AgendaPage({
         empleado_id: c.empleado_id as string,
         perro_nombre: perro?.nombre ?? "—",
         servicio_nombre: servicio?.nombre ?? "—",
-        fecha_local: fechaLocalDeInstante(c.inicio as string),
+        fecha_local: fechaLocalDeInstante(c.inicio as string, zona),
       };
     })
     .filter((c) => c.fecha_local >= desde && c.fecha_local <= hasta);
@@ -201,7 +203,7 @@ export default async function AgendaPage({
                               } ${puedeEditarTodos || esPropia ? "hover:opacity-80" : "cursor-default"}`}
                             >
                               <span className="font-semibold text-n-900">
-                                {horaLocalDeInstante(c.inicio)} · {c.perro_nombre}
+                                {horaLocalDeInstante(c.inicio, zona)} · {c.perro_nombre}
                               </span>
                               <span
                                 className={`rounded-full px-2 py-0.5 text-xs font-semibold ${ESTILO_ESTADO[c.estado] ?? "bg-n-100"}`}

@@ -9,10 +9,10 @@ import { fechaLocalDeInstante } from "@/lib/formato";
 export const DIAS_MUY_VIEJO = 7;
 
 // `desde` puede ser un instante (timestamptz) o una fecha de calendario
-// ("2026-09-20"); el instante se pasa a la fecha local de San Luis Potosí
+// ("2026-09-20"); el instante se pasa a la fecha local del negocio (`zona`)
 // antes de contar, para no correrse un día por el huso del servidor.
-export function diasDesde(desde: string, hoy: string): number {
-  const fecha = desde.length > 10 ? fechaLocalDeInstante(desde) : desde;
+export function diasDesde(desde: string, hoy: string, zona: string): number {
+  const fecha = desde.length > 10 ? fechaLocalDeInstante(desde, zona) : desde;
   const [a1, m1, d1] = fecha.split("-").map(Number);
   const [a2, m2, d2] = hoy.slice(0, 10).split("-").map(Number);
   return Math.max(0, Math.round((Date.UTC(a2, m2 - 1, d2) - Date.UTC(a1, m1 - 1, d1)) / 86_400_000));

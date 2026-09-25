@@ -14,8 +14,28 @@ export type Busqueda = { slug: string | null; dominio: string | null };
 export const DOMINIO_PLATAFORMA = (process.env.PELUDESK_DOMINIO ?? "peludesk.com").toLowerCase();
 export const NEGOCIO_POR_OMISION = (process.env.NEGOCIO_POR_OMISION ?? "ludogteka").toLowerCase();
 
-// Subdominios de la plataforma que no son negocios.
-const RESERVADOS = new Set(["www", "app", "api", "admin", "mail", "static"]);
+// Subdominios de la plataforma que no son negocios (la base tampoco deja
+// usarlos de slug).
+export const SLUGS_RESERVADOS = new Set(["www", "app", "api", "admin", "mail", "static", "plataforma", "soporte"]);
+const RESERVADOS = SLUGS_RESERVADOS;
+
+/**
+ * ¿Es el dominio de la PLATAFORMA (la administración de PeluDesk)?
+ *   peludesk.com, www.peludesk.com, app.peludesk.com → sí
+ *   plataforma.localhost                             → sí (desarrollo)
+ * Más dominios: PELUDESK_HOSTS_PLATAFORMA (separados por coma).
+ */
+export function esHostPlataforma(hostCrudo: string | null | undefined): boolean {
+  const host = (hostCrudo ?? "").toLowerCase().split(":")[0].trim().replace(/\.$/, "");
+  const extra = (process.env.PELUDESK_HOSTS_PLATAFORMA ?? "").split(",").map((h) => h.trim().toLowerCase()).filter(Boolean);
+  return (
+    host === DOMINIO_PLATAFORMA ||
+    host === `www.${DOMINIO_PLATAFORMA}` ||
+    host === `app.${DOMINIO_PLATAFORMA}` ||
+    host === "plataforma.localhost" ||
+    extra.includes(host)
+  );
+}
 
 export function busquedaPorHost(hostCrudo: string | null | undefined): Busqueda | null {
   const host = (hostCrudo ?? "").toLowerCase().split(":")[0].trim().replace(/\.$/, "");

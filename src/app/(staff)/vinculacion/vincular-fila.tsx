@@ -12,6 +12,7 @@ import { Antiguedad } from "@/components/ui/antiguedad";
 import { vincularCuenta } from "./actions";
 import type { CuentaPendiente } from "./tipos";
 import type { ClienteBuscable } from "@/lib/clientes/buscables";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 export function VincularFila({
   cuenta,
@@ -22,6 +23,7 @@ export function VincularFila({
   clientes: ClienteBuscable[];
   diasEsperando: number;
 }) {
+  const zona = useZonaNegocio();
   const router = useRouter();
   const [buscando, setBuscando] = useState(false);
   const [seleccionado, setSeleccionado] = useState<ClienteBuscable | null>(null);
@@ -94,7 +96,7 @@ export function VincularFila({
     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-n-200 px-4 py-3 last:border-b-0">
       <div className="flex flex-col gap-1">
         <p className="font-semibold text-n-900">{cuenta.email}</p>
-        <p className="text-sm text-n-600">Registrada el {formatearFecha(cuenta.creado_en)}</p>
+        <p className="text-sm text-n-600">Registrada el {formatearFecha(cuenta.creado_en, zona)}</p>
         <Antiguedad dias={diasEsperando} prefijo="Esperando" />
       </div>
       <Button type="button" variante="secundario" onClick={() => setBuscando(true)}>

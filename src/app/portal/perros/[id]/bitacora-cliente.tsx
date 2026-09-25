@@ -8,7 +8,7 @@ export type EntradaBitacoraCliente = {
   created_at: string;
 };
 
-export function BitacoraCliente({ entradas }: { entradas: EntradaBitacoraCliente[] }) {
+export function BitacoraCliente({ entradas, zona }: { entradas: EntradaBitacoraCliente[]; zona: string }) {
   if (entradas.length === 0) {
     return <p className="text-n-600">Todavía no hay entradas en la bitácora de tu perro.</p>;
   }
@@ -30,7 +30,7 @@ export function BitacoraCliente({ entradas }: { entradas: EntradaBitacoraCliente
             >
               {e.tipo === "incidencia" ? "Incidencia" : "Actualización"}
             </span>
-            <span className="text-sm text-n-500">{formatearFecha(e.created_at)}</span>
+            <span className="text-sm text-n-500">{formatearFecha(e.created_at, zona)}</span>
           </div>
           {e.nota && <p className="mt-2 text-n-800">{e.nota}</p>}
           {e.foto_url && (

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha, formatearFechaCalendario } from "@/lib/formato";
 import { crearMedicamento, toggleActivoMedicamento, registrarDosis } from "./medicamento-actions";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 export type DosisFila = { id: string; administrado_at: string; omitida: boolean; notas: string | null };
 
@@ -34,6 +35,7 @@ export function MedicamentosSeccion({
   medicamentos: MedicamentoFila[];
   puedeEscribir: boolean;
 }) {
+  const zona = useZonaNegocio();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const enviando = useEspera();
@@ -176,7 +178,7 @@ export function MedicamentosSeccion({
                 <ul className="mt-3 flex flex-col gap-1 border-t border-n-200 pt-2">
                   {m.dosisRegistradas.map((d) => (
                     <li key={d.id} className="flex flex-wrap items-center gap-2 text-sm">
-                      <span className="text-n-600">{formatearFecha(d.administrado_at)}</span>
+                      <span className="text-n-600">{formatearFecha(d.administrado_at, zona)}</span>
                       {d.omitida && (
                         <span className="rounded-full bg-naranja-suave px-2 py-0.5 text-xs font-semibold text-naranja-oscuro">
                           Omitida

@@ -22,6 +22,7 @@ import {
 } from "@/lib/tarifas/matriz";
 import { CeldaTarifa, type ValorCelda } from "./celda-tarifa";
 import { guardarTarifas, type FilaTarifaGuardar } from "./tarifas-actions";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 type Tramo = { clientId: string; desde: number; hasta: number | null };
 
@@ -60,6 +61,7 @@ export function MatrizTarifas({
   pelajes: OpcionDimension[];
   vigentes: CeldaVigente[];
 }) {
+  const zona = useZonaNegocio();
   const router = useRouter();
   const dimensiones = {
     depende_grupo_raza: dependeGrupoRaza,
@@ -86,7 +88,7 @@ export function MatrizTarifas({
     }))
   );
   const [valores, setValores] = useState<Map<string, ValorCelda>>(new Map());
-  const [vigenciaDesde, setVigenciaDesde] = useState(hoyNegocio());
+  const [vigenciaDesde, setVigenciaDesde] = useState(hoyNegocio(zona));
   const [errorTramos, setErrorTramos] = useState<string | null>(null);
   const [rellenos, setRellenos] = useState<Map<string, string>>(new Map());
   const [incremento, setIncremento] = useState({ valor: "", unidad: "porcentaje" as "porcentaje" | "monto" });
@@ -325,7 +327,7 @@ export function MatrizTarifas({
     router.refresh();
   }
 
-  const vigenciaEsFutura = vigenciaDesde > hoyNegocio();
+  const vigenciaEsFutura = vigenciaDesde > hoyNegocio(zona);
 
   if (previsualizando) {
     return (

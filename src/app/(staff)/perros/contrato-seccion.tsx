@@ -16,6 +16,7 @@ import {
   cancelarContrato,
   obtenerUrlContratoStaff,
 } from "../contratos/contrato-actions";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 const BUCKET = "perros-archivos";
 
@@ -182,6 +183,7 @@ export function ContratoSeccion({
   tipos: TipoContratoFila[];
   contratos: ContratoFila[];
 }) {
+  const zona = useZonaNegocio();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -308,7 +310,7 @@ export function ContratoSeccion({
                   </span>
                   {pendiente ? (
                     <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${ESTILO_ESTADO.pendiente_firma}`}>
-                      Pendiente de firma · generado {formatearFecha(pendiente.createdAt)}
+                      Pendiente de firma · generado {formatearFecha(pendiente.createdAt, zona)}
                     </span>
                   ) : (
                     <Button
@@ -381,7 +383,7 @@ export function ContratoSeccion({
                   <span className="font-semibold text-n-900">{c.tipoNombre}</span>
                   <span className="text-n-600">
                     {c.version !== null ? ` · versión ${c.version}` : ""} ·{" "}
-                    {c.fechaFirma ? formatearFecha(c.fechaFirma) : formatearFecha(c.createdAt)}
+                    {c.fechaFirma ? formatearFecha(c.fechaFirma, zona) : formatearFecha(c.createdAt, zona)}
                   </span>
                   {c.paqueteNombre && <span className="text-n-600"> · {c.paqueteNombre}</span>}
                   {c.motivoCancelacion && <p className="mt-1 text-xs text-n-500">{c.motivoCancelacion}</p>}

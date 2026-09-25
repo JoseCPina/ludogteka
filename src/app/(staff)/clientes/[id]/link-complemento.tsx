@@ -10,6 +10,7 @@ import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
 import { TIPOS_LINK_ALTA, TIPOS_LINK_ALTA_LISTA, type TipoLinkAlta } from "@/lib/alta/tipos-link";
 import { crearInvitacion, type EstadoInvitacion } from "../invitaciones/invitacion-actions";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 export type LinkPendiente = { id: string; tipo: string; expira_at: string; estado: string };
 
@@ -36,6 +37,7 @@ export function LinkComplemento({
   clienteTelefono: string;
   pendientes: LinkPendiente[];
 }) {
+  const zona = useZonaNegocio();
   const router = useRouter();
   const [tipo, setTipo] = useState<TipoLinkAlta>("guarderia_hotel");
   const enviando = useEspera();
@@ -76,7 +78,7 @@ export function LinkComplemento({
               {TIPOS_LINK_ALTA[p.tipo as TipoLinkAlta]?.etiqueta ?? p.tipo}
               {p.estado === "en_curso"
                 ? " · ya guardó sus datos, le falta firmar: el mismo link le sirve para volver"
-                : ` · vence el ${formatearFecha(p.expira_at)}`}
+                : ` · vence el ${formatearFecha(p.expira_at, zona)}`}
               . Reenvíalo o cancélalo desde{" "}
               <Link href="/clientes/invitaciones" className="font-semibold text-azul hover:underline">
                 Altas por link
@@ -118,7 +120,7 @@ export function LinkComplemento({
           <p className="font-bold text-verde-oscuro">Link listo para mandar</p>
           <CampoCopiable valor={resultado.url} textoBoton="Copiar link" />
           <p className="text-sm text-verde-oscuro">
-            Vence el {resultado.expiraAt ? formatearFecha(resultado.expiraAt) : "—"}. Le va a pedir
+            Vence el {resultado.expiraAt ? formatearFecha(resultado.expiraAt, zona) : "—"}. Le va a pedir
             su contraseña para entrar: el link solo dice de qué expediente hablamos, no abre el de
             nadie por sí solo.
           </p>

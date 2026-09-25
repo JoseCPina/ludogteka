@@ -8,6 +8,7 @@ import { formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
 import { moneda } from "@/lib/empleados/textos";
 import { CADA_MESES, CUBRE } from "@/lib/gastos/textos";
 import { cambiarRecurrente, crearRecurrente } from "../gastos-actions";
+import { zonaActual } from "@/lib/negocio/actual";
 
 type Recurrente = {
   id: string;
@@ -26,9 +27,10 @@ type Recurrente = {
 // cada dos meses). Cada una genera el gasto esperado de su periodo 15 días
 // antes de que venza; se marca pagado con su monto real en Gastos.
 export default async function RecurrentesPage() {
+  const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
   const [{ data: recurrentes }, { data: categorias }, { data: proveedores }] = await Promise.all([
     supabase
       .from("gastos_recurrentes")

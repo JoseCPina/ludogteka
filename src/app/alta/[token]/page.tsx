@@ -1,6 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { negocioActual } from "@/lib/negocio/actual";
+import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
 import { cargarRazas } from "@/lib/razas";
@@ -49,6 +49,7 @@ function camposFaltantes(
 }
 
 export default async function AltaPage({ params }: { params: Promise<{ token: string }> }) {
+  const zona = await zonaActual();
   const { token } = await params;
   // PeluDesk: el link es del negocio del dominio. La secret key salta la
   // RLS, así que todo lo que es del negocio se filtra aquí a mano.
@@ -226,7 +227,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
           <p className="mt-2 text-sm text-n-500">
             {invitacion!.alta_completada_at
               ? "Este link es tuyo: puedes abrirlo las veces que necesites hasta terminar."
-              : `Este link es tuyo. Vence el ${formatearFecha(invitacion!.expira_at as string)}, y si lo dejas a medias puedes volver a abrirlo para terminar.`}
+              : `Este link es tuyo. Vence el ${formatearFecha(invitacion!.expira_at as string, zona)}, y si lo dejas a medias puedes volver a abrirlo para terminar.`}
           </p>
         </header>
 
@@ -257,7 +258,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
             : "Regístrate y cuéntanos de tu perro. Toma unos minutos y lo puedes hacer desde el celular."}
         </p>
         <p className="mt-2 text-sm text-n-500">
-          Este link es tuyo. Vence el {formatearFecha(invitacion!.expira_at as string)}, y si lo
+          Este link es tuyo. Vence el {formatearFecha(invitacion!.expira_at as string, zona)}, y si lo
           dejas a medias puedes volver a abrirlo para terminar.
         </p>
       </header>

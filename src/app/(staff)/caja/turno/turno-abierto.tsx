@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
 import { registrarRetiro, cerrarTurno } from "../caja-actions";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 export type Retiro = {
   id: string;
@@ -43,6 +44,7 @@ export function TurnoAbierto({
   notasApertura: string | null;
   retiros: Retiro[];
 }) {
+  const zona = useZonaNegocio();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
@@ -176,7 +178,7 @@ export function TurnoAbierto({
       <div className="rounded-lg border border-n-200 bg-white p-5">
         <p className="font-semibold text-n-900">Turno abierto</p>
         <p className="text-sm text-n-600">
-          Abrió {abiertoPorNombre} el {formatearFecha(abiertoEn)} · Fondo inicial {dinero(fondoInicial)}
+          Abrió {abiertoPorNombre} el {formatearFecha(abiertoEn, zona)} · Fondo inicial {dinero(fondoInicial)}
         </p>
         {notasApertura && <p className="mt-1 text-sm text-n-500">{notasApertura}</p>}
       </div>

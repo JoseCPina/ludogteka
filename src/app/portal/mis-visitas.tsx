@@ -6,6 +6,7 @@ import {
   horaLocalDeInstante,
 } from "@/lib/formato";
 import { whatsAppDelNegocio } from "@/lib/landing/negocio";
+import { zonaActual } from "@/lib/negocio/actual";
 
 // Las citas de estética y las estancias de guardería y hotel, tal como las
 // da mis_visitas() en la base: sin precios (el dueño nunca ve información
@@ -46,22 +47,22 @@ function dia(fechaISO: string) {
 }
 
 // La fecha con la que se ordena y se decide si ya pasó.
-function fechaDe(v: Visita): string {
-  return v.tipo === "estetica" ? fechaLocalDeInstante(v.inicio as string) : (v.fecha_entrada as string);
+function fechaDe(v: Visita, zona: string): string {
+  return v.tipo === "estetica" ? fechaLocalDeInstante(v.inicio as string, zona) : (v.fecha_entrada as string);
 }
 
 // Por fecha, también para "en_curso": una estancia que quedó abierta
 // porque nadie le hizo check-out no puede seguir diciendo "Está con
 // nosotros" semanas después.
-function esProxima(v: Visita, hoy: string): boolean {
+function esProxima(v: Visita, hoy: string, zona: string): boolean {
   if (!ACTIVAS.has(v.estado)) return false;
-  if (v.tipo === "estetica") return fechaDe(v) >= hoy;
+  if (v.tipo === "estetica") return fechaDe(v, zona) >= hoy;
   // El hotel sigue "próximo" hasta el día que sale; guardería es de un día.
   return v.unidad === "noche" ? (v.fecha_salida as string) >= hoy : (v.fecha_entrada as string) >= hoy;
 }
 
-function cuando(v: Visita): string {
-  if (v.tipo === "estetica") return `${dia(fechaDe(v))} · ${horaLocalDeInstante(v.inicio as string)}`;
+function cuando(v: Visita, zona: string): string {
+  if (v.tipo === "estetica") return `${dia(fechaDe(v, zona))} · ${horaLocalDeInstante(v.inicio as string, zona)}`;
   if (v.unidad === "noche") {
     const noches = Math.round(
       (Date.parse(v.fecha_salida as string) - Date.parse(v.fecha_entrada as string)) / 86_400_000
@@ -72,7 +73,7 @@ function cuando(v: Visita): string {
   return dia(v.fecha_entrada as string);
 }
 
-function Fila({ v, enHistorial = false }: { v: Visita; enHistorial?: boolean }) {
+function Fila({ v, zona, enHistorial = false }: { v: Visita; zona: string; enHistorial?: boolean }) {
   const apagada = v.estado === "cancelada" || v.estado === "no_llego";
   // Ya pasó pero nadie la cerró en el mostrador: no se le dice al dueño
   // "Agendada" ni "Está con nosotros" de algo de hace semanas.
@@ -81,7 +82,7 @@ function Fila({ v, enHistorial = false }: { v: Visita; enHistorial?: boolean }) 
   return (
     <li className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 px-4 py-3">
       <span className="flex min-w-0 flex-col">
-        <span className={`font-semibold ${apagada ? "text-n-500 line-through" : "text-n-900"}`}>{cuando(v)}</span>
+        <span className={`font-semibold ${apagada ? "text-n-500 line-through" : "text-n-900"}`}>{cuando(v, zona)}</span>
         <span className="text-sm text-n-600">
           {v.servicio_nombre} · {v.perro_nombre}
         </span>
@@ -106,14 +107,15 @@ function Fila({ v, enHistorial = false }: { v: Visita; enHistorial?: boolean }) 
 }
 
 export async function MisVisitas({ supabase, hoy }: { supabase: SupabaseClient; hoy: string }) {
+  const zona = await zonaActual();
   const { data, error } = await supabase.rpc("mis_visitas");
   const whatsapp = await whatsAppDelNegocio("portal_citas", (n) => `Hola, ${n}. Quiero agendar o cambiar una cita de mi perro.`);
   const visitas = (data ?? []) as Visita[];
 
-  const proximas = visitas.filter((v) => esProxima(v, hoy)).sort((a, b) => fechaDe(a).localeCompare(fechaDe(b)) || (a.inicio ?? "").localeCompare(b.inicio ?? ""));
+  const proximas = visitas.filter((v) => esProxima(v, hoy, zona)).sort((a, b) => fechaDe(a, zona).localeCompare(fechaDe(b, zona)) || (a.inicio ?? "").localeCompare(b.inicio ?? ""));
   const historial = visitas
-    .filter((v) => !esProxima(v, hoy))
-    .sort((a, b) => fechaDe(b).localeCompare(fechaDe(a)) || (b.inicio ?? "").localeCompare(a.inicio ?? ""));
+    .filter((v) => !esProxima(v, hoy, zona))
+    .sort((a, b) => fechaDe(b, zona).localeCompare(fechaDe(a, zona)) || (b.inicio ?? "").localeCompare(a.inicio ?? ""));
 
   return (
     <section className="flex flex-col gap-5">
@@ -147,7 +149,7 @@ export async function MisVisitas({ supabase, hoy }: { supabase: SupabaseClient; 
             ) : (
               <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
                 {proximas.slice(0, MAX_PROXIMAS).map((v) => (
-                  <Fila key={v.id} v={v} />
+                  <Fila key={v.id} v={v} zona={zona} />
                 ))}
               </ul>
             )}
@@ -163,7 +165,7 @@ export async function MisVisitas({ supabase, hoy }: { supabase: SupabaseClient; 
               <h3 className="mb-2 font-bold text-n-800">Historial</h3>
               <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
                 {historial.slice(0, MAX_HISTORIAL).map((v) => (
-                  <Fila key={v.id} v={v} enHistorial />
+                  <Fila key={v.id} v={v} zona={zona} enHistorial />
                 ))}
               </ul>
               {historial.length > MAX_HISTORIAL && (

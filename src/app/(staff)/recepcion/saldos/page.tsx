@@ -4,14 +4,16 @@ import { Antiguedad } from "@/components/ui/antiguedad";
 import { formatearFecha, hoyNegocio } from "@/lib/formato";
 import { haceCuanto } from "@/lib/antiguedad";
 import { cargarSaldosDeSalidas } from "@/lib/tablero/saldos-de-salidas";
+import { zonaActual } from "@/lib/negocio/actual";
 
 // Cuentas con saldo de perros que ya se fueron, de la más vieja a la más
 // nueva: la que lleva más tiempo sin cobrarse es la primera que se pierde.
 export default async function SaldosPendientesPage() {
+  const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
-  const saldos = await cargarSaldosDeSalidas(supabase, hoy);
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
+  const saldos = await cargarSaldosDeSalidas(supabase, hoy, zona);
   const total = saldos.reduce((s, c) => s + c.saldo, 0);
 
   return (
@@ -44,7 +46,7 @@ export default async function SaldosPendientesPage() {
                     {s.perros || "Cuenta"} · <span className="font-normal">{s.clienteNombre}</span>
                   </p>
                   <p className="text-sm text-n-600">
-                    {s.descripcion} · salió el {formatearFecha(s.salioEl)}
+                    {s.descripcion} · salió el {formatearFecha(s.salioEl, zona)}
                   </p>
                   <Antiguedad dias={s.dias} texto={`Sin cobrar desde que salió, ${haceCuanto(s.dias)}`} />
                 </div>

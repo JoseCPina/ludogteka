@@ -7,8 +7,10 @@ import { hoyNegocio } from "@/lib/formato";
 import { FormularioAccion } from "@/components/formulario-accion";
 import { CamposEmpleado, type CuentaLigable } from "../campos-empleado";
 import { crearEmpleado } from "../empleados-actions";
+import { zonaActual } from "@/lib/negocio/actual";
 
 export default async function NuevoEmpleadoPage() {
+  const zona = await zonaActual();
   const sesion = await obtenerSesionConRol();
   if (!tienePermiso(sesion, "nomina")) redirect("/empleados");
   const supabase = await createSupabaseServerClient();
@@ -26,7 +28,7 @@ export default async function NuevoEmpleadoPage() {
         </p>
       </div>
       <FormularioAccion accion={crearEmpleado} textoBoton="Dar de alta">
-        <CamposEmpleado cuentas={(cuentas ?? []) as CuentaLigable[]} valores={{ fecha_ingreso: hoyNegocio() }} />
+        <CamposEmpleado cuentas={(cuentas ?? []) as CuentaLigable[]} valores={{ fecha_ingreso: hoyNegocio(zona) }} />
       </FormularioAccion>
     </div>
   );

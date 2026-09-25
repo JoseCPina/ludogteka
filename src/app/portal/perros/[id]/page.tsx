@@ -16,6 +16,7 @@ import {
 import { FirmarContrato } from "@/components/firmar-contrato";
 import { BitacoraCliente, type EntradaBitacoraCliente } from "./bitacora-cliente";
 import { MedicamentosCliente, type MedicamentoFilaCliente } from "./medicamentos-cliente";
+import { zonaActual } from "@/lib/negocio/actual";
 
 const ESTILO_GRAVEDAD: Record<string, string> = {
   grave: "border-naranja bg-naranja-suave text-naranja-oscuro",
@@ -24,6 +25,7 @@ const ESTILO_GRAVEDAD: Record<string, string> = {
 };
 
 export default async function MiPerroPage({ params }: { params: Promise<{ id: string }> }) {
+  const zona = await zonaActual();
   const { id } = await params;
 
   const sesion = await obtenerSesionConRol();
@@ -280,13 +282,13 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
 
       <div className="flex flex-col gap-3">
         <h2 className="text-lg font-bold text-n-900">Bitácora</h2>
-        <BitacoraCliente entradas={entradasBitacora} />
+        <BitacoraCliente zona={zona} entradas={entradasBitacora} />
       </div>
 
       {medicamentos.length > 0 && (
         <div className="flex flex-col gap-3">
           <h2 className="text-lg font-bold text-n-900">Medicamentos</h2>
-          <MedicamentosCliente medicamentos={medicamentos} />
+          <MedicamentosCliente zona={zona} medicamentos={medicamentos} />
         </div>
       )}
 

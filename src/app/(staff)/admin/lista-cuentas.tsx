@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Field } from "@/components/ui/field";
 import { ChipRol } from "@/components/ui/chip-rol";
 import { formatearFecha } from "@/lib/formato";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 export type Cuenta = {
   id: string;
@@ -14,6 +15,7 @@ export type Cuenta = {
 };
 
 export function ListaCuentas({ cuentas }: { cuentas: Cuenta[] }) {
+  const zona = useZonaNegocio();
   const [busqueda, setBusqueda] = useState("");
 
   const filtradas = useMemo(() => {
@@ -82,7 +84,7 @@ export function ListaCuentas({ cuentas }: { cuentas: Cuenta[] }) {
                   )}
                 </td>
                 <td className="border-b border-n-200 px-4 py-3 tabular-nums text-n-600">
-                  {formatearFecha(cuenta.creado_en)}
+                  {formatearFecha(cuenta.creado_en, zona)}
                 </td>
               </tr>
             ))}

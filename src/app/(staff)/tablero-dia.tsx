@@ -65,8 +65,8 @@ type Cita = {
 type Atencion = { clave: string; texto: string; href: string; detalle?: string; dias?: number; antiguedad?: string };
 
 // "2 contratos esperan la firma del dueño · el más viejo desde hace 3 días".
-function masViejo(fechas: string[], hoy: string, genero: "o" | "a" = "o") {
-  const dias = Math.max(...fechas.map((f) => diasDesde(f, hoy)));
+function masViejo(fechas: string[], hoy: string, zona: string, genero: "o" | "a" = "o") {
+  const dias = Math.max(...fechas.map((f) => diasDesde(f, hoy, zona)));
   const antiguedad = fechas.length === 1 ? `Esperando ${desdeCuando(dias)}` : `${genero === "o" ? "El" : "La"} más viej${genero} ${desdeCuando(dias)}`;
   return { dias, antiguedad };
 }
@@ -130,10 +130,11 @@ function Cifra({ etiqueta, valor, sub }: { etiqueta: string; valor: string; sub?
 
 export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   const negocio = await negocioActual();
+  const zona = negocio.zona_horaria;
   const supabase = await createSupabaseServerClient();
 
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
   const columnas = "estancia_id, reserva_id, perro_id, perro_nombre, categoria, servicio_nombre";
 
   const [
@@ -214,11 +215,11 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       const servicio = Array.isArray(c.servicios) ? c.servicios[0] : c.servicios;
       return {
         id: c.id as string,
-        hora: horaLocalDeInstante(c.inicio as string),
+        hora: horaLocalDeInstante(c.inicio as string, zona),
         estado: c.estado as string,
         perro_nombre: perro?.nombre ?? "—",
         servicio_nombre: servicio?.nombre ?? "—",
-        fecha_local: fechaLocalDeInstante(c.inicio as string),
+        fecha_local: fechaLocalDeInstante(c.inicio as string, zona),
       };
     })
     .filter((c) => c.fecha_local === hoy && c.estado !== "cancelada");
@@ -272,12 +273,12 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       const nombre = perro?.nombre ?? "Perro";
       const cuando = formatearFechaCalendario(p.fecha_entrada as string);
       // Lo que falta para la estancia espera desde que se reservó.
-      const diasReservado = diasDesde(p.created_at as string, hoy);
+      const diasReservado = diasDesde(p.created_at as string, hoy, zona);
       const esperaReserva = { dias: diasReservado, antiguedad: `Pendiente desde que se reservó, ${haceCuanto(diasReservado)}` };
       const sanit = bloqueosSanitarios.get(perroId);
       if (sanit) {
         const venc = vencidaDesde.get(perroId);
-        const diasVencida = venc ? diasDesde(venc, hoy) : null;
+        const diasVencida = venc ? diasDesde(venc, hoy, zona) : null;
         atencion.push({
           clave: `san-${perroId}`,
           texto: `${nombre} llega el ${cuando} con requisito sanitario pendiente`,
@@ -329,7 +330,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // Cuentas con saldo de perros que ya se fueron (estancia o cita
   // terminada), sin tope de dos días: la que lleva semanas es la que más
   // importa que no se pierda.
-  const saldos = await cargarSaldosDeSalidas(supabase, hoy);
+  const saldos = await cargarSaldosDeSalidas(supabase, hoy, zona);
   if (saldos.length > 0) {
     const total = saldos.reduce((suma, c) => suma + c.saldo, 0);
     atencion.push({
@@ -340,7 +341,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
           : `${saldos.length} cuentas de perros que ya se fueron tienen saldo pendiente`,
       detalle: `$${total.toFixed(2)} por cobrar`,
       href: saldos.length === 1 ? `/caja/cobrar/${saldos[0].reservaId}` : "/recepcion/saldos",
-      ...masViejo(saldos.map((c) => c.salioEl), hoy, "a"),
+      ...masViejo(saldos.map((c) => c.salioEl), hoy, zona, "a"),
     });
   }
 
@@ -386,7 +387,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       texto: `${comprobantesPorRevisar} ${comprobantesPorRevisar === 1 ? "comprobante sanitario espera" : "comprobantes sanitarios esperan"} revisión`,
       detalle: "Lo mandó el dueño desde su portal; no cuenta hasta que lo confirmes contra el documento",
       href: "/recepcion/comprobantes",
-      ...masViejo(fechasComprobantes, hoy),
+      ...masViejo(fechasComprobantes, hoy, zona),
     });
   }
 
@@ -401,7 +402,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       texto: `${contratosRegenerar} ${contratosRegenerar === 1 ? "contrato firmado hay" : "contratos firmados hay"} que volver a generar`,
       detalle: "Se firmaron con campos sin llenar en el PDF; el firmado se conserva",
       href: "/recepcion/contratos",
-      ...masViejo(fechasRegenerar, hoy),
+      ...masViejo(fechasRegenerar, hoy, zona),
     });
   }
   if (contratosFirmar > 0) {
@@ -410,7 +411,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       texto: `${contratosFirmar} ${contratosFirmar === 1 ? "contrato espera" : "contratos esperan"} la firma del dueño`,
       detalle: "Se firman desde el portal; recuérdaselo por WhatsApp",
       href: "/recepcion/contratos",
-      ...masViejo(fechasFirmar, hoy),
+      ...masViejo(fechasFirmar, hoy, zona),
     });
   }
 
@@ -421,7 +422,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       clave: "vincular",
       texto: `${pendientesVincular} ${pendientesVincular === 1 ? "cuenta nueva espera" : "cuentas nuevas esperan"} vincularse a su expediente`,
       href: "/vinculacion",
-      ...masViejo(cuentasSinVincular.map((c) => c.creado_en), hoy, "a"),
+      ...masViejo(cuentasSinVincular.map((c) => c.creado_en), hoy, zona, "a"),
     });
   }
   if (!turnoAbierto || turnoAbierto.length === 0) {
@@ -431,7 +432,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       detalle: "Sin turno no se puede cobrar ni vender bonos",
       href: "/caja",
       ...(ultimoTurno?.[0]?.cerrado_at
-        ? { dias: diasDesde(ultimoTurno[0].cerrado_at as string, hoy), antiguedad: `El último se cerró ${haceCuanto(diasDesde(ultimoTurno[0].cerrado_at as string, hoy))}` }
+        ? { dias: diasDesde(ultimoTurno[0].cerrado_at as string, hoy, zona), antiguedad: `El último se cerró ${haceCuanto(diasDesde(ultimoTurno[0].cerrado_at as string, hoy, zona))}` }
         : {}),
     });
   }

@@ -9,8 +9,10 @@ import { formatearTelefono } from "@/lib/telefono";
 import { formatearFecha } from "@/lib/formato";
 import { desvincularCuenta } from "./actions";
 import type { CuentaVinculada } from "./tipos";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 export function DesvincularFila({ cuenta }: { cuenta: CuentaVinculada }) {
+  const zona = useZonaNegocio();
   const router = useRouter();
   const [confirmando, setConfirmando] = useState(false);
   const enviando = useEspera();
@@ -42,7 +44,7 @@ export function DesvincularFila({ cuenta }: { cuenta: CuentaVinculada }) {
           </p>
           <p className="text-sm text-n-600">
             {origen}
-            {cuenta.vinculado_en ? ` · ${formatearFecha(cuenta.vinculado_en)}` : ""}
+            {cuenta.vinculado_en ? ` · ${formatearFecha(cuenta.vinculado_en, zona)}` : ""}
           </p>
         </div>
         {!confirmando && (

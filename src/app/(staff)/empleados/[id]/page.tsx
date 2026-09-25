@@ -19,6 +19,7 @@ import { ListaPagos } from "../nomina-vistas";
 import { actualizarEmpleado, darDeBajaEmpleado, guardarHorario, reactivarEmpleado } from "../empleados-actions";
 import { ajustarVacaciones } from "../ausencias-actions";
 import { cancelarAdelanto, guardarEsquema, registrarAdelanto } from "../nomina-actions";
+import { zonaActual } from "@/lib/negocio/actual";
 
 type Esquema = {
   id: string;
@@ -53,6 +54,7 @@ export default async function EmpleadoPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ desde?: string; hasta?: string; creado?: string }>;
 }) {
+  const zona = await zonaActual();
   const { id } = await params;
   const sp = await searchParams;
   const supabase = await createSupabaseServerClient();
@@ -60,7 +62,7 @@ export default async function EmpleadoPage({
   const esAdmin = sesion?.rol === "admin";
   const puedeNomina = tienePermiso(sesion, "nomina");
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
   const hasta = sp.hasta || hoy;
   const desde = sp.desde || sumarDiasFecha(hasta, -13);
 
@@ -146,7 +148,7 @@ export default async function EmpleadoPage({
         ) : (
           <>
             <ResumenAsistencia dias={diasAsistencia} />
-            <TablaAsistencia dias={diasAsistencia} empleadoId={id} puedeCorregir={esAdmin} correcciones={(correcciones ?? []) as Correccion[]} />
+            <TablaAsistencia zona={zona} dias={diasAsistencia} empleadoId={id} puedeCorregir={esAdmin} correcciones={(correcciones ?? []) as Correccion[]} />
             {esAdmin && <p className="text-xs text-n-500">Solo admin corrige, y cada corrección guarda el registro original y el motivo.</p>}
           </>
         )}
@@ -205,14 +207,14 @@ export default async function EmpleadoPage({
             <ul className="mt-2 flex flex-col gap-1 text-n-700">
               {movimientosVacaciones.map((m) => (
                 <li key={m.created_at}>
-                  {formatearFecha(m.created_at)} · {Number(m.dias) > 0 ? "+" : ""}
+                  {formatearFecha(m.created_at, zona)} · {Number(m.dias) > 0 ? "+" : ""}
                   {Number(m.dias)} · {m.motivo}
                 </li>
               ))}
             </ul>
           </details>
         )}
-        <ListaAusencias ausencias={(ausencias ?? []) as unknown as Ausencia[]} esAdmin={esAdmin} puedeCancelarSolicitadas={Boolean(puedePedirPorEl)} vacio="Sin ausencias registradas." />
+        <ListaAusencias zona={zona} ausencias={(ausencias ?? []) as unknown as Ausencia[]} esAdmin={esAdmin} puedeCancelarSolicitadas={Boolean(puedePedirPorEl)} vacio="Sin ausencias registradas." />
         {puedePedirPorEl && !dadoDeBaja && (
           <Desplegable texto={esSuyo ? "Pedir una ausencia" : "Pedir una ausencia por esta persona"}>
             <FormularioSolicitarAusencia empleadoId={id} hoy={hoy} />
@@ -324,7 +326,7 @@ export default async function EmpleadoPage({
             <Link href={`/empleados/nomina/${id}`} className="w-fit">
               <Button type="button" variante="secundario">Calcular y pagar un periodo</Button>
             </Link>
-            <ListaPagos pagos={pagos} puedeRevertir={puedeNomina} />
+            <ListaPagos zona={zona} pagos={pagos} puedeRevertir={puedeNomina} />
           </Seccion>
 
           <Seccion titulo="Datos del empleado">

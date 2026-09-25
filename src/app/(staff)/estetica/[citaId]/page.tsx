@@ -7,12 +7,14 @@ import { ResumenSanitario, type EstadoRequisitoItem } from "@/app/(staff)/perros
 import { NotaSoloEstetica } from "@/app/(staff)/perros/nota-solo-estetica";
 import { formatearFechaCalendario, horaLocalDeInstante } from "@/lib/formato";
 import { CitaDetalle, type RecetaItem } from "./cita-detalle";
+import { zonaActual } from "@/lib/negocio/actual";
 
 export default async function CitaDetallePage({
   params,
 }: {
   params: Promise<{ citaId: string }>;
 }) {
+  const zona = await zonaActual();
   const { citaId } = await params;
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
@@ -98,8 +100,8 @@ export default async function CitaDetallePage({
           {servicio?.nombre} — {perro.nombre}
         </h1>
         <p className="mt-1 text-n-600">
-          {formatearFechaCalendario(cita.inicio)} · {horaLocalDeInstante(cita.inicio)}
-          {cita.fin ? ` – ${horaLocalDeInstante(cita.fin)}` : ""} · {empleado?.nombre_completo ?? "—"}
+          {formatearFechaCalendario(cita.inicio)} · {horaLocalDeInstante(cita.inicio, zona)}
+          {cita.fin ? ` – ${horaLocalDeInstante(cita.fin, zona)}` : ""} · {empleado?.nombre_completo ?? "—"}
         </p>
         {cita.fuera_de_horario && (
           <p className="mt-1 inline-block rounded-full bg-amarillo-suave px-2.5 py-1 text-xs font-bold text-amarillo-oscuro">

@@ -7,8 +7,9 @@ import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
-import { formatearFecha } from "@/lib/formato";
+import { formatearFecha, formatearFechaCalendario } from "@/lib/formato";
 import { registrarEntradaCompra, registrarSalida, registrarAjuste } from "./movimientos-actions";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 const ETIQUETA_TIPO: Record<string, string> = {
   entrada_compra: "Entrada (compra)",
@@ -57,6 +58,7 @@ export function MovimientosInsumo({
   proveedores: ProveedorOpcion[];
   movimientos: MovimientoFila[];
 }) {
+  const zona = useZonaNegocio();
   const router = useRouter();
   const [formularioAbierto, setFormularioAbierto] = useState<"entrada" | "salida" | "ajuste" | null>(null);
   const enviando = useEspera();
@@ -300,11 +302,11 @@ export function MovimientosInsumo({
                       {cantidadMostrada.toLocaleString("es-MX")} {unidadConsumoEtiqueta}
                     </span>
                   </div>
-                  <span className="text-n-500">{formatearFecha(m.created_at)}</span>
+                  <span className="text-n-500">{formatearFecha(m.created_at, zona)}</span>
                 </div>
                 {m.motivo && <p className="mt-1 text-n-600">{m.motivo}</p>}
                 {m.fecha_caducidad && (
-                  <p className="mt-1 text-n-600">Caduca: {new Date(m.fecha_caducidad).toLocaleDateString("es-MX")}</p>
+                  <p className="mt-1 text-n-600">Caduca: {formatearFechaCalendario(m.fecha_caducidad)}</p>
                 )}
                 {esAdmin && m.compra && (
                   <p className="mt-1 text-n-600">

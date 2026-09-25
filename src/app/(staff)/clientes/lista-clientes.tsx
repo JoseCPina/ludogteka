@@ -7,6 +7,7 @@ import { formatearFecha } from "@/lib/formato";
 import { formatearTelefono } from "@/lib/telefono";
 import { ETIQUETA_BUSCAR_CLIENTES } from "@/components/buscador-clientes";
 import { filtrarClientesBuscables, type ClienteBuscable } from "@/lib/clientes/buscables";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 export type ClienteFila = ClienteBuscable & {
   email: string | null;
@@ -16,6 +17,7 @@ export type ClienteFila = ClienteBuscable & {
 };
 
 export function ListaClientes({ clientes }: { clientes: ClienteFila[] }) {
+  const zona = useZonaNegocio();
   const [busqueda, setBusqueda] = useState("");
 
   // Mismo filtro que todos los buscadores: perro, dueño o teléfono.
@@ -106,7 +108,7 @@ export function ListaClientes({ clientes }: { clientes: ClienteFila[] }) {
                   {cliente.email ?? "—"}
                 </td>
                 <td className="border-b border-n-200 px-4 py-3 tabular-nums text-n-600">
-                  {formatearFecha(cliente.created_at)}
+                  {formatearFecha(cliente.created_at, zona)}
                 </td>
               </tr>
             ))}

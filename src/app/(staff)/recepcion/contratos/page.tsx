@@ -4,7 +4,7 @@ import { Alert } from "@/components/ui/alert";
 import { formatearFecha, hoyNegocio } from "@/lib/formato";
 import { diasDesde } from "@/lib/antiguedad";
 import { Antiguedad } from "@/components/ui/antiguedad";
-import { urlDelNegocioActual } from "@/lib/negocio/actual";
+import { urlDelNegocioActual, zonaActual } from "@/lib/negocio/actual";
 import { BotonRegenerar } from "./boton-regenerar";
 
 type Fila = {
@@ -39,6 +39,7 @@ function recordatorioWhatsApp(f: Fila, urlPublica: string): string | null {
 // firmados con defecto que hay que volver a generar. Del que lleva más
 // tiempo esperando al más reciente, con la antigüedad en cada fila.
 export default async function ContratosPorAtenderPage() {
+  const zona = await zonaActual();
   const urlPublica = await urlDelNegocioActual();
   const supabase = await createSupabaseServerClient();
   const [{ data, error }, { data: hoyData }] = await Promise.all([
@@ -50,7 +51,7 @@ export default async function ContratosPorAtenderPage() {
       .order("espera_desde"),
     supabase.rpc("fecha_negocio"),
   ]);
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
 
   const filas = (data ?? []) as Fila[];
   const porRegenerar = filas.filter((f) => f.situacion === "por_regenerar");
@@ -86,11 +87,11 @@ export default async function ContratosPorAtenderPage() {
                     </p>
                     <p className="text-sm text-n-600">
                       {f.cliente_nombre}
-                      {f.fecha_firma ? ` · firmado el ${formatearFecha(f.fecha_firma)}` : ""}
+                      {f.fecha_firma ? ` · firmado el ${formatearFecha(f.fecha_firma, zona)}` : ""}
                     </p>
                     <p className="mt-2 text-sm text-naranja-oscuro">{f.regenerar_motivo}</p>
                     <div className="mt-2">
-                      <Antiguedad dias={diasDesde(f.espera_desde, hoy)} prefijo="Por regenerar" />
+                      <Antiguedad dias={diasDesde(f.espera_desde, hoy, zona)} prefijo="Por regenerar" />
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-3">
                       <BotonRegenerar contratoId={f.contrato_id} />
@@ -123,9 +124,9 @@ export default async function ContratosPorAtenderPage() {
                         </p>
                         <p className="text-sm text-n-600">
                           {f.tipo_nombre}
-                          {f.paquete_nombre ? ` · ${f.paquete_nombre}` : ""} · generado el {formatearFecha(f.created_at)}
+                          {f.paquete_nombre ? ` · ${f.paquete_nombre}` : ""} · generado el {formatearFecha(f.created_at, zona)}
                         </p>
-                        <Antiguedad dias={diasDesde(f.espera_desde, hoy)} prefijo="Espera la firma" />
+                        <Antiguedad dias={diasDesde(f.espera_desde, hoy, zona)} prefijo="Espera la firma" />
                       </div>
                       <div className="flex flex-wrap items-center gap-3">
                         {wa && (

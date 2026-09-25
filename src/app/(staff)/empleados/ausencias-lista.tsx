@@ -33,12 +33,14 @@ export function ListaAusencias({
   puedeCancelarSolicitadas,
   mostrarNombre = false,
   vacio,
+  zona,
 }: {
   ausencias: Ausencia[];
   esAdmin: boolean;
   puedeCancelarSolicitadas: boolean;
   mostrarNombre?: boolean;
   vacio: string;
+  zona: string;
 }) {
   if (ausencias.length === 0) return <p className="text-sm text-n-600">{vacio}</p>;
   return (
@@ -55,7 +57,7 @@ export function ListaAusencias({
                   {TIPOS_AUSENCIA[a.tipo] ?? a.tipo} · {rango}
                 </p>
                 <p className="text-sm text-n-600">
-                  {Number(a.dias)} {Number(a.dias) === 1 ? "día" : "días"} que le tocaba trabajar · pedida el {formatearFecha(a.created_at)}
+                  {Number(a.dias)} {Number(a.dias) === 1 ? "día" : "días"} que le tocaba trabajar · pedida el {formatearFecha(a.created_at, zona)}
                   {a.motivo && ` · «${a.motivo}»`}
                 </p>
                 {a.motivo_revision && <p className="text-sm text-n-600">Nota de la revisión: {a.motivo_revision}</p>}

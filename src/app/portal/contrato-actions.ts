@@ -1,5 +1,6 @@
 "use server";
 
+import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import crypto from "node:crypto";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
@@ -7,6 +8,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { generarPdfContrato } from "@/lib/contratos/generar-pdf";
 import { resolverPlantilla } from "@/lib/contratos/plantilla";
 import { fechaLocalDeInstante, horaLocalDeInstante } from "@/lib/formato";
+import { zonaActual } from "@/lib/negocio/actual";
 
 const BUCKET = "perros-archivos";
 
@@ -21,6 +23,7 @@ export async function firmarContratoDigital(
   contratoId: string,
   firmaPngDataUrl: string
 ): Promise<EstadoFirmarContrato> {
+  const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
 
   const { data: contrato, error: errorContrato } = await supabase
@@ -70,7 +73,7 @@ export async function firmarContratoDigital(
     hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() || hdrs.get("x-real-ip") || "no determinada";
 
   const ahoraIso = new Date().toISOString();
-  const fechaHoraTexto = `${fechaLocalDeInstante(ahoraIso)} ${horaLocalDeInstante(ahoraIso)}`;
+  const fechaHoraTexto = `${fechaLocalDeInstante(ahoraIso, zona)} ${horaLocalDeInstante(ahoraIso, zona)}`;
 
   const camposTexto = campos as Record<string, string>;
   const pdfBytes = await generarPdfContrato({
@@ -80,6 +83,7 @@ export async function firmarContratoDigital(
       pngBytes,
       firmanteNombre: clienteRow?.nombre ?? "—",
       fechaHoraTexto,
+      lugarHora: (await cargarNegocioLanding()).ciudad ?? zona,
       ip,
     },
   });

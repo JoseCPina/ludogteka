@@ -17,7 +17,7 @@ export type FilaHistorial = {
 // tarifas es insert-only: cada fila YA es su propia entrada de auditoría
 // (quién, qué precio, desde cuándo) — este historial sale directo de la
 // tabla, sin bitácora aparte.
-export function HistorialTarifas({ filas }: { filas: FilaHistorial[] }) {
+export function HistorialTarifas({ filas, zona }: { filas: FilaHistorial[]; zona: string }) {
   if (filas.length === 0) {
     return <p className="text-n-600">Todavía no se ha capturado ninguna tarifa.</p>;
   }
@@ -65,7 +65,7 @@ export function HistorialTarifas({ filas }: { filas: FilaHistorial[] }) {
               </td>
               <td className="border-b border-n-200 px-4 py-3 text-n-600">{f.creado_por}</td>
               <td className="border-b border-n-200 px-4 py-3 tabular-nums text-n-600">
-                {formatearFecha(f.created_at)}
+                {formatearFecha(f.created_at, zona)}
               </td>
             </tr>
           ))}

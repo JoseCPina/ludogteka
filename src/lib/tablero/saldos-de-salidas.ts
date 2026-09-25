@@ -18,7 +18,7 @@ export type SaldoDeSalida = {
 // una sola consulta en vez de una por reserva; `p_dias` alcanza a las que
 // llevan semanas sin cobrarse, que son justo las que no se pueden perder.
 // Ordenadas de la más vieja a la más nueva.
-export async function cargarSaldosDeSalidas(supabase: SupabaseClient, hoy: string, dias = 120): Promise<SaldoDeSalida[]> {
+export async function cargarSaldosDeSalidas(supabase: SupabaseClient, hoy: string, zona: string, dias = 120): Promise<SaldoDeSalida[]> {
   const { data: cuentas } = await supabase.rpc("cuentas_abiertas", { p_dias: dias });
   const filas = (cuentas ?? []) as {
     reserva_id: string;
@@ -55,7 +55,7 @@ export async function cargarSaldosDeSalidas(supabase: SupabaseClient, hoy: strin
       descripcion: c.descripcion,
       saldo: Number(c.saldo),
       salioEl: r.salida,
-      dias: diasDesde(r.salida, hoy),
+      dias: diasDesde(r.salida, hoy, zona),
     });
   }
   return resultado.sort((a, b) => a.salioEl.localeCompare(b.salioEl));

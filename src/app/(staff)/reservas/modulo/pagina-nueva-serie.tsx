@@ -8,12 +8,14 @@ import { cargarServiciosOfrecibles } from "@/lib/servicios/ofrecibles";
 import { diasSinGuarderia } from "@/lib/horario";
 import { NuevaSerieForm } from "../series/nueva/nueva-serie-form";
 import { cargarPaquetesDePerros } from "@/lib/bonos/cargar-paquetes";
+import { zonaActual } from "@/lib/negocio/actual";
 
 export async function PaginaNuevaSerie({ modulo }: { modulo: ModuloEstancia }) {
+  const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
 
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
 
   const [
     { data: clientes, error: errorClientes },

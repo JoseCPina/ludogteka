@@ -20,6 +20,11 @@
 //   6. Storage: la foto de un perro de B no se firma ni se lista desde A.
 //   7. La llave anónima pelada, con cualquiera de los dos encabezados.
 //   8. auditoria_frontera() vacía.
+//   9. Lo COMPARTIDO entre todos los negocios (razas, tallas, pelajes,
+//      unidades, la fila de otro negocio, la persona de dos negocios, la
+//      plataforma): nadie de un negocio —ni su admin— lo escribe. Solo la
+//      administración de PeluDesk, que a su vez no ve datos de ningún
+//      negocio.
 // Al final se compara una huella de las filas de B antes y después: nada
 // de lo de arriba pudo haberlas cambiado. Sale con 1 si hay hallazgos.
 import fs from "node:fs";
@@ -323,6 +328,121 @@ for (const negocio of [LUDOGTEKA, B]) {
   }
 }
 console.log(`  ${relaciones.length} relaciones y ${soloLectura.size} funciones de lectura, con los dos encabezados`);
+
+
+// ── 9. Lo compartido: solo la plataforma lo escribe ──
+console.log("\n── Lo compartido entre negocios");
+const COMPARTIDAS = {
+  razas: { cambio: { nombre: "hackeado por un negocio" }, alta: { nombre: `Raza intrusa ${MARCA}` } },
+  tamanos_categoria: { cambio: { etiqueta: "hackeado por un negocio" }, alta: { clave: "intrusa", etiqueta: "intrusa", orden: 99 } },
+  tipos_pelaje: { cambio: { etiqueta: "hackeado por un negocio" }, alta: { clave: "intrusa", etiqueta: "intrusa", orden: 99 } },
+  unidades_medida: { cambio: { etiqueta: "hackeado por un negocio" }, alta: { clave: "intrusa", etiqueta: "intrusa", magnitud: "pieza", equivalencia_en_base: 1 } },
+};
+async function huellaCompartida() {
+  const h = {};
+  for (const t of [...Object.keys(COMPARTIDAS), "negocios", "plataforma_admins"]) {
+    const { data, error } = await A.from(t).select("*").order("id");
+    if (error) throw new Error(`huella ${t}: ${error.message}`);
+    h[t] = JSON.stringify(data);
+  }
+  const { data: personas } = await A.from("profiles").select("id, nombre_completo, updated_at").in("id", [datos.cuentaAmbos, datos.esteticaAmbos]).order("id");
+  h.personas_de_dos_negocios = JSON.stringify(personas);
+  return h;
+}
+const compartidoAntes = await huellaCompartida();
+const unaFila = {};
+for (const t of Object.keys(COMPARTIDAS)) unaFila[t] = (await A.from(t).select("id").limit(1).single()).data.id;
+
+// Todos los de Ludogteka, y además el admin de Huellitas (el de otro negocio).
+const escritores = { ...tokens, admin_de_huellitas: await tokenDe(datos.adminB) };
+let intentos = 0;
+for (const [rol, token] of Object.entries(escritores)) {
+  for (const negocio of [LUDOGTEKA, B]) {
+    const donde = negocio === B ? "B" : "A";
+    for (const [t, { cambio, alta }] of Object.entries(COMPARTIDAS)) {
+      const ins = await fetch(`${URL}/rest/v1/${t}`, { method: "POST", headers: { ...cabeceras(token, negocio), Prefer: "return=representation" }, body: JSON.stringify(alta) });
+      if (ins.ok) hallazgo(`${rol} [${donde}] pudo AGREGAR a ${t} (compartida)`);
+      const up = await fetch(`${URL}/rest/v1/${t}?id=eq.${unaFila[t]}`, { method: "PATCH", headers: { ...cabeceras(token, negocio), Prefer: "return=representation" }, body: JSON.stringify(cambio) });
+      const upFilas = await up.json().catch(() => null);
+      if (up.ok && Array.isArray(upFilas) && upFilas.length) hallazgo(`${rol} [${donde}] pudo CAMBIAR ${t} (compartida)`);
+      const del = await fetch(`${URL}/rest/v1/${t}?id=eq.${unaFila[t]}`, { method: "DELETE", headers: { ...cabeceras(token, negocio), Prefer: "return=representation" } });
+      const delFilas = await del.json().catch(() => null);
+      if (del.ok && Array.isArray(delFilas) && delFilas.length) hallazgo(`${rol} [${donde}] pudo BORRAR de ${t} (compartida)`);
+      intentos += 3;
+    }
+    // La fila de otro negocio, y lo que de la suya solo cambia la plataforma.
+    const ajeno = negocio === B ? LUDOGTEKA : B;
+    for (const [id, cambio, que] of [
+      [ajeno, { nombre: "hackeado", marca: { favicon: "/x.ico" } }, "la fila de OTRO negocio"],
+      [negocio, { slug: "hackeado" }, "el slug de su negocio"],
+      [negocio, { dominio: "hackeado.mx" }, "el dominio de su negocio"],
+      [negocio, { activo: false }, "el estado de su negocio"],
+    ]) {
+      const r = await fetch(`${URL}/rest/v1/negocios?id=eq.${id}`, { method: "PATCH", headers: { ...cabeceras(token, negocio), Prefer: "return=representation" }, body: JSON.stringify(cambio) });
+      const f = await r.json().catch(() => null);
+      if (r.ok && Array.isArray(f) && f.length) hallazgo(`${rol} [${donde}] pudo cambiar ${que}`);
+      intentos++;
+    }
+    // La persona que está en los dos negocios: su nombre es suyo.
+    for (const persona of [datos.cuentaAmbos, datos.esteticaAmbos]) {
+      if (persona === personasA[rol]) continue; // su propio nombre sí lo cambia cada quien
+      const r = await fetch(`${URL}/rest/v1/profiles?id=eq.${persona}`, { method: "PATCH", headers: { ...cabeceras(token, negocio), Prefer: "return=representation" }, body: JSON.stringify({ nombre_completo: "hackeado por un negocio" }) });
+      const f = await r.json().catch(() => null);
+      if (r.ok && Array.isArray(f) && f.length) hallazgo(`${rol} [${donde}] pudo cambiarle el nombre a una persona de dos negocios`);
+      intentos++;
+    }
+    // La plataforma: hacerse admin de PeluDesk, dar de alta o tocar negocios, buscar personas.
+    const intentosPlataforma = [
+      ["plataforma_admins", { profile_id: personasA[rol] ?? datos.adminB }],
+    ];
+    for (const [t, fila] of intentosPlataforma) {
+      const r = await fetch(`${URL}/rest/v1/${t}`, { method: "POST", headers: { ...cabeceras(token, negocio), Prefer: "return=representation" }, body: JSON.stringify(fila) });
+      if (r.ok) hallazgo(`${rol} [${donde}] pudo insertar en ${t}`);
+      intentos++;
+    }
+    const rpcsPlataforma = [
+      ["crear_negocio", { p_slug: "intruso", p_nombre: "Intruso", p_zona_horaria: "America/Mexico_City", p_ciudad: null, p_dominio: null }],
+      ["agregar_admin_negocio", { p_negocio_id: ajeno, p_profile_id: personasA[rol] ?? datos.adminB }],
+      ["agregar_admin_plataforma", { p_profile_id: personasA[rol] ?? datos.adminB }],
+      ["plataforma_actualizar_negocio", { p_negocio_id: ajeno, p_nombre: "hackeado", p_zona_horaria: "America/Mexico_City", p_ciudad: null, p_dominio: null, p_url_publica: null, p_activo: false, p_marca: {} }],
+      ["plataforma_negocios", {}],
+      ["plataforma_buscar_personas", { p_busqueda: "4441234567" }],
+      ["plataforma_buscar_personas_por_id", { p_persona_id: datos.cuentaAmbos }],
+      ["plataforma_registrar_evento", { p_accion: "editar_catalogo", p_negocio_id: null, p_persona_id: null, p_motivo: "x", p_detalle: {} }],
+    ];
+    for (const [fn, args] of rpcsPlataforma) {
+      const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: cabeceras(token, negocio), body: JSON.stringify(args) });
+      if (r.ok) hallazgo(`${rol} [${donde}] pudo llamar ${fn} (solo de la plataforma)`);
+      else if (r.status === 404) hallazgo(`${fn}: 404, la llamada no llegó (argumentos del script)`);
+      intentos++;
+    }
+  }
+}
+const compartidoDespues = await huellaCompartida();
+for (const t of Object.keys(compartidoAntes)) if (compartidoAntes[t] !== compartidoDespues[t]) hallazgo(`lo compartido CAMBIÓ: ${t}`);
+console.log(`  ${intentos} intentos de escribir lo compartido, de ${Object.keys(escritores).length} personas con los dos encabezados`);
+
+// Control positivo: la administración de PeluDesk sí edita lo compartido…
+const { data: plataformaId } = await A.rpc("usuario_por_email", { p_email: "plataforma@peludesk.prueba" });
+if (!plataformaId) hallazgo("no hay administrador de plataforma en desarrollo (node scripts/plataforma/agregar-admin.mjs plataforma@peludesk.prueba)");
+else {
+  const tp = await tokenDe(plataformaId);
+  const { data: talla } = await A.from("tamanos_categoria").select("id, etiqueta").limit(1).single();
+  const hp = { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY, Authorization: `Bearer ${tp}`, "Content-Type": "application/json", Prefer: "return=representation" };
+  const r = await fetch(`${URL}/rest/v1/tamanos_categoria?id=eq.${talla.id}`, { method: "PATCH", headers: hp, body: JSON.stringify({ etiqueta: talla.etiqueta }) });
+  const f = await r.json().catch(() => null);
+  if (!(r.ok && Array.isArray(f) && f.length === 1)) hallazgo(`control positivo: la plataforma no pudo editar una talla (${r.status})`);
+  else console.log("  ✔ control positivo: la administración de PeluDesk sí edita lo compartido");
+  // …pero no ve nada de ningún negocio.
+  for (const negocio of [LUDOGTEKA, B]) {
+    for (const rel of ["clientes", "perros", "cobros", "gastos", "empleados", "membresias", "contratos"]) {
+      const x = await fetch(`${URL}/rest/v1/${rel}?select=id&limit=5`, { headers: { ...hp, "x-negocio-id": negocio } });
+      const filas = await x.json().catch(() => null);
+      if (Array.isArray(filas) && filas.length) hallazgo(`la plataforma ve ${rel} de ${negocio === B ? "Huellitas" : "Ludogteka"} (no es miembro)`);
+    }
+  }
+  console.log("  ✔ la administración de PeluDesk no ve datos de ningún negocio");
+}
 
 // ── 8. Catálogo ──
 const { data: frontera, error: errFrontera } = await A.rpc("auditoria_frontera");

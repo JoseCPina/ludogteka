@@ -6,8 +6,10 @@ import type { CuentaPendiente, CuentaVinculada } from "./tipos";
 import { cargarClientesBuscables } from "@/lib/clientes/buscables";
 import { diasDesde } from "@/lib/antiguedad";
 import { hoyNegocio } from "@/lib/formato";
+import { zonaActual } from "@/lib/negocio/actual";
 
 export default async function VinculacionPage() {
+  const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
 
   const [pendientesRes, vinculadasRes, clientesRes, { data: hoyData }] = await Promise.all([
@@ -17,7 +19,7 @@ export default async function VinculacionPage() {
     cargarClientesBuscables(supabase),
     supabase.rpc("fecha_negocio"),
   ]);
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
 
   const pendientes = (pendientesRes.data as CuentaPendiente[] | null) ?? [];
   const vinculadas = (vinculadasRes.data as CuentaVinculada[] | null) ?? [];
@@ -46,7 +48,7 @@ export default async function VinculacionPage() {
         ) : (
           <div className="overflow-hidden rounded-lg border border-n-200 bg-white">
             {pendientes.map((cuenta) => (
-              <VincularFila key={cuenta.id} cuenta={cuenta} clientes={clientes} diasEsperando={diasDesde(cuenta.creado_en, hoy)} />
+              <VincularFila key={cuenta.id} cuenta={cuenta} clientes={clientes} diasEsperando={diasDesde(cuenta.creado_en, hoy, zona)} />
             ))}
           </div>
         )}

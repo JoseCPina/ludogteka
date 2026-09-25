@@ -6,13 +6,15 @@ import { hoyNegocio } from "@/lib/formato";
 import { moduloDeCategoria } from "@/lib/modulos";
 import { diasSinGuarderia } from "@/lib/horario";
 import { SerieDetalle } from "./serie-detalle";
+import { zonaActual } from "@/lib/negocio/actual";
 
 export default async function SerieDetallePage({ params }: { params: Promise<{ id: string }> }) {
+  const zona = await zonaActual();
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
 
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
 
   // Sin filtro de deleted_at: una serie cancelada debe poder seguir
   // viéndose (patrón + historial), no dar 404 justo después de cancelarla.

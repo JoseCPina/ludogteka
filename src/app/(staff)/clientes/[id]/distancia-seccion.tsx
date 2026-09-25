@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
 import { actualizarDireccionYCalcular, ajustarDistanciaManual } from "./distancia-actions";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 export function DistanciaSeccion({
   clienteId,
@@ -22,6 +23,7 @@ export function DistanciaSeccion({
   calculadaAtInicial: string | null;
   ajustadaManualmenteInicial: boolean;
 }) {
+  const zona = useZonaNegocio();
   const router = useRouter();
   const [direccion, setDireccion] = useState(direccionInicial ?? "");
   const [distanciaKm, setDistanciaKm] = useState(distanciaKmInicial);
@@ -128,7 +130,7 @@ export function DistanciaSeccion({
               </span>
             )}
             {calculadaAt && (
-              <span className="text-sm text-n-600">· actualizada el {formatearFecha(calculadaAt)}</span>
+              <span className="text-sm text-n-600">· actualizada el {formatearFecha(calculadaAt, zona)}</span>
             )}
           </div>
         )}

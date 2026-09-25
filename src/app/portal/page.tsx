@@ -6,8 +6,10 @@ import { PerroFoto } from "@/app/(staff)/perros/perro-foto";
 import { MisDatosForm } from "./mis-datos-form";
 import { MisVisitas } from "./mis-visitas";
 import { hoyNegocio } from "@/lib/formato";
+import { zonaActual } from "@/lib/negocio/actual";
 
 export default async function PortalPage() {
+  const zona = await zonaActual();
   const sesion = await obtenerSesionConRol();
   if (!sesion) return null;
 
@@ -57,7 +59,7 @@ export default async function PortalPage() {
     .order("created_at");
 
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio();
+  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
 
   const urlsFotos = new Map<string, string>();
   await Promise.all(

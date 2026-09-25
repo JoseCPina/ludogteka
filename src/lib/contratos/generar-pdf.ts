@@ -10,6 +10,9 @@ export type FirmaContrato = {
   pngBytes: Uint8Array;
   firmanteNombre: string;
   fechaHoraTexto: string;
+  // Dónde se lee esa hora: "hora de <ciudad del negocio>" (la zona es la
+  // del negocio). Sin ciudad capturada, la zona tal cual.
+  lugarHora: string;
   ip: string;
 };
 
@@ -96,7 +99,7 @@ export async function generarPdfContrato(opciones: OpcionesPdfContrato): Promise
       { tamano: 9 }
     );
     escribirLinea(
-      `${opciones.firma.fechaHoraTexto} (hora de San Luis Potosí) · IP: ${opciones.firma.ip}`,
+      `${opciones.firma.fechaHoraTexto} (hora de ${opciones.firma.lugarHora}) · IP: ${opciones.firma.ip}`,
       { tamano: 9 }
     );
     escribirLinea(

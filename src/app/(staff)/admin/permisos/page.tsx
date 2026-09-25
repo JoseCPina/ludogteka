@@ -4,12 +4,14 @@ import { Alert } from "@/components/ui/alert";
 import { etiquetaDePermiso } from "@/lib/auth/permisos";
 import { formatearFecha, horaLocalDeInstante } from "@/lib/formato";
 import { CasillasPermisos } from "./casillas-permisos";
+import { zonaActual } from "@/lib/negocio/actual";
 
 // Permisos extra por persona de recepción (solo admin: el middleware no
 // deja entrar a nadie más y la base rechaza otorgar/revocar a quien no es
 // admin). Arriba, una tarjeta por persona con sus casillas; abajo, la
 // bitácora completa de quién dio o quitó qué y cuándo.
 export default async function PermisosPage() {
+  const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
   const [{ data: recepcion, error }, { data: filas }, { data: nombres }] = await Promise.all([
     // Recepción de ESTE negocio (el rol vive en la membresía).
@@ -84,7 +86,7 @@ export default async function PermisosPage() {
                   {e.accion === "dio" ? "a" : "a"} <strong>{nombre.get(e.a) ?? "—"}</strong>
                 </span>
                 <span className="tabular-nums text-n-600">
-                  {formatearFecha(e.cuando)} · {horaLocalDeInstante(e.cuando)}
+                  {formatearFecha(e.cuando, zona)} · {horaLocalDeInstante(e.cuando, zona)}
                 </span>
               </li>
             ))}
