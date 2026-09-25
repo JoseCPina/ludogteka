@@ -1,8 +1,9 @@
+import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
-import { periodoAnterior } from "@/lib/gastos/textos";
+import { mesAnterior, periodoAnterior, rangoMes } from "@/lib/gastos/textos";
 
 function formatearMoneda(n: number): string {
   return n.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
@@ -15,8 +16,19 @@ export default async function ReportesPage({
 }) {
   const params = await searchParams;
   const hoy = hoyNegocio();
-  const desde = params.desde || `${hoy.slice(0, 7)}-01`;
-  const hasta = params.hasta || hoy;
+  // Por omisión, el ÚLTIMO MES COMPLETO: a mitad de mes los gastos fijos
+  // salen prorrateados a los días transcurridos y la utilidad se ve mejor
+  // de lo que va a ser.
+  const ultimoMes = rangoMes(mesAnterior(hoy.slice(0, 7)));
+  const mesEnCurso = { desde: `${hoy.slice(0, 7)}-01`, hasta: hoy };
+  const desde = params.desde || ultimoMes.desde;
+  const hasta = params.hasta || (params.desde ? hoy : ultimoMes.hasta);
+  // El rango llega a hoy o después: todavía no termina.
+  const parcial = hasta >= hoy;
+  const esMesCompleto = desde === rangoMes(desde.slice(0, 7)).desde && hasta === rangoMes(desde.slice(0, 7)).hasta;
+  const nombreMes = (fecha: string) =>
+    new Intl.DateTimeFormat("es-MX", { month: "long", year: "numeric" }).format(new Date(Number(fecha.slice(0, 4)), Number(fecha.slice(5, 7)) - 1, 1));
+  const dias = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000) + 1;
 
   // Con qué se compara: el mes anterior si el rango es un mes completo; si
   // no, los mismos días justo antes.
@@ -154,7 +166,36 @@ export default async function ReportesPage({
           />
         </div>
         <Button type="submit">Actualizar</Button>
+        <div className="flex flex-wrap gap-3 pb-3 text-sm font-semibold">
+          <Link href={`/reportes?desde=${ultimoMes.desde}&hasta=${ultimoMes.hasta}`} className="text-azul hover:underline">
+            Último mes completo ({nombreMes(ultimoMes.desde)})
+          </Link>
+          <Link href={`/reportes?desde=${mesEnCurso.desde}&hasta=${mesEnCurso.hasta}`} className="text-azul hover:underline">
+            Mes en curso
+          </Link>
+        </div>
       </form>
+
+      <p className="-mt-3 text-sm text-n-600">
+        Mostrando{" "}
+        <strong className="text-n-900">
+          {esMesCompleto && !parcial
+            ? `${nombreMes(desde)} completo`
+            : esMesCompleto
+              ? `${nombreMes(desde)} (todavía no termina)`
+              : `del ${formatearFechaCalendario(desde)} al ${formatearFechaCalendario(hasta)}`}
+        </strong>
+        .
+      </p>
+
+      {parcial && (
+        <Alert variante="advertencia" titulo={desde.slice(0, 7) === hoy.slice(0, 7) ? "Mes en curso: es un mes parcial" : "El periodo todavía no termina"}>
+          {hasta === hoy
+            ? `Van ${dias(desde, hoy)} días (del ${formatearFechaCalendario(desde)} a hoy). Los gastos fijos (renta, luz, internet…) están prorrateados a esos días transcurridos, no al mes completo, así que la utilidad todavía no es la del mes. `
+            : `El rango termina el ${formatearFechaCalendario(hasta)}, después de hoy: los gastos fijos se cuentan hasta esa fecha, pero ingresos, insumos y nómina solo llegan a hoy, así que la utilidad sale más baja de lo que va a ser. `}
+          Para ver un mes cerrado, usa «Último mes completo».
+        </Alert>
+      )}
 
       {errorUtilidad || !utilidad ? (
         <Alert variante="error" titulo="No pudimos calcular la utilidad">
