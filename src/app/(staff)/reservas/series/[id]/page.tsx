@@ -82,13 +82,13 @@ export default async function SerieDetallePage({ params }: { params: Promise<{ i
       <div>
         <Link
           href={modulo ? `${modulo.base}/series` : "/reservas"}
-          className="text-sm font-semibold text-azul hover:underline"
+          className="text-sm font-semibold text-morado hover:underline"
         >
           ← Series recurrentes{modulo ? ` de ${modulo.etiqueta.toLowerCase()}` : ""}
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">{perro?.nombre ?? "—"}</h1>
         {serie.perro_id && (
-          <Link href={`/perros/${serie.perro_id}`} className="text-sm text-azul hover:underline">
+          <Link href={`/perros/${serie.perro_id}`} className="text-sm text-morado hover:underline">
             Ver expediente del perro →
           </Link>
         )}

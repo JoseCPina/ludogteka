@@ -37,7 +37,7 @@ export default async function NuevoPerroPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href={`/clientes/${id}`} className="text-sm font-semibold text-azul hover:underline">
+        <Link href={`/clientes/${id}`} className="text-sm font-semibold text-morado hover:underline">
           ← {cliente.nombre}
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Nuevo perro</h1>

@@ -100,11 +100,11 @@ export function MovimientosTurno({
                   <td className="border-b border-n-200 px-3 py-2 tabular-nums text-n-600">{formatearFecha(m.fecha, zona)}</td>
                   <td className="border-b border-n-200 px-3 py-2 text-n-900">
                     {ETIQUETA_TIPO[m.tipo] ?? m.tipo}
-                    {m.origen !== "manual" && <span className="ml-2 rounded-full bg-azul-suave px-2 py-0.5 text-xs font-semibold text-azul">{ETIQUETA_ORIGEN[m.origen]}</span>}
+                    {m.origen !== "manual" && <span className="ml-2 rounded-full bg-morado-suave px-2 py-0.5 text-xs font-semibold text-morado">{ETIQUETA_ORIGEN[m.origen]}</span>}
                   </td>
                   <td className="border-b border-n-200 px-3 py-2 text-n-700">
                     {m.reservaId ? (
-                      <Link href={`/caja/cobrar/${m.reservaId}`} className="font-semibold text-azul hover:underline">
+                      <Link href={`/caja/cobrar/${m.reservaId}`} className="font-semibold text-morado hover:underline">
                         {m.clienteNombre ?? "Cuenta"}
                       </Link>
                     ) : (
@@ -114,7 +114,7 @@ export function MovimientosTurno({
                     <span className="block text-xs text-n-500">{m.hechoPorNombre}</span>
                   </td>
                   <td className="border-b border-n-200 px-3 py-2 text-n-700">{ETIQUETA_METODO[m.metodo] ?? m.metodo}</td>
-                  <td className={`border-b border-n-200 px-3 py-2 text-right tabular-nums font-semibold ${m.monto < 0 ? "text-naranja-oscuro" : "text-n-900"}`}>
+                  <td className={`border-b border-n-200 px-3 py-2 text-right tabular-nums font-semibold ${m.monto < 0 ? "text-coral-oscuro" : "text-n-900"}`}>
                     {dinero(m.monto)}
                     {m.propina > 0 ? <span className="block text-xs font-normal text-n-500">+ propina {dinero(m.propina)}</span> : null}
                   </td>

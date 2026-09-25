@@ -48,7 +48,7 @@ export async function ListaSeries({ modulo }: { modulo: ModuloEstancia }) {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link href={modulo.base} className="text-sm font-semibold text-azul hover:underline">
+          <Link href={modulo.base} className="text-sm font-semibold text-morado hover:underline">
             ← {modulo.etiqueta}
           </Link>
           <h1 className="mt-1 text-2xl font-bold text-n-900">

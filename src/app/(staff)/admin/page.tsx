@@ -115,7 +115,7 @@ export default async function AdminPage() {
               Dale a una persona de recepción permisos extra para que te ayude a administrar.
             </p>
           </div>
-          <Link href="/admin/permisos" className="font-semibold text-azul hover:underline">
+          <Link href="/admin/permisos" className="font-semibold text-morado hover:underline">
             Administrar permisos →
           </Link>
         </section>

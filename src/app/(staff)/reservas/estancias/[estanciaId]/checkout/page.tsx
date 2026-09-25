@@ -146,7 +146,7 @@ export default async function CheckoutEstanciaPage({
     <div className="flex flex-col gap-6">
       <Link
         href={modulo ? `${modulo.base}/checkout` : "/reservas"}
-        className="text-sm font-semibold text-azul hover:underline"
+        className="text-sm font-semibold text-morado hover:underline"
       >
         ← Check-out{modulo ? ` de ${modulo.etiqueta.toLowerCase()}` : ""}
       </Link>

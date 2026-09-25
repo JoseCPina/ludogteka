@@ -42,7 +42,7 @@ export const Field = forwardRef<HTMLInputElement, Props>(
 
     return (
       <div>
-        <label htmlFor={inputId} className="mb-1.5 block text-sm font-semibold text-n-800">
+        <label htmlFor={inputId} className="mb-1.5 block text-sm font-medium text-n-800">
           {label}
         </label>
         <div className="relative">
@@ -52,9 +52,9 @@ export const Field = forwardRef<HTMLInputElement, Props>(
             type={esPassword ? (mostrar ? "text" : "password") : type}
             aria-invalid={error ? true : undefined}
             aria-describedby={descripcionId}
-            className={`min-h-12 w-full rounded-md border-[1.5px] bg-white px-3.5 text-base text-n-900 focus:border-azul focus:outline-none focus:ring-[3px] focus:ring-azul-suave ${
+            className={`min-h-12 w-full rounded-md border-[1.5px] bg-white px-3.5 text-base text-n-900 focus:border-morado focus:outline-none focus:ring-[3px] focus:ring-morado-suave ${
               esPassword ? "pr-11" : ""
-            } ${error ? "border-naranja-oscuro bg-naranja-suave" : "border-n-400"} ${className}`}
+            } ${error ? "border-coral-oscuro bg-coral-suave" : "border-borde"} ${className}`}
             {...props}
           />
           {esPassword && (
@@ -70,7 +70,7 @@ export const Field = forwardRef<HTMLInputElement, Props>(
           )}
         </div>
         {error && (
-          <p id={descripcionId} className="mt-1.5 text-sm font-semibold text-naranja-oscuro">
+          <p id={descripcionId} className="mt-1.5 text-sm font-semibold text-coral-oscuro">
             {error}
           </p>
         )}

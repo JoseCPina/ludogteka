@@ -56,10 +56,10 @@ export function RestablecerPassword({
           )}
 
           {resultado?.password ? (
-            <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-verde bg-verde-suave p-4">
-              <p className="font-bold text-verde-oscuro">Contraseña temporal</p>
+            <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-menta bg-menta-suave p-4">
+              <p className="font-bold text-menta-oscuro">Contraseña temporal</p>
               <CampoCopiable valor={resultado.password} monoespaciado textoCopiado="Copiada" />
-              <p className="text-sm text-verde-oscuro">
+              <p className="text-sm text-menta-oscuro">
                 Esto se muestra una sola vez: si cierras la pantalla ya no la puedes volver a ver,
                 tendrías que generar otra. Dile que la cambie desde su portal en cuanto entre.
               </p>
@@ -72,8 +72,8 @@ export function RestablecerPassword({
               </div>
             </div>
           ) : confirmando ? (
-            <div className="flex flex-wrap items-center gap-2 rounded-lg border-[1.5px] border-amarillo bg-amarillo-suave p-4">
-              <p className="w-full text-sm text-amarillo-oscuro">
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border-[1.5px] border-ambar bg-ambar-suave p-4">
+              <p className="w-full text-sm text-ambar-oscuro">
                 La contraseña actual de {clienteNombre} deja de servir en ese momento. Si no era él
                 quien la pidió, se queda fuera de su portal hasta que le pases la nueva.
               </p>

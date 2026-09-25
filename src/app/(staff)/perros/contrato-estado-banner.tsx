@@ -54,7 +54,7 @@ export function ContratoEstadoBanner({
       <div className="flex flex-wrap gap-1.5">
         {faltantes.length > 0 && (
           <span
-            className="w-fit rounded-full border-[1.5px] border-amarillo bg-amarillo-suave px-2 py-1 text-xs font-bold text-amarillo-oscuro"
+            className="w-fit rounded-full border-[1.5px] border-ambar bg-ambar-suave px-2 py-1 text-xs font-bold text-ambar-oscuro"
             title="Aviso legal, no bloquea"
           >
             Falta: {lista(faltantes)}
@@ -62,14 +62,14 @@ export function ContratoEstadoBanner({
         )}
         {desactualizados.length > 0 && (
           <span
-            className="w-fit rounded-full border-[1.5px] border-azul bg-azul-suave px-2 py-1 text-xs font-bold text-azul-oscuro"
+            className="w-fit rounded-full border-[1.5px] border-morado bg-morado-suave px-2 py-1 text-xs font-bold text-morado-oscuro"
             title="Aviso legal, no bloquea — pide firma actualizada"
           >
             Actualizar: {lista(desactualizados)}
           </span>
         )}
         {estado === "vigente" && (
-          <span className="w-fit rounded-full border-[1.5px] border-verde bg-verde-suave px-2 py-1 text-xs font-bold text-verde-oscuro">
+          <span className="w-fit rounded-full border-[1.5px] border-menta bg-menta-suave px-2 py-1 text-xs font-bold text-menta-oscuro">
             Contratos firmados
           </span>
         )}
@@ -79,7 +79,7 @@ export function ContratoEstadoBanner({
 
   if (estado === "vigente") {
     return (
-      <div className="w-fit rounded-full border-[1.5px] border-verde bg-verde-suave px-3 py-1.5 text-sm font-bold text-verde-oscuro">
+      <div className="w-fit rounded-full border-[1.5px] border-menta bg-menta-suave px-3 py-1.5 text-sm font-bold text-menta-oscuro">
         Contratos firmados
       </div>
     );

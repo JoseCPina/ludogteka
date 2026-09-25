@@ -18,7 +18,7 @@ export default async function SinCostoPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/inventario" className="text-sm font-semibold text-azul hover:underline">
+        <Link href="/inventario" className="text-sm font-semibold text-morado hover:underline">
           ← Inventario
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Consumibles sin costo</h1>

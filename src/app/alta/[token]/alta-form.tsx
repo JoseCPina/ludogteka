@@ -25,10 +25,10 @@ function Progreso({ paso, total }: { paso: number; total: number }) {
       {PASOS.slice(0, total).map((etiqueta, i) => (
         <li key={etiqueta} className="flex flex-1 flex-col gap-1">
           <span
-            className={`h-1.5 rounded-full ${i <= paso ? "bg-azul" : "bg-n-200"}`}
+            className={`h-1.5 rounded-full ${i <= paso ? "bg-morado" : "bg-n-200"}`}
             aria-hidden="true"
           />
-          <span className={`text-xs ${i === paso ? "font-bold text-azul" : "text-n-500"}`}>
+          <span className={`text-xs ${i === paso ? "font-bold text-morado" : "text-n-500"}`}>
             {etiqueta}
           </span>
         </li>

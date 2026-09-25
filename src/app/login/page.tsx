@@ -4,6 +4,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { negocioActual } from "@/lib/negocio/actual";
 import { rutaPorRol } from "@/lib/auth/rutas";
 import { LoginForm } from "./login-form";
+import { EncabezadoNegocio } from "@/components/marca/encabezado-negocio";
 
 export default async function LoginPage({
   searchParams,
@@ -38,9 +39,10 @@ export default async function LoginPage({
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
-        <h1 className="mb-1 text-center text-3xl font-extrabold tracking-tight text-azul">
-          {negocio.nombre}
-        </h1>
+        <div className="mb-3 flex justify-center">
+          <EncabezadoNegocio />
+        </div>
+        <h1 className="sr-only">{negocio.nombre}</h1>
         <p className="mb-8 text-center text-n-600">Inicia sesión para continuar</p>
         <LoginForm
           errorInicial={errorInicial}

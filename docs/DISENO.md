@@ -1,134 +1,147 @@
-# Identidad visual — Ludogteka
+# Sistema visual — PeluDesk
 
-Aprobado en Fase 1. Contexto de uso que determina cada decisión de aquí: recepción de un negocio canino, de pie, con prisa, a veces en tablet. Legibilidad y botones grandes por encima de lo bonito. Un solo tema (claro) — es una herramienta operativa de mostrador, no una app de consumo con horarios variables de uso; se prioriza consistencia entre turnos sobre personalización.
+Diseño base de toda la app (25 de septiembre de 2026). Fuente: el kit gráfico de PeluDesk en `marca-peludesk/` (láminas 01 identidad, 02 logo, 03 sistema gráfico, 04 UI kit; carpeta de Drive del dueño). Contexto que manda sobre lo bonito: recepción de un negocio canino, de pie, con prisa, a veces en tablet o en el celular. Legibilidad y botones grandes primero. Un solo tema (claro).
 
-## Paleta de marca
+Los tokens viven en `src/app/globals.css` (`@theme`). **Todo par de texto sobre fondo está verificado con la fórmula de WCAG, no supuesto:** `node scripts/diseno/contraste.mjs` (sale con 1 si alguno no llega). Un color nuevo o una combinación nueva de texto sobre fondo se agrega a ese script antes de usarse.
 
-Los 5 colores de marca (logo del negocio) van como acento sobre una base de neutros — nunca como relleno de áreas grandes.
+## Qué lleva la marca PeluDesk y qué la del negocio
 
-| Nombre | Hex | Rol |
-|---|---|---|
-| Azul | `#3148DD` | Primario. Botones principales, links, foco. |
-| Turquesa | `#00CDC4` | Acento secundario. Nunca como texto ni fondo de botón sólido. |
-| Naranja | `#EF5025` | Destructivo / peligro. Nunca como texto ni fondo de botón sólido. |
-| Amarillo | `#FFC73A` | Advertencia. Nunca como texto ni fondo de botón sólido. |
-| Verde | `#2AC862` | Éxito / confirmación. Nunca como texto ni fondo de botón sólido. |
-| Blanco | `#FFFFFF` | — |
-
-Variantes brillantes — **solo para gráficas y reportes** (Fase 8+), nunca en la UI base:
-
-| Nombre | Hex |
+| Superficie | Marca |
 |---|---|
-| Azul brillante | `#0B6AF8` |
-| Amarillo brillante | `#F8DB1A` |
-| Naranja brillante | `#FF5D02` |
+| La plataforma (peludesk.mx, `/plataforma`), la pantalla de un dominio sin negocio (`/negocio-no-encontrado`) | **PeluDesk**: `LogoPeluDesk`, favicons de PeluDesk |
+| El diseño base de toda la app (paleta, letra, componentes) | **PeluDesk** |
+| "Hecho con PeluDesk", discreto, al pie del menú del staff | **PeluDesk** (el cliente no lo ve) |
+| Encabezado del staff, portal de clientes, login, alta por link, sin acceso | **El negocio** (`MarcaDelNegocio`, `EncabezadoNegocio`), encima del diseño base |
+| Su landing, su favicon | **El negocio** (`negocios.landing`, `negocios.marca.favicon`) |
+| Contratos en PDF | Sin marca (ni de PeluDesk ni del negocio): documento legal, no se tocó |
 
-### Por qué hay variantes "-oscuro"
+**El dueño de un perro ve a su guardería, no a PeluDesk.** La landing de Ludogteka con el tema de la camioneta (`src/components/landing/`, Nunito + Fredoka, sus colores `--lp-*`) queda fuera de este sistema y no se toca.
 
-Verificado con la fórmula de luminancia relativa de WCAG (no supuesto):
+La marca del negocio sale de `negocios.marca` (la edita la plataforma, `/plataforma/negocios/<id>`):
+- `logo`: imagen (ruta del sitio o https);
+- `logo_texto` + `logo_fuente`: logotipo de palabras con color (el de Ludogteka: "lu·dog·teka", índigo/naranja, Fredoka);
+- sin logo: su inicial sobre `color`, y su nombre;
+- `favicon`: su ícono; sin él, `/icono-negocio` lo arma con su inicial y su color.
+
+## Logo de PeluDesk
+
+`public/marca/peludesk/isotipo.svg` es **la única fuente** del isotipo (el perrito de perfil con las tres huellas), redibujado en vector a partir de la lámina 02: los PNG del kit son recortes rasterizados de las láminas (orillas crema, cortes) y no sirven a cualquier tamaño. Los favicons (16, 32, 48, 180, 512 y `favicon.ico`) salen de ahí: `node scripts/diseno/favicons-peludesk.mjs`. El nombre va en Outfit: "pelu" en morado, "desk" en `#6FC3A9` (el menta más saturado del logotipo, medido en la lámina; es solo del logo, un logotipo no está sujeto a las reglas de contraste de texto). Sobre fondo morado: "pelu" en crema y "desk" en menta. Nunca estirar, recolorear, rotar ni poner sobre fotos (lámina 02, usos incorrectos).
+
+## Paleta
+
+| Token | Hex | Rol |
+|---|---|---|
+| `morado` | `#4B3F72` | Deep purple. Primario: botones principales, links, foco, títulos de marca. **Sí lleva texto blanco (9.32:1).** |
+| `menta` | `#A7D8C8` | Mint. Secundario: botón de acción positiva (con texto **morado**, 5.90:1), fondos, íconos, ilustración. |
+| `coral` | `#F28C82` | Soft coral. Acento: puntos, íconos, decoración. |
+| `ambar` | `#F5B85C` | Aviso cálido del kit ("En proceso", "Recuerda"). |
+| `crema` / `n-50` | `#FFF8EE` | Cream. Fondo de página. |
+| `grafito` / `n-900` | `#2B2A33` | Graphite. Texto principal. |
+
+### Por qué hay variantes oscuras
 
 | Par | Ratio | Veredicto |
 |---|---|---|
-| Blanco sobre Azul | 6.77 | Pasa AA |
-| Blanco sobre Naranja | 3.59 | Falla texto normal (solo texto grande ≥18.67px/negrita) |
-| Blanco sobre Turquesa | 1.99 | Falla |
-| Blanco sobre Amarillo | 1.56 | Falla |
-| Blanco sobre Verde | 2.20 | Falla (no reportado por el cliente, encontrado al verificar) |
+| Blanco sobre menta | 1.58 | Falla |
+| Blanco sobre coral | 2.37 | Falla |
+| Blanco sobre ámbar | 1.77 | Falla |
+| Menta como texto sobre blanco | 1.58 | Falla |
+| Coral como texto sobre blanco | 2.37 | Falla |
 
-Turquesa, amarillo, verde y naranja **no admiten texto blanco encima ni sirven como color de texto en su tono base**. Para texto, botón sólido con texto blanco, o badge, se usa una variante oscurecida de la misma familia — todas verificadas ≥5.3:1 con blanco:
+**Menta, coral y ámbar no llevan texto encima ni son color de texto.** Para texto, botón sólido con texto blanco o chip, va su variante oscura:
 
-| Nombre | Hex | Uso |
+| Token | Hex | Uso | Verificado |
+|---|---|---|---|
+| `morado-oscuro` | `#3A3059` | Hover del primario | blanco 12.02 |
+| `menta-oscuro` | `#1F6B57` | Texto de éxito, botón de éxito sólido | blanco 6.37 · sobre crema 6.04 |
+| `menta-hover` | `#8ECBB7` | Hover del botón menta (texto morado) | morado 5.05 |
+| `coral-oscuro` | `#B23C31` | Texto de error, botón destructivo | blanco 5.86 · sobre crema 5.56 |
+| `coral-hondo` | `#962F26` | Hover del destructivo | blanco 7.69 |
+| `ambar-oscuro` | `#8A5400` | Texto de advertencia | sobre crema 5.95 |
+
+### Fondos suaves (chips y alertas)
+
+| Token | Hex | Texto encima |
 |---|---|---|
-| Naranja oscuro | `#A6330F` | Texto/ícono de naranja, botón destructivo sólido, badge de error |
-| Amarillo oscuro | `#8A6300` | Texto/ícono de amarillo, badge de advertencia |
-| Turquesa oscuro | `#0B6E68` | Texto/ícono de turquesa, badge de acento secundario |
-| Verde oscuro | `#1B7A42` | Texto/ícono de verde, botón de éxito sólido, badge de confirmación |
-| Azul oscuro | `#26379E` | Hover/pressed del botón primario (azul base ya pasa AA directo) |
+| `menta-suave` | `#E3F3ED` | `menta-oscuro` 5.55 |
+| `coral-suave` | `#FDE8E5` | `coral-oscuro` 4.98 |
+| `ambar-suave` | `#FDF0D9` | `ambar-oscuro` 5.57 |
+| `morado-suave` | `#ECE8F5` | `morado` 7.73 |
 
-Regla: los 5 colores base sin sufijo se reservan para fondos grandes, íconos, puntos de estado (chip dot) y bordes — nunca para texto de lectura ni fondo de botón con texto encima.
-
-### Fondos suaves (badges, alertas)
-
-| Nombre | Hex | Uso |
-|---|---|---|
-| Azul suave | `#E3E7FC` | Fondo de badge/alerta de azul (texto: azul base, 5.5:1) |
-| Turquesa suave | `#DFF9F7` | Fondo de badge/alerta de turquesa (texto: turquesa oscuro) |
-| Naranja suave | `#FCE4DC` | Fondo de badge/alerta de naranja (texto: naranja oscuro, 5.6:1) |
-| Amarillo suave | `#FFF3D6` | Fondo de badge/alerta de amarillo (texto: amarillo oscuro) |
-| Verde suave | `#E2F7E9` | Fondo de badge/alerta de verde (texto: verde oscuro, 8.2:1) |
+El cuerpo de una alerta va en `n-700` sobre cualquiera de estos fondos (≥ 8.1).
 
 ## Neutros
 
-Rampa de 10 pasos con sesgo azul (la misma familia del primario) — no gris de banco. "Nada de gris sobre gris" se resuelve así: cada paso tiene un rol fijo, nunca se usan dos pasos adyacentes para texto-sobre-fondo.
+Rampa cálida del grafito a la crema (la familia de la marca, no gris de banco). Cada paso tiene un rol fijo; nunca dos pasos vecinos para texto sobre fondo.
 
-| Paso | Hex | Uso | Contraste vs blanco |
+| Paso | Hex | Uso | Sobre blanco / crema |
 |---|---|---|---|
-| 0 | `#FFFFFF` | Blanco puro | — |
-| 50 | `#F5F6FA` | Fondo de página | — |
-| 100 | `#EBEDF5` | Superficie alterna, hover de fila/tarjeta | — |
-| 200 | `#DDE1ED` | Bordes y líneas sutiles (dividers, tabla) | — |
-| 300 | `#C6CBDC` | Bordes de contenedor/tarjeta | — |
-| 400 | `#9BA3BD` | **Solo decorativo** — placeholder, fondo deshabilitado. Nunca texto (2.51:1, falla incluso el mínimo de 3:1). | 2.51 |
-| 500 | `#747C99` | Texto grande/ícono/borde de input activo (no para texto de lectura normal) | 4.13 |
-| 600 | `#5C6480` | Texto secundario de lectura — pasa AA | 5.85 |
-| 700 | `#454C63` | Labels fuertes, texto secundario enfatizado | 8.51 |
-| 800 | `#2B2F3D` | Texto sobre superficie oscura, headings grandes | — |
-| 900 | `#14161F` | Texto principal | 18.04 |
+| 0 | `#FFFFFF` | Superficies (tarjetas, inputs, barras) | — |
+| 50 | `#FFF8EE` | Fondo de página (crema) | — |
+| 100 | `#F6EFE5` | Superficie alterna, hover de fila, chip neutro | — |
+| 200 | `#EBE3D8` | Bordes sutiles y separadores | — |
+| 300 | `#D9D1C6` | Bordes de contenedor | — |
+| 400 | `#ABA49F` | **Solo decorativo**: placeholder, deshabilitado. Nunca texto. | 2.5 |
+| 500 | `#7B7580` | Texto grande, íconos | 4.47 / 4.24 |
+| 600 | `#5E5968` | Texto secundario de lectura | 6.76 / 6.41 |
+| 700 | `#46424F` | Labels, texto enfatizado | 9.76 / 9.25 |
+| 800 | `#35323E` | Headings grandes | — |
+| 900 | `#2B2A33` | Texto principal (grafito) | 14.17 / 13.44 |
+| `borde` | `#948D98` | Borde de input, select y botón fantasma: el más claro que da 3:1 (WCAG 1.4.11) | 3.22 / 3.05 |
 
 ## Tipografía
 
-Una sola familia variable: **Nunito** (redondeada, cálida, buenos números tabulares), cargada vía `next/font/google`. Jerarquía por peso/tamaño, no por segunda familia — en una herramienta de mostrador usada todo el día, un segundo font es una decisión que hay que justificar en cada pantalla nueva, y no se paga sola aquí.
+**Outfit** (la del UI kit), cargada con `next/font/google` en el layout raíz, pesos 400–800. Jerarquía por peso y tamaño, una sola familia.
 
-| Rol | Tamaño | Peso | Otros |
-|---|---|---|---|
-| Título / h1 | 2.25rem (36px) | 800 | letter-spacing -0.01em, line-height 1.15 |
-| Subtítulo / h2 | 1.75rem (28px) | 700 | |
-| Sección / h3 | 1.25rem (20px) | 700 | |
-| Texto / body | 1.125rem (18px) | 400 | tamaño base de la app — más grande que el default web de 16px, por legibilidad en tablet |
-| Label | 0.875rem (14px) | 600 | uppercase, letter-spacing 0.04em |
-| Meta / dato | 0.8125rem (13px) | 500 | `font-variant-numeric: tabular-nums` |
+| Rol | Tamaño | Peso |
+|---|---|---|
+| H1 | 32px / 40 | 700 |
+| H2 | 24px / 32 | 700 |
+| H3 | 20px / 28 | 600 |
+| Texto | 16–18px / 24 | 400 |
+| Label | 14px / 20 | 500 |
+| Dato / caption | 13–14px / 20 | 400–500, `tabular-nums` en montos, horas, teléfonos y folios |
 
-Cualquier columna con dígitos (montos, teléfonos, folios, horas) lleva `font-variant-numeric: tabular-nums`.
+La landing de Ludogteka conserva su Nunito y su Fredoka (las carga su propia página).
 
-## Espaciado
+## Forma
 
-8 pasos, sin valores sueltos fuera de esta escala:
+Radios: `sm` 10px · `md` 12px (controles: botones, inputs, chips grandes) · `lg` 18px (tarjetas, alertas). Chips y píldoras: redondo completo. Espaciado en la escala `4 · 8 · 12 · 16 · 24 · 32 · 48 · 64`.
 
-`4px · 8px · 12px · 16px · 24px · 32px · 48px · 64px`
+## Componentes (como la lámina 04)
 
-## Componentes
+### Botones (`src/components/ui/button.tsx`)
+- Alto mínimo 48px, texto 16px/600, radio 12px, spinner con `cargando` (nunca un texto quieto).
+- **Primario**: morado con texto blanco; hover morado-oscuro.
+- **Éxito** (el secundario menta del kit, "Nuevo cliente"): menta con texto **morado**; hover menta-hover.
+- **Secundario** (el "ghost" del kit): blanco, borde `borde`, texto grafito.
+- **Peligro**: coral-oscuro con texto blanco (el coral del kit no aguanta texto blanco).
+- Foco visible siempre: anillo morado de 3px.
 
-### Botones
-- Alto mínimo 48px (dedo en tablet), texto 16px/600, radio 10px (`--radio-md`).
-- Primario: fondo azul, texto blanco. Hover: azul oscuro.
-- Secundario: fondo blanco, borde neutro-400, texto neutro-900.
-- Destructivo: fondo naranja-oscuro, texto blanco.
-- Éxito: fondo verde-oscuro, texto blanco.
-- Deshabilitado: fondo neutro-100, texto neutro-400, `cursor: not-allowed`.
-- Foco visible siempre: anillo azul de 3px, offset 2px — nunca solo cambio sutil de color.
+### Inputs, selects, textareas
+- Label arriba siempre (nunca placeholder como label), 14px/500.
+- Alto mínimo 48px, fondo blanco, borde 1.5px `borde`, radio 12px.
+- Foco: borde morado + halo morado-suave.
+- Error: borde coral-oscuro + fondo coral-suave + mensaje específico debajo.
 
-### Inputs
-- Label siempre visible arriba (nunca placeholder-como-label).
-- Alto mínimo 48px, borde 1.5px neutro-400, radio 10px.
-- Foco: borde azul + halo azul-suave (`box-shadow` 3px).
-- Error: borde naranja-oscuro + fondo naranja-suave + mensaje específico debajo del campo (nunca solo un borde rojo sin texto).
+### Alertas (`src/components/ui/alert.tsx`)
+Fondo suave de la familia, borde fino del tono base y un ícono en círculo del tono **oscuro** con el símbolo blanco (en el tono base no llegaría al 3:1 de un gráfico). Variantes: éxito (menta), error (coral), advertencia (ámbar), información (morado).
+
+### Chips de estado (`src/components/ui/chip.tsx`)
+Fondo suave + texto oscuro de la misma familia + un punto; el estado lo dice el texto, nunca solo el color. Tonos: éxito/confirmada (menta), pendiente (coral), en proceso (ámbar), información (morado), neutro/cancelada.
 
 ### Tablas
-- Encabezado: fondo neutro-100, texto neutro-600 uppercase pequeño.
-- Fila: hover neutro-50, separador neutro-200 (línea, no grid pesado).
-- Estado por chip de color (fondo suave + texto oscuro de la misma familia), nunca solo texto plano — se lee de un vistazo.
-- Columnas numéricas: `tabular-nums`, alineadas a la derecha.
-- Contenedor con `overflow-x: auto` propio — la página nunca scrollea horizontal.
+Encabezado en `n-100` con texto `n-600` pequeño; filas con separador `n-200` y hover `n-50`; estado con chip; columnas numéricas `tabular-nums` a la derecha; contenedor con su propio `overflow-x: auto`.
 
-### Estado vacío
-- Ícono simple en círculo azul-suave, mensaje corto en tono cercano ("Aún no hay dueños registrados", nunca "No data found"), botón de acción primaria si aplica.
+### Tarjetas
+Blanco sobre crema, borde `n-200`, radio 18px, sombra mínima o ninguna.
 
-### Estados de aviso
-- Error: fondo naranja-suave, borde izquierdo naranja de 4px, texto naranja-oscuro + neutro-700. Mensaje dice qué pasó y qué hacer, nunca un error técnico crudo.
-- Advertencia: mismo patrón con amarillo (p. ej. vacuna por vencer).
-- Éxito: mismo patrón con verde (p. ej. cliente vinculado).
-- Errores de campo van pegados al input específico, no solo en un banner genérico arriba del formulario.
+### Íconos (`src/components/iconos-nav.tsx`)
+Estilo de la iconografía del kit: bicolor morado + menta (coral de acento), formas llenas y redondeadas, 22–24px, siempre junto a su etiqueta (decorativos). En SVG: los PNG del kit son recortes de 400px con el fondo de la lámina.
+
+### Navegación del staff
+Barra lateral blanca con íconos; la sección activa en píldora morado-suave con texto morado (como el tablero del kit); "Hecho con PeluDesk" al pie. Arriba, la marca del negocio.
 
 ## Modo oscuro
 
-No implementado por decisión — un solo tema claro, consistente entre turnos y dispositivos. Se puede agregar después si se pide explícitamente.
+No implementado, por decisión: un solo tema claro, consistente entre turnos y dispositivos.

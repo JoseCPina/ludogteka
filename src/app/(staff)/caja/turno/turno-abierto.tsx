@@ -241,12 +241,12 @@ export function TurnoAbierto({
       </div>
 
       {cerrando && (
-        <div className="flex flex-col gap-4 rounded-lg border-[1.5px] border-naranja bg-naranja-suave p-5">
-          <p className="font-bold text-naranja-oscuro">Cerrar turno — arqueo</p>
+        <div className="flex flex-col gap-4 rounded-lg border-[1.5px] border-coral bg-coral-suave p-5">
+          <p className="font-bold text-coral-oscuro">Cerrar turno — arqueo</p>
 
           {!revelado ? (
             <>
-              <p className="text-sm text-naranja-oscuro">
+              <p className="text-sm text-coral-oscuro">
                 Cuenta el efectivo físico y anota lo que reporta la terminal, ANTES de continuar. Lo que captures
                 aquí se compara contra el sistema hasta después de enviarlo — no se te muestra antes.
               </p>
@@ -289,7 +289,7 @@ export function TurnoAbierto({
             </>
           ) : (
             <>
-              <p className="text-sm font-semibold text-naranja-oscuro">
+              <p className="text-sm font-semibold text-coral-oscuro">
                 Hay diferencia contra lo que esperaba el sistema. Escribe la explicación para poder cerrar — nunca
                 se ajusta en silencio.
               </p>
@@ -297,16 +297,16 @@ export function TurnoAbierto({
                 <table className="w-full min-w-[420px] border-collapse text-sm">
                   <thead>
                     <tr>
-                      <th className="border-b border-naranja py-1 text-left text-xs font-bold uppercase text-naranja-oscuro">
+                      <th className="border-b border-coral py-1 text-left text-xs font-bold uppercase text-coral-oscuro">
                         Método
                       </th>
-                      <th className="border-b border-naranja py-1 text-right text-xs font-bold uppercase text-naranja-oscuro">
+                      <th className="border-b border-coral py-1 text-right text-xs font-bold uppercase text-coral-oscuro">
                         Contado
                       </th>
-                      <th className="border-b border-naranja py-1 text-right text-xs font-bold uppercase text-naranja-oscuro">
+                      <th className="border-b border-coral py-1 text-right text-xs font-bold uppercase text-coral-oscuro">
                         Esperado
                       </th>
-                      <th className="border-b border-naranja py-1 text-right text-xs font-bold uppercase text-naranja-oscuro">
+                      <th className="border-b border-coral py-1 text-right text-xs font-bold uppercase text-coral-oscuro">
                         Diferencia
                       </th>
                     </tr>
@@ -325,14 +325,14 @@ export function TurnoAbierto({
                       ] as [string, number, number, number][]
                     ).map(([metodo, contado, esperado, diferencia]) => (
                       <tr key={metodo}>
-                        <td className="border-b border-naranja/30 py-1 text-naranja-oscuro">{ETIQUETA_METODO[metodo]}</td>
-                        <td className="border-b border-naranja/30 py-1 text-right tabular-nums text-naranja-oscuro">
+                        <td className="border-b border-coral/30 py-1 text-coral-oscuro">{ETIQUETA_METODO[metodo]}</td>
+                        <td className="border-b border-coral/30 py-1 text-right tabular-nums text-coral-oscuro">
                           {dinero(contado)}
                         </td>
-                        <td className="border-b border-naranja/30 py-1 text-right tabular-nums text-naranja-oscuro">
+                        <td className="border-b border-coral/30 py-1 text-right tabular-nums text-coral-oscuro">
                           {dinero(esperado)}
                         </td>
-                        <td className="border-b border-naranja/30 py-1 text-right tabular-nums font-bold text-naranja-oscuro">
+                        <td className="border-b border-coral/30 py-1 text-right tabular-nums font-bold text-coral-oscuro">
                           {diferencia > 0 ? "+" : ""}
                           {dinero(diferencia)}
                         </td>

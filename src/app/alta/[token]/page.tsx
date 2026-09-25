@@ -14,6 +14,7 @@ import {
   type HorarioDia,
 } from "./requisitos-guarderia-hotel";
 import { CAMPOS_BASE, CAMPOS_EXPEDIENTE, type CampoPerro } from "@/lib/alta/campos-perro";
+import { EncabezadoNegocio } from "@/components/marca/encabezado-negocio";
 
 // Pantalla pública: no hay sesión todavía (la cuenta se crea al final) y
 // por eso NO está en las zonas protegidas del middleware. Lo único que la
@@ -100,11 +101,12 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
   if (problema) {
     return (
       <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-4 p-6">
+        <EncabezadoNegocio />
         <h1 className="text-2xl font-bold text-n-900">Alta en {negocio.nombre}</h1>
         <Alert variante="advertencia" titulo="No podemos abrir este link">
           {problema}
         </Alert>
-        <a href="/login" className="text-sm font-semibold text-azul hover:underline">
+        <a href="/login" className="text-sm font-semibold text-morado hover:underline">
           Ir a iniciar sesión →
         </a>
       </main>
@@ -217,6 +219,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
 
     return (
       <main className="mx-auto flex min-h-screen max-w-lg flex-col gap-6 p-6">
+        <EncabezadoNegocio />
         <header>
           <h1 className="text-2xl font-bold text-n-900">Hola de nuevo, {cliente.nombre}</h1>
           <p className="mt-1 text-n-600">
@@ -250,6 +253,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
   // ───── Alta nueva ─────
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col gap-6 p-6">
+      <EncabezadoNegocio />
       <header>
         <h1 className="text-2xl font-bold text-n-900">Bienvenido a {negocio.nombre}</h1>
         <p className="mt-1 text-n-600">
@@ -291,6 +295,7 @@ async function LinkCumplido({ clienteId, tipo }: { clienteId: string | null; tip
 
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-4 p-6">
+      <EncabezadoNegocio />
       <h1 className="text-2xl font-bold text-n-900">Ya quedó todo</h1>
       {perfil ? (
         <>
@@ -299,7 +304,7 @@ async function LinkCumplido({ clienteId, tipo }: { clienteId: string | null; tip
           </Alert>
           <a
             href={sesionEsDelDueno ? "/portal" : "/login"}
-            className="inline-flex min-h-12 items-center justify-center rounded-md bg-azul px-5 font-bold text-white hover:opacity-90"
+            className="inline-flex min-h-12 items-center justify-center rounded-md bg-morado px-5 font-bold text-white hover:opacity-90"
           >
             {sesionEsDelDueno ? "Entrar a mi portal →" : "Entrar con mi teléfono →"}
           </a>

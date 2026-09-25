@@ -19,7 +19,7 @@ export function Antiguedad({
   return (
     <span
       className={`w-fit rounded-full px-2 py-0.5 text-xs font-semibold ${
-        viejo ? "bg-naranja-suave text-naranja-oscuro" : "bg-n-100 text-n-700"
+        viejo ? "bg-coral-suave text-coral-oscuro" : "bg-n-100 text-n-700"
       }`}
     >
       {viejo && dias < 14 ? `${frase} · más de una semana` : frase}

@@ -37,11 +37,11 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 
 const ESTILO_ESTADO: Record<string, string> = {
   reservada: "bg-n-100 text-n-700",
-  confirmada: "bg-azul-suave text-azul",
-  en_curso: "bg-verde-suave text-verde-oscuro",
+  confirmada: "bg-morado-suave text-morado",
+  en_curso: "bg-menta-suave text-menta-oscuro",
   finalizada: "bg-n-100 text-n-600",
-  cancelada: "bg-naranja-suave text-naranja-oscuro",
-  no_llego: "bg-naranja-suave text-naranja-oscuro",
+  cancelada: "bg-coral-suave text-coral-oscuro",
+  no_llego: "bg-coral-suave text-coral-oscuro",
 };
 
 export function EstanciaFila({
@@ -206,8 +206,8 @@ export function EstanciaFila({
               </Button>
             </div>
           ) : confirmandoCancelar ? (
-            <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-naranja bg-naranja-suave p-3">
-              <p className="text-sm font-semibold text-naranja-oscuro">
+            <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
+              <p className="text-sm font-semibold text-coral-oscuro">
                 ¿Cancelar la estancia de {fila.perroNombre}?
               </p>
               <div className="flex gap-2">
@@ -220,8 +220,8 @@ export function EstanciaFila({
               </div>
             </div>
           ) : confirmandoNoLlego ? (
-            <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-naranja bg-naranja-suave p-3">
-              <p className="text-sm font-semibold text-naranja-oscuro">
+            <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
+              <p className="text-sm font-semibold text-coral-oscuro">
                 ¿Marcar que {fila.perroNombre} no llegó?
               </p>
               <div className="flex gap-2">

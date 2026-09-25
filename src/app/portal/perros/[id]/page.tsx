@@ -19,8 +19,8 @@ import { MedicamentosCliente, type MedicamentoFilaCliente } from "./medicamentos
 import { zonaActual } from "@/lib/negocio/actual";
 
 const ESTILO_GRAVEDAD: Record<string, string> = {
-  grave: "border-naranja bg-naranja-suave text-naranja-oscuro",
-  moderada: "border-amarillo bg-amarillo-suave text-amarillo-oscuro",
+  grave: "border-coral bg-coral-suave text-coral-oscuro",
+  moderada: "border-ambar bg-ambar-suave text-ambar-oscuro",
   leve: "border-n-300 bg-n-100 text-n-700",
 };
 
@@ -173,7 +173,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/portal" className="text-sm font-semibold text-azul hover:underline">
+        <Link href="/portal" className="text-sm font-semibold text-morado hover:underline">
           ← Tus perros
         </Link>
         <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -184,7 +184,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
             </span>
           )}
           {!esPropio && (
-            <span className="rounded-full bg-turquesa-suave px-2 py-0.5 text-xs font-semibold text-turquesa-oscuro">
+            <span className="rounded-full bg-menta-suave px-2 py-0.5 text-xs font-semibold text-menta-oscuro">
               Acceso compartido
             </span>
           )}

@@ -19,13 +19,13 @@ export function BitacoraCliente({ entradas, zona }: { entradas: EntradaBitacoraC
         <li
           key={e.id}
           className={`rounded-lg border-[1.5px] p-4 ${
-            e.tipo === "incidencia" ? "border-naranja bg-naranja-suave" : "border-n-200 bg-white"
+            e.tipo === "incidencia" ? "border-coral bg-coral-suave" : "border-n-200 bg-white"
           }`}
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span
               className={`rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide ${
-                e.tipo === "incidencia" ? "bg-naranja-oscuro text-white" : "bg-azul-suave text-azul"
+                e.tipo === "incidencia" ? "bg-coral-oscuro text-white" : "bg-morado-suave text-morado"
               }`}
             >
               {e.tipo === "incidencia" ? "Incidencia" : "Actualización"}

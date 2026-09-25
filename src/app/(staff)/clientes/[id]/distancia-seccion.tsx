@@ -125,7 +125,7 @@ export function DistanciaSeccion({
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-bold text-n-900">{distanciaKm} km</span>
             {ajustadaManualmente && (
-              <span className="rounded-full bg-amarillo-suave px-2 py-0.5 text-xs font-semibold text-amarillo-oscuro">
+              <span className="rounded-full bg-ambar-suave px-2 py-0.5 text-xs font-semibold text-ambar-oscuro">
                 Ajustada a mano
               </span>
             )}

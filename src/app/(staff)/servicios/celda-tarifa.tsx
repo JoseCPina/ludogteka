@@ -27,7 +27,7 @@ export function CeldaTarifa({
 
   let estilo = "border-n-300 bg-white";
   if (valor.no_aplica) estilo = "border-n-300 bg-n-100";
-  else if (sinCapturarAun) estilo = "border-2 border-naranja-oscuro bg-naranja-suave";
+  else if (sinCapturarAun) estilo = "border-2 border-coral-oscuro bg-coral-suave";
 
   return (
     <div className={`flex flex-col gap-1 rounded-md border-[1.5px] p-2 ${estilo}`}>
@@ -40,8 +40,8 @@ export function CeldaTarifa({
         value={valor.no_aplica ? "" : valor.precio}
         disabled={disabled || valor.no_aplica}
         onChange={(e) => onChange({ ...valor, precio: e.target.value })}
-        className={`w-full rounded border-[1.5px] px-2 py-1.5 text-sm tabular-nums focus:border-azul focus:outline-none focus:ring-[2px] focus:ring-azul-suave disabled:bg-n-100 disabled:text-n-400 ${
-          sinCapturarAun ? "border-naranja-oscuro placeholder:text-naranja-oscuro placeholder:font-semibold" : "border-n-300"
+        className={`w-full rounded border-[1.5px] px-2 py-1.5 text-sm tabular-nums focus:border-morado focus:outline-none focus:ring-[2px] focus:ring-morado-suave disabled:bg-n-100 disabled:text-n-400 ${
+          sinCapturarAun ? "border-coral-oscuro placeholder:text-coral-oscuro placeholder:font-semibold" : "border-n-300"
         }`}
       />
       {pidePeloMaltratado && !valor.no_aplica && (
@@ -56,7 +56,7 @@ export function CeldaTarifa({
             value={valor.precioMaltratado ?? ""}
             disabled={disabled}
             onChange={(e) => onChange({ ...valor, precioMaltratado: e.target.value })}
-            className="w-full rounded border-[1.5px] border-n-300 px-2 py-1 text-sm tabular-nums focus:border-azul focus:outline-none"
+            className="w-full rounded border-[1.5px] border-n-300 px-2 py-1 text-sm tabular-nums focus:border-morado focus:outline-none"
           />
         </label>
       )}
@@ -71,7 +71,7 @@ export function CeldaTarifa({
         No aplica
       </label>
       {sinCapturarAun && (
-        <span className="text-xs font-bold text-naranja-oscuro">Sin tarifa</span>
+        <span className="text-xs font-bold text-coral-oscuro">Sin tarifa</span>
       )}
     </div>
   );

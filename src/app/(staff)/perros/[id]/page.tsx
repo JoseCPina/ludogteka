@@ -356,7 +356,7 @@ export default async function PerroPage({
         {perro.cliente_id && cliente && (
           <Link
             href={`/clientes/${perro.cliente_id}`}
-            className="text-sm font-semibold text-azul hover:underline"
+            className="text-sm font-semibold text-morado hover:underline"
           >
             ← {cliente.nombre}
           </Link>
@@ -375,7 +375,7 @@ export default async function PerroPage({
               <Link
                 key={s.id}
                 href={`/reservas/series/${s.id}`}
-                className="flex items-center gap-2 rounded-md border-l-4 border-azul bg-azul-suave px-4 py-2.5 text-sm font-semibold text-azul hover:underline"
+                className="flex items-center gap-2 rounded-md border-l-4 border-morado bg-morado-suave px-4 py-2.5 text-sm font-semibold text-morado hover:underline"
               >
                 Serie recurrente activa: {servicio?.nombre ?? "—"} — {formatearDiasSemana(s.dias_semana as number[])}
               </Link>
@@ -480,7 +480,7 @@ export default async function PerroPage({
                 </span>
               );
             })}
-            <Link href="/recepcion/comprobantes" className="mt-1 block font-semibold text-azul hover:underline">
+            <Link href="/recepcion/comprobantes" className="mt-1 block font-semibold text-morado hover:underline">
               Revisarlos en la bandeja de comprobantes →
             </Link>
           </Alert>
@@ -536,7 +536,7 @@ export default async function PerroPage({
             {!perro.fallecido && (
               <Link
                 href={`/guarderia/pases?cliente=${perro.cliente_id}&perro=${id}`}
-                className="text-sm font-semibold text-azul hover:underline"
+                className="text-sm font-semibold text-morado hover:underline"
               >
                 Vender paquete para {perro.nombre}
               </Link>
@@ -557,7 +557,7 @@ export default async function PerroPage({
                   </span>
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                      b.estado === "activo" ? "bg-verde-suave text-verde-oscuro" : b.estado === "vencido" ? "bg-naranja-suave text-naranja-oscuro" : "bg-n-100 text-n-600"
+                      b.estado === "activo" ? "bg-menta-suave text-menta-oscuro" : b.estado === "vencido" ? "bg-coral-suave text-coral-oscuro" : "bg-n-100 text-n-600"
                     }`}
                   >
                     {b.estado === "activo" ? "Activo" : b.estado === "vencido" ? "Vencido" : "Agotado"}

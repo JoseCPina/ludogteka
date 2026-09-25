@@ -64,7 +64,7 @@ export default async function CajaPage() {
           <h1 className="text-2xl font-bold text-n-900">Caja</h1>
           <p className="mt-1 text-n-600">
             Cobra, vende pases y aplica cargos desde aquí. El turno, sus movimientos y el arqueo están en{" "}
-            <Link href="/caja/turno" className="font-semibold text-azul hover:underline">
+            <Link href="/caja/turno" className="font-semibold text-morado hover:underline">
               Turno
             </Link>
             .
@@ -76,7 +76,7 @@ export default async function CajaPage() {
       </div>
 
       {turno ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-verde bg-verde-suave px-4 py-3 text-sm text-verde-oscuro">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-menta bg-menta-suave px-4 py-3 text-sm text-menta-oscuro">
           <span>
             Turno abierto desde el {formatearFecha(turno.abierto_at as string, zona)} · fondo ${Number(turno.fondo_inicial).toFixed(2)}
           </span>

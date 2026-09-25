@@ -6,55 +6,65 @@
  * deliberada para una herramienta de mostrador usada todo el turno.
  */
 @theme {
-  /* marca — colores base: fondos grandes, íconos, bordes. Nunca texto. */
-  --color-azul: #3148dd;
-  --color-turquesa: #00cdc4;
-  --color-naranja: #ef5025;
-  --color-amarillo: #ffc73a;
-  --color-verde: #2ac862;
+  /*
+   * PeluDesk — sistema visual base (docs/DISENO.md). Cada combinación de
+   * texto sobre fondo está verificada con la fórmula de WCAG, no supuesta:
+   * node scripts/diseno/contraste.mjs. Un solo tema (claro).
+   */
 
-  /* marca — variantes oscuras: texto, botón sólido con texto blanco, badges */
-  --color-azul-oscuro: #26379e;
-  --color-turquesa-oscuro: #0b6e68;
-  --color-naranja-oscuro: #a6330f;
-  --color-amarillo-oscuro: #8a6300;
-  --color-verde-oscuro: #1b7a42;
+  /* marca — tonos base del kit. Menta, coral y ámbar NO llevan texto
+     encima ni sirven como color de texto: son fondos grandes, íconos,
+     puntos de estado, ilustración y bordes. */
+  --color-morado: #4b3f72;      /* Deep purple: primario; sí lleva texto blanco */
+  --color-menta: #a7d8c8;       /* Mint: secundario; lleva texto MORADO */
+  --color-coral: #f28c82;       /* Soft coral: acento, destructivo decorativo */
+  --color-ambar: #f5b85c;       /* aviso cálido del kit ("En proceso") */
+  --color-crema: #fff8ee;       /* Cream: fondo de página */
+  --color-grafito: #2b2a33;     /* Graphite: texto principal */
 
-  /* marca — fondos suaves para badges/alertas */
-  --color-azul-suave: #e3e7fc;
-  --color-turquesa-suave: #dff9f7;
-  --color-naranja-suave: #fce4dc;
-  --color-amarillo-suave: #fff3d6;
-  --color-verde-suave: #e2f7e9;
+  /* variantes oscuras: texto de la familia y botón sólido con texto blanco */
+  --color-morado-oscuro: #3a3059;  /* hover/pressed del primario */
+  --color-menta-oscuro: #1f6b57;   /* texto de éxito, botón de éxito */
+  --color-menta-hover: #8ecbb7;    /* hover del botón secundario (con texto morado) */
+  --color-coral-oscuro: #b23c31;   /* texto de error, botón destructivo */
+  --color-ambar-oscuro: #8a5400;   /* texto de advertencia */
 
-  /* marca — solo para gráficas y reportes (Fase 8+), nunca en UI base */
-  --color-azul-brillante: #0b6af8;
-  --color-amarillo-brillante: #f8db1a;
-  --color-naranja-brillante: #ff5d02;
+  /* fondos suaves: chips de estado y alertas */
+  --color-morado-suave: #ece8f5;
+  --color-menta-suave: #e3f3ed;
+  --color-coral-suave: #fde8e5;
+  --color-ambar-suave: #fdf0d9;
 
-  /* neutros — rampa con sesgo azul, no gris de banco. Roles fijos: ver
-     docs/DISENO.md (400 es solo decorativo, nunca texto). */
+  /* neutros — rampa cálida del grafito a la crema. Roles fijos (DISENO.md):
+     400 es solo decorativo, nunca texto. */
+  /* borde de controles (input, select, botón fantasma): el más claro que
+     cumple 3:1 contra blanco y crema (WCAG 1.4.11) */
+  --color-borde: #948d98;
+
+  /* hover del destructivo */
+  --color-coral-hondo: #962f26;
+
   --color-n-0: #ffffff;
-  --color-n-50: #f5f6fa;
-  --color-n-100: #ebedf5;
-  --color-n-200: #dde1ed;
-  --color-n-300: #c6cbdc;
-  --color-n-400: #9ba3bd;
-  --color-n-500: #747c99;
-  --color-n-600: #5c6480;
-  --color-n-700: #454c63;
-  --color-n-800: #2b2f3d;
-  --color-n-900: #14161f;
+  --color-n-50: #fff8ee;
+  --color-n-100: #f6efe5;
+  --color-n-200: #ebe3d8;
+  --color-n-300: #d9d1c6;
+  --color-n-400: #aba49f;
+  --color-n-500: #7b7580;
+  --color-n-600: #5e5968;
+  --color-n-700: #46424f;
+  --color-n-800: #35323e;
+  --color-n-900: #2b2a33;
 
   --color-background: var(--color-n-50);
   --color-foreground: var(--color-n-900);
 
-  --font-sans: var(--font-nunito);
+  --font-sans: var(--font-outfit);
 
-  /* radios: 8 / 10 / 14px, sobre-escriben el default de Tailwind */
-  --radius-sm: 8px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  /* radios: 10 / 12 / 18px, como el UI kit (controles 12, tarjetas 18) */
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
 }
 
 body {

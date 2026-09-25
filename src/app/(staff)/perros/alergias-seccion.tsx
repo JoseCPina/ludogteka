@@ -20,8 +20,8 @@ export type AlergiaFila = {
 };
 
 const ESTILO_GRAVEDAD: Record<string, string> = {
-  grave: "border-naranja bg-naranja-suave text-naranja-oscuro",
-  moderada: "border-amarillo bg-amarillo-suave text-amarillo-oscuro",
+  grave: "border-coral bg-coral-suave text-coral-oscuro",
+  moderada: "border-ambar bg-ambar-suave text-ambar-oscuro",
   leve: "border-n-300 bg-n-100 text-n-700",
 };
 

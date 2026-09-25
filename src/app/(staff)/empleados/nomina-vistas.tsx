@@ -13,7 +13,7 @@ function Renglon({ etiqueta, detalle, valor, signo = "+" }: { etiqueta: string; 
         <span className="font-semibold text-n-900">{etiqueta}</span>
         {detalle && <span className="block text-xs text-n-600">{detalle}</span>}
       </td>
-      <td className={`border-b border-n-200 px-3 py-2 text-right tabular-nums ${signo === "−" ? "text-naranja-oscuro" : "text-n-900"}`}>
+      <td className={`border-b border-n-200 px-3 py-2 text-right tabular-nums ${signo === "−" ? "text-coral-oscuro" : "text-n-900"}`}>
         {signo === "−" ? "−" : ""}
         {moneda(valor)}
       </td>
@@ -28,7 +28,7 @@ export function VistaDesglose({ d }: { d: Desglose }) {
   return (
     <div className="flex flex-col gap-3">
       {d.avisos.length > 0 && (
-        <ul className="rounded-md border border-amarillo bg-amarillo-suave px-4 py-2 text-sm text-amarillo-oscuro">
+        <ul className="rounded-md border border-ambar bg-ambar-suave px-4 py-2 text-sm text-ambar-oscuro">
           {d.avisos.map((a) => (
             <li key={a}>{a}</li>
           ))}
@@ -123,7 +123,7 @@ export function ListaPagos({ pagos, puedeRevertir, zona }: { pagos: PagoNomina[]
         const esReverso = p.tipo === "reverso";
         const revertido = revertidos.has(p.id);
         return (
-          <li key={p.id} className={`flex flex-col gap-2 rounded-md border bg-white p-3 ${esReverso ? "border-naranja" : "border-n-200"}`}>
+          <li key={p.id} className={`flex flex-col gap-2 rounded-md border bg-white p-3 ${esReverso ? "border-coral" : "border-n-200"}`}>
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <p className="font-semibold text-n-900">
@@ -134,13 +134,13 @@ export function ListaPagos({ pagos, puedeRevertir, zona }: { pagos: PagoNomina[]
                   {p.notas && ` · ${p.notas}`}
                   {p.motivo && ` · motivo: ${p.motivo}`}
                 </p>
-                {revertido && <p className="text-xs font-semibold text-naranja-oscuro">Revertido</p>}
+                {revertido && <p className="text-xs font-semibold text-coral-oscuro">Revertido</p>}
               </div>
-              <span className={`text-lg font-bold tabular-nums ${esReverso ? "text-naranja-oscuro" : "text-n-900"}`}>{moneda(p.total)}</span>
+              <span className={`text-lg font-bold tabular-nums ${esReverso ? "text-coral-oscuro" : "text-n-900"}`}>{moneda(p.total)}</span>
             </div>
             {!esReverso && "dias" in p.desglose && (
               <details className="text-sm">
-                <summary className="cursor-pointer font-semibold text-azul">Ver desglose</summary>
+                <summary className="cursor-pointer font-semibold text-morado">Ver desglose</summary>
                 <div className="mt-2">
                   <VistaDesglose d={p.desglose} />
                   <p className="mt-2 text-xs text-n-500">Capturado el {formatearFecha(p.created_at, zona)}.</p>

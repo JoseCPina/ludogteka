@@ -37,7 +37,7 @@ function Lista({ titulo, items, vacio }: { titulo: string; items: Fila[]; vacio:
             <li key={f.id}>
               <Link
                 href={`/guarderia/pases?cliente=${f.cliente_id}${f.perro_id ? `&perro=${f.perro_id}` : ""}`}
-                className="flex flex-col rounded-md border border-n-200 bg-white px-3 py-2 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul-suave"
+                className="flex flex-col rounded-md border border-n-200 bg-white px-3 py-2 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
               >
                 <span className="font-semibold text-n-900">
                   {f.perro_nombre ?? "—"} <span className="font-normal text-n-600">({f.cliente_nombre})</span> ·{" "}

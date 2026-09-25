@@ -242,7 +242,7 @@ export default async function EditarClientePage({
                 <li key={perro.id}>
                   <Link
                     href={`/perros/${perro.id}`}
-                    className="flex flex-col gap-2 rounded-md border-[1.5px] border-n-200 bg-white px-4 py-3 hover:border-azul"
+                    className="flex flex-col gap-2 rounded-md border-[1.5px] border-n-200 bg-white px-4 py-3 hover:border-morado"
                   >
                     <span className="flex items-center justify-between">
                       <span className="flex items-center gap-3">

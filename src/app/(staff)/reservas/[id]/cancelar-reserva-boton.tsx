@@ -46,8 +46,8 @@ export function CancelarReservaBoton({
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-naranja bg-naranja-suave p-3">
-      <p className="text-sm font-semibold text-naranja-oscuro">
+    <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
+      <p className="text-sm font-semibold text-coral-oscuro">
         ¿Cancelar los {cancelables} perro(s) que todavía se pueden cancelar de esta reserva?
       </p>
       <div className="flex gap-2">

@@ -182,7 +182,7 @@ export function SelectorRaza({
             <button
               type="button"
               onClick={limpiar}
-              className="ml-auto rounded px-2 py-1 text-sm font-semibold text-azul hover:bg-azul-suave"
+              className="ml-auto rounded px-2 py-1 text-sm font-semibold text-morado hover:bg-morado-suave"
             >
               Cambiar
             </button>
@@ -210,7 +210,7 @@ export function SelectorRaza({
             onFocus={() => setAbierto(true)}
             onBlur={() => window.setTimeout(() => setAbierto(false), 150)}
             onKeyDown={alTeclear}
-            className="min-h-12 w-full rounded-md border-[1.5px] border-n-400 bg-white px-3.5 text-base text-n-900 focus:border-azul focus:outline-none focus:ring-[3px] focus:ring-azul-suave"
+            className="min-h-12 w-full rounded-md border-[1.5px] border-n-400 bg-white px-3.5 text-base text-n-900 focus:border-morado focus:outline-none focus:ring-[3px] focus:ring-morado-suave"
           />
 
           {abierto && (
@@ -227,7 +227,7 @@ export function SelectorRaza({
                     onClick={() => elegir(raza)}
                     onMouseEnter={() => setResaltado(i)}
                     className={`flex w-full flex-col items-start gap-0.5 px-3.5 py-2.5 text-left ${
-                      i === resaltado ? "bg-azul-suave" : "bg-white"
+                      i === resaltado ? "bg-morado-suave" : "bg-white"
                     }`}
                   >
                     <span className="text-n-900">{raza.nombre}</span>

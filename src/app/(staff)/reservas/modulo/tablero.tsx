@@ -39,7 +39,7 @@ function ListaPerros({
         <li key={f.estancia_id}>
           <Link
             href={destino(f)}
-            className="flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-3 py-2 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul-suave"
+            className="flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-3 py-2 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
           >
             <span className="font-semibold text-n-900">{f.perro_nombre}</span>
             <span className="text-xs text-n-500">{f.servicio_nombre}</span>

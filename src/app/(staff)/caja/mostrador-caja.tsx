@@ -70,7 +70,7 @@ export function MostradorCaja({
       <li>
         <Link
           href={`/caja/cobrar/${c.reservaId}`}
-          className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-4 py-3 hover:border-azul hover:bg-n-50"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-4 py-3 hover:border-morado hover:bg-n-50"
         >
           <span className="flex min-w-0 flex-col">
             <span className="font-semibold text-n-900">
@@ -83,7 +83,7 @@ export function MostradorCaja({
             </span>
           </span>
           <span className="flex flex-col items-end">
-            <span className="text-lg font-bold tabular-nums text-naranja-oscuro">{dinero(c.saldo)}</span>
+            <span className="text-lg font-bold tabular-nums text-coral-oscuro">{dinero(c.saldo)}</span>
             <span className="text-xs text-n-500">de {dinero(c.totalCuenta)}</span>
           </span>
         </Link>
@@ -100,11 +100,11 @@ export function MostradorCaja({
       )}
 
       {pendientesMp.length > 0 && (
-        <div className="flex flex-col gap-2 rounded-lg border-[1.5px] border-amarillo bg-amarillo-suave p-4">
-          <p className="font-bold text-amarillo-oscuro">
+        <div className="flex flex-col gap-2 rounded-lg border-[1.5px] border-ambar bg-ambar-suave p-4">
+          <p className="font-bold text-ambar-oscuro">
             {pendientesMp.length === 1 ? "Un pago de Mercado Pago llegó" : `${pendientesMp.length} pagos de Mercado Pago llegaron`} sin turno abierto
           </p>
-          <ul className="text-sm text-amarillo-oscuro">
+          <ul className="text-sm text-ambar-oscuro">
             {pendientesMp.map((p) => (
               <li key={p.id}>
                 {p.clienteNombre} · {p.tipo === "point" ? "terminal" : "link"} · {dinero(p.monto)}
@@ -112,7 +112,7 @@ export function MostradorCaja({
               </li>
             ))}
           </ul>
-          <p className="text-sm text-amarillo-oscuro">
+          <p className="text-sm text-ambar-oscuro">
             {turnoAbierto
               ? "Ya hay turno: regístralos para que entren a este corte."
               : "Se registran solos en cuanto abras el turno."}

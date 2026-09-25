@@ -24,7 +24,7 @@ export default async function EditarProveedorPage({ params }: { params: Promise<
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/inventario/proveedores" className="text-sm font-semibold text-azul hover:underline">
+        <Link href="/inventario/proveedores" className="text-sm font-semibold text-morado hover:underline">
           ← Proveedores
         </Link>
         <div className="mt-1 flex flex-wrap items-center gap-2">

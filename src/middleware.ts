@@ -225,7 +225,7 @@ export async function middleware(request: NextRequest) {
 
 // Rutas de la plataforma: la administración y lo que Auth necesita para
 // entrar (link de invitación y escoger contraseña).
-const RUTAS_PLATAFORMA = ["/plataforma", "/auth/callback", "/auth/nueva-password", "/robots.txt", "/icono-negocio"];
+const RUTAS_PLATAFORMA = ["/plataforma", "/auth/callback", "/auth/nueva-password", "/robots.txt", "/icono-negocio", "/marca", "/iconos"];
 
 async function plataforma(request: NextRequest, cabeceras: Headers) {
   const { pathname } = request.nextUrl;

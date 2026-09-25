@@ -20,11 +20,11 @@ const ETIQUETA_TIPO: Record<string, string> = {
 };
 
 const ESTILO_TIPO: Record<string, string> = {
-  entrada_compra: "bg-verde-suave text-verde-oscuro",
+  entrada_compra: "bg-menta-suave text-menta-oscuro",
   salida_consumo: "bg-n-100 text-n-700",
-  salida_merma: "bg-naranja-suave text-naranja-oscuro",
-  ajuste_positivo: "bg-verde-suave text-verde-oscuro",
-  ajuste_negativo: "bg-naranja-suave text-naranja-oscuro",
+  salida_merma: "bg-coral-suave text-coral-oscuro",
+  ajuste_positivo: "bg-menta-suave text-menta-oscuro",
+  ajuste_negativo: "bg-coral-suave text-coral-oscuro",
 };
 
 export type MovimientoFila = {

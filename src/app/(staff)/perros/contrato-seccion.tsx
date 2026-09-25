@@ -28,9 +28,9 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 };
 
 const ESTILO_ESTADO: Record<string, string> = {
-  pendiente_firma: "bg-amarillo-suave text-amarillo-oscuro",
-  firmado_digital: "bg-verde-suave text-verde-oscuro",
-  firmado_papel: "bg-verde-suave text-verde-oscuro",
+  pendiente_firma: "bg-ambar-suave text-ambar-oscuro",
+  firmado_digital: "bg-menta-suave text-menta-oscuro",
+  firmado_papel: "bg-menta-suave text-menta-oscuro",
   cancelado: "bg-n-100 text-n-500",
 };
 
@@ -80,20 +80,20 @@ function PastillaEstadoTipo({ tipo }: { tipo: TipoContratoFila }) {
   }
   if (tipo.estado === "vigente") {
     return (
-      <span className="rounded-full bg-verde-suave px-2.5 py-1 text-xs font-semibold text-verde-oscuro">
+      <span className="rounded-full bg-menta-suave px-2.5 py-1 text-xs font-semibold text-menta-oscuro">
         Al día
       </span>
     );
   }
   if (tipo.estado === "requiere_actualizacion") {
     return (
-      <span className="rounded-full bg-azul-suave px-2.5 py-1 text-xs font-semibold text-azul-oscuro">
+      <span className="rounded-full bg-morado-suave px-2.5 py-1 text-xs font-semibold text-morado-oscuro">
         Requiere actualización
       </span>
     );
   }
   return (
-    <span className="rounded-full bg-amarillo-suave px-2.5 py-1 text-xs font-semibold text-amarillo-oscuro">
+    <span className="rounded-full bg-ambar-suave px-2.5 py-1 text-xs font-semibold text-ambar-oscuro">
       Falta firmar
     </span>
   );
@@ -388,7 +388,7 @@ export function ContratoSeccion({
                   {c.paqueteNombre && <span className="text-n-600"> · {c.paqueteNombre}</span>}
                   {c.motivoCancelacion && <p className="mt-1 text-xs text-n-500">{c.motivoCancelacion}</p>}
                   {c.regenerarMotivo && (
-                    <p className="mt-1 text-xs font-semibold text-naranja-oscuro">
+                    <p className="mt-1 text-xs font-semibold text-coral-oscuro">
                       {c.regenerarMotivo}{" "}
                       <a href="/recepcion/contratos" className="underline">
                         Volver a generarlo

@@ -44,7 +44,7 @@ export default async function PermisosPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/admin" className="text-sm font-semibold text-azul hover:underline">
+        <Link href="/admin" className="text-sm font-semibold text-morado hover:underline">
           ← Panel de admin
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Permisos de recepción</h1>

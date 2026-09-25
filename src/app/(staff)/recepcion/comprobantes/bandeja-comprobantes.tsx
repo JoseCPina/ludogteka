@@ -63,7 +63,7 @@ function Tarjeta({ item }: { item: ComprobantePendiente }) {
 
   if (listo) {
     return (
-      <li className="rounded-lg border border-verde bg-verde-suave p-4 text-sm font-semibold text-verde-oscuro">
+      <li className="rounded-lg border border-menta bg-menta-suave p-4 text-sm font-semibold text-menta-oscuro">
         {listo}
       </li>
     );
@@ -96,11 +96,11 @@ function Tarjeta({ item }: { item: ComprobantePendiente }) {
           <Antiguedad dias={item.dias_esperando} prefijo="Esperando revisión" />
           <p className="text-sm text-n-600">
             Dueño:{" "}
-            <Link href={`/clientes/${item.cliente_id}`} className="font-semibold text-azul hover:underline">
+            <Link href={`/clientes/${item.cliente_id}`} className="font-semibold text-morado hover:underline">
               {item.cliente_nombre}
             </Link>
             {" · "}
-            <Link href={`/perros/${item.perro_id}`} className="font-semibold text-azul hover:underline">
+            <Link href={`/perros/${item.perro_id}`} className="font-semibold text-morado hover:underline">
               Ver expediente de {item.perro_nombre} →
             </Link>
           </p>

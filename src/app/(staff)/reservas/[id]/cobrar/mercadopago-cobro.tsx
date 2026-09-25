@@ -180,11 +180,11 @@ export function CobroMercadoPago({
   if (!disponible.activo) return null;
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-azul bg-azul-suave/40 p-4">
+    <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-morado bg-morado-suave/40 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="font-semibold text-n-900">Cobrar con Mercado Pago</p>
         {disponible.simulado && (
-          <span className="rounded-full bg-amarillo-suave px-2 py-0.5 text-xs font-semibold text-amarillo-oscuro">
+          <span className="rounded-full bg-ambar-suave px-2 py-0.5 text-xs font-semibold text-ambar-oscuro">
             Simulación: no mueve dinero
           </span>
         )}
@@ -198,7 +198,7 @@ export function CobroMercadoPago({
       {aviso && <Alert variante="exito" titulo={aviso} />}
 
       {ordenActiva ? (
-        <div className="flex flex-col gap-3 rounded-md border border-azul bg-white p-4">
+        <div className="flex flex-col gap-3 rounded-md border border-morado bg-white p-4">
           <div className="flex items-center gap-3">
             {!agotado && <Spinner />}
             <div>
@@ -274,7 +274,7 @@ export function CobroMercadoPago({
             </p>
           )}
           {modo === "link" && !clienteTelefono && (
-            <p className="text-sm text-amarillo-oscuro">Este cliente no tiene teléfono: el link se genera igual, pero tendrás que mandarlo tú.</p>
+            <p className="text-sm text-ambar-oscuro">Este cliente no tiene teléfono: el link se genera igual, pero tendrás que mandarlo tú.</p>
           )}
           <AccionesFormulario error={null}>
             {modo === "terminal" ? (
@@ -294,15 +294,15 @@ export function CobroMercadoPago({
       )}
 
       {link && (
-        <div className="flex flex-col gap-2 rounded-md border border-verde bg-verde-suave p-4">
-          <p className="font-semibold text-verde-oscuro">Link listo{link.simulado ? " (simulado: abrirlo equivale a pagarlo)" : ""}</p>
+        <div className="flex flex-col gap-2 rounded-md border border-menta bg-menta-suave p-4">
+          <p className="font-semibold text-menta-oscuro">Link listo{link.simulado ? " (simulado: abrirlo equivale a pagarlo)" : ""}</p>
           <CampoCopiable valor={link.url} textoBoton="Copiar link" />
           {link.urlWhatsApp && (
             <a href={link.urlWhatsApp} target="_blank" rel="noreferrer" className="self-start">
               <Button type="button">Mandar por WhatsApp</Button>
             </a>
           )}
-          <p className="text-sm text-verde-oscuro">Cuando el cliente pague, el cobro se registra solo (método transferencia) y el saldo baja.</p>
+          <p className="text-sm text-menta-oscuro">Cuando el cliente pague, el cobro se registra solo (método transferencia) y el saldo baja.</p>
         </div>
       )}
 
@@ -323,7 +323,7 @@ export function CobroMercadoPago({
                 )}
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                    o.estado === "pagada" ? "bg-verde-suave text-verde-oscuro" : o.estado === "creada" || o.estado === "en_terminal" ? "bg-azul-suave text-azul" : "bg-n-100 text-n-600"
+                    o.estado === "pagada" ? "bg-menta-suave text-menta-oscuro" : o.estado === "creada" || o.estado === "en_terminal" ? "bg-morado-suave text-morado" : "bg-n-100 text-n-600"
                   }`}
                 >
                   {o.pendiente_de_registrar ? "Pagado, sin turno" : ETIQUETA_ESTADO[o.estado] ?? o.estado}

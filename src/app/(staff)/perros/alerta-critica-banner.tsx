@@ -20,13 +20,13 @@ export function AlertaCriticaBanner({
 
   return (
     <div
-      className={`flex flex-col gap-2 rounded-lg border-2 border-naranja-oscuro bg-naranja-suave ${
+      className={`flex flex-col gap-2 rounded-lg border-2 border-coral-oscuro bg-coral-suave ${
         esGrande ? "p-4" : "p-2.5"
       }`}
       role="alert"
     >
       <p
-        className={`font-extrabold uppercase tracking-wide text-naranja-oscuro ${
+        className={`font-extrabold uppercase tracking-wide text-coral-oscuro ${
           esGrande ? "text-sm" : "text-xs"
         }`}
       >
@@ -36,7 +36,7 @@ export function AlertaCriticaBanner({
         {alertas.map((a) => (
           <span
             key={a.id}
-            className={`rounded-full bg-naranja-oscuro font-bold text-white ${
+            className={`rounded-full bg-coral-oscuro font-bold text-white ${
               esGrande ? "px-3 py-1 text-sm" : "px-2 py-0.5 text-xs"
             }`}
           >
@@ -46,7 +46,7 @@ export function AlertaCriticaBanner({
         {alergiasGraves.map((al) => (
           <span
             key={al.id}
-            className={`rounded-full bg-naranja-oscuro font-bold text-white ${
+            className={`rounded-full bg-coral-oscuro font-bold text-white ${
               esGrande ? "px-3 py-1 text-sm" : "px-2 py-0.5 text-xs"
             }`}
           >

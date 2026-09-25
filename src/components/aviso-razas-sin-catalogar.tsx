@@ -24,7 +24,7 @@ export function AvisoRazasSinCatalogar({ cuantos }: { cuantos: number }) {
     >
       Tienen la raza escrita a mano, de antes del catálogo, y sin raza del catálogo su baño se
       cobra como pelo corto. Un shih tzu ahí paga como chihuahua.{" "}
-      <Link href="/perros/razas" className="font-semibold text-azul hover:underline">
+      <Link href="/perros/razas" className="font-semibold text-morado hover:underline">
         Asignarles su raza →
       </Link>
     </Alert>

@@ -65,7 +65,7 @@ export function RecordatorioSanitario({
   }
 
   if (pendientes.length === 0) {
-    return <p className="text-sm text-verde-oscuro">Vacunas y desparasitación al día.</p>;
+    return <p className="text-sm text-menta-oscuro">Vacunas y desparasitación al día.</p>;
   }
 
   // La propuesta más reciente de cada tipo es la que cuenta: una pendiente
@@ -77,7 +77,7 @@ export function RecordatorioSanitario({
   const categoriaDe = (tipoId: string) => tipos.find((t) => t.id === tipoId)?.categoria ?? "vacuna";
 
   return (
-    <div className="rounded-md bg-azul-suave p-3 text-sm text-azul-oscuro">
+    <div className="rounded-md bg-morado-suave p-3 text-sm text-morado-oscuro">
       <p className="font-semibold">Para tu próxima visita:</p>
       <ul className="mt-1 flex flex-col gap-3 pl-5">
         {pendientes.map((item) => {
@@ -95,7 +95,7 @@ export function RecordatorioSanitario({
                 </p>
               )}
               {rechazada && (
-                <p className="mt-1 rounded-md bg-amarillo-suave px-2 py-1 font-semibold text-amarillo-oscuro">
+                <p className="mt-1 rounded-md bg-ambar-suave px-2 py-1 font-semibold text-ambar-oscuro">
                   Recepción no pudo confirmar el comprobante que mandaste: {propuesta.motivo_rechazo}. Puedes mandar otro.
                 </p>
               )}
@@ -154,7 +154,7 @@ function NotaEstetica({
       )}
       {puedeProponer && pendientes.length > 0 && (
         <details className="mt-2">
-          <summary className="cursor-pointer font-semibold text-azul hover:underline">
+          <summary className="cursor-pointer font-semibold text-morado hover:underline">
             Adelantarlo ahora: subir sus comprobantes
           </summary>
           <ul className="mt-2 flex flex-col gap-3 pl-1">
@@ -165,7 +165,7 @@ function NotaEstetica({
                 <li key={item.tipo_requisito_id}>
                   <span className="font-semibold text-n-800">{item.etiqueta}</span>
                   {propuesta?.estado === "rechazado" && (
-                    <span className="block text-amarillo-oscuro">
+                    <span className="block text-ambar-oscuro">
                       Recepción no pudo confirmar el que mandaste: {propuesta.motivo_rechazo}.
                     </span>
                   )}

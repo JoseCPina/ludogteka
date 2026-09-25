@@ -33,7 +33,7 @@ function TarjetaServicio({ servicio }: { servicio: PrecioDeServicio }) {
         <ul className="mt-2 flex flex-col gap-0.5">
           {servicio.incluye.map((item) => (
             <li key={item} className="flex gap-2 text-sm text-n-700">
-              <span aria-hidden="true" className="text-turquesa-oscuro">
+              <span aria-hidden="true" className="text-menta-oscuro">
                 ✓
               </span>
               {item}
@@ -97,7 +97,7 @@ export function PrecioEstetica({
   return (
     <div
       className={`flex flex-col gap-3 rounded-lg border-[1.5px] p-4 ${
-        incierto ? "border-naranja-oscuro bg-naranja-suave" : "border-turquesa bg-turquesa-suave"
+        incierto ? "border-coral-oscuro bg-coral-suave" : "border-menta bg-menta-suave"
       }`}
     >
       <p className="text-sm font-semibold text-n-700">Lo que cuesta bañar a tu perro</p>
@@ -121,7 +121,7 @@ export function PrecioEstetica({
 
       {incierto && (
         <div className="flex flex-col gap-2 text-sm text-n-800">
-          <p className="font-bold text-naranja-oscuro">Ojo: estos números pueden quedarse cortos.</p>
+          <p className="font-bold text-coral-oscuro">Ojo: estos números pueden quedarse cortos.</p>
           <p>
             Como no nos dijiste la raza, estamos calculando el precio del pelo más sencillo de
             bañar. Si tu perro tiene el pelo largo, rizado o enredado, el baño cuesta más

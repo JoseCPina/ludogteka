@@ -257,7 +257,7 @@ export async function PantallaCobro({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href={volverHref} className="text-sm font-semibold text-azul hover:underline">
+        <Link href={volverHref} className="text-sm font-semibold text-morado hover:underline">
           ← {volverEtiqueta}
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Cobrar — {cliente?.nombre ?? "Cliente"}</h1>

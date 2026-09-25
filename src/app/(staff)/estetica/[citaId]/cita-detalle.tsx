@@ -195,8 +195,8 @@ export function CitaDetalle({
               </Button>
             </div>
           ) : confirmandoCancelar ? (
-            <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-naranja bg-naranja-suave p-3">
-              <p className="text-sm font-semibold text-naranja-oscuro">¿Cancelar esta cita?</p>
+            <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
+              <p className="text-sm font-semibold text-coral-oscuro">¿Cancelar esta cita?</p>
               <div className="flex gap-2">
                 <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={accionCancelar}>
                   {cargando.cargando ? "Cancelando…" : "Sí, cancelar"}
@@ -207,8 +207,8 @@ export function CitaDetalle({
               </div>
             </div>
           ) : confirmandoNoLlego ? (
-            <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-naranja bg-naranja-suave p-3">
-              <p className="text-sm font-semibold text-naranja-oscuro">
+            <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
+              <p className="text-sm font-semibold text-coral-oscuro">
                 ¿Marcar que {perroNombre} no llegó?
               </p>
               <div className="flex gap-2">
@@ -327,7 +327,7 @@ export function CitaDetalle({
                           onChange={(e) =>
                             setCantidadesConsumo((prev) => ({ ...prev, [r.insumo_id]: e.target.value }))
                           }
-                          className="min-h-10 w-24 rounded-md border-[1.5px] border-n-400 px-2 text-right text-sm focus:border-azul focus:outline-none focus:ring-[3px] focus:ring-azul-suave"
+                          className="min-h-10 w-24 rounded-md border-[1.5px] border-n-400 px-2 text-right text-sm focus:border-morado focus:outline-none focus:ring-[3px] focus:ring-morado-suave"
                         />
                         <span className="text-sm text-n-600">{r.unidad_etiqueta}</span>
                       </div>

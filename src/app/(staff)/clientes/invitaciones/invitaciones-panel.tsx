@@ -37,9 +37,9 @@ export type InvitacionFila = {
 };
 
 const ESTILO_ESTADO: Record<string, string> = {
-  pendiente: "bg-amarillo-suave text-amarillo-oscuro",
-  en_curso: "bg-azul-suave text-azul",
-  usada: "bg-verde-suave text-verde-oscuro",
+  pendiente: "bg-ambar-suave text-ambar-oscuro",
+  en_curso: "bg-morado-suave text-morado",
+  usada: "bg-menta-suave text-menta-oscuro",
   vencida: "bg-n-100 text-n-500",
   cancelada: "bg-n-100 text-n-500",
 };
@@ -58,10 +58,10 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 function EnlaceGenerado({ resultado }: { resultado: EstadoInvitacion }) {
   const zona = useZonaNegocio();
   return (
-    <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-verde bg-verde-suave p-4">
-      <p className="font-bold text-verde-oscuro">Link listo para mandar</p>
+    <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-menta bg-menta-suave p-4">
+      <p className="font-bold text-menta-oscuro">Link listo para mandar</p>
       <CampoCopiable valor={resultado.url ?? ""} textoBoton="Copiar link" />
-      <p className="text-sm text-verde-oscuro">
+      <p className="text-sm text-menta-oscuro">
         Vence el {resultado.expiraAt ? formatearFecha(resultado.expiraAt, zona) : "—"}. Le sirve al
         cliente hasta que termine todo (datos y firma): si lo deja a medias, lo vuelve a abrir y
         continúa. En cuanto no le falte nada, deja de servir.
@@ -122,7 +122,7 @@ function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
             {invitacion.es_complemento && (
               <>
                 {" · "}
-                <span className="font-semibold text-azul">
+                <span className="font-semibold text-morado">
                   Completar expediente de {invitacion.cliente_nombre ?? "un cliente"}
                 </span>
               </>
@@ -133,7 +133,7 @@ function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
               <>
                 {invitacion.es_complemento ? "Completó su expediente el " : "Se dio de alta el "}
                 {formatearFecha(invitacion.usada_at as string, zona)} ·{" "}
-                <Link href={`/clientes/${invitacion.cliente_id}`} className="font-semibold text-azul hover:underline">
+                <Link href={`/clientes/${invitacion.cliente_id}`} className="font-semibold text-morado hover:underline">
                   Ver expediente de {invitacion.cliente_nombre ?? "el cliente"} →
                 </Link>
               </>
@@ -141,7 +141,7 @@ function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
               <>
                 Guardó sus datos el {formatearFecha(invitacion.alta_completada_at as string, zona)}; le
                 falta firmar el contrato. El mismo link le sirve para volver ·{" "}
-                <Link href={`/clientes/${invitacion.cliente_id}`} className="font-semibold text-azul hover:underline">
+                <Link href={`/clientes/${invitacion.cliente_id}`} className="font-semibold text-morado hover:underline">
                   Ver expediente de {invitacion.cliente_nombre ?? "el cliente"} →
                 </Link>
               </>
@@ -192,7 +192,7 @@ function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
         </div>
       )}
 
-      {error && <p className="text-sm font-semibold text-naranja-oscuro">{error}</p>}
+      {error && <p className="text-sm font-semibold text-coral-oscuro">{error}</p>}
     </li>
   );
 }

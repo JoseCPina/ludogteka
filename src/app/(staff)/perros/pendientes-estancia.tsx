@@ -55,7 +55,7 @@ export function PendientesEstancia({
 
   if (pendientes.length === 0) {
     return (
-      <p className="rounded-md border-l-4 border-verde bg-verde-suave px-4 py-3 text-sm font-semibold text-verde-oscuro">
+      <p className="rounded-md border-l-4 border-menta bg-menta-suave px-4 py-3 text-sm font-semibold text-menta-oscuro">
         {perroNombre} tiene todo lo que se pide para guardería y hotel.
       </p>
     );
@@ -85,7 +85,7 @@ export function PendientesEstancia({
       <li className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <span>{p.etiqueta}</span>
         {accion && (
-          <Link href={accion.href} className="text-sm font-semibold text-azul hover:underline">
+          <Link href={accion.href} className="text-sm font-semibold text-morado hover:underline">
             {accion.texto} →
           </Link>
         )}
@@ -94,12 +94,12 @@ export function PendientesEstancia({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border-[1.5px] border-amarillo bg-amarillo-suave/40 p-4">
+    <div className="flex flex-col gap-4 rounded-lg border-[1.5px] border-ambar bg-ambar-suave/40 p-4">
       <p className="font-bold text-n-900">Para guardería y hotel, a {perroNombre} le falta:</p>
 
       {(bloquean.length > 0 || condiciones.length > 0) && (
         <div>
-          <p className="text-sm font-bold text-naranja-oscuro">No se le puede reservar hasta que esto quede</p>
+          <p className="text-sm font-bold text-coral-oscuro">No se le puede reservar hasta que esto quede</p>
           <ul className="mt-1 flex flex-col gap-1 text-n-900">
             {bloquean.map((p) => (
               <Item key={p.clave} p={p} />

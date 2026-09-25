@@ -101,7 +101,7 @@ export function RecetaConsumo({
                       <button
                         type="button"
                         onClick={() => quitar(f.id)}
-                        className="text-xs font-semibold text-naranja-oscuro hover:underline"
+                        className="text-xs font-semibold text-coral-oscuro hover:underline"
                       >
                         Quitar
                       </button>

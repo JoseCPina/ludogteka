@@ -35,22 +35,22 @@ export function PaseCheckin({ estanciaId, estado }: { estanciaId: string; estado
 
   if (estado.tipo === "cubierto") {
     return (
-      <div className="rounded-lg border-l-4 border-verde bg-verde-suave px-4 py-3">
-        <p className="font-bold text-verde-oscuro">Viene con pase</p>
-        <p className="text-sm text-verde-oscuro">{estado.descripcion}</p>
+      <div className="rounded-lg border-l-4 border-menta bg-menta-suave px-4 py-3">
+        <p className="font-bold text-menta-oscuro">Viene con pase</p>
+        <p className="text-sm text-menta-oscuro">{estado.descripcion}</p>
       </div>
     );
   }
 
   if (estado.tipo === "disponible") {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border-l-4 border-amarillo bg-amarillo-suave px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border-l-4 border-ambar bg-ambar-suave px-4 py-3">
         <div>
-          <p className="font-bold text-amarillo-oscuro">Tiene pases sin aplicar</p>
-          <p className="text-sm text-amarillo-oscuro">
+          <p className="font-bold text-ambar-oscuro">Tiene pases sin aplicar</p>
+          <p className="text-sm text-ambar-oscuro">
             {estado.descripcion}. Hoy quedó como día suelto (${estado.precioDia.toFixed(2)}).
           </p>
-          {error && <p className="mt-1 text-sm font-semibold text-naranja-oscuro">{error}</p>}
+          {error && <p className="mt-1 text-sm font-semibold text-coral-oscuro">{error}</p>}
         </div>
         <Button type="button" cargando={aplicando.cargando} onClick={aplicar}>
           {aplicando.cargando ? "Aplicando…" : "Usar el pase para hoy"}

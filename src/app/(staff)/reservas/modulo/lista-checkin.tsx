@@ -39,7 +39,7 @@ export async function ListaCheckin({ modulo }: { modulo: ModuloEstancia }) {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link href={modulo.base} className="text-sm font-semibold text-azul hover:underline">
+          <Link href={modulo.base} className="text-sm font-semibold text-morado hover:underline">
             ← {modulo.etiqueta}
           </Link>
           <h1 className="mt-1 text-2xl font-bold text-n-900">Check-in — {modulo.etiqueta}</h1>
@@ -66,7 +66,7 @@ export async function ListaCheckin({ modulo }: { modulo: ModuloEstancia }) {
             <li key={l.estancia_id}>
               <Link
                 href={`/reservas/estancias/${l.estancia_id}/checkin`}
-                className="flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-4 py-3 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul-suave"
+                className="flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-4 py-3 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
               >
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold text-n-900">{l.perro_nombre}</span>

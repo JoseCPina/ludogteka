@@ -45,14 +45,14 @@ export function ConvertirHotel({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border-2 border-amarillo bg-amarillo-suave p-4">
+    <div className="flex flex-col gap-3 rounded-lg border-2 border-ambar bg-ambar-suave p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="font-bold text-amarillo-oscuro">
+          <p className="font-bold text-ambar-oscuro">
             Pasó el cierre ({sugerencia.horaCierre}) hace {sugerencia.minutos} minuto
             {sugerencia.minutos === 1 ? "" : "s"} y el perro sigue aquí
           </p>
-          <p className="text-sm text-amarillo-oscuro">
+          <p className="text-sm text-ambar-oscuro">
             No hay cargo por recogida tardía: si se queda, la estancia se convierte en noche de hotel y
             se cobra a su tarifa. La salida queda para el siguiente día que abrimos (el de sábado se entrega
             el lunes: dos noches). Tú decides, no se aplica solo.
@@ -64,7 +64,7 @@ export function ConvertirHotel({
               {convirtiendo.cargando ? "Convirtiendo…" : "Convertir en noche de hotel"}
             </Button>
           ) : (
-            <span className="text-sm font-semibold text-amarillo-oscuro">
+            <span className="text-sm font-semibold text-ambar-oscuro">
               Ningún servicio de hotel tiene precio capturado. Captúralo en{" "}
               <Link href="/servicios" className="underline">
                 Servicios

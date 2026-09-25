@@ -29,7 +29,7 @@ export default async function Soporte({ searchParams }: { searchParams: Promise<
         <div className="min-w-64 flex-1">
           <Field label="Teléfono o correo" name="q" defaultValue={q} />
         </div>
-        <button type="submit" className="min-h-12 rounded-md bg-azul px-5 font-semibold text-white hover:opacity-90">Buscar</button>
+        <button type="submit" className="min-h-12 rounded-md bg-morado px-5 font-semibold text-white hover:opacity-90">Buscar</button>
       </form>
       {error && <Alert variante="error" titulo="No se pudo buscar">{error.message}</Alert>}
       {q.trim() && !error && personas.length === 0 && <p className="text-n-600">Nadie con ese teléfono o correo.</p>}

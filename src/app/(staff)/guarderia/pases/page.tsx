@@ -76,7 +76,7 @@ export default async function PasesGuarderiaPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/guarderia" className="text-sm font-semibold text-azul hover:underline">
+        <Link href="/guarderia" className="text-sm font-semibold text-morado hover:underline">
           ← Guardería
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Day pass y mensualidad</h1>
@@ -106,10 +106,10 @@ export default async function PasesGuarderiaPage({
               <p className="font-bold text-n-900">{clienteElegido.nombre}</p>
             </div>
             <div className="flex gap-3 text-sm font-semibold">
-              <Link href={`/clientes/${clienteElegido.id}`} className="text-azul hover:underline">
+              <Link href={`/clientes/${clienteElegido.id}`} className="text-morado hover:underline">
                 Ver ficha
               </Link>
-              <Link href="/guarderia/pases" className="text-azul hover:underline">
+              <Link href="/guarderia/pases" className="text-morado hover:underline">
                 Cambiar cliente
               </Link>
             </div>

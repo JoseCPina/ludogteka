@@ -51,7 +51,7 @@ export function AltaClienteBanner({
         venga — sobre todo teléfono y contacto de emergencia. Las vacunas no las capturó: eso lo
         registras tú con el carnet.
       </span>
-      {error && <span className="mt-2 block font-semibold text-naranja-oscuro">{error}</span>}
+      {error && <span className="mt-2 block font-semibold text-coral-oscuro">{error}</span>}
       <span className="mt-3 block">
         <Button type="button" variante="secundario" cargando={ocupado.cargando} onClick={marcar}>
           {ocupado.cargando ? "Guardando…" : "Ya lo revisé"}

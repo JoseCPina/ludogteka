@@ -260,7 +260,7 @@ export function CargosSeccion({
             <button
               type="button"
               onClick={() => setCantidad(String(Math.round(distanciaClienteKm)))}
-              className="mb-[1px] text-sm font-semibold text-azul hover:underline"
+              className="mb-[1px] text-sm font-semibold text-morado hover:underline"
             >
               Usar distancia guardada ({distanciaClienteKm} km)
             </button>

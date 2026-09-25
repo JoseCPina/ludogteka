@@ -55,13 +55,13 @@ export function DesvincularFila({ cuenta }: { cuenta: CuentaVinculada }) {
       </div>
 
       {confirmando && (
-        <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-naranja bg-naranja-suave p-4">
+        <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-coral bg-coral-suave p-4">
           {error && (
             <Alert variante="error" titulo="No se pudo desvincular">
               {error}
             </Alert>
           )}
-          <p className="font-semibold text-naranja-oscuro">
+          <p className="font-semibold text-coral-oscuro">
             ¿Quitarle a {cuenta.email} el acceso al expediente de {cuenta.cliente_nombre}?
           </p>
           <div className="flex flex-wrap gap-3">

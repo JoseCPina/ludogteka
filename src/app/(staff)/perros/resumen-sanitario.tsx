@@ -29,27 +29,27 @@ const ESTILOS_ESTADO: Record<
   // es el caso más peligroso (nadie aplicó nunca la vacuna) y no debe leerse
   // como "más tranquilo" que una vencida solo por ser un estado distinto.
   sin_registro: {
-    fondo: "bg-naranja-suave",
-    borde: "border-naranja",
-    texto: "text-naranja-oscuro",
+    fondo: "bg-coral-suave",
+    borde: "border-coral",
+    texto: "text-coral-oscuro",
     etiqueta: "Sin registro",
   },
   vencida: {
-    fondo: "bg-naranja-suave",
-    borde: "border-naranja",
-    texto: "text-naranja-oscuro",
+    fondo: "bg-coral-suave",
+    borde: "border-coral",
+    texto: "text-coral-oscuro",
     etiqueta: "Vencida",
   },
   por_vencer: {
-    fondo: "bg-amarillo-suave",
-    borde: "border-amarillo",
-    texto: "text-amarillo-oscuro",
+    fondo: "bg-ambar-suave",
+    borde: "border-ambar",
+    texto: "text-ambar-oscuro",
     etiqueta: "Por vencer",
   },
   vigente: {
-    fondo: "bg-verde-suave",
-    borde: "border-verde",
-    texto: "text-verde-oscuro",
+    fondo: "bg-menta-suave",
+    borde: "border-menta",
+    texto: "text-menta-oscuro",
     etiqueta: "Vigente",
   },
 };
@@ -82,7 +82,7 @@ export function ResumenSanitario({
           >
             {item.es_critica && (
               <span
-                className="rounded-full bg-azul px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white"
+                className="rounded-full bg-morado px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white"
                 title="Vacuna crítica para este negocio: se contagia en entornos de grupo"
               >
                 Crítica

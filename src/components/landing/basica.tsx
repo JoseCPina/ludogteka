@@ -46,7 +46,7 @@ export async function LandingBasica() {
               href={whatsapp}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-8 inline-flex min-h-12 items-center gap-2.5 rounded-full bg-azul px-6 font-bold text-white hover:opacity-90"
+              className="mt-8 inline-flex min-h-12 items-center gap-2.5 rounded-full bg-morado px-6 font-bold text-white hover:opacity-90"
             >
               <WhatsappLogo size={22} weight="fill" aria-hidden />
               Escríbenos por WhatsApp
@@ -72,13 +72,13 @@ export async function LandingBasica() {
           <section className="grid gap-4 sm:grid-cols-2">
             {direccion && (
               <div className="flex items-start gap-3 rounded-lg border border-n-200 bg-white p-5">
-                <MapPin size={24} weight="fill" className="shrink-0 text-azul" aria-hidden />
+                <MapPin size={24} weight="fill" className="shrink-0 text-morado" aria-hidden />
                 <address className="not-italic text-n-700">{direccion}</address>
               </div>
             )}
             {d?.horario && d.horario.length > 0 && (
               <div className="flex items-start gap-3 rounded-lg border border-n-200 bg-white p-5">
-                <Clock size={24} weight="bold" className="shrink-0 text-azul" aria-hidden />
+                <Clock size={24} weight="bold" className="shrink-0 text-morado" aria-hidden />
                 <dl className="text-n-700">
                   {d.horario.map((h) => (
                     <div key={h.dias}>

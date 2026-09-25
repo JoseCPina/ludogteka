@@ -111,7 +111,7 @@ export default async function DetalleReservaPage({
       <div>
         <Link
           href={moduloUnico ? moduloUnico.base : "/reservas"}
-          className="text-sm font-semibold text-azul hover:underline"
+          className="text-sm font-semibold text-morado hover:underline"
         >
           ← {moduloUnico ? moduloUnico.etiqueta : "Reservas"}
         </Link>
@@ -124,7 +124,7 @@ export default async function DetalleReservaPage({
             {reserva.notas && <p className="mt-2 text-n-700">{reserva.notas}</p>}
           </div>
           <div className="flex flex-col items-end gap-2">
-            <p className={`text-sm font-bold ${saldo > 0 ? "text-naranja-oscuro" : "text-verde-oscuro"}`}>
+            <p className={`text-sm font-bold ${saldo > 0 ? "text-coral-oscuro" : "text-menta-oscuro"}`}>
               Saldo: ${saldo.toFixed(2)}
               {saldo < 0 ? " (a favor)" : ""}
             </p>

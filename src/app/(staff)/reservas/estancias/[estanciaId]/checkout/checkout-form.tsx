@@ -123,11 +123,11 @@ export function CheckoutForm({
                     onChange={() => toggle(p)}
                     className="h-4 w-4"
                   />
-                  <span className={p.devuelto ? "text-n-900" : "font-semibold text-naranja-oscuro"}>
+                  <span className={p.devuelto ? "text-n-900" : "font-semibold text-coral-oscuro"}>
                     {p.descripcion}
                   </span>
                   {!p.devuelto && (
-                    <span className="ml-auto text-xs font-bold uppercase text-naranja-oscuro">
+                    <span className="ml-auto text-xs font-bold uppercase text-coral-oscuro">
                       Sin entregar
                     </span>
                   )}
@@ -173,7 +173,7 @@ export function CheckoutForm({
           </Button>
         </div>
         {esDueno === false && (
-          <p className="mt-2 text-sm font-semibold text-naranja-oscuro">
+          <p className="mt-2 text-sm font-semibold text-coral-oscuro">
             Confirma que esta persona está autorizada antes de entregar al perro.
           </p>
         )}

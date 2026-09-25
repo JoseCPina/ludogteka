@@ -132,7 +132,7 @@ function RevisionPlantilla({ titulo, cuerpo }: { titulo: string; cuerpo: string 
           lista o quítales las llaves. Hasta entonces no se puede publicar.
         </Alert>
       ) : (
-        <p className="text-sm font-semibold text-verde-oscuro">Todas las variables del texto se pueden llenar.</p>
+        <p className="text-sm font-semibold text-menta-oscuro">Todas las variables del texto se pueden llenar.</p>
       )}
       {toleradas.length > 0 && (
         <p className="text-sm text-n-600">
@@ -449,13 +449,13 @@ function TarjetaTipo({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin: bool
               tipo.categorias.map((c) => (
                 <span
                   key={c}
-                  className="rounded-full bg-azul-suave px-2 py-0.5 text-xs font-semibold text-azul-oscuro"
+                  className="rounded-full bg-morado-suave px-2 py-0.5 text-xs font-semibold text-morado-oscuro"
                 >
                   {etiquetaCategoria(c)}
                 </span>
               ))
             )}
-            <span className="rounded-full bg-turquesa-suave px-2 py-0.5 text-xs font-semibold text-turquesa-oscuro">
+            <span className="rounded-full bg-menta-suave px-2 py-0.5 text-xs font-semibold text-menta-oscuro">
               {tipo.seGeneraAl === "compra_paquete"
                 ? "Se genera al comprar un paquete · se firma en el portal"
                 : "Se firma en el alta"}
@@ -532,7 +532,7 @@ function TarjetaTipo({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin: bool
                 >
                   <span className="text-n-700">
                     Versión {v.version} · {v.titulo}
-                    {v.activa && <span className="ml-2 font-semibold text-verde-oscuro">activa</span>}
+                    {v.activa && <span className="ml-2 font-semibold text-menta-oscuro">activa</span>}
                   </span>
                   {esAdmin ? (
                     <label className="flex items-center gap-2 text-n-900">
@@ -547,7 +547,7 @@ function TarjetaTipo({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin: bool
                     </label>
                   ) : (
                     v.requiere_refirma && (
-                      <span className="rounded-full bg-amarillo-suave px-2 py-0.5 text-xs font-semibold text-amarillo-oscuro">
+                      <span className="rounded-full bg-ambar-suave px-2 py-0.5 text-xs font-semibold text-ambar-oscuro">
                         Requiere refirma
                       </span>
                     )
@@ -582,7 +582,7 @@ function TarjetaArchivado({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin:
         {tipo.nombre} · {tipo.versiones.length}{" "}
         {tipo.versiones.length === 1 ? "versión" : "versiones"}
       </span>
-      {error && <span className="text-sm text-naranja-oscuro">{error}</span>}
+      {error && <span className="text-sm text-coral-oscuro">{error}</span>}
       {esAdmin && (
         <Button type="button" variante="secundario" cargando={ocupado.cargando} onClick={reactivar}>
           {ocupado.cargando ? "Reactivando…" : "Reactivar"}

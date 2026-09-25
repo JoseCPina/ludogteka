@@ -24,7 +24,7 @@ export default async function ProveedoresPage({
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link href="/inventario" className="text-sm font-semibold text-azul hover:underline">
+          <Link href="/inventario" className="text-sm font-semibold text-morado hover:underline">
             ← Inventario
           </Link>
           <h1 className="mt-1 text-2xl font-bold text-n-900">Proveedores</h1>
@@ -52,7 +52,7 @@ export default async function ProveedoresPage({
             <li key={p.id}>
               <Link
                 href={`/inventario/proveedores/${p.id}`}
-                className={`flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-4 py-3 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul-suave ${
+                className={`flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-4 py-3 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave ${
                   p.deleted_at ? "opacity-60" : ""
                 }`}
               >

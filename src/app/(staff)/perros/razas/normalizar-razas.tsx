@@ -189,14 +189,14 @@ export function NormalizarRazas({
             <div
               key={perro.id}
               className={`flex flex-col gap-3 rounded-lg border-[1.5px] bg-white p-4 ${
-                eleccion.raza_id ? "border-verde" : "border-n-200"
+                eleccion.raza_id ? "border-menta" : "border-n-200"
               }`}
             >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <div>
                   <Link
                     href={`/perros/${perro.id}`}
-                    className="font-bold text-azul hover:underline"
+                    className="font-bold text-morado hover:underline"
                   >
                     {perro.nombre}
                   </Link>
@@ -208,7 +208,7 @@ export function NormalizarRazas({
                       Escribieron: <strong>«{perro.raza_escrita}»</strong>
                     </>
                   ) : (
-                    <span className="font-semibold text-naranja-oscuro">
+                    <span className="font-semibold text-coral-oscuro">
                       No escribieron ninguna raza
                     </span>
                   )}
@@ -226,8 +226,8 @@ export function NormalizarRazas({
               />
 
               {faltaTalla && (
-                <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-naranja-oscuro bg-naranja-suave p-3">
-                  <p className="text-sm font-bold text-naranja-oscuro">
+                <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral-oscuro bg-coral-suave p-3">
+                  <p className="text-sm font-bold text-coral-oscuro">
                     Este grupo cobra por talla y {perro.nombre} no tiene tamaño registrado.
                   </p>
                   <p className="text-sm text-n-700">

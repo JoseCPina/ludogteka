@@ -30,7 +30,7 @@ export function SelectorDias({
               title={diasCerrados.includes(d.valor) ? `Guardería no abre en ${d.larga.toLowerCase()}` : undefined}
               className={`rounded-full border-[1.5px] px-3 py-1.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:border-n-100 disabled:bg-n-100 disabled:text-n-500 disabled:line-through ${
                 dias.includes(d.valor)
-                  ? "border-azul bg-azul-suave text-azul"
+                  ? "border-morado bg-morado-suave text-morado"
                   : "border-n-200 bg-white text-n-600 hover:border-n-300"
               }`}
             >

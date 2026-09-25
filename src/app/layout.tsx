@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
-import { Nunito } from "next/font/google";
+import { Outfit } from "next/font/google";
 import { headers } from "next/headers";
 import { ENCABEZADOS_NEGOCIO, ENCABEZADO_PLATAFORMA } from "@/lib/negocio/resolver";
 import { urlDelNegocio } from "@/lib/negocio/actual";
 import { ProveedorZonaNegocio } from "@/components/zona-negocio";
 import "./globals.css";
 
-const nunito = Nunito({
-  variable: "--font-nunito",
+// Outfit: la letra de PeluDesk (UI kit), base de toda la app. La landing
+// de Ludogteka conserva la suya (Nunito + Fredoka, src/app/page.tsx).
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
-  weight: ["400", "600", "700", "800"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 // Título, ícono y dirección base de este negocio (lo resolvió el
@@ -20,7 +22,14 @@ const nunito = Nunito({
 export async function generateMetadata(): Promise<Metadata> {
   const h = await headers();
   if (h.get(ENCABEZADO_PLATAFORMA) === "1") {
-    return { title: "PeluDesk", icons: { icon: "/icono-negocio" }, robots: { index: false, follow: false } };
+    return {
+      title: "PeluDesk",
+      icons: {
+        icon: [{ url: "/marca/peludesk/isotipo.svg", type: "image/svg+xml" }, { url: "/marca/peludesk/favicon-32.png", sizes: "32x32" }],
+        apple: "/marca/peludesk/favicon-180.png",
+      },
+      robots: { index: false, follow: false },
+    };
   }
   const nombre = decodeURIComponent(h.get(ENCABEZADOS_NEGOCIO.nombre) ?? "") || "PeluDesk";
   const slug = h.get(ENCABEZADOS_NEGOCIO.slug);
@@ -51,7 +60,7 @@ export default async function RootLayout({
     <html
       lang="es"
       data-negocio={negocioId}
-      className={`${nunito.variable} h-full antialiased`}
+      className={`${outfit.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-background text-foreground font-sans">{cuerpo}</body>

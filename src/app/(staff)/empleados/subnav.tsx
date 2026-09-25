@@ -27,12 +27,12 @@ export function SubnavEmpleados({
           key={p.clave}
           href={p.href}
           className={`whitespace-nowrap rounded-t-md border-b-[3px] px-4 py-2 font-semibold ${
-            activa === p.clave ? "border-azul text-azul" : "border-transparent text-n-600 hover:text-n-900"
+            activa === p.clave ? "border-morado text-morado" : "border-transparent text-n-600 hover:text-n-900"
           }`}
         >
           {p.etiqueta}
           {"aviso" in p && p.aviso ? (
-            <span className="ml-2 rounded-full bg-amarillo-suave px-2 py-0.5 text-xs text-amarillo-oscuro">{p.aviso}</span>
+            <span className="ml-2 rounded-full bg-ambar-suave px-2 py-0.5 text-xs text-ambar-oscuro">{p.aviso}</span>
           ) : null}
         </Link>
       ))}

@@ -152,7 +152,7 @@ export function RequisitoForm({
           onChange={(e) => manejarCambioFecha(e.target.value)}
         />
         {avisoFechaAntigua && (
-          <p className="mt-1.5 text-sm font-semibold text-amarillo-oscuro">
+          <p className="mt-1.5 text-sm font-semibold text-ambar-oscuro">
             Esta fecha es de hace más de dos años — revisa que el año esté bien escrito.
           </p>
         )}

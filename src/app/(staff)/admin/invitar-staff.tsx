@@ -97,8 +97,8 @@ export function InvitarStaff() {
           {resultado.rol === "recepcion" ? "recepción" : "estética"}.
         </Alert>
 
-        <div className="rounded-lg border-[1.5px] border-amarillo bg-amarillo-suave p-4">
-          <p className="mb-2 font-bold text-amarillo-oscuro">
+        <div className="rounded-lg border-[1.5px] border-ambar bg-ambar-suave p-4">
+          <p className="mb-2 font-bold text-ambar-oscuro">
             Cópialo ahora — este link no se vuelve a mostrar
           </p>
           <p className="mb-3 text-sm text-n-700">

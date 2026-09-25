@@ -124,7 +124,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
             {pendientes.map((p) => {
               const per = periodoDe.get(p.id);
               return (
-                <li key={p.id} className={`flex flex-col gap-2 rounded-lg border bg-white p-3 ${p.vencido ? "border-naranja" : "border-n-200"}`}>
+                <li key={p.id} className={`flex flex-col gap-2 rounded-lg border bg-white p-3 ${p.vencido ? "border-coral" : "border-n-200"}`}>
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="flex flex-col gap-1">
                       <p className="font-semibold text-n-900">
@@ -215,7 +215,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                       <td className="px-3 py-2 font-semibold text-n-900">{r.categoria}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{moneda(r.monto)}</td>
                       <td className="px-3 py-2 text-right tabular-nums text-n-600">{moneda(r.anterior)}</td>
-                      <td className={`px-3 py-2 text-right tabular-nums ${dif > 0 ? "text-naranja-oscuro" : "text-verde-oscuro"}`}>
+                      <td className={`px-3 py-2 text-right tabular-nums ${dif > 0 ? "text-coral-oscuro" : "text-menta-oscuro"}`}>
                         {dif > 0 ? "+" : ""}
                         {moneda(dif)}
                       </td>
@@ -226,7 +226,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                 <td className="px-3 py-2 text-n-900">Total</td>
                 <td className="px-3 py-2 text-right tabular-nums">{moneda(total)}</td>
                 <td className="px-3 py-2 text-right tabular-nums text-n-600">{moneda(totalAnterior)}</td>
-                <td className={`px-3 py-2 text-right tabular-nums ${total - totalAnterior > 0 ? "text-naranja-oscuro" : "text-verde-oscuro"}`}>
+                <td className={`px-3 py-2 text-right tabular-nums ${total - totalAnterior > 0 ? "text-coral-oscuro" : "text-menta-oscuro"}`}>
                   {total - totalAnterior > 0 ? "+" : ""}
                   {moneda(total - totalAnterior)}
                 </td>
@@ -272,10 +272,10 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                             {moneda(a.monto)} · {a.notas}
                           </p>
                         ))}
-                        {cancelado && <p className="text-xs font-semibold text-naranja-oscuro">Cancelado: {g.motivo_cancelacion}</p>}
+                        {cancelado && <p className="text-xs font-semibold text-coral-oscuro">Cancelado: {g.motivo_cancelacion}</p>}
                         {g.notas && !cancelado && <p className="text-xs text-n-500">{g.notas}</p>}
                         {url && (
-                          <a href={url} target="_blank" rel="noopener noreferrer" className="w-fit text-sm font-semibold text-azul hover:underline">
+                          <a href={url} target="_blank" rel="noopener noreferrer" className="w-fit text-sm font-semibold text-morado hover:underline">
                             Ver comprobante
                           </a>
                         )}

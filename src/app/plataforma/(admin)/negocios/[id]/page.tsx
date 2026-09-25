@@ -9,7 +9,7 @@ import { actualizarNegocio, agregarAdmin } from "../../../acciones";
 
 type Fila = {
   id: string; slug: string; nombre: string; dominio: string | null; url_publica: string | null; zona_horaria: string;
-  ciudad: string | null; activo: boolean; marca: { color?: string | null; favicon?: string | null } | null; admins: string[] | null;
+  ciudad: string | null; activo: boolean; marca: { color?: string | null; favicon?: string | null; logo?: string | null } | null; admins: string[] | null;
 };
 
 export default async function NegocioPlataforma({ params }: { params: Promise<{ id: string }> }) {
@@ -24,7 +24,7 @@ export default async function NegocioPlataforma({ params }: { params: Promise<{ 
       <div>
         <h1 className="text-2xl font-bold text-n-900">{n.nombre}</h1>
         <p className="mt-1 text-n-600">
-          <a href={urlDelNegocio(n)} className="text-azul hover:underline">{urlDelNegocio(n)}</a> · dirección corta «{n.slug}»
+          <a href={urlDelNegocio(n)} className="text-morado hover:underline">{urlDelNegocio(n)}</a> · dirección corta «{n.slug}»
         </p>
       </div>
 
@@ -40,7 +40,8 @@ export default async function NegocioPlataforma({ params }: { params: Promise<{ 
           <Field label="Ciudad" name="ciudad" defaultValue={n.ciudad ?? ""} />
           <Field label="Dominio propio" name="dominio" defaultValue={n.dominio ?? ""} placeholder="ejemplo.mx" />
           <Field label="Dirección pública (opcional)" name="url_publica" defaultValue={n.url_publica ?? ""} placeholder="https://www.ejemplo.mx" ayuda="Solo si los links deben salir con otra dirección que https://<dominio> (p. ej. con www)." />
-          <Field label="Color de la marca" name="color" defaultValue={n.marca?.color ?? ""} placeholder="#3148dd" />
+          <Field label="Color de la marca" name="color" defaultValue={n.marca?.color ?? ""} placeholder="#4b3f72" />
+          <Field label="Logo (imagen)" name="logo" defaultValue={n.marca?.logo ?? ""} placeholder="/marca/negocios/logo.png o https://…" ayuda="Va en el encabezado de su staff, su portal, su login y su alta por link. Vacío: su logotipo de palabras si tiene, o su inicial y su nombre." />
           <Field label="Ícono de la pestaña (favicon)" name="favicon" defaultValue={n.marca?.favicon ?? ""} placeholder="/iconos/negocio.png o https://…" ayuda="Vacío: su inicial sobre el color de la marca." />
           <label className="flex items-center gap-2 text-n-800">
             <input type="checkbox" name="activo" defaultChecked={n.activo} className="h-5 w-5" />

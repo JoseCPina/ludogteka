@@ -39,12 +39,12 @@ function CeldaDisponibilidad({
   disponible: number | null;
 }) {
   if (cupo === null || disponible === null) {
-    return <span className="text-sm font-semibold text-naranja-oscuro">Sin configurar</span>;
+    return <span className="text-sm font-semibold text-coral-oscuro">Sin configurar</span>;
   }
   const lleno = disponible <= 0;
   return (
     <span
-      className={`tabular-nums text-sm font-semibold ${lleno ? "text-naranja-oscuro" : "text-n-700"}`}
+      className={`tabular-nums text-sm font-semibold ${lleno ? "text-coral-oscuro" : "text-n-700"}`}
     >
       {ocupado}/{cupo}
       {lleno && <span className="ml-1 font-bold">· Lleno</span>}

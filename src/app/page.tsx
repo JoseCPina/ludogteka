@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fredoka } from "next/font/google";
+import { Fredoka, Nunito } from "next/font/google";
 import { Encabezado } from "@/components/landing/encabezado";
 import { Hero } from "@/components/landing/hero";
 import { Servicios } from "@/components/landing/servicios";
@@ -33,6 +33,15 @@ const fredoka = Fredoka({
   weight: ["500", "600", "700"],
   variable: "--font-fredoka",
   display: "swap",
+});
+
+// El texto de la landing de Ludogteka es Nunito, como siempre (la app pasó
+// a Outfit, la letra de PeluDesk): misma configuración de antes, para que
+// se vea idéntica.
+const nunito = Nunito({
+  variable: "--font-nunito",
+  subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
 });
 
 // Los patrones de huesos y huellas de las franjas, con el tono un poco más
@@ -116,7 +125,7 @@ export default async function Landing() {
 
   const { TEXTOS } = await datosLanding();
   return (
-    <div className={`lp ${fredoka.variable} flex min-h-full flex-col bg-[var(--lp-crema)]`} style={PATRONES}>
+    <div className={`lp ${fredoka.variable} ${nunito.variable} flex min-h-full flex-col bg-[var(--lp-crema)]`} style={{ ...PATRONES, fontFamily: "var(--font-nunito), system-ui, sans-serif" }}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(await datosEstructurados()) }}

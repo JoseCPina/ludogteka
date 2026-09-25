@@ -60,7 +60,7 @@ export default async function ContratosPorAtenderPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/recepcion" className="text-sm font-semibold text-azul hover:underline">
+        <Link href="/recepcion" className="text-sm font-semibold text-morado hover:underline">
           ← Tablero del día
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Contratos por firmar</h1>
@@ -81,7 +81,7 @@ export default async function ContratosPorAtenderPage() {
               <h2 className="text-lg font-bold text-n-900">Hay que volver a generarlos</h2>
               <ul className="flex flex-col gap-3">
                 {porRegenerar.map((f) => (
-                  <li key={f.contrato_id} className="rounded-lg border border-n-200 border-l-4 border-l-naranja bg-white p-4">
+                  <li key={f.contrato_id} className="rounded-lg border border-n-200 border-l-4 border-l-coral bg-white p-4">
                     <p className="font-bold text-n-900">
                       {f.tipo_nombre} · {f.perro_nombre}
                     </p>
@@ -89,13 +89,13 @@ export default async function ContratosPorAtenderPage() {
                       {f.cliente_nombre}
                       {f.fecha_firma ? ` · firmado el ${formatearFecha(f.fecha_firma, zona)}` : ""}
                     </p>
-                    <p className="mt-2 text-sm text-naranja-oscuro">{f.regenerar_motivo}</p>
+                    <p className="mt-2 text-sm text-coral-oscuro">{f.regenerar_motivo}</p>
                     <div className="mt-2">
                       <Antiguedad dias={diasDesde(f.espera_desde, hoy, zona)} prefijo="Por regenerar" />
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-3">
                       <BotonRegenerar contratoId={f.contrato_id} />
-                      <Link href={`/perros/${f.perro_id}`} className="text-sm font-semibold text-azul hover:underline">
+                      <Link href={`/perros/${f.perro_id}`} className="text-sm font-semibold text-morado hover:underline">
                         Ver expediente
                       </Link>
                     </div>
@@ -134,12 +134,12 @@ export default async function ContratosPorAtenderPage() {
                             href={wa}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex min-h-10 items-center rounded-md bg-verde-oscuro px-4 text-sm font-semibold text-white hover:bg-[#155c33]"
+                            className="inline-flex min-h-10 items-center rounded-md bg-menta-oscuro px-4 text-sm font-semibold text-white hover:bg-morado"
                           >
                             Recordar por WhatsApp
                           </a>
                         )}
-                        <Link href={`/perros/${f.perro_id}`} className="text-sm font-semibold text-azul hover:underline">
+                        <Link href={`/perros/${f.perro_id}`} className="text-sm font-semibold text-morado hover:underline">
                           Ver expediente
                         </Link>
                       </div>

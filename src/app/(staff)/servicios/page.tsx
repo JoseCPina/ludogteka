@@ -142,7 +142,7 @@ export default async function ServiciosPage() {
                     <td className="border-b border-n-200 px-4 py-3">
                       <Link
                         href={esAdmin ? `/servicios/${s.id}` : `/servicios/${s.id}/tarifas`}
-                        className="rounded font-semibold text-azul hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul"
+                        className="rounded font-semibold text-morado hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado"
                       >
                         {s.nombre}
                       </Link>
@@ -153,22 +153,22 @@ export default async function ServiciosPage() {
                     <td className="border-b border-n-200 px-4 py-3">
                       <div className="flex flex-wrap gap-1.5">
                         {s.depende_grupo_raza && (
-                          <span className="rounded-full bg-azul-suave px-2 py-0.5 text-xs font-semibold text-azul">
+                          <span className="rounded-full bg-morado-suave px-2 py-0.5 text-xs font-semibold text-morado">
                             Grupo de raza
                           </span>
                         )}
                         {s.depende_tamano && (
-                          <span className="rounded-full bg-azul-suave px-2 py-0.5 text-xs font-semibold text-azul">
+                          <span className="rounded-full bg-morado-suave px-2 py-0.5 text-xs font-semibold text-morado">
                             Tamaño
                           </span>
                         )}
                         {s.depende_pelaje && (
-                          <span className="rounded-full bg-azul-suave px-2 py-0.5 text-xs font-semibold text-azul">
+                          <span className="rounded-full bg-morado-suave px-2 py-0.5 text-xs font-semibold text-morado">
                             Pelaje
                           </span>
                         )}
                         {s.depende_cantidad && (
-                          <span className="rounded-full bg-azul-suave px-2 py-0.5 text-xs font-semibold text-azul">
+                          <span className="rounded-full bg-morado-suave px-2 py-0.5 text-xs font-semibold text-morado">
                             Cantidad
                           </span>
                         )}
@@ -187,14 +187,14 @@ export default async function ServiciosPage() {
                             Inactivo
                           </span>
                         ) : (
-                          <span className="rounded-full bg-verde-suave px-2 py-0.5 text-xs font-semibold text-verde-oscuro">
+                          <span className="rounded-full bg-menta-suave px-2 py-0.5 text-xs font-semibold text-menta-oscuro">
                             Activo
                           </span>
                         )}
                         {faltan > 0 && (
                           <Link
                             href={`/servicios/${s.id}/tarifas`}
-                            className="rounded-full border-[1.5px] border-naranja-oscuro bg-naranja-suave px-2 py-0.5 text-xs font-bold text-naranja-oscuro hover:underline"
+                            className="rounded-full border-[1.5px] border-coral-oscuro bg-coral-suave px-2 py-0.5 text-xs font-bold text-coral-oscuro hover:underline"
                           >
                             {faltan} sin tarifa
                           </Link>

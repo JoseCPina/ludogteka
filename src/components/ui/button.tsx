@@ -3,11 +3,16 @@ import { Spinner } from "./spinner";
 
 type Variante = "primario" | "secundario" | "peligro" | "exito";
 
+// Como el UI kit de PeluDesk (lámina 04): primario morado; "éxito" es el
+// secundario menta del kit (acción positiva, "Nuevo cliente"), con texto
+// MORADO — blanco sobre menta no pasa AA (1.58:1); secundario es el
+// "ghost" (blanco con borde); peligro va en coral OSCURO por la misma razón
+// (blanco sobre coral: 2.37:1). Ver scripts/diseno/contraste.mjs.
 const clasesPorVariante: Record<Variante, string> = {
-  primario: "bg-azul text-white hover:bg-azul-oscuro",
-  secundario: "bg-white text-n-900 border border-n-400 hover:bg-n-100",
-  peligro: "bg-naranja-oscuro text-white hover:bg-[#822608]",
-  exito: "bg-verde-oscuro text-white hover:bg-[#155c33]",
+  primario: "bg-morado text-white hover:bg-morado-oscuro",
+  secundario: "bg-white text-n-900 border-[1.5px] border-borde hover:bg-n-100",
+  peligro: "bg-coral-oscuro text-white hover:bg-coral-hondo",
+  exito: "bg-menta text-morado hover:bg-menta-hover",
 };
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -24,7 +29,7 @@ export const Button = forwardRef<HTMLButtonElement, Props>(
       ref={ref}
       disabled={disabled || cargando}
       aria-busy={cargando || undefined}
-      className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-md px-5 text-base font-semibold transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-n-100 disabled:text-n-400 disabled:hover:bg-n-100 ${clasesPorVariante[variante]} ${className}`}
+      className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-md px-5 text-base font-semibold transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-n-200 disabled:bg-n-100 disabled:text-n-500 disabled:hover:bg-n-100 ${clasesPorVariante[variante]} ${className}`}
       {...props}
     >
       {cargando && <Spinner />}

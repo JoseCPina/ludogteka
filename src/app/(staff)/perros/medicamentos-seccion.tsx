@@ -112,7 +112,7 @@ export function MedicamentosSeccion({
                 </div>
                 <span
                   className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                    m.activo ? "bg-verde-suave text-verde-oscuro" : "bg-n-100 text-n-600"
+                    m.activo ? "bg-menta-suave text-menta-oscuro" : "bg-n-100 text-n-600"
                   }`}
                 >
                   {m.activo ? "Activo" : "Inactivo"}
@@ -180,7 +180,7 @@ export function MedicamentosSeccion({
                     <li key={d.id} className="flex flex-wrap items-center gap-2 text-sm">
                       <span className="text-n-600">{formatearFecha(d.administrado_at, zona)}</span>
                       {d.omitida && (
-                        <span className="rounded-full bg-naranja-suave px-2 py-0.5 text-xs font-semibold text-naranja-oscuro">
+                        <span className="rounded-full bg-coral-suave px-2 py-0.5 text-xs font-semibold text-coral-oscuro">
                           Omitida
                         </span>
                       )}

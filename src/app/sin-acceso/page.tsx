@@ -4,6 +4,7 @@ import { negocioActual, urlDelNegocio } from "@/lib/negocio/actual";
 import { rutaPorRol } from "@/lib/auth/rutas";
 import { cerrarSesion } from "@/lib/auth/actions";
 import { Alert } from "@/components/ui/alert";
+import { EncabezadoNegocio } from "@/components/marca/encabezado-negocio";
 
 // Una cuenta de PeluDesk que existe (la persona es cliente o trabaja en
 // otro negocio) pero no tiene membresía en el negocio de este dominio.
@@ -26,7 +27,8 @@ export default async function SinAccesoPage() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center gap-5 p-6">
-      <h1 className="text-2xl font-bold text-n-900">{negocio.nombre}</h1>
+      <EncabezadoNegocio />
+      <h1 className="sr-only">{negocio.nombre}</h1>
       <Alert variante="advertencia" titulo={`Tu cuenta no tiene acceso a ${negocio.nombre}`}>
         Si eres cliente, pídele a recepción tu link de registro. Si trabajas aquí, pídele a quien administra el
         negocio que te dé acceso.
@@ -37,7 +39,7 @@ export default async function SinAccesoPage() {
           <ul className="mt-3 flex flex-col gap-2">
             {negocios.map((n) => (
               <li key={n.id}>
-                <a href={`${urlDelNegocio(n)}/login`} className="font-semibold text-azul hover:underline">
+                <a href={`${urlDelNegocio(n)}/login`} className="font-semibold text-morado hover:underline">
                   {n.nombre} →
                 </a>
               </li>

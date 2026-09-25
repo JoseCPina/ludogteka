@@ -80,7 +80,7 @@ export function LinkComplemento({
                 ? " · ya guardó sus datos, le falta firmar: el mismo link le sirve para volver"
                 : ` · vence el ${formatearFecha(p.expira_at, zona)}`}
               . Reenvíalo o cancélalo desde{" "}
-              <Link href="/clientes/invitaciones" className="font-semibold text-azul hover:underline">
+              <Link href="/clientes/invitaciones" className="font-semibold text-morado hover:underline">
                 Altas por link
               </Link>
               .
@@ -116,10 +116,10 @@ export function LinkComplemento({
       </div>
 
       {resultado?.url && (
-        <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-verde bg-verde-suave p-4">
-          <p className="font-bold text-verde-oscuro">Link listo para mandar</p>
+        <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-menta bg-menta-suave p-4">
+          <p className="font-bold text-menta-oscuro">Link listo para mandar</p>
           <CampoCopiable valor={resultado.url} textoBoton="Copiar link" />
-          <p className="text-sm text-verde-oscuro">
+          <p className="text-sm text-menta-oscuro">
             Vence el {resultado.expiraAt ? formatearFecha(resultado.expiraAt, zona) : "—"}. Le va a pedir
             su contraseña para entrar: el link solo dice de qué expediente hablamos, no abre el de
             nadie por sí solo.

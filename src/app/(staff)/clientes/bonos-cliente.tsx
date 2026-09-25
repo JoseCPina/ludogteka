@@ -50,9 +50,9 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 };
 
 const ESTILO_ESTADO: Record<string, string> = {
-  activo: "bg-verde-suave text-verde-oscuro",
+  activo: "bg-menta-suave text-menta-oscuro",
   agotado: "bg-n-100 text-n-600",
-  vencido: "bg-naranja-suave text-naranja-oscuro",
+  vencido: "bg-coral-suave text-coral-oscuro",
   cancelado: "bg-n-100 text-n-500",
 };
 

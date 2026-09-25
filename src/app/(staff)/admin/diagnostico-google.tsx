@@ -40,10 +40,10 @@ function Resultado({ estado }: { estado: EstadoDiagnostico }) {
             key={p.api}
             className={`rounded-lg border-[1.5px] p-4 ${
               p.simulado
-                ? "border-amarillo bg-amarillo-suave"
+                ? "border-ambar bg-ambar-suave"
                 : p.ok
-                  ? "border-verde bg-verde-suave"
-                  : "border-naranja bg-naranja-suave"
+                  ? "border-menta bg-menta-suave"
+                  : "border-coral bg-coral-suave"
             }`}
           >
             <div className="flex flex-wrap items-center justify-between gap-2">

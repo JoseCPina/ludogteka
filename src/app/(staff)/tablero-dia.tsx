@@ -105,7 +105,7 @@ function ListaPerros({
         <li key={f.estancia_id}>
           <Link
             href={destino(f)}
-            className="flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-3 py-2 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul-suave"
+            className="flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-3 py-2 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
           >
             <span className="font-semibold text-n-900">{f.perro_nombre}</span>
             <span className="text-xs text-n-500">
@@ -458,7 +458,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
       <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Necesita atención</h2>
       {atencion.length === 0 ? (
-        <p className="text-sm text-verde-oscuro">Nada pendiente por ahora.</p>
+        <p className="text-sm text-menta-oscuro">Nada pendiente por ahora.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {atencion.map((a) => {
@@ -467,8 +467,8 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
               <li key={a.clave}>
                 <Link
                   href={a.href}
-                  className={`flex flex-col gap-1 rounded-md border-l-4 px-3 py-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul-suave ${
-                    viejo ? "border-naranja bg-naranja-suave/40 hover:bg-naranja-suave/60" : "border-amarillo bg-white hover:bg-n-50"
+                  className={`flex flex-col gap-1 rounded-md border-l-4 px-3 py-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave ${
+                    viejo ? "border-coral bg-coral-suave/40 hover:bg-coral-suave/60" : "border-ambar bg-white hover:bg-n-50"
                   }`}
                 >
                   <span className="font-semibold text-n-900">{a.texto}</span>
@@ -488,7 +488,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       <div className="flex flex-col gap-4">
         {cifras}
         {listaAtencion}
-        <Link href="/recepcion" className="text-sm font-semibold text-azul hover:underline">
+        <Link href="/recepcion" className="text-sm font-semibold text-morado hover:underline">
           Ver el tablero del día completo →
         </Link>
       </div>
@@ -533,7 +533,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
         <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Citas de estética hoy</h2>
-            <Link href="/estetica" className="text-xs font-semibold text-azul hover:underline">
+            <Link href="/estetica" className="text-xs font-semibold text-morado hover:underline">
               Ver agenda →
             </Link>
           </div>
@@ -545,7 +545,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
                 <li key={c.id}>
                   <Link
                     href={`/estetica/${c.id}`}
-                    className="flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-3 py-2 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul-suave"
+                    className="flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-3 py-2 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
                   >
                     <span>
                       <span className="tabular-nums font-semibold text-n-900">{c.hora}</span>{" "}

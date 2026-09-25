@@ -62,8 +62,8 @@ export function ElegirPase({
   const p = pase.paquete;
   const nombre = `grupo-pase-${p.id}`;
   return (
-    <fieldset className="flex flex-col gap-2 rounded-md border-[1.5px] border-turquesa bg-turquesa-suave px-3 py-3">
-      <legend className="px-1 text-sm font-bold text-turquesa-oscuro">Tiene pases disponibles</legend>
+    <fieldset className="flex flex-col gap-2 rounded-md border-[1.5px] border-menta bg-menta-suave px-3 py-3">
+      <legend className="px-1 text-sm font-bold text-menta-oscuro">Tiene pases disponibles</legend>
       <p className="text-sm text-n-800">
         <strong>{p.servicio_nombre}</strong> · {describirBono(p)}
         {pase.otros > 0 && (
@@ -96,7 +96,7 @@ export function ElegirPase({
 function Aviso({ tono, children }: { tono: "info" | "advertencia"; children: React.ReactNode }) {
   const clases =
     tono === "info"
-      ? "border-azul bg-azul-suave text-n-800"
-      : "border-amarillo bg-amarillo-suave text-n-800";
+      ? "border-morado bg-morado-suave text-n-800"
+      : "border-ambar bg-ambar-suave text-n-800";
   return <p className={`rounded-md border-l-4 px-3 py-2 text-sm ${clases}`}>{children}</p>;
 }

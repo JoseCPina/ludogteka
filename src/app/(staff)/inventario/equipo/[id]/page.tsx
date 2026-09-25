@@ -47,7 +47,7 @@ export default async function EquipoPage({ params }: { params: Promise<{ id: str
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/inventario?ver=equipo" className="text-sm font-semibold text-azul hover:underline">
+        <Link href="/inventario?ver=equipo" className="text-sm font-semibold text-morado hover:underline">
           ← Equipo
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">{equipo.nombre as string}</h1>

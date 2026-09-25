@@ -410,7 +410,7 @@ export function CuentaCobro({
                     </td>
                     <td className="border-b border-n-200 px-4 py-2.5 text-right">
                       {l.cantidadCubiertaPorBono > 0 && (
-                        <span className="mr-2 text-xs font-semibold text-turquesa-oscuro">
+                        <span className="mr-2 text-xs font-semibold text-menta-oscuro">
                           {l.cantidadCubiertaPorBono}/{l.cantidad} con bono
                         </span>
                       )}
@@ -429,8 +429,8 @@ export function CuentaCobro({
       </div>
 
       {aplicandoBonoIdx !== null && (
-        <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-turquesa bg-turquesa-suave p-4">
-          <p className="font-semibold text-turquesa-oscuro">
+        <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-menta bg-menta-suave p-4">
+          <p className="font-semibold text-menta-oscuro">
             Pagar &quot;{lineas[aplicandoBonoIdx].descripcion}&quot; con bono
           </p>
           <div className="flex flex-wrap items-end gap-3">
@@ -485,7 +485,7 @@ export function CuentaCobro({
         <span className="text-n-600">
           Propinas: <span className="font-semibold text-n-900">{dinero(totales.totalPropinas)}</span>
         </span>
-        <span className={`font-bold ${totales.saldo > 0 ? "text-naranja-oscuro" : "text-verde-oscuro"}`}>
+        <span className={`font-bold ${totales.saldo > 0 ? "text-coral-oscuro" : "text-menta-oscuro"}`}>
           Saldo: {dinero(totales.saldo)}
           {totales.saldo < 0 ? " (a favor del cliente)" : ""}
         </span>
@@ -534,7 +534,7 @@ export function CuentaCobro({
             </div>
 
             {valorNumDescuento > 0 && (
-              <p className={`text-sm ${pasaTope ? "font-semibold text-naranja-oscuro" : "text-n-600"}`}>
+              <p className={`text-sm ${pasaTope ? "font-semibold text-coral-oscuro" : "text-n-600"}`}>
                 Equivale a {dinero(montoEstimadoDescuento)}
                 {pasaTope
                   ? ` — pasa el tope de recepción (${dinero(topeRecepcion)}). ${puedeSinTope ? "Necesita motivo." : "Solo un admin, o quien tenga el permiso «Descuentos sin tope», puede aplicarlo."}`
@@ -644,9 +644,9 @@ export function CuentaCobro({
       />
 
       {!turnoAbierto ? (
-        <div className="rounded-lg border-[1.5px] border-amarillo bg-amarillo-suave p-4">
-          <p className="font-bold text-amarillo-oscuro">No hay turno de caja abierto</p>
-          <p className="mt-1 text-sm text-amarillo-oscuro">
+        <div className="rounded-lg border-[1.5px] border-ambar bg-ambar-suave p-4">
+          <p className="font-bold text-ambar-oscuro">No hay turno de caja abierto</p>
+          <p className="mt-1 text-sm text-ambar-oscuro">
             Ábrelo con el fondo inicial para poder registrar cobros.
           </p>
           {!abriendoTurno ? (
@@ -786,7 +786,7 @@ export function CuentaCobro({
                   {devolucionesDeEste.length > 0 && (
                     <div className="mt-2 border-t border-n-200 pt-2">
                       {devolucionesDeEste.map((d) => (
-                        <p key={d.id} className="text-sm text-naranja-oscuro">
+                        <p key={d.id} className="text-sm text-coral-oscuro">
                           Devuelto {dinero(d.metodos.reduce((s, m) => s + m.monto, 0))} — {d.motivo} (autorizó{" "}
                           {d.autorizadoPorNombre}, {formatearFecha(d.creadoEn, zona)})
                         </p>

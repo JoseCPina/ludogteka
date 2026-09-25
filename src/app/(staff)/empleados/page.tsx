@@ -68,7 +68,7 @@ export default async function EmpleadosPage() {
             const d = hoyDe.get(e.id);
             let estado = d ? ESTADOS_DIA[d.estado] : null;
             if (d?.estado === "pendiente" && d.hora_entrada_prog && ahora > horaCampo(d.hora_entrada_prog)) {
-              estado = { etiqueta: "No ha llegado", estilo: "bg-amarillo-suave text-amarillo-oscuro" };
+              estado = { etiqueta: "No ha llegado", estilo: "bg-ambar-suave text-ambar-oscuro" };
             }
             // Recepción registra solo por quien no tiene cuenta; admin, por cualquiera.
             const puedeRegistrar = esAdmin || (sesion?.rol === "recepcion" && !e.profile_id);
@@ -116,7 +116,7 @@ export default async function EmpleadosPage() {
           <ul className="mt-3 flex flex-col gap-1 text-sm">
             {bajas.map((e) => (
               <li key={e.id}>
-                <Link href={`/empleados/${e.id}`} className="text-azul hover:underline">
+                <Link href={`/empleados/${e.id}`} className="text-morado hover:underline">
                   {e.nombre}
                 </Link>{" "}
                 <span className="text-n-500">· {e.puesto} · baja el {formatearFechaCalendario(e.fecha_baja as string)}</span>

@@ -80,7 +80,7 @@ export function LoginForm({
       <button
         type="button"
         onClick={() => setAyuda((v) => !v)}
-        className="self-center rounded text-sm font-semibold text-azul hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul-suave"
+        className="self-center rounded text-sm font-semibold text-morado hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
       >
         ¿Olvidaste tu contraseña?
       </button>

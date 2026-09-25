@@ -215,27 +215,27 @@ export function NuevaReservaForm({
               <li
                 key={r.perroId}
                 className={`rounded-lg border-[1.5px] p-4 ${
-                  r.exito ? "border-verde bg-verde-suave" : "border-naranja bg-naranja-suave"
+                  r.exito ? "border-menta bg-menta-suave" : "border-coral bg-coral-suave"
                 }`}
               >
-                <p className={`font-bold ${r.exito ? "text-verde-oscuro" : "text-naranja-oscuro"}`}>
+                <p className={`font-bold ${r.exito ? "text-menta-oscuro" : "text-coral-oscuro"}`}>
                   {linea?.perroNombre ?? "Perro"} — {r.exito ? "Reservado" : "No se pudo reservar"}
                 </p>
                 {r.exito && describirBonoAplicado(r.bono) && (
-                  <p className="mt-1 text-sm text-verde-oscuro">{describirBonoAplicado(r.bono)}</p>
+                  <p className="mt-1 text-sm text-menta-oscuro">{describirBonoAplicado(r.bono)}</p>
                 )}
                 {r.exito && r.estanciaId && (
                   <Link
                     href={`/reservas/estancias/${r.estanciaId}/checkin`}
-                    className="mt-1 inline-block text-sm font-semibold text-verde-oscuro hover:underline"
+                    className="mt-1 inline-block text-sm font-semibold text-menta-oscuro hover:underline"
                   >
                     Hacer check-in ahora →
                   </Link>
                 )}
-                {!r.exito && r.motivo && <p className="mt-1 text-sm text-naranja-oscuro"><TextoConEnlaces texto={r.motivo} /></p>}
+                {!r.exito && r.motivo && <p className="mt-1 text-sm text-coral-oscuro"><TextoConEnlaces texto={r.motivo} /></p>}
                 {esBloqueoSanitario && esAdmin && linea && (
-                  <div className="mt-3 flex flex-col gap-2 border-t border-naranja pt-3">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-naranja-oscuro">
+                  <div className="mt-3 flex flex-col gap-2 border-t border-coral pt-3">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-coral-oscuro">
                       <input
                         type="checkbox"
                         checked={linea.bloqueoSanitarioSuperado}
@@ -270,8 +270,8 @@ export function NuevaReservaForm({
                   </div>
                 )}
                 {esBloqueoComportamiento && esAdmin && linea && (
-                  <div className="mt-3 flex flex-col gap-2 border-t border-naranja pt-3">
-                    <label className="flex items-center gap-2 text-sm font-semibold text-naranja-oscuro">
+                  <div className="mt-3 flex flex-col gap-2 border-t border-coral pt-3">
+                    <label className="flex items-center gap-2 text-sm font-semibold text-coral-oscuro">
                       <input
                         type="checkbox"
                         checked={linea.bloqueoComportamientoSuperado}
@@ -377,7 +377,7 @@ export function NuevaReservaForm({
                 </label>
 
                 {seriesDelPerro.length > 0 && (
-                  <p className="mt-2 rounded-md bg-azul-suave px-3 py-2 text-sm text-azul">
+                  <p className="mt-2 rounded-md bg-morado-suave px-3 py-2 text-sm text-morado">
                     Ya tiene serie recurrente:{" "}
                     {seriesDelPerro
                       .map((s) => `${s.servicioNombre} — ${formatearDiasSemana(s.diasSemana)}`)

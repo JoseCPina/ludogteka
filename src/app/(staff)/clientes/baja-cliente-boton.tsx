@@ -26,8 +26,8 @@ export function BajaClienteBoton({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-naranja bg-naranja-suave p-4">
-      <p className="font-semibold text-naranja-oscuro">
+    <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-coral bg-coral-suave p-4">
+      <p className="font-semibold text-coral-oscuro">
         ¿Dar de baja a {nombre}? Ya no va a aparecer en el listado ni se podrá vincular a una
         cuenta nueva. No borra su historial y su correo queda libre para otro cliente.
       </p>

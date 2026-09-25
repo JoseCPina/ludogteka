@@ -85,7 +85,7 @@ export function CampoCopiable({
         </Button>
       </div>
       {estado === "seleccionado" && (
-        <p className="text-sm font-semibold text-amarillo-oscuro" aria-live="polite">
+        <p className="text-sm font-semibold text-ambar-oscuro" aria-live="polite">
           No se pudo usar el portapapeles: el texto quedó seleccionado, cópialo con Ctrl+C.
         </p>
       )}

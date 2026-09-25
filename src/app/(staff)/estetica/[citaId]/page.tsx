@@ -91,7 +91,7 @@ export default async function CitaDetallePage({
 
   return (
     <div className="flex flex-col gap-6">
-      <Link href="/estetica" className="text-sm font-semibold text-azul hover:underline">
+      <Link href="/estetica" className="text-sm font-semibold text-morado hover:underline">
         ← Estética
       </Link>
 
@@ -104,7 +104,7 @@ export default async function CitaDetallePage({
           {cita.fin ? ` – ${horaLocalDeInstante(cita.fin, zona)}` : ""} · {empleado?.nombre_completo ?? "—"}
         </p>
         {cita.fuera_de_horario && (
-          <p className="mt-1 inline-block rounded-full bg-amarillo-suave px-2.5 py-1 text-xs font-bold text-amarillo-oscuro">
+          <p className="mt-1 inline-block rounded-full bg-ambar-suave px-2.5 py-1 text-xs font-bold text-ambar-oscuro">
             Fuera de horario
           </p>
         )}
@@ -115,7 +115,7 @@ export default async function CitaDetallePage({
         <>
           <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
           {traePendientes && (
-            <p className="rounded-md border-[1.5px] border-amarillo bg-amarillo-suave px-3 py-2 text-sm text-amarillo-oscuro">
+            <p className="rounded-md border-[1.5px] border-ambar bg-ambar-suave px-3 py-2 text-sm text-ambar-oscuro">
               Trae requisitos vencidos o sin registro. No detienen esta cita (las vacunas se exigen en guardería y
               hotel), pero sí sus estancias: conviene ponerlo al día.
             </p>

@@ -90,7 +90,7 @@ export default async function PortalPage() {
               <li key={c.contrato_id}>
                 {c.tipo_nombre} de {c.perro_nombre}
                 {c.paquete_nombre ? ` (${c.paquete_nombre})` : ""}:{" "}
-                <Link href={`/portal/perros/${c.perro_id}`} className="font-semibold text-azul underline">
+                <Link href={`/portal/perros/${c.perro_id}`} className="font-semibold text-morado underline">
                   firmarlo
                 </Link>
               </li>
@@ -118,7 +118,7 @@ export default async function PortalPage() {
                 <li key={perro.id}>
                   <Link
                     href={`/portal/perros/${perro.id}`}
-                    className="flex items-center gap-3 rounded-md border-[1.5px] border-n-200 bg-white px-4 py-3 hover:border-azul"
+                    className="flex items-center gap-3 rounded-md border-[1.5px] border-n-200 bg-white px-4 py-3 hover:border-morado"
                   >
                     <PerroFoto
                       perroId={perro.id}
@@ -134,7 +134,7 @@ export default async function PortalPage() {
                       </span>
                     )}
                     {!esPropio && (
-                      <span className="rounded-full bg-turquesa-suave px-2 py-0.5 text-xs font-semibold text-turquesa-oscuro">
+                      <span className="rounded-full bg-menta-suave px-2 py-0.5 text-xs font-semibold text-menta-oscuro">
                         Acceso compartido
                       </span>
                     )}

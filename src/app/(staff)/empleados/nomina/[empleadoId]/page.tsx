@@ -49,13 +49,13 @@ export default async function NominaEmpleadoPage({
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <div>
-        <Link href={`/empleados/nomina?desde=${desde}&hasta=${hasta}`} className="text-sm font-semibold text-azul hover:underline">
+        <Link href={`/empleados/nomina?desde=${desde}&hasta=${hasta}`} className="text-sm font-semibold text-morado hover:underline">
           ← Nómina
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">{empleado.nombre}</h1>
         <p className="mt-1 text-n-600">
           {empleado.puesto} ·{" "}
-          <Link href={`/empleados/${empleadoId}`} className="font-semibold text-azul hover:underline">
+          <Link href={`/empleados/${empleadoId}`} className="font-semibold text-morado hover:underline">
             Ver ficha
           </Link>
         </p>

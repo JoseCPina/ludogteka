@@ -46,7 +46,7 @@ export default async function RecurrentesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/gastos" className="text-sm font-semibold text-azul hover:underline">
+        <Link href="/gastos" className="text-sm font-semibold text-morado hover:underline">
           ← Gastos
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Gastos recurrentes</h1>

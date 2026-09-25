@@ -98,7 +98,7 @@ export default async function TarifasServicioPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href={`/servicios/${id}`} className="text-sm font-semibold text-azul hover:underline">
+        <Link href={`/servicios/${id}`} className="text-sm font-semibold text-morado hover:underline">
           ← {servicio.nombre}
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Tarifas — {servicio.nombre}</h1>
@@ -108,7 +108,7 @@ export default async function TarifasServicioPage({
       </div>
 
       {servicio.monto_libre && (
-        <p className="rounded-md border-[1.5px] border-amarillo bg-amarillo-suave px-3 py-2 text-sm text-amarillo-oscuro">
+        <p className="rounded-md border-[1.5px] border-ambar bg-ambar-suave px-3 py-2 text-sm text-ambar-oscuro">
           Este cargo es de <strong>monto libre</strong>: no tiene precio fijo. El importe y qué se le
           dio se capturan al aplicarlo en la estancia. Lo que captures aquí no se usa.
         </p>

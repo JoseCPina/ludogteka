@@ -48,12 +48,12 @@ export default async function InventarioPage({
     <Link
       href={clave === "equipo" ? "/inventario?ver=equipo" : "/inventario"}
       className={`rounded-t-md border-b-[3px] px-4 py-2 font-semibold ${
-        vista === clave ? "border-azul text-azul" : "border-transparent text-n-600 hover:text-n-900"
+        vista === clave ? "border-morado text-morado" : "border-transparent text-n-600 hover:text-n-900"
       }`}
     >
       {etiqueta}
       {avisos > 0 && (
-        <span className="ml-2 rounded-full bg-amarillo-suave px-2 py-0.5 text-xs text-amarillo-oscuro">{avisos}</span>
+        <span className="ml-2 rounded-full bg-ambar-suave px-2 py-0.5 text-xs text-ambar-oscuro">{avisos}</span>
       )}
     </Link>
   );
@@ -136,17 +136,17 @@ export default async function InventarioPage({
                               {minimo > 0 && <span className="text-n-500"> · mínimo {minimo.toLocaleString("es-MX")}</span>}
                             </span>
                             {ex?.bajo_minimo && (
-                              <span className="rounded-full bg-amarillo-suave px-2 py-0.5 text-xs font-semibold text-amarillo-oscuro">
+                              <span className="rounded-full bg-ambar-suave px-2 py-0.5 text-xs font-semibold text-ambar-oscuro">
                                 Bajo mínimo
                               </span>
                             )}
                             {caducidad === "por_vencer" && (
-                              <span className="rounded-full bg-amarillo-suave px-2 py-0.5 text-xs font-semibold text-amarillo-oscuro">
+                              <span className="rounded-full bg-ambar-suave px-2 py-0.5 text-xs font-semibold text-ambar-oscuro">
                                 Por caducar
                               </span>
                             )}
                             {caducidad === "vencida" && (
-                              <span className="rounded-full bg-naranja-suave px-2 py-0.5 text-xs font-semibold text-naranja-oscuro">
+                              <span className="rounded-full bg-coral-suave px-2 py-0.5 text-xs font-semibold text-coral-oscuro">
                                 Caducado
                               </span>
                             )}

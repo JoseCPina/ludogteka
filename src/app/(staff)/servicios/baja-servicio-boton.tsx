@@ -26,8 +26,8 @@ export function BajaServicioBoton({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-naranja bg-naranja-suave p-4">
-      <p className="font-semibold text-naranja-oscuro">
+    <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-coral bg-coral-suave p-4">
+      <p className="font-semibold text-coral-oscuro">
         ¿Dar de baja a &quot;{nombre}&quot;? Deja de poder cobrarse desde hoy, pero sigue
         apareciendo en el histórico de precios y en tickets/reservas viejos que ya lo referencian.
         No se borra nada.

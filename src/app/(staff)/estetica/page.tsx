@@ -28,11 +28,11 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 
 const ESTILO_ESTADO: Record<string, string> = {
   reservada: "bg-n-100 text-n-700",
-  confirmada: "bg-azul-suave text-azul",
-  en_curso: "bg-verde-suave text-verde-oscuro",
+  confirmada: "bg-morado-suave text-morado",
+  en_curso: "bg-menta-suave text-menta-oscuro",
   finalizada: "bg-n-100 text-n-600",
-  cancelada: "bg-naranja-suave text-naranja-oscuro",
-  no_llego: "bg-naranja-suave text-naranja-oscuro",
+  cancelada: "bg-coral-suave text-coral-oscuro",
+  no_llego: "bg-coral-suave text-coral-oscuro",
 };
 
 type Cita = {
@@ -199,7 +199,7 @@ export default async function AgendaPage({
                                 puedeEditarTodos || esPropia ? `/estetica/${c.id}` : "#"
                               }
                               className={`flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm ${
-                                c.fuera_de_horario ? "border-amarillo bg-amarillo-suave" : "border-n-200 bg-n-50"
+                                c.fuera_de_horario ? "border-ambar bg-ambar-suave" : "border-n-200 bg-n-50"
                               } ${puedeEditarTodos || esPropia ? "hover:opacity-80" : "cursor-default"}`}
                             >
                               <span className="font-semibold text-n-900">

@@ -74,13 +74,13 @@ export function ListaClientes({ clientes }: { clientes: ClienteFila[] }) {
                 <td className="border-b border-n-200 px-4 py-3">
                   <Link
                     href={`/clientes/${cliente.id}`}
-                    className="rounded font-semibold text-azul hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul"
+                    className="rounded font-semibold text-morado hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado"
                   >
                     {cliente.nombre}
                   </Link>
                   {cliente.alta_por_cliente && !cliente.datos_revisados_at && (
                     <span
-                      className="ml-2 whitespace-nowrap rounded-full bg-azul-suave px-2 py-0.5 text-xs font-semibold text-azul-oscuro"
+                      className="ml-2 whitespace-nowrap rounded-full bg-morado-suave px-2 py-0.5 text-xs font-semibold text-morado-oscuro"
                       title="Estos datos los capturo el dueno desde su celular: conviene revisarlos"
                     >
                       Alta del cliente · sin revisar
@@ -94,7 +94,7 @@ export function ListaClientes({ clientes }: { clientes: ClienteFila[] }) {
                         <span key={p.id}>
                           {i > 0 && ", "}
                           {cliente.coincidentes.has(p.id) ? (
-                            <strong className="rounded bg-amarillo-suave px-1 text-n-900">{p.nombre}</strong>
+                            <strong className="rounded bg-ambar-suave px-1 text-n-900">{p.nombre}</strong>
                           ) : (
                             p.nombre
                           )}

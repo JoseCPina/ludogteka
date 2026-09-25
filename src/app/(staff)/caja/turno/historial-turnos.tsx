@@ -37,11 +37,11 @@ export function HistorialTurnos({ turnos, zona }: { turnos: TurnoCerrado[]; zona
                 {formatearFecha(t.abiertoEn, zona)} – {formatearFecha(t.cerradoEn, zona)}
               </p>
               {hayDiferencia ? (
-                <span className="rounded-full bg-naranja-suave px-2 py-0.5 text-xs font-semibold text-naranja-oscuro">
+                <span className="rounded-full bg-coral-suave px-2 py-0.5 text-xs font-semibold text-coral-oscuro">
                   Con diferencia
                 </span>
               ) : (
-                <span className="rounded-full bg-verde-suave px-2 py-0.5 text-xs font-semibold text-verde-oscuro">
+                <span className="rounded-full bg-menta-suave px-2 py-0.5 text-xs font-semibold text-menta-oscuro">
                   Cuadró
                 </span>
               )}
@@ -83,8 +83,8 @@ export function HistorialTurnos({ turnos, zona }: { turnos: TurnoCerrado[]; zona
                           m.diferencia === 0
                             ? "text-n-700"
                             : m.diferencia > 0
-                              ? "text-azul"
-                              : "text-naranja-oscuro"
+                              ? "text-morado"
+                              : "text-coral-oscuro"
                         }`}
                       >
                         {m.diferencia > 0 ? "+" : ""}

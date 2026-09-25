@@ -17,18 +17,18 @@ export function puedeDarDeAlta(rol: string | undefined): boolean {
 }
 
 export const ESTADOS_EQUIPO: Record<string, { etiqueta: string; estilo: string }> = {
-  bueno: { etiqueta: "Bueno", estilo: "bg-verde-suave text-verde-oscuro" },
-  mantenimiento: { etiqueta: "Necesita mantenimiento", estilo: "bg-amarillo-suave text-amarillo-oscuro" },
-  descompuesto: { etiqueta: "Descompuesto", estilo: "bg-naranja-suave text-naranja-oscuro" },
+  bueno: { etiqueta: "Bueno", estilo: "bg-menta-suave text-menta-oscuro" },
+  mantenimiento: { etiqueta: "Necesita mantenimiento", estilo: "bg-ambar-suave text-ambar-oscuro" },
+  descompuesto: { etiqueta: "Descompuesto", estilo: "bg-coral-suave text-coral-oscuro" },
   baja: { etiqueta: "Dado de baja", estilo: "bg-n-100 text-n-600" },
 };
 
 export const AVISOS_EQUIPO: Record<string, { etiqueta: string; estilo: string }> = {
-  vencido: { etiqueta: "Mantenimiento vencido", estilo: "bg-naranja-suave text-naranja-oscuro" },
-  pronto: { etiqueta: "Toca mantenimiento pronto", estilo: "bg-amarillo-suave text-amarillo-oscuro" },
-  sin_registro: { etiqueta: "Sin mantenimiento registrado", estilo: "bg-amarillo-suave text-amarillo-oscuro" },
-  necesita_mantenimiento: { etiqueta: "Necesita mantenimiento", estilo: "bg-amarillo-suave text-amarillo-oscuro" },
-  descompuesto: { etiqueta: "Descompuesto", estilo: "bg-naranja-suave text-naranja-oscuro" },
+  vencido: { etiqueta: "Mantenimiento vencido", estilo: "bg-coral-suave text-coral-oscuro" },
+  pronto: { etiqueta: "Toca mantenimiento pronto", estilo: "bg-ambar-suave text-ambar-oscuro" },
+  sin_registro: { etiqueta: "Sin mantenimiento registrado", estilo: "bg-ambar-suave text-ambar-oscuro" },
+  necesita_mantenimiento: { etiqueta: "Necesita mantenimiento", estilo: "bg-ambar-suave text-ambar-oscuro" },
+  descompuesto: { etiqueta: "Descompuesto", estilo: "bg-coral-suave text-coral-oscuro" },
 };
 
 // En las listas la existencia va con la unidad corta: «1,960 ml», «3 pz».

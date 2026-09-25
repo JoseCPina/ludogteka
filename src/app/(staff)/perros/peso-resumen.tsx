@@ -56,14 +56,14 @@ export function PesoResumen({ historial }: { historial: PesoFila[] }) {
   if (esNotable) {
     if (esBaja) {
       estiloCaja = esUrgente
-        ? "border-2 border-naranja-oscuro bg-naranja-suave"
-        : "border-naranja bg-naranja-suave";
-      estiloTexto = "text-naranja-oscuro";
+        ? "border-2 border-coral-oscuro bg-coral-suave"
+        : "border-coral bg-coral-suave";
+      estiloTexto = "text-coral-oscuro";
     } else {
       // Alza notable: dato útil para estética, no una alarma — tono
       // informativo (azul), no el naranja/amarillo reservado para riesgo.
-      estiloCaja = "border-azul bg-azul-suave";
-      estiloTexto = "text-azul-oscuro";
+      estiloCaja = "border-morado bg-morado-suave";
+      estiloTexto = "text-morado-oscuro";
     }
   }
 

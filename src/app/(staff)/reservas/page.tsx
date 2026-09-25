@@ -29,13 +29,13 @@ export default function ReservasPage() {
           <li key={m.categoria}>
             <Link
               href={m.base}
-              className="flex items-center justify-between gap-3 rounded-lg border-[1.5px] border-n-200 bg-white px-4 py-4 hover:border-azul focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul-suave"
+              className="flex items-center justify-between gap-3 rounded-lg border-[1.5px] border-n-200 bg-white px-4 py-4 hover:border-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
             >
               <span>
                 <span className="block font-bold text-n-900">{m.etiqueta}</span>
                 <span className="block text-sm text-n-600">{m.descripcion}</span>
               </span>
-              <span className="text-azul">→</span>
+              <span className="text-morado">→</span>
             </Link>
           </li>
         ))}

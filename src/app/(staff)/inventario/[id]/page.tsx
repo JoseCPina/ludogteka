@@ -93,7 +93,7 @@ export default async function EditarInsumoPage({ params }: { params: Promise<{ i
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/inventario" className="text-sm font-semibold text-azul hover:underline">
+        <Link href="/inventario" className="text-sm font-semibold text-morado hover:underline">
           ← Inventario
         </Link>
         <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -112,7 +112,7 @@ export default async function EditarInsumoPage({ params }: { params: Promise<{ i
             </span>
           )}
           {existencia?.bajo_minimo && (
-            <span className="rounded-full bg-amarillo-suave px-2 py-0.5 text-xs font-semibold text-amarillo-oscuro">Bajo mínimo</span>
+            <span className="rounded-full bg-ambar-suave px-2 py-0.5 text-xs font-semibold text-ambar-oscuro">Bajo mínimo</span>
           )}
         </div>
       </div>

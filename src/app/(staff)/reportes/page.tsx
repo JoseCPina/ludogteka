@@ -152,7 +152,7 @@ export default async function ReportesPage({
             name="desde"
             type="date"
             defaultValue={desde}
-            className="min-h-12 rounded-md border-[1.5px] border-n-400 px-3.5 text-base focus:border-azul focus:outline-none focus:ring-[3px] focus:ring-azul-suave"
+            className="min-h-12 rounded-md border-[1.5px] border-n-400 px-3.5 text-base focus:border-morado focus:outline-none focus:ring-[3px] focus:ring-morado-suave"
           />
         </div>
         <div>
@@ -164,15 +164,15 @@ export default async function ReportesPage({
             name="hasta"
             type="date"
             defaultValue={hasta}
-            className="min-h-12 rounded-md border-[1.5px] border-n-400 px-3.5 text-base focus:border-azul focus:outline-none focus:ring-[3px] focus:ring-azul-suave"
+            className="min-h-12 rounded-md border-[1.5px] border-n-400 px-3.5 text-base focus:border-morado focus:outline-none focus:ring-[3px] focus:ring-morado-suave"
           />
         </div>
         <Button type="submit">Actualizar</Button>
         <div className="flex flex-wrap gap-3 pb-3 text-sm font-semibold">
-          <Link href={`/reportes?desde=${ultimoMes.desde}&hasta=${ultimoMes.hasta}`} className="text-azul hover:underline">
+          <Link href={`/reportes?desde=${ultimoMes.desde}&hasta=${ultimoMes.hasta}`} className="text-morado hover:underline">
             Último mes completo ({nombreMes(ultimoMes.desde)})
           </Link>
-          <Link href={`/reportes?desde=${mesEnCurso.desde}&hasta=${mesEnCurso.hasta}`} className="text-azul hover:underline">
+          <Link href={`/reportes?desde=${mesEnCurso.desde}&hasta=${mesEnCurso.hasta}`} className="text-morado hover:underline">
             Mes en curso
           </Link>
         </div>
@@ -207,7 +207,7 @@ export default async function ReportesPage({
         <div className="flex flex-col gap-4 rounded-lg border-[1.5px] border-n-300 bg-white p-5">
           <div>
             <p className="text-sm font-bold uppercase tracking-wide text-n-600">Utilidad del periodo</p>
-            <p className={`mt-1 text-3xl font-extrabold ${Number(utilidad.utilidad) < 0 ? "text-naranja-oscuro" : "text-n-900"}`}>
+            <p className={`mt-1 text-3xl font-extrabold ${Number(utilidad.utilidad) < 0 ? "text-coral-oscuro" : "text-n-900"}`}>
               {formatearMoneda(Number(utilidad.utilidad))}
             </p>
           </div>
@@ -267,7 +267,7 @@ export default async function ReportesPage({
                           <td className="py-1.5 pr-3">{c.categoria}</td>
                           <td className="py-1.5 pr-3 text-right tabular-nums">{formatearMoneda(c.monto)}</td>
                           <td className="py-1.5 pr-3 text-right tabular-nums text-n-600">{formatearMoneda(c.anterior)}</td>
-                          <td className={`py-1.5 pr-3 text-right tabular-nums ${dif > 0 ? "text-naranja-oscuro" : "text-verde-oscuro"}`}>
+                          <td className={`py-1.5 pr-3 text-right tabular-nums ${dif > 0 ? "text-coral-oscuro" : "text-menta-oscuro"}`}>
                             {dif > 0 ? "+" : ""}
                             {formatearMoneda(dif)}
                           </td>
@@ -298,11 +298,11 @@ export default async function ReportesPage({
       ) : (
         <div className="flex flex-col gap-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="rounded-lg border-[1.5px] border-verde bg-verde-suave p-5">
-              <p className="text-sm font-bold uppercase tracking-wide text-verde-oscuro">
+            <div className="rounded-lg border-[1.5px] border-menta bg-menta-suave p-5">
+              <p className="text-sm font-bold uppercase tracking-wide text-menta-oscuro">
                 Ingreso reconocido
               </p>
-              <p className="mt-1 text-3xl font-extrabold text-verde-oscuro">
+              <p className="mt-1 text-3xl font-extrabold text-menta-oscuro">
                 {formatearMoneda(reporte.ingreso_reconocido)}
               </p>
               <p className="mt-2 text-sm text-n-700">
@@ -311,11 +311,11 @@ export default async function ReportesPage({
                 contra costos.
               </p>
             </div>
-            <div className="rounded-lg border-[1.5px] border-azul bg-azul-suave p-5">
-              <p className="text-sm font-bold uppercase tracking-wide text-azul-oscuro">
+            <div className="rounded-lg border-[1.5px] border-morado bg-morado-suave p-5">
+              <p className="text-sm font-bold uppercase tracking-wide text-morado-oscuro">
                 Ingreso neto de caja
               </p>
-              <p className="mt-1 text-3xl font-extrabold text-azul-oscuro">
+              <p className="mt-1 text-3xl font-extrabold text-morado-oscuro">
                 {formatearMoneda(reporte.ingreso_caja_neto)}
               </p>
               <p className="mt-2 text-sm text-n-700">
@@ -370,19 +370,19 @@ export default async function ReportesPage({
                 </tr>
                 <tr>
                   <td className="border-b border-n-200 px-4 py-2.5 text-n-700">Devoluciones</td>
-                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-naranja-oscuro">
+                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-coral-oscuro">
                     −{formatearMoneda(reporte.devoluciones_efectivo)}
                   </td>
-                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-naranja-oscuro">
+                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-coral-oscuro">
                     −{formatearMoneda(reporte.devoluciones_terminal)}
                   </td>
-                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-naranja-oscuro">
+                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-coral-oscuro">
                     −{formatearMoneda(reporte.devoluciones_transferencia)}
                   </td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2.5 text-n-700">Retiros de caja</td>
-                  <td className="px-4 py-2.5 text-right text-naranja-oscuro">
+                  <td className="px-4 py-2.5 text-right text-coral-oscuro">
                     −{formatearMoneda(reporte.retiros_efectivo)}
                   </td>
                   <td className="px-4 py-2.5 text-right text-n-400">—</td>
@@ -429,11 +429,11 @@ export default async function ReportesPage({
         ) : (
           <>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="rounded-lg border-[1.5px] border-turquesa bg-turquesa-suave p-5">
-                <p className="text-sm font-bold uppercase tracking-wide text-turquesa-oscuro">
+              <div className="rounded-lg border-[1.5px] border-menta bg-menta-suave p-5">
+                <p className="text-sm font-bold uppercase tracking-wide text-menta-oscuro">
                   Margen bruto de estética
                 </p>
-                <p className="mt-1 text-3xl font-extrabold text-turquesa-oscuro">
+                <p className="mt-1 text-3xl font-extrabold text-menta-oscuro">
                   {formatearMoneda(costos.margen_estetica)}
                 </p>
                 <p className="mt-2 text-sm text-n-700">
@@ -585,9 +585,9 @@ export default async function ReportesPage({
             <div className="rounded-lg border border-n-200 bg-white p-4">
               <p className="text-sm font-bold text-n-900">Cumplimiento sanitario</p>
               <div className="mt-2 flex flex-col gap-1 text-sm">
-                <span className="text-verde-oscuro">Vigente: {estadoActual.sanitario_vigente}</span>
-                <span className="text-amarillo-oscuro">Por vencer: {estadoActual.sanitario_por_vencer}</span>
-                <span className="text-naranja-oscuro">Vencido/sin registro: {estadoActual.sanitario_bloqueado}</span>
+                <span className="text-menta-oscuro">Vigente: {estadoActual.sanitario_vigente}</span>
+                <span className="text-ambar-oscuro">Por vencer: {estadoActual.sanitario_por_vencer}</span>
+                <span className="text-coral-oscuro">Vencido/sin registro: {estadoActual.sanitario_bloqueado}</span>
               </div>
             </div>
             <div className="rounded-lg border border-n-200 bg-white p-4">
@@ -597,16 +597,16 @@ export default async function ReportesPage({
                 usan ningún servicio con contrato.
               </p>
               <div className="mt-2 flex flex-col gap-1 text-sm">
-                <span className="text-verde-oscuro">Vigente: {estadoActual.contrato_vigente}</span>
-                <span className="text-azul-oscuro">Requiere actualización: {estadoActual.contrato_requiere_actualizacion}</span>
-                <span className="text-amarillo-oscuro">Sin firmar: {estadoActual.contrato_sin_firmar}</span>
+                <span className="text-menta-oscuro">Vigente: {estadoActual.contrato_vigente}</span>
+                <span className="text-morado-oscuro">Requiere actualización: {estadoActual.contrato_requiere_actualizacion}</span>
+                <span className="text-ambar-oscuro">Sin firmar: {estadoActual.contrato_sin_firmar}</span>
               </div>
             </div>
             <div className="rounded-lg border border-n-200 bg-white p-4">
               <p className="text-sm font-bold text-n-900">Inventario</p>
               <div className="mt-2 flex flex-col gap-1 text-sm">
-                <span className="text-amarillo-oscuro">Bajo mínimo: {estadoActual.insumos_bajo_minimo}</span>
-                <span className="text-naranja-oscuro">Por caducar/caducados: {estadoActual.insumos_por_caducar}</span>
+                <span className="text-ambar-oscuro">Bajo mínimo: {estadoActual.insumos_bajo_minimo}</span>
+                <span className="text-coral-oscuro">Por caducar/caducados: {estadoActual.insumos_por_caducar}</span>
               </div>
             </div>
           </div>

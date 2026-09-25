@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 import { cerrarSesion } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
 import type { ItemNav } from "@/lib/nav/config";
+import { IconoSeccion } from "@/components/iconos-nav";
+import { HechoConPeluDesk } from "@/components/marca/peludesk";
 
 const ETIQUETAS_ROL: Record<string, string> = {
   admin: "Admin",
@@ -14,14 +16,16 @@ const ETIQUETAS_ROL: Record<string, string> = {
 };
 
 export function StaffShell({
-  nombreNegocio,
+  marca,
   rol,
   email,
   nombreCompleto,
   items,
   children,
 }: {
-  nombreNegocio: string;
+  // La marca del negocio (MarcaDelNegocio, la arma el layout del servidor):
+  // el staff trabaja en SU negocio; PeluDesk solo firma al pie del menú.
+  marca: ReactNode;
   rol: string;
   email: string;
   nombreCompleto: string | null;
@@ -41,7 +45,7 @@ export function StaffShell({
             onClick={() => setMenuAbierto((valor) => !valor)}
             aria-expanded={menuAbierto}
             aria-controls="menu-lateral-staff"
-            className="grid h-11 w-11 flex-none place-items-center rounded-md text-n-700 hover:bg-n-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul md:hidden"
+            className="grid h-11 w-11 flex-none place-items-center rounded-md text-n-700 hover:bg-n-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado md:hidden"
           >
             <span className="sr-only">{menuAbierto ? "Cerrar menú" : "Abrir menú"}</span>
             <svg
@@ -59,8 +63,10 @@ export function StaffShell({
               <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
-          <span className="text-lg font-extrabold tracking-tight text-azul">{nombreNegocio}</span>
-          <span className="hidden text-n-400 md:inline">/</span>
+          <Link href={items[0]?.href ?? "/"} className="rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado">
+            {marca}
+          </Link>
+          <span className="hidden text-n-500 md:inline" aria-hidden="true">/</span>
           <span className="hidden font-semibold text-n-800 md:inline">
             {activo?.etiqueta ?? "Inicio"}
           </span>
@@ -84,9 +90,10 @@ export function StaffShell({
       <div className="flex flex-1">
         <nav
           aria-label="Secciones"
-          className="hidden w-60 flex-none border-r border-n-200 bg-white p-3 md:block"
+          className="hidden w-64 flex-none flex-col justify-between border-r border-n-200 bg-white p-3 md:flex"
         >
           <ListaNav items={items} pathname={pathname} />
+          <HechoConPeluDesk className="mt-6 px-3 pb-1" />
         </nav>
 
         {menuAbierto && (
@@ -103,11 +110,15 @@ export function StaffShell({
               className="absolute inset-y-0 left-0 w-72 max-w-[80%] overflow-y-auto bg-white p-3 shadow-lg"
             >
               <ListaNav items={items} pathname={pathname} onNavegar={() => setMenuAbierto(false)} />
+              <HechoConPeluDesk className="mt-6 px-3 pb-1" />
             </nav>
           </div>
         )}
 
-        <main className="flex-1 bg-n-50 p-4 md:p-8">{children}</main>
+        {/* min-w-0: sin él, este hijo flex crece al ancho de su contenido y una
+            tabla ancha empuja toda la página de lado en el celular (así estaba
+            /admin: 616 px en una pantalla de 390). */}
+        <main className="min-w-0 flex-1 bg-n-50 p-4 md:p-8">{children}</main>
       </div>
     </div>
   );
@@ -142,6 +153,7 @@ function ListaNav({
         }
 
         const esActivo = pathname === item.href;
+        const esInicio = item === items[0];
 
         return (
           <li key={item.href}>
@@ -149,10 +161,11 @@ function ListaNav({
               href={item.href}
               onClick={onNavegar}
               aria-current={esActivo ? "page" : undefined}
-              className={`flex min-h-11 items-center rounded-md px-3 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul ${
-                esActivo ? "bg-azul-suave text-azul" : "text-n-700 hover:bg-n-100"
+              className={`flex min-h-11 items-center gap-3 rounded-md px-3 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado ${
+                esActivo ? "bg-morado-suave text-morado" : "text-n-700 hover:bg-n-100"
               }`}
             >
+              <IconoSeccion href={item.href} inicio={esInicio} />
               {item.etiqueta}
             </Link>
           </li>

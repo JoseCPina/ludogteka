@@ -100,11 +100,11 @@ export function RequisitosEstancia({
             : " Si algún día reserva guardería u hotel, ya los tendría cubiertos."}
         </p>
       ) : bloqueos.length === 0 ? (
-        <p className="rounded-md border-[1.5px] border-verde bg-verde-suave px-3 py-2 text-sm font-semibold text-verde-oscuro">
+        <p className="rounded-md border-[1.5px] border-menta bg-menta-suave px-3 py-2 text-sm font-semibold text-menta-oscuro">
           Nada bloquea una reserva de guardería u hotel por estos requisitos.
         </p>
       ) : (
-        <div className="rounded-md border-[1.5px] border-naranja bg-naranja-suave px-3 py-2 text-sm text-naranja-oscuro">
+        <div className="rounded-md border-[1.5px] border-coral bg-coral-suave px-3 py-2 text-sm text-coral-oscuro">
           <p className="font-semibold">Hoy no se le puede reservar guardería ni hotel:</p>
           <ul className="mt-1 list-inside list-disc">
             {bloqueos.map((b) => (

@@ -49,13 +49,13 @@ export function VincularFila({
 
   if (seleccionado) {
     return (
-      <div className="flex flex-col gap-3 border-b border-n-200 bg-azul-suave p-4">
+      <div className="flex flex-col gap-3 border-b border-n-200 bg-morado-suave p-4">
         {error && (
           <Alert variante="error" titulo="No se pudo vincular">
             {error}
           </Alert>
         )}
-        <p className="text-azul">
+        <p className="text-morado">
           Vas a dar a <strong>{cuenta.email}</strong> acceso al expediente de{" "}
           <strong>
             {seleccionado.nombre}, {formatearTelefono(seleccionado.telefono)}

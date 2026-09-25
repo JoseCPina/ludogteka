@@ -75,6 +75,22 @@ export type NegocioLanding = {
   url_publica: string | null;
   ciudad: string | null;
   landing: DatosLanding | null;
+  marca: MarcaNegocio;
+};
+
+// La marca del negocio (negocios.marca), la que va ENCIMA del diseño base
+// de PeluDesk: su logo en el staff, su portal, su login, su alta por link.
+export type MarcaNegocio = {
+  nombre_corto?: string | null;
+  // Color de su marca (#RRGGBB): su ícono generado y detalles.
+  color?: string | null;
+  favicon?: string | null;
+  // Logo como imagen (ruta del sitio o https).
+  logo?: string | null;
+  // O logotipo de palabras con color, en la letra que se indique (así es el
+  // de Ludogteka: "lu·dog·teka" en Fredoka, como en su camioneta).
+  logo_texto?: { texto: string; color: string }[] | null;
+  logo_fuente?: "fredoka" | "outfit" | null;
 };
 
 // Una lectura por petición, aunque la pidan todas las secciones.
@@ -83,7 +99,7 @@ export const cargarNegocioLanding = cache(async (): Promise<NegocioLanding> => {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.rpc("negocio_publico");
   const fila = (Array.isArray(data) ? data[0] : data) as
-    | { ciudad: string | null; landing: DatosLanding | null }
+    | { ciudad: string | null; landing: DatosLanding | null; marca: MarcaNegocio | null }
     | null
     | undefined;
   return {
@@ -94,6 +110,7 @@ export const cargarNegocioLanding = cache(async (): Promise<NegocioLanding> => {
     url_publica: basico.url_publica ?? null,
     ciudad: fila?.ciudad ?? null,
     landing: fila?.landing ?? null,
+    marca: fila?.marca ?? {},
   };
 });
 

@@ -61,12 +61,12 @@ export function FormularioPlataforma({
       {resultado?.link && <CampoCopiable valor={resultado.link} etiqueta="Link para escoger contraseña (un solo uso)" textoBoton="Copiar link" />}
       {resultado?.password && <CampoCopiable valor={resultado.password} etiqueta="Contraseña temporal" monoespaciado />}
       {resultado?.urlWhatsApp && (
-        <a href={resultado.urlWhatsApp} target="_blank" rel="noopener noreferrer" className="self-start text-sm font-semibold text-azul hover:underline">
+        <a href={resultado.urlWhatsApp} target="_blank" rel="noopener noreferrer" className="self-start text-sm font-semibold text-morado hover:underline">
           Mandársela por WhatsApp →
         </a>
       )}
       {resultado?.ir && (resultado.link || resultado.password || resultado.error) && (
-        <a href={resultado.ir} className="self-start text-sm font-semibold text-azul hover:underline">Ir a la ficha del negocio →</a>
+        <a href={resultado.ir} className="self-start text-sm font-semibold text-morado hover:underline">Ir a la ficha del negocio →</a>
       )}
     </form>
   );

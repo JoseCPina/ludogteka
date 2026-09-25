@@ -121,7 +121,7 @@ export function BuscadorClientes({
                 const c = coincidencia.cliente;
                 const contenido = <FilaCliente coincidencia={coincidencia} />;
                 const clases =
-                  "flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-azul-suave";
+                  "flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave";
                 return (
                   <li key={c.id}>
                     {hrefDe ? (
@@ -169,7 +169,7 @@ export function FilaCliente({ coincidencia }: { coincidencia: CoincidenciaClient
                 <span key={p.id}>
                   {i > 0 && ", "}
                   {idsCoinciden.has(p.id) ? (
-                    <strong className="rounded bg-amarillo-suave px-1 text-n-900">{p.nombre}</strong>
+                    <strong className="rounded bg-ambar-suave px-1 text-n-900">{p.nombre}</strong>
                   ) : (
                     p.nombre
                   )}

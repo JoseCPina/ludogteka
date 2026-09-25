@@ -75,9 +75,9 @@ export function ListaCuentas({ cuentas }: { cuentas: Cuenta[] }) {
                 <td className="border-b border-n-200 px-4 py-3">
                   {cuenta.rol === "cliente" ? (
                     cuenta.cliente_id ? (
-                      <span className="font-semibold text-verde-oscuro">Sí</span>
+                      <span className="font-semibold text-menta-oscuro">Sí</span>
                     ) : (
-                      <span className="font-semibold text-amarillo-oscuro">No</span>
+                      <span className="font-semibold text-ambar-oscuro">No</span>
                     )
                   ) : (
                     <span className="text-n-400">—</span>

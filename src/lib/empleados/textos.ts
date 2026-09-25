@@ -12,22 +12,22 @@ export const TIPOS_AUSENCIA: Record<string, string> = {
 };
 
 export const ESTADOS_AUSENCIA: Record<string, { etiqueta: string; estilo: string }> = {
-  solicitada: { etiqueta: "Por aprobar", estilo: "bg-amarillo-suave text-amarillo-oscuro" },
-  aprobada: { etiqueta: "Aprobada", estilo: "bg-verde-suave text-verde-oscuro" },
+  solicitada: { etiqueta: "Por aprobar", estilo: "bg-ambar-suave text-ambar-oscuro" },
+  aprobada: { etiqueta: "Aprobada", estilo: "bg-menta-suave text-menta-oscuro" },
   rechazada: { etiqueta: "Rechazada", estilo: "bg-n-100 text-n-600" },
   cancelada: { etiqueta: "Cancelada", estilo: "bg-n-100 text-n-600" },
 };
 
 // Estado de un día contra su horario (asistencia_periodo / dias_asistencia_interno).
 export const ESTADOS_DIA: Record<string, { etiqueta: string; estilo: string }> = {
-  a_tiempo: { etiqueta: "A tiempo", estilo: "bg-verde-suave text-verde-oscuro" },
-  retardo: { etiqueta: "Retardo", estilo: "bg-amarillo-suave text-amarillo-oscuro" },
-  extra: { etiqueta: "Vino sin tocarle", estilo: "bg-azul-suave text-azul-oscuro" },
-  ausencia: { etiqueta: "Ausencia", estilo: "bg-turquesa-suave text-turquesa-oscuro" },
+  a_tiempo: { etiqueta: "A tiempo", estilo: "bg-menta-suave text-menta-oscuro" },
+  retardo: { etiqueta: "Retardo", estilo: "bg-ambar-suave text-ambar-oscuro" },
+  extra: { etiqueta: "Vino sin tocarle", estilo: "bg-morado-suave text-morado-oscuro" },
+  ausencia: { etiqueta: "Ausencia", estilo: "bg-menta-suave text-menta-oscuro" },
   descanso: { etiqueta: "Descanso", estilo: "bg-n-100 text-n-600" },
   programado: { etiqueta: "Programado", estilo: "bg-n-100 text-n-600" },
   pendiente: { etiqueta: "Por llegar", estilo: "bg-n-100 text-n-700" },
-  falta: { etiqueta: "Falta", estilo: "bg-naranja-suave text-naranja-oscuro" },
+  falta: { etiqueta: "Falta", estilo: "bg-coral-suave text-coral-oscuro" },
 };
 
 export const ORIGEN_REGISTRO: Record<string, string> = {

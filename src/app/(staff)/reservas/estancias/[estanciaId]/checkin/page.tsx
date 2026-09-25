@@ -150,7 +150,7 @@ export default async function CheckinEstanciaPage({
     <div className="flex flex-col gap-6">
       <Link
         href={modulo ? `${modulo.base}/checkin` : "/reservas"}
-        className="text-sm font-semibold text-azul hover:underline"
+        className="text-sm font-semibold text-morado hover:underline"
       >
         ← Check-in{modulo ? ` de ${modulo.etiqueta.toLowerCase()}` : ""}
       </Link>

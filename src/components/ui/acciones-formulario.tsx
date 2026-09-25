@@ -40,14 +40,14 @@ export function AccionesFormulario({
         {hayError ? (
           <span
             role="alert"
-            className="inline-flex min-h-11 items-center rounded-md border-l-4 border-naranja bg-naranja-suave px-3 py-1.5 text-sm font-semibold text-naranja-oscuro"
+            className="inline-flex min-h-11 items-center rounded-md border-l-4 border-coral bg-coral-suave px-3 py-1.5 text-sm font-semibold text-coral-oscuro"
           >
             <span>{conEnlaces(error)}</span>
           </span>
         ) : textoExito ? (
           <span
             role="status"
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-md border-l-4 border-verde bg-verde-suave px-3 py-1.5 text-sm font-semibold text-verde-oscuro"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-md border-l-4 border-menta bg-menta-suave px-3 py-1.5 text-sm font-semibold text-menta-oscuro"
           >
             <svg viewBox="0 0 20 20" className="h-4 w-4 flex-none" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M4 10.5l4 4 8-9" />

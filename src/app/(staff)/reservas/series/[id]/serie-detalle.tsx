@@ -40,11 +40,11 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 
 const ESTILO_ESTADO: Record<string, string> = {
   reservada: "bg-n-100 text-n-700",
-  confirmada: "bg-azul-suave text-azul",
-  en_curso: "bg-verde-suave text-verde-oscuro",
+  confirmada: "bg-morado-suave text-morado",
+  en_curso: "bg-menta-suave text-menta-oscuro",
   finalizada: "bg-n-100 text-n-600",
-  cancelada: "bg-naranja-suave text-naranja-oscuro",
-  no_llego: "bg-naranja-suave text-naranja-oscuro",
+  cancelada: "bg-coral-suave text-coral-oscuro",
+  no_llego: "bg-coral-suave text-coral-oscuro",
 };
 
 function ResumenGeneracion({ resultados }: { resultados: ResultadoFecha[] }) {
@@ -56,7 +56,7 @@ function ResumenGeneracion({ resultados }: { resultados: ResultadoFecha[] }) {
   return (
     <div className="flex flex-col gap-2">
       {creadas.length > 0 && (
-        <div className="text-sm text-verde-oscuro">
+        <div className="text-sm text-menta-oscuro">
           <p>
             Se generaron {creadas.length} fecha{creadas.length === 1 ? "" : "s"} —{" "}
             {creadas.filter((r) => r.bono?.aplicado).length} con pase,{" "}
@@ -73,9 +73,9 @@ function ResumenGeneracion({ resultados }: { resultados: ResultadoFecha[] }) {
         </div>
       )}
       {noCupieron.length > 0 && (
-        <div className="rounded-md border-[1.5px] border-naranja bg-naranja-suave p-3">
-          <p className="text-sm font-semibold text-naranja-oscuro">No cupieron:</p>
-          <ul className="mt-1 flex flex-col gap-0.5 text-sm text-naranja-oscuro">
+        <div className="rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
+          <p className="text-sm font-semibold text-coral-oscuro">No cupieron:</p>
+          <ul className="mt-1 flex flex-col gap-0.5 text-sm text-coral-oscuro">
             {noCupieron.map((r) => (
               <li key={r.fecha}>
                 {formatearFechaCalendario(r.fecha)}: {r.motivo}
@@ -302,8 +302,8 @@ export function SerieDetalle({
       )}
 
       {confirmandoCancelarSerie && (
-        <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-naranja bg-naranja-suave p-4">
-          <p className="font-semibold text-naranja-oscuro">
+        <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-4">
+          <p className="font-semibold text-coral-oscuro">
             ¿Cancelar toda la serie? Se cancelarán {afectadasPorEdicion} estancia
             {afectadasPorEdicion === 1 ? "" : "s"} futura{afectadasPorEdicion === 1 ? "" : "s"} sin iniciar. Las que
             ya tienen check-in o ya pasaron no se tocan.
@@ -363,8 +363,8 @@ export function SerieDetalle({
               Guardar cambios
             </Button>
           ) : (
-            <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-naranja bg-naranja-suave p-3">
-              <p className="text-sm font-semibold text-naranja-oscuro">
+            <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
+              <p className="text-sm font-semibold text-coral-oscuro">
                 Esto va a cancelar {afectadasPorEdicion} estancia{afectadasPorEdicion === 1 ? "" : "s"} futura
                 {afectadasPorEdicion === 1 ? "" : "s"} que todavía no inicia y las va a regenerar con el patrón
                 nuevo. Las que ya tienen check-in o ya pasaron no se tocan. ¿Continuar?

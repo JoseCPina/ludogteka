@@ -37,7 +37,7 @@ export function TarifasFaltantes({ servicios }: { servicios: ServicioConHuecos[]
           <li key={s.id}>
             <Link
               href={`/servicios/${s.id}/tarifas`}
-              className="font-semibold text-azul hover:underline"
+              className="font-semibold text-morado hover:underline"
             >
               {s.nombre}
             </Link>{" "}

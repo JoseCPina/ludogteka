@@ -33,7 +33,7 @@ export default async function CargoSueltoPage({ searchParams }: { searchParams: 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/caja" className="text-sm font-semibold text-azul hover:underline">
+        <Link href="/caja" className="text-sm font-semibold text-morado hover:underline">
           ← Caja
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Cargo suelto</h1>
@@ -50,7 +50,7 @@ export default async function CargoSueltoPage({ searchParams }: { searchParams: 
               <p className="font-bold text-n-900">{clienteElegido.nombre}</p>
               <p className="text-sm text-n-600">{formatearTelefono(clienteElegido.telefono)}</p>
             </div>
-            <Link href="/caja/cargo" className="text-sm font-semibold text-azul hover:underline">
+            <Link href="/caja/cargo" className="text-sm font-semibold text-morado hover:underline">
               Cambiar cliente
             </Link>
           </div>

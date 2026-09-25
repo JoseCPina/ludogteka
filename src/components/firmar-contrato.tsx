@@ -153,12 +153,12 @@ export function FirmarContrato({
             {tipoNombre}
             {subtitulo && <span className="font-normal text-n-600"> · {subtitulo}</span>}
           </span>
-          <span className="w-fit rounded-full bg-verde-suave px-2.5 py-1 text-xs font-semibold text-verde-oscuro">
+          <span className="w-fit rounded-full bg-menta-suave px-2.5 py-1 text-xs font-semibold text-menta-oscuro">
             {ETIQUETA_ESTADO[estado] ?? estado}
           </span>
         </div>
         {urlFirmado && (
-          <a href={urlFirmado} target="_blank" rel="noreferrer" className="text-sm font-semibold text-azul hover:underline">
+          <a href={urlFirmado} target="_blank" rel="noreferrer" className="text-sm font-semibold text-morado hover:underline">
             Ver contrato firmado →
           </a>
         )}
@@ -167,8 +167,8 @@ export function FirmarContrato({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-amarillo bg-amarillo-suave p-4">
-      <p className="font-bold text-amarillo-oscuro">
+    <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-ambar bg-ambar-suave p-4">
+      <p className="font-bold text-ambar-oscuro">
         {tipoNombre}
         {subtitulo && ` · ${subtitulo}`} · pendiente de firma
       </p>
@@ -192,7 +192,7 @@ export function FirmarContrato({
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          <p className="text-sm text-amarillo-oscuro">Dibuja tu firma con el dedo en el recuadro.</p>
+          <p className="text-sm text-ambar-oscuro">Dibuja tu firma con el dedo en el recuadro.</p>
           <canvas
             ref={canvasRef}
             className="h-48 w-full touch-none rounded-md border-[1.5px] border-n-400 bg-white"

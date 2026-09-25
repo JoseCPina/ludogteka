@@ -61,7 +61,7 @@ export function RequisitosHistorial({ filas }: { filas: RequisitoAplicadoFila[] 
                     href={fila.comprobante_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="font-semibold text-azul hover:underline"
+                    className="font-semibold text-morado hover:underline"
                   >
                     Ver foto
                   </a>

@@ -213,7 +213,7 @@ export function TarjetaPerro({
             onChange={(e) => onFoto(e.target.files?.[0] ?? null)}
             className="w-full rounded-md border-[1.5px] border-n-400 bg-white p-2.5 text-sm text-n-700"
           />
-          {foto && <p className="mt-1 text-sm text-verde-oscuro">Foto lista: {foto.name}</p>}
+          {foto && <p className="mt-1 text-sm text-menta-oscuro">Foto lista: {foto.name}</p>}
         </div>
       )}
     </div>

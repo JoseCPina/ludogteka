@@ -99,10 +99,10 @@ function AlertaFila({
   }
 
   return (
-    <li className="rounded-md border-[1.5px] border-naranja bg-naranja-suave p-3">
+    <li className="rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <span className="font-bold text-naranja-oscuro">{alerta.etiqueta}</span>
+          <span className="font-bold text-coral-oscuro">{alerta.etiqueta}</span>
           {alerta.notas && <p className="text-sm text-n-700">{alerta.notas}</p>}
         </div>
         {!confirmando && (

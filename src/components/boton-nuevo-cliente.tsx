@@ -47,9 +47,9 @@ export function BotonNuevoCliente({
   }
 
   return (
-    <div className={`flex flex-col gap-3 rounded-lg border-[1.5px] border-azul bg-azul-suave p-4 ${className}`}>
+    <div className={`flex flex-col gap-3 rounded-lg border-[1.5px] border-morado bg-morado-suave p-4 ${className}`}>
       <div>
-        <p className="font-bold text-azul">
+        <p className="font-bold text-morado">
           {definicion ? `Nuevo cliente de ${definicion.etiqueta.toLowerCase()}` : "Nuevo cliente"}
         </p>
         <p className="mt-0.5 text-sm text-n-700">

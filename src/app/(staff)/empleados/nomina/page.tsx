@@ -60,7 +60,7 @@ export default async function NominaPage({ searchParams }: { searchParams: Promi
       </form>
 
       {(porAprobar ?? 0) > 0 && (
-        <p className="rounded-md border border-amarillo bg-amarillo-suave px-4 py-2 text-sm text-amarillo-oscuro">
+        <p className="rounded-md border border-ambar bg-ambar-suave px-4 py-2 text-sm text-ambar-oscuro">
           Hay {porAprobar} {porAprobar === 1 ? "ausencia" : "ausencias"} por aprobar: mientras no se aprueben, esos días cuentan como falta.{" "}
           <Link href="/empleados/ausencias" className="font-semibold underline">
             Revisarlas
@@ -91,7 +91,7 @@ export default async function NominaPage({ searchParams }: { searchParams: Promi
                 return (
                   <tr key={e.id} className="border-t border-n-200">
                     <td className="px-3 py-2">
-                      <Link href={`/empleados/nomina/${e.id}?desde=${desde}&hasta=${hasta}`} className="font-semibold text-azul hover:underline">
+                      <Link href={`/empleados/nomina/${e.id}?desde=${desde}&hasta=${hasta}`} className="font-semibold text-morado hover:underline">
                         {e.nombre}
                       </Link>
                       <span className="block text-xs text-n-500">{e.puesto}</span>
@@ -107,17 +107,17 @@ export default async function NominaPage({ searchParams }: { searchParams: Promi
                         <td className="px-3 py-2 text-right font-bold tabular-nums">{moneda(d.total)}</td>
                       </>
                     ) : (
-                      <td colSpan={5} className="px-3 py-2 text-naranja-oscuro">
+                      <td colSpan={5} className="px-3 py-2 text-coral-oscuro">
                         {calculos[i].error?.message ?? "No se pudo calcular"}
                       </td>
                     )}
                     <td className="px-3 py-2">
                       {pagado ? (
-                        <span className="rounded-full bg-verde-suave px-2.5 py-1 text-xs font-semibold text-verde-oscuro">
+                        <span className="rounded-full bg-menta-suave px-2.5 py-1 text-xs font-semibold text-menta-oscuro">
                           Pagado ({formatearFechaCalendario(pagado.periodo_desde)}–{formatearFechaCalendario(pagado.periodo_hasta)})
                         </span>
                       ) : !d?.esquema ? (
-                        <span className="rounded-full bg-amarillo-suave px-2.5 py-1 text-xs font-semibold text-amarillo-oscuro">Sin esquema de pago</span>
+                        <span className="rounded-full bg-ambar-suave px-2.5 py-1 text-xs font-semibold text-ambar-oscuro">Sin esquema de pago</span>
                       ) : (
                         <span className="rounded-full bg-n-100 px-2.5 py-1 text-xs font-semibold text-n-700">Por pagar</span>
                       )}

@@ -19,7 +19,7 @@ export default async function SaldosPendientesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/recepcion" className="text-sm font-semibold text-azul hover:underline">
+        <Link href="/recepcion" className="text-sm font-semibold text-morado hover:underline">
           ← Tablero del día
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Saldos de perros que ya se fueron</h1>
@@ -54,7 +54,7 @@ export default async function SaldosPendientesPage() {
                   <span className="font-bold tabular-nums text-n-900">${s.saldo.toFixed(2)}</span>
                   <Link
                     href={`/caja/cobrar/${s.reservaId}`}
-                    className="inline-flex min-h-10 items-center rounded-md bg-azul px-4 text-sm font-semibold text-white hover:bg-azul-oscuro"
+                    className="inline-flex min-h-10 items-center rounded-md bg-morado px-4 text-sm font-semibold text-white hover:bg-morado-oscuro"
                   >
                     Cobrar
                   </Link>

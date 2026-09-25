@@ -96,7 +96,7 @@ export default async function ComprobantesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/recepcion" className="text-sm font-semibold text-azul hover:underline">
+        <Link href="/recepcion" className="text-sm font-semibold text-morado hover:underline">
           ← Tablero del día
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Comprobantes por revisar</h1>
@@ -128,7 +128,7 @@ export default async function ComprobantesPage() {
                 </span>
                 <span
                   className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                    r.estado === "confirmado" ? "bg-verde-suave text-verde-oscuro" : "bg-n-100 text-n-600"
+                    r.estado === "confirmado" ? "bg-menta-suave text-menta-oscuro" : "bg-n-100 text-n-600"
                   }`}
                 >
                   {r.estado === "confirmado" ? "Confirmado" : "Rechazado"} · {formatearFecha(r.revisado_at, zona)}

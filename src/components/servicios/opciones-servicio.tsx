@@ -23,7 +23,7 @@ export function AvisoServiciosSinPrecio({ servicios }: { servicios: ServicioOfre
   const sinPrecio = servicios.filter((s) => !s.cotizable);
   if (sinPrecio.length === 0) return null;
   return (
-    <p className="rounded-md border-[1.5px] border-amarillo bg-amarillo-suave px-3 py-2 text-sm text-amarillo-oscuro">
+    <p className="rounded-md border-[1.5px] border-ambar bg-ambar-suave px-3 py-2 text-sm text-ambar-oscuro">
       {sinPrecio.length === 1 ? "Hay un servicio" : `Hay ${sinPrecio.length} servicios`} sin precio
       capturado. No es que no exista{sinPrecio.length === 1 ? "" : "n"}: falta capturar su tarifa para
       poder reservarlo{sinPrecio.length === 1 ? "" : "s"}:{" "}

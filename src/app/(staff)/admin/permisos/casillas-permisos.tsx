@@ -41,7 +41,7 @@ export function CasillasPermisos({ profileId, activos }: { profileId: string; ac
             <li key={p.clave}>
               <label
                 className={`flex h-full items-start gap-3 rounded-md border-[1.5px] p-3 ${
-                  activo ? "border-azul bg-azul-suave" : "border-n-200 bg-white"
+                  activo ? "border-morado bg-morado-suave" : "border-n-200 bg-white"
                 }`}
               >
                 <input
@@ -64,7 +64,7 @@ export function CasillasPermisos({ profileId, activos }: { profileId: string; ac
         })}
       </ul>
       {error && (
-        <p role="alert" className="rounded-md border-l-4 border-naranja bg-naranja-suave px-3 py-2 text-sm font-semibold text-naranja-oscuro">
+        <p role="alert" className="rounded-md border-l-4 border-coral bg-coral-suave px-3 py-2 text-sm font-semibold text-coral-oscuro">
           {error}
         </p>
       )}

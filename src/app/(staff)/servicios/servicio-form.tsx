@@ -178,8 +178,8 @@ export function ServicioForm({
       )}
 
       {esBono && (
-        <div className="flex flex-col gap-4 rounded-md border-[1.5px] border-turquesa bg-turquesa-suave p-3">
-          <p className="text-sm font-semibold text-turquesa-oscuro">Solo para bonos</p>
+        <div className="flex flex-col gap-4 rounded-md border-[1.5px] border-menta bg-menta-suave p-3">
+          <p className="text-sm font-semibold text-menta-oscuro">Solo para bonos</p>
           <Select
             label="Servicio al que da acceso"
             name="servicio_incluido_id"

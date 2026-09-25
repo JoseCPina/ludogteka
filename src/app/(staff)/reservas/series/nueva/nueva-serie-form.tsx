@@ -95,11 +95,11 @@ export function NuevaSerieForm({
           Se generaron {creadas.length} fecha{creadas.length === 1 ? "" : "s"} en las próximas 8 semanas.
         </Alert>
         {noCupieron.length > 0 && (
-          <div className="rounded-lg border-[1.5px] border-naranja bg-naranja-suave p-4">
-            <p className="font-bold text-naranja-oscuro">
+          <div className="rounded-lg border-[1.5px] border-coral bg-coral-suave p-4">
+            <p className="font-bold text-coral-oscuro">
               {noCupieron.length} fecha{noCupieron.length === 1 ? "" : "s"} no {noCupieron.length === 1 ? "cupo" : "cupieron"}
             </p>
-            <ul className="mt-2 flex flex-col gap-1 text-sm text-naranja-oscuro">
+            <ul className="mt-2 flex flex-col gap-1 text-sm text-coral-oscuro">
               {noCupieron.map((r) => (
                 <li key={r.fecha}>
                   {formatearFechaCalendario(r.fecha)}: {r.motivo ? <TextoConEnlaces texto={r.motivo} /> : null}
@@ -120,7 +120,7 @@ export function NuevaSerieForm({
                 <li key={r.fecha} className="flex flex-wrap items-baseline gap-2">
                   <span
                     className={`rounded-full px-2.5 py-0.5 font-semibold ${
-                      r.bono?.aplicado ? "bg-verde-suave text-verde-oscuro" : "bg-n-100 text-n-700"
+                      r.bono?.aplicado ? "bg-menta-suave text-menta-oscuro" : "bg-n-100 text-n-700"
                     }`}
                   >
                     {formatearFechaCalendario(r.fecha)}

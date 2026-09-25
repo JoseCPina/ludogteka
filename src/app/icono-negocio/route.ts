@@ -14,7 +14,7 @@ function escapar(t: string) {
 
 export async function GET() {
   let inicial = "P";
-  let color = "#3148dd";
+  let color = "#4b3f72";
   if (!(await esPlataforma())) {
     const negocio = await cargarNegocioLanding();
     inicial = (negocio.nombre.trim()[0] ?? "P").toUpperCase();

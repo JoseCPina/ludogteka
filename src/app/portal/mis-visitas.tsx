@@ -92,12 +92,12 @@ function Fila({ v, zona, enHistorial = false }: { v: Visita; zona: string; enHis
           sinCerrar
             ? "bg-n-100 text-n-600"
             : v.estado === "en_curso"
-            ? "bg-turquesa-suave text-turquesa-oscuro"
+            ? "bg-menta-suave text-menta-oscuro"
             : apagada
               ? "bg-n-100 text-n-600"
               : ACTIVAS.has(v.estado)
-                ? "bg-azul-suave text-azul"
-                : "bg-verde-suave text-verde-oscuro"
+                ? "bg-morado-suave text-morado"
+                : "bg-menta-suave text-menta-oscuro"
         }`}
       >
         {etiqueta}
@@ -124,7 +124,7 @@ export async function MisVisitas({ supabase, hoy }: { supabase: SupabaseClient; 
         <p className="mt-1 text-sm text-n-600">
           Para agendar, cambiar o cancelar,{" "}
           {whatsapp ? (
-            <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="font-semibold text-azul underline">
+            <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="font-semibold text-morado underline">
               escríbenos por WhatsApp
             </a>
           ) : (
@@ -135,7 +135,7 @@ export async function MisVisitas({ supabase, hoy }: { supabase: SupabaseClient; 
       </div>
 
       {error ? (
-        <p className="rounded-md bg-naranja-suave px-4 py-3 text-sm text-naranja-oscuro">
+        <p className="rounded-md bg-coral-suave px-4 py-3 text-sm text-coral-oscuro">
           No pudimos cargar tus citas. Recarga la página; si sigue igual, avísanos por WhatsApp.
         </p>
       ) : (

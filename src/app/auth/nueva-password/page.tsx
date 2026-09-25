@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { NuevaPasswordForm } from "./nueva-password-form";
 import { esPlataforma, negocioActual } from "@/lib/negocio/actual";
+import { EncabezadoNegocio } from "@/components/marca/encabezado-negocio";
+import { LogoPeluDesk } from "@/components/marca/peludesk";
 
 export default async function NuevaPasswordPage() {
   const supabase = await createSupabaseServerClient();
@@ -14,9 +16,10 @@ export default async function NuevaPasswordPage() {
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
-        <h1 className="mb-1 text-center text-3xl font-extrabold tracking-tight text-azul">
-          {(await esPlataforma()) ? "PeluDesk" : (await negocioActual()).nombre}
-        </h1>
+        <div className="mb-3 flex justify-center">
+          {(await esPlataforma()) ? <LogoPeluDesk tamano={40} /> : <EncabezadoNegocio />}
+        </div>
+        <h1 className="sr-only">{(await esPlataforma()) ? "PeluDesk" : (await negocioActual()).nombre}</h1>
         <p className="mb-8 text-center text-n-600">Define tu contraseña para continuar</p>
         <NuevaPasswordForm />
       </div>

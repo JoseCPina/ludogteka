@@ -41,7 +41,7 @@ export default async function NuevoNegocio() {
           </Select>
           <Field label="Ciudad" name="ciudad" />
           <Field label="Dominio propio (opcional)" name="dominio" placeholder="ejemplo.mx" ayuda="Sin www. Hay que apuntar su DNS a Vercel antes de que funcione." />
-          <Field label="Color de la marca (opcional)" name="color" placeholder="#3148dd" ayuda="Con él se arma su ícono de pestaña mientras no suba uno propio." />
+          <Field label="Color de la marca (opcional)" name="color" placeholder="#4b3f72" ayuda="Con él se arma su ícono de pestaña mientras no suba uno propio." />
         </section>
         <section className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
           <h2 className="font-bold text-n-900">Su primer admin</h2>

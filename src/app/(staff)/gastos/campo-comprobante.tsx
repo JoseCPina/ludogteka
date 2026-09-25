@@ -61,7 +61,7 @@ export function CampoComprobante({ etiqueta = "Foto del comprobante o ticket (op
         }}
       />
       {estado === "preparando" && <p className="text-xs text-n-600">Preparando la foto…</p>}
-      {estado === "error" && <p className="text-xs text-naranja-oscuro">No pudimos leer esa foto. Prueba con otra.</p>}
+      {estado === "error" && <p className="text-xs text-coral-oscuro">No pudimos leer esa foto. Prueba con otra.</p>}
       {vista && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={vista} alt="Vista previa del comprobante" className="mt-1 max-h-40 w-fit rounded-md border border-n-200" />

@@ -8,12 +8,14 @@ import { Button } from "@/components/ui/button";
 import { SECCIONES_PORTAL } from "@/lib/nav/config";
 
 export function PortalShell({
-  nombreNegocio,
+  marca,
   identidad,
   nombreCompleto,
   children,
 }: {
-  nombreNegocio: string;
+  // La marca del negocio (MarcaDelNegocio): el dueño de un perro ve a su
+  // guardería, no a PeluDesk.
+  marca: ReactNode;
   // Cómo se llama quien está viendo esto. NUNCA el correo con el que Auth
   // lo conoce: desde que la cuenta se arma con el teléfono, ese correo es
   // sintético (t4441234567@telefono.ludogteka.mx) y enseñárselo al dueño
@@ -27,8 +29,10 @@ export function PortalShell({
   return (
     <div className="flex min-h-full flex-1 flex-col">
       <header className="flex flex-none flex-col gap-3 border-b border-n-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between md:px-8">
-        <div>
-          <span className="text-lg font-extrabold tracking-tight text-azul">{nombreNegocio}</span>
+        <div className="flex flex-col gap-1">
+          <Link href="/portal" className="self-start rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado">
+            {marca}
+          </Link>
           <p className="text-sm text-n-600">Hola, {nombreCompleto ?? identidad}</p>
         </div>
         <form action={cerrarSesion}>
@@ -51,7 +55,7 @@ export function PortalShell({
                 href={item.href}
                 aria-current={esActivo ? "page" : undefined}
                 className={`flex min-h-11 items-center whitespace-nowrap border-b-2 px-3 font-semibold ${
-                  esActivo ? "border-azul text-azul" : "border-transparent text-n-600 hover:text-n-900"
+                  esActivo ? "border-morado text-morado" : "border-transparent text-n-600 hover:text-n-900"
                 }`}
               >
                 {item.etiqueta}
