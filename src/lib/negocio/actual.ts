@@ -31,7 +31,7 @@ export async function negocioIdActual(): Promise<string> {
  * alguien (alta, complemento, restablecer contraseña, pagos):
  *   dirección propia → negocios.url_publica (https://www.ludogteka.mx)
  *   dominio propio   → https://<dominio>
- *   sin dominio      → https://<slug>.peludesk.com
+ *   sin dominio      → https://<slug>.peludesk.mx
  * En desarrollo, PELUDESK_URL_DESARROLLO con {slug} (p. ej.
  * "http://{slug}.localhost:3001").
  */
@@ -40,7 +40,7 @@ export function urlDelNegocio(n: Pick<NegocioBasico, "slug" | "dominio" | "url_p
   if (plantillaDev) return plantillaDev.replace("{slug}", n.slug).replace(/\/$/, "");
   if (n.url_publica) return n.url_publica.replace(/\/$/, "");
   if (n.dominio) return `https://${n.dominio}`;
-  return `https://${n.slug}.${(process.env.PELUDESK_DOMINIO ?? "peludesk.com").toLowerCase()}`;
+  return `https://${n.slug}.${(process.env.PELUDESK_DOMINIO ?? "peludesk.mx").toLowerCase()}`;
 }
 
 export async function urlDelNegocioActual(): Promise<string> {

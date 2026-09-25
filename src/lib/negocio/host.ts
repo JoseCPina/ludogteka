@@ -2,7 +2,7 @@
  * De qué negocio es una petición, por el dominio con el que entró.
  *
  *   ludogteka.mx, www.ludogteka.mx      → dominio propio "ludogteka.mx"
- *   ludogteka.peludesk.com              → slug "ludogteka"
+ *   ludogteka.peludesk.mx              → slug "ludogteka"
  *   huellitas.localhost:3001            → slug "huellitas" (desarrollo)
  *   localhost, 127.0.0.1, *.vercel.app  → el negocio por omisión
  *                                          (NEGOCIO_POR_OMISION, "ludogteka")
@@ -11,7 +11,7 @@
  */
 export type Busqueda = { slug: string | null; dominio: string | null };
 
-export const DOMINIO_PLATAFORMA = (process.env.PELUDESK_DOMINIO ?? "peludesk.com").toLowerCase();
+export const DOMINIO_PLATAFORMA = (process.env.PELUDESK_DOMINIO ?? "peludesk.mx").toLowerCase();
 export const NEGOCIO_POR_OMISION = (process.env.NEGOCIO_POR_OMISION ?? "ludogteka").toLowerCase();
 
 // Subdominios de la plataforma que no son negocios (la base tampoco deja
@@ -21,7 +21,7 @@ const RESERVADOS = SLUGS_RESERVADOS;
 
 /**
  * ¿Es el dominio de la PLATAFORMA (la administración de PeluDesk)?
- *   peludesk.com, www.peludesk.com, app.peludesk.com → sí
+ *   peludesk.mx, www.peludesk.mx, app.peludesk.mx → sí
  *   plataforma.localhost                             → sí (desarrollo)
  * Más dominios: PELUDESK_HOSTS_PLATAFORMA (separados por coma).
  */

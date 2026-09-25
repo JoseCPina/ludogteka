@@ -8,7 +8,7 @@
 // Desarrollo: lee .env.local. Producción (--prod): lee la llave de
 // servicio al vuelo con el CLI de Supabase (nunca se imprime ni se guarda)
 // y la URL de la plataforma de PELUDESK_URL_PLATAFORMA (por omisión
-// https://peludesk.com).
+// https://peludesk.mx).
 import fs from "node:fs";
 import { execFileSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
@@ -23,7 +23,7 @@ if (prod) {
   const llaves = JSON.parse(execFileSync("node", ["node_modules/supabase/dist/supabase.js", "projects", "api-keys", "--project-ref", ref, "-o", "json"], { encoding: "utf8" }));
   llave = llaves.find((x) => x.name === "service_role" && (x.type ?? "legacy") === "legacy").api_key;
   url = `https://${ref}.supabase.co`;
-  base = process.env.PELUDESK_URL_PLATAFORMA ?? "https://peludesk.com";
+  base = process.env.PELUDESK_URL_PLATAFORMA ?? "https://peludesk.mx";
 } else {
   const env = Object.fromEntries(fs.readFileSync(".env.local", "utf8").split(/\r?\n/).filter((l) => l.includes("=") && !l.startsWith("#")).map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }));
   url = env.NEXT_PUBLIC_SUPABASE_URL;
