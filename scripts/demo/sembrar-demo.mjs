@@ -161,7 +161,16 @@ const alertas = porClave(exigir(await deNeg("catalogo_alertas", "id, clave").is(
 const areas = porClave(exigir(await deNeg("areas_inventario", "id, clave").is("deleted_at", null), "áreas"));
 const categoriasGasto = porClave(exigir(await deNeg("categorias_gasto", "id, clave").is("deleted_at", null), "categorías de gasto"));
 const unidades = porClave(exigir(await A.from("unidades_medida").select("id, clave, equivalencia_en_base"), "unidades"));
-const tiposContrato = Object.fromEntries(exigir(await deNeg("tipos_contrato", "id, nombre").is("deleted_at", null), "tipos de contrato").map((t) => [t.nombre, t.id]));
+// Los tipos de contrato se reconocen por su categoría, no por su nombre (el
+// negocio modelo de cada base los nombra a su manera): general = sin
+// categorías; hotel y guardería = los que traen esa categoría.
+const filasTipos = exigir(await deNeg("tipos_contrato", "id, nombre, categorias_servicio").is("deleted_at", null), "tipos de contrato");
+const tipoPorCategoria = (cat) => filasTipos.find((t) => (cat ? (t.categorias_servicio ?? []).includes(cat) : !(t.categorias_servicio ?? []).length))?.id;
+const tiposContrato = {
+  "Contrato general": tipoPorCategoria(null),
+  "Contrato de hotel": tipoPorCategoria("hotel"),
+  "Contrato de guardería": tipoPorCategoria("guarderia"),
+};
 const razas = exigir(await A.from("razas").select("id, nombre, es_desconocida").is("deleted_at", null), "razas");
 const razaDe = (nombre) => razas.find((r) => r.nombre.toLowerCase() === nombre.toLowerCase()) ?? razas.find((r) => r.es_desconocida);
 const grupoDeRaza = Object.fromEntries(exigir(await deNeg("razas_grupo", "raza_id, grupo_raza_id").is("deleted_at", null), "razas por grupo")
@@ -207,7 +216,14 @@ console.log(`tarifas: ${tarifas.length}`);
 
 // ── Plantillas de contrato ──
 for (const [tipo, p] of Object.entries(D.PLANTILLAS)) {
-  if (!tiposContrato[tipo]) continue;
+  if (!tiposContrato[tipo]) {
+    // El modelo no trae ese tipo (en producción, el de hotel): se crea como
+    // lo crea la pantalla de plantillas, ya con su primera versión.
+    const categoria = tipo === "Contrato de hotel" ? "hotel" : tipo === "Contrato de guardería" ? "guarderia" : null;
+    tiposContrato[tipo] = exigir(await ADM.rpc("crear_tipo_contrato", { p_nombre: tipo, p_categorias_servicio: categoria ? [categoria] : [], p_titulo: p.titulo, p_cuerpo: p.cuerpo }), `tipo ${tipo}`);
+    if (categoria === "guarderia") exigir(await ADM.rpc("definir_momento_tipo_contrato", { p_tipo_id: tiposContrato[tipo], p_se_genera_al: "compra_paquete" }), "momento guardería");
+    continue;
+  }
   exigir(await ADM.rpc("publicar_plantilla", { p_tipo_contrato_id: tiposContrato[tipo], p_titulo: p.titulo, p_cuerpo: p.cuerpo, p_requiere_refirma: false }), `plantilla ${tipo}`);
 }
 
