@@ -7,6 +7,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarRazas } from "@/lib/razas";
 import { negocioIdActual, zonaActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { tipoContratoAplica, usaEstancias } from "@/lib/plan/modulos";
 import { Alert } from "@/components/ui/alert";
 import { PerroForm } from "../perro-form";
 import { PerroFoto } from "../perro-foto";
@@ -121,6 +122,10 @@ export default async function PerroPage({
   const aplicanRequisitos = Boolean(usaGuarderiaHotel);
   // Qué le falta para guardería y hotel, aunque hoy solo use estética: es
   // justo el perro que llega a pedir guardería por primera vez.
+  // Requisitos sanitarios, evaluación y celo/gestante solo si el negocio
+  // tiene guardería u hotel; contratos, solo con su módulo.
+  const conEstancias = usaEstancias(sesion.modulos);
+  const conContratos = sesion.modulos.includes("contratos");
   const pendientesEstancia = (await cargarPendientesEstancia(supabase, [id])).get(id) ?? [];
   const tiposContratoPendientes = new Set(
     pendientesEstancia.filter((p) => p.tipoContratoId).map((p) => p.tipoContratoId as string)
@@ -148,7 +153,7 @@ export default async function PerroPage({
   const [{ data: tiposCrudo }, { data: estadoPorTipo }] = await Promise.all([
     supabase
       .from("tipos_contrato")
-      .select("id, nombre, plantillas_contrato!inner(id)")
+      .select("id, nombre, categorias_servicio, plantillas_contrato!inner(id)")
       .is("deleted_at", null)
       .eq("plantillas_contrato.activa", true)
       .order("orden")
@@ -305,7 +310,7 @@ export default async function PerroPage({
   const estadoContratoPorTipo = new Map(
     (estadoPorTipo ?? []).map((e) => [e.tipo_contrato_id as string, e.estado as string])
   );
-  const tiposContrato: TipoContratoFila[] = (tiposCrudo ?? []).map((t) => ({
+  const tiposContrato: TipoContratoFila[] = (tiposCrudo ?? []).filter((t) => tipoContratoAplica(t.categorias_servicio as string[], sesion.modulos)).map((t) => ({
     id: t.id,
     nombre: t.nombre,
     // Aparecer en perros_contrato_estado ES la definición de "a este
@@ -384,13 +389,13 @@ export default async function PerroPage({
         </div>
       )}
 
-      {aplicanRequisitos ? (
+      {conEstancias && (aplicanRequisitos ? (
         <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
       ) : (
         <NotaSoloEstetica />
-      )}
+      ))}
 
-      {!perro.fallecido && (
+      {!perro.fallecido && conEstancias && (
         <PendientesEstancia
           perroId={id}
           perroNombre={perro.nombre}
@@ -444,6 +449,8 @@ export default async function PerroPage({
         soloLectura={soloLectura}
       />
 
+      {conEstancias && (
+      <>
       <div id="requisitos-estancia" className="flex scroll-mt-6 flex-col gap-4 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Requisitos para guardería y hotel</h2>
         <RequisitosEstancia
@@ -496,6 +503,8 @@ export default async function PerroPage({
 
         <RequisitosHistorial filas={historial} />
       </div>
+      </>
+      )}
 
       <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Peso</h2>
@@ -517,7 +526,7 @@ export default async function PerroPage({
         <AlergiasSeccion perroId={id} alergias={alergiasFilas} />
       </div>
 
-      {!soloLectura && perro.cliente_id && (
+      {!soloLectura && perro.cliente_id && conContratos && (
         <div id="contrato" className="flex scroll-mt-6 flex-col gap-4 border-t border-n-200 pt-6">
           <h2 className="text-lg font-bold text-n-900">Contrato</h2>
           <ContratoSeccion

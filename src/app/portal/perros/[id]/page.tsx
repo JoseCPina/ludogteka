@@ -248,6 +248,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
         )}
       </div>
 
+      {(sesion?.modulos ?? []).some((m) => m === "guarderia" || m === "hotel") && (
       <div className="flex flex-col gap-3">
         <h2 className="text-lg font-bold text-n-900">Estado de salud</h2>
         {Boolean(usaGuarderiaHotel) && (
@@ -262,8 +263,9 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
           aplica={Boolean(usaGuarderiaHotel)}
         />
       </div>
+      )}
 
-      {esPropio && contratos.length > 0 && (
+      {esPropio && contratos.length > 0 && (sesion?.modulos ?? []).includes("contratos") && (
         <div className="flex flex-col gap-3">
           <h2 className="text-lg font-bold text-n-900">
             {contratos.length === 1 ? "Contrato" : "Contratos"}

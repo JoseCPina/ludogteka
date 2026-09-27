@@ -337,11 +337,13 @@ const COMPARTIDAS = {
   tamanos_categoria: { cambio: { etiqueta: "hackeado por un negocio" }, alta: { clave: "intrusa", etiqueta: "intrusa", orden: 99 } },
   tipos_pelaje: { cambio: { etiqueta: "hackeado por un negocio" }, alta: { clave: "intrusa", etiqueta: "intrusa", orden: 99 } },
   unidades_medida: { cambio: { etiqueta: "hackeado por un negocio" }, alta: { clave: "intrusa", etiqueta: "intrusa", magnitud: "pieza", equivalencia_en_base: 1 } },
+  // Los planes de PeluDesk: precios y módulos, solo la plataforma.
+  planes: { cambio: { precio_mensual: 1, modulos: ["hotel", "reportes"] }, alta: { clave: "intruso", nombre: "Gratis para mí", precio_mensual: 0, precio_anual: 0, modulos: ["hotel"] } },
 };
 async function huellaCompartida() {
   const h = {};
-  for (const t of [...Object.keys(COMPARTIDAS), "negocios", "plataforma_admins"]) {
-    const { data, error } = await A.from(t).select("*").order("id");
+  for (const t of [...Object.keys(COMPARTIDAS), "negocios", "plataforma_admins", "modulos"]) {
+    const { data, error } = await A.from(t).select("*").order(t === "modulos" ? "clave" : "id");
     if (error) throw new Error(`huella ${t}: ${error.message}`);
     h[t] = JSON.stringify(data);
   }
@@ -370,6 +372,14 @@ for (const [rol, token] of Object.entries(escritores)) {
       if (del.ok && Array.isArray(delFilas) && delFilas.length) hallazgo(`${rol} [${donde}] pudo BORRAR de ${t} (compartida)`);
       intentos += 3;
     }
+    {
+      const ins = await fetch(`${URL}/rest/v1/modulos`, { method: "POST", headers: { ...cabeceras(token, negocio), Prefer: "return=representation" }, body: JSON.stringify({ clave: "intruso", nombre: "Intruso", descripcion: "x", orden: 99 }) });
+      if (ins.ok) hallazgo(`${rol} [${donde}] pudo AGREGAR a modulos (compartida)`);
+      const up = await fetch(`${URL}/rest/v1/modulos?clave=eq.hotel`, { method: "PATCH", headers: { ...cabeceras(token, negocio), Prefer: "return=representation" }, body: JSON.stringify({ nombre: "hackeado" }) });
+      const upFilas = await up.json().catch(() => null);
+      if (up.ok && Array.isArray(upFilas) && upFilas.length) hallazgo(`${rol} [${donde}] pudo CAMBIAR modulos (compartida)`);
+      intentos += 2;
+    }
     // La fila de otro negocio, y lo que de la suya solo cambia la plataforma.
     const ajeno = negocio === B ? LUDOGTEKA : B;
     for (const [id, cambio, que] of [
@@ -377,6 +387,12 @@ for (const [rol, token] of Object.entries(escritores)) {
       [negocio, { slug: "hackeado" }, "el slug de su negocio"],
       [negocio, { dominio: "hackeado.mx" }, "el dominio de su negocio"],
       [negocio, { activo: false }, "el estado de su negocio"],
+      [negocio, { plan_id: null }, "el plan de su negocio"],
+      // Valores que de verdad cambian (un "cambio" al mismo valor no es cambio).
+      [negocio, { complementos: ["pagina_web", "reportes"] }, "los complementos de su negocio"],
+      [negocio, { modulos_cortesia: ["hotel", "reportes"] }, "los módulos de cortesía de su negocio"],
+      [negocio, { web_gratis_at: new Date().toISOString() }, "la web gratis de su negocio"],
+      [negocio, { plan: "prueba", prueba_termina_at: "2099-01-01T00:00:00Z" }, "el estado de su prueba"],
     ]) {
       const r = await fetch(`${URL}/rest/v1/negocios?id=eq.${id}`, { method: "PATCH", headers: { ...cabeceras(token, negocio), Prefer: "return=representation" }, body: JSON.stringify(cambio) });
       const f = await r.json().catch(() => null);
@@ -409,6 +425,9 @@ for (const [rol, token] of Object.entries(escritores)) {
       ["plataforma_buscar_personas", { p_busqueda: "4441234567" }],
       ["plataforma_buscar_personas_por_id", { p_persona_id: datos.cuentaAmbos }],
       ["plataforma_registrar_evento", { p_accion: "editar_catalogo", p_negocio_id: null, p_persona_id: null, p_motivo: "x", p_detalle: {} }],
+      ["plataforma_cambiar_plan", { p_negocio_id: negocio, p_plan: "activo", p_prueba_termina_at: null, p_motivo: "x" }],
+      ["plataforma_asignar_plan", { p_negocio_id: negocio, p_plan_id: unaFila.planes, p_complementos: ["pagina_web"], p_modulos_cortesia: ["hotel"], p_motivo: "x" }],
+      ["plataforma_guardar_plan", { p_id: null, p_clave: "intruso", p_nombre: "Intruso", p_descripcion: null, p_tipo: "plan", p_precio_mensual: 0, p_precio_anual: 0, p_modulos: [], p_orden: 0, p_activo: true }],
     ];
     for (const [fn, args] of rpcsPlataforma) {
       const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: cabeceras(token, negocio), body: JSON.stringify(args) });

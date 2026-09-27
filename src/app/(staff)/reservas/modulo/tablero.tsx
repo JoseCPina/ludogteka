@@ -1,3 +1,4 @@
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
@@ -57,6 +58,7 @@ function ListaPerros({
 export async function TableroModulo({ modulo }: { modulo: ModuloEstancia }) {
   const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
+  const sesion = await obtenerSesionConRol();
 
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
   const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
@@ -150,7 +152,7 @@ export async function TableroModulo({ modulo }: { modulo: ModuloEstancia }) {
             </section>
           </div>
 
-          {modulo.categoria === "guarderia" && <PasesTablero hoy={hoy} />}
+          {modulo.categoria === "guarderia" && (sesion?.modulos ?? []).includes("bonos") && <PasesTablero hoy={hoy} />}
 
           <TablaOcupacion filas={(calendario as FilaCalendario[]) ?? []} modulo={modulo} />
         </>

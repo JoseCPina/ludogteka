@@ -1,3 +1,4 @@
+import { urlPublicaArchivo } from "@/lib/negocio/publico";
 import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { negocioActual, urlDelNegocio } from "@/lib/negocio/actual";
@@ -102,7 +103,7 @@ export const cargarNegocioLanding = cache(async (): Promise<NegocioLanding> => {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.rpc("negocio_publico");
   const fila = (Array.isArray(data) ? data[0] : data) as
-    | { ciudad: string | null; landing: DatosLanding | null; marca: MarcaNegocio | null; plan: string | null; prueba_termina_at: string | null }
+    | { ciudad: string | null; landing: DatosLanding | null; marca: MarcaNegocio | null; plan: string | null; prueba_termina_at: string | null; logo_perfil: string | null }
     | null
     | undefined;
   return {
@@ -113,7 +114,9 @@ export const cargarNegocioLanding = cache(async (): Promise<NegocioLanding> => {
     url_publica: basico.url_publica ?? null,
     ciudad: fila?.ciudad ?? null,
     landing: fila?.landing ?? null,
-    marca: fila?.marca ?? {},
+    // El logo que la plataforma configuró manda; si no hay, el que el negocio
+    // subió en su perfil (/admin/perfil).
+    marca: { ...(fila?.marca ?? {}), ...(!fila?.marca?.logo && fila?.logo_perfil ? { logo: urlPublicaArchivo(fila.logo_perfil) } : {}) },
     plan: fila?.plan ?? "activo",
     prueba_termina_at: fila?.prueba_termina_at ?? null,
   };

@@ -5,6 +5,7 @@ import { StaffShell } from "@/components/chrome/staff-shell";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { MarcaDelNegocio } from "@/components/marca/marca-negocio";
 import { AvisoPlan } from "@/components/aviso-plan";
+import { ProveedorModulos } from "@/components/modulos-contexto";
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const sesion = await obtenerSesionConRol();
@@ -18,9 +19,9 @@ export default async function StaffLayout({ children }: { children: React.ReactN
       rol={sesion.rol}
       email={sesion.user.email ?? ""}
       nombreCompleto={sesion.nombreCompleto}
-      items={navStaffPara(sesion.rol, sesion.permisos)}
+      items={navStaffPara(sesion.rol, sesion.permisos, sesion.modulos)}
     >
-      {children}
+      <ProveedorModulos modulos={sesion.modulos}>{children}</ProveedorModulos>
     </StaffShell>
   );
 }

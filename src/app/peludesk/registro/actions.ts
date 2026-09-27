@@ -9,24 +9,42 @@ import { normalizarTelefono } from "@/lib/telefono";
 import { urlDelNegocio } from "@/lib/negocio/actual";
 import { NEGOCIO_ORIGINAL_ID } from "@/lib/negocio/legado";
 
-export type EstadoRegistro = { error: string | null };
+// Lo que la persona escribió regresa con el error: React limpia el
+// formulario al terminar la acción y sin esto tendría que capturar todo de
+// nuevo. La contraseña nunca regresa.
+export type ValoresRegistro = { nombre: string; negocio: string; ciudad: string; telefono: string; servicios: string[] };
+export type EstadoRegistro = { error: string | null; valores?: ValoresRegistro };
 
 // De qué negocio se copia la configuración base (servicios, requisitos,
 // alertas, horario): el mismo modelo que usa la plataforma al dar de alta.
 const MODELO = process.env.PELUDESK_NEGOCIO_MODELO_ID ?? NEGOCIO_ORIGINAL_ID;
-const DIAS_PRUEBA = 30;
+const DIAS_PRUEBA = 15;
+const SERVICIOS = ["estetica", "guarderia", "hotel"];
 
 /**
  * Prueba gratis desde peludesk.mx, sin que nadie de PeluDesk intervenga:
  * la cuenta de la persona (entra con su teléfono y su contraseña), su
  * negocio en <slug>.peludesk.mx con la configuración base y ella como
- * admin, y 30 días de prueba. Luego la sesión se abre en el dominio del
+ * admin, y 15 días de prueba con todo el plan Completo, pero prendidos solo
+ * los servicios que ofrece (y el plan sugerido según eso). Luego la sesión se abre en el dominio del
  * negocio (/auth/entrar) y aterriza en /bienvenida.
  *
  * Límites (en la base, registrar_negocio_prueba): un negocio por teléfono,
  * tres registros por IP al día. Y un campo trampa que una persona no ve.
  */
-export async function registrarPrueba(_previo: EstadoRegistro, fd: FormData): Promise<EstadoRegistro> {
+export async function registrarPrueba(previo: EstadoRegistro, fd: FormData): Promise<EstadoRegistro> {
+  const valores: ValoresRegistro = {
+    nombre: String(fd.get("nombre") ?? "").trim(),
+    negocio: String(fd.get("negocio") ?? "").trim(),
+    ciudad: String(fd.get("ciudad") ?? "").trim(),
+    telefono: String(fd.get("telefono") ?? "").trim(),
+    servicios: fd.getAll("servicios").map(String),
+  };
+  const r = await registrar(fd);
+  return r.error ? { ...r, valores } : r;
+}
+
+async function registrar(fd: FormData): Promise<EstadoRegistro> {
   if (String(fd.get("sitio_web") ?? "")) return { error: "No pudimos registrar tu negocio. Intenta de nuevo." };
 
   const nombre = String(fd.get("nombre") ?? "").trim();
@@ -39,6 +57,8 @@ export async function registrarPrueba(_previo: EstadoRegistro, fd: FormData): Pr
   if (negocio.length < 3 || negocio.length > 60) return { error: "Escribe el nombre de tu negocio (de 3 a 60 letras)." };
   if (!telefono) return { error: "Escribe tu teléfono a diez dígitos." };
   if (password.length < 8) return { error: "La contraseña necesita al menos 8 caracteres." };
+  const servicios = fd.getAll("servicios").map(String).filter((s) => SERVICIOS.includes(s));
+  if (servicios.length === 0) return { error: "Escoge al menos un servicio que ofrece tu negocio." };
 
   const h = await headers();
   const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || null;
@@ -92,6 +112,7 @@ export async function registrarPrueba(_previo: EstadoRegistro, fd: FormData): Pr
     p_persona_id: personaId,
     p_modelo: MODELO,
     p_dias: DIAS_PRUEBA,
+    p_servicios: servicios,
   });
   const alta = (filas as { negocio_id: string; slug: string }[] | null)?.[0];
   if (errorNegocio || !alta) {

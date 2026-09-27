@@ -697,6 +697,22 @@ exigir(await ADM.from("gastos_recurrentes").insert({ concepto: "Renta del local"
 exigir(await ADM.from("gastos_recurrentes").insert({ concepto: "Recarga de gas", categoria_id: categoriasGasto.gas.id, monto_estimado: 1250, cada_meses: 1, dia: Number(dia(-3).slice(8, 10)), cubre: "mes_del_pago", proxima_fecha: dia(-3) }), "recurrente gas");
 exigir(await ADM.rpc("gastos_por_atender"), "generar gastos esperados");
 
+// ── Perfil público y página web (el demo la trae incluida) ──
+// Se conserva entre corridas (demo_vaciar no la toca): solo se crea si falta.
+exigir(await S.from("cupo_configuracion").update({ telefono_recepcion: D.NEGOCIO.telefono }).eq("negocio_id", NEG).is("deleted_at", null), "WhatsApp de recepción");
+const { data: perfilPrevio } = await S.from("negocio_perfil").select("id").eq("negocio_id", NEG).is("deleted_at", null).maybeSingle();
+if (!perfilPrevio) {
+  exigir(await S.from("negocio_perfil").insert({ negocio_id: NEG, descripcion: D.NEGOCIO.descripcion, direccion: D.NEGOCIO.direccion }), "perfil");
+}
+const { count: fotosPrevias } = await S.from("negocio_fotos").select("id", { count: "exact", head: true }).eq("negocio_id", NEG).is("deleted_at", null);
+if (!fotosPrevias) {
+  for (const [orden, foto] of D.NEGOCIO.fotos.entries()) {
+    const ruta = `${NEG}/fotos/${foto}.jpg`;
+    exigir(await A.storage.from("negocios-publico").upload(ruta, fs.readFileSync(path.join(AQUI, "fotos", `${foto}.jpg`)), { contentType: "image/jpeg", upsert: true }), "foto pública");
+    exigir(await S.from("negocio_fotos").insert({ negocio_id: NEG, path: ruta, orden }), "foto del perfil");
+  }
+}
+
 // ── Cuentas de solo lectura ──
 const cuentasDemo = [...D.PERSONAL.filter((p) => P[p.clave].id).map((p) => P[p.clave].id), ...CLIENTES.filter((c) => c.cuenta).map((c) => c.cuenta)];
 exigir(await S.from("membresias").update({ solo_lectura: true }).eq("negocio_id", NEG).in("profile_id", cuentasDemo), "solo lectura");

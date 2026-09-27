@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { TIPOS_LINK_ALTA, TIPOS_LINK_ALTA_LISTA, type TipoLinkAlta } from "@/lib/alta/tipos-link";
+import { useModulos } from "@/components/modulos-contexto";
 
 /**
  * Dar de alta a alguien desde el módulo en el que está parada recepción.
@@ -35,7 +36,12 @@ export function BotonNuevoCliente({
   className?: string;
 }) {
   const [abierto, setAbierto] = useState(false);
-  const definicion = tipo ? TIPOS_LINK_ALTA[tipo] : null;
+  const { tiene } = useModulos();
+  // El link de alta crea la cuenta del portal: sin portal no hay links, y
+  // solo se ofrecen los de los servicios que el negocio tiene.
+  const linkDisponible = (t: TipoLinkAlta) => tiene("portal") && (t === "estetica" ? tiene("estetica") : tiene("guarderia") || tiene("hotel"));
+  const definicion = tipo && linkDisponible(tipo) ? TIPOS_LINK_ALTA[tipo] : null;
+  const tipos = TIPOS_LINK_ALTA_LISTA.filter((t) => linkDisponible(t.clave as TipoLinkAlta));
   const hrefCaptura = volver ? `/clientes/nuevo?volver=${encodeURIComponent(volver)}` : "/clientes/nuevo";
 
   if (!abierto) {
@@ -62,7 +68,7 @@ export function BotonNuevoCliente({
             <Button type="button">Mandarle un link</Button>
           </Link>
         ) : (
-          TIPOS_LINK_ALTA_LISTA.map((t) => (
+          tipos.map((t) => (
             <Link key={t.clave} href={`/clientes/invitaciones?tipo=${t.clave}`}>
               <Button type="button">Link de {t.etiqueta.toLowerCase()}</Button>
             </Link>
@@ -77,6 +83,7 @@ export function BotonNuevoCliente({
           Cerrar
         </Button>
       </div>
+      {(definicion || tipos.length > 0) && (
       <p className="text-sm text-n-700">
         Con el link, el dueño captura sus datos desde su celular
         {definicion?.llevaContrato ? ` y firma el contrato de ${definicion.etiqueta.toLowerCase()} él mismo` : ""}.
@@ -84,6 +91,7 @@ export function BotonNuevoCliente({
         {definicion && !definicion.llevaContrato ? "." : ": el contrato queda pendiente y se firma después."}
         {volver ? " Al terminar regresas aquí con el cliente ya elegido." : ""}
       </p>
+      )}
     </div>
   );
 }

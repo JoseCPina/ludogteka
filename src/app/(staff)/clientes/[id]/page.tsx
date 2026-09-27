@@ -21,6 +21,8 @@ import { BonosCliente, type BonoCatalogo, type BonoFila } from "../bonos-cliente
 import { DistanciaSeccion } from "./distancia-seccion";
 import { LinkComplemento, type LinkPendiente } from "./link-complemento";
 import { RestablecerPassword } from "./restablecer-password";
+import { usaEstancias } from "@/lib/plan/modulos";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { cargarPendientesEstancia } from "@/lib/perros/pendientes-estancia";
 import { PendientesEstancia, type CatalogosPerro } from "../../perros/pendientes-estancia";
 import { cargarRazas } from "@/lib/razas";
@@ -37,6 +39,9 @@ export default async function EditarClientePage({
   const { creado } = await searchParams;
 
   const supabase = await createSupabaseServerClient();
+  // Solo lo de los módulos que el negocio tiene prendidos.
+  const mods = (await obtenerSesionConRol())?.modulos ?? [];
+  const conEstancias = usaEstancias(mods);
   const { data: cliente } = await supabase
     .from("clientes")
     .select(
@@ -289,7 +294,7 @@ export default async function EditarClientePage({
         )}
       </div>
 
-      {perrosVivos.length > 0 && (
+      {perrosVivos.length > 0 && conEstancias && (
         <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
           <h2 className="text-lg font-bold text-n-900">Para guardería y hotel</h2>
           <p className="text-sm text-n-600">
@@ -311,19 +316,24 @@ export default async function EditarClientePage({
         </div>
       )}
 
-      <RestablecerPassword
-        clienteId={id}
-        clienteNombre={cliente.nombre}
-        tieneCuenta={Boolean(cuentaCliente)}
-      />
+      {mods.includes("portal") && (
+        <>
+          <RestablecerPassword
+            clienteId={id}
+            clienteNombre={cliente.nombre}
+            tieneCuenta={Boolean(cuentaCliente)}
+          />
 
-      <LinkComplemento
-        clienteId={id}
-        clienteNombre={cliente.nombre}
-        clienteTelefono={cliente.telefono}
-        pendientes={(linksPendientes as LinkPendiente[]) ?? []}
-      />
+          <LinkComplemento
+            clienteId={id}
+            clienteNombre={cliente.nombre}
+            clienteTelefono={cliente.telefono}
+            pendientes={(linksPendientes as LinkPendiente[]) ?? []}
+          />
+        </>
+      )}
 
+      {mods.includes("recoleccion") && (
       <DistanciaSeccion
         clienteId={id}
         direccionInicial={cliente.direccion}
@@ -331,7 +341,9 @@ export default async function EditarClientePage({
         calculadaAtInicial={cliente.distancia_calculada_at}
         ajustadaManualmenteInicial={cliente.distancia_ajustada_manualmente}
       />
+      )}
 
+      {mods.includes("bonos") && (
       <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Paquetes (day pass y mensualidad)</h2>
         <p className="-mt-1 text-sm text-n-600">Cada paquete es de un perro: solo ese perro lo usa.</p>
@@ -341,6 +353,7 @@ export default async function EditarClientePage({
           perros={(perros ?? []).filter((p) => !p.fallecido).map((p) => ({ id: p.id as string, nombre: p.nombre as string }))}
         />
       </div>
+      )}
 
       <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Dar de baja</h2>

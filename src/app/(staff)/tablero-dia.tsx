@@ -9,6 +9,7 @@ import { desdeCuando, diasDesde, esMuyViejo, haceCuanto } from "@/lib/antiguedad
 import { cargarSaldosDeSalidas } from "@/lib/tablero/saldos-de-salidas";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
+import { usaEstancias } from "@/lib/plan/modulos";
 import {
   fechaLocalDeInstante,
   formatearFechaCalendario,
@@ -132,6 +133,12 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   const negocio = await negocioActual();
   const zona = negocio.zona_horaria;
   const supabase = await createSupabaseServerClient();
+  // Solo lo que el negocio tiene prendido (su plan y lo que el admin apagó).
+  const sesion = await obtenerSesionConRol();
+  const mods = sesion?.modulos ?? [];
+  const conEstancias = usaEstancias(mods);
+  const conHotel = mods.includes("hotel");
+  const conEstetica = mods.includes("estetica");
 
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
   const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
@@ -298,7 +305,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
         });
       }
       const contrato = contratoPorPerro.get(perroId);
-      if (contrato) {
+      if (contrato && mods.includes("contratos")) {
         const faltantes = (contrato.faltantes as string[]) ?? [];
         atencion.push({
           clave: `con-${perroId}`,
@@ -348,8 +355,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // Gastos del local vencidos o por vencer (con montos: solo para quien
   // tiene «Gastos»). La lista a la que manda va del vencimiento más viejo
   // al más nuevo.
-  const sesion = await obtenerSesionConRol();
-  if (tienePermiso(sesion, "gastos")) {
+  if (tienePermiso(sesion, "gastos") && mods.includes("gastos")) {
     const { data: porPagar } = await supabase.rpc("gastos_por_atender");
     const lista = (porPagar ?? []) as { concepto: string; vencimiento: string; dias: number; vencido: boolean }[];
     const vencidos = lista.filter((g) => g.vencido);
@@ -381,7 +387,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
 
   const fechasComprobantes = (comprobantes ?? []).map((c) => c.created_at as string);
   const comprobantesPorRevisar = fechasComprobantes.length;
-  if (comprobantesPorRevisar > 0) {
+  if (comprobantesPorRevisar > 0 && mods.includes("portal")) {
     atencion.push({
       clave: "comprobantes",
       texto: `${comprobantesPorRevisar} ${comprobantesPorRevisar === 1 ? "comprobante sanitario espera" : "comprobantes sanitarios esperan"} revisión`,
@@ -396,7 +402,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   const fechasFirmar = filasContratos.filter((c) => c.situacion === "por_firmar").map((c) => c.espera_desde);
   const contratosRegenerar = fechasRegenerar.length;
   const contratosFirmar = fechasFirmar.length;
-  if (contratosRegenerar > 0) {
+  if (contratosRegenerar > 0 && mods.includes("contratos")) {
     atencion.push({
       clave: "contratos-regenerar",
       texto: `${contratosRegenerar} ${contratosRegenerar === 1 ? "contrato firmado hay" : "contratos firmados hay"} que volver a generar`,
@@ -405,7 +411,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       ...masViejo(fechasRegenerar, hoy, zona),
     });
   }
-  if (contratosFirmar > 0) {
+  if (contratosFirmar > 0 && mods.includes("contratos")) {
     atencion.push({
       clave: "contratos-firmar",
       texto: `${contratosFirmar} ${contratosFirmar === 1 ? "contrato espera" : "contratos esperan"} la firma del dueño`,
@@ -417,7 +423,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
 
   const cuentasSinVincular = (Array.isArray(sinVincular) ? sinVincular : []) as { creado_en: string }[];
   const pendientesVincular = cuentasSinVincular.length;
-  if (pendientesVincular > 0) {
+  if (pendientesVincular > 0 && mods.includes("portal")) {
     atencion.push({
       clave: "vincular",
       texto: `${pendientesVincular} ${pendientesVincular === 1 ? "cuenta nueva espera" : "cuentas nuevas esperan"} vincularse a su expediente`,
@@ -440,8 +446,16 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   const ocupacionDiurna = hoyCal ? `${hoyCal.ocupado_diurno}${hoyCal.cupo_diurno != null ? ` / ${hoyCal.cupo_diurno}` : ""}` : "—";
   const ocupacionNocturna = hoyCal ? `${hoyCal.ocupado_nocturno}${hoyCal.cupo_nocturno != null ? ` / ${hoyCal.cupo_nocturno}` : ""}` : "—";
 
-  const cifras = (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+  const citasEnCurso = citas.filter((c) => c.estado === "en_curso").length;
+  const citasTerminadas = citas.filter((c) => c.estado === "finalizada").length;
+  const cifras = !conEstancias ? (
+    <div className="grid grid-cols-3 gap-3">
+      <Cifra etiqueta="Citas hoy" valor={String(citas.length)} />
+      <Cifra etiqueta="En curso" valor={String(citasEnCurso)} />
+      <Cifra etiqueta="Terminadas" valor={String(citasTerminadas)} />
+    </div>
+  ) : (
+    <div className={`grid grid-cols-2 gap-3 ${conHotel ? "md:grid-cols-5" : "md:grid-cols-4"}`}>
       <Cifra etiqueta="Llegan hoy" valor={String(llegan.length)} />
       <Cifra etiqueta="Se van hoy" valor={String(seVan.length)} />
       <Cifra etiqueta="Adentro ahora" valor={String(dentro.length)} />
@@ -450,7 +464,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
         valor={ocupacionDiurna}
         sub={hoyCal?.cupo_estado === "sin_configurar" ? "Cupo sin configurar" : "toda la casa"}
       />
-      <Cifra etiqueta="Ocupación de noche" valor={ocupacionNocturna} sub="perros de hotel" />
+      {conHotel && <Cifra etiqueta="Ocupación de noche" valor={ocupacionNocturna} sub="perros de hotel" />}
     </div>
   );
 
@@ -503,25 +517,33 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
           <p className="mt-1 text-n-600">{formatearFechaCalendario(hoy)} — toda la casa en una pantalla.</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <BotonNuevoCliente tipo="guarderia_hotel" />
-          <Link href="/guarderia/checkin">
-            <Button type="button" variante="secundario">
-              Check-in
-            </Button>
-          </Link>
-          <Link href="/guarderia/checkout">
-            <Button type="button" variante="secundario">
-              Check-out
-            </Button>
-          </Link>
-          <Link href="/estetica/nueva">
-            <Button type="button" variante="secundario">
-              Nueva cita de estética
-            </Button>
-          </Link>
-          <Link href="/guarderia/nueva">
-            <Button type="button">Nueva reserva</Button>
-          </Link>
+          <BotonNuevoCliente tipo={conEstancias ? "guarderia_hotel" : "estetica"} />
+          {conEstancias && (
+            <>
+              <Link href={mods.includes("guarderia") ? "/guarderia/checkin" : "/hotel/checkin"}>
+                <Button type="button" variante="secundario">
+                  Check-in
+                </Button>
+              </Link>
+              <Link href={mods.includes("guarderia") ? "/guarderia/checkout" : "/hotel/checkout"}>
+                <Button type="button" variante="secundario">
+                  Check-out
+                </Button>
+              </Link>
+            </>
+          )}
+          {conEstetica && (
+            <Link href="/estetica/nueva">
+              <Button type="button" variante={conEstancias ? "secundario" : "primario"}>
+                Nueva cita de estética
+              </Button>
+            </Link>
+          )}
+          {conEstancias && (
+            <Link href={mods.includes("guarderia") ? "/guarderia/nueva" : "/hotel/nueva"}>
+              <Button type="button">Nueva reserva</Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -530,6 +552,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {listaAtencion}
 
+        {conEstetica && (
         <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Citas de estética hoy</h2>
@@ -559,8 +582,10 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
             </ul>
           )}
         </section>
+        )}
       </div>
 
+      {conEstancias && (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
           <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Llegan hoy</h2>
@@ -587,6 +612,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
           />
         </section>
       </div>
+      )}
     </div>
   );
 }

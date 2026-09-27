@@ -11,6 +11,7 @@ type Fila = {
   zona_horaria: string; ciudad: string | null; activo: boolean; admins: string[] | null; clientes: number;
   plan: "activo" | "prueba" | "demo"; prueba_termina_at: string | null; perros: number; reservas: number; cobros: number;
   ultima_actividad: string | null; ultimo_acceso: string | null;
+  plan_nombre: string | null; complementos: string[]; modulos_cortesia: string[]; web_gratis_at: string | null;
 };
 
 // Las fechas de la plataforma se leen en la hora del centro de México.
@@ -43,6 +44,11 @@ function Negocio({ n, ahora }: { n: Fila; ahora: number }) {
         <Link href={`/plataforma/negocios/${n.id}`} className="text-lg font-bold text-n-900 hover:underline">{n.nombre}</Link>
         <span className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${estado.clase}`}>{estado.texto}</span>
       </div>
+      <p className="mt-1 text-sm font-semibold text-n-800">
+        Plan {n.plan_nombre ?? "sin asignar"}
+        {n.complementos.includes("pagina_web") ? " + página web" : n.web_gratis_at ? " + página web (ganada)" : ""}
+        {n.modulos_cortesia.length > 0 ? ` · cortesía: ${n.modulos_cortesia.join(", ")}` : ""}
+      </p>
       <p className="mt-1 text-sm text-n-600">
         {urlDelNegocio(n)} · {n.zona_horaria}{n.ciudad ? ` · ${n.ciudad}` : ""}
       </p>
@@ -64,6 +70,9 @@ export default async function NegociosPlataforma() {
     .filter((n) => n.plan === "prueba")
     .sort((a, b) => (a.prueba_termina_at ?? "").localeCompare(b.prueba_termina_at ?? ""));
   const resto = negocios.filter((n) => n.plan !== "prueba");
+  // Cuántos negocios hay por plan (los que pagan, sin contar pruebas ni el demo).
+  const porPlan = new Map<string, number>();
+  for (const n of negocios) if (n.plan === "activo") porPlan.set(n.plan_nombre ?? "Sin plan", (porPlan.get(n.plan_nombre ?? "Sin plan") ?? 0) + 1);
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -76,6 +85,18 @@ export default async function NegociosPlataforma() {
         </Link>
       </div>
       {error && <Alert variante="error" titulo="No pudimos cargar los negocios">{error.message}</Alert>}
+      <section className="flex flex-wrap gap-3">
+        {[...porPlan].map(([plan, cuantos]) => (
+          <div key={plan} className="rounded-lg border border-n-200 bg-white px-4 py-3">
+            <p className="text-sm text-n-600">Plan {plan}</p>
+            <p className="text-2xl font-bold tabular-nums text-n-900">{cuantos}</p>
+          </div>
+        ))}
+        <div className="rounded-lg border border-n-200 bg-white px-4 py-3">
+          <p className="text-sm text-n-600">En prueba</p>
+          <p className="text-2xl font-bold tabular-nums text-n-900">{pruebas.length}</p>
+        </div>
+      </section>
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-bold text-n-900">En prueba gratis ({pruebas.length})</h2>
         <p className="-mt-2 text-sm text-n-600">

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LogoPeluDesk } from "@/components/marca/peludesk";
 import { Revelar } from "@/components/peludesk/revelar";
 import { CASO_REAL, CELULAR, ESCRITORIO, urlDemo } from "@/lib/peludesk/landing";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import "./peludesk.css";
 
 // peludesk.mx: qué es PeluDesk y para quién, cada función con su captura
@@ -14,12 +15,12 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://peludesk.mx"),
   title: { absolute: "PeluDesk — software para guarderías, hoteles y estéticas caninas" },
   description:
-    "Recepción, agenda de estética, caja, contratos firmados en línea, expediente con vacunas, inventario, nómina y utilidad. Prueba PeluDesk 30 días gratis.",
+    "Recepción, agenda de estética, caja, contratos firmados en línea, expediente con vacunas, inventario, nómina y utilidad. Prueba PeluDesk 15 días gratis.",
   alternates: { canonical: "/" },
   robots: { index: true, follow: true },
   openGraph: {
     title: "PeluDesk — el escritorio digital para negocios caninos",
-    description: "Guardería, hotel y estética canina en una sola pantalla. Prueba 30 días gratis.",
+    description: "Guardería, hotel y estética canina en una sola pantalla. Prueba 15 días gratis.",
     images: [{ url: "/peludesk/capturas/tablero-escritorio-1600.webp", width: 1600, height: 1000 }],
     locale: "es_MX",
     type: "website",
@@ -216,8 +217,25 @@ function BotonDemo({ className = "", claro = false }: { className?: string; clar
   );
 }
 
-export default function PeluDeskLanding() {
+type Plan = { clave: string; nombre: string; descripcion: string | null; tipo: string; precio_mensual: number; precio_anual: number; modulos: string[] };
+const pesos = (n: number) => `${Number(n).toLocaleString("es-MX", { maximumFractionDigits: 0 })}`;
+
+// Los planes salen de la base (los edita la plataforma), nunca del código.
+async function cargarPlanes() {
+  const supabase = await createSupabaseServerClient();
+  const [{ data: planes }, { data: modulos }] = await Promise.all([
+    supabase.from("planes").select("clave, nombre, descripcion, tipo, precio_mensual, precio_anual, modulos").eq("activo", true).order("orden"),
+    supabase.from("modulos").select("clave, nombre").order("orden"),
+  ]);
+  const nombres = Object.fromEntries((modulos ?? []).map((m) => [m.clave as string, m.nombre as string]));
+  return { planes: (planes ?? []) as Plan[], nombres };
+}
+
+export default async function PeluDeskLanding() {
   const demo = urlDemo();
+  const { planes, nombres } = await cargarPlanes();
+  const planesBase = planes.filter((p) => p.tipo === "plan");
+  const web = planes.find((p) => p.tipo === "complemento" && p.modulos.includes("pagina_web"));
   return (
     <div className="min-h-[100dvh] bg-crema text-n-900">
       <header className="sticky top-0 z-20 border-b border-n-200/70 bg-crema/90 backdrop-blur supports-[backdrop-filter]:bg-crema/75">
@@ -228,6 +246,9 @@ export default function PeluDeskLanding() {
           <nav className="flex items-center gap-2 sm:gap-3">
             <a href="#funciones" className="hidden rounded-md px-3 py-2 text-sm font-semibold text-n-700 hover:text-morado md:inline-block">
               Funciones
+            </a>
+            <a href="#planes" className="hidden rounded-md px-3 py-2 text-sm font-semibold text-n-700 hover:text-morado md:inline-block">
+              Planes
             </a>
             <a href="#demo" className="hidden rounded-md px-3 py-2 text-sm font-semibold text-n-700 hover:text-morado md:inline-block">
               Demo
@@ -260,7 +281,7 @@ export default function PeluDeskLanding() {
               <BotonPrueba />
               <BotonDemo />
             </div>
-            <p className="mt-4 text-sm text-n-600">30 días gratis, sin tarjeta. Tu negocio queda en tunegocio.peludesk.mx.</p>
+            <p className="mt-4 text-sm text-n-600">15 días gratis, sin tarjeta. Tu negocio queda en tunegocio.peludesk.mx.</p>
           </div>
           <div className="relative lg:col-span-7">
             <Escritorio captura="tablero" alt={FUNCIONES[0].alt} prioridad />
@@ -387,6 +408,41 @@ export default function PeluDeskLanding() {
           </div>
         </section>
 
+        {/* Planes */}
+        {planesBase.length > 0 && (
+          <section id="planes" aria-labelledby="t-planes" className="scroll-mt-16 mx-auto max-w-6xl px-4 pt-20 sm:px-6">
+            <h2 id="t-planes" className="text-3xl font-bold leading-tight tracking-[-0.02em]">Planes</h2>
+            <p className="mt-3 max-w-[60ch] leading-relaxed text-n-700">
+              Pagas por lo que tu negocio ofrece. Precios mensuales más IVA; al año pagas diez meses. Caja y clientes van en todos.
+            </p>
+            <ul className="mt-8 flex flex-col divide-y divide-n-200 rounded-[18px] border border-n-200 bg-white">
+              {planesBase.map((p) => (
+                <li key={p.clave} className="grid gap-4 p-6 md:grid-cols-[14rem_minmax(0,1fr)_12rem] md:items-start md:gap-8">
+                  <div>
+                    <h3 className="text-xl font-bold text-n-900">{p.nombre}</h3>
+                    {p.descripcion && <p className="mt-1 text-sm text-n-600">{p.descripcion}</p>}
+                  </div>
+                  <p className="text-sm leading-relaxed text-n-700">{p.modulos.map((m) => nombres[m] ?? m).join(" · ")}</p>
+                  <div className="md:text-right">
+                    <p className="text-2xl font-bold tabular-nums text-n-900">
+                      {pesos(p.precio_mensual)}
+                      <span className="text-sm font-medium text-n-600"> al mes</span>
+                    </p>
+                    <p className="text-sm tabular-nums text-n-600">o {pesos(p.precio_anual)} al año</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            {web && (
+              <p className="mt-5 max-w-[70ch] leading-relaxed text-n-700">
+                <strong className="text-n-900">Página web:</strong> tu página pública con tus servicios, precios, fotos, horario y WhatsApp,{" "}
+                {pesos(web.precio_mensual)} al mes en cualquier plan. <strong className="text-n-900">Gratis de por vida</strong> si completas
+                tu perfil en los primeros 7 días de tu prueba.
+              </p>
+            )}
+          </section>
+        )}
+
         {/* Prueba gratis */}
         <section aria-labelledby="t-prueba" className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
           <div className="grid gap-8 rounded-[18px] border border-n-200 bg-white p-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:p-12">
@@ -396,7 +452,7 @@ export default function PeluDeskLanding() {
               </h2>
               <p className="mt-3 max-w-[56ch] leading-relaxed text-n-700">
                 Con tu nombre, el de tu negocio y tu teléfono. Entras directo a tu negocio vacío y te guiamos en cinco pasos:
-                datos del negocio, servicios y precios, horario y cupo, tu primer empleado y tu primer cliente. 30 días
+                datos del negocio, servicios y precios, horario y cupo, tu primer empleado y tu primer cliente. 15 días
                 gratis, sin tarjeta.
               </p>
             </div>

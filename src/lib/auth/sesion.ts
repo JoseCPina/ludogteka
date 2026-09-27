@@ -18,10 +18,13 @@ export const obtenerSesionConRol = cache(async () => {
 
   if (!user) return null;
 
-  const [{ data: rolData }, { data: clienteData }, { data: perfil }] = await Promise.all([
+  const [{ data: rolData }, { data: clienteData }, { data: perfil }, { data: modulosData }] = await Promise.all([
     supabase.rpc("current_rol"),
     supabase.rpc("mi_cliente_id"),
     supabase.from("profiles").select("nombre_completo").eq("id", user.id).maybeSingle(),
+    // Los módulos que el negocio tiene prendidos (su plan y lo que el admin
+    // apagó). La base los hace cumplir; esto es para no mostrar lo demás.
+    supabase.rpc("modulos_activos"),
   ]);
   const rol = (rolData as string | null) ?? "anonimo";
 
@@ -38,6 +41,7 @@ export const obtenerSesionConRol = cache(async () => {
     user,
     rol,
     permisos,
+    modulos: ((modulosData as string[] | null) ?? []).map(String),
     nombreCompleto: (perfil?.nombre_completo as string | null | undefined) ?? null,
     clienteId: (clienteData as string | null) ?? null,
   };

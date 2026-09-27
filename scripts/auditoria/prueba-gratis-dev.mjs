@@ -53,6 +53,7 @@ async function registrar(p, { nombre = "Persona de Prueba", negocio, tel, passwo
   await p.getByLabel("Nombre de tu negocio").fill(negocio);
   await p.getByLabel("Teléfono").fill(tel);
   await p.getByLabel("Contraseña", { exact: true }).fill(password);
+  await p.getByLabel("Estética").check();
   await p.getByRole("button", { name: "Abrir mi negocio" }).click();
 }
 
@@ -65,6 +66,12 @@ try {
   await page.getByLabel("Teléfono").fill(TEL);
   await page.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Abrir mi negocio" }).click();
+  await page.getByText("Escoge al menos un servicio").first().waitFor();
+  ok(true, "sin escoger servicios no se registra");
+  ok((await page.getByLabel("Nombre de tu negocio").inputValue()) === NEGOCIO, "lo escrito se conserva tras el error");
+  await page.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
+  await page.getByLabel("Estética").check();
+  await page.getByRole("button", { name: "Abrir mi negocio" }).click();
   await page.waitForURL(/\/bienvenida/, { timeout: 120_000 });
   const host = new URL(page.url()).host;
   const base = `http://${host}`;
@@ -72,9 +79,19 @@ try {
   ok((await texto()).includes("0 de 5"), "/bienvenida empieza en 0 de 5");
   ok((await texto()).includes("Prueba gratis de PeluDesk"), "el aviso de días restantes aparece");
   ok((await texto()).includes("Persona de Prueba"), "el encabezado dice su nombre");
-  const { data: neg } = await A.from("negocios").select("id, slug, plan, prueba_termina_at").eq("slug", host.split(".")[0]).single();
+  const { data: neg } = await A.from("negocios").select("id, slug, plan, prueba_termina_at, planes(clave)").eq("slug", host.split(".")[0]).single();
   const dias = Math.round((Date.parse(neg.prueba_termina_at) - Date.now()) / 86_400_000);
-  ok(neg.plan === "prueba" && dias >= 29 && dias <= 30, `plan prueba por 30 días (quedan ${dias})`);
+  ok(neg.plan === "prueba" && dias >= 14 && dias <= 15, `prueba por 15 días (quedan ${dias})`);
+  ok(neg.planes?.clave === "estetica", `plan sugerido: ${neg.planes?.clave}`);
+  const { data: apagados } = await A.from("negocio_modulos").select("modulo").eq("negocio_id", neg.id).eq("activo", false);
+  const off = (apagados ?? []).map((x) => x.modulo).sort().join(",");
+  ok(off === "bonos,contratos,guarderia,hotel,recoleccion", `solo estética prendida (apagados: ${off})`);
+  ok((await texto()).includes("Gana tu página web gratis"), "la bienvenida muestra el avance para ganar la web");
+  const menu = await page.locator("nav").first().innerText();
+  ok(!/Hotel|Guardería/.test(menu) && /Estética/.test(menu), "el menú no tiene hotel ni guardería");
+  await page.goto(`${base}/hotel`);
+  ok(new URL(page.url()).pathname === "/admin/modulos", "hotel apagado: /hotel manda a Módulos y plan");
+  await page.goto(`${base}/bienvenida`);
 
   console.log("── Los cinco pasos");
   await page.goto(`${base}/admin#configuracion`);
@@ -83,13 +100,13 @@ try {
   await page.getByText("Configuración guardada").first().waitFor();
   ok(true, "datos del negocio guardados");
 
-  const { data: serv } = await A.from("servicios").select("id").eq("negocio_id", neg.id).eq("clave", "guarderia_dia").single();
+  const { data: serv } = await A.from("servicios").select("id").eq("negocio_id", neg.id).eq("clave", "estetica_expres").single();
   await page.goto(`${base}/servicios/${serv.id}/tarifas`);
   await page.getByPlaceholder("Sin capturar").first().fill("280");
   await page.getByRole("button", { name: "Revisar y guardar" }).click();
   await page.getByRole("button", { name: "Confirmar y guardar" }).click();
   await page.getByText("Tarifas guardadas").first().waitFor();
-  ok(true, "precio de guardería capturado");
+  ok(true, "precio de estética capturado");
 
   await page.goto(`${base}/admin#horario`);
   await page.getByRole("button", { name: "Guardar horario" }).click();
@@ -115,6 +132,32 @@ try {
   ok((await texto()).includes("5 de 5"), "/bienvenida queda en 5 de 5");
   await page.screenshot({ path: path.join(SALIDA, "prueba-bienvenida.png"), fullPage: true });
 
+  console.log("── Ganar la página web completando el perfil");
+  const fotoDePrueba = path.resolve("scripts/demo/fotos/x5oPmHmY3kQ.jpg");
+  await page.goto(`${base}/admin/perfil`);
+  await page.getByLabel("Dirección").fill("Calle de Prueba 12, Col. Centro");
+  await page.getByRole("button", { name: "Guardar datos" }).click();
+  await page.getByText("Perfil guardado").first().waitFor();
+  await page.getByLabel("Foto para: subir logo").setInputFiles(fotoDePrueba);
+  await page.getByRole("button", { name: "Subir logo", exact: true }).click();
+  await page.getByText("Logo guardado").first().waitFor();
+  for (let i = 0; i < 3; i++) {
+    await page.getByLabel("Foto para: agregar foto").setInputFiles(fotoDePrueba);
+    await page.getByRole("button", { name: "Agregar foto", exact: true }).click();
+    await page.getByText("Foto agregada").first().waitFor();
+    await page.waitForTimeout(1500);
+  }
+  const { data: web } = await A.from("negocios").select("web_gratis_at").eq("id", neg.id).single();
+  ok(Boolean(web.web_gratis_at), "perfil completo en los primeros 7 días: la web quedó gratis de por vida");
+  await page.goto(`${base}/bienvenida`);
+  ok((await texto()).includes("Tu página web está incluida"), "la bienvenida dice que la web está incluida");
+  const publica = await ctx.newPage();
+  await publica.goto(`${base}/`);
+  const tPagina = (await publica.locator("body").innerText()).replace(/\s+/g, " ");
+  ok(tPagina.includes("Servicios y precios") && tPagina.includes("Baño exprés") && !tPagina.includes("Hotel (por noche)"), "su página pública muestra estética con precio y no hotel");
+  await publica.screenshot({ path: path.join(SALIDA, "prueba-pagina-web.png"), fullPage: true });
+  await publica.close();
+
   console.log("── Cerrar sesión y volver a entrar con teléfono");
   await page.getByRole("button", { name: "Salir" }).click();
   await page.waitForURL(/\/login|\/$/);
@@ -132,6 +175,7 @@ try {
   await otra.getByLabel("Nombre de tu negocio").fill(`${NEGOCIO} dos`);
   await otra.getByLabel("Teléfono").fill(TEL);
   await otra.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
+  await otra.getByLabel("Estética").check();
   await otra.getByRole("button", { name: "Abrir mi negocio" }).click();
   await otra.getByText("No se pudo abrir tu negocio").first().waitFor();
   const msg = (await otra.locator("body").innerText()).replace(/\s+/g, " ");
@@ -197,6 +241,7 @@ try {
 
   console.log(`\nTODO BIEN: ${NEGOCIO} (${host})`);
 } catch (e) {
+  if (fallas === 0) fallas = 1; // una excepción de Playwright también es falla
   console.log(`\nFALLÓ: ${e.message}`);
   await page.screenshot({ path: path.join(SALIDA, "prueba-falla.png"), fullPage: true }).catch(() => {});
   console.log(`URL: ${page.url()}`);

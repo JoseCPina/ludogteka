@@ -13,7 +13,10 @@ export const NEGOCIO = {
   zona: "America/Mexico_City",
   color: "#2f7d6d",
   telefono: "4420000100",
-  direccion: "Av. Ejemplo 123, Col. Centro, Querétaro",
+  direccion: "Av. Ejemplo 123, Col. Centro",
+  // Para su página web (el demo la trae incluida).
+  descripcion: "Guardería, hotel y estética para tu perro en Querétaro. Patio amplio, grupos por tamaño y fotos del día en tu portal. Negocio de demostración de PeluDesk: los datos son de ejemplo.",
+  fotos: ["x5oPmHmY3kQ", "JKdIHsDLAu8", "CfDAo3C3bvQ", "hbmDghIdYP0", "nwe2qgAhT4k", "cwwwHfTytSI"],
 };
 
 // El personal. `cuenta` = entra a la app (y es una de las cuentas de solo

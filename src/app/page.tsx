@@ -13,6 +13,8 @@ import { Requisitos } from "@/components/landing/requisitos";
 import { Ubicacion } from "@/components/landing/ubicacion";
 import { LlamadoFinal, Pie, WhatsAppFlotante } from "@/components/landing/cierre";
 import { LandingBasica } from "@/components/landing/basica";
+import { PaginaNegocio, type DatosPagina } from "@/components/pagina-negocio";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { patronHuesos } from "@/components/landing/patron";
 import { cargarNegocioLanding, datosLanding } from "@/lib/landing/negocio";
 import "@/components/landing/landing.css";
@@ -106,7 +108,14 @@ async function datosEstructurados() {
 }
 
 export default async function Landing() {
-  if (!(await temaLudogteka())) return <LandingBasica />;
+  if (!(await temaLudogteka())) {
+    // Un negocio con el módulo «Página web»: su página armada con su perfil,
+    // sus servicios y sus precios. Sin él, la básica de siempre.
+    const supabase = await createSupabaseServerClient();
+    const { data } = await supabase.rpc("pagina_publica");
+    if (data) return <PaginaNegocio datos={data as DatosPagina} />;
+    return <LandingBasica />;
+  }
 
   const { TEXTOS } = await datosLanding();
   return (

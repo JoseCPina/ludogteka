@@ -12,6 +12,9 @@ const DINERO = /precio|monto|costo|total|importe|pagad|saldo|descuento|tarifa|pa
 const NO_ES_DINERO = new Set([
   "servicios.monto_libre", "servicios_cotizables.monto_libre", // sí/no: el importe se captura al aplicar
   "perros.tope_gasto_autorizado", // lo autoriza el propio dueño y va en su contrato: le corresponde
+  // Los precios de los planes de PeluDesk: públicos a propósito (la landing
+  // de peludesk.mx los muestra). No son dinero de ningún negocio.
+  "planes.precio_mensual", "planes.precio_anual",
 ]);
 
 // Del negocio, no del cliente: ningún cliente debe recibir UNA sola fila,

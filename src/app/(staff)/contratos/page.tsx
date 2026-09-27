@@ -2,6 +2,7 @@ import { tienePermiso } from "@/lib/auth/permisos";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
+import { tipoContratoAplica } from "@/lib/plan/modulos";
 import { PlantillasContrato, type TipoContratoVista } from "./plantillas-contrato";
 import type { CategoriaServicioContrato, MomentoContrato } from "./plantilla-actions";
 
@@ -35,7 +36,8 @@ export default async function ContratosPage() {
     versionesPorTipo.set(v.tipo_contrato_id, lista);
   }
 
-  const vistas: TipoContratoVista[] = (tipos ?? []).map((t) => ({
+  // Solo los tipos de los servicios que el negocio tiene prendidos.
+  const vistas: TipoContratoVista[] = (tipos ?? []).filter((t) => tipoContratoAplica(t.categorias_servicio as string[], sesion?.modulos ?? [])).map((t) => ({
     id: t.id,
     nombre: t.nombre,
     categorias: (t.categorias_servicio ?? []) as CategoriaServicioContrato[],

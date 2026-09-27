@@ -11,6 +11,7 @@ import type { DiaHorario } from "./configuracion-actions";
 import { TarifasFaltantes, type ServicioConHuecos } from "./tarifas-faltantes";
 import { contarSinTarifa, type CeldaVigente } from "@/lib/tarifas/matriz";
 import { TableroDia } from "../tablero-dia";
+import { AvanceWeb } from "@/components/avance-web";
 import Link from "next/link";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
@@ -102,6 +103,7 @@ export default async function AdminPage() {
         </p>
       </div>
 
+      {esAdmin && <AvanceWeb compacto />}
       <section className="flex flex-col gap-4">
         <h2 className="text-lg font-bold text-n-900">Hoy</h2>
         <TableroDia compacto />

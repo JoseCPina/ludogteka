@@ -10,6 +10,7 @@ import { BuscadorClientes } from "@/components/buscador-clientes";
 import type { ClienteBuscable } from "@/lib/clientes/buscables";
 import { formatearFechaCalendario } from "@/lib/formato";
 import { formatearTelefono } from "@/lib/telefono";
+import { useModulos } from "@/components/modulos-contexto";
 import { registrarPagosMpPendientes } from "./mercadopago-actions";
 
 export type CuentaAbierta = {
@@ -51,6 +52,7 @@ export function MostradorCaja({
 }) {
   const router = useRouter();
   const [cliente, setCliente] = useState<ClienteBuscable | null>(null);
+  const tieneBonos = useModulos().tiene("bonos");
   const [error, setError] = useState<string | null>(null);
   const registrando = useEspera();
 
@@ -159,9 +161,11 @@ export function MostradorCaja({
               <Link href={`/caja/cargo?cliente=${cliente.id}`}>
                 <Button type="button">Cargo suelto</Button>
               </Link>
-              <Link href={`/caja/pases?cliente=${cliente.id}`}>
-                <Button type="button" variante="secundario">Vender pase o mensualidad</Button>
-              </Link>
+              {tieneBonos && (
+                <Link href={`/caja/pases?cliente=${cliente.id}`}>
+                  <Button type="button" variante="secundario">Vender pase o mensualidad</Button>
+                </Link>
+              )}
               <Link href={`/clientes/${cliente.id}`}>
                 <Button type="button" variante="secundario">Ver expediente</Button>
               </Link>

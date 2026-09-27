@@ -3,6 +3,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { formatearFecha } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { usaEstancias } from "@/lib/plan/modulos";
+import { AvanceWeb } from "@/components/avance-web";
 
 // Los primeros pasos de un negocio recién abierto desde peludesk.mx. Cada
 // paso manda a la pantalla donde se hace de verdad (no hay un asistente
@@ -14,6 +17,10 @@ export default async function BienvenidaPage() {
   const supabase = await createSupabaseServerClient();
   const negocio = await cargarNegocioLanding();
   const zona = await zonaActual();
+  // Los pasos se ajustan a lo que el negocio ofrece (sus módulos).
+  const mods = (await obtenerSesionConRol())?.modulos ?? [];
+  const conEstancias = usaEstancias(mods);
+  const servicios = [mods.includes("guarderia") && "guardería", mods.includes("hotel") && "hotel", mods.includes("estetica") && "estética"].filter(Boolean).join(", ");
   const cuenta = (tabla: string) => supabase.from(tabla).select("id", { count: "exact", head: true }).is("deleted_at", null);
   const [{ data: config }, { data: cupoPropio }, tarifas, empleados, clientes] = await Promise.all([
     supabase.rpc("resolver_cupo_configuracion"),
@@ -26,7 +33,7 @@ export default async function BienvenidaPage() {
   ]);
   const vigente = (Array.isArray(config) ? config[0] : config) as { telefono_recepcion?: string | null } | null;
 
-  const pasos: Paso[] = [
+  const todos: (Paso & { aplica?: boolean })[] = [
     {
       titulo: "Datos del negocio",
       que: "El teléfono de recepción (al que te escriben tus clientes por WhatsApp) y la dirección desde donde sale la camioneta.",
@@ -36,14 +43,16 @@ export default async function BienvenidaPage() {
     },
     {
       titulo: "Servicios y precios",
-      que: "Ya tienes guardería, hotel y estética dados de alta. Ponles tu precio: por talla, por grupo de raza o por hora.",
+      que: `Ya tienes dados de alta los servicios de ${servicios || "tu negocio"}. Ponles tu precio${mods.includes("estetica") ? ": en estética, por grupo de raza o por talla" : ""}${conEstancias ? "; en hotel, por talla; en guardería, por día o por hora" : ""}.`,
       href: "/servicios",
       accion: "Poner precios",
       listo: (tarifas.count ?? 0) > 0,
     },
     {
-      titulo: "Horario y cupo",
-      que: "Qué días y a qué hora abres, y cuántos perros caben de día y de noche. Con eso se validan las reservas.",
+      titulo: conEstancias ? "Horario y cupo" : "Horario",
+      que: conEstancias
+        ? "Qué días y a qué hora abres, y cuántos perros caben de día y de noche. Con eso se validan las reservas."
+        : "Qué días y a qué hora abres. Sale en tu página web.",
       href: "/admin#horario",
       accion: "Ajustar horario",
       listo: (cupoPropio?.length ?? 0) > 0,
@@ -54,6 +63,7 @@ export default async function BienvenidaPage() {
       href: "/empleados/nuevo",
       accion: "Agregar empleado",
       listo: (empleados.count ?? 0) > 0,
+      aplica: mods.includes("empleados"),
     },
     {
       titulo: "Tu primer cliente",
@@ -63,6 +73,7 @@ export default async function BienvenidaPage() {
       listo: (clientes.count ?? 0) > 0,
     },
   ];
+  const pasos: Paso[] = todos.filter((p) => p.aplica !== false);
   const hechos = pasos.filter((p) => p.listo).length;
 
   return (
@@ -70,7 +81,7 @@ export default async function BienvenidaPage() {
       <header>
         <h1 className="text-2xl font-bold tracking-tight text-n-900">Te damos la bienvenida a {negocio.nombre}</h1>
         <p className="mt-1 text-n-700">
-          Cinco pasos para dejar tu negocio listo.{" "}
+          {pasos.length} pasos para dejar tu negocio listo.{" "}
           {negocio.plan === "prueba" && negocio.prueba_termina_at && (
             <>Tu prueba gratis dura hasta el {formatearFecha(negocio.prueba_termina_at, zona)}.</>
           )}
@@ -109,6 +120,7 @@ export default async function BienvenidaPage() {
           </li>
         ))}
       </ol>
+      <AvanceWeb />
       <p className="text-sm text-n-600">
         Puedes volver a esta página cuando quieras desde el aviso de arriba.{" "}
         <Link href="/admin" className="font-semibold text-morado hover:underline">

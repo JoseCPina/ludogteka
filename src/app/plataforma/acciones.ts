@@ -251,3 +251,47 @@ export async function cambiarPlan(negocioId: string, fd: FormData): Promise<Resu
   revalidatePath("/plataforma");
   return { error: null, exito: "Plan guardado." };
 }
+
+// Los planes (nombre, precios y módulos): viven en la base, nunca en el código.
+export async function guardarPlan(planId: string | null, fd: FormData): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const mensual = Number(texto(fd, "precio_mensual"));
+  const anual = Number(texto(fd, "precio_anual") || mensual * 10);
+  if (!(mensual >= 0) || !(anual >= 0)) return { error: "Los precios tienen que ser números de cero para arriba." };
+  const { error } = await s.supabase.rpc("plataforma_guardar_plan", {
+    p_id: planId,
+    p_clave: texto(fd, "clave"),
+    p_nombre: texto(fd, "nombre"),
+    p_descripcion: texto(fd, "descripcion") || null,
+    p_tipo: texto(fd, "tipo") || "plan",
+    p_precio_mensual: mensual,
+    p_precio_anual: anual,
+    p_modulos: fd.getAll("modulos").map(String),
+    p_orden: Number(texto(fd, "orden") || 0),
+    p_activo: fd.get("activo") === "on",
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/plataforma/planes");
+  revalidatePath("/plataforma");
+  return { error: null, exito: "Plan guardado. Los negocios en este plan lo ven al instante." };
+}
+
+// El plan contratado de un negocio, sus complementos (la página web) y los
+// módulos que se le dan de cortesía. Subir de plan desbloquea al instante;
+// bajar no borra nada (lo que queda fuera se esconde y se bloquea).
+export async function asignarPlan(negocioId: string, fd: FormData): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const { error } = await s.supabase.rpc("plataforma_asignar_plan", {
+    p_negocio_id: negocioId,
+    p_plan_id: texto(fd, "plan_id"),
+    p_complementos: fd.getAll("complementos").map(String),
+    p_modulos_cortesia: fd.getAll("cortesia").map(String),
+    p_motivo: texto(fd, "motivo"),
+  });
+  if (error) return { error: error.message };
+  revalidatePath(`/plataforma/negocios/${negocioId}`);
+  revalidatePath("/plataforma");
+  return { error: null, exito: "Plan asignado." };
+}

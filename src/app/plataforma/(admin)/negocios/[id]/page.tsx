@@ -5,17 +5,24 @@ import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { ZONAS_MEXICO } from "@/lib/plataforma/tipos";
 import { urlDelNegocio } from "@/lib/negocio/actual";
-import { actualizarNegocio, agregarAdmin, cambiarPlan } from "../../../acciones";
+import { actualizarNegocio, agregarAdmin, asignarPlan, cambiarPlan } from "../../../acciones";
 
 type Fila = {
   id: string; slug: string; nombre: string; dominio: string | null; url_publica: string | null; zona_horaria: string;
-  ciudad: string | null; activo: boolean; plan: "activo" | "prueba" | "demo"; prueba_termina_at: string | null; marca: { color?: string | null; favicon?: string | null; logo?: string | null } | null; admins: string[] | null;
+  ciudad: string | null; activo: boolean; plan: "activo" | "prueba" | "demo"; prueba_termina_at: string | null;
+  plan_id: string | null; plan_nombre: string | null; complementos: string[]; modulos_cortesia: string[]; web_gratis_at: string | null; marca: { color?: string | null; favicon?: string | null; logo?: string | null } | null; admins: string[] | null;
 };
 
 export default async function NegocioPlataforma({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { supabase } = await exigirPlataforma();
-  const { data } = await supabase.rpc("plataforma_negocios");
+  const [{ data }, { data: planesCrudo }, { data: modulosCrudo }] = await Promise.all([
+    supabase.rpc("plataforma_negocios"),
+    supabase.from("planes").select("id, nombre, tipo, precio_mensual, modulos").eq("activo", true).order("orden"),
+    supabase.from("modulos").select("clave, nombre").order("orden"),
+  ]);
+  const planes = (planesCrudo ?? []) as { id: string; nombre: string; tipo: string; precio_mensual: number; modulos: string[] }[];
+  const modulos = (modulosCrudo ?? []) as { clave: string; nombre: string }[];
   const n = ((data ?? []) as Fila[]).find((x) => x.id === id);
   if (!n) notFound();
   const zonas = ZONAS_MEXICO.some((z) => z.zona === n.zona_horaria) ? ZONAS_MEXICO : [{ zona: n.zona_horaria, etiqueta: n.zona_horaria }, ...ZONAS_MEXICO];
@@ -51,7 +58,45 @@ export default async function NegocioPlataforma({ params }: { params: Promise<{ 
       </FormularioPlataforma>
 
       <section className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="font-bold text-n-900">Plan</h2>
+        <h2 className="font-bold text-n-900">Plan contratado y módulos</h2>
+        <p className="-mt-2 text-sm text-n-600">
+          Los módulos disponibles salen del plan (en prueba: todo el Completo), más los complementos y la cortesía.
+          {n.web_gratis_at ? " Se ganó la página web gratis de por vida." : ""} Bajar de plan no borra nada.
+        </p>
+        <FormularioPlataforma accion={asignarPlan.bind(null, n.id)} textoBoton="Guardar plan contratado" variante="secundario">
+          <Select label="Plan" name="plan_id" defaultValue={n.plan_id ?? ""}>
+            {planes.filter((p) => p.tipo === "plan").map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.nombre} — ${Number(p.precio_mensual).toLocaleString("es-MX")} al mes
+              </option>
+            ))}
+          </Select>
+          <fieldset>
+            <legend className="mb-2 text-sm font-medium text-n-800">Complementos contratados</legend>
+            {planes.filter((p) => p.tipo === "complemento").map((p) => (
+              <label key={p.id} className="flex items-center gap-2 text-sm text-n-800">
+                <input type="checkbox" name="complementos" value={p.modulos[0]} defaultChecked={n.complementos.includes(p.modulos[0])} className="h-4 w-4 accent-morado" />
+                {p.nombre} — ${Number(p.precio_mensual).toLocaleString("es-MX")} al mes
+              </label>
+            ))}
+          </fieldset>
+          <fieldset>
+            <legend className="mb-2 text-sm font-medium text-n-800">Módulos de cortesía (fuera de su plan, sin costo)</legend>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {modulos.map((m) => (
+                <label key={m.clave} className="flex items-center gap-2 text-sm text-n-800">
+                  <input type="checkbox" name="cortesia" value={m.clave} defaultChecked={n.modulos_cortesia.includes(m.clave)} className="h-4 w-4 accent-morado" />
+                  {m.nombre}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <Field label="Motivo" name="motivo" required placeholder="Contrató el plan Completo anual" />
+        </FormularioPlataforma>
+      </section>
+
+      <section className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
+        <h2 className="font-bold text-n-900">Estado de la cuenta</h2>
         <p className="-mt-2 text-sm text-n-600">
           Una prueba vencida queda en solo lectura. Al activarlo, el negocio vuelve a poder guardar. Queda en la bitácora con el motivo.
         </p>

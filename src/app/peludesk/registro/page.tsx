@@ -4,8 +4,8 @@ import { LogoPeluDesk } from "@/components/marca/peludesk";
 import { RegistroForm } from "./registro-form";
 
 export const metadata: Metadata = {
-  title: { absolute: "Prueba PeluDesk gratis 30 días" },
-  description: "Abre tu guardería, hotel o estética canina en PeluDesk. 30 días gratis, sin tarjeta.",
+  title: { absolute: "Prueba PeluDesk gratis 15 días" },
+  description: "Abre tu guardería, hotel o estética canina en PeluDesk. 15 días gratis, sin tarjeta.",
   robots: { index: true, follow: true },
 };
 
@@ -18,7 +18,7 @@ export default function RegistroPage() {
             <LogoPeluDesk tamano={34} />
           </Link>
           <div>
-            <h1 className="text-3xl font-bold leading-tight tracking-tight text-n-900 md:text-4xl">Prueba PeluDesk 30 días, gratis</h1>
+            <h1 className="text-3xl font-bold leading-tight tracking-tight text-n-900 md:text-4xl">Prueba PeluDesk 15 días, gratis</h1>
             <p className="mt-3 max-w-[48ch] text-n-700">
               Con tu nombre, el de tu negocio y tu teléfono abrimos tu cuenta en este momento. Entras directo a tu negocio
               vacío y te guiamos para dejarlo listo.
@@ -28,7 +28,8 @@ export default function RegistroPage() {
             {[
               "Tu negocio queda en su propia dirección: tunegocio.peludesk.mx.",
               "Tú eres la administración: das de alta a tu equipo y a tus clientes.",
-              "No pedimos tarjeta. Al terminar los 30 días tu información se queda y puedes seguir consultándola.",
+              "Completa tu perfil en los primeros 7 días y tu página web queda gratis de por vida.",
+              "No pedimos tarjeta. Al terminar los 15 días tu información se queda y puedes seguir consultándola.",
             ].map((t, i) => (
               <li key={i} className="flex gap-3">
                 <span aria-hidden className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-menta text-sm font-bold text-morado">

@@ -80,7 +80,7 @@ export default async function PortalPage() {
         <p className="mt-1 text-n-600">Este es tu portal.</p>
       </div>
 
-      {(porFirmar ?? []).length > 0 && (
+      {(porFirmar ?? []).length > 0 && (sesion?.modulos ?? []).includes("contratos") && (
         <Alert
           variante="advertencia"
           titulo={(porFirmar ?? []).length === 1 ? "Tienes un contrato por firmar" : `Tienes ${(porFirmar ?? []).length} contratos por firmar`}

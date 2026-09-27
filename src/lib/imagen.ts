@@ -9,10 +9,10 @@ const CALIDAD_JPEG = 0.82;
 // foto tomada en vertical con el celular se sube acostada, porque los
 // píxeles crudos del sensor suelen venir en horizontal y solo el tag EXIF
 // dice cómo mostrarla derecha.
-export async function comprimirImagen(archivo: File): Promise<Blob> {
+export async function comprimirImagen(archivo: File, ladoMaximo: number = LADO_MAXIMO): Promise<Blob> {
   const bitmap = await createImageBitmap(archivo, { imageOrientation: "from-image" });
 
-  const escala = Math.min(1, LADO_MAXIMO / Math.max(bitmap.width, bitmap.height));
+  const escala = Math.min(1, ladoMaximo / Math.max(bitmap.width, bitmap.height));
   const ancho = Math.round(bitmap.width * escala);
   const alto = Math.round(bitmap.height * escala);
 

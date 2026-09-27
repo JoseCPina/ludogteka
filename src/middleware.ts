@@ -4,6 +4,7 @@ import { rutaPorRol } from "@/lib/auth/rutas";
 import { ENCABEZADOS_NEGOCIO, ENCABEZADO_PLATAFORMA, resolverNegocio, type NegocioBasico } from "@/lib/negocio/resolver";
 import { ENCABEZADO_FIRMA, firmaValida, firmarNegocio, firmarPlataforma, plataformaFirmada } from "@/lib/negocio/firma";
 import { esHostPlataforma } from "@/lib/negocio/host";
+import { moduloDeRuta } from "@/lib/plan/modulos";
 
 // Los encabezados de negocio que puso este mismo middleware (firmados).
 // Solo los trae la petición interna con la que Next pinta el destino de
@@ -220,6 +221,18 @@ export async function middleware(request: NextRequest) {
       );
     }
     return conCookiesDe(response, NextResponse.redirect(new URL(rutaPorRol(rol), request.url)));
+  }
+
+  // Un módulo que el negocio no tiene (su plan o lo que el admin apagó) no
+  // se abre: el admin va a la pantalla de módulos, los demás a una página
+  // que lo explica. La base lo bloquea de todos modos.
+  const moduloZona = zonaPagina ? moduloDeRuta(pathname) : null;
+  if (moduloZona) {
+    const { data: activos } = await supabase.rpc("modulos_activos");
+    if (!((activos as string[] | null) ?? []).includes(moduloZona)) {
+      const destino = rol === "admin" ? `/admin/modulos?apagado=${moduloZona}` : `/modulo-apagado?m=${moduloZona}`;
+      return conCookiesDe(response, NextResponse.redirect(new URL(destino, request.url)));
+    }
   }
 
   return response;

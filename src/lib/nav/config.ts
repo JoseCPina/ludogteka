@@ -11,6 +11,8 @@ export type ItemNav = {
   // sección exista, basta con quitar esta bandera (o mover la entrada,
   // si cambia de lugar en el flujo).
   proximamente?: boolean;
+  // Solo si el negocio tiene ese módulo prendido (src/lib/plan/modulos.ts).
+  modulo?: string;
 };
 
 // Agregar una sección nueva (Fase 4+) es agregar una entrada aquí, no
@@ -23,23 +25,25 @@ export const SECCIONES_STAFF: ItemNav[] = [
   // uno con sus reservas, su check-in/check-out y su lista del día. La
   // ocupación que se muestra en ambos es la de toda la casa — ver
   // src/lib/modulos.ts.
-  { etiqueta: "Guardería", href: "/guarderia", roles: ["admin", "recepcion"] },
-  { etiqueta: "Hotel", href: "/hotel", roles: ["admin", "recepcion"] },
-  { etiqueta: "Estética", href: "/estetica", roles: ["admin", "recepcion", "estetica"] },
+  { etiqueta: "Guardería", href: "/guarderia", roles: ["admin", "recepcion"], modulo: "guarderia" },
+  { etiqueta: "Hotel", href: "/hotel", roles: ["admin", "recepcion"], modulo: "hotel" },
+  { etiqueta: "Estética", href: "/estetica", roles: ["admin", "recepcion", "estetica"], modulo: "estetica" },
   { etiqueta: "Servicios", href: "/servicios", roles: ["admin"], permisos: ["tarifas"] },
   { etiqueta: "Clientes", href: "/clientes", roles: ["admin", "recepcion"] },
-  { etiqueta: "Vinculación", href: "/vinculacion", roles: ["admin", "recepcion"] },
+  { etiqueta: "Vinculación", href: "/vinculacion", roles: ["admin", "recepcion"], modulo: "portal" },
   { etiqueta: "Caja", href: "/caja", roles: ["admin", "recepcion"] },
-  { etiqueta: "Contratos", href: "/contratos", roles: ["admin", "recepcion"] },
-  { etiqueta: "Inventario", href: "/inventario", roles: ["admin", "recepcion", "estetica"] },
-  { etiqueta: "Reportes", href: "/reportes", roles: ["admin"], permisos: ["reportes_financieros"] },
-  { etiqueta: "Empleados", href: "/empleados", roles: ["admin", "recepcion"] },
-  { etiqueta: "Gastos", href: "/gastos", roles: ["admin"], permisos: ["gastos"] },
-  { etiqueta: "Mi asistencia", href: "/mi-trabajo", roles: ["recepcion", "estetica"] },
+  { etiqueta: "Contratos", href: "/contratos", roles: ["admin", "recepcion"], modulo: "contratos" },
+  { etiqueta: "Inventario", href: "/inventario", roles: ["admin", "recepcion", "estetica"], modulo: "inventario" },
+  { etiqueta: "Reportes", href: "/reportes", roles: ["admin"], permisos: ["reportes_financieros"], modulo: "reportes" },
+  { etiqueta: "Empleados", href: "/empleados", roles: ["admin", "recepcion"], modulo: "empleados" },
+  { etiqueta: "Gastos", href: "/gastos", roles: ["admin"], permisos: ["gastos"], modulo: "gastos" },
+  { etiqueta: "Mi asistencia", href: "/mi-trabajo", roles: ["recepcion", "estetica"], modulo: "empleados" },
   // Admin aterriza en /admin (su "Inicio"); esta entrada es para recepción
   // con permisos de personal o de configuración.
   { etiqueta: "Administración", href: "/admin", roles: ["admin"], permisos: ["personal", "configuracion_negocio", "tarifas"] },
   { etiqueta: "Permisos", href: "/admin/permisos", roles: ["admin"] },
+  { etiqueta: "Perfil y página web", href: "/admin/perfil", roles: ["admin"], permisos: ["configuracion_negocio"] },
+  { etiqueta: "Módulos y plan", href: "/admin/modulos", roles: ["admin"] },
 ];
 
 // Vacío por ahora — Fase 2/6/9 agregan aquí Mis perros, Mis reservas,
@@ -47,7 +51,7 @@ export const SECCIONES_STAFF: ItemNav[] = [
 // en cuanto tenga elementos.
 export const SECCIONES_PORTAL: ItemNav[] = [];
 
-export function navStaffPara(rol: string, permisos: string[] = []): ItemNav[] {
+export function navStaffPara(rol: string, permisos: string[] = [], modulos: string[] = []): ItemNav[] {
   const inicio = rutaPorRol(rol);
   return [
     { etiqueta: "Inicio", href: inicio, roles: [rol] },
@@ -58,6 +62,7 @@ export function navStaffPara(rol: string, permisos: string[] = []): ItemNav[] {
       (seccion) =>
         (seccion.roles.includes(rol) ||
           (rol === "recepcion" && (seccion.permisos ?? []).some((p) => permisos.includes(p)))) &&
+        (!seccion.modulo || modulos.includes(seccion.modulo)) &&
         seccion.href !== inicio
     ),
   ];
