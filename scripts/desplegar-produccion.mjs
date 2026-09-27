@@ -28,6 +28,12 @@
 // La cadena de conexión NUNCA va en el repo ni en .env.local (ver
 // CLAUDE.md, sección Entornos): se lee de C:/proyectos/.ludogteka-prod-db,
 // fuera del repo y permanente, o de LUDOGTEKA_PROD_DB_URL si viene puesta.
+//
+// En la nube (Claude Code en claude.ai/code, CLAUDE_CODE_REMOTE=true) git
+// solo puede empujar la rama de la sesión, no main. Ahí el código se
+// despliega empujando esa rama y fusionando su PR a main con gh; Vercel
+// construye igual, porque lo que dispara el build es que main cambie. La
+// cadena llega por LUDOGTEKA_PROD_DB_URL y el CLI de Vercel usa VERCEL_TOKEN.
 
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -37,6 +43,8 @@ const PROY_PROD = "xdsxjhytggpsgrmfuuff";
 const PROY_DEV = "sgfolltpvktbsiisfuzq";
 const RAMA = "main";
 const REINTENTOS_MIGRACION = 3;
+const EN_NUBE = process.env.CLAUDE_CODE_REMOTE === "true";
+const VERCEL_TOKEN = process.env.VERCEL_TOKEN || "";
 
 const args = new Set(process.argv.slice(2));
 const APLICAR = args.has("--aplicar");
@@ -136,7 +144,11 @@ function ultimoDeploy() {
   // dispositivo de Vercel — ese no lee del teclado, imprime un código y se
   // queda esperando en el navegador — así que aquí el tope de tiempo es lo
   // único que corta.
-  const salida = corre("npx vercel ls ludogteka --prod", [], { timeout: 45000 });
+  // Con VERCEL_TOKEN (la nube) el token va como argumento directo, sin
+  // shell: así no queda en ningún mensaje de error ni en una línea de cmd.
+  const salida = VERCEL_TOKEN && process.platform !== "win32"
+    ? corre("npx", ["--yes", "vercel", "ls", "ludogteka", "--prod", "--token", VERCEL_TOKEN], { timeout: 45000 })
+    : corre("npx vercel ls ludogteka --prod", [], { timeout: 45000 });
   const renglon = salida
     .split("\n")
     .find((l) => /vercel\.app/.test(l) && /(Ready|Building|Queued|Error|Canceled)/.test(l));
@@ -149,7 +161,8 @@ function ultimoDeploy() {
 
 // La cadena trae la contraseña: nunca se imprime, ni siquiera al fallar.
 function sinSecreto(texto) {
-  return String(texto).replace(/postgresql:\/\/[^\s"']+/g, "postgresql://[oculto]");
+  const limpio = String(texto).replace(/postgresql:\/\/[^\s"']+/g, "postgresql://[oculto]");
+  return VERCEL_TOKEN ? limpio.split(VERCEL_TOKEN).join("[oculto]") : limpio;
 }
 
 // La cadena de conexión vive en un archivo FUERA del repo, permanente
@@ -203,9 +216,13 @@ async function consulta(sql) {
 titulo("Estado del repositorio");
 
 const rama = git("rev-parse", "--abbrev-ref", "HEAD");
-console.log(`   rama:   ${rama}`);
-if (rama !== RAMA) {
+console.log(`   rama:   ${rama}${EN_NUBE ? " (sesión en la nube: se despliega por PR a main)" : ""}`);
+if (rama !== RAMA && !EN_NUBE) {
   abortar(`estás en '${rama}', no en '${RAMA}'`, "Producción se despliega desde main.");
+}
+if (rama === "HEAD") abortar("no estás en ninguna rama (HEAD suelto)");
+if (rama === RAMA && EN_NUBE) {
+  abortar("en la nube no se despliega desde main", "Git solo empuja la rama de la sesión: trabaja en una rama propia y el script abre su PR.");
 }
 
 const sucio = git("status", "--porcelain");
@@ -237,6 +254,19 @@ if (detras) {
     "Haz pull y vuelve a intentar; si no, el push va a ser rechazado o vas a\n" +
       "pisar trabajo de alguien más:\n" + detras
   );
+}
+
+// En la nube, lo que puede fallar al desplegar el código (empujar la rama,
+// abrir o fusionar el PR) se prueba ANTES de migrar: si falla después, queda
+// esquema nuevo con código viejo, que es justo lo que este script evita.
+if (EN_NUBE && APLICAR && pendientes) {
+  try {
+    corre("gh", ["auth", "status"]);
+    corre("git", ["push", "origin", `HEAD:refs/heads/${rama}`]);
+    console.log(`   rama '${rama}' empujada; gh con sesión.`);
+  } catch (e) {
+    abortar("en la nube no se puede empujar la rama o gh no tiene sesión", sinSecreto(e.salida || e.message));
+  }
 }
 
 // ---------------------------------------------------------------- 2
@@ -399,7 +429,21 @@ try {
 }
 
 try {
-  console.log(corre("git", ["push", "origin", RAMA]).trim() || "   push enviado.");
+  if (EN_NUBE) {
+    const asunto = git("log", "-1", "--format=%s");
+    try {
+      corre("gh", ["pr", "create", "--base", RAMA, "--head", rama, "--title", asunto, "--body",
+        "Despliegue a producción desde una sesión en la nube (`npm run desplegar -- --aplicar`): " +
+          "migraciones ya aplicadas y verificadas; al fusionar, Vercel construye main.\n\n" +
+          "🤖 Generated with [Claude Code](https://claude.com/claude-code)"]);
+    } catch (e) {
+      // Si la rama ya tiene su PR abierto, se fusiona ese.
+      if (!/already exists/i.test(e.salida || "")) throw e;
+    }
+    console.log(corre("gh", ["pr", "merge", rama, "--merge"]).trim() || "   PR fusionado a main.");
+  } else {
+    console.log(corre("git", ["push", "origin", RAMA]).trim() || "   push enviado.");
+  }
 } catch (e) {
   abortar(
     "el push del código falló DESPUÉS de migrar",
@@ -407,6 +451,16 @@ try {
       "\n\nProducción quedó con el esquema nuevo y el código viejo. Resuelve el push\n" +
       "cuanto antes: es la ventana que este script existe para evitar."
   );
+}
+
+// La rama de la sesión queda al día con main (la fusión es un commit más
+// adelante); si no, el siguiente despliegue la vería "detrás de origin/main".
+if (EN_NUBE) {
+  try {
+    git("pull", "--ff-only", "origin", RAMA);
+  } catch (e) {
+    console.log(`   (no se pudo traer main a la rama: ${sinSecreto(e.salida || e.message).trim()})`);
+  }
 }
 
 // ---------------------------------------------------------------- 7

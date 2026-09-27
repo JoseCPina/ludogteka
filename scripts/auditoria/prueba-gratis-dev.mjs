@@ -16,7 +16,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { chromium } from "playwright-core";
+import { abrirNavegador } from "../lib/navegador.mjs";
 import { createClient } from "@supabase/supabase-js";
 
 const env = Object.fromEntries(fs.readFileSync(".env.local", "utf8").split(/\r?\n/).filter((l) => l.includes("=") && !l.startsWith("#")).map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }));
@@ -35,9 +35,7 @@ const ok = (cond, que) => {
   if (!cond) { fallas++; throw new Error(que); }
 };
 
-const dir = path.join(os.homedir(), "AppData/Local/ms-playwright/chromium_headless_shell-1243");
-const sub = fs.readdirSync(dir).find((x) => fs.existsSync(path.join(dir, x, "chrome-headless-shell.exe")));
-const navegador = await chromium.launch({ executablePath: path.join(dir, sub, "chrome-headless-shell.exe"), args: ["--disable-gpu"] });
+const navegador = await abrirNavegador();
 const ctx = await navegador.newContext({ viewport: { width: 1280, height: 900 }, locale: "es-MX" });
 const page = await ctx.newPage();
 page.setDefaultTimeout(90_000);

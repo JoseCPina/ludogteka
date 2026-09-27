@@ -11,9 +11,8 @@
 // pedido. Un navegador por rol, una página a la vez: esta máquina tiene
 // poca memoria.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
-import { chromium } from "playwright-core";
+import { abrirNavegador } from "../lib/navegador.mjs";
 
 const [base, salida, ...resto] = process.argv.slice(2);
 if (!base || !salida || !resto.length) throw new Error("Uso: capturas.mjs <base> <salida> <tomas>");
@@ -25,9 +24,7 @@ const tomas = resto[0].endsWith(".json")
       return { rol, ruta, nombre, ancho: Number(ancho || 1280), alto: Number(alto || 800) };
     });
 
-const dir = path.join(os.homedir(), "AppData/Local/ms-playwright/chromium_headless_shell-1243");
-const sub = fs.readdirSync(dir).find((x) => fs.existsSync(path.join(dir, x, "chrome-headless-shell.exe")));
-const navegador = await chromium.launch({ executablePath: path.join(dir, sub, "chrome-headless-shell.exe"), args: ["--disable-gpu"] });
+const navegador = await abrirNavegador();
 try {
   const porRol = Map.groupBy(tomas, (t) => t.rol);
   for (const [rol, lista] of porRol) {
