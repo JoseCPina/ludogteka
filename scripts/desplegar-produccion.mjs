@@ -29,11 +29,12 @@
 // CLAUDE.md, sección Entornos): se lee de C:/proyectos/.ludogteka-prod-db,
 // fuera del repo y permanente, o de LUDOGTEKA_PROD_DB_URL si viene puesta.
 //
-// En la nube (Claude Code en claude.ai/code, CLAUDE_CODE_REMOTE=true) git
-// solo puede empujar la rama de la sesión, no main. Ahí el código se
-// despliega empujando esa rama y fusionando su PR a main con gh; Vercel
-// construye igual, porque lo que dispara el build es que main cambie. La
-// cadena llega por LUDOGTEKA_PROD_DB_URL y el CLI de Vercel usa VERCEL_TOKEN.
+// En la nube (Claude Code en claude.ai/code, CLAUDE_CODE_REMOTE=true) NO se
+// despliega: el proxy de la sesión no deja pasar Postgres ni el GraphQL de gh.
+// Desde el 27 de septiembre de 2026 producción se aplica SOLO desde la
+// computadora del dueño (CLAUDE.md, "Trabajar en la nube"); el script se niega
+// al arrancar. Las ramas EN_NUBE de abajo (empujar la rama de la sesión y
+// fusionar su PR a main con gh) quedan para cuando la red lo permita.
 
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -66,6 +67,13 @@ function abortar(motivo, detalle) {
     console.error("salvo por las migraciones que alcanzaron a aplicarse (se listan arriba).");
   }
   console.error(`${"!".repeat(72)}\n`);
+  process.exit(1);
+}
+
+if (EN_NUBE) {
+  console.error("\nEn la nube no se despliega a producción: Postgres no pasa por el proxy de la sesión.");
+  console.error("Producción se aplica solo desde la computadora del dueño: npm run desplegar -- --revisar, luego -- --aplicar.");
+  console.error("Aquí: deja todo en commit en la rama y di qué migraciones quedan pendientes (node scripts/nube/migrar-dev.mjs --revisar).\n");
   process.exit(1);
 }
 

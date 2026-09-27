@@ -60,6 +60,34 @@ if [ -n "${VERCEL_ORG_ID:-}" ] && [ -n "${VERCEL_PROJECT_ID:-}" ] && [ ! -f .ver
   printf '{"projectId":"%s","orgId":"%s","projectName":"ludogteka"}\n' "$VERCEL_PROJECT_ID" "$VERCEL_ORG_ID" > .vercel/project.json
 fi
 
+# ------------------------------------------------------------ gh (GitHub CLI)
+# El despliegue desde la nube abre y fusiona el PR a main con gh. La versión va
+# fija: en la nube api.github.com y /releases/latest los niega el proxy, pero la
+# descarga de un release concreto sí pasa. Se verifica con su checksums.txt; si
+# no se puede bajar, el de apt (más viejo) sirve igual. La sesión la da GH_TOKEN.
+paso "gh (GitHub CLI)"
+GH_VERSION=2.63.2
+if command -v gh >/dev/null 2>&1; then
+  echo "   ya está: $(gh --version | head -n 1)"
+else
+  tmp=$(mktemp -d)
+  base="https://github.com/cli/cli/releases/download/v${GH_VERSION}"
+  arch=$(dpkg --print-architecture 2>/dev/null || echo amd64)
+  tarball="gh_${GH_VERSION}_linux_${arch}.tar.gz"
+  if curl -fsSL -o "$tmp/$tarball" "$base/$tarball" \
+    && curl -fsSL -o "$tmp/checksums.txt" "$base/gh_${GH_VERSION}_checksums.txt" \
+    && (cd "$tmp" && grep " $tarball\$" checksums.txt | sha256sum -c --quiet -); then
+    tar -xzf "$tmp/$tarball" -C "$tmp"
+    $SUDO install -m 0755 "$tmp/gh_${GH_VERSION}_linux_${arch}/bin/gh" /usr/local/bin/gh
+  else
+    aviso "no se pudo bajar gh ${GH_VERSION} del release; se intenta con apt"
+    { $SUDO apt-get update -qq && $SUDO apt-get install -y -qq gh; } || aviso "gh quedó sin instalar"
+  fi
+  rm -rf "$tmp"
+  command -v gh >/dev/null 2>&1 && echo "   $(gh --version | head -n 1)"
+fi
+[ -n "${GH_TOKEN:-${GITHUB_TOKEN:-}}" ] || aviso "sin GH_TOKEN: gh queda instalado pero sin sesión (el despliegue desde la nube la necesita)"
+
 # ------------------------------------------------------------ Playwright
 # Chromium sin cabeza con sus librerías del sistema (apt). La versión la
 # decide el playwright-core del repo; scripts/lib/navegador.mjs lo encuentra.

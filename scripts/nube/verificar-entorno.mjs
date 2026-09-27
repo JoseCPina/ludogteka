@@ -26,6 +26,21 @@ async function prueba(que, fn) {
   }
 }
 
+// En la nube, Postgres (TCP) no pasa por el proxy de la sesión y gh no alcanza
+// GraphQL: no hacen falta, porque ahí desarrollo se migra por la API de gestión
+// (migrar-dev.mjs) y producción se despliega solo desde la computadora del
+// dueño. Se reportan como informativos, no como falla.
+const nube = env.CLAUDE_CODE_REMOTE === "true";
+async function soloLocal(que, fn) {
+  if (!nube) return prueba(que, fn);
+  try {
+    const detalle = await fn();
+    console.log(`  ✔ ${que}${detalle ? ` — ${detalle}` : ""}`);
+  } catch (e) {
+    console.log(`  · ${que} — no se alcanza desde la nube (esperado: ${limpio(e.message)})`);
+  }
+}
+
 function corre(cmd, args, timeout = 60000) {
   const r = spawnSync(cmd, args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout });
   if (r.error) throw r.error;
@@ -37,7 +52,9 @@ console.log(`\nEntorno: ${env.CLAUDE_CODE_REMOTE === "true" ? "nube (claude.ai/c
 
 console.log("Variables");
 for (const v of ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SECRET_KEY", "SUPABASE_ACCESS_TOKEN", "SUPABASE_DB_PASSWORD", "VERCEL_TOKEN", "VERCEL_ORG_ID", "VERCEL_PROJECT_ID", "LUDOGTEKA_PROD_DB_URL"]) {
-  await prueba(v, () => {
+  // En la nube no se usa Postgres: la contraseña y la cadena de producción sobran ahí.
+  const opcional = nube && (v === "SUPABASE_DB_PASSWORD" || v === "LUDOGTEKA_PROD_DB_URL");
+  await (opcional ? soloLocal : prueba)(v, () => {
     if (!env[v]) throw new Error("no está puesta");
     return "";
   });
@@ -45,7 +62,7 @@ for (const v of ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "S
 await prueba("NEXT_PUBLIC_SUPABASE_URL es desarrollo", () => {
   if (!env.NEXT_PUBLIC_SUPABASE_URL?.includes(DEV)) throw new Error(`se esperaba ${DEV}: las llaves de producción viven solo en Vercel`);
 });
-await prueba("LUDOGTEKA_PROD_DB_URL es producción", () => {
+if (env.LUDOGTEKA_PROD_DB_URL) await prueba("LUDOGTEKA_PROD_DB_URL es producción", () => {
   if (!env.LUDOGTEKA_PROD_DB_URL?.includes(PROD)) throw new Error(`se esperaba una cadena de ${PROD}`);
 });
 
@@ -58,7 +75,17 @@ await prueba("API REST de desarrollo con la secret key", async () => {
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return `HTTP ${r.status}`;
 });
-await prueba("Postgres de desarrollo por el CLI ligado (migration list)", () => {
+await prueba("API de gestión de desarrollo (lo que usa migrar-dev.mjs)", async () => {
+  const r = await fetch(`https://api.supabase.com/v1/projects/${DEV}/database/query`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${env.SUPABASE_ACCESS_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ query: "select count(*)::int as n from supabase_migrations.schema_migrations" }),
+    signal: AbortSignal.timeout(20000),
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return `${(await r.json())[0].n} migraciones registradas`;
+});
+await soloLocal("Postgres de desarrollo por el CLI ligado (migration list)", () => {
   const salida = corre("node", [CLI, "migration", "list"], 90000);
   return `${(salida.match(/\d{14}/g) || []).length / 2 | 0} migraciones`;
 });
@@ -82,7 +109,7 @@ await prueba("API REST de producción (conteo de clientes)", async () => {
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return `${r.headers.get("content-range")?.split("/")[1] ?? "?"} clientes`;
 });
-await prueba("Postgres de producción (select 1, lo que usa el despliegue)", async () => {
+await soloLocal("Postgres de producción (select 1, lo que usa el despliegue)", async () => {
   const c = new pg.Client({ connectionString: env.LUDOGTEKA_PROD_DB_URL, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 20000 });
   await c.connect();
   try {
@@ -97,7 +124,7 @@ await prueba("CLI de Vercel con sesión (vercel whoami)", () => {
   const args = ["whoami", ...(env.VERCEL_TOKEN ? ["--token", env.VERCEL_TOKEN] : [])];
   return corre("vercel", args).trim().split("\n").pop();
 });
-await prueba("gh con sesión (para abrir y fusionar el PR del despliegue)", () => {
+await soloLocal("gh con sesión (para abrir y fusionar el PR del despliegue)", () => {
   corre("gh", ["auth", "status"]);
 });
 await prueba("Playwright abre Chromium", async () => {
