@@ -3,12 +3,23 @@
 import { useEffect, useRef, type ReactNode } from "react";
 
 /**
- * Aparición al entrar en pantalla, una sola vez: opacidad y 12px hacia
- * arriba, 500 ms ease-out. Es la única animación de la landing: marca el
- * ritmo de lectura de cada sección, nada más. Sin JavaScript, o con
- * "reducir movimiento", el contenido está visible desde el principio.
+ * Aparición al entrar en pantalla, una sola vez. `desde`:
+ *   - "abajo": opacidad y 16px hacia arriba (texto y capturas);
+ *   - "asomar": un perro que se asoma, sube desde abajo con un rebote corto.
+ * Sin JavaScript, o con "reducir movimiento", el contenido está visible
+ * desde el principio. Solo anima opacity y transform (no tumba el celular).
  */
-export function Revelar({ children, className = "", retraso = 0 }: { children: ReactNode; className?: string; retraso?: number }) {
+export function Revelar({
+  children,
+  className = "",
+  retraso = 0,
+  desde = "abajo",
+}: {
+  children: ReactNode;
+  className?: string;
+  retraso?: number;
+  desde?: "abajo" | "asomar";
+}) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = ref.current;
@@ -22,13 +33,18 @@ export function Revelar({ children, className = "", retraso = 0 }: { children: R
         el.dataset.revelar = "visto";
         obs.disconnect();
       },
-      { rootMargin: "0px 0px -12% 0px" }
+      { rootMargin: "0px 0px -10% 0px" }
     );
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
   return (
-    <div ref={ref} className={`pd-revelar ${className}`} style={retraso ? ({ "--pd-retraso": `${retraso}ms` } as React.CSSProperties) : undefined}>
+    <div
+      ref={ref}
+      data-desde={desde}
+      className={`pd-revelar ${className}`}
+      style={retraso ? ({ "--pd-retraso": `${retraso}ms` } as React.CSSProperties) : undefined}
+    >
       {children}
     </div>
   );

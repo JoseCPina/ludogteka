@@ -21,12 +21,10 @@ export function IsotipoPeluDesk({ tamano = 40, className = "" }: { tamano?: numb
 
 export function LogoPeluDesk({
   tamano = 36,
-  lema = false,
   claro = false,
   className = "",
 }: {
   tamano?: number;
-  lema?: boolean;
   // Sobre fondo morado: el nombre en crema y menta.
   claro?: boolean;
   className?: string;
@@ -34,16 +32,9 @@ export function LogoPeluDesk({
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <IsotipoPeluDesk tamano={tamano} />
-      <span className="flex flex-col leading-none">
-        <span className="font-bold tracking-[-0.02em]" style={{ fontSize: tamano * 0.72 }}>
-          <span className={claro ? "text-crema" : "text-morado"}>pelu</span>
-          <span style={{ color: claro ? "#a7d8c8" : MENTA_LOGO }}>desk</span>
-        </span>
-        {lema && (
-          <span className={`mt-1 font-medium ${claro ? "text-crema/90" : "text-n-600"}`} style={{ fontSize: Math.max(11, tamano * 0.3) }}>
-            El escritorio digital para negocios caninos
-          </span>
-        )}
+      <span className="font-bold leading-none tracking-[-0.02em]" style={{ fontSize: tamano * 0.72 }}>
+        <span className={claro ? "text-crema" : "text-morado"}>pelu</span>
+        <span style={{ color: claro ? "#a7d8c8" : MENTA_LOGO }}>desk</span>
       </span>
     </span>
   );
