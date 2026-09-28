@@ -29,16 +29,29 @@
 // CLAUDE.md, sección Entornos): se lee de C:/proyectos/.ludogteka-prod-db,
 // fuera del repo y permanente, o de LUDOGTEKA_PROD_DB_URL si viene puesta.
 //
-// En la nube (Claude Code en claude.ai/code, CLAUDE_CODE_REMOTE=true) NO se
-// despliega: el proxy de la sesión no deja pasar Postgres ni el GraphQL de gh.
-// Desde el 27 de septiembre de 2026 producción se aplica SOLO desde la
-// computadora del dueño (CLAUDE.md, "Trabajar en la nube"); el script se niega
-// al arrancar. Las ramas EN_NUBE de abajo (empujar la rama de la sesión y
-// fusionar su PR a main con gh) quedan para cuando la red lo permita.
+// En la nube (Claude Code en claude.ai/code, CLAUDE_CODE_REMOTE=true), desde
+// el 28 de septiembre de 2026 (autorizado por el dueño), el mismo despliegue
+// corre sin la computadora del dueño. El proxy de la sesión solo deja pasar
+// HTTPS, así que:
+//   - la base se lee y se migra con la API de gestión de Supabase
+//     (scripts/nube/migraciones-api.mjs: el mismo motor probado en
+//     desarrollo, mismo formato que el CLI, una transacción por migración
+//     con su registro, se detiene al primer error);
+//   - ANTES de migrar exige un respaldo físico completo de menos de 26 h
+//     (la API de gestión no deja crear uno al momento) y guarda una copia en
+//     JSON de todas las tablas de public; cuenta filas antes y después y
+//     corre auditoria_frontera() al final (si no sale vacía, no se publica);
+//   - el código se publica fusionando la rama de la sesión a main por la
+//     API REST de GitHub (el GraphQL, que usa gh pr, lo niega el proxy), con
+//     el PR y su "se puede fusionar" comprobados ANTES de migrar y la fusión
+//     fijada al commit que se revisó.
 
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import pg from "pg";
+import { PROD as PROD_API, aplicarPendientes, auditoriaFrontera, clienteApi, estadoMigraciones } from "./nube/migraciones-api.mjs";
 
 const PROY_PROD = "xdsxjhytggpsgrmfuuff";
 const PROY_DEV = "sgfolltpvktbsiisfuzq";
@@ -46,6 +59,8 @@ const RAMA = "main";
 const REINTENTOS_MIGRACION = 3;
 const EN_NUBE = process.env.CLAUDE_CODE_REMOTE === "true";
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN || "";
+const GH_TOKEN = process.env.GH_TOKEN || process.env.GITHUB_TOKEN || "";
+const HORAS_MAX_RESPALDO = 26;
 
 const args = new Set(process.argv.slice(2));
 const APLICAR = args.has("--aplicar");
@@ -67,13 +82,6 @@ function abortar(motivo, detalle) {
     console.error("salvo por las migraciones que alcanzaron a aplicarse (se listan arriba).");
   }
   console.error(`${"!".repeat(72)}\n`);
-  process.exit(1);
-}
-
-if (EN_NUBE) {
-  console.error("\nEn la nube no se despliega a producción: Postgres no pasa por el proxy de la sesión.");
-  console.error("Producción se aplica solo desde la computadora del dueño: npm run desplegar -- --revisar, luego -- --aplicar.");
-  console.error("Aquí: deja todo en commit en la rama y di qué migraciones quedan pendientes (node scripts/nube/migrar-dev.mjs --revisar).\n");
   process.exit(1);
 }
 
@@ -169,8 +177,9 @@ function ultimoDeploy() {
 
 // La cadena trae la contraseña: nunca se imprime, ni siquiera al fallar.
 function sinSecreto(texto) {
-  const limpio = String(texto).replace(/postgresql:\/\/[^\s"']+/g, "postgresql://[oculto]");
-  return VERCEL_TOKEN ? limpio.split(VERCEL_TOKEN).join("[oculto]") : limpio;
+  let limpio = String(texto).replace(/postgresql:\/\/[^\s"']+/g, "postgresql://[oculto]");
+  for (const s of [VERCEL_TOKEN, GH_TOKEN, process.env.SUPABASE_ACCESS_TOKEN]) if (s) limpio = limpio.split(s).join("[oculto]");
+  return limpio;
 }
 
 // La cadena de conexión vive en un archivo FUERA del repo, permanente
@@ -188,8 +197,9 @@ function leerDbUrl() {
   }
 }
 
-const DB_URL = leerDbUrl();
-if (!DB_URL) {
+// En la nube no hace falta: la base va por la API de gestión.
+const DB_URL = EN_NUBE ? "" : leerDbUrl();
+if (!EN_NUBE && !DB_URL) {
   abortar(
     `falta la cadena de producción: ni LUDOGTEKA_PROD_DB_URL ni ${ARCHIVO_DB_URL}`,
     "El archivo lleva una sola línea, la cadena completa, y NO se borra al terminar:\n" +
@@ -197,7 +207,7 @@ if (!DB_URL) {
       ":<password>@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
   );
 }
-if (!DB_URL.includes(PROY_PROD)) {
+if (!EN_NUBE && !DB_URL.includes(PROY_PROD)) {
   abortar(
     "LUDOGTEKA_PROD_DB_URL no apunta a producción",
     DB_URL.includes(PROY_DEV)
@@ -206,7 +216,19 @@ if (!DB_URL.includes(PROY_PROD)) {
   );
 }
 
+// En la nube: la API de gestión, con el proyecto de producción confirmado por la propia API.
+let cliProd = null;
+if (EN_NUBE) {
+  if (PROD_API !== PROY_PROD) abortar("el motor de migraciones apunta a otro proyecto de producción");
+  try {
+    cliProd = await clienteApi(PROY_PROD, { produccion: true });
+  } catch (e) {
+    abortar("no se pudo abrir producción por la API de gestión", sinSecreto(e.message));
+  }
+}
+
 async function consulta(sql) {
+  if (cliProd) return cliProd.sql(sql, 120000);
   const cliente = new pg.Client({
     connectionString: DB_URL,
     ssl: { rejectUnauthorized: false },
@@ -264,16 +286,80 @@ if (detras) {
   );
 }
 
-// En la nube, lo que puede fallar al desplegar el código (empujar la rama,
-// abrir o fusionar el PR) se prueba ANTES de migrar: si falla después, queda
-// esquema nuevo con código viejo, que es justo lo que este script evita.
-if (EN_NUBE && APLICAR && pendientes) {
+// GitHub por la API REST (el GraphQL de `gh pr` lo niega el proxy de la nube).
+const [GH_DUENO, GH_REPO] = (() => {
+  const m = /github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?$/.exec(git("remote", "get-url", "origin"));
+  return m ? [m[1], m[2]] : ["", ""];
+})();
+async function github(ruta, { method = "GET", body } = {}) {
+  const r = await fetch(`https://api.github.com/repos/${GH_DUENO}/${GH_REPO}${ruta}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${GH_TOKEN}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      "Content-Type": "application/json",
+    },
+    body: body ? JSON.stringify(body) : undefined,
+    signal: AbortSignal.timeout(30000),
+  });
+  const texto = await r.text();
+  let json = null;
   try {
-    corre("gh", ["auth", "status"]);
-    corre("git", ["push", "origin", `HEAD:refs/heads/${rama}`]);
-    console.log(`   rama '${rama}' empujada; gh con sesión.`);
+    json = texto ? JSON.parse(texto) : null;
+  } catch {}
+  if (!r.ok) {
+    const e = new Error(`GitHub ${method} ${ruta}: HTTP ${r.status} ${sinSecreto(json?.message ?? texto).slice(0, 300)}`);
+    e.status = r.status;
+    throw e;
+  }
+  return json;
+}
+
+// En la nube, lo que puede fallar al publicar el código (empujar la rama,
+// el PR, que se pueda fusionar) se prueba ANTES de migrar: si falla después,
+// queda esquema nuevo con código viejo, que es justo lo que este script evita.
+let prNube = null;
+if (EN_NUBE && pendientes) {
+  if (!GH_TOKEN) abortar("en la nube falta GH_TOKEN para publicar el código por la API de GitHub");
+  if (!GH_DUENO) abortar("no se reconoce el repositorio de GitHub del remoto origin");
+  try {
+    const repo = await github("");
+    if (!repo.permissions?.push) abortar("el GH_TOKEN no tiene permiso de escritura en el repositorio");
+    if (APLICAR) {
+      corre("git", ["push", "origin", `HEAD:refs/heads/${rama}`]);
+      console.log(`   rama '${rama}' empujada.`);
+      const abiertos = await github(`/pulls?state=open&base=${RAMA}&head=${GH_DUENO}:${encodeURIComponent(rama)}`);
+      prNube = abiertos[0] ?? null;
+      if (!prNube) {
+        const asunto = git("log", "-1", "--format=%s");
+        prNube = await github("/pulls", {
+          method: "POST",
+          body: {
+            title: asunto,
+            head: rama,
+            base: RAMA,
+            body:
+              "Despliegue a producción desde una sesión en la nube (`npm run desplegar -- --aplicar`): " +
+              "las migraciones se aplican y se verifican ANTES de fusionar; al fusionar, Vercel construye main.\n\n" +
+              "🤖 Generated with [Claude Code](https://claude.com/claude-code)",
+          },
+        });
+      }
+      // GitHub calcula "se puede fusionar" en segundo plano: se espera.
+      let mergeable = null;
+      for (let i = 0; i < 15 && mergeable === null; i += 1) {
+        const pr = await github(`/pulls/${prNube.number}`);
+        mergeable = pr.mergeable;
+        prNube = pr;
+        if (mergeable === null) await new Promise((r) => setTimeout(r, 2000));
+      }
+      if (prNube.head.sha !== local) abortar("el PR no apunta al commit que se está desplegando", `PR: ${prNube.head.sha} · local: ${local}`);
+      if (mergeable !== true) abortar(`el PR #${prNube.number} no se puede fusionar con ${RAMA} (${prNube.mergeable_state})`, prNube.html_url);
+      console.log(`   PR #${prNube.number} listo para fusionar: ${prNube.html_url}`);
+    }
   } catch (e) {
-    abortar("en la nube no se puede empujar la rama o gh no tiene sesión", sinSecreto(e.salida || e.message));
+    abortar("en la nube no se pudo preparar la publicación del código", sinSecreto(e.salida || e.message));
   }
 }
 
@@ -289,7 +375,20 @@ const TABLAS_NEGOCIO = [
 ];
 
 let hayDatos = false;
+// Conteo de TODAS las tablas de public, para comparar antes y después.
+async function contarTodo() {
+  const tablas = await consulta(
+    `select table_name from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE' order by table_name`
+  );
+  if (!tablas.length) return {};
+  const filas = await consulta(
+    tablas.map((t) => `select '${t.table_name}' as tabla, count(*)::int as filas from public."${t.table_name}"`).join(" union all ")
+  );
+  return Object.fromEntries(filas.map((f) => [f.tabla, Number(f.filas)]));
+}
+let conteosAntes = {};
 try {
+  conteosAntes = await contarTodo();
   const existentes = await consulta(
     `select table_name from information_schema.tables
      where table_schema = 'public'
@@ -324,16 +423,63 @@ console.log(
 // ---------------------------------------------------------------- 3
 titulo("Migraciones pendientes");
 
-let salidaSeco;
-try {
-  salidaSeco = supabase("db", "push", "--dry-run", "--db-url", DB_URL);
-} catch (e) {
-  abortar("el dry-run de las migraciones falló", sinSecreto(e.salida || e.message));
+let migracionesUnicas;
+let pendientesNube = [];
+if (EN_NUBE) {
+  // El "dry-run": las mismas reglas que el CLI, leídas por la API.
+  let estado;
+  try {
+    estado = await estadoMigraciones(cliProd);
+  } catch (e) {
+    abortar("no se pudo leer el historial de migraciones de producción", sinSecreto(e.message));
+  }
+  if (estado.problema) abortar(estado.problema);
+  pendientesNube = estado.pendientes;
+  migracionesUnicas = pendientesNube.map((p) => `${p.version}_${p.name}.sql`);
+  console.log(`   aplicadas en producción: ${estado.remotas.length} · en el repo: ${estado.locales.length}`);
+  console.log(migracionesUnicas.length ? migracionesUnicas.map((m) => `   · ${m}`).join("\n") : "   Remote database is up to date.");
+} else {
+  let salidaSeco;
+  try {
+    salidaSeco = supabase("db", "push", "--dry-run", "--db-url", DB_URL);
+  } catch (e) {
+    abortar("el dry-run de las migraciones falló", sinSecreto(e.salida || e.message));
+  }
+  console.log(sinSecreto(salidaSeco).trim());
+  const pendientesMigracion = [...salidaSeco.matchAll(/(\d{14}_[\w-]+\.sql)/g)].map((m) => m[1]);
+  migracionesUnicas = [...new Set(pendientesMigracion)];
 }
-console.log(sinSecreto(salidaSeco).trim());
 
-const pendientesMigracion = [...salidaSeco.matchAll(/(\d{14}_[\w-]+\.sql)/g)].map((m) => m[1]);
-const migracionesUnicas = [...new Set(pendientesMigracion)];
+// ---------------------------------------------------------------- respaldo
+if (EN_NUBE && migracionesUnicas.length) {
+  titulo("Respaldo antes de migrar");
+  try {
+    const b = await cliProd.api(`/projects/${PROY_PROD}/database/backups`);
+    const completos = (b.backups ?? []).filter((x) => x.status === "COMPLETED").sort((a, c) => c.inserted_at.localeCompare(a.inserted_at));
+    const ultimo = completos[0];
+    const horas = ultimo ? (Date.now() - Date.parse(ultimo.inserted_at)) / 3600000 : Infinity;
+    console.log(`   respaldo físico más reciente: ${ultimo ? `${ultimo.inserted_at} (hace ${horas.toFixed(1)} h, id ${ultimo.id})` : "ninguno"}`);
+    console.log(`   PITR: ${b.pitr_enabled ? "sí" : "no"} · (la API no deja crear un punto de restauración al momento)`);
+    if (!b.pitr_enabled && horas > HORAS_MAX_RESPALDO) {
+      abortar(`no hay un respaldo físico completo de las últimas ${HORAS_MAX_RESPALDO} h`, "Espera al respaldo diario o créalo desde el panel de Supabase, y vuelve a correr.");
+    }
+    if (APLICAR) {
+      const carpeta = path.join(os.tmpdir(), "peludesk-respaldos", new Date().toISOString().replace(/[:.]/g, "-"));
+      mkdirSync(carpeta, { recursive: true });
+      let total = 0;
+      for (const tabla of Object.keys(conteosAntes)) {
+        const [fila] = await consulta(`select coalesce(json_agg(t), '[]'::json) as filas from public."${tabla}" t`);
+        writeFileSync(path.join(carpeta, `${tabla}.json`), JSON.stringify(fila.filas));
+        total += conteosAntes[tabla];
+      }
+      writeFileSync(path.join(carpeta, "_conteos.json"), JSON.stringify(conteosAntes, null, 2));
+      console.log(`   copia JSON de ${Object.keys(conteosAntes).length} tablas (${total} filas) en ${carpeta}`);
+      console.log("   (vive en el contenedor de esta sesión; el respaldo restaurable es el físico de arriba)");
+    }
+  } catch (e) {
+    abortar("no se pudo comprobar o hacer el respaldo previo", sinSecreto(e.message));
+  }
+}
 
 if (migracionesUnicas.length === 0 && !pendientes) {
   console.log("\nNada que migrar y nada que desplegar. Listo.");
@@ -372,7 +518,26 @@ let migrado = migracionesUnicas.length === 0;
 if (migrado) {
   console.log("   No hay migraciones pendientes: no se toca el esquema.");
 }
-for (let intento = 1; intento <= REINTENTOS_MIGRACION && !migrado; intento += 1) {
+// En la nube: el motor por la API. Cada migración es su propia transacción
+// con su registro; un error de SQL se detiene ahí (se deshizo), y solo un
+// fallo de red o del servidor (sin respuesta de la base) se reintenta, sobre
+// las que sigan pendientes según la base.
+for (let intento = 1; EN_NUBE && intento <= REINTENTOS_MIGRACION && !migrado; intento += 1) {
+  console.log(`   intento ${intento} de ${REINTENTOS_MIGRACION}…`);
+  try {
+    const estado = await estadoMigraciones(cliProd);
+    if (estado.problema) abortar(estado.problema);
+    await aplicarPendientes(cliProd, estado.pendientes);
+    migrado = true;
+  } catch (e) {
+    const detalle = sinSecreto(e.message);
+    console.log(`   falló: ${detalle}`);
+    const transitorio = !e.status || e.status >= 500 || /HTTP (5\d\d|429)|timeout|aborted|fetch failed/i.test(detalle);
+    if (!transitorio || intento === REINTENTOS_MIGRACION) abortar("las migraciones no se pudieron aplicar", detalle);
+    await new Promise((r) => setTimeout(r, 5000 * intento));
+  }
+}
+for (let intento = 1; !EN_NUBE && intento <= REINTENTOS_MIGRACION && !migrado; intento += 1) {
   console.log(`   intento ${intento} de ${REINTENTOS_MIGRACION}…`);
   try {
     const salida = supabase("db", "push", "--db-url", DB_URL);
@@ -420,6 +585,28 @@ try {
   abortar("no se pudo verificar el historial de migraciones", sinSecreto(e.message));
 }
 
+try {
+  const conteosDespues = await contarTodo();
+  const cambios = Object.keys({ ...conteosAntes, ...conteosDespues })
+    .filter((t) => conteosAntes[t] !== conteosDespues[t])
+    .map((t) => `   ${(t + ":").padEnd(28)} ${String(conteosAntes[t] ?? "(nueva)").padStart(8)} → ${String(conteosDespues[t] ?? "(ya no está)").padStart(8)}`);
+  console.log(cambios.length ? `   filas que cambiaron con la migración:\n${cambios.join("\n")}` : "   Conteos: ninguna tabla cambió de número de filas.");
+} catch (e) {
+  console.log(`   (no se pudieron recontar las tablas: ${sinSecreto(e.message)})`);
+}
+try {
+  const frontera = cliProd ? await auditoriaFrontera(cliProd) : await consulta("select * from public.auditoria_frontera()");
+  if (frontera.length) {
+    abortar(
+      `auditoria_frontera() trae ${frontera.length} renglón(es) después de migrar`,
+      frontera.slice(0, 20).map((f) => JSON.stringify(f)).join("\n") + "\n\nEl código NO se publicó: revisa la frontera antes de desplegar."
+    );
+  }
+  console.log("   auditoria_frontera(): vacía.");
+} catch (e) {
+  abortar("no se pudo correr auditoria_frontera()", sinSecreto(e.message));
+}
+
 // ---------------------------------------------------------------- 6
 titulo("Desplegando el código");
 
@@ -438,17 +625,10 @@ try {
 
 try {
   if (EN_NUBE) {
-    const asunto = git("log", "-1", "--format=%s");
-    try {
-      corre("gh", ["pr", "create", "--base", RAMA, "--head", rama, "--title", asunto, "--body",
-        "Despliegue a producción desde una sesión en la nube (`npm run desplegar -- --aplicar`): " +
-          "migraciones ya aplicadas y verificadas; al fusionar, Vercel construye main.\n\n" +
-          "🤖 Generated with [Claude Code](https://claude.com/claude-code)"]);
-    } catch (e) {
-      // Si la rama ya tiene su PR abierto, se fusiona ese.
-      if (!/already exists/i.test(e.salida || "")) throw e;
-    }
-    console.log(corre("gh", ["pr", "merge", rama, "--merge"]).trim() || "   PR fusionado a main.");
+    // Fijado al commit que se revisó: si alguien empujó algo más a la rama, GitHub la rechaza.
+    const r = await github(`/pulls/${prNube.number}/merge`, { method: "PUT", body: { merge_method: "merge", sha: local } });
+    if (!r?.merged) throw new Error(`GitHub no fusionó el PR #${prNube.number}: ${r?.message ?? "sin detalle"}`);
+    console.log(`   PR #${prNube.number} fusionado a ${RAMA} (${String(r.sha).slice(0, 7)}).`);
   } else {
     console.log(corre("git", ["push", "origin", RAMA]).trim() || "   push enviado.");
   }
@@ -466,6 +646,7 @@ try {
 if (EN_NUBE) {
   try {
     git("pull", "--ff-only", "origin", RAMA);
+    git("push", "origin", `HEAD:refs/heads/${rama}`);
   } catch (e) {
     console.log(`   (no se pudo traer main a la rama: ${sinSecreto(e.salida || e.message).trim()})`);
   }
