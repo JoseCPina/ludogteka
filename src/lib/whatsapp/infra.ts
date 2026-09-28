@@ -22,6 +22,9 @@ import type { BloqueIA, Cuenta, DatosSoporte, DepsSoporte, Hilo, IA, RespuestaIA
  *   TELEGRAM_BOT_TOKEN        el bot de la bandeja de PeluDesk
  *   TELEGRAM_SECRET_TOKEN     (opcional) si no, se deriva de TELEGRAM_BOT_TOKEN
  *   ANTHROPIC_API_KEY
+ *   ANTHROPIC_WORKSPACE_ID    (opcional) solo si la llave no está ligada a un
+ *                             workspace: Anthropic la rechaza sin el encabezado
+ *                             anthropic-workspace-id («not scoped to a workspace»)
  *   WHATSAPP_IA_TOPE_MENSUAL_MXN (opcional)
  */
 export const VERSION_GRAPH = "v23.0";
@@ -57,6 +60,7 @@ export function configWhatsApp() {
     telegramToken,
     telegramSecreto: process.env.TELEGRAM_SECRET_TOKEN || derivado(telegramToken, "telegram-webhook"),
     anthropic: process.env.ANTHROPIC_API_KEY ?? "",
+    anthropicWorkspace: process.env.ANTHROPIC_WORKSPACE_ID?.trim() ?? "",
   };
 }
 
@@ -403,14 +407,22 @@ export class TelegramHttp implements Telegram {
 // ───────────────────────────── Anthropic (sin SDK: un POST y dos campos)
 
 export class Anthropic implements IA {
-  constructor(private llave: string) {}
+  constructor(
+    private llave: string,
+    private workspace = "",
+  ) {}
 
   async responder(system: string, mensajes: BloqueIA[], tools: BloqueIA[]): Promise<RespuestaIA> {
     if (!this.llave) throw new Error("falta ANTHROPIC_API_KEY");
     const r = await fetch(`${ANTHROPIC()}/v1/messages`, {
       method: "POST",
       signal: AbortSignal.timeout(TIMEOUT_IA_MS),
-      headers: { "content-type": "application/json", "x-api-key": this.llave, "anthropic-version": "2023-06-01" },
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": this.llave,
+        "anthropic-version": "2023-06-01",
+        ...(this.workspace ? { "anthropic-workspace-id": this.workspace } : {}),
+      },
       body: JSON.stringify({ model: MODELO_IA, max_tokens: MAX_TOKENS_IA, system, tools, messages: mensajes }),
     });
     const cuerpo = (await r.json().catch(() => ({}))) as {
@@ -464,7 +476,7 @@ export function construirSoporte(): { deps: DepsSoporte; datos: DatosSupabase; w
     datos,
     tg: new TelegramHttp(cfg.telegramToken),
     wa,
-    ia: new Anthropic(cfg.anthropic),
+    ia: new Anthropic(cfg.anthropic, cfg.anthropicWorkspace),
     base: CONOCIMIENTO,
     topeMensual: topeMensual(),
     ahora: () => new Date(),
