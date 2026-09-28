@@ -339,6 +339,9 @@ const COMPARTIDAS = {
   unidades_medida: { cambio: { etiqueta: "hackeado por un negocio" }, alta: { clave: "intrusa", etiqueta: "intrusa", magnitud: "pieza", equivalencia_en_base: 1 } },
   // Los planes de PeluDesk: precios y módulos, solo la plataforma.
   planes: { cambio: { precio_mensual: 1, modulos: ["hotel", "reportes"] }, alta: { clave: "intruso", nombre: "Gratis para mí", precio_mensual: 0, precio_anual: 0, modulos: ["hotel"] } },
+  // Los precios de Stripe y los eventos del webhook (28 de septiembre de 2026): solo la plataforma y el servidor.
+  planes_precios_stripe: { cambio: { total_centavos: 1, stripe_price_id: "price_intruso" }, alta: { periodicidad: "mensual", neto: 0, total_centavos: 0, lookup_key: "peludesk_intruso_mensual", stripe_price_id: "price_intruso", stripe_product_id: "prod_intruso", modo: "test" } },
+  eventos_stripe: { cambio: { procesado_at: null, error: "intruso" }, alta: { stripe_event_id: `evt_intruso_${MARCA}`, tipo: "invoice.paid", modo: "test", payload: {} } },
 };
 async function huellaCompartida() {
   const h = {};

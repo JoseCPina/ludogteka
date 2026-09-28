@@ -6,6 +6,7 @@ import { LogoPeluDesk } from "@/components/marca/peludesk";
 const SECCIONES = [
   { href: "/plataforma", texto: "Negocios" },
   { href: "/plataforma/planes", texto: "Planes" },
+  { href: "/plataforma/cobro", texto: "Cobro" },
   { href: "/plataforma/soporte", texto: "Soporte" },
   { href: "/plataforma/catalogos", texto: "Catálogos compartidos" },
 ];

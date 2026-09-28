@@ -11,6 +11,7 @@ import type { DiaHorario } from "./configuracion-actions";
 import { TarifasFaltantes, type ServicioConHuecos } from "./tarifas-faltantes";
 import { contarSinTarifa, type CeldaVigente } from "@/lib/tarifas/matriz";
 import { TableroDia } from "../tablero-dia";
+import { RecordatorioPago } from "./recordatorio-pago";
 import { AvanceWeb } from "@/components/avance-web";
 import Link from "next/link";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -34,6 +35,9 @@ export default async function AdminPage() {
   // negocio dueño de las llaves del entorno.
   const conIntegraciones = usaIntegracionesDelEntorno(await negocioActual());
   const nada = Promise.resolve({ data: null, error: null });
+  const cobro = esAdmin
+    ? ((await supabase.rpc("mi_cobro")).data as { toca_recordatorio?: boolean; solo_lectura_desde?: string | null } | null)
+    : null;
   const [
     { data, error },
     { data: topeData },
@@ -106,6 +110,7 @@ export default async function AdminPage() {
       {esAdmin && <AvanceWeb compacto />}
       <section className="flex flex-col gap-4">
         <h2 className="text-lg font-bold text-n-900">Hoy</h2>
+        {cobro?.toca_recordatorio && <RecordatorioPago soloLecturaDesde={cobro.solo_lectura_desde ?? null} />}
         <TableroDia compacto />
       </section>
 

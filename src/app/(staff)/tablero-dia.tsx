@@ -12,6 +12,7 @@ import { tienePermiso } from "@/lib/auth/permisos";
 import { usaEstancias } from "@/lib/plan/modulos";
 import {
   fechaLocalDeInstante,
+  formatearFecha,
   formatearFechaCalendario,
   horaLocalDeInstante,
   hoyNegocio,
@@ -441,6 +442,25 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
         ? { dias: diasDesde(ultimoTurno[0].cerrado_at as string, hoy, zona), antiguedad: `El último se cerró ${haceCuanto(diasDesde(ultimoTurno[0].cerrado_at as string, hoy, zona))}` }
         : {}),
     });
+  }
+
+  // La suscripción a PeluDesk: un cobro fallido espera al admin aquí, con
+  // cuánto lleva (la gracia es de 7 días; al 8 el negocio queda en solo lectura).
+  if (sesion?.rol === "admin") {
+    const { data: cobroData } = await supabase.rpc("estado_cobro");
+    const cobro = cobroData as { estado: string; primer_fallo_at: string | null; solo_lectura_desde: string | null } | null;
+    if (cobro && (cobro.estado === "gracia" || cobro.estado === "solo_lectura") && cobro.primer_fallo_at) {
+      atencion.unshift({
+        clave: "cobro",
+        texto: cobro.estado === "gracia" ? "No se pudo cobrar tu suscripción de PeluDesk" : "El negocio está en solo lectura: no se pudo cobrar la suscripción",
+        detalle:
+          cobro.estado === "gracia" && cobro.solo_lectura_desde
+            ? `Todo funciona hasta el ${formatearFecha(cobro.solo_lectura_desde, zona)}; paga o cambia la tarjeta para no quedar en solo lectura`
+            : "Paga la factura pendiente y todo vuelve a funcionar solo",
+        href: "/admin/modulos",
+        ...masViejo([cobro.primer_fallo_at], hoy, zona),
+      });
+    }
   }
 
   const ocupacionDiurna = hoyCal ? `${hoyCal.ocupado_diurno}${hoyCal.cupo_diurno != null ? ` / ${hoyCal.cupo_diurno}` : ""}` : "—";

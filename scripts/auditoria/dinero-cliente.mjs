@@ -38,9 +38,13 @@ const SOLO_STAFF = [
   "llegadas_hoy", "quienes_estan_adentro",
   // Permisos del personal: el cliente no tiene ninguno y no ve los de nadie.
   "permisos_staff",
+  // La suscripción del negocio a PeluDesk (28 de septiembre de 2026): solo su admin.
+  "suscripciones", "pagos_suscripcion",
+  // Lo de Stripe de la plataforma: ni el negocio lo ve.
+  "planes_precios_stripe", "eventos_stripe",
 ];
 // RPC que un cliente con sesión no debe poder llamar (tienen que rechazarlo).
-const RPC_SOLO_STAFF = ["calendario_ocupacion", "insumos_sin_costo", "asistencia_periodo", "calcular_nomina", "reporte_utilidad_periodo", "cuentas_para_empleado", "gastos_por_atender", "gastos_por_categoria_periodo"];
+const RPC_SOLO_STAFF = ["mi_cobro", "plataforma_cobros", "calendario_ocupacion", "insumos_sin_costo", "asistencia_periodo", "calcular_nomina", "reporte_utilidad_periodo", "cuentas_para_empleado", "gastos_por_atender", "gastos_por_categoria_periodo"];
 
 const spec = await (await fetch(URL + "/rest/v1/", { headers: { apikey: env.SUPABASE_SECRET_KEY, Authorization: `Bearer ${env.SUPABASE_SECRET_KEY}` } })).json();
 const relaciones = Object.keys(spec.definitions).sort();
@@ -114,6 +118,9 @@ for (const cli of clientes) {
     ["saldo_vacaciones", { p_empleado_id: empleadoCualquiera ?? ID_VACIO }],
     ["gastos_por_atender", {}],
     ["gastos_por_categoria_periodo", { p_desde: "2026-01-01", p_hasta: "2027-12-31" }],
+    ["mi_cobro", {}],
+    ["plataforma_cobros", {}],
+    ["estado_cobro", {}],
   ];
   for (const [fn, args] of sondas) {
     const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(args) });

@@ -6,6 +6,20 @@ import { Select } from "@/components/ui/select";
 import { ZONAS_MEXICO } from "@/lib/plataforma/tipos";
 import { urlDelNegocio } from "@/lib/negocio/actual";
 import { actualizarNegocio, agregarAdmin, asignarPlan, cambiarPlan } from "../../../acciones";
+import { formatearFecha } from "@/lib/formato";
+import { pesosDeCentavos } from "@/lib/cobro/iva";
+import { estadoCobro } from "@/lib/cobro/estados";
+
+type Cobro = {
+  negocio_id: string; estado: string; plan_nombre: string | null; periodicidad: string | null; monto_centavos: number | null;
+  periodo_fin: string | null; primer_fallo_at: string | null; cancela_al_terminar: boolean; stripe_customer_id: string | null;
+  stripe_subscription_id: string | null; estado_stripe: string | null; modo: string | null;
+};
+type Pago = {
+  stripe_invoice_id: string; numero: string | null; estado: string; monto_centavos: number; periodo_inicio: string | null;
+  periodo_fin: string | null; pagado_at: string | null; fallo_at: string | null; url_factura: string | null; created_at: string;
+};
+const fechaMx = (iso: string | null) => (iso ? formatearFecha(iso, "America/Mexico_City") : "—");
 
 type Fila = {
   id: string; slug: string; nombre: string; dominio: string | null; url_publica: string | null; zona_horaria: string;
@@ -16,11 +30,15 @@ type Fila = {
 export default async function NegocioPlataforma({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { supabase } = await exigirPlataforma();
-  const [{ data }, { data: planesCrudo }, { data: modulosCrudo }] = await Promise.all([
+  const [{ data }, { data: planesCrudo }, { data: modulosCrudo }, { data: cobros }, { data: pagosCrudo }] = await Promise.all([
     supabase.rpc("plataforma_negocios"),
     supabase.from("planes").select("id, nombre, tipo, precio_mensual, modulos").eq("activo", true).order("orden"),
     supabase.from("modulos").select("clave, nombre").order("orden"),
+    supabase.rpc("plataforma_cobros"),
+    supabase.rpc("plataforma_pagos_negocio", { p_negocio_id: id }),
   ]);
+  const cobro = ((cobros ?? []) as Cobro[]).find((c) => c.negocio_id === id) ?? null;
+  const pagos = (pagosCrudo ?? []) as Pago[];
   const planes = (planesCrudo ?? []) as { id: string; nombre: string; tipo: string; precio_mensual: number; modulos: string[] }[];
   const modulos = (modulosCrudo ?? []) as { clave: string; nombre: string }[];
   const n = ((data ?? []) as Fila[]).find((x) => x.id === id);
@@ -34,6 +52,49 @@ export default async function NegocioPlataforma({ params }: { params: Promise<{ 
           <a href={urlDelNegocio(n)} className="text-morado hover:underline">{urlDelNegocio(n)}</a> · dirección corta «{n.slug}»
         </p>
       </div>
+
+      <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-bold text-n-900">Cobro</h2>
+          {cobro && <span className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${estadoCobro(cobro.estado).clase}`}>{estadoCobro(cobro.estado).texto}</span>}
+        </div>
+        {cobro?.stripe_subscription_id ? (
+          <p className="text-sm text-n-700">
+            {cobro.plan_nombre} · {cobro.periodicidad} · {cobro.monto_centavos != null ? `${pesosDeCentavos(cobro.monto_centavos)} con IVA` : ""} · periodo hasta el{" "}
+            {fechaMx(cobro.periodo_fin)}
+            {cobro.cancela_al_terminar ? " · cancela al terminar" : ""}
+            {cobro.primer_fallo_at ? ` · primer cobro fallido el ${fechaMx(cobro.primer_fallo_at)}` : ""}
+            <span className="block text-xs text-n-600">
+              Stripe ({cobro.modo}): {cobro.stripe_customer_id} · {cobro.stripe_subscription_id} · {cobro.estado_stripe}
+            </span>
+          </p>
+        ) : (
+          <p className="text-sm text-n-600">Sin suscripción en Stripe.</p>
+        )}
+        <h3 className="text-sm font-semibold text-n-800">Historial de pagos</h3>
+        {pagos.length === 0 ? (
+          <p className="text-sm text-n-600">Todavía no hay pagos.</p>
+        ) : (
+          <ul className="divide-y divide-n-200 text-sm">
+            {pagos.map((p) => (
+              <li key={p.stripe_invoice_id} className="flex flex-wrap items-baseline justify-between gap-2 py-2">
+                <span>
+                  <span className="font-semibold text-n-900">{pesosDeCentavos(p.monto_centavos)}</span> ·{" "}
+                  {p.estado === "pagado" ? `pagado el ${fechaMx(p.pagado_at)}` : p.estado === "fallido" ? `falló el ${fechaMx(p.fallo_at)}` : p.estado}
+                  <span className="block text-xs text-n-600">
+                    {p.numero ?? p.stripe_invoice_id} · periodo {fechaMx(p.periodo_inicio)} – {fechaMx(p.periodo_fin)}
+                  </span>
+                </span>
+                {p.url_factura && (
+                  <a href={p.url_factura} target="_blank" rel="noopener noreferrer" className="text-morado hover:underline">
+                    Ver factura
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <FormularioPlataforma accion={actualizarNegocio.bind(null, n.id)} textoBoton="Guardar">
         <section className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">

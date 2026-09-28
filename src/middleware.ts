@@ -118,7 +118,10 @@ export async function middleware(request: NextRequest) {
     return plataforma(request, cabeceras);
   }
   // Y en el dominio de un negocio, /plataforma (ni la landing de PeluDesk) no existe.
-  if (pathname === "/plataforma" || pathname.startsWith("/plataforma/") || pathname === "/peludesk" || pathname.startsWith("/peludesk/")) {
+  if (
+    pathname === "/plataforma" || pathname.startsWith("/plataforma/") || pathname === "/peludesk" || pathname.startsWith("/peludesk/") ||
+    pathname.startsWith("/api/stripe/")
+  ) {
     return NextResponse.rewrite(new URL("/negocio-no-encontrado", request.url), { request: { headers: cabeceras }, status: 404 });
   }
 
@@ -253,6 +256,9 @@ async function plataforma(request: NextRequest, cabeceras: Headers) {
   const { pathname } = request.nextUrl;
   cabeceras.set(ENCABEZADO_PLATAFORMA, "1");
   cabeceras.set(ENCABEZADO_FIRMA, await firmarPlataforma());
+  // El webhook de Stripe (cobro de PeluDesk): sin sesión ni negocio; la
+  // firma la comprueba la ruta.
+  if (pathname === "/api/stripe/webhook") return NextResponse.next({ request: { headers: cabeceras } });
   const publica = PUBLICAS_PLATAFORMA[pathname];
   if (publica) return NextResponse.rewrite(new URL(publica, request.url), { request: { headers: cabeceras } });
   if (pathname === "/peludesk" || pathname.startsWith("/peludesk/")) return NextResponse.redirect(new URL("/", request.url));
