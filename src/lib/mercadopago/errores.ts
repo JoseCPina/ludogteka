@@ -30,6 +30,14 @@ export function traducirRespuestaMp(status: number, cuerpo: unknown): { mensaje:
         "La conexión con tu cuenta ya no es válida (se revocó o venció). En Administración → Cobro con terminal, desconecta y vuelve a conectar Mercado Pago.",
     };
   }
+  // Visto en la API real: mandar una orden a una terminal que no es de la
+  // cuenta conectada da 403 forbidden_checking_device_owner.
+  if (status === 403 && codigo === "forbidden_checking_device_owner") {
+    return {
+      mensaje: "Esa terminal no es de la cuenta de Mercado Pago conectada.",
+      sugerencia: "Escoge otra vez la terminal en Administración → Cobro con terminal (solo salen las de tu cuenta).",
+    };
+  }
   if (status === 403) {
     return {
       mensaje: "La credencial no tiene permiso para esta operación.",

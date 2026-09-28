@@ -45,15 +45,18 @@ function token(cx: ConexionCobro): string {
 
 /**
  * Solo Point Smart recibe órdenes de la app (API de Orders). El modelo va
- * al principio del id: NEWLAND_N950__… es Point Smart; PAX_A910__…, Point
- * Smart 2. Cualquier otra (Point Air, Mini, Blue, Pro 2) cobra sola, con
- * el celular, y no se puede integrar.
+ * al principio del id. Visto en la API real (28 de septiembre de 2026, la
+ * cuenta de PeluDesk): NEWLAND_N950__… es Point Smart y DSPREAD_D20__… es
+ * Point Smart 2 (las dos salen en /terminals/v1/list y aceptan modo PDV);
+ * PAX_A910__… es la Point Smart de otros países. Cualquier otra (Point
+ * Air, Mini, Blue) cobra sola, con el celular, y no se puede integrar.
  */
 export function modeloDeTerminal(id: string): { nombre: string; compatible: boolean } {
   const prefijo = id.split("__")[0]?.toUpperCase() ?? "";
   if (prefijo.startsWith("SIMULADA")) return { nombre: "Point Smart (simulada)", compatible: true };
   if (prefijo.includes("N950")) return { nombre: "Point Smart", compatible: true };
-  if (prefijo.includes("A910")) return { nombre: "Point Smart 2", compatible: true };
+  if (prefijo.includes("D20")) return { nombre: "Point Smart 2", compatible: true };
+  if (prefijo.includes("A910")) return { nombre: "Point Smart", compatible: true };
   return { nombre: prefijo.replace(/_/g, " ") || id, compatible: false };
 }
 
