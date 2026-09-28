@@ -88,6 +88,30 @@ else
 fi
 [ -n "${GH_TOKEN:-${GITHUB_TOKEN:-}}" ] || aviso "sin GH_TOKEN: gh queda instalado pero sin sesión (el despliegue desde la nube la necesita)"
 
+# ------------------------------------------------------------ Stripe CLI
+# Para probar el cobro de la suscripción en modo prueba: `stripe listen`
+# reenvía los eventos, firmados, al webhook del servidor de desarrollo
+# (scripts/auditoria/cobro-stripe-dev.mjs). Versión fija con checksum, como gh.
+paso "Stripe CLI"
+STRIPE_CLI_VERSION=1.30.0
+if command -v stripe >/dev/null 2>&1; then
+  echo "   ya está: $(stripe version 2>/dev/null | head -n 1)"
+else
+  tmp=$(mktemp -d)
+  base="https://github.com/stripe/stripe-cli/releases/download/v${STRIPE_CLI_VERSION}"
+  tarball="stripe_${STRIPE_CLI_VERSION}_linux_x86_64.tar.gz"
+  if curl -fsSL -o "$tmp/$tarball" "$base/$tarball" \
+    && curl -fsSL -o "$tmp/checksums.txt" "$base/stripe-linux-checksums.txt" \
+    && (cd "$tmp" && grep " $tarball\$" checksums.txt | sha256sum -c --quiet -); then
+    tar -xzf "$tmp/$tarball" -C "$tmp"
+    $SUDO install -m 0755 "$tmp/stripe" /usr/local/bin/stripe
+    echo "   stripe $(stripe version 2>/dev/null | head -n 1)"
+  else
+    aviso "no se pudo bajar la Stripe CLI ${STRIPE_CLI_VERSION}"
+  fi
+  rm -rf "$tmp"
+fi
+
 # ------------------------------------------------------------ Playwright
 # Chromium sin cabeza con sus librerías del sistema (apt). La versión la
 # decide el playwright-core del repo; scripts/lib/navegador.mjs lo encuentra.
@@ -95,6 +119,23 @@ paso "Playwright + Chromium"
 if ! npx --no-install playwright-core install --with-deps chromium; then
   aviso "no se pudieron instalar las librerías del sistema; se intenta solo el navegador"
   npx --no-install playwright-core install chromium || aviso "Playwright quedó sin navegador"
+fi
+
+# El proxy de la sesión abre el HTTPS con su propio certificado: Chromium solo
+# lo acepta si está en su almacén NSS (sin esto, Stripe Checkout y cualquier
+# sitio externo dan ERR_CERT_AUTHORITY_INVALID). Nunca se apaga TLS.
+if [ "${CLAUDE_CODE_REMOTE:-}" = "true" ] && [ -f /root/.ccr/agent-proxy-ca.crt ]; then
+  command -v certutil >/dev/null 2>&1 || $SUDO apt-get install -y -qq libnss3-tools >/dev/null 2>&1 \
+    || { $SUDO apt-get update -qq >/dev/null 2>&1 && $SUDO apt-get install -y -qq libnss3-tools >/dev/null 2>&1; } || true
+  if command -v certutil >/dev/null 2>&1; then
+    mkdir -p "$HOME/.pki/nssdb"
+    [ -f "$HOME/.pki/nssdb/cert9.db" ] || certutil -N -d "sql:$HOME/.pki/nssdb" --empty-password
+    certutil -L -d "sql:$HOME/.pki/nssdb" -n ccr-agent-proxy >/dev/null 2>&1 \
+      || certutil -A -d "sql:$HOME/.pki/nssdb" -t "C,," -n ccr-agent-proxy -i /root/.ccr/agent-proxy-ca.crt
+    echo "   Chromium confía en el certificado del proxy de la sesión"
+  else
+    aviso "sin certutil: Chromium no podrá abrir sitios externos (Stripe Checkout)"
+  fi
 fi
 
 # ------------------------------------------------------------ .env.local
@@ -120,7 +161,12 @@ else
     echo "SUPABASE_SECRET_KEY=${SUPABASE_SECRET_KEY:-}"
     echo "LUDOGTEKA_URL_PUBLICA=${LUDOGTEKA_URL_PUBLICA:-http://localhost:3001}"
     echo "PELUDESK_URL_DESARROLLO=${PELUDESK_URL_DESARROLLO:-$url_negocios_dev}"
+    # Stripe: SOLO la llave de modo prueba (la de producción vive en Vercel).
+    if [[ "${STRIPE_SECRET_KEY:-}" == sk_test_* ]]; then echo "STRIPE_SECRET_KEY=$STRIPE_SECRET_KEY"; fi
   } > .env.local
+  if [ -n "${STRIPE_SECRET_KEY:-}" ] && [[ "$STRIPE_SECRET_KEY" != sk_test_* ]]; then
+    aviso "STRIPE_SECRET_KEY no es de modo prueba: no se escribe en .env.local"
+  fi
   echo "   escrito (sin Mercado Pago ni Google Maps: corren en simulación)"
 fi
 

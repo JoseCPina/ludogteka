@@ -9,6 +9,8 @@ import { urlDelNegocio } from "@/lib/negocio/actual";
 import { SLUGS_RESERVADOS } from "@/lib/negocio/host";
 import { generarPasswordTemporal } from "@/lib/auth/identidad";
 import type { ResultadoPlataforma } from "@/lib/plataforma/tipos";
+import { sincronizarPreciosPlan, type PlanParaStripe } from "@/lib/cobro/precios";
+import { mensajeDeErrorStripe, stripeConfigurado } from "@/lib/cobro/stripe";
 
 // La administración de PeluDesk. Toda escritura va con la sesión de quien
 // administra (su JWT): la base comprueba es_admin_plataforma() en cada
@@ -253,20 +255,23 @@ export async function cambiarPlan(negocioId: string, fd: FormData): Promise<Resu
 }
 
 // Los planes (nombre, precios y módulos): viven en la base, nunca en el código.
+// El anual lo calcula la base (diez mensualidades). Al guardar se
+// sincronizan sus precios con Stripe: si el importe cambió se CREA un precio
+// nuevo (el anterior no se toca: quien ya está suscrito sigue pagando lo que
+// aceptó).
 export async function guardarPlan(planId: string | null, fd: FormData): Promise<ResultadoPlataforma> {
   const s = await sesionPlataforma();
   if (!s) return NO_AUTORIZADO;
   const mensual = Number(texto(fd, "precio_mensual"));
-  const anual = Number(texto(fd, "precio_anual") || mensual * 10);
-  if (!(mensual >= 0) || !(anual >= 0)) return { error: "Los precios tienen que ser números de cero para arriba." };
-  const { error } = await s.supabase.rpc("plataforma_guardar_plan", {
+  if (!(mensual >= 0)) return { error: "El precio mensual tiene que ser un número de cero para arriba." };
+  const { data: id, error } = await s.supabase.rpc("plataforma_guardar_plan", {
     p_id: planId,
     p_clave: texto(fd, "clave"),
     p_nombre: texto(fd, "nombre"),
     p_descripcion: texto(fd, "descripcion") || null,
     p_tipo: texto(fd, "tipo") || "plan",
     p_precio_mensual: mensual,
-    p_precio_anual: anual,
+    p_precio_anual: mensual * 10,
     p_modulos: fd.getAll("modulos").map(String),
     p_orden: Number(texto(fd, "orden") || 0),
     p_activo: fd.get("activo") === "on",
@@ -274,7 +279,68 @@ export async function guardarPlan(planId: string | null, fd: FormData): Promise<
   if (error) return { error: error.message };
   revalidatePath("/plataforma/planes");
   revalidatePath("/plataforma");
-  return { error: null, exito: "Plan guardado. Los negocios en este plan lo ven al instante." };
+  const sync = await sincronizarUno(s, String(id));
+  if (sync.error) return { error: `El plan se guardó, pero sus precios no se sincronizaron con Stripe: ${sync.error} Vuelve a guardar o usa «Sincronizar con Stripe».` };
+  return { error: null, exito: `Plan guardado. Los negocios en este plan lo ven al instante.${sync.nota ? ` ${sync.nota}` : ""}` };
+}
+
+type SesionPlataforma = NonNullable<Awaited<ReturnType<typeof sesionPlataforma>>>;
+
+async function sincronizarUno(s: SesionPlataforma, planId: string): Promise<{ error: string | null; nota?: string }> {
+  if (!stripeConfigurado()) return { error: null, nota: "(Stripe no está configurado en este entorno: no se sincronizó.)" };
+  const { data: plan } = await s.supabase
+    .from("planes")
+    .select("id, clave, nombre, tipo, precio_mensual, activo")
+    .eq("id", planId)
+    .maybeSingle();
+  if (!plan) return { error: "no encontramos el plan." };
+  try {
+    const precios = await sincronizarPreciosPlan({ ...(plan as PlanParaStripe), precio_mensual: Number(plan.precio_mensual) });
+    const nuevos = precios.filter((p) => p.nuevo);
+    for (const p of precios) {
+      const { data: ya } = await s.supabase
+        .from("planes_precios_stripe")
+        .select("id, stripe_price_id")
+        .eq("plan_id", p.plan_id)
+        .eq("periodicidad", p.periodicidad)
+        .eq("modo", p.modo)
+        .eq("vigente", true)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (ya?.stripe_price_id === p.stripe_price_id) continue;
+      if (ya) await s.supabase.from("planes_precios_stripe").update({ vigente: false }).eq("id", ya.id);
+      const { error } = await s.supabase.from("planes_precios_stripe").insert({
+        plan_id: p.plan_id,
+        periodicidad: p.periodicidad,
+        neto: p.neto,
+        total_centavos: p.total_centavos,
+        lookup_key: p.lookup_key,
+        stripe_price_id: p.stripe_price_id,
+        stripe_product_id: p.stripe_product_id,
+        modo: p.modo,
+      });
+      if (error) return { error: error.message };
+    }
+    return { error: null, nota: nuevos.length ? `Se crearon ${nuevos.length} precio(s) nuevo(s) en Stripe.` : "Stripe ya tenía esos precios." };
+  } catch (e) {
+    return { error: mensajeDeErrorStripe(e) };
+  }
+}
+
+// Todos los planes contra Stripe (idempotente: lo que ya cuadra no se toca).
+export async function sincronizarPreciosStripe(): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  if (!stripeConfigurado()) return { error: "Falta STRIPE_SECRET_KEY en este entorno." };
+  const { data: planes } = await s.supabase.from("planes").select("id, nombre").is("deleted_at", null).order("orden");
+  const notas: string[] = [];
+  for (const p of planes ?? []) {
+    const r = await sincronizarUno(s, p.id as string);
+    if (r.error) return { error: `${p.nombre}: ${r.error}` };
+    notas.push(`${p.nombre}: ${r.nota}`);
+  }
+  revalidatePath("/plataforma/planes");
+  return { error: null, exito: notas.join(" · ") };
 }
 
 // El plan contratado de un negocio, sus complementos (la página web) y los

@@ -221,7 +221,8 @@ try {
   await page.goto(`${base}/admin`);
   const t = await texto();
   ok(t.includes("Tu prueba de PeluDesk terminó"), "aviso de prueba vencida");
-  ok(t.includes("Te vamos a buscar al teléfono") || t.includes("Escríbenos para seguir usándolo"), "el aviso dice qué sigue");
+  // Desde el cobro con Stripe (28 de septiembre de 2026) el admin contrata ahí mismo.
+  ok(t.includes("Contrata un plan y todo vuelve a funcionar"), "el aviso dice qué sigue: contratar");
   await page.screenshot({ path: path.join(SALIDA, "prueba-vencida.png") });
   await page.goto(`${base}/admin#configuracion`);
   await page.getByLabel("WhatsApp de recepción").fill("4420990000");

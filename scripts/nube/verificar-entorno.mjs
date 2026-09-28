@@ -13,7 +13,7 @@ const CLI = "node_modules/supabase/dist/supabase.js";
 const env = process.env;
 let fallas = 0;
 
-const secretos = [env.SUPABASE_SECRET_KEY, env.SUPABASE_ACCESS_TOKEN, env.VERCEL_TOKEN, env.LUDOGTEKA_PROD_DB_URL, env.SUPABASE_DB_PASSWORD].filter(Boolean);
+const secretos = [env.STRIPE_SECRET_KEY, env.SUPABASE_SECRET_KEY, env.SUPABASE_ACCESS_TOKEN, env.VERCEL_TOKEN, env.LUDOGTEKA_PROD_DB_URL, env.SUPABASE_DB_PASSWORD].filter(Boolean);
 const limpio = (t) => secretos.reduce((s, x) => s.split(x).join("[oculto]"), String(t)).replace(/postgresql:\/\/\S+/g, "postgresql://[oculto]").split("\n").filter(Boolean).slice(-2).join(" ").slice(0, 300);
 
 async function prueba(que, fn) {
@@ -118,6 +118,18 @@ await soloLocal("Postgres de producción (select 1, lo que usa el despliegue)", 
     await c.end();
   }
 });
+
+console.log("\nStripe (cobro de la suscripción)");
+await prueba("STRIPE_SECRET_KEY de modo prueba", () => {
+  if (!env.STRIPE_SECRET_KEY) throw new Error("no está puesta");
+  if (!env.STRIPE_SECRET_KEY.startsWith("sk_test_")) throw new Error("no es sk_test_: la de producción vive solo en Vercel");
+});
+await prueba("API de Stripe (cuenta)", async () => {
+  const r = await fetch("https://api.stripe.com/v1/account", { headers: { Authorization: `Bearer ${env.STRIPE_SECRET_KEY}` }, signal: AbortSignal.timeout(20000) });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return (await r.json()).settings?.dashboard?.display_name ?? "";
+});
+await prueba("Stripe CLI (stripe listen para los webhooks de prueba)", () => corre("stripe", ["version"]).split("\n")[0]);
 
 console.log("\nHerramientas");
 await prueba("CLI de Vercel con sesión (vercel whoami)", () => {
