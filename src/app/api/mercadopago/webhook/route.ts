@@ -65,6 +65,24 @@ export async function POST(request: NextRequest) {
     console.warn("[mercadopago] firma inválida", { tipo, dataId });
     return NextResponse.json({ error: "Firma inválida." }, { status: 401 });
   }
+  // "Vinculación de aplicaciones" (mp-connect): llega al autorizar y al
+  // quitar el permiso desde Mercado Pago. Visto en producción el 28 de
+  // septiembre de 2026 (firmado con el secreto de la aplicación). Si el dueño
+  // quitó el permiso, la conexión queda marcada para reconectar.
+  if (tipo === "mp-connect" && deApp) {
+    const accion = cuerpo.action ?? "";
+    console.info("[mercadopago] vinculación", { accion, userId });
+    if (userId && /deauthoriz|revok|unlink/i.test(accion)) {
+      await createSupabaseAdminClient()
+        .from("integraciones_cobro")
+        .update({ estado: "error", ultimo_error: "Se quitó el permiso de PeluDesk desde Mercado Pago. Vuelve a conectar la cuenta." })
+        .eq("proveedor", "mercadopago")
+        .eq("cuenta_id", userId)
+        .eq("estado", "conectada")
+        .is("deleted_at", null);
+    }
+    return NextResponse.json({ ok: true, motivo: "vinculacion", accion });
+  }
   if (!dataId) return NextResponse.json({ ok: true, motivo: "sin_id" });
   if (!["order", "orders", "payment"].includes(tipo)) return NextResponse.json({ ok: true, motivo: "tipo_ignorado", tipo });
 

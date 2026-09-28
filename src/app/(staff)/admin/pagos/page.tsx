@@ -79,10 +79,17 @@ export default async function PagosPage({ searchParams }: { searchParams: Promis
 
       {mp === "conectado" && <Alert variante="exito" titulo="Mercado Pago quedó conectado">Ahora escoge tu terminal Point Smart abajo.</Alert>}
       {mp_error && <Alert variante="error" titulo="No se pudo conectar Mercado Pago">{mp_error}</Alert>}
-      {enPrueba && (
+      {/* En la prueba, una cuenta conectada cobra de verdad: el aviso de
+          simulación solo sale mientras no haya una. */}
+      {enPrueba && resumen.activo && resumen.simulado && (
         <Alert variante="info" titulo="Estás en tu prueba gratis">
           Mientras no conectes tu cuenta, la terminal y los links funcionan en simulación: no mueven dinero. Puedes conectar tu cuenta
           real cuando quieras.
+        </Alert>
+      )}
+      {enPrueba && resumen.activo && !resumen.simulado && (
+        <Alert variante="advertencia" titulo={`Tu cuenta de ${resumen.nombre} está conectada: los cobros son de verdad`}>
+          Aunque sigas en tu prueba gratis, lo que cobres con la terminal o con un link mueve dinero real en tu cuenta.
         </Alert>
       )}
       {legado && (
