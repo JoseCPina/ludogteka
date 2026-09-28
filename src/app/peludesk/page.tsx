@@ -8,7 +8,7 @@ import { Ilustracion, type NombreIlustracion } from "@/components/peludesk/ilust
 import { MenuCelular } from "@/components/peludesk/menu-celular";
 import { RedesPeluDesk } from "@/components/peludesk/redes";
 import { Revelar } from "@/components/peludesk/revelar";
-import { CASO_REAL, CELULAR, ESCRITORIO, REDES_PELUDESK, urlDemo } from "@/lib/peludesk/landing";
+import { CASO_REAL, CELULAR, ESCRITORIO, REDES_PELUDESK, urlDemo, whatsappPeluDesk } from "@/lib/peludesk/landing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import "./peludesk.css";
 
@@ -248,6 +248,7 @@ async function cargarPlanes() {
 
 export default async function PeluDeskLanding() {
   const demo = urlDemo();
+  const whatsapp = whatsappPeluDesk("Hola, quiero saber más de PeluDesk.");
   const { planes, nombres } = await cargarPlanes();
   const planesBase = planes.filter((p) => p.tipo === "plan");
   const web = planes.find((p) => p.tipo === "complemento" && p.modulos.includes("pagina_web"));
@@ -322,6 +323,11 @@ export default async function PeluDeskLanding() {
                 <BotonPrueba />
                 <BotonDemo />
               </div>
+              {whatsapp && (
+                <a href={whatsapp} target="_blank" rel="noopener" className="mt-4 flex min-h-12 items-center justify-center rounded-full text-base font-semibold text-morado hover:bg-morado-suave">
+                  Escríbenos por WhatsApp
+                </a>
+              )}
               <div className="mt-5 flex items-center justify-between">
                 <span className="text-sm text-n-600">Síguenos</span>
                 <RedesPeluDesk />
@@ -677,6 +683,14 @@ export default async function PeluDeskLanding() {
                   <p className="max-w-[60ch] pb-5 leading-relaxed text-n-700">{r}</p>
                 </details>
               ))}
+              {whatsapp && (
+                <p className="mt-6 text-n-700">
+                  ¿Te quedó otra duda?{" "}
+                  <a href={whatsapp} target="_blank" rel="noopener" className="font-semibold text-morado underline-offset-4 hover:underline">
+                    Escríbenos por WhatsApp
+                  </a>
+                </p>
+              )}
             </div>
           </div>
         </section>
@@ -713,9 +727,13 @@ export default async function PeluDeskLanding() {
             <a href="#planes" className="hover:text-morado">Planes</a>
             <a href="#preguntas" className="hover:text-morado">Preguntas</a>
             <Link href="/registro" className="hover:text-morado">Pruébalo gratis</Link>
+            {whatsapp && (
+              <a href={whatsapp} target="_blank" rel="noopener" className="hover:text-morado">WhatsApp</a>
+            )}
           </nav>
           <RedesPeluDesk className="-ml-3 md:ml-0" />
         </div>
+        <p className="mx-auto max-w-6xl px-4 pb-8 text-xs text-n-600 sm:px-6">PeluDesk es una marca de Menteo, S.A.S.</p>
       </footer>
 
       <BarraCelular>

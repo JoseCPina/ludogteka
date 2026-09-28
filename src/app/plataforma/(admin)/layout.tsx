@@ -8,6 +8,7 @@ const SECCIONES = [
   { href: "/plataforma/planes", texto: "Planes" },
   { href: "/plataforma/cobro", texto: "Cobro" },
   { href: "/plataforma/maps", texto: "Google Maps" },
+  { href: "/plataforma/whatsapp", texto: "WhatsApp" },
   { href: "/plataforma/soporte", texto: "Soporte" },
   { href: "/plataforma/catalogos", texto: "Catálogos compartidos" },
 ];
