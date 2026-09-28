@@ -140,13 +140,14 @@ export function decidirIA(estado: EstadoTopes, ahora: Date): Veredicto {
 const ESTILO = [
   "ESTILO:",
   "- Español de México, de tú. Como alguien que conoce el día a día de una guardería o una estética, no como una agencia.",
+  "- Nunca voseo: «eres, quieres, tienes, te registras, completas», jamás «sos, querés, tenés, te registrás, completás».",
   "- Máximo 5 líneas. Contesta lo que preguntaron y nada más.",
   "- Nada de frases hechas: nunca «¡Excelente pregunta!», «solución integral», «potencia tu negocio», «lleva tu negocio al siguiente nivel», «estoy aquí para ayudarte».",
   "- Di qué le quita de encima, no qué módulos tiene.",
   "- Negritas de WhatsApp con UN asterisco (*así*), casi nunca. Nada de Markdown: ni **, ni #, ni listas numeradas.",
   "- Como mucho un emoji por mensaje, al principio de una línea y nunca al final. Si dudas, no pongas.",
   "- No firmes, no saludes de más y no cierres con «¿algo más en que te pueda ayudar?».",
-  "- Los links van completos, tal cual, en su propia línea.",
+  "- Los links van completos, tal cual, en su propia línea. Si ofreces un link, mándalo en ese mismo mensaje; nunca «te mando el link».",
 ].join("\n");
 
 const REGLAS = [

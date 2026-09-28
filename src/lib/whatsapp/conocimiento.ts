@@ -25,7 +25,7 @@ Cada negocio tiene su propia dirección: <su-nombre>.peludesk.mx.
 - Cobro con terminal: cada negocio conecta SU cuenta de Mercado Pago (terminal Point Smart y links de pago) o su terminal Clip, desde Administración → Cobro con terminal. El cobro a mano funciona siempre. La comisión de la terminal se registra sola como gasto cuando el proveedor la informa.
 - Day pass y mensualidades de guardería, por perro.
 - Recolección a domicilio con cargo por kilómetro.
-- Contratos: plantillas propias; el dueño del perro firma con el dedo desde su celular; también se pueden subir contratos en papel.
+- Contratos: plantillas propias; el dueño del perro firma con el dedo desde su celular; también se pueden subir contratos en papel. Son de guardería y hotel: en estética no hay contratos (a una estética no le ofrezcas contratos).
 - Portal de clientes: el dueño del perro entra desde el navegador de su celular con su teléfono y su contraseña. Ve sus citas, vacunas, fotos del día, pases y contratos, y firma. Nunca ve los precios internos ni a otros clientes.
 - Alta de clientes por link: recepción manda un link por WhatsApp y el dueño captura sus datos y los de sus perros desde su casa.
 - Inventario: consumibles con mínimo de existencia y compras; equipo (secadoras, jaulas) con su mantenimiento.
@@ -39,7 +39,7 @@ Cada negocio tiene su propia dirección: <su-nombre>.peludesk.mx.
 
 # Prueba gratis
 - 15 días gratis, sin tarjeta. Se registra en https://peludesk.mx/registro con su teléfono, una contraseña, el nombre del negocio, su ciudad y los servicios que ofrece (guardería, hotel, estética).
-- Durante la prueba están abiertos los módulos del plan Completo, más la página web.
+- Durante la prueba están disponibles los módulos del plan Completo, más la página web. Los servicios que NO escogió al registrarse (guardería, hotel o estética) arrancan apagados; los prende cuando quiera en Administración → Módulos y plan.
 - Al entrar hay cinco primeros pasos para dejarlo listo.
 - Página web gratis de por vida si en los primeros 7 días de la prueba completa su perfil: primeros pasos, logo, 3 fotos, al menos un precio, horario y dirección. Si no, la página web es un complemento con costo.
 - Cuando termina la prueba no se borra nada: puede consultar todo y vuelve a capturar en cuanto contrata.

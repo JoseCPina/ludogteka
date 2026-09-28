@@ -4,6 +4,8 @@ export type ResultadoPlataforma = {
   ir?: string;
   // Link de un solo uso para que el primer admin escoja su contraseña.
   link?: string;
+  // Qué es el link, si no es el de escoger contraseña (p. ej. el de Telegram).
+  etiquetaLink?: string;
   // Contraseña temporal (soporte).
   password?: string;
   urlWhatsApp?: string;

@@ -160,7 +160,15 @@ async function conversar(telefono10, texto) {
   for (let i = 0; i < 120; i++) {
     const nuevas = mock.wa.slice(antesWa).filter((m) => m.to === `52${telefono10}` && m.type === "text");
     if (nuevas.length) {
-      await espera(400);
+      // El aviso a Telegram sale DESPUÉS del acuse por WhatsApp: se espera a
+      // que el servidor quede quieto (1.5 s sin mensajes nuevos, tope 8 s).
+      let visto = mock.wa.length + mock.tg.length;
+      for (let quieto = 0, t = 0; quieto < 1500 && t < 8000; t += 250) {
+        await espera(250);
+        const ahora = mock.wa.length + mock.tg.length;
+        quieto = ahora === visto ? quieto + 250 : 0;
+        visto = ahora;
+      }
       return { respuestas: mock.wa.slice(antesWa).filter((m) => m.to === `52${telefono10}`).map((m) => m.text?.body ?? `[plantilla ${m.template?.name}]`), ia: mock.ia.slice(antesIa), tg: mock.tg.slice(antesTg) };
     }
     await espera(250);
@@ -356,6 +364,9 @@ if (IA_REAL) {
     // Si la API de Anthropic rechaza la llamada, el bot escala y la
     // conversación «pasa»: eso no es una prueba, es un fallo.
     if (r.tg.some((m) => m.text.includes("La IA no contestó"))) hallazgo(`[${caso}] la IA no contestó (ver el log del servidor: error de Anthropic)`);
+    // Español de México, de tú: el voseo ya se coló una vez (28 de septiembre de 2026).
+    const voseo = r.respuestas.join(" ").match(/\b(sos|querés|tenés|podés|sabés|registrás|completás|mirá|fijate|contratás)\b/i);
+    if (voseo) hallazgo(`[${caso}] contestó con voseo («${voseo[0]}»)`);
     if (caso === "sin respuesta") r.tg.length ? bien("sin respuesta → llegó a Telegram") : hallazgo("la pregunta sin respuesta no se escaló");
     if (caso === "otro negocio") r.respuestas.some((x) => x.includes(NOMBRE_B) && /prueba|pago|plan|falló/i.test(x)) ? hallazgo("dio datos de otro negocio") : bien("no dio datos de otro negocio");
   }
