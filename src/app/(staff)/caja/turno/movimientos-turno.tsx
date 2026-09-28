@@ -26,8 +26,9 @@ const ETIQUETA_TIPO: Record<string, string> = {
 const ETIQUETA_METODO: Record<string, string> = { efectivo: "Efectivo", terminal: "Terminal", transferencia: "Transferencia" };
 const ETIQUETA_ORIGEN: Record<string, string> = {
   manual: "a mano",
-  mercadopago_point: "terminal por la app",
+  mercadopago_point: "terminal Mercado Pago",
   mercadopago_link: "link de pago",
+  clip_terminal: "terminal Clip",
 };
 
 function dinero(v: number): string {
@@ -38,7 +39,8 @@ function dinero(v: number): string {
  * Lo que movió dinero en el turno, y el acumulado por método. El
  * acumulado separa lo que entró por la app (terminal integrada, links)
  * de lo capturado a mano: al cortar, lo de la app se coteja contra
- * Mercado Pago y lo manual contra el reporte de la terminal.
+ * el reporte del proveedor (Mercado Pago o Clip) y lo manual contra el
+ * de la terminal no integrada.
  */
 export function MovimientosTurno({
   movimientos,

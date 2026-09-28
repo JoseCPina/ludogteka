@@ -2,12 +2,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { geocodificarDireccion } from "./geocodificar";
 import { calcularDistanciaRuta } from "./ruta";
 import type { NegocioBasico } from "@/lib/negocio/resolver";
-import { usaIntegracionesDelEntorno } from "@/lib/negocio/integraciones";
+import { apartarConsulta, hayLlaveMaps, mensajeTope } from "./cuota";
 
 export type ResultadoDistancia = {
   error: string | null;
   distanciaKm?: number;
   simulado?: boolean;
+  // Se llegó al tope de consultas de Google Maps del mes: capturar a mano.
+  sinCuota?: boolean;
 };
 
 // El cálculo de la distancia de un cliente, en un solo lugar, porque ya
@@ -55,20 +57,13 @@ export async function geocodificarYCalcularDistancia(
   // puede ajustar la distancia a mano sobre esa misma dirección.
   await supabase.from("clientes").update({ direccion }).eq("id", clienteId).eq("negocio_id", negocio.id);
 
-  // Las llaves de Google del entorno son de un solo negocio; en los demás
-  // la distancia se captura a mano (una simulada cotizaría viajes mal).
-  if (!usaIntegracionesDelEntorno(negocio)) {
-    return { error: "El cálculo automático de distancia no está activado para este negocio. Captura la distancia a mano." };
-  }
-
-  const geocodificado = await geocodificarDireccion(direccion);
-  if (!geocodificado.ok) {
-    return { error: `${geocodificado.error} Puedes ajustar la distancia a mano mientras tanto.` };
-  }
-
-  const [{ data: cupoData }, { data: sucursal }] = await Promise.all([
+  // La llave de Google es de PeluDesk, para todos, con tope por negocio al
+  // mes (src/lib/google-maps/cuota.ts). Primero lo que no gasta consultas:
+  // sin la dirección del negocio y la de la base no hay ruta que medir.
+  const [{ data: cupoData }, { data: sucursal }, { data: neg }] = await Promise.all([
     supabase.rpc("resolver_cupo_configuracion"),
-    supabase.from("sucursales").select("lat, lng").eq("negocio_id", negocio.id).is("deleted_at", null).limit(1).single(),
+    supabase.from("sucursales").select("lat, lng").eq("negocio_id", negocio.id).is("deleted_at", null).order("activo", { ascending: false }).limit(1).maybeSingle(),
+    supabase.from("negocios").select("ciudad").eq("id", negocio.id).maybeSingle(),
   ]);
   const cupo = (Array.isArray(cupoData) ? cupoData[0] : cupoData) as {
     base_lat: number | null;
@@ -76,18 +71,40 @@ export async function geocodificarYCalcularDistancia(
   } | null;
 
   if (!cupo?.base_lat || !cupo?.base_lng) {
-    return {
-      error: "Falta configurar la dirección de la base (donde se guarda la camioneta). Avísale a soporte.",
-    };
+    return { error: "Falta la dirección de la base (donde se guarda la camioneta): el admin la captura en Administración → Ubicación para recolección. Mientras, captura la distancia a mano." };
   }
   if (!sucursal?.lat || !sucursal?.lng) {
-    return { error: "Falta configurar la dirección del negocio. Avísale a soporte." };
+    return { error: "Falta la dirección del negocio: el admin la captura en Administración → Ubicación para recolección. Mientras, captura la distancia a mano." };
+  }
+
+  if (hayLlaveMaps()) {
+    const cuota = await apartarConsulta(supabase, "geocodificar");
+    if (!cuota.permitida) return { error: mensajeTope(cuota), sinCuota: true };
+  }
+  const geocodificado = await geocodificarDireccion(direccion, {
+    ciudad: (neg?.ciudad as string | null) ?? null,
+    centro: { lat: Number(sucursal.lat), lng: Number(sucursal.lng) },
+  });
+  if (!geocodificado.ok) {
+    return { error: `${geocodificado.error} Puedes ajustar la distancia a mano mientras tanto.` };
+  }
+  if (hayLlaveMaps()) {
+    const cuota = await apartarConsulta(supabase, "ruta");
+    if (!cuota.permitida) {
+      // La coordenada ya costó una consulta: se guarda para no pedirla otra vez.
+      await supabase
+        .from("clientes")
+        .update({ direccion_lat: geocodificado.lat, direccion_lng: geocodificado.lng })
+        .eq("id", clienteId)
+        .eq("negocio_id", negocio.id);
+      return { error: mensajeTope(cuota), sinCuota: true };
+    }
   }
 
   const ruta = await calcularDistanciaRuta(
     { id: "base", lat: cupo.base_lat, lng: cupo.base_lng },
     { id: `cliente-${clienteId}`, lat: geocodificado.lat, lng: geocodificado.lng },
-    { id: "ludogteka", lat: sucursal.lat, lng: sucursal.lng }
+    { id: "negocio", lat: Number(sucursal.lat), lng: Number(sucursal.lng) }
   );
 
   if (!ruta.ok) {

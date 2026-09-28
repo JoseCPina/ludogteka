@@ -361,3 +361,29 @@ export async function asignarPlan(negocioId: string, fd: FormData): Promise<Resu
   revalidatePath("/plataforma");
   return { error: null, exito: "Plan asignado." };
 }
+
+// Google Maps: la llave es de PeluDesk; el tope de consultas al mes es por
+// plan, y la plataforma puede ponerle a un negocio uno propio (vacío = el
+// de su plan).
+export async function topeMapsNegocio(negocioId: string, fd: FormData): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const crudo = texto(fd, "tope");
+  const tope = crudo === "" ? null : Number(crudo);
+  if (tope !== null && (!Number.isInteger(tope) || tope < 0)) return { error: "El tope es un número entero de cero para arriba (vacío = el de su plan)." };
+  const { error } = await s.supabase.rpc("plataforma_maps_tope_negocio", { p_negocio_id: negocioId, p_tope: tope, p_motivo: texto(fd, "motivo") });
+  if (error) return { error: error.message };
+  revalidatePath("/plataforma/maps");
+  return { error: null, exito: tope === null ? "Ahora usa el tope de su plan." : `Tope de ${tope} consultas al mes.` };
+}
+
+export async function topeMapsPlan(planId: string, fd: FormData): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const tope = Number(texto(fd, "tope"));
+  if (!Number.isInteger(tope) || tope < 0) return { error: "El tope es un número entero de cero para arriba." };
+  const { error } = await s.supabase.rpc("plataforma_maps_tope_plan", { p_plan_id: planId, p_tope: tope });
+  if (error) return { error: error.message };
+  revalidatePath("/plataforma/maps");
+  return { error: null, exito: "Tope del plan guardado." };
+}

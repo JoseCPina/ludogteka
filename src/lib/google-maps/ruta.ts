@@ -8,7 +8,7 @@ export type ResultadoRuta =
 
 // Routes API (computeRoutes), NO Distance Matrix ni Directions — esas dos
 // quedaron legacy desde el 1 de marzo de 2025. Una sola llamada con el
-// domicilio como waypoint intermedio entre base y Ludogteka: el orden se
+// domicilio como waypoint intermedio entre base y el negocio: el orden se
 // respeta tal cual (sin optimizeWaypointOrder), exactamente la ruta real
 // de la camioneta. Field mask pedido al mínimo (solo distanceMeters) para
 // no pagar/transferir de más — Routes API exige X-Goog-FieldMask, a
@@ -17,11 +17,11 @@ export type ResultadoRuta =
 export async function calcularDistanciaRuta(
   base: PuntoRuta,
   domicilio: PuntoRuta,
-  ludogteka: PuntoRuta
+  negocio: PuntoRuta
 ): Promise<ResultadoRuta> {
   const key = process.env.GOOGLE_MAPS_API_KEY;
   if (!key) {
-    return { ok: true, km: distanciaSimulada(base.id, domicilio.id, ludogteka.id), simulado: true };
+    return { ok: true, km: distanciaSimulada(base.id, domicilio.id, negocio.id), simulado: true };
   }
 
   const punto = (p: PuntoRuta) => ({ location: { latLng: { latitude: p.lat, longitude: p.lng } } });
@@ -37,7 +37,7 @@ export async function calcularDistanciaRuta(
       },
       body: JSON.stringify({
         origin: punto(base),
-        destination: punto(ludogteka),
+        destination: punto(negocio),
         intermediates: [punto(domicilio)],
         travelMode: "DRIVE",
       }),

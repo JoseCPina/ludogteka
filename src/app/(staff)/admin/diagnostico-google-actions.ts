@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { probarGoogleMaps, type PruebaApi } from "@/lib/google-maps/diagnostico";
 import { negocioActual } from "@/lib/negocio/actual";
-import { usaIntegracionesDelEntorno } from "@/lib/negocio/integraciones";
+import { apartarConsulta, hayLlaveMaps, mensajeTope } from "@/lib/google-maps/cuota";
 
 export type EstadoDiagnostico = {
   error: string | null;
@@ -21,10 +21,6 @@ export async function probarConexionGoogle(): Promise<EstadoDiagnostico> {
     return { error: "Solo un admin puede correr esta prueba." };
   }
   const negocio = await negocioActual();
-  if (!usaIntegracionesDelEntorno(negocio)) {
-    return { error: "Google Maps todavía no está activado para tu negocio." };
-  }
-
   const supabase = await createSupabaseServerClient();
 
   const [{ data: sucursal }, { data: cupo }] = await Promise.all([
@@ -40,13 +36,13 @@ export async function probarConexionGoogle(): Promise<EstadoDiagnostico> {
   if (!sucursal?.lat || !sucursal?.lng) {
     return {
       error:
-        `La sucursal no tiene coordenadas guardadas todavía. Captura la dirección de ${negocio.nombre} antes de probar la conexión.`,
+        `La sucursal no tiene coordenadas guardadas todavía. Captura la dirección de ${negocio.nombre} (Ubicación para recolección) antes de probar la conexión.`,
     };
   }
   if (!cupo?.base_lat || !cupo?.base_lng) {
     return {
       error:
-        "La base de la camioneta no tiene coordenadas guardadas todavía. Captúrala en la configuración de cupo antes de probar.",
+        "La base de la camioneta no tiene coordenadas guardadas todavía. Captúrala en Ubicación para recolección antes de probar.",
     };
   }
 
@@ -54,6 +50,14 @@ export async function probarConexionGoogle(): Promise<EstadoDiagnostico> {
   // real y conocida, así que si Google contesta "no la encuentro" el
   // problema es de la llave o de la API, no del texto.
   const direccion = (sucursal.direccion as string | null) ?? negocio.nombre;
+
+  // Dos consultas reales (geocodificar y ruta), contra el tope del mes.
+  if (hayLlaveMaps()) {
+    for (const tipo of ["geocodificar", "ruta"] as const) {
+      const c = await apartarConsulta(supabase, tipo);
+      if (!c.permitida) return { error: mensajeTope(c) };
+    }
+  }
 
   const pruebas = await probarGoogleMaps(
     direccion,

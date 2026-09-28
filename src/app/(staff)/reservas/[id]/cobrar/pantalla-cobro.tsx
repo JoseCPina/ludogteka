@@ -3,8 +3,8 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
-import { estadoMercadoPago } from "@/app/(staff)/caja/mercadopago-actions";
-import type { OrdenMpFila } from "./mercadopago-cobro";
+import { estadoCobroIntegrado } from "@/app/(staff)/caja/cobro-integrado-actions";
+import type { OrdenCobroFila } from "./cobro-integrado";
 import {
   CuentaCobro,
   type LineaCuenta,
@@ -85,9 +85,9 @@ export async function PantallaCobro({
       .eq("reserva_id", id)
       .order("created_at", { ascending: false })
       .limit(20),
-    estadoMercadoPago(),
+    estadoCobroIntegrado(),
   ]);
-  const ordenesMp: OrdenMpFila[] = (ordenesMpCrudo ?? []).map((o) => ({
+  const ordenesMp: OrdenCobroFila[] = (ordenesMpCrudo ?? []).map((o) => ({
     id: o.id as string,
     tipo: o.tipo as "point" | "link",
     monto: Number(o.monto),

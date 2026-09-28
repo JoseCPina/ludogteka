@@ -11,7 +11,7 @@ import type { ClienteBuscable } from "@/lib/clientes/buscables";
 import { formatearFechaCalendario } from "@/lib/formato";
 import { formatearTelefono } from "@/lib/telefono";
 import { useModulos } from "@/components/modulos-contexto";
-import { registrarPagosMpPendientes } from "./mercadopago-actions";
+import { registrarPagosMpPendientes } from "./cobro-integrado-actions";
 
 export type CuentaAbierta = {
   reservaId: string;
@@ -104,7 +104,7 @@ export function MostradorCaja({
       {pendientesMp.length > 0 && (
         <div className="flex flex-col gap-2 rounded-lg border-[1.5px] border-ambar bg-ambar-suave p-4">
           <p className="font-bold text-ambar-oscuro">
-            {pendientesMp.length === 1 ? "Un pago de Mercado Pago llegó" : `${pendientesMp.length} pagos de Mercado Pago llegaron`} sin turno abierto
+            {pendientesMp.length === 1 ? "Un pago de la terminal o de un link llegó" : `${pendientesMp.length} pagos de la terminal o de links llegaron`} sin turno abierto
           </p>
           <ul className="text-sm text-ambar-oscuro">
             {pendientesMp.map((p) => (

@@ -16,11 +16,11 @@ import {
   consultarCobroTerminal,
   cancelarCobroTerminal,
   crearLinkPago,
-  type EstadoMpDisponible,
-} from "@/app/(staff)/caja/mercadopago-actions";
+} from "@/app/(staff)/caja/cobro-integrado-actions";
+import type { ResumenCobro } from "@/lib/pagos/tipos";
 import { useZonaNegocio } from "@/components/zona-negocio";
 
-export type OrdenMpFila = {
+export type OrdenCobroFila = {
   id: string;
   tipo: "point" | "link";
   monto: number;
@@ -50,12 +50,13 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 };
 
 /**
- * Cobrar con Mercado Pago desde la cuenta: la terminal Point (recepción
- * manda el monto, el cliente paga ahí) y el link de pago por WhatsApp.
- * Cuando Mercado Pago confirma, el cobro se registra solo con su método
- * y aparece en el historial de abajo; recepción no captura nada a mano.
+ * Cobrar desde la cuenta con el proveedor que el negocio conectó (Mercado
+ * Pago o Clip): la terminal (recepción manda el monto, el cliente paga ahí)
+ * y, con Mercado Pago, el link de pago por WhatsApp. Cuando el proveedor
+ * confirma, el cobro se registra solo con su método y aparece en el
+ * historial de abajo; recepción no captura nada a mano.
  */
-export function CobroMercadoPago({
+export function CobroIntegrado({
   reservaId,
   saldo,
   turnoAbierto,
@@ -66,8 +67,8 @@ export function CobroMercadoPago({
   reservaId: string;
   saldo: number;
   turnoAbierto: boolean;
-  disponible: EstadoMpDisponible;
-  ordenes: OrdenMpFila[];
+  disponible: ResumenCobro;
+  ordenes: OrdenCobroFila[];
   clienteTelefono: string | null;
 }) {
   const zona = useZonaNegocio();
@@ -139,7 +140,7 @@ export function CobroMercadoPago({
     const m = Number(monto);
     if (!Number.isFinite(m) || m <= 0) return setError("Escribe el monto a cobrar.");
     const res = await iniciando.ejecutar(() =>
-      iniciarCobroTerminal(reservaId, m, Number(plazos) > 1 ? Number(plazos) : null, concepto || "Ludogteka")
+      iniciarCobroTerminal(reservaId, m, Number(plazos) > 1 ? Number(plazos) : null, concepto || "Cobro en mostrador")
     );
     if (res.error) {
       setError(res.error);
@@ -176,13 +177,17 @@ export function CobroMercadoPago({
 
   const historial = ordenes.filter((o) => o.id !== ordenActiva);
 
-  // PeluDesk: en un negocio sin Mercado Pago activado no se ofrece.
-  if (!disponible.activo) return null;
+  // Sin cobro integrado conectado no se ofrece (el manual está arriba).
+  if (!disponible.activo) {
+    return disponible.proveedor === "manual" || !disponible.motivo ? null : (
+      <p className="rounded-lg border border-n-200 bg-n-50 px-4 py-3 text-sm text-n-600">{disponible.motivo}</p>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-morado bg-morado-suave/40 p-4">
+    <div data-cobro-integrado className="flex flex-col gap-3 rounded-lg border-[1.5px] border-morado bg-morado-suave/40 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="font-semibold text-n-900">Cobrar con Mercado Pago</p>
+        <p className="font-semibold text-n-900">Cobrar con {disponible.nombre}</p>
         {disponible.simulado && (
           <span className="rounded-full bg-ambar-suave px-2 py-0.5 text-xs font-semibold text-ambar-oscuro">
             Simulación: no mueve dinero
@@ -224,7 +229,7 @@ export function CobroMercadoPago({
           </AccionesFormulario>
           {agotado && (
             <p className="text-sm text-n-600">
-              Si el cliente SÍ pagó en la terminal, no registres nada a mano: en cuanto Mercado Pago lo confirme (webhook), el cobro entra solo aunque hayas cancelado aquí.
+              Si el cliente SÍ pagó en la terminal, no registres nada a mano: en cuanto {disponible.nombre} lo confirme, el cobro entra solo aunque hayas cancelado aquí.
             </p>
           )}
         </div>
@@ -233,12 +238,16 @@ export function CobroMercadoPago({
           <Button type="button" disabled={!turnoAbierto || !disponible.terminal} onClick={() => setModo("terminal")}>
             Cobrar con terminal
           </Button>
-          <Button type="button" variante="secundario" onClick={() => setModo("link")}>
-            Mandar link de pago
-          </Button>
-          {!turnoAbierto && <span className="self-center text-sm text-n-600">La terminal necesita turno abierto; el link no.</span>}
+          {disponible.link && (
+            <Button type="button" variante="secundario" onClick={() => setModo("link")}>
+              Mandar link de pago
+            </Button>
+          )}
+          {!turnoAbierto && (
+            <span className="self-center text-sm text-n-600">La terminal necesita turno abierto{disponible.link ? "; el link no" : ""}.</span>
+          )}
           {turnoAbierto && !disponible.terminal && (
-            <span className="self-center text-sm text-n-600">Sin terminal configurada (MERCADOPAGO_TERMINAL_ID).</span>
+            <span className="self-center text-sm text-n-600">{disponible.motivo ?? "Sin terminal escogida."}</span>
           )}
         </div>
       ) : (
@@ -248,7 +257,7 @@ export function CobroMercadoPago({
             <div className="w-36">
               <Field label="Monto" type="number" min="0" step="0.01" value={monto} onChange={(e) => setMonto(e.target.value)} autoFocus />
             </div>
-            {modo === "terminal" && (
+            {modo === "terminal" && disponible.proveedor === "mercadopago" && (
               <div className="w-44">
                 <Select label="Meses sin intereses" value={plazos} onChange={(e) => setPlazos(e.target.value)}>
                   <option value="1">Un solo pago</option>
@@ -270,7 +279,7 @@ export function CobroMercadoPago({
           </div>
           {modo === "terminal" && Number(plazos) > 1 && (
             <p className="text-sm text-n-600">
-              Los meses sin intereses los absorbe el negocio y tienen que estar activados en la cuenta de Mercado Pago; el plazo que el cliente elija en la terminal queda registrado en el cobro.
+              Los meses sin intereses los absorbe el negocio y tienen que estar activados en su cuenta de Mercado Pago; el plazo que el cliente elija en la terminal queda registrado en el cobro.
             </p>
           )}
           {modo === "link" && !clienteTelefono && (

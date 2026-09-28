@@ -42,9 +42,12 @@ const SOLO_STAFF = [
   "suscripciones", "pagos_suscripcion",
   // Lo de Stripe de la plataforma: ni el negocio lo ve.
   "planes_precios_stripe", "eventos_stripe",
+  // Integraciones por negocio (28 de septiembre de 2026): con qué cobra,
+  // sus intentos de OAuth y su consumo de Google Maps.
+  "integraciones_cobro", "integraciones_oauth", "maps_consultas",
 ];
 // RPC que un cliente con sesión no debe poder llamar (tienen que rechazarlo).
-const RPC_SOLO_STAFF = ["mi_cobro", "plataforma_cobros", "calendario_ocupacion", "insumos_sin_costo", "asistencia_periodo", "calcular_nomina", "reporte_utilidad_periodo", "cuentas_para_empleado", "gastos_por_atender", "gastos_por_categoria_periodo"];
+const RPC_SOLO_STAFF = ["mi_cobro", "plataforma_cobros", "calendario_ocupacion", "insumos_sin_costo", "asistencia_periodo", "calcular_nomina", "reporte_utilidad_periodo", "cuentas_para_empleado", "gastos_por_atender", "gastos_por_categoria_periodo", "maps_consumo_mes", "plataforma_maps_consumo", "elegir_proveedor_cobro"];
 
 const spec = await (await fetch(URL + "/rest/v1/", { headers: { apikey: env.SUPABASE_SECRET_KEY, Authorization: `Bearer ${env.SUPABASE_SECRET_KEY}` } })).json();
 const relaciones = Object.keys(spec.definitions).sort();

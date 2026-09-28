@@ -1,27 +1,47 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { modoSimulacion, webhookSecret } from "@/lib/mercadopago/config";
+import { appWebhookSecret, webhookSecretLegado } from "@/lib/mercadopago/config";
 import { validarFirmaWebhook } from "@/lib/mercadopago/webhook";
-import { consultarOrdenPoint } from "@/lib/mercadopago/point";
-import { contextoDeOrden, sincronizarOrdenPoint, sincronizarPagoPorId } from "@/lib/mercadopago/registro";
+import { consultarOrdenPoint, normalizarOrdenPoint } from "@/lib/mercadopago/point";
+import { consultarPago } from "@/lib/mercadopago/links";
+import { NEGOCIO_DE_LAS_LLAVES } from "@/lib/negocio/integraciones";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { remotoDeLink } from "@/lib/pagos/adaptadores";
+import { conexionDeCobro, negocioParaCobro } from "@/lib/pagos/conexion";
+import { aplicarEstado, contextoDeOrden, sincronizarTerminal } from "@/lib/pagos/registro";
 
-// Webhook de Mercado Pago. Público (no hay sesión: llama Mercado Pago),
-// pero NADA se registra sin firma válida: el secreto del panel es lo que
-// prueba que la notificación viene de Mercado Pago y no de alguien que
-// conoce la URL. Y aun con firma válida, el pago se lee de la API con el
-// access token (nunca del cuerpo de la notificación) antes de registrar.
-//
-// Mercado Pago espera 200/201 en menos de 22 s y reintenta si no; el
-// registro es idempotente, así que un reintento tardío no duplica nada.
+/**
+ * Webhook ÚNICO de Mercado Pago para todos los negocios de PeluDesk
+ * (https://peludesk.mx/api/mercadopago/webhook; también responde en el
+ * dominio de cada negocio, donde Ludogteka tenía el suyo).
+ *
+ * Nada se registra sin firma válida, y nada se toma del cuerpo:
+ *   1. La firma dice de qué aplicación viene: la de PeluDesk (cuentas
+ *      conectadas por OAuth) o la de Ludogteka (la llave del entorno, que
+ *      solo puede ser de ESE negocio).
+ *   2. El negocio sale de la cuenta que cobró (user_id → la cuenta que ese
+ *      negocio conectó); con la firma de Ludogteka, solo Ludogteka.
+ *   3. El recurso se lee de la API con el token DE ESE negocio (una orden o
+ *      un pago de otra cuenta da 404), y su referencia tiene que ser una
+ *      orden de ESE negocio. Un pago que apunte a la orden de otro negocio
+ *      se rechaza y queda en los logs.
+ * Mercado Pago espera 200/201 en menos de 22 s y reintenta si no; el
+ * registro es idempotente, así que un reintento tardío no duplica nada.
+ */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function rechazo(motivo: string, datos: Record<string, unknown>) {
+  console.warn(`[mercadopago] notificación rechazada: ${motivo}`, datos);
+  // 200: no tiene caso que Mercado Pago lo reintente.
+  return NextResponse.json({ ok: false, motivo });
+}
+
 export async function POST(request: NextRequest) {
-  const secreto = webhookSecret();
   const url = new URL(request.url);
   const dataIdQuery = url.searchParams.get("data.id") ?? url.searchParams.get("id");
   const tipoQuery = url.searchParams.get("type") ?? url.searchParams.get("topic");
 
-  let cuerpo: { type?: string; action?: string; data?: { id?: string | number } } = {};
+  let cuerpo: { type?: string; action?: string; user_id?: string | number; data?: { id?: string | number } } = {};
   try {
     cuerpo = await request.json();
   } catch {
@@ -29,44 +49,78 @@ export async function POST(request: NextRequest) {
   }
   const dataId = dataIdQuery ?? (cuerpo.data?.id != null ? String(cuerpo.data.id) : null);
   const tipo = tipoQuery ?? cuerpo.type ?? "";
+  const userId = cuerpo.user_id != null ? String(cuerpo.user_id) : null;
 
-  if (!secreto) {
-    // Sin secreto no se puede validar nada: se contesta 200 para que
-    // Mercado Pago no reintente en bucle, y se deja rastro en los logs.
-    console.error("[mercadopago] webhook recibido sin MERCADOPAGO_WEBHOOK_SECRET configurado; ignorado.", { tipo, dataId });
+  const firma = (secreto: string | null) =>
+    secreto
+      ? validarFirmaWebhook({ xSignature: request.headers.get("x-signature"), xRequestId: request.headers.get("x-request-id"), dataId, secreto }).valida
+      : false;
+  const deApp = firma(appWebhookSecret());
+  const deLegado = !deApp && firma(webhookSecretLegado());
+  if (!appWebhookSecret() && !webhookSecretLegado()) {
+    console.error("[mercadopago] webhook sin ningún secreto configurado; ignorado.", { tipo, dataId });
     return NextResponse.json({ ok: false, motivo: "sin_secreto" }, { status: 200 });
   }
-
-  const firma = validarFirmaWebhook({
-    xSignature: request.headers.get("x-signature"),
-    xRequestId: request.headers.get("x-request-id"),
-    dataId,
-    secreto,
-  });
-  if (!firma.valida) {
-    console.warn("[mercadopago] firma inválida:", firma.motivo, { tipo, dataId });
+  if (!deApp && !deLegado) {
+    console.warn("[mercadopago] firma inválida", { tipo, dataId });
     return NextResponse.json({ error: "Firma inválida." }, { status: 401 });
   }
   if (!dataId) return NextResponse.json({ ok: true, motivo: "sin_id" });
+  if (!["order", "orders", "payment"].includes(tipo)) return NextResponse.json({ ok: true, motivo: "tipo_ignorado", tipo });
+
+  // ¿De qué negocio es?
+  let negocioId: string | null = null;
+  if (deApp) {
+    if (!userId) return rechazo("sin_cuenta", { tipo, dataId });
+    const { data: filas } = await createSupabaseAdminClient()
+      .from("integraciones_cobro")
+      .select("negocio_id")
+      .eq("proveedor", "mercadopago")
+      .eq("cuenta_id", userId)
+      .eq("estado", "conectada")
+      .is("deleted_at", null);
+    if (!filas || filas.length !== 1) return rechazo(filas?.length ? "cuenta_ambigua" : "cuenta_desconocida", { tipo, dataId, userId });
+    negocioId = filas[0].negocio_id as string;
+  } else {
+    negocioId = NEGOCIO_DE_LAS_LLAVES;
+  }
+
+  const negocio = await negocioParaCobro(negocioId);
+  const cx = negocio ? await conexionDeCobro(negocio) : null;
+  if (!cx || cx.proveedor !== "mercadopago" || cx.simulado) return rechazo("sin_conexion", { tipo, dataId, negocioId });
+  if (deApp && cx.cuentaId && cx.cuentaId !== userId) return rechazo("otra_cuenta", { tipo, dataId, negocioId, userId });
 
   try {
     if (tipo === "order" || tipo === "orders") {
-      // Point: data.id es el id de la orden en Mercado Pago (ORD…). El
-      // negocio sale de la orden (la notificación no lo trae).
-      const ctx = await contextoDeOrden({ mp_order_id: dataId });
-      if (!ctx) return NextResponse.json({ ok: true, motivo: "orden_desconocida" });
-      // En simulación no hay API a la que preguntar: la orden se resuelve sola.
-      const remota = modoSimulacion() ? undefined : await consultarOrdenPoint(dataId);
-      const r = await sincronizarOrdenPoint(ctx.admin, ctx.orden, remota);
+      // Point: data.id es la orden en Mercado Pago. Tiene que ser una orden
+      // de ESTE negocio.
+      const ctx = await contextoDeOrden({ mp_order_id: dataId, proveedor: "mercadopago" }, negocioId);
+      if (!ctx) {
+        const ajena = await contextoDeOrden({ mp_order_id: dataId, proveedor: "mercadopago" });
+        return ajena ? rechazo("orden_de_otro_negocio", { dataId, negocioId, dueño: ajena.orden.negocio_id }) : NextResponse.json({ ok: true, motivo: "orden_desconocida" });
+      }
+      const remoto = normalizarOrdenPoint(await consultarOrdenPoint(cx, dataId), ctx.orden.estado);
+      const r = await aplicarEstado(ctx.admin, cx, ctx.orden, remoto);
       return NextResponse.json({ ok: true, estado: r.estado, registrado: r.registrado });
     }
-    if (tipo === "payment") {
-      const r = await sincronizarPagoPorId(dataId);
-      return NextResponse.json({ ok: true, estado: r?.estado ?? "ignorado", registrado: r?.registrado ?? false });
+
+    // Pago (links): se lee con el token de este negocio; su referencia
+    // tiene que ser una orden de este negocio.
+    const pago = await consultarPago(cx, dataId);
+    const ref = pago.external_reference;
+    if (!ref) return NextResponse.json({ ok: true, motivo: "sin_referencia" });
+    const ctx = await contextoDeOrden({ id: ref }, negocioId);
+    if (!ctx) {
+      const ajena = await contextoDeOrden({ id: ref });
+      return ajena ? rechazo("pago_a_orden_de_otro_negocio", { dataId, ref, negocioId, dueño: ajena.orden.negocio_id }) : NextResponse.json({ ok: true, motivo: "orden_desconocida" });
     }
-    return NextResponse.json({ ok: true, motivo: "tipo_ignorado", tipo });
+    const r =
+      ctx.orden.tipo === "link"
+        ? await aplicarEstado(ctx.admin, cx, ctx.orden, remotoDeLink(pago, ctx.orden))
+        : await sincronizarTerminal(ctx.admin, cx, ctx.orden);
+    return NextResponse.json({ ok: true, estado: r.estado, registrado: r.registrado });
   } catch (e) {
-    console.error("[mercadopago] error procesando webhook", { tipo, dataId, error: e instanceof Error ? e.message : String(e) });
+    console.error("[mercadopago] error procesando webhook", { tipo, dataId, negocioId, error: e instanceof Error ? e.message : String(e) });
     // 500 para que Mercado Pago reintente: el registro es idempotente.
     return NextResponse.json({ error: "No se pudo procesar." }, { status: 500 });
   }

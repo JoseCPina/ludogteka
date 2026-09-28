@@ -4,28 +4,29 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
-import { modoSimulacion, terminalIdConfigurada, TERMINAL_ESPERA_SEGUNDOS } from "@/lib/mercadopago/config";
-import { crearOrdenPoint, cancelarOrdenPoint } from "@/lib/mercadopago/point";
-import { crearLinkPago as crearPreferenciaMp, vigenciaLink } from "@/lib/mercadopago/links";
-import { leerOrdenLocal, sincronizarOrdenPoint, type ResultadoSincronizacion } from "@/lib/mercadopago/registro";
-import { ErrorMercadoPago } from "@/lib/mercadopago/errores";
 import { negocioActual } from "@/lib/negocio/actual";
-import { usaIntegracionesDelEntorno } from "@/lib/negocio/integraciones";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { MENSAJE_SOLO_LECTURA } from "@/lib/solo-lectura";
+import { vigenciaLink } from "@/lib/mercadopago/links";
+import { TERMINAL_ESPERA_SEGUNDOS } from "@/lib/mercadopago/config";
+import { adaptador } from "@/lib/pagos/adaptadores";
+import { conexionDeCobro, resumenDeCobro } from "@/lib/pagos/conexion";
+import { leerOrdenLocal, sincronizarTerminal } from "@/lib/pagos/registro";
+import { mensajeDeError, type ConexionCobro, type ResultadoSincronizacion, type ResumenCobro } from "@/lib/pagos/tipos";
 
-// Todas las acciones de Mercado Pago comparten esto: solo admin o
-// recepción, y el error se traduce a qué revisar.
+// El cobro integrado desde la cuenta: terminal y link de pago, con el
+// proveedor que el negocio haya conectado (src/lib/pagos). Nada de aquí sabe
+// si es Mercado Pago o Clip: habla con el adaptador.
 //
-// PeluDesk: la cuenta de Mercado Pago de las variables de entorno es de
-// UN negocio (ver lib/negocio/integraciones.ts). En cualquier otro, la
-// integración está apagada — ni cuenta real ni simulación.
-async function exigirCaja(): Promise<string | null> {
+// Solo admin o recepción. El demo lo ve (en simulación) pero no cobra.
+
+async function exigirCaja(): Promise<{ error: string } | { cx: ConexionCobro }> {
   const sesion = await obtenerSesionConRol();
-  if (!sesion || !["admin", "recepcion"].includes(sesion.rol)) return "Solo admin o recepción pueden cobrar.";
-  if ((await cargarNegocioLanding()).plan === "demo") return MENSAJE_SOLO_LECTURA;
-  if (!usaIntegracionesDelEntorno(await negocioActual())) return "Mercado Pago todavía no está activado para tu negocio.";
-  return null;
+  if (!sesion || !["admin", "recepcion"].includes(sesion.rol)) return { error: "Solo admin o recepción pueden cobrar." };
+  if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_SOLO_LECTURA };
+  const cx = await conexionDeCobro(await negocioActual());
+  if (!cx) return { error: "Este negocio no tiene terminal ni links de pago conectados. Cobra a mano, o pide al admin que conecte su cuenta en Administración → Cobro con terminal." };
+  return { cx };
 }
 
 // La secret key salta la RLS: todo lo de mp_ordenes se filtra por el
@@ -35,11 +36,6 @@ async function adminDelNegocio() {
   return { negocio, admin: createSupabaseAdminClient(negocio.id) };
 }
 
-function mensajeDe(e: unknown): string {
-  if (e instanceof ErrorMercadoPago) return e.sugerencia ? `${e.message} ${e.sugerencia}` : e.message;
-  return e instanceof Error ? e.message : "No pudimos hablar con Mercado Pago.";
-}
-
 function revalidarCuenta(reservaId: string) {
   revalidatePath(`/reservas/${reservaId}/cobrar`);
   revalidatePath(`/caja/cobrar/${reservaId}`);
@@ -47,34 +43,17 @@ function revalidarCuenta(reservaId: string) {
   revalidatePath("/caja/turno");
 }
 
-export type EstadoMpDisponible = {
-  activo: boolean;
-  simulado: boolean;
-  terminal: boolean;
-  esperaSegundos: number;
-};
-
-export async function estadoMercadoPago(): Promise<EstadoMpDisponible> {
-  // El demo enseña la terminal y el link como en un negocio con Mercado
-  // Pago, marcados como simulación; cobrar lo rechaza exigirCaja.
-  if ((await cargarNegocioLanding()).plan === "demo") {
-    return { activo: true, simulado: true, terminal: true, esperaSegundos: TERMINAL_ESPERA_SEGUNDOS };
-  }
-  const activo = usaIntegracionesDelEntorno(await negocioActual());
-  return {
-    activo,
-    simulado: modoSimulacion(),
-    terminal: activo && (modoSimulacion() || Boolean(terminalIdConfigurada())),
-    esperaSegundos: TERMINAL_ESPERA_SEGUNDOS,
-  };
+/** Lo que la pantalla de cobro necesita saber (sin credenciales). */
+export async function estadoCobroIntegrado(): Promise<ResumenCobro> {
+  return resumenDeCobro(await negocioActual());
 }
 
 export type ResultadoIniciarTerminal = { error: string | null; ordenId?: string; simulado?: boolean };
 
 /**
  * Mandar el monto a la terminal. Se crea primero la orden nuestra (para
- * tener el external_reference), luego la de Mercado Pago; si Mercado Pago
- * falla, la nuestra queda 'fallida' con el motivo y no hay nada a medias.
+ * tener la referencia), luego la del proveedor; si el proveedor falla, la
+ * nuestra queda 'fallida' con el motivo y no hay nada a medias.
  */
 export async function iniciarCobroTerminal(
   reservaId: string,
@@ -82,19 +61,17 @@ export async function iniciarCobroTerminal(
   plazos: number | null,
   descripcion: string
 ): Promise<ResultadoIniciarTerminal> {
-  const rechazo = await exigirCaja();
-  if (rechazo) return { error: rechazo };
+  const acceso = await exigirCaja();
+  if ("error" in acceso) return { error: acceso.error };
+  const { cx } = acceso;
   if (!Number.isFinite(monto) || monto <= 0) return { error: "El monto a cobrar debe ser mayor a cero." };
   if (plazos !== null && ![1, 3, 6, 9, 12].includes(plazos)) return { error: "Plazo no válido." };
+  if (plazos && plazos > 1 && cx.proveedor !== "mercadopago") return { error: "Los meses sin intereses desde la app solo están con Mercado Pago." };
+  if (!cx.terminalId) return { error: "No hay terminal escogida. El admin la escoge en Administración → Cobro con terminal; mientras, cobra a mano." };
 
   const supabase = await createSupabaseServerClient();
   const { data: turno } = await supabase.from("turnos_caja").select("id").eq("estado", "abierto").maybeSingle();
   if (!turno) return { error: "No hay turno de caja abierto. Ábrelo antes de cobrar." };
-
-  const terminalId = terminalIdConfigurada() ?? (modoSimulacion() ? "SIMULADA__TERMINAL-01" : null);
-  if (!terminalId) {
-    return { error: "No hay terminal configurada (MERCADOPAGO_TERMINAL_ID). Revisa el diagnóstico en /admin o cobra a mano." };
-  }
 
   // Una orden viva por cuenta a la vez: dos montos en la terminal al mismo
   // tiempo es justo lo que confunde en el mostrador.
@@ -117,14 +94,16 @@ export async function iniciarCobroTerminal(
     .from("mp_ordenes")
     .insert({
       negocio_id: negocio.id,
+      proveedor: cx.proveedor,
+      cuenta_id: cx.cuentaId,
       tipo: "point",
       reserva_id: reservaId,
       monto: Math.round(monto * 100) / 100,
       descripcion: descripcion.slice(0, 120),
       estado: "creada",
-      terminal_id: terminalId,
+      terminal_id: cx.terminalId,
       installments: plazos && plazos > 1 ? plazos : null,
-      simulado: modoSimulacion(),
+      simulado: cx.simulado,
       expira_at: new Date(Date.now() + (TERMINAL_ESPERA_SEGUNDOS + 60) * 1000).toISOString(),
       created_by: sesion?.user.id ?? null,
     })
@@ -133,71 +112,62 @@ export async function iniciarCobroTerminal(
   if (errorOrden || !orden) return { error: "No pudimos registrar la orden. Intenta de nuevo." };
 
   try {
-    const remota = await crearOrdenPoint({
-      monto,
-      externalReference: orden.id as string,
-      descripcion,
-      terminalId,
-      plazos,
-    });
+    const remota = await adaptador(cx.proveedor).crearCobroTerminal(cx, { ordenId: orden.id as string, monto, descripcion, plazos });
     await admin
       .from("mp_ordenes")
-      .update({ mp_order_id: remota.id, estado: remota.status === "at_terminal" ? "en_terminal" : "creada", ultimo_evento: remota })
+      .update({ mp_order_id: remota.idRemoto, estado: remota.estado, ultimo_evento: remota.crudo as object })
       .eq("id", orden.id)
       .eq("negocio_id", negocio.id);
   } catch (e) {
-    await admin.from("mp_ordenes").update({ estado: "fallida", detalle_error: mensajeDe(e) }).eq("id", orden.id).eq("negocio_id", negocio.id);
-    return { error: mensajeDe(e), ordenId: orden.id as string };
+    await admin.from("mp_ordenes").update({ estado: "fallida", detalle_error: mensajeDeError(e) }).eq("id", orden.id).eq("negocio_id", negocio.id);
+    return { error: mensajeDeError(e), ordenId: orden.id as string };
   }
 
   revalidarCuenta(reservaId);
-  return { error: null, ordenId: orden.id as string, simulado: modoSimulacion() };
+  return { error: null, ordenId: orden.id as string, simulado: cx.simulado };
 }
 
 export type ResultadoConsulta = { error: string | null } & Partial<ResultadoSincronizacion>;
 
 // La pantalla llama esto cada pocos segundos mientras el cliente paga.
 // Si el webhook ya registró el pago, aquí solo se lee; si no, se consulta
-// a Mercado Pago y se registra desde aquí. Nunca dos veces.
+// al proveedor y se registra desde aquí. Nunca dos veces.
 export async function consultarCobroTerminal(ordenId: string): Promise<ResultadoConsulta> {
-  const rechazo = await exigirCaja();
-  if (rechazo) return { error: rechazo };
+  const acceso = await exigirCaja();
+  if ("error" in acceso) return { error: acceso.error };
   const { negocio, admin } = await adminDelNegocio();
   const orden = await leerOrdenLocal(admin, ordenId, negocio.id);
   if (!orden) return { error: "Orden no encontrada." };
   try {
-    const r = await sincronizarOrdenPoint(admin, orden);
+    const r = await sincronizarTerminal(admin, acceso.cx, orden);
     if (r.pagada || ["cancelada", "expirada", "fallida"].includes(r.estado)) {
       const { data } = await admin.from("mp_ordenes").select("reserva_id").eq("id", ordenId).eq("negocio_id", negocio.id).single();
       if (data) revalidarCuenta(data.reserva_id as string);
     }
     return { error: null, ...r };
   } catch (e) {
-    return { error: mensajeDe(e) };
+    return { error: mensajeDeError(e) };
   }
 }
 
 // Cancelar desde la app (mientras la orden no se haya pagado). Si la
-// terminal ya la tiene en pantalla, Mercado Pago pide cancelarla ahí;
-// de todos modos la orden nuestra queda cancelada para que la cuenta no
-// se quede con un cobro "en curso" colgado.
+// terminal ya la tiene en pantalla, el proveedor pide cancelarla ahí; de
+// todos modos la orden nuestra queda cancelada para que la cuenta no se
+// quede con un cobro "en curso" colgado.
 export async function cancelarCobroTerminal(ordenId: string, motivo: string): Promise<{ error: string | null; aviso?: string }> {
-  const rechazo = await exigirCaja();
-  if (rechazo) return { error: rechazo };
+  const acceso = await exigirCaja();
+  if ("error" in acceso) return { error: acceso.error };
   const { negocio, admin } = await adminDelNegocio();
   const orden = await leerOrdenLocal(admin, ordenId, negocio.id);
   if (!orden) return { error: "Orden no encontrada." };
   if (orden.estado === "pagada" || orden.cobro_id) return { error: "Este cobro ya se pagó; si hay que devolverlo, usa una devolución." };
 
   let aviso: string | undefined;
-  if (orden.mp_order_id) {
+  if (orden.mp_order_id && orden.proveedor === acceso.cx.proveedor) {
     try {
-      await cancelarOrdenPoint(orden.mp_order_id, orden.id);
+      await adaptador(orden.proveedor).cancelarCobroTerminal(acceso.cx, orden);
     } catch (e) {
-      // Mercado Pago no deja cancelar por API una orden que ya está en
-      // la pantalla de la terminal: hay que cancelarla ahí. La nuestra
-      // se cierra igual.
-      aviso = `No se pudo cancelar en Mercado Pago (${mensajeDe(e)}). Cancélala en la terminal si sigue en pantalla.`;
+      aviso = `No se pudo cancelar con el proveedor (${mensajeDeError(e)}). Cancélalo en la terminal si sigue en pantalla.`;
     }
   }
   await admin
@@ -212,20 +182,19 @@ export async function cancelarCobroTerminal(ordenId: string, motivo: string): Pr
 
 export type ResultadoLink = { error: string | null; ordenId?: string; url?: string; urlWhatsApp?: string; simulado?: boolean };
 
-// Link de pago por WhatsApp: para anticipos de hotel o saldos pendientes
-// sin que el cliente venga. Cuando pague, el webhook registra el cobro
-// con método 'transferencia' (el dinero cae en la cuenta de Mercado Pago).
+// Link de pago por WhatsApp, a nombre del negocio: para anticipos de hotel
+// o saldos sin que el cliente venga. Cuando pague, el webhook registra el
+// cobro con método 'transferencia' (el dinero cae en la cuenta del negocio).
 export async function crearLinkPago(reservaId: string, monto: number, concepto: string): Promise<ResultadoLink> {
-  const rechazo = await exigirCaja();
-  if (rechazo) return { error: rechazo };
+  const acceso = await exigirCaja();
+  if ("error" in acceso) return { error: acceso.error };
+  const { cx } = acceso;
+  const ad = adaptador(cx.proveedor);
+  if (!ad.soportaLink || !ad.crearLinkPago) return { error: `Los links de pago no están disponibles con ${ad.nombre}.` };
   if (!Number.isFinite(monto) || monto <= 0) return { error: "El monto del link debe ser mayor a cero." };
 
   const supabase = await createSupabaseServerClient();
-  const { data: reserva } = await supabase
-    .from("reservas")
-    .select("id, clientes(nombre, telefono)")
-    .eq("id", reservaId)
-    .maybeSingle();
+  const { data: reserva } = await supabase.from("reservas").select("id, clientes(nombre, telefono)").eq("id", reservaId).maybeSingle();
   if (!reserva) return { error: "Cuenta no encontrada." };
   const cliente = (Array.isArray(reserva.clientes) ? reserva.clientes[0] : reserva.clientes) as { nombre: string; telefono: string | null } | null;
 
@@ -237,12 +206,14 @@ export async function crearLinkPago(reservaId: string, monto: number, concepto: 
     .from("mp_ordenes")
     .insert({
       negocio_id: negocio.id,
+      proveedor: cx.proveedor,
+      cuenta_id: cx.cuentaId,
       tipo: "link",
       reserva_id: reservaId,
       monto: Math.round(monto * 100) / 100,
       descripcion: titulo.slice(0, 120),
       estado: "creada",
-      simulado: modoSimulacion(),
+      simulado: cx.simulado,
       expira_at: expira.toISOString(),
       created_by: sesion?.user.id ?? null,
     })
@@ -251,7 +222,7 @@ export async function crearLinkPago(reservaId: string, monto: number, concepto: 
   if (errorOrden || !orden) return { error: "No pudimos registrar el link. Intenta de nuevo." };
 
   try {
-    const pref = await crearPreferenciaMp({
+    const link = await ad.crearLinkPago(cx, {
       ordenId: orden.id as string,
       monto,
       titulo,
@@ -261,33 +232,32 @@ export async function crearLinkPago(reservaId: string, monto: number, concepto: 
     });
     await admin
       .from("mp_ordenes")
-      .update({ mp_preference_id: pref.id, url_pago: pref.init_point, ultimo_evento: pref })
+      .update({ mp_preference_id: link.idRemoto, url_pago: link.url, ultimo_evento: link.crudo as object })
       .eq("id", orden.id)
       .eq("negocio_id", negocio.id);
 
     const mensaje =
       `Hola ${cliente?.nombre ?? ""}, te mandamos el link para pagar ${titulo.toLowerCase()} en ${negocio.nombre}: $${monto.toFixed(2)}. ` +
-      `Puedes pagar con tarjeta o desde tu cuenta de Mercado Pago aquí: ${pref.init_point} ` +
+      `Puedes pagar con tarjeta o desde tu cuenta de ${ad.nombre} aquí: ${link.url} ` +
       `(vence en 7 días). ¡Gracias!`;
     const telefono = cliente?.telefono?.replace(/\D/g, "") ?? "";
     const urlWhatsApp = telefono ? `https://wa.me/52${telefono}?text=${encodeURIComponent(mensaje)}` : undefined;
 
     revalidarCuenta(reservaId);
-    return { error: null, ordenId: orden.id as string, url: pref.init_point, urlWhatsApp, simulado: modoSimulacion() };
+    return { error: null, ordenId: orden.id as string, url: link.url, urlWhatsApp, simulado: cx.simulado };
   } catch (e) {
-    await admin.from("mp_ordenes").update({ estado: "fallida", detalle_error: mensajeDe(e) }).eq("id", orden.id).eq("negocio_id", negocio.id);
-    return { error: mensajeDe(e) };
+    await admin.from("mp_ordenes").update({ estado: "fallida", detalle_error: mensajeDeError(e) }).eq("id", orden.id).eq("negocio_id", negocio.id);
+    return { error: mensajeDeError(e) };
   }
 }
 
-// Pagos confirmados que se quedaron sin turno (un link pagado de
-// noche): se registran en el turno abierto. También los registra solo
-// el trigger al abrir turno; esto es para el caso en que el turno ya
-// estaba abierto cuando llegó algo y algo falló, o para el botón de la
-// caja.
+// Pagos confirmados que se quedaron sin turno (un link pagado de noche):
+// se registran en el turno abierto. También los registra solo el trigger
+// al abrir turno; esto es para el botón de la caja.
 export async function registrarPagosMpPendientes(): Promise<{ error: string | null; registrados: number }> {
-  const rechazo = await exigirCaja();
-  if (rechazo) return { error: rechazo, registrados: 0 };
+  const sesion = await obtenerSesionConRol();
+  if (!sesion || !["admin", "recepcion"].includes(sesion.rol)) return { error: "Solo admin o recepción pueden cobrar.", registrados: 0 };
+  if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_SOLO_LECTURA, registrados: 0 };
   const { negocio, admin } = await adminDelNegocio();
   const { data: pendientes } = await admin
     .from("mp_ordenes")

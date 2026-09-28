@@ -38,7 +38,7 @@ const { data: unPerro } = await A.from("perros").select("id, nombre").eq("negoci
 if (!unCliente || !unPerro) console.log("  · sin clientes o perros todavía: se saltan la ficha del cliente y la del perro");
 
 const RUTAS = {
-  admin: ["/admin", "/reportes", "/servicios", "/empleados", "/gastos", "/admin/permisos", "/inventario"],
+  admin: ["/admin", "/admin/pagos", "/reportes", "/servicios", "/empleados", "/gastos", "/admin/permisos", "/inventario"],
   recepcion: ["/recepcion", "/clientes", ...(unCliente ? [`/clientes/${unCliente.id}`] : []), ...(unPerro ? [`/perros/${unPerro.id}`] : []), "/caja", "/caja/turno", "/guarderia", "/hotel", "/estetica", "/recepcion/contratos", "/vinculacion", "/clientes/invitaciones"],
   estetica: ["/estetica"],
   cliente: ["/portal"],

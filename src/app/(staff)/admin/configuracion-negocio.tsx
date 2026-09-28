@@ -19,7 +19,8 @@ export type ConfiguracionVigente = {
 };
 
 /**
- * El cupo, la dirección de la base y el WhatsApp de recepción.
+ * El cupo y el WhatsApp de recepción (la base de la camioneta va en
+ * «Ubicación para recolección», donde se ubica en el mapa).
  *
  * El teléfono es el que se le ofrece al cliente en "¿olvidaste tu
  * contraseña?": si está vacío, esa pantalla no puede abrirle WhatsApp a
@@ -33,7 +34,6 @@ export function ConfiguracionNegocio({ vigente }: { vigente: ConfiguracionVigent
   const [cupoDiurno, setCupoDiurno] = useState(String(vigente?.cupo_diurno ?? ""));
   const [cupoNocturno, setCupoNocturno] = useState(String(vigente?.cupo_nocturno ?? ""));
   const [telefono, setTelefono] = useState(vigente?.telefono_recepcion ?? "");
-  const [baseDireccion, setBaseDireccion] = useState(vigente?.base_direccion ?? "");
   const guardando = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
@@ -45,7 +45,9 @@ export function ConfiguracionNegocio({ vigente }: { vigente: ConfiguracionVigent
       cupoDiurno: Number(cupoDiurno),
       cupoNocturno: Number(cupoNocturno),
       telefonoRecepcion: telefono,
-      baseDireccion,
+      // La base se captura (y se ubica en el mapa) en «Ubicación para
+      // recolección»; aquí no se toca.
+      baseDireccion: "",
     }));
     if (res.error) {
       setError(res.error);
@@ -104,14 +106,6 @@ export function ConfiguracionNegocio({ vigente }: { vigente: ConfiguracionVigent
           ayuda="Los que tienen dónde dormir."
         />
       </div>
-
-      <Field
-        label="Dirección de la base (opcional)"
-        value={baseDireccion}
-        onChange={(e) => setBaseDireccion(e.target.value)}
-        placeholder="Donde se guarda la camioneta"
-        ayuda="Desde aquí se mide la ruta para cotizar la recolección a domicilio."
-      />
 
       <AccionesFormulario error={error} exito={ok && "Configuración guardada"}>
         <Button type="button" cargando={guardando.cargando} onClick={guardar}>
