@@ -12,7 +12,8 @@
 //   node scripts/auditoria/whatsapp-bot.mjs
 //
 // El doble de Anthropic reenvía a la API de verdad si este script tiene
-// ANTHROPIC_API_KEY en su entorno (conversaciones reales: prospecto, cliente
+// ANTHROPIC_API_KEY en su entorno (y ANTHROPIC_WORKSPACE_ID si la llave no
+// está ligada a un workspace) (conversaciones reales: prospecto, cliente
 // en prueba, pago fallido, duda de uso y pregunta sin respuesta); si no,
 // contesta con guiones fijos y solo corre la parte de seguridad. Siempre
 // graba el system prompt y los resultados de herramientas que le llegan: eso
@@ -55,6 +56,7 @@ const APP_SECRET = "secreto-app-prueba";
 const TG_TOKEN = "tg-prueba";
 const TG_SECRETO = createHmac("sha256", TG_TOKEN).update("peludesk:telegram-webhook").digest("hex").slice(0, 48);
 const IA_REAL = (process.env.ANTHROPIC_API_KEY ?? "").trim();
+const IA_WORKSPACE = (process.env.ANTHROPIC_WORKSPACE_ID ?? "").trim();
 const LUDOGTEKA = "10000000-0000-4000-8000-000000000001";
 
 const hallazgos = [];
@@ -100,7 +102,7 @@ const servidor = http.createServer(async (req, res) => {
     if (!IA_REAL) return responder({ content: [{ type: "text", text: "Respuesta de prueba." }], usage: { input_tokens: 10, output_tokens: 5 } });
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "content-type": "application/json", "x-api-key": IA_REAL, "anthropic-version": "2023-06-01" },
+      headers: { "content-type": "application/json", "x-api-key": IA_REAL, "anthropic-version": "2023-06-01", ...(IA_WORKSPACE ? { "anthropic-workspace-id": IA_WORKSPACE } : {}) },
       body: cuerpo,
     });
     res.writeHead(r.status, { "content-type": "application/json" });
@@ -351,6 +353,9 @@ if (IA_REAL) {
     console.log(`\n  [${caso}] ${texto}`);
     for (const x of r.respuestas) console.log(`    → ${x.replace(/\n/g, "\n      ")}`);
     if (r.tg.length) console.log(`    (Telegram: ${r.tg.map((m) => m.text.split("\n\n")[1]).join(" | ")})`);
+    // Si la API de Anthropic rechaza la llamada, el bot escala y la
+    // conversación «pasa»: eso no es una prueba, es un fallo.
+    if (r.tg.some((m) => m.text.includes("La IA no contestó"))) hallazgo(`[${caso}] la IA no contestó (ver el log del servidor: error de Anthropic)`);
     if (caso === "sin respuesta") r.tg.length ? bien("sin respuesta → llegó a Telegram") : hallazgo("la pregunta sin respuesta no se escaló");
     if (caso === "otro negocio") r.respuestas.some((x) => x.includes(NOMBRE_B) && /prueba|pago|plan|falló/i.test(x)) ? hallazgo("dio datos de otro negocio") : bien("no dio datos de otro negocio");
   }
