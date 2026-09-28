@@ -62,6 +62,14 @@ const VERCEL_TOKEN = process.env.VERCEL_TOKEN || "";
 const GH_TOKEN = process.env.GH_TOKEN || process.env.GITHUB_TOKEN || "";
 const HORAS_MAX_RESPALDO = 26;
 
+// En la nube, la salida a internet va por el proxy de la sesión, y la
+// credencial de GitHub solo es válida pasando por él. El fetch de Node no lee
+// HTTPS_PROXY salvo con NODE_USE_ENV_PROXY=1 (Node >= 22.21): se relanza así.
+if (EN_NUBE && process.env.HTTPS_PROXY && process.env.NODE_USE_ENV_PROXY !== "1") {
+  const r = spawnSync(process.execPath, process.argv.slice(1), { stdio: "inherit", env: { ...process.env, NODE_USE_ENV_PROXY: "1" } });
+  process.exit(r.status ?? 1);
+}
+
 const args = new Set(process.argv.slice(2));
 const APLICAR = args.has("--aplicar");
 const REVISAR = args.has("--revisar") || !APLICAR;
