@@ -109,7 +109,9 @@ export async function middleware(request: NextRequest) {
   cabeceras.delete(ENCABEZADO_FIRMA);
   cabeceras.delete(ENCABEZADO_PLATAFORMA);
 
-  if (pathname === "/negocio-no-encontrado") return NextResponse.next({ request: { headers: cabeceras } });
+  if (pathname === "/negocio-no-encontrado" || pathname === "/pagina-no-encontrada") {
+    return NextResponse.next({ request: { headers: cabeceras } });
+  }
 
   // ── El dominio de la plataforma: la administración de PeluDesk ──
   // Sin negocio. Solo /plataforma y lo de Auth; quién entra lo decide la
@@ -117,12 +119,13 @@ export async function middleware(request: NextRequest) {
   if (!firmado && (plataformaInterna || esHostPlataforma(request.headers.get("host")))) {
     return plataforma(request, cabeceras);
   }
-  // Y en el dominio de un negocio, /plataforma (ni la landing de PeluDesk) no existe.
+  // Y en el dominio de un negocio, /plataforma (ni la landing de PeluDesk) no existe:
+  // 404 de verdad (lo da la página con notFound(); el status del rewrite no llega).
   if (
     pathname === "/plataforma" || pathname.startsWith("/plataforma/") || pathname === "/peludesk" || pathname.startsWith("/peludesk/") ||
     pathname.startsWith("/api/stripe/")
   ) {
-    return NextResponse.rewrite(new URL("/negocio-no-encontrado", request.url), { request: { headers: cabeceras }, status: 404 });
+    return NextResponse.rewrite(new URL("/pagina-no-encontrada", request.url), { request: { headers: cabeceras }, status: 404 });
   }
 
   let negocio: NegocioBasico | null = firmado;

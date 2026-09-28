@@ -27,3 +27,11 @@ export type Captura = { nombre: string; alt: string; ancho: number; alto: number
 // Proporción de las capturas: escritorio 1280×800 (16:10), celular 390×844.
 export const ESCRITORIO = { ancho: 1600, alto: 1000 };
 export const CELULAR = { ancho: 780, alto: 1688 };
+
+// Las redes de PeluDesk (28 de septiembre de 2026): el mismo usuario,
+// «peludesk», en las tres. Si cambia una cuenta, se cambia aquí.
+export const REDES_PELUDESK = [
+  { red: "facebook", nombre: "Facebook", url: "https://www.facebook.com/peludesk" },
+  { red: "instagram", nombre: "Instagram", url: "https://www.instagram.com/peludesk/" },
+  { red: "tiktok", nombre: "TikTok", url: "https://www.tiktok.com/@peludesk" },
+] as const;

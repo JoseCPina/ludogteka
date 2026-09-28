@@ -1,45 +1,236 @@
-/* Landing de PeluDesk (peludesk.mx). Solo lo que Tailwind no da. */
+/* Landing de PeluDesk (peludesk.mx). Solo lo que Tailwind no da.
+   Todo el movimiento es opacity/transform (lo hace la tarjeta de video, no
+   el procesador del celular) y TODO se apaga con "reducir movimiento". */
 
-/* Aparición al hacer scroll (components/peludesk/revelar.tsx). */
+/* ── Aparición al hacer scroll (components/peludesk/revelar.tsx) ── */
 .pd-revelar {
   transition:
-    opacity 500ms cubic-bezier(0.23, 1, 0.32, 1) var(--pd-retraso, 0ms),
-    transform 500ms cubic-bezier(0.23, 1, 0.32, 1) var(--pd-retraso, 0ms);
+    opacity 560ms cubic-bezier(0.23, 1, 0.32, 1) var(--pd-retraso, 0ms),
+    transform 560ms cubic-bezier(0.23, 1, 0.32, 1) var(--pd-retraso, 0ms);
 }
 .pd-revelar[data-revelar="oculto"] {
   opacity: 0;
-  transform: translateY(12px);
+  transform: translateY(16px);
 }
-@media (prefers-reduced-motion: reduce) {
-  .pd-revelar {
-    transition: none;
-  }
+/* Un perro que se asoma: sube desde abajo y se pasa tantito. */
+.pd-revelar[data-desde="asomar"] {
+  transition:
+    opacity 300ms ease var(--pd-retraso, 0ms),
+    transform 700ms cubic-bezier(0.34, 1.45, 0.64, 1) var(--pd-retraso, 0ms);
+}
+.pd-revelar[data-desde="asomar"][data-revelar="oculto"] {
+  transform: translateY(38%);
 }
 
-/* Botones: presión al tocar; el levantón solo con mouse. */
+/* ── Botones: presión al tocar; el levantón solo con mouse ── */
 .pd-boton {
   transition:
     background-color 150ms ease,
-    transform 120ms cubic-bezier(0.23, 1, 0.32, 1);
+    border-color 150ms ease,
+    box-shadow 200ms ease,
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .pd-boton:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
+}
+.pd-flecha {
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .pd-boton:hover {
+    transform: translateY(-2px);
+  }
+  .pd-boton-primario:hover {
+    box-shadow: 0 10px 22px -10px rgb(75 63 114 / 0.65);
+  }
+  .pd-boton:hover .pd-flecha,
+  .group:hover .pd-flecha {
+    transform: translateX(3px);
+  }
+  .pd-tarjeta {
+    transition:
+      transform 220ms cubic-bezier(0.23, 1, 0.32, 1),
+      box-shadow 220ms ease;
+  }
+  .pd-tarjeta:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 36px -18px rgb(75 63 114 / 0.35);
+  }
 }
 
-/* Captura: marco sin barra de navegador, sombra teñida de morado. */
+/* ── Capturas ── */
 .pd-captura {
   box-shadow:
     0 1px 2px rgb(75 63 114 / 0.08),
-    0 12px 32px -8px rgb(75 63 114 / 0.22);
+    0 18px 40px -12px rgb(75 63 114 / 0.28);
+}
+/* Las del encabezado pasan solas (capturas-en-movimiento.tsx). */
+.pd-diapositiva {
+  opacity: 0;
+  transform: scale(1.015);
+  transition:
+    opacity 700ms ease,
+    transform 4200ms linear;
+}
+.pd-diapositiva[data-activa="true"] {
+  opacity: 1;
+  transform: scale(1);
+}
+/* La rayita que dice cuánto falta para la siguiente. */
+.pd-progreso {
+  position: absolute;
+  inset: auto 12px 5px 12px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.75);
+  transform-origin: left;
+  animation: pd-progreso 4200ms linear forwards;
+}
+@keyframes pd-progreso {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
-/* Los puntos del sistema gráfico de la marca (lámina 03): menta, coral, morado. */
-.pd-puntos {
-  background-image:
-    radial-gradient(circle at 12px 12px, #a7d8c8 11px, transparent 12px),
-    radial-gradient(circle at 36px 8px, #f28c82 7px, transparent 8px),
-    radial-gradient(circle at 44px 30px, #4b3f72 9px, transparent 10px);
-  background-repeat: no-repeat;
-  width: 56px;
-  height: 42px;
+/* ── Detalles que dan vida ── */
+/* El chihuahua del encabezado respira. */
+.pd-flotar {
+  animation: pd-flotar 5s ease-in-out infinite;
+}
+@keyframes pd-flotar {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(-1.5deg);
+  }
+}
+/* El corazón late cuando se ve. */
+.pd-latido {
+  animation: pd-latido 2.4s ease-in-out infinite;
+  transform-origin: 70% 40%;
+}
+@keyframes pd-latido {
+  0%,
+  60%,
+  100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.1);
+  }
+  30% {
+    transform: scale(0.98);
+  }
+}
+
+/* Con scroll-driven animations (Chrome, Safari 26): el fondo se mueve más
+   lento que la página y las huellitas se van dibujando. Donde no existe,
+   todo queda quieto y en su lugar. */
+@supports (animation-timeline: view()) {
+  .pd-paralaje {
+    animation: pd-paralaje linear both;
+    animation-timeline: view();
+  }
+  @keyframes pd-paralaje {
+    from {
+      transform: translateY(40px);
+    }
+    to {
+      transform: translateY(-40px);
+    }
+  }
+  .pd-huellitas {
+    animation: pd-huellitas linear both;
+    animation-timeline: view();
+    animation-range: entry 10% cover 55%;
+  }
+  @keyframes pd-huellitas {
+    from {
+      clip-path: inset(0 0 0 100%);
+      opacity: 0.2;
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+      opacity: 1;
+    }
+  }
+  .pd-ladeo {
+    animation: pd-ladeo linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 50%;
+  }
+  @keyframes pd-ladeo {
+    from {
+      transform: translateY(30%) rotate(-6deg);
+    }
+    to {
+      transform: translateY(0) rotate(0deg);
+    }
+  }
+}
+
+/* ── Menú y barra del celular ── */
+.pd-menu:not([hidden]) {
+  animation: pd-menu 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@keyframes pd-menu {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+.pd-barra {
+  transition:
+    transform 260ms cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 200ms ease;
+}
+.pd-barra[data-visible="false"] {
+  transform: translateY(110%);
+  opacity: 0;
+}
+
+/* Preguntas: la flecha gira al abrir. */
+.pd-pregunta summary::-webkit-details-marker {
+  display: none;
+}
+.pd-pregunta .pd-mas {
+  transition: transform 200ms ease;
+}
+.pd-pregunta[open] .pd-mas {
+  transform: rotate(45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pd-revelar,
+  .pd-revelar[data-desde="asomar"],
+  .pd-boton,
+  .pd-flecha,
+  .pd-tarjeta,
+  .pd-diapositiva,
+  .pd-barra,
+  .pd-pregunta .pd-mas {
+    transition: none !important;
+  }
+  .pd-boton:hover,
+  .pd-tarjeta:hover,
+  .pd-diapositiva {
+    transform: none !important;
+  }
+  .pd-flotar,
+  .pd-latido,
+  .pd-paralaje,
+  .pd-huellitas,
+  .pd-ladeo,
+  .pd-menu:not([hidden]),
+  .pd-progreso {
+    animation: none !important;
+  }
+  .pd-progreso {
+    display: none;
+  }
 }
