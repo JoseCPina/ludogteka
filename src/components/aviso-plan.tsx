@@ -3,6 +3,7 @@ import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { zonaActual } from "@/lib/negocio/actual";
 import { formatearFecha } from "@/lib/formato";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { whatsappPeluDesk } from "@/lib/peludesk/landing";
 
 // El aviso del plan del negocio, arriba de todo en el staff y el portal:
 //   demo (cuenta de solo lectura) → qué es y cómo probar PeluDesk;
@@ -17,11 +18,6 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 // escribir (negocio_escribible()); esto solo lo explica.
 const URL_REGISTRO = "https://peludesk.mx/registro";
 
-function whatsappPeluDesk(mensaje: string): string | null {
-  const tel = (process.env.PELUDESK_WHATSAPP ?? "").replace(/\D/g, "");
-  if (tel.length < 10) return null;
-  return `https://wa.me/${tel.length === 10 ? `52${tel}` : tel}?text=${encodeURIComponent(mensaje)}`;
-}
 
 // Días que le quedan a la prueba (negativo: ya venció). Fuera del render:
 // en un componente de servidor se calcula una vez por petición.

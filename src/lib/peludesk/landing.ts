@@ -35,3 +35,15 @@ export const REDES_PELUDESK = [
   { red: "instagram", nombre: "Instagram", url: "https://www.instagram.com/peludesk/" },
   { red: "tiktok", nombre: "TikTok", url: "https://www.tiktok.com/@peludesk" },
 ] as const;
+
+/**
+ * El WhatsApp de PeluDesk (ventas y soporte; lo atiende el bot de
+ * src/lib/whatsapp). Sale de PELUDESK_WHATSAPP (10 dígitos o con 52); sin
+ * ella, null y los botones no se pintan.
+ */
+export function whatsappPeluDesk(mensaje?: string): string | null {
+  const tel = (process.env.PELUDESK_WHATSAPP ?? "").replace(/\D/g, "");
+  if (tel.length < 10) return null;
+  const numero = tel.length === 10 ? `52${tel}` : tel;
+  return `https://wa.me/${numero}${mensaje ? `?text=${encodeURIComponent(mensaje)}` : ""}`;
+}

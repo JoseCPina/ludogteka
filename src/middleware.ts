@@ -125,7 +125,7 @@ export async function middleware(request: NextRequest) {
   // 404 de verdad (lo da la página con notFound(); el status del rewrite no llega).
   if (
     pathname === "/plataforma" || pathname.startsWith("/plataforma/") || pathname === "/peludesk" || pathname.startsWith("/peludesk/") ||
-    pathname.startsWith("/api/stripe/")
+    pathname.startsWith("/api/stripe/") || pathname.startsWith("/api/whatsapp/") || pathname.startsWith("/api/telegram/")
   ) {
     return NextResponse.rewrite(new URL("/pagina-no-encontrada", request.url), { request: { headers: cabeceras }, status: 404 });
   }
@@ -264,6 +264,11 @@ async function plataforma(request: NextRequest, cabeceras: Headers) {
   // El webhook de Stripe (cobro de PeluDesk): sin sesión ni negocio; la
   // firma la comprueba la ruta.
   if (pathname === "/api/stripe/webhook") return NextResponse.next({ request: { headers: cabeceras } });
+  // El bot de WhatsApp de PeluDesk y su bandeja de Telegram: sin sesión ni
+  // negocio; cada ruta comprueba su firma o su secret_token.
+  if (pathname === "/api/whatsapp/webhook" || pathname === "/api/telegram/webhook") {
+    return NextResponse.next({ request: { headers: cabeceras } });
+  }
   // Integraciones por negocio: el webhook único de Mercado Pago, el regreso
   // de "Conectar Mercado Pago" (OAuth), el webhook de Clip de cada negocio
   // y el cron. Sin sesión: cada ruta comprueba su firma, su state o su token.
