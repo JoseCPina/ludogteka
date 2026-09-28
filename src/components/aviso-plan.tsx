@@ -96,7 +96,7 @@ export async function AvisoPlan({ esPersonal }: { esPersonal: boolean }) {
   }
 
   if (cobro?.estado === "prueba_vencida" && fin) {
-    const wa = whatsappPeluDesk(`Hola, soy de ${negocio.nombre} (${negocio.slug}.peludesk.mx). Terminó mi prueba de PeluDesk y quiero seguir usándolo.`);
+    const wa = await whatsappPeluDesk(`Hola, soy de ${negocio.nombre} (${negocio.slug}.peludesk.mx). Terminó mi prueba de PeluDesk y quiero seguir usándolo.`);
     return (
       <div role="alert" className="flex flex-wrap items-center justify-between gap-2 border-b border-ambar bg-ambar-suave px-4 py-2 text-sm text-n-800 md:px-6">
         <p>

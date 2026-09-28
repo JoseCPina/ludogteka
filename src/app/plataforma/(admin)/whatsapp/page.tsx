@@ -14,10 +14,11 @@ export default async function WhatsAppPlataforma() {
   const { supabase } = await exigirPlataforma();
   const cfg = configWhatsApp();
   const inicioMes = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)).toISOString();
-  const [{ data: hilos }, { data: uso }, { data: chat }, webhook] = await Promise.all([
+  const [{ data: hilos }, { data: uso }, { data: chat }, { data: contesta }, webhook] = await Promise.all([
     supabase.from("wa_hilos").select("telefono, tipo, negocio_nombre, resumen, estado, urgencia, updated_at").is("deleted_at", null).order("updated_at", { ascending: false }).limit(40),
     supabase.from("wa_uso_ia").select("costo_mxn, resultado").gte("created_at", inicioMes),
     supabase.from("wa_config").select("id").eq("clave", "telegram_chat_operador").is("deleted_at", null).maybeSingle(),
+    supabase.from("wa_config").select("valor").eq("clave", "whatsapp_contesta_desde").is("deleted_at", null).maybeSingle(),
     cfg.telegramToken ? new TelegramHttp(cfg.telegramToken).llamar("getWebhookInfo") : Promise.resolve(null),
   ]);
   const gasto = (uso ?? []).reduce((s, f) => s + Number(f.costo_mxn ?? 0), 0);
@@ -41,6 +42,12 @@ export default async function WhatsAppPlataforma() {
           respondiendo al mensaje.
         </p>
       </div>
+
+      <Alert variante={contesta ? "exito" : "info"} titulo={contesta ? "El número ya contesta" : "El número todavía no contesta"}>
+        {contesta
+          ? `Desde el ${new Date(contesta.valor as string).toLocaleString("es-MX", { timeZone: "America/Mexico_City" })}. El botón de WhatsApp se ve en la landing y en el aviso de prueba vencida.`
+          : "El botón de WhatsApp de la landing y del aviso de prueba vencida sale en cuanto el bot mande su primer mensaje."}
+      </Alert>
 
       <section className="rounded-lg border border-n-200 bg-white p-4">
         <h2 className="font-semibold text-n-900">Variables</h2>
