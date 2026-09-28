@@ -43,5 +43,20 @@ export async function linkVincularTelegram(): Promise<ResultadoPlataforma> {
   if (!yo.ok || !usuario) return { error: `No pude leer el bot de Telegram: ${yo.descripcion ?? "sin detalle"}` };
   const codigo = randomBytes(18).toString("base64url");
   await new DatosSupabase().guardarConfig("telegram_codigo_inicio", codigo);
-  return { error: null, exito: "Ábrelo en el Telegram donde quieres recibir los mensajes y dale Iniciar.", link: `https://t.me/${usuario}?start=${codigo}` };
+  return { error: null, exito: "Ábrelo en el Telegram donde quieres recibir los mensajes y dale Iniciar.", link: `https://t.me/${usuario}?start=${codigo}`, etiquetaLink: "Link para vincular tu Telegram (un solo uso)" };
+}
+
+/**
+ * La foto del bot de Telegram = la del WhatsApp de PeluDesk
+ * (public/marca/peludesk/perfil-640.jpg). Telegram solo la acepta subida
+ * como archivo nuevo, así que el servidor la baja de su propio sitio y la
+ * manda multipart. Va aquí porque la red de la nube no llega a Telegram.
+ */
+export async function ponerFotoBotTelegram(): Promise<ResultadoPlataforma> {
+  if (!(await sesionPlataforma())) return NO_AUTORIZADO;
+  const cfg = configWhatsApp();
+  if (!cfg.telegramToken) return { error: "Falta TELEGRAM_BOT_TOKEN en las variables de Vercel." };
+  const r = await new TelegramHttp(cfg.telegramToken).subirFotoPerfil(`${urlPlataforma()}/marca/peludesk/perfil-640.jpg`);
+  if (!r.ok) return { error: `Telegram no la aceptó: ${r.descripcion ?? "sin detalle"}. Se puede poner a mano con @BotFather → /setuserpic.` };
+  return { error: null, exito: "Listo: el bot de Telegram ya tiene la foto de PeluDesk." };
 }

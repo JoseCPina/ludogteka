@@ -3,7 +3,7 @@ import { Alert } from "@/components/ui/alert";
 import { FormularioPlataforma } from "@/components/plataforma/formulario-plataforma";
 import { configWhatsApp, TelegramHttp } from "@/lib/whatsapp/infra";
 import { NOMBRE_TIPO, type TipoInterlocutor } from "@/lib/whatsapp/agente";
-import { conectarWebhookTelegram, linkVincularTelegram } from "./acciones";
+import { conectarWebhookTelegram, linkVincularTelegram, ponerFotoBotTelegram } from "./acciones";
 
 type Hilo = { telefono: string; tipo: TipoInterlocutor; negocio_nombre: string | null; resumen: string | null; estado: string; urgencia: string; updated_at: string };
 
@@ -68,6 +68,7 @@ export default async function WhatsAppPlataforma() {
         <div className="flex flex-wrap gap-4">
           <FormularioPlataforma accion={conectarWebhookTelegram} textoBoton="Conectar webhook de Telegram" variante="secundario" />
           <FormularioPlataforma accion={linkVincularTelegram} textoBoton={chat ? "Cambiar el chat de la bandeja" : "Vincular mi Telegram"} />
+          <FormularioPlataforma accion={ponerFotoBotTelegram} textoBoton="Poner la foto del bot" variante="secundario" />
         </div>
       </section>
 

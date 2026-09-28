@@ -387,6 +387,23 @@ export class TelegramHttp implements Telegram {
     }
   }
 
+  /** setMyProfilePhoto: la foto se sube como archivo nuevo (attach://). */
+  async subirFotoPerfil(urlFoto: string) {
+    if (!this.token) return { ok: false, descripcion: "falta TELEGRAM_BOT_TOKEN" };
+    try {
+      const foto = await fetch(urlFoto, { signal: AbortSignal.timeout(TIMEOUT_RED_MS) });
+      if (!foto.ok) return { ok: false, descripcion: `no pude bajar la foto (${foto.status})` };
+      const datos = new FormData();
+      datos.append("photo", JSON.stringify({ type: "static", photo: "attach://foto" }));
+      datos.append("foto", new Blob([await foto.arrayBuffer()], { type: "image/jpeg" }), "peludesk.jpg");
+      const r = await fetch(`${TELEGRAM()}/bot${this.token}/setMyProfilePhoto`, { method: "POST", body: datos, signal: AbortSignal.timeout(TIMEOUT_RED_MS) });
+      const j = (await r.json().catch(() => ({}))) as { ok?: boolean; description?: string };
+      return { ok: Boolean(j.ok), descripcion: j.description };
+    } catch (e) {
+      return { ok: false, descripcion: String(e) };
+    }
+  }
+
   async enviar(chatId: number, htmlTexto: string, responderA?: number) {
     const r = await this.llamar("sendMessage", {
       chat_id: chatId,

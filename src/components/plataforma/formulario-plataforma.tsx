@@ -58,7 +58,7 @@ export function FormularioPlataforma({
           {textoBoton}
         </Button>
       </AccionesFormulario>
-      {resultado?.link && <CampoCopiable valor={resultado.link} etiqueta="Link para escoger contraseña (un solo uso)" textoBoton="Copiar link" />}
+      {resultado?.link && <CampoCopiable valor={resultado.link} etiqueta={resultado.etiquetaLink ?? "Link para escoger contraseña (un solo uso)"} textoBoton="Copiar link" />}
       {resultado?.password && <CampoCopiable valor={resultado.password} etiqueta="Contraseña temporal" monoespaciado />}
       {resultado?.urlWhatsApp && (
         <a href={resultado.urlWhatsApp} target="_blank" rel="noopener noreferrer" className="self-start text-sm font-semibold text-morado hover:underline">

@@ -11,7 +11,8 @@
 //   verificar <código>   verifica el código
 //   registrar            lo registra en la Cloud API (con el PIN de dos pasos de WHATSAPP_PIN)
 //   suscribir            suscribe la app a la WABA con el webhook de PeluDesk (override)
-//   perfil               descripción, sitio y categoría del perfil de WhatsApp
+//   perfil               descripción, sitio, categoría y foto del perfil de WhatsApp
+//                        (public/marca/peludesk/perfil-640.jpg: el isotipo a cuadro completo)
 //   plantillas           crea la plantilla de seguimiento (reabre la ventana de 24 h)
 //
 // Variables del entorno (nunca se imprimen):
@@ -26,12 +27,14 @@
 //
 // En la nube: NODE_USE_ENV_PROXY=1 y graph.facebook.com en los dominios permitidos.
 import { createHmac } from "node:crypto";
+import { readFileSync } from "node:fs";
 
 const GRAPH = "https://graph.facebook.com/v23.0";
 const NUMERO = { cc: "52", phone_number: "5649160742" };
 const NOMBRE_VISIBLE = "PeluDesk";
 const WEBHOOK = "https://peludesk.mx/api/whatsapp/webhook";
 const PLANTILLA = "peludesk_seguimiento_v1";
+const FOTO_PERFIL = new URL("../../public/marca/peludesk/perfil-640.jpg", import.meta.url);
 
 const env = (n) => (process.env[n] ?? "").trim();
 const token = env("WHATSAPP_TOKEN");
@@ -157,10 +160,24 @@ const pasos = {
 
   async perfil() {
     const id = requerir("WHATSAPP_PHONE_NUMBER_ID");
+    // La foto va por la API de subida reanudable de la app: da un handle que
+    // el perfil acepta en profile_picture_handle.
+    const foto = readFileSync(FOTO_PERFIL);
+    const app = await graph("/app?fields=id");
+    const sesion = await graph(`/${app.id}/uploads?file_name=perfil-640.jpg&file_length=${foto.length}&file_type=image/jpeg`, { method: "POST" });
+    const r = await fetch(`${GRAPH}/${sesion.id}`, {
+      method: "POST",
+      headers: { Authorization: `OAuth ${token}`, file_offset: "0", "Content-Type": "application/octet-stream" },
+      body: foto,
+      signal: AbortSignal.timeout(30000),
+    });
+    const subida = await r.json().catch(() => ({}));
+    if (!r.ok || !subida.h) throw new Error(`Subida de la foto → ${r.status}: ${subida.error?.message ?? "sin handle"}`);
     await graph(`/${id}/whatsapp_business_profile`, {
       method: "POST",
       body: {
         messaging_product: "whatsapp",
+        profile_picture_handle: subida.h,
         about: "Software para guarderías, hoteles y estéticas caninas.",
         description: "PeluDesk: reservas, citas de estética, cobros, contratos y vacunas al día. Pruébalo 15 días gratis en peludesk.mx. PeluDesk es una marca de Menteo, S.A.S.",
         websites: ["https://peludesk.mx"],
