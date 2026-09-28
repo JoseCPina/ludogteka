@@ -312,7 +312,8 @@ export async function ligaPortalDe(n: NegocioDeAdmin): Promise<string> {
 const MAX_INTENTOS = 3;
 
 export class ClienteWA implements SalidaWA {
-  constructor(private token: string, private phoneNumberId: string) {}
+  /** alContestar: se llama cada vez que Meta acepta un mensaje del número (ver marcarNumeroContesta). */
+  constructor(private token: string, private phoneNumberId: string, private alContestar?: () => Promise<void>) {}
 
   get configurado() {
     return Boolean(this.token && this.phoneNumberId);
@@ -356,6 +357,7 @@ export class ClienteWA implements SalidaWA {
       if (intento < MAX_INTENTOS) await new Promise((res) => setTimeout(res, 300 * 2 ** (intento - 1)));
     }
     if (!ultimo.ok) console.error("[whatsapp] envío rechazado", { estado: ultimo.estado, error: ultimo.error, tipo: cuerpo.type ?? cuerpo.status });
+    else if (cuerpo.type && this.alContestar) await this.alContestar().catch(() => {});
     return ultimo;
   }
 }
@@ -428,6 +430,25 @@ export class Anthropic implements IA {
   }
 }
 
+// ───────────────────────────── ¿el número ya contesta?
+
+export const CLAVE_NUMERO_CONTESTA = "whatsapp_contesta_desde";
+let numeroYaContesta = false;
+
+/**
+ * La primera vez que Meta acepta un mensaje del número, se anota en
+ * wa_config: desde ese momento la landing y el aviso de prueba vencida
+ * muestran el botón de WhatsApp (whatsappPeluDesk). Antes, el número todavía
+ * no está activo y el botón mandaría a un número sin WhatsApp.
+ */
+export async function marcarNumeroContesta(): Promise<void> {
+  if (numeroYaContesta) return;
+  const sb = createSupabaseAdminClient();
+  const { data } = await sb.from("wa_config").select("id").eq("clave", CLAVE_NUMERO_CONTESTA).is("deleted_at", null).maybeSingle();
+  if (!data) await sb.from("wa_config").insert({ clave: CLAVE_NUMERO_CONTESTA, valor: new Date().toISOString() });
+  numeroYaContesta = true;
+}
+
 // ───────────────────────────── armado
 
 function topeMensual(): number {
@@ -438,7 +459,7 @@ function topeMensual(): number {
 export function construirSoporte(): { deps: DepsSoporte; datos: DatosSupabase; wa: ClienteWA } {
   const cfg = configWhatsApp();
   const datos = new DatosSupabase();
-  const wa = new ClienteWA(cfg.token, cfg.phoneNumberId);
+  const wa = new ClienteWA(cfg.token, cfg.phoneNumberId, marcarNumeroContesta);
   const deps: DepsSoporte = {
     datos,
     tg: new TelegramHttp(cfg.telegramToken),

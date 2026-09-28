@@ -248,7 +248,7 @@ async function cargarPlanes() {
 
 export default async function PeluDeskLanding() {
   const demo = urlDemo();
-  const whatsapp = whatsappPeluDesk("Hola, quiero saber más de PeluDesk.");
+  const whatsapp = await whatsappPeluDesk("Hola, quiero saber más de PeluDesk.");
   const { planes, nombres } = await cargarPlanes();
   const planesBase = planes.filter((p) => p.tipo === "plan");
   const web = planes.find((p) => p.tipo === "complemento" && p.modulos.includes("pagina_web"));
