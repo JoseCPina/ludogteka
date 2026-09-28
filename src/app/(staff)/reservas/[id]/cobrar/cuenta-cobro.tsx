@@ -11,8 +11,8 @@ import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
 import { abrirTurno } from "../../turno-actions";
 import { registrarCobro, registrarDevolucion, type MetodoPago } from "../../cobro-actions";
-import { CobroMercadoPago, type OrdenMpFila } from "./mercadopago-cobro";
-import type { EstadoMpDisponible } from "@/app/(staff)/caja/mercadopago-actions";
+import { CobroIntegrado, type OrdenCobroFila } from "./cobro-integrado";
+import type { ResumenCobro } from "@/lib/pagos/tipos";
 import { consumirBono, type ItemTipoBono } from "../../bono-actions";
 import { aplicarDescuento, cancelarDescuento, type TipoDescuento } from "../../descuento-actions";
 import { useZonaNegocio } from "@/components/zona-negocio";
@@ -133,7 +133,7 @@ export function CuentaCobro({
   esAdmin: boolean;
   // Admin o recepción con «Descuentos sin tope». Devoluciones: solo admin.
   puedeSinTope: boolean;
-  mp: { disponible: EstadoMpDisponible; ordenes: OrdenMpFila[]; clienteTelefono: string | null };
+  mp: { disponible: ResumenCobro; ordenes: OrdenCobroFila[]; clienteTelefono: string | null };
 }) {
   const zona = useZonaNegocio();
   const router = useRouter();
@@ -634,7 +634,7 @@ export function CuentaCobro({
         )}
       </div>
 
-      <CobroMercadoPago
+      <CobroIntegrado
         reservaId={reservaId}
         saldo={totales.saldo}
         turnoAbierto={turnoAbierto}

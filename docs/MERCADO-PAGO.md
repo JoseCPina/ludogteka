@@ -1,5 +1,13 @@
 # Mercado Pago en Ludogteka
 
+> **Desde el 28 de septiembre de 2026 cada negocio de PeluDesk conecta SU
+> cuenta** en Administración → Cobro con terminal («Conectar Mercado Pago»,
+> por OAuth; ver «Integraciones por negocio» en CLAUDE.md). Lo de abajo
+> (variables `MERCADOPAGO_*` del entorno) es la conexión ANTERIOR de
+> Ludogteka, que sigue funcionando mientras no se reconecte por OAuth con
+> la misma cuenta. Sin cuenta conectada, un negocio real cobra a mano; el
+> demo y los negocios en prueba cobran en simulación.
+
 Dos vías, las dos alimentando el mismo ledger de cobros de la caja:
 
 - **Terminal Point integrada** (API de Orders, la vigente para Point desde
@@ -10,8 +18,8 @@ Dos vías, las dos alimentando el mismo ledger de cobros de la caja:
   `transferencia` (el dinero cae en la cuenta de Mercado Pago, no en el
   lote de la terminal).
 
-Sin `MERCADOPAGO_ACCESS_TOKEN` la app corre en **simulación**: no pega a
-la API real ni mueve dinero. Es lo que corre en desarrollo.
+Sin `MERCADOPAGO_ACCESS_TOKEN`, Ludogteka no tiene la conexión anterior
+(en desarrollo, cobra a mano salvo que se conecte una cuenta simulada).
 
 ## Lo que hay que hacer en Mercado Pago (una sola vez)
 

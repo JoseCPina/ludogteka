@@ -1,16 +1,13 @@
+import { ErrorProveedor } from "@/lib/pagos/tipos";
+
 /**
  * Lo que Mercado Pago contesta, traducido a qué revisar. Mismo espíritu
  * que traducirError() de la base: el mensaje que ve recepción o el admin
  * dice qué pasó y qué hacer, no el JSON crudo.
  */
-export class ErrorMercadoPago extends Error {
-  constructor(
-    message: string,
-    public readonly status: number,
-    public readonly sugerencia: string | null,
-    public readonly detalle: string | null
-  ) {
-    super(message);
+export class ErrorMercadoPago extends ErrorProveedor {
+  constructor(message: string, status: number, sugerencia: string | null, detalle: string | null) {
+    super(message, status, sugerencia, detalle);
     this.name = "ErrorMercadoPago";
   }
 }
@@ -30,14 +27,14 @@ export function traducirRespuestaMp(status: number, cuerpo: unknown): { mensaje:
     return {
       mensaje: "Mercado Pago rechazó la credencial.",
       sugerencia:
-        "Revisa MERCADOPAGO_ACCESS_TOKEN en Vercel: debe ser el access token de PRODUCCIÓN de la aplicación (empieza con APP_USR-), no la public key ni una credencial de prueba vencida.",
+        "La conexión con tu cuenta ya no es válida (se revocó o venció). En Administración → Cobro con terminal, desconecta y vuelve a conectar Mercado Pago.",
     };
   }
   if (status === 403) {
     return {
       mensaje: "La credencial no tiene permiso para esta operación.",
       sugerencia:
-        "En Tus integraciones, la aplicación debe tener activados los productos Point y Checkout Pro, y la terminal debe estar vinculada a la MISMA cuenta de Mercado Pago que emitió el access token.",
+        "La terminal debe estar vinculada a la MISMA cuenta de Mercado Pago que conectaste, y la cuenta debe tener activados Point y los links de pago.",
     };
   }
   if (status === 404) {
@@ -45,7 +42,7 @@ export function traducirRespuestaMp(status: number, cuerpo: unknown): { mensaje:
       mensaje: "Mercado Pago no encontró el recurso.",
       sugerencia:
         /terminal/i.test(detalle)
-          ? "El id de la terminal no existe en esta cuenta. Cópialo del diagnóstico (lista de terminales) a MERCADOPAGO_TERMINAL_ID."
+          ? "La terminal elegida ya no está en tu cuenta. Escoge otra en Administración → Cobro con terminal."
           : "El id de la orden o del pago no existe (o tiene más de 3 meses). Si venía de una notificación, ignórala.",
     };
   }
@@ -58,7 +55,7 @@ export function traducirRespuestaMp(status: number, cuerpo: unknown): { mensaje:
   if (status === 400 && /operating_mode|PDV|standalone/i.test(detalle)) {
     return {
       mensaje: "La terminal no está en modo PDV (integrado).",
-      sugerencia: "Cámbiala a PDV desde el diagnóstico de /admin o con la API terminals/v1/setup; en STANDALONE la terminal ignora las órdenes de la app.",
+      sugerencia: "Cámbiala a PDV en Administración → Cobro con terminal («Poner en modo integrado»); en STANDALONE la terminal ignora las órdenes de la app.",
     };
   }
   if (status === 400) {

@@ -35,6 +35,8 @@ type Zona = { prefijo: string; rolesPermitidos: string[]; permisos?: string[] };
 const ZONAS_PROTEGIDAS: Zona[] = [
   // Dar y quitar permisos nunca se delega.
   { prefijo: "/admin/permisos", rolesPermitidos: ["admin"] },
+  // Con qué cobra el negocio y sus credenciales: solo admin, nunca se delega.
+  { prefijo: "/admin/pagos", rolesPermitidos: ["admin"] },
   { prefijo: "/admin", rolesPermitidos: ["admin"], permisos: ["personal", "configuracion_negocio", "tarifas"] },
   { prefijo: "/recepcion", rolesPermitidos: ["recepcion", "admin"] },
   // Los primeros pasos de un negocio recién abierto en peludesk.mx.
@@ -262,6 +264,18 @@ async function plataforma(request: NextRequest, cabeceras: Headers) {
   // El webhook de Stripe (cobro de PeluDesk): sin sesión ni negocio; la
   // firma la comprueba la ruta.
   if (pathname === "/api/stripe/webhook") return NextResponse.next({ request: { headers: cabeceras } });
+  // Integraciones por negocio: el webhook único de Mercado Pago, el regreso
+  // de "Conectar Mercado Pago" (OAuth), el webhook de Clip de cada negocio
+  // y el cron. Sin sesión: cada ruta comprueba su firma, su state o su token.
+  if (
+    pathname === "/api/mercadopago/webhook" ||
+    pathname === "/api/mercadopago/oauth" ||
+    pathname === "/api/mercadopago/oauth/simulacion" ||
+    pathname.startsWith("/api/clip/webhook/") ||
+    pathname.startsWith("/api/cron/")
+  ) {
+    return NextResponse.next({ request: { headers: cabeceras } });
+  }
   const publica = PUBLICAS_PLATAFORMA[pathname];
   if (publica) return NextResponse.rewrite(new URL(publica, request.url), { request: { headers: cabeceras } });
   if (pathname === "/peludesk" || pathname.startsWith("/peludesk/")) return NextResponse.redirect(new URL("/", request.url));

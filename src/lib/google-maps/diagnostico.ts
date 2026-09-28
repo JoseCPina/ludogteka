@@ -185,7 +185,7 @@ async function probarRoutes(
       api: "Routes API",
       ok: true,
       simulado: false,
-      detalle: `Ruta base → dirección de prueba → Ludogteka: ${(metros / 1000).toFixed(1)} km.`,
+      detalle: `Ruta base → dirección de prueba → el negocio: ${(metros / 1000).toFixed(1)} km.`,
       sugerencia: null,
       ms,
     };
@@ -209,15 +209,15 @@ async function probarRoutes(
 export async function probarGoogleMaps(
   direccionPrueba: string,
   base: Punto,
-  ludogteka: Punto
+  negocio: Punto
 ): Promise<PruebaApi[]> {
   const key = process.env.GOOGLE_MAPS_API_KEY;
 
   const geo = await probarGeocoding(direccionPrueba, key);
   const intermedio = geo.ok && !geo.simulado
-    ? extraerPunto(geo.detalle) ?? ludogteka
-    : ludogteka;
-  const rutas = await probarRoutes(base, intermedio, ludogteka, key);
+    ? extraerPunto(geo.detalle) ?? negocio
+    : negocio;
+  const rutas = await probarRoutes(base, intermedio, negocio, key);
 
   return [geo, rutas];
 }

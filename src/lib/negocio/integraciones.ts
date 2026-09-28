@@ -1,21 +1,15 @@
-import type { NegocioBasico } from "./resolver";
 import { NEGOCIO_ORIGINAL_ID } from "./legado";
 
 /**
- * Las llaves de Mercado Pago y Google Maps que viven en las variables de
- * entorno (MERCADOPAGO_*, GOOGLE_MAPS_*) son de UN negocio: Ludogteka, que
- * las tenía antes de PeluDesk. Mientras no existan las integraciones por
- * negocio, cualquier otro negocio las tiene APAGADAS — ni la cuenta real
- * de Ludogteka (cobraría a nombre de otro) ni el modo simulación (daría
- * por pagado un cobro que nadie pagó, o una distancia inventada con la
- * que se cotiza un viaje).
+ * Las llaves de Mercado Pago del entorno (MERCADOPAGO_ACCESS_TOKEN,
+ * _WEBHOOK_SECRET, _TERMINAL_ID) son de UN negocio: Ludogteka, que cobraba
+ * con ellas antes de PeluDesk. Desde las integraciones por negocio (28 de
+ * septiembre de 2026) cada negocio conecta SU cuenta (src/lib/pagos) y estas
+ * llaves solo siguen como la conexión de Ludogteka mientras no se
+ * reconecte por OAuth. Ningún otro negocio las usa, ni en simulación.
+ *
+ * Google Maps ya no es de un negocio: la llave es de PeluDesk, para todos,
+ * con tope por negocio al mes (src/lib/google-maps/cuota.ts).
  */
 export const NEGOCIO_DE_LAS_LLAVES =
   process.env.PELUDESK_NEGOCIO_INTEGRACIONES_ID ?? NEGOCIO_ORIGINAL_ID;
-
-export function usaIntegracionesDelEntorno(negocio: Pick<NegocioBasico, "id">): boolean {
-  return negocio.id === NEGOCIO_DE_LAS_LLAVES;
-}
-
-export const MENSAJE_INTEGRACION_APAGADA =
-  "Esta integración todavía no está activada para tu negocio.";

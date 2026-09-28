@@ -13,15 +13,32 @@ export type ResultadoGeocodificar =
 // Se llama UNA vez por dirección nueva; el resultado se guarda en
 // clientes.direccion_lat/lng y no se vuelve a pedir mientras el texto no
 // cambie (ver distancia-actions.ts).
-export async function geocodificarDireccion(direccion: string): Promise<ResultadoGeocodificar> {
+//
+// `ciudad` es la del negocio (negocios.ciudad): se agrega a la dirección
+// cuando no la trae, para que "Av. Juárez 120" caiga en SU ciudad y no en
+// cualquiera de las cien avenidas Juárez del país. `centro` es el negocio
+// (solo para la simulación).
+export function direccionConCiudad(direccion: string, ciudad: string | null | undefined): string {
+  const d = direccion.trim();
+  const c = ciudad?.trim();
+  if (!c) return d;
+  const sinAcentos = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return sinAcentos(d).includes(sinAcentos(c)) ? d : `${d}, ${c}`;
+}
+
+export async function geocodificarDireccion(
+  direccion: string,
+  opciones: { ciudad?: string | null; centro?: { lat: number; lng: number } | null } = {}
+): Promise<ResultadoGeocodificar> {
   const key = process.env.GOOGLE_MAPS_API_KEY;
+  const completa = direccionConCiudad(direccion, opciones.ciudad);
   if (!key) {
-    const { lat, lng } = geocodificarSimulado(direccion);
+    const { lat, lng } = geocodificarSimulado(completa, opciones.centro);
     return { ok: true, lat, lng, simulado: true };
   }
 
   const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
-  url.searchParams.set("address", direccion);
+  url.searchParams.set("address", completa);
   url.searchParams.set("region", "mx");
   url.searchParams.set("key", key);
 

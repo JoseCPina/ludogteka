@@ -4,7 +4,7 @@ import { InvitarStaff } from "./invitar-staff";
 import { ListaCuentas, type Cuenta } from "./lista-cuentas";
 import { DescuentoConfig } from "./descuento-config";
 import { DiagnosticoGoogle } from "./diagnostico-google";
-import { DiagnosticoMercadoPago } from "./diagnostico-mercadopago";
+import { UbicacionNegocio } from "./ubicacion-negocio";
 import { ConfiguracionNegocio, type ConfiguracionVigente } from "./configuracion-negocio";
 import { HorarioNegocio } from "./horario-negocio";
 import type { DiaHorario } from "./configuracion-actions";
@@ -18,7 +18,7 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { ListaPersonal, type PersonaStaff } from "./lista-personal";
 import { negocioActual, zonaActual } from "@/lib/negocio/actual";
-import { usaIntegracionesDelEntorno } from "@/lib/negocio/integraciones";
+import { resumenDeCobro } from "@/lib/pagos/conexion";
 
 // Admin ve todo. Una persona de recepción con permisos extra llega aquí
 // solo con las secciones que le tocan (el middleware la deja entrar con
@@ -31,9 +31,20 @@ export default async function AdminPage() {
   const puedeConfig = tienePermiso(sesion, "configuracion_negocio");
   const puedeTarifas = tienePermiso(sesion, "tarifas");
   const puedePersonal = tienePermiso(sesion, "personal");
-  // PeluDesk: Mercado Pago y Google Maps solo existen, por ahora, para el
-  // negocio dueño de las llaves del entorno.
-  const conIntegraciones = usaIntegracionesDelEntorno(await negocioActual());
+  // Integraciones del negocio: con qué cobra (src/lib/pagos) y su ubicación
+  // y consumo de Google Maps (la llave es de PeluDesk, con tope por mes).
+  const puedeUbicacion = esAdmin || puedeConfig;
+  const [cobroIntegrado, ubicacion] = await Promise.all([
+    esAdmin ? resumenDeCobro(await negocioActual()) : Promise.resolve(null),
+    puedeUbicacion
+      ? Promise.all([
+          supabase.from("sucursales").select("direccion, lat").is("deleted_at", null).order("activo", { ascending: false }).limit(1).maybeSingle(),
+          supabase.rpc("resolver_cupo_configuracion"),
+          esAdmin ? supabase.rpc("maps_consumo_mes") : Promise.resolve({ data: null }),
+        ])
+      : Promise.resolve(null),
+  ]);
+  const cupoUbic = ubicacion ? ((Array.isArray(ubicacion[1].data) ? ubicacion[1].data[0] : ubicacion[1].data) as { base_direccion: string | null; base_lat: number | null } | null) : null;
   const nada = Promise.resolve({ data: null, error: null });
   const cobro = esAdmin
     ? ((await supabase.rpc("mi_cobro")).data as { toca_recordatorio?: boolean; solo_lectura_desde?: string | null } | null)
@@ -135,6 +146,18 @@ export default async function AdminPage() {
         </section>
       )}
 
+      {ubicacion && (
+        <section id="ubicacion" className="scroll-mt-20 rounded-lg border border-n-200 bg-white p-5">
+          <h2 className="mb-4 text-lg font-bold text-n-900">Ubicación para recolección</h2>
+          <UbicacionNegocio
+            direccion={(ubicacion[0].data?.direccion as string | null) ?? ""}
+            base={cupoUbic?.base_direccion ?? ""}
+            conCoordenadas={{ negocio: ubicacion[0].data?.lat != null, base: cupoUbic?.base_lat != null }}
+            consumo={(ubicacion[2].data as { usadas: number; tope: number } | null) ?? null}
+          />
+        </section>
+      )}
+
       {puedeConfig && (
         <section id="horario" className="scroll-mt-20 rounded-lg border border-n-200 bg-white p-5">
           <h2 className="mb-4 text-lg font-bold text-n-900">Horario de atención</h2>
@@ -173,23 +196,28 @@ export default async function AdminPage() {
         />
       </section>
 
-      {conIntegraciones ? (
-        <>
-          <section className="rounded-lg border border-n-200 bg-white p-5">
-            <h2 className="mb-4 text-lg font-bold text-n-900">Conexión con Mercado Pago (terminal y links de pago)</h2>
-            <DiagnosticoMercadoPago />
-          </section>
-
-          <section className="rounded-lg border border-n-200 bg-white p-5">
-            <h2 className="mb-4 text-lg font-bold text-n-900">Conexión con Google Maps</h2>
-            <DiagnosticoGoogle />
-          </section>
-        </>
-      ) : (
-        <Alert variante="advertencia" titulo="Mercado Pago y Google Maps todavía no están activados para tu negocio">
-          Mientras tanto, los cobros se registran a mano en Caja y la distancia de cada cliente se captura en su ficha.
-        </Alert>
+      {cobroIntegrado && (
+        <section className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-n-200 bg-white p-5">
+          <div>
+            <h2 className="text-lg font-bold text-n-900">Cobro con terminal</h2>
+            <p className="mt-1 text-sm text-n-700">
+              {cobroIntegrado.proveedor === "manual"
+                ? "Hoy registras los cobros a mano."
+                : cobroIntegrado.activo
+                  ? `Cobras con ${cobroIntegrado.nombre}${cobroIntegrado.simulado ? " (simulación: no mueve dinero)" : ""}.`
+                  : cobroIntegrado.motivo}
+            </p>
+          </div>
+          <Link href="/admin/pagos" className="font-semibold text-morado underline underline-offset-4">
+            Configurar
+          </Link>
+        </section>
       )}
+
+      <section className="rounded-lg border border-n-200 bg-white p-5">
+        <h2 className="mb-4 text-lg font-bold text-n-900">Conexión con Google Maps</h2>
+        <DiagnosticoGoogle />
+      </section>
       </>
       )}
 
