@@ -35,6 +35,15 @@ export type OrdenCobroFila = {
   expira_at: string | null;
 };
 
+// Un link sin pagar no está "mandándose a la terminal": espera al cliente,
+// o ya venció (el link vence solo en Mercado Pago a los 7 días).
+function etiquetaDe(o: OrdenCobroFila): string {
+  if (o.tipo === "link" && o.estado === "creada") {
+    return o.expira_at && new Date(o.expira_at).getTime() < Date.now() ? "Venció sin pagarse" : "Esperando el pago";
+  }
+  return ETIQUETA_ESTADO[o.estado] ?? o.estado;
+}
+
 function dinero(v: number): string {
   return `$${v.toFixed(2)}`;
 }
@@ -335,7 +344,7 @@ export function CobroIntegrado({
                     o.estado === "pagada" ? "bg-menta-suave text-menta-oscuro" : o.estado === "creada" || o.estado === "en_terminal" ? "bg-morado-suave text-morado" : "bg-n-100 text-n-600"
                   }`}
                 >
-                  {o.pendiente_de_registrar ? "Pagado, sin turno" : ETIQUETA_ESTADO[o.estado] ?? o.estado}
+                  {o.pendiente_de_registrar ? "Pagado, sin turno" : etiquetaDe(o)}
                 </span>
               </span>
             </li>
