@@ -75,3 +75,87 @@ Bitácora de toda intervención hecha a mano sobre los datos de producción, fue
 2. En Auth: `ban_duration: "none"` y devolverle a cada cuenta su correo original.
 
 Los correos originales están en esta página.
+
+## 2026-09-29: limpieza de la prueba de cobro con Mercado Pago en Ludogteka
+
+Pedida por escrito por el dueño de PeluDesk (José Carlos Piña). Va como
+migración versionada, `supabase/migrations/20260929020143_limpiar_prueba_mercadopago_ludogteka.sql`,
+aplicada con `npm run desplegar -- --aplicar`: respaldo, conteos antes y
+después y `auditoria_frontera()`. Tiene candados: solo corre donde existe
+exactamente esta prueba, no hace nada si ya se limpió y aborta sin tocar nada
+si el estado no es el esperado. Se ensayó en desarrollo con una réplica de
+los mismos IDs dentro de una transacción que se deshizo, y quedó así:
+
+| | Antes | Después |
+|---|---|---|
+| Saldo de la cuenta | $350 | $0 |
+| Cuentas abiertas | aparece | ya no |
+| Inventario | 12 | 14 (regresó lo consumido) |
+
+Correrla dos veces no duplica nada.
+
+### Qué fue la prueba
+
+28 de septiembre de 2026, de 5:43 a 5:50 p.m. hora de San Luis Potosí, con
+la cuenta de recepción de Dulce:
+
+- Cliente «jose» (`4fb6ba68`, teléfono del dueño) con el perro «me» (`306f84c2`).
+- Reserva `a1f811da` con un «Baño exprés» de $370 (cita `52b8d6f5`) que se
+  marcó finalizada.
+- Cobros de Mercado Pago en vivo, en el turno `8933562c`:
+  - terminal Point: un intento rechazado y uno pagado de $10 (cobro `937907ca`);
+  - link de pago de $10, pagado (cobro `e563b3b8`).
+- El link generó solo el gasto «Comisión de Mercado Pago» de $5.05 (`56d41636`).
+
+Mercado Pago ya reembolsó los dos cobros y regresó la comisión. Eso lo hizo
+el dueño allá; aquí no se reembolsó nada.
+
+### Qué hizo la limpieza
+
+1. **Devoluciones.** Una por cobro, en el turno de los cobros (el único
+   abierto de Ludogteka) y con su método: terminal $10 y transferencia $10.
+   El esperado del turno en esos métodos vuelve a cero.
+   - Autoriza la persona de José Carlos Piña en PeluDesk (`a83de437`), no
+     el admin de Ludogteka: ella no autorizó esto, y por eso no se usó
+     `registrar_devolucion()`, que pone al admin de la sesión.
+2. **Gasto.** El de comisión quedó cancelado con el motivo «cobro de prueba
+   devuelto; Mercado Pago regresó la comisión». No tenía retiro de caja.
+3. **Cita.** Quedó cancelada, con una nota en la cita y en la reserva.
+   - Sale de la cuenta: el saldo queda en 0 y desaparece de cuentas abiertas
+     y de «Necesita atención».
+   - Sale de la comisión: `comision_de_cita` solo cuenta finalizadas.
+     Además, la estilista (Karen) no tiene expediente de empleado ni pagos
+     de nómina.
+   - Sale de los costos.
+   - No había inventario que regresar: el «Baño exprés» no tiene receta. La
+     migración igual regresa con un ajuste positivo cualquier consumo ligado
+     a la cita.
+4. **Bajas.** El cliente «jose» y el perro «me» quedaron dados de baja
+   (`deleted_at`).
+
+### Qué NO se tocó
+
+- **Órdenes de Mercado Pago.** Se quedan como las dejó el proveedor; la app
+  nunca cambia una orden pagada.
+- **El turno abierto.** Lo cierra recepción con el conteo real.
+- **Los contratos del expediente viejo «José Carlos Piña».** Los firmados
+  quedan como evidencia y el cancelado ya estaba así.
+
+### Cómo queda en los reportes
+
+- **Caja:** cobrado $20 y devuelto $20 en el mismo turno.
+- **Financiero:** el mes neto en cero. Por día, el 28 aparecen los cobros y
+  el 29 las devoluciones.
+- **Gastos:** la comisión ya no cuenta.
+- **Utilidad y costos:** la cita cancelada no cuenta.
+
+### Cómo se deshace
+
+Sería volver a meter una prueba que no pasó; no hay motivo. Si hiciera
+falta:
+
+1. Dar de baja (`deleted_at`) las dos devoluciones de los cobros `937907ca`
+   y `e563b3b8`.
+2. Regresar el gasto `56d41636` a `pagado`.
+3. Regresar la cita `52b8d6f5` a `finalizada`.
+4. Quitar el `deleted_at` del cliente y del perro.
