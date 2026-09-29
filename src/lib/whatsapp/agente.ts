@@ -9,10 +9,17 @@
 // cuenta de quien escribe. Todo lo demás se escala a Telegram. Es más barato
 // quedar como lento que inventar un precio.
 
-/** Modelo fijo: barato y suficiente para contestar con una base delante. */
-export const MODELO_IA = "claude-haiku-4-5-20251001";
-/** Cinco líneas no necesitan más, y acota el gasto por respuesta. */
-export const MAX_TOKENS_IA = 500;
+/** Modelo fijo (29 de septiembre de 2026, pedido del dueño: Haiku vendía como catálogo). */
+export const MODELO_IA = "claude-sonnet-5";
+/** Dos mensajes cortos no necesitan más, y acota el gasto por respuesta. */
+export const MAX_TOKENS_IA = 700;
+/**
+ * Sin razonamiento extendido: es WhatsApp y cada segundo pensando es un
+ * segundo de «escribiendo…». Medido el 29 de septiembre de 2026 con las
+ * conversaciones de scripts/auditoria/whatsapp-bot.mjs: con adaptive y
+ * esfuerzo bajo, ni más rápido ni mejor formato.
+ */
+export const OPCIONES_IA = { thinking: { type: "disabled" } } as const;
 /** Respuestas de IA por teléfono y día. Al rebasarlo, todo se escala. */
 export const TOPE_DIARIO_TELEFONO = 25;
 /** Presupuesto mensual global por omisión, en pesos (WHATSAPP_IA_TOPE_MENSUAL_MXN lo cambia). */
@@ -20,10 +27,10 @@ export const TOPE_MENSUAL_MXN = 500;
 /** Mientras el operador haya contestado hace menos de esto, el agente se calla en ese hilo. */
 export const MINUTOS_SILENCIO_HUMANO = 30;
 
-// Tarifario de Haiku 4.5 (dólares por millón de tokens). No es contabilidad:
+// Tarifario de Sonnet 5 (dólares por millón de tokens). No es contabilidad:
 // es un freno de mano.
-const USD_POR_MTOK_IN = 1.0;
-const USD_POR_MTOK_OUT = 5.0;
+const USD_POR_MTOK_IN = 2.0;
+const USD_POR_MTOK_OUT = 10.0;
 const PESOS_POR_USD = 20;
 
 export function costoMxn(tokensIn: number, tokensOut: number): number {
@@ -135,19 +142,106 @@ export function decidirIA(estado: EstadoTopes, ahora: Date): Veredicto {
 
 // ───────────────────────────── system prompt
 
+// ───────────────────────────── capturas del demo
+
+/**
+ * Capturas reales del demo (Patitas & Co., datos inventados), tomadas en
+ * tamaño celular: public/peludesk/whatsapp/<clave>.jpg. El pie lo pone el
+ * código, no el modelo: así nunca describe algo que la imagen no muestra.
+ */
+export const CAPTURAS = {
+  estetica: "Así se ve la agenda de estética: una columna por estilista y sin citas encimadas.",
+  caja: "La caja del día: lo que falta cobrar y cada cuenta abierta, en una sola pantalla.",
+  hotel: "La ocupación de la casa: cuánto cupo queda de día y de noche, varios días adelante.",
+  vacunas: "El expediente avisa qué vacuna venció y no deja reservar hasta que se registre la nueva.",
+} as const;
+export type ClaveCaptura = keyof typeof CAPTURAS;
+export const esCaptura = (x: string): x is ClaveCaptura => Object.hasOwn(CAPTURAS, x);
+
+/** Separa dos mensajes seguidos en la respuesta del modelo. */
+export const SEPARADOR_MENSAJES = "===";
+const MARCA_CAPTURA = /^[ \t]*\[\[captura:([a-z]+)\]\][ \t]*$/gm;
+
+export type PiezaSalida = { tipo: "texto"; cuerpo: string } | { tipo: "captura"; clave: ClaveCaptura };
+
+/**
+ * La respuesta del modelo en piezas, en orden: textos (partidos por el
+ * separador) y a lo más UNA captura, solo si viene al caso y no repite.
+ * `yaMandadas`: las capturas de este hilo; `ultimaFueCaptura`: si lo último
+ * que mandó el bot fue una imagen (nunca dos seguidas). Nunca más de dos
+ * textos: lo que sobre se junta en el segundo.
+ */
+export function piezasDeSalida(texto: string, yaMandadas: Set<string>, ultimaFueCaptura: boolean): PiezaSalida[] {
+  const piezas: PiezaSalida[] = [];
+  let captura = false;
+  let anterior = 0;
+  const empujarTexto = (bruto: string) => {
+    for (const parte of bruto.split(new RegExp(`^[ \\t]*${SEPARADOR_MENSAJES}[ \\t]*$`, "m"))) {
+      const t = parte.trim();
+      if (t) piezas.push({ tipo: "texto", cuerpo: t });
+    }
+  };
+  for (const m of (texto ?? "").matchAll(MARCA_CAPTURA)) {
+    empujarTexto(texto.slice(anterior, m.index));
+    anterior = (m.index ?? 0) + m[0].length;
+    const clave = m[1];
+    const ultima = piezas[piezas.length - 1];
+    const tocaImagen = esCaptura(clave) && !captura && !yaMandadas.has(clave) && !(piezas.length === 0 && ultimaFueCaptura) && ultima?.tipo !== "captura";
+    if (tocaImagen) {
+      piezas.push({ tipo: "captura", clave });
+      captura = true;
+    }
+  }
+  empujarTexto(texto.slice(anterior));
+  // Más de dos textos: el segundo se queda con el resto.
+  const textos = piezas.filter((p) => p.tipo === "texto");
+  if (textos.length > 2) {
+    const segundo = textos[1];
+    for (const extra of textos.slice(2)) {
+      (segundo as { cuerpo: string }).cuerpo += `\n\n${(extra as { cuerpo: string }).cuerpo}`;
+      piezas.splice(piezas.indexOf(extra), 1);
+    }
+  }
+  // Una imagen al final de todo, después del link, se pierde: va antes del último texto.
+  if (piezas.length >= 2 && piezas[piezas.length - 1].tipo === "captura") {
+    const img = piezas.pop()!;
+    piezas.splice(piezas.length - 1, 0, img);
+  }
+  return piezas;
+}
+
+/** Cómo queda apuntada una captura en el historial del hilo (el modelo la ve así). */
+export function textoCaptura(clave: ClaveCaptura): string {
+  return `[[captura:${clave}]] ${CAPTURAS[clave]}`;
+}
+
+// ───────────────────────────── system prompt
+
 // La voz de la landing de PeluDesk: de quien conoce el día a día, corto y
 // sin frases de agencia.
 const ESTILO = [
   "ESTILO:",
-  "- Español de México, de tú. Como alguien que conoce el día a día de una guardería o una estética, no como una agencia.",
+  "- Español de México, de tú, humano y cercano. Como alguien que conoce el día a día de una guardería o una estética, no como una agencia.",
   "- Nunca voseo: «eres, quieres, tienes, te registras, completas», jamás «sos, querés, tenés, te registrás, completás».",
-  "- Máximo 5 líneas. Contesta lo que preguntaron y nada más.",
-  "- Nada de frases hechas: nunca «¡Excelente pregunta!», «solución integral», «potencia tu negocio», «lleva tu negocio al siguiente nivel», «estoy aquí para ayudarte».",
-  "- Di qué le quita de encima, no qué módulos tiene.",
-  "- Negritas de WhatsApp con UN asterisco (*así*), casi nunca. Nada de Markdown: ni **, ni #, ni listas numeradas.",
-  "- Como mucho un emoji por mensaje, al principio de una línea y nunca al final. Si dudas, no pongas.",
+  "- Contesta lo que preguntaron y nada más. Nada de frases hechas: nunca «¡Excelente pregunta!», «solución integral», «potencia tu negocio», «lleva tu negocio al siguiente nivel», «estoy aquí para ayudarte».",
   "- No firmes, no saludes de más y no cierres con «¿algo más en que te pueda ayudar?».",
-  "- Los links van completos, tal cual, en su propia línea. Si ofreces un link, mándalo en ese mismo mensaje; nunca «te mando el link».",
+  "",
+  "FORMATO (esto es WhatsApp y se lee en el celular):",
+  "- Un renglón en blanco entre cada idea. Cada párrafo es UNA frase corta, de dos renglones en el celular como mucho (unas 15 palabras). Mal: «PeluDesk te ordena la agenda de estética: una columna por estilista, sin encimar citas, y los precios salen solos». Bien: «Tu agenda queda con una columna por estilista.» (renglón en blanco) «Y ya no se te enciman las citas.»",
+  "- Vale igual para las dudas de uso: «Se conecta en Administración → Cobro con terminal.» (renglón en blanco) «Ahí ligas tu cuenta de Mercado Pago.» Una frase con comas que pase de 15 palabras son dos frases.",
+  "- Cada mensaje, máximo cuatro párrafos cortos. Si hay que decir más, pártelo en DOS mensajes seguidos: escribe una línea que diga solo === entre los dos. O mejor, pregunta y espera la respuesta.",
+  "- Negritas con UN asterisco (*así*), solo para el dato clave (un precio, «15 días gratis»). Nunca ** doble. Nada de Markdown: ni #, ni listas, ni viñetas.",
+  "- Los links van completos y solos en su propio renglón, al final del mensaje. Un solo link por mensaje. Si ofreces un link, mándalo ahí mismo; nunca «te mando el link».",
+  "- Como mucho un emoji por mensaje, al principio de una línea y nunca al final. Si dudas, no pongas.",
+].join("\n");
+
+const IMAGENES = [
+  "IMÁGENES (capturas reales del demo):",
+  "- Puedes mandar UNA captura escribiendo en su propio renglón [[captura:clave]] (el pie lo pone el sistema). Claves:",
+  ...Object.entries(CAPTURAS).map(([k, pie]) => `  · ${k}: ${pie}`),
+  "- Solo cuando viene al caso por lo que la persona contó: agenda en libreta o citas encimadas → estetica; cobros, cuentas o el corte de caja → caja; hotel o cupo → hotel; vacunas o cartillas → vacunas.",
+  "- Una por tema y nunca dos seguidas. Si ya la mandaste en esta conversación (la ves en el historial como [[captura:...]]), no la repitas. Ponla antes del renglón del link.",
+  "- Si la persona no ha contado nada de cómo trabaja, no mandes imagen.",
 ].join("\n");
 
 const REGLAS = [
@@ -167,17 +261,62 @@ function pesos(n: number): string {
   return `$${Number(n).toLocaleString("es-MX", { maximumFractionDigits: 2 })}`;
 }
 
+/** El precio con el que se abre: el plan más barato, al mes. */
+export function precioDesde(planes: PlanPublico[]): number | null {
+  const mensuales = planes.filter((p) => p.tipo === "plan" && p.mensual > 0).map((p) => p.mensual);
+  return mensuales.length ? Math.min(...mensuales) : null;
+}
+
 function bloquePlanes(planes: PlanPublico[]): string {
   if (planes.length === 0) return "PLANES Y PRECIOS: no hay planes publicados ahora mismo. Si preguntan precios, escala.";
+  const desde = precioDesde(planes);
   const lineas = planes.map((p) => {
-    const mods = p.modulos.length ? ` Incluye: ${p.modulos.join(", ")}.` : "";
     const desc = p.descripcion ? ` ${p.descripcion}` : "";
     if (p.tipo === "complemento") {
-      return `- Complemento «${p.nombre}»: ${pesos(p.mensual)} al mes + IVA (o ${pesos(p.anual)} al año + IVA), en cualquier plan.${desc}`;
+      return (
+        `- «${p.nombre}»: se da de REGALO si completa su perfil en la primera semana de la prueba. ` +
+        `Solo si pregunta qué pasa si no lo completa: ${pesos(p.mensual)} al mes + IVA. Nunca la ofrezcas primero como extra con precio.`
+      );
     }
-    return `- Plan ${p.nombre}: ${pesos(p.mensual)} al mes + IVA, o ${pesos(p.anual)} al año + IVA.${desc}${mods}`;
+    const mods = p.modulos.length ? ` Módulos (para ti, no para listarlos): ${p.modulos.join(", ")}.` : "";
+    return `- Plan ${p.nombre}: ${pesos(p.mensual)} al mes + IVA.${desc}${mods} [Pago anual, SOLO si pregunta por pagar el año: ${pesos(p.anual)} + IVA; nunca lo menciones por tu cuenta.]`;
   });
-  return ["PLANES Y PRECIOS (de la base, vigentes hoy; caja y clientes van en todos):", ...lineas].join("\n");
+  return [
+    "PLANES Y PRECIOS (de la base, vigentes hoy; caja y clientes van en todos):",
+    ...(desde ? [`- Desde ${pesos(desde)} al mes + IVA.`] : []),
+    ...lineas,
+  ].join("\n");
+}
+
+/** Un escalamiento sin motivo real («placeholder», vacío): el modelo se trabó, no hay duda que escalar. */
+export function escalamientoVacio(resumen: unknown): boolean {
+  const t = String(resumen ?? "").trim();
+  return t.length < 12 || /^(placeholder|resumen|n\/?a|todo|xxx+|\.\.\.)$/i.test(t);
+}
+
+function comoVender(ctx: ContextoAgente): string {
+  const desde = precioDesde(ctx.planes);
+  return [
+    "CÓMO VENDES:",
+    desde
+      ? `- El precio, solo cuando lo pregunten, y directo: «Desde *${pesos(desde)} al mes + IVA*, y los primeros *15 días son gratis*, sin tarjeta». Luego, en UNA línea, el plan exacto que le toca según su negocio. Si no sabes qué negocio tiene, IGUAL da primero el «Desde…» y después pregúntale qué tiene; nunca escondas el precio detrás de una pregunta. Si ya le diste ese «Desde…» en esta conversación y vuelve a preguntar, basta el precio de su plan en negritas.`
+      : "- No hay precios publicados: si preguntan, escala.",
+    "- Precio anual solo si lo pregunta.",
+    "- Nunca listes módulos ni funciones, ni en una frase con comas («agenda, precios, inventario y caja» es un catálogo), ni digas «trae todo: esto, esto y lo demás». Escoge UNA cosa que le quite de encima, la que va con lo que te contó: la libreta, los recordatorios que manda a mano por WhatsApp, el corte de caja que no cuadra, las vacunas vencidas que se le pasan.",
+    "- Pregúntale cómo lo lleva hoy (libreta, Excel, WhatsApp, otra app) y conecta su respuesta con lo que PeluDesk le resuelve, con la captura que corresponda.",
+    "- Si ya usa otra app, no la critiques: pregúntale qué le falta o qué le cuesta trabajo, y conecta con eso. Nunca prometas migrar sus datos.",
+    "- La página web es un regalo: «si completas tu perfil en la primera semana, tu página web te queda gratis para siempre». Nunca la ofrezcas primero como extra con precio.",
+    "- Cada respuesta termina empujando a UN siguiente paso concreto, con su link en el último renglón: ver el demo o empezar la prueba. Aunque le hagas una pregunta, el último renglón es ese link (demo si apenas está conociendo; prueba si ya se interesó o quiere meter sus datos).",
+    "- Un solo link por mensaje: nunca el demo y la prueba juntos. Escoge el que va con lo que pidió.",
+    `- Los dos links NO los escribes tú: pon en su propio renglón [[link:demo]] o [[link:prueba]] y el sistema pone la dirección (demo: ${ctx.enlaces.demo} · prueba: ${ctx.enlaces.registro}; así se ven en el historial y son los correctos).`,
+    "- Si no sabes qué negocio tiene, pregúntale «¿Qué tienes: guardería, hotel o estética?». Quien pregunta por PeluDesk casi siempre es dueño o encargado de un negocio, no dueño de un perro.",
+    "- Si te cuenta que lo lleva en libreta, Excel o WhatsApp, manda la captura de lo que más le duele (estética → estetica; guardería u hotel → hotel; cobros → caja; vacunas → vacunas).",
+  ].join("\n");
+}
+
+/** Los links que el modelo pide por nombre (nunca los escribe: una vez se comió los dos puntos del puerto). */
+export function ponerLinks(texto: string, enlaces: { demo: string; registro: string }): string {
+  return (texto ?? "").replace(/\[\[link:(demo|prueba)\]\]/g, (_, cual: string) => (cual === "demo" ? enlaces.demo : enlaces.registro));
 }
 
 function describirNegocio(n: NegocioDeAdmin): string {
@@ -238,10 +377,9 @@ function bloqueTipo(ctx: ContextoAgente): string {
     case "prospecto":
       return [
         "QUIÉN TE ESCRIBE: alguien que no tiene cuenta de admin en PeluDesk (un posible cliente).",
-        "Tu trabajo es que entienda si le sirve. Pregunta qué tiene (guardería, hotel, estética) solo si hace falta para contestar.",
-        "Cuando quiera verlo, manda el demo; cuando quiera probarlo, manda el registro. No insistas ni vendas de más.",
-        `- Demo: ${ctx.enlaces.demo}`,
-        `- Prueba gratis: ${ctx.enlaces.registro}`,
+        "Tu trabajo es que vea si le sirve y dé el siguiente paso (demo o prueba).",
+        "",
+        comoVender(ctx),
       ].join("\n");
     case "admin":
       return [
@@ -258,9 +396,9 @@ function bloqueTipo(ctx: ContextoAgente): string {
       return [
         "QUIÉN TE ESCRIBE: el dueño de un perro que es cliente de un negocio que usa PeluDesk.",
         "PeluDesk es el sistema que usa su guardería, hotel o estética. De sus perros, citas, contratos, pagos o su contraseña del portal no sabes nada: eso lo resuelve su negocio directamente. No digas qué negocio es.",
-        "Si pregunta por PeluDesk para un negocio propio, trátalo como posible cliente (demo y registro de arriba).",
-        `- Demo: ${ctx.enlaces.demo}`,
-        `- Prueba gratis: ${ctx.enlaces.registro}`,
+        "Si pregunta por PeluDesk para un negocio propio, trátalo como posible cliente:",
+        "",
+        comoVender(ctx),
       ].join("\n");
   }
 }
@@ -273,6 +411,8 @@ export function systemPrompt(base: string, aprendido: ParAprendido[], ctx: Conte
     `Hoy es ${hoy} (hora del centro de México).`,
     "",
     ESTILO,
+    "",
+    IMAGENES,
     "",
     REGLAS,
     "",

@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   // AVIF primero: en las fotos de la landing pesa ~40% menos que WebP, y
   // la landing se abre sobre todo desde el celular (link por WhatsApp).
   images: { formats: ["image/avif", "image/webp"], qualities: [60, 75] },
+  // Las capturas que el bot de WhatsApp sube a Meta se leen del disco en la
+  // función del webhook (src/lib/whatsapp/infra.ts, bytesCaptura).
+  outputFileTracingIncludes: { "/api/whatsapp/webhook": ["./public/peludesk/whatsapp/*.jpg"] },
   async redirects() {
     return [
       // La sección "Agenda" pasó a llamarse "Estética" y se movió de /agenda

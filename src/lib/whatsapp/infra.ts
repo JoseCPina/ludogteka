@@ -1,11 +1,13 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { urlDelNegocio } from "@/lib/negocio/actual";
 import { urlDemo } from "@/lib/peludesk/landing";
 import { urlPlataforma } from "@/lib/pagos/urls";
 import { stripe } from "@/lib/cobro/stripe";
 import { configuracionPortal } from "@/lib/cobro/portal";
-import { MAX_TOKENS_IA, MODELO_IA, type NegocioDeAdmin, type PlanPublico, type TipoInterlocutor, TOPE_MENSUAL_MXN } from "./agente";
+import { type ClaveCaptura, MAX_TOKENS_IA, MODELO_IA, type NegocioDeAdmin, OPCIONES_IA, type PlanPublico, type TipoInterlocutor, TOPE_MENSUAL_MXN } from "./agente";
 import { CONOCIMIENTO } from "./conocimiento";
 import type { BloqueIA, Cuenta, DatosSoporte, DepsSoporte, Hilo, IA, RespuestaIA, SalidaWA, Telegram } from "./soporte";
 
@@ -315,9 +317,30 @@ export async function ligaPortalDe(n: NegocioDeAdmin): Promise<string> {
 
 const MAX_INTENTOS = 3;
 
+/**
+ * Las capturas se suben a WhatsApp UNA vez y se reusa el media id (así la
+ * imagen sale al instante). Meta guarda un media 30 días: pasados 25 se
+ * vuelve a subir. Si cambian las imágenes, se sube VERSION_CAPTURAS.
+ */
+const VERSION_CAPTURAS = 1;
+const DIAS_MEDIA = 25;
+const claveMedia = (clave: ClaveCaptura) => `wa_media_${clave}_v${VERSION_CAPTURAS}`;
+
+export interface AlmacenMedia {
+  leer(clave: string): Promise<string | null>;
+  guardar(clave: string, valor: string): Promise<void>;
+}
+
 export class ClienteWA implements SalidaWA {
+  #medias = new Map<ClaveCaptura, string>();
+
   /** alContestar: se llama cada vez que Meta acepta un mensaje del número (ver marcarNumeroContesta). */
-  constructor(private token: string, private phoneNumberId: string, private alContestar?: () => Promise<void>) {}
+  constructor(
+    private token: string,
+    private phoneNumberId: string,
+    private alContestar?: () => Promise<void>,
+    private almacen?: AlmacenMedia,
+  ) {}
 
   get configurado() {
     return Boolean(this.token && this.phoneNumberId);
@@ -331,9 +354,60 @@ export class ClienteWA implements SalidaWA {
     return this.enviar({ messaging_product: "whatsapp", recipient_type: "individual", to: a, type: "template", template: { name: nombre, language: { code: "es_MX" } } });
   }
 
-  /** Palomitas azules: gratis y le dice a la persona que se leyó. */
+  /**
+   * Palomitas azules y «escribiendo…» (se quita solo al contestar o a los 25 s):
+   * la persona sabe que llegó mientras la IA piensa.
+   */
   async marcarLeido(waMessageId: string) {
-    await this.enviar({ messaging_product: "whatsapp", status: "read", message_id: waMessageId });
+    await this.enviar({ messaging_product: "whatsapp", status: "read", message_id: waMessageId, typing_indicator: { type: "text" } });
+  }
+
+  async captura(a: string, clave: ClaveCaptura, pie: string) {
+    const mandar = (id: string) =>
+      this.enviar({ messaging_product: "whatsapp", recipient_type: "individual", to: a, type: "image", image: { id, caption: pie } });
+    try {
+      let id = await this.mediaDe(clave, false);
+      let r = await mandar(id);
+      if (!r.ok && r.estado && r.estado < 500) {
+        // El media id pudo vencer antes de tiempo: se sube de nuevo una vez.
+        id = await this.mediaDe(clave, true);
+        r = await mandar(id);
+      }
+      return r;
+    } catch (e) {
+      console.error("[whatsapp] captura", clave, e instanceof Error ? e.message : e);
+      return { ok: false };
+    }
+  }
+
+  private async mediaDe(clave: ClaveCaptura, forzar: boolean): Promise<string> {
+    if (!forzar) {
+      const enMemoria = this.#medias.get(clave);
+      if (enMemoria) return enMemoria;
+      const guardado = await this.almacen?.leer(claveMedia(clave)).catch(() => null);
+      if (guardado) {
+        const { id, subido } = JSON.parse(guardado) as { id: string; subido: string };
+        if (id && Date.now() - Date.parse(subido) < DIAS_MEDIA * 86_400_000) {
+          this.#medias.set(clave, id);
+          return id;
+        }
+      }
+    }
+    const datos = new FormData();
+    datos.append("messaging_product", "whatsapp");
+    datos.append("type", "image/jpeg");
+    datos.append("file", new Blob([new Uint8Array(await bytesCaptura(clave))], { type: "image/jpeg" }), `${clave}.jpg`);
+    const r = await fetch(`${GRAPH()}/${VERSION_GRAPH}/${this.phoneNumberId}/media`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${this.token}` },
+      body: datos,
+      signal: AbortSignal.timeout(TIMEOUT_RED_MS * 2),
+    });
+    const j = (await r.json().catch(() => ({}))) as { id?: string; error?: { message?: string } };
+    if (!r.ok || !j.id) throw new Error(`subir ${clave}: ${j.error?.message ?? `HTTP ${r.status}`}`);
+    this.#medias.set(clave, j.id);
+    await this.almacen?.guardar(claveMedia(clave), JSON.stringify({ id: j.id, subido: new Date().toISOString() })).catch(() => {});
+    return j.id;
   }
 
   private async enviar(cuerpo: Record<string, unknown>): Promise<{ ok: boolean; estado?: number; error?: string }> {
@@ -363,6 +437,20 @@ export class ClienteWA implements SalidaWA {
     if (!ultimo.ok) console.error("[whatsapp] envío rechazado", { estado: ultimo.estado, error: ultimo.error, tipo: cuerpo.type ?? cuerpo.status });
     else if (cuerpo.type && this.alContestar) await this.alContestar().catch(() => {});
     return ultimo;
+  }
+}
+
+/**
+ * Los bytes de una captura: del disco (next.config la incluye en la función
+ * del webhook) o, si no está, del propio sitio.
+ */
+async function bytesCaptura(clave: ClaveCaptura): Promise<Buffer> {
+  try {
+    return await readFile(path.join(process.cwd(), "public", "peludesk", "whatsapp", `${clave}.jpg`));
+  } catch {
+    const r = await fetch(`${urlPlataforma()}/peludesk/whatsapp/${clave}.jpg`, { signal: AbortSignal.timeout(TIMEOUT_RED_MS) });
+    if (!r.ok) throw new Error(`no encontré la captura ${clave} (${r.status})`);
+    return Buffer.from(await r.arrayBuffer());
   }
 }
 
@@ -440,7 +528,7 @@ export class Anthropic implements IA {
         "anthropic-version": "2023-06-01",
         ...(this.workspace ? { "anthropic-workspace-id": this.workspace } : {}),
       },
-      body: JSON.stringify({ model: MODELO_IA, max_tokens: MAX_TOKENS_IA, system, tools, messages: mensajes }),
+      body: JSON.stringify({ model: MODELO_IA, max_tokens: MAX_TOKENS_IA, ...OPCIONES_IA, system, tools, messages: mensajes }),
     });
     const cuerpo = (await r.json().catch(() => ({}))) as {
       content?: { type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }[];
@@ -488,7 +576,10 @@ function topeMensual(): number {
 export function construirSoporte(): { deps: DepsSoporte; datos: DatosSupabase; wa: ClienteWA } {
   const cfg = configWhatsApp();
   const datos = new DatosSupabase();
-  const wa = new ClienteWA(cfg.token, cfg.phoneNumberId, marcarNumeroContesta);
+  const wa = new ClienteWA(cfg.token, cfg.phoneNumberId, marcarNumeroContesta, {
+    leer: (clave) => datos.config(clave),
+    guardar: (clave, valor) => datos.guardarConfig(clave, valor),
+  });
   const deps: DepsSoporte = {
     datos,
     tg: new TelegramHttp(cfg.telegramToken),

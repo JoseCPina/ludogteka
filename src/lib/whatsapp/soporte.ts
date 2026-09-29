@@ -15,20 +15,28 @@
 //      Telegram; una respuesta inventada cuesta un cliente.
 
 import {
+  type ClaveCaptura,
   type ContextoAgente,
   costoMxn,
+  CAPTURAS,
   decidirIA,
+  escalamientoVacio,
   type Escalamiento,
   herramientas,
   type NegocioDeAdmin,
   type ParAprendido,
   parsearOperador,
+  type PiezaSalida,
+  piezasDeSalida,
+  ponerLinks,
+  SEPARADOR_MENSAJES,
   systemPrompt,
   TEXTO_ESCALAMIENTO,
+  textoCaptura,
   textoTelegram,
   type TipoInterlocutor,
 } from "./agente";
-import { aFormatoWhatsApp } from "./texto";
+import { aFormatoWhatsApp, enDosSiEsLargo, formatoDelBot, hayQueReescribir, juntarCortos, unLinkAlFinal } from "./texto";
 
 // ───────────────────────────── puertos
 
@@ -98,6 +106,8 @@ export interface IA {
 export interface SalidaWA {
   texto(a: string, cuerpo: string): Promise<{ ok: boolean }>;
   plantilla(a: string, nombre: string): Promise<{ ok: boolean }>;
+  /** Una captura del demo con su pie (la imagen se sube una vez y se reusa). */
+  captura(a: string, clave: ClaveCaptura, pie: string): Promise<{ ok: boolean }>;
 }
 
 /** Lo que el bot sabe de quien escribe. Lo resuelve la base, por teléfono. */
@@ -127,6 +137,18 @@ export interface DepsSoporte {
 
 export type Desenlace = "respondio" | "escalo" | "callado" | "error";
 
+/** Milisegundos por etapa de una respuesta, para los logs (dónde se va el tiempo). */
+export type Tiempos = Record<string, number>;
+
+function cronometro(tiempos: Tiempos | undefined) {
+  let marca = Date.now();
+  return (etapa: string) => {
+    const ahora = Date.now();
+    if (tiempos) tiempos[etapa] = (tiempos[etapa] ?? 0) + (ahora - marca);
+    marca = ahora;
+  };
+}
+
 const LIMITE_HISTORIAL = 12;
 const LIMITE_APRENDIDO = 60;
 export const PLANTILLA_SEGUIMIENTO = "peludesk_seguimiento_v1";
@@ -150,11 +172,22 @@ function negocioDelHilo(c: Cuenta): { id: string | null; nombre: string | null }
  * escala y la persona recibe el acuse. Un mensaje sin contestar es peor que
  * uno escalado de más.
  */
-export async function atender(telefono: string, texto: string, deps: DepsSoporte): Promise<Desenlace> {
+export async function atender(telefono: string, texto: string, deps: DepsSoporte, tiempos?: Tiempos): Promise<Desenlace> {
+  const marcar = cronometro(tiempos);
   const ahora = deps.ahora();
-  const cuenta = await deps.cuenta(telefono);
+  // Todo lo que no depende de nada, a la vez: cada consulta en serie eran
+  // cientos de milisegundos antes de siquiera llamar a la IA.
+  const historialP = deps.datos.ultimosMensajes(telefono, LIMITE_HISTORIAL);
+  const aprendidoP = deps.datos.aprendido(LIMITE_APRENDIDO);
+  historialP.catch(() => {});
+  aprendidoP.catch(() => {});
+  const [cuenta, previo, respuestasHoy, gastoDelMes] = await Promise.all([
+    deps.cuenta(telefono),
+    deps.datos.hiloPorTelefono(telefono),
+    deps.datos.respuestasIADesde(telefono, inicioDelDia(ahora)),
+    deps.datos.gastoIADesde(inicioDelMes(ahora)),
+  ]);
   const neg = negocioDelHilo(cuenta);
-  const previo = await deps.datos.hiloPorTelefono(telefono);
   const hilo: Hilo = {
     telefono,
     tipo: cuenta.tipo,
@@ -169,8 +202,8 @@ export async function atender(telefono: string, texto: string, deps: DepsSoporte
 
   const v = decidirIA(
     {
-      respuestasHoy: await deps.datos.respuestasIADesde(telefono, inicioDelDia(ahora)),
-      gastoDelMes: await deps.datos.gastoIADesde(inicioDelMes(ahora)),
+      respuestasHoy,
+      gastoDelMes,
       topeMensual: deps.topeMensual,
       ultimoHumanoAt: hilo.ultimoHumanoAt,
     },
@@ -185,11 +218,8 @@ export async function atender(telefono: string, texto: string, deps: DepsSoporte
   }
 
   try {
-    const [historial, aprendido, ctx] = await Promise.all([
-      deps.datos.ultimosMensajes(telefono, LIMITE_HISTORIAL),
-      deps.datos.aprendido(LIMITE_APRENDIDO),
-      deps.contexto(cuenta),
-    ]);
+    const [historial, aprendido, ctx] = await Promise.all([historialP, aprendidoP, deps.contexto(cuenta)]);
+    marcar("preparar");
     const system = systemPrompt(deps.base, aprendido, ctx, deps.hoyTexto());
     const tools = herramientas(cuenta.tipo);
     const mensajes: BloqueIA[] = [];
@@ -202,7 +232,7 @@ export async function atender(telefono: string, texto: string, deps: DepsSoporte
     }
     if (mensajes.length === 0 || mensajes[mensajes.length - 1].role !== "user") mensajes.push({ role: "user", content: texto });
     if (mensajes[0].role !== "user") mensajes.shift();
-    return await conversar(telefono, texto, hilo, cuenta, system, mensajes, tools, deps);
+    return await conversar(telefono, texto, hilo, cuenta, system, mensajes, tools, historial, ctx.enlaces, deps, marcar);
   } catch (e) {
     deps.alerta(`La IA falló para ${telefono}`, e);
     await deps.datos.registrarUsoIA({ telefono, tokensIn: 0, tokensOut: 0, costoMxn: 0, resultado: "error" });
@@ -219,41 +249,122 @@ async function conversar(
   system: string,
   mensajes: BloqueIA[],
   tools: BloqueIA[],
+  historial: MensajeHilo[],
+  enlaces: ContextoAgente["enlaces"],
   deps: DepsSoporte,
+  marcar: (etapa: string) => void,
 ): Promise<Desenlace> {
+  // Lo que el modelo escribió ANTES de pedir una herramienta también es
+  // respuesta: sin esto se perdía (le contestaba los días de prueba, pedía el
+  // link y a la persona solo le llegaba «Ahí puedes contratar…»).
+  let escritoAntes = "";
+  let reescrita = false;
+  let reintentoEscalar = false;
   for (let vuelta = 0; vuelta < 3; vuelta++) {
-    const r = await deps.ia.responder(system, mensajes, tools);
+    let r = await deps.ia.responder(system, mensajes, tools);
+    marcar("ia");
+    // Llamó a escalar sin motivo («placeholder»): se le pregunta una vez más.
+    const vacio = r.usos.find((u) => u.nombre === "escalar" && escalamientoVacio(u.entrada.resumen));
+    if (vacio && !reintentoEscalar) {
+      reintentoEscalar = true;
+      deps.alerta(`La IA escaló sin motivo («${String(vacio.entrada.resumen ?? "")}»); se reintenta`);
+      await deps.datos.registrarUsoIA({ telefono, tokensIn: r.tokensIn, tokensOut: r.tokensOut, costoMxn: costoMxn(r.tokensIn, r.tokensOut), resultado: "error" });
+      r = await deps.ia.responder(system, mensajes, tools);
+      marcar("ia");
+    }
     const apuntar = (resultado: UsoIA["resultado"]) =>
       deps.datos.registrarUsoIA({ telefono, tokensIn: r.tokensIn, tokensOut: r.tokensOut, costoMxn: costoMxn(r.tokensIn, r.tokensOut), resultado });
 
     const esc = r.usos.find((u) => u.nombre === "escalar");
     if (esc) {
       await apuntar("escalo");
-      await escalar(hilo, texto, String(esc.entrada.resumen ?? "Sin resumen"), esc.entrada.urgencia === "urgente" ? "urgente" : "normal", deps);
+      const resumen = escalamientoVacio(esc.entrada.resumen) ? `La IA escaló sin decir por qué. Lo que escribió: «${texto.slice(0, 200)}»` : String(esc.entrada.resumen);
+      await escalar(hilo, texto, resumen, esc.entrada.urgencia === "urgente" ? "urgente" : "normal", deps);
       return "escalo";
     }
 
     const portal = r.usos.find((u) => u.nombre === "liga_portal_pagos");
     if (portal && vuelta < 2) {
+      if (r.texto.trim()) escritoAntes += `${r.texto.trim()}\n\n`;
       await apuntar("respondio");
       mensajes.push({ role: "assistant", content: r.bloques });
       mensajes.push({ role: "user", content: [{ type: "tool_result", tool_use_id: portal.id, content: JSON.stringify(await resultadoPortal(cuenta, portal.entrada, deps)) }] });
       continue;
     }
 
-    const salida = aFormatoWhatsApp(r.texto);
-    if (!salida) {
+    // Un párrafo de más de dos renglones que no se pudo partir entre frases, o
+    // un mensaje de más de cuatro párrafos: se le pide UNA vez que lo
+    // reescriba (el borrador no sale ni se guarda).
+    if (!reescrita && !r.usos.length && hayQueReescribir(ponerLinks(escritoAntes + r.texto, enlaces), SEPARADOR_MENSAJES)) {
+      reescrita = true;
+      await apuntar("respondio");
+      const borrador = await deps.ia
+        .responder(
+          system,
+          [
+            ...mensajes,
+            { role: "assistant", content: (escritoAntes + r.texto).trim() },
+            { role: "user", content: "[Nota interna de PeluDesk, no es del cliente] Reescribe tu último mensaje igual, con el mismo contenido, pero cada párrafo de UNA frase corta (dos renglones en el celular) y máximo cuatro párrafos por mensaje (si no cabe, junta ideas o quita lo que sobre). Conserva los [[captura:...]], [[link:...]] y === donde estaban. Contesta solo con el mensaje reescrito." },
+          ],
+          tools,
+        )
+        .catch(() => null);
+      marcar("ia");
+      if (borrador?.texto.trim() && !borrador.usos.length) {
+        r = borrador;
+        escritoAntes = "";
+      }
+    }
+
+    // Capturas ya mandadas en el hilo y si lo último del bot fue una imagen:
+    // una por tema y nunca dos seguidas.
+    const delBot = historial.filter((m) => m.quien !== "usuario");
+    const yaMandadas = new Set([...historial.map((m) => m.texto).join("\n").matchAll(/\[\[captura:([a-z]+)\]\]/g)].map((m) => m[1]));
+    const ultimaFueCaptura = delBot.length > 0 && delBot[delBot.length - 1].texto.startsWith("[[captura:");
+    const piezas = piezasDeSalida(ponerLinks(escritoAntes + r.texto, enlaces), yaMandadas, ultimaFueCaptura)
+      .flatMap((p): PiezaSalida[] => (p.tipo === "texto" ? unLinkAlFinal(juntarCortos(formatoDelBot(aFormatoWhatsApp(p.cuerpo)))).map((cuerpo) => ({ tipo: "texto", cuerpo })) : [p]))
+      .filter((p) => p.tipo !== "texto" || p.cuerpo);
+    // Una respuesta de un solo mensaje que se pasó de largo se manda en dos.
+    if (piezas.filter((p) => p.tipo === "texto").length === 1) {
+      const i = piezas.findIndex((p) => p.tipo === "texto");
+      const [uno, dos] = enDosSiEsLargo((piezas[i] as { cuerpo: string }).cuerpo);
+      if (dos) piezas.splice(i, 1, { tipo: "texto", cuerpo: uno }, { tipo: "texto", cuerpo: dos });
+    }
+    // Con un posible cliente, toda respuesta deja un siguiente paso: si el
+    // modelo cerró con una pregunta y sin link, va el del demo.
+    const ultimoTexto = [...piezas].reverse().find((p) => p.tipo === "texto");
+    const textos = piezas.flatMap((p) => (p.tipo === "texto" ? [p.cuerpo] : []));
+    if (cuenta.tipo === "prospecto" && ultimoTexto?.tipo === "texto" && !/https?:\/\//.test(textos.join(" "))) {
+      ultimoTexto.cuerpo += `\n\nSi quieres ir viendo cómo se ve por dentro:\n\n${enlaces.demo}`;
+    }
+    if (!piezas.some((p) => p.tipo === "texto")) {
       await apuntar("escalo");
       await escalar(hilo, texto, "La IA contestó en blanco.", "normal", deps);
       return "escalo";
     }
     await apuntar("respondio");
-    const env = await deps.wa.texto(telefono, salida);
-    if (!env.ok) {
-      await escalar(hilo, texto, "WhatsApp rechazó la respuesta del bot. Revisa tú.", "normal", deps, { avisar: false });
-      return "error";
+    let enviados = 0;
+    for (const p of piezas) {
+      if (p.tipo === "captura") {
+        // Una imagen que no sale no detiene la respuesta: el texto es lo que importa.
+        const c = await deps.wa.captura(telefono, p.clave, CAPTURAS[p.clave]);
+        if (c.ok) await deps.datos.apuntarMensaje(telefono, "agente", textoCaptura(p.clave));
+        else deps.alerta(`No salió la captura ${p.clave} a ${telefono}`);
+        continue;
+      }
+      const env = await deps.wa.texto(telefono, p.cuerpo);
+      if (!env.ok) {
+        if (enviados === 0) {
+          await escalar(hilo, texto, "WhatsApp rechazó la respuesta del bot. Revisa tú.", "normal", deps, { avisar: false });
+          return "error";
+        }
+        deps.alerta(`WhatsApp rechazó la segunda parte de la respuesta a ${telefono}`);
+        break;
+      }
+      enviados++;
+      await deps.datos.apuntarMensaje(telefono, "agente", p.cuerpo);
     }
-    await deps.datos.apuntarMensaje(telefono, "agente", salida);
+    marcar("enviar");
     await deps.datos.guardarHilo(hilo);
     return "respondio";
   }
