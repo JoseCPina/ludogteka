@@ -214,6 +214,11 @@ await A.from("wa_hilos").insert({ telefono: TEL_WA, ultimo_entrante_at: new Date
 const nav = await abrirNavegador();
 const idRecep = await miembro("recepcion");
 const idAdminTel = await adminDeTelefono();
+// Respuestas sin ver de corridas anteriores (una que tronó a la mitad deja
+// su ticket contestado): con dos o más, el aviso de arriba las junta y
+// manda a /ayuda en vez de al ticket de esta corrida.
+await SH.from("soporte_tickets").update({ visto_creador_at: new Date().toISOString() })
+  .eq("negocio_id", H).in("profile_id", [idRecep, idAdminTel]).eq("ultimo_de", "plataforma").is("deleted_at", null);
 const ctxRecep = await nav.newContext();
 await ctxRecep.addCookies(await cookiesDe(idRecep));
 const recep = await ctxRecep.newPage();

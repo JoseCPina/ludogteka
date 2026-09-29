@@ -24,3 +24,7 @@ Primero lo que más duele en una guardería, después caja y papeleo, luego est�
 | Lunes 19 de octubre | 7. Tu página web, gratis | Reels de Instagram · TikTok · Reels de Facebook |
 
 Los videos de caja, portal y utilidad van también en 16:9 al muro de Facebook porque ahí sigue el dueño de negocio que decide la compra; los demás, en Reels.
+
+## Publicación automática
+
+El calendario de arriba vive como configuración en `src/lib/redes/serie.ts` (fechas, redes, formato y pie de cada video, a las 13:00 de la Ciudad de México). En `/plataforma/redes` se carga con «Cargar el calendario de la serie» y la tarea de Vercel lo publica sola cada hora: Facebook e Instagram por la Graph API, TikTok como borrador en el buzón de la cuenta (se publica desde la app, con el pie que llega en el aviso de Telegram). Si cambia una fecha o un pie aquí, se cambia también ahí.
