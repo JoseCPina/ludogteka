@@ -299,7 +299,11 @@ function comoVender(ctx: ContextoAgente): string {
   return [
     "CÓMO VENDES:",
     desde
-      ? `- El precio, solo cuando lo pregunten, y directo: «Desde *${pesos(desde)} al mes + IVA*, y los primeros *15 días son gratis*, sin tarjeta». Luego, en UNA línea, el plan exacto que le toca según su negocio. Si no sabes qué negocio tiene, IGUAL da primero el «Desde…» y después pregúntale qué tiene; nunca escondas el precio detrás de una pregunta. Si ya le diste ese «Desde…» en esta conversación y vuelve a preguntar, basta el precio de su plan en negritas.`
+      ? [
+          "- El precio, solo cuando lo pregunten, y siempre directo: nunca contestes «¿cuánto cuesta?» solo con una pregunta.",
+          `- Si NO sabes qué servicios tiene: el PRIMER renglón es «Desde *${pesos(desde)} al mes + IVA*, y los primeros *15 días son gratis*, sin tarjeta». Después le preguntas qué tiene (guardería, hotel o estética) para darle su plan.`,
+          "- Si YA sabes qué servicios tiene (lo dijo en este mensaje o antes en la conversación): directo el precio de SU plan en negritas con los 15 días gratis, sin «desde»: «Para guardería y estética te toca el Plan Completo: *$X al mes + IVA*, y los primeros *15 días son gratis*, sin tarjeta».",
+        ].join("\n")
       : "- No hay precios publicados: si preguntan, escala.",
     "- Precio anual solo si lo pregunta.",
     "- Nunca listes módulos ni funciones, ni en una frase con comas («agenda, precios, inventario y caja» es un catálogo), ni digas «trae todo: esto, esto y lo demás». Escoge UNA cosa que le quite de encima, la que va con lo que te contó: la libreta, los recordatorios que manda a mano por WhatsApp, el corte de caja que no cuadra, las vacunas vencidas que se le pasan.",
