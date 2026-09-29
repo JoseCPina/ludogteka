@@ -1,0 +1,35 @@
+1
+00:00:00,150 --> 00:00:01,895
+¿Te enteraste de la vacuna vencida cuando
+
+2
+00:00:01,915 --> 00:00:03,365
+el perro ya estaba adentro?
+
+3
+00:00:04,000 --> 00:00:06,054
+Si a un perro se le venció una vacuna,
+
+4
+00:00:06,229 --> 00:00:08,438
+no te deja reservarle guardería ni hotel.
+
+5
+00:00:08,458 --> 00:00:09,491
+Y te dice cuál.
+
+6
+00:00:12,400 --> 00:00:14,435
+Y en reportes ves cuántos perros tienen
+
+7
+00:00:14,455 --> 00:00:15,731
+vacunas por vencer,
+
+8
+00:00:15,790 --> 00:00:17,333
+para avisarles a tiempo.
+
+9
+00:00:20,300 --> 00:00:23,747
+Pruébalo 15 días gratis en peludesk.mx.

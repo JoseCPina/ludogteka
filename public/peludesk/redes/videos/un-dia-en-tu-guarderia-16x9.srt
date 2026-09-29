@@ -1,71 +1,75 @@
 1
-00:00:00,400 --> 00:00:01,230
-La libreta,
+00:00:00,300 --> 00:00:01,948
+Así empiezan muchas mañanas:
 
 2
-00:00:01,290 --> 00:00:03,588
-veinte chats sin contestar y el cupo de
+00:00:02,123 --> 00:00:03,008
+la libreta,
 
 3
-00:00:03,648 --> 00:00:05,840
-memoria. Así empiezan muchas mañanas.
+00:00:03,028 --> 00:00:05,388
+veinte chats sin contestar y el cupo
 
 4
-00:00:06,500 --> 00:00:07,705
-En estética,
+00:00:05,408 --> 00:00:06,952
+apuntado en la cabeza.
 
 5
-00:00:07,765 --> 00:00:10,377
-cada estilista tiene su columna:
+00:00:07,300 --> 00:00:08,011
+En estética,
 
 6
-00:00:10,437 --> 00:00:13,540
-ves quién está libre y qué perro sigue.
+00:00:08,031 --> 00:00:09,760
+cada estilista tiene su columna:
 
 7
-00:00:14,500 --> 00:00:17,557
-El cupo de hotel y guardería se cuenta
+00:00:09,935 --> 00:00:12,698
+ves quién está libre y qué perro sigue.
 
 8
-00:00:17,617 --> 00:00:19,611
-solo, con cada reserva,
+00:00:15,300 --> 00:00:17,358
+El cupo de hotel y guardería se cuenta
 
 9
-00:00:19,671 --> 00:00:21,240
-llegada y salida.
+00:00:17,378 --> 00:00:18,968
+solo, con cada reserva,
 
 10
-00:00:22,000 --> 00:00:24,425
-¿A Simba se le venció la vacuna?
+00:00:19,027 --> 00:00:20,837
+llegada y salida.
 
 11
-00:00:24,485 --> 00:00:26,648
-Te avisa antes de recibirlo,
+00:00:22,800 --> 00:00:24,668
+¿A Simba se le venció la vacuna?
 
 12
-00:00:26,708 --> 00:00:28,740
-no cuando ya está adentro.
+00:00:24,727 --> 00:00:26,503
+Te avisa antes de recibirlo,
 
 13
-00:00:29,600 --> 00:00:32,754
-En la caja cobras con terminal,
+00:00:26,596 --> 00:00:28,523
+no cuando ya está adentro.
 
 14
-00:00:32,814 --> 00:00:36,837
-y el dueño ve en su portal las visitas de
+00:00:30,400 --> 00:00:32,291
+En la caja cobras con terminal,
 
 15
-00:00:36,897 --> 00:00:38,140
-su perro.
+00:00:32,316 --> 00:00:34,513
+y el dueño ve en su portal las visitas de
 
 16
-00:00:39,100 --> 00:00:41,926
-Los perros ya te dan suficiente trabajo.
+00:00:34,533 --> 00:00:35,519
+su perro.
 
 17
-00:00:41,986 --> 00:00:44,373
-Prueba PeluDesk 15 días gratis en
+00:00:39,900 --> 00:00:43,119
+Los perros ya te dan suficiente trabajo.
 
 18
-00:00:44,433 --> 00:00:45,440
+00:00:43,139 --> 00:00:46,296
+Prueba PeluDesk 15 días gratis en
+
+19
+00:00:46,355 --> 00:00:47,434
 peludesk.mx

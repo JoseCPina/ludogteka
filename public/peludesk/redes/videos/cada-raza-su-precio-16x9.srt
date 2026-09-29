@@ -1,0 +1,35 @@
+1
+00:00:00,150 --> 00:00:02,104
+¿Cuánto cobras por bañar a un husky?
+
+2
+00:00:02,124 --> 00:00:03,644
+¿Y a un poodle?
+
+3
+00:00:03,500 --> 00:00:05,767
+Le pones un precio a cada grupo de raza,
+
+4
+00:00:05,787 --> 00:00:07,242
+y otro por si llega con el pelo
+
+5
+00:00:07,262 --> 00:00:08,712
+maltratado.
+
+6
+00:00:11,300 --> 00:00:13,114
+La cita toma el precio de la raza del
+
+7
+00:00:13,134 --> 00:00:15,564
+perro, y cada estilista ve sus citas en su
+
+8
+00:00:15,584 --> 00:00:16,837
+columna.
+
+9
+00:00:19,400 --> 00:00:23,172
+Pruébalo 15 días gratis en peludesk.mx.

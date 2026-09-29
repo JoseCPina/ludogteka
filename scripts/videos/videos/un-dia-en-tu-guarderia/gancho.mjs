@@ -96,9 +96,11 @@ export function gancho(c, { monitorFinal, fotoAgenda }) {
     ${titulo1}${titulo2}`;
 
   // Ritmo: llega la libreta, luego el teléfono; cuando se detienen, el
-  // título; hasta después los apuntes y los chats. Al 3.8 s todo se va al
+  // título; hasta después los apuntes y los chats. Hacia los 4 s todo se va al
   // fondo y sube el monitor limpio.
-  const T = 3.8;
+  // Con la escena más larga (7.3 s, por la frase nueva de la voz) el cambio al
+  // monitor se recorre lo mismo: la libreta y los chats acompañan la lista.
+  const T = 3.8 + Math.max(0, c.dur - 6.5);
   const js = `
     gsap.set("#e1-libreta", { rotation: ${lib.giro} });
     gsap.set("#e1-tel", { rotation: 6 });

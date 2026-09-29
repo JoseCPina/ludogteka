@@ -9,6 +9,8 @@
 //   --formatos 16x9,9x16
 //   --calidad draft|standard|high   (standard por omisión)
 //   --sin-render        solo arma los proyectos de HyperFrames (para abrirlos en el Studio)
+//   --sin-musica        sin música de fondo
+//   --solo-voz          genera y revisa la voz (y la música) sin grabar ni renderizar
 //
 // Sale en public/peludesk/redes/videos/:
 //   <video>-16x9.mp4, <video>-16x9-subtitulos.mp4, <video>-9x16.mp4, <video>-9x16-subtitulos.mp4,
@@ -23,7 +25,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { construir, tiempos } from "./lib/composicion.mjs";
 import { grabar } from "./lib/grabar.mjs";
-import { generarVoz, montarAudio } from "./lib/voz.mjs";
+import { generarVoz, generarMusica, mezclar, montarAudio, AIRE, SILENCIO } from "./lib/voz.mjs";
 import { srt } from "./lib/subtitulos.mjs";
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
@@ -44,6 +46,8 @@ if (!nombre) {
   console.log("Videos:", fs.readdirSync(path.join(AQUI, "videos")).join(", "));
   process.exit(1);
 }
+// La música de fondo por omisión: la misma para toda la serie.
+const MUSICA = "Warm, gentle acoustic instrumental for a short product video about a small dog daycare and grooming business. Soft acoustic guitar and light marimba, subtle shaker, relaxed friendly groove around 96 bpm, steady and unobtrusive from start to finish, no drops, no big build-ups, no vocals. Background bed that stays under a spoken voiceover.";
 const BASE = opcion("base", "http://patitasyco.localhost:3001");
 const FORMATOS = opcion("formatos", "16x9,9x16").split(",");
 const CALIDAD = opcion("calidad", "standard");
@@ -58,7 +62,7 @@ if (!/^https?:\/\/patitasyco\./.test(BASE)) throw new Error(`Las tomas se graban
 // ── 1. Grabar ──
 const elegidas = opcion("tomas")?.split(",");
 const faltan = Object.keys(guion.tomas).filter((t) => (elegidas ? elegidas.includes(t) : !fs.existsSync(path.join(GRAB, `${t}.json`))));
-if (bandera("grabar") || faltan.length) {
+if (!bandera("solo-voz") && (bandera("grabar") || faltan.length)) {
   console.log(`Grabando ${bandera("grabar") ? "todas las tomas" : faltan.join(", ")} desde ${BASE}`);
   const ok = await contesta(`${BASE}/demo`);
   if (!ok) throw new Error(`No contesta ${BASE}. Prende la app (npm run build && npm run start -- -p 3001).`);
@@ -69,37 +73,78 @@ if (bandera("grabar") || faltan.length) {
 }
 if (bandera("solo-grabar")) process.exit(0);
 
-// ── 2. Voz (o pista vacía) ──
+// ── 2. Voz (o pista vacía) y música ──
 const escenas = tiempos(guion);
 const total = escenas.at(-1).fin;
-const voz = await generarVoz({ escenas, total, dir: path.join(BUILD, "voz") });
-console.log(voz.generada ? "Voz generada con ElevenLabs" : "Sin ELEVENLABS_API_KEY: pista de audio vacía, lista para montar la voz");
+const CACHE_AUDIO = path.join(AQUI, "audio", nombre);
+const voz = await generarVoz({ escenas, total, dir: path.join(BUILD, "voz"), cache: CACHE_AUDIO });
+console.log(voz.generada ? "Voz generada con ElevenLabs (o de la caché de audio/)" : "Sin ELEVENLABS_API_KEY: pista de audio vacía, lista para montar la voz");
+const musica = voz.generada && !bandera("sin-musica") ? await generarMusica({ total, prompt: guion.musica ?? MUSICA, cache: CACHE_AUDIO }) : null;
+if (musica) console.log("Música de fondo: " + path.relative(RAIZ, musica));
+const pistaFinal = voz.generada ? mezclar({ voz: voz.pista, musica, total, salida: path.join(BUILD, "voz", "mezcla.wav") }) : voz.pista;
+if (voz.generada) verificarVoz();
+if (bandera("solo-voz")) {
+  fs.writeFileSync(path.join(AQUI, "videos", nombre, "GUION.md"), guionMd());
+  process.exit(0);
+}
 
 // ── 3. Componer y renderizar ──
-const hf = path.join(AQUI, "node_modules/.bin/hyperframes");
-if (!fs.existsSync(hf)) throw new Error("Falta HyperFrames: cd scripts/videos && npm ci");
+const hfBin = path.join(AQUI, "node_modules/hyperframes/bin/hyperframes.mjs");
+if (!fs.existsSync(hfBin)) throw new Error("Falta HyperFrames: cd scripts/videos && npm ci");
+// Se corre con el mismo Node (en Windows, node_modules/.bin/hyperframes es un .cmd que spawn no abre).
+const hf = process.execPath;
+const hfArgs = (...a) => [hfBin, ...a];
 const env = { ...process.env, HYPERFRAMES_NO_TELEMETRY: "1", HYPERFRAMES_SKIP_SKILLS: "1" };
 env.HYPERFRAMES_BROWSER_PATH ??= navegadorLocal();
+// Captura por segmentos: en la captura continua, con un solo navegador (8 GB
+// de RAM), el render se trababa siempre en el mismo cuadro; por segmentos no,
+// y un reintento reanuda (--resume) en vez de empezar de cero.
+env.HF_SEGMENTED_CAPTURE ??= "true";
 fs.mkdirSync(SALIDA, { recursive: true });
 
 for (const formato of FORMATOS) {
   const dir = path.join(BUILD, formato);
   const { subtitulos } = construir({ guion, formato, dir, grabaciones: GRAB, alineacion: voz.alineacion });
   console.log(`\n[${formato}] proyecto en ${path.relative(RAIZ, dir)} (${total} s, ${escenas.length} escenas, ${subtitulos.length} subtítulos)`);
-  const lint = spawnSync(hf, ["lint"], { cwd: dir, env, encoding: "utf8" });
+  const lint = spawnSync(hf, hfArgs("lint"), { cwd: dir, env, encoding: "utf8" });
   const hallazgos = (lint.stdout + lint.stderr).split("\n").filter((l) => /error|✗/i.test(l));
   if (lint.status !== 0) { console.log(lint.stdout, lint.stderr); throw new Error(`hyperframes lint falló en ${formato}`); }
   if (hallazgos.length) console.log(hallazgos.join("\n"));
   fs.writeFileSync(path.join(SALIDA, `${nombre}-${formato}.srt`), srt(subtitulos));
   if (bandera("sin-render")) continue;
 
+  // Una sola pasada completa (sin subtítulos); los subtítulos se renderizan
+  // aparte, transparentes, y ffmpeg los pone encima.
+  const renderizar = (args, nombreLog, envExtra = {}) => {
+    for (let intento = 1; intento <= 3; intento++) {
+      // La salida va a un archivo, no a un tubo: la barra de progreso escribe
+      // miles de renglones.
+      const log = path.join(dir, nombreLog);
+      const fd = fs.openSync(log, "w");
+      const r = spawnSync(hf, hfArgs("render", "-q", CALIDAD, "-f", "30", ...args, ...(intento > 1 ? ["--resume"] : [])), { cwd: dir, env: { ...env, ...envExtra }, stdio: ["ignore", fd, fd] });
+      fs.closeSync(fd);
+      if (r.status === 0) return;
+      const salida = fs.readFileSync(log, "utf8");
+      // Si se traba ("capture stalled"), se reintenta hasta dos veces.
+      if (!/capture stalled|timed out/i.test(salida) || intento === 3) { console.log(salida.slice(-3000)); throw new Error(`Falló el render ${formato} (registro: ${path.relative(RAIZ, log)})`); }
+      console.log(`  … el render se trabó, reintento ${intento + 1} de 3`);
+    }
+  };
+  const t0 = Date.now();
+  const limpio = path.join(dir, "render.mp4");
+  renderizar(["--video-frame-format", "jpg", "--variables", JSON.stringify({ subtitulos: false }), "-o", limpio], "render.log");
+  const capa = path.join(dir, "subtitulos.mov");
+  // Sin segmentos: la captura segmentada arma MP4 y ProRes (con transparencia) no cabe ahí.
+  renderizar(["-c", "capas/subtitulos.html", "--format", "mov", "-o", capa], "render-subtitulos.log", { HF_SEGMENTED_CAPTURE: "false" });
+  const conSubtitulos = path.join(dir, "render-subtitulos.mp4");
+  execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-i", limpio, "-i", capa, "-filter_complex", "[0:v][1:v]overlay=0:0:format=auto,format=yuv420p[v]", "-map", "[v]", "-c:v", "libx264", "-preset", "medium", "-crf", "14", "-r", "30", "-movflags", "+faststart", conSubtitulos]);
+  fs.rmSync(capa, { force: true });
+
   for (const conSubs of [false, true]) {
-    const crudo = path.join(dir, `render${conSubs ? "-subtitulos" : ""}.mp4`);
-    const t0 = Date.now();
-    const r = spawnSync(hf, ["render", "-q", CALIDAD, "-f", "30", "--video-frame-format", "png", "--variables", JSON.stringify({ subtitulos: conSubs }), "-o", crudo], { cwd: dir, env, encoding: "utf8" });
-    if (r.status !== 0) { console.log(r.stdout.slice(-3000), r.stderr.slice(-3000)); throw new Error(`Falló el render ${formato}${conSubs ? " con subtítulos" : ""}`); }
+    const crudo = conSubs ? conSubtitulos : limpio;
     const final = path.join(SALIDA, `${nombre}-${formato}${conSubs ? "-subtitulos" : ""}.mp4`);
-    montarAudio(crudo, voz.pista, final);
+    montarAudio(crudo, pistaFinal, final);
+    comprobarMp4(final);
     console.log(`  ✔ ${path.relative(RAIZ, final)} · ${(fs.statSync(final).size / 1e6).toFixed(1)} MB · ${((Date.now() - t0) / 1000).toFixed(0)} s`);
     if (!conSubs) {
       execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-ss", String(guion.portada ?? 1), "-i", final, "-frames:v", "1", "-q:v", "3", path.join(SALIDA, `${nombre}-${formato}.jpg`)]);
@@ -114,12 +159,13 @@ console.log(`\nGuion con tiempos: ${path.relative(RAIZ, path.join(AQUI, "videos"
 function guionMd() {
   const t = (s) => `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, "0")}`;
   const filas = escenas.map((e, i) => {
-    const desde = e.inicio + (e.voz?.desde ?? 0), hasta = e.inicio + (e.voz?.hasta ?? e.duracion - 0.3);
+    const real = voz.colocacion?.[e.id];
+    const desde = real?.desde ?? e.inicio + (e.voz?.desde ?? 0), hasta = real?.hasta ?? e.inicio + (e.voz?.hasta ?? e.duracion - 0.3);
     return `## ${i + 1}. ${e.titulo} · ${t(e.inicio)}–${t(e.fin)} (${e.duracion} s)
 
 - **Pantalla:** ${e.pantalla}
 - **Texto en pantalla:** ${e.texto}
-- **Locución** (${t(desde)}–${t(hasta)}, ${(hasta - desde).toFixed(1)} s): «${e.voz.texto}»
+- **Locución** (${t(desde)}–${t(hasta)}, ${(hasta - desde).toFixed(1)} s${real ? `, voz real${real.velocidad !== 1 ? ` a ${real.velocidad}x` : ""}` : ""}): «${e.voz.texto}»
 `;
   });
   return `# ${guion.titulo}
@@ -127,9 +173,44 @@ function guionMd() {
 Generado por \`node scripts/videos/producir.mjs ${nombre}\`: no se edita a mano (el guion vive en \`guion.mjs\`).
 
 Duración: ${total} s. Las escenas se traslapan ${guion.traslape} s para la transición.
-La voz se lee dentro de la ventana de cada escena; los subtítulos (\`public/peludesk/redes/videos/${nombre}-<formato>.srt\`) usan esos mismos tiempos.
+${voz.generada
+  ? `Voz de ElevenLabs con los tiempos reales de la voz generada${musica ? ", con música de fondo de Eleven Music" : ""}; los subtítulos (\`public/peludesk/redes/videos/${nombre}-<formato>.srt\`) van alineados palabra por palabra a esa voz.`
+  : `La voz se lee dentro de la ventana de cada escena; los subtítulos (\`public/peludesk/redes/videos/${nombre}-<formato>.srt\`) usan esos mismos tiempos.`}
 
 ${filas.join("\n")}`;
+}
+
+// La voz de cada escena termina sola, antes del final de su escena y sin
+// pisar la siguiente. En la pista de voz (sin música): justo antes del corte
+// de cada frase (su desvanecido) ya no hay sonido, o sea que el corte no se
+// comió nada; y el último sonido cae antes del final de la escena.
+function verificarVoz() {
+  const pcm = execFileSync("ffmpeg", ["-loglevel", "error", "-i", voz.pista, "-ac", "1", "-ar", "16000", "-f", "s16le", "-"], { maxBuffer: 1 << 28 });
+  const muestras = new Int16Array(pcm.buffer, pcm.byteOffset, pcm.length / 2);
+  const rms = (a, b) => {
+    const i0 = Math.max(0, Math.floor(a * 16000)), i1 = Math.min(muestras.length, Math.floor(b * 16000));
+    let s = 0; for (let i = i0; i < i1; i++) s += muestras[i] * muestras[i];
+    return i1 > i0 ? Math.sqrt(s / (i1 - i0)) / 32768 : 0;
+  };
+  const fallas = [];
+  const conVoz = escenas.filter((e) => voz.colocacion?.[e.id]);
+  for (const [i, e] of conVoz.entries()) {
+    const c = voz.colocacion[e.id];
+    const sig = conVoz[i + 1] && voz.colocacion[conVoz[i + 1].id];
+    const enCorte = rms(c.hasta, c.corte);
+    console.log(`  voz ${e.id}: ${c.desde.toFixed(2)}–${c.hasta.toFixed(2)} s · escena ${e.inicio.toFixed(2)}–${e.fin.toFixed(2)} s · sobran ${(e.fin - c.hasta).toFixed(2)} s · en el corte ${(20 * Math.log10(enCorte || 1e-9)).toFixed(0)} dBFS${c.velocidad !== 1 ? ` · ${c.velocidad}x` : ""}`);
+    if (enCorte > SILENCIO) fallas.push(`${e.id}: todavía hay voz al cortarla (${c.hasta.toFixed(2)} s)`);
+    if (c.corte > e.fin - AIRE / 2) fallas.push(`${e.id}: la voz termina en ${c.corte.toFixed(2)} s y la escena en ${e.fin.toFixed(2)} s`);
+    if (sig && c.corte + AIRE > sig.desde) fallas.push(`${e.id}: la voz termina en ${c.corte.toFixed(2)} s y la siguiente empieza en ${sig.desde.toFixed(2)} s`);
+  }
+  if (fallas.length) throw new Error("La voz se corta:\n  " + fallas.join("\n  "));
+}
+
+// El MP4 final: audio y video del mismo largo que el guion.
+function comprobarMp4(archivo) {
+  const info = JSON.parse(execFileSync("ffprobe", ["-v", "error", "-show_entries", "stream=codec_type,duration", "-of", "json", archivo]).toString());
+  const d = Object.fromEntries(info.streams.map((s) => [s.codec_type, Number(s.duration)]));
+  if (!d.audio || Math.abs(d.audio - total) > 0.15 || Math.abs(d.video - total) > 0.15) throw new Error(`${path.basename(archivo)}: video ${d.video} s, audio ${d.audio} s, guion ${total} s`);
 }
 
 // <slug>.localhost no lo resuelve Node: se pega a 127.0.0.1 con el Host puesto.

@@ -1,0 +1,31 @@
+1
+00:00:00,150 --> 00:00:01,187
+Vendiste bien este mes.
+
+2
+00:00:01,207 --> 00:00:02,808
+¿Pero cuánto ganaste de verdad?
+
+3
+00:00:03,500 --> 00:00:05,396
+PeluDesk le resta a lo que cobraste los
+
+4
+00:00:05,416 --> 00:00:08,526
+insumos, la nómina y los gastos del local.
+
+5
+00:00:11,500 --> 00:00:13,628
+Y te lo compara con el mes anterior,
+
+6
+00:00:13,648 --> 00:00:15,056
+gasto por gasto,
+
+7
+00:00:15,076 --> 00:00:17,316
+sin sumar a mano.
+
+8
+00:00:19,600 --> 00:00:23,140
+Pruébalo 15 días gratis en peludesk.mx.

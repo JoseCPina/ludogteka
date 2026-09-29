@@ -12,6 +12,7 @@
 // puede abrir en el Studio de HyperFrames (`npx hyperframes preview`) y
 // mover o recortar escenas en su línea de tiempo.
 import fs from "node:fs";
+import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { dispositivo } from "./dispositivos.mjs";
@@ -136,6 +137,41 @@ ${subtitulos.map((s, i) => `      tl.fromTo("#sub-${i}-t", { opacity: 0, y: 14 }
 </html>
 `;
   fs.writeFileSync(path.join(dir, "index.html"), index);
+
+  // Los subtítulos solos, sobre fondo transparente: se renderizan aparte (no
+  // tienen video, así que es barato) y ffmpeg los pone encima del video sin
+  // subtítulos. Así cada formato se renderiza una sola vez completo.
+  const soloSubs = `<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=${F.W}, height=${F.H}" />
+    <title>${esc(guion.titulo)} · ${F.id} · subtítulos</title>
+    <link rel="stylesheet" href="../recursos/estilo.css" />
+    <script src="../recursos/gsap.min.js"></script>
+    <style>
+      html, body { background: transparent !important; }
+      #principal { position: relative; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+      #pd-subtitulos { bottom: ${abajoSub}px; height: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="principal" data-composition-id="principal" data-width="${F.W}" data-height="${F.H}" data-duration="${total}">
+      <div id="pd-subtitulos">
+${subsHtml}
+      </div>
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true });
+${subtitulos.map((s, i) => `      tl.fromTo("#sub-${i}-t", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.22, ease: "power2.out" }, ${r(s.inicio)});`).join("\n")}
+      window.__timelines["principal"] = tl;
+    </script>
+  </body>
+</html>
+`;
+  // En su carpeta: dos composiciones raíz en la misma carpeta no pasan el lint.
+  fs.mkdirSync(path.join(dir, "capas"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "capas", "subtitulos.html"), soloSubs);
   fs.writeFileSync(path.join(dir, "hyperframes.json"), JSON.stringify({ paths: { assets: "recursos" }, media: { autoProxy: true } }, null, 2));
   return { total, escenas, subtitulos };
 }
@@ -149,6 +185,11 @@ function contexto({ F, e, dir, grabaciones, metas }) {
       if (!fs.existsSync(archivo)) throw new Error(`Falta la grabación "${nombre}". Corre producir.mjs con --grabar.`);
       const m = JSON.parse(fs.readFileSync(archivo, "utf8"));
       copiar(path.join(grabaciones, `${nombre}.mp4`), path.join(dir, "tomas", `${nombre}.mp4`));
+      // El último cuadro de la toma, para dejarlo debajo del video: si la
+      // escena dura más que la toma, la pantalla se queda en ese cuadro en vez
+      // de quedarse en blanco.
+      const fin = path.join(dir, "tomas", `${nombre}-fin.jpg`);
+      if (!fs.existsSync(fin)) execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-sseof", "-0.2", "-i", path.join(grabaciones, `${nombre}.mp4`), "-frames:v", "1", "-q:v", "2", fin]);
       metas.set(nombre, m);
     }
     return metas.get(nombre);
@@ -168,7 +209,8 @@ function contexto({ F, e, dir, grabaciones, metas }) {
     video(nombre, { inicio = 0, desde = 0, duracion } = {}) {
       const m = toma(nombre);
       const d = duracion ?? Math.min(e.duracion - inicio, m.duracion - desde);
-      return `<video id="${e.id}-v${nVideo++}" class="clip" src="tomas/${nombre}.mp4" data-start="${r(inicio)}" data-duration="${r(d)}" data-media-start="${r(desde)}" data-track-index="${3 + nVideo}" muted playsinline></video>`;
+      const fondo = `<img src="tomas/${nombre}-fin.jpg" alt="" />`;
+      return `${fondo}<video id="${e.id}-v${nVideo++}" class="clip" src="tomas/${nombre}.mp4" data-start="${r(inicio)}" data-duration="${r(d)}" data-media-start="${r(desde)}" data-track-index="${3 + nVideo}" muted playsinline></video>`;
     },
     imagen(nombre, marca) {
       const m = recorte(nombre, marca);

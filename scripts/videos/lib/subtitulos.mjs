@@ -37,16 +37,24 @@ export function partirSubtitulos(escenas, { max, alineacion } = {}) {
     const lista = frases(e.voz.subtitulo ?? e.voz.texto, max);
     const al = alineacion?.[e.id];
     if (al) {
-      // Alineación de ElevenLabs: { caracteres: [...], inicios: [...], fines: [...] } relativos al audio de la escena.
-      let cursor = 0;
-      const texto = al.caracteres.join("");
+      // Alineación de ElevenLabs ({ caracteres, inicios, fines }, relativos al
+      // audio de la escena) → palabras dichas con su inicio y su fin.
+      const dichas = palabrasDichas(al);
+      const nSub = lista.reduce((s, f) => s + f.split(" ").length, 0);
+      const base = e.inicio + e.voz.desde;
+      let k = 0;
       for (const f of lista) {
-        const i = texto.indexOf(f.split(" ")[0], cursor);
-        const j = Math.min(al.fines.length - 1, (i < 0 ? cursor : i) + f.length - 1);
-        const ini = al.inicios[i < 0 ? cursor : i];
-        subs.push({ escena: e.id, texto: f, inicio: e.inicio + e.voz.desde + ini, fin: e.inicio + e.voz.desde + al.fines[j] + 0.15 });
-        cursor = j + 1;
+        const n = f.split(" ").length;
+        // Mismo número de palabras (lo normal): palabra por palabra. Si el
+        // subtítulo escribe distinto lo que se dice («peludesk.mx» por
+        // «peludesk punto mx»), en proporción.
+        const a = nSub === dichas.length ? k : Math.round((k / nSub) * dichas.length);
+        const b = nSub === dichas.length ? k + n - 1 : Math.max(a, Math.round(((k + n) / nSub) * dichas.length) - 1);
+        subs.push({ escena: e.id, texto: f, inicio: base + dichas[a].inicio, fin: base + dichas[Math.min(b, dichas.length - 1)].fin + 0.15 });
+        k += n;
       }
+      // Uno no se queda en pantalla encima del que sigue.
+      for (let i = subs.length - lista.length; i < subs.length - 1; i++) subs[i].fin = Math.min(subs[i].fin, subs[i + 1].inicio - 0.02);
       continue;
     }
     const desde = e.inicio + e.voz.desde;
@@ -60,6 +68,17 @@ export function partirSubtitulos(escenas, { max, alineacion } = {}) {
     }
   }
   return subs;
+}
+
+function palabrasDichas(al) {
+  const salida = [];
+  let actual = null;
+  al.caracteres.forEach((ch, i) => {
+    if (/\s/.test(ch)) { actual = null; return; }
+    if (!actual) { actual = { inicio: al.inicios[i], fin: al.fines[i] }; salida.push(actual); }
+    else actual.fin = al.fines[i];
+  });
+  return salida;
 }
 
 const hms = (s) => {

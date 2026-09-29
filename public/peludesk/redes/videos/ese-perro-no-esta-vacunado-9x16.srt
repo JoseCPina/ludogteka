@@ -1,0 +1,51 @@
+1
+00:00:00,150 --> 00:00:01,268
+¿Te enteraste de la vacuna
+
+2
+00:00:01,288 --> 00:00:02,394
+vencida cuando el perro ya
+
+3
+00:00:02,414 --> 00:00:03,365
+estaba adentro?
+
+4
+00:00:04,000 --> 00:00:05,257
+Si a un perro se le venció una
+
+5
+00:00:05,277 --> 00:00:07,161
+vacuna, no te deja reservarle
+
+6
+00:00:07,181 --> 00:00:08,438
+guardería ni hotel.
+
+7
+00:00:08,458 --> 00:00:09,491
+Y te dice cuál.
+
+8
+00:00:12,400 --> 00:00:13,796
+Y en reportes ves cuántos
+
+9
+00:00:13,816 --> 00:00:15,027
+perros tienen vacunas por
+
+10
+00:00:15,047 --> 00:00:15,731
+vencer,
+
+11
+00:00:15,790 --> 00:00:17,333
+para avisarles a tiempo.
+
+12
+00:00:20,300 --> 00:00:22,799
+Pruébalo 15 días gratis en
+
+13
+00:00:22,819 --> 00:00:23,747
+peludesk.mx.

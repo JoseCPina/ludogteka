@@ -25,5 +25,5 @@ function headlessShellDeWindows() {
 
 export function abrirNavegador() {
   const executablePath = process.platform === "win32" ? headlessShellDeWindows() : undefined;
-  return chromium.launch({ executablePath, args: ["--disable-gpu"] });
+  return chromium.launch({ executablePath, args: ["--disable-gpu", "--lang=es-MX"] });
 }

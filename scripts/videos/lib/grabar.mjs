@@ -24,6 +24,7 @@ import { abrirNavegador } from "../../lib/navegador.mjs";
 const CSS_GRABACION = `
   nextjs-portal{display:none!important}
   [data-aviso-plan=demo]{display:none!important}
+  input[type=file]{visibility:hidden!important} /* el chrome-headless-shell lo pinta en inglés ("Choose File") */
   *{caret-color:transparent!important}
   html{scrollbar-width:none} ::-webkit-scrollbar{display:none}
   #pd-cursor{position:fixed;left:0;top:0;z-index:2147483647;pointer-events:none;will-change:transform}
@@ -247,16 +248,16 @@ export async function grabar({ base, rol, ruta, ancho, alto, escala = 2, puntero
   for (let i = 0; i < lista.length; i++) {
     const desde = i === 0 ? t0 : lista[i].t;
     const hasta = i + 1 < lista.length ? lista[i + 1].t : t0 + fin;
-    concat.push(`file '${lista[i].archivo}'`, `duration ${Math.max(0.001, hasta - desde).toFixed(4)}`);
+    concat.push(`file '${lista[i].archivo.replaceAll(path.sep, "/")}'`,`duration ${Math.max(0.001, hasta - desde).toFixed(4)}`);
   }
-  concat.push(`file '${lista.at(-1).archivo}'`);
+  concat.push(`file '${lista.at(-1).archivo.replaceAll(path.sep, "/")}'`);
   const listaTxt = path.join(cuadros, "lista.txt");
   fs.writeFileSync(listaTxt, concat.join("\n"));
   const mp4 = path.join(salida, `${nombre}.mp4`);
   execFileSync("ffmpeg", [
     "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", listaTxt,
     "-vf", "fps=30,scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p",
-    "-c:v", "libx264", "-preset", "medium", "-crf", "14", "-movflags", "+faststart", mp4,
+    "-c:v", "libx264", "-preset", "medium", "-crf", "14", "-g", "30", "-keyint_min", "30", "-movflags", "+faststart", mp4, // un keyframe por segundo: HyperFrames busca cuadros sueltos
   ]);
   fs.rmSync(cuadros, { recursive: true, force: true });
 

@@ -21,14 +21,16 @@ const monitor = (c) => MONITOR[c.vertical ? "9x16" : "16x9"];
 const guion = {
   titulo: "Un día en tu guardería",
   traslape: 0.5,
-  portada: 42,
+  portada: 44,
   tomas: TOMAS,
   escenas: [
     {
-      id: "e1", titulo: "Gancho: la libreta y los chats", duracion: 6.5, acento: "var(--morado)",
+      id: "e1", titulo: "Gancho: la libreta y los chats", duracion: 7.3, acento: "var(--morado)",
       pantalla: "Libreta con apuntes tachados y un teléfono con chats que no paran; se van al fondo y sube el monitor con la agenda limpia.",
       texto: "«Así empiezan muchas mañanas.» → «Y así, con PeluDesk.»",
-      voz: { texto: "La libreta, veinte chats sin contestar y el cupo de memoria. Así empiezan muchas mañanas.", desde: 0.4, hasta: 5.9 },
+      // Primero lo que dice la pantalla («Así empiezan muchas mañanas.»), luego
+      // lo que se ve en la libreta y los chats.
+      voz: { texto: "Así empiezan muchas mañanas: la libreta, veinte chats sin contestar y el cupo apuntado en la cabeza.", desde: 0.3, hasta: 6.85 },
       componer: (c) => gancho(c, { monitorFinal: monitor(c), fotoAgenda: c.imagen("estetica", "inicio") }),
     },
     {
@@ -60,13 +62,13 @@ const guion = {
       componer: (c) => caja(c),
     },
     {
-      id: "e6", titulo: "Cierre: 15 días gratis", duracion: 7.5, acento: "var(--menta)",
+      id: "e6", titulo: "Cierre: 15 días gratis", duracion: 8.6, acento: "var(--menta)",
       pantalla: "Fondo morado; tres teléfonos llegan y giran cambiando de pantalla; se van al fondo y queda «15 días gratis» con peludesk.mx.",
       texto: "«15 días gratis.» «Sin tarjeta. Si no te sirve, no pagas nada.» peludesk.mx",
       voz: {
         texto: "Los perros ya te dan suficiente trabajo. Prueba PeluDesk quince días gratis en peludesk punto mx.",
         subtitulo: "Los perros ya te dan suficiente trabajo. Prueba PeluDesk 15 días gratis en peludesk.mx",
-        desde: 0.6, hasta: 7.0,
+        desde: 0.6, hasta: 8.1,
       },
       componer: (c) => cierre(c),
     },

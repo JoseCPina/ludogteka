@@ -1,0 +1,51 @@
+1
+00:00:00,150 --> 00:00:01,291
+¿Tu negocio todavía no tiene
+
+2
+00:00:01,311 --> 00:00:02,204
+página web?
+
+3
+00:00:03,400 --> 00:00:04,158
+En tu prueba,
+
+4
+00:00:04,178 --> 00:00:05,714
+completa tu perfil la primera
+
+5
+00:00:05,734 --> 00:00:07,107
+semana: logo,
+
+6
+00:00:07,127 --> 00:00:08,465
+tres fotos, horario,
+
+7
+00:00:08,485 --> 00:00:10,562
+dirección y un precio.
+
+8
+00:00:12,100 --> 00:00:13,787
+Y tu página web queda gratis
+
+9
+00:00:13,807 --> 00:00:14,642
+de por vida,
+
+10
+00:00:14,735 --> 00:00:15,633
+con tus servicios,
+
+11
+00:00:15,653 --> 00:00:17,683
+tus precios y tus fotos.
+
+12
+00:00:20,600 --> 00:00:23,397
+Pruébalo 15 días gratis en
+
+13
+00:00:23,688 --> 00:00:24,651
+peludesk.mx.
