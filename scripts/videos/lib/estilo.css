@@ -1,0 +1,125 @@
+/* Estilo compartido de los videos de PeluDesk: marca, dispositivos, texto y
+   subtítulos. Paleta y letra del kit (src/app/globals.css, src/fuentes). Un
+   solo acento de color por escena: cada escena pone --acento. */
+
+@font-face {
+  font-family: "Outfit";
+  src: url("outfit-latin.woff2") format("woff2");
+  font-weight: 400 800;
+}
+@font-face {
+  font-family: "Caveat";
+  src: url("caveat-latin-600-normal.woff2") format("woff2");
+  font-weight: 600;
+}
+
+:root {
+  --morado: #4b3f72;
+  --morado-oscuro: #3a3059;
+  --menta: #a7d8c8;
+  --menta-oscuro: #1f6b57;
+  --coral: #f28c82;
+  --coral-oscuro: #b23c31;
+  --ambar: #f5b85c;
+  --crema: #fff8ee;
+  --grafito: #2b2a33;
+  --n-100: #f6efe5;
+  --n-200: #ebe3d8;
+  --n-500: #7b7580;
+  --acento: var(--morado);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { margin: 0; background: var(--crema); overflow: hidden; }
+body { font-family: "Outfit", sans-serif; color: var(--grafito); -webkit-font-smoothing: antialiased; }
+
+/* ── Capas de una escena ── */
+.pd-fondo { position: absolute; inset: 0; background: var(--crema); }
+.pd-camara { position: absolute; left: 0; top: 0; width: 100%; height: 100%; transform-origin: 0 0; }
+.pd-capa { position: absolute; left: 0; top: 0; }
+
+/* ── Texto editorial ── */
+.pd-titulo {
+  position: absolute; font-weight: 700; letter-spacing: -0.035em; line-height: 0.98; color: var(--grafito);
+}
+.pd-titulo .pd-acento { color: var(--acento); }
+.pd-palabra { display: inline-block; will-change: transform; }
+.pd-linea { display: block; overflow: visible; }
+.pd-sub { position: absolute; font-weight: 500; letter-spacing: -0.01em; color: var(--n-500); line-height: 1.25; }
+.pd-etiqueta {
+  position: absolute; display: inline-flex; align-items: center; gap: 0.45em; font-weight: 600;
+  border-radius: 999px; padding: 0.42em 0.95em 0.46em; background: var(--grafito); color: var(--crema); white-space: nowrap;
+}
+
+/* ── Dispositivos: genéricos, sin logos ── */
+.disp { position: absolute; transform-style: preserve-3d; }
+.disp-cara { position: absolute; left: 0; top: 0; backface-visibility: hidden; }
+.disp-cuerpo { position: absolute; background: #17161c; }
+.disp-pantalla { position: absolute; overflow: hidden; background: #fff; isolation: isolate; }
+.disp-app > video, .disp-app > img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; object-position: top left; }
+.disp-reflejo {
+  position: absolute; inset: 0; pointer-events: none; z-index: 5;
+  /* El brillo del vidrio: una franja diagonal muy tenue y el borde superior algo más claro. */
+  background:
+    linear-gradient(112deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.05) 31%, rgba(255,255,255,0) 31.2%),
+    linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0) 12%);
+  mix-blend-mode: screen;
+}
+.disp-vidrio-borde { position: absolute; inset: 0; pointer-events: none; z-index: 6; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.55); border-radius: inherit; }
+.disp-sombra {
+  position: absolute; pointer-events: none; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(43,42,51,0.34), rgba(43,42,51,0.12) 60%, rgba(43,42,51,0) 100%);
+  filter: blur(6px);
+}
+.disp-metal {
+  background: linear-gradient(90deg, #a8a3ae 0%, #dcd8e0 22%, #f1eef3 45%, #cdc9d2 70%, #9e99a5 100%);
+}
+
+/* Monitor */
+.monitor .disp-cuerpo {
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255,255,255,0.07),
+    inset 0 1.5px 0 rgba(255,255,255,0.16),
+    0 2px 3px rgba(43,42,51,0.2),
+    0 28px 50px -18px rgba(43,42,51,0.42),
+    0 70px 110px -40px rgba(43,42,51,0.3);
+}
+.monitor .monitor-menton { position: absolute; left: 0; right: 0; bottom: 0; border-top: 1px solid rgba(255,255,255,0.05); }
+.monitor .monitor-cuello { position: absolute; clip-path: polygon(8% 0, 92% 0, 100% 100%, 0 100%); }
+.monitor .monitor-cuello::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(43,42,51,0.35), rgba(43,42,51,0) 38%); }
+.monitor .monitor-base { position: absolute; border-radius: 10px 10px 16px 16px; box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.8), 0 6px 14px -4px rgba(43,42,51,0.35); }
+
+/* Tablet y teléfono: canto de aluminio, vidrio negro al borde. */
+.tablet .disp-cuerpo, .telefono .disp-cuerpo {
+  box-shadow:
+    0 0 0 2px #cfcad4,
+    0 0 0 3.5px #8f8a96,
+    inset 0 0 0 1.5px rgba(255,255,255,0.06),
+    0 3px 5px rgba(43,42,51,0.18),
+    0 30px 55px -20px rgba(43,42,51,0.45),
+    0 70px 120px -45px rgba(43,42,51,0.32);
+}
+.disp-camara-frontal { position: absolute; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #3b3a52 0%, #0b0b10 60%); box-shadow: 0 0 0 1px rgba(255,255,255,0.06); z-index: 7; }
+.telefono .telefono-isla { position: absolute; background: #050507; border-radius: 999px; z-index: 7; }
+.telefono .telefono-boton { position: absolute; border-radius: 3px; }
+
+/* ── Anotaciones sobre la pantalla ── */
+.pd-resalte { position: absolute; border-radius: 14px; border: 4px solid var(--acento); box-shadow: 0 0 0 9999px rgba(43,42,51,0); }
+.pd-flecha { position: absolute; overflow: visible; }
+.pd-flotante { position: absolute; transform-origin: 50% 50%; }
+.pd-flotante img { display: block; width: 100%; height: 100%; border-radius: 12px; }
+.pd-flotante::after {
+  content: ""; position: absolute; inset: 0; border-radius: 12px; pointer-events: none;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 0 0 1px rgba(43,42,51,0.08);
+}
+.pd-sombra-flotante { box-shadow: 0 2px 4px rgba(43,42,51,0.12), 0 24px 48px -12px rgba(43,42,51,0.38), 0 60px 90px -40px rgba(43,42,51,0.28); border-radius: 12px; }
+
+/* ── Subtítulos (capa del index; la variable "subtitulos" los prende) ── */
+#pd-subtitulos { position: absolute; left: 0; right: 0; pointer-events: none; z-index: 50; display: flex; justify-content: center; }
+.pd-subtitulo {
+  position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); max-width: 86%;
+  text-align: center; font-weight: 600; letter-spacing: -0.01em; line-height: 1.22;
+  color: var(--crema); background: rgba(43,42,51,0.9); border-radius: 18px; padding: 0.34em 0.7em 0.4em;
+  width: max-content;
+}
+.disp-reverso { transform: rotateY(180deg); }

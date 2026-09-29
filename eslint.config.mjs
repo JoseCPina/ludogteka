@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Videos de producto: dependencias propias y proyectos generados.
+    "scripts/videos/node_modules/**",
+    "scripts/videos/.build/**",
+    "scripts/videos/grabaciones/**",
   ]),
 ]);
 

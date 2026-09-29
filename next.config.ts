@@ -7,6 +7,11 @@ const nextConfig: NextConfig = {
   // Las capturas que el bot de WhatsApp sube a Meta se leen del disco en la
   // función del webhook (src/lib/whatsapp/infra.ts, bytesCaptura).
   outputFileTracingIncludes: { "/api/whatsapp/webhook": ["./public/peludesk/whatsapp/*.jpg"] },
+  // Los videos de producto para redes (scripts/videos) son para subirlos a
+  // Reels, TikTok o YouTube, no para que un buscador los indexe desde aquí.
+  async headers() {
+    return [{ source: "/peludesk/redes/:ruta*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] }];
+  },
   async redirects() {
     return [
       // La sección "Agenda" pasó a llamarse "Estética" y se movió de /agenda
