@@ -154,14 +154,20 @@ ok(util && Math.abs(Number(util.utilidad) - (Number(util.ingreso_reconocido) - N
 
 console.log("\n── Comisión de Mercado Pago, sola (solo el servidor)");
 const { data: reservaCualquiera } = await A.from("reservas").select("id").limit(1).single();
-const { data: orden } = await A.from("mp_ordenes").insert({ tipo: "link", reserva_id: reservaCualquiera.id, monto: 100, simulado: true }).select("id").single();
-ok(Boolean(orden), "orden de Mercado Pago de prueba (simulada)");
+// No simulada: la comisión de una orden simulada no se registra nunca
+// (registrar_comision_mercadopago, 28 de septiembre de 2026). Se da de baja al final.
+const { data: orden } = await A.from("mp_ordenes").insert({ tipo: "link", reserva_id: reservaCualquiera.id, monto: 100, simulado: false }).select("id").single();
+ok(Boolean(orden), "orden de Mercado Pago de prueba");
 if (orden) {
   await A.from("gastos").update({ mp_orden_id: null }).eq("mp_orden_id", orden.id);
   const r1 = await A.rpc("registrar_comision_mercadopago", { p_orden_id: orden.id, p_monto: 12.34, p_detalle: "prueba" });
   const r2 = await A.rpc("registrar_comision_mercadopago", { p_orden_id: orden.id, p_monto: 12.34, p_detalle: "prueba" });
   const { data: com } = await A.from("gastos").select("categoria_id, monto, metodo").eq("mp_orden_id", orden.id).single();
   ok(r1.data === true && r2.data === false && com.categoria_id === cat("comisiones") && com.metodo === "retenido", "la comisión entra una sola vez por orden, como «retenido», en Comisiones");
+  const { data: sim } = await A.from("mp_ordenes").insert({ tipo: "link", reserva_id: reservaCualquiera.id, monto: 100, simulado: true }).select("id").single();
+  const rSim = await A.rpc("registrar_comision_mercadopago", { p_orden_id: sim.id, p_monto: 5, p_detalle: "simulada" });
+  ok(rSim.data === false, "la comisión de una orden simulada no se registra");
+  await A.from("mp_ordenes").update({ deleted_at: new Date().toISOString() }).eq("id", sim.id);
   const rAdm = await ADM.rpc("registrar_comision_mercadopago", { p_orden_id: orden.id, p_monto: 1, p_detalle: null });
   ok(Boolean(rAdm.error), "ni admin la registra a mano por esa puerta");
   await A.from("gastos").update({ mp_orden_id: null, estado: "cancelado", motivo_cancelacion: "prueba" }).eq("mp_orden_id", orden.id);
