@@ -14,7 +14,7 @@ Voz de ElevenLabs con los tiempos reales de la voz generada, con música de fond
 ## 2. Monitor: completa tu perfil · 0:02.9–0:12.1 (9.2 s)
 
 - **Pantalla:** «Perfil y página web»: descripción y dirección del negocio; baja a «Fotos del negocio».
-- **Texto en pantalla:** «Completa tu perfil en 7 días.»
+- **Texto en pantalla:** «Completa tu perfil.» y la pastilla «En tus primeros 7 días».
 - **Locución** (0:03.4–0:10.0, 6.6 s, voz real): «En tu prueba, completa tu perfil la primera semana: logo, tres fotos, horario, dirección y un precio.»
 
 ## 3. Teléfono: tu página, gratis · 0:11.6–0:19.8 (8.2 s)

@@ -28,7 +28,7 @@ const guion = {
     {
       id: "e2", titulo: "Monitor: completa tu perfil", duracion: 9.2, acento: "var(--morado)",
       pantalla: "«Perfil y página web»: descripción y dirección del negocio; baja a «Fotos del negocio».",
-      texto: "«Completa tu perfil en 7 días.»",
+      texto: "«Completa tu perfil.» y la pastilla «En tus primeros 7 días».",
       voz: { texto: "En tu prueba, completa tu perfil la primera semana: logo, tres fotos, horario, dirección y un precio.", desde: 0.5, hasta: 8.5 },
       componer: (c) => {
         const M = c.toma("perfil").marcas;

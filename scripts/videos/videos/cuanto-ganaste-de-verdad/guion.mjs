@@ -30,7 +30,7 @@ const guion = {
     {
       id: "e2", titulo: "Monitor: la utilidad del mes", duracion: 8.6, acento: "var(--menta-oscuro)",
       pantalla: "Reportes del mes en curso: «Utilidad del periodo» con ingreso reconocido menos insumos, nómina y gastos del local; el renglón «Utilidad» sale de la pantalla.",
-      texto: "«Lo cobrado, menos todo lo demás.»",
+      texto: "«Cobrado, menos todo lo demás.» y la tarjeta con ingreso reconocido, insumos, nómina, gastos del local y utilidad.",
       voz: { texto: "PeluDesk le resta a lo que cobraste los insumos, la nómina y los gastos del local.", desde: 0.6, hasta: 7.3 },
       componer: (c) => {
         const M = c.toma("utilidad").marcas;
@@ -55,7 +55,7 @@ const guion = {
     {
       id: "e3", titulo: "Tablet: contra el mes anterior", duracion: 7.8, acento: "var(--morado)",
       pantalla: "Los gastos del local por categoría en la tablet, este periodo contra el anterior y su diferencia; el renglón de la renta sale de la pantalla.",
-      texto: "«Contra el mes anterior.»",
+      texto: "«Contra el mes anterior.» y la tarjeta de gastos del local: este mes, anterior y diferencia.",
       voz: { texto: "Y te lo compara con el mes anterior, gasto por gasto, sin sumar a mano.", desde: 0.5, hasta: 6.6 },
       componer: (c) => {
         const M = c.toma("categorias").marcas;
