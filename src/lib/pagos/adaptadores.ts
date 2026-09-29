@@ -1,4 +1,4 @@
-import { cancelarOrdenPoint, consultarOrdenPoint, crearOrdenPoint, normalizarOrdenPoint } from "@/lib/mercadopago/point";
+import { cancelarOrdenPoint, consultarOrdenPoint, crearOrdenPoint, normalizarOrdenPoint, type OrdenPoint } from "@/lib/mercadopago/point";
 import { comisionDePago, consultarPago, crearLinkPago, normalizarPagoLink, type PagoMp } from "@/lib/mercadopago/links";
 import { cancelarCobroClip, comisionDeClip, consultarCobroClip, crearCobroClip, normalizarCobroClip, type CobroClip } from "@/lib/clip/terminal";
 import { simularTerminal } from "./simulacion";
@@ -46,9 +46,11 @@ const mercadoPago: AdaptadorCobro = {
   async comision(cx, orden, remoto) {
     if (cx.simulado || orden.simulado) return null;
     // En un link, el pago ya trae fee_details. En la terminal (API de
-    // Orders) no: se lee el pago con la API de pagos, si su id es de ella.
+    // Orders) no: su id es "PAY01…" y el de la API de pagos viene en
+    // reference_id (visto con un cobro real el 28 de septiembre de 2026).
     let pago: PagoMp | null = orden.tipo === "link" ? (remoto.crudo as PagoMp) : null;
-    const id = remoto.pago?.paymentId;
+    const referencia = orden.tipo === "point" ? (remoto.crudo as OrdenPoint | null)?.transactions?.payments?.[0]?.reference_id : null;
+    const id = referencia != null ? String(referencia) : remoto.pago?.paymentId;
     if (!pago && id && /^\d+$/.test(id)) {
       try {
         pago = await consultarPago(cx, id);

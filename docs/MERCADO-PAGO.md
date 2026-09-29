@@ -2,11 +2,12 @@
 
 > **Desde el 28 de septiembre de 2026 cada negocio de PeluDesk conecta SU
 > cuenta** en Administración → Cobro con terminal («Conectar Mercado Pago»,
-> por OAuth; ver «Integraciones por negocio» en CLAUDE.md). Lo de abajo
-> (variables `MERCADOPAGO_*` del entorno) es la conexión ANTERIOR de
-> Ludogteka, que sigue funcionando mientras no se reconecte por OAuth con
-> la misma cuenta. Sin cuenta conectada, un negocio real cobra a mano; el
-> demo y los negocios en prueba cobran en simulación.
+> por OAuth; ver «Integraciones por negocio» en CLAUDE.md). Ludogteka ya
+> cobra así, y ese día se borraron de Vercel las variables `MERCADOPAGO_*`
+> de la conexión ANTERIOR (lo de abajo sobre variables, aplicación propia y
+> webhook en www.ludogteka.mx queda solo como historia). Sin cuenta
+> conectada, un negocio real cobra a mano; el demo y los negocios en prueba
+> cobran en simulación.
 
 Dos vías, las dos alimentando el mismo ledger de cobros de la caja:
 
