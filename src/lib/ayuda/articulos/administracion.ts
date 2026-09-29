@@ -184,7 +184,7 @@ Un pago no se borra. En **Pagos registrados**, aprieta **Revertir este pago**, e
     modulo: "gastos",
     roles: ["admin", "recepcion"],
     rutas: ["/gastos", "/gastos/recurrentes"],
-    palabras: ["renta", "luz", "gasolina", "pagos fijos", "egresos", "recibos", "comprobante"],
+    palabras: ["renta", "luz", "gasolina", "pagos fijos", "egresos", "recibos", "comprobante", "cancelar gasto", "corregir gasto", "retiro de caja"],
     captura: "registrar-gastos-del-local.jpg",
     cuerpo: `Aquí va todo lo que sale del negocio que no es inventario ni nómina: renta, luz, internet, gasolina. Con eso la utilidad de los reportes sale completa. Lo ve admin o quien tenga el permiso «Gastos del local».
 
@@ -205,7 +205,16 @@ Si pagaste con **Efectivo del cajón**, se registra solo el retiro en el turno d
 ## Si algo no sale
 
 - «No hay turno de caja abierto»: abre el turno en Caja o escoge otro método de pago.
-- ¿Te equivocaste de monto? Usa **Corregir monto**; para quitarlo, **Cancelar** con motivo. Nada se borra.`,
+- ¿Te equivocaste de monto? Usa **Corregir monto**, escribe el **Monto correcto** y el **Motivo** y aprieta **Guardar corrección**: queda un ajuste por la diferencia.
+
+## Cancelar un gasto
+
+1. En [Gastos](/gastos) busca el gasto en la lista del mes y aprieta **Cancelar**.
+2. Escribe **¿Por qué se cancela?** y aprieta **Cancelar gasto**.
+
+El gasto se queda tachado con su motivo y ya no cuenta en la utilidad. Nada se borra.
+
+> Si lo pagaste con **Efectivo del cajón** y ese turno sigue abierto, su retiro también se quita: el dinero se queda en el cajón y el corte cuadra. Si el turno ya se cerró, el retiro se queda en ese corte; si el dinero no salió, regrésalo al cajón y anótalo en el siguiente corte.`,
   },
 
   // ─── Reportes ─────────────────────────────────────────────────────────
