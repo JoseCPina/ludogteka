@@ -24,7 +24,7 @@ export default async function EditarInsumoPage({ params }: { params: Promise<{ i
       supabase
         .from("insumos")
         .select(
-          "id, nombre, area_id, unidad_compra_id, unidad_consumo_id, stock_minimo, existencia_inicial, requiere_caducidad, dias_aviso_caducidad, deleted_at, unidad_compra:unidades_medida!unidad_compra_id(etiqueta), unidad_consumo:unidades_medida!unidad_consumo_id(etiqueta, equivalencia_en_base)"
+          "id, nombre, area_id, unidad_compra_id, unidad_consumo_id, stock_minimo, existencia_inicial, requiere_caducidad, dias_aviso_caducidad, se_vende, precio_venta, deleted_at, unidad_compra:unidades_medida!unidad_compra_id(etiqueta), unidad_consumo:unidades_medida!unidad_consumo_id(etiqueta, equivalencia_en_base)"
         )
         .eq("id", id)
         .single(),
@@ -165,6 +165,8 @@ export default async function EditarInsumoPage({ params }: { params: Promise<{ i
             existencia_inicial_consumo: Number(insumo.existencia_inicial) / equivalencia,
             requiere_caducidad: insumo.requiere_caducidad,
             dias_aviso_caducidad: insumo.dias_aviso_caducidad,
+            se_vende: Boolean(insumo.se_vende),
+            precio_venta: insumo.precio_venta != null ? Number(insumo.precio_venta) : null,
           }}
           textoBoton="Guardar cambios"
         />

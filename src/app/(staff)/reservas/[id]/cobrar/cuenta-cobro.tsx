@@ -13,6 +13,7 @@ import { abrirTurno } from "../../turno-actions";
 import { registrarCobro, registrarDevolucion, type MetodoPago } from "../../cobro-actions";
 import { CobroIntegrado, type OrdenCobroFila } from "./cobro-integrado";
 import { DevolucionIntegrada } from "./devolucion-integrada";
+import { CancelarRenglonVenta } from "./cancelar-renglon-venta";
 import type { ResumenCobro } from "@/lib/pagos/tipos";
 import { consumirBono, type ItemTipoBono } from "../../bono-actions";
 import { aplicarDescuento, cancelarDescuento, type TipoDescuento } from "../../descuento-actions";
@@ -92,6 +93,7 @@ const ETIQUETA_METODO: Record<string, string> = {
 };
 
 const ETIQUETA_TIPO: Record<string, string> = {
+  venta: "Venta",
   estancia: "Estancia",
   cargo: "Cargo",
   estetica: "Estética",
@@ -392,7 +394,7 @@ export function CuentaCobro({
               </tr>
             ) : (
               lineas.map((l, i) => {
-                const opcionesBono = l.tipo === "bono" ? [] : bonosParaLinea(l);
+                const opcionesBono = l.tipo === "bono" || l.tipo === "venta" ? [] : bonosParaLinea(l);
                 return (
                   <tr key={i}>
                     <td className="border-b border-n-200 px-4 py-2.5 text-n-900">
@@ -420,6 +422,9 @@ export function CuentaCobro({
                         <Button type="button" variante="secundario" onClick={() => abrirAplicarBono(i)}>
                           Pagar con bono
                         </Button>
+                      )}
+                      {l.tipo === "venta" && cobrosIniciales.length === 0 && (
+                        <CancelarRenglonVenta ventaId={l.origenId} reservaId={reservaId} onError={setError} />
                       )}
                     </td>
                   </tr>

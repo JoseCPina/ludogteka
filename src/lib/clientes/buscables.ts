@@ -49,7 +49,7 @@ export async function cargarClientesBuscables(
   supabase: SupabaseClient
 ): Promise<{ clientes: ClienteBuscable[]; error: Error | null }> {
   const [{ data: clientes, error: e1 }, { data: perros, error: e2 }] = await Promise.all([
-    supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).order("nombre"),
+    supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).eq("publico_general", false).order("nombre"),
     supabase
       .from("perros")
       .select("id, cliente_id, nombre")

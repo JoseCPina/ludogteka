@@ -31,6 +31,8 @@ function leerCampos(formData: FormData) {
     existencia_inicial_consumo: Number(formData.get("existencia_inicial_consumo") ?? 0),
     requiere_caducidad: formData.get("requiere_caducidad") === "on",
     dias_aviso_caducidad_crudo: String(formData.get("dias_aviso_caducidad") ?? "").trim(),
+    se_vende: formData.get("se_vende") === "on",
+    precio_venta_crudo: String(formData.get("precio_venta") ?? "").trim(),
   };
 }
 
@@ -48,6 +50,7 @@ function validar(campos: ReturnType<typeof leerCampos>): string | null {
   ) {
     return "Los días de aviso de caducidad deben ser mayores a 0.";
   }
+  if (campos.se_vende && !(Number(campos.precio_venta_crudo) > 0)) return "Escribe el precio de venta al público (mayor a cero).";
   return null;
 }
 
@@ -80,6 +83,8 @@ export async function crearInsumo(
     existencia_inicial: existenciaInicialBase,
     requiere_caducidad: campos.requiere_caducidad,
     dias_aviso_caducidad: campos.dias_aviso_caducidad_crudo ? Number(campos.dias_aviso_caducidad_crudo) : null,
+    se_vende: campos.se_vende,
+    precio_venta: campos.se_vende ? Math.round(Number(campos.precio_venta_crudo) * 100) / 100 : null,
   });
 
   if (dbError) return { error: traducirError(dbError) };
@@ -120,6 +125,8 @@ export async function actualizarInsumo(
       existencia_inicial: existenciaInicialBase,
       requiere_caducidad: campos.requiere_caducidad,
       dias_aviso_caducidad: campos.dias_aviso_caducidad_crudo ? Number(campos.dias_aviso_caducidad_crudo) : null,
+      se_vende: campos.se_vende,
+      precio_venta: campos.se_vende ? Math.round(Number(campos.precio_venta_crudo) * 100) / 100 : null,
     })
     .eq("id", id);
 

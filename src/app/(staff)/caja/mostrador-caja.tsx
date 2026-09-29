@@ -161,6 +161,9 @@ export function MostradorCaja({
               <Link href={`/caja/cargo?cliente=${cliente.id}`}>
                 <Button type="button">Cargo suelto</Button>
               </Link>
+              <Link href={`/caja/venta?cliente=${cliente.id}`}>
+                <Button type="button" variante="secundario">Venta rápida</Button>
+              </Link>
               {tieneBonos && (
                 <Link href={`/caja/pases?cliente=${cliente.id}`}>
                   <Button type="button" variante="secundario">Vender pase o mensualidad</Button>
