@@ -63,12 +63,12 @@ Si el perro tiene day pass o mensualidad, junto a su línea sale **Pagar con bon
   {
     slug: "terminal-no-recibe-el-cobro",
     titulo: "Qué hacer si la terminal no recibe el cobro",
-    resumen: "Cuando la terminal no muestra el cobro, no confirma o el pago llegó sin turno abierto.",
+    resumen: "Cuando el cobro no le llega a la terminal, la terminal no confirma o el pago llegó sin turno abierto.",
     grupo: "caja",
     modulo: null,
     roles: ["admin", "recepcion"],
     rutas: [],
-    palabras: ["terminal no responde", "no llega", "modo PDV", "cancelar cobro", "sin turno", "pago pendiente"],
+    palabras: ["terminal no responde", "no llega", "no le llega", "no aparece en la terminal", "modo PDV", "cancelar cobro", "sin turno", "pago pendiente"],
     cuerpo: `La app espera la respuesta de la terminal unos 2 minutos. Si no llega, te da la salida para no dejar al cliente parado.
 
 ## Si la terminal no muestra el cobro
@@ -82,7 +82,7 @@ Si el perro tiene day pass o mensualidad, junto a su línea sale **Pagar con bon
 Sale «La terminal no ha respondido».
 
 1. Si el cliente no pagó, aprieta **Cancelar y registrar a mano** y cóbrale en **Registrar cobro**.
-2. Si no estás seguro, aprieta **Seguir esperando**.
+2. Si tienes duda, aprieta **Seguir esperando**.
 
 > Si el cliente SÍ pagó en la terminal, no registres nada a mano: en cuanto el proveedor lo confirme, el cobro entra solo aunque hayas cancelado aquí.
 
