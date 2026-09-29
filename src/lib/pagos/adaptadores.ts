@@ -1,8 +1,8 @@
-import { cancelarOrdenPoint, consultarOrdenPoint, crearOrdenPoint, normalizarOrdenPoint, type OrdenPoint } from "@/lib/mercadopago/point";
-import { comisionDePago, consultarPago, crearLinkPago, normalizarPagoLink, type PagoMp } from "@/lib/mercadopago/links";
+import { cancelarOrdenPoint, consultarOrdenPoint, crearOrdenPoint, normalizarOrdenPoint, reembolsarOrdenPoint, type OrdenPoint } from "@/lib/mercadopago/point";
+import { comisionDePago, consultarPago, crearLinkPago, normalizarPagoLink, reembolsarPago, type PagoMp, type ReembolsoPagoMp } from "@/lib/mercadopago/links";
 import { cancelarCobroClip, comisionDeClip, consultarCobroClip, crearCobroClip, normalizarCobroClip, type CobroClip } from "@/lib/clip/terminal";
 import { simularTerminal } from "./simulacion";
-import type { ConexionCobro, EstadoOrden, EstadoRemoto, OrdenLocal, ProveedorIntegrado } from "./tipos";
+import type { ConexionCobro, EstadoOrden, EstadoRemoto, OrdenLocal, ProveedorIntegrado, ReembolsoRemoto } from "./tipos";
 
 /**
  * Una sola interfaz para cobrar en terminal y por link, con un adaptador
@@ -19,6 +19,53 @@ export interface AdaptadorCobro {
   crearLinkPago?(cx: ConexionCobro, args: { ordenId: string; monto: number; titulo: string; clienteNombre: string; clienteTelefono: string | null; expiraAt: Date }): Promise<{ idRemoto: string; url: string; crudo: unknown }>;
   /** La comisión que el proveedor le retuvo al negocio por este pago (null si no la da). */
   comision(cx: ConexionCobro, orden: OrdenLocal, remoto: EstadoRemoto): Promise<{ monto: number; detalle: string } | null>;
+  /**
+   * Reembolsos. Sin `reembolsar`, la devolución se hace en el proveedor y en
+   * la app se registra a mano (Clip: su API de Punto de Venta no documenta
+   * reembolsos).
+   */
+  reembolsar?(cx: ConexionCobro, orden: OrdenLocal, args: { reembolsoId: string; monto: number; total: boolean; conocidos: string[] }): Promise<ReembolsoRemoto>;
+  /** Los reembolsos que el proveedor tiene de esta orden (incluidos los hechos en su panel). */
+  reembolsosRemotos?(cx: ConexionCobro, orden: OrdenLocal, crudo?: unknown): Promise<ReembolsoRemoto[]>;
+  /** ¿El proveedor le regresa al negocio la comisión de lo reembolsado? */
+  regresaComision: boolean;
+}
+
+const ESTADO_REEMBOLSO: Record<string, ReembolsoRemoto["estado"]> = {
+  approved: "aprobado",
+  processed: "aprobado",
+  refunded: "aprobado",
+  in_process: "pendiente",
+  pending: "pendiente",
+  processing: "pendiente",
+  created: "pendiente",
+  rejected: "rechazado",
+  cancelled: "rechazado",
+  canceled: "rechazado",
+  failed: "rechazado",
+};
+const estadoReembolso = (s: string | undefined): ReembolsoRemoto["estado"] => ESTADO_REEMBOLSO[String(s ?? "approved").toLowerCase()] ?? "pendiente";
+const monto2 = (v: unknown) => Math.round((Number(v) || 0) * 100) / 100;
+
+function reembolsosDeOrdenPoint(o: OrdenPoint): ReembolsoRemoto[] {
+  const lista = (o.transactions?.refunds ?? [])
+    .filter((r) => r.id)
+    .map((r) => ({ id: String(r.id), monto: monto2(r.amount), estado: estadoReembolso(r.status), crudo: r }));
+  // Una orden reembolsada sin el detalle: el total, con un id estable.
+  if (!lista.length && o.status === "refunded") {
+    const pagado = monto2(o.transactions?.payments?.[0]?.paid_amount ?? o.total_paid_amount ?? o.transactions?.payments?.[0]?.amount);
+    if (pagado > 0) return [{ id: `${o.id}-refund`, monto: pagado, estado: "aprobado", crudo: { status: o.status } }];
+  }
+  return lista;
+}
+
+function reembolsosDePago(p: PagoMp): ReembolsoRemoto[] {
+  const lista = (p.refunds ?? []).map((r: ReembolsoPagoMp) => ({ id: String(r.id), monto: monto2(r.amount), estado: estadoReembolso(r.status), crudo: r }));
+  if (!lista.length && p.status === "refunded") {
+    const m = monto2(p.transaction_amount_refunded ?? p.transaction_amount);
+    if (m > 0) return [{ id: `${p.id}-refund`, monto: m, estado: "aprobado", crudo: { status: p.status } }];
+  }
+  return lista;
 }
 
 const simulada = (orden: OrdenLocal) =>
@@ -64,6 +111,37 @@ const mercadoPago: AdaptadorCobro = {
     const tipo = orden.tipo === "point" ? "terminal" : "link de pago";
     return { monto, detalle: `Cobro por ${tipo}, pago ${pago.id}: ${(pago.fee_details ?? []).map((f) => `${f.type ?? "comisión"} ${f.amount}`).join(", ")}` };
   },
+  // Mercado Pago regresa la comisión en una devolución total (visto con los
+  // cobros reales del 28 de septiembre de 2026); en una parcial, la parte
+  // proporcional.
+  regresaComision: true,
+  async reembolsar(cx, orden, args) {
+    if (cx.simulado || orden.simulado) {
+      return { id: `SIM-REF-${args.reembolsoId.slice(0, 8)}`, monto: args.monto, estado: "aprobado", crudo: { simulado: true } };
+    }
+    if (orden.tipo === "link") {
+      if (!orden.mp_payment_id) throw new Error("La orden no tiene el pago de Mercado Pago registrado.");
+      const r = await reembolsarPago(cx, orden.mp_payment_id, args.total ? null : args.monto, args.reembolsoId);
+      return { id: String(r.id), monto: monto2(r.amount ?? args.monto), estado: estadoReembolso(r.status), crudo: r };
+    }
+    if (!orden.mp_order_id) throw new Error("La orden no llegó a crearse en Mercado Pago.");
+    const antes = new Set(args.conocidos);
+    const o = await reembolsarOrdenPoint(cx, orden.mp_order_id, { pagoId: orden.mp_payment_id, monto: args.monto, total: args.total, idempotencia: args.reembolsoId });
+    const lista = reembolsosDeOrdenPoint(o).filter((r) => !antes.has(r.id));
+    // El reembolso nuevo es el último de la lista con ese monto.
+    const nuevo = [...lista].reverse().find((r) => Math.abs(r.monto - args.monto) < 0.005) ?? lista.at(-1);
+    if (!nuevo) return { id: `${orden.mp_order_id}-refund-${args.reembolsoId.slice(0, 8)}`, monto: args.monto, estado: o.status === "refunded" ? "aprobado" : "pendiente", crudo: o };
+    return { ...nuevo, crudo: o };
+  },
+  async reembolsosRemotos(cx, orden, crudo) {
+    if (cx.simulado || orden.simulado) return [];
+    if (orden.tipo === "link") {
+      const pago = (crudo as PagoMp | undefined)?.id ? (crudo as PagoMp) : orden.mp_payment_id ? await consultarPago(cx, orden.mp_payment_id) : null;
+      return pago ? reembolsosDePago(pago) : [];
+    }
+    const o = (crudo as OrdenPoint | undefined)?.id ? (crudo as OrdenPoint) : orden.mp_order_id ? await consultarOrdenPoint(cx, orden.mp_order_id) : null;
+    return o ? reembolsosDeOrdenPoint(o) : [];
+  },
 };
 
 const clip: AdaptadorCobro = {
@@ -88,6 +166,8 @@ const clip: AdaptadorCobro = {
     const monto = comisionDeClip(remoto.crudo as CobroClip);
     return monto > 0 ? { monto, detalle: `Cobro en terminal Clip, pago ${remoto.pago?.paymentId ?? "?"}` } : null;
   },
+  // Sin reembolsos por API: la devolución se hace en Clip y aquí se registra a mano.
+  regresaComision: false,
 };
 
 const ADAPTADORES: Record<ProveedorIntegrado, AdaptadorCobro> = { mercadopago: mercadoPago, clip };

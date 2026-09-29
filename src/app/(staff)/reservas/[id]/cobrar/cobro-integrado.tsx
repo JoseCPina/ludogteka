@@ -33,11 +33,18 @@ export type OrdenCobroFila = {
   detalle_error: string | null;
   created_at: string;
   expira_at: string | null;
+  cobro_id: string | null;
+  proveedor: "mercadopago" | "clip";
+  monto_reembolsado: number;
 };
 
 // Un link sin pagar no está "mandándose a la terminal": espera al cliente,
 // o ya venció (el link vence solo en Mercado Pago a los 7 días).
 function etiquetaDe(o: OrdenCobroFila): string {
+  // Se pagó y además se reembolsó: se dicen las dos cosas.
+  if (o.estado === "pagada" && o.monto_reembolsado > 0) {
+    return o.monto_reembolsado >= o.monto ? "Pagado · reembolsado completo" : `Pagado · reembolsado ${dinero(o.monto_reembolsado)}`;
+  }
   if (o.tipo === "link" && o.estado === "creada") {
     return o.expira_at && new Date(o.expira_at).getTime() < Date.now() ? "Venció sin pagarse" : "Esperando el pago";
   }
@@ -341,7 +348,7 @@ export function CobroIntegrado({
                 )}
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                    o.estado === "pagada" ? "bg-menta-suave text-menta-oscuro" : o.estado === "creada" || o.estado === "en_terminal" ? "bg-morado-suave text-morado" : "bg-n-100 text-n-600"
+                    o.estado === "pagada" && o.monto_reembolsado > 0 ? "bg-coral-suave text-coral-oscuro" : o.estado === "pagada" ? "bg-menta-suave text-menta-oscuro" : o.estado === "creada" || o.estado === "en_terminal" ? "bg-morado-suave text-morado" : "bg-n-100 text-n-600"
                   }`}
                 >
                   {o.pendiente_de_registrar ? "Pagado, sin turno" : etiquetaDe(o)}

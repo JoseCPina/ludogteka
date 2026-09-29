@@ -59,6 +59,10 @@ async function registrar(admin: SupabaseClient, cx: ConexionCobro, orden: OrdenL
   });
   if (error) throw new Error(error.message);
   const r = data as { registrado: boolean; sin_turno?: boolean; repetido?: boolean };
+  // Terminal de Mercado Pago: el id del pago en /v1/payments, para
+  // reconocer después los reembolsos hechos desde el panel.
+  const ref = orden.tipo === "point" ? (remoto.crudo as { transactions?: { payments?: { reference_id?: string | number }[] } } | null)?.transactions?.payments?.[0]?.reference_id : null;
+  if (ref != null) await admin.from("mp_ordenes").update({ mp_payment_ref: String(ref) }).eq("id", orden.id).eq("negocio_id", orden.negocio_id);
   if (r.registrado && !r.repetido) await registrarComision(admin, cx, orden, remoto);
   return { estado: "pagada", pagada: true, registrado: Boolean(r.registrado), sinTurno: Boolean(r.sin_turno), detalle: null, installments: pago.installments ?? 1 };
 }
@@ -127,13 +131,18 @@ export async function sincronizarTerminal(admin: SupabaseClient, cx: ConexionCob
  * un cliente atado al negocio de la orden.
  */
 export async function contextoDeOrden(
-  filtro: { id: string } | { mp_order_id: string; proveedor: "mercadopago" | "clip" },
+  filtro: { id: string } | { mp_order_id: string; proveedor: "mercadopago" | "clip" } | { pago: string },
   negocioEsperado?: string
 ): Promise<{ admin: SupabaseClient; orden: OrdenLocal } | null> {
   let consulta = createSupabaseAdminClient().from("mp_ordenes").select("id, negocio_id").is("deleted_at", null);
   if ("id" in filtro) {
     if (!/^[0-9a-f-]{36}$/i.test(filtro.id)) return null;
     consulta = consulta.eq("id", filtro.id);
+  } else if ("pago" in filtro) {
+    // Un pago de la terminal por su id de /v1/payments (un reembolso hecho
+    // en el panel llega así, sin nuestra referencia).
+    if (!/^[\w-]{1,64}$/.test(filtro.pago)) return null;
+    consulta = consulta.eq("proveedor", "mercadopago").or(`mp_payment_ref.eq.${filtro.pago},mp_payment_id.eq.${filtro.pago}`);
   } else {
     consulta = consulta.eq("mp_order_id", filtro.mp_order_id).eq("proveedor", filtro.proveedor);
   }

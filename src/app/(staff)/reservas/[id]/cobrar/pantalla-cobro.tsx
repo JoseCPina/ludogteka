@@ -59,7 +59,7 @@ export async function PantallaCobro({
     supabase.from("turnos_caja").select("id").eq("estado", "abierto").maybeSingle(),
     supabase
       .from("cobros")
-      .select("id, notas, created_at, created_by, cobro_metodos(metodo, monto, propina)")
+      .select("id, notas, created_at, created_by, origen, cobro_metodos(metodo, monto, propina)")
       .eq("reserva_id", id)
       .order("created_at"),
     supabase
@@ -81,7 +81,7 @@ export async function PantallaCobro({
   const [{ data: ordenesMpCrudo }, mpDisponible] = await Promise.all([
     supabase
       .from("mp_ordenes_estado")
-      .select("id, tipo, monto, descripcion, estado, url_pago, installments, simulado, pendiente_de_registrar, detalle_error, created_at, expira_at")
+      .select("id, tipo, monto, descripcion, estado, url_pago, installments, simulado, pendiente_de_registrar, detalle_error, created_at, expira_at, cobro_id, proveedor, monto_reembolsado")
       .eq("reserva_id", id)
       .order("created_at", { ascending: false })
       .limit(20),
@@ -100,13 +100,16 @@ export async function PantallaCobro({
     detalle_error: (o.detalle_error as string | null) ?? null,
     created_at: o.created_at as string,
     expira_at: (o.expira_at as string | null) ?? null,
+    cobro_id: (o.cobro_id as string | null) ?? null,
+    proveedor: (o.proveedor as "mercadopago" | "clip") ?? "mercadopago",
+    monto_reembolsado: Number(o.monto_reembolsado ?? 0),
   }));
 
   const cobroIds = (cobrosCrudo ?? []).map((c) => c.id as string);
   const { data: devolucionesCrudo, error: errorDevoluciones } = cobroIds.length
     ? await supabase
         .from("devoluciones")
-        .select("id, motivo, created_at, autorizado_por, cobro_id, devolucion_metodos(metodo, monto)")
+        .select("id, motivo, created_at, autorizado_por, cobro_id, origen, devolucion_metodos(metodo, monto)")
         .in("cobro_id", cobroIds)
         .order("created_at")
     : { data: [] as never[], error: null };
@@ -226,6 +229,7 @@ export async function PantallaCobro({
     creadoEn: c.created_at as string,
     creadoPorNombre: nombrePorId.get(c.created_by as string) ?? "—",
     metodos: (c.cobro_metodos as { metodo: string; monto: number; propina: number }[]) ?? [],
+    origen: ((c.origen as string | null) ?? "manual") as CobroHistorial["origen"],
   }));
 
   const devoluciones: DevolucionHistorial[] = (devolucionesCrudo ?? []).map((d) => ({
@@ -233,7 +237,11 @@ export async function PantallaCobro({
     cobroId: d.cobro_id as string,
     motivo: d.motivo as string,
     creadoEn: d.created_at as string,
-    autorizadoPorNombre: nombrePorId.get(d.autorizado_por as string) ?? "—",
+    autorizadoPorNombre: d.autorizado_por
+      ? nombrePorId.get(d.autorizado_por as string) ?? "—"
+      : d.origen && d.origen !== "manual"
+        ? "hecho en el panel del proveedor"
+        : "—",
     metodos: (d.devolucion_metodos as { metodo: string; monto: number }[]) ?? [],
   }));
 

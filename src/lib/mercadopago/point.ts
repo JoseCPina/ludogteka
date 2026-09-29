@@ -34,6 +34,8 @@ export type OrdenPoint = {
       status_detail?: string;
       payment_method?: { id?: string; type?: string; installments?: number | string };
     }[];
+    // Reembolsos de la orden (desde la app o desde el panel de Mercado Pago).
+    refunds?: { id?: string; transaction_id?: string; reference_id?: string | number; amount?: string | number; status?: string }[];
   };
   config?: { point?: { terminal_id?: string } };
 };
@@ -101,6 +103,24 @@ export async function cancelarOrdenPoint(cx: ConexionCobro, mpOrderId: string, i
     method: "POST",
     body: {},
     idempotencia: `${idempotencia}-cancel`,
+  });
+}
+
+/**
+ * Reembolso de una orden de la terminal: POST /v1/orders/{id}/refund. Sin
+ * cuerpo es total; parcial, con la transacción de pago y el monto. Devuelve
+ * la orden con transactions.refunds.
+ */
+export async function reembolsarOrdenPoint(
+  cx: ConexionCobro,
+  mpOrderId: string,
+  args: { pagoId: string | null; monto: number; total: boolean; idempotencia: string }
+): Promise<OrdenPoint> {
+  const cuerpo = args.total || !args.pagoId ? {} : { transactions: [{ id: args.pagoId, amount: args.monto.toFixed(2) }] };
+  return mpFetch<OrdenPoint>(token(cx), `/v1/orders/${encodeURIComponent(mpOrderId)}/refund`, {
+    method: "POST",
+    body: cuerpo,
+    idempotencia: `reembolso-${args.idempotencia}`,
   });
 }
 

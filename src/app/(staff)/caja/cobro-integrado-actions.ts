@@ -12,6 +12,7 @@ import { TERMINAL_ESPERA_SEGUNDOS } from "@/lib/mercadopago/config";
 import { adaptador } from "@/lib/pagos/adaptadores";
 import { conexionDeCobro, resumenDeCobro } from "@/lib/pagos/conexion";
 import { leerOrdenLocal, sincronizarTerminal } from "@/lib/pagos/registro";
+import { pedirReembolso, sincronizarReembolsos } from "@/lib/pagos/reembolsos";
 import { mensajeDeError, type ConexionCobro, type ResultadoSincronizacion, type ResumenCobro } from "@/lib/pagos/tipos";
 
 // El cobro integrado desde la cuenta: terminal y link de pago, con el
@@ -281,4 +282,87 @@ export async function registrarPagosMpPendientes(): Promise<{ error: string | nu
   revalidatePath("/caja");
   revalidatePath("/caja/turno");
   return { error: null, registrados };
+}
+
+export type ResultadoDevolucionIntegrada = { error: string | null; aviso?: string };
+
+/**
+ * Devolver un cobro que entró por Mercado Pago: el reembolso se hace en
+ * Mercado Pago con la cuenta del negocio y, solo si lo acepta, la devolución
+ * queda en caja en el mismo paso. Quién puede y cuánto lo decide la base
+ * (preparar_reembolso: solo admin, lo que queda del cobro, turno abierto).
+ */
+export async function devolverConProveedor(reservaId: string, cobroId: string, monto: number, motivo: string): Promise<ResultadoDevolucionIntegrada> {
+  if (!Number.isFinite(monto) || monto <= 0) return { error: "El monto a devolver debe ser mayor a cero." };
+  if (!motivo.trim()) return { error: "Escribe el motivo de la devolución." };
+  if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_SOLO_LECTURA };
+
+  const supabase = await createSupabaseServerClient();
+  const { data: prep, error } = await supabase.rpc("preparar_reembolso", {
+    p_cobro_id: cobroId,
+    p_monto: Math.round(monto * 100) / 100,
+    p_motivo: motivo.trim(),
+  });
+  if (error) return { error: traducirErrorCaja(error.message) };
+  const p = prep as { reembolso_id: string; orden_id: string; total: boolean };
+
+  const { negocio, admin } = await adminDelNegocio();
+  const orden = await leerOrdenLocal(admin, p.orden_id, negocio.id);
+  if (!orden) return { error: "Orden no encontrada." };
+  const cx = await conexionDeCobro(negocio);
+  if (!cx) {
+    await admin.rpc("rechazar_reembolso", { p_reembolso_id: p.reembolso_id, p_detalle: "Sin cuenta de Mercado Pago conectada.", p_evento: null });
+    return { error: "Mercado Pago no está conectado: no se pudo pedir el reembolso y no se registró nada en caja. Reconecta la cuenta en Administración → Cobro con terminal, o hazlo en el panel de Mercado Pago (se registra solo)." };
+  }
+  try {
+    const r = await pedirReembolso(admin, cx, orden, { reembolsoId: p.reembolso_id, monto, total: p.total });
+    revalidarCuenta(reservaId);
+    if (!r.ok) return { error: `${r.error} No se registró nada en caja.` };
+    if (r.pendiente) return { error: null, aviso: "Mercado Pago lo está procesando. En cuanto lo confirme se registra solo en caja; lo ves en Caja → Reembolsos." };
+    const avisos = [
+      r.sinTurno ? "Se reembolsó en Mercado Pago; como no hay turno abierto, entra a caja al abrir el siguiente." : null,
+      r.comisionDevuelta > 0 ? `Mercado Pago regresó $${r.comisionDevuelta.toFixed(2)} de comisión: se quitó de los gastos.` : null,
+    ].filter(Boolean);
+    return { error: null, aviso: avisos.join(" ") || undefined };
+  } catch (e) {
+    // Mercado Pago ya lo hizo pero no se pudo registrar: queda en el aire y
+    // lo termina «Consultar» en Caja → Reembolsos (o el webhook).
+    console.error("[reembolso] no se pudo registrar", p.reembolso_id, e);
+    revalidarCuenta(reservaId);
+    return { error: `No pudimos terminar de registrarlo (${mensajeDeError(e)}). Revisa Caja → Reembolsos: ahí se consulta a Mercado Pago y se registra una sola vez.` };
+  }
+}
+
+function traducirErrorCaja(msg: string): string {
+  if (/solo lectura/i.test(msg)) return MENSAJE_SOLO_LECTURA;
+  return msg.replace(/^.*?ERROR:\s*/, "");
+}
+
+/** Caja → Reembolsos: volver a preguntarle al proveedor por una orden. */
+export async function consultarReembolsosDeOrden(ordenId: string): Promise<{ error: string | null; nuevos?: number }> {
+  const sesion = await obtenerSesionConRol();
+  if (!sesion || !["admin", "recepcion"].includes(sesion.rol)) return { error: "Solo admin o recepción." };
+  if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_SOLO_LECTURA };
+  const { negocio, admin } = await adminDelNegocio();
+  const orden = await leerOrdenLocal(admin, ordenId, negocio.id);
+  if (!orden) return { error: "Orden no encontrada." };
+  const cx = await conexionDeCobro(negocio);
+  if (!cx || cx.proveedor !== orden.proveedor) return { error: "El negocio ya no está conectado a ese proveedor: revísalo en su panel." };
+  try {
+    const nuevos = await sincronizarReembolsos(admin, cx, orden);
+    revalidatePath("/caja/reembolsos");
+    revalidatePath("/caja");
+    return { error: null, nuevos };
+  } catch (e) {
+    return { error: mensajeDeError(e) };
+  }
+}
+
+export async function marcarReembolsoRevisado(reembolsoId: string): Promise<{ error: string | null }> {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("marcar_reembolso_revisado", { p_reembolso_id: reembolsoId });
+  if (error) return { error: traducirErrorCaja(error.message) };
+  revalidatePath("/caja/reembolsos");
+  revalidatePath("/recepcion");
+  return { error: null };
 }

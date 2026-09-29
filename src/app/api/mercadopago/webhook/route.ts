@@ -7,7 +7,18 @@ import { NEGOCIO_DE_LAS_LLAVES } from "@/lib/negocio/integraciones";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { remotoDeLink } from "@/lib/pagos/adaptadores";
 import { conexionDeCobro, negocioParaCobro } from "@/lib/pagos/conexion";
-import { aplicarEstado, contextoDeOrden, sincronizarTerminal } from "@/lib/pagos/registro";
+import { aplicarEstado, contextoDeOrden, leerOrdenLocal, sincronizarTerminal } from "@/lib/pagos/registro";
+import { sincronizarReembolsos } from "@/lib/pagos/reembolsos";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { ConexionCobro, OrdenLocal } from "@/lib/pagos/tipos";
+
+// Después de aplicar el pago: si la orden está pagada, los reembolsos que
+// Mercado Pago reporte y no conozcamos (hechos en su panel) entran a la caja.
+async function reembolsosDe(admin: SupabaseClient, cx: ConexionCobro, orden: OrdenLocal, crudo: unknown): Promise<number> {
+  const fresca = await leerOrdenLocal(admin, orden.id, orden.negocio_id);
+  if (!fresca || fresca.estado !== "pagada") return 0;
+  return sincronizarReembolsos(admin, cx, fresca, crudo);
+}
 
 /**
  * Webhook ÚNICO de Mercado Pago para todos los negocios de PeluDesk
@@ -117,26 +128,33 @@ export async function POST(request: NextRequest) {
         const ajena = await contextoDeOrden({ mp_order_id: dataId, proveedor: "mercadopago" });
         return ajena ? rechazo("orden_de_otro_negocio", { dataId, negocioId, dueño: ajena.orden.negocio_id }) : NextResponse.json({ ok: true, motivo: "orden_desconocida" });
       }
-      const remoto = normalizarOrdenPoint(await consultarOrdenPoint(cx, dataId), ctx.orden.estado);
+      const crudo = await consultarOrdenPoint(cx, dataId);
+      const remoto = normalizarOrdenPoint(crudo, ctx.orden.estado);
       const r = await aplicarEstado(ctx.admin, cx, ctx.orden, remoto);
-      return NextResponse.json({ ok: true, estado: r.estado, registrado: r.registrado });
+      const reembolsos = await reembolsosDe(ctx.admin, cx, ctx.orden, crudo);
+      return NextResponse.json({ ok: true, estado: r.estado, registrado: r.registrado, reembolsos });
     }
 
     // Pago (links): se lee con el token de este negocio; su referencia
     // tiene que ser una orden de este negocio.
     const pago = await consultarPago(cx, dataId);
     const ref = pago.external_reference;
-    if (!ref) return NextResponse.json({ ok: true, motivo: "sin_referencia" });
-    const ctx = await contextoDeOrden({ id: ref }, negocioId);
+    // Un pago sin nuestra referencia puede ser el de una terminal (su id de
+    // /v1/payments), p. ej. al reembolsarlo desde el panel.
+    const ctx = ref ? await contextoDeOrden({ id: ref }, negocioId) : await contextoDeOrden({ pago: String(pago.id ?? dataId) }, negocioId);
     if (!ctx) {
-      const ajena = await contextoDeOrden({ id: ref });
-      return ajena ? rechazo("pago_a_orden_de_otro_negocio", { dataId, ref, negocioId, dueño: ajena.orden.negocio_id }) : NextResponse.json({ ok: true, motivo: "orden_desconocida" });
+      const ajena = ref ? await contextoDeOrden({ id: ref }) : await contextoDeOrden({ pago: String(pago.id ?? dataId) });
+      if (ajena) return rechazo("pago_a_orden_de_otro_negocio", { dataId, ref, negocioId, dueño: ajena.orden.negocio_id });
+      return NextResponse.json({ ok: true, motivo: ref ? "orden_desconocida" : "sin_referencia" });
     }
     const r =
       ctx.orden.tipo === "link"
         ? await aplicarEstado(ctx.admin, cx, ctx.orden, remotoDeLink(pago, ctx.orden))
         : await sincronizarTerminal(ctx.admin, cx, ctx.orden);
-    return NextResponse.json({ ok: true, estado: r.estado, registrado: r.registrado });
+    // En la terminal, los reembolsos se leen de la orden (el pago de la API
+    // de pagos es el mismo dinero: con la orden basta y no se cuenta doble).
+    const reembolsos = await reembolsosDe(ctx.admin, cx, ctx.orden, ctx.orden.tipo === "link" ? pago : undefined);
+    return NextResponse.json({ ok: true, estado: r.estado, registrado: r.registrado, reembolsos });
   } catch (e) {
     console.error("[mercadopago] error procesando webhook", { tipo, dataId, negocioId, error: e instanceof Error ? e.message : String(e) });
     // 500 para que Mercado Pago reintente: el registro es idempotente.

@@ -386,6 +386,32 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     }
   }
 
+  // Reembolsos de Mercado Pago que alguien tiene que ver: hechos desde el
+  // panel del proveedor (ya en caja, pero nadie en el mostrador los pidió),
+  // hechos sin turno abierto, o pedidos cuya respuesta no ha llegado.
+  if (sesion && ["admin", "recepcion"].includes(sesion.rol)) {
+    const { data: reembolsos } = await supabase.rpc("reembolsos_por_atender");
+    const lista = (reembolsos ?? []) as { origen: string; estado: string; registrado: boolean; monto: number; desde: string }[];
+    if (lista.length > 0) {
+      const panel = lista.filter((r) => r.origen === "proveedor");
+      const total = lista.reduce((s2, r) => s2 + Number(r.monto), 0);
+      atencion.push({
+        clave: "reembolsos",
+        texto:
+          lista.length === 1
+            ? panel.length
+              ? "Se hizo un reembolso desde el panel de Mercado Pago"
+              : lista[0].estado === "solicitado"
+                ? "Un reembolso espera la respuesta de Mercado Pago"
+                : "Un reembolso de Mercado Pago falta de registrarse en caja"
+            : `${lista.length} reembolsos de Mercado Pago por revisar`,
+        detalle: `$${total.toFixed(2)}${panel.length ? " · hecho fuera de la app; ya se registró en caja" : ""}`,
+        href: "/caja/reembolsos",
+        ...masViejo(lista.map((r) => r.desde), hoy, zona),
+      });
+    }
+  }
+
   const fechasComprobantes = (comprobantes ?? []).map((c) => c.created_at as string);
   const comprobantesPorRevisar = fechasComprobantes.length;
   if (comprobantesPorRevisar > 0 && mods.includes("portal")) {

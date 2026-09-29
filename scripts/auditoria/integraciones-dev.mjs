@@ -22,6 +22,13 @@
 //   2. Escoger terminal (una Point Smart y una que no es compatible).
 //   3. Cobro en terminal → pagado → cobro registrado + comisión como gasto.
 //   4. Link de pago → webhook FIRMADO → cobro registrado + comisión.
+//  4b. Devoluciones con Mercado Pago: parcial en terminal (comisión
+//      proporcional), rechazada por Mercado Pago (nada en caja), más de lo
+//      cobrado (se frena antes), total del link (comisión cancelada), hecha
+//      en el panel (webhook → caja + «Necesita atención» + «Enterado»),
+//      recepción sin permiso y el admin de Huellitas contra un cobro de
+//      Ludogteka. En el 8, Clip dice que su devolución se hace en Clip; en
+//      el 9, la devolución simulada queda marcada.
 //   5. Webhook cruzado (pago de la cuenta de Huellitas que apunta a una orden
 //      de Ludogteka), firma mala, cuenta desconocida → rechazados.
 //   6. Renovación del token por el cron (y el cron sin secreto, rechazado).
@@ -35,7 +42,7 @@ import http from "node:http";
 import { createHmac, randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { abrirNavegador } from "../lib/navegador.mjs";
-import { A, URL, env } from "./sesiones-dev.mjs";
+import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const PUERTO_APP = 3001;
@@ -54,9 +61,15 @@ const BASE = `http://huellitas.localhost:${PUERTO_APP}`;
 const PLATAFORMA = `http://plataforma.localhost:${PUERTO_APP}`;
 const conNegocio = (id) => createClient(URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: false }, global: { headers: { "x-negocio-id": id } } });
 const servicioH = conNegocio(H);
+// Una sesión real (JWT) en Huellitas.
+const sesion = async (profileId) =>
+  createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${await tokenDe(profileId)}`, "x-negocio-id": H } },
+  });
 
 // ───────────── Mercado Pago y Clip de mentiras
-const mock = { tokens: 0, ordenes: new Map(), pagos: new Map(), preferencias: [], clip: new Map(), refrescos: 0 };
+const mock = { tokens: 0, ordenes: new Map(), pagos: new Map(), preferencias: [], clip: new Map(), refrescos: 0, idempotencia: [] };
 const servidor = http.createServer(async (req, res) => {
   const u = new globalThis.URL(req.url, "http://127.0.0.1:4455");
   let cuerpo = "";
@@ -103,29 +116,79 @@ const servidor = http.createServer(async (req, res) => {
     mock.ordenes.set(id, { ...b, consultas: 0 });
     return json(201, { id, status: "at_terminal", external_reference: b.external_reference, user_id: CUENTA_MP });
   }
+  // Reembolso de una orden de la terminal (total sin cuerpo; parcial con la
+  // transacción). Un monto con .66 centavos lo rechaza Mercado Pago.
+  const reembolsoOrden = p.match(/^\/v1\/orders\/([^/]+)\/refund$/);
+  if (reembolsoOrden && req.method === "POST") {
+    const o = mock.ordenes.get(reembolsoOrden[1]);
+    if (!o?.pagada) return json(404, { message: "order not found" });
+    const b = cuerpo ? JSON.parse(cuerpo) : {};
+    mock.idempotencia.push(req.headers["x-idempotency-key"]);
+    const pagado = Number(o.transactions.payments[0].amount);
+    const ya = o.refunds.reduce((a, r) => a + Number(r.amount), 0);
+    const monto = b.transactions?.[0]?.amount != null ? Number(b.transactions[0].amount) : Math.round((pagado - ya) * 100) / 100;
+    if (Math.round(monto * 100) % 100 === 66) return json(400, { errors: [{ code: "refund_not_allowed", message: "The refund could not be processed" }] });
+    if (monto > pagado - ya + 0.001) return json(400, { errors: [{ code: "invalid_amount", message: "amount exceeds" }] });
+    o.refunds.push({ id: `REF01${randomUUID().slice(0, 8)}`, transaction_id: o.pagada.pagoId, amount: monto.toFixed(2), status: "processed" });
+    return json(200, respuestaOrden(reembolsoOrden[1], o));
+  }
   const orden = p.match(/^\/v1\/orders\/([^/]+)$/);
   if (orden) {
     const o = mock.ordenes.get(orden[1]);
     if (!o) return json(404, { message: "order not found" });
     o.consultas += 1;
-    if (o.consultas < 2) return json(200, { id: orden[1], status: "at_terminal", external_reference: o.external_reference, user_id: CUENTA_MP });
-    const pagoId = `8${orden[1].slice(-9)}`;
-    const monto = o.transactions.payments[0].amount;
-    mock.pagos.set(pagoId, { id: pagoId, status: "approved", external_reference: o.external_reference, transaction_amount: Number(monto), collector_id: CUENTA_MP, fee_details: [{ type: "mercadopago_fee", amount: 4.5, fee_payer: "collector" }] });
-    return json(200, { id: orden[1], status: "processed", external_reference: o.external_reference, user_id: CUENTA_MP, transactions: { payments: [{ id: pagoId, paid_amount: monto, payment_method: { type: "credit_card", installments: 1 } }] } });
+    if (o.consultas < 2 && !o.pagada) return json(200, { id: orden[1], status: "at_terminal", external_reference: o.external_reference, user_id: CUENTA_MP });
+    if (!o.pagada) {
+      const pagoId = `8${orden[1].slice(-9)}`;
+      const monto = o.transactions.payments[0].amount;
+      mock.pagos.set(pagoId, { id: pagoId, status: "approved", transaction_amount: Number(monto), collector_id: CUENTA_MP, fee_details: [{ type: "mercadopago_fee", amount: 4.5, fee_payer: "collector" }] });
+      o.pagada = { pagoId };
+      o.refunds = [];
+    }
+    return json(200, respuestaOrden(orden[1], o));
   }
   if (p === "/checkout/preferences" && req.method === "POST") {
     const b = JSON.parse(cuerpo);
     mock.preferencias.push(b);
     return json(201, { id: `PREF-${mock.preferencias.length}`, init_point: `https://mercadopago.example/checkout/${mock.preferencias.length}` });
   }
+  const reembolsoPago = p.match(/^\/v1\/payments\/([^/]+)\/refunds$/);
+  if (reembolsoPago && req.method === "POST") {
+    const x = mock.pagos.get(reembolsoPago[1]);
+    if (!x) return json(404, { message: "payment not found" });
+    mock.idempotencia.push(req.headers["x-idempotency-key"]);
+    const b = cuerpo ? JSON.parse(cuerpo) : {};
+    x.refunds ??= [];
+    const ya = x.refunds.reduce((a, r) => a + r.amount, 0);
+    const monto = b.amount != null ? Number(b.amount) : Math.round((x.transaction_amount - ya) * 100) / 100;
+    if (Math.round(monto * 100) % 100 === 66) return json(400, { message: "refund_not_allowed", cause: [{ description: "The refund could not be processed" }] });
+    const r = { id: Number(`7${Date.now()}`.slice(0, 13)), payment_id: x.id, amount: monto, status: "approved" };
+    x.refunds.push(r);
+    x.transaction_amount_refunded = ya + monto;
+    if (x.transaction_amount_refunded >= x.transaction_amount - 0.001) x.status = "refunded";
+    return json(201, r);
+  }
   const pago = p.match(/^\/v1\/payments\/([^/]+)$/);
   if (pago) {
     const x = mock.pagos.get(pago[1]);
     return x ? json(200, x) : json(404, { message: "payment not found" });
   }
-  return json(404, { message: `mock sin ruta ${req.method} ${p}` });
+  console.log("MOCK sin ruta", req.method, p); return json(404, { message: `mock sin ruta ${req.method} ${p}` });
 });
+function respuestaOrden(id, o) {
+  const monto = o.transactions.payments[0].amount;
+  const reembolsado = o.refunds.reduce((a, r) => a + Number(r.amount), 0);
+  return {
+    id,
+    status: reembolsado >= Number(monto) - 0.001 ? "refunded" : "processed",
+    external_reference: o.external_reference,
+    user_id: CUENTA_MP,
+    transactions: {
+      payments: [{ id: `PAY01${o.pagada.pagoId}`, reference_id: o.pagada.pagoId, paid_amount: monto, payment_method: { type: "credit_card", installments: 1 } }],
+      refunds: o.refunds,
+    },
+  };
+}
 await new Promise((r) => servidor.listen(4455, "127.0.0.1", r));
 
 // Webhook firmado como lo firma Mercado Pago.
@@ -277,6 +340,113 @@ try {
     else bien(`comisión del link como gasto: $${c.monto}`);
   }
 
+  console.log("\n4b. Devoluciones con Mercado Pago");
+  const devolverEnPantalla = async (cobroId, monto, motivo) => {
+    await admin.goto(`${BASE}/reservas/${reserva.id}/cobrar`, { waitUntil: "networkidle" });
+    const li = admin.locator(`li[data-cobro-id="${cobroId}"]`);
+    await li.getByRole("button", { name: "Devolver con Mercado Pago" }).click();
+    await li.getByLabel("Monto a devolver").fill(String(monto));
+    await li.getByLabel("Motivo").fill(motivo);
+    await li.getByRole("button", { name: "Devolver con Mercado Pago" }).click();
+    await li.locator("[role=alert], [role=status]").first().waitFor({ timeout: 30_000 });
+    return (await li.locator("[role=alert]").count()) ? await li.locator("[role=alert]").first().innerText() : null;
+  };
+  const devolucionesDe = async (cobroId) =>
+    (await A.from("devoluciones").select("id, origen, motivo, devolucion_metodos(metodo, monto)").eq("negocio_id", H).eq("cobro_id", cobroId)).data ?? [];
+  const reembolsosDe = async (ordenId) => (await A.from("reembolsos_cobro").select("*").eq("negocio_id", H).eq("orden_id", ordenId).order("created_at")).data ?? [];
+  const ordenCompleta = async (id) => (await A.from("mp_ordenes").select("estado, monto, monto_reembolsado, cobro_id, mp_payment_ref").eq("negocio_id", H).eq("id", id).single()).data;
+
+  // Parcial de la terminal: $23.45 de $123.45.
+  const e1 = await devolverEnPantalla(o3.cobro_id, 23.45, "Una noche menos");
+  const r1 = await reembolsosDe(o3.id);
+  const d1 = await devolucionesDe(o3.cobro_id);
+  const oo1 = await ordenCompleta(o3.id);
+  if (e1 || r1.length !== 1 || r1[0].estado !== "hecho" || d1.length !== 1 || d1[0].origen !== "mercadopago_point" || Number(d1[0].devolucion_metodos[0].monto) !== 23.45)
+    hallazgo(`la devolución parcial de la terminal no quedó: ${e1} ${JSON.stringify(r1)} ${JSON.stringify(d1)}`);
+  else if (oo1.estado !== "pagada" || Number(oo1.monto_reembolsado) !== 23.45) hallazgo(`la orden no dice que se pagó y se reembolsó en parte: ${JSON.stringify(oo1)}`);
+  else if (!mock.idempotencia.at(-1)?.includes(r1[0].id)) hallazgo("el reembolso no se pidió con nuestra llave de idempotencia");
+  else bien(`parcial en terminal: Mercado Pago reembolsó $23.45 y la devolución quedó en caja (${d1[0].origen}, ${d1[0].devolucion_metodos[0].metodo}); la orden sigue «pagada» con $23.45 reembolsados`);
+  const aj1 = (await A.from("gastos").select("monto, tipo, notas").eq("negocio_id", H).eq("tipo", "ajuste").eq("id", r1[0]?.gasto_ajuste_id ?? "00000000-0000-0000-0000-000000000000").maybeSingle()).data;
+  const esperado = -Math.round((4.5 * 23.45 / 123.45) * 100) / 100;
+  if (!aj1 || Number(aj1.monto) !== esperado) hallazgo(`la comisión proporcional no se ajustó (esperado ${esperado}): ${JSON.stringify(aj1)}`);
+  else bien(`comisión: ajuste proporcional de $${aj1.monto} al gasto «Comisión de Mercado Pago»`);
+  await admin.getByText("Pagado · reembolsado $23.45").first().waitFor({ timeout: 10_000 }).then(() => bien("la orden se ve «Pagado · reembolsado $23.45»"), () => hallazgo("la orden no se ve como pagada y reembolsada en parte"));
+
+  // Mercado Pago lo rechaza (.66): en la caja no queda nada.
+  const e2 = await devolverEnPantalla(o3.cobro_id, 10.66, "Prueba de rechazo");
+  const r2 = (await reembolsosDe(o3.id)).at(-1);
+  const d2 = await devolucionesDe(o3.cobro_id);
+  if (!e2 || !/Mercado Pago/.test(e2) || r2.estado !== "rechazado" || d2.length !== 1) hallazgo(`un reembolso rechazado dejó algo en caja o no se dijo: ${e2} ${JSON.stringify(r2)} ${d2.length}`);
+  else bien(`rechazado por Mercado Pago → no se registra nada y se dice por qué («${e2.slice(0, 90)}…»)`);
+
+  // Más de lo que queda: lo rechaza la base antes de ir a Mercado Pago.
+  const antesMp = mock.idempotencia.length;
+  const e3 = await devolverEnPantalla(o3.cobro_id, 500, "Demasiado");
+  if (!e3 || mock.idempotencia.length !== antesMp) hallazgo(`devolver más de lo cobrado no se frenó antes de Mercado Pago: ${e3}`);
+  else bien("devolver más de lo que queda se frena antes de llamar a Mercado Pago");
+
+  // Total del link: se cancela la comisión completa.
+  const e4 = await devolverEnPantalla(o4b.cobro_id, 77.1, "Cancelaron el hotel");
+  const d4 = await devolucionesDe(o4b.cobro_id);
+  const g4 = (await A.from("gastos").select("estado, motivo_cancelacion").eq("negocio_id", H).eq("mp_orden_id", o4.id).single()).data;
+  const oo4 = await ordenCompleta(o4.id);
+  if (e4 || d4.length !== 1 || d4[0].origen !== "mercadopago_link" || d4[0].devolucion_metodos[0].metodo !== "transferencia") hallazgo(`la devolución total del link no quedó: ${e4} ${JSON.stringify(d4)}`);
+  else if (g4.estado !== "cancelado") hallazgo(`la comisión del link no se canceló: ${JSON.stringify(g4)}`);
+  else if (Number(oo4.monto_reembolsado) !== 77.1 || oo4.estado !== "pagada") hallazgo(`la orden del link no quedó reembolsada completa: ${JSON.stringify(oo4)}`);
+  else bien(`total del link: reembolso + devolución en caja + comisión cancelada («${g4.motivo_cancelacion}»)`);
+  const deNuevo = await webhookMp({ tipo: "payment", id: pagoLink });
+  if ((await devolucionesDe(o4b.cobro_id)).length !== 1) hallazgo(`el webhook del pago reembolsado duplicó la devolución: ${JSON.stringify(deNuevo)}`);
+  else bien("el webhook del mismo pago reembolsado no duplica la devolución");
+
+  // Reembolso hecho en el panel de Mercado Pago (lo que queda de la terminal).
+  const idOrdenMp = [...mock.ordenes.entries()].find(([, o]) => o.external_reference === o3.id)[0];
+  const om = mock.ordenes.get(idOrdenMp);
+  om.refunds.push({ id: "REF01PANEL01", transaction_id: om.pagada.pagoId, amount: "100.00", status: "processed" });
+  const w5 = await webhookMp({ tipo: "order", id: idOrdenMp });
+  const d5 = await devolucionesDe(o3.cobro_id);
+  const r5 = (await reembolsosDe(o3.id)).find((r) => r.id_remoto === "REF01PANEL01");
+  const oo5 = await ordenCompleta(o3.id);
+  if (!r5 || r5.origen !== "proveedor" || d5.length !== 2 || Number(oo5.monto_reembolsado) !== 123.45) hallazgo(`el reembolso del panel no entró a caja: ${JSON.stringify(w5)} ${JSON.stringify(r5)} ${d5.length}`);
+  else bien("reembolso hecho en el panel → llegó por el webhook y quedó en caja (origen «proveedor»)");
+  const g5 = (await A.from("gastos").select("estado").eq("negocio_id", H).eq("mp_orden_id", o3.id).single()).data;
+  if (g5.estado !== "cancelado") hallazgo(`con la terminal reembolsada completa, la comisión no se canceló: ${g5.estado}`);
+  else bien("con eso la terminal quedó reembolsada completa y su comisión (con su ajuste) se canceló");
+  await webhookMp({ tipo: "order", id: idOrdenMp });
+  if ((await devolucionesDe(o3.cobro_id)).length !== 2) hallazgo("el webhook repetido del panel duplicó la devolución");
+  else bien("el webhook repetido no la duplica");
+  // Por el pago (topic payment) también se reconoce, sin nuestra referencia.
+  const wPago = await webhookMp({ tipo: "payment", id: om.pagada.pagoId });
+  if (wPago.motivo === "sin_referencia" || (await devolucionesDe(o3.cobro_id)).length !== 2) hallazgo(`el aviso por el pago de la terminal no se reconoció o duplicó: ${JSON.stringify(wPago)}`);
+  else bien("el aviso por el pago de la terminal (sin referencia) se reconoce por su id y no duplica");
+  await recep.goto(`${BASE}/recepcion`, { waitUntil: "networkidle" });
+  if (!(await recep.getByText(/reembolso desde el panel de Mercado Pago|reembolsos de Mercado Pago por revisar/).count())) hallazgo("el reembolso del panel no sale en «Necesita atención»");
+  else bien("sale en «Necesita atención» del tablero");
+  await recep.goto(`${BASE}/caja/reembolsos`, { waitUntil: "networkidle" });
+  const filaPanel = recep.locator("li", { hasText: "$100.00" }).filter({ has: recep.getByRole("button", { name: "Enterado" }) }).first();
+  await filaPanel.getByRole("button", { name: "Enterado" }).click();
+  await filaPanel.waitFor({ state: "detached", timeout: 20_000 }).catch(() => {});
+  const rv = (await reembolsosDe(o3.id)).find((r) => r.id_remoto === "REF01PANEL01");
+  if (!rv.revisado_at) hallazgo("«Enterado» no lo marcó");
+  else bien("recepción lo marca «Enterado» en Caja → Reembolsos y deja de salir");
+
+  // Recepción no devuelve (lo decide la base, no la pantalla).
+  const { data: mRecep } = await A.from("membresias").select("profile_id").eq("negocio_id", H).eq("rol", "recepcion").is("deleted_at", null).limit(1).single();
+  const cliRecep = await sesion(mRecep.profile_id);
+  const pr = await cliRecep.rpc("preparar_reembolso", { p_cobro_id: o4b.cobro_id, p_monto: 1, p_motivo: "x" });
+  if (!pr.error) hallazgo("recepción pudo pedir un reembolso");
+  else bien(`recepción no puede pedir reembolsos (${pr.error.message})`);
+
+  // Otro negocio: el admin de Huellitas contra un cobro de Ludogteka.
+  const { data: cobroL } = await A.from("cobros").select("id").eq("negocio_id", ludogteka.id).limit(1).maybeSingle();
+  if (cobroL) {
+    const { data: mAdm } = await A.from("membresias").select("profile_id").eq("negocio_id", H).eq("rol", "admin").is("deleted_at", null).limit(1).single();
+    const cliAdm = await sesion(mAdm.profile_id);
+    const x = await cliAdm.rpc("preparar_reembolso", { p_cobro_id: cobroL.id, p_monto: 1, p_motivo: "cruzado" });
+    const cuantos = (await A.from("reembolsos_cobro").select("id", { count: "exact", head: true }).eq("negocio_id", ludogteka.id)).count;
+    if (!x.error || cuantos) hallazgo(`el admin de Huellitas alcanzó un cobro de Ludogteka: ${JSON.stringify(x)}`);
+    else bien(`un negocio no puede reembolsar cobros de otro (${x.error.message})`);
+  }
+
   console.log("\n5. Webhooks que NO se aplican");
   const { data: resL } = await A.from("reservas").select("id").eq("negocio_id", ludogteka.id).limit(1).single();
   const { data: ordenL } = await A.from("mp_ordenes").insert({ negocio_id: ludogteka.id, tipo: "link", reserva_id: resL.id, monto: 55, estado: "creada", simulado: false, updated_at: new Date().toISOString() }).select("id").single();
@@ -331,6 +501,12 @@ try {
       const c = await comisionDe(oc.id);
       bien(`cobro con Clip registrado (${cobro.origen}); comisión: ${c ? `${c.concepto} $${c.monto}` : "no la dio Clip"}`);
     }
+    await admin.goto(`${BASE}/reservas/${reserva.id}/cobrar`, { waitUntil: "networkidle" });
+    const liClip = admin.locator(`li[data-cobro-id="${oc.cobro_id}"]`);
+    await liClip.getByRole("button", { name: "Registrar devolución" }).click();
+    if (!(await liClip.getByText(/La devolución se hace en Clip/).count()) || (await liClip.getByRole("button", { name: "Devolver con Mercado Pago" }).count()))
+      hallazgo("la devolución de un cobro de Clip no dice que se hace en Clip");
+    else bien("devolver un cobro de Clip: la pantalla dice que se hace en Clip y aquí solo se registra (a mano)");
     const tokenClip = JSON.parse(await secreto("clip")).webhookToken;
     const wc = await pedirApp(`plataforma.localhost:${PUERTO_APP}`, `/api/clip/webhook/${tokenClip}`, { method: "POST", body: JSON.stringify({ reference: oc.id, status: "COMPLETED" }) });
     if (wc.status !== 200) hallazgo(`el webhook de Clip respondió ${wc.status}`);
@@ -353,6 +529,17 @@ try {
     const { data: cobro } = await A.from("cobros").select("notas").eq("negocio_id", H).eq("id", os_.cobro_id).single();
     if (!cobro.notas.includes("SIMULADO")) hallazgo("el cobro simulado no dice SIMULADO");
     else bien(`cobro simulado registrado y marcado: «${cobro.notas}»`);
+  }
+  if (os_?.cobro_id) {
+    await admin.goto(`${BASE}/reservas/${reserva.id}/cobrar`, { waitUntil: "networkidle" });
+    const liSim = admin.locator(`li[data-cobro-id="${os_.cobro_id}"]`);
+    await liSim.getByRole("button", { name: "Devolver con Mercado Pago" }).click();
+    await liSim.getByLabel("Motivo").fill("Prueba simulada");
+    await liSim.getByRole("button", { name: "Devolver con Mercado Pago" }).click();
+    await liSim.locator("[role=alert], [role=status]").first().waitFor({ timeout: 30_000 });
+    const dSim = (await A.from("devoluciones").select("motivo").eq("negocio_id", H).eq("cobro_id", os_.cobro_id)).data ?? [];
+    if (dSim.length !== 1 || !dSim[0].motivo.includes("SIMULADO")) hallazgo(`la devolución simulada en prueba no quedó marcada: ${JSON.stringify(dSim)}`);
+    else bien(`devolución simulada en prueba, marcada: «${dSim[0].motivo}»`);
   }
   await A.from("negocios").update({ plan: "activo" }).eq("id", H);
   await recep.goto(`${BASE}/reservas/${reserva.id}/cobrar`, { waitUntil: "networkidle" });

@@ -27,7 +27,12 @@ export type PagoMp = {
   // Lo que Mercado Pago retuvo del cobro (su comisión, impuestos de la
   // comisión, financiamiento…). fee_payer "collector" = lo pagó el negocio.
   fee_details?: { type?: string; amount?: number; fee_payer?: string }[];
+  // Reembolsos del pago (desde la app o desde el panel de Mercado Pago).
+  refunds?: ReembolsoPagoMp[];
+  transaction_amount_refunded?: number;
 };
+
+export type ReembolsoPagoMp = { id: number | string; payment_id?: number | string; amount?: number | string; status?: string; date_created?: string };
 
 // La comisión que le costó al negocio este pago (0 si la API no la trae).
 export function comisionDePago(pago: PagoMp): number {
@@ -110,6 +115,20 @@ export async function crearLinkPago(
 
 export async function consultarPago(cx: ConexionCobro, paymentId: string): Promise<PagoMp> {
   return mpFetch<PagoMp>(cx.mp?.accessToken ?? "", `/v1/payments/${encodeURIComponent(paymentId)}`);
+}
+
+/**
+ * Reembolso de un pago (link): POST /v1/payments/{id}/refunds con
+ * { amount } (sin cuerpo = total). La llave de idempotencia es nuestro
+ * reembolso: si la llamada se corta y se repite, Mercado Pago no devuelve
+ * dos veces.
+ */
+export async function reembolsarPago(cx: ConexionCobro, paymentId: string, monto: number | null, idempotencia: string): Promise<ReembolsoPagoMp> {
+  return mpFetch<ReembolsoPagoMp>(cx.mp?.accessToken ?? "", `/v1/payments/${encodeURIComponent(paymentId)}/refunds`, {
+    method: "POST",
+    body: monto === null ? {} : { amount: Math.round(monto * 100) / 100 },
+    idempotencia: `reembolso-${idempotencia}`,
+  });
 }
 
 export function vigenciaLink(): Date {
