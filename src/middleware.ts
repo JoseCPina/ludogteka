@@ -313,5 +313,7 @@ async function plataforma(request: NextRequest, cabeceras: Headers) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  // Archivos estáticos (imágenes y los videos de redes de public/peludesk/redes:
+  // mp4 y sus subtítulos .srt) no pasan por aquí.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|srt)$).*)"],
 };

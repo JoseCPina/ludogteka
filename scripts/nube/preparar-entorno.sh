@@ -121,6 +121,20 @@ if ! npx --no-install playwright-core install --with-deps chromium; then
   npx --no-install playwright-core install chromium || aviso "Playwright quedó sin navegador"
 fi
 
+# ------------------------------------------------------------ Videos de producto
+# scripts/videos (HyperFrames + GSAP, su propio package.json para no cargar
+# el build de Vercel) y ffmpeg, que usan la grabación y el render.
+paso "Videos: ffmpeg + HyperFrames"
+if ! command -v ffmpeg >/dev/null 2>&1; then
+  $SUDO apt-get install -y -qq ffmpeg >/dev/null 2>&1 \
+    || { $SUDO apt-get update -qq >/dev/null 2>&1 && $SUDO apt-get install -y -qq ffmpeg >/dev/null 2>&1; } \
+    || aviso "no se pudo instalar ffmpeg (los videos de scripts/videos no se podrán producir)"
+fi
+if [ ! -x scripts/videos/node_modules/.bin/hyperframes ] || [ scripts/videos/package-lock.json -nt scripts/videos/node_modules/.package-lock.json ]; then
+  (cd scripts/videos && PUPPETEER_SKIP_DOWNLOAD=1 npm ci --no-audit --no-fund >/dev/null 2>&1) || aviso "no se pudo instalar HyperFrames en scripts/videos"
+fi
+command -v ffmpeg >/dev/null 2>&1 && echo "   $(ffmpeg -version | head -n 1 | cut -d' ' -f1-3)"
+
 # El proxy de la sesión abre el HTTPS con su propio certificado: Chromium solo
 # lo acepta si está en su almacén NSS (sin esto, Stripe Checkout y cualquier
 # sitio externo dan ERR_CERT_AUTHORITY_INVALID). Nunca se apaga TLS.
