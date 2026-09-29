@@ -8,7 +8,6 @@ import { negocioActual } from "@/lib/negocio/actual";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { articulosDelNegocio } from "@/lib/ayuda";
 import {
-  HERRAMIENTAS_ASISTENTE,
   LIMITE_HISTORIAL,
   MAX_PREGUNTAS_DIA,
   MAX_TOKENS_ASISTENTE,
@@ -92,20 +91,18 @@ export async function preguntarAsistente(datos: { conversacionId: string | null;
   let resultado;
   let tokens = { in: 0, out: 0 };
   try {
-    const r = await ia.responder(
-      [
-        { type: "text", text: promptFijo(articulos), cache_control: { type: "ephemeral" } },
-        {
-          type: "text",
-          text: promptVariable({ negocio: negocio.nombre, rol: sesion.rol as "admin" | "recepcion", modulos: sesion.modulos, pantalla: datos.pantalla, hoy: hoyTexto }),
-        },
-      ],
-      historial,
-      HERRAMIENTAS_ASISTENTE,
-      MAX_TOKENS_ASISTENTE
-    );
+    const system = [
+      { type: "text" as const, text: promptFijo(articulos), cache_control: { type: "ephemeral" as const } },
+      {
+        type: "text" as const,
+        text: promptVariable({ negocio: negocio.nombre, rol: sesion.rol as "admin" | "recepcion", modulos: sesion.modulos, pantalla: datos.pantalla, hoy: hoyTexto }),
+      },
+    ];
+    // Sin herramientas: «no está documentado» y «fuera de alcance» van como
+    // marcas de texto (ver src/lib/ayuda/asistente.ts).
+    const r = await ia.responder(system, historial, [], MAX_TOKENS_ASISTENTE);
     tokens = { in: r.tokensIn, out: r.tokensOut };
-    resultado = procesarRespuesta(r.texto, r.usos, permitidos);
+    resultado = procesarRespuesta(r.texto, permitidos);
   } catch (e) {
     console.error("[ayuda] el asistente no contestó", e instanceof Error ? e.message : e);
     await plataforma.registrarUsoIA({ telefono: `app:${negocio.slug}`, tokensIn: 0, tokensOut: 0, costoMxn: 0, resultado: "error" });
