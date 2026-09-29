@@ -9,6 +9,7 @@ const SECCIONES = [
   { href: "/plataforma/cobro", texto: "Cobro" },
   { href: "/plataforma/maps", texto: "Google Maps" },
   { href: "/plataforma/whatsapp", texto: "WhatsApp" },
+  { href: "/plataforma/redes", texto: "Redes" },
   { href: "/plataforma/soporte", texto: "Soporte" },
   { href: "/plataforma/personas", texto: "Personas" },
   { href: "/plataforma/catalogos", texto: "Catálogos compartidos" },
