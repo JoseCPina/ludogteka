@@ -70,9 +70,14 @@ export default async function CajaPage() {
             .
           </p>
         </div>
-        <Link href="/caja/turno">
-          <Button type="button" variante="secundario">Turno y arqueo</Button>
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/caja/venta">
+            <Button type="button">Venta rápida</Button>
+          </Link>
+          <Link href="/caja/turno">
+            <Button type="button" variante="secundario">Turno y arqueo</Button>
+          </Link>
+        </div>
       </div>
 
       {turno ? (

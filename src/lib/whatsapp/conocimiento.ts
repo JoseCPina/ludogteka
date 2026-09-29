@@ -23,6 +23,9 @@ Cada negocio tiene su propia dirección: <su-nombre>.peludesk.mx.
 - Estética: agenda con una columna por estilista, sin citas encimadas. Al terminar la cita se descuenta del inventario lo que se usó.
 - Caja: noches, guardería, baño y extras en una sola cuenta. Se cobra en efectivo, transferencia o tarjeta, se da cambio y en la noche se cuadra la caja (turno, retiros y arqueo).
 - Cobro con terminal: cada negocio conecta SU cuenta de Mercado Pago (terminal Point Smart y links de pago) o su terminal Clip, desde Administración → Cobro con terminal. El cobro a mano funciona siempre. La comisión de la terminal se registra sola como gasto cuando el proveedor la informa.
+- Devoluciones: un cobro que entró por Mercado Pago (terminal o link) se devuelve desde la app, total o parcial; Mercado Pago lo reembolsa y queda en la caja en el mismo paso, y la comisión que regresa se quita de los gastos. Lo que se reembolse desde el panel de Mercado Pago también entra solo a la caja y sale en «Necesita atención». Con Clip, la devolución se hace en Clip y en la app se registra.
+- Venta rápida en Caja: vender un producto del inventario (shampoo, croquetas, un collar) o cualquier concepto con su monto, sin reserva ni perro; con cliente o a «Público en general». Descuenta el inventario y sale aparte en el corte y los reportes.
+- Ayuda dentro de la app: artículos paso a paso de cada pantalla (también en https://peludesk.mx/ayuda), un asistente que contesta con esos artículos y tickets de soporte con respuesta de una persona de PeluDesk.
 - Day pass y mensualidades de guardería, por perro.
 - Recolección a domicilio con cargo por kilómetro.
 - Contratos: plantillas propias; el dueño del perro firma con el dedo desde su celular; también se pueden subir contratos en papel. Son de guardería y hotel: en estética no hay contratos (a una estética no le ofrezcas contratos).

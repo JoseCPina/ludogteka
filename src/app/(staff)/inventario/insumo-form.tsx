@@ -34,6 +34,8 @@ export function InsumoForm({
     existencia_inicial_consumo: number;
     requiere_caducidad: boolean;
     dias_aviso_caducidad: number | null;
+    se_vende?: boolean;
+    precio_venta?: number | null;
   };
   textoBoton: string;
   // Estética lo ve pero no lo edita (dar de alta y editar es de admin y recepción).
@@ -43,6 +45,8 @@ export function InsumoForm({
   const enviando = enviandoForm || soloLectura;
   const [unidadCompraId, setUnidadCompraId] = useState(valoresIniciales?.unidad_compra_id ?? "");
   const [requiereCaducidad, setRequiereCaducidad] = useState(valoresIniciales?.requiere_caducidad ?? false);
+  const [seVende, setSeVende] = useState(valoresIniciales?.se_vende ?? false);
+  const unidadCompra = unidades.find((u) => u.id === unidadCompraId)?.etiqueta.toLowerCase();
 
   const magnitudCompra = unidades.find((u) => u.id === unidadCompraId)?.magnitud;
   const unidadesConsumoCompatibles = useMemo(
@@ -159,6 +163,32 @@ export function InsumoForm({
             disabled={enviando}
             defaultValue={valoresIniciales?.dias_aviso_caducidad ?? 30}
             ayuda="La fecha real de caducidad se captura por cada compra."
+          />
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3">
+        <label className="flex items-center gap-2 text-n-900">
+          <input
+            type="checkbox"
+            name="se_vende"
+            disabled={enviando}
+            checked={seVende}
+            onChange={(e) => setSeVende(e.target.checked)}
+            className="h-4 w-4"
+          />
+          Se vende en mostrador
+        </label>
+        {seVende && (
+          <Field
+            label={`Precio de venta al público${unidadCompra ? ` (por ${unidadCompra})` : ""}`}
+            name="precio_venta"
+            type="number"
+            step="0.01"
+            min="0.01"
+            disabled={enviando}
+            defaultValue={valoresIniciales?.precio_venta ?? ""}
+            ayuda="Se vende por unidad de compra. Al venderlo en Caja → Venta rápida, sale de la existencia."
           />
         )}
       </div>

@@ -12,6 +12,8 @@ import { formatearFecha } from "@/lib/formato";
 import { abrirTurno } from "../../turno-actions";
 import { registrarCobro, registrarDevolucion, type MetodoPago } from "../../cobro-actions";
 import { CobroIntegrado, type OrdenCobroFila } from "./cobro-integrado";
+import { DevolucionIntegrada } from "./devolucion-integrada";
+import { CancelarRenglonVenta } from "./cancelar-renglon-venta";
 import type { ResumenCobro } from "@/lib/pagos/tipos";
 import { consumirBono, type ItemTipoBono } from "../../bono-actions";
 import { aplicarDescuento, cancelarDescuento, type TipoDescuento } from "../../descuento-actions";
@@ -72,6 +74,7 @@ export type CobroHistorial = {
   creadoEn: string;
   creadoPorNombre: string;
   metodos: { metodo: string; monto: number; propina: number }[];
+  origen: "manual" | "mercadopago_point" | "mercadopago_link" | "clip_terminal";
 };
 
 export type DevolucionHistorial = {
@@ -90,6 +93,7 @@ const ETIQUETA_METODO: Record<string, string> = {
 };
 
 const ETIQUETA_TIPO: Record<string, string> = {
+  venta: "Venta",
   estancia: "Estancia",
   cargo: "Cargo",
   estetica: "Estética",
@@ -390,7 +394,7 @@ export function CuentaCobro({
               </tr>
             ) : (
               lineas.map((l, i) => {
-                const opcionesBono = l.tipo === "bono" ? [] : bonosParaLinea(l);
+                const opcionesBono = l.tipo === "bono" || l.tipo === "venta" ? [] : bonosParaLinea(l);
                 return (
                   <tr key={i}>
                     <td className="border-b border-n-200 px-4 py-2.5 text-n-900">
@@ -418,6 +422,9 @@ export function CuentaCobro({
                         <Button type="button" variante="secundario" onClick={() => abrirAplicarBono(i)}>
                           Pagar con bono
                         </Button>
+                      )}
+                      {l.tipo === "venta" && cobrosIniciales.length === 0 && (
+                        <CancelarRenglonVenta ventaId={l.origenId} reservaId={reservaId} onError={setError} />
                       )}
                     </td>
                   </tr>
@@ -761,7 +768,7 @@ export function CuentaCobro({
                 0
               );
               return (
-                <li key={c.id} className="rounded-lg border border-n-200 bg-white p-4">
+                <li key={c.id} data-cobro-id={c.id} className="rounded-lg border border-n-200 bg-white p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="font-semibold text-n-900">
                       {dinero(totalCobro)}
@@ -794,7 +801,25 @@ export function CuentaCobro({
                     </div>
                   )}
 
-                  {esAdmin && totalDevuelto < totalCobro && (
+                  {esAdmin && totalDevuelto < totalCobro && (c.origen === "mercadopago_point" || c.origen === "mercadopago_link") && (
+                    <div className="mt-2 border-t border-n-200 pt-2">
+                      {devolviendoCobroId !== c.id ? (
+                        <Button type="button" variante="secundario" onClick={() => setDevolviendoCobroId(c.id)}>
+                          Devolver con Mercado Pago
+                        </Button>
+                      ) : (
+                        <DevolucionIntegrada
+                          reservaId={reservaId}
+                          cobroId={c.id}
+                          disponible={Math.round((totalCobro - totalDevuelto) * 100) / 100}
+                          simulado={mp.ordenes.some((o) => o.cobro_id === c.id && o.simulado)}
+                          onCerrar={() => setDevolviendoCobroId(null)}
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {esAdmin && totalDevuelto < totalCobro && c.origen !== "mercadopago_point" && c.origen !== "mercadopago_link" && (
                     <div className="mt-2 border-t border-n-200 pt-2">
                       {devolviendoCobroId !== c.id ? (
                         <Button
@@ -803,13 +828,19 @@ export function CuentaCobro({
                           onClick={() => {
                             setDevolviendoCobroId(c.id);
                             setMotivoDevolucion("");
-                            setMetodosDevolucion([{ metodo: "efectivo", monto: "" }]);
+                            setMetodosDevolucion([{ metodo: c.origen === "clip_terminal" ? "terminal" : "efectivo", monto: "" }]);
                           }}
                         >
                           Registrar devolución
                         </Button>
                       ) : (
                         <div className="flex flex-col gap-3 rounded-md border border-n-200 bg-n-50 p-3">
+                          {c.origen === "clip_terminal" && (
+                            <p className="text-sm text-n-700">
+                              Este cobro entró por la terminal Clip. La devolución se hace en Clip (en la terminal o en tu panel de Clip); aquí solo se
+                              registra para que cuadre la caja. Regístrala con el método «Terminal».
+                            </p>
+                          )}
                           {metodosDevolucion.map((m, i) => (
                             <div key={i} className="flex flex-wrap items-end gap-3">
                               <div className="w-40">

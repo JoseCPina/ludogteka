@@ -11,6 +11,7 @@ export default async function ClientesPage() {
       .from("clientes")
       .select("id, nombre, telefono, email, created_at, alta_por_cliente, datos_revisados_at")
       .is("deleted_at", null)
+      .eq("publico_general", false)
       .order("nombre"),
     // Para buscar por nombre del perro, como en todos los buscadores.
     supabase.from("perros").select("id, cliente_id, nombre").is("deleted_at", null).eq("fallecido", false).order("nombre"),

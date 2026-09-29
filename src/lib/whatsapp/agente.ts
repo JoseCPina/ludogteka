@@ -91,6 +91,8 @@ export interface ContextoAgente {
   negocios: NegocioDeAdmin[];
   planes: PlanPublico[];
   enlaces: { registro: string; demo: string };
+  /** Admin y personal: la documentación del centro de ayuda (bloque aparte, en caché). */
+  documentacion?: string;
 }
 
 export interface ParAprendido {
@@ -390,11 +392,12 @@ function bloqueTipo(ctx: ContextoAgente): string {
         "QUIÉN TE ESCRIBE: el admin de un negocio que usa PeluDesk (lo reconocimos por su teléfono).",
         "Contesta su duda concreta. De su cuenta solo sabes lo de DATOS DE SU CUENTA; si pregunta algo que no está ahí (un cliente, una cita, un cobro de su caja), no lo sabes: dile dónde verlo en la app o escala.",
         "Si tiene más de un negocio y no queda claro de cuál habla, pregúntale cuál.",
+        "Sus dudas de uso de la app (cómo hacer algo) se contestan con la DOCUMENTACIÓN DE USO, citando el link del artículo. Si no está ahí, escala.",
       ].join("\n");
     case "personal":
       return [
         "QUIÉN TE ESCRIBE: alguien del personal (recepción o estética) de un negocio que usa PeluDesk. No es admin.",
-        "Puedes contestar dudas de uso de la app. Del plan, el pago o la cuenta del negocio no tienes datos: eso lo ve y lo cambia solo el admin de su negocio, en Administración → Módulos y plan.",
+        "Puedes contestar dudas de uso de la app con la DOCUMENTACIÓN DE USO, citando el link del artículo; si no está ahí, escala. Del plan, el pago o la cuenta del negocio no tienes datos: eso lo ve y lo cambia solo el admin de su negocio, en Administración → Módulos y plan.",
       ].join("\n");
     case "cliente_de_negocio":
       return [
@@ -513,6 +516,8 @@ export type ComandoOperador =
   | { cmd: "aprender" }
   | { cmd: "cerrar" }
   | { cmd: "seguimiento" }
+  | { cmd: "proceso" }
+  | { cmd: "resolver" }
   | { cmd: "start"; argumento: string }
   | { cmd: "texto"; texto: string };
 
@@ -529,6 +534,11 @@ export function parsearOperador(texto: string): ComandoOperador {
       return { cmd: "cerrar" };
     case "seguimiento":
       return { cmd: "seguimiento" };
+    // Tickets de soporte (en un reply a su aviso).
+    case "proceso":
+      return { cmd: "proceso" };
+    case "resolver":
+      return { cmd: "resolver" };
     case "start":
       return { cmd: "start", argumento: resto.join(" ").trim() };
     default:

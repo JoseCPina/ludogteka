@@ -46,6 +46,7 @@ export default async function ReportesPage({
     { data: utilidadAnteriorData },
     { data: gastosCategoria },
     { data: gastosCategoriaAnterior },
+    { data: ventasData, error: errorVentas },
   ] = await Promise.all([
     supabase.rpc("reporte_financiero_periodo", { p_desde: desde, p_hasta: hasta }).single(),
     supabase.rpc("reporte_costos_periodo", { p_desde: desde, p_hasta: hasta }).single(),
@@ -56,7 +57,17 @@ export default async function ReportesPage({
     supabase.rpc("reporte_utilidad_periodo", { p_desde: anterior.desde, p_hasta: anterior.hasta }).single(),
     supabase.rpc("gastos_por_categoria_periodo", { p_desde: desde, p_hasta: hasta }),
     supabase.rpc("gastos_por_categoria_periodo", { p_desde: anterior.desde, p_hasta: anterior.hasta }),
+    supabase.rpc("reporte_ventas_mostrador_periodo", { p_desde: desde, p_hasta: hasta }).single(),
   ]);
+  // Venta de mostrador: aparte de los servicios (ya está dentro de lo cobrado).
+  const ventas = ventasData as {
+    ventas: number;
+    total_vendido: number;
+    productos: number;
+    conceptos: number;
+    costo_productos: number;
+    cobrado: number;
+  } | null;
 
   // Utilidad = ingreso reconocido − consumo de insumos − costo de nómina.
   const utilidad = utilidadData as {
@@ -407,6 +418,39 @@ export default async function ReportesPage({
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Descuentos otorgados</p>
               <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(reporte.descuentos_otorgados)}</p>
               <p className="mt-1 text-xs text-n-500">Ya restados del cobro, solo informativo</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!errorVentas && ventas && Number(ventas.ventas) > 0 && (
+        <div className="flex flex-col gap-4 border-t border-n-200 pt-6" data-reporte-ventas>
+          <div>
+            <h2 className="text-lg font-bold text-n-900">Ventas de mostrador</h2>
+            <p className="mt-1 text-sm text-n-600">
+              Productos y conceptos vendidos en Caja → Venta rápida, aparte de los servicios. Ya están dentro de lo cobrado de arriba; el costo de
+              los productos entra al costo de insumos de la utilidad.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+            <div className="rounded-lg border border-n-200 bg-white p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-n-600">Vendido</p>
+              <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(Number(ventas.total_vendido))}</p>
+              <p className="mt-1 text-xs text-n-500">{Number(ventas.ventas)} {Number(ventas.ventas) === 1 ? "venta" : "ventas"}</p>
+            </div>
+            <div className="rounded-lg border border-n-200 bg-white p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-n-600">Productos</p>
+              <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(Number(ventas.productos))}</p>
+              <p className="mt-1 text-xs text-n-500">Costo {formatearMoneda(Number(ventas.costo_productos))}</p>
+            </div>
+            <div className="rounded-lg border border-n-200 bg-white p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-n-600">Conceptos libres</p>
+              <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(Number(ventas.conceptos))}</p>
+            </div>
+            <div className="rounded-lg border border-n-200 bg-white p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-n-600">Cobrado (neto)</p>
+              <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(Number(ventas.cobrado))}</p>
+              <p className="mt-1 text-xs text-n-500">Menos devoluciones</p>
             </div>
           </div>
         </div>

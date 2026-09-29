@@ -17,7 +17,7 @@ export default async function AgendarPage() {
     { data: conGuarderiaHotel },
     { data: conRequisitoPendiente },
   ] = await Promise.all([
-    supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).order("nombre"),
+    supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).eq("publico_general", false).order("nombre"),
     supabase
       .from("perros")
       .select("id, cliente_id, nombre")

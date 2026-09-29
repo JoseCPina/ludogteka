@@ -122,6 +122,14 @@ export type ResultadoSincronizacion = {
   installments: number | null;
 };
 
+/** Un reembolso tal como lo reporta el proveedor. */
+export type ReembolsoRemoto = {
+  id: string;
+  monto: number;
+  estado: "aprobado" | "pendiente" | "rechazado";
+  crudo: unknown;
+};
+
 /** Error de un proveedor, dicho para quien está en el mostrador. */
 export class ErrorProveedor extends Error {
   constructor(

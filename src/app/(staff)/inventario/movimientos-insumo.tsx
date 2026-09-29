@@ -15,6 +15,7 @@ const ETIQUETA_TIPO: Record<string, string> = {
   entrada_compra: "Entrada (compra)",
   salida_consumo: "Salida (consumo)",
   salida_merma: "Merma",
+  salida_venta: "Venta de mostrador",
   ajuste_positivo: "Ajuste (+)",
   ajuste_negativo: "Ajuste (−)",
 };
@@ -23,6 +24,7 @@ const ESTILO_TIPO: Record<string, string> = {
   entrada_compra: "bg-menta-suave text-menta-oscuro",
   salida_consumo: "bg-n-100 text-n-700",
   salida_merma: "bg-coral-suave text-coral-oscuro",
+  salida_venta: "bg-morado-suave text-morado",
   ajuste_positivo: "bg-menta-suave text-menta-oscuro",
   ajuste_negativo: "bg-coral-suave text-coral-oscuro",
 };

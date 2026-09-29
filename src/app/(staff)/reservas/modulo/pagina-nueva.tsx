@@ -40,7 +40,7 @@ export async function PaginaNuevaReserva({
     { servicios, error: errorServicios },
     { data: seriesActivas, error: errorSeries },
   ] = await Promise.all([
-    supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).order("nombre"),
+    supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).eq("publico_general", false).order("nombre"),
     supabase
       .from("perros")
       .select("id, cliente_id, nombre")

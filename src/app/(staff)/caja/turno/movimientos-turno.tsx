@@ -20,6 +20,7 @@ export type ResumenMetodo = { metodo: string; origen: string; cobrado: number; p
 const ETIQUETA_TIPO: Record<string, string> = {
   cobro: "Cobro",
   venta_bono: "Venta de bono",
+  venta_mostrador: "Venta de mostrador",
   devolucion: "Devolución",
   retiro: "Retiro",
 };
@@ -61,8 +62,17 @@ export function MovimientosTurno({
     return { metodo: m, cobrado, propinas, devuelto, neto: cobrado + propinas - devuelto, manual: manual?.cobrado ?? 0, app: app.reduce((s, r) => s + r.cobrado, 0) };
   });
 
+  // Lo que entró por venta de mostrador, aparte de los servicios.
+  const ventasMostrador = movimientos.filter((m) => m.tipo === "venta_mostrador").reduce((s, m) => s + m.monto, 0);
+  const servicios = movimientos.filter((m) => m.tipo === "cobro" || m.tipo === "venta_bono").reduce((s, m) => s + m.monto, 0);
+
   return (
     <div className="flex flex-col gap-4">
+      {ventasMostrador > 0 && (
+        <p className="text-sm text-n-700" data-ventas-mostrador>
+          Servicios y pases: <strong>{dinero(servicios)}</strong> · Ventas de mostrador: <strong>{dinero(ventasMostrador)}</strong>
+        </p>
+      )}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {porMetodo.map((m) => (
           <div key={m.metodo} className="rounded-lg border border-n-200 bg-white p-4">
