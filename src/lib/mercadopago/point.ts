@@ -25,6 +25,9 @@ export type OrdenPoint = {
   transactions?: {
     payments?: {
       id?: string;
+      // El id del mismo pago en la API de pagos (/v1/payments/<id>), numérico:
+      // de ahí sale la comisión (fee_details).
+      reference_id?: string | number;
       amount?: string | number;
       paid_amount?: string | number;
       status?: string;

@@ -53,9 +53,12 @@ export function descriptorDeCuenta(nombre: string): string {
 export function urlWebhookDe(cx: ConexionCobro): string {
   // La llave del entorno es de la aplicación de Ludogteka: su webhook sigue
   // donde siempre. Todo lo de OAuth va al webhook único de PeluDesk.
-  return cx.origen === "llave_entorno"
-    ? `${urlPublicaLegado()}/api/mercadopago/webhook`
-    : `${urlPlataforma()}/api/mercadopago/webhook`;
+  // source_news=webhooks: solo la notificación firmada. Sin él, Mercado Pago
+  // manda además la IPN vieja (topic=payment / merchant_order) sin firma, el
+  // webhook la contesta 401 y Mercado Pago la reintenta por horas (visto con
+  // un link real el 28 de septiembre de 2026).
+  const base = cx.origen === "llave_entorno" ? urlPublicaLegado() : urlPlataforma();
+  return `${base}/api/mercadopago/webhook?source_news=webhooks`;
 }
 
 export async function crearLinkPago(
