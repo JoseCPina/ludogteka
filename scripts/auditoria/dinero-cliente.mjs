@@ -45,9 +45,13 @@ const SOLO_STAFF = [
   // Integraciones por negocio (28 de septiembre de 2026): con qué cobra,
   // sus intentos de OAuth y su consumo de Google Maps.
   "integraciones_cobro", "integraciones_oauth", "maps_consultas",
+  // Reembolsos con el proveedor y venta de mostrador (29 de septiembre de 2026).
+  "reembolsos_cobro", "ventas_mostrador",
+  // Soporte: tickets y conversaciones con el asistente son del personal.
+  "soporte_tickets", "soporte_ticket_mensajes", "soporte_conversaciones", "soporte_mensajes_asistente",
 ];
 // RPC que un cliente con sesión no debe poder llamar (tienen que rechazarlo).
-const RPC_SOLO_STAFF = ["mi_cobro", "plataforma_cobros", "calendario_ocupacion", "insumos_sin_costo", "asistencia_periodo", "calcular_nomina", "reporte_utilidad_periodo", "cuentas_para_empleado", "gastos_por_atender", "gastos_por_categoria_periodo", "maps_consumo_mes", "plataforma_maps_consumo", "elegir_proveedor_cobro"];
+const RPC_SOLO_STAFF = ["mi_cobro", "plataforma_cobros", "calendario_ocupacion", "insumos_sin_costo", "asistencia_periodo", "calcular_nomina", "reporte_utilidad_periodo", "cuentas_para_empleado", "gastos_por_atender", "gastos_por_categoria_periodo", "maps_consumo_mes", "plataforma_maps_consumo", "elegir_proveedor_cobro", "reporte_ventas_mostrador_periodo", "cliente_publico_general", "crear_venta_mostrador", "preparar_reembolso", "crear_ticket", "plataforma_tickets"];
 
 const spec = await (await fetch(URL + "/rest/v1/", { headers: { apikey: env.SUPABASE_SECRET_KEY, Authorization: `Bearer ${env.SUPABASE_SECRET_KEY}` } })).json();
 const relaciones = Object.keys(spec.definitions).sort();
@@ -124,6 +128,14 @@ for (const cli of clientes) {
     ["mi_cobro", {}],
     ["plataforma_cobros", {}],
     ["estado_cobro", {}],
+    ["reporte_ventas_mostrador_periodo", { p_desde: "2026-01-01", p_hasta: "2027-12-31" }],
+    ["cliente_publico_general", {}],
+    ["crear_venta_mostrador", { p_cliente_id: null, p_lineas: [{ concepto: "x", precio: 1, cantidad: 1 }], p_notas: null }],
+    ["preparar_reembolso", { p_cobro_id: ID_VACIO, p_monto: 1, p_motivo: "x" }],
+    ["crear_ticket", { p_asunto: "x", p_descripcion: "y", p_pantalla: null, p_navegador: null, p_conversacion_id: null, p_sin_documentar: false }],
+    ["plataforma_tickets", { p_estado: null }],
+    ["reembolsos_por_atender", {}],
+    ["mis_tickets_con_respuesta", {}],
   ];
   for (const [fn, args] of sondas) {
     const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(args) });

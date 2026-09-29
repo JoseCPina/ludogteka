@@ -9,6 +9,7 @@ import { stripe } from "@/lib/cobro/stripe";
 import { configuracionPortal } from "@/lib/cobro/portal";
 import { type ClaveCaptura, MAX_TOKENS_IA, MODELO_IA, type NegocioDeAdmin, OPCIONES_IA, type PlanPublico, type TipoInterlocutor, TOPE_MENSUAL_MXN } from "./agente";
 import { CONOCIMIENTO } from "./conocimiento";
+import { documentacionParaWhatsApp } from "@/lib/ayuda/whatsapp";
 import type { BloqueIA, Cuenta, DatosSoporte, DepsSoporte, Hilo, IA, RespuestaIA, SalidaWA, Telegram } from "./soporte";
 
 /**
@@ -517,7 +518,12 @@ export class Anthropic implements IA {
     private workspace = "",
   ) {}
 
-  async responder(system: string, mensajes: BloqueIA[], tools: BloqueIA[]): Promise<RespuestaIA> {
+  /**
+   * `system` puede ir en bloques: el asistente de Ayuda manda primero la
+   * documentación con cache_control (se cobra a 10 % mientras no cambie) y
+   * después lo de cada persona.
+   */
+  async responder(system: string | BloqueIA[], mensajes: BloqueIA[], tools: BloqueIA[], maxTokens = MAX_TOKENS_IA): Promise<RespuestaIA> {
     if (!this.llave) throw new Error("falta ANTHROPIC_API_KEY");
     const r = await fetch(`${ANTHROPIC()}/v1/messages`, {
       method: "POST",
@@ -528,11 +534,11 @@ export class Anthropic implements IA {
         "anthropic-version": "2023-06-01",
         ...(this.workspace ? { "anthropic-workspace-id": this.workspace } : {}),
       },
-      body: JSON.stringify({ model: MODELO_IA, max_tokens: MAX_TOKENS_IA, ...OPCIONES_IA, system, tools, messages: mensajes }),
+      body: JSON.stringify({ model: MODELO_IA, max_tokens: maxTokens, ...OPCIONES_IA, system, tools, messages: mensajes }),
     });
     const cuerpo = (await r.json().catch(() => ({}))) as {
       content?: { type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }[];
-      usage?: { input_tokens?: number; output_tokens?: number };
+      usage?: { input_tokens?: number; output_tokens?: number; cache_read_input_tokens?: number; cache_creation_input_tokens?: number };
       error?: { message?: string };
     };
     if (!r.ok) throw new Error(`Anthropic: ${cuerpo.error?.message ?? `HTTP ${r.status}`}`);
@@ -540,7 +546,10 @@ export class Anthropic implements IA {
     return {
       texto: bloques.filter((b) => b.type === "text").map((b) => b.text ?? "").join("\n"),
       usos: bloques.filter((b) => b.type === "tool_use").map((b) => ({ id: String(b.id), nombre: String(b.name), entrada: b.input ?? {} })),
-      tokensIn: Number(cuerpo.usage?.input_tokens ?? 0),
+      // Lo leído de caché cuesta la décima parte; lo escrito, 1.25×: se cuenta así en el tope.
+      tokensIn: Math.round(
+        Number(cuerpo.usage?.input_tokens ?? 0) + Number(cuerpo.usage?.cache_read_input_tokens ?? 0) * 0.1 + Number(cuerpo.usage?.cache_creation_input_tokens ?? 0) * 1.25
+      ),
       tokensOut: Number(cuerpo.usage?.output_tokens ?? 0),
       bloques,
     };
@@ -595,6 +604,7 @@ export function construirSoporte(): { deps: DepsSoporte; datos: DatosSupabase; w
       negocios: cuenta.negocios,
       planes: await planesPublicos(),
       enlaces: { registro: `${urlPlataforma()}/registro`, demo: `${urlDemo()}/demo` },
+      documentacion: cuenta.tipo === "admin" || cuenta.tipo === "personal" ? documentacionParaWhatsApp(urlPlataforma()) : undefined,
     }),
     ligaPortal: ligaPortalDe,
     alerta: (detalle, e) => console.error(`[whatsapp] ${detalle}`, e instanceof Error ? e.message : (e ?? "")),

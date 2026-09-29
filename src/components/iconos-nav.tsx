@@ -111,6 +111,13 @@ const ICONOS: Record<string, React.ReactNode> = {
       <circle cx="12" cy="12" r="3.4" fill={T} />
     </>
   ),
+  ayuda: (
+    <>
+      <circle cx="12" cy="12" r="9.5" fill={M} />
+      <path d="M9.4 9.3a2.7 2.7 0 1 1 3.6 2.5c-.6.3-1 .8-1 1.5v.6" stroke={T} strokeWidth="2.3" strokeLinecap="round" fill="none" />
+      <circle cx="12" cy="17.2" r="1.3" fill={T} />
+    </>
+  ),
   permisos: (
     <>
       <path d="M12 2.5 20 5.5v6c0 4.8-3.3 8.6-8 10-4.7-1.4-8-5.2-8-10v-6Z" fill={M} />
@@ -136,6 +143,7 @@ const POR_RUTA: [string, string][] = [
   ["/empleados", "empleados"],
   ["/gastos", "gastos"],
   ["/mi-trabajo", "asistencia"],
+  ["/ayuda", "ayuda"],
 ];
 
 export function IconoSeccion({ href, inicio = false }: { href: string; inicio?: boolean }) {

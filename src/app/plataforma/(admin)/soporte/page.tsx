@@ -1,59 +1,63 @@
+import Link from "next/link";
 import { exigirPlataforma } from "@/lib/plataforma/sesion";
-import { FormularioPlataforma } from "@/components/plataforma/formulario-plataforma";
-import { Field } from "@/components/ui/field";
 import { Alert } from "@/components/ui/alert";
-import { restablecerPasswordPersona } from "../../acciones";
+import { ETIQUETA_ESTADO_TICKET } from "@/lib/soporte/textos";
 
-type Persona = {
-  persona_id: string; email: string; nombre: string | null; telefonos: string[] | null;
-  negocios: { negocio: string; slug: string; rol: string }[]; ultimo_acceso: string | null;
+type Fila = {
+  id: string; negocio: string; slug: string; numero: number; asunto: string; estado: string; rol: string; persona: string;
+  ultimo_de: string; ultimo_mensaje_at: string; sin_documentar: boolean;
 };
 
-const ROL: Record<string, string> = { admin: "admin", recepcion: "recepción", estetica: "estética", cliente: "cliente" };
+const fecha = (iso: string) =>
+  new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" }).format(new Date(iso));
 
-// Soporte de PeluDesk: una persona es UNA cuenta en todos sus negocios.
-// Aquí se busca en toda la plataforma y se le restablece la contraseña —
-// lo que ningún negocio puede hacer cuando la persona está en varios.
-export default async function Soporte({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+// Los tickets de todos los negocios: primero los que esperan respuesta de
+// PeluDesk, del más viejo al más nuevo. También llegan a la bandeja de Telegram.
+export default async function SoportePlataforma({ searchParams }: { searchParams: Promise<{ estado?: string }> }) {
   const { supabase } = await exigirPlataforma();
-  const { q = "" } = await searchParams;
-  const { data, error } = q.trim() ? await supabase.rpc("plataforma_buscar_personas", { p_busqueda: q }) : { data: [], error: null };
-  const personas = (data ?? []) as Persona[];
+  const { estado } = await searchParams;
+  const filtro = estado && ["abierto", "en_proceso", "resuelto"].includes(estado) ? estado : null;
+  const { data, error } = await supabase.rpc("plataforma_tickets", { p_estado: filtro });
+  const filas = (data ?? []) as Fila[];
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold text-n-900">Soporte</h1>
-        <p className="mt-1 text-n-600">Busca a una persona por su teléfono (a diez dígitos) o su correo exacto.</p>
+        <p className="mt-1 text-n-600">Tickets de los negocios. Contesta aquí o respondiendo al aviso en Telegram.</p>
       </div>
-      <form className="flex flex-wrap items-end gap-3" action="/plataforma/soporte">
-        <div className="min-w-64 flex-1">
-          <Field label="Teléfono o correo" name="q" defaultValue={q} />
-        </div>
-        <button type="submit" className="min-h-12 rounded-md bg-morado px-5 font-semibold text-white hover:opacity-90">Buscar</button>
-      </form>
-      {error && <Alert variante="error" titulo="No se pudo buscar">{error.message}</Alert>}
-      {q.trim() && !error && personas.length === 0 && <p className="text-n-600">Nadie con ese teléfono o correo.</p>}
-      <ul className="flex flex-col gap-4">
-        {personas.map((p) => (
-          <li key={p.persona_id} className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
-            <div>
-              <p className="font-bold text-n-900">{p.nombre ?? p.email}</p>
-              <p className="text-sm text-n-600">
-                {p.email}
-                {(p.telefonos ?? []).length ? ` · tel. ${(p.telefonos ?? []).join(", ")}` : ""}
-              </p>
-              <p className="mt-1 text-sm text-n-600">
-                {p.negocios.length
-                  ? p.negocios.map((n) => `${n.negocio} (${ROL[n.rol] ?? n.rol})`).join(" · ")
-                  : "Sin negocio"}
-              </p>
-            </div>
-            <FormularioPlataforma accion={async (fd) => {
-              "use server";
-              return restablecerPasswordPersona(p.persona_id, String(fd.get("motivo") ?? ""));
-            }} textoBoton="Restablecer contraseña" variante="secundario">
-              <Field label="Motivo" name="motivo" required ayuda="Quién lo pidió y cómo comprobaste que era la persona. Queda en la bitácora." />
-            </FormularioPlataforma>
+      <nav className="flex flex-wrap gap-2 text-sm font-semibold">
+        {[null, "abierto", "en_proceso", "resuelto"].map((e) => (
+          <Link
+            key={e ?? "todos"}
+            href={e ? `/plataforma/soporte?estado=${e}` : "/plataforma/soporte"}
+            className={`rounded-full px-3 py-1 ${filtro === e ? "bg-morado text-white" : "bg-n-100 text-n-700"}`}
+          >
+            {e ? ETIQUETA_ESTADO_TICKET[e] : "Todos"}
+          </Link>
+        ))}
+      </nav>
+      {error && <Alert variante="error" titulo="No se pudieron cargar">{error.message}</Alert>}
+      {!error && filas.length === 0 && <p className="text-n-600">No hay tickets.</p>}
+      <ul className="flex flex-col gap-2">
+        {filas.map((t) => (
+          <li key={t.id}>
+            <Link href={`/plataforma/soporte/${t.id}`} className="flex flex-col gap-1 rounded-lg border border-n-200 bg-white px-4 py-3 hover:border-morado">
+              <span className="flex flex-wrap items-center justify-between gap-2">
+                <span className="font-semibold text-n-900">
+                  {t.negocio} · #{t.numero} · {t.asunto}
+                </span>
+                <span className="flex gap-2 text-xs">
+                  {t.estado !== "resuelto" && t.ultimo_de === "negocio" && (
+                    <span className="rounded-full bg-coral-suave px-2 py-0.5 font-semibold text-coral-oscuro">Espera respuesta</span>
+                  )}
+                  {t.sin_documentar && <span className="rounded-full bg-ambar-suave px-2 py-0.5 font-semibold text-ambar-oscuro">Sin documentar</span>}
+                  <span className="rounded-full bg-n-100 px-2 py-0.5 font-semibold text-n-700">{ETIQUETA_ESTADO_TICKET[t.estado]}</span>
+                </span>
+              </span>
+              <span className="text-sm text-n-600">
+                {t.persona} ({t.rol === "admin" ? "admin" : "recepción"}) · último mensaje {fecha(t.ultimo_mensaje_at)}
+              </span>
+            </Link>
           </li>
         ))}
       </ul>

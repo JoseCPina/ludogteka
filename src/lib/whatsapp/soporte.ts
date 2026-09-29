@@ -84,6 +84,13 @@ export interface DatosSoporte {
   ventanaAbierta(telefono: string): Promise<boolean>;
 }
 
+export interface TicketsBandeja {
+  /** El ticket del aviso al que se respondió (o null si no es de un ticket). */
+  porMensaje(messageId: number): Promise<{ id: string; numero: number } | null>;
+  responder(ticketId: string, texto: string): Promise<string>;
+  estado(ticketId: string, estado: "en_proceso" | "resuelto"): Promise<string>;
+}
+
 export interface Telegram {
   enviar(chatId: number, htmlTexto: string, responderA?: number): Promise<number | null>;
 }
@@ -100,7 +107,7 @@ export interface RespuestaIA {
 }
 
 export interface IA {
-  responder(system: string, mensajes: BloqueIA[], tools: BloqueIA[]): Promise<RespuestaIA>;
+  responder(system: string | BloqueIA[], mensajes: BloqueIA[], tools: BloqueIA[]): Promise<RespuestaIA>;
 }
 
 export interface SalidaWA {
@@ -128,6 +135,11 @@ export interface DepsSoporte {
   hoyTexto(): string;
   cuenta(telefono: string): Promise<Cuenta>;
   contexto(cuenta: Cuenta): Promise<ContextoAgente>;
+  /**
+   * Los tickets de soporte de la app, que también avisan en esta bandeja.
+   * Responder a su aviso contesta el ticket (sin esto, solo hilos de WhatsApp).
+   */
+  tickets?: TicketsBandeja;
   /** Link al portal de pagos de un negocio DE ESTA cuenta (nunca de otro). */
   ligaPortal(negocio: NegocioDeAdmin): Promise<string>;
   alerta(detalle: string, e?: unknown): void;
@@ -220,7 +232,15 @@ export async function atender(telefono: string, texto: string, deps: DepsSoporte
   try {
     const [historial, aprendido, ctx] = await Promise.all([historialP, aprendidoP, deps.contexto(cuenta)]);
     marcar("preparar");
-    const system = systemPrompt(deps.base, aprendido, ctx, deps.hoyTexto());
+    const texto_ = systemPrompt(deps.base, aprendido, ctx, deps.hoyTexto());
+    // La documentación de uso (admin y personal) va primero y en caché: es
+    // la misma para todos y es lo más largo del prompt.
+    const system: string | BloqueIA[] = ctx.documentacion
+      ? [
+          { type: "text", text: ctx.documentacion, cache_control: { type: "ephemeral" } },
+          { type: "text", text: texto_ },
+        ]
+      : texto_;
     const tools = herramientas(cuenta.tipo);
     const mensajes: BloqueIA[] = [];
     for (const m of historial) {
@@ -246,7 +266,7 @@ async function conversar(
   texto: string,
   hilo: Hilo,
   cuenta: Cuenta,
-  system: string,
+  system: string | BloqueIA[],
   mensajes: BloqueIA[],
   tools: BloqueIA[],
   historial: MensajeHilo[],
@@ -427,6 +447,7 @@ export const AYUDA_OPERADOR = [
   "Contesta <b>respondiendo</b> (reply) al mensaje de un hilo y tu texto sale por WhatsApp.",
   "",
   "En un reply: /aprender · /cerrar · /seguimiento",
+  "En el aviso de un ticket 🎫: tu respuesta le llega en la app · /proceso · /resolver",
 ].join("\n");
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -456,6 +477,32 @@ export async function procesarUpdate(update: any, deps: DepsSoporte): Promise<st
   if (!respondido) {
     await deps.tg.enviar(chatId, cmd.cmd === "start" ? AYUDA_OPERADOR : "⚠️ Responde al mensaje del hilo al que le quieres contestar.");
     return cmd.cmd === "start" ? "ayuda" : "sin hilo";
+  }
+  // ¿Es el aviso de un ticket de soporte de la app?
+  const ticket = deps.tickets ? await deps.tickets.porMensaje(respondido) : null;
+  if (ticket && deps.tickets) {
+    try {
+      if (cmd.cmd === "texto") {
+        if (!cmd.texto) {
+          await deps.tg.enviar(chatId, "⚠️ Ese comando no existe. En un ticket: tu respuesta, /proceso o /resolver.", respondido);
+          return "comando desconocido";
+        }
+        const aviso = await deps.tickets.responder(ticket.id, cmd.texto);
+        await deps.tg.enviar(chatId, `✅ Contestado el ticket #${ticket.numero}. ${aviso}`, respondido);
+        return "ticket contestado";
+      }
+      if (cmd.cmd === "proceso" || cmd.cmd === "resolver" || cmd.cmd === "cerrar") {
+        const aviso = await deps.tickets.estado(ticket.id, cmd.cmd === "proceso" ? "en_proceso" : "resuelto");
+        await deps.tg.enviar(chatId, `✅ Ticket #${ticket.numero} ${cmd.cmd === "proceso" ? "en proceso" : "resuelto"}. ${aviso}`, respondido);
+        return cmd.cmd === "proceso" ? "ticket en proceso" : "ticket resuelto";
+      }
+      await deps.tg.enviar(chatId, "⚠️ En un ticket: tu respuesta, /proceso o /resolver.", respondido);
+      return "comando de ticket desconocido";
+    } catch (e) {
+      deps.alerta(`No se pudo contestar el ticket ${ticket.id}`, e);
+      await deps.tg.enviar(chatId, "⚠️ No se pudo guardar en el ticket. Contéstalo en /plataforma/soporte.", respondido);
+      return "ticket falló";
+    }
   }
   const hilo = await deps.datos.hiloPorMensajeTelegram(respondido);
   if (!hilo) {
@@ -490,6 +537,8 @@ export async function procesarUpdate(update: any, deps: DepsSoporte): Promise<st
       return r.ok ? "seguimiento" : "seguimiento falló";
     }
     case "start":
+    case "proceso":
+    case "resolver":
       await deps.tg.enviar(chatId, AYUDA_OPERADOR, respondido);
       return "ayuda";
     case "texto": {

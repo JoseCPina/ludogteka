@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { configWhatsApp, construirSoporte, igualSeguro } from "@/lib/whatsapp/infra";
+import { ticketsBandeja } from "@/lib/soporte/bandeja";
 import { procesarUpdate } from "@/lib/whatsapp/soporte";
 
 /**
@@ -21,6 +22,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "secret_token inválido" }, { status: 401 });
   }
   const { deps } = construirSoporte();
+  deps.tickets = ticketsBandeja();
   try {
     const resultado = await procesarUpdate(await request.json(), deps);
     return NextResponse.json({ ok: true, resultado });

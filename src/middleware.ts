@@ -69,6 +69,8 @@ const ZONAS_PROTEGIDAS: Zona[] = [
   { prefijo: "/empleados/comisiones", rolesPermitidos: ["admin"], permisos: ["nomina"] },
   { prefijo: "/empleados/nuevo", rolesPermitidos: ["admin"], permisos: ["nomina"] },
   { prefijo: "/empleados", rolesPermitidos: ["admin", "recepcion"] },
+  // Ayuda: artículos, asistente y tickets (admin y recepción, sin permiso especial).
+  { prefijo: "/ayuda", rolesPermitidos: ["admin", "recepcion"] },
   // Lo de cada quien: su asistencia, ausencias y pagos.
   { prefijo: "/mi-trabajo", rolesPermitidos: ["admin", "recepcion", "estetica"] },
 ];
@@ -255,6 +257,7 @@ const RUTAS_PLATAFORMA = ["/plataforma", "/auth/callback", "/auth/nueva-password
 const PUBLICAS_PLATAFORMA: Record<string, string> = {
   "/": "/peludesk",
   "/registro": "/peludesk/registro",
+  "/ayuda": "/peludesk/ayuda",
 };
 
 async function plataforma(request: NextRequest, cabeceras: Headers) {
@@ -281,7 +284,8 @@ async function plataforma(request: NextRequest, cabeceras: Headers) {
   ) {
     return NextResponse.next({ request: { headers: cabeceras } });
   }
-  const publica = PUBLICAS_PLATAFORMA[pathname];
+  // El centro de ayuda público: /ayuda y /ayuda/<artículo>.
+  const publica = PUBLICAS_PLATAFORMA[pathname] ?? (/^\/ayuda\/[a-z0-9-]+$/.test(pathname) ? `/peludesk${pathname}` : undefined);
   if (publica) return NextResponse.rewrite(new URL(publica, request.url), { request: { headers: cabeceras } });
   if (pathname === "/peludesk" || pathname.startsWith("/peludesk/")) return NextResponse.redirect(new URL("/", request.url));
   const permitida = RUTAS_PLATAFORMA.some((r) => pathname === r || pathname.startsWith(`${r}/`));

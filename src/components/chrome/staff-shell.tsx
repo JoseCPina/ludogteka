@@ -8,6 +8,26 @@ import { Button } from "@/components/ui/button";
 import type { ItemNav } from "@/lib/nav/config";
 import { IconoSeccion } from "@/components/iconos-nav";
 import { HechoConPeluDesk } from "@/components/marca/peludesk";
+import { articuloDeRuta } from "@/lib/ayuda/rutas";
+
+// El «?» de cada pantalla: el artículo de la ruta más específica (o el
+// índice de Ayuda si esa pantalla no tiene uno).
+function BotonAyuda({ ayuda, pathname }: { ayuda: { slug: string; rutas: string[] }[]; pathname: string }) {
+  const a = articuloDeRuta(pathname, ayuda);
+  const desde = `desde=${encodeURIComponent(pathname)}`;
+  const href = pathname.startsWith("/ayuda") ? "/ayuda" : a ? `/ayuda/${a.slug}?${desde}` : `/ayuda?${desde}`;
+  return (
+    <Link
+      href={href}
+      aria-label="Ayuda de esta pantalla"
+      title="Ayuda de esta pantalla"
+      data-boton-ayuda={a?.slug ?? ""}
+      className="grid h-11 w-11 place-items-center rounded-full border-[1.5px] border-n-300 text-lg font-bold text-n-700 hover:border-morado hover:text-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado"
+    >
+      ?
+    </Link>
+  );
+}
 
 const ETIQUETAS_ROL: Record<string, string> = {
   admin: "Admin",
@@ -22,6 +42,7 @@ export function StaffShell({
   email,
   nombreCompleto,
   items,
+  ayuda,
   children,
 }: {
   // La marca del negocio (MarcaDelNegocio, la arma el layout del servidor):
@@ -33,6 +54,9 @@ export function StaffShell({
   email: string;
   nombreCompleto: string | null;
   items: ItemNav[];
+  // Las pantallas con artículo de ayuda (los de los módulos del negocio):
+  // el «?» abre el de la pantalla actual. Sin esto (estética), no hay «?».
+  ayuda?: { slug: string; rutas: string[] }[];
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -77,6 +101,7 @@ export function StaffShell({
         </div>
 
         <div className="flex items-center gap-3">
+          {ayuda && <BotonAyuda ayuda={ayuda} pathname={pathname} />}
           <div className="hidden text-right leading-tight sm:block">
             <p className="text-sm font-semibold text-n-900">{nombreCompleto ?? email}</p>
             <p className="text-xs font-semibold uppercase tracking-wide text-n-500">

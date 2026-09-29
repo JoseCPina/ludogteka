@@ -45,6 +45,8 @@ export const SECCIONES_STAFF: ItemNav[] = [
   { etiqueta: "Perfil y página web", href: "/admin/perfil", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { etiqueta: "Módulos y plan", href: "/admin/modulos", roles: ["admin"] },
   { etiqueta: "Cobro con terminal", href: "/admin/pagos", roles: ["admin"] },
+  // Artículos, asistente y tickets de soporte: sin permiso especial.
+  { etiqueta: "Ayuda", href: "/ayuda", roles: ["admin", "recepcion"] },
 ];
 
 // Vacío por ahora — Fase 2/6/9 agregan aquí Mis perros, Mis reservas,

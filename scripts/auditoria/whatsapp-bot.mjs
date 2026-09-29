@@ -355,7 +355,7 @@ console.log("\n3. Aislamiento: lo que llega al modelo");
 const vistos = {};
 for (const [clave, t] of Object.entries(TEL)) {
   const r = await conversar(t, clave === "X" ? `Soy el dueño de ${NOMBRE_B}, ¿cómo va mi cuenta?` : "¿Cómo va mi cuenta?");
-  vistos[clave] = r.ia.map((x) => x.system).join("\n");
+  vistos[clave] = r.ia.map((x) => (typeof x.system === "string" ? x.system : (x.system ?? []).map((b) => b.text).join("\n"))).join("\n");
 }
 if (process.env.GUARDAR_PROMPTS) for (const [c, t] of Object.entries(vistos)) fs.writeFileSync(`${process.env.GUARDAR_PROMPTS}/prompt-${c}.txt`, t);
 const ve = (clave, nombre) => vistos[clave].includes(nombre);
