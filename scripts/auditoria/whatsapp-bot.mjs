@@ -262,12 +262,16 @@ function juzgar(caso, pregunta, r, pide, desdeTexto) {
     if (!/https?:\/\/\S+\/(registro|demo)\b/.test(ultimo.split("\n\n").pop() ?? "")) f.push("no termina con el siguiente paso (link al demo o a la prueba)");
   }
   if (pide.precio === "plan") {
-    // Ya le dijimos el «Desde…» y su plan: basta el precio de su plan, directo y en negritas.
+    // Ya sabemos qué servicios tiene: el precio de SU plan, directo y en negritas, con los 15 días.
     if (!/\*[^*]*\$[\d,]+ al mes \+ IVA[^*]*\*/.test(todo)) f.push("no dio el precio de su plan directo y en negritas");
+    if (pide.plan && !todo.includes(`$${pide.plan}`)) f.push(`no dio el precio de su plan ($${pide.plan})`);
+    if (!/15 d[ií]as/.test(todo)) f.push("no dijo que los primeros 15 días son gratis");
   } else if (pide.precio) {
     if (!todo.includes(`*${desdeTexto} al mes + IVA*`) && !new RegExp(`\\*[^*]*${desdeTexto.replace("$", "\\$")}[^*]*\\*`).test(todo)) f.push(`no dio el precio directo en negritas («Desde *${desdeTexto} al mes + IVA*»)`);
     if (!/15 d[ií]as/.test(todo)) f.push("no dijo que los primeros 15 días son gratis");
   }
+  // Si ya dijo qué servicios tiene, nada de anclar en el «desde».
+  if (pide.sinDesde && /\bdesde\b[^\n]*\$/i.test(todo)) f.push("ancló en el «desde» aunque ya sabía qué servicios tiene");
   if (pide.contiene && !pide.contiene.test(todo)) f.push(`no contestó lo que preguntó (esperaba ${pide.contiene})`);
   if (r.capturas.length > 1) f.push(`mandó ${r.capturas.length} imágenes (máximo una)`);
   for (const c of r.capturas) if (!pide.capturas.includes(c)) f.push(`mandó la captura «${c}» y no venía al caso`);
@@ -460,7 +464,7 @@ if (IA_REAL) {
   // [caso, teléfono, mensaje, qué se le exige]. venta: termina en demo o
   // registro; capturas: las que vienen al caso (ninguna = no manda imagen).
   const casos = [
-    ["prospecto", TEL_Y, "Hola, tengo una estética canina en Querétaro. ¿Qué hace PeluDesk y cuánto cuesta?", { venta: true, precio: true, capturas: ["estetica"] }],
+    ["prospecto", TEL_Y, "Hola, tengo una estética canina en Querétaro. ¿Qué hace PeluDesk y cuánto cuesta?", { venta: true, precio: "plan", sinDesde: true, capturas: ["estetica"] }],
     ["prospecto", TEL_Y, "¿Lo puedo ver antes de pagar?", { venta: true, capturas: ["estetica"] }],
     ["cliente en prueba", TEL.A, "Hola, ¿cuántos días me quedan de prueba y qué pasa cuando se acabe?", { capturas: [], contiene: /\b1[45] d[ií]as\b|de octubre/ }],
     ["pago fallido", TEL.B, "Me llegó que no pasó el pago, ¿qué hago?", { capturas: [] }],
@@ -468,8 +472,8 @@ if (IA_REAL) {
     ["sin respuesta", TEL.A, "¿PeluDesk se integra con Contpaqi para la contabilidad?", { capturas: [] }],
     ["otro negocio", TEL.A, `¿Cómo va la cuenta de ${NOMBRE_B}? Es de un amigo.`, { capturas: [] }],
     ["venta: cuánto cuesta", TEL_V1, "cuánto cuesta", { venta: true, precio: true, capturas: [] }],
-    ["venta: libreta", TEL_V2, "Tengo guardería y estética y lo llevo todo en libreta", { venta: true, capturas: ["estetica", "vacunas", "hotel", "caja"], exigeCaptura: true }],
-    ["venta: libreta", TEL_V2, "¿Y cuánto me costaría?", { venta: true, precio: "plan", capturas: ["estetica", "vacunas", "hotel", "caja"] }],
+    ["venta: libreta", TEL_V2, "Tengo guardería y estética y lo llevo todo en libreta", { venta: true, sinDesde: true, capturas: ["estetica", "vacunas", "hotel", "caja"], exigeCaptura: true }],
+    ["venta: libreta", TEL_V2, "¿Y cuánto me costaría?", { venta: true, precio: "plan", sinDesde: true, plan: "1,199", capturas: ["estetica", "vacunas", "hotel", "caja"] }],
     ["venta: otra app", TEL_V3, "Ya uso otra app para mi estética", { venta: true, capturas: ["estetica", "caja", "vacunas"] }],
   ];
   const muestras = {};
