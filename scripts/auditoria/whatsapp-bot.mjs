@@ -65,17 +65,28 @@ const bien = (t) => console.log(`  ✔ ${t}`);
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ───────────── dobles de WhatsApp, Telegram y Anthropic
-const mock = { wa: [], tg: [], ia: [], tgId: 1000 };
+const mock = { wa: [], tg: [], ia: [], leidos: [], medias: {}, subidas: 0, tgId: 1000 };
 const servidor = http.createServer(async (req, res) => {
   let cuerpo = "";
   for await (const c of req) cuerpo += c;
-  const j = cuerpo ? JSON.parse(cuerpo) : {};
+  const esJson = (req.headers["content-type"] ?? "").includes("json");
+  const j = cuerpo && esJson ? JSON.parse(cuerpo) : {};
   const responder = (obj, status = 200) => {
     res.writeHead(status, { "content-type": "application/json" });
     res.end(JSON.stringify(obj));
   };
+  if (req.url.startsWith(`/v23.0/${PHONE_ID}/media`)) {
+    // Subida de una captura (multipart): el nombre del archivo dice cuál es.
+    const clave = cuerpo.match(/filename="([a-z]+)\.jpg"/)?.[1] ?? "?";
+    const id = `media_${clave}_${++mock.subidas}`;
+    mock.medias[id] = clave;
+    return responder({ id });
+  }
   if (req.url.startsWith(`/v23.0/${PHONE_ID}/messages`)) {
-    if (j.status === "read") return responder({ success: true });
+    if (j.status === "read") {
+      mock.leidos.push(j);
+      return responder({ success: true });
+    }
     mock.wa.push(j);
     return responder({ messages: [{ id: `wamid.${randomUUID()}` }] });
   }
@@ -105,8 +116,13 @@ const servidor = http.createServer(async (req, res) => {
       headers: { "content-type": "application/json", "x-api-key": IA_REAL, "anthropic-version": "2023-06-01", ...(IA_WORKSPACE ? { "anthropic-workspace-id": IA_WORKSPACE } : {}) },
       body: cuerpo,
     });
+    const crudo = await r.text();
+    // Lo que escribió el modelo, para comprobar que el formato no se come nada.
+    try {
+      registro.salida = (JSON.parse(crudo).content ?? []).filter((b) => b.type === "text").map((b) => b.text).join("\n");
+    } catch {}
     res.writeHead(r.status, { "content-type": "application/json" });
-    return res.end(await r.text());
+    return res.end(crudo);
   }
   responder({ error: "no existe" }, 404);
 });
@@ -151,7 +167,14 @@ async function mandar(telefono10, texto, opciones = {}) {
 }
 
 /** Manda y espera la respuesta por WhatsApp a ese teléfono. */
+/** Lo que vio la persona, en orden: texto tal cual, imagen como «[captura:clave] pie». */
+// El servidor reusa el media id de corridas anteriores (wa_config): el id del doble dice qué captura es.
+const claveDeMedia = (id) => mock.medias[id] ?? String(id ?? "").match(/^media_([a-z]+)_/)?.[1] ?? "?";
+const vista = (m) => (m.type === "image" ? `[captura:${claveDeMedia(m.image?.id)}] ${m.image?.caption ?? ""}` : (m.text?.body ?? `[plantilla ${m.template?.name}]`));
+
 async function conversar(telefono10, texto) {
+  const inicio = Date.now();
+  const antesLeidos = mock.leidos.length;
   const antesWa = mock.wa.length;
   const antesIa = mock.ia.length;
   const antesTg = mock.tg.length;
@@ -160,6 +183,7 @@ async function conversar(telefono10, texto) {
   for (let i = 0; i < 120; i++) {
     const nuevas = mock.wa.slice(antesWa).filter((m) => m.to === `52${telefono10}` && m.type === "text");
     if (nuevas.length) {
+      const primeraMs = Date.now() - inicio;
       // El aviso a Telegram sale DESPUÉS del acuse por WhatsApp: se espera a
       // que el servidor quede quieto (1.5 s sin mensajes nuevos, tope 8 s).
       let visto = mock.wa.length + mock.tg.length;
@@ -169,11 +193,86 @@ async function conversar(telefono10, texto) {
         quieto = ahora === visto ? quieto + 250 : 0;
         visto = ahora;
       }
-      return { respuestas: mock.wa.slice(antesWa).filter((m) => m.to === `52${telefono10}`).map((m) => m.text?.body ?? `[plantilla ${m.template?.name}]`), ia: mock.ia.slice(antesIa), tg: mock.tg.slice(antesTg) };
+      const salidas = mock.wa.slice(antesWa).filter((m) => m.to === `52${telefono10}`);
+      return {
+        respuestas: salidas.map(vista),
+        textos: salidas.filter((m) => m.type === "text").map((m) => m.text.body),
+        capturas: salidas.filter((m) => m.type === "image").map((m) => claveDeMedia(m.image?.id)),
+        leido: mock.leidos.slice(antesLeidos).some((l) => l.typing_indicator?.type === "text"),
+        primeraMs,
+        ia: mock.ia.slice(antesIa),
+        tg: mock.tg.slice(antesTg),
+      };
     }
     await espera(250);
   }
   throw new Error(`Sin respuesta por WhatsApp a ${telefono10} para «${texto}»`);
+}
+
+// ───────────── juez de las conversaciones reales
+// Las reglas del dueño (29 de septiembre de 2026) para cada respuesta: largo,
+// formato de WhatsApp, un link al final, siguiente paso, imagen solo cuando
+// viene al caso, la web como regalo y nada de catálogo.
+const MODULOS_CATALOGO = /\b(inventario|empleados|gastos|reportes|n[oó]mina|contratos|recolecci[oó]n|portal|permisos|m[oó]dulos|agenda|caja|clientes)\b/gi;
+function juzgar(caso, pregunta, r, pide, desdeTexto) {
+  const f = [];
+  if (r.tg.some((m) => m.text.includes("La IA no contestó"))) f.push("la IA no contestó (ver el log del servidor)");
+  if (!r.leido) f.push("no marcó leído con «escribiendo…»");
+  const voseo = r.textos.join(" ").match(/\b(sos|querés|tenés|podés|sabés|registrás|completás|mirá|fijate|contratás)\b/i);
+  if (voseo) f.push(`voseo («${voseo[0]}»)`);
+  if (r.textos.length > 2) f.push(`${r.textos.length} mensajes de texto seguidos (máximo 2)`);
+  for (const [i, t] of r.textos.entries()) {
+    const n = r.textos.length > 1 ? ` (mensaje ${i + 1})` : "";
+    if (t.includes("**")) f.push(`negrita con ** doble${n}`);
+    if (/\n/.test(t.replace(/\n\n/g, ""))) f.push(`dos renglones pegados sin renglón en blanco${n}`);
+    const parrafos = t.split("\n\n");
+    // Dos renglones de WhatsApp en el celular ≈ 80 caracteres; se tolera hasta 120.
+    const largo = parrafos.find((p) => !/^https?:\/\//.test(p) && p.length > 120);
+    if (largo) f.push(`párrafo de ${largo.length} caracteres (más de 2 renglones)${n}: «${largo.slice(0, 50)}…»`);
+    // El link y el renglón que lo presenta («Aquí lo ves:») son el cierre, no cuentan.
+    const sinLink = parrafos.filter((p, k) => !/^https?:\/\//.test(p) && !(/:$/.test(p) && /^https?:\/\//.test(parrafos[k + 1] ?? ""))).length;
+    if (sinLink > 4) f.push(`${sinLink} párrafos en un mensaje (máximo 4 y el link)${n}`);
+    const links = t.match(/https?:\/\/\S+/g) ?? [];
+    if (links.length > 1) f.push(`${links.length} links en un mensaje${n}`);
+    if (links.length === 1 && parrafos[parrafos.length - 1] !== links[0]) f.push(`el link no va solo al final${n}`);
+    const sinNavegacion = t.replace(/M[oó]dulos y plan|portal de pagos/gi, "");
+    if (new Set((sinNavegacion.match(MODULOS_CATALOGO) ?? []).map((x) => x.toLowerCase())).size >= 4) f.push(`suena a catálogo de módulos${n}: ${[...new Set(sinNavegacion.match(MODULOS_CATALOGO).map((x) => x.toLowerCase()))].join(", ")}`);
+    if (!/(al año|anual)/i.test(pregunta) && /\b(al año|anual)\b/i.test(t)) f.push(`dio el precio anual sin que lo pidiera${n}`);
+    if (/p[aá]gina web/i.test(t) && /\$\s?149|complemento/i.test(t) && !/gratis|regalo/i.test(t)) f.push(`vendió la página web como extra con precio${n}`);
+  }
+  const todo = r.textos.join("\n\n");
+  // Ni una palabra del modelo se pierde en el camino (partir, mover links, formato).
+  const palabras = (t) => (t.toLowerCase().replace(/\[\[[^\]]*\]\]/g, " ").replace(/https?:\/\/\S+/g, " ").match(/[\p{L}\p{N}$]+/gu) ?? []);
+  const enviadas = new Map();
+  for (const w of palabras(r.respuestas.join(" "))) enviadas.set(w, (enviadas.get(w) ?? 0) + 1);
+  // Si se pidió reescribir un párrafo largo, lo que cuenta es la reescritura.
+  const reescritura = r.ia.findLast((x) => JSON.stringify(x.mensajes.at(-1)?.content ?? "").includes("Nota interna de PeluDesk"));
+  if (reescritura) console.log("    (se pidió reescribir un párrafo largo)");
+  const escrito = reescritura ? [reescritura] : r.ia;
+  const perdidas = palabras(escrito.map((x) => x.salida ?? "").join(" ")).filter((w) => {
+    const n = enviadas.get(w) ?? 0;
+    if (n > 0) enviadas.set(w, n - 1);
+    return n === 0;
+  });
+  // Al escalar se manda el acuse y el borrador del modelo se descarta a propósito.
+  const escalo = r.textos.some((t) => /en un rato te escribimos/.test(t));
+  if (perdidas.length && !escalo) f.push(`se perdió texto del modelo al mandarlo: «${perdidas.slice(0, 8).join(" ")}»`);
+  if (pide.venta) {
+    const ultimo = r.textos[r.textos.length - 1] ?? "";
+    if (!/https?:\/\/\S+\/(registro|demo)\b/.test(ultimo.split("\n\n").pop() ?? "")) f.push("no termina con el siguiente paso (link al demo o a la prueba)");
+  }
+  if (pide.precio === "plan") {
+    // Ya le dijimos el «Desde…» y su plan: basta el precio de su plan, directo y en negritas.
+    if (!/\*[^*]*\$[\d,]+ al mes \+ IVA[^*]*\*/.test(todo)) f.push("no dio el precio de su plan directo y en negritas");
+  } else if (pide.precio) {
+    if (!todo.includes(`*${desdeTexto} al mes + IVA*`) && !new RegExp(`\\*[^*]*${desdeTexto.replace("$", "\\$")}[^*]*\\*`).test(todo)) f.push(`no dio el precio directo en negritas («Desde *${desdeTexto} al mes + IVA*»)`);
+    if (!/15 d[ií]as/.test(todo)) f.push("no dijo que los primeros 15 días son gratis");
+  }
+  if (pide.contiene && !pide.contiene.test(todo)) f.push(`no contestó lo que preguntó (esperaba ${pide.contiene})`);
+  if (r.capturas.length > 1) f.push(`mandó ${r.capturas.length} imágenes (máximo una)`);
+  for (const c of r.capturas) if (!pide.capturas.includes(c)) f.push(`mandó la captura «${c}» y no venía al caso`);
+  if (pide.exigeCaptura && r.capturas.length === 0) f.push("contó cómo trabaja y no le mandó la captura que corresponde");
+  return f;
 }
 
 // ───────────── cuentas de prueba en desarrollo
@@ -256,6 +355,13 @@ for (const [clave, t] of Object.entries(TEL)) {
 }
 if (process.env.GUARDAR_PROMPTS) for (const [c, t] of Object.entries(vistos)) fs.writeFileSync(`${process.env.GUARDAR_PROMPTS}/prompt-${c}.txt`, t);
 const ve = (clave, nombre) => vistos[clave].includes(nombre);
+// Quién es quién lo decide la base: cada teléfono tiene que caer en SU tipo.
+// (Hasta el 29 de septiembre de 2026 todo número desconocido salía como
+// «cliente de un negocio»: el bot le hablaba a un prospecto como a un dueño de perro.)
+const QUIEN = { A: "QUIÉN TE ESCRIBE: el admin", B: "QUIÉN TE ESCRIBE: el admin", R: "QUIÉN TE ESCRIBE: alguien del personal", C: "QUIÉN TE ESCRIBE: el dueño de un perro", X: "QUIÉN TE ESCRIBE: alguien que no tiene cuenta" };
+for (const [c, esperado] of Object.entries(QUIEN)) {
+  vistos[c].includes(esperado) ? bien(`${c}: la base lo reconoce como «${esperado.slice(18)}…»`) : hallazgo(`${c}: la base no lo clasificó como «${esperado.slice(18)}…»`);
+}
 ve("A", NOMBRE_A) && !ve("A", NOMBRE_B) ? bien("el admin de A ve solo A") : hallazgo("el admin de A no ve A o ve B");
 ve("B", NOMBRE_B) && !ve("B", NOMBRE_A) ? bien("el admin de B ve solo B") : hallazgo("el admin de B no ve B o ve A");
 for (const c of ["R", "C", "X"]) {
@@ -347,29 +453,43 @@ if (IA_REAL) {
   await A.from("wa_config").insert({ clave: "telegram_chat_operador", valor: String(CHAT) });
   // Sin los guiones de arriba en el historial.
   await A.from("wa_mensajes").update({ deleted_at: new Date().toISOString() }).in("telefono", [`52${TEL.A}`, `52${TEL.B}`]).is("deleted_at", null);
+  const { data: planesBase } = await A.from("planes").select("tipo, precio_mensual").eq("activo", true).is("deleted_at", null);
+  const desde = Math.min(...(planesBase ?? []).filter((p) => p.tipo === "plan").map((p) => Number(p.precio_mensual)));
+  const desdeTexto = `$${desde.toLocaleString("es-MX")}`;
+  const TEL_V1 = tel("57"), TEL_V2 = tel("58"), TEL_V3 = tel("59");
+  // [caso, teléfono, mensaje, qué se le exige]. venta: termina en demo o
+  // registro; capturas: las que vienen al caso (ninguna = no manda imagen).
   const casos = [
-    ["prospecto", TEL_Y, "Hola, tengo una estética canina en Querétaro. ¿Qué hace PeluDesk y cuánto cuesta?"],
-    ["prospecto", TEL_Y, "¿Lo puedo ver antes de pagar?"],
-    ["cliente en prueba", TEL.A, "Hola, ¿cuántos días me quedan de prueba y qué pasa cuando se acabe?"],
-    ["pago fallido", TEL.B, "Me llegó que no pasó el pago, ¿qué hago?"],
-    ["duda de uso", TEL.A, "¿Cómo conecto mi terminal de Mercado Pago?"],
-    ["sin respuesta", TEL.A, "¿PeluDesk se integra con Contpaqi para la contabilidad?"],
-    ["otro negocio", TEL.A, `¿Cómo va la cuenta de ${NOMBRE_B}? Es de un amigo.`],
+    ["prospecto", TEL_Y, "Hola, tengo una estética canina en Querétaro. ¿Qué hace PeluDesk y cuánto cuesta?", { venta: true, precio: true, capturas: ["estetica"] }],
+    ["prospecto", TEL_Y, "¿Lo puedo ver antes de pagar?", { venta: true, capturas: ["estetica"] }],
+    ["cliente en prueba", TEL.A, "Hola, ¿cuántos días me quedan de prueba y qué pasa cuando se acabe?", { capturas: [], contiene: /\b1[45] d[ií]as\b|de octubre/ }],
+    ["pago fallido", TEL.B, "Me llegó que no pasó el pago, ¿qué hago?", { capturas: [] }],
+    ["duda de uso", TEL.A, "¿Cómo conecto mi terminal de Mercado Pago?", { capturas: ["caja"] }],
+    ["sin respuesta", TEL.A, "¿PeluDesk se integra con Contpaqi para la contabilidad?", { capturas: [] }],
+    ["otro negocio", TEL.A, `¿Cómo va la cuenta de ${NOMBRE_B}? Es de un amigo.`, { capturas: [] }],
+    ["venta: cuánto cuesta", TEL_V1, "cuánto cuesta", { venta: true, precio: true, capturas: [] }],
+    ["venta: libreta", TEL_V2, "Tengo guardería y estética y lo llevo todo en libreta", { venta: true, capturas: ["estetica", "vacunas", "hotel", "caja"], exigeCaptura: true }],
+    ["venta: libreta", TEL_V2, "¿Y cuánto me costaría?", { venta: true, precio: "plan", capturas: ["estetica", "vacunas", "hotel", "caja"] }],
+    ["venta: otra app", TEL_V3, "Ya uso otra app para mi estética", { venta: true, capturas: ["estetica", "caja", "vacunas"] }],
   ];
-  for (const [caso, t, texto] of casos) {
+  const muestras = {};
+  const tiemposIA = [];
+  for (const [caso, t, texto, pide] of casos) {
     const r = await conversar(t, texto);
-    console.log(`\n  [${caso}] ${texto}`);
+    tiemposIA.push(r.primeraMs);
+    (muestras[caso] ??= []).push({ texto, respuestas: r.respuestas });
+    console.log(`\n  [${caso}] ${texto}   (${(r.primeraMs / 1000).toFixed(1)} s al primer mensaje)`);
     for (const x of r.respuestas) console.log(`    → ${x.replace(/\n/g, "\n      ")}`);
     if (r.tg.length) console.log(`    (Telegram: ${r.tg.map((m) => m.text.split("\n\n")[1]).join(" | ")})`);
-    // Si la API de Anthropic rechaza la llamada, el bot escala y la
-    // conversación «pasa»: eso no es una prueba, es un fallo.
-    if (r.tg.some((m) => m.text.includes("La IA no contestó"))) hallazgo(`[${caso}] la IA no contestó (ver el log del servidor: error de Anthropic)`);
-    // Español de México, de tú: el voseo ya se coló una vez (28 de septiembre de 2026).
-    const voseo = r.respuestas.join(" ").match(/\b(sos|querés|tenés|podés|sabés|registrás|completás|mirá|fijate|contratás)\b/i);
-    if (voseo) hallazgo(`[${caso}] contestó con voseo («${voseo[0]}»)`);
+    const fallas = juzgar(caso, texto, r, pide, desdeTexto);
+    for (const f of fallas) hallazgo(`[${caso}] ${f}`);
+    if (!fallas.length) bien(`[${caso}] largo, formato, link, siguiente paso e imagen`);
     if (caso === "sin respuesta") r.tg.length ? bien("sin respuesta → llegó a Telegram") : hallazgo("la pregunta sin respuesta no se escaló");
-    if (caso === "otro negocio") r.respuestas.some((x) => x.includes(NOMBRE_B) && /prueba|pago|plan|falló/i.test(x)) ? hallazgo("dio datos de otro negocio") : bien("no dio datos de otro negocio");
+    if (caso === "otro negocio") r.respuestas.some((x) => x.includes(NOMBRE_B) && /prueba|pago|plan|falló/i.test(x.replaceAll(NOMBRE_B, ""))) ? hallazgo("dio datos de otro negocio") : bien("no dio datos de otro negocio");
   }
+  tiemposIA.sort((a, b) => a - b);
+  console.log(`\n  Tiempo al primer mensaje: mediana ${(tiemposIA[tiemposIA.length >> 1] / 1000).toFixed(1)} s, máximo ${(tiemposIA[tiemposIA.length - 1] / 1000).toFixed(1)} s.`);
+  if (process.env.MUESTRA_SALIDA) fs.writeFileSync(process.env.MUESTRA_SALIDA, JSON.stringify(muestras, null, 2));
   await A.from("wa_config").update({ deleted_at: new Date().toISOString() }).eq("clave", "telegram_chat_operador").eq("valor", String(CHAT)).is("deleted_at", null);
 } else {
   console.log("\n7. Conversaciones con la IA de verdad: omitidas (sin ANTHROPIC_API_KEY en el entorno de este script).");

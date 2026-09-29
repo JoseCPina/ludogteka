@@ -1,7 +1,7 @@
 import { after, NextResponse, type NextRequest } from "next/server";
 import { TEXTO_SOLO_TEXTO } from "@/lib/whatsapp/agente";
 import { configWhatsApp, construirSoporte, firmaMetaValida, igualSeguro, telefonoCanonico } from "@/lib/whatsapp/infra";
-import { atender } from "@/lib/whatsapp/soporte";
+import { atender, type Tiempos } from "@/lib/whatsapp/soporte";
 
 /**
  * Webhook de WhatsApp (Cloud API) del número de PeluDesk. Vive en el dominio
@@ -16,7 +16,11 @@ import { atender } from "@/lib/whatsapp/soporte";
  *            Meta no se contesta dos veces; si no se pudo guardar, 500 para
  *            que Meta reintente);
  *         4. contesta 200 y atiende después (after), porque Meta espera
- *            respuesta rápida y la IA tarda unos segundos.
+ *            respuesta rápida y la IA tarda unos segundos. Lo primero en
+ *            after: palomitas azules + «escribiendo…».
+ *         Cada respuesta deja en el log «[whatsapp] tiempos»: cuánto tardó
+ *         Meta en entregarnos el mensaje (su timestamp contra la llegada) y
+ *         cuánto se fue en preparar, en la IA y en enviar.
  * Quién escribe lo decide la base con el teléfono que Meta entrega
  * (bot_cuenta_por_telefono), nunca lo que la persona diga ser.
  */
@@ -35,6 +39,7 @@ export async function GET(request: NextRequest) {
 type MensajeMeta = {
   from?: string;
   id?: string;
+  timestamp?: string;
   type?: string;
   text?: { body?: string };
   button?: { text?: string };
@@ -44,7 +49,7 @@ type MensajeMeta = {
   document?: { caption?: string };
 };
 
-type Entrada = { telefono: string; id: string; texto: string | null };
+type Entrada = { telefono: string; id: string; texto: string | null; enviadoMs: number | null };
 
 function textoDe(m: MensajeMeta): string | null {
   const t =
@@ -60,6 +65,7 @@ function textoDe(m: MensajeMeta): string | null {
 }
 
 export async function POST(request: NextRequest) {
+  const llegada = Date.now();
   const cfg = configWhatsApp();
   const crudo = await request.text();
   if (!firmaMetaValida(request.headers.get("x-hub-signature-256"), crudo, cfg.appSecret)) {
@@ -84,7 +90,8 @@ export async function POST(request: NextRequest) {
       }
       for (const m of v.messages) {
         if (!m.from || !m.id) continue;
-        entradas.push({ telefono: telefonoCanonico(m.from), id: m.id, texto: textoDe(m) });
+        const ts = Number(m.timestamp);
+        entradas.push({ telefono: telefonoCanonico(m.from), id: m.id, texto: textoDe(m), enviadoMs: Number.isFinite(ts) && ts > 0 ? ts * 1000 : null });
       }
     }
   }
@@ -102,16 +109,26 @@ export async function POST(request: NextRequest) {
   }
 
   after(async () => {
+    // Todos a la vez y antes que nada: la persona ve que sí llegó.
+    await Promise.all(nuevas.map((m) => wa.marcarLeido(m.id).catch(() => {})));
     for (const m of nuevas) {
+      const inicio = Date.now();
       try {
-        await wa.marcarLeido(m.id);
         if (!m.texto) {
           await wa.texto(m.telefono, TEXTO_SOLO_TEXTO);
           await datos.apuntarMensaje(m.telefono, "agente", TEXTO_SOLO_TEXTO);
           continue;
         }
-        const r = await atender(m.telefono, m.texto, deps);
-        console.info("[whatsapp] atendido", { desenlace: r });
+        const tiempos: Tiempos = {};
+        const r = await atender(m.telefono, m.texto, deps, tiempos);
+        console.info("[whatsapp] tiempos", {
+          desenlace: r,
+          // Del envío en el celular a que Meta nos lo entregó (su reloj contra el nuestro).
+          retraso_meta_s: m.enviadoMs ? Math.round((llegada - m.enviadoMs) / 100) / 10 : null,
+          ...tiempos,
+          total_ms: Date.now() - inicio,
+          desde_llegada_ms: Date.now() - llegada,
+        });
       } catch (e) {
         console.error("[whatsapp] error atendiendo", e instanceof Error ? e.message : e);
       }
