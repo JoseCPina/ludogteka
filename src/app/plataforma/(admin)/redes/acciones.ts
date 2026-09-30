@@ -59,6 +59,24 @@ export async function reprogramar(id: string, fd: FormData): Promise<ResultadoPl
   return { error: null, exito: "Reprogramada." };
 }
 
+/** Mueve TODAS las redes de un video a la misma fecha y hora (Ciudad de México). */
+export async function reprogramarVideo(video: string, fd: FormData): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const valor = String(fd.get("fecha") ?? "").trim();
+  if (!/^d{4}-d{2}-d{2}Td{2}:d{2}$/.test(valor)) return { error: "Escoge la fecha y la hora." };
+  const { data, error } = await s.supabase.from("redes_publicaciones").select("id").eq("video", video).eq("prueba", false).is("deleted_at", null).in("estado", ["programada", "reintentar", "fallida"]);
+  if (error) return { error: error.message };
+  if (!data?.length) return { error: "Ese video no tiene publicaciones por mover." };
+  const cuando = instanteDeHoraLocal(valor, ZONA);
+  for (const f of data) {
+    const { error: e } = await s.supabase.rpc("plataforma_redes_reprogramar", { p_id: f.id, p_fecha: cuando });
+    if (e) return { error: e.message };
+  }
+  revalidatePath("/plataforma/redes");
+  return { error: null, exito: `Reprogramadas ${data.length} publicaciones a la misma hora.` };
+}
+
 export async function publicarAhora(id: string): Promise<ResultadoPlataforma> {
   const s = await sesionPlataforma();
   if (!s) return NO_AUTORIZADO;

@@ -6,7 +6,7 @@ import { formatearFecha, horaLocalDeInstante, horaLocalParaInput } from "@/lib/f
 import { credencialesMeta } from "@/lib/redes/meta";
 import { estadoTikTok, REDIRECT_TIKTOK } from "@/lib/redes/tiktok";
 import { SERIE, TITULOS } from "@/lib/redes/serie";
-import { agregarARed, cancelar, cargarSerie, conectarTikTok, linkTikTok, pausar, probar, publicarAhora, reprogramar, resolver } from "./acciones";
+import { agregarARed, cancelar, cargarSerie, reprogramarVideo, conectarTikTok, linkTikTok, pausar, probar, publicarAhora, reprogramar, resolver } from "./acciones";
 
 // Las acciones de esta pantalla pueden correr el publicador (Meta tarda).
 export const maxDuration = 300;
@@ -30,7 +30,7 @@ const ESTADO: Record<string, { texto: string; clase: string }> = {
 };
 
 // Publicación automática de los videos de PeluDesk (src/lib/redes). La
-// tarea de Vercel corre cada hora (minuto 3) y publica lo que ya toca.
+// tarea de Vercel corre en los minutos 3, 23 y 43 de cada hora y publica lo que ya toca.
 export default async function RedesPlataforma() {
   const { supabase } = await exigirPlataforma();
   const [{ data, error }, { data: ajustes }, tiktok] = await Promise.all([
@@ -51,7 +51,7 @@ export default async function RedesPlataforma() {
         <h1 className="text-2xl font-bold text-n-900">Redes</h1>
         <p className="mt-1 text-n-600">
           Los videos de PeluDesk salen solos en Facebook, Instagram y TikTok (a TikTok llegan como borrador y se publican desde la app).
-          Cada hora se publica lo que ya toca; cada publicación y cada falla avisan en Telegram.
+          Cada 20 minutos se publica lo que ya toca; cada publicación y cada falla avisan en Telegram.
         </p>
       </div>
       {error && <Alert variante="error" titulo="No pudimos cargar el calendario">{error.message}</Alert>}
@@ -111,6 +111,14 @@ export default async function RedesPlataforma() {
             return (
               <li key={e.video} className="flex flex-col gap-2 py-3">
                 <div><b className="text-n-900">{e.titulo}</b> <span className="text-sm text-n-600">· en {[...tiene].map((r) => RED[r]).join(", ") || "ninguna red"}</span></div>
+                <details className="text-sm text-n-700">
+                  <summary className="cursor-pointer text-n-600">Mover todas sus redes a la misma hora</summary>
+                  <div className="mt-2">
+                    <FormularioPlataforma accion={reprogramarVideo.bind(null, e.video)} textoBoton="Reprogramar el video" variante="secundario">
+                      <Field label="Fecha y hora (Ciudad de México)" name="fecha" type="datetime-local" required />
+                    </FormularioPlataforma>
+                  </div>
+                </details>
                 {faltan.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     <span className="self-center text-sm text-n-600">Agregar a otra red:</span>

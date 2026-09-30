@@ -23,6 +23,7 @@ type Entrada = {
   video: string;
   titulo: string;
   fecha: string; // AAAA-MM-DD
+  hora?: string; // HH:MM de la Ciudad de México; si falta, HORA_PUBLICACION
   redes: { red: Red; formato: Formato }[];
   texto: string; // el cuerpo del pie, igual en todas las redes
   hashtags: string[];
@@ -37,7 +38,8 @@ export const SERIE: Entrada[] = [
   {
     video: "un-dia-en-tu-guarderia",
     titulo: "Un día en tu guardería",
-    fecha: "2026-10-01",
+    fecha: "2026-09-30",
+    hora: "13:40",
     redes: [MURO_FB, REEL_IG],
     texto: "La libreta, los chats sin contestar y el cupo en la cabeza. Así empiezan muchas mañanas en una guardería.\n\nCon PeluDesk la agenda de estética, el cupo de hotel y guardería, las vacunas y la caja están en un solo lugar, y el dueño ve lo de su perro desde su celular.\n\nPruébalo 15 días gratis, sin tarjeta: peludesk.mx",
     hashtags: ["#guarderiacanina", "#hotelcanino", "#esteticacanina"],
@@ -45,7 +47,8 @@ export const SERIE: Entrada[] = [
   {
     video: "ese-perro-no-esta-vacunado",
     titulo: "Ese perro no está vacunado",
-    fecha: "2026-10-05",
+    fecha: "2026-09-30",
+    hora: "13:20",
     redes: [REEL_IG, TIKTOK, REEL_FB],
     texto: "¿Te enteraste de la vacuna vencida cuando el perro ya estaba adentro?\n\nEn PeluDesk, si a un perro se le venció una vacuna, no te deja reservarle guardería ni hotel, y te dice cuál le falta.\n\n15 días gratis en peludesk.mx",
     hashtags: ["#guarderiacanina", "#hotelcanino", "#vacunasperros"],
@@ -53,7 +56,8 @@ export const SERIE: Entrada[] = [
   {
     video: "corte-de-caja",
     titulo: "Tu corte de caja, sin sorpresas",
-    fecha: "2026-10-07",
+    fecha: "2026-09-30",
+    hora: "13:00",
     redes: [REEL_IG, TIKTOK, MURO_FB],
     texto: "¿Cierras el día y la caja no te cuadra?\n\nCobras con terminal, la propina se anota aparte, y al cerrar el corte te dice si cuadró, método por método.\n\nPruébalo 15 días gratis en peludesk.mx",
     hashtags: ["#guarderiacanina", "#esteticacanina", "#negociocanino"],
@@ -118,7 +122,7 @@ export function filasDeLaSerie() {
       red: r.red,
       formato: r.formato,
       archivo: archivoDe(e.video, r.formato),
-      programada_at: `${e.fecha}T${HORA_PUBLICACION}:00${ZONA}`,
+      programada_at: `${e.fecha}T${e.hora ?? HORA_PUBLICACION}:00${ZONA}`,
       pie: pieDe(e, r.red),
     })),
   );
@@ -136,7 +140,7 @@ export function filasDeUnVideo(video: string, red: Red | "todas", ahora = new Da
   const redes: Red[] = red === "todas" ? ["facebook", "instagram", "tiktok"] : [red];
   return redes.map((r) => {
     const formato: Formato = e.redes.find((x) => x.red === r)?.formato ?? (r === "tiktok" ? "borrador" : "reel");
-    const fecha = new Date(`${e.fecha}T${HORA_PUBLICACION}:00${ZONA}`);
+    const fecha = new Date(`${e.fecha}T${e.hora ?? HORA_PUBLICACION}:00${ZONA}`);
     return { video: e.video, red: r, formato, archivo: archivoDe(e.video, formato), programada_at: (fecha > ahora ? fecha : ahora).toISOString(), pie: pieDe(e, r) };
   });
 }
