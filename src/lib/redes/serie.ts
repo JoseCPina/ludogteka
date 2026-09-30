@@ -45,7 +45,7 @@ export const SERIE: Entrada[] = [
   {
     video: "ese-perro-no-esta-vacunado",
     titulo: "Ese perro no está vacunado",
-    fecha: "2026-10-05",
+    fecha: "2026-09-29",
     redes: [REEL_IG, TIKTOK, REEL_FB],
     texto: "¿Te enteraste de la vacuna vencida cuando el perro ya estaba adentro?\n\nEn PeluDesk, si a un perro se le venció una vacuna, no te deja reservarle guardería ni hotel, y te dice cuál le falta.\n\n15 días gratis en peludesk.mx",
     hashtags: ["#guarderiacanina", "#hotelcanino", "#vacunasperros"],
@@ -53,7 +53,7 @@ export const SERIE: Entrada[] = [
   {
     video: "corte-de-caja",
     titulo: "Tu corte de caja, sin sorpresas",
-    fecha: "2026-10-07",
+    fecha: "2026-09-29",
     redes: [REEL_IG, TIKTOK, MURO_FB],
     texto: "¿Cierras el día y la caja no te cuadra?\n\nCobras con terminal, la propina se anota aparte, y al cerrar el corte te dice si cuadró, método por método.\n\nPruébalo 15 días gratis en peludesk.mx",
     hashtags: ["#guarderiacanina", "#esteticacanina", "#negociocanino"],
@@ -122,6 +122,23 @@ export function filasDeLaSerie() {
       pie: pieDe(e, r.red),
     })),
   );
+}
+
+/**
+ * Lo que falta de un video en una red (o en todas): lo usa «Agregar a otra
+ * red». El formato de esa red sale del video si ya lo tenía; si no, Reels en
+ * Facebook. Si la fecha del calendario ya pasó, sale en la siguiente corrida
+ * de la tarea (ahora), no en una fecha vieja.
+ */
+export function filasDeUnVideo(video: string, red: Red | "todas", ahora = new Date()) {
+  const e = SERIE.find((x) => x.video === video);
+  if (!e) return [];
+  const redes: Red[] = red === "todas" ? ["facebook", "instagram", "tiktok"] : [red];
+  return redes.map((r) => {
+    const formato: Formato = e.redes.find((x) => x.red === r)?.formato ?? (r === "tiktok" ? "borrador" : "reel");
+    const fecha = new Date(`${e.fecha}T${HORA_PUBLICACION}:00${ZONA}`);
+    return { video: e.video, red: r, formato, archivo: archivoDe(e.video, formato), programada_at: (fecha > ahora ? fecha : ahora).toISOString(), pie: pieDe(e, r) };
+  });
 }
 
 export const TITULOS: Record<string, string> = Object.fromEntries(SERIE.map((e) => [e.video, e.titulo]));

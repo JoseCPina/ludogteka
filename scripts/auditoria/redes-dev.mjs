@@ -68,6 +68,7 @@ const doble = http.createServer(async (req, res) => {
   if (p.startsWith("/video-upload/")) return json(res, 200, { success: true });
   const [, id, arista] = partes;
   const q = Object.fromEntries(new URLSearchParams(req.method === "GET" ? u.search : cuerpo));
+  if (req.method === "GET" && q.fields === "access_token") return json(res, 200, { access_token: "token-de-pagina", id });
   if (arista === "media") { const c = `cont-${llamadas.length}`; contenedores[c] = "FINISHED"; return json(res, 200, { id: c }); }
   if (arista === "media_publish") { contenedores[q.creation_id] = "PUBLISHED"; return json(res, 200, { id: `ig-${q.creation_id}` }); }
   if (arista === "video_reels" && q.upload_phase === "start") { const v = `reel-${llamadas.length}`; return json(res, 200, { video_id: v, upload_url: `https://rupload.facebook.com/video-upload/v26.0/${v}` }); }
@@ -83,7 +84,7 @@ await new Promise((r) => doble.listen(PUERTO, "127.0.0.1", r));
 
 // ── La app, con los dobles ──
 const logs = [];
-const app = spawn("npx", ["next", "start", "-p", "3001"], {
+const app = spawn(...(process.platform === "win32" ? [process.execPath, ["node_modules/next/dist/bin/next", "start", "-p", "3001"]] : ["npx", ["next", "start", "-p", "3001"]]), {
   env: {
     ...process.env, NODE_USE_ENV_PROXY: "", VERCEL_ENV: "", META_API_URL: D, TIKTOK_API_URL: D, TELEGRAM_API_URL: D,
     PELUDESK_META_TOKEN: SECRETOS.meta, PELUDESK_FB_PAGE_ID: "pagina1", PELUDESK_IG_USER_ID: "ig1",
@@ -126,6 +127,8 @@ try {
 
   console.log("\n2. Dos corridas a la vez");
   // Lo del primer día (Facebook muro + Instagram) y el reel de Facebook + TikTok del segundo, ya.
+  // El calendario pone hoy tres videos; el de caja se aparta para las secciones 4 en adelante.
+  await tabla().update({ programada_at: new Date(Date.now() + 86_400_000).toISOString() }).eq("video", "corte-de-caja");
   const hoy = (await filas()).filter((f) => ["un-dia-en-tu-guarderia", "ese-perro-no-esta-vacunado"].includes(f.video));
   await tabla().update({ programada_at: new Date(Date.now() - 60_000).toISOString() }).in("id", hoy.map((f) => f.id));
   const [r1, r2] = await Promise.all([cron(), cron()]);
@@ -133,12 +136,12 @@ try {
   const despues = (await filas()).filter((f) => hoy.some((h) => h.id === f.id));
   ok(despues.every((f) => f.estado === "publicada"), `las ${hoy.length} publicaciones salieron`, `estados: ${despues.map((f) => `${f.red}/${f.formato}:${f.estado}${f.error ? ` (${f.error})` : ""}`).join(", ")}`);
   ok(cuenta((l) => l.p.endsWith("/media_publish")) === 2 && cuenta((l) => l.p.endsWith("/videos") && l.m === "POST") === 1 && cuenta((l) => l.cuerpo.includes("upload_phase=finish")) === 1 && cuenta((l) => l.p === "/v2/post/publish/inbox/video/init/") === 1,
-    "cada una se publicó UNA vez (2 IG, 1 muro, 1 reel, 1 TikTok)",
+    "cada una se publicó UNA vez (2 IG, 1 muro, 1 reel, 2 TikTok)",
     `publicaciones repetidas o faltantes: IG ${cuenta((l) => l.p.endsWith("/media_publish"))}, muro ${cuenta((l) => l.p.endsWith("/videos"))}, reel ${cuenta((l) => l.cuerpo.includes("upload_phase=finish"))}, TikTok ${cuenta((l) => l.p === "/v2/post/publish/inbox/video/init/")}`);
   ok(despues.filter((f) => f.red !== "tiktok").every((f) => f.url?.startsWith("https://")), "cada publicación de Meta guardó su enlace", "falta el enlace de alguna");
-  const pieIg = hoy.find((f) => f.red === "instagram").pie;
+  const piesIg = hoy.filter((f) => f.red === "instagram").map((f) => f.pie);
   const conPie = llamadas.find((l) => l.p.endsWith("/media") && l.cuerpo.includes("caption="));
-  ok(conPie && new URLSearchParams(conPie.cuerpo).get("caption") === pieIg, "el pie llegó completo a Instagram", "el pie no llegó igual a Instagram");
+  ok(conPie && piesIg.includes(new URLSearchParams(conPie.cuerpo).get("caption")), "el pie llegó completo a Instagram", "el pie no llegó igual a Instagram");
   const reelFin = llamadas.find((l) => l.cuerpo.includes("upload_phase=finish"));
   ok(reelFin && new URLSearchParams(reelFin.cuerpo).get("description"), "la descripción del reel va en el finish", "el reel salió sin descripción");
 

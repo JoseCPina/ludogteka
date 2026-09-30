@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { sesionPlataforma } from "@/lib/plataforma/sesion";
 import { instanteDeHoraLocal } from "@/lib/formato";
 import type { ResultadoPlataforma } from "@/lib/plataforma/tipos";
-import { filasDeLaSerie } from "@/lib/redes/serie";
+import { filasDeLaSerie, filasDeUnVideo, type Red } from "@/lib/redes/serie";
 import { correrPublicador } from "@/lib/redes/publicador";
 import { conectarTikTok as canjearTikTok, urlAutorizarTikTok } from "@/lib/redes/tiktok";
 
@@ -34,6 +34,18 @@ export async function cargarSerie(): Promise<ResultadoPlataforma> {
   if (error) return { error: error.message };
   revalidatePath("/plataforma/redes");
   return { error: null, exito: Number(data) ? `Se agregaron ${data} publicaciones al calendario.` : "El calendario ya estaba completo (los pies se actualizaron)." };
+}
+
+export async function agregarARed(video: string, red: Red | "todas"): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const filas = filasDeUnVideo(video, red);
+  if (!filas.length) return { error: "Ese video no está en la serie." };
+  // La base no duplica: solo agrega las redes que ese video todavía no tiene.
+  const { data, error } = await s.supabase.rpc("plataforma_redes_programar", { p_filas: filas });
+  if (error) return { error: error.message };
+  revalidatePath("/plataforma/redes");
+  return { error: null, exito: Number(data) ? `Se agregó (${data}). Sale en su hora, o antes con «Publicar ahora».` : "Ya la tenía." };
 }
 
 export async function reprogramar(id: string, fd: FormData): Promise<ResultadoPlataforma> {

@@ -14,9 +14,9 @@ Primero lo que más duele en una guardería, después caja y papeleo, luego est�
 
 | Fecha | Video | Dónde |
 | --- | --- | --- |
-| Jueves 1 de octubre de 2026 | Un día en tu guardería (46 s, presentación) | Facebook (16:9) · Reels de Instagram (9:16) |
-| Lunes 5 de octubre | 1. Ese perro no está vacunado | Reels de Instagram · TikTok · Reels de Facebook |
-| Miércoles 7 de octubre | 2. Tu corte de caja, sin sorpresas | Reels de Instagram · TikTok · Facebook (16:9) |
+| Martes 29 de septiembre de 2026 (hoy) | Un día en tu guardería (46 s, presentación) | Facebook (16:9) · Reels de Instagram (9:16) · TikTok |
+| Martes 29 de septiembre de 2026 (hoy) | 1. Ese perro no está vacunado | Reels de Instagram · TikTok · Reels de Facebook |
+| Martes 29 de septiembre de 2026 (hoy) | 2. Tu corte de caja, sin sorpresas | Reels de Instagram · TikTok · Facebook (16:9) |
 | Viernes 9 de octubre | 3. Adiós a la impresora | Reels de Instagram · TikTok · Reels de Facebook |
 | Lunes 12 de octubre | 4. Cada raza, su precio | Reels de Instagram · TikTok · Reels de Facebook |
 | Miércoles 14 de octubre | 5. Tu cliente ve todo desde su celular | Reels de Instagram · TikTok · Facebook (16:9) |
@@ -27,4 +27,4 @@ Los videos de caja, portal y utilidad van también en 16:9 al muro de Facebook p
 
 ## Publicación automática
 
-El calendario de arriba vive como configuración en `src/lib/redes/serie.ts` (fechas, redes, formato y pie de cada video, a las 13:00 de la Ciudad de México). En `/plataforma/redes` se carga con «Cargar el calendario de la serie» y la tarea de Vercel lo publica sola cada hora: Facebook e Instagram por la Graph API, TikTok como borrador en el buzón de la cuenta (se publica desde la app, con el pie que llega en el aviso de Telegram). Si cambia una fecha o un pie aquí, se cambia también ahí.
+El calendario de arriba vive como configuración en `src/lib/redes/serie.ts` (fechas, redes, formato y pie de cada video, a las 13:00 de la Ciudad de México). En `/plataforma/redes` se carga con «Cargar el calendario de la serie» y la tarea de Vercel lo publica sola cada hora: Facebook e Instagram por la Graph API, TikTok como borrador en el buzón de la cuenta (se publica desde la app, con el pie que llega en el aviso de Telegram). Cada video tiene además «Agregar a otra red» (o «Agregar a las que faltan») para crear la publicación de una red que no tenga, con su pie sugerido; si la fecha del calendario ya pasó, sale en la siguiente corrida. Si cambia una fecha o un pie aquí, se cambia también ahí.

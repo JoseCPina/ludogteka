@@ -5,8 +5,8 @@ import { FormularioPlataforma } from "@/components/plataforma/formulario-platafo
 import { formatearFecha, horaLocalDeInstante, horaLocalParaInput } from "@/lib/formato";
 import { credencialesMeta } from "@/lib/redes/meta";
 import { estadoTikTok, REDIRECT_TIKTOK } from "@/lib/redes/tiktok";
-import { TITULOS } from "@/lib/redes/serie";
-import { cancelar, cargarSerie, conectarTikTok, linkTikTok, pausar, probar, publicarAhora, reprogramar, resolver } from "./acciones";
+import { SERIE, TITULOS } from "@/lib/redes/serie";
+import { agregarARed, cancelar, cargarSerie, conectarTikTok, linkTikTok, pausar, probar, publicarAhora, reprogramar, resolver } from "./acciones";
 
 // Las acciones de esta pantalla pueden correr el publicador (Meta tarda).
 export const maxDuration = 300;
@@ -100,6 +100,29 @@ export default async function RedesPlataforma() {
           </ul>
         </section>
       )}
+
+      <section className="rounded-lg border border-n-200 bg-white p-5">
+        <h2 className="text-lg font-bold text-n-900">Videos y redes</h2>
+        <p className="text-sm text-n-600">Agrega un video a la red que le falte, con su pie sugerido. No duplica lo que ya existe.</p>
+        <ul className="mt-3 flex flex-col divide-y divide-n-200">
+          {SERIE.map((e) => {
+            const tiene = new Set(serie.filter((f) => f.video === e.video && f.estado !== "cancelada").map((f) => f.red));
+            const faltan = (["facebook", "instagram", "tiktok"] as const).filter((r) => !tiene.has(r));
+            return (
+              <li key={e.video} className="flex flex-col gap-2 py-3">
+                <div><b className="text-n-900">{e.titulo}</b> <span className="text-sm text-n-600">· en {[...tiene].map((r) => RED[r]).join(", ") || "ninguna red"}</span></div>
+                {faltan.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    <span className="self-center text-sm text-n-600">Agregar a otra red:</span>
+                    {faltan.map((r) => <FormularioPlataforma key={r} accion={agregarARed.bind(null, e.video, r)} textoBoton={RED[r]} variante="secundario" />)}
+                    {faltan.length > 1 && <FormularioPlataforma accion={agregarARed.bind(null, e.video, "todas")} textoBoton="Todas las que faltan" />}
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
 
       {serie.length === 0 ? (
         <Alert variante="info" titulo="Todavía no hay calendario">Cárgalo con «Cargar el calendario de la serie».</Alert>
