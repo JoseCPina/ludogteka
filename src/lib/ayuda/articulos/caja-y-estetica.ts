@@ -224,7 +224,9 @@ Con **Ver la cuenta** abres la cuenta del cliente. Abajo, en **Últimos reembols
 
 ## Sacar dinero durante el día
 
-Aprieta **Registrar retiro**, escribe **Monto** y **Motivo** y aprieta **Confirmar retiro**.
+Aprieta **Registrar retiro**, escribe **Monto** y **Motivo** y aprieta **Confirmar retiro**. El retiro aparece en **Retiros de este turno** con quién lo registró; lo ve todo el equipo de caja, aunque el turno lo haya abierto otra persona.
+
+¿Se registró dos veces o con el monto equivocado? En ese retiro aprieta **Cancelar este retiro…**, escribe **¿Por qué se cancela?** y aprieta **Cancelar retiro**. Queda tachado con su motivo y ya no cuenta en el corte. Recepción cancela los suyos; un admin, cualquiera. Un retiro de un gasto pagado del cajón se cancela desde Gastos.
 
 ## Hacer el corte
 
@@ -238,7 +240,8 @@ Aprieta **Registrar retiro**, escribe **Monto** y **Motivo** y aprieta **Confirm
 
 ## Si algo no sale
 
-- «Solo puedes cerrar el turno que tú abriste.»: recepción cierra su propio turno; un admin puede cerrar cualquiera.
+- «Este turno lo abrió … con su cuenta: solo … o un admin pueden cerrarlo.»: recepción solo cierra el turno que abrió con su cuenta; un admin puede cerrar cualquiera (entra con su cuenta de admin y queda registrado que lo cerró). Mientras, puedes cobrar y registrar retiros en él.
+- «El turno de este retiro ya se cerró»: el corte ya lo tomó en cuenta; anótalo en el siguiente.
 - «Ya hay un turno de caja abierto.»`,
   },
   {

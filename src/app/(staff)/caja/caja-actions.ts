@@ -20,6 +20,17 @@ export async function registrarRetiro(monto: number, motivo: string): Promise<Es
   return { error: null, retiroId: data as string };
 }
 
+/** Cancelar un retiro (duplicado o equivocado) con motivo: baja lógica, nunca se borra. */
+export async function cancelarRetiro(retiroId: string, motivo: string): Promise<{ error: string | null }> {
+  if (!motivo.trim()) return { error: "Escribe por qué se cancela el retiro." };
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("cancelar_retiro", { p_id: retiroId, p_motivo: motivo.trim() });
+  if (error) return { error: traducirError(error) };
+  revalidatePath("/caja");
+  revalidatePath("/caja/turno");
+  return { error: null };
+}
+
 export type ResultadoCierre = {
   error: string | null;
   cerrado: boolean;

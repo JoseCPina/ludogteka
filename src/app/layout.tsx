@@ -32,11 +32,26 @@ export async function generateMetadata(): Promise<Metadata> {
   const dominio = h.get(ENCABEZADOS_NEGOCIO.dominio) || null;
   const url_publica = h.get(ENCABEZADOS_NEGOCIO.url) || null;
   const icono = h.get(ENCABEZADOS_NEGOCIO.icono) || "/icono-negocio";
+  // La vista previa al compartir CUALQUIER link del negocio (login, alta por
+  // link, portal): su nombre y su imagen (negocios.marca.imagen_compartir, o
+  // la tarjeta que se arma con su marca en /imagen-negocio). Nunca la de
+  // PeluDesk. La landing (src/app/page.tsx) pone la suya encima.
+  const imagen = h.get(ENCABEZADOS_NEGOCIO.imagen) || "/imagen-negocio";
+  const descripcion = `${nombre}: guardería, hotel y estética canina.`;
   return {
     metadataBase: slug ? new URL(urlDelNegocio({ slug, dominio, url_publica })) : undefined,
     title: nombre,
-    description: `${nombre}: guardería, hotel y estética canina.`,
+    description: descripcion,
     icons: { icon: icono },
+    openGraph: {
+      type: "website",
+      locale: "es_MX",
+      siteName: nombre,
+      title: nombre,
+      description: descripcion,
+      images: [{ url: imagen, width: 1200, height: 630, alt: nombre }],
+    },
+    twitter: { card: "summary_large_image", title: nombre, description: descripcion, images: [imagen] },
     // El negocio de demostración se ve pero no se indexa.
     ...(slug === SLUG_DEMO ? { robots: { index: false, follow: false } } : {}),
   };

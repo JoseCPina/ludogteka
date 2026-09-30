@@ -20,6 +20,7 @@ async function negocioFirmado(h: Headers): Promise<NegocioBasico | null> {
     url_publica: h.get(ENCABEZADOS_NEGOCIO.url) || null,
     zona_horaria: h.get(ENCABEZADOS_NEGOCIO.zona) ?? "",
     icono: h.get(ENCABEZADOS_NEGOCIO.icono) || null,
+    imagen: h.get(ENCABEZADOS_NEGOCIO.imagen) || null,
   };
   return (await firmaValida(n, h.get(ENCABEZADO_FIRMA))) ? n : null;
 }
@@ -157,6 +158,7 @@ export async function middleware(request: NextRequest) {
   cabeceras.set(ENCABEZADOS_NEGOCIO.url, negocio.url_publica ?? "");
   cabeceras.set(ENCABEZADOS_NEGOCIO.zona, negocio.zona_horaria);
   cabeceras.set(ENCABEZADOS_NEGOCIO.icono, negocio.icono ?? "");
+  cabeceras.set(ENCABEZADOS_NEGOCIO.imagen, negocio.imagen ?? "");
   cabeceras.set(ENCABEZADO_FIRMA, await firmarNegocio(negocio));
   const siguiente = () => NextResponse.next({ request: { headers: cabeceras } });
 
@@ -256,7 +258,7 @@ export async function middleware(request: NextRequest) {
 
 // Rutas de la plataforma: la administración y lo que Auth necesita para
 // entrar (link de invitación y escoger contraseña).
-const RUTAS_PLATAFORMA = ["/plataforma", "/auth/callback", "/auth/nueva-password", "/robots.txt", "/sitemap.xml", "/icono-negocio", "/marca", "/iconos"];
+const RUTAS_PLATAFORMA = ["/plataforma", "/auth/callback", "/auth/nueva-password", "/robots.txt", "/sitemap.xml", "/icono-negocio", "/imagen-negocio", "/marca", "/iconos"];
 
 // Las páginas públicas de PeluDesk (landing y registro de prueba): viven
 // en /peludesk/* y se sirven en la raíz del dominio de la plataforma.

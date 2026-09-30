@@ -12,6 +12,12 @@ export type NegocioBasico = {
   // El ícono de la pestaña: negocios.marca.favicon, o el que se arma con
   // la inicial y el color del negocio (/icono-negocio).
   icono?: string | null;
+  // La imagen con la que se comparte un link del negocio (WhatsApp, Meta):
+  // negocios.marca.imagen_compartir, o la que se arma con su marca
+  // (/imagen-negocio).
+  imagen?: string | null;
+  // El color de su marca (#RRGGBB), para el ícono que se arma con su inicial.
+  color?: string | null;
 };
 
 // Los encabezados con los que el middleware le pasa el negocio al resto de
@@ -25,6 +31,7 @@ export const ENCABEZADOS_NEGOCIO = {
   url: "x-negocio-url",
   zona: "x-negocio-zona",
   icono: "x-negocio-icono",
+  imagen: "x-negocio-imagen",
 } as const;
 
 // La petición es de la administración de PeluDesk (sin negocio).
@@ -61,7 +68,7 @@ export async function resolverNegocio(host: string | null): Promise<NegocioBasic
     signal: AbortSignal.timeout(5_000),
   });
   if (!r.ok) throw new Error(`No se pudo resolver el negocio (${r.status})`);
-  const filas = (await r.json()) as (NegocioBasico & { marca?: { favicon?: string } | null })[];
+  const filas = (await r.json()) as (NegocioBasico & { marca?: { favicon?: string; imagen_compartir?: string; color?: string } | null })[];
   const fila = filas[0] ?? null;
   const valor: NegocioBasico | null = fila
     ? {
@@ -72,6 +79,8 @@ export async function resolverNegocio(host: string | null): Promise<NegocioBasic
         url_publica: fila.url_publica ?? null,
         zona_horaria: fila.zona_horaria,
         icono: iconoValido(fila.marca?.favicon),
+        imagen: iconoValido(fila.marca?.imagen_compartir),
+        color: typeof fila.marca?.color === "string" && /^#[0-9a-fA-F]{6}$/.test(fila.marca.color) ? fila.marca.color : null,
       }
     : null;
   CACHE.set(llave, { valor, hasta: Date.now() + VIDA_MS });
