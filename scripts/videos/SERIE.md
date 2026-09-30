@@ -14,9 +14,9 @@ Primero lo que más duele en una guardería, después caja y papeleo, luego est�
 
 | Fecha | Video | Dónde |
 | --- | --- | --- |
-| Martes 29 de septiembre de 2026 (hoy) | Un día en tu guardería (46 s, presentación) | Facebook (16:9) · Reels de Instagram (9:16) · TikTok |
-| Martes 29 de septiembre de 2026 (hoy) | 1. Ese perro no está vacunado | Reels de Instagram · TikTok · Reels de Facebook |
-| Martes 29 de septiembre de 2026 (hoy) | 2. Tu corte de caja, sin sorpresas | Reels de Instagram · TikTok · Facebook (16:9) |
+| Jueves 1 de octubre de 2026 | Un día en tu guardería (46 s, presentación) | Facebook (16:9) · Reels de Instagram (9:16) · TikTok |
+| Lunes 5 de octubre | 1. Ese perro no está vacunado | Reels de Instagram · TikTok · Reels de Facebook |
+| Miércoles 7 de octubre | 2. Tu corte de caja, sin sorpresas | Reels de Instagram · TikTok · Facebook (16:9) |
 | Viernes 9 de octubre | 3. Adiós a la impresora | Reels de Instagram · TikTok · Reels de Facebook |
 | Lunes 12 de octubre | 4. Cada raza, su precio | Reels de Instagram · TikTok · Reels de Facebook |
 | Miércoles 14 de octubre | 5. Tu cliente ve todo desde su celular | Reels de Instagram · TikTok · Facebook (16:9) |

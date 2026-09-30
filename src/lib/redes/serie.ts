@@ -45,7 +45,7 @@ export const SERIE: Entrada[] = [
   {
     video: "ese-perro-no-esta-vacunado",
     titulo: "Ese perro no está vacunado",
-    fecha: "2026-09-29",
+    fecha: "2026-10-05",
     redes: [REEL_IG, TIKTOK, REEL_FB],
     texto: "¿Te enteraste de la vacuna vencida cuando el perro ya estaba adentro?\n\nEn PeluDesk, si a un perro se le venció una vacuna, no te deja reservarle guardería ni hotel, y te dice cuál le falta.\n\n15 días gratis en peludesk.mx",
     hashtags: ["#guarderiacanina", "#hotelcanino", "#vacunasperros"],
@@ -53,7 +53,7 @@ export const SERIE: Entrada[] = [
   {
     video: "corte-de-caja",
     titulo: "Tu corte de caja, sin sorpresas",
-    fecha: "2026-09-29",
+    fecha: "2026-10-07",
     redes: [REEL_IG, TIKTOK, MURO_FB],
     texto: "¿Cierras el día y la caja no te cuadra?\n\nCobras con terminal, la propina se anota aparte, y al cerrar el corte te dice si cuadró, método por método.\n\nPruébalo 15 días gratis en peludesk.mx",
     hashtags: ["#guarderiacanina", "#esteticacanina", "#negociocanino"],
