@@ -16,13 +16,15 @@ import { completarAlta, subirFotoAlta, calcularDistanciaAlta, cerrarLinkSiComple
 import { perroVacio, type ContratoPendiente, type PerroAlta } from "../tipos";
 import { camposDeTipo } from "@/lib/alta/campos-perro";
 import { TarjetaPerro, type Catalogo } from "./tarjeta-perro";
+import { ComprobantesPerro, type Comprobantes } from "./comprobantes-perro";
+import { ResumenRequisitos, type ResumenPerro } from "./resumen-requisitos";
+import { subirComprobantesAlta } from "./subir-comprobantes";
+import type { TipoRequisitoAlta } from "@/lib/alta/requisitos";
 
-const PASOS = ["Tus datos", "Tus perros", "Tu cuenta", "Tu contrato"];
-
-function Progreso({ paso, total }: { paso: number; total: number }) {
+function Progreso({ pasos, paso }: { pasos: string[]; paso: number }) {
   return (
     <ol className="flex gap-2" aria-label="Progreso del alta">
-      {PASOS.slice(0, total).map((etiqueta, i) => (
+      {pasos.map((etiqueta, i) => (
         <li key={etiqueta} className="flex flex-1 flex-col gap-1">
           <span
             className={`h-1.5 rounded-full ${i <= paso ? "bg-morado" : "bg-n-200"}`}
@@ -44,6 +46,7 @@ export function AltaForm({
   tamanos,
   pelajes,
   cotizacion,
+  requisitos,
 }: {
   token: string;
   tipo: TipoLinkAlta;
@@ -51,10 +54,21 @@ export function AltaForm({
   tamanos: Catalogo[];
   pelajes: Catalogo[];
   cotizacion: CotizacionEstetica | null;
+  // Las vacunas y desparasitación que el negocio pide para guardería u
+  // hotel (null: este flujo o este negocio no las pide).
+  requisitos: TipoRequisitoAlta[] | null;
 }) {
   const router = useRouter();
   const definicion = TIPOS_LINK_ALTA[tipo];
   const campos = camposDeTipo(definicion.expedienteCompleto);
+  // Los pasos, con «Vacunas» solo cuando hay algo que pedir. Los índices
+  // salen de aquí y no de números fijos.
+  const PASO_DATOS = 0;
+  const PASO_PERROS = 1;
+  const PASO_VACUNAS = requisitos ? 2 : -1;
+  const PASO_CUENTA = requisitos ? 3 : 2;
+  const PASO_CONTRATO = PASO_CUENTA + 1;
+  const pasos = ["Tus datos", "Tus perros", ...(requisitos ? ["Vacunas"] : []), "Tu cuenta", "Tu contrato"];
 
   // La cuenta es obligatoria para quien va a dejar a su perro —el portal es
   // donde ve sus fotos, su salud y sus contratos— y opcional para quien solo
@@ -77,6 +91,9 @@ export function AltaForm({
   const [confirmacion, setConfirmacion] = useState("");
   const [perros, setPerros] = useState<PerroAlta[]>([perroVacio()]);
   const [fotos, setFotos] = useState<(File | null)[]>([null]);
+  // Comprobantes por perro (mismo índice que `perros`) y por tipo.
+  const [comprobantes, setComprobantes] = useState<Comprobantes[]>([{}]);
+  const [resumenRequisitos, setResumenRequisitos] = useState<ResumenPerro[]>([]);
   const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -92,16 +109,18 @@ export function AltaForm({
   function agregarPerro() {
     setPerros((prev) => [...prev, perroVacio()]);
     setFotos((prev) => [...prev, null]);
+    setComprobantes((prev) => [...prev, {}]);
   }
 
   function quitarPerro(i: number) {
     setPerros((prev) => prev.filter((_, j) => j !== i));
     setFotos((prev) => prev.filter((_, j) => j !== i));
+    setComprobantes((prev) => prev.filter((_, j) => j !== i));
   }
 
   function siguiente() {
     setError(null);
-    if (paso === 0) {
+    if (paso === PASO_DATOS) {
       if (!nombre.trim()) return setError("Escribe tu nombre.");
       if (telefono.replace(/[^0-9]/g, "").length !== 10) {
         return setError("El teléfono debe tener 10 dígitos.");
@@ -110,10 +129,15 @@ export function AltaForm({
         return setError("Ese correo no se ve bien. Revísalo o déjalo vacío.");
       }
     }
-    if (paso === 1) {
+    if (paso === PASO_PERROS) {
       if (perros.some((p) => !p.nombre.trim())) {
         return setError("Cada perro necesita al menos un nombre.");
       }
+    }
+    if (paso === PASO_VACUNAS) {
+      // Un archivo sin fecha, o una fecha futura, no se puede revisar.
+      const malo = comprobantes.some((c) => Object.values(c).some((v) => v.archivo && !/^\d{4}-\d{2}-\d{2}$/.test(v.fecha)));
+      if (malo) return setError("Escribe la fecha en que se aplicó cada comprobante que subiste.");
     }
     setPaso((p) => p + 1);
   }
@@ -155,6 +179,14 @@ export function AltaForm({
       }
 
       const creados = res.perros ?? [];
+      if (requisitos) {
+        const resumen = await subirComprobantesAlta(
+          token,
+          creados.map((p, i) => ({ perroId: p.id, nombre: p.nombre, pendientes: requisitos, valores: comprobantes[i] ?? {} })),
+          setAviso
+        );
+        setResumenRequisitos(resumen);
+      }
       const conFoto = creados.filter((_, i) => fotos[i]).length;
       let subidas = 0;
       for (let i = 0; i < creados.length; i += 1) {
@@ -213,7 +245,7 @@ export function AltaForm({
       return;
     }
     setContratos(pendientes);
-    setPaso(3);
+    setPaso(PASO_CONTRATO);
   }
 
   if (terminadoSinCuenta) {
@@ -224,6 +256,7 @@ export function AltaForm({
           {perros.map((p) => p.nombre.trim()).filter(Boolean).join(", ") || "tu perro"}. Puedes
           agendar por WhatsApp o pasando al mostrador.
         </Alert>
+        <ResumenRequisitos resumen={resumenRequisitos} dondeSubir="Tráenos el carnet cuando vengas." />
         {definicion.llevaContrato && (
           <p className="text-n-600">
             Cuando llegues, recepción te va a pedir que firmes el contrato de{" "}
@@ -238,20 +271,24 @@ export function AltaForm({
     );
   }
 
-  const totalPasos = contratos.length > 0 ? 4 : 3;
   const faltanFirmas = contratos.filter((c) => !firmados.has(c.id));
 
   return (
     <div className="flex flex-col gap-6">
-      <Progreso paso={paso} total={totalPasos} />
+      <Progreso pasos={contratos.length > 0 ? pasos : pasos.slice(0, -1)} paso={paso} />
 
       {error && (
         <Alert variante="error" titulo="Revisa esto">
           {error}
         </Alert>
       )}
+      {/* Si el registro quedó pero no la sesión, lo pendiente de vacunas se
+          dice igual: el dueño no va a ver el portal en este momento. */}
+      {error && paso === PASO_CUENTA && (
+        <ResumenRequisitos resumen={resumenRequisitos} dondeSubir="Súbelo desde tu portal o tráenos el carnet." />
+      )}
 
-      {paso === 0 && (
+      {paso === PASO_DATOS && (
         <div className="flex flex-col gap-4">
           <Field
             label="Tu nombre completo"
@@ -316,15 +353,10 @@ export function AltaForm({
         </div>
       )}
 
-      {paso === 1 && (
+      {paso === PASO_PERROS && (
         <div className="flex flex-col gap-4">
-          {/* El aviso de vacunas es de quien va a dejar a su perro: a un
-              baño de dos horas no se le revisa el carnet. */}
-          {definicion.expedienteCompleto && (
-            <Alert variante="advertencia" titulo="Las vacunas no se capturan aquí">
-              Recepción las revisa con tu carnet físico cuando lleguen. No te preocupes por eso
-              ahora.
-            </Alert>
+          {requisitos && (
+            <p className="text-sm text-n-600">Las vacunas y la desparasitación van en el siguiente paso.</p>
           )}
 
           {perros.map((perro, i) => (
@@ -349,7 +381,7 @@ export function AltaForm({
           </Button>
 
           <div className="flex justify-between">
-            <Button type="button" variante="secundario" onClick={() => setPaso(0)}>
+            <Button type="button" variante="secundario" onClick={() => setPaso(PASO_DATOS)}>
               Atrás
             </Button>
             <Button type="button" onClick={siguiente}>
@@ -359,7 +391,39 @@ export function AltaForm({
         </div>
       )}
 
-      {paso === 2 && (
+      {paso === PASO_VACUNAS && requisitos && (
+        <div className="flex flex-col gap-4">
+          <Alert variante="advertencia" titulo="Vacunas y desparasitación">
+            Súbenos la foto o el PDF del carnet de cada perro, con la fecha en que se aplicó cada una.
+            Recepción lo revisa y queda registrado. Si no lo tienes a la mano, puedes seguir: lo que
+            falte queda «sin registro» y tu perro no podrá quedarse en guardería ni hotel hasta que lo
+            tengamos.
+          </Alert>
+          {perros.map((perro, i) => (
+            <ComprobantesPerro
+              key={i}
+              titulo={perro.nombre.trim() || `Perro ${i + 1}`}
+              requisitos={requisitos.map((r) => ({ ...r, estado: "sin_registro" as const, en_revision: false }))}
+              valores={comprobantes[i] ?? {}}
+              onCambio={(tipoId, valor) =>
+                setComprobantes((prev) =>
+                  prev.map((c, j) => (i === j ? { ...c, [tipoId]: valor } : c))
+                )
+              }
+            />
+          ))}
+          <div className="flex justify-between">
+            <Button type="button" variante="secundario" onClick={() => setPaso(PASO_PERROS)}>
+              Atrás
+            </Button>
+            <Button type="button" onClick={siguiente}>
+              {perros.every((_, i) => !Object.values(comprobantes[i] ?? {}).some((v) => v.archivo)) ? "Seguir sin subirlas" : "Siguiente"}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {paso === PASO_CUENTA && (
         <div className="flex flex-col gap-4">
           {cuentaOpcional ? (
             <div className="flex flex-col gap-3 rounded-md border-[1.5px] border-n-200 bg-white p-4 text-n-900">
@@ -415,7 +479,7 @@ export function AltaForm({
               type="button"
               variante="secundario"
               cargando={enviando.cargando}
-              onClick={() => setPaso(1)}
+              onClick={() => setPaso(requisitos ? PASO_VACUNAS : PASO_PERROS)}
             >
               Atrás
             </Button>
@@ -426,12 +490,13 @@ export function AltaForm({
         </div>
       )}
 
-      {paso === 3 && (
+      {paso === PASO_CONTRATO && (
         <div className="flex flex-col gap-4">
           <Alert variante="exito" titulo="Tu registro ya quedó">
             Falta lo último: firmar {contratos.length === 1 ? "el contrato" : "los contratos"} de{" "}
             {definicion.etiqueta.toLowerCase()}. Puedes leerlo completo antes de firmar.
           </Alert>
+          <ResumenRequisitos resumen={resumenRequisitos} dondeSubir="Las puedes subir después desde tu portal, o tráenos el carnet." />
 
           {contratos.map((contrato) => (
             <FirmarContrato

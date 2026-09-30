@@ -43,15 +43,19 @@ export function ProponerComprobante({
 
   async function enviar() {
     setError(null);
-    if (!archivo) return setError("Toma o elige la foto del comprobante.");
+    if (!archivo) return setError("Toma o elige la foto del comprobante, o su PDF.");
 
     const r = await enviando.correr(async () => {
-      const blob = await comprimirImagen(archivo);
+      // Un PDF va tal cual; una foto se comprime antes de subirla.
+      const listo =
+        archivo.type === "application/pdf"
+          ? archivo
+          : new File([await comprimirImagen(archivo, 1600)], "comprobante.jpg", { type: "image/jpeg" });
       const datos = new FormData();
       datos.append("tipo_requisito_id", tipoRequisitoId);
       datos.append("fecha_aplicacion", fecha);
       datos.append("detalle", detalle);
-      datos.append("foto", new File([blob], "comprobante.jpg", { type: "image/jpeg" }));
+      datos.append("foto", listo);
       return proponerComprobante(perroId, datos);
     });
 
@@ -76,7 +80,7 @@ export function ProponerComprobante({
     <div className="mt-2 flex flex-col gap-3 rounded-md border-[1.5px] border-n-200 bg-white p-3">
       <p className="text-sm text-n-700">
         <strong>{etiqueta}.</strong> Toma una foto clara del carnet o del comprobante donde se vea la
-        fecha. Recepción lo revisa y, si todo cuadra, queda registrado.
+        fecha, o sube su PDF. Recepción lo revisa y, si todo cuadra, queda registrado.
       </p>
 
       {error && (
@@ -101,14 +105,14 @@ export function ProponerComprobante({
       />
 
       <div>
-        <p className="mb-1.5 text-sm font-semibold text-n-800">Foto del comprobante</p>
+        <p className="mb-1.5 text-sm font-semibold text-n-800">Foto o PDF del comprobante</p>
         {/* Sin `capture`: es un documento, y el dueño casi siempre ya tiene la
             foto del carnet en su galería. Con `capture` el celular abre SOLO la
             cámara y no deja escoger de archivos. */}
         <input
           ref={inputArchivoRef}
           type="file"
-          accept="image/*"
+          accept="image/*,application/pdf"
           className="hidden"
           onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
         />
@@ -118,7 +122,7 @@ export function ProponerComprobante({
           disabled={enviando.cargando}
           onClick={() => inputArchivoRef.current?.click()}
         >
-          {archivo ? archivo.name : "Tomar o elegir foto"}
+          {archivo ? archivo.name : "Elegir foto o PDF"}
         </Button>
       </div>
 

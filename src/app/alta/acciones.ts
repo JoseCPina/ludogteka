@@ -6,6 +6,7 @@ import { correoSinteticoDeTelefono } from "@/lib/auth/identidad";
 import { geocodificarYCalcularDistancia } from "@/lib/google-maps/distancia-cliente";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { negocioActual } from "@/lib/negocio/actual";
+import { cargarRequisitosAlta } from "@/lib/alta/requisitos";
 import type {
   ContratoPendiente,
   DatosAlta,
@@ -487,6 +488,98 @@ export async function subirFotoAlta(
   if (errorPerro) return { error: "No pudimos guardar la foto." };
 
   return { error: null };
+}
+
+/**
+ * El dueño sube desde el alta el comprobante de una vacuna o
+ * desparasitación de su perro (foto o PDF del carnet).
+ *
+ * Queda como PROPUESTO, igual que desde el portal: no es un registro
+ * sanitario y no levanta ningún bloqueo hasta que recepción lo confirme
+ * contra el documento. La autorización es el token del link, acotado a
+ * los perros del expediente que ESE link creó o completó: con el token de
+ * otra persona no se le puede colgar un comprobante a un perro ajeno. El
+ * negocio tiene que pedir requisitos (guardería u hotel prendidos) y el
+ * tipo tiene que ser uno de sus obligatorios.
+ */
+export async function proponerComprobanteAlta(
+  token: string,
+  perroId: string,
+  formData: FormData
+): Promise<{ error: string | null; id?: string }> {
+  const tipoId = String(formData.get("tipo_requisito_id") ?? "").trim();
+  const fecha = String(formData.get("fecha_aplicacion") ?? "").trim();
+  const archivo = formData.get("archivo");
+  if (!tipoId) return { error: "Elige de qué es el comprobante." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return { error: "Escribe la fecha en que se aplicó." };
+  if (!(archivo instanceof File) || archivo.size === 0) return { error: "Falta el comprobante: es lo que recepción va a revisar." };
+  const esPdf = archivo.type === "application/pdf";
+  if (!esPdf && !archivo.type.startsWith("image/")) return { error: "El comprobante tiene que ser una foto o un PDF." };
+  if (archivo.size > 8 * 1024 * 1024) return { error: "El archivo pesa más de 8 MB. Toma una foto más ligera o recorta el PDF." };
+
+  const negocio = await negocioActual();
+  const admin = createSupabaseAdminClient(negocio.id);
+
+  const { data: invitacion } = await admin
+    .from("invitaciones_cliente")
+    .select("cliente_id, cancelada_at")
+    .eq("token", token)
+    .eq("negocio_id", negocio.id)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (!invitacion?.cliente_id || invitacion.cancelada_at) return { error: "Este link no tiene un alta completada." };
+
+  const { data: perro } = await admin
+    .from("perros")
+    .select("id, cliente_id")
+    .eq("id", perroId)
+    .eq("negocio_id", negocio.id)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (!perro || perro.cliente_id !== invitacion.cliente_id) return { error: "Ese perro no es de esta alta." };
+
+  const tipos = await cargarRequisitosAlta(admin, negocio.id, true);
+  const tipo = tipos?.find((t) => t.id === tipoId);
+  if (!tipo) return { error: "Ese requisito no se pide en este negocio." };
+
+  const { data: hoy } = await admin.rpc("fecha_negocio");
+  if (fecha > (hoy as string)) return { error: "La fecha de aplicación no puede ser futura." };
+
+  const { data: pendiente } = await admin
+    .from("requisitos_sanitarios_propuestos")
+    .select("id")
+    .eq("negocio_id", negocio.id)
+    .eq("perro_id", perroId)
+    .eq("tipo_requisito_id", tipoId)
+    .eq("estado", "pendiente")
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (pendiente) return { error: null, id: pendiente.id };
+
+  const id = crypto.randomUUID();
+  const path = `${perro.cliente_id}/${perroId}/requisitos-propuestos/${id}/comprobante.${esPdf ? "pdf" : "jpg"}`;
+  const { error: errorSubida } = await admin.storage
+    .from(BUCKET)
+    .upload(path, archivo, { upsert: false, contentType: archivo.type });
+  if (errorSubida) return { error: "No pudimos guardar el comprobante. Intenta de nuevo." };
+
+  // Sin sesión (el alta nueva todavía no la abre): la fila queda sin
+  // created_by, y la secret key la inserta en el negocio del link.
+  const { error: errorFila } = await admin.from("requisitos_sanitarios_propuestos").insert({
+    id,
+    negocio_id: negocio.id,
+    perro_id: perroId,
+    tipo_requisito_id: tipoId,
+    fecha_aplicacion: fecha,
+    detalle: String(formData.get("detalle") ?? "").trim() || null,
+    comprobante_path: path,
+    created_by: null,
+  });
+  if (errorFila) {
+    await admin.storage.from(BUCKET).remove([path]);
+    return { error: "No pudimos registrar el comprobante. Intenta de nuevo." };
+  }
+  return { error: null, id };
 }
 
 /**
