@@ -31,6 +31,7 @@ export function BarraCelular({ children }: { children: ReactNode }) {
       data-visible={visible}
       aria-hidden={!visible}
       inert={!visible}
+      data-fijo-inferior
       className="pd-barra fixed inset-x-0 bottom-0 z-30 border-t border-n-200 bg-crema/95 px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 backdrop-blur md:hidden"
     >
       {children}

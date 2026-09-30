@@ -54,7 +54,7 @@ await new Promise((r) => meta.listen(4458, "127.0.0.1", r));
 
 // ── El servidor de esta prueba ──
 const servidor = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "-p", String(PUERTO)], {
-  env: { ...process.env, PELUDESK_URL_DESARROLLO: `http://{slug}.localhost:${PUERTO}`, PELUDESK_META_PIXEL_ID: PIXEL, PELUDESK_META_CAPI_TOKEN: "token-de-mentiras", META_API_URL: "http://127.0.0.1:4458" },
+  env: { ...process.env, PELUDESK_URL_DESARROLLO: `http://{slug}.localhost:${PUERTO}`, PELUDESK_WHATSAPP: "525649160742", PELUDESK_META_PIXEL_ID: PIXEL, PELUDESK_META_CAPI_TOKEN: "token-de-mentiras", META_API_URL: "http://127.0.0.1:4458" },
   stdio: ["ignore", "pipe", "pipe"],
 });
 let bitacora = "";
@@ -444,6 +444,53 @@ try {
       await page.goto(`${PLATAFORMA}${ruta}`, { waitUntil: "networkidle" });
       ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `${ruta}: sin scroll horizontal en celular`);
     }
+    await ctx.close();
+  }
+
+  // ═════════════════ G. Botón de WhatsApp ═════════════════
+  console.log("── G. Botón de WhatsApp");
+  for (const [w, h, cel] of [[1440, 900, false], [390, 844, true]]) {
+    const { ctx, page } = await contexto({ width: w, height: h });
+    await ctx.addCookies([{ name: "peludesk_consent", value: encodeURIComponent(JSON.stringify({ v: 1, a: false, m: false, t: Date.now() })), url: PLATAFORMA }]);
+    for (const ruta of ["/", "/registro", "/blog", "/blog/como-abrir-una-guarderia-canina-en-mexico"]) {
+      await page.goto(`${PLATAFORMA}${ruta}`, { waitUntil: "networkidle" });
+      const wa = page.locator("a.pd-wa");
+      ok((await wa.getAttribute("data-visible")) === "false", `${w}px ${ruta}: no sale en el primer pantallazo`);
+      let visto = null;
+      for (const f of [1.2, 2.4, 3.6]) {
+        await page.evaluate((y) => window.scrollTo(0, y), Math.round(h * f));
+        await page.waitForTimeout(600);
+        if ((await wa.getAttribute("data-visible")) === "true") { visto = await wa.boundingBox(); break; }
+      }
+      ok(Boolean(visto), `${w}px ${ruta}: aparece después de bajar`);
+      if (!visto) continue;
+      ok(cel ? Math.round(visto.width) === 52 && Math.round(visto.height) === 52 : Math.round(visto.height) === 52, cel ? "celular: círculo de 52 px" : "escritorio: pastilla de 52 px de alto");
+      const tapa = await page.evaluate(() => {
+        const r = document.querySelector("a.pd-wa").getBoundingClientRect();
+        return [...document.querySelectorAll(".pd-captura, form, .pd-boton, [data-fijo-inferior]:not([aria-hidden=true])")].some((o) => { const q = o.getBoundingClientRect(); return q.width > 0 && q.height > 0 && q.right > r.left && q.left < r.right && q.bottom > r.top && q.top < r.bottom; });
+      });
+      ok(!tapa, `${w}px ${ruta}: no tapa capturas, formularios, botones ni el aviso`);
+      if (!cel) {
+        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight * 0.7)); await page.waitForTimeout(6500);
+        const c = await wa.getAttribute("data-compacto");
+        const v = await wa.getAttribute("data-visible");
+        ok(c === "true" || v === "false", "escritorio: se contrae al ícono (al seguir bajando o a los 6 s)");
+      }
+    }
+    const estilo = await page.evaluate(() => { const a = document.querySelector("a.pd-wa"); const s = getComputedStyle(a); return [s.backgroundColor, s.color, a.getAttribute("href")]; });
+    ok(estilo[0] === "rgb(167, 216, 200)" && estilo[1] === "rgb(75, 63, 114)", "colores del kit: fondo menta y ícono morado");
+    ok(estilo[2].startsWith("https://wa.me/525649160742"), "es solo un enlace a wa.me");
+    await ctx.close();
+  }
+  {
+    // Contraste AA del ícono morado sobre menta.
+    const lum = (hex) => { const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+    const [a, b] = [lum("#A7D8C8"), lum("#4B3F72")];
+    const ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    ok(ratio >= 4.5, `contraste morado sobre menta ${ratio.toFixed(1)}:1 (AA)`);
+    const { ctx, page } = await contexto();
+    await page.goto(`http://huellitas.localhost:${PUERTO}/login`, { waitUntil: "networkidle" });
+    ok((await page.locator("a.pd-wa").count()) === 0, "en el dominio de un negocio no hay botón de WhatsApp de PeluDesk");
     await ctx.close();
   }
 } catch (e) {

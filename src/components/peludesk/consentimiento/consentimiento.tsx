@@ -132,6 +132,7 @@ export function ConsentimientoCookies({ inicial, pixelId }: { inicial: Consentim
       {!estado.decidido && !configurando && (
         <section
           aria-label="Aviso de cookies"
+          data-fijo-inferior
           className="fixed inset-x-0 bottom-0 z-[60] p-3 sm:bottom-4 sm:left-4 sm:right-auto sm:max-w-[26rem] sm:p-0"
         >
           <div className="rounded-2xl border border-n-200 bg-white p-5 shadow-[0_12px_40px_rgb(75_63_114/0.22)]">
