@@ -14,6 +14,7 @@
 //   2. Cuando hay duda, se escala. Un escalamiento cuesta un mensaje de
 //      Telegram; una respuesta inventada cuesta un cliente.
 
+import { URL_AVISO_PRIVACIDAD } from "@/lib/peludesk/legal";
 import {
   type ClaveCaptura,
   type ContextoAgente,
@@ -356,6 +357,10 @@ async function conversar(
     const textos = piezas.flatMap((p) => (p.tipo === "texto" ? [p.cuerpo] : []));
     if (cuenta.tipo === "prospecto" && ultimoTexto?.tipo === "texto" && !/https?:\/\//.test(textos.join(" "))) {
       ultimoTexto.cuerpo += `\n\nSi quieres ir viendo cómo se ve por dentro:\n\n${enlaces.demo}`;
+    }
+    // A un número nuevo, en la primera respuesta, una línea corta con el aviso de privacidad.
+    if (cuenta.tipo === "prospecto" && delBot.length === 0 && piezas.some((p) => p.tipo === "texto")) {
+      piezas.push({ tipo: "texto", cuerpo: `Así cuidamos tus datos: ${URL_AVISO_PRIVACIDAD}` });
     }
     if (!piezas.some((p) => p.tipo === "texto")) {
       await apuntar("escalo");

@@ -3,7 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { rutaPorRol } from "@/lib/auth/rutas";
 import { ENCABEZADOS_NEGOCIO, ENCABEZADO_PLATAFORMA, resolverNegocio, type NegocioBasico } from "@/lib/negocio/resolver";
 import { ENCABEZADO_FIRMA, firmaValida, firmarNegocio, firmarPlataforma, plataformaFirmada } from "@/lib/negocio/firma";
-import { esHostPlataforma } from "@/lib/negocio/host";
+import { DOMINIO_PLATAFORMA, esHostPlataforma } from "@/lib/negocio/host";
 import { moduloDeRuta } from "@/lib/plan/modulos";
 
 // Los encabezados de negocio que puso este mismo middleware (firmados).
@@ -101,6 +101,12 @@ const RUTAS_PUBLICAS_EXACTAS = new Set([
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Una sola versión del host: www.peludesk.mx redirige (308, conserva ruta y
+  // parámetros) a peludesk.mx, el canónico. Sin cadenas: es un solo salto.
+  if ((request.headers.get("host") ?? "").toLowerCase().split(":")[0] === `www.${DOMINIO_PLATAFORMA}`) {
+    return NextResponse.redirect(`https://${DOMINIO_PLATAFORMA}${pathname}${request.nextUrl.search}`, 308);
+  }
 
   // El negocio lo decide el DOMINIO, nunca el navegador: los encabezados
   // x-negocio-* que vengan de afuera se tiran antes de poner los nuestros.
@@ -250,7 +256,7 @@ export async function middleware(request: NextRequest) {
 
 // Rutas de la plataforma: la administración y lo que Auth necesita para
 // entrar (link de invitación y escoger contraseña).
-const RUTAS_PLATAFORMA = ["/plataforma", "/auth/callback", "/auth/nueva-password", "/robots.txt", "/icono-negocio", "/marca", "/iconos"];
+const RUTAS_PLATAFORMA = ["/plataforma", "/auth/callback", "/auth/nueva-password", "/robots.txt", "/sitemap.xml", "/icono-negocio", "/marca", "/iconos"];
 
 // Las páginas públicas de PeluDesk (landing y registro de prueba): viven
 // en /peludesk/* y se sirven en la raíz del dominio de la plataforma.
@@ -258,7 +264,18 @@ const PUBLICAS_PLATAFORMA: Record<string, string> = {
   "/": "/peludesk",
   "/registro": "/peludesk/registro",
   "/ayuda": "/peludesk/ayuda",
+  "/blog": "/peludesk/blog",
+  "/blog/rss.xml": "/peludesk/blog/rss.xml",
+  "/aviso-de-privacidad": "/peludesk/aviso-de-privacidad",
+  "/terminos": "/peludesk/terminos",
+  "/cookies": "/peludesk/cookies",
+  "/software-para-guarderias-caninas": "/peludesk/software/software-para-guarderias-caninas",
+  "/software-para-esteticas-caninas": "/peludesk/software/software-para-esteticas-caninas",
+  "/software-para-hoteles-caninos": "/peludesk/software/software-para-hoteles-caninos",
 };
+// Con parámetro: artículos del centro de ayuda y del blog, páginas del índice
+// del blog y sus categorías. Una lista cerrada de formas, nunca por prefijo.
+const PUBLICAS_PLATAFORMA_PATRON = /^\/(ayuda\/[a-z0-9-]+|blog\/[a-z0-9-]+|blog\/pagina\/\d{1,3}|blog\/categoria\/[a-z0-9-]+)$/;
 
 async function plataforma(request: NextRequest, cabeceras: Headers) {
   const { pathname } = request.nextUrl;
@@ -285,8 +302,13 @@ async function plataforma(request: NextRequest, cabeceras: Headers) {
     return NextResponse.next({ request: { headers: cabeceras } });
   }
   // El centro de ayuda público: /ayuda y /ayuda/<artículo>.
-  const publica = PUBLICAS_PLATAFORMA[pathname] ?? (/^\/ayuda\/[a-z0-9-]+$/.test(pathname) ? `/peludesk${pathname}` : undefined);
-  if (publica) return NextResponse.rewrite(new URL(publica, request.url), { request: { headers: cabeceras } });
+  const publica = PUBLICAS_PLATAFORMA[pathname] ?? (PUBLICAS_PLATAFORMA_PATRON.test(pathname) ? `/peludesk${pathname}` : undefined);
+  if (publica) {
+    // El rewrite conserva los parámetros: /registro?utm_source=… los necesita.
+    const destino = new URL(publica, request.url);
+    destino.search = request.nextUrl.search;
+    return NextResponse.rewrite(destino, { request: { headers: cabeceras } });
+  }
   if (pathname === "/peludesk" || pathname.startsWith("/peludesk/")) return NextResponse.redirect(new URL("/", request.url));
   const permitida = RUTAS_PLATAFORMA.some((r) => pathname === r || pathname.startsWith(`${r}/`));
   if (!permitida) return NextResponse.redirect(new URL("/", request.url));

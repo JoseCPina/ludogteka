@@ -180,7 +180,7 @@ const pasos = {
         profile_picture_handle: subida.h,
         about: "Software para guarderías, hoteles y estéticas caninas.",
         description: "PeluDesk: reservas, citas de estética, cobros, contratos y vacunas al día. Pruébalo 15 días gratis en peludesk.mx. PeluDesk es una marca de Menteo, S.A.S.",
-        websites: ["https://peludesk.mx"],
+        websites: ["https://peludesk.mx", "https://peludesk.mx/aviso-de-privacidad"],
         vertical: "PROF_SERVICES",
       },
     });

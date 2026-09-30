@@ -1,17 +1,28 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LogoPeluDesk } from "@/components/marca/peludesk";
+import { AvisoSimplificado } from "@/components/peludesk/aviso-simplificado";
+import { PieSitio } from "@/components/peludesk/sitio";
+import { PARAMETROS_ORIGEN, type ParametroOrigen } from "@/lib/peludesk/origen";
+import { metaPagina } from "@/lib/peludesk/seo";
 import { RegistroForm } from "./registro-form";
 
-export const metadata: Metadata = {
-  title: { absolute: "Prueba PeluDesk gratis 15 días" },
-  description: "Abre tu guardería, hotel o estética canina en PeluDesk. 15 días gratis, sin tarjeta.",
-  robots: { index: true, follow: true },
-};
+export const metadata: Metadata = metaPagina({
+  titulo: "Prueba PeluDesk gratis 15 días",
+  descripcion: "Abre tu guardería, hotel o estética canina en PeluDesk. 15 días gratis, sin tarjeta.",
+  ruta: "/registro",
+});
 
-export default function RegistroPage() {
+export default async function RegistroPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const q = await searchParams;
+  const origen: Partial<Record<ParametroOrigen, string>> = {};
+  for (const k of PARAMETROS_ORIGEN) {
+    const v = Array.isArray(q[k]) ? q[k][0] : q[k];
+    if (v) origen[k] = v.slice(0, 300);
+  }
   return (
-    <main className="min-h-[100dvh] bg-crema">
+    <div className="bg-crema">
+    <main id="contenido" className="min-h-[100dvh]">
       <div className="mx-auto grid w-full max-w-5xl gap-10 px-4 py-8 sm:px-6 md:grid-cols-[1fr_minmax(0,26rem)] md:gap-16 md:py-14">
         <div className="flex flex-col gap-6">
           <Link href="/" aria-label="PeluDesk, inicio" className="w-fit">
@@ -48,9 +59,14 @@ export default function RegistroPage() {
           </p>
         </div>
         <section className="relative rounded-2xl border border-n-200 bg-white p-6 shadow-[0_1px_2px_rgb(75_63_114/0.06)] sm:p-8">
-          <RegistroForm />
+          <RegistroForm origen={origen} />
         </section>
       </div>
+      <div className="mx-auto w-full max-w-5xl px-4 pb-12 sm:px-6">
+        <AvisoSimplificado compacto className="max-w-[60ch]" />
+      </div>
     </main>
+    <PieSitio />
+    </div>
   );
 }

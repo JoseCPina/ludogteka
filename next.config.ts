@@ -6,11 +6,22 @@ const nextConfig: NextConfig = {
   images: { formats: ["image/avif", "image/webp"], qualities: [60, 75] },
   // Las capturas que el bot de WhatsApp sube a Meta se leen del disco en la
   // función del webhook (src/lib/whatsapp/infra.ts, bytesCaptura).
-  outputFileTracingIncludes: { "/api/whatsapp/webhook": ["./public/peludesk/whatsapp/*.jpg"] },
+  // El blog, las páginas legales y los aterrizajes de peludesk.mx son archivos
+  // de /content que se leen del disco (src/lib/peludesk/blog.ts).
+  outputFileTracingIncludes: {
+    "/api/whatsapp/webhook": ["./public/peludesk/whatsapp/*.jpg"],
+    "/peludesk/**": ["./content/**/*"],
+    "/sitemap.xml": ["./content/**/*"],
+  },
   // Los videos de producto para redes (scripts/videos) son para subirlos a
   // Reels, TikTok o YouTube, no para que un buscador los indexe desde aquí.
   async headers() {
-    return [{ source: "/peludesk/redes/:ruta*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] }];
+    return [
+      { source: "/peludesk/redes/:ruta*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
+      // El demo (Patitas & Co.) es para verlo, no para que un buscador lo indexe.
+      // Además robots.txt del demo lo prohíbe y sus páginas traen meta noindex.
+      { source: "/:ruta*", has: [{ type: "host", value: "patitasyco.peludesk.mx" }], headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
+    ];
   },
   async redirects() {
     return [

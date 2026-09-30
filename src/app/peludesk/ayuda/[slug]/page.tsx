@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ARTICULOS, articuloPorSlug } from "@/lib/ayuda";
 import { ArticuloAyuda } from "@/components/ayuda/articulo-ayuda";
+import { PieSitio } from "@/components/peludesk/sitio";
+import { metaPagina } from "@/lib/peludesk/seo";
 import { EncabezadoAyuda } from "../encabezado";
 
 export function generateStaticParams() {
@@ -12,8 +14,8 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const a = articuloPorSlug((await params).slug);
   return a
-    ? { metadataBase: new URL("https://peludesk.mx"), title: { absolute: `${a.titulo} — Ayuda de PeluDesk` }, description: a.resumen, alternates: { canonical: `/ayuda/${a.slug}` } }
-    : {};
+    ? metaPagina({ titulo: `${a.titulo} — Ayuda de PeluDesk`, descripcion: a.resumen, ruta: `/ayuda/${a.slug}` })
+    : { robots: { index: false } };
 }
 
 // En el centro público, un link a otro artículo sigue siendo link; uno a una
@@ -26,13 +28,14 @@ export default async function ArticuloPublico({ params }: { params: Promise<{ sl
   return (
     <div className="min-h-full bg-n-50">
       <EncabezadoAyuda />
-      <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8">
+      <main id="contenido" className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8">
         <Link href="/ayuda" className="text-sm font-semibold text-morado hover:underline">← Todos los artículos</Link>
         <ArticuloAyuda articulo={a} linkDe={linkPublico} />
         <p className="max-w-3xl text-sm text-n-600">
           ¿No se resolvió? Dentro de tu cuenta, en <strong>Ayuda</strong>, puedes preguntarle al asistente o crear un ticket y te contestamos.
         </p>
       </main>
+      <PieSitio />
     </div>
   );
 }

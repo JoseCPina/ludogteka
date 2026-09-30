@@ -1,19 +1,26 @@
 "use server";
 
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { cookies, headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { correoSinteticoDeTelefono } from "@/lib/auth/identidad";
 import { normalizarTelefono } from "@/lib/telefono";
 import { urlDelNegocio } from "@/lib/negocio/actual";
 import { NEGOCIO_ORIGINAL_ID } from "@/lib/negocio/legado";
+import { DOCUMENTOS_LEGALES } from "@/lib/peludesk/legal";
+import { COOKIE_CONSENTIMIENTO, leerConsentimiento } from "@/lib/peludesk/cookies";
+import { origenDe } from "@/lib/peludesk/origen";
+import { enviarConversion } from "@/lib/peludesk/capi";
 
 // Lo que la persona escribió regresa con el error: React limpia el
 // formulario al terminar la acción y sin esto tendría que capturar todo de
 // nuevo. La contraseña nunca regresa.
 export type ValoresRegistro = { nombre: string; negocio: string; ciudad: string; telefono: string; servicios: string[] };
-export type EstadoRegistro = { error: string | null; valores?: ValoresRegistro };
+// destino + eventId: el registro salió bien; el navegador manda CompleteRegistration
+// al píxel (con ese mismo eventId, que el servidor usó en la API de conversiones)
+// y luego entra al negocio. Es aquí, en peludesk.mx, donde vive el píxel: el
+// negocio nuevo está en otro dominio y no lo lleva.
+export type EstadoRegistro = { error: string | null; valores?: ValoresRegistro; destino?: string; eventId?: string };
 
 // De qué negocio se copia la configuración base (servicios, requisitos,
 // alertas, horario): el mismo modelo que usa la plataforma al dar de alta.
@@ -52,6 +59,8 @@ async function registrar(fd: FormData): Promise<EstadoRegistro> {
   const ciudad = String(fd.get("ciudad") ?? "").trim();
   const telefono = normalizarTelefono(String(fd.get("telefono") ?? ""));
   const password = String(fd.get("password") ?? "");
+  // La casilla de términos y aviso: obligatoria, y se comprueba aquí, no solo en el navegador.
+  if (fd.get("acepto") !== "on") return { error: "Para abrir tu negocio, acepta los términos y el aviso de privacidad." };
 
   if (nombre.length < 3) return { error: "Escribe tu nombre." };
   if (negocio.length < 3 || negocio.length > 60) return { error: "Escribe el nombre de tu negocio (de 3 a 60 letras)." };
@@ -62,6 +71,9 @@ async function registrar(fd: FormData): Promise<EstadoRegistro> {
 
   const h = await headers();
   const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || null;
+  const ua = h.get("user-agent")?.slice(0, 400) ?? null;
+  const jar = await cookies();
+  const consentimiento = leerConsentimiento(jar.get(COOKIE_CONSENTIMIENTO)?.value);
   const admin = createSupabaseAdminClient();
 
   const { data: motivo } = await admin.rpc("puede_registrar_prueba", { p_telefono: telefono, p_ip: ip });
@@ -104,6 +116,24 @@ async function registrar(fd: FormData): Promise<EstadoRegistro> {
     await admin.from("profiles").update({ nombre_completo: nombre }).eq("id", personaId);
   }
 
+  // La evidencia de la aceptación (versión, fecha, IP y navegador) se guarda
+  // ANTES de abrir el negocio: sin ella no se registra a nadie.
+  const { error: errorAceptacion } = await admin.from("aceptaciones_legales").insert(
+    (["terminos", "aviso_privacidad"] as const).map((documento) => ({
+      persona_id: personaId,
+      telefono,
+      documento,
+      version: DOCUMENTOS_LEGALES[documento].version,
+      ip,
+      user_agent: ua,
+    }))
+  );
+  if (errorAceptacion) {
+    if (creadaAqui) await admin.auth.admin.deleteUser(personaId);
+    console.error("[registro] aceptaciones_legales", errorAceptacion.code, errorAceptacion.message);
+    return { error: "No pudimos registrar tu aceptación. Intenta de nuevo en un momento." };
+  }
+
   const { data: filas, error: errorNegocio } = await admin.rpc("registrar_negocio_prueba", {
     p_nombre: negocio,
     p_ciudad: ciudad || null,
@@ -123,12 +153,36 @@ async function registrar(fd: FormData): Promise<EstadoRegistro> {
     return { error: propio ? errorNegocio!.message : "No pudimos abrir tu negocio. Intenta de nuevo en un momento." };
   }
 
+  // De dónde llegó (etiquetas utm siempre; el clic de Meta solo con marketing aceptado) y qué versión aceptó.
+  const origen = origenDe((k) => fd.get(k), consentimiento.marketing);
+  const { error: errorOrigen } = await admin
+    .from("registros_prueba")
+    .update({ ...origen, terminos_version: DOCUMENTOS_LEGALES.terminos.version, aviso_version: DOCUMENTOS_LEGALES.aviso_privacidad.version })
+    .eq("negocio_id", alta.negocio_id);
+  if (errorOrigen) console.error("[registro] origen", errorOrigen.code, errorOrigen.message);
+
+  // API de conversiones de Meta, deduplicada con el píxel por el mismo event_id. Solo con marketing aceptado.
+  const eventId = crypto.randomUUID();
+  if (consentimiento.marketing) {
+    await enviarConversion({
+      nombre: "CompleteRegistration",
+      eventId,
+      url: "https://peludesk.mx/registro",
+      ip,
+      userAgent: ua,
+      fbp: jar.get("_fbp")?.value ?? null,
+      fbc: jar.get("_fbc")?.value ?? null,
+      telefono,
+      contenido: "negocio_de_prueba",
+    });
+  }
+
   // Sesión en SU dominio: un link de un solo uso que se canjea allá.
   const { data: link, error: errorLink } = await admin.auth.admin.generateLink({ type: "magiclink", email });
   const destino = urlDelNegocio({ slug: alta.slug, dominio: null, url_publica: null });
   if (errorLink || !link.properties?.hashed_token) {
     console.error("[registro] generateLink", errorLink?.message);
-    redirect(`${destino}/login`);
+    return { error: null, destino: `${destino}/login`, eventId };
   }
-  redirect(`${destino}/auth/entrar?token_hash=${encodeURIComponent(link.properties.hashed_token)}&next=/bienvenida`);
+  return { error: null, destino: `${destino}/auth/entrar?token_hash=${encodeURIComponent(link.properties.hashed_token)}&next=/bienvenida`, eventId };
 }

@@ -1,0 +1,77 @@
+{
+  "titulo": "Software para estéticas caninas | PeluDesk",
+  "h1": "Software para estéticas caninas: agenda, precios y caja",
+  "descripcion": "Agenda por estilista, precio de cada baño por raza o talla, comisiones y cobro en un solo lugar. Prueba PeluDesk 15 días gratis, sin tarjeta.",
+  "gancho": "Una columna por estilista, el precio sale solo y al terminar la cita ya está en la cuenta.",
+  "alivios": [
+    {
+      "antes": "Calcular el precio de cada baño",
+      "ahora": "Sale solo, por raza o talla, con su precio aparte si llega con el pelo maltratado."
+    },
+    {
+      "antes": "Citas encimadas en la libreta",
+      "ahora": "Una columna por persona y ninguna cita choca con otra."
+    },
+    {
+      "antes": "Calcular comisiones al final de la quincena",
+      "ahora": "La comisión de cada cita queda registrada por estilista."
+    },
+    {
+      "antes": "Ver que se acabó el champú cuando ya no hay",
+      "ahora": "Al terminar la cita se descuenta del inventario lo que se usó."
+    }
+  ],
+  "funciones": [
+    {
+      "titulo": "Agenda de estética",
+      "texto": "Una columna por estilista, con el detalle de cada cita y su hora."
+    },
+    {
+      "titulo": "Precios por grupo de raza",
+      "texto": "Cada servicio tiene su precio por grupo de raza o talla, y un precio alterno para pelo maltratado."
+    },
+    {
+      "titulo": "Ficha del perro",
+      "texto": "Alergias, alertas de manejo, datos de contacto y su historial."
+    },
+    {
+      "titulo": "Inventario que se descuenta solo",
+      "texto": "Champú, bolsas y demás consumibles con su mínimo; se descuentan al finalizar la cita."
+    },
+    {
+      "titulo": "Comisiones y propinas",
+      "texto": "Registra lo que le toca a cada estilista y reparte las propinas entre quienes atendieron."
+    },
+    {
+      "titulo": "Cobro y cierre de caja",
+      "texto": "Cobra en efectivo, terminal o link de pago y cierra el turno contando."
+    }
+  ],
+  "preguntas": [
+    [
+      "¿Puedo cobrar distinto según la raza?",
+      "Sí. Los precios se capturan por grupo de raza o por talla, servicio por servicio."
+    ],
+    [
+      "¿Maneja el pelo maltratado?",
+      "Sí. Puedes poner un precio alterno y quien recibe al perro lo marca en la cita."
+    ],
+    [
+      "¿Sirve si tengo una sola estilista?",
+      "Sí. Pagas por tu negocio, no por persona, y la agenda funciona igual."
+    ],
+    [
+      "¿Necesito tarjeta para probarlo?",
+      "No. Son 15 días con todo abierto. La tarjeta solo se pide cuando decides contratar."
+    ],
+    [
+      "¿Mis clientes tienen que instalar algo?",
+      "No. Si quieren ver sus citas, entran a su portal desde el navegador del celular."
+    ]
+  ],
+  "articulos": [
+    "como-fijar-el-precio-de-una-guarderia-o-estetica-canina",
+    "como-hacer-el-corte-de-caja-de-un-negocio-canino"
+  ],
+  "ilustracion": "escena-bano"
+}

@@ -7,6 +7,12 @@ import { CapturasEnMovimiento } from "@/components/peludesk/capturas-en-movimien
 import { Ilustracion, type NombreIlustracion } from "@/components/peludesk/ilustracion";
 import { MenuCelular } from "@/components/peludesk/menu-celular";
 import { RedesPeluDesk } from "@/components/peludesk/redes";
+import { EnlaceRegistro } from "@/components/peludesk/enlace-registro";
+import { EventoPixelAlVer } from "@/components/peludesk/consentimiento/evento-pixel";
+import { PieSitio } from "@/components/peludesk/sitio";
+import { TarjetaArticulo } from "@/components/peludesk/blog";
+import { todosLosArticulos } from "@/lib/peludesk/blog";
+import { JsonLd, preguntasFrecuentes } from "@/lib/peludesk/seo";
 import { Revelar } from "@/components/peludesk/revelar";
 import { CASO_REAL, CELULAR, ESCRITORIO, REDES_PELUDESK, urlDemo, whatsappPeluDesk } from "@/lib/peludesk/landing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -80,8 +86,7 @@ function Flecha() {
 
 function BotonPrueba({ className = "", texto = "Pruébalo 15 días gratis", claro = false }: { className?: string; texto?: string; claro?: boolean }) {
   return (
-    <Link
-      href="/registro"
+    <EnlaceRegistro
       className={`pd-boton pd-boton-primario inline-flex min-h-12 items-center justify-center whitespace-nowrap rounded-full px-6 text-base font-semibold focus-visible:outline-none focus-visible:ring-[3px] ${
         claro
           ? "bg-menta text-morado hover:bg-menta-hover focus-visible:ring-white"
@@ -90,7 +95,7 @@ function BotonPrueba({ className = "", texto = "Pruébalo 15 días gratis", clar
     >
       {texto}
       <Flecha />
-    </Link>
+    </EnlaceRegistro>
   );
 }
 
@@ -98,6 +103,7 @@ function BotonDemo({ className = "", claro = false, texto = "Ve el demo en 1 min
   return (
     <a
       href={`${urlDemo()}/demo`}
+      data-pixel-evento="Lead"
       className={`pd-boton inline-flex min-h-12 items-center justify-center whitespace-nowrap rounded-full border-2 px-6 text-base font-semibold focus-visible:outline-none focus-visible:ring-[3px] ${
         claro
           ? "border-crema/70 text-crema hover:bg-white/10 focus-visible:ring-menta"
@@ -252,6 +258,7 @@ export default async function PeluDeskLanding() {
   const { planes, nombres } = await cargarPlanes();
   const planesBase = planes.filter((p) => p.tipo === "plan");
   const web = planes.find((p) => p.tipo === "complemento" && p.modulos.includes("pagina_web"));
+  const articulosRecientes = todosLosArticulos().slice(0, 3);
   const destacado = planesBase.length >= 3 ? planesBase[planesBase.length - 1].clave : null;
 
   // Datos estructurados: quién es PeluDesk y sus redes (sameAs), y el
@@ -283,6 +290,8 @@ export default async function PeluDeskLanding() {
 
   return (
     <div className="min-h-[100dvh] overflow-x-clip bg-crema text-n-900">
+      <JsonLd datos={preguntasFrecuentes(PREGUNTAS)} />
+      <EventoPixelAlVer nombre="ViewContent" datos={{ content_name: "landing", content_category: "landing" }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(datos).replace(/</g, "\\u003c") }} />
 
       <header className="sticky top-0 z-20 border-b border-n-200/70 bg-crema/90 backdrop-blur supports-[backdrop-filter]:bg-crema/75">
@@ -296,6 +305,7 @@ export default async function PeluDeskLanding() {
               ["#demo", "Demo"],
               ["#planes", "Planes"],
               ["#preguntas", "Preguntas"],
+              ["/blog", "Blog"],
             ].map(([href, texto]) => (
               <a key={href} href={href} className="rounded-md px-3 py-2 text-sm font-semibold text-n-700 hover:text-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave">
                 {texto}
@@ -313,6 +323,7 @@ export default async function PeluDeskLanding() {
                   ["#demo", "Demo"],
                   ["#planes", "Planes"],
                   ["#preguntas", "Preguntas"],
+                  ["/blog", "Blog"],
                 ].map(([href, texto]) => (
                   <a key={href} href={href} className="flex min-h-12 items-center border-b border-n-200 text-base font-semibold text-n-900">
                     {texto}
@@ -695,6 +706,47 @@ export default async function PeluDeskLanding() {
           </div>
         </section>
 
+        {/* ── Aprende: aterrizajes por tipo de negocio y lo último del blog ── */}
+        <section aria-labelledby="t-aprende" className="border-t border-n-200 bg-white">
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+            <Etiqueta>Para cada negocio</Etiqueta>
+            <h2 id="t-aprende" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
+              Mira cómo te ayuda según lo que haces
+            </h2>
+            <ul className="mt-6 grid gap-3 sm:grid-cols-3">
+              {[
+                ["/software-para-guarderias-caninas", "Software para guarderías caninas"],
+                ["/software-para-esteticas-caninas", "Software para estéticas caninas"],
+                ["/software-para-hoteles-caninos", "Software para hoteles caninos"],
+              ].map(([href, texto]) => (
+                <li key={href}>
+                  <Link href={href} className="flex min-h-14 items-center justify-between gap-3 rounded-2xl border border-n-200 bg-crema px-5 font-semibold text-n-900 hover:border-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave">
+                    {texto}
+                    <Flecha />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            {articulosRecientes.length > 0 && (
+              <>
+                <h3 className="mt-12 text-xl font-bold text-n-900">Guías del blog</h3>
+                <ul className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {articulosRecientes.map((a) => (
+                    <li key={a.slug} className="flex">
+                      <div className="flex w-full">
+                        <TarjetaArticulo a={a} />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-5">
+                  <Link href="/blog" className="font-semibold text-morado underline underline-offset-2">Ver todas las guías</Link>
+                </p>
+              </>
+            )}
+          </div>
+        </section>
+
         {/* ── Cierre ── */}
         <section id="cierre" aria-labelledby="t-cierre" className="px-4 pb-16 sm:px-6 lg:pb-24">
           <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[32px] bg-morado px-6 py-12 text-center sm:px-10 lg:py-16">
@@ -716,25 +768,7 @@ export default async function PeluDeskLanding() {
         </section>
       </main>
 
-      <footer className="border-t border-n-200 bg-white pb-24 md:pb-0">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1fr_auto_auto] md:items-center">
-          <div>
-            <LogoPeluDesk tamano={26} />
-            <p className="mt-3 text-sm text-n-600">Para guarderías, hoteles y estéticas caninas. Hecho en México.</p>
-          </div>
-          <nav aria-label="Pie de página" className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold text-n-700">
-            <a href="#demo" className="hover:text-morado">Demo</a>
-            <a href="#planes" className="hover:text-morado">Planes</a>
-            <a href="#preguntas" className="hover:text-morado">Preguntas</a>
-            <Link href="/registro" className="hover:text-morado">Pruébalo gratis</Link>
-            {whatsapp && (
-              <a href={whatsapp} target="_blank" rel="noopener" className="hover:text-morado">WhatsApp</a>
-            )}
-          </nav>
-          <RedesPeluDesk className="-ml-3 md:ml-0" />
-        </div>
-        <p className="mx-auto max-w-6xl px-4 pb-8 text-xs text-n-600 sm:px-6">PeluDesk es una marca de Menteo, S.A.S.</p>
-      </footer>
+      <PieSitio whatsapp={whatsapp} />
 
       <BarraCelular>
         <BotonPrueba className="w-full" />

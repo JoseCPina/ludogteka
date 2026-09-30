@@ -4,6 +4,7 @@ import { ENCABEZADOS_NEGOCIO, ENCABEZADO_PLATAFORMA } from "@/lib/negocio/resolv
 import { urlDelNegocio } from "@/lib/negocio/actual";
 import { ProveedorZonaNegocio } from "@/components/zona-negocio";
 import { outfit } from "@/fuentes";
+import { SLUG_DEMO } from "@/lib/peludesk/landing";
 import "./globals.css";
 
 // Outfit (src/fuentes): la letra de PeluDesk, base de toda la app. La
@@ -36,6 +37,8 @@ export async function generateMetadata(): Promise<Metadata> {
     title: nombre,
     description: `${nombre}: guardería, hotel y estética canina.`,
     icons: { icon: icono },
+    // El negocio de demostración se ve pero no se indexa.
+    ...(slug === SLUG_DEMO ? { robots: { index: false, follow: false } } : {}),
   };
 }
 

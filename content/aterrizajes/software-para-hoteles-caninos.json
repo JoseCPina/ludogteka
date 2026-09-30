@@ -1,0 +1,78 @@
+{
+  "titulo": "Software para hoteles caninos | PeluDesk",
+  "h1": "Software para hoteles caninos: cupo, noches y cuenta",
+  "descripcion": "Reservas por noche con cupo de toda la casa, vacunas al día, check-in, check-out con cuenta y corte de caja. Prueba PeluDesk 15 días gratis, sin tarjeta.",
+  "gancho": "No aceptas un perro que no cabe. El cupo de día y de noche se cuenta solo, junto con la guardería.",
+  "alivios": [
+    {
+      "antes": "Adivinar si cabe uno más",
+      "ahora": "Guardería y hotel cuentan del mismo cupo. Si esa noche está llena, te avisa."
+    },
+    {
+      "antes": "Contar noches con el calendario en la mano",
+      "ahora": "Pones entrada y salida y se cobran las noches que hay entre las dos."
+    },
+    {
+      "antes": "Revisar cartillas la víspera",
+      "ahora": "Si una vacuna venció, la reserva no se crea y te dice cuál falta."
+    },
+    {
+      "antes": "Sumar la cuenta cuando ya se van",
+      "ahora": "Noches, baño y extras están en una sola cuenta al hacer el check-out."
+    }
+  ],
+  "funciones": [
+    {
+      "titulo": "Reservas por noche",
+      "texto": "Entrada, salida y perros de la misma familia en una sola reserva."
+    },
+    {
+      "titulo": "Ocupación de toda la casa",
+      "texto": "El tablero muestra la ocupación diurna y nocturna, con lo que llega y lo que sale hoy."
+    },
+    {
+      "titulo": "Walk-in",
+      "texto": "Si el perro ya está en la puerta sin reserva, lo registras y se revisa el cupo igual."
+    },
+    {
+      "titulo": "Expediente completo",
+      "texto": "Vacunas, alergias, alimentación, alertas de manejo y contacto de emergencia."
+    },
+    {
+      "titulo": "Check-in y check-out",
+      "texto": "Quién lo deja, qué trae y foto al llegar; al salir, la cuenta y el cobro."
+    },
+    {
+      "titulo": "Recolección a domicilio",
+      "texto": "Cotiza la distancia y cobra la recolección junto con la estancia."
+    }
+  ],
+  "preguntas": [
+    [
+      "¿Cómo evita vender de más?",
+      "Al guardar una reserva revisa el cupo de cada noche. Si alguna está llena, no la guarda."
+    ],
+    [
+      "¿Guardería y hotel comparten cupo?",
+      "Sí. Comparten el mismo espacio y la ocupación que ves es la de toda la casa."
+    ],
+    [
+      "¿Puedo cobrar precios distintos por talla?",
+      "Sí. Las tarifas de hotel se capturan por talla."
+    ],
+    [
+      "¿Necesito tarjeta para probarlo?",
+      "No. Son 15 días con todo abierto. La tarjeta solo se pide cuando decides contratar."
+    ],
+    [
+      "¿Los dueños ven sus reservas?",
+      "Sí. Desde su portal ven sus próximas reservas y su historial, pero nunca tus precios ni a otros clientes."
+    ]
+  ],
+  "articulos": [
+    "como-controlar-el-cupo-de-un-hotel-canino-sin-sobrevender",
+    "que-vacunas-pedir-en-una-guarderia-u-hotel-canino",
+    "como-hacer-el-corte-de-caja-de-un-negocio-canino"
+  ],
+  "ilustracion": "escena-hotel"
+}

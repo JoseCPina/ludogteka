@@ -52,6 +52,7 @@ async function registrar(p, { nombre = "Persona de Prueba", negocio, tel, passwo
   await p.getByLabel("Teléfono").fill(tel);
   await p.getByLabel("Contraseña", { exact: true }).fill(password);
   await p.getByLabel("Estética").check();
+  await p.getByLabel(/Leí y acepto/).check();
   await p.getByRole("button", { name: "Abrir mi negocio" }).click();
 }
 
@@ -63,12 +64,14 @@ try {
   await page.getByLabel("Ciudad").fill("Querétaro");
   await page.getByLabel("Teléfono").fill(TEL);
   await page.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
+  await page.getByLabel(/Leí y acepto/).check();
   await page.getByRole("button", { name: "Abrir mi negocio" }).click();
   await page.getByText("Escoge al menos un servicio").first().waitFor();
   ok(true, "sin escoger servicios no se registra");
   ok((await page.getByLabel("Nombre de tu negocio").inputValue()) === NEGOCIO, "lo escrito se conserva tras el error");
   await page.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
   await page.getByLabel("Estética").check();
+  await page.getByLabel(/Leí y acepto/).check();
   await page.getByRole("button", { name: "Abrir mi negocio" }).click();
   await page.waitForURL(/\/bienvenida/, { timeout: 120_000 });
   const host = new URL(page.url()).host;
@@ -174,6 +177,7 @@ try {
   await otra.getByLabel("Teléfono").fill(TEL);
   await otra.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
   await otra.getByLabel("Estética").check();
+  await otra.getByLabel(/Leí y acepto/).check();
   await otra.getByRole("button", { name: "Abrir mi negocio" }).click();
   await otra.getByText("No se pudo abrir tu negocio").first().waitFor();
   const msg = (await otra.locator("body").innerText()).replace(/\s+/g, " ");

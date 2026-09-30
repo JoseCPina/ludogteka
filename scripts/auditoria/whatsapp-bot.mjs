@@ -346,8 +346,11 @@ console.log("\n2. Webhook de WhatsApp");
   await espera(3000);
   await mandar(TEL.X, "#guion:nada", { id: idFijo });
   await espera(3000);
-  const contestados = mock.wa.slice(antesWa).filter((m) => m.to === `52${TEL.X}`).length;
-  contestados === 1 ? bien("el mismo mensaje dos veces → una respuesta") : hallazgo(`mensaje repetido → ${contestados} respuestas`);
+  // Un número nuevo recibe su respuesta MÁS la línea del aviso de privacidad (dos envíos);
+  // el mensaje repetido no debe duplicar ninguno de los dos.
+  const aEl = mock.wa.slice(antesWa).filter((m) => m.to === `52${TEL.X}`);
+  const conAviso = aEl.filter((m) => JSON.stringify(m).includes("peludesk.mx/aviso-de-privacidad")).length;
+  aEl.length === 2 && conAviso === 1 ? bien("el mismo mensaje dos veces → una respuesta y una sola línea del aviso de privacidad") : hallazgo(`mensaje repetido → ${aEl.length} envíos, ${conAviso} con el aviso`);
 }
 
 // ───────────── 3. qué sabe el modelo de cada quien

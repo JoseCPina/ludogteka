@@ -5,6 +5,7 @@ import { formatearFecha } from "@/lib/formato";
 import { Alert } from "@/components/ui/alert";
 import { telefonoDeCorreoSintetico } from "@/lib/auth/identidad";
 import { formatearTelefono } from "@/lib/telefono";
+import { textoDeOrigen, type Origen } from "@/lib/peludesk/origen";
 
 type Fila = {
   id: string; slug: string; nombre: string; dominio: string | null; url_publica: string | null;
@@ -27,7 +28,7 @@ function diasRestantes(fin: string, ahora: number): number {
   return Math.ceil((Date.parse(fin) - ahora) / 86_400_000);
 }
 
-function Negocio({ n, ahora }: { n: Fila; ahora: number }) {
+function Negocio({ n, ahora, origen }: { n: Fila; ahora: number; origen?: Partial<Origen> | null }) {
   const dias = n.plan === "prueba" && n.prueba_termina_at ? diasRestantes(n.prueba_termina_at, ahora) : null;
   const estado = !n.activo
     ? { texto: "Suspendido", clase: "bg-coral-suave text-coral-oscuro" }
@@ -56,6 +57,11 @@ function Negocio({ n, ahora }: { n: Fila; ahora: number }) {
         Uso: {n.clientes} clientes · {n.perros} perros · {n.reservas} cuentas · {n.cobros} cobros · última actividad {fecha(n.ultima_actividad)} ·
         el personal entró por última vez {fecha(n.ultimo_acceso)}
       </p>
+      {n.plan === "prueba" && (
+        <p className="mt-1 text-sm text-n-700">
+          <span className="font-semibold text-n-800">Llegó desde:</span> {textoDeOrigen(origen)}
+        </p>
+      )}
       <p className="mt-1 text-sm text-n-500">Admin: {(n.admins ?? []).map((a) => { const tel = telefonoDeCorreoSintetico(a); return tel ? `tel. ${formatearTelefono(tel)}` : a; }).join(", ") || "ninguno todavía"}</p>
     </li>
   );
@@ -65,6 +71,12 @@ export default async function NegociosPlataforma() {
   const { supabase } = await exigirPlataforma();
   const { data, error } = await supabase.rpc("plataforma_negocios");
   const negocios = (data ?? []) as Fila[];
+  // De qué campaña llegó cada negocio en prueba (registros_prueba: solo la plataforma la lee).
+  const { data: registros } = await supabase
+    .from("registros_prueba")
+    .select("negocio_id, utm_source, utm_medium, utm_campaign, utm_content, fbclid, referente")
+    .not("negocio_id", "is", null);
+  const origenDe = new Map((registros ?? []).map((r) => [r.negocio_id as string, r as Partial<Origen>]));
   const ahora = instanteActual();
   const pruebas = negocios
     .filter((n) => n.plan === "prueba")
@@ -105,7 +117,7 @@ export default async function NegociosPlataforma() {
         {pruebas.length === 0 ? (
           <p className="rounded-lg border border-dashed border-n-300 p-4 text-sm text-n-600">Nadie se ha registrado todavía.</p>
         ) : (
-          <ul className="flex flex-col gap-3">{pruebas.map((n) => <Negocio key={n.id} n={n} ahora={ahora} />)}</ul>
+          <ul className="flex flex-col gap-3">{pruebas.map((n) => <Negocio key={n.id} n={n} ahora={ahora} origen={origenDe.get(n.id) ?? null} />)}</ul>
         )}
       </section>
       <section className="flex flex-col gap-3">

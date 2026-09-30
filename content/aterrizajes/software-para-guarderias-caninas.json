@@ -1,0 +1,78 @@
+{
+  "titulo": "Software para guarderías caninas | PeluDesk",
+  "h1": "Software para guarderías caninas que se usa en el mostrador",
+  "descripcion": "Reservas con cupo, vacunas al día, check-in, contratos firmados desde el celular y cobro con corte de caja. Prueba PeluDesk 15 días gratis, sin tarjeta.",
+  "gancho": "Deja de contar perros de memoria. Sabes quién llega, quién se va y quién no puede entrar, antes de abrir la puerta.",
+  "alivios": [
+    {
+      "antes": "Contar en la mañana quién viene hoy",
+      "ahora": "Abres el tablero y ves llegadas, salidas y cuántos perros hay adentro."
+    },
+    {
+      "antes": "Revisar cartillas a la carrera",
+      "ahora": "Si una vacuna venció, no te deja reservar. Y te dice cuál."
+    },
+    {
+      "antes": "Perseguir contratos sin firmar",
+      "ahora": "El dueño firma con el dedo desde su celular. Tú ves quién falta y desde cuándo."
+    },
+    {
+      "antes": "Llevar los pases y mensualidades en una libreta",
+      "ahora": "Cada perro tiene sus pases y su saldo. Se descuentan solos al reservar."
+    }
+  ],
+  "funciones": [
+    {
+      "titulo": "Reservas con cupo",
+      "texto": "Aparta uno o varios días. Si ese día ya está lleno, te avisa antes de guardar."
+    },
+    {
+      "titulo": "Perros que vienen siempre los mismos días",
+      "texto": "Crea una serie por días de la semana y las reservas se generan solas."
+    },
+    {
+      "titulo": "Expediente de cada perro",
+      "texto": "Vacunas con fecha, alergias, alertas de manejo, contacto de emergencia, veterinario y foto."
+    },
+    {
+      "titulo": "Check-in con foto y pertenencias",
+      "texto": "Quién lo deja, cómo llega y qué trae. Todo queda escrito."
+    },
+    {
+      "titulo": "Day pass y mensualidad",
+      "texto": "Vende paquetes por perro, ve su saldo y el contrato correspondiente se genera solo."
+    },
+    {
+      "titulo": "Cobro y corte de caja",
+      "texto": "Cuenta sumada al recoger al perro, cobro en efectivo, terminal o link, y turno con fondo y arqueo."
+    }
+  ],
+  "preguntas": [
+    [
+      "¿Necesito tarjeta para probarlo?",
+      "No. Son 15 días con todo abierto. La tarjeta solo se pide cuando decides contratar."
+    ],
+    [
+      "¿Mis clientes tienen que instalar algo?",
+      "No. Entran a su portal desde el navegador del celular con su teléfono y su contraseña."
+    ],
+    [
+      "¿Bloquea a un perro con vacunas vencidas?",
+      "Sí, al reservar guardería. Un administrador puede autorizar una excepción con motivo."
+    ],
+    [
+      "¿Puedo mandar el contrato a firmar por celular?",
+      "Sí. El dueño lo firma desde su portal, o lo subes firmado en papel."
+    ],
+    [
+      "¿Qué pasa cuando termina la prueba?",
+      "No se borra nada. Consultas todo lo tuyo y vuelves a capturar en cuanto contratas."
+    ]
+  ],
+  "articulos": [
+    "como-abrir-una-guarderia-canina-en-mexico",
+    "que-vacunas-pedir-en-una-guarderia-u-hotel-canino",
+    "que-suele-incluir-el-contrato-de-una-guarderia-canina"
+  ],
+  "ilustracion": "escena-agenda"
+}
