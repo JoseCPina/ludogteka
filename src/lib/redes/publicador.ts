@@ -125,7 +125,8 @@ async function instagram(f: Publicacion): Promise<Resultado> {
 }
 
 async function facebook(f: Publicacion): Promise<Resultado> {
-  const { token, pagina } = exigirMeta();
+  const { token: tokenUsuario, pagina } = exigirMeta();
+  const token = await meta.fbTokenPagina({ pagina, token: tokenUsuario });
   if (f.prueba) {
     // Privado y borrado: nadie lo ve.
     const id = await meta.fbVideoMuro({ pagina, token, videoUrl: urlVideo(f.archivo), pie: f.pie, publicado: false });

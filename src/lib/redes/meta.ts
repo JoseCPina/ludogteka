@@ -134,6 +134,13 @@ export async function igPermalink(id: string, token: string): Promise<string | n
 
 // ── Facebook ──
 
+/** Facebook exige el token DE LA PÁGINA (error 210 con el del usuario del sistema): se pide al vuelo, sin guardarlo. */
+export async function fbTokenPagina({ pagina, token }: { pagina: string; token: string }): Promise<string> {
+  const j = await peticion(pagina, { params: { fields: "access_token", access_token: token }, etiqueta: "facebook/token-pagina", intentos: 2 });
+  if (!j.access_token) throw new ErrorRed("facebook/token-pagina: Meta no devolvió el token de la página (¿el usuario del sistema tiene la página asignada con control total?)");
+  return String(j.access_token);
+}
+
 /** Paso 1 del reel: da el video_id y la URL de subida (no se compone). */
 export async function fbReelIniciar({ pagina, token }: { pagina: string; token: string }): Promise<{ videoId: string; subida: string }> {
   const j = await peticion(`${pagina}/video_reels`, { metodo: "POST", params: { upload_phase: "start", access_token: token }, etiqueta: "facebook/reel/start" });
