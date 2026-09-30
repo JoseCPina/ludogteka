@@ -139,6 +139,7 @@ export async function actualizarNegocio(negocioId: string, fd: FormData): Promis
   const color = texto(fd, "color");
   const favicon = texto(fd, "favicon");
   const logo = texto(fd, "logo");
+  const imagenCompartir = texto(fd, "imagen_compartir");
   const urlPublica = texto(fd, "url_publica").toLowerCase().replace(/\/$/, "");
   const dominio = texto(fd, "dominio").toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/^www\./, "");
   if (color && !/^#[0-9a-fA-F]{6}$/.test(color)) return { error: "El color va como #RRGGBB." };
@@ -146,6 +147,8 @@ export async function actualizarNegocio(negocioId: string, fd: FormData): Promis
     return { error: "El ícono va como una ruta del sitio (/iconos/negocio.png) o una dirección https." };
   if (logo && !/^\/(?!\/)[\w\-./]+$/.test(logo) && !/^https:\/\/[^\s"'<>]+$/.test(logo))
     return { error: "El logo va como una ruta del sitio (/marca/negocios/logo.png) o una dirección https." };
+  if (imagenCompartir && !/^\/(?!\/)[\w\-./]+$/.test(imagenCompartir) && !/^https:\/\/[^\s"'<>]+$/.test(imagenCompartir))
+    return { error: "La imagen al compartir va como una ruta del sitio (/marca/negocios/compartir.jpg) o una dirección https." };
   if (urlPublica && !/^https:\/\/[a-z0-9.-]+$/.test(urlPublica)) return { error: "La dirección pública va como https://www.ejemplo.mx, sin nada después." };
   const { error } = await s.supabase.rpc("plataforma_actualizar_negocio", {
     p_negocio_id: negocioId,
@@ -155,7 +158,7 @@ export async function actualizarNegocio(negocioId: string, fd: FormData): Promis
     p_dominio: dominio || null,
     p_url_publica: urlPublica || null,
     p_activo: fd.get("activo") === "on",
-    p_marca: { color: color || null, favicon: favicon || null, logo: logo || null },
+    p_marca: { color: color || null, favicon: favicon || null, logo: logo || null, imagen_compartir: imagenCompartir || null },
   });
   if (error) return { error: error.message };
   revalidatePath(`/plataforma/negocios/${negocioId}`);

@@ -26,10 +26,10 @@ export default async function TurnoCajaPage() {
     ? await Promise.all([
         supabase
           .from("movimientos_caja")
-          // Un retiro dado de baja (gasto cancelado con el turno abierto) no cuenta.
-          .select("id, monto, motivo, created_at, created_by")
+          // Los cancelados (gasto cancelado con el turno abierto, o retiro
+          // cancelado con motivo) se enseñan tachados y no suman.
+          .select("id, monto, motivo, created_at, created_by, deleted_at, motivo_cancelacion, cancelado_por")
           .eq("turno_id", turnoAbierto.id)
-          .is("deleted_at", null)
           .order("created_at"),
         supabase.rpc("movimientos_turno", { p_turno_id: turnoAbierto.id }),
         supabase.rpc("resumen_turno", { p_turno_id: turnoAbierto.id }),
@@ -50,7 +50,7 @@ export default async function TurnoCajaPage() {
   const idsNombres = Array.from(
     new Set([
       turnoAbierto?.abierto_por,
-      ...(retirosCrudo ?? []).map((r) => r.created_by),
+      ...(retirosCrudo ?? []).flatMap((r) => [r.created_by, r.cancelado_por]),
       ...((movimientosCrudo ?? []) as { hecho_por: string | null }[]).map((m) => m.hecho_por),
       ...(turnosCerradosCrudo ?? []).flatMap((t) => [t.abierto_por, t.cerrado_por]),
     ])
@@ -59,7 +59,8 @@ export default async function TurnoCajaPage() {
   const { data: perfiles } = idsNombres.length
     ? await supabase.from("profiles").select("id, nombre_completo").in("id", idsNombres)
     : { data: [] as { id: string; nombre_completo: string | null }[] };
-  const nombrePorId = new Map((perfiles ?? []).map((p) => [p.id, p.nombre_completo ?? "—"]));
+  // Un perfil sin nombre no entra al mapa: quien lo use decide su respaldo.
+  const nombrePorId = new Map((perfiles ?? []).filter((p) => p.nombre_completo).map((p) => [p.id, p.nombre_completo as string]));
 
   const retiros: Retiro[] = (retirosCrudo ?? []).map((r) => ({
     id: r.id as string,
@@ -67,6 +68,11 @@ export default async function TurnoCajaPage() {
     motivo: r.motivo as string,
     creadoEn: r.created_at as string,
     creadoPorNombre: nombrePorId.get(r.created_by as string) ?? "—",
+    cancelado: Boolean(r.deleted_at),
+    motivoCancelacion: (r.motivo_cancelacion as string | null) ?? null,
+    canceladoPorNombre: r.cancelado_por ? (nombrePorId.get(r.cancelado_por as string) ?? "—") : null,
+    // Recepción cancela solo los suyos; admin, cualquiera.
+    puedeCancelar: !r.deleted_at && (sesion?.rol === "admin" || r.created_by === sesion?.user.id),
   }));
 
   const movimientos: MovimientoTurno[] = ((movimientosCrudo ?? []) as Record<string, unknown>[]).map((m) => ({
@@ -133,9 +139,15 @@ export default async function TurnoCajaPage() {
             turnoId={turnoAbierto.id}
             fondoInicial={Number(turnoAbierto.fondo_inicial)}
             abiertoEn={turnoAbierto.abierto_at}
-            abiertoPorNombre={nombrePorId.get(turnoAbierto.abierto_por) ?? "—"}
+            // Sin nombre en su perfil (pasa con la primera cuenta de admin de
+            // un negocio), se dice «otra persona» y no una raya.
+            abiertoPorNombre={nombrePorId.get(turnoAbierto.abierto_por) ?? "otra persona"}
             notasApertura={turnoAbierto.notas_apertura}
             retiros={retiros}
+            // Admin cierra cualquier turno de su negocio; recepción, solo el
+            // que abrió ella (regla de cerrar_turno desde el 29 de julio).
+            puedeCerrar={sesion?.rol === "admin" || turnoAbierto.abierto_por === sesion?.user.id}
+            abiertoPorMi={turnoAbierto.abierto_por === sesion?.user.id}
           />
           <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
             <h2 className="text-lg font-bold text-n-900">Movimientos de este turno</h2>

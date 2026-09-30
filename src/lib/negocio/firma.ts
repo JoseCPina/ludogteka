@@ -34,7 +34,7 @@ function llaveHmac(): Promise<CryptoKey> {
 }
 
 function contenido(n: NegocioBasico): string {
-  return [n.id, n.slug, n.nombre, n.dominio ?? "", n.url_publica ?? "", n.zona_horaria, n.icono ?? ""].join("|");
+  return [n.id, n.slug, n.nombre, n.dominio ?? "", n.url_publica ?? "", n.zona_horaria, n.icono ?? "", n.imagen ?? ""].join("|");
 }
 
 const aHex = (b: ArrayBuffer) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");

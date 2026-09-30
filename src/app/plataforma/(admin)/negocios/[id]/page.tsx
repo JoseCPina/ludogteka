@@ -24,7 +24,7 @@ const fechaMx = (iso: string | null) => (iso ? formatearFecha(iso, "America/Mexi
 type Fila = {
   id: string; slug: string; nombre: string; dominio: string | null; url_publica: string | null; zona_horaria: string;
   ciudad: string | null; activo: boolean; plan: "activo" | "prueba" | "demo"; prueba_termina_at: string | null;
-  plan_id: string | null; plan_nombre: string | null; complementos: string[]; modulos_cortesia: string[]; web_gratis_at: string | null; marca: { color?: string | null; favicon?: string | null; logo?: string | null } | null; admins: string[] | null;
+  plan_id: string | null; plan_nombre: string | null; complementos: string[]; modulos_cortesia: string[]; web_gratis_at: string | null; marca: { color?: string | null; favicon?: string | null; logo?: string | null; imagen_compartir?: string | null } | null; admins: string[] | null;
 };
 
 export default async function NegocioPlataforma({ params }: { params: Promise<{ id: string }> }) {
@@ -111,6 +111,7 @@ export default async function NegocioPlataforma({ params }: { params: Promise<{ 
           <Field label="Color de la marca" name="color" defaultValue={n.marca?.color ?? ""} placeholder="#4b3f72" />
           <Field label="Logo (imagen)" name="logo" defaultValue={n.marca?.logo ?? ""} placeholder="/marca/negocios/logo.png o https://…" ayuda="Va en el encabezado de su staff, su portal, su login y su alta por link. Vacío: su logotipo de palabras si tiene, o su inicial y su nombre." />
           <Field label="Ícono de la pestaña (favicon)" name="favicon" defaultValue={n.marca?.favicon ?? ""} placeholder="/iconos/negocio.png o https://…" ayuda="Vacío: su inicial sobre el color de la marca." />
+          <Field label="Imagen al compartir un link (WhatsApp)" name="imagen_compartir" defaultValue={n.marca?.imagen_compartir ?? ""} placeholder="/marca/negocios/compartir.jpg o https://…" ayuda="1200×630, JPG o PNG. Vacío: una tarjeta con su marca y su nombre (/imagen-negocio)." />
           <label className="flex items-center gap-2 text-n-800">
             <input type="checkbox" name="activo" defaultChecked={n.activo} className="h-5 w-5" />
             Activo (sin esto, su dominio responde «este sitio no existe»)

@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
-import { registrarRetiro, cerrarTurno } from "../caja-actions";
+import { registrarRetiro, cerrarTurno, cancelarRetiro } from "../caja-actions";
 import { useZonaNegocio } from "@/components/zona-negocio";
 
 export type Retiro = {
@@ -17,6 +17,10 @@ export type Retiro = {
   motivo: string;
   creadoEn: string;
   creadoPorNombre: string;
+  cancelado: boolean;
+  motivoCancelacion: string | null;
+  canceladoPorNombre: string | null;
+  puedeCancelar: boolean;
 };
 
 function dinero(v: number): string {
@@ -36,6 +40,8 @@ export function TurnoAbierto({
   abiertoPorNombre,
   notasApertura,
   retiros,
+  puedeCerrar,
+  abiertoPorMi,
 }: {
   turnoId: string;
   fondoInicial: number;
@@ -43,6 +49,8 @@ export function TurnoAbierto({
   abiertoPorNombre: string;
   notasApertura: string | null;
   retiros: Retiro[];
+  puedeCerrar: boolean;
+  abiertoPorMi: boolean;
 }) {
   const zona = useZonaNegocio();
   const router = useRouter();
@@ -68,8 +76,24 @@ export function TurnoAbierto({
     diferenciaTransferencia: number;
   } | null>(null);
   const guardandoCierre = useEspera();
+  const [cancelando, setCancelando] = useState<string | null>(null);
+  const [motivoCancelacion, setMotivoCancelacion] = useState("");
+  const cancelandoRetiro = useEspera();
 
-  const totalRetiros = retiros.reduce((sum, r) => sum + r.monto, 0);
+  // Solo los vivos suman: un retiro cancelado se ve tachado y no cuenta.
+  const totalRetiros = retiros.filter((r) => !r.cancelado).reduce((sum, r) => sum + r.monto, 0);
+
+  async function confirmarCancelacion(id: string) {
+    setError(null);
+    const res = await cancelandoRetiro.ejecutar(() => cancelarRetiro(id, motivoCancelacion));
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    setCancelando(null);
+    setMotivoCancelacion("");
+    router.refresh();
+  }
 
   async function enviarRetiro() {
     const monto = Number(montoRetiro);
@@ -181,16 +205,27 @@ export function TurnoAbierto({
           Abrió {abiertoPorNombre} el {formatearFecha(abiertoEn, zona)} · Fondo inicial {dinero(fondoInicial)}
         </p>
         {notasApertura && <p className="mt-1 text-sm text-n-500">{notasApertura}</p>}
+        {!puedeCerrar && (
+          <p className="mt-2 text-sm font-semibold text-ambar-oscuro" data-turno-ajeno>
+            Este turno lo abrió {abiertoPorNombre} con su cuenta: solo {abiertoPorNombre} o un admin pueden cerrarlo.
+            Tú puedes cobrar y registrar retiros en él.
+          </p>
+        )}
+        {puedeCerrar && !abiertoPorMi && (
+          <p className="mt-2 text-sm text-n-600">Lo abrió otra persona; como admin puedes cerrarlo y queda registrado que lo cerraste tú.</p>
+        )}
       </div>
 
       {!cerrando ? (
         <div className="flex flex-wrap gap-3">
           <Button type="button" variante="secundario" onClick={() => setRegistrandoRetiro((v) => !v)}>
-            {registrandoRetiro ? "Cancelar retiro" : "Registrar retiro"}
+            {registrandoRetiro ? "Ya no registrar retiro" : "Registrar retiro"}
           </Button>
-          <Button type="button" variante="peligro" onClick={iniciarCierre}>
-            Cerrar turno
-          </Button>
+          {puedeCerrar && (
+            <Button type="button" variante="peligro" onClick={iniciarCierre}>
+              Cerrar turno
+            </Button>
+          )}
         </div>
       ) : null}
 
@@ -229,11 +264,52 @@ export function TurnoAbierto({
         ) : (
           <ul className="flex flex-col gap-1">
             {retiros.map((r) => (
-              <li key={r.id} className="flex justify-between rounded-md border border-n-200 bg-white px-3 py-2 text-sm">
-                <span className="text-n-700">
-                  {r.motivo} — {r.creadoPorNombre}
-                </span>
-                <span className="font-semibold text-n-900">{dinero(r.monto)}</span>
+              <li
+                key={r.id}
+                data-retiro={r.cancelado ? "cancelado" : "vivo"}
+                className={`flex flex-col gap-2 rounded-md border border-n-200 bg-white px-3 py-2 text-sm ${r.cancelado ? "opacity-70" : ""}`}
+              >
+                <div className="flex justify-between gap-3">
+                  <span className={`text-n-700 ${r.cancelado ? "line-through" : ""}`}>
+                    {r.motivo} — {r.creadoPorNombre} · {formatearFecha(r.creadoEn, zona)}
+                  </span>
+                  <span className={`font-semibold ${r.cancelado ? "text-n-400 line-through" : "text-n-900"}`}>{dinero(r.monto)}</span>
+                </div>
+                {r.cancelado && (
+                  <p className="text-xs font-semibold text-coral-oscuro">
+                    Cancelado{r.canceladoPorNombre ? ` por ${r.canceladoPorNombre}` : ""}{r.motivoCancelacion ? `: ${r.motivoCancelacion}` : " (gasto cancelado)"}
+                  </p>
+                )}
+                {r.puedeCancelar && !cerrando && cancelando !== r.id && (
+                  <button
+                    type="button"
+                    className="self-start text-xs font-semibold text-coral-oscuro hover:underline"
+                    onClick={() => {
+                      setCancelando(r.id);
+                      setMotivoCancelacion("");
+                    }}
+                  >
+                    Cancelar este retiro…
+                  </button>
+                )}
+                {cancelando === r.id && (
+                  <div className="flex flex-wrap items-end gap-2 rounded-md bg-coral-suave p-2">
+                    <div className="min-w-[240px] flex-1">
+                      <Field
+                        label="¿Por qué se cancela?"
+                        value={motivoCancelacion}
+                        onChange={(e) => setMotivoCancelacion(e.target.value)}
+                        placeholder="ej. Se registró dos veces"
+                      />
+                    </div>
+                    <Button type="button" variante="peligro" cargando={cancelandoRetiro.cargando} onClick={() => confirmarCancelacion(r.id)}>
+                      {cancelandoRetiro.cargando ? "Cancelando…" : "Cancelar retiro"}
+                    </Button>
+                    <Button type="button" variante="secundario" disabled={cancelandoRetiro.cargando} onClick={() => setCancelando(null)}>
+                      Dejarlo
+                    </Button>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

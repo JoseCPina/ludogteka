@@ -18,6 +18,7 @@ export async function negocioActual(): Promise<NegocioBasico> {
     dominio: h.get(ENCABEZADOS_NEGOCIO.dominio) || null,
     url_publica: h.get(ENCABEZADOS_NEGOCIO.url) || null,
     icono: h.get(ENCABEZADOS_NEGOCIO.icono) || null,
+    imagen: h.get(ENCABEZADOS_NEGOCIO.imagen) || null,
     zona_horaria: h.get(ENCABEZADOS_NEGOCIO.zona) ?? "America/Mexico_City",
   };
 }
