@@ -29,7 +29,7 @@ function sitemapPlataforma(): MetadataRoute.Sitemap {
     ...arts.map((a) => ({ url: `${SITIO}/blog/${a.slug}`, lastModified: fechaIso(a.actualizado), changeFrequency: "monthly" as const, priority: 0.7 })),
     { url: `${SITIO}/ayuda`, changeFrequency: "monthly", priority: 0.5 },
     ...ARTICULOS.map((a) => ({ url: `${SITIO}/ayuda/${a.slug}`, changeFrequency: "monthly" as const, priority: 0.4 })),
-    ...Object.values(DOCUMENTOS_LEGALES).map((d) => ({ url: `${SITIO}${d.ruta}`, lastModified: fechaIso(d.version), changeFrequency: "yearly" as const, priority: 0.2 })),
+    ...Object.values(DOCUMENTOS_LEGALES).map((d) => ({ url: `${SITIO}${d.ruta}`, lastModified: fechaIso(d.version.slice(0, 10)), changeFrequency: "yearly" as const, priority: 0.2 })),
   ];
 }
 

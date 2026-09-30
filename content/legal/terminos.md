@@ -1,6 +1,6 @@
 ## 1. Quiénes somos y qué aceptas
 
-Estos términos regulan el uso de **PeluDesk**, la aplicación y el sitio **peludesk.mx**, que opera **Menteo, S.A.S.** («Menteo», «nosotros»), con domicilio en Calzada de Guadalupe 1050, Colonia Tepeyac, C.P. 78384, San Luis Potosí, S.L.P., México; correo [contacto@menteo.com.mx](mailto:contacto@menteo.com.mx); teléfono 444 130 1539.
+Estos términos regulan el uso de **PeluDesk**, la aplicación y el sitio **peludesk.mx**, que opera **Menteo, S.A.S.** («Menteo», «nosotros»), con domicilio en Calzada de Guadalupe 1050, Colonia Tepeyac, C.P. 78384, San Luis Potosí, S.L.P., México; correo [contacto@peludesk.mx](mailto:contacto@peludesk.mx); teléfono 444 130 1539.
 
 Al crear una cuenta, abrir un negocio de prueba o usar PeluDesk aceptas estos términos y el [aviso de privacidad](/aviso-de-privacidad). Quien acepta en nombre de un negocio declara que puede obligarlo. Si no estás de acuerdo, no uses el servicio.
 
@@ -84,7 +84,7 @@ Estos términos se rigen por las leyes de los Estados Unidos Mexicanos. Para su 
 
 ## 14. Contacto
 
-Dudas sobre estos términos: [contacto@menteo.com.mx](mailto:contacto@menteo.com.mx) · 444 130 1539 · WhatsApp +52 56 4916 0742.
+Dudas sobre estos términos: [contacto@peludesk.mx](mailto:contacto@peludesk.mx) · 444 130 1539 · WhatsApp +52 56 4916 0742.
 
 ---
 
@@ -98,7 +98,7 @@ El Encargado trata esos datos únicamente para prestar el servicio contratado: a
 
 ### B. Instrucciones del Responsable
 
-El Encargado trata los datos siguiendo las instrucciones del Responsable, que son el uso que este hace de la aplicación y sus solicitudes por escrito a [contacto@menteo.com.mx](mailto:contacto@menteo.com.mx). Si una instrucción viola la ley, el Encargado lo hará saber. El Responsable es quien define las finalidades, obtiene los consentimientos y da a sus titulares su propio aviso de privacidad.
+El Encargado trata los datos siguiendo las instrucciones del Responsable, que son el uso que este hace de la aplicación y sus solicitudes por escrito a [contacto@peludesk.mx](mailto:contacto@peludesk.mx). Si una instrucción viola la ley, el Encargado lo hará saber. El Responsable es quien define las finalidades, obtiene los consentimientos y da a sus titulares su propio aviso de privacidad.
 
 ### C. Confidencialidad
 

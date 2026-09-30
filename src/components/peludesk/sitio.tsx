@@ -98,6 +98,7 @@ export function PieSitio({ whatsapp = null }: { whatsapp?: string | null }) {
           <Link href={DOCUMENTOS_LEGALES.terminos.ruta} className={ENLACE_PIE}>Términos y condiciones</Link>
           <Link href={DOCUMENTOS_LEGALES.cookies.ruta} className={ENLACE_PIE}>Política de cookies</Link>
           <BotonPreferenciasCookies className={`${ENLACE_PIE} w-fit text-left`} />
+          <a href={`mailto:${EMPRESA.correo}`} className={ENLACE_PIE}>{EMPRESA.correo}</a>
         </nav>
       </div>
       <p className="mx-auto max-w-6xl px-4 pb-8 text-xs text-n-600 sm:px-6">

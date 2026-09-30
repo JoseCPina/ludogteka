@@ -86,7 +86,7 @@ export default function Cookies() {
           <p>
             Cómo tratamos los datos que obtienen la analítica y el píxel está en el{" "}
             <Link href="/aviso-de-privacidad">aviso de privacidad</Link>. Si tienes dudas, escribe a{" "}
-            <a href="mailto:contacto@menteo.com.mx">contacto@menteo.com.mx</a>.
+            <a href="mailto:contacto@peludesk.mx">contacto@peludesk.mx</a>.
           </p>
         </div>
       }

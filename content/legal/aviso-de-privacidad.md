@@ -4,7 +4,7 @@
 
 Para cualquier asunto de privacidad o para ejercer tus derechos:
 
-- **Correo:** [contacto@menteo.com.mx](mailto:contacto@menteo.com.mx)
+- **Correo:** [contacto@peludesk.mx](mailto:contacto@peludesk.mx)
 - **Teléfono:** 444 130 1539
 - **WhatsApp de PeluDesk:** +52 56 4916 0742
 - **Domicilio:** el indicado arriba.
@@ -108,7 +108,7 @@ Tienes derecho a **acceder** a tus datos personales y saber cómo los tratamos, 
 
 ### Cómo ejercerlos
 
-Escribe a [contacto@menteo.com.mx](mailto:contacto@menteo.com.mx) (o por WhatsApp al +52 56 4916 0742) e incluye:
+Escribe a [contacto@peludesk.mx](mailto:contacto@peludesk.mx) (o por WhatsApp al +52 56 4916 0742) e incluye:
 
 1. Tu nombre y un medio para responderte.
 2. Un documento que acredite tu identidad o, si actúas por otra persona, su representación.

@@ -52,6 +52,7 @@ export const ORGANIZACION = {
   name: "PeluDesk",
   url: SITIO,
   logo: `${SITIO}/marca/peludesk/favicon-180.png`,
+  email: "contacto@peludesk.mx",
   sameAs: REDES_PELUDESK.map((r) => r.url),
 };
 

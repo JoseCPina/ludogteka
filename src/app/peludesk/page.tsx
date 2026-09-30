@@ -271,6 +271,7 @@ export default async function PeluDeskLanding() {
       name: "PeluDesk",
       url: "https://peludesk.mx",
       logo: "https://peludesk.mx/marca/peludesk/favicon-180.png",
+      email: "contacto@peludesk.mx",
       sameAs: REDES_PELUDESK.map((r) => r.url),
     },
     {
