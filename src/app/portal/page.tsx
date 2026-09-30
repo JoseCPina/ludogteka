@@ -6,7 +6,9 @@ import { PerroFoto } from "@/app/(staff)/perros/perro-foto";
 import { MisDatosForm } from "./mis-datos-form";
 import { MisVisitas } from "./mis-visitas";
 import { hoyNegocio } from "@/lib/formato";
-import { zonaActual } from "@/lib/negocio/actual";
+import { negocioActual, zonaActual } from "@/lib/negocio/actual";
+import { cargarTextosPoliticas } from "@/lib/politicas/cargar";
+import { politicasVisibles, textoPolitica } from "@/lib/politicas/catalogo";
 
 export default async function PortalPage() {
   const zona = await zonaActual();
@@ -61,6 +63,17 @@ export default async function PortalPage() {
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
   const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
 
+  // Las reglas del negocio, redactadas por él y filtradas por sus módulos.
+  const textosPoliticas = await cargarTextosPoliticas(supabase, (await negocioActual()).id);
+  const modulos = sesion.modulos ?? [];
+  const politicas = politicasVisibles(textosPoliticas, modulos);
+  const comoSeAgenda = [
+    modulos.includes("guarderia") || modulos.includes("hotel") ? textoPolitica(textosPoliticas, "como_reservar") : "",
+    modulos.includes("estetica") ? textoPolitica(textosPoliticas, "como_agendar_estetica") : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   const urlsFotos = new Map<string, string>();
   await Promise.all(
     (perros ?? [])
@@ -99,7 +112,20 @@ export default async function PortalPage() {
         </Alert>
       )}
 
-      <MisVisitas supabase={supabase} hoy={hoy} />
+      <MisVisitas supabase={supabase} hoy={hoy} comoSeAgenda={comoSeAgenda} />
+
+      {politicas.length > 0 && (
+        <section data-politicas-portal>
+          <h2 className="mb-2 text-lg font-bold text-n-900">Reglas de la casa</h2>
+          <ul className="flex flex-col gap-1 rounded-lg border border-n-200 bg-white p-4 text-sm text-n-800">
+            {politicas.map((p) => (
+              <li key={p.clave} data-politica={p.clave}>
+                {p.texto}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <MisDatosForm nombre={cliente.nombre} telefono={cliente.telefono} email={cliente.email} />
 

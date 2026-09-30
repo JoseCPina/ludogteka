@@ -106,7 +106,7 @@ function Fila({ v, zona, enHistorial = false }: { v: Visita; zona: string; enHis
   );
 }
 
-export async function MisVisitas({ supabase, hoy }: { supabase: SupabaseClient; hoy: string }) {
+export async function MisVisitas({ supabase, hoy, comoSeAgenda }: { supabase: SupabaseClient; hoy: string; comoSeAgenda: string }) {
   const zona = await zonaActual();
   const { data, error } = await supabase.rpc("mis_visitas");
   const whatsapp = await whatsAppDelNegocio("portal_citas", (n) => `Hola, ${n}. Quiero agendar o cambiar una cita de mi perro.`);
@@ -121,17 +121,22 @@ export async function MisVisitas({ supabase, hoy }: { supabase: SupabaseClient; 
     <section className="flex flex-col gap-5">
       <div>
         <h2 className="text-lg font-bold text-n-900">Citas y reservas</h2>
-        <p className="mt-1 text-sm text-n-600">
-          Para agendar, cambiar o cancelar,{" "}
-          {whatsapp ? (
-            <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="font-semibold text-morado underline">
-              escríbenos por WhatsApp
-            </a>
-          ) : (
-            "escríbenos por WhatsApp"
-          )}
-          .
-        </p>
+        {/* Cómo se agenda lo redacta el negocio (Políticas y reglas); el
+            link a su WhatsApp va aparte, si lo tiene. */}
+        {comoSeAgenda && (
+          <p className="mt-1 text-sm text-n-600" data-politica="como_agendar">
+            {comoSeAgenda}
+            {whatsapp && (
+              <>
+                {" "}
+                <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="font-semibold text-morado underline">
+                  Escríbenos por WhatsApp
+                </a>
+                .
+              </>
+            )}
+          </p>
+        )}
       </div>
 
       {error ? (

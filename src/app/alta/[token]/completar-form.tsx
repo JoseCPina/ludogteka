@@ -64,6 +64,8 @@ export function CompletarForm({
   pelajes,
   cotizacion,
   requisitos,
+  comoSeAgenda,
+  ofreceRecoleccion,
 }: {
   token: string;
   tipo: TipoLinkAlta;
@@ -77,6 +79,8 @@ export function CompletarForm({
   pelajes: Catalogo[];
   cotizacion: CotizacionEstetica | null;
   requisitos: TipoRequisitoAlta[] | null;
+  comoSeAgenda: string;
+  ofreceRecoleccion: boolean;
 }) {
   const router = useRouter();
   const definicion = TIPOS_LINK_ALTA[tipo];
@@ -87,7 +91,9 @@ export function CompletarForm({
   // revisión) también tiene algo que pedir: si no, «solo esto nos falta»
   // dejaría fuera justo lo que le impide quedarse.
   const conRequisitos = perros.filter((p) => p.requisitos.some((r) => !cubierto(r)));
-  const hayAlgoQuePedir = faltaDireccion || conHuecos.length > 0 || conRequisitos.length > 0;
+  // La dirección solo se pide si el negocio recoge a domicilio.
+  const pideDireccion = faltaDireccion && ofreceRecoleccion;
+  const hayAlgoQuePedir = pideDireccion || conHuecos.length > 0 || conRequisitos.length > 0;
 
   const [fase, setFase] = useState<Fase>("cuenta");
   // No se edita: el expediente ya lo trae, y dejar que se cambie desde un
@@ -149,7 +155,7 @@ export function CompletarForm({
     });
 
     const res = await enviando.ejecutar(() => completarExpediente(token, {
-      direccion: faltaDireccion ? direccion : "",
+      direccion: pideDireccion ? direccion : "",
       password,
       perros: perrosAMandar,
       perrosNuevos: nuevos,
@@ -162,7 +168,7 @@ export function CompletarForm({
 
     let sesionAbierta = tieneCuenta;
     try {
-      if (faltaDireccion && direccion.trim()) {
+      if (pideDireccion && direccion.trim()) {
         setAviso("Calculando la distancia a tu domicilio…");
         await conTope(calcularDistanciaAlta(token));
       }
@@ -350,7 +356,7 @@ export function CompletarForm({
             Lo que ya nos habías dicho no aparece aquí: no hace falta que lo escribas otra vez.
           </Alert>
 
-          {faltaDireccion && (
+          {pideDireccion && (
             <Field
               label="Tu dirección"
               value={direccion}

@@ -296,6 +296,44 @@ try {
   else bien("un link de otro expediente no autoriza comprobantes de este perro (la acción exige perro.cliente_id = link.cliente_id)");
   await SH.from("invitaciones_cliente").delete().eq("token", tokenOtro);
   await SH.from("clientes").delete().eq("id", otroCli.id);
+  console.log("\n8. Las reglas son del negocio, no del código");
+  // Huellitas escribe una regla con la marca; su alta la muestra, la de
+  // Ludogteka no (ni la de Huellitas muestra las de Ludogteka).
+  const { data: previas } = await SH.from("negocio_politicas").select("textos").eq("negocio_id", H).is("deleted_at", null).maybeSingle();
+  const { error: ePol } = await adminJ.rpc("guardar_politicas_negocio", { p_textos: { ...(previas?.textos ?? {}), agresivos: `Regla ${MARCA}: aquí no recibimos perros que muerdan.`, despues_del_cierre: "" } });
+  if (ePol) hallazgo(`guardar_politicas_negocio: ${ePol.message}`);
+  const tokenPol = await crearLink("guarderia_hotel", clienteId);
+  const rPol = await pedir(`/alta/${tokenPol}`);
+  if (!rPol.cuerpo.includes(`Regla ${MARCA}`)) hallazgo("el alta de Huellitas no muestra la regla que escribió su admin");
+  else if (rPol.cuerpo.includes("noche de hotel") || rPol.cuerpo.includes("perros agresivos, por la seguridad")) hallazgo("el alta de Huellitas muestra reglas de Ludogteka");
+  else bien("el alta de Huellitas muestra su regla y ninguna de Ludogteka");
+  const { data: recLudo } = await A.from("membresias").select("profile_id").eq("negocio_id", "10000000-0000-4000-8000-000000000001").eq("rol", "recepcion").is("deleted_at", null).limit(1).single();
+  const LJ = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false }, global: { headers: { Authorization: `Bearer ${await tokenDe(recLudo.profile_id)}`, "x-negocio-id": "10000000-0000-4000-8000-000000000001" } } });
+  const { data: tokLudo, error: eLudo } = await LJ.rpc("crear_invitacion_cliente", { p_nombre_referencia: `Prueba ${MARCA}`, p_telefono: "4440007777", p_dias_vigencia: 1, p_tipo: "guarderia_hotel", p_cliente_id: null });
+  if (eLudo) hallazgo(`link en Ludogteka: ${eLudo.message}`);
+  else {
+    const tk = (Array.isArray(tokLudo) ? tokLudo[0] : tokLudo).token;
+    const rL = await new Promise((resolve, reject) => {
+      http.get({ host: "127.0.0.1", port: PUERTO, path: `/alta/${tk}`, headers: { host: `ludogteka.localhost:${PUERTO}` } }, (res) => { let d = ""; res.on("data", (c) => (d += c)); res.on("end", () => resolve(d)); }).on("error", reject);
+    });
+    if (rL.includes(MARCA)) hallazgo("el alta de Ludogteka muestra una regla de Huellitas");
+    else if (!rL.includes("noche de hotel")) hallazgo("el alta de Ludogteka perdió su regla del cierre (noche de hotel)");
+    else bien("el alta de Ludogteka conserva sus reglas y no muestra las de Huellitas");
+    await A.from("invitaciones_cliente").delete().eq("token", tk);
+  }
+  // Sin hotel, la regla del cierre no sale aunque esté escrita.
+  await adminJ.rpc("guardar_politicas_negocio", { p_textos: { ...(previas?.textos ?? {}), agresivos: `Regla ${MARCA}`, despues_del_cierre: `Cierre ${MARCA} se cobra noche de hotel` } });
+  await SH.from("negocio_modulos").insert({ negocio_id: H, modulo: "hotel", activo: false, updated_at: new Date().toISOString() });
+  const rSinHotel = await pedir(`/alta/${tokenPol}`);
+  await SH.from("negocio_modulos").delete().eq("negocio_id", H).eq("modulo", "hotel");
+  if (rSinHotel.cuerpo.includes(`Cierre ${MARCA}`)) hallazgo("con hotel apagado, el alta sigue hablando de la noche de hotel");
+  else bien("con hotel apagado, la regla del cierre (noche de hotel) no sale");
+  // El cliente lo lee en su portal; recepción no puede escribirlas.
+  const { error: eRec } = await recepJ.rpc("guardar_politicas_negocio", { p_textos: { agresivos: "x" } });
+  if (!eRec) hallazgo("recepción sin permiso pudo guardar las políticas");
+  else bien("recepción sin el permiso no puede guardar las políticas");
+  await adminJ.rpc("guardar_politicas_negocio", { p_textos: previas?.textos ?? {} });
+  await A.from("invitaciones_cliente").delete().eq("token", tokenPol);
 } catch (e) {
   hallazgo(`el recorrido tronó: ${e instanceof Error ? e.message.split("\n")[0] : e}`);
   await dueno.screenshot({ path: "/tmp/alta-link-dueno.png" }).catch(() => {});

@@ -29,7 +29,8 @@ export const TIPOS_LINK_ALTA = {
     // vía mis_visitas()). Si el portal cambia, se cambia aquí.
     cuentaMuestra:
       "las próximas reservas de guardería y hotel de tu perro y las que ya pasaron, las fotos y notas que le dejemos mientras se queda con nosotros, sus vacunas y comprobantes, y tus contratos",
-    comoSeAgenda: "Para reservar, cambiar o cancelar nos escribes por WhatsApp.",
+    // Cómo se reserva NO va aquí: es una regla del negocio (Políticas y
+    // reglas, clave como_reservar).
     categorias: ["guarderia", "hotel"] as const,
     expedienteCompleto: true,
     llevaContrato: true,
@@ -44,7 +45,7 @@ export const TIPOS_LINK_ALTA = {
     descripcion: "Lo básico más los precios del baño según la raza. Sin contrato.",
     cuentaMuestra:
       "las próximas citas de estética de tu perro y el historial de sus baños, su ficha con su foto (la puedes cambiar tú) y las fotos y notas que le dejemos cuando viene",
-    comoSeAgenda: "Para agendar, cambiar o cancelar una cita nos escribes por WhatsApp.",
+    // Cómo se agenda: Políticas y reglas del negocio, clave como_agendar_estetica.
     categorias: ["estetica"] as const,
     expedienteCompleto: false,
     llevaContrato: false,

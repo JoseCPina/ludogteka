@@ -408,6 +408,30 @@ Solo Point Smart recibe cobros desde la app. Con otras terminales, registra el c
 
   // ─── Página web ───────────────────────────────────────────────────────
   {
+    slug: "politicas-y-reglas",
+    titulo: "Cómo escribir las políticas y reglas que ve el dueño",
+    resumen: "Lo que le dices al cliente al registrarse por link y en su portal: evaluación, celo, cierre, cómo reservar, cancelaciones.",
+    grupo: "admin",
+    modulo: null,
+    roles: ["admin", "recepcion"],
+    rutas: ["/admin/politicas"],
+    palabras: ["reglas", "políticas", "agresivos", "celo", "cancelación", "anticipo", "noche de hotel", "cómo reservar", "texto del alta"],
+    cuerpo: `Cuando un dueño se registra por link o entra a su portal, la app le dice tus reglas: qué le vas a pedir a su perro y cómo se reserva. Esas reglas las escribes tú; nada viene escrito por PeluDesk salvo lo que la app hace igual para todos. Lo cambia admin o quien tenga el permiso «Configuración del negocio».
+
+1. Entra a [Políticas y reglas](/admin/politicas).
+2. Escribe cada regla con tus palabras, como se lo dirías en el mostrador. Si una no aplica en tu negocio, déjala vacía: no se menciona.
+3. Aprieta **Guardar políticas**.
+
+Cada regla solo se muestra con el módulo que la usa prendido: sin hotel no se habla de la noche de hotel, sin estética no sale lo de estética. Una regla apagada se ve en gris hasta que prendas el módulo.
+
+> Las vacunas que pides y su vigencia no van aquí: salen del catálogo de requisitos sanitarios. El horario sale de [Administración](/admin).
+
+## Si algo no sale
+
+- «Solo un admin, o quien tenga el permiso «Configuración del negocio», puede cambiar las políticas del negocio.»
+- Una regla en gris: falta prender el módulo en [Módulos y plan](/admin/modulos).`,
+  },
+  {
     slug: "perfil-y-pagina-web",
     titulo: "Cómo armar tu perfil y tu página web",
     resumen: "Sube tu logo, tus fotos y tu dirección, y tu página se arma sola con tus servicios y precios.",

@@ -127,6 +127,11 @@ const pruebas = {
     return { dejo: !r.error, ve: (r.data ?? []).length > 0, detalle: r.error?.message };
   },
   async configuracion_negocio() {
+    // Las políticas y reglas van con el mismo permiso que el horario. Se
+    // reenvían las vigentes: la función reemplaza el objeto completo.
+    const { data: vigentes } = await A.from("negocio_politicas").select("textos").is("deleted_at", null).maybeSingle();
+    const pol = await R.rpc("guardar_politicas_negocio", { p_textos: vigentes?.textos ?? {} });
+    if (pol.error) return { dejo: false, ve: false, detalle: `guardar_politicas_negocio: ${pol.error.message}` };
     const r = await R.rpc("guardar_horario_semana", { p_dias: dias });
     return { dejo: !r.error, ve: !r.error, detalle: r.error?.message };
   },

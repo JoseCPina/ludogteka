@@ -141,12 +141,17 @@ if (!gastoPrevio) {
   exigir(await ADM.rpc("registrar_gasto", { p_concepto: `Renta ${MARCA}`, p_categoria_id: cat.id, p_monto: 4321, p_fecha_pago: hoy, p_metodo: "transferencia", p_proveedor_id: null, p_periodo_desde: null, p_periodo_hasta: null, p_comprobante_path: null, p_notas: MARCA }), "gasto");
 }
 
+// ── Las políticas y reglas de Huellitas, con la marca: la auditoría entre
+// negocios comprueba que nadie de Ludogteka las alcance y que el alta de
+// Ludogteka no las muestre ──
+exigir(await ADM.rpc("guardar_politicas_negocio", { p_textos: { agresivos: `Regla de Huellitas ${MARCA}: no recibimos perros que muerdan.` } }), "políticas");
+
 // ── Una foto en Storage bajo el expediente de Huellitas ──
 const rutaFoto = `${clienteSoloB}/${perroSoloB}/perfil/foto.jpg`;
 await SB.storage.from("perros-archivos").upload(rutaFoto, new Blob([Buffer.from(MARCA)], { type: "image/jpeg" }), { upsert: true });
 
 // ── Lo que la auditoría necesita ──
-const tablasB = ["clientes", "perros", "reservas", "cargos_aplicados", "cobros", "cobro_metodos", "turnos_caja", "contratos", "plantillas_contrato", "tipos_contrato", "empleados", "gastos", "servicios", "grupos_raza", "categorias_gasto", "membresias", "cupo_configuracion", "horario_semana"];
+const tablasB = ["clientes", "perros", "reservas", "cargos_aplicados", "cobros", "cobro_metodos", "turnos_caja", "contratos", "plantillas_contrato", "tipos_contrato", "empleados", "gastos", "servicios", "grupos_raza", "categorias_gasto", "membresias", "cupo_configuracion", "horario_semana", "negocio_politicas"];
 const idsB = [B];
 for (const t of tablasB) {
   const { data, error } = await SB.from(t).select("id").eq("negocio_id", B);
