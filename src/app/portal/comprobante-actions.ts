@@ -7,7 +7,7 @@ import { negocioActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 
 const BUCKET = "perros-archivos";
-const PESO_MAXIMO = 4 * 1024 * 1024;
+const PESO_MAXIMO = 8 * 1024 * 1024;
 
 export type ResultadoProponer = { error: string | null; id?: string };
 
@@ -30,11 +30,12 @@ export async function proponerComprobante(perroId: string, formData: FormData): 
   if (!tipoId) return { error: "Elige de qué es el comprobante." };
   if (!fecha) return { error: "Escribe la fecha en que se aplicó." };
   if (!(archivo instanceof File) || archivo.size === 0) {
-    return { error: "Falta la foto del comprobante: es lo que recepción va a revisar." };
+    return { error: "Falta el comprobante (foto o PDF): es lo que recepción va a revisar." };
   }
-  if (!archivo.type.startsWith("image/")) return { error: "Ese archivo no es una imagen." };
+  const esPdf = archivo.type === "application/pdf";
+  if (!esPdf && !archivo.type.startsWith("image/")) return { error: "El comprobante tiene que ser una foto o un PDF." };
   if (archivo.size > PESO_MAXIMO) {
-    return { error: "La foto pesa demasiado. Toma una más ligera o recórtala." };
+    return { error: "El archivo pesa demasiado. Toma una foto más ligera o recorta el PDF." };
   }
 
   const sesion = await obtenerSesionConRol();
@@ -80,7 +81,7 @@ export async function proponerComprobante(perroId: string, formData: FormData): 
   }
 
   const id = crypto.randomUUID();
-  const path = `${perro.cliente_id}/${perroId}/requisitos-propuestos/${id}/comprobante.jpg`;
+  const path = `${perro.cliente_id}/${perroId}/requisitos-propuestos/${id}/comprobante.${esPdf ? "pdf" : "jpg"}`;
   const negocio = await negocioActual();
   const admin = createSupabaseAdminClient(negocio.id);
 

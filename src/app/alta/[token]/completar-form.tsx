@@ -22,6 +22,10 @@ import {
 } from "../tipos";
 import { camposDeTipo, type CampoPerro } from "@/lib/alta/campos-perro";
 import { TarjetaPerro, type Catalogo } from "./tarjeta-perro";
+import { ComprobantesPerro, type Comprobantes } from "./comprobantes-perro";
+import { ResumenRequisitos, type ResumenPerro } from "./resumen-requisitos";
+import { subirComprobantesAlta } from "./subir-comprobantes";
+import { cubierto, type RequisitoDePerro, type TipoRequisitoAlta } from "@/lib/alta/requisitos";
 
 export type PerroExistente = {
   id: string;
@@ -32,9 +36,12 @@ export type PerroExistente = {
   // la lista vacía y no se pinta: al dueño no se le enseña una tarjeta
   // llena de campos ya contestados para que la revise.
   campos: CampoPerro[];
+  // Las vacunas y desparasitación que el negocio pide, con el estado que
+  // tiene este perro en cada una. Vacío si el flujo no las pide.
+  requisitos: RequisitoDePerro[];
 };
 
-type Fase = "cuenta" | "datos" | "contrato";
+type Fase = "cuenta" | "datos" | "contrato" | "listo";
 
 // Un perro existente se edita con la misma forma que uno nuevo, así que
 // se envuelve en un PerroAlta con todo vacío: lo único que se va a mandar
@@ -56,6 +63,7 @@ export function CompletarForm({
   tamanos,
   pelajes,
   cotizacion,
+  requisitos,
 }: {
   token: string;
   tipo: TipoLinkAlta;
@@ -68,13 +76,18 @@ export function CompletarForm({
   tamanos: Catalogo[];
   pelajes: Catalogo[];
   cotizacion: CotizacionEstetica | null;
+  requisitos: TipoRequisitoAlta[] | null;
 }) {
   const router = useRouter();
   const definicion = TIPOS_LINK_ALTA[tipo];
   const camposNuevo = camposDeTipo(definicion.expedienteCompleto);
 
   const conHuecos = perros.filter((p) => p.campos.length > 0);
-  const hayAlgoQuePedir = faltaDireccion || conHuecos.length > 0;
+  // Un perro con una vacuna sin registro o vencida (y sin comprobante en
+  // revisión) también tiene algo que pedir: si no, «solo esto nos falta»
+  // dejaría fuera justo lo que le impide quedarse.
+  const conRequisitos = perros.filter((p) => p.requisitos.some((r) => !cubierto(r)));
+  const hayAlgoQuePedir = faltaDireccion || conHuecos.length > 0 || conRequisitos.length > 0;
 
   const [fase, setFase] = useState<Fase>("cuenta");
   // No se edita: el expediente ya lo trae, y dejar que se cambie desde un
@@ -88,6 +101,9 @@ export function CompletarForm({
   );
   const [nuevos, setNuevos] = useState<PerroAlta[]>([]);
   const [fotosNuevos, setFotosNuevos] = useState<(File | null)[]>([]);
+  const [comprobantes, setComprobantes] = useState<Record<string, Comprobantes>>({});
+  const [comprobantesNuevos, setComprobantesNuevos] = useState<Comprobantes[]>([]);
+  const [resumenRequisitos, setResumenRequisitos] = useState<ResumenPerro[]>([]);
   const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -156,6 +172,17 @@ export function CompletarForm({
       const creados = (res.perros ?? []).filter(
         (p) => !perros.some((existente) => existente.id === p.id)
       );
+      if (requisitos) {
+        const resumen = await subirComprobantesAlta(
+          token,
+          [
+            ...conRequisitos.map((p) => ({ perroId: p.id, nombre: p.nombre, pendientes: p.requisitos, valores: comprobantes[p.id] ?? {} })),
+            ...creados.map((p, i) => ({ perroId: p.id, nombre: p.nombre, pendientes: requisitos, valores: comprobantesNuevos[i] ?? {} })),
+          ],
+          setAviso
+        );
+        setResumenRequisitos(resumen);
+      }
       for (let i = 0; i < creados.length; i += 1) {
         const archivo = fotosNuevos[i];
         if (!archivo) continue;
@@ -185,12 +212,33 @@ export function CompletarForm({
 
     const pendientes = res.contratos ?? [];
     if (pendientes.length === 0) {
-      router.push("/portal");
-      router.refresh();
+      // Sin contrato que firmar, pero con vacunas pendientes: se le dice
+      // aquí antes de mandarlo al portal, no se le deja creer que ya quedó.
+      setFase("listo");
       return;
     }
     setContratos(pendientes);
     setFase("contrato");
+  }
+
+  if (fase === "listo") {
+    return (
+      <div className="flex flex-col gap-4">
+        <Alert variante="exito" titulo="Ya quedó lo que faltaba">
+          Gracias. Lo que sigue lo ves en tu portal.
+        </Alert>
+        <ResumenRequisitos resumen={resumenRequisitos} dondeSubir="Las puedes subir desde tu portal, o tráenos el carnet." />
+        <Button
+          type="button"
+          onClick={() => {
+            router.push("/portal");
+            router.refresh();
+          }}
+        >
+          Entrar a mi portal
+        </Button>
+      </div>
+    );
   }
 
   if (fase === "contrato") {
@@ -202,6 +250,7 @@ export function CompletarForm({
           {definicion.etiqueta.toLowerCase()}. Puedes leerlo completo antes de firmar. Si lo dejas
           para después, este mismo link te trae de vuelta aquí.
         </Alert>
+        <ResumenRequisitos resumen={resumenRequisitos} dondeSubir="Las puedes subir desde tu portal, o tráenos el carnet." />
 
         {contratos.map((contrato) => (
           <FirmarContrato
@@ -311,6 +360,28 @@ export function CompletarForm({
             />
           )}
 
+          {requisitos && conRequisitos.length > 0 && (
+            <p className="text-sm text-n-600">
+              Súbenos la foto o el PDF del carnet con la fecha de cada vacuna. Recepción lo revisa. Si no lo
+              tienes a la mano puedes seguir, pero tu perro no podrá quedarse en guardería ni hotel hasta que
+              lo tengamos.
+            </p>
+          )}
+          {conRequisitos.map((perro) => (
+            <ComprobantesPerro
+              key={`req-${perro.id}`}
+              titulo={`Vacunas de ${perro.nombre}`}
+              requisitos={perro.requisitos}
+              valores={comprobantes[perro.id] ?? {}}
+              onCambio={(tipoId, valor) =>
+                setComprobantes((prev) => ({
+                  ...prev,
+                  [perro.id]: { ...prev[perro.id], [tipoId]: valor },
+                }))
+              }
+            />
+          ))}
+
           {conHuecos.map((perro) => (
             <TarjetaPerro
               key={perro.id}
@@ -349,9 +420,24 @@ export function CompletarForm({
               onQuitar={() => {
                 setNuevos((prev) => prev.filter((_, j) => j !== i));
                 setFotosNuevos((prev) => prev.filter((_, j) => j !== i));
+                setComprobantesNuevos((prev) => prev.filter((_, j) => j !== i));
               }}
             />
           ))}
+          {requisitos &&
+            nuevos.map((perro, i) => (
+              <ComprobantesPerro
+                key={`req-nuevo-${i}`}
+                titulo={`Vacunas de ${perro.nombre.trim() || "tu perro nuevo"}`}
+                requisitos={requisitos.map((r) => ({ ...r, estado: "sin_registro" as const, en_revision: false }))}
+                valores={comprobantesNuevos[i] ?? {}}
+                onCambio={(tipoId, valor) =>
+                  setComprobantesNuevos((prev) =>
+                    prev.map((c, j) => (i === j ? { ...c, [tipoId]: valor } : c))
+                  )
+                }
+              />
+            ))}
 
           <Button
             type="button"
@@ -360,6 +446,7 @@ export function CompletarForm({
             onClick={() => {
               setNuevos((prev) => [...prev, perroVacio()]);
               setFotosNuevos((prev) => [...prev, null]);
+              setComprobantesNuevos((prev) => [...prev, {}]);
             }}
           >
             Tengo otro perro que no está aquí

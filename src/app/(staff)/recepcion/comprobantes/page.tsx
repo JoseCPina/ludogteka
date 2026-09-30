@@ -72,6 +72,7 @@ export default async function ComprobantesPage() {
         created_at: p.created_at as string,
         dias_esperando: diasDesde(p.created_at as string, hoy, zona),
         foto_url: firmada?.signedUrl ?? null,
+        es_pdf: (p.comprobante_path as string).endsWith(".pdf"),
         estado_actual: estadoActual?.estado ?? null,
       };
     })

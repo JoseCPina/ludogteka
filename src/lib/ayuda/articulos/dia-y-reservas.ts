@@ -70,11 +70,15 @@ Si la ocupación dice «Cupo sin configurar», falta capturar el cupo de ese dí
 
 1. En [Clientes](/clientes) toca **Mandar link de alta**. También puedes usar **Nuevo cliente** → **Mandarle un link** desde Guardería, Hotel o Estética.
 2. Escribe **¿Para quién es?** (algo como «Ana, la del labrador») y su **Teléfono (WhatsApp)**.
-3. Escoge **¿Para qué viene?**: guardería y hotel pide el expediente completo y el contrato; estética pide lo básico y le enseña el precio del baño.
+3. Escoge **¿Para qué viene?**: guardería y hotel pide el expediente completo, las vacunas y el contrato; estética pide lo básico y le enseña el precio del baño.
 4. Escoge la **Vigencia del link** y toca **Generar link**.
 5. Toca **Abrir WhatsApp** para mandárselo, o **Copiar link**.
 
 El link le sirve hasta que termine todo, datos y firma. Si lo deja a medias, lo vuelve a abrir y sigue. En **Links pendientes** puedes **Reenviar** o **Cancelar**.
+
+## Las vacunas en el alta
+
+Si tienes guardería u hotel prendidos, el link de guardería y hotel trae el paso **Vacunas**: el dueño sube la foto o el PDF del carnet con la fecha de cada vacuna y desparasitación que pides. Lo que sube te llega a [Comprobantes por revisar](/recepcion/comprobantes) y no cuenta hasta que lo confirmes. Si no lo sube, el perro queda **Sin registro**: el alta se lo dice, y la app no le deja reservar guardería ni hotel hasta que registres sus vacunas (con el carnet en el mostrador o confirmando lo que mande desde su portal).
 
 ## Si algo no sale
 
@@ -132,18 +136,18 @@ Una perra marcada en celo o gestante, o un perro con una alerta que bloquea, no 
   {
     slug: "revisar-comprobante-sanitario",
     titulo: "Cómo revisar un comprobante sanitario que mandó el dueño",
-    resumen: "El dueño sube la foto del carnet desde su portal y tú la confirmas o la rechazas.",
+    resumen: "El dueño sube la foto o el PDF del carnet desde su portal o desde el alta por link, y tú la confirmas o la rechazas.",
     grupo: "clientes",
     modulo: "portal",
     roles: ["admin", "recepcion"],
     rutas: ["/recepcion/comprobantes"],
     palabras: ["carnet", "vacuna del portal", "comprobante", "confirmar vacuna", "rechazar", "bandeja"],
     captura: "revisar-comprobante-sanitario.jpg",
-    cuerpo: `Cuando un dueño sube la foto de una vacuna desde su portal, todavía no cuenta: alguien tiene que ver que la foto coincida con lo que dice. Hasta que la confirmes, el perro sigue con el requisito pendiente.
+    cuerpo: `Cuando un dueño sube el comprobante de una vacuna (desde su portal o en el alta por link), todavía no cuenta: alguien tiene que ver que coincida con lo que dice. Hasta que lo confirmes, el perro sigue con el requisito pendiente y no puede reservar guardería ni hotel.
 
 1. Entra a [Comprobantes por revisar](/recepcion/comprobantes). Llegas también desde el aviso del tablero.
-2. Cada comprobante trae la foto, la **Aplicación (según el dueño)**, cuánto tiempo **Quedaría vigente** y desde cuándo espera.
-3. Compara la foto con la fecha y el tipo de vacuna.
+2. Cada comprobante trae la foto (o el link **Abrir el PDF del comprobante**), la **Aplicación (según el dueño)**, cuánto tiempo **Quedaría vigente** y desde cuándo espera.
+3. Compara el comprobante con la fecha y el tipo de vacuna.
 4. Si todo cuadra, toca **Confirmar y registrar**: queda como aplicación real en su expediente, con la misma foto.
 5. Si no, toca **Rechazar…**, escribe **¿Por qué no se confirma?** y toca **Rechazar con este motivo**. El dueño lee el motivo en su portal.
 

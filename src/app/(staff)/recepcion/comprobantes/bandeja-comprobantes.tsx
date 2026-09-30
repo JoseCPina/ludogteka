@@ -26,6 +26,7 @@ export type ComprobantePendiente = {
   // Días desde que el dueño lo mandó (la bandeja va del más viejo al más nuevo).
   dias_esperando: number;
   foto_url: string | null;
+  es_pdf: boolean;
   // Cómo está ese requisito HOY para ese perro, para que recepción vea
   // qué va a cambiar al confirmar (p. ej. "sin registro" → vigente).
   estado_actual: string | null;
@@ -72,7 +73,16 @@ function Tarjeta({ item }: { item: ComprobantePendiente }) {
   return (
     <li className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4 md:flex-row md:gap-5">
       <div className="flex-none">
-        {item.foto_url ? (
+        {item.foto_url && item.es_pdf ? (
+          <a
+            href={item.foto_url}
+            target="_blank"
+            rel="noreferrer"
+            className="grid h-44 w-44 place-items-center rounded-md border border-n-200 bg-n-50 p-3 text-center text-sm font-semibold text-morado hover:underline"
+          >
+            Abrir el PDF del comprobante →
+          </a>
+        ) : item.foto_url ? (
           <a href={item.foto_url} target="_blank" rel="noreferrer" title="Abrir la foto en grande">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img

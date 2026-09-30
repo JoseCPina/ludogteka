@@ -30,7 +30,7 @@ Cada negocio tiene su propia dirección: <su-nombre>.peludesk.mx.
 - Recolección a domicilio con cargo por kilómetro.
 - Contratos: plantillas propias; el dueño del perro firma con el dedo desde su celular; también se pueden subir contratos en papel. Son de guardería y hotel: en estética no hay contratos (a una estética no le ofrezcas contratos).
 - Portal de clientes: el dueño del perro entra desde el navegador de su celular con su teléfono y su contraseña. Ve sus citas, vacunas, fotos del día, pases y contratos, y firma. Nunca ve los precios internos ni a otros clientes.
-- Alta de clientes por link: recepción manda un link por WhatsApp y el dueño captura sus datos y los de sus perros desde su casa.
+- Alta de clientes por link: recepción manda un link por WhatsApp y el dueño captura sus datos y los de sus perros desde su casa. Con guardería u hotel prendidos, el link también le pide la foto o el PDF del carnet de vacunas; lo que sube lo revisa recepción antes de contar, y si no lo sube el perro queda «sin registro» y no puede reservar guardería ni hotel.
 - Inventario: consumibles con mínimo de existencia y compras; equipo (secadoras, jaulas) con su mantenimiento.
 - Empleados: asistencia, retardos, ausencias y vacaciones, comisiones de estética, propinas, adelantos y nómina.
 - Gastos del local, con gastos recurrentes y comprobantes.

@@ -15,6 +15,8 @@ import {
 } from "./requisitos-guarderia-hotel";
 import { CAMPOS_BASE, CAMPOS_EXPEDIENTE, type CampoPerro } from "@/lib/alta/campos-perro";
 import { EncabezadoNegocio } from "@/components/marca/encabezado-negocio";
+import { cargarRequisitosAlta, estadoRequisitosDePerros, cubierto, type TipoRequisitoAlta } from "@/lib/alta/requisitos";
+import { ResumenRequisitos, type ResumenPerro } from "./resumen-requisitos";
 
 // Pantalla pública: no hay sesión todavía (la cuenta se crea al final) y
 // por eso NO está en las zonas protegidas del middleware. Lo único que la
@@ -121,7 +123,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
   // El catálogo de razas viaja SIN el grupo de precio: el dueño escoge la
   // raza de su perro, no el cajón en el que el negocio lo cobra. Mandar el
   // grupo aunque no se pinte sería dejarlo servido en el HTML.
-  const [razas, { data: tamanos }, { data: pelajes }, { data: requisitosCrudo }, { data: horarioCrudo }] =
+  const [razas, { data: tamanos }, { data: pelajes }, { data: requisitosCrudo }, { data: horarioCrudo }, requisitosAlta] =
     await Promise.all([
       cargarRazas(admin, negocio.id),
       admin.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
@@ -141,6 +143,9 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
       definicion.llevaContrato
         ? admin.rpc("horario_semana_vigente")
         : Promise.resolve({ data: null }),
+      // Lo que el alta le PIDE al perro (con comprobante): solo con
+      // guardería u hotel prendidos y en el flujo que los usa.
+      cargarRequisitosAlta(admin, negocio.id, definicion.expedienteCompleto),
     ]);
 
   // El horario vigente lo decide la base (horario_semana_vigente): la
@@ -209,12 +214,16 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
       );
     }
 
+    const estadoRequisitos = requisitosAlta
+      ? await estadoRequisitosDePerros(admin, negocio.id, requisitosAlta, (perrosCrudo ?? []).map((p) => p.id as string))
+      : {};
     const perros: PerroExistente[] = (perrosCrudo ?? []).map((p) => ({
       id: p.id as string,
       nombre: p.nombre as string,
       raza: (p.raza as string | null) ?? "",
       raza_id: (p.raza_id as string | null) ?? null,
       campos: camposFaltantes(p as Record<string, unknown>, definicion.expedienteCompleto),
+      requisitos: estadoRequisitos[p.id as string] ?? [],
     }));
 
     return (
@@ -244,6 +253,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
           faltaDireccion={!((cliente.direccion as string | null) ?? "").trim()}
           tieneCuenta={Boolean(perfil)}
           perros={perros}
+          requisitos={requisitosAlta}
           {...catalogos}
         />
       </main>
@@ -269,15 +279,20 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
 
       {bloqueRequisitos}
 
-      <AltaForm token={token} tipo={tipo} {...catalogos} />
+      <AltaForm token={token} tipo={tipo} requisitos={requisitosAlta} {...catalogos} />
     </main>
   );
 }
 
-// Ya no queda nada por hacer con este link. Se le manda a su portal —
-// directo si ya tiene la sesión abierta en este navegador, y si no, al
-// login con su teléfono. Si el expediente no tiene cuenta (estética sin
-// portal), se le dice que su registro quedó y cómo abrir una.
+// Ya no queda nada por LLENAR NI FIRMAR con este link. Se le manda a su
+// portal — directo si ya tiene la sesión abierta en este navegador, y si
+// no, al login con su teléfono. Si el expediente no tiene cuenta (estética
+// sin portal), se le dice que su registro quedó y cómo abrir una.
+//
+// Las vacunas no cierran ni abren el link (las confirma recepción), pero
+// aquí se dicen: un perro con un requisito sin registro no puede reservar
+// guardería ni hotel, y esta pantalla nunca dice «no te falta nada» si es
+// así.
 async function LinkCumplido({ clienteId, tipo }: { clienteId: string | null; tipo: TipoLinkAlta }) {
   const definicion = TIPOS_LINK_ALTA[tipo];
   const negocio = await negocioActual();
@@ -285,6 +300,8 @@ async function LinkCumplido({ clienteId, tipo }: { clienteId: string | null; tip
   const { data: perfil } = clienteId
     ? await admin.from("membresias").select("id:profile_id").eq("cliente_id", clienteId).eq("negocio_id", negocio.id).is("deleted_at", null).limit(1).maybeSingle()
     : { data: null };
+  const resumen = clienteId ? await resumenRequisitosDeCliente(admin, negocio.id, clienteId, definicion.expedienteCompleto) : [];
+  const faltan = resumen.some((p) => p.sin_registro.length > 0);
 
   let sesionEsDelDueno = false;
   if (perfil) {
@@ -296,11 +313,12 @@ async function LinkCumplido({ clienteId, tipo }: { clienteId: string | null; tip
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-4 p-6">
       <EncabezadoNegocio />
-      <h1 className="text-2xl font-bold text-n-900">Ya quedó todo</h1>
+      <h1 className="text-2xl font-bold text-n-900">{faltan ? "Tu registro ya quedó" : "Ya quedó todo"}</h1>
+      <ResumenRequisitos resumen={resumen} dondeSubir={perfil ? "Súbelas desde tu portal, o tráenos el carnet." : "Tráenos el carnet cuando vengas."} />
       {perfil ? (
         <>
           <Alert variante="exito" titulo="Ya terminaste tu registro">
-            No te falta nada por llenar ni por firmar. En tu cuenta ves {definicion.cuentaMuestra}.
+            No te falta nada por llenar ni por firmar{faltan ? " (solo las vacunas de arriba)" : ""}. En tu cuenta ves {definicion.cuentaMuestra}.
           </Alert>
           <a
             href={sesionEsDelDueno ? "/portal" : "/login"}
@@ -328,4 +346,33 @@ async function LinkCumplido({ clienteId, tipo }: { clienteId: string | null; tip
       )}
     </main>
   );
+}
+
+// Vacunas y desparasitación de los perros de un expediente, para la
+// pantalla final: lo que espera revisión y lo que sigue sin registro.
+async function resumenRequisitosDeCliente(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  negocioId: string,
+  clienteId: string,
+  pideExpediente: boolean
+): Promise<ResumenPerro[]> {
+  const tipos: TipoRequisitoAlta[] | null = await cargarRequisitosAlta(admin, negocioId, pideExpediente);
+  if (!tipos) return [];
+  const { data: perros } = await admin
+    .from("perros")
+    .select("id, nombre")
+    .eq("cliente_id", clienteId)
+    .eq("negocio_id", negocioId)
+    .is("deleted_at", null)
+    .eq("fallecido", false)
+    .order("nombre");
+  const estado = await estadoRequisitosDePerros(admin, negocioId, tipos, (perros ?? []).map((p) => p.id as string));
+  return (perros ?? []).map((p) => {
+    const req = estado[p.id as string] ?? [];
+    return {
+      perro_nombre: p.nombre as string,
+      en_revision: req.filter((r) => r.en_revision).map((r) => r.etiqueta),
+      sin_registro: req.filter((r) => !cubierto(r)).map((r) => r.etiqueta),
+    };
+  });
 }
