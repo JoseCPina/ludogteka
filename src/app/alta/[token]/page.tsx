@@ -17,6 +17,8 @@ import { CAMPOS_BASE, CAMPOS_EXPEDIENTE, type CampoPerro } from "@/lib/alta/camp
 import { EncabezadoNegocio } from "@/components/marca/encabezado-negocio";
 import { cargarRequisitosAlta, estadoRequisitosDePerros, cubierto, type TipoRequisitoAlta } from "@/lib/alta/requisitos";
 import { ResumenRequisitos, type ResumenPerro } from "./resumen-requisitos";
+import { cargarTextosPoliticas } from "@/lib/politicas/cargar";
+import { politicasVisibles, textoPolitica } from "@/lib/politicas/catalogo";
 
 // Pantalla pública: no hay sesión todavía (la cuenta se crea al final) y
 // por eso NO está en las zonas protegidas del middleware. Lo único que la
@@ -123,7 +125,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
   // El catálogo de razas viaja SIN el grupo de precio: el dueño escoge la
   // raza de su perro, no el cajón en el que el negocio lo cobra. Mandar el
   // grupo aunque no se pinte sería dejarlo servido en el HTML.
-  const [razas, { data: tamanos }, { data: pelajes }, { data: requisitosCrudo }, { data: horarioCrudo }, requisitosAlta] =
+  const [razas, { data: tamanos }, { data: pelajes }, { data: requisitosCrudo }, { data: horarioCrudo }, requisitosAlta, textosPoliticas, { data: modulosCrudo }] =
     await Promise.all([
       cargarRazas(admin, negocio.id),
       admin.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
@@ -146,7 +148,15 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
       // Lo que el alta le PIDE al perro (con comprobante): solo con
       // guardería u hotel prendidos y en el flujo que los usa.
       cargarRequisitosAlta(admin, negocio.id, definicion.expedienteCompleto),
+      // Las reglas redactadas por el negocio y sus módulos: sin hotel no
+      // se habla de la noche de hotel, sin recolección no se pide dirección.
+      cargarTextosPoliticas(admin, negocio.id),
+      admin.rpc("modulos_activos"),
     ]);
+  const modulos = (modulosCrudo as string[] | null) ?? [];
+  const politicas = politicasVisibles(textosPoliticas, modulos);
+  const comoSeAgenda = textoPolitica(textosPoliticas, definicion.expedienteCompleto ? "como_reservar" : "como_agendar_estetica");
+  const ofreceRecoleccion = modulos.includes("recoleccion");
 
   // El horario vigente lo decide la base (horario_semana_vigente): la
   // misma generación de configuración que usan las reservas.
@@ -157,7 +167,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
   }));
   const requisitos: RequisitoSanitarioPublico[] = (requisitosCrudo ?? []) as RequisitoSanitarioPublico[];
   const bloqueRequisitos = definicion.llevaContrato ? (
-    <RequisitosGuarderiaHotel requisitos={requisitos} horario={horario} />
+    <RequisitosGuarderiaHotel requisitos={requisitos} horario={horario} politicas={politicas} conGuarderia={modulos.includes("guarderia")} />
   ) : null;
 
   // La cotización solo se carga —y solo viaja— en el flujo que la usa.
@@ -254,6 +264,8 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
           tieneCuenta={Boolean(perfil)}
           perros={perros}
           requisitos={requisitosAlta}
+          comoSeAgenda={comoSeAgenda}
+          ofreceRecoleccion={ofreceRecoleccion}
           {...catalogos}
         />
       </main>
@@ -279,7 +291,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
 
       {bloqueRequisitos}
 
-      <AltaForm token={token} tipo={tipo} requisitos={requisitosAlta} {...catalogos} />
+      <AltaForm token={token} tipo={tipo} requisitos={requisitosAlta} comoSeAgenda={comoSeAgenda} ofreceRecoleccion={ofreceRecoleccion} {...catalogos} />
     </main>
   );
 }

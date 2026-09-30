@@ -47,6 +47,8 @@ export function AltaForm({
   pelajes,
   cotizacion,
   requisitos,
+  comoSeAgenda,
+  ofreceRecoleccion,
 }: {
   token: string;
   tipo: TipoLinkAlta;
@@ -57,6 +59,10 @@ export function AltaForm({
   // Las vacunas y desparasitación que el negocio pide para guardería u
   // hotel (null: este flujo o este negocio no las pide).
   requisitos: TipoRequisitoAlta[] | null;
+  // Cómo se reserva o se agenda: la regla que redactó el negocio.
+  comoSeAgenda: string;
+  // Con recolección prendida se le pregunta si quiere que pasen por su perro.
+  ofreceRecoleccion: boolean;
 }) {
   const router = useRouter();
   const definicion = TIPOS_LINK_ALTA[tipo];
@@ -319,7 +325,8 @@ export function AltaForm({
 
           {/* La dirección solo le sirve a quien quiere que pasemos por su
               perro. Preguntársela a todos es un campo largo, en un celular,
-              que la mayoría no va a usar. */}
+              que la mayoría no va a usar. Y solo si el negocio recoge. */}
+          {ofreceRecoleccion && (
           <label className="flex items-start gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3 text-n-900">
             <input
               type="checkbox"
@@ -335,8 +342,9 @@ export function AltaForm({
               </span>
             </span>
           </label>
+          )}
 
-          {quiereRecoleccion && (
+          {ofreceRecoleccion && quiereRecoleccion && (
             <Field
               label="Tu dirección"
               value={direccion}
@@ -430,7 +438,7 @@ export function AltaForm({
               <div>
                 <p className="font-bold">¿Quieres una cuenta para ver las citas de tu perro?</p>
                 <p className="mt-1 text-sm text-n-600">
-                  Desde tu celular ves {definicion.cuentaMuestra}. {definicion.comoSeAgenda} Si no la
+                  Desde tu celular ves {definicion.cuentaMuestra}. {comoSeAgenda} Si no la
                   quieres ahora, tu registro queda completo igual y la puedes pedir en recepción cuando
                   quieras.
                 </p>
@@ -447,7 +455,7 @@ export function AltaForm({
             </div>
           ) : (
             <p className="text-n-600">
-              En tu cuenta ves {definicion.cuentaMuestra}. {definicion.comoSeAgenda}
+              En tu cuenta ves {definicion.cuentaMuestra}. {comoSeAgenda}
             </p>
           )}
 
