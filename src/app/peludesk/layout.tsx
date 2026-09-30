@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
 import { ConsentimientoCookies } from "@/components/peludesk/consentimiento/consentimiento";
 import { COOKIE_CONSENTIMIENTO, leerConsentimiento } from "@/lib/peludesk/cookies";
+import { BotonWhatsApp } from "@/components/peludesk/boton-whatsapp";
+import { whatsappPeluDesk } from "@/lib/peludesk/landing";
 import "./peludesk.css";
 
 /**
@@ -14,12 +16,14 @@ import "./peludesk.css";
 export default async function PeluDeskLayout({ children }: { children: React.ReactNode }) {
   const jar = await cookies();
   const inicial = leerConsentimiento(jar.get(COOKIE_CONSENTIMIENTO)?.value);
+  const whatsapp = await whatsappPeluDesk("Hola, quiero saber más de PeluDesk.");
   const pixelId = process.env.PELUDESK_META_PIXEL_ID?.trim() || null;
   return (
     <>
       {/* Antes que el resto, para que el teclado llegue primero al aviso. */}
       <ConsentimientoCookies inicial={inicial} pixelId={pixelId} />
       {children}
+      {whatsapp && <BotonWhatsApp href={whatsapp} />}
     </>
   );
 }

@@ -6,7 +6,7 @@ import { RedesPeluDesk } from "@/components/peludesk/redes";
 import { EnlaceRegistro } from "@/components/peludesk/enlace-registro";
 import { BotonPreferenciasCookies } from "@/components/peludesk/consentimiento/preferencias-cookies";
 import { EMPRESA, DOCUMENTOS_LEGALES } from "@/lib/peludesk/legal";
-import { urlDemo } from "@/lib/peludesk/landing";
+import { urlDemo, whatsappPeluDesk } from "@/lib/peludesk/landing";
 
 /**
  * Encabezado y pie de las páginas de peludesk.mx que no son la landing
@@ -108,7 +108,8 @@ export function PieSitio({ whatsapp = null }: { whatsapp?: string | null }) {
 }
 
 /** Marco común de las páginas interiores: encabezado, contenido y pie. */
-export function MarcoSitio({ children, whatsapp = null }: { children: ReactNode; whatsapp?: string | null }) {
+export async function MarcoSitio({ children }: { children: ReactNode }) {
+  const whatsapp = await whatsappPeluDesk("Hola, quiero saber más de PeluDesk.");
   return (
     <div className="min-h-[100dvh] overflow-x-clip bg-crema text-n-900">
       <EncabezadoSitio />
