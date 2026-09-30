@@ -64,7 +64,7 @@ export async function reprogramarVideo(video: string, fd: FormData): Promise<Res
   const s = await sesionPlataforma();
   if (!s) return NO_AUTORIZADO;
   const valor = String(fd.get("fecha") ?? "").trim();
-  if (!/^d{4}-d{2}-d{2}Td{2}:d{2}$/.test(valor)) return { error: "Escoge la fecha y la hora." };
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(valor)) return { error: "Escoge la fecha y la hora." };
   const { data, error } = await s.supabase.from("redes_publicaciones").select("id").eq("video", video).eq("prueba", false).is("deleted_at", null).in("estado", ["programada", "reintentar", "fallida"]);
   if (error) return { error: error.message };
   if (!data?.length) return { error: "Ese video no tiene publicaciones por mover." };
