@@ -159,3 +159,7 @@ falta:
 2. Regresar el gasto `56d41636` a `pagado`.
 3. Regresar la cita `52b8d6f5` a `finalizada`.
 4. Quitar el `deleted_at` del cliente y del perro.
+
+## 1 de octubre de 2026 (UTC) — reels de Instagram vueltos a subir con portada
+
+Los tres reels de @peludesk que el programador publicó el 30 de septiembre (corte-de-caja, ese-perro-no-esta-vacunado, un-dia-en-tu-guarderia) salieron sin portada propia y Instagram no deja cambiarla por la API. Por REST con la service_role (operación puntual de un administrador, sin cambios de esquema): las tres filas originales de `redes_publicaciones` (Instagram) pasaron a `cancelada` con la liga del reel anterior en `error`, y se insertaron tres filas nuevas (mismo video, pie y archivo) que el publicador sacó con `cover_url`. Se hizo así porque el índice único `(video, red)` solo deja una fila viva por video y red: así el calendario no las vuelve a agregar. Los reels anteriores siguen en Instagram hasta que se borren a mano. Facebook y TikTok no se tocaron.
