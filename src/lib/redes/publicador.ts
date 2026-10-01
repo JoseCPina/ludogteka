@@ -25,7 +25,7 @@ import { DatosSupabase, TelegramHttp, configWhatsApp } from "@/lib/whatsapp/infr
 import * as meta from "./meta";
 import { ErrorRed } from "./meta";
 import * as tt from "./tiktok";
-import { TITULOS, urlVideo } from "./serie";
+import { TITULOS, urlPortada, urlVideo } from "./serie";
 
 export type Publicacion = {
   id: string;
@@ -113,7 +113,7 @@ async function instagram(f: Publicacion): Promise<Resultado> {
   }
   if (!contenedor) {
     await anotar(f.id, { paso: "contenedor" });
-    contenedor = await meta.igCrearContenedor({ ig, token, videoUrl: urlVideo(f.archivo), pie: f.pie });
+    contenedor = await meta.igCrearContenedor({ ig, token, videoUrl: urlVideo(f.archivo), pie: f.pie, portadaUrl: urlPortada(f.archivo) });
     await anotar(f.id, { contenedor_id: contenedor, paso: "esperar" });
   }
   await meta.igEsperar({ contenedor, token, topeMs: 150_000 });
@@ -122,6 +122,15 @@ async function instagram(f: Publicacion): Promise<Resultado> {
   const id = await meta.igPublicar({ ig, token, contenedor });
   await anotar(f.id, { publicacion_id: id });
   return { publicacionId: id, url: await meta.igPermalink(id, token) };
+}
+
+/** La miniatura no es crítica: si falla, el video ya salió y solo se anota en los logs. */
+async function miniaturaFb(videoId: string, token: string, f: Publicacion) {
+  try {
+    await meta.fbMiniatura({ videoId, token, imagenUrl: urlPortada(f.archivo) });
+  } catch (e) {
+    console.error("[redes] miniatura de Facebook:", f.video, e instanceof Error ? e.message : e);
+  }
 }
 
 async function facebook(f: Publicacion): Promise<Resultado> {
@@ -140,6 +149,7 @@ async function facebook(f: Publicacion): Promise<Resultado> {
     await anotar(f.id, { paso: "enviar" });
     const id = await meta.fbVideoMuro({ pagina, token, videoUrl: urlVideo(f.archivo), pie: f.pie });
     await anotar(f.id, { publicacion_id: id });
+    await miniaturaFb(id, token, f);
     return { publicacionId: id, url: await meta.fbPermalink(id, token) };
   }
   // Reel: start (inofensivo) → subir (inofensivo) → finish (publica).
@@ -156,6 +166,7 @@ async function facebook(f: Publicacion): Promise<Resultado> {
   await meta.fbReelSubir({ subida, token, videoUrl: urlVideo(f.archivo) });
   await anotar(f.id, { paso: "publicar" });
   await meta.fbReelPublicar({ pagina, token, videoId, pie: f.pie });
+  await miniaturaFb(videoId, token, f);
   return { publicacionId: videoId, url: await meta.fbPermalink(videoId, token) };
 }
 

@@ -93,8 +93,22 @@ export async function peticion(ruta: string, { metodo = "GET", params = {}, etiq
 
 // ── Instagram ──
 
-export async function igCrearContenedor({ ig, token, videoUrl, pie }: { ig: string; token: string; videoUrl: string; pie: string }): Promise<string> {
-  const j = await peticion(`${ig}/media`, { metodo: "POST", params: { media_type: "REELS", video_url: videoUrl, caption: pie, share_to_feed: "true", access_token: token }, etiqueta: "instagram/media" });
+/**
+ * Contenedor REELS con su portada propia (`cover_url`: Instagram la descarga de
+ * nuestra URL pública). Si Meta rechaza la portada (4xx) se reintenta con
+ * `thumb_offset` —un cuadro del propio video— para que el reel salga igual y
+ * no se pierda la publicación; el motivo queda en los logs.
+ */
+export async function igCrearContenedor({ ig, token, videoUrl, pie, portadaUrl, portadaOffsetMs = 2000 }: { ig: string; token: string; videoUrl: string; pie: string; portadaUrl?: string; portadaOffsetMs?: number }): Promise<string> {
+  const base = { media_type: "REELS", video_url: videoUrl, caption: pie, share_to_feed: "true", access_token: token };
+  let j: Json;
+  try {
+    j = await peticion(`${ig}/media`, { metodo: "POST", params: { ...base, ...(portadaUrl ? { cover_url: portadaUrl } : {}) }, etiqueta: "instagram/media" });
+  } catch (e) {
+    if (!portadaUrl || (e instanceof ErrorRed && e.reintentable)) throw e;
+    console.error("[redes] Instagram rechazó cover_url; se usa thumb_offset:", e instanceof Error ? e.message : e);
+    j = await peticion(`${ig}/media`, { metodo: "POST", params: { ...base, thumb_offset: String(portadaOffsetMs) }, etiqueta: "instagram/media(thumb_offset)" });
+  }
   if (!j.id) throw new ErrorRed("instagram/media: no devolvió id de contenedor");
   return String(j.id);
 }
@@ -180,6 +194,19 @@ export async function fbVideoMuro({ pagina, token, videoUrl, pie, publicado = tr
   const id = (j.id ?? j.video_id) as string | undefined;
   if (!id) throw new ErrorRed("facebook/videos: no devolvió id");
   return String(id);
+}
+
+/** Pone la miniatura preferida de un video o reel ya subido (sin republicarlo). */
+export async function fbMiniatura({ videoId, token, imagenUrl }: { videoId: string; token: string; imagenUrl: string }): Promise<void> {
+  const img = await fetch(imagenUrl, { signal: AbortSignal.timeout(TOPE_MS) }).catch(() => null);
+  if (!img?.ok) throw new ErrorRed(`facebook/miniatura: no se pudo leer la portada (${imagenUrl})`, true);
+  const form = new FormData();
+  form.set("source", new Blob([await img.arrayBuffer()], { type: "image/jpeg" }), "portada.jpg");
+  form.set("is_preferred", "true");
+  form.set("access_token", token);
+  const res = await fetch(`${GRAPH()}/${VERSION}/${videoId}/thumbnails`, { method: "POST", body: form, signal: AbortSignal.timeout(TOPE_MS) }).catch(() => null);
+  const j = (await res?.json().catch(() => ({}))) as (Json & { success?: boolean }) | undefined;
+  if (!res || !res.ok || j?.error || j?.success === false) throw new ErrorRed(`facebook/miniatura: HTTP ${res?.status ?? "red"} ${String(j?.error?.message ?? "").slice(0, 200)}`, !res || res.status >= 500);
 }
 
 export async function fbBorrar({ id, token }: { id: string; token: string }): Promise<void> {

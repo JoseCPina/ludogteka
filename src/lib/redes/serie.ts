@@ -152,3 +152,8 @@ export function urlVideo(archivo: string): string {
   const base = (process.env.PELUDESK_VIDEOS_URL?.trim() || "https://peludesk.mx").replace(/\/$/, "");
   return `${base}/peludesk/redes/videos/${archivo}`;
 }
+
+/** La portada pública de un video (la misma imagen que el reel lleva como cover): `<video>-9x16.jpg` o `<video>-16x9.jpg`. */
+export function urlPortada(archivo: string): string {
+  return urlVideo(archivo.replace(/(-subtitulos)?.mp4$/, ".jpg"));
+}

@@ -73,6 +73,7 @@ const doble = http.createServer(async (req, res) => {
   if (arista === "media_publish") { contenedores[q.creation_id] = "PUBLISHED"; return json(res, 200, { id: `ig-${q.creation_id}` }); }
   if (arista === "video_reels" && q.upload_phase === "start") { const v = `reel-${llamadas.length}`; return json(res, 200, { video_id: v, upload_url: `https://rupload.facebook.com/video-upload/v26.0/${v}` }); }
   if (arista === "video_reels" && q.upload_phase === "finish") return json(res, 200, { success: true, post_id: "p1" });
+  if (arista === "thumbnails") return json(res, 200, { success: true });
   if (arista === "videos") return json(res, 200, { id: `muro-${llamadas.length}` });
   if (req.method === "DELETE") return json(res, 200, { success: true });
   if (req.method === "GET" && q.fields?.includes("status_code")) return json(res, 200, { status_code: contenedores[id] ?? "FINISHED", status: "" });
@@ -142,6 +143,8 @@ try {
   const piesIg = hoy.filter((f) => f.red === "instagram").map((f) => f.pie);
   const conPie = llamadas.find((l) => l.p.endsWith("/media") && l.cuerpo.includes("caption="));
   ok(conPie && piesIg.includes(new URLSearchParams(conPie.cuerpo).get("caption")), "el pie llegó completo a Instagram", "el pie no llegó igual a Instagram");
+  ok(conPie && /^http:\/\/127\.0\.0\.1:3001\/peludesk\/redes\/videos\/.+-9x16\.jpg$/.test(new URLSearchParams(conPie.cuerpo).get("cover_url") ?? ""), "el contenedor de Instagram lleva cover_url (portada 9x16)", "Instagram no recibió cover_url");
+  ok(cuenta((l) => l.p.endsWith("/thumbnails")) >= 2, "Facebook recibió la miniatura de reel y muro", `miniaturas recibidas: ${cuenta((l) => l.p.endsWith("/thumbnails"))}`);
   const reelFin = llamadas.find((l) => l.cuerpo.includes("upload_phase=finish"));
   ok(reelFin && new URLSearchParams(reelFin.cuerpo).get("description"), "la descripción del reel va en el finish", "el reel salió sin descripción");
 
