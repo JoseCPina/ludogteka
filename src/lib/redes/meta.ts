@@ -48,7 +48,7 @@ export function credencialesMeta() {
 
 type Json = Record<string, unknown> & { error?: { message?: string; code?: number; error_subcode?: number; type?: string; error_user_msg?: string; fbtrace_id?: string } };
 
-async function peticion(ruta: string, { metodo = "GET", params = {}, etiqueta, intentos = 3 }: { metodo?: "GET" | "POST" | "DELETE"; params?: Record<string, string | undefined>; etiqueta: string; intentos?: number }): Promise<Json> {
+export async function peticion(ruta: string, { metodo = "GET", params = {}, etiqueta, intentos = 3 }: { metodo?: "GET" | "POST" | "DELETE"; params?: Record<string, string | undefined>; etiqueta: string; intentos?: number }): Promise<Json> {
   const url = new URL(`${GRAPH()}/${VERSION}/${ruta}`);
   const cuerpo = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {

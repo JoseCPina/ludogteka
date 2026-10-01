@@ -177,3 +177,14 @@ export async function tiktokEstado({ token, publishId }: { token: string; publis
 }
 
 export const URL_BORRADORES_TIKTOK = "https://www.tiktok.com/creator-center/upload";
+
+/**
+ * Seguidores de la cuenta. Pide el scope `user.info.stats`, que la conexión
+ * actual (video.upload + user.info.basic) no trae: sin él TikTok contesta
+ * scope_not_authorized y el resumen diario deja los seguidores de TikTok fuera.
+ */
+export async function seguidoresTikTok(token: string): Promise<number | null> {
+  const j = await pedir("/v2/user/info/?fields=follower_count", { metodo: "GET", cabeceras: { Authorization: `Bearer ${token}` }, etiqueta: "tiktok/user/info" });
+  const n = (j.data as { user?: { follower_count?: number } })?.user?.follower_count;
+  return typeof n === "number" ? n : null;
+}
