@@ -1,5 +1,6 @@
 "use client";
 
+import { sha256Archivo } from "@/lib/hash-archivo";
 import { useRef, useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { conTope, esperarConTope, mensajeDeFallo } from "@/lib/ui/espera";
@@ -62,13 +63,7 @@ export type TipoContratoFila = {
   estado: "vigente" | "sin_contrato" | "requiere_actualizacion" | null;
 };
 
-async function calcularHashArchivo(archivo: File): Promise<string> {
-  const buffer = await archivo.arrayBuffer();
-  const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
+const calcularHashArchivo = sha256Archivo;
 
 function PastillaEstadoTipo({ tipo }: { tipo: TipoContratoFila }) {
   if (!tipo.aplica) {

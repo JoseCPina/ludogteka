@@ -1,5 +1,6 @@
 "use client";
 
+import { idCliente } from "@/lib/id-cliente";
 import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -134,7 +135,7 @@ export function PerroAdentro({ dato, permiso, retencion }: { dato: PerroAdentroD
     setError(null);
     if (media === null) void refrescar();
     for (const archivo of Array.from(archivos)) {
-      const key = crypto.randomUUID();
+      const key = idCliente();
       const esVideo = archivo.type.startsWith("video/");
       setSubidas((s) => [...s, { key, nombre: archivo.name, tipo: esVideo ? "video" : "foto", estado: "preparando", texto: esVideo ? "Revisando el video…" : "Preparando la foto…", progreso: 0 }]);
       // Uno por uno: el celular no aguanta tres videos comprimiéndose a la vez.

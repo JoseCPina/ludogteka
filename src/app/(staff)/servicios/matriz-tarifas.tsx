@@ -1,5 +1,6 @@
 "use client";
 
+import { idCliente } from "@/lib/id-cliente";
 import { useMemo, useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
@@ -154,7 +155,7 @@ export function MatrizTarifas({
   function agregarTramo() {
     const ultimo = tramos[tramos.length - 1];
     const nuevoDesde = ultimo?.hasta ? ultimo.hasta + 1 : (ultimo?.desde ?? 0) + 1;
-    setTramos([...tramos, { clientId: crypto.randomUUID(), desde: nuevoDesde, hasta: null }]);
+    setTramos([...tramos, { clientId: idCliente(), desde: nuevoDesde, hasta: null }]);
     setErrorTramos(null);
   }
 

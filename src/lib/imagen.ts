@@ -10,7 +10,7 @@ const CALIDAD_JPEG = 0.82;
 // píxeles crudos del sensor suelen venir en horizontal y solo el tag EXIF
 // dice cómo mostrarla derecha.
 export async function comprimirImagen(archivo: File, ladoMaximo: number = LADO_MAXIMO): Promise<Blob> {
-  const bitmap = await createImageBitmap(archivo, { imageOrientation: "from-image" });
+  const bitmap = await decodificar(archivo);
 
   const escala = Math.min(1, ladoMaximo / Math.max(bitmap.width, bitmap.height));
   const ancho = Math.round(bitmap.width * escala);
@@ -34,4 +34,27 @@ export async function comprimirImagen(archivo: File, ladoMaximo: number = LADO_M
       CALIDAD_JPEG
     );
   });
+}
+
+// Navegadores viejos (iOS anterior a 15) no traen createImageBitmap con
+// opciones: se decodifica con un <img>, que gira la foto por su EXIF solo.
+async function decodificar(archivo: File): Promise<CanvasImageSource & { width: number; height: number; close: () => void }> {
+  if (typeof createImageBitmap === "function") {
+    try {
+      return await createImageBitmap(archivo, { imageOrientation: "from-image" });
+    } catch {
+      // cae al respaldo
+    }
+  }
+  const url = URL.createObjectURL(archivo);
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    return Object.assign(img, { close: () => {} });
+  } catch {
+    throw new Error("Este navegador no puede preparar esa foto. Prueba con otra o actualiza tu navegador.");
+  } finally {
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
 }

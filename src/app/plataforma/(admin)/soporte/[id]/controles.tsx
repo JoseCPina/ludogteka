@@ -72,10 +72,14 @@ export function ControlesTicket({ ticketId, estado, propuesta }: { ticketId: str
               className="self-start"
               onClick={async () => {
                 try {
+                  if (!navigator.clipboard?.writeText) throw new Error("sin portapapeles");
                   await navigator.clipboard.writeText(propuesta);
                   setCopiado(true);
                 } catch {
-                  setCopiado(false);
+                  // Sin portapapeles (http o navegador viejo): se selecciona el texto para copiarlo a mano.
+                  const area = document.querySelector<HTMLTextAreaElement>("[data-articulo-propuesto]");
+                  area?.select();
+                  setCopiado(Boolean(area) && Boolean(document.execCommand?.("copy")));
                 }
               }}
             >
