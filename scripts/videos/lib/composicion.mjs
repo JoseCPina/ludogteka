@@ -212,6 +212,13 @@ function contexto({ F, e, dir, grabaciones, metas }) {
       const fondo = `<img src="tomas/${nombre}-fin.jpg" alt="" />`;
       return `${fondo}<video id="${e.id}-v${nVideo++}" class="clip" src="tomas/${nombre}.mp4" data-start="${r(inicio)}" data-duration="${r(d)}" data-media-start="${r(desde)}" data-track-index="${3 + nVideo}" muted playsinline></video>`;
     },
+    // Un clip de video que no es una toma de la app (p. ej. una toma de IA aprobada): se copia a tomas/.
+    clip(archivo, { inicio = 0, desde = 0, duracion, clase = "clip", estilo = "" } = {}) {
+      const nombre = path.basename(archivo);
+      copiar(archivo, path.join(dir, "tomas", nombre));
+      const d = duracion ?? e.duracion - inicio;
+      return `<video id="${e.id}-c${nVideo++}" class="${clase}" src="tomas/${nombre}" data-start="${r(inicio)}" data-duration="${r(d)}" data-media-start="${r(desde)}" data-track-index="${3 + nVideo}" muted playsinline style="${estilo}"></video>`;
+    },
     imagen(nombre, marca) {
       const m = recorte(nombre, marca);
       return `<img src="tomas/${m.recorte}" alt="" />`;

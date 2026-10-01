@@ -42,7 +42,8 @@ export const CSS_GANCHO = `
   .globo span { font-size: 19px; line-height: 1.2; }
 `;
 
-export function gancho(c, { monitorFinal, fotoAgenda }) {
+// `soloCaos`: solo la libreta y los chats (sin el monitor limpio ni el segundo título), con `titulo` propio.
+export function gancho(c, { monitorFinal, fotoAgenda, soloCaos = false, titulo = null }) {
   const V = c.vertical;
   const { W } = c;
   // ── Libreta ──
@@ -79,12 +80,12 @@ export function gancho(c, { monitorFinal, fotoAgenda }) {
   });
 
   // ── Monitor limpio (el mismo cuadro con el que arranca la escena 2) ──
-  const mon = c.dispositivo({ id: "mon", tipo: "monitor", toma: "estetica", ...monitorFinal, contenido: fotoAgenda });
+  const mon = soloCaos ? { html: "" } : c.dispositivo({ id: "mon", tipo: "monitor", toma: "estetica", ...monitorFinal, contenido: fotoAgenda });
 
   const titulo1 = c.titulo(V
-    ? { id: "t1", texto: "Así empiezan|muchas mañanas.", x: 80, y: 230, ancho: 920, tam: 92 }
-    : { id: "t1", texto: "Así empiezan muchas mañanas.", x: 0, y: 92, ancho: W, tam: 84, alinear: "center" });
-  const titulo2 = c.titulo(V
+    ? { id: "t1", texto: titulo ?? "Así empiezan|muchas mañanas.", x: 80, y: 230, ancho: 920, tam: 92 }
+    : { id: "t1", texto: titulo ?? "Así empiezan muchas mañanas.", x: 0, y: 92, ancho: W, tam: 84, alinear: "center" });
+  const titulo2 = soloCaos ? "" : c.titulo(V
     ? { id: "t2", texto: "Y así, con|*PeluDesk*.", x: 80, y: 230, ancho: 920, tam: 92 }
     : { id: "t2", texto: "Y así,|con *PeluDesk*.", x: 110, y: 380, ancho: 560, tam: 84 });
   const huellas = `<img id="e1-huellas" src="${c.ilustracion("huellitas")}" alt="" style="position:absolute;${V ? "left:720px;top:1500px;width:300px" : "left:1650px;top:780px;width:230px"};opacity:0" />`;
@@ -114,6 +115,8 @@ export function gancho(c, { monitorFinal, fotoAgenda }) {
     PD.contar(tl, "#e1-contador", 3, 23, 1.1, { duracion: 2.4 });
     tl.fromTo("#e1-huellas", { opacity: 0, y: 20 }, { opacity: 0.22, y: 0, duration: 0.8, ease: PD.suave }, 1.4);
 
+    ${soloCaos ? `tl.to(["#e1-libreta-p", "#e1-tel-p", "#e1-huellas"], { opacity: 0, duration: 0.45, ease: PD.salir }, ${c.dur - 0.5});
+    PD.tituloFuera(tl, "#e1-t1", ${c.dur - 0.55});` : `
     // Todo al fondo: se desenfoca, se achica y se hace a un lado.
     PD.tituloFuera(tl, "#e1-t1", ${T});
     tl.fromTo("#e1-libreta-p", { filter: "blur(0px) saturate(1)" }, { immediateRender: false, x: ${V ? -40 : -60}, y: ${V ? -80 : 40}, scale: ${V ? 0.62 : 0.55}, filter: "blur(7px) saturate(0.4)", opacity: 0.55, duration: 0.8, ease: PD.suave }, ${T});
@@ -124,7 +127,7 @@ export function gancho(c, { monitorFinal, fotoAgenda }) {
     PD.titulo(tl, "#e1-t2", ${T + 0.85});
     // Se van la libreta y los chats; el monitor se queda donde lo recoge la escena 2.
     tl.to(["#e1-libreta-p", "#e1-tel-p"], { opacity: 0, duration: 0.45, ease: PD.salir }, ${c.dur - 0.9});
-    PD.tituloFuera(tl, "#e1-t2", ${c.dur - 0.55});
+    PD.tituloFuera(tl, "#e1-t2", ${c.dur - 0.55});`}
   `;
   return { html, js, css: CSS_GANCHO + `#e1-mon-p { opacity: 0; }` };
 }

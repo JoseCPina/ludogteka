@@ -1,0 +1,20 @@
+{
+  "generacionesVideo": 11,
+  "creditos": 2483,
+  "saldoInicial": 29000,
+  "rechazadas": [
+    {
+      "toma": "T2",
+      "video": 1,
+      "modelo": "veo3-1",
+      "motivo": "El secador desaparece de la mano de la peluquera en la segunda mitad del clip (objeto que se esfuma) y la composición tiene un pilar/pared vertical que ocupa un tercio del cuadro (recorte 9:16 mal elegido)"
+    },
+    {
+      "toma": "T2",
+      "video": 2,
+      "modelo": "veo3-1",
+      "motivo": "Duda: mancha blanca borrosa junto a la mano de la peluquera en el pecho del perro, cabeza del perro cambia de pose con cierre de ojos abrupto, y el mismo pilar vertical del recorte; se regenera con recorte centrado en el vano"
+    }
+  ],
+  "pruebas": "203 créditos de pruebas previas al pipeline: 1 imagen nano-banana-pro 1:1 (40), 1 imagen con lienzo (40), 1 imagen gpt-image-2 (42) y 1 video Veo 3.1 de prueba (120, con letterbox: Veo no vuelve vertical una imagen 1:1)"
+}

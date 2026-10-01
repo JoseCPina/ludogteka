@@ -73,6 +73,7 @@ const doble = http.createServer(async (req, res) => {
   if (arista === "media_publish") { contenedores[q.creation_id] = "PUBLISHED"; return json(res, 200, { id: `ig-${q.creation_id}` }); }
   if (arista === "video_reels" && q.upload_phase === "start") { const v = `reel-${llamadas.length}`; return json(res, 200, { video_id: v, upload_url: `https://rupload.facebook.com/video-upload/v26.0/${v}` }); }
   if (arista === "video_reels" && q.upload_phase === "finish") return json(res, 200, { success: true, post_id: "p1" });
+  if (arista === "photos") return json(res, 200, { id: `foto-${llamadas.length}`, post_id: "p-foto" });
   if (arista === "thumbnails") return json(res, 200, { success: true });
   if (arista === "videos") return json(res, 200, { id: `muro-${llamadas.length}` });
   if (req.method === "DELETE") return json(res, 200, { success: true });
@@ -129,7 +130,7 @@ try {
   console.log("\n2. Dos corridas a la vez");
   // Lo del primer día (Facebook muro + Instagram) y el reel de Facebook + TikTok del segundo, ya.
   // El calendario pone hoy tres videos; el de caja se aparta para las secciones 4 en adelante.
-  await tabla().update({ programada_at: new Date(Date.now() + 86_400_000).toISOString() }).eq("video", "corte-de-caja");
+  await tabla().update({ programada_at: new Date(Date.now() + 86_400_000).toISOString() }).in("video", ["corte-de-caja", "2-de-cada-3", "eres-duena-o-dueno", "52-de-cada-100"]);
   const hoy = (await filas()).filter((f) => ["un-dia-en-tu-guarderia", "ese-perro-no-esta-vacunado"].includes(f.video));
   await tabla().update({ programada_at: new Date(Date.now() - 60_000).toISOString() }).in("id", hoy.map((f) => f.id));
   const [r1, r2] = await Promise.all([cron(), cron()]);
@@ -147,6 +148,27 @@ try {
   ok(cuenta((l) => l.p.endsWith("/thumbnails")) >= 2, "Facebook recibió la miniatura de reel y muro", `miniaturas recibidas: ${cuenta((l) => l.p.endsWith("/thumbnails"))}`);
   const reelFin = llamadas.find((l) => l.cuerpo.includes("upload_phase=finish"));
   ok(reelFin && new URLSearchParams(reelFin.cuerpo).get("description"), "la descripción del reel va en el finish", "el reel salió sin descripción");
+
+  console.log("\n2b. Imágenes (cuadrícula) y el video del tríptico, en orden de programada_at");
+  const trio = ["2-de-cada-3", "eres-duena-o-dueno", "52-de-cada-100"];
+  const antesImg = llamadas.length;
+  const ahoraMs = Date.now();
+  // Fechas escalonadas: la corrida las tiene que sacar por programada_at.
+  const dueTrio = (await filas()).filter((f) => trio.includes(f.video) && f.red !== "tiktok");
+  for (const f of dueTrio) await tabla().update({ programada_at: new Date(ahoraMs - 600_000 + trio.indexOf(f.video) * 60_000 + (f.red === "facebook" ? 1000 : 0)).toISOString() }).eq("id", f.id);
+  const rImg = await cron();
+  respuestas.push(rImg.texto);
+  const nuevas = llamadas.slice(antesImg);
+  const trasImg = (await filas()).filter((f) => trio.includes(f.video) && f.red !== "tiktok");
+  ok(trasImg.length === 6 && trasImg.every((f) => f.estado === "publicada"), "las 2 imágenes y el video salieron en Instagram y Facebook", `estados: ${trasImg.map((f) => `${f.video}/${f.red}:${f.estado}${f.error ? ` (${f.error})` : ""}`).join(", ")}`);
+  const medias = nuevas.filter((l) => l.p.endsWith("/media"));
+  const imgIg = medias.filter((l) => new URLSearchParams(l.cuerpo).get("image_url"));
+  ok(imgIg.length === 2 && imgIg.every((l) => /\/peludesk\/redes\/imagenes\/(2-de-cada-3|52-de-cada-100)\.jpg$/.test(new URLSearchParams(l.cuerpo).get("image_url")) && !l.cuerpo.includes("media_type=REELS")), "Instagram recibió las 2 imágenes (image_url de /imagenes/, sin REELS)", `contenedores de imagen: ${imgIg.length}`);
+  const fotos = nuevas.filter((l) => l.p.endsWith("/photos"));
+  ok(fotos.length === 2 && fotos.every((l) => new URLSearchParams(l.cuerpo).get("caption")?.includes("peludesk.mx") && new URLSearchParams(l.cuerpo).get("url")?.includes("/imagenes/")), "Facebook recibió las 2 fotos con su pie", `fotos: ${fotos.length}`);
+  const ordenIg = medias.map((l) => (new URLSearchParams(l.cuerpo).get("image_url") ?? new URLSearchParams(l.cuerpo).get("video_url") ?? "").split("/").pop());
+  ok(ordenIg[0] === "2-de-cada-3.jpg" && /eres-duena-o-dueno/.test(ordenIg[1]) && ordenIg[2] === "52-de-cada-100.jpg", "salieron en orden: «2 de cada 3», el video, «52 de cada 100»", `orden en Instagram: ${ordenIg.join(" → ")}`);
+  ok(trasImg.filter((f) => f.formato === "imagen").every((f) => f.url?.startsWith("https://")), "las imágenes guardaron su enlace", "falta el enlace de una imagen");
 
   console.log("\n3. Instagram cortado al publicar");
   const ig = (await filas()).find((f) => f.video === "corte-de-caja" && f.red === "instagram");

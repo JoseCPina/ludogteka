@@ -1,0 +1,83 @@
+{
+  "toma": "T3",
+  "imagenes": [
+    {
+      "n": 1,
+      "archivo": "cache\\eres-duena-o-dueno\\T3\\imagen-1.png",
+      "modelo": "nano-banana-pro",
+      "prompt": "Two dogs sleeping on separate beds in a bright quiet room, a labrador and a small mixed-breed, clearly apart, morning light. Vertical-friendly composition with the subject centered and generous headroom and floor space. Documentary realism, natural light, no text, no logos, no signs, no other animals in the scene unless stated, no hands in the foreground, simple collars without tags.",
+      "creditos": 40,
+      "descartada": true
+    },
+    {
+      "n": 2,
+      "archivo": "cache\\eres-duena-o-dueno\\T3\\imagen-2.png",
+      "modelo": "nano-banana-pro",
+      "prompt": "Two dogs sleeping on separate beds in a bright quiet room, a labrador and a small mixed-breed, clearly apart, morning light. Vertical-friendly composition with the subject centered and generous headroom and floor space. Documentary realism, natural light, no text, no logos, no signs, no other animals in the scene unless stated, no hands in the foreground, simple collars without tags.",
+      "creditos": 40,
+      "descartada": true
+    },
+    {
+      "n": 3,
+      "archivo": "cache\\eres-duena-o-dueno\\T3\\imagen-3.png",
+      "modelo": "nano-banana-pro",
+      "prompt": "Two dogs sleeping on separate beds in a bright quiet room, a labrador and a small mixed-breed, clearly apart, morning light. Vertical-friendly composition with the subject centered and generous headroom and floor space. Documentary realism, natural light, no text, no logos, no signs, no other animals in the scene unless stated, no hands in the foreground, simple collars without tags.",
+      "creditos": 40,
+      "descartada": true
+    },
+    {
+      "n": 4,
+      "archivo": "cache\\eres-duena-o-dueno\\T3\\imagen-4.png",
+      "modelo": "nano-banana-pro",
+      "prompt": "Two dogs sleeping on separate beds in a bright quiet room, a labrador on a bed in the foreground and a small mixed-breed on another bed behind it, clearly apart, stacked vertically in the frame, morning light. Tall, narrow composition made for a vertical phone screen: every subject is compact and stacked, together occupying only the central 45% of the image width, with plain empty background on both sides, generous headroom and floor space. Documentary realism, natural light, no text, no logos, no signs, no other animals in the scene unless stated, no hands in the foreground, simple collars without tags.",
+      "creditos": 40
+    },
+    {
+      "n": 5,
+      "archivo": "cache\\eres-duena-o-dueno\\T3\\imagen-5.png",
+      "modelo": "nano-banana-pro",
+      "prompt": "Two dogs sleeping on separate beds in a bright quiet room, a labrador on a bed in the foreground and a small mixed-breed on another bed behind it, clearly apart, stacked vertically in the frame, morning light. Tall, narrow composition made for a vertical phone screen: every subject is compact and stacked, together occupying only the central 45% of the image width, with plain empty background on both sides, generous headroom and floor space. Documentary realism, natural light, no text, no logos, no signs, no other animals in the scene unless stated, no hands in the foreground, simple collars without tags.",
+      "creditos": 40
+    },
+    {
+      "n": 6,
+      "archivo": "cache\\eres-duena-o-dueno\\T3\\imagen-6.png",
+      "modelo": "nano-banana-pro",
+      "prompt": "Two dogs sleeping on separate beds in a bright quiet room, a labrador on a bed in the foreground and a small mixed-breed on another bed behind it, clearly apart, stacked vertically in the frame, morning light. Tall, narrow composition made for a vertical phone screen: every subject is compact and stacked, together occupying only the central 45% of the image width, with plain empty background on both sides, generous headroom and floor space. Documentary realism, natural light, no text, no logos, no signs, no other animals in the scene unless stated, no hands in the foreground, simple collars without tags.",
+      "creditos": 40
+    }
+  ],
+  "videos": [
+    {
+      "n": 1,
+      "archivo": "cache\\eres-duena-o-dueno\\T3\\video-1-veo3-1.mp4",
+      "modelo": "veo3-1",
+      "prompt": "Very slow dolly to the right, the dogs breathe, one lifts an ear. Photorealistic, natural motion, the subject keeps the same identity throughout, no new objects appear.",
+      "creditos": 120,
+      "qc": {
+        "estado": "no-usada",
+        "motivo": "Sin error visible (SSIM 0.942); se usó la variante 2, de la que se revisaron los 12 cuadros completos. No cuenta como rechazo.",
+        "fecha": "2026-10-01T04:22:08.229Z"
+      }
+    },
+    {
+      "n": 2,
+      "archivo": "cache/eres-duena-o-dueno/T3/video-2-veo3-1.mp4",
+      "modelo": "veo3-1",
+      "prompt": "Very slow dolly to the right, the dogs breathe, one lifts an ear. Photorealistic, natural motion, the subject keeps the same identity throughout, no new objects appear.",
+      "creditos": 120,
+      "qc": {
+        "estado": "aprobada",
+        "motivo": "12 cuadros a resolución completa + tira de 20 cuadros + SSIM 0.951: dos perros con 4 patas, cola, orejas y ojos correctos, sin fusiones ni morphing, camas y sombras coherentes, sin texto. Nota: el perro grande es un golden (el prompt decía labrador); el pilar blanco es parte de la imagen base",
+        "fecha": "2026-10-01T04:21:55.965Z"
+      },
+      "nota": "Generación que quedó procesando cuando se cortó el comando por tiempo; se recuperó con `openart creation wait` (id TWdYtfXm7kZ0JDQzFsMk)."
+    }
+  ],
+  "aprobado": "cache\\eres-duena-o-dueno\\aprobadas\\T3.mp4",
+  "elegida": 5,
+  "cuadroInicial": {
+    "archivo": "cache\\eres-duena-o-dueno\\T3\\inicio-5.png",
+    "recorteX": 246
+  }
+}

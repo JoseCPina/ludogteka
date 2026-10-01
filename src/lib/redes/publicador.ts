@@ -31,7 +31,7 @@ export type Publicacion = {
   id: string;
   video: string;
   red: "facebook" | "instagram" | "tiktok";
-  formato: "reel" | "muro" | "borrador";
+  formato: "reel" | "muro" | "borrador" | "imagen";
   archivo: string;
   programada_at: string;
   pie: string;
@@ -106,6 +106,7 @@ function exigirMeta() {
 
 async function instagram(f: Publicacion): Promise<Resultado> {
   const { token, ig } = exigirMeta();
+  const imagen = f.formato === "imagen";
   let contenedor = f.contenedor_id;
   if (contenedor && f.paso === "publicar") {
     // Se cortó al publicar: si ya salió, no se vuelve a publicar.
@@ -114,7 +115,9 @@ async function instagram(f: Publicacion): Promise<Resultado> {
   }
   if (!contenedor) {
     await anotar(f.id, { paso: "contenedor" });
-    contenedor = await meta.igCrearContenedor({ ig, token, videoUrl: urlVideo(f.archivo), pie: f.pie, portadaUrl: urlPortada(f.archivo) });
+    contenedor = imagen
+      ? await meta.igCrearContenedorImagen({ ig, token, imagenUrl: urlVideo(f.archivo, f.formato), pie: f.pie })
+      : await meta.igCrearContenedor({ ig, token, videoUrl: urlVideo(f.archivo), pie: f.pie, portadaUrl: urlPortada(f.archivo) });
     await anotar(f.id, { contenedor_id: contenedor, paso: "esperar" });
   }
   await meta.igEsperar({ contenedor, token, topeMs: 150_000 });
@@ -137,6 +140,16 @@ async function miniaturaFb(videoId: string, token: string, f: Publicacion) {
 async function facebook(f: Publicacion): Promise<Resultado> {
   const { token: tokenUsuario, pagina } = exigirMeta();
   const token = await meta.fbTokenPagina({ pagina, token: tokenUsuario });
+  if (f.formato === "imagen" && !f.prueba) {
+    // Foto de la página: una llamada. Si se cortó a la mitad y no dejó id, no hay forma de saber si salió.
+    if (f.paso === "enviar" && !f.publicacion_id) {
+      throw new Revisar("La corrida anterior se cortó mientras Facebook recibía la foto y no dejó id: revisa la página antes de reintentar.");
+    }
+    await anotar(f.id, { paso: "enviar" });
+    const id = await meta.fbFoto({ pagina, token, imagenUrl: urlVideo(f.archivo, f.formato), pie: f.pie });
+    await anotar(f.id, { publicacion_id: id });
+    return { publicacionId: id, url: await meta.fbPermalink(id, token) };
+  }
   if (f.prueba) {
     // Privado y borrado: nadie lo ve.
     const id = await meta.fbVideoMuro({ pagina, token, videoUrl: urlVideo(f.archivo), pie: f.pie, publicado: false });
@@ -206,7 +219,7 @@ async function esperarTikTok(token: string, publishId: string): Promise<Resultad
 // ── Avisos en la bandeja de Telegram ──
 
 function nombre(f: Publicacion) {
-  const formato = f.formato === "muro" ? "muro" : f.formato === "borrador" ? "borrador" : "reel";
+  const formato = f.formato === "muro" ? "muro" : f.formato === "borrador" ? "borrador" : f.formato === "imagen" ? "imagen" : "reel";
   return `${f.prueba ? "PRUEBA · " : ""}<b>${escaparHtml(TITULOS[f.video] ?? f.video)}</b> · ${RED[f.red]} (${formato})`;
 }
 

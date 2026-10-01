@@ -113,6 +113,13 @@ export async function igCrearContenedor({ ig, token, videoUrl, pie, portadaUrl, 
   return String(j.id);
 }
 
+/** Contenedor de IMAGEN de Instagram (se publica igual: esperar FINISHED → media_publish). */
+export async function igCrearContenedorImagen({ ig, token, imagenUrl, pie }: { ig: string; token: string; imagenUrl: string; pie: string }): Promise<string> {
+  const j = await peticion(`${ig}/media`, { metodo: "POST", params: { image_url: imagenUrl, caption: pie, access_token: token }, etiqueta: "instagram/media(imagen)" });
+  if (!j.id) throw new ErrorRed("instagram/media(imagen): no devolvió id de contenedor");
+  return String(j.id);
+}
+
 /** FINISHED | IN_PROGRESS | PUBLISHED | ERROR | EXPIRED, con el motivo. */
 export async function igEstado({ contenedor, token }: { contenedor: string; token: string }): Promise<{ estado: string; motivo: string | null }> {
   const j = await peticion(contenedor, { params: { fields: "status_code,status", access_token: token }, etiqueta: "instagram/estado" });
@@ -207,6 +214,14 @@ export async function fbMiniatura({ videoId, token, imagenUrl }: { videoId: stri
   const res = await fetch(`${GRAPH()}/${VERSION}/${videoId}/thumbnails`, { method: "POST", body: form, signal: AbortSignal.timeout(TOPE_MS) }).catch(() => null);
   const j = (await res?.json().catch(() => ({}))) as (Json & { success?: boolean }) | undefined;
   if (!res || !res.ok || j?.error || j?.success === false) throw new ErrorRed(`facebook/miniatura: HTTP ${res?.status ?? "red"} ${String(j?.error?.message ?? "").slice(0, 200)}`, !res || res.status >= 500);
+}
+
+/** Foto de la página (una llamada). `publicado: false` = sin publicar (para la prueba). Devuelve el id de la foto. */
+export async function fbFoto({ pagina, token, imagenUrl, pie, publicado = true }: { pagina: string; token: string; imagenUrl: string; pie: string; publicado?: boolean }): Promise<string> {
+  const j = await peticion(`${pagina}/photos`, { metodo: "POST", params: { url: imagenUrl, caption: pie, published: publicado ? "true" : "false", access_token: token }, etiqueta: "facebook/photos", intentos: 1 });
+  const id = (j.id ?? j.post_id) as string | undefined;
+  if (!id) throw new ErrorRed("facebook/photos: no devolvió id");
+  return String(id);
 }
 
 export async function fbBorrar({ id, token }: { id: string; token: string }): Promise<void> {

@@ -52,7 +52,7 @@ const BASE = opcion("base", "http://patitasyco.localhost:3001");
 const FORMATOS = opcion("formatos", "16x9,9x16").split(",");
 const CALIDAD = opcion("calidad", "standard");
 const guion = (await import(pathToFileURL(path.join(AQUI, "videos", nombre, "guion.mjs")).href)).default;
-const GRAB = path.join(AQUI, "grabaciones", nombre);
+const GRAB = path.join(AQUI, "grabaciones", guion.grabaciones ?? nombre); // `grabaciones`: reutiliza las tomas de otro video
 const BUILD = path.join(AQUI, ".build", nombre);
 const SALIDA = path.join(RAIZ, "public/peludesk/redes/videos");
 

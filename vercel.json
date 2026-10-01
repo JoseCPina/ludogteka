@@ -7,7 +7,7 @@
     },
     {
       "path": "/api/cron/redes",
-      "schedule": "3,23,43 * * * *"
+      "schedule": "*/3 * * * *"
     },
     {
       "path": "/api/cron/resumen",

@@ -14,7 +14,7 @@
  */
 
 export type Red = "facebook" | "instagram" | "tiktok";
-export type Formato = "reel" | "muro" | "borrador";
+export type Formato = "reel" | "muro" | "borrador" | "imagen";
 
 export const HORA_PUBLICACION = "13:00"; // hora de la Ciudad de México
 const ZONA = "-06:00"; // México no cambia de horario desde 2022
@@ -33,6 +33,8 @@ const REEL_IG = { red: "instagram", formato: "reel" } as const;
 const TIKTOK = { red: "tiktok", formato: "borrador" } as const;
 const REEL_FB = { red: "facebook", formato: "reel" } as const;
 const MURO_FB = { red: "facebook", formato: "muro" } as const;
+const IMG_IG = { red: "instagram", formato: "imagen" } as const;
+const IMG_FB = { red: "facebook", formato: "imagen" } as const;
 
 export const SERIE: Entrada[] = [
   {
@@ -102,9 +104,38 @@ export const SERIE: Entrada[] = [
     texto: "¿Tu negocio todavía no tiene página web?\n\nEn tu prueba, completa tu perfil la primera semana: logo, tres fotos, horario, dirección y un precio. Tu página queda gratis de por vida.\n\nEmpieza tus 15 días gratis en peludesk.mx",
     hashtags: ["#guarderiacanina", "#esteticacanina", "#paginaweb"],
   },
+  // ── Tríptico «¿Eres dueña o dueño…?»: dos imágenes de la cuadrícula y el video con tomas de IA, con 3 minutos entre cada una ──
+  {
+    video: "2-de-cada-3",
+    titulo: "2 de cada 3 negocios cierran antes de los 5 años (imagen)",
+    fecha: "2026-10-01",
+    hora: "13:00",
+    redes: [IMG_IG, IMG_FB],
+    texto: "Cerca de 2 de cada 3 negocios en México cierran antes de los 5 años (INEGI).\n\nLlevar la agenda, las vacunas y la caja en libreta y chats pesa más de lo que parece. En PeluDesk lo ves todo en un solo lugar. Pruébalo 15 días gratis en peludesk.mx",
+    hashtags: ["#guarderiacanina", "#esteticacanina", "#emprendedoresmx"],
+  },
+  {
+    video: "eres-duena-o-dueno",
+    titulo: "¿Eres dueña o dueño de un negocio canino?",
+    fecha: "2026-10-01",
+    hora: "13:03",
+    redes: [REEL_IG, REEL_FB, TIKTOK],
+    texto: "¿Eres dueña o dueño de un negocio canino?\n\nSegún el INEGI, más de la mitad de los negocios en México cierra antes de cumplir 2 años. Una de las causas que más se repiten: administrar mal el negocio.\n\nCon PeluDesk ves tu agenda, cuidas las vacunas y cuadras la caja, sin libreta. Pruébalo 15 días gratis en peludesk.mx",
+    hashtags: ["#guarderiacanina", "#esteticacanina", "#emprendedoresmx"],
+  },
+  {
+    video: "52-de-cada-100",
+    titulo: "52 de cada 100 negocios cierran antes de cumplir 2 años (imagen)",
+    fecha: "2026-10-01",
+    hora: "13:06",
+    redes: [IMG_IG, IMG_FB],
+    texto: "52 de cada 100 negocios en México cierran antes de cumplir 2 años (INEGI).\n\nTener las cuentas claras ayuda. PeluDesk junta tu agenda, tus vacunas y tu caja, sin libreta. 15 días gratis en peludesk.mx",
+    hashtags: ["#guarderiacanina", "#esteticacanina", "#emprendedoresmx"],
+  },
 ];
 
 export function archivoDe(video: string, formato: Formato): string {
+  if (formato === "imagen") return `${video}.jpg`; // public/peludesk/redes/imagenes/
   return formato === "muro" ? `${video}-16x9.mp4` : `${video}-9x16-subtitulos.mp4`;
 }
 
@@ -148,9 +179,9 @@ export function filasDeUnVideo(video: string, red: Red | "todas", ahora = new Da
 export const TITULOS: Record<string, string> = Object.fromEntries(SERIE.map((e) => [e.video, e.titulo]));
 
 /** La URL pública del video (Meta la descarga; TikTok la lee nuestro servidor). */
-export function urlVideo(archivo: string): string {
+export function urlVideo(archivo: string, formato?: string): string {
   const base = (process.env.PELUDESK_VIDEOS_URL?.trim() || "https://peludesk.mx").replace(/\/$/, "");
-  return `${base}/peludesk/redes/videos/${archivo}`;
+  return `${base}/peludesk/redes/${formato === "imagen" ? "imagenes" : "videos"}/${archivo}`;
 }
 
 /** La portada pública de un video (la misma imagen que el reel lleva como cover): `<video>-9x16.jpg` o `<video>-16x9.jpg`. */

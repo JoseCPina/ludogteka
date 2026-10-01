@@ -1,0 +1,106 @@
+{
+  "toma": "T2",
+  "imagenes": [
+    {
+      "n": 1,
+      "archivo": "cache\\eres-duena-o-dueno\\T2\\imagen-1.png",
+      "modelo": "nano-banana-pro",
+      "prompt": "Professional dog groomer in a purple apron, back three-quarter view, drying one fluffy white dog on a grooming table, soft light, clean salon. Vertical-friendly composition with the subject centered and generous headroom and floor space. Documentary realism, natural light, no text, no logos, no signs, no other animals in the scene unless stated, no hands in the foreground, simple collars without tags.",
+      "creditos": 40,
+      "descartada": true
+    },
+    {
+      "n": 2,
+      "archivo": "cache\\eres-duena-o-dueno\\T2\\imagen-2.png",
+      "modelo": "nano-banana-pro",
+      "prompt": "Professional dog groomer in a purple apron, back three-quarter view, drying one fluffy white dog on a grooming table, soft light, clean salon. Vertical-friendly composition with the subject centered and generous headroom and floor space. Documentary realism, natural light, no text, no logos, no signs, no other animals in the scene unless stated, no hands in the foreground, simple collars without tags.",
+      "creditos": 40,
+      "descartada": true
+    },
+    {
+      "n": 3,
+      "archivo": "cache\\eres-duena-o-dueno\\T2\\imagen-3.png",
+      "modelo": "nano-banana-pro",
+      "prompt": "Professional dog groomer in a purple apron, back three-quarter view, drying one fluffy white dog on a grooming table, soft light, clean salon. Vertical-friendly composition with the subject centered and generous headroom and floor space. Documentary realism, natural light, no text, no logos, no signs, no other animals in the scene unless stated, no hands in the foreground, simple collars without tags.",
+      "creditos": 40,
+      "descartada": true
+    },
+    {
+      "n": 4,
+      "archivo": "cache\\eres-duena-o-dueno\\T2\\imagen-4.png",
+      "modelo": "nano-banana-pro",
+      "prompt": "Professional dog groomer in a purple apron, back three-quarter view, drying one fluffy white dog standing on a grooming table directly in front of her, dog and groomer overlapping closely as one compact group, soft light, clean salon. Tall, narrow composition made for a vertical phone screen: every subject is compact and stacked, together occupying only the central 45% of the image width, with plain empty background on both sides, generous headroom and floor space. Documentary realism, natural light, no text, no logos, no signs, no other animals in the scene unless stated, no hands in the foreground, simple collars without tags.",
+      "creditos": 40
+    },
+    {
+      "n": 5,
+      "archivo": "cache\\eres-duena-o-dueno\\T2\\imagen-5.png",
+      "modelo": "nano-banana-pro",
+      "prompt": "Professional dog groomer in a purple apron, back three-quarter view, drying one fluffy white dog standing on a grooming table directly in front of her, dog and groomer overlapping closely as one compact group, soft light, clean salon. Tall, narrow composition made for a vertical phone screen: every subject is compact and stacked, together occupying only the central 45% of the image width, with plain empty background on both sides, generous headroom and floor space. Documentary realism, natural light, no text, no logos, no signs, no other animals in the scene unless stated, no hands in the foreground, simple collars without tags.",
+      "creditos": 40
+    },
+    {
+      "n": 6,
+      "archivo": "cache\\eres-duena-o-dueno\\T2\\imagen-6.png",
+      "modelo": "nano-banana-pro",
+      "prompt": "Professional dog groomer in a purple apron, back three-quarter view, drying one fluffy white dog standing on a grooming table directly in front of her, dog and groomer overlapping closely as one compact group, soft light, clean salon. Tall, narrow composition made for a vertical phone screen: every subject is compact and stacked, together occupying only the central 45% of the image width, with plain empty background on both sides, generous headroom and floor space. Documentary realism, natural light, no text, no logos, no signs, no other animals in the scene unless stated, no hands in the foreground, simple collars without tags.",
+      "creditos": 40
+    }
+  ],
+  "videos": [
+    {
+      "n": 1,
+      "archivo": "cache\\eres-duena-o-dueno\\T2\\video-1-veo3-1.mp4",
+      "modelo": "veo3-1",
+      "prompt": "She brushes the coat slowly, subtle camera drift. Photorealistic, natural motion, the subject keeps the same identity throughout, no new objects appear.",
+      "creditos": 120,
+      "qc": {
+        "estado": "rechazada",
+        "motivo": "El secador desaparece de la mano de la peluquera en la segunda mitad del clip (objeto que se esfuma) y la composición tiene un pilar/pared vertical que ocupa un tercio del cuadro (recorte 9:16 mal elegido)",
+        "fecha": "2026-10-01T04:21:07.149Z"
+      }
+    },
+    {
+      "n": 2,
+      "archivo": "cache\\eres-duena-o-dueno\\T2\\video-2-veo3-1.mp4",
+      "modelo": "veo3-1",
+      "prompt": "She brushes the coat slowly, subtle camera drift. Photorealistic, natural motion, the subject keeps the same identity throughout, no new objects appear.",
+      "creditos": 120,
+      "qc": {
+        "estado": "rechazada",
+        "motivo": "Duda: mancha blanca borrosa junto a la mano de la peluquera en el pecho del perro, cabeza del perro cambia de pose con cierre de ojos abrupto, y el mismo pilar vertical del recorte; se regenera con recorte centrado en el vano",
+        "fecha": "2026-10-01T04:21:07.244Z"
+      }
+    },
+    {
+      "n": 3,
+      "archivo": "cache\\eres-duena-o-dueno\\T2\\video-3-veo3-1.mp4",
+      "modelo": "veo3-1",
+      "prompt": "She brushes the coat slowly, subtle camera drift. Photorealistic, natural motion, the subject keeps the same identity throughout, no new objects appear.",
+      "creditos": 120,
+      "qc": {
+        "estado": "aprobada",
+        "motivo": "12 cuadros a resolución completa + tira de continuidad + SSIM 0.924: perro con 4 patas, cola, orejas y ojos correctos; peluquera con 2 manos (reloj en la muñeca), secador presente todo el clip; sin fusiones ni morphing; mesa, patas y reflejos del piso coherentes; sin texto. Recorte centrado en el vano de la puerta",
+        "fecha": "2026-10-01T04:28:45.173Z"
+      }
+    },
+    {
+      "n": 4,
+      "archivo": "cache\\eres-duena-o-dueno\\T2\\video-4-veo3-1.mp4",
+      "modelo": "veo3-1",
+      "prompt": "She brushes the coat slowly, subtle camera drift. Photorealistic, natural motion, the subject keeps the same identity throughout, no new objects appear.",
+      "creditos": 120,
+      "qc": {
+        "estado": "no-usada",
+        "motivo": "No se revisó: la variante 3 ya pasó el control de calidad. No cuenta como rechazo.",
+        "fecha": "2026-10-01T04:28:52.538Z"
+      }
+    }
+  ],
+  "aprobado": "cache\\eres-duena-o-dueno\\aprobadas\\T2.mp4",
+  "elegida": 5,
+  "cuadroInicial": {
+    "archivo": "cache\\eres-duena-o-dueno\\T2\\inicio-5.png",
+    "recorteX": 228
+  }
+}

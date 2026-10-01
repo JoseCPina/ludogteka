@@ -1,0 +1,130 @@
+{
+  "video": "eres-duena-o-dueno",
+  "titulo": "¿Eres dueña o dueño de un negocio canino?",
+  "traslape": 0.4,
+  "portada": 38.5,
+  "modeloImagen": "nano-banana-pro",
+  "modeloVideo": "veo3-1",
+  "modeloVideoAlterno": "kling-v3",
+  "musica": "Soft, warm, calm instrumental for a short serious-but-hopeful product video. Gentle felt piano and light acoustic guitar, airy pads, very slow and steady pulse around 84 bpm, no drops, no vocals, no big build-ups. Background bed that stays well under a spoken voiceover.",
+  "tomas": {
+    "T1": {
+      "imagen": "Candid documentary photo, bright modern dog daycare, a woman in a teal polo seen from the side crouching close to one golden retriever sitting facing her, she greets it, one compact group, natural window light, shallow depth of field, 35mm, photorealistic fur.",
+      "video": "Slow handheld push-in, the dog wags its tail gently, the woman strokes its back.",
+      "duracion": 4
+    },
+    "T2": {
+      "imagen": "Professional dog groomer in a purple apron, back three-quarter view, drying one fluffy white dog standing on a grooming table directly in front of her, dog and groomer overlapping closely as one compact group, soft light, clean salon.",
+      "video": "She brushes the coat slowly, subtle camera drift.",
+      "duracion": 4
+    },
+    "T3": {
+      "imagen": "Two dogs sleeping on separate beds in a bright quiet room, a labrador on a bed in the foreground and a small mixed-breed on another bed behind it, clearly apart, stacked vertically in the frame, morning light.",
+      "video": "Very slow dolly to the right, the dogs breathe, one lifts an ear.",
+      "duracion": 4
+    },
+    "T4": {
+      "imagen": "Woman in her 30s seen from behind sitting at a reception desk of a dog daycare at night, paper notebook, calculator, warm desk lamp, one dog sleeping on the floor beside her chair, moody warm light, compact framing.",
+      "video": "Slow push-in, she leans back in the chair and exhales.",
+      "duracion": 6
+    }
+  },
+  "escenas": [
+    {
+      "id": "e1",
+      "tipo": "ia",
+      "duracion": 7,
+      "tomas": [
+        [
+          "T1",
+          1.9
+        ],
+        [
+          "T2",
+          1.75
+        ],
+        [
+          "T3",
+          1.75
+        ],
+        [
+          "T4",
+          1.6
+        ]
+      ],
+      "voz": {
+        "texto": "¿Eres dueña o dueño de un negocio canino? No es por asustarte.",
+        "desde": 0.3,
+        "hasta": 6
+      }
+    },
+    {
+      "id": "e2",
+      "tipo": "codigo",
+      "plantilla": "cifra",
+      "toma": "T4",
+      "duracion": 8.6,
+      "voz": {
+        "texto": "Pero según el INEGI, más de la mitad de los negocios en México cierra antes de cumplir dos años.",
+        "desde": 0.4,
+        "hasta": 8
+      }
+    },
+    {
+      "id": "e3",
+      "tipo": "pantalla",
+      "plantilla": "libreta",
+      "duracion": 6,
+      "voz": {
+        "texto": "Y una de las causas que más se repiten: administrar mal el negocio.",
+        "desde": 0.4,
+        "hasta": 5.5
+      }
+    },
+    {
+      "id": "e4",
+      "tipo": "pantalla",
+      "plantilla": "agenda",
+      "duracion": 4.6,
+      "voz": {
+        "texto": "Con PeluDesk ves tu agenda,",
+        "desde": 0.5,
+        "hasta": 3.6
+      }
+    },
+    {
+      "id": "e5",
+      "tipo": "pantalla",
+      "plantilla": "vacuna",
+      "duracion": 4.4,
+      "voz": {
+        "texto": "cuidas las vacunas",
+        "desde": 0.4,
+        "hasta": 3.2
+      }
+    },
+    {
+      "id": "e6",
+      "tipo": "pantalla",
+      "plantilla": "caja",
+      "duracion": 4.6,
+      "voz": {
+        "texto": "y cuadras la caja, sin libreta.",
+        "desde": 0.4,
+        "hasta": 3.6
+      }
+    },
+    {
+      "id": "e7",
+      "tipo": "codigo",
+      "plantilla": "cierre",
+      "duracion": 5.8,
+      "voz": {
+        "texto": "Pruébalo quince días gratis, en peludesk punto mx.",
+        "subtitulo": "Pruébalo 15 días gratis, en peludesk.mx.",
+        "desde": 0.6,
+        "hasta": 5.2
+      }
+    }
+  ]
+}

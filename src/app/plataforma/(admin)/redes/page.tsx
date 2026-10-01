@@ -18,7 +18,7 @@ type Fila = {
 
 const ZONA = "America/Mexico_City";
 const RED: Record<string, string> = { facebook: "Facebook", instagram: "Instagram", tiktok: "TikTok" };
-const FORMATO: Record<string, string> = { reel: "reel 9:16", muro: "muro 16:9", borrador: "borrador 9:16" };
+const FORMATO: Record<string, string> = { reel: "reel 9:16", muro: "muro 16:9", borrador: "borrador 9:16", imagen: "imagen 4:5" };
 const ESTADO: Record<string, { texto: string; clase: string }> = {
   programada: { texto: "Programada", clase: "bg-morado-suave text-morado" },
   publicando: { texto: "Publicando", clase: "bg-ambar-suave text-ambar-oscuro" },

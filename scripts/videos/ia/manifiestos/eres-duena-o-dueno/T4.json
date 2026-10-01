@@ -1,0 +1,82 @@
+{
+  "toma": "T4",
+  "imagenes": [
+    {
+      "n": 1,
+      "archivo": "cache\\eres-duena-o-dueno\\T4\\imagen-1.png",
+      "modelo": "nano-banana-pro",
+      "prompt": "Woman in her 30s seen from behind at a reception desk of a dog daycare at night, paper notebook, calculator, warm desk lamp, a dog sleeping on the floor beside her, moody warm light. Vertical-friendly composition with the subject centered and generous headroom and floor space. Documentary realism, natural light, no text, no logos, no signs, no other animals in the scene unless stated, no hands in the foreground, simple collars without tags.",
+      "creditos": 40,
+      "descartada": true
+    },
+    {
+      "n": 2,
+      "archivo": "cache\\eres-duena-o-dueno\\T4\\imagen-2.png",
+      "modelo": "nano-banana-pro",
+      "prompt": "Woman in her 30s seen from behind at a reception desk of a dog daycare at night, paper notebook, calculator, warm desk lamp, a dog sleeping on the floor beside her, moody warm light. Vertical-friendly composition with the subject centered and generous headroom and floor space. Documentary realism, natural light, no text, no logos, no signs, no other animals in the scene unless stated, no hands in the foreground, simple collars without tags.",
+      "creditos": 40,
+      "descartada": true
+    },
+    {
+      "n": 3,
+      "archivo": "cache\\eres-duena-o-dueno\\T4\\imagen-3.png",
+      "modelo": "nano-banana-pro",
+      "prompt": "Woman in her 30s seen from behind at a reception desk of a dog daycare at night, paper notebook, calculator, warm desk lamp, a dog sleeping on the floor beside her, moody warm light. Vertical-friendly composition with the subject centered and generous headroom and floor space. Documentary realism, natural light, no text, no logos, no signs, no other animals in the scene unless stated, no hands in the foreground, simple collars without tags.",
+      "creditos": 40,
+      "descartada": true
+    },
+    {
+      "n": 4,
+      "archivo": "cache\\eres-duena-o-dueno\\T4\\imagen-4.png",
+      "modelo": "nano-banana-pro",
+      "prompt": "Woman in her 30s seen from behind sitting at a reception desk of a dog daycare at night, paper notebook, calculator, warm desk lamp, one dog sleeping on the floor beside her chair, moody warm light, compact framing. Tall, narrow composition made for a vertical phone screen: every subject is compact and stacked, together occupying only the central 45% of the image width, with plain empty background on both sides, generous headroom and floor space. Documentary realism, natural light, no text, no logos, no signs, no other animals in the scene unless stated, no hands in the foreground, simple collars without tags.",
+      "creditos": 40
+    },
+    {
+      "n": 5,
+      "archivo": "cache\\eres-duena-o-dueno\\T4\\imagen-5.png",
+      "modelo": "nano-banana-pro",
+      "prompt": "Woman in her 30s seen from behind sitting at a reception desk of a dog daycare at night, paper notebook, calculator, warm desk lamp, one dog sleeping on the floor beside her chair, moody warm light, compact framing. Tall, narrow composition made for a vertical phone screen: every subject is compact and stacked, together occupying only the central 45% of the image width, with plain empty background on both sides, generous headroom and floor space. Documentary realism, natural light, no text, no logos, no signs, no other animals in the scene unless stated, no hands in the foreground, simple collars without tags.",
+      "creditos": 40
+    },
+    {
+      "n": 6,
+      "archivo": "cache\\eres-duena-o-dueno\\T4\\imagen-6.png",
+      "modelo": "nano-banana-pro",
+      "prompt": "Woman in her 30s seen from behind sitting at a reception desk of a dog daycare at night, paper notebook, calculator, warm desk lamp, one dog sleeping on the floor beside her chair, moody warm light, compact framing. Tall, narrow composition made for a vertical phone screen: every subject is compact and stacked, together occupying only the central 45% of the image width, with plain empty background on both sides, generous headroom and floor space. Documentary realism, natural light, no text, no logos, no signs, no other animals in the scene unless stated, no hands in the foreground, simple collars without tags.",
+      "creditos": 40
+    }
+  ],
+  "videos": [
+    {
+      "n": 1,
+      "archivo": "cache\\eres-duena-o-dueno\\T4\\video-1-veo3-1.mp4",
+      "modelo": "veo3-1",
+      "prompt": "Slow push-in, she leans back in the chair and exhales. Photorealistic, natural motion, the subject keeps the same identity throughout, no new objects appear.",
+      "creditos": 180,
+      "qc": {
+        "estado": "aprobada",
+        "motivo": "12 cuadros a resolución completa + SSIM 0.889: sin error de anatomía (manos sobre el cuaderno con dedos correctos, perro dormido estable, silla y lámpara coherentes), sin texto legible, sin morphing; el cuaderno y las notas se mantienen. La mujer se recarga y exhala como pide el guion",
+        "fecha": "2026-10-01T04:25:24.972Z"
+      }
+    },
+    {
+      "n": 2,
+      "archivo": "cache\\eres-duena-o-dueno\\T4\\video-2-veo3-1.mp4",
+      "modelo": "veo3-1",
+      "prompt": "Slow push-in, she leans back in the chair and exhales. Photorealistic, natural motion, the subject keeps the same identity throughout, no new objects appear.",
+      "creditos": 180,
+      "qc": {
+        "estado": "no-usada",
+        "motivo": "No se revisó: la variante 1 ya pasó el control de calidad. No cuenta como rechazo.",
+        "fecha": "2026-10-01T04:25:39.443Z"
+      }
+    }
+  ],
+  "aprobado": "cache\\eres-duena-o-dueno\\aprobadas\\T4.mp4",
+  "elegida": 5,
+  "cuadroInicial": {
+    "archivo": "cache\\eres-duena-o-dueno\\T4\\inicio-5.png",
+    "recorteX": 184
+  }
+}
