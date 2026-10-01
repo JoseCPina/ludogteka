@@ -58,7 +58,8 @@ type Resultado = { publicacionId?: string | null; url?: string | null; nota?: st
 export async function correrPublicador({ limite = 6 }: { limite?: number } = {}) {
   const { data, error } = await bd().rpc("redes_tomar", { p_limite: limite, p_bloqueo_min: BLOQUEO_MIN });
   if (error) throw new Error(`redes_tomar: ${error.message}`);
-  const filas = (data ?? []) as Publicacion[];
+  // El UPDATE … RETURNING no garantiza el orden: se publica por hora programada (el último en salir queda arriba en el perfil).
+  const filas = ((data ?? []) as Publicacion[]).sort((x, y) => x.programada_at.localeCompare(y.programada_at));
   const resumen = { tomadas: filas.length, publicadas: 0, reintentar: 0, fallidas: 0, revisar: 0 };
   for (const f of filas) {
     const r = await publicarUna(f);
