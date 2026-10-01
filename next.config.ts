@@ -12,12 +12,25 @@ const nextConfig: NextConfig = {
     "/api/whatsapp/webhook": ["./public/peludesk/whatsapp/*.jpg"],
     "/peludesk/**": ["./content/**/*"],
     "/sitemap.xml": ["./content/**/*"],
+    // La tarjeta del reporte de guardería se dibuja en el servidor y lee sus
+    // fuentes del disco (src/lib/reporte/tarjeta-servidor.ts).
+    "/guarderia/reportes/**": ["./src/lib/reporte/fuentes/**/*"],
   },
   // Los videos de producto para redes (scripts/videos) son para subirlos a
   // Reels, TikTok o YouTube, no para que un buscador los indexe desde aquí.
   async headers() {
     return [
       { source: "/peludesk/redes/:ruta*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
+      // Las ligas que se le mandan a un dueño (reporte /r/<token>, galería
+      // /f/<token>) son personales: nada que indexar ni guardar en caché.
+      {
+        source: "/r/:token",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "private, no-store" }, { key: "Referrer-Policy", value: "no-referrer" }],
+      },
+      {
+        source: "/f/:token",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "private, no-store" }, { key: "Referrer-Policy", value: "no-referrer" }],
+      },
       // El demo (Patitas & Co.) es para verlo, no para que un buscador lo indexe.
       // Además robots.txt del demo lo prohíbe y sus páginas traen meta noindex.
       { source: "/:ruta*", has: [{ type: "host", value: "patitasyco.peludesk.mx" }], headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },

@@ -20,8 +20,12 @@ export type Articulo = {
   resumen: string;
   /** Dónde se agrupa en el índice (una clave de NOMBRE_GRUPO). */
   grupo: keyof typeof NOMBRE_GRUPO;
-  /** El módulo del que depende (null: todo negocio lo tiene, p. ej. caja y clientes). */
-  modulo: ClaveModulo | null;
+  /**
+   * El módulo del que depende (null: todo negocio lo tiene, p. ej. caja y
+   * clientes). Con una lista basta con que esté activo cualquiera (lo que
+   * sirve a guardería y a hotel).
+   */
+  modulo: ClaveModulo | ClaveModulo[] | null;
   /** Quién hace esta tarea (admin y/o recepción). */
   roles: ("admin" | "recepcion")[];
   /**

@@ -120,7 +120,19 @@ function ListaPerros({
   );
 }
 
-function Cifra({ etiqueta, valor, sub }: { etiqueta: string; valor: string; sub?: string }) {
+function Cifra({ etiqueta, valor, sub, href }: { etiqueta: string; valor: string; sub?: string; href?: string }) {
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="rounded-lg border border-n-200 bg-white p-4 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
+      >
+        <p className="text-xs font-bold uppercase tracking-wide text-n-500">{etiqueta}</p>
+        <p className="mt-1 text-2xl font-bold text-n-900">{valor}</p>
+        <p className="text-xs font-semibold text-morado">{sub ?? "Fotos, videos y reporte →"}</p>
+      </Link>
+    );
+  }
   return (
     <div className="rounded-lg border border-n-200 bg-white p-4">
       <p className="text-xs font-bold uppercase tracking-wide text-n-500">{etiqueta}</p>
@@ -504,7 +516,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     <div className={`grid grid-cols-2 gap-3 ${conHotel ? "md:grid-cols-5" : "md:grid-cols-4"}`}>
       <Cifra etiqueta="Llegan hoy" valor={String(llegan.length)} />
       <Cifra etiqueta="Se van hoy" valor={String(seVan.length)} />
-      <Cifra etiqueta="Adentro ahora" valor={String(dentro.length)} />
+      <Cifra etiqueta="Adentro ahora" valor={String(dentro.length)} href="/adentro" />
       <Cifra
         etiqueta="Ocupación de día"
         valor={ocupacionDiurna}

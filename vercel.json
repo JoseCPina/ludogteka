@@ -6,6 +6,10 @@
       "schedule": "17 9 * * *"
     },
     {
+      "path": "/api/cron/reportes-archivos",
+      "schedule": "37 9 * * *"
+    },
+    {
       "path": "/api/cron/redes",
       "schedule": "*/3 * * * *"
     },

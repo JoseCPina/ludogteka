@@ -64,6 +64,7 @@ if (!cli) cli = exigir(await S.from("clientes").insert({ negocio_id: N, nombre: 
 let { data: perro } = await S.from("perros").select("id").eq("negocio_id", N).limit(1).maybeSingle();
 if (!perro) perro = exigir(await S.from("perros").insert({ negocio_id: N, cliente_id: cli.id, nombre: "Perro Módulos" }).select("id").single(), "perro");
 const serv = Object.fromEntries((await S.from("servicios").select("id, clave").eq("negocio_id", N).is("deleted_at", null)).data.map((s) => [s.clave, s.id]));
+const falso0 = "00000000-0000-4000-8000-000000000000";
 const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
 const manana = new Date(Date.now() + 86_400_000).toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
 const { data: reserva } = await S.from("reservas").insert({ negocio_id: N, cliente_id: cli.id }).select("id").single();
@@ -82,6 +83,10 @@ try {
   const { data: pieza } = await A.from("unidades_medida").select("id").eq("clave", "pieza").single();
   debeRechazar(await ADM.from("insumos").insert({ nombre: "Shampoo", area_id: area.id, unidad_compra_id: pieza.id, unidad_consumo_id: pieza.id, stock_minimo: 0, existencia_inicial: 0, requiere_caducidad: false }).select("id"), "dar de alta un insumo", modulo);
   debeRechazar(await ADM.from("equipos").insert({ nombre: "Secadora", area_id: area.id, cantidad: 1, estado: "bueno" }).select("id"), "dar de alta equipo", modulo);
+  debeRechazar(await ADM.rpc("reporte_guardar", { p_perro_id: perro.id, p_respuestas: { estado_general: { opciones: ["activo"] } }, p_estado: "borrador" }), "llenar un reporte de guardería (el permiso ya no vale sin el módulo)");
+  debeRechazar(await ADM.rpc("media_preparar", { p_perro_id: perro.id, p_tipo: "foto", p_mime: "image/jpeg" }), "subir una foto de un perro adentro (sin guardería ni hotel)");
+  debeRechazar(await ADM.rpc("galeria_crear", { p_perro_id: perro.id, p_media_ids: [falso0], p_hash: "0".repeat(64) }), "armar una galería (sin guardería ni hotel)");
+  debeRechazar(await ADM.from("reporte_config").insert({ titulo: "Otro" }).select("id"), "configurar el reporte (sin guardería ni hotel)", modulo);
   debeRechazar(await ADM.from("empleados").insert({ nombre: "Empleada", puesto: "Estilista", fecha_ingreso: hoy }).select("id"), "dar de alta un empleado", modulo);
   const { data: cat } = await S.from("categorias_gasto").select("id").eq("negocio_id", N).limit(1).single();
   debeRechazar(await ADM.rpc("registrar_gasto", { p_concepto: "Renta", p_categoria_id: cat.id, p_monto: 100, p_fecha_pago: hoy, p_metodo: "transferencia", p_proveedor_id: null, p_periodo_desde: null, p_periodo_hasta: null, p_comprobante_path: null, p_notas: null }), "registrar un gasto");

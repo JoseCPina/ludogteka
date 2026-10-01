@@ -20,7 +20,10 @@ export async function ListaCheckout({ modulo }: { modulo: ModuloEstancia }) {
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Check-out — {modulo.etiqueta}</h1>
         <p className="mt-1 text-n-600">
-          Perros de {modulo.etiqueta.toLowerCase()} que siguen aquí ahora mismo.
+          Perros de {modulo.etiqueta.toLowerCase()} que siguen aquí ahora mismo.{" "}
+          <Link href="/adentro" className="font-semibold text-morado hover:underline">
+            Fotos, videos y reporte →
+          </Link>
         </p>
       </div>
 

@@ -71,6 +71,12 @@ export const PERMISOS = [
     implica:
       "Registra y ve los gastos del local (renta, luz, camioneta…), los marca pagados, los cancela o corrige, y maneja los gastos recurrentes. Editar las categorías sigue siendo de admin. Ni «Costos y compras de inventario» ni «Nómina» dan acceso a esto.",
   },
+  {
+    clave: "reportes_guarderia",
+    etiqueta: "Reportes de guardería",
+    implica:
+      "Llena y envía el reporte de comportamiento diario de guardería, y toma o sube fotos y videos de los perros que están adentro (hotel y guardería) para mandárselos a su dueño. Cambiar la plantilla del reporte sigue siendo de admin.",
+  },
 ] as const;
 
 export type ClavePermiso = (typeof PERMISOS)[number]["clave"];

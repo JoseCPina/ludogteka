@@ -11,8 +11,9 @@ export type ItemNav = {
   // sección exista, basta con quitar esta bandera (o mover la entrada,
   // si cambia de lugar en el flujo).
   proximamente?: boolean;
-  // Solo si el negocio tiene ese módulo prendido (src/lib/plan/modulos.ts).
-  modulo?: string;
+  // Solo si el negocio tiene ese módulo prendido (src/lib/plan/modulos.ts);
+  // con una lista, basta con cualquiera de ellos.
+  modulo?: string | string[];
 };
 
 // Agregar una sección nueva (Fase 4+) es agregar una entrada aquí, no
@@ -27,6 +28,8 @@ export const SECCIONES_STAFF: ItemNav[] = [
   // src/lib/modulos.ts.
   { etiqueta: "Guardería", href: "/guarderia", roles: ["admin", "recepcion"], modulo: "guarderia" },
   { etiqueta: "Hotel", href: "/hotel", roles: ["admin", "recepcion"], modulo: "hotel" },
+  // Los que están adentro, con fotos, videos y el reporte del día.
+  { etiqueta: "Adentro ahora", href: "/adentro", roles: ["admin", "recepcion"], modulo: ["guarderia", "hotel"] },
   { etiqueta: "Estética", href: "/estetica", roles: ["admin", "recepcion", "estetica"], modulo: "estetica" },
   { etiqueta: "Servicios", href: "/servicios", roles: ["admin"], permisos: ["tarifas"] },
   { etiqueta: "Clientes", href: "/clientes", roles: ["admin", "recepcion"] },
@@ -44,6 +47,7 @@ export const SECCIONES_STAFF: ItemNav[] = [
   { etiqueta: "Permisos", href: "/admin/permisos", roles: ["admin"] },
   { etiqueta: "Perfil y página web", href: "/admin/perfil", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { etiqueta: "Políticas y reglas", href: "/admin/politicas", roles: ["admin"], permisos: ["configuracion_negocio"] },
+  { etiqueta: "Reporte y fotos", href: "/admin/reporte-guarderia", roles: ["admin"], modulo: ["guarderia", "hotel"] },
   { etiqueta: "Módulos y plan", href: "/admin/modulos", roles: ["admin"] },
   { etiqueta: "Cobro con terminal", href: "/admin/pagos", roles: ["admin"] },
   // Artículos, asistente y tickets de soporte: sin permiso especial.
@@ -66,7 +70,7 @@ export function navStaffPara(rol: string, permisos: string[] = [], modulos: stri
       (seccion) =>
         (seccion.roles.includes(rol) ||
           (rol === "recepcion" && (seccion.permisos ?? []).some((p) => permisos.includes(p)))) &&
-        (!seccion.modulo || modulos.includes(seccion.modulo)) &&
+        (!seccion.modulo || (Array.isArray(seccion.modulo) ? seccion.modulo : [seccion.modulo]).some((m) => modulos.includes(m))) &&
         seccion.href !== inicio
     ),
   ];

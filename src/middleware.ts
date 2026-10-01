@@ -4,7 +4,7 @@ import { rutaPorRol } from "@/lib/auth/rutas";
 import { ENCABEZADOS_NEGOCIO, ENCABEZADO_PLATAFORMA, resolverNegocio, type NegocioBasico } from "@/lib/negocio/resolver";
 import { ENCABEZADO_FIRMA, firmaValida, firmarNegocio, firmarPlataforma, plataformaFirmada } from "@/lib/negocio/firma";
 import { DOMINIO_PLATAFORMA, esHostPlataforma } from "@/lib/negocio/host";
-import { moduloDeRuta } from "@/lib/plan/modulos";
+import { moduloDeRuta, moduloRequeridoActivo } from "@/lib/plan/modulos";
 
 // Los encabezados de negocio que puso este mismo middleware (firmados).
 // Solo los trae la petición interna con la que Next pinta el destino de
@@ -38,6 +38,8 @@ const ZONAS_PROTEGIDAS: Zona[] = [
   { prefijo: "/admin/permisos", rolesPermitidos: ["admin"] },
   // Con qué cobra el negocio y sus credenciales: solo admin, nunca se delega.
   { prefijo: "/admin/pagos", rolesPermitidos: ["admin"] },
+  // La plantilla del reporte de guardería y los días de retención: solo admin.
+  { prefijo: "/admin/reporte-guarderia", rolesPermitidos: ["admin"] },
   { prefijo: "/admin", rolesPermitidos: ["admin"], permisos: ["personal", "configuracion_negocio", "tarifas"] },
   { prefijo: "/recepcion", rolesPermitidos: ["recepcion", "admin"] },
   // Los primeros pasos de un negocio recién abierto en peludesk.mx.
@@ -56,6 +58,8 @@ const ZONAS_PROTEGIDAS: Zona[] = [
   { prefijo: "/servicios", rolesPermitidos: ["admin"], permisos: ["tarifas"] },
   { prefijo: "/reservas", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/guarderia", rolesPermitidos: ["admin", "recepcion"] },
+  // Quién está adentro ahora (hotel y guardería), con fotos, videos y reporte.
+  { prefijo: "/adentro", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/hotel", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/caja", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/contratos", rolesPermitidos: ["admin", "recepcion"] },
@@ -247,8 +251,9 @@ export async function middleware(request: NextRequest) {
   const moduloZona = zonaPagina ? moduloDeRuta(pathname) : null;
   if (moduloZona) {
     const { data: activos } = await supabase.rpc("modulos_activos");
-    if (!((activos as string[] | null) ?? []).includes(moduloZona)) {
-      const destino = rol === "admin" ? `/admin/modulos?apagado=${moduloZona}` : `/modulo-apagado?m=${moduloZona}`;
+    if (!moduloRequeridoActivo(moduloZona, ((activos as string[] | null) ?? []).map(String))) {
+      const primero = Array.isArray(moduloZona) ? moduloZona[0] : moduloZona;
+      const destino = rol === "admin" ? `/admin/modulos?apagado=${primero}` : `/modulo-apagado?m=${primero}`;
       return conCookiesDe(response, NextResponse.redirect(new URL(destino, request.url)));
     }
   }

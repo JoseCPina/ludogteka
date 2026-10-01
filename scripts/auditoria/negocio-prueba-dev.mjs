@@ -150,8 +150,14 @@ exigir(await ADM.rpc("guardar_politicas_negocio", { p_textos: { agresivos: `Regl
 const rutaFoto = `${clienteSoloB}/${perroSoloB}/perfil/foto.jpg`;
 await SB.storage.from("perros-archivos").upload(rutaFoto, new Blob([Buffer.from(MARCA)], { type: "image/jpeg" }), { upsert: true });
 
+// ── Reporte de comportamiento, fotos y videos, galería y ligas (con la marca) ──
+{
+  const { prepararHuellitas, sembrarReportesConMarca } = await import("./reportes-datos-dev.mjs");
+  await sembrarReportesConMarca(await prepararHuellitas());
+}
+
 // ── Lo que la auditoría necesita ──
-const tablasB = ["clientes", "perros", "reservas", "cargos_aplicados", "cobros", "cobro_metodos", "turnos_caja", "contratos", "plantillas_contrato", "tipos_contrato", "empleados", "gastos", "servicios", "grupos_raza", "categorias_gasto", "membresias", "cupo_configuracion", "horario_semana", "negocio_politicas"];
+const tablasB = ["clientes", "perros", "reservas", "cargos_aplicados", "cobros", "cobro_metodos", "turnos_caja", "contratos", "plantillas_contrato", "tipos_contrato", "empleados", "gastos", "servicios", "grupos_raza", "categorias_gasto", "membresias", "cupo_configuracion", "horario_semana", "negocio_politicas", "reporte_config", "reporte_secciones", "reporte_opciones", "reportes_guarderia", "media_perro", "galerias_perro", "galeria_items", "enlaces_cliente"];
 const idsB = [B];
 for (const t of tablasB) {
   const { data, error } = await SB.from(t).select("id").eq("negocio_id", B);

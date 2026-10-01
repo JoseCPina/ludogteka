@@ -104,6 +104,11 @@ export async function TableroModulo({ modulo }: { modulo: ModuloEstancia }) {
               Check-out
             </Button>
           </Link>
+          <Link href="/adentro">
+            <Button type="button" variante="secundario">
+              Fotos, videos y reporte
+            </Button>
+          </Link>
           <Link href={`${modulo.base}/series`}>
             <Button type="button" variante="secundario">
               Series recurrentes

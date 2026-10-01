@@ -23,7 +23,11 @@ export type ClaveModulo =
   | "pagina_web";
 
 // Lo más específico primero: gana el primer prefijo que coincide.
-export const RUTAS_DE_MODULO: { prefijo: string; modulo: ClaveModulo }[] = [
+// `modulo` como lista: basta con que esté activo CUALQUIERA (lo que sirve a
+// guardería y a hotel: «Adentro ahora», fotos y videos).
+export const RUTAS_DE_MODULO: { prefijo: string; modulo: ClaveModulo | ClaveModulo[] }[] = [
+  { prefijo: "/adentro", modulo: ["guarderia", "hotel"] },
+  { prefijo: "/admin/reporte-guarderia", modulo: ["guarderia", "hotel"] },
   { prefijo: "/guarderia/pases", modulo: "bonos" },
   { prefijo: "/caja/pases", modulo: "bonos" },
   { prefijo: "/guarderia", modulo: "guarderia" },
@@ -41,8 +45,13 @@ export const RUTAS_DE_MODULO: { prefijo: string; modulo: ClaveModulo }[] = [
   { prefijo: "/clientes/invitaciones", modulo: "portal" },
 ];
 
-export function moduloDeRuta(pathname: string): ClaveModulo | null {
+export function moduloDeRuta(pathname: string): ClaveModulo | ClaveModulo[] | null {
   return RUTAS_DE_MODULO.find((r) => pathname === r.prefijo || pathname.startsWith(`${r.prefijo}/`))?.modulo ?? null;
+}
+
+/** ¿Está activo lo que pide la ruta? (un módulo, o cualquiera de una lista). */
+export function moduloRequeridoActivo(requerido: ClaveModulo | ClaveModulo[], activos: readonly string[]): boolean {
+  return (Array.isArray(requerido) ? requerido : [requerido]).some((m) => activos.includes(m));
 }
 
 /** ¿El negocio usa guardería u hotel? (requisitos sanitarios, evaluación, celo, cupo). */
