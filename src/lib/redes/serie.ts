@@ -108,8 +108,8 @@ export const SERIE: Entrada[] = [
   {
     video: "2-de-cada-3",
     titulo: "2 de cada 3 negocios cierran antes de los 5 años (imagen)",
-    fecha: "2026-10-01",
-    hora: "13:00",
+    fecha: "2026-09-30",
+    hora: "23:42",
     redes: [IMG_IG, IMG_FB],
     texto: "Cerca de 2 de cada 3 negocios en México cierran antes de los 5 años (INEGI).\n\nLlevar la agenda, las vacunas y la caja en libreta y chats pesa más de lo que parece. En PeluDesk lo ves todo en un solo lugar. Pruébalo 15 días gratis en peludesk.mx",
     hashtags: ["#guarderiacanina", "#esteticacanina", "#emprendedoresmx"],
@@ -117,8 +117,8 @@ export const SERIE: Entrada[] = [
   {
     video: "eres-duena-o-dueno",
     titulo: "¿Eres dueña o dueño de un negocio canino?",
-    fecha: "2026-10-01",
-    hora: "13:03",
+    fecha: "2026-09-30",
+    hora: "23:45",
     redes: [REEL_IG, REEL_FB, TIKTOK],
     texto: "¿Eres dueña o dueño de un negocio canino?\n\nSegún el INEGI, más de la mitad de los negocios en México cierra antes de cumplir 2 años. Una de las causas que más se repiten: administrar mal el negocio.\n\nCon PeluDesk ves tu agenda, cuidas las vacunas y cuadras la caja, sin libreta. Pruébalo 15 días gratis en peludesk.mx",
     hashtags: ["#guarderiacanina", "#esteticacanina", "#emprendedoresmx"],
@@ -126,8 +126,8 @@ export const SERIE: Entrada[] = [
   {
     video: "52-de-cada-100",
     titulo: "52 de cada 100 negocios cierran antes de cumplir 2 años (imagen)",
-    fecha: "2026-10-01",
-    hora: "13:06",
+    fecha: "2026-09-30",
+    hora: "23:48",
     redes: [IMG_IG, IMG_FB],
     texto: "52 de cada 100 negocios en México cierran antes de cumplir 2 años (INEGI).\n\nTener las cuentas claras ayuda. PeluDesk junta tu agenda, tus vacunas y tu caja, sin libreta. 15 días gratis en peludesk.mx",
     hashtags: ["#guarderiacanina", "#esteticacanina", "#emprendedoresmx"],
