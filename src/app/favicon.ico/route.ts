@@ -3,6 +3,7 @@ import path from "node:path";
 import { NextResponse, type NextRequest } from "next/server";
 import { resolverNegocio } from "@/lib/negocio/resolver";
 import { esHostPlataforma } from "@/lib/negocio/host";
+import { CACHE_ICONO, iconoPng, marcaDeIcono } from "@/lib/negocio/icono";
 
 // Los navegadores, buscadores y las vistas previas de WhatsApp y Meta piden
 // /favicon.ico aunque la página diga otro ícono. Esta ruta no pasa por el
@@ -21,13 +22,13 @@ async function entregar(ruta: string): Promise<Response | null> {
       const r = await fetch(ruta, { signal: AbortSignal.timeout(8_000) });
       const tipo = r.headers.get("content-type") ?? "";
       if (!r.ok || !tipo.startsWith("image/")) return null;
-      return new NextResponse(await r.arrayBuffer(), { headers: { "Content-Type": tipo, "Cache-Control": "public, max-age=3600" } });
+      return new NextResponse(await r.arrayBuffer(), { headers: { "Content-Type": tipo, "Cache-Control": CACHE_ICONO } });
     }
     const limpio = path.posix.normalize(ruta);
     const tipo = TIPOS[path.posix.extname(limpio).toLowerCase()];
     if (!limpio.startsWith("/") || limpio.includes("..") || !tipo) return null;
     const bytes = await readFile(path.join(process.cwd(), "public", limpio));
-    return new NextResponse(bytes, { headers: { "Content-Type": tipo, "Content-Length": String(bytes.byteLength), "Cache-Control": "public, max-age=3600" } });
+    return new NextResponse(bytes, { headers: { "Content-Type": tipo, "Content-Length": String(bytes.byteLength), "Cache-Control": CACHE_ICONO } });
   } catch {
     return null;
   }
@@ -38,24 +39,17 @@ export async function GET(request: NextRequest) {
   if (esHostPlataforma(host)) {
     return (await entregar("/marca/peludesk/favicon.ico")) ?? new NextResponse(null, { status: 404 });
   }
-  let inicial = "P";
-  let color = "#4b3f72";
+  const { inicial, color } = await marcaDeIcono(host);
   try {
     const negocio = await resolverNegocio(host);
     if (negocio?.icono) {
       const propio = await entregar(negocio.icono);
       if (propio) return propio;
     }
-    if (negocio) {
-      inicial = (negocio.nombre.trim()[0] ?? "P").toUpperCase();
-      color = negocio.color ?? color;
-    }
   } catch {
-    // Sin base, el genérico.
+    // Sin base, el generado.
   }
-  // Sin ícono propio: el que se arma con su inicial, entregado aquí mismo
-  // (el mismo de /icono-negocio) y no con una redirección.
-  const escapada = inicial.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="${color}"/><text x="32" y="44" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="700" fill="#fff">${escapada}</text></svg>`;
-  return new NextResponse(svg, { headers: { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=3600" } });
+  // Sin ícono propio: el generado con su inicial (PNG 32: lo que un
+  // navegador espera en /favicon.ico), entregado aquí mismo, sin redirección.
+  return iconoPng(32, inicial, color);
 }

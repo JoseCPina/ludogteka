@@ -387,6 +387,18 @@ try {
     }
     const inicio = await pedir(host, "/login");
     ok(!/Aviso de cookies|peludesk_consent|connect\.facebook\.net|fbq\(|_vercel\/insights/.test(inicio.texto), `${slug}: el HTML del negocio no trae banner, píxel ni analítica`);
+    // Ícono del negocio en el head: su generado en cada tamaño, nunca el de Vercel ni el de PeluDesk.
+    const iconos = [...inicio.texto.matchAll(/<link[^>]*>/g)].map((m) => m[0]).filter((l) => /rel="(?:icon|shortcut icon|apple-touch-icon|manifest)"/.test(l));
+    ok(iconos.length >= 6 && !iconos.some((l) => /vercel|next\.svg|peludesk\/(isotipo|favicon)/i.test(l)), `${slug}: ${iconos.length} etiquetas de ícono, ninguna de Vercel ni de PeluDesk`);
+    for (const l of iconos) {
+      const href = l.match(/href="([^"]+)"/)?.[1]?.replaceAll("&amp;", "&") ?? "";
+      const r = await pedir(host, href);
+      ok(r.status === 200 && /^image\/|manifest/.test(r.headers["content-type"] ?? "") && /max-age=\d+/.test(r.headers["cache-control"] ?? ""), `${slug}: ${href} responde 200, imagen y caché`);
+    }
+    for (const pre of ["r", "f"]) {
+      const f = await pedir(host, `/${pre}/liga-falsa-0123456789`, { cabeceras: { "user-agent": "facebookexternalhit/1.1" } });
+      ok(f.status === 200 && /no está disponible/.test(f.texto) && /noindex/.test(f.headers["x-robots-tag"] ?? ""), `${slug}/${pre}/<falsa>: liga no disponible con noindex para facebookexternalhit`);
+    }
     const { ctx, page, peticiones } = await contexto();
     await ctx.addCookies([{ name: "peludesk_consent", value: encodeURIComponent(JSON.stringify({ v: 1, a: true, m: true, t: Date.now() })), url: `http://${host}:${PUERTO}` }]);
     await page.goto(`http://${host}:${PUERTO}/login`, { waitUntil: "networkidle" });
@@ -396,7 +408,7 @@ try {
   }
   {
     const r = await pedir("patitasyco.localhost", "/robots.txt");
-    ok(/Disallow: \//.test(r.texto) && !/Allow:/.test(r.texto) && !/Sitemap:/.test(r.texto), "el robots.txt del demo lo prohíbe todo y no publica sitemap");
+    ok(/User-Agent: \*[\s\S]*Disallow: \/\s*$/.test(r.texto) && !/Sitemap:/.test(r.texto), "el robots.txt del demo lo prohíbe a los buscadores (solo las vistas previas pasan) y no publica sitemap");
     const s = await pedir("patitasyco.localhost", "/sitemap.xml");
     ok(!/<loc>/.test(s.texto), "el demo no publica sitemap");
     const login = await pedir("patitasyco.localhost", "/login");

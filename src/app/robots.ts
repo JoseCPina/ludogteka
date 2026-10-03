@@ -27,7 +27,7 @@ const VISTAS_PREVIAS = [
 // Íconos e imágenes de vista previa: se pueden pedir siempre.
 const SIEMPRE_PUBLICO = [
   "/favicon.ico",
-  "/icono-negocio",
+  "/icono-negocio", "/manifest.webmanifest",
   "/iconos/",
   "/opengraph-image",
   "/imagen-negocio",

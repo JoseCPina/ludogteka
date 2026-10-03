@@ -34,7 +34,7 @@ const pedir = (host, ruta) =>
     http.get({ host: "127.0.0.1", port: PUERTO, path: ruta, headers: { host: `${host}:${PUERTO}`, "user-agent": UA } }, (res) => {
       const trozos = [];
       res.on("data", (c) => trozos.push(c));
-      res.on("end", () => resolve({ status: res.statusCode, tipo: res.headers["content-type"] ?? "", location: res.headers.location ?? null, cuerpo: Buffer.concat(trozos) }));
+      res.on("end", () => resolve({ status: res.statusCode, tipo: res.headers["content-type"] ?? "", location: res.headers.location ?? null, xrobots: res.headers["x-robots-tag"] ?? "", cuerpo: Buffer.concat(trozos) }));
     }).on("error", reject);
   });
 const meta = (html, prop) => html.match(new RegExp(`<meta[^>]+(?:property|name)="${prop}"[^>]+content="([^"]*)"`))?.[1] ?? html.match(new RegExp(`<meta[^>]+content="([^"]*)"[^>]+(?:property|name)="${prop}"`))?.[1] ?? null;
@@ -55,8 +55,8 @@ const tokenAlta = await link(null);
 const tokenComplemento = await link(cli.id);
 
 const NEGOCIOS = [
-  { host: "ludogteka.localhost", nombre: "Ludogteka", imagen: /opengraph-image\.jpg$/, favicon: "image/x-icon" },
-  { host: "huellitas.localhost", nombre: huellitas.nombre, imagen: /\/imagen-negocio$/, favicon: "image/svg+xml" },
+  { host: "ludogteka.localhost", nombre: "Ludogteka", imagen: /opengraph-image\.jpg$/, color: "#4458a7" },
+  { host: "huellitas.localhost", nombre: huellitas.nombre, imagen: /\/imagen-negocio$/, color: null },
 ];
 try {
   for (const n of NEGOCIOS) {
@@ -88,9 +88,39 @@ try {
         else bien(`la imagen ${ruta} existe: ${img.tipo}, ${Math.round(img.cuerpo.length / 1024)} KB, sin redirección`);
       }
     }
+    // Íconos: todas las etiquetas del head, con los tamaños declarados, y cada
+    // href responde 200 como imagen. Nunca el de Vercel ni el de PeluDesk.
+    for (const ruta of ["/", "/login", `/alta/${tokenAlta}`, "/portal"]) {
+      const pg = await pedir(n.host, ruta);
+      if (pg.status >= 300 && pg.status < 400) continue; // /portal sin sesión: el login ya se revisó
+      const cab = pg.cuerpo.toString("utf8");
+      const links = [...cab.matchAll(/<link[^>]*>/g)].map((m) => m[0]).filter((l) => /rel="(?:shortcut icon|icon|apple-touch-icon|mask-icon|manifest)"/.test(l));
+      const tamanos = new Set(links.map((l) => Number(l.match(/sizes="(\d+)x/)?.[1])).filter(Boolean));
+      const faltan = [16, 32, 48, 180, 512].filter((t) => !tamanos.has(t));
+      if (faltan.length) hallazgo(`${n.host}${ruta}: faltan íconos declarados de ${faltan.join(", ")}`);
+      if (!links.some((l) => /rel="apple-touch-icon"/.test(l))) hallazgo(`${n.host}${ruta}: sin apple-touch-icon`);
+      if (!links.some((l) => /rel="manifest"/.test(l))) hallazgo(`${n.host}${ruta}: sin manifest`);
+      for (const l of links) {
+        const href = l.match(/href="([^"]+)"/)?.[1]?.replaceAll("&amp;", "&");
+        if (!href || /vercel|next\.svg|peludesk\/(isotipo|favicon)/i.test(href)) { hallazgo(`${n.host}${ruta}: ícono prohibido ${href}`); continue; }
+        const r = await pedir(n.host, href.replace(`http://${n.host}:${PUERTO}`, ""));
+        if (r.status !== 200 || !/^image\/|manifest/.test(r.tipo) || r.cuerpo.length < 100) hallazgo(`${n.host}${ruta}: ${href} → ${r.status} ${r.tipo} ${r.cuerpo.length} bytes`);
+      }
+      if (ruta === "/") bien(`${n.host}: ${links.length} etiquetas de ícono/manifest, tamaños ${[...tamanos].sort((x, y) => x - y).join(", ")}, todos los href con 200`);
+    }
     const fav = await pedir(n.host, "/favicon.ico");
-    if (fav.status !== 200 || !fav.tipo.startsWith(n.favicon) || fav.cuerpo.length < 100) hallazgo(`/favicon.ico: ${fav.status} ${fav.tipo} ${fav.cuerpo.length} bytes → ${fav.location}`);
+    if (fav.status !== 200 || !fav.tipo.startsWith("image/") || fav.cuerpo.length < 100) hallazgo(`/favicon.ico: ${fav.status} ${fav.tipo} ${fav.cuerpo.length} bytes → ${fav.location}`);
     else bien(`/favicon.ico entrega el ícono con 200 (${fav.tipo}, ${fav.cuerpo.length} bytes)`);
+    const svg = (await pedir(n.host, "/icono-negocio")).cuerpo.toString("utf8");
+    if (!svg.includes(`>${n.nombre[0].toUpperCase()}</text>`) || (n.color && !svg.includes(n.color))) hallazgo(`${n.host}: /icono-negocio no trae su inicial${n.color ? " y color" : ""}`);
+    else bien(`${n.host}: /icono-negocio con su inicial${n.color ? " y su color " + n.color : ""}`);
+    // Reportes y galerías: una liga falsa, con el rastreador de vistas previas.
+    for (const pre of ["r", "f"]) {
+      const falsa = await pedir(n.host, `/${pre}/liga-falsa-0123456789`);
+      const txt = falsa.cuerpo.toString("utf8");
+      if (falsa.status !== 200 || !/no está disponible/.test(txt) || !/noindex/.test(txt + falsa.xrobots)) hallazgo(`${n.host}/${pre}/<falsa>: ${falsa.status}, mensaje o noindex`);
+      else bien(`${n.host}/${pre}/<falsa>: la alcanza facebookexternalhit, "liga no disponible" y noindex`);
+    }
   }
   console.log("\nplataforma.localhost");
   const p = await pedir("plataforma.localhost", "/login");
@@ -98,7 +128,7 @@ try {
   if (/Huellitas|Ludogteka/.test(meta(html, "og:title") ?? "") || /Huellitas|Ludogteka/.test(html.match(/<title>([^<]*)/)?.[1] ?? "")) hallazgo("la plataforma enseña un negocio en su vista previa");
   else bien("en el dominio de la plataforma no sale ningún negocio");
   const pf = await pedir("plataforma.localhost", "/favicon.ico");
-  if (pf.status !== 200 || !pf.tipo.startsWith("image/x-icon")) hallazgo(`favicon de la plataforma: ${pf.status} ${pf.tipo}`);
+  if (pf.status !== 200 || !pf.tipo.startsWith("image/")) hallazgo(`favicon de la plataforma: ${pf.status} ${pf.tipo}`);
   else bien("la plataforma entrega su favicon con 200");
 } finally {
   await SH.from("invitaciones_cliente").delete().in("token", [tokenAlta, tokenComplemento]);

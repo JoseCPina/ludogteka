@@ -5,6 +5,7 @@ import { urlDelNegocio } from "@/lib/negocio/actual";
 import { ProveedorZonaNegocio } from "@/components/zona-negocio";
 import { outfit } from "@/fuentes";
 import { SLUG_DEMO } from "@/lib/peludesk/landing";
+import { ICONOS_GENERADOS } from "@/lib/negocio/icono";
 import "./globals.css";
 
 // Outfit (src/fuentes): la letra de PeluDesk, base de toda la app. La
@@ -31,7 +32,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const slug = h.get(ENCABEZADOS_NEGOCIO.slug);
   const dominio = h.get(ENCABEZADOS_NEGOCIO.dominio) || null;
   const url_publica = h.get(ENCABEZADOS_NEGOCIO.url) || null;
-  const icono = h.get(ENCABEZADOS_NEGOCIO.icono) || "/icono-negocio";
+  const iconoPropio = h.get(ENCABEZADOS_NEGOCIO.icono) || null;
   // La vista previa al compartir CUALQUIER link del negocio (login, alta por
   // link, portal): su nombre y su imagen (negocios.marca.imagen_compartir, o
   // la tarjeta que se arma con su marca en /imagen-negocio). Nunca la de
@@ -42,7 +43,9 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: slug ? new URL(urlDelNegocio({ slug, dominio, url_publica })) : undefined,
     title: nombre,
     description: descripcion,
-    icons: { icon: icono },
+    // Con ícono propio, ese (y también para iOS); sin él, el generado en cada tamaño.
+    icons: iconoPropio ? { icon: iconoPropio, apple: iconoPropio } : ICONOS_GENERADOS,
+    manifest: "/manifest.webmanifest",
     openGraph: {
       type: "website",
       locale: "es_MX",

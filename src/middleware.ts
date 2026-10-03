@@ -102,6 +102,8 @@ const RUTAS_PUBLICAS_EXACTAS = new Set([
   "/opengraph-image.jpg",
   "/robots.txt",
   "/sitemap.xml",
+  "/icono-negocio",
+  "/manifest.webmanifest",
 ]);
 
 export async function middleware(request: NextRequest) {
@@ -263,7 +265,7 @@ export async function middleware(request: NextRequest) {
 
 // Rutas de la plataforma: la administración y lo que Auth necesita para
 // entrar (link de invitación y escoger contraseña).
-const RUTAS_PLATAFORMA = ["/plataforma", "/auth/callback", "/auth/nueva-password", "/robots.txt", "/sitemap.xml", "/icono-negocio", "/imagen-negocio", "/marca", "/iconos"];
+const RUTAS_PLATAFORMA = ["/plataforma", "/auth/callback", "/auth/nueva-password", "/robots.txt", "/sitemap.xml", "/icono-negocio", "/manifest.webmanifest", "/imagen-negocio", "/marca", "/iconos"];
 
 // Las páginas públicas de PeluDesk (landing y registro de prueba): viven
 // en /peludesk/* y se sirven en la raíz del dominio de la plataforma.
