@@ -1,34 +1,99 @@
 import type { MetadataRoute } from "next";
-import { headers } from "next/headers";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { urlDelNegocio } from "@/lib/negocio/actual";
-import { ENCABEZADOS_NEGOCIO, ENCABEZADO_PLATAFORMA } from "@/lib/negocio/resolver";
-import { SLUG_DEMO } from "@/lib/peludesk/landing";
+import { headers } from "next/headers";
+import { ENCABEZADO_PLATAFORMA } from "@/lib/negocio/resolver";
 import { SITIO } from "@/lib/peludesk/seo";
 
-// Solo la landing es para buscadores. Todo lo demás pide sesión o es un
-// link personal (alta por invitación), y no tiene nada que indexar.
+// Rastreadores que arman la vista previa de un link (WhatsApp, Facebook,
+// Instagram, X, LinkedIn, Slack, Telegram…). Nunca se bloquean, en ninguna
+// ruta: un link a /alta/<token> o a la landing tiene que poder mostrar su
+// imagen. Lo que no debe indexarse lleva noindex en el HTML, no aquí.
+const VISTAS_PREVIAS = [
+  "facebookexternalhit",
+  "meta-externalagent",
+  "meta-externalfetcher",
+  "facebookcatalog",
+  "WhatsApp",
+  "Twitterbot",
+  "LinkedInBot",
+  "Slackbot",
+  "Slack-ImgProxy",
+  "TelegramBot",
+  "Discordbot",
+  "Pinterestbot",
+];
+
+// Íconos e imágenes de vista previa: se pueden pedir siempre.
+const SIEMPRE_PUBLICO = [
+  "/favicon.ico",
+  "/icono-negocio",
+  "/iconos/",
+  "/opengraph-image",
+  "/imagen-negocio",
+  "/marca/",
+  "/_next/",
+];
+
+// Pantallas con sesión o con datos de alguien.
+const PRIVADAS = [
+  "/login",
+  "/alta",
+  "/portal",
+  "/admin",
+  "/api",
+  "/auth",
+  "/sin-acceso",
+  "/modulo-apagado",
+  "/demo",
+  "/plataforma",
+  "/bienvenida",
+  "/caja",
+  "/clientes",
+  "/contratos",
+  "/empleados",
+  "/estetica",
+  "/gastos",
+  "/guarderia",
+  "/hotel",
+  "/inventario",
+  "/mi-trabajo",
+  "/perros",
+  "/recepcion",
+  "/reportes",
+  "/reservas",
+  "/servicios",
+  "/vinculacion",
+  "/ayuda",
+];
+
+// Solo la landing de un negocio con plan activo y landing propia es para
+// buscadores. El demo (plan demo) y los negocios en prueba no se indexan.
 // PeluDesk: la dirección es la del negocio del dominio.
-//
-// En peludesk.mx (la plataforma) se indexa el sitio público —landing, registro,
-// ayuda, blog, aterrizajes y legales— y se excluye lo interno: /plataforma,
-// /demo, /peludesk/redes (los videos, que también llevan X-Robots-Tag) y /api.
 export default async function robots(): Promise<MetadataRoute.Robots> {
+  // En peludesk.mx (la plataforma) se indexa el sitio público —landing,
+  // registro, ayuda, blog, aterrizajes y legales— y se excluye lo interno.
   const h = await headers();
   if (h.get(ENCABEZADO_PLATAFORMA) === "1") {
     return {
-      rules: { userAgent: "*", allow: "/", disallow: ["/plataforma", "/demo", "/peludesk/redes", "/api", "/auth"] },
+      rules: [
+        { userAgent: VISTAS_PREVIAS, allow: "/" },
+        { userAgent: "*", allow: "/", disallow: ["/plataforma", "/demo", "/peludesk/redes", "/api", "/auth"] },
+      ],
       sitemap: `${SITIO}/sitemap.xml`,
       host: SITIO,
     };
   }
-  // El demo no se indexa, ni su sitemap se publica.
-  if (h.get(ENCABEZADOS_NEGOCIO.slug) === SLUG_DEMO) return { rules: { userAgent: "*", disallow: "/" } };
   const negocio = await cargarNegocioLanding();
   const url = (negocio.landing?.url_publica ?? urlDelNegocio(negocio)).replace(/\/$/, "");
+  const indexable = negocio.plan === "activo" && !!negocio.landing;
   return {
-    rules: { userAgent: "*", allow: ["/$", "/_next/", "/opengraph-image"], disallow: "/" },
-    sitemap: `${url}/sitemap.xml`,
-    host: url,
+    rules: [
+      { userAgent: VISTAS_PREVIAS, allow: "/" },
+      indexable
+        ? { userAgent: "*", allow: ["/", ...SIEMPRE_PUBLICO], disallow: PRIVADAS }
+        : { userAgent: "*", allow: SIEMPRE_PUBLICO, disallow: "/" },
+    ],
+    ...(indexable ? { sitemap: `${url}/sitemap.xml`, host: url } : {}),
   };
 }
