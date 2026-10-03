@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { negocioActual, zonaActual } from "@/lib/negocio/actual";
@@ -19,6 +20,9 @@ import { cargarRequisitosAlta, estadoRequisitosDePerros, cubierto, type TipoRequ
 import { ResumenRequisitos, type ResumenPerro } from "./resumen-requisitos";
 import { cargarTextosPoliticas } from "@/lib/politicas/cargar";
 import { politicasVisibles, textoPolitica } from "@/lib/politicas/catalogo";
+
+// Link personal: se puede abrir y compartir (con su vista previa), pero no se indexa.
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 
 // Pantalla pública: no hay sesión todavía (la cuenta se crea al final) y
 // por eso NO está en las zonas protegidas del middleware. Lo único que la
