@@ -14,6 +14,9 @@ export async function crearCita(datos: {
   empleadoId: string;
   inicio: string;
   estanciaId: string | null;
+  // Raza sin grupo de precio en el negocio: el grupo de esta cita y por qué.
+  grupoExcepcionId?: string | null;
+  motivoExcepcion?: string | null;
 }): Promise<EstadoCrearCita> {
   if (!datos.perroId || !datos.servicioId || !datos.empleadoId || !datos.inicio) {
     return { error: "Completa perro, servicio, empleado y hora." };
@@ -49,6 +52,7 @@ export async function crearCita(datos: {
       empleado_id: datos.empleadoId,
       inicio: datos.inicio,
       estancia_id: datos.estanciaId,
+      ...(datos.grupoExcepcionId ? { grupo_raza_excepcion_id: datos.grupoExcepcionId, excepcion_grupo_motivo: datos.motivoExcepcion ?? null } : {}),
     })
     .select("id")
     .single();

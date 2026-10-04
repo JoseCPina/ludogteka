@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { armarClientesBuscables } from "@/lib/clientes/buscables";
+import { tienePermiso } from "@/lib/auth/permisos";
 import { AgendarForm } from "./agendar-form";
 
 export default async function AgendarPage() {
@@ -50,6 +51,11 @@ export default async function AgendarPage() {
       .select("perro_id")
       .in("estado", ["vencida", "sin_registro"]),
   ]);
+  const [{ data: sinGrupoCrudo }, { data: gruposPrecio }] = await Promise.all([
+    supabase.from("perro_grupo_raza").select("perro_id, raza_id, raza_nombre").eq("sin_grupo", true),
+    supabase.from("grupos_raza").select("id, nombre").is("deleted_at", null).order("orden"),
+  ]);
+  const perrosSinGrupo = ((sinGrupoCrudo ?? []) as { perro_id: string; raza_id: string; raza_nombre: string }[]).map((r) => ({ perroId: r.perro_id, razaId: r.raza_id, razaNombre: r.raza_nombre }));
   const usanGh = new Set((conGuarderiaHotel ?? []).map((r) => r.perro_id as string));
   const perrosConAvisoSanitario = Array.from(
     new Set((conRequisitoPendiente ?? []).map((r) => r.perro_id as string).filter((id) => usanGh.has(id)))
@@ -97,6 +103,10 @@ export default async function AgendarPage() {
           }))}
           estanciasEnCurso={estanciasLista}
           perrosConAvisoSanitario={perrosConAvisoSanitario}
+          perrosSinGrupo={perrosSinGrupo}
+          gruposPrecio={(gruposPrecio ?? []) as { id: string; nombre: string }[]}
+          puedeAsignarGrupo={tienePermiso(sesion, "tarifas")}
+          puedeExcepcion={tienePermiso(sesion, "excepciones_reserva")}
           rolActual={sesion?.rol ?? "cliente"}
           userIdActual={sesion?.user.id ?? ""}
         />

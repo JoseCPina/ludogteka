@@ -236,7 +236,19 @@ if (EN_NUBE) {
 }
 
 async function consulta(sql) {
-  if (cliProd) return cliProd.sql(sql, 120000);
+  if (cliProd) {
+    // Lecturas (conteos y copia JSON): la API de gestión limita las consultas
+    // por minuto (429 ThrottlerException) y ~200 seguidas lo rebasan. Es solo
+    // lectura, así que se espera y se repite; las migraciones NO pasan por aquí.
+    for (let intento = 1; ; intento++) {
+      try {
+        return await cliProd.sql(sql, 120000);
+      } catch (e) {
+        if (e?.status !== 429 || intento >= 8) throw e;
+        await new Promise((r) => setTimeout(r, 15000 * intento));
+      }
+    }
+  }
   const cliente = new pg.Client({
     connectionString: DB_URL,
     ssl: { rejectUnauthorized: false },

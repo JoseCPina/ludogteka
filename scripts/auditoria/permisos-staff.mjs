@@ -113,7 +113,18 @@ const pruebas = {
   },
   async tarifas() {
     const r = await R.from("tarifas").update({ precio: tarifa.precio }).eq("id", tarifa.id).select("id");
-    return { dejo: (r.data ?? []).length === 1, ve: (r.data ?? []).length === 1, detalle: r.error?.message };
+    // El mismo permiso gobierna las razas: proponer una raza nueva y asignar el grupo de precio de una raza.
+    const propuesta = await R.rpc("razas_proponer", { p_nombre: `Raza de prueba permisos ${Date.now()}`, p_variantes: [], p_tamano_id: null, p_pelaje_id: null, p_texto_norm: null });
+    if (propuesta.data) await A.from("razas_propuestas").delete().eq("id", propuesta.data);
+    const { data: rg } = await A.from("razas_grupo").select("raza_id, grupo_raza_id").is("deleted_at", null).limit(1).single();
+    const asignado = await R.rpc("asignar_grupo_raza", { p_raza_id: rg.raza_id, p_grupo_raza_id: rg.grupo_raza_id });
+    if (!asignado.error) await A.from("razas_grupo").delete().eq("raza_id", rg.raza_id).not("deleted_at", "is", null);
+    const tarifaOk = (r.data ?? []).length === 1;
+    return {
+      dejo: tarifaOk || !propuesta.error || !asignado.error,
+      ve: tarifaOk && !propuesta.error && !asignado.error,
+      detalle: r.error?.message ?? propuesta.error?.message ?? asignado.error?.message,
+    };
   },
   async reportes_financieros() {
     const args = { p_desde: "2026-01-01", p_hasta: "2027-12-31" };

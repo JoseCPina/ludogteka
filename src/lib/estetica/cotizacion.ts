@@ -214,6 +214,13 @@ export function cotizarPerro(
 ): CotizacionDePerro | null {
   if (!razaEscrita.trim()) return null;
 
+  // Una raza del catálogo que este negocio todavía no mete en un grupo de
+  // precio NO se cotiza con el grupo por defecto: no se adivina ningún
+  // precio (igual que perro_grupo_raza.sin_grupo del lado de la base).
+  if (razaId && !cotizacion.grupoDeRaza[razaId]) {
+    return { servicios: cotizacion.servicios.map((s) => ({ ...s, ...SIN_TARIFA })), firmeza: "sin_dato" };
+  }
+
   // Sin raza del catálogo el perro cae al grupo por defecto: lo mismo que
   // hace la vista perro_grupo_raza del lado de la base.
   const grupoId =

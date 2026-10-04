@@ -88,7 +88,9 @@ async function huellaB() {
   for (const t of TABLAS_HUELLA) {
     const { data, error } = await SB.from(t).select("id, updated_at, deleted_at").eq("negocio_id", B);
     if (error) throw new Error(`huella ${t}: ${error.message}`);
-    h[t] = JSON.stringify(data.map((f) => [f.id, f.updated_at, f.deleted_at]).sort());
+    // El bloque de razas (10) edita y restaura UN perro de B con la llave de servicio; ese perro se
+    // revisa ahí mismo (que Ludogteka no lo toque), no por su updated_at.
+    h[t] = JSON.stringify(data.filter((f) => !(t === "perros" && f.id === datos.perroSoloB)).map((f) => [f.id, f.updated_at, f.deleted_at]).sort());
   }
   return h;
 }
@@ -464,6 +466,124 @@ else {
     }
   }
   console.log("  ✔ la administración de PeluDesk no ve datos de ningún negocio");
+}
+
+// ── 10. Razas: propuestas, normalizaciones y grupos de precio ──
+// Un negocio no ve las propuestas ni el historial de otro, las funciones de
+// razas (fuera del catálogo, sin grupo, asignaciones) solo hablan del negocio
+// de la petición, y la bandeja de la plataforma es solo de la plataforma.
+console.log("\n── Razas: propuestas y normalizaciones");
+{
+  const tAdminB = await tokenDe(datos.adminB);
+  const { data: perroB } = await SB.from("perros").select("id, raza, raza_id").eq("id", datos.perroSoloB).single();
+  const rpcB = async (fn, args, token = tAdminB) => {
+    const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: cabeceras(token, B), body: JSON.stringify(args) });
+    return { ok: r.ok, status: r.status, cuerpo: await r.json().catch(() => null) };
+  };
+  try {
+    await SB.from("perros").update({ raza: `${MARCA} Raros`, raza_id: null }).eq("id", perroB.id);
+    const normPropia = (await A.rpc("normalizar_raza", { p_texto: `${MARCA} Raros` })).data;
+    const prop = await rpcB("razas_proponer", { p_nombre: `Raza ${MARCA}`, p_variantes: [`${MARCA} raros`], p_tamano_id: null, p_pelaje_id: null, p_texto_norm: normPropia });
+    if (!prop.ok) hallazgo(`razas: el admin de Huellitas no pudo proponer una raza (${JSON.stringify(prop.cuerpo).slice(0, 160)})`);
+    const propuestaId = prop.cuerpo;
+
+    // Una asignación de B (queda en su historial).
+    const { data: poodle } = await A.from("razas").select("id").eq("nombre", "Poodle").single();
+    await SB.from("perros").update({ raza: `${MARCA} Poodles`, raza_id: null }).eq("id", perroB.id);
+    const normPoodle = (await A.rpc("normalizar_raza", { p_texto: `${MARCA} Poodles` })).data;
+    const asig = await rpcB("razas_asignar_texto", { p_texto_norm: normPoodle, p_raza_id: poodle.id });
+    const normalizacionB = Array.isArray(asig.cuerpo) ? asig.cuerpo[0]?.normalizacion_id : asig.cuerpo?.normalizacion_id;
+    if (!asig.ok || !normalizacionB) hallazgo(`razas: el admin de Huellitas no pudo asignar un texto a una raza (${JSON.stringify(asig.cuerpo).slice(0, 160)})`);
+
+    // Control positivo: B sí ve lo suyo.
+    const { data: lasSuyas } = await SB.from("razas_propuestas").select("id").eq("negocio_id", B);
+    if (!(lasSuyas ?? []).some((f) => f.id === propuestaId)) hallazgo("razas: control positivo, Huellitas no ve su propia propuesta");
+    else console.log("  ✔ control positivo: Huellitas ve su propuesta y su historial");
+
+    // Ludogteka (cada rol) y el anónimo: nada de B.
+    const lecturas = ["razas_propuestas", "razas_propuestas_perros", "razas_normalizaciones", "razas_normalizacion_perros"];
+    for (const [rol, token] of [...Object.entries(tokens), ["anonimo", null]]) {
+      for (const t of lecturas) {
+        const r = await fetch(`${URL}/rest/v1/${t}?select=*&limit=500`, { headers: cabeceras(token, LUDOGTEKA) });
+        const texto = await r.text();
+        const filas = r.ok ? JSON.parse(texto) : [];
+        if (filas.some((f) => f.negocio_id === B) || texto.includes(MARCA)) hallazgo(`razas: ${rol} de Ludogteka ve ${t} de Huellitas`);
+        // También con el encabezado de B suplantado: la membresía manda.
+        const r2 = await fetch(`${URL}/rest/v1/${t}?select=*&limit=500`, { headers: cabeceras(token, B) });
+        const t2 = await r2.text();
+        if (t2.includes(MARCA) && !miembrosDeB.has(personasA[rol])) hallazgo(`razas: ${rol} suplantando a Huellitas ve ${t}`);
+      }
+      for (const fn of ["razas_fuera_de_catalogo", "razas_sin_grupo", "razas_asignaciones_recientes"]) {
+        for (const negocio of [LUDOGTEKA, B]) {
+          const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: cabeceras(token, negocio), body: "{}" });
+          const texto = await r.text();
+          if (texto.includes(MARCA) && !(negocio === B && miembrosDeB.has(personasA[rol]))) hallazgo(`razas: rpc ${fn} (${rol}, negocio ${negocio === B ? "B" : "A"}) trae lo de Huellitas`);
+        }
+      }
+    }
+    console.log("  ✔ ningún rol de Ludogteka ni el anónimo ve propuestas, historial, razas sin grupo ni textos de Huellitas");
+
+    // Escribir sobre lo de B desde Ludogteka.
+    const antes = JSON.stringify((await SB.from("razas_propuestas").select("id, estado, nombre, updated_at").eq("negocio_id", B)).data);
+    for (const [rol, token] of Object.entries(tokens)) {
+      const h = { ...cabeceras(token, LUDOGTEKA), Prefer: "return=representation" };
+      await fetch(`${URL}/rest/v1/razas_propuestas?id=eq.${propuestaId}`, { method: "PATCH", headers: h, body: JSON.stringify({ estado: "aprobada", nombre: "hackeada" }) });
+      await fetch(`${URL}/rest/v1/razas_propuestas?id=eq.${propuestaId}`, { method: "DELETE", headers: h });
+      await fetch(`${URL}/rest/v1/razas_propuestas`, { method: "POST", headers: h, body: JSON.stringify({ nombre: "x", nombre_norm: "x", negocio_id: B }) });
+      await fetch(`${URL}/rest/v1/razas_normalizaciones?id=eq.${normalizacionB}`, { method: "PATCH", headers: h, body: JSON.stringify({ revertida_at: new Date().toISOString() }) });
+      for (const [fn, args] of [
+        ["razas_revertir_normalizacion", { p_normalizacion_id: normalizacionB }],
+        ["razas_asignar_texto", { p_texto_norm: normPropia, p_raza_id: poodle.id }],
+        ["asignar_grupo_raza", { p_raza_id: poodle.id, p_grupo_raza_id: "00000000-0000-0000-0000-000000000000" }],
+        ["plataforma_resolver_propuesta", { p_id: propuestaId, p_accion: "aprobar", p_motivo: null, p_raza_destino: null, p_nombre: null }],
+        ["plataforma_razas_propuestas", {}],
+        ["plataforma_agregar_raza", { p_nombre: `Intrusa ${MARCA}`, p_variantes: [] }],
+      ]) {
+        const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: cabeceras(token, LUDOGTEKA), body: JSON.stringify(args) });
+        const texto = await r.text();
+        if (r.ok && /plataforma_/.test(fn)) hallazgo(`razas: ${rol} de Ludogteka pudo llamar ${fn}`);
+        if (r.ok && texto.includes(MARCA)) hallazgo(`razas: ${rol} de Ludogteka con ${fn} tocó o vio lo de Huellitas`);
+      }
+    }
+    const despues = JSON.stringify((await SB.from("razas_propuestas").select("id, estado, nombre, updated_at").eq("negocio_id", B)).data);
+    if (antes !== despues) hallazgo("razas: las propuestas de Huellitas CAMBIARON por escrituras desde Ludogteka");
+    const { data: normB } = await SB.from("razas_normalizaciones").select("revertida_at").eq("id", normalizacionB).single();
+    if (normB?.revertida_at) hallazgo("razas: Ludogteka deshizo una asignación de Huellitas");
+    const { data: perroDespues } = await SB.from("perros").select("raza, raza_id").eq("id", perroB.id).single();
+    if (perroDespues.raza_id !== poodle.id) hallazgo("razas: el perro de Huellitas cambió de raza por una llamada de Ludogteka");
+    console.log("  ✔ ninguna escritura ni función de razas de Ludogteka alcanzó propuestas, historial ni perros de Huellitas");
+
+    // Quién puede proponer: recepción de Huellitas sin el permiso «tarifas» no.
+    const { data: recB } = await SB.rpc("usuario_por_email", { p_email: "recepcion@huellitas.prueba" });
+    const sinPermiso = await rpcB("razas_proponer", { p_nombre: `Otra ${MARCA}`, p_variantes: [], p_tamano_id: null, p_pelaje_id: null, p_texto_norm: null }, await tokenDe(recB));
+    if (sinPermiso.ok) hallazgo("razas: recepción sin el permiso de tarifas pudo proponer una raza");
+    else console.log("  ✔ recepción sin «Precios y tarifas» no puede proponer razas ni asignar grupos");
+    const sinGrupoRec = await rpcB("asignar_grupo_raza", { p_raza_id: poodle.id, p_grupo_raza_id: "00000000-0000-0000-0000-000000000000" }, await tokenDe(recB));
+    if (sinGrupoRec.ok) hallazgo("razas: recepción sin permiso pudo asignar el grupo de una raza");
+
+    // El catálogo compartido no lo escribe un negocio (ni su admin).
+    const rIns = await fetch(`${URL}/rest/v1/razas`, { method: "POST", headers: { ...cabeceras(tAdminB, B), Prefer: "return=representation" }, body: JSON.stringify({ nombre: `Raza intrusa ${MARCA}` }) });
+    if (rIns.ok) hallazgo("razas: el admin de un negocio escribió en el catálogo compartido de razas");
+    const rpAdmin = await rpcB("plataforma_resolver_propuesta", { p_id: propuestaId, p_accion: "aprobar", p_motivo: null, p_raza_destino: null, p_nombre: null });
+    if (rpAdmin.ok) hallazgo("razas: el admin de un negocio resolvió su propia propuesta");
+    else console.log("  ✔ el catálogo compartido y la bandeja de propuestas son solo de la plataforma");
+
+    // Control positivo: la plataforma sí ve la bandeja, y rechaza (limpia).
+    const { data: plataformaId } = await A.rpc("usuario_por_email", { p_email: "plataforma@peludesk.prueba" });
+    if (plataformaId) {
+      const tp = await tokenDe(plataformaId);
+      const lista = await fetch(`${URL}/rest/v1/rpc/plataforma_razas_propuestas`, { method: "POST", headers: cabeceras(tp, LUDOGTEKA), body: "{}" });
+      const filas = await lista.json().catch(() => []);
+      if (!lista.ok || !Array.isArray(filas) || !filas.some((f) => f.id === propuestaId)) hallazgo("razas: control positivo, la plataforma no ve la propuesta de Huellitas");
+      else {
+        const rech = await fetch(`${URL}/rest/v1/rpc/plataforma_resolver_propuesta`, { method: "POST", headers: cabeceras(tp, LUDOGTEKA), body: JSON.stringify({ p_id: propuestaId, p_accion: "rechazar", p_motivo: "auditoría", p_raza_destino: null, p_nombre: null }) });
+        if (!rech.ok) hallazgo(`razas: la plataforma no pudo rechazar la propuesta (${rech.status})`);
+        else console.log("  ✔ control positivo: la plataforma ve la bandeja y resuelve propuestas");
+      }
+    }
+  } finally {
+    await SB.from("perros").update({ raza: perroB.raza, raza_id: perroB.raza_id }).eq("id", perroB.id);
+  }
 }
 
 // ── 8. Catálogo ──
