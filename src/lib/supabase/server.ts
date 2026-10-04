@@ -19,9 +19,20 @@ export async function createSupabaseServerClient() {
           return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
+          // En un render (Server Component) Next no deja escribir cookies y
+          // lanza. supabase-js llama esto cuando renueva el token y la
+          // llamada corre dentro de un evento sin quien la atrape: el error
+          // llegaba como «Unhandled Rejection» y tumbaba la instancia de la
+          // función. En un Server Action o Route Handler sí escribe; en un
+          // render se ignora, porque la sesión la renueva el middleware (y
+          // la siguiente petición con cookie vencida la renueva ahí).
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // Solo lectura en este contexto.
+          }
         },
       },
     }
