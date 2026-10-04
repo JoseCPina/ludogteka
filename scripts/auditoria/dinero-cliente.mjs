@@ -52,9 +52,11 @@ const SOLO_STAFF = [
   // Reporte de comportamiento, fotos y videos, galerías y ligas (1 de octubre de 2026).
   "reporte_config", "reporte_secciones", "reporte_opciones", "reportes_guarderia", "reportes_guarderia_versiones",
   "media_perro", "galerias_perro", "galeria_items", "enlaces_cliente",
+  // Razas: propuestas de razas nuevas y asignaciones en bloque (3 de octubre de 2026).
+  "razas_propuestas", "razas_propuestas_perros", "razas_normalizaciones", "razas_normalizacion_perros",
 ];
 // RPC que un cliente con sesión no debe poder llamar (tienen que rechazarlo).
-const RPC_SOLO_STAFF = ["mi_cobro", "plataforma_cobros", "calendario_ocupacion", "insumos_sin_costo", "asistencia_periodo", "calcular_nomina", "reporte_utilidad_periodo", "cuentas_para_empleado", "gastos_por_atender", "gastos_por_categoria_periodo", "maps_consumo_mes", "plataforma_maps_consumo", "elegir_proveedor_cobro", "reporte_ventas_mostrador_periodo", "cliente_publico_general", "crear_venta_mostrador", "preparar_reembolso", "crear_ticket", "plataforma_tickets", "reporte_guardar", "reporte_asegurar_plantilla", "reporte_registrar_tarjeta", "reporte_crear_enlace", "media_preparar", "media_confirmar", "media_quitar", "galeria_crear", "plataforma_almacenamiento_reportes"];
+const RPC_SOLO_STAFF = ["mi_cobro", "plataforma_cobros", "calendario_ocupacion", "insumos_sin_costo", "asistencia_periodo", "calcular_nomina", "reporte_utilidad_periodo", "cuentas_para_empleado", "gastos_por_atender", "gastos_por_categoria_periodo", "maps_consumo_mes", "plataforma_maps_consumo", "elegir_proveedor_cobro", "reporte_ventas_mostrador_periodo", "cliente_publico_general", "crear_venta_mostrador", "preparar_reembolso", "crear_ticket", "plataforma_tickets", "reporte_guardar", "reporte_asegurar_plantilla", "reporte_registrar_tarjeta", "reporte_crear_enlace", "media_preparar", "media_confirmar", "media_quitar", "galeria_crear", "plataforma_almacenamiento_reportes", "razas_fuera_de_catalogo", "razas_sin_grupo", "razas_asignaciones_recientes", "razas_asignar_texto", "razas_revertir_normalizacion", "razas_proponer", "asignar_grupo_raza", "plataforma_razas_propuestas", "plataforma_resolver_propuesta", "plataforma_agregar_raza"];
 
 const spec = await (await fetch(URL + "/rest/v1/", { headers: { apikey: env.SUPABASE_SECRET_KEY, Authorization: `Bearer ${env.SUPABASE_SECRET_KEY}` } })).json();
 const relaciones = Object.keys(spec.definitions).sort();

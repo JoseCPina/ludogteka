@@ -5,7 +5,12 @@ import { Alert } from "@/components/ui/alert";
 import { cargarRazas, sugerirRaza } from "@/lib/razas";
 import { negocioIdActual } from "@/lib/negocio/actual";
 import { cargarCotizacionEstetica } from "@/lib/estetica/cotizacion";
+import { tienePermiso } from "@/lib/auth/permisos";
+import { zonaActual } from "@/lib/negocio/actual";
+import { diasDesde } from "@/lib/antiguedad";
+import { hoyNegocio } from "@/lib/formato";
 import { NormalizarRazas, type PerroSinRaza } from "./normalizar-razas";
+import { FueraDeCatalogo, type Asignacion, type GrupoFuera } from "./fuera-catalogo";
 
 /**
  * Normalización en bloque de las razas escritas a mano.
@@ -24,7 +29,8 @@ export default async function NormalizarRazasPage() {
   // sale bajo— pero no se le pintan controles que no van a guardar.
   const soloLectura = !['admin', 'recepcion'].includes(sesion?.rol ?? '');
 
-  const [razas, cotizacion, { data: perrosCrudo }, { data: tamanos }] = await Promise.all([
+  const zona = await zonaActual();
+  const [razas, cotizacion, { data: perrosCrudo }, { data: tamanos }, { data: pelajes }, { data: gruposCrudo }, { data: asignacionesCrudo }, { data: sinGrupo }] = await Promise.all([
     cargarRazas(supabase, await negocioIdActual(), { conGrupo: true }),
     cargarCotizacionEstetica(supabase, await negocioIdActual()),
     supabase
@@ -35,7 +41,17 @@ export default async function NormalizarRazasPage() {
       .eq("fallecido", false)
       .order("nombre"),
     supabase.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
+    supabase.from("tipos_pelaje").select("id, etiqueta").is("deleted_at", null).order("orden"),
+    supabase.rpc("razas_fuera_de_catalogo"),
+    soloLectura ? Promise.resolve({ data: [] }) : supabase.rpc("razas_asignaciones_recientes"),
+    supabase.rpc("razas_sin_grupo"),
   ]);
+  const grupos = (gruposCrudo ?? []) as GrupoFuera[];
+  const hoy = hoyNegocio(zona);
+  const asignaciones: Asignacion[] = ((asignacionesCrudo ?? []) as { id: string; textos: string[]; raza_nombre: string; perros: number; hecha_por: string; hecha_at: string; revertida: boolean }[]).map((a) => ({
+    id: a.id, textos: a.textos, raza: a.raza_nombre, perros: a.perros, hecha_por: a.hecha_por, revertida: a.revertida, dias: diasDesde(a.hecha_at, hoy, zona),
+  }));
+  const razasSinGrupo = (sinGrupo ?? []) as { raza_id: string; nombre: string; perros: number }[];
 
   const perros: PerroSinRaza[] = ((perrosCrudo ?? []) as unknown as {
     id: string;
@@ -75,6 +91,35 @@ export default async function NormalizarRazasPage() {
           Mientras no se les asigne una raza de la lista, su baño se cotiza con el grupo más barato.
         </p>
       </div>
+
+      {razasSinGrupo.length > 0 && (
+        <Alert variante="advertencia" titulo={razasSinGrupo.length === 1 ? "1 raza nueva sin grupo de precio" : `${razasSinGrupo.length} razas nuevas sin grupo de precio`}>
+          {razasSinGrupo.map((r) => r.nombre).join(", ")}: mientras no tengan grupo, la app no les adivina precio y no deja agendarles estética sin asignarlo.{" "}
+          <Link href="/perros/razas/grupos" className="font-semibold underline">Asignar grupo de precio</Link>
+        </Alert>
+      )}
+
+      {grupos.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-lg font-bold text-n-900">Textos de raza fuera del catálogo</h2>
+          <p className="text-n-600">
+            Agrupados por como se escriben, sin importar mayúsculas, acentos ni «perro»/«raza». Nada se junta solo: tú decides a qué raza pertenece cada grupo.
+          </p>
+          <FueraDeCatalogo
+            grupos={grupos}
+            razas={razas.map((r) => ({ id: r.id, nombre: r.nombre }))}
+            tamanos={(tamanos as { id: string; etiqueta: string }[]) ?? []}
+            pelajes={(pelajes as { id: string; etiqueta: string }[]) ?? []}
+            asignaciones={asignaciones}
+            puedeAsignar={!soloLectura}
+            puedeProponer={tienePermiso(sesion, "tarifas")}
+          />
+        </section>
+      )}
+
+      {grupos.length === 0 && asignaciones.length > 0 && (
+        <FueraDeCatalogo grupos={[]} razas={[]} tamanos={[]} pelajes={[]} asignaciones={asignaciones} puedeAsignar={!soloLectura} puedeProponer={false} />
+      )}
 
       {perros.length === 0 ? (
         <Alert variante="exito" titulo="No queda ninguno">

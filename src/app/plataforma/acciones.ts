@@ -205,7 +205,19 @@ export async function guardarRaza(fd: FormData): Promise<ResultadoPlataforma> {
   const nombre = texto(fd, "nombre");
   const alias = texto(fd, "alias").split(",").map((a) => a.trim()).filter(Boolean);
   if (!nombre) return { error: "Escribe el nombre de la raza." };
-  const datos = { nombre, alias, es_desconocida: fd.get("es_desconocida") === "on" };
+  const datos = {
+    nombre,
+    alias,
+    es_desconocida: fd.get("es_desconocida") === "on",
+    tamano_tipico_id: texto(fd, "tamano_tipico_id") || null,
+    pelaje_tipico_id: texto(fd, "pelaje_tipico_id") || null,
+  };
+  // Ni el nombre ni una variante pueden ser ya de otra raza (misma escritura normalizada).
+  for (const t of [nombre, ...alias]) {
+    const { data: choque } = await s.supabase.rpc("razas_conflicto", { p_texto: t, p_excluir: id || null });
+    const c = (Array.isArray(choque) ? choque[0] : choque) as { raza_nombre: string } | null;
+    if (c) return { error: `«${t}» ya es de la raza ${c.raza_nombre}. No se pueden repetir nombres ni variantes entre razas.` };
+  }
   const r = id
     ? await s.supabase.from("razas").update(datos).eq("id", id).select("id")
     : await s.supabase.from("razas").insert(datos).select("id");
@@ -216,6 +228,29 @@ export async function guardarRaza(fd: FormData): Promise<ResultadoPlataforma> {
   });
   revalidatePath("/plataforma/catalogos");
   return { error: null, exito: id ? "Raza guardada." : "Raza agregada. Cada negocio le asigna su grupo de precio." };
+}
+
+/** Una propuesta de raza de un negocio: aprobarla, rechazarla con motivo o aprobarla como variante de otra. */
+export async function resolverPropuestaRaza(fd: FormData): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const id = texto(fd, "id");
+  const accion = texto(fd, "accion");
+  const motivo = texto(fd, "motivo");
+  if (accion === "rechazar" && !motivo) return { error: "Escribe el motivo del rechazo: el negocio lo va a ver." };
+  const { data, error } = await s.supabase.rpc("plataforma_resolver_propuesta", {
+    p_id: id,
+    p_accion: accion,
+    p_motivo: motivo || null,
+    p_raza_destino: texto(fd, "raza_destino") || null,
+    p_nombre: texto(fd, "nombre") || null,
+  });
+  if (error) return { error: error.message };
+  await s.supabase.rpc("plataforma_registrar_evento", {
+    p_accion: "resolver_propuesta_raza", p_negocio_id: null, p_persona_id: null, p_motivo: motivo || null, p_detalle: { propuesta: id, accion, raza: data },
+  });
+  revalidatePath("/plataforma/catalogos");
+  return { error: null, exito: accion === "rechazar" ? "Propuesta rechazada." : "Listo: la raza ya está en el catálogo y los perros que la propusieron quedaron ligados." };
 }
 
 const CATALOGOS_ETIQUETA = new Set(["tamanos_categoria", "tipos_pelaje", "unidades_medida"]);

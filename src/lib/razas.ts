@@ -117,3 +117,34 @@ export async function contarPerrosSinRazaCatalogo(supabase: SupabaseClient): Pro
     .eq("fallecido", false);
   return count ?? 0;
 }
+
+const PALABRAS_VACIAS = new Set(["perro", "perra", "perros", "perras", "raza", "razas", "de", "del", "la", "el", "los", "las", "un", "una", "mi"]);
+
+/**
+ * El texto de una raza en su forma comparable: minúsculas, sin acentos ni
+ * signos ni espacios dobles, sin palabras vacías («perro», «raza») y en
+ * singular. Es la gemela EXACTA de `public.normalizar_raza()` de la base (la
+ * que agrupa los perros fuera del catálogo): un cambio aquí se hace allá y la
+ * auditoría `razas-dev.mjs` compara las dos con los mismos textos.
+ */
+export function normalizarRaza(texto: string): string {
+  const base = (texto ?? "")
+    .toLowerCase()
+    .replace(/[áàäâã]/g, "a")
+    .replace(/[éèëê]/g, "e")
+    .replace(/[íìïî]/g, "i")
+    .replace(/[óòöôõ]/g, "o")
+    .replace(/[úùüû]/g, "u")
+    .replace(/ñ/g, "n")
+    .replace(/ç/g, "c")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  const salida: string[] = [];
+  for (let w of base.split(/ +/)) {
+    if (!w || PALABRAS_VACIAS.has(w)) continue;
+    if (w.length > 5 && /(ores|eres|eses|anes)$/.test(w)) w = w.slice(0, -2);
+    else if (w.length > 3 && /[^s]s$/.test(w)) w = w.slice(0, -1);
+    salida.push(w);
+  }
+  return salida.join(" ");
+}

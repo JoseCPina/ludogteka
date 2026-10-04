@@ -13,6 +13,7 @@ import { BuscadorClientes } from "@/components/buscador-clientes";
 import type { ClienteBuscable } from "@/lib/clientes/buscables";
 import { hoyNegocio, instanteDeHoraLocal } from "@/lib/formato";
 import { crearCita } from "../agenda-actions";
+import { asignarGrupoDeRaza } from "../../perros/razas/grupos-actions";
 import { useZonaNegocio } from "@/components/zona-negocio";
 
 type Perro = { id: string; cliente_id: string; nombre: string };
@@ -35,6 +36,10 @@ export function AgendarForm({
   rolActual,
   userIdActual,
   perrosConAvisoSanitario,
+  perrosSinGrupo,
+  gruposPrecio,
+  puedeAsignarGrupo,
+  puedeExcepcion,
 }: {
   clientes: ClienteBuscable[];
   perros: Perro[];
@@ -45,6 +50,12 @@ export function AgendarForm({
   // vencidos o sin registro: la cita de estética se agenda igual (a ellos
   // se les exige en la estancia, no aquí), pero se avisa.
   perrosConAvisoSanitario: string[];
+  // Perros cuya raza (nueva en el catálogo) no tiene grupo de precio en este
+  // negocio: la app no adivina el precio, hay que asignarlo o hacer excepción.
+  perrosSinGrupo: { perroId: string; razaId: string; razaNombre: string }[];
+  gruposPrecio: { id: string; nombre: string }[];
+  puedeAsignarGrupo: boolean;
+  puedeExcepcion: boolean;
   rolActual: string;
   userIdActual: string;
 }) {
@@ -57,20 +68,43 @@ export function AgendarForm({
   const [fechaHora, setFechaHora] = useState(`${hoyNegocio(zona)}T10:00`);
   const [estanciaId, setEstanciaId] = useState("");
   const [peloMaltratado, setPeloMaltratado] = useState(false);
+  const [grupoElegido, setGrupoElegido] = useState("");
+  const [excepcion, setExcepcion] = useState(false);
+  const [motivoExcepcion, setMotivoExcepcion] = useState("");
+  const asignando = useEspera();
   const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
 
   const clienteElegido = clientes.find((c) => c.id === clienteId) ?? null;
   const perrosDelCliente = useMemo(() => perros.filter((p) => p.cliente_id === clienteId), [perros, clienteId]);
   const estanciasDelPerro = estanciasEnCurso.filter((e) => e.perroId === perroId);
+  const sinGrupo = perrosSinGrupo.find((p) => p.perroId === perroId) ?? null;
+
+  async function asignarGrupo() {
+    if (!sinGrupo || !grupoElegido) return;
+    setError(null);
+    const res = await asignando.ejecutar(() => asignarGrupoDeRaza(sinGrupo.razaId, grupoElegido));
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    setGrupoElegido("");
+    router.refresh();
+  }
 
   async function enviar() {
     if (!perroId) {
       setError("Elige un perro.");
       return;
     }
+    if (sinGrupo && (!excepcion || !grupoElegido || !motivoExcepcion.trim())) {
+      setError(`La raza ${sinGrupo.razaNombre} todavía no tiene grupo de precio en este negocio. Asígnaselo arriba, o registra una excepción con grupo y motivo.`);
+      return;
+    }
     setError(null);
     const res = await enviando.ejecutar(() => crearCita({
+      grupoExcepcionId: sinGrupo ? grupoElegido : null,
+      motivoExcepcion: sinGrupo ? motivoExcepcion.trim() : null,
       perroId,
       servicioId,
       peloMaltratado,
@@ -113,7 +147,7 @@ export function AgendarForm({
         </Alert>
       ) : (
         <>
-          <Select label="Perro" value={perroId} onChange={(e) => { setPerroId(e.target.value); setEstanciaId(""); }}>
+          <Select label="Perro" value={perroId} onChange={(e) => { setPerroId(e.target.value); setEstanciaId(""); setGrupoElegido(""); setExcepcion(false); setMotivoExcepcion(""); }}>
             <option value="">Elige un perro</option>
             {perrosDelCliente.map((p) => (
               <option key={p.id} value={p.id}>
@@ -127,6 +161,37 @@ export function AgendarForm({
               La cita de estética se agenda igual: las vacunas se exigen en guardería y hotel, no en el baño. Pero este
               perro sí usa guardería u hotel, y ahí sí lo van a detener: conviene ponerlo al día.
             </Alert>
+          )}
+
+          {sinGrupo && (
+            <div className="flex flex-col gap-3 rounded-lg border-l-4 border-ambar bg-ambar-suave p-4">
+              <p className="font-bold text-n-900">La raza {sinGrupo.razaNombre} todavía no tiene grupo de precio</p>
+              <p className="text-sm text-n-800">
+                La app no adivina el precio de un baño. {puedeAsignarGrupo || puedeExcepcion ? "Asigna el grupo ahora o registra una excepción solo para esta cita." : "Pídele a admin que lo asigne, o a alguien con el permiso de excepciones al reservar."}
+              </p>
+              <Select label="Grupo de precio" value={grupoElegido} onChange={(e) => setGrupoElegido(e.target.value)}>
+                <option value="">Elige un grupo</option>
+                {gruposPrecio.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.nombre}
+                  </option>
+                ))}
+              </Select>
+              {puedeAsignarGrupo && (
+                <Button type="button" className="self-start" disabled={!grupoElegido} cargando={asignando.cargando} onClick={asignarGrupo}>
+                  Asignarlo a la raza {sinGrupo.razaNombre}
+                </Button>
+              )}
+              {puedeExcepcion && (
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2 text-n-800">
+                    <input type="checkbox" className="h-5 w-5" checked={excepcion} onChange={(e) => setExcepcion(e.target.checked)} />
+                    Solo para esta cita, con el grupo que elegí (excepción)
+                  </label>
+                  {excepcion && <Field label="Motivo de la excepción" value={motivoExcepcion} onChange={(e) => setMotivoExcepcion(e.target.value)} ayuda="Queda registrado con tu nombre." />}
+                </div>
+              )}
+            </div>
           )}
 
           {estanciasDelPerro.length > 0 && (

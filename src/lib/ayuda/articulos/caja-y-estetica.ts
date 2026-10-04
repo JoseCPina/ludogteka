@@ -296,6 +296,47 @@ Para quitarlo, aprieta **Cancelar** en el descuento, escribe el **Motivo de la c
 - Si no ves **Aplicar descuento**, la cuenta ya está descontada completa o no hay motivos de descuento dados de alta.`,
   },
   {
+    slug: "agregar-una-raza-que-no-aparece",
+    titulo: "Cómo agregar una raza que no aparece",
+    resumen: "Juntar las formas de escribir una raza, proponer la que falta y darle su grupo de precio.",
+    grupo: "clientes",
+    modulo: null,
+    roles: ["admin", "recepcion"],
+    rutas: ["/perros/razas", "/perros/razas/grupos"],
+    palabras: ["raza", "razas", "calupoh", "mestizo", "criollo", "grupo de precio", "catálogo", "no aparece", "fuera del catálogo", "normalizar"],
+    cuerpo: `Cuando alguien escribe una raza que no está en la lista (por ejemplo «calupoh»), el perro se queda con el texto escrito a mano. Mientras no tenga una raza de la lista, su baño se cotiza con el grupo más barato (pelo corto). Esta pantalla lo arregla.
+
+Entra a [Razas sin catalogar](/perros/razas). Arriba, en **Textos de raza fuera del catálogo**, los perros salen juntos por como se escribe, sin importar mayúsculas, acentos ni palabras como «perro» o «raza»: «Calupoh», «calupoh» y «Perro calupoh» son un solo renglón con su número de perros.
+
+## Si la raza sí existe
+
+1. Mira las **Parecidas del catálogo**. Nada se junta solo: tú decides.
+2. Aprieta **Es esta raza: …** en la correcta, o escoge otra en **O elige otra raza del catálogo** y aprieta **Es esta raza**.
+3. Todos los perros del renglón cambian de una vez y el texto original queda guardado.
+4. ¿Te equivocaste? Baja a **Asignaciones recientes** y aprieta **Deshacer**: cada perro regresa a lo que tenía escrito.
+
+«Mestizo», «criollo» y «corriente» ya son una raza del catálogo: **Mestizo**.
+
+## Si la raza no existe
+
+1. Aprieta **Es una raza nueva**.
+2. Escribe el **Nombre de la raza**, las **Otras formas de escribirla** separadas por coma («calupo, kalupoh»), la **Talla típica** y el **Tipo de pelo**.
+3. Aprieta **Enviar propuesta**. Solo lo hace admin o quien tenga el permiso «Precios y tarifas».
+
+La propuesta queda ligada a los perros que usan esa raza y PeluDesk la revisa. Cuando la aprueba, la raza entra al catálogo de todos los negocios y esos perros se ligan solos. Si la rechaza, ves el motivo.
+
+## Después: su grupo de precio
+
+Una raza nueva llega **sin grupo de precio** en tu negocio, porque cada negocio decide el suyo. Mientras no lo tenga, la app no adivina ningún precio. Te avisa en **Necesita atención** del tablero («La raza … no tiene grupo de precio», con los días que lleva esperando).
+
+1. Aprieta el aviso, o entra a [Razas sin grupo de precio](/perros/razas/grupos).
+2. En **Grupo de precio** escoge el grupo y aprieta **Guardar grupo**. Solo admin o quien tenga «Precios y tarifas».
+
+Si agendas una cita de estética antes de asignarlo, la pantalla te pide el grupo en ese momento. Quien tiene «Excepciones al reservar» puede marcar **Solo para esta cita, con el grupo que elegí (excepción)** y escribir el **Motivo de la excepción**: queda con su nombre.
+
+> Mientras la propuesta espera, el perro conserva su raza escrita a mano y su baño se sigue cotizando con el grupo por defecto, como hasta ahora.`,
+  },
+  {
     slug: "agendar-cita-estetica",
     titulo: "Cómo agendar una cita de estética",
     resumen: "Apartar un baño o corte con el servicio, el estilista y la hora.",
@@ -322,7 +363,8 @@ Una cita fuera del horario sale resaltada en naranja en la agenda.
 ## Si algo no sale
 
 - «Este perro no tiene talla registrada…»: captúrala en su expediente con el link del mensaje.
-- «No hay nadie que pueda quedar como responsable de la cita»: falta dar de alta al personal de estética.`,
+- «No hay nadie que pueda quedar como responsable de la cita»: falta dar de alta al personal de estética.
+- Sale el recuadro **La raza … todavía no tiene grupo de precio**: es una raza nueva del catálogo y tu negocio aún no decide su precio. Mira [Cómo agregar una raza que no aparece](/ayuda/agregar-una-raza-que-no-aparece).`,
   },
   {
     slug: "atender-cita-estetica",

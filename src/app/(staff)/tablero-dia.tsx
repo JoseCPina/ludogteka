@@ -365,6 +365,23 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     });
   }
 
+  // Razas nuevas del catálogo con perros de este negocio y sin grupo de
+  // precio: la app no les adivina precio. La lista a la que manda va de la
+  // más vieja a la más nueva.
+  if (tienePermiso(sesion, "tarifas")) {
+    const { data: sinGrupo } = await supabase.rpc("razas_sin_grupo");
+    const razasSinGrupo = (sinGrupo ?? []) as { nombre: string; desde: string }[];
+    if (razasSinGrupo.length > 0) {
+      atencion.push({
+        clave: "razas-sin-grupo",
+        texto: razasSinGrupo.length === 1 ? `La raza ${razasSinGrupo[0].nombre} no tiene grupo de precio` : `${razasSinGrupo.length} razas no tienen grupo de precio`,
+        detalle: razasSinGrupo.length > 1 ? razasSinGrupo.map((r) => r.nombre).slice(0, 4).join(", ") : "Sin grupo no se puede agendar su estética",
+        href: "/perros/razas/grupos",
+        ...masViejo(razasSinGrupo.map((r) => r.desde), hoy, zona, "a"),
+      });
+    }
+  }
+
   // Gastos del local vencidos o por vencer (con montos: solo para quien
   // tiene «Gastos»). La lista a la que manda va del vencimiento más viejo
   // al más nuevo.
