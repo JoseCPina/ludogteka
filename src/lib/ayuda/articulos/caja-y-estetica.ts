@@ -298,43 +298,56 @@ Para quitarlo, aprieta **Cancelar** en el descuento, escribe el **Motivo de la c
   {
     slug: "agregar-una-raza-que-no-aparece",
     titulo: "Cómo agregar una raza que no aparece",
-    resumen: "Juntar las formas de escribir una raza, proponer la que falta y darle su grupo de precio.",
+    resumen: "Proponer la raza que falta desde el mismo formulario del perro, ligar la que ya existe y darle su grupo de precio.",
     grupo: "clientes",
     modulo: null,
     roles: ["admin", "recepcion"],
-    rutas: ["/perros/razas", "/perros/razas/grupos"],
-    palabras: ["raza", "razas", "calupoh", "mestizo", "criollo", "grupo de precio", "catálogo", "no aparece", "fuera del catálogo", "normalizar"],
-    cuerpo: `Cuando alguien escribe una raza que no está en la lista (por ejemplo «calupoh»), el perro se queda con el texto escrito a mano. Mientras no tenga una raza de la lista, su baño se cotiza con el grupo más barato (pelo corto). Esta pantalla lo arregla.
+    rutas: ["/perros", "/perros/razas", "/perros/razas/grupos"],
+    palabras: ["raza", "razas", "calupoh", "mestizo", "criollo", "grupo de precio", "catálogo", "no aparece", "no la encuentro", "agregar esta raza", "fuera del catálogo", "normalizar", "propuesta"],
+    cuerpo: `Al capturar o editar un perro, escribe la raza en **Raza**. Mientras escribes salen las razas de la lista que empiezan igual, que lo contienen o que se le parecen («¿Quisiste decir esta?»). Escoge la correcta y listo: de ahí sale el precio de estética.
 
-Entra a [Razas sin catalogar](/perros/razas). Arriba, en **Textos de raza fuera del catálogo**, los perros salen juntos por como se escribe, sin importar mayúsculas, acentos ni palabras como «perro» o «raza»: «Calupoh», «calupoh» y «Perro calupoh» son un solo renglón con su número de perros.
+## Si no está en la lista
 
-## Si la raza sí existe
+1. Termina de escribir la raza y aprieta **No la encuentro: agregar esta raza**. En el celular se abre una hoja desde abajo.
+2. Revisa el **Nombre de la raza** (ya viene con lo que escribiste) y, si quieres, pon los **Otros nombres con los que se le conoce**, separados por coma («calupo, kalupoh»).
+3. Escoge la **Talla típica** y el **Tipo de pelaje**, y escribe en **Notas** a qué raza se parece o cómo se maneja.
+4. Si eres admin o tienes el permiso «Precios y tarifas», puedes escoger también el **Grupo de precio de estética en este negocio**. Si no lo sabes todavía, déjalo vacío: nunca se adivina.
+5. Aprieta **Guardar raza**. El perro queda ligado a la propuesta y sigues con el formulario.
+
+PeluDesk revisa la propuesta, con tus notas. Cuando la aprueba, la raza entra al catálogo de todos los negocios y los perros ligados se cambian solos a ella. Si la rechaza, ves el motivo en [Razas sin catalogar](/perros/razas).
+
+> Si el grupo de precio no está asignado, el formulario lo dice: **la estética de este perro necesita un grupo de precio antes de agendar**. Quien tiene «Precios y tarifas» entra desde ahí a [Razas sin grupo de precio](/perros/razas/grupos); a los demás les dice que se lo pidan a admin.
+
+## Si la raza ya estaba escrita a mano
+
+Un perro capturado antes puede tener la raza escrita pero sin ligar a la lista. Al abrirlo, si lo escrito es igual a una raza de la lista, el formulario te dice «está en el catálogo como …» y aprietas **Usar …**: se liga con un toque, nunca solo. Después aprieta **Guardar cambios**.
+
+## Muchos perros a la vez
+
+Entra a [Razas sin catalogar](/perros/razas). Arriba, en **Textos de raza fuera del catálogo**, los perros salen juntos por como se escribe, sin importar mayúsculas, acentos ni palabras como «perro» o «raza»: «Calupoh», «calupoh» y «Perro calupoh» son un solo renglón.
 
 1. Mira las **Parecidas del catálogo**. Nada se junta solo: tú decides.
 2. Aprieta **Es esta raza: …** en la correcta, o escoge otra en **O elige otra raza del catálogo** y aprieta **Es esta raza**.
 3. Todos los perros del renglón cambian de una vez y el texto original queda guardado.
-4. ¿Te equivocaste? Baja a **Asignaciones recientes** y aprieta **Deshacer**: cada perro regresa a lo que tenía escrito.
+4. ¿Te equivocaste? Baja a **Asignaciones recientes** y aprieta **Deshacer**.
+5. Si de verdad es una raza nueva, aprieta **Es una raza nueva** y llena la propuesta (la hace admin o quien tenga «Precios y tarifas»).
 
 «Mestizo», «criollo» y «corriente» ya son una raza del catálogo: **Mestizo**.
 
-## Si la raza no existe
-
-1. Aprieta **Es una raza nueva**.
-2. Escribe el **Nombre de la raza**, las **Otras formas de escribirla** separadas por coma («calupo, kalupoh»), la **Talla típica** y el **Tipo de pelo**.
-3. Aprieta **Enviar propuesta**. Solo lo hace admin o quien tenga el permiso «Precios y tarifas».
-
-La propuesta queda ligada a los perros que usan esa raza y PeluDesk la revisa. Cuando la aprueba, la raza entra al catálogo de todos los negocios y esos perros se ligan solos. Si la rechaza, ves el motivo.
-
-## Después: su grupo de precio
+## Su grupo de precio
 
 Una raza nueva llega **sin grupo de precio** en tu negocio, porque cada negocio decide el suyo. Mientras no lo tenga, la app no adivina ningún precio. Te avisa en **Necesita atención** del tablero («La raza … no tiene grupo de precio», con los días que lleva esperando).
 
 1. Aprieta el aviso, o entra a [Razas sin grupo de precio](/perros/razas/grupos).
-2. En **Grupo de precio** escoge el grupo y aprieta **Guardar grupo**. Solo admin o quien tenga «Precios y tarifas».
+2. En **Grupo de precio** escoge el grupo y aprieta **Guardar grupo**. Sirve para las razas del catálogo y también para las **Razas propuestas, en revisión**; al aprobarse una propuesta, ese grupo queda como el de la raza en tu negocio.
 
 Si agendas una cita de estética antes de asignarlo, la pantalla te pide el grupo en ese momento. Quien tiene «Excepciones al reservar» puede marcar **Solo para esta cita, con el grupo que elegí (excepción)** y escribir el **Motivo de la excepción**: queda con su nombre.
 
-> Mientras la propuesta espera, el perro conserva su raza escrita a mano y su baño se sigue cotizando con el grupo por defecto, como hasta ahora.`,
+> Un perro con una raza en revisión y sin grupo no se puede agendar en estética hasta que le des el grupo o hagas la excepción. Si PeluDesk rechaza la propuesta, el perro conserva la raza escrita y vuelve a cotizarse con el grupo por defecto.
+
+## Si el dueño llena su propio link
+
+En el link de alta, el dueño también puede apretar **No la encuentro: agregar esta raza**: solo escribe el nombre, otros nombres y cómo es. No ve precios ni grupos de precio. Su propuesta te llega igual, con sus notas, y la ves en [Razas sin catalogar](/perros/razas).`,
   },
   {
     slug: "agendar-cita-estetica",
@@ -364,7 +377,7 @@ Una cita fuera del horario sale resaltada en naranja en la agenda.
 
 - «Este perro no tiene talla registrada…»: captúrala en su expediente con el link del mensaje.
 - «No hay nadie que pueda quedar como responsable de la cita»: falta dar de alta al personal de estética.
-- Sale el recuadro **La raza … todavía no tiene grupo de precio**: es una raza nueva del catálogo y tu negocio aún no decide su precio. Mira [Cómo agregar una raza que no aparece](/ayuda/agregar-una-raza-que-no-aparece).`,
+- Sale el recuadro **La raza … todavía no tiene grupo de precio**: es una raza nueva (del catálogo o propuesta desde el formulario del perro) y tu negocio aún no decide su precio. Mira [Cómo agregar una raza que no aparece](/ayuda/agregar-una-raza-que-no-aparece).`,
   },
   {
     slug: "atender-cita-estetica",

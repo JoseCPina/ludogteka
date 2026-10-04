@@ -1,7 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useId, useMemo, useRef, useState } from "react";
-import { normalizarTextoRaza } from "@/lib/razas";
+import { buscarRazasCatalogo, normalizarRaza, razaExacta } from "@/lib/razas";
+import { useEspera } from "@/hooks/use-espera";
+import { HojaRazaNueva, type OpcionCatalogo } from "@/components/hoja-raza-nueva";
+import type { DatosRazaPropuesta, PropuestaRazaVista } from "@/lib/razas-propuesta";
 
 export type RazaOpcion = {
   id: string;
@@ -16,23 +20,27 @@ export type RazaOpcion = {
   grupo_depende_tamano?: boolean;
 };
 
-const MAXIMO_SUGERENCIAS = 8;
-
-function buscar(razas: RazaOpcion[], consulta: string): RazaOpcion[] {
-  const q = normalizarTextoRaza(consulta);
-  if (!q) return razas.slice(0, MAXIMO_SUGERENCIAS);
-
-  // Las que EMPIEZAN con lo tecleado van primero: quien escribe "pas"
-  // busca un pastor, no un "perro pelón" que contiene "pas" a la mitad.
-  const empiezan: RazaOpcion[] = [];
-  const contienen: RazaOpcion[] = [];
-  for (const raza of razas) {
-    const candidatos = [raza.nombre, ...raza.alias].map(normalizarTextoRaza);
-    if (candidatos.some((c) => c.startsWith(q))) empiezan.push(raza);
-    else if (candidatos.some((c) => c.includes(q))) contienen.push(raza);
-  }
-  return [...empiezan, ...contienen].slice(0, MAXIMO_SUGERENCIAS);
-}
+/**
+ * Cómo se ofrece resolver una raza que no está en el catálogo. Sin esto el
+ * selector solo deja escribir texto suelto («usar tal cual»); con esto, quien
+ * captura la describe ahí mismo y la propone a la plataforma.
+ */
+export type OpcionesPropuestaRaza = {
+  // «personal»: admin o recepción (puede dar talla, pelo y, con «Precios y
+  // tarifas», grupo de precio). «dueno»: el cliente en su link, sin precios.
+  modo: "personal" | "dueno";
+  tamanos?: OpcionCatalogo[];
+  pelajes?: OpcionCatalogo[];
+  // Solo con «Precios y tarifas»: sin esto no se muestra ningún grupo.
+  grupos?: { id: string; nombre: string }[];
+  puedeAsignarGrupo?: boolean;
+  // personal: el perro ya existe → se liga en el momento; si no, la propuesta
+  // viaja con el formulario (campo oculto) y se liga al guardar al perro.
+  proponer?: (datos: DatosRazaPropuesta) => Promise<{ error: string | null }>;
+  propuestaInicial?: PropuestaRazaVista | null;
+  // dueno: el padre guarda la propuesta junto con el perro.
+  valorPropuesta?: DatosRazaPropuesta | null;
+};
 
 /**
  * Buscador de raza contra el catálogo.
@@ -58,21 +66,28 @@ export function SelectorRaza({
   ayuda,
   disabled = false,
   mostrarGrupo = false,
+  propuestas,
 }: {
   razas: RazaOpcion[];
   nombreCampoId?: string;
   nombreCampoTexto?: string;
   valorId?: string | null;
   valorTexto?: string | null;
-  onCambio?: (valor: { raza_id: string | null; raza: string }) => void;
+  onCambio?: (valor: { raza_id: string | null; raza: string; propuesta?: DatosRazaPropuesta | null }) => void;
   label?: string;
   ayuda?: string;
   disabled?: boolean;
   mostrarGrupo?: boolean;
+  propuestas?: OpcionesPropuestaRaza;
 }) {
   const controlado = typeof onCambio === "function";
   const [internoId, setInternoId] = useState<string | null>(valorId ?? null);
   const [internoTexto, setInternoTexto] = useState(valorTexto ?? "");
+
+  const [internaPropuesta, setInternaPropuesta] = useState<PropuestaRazaVista | null>(propuestas?.propuestaInicial ?? null);
+  const [hoja, setHoja] = useState(false);
+  const [errorHoja, setErrorHoja] = useState<string | null>(null);
+  const envioHoja = useEspera();
 
   const razaId = controlado ? (valorId ?? null) : internoId;
   const texto = controlado ? (valorTexto ?? "") : internoTexto;
@@ -98,10 +113,19 @@ export function SelectorRaza({
   }
 
   const elegida = useMemo(() => razas.find((r) => r.id === razaId) ?? null, [razas, razaId]);
-  const sugerencias = useMemo(() => buscar(razas, consulta), [razas, consulta]);
+  const sugerencias = useMemo(() => buscarRazasCatalogo(razas, consulta), [razas, consulta]);
 
-  function emitir(raza_id: string | null, raza: string) {
-    if (controlado) onCambio!({ raza_id, raza });
+  const valorPropuesta = propuestas?.valorPropuesta ?? null;
+  const propuesta: PropuestaRazaVista | null = controlado
+    ? valorPropuesta && !razaId && normalizarRaza(valorPropuesta.nombre) === normalizarRaza(texto)
+      ? { nombre: valorPropuesta.nombre, grupoNombre: null, enviada: false, datos: valorPropuesta }
+      : null
+    : internaPropuesta && !razaId && normalizarRaza(internaPropuesta.nombre) === normalizarRaza(texto)
+      ? internaPropuesta
+      : null;
+
+  function emitir(raza_id: string | null, raza: string, nuevaPropuesta: DatosRazaPropuesta | null = null) {
+    if (controlado) onCambio!({ raza_id, raza, propuesta: nuevaPropuesta });
     else {
       setInternoId(raza_id);
       setInternoTexto(raza);
@@ -109,6 +133,7 @@ export function SelectorRaza({
   }
 
   function elegir(raza: RazaOpcion) {
+    setInternaPropuesta(null);
     emitir(raza.id, raza.nombre);
     setConsulta("");
     setAbierto(false);
@@ -127,8 +152,44 @@ export function SelectorRaza({
     setAbierto(false);
   }
 
+  // «No la encuentro»: abre la hoja con lo escrito (o con lo que ya tenía el perro).
+  function abrirHoja() {
+    setErrorHoja(null);
+    setHoja(true);
+    setAbierto(false);
+  }
+
+  async function guardarHoja(datos: DatosRazaPropuesta) {
+    if (!propuestas) return;
+    setErrorHoja(null);
+    if (propuestas.modo === "personal" && propuestas.proponer) {
+      const res = await envioHoja.ejecutar(() => propuestas.proponer!(datos));
+      if (res.error) return setErrorHoja(res.error);
+      setInternaPropuesta({
+        nombre: datos.nombre,
+        grupoNombre: propuestas.grupos?.find((g) => g.id === datos.grupoId)?.nombre ?? null,
+        enviada: true,
+        datos: null,
+      });
+      emitir(null, datos.nombre);
+    } else if (propuestas.modo === "personal") {
+      setInternaPropuesta({
+        nombre: datos.nombre,
+        grupoNombre: propuestas.grupos?.find((g) => g.id === datos.grupoId)?.nombre ?? null,
+        enviada: false,
+        datos,
+      });
+      emitir(null, datos.nombre);
+    } else {
+      emitir(null, datos.nombre, datos);
+    }
+    setConsulta("");
+    setHoja(false);
+  }
+
   function limpiar() {
-    emitir(null, "");
+    setInternaPropuesta(null);
+    emitir(null, "", null);
     setConsulta("");
     setAbierto(true);
     porEnfocar.current = true;
@@ -146,7 +207,8 @@ export function SelectorRaza({
       // Enter dentro del buscador escoge de la lista; sin esto envía el
       // formulario completo a medio capturar.
       e.preventDefault();
-      if (sugerencias[resaltado]) elegir(sugerencias[resaltado]);
+      if (sugerencias[resaltado]) elegir(sugerencias[resaltado].raza);
+      else if (propuestas && hayTexto) abrirHoja();
       else usarLibre();
     } else if (e.key === "Escape") {
       setAbierto(false);
@@ -155,7 +217,10 @@ export function SelectorRaza({
 
   const idLista = `${idBase}-lista`;
   const hayTexto = consulta.trim().length > 0;
-  const coincideExacto = sugerencias.some((r) => normalizarTextoRaza(r.nombre) === normalizarTextoRaza(consulta));
+  const coincideExacto = sugerencias.some((x) => !x.parecido && normalizarRaza(x.raza.nombre) === normalizarRaza(consulta));
+  // Un perro con la raza escrita a mano que YA coincide con una del catálogo:
+  // se ofrece ligarla con un toque (nunca se liga sola).
+  const exactaDelTexto = !elegida && texto ? razaExacta(razas, texto) : null;
 
   return (
     <div>
@@ -175,7 +240,7 @@ export function SelectorRaza({
           <span className="font-semibold text-n-900">{texto}</span>
           {!elegida && (
             <span className="rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-600">
-              Fuera del catálogo
+              {propuesta ? "Raza nueva propuesta" : "Fuera del catálogo"}
             </span>
           )}
           {!disabled && (
@@ -219,7 +284,7 @@ export function SelectorRaza({
               role="listbox"
               className="absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded-md border-[1.5px] border-n-300 bg-white shadow-lg"
             >
-              {sugerencias.map((raza, i) => (
+              {sugerencias.map(({ raza, parecido }, i) => (
                 <li key={raza.id} role="option" aria-selected={i === resaltado}>
                   <button
                     type="button"
@@ -231,6 +296,7 @@ export function SelectorRaza({
                     }`}
                   >
                     <span className="text-n-900">{raza.nombre}</span>
+                    {parecido && <span className="text-xs font-semibold text-n-600">¿Quisiste decir esta? Se parece a lo que escribiste</span>}
                     {mostrarGrupo && raza.grupo_nombre && (
                       <span className="text-xs text-n-500">{raza.grupo_nombre}</span>
                     )}
@@ -238,7 +304,22 @@ export function SelectorRaza({
                 </li>
               ))}
 
-              {hayTexto && !coincideExacto && (
+              {hayTexto && !coincideExacto && propuestas && (
+                <li>
+                  <button
+                    type="button"
+                    data-agregar-raza
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={abrirHoja}
+                    className="min-h-12 w-full border-t border-n-200 px-3.5 py-2.5 text-left font-semibold text-morado hover:bg-morado-suave"
+                  >
+                    No la encuentro: agregar esta raza
+                    <span className="block text-sm font-normal text-n-600">«{consulta.trim()}»</span>
+                  </button>
+                </li>
+              )}
+
+              {hayTexto && !coincideExacto && !propuestas && (
                 <li>
                   <button
                     type="button"
@@ -259,14 +340,105 @@ export function SelectorRaza({
         </div>
       )}
 
-      {mostrarGrupo && texto && (
-        <p className="mt-1.5 text-sm text-n-600">
-          Grupo de precio de estética:{" "}
-          <strong>{elegida?.grupo_nombre ?? "el predeterminado, por no estar en el catálogo"}</strong>
+      {!controlado && propuesta && !propuesta.enviada && propuesta.datos && (
+        <input type="hidden" name="raza_propuesta" value={JSON.stringify(propuesta.datos)} />
+      )}
+
+      {exactaDelTexto && !disabled && (
+        <div data-ligar-raza className="mt-2 flex flex-wrap items-center gap-2 rounded-md bg-morado-suave px-3 py-2 text-sm text-n-800">
+          <span>
+            «{texto}» está en el catálogo como <strong>{exactaDelTexto.nombre}</strong>.
+          </span>
+          <button type="button" onClick={() => elegir(exactaDelTexto)} className="ml-auto rounded px-2 py-1 font-semibold text-morado hover:bg-white">
+            Usar {exactaDelTexto.nombre}
+          </button>
+        </div>
+      )}
+
+      {texto && !elegida && !exactaDelTexto && !propuesta && propuestas && !disabled && (
+        <button type="button" data-agregar-raza onClick={abrirHoja} className="mt-2 min-h-11 rounded-md border-[1.5px] border-morado px-3 text-sm font-semibold text-morado hover:bg-morado-suave">
+          No la encuentro: agregar esta raza
+        </button>
+      )}
+
+      {propuesta && propuestas?.modo === "dueno" && (
+        <p className="mt-1.5 text-sm text-n-700">
+          Listo: anotamos <strong>{propuesta.nombre}</strong> y la revisamos para agregarla.
         </p>
       )}
+
+      {mostrarGrupo && texto && <AvisoGrupo elegida={elegida} propuesta={propuesta} propuestas={propuestas} />}
       {!mostrarGrupo && ayuda && <p className="mt-1.5 text-sm text-n-600">{ayuda}</p>}
       {mostrarGrupo && !texto && ayuda && <p className="mt-1.5 text-sm text-n-600">{ayuda}</p>}
+
+      {hoja && propuestas && (
+        <HojaRazaNueva
+          nombreInicial={texto || consulta.trim()}
+          modo={propuestas.modo}
+          tamanos={propuestas.tamanos}
+          pelajes={propuestas.pelajes}
+          grupos={propuestas.puedeAsignarGrupo ? propuestas.grupos : []}
+          inicial={propuesta?.datos ?? null}
+          guardando={envioHoja.cargando}
+          error={errorHoja}
+          onGuardar={guardarHoja}
+          onCancelar={() => setHoja(false)}
+        />
+      )}
     </div>
+  );
+}
+
+/**
+ * Qué grupo de precio de estética le toca a lo que se escogió, dicho sin
+ * adivinar: el del catálogo, el que el negocio le dio a la propuesta, o que
+ * hace falta asignarlo antes de agendar. Solo lo muestra el personal.
+ */
+function AvisoGrupo({
+  elegida,
+  propuesta,
+  propuestas,
+}: {
+  elegida: RazaOpcion | null;
+  propuesta: PropuestaRazaVista | null;
+  propuestas?: OpcionesPropuestaRaza;
+}) {
+  const puedeAsignar = Boolean(propuestas?.puedeAsignarGrupo);
+  const enlace = puedeAsignar ? (
+    <>
+      {" "}
+      <Link href="/perros/razas/grupos" className="font-semibold text-morado underline">
+        Asignar grupo
+      </Link>
+    </>
+  ) : (
+    " Pídeselo a admin o a quien tenga «Precios y tarifas»."
+  );
+  const necesita = (cual: string) => (
+    <p data-aviso-grupo="falta" className="mt-1.5 text-sm text-n-700">
+      {cual} La estética de este perro necesita un grupo de precio antes de agendar.{enlace}
+    </p>
+  );
+
+  if (elegida?.grupo_nombre) {
+    return (
+      <p data-aviso-grupo="ok" className="mt-1.5 text-sm text-n-600">
+        Grupo de precio de estética: <strong>{elegida.grupo_nombre}</strong>
+      </p>
+    );
+  }
+  if (elegida) return necesita("La raza está en el catálogo, pero este negocio todavía no le asigna grupo de precio.");
+  if (propuesta?.grupoNombre) {
+    return (
+      <p data-aviso-grupo="propuesta" className="mt-1.5 text-sm text-n-600">
+        Raza nueva en revisión. Grupo de precio de estética: <strong>{propuesta.grupoNombre}</strong>
+      </p>
+    );
+  }
+  if (propuesta) return necesita("Raza nueva en revisión por PeluDesk.");
+  return (
+    <p data-aviso-grupo="predeterminado" className="mt-1.5 text-sm text-n-600">
+      Grupo de precio de estética: <strong>el predeterminado, por no estar en el catálogo</strong>
+    </p>
   );
 }

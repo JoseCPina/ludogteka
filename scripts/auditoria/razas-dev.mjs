@@ -24,6 +24,12 @@
 //      «excepciones_reserva», grupo y motivo) pasa y queda registrada; con el
 //      grupo asignado (permiso «tarifas») pasa normal; reasignar conserva la
 //      historia (la fila anterior se da de baja).
+//   6. Razas desde el formulario del perro: razas_proponer_formulario (admin y
+//      recepción; estética no) con la descripción, el perro ligado, una sola
+//      propuesta por nombre, el grupo SOLO con «tarifas» y de ESTE negocio,
+//      perro_grupo_raza «sin grupo» con propuesta pendiente (nunca el grupo
+//      por defecto), y el grupo del negocio que se vuelve el de la raza al
+//      aprobar. Sin sesión y de otro negocio, nada.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -319,6 +325,66 @@ try {
   const { data: pd } = await SB.from("perro_grupo_raza").select("por_defecto, sin_grupo").eq("perro_id", dMestiza).single();
   if (!pd.por_defecto || pd.sin_grupo) hallazgo("un perro con la raza escrita a mano dejó de comportarse como hasta hoy (grupo por defecto)");
   else bien("un perro con la raza escrita a mano sigue con el grupo por defecto, como hasta hoy (lo resuelve la normalización)");
+
+  // ── 6. Razas desde el formulario del perro ──
+  console.log("── 6. Desde el formulario del perro");
+  const NOMBRE6 = `Formulario Z${sufijo}`;
+  const { data: perroF } = await SB.from("perros").insert({ cliente_id: datos.clienteSoloB, nombre: `ZZ form ${sufijo}`, raza: NOMBRE6, raza_id: null }).select("id").single();
+  creados.perros.push(perroF.id);
+  const args6 = (extra = {}) => ({ p_nombre: NOMBRE6, p_variantes: [`Otro ${sufijo}`], p_tamano_id: null, p_pelaje_id: null, p_notas: "Se parece al husky", p_perro_id: perroF.id, p_grupo_raza_id: null, ...extra });
+  const prop6 = await rpc(tAdmin, "razas_proponer_formulario", args6());
+  if (!prop6.ok) hallazgo(`razas_proponer_formulario (admin): ${prop6.mensaje}`);
+  else {
+    const dup = await rpc(tRecep, "razas_proponer_formulario", args6({ p_nombre: NOMBRE6.toUpperCase(), p_notas: "otra nota" }));
+    if (!dup.ok || dup.cuerpo !== prop6.cuerpo) hallazgo(`la misma raza propuesta otra vez debía reusar la propuesta: ${dup.mensaje || JSON.stringify(dup.cuerpo)}`);
+    else bien("la misma raza (otra escritura) reusa la propuesta pendiente, no la duplica");
+    const fila = (await SB.from("razas_propuestas").select("notas, origen, estado").eq("id", prop6.cuerpo).single()).data;
+    if (fila.origen !== "formulario" || !fila.notas.includes("husky") || !fila.notas.includes("otra nota")) hallazgo(`notas/origen: ${JSON.stringify(fila)}`);
+    else bien("la propuesta guarda las notas de quien la describió (se suman) y su origen");
+    const v = (await SB.from("perro_grupo_raza").select("sin_grupo, por_defecto, propuesta_id, raza_nombre").eq("perro_id", perroF.id).single()).data;
+    if (!v.sin_grupo || v.por_defecto || v.propuesta_id !== prop6.cuerpo || v.raza_nombre !== NOMBRE6) hallazgo(`vista con propuesta pendiente: ${JSON.stringify(v)}`);
+    else bien("perro_grupo_raza: con propuesta pendiente el perro está «sin grupo» (no el por defecto) y dice su propuesta");
+    const gruposB = (await SB.from("grupos_raza").select("id").eq("negocio_id", B).is("deleted_at", null).limit(2)).data;
+    const gruposL = (await A.from("grupos_raza").select("id").eq("negocio_id", LUDOGTEKA).limit(1)).data;
+    if ((await rpc(tRecep, "asignar_grupo_propuesta", { p_propuesta_id: prop6.cuerpo, p_grupo_raza_id: gruposB[0].id })).status !== 403) hallazgo("recepción sin «tarifas» asignó grupo a una propuesta");
+    if ((await rpc(tRecep, "razas_proponer_formulario", args6({ p_nombre: `ConGrupo Z${sufijo}`, p_grupo_raza_id: gruposB[0].id, p_perro_id: null }))).status !== 403) hallazgo("recepción sin «tarifas» propuso con grupo");
+    if ((await rpc(tEstetica, "razas_proponer_formulario", args6({ p_nombre: `Estetica Z${sufijo}`, p_perro_id: null }))).ok) hallazgo("estética propuso una raza");
+    if ((await rpc(tAdmin, "asignar_grupo_propuesta", { p_propuesta_id: prop6.cuerpo, p_grupo_raza_id: gruposL[0].id })).ok) hallazgo("se asignó a una propuesta el grupo de OTRO negocio");
+    else bien("la base rechaza grupos de otro negocio, y a recepción sin «tarifas» y a estética");
+    const conGrupo = await rpc(tAdmin, "asignar_grupo_propuesta", { p_propuesta_id: prop6.cuerpo, p_grupo_raza_id: gruposB[0].id });
+    const v2 = (await SB.from("perro_grupo_raza").select("sin_grupo, grupo_raza_id").eq("perro_id", perroF.id).single()).data;
+    if (!conGrupo.ok || v2.sin_grupo || v2.grupo_raza_id !== gruposB[0].id) hallazgo(`con el grupo de la propuesta el perro debía cotizar con él: ${conGrupo.mensaje} ${JSON.stringify(v2)}`);
+    else bien("con el grupo que el negocio le da a la propuesta, el perro ya cotiza con él");
+    const ajeno = (await A.from("perros").select("id").limit(1)).data?.[0]?.id;
+    if (ajeno && (await rpc(tAdmin, "razas_proponer_formulario", args6({ p_nombre: `Ajeno Z${sufijo}`, p_perro_id: ajeno }))).ok) hallazgo("se ligó a una propuesta un perro de OTRO negocio");
+    if ((await rpc(tAdmin, "razas_proponer_formulario", args6({ p_nombre: "Mestizo", p_perro_id: null }))).ok) hallazgo("se propuso «Mestizo», que ya está en el catálogo");
+    else bien("una raza que ya está en el catálogo se rechaza con su nombre");
+    const larga = await rpc(tAdmin, "razas_proponer_formulario", args6({ p_nombre: `X${"y".repeat(100)}`, p_perro_id: null }));
+    if (larga.ok) hallazgo("se aceptó un nombre de más de 80 caracteres");
+    // La plataforma aprueba: el grupo del negocio queda como el de la raza en ESE negocio.
+    const aprob = await rpc(tPlat, "plataforma_resolver_propuesta", { p_id: prop6.cuerpo, p_accion: "aprobar", p_motivo: null, p_raza_destino: null, p_nombre: null }, B);
+    if (!aprob.ok) hallazgo(`aprobar: ${aprob.mensaje}`);
+    else {
+      creados.razas.push(aprob.cuerpo);
+      const g = (await SB.from("razas_grupo").select("negocio_id, grupo_raza_id").eq("raza_id", aprob.cuerpo).is("deleted_at", null)).data;
+      const p6 = (await SB.from("perros").select("raza_id").eq("id", perroF.id).single()).data;
+      if (g.length !== 1 || g[0].negocio_id !== B || g[0].grupo_raza_id !== gruposB[0].id || p6.raza_id !== aprob.cuerpo) hallazgo(`al aprobar: ${JSON.stringify([g, p6])}`);
+      else bien("al aprobar, el grupo del negocio queda como el de la raza SOLO en ese negocio y el perro se liga");
+      const lista = await rpc(tPlat, "plataforma_razas_propuestas", {}, B);
+      const f6 = (lista.cuerpo ?? []).find((x) => x.id === prop6.cuerpo);
+      if (!f6 || f6.origen !== "formulario" || !f6.notas?.includes("husky") || f6.grupo_nombre == null) hallazgo(`la bandeja no trae notas/origen/grupo: ${JSON.stringify(f6)}`);
+      else bien("la bandeja de la plataforma trae las notas, el origen y el grupo de la propuesta");
+    }
+  }
+  const anonCab = { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY, Authorization: `Bearer ${env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`, "x-negocio-id": B, "Content-Type": "application/json" };
+  for (const fn of ["razas_proponer_formulario", "razas_proponer_cliente", "asignar_grupo_propuesta", "razas_propuestas_sin_grupo", "razas_proponer_interna"]) {
+    const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: anonCab, body: "{}" });
+    if (r.status !== 401 && r.status !== 403 && r.status !== 404) hallazgo(`${fn} contestó ${r.status} a la llave anónima`);
+  }
+  for (const fn of ["razas_proponer_cliente", "razas_proponer_interna"]) {
+    if ((await rpc(tAdmin, fn, { p_perro_id: perroF.id, p_nombre: "Hack", p_variantes: [], p_notas: null })).ok) hallazgo(`${fn} la pudo llamar un admin con su JWT`);
+  }
+  bien("anónimo no ejecuta ninguna; las del servidor (cliente, interna) ni un admin con su JWT");
 } finally {
   // Limpieza de lo de prueba (desarrollo, con la llave de servicio).
   for (const id of creados.citas) await SB.from("citas_estetica").delete().eq("id", id);

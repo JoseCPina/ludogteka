@@ -369,8 +369,16 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // precio: la app no les adivina precio. La lista a la que manda va de la
   // más vieja a la más nueva.
   if (tienePermiso(sesion, "tarifas")) {
-    const { data: sinGrupo } = await supabase.rpc("razas_sin_grupo");
-    const razasSinGrupo = (sinGrupo ?? []) as { nombre: string; desde: string }[];
+    const [{ data: sinGrupo }, { data: propuestasSinGrupo }] = await Promise.all([
+      supabase.rpc("razas_sin_grupo"),
+      supabase.rpc("razas_propuestas_sin_grupo"),
+    ]);
+    // Las razas del catálogo sin grupo y las razas propuestas que esperan
+    // aprobación (con perros, sin grupo que el negocio les haya dado).
+    const razasSinGrupo = [
+      ...((sinGrupo ?? []) as { nombre: string; desde: string }[]),
+      ...((propuestasSinGrupo ?? []) as { nombre: string; desde: string; perros: number }[]).filter((p) => p.perros > 0),
+    ];
     if (razasSinGrupo.length > 0) {
       atencion.push({
         clave: "razas-sin-grupo",

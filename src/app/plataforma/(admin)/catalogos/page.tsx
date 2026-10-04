@@ -7,6 +7,7 @@ type Raza = { id: string; nombre: string; alias: string[] | null; es_desconocida
 type Propuesta = {
   id: string; negocio_nombre: string; nombre: string; variantes: string[]; tamano: string | null; pelaje: string | null; estado: string; motivo: string | null;
   perros: number; creada_at: string; resuelta_at: string | null; raza_nombre: string | null; parecidas: { raza_id: string; nombre: string; puntaje: number }[];
+  notas: string | null; origen: string; grupo_nombre: string | null;
 };
 type Etiqueta = { id: string; clave: string; etiqueta: string };
 
@@ -62,6 +63,11 @@ export default async function Catalogos() {
                 {p.variantes.length ? `Variantes: ${p.variantes.join(", ")}. ` : ""}
                 {p.tamano ? `Talla: ${p.tamano}. ` : ""}
                 {p.pelaje ? `Pelo: ${p.pelaje}.` : ""}
+              </p>
+              {p.notas && <p className="mt-1 whitespace-pre-line rounded-md bg-n-100 p-2 text-sm text-n-800">{p.notas}</p>}
+              <p className="mt-1 text-xs text-n-600">
+                {p.origen === "cliente" ? "La propuso el dueño desde su link de alta." : p.origen === "formulario" ? "La propuso el personal al capturar un perro." : "Desde la pantalla de razas."}
+                {p.grupo_nombre ? ` El negocio ya le dio el grupo «${p.grupo_nombre}»: al aprobarla queda como el suyo allá.` : ""}
               </p>
               {p.estado !== "pendiente" ? (
                 <p className="mt-2 text-sm font-semibold text-n-700">

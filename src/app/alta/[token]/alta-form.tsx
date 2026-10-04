@@ -12,7 +12,7 @@ import { FirmarContrato } from "@/components/firmar-contrato";
 import type { RazaOpcion } from "@/components/selector-raza";
 import type { CotizacionEstetica } from "@/lib/estetica/cotizacion";
 import { TIPOS_LINK_ALTA, type TipoLinkAlta } from "@/lib/alta/tipos-link";
-import { completarAlta, subirFotoAlta, calcularDistanciaAlta, cerrarLinkSiCompleto, iniciarSesionPorTelefono } from "../acciones";
+import { completarAlta, subirFotoAlta, calcularDistanciaAlta, cerrarLinkSiCompleto, iniciarSesionPorTelefono, proponerRazaAlta } from "../acciones";
 import { perroVacio, type ContratoPendiente, type PerroAlta } from "../tipos";
 import { camposDeTipo } from "@/lib/alta/campos-perro";
 import { TarjetaPerro, type Catalogo } from "./tarjeta-perro";
@@ -185,6 +185,12 @@ export function AltaForm({
       }
 
       const creados = res.perros ?? [];
+      // Las razas que el dueño no encontró y describió: se proponen ya con el
+      // perro creado (si falla alguna, el perro queda con su texto).
+      for (let i = 0; i < creados.length; i += 1) {
+        const prop = perros[i]?.raza_propuesta;
+        if (prop && !perros[i]?.raza_id) await conTope(proponerRazaAlta(token, creados[i].id, prop)).catch(() => null);
+      }
       if (requisitos) {
         const resumen = await subirComprobantesAlta(
           token,

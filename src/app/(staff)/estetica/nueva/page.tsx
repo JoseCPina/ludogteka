@@ -52,10 +52,10 @@ export default async function AgendarPage() {
       .in("estado", ["vencida", "sin_registro"]),
   ]);
   const [{ data: sinGrupoCrudo }, { data: gruposPrecio }] = await Promise.all([
-    supabase.from("perro_grupo_raza").select("perro_id, raza_id, raza_nombre").eq("sin_grupo", true),
+    supabase.from("perro_grupo_raza").select("perro_id, raza_id, raza_nombre, propuesta_id").eq("sin_grupo", true),
     supabase.from("grupos_raza").select("id, nombre").is("deleted_at", null).order("orden"),
   ]);
-  const perrosSinGrupo = ((sinGrupoCrudo ?? []) as { perro_id: string; raza_id: string; raza_nombre: string }[]).map((r) => ({ perroId: r.perro_id, razaId: r.raza_id, razaNombre: r.raza_nombre }));
+  const perrosSinGrupo = ((sinGrupoCrudo ?? []) as { perro_id: string; raza_id: string | null; raza_nombre: string; propuesta_id: string | null }[]).map((r) => ({ perroId: r.perro_id, razaId: r.raza_id, propuestaId: r.propuesta_id, razaNombre: r.raza_nombre }));
   const usanGh = new Set((conGuarderiaHotel ?? []).map((r) => r.perro_id as string));
   const perrosConAvisoSanitario = Array.from(
     new Set((conRequisitoPendiente ?? []).map((r) => r.perro_id as string).filter((id) => usanGh.has(id)))

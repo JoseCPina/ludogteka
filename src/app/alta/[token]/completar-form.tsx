@@ -13,7 +13,7 @@ import { FirmarContrato } from "@/components/firmar-contrato";
 import type { RazaOpcion } from "@/components/selector-raza";
 import type { CotizacionEstetica } from "@/lib/estetica/cotizacion";
 import { TIPOS_LINK_ALTA, type TipoLinkAlta } from "@/lib/alta/tipos-link";
-import { completarExpediente, subirFotoAlta, calcularDistanciaAlta, cerrarLinkSiCompleto } from "../acciones";
+import { completarExpediente, subirFotoAlta, calcularDistanciaAlta, cerrarLinkSiCompleto, proponerRazaAlta } from "../acciones";
 import {
   perroVacio,
   type ContratoPendiente,
@@ -178,6 +178,16 @@ export function CompletarForm({
       const creados = (res.perros ?? []).filter(
         (p) => !perros.some((existente) => existente.id === p.id)
       );
+      // Las razas que el dueño no encontró y describió: se proponen ya con
+      // el perro creado (si falla alguna, el perro queda con su texto).
+      for (const p of conHuecos) {
+        const prop = p.campos.includes("raza") ? existentes[p.id]?.raza_propuesta : null;
+        if (prop && !existentes[p.id]?.raza_id) await conTope(proponerRazaAlta(token, p.id, prop)).catch(() => null);
+      }
+      for (let i = 0; i < creados.length; i += 1) {
+        const prop = nuevos[i]?.raza_propuesta;
+        if (prop && !nuevos[i]?.raza_id) await conTope(proponerRazaAlta(token, creados[i].id, prop)).catch(() => null);
+      }
       if (requisitos) {
         const resumen = await subirComprobantesAlta(
           token,

@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hrefDeVuelta, rutaDeVuelta } from "@/lib/clientes/volver";
+import { leerPropuestaJson } from "@/lib/razas-propuesta";
+import { ligarRazaPropuesta } from "./raza-propuesta-actions";
 
 export type EstadoPerroForm = { error: string | null; ok?: boolean };
 
@@ -132,6 +134,15 @@ async function altaPerro(clienteId: string, formData: FormData, volver: string |
 
   if (error) {
     return { error: "No pudimos guardar al perro. Intenta de nuevo." };
+  }
+
+  // La raza que se propuso en el formulario viaja con el perro nuevo: se liga
+  // ahora que ya existe. Si falla, el perro ya quedó guardado (con su texto) y
+  // su ficha vuelve a ofrecer «agregar esta raza».
+  const propuesta = leerPropuestaJson(String(formData.get("raza_propuesta") ?? ""));
+  if (propuesta && !campos.raza_id) {
+    const res = await ligarRazaPropuesta(data.id, propuesta);
+    if (res.error) console.error("[perros] no se pudo ligar la propuesta de raza", data.id, res.error);
   }
 
   revalidatePath(`/clientes/${clienteId}`);

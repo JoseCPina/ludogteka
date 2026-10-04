@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PerroForm } from "@/app/(staff)/perros/perro-form";
 import { crearPerro, crearPerroYVolver } from "@/app/(staff)/perros/actions";
 import { cargarRazas } from "@/lib/razas";
+import { contextoRazaFormulario } from "@/lib/razas-form";
 import { negocioIdActual } from "@/lib/negocio/actual";
 import { Alert } from "@/components/ui/alert";
 import { hrefDeVuelta, rutaDeVuelta } from "@/lib/clientes/volver";
@@ -31,6 +32,7 @@ export default async function NuevoPerroPage({
   ]);
 
   if (!cliente) notFound();
+  const contextoRaza = await contextoRazaFormulario(supabase, null);
 
   const crearConCliente = volver ? crearPerroYVolver.bind(null, id, volver) : crearPerro.bind(null, id);
 
@@ -58,6 +60,8 @@ export default async function NuevoPerroPage({
         razas={razas}
         tamanos={tamanos ?? []}
         pelajes={pelajes ?? []}
+        grupos={contextoRaza.grupos}
+        puedeAsignarGrupo={contextoRaza.puedeAsignarGrupo}
         textoBoton={volver ? "Guardar perro y seguir" : "Guardar perro"}
       />
     </div>

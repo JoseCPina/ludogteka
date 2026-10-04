@@ -148,3 +148,68 @@ export function normalizarRaza(texto: string): string {
   }
   return salida.join(" ");
 }
+
+/**
+ * Parecido entre dos textos de raza, 0 a 1: la misma cuenta que
+ * `extensions.similarity()` (pg_trgm) de la base, que es lo que usa
+ * /perros/razas para sugerir. Cada palabra se rodea de espacios, se parte en
+ * trigramas y se compara la intersección contra la unión.
+ */
+export function similitudRaza(a: string, b: string): number {
+  const trigramas = (t: string) => {
+    const s = new Set<string>();
+    for (const palabra of normalizarRaza(t).split(" ")) {
+      if (!palabra) continue;
+      const p = `  ${palabra} `;
+      for (let i = 0; i + 3 <= p.length; i += 1) s.add(p.slice(i, i + 3));
+    }
+    return s;
+  };
+  const A = trigramas(a);
+  const B = trigramas(b);
+  if (A.size === 0 || B.size === 0) return 0;
+  let comunes = 0;
+  for (const x of A) if (B.has(x)) comunes += 1;
+  return comunes / (A.size + B.size - comunes);
+}
+
+export const UMBRAL_PARECIDO = 0.4;
+
+export type SugerenciaRaza = { raza: RazaOpcion; parecido: boolean };
+
+/**
+ * Lo que se le enseña a quien escribe en «Raza»: primero las que empiezan
+ * con lo tecleado, luego las que lo contienen (por nombre o por cualquiera de
+ * sus otros nombres, ya normalizados como los normaliza la base), y al final
+ * las que solo se PARECEN (trigramas ≥ 0.4), marcadas como tales.
+ */
+export function buscarRazasCatalogo(razas: RazaOpcion[], consulta: string, maximo = 8): SugerenciaRaza[] {
+  const q = normalizarRaza(consulta);
+  if (!q) return razas.slice(0, maximo).map((raza) => ({ raza, parecido: false }));
+  const empiezan: RazaOpcion[] = [];
+  const contienen: RazaOpcion[] = [];
+  const parecidas: { raza: RazaOpcion; puntaje: number }[] = [];
+  for (const raza of razas) {
+    const candidatos = [raza.nombre, ...raza.alias].map(normalizarRaza).filter(Boolean);
+    if (candidatos.some((c) => c.startsWith(q))) empiezan.push(raza);
+    else if (candidatos.some((c) => c.includes(q))) contienen.push(raza);
+    else if (q.length >= 3) {
+      const puntaje = Math.max(...candidatos.map((c) => similitudRaza(c, q)));
+      if (puntaje >= UMBRAL_PARECIDO) parecidas.push({ raza, puntaje });
+    }
+  }
+  parecidas.sort((x, y) => y.puntaje - x.puntaje);
+  return [
+    ...empiezan.map((raza) => ({ raza, parecido: false })),
+    ...contienen.map((raza) => ({ raza, parecido: false })),
+    ...parecidas.map((x) => ({ raza: x.raza, parecido: true })),
+  ].slice(0, maximo);
+}
+
+/** La raza del catálogo cuyo nombre u otro nombre es EXACTAMENTE ese texto (ya normalizado), o null. */
+export function razaExacta(razas: RazaOpcion[], texto: string): RazaOpcion | null {
+  const q = normalizarRaza(texto);
+  if (!q) return null;
+  const hay = razas.filter((r) => [r.nombre, ...r.alias].some((c) => normalizarRaza(c) === q));
+  return hay.length === 1 ? hay[0] : null;
+}

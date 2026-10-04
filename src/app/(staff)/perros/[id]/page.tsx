@@ -5,6 +5,7 @@ import Link from "next/link";
 import { describirBono } from "@/lib/bonos/descripcion";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarRazas } from "@/lib/razas";
+import { contextoRazaFormulario } from "@/lib/razas-form";
 import { negocioIdActual, zonaActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tipoContratoAplica, usaEstancias } from "@/lib/plan/modulos";
@@ -187,6 +188,7 @@ export default async function PerroPage({
     : { data: [] as { id: string; perro_medicamento_id: string; administrado_at: string; omitida: boolean; notas: string | null }[] };
 
   if (!perro) notFound();
+  const contextoRaza = await contextoRazaFormulario(supabase, perro.id);
 
   let urlFoto: string | null = null;
   if (perro.foto_path) {
@@ -425,6 +427,10 @@ export default async function PerroPage({
 
       <PerroForm
         action={actualizarConId}
+        perroId={perro.id}
+        grupos={contextoRaza.grupos}
+        puedeAsignarGrupo={contextoRaza.puedeAsignarGrupo}
+        propuestaInicial={contextoRaza.propuesta}
         razas={razas}
         tamanos={tamanos ?? []}
         pelajes={pelajes ?? []}
