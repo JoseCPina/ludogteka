@@ -61,3 +61,14 @@ export async function asignarGrupoDeRaza(razaId: string, grupoId: string): Promi
   revalidatePath("/recepcion");
   return { error: null, exito: "Grupo de precio guardado." };
 }
+
+/** El grupo de precio de una raza propuesta que sigue en revisión (admin o permiso de tarifas). */
+export async function asignarGrupoDePropuesta(propuestaId: string, grupoId: string): Promise<ResultadoRaza> {
+  if (!propuestaId || !grupoId) return { error: "Elige el grupo de precio." };
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("asignar_grupo_propuesta", { p_propuesta_id: propuestaId, p_grupo_raza_id: grupoId });
+  if (error) return { error: limpio(error) };
+  revalidatePath("/perros/razas/grupos");
+  revalidatePath("/estetica");
+  return { error: null, exito: "Grupo de precio guardado. Cuando PeluDesk apruebe la raza, queda como su grupo en este negocio." };
+}

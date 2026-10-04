@@ -10,6 +10,8 @@ import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { SelectorRaza, type RazaOpcion } from "@/components/selector-raza";
 import type { EstadoPerroForm } from "./actions";
+import { proponerRazaDesdeFormulario } from "./raza-propuesta-actions";
+import type { PropuestaRazaVista } from "@/lib/razas-propuesta";
 
 const ESTADO_INICIAL: EstadoPerroForm = { error: null };
 
@@ -23,6 +25,10 @@ export function PerroForm({
   valoresIniciales,
   textoBoton,
   soloLectura = false,
+  perroId = null,
+  grupos = [],
+  puedeAsignarGrupo = false,
+  propuestaInicial = null,
 }: {
   action: (estadoPrevio: EstadoPerroForm, formData: FormData) => Promise<EstadoPerroForm>;
   razas: RazaOpcion[];
@@ -47,6 +53,12 @@ export function PerroForm({
   };
   textoBoton: string;
   soloLectura?: boolean;
+  // El perro que se edita: con él, «agregar esta raza» lo liga en el momento.
+  perroId?: string | null;
+  // Solo con «Precios y tarifas»: sin él no llegan ni los nombres de los grupos.
+  grupos?: { id: string; nombre: string }[];
+  puedeAsignarGrupo?: boolean;
+  propuestaInicial?: PropuestaRazaVista | null;
 }) {
   const [estado, formAction, enviando] = useActionState(useAccionConTope(action), ESTADO_INICIAL);
   const deshabilitado = enviando || soloLectura;
@@ -79,7 +91,16 @@ export function PerroForm({
         mostrarGrupo
         valorId={valoresIniciales?.raza_id ?? null}
         valorTexto={valoresIniciales?.raza ?? ""}
-        ayuda="De aquí sale el precio de estética. Si no está en la lista, escríbela igual: cotiza con el grupo por defecto."
+        ayuda="De aquí sale el precio de estética. Si no está en la lista, usa «No la encuentro: agregar esta raza»."
+        propuestas={{
+          modo: "personal",
+          tamanos,
+          pelajes,
+          grupos,
+          puedeAsignarGrupo,
+          propuestaInicial,
+          proponer: perroId ? (datos) => proponerRazaDesdeFormulario({ ...datos, perroId }) : undefined,
+        }}
       />
 
       <div className="grid grid-cols-2 gap-4">

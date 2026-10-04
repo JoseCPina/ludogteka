@@ -73,7 +73,8 @@ export function TarjetaPerro({
           label="¿De qué raza es?"
           valorId={perro.raza_id}
           valorTexto={perro.raza}
-          onCambio={(v) => onCambio({ raza: v.raza, raza_id: v.raza_id })}
+          onCambio={(v) => onCambio({ raza: v.raza, raza_id: v.raza_id, raza_propuesta: v.propuesta ?? null })}
+          propuestas={{ modo: "dueno", valorPropuesta: perro.raza_propuesta }}
           ayuda="Si no sabes o es mestizo, escribe «mestizo» y escógelo de la lista."
         />
       )}
@@ -135,7 +136,9 @@ export function TarjetaPerro({
       {cotizacion && (
         <PrecioEstetica
           cotizacion={cotizacion}
-          razaId={perro.raza_id}
+          // Una raza propuesta no tiene grupo de precio todavía: no se le
+          // adivina un estimado (cotizarPerro la trata como «sin dato»).
+          razaId={perro.raza_propuesta ? "raza-propuesta" : perro.raza_id}
           razaEscrita={perro.raza}
           tamanoId={perro.tamano_id}
         />

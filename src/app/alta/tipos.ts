@@ -2,6 +2,8 @@
 // propio archivo porque uno con "use server" solo puede exportar funciones
 // async (misma razón por la que traducir-error.ts vive aparte).
 
+import type { DatosRazaPropuesta } from "@/lib/razas-propuesta";
+
 export type PerroAlta = {
   nombre: string;
   // Las dos, no una: `raza` es lo que el dueño ve escrito, `raza_id` es
@@ -9,6 +11,9 @@ export type PerroAlta = {
   // las dos; cuando escribe una raza que no está, solo el texto.
   raza: string;
   raza_id: string | null;
+  // Una raza que el dueño no encontró y describió: se propone a PeluDesk
+  // después de crear al perro (proponerRazaAlta). Nunca trae precios.
+  raza_propuesta: DatosRazaPropuesta | null;
   sexo: string;
   fecha_nacimiento: string;
   tamano_id: string;
@@ -87,6 +92,7 @@ export function perroVacio(): PerroAlta {
     nombre: "",
     raza: "",
     raza_id: null,
+    raza_propuesta: null,
     sexo: "",
     fecha_nacimiento: "",
     tamano_id: "",

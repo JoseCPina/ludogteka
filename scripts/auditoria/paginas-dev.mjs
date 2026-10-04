@@ -39,7 +39,7 @@ if (!unCliente || !unPerro) console.log("  · sin clientes o perros todavía: se
 
 const RUTAS = {
   admin: ["/admin", "/admin/pagos", "/reportes", "/servicios", "/empleados", "/gastos", "/admin/permisos", "/inventario", "/ayuda", "/ayuda/pedir-ayuda", "/caja/reembolsos", "/perros/razas", "/perros/razas/grupos", "/estetica/nueva", "/ayuda/agregar-una-raza-que-no-aparece"],
-  recepcion: ["/recepcion", "/clientes", ...(unCliente ? [`/clientes/${unCliente.id}`] : []), ...(unPerro ? [`/perros/${unPerro.id}`] : []), "/caja", "/caja/turno", "/guarderia", "/hotel", "/estetica", "/recepcion/contratos", "/vinculacion", "/clientes/invitaciones", "/caja/venta", "/caja/reembolsos", "/ayuda", "/ayuda/corte-de-caja", "/ayuda/tickets/nuevo", "/perros/razas", "/perros/razas/grupos", "/estetica/nueva"],
+  recepcion: ["/recepcion", "/clientes", ...(unCliente ? [`/clientes/${unCliente.id}`] : []), ...(unPerro ? [`/perros/${unPerro.id}`] : []), ...(unCliente ? [`/clientes/${unCliente.id}/perros/nuevo`] : []), "/caja", "/caja/turno", "/guarderia", "/hotel", "/estetica", "/recepcion/contratos", "/vinculacion", "/clientes/invitaciones", "/caja/venta", "/caja/reembolsos", "/ayuda", "/ayuda/corte-de-caja", "/ayuda/tickets/nuevo", "/perros/razas", "/perros/razas/grupos", "/estetica/nueva"],
   estetica: ["/estetica"],
   cliente: ["/portal"],
 };

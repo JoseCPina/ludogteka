@@ -13,7 +13,7 @@ import { BuscadorClientes } from "@/components/buscador-clientes";
 import type { ClienteBuscable } from "@/lib/clientes/buscables";
 import { hoyNegocio, instanteDeHoraLocal } from "@/lib/formato";
 import { crearCita } from "../agenda-actions";
-import { asignarGrupoDeRaza } from "../../perros/razas/grupos-actions";
+import { asignarGrupoDePropuesta, asignarGrupoDeRaza } from "../../perros/razas/grupos-actions";
 import { useZonaNegocio } from "@/components/zona-negocio";
 
 type Perro = { id: string; cliente_id: string; nombre: string };
@@ -52,7 +52,7 @@ export function AgendarForm({
   perrosConAvisoSanitario: string[];
   // Perros cuya raza (nueva en el catálogo) no tiene grupo de precio en este
   // negocio: la app no adivina el precio, hay que asignarlo o hacer excepción.
-  perrosSinGrupo: { perroId: string; razaId: string; razaNombre: string }[];
+  perrosSinGrupo: { perroId: string; razaId: string | null; propuestaId: string | null; razaNombre: string }[];
   gruposPrecio: { id: string; nombre: string }[];
   puedeAsignarGrupo: boolean;
   puedeExcepcion: boolean;
@@ -83,7 +83,7 @@ export function AgendarForm({
   async function asignarGrupo() {
     if (!sinGrupo || !grupoElegido) return;
     setError(null);
-    const res = await asignando.ejecutar(() => asignarGrupoDeRaza(sinGrupo.razaId, grupoElegido));
+    const res = await asignando.ejecutar(() => (sinGrupo.razaId ? asignarGrupoDeRaza(sinGrupo.razaId, grupoElegido) : asignarGrupoDePropuesta(sinGrupo.propuestaId ?? "", grupoElegido)));
     if (res.error) {
       setError(res.error);
       return;

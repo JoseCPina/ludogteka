@@ -7,6 +7,7 @@ import { geocodificarYCalcularDistancia } from "@/lib/google-maps/distancia-clie
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { negocioActual } from "@/lib/negocio/actual";
 import { cargarRequisitosAlta } from "@/lib/alta/requisitos";
+import type { DatosRazaPropuesta } from "@/lib/razas-propuesta";
 import type {
   ContratoPendiente,
   DatosAlta,
@@ -17,6 +18,13 @@ import type {
 } from "./tipos";
 
 const BUCKET = "perros-archivos";
+
+// La raza propuesta no es un campo del perro: viaja aparte (proponerRazaAlta).
+function sinPropuesta<T extends { raza_propuesta?: unknown }>(p: T): Omit<T, "raza_propuesta"> {
+  const { raza_propuesta, ...resto } = p;
+  void raza_propuesta;
+  return resto;
+}
 
 // Todo el alta pasa por el servidor con la secret key, nunca por el
 // navegador: la pantalla es pública (sin sesión, solo con el token del
@@ -328,7 +336,7 @@ export async function completarExpediente(
     // los perros nuevos: si no, el mismo número entra con guiones desde
     // un flujo y sin ellos desde el otro, y buscar por teléfono deja de
     // encontrarlo.
-    p_perros: datos.perros.map((p) => ({
+    p_perros: datos.perros.map(sinPropuesta).map((p) => ({
       ...p,
       ...(p.contacto_emergencia_telefono !== undefined && {
         contacto_emergencia_telefono:
@@ -339,7 +347,7 @@ export async function completarExpediente(
           normalizarTelefono(p.veterinario_telefono) ?? p.veterinario_telefono,
       }),
     })),
-    p_perros_nuevos: datos.perrosNuevos.map((p) => ({
+    p_perros_nuevos: datos.perrosNuevos.map(sinPropuesta).map((p) => ({
       ...p,
       contacto_emergencia_telefono:
         normalizarTelefono(p.contacto_emergencia_telefono) ?? p.contacto_emergencia_telefono,
@@ -487,6 +495,48 @@ export async function subirFotoAlta(
 
   if (errorPerro) return { error: "No pudimos guardar la foto." };
 
+  return { error: null };
+}
+
+// La raza que el dueño no encontró y describió en el formulario. Se propone
+// DESPUÉS de crear al perro, con el mismo token y acotada a los perros del
+// expediente que ESA invitación creó. Sin tamaño, sin pelo, sin grupo ni
+// precio: el dueño solo dice cómo se llama y cómo es; lo demás lo decide
+// PeluDesk y el negocio. Si falla, el perro ya quedó guardado con la raza
+// escrita y el negocio la ve en /perros/razas.
+export async function proponerRazaAlta(
+  token: string,
+  perroId: string,
+  datos: Pick<DatosRazaPropuesta, "nombre" | "variantes" | "notas">
+): Promise<{ error: string | null }> {
+  const negocio = await negocioActual();
+  const admin = createSupabaseAdminClient(negocio.id);
+
+  const { data: invitacion } = await admin
+    .from("invitaciones_cliente")
+    .select("cliente_id")
+    .eq("token", token)
+    .eq("negocio_id", negocio.id)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (!invitacion?.cliente_id) return { error: "Este link no tiene un alta completada." };
+
+  const { data: perro } = await admin
+    .from("perros")
+    .select("id, cliente_id")
+    .eq("id", perroId)
+    .eq("negocio_id", negocio.id)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (!perro || perro.cliente_id !== invitacion.cliente_id) return { error: "Ese perro no es de esta alta." };
+
+  const { error } = await admin.rpc("razas_proponer_cliente", {
+    p_perro_id: perroId,
+    p_nombre: String(datos.nombre ?? "").slice(0, 80),
+    p_variantes: String(datos.variantes ?? "").slice(0, 300).split(",").map((v) => v.trim()).filter(Boolean),
+    p_notas: String(datos.notas ?? "").slice(0, 600) || null,
+  });
+  if (error) return { error: error.code === "P0001" ? error.message : "No pudimos guardar la raza." };
   return { error: null };
 }
 

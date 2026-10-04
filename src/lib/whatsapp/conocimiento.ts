@@ -17,7 +17,7 @@ Cada negocio tiene su propia dirección: <su-nombre>.peludesk.mx.
 # Qué le quita de encima al negocio
 - En la mañana: abres y ya ves quién llega, quién se va, las citas de estética y el cupo de día y de noche. También lo que está esperando (contratos por firmar, cartillas por revisar, saldos), con los días que lleva cada uno.
 - Vacunas: si una vacuna venció, no deja reservarle guardería ni hotel al perro, y dice cuál falta. En estética no bloquea.
-- Precios de estética: salen solos por raza o talla, con precio aparte si el perro llega con el pelo maltratado.
+- Precios de estética: salen solos por raza o talla, con precio aparte si el perro llega con el pelo maltratado. Si la raza no está en el catálogo, quien captura al perro la propone ahí mismo («No la encuentro: agregar esta raza», con nombre, otros nombres, talla, pelo y notas); la revisa PeluDesk y el negocio decide el grupo de precio de la raza: nunca se adivina, y sin grupo no se agenda la estética de ese perro.
 - Cupo: guardería y hotel cuentan del mismo cupo; no se acepta un perro que no cabe.
 - Expediente de cada perro: foto, vacunas, alertas de manejo (si se escapa, si es alérgico, si come aparte), medicamentos y bitácora del día con fotos.
 - Reporte de comportamiento diario (guardería): por cada perro que está adentro, recepción llena en la tablet o el celular un formulario con botones grandes (estado general, actividades, socialización, conducta, alimentación, descanso, recomendaciones y resumen del día) y la app arma una tarjeta con la marca del negocio. Se manda por WhatsApp como una liga, no como archivo, y vence a los 7 días. Las opciones las edita el admin (renombrar, apagar o agregar). No se genera ni se envía nada en bloque: cada reporte lo revisa una persona.
