@@ -83,10 +83,10 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/auth/nueva-password` | 03 |  |
 | `/ayuda` | 53 |  |
 | `/ayuda/[slug]` | 53 |  |
-| `/ayuda/tickets/[id]` | 53 | Se cubre con la creación del ticket en el video 53 (el detalle es la misma pantalla). |
+| `/ayuda/tickets/[id]` | 53 |  |
 | `/ayuda/tickets/nuevo` | 53 |  |
-| `/ayuda/videos` | — |  |
-| `/ayuda/videos/[slug]` | — |  |
+| `/ayuda/videos` | 53 |  |
+| `/ayuda/videos/[slug]` | 53 |  |
 | `/bienvenida` | 02 |  |
 | `/caja` | 33 |  |
 | `/caja/cargo` | 36 |  |
@@ -308,6 +308,5 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 - Pantalla `/`: Es la landing o la página pública del negocio; se enseña en el video 52 solo como resultado.
 - Pantalla `/negocio-no-encontrado`: Pantalla de error técnica (dominio sin negocio); no es una tarea del usuario.
 - Pantalla `/pagina-no-encontrada`: Pantalla de error técnica (404); no es una tarea del usuario.
-- Pantalla `/ayuda/tickets/[id]`: Se cubre con la creación del ticket en el video 53 (el detalle es la misma pantalla).
 
 Fuera de la serie por diseño (no son del personal del negocio): la administración de la plataforma (`/plataforma`), el sitio público de peludesk.mx y el negocio de demostración.

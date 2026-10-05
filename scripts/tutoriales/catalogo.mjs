@@ -99,7 +99,7 @@ export const VIDEOS = [
   v("50", "conecta-mercado-pago-o-clip", "negocio", "Conecta tu terminal: Mercado Pago o Clip", "Conectas tu cuenta de cobro o decides cobrar solo a mano.", { rol: "admin", rutas: ["/admin/pagos"], articulos: ["conectar-mercado-pago-o-clip"], etiquetas: ["mercado pago", "clip", "terminal"] }),
   v("51", "politicas-y-reglas-de-tu-negocio", "negocio", "Políticas y reglas de tu negocio: lo que le dices a tus clientes", "Escribes tus reglas (cancelaciones, evaluación, recolección) una vez y salen en todo.", { rol: "admin", permisos: ["configuracion_negocio"], rutas: ["/admin/politicas"], articulos: ["politicas-y-reglas"], etiquetas: ["políticas", "reglas"] }),
   v("52", "perfil-y-pagina-web-gratis", "negocio", "Tu perfil y tu página web gratis", "Completas tu perfil y se activa tu página web con tu logo, fotos y precios.", { rol: "admin", modulos: ["pagina_web"], permisos: ["configuracion_negocio"], rutas: ["/admin/perfil", "/"], articulos: ["perfil-y-pagina-web"], etiquetas: ["página web", "perfil"] }),
-  v("53", "pide-ayuda-desde-la-app", "negocio", "Pide ayuda: el asistente, los videos y los tickets", "Usas el asistente, buscas un video y mandas un ticket si algo no sale.", { rutas: ["/ayuda", "/ayuda/[slug]", "/ayuda/tickets/nuevo", "/ayuda/tickets/[id]"], articulos: ["pedir-ayuda"], etiquetas: ["ayuda", "soporte"] }),
+  v("53", "pide-ayuda-desde-la-app", "negocio", "Pide ayuda: el asistente, los videos y los tickets", "Usas el asistente, buscas un video y mandas un ticket si algo no sale.", { rutas: ["/ayuda", "/ayuda/[slug]", "/ayuda/videos", "/ayuda/videos/[slug]", "/ayuda/tickets/nuevo", "/ayuda/tickets/[id]"], articulos: ["pedir-ayuda"], etiquetas: ["ayuda", "soporte"] }),
   v("54", "recoleccion-a-domicilio", "negocio", "Recolección a domicilio: cotiza, cobra y la ves en la cuenta", "Cotizas el traslado por kilómetros y lo cobras junto con el servicio.", { modulos: ["recoleccion"], rutas: [], articulos: ["cotizar-y-cobrar-recoleccion"], etiquetas: ["recolección"] }),
 ];
 
@@ -109,8 +109,7 @@ export const EXCLUIDOS = {
     "/": "Es la landing o la página pública del negocio; se enseña en el video 52 solo como resultado.",
     "/negocio-no-encontrado": "Pantalla de error técnica (dominio sin negocio); no es una tarea del usuario.",
     "/pagina-no-encontrada": "Pantalla de error técnica (404); no es una tarea del usuario.",
-    "/ayuda/tickets/[id]": "Se cubre con la creación del ticket en el video 53 (el detalle es la misma pantalla).",
-  },
+      },
   avisos: {},
   permisos: {},
 };
