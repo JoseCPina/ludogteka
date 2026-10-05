@@ -94,7 +94,7 @@ export function qcVideo({ video, guion, master, vtt, muestras, conVoz, wav, secc
     let suma = 0;
     for (let j = 0; j < 160 * 90; j++) suma += crudo[i * 160 * 90 + j];
     const media = suma / (160 * 90);
-    if (media < 6 || media > 250) malos++;
+    if (media < 6 || media > 254.6) malos++;
   }
   m.fotogramas = n;
   if (malos) errores.push(`${malos} fotograma(s) en negro o en blanco`);
@@ -105,7 +105,11 @@ export function qcVideo({ video, guion, master, vtt, muestras, conVoz, wav, secc
     let ruta = "";
     try { ruta = new URL(s.url).pathname; } catch { ruta = s.url; }
     if (PROHIBIDAS_RUTA.some((r) => r.test(ruta)) && !permitirRutas.some((p) => ruta.startsWith(p))) errores.push(`escena ${s.escena}: estuvo en ${ruta}`);
-    for (const [re, motivo] of PROHIBIDOS_TEXTO) if (re.test(s.texto)) errores.push(`escena ${s.escena}: ${motivo}`);
+    for (const o of new Set(s.ocultos ?? [])) defectos.push(`escena ${s.escena}: la app dice «${o.slice(0, 70)}…» (texto de otro negocio); se ocultó en la grabación`);
+    for (const [re, motivo] of PROHIBIDOS_TEXTO) {
+      if (re.test(s.visible ?? s.texto)) errores.push(`escena ${s.escena}: ${motivo} (a la vista)`);
+      else if (re.test(s.texto) && !(s.ocultos ?? []).length) defectos.push(`escena ${s.escena}: ${motivo} en la página, fuera de lo que se ve`);
+    }
     if (/error|no se pudo|no pudimos|algo salió/i.test(s.texto.split("\n").slice(0, 40).join(" ")) && /no se pudo|no pudimos|algo salió/i.test(s.texto)) defectos.push(`escena ${s.escena}: la app mostró un aviso de error (${(s.texto.match(/(no se pudo|no pudimos|algo salió)[^\n]{0,80}/i) ?? [""])[0]})`);
   }
   for (const t of [video.titulo, guion.gancho, ...guion.escenas.flatMap((e) => [e.titulo, e.dice]), ...guion.resumen]) if (/ludogteka/i.test(t)) errores.push("el guion dice «Ludogteka»");

@@ -30,6 +30,7 @@ export function estimar(paso) {
     case "clic": return 1700 + (c?.espera ?? 0);
     case "escribir": return 1500 + String(b ?? "").length * 75;
     case "elegir": return 1900;
+    case "rellenar": return 1700;
     case "marcar": return 1500;
     case "resaltar": return typeof b === "number" ? b : 2600;
     case "zoom": return (typeof c === "number" ? c : 2800) + 900;
@@ -45,7 +46,7 @@ export function estimar(paso) {
 
 // Un texto de la pantalla → un elemento. Se prueba en este orden: botón, enlace,
 // pestaña, opción de menú, casilla, campo por su etiqueta o placeholder, y texto.
-async function localizar(page, objetivo, { visibleEn = 20000, indice = 0 } = {}) {
+async function localizar(page, objetivo, { visibleEn = 20000, indice = 0, campo = false } = {}) {
   if (typeof objetivo !== "string") return objetivo;
   if (objetivo.startsWith("css:")) {
     const l = page.locator(objetivo.slice(4)).nth(indice);
@@ -55,6 +56,12 @@ async function localizar(page, objetivo, { visibleEn = 20000, indice = 0 } = {})
   const limite = Date.now() + visibleEn;
   const nombre = objetivo;
   while (Date.now() < limite) {
+    if (campo) {
+      // Un campo de formulario se busca primero por su etiqueta: «Empleado» no debe caer en el menú «Empleados».
+      const l = page.getByLabel(nombre, { exact: false });
+      const n = await l.count();
+      for (let i = 0; i < n; i++) if (await l.nth(i).isVisible().catch(() => false)) return l.nth(i);
+    }
     for (const rol of ["button", "link", "tab", "menuitem", "checkbox", "radio", "switch", "option"]) {
       const l = page.getByRole(rol, { name: nombre, exact: false });
       const n = await l.count();
@@ -77,10 +84,27 @@ export async function grabarVideo({ base, cookies, inicio, guion, tarjetas, plan
 
   const navegador = await abrirNavegador();
   const ctx = await navegador.newContext({ viewport: { width: ANCHO, height: ALTO }, deviceScaleFactor: 1, locale: "es-MX", timezoneId: "America/Mexico_City" });
-  await ctx.addCookies(cookies);
+  if (cookies?.length) await ctx.addCookies(cookies);
   const logo = `${base}/marca/peludesk/isotipo.svg`;
   await ctx.addInitScript(scriptCursor("flecha"));
   await ctx.addInitScript(scriptHud(logo));
+  // Un texto fijo con el nombre de otro negocio (defecto de la app) no se muestra en el video:
+  // se oculta SOLO en la grabación (la app no se toca) y el defecto se anota en el reporte.
+  await ctx.addInitScript(() => {
+    const ocultar = () => {
+      if (!document.body) return;
+      const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      for (let n = w.nextNode(); n; n = w.nextNode()) {
+        if (/ludogteka/i.test(n.textContent) && n.parentElement && !n.parentElement.dataset.pdOculto) {
+          n.parentElement.dataset.pdOculto = n.textContent.trim().slice(0, 80);
+          n.parentElement.style.visibility = "hidden";
+        }
+      }
+    };
+    new MutationObserver(ocultar).observe(document, { childList: true, subtree: true, characterData: true });
+    document.addEventListener("DOMContentLoaded", ocultar);
+    setInterval(ocultar, 400);
+  });
   const page = await ctx.newPage();
   page.setDefaultTimeout(60000);
   page.on("dialog", (d) => d.accept().catch(() => {}));
@@ -88,7 +112,7 @@ export async function grabarVideo({ base, cookies, inicio, guion, tarjetas, plan
 
   // Entra a la pantalla de inicio y espera a que cargue de verdad.
   const r = await page.goto(base + inicio, { waitUntil: "networkidle", timeout: 120000 });
-  if (!r || r.status() >= 400 || /\/login|\/sin-acceso/.test(page.url())) throw new Error(`No se pudo entrar a ${inicio} (${page.url()}).`);
+  if (!r || r.status() >= 400 || (cookies?.length && /\/login|\/sin-acceso/.test(page.url()))) throw new Error(`No se pudo entrar a ${inicio} (${page.url()}).`);
   await page.evaluate(() => document.fonts.ready);
   await page.addStyleTag({ content: "nextjs-portal{display:none!important}input[type=file]{visibility:hidden!important}*{caret-color:transparent!important}html{scrollbar-width:none}::-webkit-scrollbar{display:none}" });
 
@@ -116,7 +140,22 @@ export async function grabarVideo({ base, cookies, inicio, guion, tarjetas, plan
   const muestrear = async (escenaN) => {
     const url = page.url();
     const texto = await page.locator("body").innerText({ timeout: 5000 }).catch(() => "");
-    muestras.push({ escena: escenaN, t: Number(ahora().toFixed(2)), url, texto: texto.slice(0, 6000) });
+    // Lo que de verdad se ve en pantalla en este momento (el QC es estricto con esto).
+    const visible = await page.evaluate(() => {
+      const sal = [];
+      const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      for (let n = w.nextNode(); n; n = w.nextNode()) {
+        const t = n.textContent.trim();
+        if (!t) continue;
+        if (n.parentElement && getComputedStyle(n.parentElement).visibility === "hidden") continue;
+        const r = document.createRange(); r.selectNodeContents(n);
+        const b = r.getBoundingClientRect();
+        if (b.width > 0 && b.height > 0 && b.bottom > 0 && b.top < innerHeight && b.right > 0 && b.left < innerWidth) sal.push(t);
+      }
+      return sal.join("\n");
+    }).catch(() => "");
+    const ocultos = await page.evaluate(() => [...document.querySelectorAll("[data-pd-oculto]")].map((e) => e.dataset.pdOculto)).catch(() => []);
+    muestras.push({ escena: escenaN, t: Number(ahora().toFixed(2)), url, texto: (texto + "\n" + ocultos.join("\n")).slice(0, 6000), visible: visible.slice(0, 6000), ocultos });
   };
 
   const reponer = async () => {
@@ -129,9 +168,9 @@ export async function grabarVideo({ base, cookies, inicio, guion, tarjetas, plan
     if (!c) throw new Error("El elemento no tiene caja en pantalla");
     return { x: c.x + c.width / 2, y: c.y + c.height / 2, caja: { x: c.x, y: c.y, w: c.width, h: c.height } };
   };
-  async function mover(objetivo, { ms = 800, dx = 0, dy = 0 } = {}) {
+  async function mover(objetivo, { ms = 800, dx = 0, dy = 0, campo = false } = {}) {
     await page.evaluate(() => window.__tut.alejar(0)).catch(() => {});
-    const loc = await localizar(page, objetivo);
+    const loc = await localizar(page, objetivo, { campo });
     const c = await centro(loc);
     const x = c.x + dx, y = c.y + dy;
     await Promise.all([
@@ -167,14 +206,24 @@ export async function grabarVideo({ base, cookies, inicio, guion, tarjetas, plan
     },
     async clic(objetivo, opciones) { await clic(objetivo, opciones); },
     async escribir(etiqueta, valor) {
-      const { loc } = await mover(etiqueta, { ms: 700 });
+      const { loc } = await mover(etiqueta, { ms: 700, campo: true });
       await page.evaluate(() => { window.__pdCursor.onda(); });
       await loc.click({ timeout: 10000 }).catch(() => {});
       await page.keyboard.press("Control+A");
       await page.keyboard.type(String(valor), { delay: 65 });
     },
+    // Campos que no se teclean (fecha y hora): se rellenan de golpe, con el cursor encima.
+    async rellenar(etiqueta, valor) {
+      const { loc } = await mover(etiqueta, { ms: 700, campo: true });
+      await page.evaluate(() => { window.__pdCursor.onda(); });
+      await loc.fill(String(valor));
+      await espera(500);
+    },
     async elegir(etiqueta, opcion) {
-      const { loc } = await mover(etiqueta, { ms: 750 });
+      const { loc: encontrado } = await mover(etiqueta, { ms: 750, campo: true });
+      // Si la etiqueta cayó en un texto y no en el <select>, se toma el select del mismo campo.
+      const esSelect = await encontrado.evaluate((el) => el.tagName === "SELECT").catch(() => false);
+      const loc = esSelect ? encontrado : encontrado.locator("xpath=ancestor-or-self::*[.//select][1]//select").first();
       await page.evaluate(() => { window.__pdCursor.onda(); });
       if (typeof opcion === "number") await loc.selectOption({ index: opcion });
       else await loc.selectOption({ label: opcion }).catch(async () => { const ops = await loc.locator("option").allInnerTexts(); const i = ops.findIndex((t) => t.toLowerCase().includes(String(opcion).toLowerCase())); if (i < 0) throw new Error(`No hay la opción «${opcion}» en «${etiqueta}» (${ops.join(" | ")})`); await loc.selectOption({ index: i }); });

@@ -54,3 +54,4 @@ next-env.d.ts
 
 # Serie de tutoriales (grabaciones y renders intermedios; los videos viven en Storage)
 scripts/tutoriales/salida/
+scripts/tutoriales/audio/
