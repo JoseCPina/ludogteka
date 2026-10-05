@@ -6,6 +6,7 @@ import { Alert } from "@/components/ui/alert";
 import { telefonoDeCorreoSintetico } from "@/lib/auth/identidad";
 import { formatearTelefono } from "@/lib/telefono";
 import { textoDeOrigen, type Origen } from "@/lib/peludesk/origen";
+import { cuentaEnPruebas, cuentaEnTotales, esDemo } from "@/lib/plataforma/metricas";
 
 type Fila = {
   id: string; slug: string; nombre: string; dominio: string | null; url_publica: string | null;
@@ -42,7 +43,10 @@ function Negocio({ n, ahora, origen }: { n: Fila; ahora: number; origen?: Partia
   return (
     <li className="rounded-lg border border-n-200 bg-white p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <Link href={`/plataforma/negocios/${n.id}`} className="text-lg font-bold text-n-900 hover:underline">{n.nombre}</Link>
+        <span className="flex flex-wrap items-baseline gap-2">
+          <Link href={`/plataforma/negocios/${n.id}`} className="text-lg font-bold text-n-900 hover:underline">{n.nombre}</Link>
+          {esDemo(n) && <span className="rounded-full bg-morado-suave px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-morado">Demo</span>}
+        </span>
         <span className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${estado.clase}`}>{estado.texto}</span>
       </div>
       <p className="mt-1 text-sm font-semibold text-n-800">
@@ -78,13 +82,15 @@ export default async function NegociosPlataforma() {
     .not("negocio_id", "is", null);
   const origenDe = new Map((registros ?? []).map((r) => [r.negocio_id as string, r as Partial<Origen>]));
   const ahora = instanteActual();
+  // «En prueba» = negocios reales en plan prueba y sin suspender. El demo y
+  // los suspendidos se ven abajo, pero no suman en ningún conteo.
   const pruebas = negocios
-    .filter((n) => n.plan === "prueba")
+    .filter(cuentaEnPruebas)
     .sort((a, b) => (a.prueba_termina_at ?? "").localeCompare(b.prueba_termina_at ?? ""));
-  const resto = negocios.filter((n) => n.plan !== "prueba");
+  const resto = negocios.filter((n) => !cuentaEnPruebas(n));
   // Cuántos negocios hay por plan (los que pagan, sin contar pruebas ni el demo).
   const porPlan = new Map<string, number>();
-  for (const n of negocios) if (n.plan === "activo") porPlan.set(n.plan_nombre ?? "Sin plan", (porPlan.get(n.plan_nombre ?? "Sin plan") ?? 0) + 1);
+  for (const n of negocios.filter(cuentaEnTotales)) if (n.plan === "activo") porPlan.set(n.plan_nombre ?? "Sin plan", (porPlan.get(n.plan_nombre ?? "Sin plan") ?? 0) + 1);
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -121,7 +127,8 @@ export default async function NegociosPlataforma() {
         )}
       </section>
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Clientes y demo ({resto.length})</h2>
+        <h2 className="text-lg font-bold text-n-900">Clientes, demo y suspendidos ({resto.length})</h2>
+        <p className="-mt-2 text-sm text-n-600">El demo y los negocios suspendidos están aquí pero no suman en los conteos de arriba.</p>
         <ul className="flex flex-col gap-3">{resto.map((n) => <Negocio key={n.id} n={n} ahora={ahora} />)}</ul>
       </section>
     </div>

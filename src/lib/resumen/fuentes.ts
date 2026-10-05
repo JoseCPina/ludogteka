@@ -14,6 +14,7 @@
  */
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { modoStripe } from "@/lib/cobro/stripe";
+import { instanteDeHoraLocal } from "@/lib/formato";
 import { credencialesMeta, fbTokenPagina, peticion, ErrorRed } from "@/lib/redes/meta";
 import { seguidoresTikTok, tokenTikTok } from "@/lib/redes/tiktok";
 import { ANUNCIO_UTM, CAMPANA_ID, CAMPANA_NOMBRE_CONTIENE, CUENTA_PUBLICITARIA, UTM_CAMPANA, ZONA } from "./config";
@@ -56,13 +57,22 @@ export type DatosInternos = {
   registros: { dia: number; antes: number; mes: number; semana: number; semana_antes: number; campana_dia: number; campana_mes: number; origen_dia: { origen: string; n: number }[]; origen_mes: { origen: string; n: number }[]; anuncio_dia: Record<string, number>; anuncio_mes: Record<string, number> };
   negocios: { pruebas_activas: number; vencen: { nombre: string; dias: number }[]; convertidas_dia: number; convertidas_mes: number; cancelaciones_dia: number; cancelaciones_mes: number; pagos_fallidos_dia: number; en_gracia: { nombre: string; estado: string }[]; mrr_centavos: number };
   chats: { prospectos: number; clientes: number; antes_prospectos: number; antes_clientes: number; ia_sola: number; escaladas: number; escaladas_abiertas: number; primera_respuesta_seg: number | null; primera_respuesta_n: number; sin_contestar: { tel4: string; horas: number }[]; ia_errores_24h: number; ia_ultimo: string | null; ia_costo_mxn: number };
+  /** El seguimiento de pruebas por WhatsApp de ese día (seguimiento_resumen_dia). */
+  seguimiento?: { dia5: number; dia10: number; dia15: number; fallidos: number; respuestas: number; bajas: number; pausa: boolean };
   redes: { publicadas: { video: string; red: string; formato: string; url: string | null; publicacion_id: string | null }[]; hoy: { video: string; red: string; hora: string }[]; borradores: { video: string; fecha: string }[]; con_problema: { video: string; red: string; estado: string; error: string }[] };
 };
 
 export async function datosInternos(dia: string, umbralHoras: number): Promise<DatosInternos> {
   const { data, error } = await createSupabaseAdminClient().rpc("resumen_datos", { p_dia: dia, p_modo: modoStripe(), p_utm_campana: UTM_CAMPANA, p_horas_sin_contestar: umbralHoras });
   if (error) throw new Error(`resumen_datos: ${error.message}`);
-  return data as DatosInternos;
+  const datos = data as DatosInternos;
+  // Lo enviado ese día por el seguimiento de pruebas (de las 00:00 a las 24:00 de la Ciudad de México).
+  const desde = instanteDeHoraLocal(`${dia}T00:00`, ZONA);
+  const hasta = instanteDeHoraLocal(`${sumarDias(dia, 1)}T00:00`, ZONA);
+  const seg = await createSupabaseAdminClient().rpc("seguimiento_resumen_dia", { p_desde: desde, p_hasta: hasta });
+  if (seg.error) throw new Error(`seguimiento_resumen_dia: ${seg.error.message}`);
+  datos.seguimiento = seg.data as DatosInternos["seguimiento"];
+  return datos;
 }
 
 // ── Meta ──

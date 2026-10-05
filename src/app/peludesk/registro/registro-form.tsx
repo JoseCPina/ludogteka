@@ -75,7 +75,7 @@ export function RegistroForm({ origen }: { origen: Partial<Record<ParametroOrige
         ))}
         <p className="text-sm text-n-600">Dejamos prendido solo eso; lo demás lo prendes cuando quieras.</p>
       </fieldset>
-      <Field label="Teléfono" name="telefono" type="tel" inputMode="tel" autoComplete="tel" required defaultValue={v?.telefono} ayuda="A diez dígitos. Con él entras a PeluDesk." />
+      <Field label="Teléfono" name="telefono" type="tel" inputMode="tel" autoComplete="tel" required defaultValue={v?.telefono} ayuda="A diez dígitos. Con él entras a PeluDesk. También te escribimos por WhatsApp para saber si necesitas ayuda con tu prueba; escribe BAJA y dejamos de hacerlo." />
       <Field label="Contraseña" name="password" type="password" autoComplete="new-password" required minLength={8} ayuda="Al menos 8 caracteres." />
       {/* Campo trampa: una persona no lo ve ni lo llena. */}
       <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">

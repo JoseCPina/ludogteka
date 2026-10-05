@@ -73,7 +73,7 @@ PeluDesk es para personas mayores de edad con una actividad empresarial. No diri
 1. Crear y administrar tu cuenta y tu negocio de prueba o contratado, y autenticar tu acceso.
 2. Prestarte el servicio y darle soporte, incluido el asistente de ayuda y los tickets.
 3. Contestar tus mensajes y consultas por WhatsApp y darles seguimiento.
-4. Gestionar la prueba de 15 días, la suscripción, el cobro y las facturas, y pasar tu negocio a solo lectura cuando corresponda.
+4. Gestionar la prueba de 15 días, la suscripción, el cobro y las facturas, y pasar tu negocio a solo lectura cuando corresponda. Durante la prueba te escribimos por WhatsApp al teléfono que dejaste (hasta tres mensajes: a los 5, 10 y 15 días) para preguntarte si necesitas ayuda y recordarte lo que te falta para aprovecharla; si respondes, pulsas «Ahora no» o escribes BAJA, no te mandamos más.
 5. Proteger el servicio: limitar registros repetidos, detectar abusos y resolver fallas.
 6. Conservar evidencia de que aceptaste los términos y este aviso.
 7. Cumplir obligaciones legales y atender requerimientos de autoridad competente.

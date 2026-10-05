@@ -86,6 +86,23 @@ export interface PlanPublico {
   modulos: string[];
 }
 
+/**
+ * Un mensaje automático de seguimiento que PeluDesk le mandó a esta persona
+ * (negocio en prueba) y lo que hizo al contestar. Lo entrega la base por el
+ * teléfono (seguimiento_registrar_respuesta), nunca lo que la persona diga.
+ */
+export interface SeguimientoContexto {
+  tipo: "respuesta" | "boton_ayuda" | "boton_plan" | "ahora_no" | "baja";
+  negocio: string;
+  etapa: "dia5" | "dia10" | "dia15";
+  plantilla: string;
+  /** Día de la prueba (0 = el del registro), en la hora del negocio. */
+  dia: number;
+  perfilCompleto: boolean;
+  perfilCompletoAlEnviar: boolean | null;
+  enviadoAt: string;
+}
+
 export interface ContextoAgente {
   tipo: TipoInterlocutor;
   negocios: NegocioDeAdmin[];
@@ -93,6 +110,8 @@ export interface ContextoAgente {
   enlaces: { registro: string; demo: string };
   /** Admin y personal: la documentación del centro de ayuda (bloque aparte, en caché). */
   documentacion?: string;
+  /** Si contesta un mensaje de seguimiento de su prueba. */
+  seguimiento?: SeguimientoContexto | null;
 }
 
 export interface ParAprendido {
@@ -410,6 +429,32 @@ function bloqueTipo(ctx: ContextoAgente): string {
   }
 }
 
+const ETIQUETA_ETAPA = { dia5: "del día 5", dia10: "del día 10", dia15: "del último día" } as const;
+
+/** Lo que el bot sabe del seguimiento de la prueba que le mandamos (solo si lo hay y es reciente). */
+export function bloqueSeguimiento(s: SeguimientoContexto): string {
+  const oferta =
+    s.perfilCompleto
+      ? "Ya completó su perfil: la página web gratis de por vida ya es suya."
+      : s.dia <= 7
+        ? `Todavía NO completa su perfil: si lo hace antes de que termine el día 7 de su prueba (le quedan ${Math.max(0, 7 - s.dia)} días), su página web es gratis de por vida; se completa desde su panel (Administración → Perfil del negocio).`
+        : "No completó su perfil a tiempo: la página web gratis de por vida ya NO aplica; no se la ofrezcas.";
+  const accion =
+    s.tipo === "boton_ayuda"
+      ? "Pulsó «Necesito ayuda»: pregúntale en qué le ayudas, con una sola pregunta corta. Si pide hablar con una persona, escala."
+      : s.tipo === "boton_plan"
+        ? "Pulsó «Elegir un plan»: guíalo a escoger plan. Pregúntale qué servicios tiene (guardería, hotel, estética), dale SU plan con el precio de la tabla de planes y los pasos para contratarlo (Administración → Módulos y plan); si quiere pagar ya, usa la herramienta del portal de pagos."
+        : "Contestó el mensaje: atiende lo que escribió como a cualquier admin, sin repetirle el mensaje.";
+  return [
+    "SEGUIMIENTO DE SU PRUEBA (un mensaje automático que le mandamos nosotros; NO es un número desconocido ni un prospecto):",
+    `- Es el admin de «${s.negocio}», en prueba gratis, va en el día ${s.dia} de 15.`,
+    `- Le mandamos el mensaje ${ETIQUETA_ETAPA[s.etapa]} (el texto está arriba, en la conversación).`,
+    `- ${oferta}`,
+    `- ${accion}`,
+    "- Ya no le mandamos más mensajes automáticos (contestó). No lo menciones.",
+  ].join("\n");
+}
+
 /** Arma el system prompt completo. Puro: la misma entrada da la misma salida. */
 export function systemPrompt(base: string, aprendido: ParAprendido[], ctx: ContextoAgente, hoy: string): string {
   const partes = [
@@ -428,6 +473,7 @@ export function systemPrompt(base: string, aprendido: ParAprendido[], ctx: Conte
   if (ctx.tipo === "admin" && ctx.negocios.length > 0) {
     partes.push("", "DATOS DE SU CUENTA (solo de los negocios donde es admin):", ...ctx.negocios.map(describirNegocio));
   }
+  if (ctx.seguimiento) partes.push("", bloqueSeguimiento(ctx.seguimiento));
   partes.push("", bloquePlanes(ctx.planes), "", "=== BASE ===", base.trim());
   if (aprendido.length > 0) {
     partes.push("", "=== APRENDIDO (vale lo mismo que la BASE) ===", ...aprendido.map((p) => `P: ${p.pregunta}\nR: ${p.respuesta}`));

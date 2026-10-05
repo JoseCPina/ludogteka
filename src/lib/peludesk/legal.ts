@@ -25,7 +25,7 @@ export type DocumentoLegal = "terminos" | "aviso_privacidad" | "cookies";
 
 export const DOCUMENTOS_LEGALES: Record<DocumentoLegal, { version: string; fecha: string; titulo: string; ruta: string }> = {
   terminos: { version: "2026-09-30.2", fecha: "30 de septiembre de 2026", titulo: "Términos y condiciones", ruta: "/terminos" },
-  aviso_privacidad: { version: "2026-09-30.2", fecha: "30 de septiembre de 2026", titulo: "Aviso de privacidad", ruta: "/aviso-de-privacidad" },
+  aviso_privacidad: { version: "2026-10-05.1", fecha: "5 de octubre de 2026", titulo: "Aviso de privacidad", ruta: "/aviso-de-privacidad" },
   cookies: { version: "2026-09-30.2", fecha: "30 de septiembre de 2026", titulo: "Política de cookies", ruta: "/cookies" },
 };
 

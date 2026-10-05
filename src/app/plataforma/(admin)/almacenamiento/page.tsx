@@ -1,7 +1,8 @@
 import { exigirPlataforma } from "@/lib/plataforma/sesion";
 import { Alert } from "@/components/ui/alert";
+import { cuentaEnTotales, esDemo } from "@/lib/plataforma/metricas";
 
-type Fila = { negocio_id: string; nombre: string; slug: string; archivos: number; bytes: number; vencidos: number; retencion_dias: number };
+type Fila = { negocio_id: string; nombre: string; slug: string; plan: string; archivos: number; bytes: number; vencidos: number; retencion_dias: number };
 
 function megas(bytes: number): string {
   const mb = bytes / (1024 * 1024);
@@ -14,9 +15,11 @@ export default async function AlmacenamientoPlataforma() {
   const { supabase } = await exigirPlataforma();
   const { data, error } = await supabase.rpc("plataforma_almacenamiento_reportes");
   const filas = ((data ?? []) as Fila[]).map((f) => ({ ...f, archivos: Number(f.archivos), bytes: Number(f.bytes), vencidos: Number(f.vencidos) }));
-  const totalBytes = filas.reduce((a, f) => a + f.bytes, 0);
-  const totalArchivos = filas.reduce((a, f) => a + f.archivos, 0);
-  const totalVencidos = filas.reduce((a, f) => a + f.vencidos, 0);
+  // Totales sin el demo (se ve en la lista, con su etiqueta «Demo»).
+  const contadas = filas.filter(cuentaEnTotales);
+  const totalBytes = contadas.reduce((a, f) => a + f.bytes, 0);
+  const totalArchivos = contadas.reduce((a, f) => a + f.archivos, 0);
+  const totalVencidos = contadas.reduce((a, f) => a + f.vencidos, 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -48,7 +51,7 @@ export default async function AlmacenamientoPlataforma() {
           {filas.map((f) => (
             <li key={f.negocio_id} className="flex flex-wrap items-baseline justify-between gap-2 py-3">
               <span className="font-semibold text-n-900">
-                {f.nombre} <span className="text-sm font-normal text-n-600">· {f.slug}</span>
+                {f.nombre} {esDemo(f) && <span className="rounded-full bg-morado-suave px-2 py-0.5 text-xs font-bold uppercase text-morado">Demo</span>} <span className="text-sm font-normal text-n-600">· {f.slug}</span>
               </span>
               <span className="text-sm tabular-nums text-n-700">
                 {megas(f.bytes)} · {f.archivos} archivos · {f.vencidos} vencidos · se borran a los {f.retencion_dias} días

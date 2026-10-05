@@ -16,6 +16,10 @@
     {
       "path": "/api/cron/resumen",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/seguimiento",
+      "schedule": "11 * * * *"
     }
   ]
 }

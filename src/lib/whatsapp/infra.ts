@@ -7,7 +7,8 @@ import { urlDemo } from "@/lib/peludesk/landing";
 import { urlPlataforma } from "@/lib/pagos/urls";
 import { stripe } from "@/lib/cobro/stripe";
 import { configuracionPortal } from "@/lib/cobro/portal";
-import { type ClaveCaptura, MAX_TOKENS_IA, MODELO_IA, type NegocioDeAdmin, OPCIONES_IA, type PlanPublico, type TipoInterlocutor, TOPE_MENSUAL_MXN } from "./agente";
+import { type ClaveCaptura, MAX_TOKENS_IA, MODELO_IA, type NegocioDeAdmin, OPCIONES_IA, type PlanPublico, type SeguimientoContexto, type TipoInterlocutor, TOPE_MENSUAL_MXN } from "./agente";
+import { clasificarRespuesta } from "@/lib/seguimiento/respuestas";
 import { CONOCIMIENTO } from "./conocimiento";
 import { documentacionParaWhatsApp } from "@/lib/ayuda/whatsapp";
 import type { BloqueIA, Cuenta, DatosSoporte, DepsSoporte, Hilo, IA, RespuestaIA, SalidaWA, Telegram } from "./soporte";
@@ -36,6 +37,8 @@ export const VERSION_GRAPH = "v23.0";
 // el camino real del webhook sin red hacia Meta. En producción se ignoran.
 const sustituto = (nombre: string) => (process.env.VERCEL_ENV !== "production" ? process.env[nombre]?.trim().replace(/\/$/, "") || null : null);
 const GRAPH = () => sustituto("WHATSAPP_GRAPH_URL") ?? "https://graph.facebook.com";
+/** La base de la Graph API (con el doble de pruebas fuera de producción). */
+export const graphBase = GRAPH;
 const TELEGRAM = () => sustituto("TELEGRAM_API_URL") ?? "https://api.telegram.org";
 const ANTHROPIC = () => sustituto("ANTHROPIC_API_URL") ?? "https://api.anthropic.com";
 const ZONA = "America/Mexico_City";
@@ -221,6 +224,37 @@ export class DatosSupabase implements DatosSoporte {
     });
   }
 
+  /**
+   * Si este teléfono recibió un mensaje de seguimiento de su prueba: registra su
+   * respuesta (cualquiera detiene el seguimiento; «Ahora no» y la baja también,
+   * y la baja es para siempre) y devuelve el contexto para el bot. null = a este
+   * número no se le mandó nada. Nunca lanza: si falla, el bot contesta normal.
+   */
+  async registrarRespuestaSeguimiento(telefono: string, texto: string): Promise<SeguimientoContexto | null> {
+    try {
+      const { data, error } = await this.#sb.rpc("seguimiento_registrar_respuesta", { p_telefono: telefono, p_texto: texto, p_tipo: clasificarRespuesta(texto) });
+      if (error) {
+        console.error("[whatsapp] seguimiento_registrar_respuesta", error.message);
+        return null;
+      }
+      const r = data as Record<string, unknown> | null;
+      if (!r) return null;
+      return {
+        tipo: r.tipo as SeguimientoContexto["tipo"],
+        negocio: r.negocio as string,
+        etapa: r.etapa as SeguimientoContexto["etapa"],
+        plantilla: r.plantilla as string,
+        dia: Number(r.dia ?? 0),
+        perfilCompleto: Boolean(r.perfil_completo),
+        perfilCompletoAlEnviar: (r.perfil_completo_al_enviar as boolean | null) ?? null,
+        enviadoAt: r.enviado_at as string,
+      };
+    } catch (e) {
+      console.error("[whatsapp] seguimiento", e instanceof Error ? e.message : e);
+      return null;
+    }
+  }
+
   async ventanaAbierta(telefono: string) {
     const { data } = await this.#sb.from("wa_hilos").select("ultimo_entrante_at").eq("telefono", telefono).is("deleted_at", null).maybeSingle();
     const t = data?.ultimo_entrante_at ? Date.parse(data.ultimo_entrante_at as string) : 0;
@@ -356,6 +390,21 @@ export class ClienteWA implements SalidaWA {
   }
 
   /**
+   * Una plantilla con variables en el cuerpo y botones de respuesta rápida
+   * (el seguimiento de pruebas). UN solo intento de red: el reintento, si toca,
+   * lo decide quien llama (una sola vez, en otra corrida) para no mandar dos veces.
+   */
+  plantillaConParametros(a: string, nombre: string, parametros: string[], payloadsBotones: string[]) {
+    const components: Record<string, unknown>[] = [];
+    if (parametros.length > 0) components.push({ type: "body", parameters: parametros.map((text) => ({ type: "text", text })) });
+    payloadsBotones.forEach((payload, index) => components.push({ type: "button", sub_type: "quick_reply", index: String(index), parameters: [{ type: "payload", payload }] }));
+    return this.enviar(
+      { messaging_product: "whatsapp", recipient_type: "individual", to: a, type: "template", template: { name: nombre, language: { code: "es_MX" }, components } },
+      { intentos: 1 },
+    );
+  }
+
+  /**
    * Palomitas azules y «escribiendo…» (se quita solo al contestar o a los 25 s):
    * la persona sabe que llegó mientras la IA piensa.
    */
@@ -411,14 +460,15 @@ export class ClienteWA implements SalidaWA {
     return j.id;
   }
 
-  private async enviar(cuerpo: Record<string, unknown>): Promise<{ ok: boolean; estado?: number; error?: string }> {
+  private async enviar(cuerpo: Record<string, unknown>, opciones: { intentos?: number } = {}): Promise<{ ok: boolean; estado?: number; error?: string; id?: string; codigo?: number }> {
     if (!this.configurado) {
       console.error("[whatsapp] WHATSAPP_TOKEN / WHATSAPP_PHONE_NUMBER_ID sin configurar");
       return { ok: false, error: "sin configurar" };
     }
     const url = `${GRAPH()}/${VERSION_GRAPH}/${this.phoneNumberId}/messages`;
-    let ultimo: { ok: boolean; estado?: number; error?: string } = { ok: false };
-    for (let intento = 1; intento <= MAX_INTENTOS; intento++) {
+    let ultimo: { ok: boolean; estado?: number; error?: string; id?: string; codigo?: number } = { ok: false };
+    const maximo = opciones.intentos ?? MAX_INTENTOS;
+    for (let intento = 1; intento <= maximo; intento++) {
       try {
         const r = await fetch(url, {
           method: "POST",
@@ -426,14 +476,14 @@ export class ClienteWA implements SalidaWA {
           body: JSON.stringify(cuerpo),
           signal: AbortSignal.timeout(TIMEOUT_RED_MS),
         });
-        const j = (await r.json().catch(() => ({}))) as { error?: { message?: string; code?: number } };
-        ultimo = { ok: r.ok, estado: r.status, error: j.error?.message };
+        const j = (await r.json().catch(() => ({}))) as { error?: { message?: string; code?: number }; messages?: { id?: string }[] };
+        ultimo = { ok: r.ok, estado: r.status, error: j.error?.message, id: j.messages?.[0]?.id, codigo: j.error?.code };
         if (r.ok) break;
         if (r.status !== 429 && r.status < 500) break;
       } catch (e) {
         ultimo = { ok: false, error: e instanceof Error ? e.message : String(e) };
       }
-      if (intento < MAX_INTENTOS) await new Promise((res) => setTimeout(res, 300 * 2 ** (intento - 1)));
+      if (intento < maximo) await new Promise((res) => setTimeout(res, 300 * 2 ** (intento - 1)));
     }
     if (!ultimo.ok) console.error("[whatsapp] envío rechazado", { estado: ultimo.estado, error: ultimo.error, tipo: cuerpo.type ?? cuerpo.status });
     else if (cuerpo.type && this.alContestar) await this.alContestar().catch(() => {});
@@ -599,7 +649,8 @@ export function construirSoporte(): { deps: DepsSoporte; datos: DatosSupabase; w
     ahora: () => new Date(),
     hoyTexto: () => new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: ZONA }).format(new Date()),
     cuenta: cuentaPorTelefono,
-    contexto: async (cuenta) => ({
+    contexto: async (cuenta, seguimiento) => ({
+      seguimiento: seguimiento && Date.now() - Date.parse(seguimiento.enviadoAt) < 7 * 86_400_000 ? seguimiento : null,
       tipo: cuenta.tipo,
       negocios: cuenta.negocios,
       planes: await planesPublicos(),
