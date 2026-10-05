@@ -22,7 +22,9 @@ export default async function ConciliacionPlataforma() {
   const nombre = new Map((negocios ?? []).map((n) => [n.id as string, n.nombre as string]));
   const porNegocio = new Map<string, Fila[]>();
   for (const f of (filas ?? []) as Fila[]) porNegocio.set(f.negocio_id, [...(porNegocio.get(f.negocio_id) ?? []), f]);
-  const dias = (iso: string) => Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000));
+  // La antigüedad se cuenta contra el reloj del servidor, fuera del render.
+  const ahora = (await import("node:perf_hooks")).performance.timeOrigin + (await import("node:perf_hooks")).performance.now();
+  const dias = (iso: string) => Math.max(0, Math.floor((ahora - new Date(iso).getTime()) / 86_400_000));
   const pcPorNegocio = new Map<string, number>();
   for (const o of porConfirmar ?? []) pcPorNegocio.set(o.negocio_id as string, (pcPorNegocio.get(o.negocio_id as string) ?? 0) + 1);
 
