@@ -5,7 +5,7 @@ export default {
   escenas: [
     {
       titulo: "Contratos por firmar",
-      dice: "En «Contratos por firmar» están todos los contratos que esperan al dueño. Van del más viejo al más nuevo, con los días que llevan esperando, y también salen en «Necesita atención» del tablero.",
+      dice: "En «Contratos por firmar» están todos los contratos que esperan al dueño. Van del más viejo al más nuevo, con los días que llevan esperando, y también avisan en el tablero del día.",
       pasos: [["resaltar", "Pendientes de firma", 2800], ["zoom", "css:main", 1.15, 3500]],
     },
     {
