@@ -649,6 +649,7 @@ export function CuentaCobro({
         disponible={mp.disponible}
         ordenes={mp.ordenes}
         clienteTelefono={mp.clienteTelefono}
+        esAdmin={esAdmin}
       />
 
       {!turnoAbierto ? (

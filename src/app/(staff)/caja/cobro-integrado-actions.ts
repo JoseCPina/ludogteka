@@ -164,7 +164,22 @@ export async function cancelarCobroTerminal(ordenId: string, motivo: string): Pr
   const orden = await leerOrdenLocal(admin, ordenId, negocio.id);
   if (!orden) return { error: "Orden no encontrada." };
   if (orden.estado === "pagada" || orden.cobro_id) return { error: "Este cobro ya se pagó; si hay que devolverlo, usa una devolución." };
-  if (orden.estado === "por_confirmar") return { error: "Este cobro está por confirmar: primero revísalo con Mercado Pago (puede que sí se haya pagado)." };
+  if (orden.estado === "por_confirmar") {
+    // Por confirmar puede ser dinero real: solo un admin la cancela, y después de volver a preguntarle al proveedor.
+    const sesionCancela = await obtenerSesionConRol();
+    if (sesionCancela?.rol !== "admin") return { error: "Este cobro está por confirmar: revísalo con Mercado Pago. Solo un admin lo cancela si de verdad no se pagó." };
+    if (orden.tipo === "point") {
+      try {
+        const r = await sincronizarTerminal(admin, acceso.cx, orden);
+        if (r.pagada) {
+          revalidatePath("/caja");
+          return { error: "Mercado Pago ya confirmó este pago: el cobro quedó registrado." };
+        }
+      } catch {
+        // Si no se pudo consultar, el admin decide con lo que sabe.
+      }
+    }
+  }
 
   let aviso: string | undefined;
   if (orden.mp_order_id && orden.proveedor === acceso.cx.proveedor) {

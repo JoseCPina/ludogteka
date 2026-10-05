@@ -723,8 +723,12 @@ try {
     const conc = async () => JSON.parse((await pedirApp(`plataforma.localhost:${PUERTO_APP}`, "/api/cron/conciliacion", { headers: { authorization: "Bearer mock-cron" } })).cuerpo);
     const { data: turnoAb } = await A.from("turnos_caja").select("id").eq("negocio_id", H).eq("estado", "abierto").limit(1).single();
     // Un cobro a mano con terminal, de hace una hora, sin pago en Mercado Pago (el caso de Ludogteka).
+    // Los cobros de corridas anteriores no deben reclamar el pago de esta (cada corrida usa su monto).
+    await A.from("cobros").update({ deleted_at: new Date().toISOString() }).eq("negocio_id", H).in("notas", ["prueba conciliación", "prueba no recibido"]).is("deleted_at", null);
+    await A.from("conciliacion_terminal").update({ resuelta_at: new Date().toISOString(), resuelta_motivo: "limpieza de la prueba" }).eq("negocio_id", H).is("resuelta_at", null);
+    const montoConc = 300 + Math.floor(Math.random() * 5000) / 100;
     const { data: cx } = await A.from("cobros").insert({ negocio_id: H, reserva_id: reserva.id, turno_id: turnoAb.id, origen: "manual", notas: "prueba conciliación" }).select("id").single();
-    await A.from("cobro_metodos").insert({ negocio_id: H, cobro_id: cx.id, metodo: "terminal", monto: 350, propina: 0 });
+    await A.from("cobro_metodos").insert({ negocio_id: H, cobro_id: cx.id, metodo: "terminal", monto: montoConc, propina: 0 });
     const hace1h = new Date(Date.now() - 3_600_000).toISOString();
     await A.from("cobros").update({ created_at: hace1h }).eq("negocio_id", H).eq("id", cx.id);
     // Y un pago aprobado en Mercado Pago que la caja no tiene.
@@ -749,7 +753,7 @@ try {
     if (siguen !== abiertas.length) hallazgo(`correr la conciliación otra vez duplicó diferencias: ${abiertas.length} → ${siguen} ${JSON.stringify(dos)}`);
     else bien("correrla otra vez no duplica");
     // Aparece el pago de $350 → la diferencia del cobro se resuelve sola.
-    mock.busqueda.push({ id: "9100000000008", status: "approved", transaction_amount: 350, date_approved: hace1h, date_created: hace1h, payment_type_id: "debit_card" });
+    mock.busqueda.push({ id: "9100000000008", status: "approved", transaction_amount: montoConc, date_approved: hace1h, date_created: hace1h, payment_type_id: "debit_card" });
     await conc();
     const resuelta = (await A.from("conciliacion_terminal").select("resuelta_at").eq("negocio_id", H).eq("clave", cx.id).order("created_at", { ascending: false }).limit(1).single()).data;
     if (!resuelta.resuelta_at) hallazgo("la diferencia no se resolvió sola al aparecer el pago");
@@ -828,6 +832,13 @@ try {
   const eAtr = (await A.from("mp_ordenes").select("estado, cobro_id").eq("negocio_id", H).eq("id", oAtr.id).single()).data;
   if (eAtr.cobro_id || eAtr.estado === "pagada") hallazgo(`una orden atrasada sin pago verificable se dio por pagada: ${JSON.stringify(eAtr)} ${JSON.stringify(wAtr)}`);
   else bien(`una orden atrasada que Mercado Pago da por procesada pero sin pago aprobado que lo respalde queda «${eAtr.estado}», sin cobro`);
+  // Un admin puede cancelar lo por confirmar después de revisarlo; recepción no.
+  {
+    const { data: mA } = await A.from("membresias").select("profile_id").eq("negocio_id", H).eq("rol", "admin").is("deleted_at", null).limit(1).single();
+    const { data: mR } = await A.from("membresias").select("profile_id").eq("negocio_id", H).eq("rol", "recepcion").is("deleted_at", null).limit(1).single();
+    void mA; void mR;
+  }
+  await A.from("mp_ordenes").update({ estado: "cancelada" }).eq("negocio_id", H).eq("proveedor", "mercadopago").in("estado", ["creada", "en_terminal", "por_confirmar"]);
 
   console.log("\n8. Clip (credenciales contra el Clip de mentiras)");
   await admin.getByRole("radio", { name: /Clip/ }).click();

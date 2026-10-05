@@ -80,6 +80,7 @@ export function CobroIntegrado({
   disponible,
   ordenes,
   clienteTelefono,
+  esAdmin = false,
 }: {
   reservaId: string;
   saldo: number;
@@ -87,6 +88,7 @@ export function CobroIntegrado({
   disponible: ResumenCobro;
   ordenes: OrdenCobroFila[];
   clienteTelefono: string | null;
+  esAdmin?: boolean;
 }) {
   const zona = useZonaNegocio();
   const router = useRouter();
@@ -370,6 +372,20 @@ export function CobroIntegrado({
                 {o.estado === "por_confirmar" && (
                   <Button type="button" variante="secundario" cargando={revisando === o.id && revisandoEnvio.cargando} onClick={() => revisar(o.id)}>
                     Revisar con Mercado Pago
+                  </Button>
+                )}
+                {o.estado === "por_confirmar" && esAdmin && (
+                  <Button
+                    type="button"
+                    variante="secundario"
+                    onClick={async () => {
+                      setError(null);
+                      const r = await revisandoEnvio.ejecutar(() => cancelarCobroTerminal(o.id, "Cancelada por el admin después de revisar con Mercado Pago"));
+                      if (r.error) setError(r.error);
+                      router.refresh();
+                    }}
+                  >
+                    Cancelar orden
                   </Button>
                 )}
                 {o.tipo === "link" && o.estado === "creada" && o.url_pago && (
