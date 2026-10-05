@@ -16,7 +16,7 @@ export default {
     {
       titulo: "A la cuenta",
       dice: "El cargo se suma a la cuenta del cliente y lo cobras como cualquier otro, desde «Caja».",
-      pasos: [["esperar", 3000]],
+      pasos: [["esperar", 6000]],
     },
   ],
   resumen: ["El cargo suelto suma algo a una cuenta sin necesidad de reserva.", "Se cancela con motivo; nunca se borra.", "Se cobra como cualquier otra cuenta."],
