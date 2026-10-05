@@ -7,7 +7,7 @@ export default {
     {
       titulo: "Tu agenda",
       dice: "Esta es la agenda de la persona de estética: sus citas del día con la hora, el perro y su estado. Toca una cita para abrirla.",
-      pasos: [["resaltar", "Estética", 2400], ["clic", "Rufo", { nav: true }]],
+      pasos: [["resaltar", "Estética", 2400], ["clic", "Reservada", { nav: true }]],
     },
     {
       titulo: "La cita",
