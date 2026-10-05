@@ -112,7 +112,8 @@ const pendientes = async (token = tRecep) => (await rpc(token, "ajustes_servicio
 try {
   // Restos de una corrida anterior: las citas de los perros «ZZ corr» pasan a canceladas (liberan la hora).
   const { data: viejos } = await SB.from("perros").select("id").like("nombre", "ZZ corr%");
-  if (viejos?.length) await SB.from("citas_estetica").update({ estado: "cancelada" }).in("perro_id", viejos.map((p) => p.id)).in("estado", ["reservada", "confirmada"]);
+  // (con baja lógica: así también liberan la hora las ya terminadas de corridas anteriores).
+  if (viejos?.length) await SB.from("citas_estetica").update({ deleted_at: new Date().toISOString() }).in("perro_id", viejos.map((p) => p.id)).is("deleted_at", null);
   // Turno abierto en Huellitas para poder cobrar.
   let { data: turno } = await SB.from("turnos_caja").select("id").eq("estado", "abierto").maybeSingle();
   if (!turno) {
@@ -375,6 +376,7 @@ try {
   for (const id of creados.recetas) await SB.from("recetas_consumo").delete().eq("id", id);
   await SB.from("empleados").update({ deleted_at: new Date().toISOString() }).like("nombre", "Prueba corregir%").is("deleted_at", null);
   await SB.from("perros").update({ deleted_at: new Date().toISOString() }).in("id", creados.perros);
+  if (creados.citas.length) await SB.from("citas_estetica").update({ deleted_at: new Date().toISOString() }).in("id", creados.citas);
 }
 
 console.log(hallazgos.length ? `\n${hallazgos.length} HALLAZGO(S)` : "\nSin hallazgos.");

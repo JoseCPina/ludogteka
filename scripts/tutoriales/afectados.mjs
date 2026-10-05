@@ -36,17 +36,37 @@ const marcar = (v, motivo) => {
   a.motivos.add(motivo);
   afectados.set(v.id, a);
 };
+// Componentes que viven en la raíz de (staff) pero pintan pantallas concretas.
+const COMPONENTES_DE_PANTALLA = {
+  "src/app/(staff)/tablero-dia.tsx": ["/recepcion", "/admin"],
+};
 for (const f of archivos) {
+  if (COMPONENTES_DE_PANTALLA[f]) {
+    for (const v of VIDEOS) if (v.rutas.some((r) => COMPONENTES_DE_PANTALLA[f].includes(r))) marcar(v, `cambió ${f}`);
+    continue;
+  }
   const ruta = rutaDeArchivo(f);
   if (ruta && !ruta.startsWith("/api") && !ruta.startsWith("/plataforma") && !ruta.startsWith("/peludesk")) {
     for (const v of VIDEOS) if (v.rutas.some((r) => coincide(r, ruta))) marcar(v, `cambió ${f}`);
   }
   const art = f.match(/^src\/lib\/ayuda\/articulos\/.+\.ts$/);
   if (art) {
-    // Los slugs que tocó el diff de ese archivo.
-    let diff = "";
+    // Los artículos cuyo texto tocó el diff: cada línea cambiada se atribuye al
+    // `slug: "…"` que la precede en el archivo.
+    let diff = "", fuente = "";
     try { diff = execFileSync("git", ["diff", "-U0", `${base}...HEAD`, "--", f], { encoding: "utf8" }); } catch { /* sin diff */ }
-    for (const v of VIDEOS) for (const s of v.articulos) if (diff.includes(`"${s}"`) || diff.includes(s)) marcar(v, `cambió el artículo ${s}`);
+    try { fuente = execFileSync("git", ["show", `HEAD:${f}`], { encoding: "utf8" }); } catch { /* sin archivo */ }
+    const lineas = fuente.split("\n");
+    const slugEnLinea = lineas.map((l) => l.match(/^\s*slug:\s*"([^"]+)"/)?.[1] ?? null);
+    const tocados = new Set();
+    for (const h of diff.matchAll(/^@@ -\S+ \+(\d+)(?:,(\d+))? @@/gm)) {
+      const ini = Number(h[1]);
+      const n = h[2] === undefined ? 1 : Number(h[2]);
+      for (let k = ini; k < ini + Math.max(n, 1); k++) {
+        for (let j = Math.min(k, lineas.length) - 1; j >= 0; j--) { if (slugEnLinea[j]) { tocados.add(slugEnLinea[j]); break; } }
+      }
+    }
+    for (const v of VIDEOS) for (const sl of v.articulos) if (tocados.has(sl)) marcar(v, `cambió el artículo ${sl}`);
   }
   if (/^src\/components\/chrome\//.test(f) || /^src\/lib\/nav\//.test(f)) for (const v of VIDEOS.filter((x) => ["01", "04"].includes(x.id))) marcar(v, `cambió ${f} (menú y estructura)`);
 }

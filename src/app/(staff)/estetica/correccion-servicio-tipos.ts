@@ -22,6 +22,8 @@ export type CotizacionCorreccion = {
   tipo_ajuste: TipoAjuste;
   descuento_cuenta: number;
   ordenes_abiertas: OrdenAbierta[];
+  /** El precio salió de la tarifa de hoy: la cita es anterior a la primera tarifa vigente. */
+  tarifa_de_hoy?: boolean;
 };
 
 export type ResultadoCorreccion = {
@@ -38,4 +40,5 @@ export type ResultadoCorreccion = {
   inventario: { regresados?: number; consumidos?: number };
   ajuste_nomina: boolean;
   ordenes_canceladas?: number;
+  tarifa_de_hoy?: boolean;
 };

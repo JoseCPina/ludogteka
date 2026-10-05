@@ -14,7 +14,7 @@
 // El doble de Anthropic reenvía a la API DE VERDAD si este script tiene
 // ANTHROPIC_API_KEY (o PELUDESK_ANTHROPIC_API_KEY, en la nube donde la
 // primera está reservada) en su entorno (y ANTHROPIC_WORKSPACE_ID si hace
-// falta): así se evalúa el modelo real con las 21 preguntas. Sin llave, contesta con
+// falta): así se evalúa el modelo real con las 25 preguntas. Sin llave, contesta con
 // guiones (cita el artículo esperado o escribe [[sin_documentacion: …]]) y se
 // prueba todo el camino menos el juicio del modelo.
 //
@@ -67,6 +67,7 @@ const DOCUMENTADAS = [
   ["¿Dónde veo qué contratos faltan de firmar?", ["mandar-a-firmar-un-contrato"]],
   ["¿Cómo le vendo una mensualidad de guardería a un perro?", ["vender-day-pass-o-mensualidad"]],
   ["¿Cómo le mando al cliente un link de pago por WhatsApp?", ["link-de-pago-whatsapp"]],
+  ["Capturé baño completo pero era rapado, ¿cómo corrijo el servicio de la cita?", ["corregir-servicio-de-una-cita"]],
 ];
 // Dinero: lo que más duele contestar mal.
 const DINERO = [
@@ -74,6 +75,9 @@ const DINERO = [
   ["Hice el corte y no me cuadra el efectivo, ¿qué hago?", ["corte-de-caja"]],
   ["¿Cómo cobro una venta rápida si la persona no es cliente?", ["venta-rapida"]],
   ["La terminal no recibe el cobro, ¿qué hago?", ["terminal-no-recibe-el-cobro"], /a mano/i],
+  ["Corregí el servicio de una cita que ya estaba cobrada y ahora cuesta menos, ¿qué hago con la diferencia?", ["corregir-servicio-de-una-cita"], /saldo a favor|devol/i],
+  ["Desconecté Mercado Pago y al reconectarlo «Cobrar con terminal» sale deshabilitado, ¿qué hago?", ["cobrar-con-terminal"], /Cobro con terminal|escog/i],
+  ["La terminal se queda pidiendo cobros vinculados y no recibe el cobro, ¿qué hago?", ["terminal-no-recibe-el-cobro"], /Modo de vinculaci/i],
   // El tercer elemento es lo que la respuesta TIENE que decir (la advertencia
   // que cambia lo que la persona hace con el dinero).
   ["Registré un gasto pagado con efectivo de la caja y me equivoqué, ¿cómo lo cancelo?", ["registrar-gastos-del-local"], /retiro|cajón/i],

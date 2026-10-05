@@ -209,3 +209,9 @@ Los videos (`scripts/tutoriales/`, mapa en `docs/TUTORIALES.md`) se graban SOLO 
 
 **Revisión histórica de cobros con terminal en Ludogteka:** ver el reporte de la sesión; los conteos de producción antes y después de la migración `20261006120000_terminal_verificada` (solo DDL, sin backfill) quedan en la bitácora del despliegue.
 
+
+## 7 de octubre de 2026 (UTC) — «El servicio de esta cita no existe» y corregir el servicio de una cita
+
+**Causa (solo lectura):** `validar_cita_estetica` buscaba el servicio con `deleted_at is null`. Al retirarse del catálogo los siete servicios de estética de la Fase 3 (21 de septiembre), toda cita vieja que apuntaba a uno quedaba imposible de cancelar, cerrar o tocar con ese mensaje aunque el servicio sí existía (solo dado de baja). **Alcance:** producción tenía 240 citas vivas y 8 servicios de estética dados de baja, y **0 citas apuntando a ellos** (consulta de lectura por la API con la llave de servicio, sin escribir); desarrollo tenía 2 (una cancelada y una finalizada). No hubo nada que corregir en datos de producción, así que no se corrió ningún script de plataforma.
+
+**Arreglo de raíz (migraciones `20261007000000` a `20261007000600`):** la cita guarda el nombre del servicio con el que se registró (`servicio_nombre`, rellenado para todas las citas existentes con los disparadores del usuario apagados, sin mover `updated_at`); una cita existente que no cambia de servicio se valida contra su servicio aunque esté dado de baja; y nueva función `corregir_servicio_cita` (permiso `corregir_servicio`) para cambiarlo con historial inmutable (`citas_estetica_correcciones`). Reversa: es DDL aditivo (columna, tablas y funciones nuevas); volver atrás es dejar de usar las funciones y, si hiciera falta, `drop` de lo nuevo; el respaldo físico de menos de 26 h lo exige el script de despliegue.

@@ -183,6 +183,7 @@ export function CorregirServicio({
           <p>
             Precio: {dinero(cot.precio_actual)} → <span className="font-semibold text-n-900">{dinero(cot.precio_nuevo as number)}</span> ({conSigno(cot.diferencia ?? 0)})
           </p>
+          {cot.tarifa_de_hoy && <p>La cita es anterior a la primera tarifa de este servicio: se usó la tarifa de hoy.</p>}
           {cot.pagado > 0 && <p>Ya se pagó {dinero(cot.pagado)} en esta cuenta.</p>}
           {cot.tipo_ajuste === "cobro_adicional" && <p className="font-semibold text-n-900">La cuenta queda con {dinero(cot.saldo_despues ?? 0)} por cobrar (cobro adicional). El cobro original no se toca.</p>}
           {cot.tipo_ajuste === "saldo_a_favor" && <p className="font-semibold text-n-900">Quedan {dinero(cot.saldo_despues ?? 0)} a favor del cliente. Un admin los devuelve desde la cuenta (con Mercado Pago, con «Devolver con Mercado Pago»). El cobro original no se toca.</p>}

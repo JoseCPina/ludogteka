@@ -177,10 +177,10 @@ const pruebas = {
     return { dejo: !r.error, ve: !r.error, detalle: r.error?.message };
   },
   // «Corregir servicio de citas»: cambiar el servicio (y con él el precio) de una
-  // cita, abierta o terminada. Se prueba con una cita abierta y se deja como estaba.
+  // cita, abierta o terminada. Se prueba con una cita y se deja como estaba (admin siempre puede).
   async corregir_servicio() {
-    const { data: citas } = await A.from("citas_estetica").select("id, servicio_id").in("estado", ["reservada", "confirmada"]).is("deleted_at", null).limit(30);
-    const { data: servs } = await A.from("servicios_cotizables").select("id").eq("categoria", "estetica");
+    const { data: citas } = await A.from("citas_estetica").select("id, servicio_id").in("estado", ["reservada", "confirmada", "finalizada"]).is("deleted_at", null).order("created_at", { ascending: false }).limit(30);
+    const { data: servs } = await ADM.from("servicios_cotizables").select("id").eq("categoria", "estetica");
     for (const c of citas ?? []) {
       for (const s of (servs ?? []).filter((x) => x.id !== c.servicio_id)) {
         const q = await ADM.rpc("cotizar_correccion_servicio", { p_cita_id: c.id, p_servicio_id: s.id });
@@ -190,7 +190,7 @@ const pruebas = {
         return { dejo: !r.error, ve: !r.error, detalle: r.error?.message };
       }
     }
-    return { dejo: false, ve: false, detalle: "no hay una cita abierta con otro servicio cotizable en desarrollo" };
+    return { dejo: false, ve: false, detalle: "no hay una cita (abierta o terminada) con otro servicio cotizable en desarrollo" };
   },
   async plantillas_contrato() {
     const r = await R.rpc("marcar_requiere_refirma", { p_plantilla_id: plantilla.id, p_valor: plantilla.requiere_refirma });
