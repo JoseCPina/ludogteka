@@ -257,6 +257,8 @@ async function limpiar() {
   for (const p of ["mercadopago", "clip"]) await servicioH.rpc("integracion_borrar_secreto", { p_proveedor: p });
   await A.from("integraciones_cobro").delete().eq("negocio_id", H);
   await A.from("integraciones_oauth").delete().eq("negocio_id", H);
+  // Órdenes vivas de corridas anteriores (una por confirmar o en la terminal bloquea cobrar de nuevo la misma cuenta).
+  await A.from("mp_ordenes").update({ estado: "cancelada" }).eq("negocio_id", H).in("estado", ["creada", "en_terminal", "por_confirmar"]);
   await A.from("negocios").update({ plan: "activo" }).eq("id", H);
 }
 await limpiar();
