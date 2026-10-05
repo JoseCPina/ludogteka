@@ -71,7 +71,13 @@ Un cobro con terminal solo cuenta como cobrado cuando Mercado Pago confirma un *
 
 Una orden **cancelada**, **vencida**, **fallida** o en cola nunca marca nada como pagado.
 
-> Una vez a la hora, la app compara los cobros con terminal contra los pagos de Mercado Pago y avisa en **Necesita atención** lo que no cuadra: mira [Conciliación con Mercado Pago](/ayuda/corregir-un-cobro-con-terminal-mal-marcado).`,
+> Una vez a la hora, la app compara los cobros con terminal contra los pagos de Mercado Pago y avisa en **Necesita atención** lo que no cuadra: mira [Conciliación con Mercado Pago](/ayuda/corregir-un-cobro-con-terminal-mal-marcado).
+
+## Si desconectas y vuelves a conectar Mercado Pago
+
+- Al **desconectar**, las órdenes que estaban en cola se cancelan (una que la terminal ya procesó no se cancela: se verifica con Mercado Pago como cualquier pago) y la app **se acuerda de la terminal** que usabas.
+- Al **reconectar la misma cuenta**, la app busca esa terminal y la vuelve a dejar escogida y en modo integrado. Si no la encuentra, el admin la escoge en [Cobro con terminal](/admin/pagos).
+- Mientras no haya terminal escogida, **Cobrar con terminal** sale deshabilitado y dice qué falta. Escoge la terminal en Administración → Cobro con terminal y se habilita.`,
   },
   {
     slug: "terminal-no-recibe-el-cobro",
@@ -89,6 +95,7 @@ Una orden **cancelada**, **vencida**, **fallida** o en cola nunca marca nada com
 - Revisa que esté encendida y con internet.
 - Con Mercado Pago, si sale «La terminal no está en modo PDV (integrado).», el admin aprieta **Poner en modo integrado** en [Cobro con terminal](/admin/pagos).
 - Si sale «La terminal ya tiene una orden en curso.», cancela en la terminal la orden anterior.
+- Si la terminal sigue pidiendo cobros «vinculados» o no recibe el cobro aunque esté escogida, en la terminal entra a **Más opciones → Ajustes → Modo de vinculación** y regrésala a modo independiente (standalone); después vuelve a mandar el cobro.
 
 ## Si pasan los 2 minutos
 
