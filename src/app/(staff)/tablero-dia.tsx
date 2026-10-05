@@ -10,6 +10,7 @@ import { cargarSaldosDeSalidas } from "@/lib/tablero/saldos-de-salidas";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { usaEstancias } from "@/lib/plan/modulos";
+import { SelectorEstilista } from "./estetica/selector-estilista";
 import {
   fechaLocalDeInstante,
   formatearFecha,
@@ -60,6 +61,7 @@ type Cita = {
   perro_nombre: string;
   servicio_nombre: string;
   fecha_local: string;
+  empleado_id: string | null;
 };
 
 // `dias` es cuánto lleva esperando (o vencido) lo que avisa; `antiguedad`,
@@ -152,6 +154,8 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   const conEstancias = usaEstancias(mods);
   const conHotel = mods.includes("hotel");
   const conEstetica = mods.includes("estetica");
+  const puedeReasignar = sesion?.rol === "admin" || sesion?.rol === "recepcion";
+  const puedeCorregirEstilista = tienePermiso(sesion, "corregir_estilista");
 
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
   const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
@@ -170,6 +174,8 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     { data: comprobantes },
     { data: ultimoTurno },
     { data: contratosPorAtender },
+    { data: asignables },
+    { data: personalEstetica },
   ] = await Promise.all([
     supabase.from("llegadas_hoy").select(columnas).order("perro_nombre"),
     supabase.from("salidas_hoy").select(columnas).order("perro_nombre"),
@@ -177,7 +183,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     supabase.rpc("calendario_ocupacion", { p_desde: hoy, p_hasta: hoy }),
     supabase
       .from("citas_estetica")
-      .select("id, inicio, estado, perros(nombre), servicios(nombre)")
+      .select("id, inicio, estado, empleado_id, perros(nombre), servicios(nombre)")
       .is("deleted_at", null)
       .gte("inicio", sumarDiasFecha(hoy, -1))
       .lt("inicio", sumarDiasFecha(hoy, 2))
@@ -213,6 +219,12 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     // Contratos que el dueño debe firmar en su portal (el de guardería se
     // genera al vender un paquete) o que hay que volver a generar.
     supabase.from("contratos_por_atender").select("situacion, espera_desde"),
+    // Quién atiende cada cita de estética y a quién se le puede pasar (solo
+    // admin y recepción cambian la estilista).
+    conEstetica && puedeReasignar
+      ? supabase.rpc("estilistas_asignables")
+      : Promise.resolve({ data: [] as { id: string; nombre: string }[] }),
+    conEstetica ? supabase.rpc("listar_personal_estetica") : Promise.resolve({ data: [] as { id: string; nombre: string }[] }),
   ]);
 
   const error = e1 ?? e2 ?? e3 ?? e4 ?? e5;
@@ -240,9 +252,12 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
         perro_nombre: perro?.nombre ?? "—",
         servicio_nombre: servicio?.nombre ?? "—",
         fecha_local: fechaLocalDeInstante(c.inicio as string, zona),
+        empleado_id: (c.empleado_id as string | null) ?? null,
       };
     })
     .filter((c) => c.fecha_local === hoy && c.estado !== "cancelada");
+  const estilistas = ((asignables ?? []) as { id: string; nombre: string }[]).map((e) => ({ id: e.id, nombre: e.nombre }));
+  const nombreDe = new Map(((personalEstetica ?? []) as { id: string; nombre: string }[]).map((e) => [e.id, e.nombre]));
 
   // ── Lo que necesita atención ─────────────────────────────────────
   const atencion: Atencion[] = [];
@@ -648,18 +663,33 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
           ) : (
             <ul className="flex flex-col gap-2">
               {citas.map((c) => (
-                <li key={c.id}>
+                <li key={c.id} className="flex flex-col gap-2 rounded-md border border-n-200 bg-white p-2">
                   <Link
                     href={`/estetica/${c.id}`}
-                    className="flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-3 py-2 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
+                    className="flex items-center justify-between gap-3 rounded-md px-1 py-1 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
                   >
                     <span>
                       <span className="tabular-nums font-semibold text-n-900">{c.hora}</span>{" "}
                       <span className="font-semibold text-n-900">{c.perro_nombre}</span>
                       <span className="text-xs text-n-500"> · {c.servicio_nombre}</span>
+                      <span className="block text-xs text-n-500">
+                        Estilista: {c.empleado_id ? (nombreDe.get(c.empleado_id) ?? "—") : "Sin asignar"}
+                      </span>
                     </span>
                     <span className="text-xs text-n-500">{ETIQUETA_ESTADO_CITA[c.estado] ?? c.estado}</span>
                   </Link>
+                  {puedeReasignar && (c.estado === "reservada" || c.estado === "confirmada") && (
+                    <SelectorEstilista
+                      citaId={c.id}
+                      estado={c.estado}
+                      perroNombre={c.perro_nombre}
+                      empleadoId={c.empleado_id}
+                      nombreActual={c.empleado_id ? (nombreDe.get(c.empleado_id) ?? null) : null}
+                      estilistas={estilistas}
+                      puedeCorregir={puedeCorregirEstilista}
+                      compacto
+                    />
+                  )}
                 </li>
               ))}
             </ul>

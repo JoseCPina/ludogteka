@@ -40,7 +40,7 @@ type Cita = {
   inicio: string;
   estado: string;
   fuera_de_horario: boolean;
-  empleado_id: string;
+  empleado_id: string | null;
   perro_nombre: string;
   servicio_nombre: string;
   fecha_local: string;
@@ -103,7 +103,7 @@ export default async function AgendaPage({
         inicio: c.inicio as string,
         estado: c.estado as string,
         fuera_de_horario: c.fuera_de_horario as boolean,
-        empleado_id: c.empleado_id as string,
+        empleado_id: (c.empleado_id as string | null) ?? null,
         perro_nombre: perro?.nombre ?? "—",
         servicio_nombre: servicio?.nombre ?? "—",
         fecha_local: fechaLocalDeInstante(c.inicio as string, zona),
@@ -115,6 +115,12 @@ export default async function AgendaPage({
     vista === "semana" ? Array.from({ length: 7 }, (_, i) => sumarDiasFecha(desde, i)) : [desde];
 
   const puedeEditarTodos = sesion?.rol === "admin" || sesion?.rol === "recepcion";
+  // Las citas que se quedaron sin estilista no se pierden: tienen su columna.
+  const sinAsignar = citas.filter((c) => c.empleado_id === null);
+  const columnas: { id: string; nombre_completo: string | null; rol: string }[] = [
+    ...(sinAsignar.length > 0 ? [{ id: "", nombre_completo: "Sin asignar", rol: "" }] : []),
+    ...(empleados ?? []),
+  ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -166,12 +172,12 @@ export default async function AgendaPage({
         <Alert variante="error" titulo="No pudimos cargar la agenda">
           Recarga la página. Si el problema sigue, avísale al equipo técnico.
         </Alert>
-      ) : !empleados || empleados.length === 0 ? (
+      ) : (!empleados || empleados.length === 0) && sinAsignar.length === 0 ? (
         <p className="text-n-600">No hay personal de estética registrado todavía.</p>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {empleados.map((emp) => {
-            const citasEmpleado = citas.filter((c) => c.empleado_id === emp.id);
+          {columnas.map((emp) => {
+            const citasEmpleado = citas.filter((c) => (c.empleado_id ?? null) === (emp.id || null));
             const esPropia = sesion?.user.id === emp.id;
             return (
               <section key={emp.id} className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">

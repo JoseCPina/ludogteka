@@ -586,6 +586,71 @@ console.log("\n── Razas: propuestas y normalizaciones");
   }
 }
 
+// ── 11. Reasignar la estilista de una cita ──
+// El historial y la función solo hablan del negocio de la petición: nadie de
+// Ludogteka (ni el anónimo, ni suplantando el encabezado de Huellitas) lee el
+// historial de una cita de B, ve a sus estilistas ni la reasigna.
+console.log("\n── Reasignar la estilista: el historial y la función son de un solo negocio");
+{
+  const tAdminB = await tokenDe(datos.adminB);
+  const rpcB = async (fn, args) => {
+    const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: cabeceras(tAdminB, B), body: JSON.stringify(args) });
+    return { ok: r.ok, cuerpo: await r.json().catch(() => null) };
+  };
+  let citaId = null, reservaId = null;
+  try {
+    const { data: modelo } = await SB.from("citas_estetica").select("perro_id, servicio_id, empleado_id").eq("negocio_id", B).not("empleado_id", "is", null).limit(1).maybeSingle();
+    if (!modelo) hallazgo("reasignar: Huellitas no tiene una cita de modelo para probar (corre estetica-dev.mjs)");
+    else {
+      const rr = await SB.from("reservas").insert({ cliente_id: datos.clienteSoloB }).select("id").single();
+      reservaId = rr.data.id;
+      const f = new Date(Date.now() + (500 + Math.floor(Math.random() * 400)) * 86_400_000).toISOString().slice(0, 10);
+      const c = await SB.from("citas_estetica").insert({ reserva_id: reservaId, perro_id: modelo.perro_id, servicio_id: modelo.servicio_id, empleado_id: modelo.empleado_id, inicio: `${f}T20:00:00Z` }).select("id").single();
+      if (c.error) hallazgo(`reasignar: no se pudo crear la cita de prueba en Huellitas (${c.error.message})`);
+      else {
+        citaId = c.data.id;
+        const { data: otras } = await rpcB("estilistas_asignables");
+        const otra = (otras ?? []).find((e) => e.id !== modelo.empleado_id);
+        const ok1 = await rpcB("reasignar_estilista_cita", { p_cita_id: citaId, p_empleado_id: otra?.id, p_motivo: null });
+        const { data: h } = await rpcB("historial_asignaciones_cita", { p_cita_id: citaId });
+        if (!ok1.ok || !Array.isArray(h) || h.length !== 1) hallazgo(`reasignar: control positivo, el admin de Huellitas no reasigna o no ve su historial (${JSON.stringify(ok1.cuerpo).slice(0, 120)})`);
+        else console.log("  ✔ control positivo: el admin de Huellitas reasigna y ve el historial de su cita");
+        const estadoAntes = JSON.stringify([(await SB.from("citas_estetica").select("empleado_id, updated_at").eq("id", citaId).single()).data, (await SB.from("citas_estetica_asignaciones").select("id").eq("cita_id", citaId)).data]);
+        const llamadasHechas = [
+          ["reasignar_estilista_cita", { p_cita_id: citaId, p_empleado_id: modelo.empleado_id, p_motivo: "intruso" }],
+          ["reasignar_estilista_cita", { p_cita_id: citaId, p_empleado_id: null, p_motivo: null }],
+          ["historial_asignaciones_cita", { p_cita_id: citaId }],
+          ["estilistas_asignables", {}],
+        ];
+        for (const [rol, token] of [...Object.entries(tokens), ["anonimo", null]]) {
+          const esMiembro = miembrosDeB.has(personasA[rol]);
+          for (const negocio of [LUDOGTEKA, B]) {
+            if (negocio === B && esMiembro) continue;
+            for (const [fn, args] of llamadasHechas) {
+              const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: cabeceras(token, negocio), body: JSON.stringify(args) });
+              const texto = await r.text();
+              llamadas++;
+              if (texto.includes(citaId) || texto.includes(otra?.id ?? "x-no") && fn === "estilistas_asignables") hallazgo(`reasignar: ${rol} (negocio ${negocio === B ? "B" : "A"}) recibió algo de Huellitas con ${fn}`);
+              if (r.ok && fn === "reasignar_estilista_cita") hallazgo(`reasignar: ${rol} (negocio ${negocio === B ? "B" : "A"}) pudo reasignar una cita de Huellitas`);
+            }
+            const t = await fetch(`${URL}/rest/v1/citas_estetica_asignaciones?select=*&limit=500`, { headers: cabeceras(token, negocio) });
+            const tx = await t.text();
+            if (tx.includes(citaId)) hallazgo(`reasignar: ${rol} (negocio ${negocio === B ? "B" : "A"}) lee el historial de Huellitas por la tabla`);
+            const w = await fetch(`${URL}/rest/v1/citas_estetica?id=eq.${citaId}`, { method: "PATCH", headers: { ...cabeceras(token, negocio), Prefer: "return=representation" }, body: JSON.stringify({ empleado_id: modelo.empleado_id }) });
+            if (w.ok && (await w.json().catch(() => [])).length) hallazgo(`reasignar: ${rol} (negocio ${negocio === B ? "B" : "A"}) cambió empleado_id de una cita de Huellitas por la API`);
+          }
+        }
+        const estadoDespues = JSON.stringify([(await SB.from("citas_estetica").select("empleado_id, updated_at").eq("id", citaId).single()).data, (await SB.from("citas_estetica_asignaciones").select("id").eq("cita_id", citaId)).data]);
+        if (estadoAntes !== estadoDespues) hallazgo("reasignar: la cita o su historial en Huellitas CAMBIARON por llamadas desde fuera");
+        else console.log("  ✔ nadie fuera de Huellitas lee su historial, ve a sus estilistas ni reasigna sus citas");
+      }
+    }
+  } finally {
+    if (citaId) await SB.from("citas_estetica").delete().eq("id", citaId);
+    if (reservaId) await SB.from("reservas").delete().eq("id", reservaId);
+  }
+}
+
 // ── 8. Catálogo ──
 const { data: frontera, error: errFrontera } = await A.rpc("auditoria_frontera");
 if (errFrontera) hallazgo(`auditoria_frontera: ${errFrontera.message}`);

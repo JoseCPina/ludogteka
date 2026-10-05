@@ -254,6 +254,101 @@ try {
   else bien("dos aperturas a la vez: una sola cuenta");
   const { data: u5 } = await A.rpc("usuario_por_email", { p_email: `t44${sufijo.padStart(8, "6")}@telefono.ludogteka.mx` });
   if (u5) creados.cuentas.push(u5);
+
+  // ── 5. Reasignar la estilista (celular) ──
+  console.log("\n5. Reasignar la estilista: tablero del día y detalle de la cita (celular)");
+  const S1 = datos.esteticaB;
+  const S2 = datos.esteticaAmbos;
+  const { data: hoyData } = await SB.rpc("fecha_negocio");
+  const { data: razaPoodle } = await A.from("razas").select("id").eq("nombre", "Poodle").single();
+  const { data: tallaCh } = await A.from("tamanos_categoria").select("id").eq("clave", "chico").single();
+  const { data: peloMed } = await A.from("tipos_pelaje").select("id").eq("clave", "medio").single();
+  const { data: perroR } = await SB.from("perros").insert({ cliente_id: datos.clienteSoloB, nombre: `ZZ reasig ${sufijo}`, raza: "Poodle", raza_id: razaPoodle.id, tamano_id: tallaCh.id, pelaje_id: peloMed.id }).select("id").single();
+  creados.perros.push(perroR.id);
+  const { data: servEst } = await SB.from("servicios").select("id").eq("clave", "estetica_estetico").single();
+  const { data: reservaR } = await SB.from("reservas").insert({ cliente_id: datos.clienteSoloB }).select("id").single();
+  creados.reservas.push(reservaR.id);
+  const { data: citaR, error: errCitaR } = await SB.from("citas_estetica").insert({ reserva_id: reservaR.id, perro_id: perroR.id, servicio_id: servEst.id, empleado_id: S1, inicio: `${hoyData}T20:00:00Z` }).select("id").single();
+  if (errCitaR) throw new Error(`cita de hoy: ${errCitaR.message}`);
+  creados.citas.push(citaR.id);
+  const empleadoDe = async () => (await SB.from("citas_estetica").select("empleado_id, estado").eq("id", citaR.id).single()).data;
+
+  const ctxRec = await nav.newContext({ viewport: { width: 390, height: 844 } });
+  await ctxRec.addCookies(await cookiesDe(datos.recepcionB));
+  const recep = await ctxRec.newPage();
+  await recep.goto(`${BASE}/recepcion`, { waitUntil: "networkidle" });
+  const lista = recep.getByLabel(`Estilista de ZZ reasig ${sufijo}`);
+  if (!(await lista.count())) hallazgo("el tablero del día no trae el selector de estilista para recepción");
+  else {
+    bien("el tablero del día trae el selector de estilista en cada cita que no ha empezado");
+    await sinDesborde(recep, "tablero del día con selector");
+    const caja = await lista.boundingBox();
+    if (caja && caja.height < 44) hallazgo(`el selector del tablero mide ${Math.round(caja.height)}px de alto: poco para el dedo`);
+    await lista.selectOption(S2);
+    await recep.locator("[data-estilista-aviso]").first().waitFor({ timeout: 8000 }).catch(() => {});
+    const aviso = (await recep.locator("[data-estilista-aviso]").allInnerTexts()).join(" | ");
+    if (!/Quedó con .* \(antes: .*\)/.test(aviso) || (await empleadoDe()).empleado_id !== S2) hallazgo(`el tablero no confirmó el cambio a la otra estilista o no se guardó («${aviso.slice(0, 120)}»)`);
+    else bien(`un toque en el tablero: ${aviso.split("|")[0].trim()}`);
+    await lista.selectOption("");
+    await recep.waitForTimeout(1500);
+    if ((await empleadoDe()).empleado_id !== null) hallazgo("«Sin asignar» desde el tablero no dejó la cita sin estilista");
+    else bien("«Sin asignar» desde el tablero");
+    await lista.selectOption(S1);
+    await recep.waitForTimeout(1500);
+  }
+
+  // Detalle de la cita (recepción): selector, historial y confirmación
+  await recep.goto(`${BASE}/estetica/${citaR.id}`, { waitUntil: "networkidle" });
+  await sinDesborde(recep, "detalle de la cita con selector");
+  const selDetalle = recep.getByLabel("Estilista", { exact: true });
+  if (!(await selDetalle.count())) hallazgo("el detalle de la cita no trae la lista «Estilista»");
+  else {
+    await selDetalle.selectOption(S2);
+    await recep.locator("[data-estilista-aviso]").first().waitFor({ timeout: 8000 }).catch(() => {});
+    await recep.waitForFunction(() => /historial de estilista/i.test(document.body.innerText), null, { timeout: 8000 }).catch(() => {});
+    const cuerpo = await recep.locator("body").innerText();
+    if (!/Quedó con/.test(cuerpo) || !/historial de estilista/i.test(cuerpo)) hallazgo("el detalle no confirma con quién quedó ni muestra el historial");
+    else bien("detalle: confirma con quién quedó y muestra «Historial de estilista»");
+    await sinDesborde(recep, "detalle de la cita tras reasignar");
+  }
+
+  // En curso: «Cambiar estilista» con motivo opcional
+  await SB.from("citas_estetica").update({ estado: "en_curso" }).eq("id", citaR.id);
+  await recep.goto(`${BASE}/estetica/${citaR.id}`, { waitUntil: "networkidle" });
+  await recep.getByRole("button", { name: "Cambiar estilista" }).click();
+  await recep.getByLabel("Pasar a").selectOption(S1);
+  await recep.getByLabel("Motivo (opcional)").fill("Tomó al perro a la mitad");
+  await recep.getByRole("button", { name: "Cambiar estilista" }).last().click();
+  await recep.locator("[data-estilista-aviso]").first().waitFor({ timeout: 8000 }).catch(() => {});
+  const aviso2 = (await recep.locator("[data-estilista-aviso]").allInnerTexts()).join(" ");
+  if (!/Quedó con/.test(aviso2) || (await empleadoDe()).empleado_id !== S1) hallazgo(`en curso: no confirmó o no se guardó («${aviso2.slice(0, 100)}»)`);
+  else bien("en curso: «Cambiar estilista» con motivo opcional, con confirmación");
+  await sinDesborde(recep, "formulario de cambio en curso");
+
+  // Terminada: recepción sin permiso solo ve quién fue; admin corrige con motivo
+  const adminJ = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${await tokenDe(datos.adminB)}`, "x-negocio-id": B } } });
+  await adminJ.rpc("revocar_permiso", { p_profile_id: datos.recepcionB, p_permiso: "corregir_estilista" });
+  const fin = await adminJ.rpc("finalizar_cita_con_consumo", { p_cita_id: citaR.id, p_recogido_por_nombre: "Prueba", p_recogido_por_telefono: "4440000000", p_recogido_por_es_dueno: true, p_ajustes: [] });
+  if (fin.error) hallazgo(`no se pudo terminar la cita de prueba: ${fin.error.message}`);
+  await recep.goto(`${BASE}/estetica/${citaR.id}`, { waitUntil: "networkidle" });
+  if (await recep.getByRole("button", { name: "Corregir estilista" }).count()) hallazgo("recepción sin el permiso ve el botón «Corregir estilista» en un servicio terminado");
+  else bien("terminada: recepción sin el permiso solo ve quién fue (sin botón de corregir)");
+  await admin.goto(`${BASE}/estetica/${citaR.id}`, { waitUntil: "networkidle" });
+  await admin.getByRole("button", { name: "Corregir estilista" }).click();
+  await admin.getByLabel("Pasar a").selectOption(S2);
+  await admin.getByRole("button", { name: "Corregir estilista" }).last().click();
+  await admin.waitForTimeout(1200);
+  if (!/Escribe el motivo/.test(await admin.locator("body").innerText()) || (await empleadoDe()).empleado_id !== S1) hallazgo("terminada: sin motivo la pantalla debía frenar la corrección");
+  else bien("terminada: sin motivo no deja corregir");
+  await admin.getByLabel("Motivo de la corrección (obligatorio)").fill("Fue otra estilista");
+  await admin.getByRole("button", { name: "Corregir estilista" }).last().click();
+  await admin.locator("[data-estilista-aviso]").first().waitFor({ timeout: 8000 }).catch(() => {});
+  await admin.waitForFunction(() => /Fue otra estilista/.test(document.body.innerText), null, { timeout: 8000 }).catch(() => {});
+  const txtAdmin = await admin.locator("body").innerText();
+  if ((await empleadoDe()).empleado_id !== S2 || !/Fue otra estilista/.test(txtAdmin)) hallazgo("terminada: el admin no pudo corregir con motivo o no se ve en el historial");
+  else bien("terminada: el admin corrige con motivo y queda en el historial de la cita");
+  await sinDesborde(admin, "detalle de la cita terminada");
+  await ctxRec.close();
 } catch (e) {
   hallazgo(`la prueba tronó: ${e.message}`);
 } finally {

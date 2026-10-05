@@ -4,7 +4,7 @@
 // La MISMA recepcionista, sin y con cada permiso: sin él la base lo tiene
 // que rechazar aunque se lo pidan directo a la API; con él tiene que
 // funcionar de verdad (y los reportes tienen que dar lo mismo que a admin).
-// Luego, con los ocho prendidos, lo que nunca se delega. Al terminar le
+// Luego, con todos prendidos, lo que nunca se delega. Al terminar le
 // quita todos los permisos. Crea datos de prueba en desarrollo (un insumo,
 // un proveedor, una compra, una reserva cancelada): nunca correr contra
 // producción.
@@ -13,7 +13,7 @@ import { A, NEGOCIO, URL, env, tokenDe } from "./sesiones-dev.mjs";
 
 const PERMISOS = [
   "inventario_costos", "tarifas", "reportes_financieros", "personal", "nomina", "gastos",
-  "configuracion_negocio", "excepciones_reserva", "descuentos_sin_tope", "plantillas_contrato",
+  "configuracion_negocio", "excepciones_reserva", "descuentos_sin_tope", "plantillas_contrato", "corregir_estilista",
 ];
 
 const conToken = (t) => createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
@@ -162,6 +162,18 @@ const pruebas = {
   async descuentos_sin_tope() {
     const r = await R.rpc("aplicar_descuento", { p_reserva_id: reservaDesc.id, p_catalogo_descuento_id: motivoDesc.id, p_tipo: "monto_fijo", p_valor: topeRec + 1, p_motivo_adicional: "prueba de permisos" });
     if (!r.error) await A.from("descuentos_aplicados").update({ cancelado: true, motivo_cancelacion: "prueba de permisos" }).eq("reserva_id", reservaDesc.id).eq("cancelado", false);
+    return { dejo: !r.error, ve: !r.error, detalle: r.error?.message };
+  },
+  // «Corregir estilista de servicios cerrados»: cambiar la estilista de una
+  // cita ya terminada (con motivo). Antes de iniciar y en curso NO piden permiso.
+  async corregir_estilista() {
+    const { data: asignables } = await ADM.rpc("estilistas_asignables");
+    const { data: cita } = await A.from("citas_estetica").select("id, empleado_id").eq("estado", "finalizada").is("deleted_at", null).not("empleado_id", "is", null).limit(1).maybeSingle();
+    if (!cita || (asignables ?? []).length < 2) return { dejo: false, ve: false, detalle: "no hay una cita terminada y dos estilistas en desarrollo: corre scripts/auditoria/empleados.mjs" };
+    const otra = asignables.find((e) => e.id !== cita.empleado_id);
+    const r = await R.rpc("reasignar_estilista_cita", { p_cita_id: cita.id, p_empleado_id: otra.id, p_motivo: "prueba de permisos" });
+    // Se deja como estaba (admin siempre puede).
+    if (!r.error) await ADM.rpc("reasignar_estilista_cita", { p_cita_id: cita.id, p_empleado_id: cita.empleado_id, p_motivo: "prueba de permisos: se regresa" });
     return { dejo: !r.error, ve: !r.error, detalle: r.error?.message };
   },
   async plantillas_contrato() {
