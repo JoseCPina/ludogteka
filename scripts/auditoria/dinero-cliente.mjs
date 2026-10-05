@@ -55,12 +55,12 @@ const SOLO_STAFF = [
   // Razas: propuestas de razas nuevas y asignaciones en bloque (3 de octubre de 2026).
   "razas_propuestas", "razas_propuestas_perros", "razas_normalizaciones", "razas_normalizacion_perros",
   // Historial de quién atendió cada cita de estética (5 de octubre de 2026).
-  "citas_estetica_asignaciones",
+  "citas_estetica_asignaciones", "citas_estetica_correcciones",
   // Correcciones de cobros («no recibido») y conciliación con Mercado Pago (5 de octubre de 2026).
   "cobro_correcciones", "conciliacion_terminal",
 ];
 // RPC que un cliente con sesión no debe poder llamar (tienen que rechazarlo).
-const RPC_SOLO_STAFF = ["mi_cobro", "plataforma_cobros", "calendario_ocupacion", "insumos_sin_costo", "asistencia_periodo", "calcular_nomina", "reporte_utilidad_periodo", "cuentas_para_empleado", "gastos_por_atender", "gastos_por_categoria_periodo", "maps_consumo_mes", "plataforma_maps_consumo", "elegir_proveedor_cobro", "reporte_ventas_mostrador_periodo", "cliente_publico_general", "crear_venta_mostrador", "preparar_reembolso", "crear_ticket", "plataforma_tickets", "reporte_guardar", "reporte_asegurar_plantilla", "reporte_registrar_tarjeta", "reporte_crear_enlace", "media_preparar", "media_confirmar", "media_quitar", "galeria_crear", "plataforma_almacenamiento_reportes", "razas_fuera_de_catalogo", "razas_sin_grupo", "razas_asignaciones_recientes", "razas_asignar_texto", "razas_revertir_normalizacion", "razas_proponer", "asignar_grupo_raza", "plataforma_razas_propuestas", "plataforma_resolver_propuesta", "plataforma_agregar_raza", "reasignar_estilista_cita", "ajustes_nomina_interno", "cobro_marcar_no_recibido", "conciliacion_sincronizar", "conciliacion_dar_por_revisada"];
+const RPC_SOLO_STAFF = ["mi_cobro", "plataforma_cobros", "calendario_ocupacion", "insumos_sin_costo", "asistencia_periodo", "calcular_nomina", "reporte_utilidad_periodo", "cuentas_para_empleado", "gastos_por_atender", "gastos_por_categoria_periodo", "maps_consumo_mes", "plataforma_maps_consumo", "elegir_proveedor_cobro", "reporte_ventas_mostrador_periodo", "cliente_publico_general", "crear_venta_mostrador", "preparar_reembolso", "crear_ticket", "plataforma_tickets", "reporte_guardar", "reporte_asegurar_plantilla", "reporte_registrar_tarjeta", "reporte_crear_enlace", "media_preparar", "media_confirmar", "media_quitar", "galeria_crear", "plataforma_almacenamiento_reportes", "razas_fuera_de_catalogo", "razas_sin_grupo", "razas_asignaciones_recientes", "razas_asignar_texto", "razas_revertir_normalizacion", "razas_proponer", "asignar_grupo_raza", "plataforma_razas_propuestas", "plataforma_resolver_propuesta", "plataforma_agregar_raza", "reasignar_estilista_cita", "ajustes_nomina_interno", "corregir_servicio_cita", "cotizar_correccion_servicio", "cobro_marcar_no_recibido", "conciliacion_sincronizar", "conciliacion_dar_por_revisada"];
 
 const spec = await (await fetch(URL + "/rest/v1/", { headers: { apikey: env.SUPABASE_SECRET_KEY, Authorization: `Bearer ${env.SUPABASE_SECRET_KEY}` } })).json();
 const relaciones = Object.keys(spec.definitions).sort();
@@ -150,6 +150,13 @@ for (const cli of clientes) {
     ["ajustes_nomina_interno", { p_empleado_id: ID_VACIO, p_hasta: "2026-12-31", p_cita_id: null }],
     ["historial_asignaciones_cita", { p_cita_id: ID_VACIO }],
     ["estilistas_asignables", {}],
+    // Corregir el servicio de una cita: precios y cuentas, solo del personal con el permiso.
+    ["corregir_servicio_cita", { p_cita_id: ID_VACIO, p_servicio_id: ID_VACIO, p_motivo: "x" }],
+    ["cotizar_correccion_servicio", { p_cita_id: ID_VACIO, p_servicio_id: ID_VACIO }],
+    // Lecturas del personal: a un cliente le responden VACÍO (filtran por is_staff), nunca con dinero.
+    ["ordenes_abiertas_de_reservas", { p_reservas: [ID_VACIO] }],
+    ["ajustes_servicio_por_atender", {}],
+    ["historial_correcciones_servicio_cita", { p_cita_id: ID_VACIO }],
     // Cobros con terminal verificados: marcar como no recibido y conciliar son del servidor / del admin.
     ["cobro_marcar_no_recibido", { p_cobro_id: ID_VACIO, p_motivo: "x", p_actor: ID_VACIO, p_evidencia: {} }],
     ["conciliacion_sincronizar", { p_hallazgos: [], p_desde: "2026-01-01T00:00:00Z", p_hasta: "2026-01-02T00:00:00Z" }],

@@ -630,6 +630,9 @@ console.log("\n── Reasignar la estilista: el historial y la función son de 
           ["reasignar_estilista_cita", { p_cita_id: citaId, p_empleado_id: null, p_motivo: null }],
           ["historial_asignaciones_cita", { p_cita_id: citaId }],
           ["estilistas_asignables", {}],
+          ["corregir_servicio_cita", { p_cita_id: citaId, p_servicio_id: modelo.servicio_id, p_motivo: "intruso" }],
+          ["cotizar_correccion_servicio", { p_cita_id: citaId, p_servicio_id: modelo.servicio_id }],
+          ["historial_correcciones_servicio_cita", { p_cita_id: citaId }],
         ];
         for (const [rol, token] of [...Object.entries(tokens), ["anonimo", null]]) {
           const esMiembro = miembrosDeB.has(personasA[rol]);
@@ -646,11 +649,14 @@ console.log("\n── Reasignar la estilista: el historial y la función son de 
                 const permitidos = new Set((deA ?? []).map((m) => m.profile_id));
                 for (const e of JSON.parse(texto)) if (!permitidos.has(e.id)) hallazgo(`reasignar: ${rol} ve en la lista de Ludogteka a alguien que no es de su personal`);
               }
+              if (r.ok && (fn === "corregir_servicio_cita" || fn === "cotizar_correccion_servicio")) hallazgo(`corregir servicio: ${rol} (negocio ${negocio === B ? "B" : "A"}) llegó a una cita de Huellitas con ${fn}`);
               if (r.ok && fn === "reasignar_estilista_cita") hallazgo(`reasignar: ${rol} (negocio ${negocio === B ? "B" : "A"}) pudo reasignar una cita de Huellitas`);
             }
             const t = await fetch(`${URL}/rest/v1/citas_estetica_asignaciones?select=*&limit=500`, { headers: cabeceras(token, negocio) });
             const tx = await t.text();
             if (tx.includes(citaId)) hallazgo(`reasignar: ${rol} (negocio ${negocio === B ? "B" : "A"}) lee el historial de Huellitas por la tabla`);
+            const tc = await fetch(`${URL}/rest/v1/citas_estetica_correcciones?select=*&limit=500`, { headers: cabeceras(token, negocio) });
+            if ((await tc.text()).includes(citaId)) hallazgo(`corregir servicio: ${rol} (negocio ${negocio === B ? "B" : "A"}) lee las correcciones de Huellitas por la tabla`);
             const w = await fetch(`${URL}/rest/v1/citas_estetica?id=eq.${citaId}`, { method: "PATCH", headers: { ...cabeceras(token, negocio), Prefer: "return=representation" }, body: JSON.stringify({ empleado_id: modelo.empleado_id }) });
             if (w.ok && (await w.json().catch(() => [])).length) hallazgo(`reasignar: ${rol} (negocio ${negocio === B ? "B" : "A"}) cambió empleado_id de una cita de Huellitas por la API`);
           }

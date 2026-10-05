@@ -26,6 +26,8 @@ export const ARTICULOS_CAJA_Y_ESTETICA: Articulo[] = [
 
 Si el perro tiene day pass o mensualidad, junto a su línea sale **Pagar con bono**.
 
+¿Un servicio de estética se capturó mal? Se corrige desde la cita y el saldo de la cuenta cambia solo, sin tocar lo ya cobrado: un **cobro adicional** aparece como saldo por cobrar. Mira [Cómo corregir el servicio de una cita](/ayuda/corregir-servicio-de-una-cita).
+
 ## Si algo no sale
 
 - «No hay turno de caja abierto. Ábrelo antes de cobrar.»: abre el turno en el mismo aviso.
@@ -93,16 +95,13 @@ Una orden **cancelada**, **vencida**, **fallida** o en cola nunca marca nada com
 ## Si la terminal no muestra el cobro
 
 - Revisa que esté encendida y con internet.
-- Con Mercado Pago, si sale «La terminal no está en modo PDV (integrado).», el admin aprieta **Poner en modo integrado** en [Cobro con terminal](/admin/pagos).
-- Si sale «La terminal ya tiene una orden en curso.», cancela en la terminal la orden anterior.
-- Si la terminal sigue pidiendo cobros «vinculados» o no recibe el cobro aunque esté escogida, en la terminal entra a **Más opciones → Ajustes → Modo de vinculación** y regrésala a modo independiente (standalone); después vuelve a mandar el cobro.
+- «La terminal no está en modo PDV (integrado).»: el admin aprieta **Poner en modo integrado** en [Cobro con terminal](/admin/pagos).
+- «La terminal ya tiene una orden en curso.»: cancela esa orden en la terminal.
+- Si pide cobros «vinculados» o no recibe nada: en la terminal, **Más opciones → Ajustes → Modo de vinculación**, y regrésala a modo independiente.
 
 ## Si pasan los 2 minutos
 
-Sale «La terminal no ha respondido».
-
-1. Si el cliente no pagó, aprieta **Cancelar y registrar a mano** y cóbrale en **Registrar cobro** con efectivo o transferencia (con Mercado Pago o Clip elegidos, el método **Terminal** no se captura a mano: vuelve a mandarlo con **Cobrar con terminal**).
-2. Si tienes duda, aprieta **Seguir esperando**.
+Sale «La terminal no ha respondido». Si el cliente no pagó, aprieta **Cancelar y registrar a mano** y cóbrale en **Registrar cobro** con efectivo o transferencia (con Mercado Pago o Clip elegidos, el método **Terminal** no se captura a mano: vuelve a mandarlo con **Cobrar con terminal**). Si tienes duda, aprieta **Seguir esperando**.
 
 > Si el cliente SÍ pagó en la terminal, no registres nada a mano: en cuanto el proveedor lo confirme, el cobro entra solo aunque hayas cancelado aquí.
 
@@ -235,6 +234,10 @@ El dinero regresa a la tarjeta o cuenta del cliente y la devolución queda en ca
 
 La devolución se hace en Clip (en la terminal o en su panel). Aquí solo aprietas **Registrar devolución** con el método «Terminal» para que cuadre la caja.
 
+## Saldo a favor por corregir un servicio
+
+Si se corrigió el servicio de una cita ya cobrada y ahora cuesta menos, la cuenta queda con un saldo a favor del cliente. Sale en **Necesita atención** y en [Ajustes por corrección de servicio](/caja/ajustes-servicio): ábrela y devuélvelo con **Registrar devolución** (o **Devolver con Mercado Pago** si el cobro fue por Mercado Pago). Cuando el saldo llega a cero, el aviso se quita solo.
+
 ## Si algo no sale
 
 - «No hay turno de caja abierto. Ábrelo antes de registrar la devolución.»
@@ -298,6 +301,10 @@ Aprieta **Registrar retiro**, escribe **Monto** y **Motivo** y aprieta **Confirm
 5. Si no cuadra, ves lo contado, lo esperado y la diferencia. Escribe la **Explicación de la diferencia** y aprieta **Confirmar cierre**.
 
 > Una diferencia nunca se ajusta en silencio: queda escrita con su explicación.
+
+## Correcciones de servicio
+
+Corregir el servicio de una cita ya cobrada no mueve ningún corte: el cobro adicional o la devolución que resulten entran al turno en el que se hacen, y los cortes ya cerrados quedan igual.
 
 ## Si algo no sale
 
@@ -526,6 +533,58 @@ Cada cambio queda en **Historial de estilista**, al pie de la cita: de quién a 
 - Solo aparecen estilistas activas del negocio; si falta alguien, revisa que esté dada de alta en el personal de estética (en [Administración](/admin)) y que no tenga baja.`,
   },
   {
+    slug: "corregir-servicio-de-una-cita",
+    titulo: "Cómo corregir el servicio de una cita",
+    resumen: "Cuando se capturó un servicio que no era: cambiarlo, ver la diferencia de precio y qué pasa con el cobro.",
+    grupo: "estetica",
+    modulo: "estetica",
+    roles: ["admin", "recepcion"],
+    rutas: ["/estetica/[citaId]", "/caja/ajustes-servicio"],
+    palabras: ["corregir servicio", "servicio equivocado", "cambiar servicio", "me equivoqué", "precio de la cita", "cobro de más", "cobro de menos", "saldo a favor", "cobro adicional", "el servicio de esta cita no existe"],
+    cuerpo: `Si en recepción se capturó un servicio que no era (por ejemplo se capturó «Baño completo» y en realidad era el «Rapado»), se corrige desde la cita, en cualquier momento: antes de empezar, con el servicio en curso o ya terminado y cobrado.
+
+Hace falta ser admin o tener el permiso **Corregir servicio de citas** (el admin lo da en [Permisos](/admin/permisos); viene apagado). Cambiar el servicio con otra herramienta no se puede: así queda siempre su historial.
+
+## Cómo se corrige
+
+1. Abre la cita desde [Estética](/estetica) y, en **Servicio de la cita**, aprieta **Corregir servicio**.
+2. En **Servicio correcto** escoge el servicio. La app calcula el precio con las reglas de siempre: grupo de precio, talla, tipo de pelo y la tarifa de ese día.
+3. Revisa el resumen: el precio de antes y el de ahora, la diferencia y qué pasará con la cuenta.
+4. Escribe el **Motivo de la corrección (obligatorio)**.
+5. Aprieta **Confirmar corrección**.
+
+Si el perro no tiene grupo de precio para ese servicio, la app lo dice. Con el permiso **Excepciones al reservar** puedes escoger el grupo con el que se cobrará y su motivo; sin él, completa antes el grupo o el pelaje del perro en su expediente.
+
+## Qué pasa con el cobro
+
+El cobro original **nunca se toca ni se borra**. Lo que cambia es el saldo de la cuenta:
+
+- **Cita abierta, sin cobrar:** la cuenta simplemente queda con el precio nuevo. Si había un cobro en la terminal esperando o un link de pago abierto por el monto equivocado, la app lo **cancela antes** de cambiar el servicio (y nunca cancela un pago que Mercado Pago ya aprobó).
+- **Ya cobrada y ahora cuesta más:** la cuenta queda con un **cobro adicional** por cobrar. Lo cobras en [Caja](/caja) como cualquier saldo.
+- **Ya cobrada y ahora cuesta menos:** queda un **saldo a favor** del cliente. Un admin lo devuelve desde la cuenta con **Registrar devolución** (si el cobro fue con Mercado Pago, con **Devolver con Mercado Pago**; mira [Cómo devolver un cobro](/ayuda/devolver-un-cobro)).
+
+Mientras un cobro adicional o un saldo a favor siga sin resolverse, sale en **Necesita atención** y en [Ajustes por corrección de servicio](/caja/ajustes-servicio), con cuánto lleva esperando. Se quita solo cuando la cuenta queda en cero. Cada cobro o devolución entra al turno en el que se hace; los cortes ya cerrados no cambian.
+
+> Si hay un cobro por confirmar con Mercado Pago, primero ábrelo en la cuenta y usa **Revisar con Mercado Pago**: no se corrige el servicio hasta que se resuelva.
+
+## Inventario y comisión
+
+Si el servicio ya estaba terminado, el inventario se ajusta: se regresa lo que consumió el servicio anterior y se consume lo del nuevo. La comisión y la propina de la estilista se recalculan; si su nómina de ese periodo ya se pagó, el pago no se toca y la diferencia sale como **Ajuste** en su siguiente pago, en [Nómina](/empleados/nomina).
+
+## Qué queda registrado
+
+En **Historial de servicio**, al pie de la cita: el servicio y el precio de antes y de ahora, quién lo corrigió, cuándo, el motivo y cómo quedó la cuenta. No se edita ni se borra.
+
+## Si algo no sale
+
+- «Corregir el servicio de una cita es de admin o de quien tenga el permiso…»: pídele al admin el permiso.
+- «Hay un cobro por confirmar…»: revísalo primero en la cuenta con **Revisar con Mercado Pago**.
+- «No se pudo cancelar el cobro en la terminal…»: cancélalo en la terminal y vuelve a intentarlo.
+- «Esta cita se cubrió con un pase»: corrige primero el consumo del pase.
+- «Esta cita está cerrada (cancelada o no llegó)»: una cita cancelada ya no tiene servicio que corregir.
+- «El servicio de esta cita ya no se ofrece en el catálogo»: pasa con citas viejas cuyo servicio se retiró. La cita sigue mostrando el servicio con el que se registró; cámbialo aquí por el servicio vigente.`,
+  },
+  {
     slug: "atender-cita-estetica",
     titulo: "Cómo atender y terminar una cita de estética",
     resumen: "Iniciar la cita al recibir al perro, cerrarla al entregarlo y descontar lo que se usó.",
@@ -556,6 +615,10 @@ Si la cita está ligada a una estancia, no se piden esos datos: el perro sigue a
 ## Antes de iniciarla
 
 Puedes **Reagendar**, **Marcar no llegó** o **Cancelar**. Si la estilista cambió, mira [Cómo cambiar o corregir la estilista de una cita](/ayuda/cambiar-estilista-cita-estetica).
+
+## Si el servicio estaba mal
+
+¿Se capturó un servicio que no era? En cualquier momento (aun terminada y cobrada) se corrige con **Corregir servicio**; el precio se recalcula y la cuenta se ajusta. Mira [Cómo corregir el servicio de una cita](/ayuda/corregir-servicio-de-una-cita).
 
 > El pelo maltratado se marca al agendar: cambia el precio del mismo baño, no es un cargo aparte.
 

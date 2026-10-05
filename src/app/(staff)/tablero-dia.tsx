@@ -183,7 +183,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     supabase.rpc("calendario_ocupacion", { p_desde: hoy, p_hasta: hoy }),
     supabase
       .from("citas_estetica")
-      .select("id, inicio, estado, empleado_id, perros(nombre), servicios(nombre)")
+      .select("id, inicio, estado, empleado_id, perros(nombre), servicio_nombre, servicios(nombre)")
       .is("deleted_at", null)
       .gte("inicio", sumarDiasFecha(hoy, -1))
       .lt("inicio", sumarDiasFecha(hoy, 2))
@@ -250,7 +250,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
         hora: horaLocalDeInstante(c.inicio as string, zona),
         estado: c.estado as string,
         perro_nombre: perro?.nombre ?? "—",
-        servicio_nombre: servicio?.nombre ?? "—",
+        servicio_nombre: servicio?.nombre ?? (c.servicio_nombre as string | null) ?? "—",
         fecha_local: fechaLocalDeInstante(c.inicio as string, zona),
         empleado_id: (c.empleado_id as string | null) ?? null,
       };
@@ -494,6 +494,30 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
         detalle: "No cuentan como cobrados hasta que Mercado Pago lo confirme: en la cuenta, «Revisar con Mercado Pago»",
         href: "/caja/conciliacion",
         ...masViejo(pc.map((f) => f.created_at), hoy, zona),
+      });
+    }
+  }
+
+  // Servicios corregidos después de cobrarse: la cuenta quedó con un cobro
+  // adicional o un saldo a favor que nadie ha resuelto. Con su antigüedad.
+  if (conEstetica && sesion && ["admin", "recepcion"].includes(sesion.rol)) {
+    const { data: ajustes } = await supabase.rpc("ajustes_servicio_por_atender");
+    const lista = (ajustes ?? []) as { tipo_ajuste: string; saldo: number; desde: string }[];
+    if (lista.length > 0) {
+      const aFavor = lista.filter((x) => x.tipo_ajuste === "saldo_a_favor");
+      const porCobrar = lista.length - aFavor.length;
+      atencion.push({
+        clave: "ajustes-servicio",
+        texto:
+          lista.length === 1
+            ? aFavor.length ? "Un servicio corregido dejó saldo a favor del cliente por devolver" : "Un servicio corregido dejó un cobro adicional por cobrar"
+            : `${lista.length} servicios corregidos con ajuste de cuenta pendiente`,
+        detalle:
+          lista.length === 1
+            ? `$${Math.abs(Number(lista[0].saldo)).toFixed(2)}`
+            : `${aFavor.length} por devolver · ${porCobrar} por cobrar`,
+        href: "/caja/ajustes-servicio",
+        ...masViejo(lista.map((x) => x.desde), hoy, zona),
       });
     }
   }

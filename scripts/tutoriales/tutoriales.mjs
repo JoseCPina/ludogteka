@@ -215,11 +215,25 @@ async function main() {
   const c = cd;
   if (OPC.listar) {
     const ordenados = [...VIDEOS].sort((a, b) => ordenCola(a) - ordenCola(b));
+    // «Por actualizar»: estado persistente de la base (lo marca el despliegue; regrabar con éxito lo limpia).
+    const porActualizar = new Map();
+    const estadoBase = new Map();
+    for (const prod of OPC.prod ? [false, true] : [false]) {
+      try {
+        const { data } = await (prod ? conectar(true) : c).cliente.from("tutoriales").select("numero, estado, por_actualizar_motivo, por_actualizar_desde").is("deleted_at", null);
+        for (const t of data ?? []) {
+          if (!estadoBase.has(t.numero)) estadoBase.set(t.numero, t.estado);
+          if (t.por_actualizar_desde && !porActualizar.has(t.numero)) porActualizar.set(t.numero, t);
+        }
+      } catch (e) { console.warn(`(no pude leer lo «por actualizar» de ${prod ? "producción" : "desarrollo"}: ${e.message})`); }
+    }
     for (const v of ordenados) {
       const e = leerEstado(v.id);
       const hayGuion = fs.existsSync(path.join(DIR_VIDEOS, `${v.id}-${v.slug}.mjs`));
-      console.log(`${v.id}  ${(e.estado ?? "pendiente").padEnd(14)} ${hayGuion ? "con guion" : "SIN guion"}  ${e.duracion ? Math.round(e.duracion) + " s" : "     "}  ${v.titulo}`);
+      const pa = porActualizar.get(v.id);
+      console.log(`${v.id}  ${(e.estado && e.estado !== "pendiente" ? e.estado : estadoBase.get(v.id) ?? "pendiente").padEnd(14)} ${hayGuion ? "con guion" : "SIN guion"}  ${e.duracion ? Math.round(e.duracion) + " s" : "     "}  ${v.titulo}${pa ? `\n      ⚠ POR ACTUALIZAR desde ${String(pa.por_actualizar_desde).slice(0, 10)}: ${pa.por_actualizar_motivo}` : ""}`);
     }
+    if (porActualizar.size) console.log(`\n${porActualizar.size} video(s) por actualizar: ${[...porActualizar.keys()].sort().join(", ")}  →  npm run tutoriales -- --video <NN> --regrabar${OPC.prod ? " --prod" : ""}`);
     return;
   }
 
