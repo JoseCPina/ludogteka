@@ -23,7 +23,7 @@ export default {
     },
     {
       titulo: "Una raza nueva",
-      dice: "Si de verdad es una raza nueva, la propones desde el formulario del perro con «No la encuentro: agregar esta raza». PeluDesk la revisa y la agrega al catálogo.",
+      dice: "Si de verdad es una raza nueva, la propones desde el formulario del perro con la opción No la encuentro: agregar esta raza. PeluDesk la revisa y la agrega al catálogo.",
       pasos: [["ir", "/perros/razas/grupos"], ["resaltar", "Razas sin grupo de precio", 3000]],
     },
     {

@@ -105,9 +105,10 @@ export function qcVideo({ video, guion, master, vtt, muestras, conVoz, wav, secc
     let ruta = "";
     try { ruta = new URL(s.url).pathname; } catch { ruta = s.url; }
     if (PROHIBIDAS_RUTA.some((r) => r.test(ruta)) && !permitirRutas.some((p) => ruta.startsWith(p))) errores.push(`escena ${s.escena}: estuvo en ${ruta}`);
+    for (const o of new Set(s.ocultos ?? [])) defectos.push(`escena ${s.escena}: la app dice «${o.slice(0, 70)}…» (texto de otro negocio); se ocultó en la grabación`);
     for (const [re, motivo] of PROHIBIDOS_TEXTO) {
       if (re.test(s.visible ?? s.texto)) errores.push(`escena ${s.escena}: ${motivo} (a la vista)`);
-      else if (re.test(s.texto)) defectos.push(`escena ${s.escena}: ${motivo} en la página, fuera de lo que se ve`);
+      else if (re.test(s.texto) && !(s.ocultos ?? []).length) defectos.push(`escena ${s.escena}: ${motivo} en la página, fuera de lo que se ve`);
     }
     if (/error|no se pudo|no pudimos|algo salió/i.test(s.texto.split("\n").slice(0, 40).join(" ")) && /no se pudo|no pudimos|algo salió/i.test(s.texto)) defectos.push(`escena ${s.escena}: la app mostró un aviso de error (${(s.texto.match(/(no se pudo|no pudimos|algo salió)[^\n]{0,80}/i) ?? [""])[0]})`);
   }

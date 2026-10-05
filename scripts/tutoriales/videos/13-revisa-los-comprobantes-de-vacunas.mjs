@@ -22,7 +22,7 @@ export default {
   escenas: [
     {
       titulo: "Comprobantes por revisar",
-      dice: "En «Comprobantes por revisar» llegan las fotos que subieron los dueños, con el perro, el tipo de vacuna y la fecha que ellos capturaron. Además, en «Necesita atención» te sale un aviso con los días que llevan esperando.",
+      dice: "En «Comprobantes por revisar» llegan las fotos que subieron los dueños, con el perro, el tipo de vacuna y la fecha que ellos capturaron. Además, en el tablero, en Necesita atención, te sale un aviso con los días que llevan esperando.",
       pasos: [["esperar", 2500], ["zoom", "css:main", 1.15, 3500]],
     },
     {

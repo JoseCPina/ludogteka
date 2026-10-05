@@ -82,6 +82,23 @@ export async function grabarVideo({ base, cookies, inicio, guion, tarjetas, plan
   const logo = `${base}/marca/peludesk/isotipo.svg`;
   await ctx.addInitScript(scriptCursor("flecha"));
   await ctx.addInitScript(scriptHud(logo));
+  // Un texto fijo con el nombre de otro negocio (defecto de la app) no se muestra en el video:
+  // se oculta SOLO en la grabación (la app no se toca) y el defecto se anota en el reporte.
+  await ctx.addInitScript(() => {
+    const ocultar = () => {
+      if (!document.body) return;
+      const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      for (let n = w.nextNode(); n; n = w.nextNode()) {
+        if (/ludogteka/i.test(n.textContent) && n.parentElement && !n.parentElement.dataset.pdOculto) {
+          n.parentElement.dataset.pdOculto = n.textContent.trim().slice(0, 80);
+          n.parentElement.style.visibility = "hidden";
+        }
+      }
+    };
+    new MutationObserver(ocultar).observe(document, { childList: true, subtree: true, characterData: true });
+    document.addEventListener("DOMContentLoaded", ocultar);
+    setInterval(ocultar, 400);
+  });
   const page = await ctx.newPage();
   page.setDefaultTimeout(60000);
   page.on("dialog", (d) => d.accept().catch(() => {}));
@@ -124,13 +141,15 @@ export async function grabarVideo({ base, cookies, inicio, guion, tarjetas, plan
       for (let n = w.nextNode(); n; n = w.nextNode()) {
         const t = n.textContent.trim();
         if (!t) continue;
+        if (n.parentElement && getComputedStyle(n.parentElement).visibility === "hidden") continue;
         const r = document.createRange(); r.selectNodeContents(n);
         const b = r.getBoundingClientRect();
         if (b.width > 0 && b.height > 0 && b.bottom > 0 && b.top < innerHeight && b.right > 0 && b.left < innerWidth) sal.push(t);
       }
       return sal.join("\n");
     }).catch(() => "");
-    muestras.push({ escena: escenaN, t: Number(ahora().toFixed(2)), url, texto: texto.slice(0, 6000), visible: visible.slice(0, 6000) });
+    const ocultos = await page.evaluate(() => [...document.querySelectorAll("[data-pd-oculto]")].map((e) => e.dataset.pdOculto)).catch(() => []);
+    muestras.push({ escena: escenaN, t: Number(ahora().toFixed(2)), url, texto: (texto + "\n" + ocultos.join("\n")).slice(0, 6000), visible: visible.slice(0, 6000), ocultos });
   };
 
   const reponer = async () => {
