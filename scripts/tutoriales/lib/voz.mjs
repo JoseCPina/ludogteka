@@ -87,3 +87,35 @@ export async function musicaDeLaSerie(numero) {
   const pista = PISTAS_MUSICA[Number(numero) % PISTAS_MUSICA.length];
   return generarMusica({ total: LARGO_MUSICA_S, prompt: pista.prompt, cache });
 }
+
+// ── Respaldo de la voz en Storage (las sesiones de la nube son efímeras) ──
+const BUCKET = "tutoriales-masters";
+const tipo = (f) => (f.endsWith(".mp3") ? "audio/mpeg" : "application/json");
+
+export async function respaldarVoz(c, numero) {
+  const dir = path.join(DIR_AUDIO, numero);
+  if (!fs.existsSync(dir)) return 0;
+  let n = 0;
+  for (const f of fs.readdirSync(dir).filter((x) => x.startsWith("voz-"))) {
+    const { error } = await c.cliente.storage.from(BUCKET).upload(`_voz/${numero}/${f}`, fs.readFileSync(path.join(dir, f)), { contentType: tipo(f), upsert: true });
+    if (error) throw new Error(`respaldo de voz ${f}: ${error.message}`);
+    n++;
+  }
+  return n;
+}
+
+export async function restaurarVoz(c, numero) {
+  const dir = path.join(DIR_AUDIO, numero);
+  fs.mkdirSync(dir, { recursive: true });
+  const { data } = await c.cliente.storage.from(BUCKET).list(`_voz/${numero}`, { limit: 500 });
+  let n = 0;
+  for (const e of data ?? []) {
+    const destino = path.join(dir, e.name);
+    if (fs.existsSync(destino)) continue;
+    const { data: blob, error } = await c.cliente.storage.from(BUCKET).download(`_voz/${numero}/${e.name}`);
+    if (error || !blob) continue;
+    fs.writeFileSync(destino, Buffer.from(await blob.arrayBuffer()));
+    n++;
+  }
+  return n;
+}
