@@ -6,7 +6,7 @@ export default {
     {
       titulo: "Elige la reserva",
       dice: "En «Check-in» salen las reservas que llegan hoy. Toca la del perro que acaba de llegar. Si llega alguien sin reserva, usa «Walk-in (sin reserva)».",
-      pasos: [["resaltar", "Check-in — Guardería", 2600], ["clic", "css:a[href$='/checkin']", { nav: true }]],
+      pasos: [["resaltar", "Check-in — Guardería", 2600], ["ir", "/guarderia"], ["clic", "css:a[href$='/checkin']", { nav: true }]],
     },
     {
       titulo: "Quién lo entrega",
