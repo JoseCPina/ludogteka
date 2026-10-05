@@ -639,7 +639,13 @@ console.log("\n── Reasignar la estilista: el historial y la función son de 
               const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: cabeceras(token, negocio), body: JSON.stringify(args) });
               const texto = await r.text();
               llamadas++;
-              if (texto.includes(citaId) || texto.includes(otra?.id ?? "x-no") && fn === "estilistas_asignables") hallazgo(`reasignar: ${rol} (negocio ${negocio === B ? "B" : "A"}) recibió algo de Huellitas con ${fn}`);
+              if (texto.includes(citaId)) hallazgo(`reasignar: ${rol} (negocio ${negocio === B ? "B" : "A"}) recibió algo de Huellitas con ${fn}`);
+              if (r.ok && fn === "estilistas_asignables" && negocio === LUDOGTEKA) {
+                // Solo gente que de verdad es estilista (o admin) de Ludogteka; quien está en los dos negocios sale legítimamente.
+                const { data: deA } = await A.from("membresias").select("profile_id").eq("negocio_id", LUDOGTEKA).in("rol", ["estetica", "admin"]).is("deleted_at", null);
+                const permitidos = new Set((deA ?? []).map((m) => m.profile_id));
+                for (const e of JSON.parse(texto)) if (!permitidos.has(e.id)) hallazgo(`reasignar: ${rol} ve en la lista de Ludogteka a alguien que no es de su personal`);
+              }
               if (r.ok && fn === "reasignar_estilista_cita") hallazgo(`reasignar: ${rol} (negocio ${negocio === B ? "B" : "A"}) pudo reasignar una cita de Huellitas`);
             }
             const t = await fetch(`${URL}/rest/v1/citas_estetica_asignaciones?select=*&limit=500`, { headers: cabeceras(token, negocio) });
