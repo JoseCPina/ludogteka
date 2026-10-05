@@ -11,7 +11,7 @@ export default {
     {
       titulo: "Fotos y videos",
       dice: "Toca a un perro y sube sus fotos y videos directo desde el celular. Los videos duran hasta 45 segundos. Después mandas el enlace por WhatsApp: el dueño lo ve sin descargar nada, y el enlace vence solo.",
-      pasos: [["clic", "Bruno", { nav: true }], ["esperar", 3500]],
+      pasos: [["clic", "Zeus", { nav: true }], ["esperar", 3500]],
     },
     {
       titulo: "El reporte de comportamiento",

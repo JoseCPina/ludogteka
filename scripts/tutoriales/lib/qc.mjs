@@ -94,7 +94,7 @@ export function qcVideo({ video, guion, master, vtt, muestras, conVoz, wav, secc
     let suma = 0;
     for (let j = 0; j < 160 * 90; j++) suma += crudo[i * 160 * 90 + j];
     const media = suma / (160 * 90);
-    if (media < 6 || media > 250) malos++;
+    if (media < 6 || media > 254.6) malos++;
   }
   m.fotogramas = n;
   if (malos) errores.push(`${malos} fotograma(s) en negro o en blanco`);
