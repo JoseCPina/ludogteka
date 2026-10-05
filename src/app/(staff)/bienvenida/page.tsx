@@ -6,19 +6,25 @@ import { zonaActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { usaEstancias } from "@/lib/plan/modulos";
 import { AvanceWeb } from "@/components/avance-web";
+import { cargarTutorialesVisibles } from "@/lib/tutoriales";
+import { VideosParaEmpezar } from "@/components/ayuda/videos-para-empezar";
 
 // Los primeros pasos de un negocio recién abierto desde peludesk.mx. Cada
 // paso manda a la pantalla donde se hace de verdad (no hay un asistente
 // aparte que duplique formularios) y se marca solo cuando la base ya
 // tiene el dato.
-type Paso = { titulo: string; que: string; href: string; accion: string; listo: boolean };
+type Paso = { titulo: string; que: string; href: string; accion: string; listo: boolean; video?: string };
 
 export default async function BienvenidaPage() {
   const supabase = await createSupabaseServerClient();
   const negocio = await cargarNegocioLanding();
   const zona = await zonaActual();
   // Los pasos se ajustan a lo que el negocio ofrece (sus módulos).
-  const mods = (await obtenerSesionConRol())?.modulos ?? [];
+  const sesion = await obtenerSesionConRol();
+  const mods = sesion?.modulos ?? [];
+  // La serie de videos: uno por paso (si ya está publicado y es de tus módulos).
+  const videos = await cargarTutorialesVisibles(supabase, { rol: sesion?.rol ?? "", permisos: sesion?.permisos ?? [], modulos: mods }).catch(() => []);
+  const videoDe = (numero: string) => videos.find((v) => v.numero === numero)?.slug;
   const conEstancias = usaEstancias(mods);
   const servicios = [mods.includes("guarderia") && "guardería", mods.includes("hotel") && "hotel", mods.includes("estetica") && "estética"].filter(Boolean).join(", ");
   const cuenta = (tabla: string) => supabase.from(tabla).select("id", { count: "exact", head: true }).is("deleted_at", null);
@@ -39,6 +45,7 @@ export default async function BienvenidaPage() {
       que: "El teléfono de recepción (al que te escriben tus clientes por WhatsApp) y la dirección desde donde sale la camioneta.",
       href: "/admin#configuracion",
       accion: "Capturar datos",
+      video: videoDe("07"),
       listo: Boolean(vigente?.telefono_recepcion),
     },
     {
@@ -46,6 +53,7 @@ export default async function BienvenidaPage() {
       que: `Ya tienes dados de alta los servicios de ${servicios || "tu negocio"}. Ponles tu precio${mods.includes("estetica") ? ": en estética, por grupo de raza o por talla" : ""}${conEstancias ? "; en hotel, por talla; en guardería, por día o por hora" : ""}.`,
       href: "/servicios",
       accion: "Poner precios",
+      video: videoDe(mods.includes("estetica") ? "20" : "07"),
       listo: (tarifas.count ?? 0) > 0,
     },
     {
@@ -55,6 +63,7 @@ export default async function BienvenidaPage() {
         : "Qué días y a qué hora abres. Sale en tu página web.",
       href: "/admin#horario",
       accion: "Ajustar horario",
+      video: videoDe("07"),
       listo: (cupoPropio?.length ?? 0) > 0,
     },
     {
@@ -62,6 +71,7 @@ export default async function BienvenidaPage() {
       que: "Su horario y cómo se le paga. Si va a usar la app, invítalo con su correo desde Administración.",
       href: "/empleados/nuevo",
       accion: "Agregar empleado",
+      video: videoDe("44"),
       listo: (empleados.count ?? 0) > 0,
       aplica: mods.includes("empleados"),
     },
@@ -70,6 +80,7 @@ export default async function BienvenidaPage() {
       que: "Captúralo tú, o mándale un link por WhatsApp para que él llene sus datos y los de su perro.",
       href: "/clientes/nuevo",
       accion: "Agregar cliente",
+      video: videoDe("10"),
       listo: (clientes.count ?? 0) > 0,
     },
   ];
@@ -110,6 +121,11 @@ export default async function BienvenidaPage() {
                 {p.listo && <span className="ml-2 text-sm font-medium text-menta-oscuro">Listo</span>}
               </h2>
               <p className="mt-0.5 text-sm text-n-700">{p.que}</p>
+              {p.video && (
+                <Link href={`/ayuda/videos/${p.video}`} data-video-paso className="mt-1 inline-block text-sm font-semibold text-morado hover:underline">
+                  ▶ Ver cómo se hace (video)
+                </Link>
+              )}
             </div>
             <Link
               href={p.href}
@@ -120,6 +136,7 @@ export default async function BienvenidaPage() {
           </li>
         ))}
       </ol>
+      <VideosParaEmpezar videos={videos} />
       <AvanceWeb />
       <p className="text-sm text-n-600">
         Puedes volver a esta página cuando quieras desde el aviso de arriba.{" "}

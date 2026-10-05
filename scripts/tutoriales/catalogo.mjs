@@ -1,0 +1,116 @@
+// Catálogo de la serie de videos tutoriales de PeluDesk: UNA fuente.
+// De aquí salen docs/TUTORIALES.md (matriz de cobertura), el orden de la cola,
+// los títulos y descripciones de YouTube, las filas de la tabla `tutoriales` y
+// el «Siguiente: …» de cada video. `cobertura.mjs` compara este catálogo con
+// lo que la app TIENE (rutas, menú, módulos, permisos, artículos de ayuda y
+// avisos de «Necesita atención») y falla si algo queda sin video ni exclusión.
+//
+// Campos: id (dos dígitos; 00 es el avance), slug, area, titulo (≤ 70),
+// resumen (lo que el espectador logra), rol (cuenta del demo con la que se
+// graba), duracion (objetivo en segundos, de 60 a 240), modulos, permisos,
+// articulos (slugs de la ayuda), rutas (pantallas que enseña), avisos (claves
+// de «Necesita atención» que explica), etiquetas.
+
+export const AREAS = [
+  { clave: "empieza", nombre: "Empieza aquí" },
+  { clave: "clientes", nombre: "Clientes y perros" },
+  { clave: "contratos", nombre: "Contratos" },
+  { clave: "estetica", nombre: "Estética" },
+  { clave: "guarderia", nombre: "Guardería y hotel" },
+  { clave: "caja", nombre: "Caja y cobros" },
+  { clave: "inventario", nombre: "Inventario" },
+  { clave: "empleados", nombre: "Empleados y gastos" },
+  { clave: "negocio", nombre: "Tu negocio" },
+];
+
+const v = (id, slug, area, titulo, resumen, o = {}) => ({
+  id, slug, area, titulo, resumen, rol: "recepcion", duracion: 150, modulos: [], permisos: [], articulos: [], rutas: [], avisos: [], etiquetas: [], ...o,
+});
+
+export const VIDEOS = [
+  v("00", "avance-de-la-serie", "empieza", "PeluDesk: lo que vas a aprender en esta serie de videos", "Un recorrido de 40 segundos por todo lo que cubre la serie.", { duracion: 45, rol: "admin", rutas: [] }),
+
+  // ── EMPIEZA AQUÍ ──
+  v("01", "recorre-peludesk-por-primera-vez", "empieza", "Recorre PeluDesk por primera vez: menú, inicio y ayuda", "Entiendes dónde está cada cosa: el menú, el inicio de cada rol y la ayuda.", { rol: "admin", rutas: ["/admin", "/recepcion", "/estetica", "/sin-acceso", "/modulo-apagado"], articulos: ["leer-el-tablero-del-dia"], etiquetas: ["primeros pasos", "menú"] }),
+  v("02", "tus-primeros-cinco-pasos", "empieza", "Tus primeros cinco pasos en PeluDesk", "Completas el perfil, precios, horario y primeros clientes con la guía de bienvenida.", { rol: "admin", rutas: ["/bienvenida"], etiquetas: ["bienvenida", "configuración inicial"] }),
+  v("03", "entrar-y-cambiar-tu-contrasena", "empieza", "Cómo entrar a PeluDesk y cambiar tu contraseña", "Entras con tu teléfono o correo, y cambias tu contraseña con un enlace.", { rol: "recepcion", rutas: ["/login", "/auth/nueva-password"], articulos: ["restablecer-contrasena-de-cliente"], etiquetas: ["login", "contraseña"] }),
+  v("04", "el-tablero-del-dia", "empieza", "El tablero del día: qué llega, qué sale y quién está adentro", "Lees el inicio de recepción en 30 segundos: llegadas, salidas, adentro y cupo.", { rutas: ["/recepcion"], articulos: ["leer-el-tablero-del-dia"], etiquetas: ["tablero", "recepción"] }),
+  v("05", "que-hacer-con-necesita-atencion", "empieza", "Qué hacer con «Necesita atención»", "Resuelves cada aviso del tablero y sabes cuál es el más urgente.", { rutas: ["/recepcion/saldos", "/recepcion"], articulos: ["que-hacer-con-necesita-atencion"], avisos: ["saldos", "san", "eval", "con", "hotel", "turno", "cobro", "vincular", "comprobantes", "contratos-firmar", "contratos-regenerar", "razas-sin-grupo", "reembolsos", "gastos-vencidos", "gastos-proximos"], etiquetas: ["avisos", "pendientes"] }),
+  v("06", "modulos-y-plan", "empieza", "Módulos y plan: prende solo lo que usas", "Prendes y apagas guardería, hotel, estética y demás, y ves tu plan.", { rol: "admin", modulos: [], rutas: ["/admin/modulos", "/admin/modulos/pago"], articulos: ["modulos-y-plan"], etiquetas: ["plan", "módulos"] }),
+  v("07", "horario-y-datos-del-negocio", "empieza", "Configura tu horario, cupo y datos del negocio", "Defines horario de atención, cupo de guardería y hotel y el teléfono de recepción.", { rol: "admin", permisos: ["configuracion_negocio"], rutas: ["/admin"], articulos: ["horario-y-datos-del-negocio"], etiquetas: ["horario", "cupo"] }),
+  v("08", "invita-a-tu-equipo", "empieza", "Invita a tu equipo y entiende los roles", "Invitas a recepción y estética, y sabes qué ve cada rol.", { rol: "admin", permisos: ["personal"], rutas: ["/admin"], articulos: ["invitar-a-tu-equipo"], etiquetas: ["equipo", "roles"] }),
+  v("09", "permisos-extra-a-recepcion", "empieza", "Dale permisos extra a una persona de recepción", "Delegas costos, tarifas, reportes y más a una persona en particular.", { rol: "admin", permisos: ["inventario_costos", "tarifas", "reportes_financieros", "personal", "configuracion_negocio", "excepciones_reserva", "descuentos_sin_tope", "plantillas_contrato", "nomina", "gastos", "reportes_guarderia"], rutas: ["/admin/permisos"], articulos: ["permisos-extra-a-recepcion"], etiquetas: ["permisos"] }),
+
+  // ── CLIENTES Y PERROS ──
+  v("10", "captura-a-un-cliente-y-su-perro", "clientes", "Captura a un cliente y a su perro en el mostrador", "Das de alta al dueño y a su perro cuando están frente a ti.", { rutas: ["/clientes", "/clientes/nuevo", "/clientes/[id]", "/clientes/[id]/perros/nuevo"], articulos: ["capturar-cliente-en-mostrador"], etiquetas: ["clientes", "alta"] }),
+  v("11", "alta-de-cliente-con-un-link", "clientes", "Da de alta a un cliente con un link de WhatsApp", "Mandas un link y el dueño captura sus datos y los de su perro desde su celular.", { modulos: ["portal"], rutas: ["/clientes/invitaciones", "/alta/[token]"], articulos: ["alta-de-cliente-con-link"], etiquetas: ["alta por link", "whatsapp"] }),
+  v("12", "vacunas-alertas-y-datos-del-perro", "clientes", "Vacunas, alertas y datos del perro en su expediente", "Registras vacunas, alergias, celo y evaluación, y entiendes qué bloquea una reserva.", { rutas: ["/perros/[id]"], articulos: ["vacunas-alertas-y-datos-del-perro"], etiquetas: ["expediente", "vacunas"] }),
+  v("13", "revisa-los-comprobantes-de-vacunas", "clientes", "Revisa los comprobantes de vacunas que mandan los dueños", "Confirmas o rechazas el carnet que subió el dueño desde su celular.", { modulos: ["portal"], rutas: ["/recepcion/comprobantes"], articulos: ["revisar-comprobante-sanitario"], etiquetas: ["comprobantes", "vacunas"] }),
+  v("14", "agrega-una-raza-que-no-aparece", "clientes", "Qué hacer cuando una raza no aparece en el catálogo", "Propones la raza, asignas su grupo de precio y normalizas razas escritas a mano.", { permisos: ["tarifas"], rutas: ["/perros/razas", "/perros/razas/grupos"], articulos: ["agregar-una-raza-que-no-aparece"], avisos: ["razas-sin-grupo"], etiquetas: ["razas", "grupos de precio"] }),
+  v("15", "el-portal-del-dueno", "clientes", "El portal del dueño: qué ve y cómo lo invitas", "Invitas al dueño a su portal, vinculas cuentas y restableces contraseñas.", { modulos: ["portal"], rutas: ["/portal", "/portal/perros/[id]", "/vinculacion", "/activar/[token]"], articulos: ["portal-del-dueno", "restablecer-contrasena-de-cliente"], avisos: ["vincular"], etiquetas: ["portal", "dueño"] }),
+
+  // ── CONTRATOS ──
+  v("16", "plantillas-de-contrato", "contratos", "Crea y publica tus plantillas de contrato", "Escribes tu contrato con variables, lo publicas y decides cuándo se genera.", { rol: "admin", modulos: ["contratos"], permisos: ["plantillas_contrato"], rutas: ["/contratos"], etiquetas: ["contratos", "plantillas"] }),
+  v("17", "manda-a-firmar-un-contrato", "contratos", "Manda a firmar un contrato y da seguimiento", "Generas el contrato, lo mandas por WhatsApp y ves cuáles faltan.", { modulos: ["contratos"], rutas: ["/recepcion/contratos"], articulos: ["mandar-a-firmar-un-contrato"], avisos: ["contratos-firmar"], etiquetas: ["contratos", "firma"] }),
+  v("18", "el-dueno-firma-desde-su-celular", "contratos", "Así firma el dueño su contrato desde el celular", "Ves lo que ve el dueño: leer, firmar con el dedo y recibir su copia.", { rol: "cliente", modulos: ["contratos", "portal"], rutas: ["/portal"], etiquetas: ["firma digital"] }),
+  v("19", "contrato-en-papel-y-actualizaciones", "contratos", "Contrato en papel, regenerar y actualizar versiones", "Subes un contrato firmado en papel y regeneras uno con defectos.", { modulos: ["contratos"], rutas: ["/recepcion/contratos", "/contratos"], avisos: ["contratos-regenerar"], etiquetas: ["contrato en papel", "regenerar"] }),
+
+  // ── ESTÉTICA ──
+  v("20", "precios-de-estetica", "estetica", "Cómo funcionan los precios de estética", "Capturas tarifas por grupo de raza, talla y pelaje, y creas servicios.", { rol: "admin", modulos: ["estetica"], permisos: ["tarifas"], rutas: ["/servicios", "/servicios/nuevo", "/servicios/[id]", "/servicios/[id]/tarifas"], articulos: ["precios-de-estetica"], etiquetas: ["tarifas", "precios"] }),
+  v("21", "agenda-una-cita-de-estetica", "estetica", "Agenda una cita de estética en 2 minutos", "Agendas baño, rapado o exprés con el estilista y la hora.", { modulos: ["estetica"], rutas: ["/estetica", "/estetica/nueva"], articulos: ["agendar-cita-estetica"], etiquetas: ["estética", "agenda"] }),
+  v("22", "atiende-y-termina-una-cita", "estetica", "Atiende y termina una cita de estética", "Inicias la cita, la cierras al entregar al perro y cobras.", { rol: "estetica", modulos: ["estetica"], rutas: ["/estetica/[citaId]"], articulos: ["atender-cita-estetica"], etiquetas: ["estética", "cita"] }),
+  v("23", "recargos-pelo-maltratado-y-excepciones", "estetica", "Pelo maltratado, recargos y excepciones en estética", "Cobras el precio alterno, pones un recargo con motivo y registras excepciones.", { modulos: ["estetica"], permisos: ["excepciones_reserva"], rutas: ["/estetica/[citaId]", "/estetica/nueva"], etiquetas: ["recargo", "excepción"] }),
+  v("24", "receta-de-consumo-por-servicio", "estetica", "Receta de consumo: descuenta el inventario solo", "Defines qué insumos gasta cada servicio y se descuentan al terminar la cita.", { rol: "admin", modulos: ["estetica", "inventario"], rutas: ["/servicios/[id]/receta"], etiquetas: ["receta", "inventario"] }),
+
+  // ── GUARDERÍA Y HOTEL ──
+  v("25", "reserva-guarderia", "guarderia", "Reserva guardería: por día, por hora y con cupo", "Reservas un día o una hora de guardería y entiendes el cupo.", { modulos: ["guarderia"], rutas: ["/guarderia", "/guarderia/nueva", "/reservas", "/reservas/[id]"], articulos: ["reservar-guarderia"], etiquetas: ["guardería", "reserva"] }),
+  v("26", "reserva-hotel", "guarderia", "Reserva el hotel: noches, cupo y precios por talla", "Reservas varias noches y ves cuánto cuesta cada una.", { modulos: ["hotel"], rutas: ["/hotel", "/hotel/nueva"], articulos: ["reservar-hotel"], etiquetas: ["hotel", "reserva"] }),
+  v("27", "reservas-recurrentes", "guarderia", "Reservas recurrentes: la misma guardería cada semana", "Creas una serie, ves sus fechas y la cancelas o cambias.", { modulos: ["guarderia", "hotel"], rutas: ["/guarderia/series", "/guarderia/series/nueva", "/hotel/series", "/hotel/series/nueva", "/reservas/series/[id]"], etiquetas: ["serie", "recurrente"] }),
+  v("28", "perro-que-llega-sin-reserva", "guarderia", "Perro que llega sin reserva (walk-in)", "Registras a un perro que llega sin aviso, en guardería o en hotel.", { modulos: ["guarderia", "hotel"], rutas: ["/guarderia/walkin", "/hotel/walkin"], etiquetas: ["walk-in"] }),
+  v("29", "check-in-del-perro", "guarderia", "Check-in: recibe al perro con foto, pertenencias y avisos", "Haces el check-in con la foto de llegada y los avisos del perro.", { modulos: ["guarderia", "hotel"], rutas: ["/guarderia/checkin", "/hotel/checkin", "/reservas/estancias/[estanciaId]/checkin"], articulos: ["registrar-check-in"], avisos: ["hotel", "san", "eval", "con"], etiquetas: ["check-in"] }),
+  v("30", "check-out-y-cobro", "guarderia", "Check-out: entrega al perro y cobra la cuenta", "Entregas al perro, revisas los cargos y cobras en el mismo paso.", { modulos: ["guarderia", "hotel"], rutas: ["/guarderia/checkout", "/hotel/checkout", "/reservas/estancias/[estanciaId]/checkout", "/reservas/[id]/cobrar"], articulos: ["registrar-check-out-y-cobrar"], etiquetas: ["check-out", "cobro"] }),
+  v("31", "reporte-de-comportamiento-fotos-y-videos", "guarderia", "Reporte del día, fotos y videos de los perros adentro", "Llenas el reporte, mandas fotos y videos y cuidas lo que ve el dueño.", { modulos: ["guarderia", "hotel"], permisos: ["reportes_guarderia"], rutas: ["/adentro", "/guarderia/reportes", "/guarderia/reportes/[perroId]", "/admin/reporte-guarderia", "/r/[token]", "/f/[token]"], articulos: ["llenar-el-reporte-de-comportamiento", "enviar-fotos-y-videos"], etiquetas: ["reporte", "fotos"] }),
+
+  // ── CAJA Y COBROS ──
+  v("32", "abre-turno-y-corte-de-caja", "caja", "Abre tu turno y haz el corte de caja sin diferencias", "Abres el turno, registras retiros y cierras con el arqueo.", { rutas: ["/caja/turno"], articulos: ["corte-de-caja"], avisos: ["turno"], etiquetas: ["caja", "corte"] }),
+  v("33", "cobra-una-cuenta", "caja", "Cobra una cuenta: efectivo, tarjeta y varios métodos", "Cobras una cuenta abierta y la partes entre métodos.", { rutas: ["/caja", "/caja/cobrar/[reservaId]"], articulos: ["cobrar-una-cuenta"], avisos: ["cobro"], etiquetas: ["cobro", "caja"] }),
+  v("34", "cobra-con-terminal-o-link", "caja", "Cobra con la terminal o con un link de pago", "Mandas el cobro a la terminal o un link por WhatsApp y se registra solo.", { rutas: ["/caja/cobrar/[reservaId]"], articulos: ["cobrar-con-terminal", "terminal-no-recibe-el-cobro", "link-de-pago-whatsapp"], etiquetas: ["terminal", "link de pago"] }),
+  v("35", "venta-rapida-de-mostrador", "caja", "Venta rápida: vende un producto sin reserva", "Vendes un producto o un concepto libre y lo cobras en segundos.", { rutas: ["/caja/venta"], articulos: ["venta-rapida"], etiquetas: ["venta", "mostrador"] }),
+  v("36", "cargo-suelto", "caja", "Cargo suelto: agrega algo a una cuenta sin reserva", "Agregas un cargo (comida especial, recolección) a una cuenta abierta.", { rutas: ["/caja/cargo"], articulos: ["cargo-suelto"], etiquetas: ["cargo"] }),
+  v("37", "aplica-un-descuento", "caja", "Aplica un descuento con tope y motivo", "Aplicas un descuento, entiendes el tope de recepción y qué queda registrado.", { permisos: ["descuentos_sin_tope"], rutas: ["/caja/cobrar/[reservaId]"], articulos: ["aplicar-descuento"], etiquetas: ["descuento"] }),
+  v("38", "devoluciones-y-reembolsos", "caja", "Devuelve un cobro y revisa los reembolsos", "Devuelves dinero con el método original y atiendes los reembolsos de Mercado Pago.", { rol: "admin", rutas: ["/caja/reembolsos"], articulos: ["devolver-un-cobro", "reembolsos-mercado-pago"], avisos: ["reembolsos"], etiquetas: ["devolución", "reembolso"] }),
+  v("39", "day-pass-y-mensualidades", "caja", "Vende day pass y mensualidades de guardería", "Vendes paquetes por perro, ves su saldo y se aplican solos al reservar.", { modulos: ["bonos"], rutas: ["/caja/pases", "/guarderia/pases"], articulos: ["vender-day-pass-o-mensualidad"], etiquetas: ["day pass", "mensualidad"] }),
+
+  // ── INVENTARIO ──
+  v("40", "consumibles-compras-y-consumo", "inventario", "Consumibles: existencias, compras, consumo y merma", "Das de alta insumos, registras compras y consumo, y ves el stock mínimo.", { modulos: ["inventario"], permisos: ["inventario_costos"], rutas: ["/inventario", "/inventario/nuevo", "/inventario/[id]"], articulos: ["consumibles-compras-y-consumo"], etiquetas: ["inventario", "insumos"] }),
+  v("41", "equipo-y-mantenimiento", "inventario", "Equipo: estados, mantenimiento y avisos", "Llevas tus herramientas con su estado y su próximo mantenimiento.", { modulos: ["inventario"], rutas: ["/inventario/equipo/nuevo", "/inventario/equipo/[id]"], articulos: ["equipo-y-mantenimiento"], etiquetas: ["equipo", "mantenimiento"] }),
+  v("42", "proveedores-areas-y-sin-costo", "inventario", "Proveedores, áreas y lo que no tiene costo", "Organizas tus insumos por área, proveedor y cierras lo que no tiene costo.", { rol: "admin", modulos: ["inventario"], permisos: ["inventario_costos"], rutas: ["/inventario/proveedores", "/inventario/proveedores/nuevo", "/inventario/proveedores/[id]", "/inventario/areas", "/inventario/sin-costo"], etiquetas: ["proveedores", "áreas"] }),
+  v("43", "vende-productos-del-inventario", "inventario", "Vende productos de tu inventario en el mostrador", "Marcas un insumo como vendible y se descuenta al cobrar.", { modulos: ["inventario"], rutas: ["/inventario/[id]", "/caja/venta"], articulos: ["vender-producto-en-mostrador"], etiquetas: ["productos", "venta"] }),
+
+  // ── EMPLEADOS Y GASTOS ──
+  v("44", "asistencia-de-tu-equipo", "empleados", "Asistencia: entrada, salida, retardos y faltas", "Registras la entrada y salida de cada persona y ves retardos y faltas.", { modulos: ["empleados"], rutas: ["/empleados", "/empleados/[id]", "/empleados/nuevo", "/mi-trabajo"], articulos: ["entrada-y-salida-de-empleados"], etiquetas: ["asistencia", "empleados"] }),
+  v("45", "ausencias-y-vacaciones", "empleados", "Ausencias, incapacidades y vacaciones", "Apruebas ausencias y llevas el saldo de vacaciones de cada persona.", { rol: "admin", modulos: ["empleados"], rutas: ["/empleados/ausencias"], etiquetas: ["ausencias", "vacaciones"] }),
+  v("46", "comisiones-y-nomina", "empleados", "Comisiones, propinas y nómina", "Defines el esquema de pago, calculas la nómina y registras el pago.", { rol: "admin", modulos: ["empleados"], permisos: ["nomina"], rutas: ["/empleados/comisiones", "/empleados/nomina", "/empleados/nomina/[empleadoId]"], articulos: ["pagar-la-nomina"], etiquetas: ["nómina", "comisiones"] }),
+  v("47", "registra-los-gastos-del-local", "empleados", "Registra los gastos del local y adjunta el comprobante", "Capturas un gasto, lo pagas de la caja y lo clasificas por categoría.", { modulos: ["gastos"], permisos: ["gastos"], rutas: ["/gastos", "/gastos/categorias"], articulos: ["registrar-gastos-del-local"], avisos: ["gastos-vencidos", "gastos-proximos"], etiquetas: ["gastos"] }),
+  v("48", "gastos-recurrentes", "empleados", "Gastos recurrentes: renta, luz y todo lo que se repite", "Programas un gasto que se repite y lo ves venir antes de que venza.", { rol: "admin", modulos: ["gastos"], permisos: ["gastos"], rutas: ["/gastos/recurrentes"], etiquetas: ["gastos recurrentes"] }),
+
+  // ── TU NEGOCIO ──
+  v("49", "lee-los-reportes", "negocio", "Lee tus reportes: ingresos, costos, margen y utilidad", "Lees cuánto ganaste de verdad, por servicio y por periodo.", { rol: "admin", modulos: ["reportes"], permisos: ["reportes_financieros"], rutas: ["/reportes"], articulos: ["leer-los-reportes"], etiquetas: ["reportes", "utilidad"] }),
+  v("50", "conecta-mercado-pago-o-clip", "negocio", "Conecta tu terminal: Mercado Pago o Clip", "Conectas tu cuenta de cobro o decides cobrar solo a mano.", { rol: "admin", rutas: ["/admin/pagos"], articulos: ["conectar-mercado-pago-o-clip"], etiquetas: ["mercado pago", "clip", "terminal"] }),
+  v("51", "politicas-y-reglas-de-tu-negocio", "negocio", "Políticas y reglas de tu negocio: lo que le dices a tus clientes", "Escribes tus reglas (cancelaciones, evaluación, recolección) una vez y salen en todo.", { rol: "admin", permisos: ["configuracion_negocio"], rutas: ["/admin/politicas"], articulos: ["politicas-y-reglas"], etiquetas: ["políticas", "reglas"] }),
+  v("52", "perfil-y-pagina-web-gratis", "negocio", "Tu perfil y tu página web gratis", "Completas tu perfil y se activa tu página web con tu logo, fotos y precios.", { rol: "admin", modulos: ["pagina_web"], permisos: ["configuracion_negocio"], rutas: ["/admin/perfil", "/"], articulos: ["perfil-y-pagina-web"], etiquetas: ["página web", "perfil"] }),
+  v("53", "pide-ayuda-desde-la-app", "negocio", "Pide ayuda: el asistente, los videos y los tickets", "Usas el asistente, buscas un video y mandas un ticket si algo no sale.", { rutas: ["/ayuda", "/ayuda/[slug]", "/ayuda/tickets/nuevo", "/ayuda/tickets/[id]"], articulos: ["pedir-ayuda"], etiquetas: ["ayuda", "soporte"] }),
+  v("54", "recoleccion-a-domicilio", "negocio", "Recolección a domicilio: cotiza, cobra y la ves en la cuenta", "Cotizas el traslado por kilómetros y lo cobras junto con el servicio.", { modulos: ["recoleccion"], rutas: [], articulos: ["cotizar-y-cobrar-recoleccion"], etiquetas: ["recolección"] }),
+];
+
+// Lo que NO se graba, y por qué (cada ruta o aviso excluido lleva su motivo).
+export const EXCLUIDOS = {
+  rutas: {
+    "/": "Es la landing o la página pública del negocio; se enseña en el video 52 solo como resultado.",
+    "/negocio-no-encontrado": "Pantalla de error técnica (dominio sin negocio); no es una tarea del usuario.",
+    "/pagina-no-encontrada": "Pantalla de error técnica (404); no es una tarea del usuario.",
+    "/ayuda/tickets/[id]": "Se cubre con la creación del ticket en el video 53 (el detalle es la misma pantalla).",
+  },
+  avisos: {},
+  permisos: {},
+};

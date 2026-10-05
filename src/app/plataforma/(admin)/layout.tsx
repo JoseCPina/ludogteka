@@ -13,6 +13,7 @@ const SECCIONES = [
   { href: "/plataforma/seguimiento", texto: "Seguimiento de pruebas" },
   { href: "/plataforma/redes", texto: "Redes" },
   { href: "/plataforma/resumen", texto: "Resumen" },
+  { href: "/plataforma/tutoriales", texto: "Videos tutoriales" },
   { href: "/plataforma/soporte", texto: "Soporte" },
   { href: "/plataforma/personas", texto: "Personas" },
   { href: "/plataforma/catalogos", texto: "Catálogos compartidos" },

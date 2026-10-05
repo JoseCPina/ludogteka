@@ -306,6 +306,13 @@ if (detras) {
   );
 }
 
+// Videos tutoriales que este cambio pudo dejar desactualizados (solo avisa).
+console.log("\n   Videos tutoriales:");
+{
+  const r = spawnSync(process.execPath, ["scripts/tutoriales/afectados.mjs", `origin/${RAMA}`], { encoding: "utf8" });
+  console.log((r.stdout || "   (sin información)\n").trimEnd());
+}
+
 // GitHub por la API REST (el GraphQL de `gh pr` lo niega el proxy de la nube).
 const [GH_DUENO, GH_REPO] = (() => {
   const m = /github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?$/.exec(git("remote", "get-url", "origin"));

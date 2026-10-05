@@ -7,6 +7,7 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { negocioActual } from "@/lib/negocio/actual";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { articulosDelNegocio } from "@/lib/ayuda";
+import { cargarTutorialesVisibles } from "@/lib/tutoriales";
 import {
   LIMITE_HISTORIAL,
   MAX_PREGUNTAS_DIA,
@@ -34,6 +35,7 @@ export type RespuestaAsistente = {
   conversacionId?: string;
   texto?: string;
   articulos?: { slug: string; titulo: string }[];
+  video?: { slug: string; titulo: string } | null;
   sinRespuesta?: boolean;
   motivo?: string | null;
 };
@@ -67,6 +69,9 @@ export async function preguntarAsistente(datos: { conversacionId: string | null;
   const negocio = await negocioActual();
   const articulos = articulosDelNegocio(sesion.modulos);
   const permitidos = new Set(articulos.map((a) => a.slug));
+  // Los videos publicados que esta persona puede ver: el asistente puede recomendar UNO.
+  const videos = await cargarTutorialesVisibles(supabase, { rol: sesion.rol, permisos: sesion.permisos, modulos: sesion.modulos }).catch(() => []);
+  const videosPermitidos = new Map(videos.map((v) => [v.numero, { slug: v.slug, titulo: v.titulo }] as const));
 
   // La conversación anterior (solo la de esta persona: la RLS lo asegura).
   const historial: { role: "user" | "assistant"; content: string }[] = [];
@@ -95,14 +100,14 @@ export async function preguntarAsistente(datos: { conversacionId: string | null;
       { type: "text" as const, text: promptFijo(articulos), cache_control: { type: "ephemeral" as const } },
       {
         type: "text" as const,
-        text: promptVariable({ negocio: negocio.nombre, rol: sesion.rol as "admin" | "recepcion", modulos: sesion.modulos, pantalla: datos.pantalla, hoy: hoyTexto }),
+        text: promptVariable({ negocio: negocio.nombre, rol: sesion.rol as "admin" | "recepcion", modulos: sesion.modulos, pantalla: datos.pantalla, hoy: hoyTexto, videos: videos.map((v) => ({ numero: v.numero, titulo: v.titulo, articulos: v.articulos })) }),
       },
     ];
     // Sin herramientas: «no está documentado» y «fuera de alcance» van como
     // marcas de texto (ver src/lib/ayuda/asistente.ts).
     const r = await ia.responder(system, historial, [], MAX_TOKENS_ASISTENTE);
     tokens = { in: r.tokensIn, out: r.tokensOut };
-    resultado = procesarRespuesta(r.texto, permitidos);
+    resultado = procesarRespuesta(r.texto, permitidos, videosPermitidos);
   } catch (e) {
     console.error("[ayuda] el asistente no contestó", e instanceof Error ? e.message : e);
     await plataforma.registrarUsoIA({ telefono: `app:${negocio.slug}`, tokensIn: 0, tokensOut: 0, costoMxn: 0, resultado: "error" });
@@ -130,6 +135,7 @@ export async function preguntarAsistente(datos: { conversacionId: string | null;
     conversacionId: conv as string,
     texto: resultado.texto,
     articulos: resultado.articulos.map((slug) => ({ slug, titulo: articulos.find((a) => a.slug === slug)?.titulo ?? slug })),
+    video: resultado.video,
     sinRespuesta: resultado.sinRespuesta,
     motivo: resultado.motivo,
   };

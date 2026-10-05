@@ -51,3 +51,6 @@ next-env.d.ts
 # Kit gráfico de PeluDesk (fuente: Drive del dueño). Pesa ~32 MB; la app usa
 # versiones derivadas en public/marca/peludesk/ (docs/DISENO.md).
 /marca-peludesk/
+
+# Serie de tutoriales (grabaciones y renders intermedios; los videos viven en Storage)
+scripts/tutoriales/salida/

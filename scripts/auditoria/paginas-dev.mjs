@@ -38,8 +38,8 @@ const { data: unPerro } = await A.from("perros").select("id, nombre").eq("negoci
 if (!unCliente || !unPerro) console.log("  · sin clientes o perros todavía: se saltan la ficha del cliente y la del perro");
 
 const RUTAS = {
-  admin: ["/admin", "/admin/pagos", "/reportes", "/servicios", "/empleados", "/gastos", "/admin/permisos", "/inventario", "/ayuda", "/ayuda/pedir-ayuda", "/caja/reembolsos", "/perros/razas", "/perros/razas/grupos", "/estetica/nueva", "/ayuda/agregar-una-raza-que-no-aparece"],
-  recepcion: ["/recepcion", "/clientes", ...(unCliente ? [`/clientes/${unCliente.id}`] : []), ...(unPerro ? [`/perros/${unPerro.id}`] : []), ...(unCliente ? [`/clientes/${unCliente.id}/perros/nuevo`] : []), "/caja", "/caja/turno", "/guarderia", "/hotel", "/estetica", "/recepcion/contratos", "/vinculacion", "/clientes/invitaciones", "/caja/venta", "/caja/reembolsos", "/ayuda", "/ayuda/corte-de-caja", "/ayuda/tickets/nuevo", "/perros/razas", "/perros/razas/grupos", "/estetica/nueva"],
+  admin: ["/admin", "/admin/pagos", "/reportes", "/servicios", "/empleados", "/gastos", "/admin/permisos", "/inventario", "/ayuda", "/ayuda/videos", "/ayuda/pedir-ayuda", "/caja/reembolsos", "/perros/razas", "/perros/razas/grupos", "/estetica/nueva", "/ayuda/agregar-una-raza-que-no-aparece"],
+  recepcion: ["/recepcion", "/clientes", ...(unCliente ? [`/clientes/${unCliente.id}`] : []), ...(unPerro ? [`/perros/${unPerro.id}`] : []), ...(unCliente ? [`/clientes/${unCliente.id}/perros/nuevo`] : []), "/caja", "/caja/turno", "/guarderia", "/hotel", "/estetica", "/recepcion/contratos", "/vinculacion", "/clientes/invitaciones", "/caja/venta", "/caja/reembolsos", "/ayuda", "/ayuda/videos", "/ayuda/corte-de-caja", "/ayuda/tickets/nuevo", "/perros/razas", "/perros/razas/grupos", "/estetica/nueva"],
   estetica: ["/estetica"],
   cliente: ["/portal"],
 };

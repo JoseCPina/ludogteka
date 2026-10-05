@@ -10,7 +10,7 @@ import { MarkdownAyuda } from "@/lib/ayuda/markdown";
 import { diceQueNoSeResolvio } from "@/lib/ayuda/asistente";
 import { preguntarAsistente } from "./acciones";
 
-type Mensaje = { quien: "persona" | "asistente"; texto: string; articulos?: { slug: string; titulo: string }[]; sinRespuesta?: boolean };
+type Mensaje = { quien: "persona" | "asistente"; texto: string; articulos?: { slug: string; titulo: string }[]; video?: { slug: string; titulo: string } | null; sinRespuesta?: boolean };
 
 /**
  * El asistente de Ayuda: contesta con la documentación de los módulos del
@@ -47,7 +47,7 @@ export function Asistente({ pantalla, disponible }: { pantalla: string | null; d
     }
     setConversacionId(r.conversacionId ?? null);
     if (r.motivo) setMotivo(r.motivo);
-    setMensajes((prev) => [...prev, { quien: "asistente", texto: r.texto ?? "", articulos: r.articulos, sinRespuesta: r.sinRespuesta }]);
+    setMensajes((prev) => [...prev, { quien: "asistente", texto: r.texto ?? "", articulos: r.articulos, video: r.video ?? null, sinRespuesta: r.sinRespuesta }]);
   }
 
   if (!disponible) {
@@ -80,6 +80,14 @@ export function Asistente({ pantalla, disponible }: { pantalla: string | null; d
                           </Link>
                         </span>
                       ))}
+                    </p>
+                  )}
+                  {m.video && (
+                    <p className="text-sm text-n-600">
+                      Míralo en video:{" "}
+                      <Link href={`/ayuda/videos/${m.video.slug}`} className="font-semibold text-morado underline" data-cita-video={m.video.slug}>
+                        ▶ {m.video.titulo}
+                      </Link>
                     </p>
                   )}
                 </div>

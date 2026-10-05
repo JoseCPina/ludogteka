@@ -470,18 +470,19 @@ Arriba de la pantalla ves cuántos llevas y cuántos días te quedan. Si no, la 
   {
     slug: "pedir-ayuda",
     titulo: "Cómo pedir ayuda y crear un ticket de soporte",
-    resumen: "Encuentra la respuesta en los artículos o con el asistente, y si no, escríbenos con un ticket.",
+    resumen: "Encuentra la respuesta en los artículos, en un video o con el asistente, y si no, escríbenos con un ticket.",
     grupo: "ayuda",
     modulo: null,
     roles: ["admin", "recepcion"],
-    rutas: ["/ayuda"],
-    palabras: ["soporte", "ticket", "problema", "no funciona", "asistente", "contacto", "reportar error"],
+    rutas: ["/ayuda", "/ayuda/videos"],
+    palabras: ["soporte", "ticket", "problema", "no funciona", "asistente", "contacto", "reportar error", "videos", "tutoriales", "cómo se hace"],
     cuerpo: `Si algo no te sale, primero busca aquí: casi siempre hay un artículo con los pasos. Si no se resuelve, nos mandas un ticket y te contestamos.
 
 1. En el menú, entra a **Ayuda**.
 2. Busca lo que necesitas o pregúntale al asistente con tus palabras.
-3. Si no se resolvió, aprieta **Crear ticket**.
-4. Escribe un asunto y cuéntanos qué pasó. Si puedes, agrega una captura de pantalla.
+3. Si prefieres verlo, en **Videos** está la serie completa: cada tarea paso a paso, con subtítulos y a la velocidad que quieras. En cada pantalla, el botón **¿Cómo se hace?** (junto al **?**) te lleva directo al video de esa pantalla.
+4. Si no se resolvió, aprieta **Crear ticket**.
+5. Escribe un asunto y cuéntanos qué pasó. Si puedes, agrega una captura de pantalla.
 
 No tienes que explicar dónde estabas: el ticket lleva sola la pantalla en la que estabas y tu conversación con el asistente.
 
