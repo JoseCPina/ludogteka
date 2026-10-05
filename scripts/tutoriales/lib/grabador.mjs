@@ -46,7 +46,7 @@ export function estimar(paso) {
 
 // Un texto de la pantalla → un elemento. Se prueba en este orden: botón, enlace,
 // pestaña, opción de menú, casilla, campo por su etiqueta o placeholder, y texto.
-async function localizar(page, objetivo, { visibleEn = 20000, indice = 0 } = {}) {
+async function localizar(page, objetivo, { visibleEn = 20000, indice = 0, campo = false } = {}) {
   if (typeof objetivo !== "string") return objetivo;
   if (objetivo.startsWith("css:")) {
     const l = page.locator(objetivo.slice(4)).nth(indice);
@@ -56,6 +56,12 @@ async function localizar(page, objetivo, { visibleEn = 20000, indice = 0 } = {})
   const limite = Date.now() + visibleEn;
   const nombre = objetivo;
   while (Date.now() < limite) {
+    if (campo) {
+      // Un campo de formulario se busca primero por su etiqueta: «Empleado» no debe caer en el menú «Empleados».
+      const l = page.getByLabel(nombre, { exact: false });
+      const n = await l.count();
+      for (let i = 0; i < n; i++) if (await l.nth(i).isVisible().catch(() => false)) return l.nth(i);
+    }
     for (const rol of ["button", "link", "tab", "menuitem", "checkbox", "radio", "switch", "option"]) {
       const l = page.getByRole(rol, { name: nombre, exact: false });
       const n = await l.count();
@@ -162,9 +168,9 @@ export async function grabarVideo({ base, cookies, inicio, guion, tarjetas, plan
     if (!c) throw new Error("El elemento no tiene caja en pantalla");
     return { x: c.x + c.width / 2, y: c.y + c.height / 2, caja: { x: c.x, y: c.y, w: c.width, h: c.height } };
   };
-  async function mover(objetivo, { ms = 800, dx = 0, dy = 0 } = {}) {
+  async function mover(objetivo, { ms = 800, dx = 0, dy = 0, campo = false } = {}) {
     await page.evaluate(() => window.__tut.alejar(0)).catch(() => {});
-    const loc = await localizar(page, objetivo);
+    const loc = await localizar(page, objetivo, { campo });
     const c = await centro(loc);
     const x = c.x + dx, y = c.y + dy;
     await Promise.all([
@@ -200,7 +206,7 @@ export async function grabarVideo({ base, cookies, inicio, guion, tarjetas, plan
     },
     async clic(objetivo, opciones) { await clic(objetivo, opciones); },
     async escribir(etiqueta, valor) {
-      const { loc } = await mover(etiqueta, { ms: 700 });
+      const { loc } = await mover(etiqueta, { ms: 700, campo: true });
       await page.evaluate(() => { window.__pdCursor.onda(); });
       await loc.click({ timeout: 10000 }).catch(() => {});
       await page.keyboard.press("Control+A");
@@ -208,13 +214,13 @@ export async function grabarVideo({ base, cookies, inicio, guion, tarjetas, plan
     },
     // Campos que no se teclean (fecha y hora): se rellenan de golpe, con el cursor encima.
     async rellenar(etiqueta, valor) {
-      const { loc } = await mover(etiqueta, { ms: 700 });
+      const { loc } = await mover(etiqueta, { ms: 700, campo: true });
       await page.evaluate(() => { window.__pdCursor.onda(); });
       await loc.fill(String(valor));
       await espera(500);
     },
     async elegir(etiqueta, opcion) {
-      const { loc: encontrado } = await mover(etiqueta, { ms: 750 });
+      const { loc: encontrado } = await mover(etiqueta, { ms: 750, campo: true });
       // Si la etiqueta cayó en un texto y no en el <select>, se toma el select del mismo campo.
       const esSelect = await encontrado.evaluate((el) => el.tagName === "SELECT").catch(() => false);
       const loc = esSelect ? encontrado : encontrado.locator("xpath=ancestor-or-self::*[.//select][1]//select").first();
