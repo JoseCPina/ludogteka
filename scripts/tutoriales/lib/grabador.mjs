@@ -214,7 +214,10 @@ export async function grabarVideo({ base, cookies, inicio, guion, tarjetas, plan
       await espera(500);
     },
     async elegir(etiqueta, opcion) {
-      const { loc } = await mover(etiqueta, { ms: 750 });
+      const { loc: encontrado } = await mover(etiqueta, { ms: 750 });
+      // Si la etiqueta cayó en un texto y no en el <select>, se toma el select del mismo campo.
+      const esSelect = await encontrado.evaluate((el) => el.tagName === "SELECT").catch(() => false);
+      const loc = esSelect ? encontrado : encontrado.locator("xpath=ancestor-or-self::*[.//select][1]//select").first();
       await page.evaluate(() => { window.__pdCursor.onda(); });
       if (typeof opcion === "number") await loc.selectOption({ index: opcion });
       else await loc.selectOption({ label: opcion }).catch(async () => { const ops = await loc.locator("option").allInnerTexts(); const i = ops.findIndex((t) => t.toLowerCase().includes(String(opcion).toLowerCase())); if (i < 0) throw new Error(`No hay la opción «${opcion}» en «${etiqueta}» (${ops.join(" | ")})`); await loc.selectOption({ index: i }); });
