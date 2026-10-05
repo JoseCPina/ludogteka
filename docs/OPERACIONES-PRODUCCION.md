@@ -178,3 +178,21 @@ Cuenta de prueba de José (slug `peludos`, `peludos.peludesk.mx`, teléfono de r
 - **Cómo se deshace**: no se deshace (un negocio de prueba sin datos propios); si hiciera falta, se vuelve a registrar desde `/registro`.
 
 Después del despliegue se pidió a Meta la revisión de las 4 plantillas del seguimiento de pruebas (`node scripts/whatsapp/meta.mjs plantillas-seguimiento enviar`) y quedaron aprobadas; se guardó su estado en `seguimiento_pruebas_plantillas` con `seguimiento_plantilla_guardar` y se mandó UNA prueba a 4441301539 (`peludesk_prueba_dia5_v1`, a José mismo). Variable nueva en Vercel (Production): `PELUDESK_WABA_ID`.
+
+## 5 de octubre de 2026 (UTC) — tabla de precios de estética de Ludogteka
+
+Migraciones `20261005140000_estetica_reglas_de_precio` (reglas de pelaje como datos del negocio, vista `perro_grupo_raza` con `sin_grupo_motivo`, recargo manual en la cita, función `plataforma_cargar_tarifas_estetica`) y `20261005150000_portal_invitaciones`, aplicadas con `npm run desplegar -- --aplicar` (respaldo físico de 23.2 h, 130 tablas / 5,539 filas copiadas, `auditoria_frontera()` vacía, Vercel Ready).
+
+La tabla de precios se cargó con `node scripts/estetica/cargar-tarifas.mjs --negocio ludogteka --tabla scripts/estetica/tablas/ludogteka.json --prod --aplicar`, que llama a la función de la plataforma: nada de SQL a mano. Antes de la carga, 22 de las 27 tarifas ya estaban igual; cambiaron 5 (evento `2287090b-89a2-4502-bca1-975c951ddc1c` en `plataforma_eventos`, con la foto de lo anterior):
+
+- Rapado de Pomerania: no aplica → $320.
+- Baño estético de «Shih tzu, schnauzer, yorkshire, cocker y similares»: $390 (maltratado $450) → $450 ($520).
+- Rapado de ese mismo grupo: $320 → $360.
+- Rapado de «Pastores pelo corto, husky, akita y similares»: no aplica → $460.
+- Rapado de «Pastores pelo largo y similares talla grande»: no aplica → $500.
+
+`estetica_rapado` quedó con `pelajes_excluidos = ['corto']` (el rapado solo se ofrece a perros de pelo medio o largo) y el grupo «Por talla» con `pelajes_permitidos = ['corto']`. Conteos antes y después, idénticos: citas_estetica 236, clientes 46, perros 56, cobros 569; la tabla nueva `portal_invitaciones` quedó en 0. Las citas ya agendadas o cobradas no cambiaron de precio (el precio se congela en la cita).
+
+**Cómo se deshace**: `node scripts/estetica/cargar-tarifas.mjs --negocio ludogteka --revertir 2287090b-89a2-4502-bca1-975c951ddc1c --prod --aplicar`.
+
+**Textos de «incluye» sin confirmar**: el cartel del baño exprés venía cortado; el texto «baño con shampoo y secado» es el del encargo, no el del cartel.

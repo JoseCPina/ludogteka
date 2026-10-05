@@ -305,6 +305,16 @@ export async function cuentaPorTelefono(telefono: string): Promise<Cuenta> {
   return { tipo: r?.tipo ?? "prospecto", negocios };
 }
 
+/** Los videos tutoriales ya publicados (tabla compartida `tutoriales`), con los artículos que cubren. */
+export async function videosPublicados(): Promise<{ slug: string; articulos: string[] }[]> {
+  try {
+    const { data } = await createSupabaseAdminClient().from("tutoriales").select("slug, articulos, video_path, youtube_id").eq("publicado", true).is("deleted_at", null);
+    return (data ?? []).filter((v) => v.video_path || v.youtube_id).map((v) => ({ slug: v.slug as string, articulos: (v.articulos as string[]) ?? [] }));
+  } catch {
+    return [];
+  }
+}
+
 /** Los planes publicados (tabla compartida `planes`, la edita la plataforma). */
 export async function planesPublicos(): Promise<PlanPublico[]> {
   const sb = createSupabaseAdminClient();
@@ -655,7 +665,7 @@ export function construirSoporte(): { deps: DepsSoporte; datos: DatosSupabase; w
       negocios: cuenta.negocios,
       planes: await planesPublicos(),
       enlaces: { registro: `${urlPlataforma()}/registro`, demo: `${urlDemo()}/demo` },
-      documentacion: cuenta.tipo === "admin" || cuenta.tipo === "personal" ? documentacionParaWhatsApp(urlPlataforma()) : undefined,
+      documentacion: cuenta.tipo === "admin" || cuenta.tipo === "personal" ? documentacionParaWhatsApp(urlPlataforma(), await videosPublicados()) : undefined,
     }),
     ligaPortal: ligaPortalDe,
     alerta: (detalle, e) => console.error(`[whatsapp] ${detalle}`, e instanceof Error ? e.message : (e ?? "")),

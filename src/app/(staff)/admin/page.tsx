@@ -13,6 +13,7 @@ import { contarSinTarifa, type CeldaVigente } from "@/lib/tarifas/matriz";
 import { TableroDia } from "../tablero-dia";
 import { RecordatorioPago } from "./recordatorio-pago";
 import { AvanceWeb } from "@/components/avance-web";
+import { VideosInicio } from "@/components/ayuda/videos-inicio";
 import Link from "next/link";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
@@ -119,6 +120,7 @@ export default async function AdminPage() {
       </div>
 
       {esAdmin && <AvanceWeb compacto />}
+      {esAdmin && <VideosInicio />}
       <section className="flex flex-col gap-4">
         <h2 className="text-lg font-bold text-n-900">Hoy</h2>
         {cobro?.toca_recordatorio && <RecordatorioPago soloLecturaDesde={cobro.solo_lectura_desde ?? null} />}

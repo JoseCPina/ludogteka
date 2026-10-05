@@ -50,7 +50,7 @@ export function finDelSonido(archivo) {
 const API = "https://api.elevenlabs.io";
 const hash = (x) => crypto.createHash("sha1").update(JSON.stringify(x)).digest("hex").slice(0, 10);
 
-async function pedir(ruta, cuerpo, llave) {
+export async function pedir(ruta, cuerpo, llave) {
   for (let intento = 1; ; intento++) {
     const r = await fetch(API + ruta, {
       method: "POST",
@@ -69,7 +69,7 @@ async function pedir(ruta, cuerpo, llave) {
 }
 
 // Una frase con timestamps, desde la caché o de la API.
-async function frase({ texto, anterior, siguiente, velocidad, voz, llave, dir }) {
+export async function frase({ texto, anterior, siguiente, velocidad, voz, llave, dir }) {
   const pedido = { modelo: MODELO, voz, texto, anterior, siguiente, velocidad, ajustes: AJUSTES };
   const base = path.join(dir, `voz-${hash(pedido)}`);
   if (fs.existsSync(base + ".json") && fs.existsSync(base + ".mp3")) {

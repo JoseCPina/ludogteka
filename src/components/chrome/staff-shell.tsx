@@ -29,6 +29,26 @@ function BotonAyuda({ ayuda, pathname }: { ayuda: { slug: string; rutas: string[
   );
 }
 
+// «¿Cómo se hace?»: el video de la pantalla (el de la ruta más específica).
+// Solo sale si hay uno publicado que esta persona puede ver.
+function BotonVideo({ videos, pathname }: { videos: { slug: string; rutas: string[] }[]; pathname: string }) {
+  if (pathname.startsWith("/ayuda")) return null;
+  const v = articuloDeRuta(pathname, videos);
+  if (!v) return null;
+  return (
+    <Link
+      href={`/ayuda/videos/${v.slug}`}
+      data-boton-video={v.slug}
+      aria-label="¿Cómo se hace? Ver el video de esta pantalla"
+      title="¿Cómo se hace? Ver el video de esta pantalla"
+      className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border-[1.5px] border-n-300 px-3 text-sm font-semibold text-n-700 hover:border-morado hover:text-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado"
+    >
+      <span aria-hidden="true">▶</span>
+      <span className="hidden sm:inline">¿Cómo se hace?</span>
+    </Link>
+  );
+}
+
 const ETIQUETAS_ROL: Record<string, string> = {
   admin: "Admin",
   recepcion: "Recepción",
@@ -43,6 +63,7 @@ export function StaffShell({
   nombreCompleto,
   items,
   ayuda,
+  videos,
   children,
 }: {
   // La marca del negocio (MarcaDelNegocio, la arma el layout del servidor):
@@ -57,6 +78,8 @@ export function StaffShell({
   // Las pantallas con artículo de ayuda (los de los módulos del negocio):
   // el «?» abre el de la pantalla actual. Sin esto (estética), no hay «?».
   ayuda?: { slug: string; rutas: string[] }[];
+  // Los videos publicados que esta persona puede ver, con las pantallas que explican.
+  videos?: { slug: string; rutas: string[] }[];
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -101,6 +124,7 @@ export function StaffShell({
         </div>
 
         <div className="flex items-center gap-3">
+          {videos && videos.length > 0 && <BotonVideo videos={videos} pathname={pathname} />}
           {ayuda && <BotonAyuda ayuda={ayuda} pathname={pathname} />}
           <div className="hidden text-right leading-tight sm:block">
             <p className="text-sm font-semibold text-n-900">{nombreCompleto ?? email}</p>

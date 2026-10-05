@@ -21,7 +21,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { abrirNavegador } from "../../lib/navegador.mjs";
 
-const CSS_GRABACION = `
+export const CSS_GRABACION = `
   nextjs-portal{display:none!important}
   [data-aviso-plan=demo]{display:none!important}
   input[type=file]{visibility:hidden!important} /* el chrome-headless-shell lo pinta en inglés ("Choose File") */
@@ -37,7 +37,7 @@ const CSS_GRABACION = `
 `;
 
 // El cursor vive en la página: se re-crea en cada navegación.
-function scriptCursor(tipo) {
+export function scriptCursor(tipo) {
   const flecha = `<svg width="30" height="36" viewBox="0 0 30 36"><path d="M4 3 L4 29 L10.5 23 L15 33 L19.5 31 L15 21.5 L24 21.5 Z" fill="#fff" stroke="#2b2a33" stroke-width="2.2" stroke-linejoin="round"/></svg>`;
   const dedo = `<svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="rgba(75,63,114,.28)" stroke="rgba(255,255,255,.9)" stroke-width="3"/></svg>`;
   return `(() => {

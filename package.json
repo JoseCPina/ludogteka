@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "desplegar": "node scripts/desplegar-produccion.mjs"
+    "desplegar": "node scripts/desplegar-produccion.mjs",
+    "tutoriales": "node scripts/tutoriales/tutoriales.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
