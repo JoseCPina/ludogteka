@@ -593,6 +593,8 @@ try {
     await webhookMp({ tipo: "order", id: sola.mpId });
     if ((await leer(sola.id)).estado !== "cancelada" || (await leer(sola.id)).cobro_id) hallazgo("una orden por confirmar que luego se cancela no quedó cancelada sin cobro");
     else bien("una orden por confirmar que luego se cancela, queda cancelada sin cobro");
+    // Las órdenes que se quedaron vivas de estos escenarios no deben estorbar a lo que sigue.
+    await A.from("mp_ordenes").update({ estado: "cancelada" }).eq("negocio_id", H).eq("proveedor", "mercadopago").in("estado", ["creada", "en_terminal", "por_confirmar"]);
   }
 
   console.log("\n4d. «Terminal» a mano ya no se captura con un proveedor elegido; «Marcar como no recibido»");
@@ -672,9 +674,10 @@ try {
     const turnoAntes = await resumenTurno(turnoAbierto.id);
     const ok1 = await marcarEnPantalla("No se pasó ninguna tarjeta");
     const dev = (await A.from("devoluciones").select("id, origen, motivo, turno_id, autorizado_por, devolucion_metodos(metodo, monto)").eq("negocio_id", H).eq("cobro_id", cobroA)).data ?? [];
-    const corr = (await A.from("cobro_correcciones").select("tipo, motivo, estado_anterior, evidencia, turno_efecto_id, hecha_por").eq("negocio_id", H).eq("cobro_id", cobroA)).data ?? [];
+    const corr = (await A.from("cobro_correcciones").select("tipo, motivo, devolucion_id, estado_anterior, evidencia, turno_efecto_id, hecha_por").eq("negocio_id", H).eq("cobro_id", cobroA)).data ?? [];
+    if (corr[0] && corr[0].devolucion_id !== dev[0]?.id) hallazgo("la corrección no quedó ligada a su devolución");
     const saldoDespues = await saldo();
-    if (ok1 || dev.length !== 1 || dev[0].origen !== "no_recibido" || dev[0].turno_id !== turnoAbierto.id || Number(dev[0].devolucion_metodos[0].monto) !== 350.35) hallazgo(`«no recibido» no dejó la devolución en el turno abierto: ${ok1} ${JSON.stringify(dev)}`);
+    if (ok1 || dev.length !== 1 || dev[0].origen !== "manual" || !dev[0].motivo.startsWith("No recibido:") || dev[0].turno_id !== turnoAbierto.id || Number(dev[0].devolucion_metodos[0].monto) !== 350.35) hallazgo(`«no recibido» no dejó la devolución en el turno abierto: ${ok1} ${JSON.stringify(dev)}`);
     else if (corr.length !== 1 || corr[0].hecha_por !== mAdm.profile_id || !corr[0].estado_anterior?.metodos || corr[0].evidencia?.mp_sin_pago_aprobado !== true) hallazgo(`el historial de la corrección no quedó (quién, estado anterior, evidencia): ${JSON.stringify(corr)}`);
     else bien(`sin pago aprobado: queda «no recibido» (devolución en el turno abierto, historial con quién, motivo, estado anterior y lo que dijo Mercado Pago)`);
     if (!(Math.abs(saldoDespues - (saldoAntes + 350.35)) < 0.01)) hallazgo(`la cuenta no recuperó el saldo: ${saldoAntes} → ${saldoDespues}`);
