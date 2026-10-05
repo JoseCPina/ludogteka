@@ -5,8 +5,8 @@ export default {
   escenas: [
     {
       titulo: "Elige la reserva",
-      dice: "En «Check-in» salen las reservas que llegan hoy. Toca la del perro que acaba de llegar. Si llega alguien sin reserva, usa «Walk-in (sin reserva)».",
-      pasos: [["resaltar", "Check-in — Guardería", 2600], ["ir", "/guarderia"], ["clic", "css:a[href$='/checkin']", { nav: true }]],
+      dice: "En «Check-in» salen las reservas que llegan hoy. Toca la del perro que acaba de llegar; aquí lo vemos con uno de hotel, y en guardería es igual. Si llega alguien sin reserva, usa «Walk-in (sin reserva)».",
+      pasos: [["resaltar", "Check-in — Guardería", 2600], ["ir", "/hotel"], ["clic", "css:a[href^='/reservas/estancias/'][href$='/checkin']", { nav: true }]],
     },
     {
       titulo: "Quién lo entrega",
@@ -20,9 +20,9 @@ export default {
     },
     {
       titulo: "Confirmar",
-      dice: "Cuando todo está listo, aprieta «Confirmar check-in». El perro pasa a «Siguen aquí ahora». Si algo le falta al perro, como una vacuna, aquí también te avisa.",
+      dice: "Cuando todo está listo, aprieta «Confirmar check-in». El perro pasa a Siguen aquí ahora. Si algo le falta al perro, como una vacuna, aquí también te avisa.",
       pasos: [["clic", "Confirmar check-in", { nav: true }], ["esperar", 2500]],
     },
   ],
-  resumen: ["El check-in registra quién entrega al perro, cómo llega y qué trae.", "La foto de llegada queda en su bitácora.", "Al confirmar, el perro pasa a «Siguen aquí ahora»."],
+  resumen: ["El check-in registra quién entrega al perro, cómo llega y qué trae.", "La foto de llegada queda en su bitácora.", "Al confirmar, el perro pasa a Siguen aquí ahora."],
 };
