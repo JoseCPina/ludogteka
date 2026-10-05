@@ -390,11 +390,7 @@ try {
   if (/\$\s?\d/.test(paginaD)) hallazgo("con una raza propuesta, el alta del dueño muestra un precio estimado (se estaría adivinando)");
   else bien("con una raza propuesta, el alta del dueño no le enseña ningún precio ni grupo");
   await sinDesborde(dueno, "alta del dueño");
-  await dueno.getByRole("button", { name: "Siguiente" }).click();
-  if (await dueno.getByLabel("Tu contraseña", { exact: true }).isVisible().catch(() => false)) {
-    await dueno.getByLabel("Tu contraseña", { exact: true }).fill("Prueba-123456");
-    await dueno.getByLabel("Repite tu contraseña").fill("Prueba-123456");
-  }
+  // El alta de estética es corta: el perro es el último paso y no hay cuenta.
   await dueno.getByRole("button", { name: "Terminar mi registro" }).click();
   let props4 = [];
   for (let i = 0; i < 30 && props4.length === 0; i += 1) { await dueno.waitForTimeout(1000); props4 = await propuestaDe(RAZA4); }

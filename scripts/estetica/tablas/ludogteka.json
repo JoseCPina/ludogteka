@@ -1,0 +1,189 @@
+{
+ "_nota": "Tabla de estética de Ludogteka (5 de octubre de 2026). Rapados y maltratado de shih tzu calculados por criterio del dueño. El rapado no se ofrece a pelo corto; el grupo «por talla» solo cobra automático a pelo corto.",
+ "servicios": [
+  {
+   "clave": "estetica_rapado",
+   "pelajes_excluidos": [
+    "corto"
+   ]
+  }
+ ],
+ "grupos": [
+  {
+   "clave": "pelo_corto",
+   "pelajes_permitidos": [
+    "corto"
+   ]
+  }
+ ],
+ "tarifas": [
+  {
+   "servicio": "estetica_estetico",
+   "grupo": "poodle_maltes",
+   "precio": 390,
+   "maltratado": 450
+  },
+  {
+   "servicio": "estetica_rapado",
+   "grupo": "poodle_maltes",
+   "precio": 320,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_expres",
+   "grupo": "poodle_maltes",
+   "precio": 190,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_estetico",
+   "grupo": "pomerania",
+   "precio": 390,
+   "maltratado": 450
+  },
+  {
+   "servicio": "estetica_rapado",
+   "grupo": "pomerania",
+   "precio": 320,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_expres",
+   "grupo": "pomerania",
+   "precio": 190,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_estetico",
+   "grupo": "shihtzu_similares",
+   "precio": 450,
+   "maltratado": 520
+  },
+  {
+   "servicio": "estetica_rapado",
+   "grupo": "shihtzu_similares",
+   "precio": 360,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_expres",
+   "grupo": "shihtzu_similares",
+   "precio": 190,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_estetico",
+   "grupo": "pastor_corto",
+   "precio": 590,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_rapado",
+   "grupo": "pastor_corto",
+   "precio": 460,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_expres",
+   "grupo": "pastor_corto",
+   "precio": 370,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_estetico",
+   "grupo": "pastor_largo",
+   "precio": 650,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_rapado",
+   "grupo": "pastor_largo",
+   "precio": 500,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_expres",
+   "grupo": "pastor_largo",
+   "precio": 370,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_estetico",
+   "grupo": "viejo_pastor",
+   "precio": 790,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_rapado",
+   "grupo": "viejo_pastor",
+   "precio": 590,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_expres",
+   "grupo": "viejo_pastor",
+   "precio": 450,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_estetico",
+   "grupo": "pelo_corto",
+   "tamano": "chico",
+   "precio": 250,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_expres",
+   "grupo": "pelo_corto",
+   "tamano": "chico",
+   "precio": 150,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_rapado",
+   "grupo": "pelo_corto",
+   "tamano": "chico",
+   "no_aplica": true
+  },
+  {
+   "servicio": "estetica_estetico",
+   "grupo": "pelo_corto",
+   "tamano": "mediano",
+   "precio": 350,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_expres",
+   "grupo": "pelo_corto",
+   "tamano": "mediano",
+   "precio": 190,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_rapado",
+   "grupo": "pelo_corto",
+   "tamano": "mediano",
+   "no_aplica": true
+  },
+  {
+   "servicio": "estetica_estetico",
+   "grupo": "pelo_corto",
+   "tamano": "grande",
+   "precio": 490,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_expres",
+   "grupo": "pelo_corto",
+   "tamano": "grande",
+   "precio": 230,
+   "maltratado": null
+  },
+  {
+   "servicio": "estetica_rapado",
+   "grupo": "pelo_corto",
+   "tamano": "grande",
+   "no_aplica": true
+  }
+ ]
+}

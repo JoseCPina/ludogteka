@@ -26,6 +26,8 @@ export type CeldaPrecio = {
 export type ServicioEstetica = {
   clave: string;
   nombre: string;
+  // Ids de pelaje a los que este servicio no se ofrece (el rapado, a pelo corto).
+  pelajesExcluidos: string[];
   incluye: string[];
   // Lo que NO trae, dicho explícito (el exprés): null si no hace falta.
   noIncluye: string | null;
@@ -43,6 +45,10 @@ export type CotizacionEstetica = {
   grupoDeRaza: Record<string, string>;
   grupoPredeterminado: string;
   gruposPorTalla: string[];
+  // grupoId -> ids de pelaje a los que ese grupo cobra automático (null = a
+  // todos). El grupo «por talla» solo cobra pelo corto: para otro pelaje no
+  // hay precio automático y no se adivina.
+  pelajesPermitidosDeGrupo: Record<string, string[] | null>;
   // Las razas que significan "no sé": disparan el aviso fuerte.
   razasDesconocidas: string[];
   // Lo más caro que el negocio cobra hoy, para poder decir hasta dónde
@@ -61,18 +67,18 @@ export async function cargarCotizacionEstetica(
   // Se filtra a mano porque el alta pública llega con la secret key.
   negocioId: string
 ): Promise<CotizacionEstetica | null> {
-  const [{ data: servicios }, { data: grupos }, { data: razas }, { data: tamanos }] =
+  const [{ data: servicios }, { data: grupos }, { data: razas }, { data: tamanos }, { data: pelajesCat }] =
     await Promise.all([
       supabase
         .from("servicios")
-        .select("id, clave, nombre, incluye, no_incluye, orden")
+        .select("id, clave, nombre, incluye, no_incluye, pelajes_excluidos, orden")
         .in("clave", CLAVES)
         .eq("negocio_id", negocioId)
         .is("deleted_at", null)
         .order("orden"),
       supabase
         .from("grupos_raza")
-        .select("id, depende_tamano, es_predeterminado")
+        .select("id, depende_tamano, es_predeterminado, pelajes_permitidos")
         .eq("negocio_id", negocioId)
         .is("deleted_at", null),
       supabase.from("razas").select("id, es_desconocida").is("deleted_at", null),
@@ -81,7 +87,10 @@ export async function cargarCotizacionEstetica(
         .select("id, etiqueta")
         .is("deleted_at", null)
         .order("orden"),
+      supabase.from("tipos_pelaje").select("id, clave").is("deleted_at", null),
     ]);
+  const idDePelaje = new Map((pelajesCat ?? []).map((p) => [p.clave as string, p.id as string]));
+  const idsDeClaves = (claves: string[] | null | undefined) => (claves ?? []).map((c) => idDePelaje.get(c)).filter((x): x is string => Boolean(x));
 
   if (!servicios || servicios.length === 0) return null;
 
@@ -174,6 +183,7 @@ export async function cargarCotizacionEstetica(
       nombre: s.nombre as string,
       incluye: (s.incluye as string[] | null) ?? [],
       noIncluye: (s.no_incluye as string | null) ?? null,
+      pelajesExcluidos: idsDeClaves(s.pelajes_excluidos as string[] | null),
     })),
     precios,
     preciosPorTalla,
@@ -182,6 +192,9 @@ export async function cargarCotizacionEstetica(
     ),
     grupoPredeterminado: grupoPredeterminado.id as string,
     gruposPorTalla: (grupos ?? []).filter((g) => g.depende_tamano).map((g) => g.id as string),
+    pelajesPermitidosDeGrupo: Object.fromEntries(
+      (grupos ?? []).map((g) => [g.id as string, g.pelajes_permitidos === null ? null : idsDeClaves(g.pelajes_permitidos as string[])])
+    ),
     razasDesconocidas: (razas ?? []).filter((r) => r.es_desconocida).map((r) => r.id as string),
     topeConocido: todos.length > 0 ? Math.max(...todos) : null,
     tallas,
@@ -195,7 +208,9 @@ export async function cargarCotizacionEstetica(
  * importa: un estimado que no dice cuánto puede moverse se lee como un
  * precio, y la persona llega con ese billete en la mano.
  */
-export type Firmeza = "afinado" | "rango" | "incierto" | "sin_dato";
+// «depende_pelo»: el grupo solo cobra automático a ciertos pelajes y todavía
+// no se sabe el del perro.
+export type Firmeza = "afinado" | "rango" | "incierto" | "sin_dato" | "depende_pelo";
 
 export type PrecioDeServicio = ServicioEstetica & CeldaPrecio;
 
@@ -210,7 +225,8 @@ export function cotizarPerro(
   cotizacion: CotizacionEstetica,
   razaId: string | null,
   razaEscrita: string,
-  tamanoId: string
+  tamanoId: string,
+  pelajeId = ""
 ): CotizacionDePerro | null {
   if (!razaEscrita.trim()) return null;
 
@@ -228,7 +244,17 @@ export function cotizarPerro(
   const desconocida = !razaId || cotizacion.razasDesconocidas.includes(razaId);
   const porTalla = cotizacion.gruposPorTalla.includes(grupoId);
 
+  // El grupo solo cobra automático a ciertos pelajes: con otro pelaje no hay
+  // precio (no se adivina); sin pelaje capturado, el estimado es condicional.
+  const permitidos = cotizacion.pelajesPermitidosDeGrupo[grupoId] ?? null;
+  if (permitidos && pelajeId && !permitidos.includes(pelajeId)) {
+    return { servicios: cotizacion.servicios.map((s) => ({ ...s, ...SIN_TARIFA })), firmeza: "sin_dato" };
+  }
+
   const servicios: PrecioDeServicio[] = cotizacion.servicios.map((s) => {
+    if (pelajeId && s.pelajesExcluidos.includes(pelajeId)) {
+      return { ...s, estado: "no_aplica" as const, precio: null, precioPeloMaltratado: null };
+    }
     if (!porTalla) {
       return { ...s, ...(cotizacion.precios[grupoId]?.[s.clave] ?? SIN_TARIFA) };
     }
@@ -256,6 +282,7 @@ export function cotizarPerro(
 
   let firmeza: Firmeza;
   if (!hayAlguno) firmeza = "sin_dato";
+  else if (permitidos && !pelajeId) firmeza = "depende_pelo";
   else if (desconocida) firmeza = "incierto";
   else if (porTalla && !tamanoId) firmeza = "rango";
   else firmeza = "afinado";

@@ -34,6 +34,8 @@ export default async function NuevoPerroPage({
   if (!cliente) notFound();
   const contextoRaza = await contextoRazaFormulario(supabase, null);
 
+  // Viene de agendar una cita de estética: alta corta del perro.
+  const corta = Boolean(volver?.startsWith("/estetica"));
   const crearConCliente = volver ? crearPerroYVolver.bind(null, id, volver) : crearPerro.bind(null, id);
 
   return (
@@ -60,6 +62,7 @@ export default async function NuevoPerroPage({
         razas={razas}
         tamanos={tamanos ?? []}
         pelajes={pelajes ?? []}
+        corta={corta}
         grupos={contextoRaza.grupos}
         puedeAsignarGrupo={contextoRaza.puedeAsignarGrupo}
         textoBoton={volver ? "Guardar perro y seguir" : "Guardar perro"}

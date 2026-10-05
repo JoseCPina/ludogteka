@@ -29,6 +29,7 @@ export function PerroForm({
   grupos = [],
   puedeAsignarGrupo = false,
   propuestaInicial = null,
+  corta = false,
 }: {
   action: (estadoPrevio: EstadoPerroForm, formData: FormData) => Promise<EstadoPerroForm>;
   razas: RazaOpcion[];
@@ -59,6 +60,9 @@ export function PerroForm({
   grupos?: { id: string; nombre: string }[];
   puedeAsignarGrupo?: boolean;
   propuestaInicial?: PropuestaRazaVista | null;
+  // Alta corta de estética: nombre, raza, tamaño y pelaje. Lo demás se
+  // captura después en el expediente.
+  corta?: boolean;
 }) {
   const [estado, formAction, enviando] = useActionState(useAccionConTope(action), ESTADO_INICIAL);
   const deshabilitado = enviando || soloLectura;
@@ -103,6 +107,8 @@ export function PerroForm({
         }}
       />
 
+      {!corta && (
+        <>
       <div className="grid grid-cols-2 gap-4">
         <Select
           label="Sexo"
@@ -140,6 +146,9 @@ export function PerroForm({
         defaultValue={valoresIniciales?.fecha_nacimiento ?? ""}
       />
 
+        </>
+      )}
+
       <div className="grid grid-cols-2 gap-4">
         <Select
           label="Tamaño"
@@ -169,6 +178,8 @@ export function PerroForm({
         </Select>
       </div>
 
+      {!corta && (
+        <>
       <Textarea
         label="Notas de alimentación"
         name="alimentacion_notas"
@@ -220,6 +231,9 @@ export function PerroForm({
         disabled={deshabilitado}
         defaultValue={valoresIniciales?.veterinario_clinica ?? ""}
       />
+
+        </>
+      )}
 
       {!soloLectura && (
         <AccionesFormulario error={estado.error} exito={estado.ok && "Cambios guardados"}>

@@ -70,7 +70,7 @@ Si la ocupación dice «Cupo sin configurar», falta capturar el cupo de ese dí
 
 1. En [Clientes](/clientes) toca **Mandar link de alta**. También puedes usar **Nuevo cliente** → **Mandarle un link** desde Guardería, Hotel o Estética.
 2. Escribe **¿Para quién es?** (algo como «Ana, la del labrador») y su **Teléfono (WhatsApp)**.
-3. Escoge **¿Para qué viene?**: guardería y hotel pide el expediente completo, las vacunas y el contrato; estética pide lo básico y le enseña el precio del baño.
+3. Escoge **¿Para qué viene?**: guardería y hotel pide el expediente completo, las vacunas y el contrato; estética es corta: solo pide el nombre y la raza de su perro, su tamaño, su pelaje, y el nombre y WhatsApp del dueño (sin dirección, sin vacunas, sin correo ni contraseña, sin contrato), y le enseña el precio del baño según su raza.
 4. Escoge la **Vigencia del link** y toca **Generar link**.
 5. Toca **Abrir WhatsApp** para mandárselo, o **Copiar link**.
 
@@ -101,6 +101,8 @@ Si tienes guardería u hotel prendidos, el link de guardería y hotel trae el pa
 3. Toca **Crear cliente**. Si venías de reservar o cobrar, el botón dice **Crear cliente y seguir con su perro**.
 4. En la ficha del cliente, toca **Agregar perro**.
 5. Llena **Nombre del perro**, **Raza**, **Tamaño** y lo que sepas, y toca **Guardar perro**.
+
+> Si vienes de agendar estética, el alta es corta: nombre del dueño y WhatsApp, y del perro nombre, raza, tamaño y pelaje. Sin dirección, vacunas, correo ni contraseña.
 
 > Si va a usar guardería u hotel, el contrato queda pendiente y se firma después. Lo que le falte al perro aparece en su ficha, en **Para guardería y hotel**.
 
@@ -190,7 +192,7 @@ Abajo, en **Últimos revisados**, ves lo que ya se resolvió.
     modulo: "portal",
     roles: ["admin", "recepcion"],
     rutas: ["/vinculacion"],
-    palabras: ["cuenta del cliente", "vincular", "iniciar sesión", "acceso del dueño", "portal de clientes"],
+    palabras: ["invitar al portal", "enlace de un solo uso", "cuenta del cliente", "vincular", "iniciar sesión", "acceso del dueño", "portal de clientes"],
     cuerpo: `El portal es la cuenta del dueño. La crea él mismo cuando llena su link de alta, con su teléfono y una contraseña.
 
 ## Cómo entra
@@ -206,6 +208,10 @@ Abajo, en **Últimos revisados**, ves lo que ya se resolvió.
 - **Tus datos**, que puede corregir él.
 
 Nunca ve precios de otros clientes ni la caja del negocio. Para reservar, cambiar o cancelar te sigue escribiendo por WhatsApp.
+
+## Invitar al portal a un cliente que ya existe
+
+Si lo diste de alta tú en el mostrador, todavía no tiene cuenta. En su ficha, baja a **Invitar al portal** y toca **Invitar al portal**: aparece un enlace de un solo uso (sirve 7 días). Toca **Mandar por WhatsApp** o cópialo. El dueño lo abre, escoge su contraseña y entra con su teléfono. Si lo pierdes, **Generar otro enlace** deja sin efecto el anterior.
 
 ## Cuentas sin vincular
 

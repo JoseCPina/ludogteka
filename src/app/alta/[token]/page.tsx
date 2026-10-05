@@ -14,7 +14,7 @@ import {
   type RequisitoSanitarioPublico,
   type HorarioDia,
 } from "./requisitos-guarderia-hotel";
-import { CAMPOS_BASE, CAMPOS_EXPEDIENTE, type CampoPerro } from "@/lib/alta/campos-perro";
+import { camposDeTipo, type CampoPerro } from "@/lib/alta/campos-perro";
 import { EncabezadoNegocio } from "@/components/marca/encabezado-negocio";
 import { cargarRequisitosAlta, estadoRequisitosDePerros, cubierto, type TipoRequisitoAlta } from "@/lib/alta/requisitos";
 import { ResumenRequisitos, type ResumenPerro } from "./resumen-requisitos";
@@ -43,9 +43,7 @@ function camposFaltantes(
   expedienteCompleto: boolean
 ): CampoPerro[] {
   const vacio = (v: unknown) => v === null || v === undefined || String(v).trim() === "";
-  const candidatos: CampoPerro[] = expedienteCompleto
-    ? [...CAMPOS_BASE, ...CAMPOS_EXPEDIENTE]
-    : [...CAMPOS_BASE];
+  const candidatos: CampoPerro[] = camposDeTipo(expedienteCompleto);
 
   return candidatos.filter((campo) => {
     // La raza es el caso especial: un perro capturado antes del catálogo
