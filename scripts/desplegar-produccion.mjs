@@ -306,11 +306,17 @@ if (detras) {
   );
 }
 
-// Videos tutoriales que este cambio pudo dejar desactualizados (solo avisa).
+// Videos tutoriales que este cambio pudo dejar desactualizados (avisa ahora y los
+// marca «por actualizar» —estado persistente— cuando la producción ya quedó actualizada).
+let VIDEOS_POR_ACTUALIZAR = [];
 console.log("\n   Videos tutoriales:");
 {
   const r = spawnSync(process.execPath, ["scripts/tutoriales/afectados.mjs", `origin/${RAMA}`], { encoding: "utf8" });
   console.log((r.stdout || "   (sin información)\n").trimEnd());
+  // Lo que se va a marcar «por actualizar» al terminar (el diff hay que leerlo
+  // ahora: después de fusionar ya no hay diferencia contra origin/main).
+  const j = spawnSync(process.execPath, ["scripts/tutoriales/afectados.mjs", `origin/${RAMA}`, "--json"], { encoding: "utf8" });
+  try { VIDEOS_POR_ACTUALIZAR = JSON.parse((j.stdout || "[]").trim() || "[]"); } catch { VIDEOS_POR_ACTUALIZAR = []; }
 }
 
 // GitHub por la API REST (el GraphQL de `gh pr` lo niega el proxy de la nube).
@@ -720,6 +726,13 @@ while (Date.now() < limite && !listo) {
       abortar(`el build de Vercel terminó en ${d.estado}`, `Revisa: ${d.url}`);
     }
   }
+}
+
+if (VIDEOS_POR_ACTUALIZAR.length) {
+  // El código ya está fusionado: se marcan los videos. Aviso, no bloqueo.
+  const m = spawnSync(process.execPath, ["scripts/tutoriales/marcar.mjs", "--json", JSON.stringify(VIDEOS_POR_ACTUALIZAR), "--prod"], { encoding: "utf8" });
+  console.log(`\n   Videos «por actualizar»: ${VIDEOS_POR_ACTUALIZAR.map((v) => v.numero).join(", ")}`);
+  console.log(sinSecreto((m.stdout || "") + (m.stderr || "")).trimEnd().split("\n").map((l) => `   ${l}`).join("\n"));
 }
 
 if (!listo) {

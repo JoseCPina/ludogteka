@@ -30,6 +30,7 @@ export const RUTAS_DE_MODULO: { prefijo: string; modulo: ClaveModulo | ClaveModu
   { prefijo: "/admin/reporte-guarderia", modulo: ["guarderia", "hotel"] },
   { prefijo: "/guarderia/pases", modulo: "bonos" },
   { prefijo: "/caja/pases", modulo: "bonos" },
+  { prefijo: "/caja/ajustes-servicio", modulo: "estetica" },
   { prefijo: "/guarderia", modulo: "guarderia" },
   { prefijo: "/hotel", modulo: "hotel" },
   { prefijo: "/estetica", modulo: "estetica" },

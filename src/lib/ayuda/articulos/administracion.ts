@@ -298,6 +298,8 @@ Cada casilla dice qué incluye. Por ejemplo:
 - **Gastos del local**: registrar y pagar gastos.
 - **Reportes financieros**: los mismos reportes que ves tú.
 - **Personal**: invitar a gente de recepción y estética.
+- **Corregir estilista de servicios cerrados**: cambiar quién atendió un servicio que ya terminó.
+- **Corregir servicio de citas**: cambiar el servicio de una cita de estética que se capturó mal (abierta o ya cobrada); el precio se recalcula y la cuenta se ajusta.
 
 Todo cambio queda en la **Bitácora** de abajo.
 

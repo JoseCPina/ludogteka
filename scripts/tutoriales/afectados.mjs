@@ -11,12 +11,14 @@
 import { execFileSync } from "node:child_process";
 import { VIDEOS } from "./catalogo.mjs";
 
-const base = process.argv[2] ?? "origin/main";
+const args = process.argv.slice(2);
+const JSON_SALIDA = args.includes("--json");
+const base = args.find((a) => !a.startsWith("--")) ?? "origin/main";
 let archivos = [];
 try {
   archivos = execFileSync("git", ["diff", "--name-only", `${base}...HEAD`], { encoding: "utf8" }).split("\n").filter(Boolean);
 } catch {
-  console.log("   (no pude comparar contra " + base + ": sin aviso de videos)");
+  if (JSON_SALIDA) console.log("[]"); else console.log("   (no pude comparar contra " + base + ": sin aviso de videos)");
   process.exit(0);
 }
 
@@ -49,6 +51,12 @@ for (const f of archivos) {
   if (/^src\/components\/chrome\//.test(f) || /^src\/lib\/nav\//.test(f)) for (const v of VIDEOS.filter((x) => ["01", "04"].includes(x.id))) marcar(v, `cambió ${f} (menú y estructura)`);
 }
 
+// Con --json: solo la lista [{numero, motivo}] para marcarlos «por actualizar»
+// (marcar.mjs; lo hace `npm run desplegar` después de publicar).
+if (JSON_SALIDA) {
+  console.log(JSON.stringify([...afectados.values()].sort((a, b) => a.v.id.localeCompare(b.v.id)).map(({ v, motivos }) => ({ numero: v.id, motivo: [...motivos].slice(0, 3).join("; ") }))));
+  process.exit(0);
+}
 if (!afectados.size) {
   console.log("   Ningún video tutorial parece afectado por estos cambios.");
 } else {
@@ -56,5 +64,6 @@ if (!afectados.size) {
   for (const { v, motivos } of [...afectados.values()].sort((a, b) => a.v.id.localeCompare(b.v.id))) {
     console.log(`     · ${v.id} ${v.titulo} — ${[...motivos].slice(0, 2).join("; ")}`);
   }
+  console.log("   Quedan marcados «por actualizar» al desplegar (npm run tutoriales -- --listar los muestra).");
   console.log("   Para volver a grabarlos: npm run tutoriales -- --video <NN> --regrabar");
 }

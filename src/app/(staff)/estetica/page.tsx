@@ -84,7 +84,7 @@ export default async function AgendaPage({
       })),
       supabase
         .from("citas_estetica")
-        .select("id, inicio, estado, fuera_de_horario, empleado_id, perros(nombre), servicios(nombre)")
+        .select("id, inicio, estado, fuera_de_horario, empleado_id, perros(nombre), servicio_nombre, servicios(nombre)")
         .is("deleted_at", null)
         .gte("inicio", desdeConsulta)
         .lt("inicio", hastaConsulta)
@@ -105,7 +105,7 @@ export default async function AgendaPage({
         fuera_de_horario: c.fuera_de_horario as boolean,
         empleado_id: (c.empleado_id as string | null) ?? null,
         perro_nombre: perro?.nombre ?? "—",
-        servicio_nombre: servicio?.nombre ?? "—",
+        servicio_nombre: servicio?.nombre ?? (c.servicio_nombre as string | null) ?? "—",
         fecha_local: fechaLocalDeInstante(c.inicio as string, zona),
       };
     })

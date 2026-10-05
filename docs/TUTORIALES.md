@@ -2,7 +2,7 @@
 
 Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scripts/tutoriales/catalogo.mjs` y de lo que la app tiene hoy (código). No se edita a mano: se cambia el catálogo.
 
-**55 videos** (el 00 es el avance) en 9 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
+**56 videos** (el 00 es el avance) en 9 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
 
 ## Catálogo
 
@@ -17,7 +17,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 06 | Empieza aquí | Módulos y plan: prende solo lo que usas | admin | 2.5 min | — | — |
 | 07 | Empieza aquí | Configura tu horario, cupo y datos del negocio | admin | 2.5 min | — | configuracion_negocio |
 | 08 | Empieza aquí | Invita a tu equipo y entiende los roles | admin | 2.5 min | — | personal |
-| 09 | Empieza aquí | Dale permisos extra a una persona de recepción | admin | 2.5 min | — | inventario_costos, tarifas, reportes_financieros, personal, configuracion_negocio, excepciones_reserva, descuentos_sin_tope, plantillas_contrato, nomina, gastos, reportes_guarderia, corregir_estilista |
+| 09 | Empieza aquí | Dale permisos extra a una persona de recepción | admin | 2.5 min | — | inventario_costos, tarifas, reportes_financieros, personal, configuracion_negocio, excepciones_reserva, descuentos_sin_tope, plantillas_contrato, nomina, gastos, reportes_guarderia, corregir_estilista, corregir_servicio |
 | 10 | Clientes y perros | Captura a un cliente y a su perro en el mostrador | recepcion | 2.5 min | — | — |
 | 11 | Clientes y perros | Da de alta a un cliente con un link de WhatsApp | recepcion | 2.5 min | portal | — |
 | 12 | Clientes y perros | Vacunas, alertas y datos del perro en su expediente | recepcion | 2.5 min | — | — |
@@ -63,6 +63,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 52 | Tu negocio | Tu perfil y tu página web gratis | admin | 2.5 min | pagina_web | configuracion_negocio |
 | 53 | Tu negocio | Pide ayuda: el asistente, los videos y los tickets | recepcion | 2.5 min | — | — |
 | 54 | Tu negocio | Recolección a domicilio: cotiza, cobra y la ves en la cuenta | recepcion | 2.5 min | recoleccion | — |
+| 55 | Estética | Cómo corregir el servicio de una cita | admin | 2.5 min | estetica | corregir_servicio |
 
 ## Pantallas → videos
 
@@ -89,6 +90,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/ayuda/videos/[slug]` | 53 |  |
 | `/bienvenida` | 02 |  |
 | `/caja` | 33 |  |
+| `/caja/ajustes-servicio` | 55 |  |
 | `/caja/cargo` | 36 |  |
 | `/caja/cobrar/[reservaId]` | 33, 34, 37 |  |
 | `/caja/conciliacion` | 38 |  |
@@ -110,7 +112,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/empleados/nomina/[empleadoId]` | 46 |  |
 | `/empleados/nuevo` | 44 |  |
 | `/estetica` | 01, 21 |  |
-| `/estetica/[citaId]` | 22, 23 |  |
+| `/estetica/[citaId]` | 22, 23, 55 |  |
 | `/estetica/nueva` | 21, 23 |  |
 | `/f/[token]` | 31 |  |
 | `/gastos` | 47 |  |
@@ -180,11 +182,11 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Guardería | `/guarderia` | 25, 27, 28, 29, 30, 31, 39 |
 | Hotel | `/hotel` | 26, 27, 28, 29, 30 |
 | Adentro ahora | `/adentro` | 31 |
-| Estética | `/estetica` | 01, 21, 22, 23 |
+| Estética | `/estetica` | 01, 21, 22, 23, 55 |
 | Servicios | `/servicios` | 20, 24 |
 | Clientes | `/clientes` | 10, 11 |
 | Vinculación | `/vinculacion` | 15 |
-| Caja | `/caja` | 32, 33, 34, 35, 36, 37, 38, 39, 43 |
+| Caja | `/caja` | 32, 33, 34, 35, 36, 37, 38, 39, 43, 55 |
 | Contratos | `/contratos` | 16, 19 |
 | Inventario | `/inventario` | 40, 41, 42, 43 |
 | Reportes | `/reportes` | 49 |
@@ -206,7 +208,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | --- | --- |
 | guarderia | 25, 27, 28, 29, 30, 31 |
 | hotel | 26, 27, 28, 29, 30, 31 |
-| estetica | 20, 21, 22, 23, 24 |
+| estetica | 20, 21, 22, 23, 24, 55 |
 | bonos | 39 |
 | recoleccion | 54 |
 | contratos | 16, 17, 18, 19 |
@@ -233,6 +235,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Gastos del local (`gastos`) | 09, 47, 48 |
 | Reportes de guardería (`reportes_guarderia`) | 09, 31 |
 | Corregir estilista de servicios cerrados (`corregir_estilista`) | 09, 23 |
+| Corregir servicio de citas (`corregir_servicio`) | 09, 55 |
 
 ## Artículos de ayuda → videos
 
@@ -268,6 +271,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | precios-de-estetica | 20 |
 | agendar-cita-estetica | 21 |
 | cambiar-estilista-cita-estetica | 23 |
+| corregir-servicio-de-una-cita | 55 |
 | atender-cita-estetica | 22 |
 | leer-el-tablero-del-dia | 01, 04 |
 | que-hacer-con-necesita-atencion | 05 |
@@ -291,6 +295,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 
 | Aviso | Videos |
 | --- | --- |
+| ajustes-servicio | 05, 55 |
 | cobro | 05, 33 |
 | comprobantes | 05 |
 | con | 05, 29 |

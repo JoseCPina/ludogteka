@@ -8,6 +8,7 @@ import { ResumenSanitario, type EstadoRequisitoItem } from "@/app/(staff)/perros
 import { NotaSoloEstetica } from "@/app/(staff)/perros/nota-solo-estetica";
 import { formatearFecha, formatearFechaCalendario, horaLocalDeInstante } from "@/lib/formato";
 import { CitaDetalle, type RecetaItem } from "./cita-detalle";
+import { CorregirServicio } from "./corregir-servicio";
 import type { Estilista } from "../selector-estilista";
 import { zonaActual } from "@/lib/negocio/actual";
 
@@ -31,7 +32,7 @@ export default async function CitaDetallePage({
   const { data: cita, error } = await supabase
     .from("citas_estetica")
     .select(
-      "id, perro_id, servicio_id, tamano_id, empleado_id, estancia_id, inicio, fin, estado, precio, recargo, recargo_motivo, fuera_de_horario, entregado_por_nombre, recogido_por_nombre, recogido_por_es_dueno, perros(nombre), servicios(nombre)"
+      "id, perro_id, servicio_id, tamano_id, empleado_id, estancia_id, inicio, fin, estado, precio, recargo, recargo_motivo, fuera_de_horario, entregado_por_nombre, recogido_por_nombre, recogido_por_es_dueno, perros(nombre), servicio_nombre, servicios(nombre)"
     )
     .eq("id", citaId)
     .single();
@@ -43,7 +44,12 @@ export default async function CitaDetallePage({
 
   if (!perro) notFound();
 
-  const [{ data: estadoSanitario }, { data: alertasCrudo }, { data: alergias }, { data: empleado }, { data: usaGh }, { data: asignables }, { data: historialCrudo }] =
+  const puedeCorregirServicio =
+    (sesion?.rol === "admin" || sesion?.rol === "recepcion") &&
+    tienePermiso(sesion, "corregir_servicio") &&
+    !["cancelada", "no_llego"].includes(cita.estado);
+
+  const [{ data: estadoSanitario }, { data: alertasCrudo }, { data: alergias }, { data: empleado }, { data: usaGh }, { data: asignables }, { data: historialCrudo }, { data: correccionesCrudo }, { data: serviciosCorregibles }, { data: gruposPrecio }] =
     await Promise.all([
       supabase
         .from("perro_requisitos_sanitarios_estado")
@@ -63,7 +69,29 @@ export default async function CitaDetallePage({
       supabase.from("perros_con_guarderia_hotel").select("perro_id").eq("perro_id", cita.perro_id).maybeSingle(),
       supabase.rpc("estilistas_asignables"),
       supabase.rpc("historial_asignaciones_cita", { p_cita_id: citaId }),
+      supabase.rpc("historial_correcciones_servicio_cita", { p_cita_id: citaId }),
+      // De servicios_cotizables: solo lo que se puede cobrar de verdad.
+      puedeCorregirServicio
+        ? supabase.from("servicios_cotizables").select("id, nombre").eq("categoria", "estetica").order("orden")
+        : Promise.resolve({ data: [] as { id: string; nombre: string }[] }),
+      puedeCorregirServicio
+        ? supabase.from("grupos_raza").select("id, nombre").is("deleted_at", null).order("orden")
+        : Promise.resolve({ data: [] as { id: string; nombre: string }[] }),
     ]);
+  const correcciones = (correccionesCrudo ?? []) as {
+    id: string;
+    cuando: string;
+    servicio_anterior: string;
+    servicio_nuevo: string;
+    precio_anterior: number;
+    precio_nuevo: number;
+    diferencia: number;
+    estado_cita: string;
+    motivo: string;
+    por_nombre: string;
+    tipo_ajuste: string;
+    saldo_actual: number | null;
+  }[];
   const estilistas: Estilista[] = ((asignables ?? []) as { id: string; nombre: string }[]).map((e) => ({ id: e.id, nombre: e.nombre }));
   const historial = (historialCrudo ?? []) as {
     id: string;
@@ -118,7 +146,7 @@ export default async function CitaDetallePage({
 
       <div>
         <h1 className="text-2xl font-bold text-n-900">
-          {servicio?.nombre} — {perro.nombre}
+          {servicio?.nombre ?? (cita.servicio_nombre as string | null) ?? "Servicio"} — {perro.nombre}
         </h1>
         <p className="mt-1 text-n-600">
           {formatearFechaCalendario(cita.inicio)} · {horaLocalDeInstante(cita.inicio, zona)}
@@ -181,6 +209,45 @@ export default async function CitaDetallePage({
               : null
           }
         />
+      )}
+
+      {puedeCorregirServicio && (
+        <section data-corregir-servicio-seccion className="flex flex-col gap-2 border-t border-n-200 pt-4">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Servicio de la cita</h2>
+          <CorregirServicio
+            citaId={cita.id}
+            estado={cita.estado}
+            servicioActual={servicio?.nombre ?? (cita.servicio_nombre as string | null) ?? "Servicio"}
+            servicios={((serviciosCorregibles ?? []) as { id: string; nombre: string }[]).filter((x) => x.id !== cita.servicio_id)}
+            gruposPrecio={(gruposPrecio ?? []) as { id: string; nombre: string }[]}
+            puedeExcepcion={tienePermiso(sesion, "excepciones_reserva")}
+          />
+        </section>
+      )}
+
+      {correcciones.length > 0 && (
+        <section data-historial-servicio className="flex flex-col gap-2 border-t border-n-200 pt-4">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Historial de servicio</h2>
+          <ul className="flex flex-col gap-2">
+            {correcciones.map((k) => (
+              <li key={k.id} className="rounded-md border border-n-200 bg-white px-3 py-2 text-sm text-n-700">
+                <span className="font-semibold text-n-900">
+                  {k.servicio_anterior} → {k.servicio_nuevo}
+                </span>
+                <span className="block text-n-700">
+                  ${Number(k.precio_anterior).toFixed(2)} → ${Number(k.precio_nuevo).toFixed(2)}
+                  {Number(k.diferencia) !== 0 && ` (${Number(k.diferencia) > 0 ? "+" : "−"}$${Math.abs(Number(k.diferencia)).toFixed(2)})`}
+                  {k.tipo_ajuste === "cobro_adicional" && (Number(k.saldo_actual) > 0 ? " · cobro adicional por cobrar" : " · cobro adicional ya cobrado")}
+                  {k.tipo_ajuste === "saldo_a_favor" && (Number(k.saldo_actual) < 0 ? " · saldo a favor por devolver" : " · saldo a favor ya devuelto")}
+                </span>
+                <span className="block text-xs text-n-500">
+                  {formatearFecha(k.cuando, zona)} {horaLocalDeInstante(k.cuando, zona)} · por {k.por_nombre} · {ESTADO_HISTORIAL[k.estado_cita] ?? k.estado_cita}
+                </span>
+                <span className="block text-n-700">Motivo: {k.motivo}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {historial.length > 0 && (

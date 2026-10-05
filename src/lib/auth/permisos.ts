@@ -83,6 +83,12 @@ export const PERMISOS = [
     implica:
       "Cambia la estilista de un servicio de estética que ya terminó (con un motivo por escrito que queda en el historial de la cita). Si el periodo de nómina de alguna de las dos ya se pagó, la diferencia de comisión o propina se ajusta en su siguiente pago. Reasignar antes de empezar o con el servicio en curso lo hace recepción sin este permiso.",
   },
+  {
+    clave: "corregir_servicio",
+    etiqueta: "Corregir servicio de citas",
+    implica:
+      "Cambia el servicio de una cita de estética cuando se capturó mal (abierta o ya terminada y cobrada), con un motivo por escrito que queda en el historial de la cita. El precio se recalcula con las reglas de hoy y, si ya se había cobrado, la cuenta queda con un cobro adicional o un saldo a favor (nunca se toca el cobro original). Si el servicio ya se terminó, también ajusta el inventario y, si su nómina ya se pagó, la comisión en el siguiente pago.",
+  },
 ] as const;
 
 export type ClavePermiso = (typeof PERMISOS)[number]["clave"];

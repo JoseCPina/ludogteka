@@ -14,6 +14,7 @@ export const maxDuration = 120;
 type Fila = {
   numero: string; slug: string; area: string; titulo: string; duracion_s: number | null; estado: string; publicado: boolean; con_voz: boolean;
   youtube_id: string | null; video_path: string | null; poster_path: string | null; master_donde: string | null; commit_app: string | null; version: number;
+  por_actualizar_motivo: string | null; por_actualizar_desde: string | null;
 };
 type Progreso = { numero: string; estado: string; intentos: number; error: string | null; fase_error: string | null; tamano_bytes: number | null; caracteres_voz: number };
 
@@ -29,7 +30,7 @@ const ESTADO: Record<string, { texto: string; clase: string }> = {
 export default async function TutorialesPlataforma() {
   const { supabase } = await exigirPlataforma();
   const [{ data }, { data: prog }] = await Promise.all([
-    supabase.from("tutoriales").select("numero, slug, area, titulo, duracion_s, estado, publicado, con_voz, youtube_id, video_path, poster_path, master_donde, commit_app, version").is("deleted_at", null).order("orden"),
+    supabase.from("tutoriales").select("numero, slug, area, titulo, duracion_s, estado, publicado, con_voz, youtube_id, video_path, poster_path, master_donde, commit_app, version, por_actualizar_motivo, por_actualizar_desde").is("deleted_at", null).order("orden"),
     supabase.from("tutoriales_progreso").select("numero, estado, intentos, error, fase_error, tamano_bytes, caracteres_voz").is("deleted_at", null),
   ]);
   const filas = (data ?? []) as Fila[];
@@ -37,6 +38,7 @@ export default async function TutorialesPlataforma() {
   const listos = filas.filter((f) => f.estado === "listo" || f.estado === "listo_sin_voz");
   const firmados = await firmarPaquete(listos.filter((f) => f.master_donde === "prod"));
   const conteo = (e: string) => filas.filter((f) => f.estado === e).length;
+  const porActualizar = filas.filter((f) => f.por_actualizar_desde);
   const sitio = urlPlataforma();
   const avance = filas.find((f) => f.numero === "00");
   const playlists = Object.values(AREAS_TUTORIALES);
@@ -49,6 +51,11 @@ export default async function TutorialesPlataforma() {
           {filas.length} videos · {conteo("listo")} listos · {conteo("listo_sin_voz")} listos menos voz · {conteo("pendiente")} pendientes · {conteo("error")} con error.
           El corredor es <code>npm run tutoriales</code> (ver docs/TUTORIALES.md).
         </p>
+        {porActualizar.length > 0 && (
+          <p data-por-actualizar-resumen className="mt-2 rounded-md border-l-4 border-ambar bg-ambar-suave px-3 py-2 text-sm font-semibold text-ambar-oscuro">
+            {porActualizar.length} {porActualizar.length === 1 ? "video está" : "videos están"} por actualizar ({porActualizar.map((f) => f.numero).join(", ")}): la app cambió después de grabarlos. Se vuelven a grabar con <code>npm run tutoriales -- --video NN --regrabar --prod</code>.
+          </p>
+        )}
       </div>
 
       <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
@@ -76,6 +83,7 @@ export default async function TutorialesPlataforma() {
                   <span className="flex flex-wrap items-center gap-2 text-xs">
                     <span className="rounded-full bg-n-100 px-2 py-0.5 text-n-600">{AREAS_TUTORIALES[f.area] ?? f.area}</span>
                     <span className={`rounded-full px-2 py-0.5 font-semibold ${e.clase}`}>{e.texto}</span>
+                    {f.por_actualizar_desde && <span data-por-actualizar className="rounded-full bg-ambar-suave px-2 py-0.5 font-semibold text-ambar-oscuro">Por actualizar</span>}
                     {f.publicado && <span className="rounded-full bg-morado-suave px-2 py-0.5 font-semibold text-morado">En la app</span>}
                     {f.youtube_id && <span className="rounded-full bg-menta-suave px-2 py-0.5 font-semibold text-menta-oscuro">En YouTube</span>}
                   </span>
@@ -87,6 +95,11 @@ export default async function TutorialesPlataforma() {
                   {f.commit_app ? ` · app ${f.commit_app.slice(0, 7)}` : ""}
                   {f.master_donde === "dev" ? " · el master vive en el entorno de desarrollo" : ""}
                 </p>
+                {f.por_actualizar_desde && (
+                  <p className="text-sm text-ambar-oscuro">
+                    Por actualizar desde {f.por_actualizar_desde.slice(0, 10)}: {f.por_actualizar_motivo}
+                  </p>
+                )}
                 {p?.error && <p className="text-sm text-coral-oscuro">Error en {p.fase_error ?? "?"} (intento {p.intentos}): {p.error}</p>}
                 {f.video_path && (
                   <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
