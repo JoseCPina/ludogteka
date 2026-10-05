@@ -11,7 +11,7 @@ export default {
     },
     {
       titulo: "Pedir una ausencia",
-      dice: "Cada persona la pide desde «Mi asistencia». Y si alguien te avisó por WhatsApp, la pides por esa persona en «Pedir una ausencia por alguien»: escoges al «Empleado», el «Tipo», «Desde» y «Hasta».",
+      dice: "Cada persona la pide desde Mi asistencia. Y si alguien te avisó por WhatsApp, la pides por esa persona en «Pedir una ausencia por alguien»: escoges al «Empleado», el «Tipo», «Desde» y «Hasta».",
       pasos: [["resaltar", "Pedir una ausencia por alguien", 2800], ["elegir", "Empleado", 1], ["elegir", "Tipo", "Día personal"]],
     },
     {
