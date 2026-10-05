@@ -77,6 +77,12 @@ export const PERMISOS = [
     implica:
       "Llena y envía el reporte de comportamiento diario de guardería, y toma o sube fotos y videos de los perros que están adentro (hotel y guardería) para mandárselos a su dueño. Cambiar la plantilla del reporte sigue siendo de admin.",
   },
+  {
+    clave: "corregir_estilista",
+    etiqueta: "Corregir estilista de servicios cerrados",
+    implica:
+      "Cambia la estilista de un servicio de estética que ya terminó (con un motivo por escrito que queda en el historial de la cita). Si el periodo de nómina de alguna de las dos ya se pagó, la diferencia de comisión o propina se ajusta en su siguiente pago. Reasignar antes de empezar o con el servicio en curso lo hace recepción sin este permiso.",
+  },
 ] as const;
 
 export type ClavePermiso = (typeof PERMISOS)[number]["clave"];

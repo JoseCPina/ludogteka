@@ -14,6 +14,7 @@ import { registrarCobro, registrarDevolucion, type MetodoPago } from "../../cobr
 import { CobroIntegrado, type OrdenCobroFila } from "./cobro-integrado";
 import { DevolucionIntegrada } from "./devolucion-integrada";
 import { CancelarRenglonVenta } from "./cancelar-renglon-venta";
+import { MarcarNoRecibido } from "./marcar-no-recibido";
 import type { ResumenCobro } from "@/lib/pagos/tipos";
 import { consumirBono, type ItemTipoBono } from "../../bono-actions";
 import { aplicarDescuento, cancelarDescuento, type TipoDescuento } from "../../descuento-actions";
@@ -137,7 +138,7 @@ export function CuentaCobro({
   esAdmin: boolean;
   // Admin o recepción con «Descuentos sin tope». Devoluciones: solo admin.
   puedeSinTope: boolean;
-  mp: { disponible: ResumenCobro; ordenes: OrdenCobroFila[]; clienteTelefono: string | null };
+  mp: { disponible: ResumenCobro; ordenes: OrdenCobroFila[]; clienteTelefono: string | null; terminalManualBloqueada: boolean };
 }) {
   const zona = useZonaNegocio();
   const router = useRouter();
@@ -648,6 +649,7 @@ export function CuentaCobro({
         disponible={mp.disponible}
         ordenes={mp.ordenes}
         clienteTelefono={mp.clienteTelefono}
+        esAdmin={esAdmin}
       />
 
       {!turnoAbierto ? (
@@ -688,6 +690,12 @@ export function CuentaCobro({
       ) : (
         <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
           <p className="font-semibold text-n-900">Registrar cobro</p>
+          {mp.terminalManualBloqueada && (
+            <p data-terminal-bloqueada className="text-sm text-n-600">
+              El cobro con tarjeta se hace con «Cobrar con terminal» (arriba): así queda registrado solo cuando Mercado Pago confirma el pago. A mano solo
+              efectivo y transferencia.
+            </p>
+          )}
           {metodos.map((m, i) => (
             <div key={i} className="flex flex-wrap items-end gap-3">
               <div className="w-40">
@@ -697,7 +705,7 @@ export function CuentaCobro({
                   onChange={(e) => actualizarMetodo(i, { metodo: e.target.value as MetodoPago })}
                 >
                   <option value="efectivo">Efectivo</option>
-                  <option value="terminal">Terminal</option>
+                  {!mp.terminalManualBloqueada && <option value="terminal">Terminal</option>}
                   <option value="transferencia">Transferencia</option>
                 </Select>
               </div>
@@ -798,6 +806,16 @@ export function CuentaCobro({
                           {d.autorizadoPorNombre}, {formatearFecha(d.creadoEn, zona)})
                         </p>
                       ))}
+                    </div>
+                  )}
+
+                  {esAdmin && c.origen === "manual" && totalDevuelto === 0 && c.metodos.some((m) => m.metodo === "terminal") && c.metodos.every((m) => m.metodo !== "terminal" || Number(m.propina) === 0) && (
+                    <div className="mt-2 border-t border-n-200 pt-2">
+                      <MarcarNoRecibido
+                        reservaId={reservaId}
+                        cobroId={c.id}
+                        monto={c.metodos.filter((m) => m.metodo === "terminal").reduce((s, m) => s + Number(m.monto), 0)}
+                      />
                     </div>
                   )}
 

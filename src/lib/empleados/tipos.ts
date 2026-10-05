@@ -50,6 +50,9 @@ export type Desglose = {
   comisiones_detalle: { cita_id: string; fecha: string; servicio: string; perro: string; precio: number; comision: number }[];
   propinas: number;
   propinas_detalle: { cobro_id: string; fecha: string; propina_total: number; propina: number }[];
+  // Diferencias por cambios de estilista en servicios de periodos ya pagados
+  // (ya vienen sumadas en comisiones / propinas). Pagos viejos no lo traen.
+  ajustes_detalle?: { tipo: "comision" | "propina"; ref_id: string; fecha: string; perro: string | null; servicio: string | null; monto: number }[];
   adelantos: number;
   adelantos_detalle: { adelanto_id: string; fecha: string; monto: number; motivo: string | null }[];
   total: number;

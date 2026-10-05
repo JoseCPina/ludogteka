@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { adaptador } from "./adaptadores";
+import { verificarPagoDeOrden } from "./verificacion";
 import type { ConexionCobro, EstadoRemoto, OrdenLocal, ResultadoSincronizacion } from "./tipos";
 
 /**
@@ -47,7 +48,7 @@ async function registrarComision(admin: SupabaseClient, cx: ConexionCobro, orden
   }
 }
 
-async function registrar(admin: SupabaseClient, cx: ConexionCobro, orden: OrdenLocal, remoto: EstadoRemoto): Promise<ResultadoSincronizacion> {
+async function registrar(admin: SupabaseClient, cx: ConexionCobro, orden: OrdenLocal, remoto: EstadoRemoto, verificacion: Record<string, unknown> | null): Promise<ResultadoSincronizacion> {
   const pago = remoto.pago!;
   const { data, error } = await admin.rpc("registrar_pago_mercadopago", {
     p_orden_id: orden.id,
@@ -55,7 +56,8 @@ async function registrar(admin: SupabaseClient, cx: ConexionCobro, orden: OrdenL
     p_monto: pago.monto ?? orden.monto,
     p_installments: pago.installments ?? 1,
     p_mp_payment_type: pago.tipo,
-    p_evento: (remoto.crudo ?? null) as object | null,
+    // Lo real solo se registra con la verificación del servidor contra el proveedor.
+    p_evento: (verificacion ? { ...((remoto.crudo ?? {}) as object), verificacion: "aprobado", verificacion_detalle: verificacion } : (remoto.crudo ?? null)) as object | null,
   });
   if (error) throw new Error(error.message);
   const r = data as { registrado: boolean; sin_turno?: boolean; repetido?: boolean };
@@ -65,6 +67,17 @@ async function registrar(admin: SupabaseClient, cx: ConexionCobro, orden: OrdenL
   if (ref != null) await admin.from("mp_ordenes").update({ mp_payment_ref: String(ref) }).eq("id", orden.id).eq("negocio_id", orden.negocio_id);
   if (r.registrado && !r.repetido) await registrarComision(admin, cx, orden, remoto);
   return { estado: "pagada", pagada: true, registrado: Boolean(r.registrado), sinTurno: Boolean(r.sin_turno), detalle: null, installments: pago.installments ?? 1 };
+}
+
+/** Lo ambiguo nunca es pagado: queda «por confirmar» hasta que se revise con el proveedor. */
+async function porConfirmar(admin: SupabaseClient, orden: OrdenLocal, motivo: string, evento: unknown): Promise<ResultadoSincronizacion> {
+  await admin
+    .from("mp_ordenes")
+    .update({ estado: "por_confirmar", detalle_error: motivo, notificado_at: new Date().toISOString(), ultimo_evento: evento ?? null })
+    .eq("id", orden.id)
+    .eq("negocio_id", orden.negocio_id);
+  console.warn("[cobro] orden por confirmar", { orden: orden.id, motivo });
+  return { estado: "por_confirmar", pagada: false, registrado: false, sinTurno: false, detalle: motivo, installments: null };
 }
 
 async function marcar(admin: SupabaseClient, orden: OrdenLocal, estado: string, detalle: string | null, evento: unknown) {
@@ -89,7 +102,14 @@ export async function aplicarEstado(admin: SupabaseClient, cx: ConexionCobro, or
   if (remoto.referencia && remoto.referencia !== orden.id) throw new Error("El pago no corresponde a esta orden.");
   if (remoto.cuentaId && orden.cuenta_id && remoto.cuentaId !== orden.cuenta_id) throw new Error("El pago es de otra cuenta.");
 
-  if (remoto.estado === "pagada" && remoto.pago) return registrar(admin, cx, orden, remoto);
+  if (remoto.estado === "pagada" && remoto.pago) {
+    // Lo simulado (demo y negocios en prueba) no pasa por el proveedor; lo real,
+    // solo con un pago aprobado verificado por consulta directa.
+    if (cx.simulado || orden.simulado) return registrar(admin, cx, orden, remoto, null);
+    const v = await verificarPagoDeOrden(admin, cx, orden, remoto);
+    if (!v.ok) return porConfirmar(admin, orden, v.motivo, remoto.crudo);
+    return registrar(admin, cx, orden, remoto, v.detalle);
+  }
 
   // Un link rechazado no muere: el cliente puede volver a intentar con otra
   // tarjeta desde el mismo link. Se anota, no se cierra.

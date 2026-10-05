@@ -17,7 +17,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 06 | Empieza aquí | Módulos y plan: prende solo lo que usas | admin | 2.5 min | — | — |
 | 07 | Empieza aquí | Configura tu horario, cupo y datos del negocio | admin | 2.5 min | — | configuracion_negocio |
 | 08 | Empieza aquí | Invita a tu equipo y entiende los roles | admin | 2.5 min | — | personal |
-| 09 | Empieza aquí | Dale permisos extra a una persona de recepción | admin | 2.5 min | — | inventario_costos, tarifas, reportes_financieros, personal, configuracion_negocio, excepciones_reserva, descuentos_sin_tope, plantillas_contrato, nomina, gastos, reportes_guarderia |
+| 09 | Empieza aquí | Dale permisos extra a una persona de recepción | admin | 2.5 min | — | inventario_costos, tarifas, reportes_financieros, personal, configuracion_negocio, excepciones_reserva, descuentos_sin_tope, plantillas_contrato, nomina, gastos, reportes_guarderia, corregir_estilista |
 | 10 | Clientes y perros | Captura a un cliente y a su perro en el mostrador | recepcion | 2.5 min | — | — |
 | 11 | Clientes y perros | Da de alta a un cliente con un link de WhatsApp | recepcion | 2.5 min | portal | — |
 | 12 | Clientes y perros | Vacunas, alertas y datos del perro en su expediente | recepcion | 2.5 min | — | — |
@@ -31,7 +31,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 20 | Estética | Cómo funcionan los precios de estética | admin | 2.5 min | estetica | tarifas |
 | 21 | Estética | Agenda una cita de estética en 2 minutos | recepcion | 2.5 min | estetica | — |
 | 22 | Estética | Atiende y termina una cita de estética | estetica | 2.5 min | estetica | — |
-| 23 | Estética | Pelo maltratado, recargos y excepciones en estética | recepcion | 2.5 min | estetica | excepciones_reserva |
+| 23 | Estética | Pelo maltratado, recargos y excepciones en estética | recepcion | 2.5 min | estetica | excepciones_reserva, corregir_estilista |
 | 24 | Estética | Receta de consumo: descuenta el inventario solo | admin | 2.5 min | estetica, inventario | — |
 | 25 | Guardería y hotel | Reserva guardería: por día, por hora y con cupo | recepcion | 2.5 min | guarderia | — |
 | 26 | Guardería y hotel | Reserva el hotel: noches, cupo y precios por talla | recepcion | 2.5 min | hotel | — |
@@ -91,6 +91,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/caja` | 33 |  |
 | `/caja/cargo` | 36 |  |
 | `/caja/cobrar/[reservaId]` | 33, 34, 37 |  |
+| `/caja/conciliacion` | 38 |  |
 | `/caja/pases` | 39 |  |
 | `/caja/reembolsos` | 38 |  |
 | `/caja/turno` | 32 |  |
@@ -231,6 +232,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Nómina (`nomina`) | 09, 46 |
 | Gastos del local (`gastos`) | 09, 47, 48 |
 | Reportes de guardería (`reportes_guarderia`) | 09, 31 |
+| Corregir estilista de servicios cerrados (`corregir_estilista`) | 09, 23 |
 
 ## Artículos de ayuda → videos
 
@@ -254,6 +256,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | cobrar-una-cuenta | 33 |
 | cobrar-con-terminal | 34 |
 | terminal-no-recibe-el-cobro | 34 |
+| corregir-un-cobro-con-terminal-mal-marcado | 38 |
 | link-de-pago-whatsapp | 34 |
 | venta-rapida | 35 |
 | devolver-un-cobro | 38 |
@@ -264,6 +267,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | agregar-una-raza-que-no-aparece | 14 |
 | precios-de-estetica | 20 |
 | agendar-cita-estetica | 21 |
+| cambiar-estilista-cita-estetica | 23 |
 | atender-cita-estetica | 22 |
 | leer-el-tablero-del-dia | 01, 04 |
 | que-hacer-con-necesita-atencion | 05 |
@@ -290,12 +294,14 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | cobro | 05, 33 |
 | comprobantes | 05 |
 | con | 05, 29 |
+| conciliacion | 05 |
 | contratos-firmar | 05, 17 |
 | contratos-regenerar | 05, 19 |
 | eval | 05, 29 |
 | gastos-proximos | 05, 47 |
 | gastos-vencidos | 05, 47 |
 | hotel | 05, 29 |
+| por-confirmar | 05 |
 | razas-sin-grupo | 05, 14 |
 | reembolsos | 05, 38 |
 | saldos | 05 |

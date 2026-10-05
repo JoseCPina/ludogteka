@@ -22,7 +22,7 @@ export const ARTICULOS_CAJA_Y_ESTETICA: Articulo[] = [
 5. ¿Paga una parte en efectivo y otra con tarjeta? Aprieta **+ Repartir en otro método** y llena el segundo renglón.
 6. Aprieta **Registrar cobro**. El saldo baja y el cobro queda en **Cobros de esta reserva**.
 
-> El método **Terminal** de aquí es para una terminal que no está conectada a la app. Si tienes Mercado Pago o Clip conectados, usa [Cómo cobrar con la terminal](/ayuda/cobrar-con-terminal).
+> El método **Terminal** solo se captura a mano en un negocio que no tiene Mercado Pago ni Clip. Con alguno de los dos elegido, el cobro con tarjeta se hace con **Cobrar con terminal** ([Cómo cobrar con la terminal](/ayuda/cobrar-con-terminal)): así queda registrado solo cuando el proveedor confirma el pago. A mano solo se registra efectivo o transferencia.
 
 Si el perro tiene day pass o mensualidad, junto a su línea sale **Pagar con bono**.
 
@@ -58,7 +58,26 @@ Si el perro tiene day pass o mensualidad, junto a su línea sale **Pagar con bon
 
 - «Ya hay un cobro en la terminal para esta cuenta. Espéralo o cancélalo antes de mandar otro.»
 - «No hay terminal escogida. El admin la escoge en Administración → Cobro con terminal; mientras, cobra a mano.»
-- Si la terminal no responde, ve [Qué hacer si la terminal no recibe el cobro](/ayuda/terminal-no-recibe-el-cobro).`,
+- Si la terminal no responde, ve [Qué hacer si la terminal no recibe el cobro](/ayuda/terminal-no-recibe-el-cobro).
+- Si sale **Por confirmar con Mercado Pago**, mira la sección de abajo.
+
+## Qué significa «Por confirmar»
+
+Un cobro con terminal solo cuenta como cobrado cuando Mercado Pago confirma un **pago aprobado**: la app lo consulta directo, con el mismo monto y de tu cuenta. Si algo no cuadra (otro monto, el pago todavía no existe, no se pudo comprobar), la orden queda **Por confirmar con Mercado Pago**: **no cuenta como dinero** y aparece en **Necesita atención**.
+
+1. Abre la cuenta y, en la orden por confirmar, aprieta **Revisar con Mercado Pago**.
+2. Si el pago ya está aprobado, se registra el cobro (una sola vez). Si no, sigue por confirmar y te dice por qué.
+3. Si el cliente no pagó, cancela la orden o cóbrale en efectivo o transferencia.
+
+Una orden **cancelada**, **vencida**, **fallida** o en cola nunca marca nada como pagado.
+
+> Una vez a la hora, la app compara los cobros con terminal contra los pagos de Mercado Pago y avisa en **Necesita atención** lo que no cuadra: mira [Conciliación con Mercado Pago](/ayuda/corregir-un-cobro-con-terminal-mal-marcado).
+
+## Si desconectas y vuelves a conectar Mercado Pago
+
+- Al **desconectar**, las órdenes que estaban en cola se cancelan (una que la terminal ya procesó no se cancela: se verifica con Mercado Pago como cualquier pago) y la app **se acuerda de la terminal** que usabas.
+- Al **reconectar la misma cuenta**, la app busca esa terminal y la vuelve a dejar escogida y en modo integrado. Si no la encuentra, el admin la escoge en [Cobro con terminal](/admin/pagos).
+- Mientras no haya terminal escogida, **Cobrar con terminal** sale deshabilitado y dice qué falta. Escoge la terminal en Administración → Cobro con terminal y se habilita.`,
   },
   {
     slug: "terminal-no-recibe-el-cobro",
@@ -76,12 +95,13 @@ Si el perro tiene day pass o mensualidad, junto a su línea sale **Pagar con bon
 - Revisa que esté encendida y con internet.
 - Con Mercado Pago, si sale «La terminal no está en modo PDV (integrado).», el admin aprieta **Poner en modo integrado** en [Cobro con terminal](/admin/pagos).
 - Si sale «La terminal ya tiene una orden en curso.», cancela en la terminal la orden anterior.
+- Si la terminal sigue pidiendo cobros «vinculados» o no recibe el cobro aunque esté escogida, en la terminal entra a **Más opciones → Ajustes → Modo de vinculación** y regrésala a modo independiente (standalone); después vuelve a mandar el cobro.
 
 ## Si pasan los 2 minutos
 
 Sale «La terminal no ha respondido».
 
-1. Si el cliente no pagó, aprieta **Cancelar y registrar a mano** y cóbrale en **Registrar cobro**.
+1. Si el cliente no pagó, aprieta **Cancelar y registrar a mano** y cóbrale en **Registrar cobro** con efectivo o transferencia (con Mercado Pago o Clip elegidos, el método **Terminal** no se captura a mano: vuelve a mandarlo con **Cobrar con terminal**).
 2. Si tienes duda, aprieta **Seguir esperando**.
 
 > Si el cliente SÍ pagó en la terminal, no registres nada a mano: en cuanto el proveedor lo confirme, el cobro entra solo aunque hayas cancelado aquí.
@@ -91,6 +111,47 @@ Antes de los 2 minutos también puedes apretar **Cancelar cobro en terminal**.
 ## Pagos que llegaron sin turno
 
 Si un pago se confirma sin turno abierto, la orden dice «Pagado, sin turno» y en [Caja](/caja) sale un aviso. Se registran solos al abrir el turno; si el turno ya estaba abierto, aprieta **Registrar en este turno** para que entren a este corte.`,
+  },
+  {
+    slug: "corregir-un-cobro-con-terminal-mal-marcado",
+    titulo: "Cómo corregir un cobro con terminal mal marcado y revisar la conciliación",
+    resumen: "Cuando la caja dice que se cobró con terminal y nadie pasó la tarjeta: «Marcar como no recibido» y la conciliación con Mercado Pago.",
+    grupo: "caja",
+    modulo: null,
+    roles: ["admin", "recepcion"],
+    rutas: ["/caja/conciliacion"],
+    palabras: ["no recibido", "cobro falso", "cobrado sin pago", "conciliación", "terminal", "corregir cobro", "diferencia", "mercado pago no tiene el pago"],
+    cuerpo: `Cada hora la app compara los cobros con terminal contra los pagos de Mercado Pago y **marca** (no corrige) lo que no cuadra. Lo ves en **Necesita atención** del [tablero](/recepcion) y en [Conciliación](/caja/conciliacion), del más viejo al más nuevo.
+
+Hay dos tipos de diferencia:
+
+- **Cobrado en la app, sin pago aprobado en Mercado Pago**: la caja dice que se cobró con terminal y Mercado Pago no tiene el pago.
+- **Pago aprobado en Mercado Pago, sin cobro en la caja**: Mercado Pago recibió dinero que la caja no tiene. Revisa en tu panel de Mercado Pago de quién es.
+
+## Marcar como no recibido (solo admin)
+
+Para un cobro a mano con método **Terminal** que en realidad no se recibió:
+
+1. Pregúntale al cliente si pagó. Si pagó, **no lo marques**.
+2. Abre la cuenta (desde [Conciliación](/caja/conciliacion) con **Abrir la cuenta**).
+3. En el cobro, aprieta **Marcar como no recibido**.
+4. Escribe el **Motivo (obligatorio)** y aprieta **Marcar como no recibido**.
+
+Antes de cambiar nada, la app le **pregunta a Mercado Pago**: si tiene un pago aprobado del mismo monto que pueda ser de este cobro, **no te deja**. Si no lo tiene, el cobro queda como no recibido: la cuenta **vuelve a tener saldo** para cobrarse, y queda en el historial quién lo hizo, cuándo, el motivo y cómo estaba antes.
+
+- El corte de un turno que ya cerró **no cambia**: la corrección se anota en el turno abierto.
+- Para marcarlo, Mercado Pago tiene que estar conectado (para poder comprobarlo).
+- Un cobro que entró con un pago confirmado por Mercado Pago **no** se marca así: si hay que devolverlo, usa **Devolver con Mercado Pago**.
+
+## Si el cobro SÍ se recibió
+
+Si ya confirmaste que el cliente pagó, el admin puede apretar **Dar por revisada** en la diferencia y escribir qué revisó.
+
+## Si algo no sale
+
+- «Mercado Pago SÍ tiene un pago aprobado… que podría ser de este cobro»: no se marca; confírmalo con el cliente.
+- «…la cuenta no está conectada»: reconéctala en [Cobro con terminal](/admin/pagos) y vuelve a intentarlo.
+- «No hay turno de caja abierto»: ábrelo; la corrección se anota en el turno abierto.`,
   },
   {
     slug: "link-de-pago-whatsapp",
@@ -406,8 +467,63 @@ Una cita fuera del horario sale resaltada en naranja en la agenda.
 
 - «Este perro no tiene talla registrada…»: captúrala en su expediente con el link del mensaje.
 - «No hay nadie que pueda quedar como responsable de la cita»: falta dar de alta al personal de estética.
+- ¿Escogiste mal a la estilista? Mira [Cómo cambiar o corregir la estilista de una cita](/ayuda/cambiar-estilista-cita-estetica).
 - «El grupo de este perro no cobra automático a su pelaje»: pasa con un perro de pelo medio o largo sin grupo de precio (por ejemplo un mestizo). No se adivina un precio: corrige su pelaje en el expediente, asígnale su grupo, o con el permiso «Excepciones al reservar» registra una excepción con el grupo y el motivo, solo para esa cita.
 - Sale el recuadro **La raza … todavía no tiene grupo de precio**: es una raza nueva (del catálogo o propuesta desde el formulario del perro) y tu negocio aún no decide su precio. Mira [Cómo agregar una raza que no aparece](/ayuda/agregar-una-raza-que-no-aparece).`,
+  },
+  {
+    slug: "cambiar-estilista-cita-estetica",
+    titulo: "Cómo cambiar o corregir la estilista de una cita",
+    resumen: "Pasar un perro a otra estilista, dejarlo sin asignar o corregir quién lo atendió.",
+    grupo: "estetica",
+    modulo: "estetica",
+    roles: ["admin", "recepcion"],
+    rutas: ["/estetica/[citaId]", "/recepcion", "/admin"],
+    palabras: ["estilista", "reasignar", "cambiar estilista", "sin asignar", "corregir", "comisión", "otra estilista", "quién atendió"],
+    cuerpo: `La estilista de una cita se cambia desde el [tablero del día](/recepcion) (en **Citas de estética hoy**) y desde el detalle de la cita. Lo que puedes hacer depende de cómo va la cita:
+
+## Antes de empezar (Reservada o Confirmada)
+
+1. En la cita, abre la lista **Estilista** y escoge a otra persona. Queda en el momento, sin motivo.
+2. Si todavía no sabes quién la va a atender, escoge **Sin asignar**. La cita aparece en una columna **Sin asignar** de la agenda.
+3. Abajo de la lista verás un aviso verde con quién quedó y quién la tenía antes.
+
+Una cita sin estilista no se puede iniciar: primero asígnale una.
+
+## Con el servicio en curso
+
+Por ejemplo, otra estilista toma al perro a la mitad.
+
+1. Abre la cita y aprieta **Cambiar estilista**.
+2. Escoge a quién se la pasas en **Pasar a**.
+3. Si quieres, escribe el **Motivo (opcional)**.
+4. Aprieta **Cambiar estilista**.
+
+## Cuando ya terminó (Finalizada, cobrada o no)
+
+Para corregir quién atendió un servicio que ya se cerró, hace falta ser admin o tener el permiso **Corregir estilista de servicios cerrados** (el admin lo da en [Permisos](/admin/permisos)).
+
+1. Abre la cita y aprieta **Corregir estilista**.
+2. Escoge a la estilista correcta.
+3. Escribe el **Motivo de la corrección (obligatorio)**.
+4. Aprieta **Corregir estilista**.
+
+## Qué queda registrado
+
+Cada cambio queda en **Historial de estilista**, al pie de la cita: de quién a quién, quién lo hizo, cuándo, en qué momento estaba la cita y el motivo. Nada se reescribe en silencio.
+
+## Qué pasa con la comisión y la propina
+
+- Los cobros y el corte de caja no cambian.
+- Si la nómina de quien la tenía **todavía no se paga**, la comisión y la propina se van solas a la nueva estilista.
+- Si esa nómina **ya se pagó**, el pago no se toca: la diferencia aparece como un **Ajuste por cambio de estilista** (negativo para quien ya cobró de más, positivo para quien no cobró) en el siguiente pago de cada una. Lo ves en [Nómina](/empleados/nomina).
+
+## Si algo no sale
+
+- «… ya tiene otra cita a esa hora»: esa estilista está ocupada; escoge a otra o mueve primero su otra cita.
+- «Corregir la estilista de un servicio ya terminado es de admin…»: pídele al admin el permiso o que lo corrija él.
+- Una cita **Cancelada** o **No llegó** ya no se reasigna.
+- Solo aparecen estilistas activas del negocio; si falta alguien, revisa que esté dada de alta en el personal de estética (en [Administración](/admin)) y que no tenga baja.`,
   },
   {
     slug: "atender-cita-estetica",
@@ -439,12 +555,13 @@ Si la cita está ligada a una estancia, no se piden esos datos: el perro sigue a
 
 ## Antes de iniciarla
 
-Puedes **Reagendar**, **Marcar no llegó** o **Cancelar**.
+Puedes **Reagendar**, **Marcar no llegó** o **Cancelar**. Si la estilista cambió, mira [Cómo cambiar o corregir la estilista de una cita](/ayuda/cambiar-estilista-cita-estetica).
 
 > El pelo maltratado se marca al agendar: cambia el precio del mismo baño, no es un cargo aparte.
 
 ## Si algo no sale
 
-- «Solo se puede finalizar una cita que está en curso.»: primero iníciala.`,
+- «Solo se puede finalizar una cita que está en curso.»: primero iníciala.
+- «Esta cita no tiene estilista asignada»: asígnale una antes de iniciarla o terminarla (arriba de los botones, en **Estilista**).`,
   },
 ];

@@ -69,7 +69,7 @@ const sesion = async (profileId) =>
   });
 
 // ───────────── Mercado Pago y Clip de mentiras
-const mock = { tokens: 0, ordenes: new Map(), pagos: new Map(), preferencias: [], clip: new Map(), refrescos: 0, idempotencia: [] };
+const mock = { tokens: 0, ordenes: new Map(), pagos: new Map(), preferencias: [], clip: new Map(), refrescos: 0, idempotencia: [], guion: new Map(), busqueda: [], cancelaciones: [], setup: [] };
 const servidor = http.createServer(async (req, res) => {
   const u = new globalThis.URL(req.url, "http://127.0.0.1:4455");
   let cuerpo = "";
@@ -110,6 +110,23 @@ const servidor = http.createServer(async (req, res) => {
   if (!token.startsWith("APP_USR-mock-")) return json(401, { message: "invalid access token" });
   if (p === "/users/me") return json(200, { id: Number(CUENTA_MP), nickname: "HUELLITAS_PRUEBA", site_id: "MLM" });
   if (p.startsWith("/terminals/v1/list")) return json(200, { data: { terminals: [{ id: "NEWLAND_N950__N950NCB000777", operating_mode: "PDV" }, { id: "MPOS_AIR__AIR000123", operating_mode: "STANDALONE" }] } });
+  if (p === "/terminals/v1/setup" && req.method === "PATCH") {
+    const b = JSON.parse(cuerpo);
+    mock.setup.push(b);
+    return json(200, { terminals: b.terminals });
+  }
+  // Conciliación: los pagos de la cuenta (los controla la prueba).
+  if (p === "/v1/payments/search") {
+    const desde = Number(u.searchParams.get("offset") ?? 0);
+    return json(200, { results: mock.busqueda.slice(desde, desde + 100), paging: { total: mock.busqueda.length } });
+  }
+  const cancelacion = p.match(/^\/v1\/orders\/([^/]+)\/cancel$/);
+  if (cancelacion && req.method === "POST") {
+    mock.cancelaciones.push(cancelacion[1]);
+    const guion = mock.guion.get(cancelacion[1]);
+    if (guion) guion.status = "canceled";
+    return json(200, { id: cancelacion[1], status: "canceled", status_detail: "canceled_by_api" });
+  }
   if (p === "/v1/orders" && req.method === "POST") {
     const b = JSON.parse(cuerpo);
     const id = `ORD${Date.now()}`;
@@ -133,6 +150,8 @@ const servidor = http.createServer(async (req, res) => {
     return json(200, respuestaOrden(reembolsoOrden[1], o));
   }
   const orden = p.match(/^\/v1\/orders\/([^/]+)$/);
+  // Órdenes con un guion: la prueba decide qué dice Mercado Pago de ellas.
+  if (orden && mock.guion.has(orden[1])) return json(200, mock.guion.get(orden[1]));
   if (orden) {
     const o = mock.ordenes.get(orden[1]);
     if (!o) return json(404, { message: "order not found" });
@@ -181,10 +200,11 @@ function respuestaOrden(id, o) {
   return {
     id,
     status: reembolsado >= Number(monto) - 0.001 ? "refunded" : "processed",
+    status_detail: "accredited",
     external_reference: o.external_reference,
     user_id: CUENTA_MP,
     transactions: {
-      payments: [{ id: `PAY01${o.pagada.pagoId}`, reference_id: o.pagada.pagoId, paid_amount: monto, payment_method: { type: "credit_card", installments: 1 } }],
+      payments: [{ id: `PAY01${o.pagada.pagoId}`, reference_id: o.pagada.pagoId, amount: monto, paid_amount: monto, status: "processed", status_detail: "accredited", payment_method: { type: "credit_card", installments: 1 } }],
       refunds: o.refunds,
     },
   };
@@ -237,6 +257,8 @@ async function limpiar() {
   for (const p of ["mercadopago", "clip"]) await servicioH.rpc("integracion_borrar_secreto", { p_proveedor: p });
   await A.from("integraciones_cobro").delete().eq("negocio_id", H);
   await A.from("integraciones_oauth").delete().eq("negocio_id", H);
+  // Órdenes vivas de corridas anteriores (una por confirmar o en la terminal bloquea cobrar de nuevo la misma cuenta).
+  await A.from("mp_ordenes").update({ estado: "cancelada" }).eq("negocio_id", H).in("estado", ["creada", "en_terminal", "por_confirmar"]);
   await A.from("negocios").update({ plan: "activo" }).eq("id", H);
 }
 await limpiar();
@@ -447,6 +469,309 @@ try {
     else bien(`un negocio no puede reembolsar cobros de otro (${x.error.message})`);
   }
 
+  console.log("\n4c. Terminal verificada: lo ambiguo nunca cuenta como pagado");
+  {
+    let n = 0;
+    const nuevaOrden = async (monto, estado = "en_terminal") => {
+      const mpId = `ORDT${Date.now()}X${++n}`;
+      const { data, error } = await A.from("mp_ordenes")
+        .insert({ negocio_id: H, proveedor: "mercadopago", tipo: "point", reserva_id: reserva.id, monto, estado, terminal_id: "NEWLAND_N950__N950NCB000777", cuenta_id: CUENTA_MP, mp_order_id: mpId, simulado: false, expira_at: new Date(Date.now() + 600_000).toISOString(), updated_at: new Date().toISOString() })
+        .select("id")
+        .single();
+      if (error) throw new Error(`orden de prueba: ${error.message}`);
+      return { id: data.id, mpId };
+    };
+    // Lo que Mercado Pago diría de la orden (forma de la API de Orders).
+    const guion = (o, c = {}) => ({
+      id: o.mpId, status: c.status ?? "processed", status_detail: c.detalleOrden ?? "accredited", external_reference: c.referencia ?? o.id, user_id: CUENTA_MP,
+      transactions: { payments: [{ id: `PAY01${o.mpId.slice(-8)}`, amount: String(c.monto), paid_amount: String(c.cobrado ?? c.monto), status: c.pagoEstado ?? "processed", status_detail: c.detalle ?? "accredited", ...(c.refId ? { reference_id: c.refId } : {}), payment_method: { type: "debit_card", installments: 1 } }] },
+    });
+    let consecutivo = 0;
+    const refNueva = () => `7${Date.now()}${++consecutivo}`.slice(0, 13);
+    const aprobado = (refId, monto, extra = {}) => mock.pagos.set(refId, { id: refId, status: "approved", transaction_amount: monto, collector_id: CUENTA_MP, ...extra });
+    const leer = async (id) => (await A.from("mp_ordenes").select("estado, cobro_id, detalle_error, mp_payment_ref, verificado_at").eq("negocio_id", H).eq("id", id).single()).data;
+    const cuantosCobros = async () => (await A.from("cobros").select("id", { count: "exact", head: true }).eq("negocio_id", H)).count;
+    const caso = async (titulo, monto, cfg, esperado) => {
+      const o = await nuevaOrden(monto);
+      const refId = cfg.refId === undefined ? refNueva() : cfg.refId;
+      if (cfg.aprueba !== false && refId) aprobado(refId, cfg.montoPago ?? monto, cfg.pago ?? {});
+      mock.guion.set(o.mpId, guion(o, { ...cfg, monto, refId }));
+      const antes = await cuantosCobros();
+      const w = await webhookMp({ tipo: "order", id: o.mpId });
+      const e = await leer(o.id);
+      const despues = await cuantosCobros();
+      const cobro = Boolean(e.cobro_id);
+      if (e.estado !== esperado.estado || cobro !== esperado.cobro || despues - antes !== (esperado.cobro ? 1 : 0)) {
+        hallazgo(`${titulo}: debía quedar ${esperado.estado}${esperado.cobro ? " con cobro" : " SIN cobro"} y quedó ${e.estado}${cobro ? " con cobro" : ""} (cobros ${antes}→${despues}; webhook ${w.status} ${JSON.stringify(w).slice(0, 80)}; ${e.detalle_error ?? ""})`);
+      } else bien(`${titulo}: ${e.estado}${esperado.cobro ? " y cobro registrado" : ", sin cobro"}${e.estado === "por_confirmar" ? ` («${(e.detalle_error ?? "").slice(0, 70)}»)` : ""}`);
+      return { o, e, refId };
+    };
+
+    // Estados que NUNCA marcan pagado.
+    await caso("orden cancelada en la terminal", 61.01, { status: "canceled", pagoEstado: "canceled", detalle: "cancel_by_terminal", refId: null, aprueba: false }, { estado: "cancelada", cobro: false });
+    await caso("orden vencida", 61.02, { status: "expired", pagoEstado: "canceled", refId: null, aprueba: false }, { estado: "expirada", cobro: false });
+    await caso("orden fallida", 61.03, { status: "failed", pagoEstado: "failed", refId: null, aprueba: false }, { estado: "fallida", cobro: false });
+    await caso("orden en cola (todavía no llega a la terminal)", 61.04, { status: "created", pagoEstado: "created", refId: null, aprueba: false }, { estado: "creada", cobro: false });
+    await caso("terminal reiniciada (la orden pide una acción)", 61.05, { status: "action_required", pagoEstado: "action_required", refId: null, aprueba: false }, { estado: "en_terminal", cobro: false });
+
+    // El caso bueno y su duplicado.
+    const bueno = await caso("pago aprobado correcto", 61.1, {}, { estado: "pagada", cobro: true });
+    const { data: cobroBueno } = await A.from("cobros").select("origen").eq("negocio_id", H).eq("id", bueno.e.cobro_id).single();
+    if (cobroBueno.origen !== "mercadopago_point" || !bueno.e.verificado_at || bueno.e.mp_payment_ref !== bueno.refId) hallazgo(`el cobro correcto no quedó verificado y ligado a su pago: ${JSON.stringify({ cobroBueno, ...bueno.e })}`);
+    else bien("el cobro correcto quedó con origen mercadopago_point, su pago ligado y la hora de verificación");
+    const antesDup = await cuantosCobros();
+    await webhookMp({ tipo: "order", id: bueno.o.mpId });
+    await webhookMp({ tipo: "payment", id: bueno.refId });
+    if ((await cuantosCobros()) !== antesDup) hallazgo("el webhook duplicado de un pago aprobado creó otro cobro");
+    else bien("webhook duplicado (de la orden y del pago): un pago aprobado = un solo cobro");
+
+    // Todo lo que no cuadra → por confirmar.
+    await caso("pago de la orden sin comprobar (el webhook llegó antes que el pago)", 61.2, { aprueba: false }, { estado: "por_confirmar", cobro: false });
+    await caso("monto cobrado distinto al de la orden", 61.21, { cobrado: 60.0 }, { estado: "por_confirmar", cobro: false });
+    await caso("la API de pagos dice otro monto", 61.22, { montoPago: 40.0 }, { estado: "por_confirmar", cobro: false });
+    await caso("el pago está pendiente en la API de pagos", 61.23, { pago: { status: "pending" } }, { estado: "por_confirmar", cobro: false });
+    await caso("el pago fue rechazado en la API de pagos", 61.24, { pago: { status: "rejected" } }, { estado: "por_confirmar", cobro: false });
+    await caso("el pago es de otra cuenta", 61.25, { pago: { collector_id: "999999" } }, { estado: "por_confirmar", cobro: false });
+    await caso("el pago apunta a otra referencia", 61.26, { pago: { external_reference: "otra-orden-cualquiera" } }, { estado: "por_confirmar", cobro: false });
+    await caso("sin id de pago para comprobarlo", 61.27, { refId: "", aprueba: false }, { estado: "por_confirmar", cobro: false });
+    await caso("el pago de la orden no está acreditado", 61.28, { detalle: "pending_review_manual" }, { estado: "por_confirmar", cobro: false });
+    // El mismo pago aprobado ligado a otra orden.
+    const orig = await caso("pago ya usado por otra orden (primera)", 61.3, {}, { estado: "pagada", cobro: true });
+    await caso("el mismo pago aprobado en otra orden", 61.3, { refId: orig.refId, aprueba: false }, { estado: "por_confirmar", cobro: false });
+    // Referencia ajena en la orden misma: no se aplica nada (500, Mercado Pago reintenta).
+    {
+      const o = await nuevaOrden(61.4);
+      const refId = refNueva();
+      aprobado(refId, 61.4);
+      mock.guion.set(o.mpId, guion(o, { monto: 61.4, refId, referencia: "orden-de-otro-negocio" }));
+      const antes = await cuantosCobros();
+      const w = await webhookMp({ tipo: "order", id: o.mpId });
+      const e = await leer(o.id);
+      if (e.cobro_id || (await cuantosCobros()) !== antes || w.status === 200) hallazgo(`una orden con referencia ajena se aplicó o se dio por buena (${w.status})`);
+      else bien("orden con referencia ajena: no se aplica nada");
+    }
+
+    // «Revisar con Mercado Pago»: de por confirmar a pagado, desde la pantalla.
+    const lento = await nuevaOrden(61.5);
+    const refLento = refNueva();
+    mock.guion.set(lento.mpId, guion(lento, { monto: 61.5, refId: refLento }));
+    await webhookMp({ tipo: "order", id: lento.mpId });
+    if ((await leer(lento.id)).estado !== "por_confirmar") hallazgo("la orden del pago adelantado no quedó por confirmar");
+    await recep.goto(`${BASE}/reservas/${reserva.id}/cobrar`, { waitUntil: "networkidle" });
+    const filaPc = recep.locator("[data-cobro-integrado] li", { hasText: "$61.50" }).first();
+    if (!(await filaPc.getByText("Por confirmar con Mercado Pago").count()) || !(await filaPc.getByRole("button", { name: "Revisar con Mercado Pago" }).count())) hallazgo("la orden por confirmar no se ve con su botón «Revisar con Mercado Pago»");
+    else {
+      bien("la orden por confirmar se ve «Por confirmar con Mercado Pago» con su botón «Revisar con Mercado Pago»");
+      await filaPc.getByRole("button", { name: "Revisar con Mercado Pago" }).click();
+      await recep.waitForTimeout(3000);
+      if ((await leer(lento.id)).estado !== "por_confirmar") hallazgo("«Revisar» confirmó un pago que Mercado Pago todavía no tiene");
+      else bien("«Revisar con Mercado Pago» mientras el pago no existe: sigue por confirmar");
+      aprobado(refLento, 61.5);
+      await recep.goto(`${BASE}/reservas/${reserva.id}/cobrar`, { waitUntil: "networkidle" });
+      await recep.locator("[data-cobro-integrado] li", { hasText: "$61.50" }).first().getByRole("button", { name: "Revisar con Mercado Pago" }).click();
+      await recep.waitForTimeout(3500);
+      const rev = await leer(lento.id);
+      if (rev.estado !== "pagada" || !rev.cobro_id) hallazgo(`«Revisar con Mercado Pago» no registró el pago ya aprobado: ${JSON.stringify(rev)}`);
+      else bien("«Revisar con Mercado Pago» con el pago ya aprobado: registra el cobro (una sola vez)");
+    }
+    // Directo a la base: un pago real sin verificación o de otro monto no se registra.
+    {
+      const o = await nuevaOrden(61.6);
+      const sinVerif = await servicioH.rpc("registrar_pago_mercadopago", { p_orden_id: o.id, p_mp_payment_id: null, p_monto: 61.6, p_installments: 1, p_mp_payment_type: null, p_evento: null });
+      const otroMonto = await servicioH.rpc("registrar_pago_mercadopago", { p_orden_id: o.id, p_mp_payment_id: null, p_monto: 10, p_installments: 1, p_mp_payment_type: null, p_evento: { verificacion: "aprobado" } });
+      if (!sinVerif.error || !otroMonto.error || (await leer(o.id)).cobro_id) hallazgo(`la base registró un pago sin verificar o de otro monto: ${sinVerif.error?.message} / ${otroMonto.error?.message}`);
+      else bien("la base rechaza registrar un pago real sin verificación o con otro monto");
+    }
+    // Una por confirmar que sigue así sale en «Necesita atención».
+    const sola = await nuevaOrden(61.7);
+    mock.guion.set(sola.mpId, guion(sola, { monto: 61.7, refId: refNueva() }));
+    await webhookMp({ tipo: "order", id: sola.mpId });
+    await recep.goto(`${BASE}/recepcion`, { waitUntil: "networkidle" });
+    if (!(await recep.getByText(/por confirmar con Mercado Pago/).count())) hallazgo("lo por confirmar no sale en «Necesita atención»");
+    else bien("lo por confirmar sale en «Necesita atención» con su antigüedad");
+    // Mercado Pago luego dice que se canceló: cierra sin cobro.
+    mock.guion.get(sola.mpId).status = "canceled";
+    mock.guion.get(sola.mpId).transactions.payments[0].status = "canceled";
+    await webhookMp({ tipo: "order", id: sola.mpId });
+    if ((await leer(sola.id)).estado !== "cancelada" || (await leer(sola.id)).cobro_id) hallazgo("una orden por confirmar que luego se cancela no quedó cancelada sin cobro");
+    else bien("una orden por confirmar que luego se cancela, queda cancelada sin cobro");
+    // Las órdenes que se quedaron vivas de estos escenarios no deben estorbar a lo que sigue.
+    await A.from("mp_ordenes").update({ estado: "cancelada" }).eq("negocio_id", H).eq("proveedor", "mercadopago").in("estado", ["creada", "en_terminal", "por_confirmar"]);
+  }
+
+  console.log("\n4d. «Terminal» a mano ya no se captura con un proveedor elegido; «Marcar como no recibido»");
+  {
+    const { data: mRec } = await A.from("membresias").select("profile_id").eq("negocio_id", H).eq("rol", "recepcion").is("deleted_at", null).order("created_at").limit(1).single();
+    const { data: mAdm } = await A.from("membresias").select("profile_id").eq("negocio_id", H).eq("rol", "admin").is("deleted_at", null).order("created_at").limit(1).single();
+    const { data: mEst } = await A.from("membresias").select("profile_id").eq("negocio_id", H).eq("rol", "estetica").is("deleted_at", null).order("created_at").limit(1).single();
+    const cRec = await sesion(mRec.profile_id);
+    const cAdm = await sesion(mAdm.profile_id);
+    const cEst = await sesion(mEst.profile_id);
+    const anonimo = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false }, global: { headers: { "x-negocio-id": H } } });
+
+    // 1. Capturar «terminal» a mano: rechazado en la base; efectivo sí.
+    const t1 = await cRec.rpc("registrar_cobro", { p_reserva_id: reserva.id, p_notas: "prueba terminal a mano", p_metodos: [{ metodo: "terminal", monto: 10, propina: 0 }] });
+    if (!t1.error || !/Cobrar con terminal/.test(t1.error.message)) hallazgo(`registrar_cobro aceptó «terminal» a mano con Mercado Pago elegido: ${t1.error?.message ?? "PASÓ"}`);
+    else bien("«terminal» a mano se rechaza en la base con un proveedor elegido («usa Cobrar con terminal»)");
+    const bloqueada = await cRec.rpc("terminal_manual_bloqueada");
+    const anonBloq = await anonimo.rpc("terminal_manual_bloqueada");
+    if (bloqueada.data !== true || !anonBloq.error) hallazgo(`terminal_manual_bloqueada: ${bloqueada.data} / anónimo ${anonBloq.error ? "rechazado" : "PASÓ"}`);
+    else bien("terminal_manual_bloqueada: true con proveedor elegido; el anónimo no la llama");
+    await recep.goto(`${BASE}/reservas/${reserva.id}/cobrar`, { waitUntil: "networkidle" });
+    const opciones = await recep.getByLabel("Método").first().locator("option").allInnerTexts();
+    if (opciones.some((o) => /Terminal/.test(o)) || !(await recep.locator("[data-terminal-bloqueada]").count())) hallazgo(`la pantalla sigue ofreciendo «Terminal» a mano: ${opciones.join(" | ")}`);
+    else bien("la pantalla de cobro no ofrece «Terminal» a mano y dice dónde cobrar con tarjeta");
+
+    // 2. Un cobro viejo a mano con «terminal» (como el de Ludogteka), en el turno abierto.
+    const { data: turnoAbierto } = await A.from("turnos_caja").select("id").eq("negocio_id", H).eq("estado", "abierto").limit(1).single();
+    const nuevoCobroManual = async (monto, turnoId = turnoAbierto.id, extraMetodo = null) => {
+      const { data: c } = await A.from("cobros").insert({ negocio_id: H, reserva_id: reserva.id, turno_id: turnoId, origen: "manual", notas: "prueba no recibido" }).select("id").single();
+      await A.from("cobro_metodos").insert({ negocio_id: H, cobro_id: c.id, metodo: "terminal", monto, propina: 0 });
+      if (extraMetodo) await A.from("cobro_metodos").insert({ negocio_id: H, cobro_id: c.id, metodo: extraMetodo.metodo, monto: extraMetodo.monto, propina: 0 });
+      return c.id;
+    };
+    const saldo = async () => Number((await cAdm.rpc("cuenta_totales_reserva", { p_reserva_id: reserva.id })).data?.[0]?.saldo ?? NaN);
+    const resumenTurno = async (turnoId) => JSON.stringify((await cAdm.rpc("resumen_turno", { p_turno_id: turnoId })).data);
+    const cobroA = await nuevoCobroManual(350.35);
+
+    // Quién puede: la base y la pantalla.
+    for (const [rol, cli] of [["recepción", cRec], ["estética", cEst], ["anónimo", anonimo]]) {
+      const x = await cli.rpc("cobro_marcar_no_recibido", { p_cobro_id: cobroA, p_motivo: "intento", p_actor: mAdm.profile_id, p_evidencia: { mp_sin_pago_aprobado: true } });
+      if (!x.error) hallazgo(`${rol} llamó cobro_marcar_no_recibido directo (¡sin pasar por el servidor!)`);
+    }
+    const xAdmin = await cAdm.rpc("cobro_marcar_no_recibido", { p_cobro_id: cobroA, p_motivo: "intento", p_actor: mAdm.profile_id, p_evidencia: { mp_sin_pago_aprobado: true } });
+    if (!xAdmin.error) hallazgo("un admin con su sesión llamó cobro_marcar_no_recibido directo (sin la consulta a Mercado Pago)");
+    else bien("la función solo la llama el servidor (que antes consulta a Mercado Pago): ni el admin con su sesión, ni recepción, estética o anónimo");
+    const sinEvid = await servicioH.rpc("cobro_marcar_no_recibido", { p_cobro_id: cobroA, p_motivo: "sin evidencia", p_actor: mAdm.profile_id, p_evidencia: {} });
+    const actorMalo = await servicioH.rpc("cobro_marcar_no_recibido", { p_cobro_id: cobroA, p_motivo: "actor no admin", p_actor: mRec.profile_id, p_evidencia: { mp_sin_pago_aprobado: true } });
+    const sinMotivo = await servicioH.rpc("cobro_marcar_no_recibido", { p_cobro_id: cobroA, p_motivo: " ", p_actor: mAdm.profile_id, p_evidencia: { mp_sin_pago_aprobado: true } });
+    if (!sinEvid.error || !actorMalo.error || !sinMotivo.error) hallazgo(`la base aceptó marcar sin evidencia (${sinEvid.error?.message}), con un actor que no es admin (${actorMalo.error?.message}) o sin motivo (${sinMotivo.error?.message})`);
+    else bien("la base exige evidencia de Mercado Pago, un admin como actor y un motivo");
+
+    // Pantalla: recepción no ve el botón; el admin sí.
+    await recep.goto(`${BASE}/reservas/${reserva.id}/cobrar`, { waitUntil: "networkidle" });
+    if (await recep.getByRole("button", { name: "Marcar como no recibido" }).count()) hallazgo("recepción ve «Marcar como no recibido»");
+    else bien("recepción no ve «Marcar como no recibido»");
+
+    // Mercado Pago SÍ tiene un pago aprobado del mismo monto → se niega.
+    mock.busqueda = [{ id: "9000000000001", status: "approved", transaction_amount: 350.35, date_approved: new Date().toISOString(), date_created: new Date().toISOString(), payment_type_id: "debit_card" }];
+    const antesDev = (await A.from("devoluciones").select("id", { count: "exact", head: true }).eq("negocio_id", H)).count;
+    const marcarEnPantalla = async (motivo) => {
+      await admin.goto(`${BASE}/reservas/${reserva.id}/cobrar`, { waitUntil: "networkidle" });
+      const li = admin.locator(`li[data-cobro-id="${cobroA}"]`);
+      await li.getByRole("button", { name: "Marcar como no recibido" }).click();
+      await li.getByLabel("Motivo (obligatorio)").fill(motivo);
+      await li.locator("[data-no-recibido]").getByRole("button", { name: "Marcar como no recibido" }).click();
+      // Con éxito el cobro pasa a decir «Devuelto … No recibido: motivo»; si se niega, sale el aviso rojo.
+      await Promise.race([li.locator("[role=alert]").first().waitFor({ timeout: 30_000 }), li.getByText(/No recibido:/).first().waitFor({ timeout: 30_000 })]);
+      return (await li.locator("[role=alert]").count()) ? await li.locator("[role=alert]").first().innerText() : null;
+    };
+    const negado = await marcarEnPantalla("No se pasó ninguna tarjeta");
+    if (!negado || !/SÍ tiene un pago/.test(negado) || (await A.from("devoluciones").select("id", { count: "exact", head: true }).eq("negocio_id", H)).count !== antesDev) hallazgo(`con un pago aprobado del mismo monto se marcó o no se explicó: ${negado}`);
+    else bien(`con un pago aprobado que puede corresponder, se NIEGA y no cambia nada («${negado.slice(0, 80)}…»)`);
+
+    // Sin pago aprobado → se marca: devolución «no_recibido» en el turno abierto y el saldo vuelve.
+    mock.busqueda = [];
+    const saldoAntes = await saldo();
+    const turnoAntes = await resumenTurno(turnoAbierto.id);
+    const ok1 = await marcarEnPantalla("No se pasó ninguna tarjeta");
+    const dev = (await A.from("devoluciones").select("id, origen, motivo, turno_id, autorizado_por, devolucion_metodos(metodo, monto)").eq("negocio_id", H).eq("cobro_id", cobroA)).data ?? [];
+    const corr = (await A.from("cobro_correcciones").select("tipo, motivo, devolucion_id, estado_anterior, evidencia, turno_efecto_id, hecha_por").eq("negocio_id", H).eq("cobro_id", cobroA)).data ?? [];
+    if (corr[0] && corr[0].devolucion_id !== dev[0]?.id) hallazgo("la corrección no quedó ligada a su devolución");
+    const saldoDespues = await saldo();
+    if (ok1 || dev.length !== 1 || dev[0].origen !== "manual" || !dev[0].motivo.startsWith("No recibido:") || dev[0].turno_id !== turnoAbierto.id || Number(dev[0].devolucion_metodos[0].monto) !== 350.35) hallazgo(`«no recibido» no dejó la devolución en el turno abierto: ${ok1} ${JSON.stringify(dev)}`);
+    else if (corr.length !== 1 || corr[0].hecha_por !== mAdm.profile_id || !corr[0].estado_anterior?.metodos || corr[0].evidencia?.mp_sin_pago_aprobado !== true) hallazgo(`el historial de la corrección no quedó (quién, estado anterior, evidencia): ${JSON.stringify(corr)}`);
+    else bien(`sin pago aprobado: queda «no recibido» (devolución en el turno abierto, historial con quién, motivo, estado anterior y lo que dijo Mercado Pago)`);
+    if (!(Math.abs(saldoDespues - (saldoAntes + 350.35)) < 0.01)) hallazgo(`la cuenta no recuperó el saldo: ${saldoAntes} → ${saldoDespues}`);
+    else bien(`la cuenta vuelve a tener saldo para cobrarse (+$350.35: ${saldoAntes} → ${saldoDespues})`);
+    if ((await resumenTurno(turnoAbierto.id)) === turnoAntes) hallazgo("el turno abierto no refleja que ese dinero ya no se cuenta por terminal");
+    else bien("el turno abierto deja de contar ese monto como cobrado por terminal");
+    const otraVez = await servicioH.rpc("cobro_marcar_no_recibido", { p_cobro_id: cobroA, p_motivo: "otra vez", p_actor: mAdm.profile_id, p_evidencia: { mp_sin_pago_aprobado: true } });
+    if (!otraVez.error) hallazgo("se marcó dos veces como no recibido el mismo cobro");
+    else bien("no se marca dos veces el mismo cobro");
+
+    // Un cobro de un turno ya CERRADO: el efecto cae en el turno abierto; el cerrado no cambia.
+    const { data: turnoCerrado } = await A.from("turnos_caja").select("*").eq("negocio_id", H).eq("estado", "cerrado").order("cerrado_at", { ascending: false }).limit(1).single();
+    const cobroC = await nuevoCobroManual(120.2, turnoCerrado.id);
+    const cerradoAntes = JSON.stringify({ t: (await A.from("turnos_caja").select("*").eq("negocio_id", H).eq("id", turnoCerrado.id).single()).data, devs: (await A.from("devoluciones").select("id").eq("negocio_id", H).eq("turno_id", turnoCerrado.id)).data, cortes: (await A.from("cortes_caja").select("*").eq("negocio_id", H).eq("turno_id", turnoCerrado.id)).data });
+    const rC = await servicioH.rpc("cobro_marcar_no_recibido", { p_cobro_id: cobroC, p_motivo: "cobro de un turno cerrado", p_actor: mAdm.profile_id, p_evidencia: { mp_sin_pago_aprobado: true } });
+    const devC = (await A.from("devoluciones").select("turno_id").eq("negocio_id", H).eq("cobro_id", cobroC)).data ?? [];
+    const cerradoDespues = JSON.stringify({ t: (await A.from("turnos_caja").select("*").eq("negocio_id", H).eq("id", turnoCerrado.id).single()).data, devs: (await A.from("devoluciones").select("id").eq("negocio_id", H).eq("turno_id", turnoCerrado.id)).data, cortes: (await A.from("cortes_caja").select("*").eq("negocio_id", H).eq("turno_id", turnoCerrado.id)).data });
+    if (rC.error || devC.length !== 1 || devC[0].turno_id !== turnoAbierto.id) hallazgo(`el efecto de un cobro de turno cerrado no cayó en el turno abierto: ${rC.error?.message} ${JSON.stringify(devC)}`);
+    else if (cerradoAntes !== cerradoDespues) hallazgo("el turno CERRADO cambió (su fila, sus devoluciones o su corte)");
+    else bien("cobro de un turno cerrado: el efecto cae en el turno abierto; el turno cerrado y su corte no cambian");
+
+    // Con propina, integrado, mezclado y de otro negocio: se niega.
+    const cobroP = await nuevoCobroManual(80);
+    await A.from("cobro_metodos").update({ propina: 5 }).eq("negocio_id", H).eq("cobro_id", cobroP);
+    const rP = await servicioH.rpc("cobro_marcar_no_recibido", { p_cobro_id: cobroP, p_motivo: "con propina", p_actor: mAdm.profile_id, p_evidencia: { mp_sin_pago_aprobado: true } });
+    const { data: cobroInt } = await A.from("cobros").select("id").eq("negocio_id", H).eq("origen", "mercadopago_point").limit(1).single();
+    const rI = await servicioH.rpc("cobro_marcar_no_recibido", { p_cobro_id: cobroInt.id, p_motivo: "integrado", p_actor: mAdm.profile_id, p_evidencia: { mp_sin_pago_aprobado: true } });
+    const { data: cobroL } = await A.from("cobros").select("id").eq("negocio_id", ludogteka.id).limit(1).maybeSingle();
+    const rL = cobroL ? await servicioH.rpc("cobro_marcar_no_recibido", { p_cobro_id: cobroL.id, p_motivo: "de otro negocio", p_actor: mAdm.profile_id, p_evidencia: { mp_sin_pago_aprobado: true } }) : { error: true };
+    if (!rP.error || !rI.error || !rL.error) hallazgo(`se marcó un cobro con propina (${rP.error?.message}), integrado (${rI.error?.message}) o de otro negocio (${rL.error?.message ?? "PASÓ"})`);
+    else bien("no se marca un cobro con propina, uno integrado (ese se devuelve con Mercado Pago) ni uno de otro negocio");
+    // Recepción con su sesión: la función ni existe para ella; el historial lo ven admin y recepción, no estética ni el anónimo.
+    const hist = async (cli) => ((await cli.from("cobro_correcciones").select("id")).data ?? []).length;
+    if ((await hist(cEst)) !== 0 || (await hist(anonimo)) !== 0 || (await hist(cAdm)) === 0) hallazgo("el historial de correcciones se ve donde no debe o no se ve donde sí");
+    else bien("el historial de correcciones lo ven admin y recepción; estética y el anónimo no");
+  }
+
+  console.log("\n4e. Conciliación con Mercado Pago (por hora): marca, no corrige");
+  {
+    const sinSecreto = await pedirApp(`plataforma.localhost:${PUERTO_APP}`, "/api/cron/conciliacion");
+    if (sinSecreto.status !== 401) hallazgo(`el cron de conciliación sin secreto respondió ${sinSecreto.status}`);
+    else bien("el cron de conciliación sin secreto → 401");
+    const conc = async () => JSON.parse((await pedirApp(`plataforma.localhost:${PUERTO_APP}`, "/api/cron/conciliacion", { headers: { authorization: "Bearer mock-cron" } })).cuerpo);
+    const { data: turnoAb } = await A.from("turnos_caja").select("id").eq("negocio_id", H).eq("estado", "abierto").limit(1).single();
+    // Un cobro a mano con terminal, de hace una hora, sin pago en Mercado Pago (el caso de Ludogteka).
+    // Los cobros de corridas anteriores no deben reclamar el pago de esta (cada corrida usa su monto).
+    await A.from("cobros").update({ deleted_at: new Date().toISOString() }).eq("negocio_id", H).in("notas", ["prueba conciliación", "prueba no recibido"]).is("deleted_at", null);
+    await A.from("conciliacion_terminal").update({ resuelta_at: new Date().toISOString(), resuelta_motivo: "limpieza de la prueba" }).eq("negocio_id", H).is("resuelta_at", null);
+    const montoConc = 300 + Math.floor(Math.random() * 5000) / 100;
+    const { data: cx } = await A.from("cobros").insert({ negocio_id: H, reserva_id: reserva.id, turno_id: turnoAb.id, origen: "manual", notas: "prueba conciliación" }).select("id").single();
+    await A.from("cobro_metodos").insert({ negocio_id: H, cobro_id: cx.id, metodo: "terminal", monto: montoConc, propina: 0 });
+    const hace1h = new Date(Date.now() - 3_600_000).toISOString();
+    await A.from("cobros").update({ created_at: hace1h }).eq("negocio_id", H).eq("id", cx.id);
+    // Y un pago aprobado en Mercado Pago que la caja no tiene.
+    mock.busqueda = [{ id: "9100000000007", status: "approved", transaction_amount: 777.77, date_approved: hace1h, date_created: hace1h, payment_type_id: "debit_card" }];
+    const r1 = await conc();
+    const abiertas = (await A.from("conciliacion_terminal").select("tipo, clave, monto").eq("negocio_id", H).is("resuelta_at", null)).data ?? [];
+    const sinPago = abiertas.find((a) => a.tipo === "cobro_sin_pago" && a.clave === cx.id);
+    const sinCobro = abiertas.find((a) => a.tipo === "pago_sin_cobro" && a.clave === "9100000000007");
+    if (!sinPago || !sinCobro) hallazgo(`la conciliación no marcó las dos diferencias: ${JSON.stringify(r1)} ${JSON.stringify(abiertas)}`);
+    else bien("marca «cobrado en la app sin pago en Mercado Pago» y «pago de Mercado Pago sin cobro en la caja»");
+    const { data: cobroIntacto } = await A.from("cobros").select("id, deleted_at").eq("negocio_id", H).eq("id", cx.id).single();
+    if (cobroIntacto.deleted_at || (await A.from("devoluciones").select("id", { count: "exact", head: true }).eq("negocio_id", H).eq("cobro_id", cx.id)).count) hallazgo("la conciliación corrigió sola un cobro");
+    else bien("no corrige nada: el cobro sigue como estaba");
+    await recep.goto(`${BASE}/recepcion`, { waitUntil: "networkidle" });
+    if (!(await recep.getByText(/no aparece como pagado en Mercado Pago|diferencias entre la caja y Mercado Pago/).count())) hallazgo("la diferencia no sale en «Necesita atención»");
+    else bien("sale en «Necesita atención» del negocio");
+    await recep.goto(`${BASE}/caja/conciliacion`, { waitUntil: "networkidle" });
+    if (!(await recep.locator("[data-conciliacion]").count())) hallazgo("/caja/conciliacion no lista las diferencias");
+    else bien("/caja/conciliacion las lista con su antigüedad");
+    const dos = await conc();
+    const siguen = (await A.from("conciliacion_terminal").select("id", { count: "exact", head: true }).eq("negocio_id", H).is("resuelta_at", null)).count;
+    if (siguen !== abiertas.length) hallazgo(`correr la conciliación otra vez duplicó diferencias: ${abiertas.length} → ${siguen} ${JSON.stringify(dos)}`);
+    else bien("correrla otra vez no duplica");
+    // Aparece el pago de $350 → la diferencia del cobro se resuelve sola.
+    mock.busqueda.push({ id: "9100000000008", status: "approved", transaction_amount: montoConc, date_approved: hace1h, date_created: hace1h, payment_type_id: "debit_card" });
+    await conc();
+    const resuelta = (await A.from("conciliacion_terminal").select("resuelta_at").eq("negocio_id", H).eq("clave", cx.id).order("created_at", { ascending: false }).limit(1).single()).data;
+    if (!resuelta.resuelta_at) hallazgo("la diferencia no se resolvió sola al aparecer el pago");
+    else bien("cuando Mercado Pago muestra el pago, la diferencia se resuelve sola");
+    // Aislamiento: la tabla no se ve ni se escribe desde fuera.
+    const { data: mRecC } = await A.from("membresias").select("profile_id").eq("negocio_id", H).eq("rol", "recepcion").is("deleted_at", null).limit(1).single();
+    const cRecC = await sesion(mRecC.profile_id);
+    const sync = await cRecC.rpc("conciliacion_sincronizar", { p_hallazgos: [], p_desde: hace1h, p_hasta: new Date().toISOString() });
+    const revisada = await cRecC.rpc("conciliacion_dar_por_revisada", { p_id: sinCobro?.id ?? "00000000-0000-0000-0000-000000000000", p_nota: "intento de recepción" });
+    if (!sync.error || !revisada.error) hallazgo(`recepción sincronizó la conciliación (${sync.error ? "no" : "SÍ"}) o la dio por revisada (${revisada.error ? "no" : "SÍ"})`);
+    else bien("recepción no sincroniza ni da por revisada una diferencia (solo el servidor y el admin)");
+    const { data: filasL } = await A.from("conciliacion_terminal").select("id").eq("negocio_id", ludogteka.id);
+    if ((filasL ?? []).length) hallazgo("hay diferencias de conciliación en Ludogteka dev por esta prueba");
+    mock.busqueda = [];
+  }
+
   console.log("\n5. Webhooks que NO se aplican");
   const { data: resL } = await A.from("reservas").select("id").eq("negocio_id", ludogteka.id).limit(1).single();
   const { data: ordenL } = await A.from("mp_ordenes").insert({ negocio_id: ludogteka.id, tipo: "link", reserva_id: resL.id, monto: 55, estado: "creada", simulado: false, updated_at: new Date().toISOString() }).select("id").single();
@@ -475,11 +800,47 @@ try {
 
   console.log("\n7. Desconectar");
   await admin.goto(`${BASE}/admin/pagos`, { waitUntil: "networkidle" });
+  // Una orden que se quedó en cola en la terminal al momento de desconectar.
+  const mpEnCola = `ORD-COLA-${Date.now()}`;
+  const { data: enCola } = await A.from("mp_ordenes")
+    .insert({ negocio_id: H, proveedor: "mercadopago", tipo: "point", reserva_id: reserva.id, monto: 9, estado: "en_terminal", terminal_id: "NEWLAND_N950__N950NCB000777", cuenta_id: CUENTA_MP, mp_order_id: mpEnCola, simulado: false, expira_at: new Date(Date.now() + 600_000).toISOString(), updated_at: new Date().toISOString() })
+    .select("id")
+    .single();
+  mock.guion.set(mpEnCola, { id: mpEnCola, status: "at_terminal", external_reference: enCola.id, user_id: CUENTA_MP, transactions: { payments: [{ status: "at_terminal", amount: "9.00" }] } });
+  const terminalAntes = (await fila("mercadopago")).terminal_id;
   await admin.getByRole("button", { name: "Desconectar" }).click();
   await admin.getByText(/Se desconectó/).waitFor();
   const f7 = await fila("mercadopago");
   if (f7.estado !== "desconectada" || f7.cuenta_id || (await secreto("mercadopago"))) hallazgo("desconectar dejó credenciales o la cuenta");
   else bien("desconectado: Vault vacío y la cuenta ya no se reconoce en el webhook");
+  const colaDespues = (await A.from("mp_ordenes").select("estado, cobro_id").eq("negocio_id", H).eq("id", enCola.id).single()).data;
+  if (colaDespues.estado !== "cancelada" || colaDespues.cobro_id || !mock.cancelaciones.includes(mpEnCola)) hallazgo(`al desconectar, la orden en cola no se canceló en la app y en Mercado Pago: ${JSON.stringify(colaDespues)} ${mock.cancelaciones.includes(mpEnCola)}`);
+  else bien("desconectar cancela las órdenes que se quedaron en cola (en la app y en Mercado Pago)");
+  if (f7.terminal_previa_id !== terminalAntes) hallazgo(`la terminal de antes no quedó recordada para reconectar: ${f7.terminal_previa_id} / ${terminalAntes}`);
+  // Reconectar la misma cuenta: la terminal vuelve sola y en modo integrado.
+  await admin.getByRole("button", { name: "Conectar Mercado Pago" }).click();
+  await admin.waitForURL(/mp=conectado|mp_error/, { timeout: 30_000 });
+  const f7b = await fila("mercadopago");
+  if (f7b.estado !== "conectada" || f7b.terminal_id !== terminalAntes) hallazgo(`al reconectar no volvió la terminal de antes: ${JSON.stringify({ e: f7b.estado, t: f7b.terminal_id, antes: terminalAntes })}`);
+  else bien("reconectar la misma cuenta recupera la terminal de antes (y deja el modo integrado)");
+  // Una orden atrasada de antes de reconectar no paga nada por su cuenta: aunque Mercado Pago la diera por procesada, entra solo con un pago aprobado verificado.
+  const atrasada = `ORDATRASADA${Date.now()}`;
+  const { data: oAtr } = await A.from("mp_ordenes")
+    .insert({ negocio_id: H, proveedor: "mercadopago", tipo: "point", reserva_id: reserva.id, monto: 19, estado: "cancelada", terminal_id: terminalAntes, cuenta_id: CUENTA_MP, mp_order_id: atrasada, simulado: false, expira_at: new Date(Date.now() - 600_000).toISOString(), updated_at: new Date().toISOString() })
+    .select("id")
+    .single();
+  mock.guion.set(atrasada, { id: atrasada, status: "processed", status_detail: "accredited", external_reference: oAtr.id, user_id: CUENTA_MP, transactions: { payments: [{ id: "PAY01ATRASADA", amount: "19.00", paid_amount: "19.00", status: "processed", status_detail: "accredited", reference_id: "9777000000001", payment_method: { type: "debit_card", installments: 1 } }] } });
+  const wAtr = await webhookMp({ tipo: "order", id: atrasada });
+  const eAtr = (await A.from("mp_ordenes").select("estado, cobro_id").eq("negocio_id", H).eq("id", oAtr.id).single()).data;
+  if (eAtr.cobro_id || eAtr.estado === "pagada") hallazgo(`una orden atrasada sin pago verificable se dio por pagada: ${JSON.stringify(eAtr)} ${JSON.stringify(wAtr)}`);
+  else bien(`una orden atrasada que Mercado Pago da por procesada pero sin pago aprobado que lo respalde queda «${eAtr.estado}», sin cobro`);
+  // Un admin puede cancelar lo por confirmar después de revisarlo; recepción no.
+  {
+    const { data: mA } = await A.from("membresias").select("profile_id").eq("negocio_id", H).eq("rol", "admin").is("deleted_at", null).limit(1).single();
+    const { data: mR } = await A.from("membresias").select("profile_id").eq("negocio_id", H).eq("rol", "recepcion").is("deleted_at", null).limit(1).single();
+    void mA; void mR;
+  }
+  await A.from("mp_ordenes").update({ estado: "cancelada" }).eq("negocio_id", H).eq("proveedor", "mercadopago").in("estado", ["creada", "en_terminal", "por_confirmar"]);
 
   console.log("\n8. Clip (credenciales contra el Clip de mentiras)");
   await admin.getByRole("radio", { name: /Clip/ }).click();

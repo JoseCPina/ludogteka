@@ -84,6 +84,33 @@ export async function aplicarRecargoCita(citaId: string, recargo: number, motivo
   return { error: null };
 }
 
+export type EstadoReasignar = { error: string | null; de?: string; a?: string; ajusteNomina?: boolean; sinCambio?: boolean };
+
+/**
+ * Cambia (o quita) la estilista de una cita. Todo lo decide la base
+ * (reasignar_estilista_cita): quién puede en cada estado, el motivo que pide,
+ * que la estilista sea del negocio y esté activa, y el historial.
+ */
+export async function reasignarEstilista(
+  citaId: string,
+  empleadoId: string | null,
+  motivo: string | null
+): Promise<EstadoReasignar> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("reasignar_estilista_cita", {
+    p_cita_id: citaId,
+    p_empleado_id: empleadoId,
+    p_motivo: motivo,
+  });
+  if (error) return { error: traducirError(error) };
+  revalidatePath("/estetica");
+  revalidatePath(`/estetica/${citaId}`);
+  revalidatePath("/recepcion");
+  revalidatePath("/admin");
+  const r = (data ?? {}) as { de?: string; a?: string; ajuste_nomina?: boolean; sin_cambio?: boolean };
+  return { error: null, de: r.de, a: r.a, ajusteNomina: r.ajuste_nomina ?? false, sinCambio: r.sin_cambio ?? false };
+}
+
 export async function reagendarCita(citaId: string, nuevoInicio: string): Promise<EstadoAccion> {
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase

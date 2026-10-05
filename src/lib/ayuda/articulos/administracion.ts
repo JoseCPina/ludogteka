@@ -165,6 +165,10 @@ Abre a cada empleado en [Empleados](/empleados) y aprieta **Capturar esquema de 
 3. Aprieta el nombre de un empleado para ver el desglose: faltas, comisiones, propinas y adelantos.
 4. Escoge el **Método** y la **Fecha de pago** y aprieta **Marcar pagado**.
 
+## Si cambió la estilista de un servicio
+
+Si en una cita ya terminada se corrige la estilista y la nómina de quien la tenía ya se había pagado, ese pago no se toca. En el desglose del siguiente periodo aparece **Ajustes por cambio de estilista**: menos para quien ya cobró de más, más para quien no cobró. Ya están sumados en comisiones y propinas. Mira [Cómo cambiar o corregir la estilista de una cita](/ayuda/cambiar-estilista-cita-estetica).
+
 ## Si te equivocaste
 
 Un pago no se borra. En **Pagos registrados**, aprieta **Revertir este pago**, escribe por qué y vuelve a pagarlo. Los adelantos que descontó quedan pendientes otra vez.

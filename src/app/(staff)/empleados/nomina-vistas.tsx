@@ -95,6 +95,23 @@ export function VistaDesglose({ d }: { d: Desglose }) {
           </ul>
         </details>
       )}
+      {(d.ajustes_detalle ?? []).length > 0 && (
+        <details className="rounded-md border border-ambar bg-ambar-suave p-3 text-sm" open>
+          <summary className="cursor-pointer font-semibold text-ambar-oscuro">Ajustes por cambio de estilista</summary>
+          <p className="mt-2 text-xs text-n-600">
+            Un servicio de un periodo que ya se pagó cambió de estilista. El pago anterior no se toca: la diferencia viaja aquí
+            (ya está sumada en comisiones y propinas).
+          </p>
+          <ul className="mt-1 flex flex-col gap-1 text-n-700">
+            {(d.ajustes_detalle ?? []).map((a) => (
+              <li key={`${a.tipo}-${a.ref_id}`}>
+                {formatearFechaCalendario(a.fecha)} · {a.tipo === "comision" ? `${a.servicio ?? "Servicio"} · ${a.perro ?? ""}` : "Propina de un cobro"} →{" "}
+                <strong>{a.monto < 0 ? "−" : "+"}{moneda(Math.abs(a.monto))}</strong>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
       {d.adelantos_detalle.length > 0 && (
         <details className="rounded-md border border-n-200 bg-white p-3 text-sm">
           <summary className="cursor-pointer font-semibold text-n-800">Adelantos que se descuentan</summary>
