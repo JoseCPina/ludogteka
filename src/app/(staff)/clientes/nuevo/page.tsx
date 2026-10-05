@@ -10,17 +10,21 @@ export default async function NuevoClientePage({
   searchParams: Promise<{ volver?: string }>;
 }) {
   const volver = rutaDeVuelta((await searchParams).volver);
+  // Viene de agendar una cita de estética: alta corta (nombre y WhatsApp).
+  const corta = Boolean(volver?.startsWith("/estetica"));
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold text-n-900">Nuevo cliente</h1>
         <p className="mt-1 text-n-600">
-          Datos básicos del dueño. El expediente completo (perros, vacunas, etc.) se agrega en
-          otra fase.
+          {corta
+            ? "Solo su nombre y su WhatsApp. Luego registras a su perro y agendas."
+            : "Datos básicos del dueño. El expediente completo (perros, vacunas, etc.) se agrega en otra fase."}
         </p>
       </div>
       <ClienteForm
         pedirDireccion
+        corta={corta}
         action={volver ? crearClienteYVolver.bind(null, volver) : crearCliente}
         textoBoton={volver ? "Crear cliente y seguir con su perro" : "Crear cliente"}
       />

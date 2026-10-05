@@ -16,7 +16,8 @@ export function traducirError(error: { code?: string; message: string }): string
   if (error.code === "23P01") {
     return "Este perro ya tiene una reserva en fechas que se traslapan con estas. Revisa el calendario antes de intentar de nuevo.";
   }
-  if (error.code === "P0001") {
+  // Los permisos de la base (recargos, excepciones) ya vienen explicados.
+  if (error.code === "P0001" || error.code === "42501") {
     return error.message;
   }
   return "No pudimos guardar esto. Intenta de nuevo.";

@@ -16,13 +16,17 @@ import { crearCita } from "../agenda-actions";
 import { asignarGrupoDePropuesta, asignarGrupoDeRaza } from "../../perros/razas/grupos-actions";
 import { useZonaNegocio } from "@/components/zona-negocio";
 
-type Perro = { id: string; cliente_id: string; nombre: string };
+type Perro = { id: string; cliente_id: string; nombre: string; pelajeClave: string | null; pelajeEtiqueta: string | null };
 type Servicio = {
   id: string;
   nombre: string;
   // Si este servicio tiene capturado un precio alternativo para pelo
   // maltratado en algún grupo. Lo resuelve la pantalla, no el formulario.
   tiene_precio_maltratado?: boolean;
+  // Lo que trae el servicio, y lo que NO; y los pelajes a los que no se ofrece.
+  incluye: string[];
+  no_incluye: string | null;
+  pelajes_excluidos: string[];
 };
 type Empleado = { id: string; nombre_completo: string | null };
 type EstanciaEnCurso = { id: string; perroId: string; servicioNombre: string };
@@ -52,7 +56,17 @@ export function AgendarForm({
   perrosConAvisoSanitario: string[];
   // Perros cuya raza (nueva en el catálogo) no tiene grupo de precio en este
   // negocio: la app no adivina el precio, hay que asignarlo o hacer excepción.
-  perrosSinGrupo: { perroId: string; razaId: string | null; propuestaId: string | null; razaNombre: string }[];
+  perrosSinGrupo: {
+    perroId: string;
+    razaId: string | null;
+    propuestaId: string | null;
+    razaNombre: string;
+    // 'sin_grupo': la raza no tiene grupo de precio en este negocio.
+    // 'pelaje': tiene grupo, pero ese grupo no cobra automático a su pelaje.
+    motivo: "sin_grupo" | "pelaje";
+    grupoNombre: string | null;
+    pelajeClave: string | null;
+  }[];
   gruposPrecio: { id: string; nombre: string }[];
   puedeAsignarGrupo: boolean;
   puedeExcepcion: boolean;
@@ -71,6 +85,8 @@ export function AgendarForm({
   const [grupoElegido, setGrupoElegido] = useState("");
   const [excepcion, setExcepcion] = useState(false);
   const [motivoExcepcion, setMotivoExcepcion] = useState("");
+  const [recargo, setRecargo] = useState("");
+  const [motivoRecargo, setMotivoRecargo] = useState("");
   const asignando = useEspera();
   const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +95,13 @@ export function AgendarForm({
   const perrosDelCliente = useMemo(() => perros.filter((p) => p.cliente_id === clienteId), [perros, clienteId]);
   const estanciasDelPerro = estanciasEnCurso.filter((e) => e.perroId === perroId);
   const sinGrupo = perrosSinGrupo.find((p) => p.perroId === perroId) ?? null;
+  const perroElegido = perros.find((p) => p.id === perroId) ?? null;
+  // Un servicio que no se ofrece al pelaje del perro (el rapado, a pelo
+  // corto) ni aparece: enseñar una opción que va a rebotar no ayuda.
+  const noOfrecidos = servicios.filter((s) => perroElegido?.pelajeClave && s.pelajes_excluidos.includes(perroElegido.pelajeClave));
+  const serviciosOfrecidos = servicios.filter((s) => !noOfrecidos.includes(s));
+  const servicioActual = serviciosOfrecidos.find((s) => s.id === servicioId) ?? serviciosOfrecidos[0] ?? null;
+  const recargoNumero = Number(recargo.replace(",", "."));
 
   async function asignarGrupo() {
     if (!sinGrupo || !grupoElegido) return;
@@ -98,7 +121,19 @@ export function AgendarForm({
       return;
     }
     if (sinGrupo && (!excepcion || !grupoElegido || !motivoExcepcion.trim())) {
-      setError(`La raza ${sinGrupo.razaNombre} todavía no tiene grupo de precio en este negocio. Asígnaselo arriba, o registra una excepción con grupo y motivo.`);
+      setError(
+        sinGrupo.motivo === "pelaje"
+          ? "El grupo de este perro no cobra automático a su pelaje. Corrige el pelaje en su expediente, o registra una excepción con grupo y motivo."
+          : `La raza ${sinGrupo.razaNombre} todavía no tiene grupo de precio en este negocio. Asígnaselo arriba, o registra una excepción con grupo y motivo.`
+      );
+      return;
+    }
+    if (recargo.trim() && (!Number.isFinite(recargoNumero) || recargoNumero < 0)) {
+      setError("El recargo tiene que ser un número de cero para arriba.");
+      return;
+    }
+    if (recargoNumero > 0 && !motivoRecargo.trim()) {
+      setError("El recargo necesita un motivo.");
       return;
     }
     setError(null);
@@ -106,7 +141,9 @@ export function AgendarForm({
       grupoExcepcionId: sinGrupo ? grupoElegido : null,
       motivoExcepcion: sinGrupo ? motivoExcepcion.trim() : null,
       perroId,
-      servicioId,
+      servicioId: servicioActual?.id ?? servicioId,
+      recargo: recargoNumero > 0 ? recargoNumero : null,
+      motivoRecargo: recargoNumero > 0 ? motivoRecargo.trim() : null,
       peloMaltratado,
       empleadoId,
       // datetime-local no trae huso horario: la hora tecleada es la del
@@ -165,19 +202,36 @@ export function AgendarForm({
 
           {sinGrupo && (
             <div className="flex flex-col gap-3 rounded-lg border-l-4 border-ambar bg-ambar-suave p-4">
-              <p className="font-bold text-n-900">La raza {sinGrupo.razaNombre} todavía no tiene grupo de precio</p>
-              <p className="text-sm text-n-800">
-                La app no adivina el precio de un baño. {puedeAsignarGrupo || puedeExcepcion ? "Asigna el grupo ahora o registra una excepción solo para esta cita." : "Pídele a admin que lo asigne, o a alguien con el permiso de excepciones al reservar."}
-              </p>
-              <Select label="Grupo de precio" value={grupoElegido} onChange={(e) => setGrupoElegido(e.target.value)}>
-                <option value="">Elige un grupo</option>
-                {gruposPrecio.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.nombre}
-                  </option>
-                ))}
-              </Select>
-              {puedeAsignarGrupo && (
+              {sinGrupo.motivo === "pelaje" ? (
+                <>
+                  <p className="font-bold text-n-900">
+                    {sinGrupo.grupoNombre ? `El grupo «${sinGrupo.grupoNombre}»` : "El grupo de este perro"} no cobra automático a un perro de pelo {perroElegido?.pelajeEtiqueta?.toLowerCase() ?? "sin capturar"}
+                  </p>
+                  <p className="text-sm text-n-800">
+                    La app no adivina el precio de un baño.{" "}
+                    <Link href={`/perros/${perroId}`} className="font-semibold underline">Corrige su pelaje</Link> si está mal capturado.{" "}
+                    {puedeExcepcion ? "Si no, registra una excepción solo para esta cita." : "Si no, pídele a alguien con el permiso de excepciones al reservar que la registre."}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-bold text-n-900">La raza {sinGrupo.razaNombre} todavía no tiene grupo de precio</p>
+                  <p className="text-sm text-n-800">
+                    La app no adivina el precio de un baño. {puedeAsignarGrupo || puedeExcepcion ? "Asigna el grupo ahora o registra una excepción solo para esta cita." : "Pídele a admin que lo asigne, o a alguien con el permiso de excepciones al reservar."}
+                  </p>
+                </>
+              )}
+              {(sinGrupo.motivo === "sin_grupo" || puedeExcepcion) && (
+                <Select label="Grupo de precio" value={grupoElegido} onChange={(e) => setGrupoElegido(e.target.value)}>
+                  <option value="">Elige un grupo</option>
+                  {gruposPrecio.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.nombre}
+                    </option>
+                  ))}
+                </Select>
+              )}
+              {puedeAsignarGrupo && sinGrupo.motivo === "sin_grupo" && (
                 <Button type="button" className="self-start" disabled={!grupoElegido} cargando={asignando.cargando} onClick={asignarGrupo}>
                   Asignarlo a la raza {sinGrupo.razaNombre}
                 </Button>
@@ -211,8 +265,8 @@ export function AgendarForm({
           )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Select label="Servicio" value={servicioId} onChange={(e) => setServicioId(e.target.value)}>
-              {servicios.map((s) => (
+            <Select label="Servicio" value={servicioActual?.id ?? ""} onChange={(e) => setServicioId(e.target.value)}>
+              {serviciosOfrecidos.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.nombre}
                 </option>
@@ -233,6 +287,29 @@ export function AgendarForm({
             </Select>
           </div>
 
+          {noOfrecidos.length > 0 && (
+            <p className="text-sm text-n-600">
+              {noOfrecidos.map((s) => s.nombre).join(", ")} no se ofrece a perros de pelo {perroElegido?.pelajeEtiqueta?.toLowerCase()}.
+            </p>
+          )}
+
+          {servicioActual && (servicioActual.incluye.length > 0 || servicioActual.no_incluye) && (
+            <div data-incluye className="rounded-md border border-n-200 bg-n-50 p-3 text-sm text-n-800">
+              {servicioActual.incluye.length > 0 && (
+                <>
+                  <p className="font-semibold text-n-900">Incluye</p>
+                  <ul className="mt-1 list-disc pl-5">
+                    {servicioActual.incluye.map((i) => (
+                      <li key={i}>{i}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+              {servicioActual.no_incluye && <p className="mt-2 text-n-700">{servicioActual.no_incluye}</p>}
+            </div>
+          )}
+          <p data-nota-costo className="text-sm text-n-600">El costo puede aumentar según el tipo de pelo y el cuidado previo.</p>
+
           {empleados.length === 0 && (
             <Alert variante="advertencia" titulo="No hay nadie que pueda quedar como responsable de la cita">
               No hay ninguna cuenta con rol de estética (ni de admin) dada de alta. La cita necesita un responsable, así
@@ -246,7 +323,7 @@ export function AgendarForm({
           {/* Solo se ofrece en el servicio que de verdad tiene precio
               alternativo. En los demás la casilla no haría nada y sería
               una pregunta de más en el mostrador. */}
-          {servicios.find((s) => s.id === servicioId)?.tiene_precio_maltratado && (
+          {servicioActual?.tiene_precio_maltratado && (
             <label className="flex items-start gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3 text-n-900">
               <input
                 type="checkbox"
@@ -261,6 +338,19 @@ export function AgendarForm({
                 </span>
               </span>
             </label>
+          )}
+
+          {puedeExcepcion && (
+            <div className="flex flex-col gap-2 rounded-md border border-n-200 p-3">
+              <Field
+                label="Recargo manual (opcional)"
+                inputMode="decimal"
+                value={recargo}
+                onChange={(e) => setRecargo(e.target.value)}
+                ayuda="Se suma al precio de la cita. Queda registrado con tu nombre y su motivo."
+              />
+              {recargoNumero > 0 && <Field label="Motivo del recargo" value={motivoRecargo} onChange={(e) => setMotivoRecargo(e.target.value)} />}
+            </div>
           )}
 
           <Field

@@ -17,6 +17,9 @@ export async function crearCita(datos: {
   // Raza sin grupo de precio en el negocio: el grupo de esta cita y por qué.
   grupoExcepcionId?: string | null;
   motivoExcepcion?: string | null;
+  // Recargo manual (solo con «excepciones al reservar»; la base lo exige).
+  recargo?: number | null;
+  motivoRecargo?: string | null;
 }): Promise<EstadoCrearCita> {
   if (!datos.perroId || !datos.servicioId || !datos.empleadoId || !datos.inicio) {
     return { error: "Completa perro, servicio, empleado y hora." };
@@ -52,6 +55,7 @@ export async function crearCita(datos: {
       empleado_id: datos.empleadoId,
       inicio: datos.inicio,
       estancia_id: datos.estanciaId,
+      ...(datos.recargo && datos.recargo > 0 ? { recargo: datos.recargo, recargo_motivo: datos.motivoRecargo ?? null } : {}),
       ...(datos.grupoExcepcionId ? { grupo_raza_excepcion_id: datos.grupoExcepcionId, excepcion_grupo_motivo: datos.motivoExcepcion ?? null } : {}),
     })
     .select("id")
@@ -64,6 +68,20 @@ export async function crearCita(datos: {
 
   revalidatePath("/estetica");
   return { error: null, citaId: data.id };
+}
+
+/** Pone, cambia o quita el recargo manual de una cita que todavía no se cierra. */
+export async function aplicarRecargoCita(citaId: string, recargo: number, motivo: string): Promise<EstadoAccion> {
+  if (!Number.isFinite(recargo) || recargo < 0 || recargo > 100000) return { error: "Escribe un recargo de cero para arriba." };
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("citas_estetica")
+    .update({ recargo, recargo_motivo: recargo > 0 ? motivo.trim() || null : null })
+    .eq("id", citaId);
+  if (error) return { error: traducirError(error) };
+  revalidatePath(`/estetica/${citaId}`);
+  revalidatePath("/estetica");
+  return { error: null };
 }
 
 export async function reagendarCita(citaId: string, nuevoInicio: string): Promise<EstadoAccion> {

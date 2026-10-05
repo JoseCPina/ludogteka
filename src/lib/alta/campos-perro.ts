@@ -27,6 +27,11 @@ export const CAMPOS_EXPEDIENTE = [
 
 export type CampoPerro = (typeof CAMPOS_BASE)[number] | (typeof CAMPOS_EXPEDIENTE)[number];
 
+// El alta de estética es CORTA: lo que hace falta para cotizar y agendar el
+// baño (raza, tamaño y pelaje). Sexo y fecha de nacimiento se capturan después,
+// en el expediente, si algún día hacen falta.
+export const CAMPOS_ESTETICA = ["raza", "tamano_id", "pelaje_id"] as const;
+
 export function camposDeTipo(expedienteCompleto: boolean): CampoPerro[] {
-  return expedienteCompleto ? [...CAMPOS_BASE, ...CAMPOS_EXPEDIENTE] : [...CAMPOS_BASE];
+  return expedienteCompleto ? [...CAMPOS_BASE, ...CAMPOS_EXPEDIENTE] : [...CAMPOS_ESTETICA];
 }

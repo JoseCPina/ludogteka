@@ -14,6 +14,7 @@ import {
   marcarCitaNoLlego,
   iniciarCita,
   finalizarCita,
+  aplicarRecargoCita,
   type AjusteConsumo,
 } from "../agenda-actions";
 
@@ -30,6 +31,9 @@ export function CitaDetalle({
   estado: estadoInicial,
   inicio,
   precio,
+  recargo,
+  recargoMotivo,
+  puedeRecargo,
   esStandalone,
   entregadoPorNombre,
   recogidoPorNombre,
@@ -41,6 +45,10 @@ export function CitaDetalle({
   estado: string;
   inicio: string;
   precio: number;
+  // El recargo manual que ya trae (si trae) y si quien mira puede ponerlo.
+  recargo: number;
+  recargoMotivo: string | null;
+  puedeRecargo: boolean;
   esStandalone: boolean;
   entregadoPorNombre: string | null;
   recogidoPorNombre: string | null;
@@ -57,6 +65,21 @@ export function CitaDetalle({
   // El datetime-local no trae huso horario: lo que se precarga y lo que se
   // teclea es la hora EN EL NEGOCIO (su zona), no la del navegador.
   const [nuevoInicio, setNuevoInicio] = useState(horaLocalParaInput(inicio, zona));
+
+  const [editandoRecargo, setEditandoRecargo] = useState(false);
+  const [recargoTexto, setRecargoTexto] = useState(recargo > 0 ? String(recargo) : "");
+  const [recargoMotivoTexto, setRecargoMotivoTexto] = useState(recargoMotivo ?? "");
+
+  async function guardarRecargo() {
+    setError(null);
+    const monto = recargoTexto.trim() ? Number(recargoTexto.replace(",", ".")) : 0;
+    if (!Number.isFinite(monto) || monto < 0) return setError("El recargo tiene que ser un número de cero para arriba.");
+    if (monto > 0 && !recargoMotivoTexto.trim()) return setError("El recargo necesita un motivo.");
+    const res = await cargando.ejecutar(() => aplicarRecargoCita(citaId, monto, recargoMotivoTexto));
+    if (res.error) return setError(res.error);
+    setEditandoRecargo(false);
+    router.refresh();
+  }
 
   const [confirmandoCancelar, setConfirmandoCancelar] = useState(false);
   const [confirmandoNoLlego, setConfirmandoNoLlego] = useState(false);
@@ -154,7 +177,30 @@ export function CitaDetalle({
     <div className="flex flex-col gap-4">
       <p className="text-n-700">
         Precio: <span className="font-semibold text-n-900">${precio.toFixed(2)}</span>
+        {recargo > 0 && (
+          <span data-recargo className="block text-sm text-n-600">
+            Incluye un recargo de ${recargo.toFixed(2)}{recargoMotivo ? `: ${recargoMotivo}` : ""}.
+          </span>
+        )}
       </p>
+      <p className="-mt-2 text-sm text-n-600">El costo puede aumentar según el tipo de pelo y el cuidado previo.</p>
+
+      {puedeRecargo && (estado === "reservada" || estado === "confirmada" || estado === "en_curso") && (
+        editandoRecargo ? (
+          <div className="flex flex-col gap-2 rounded-md border border-n-200 p-3">
+            <Field label="Recargo manual ($)" inputMode="decimal" value={recargoTexto} onChange={(e) => setRecargoTexto(e.target.value)} ayuda="Cero lo quita. Queda registrado con tu nombre." />
+            <Field label="Motivo" value={recargoMotivoTexto} onChange={(e) => setRecargoMotivoTexto(e.target.value)} />
+            <div className="flex gap-2">
+              <Button type="button" cargando={cargando.cargando} onClick={guardarRecargo}>Guardar recargo</Button>
+              <Button type="button" variante="secundario" onClick={() => setEditandoRecargo(false)}>Cancelar</Button>
+            </div>
+          </div>
+        ) : (
+          <Button type="button" variante="secundario" className="self-start" onClick={() => setEditandoRecargo(true)}>
+            {recargo > 0 ? "Cambiar el recargo" : "Aplicar un recargo"}
+          </Button>
+        )
+      )}
 
       {error && (
         <Alert variante="error" titulo="No se pudo completar la acción">

@@ -74,7 +74,11 @@ export function AltaForm({
   const PASO_VACUNAS = requisitos ? 2 : -1;
   const PASO_CUENTA = requisitos ? 3 : 2;
   const PASO_CONTRATO = PASO_CUENTA + 1;
-  const pasos = ["Tus datos", "Tus perros", ...(requisitos ? ["Vacunas"] : []), "Tu cuenta", "Tu contrato"];
+  // El alta de estética es CORTA: tus datos y tu perro, y listo. Sin correo,
+  // sin cuenta ni contraseña (la cuenta del portal se ofrece después, desde
+  // el mostrador), sin vacunas ni contrato.
+  const corta = !definicion.expedienteCompleto;
+  const pasos = corta ? ["Tus datos", "Tu perro"] : ["Tus datos", "Tus perros", ...(requisitos ? ["Vacunas"] : []), "Tu cuenta", "Tu contrato"];
 
   // La cuenta es obligatoria para quien va a dejar a su perro —el portal es
   // donde ve sus fotos, su salud y sus contratos— y opcional para quien solo
@@ -85,6 +89,7 @@ export function AltaForm({
   // describe lo que el portal muestra de verdad: prometer de más es
   // mentirle al dueño.
   const cuentaOpcional = !definicion.expedienteCompleto;
+  void cuentaOpcional;
 
   const [paso, setPaso] = useState(0);
   const [nombre, setNombre] = useState("");
@@ -92,7 +97,7 @@ export function AltaForm({
   const [email, setEmail] = useState("");
   const [quiereRecoleccion, setQuiereRecoleccion] = useState(false);
   const [direccion, setDireccion] = useState("");
-  const [crearCuenta, setCrearCuenta] = useState(!cuentaOpcional);
+  const [crearCuenta, setCrearCuenta] = useState(!corta);
   const [password, setPassword] = useState("");
   const [confirmacion, setConfirmacion] = useState("");
   const [perros, setPerros] = useState<PerroAlta[]>([perroVacio()]);
@@ -146,6 +151,12 @@ export function AltaForm({
       if (malo) return setError("Escribe la fecha en que se aplicó cada comprobante que subiste.");
     }
     setPaso((p) => p + 1);
+  }
+
+  async function terminarCorta() {
+    setError(null);
+    if (perros.some((p) => !p.nombre.trim())) return setError("Cada perro necesita al menos un nombre.");
+    await enviar();
   }
 
   async function enviar() {
@@ -276,8 +287,8 @@ export function AltaForm({
           </p>
         )}
         <p className="text-n-600">
-          Si después quieres una cuenta para ver {definicion.cuentaMuestra}, pídela en recepción.
-          Entras con este mismo teléfono.
+          Si después quieres una cuenta para ver {definicion.cuentaMuestra}, pídele a recepción que te
+          mande la invitación: tú escoges tu contraseña y entras con este mismo teléfono.
         </p>
       </div>
     );
@@ -315,19 +326,21 @@ export function AltaForm({
             onChange={(e) => setTelefono(e.target.value)}
             placeholder="444 123 4567"
             ayuda={
-              cuentaOpcional
-                ? "Con este número te identificamos. Si abres tu cuenta, también entras con él."
+              corta
+                ? "Es tu WhatsApp: con este número te identificamos."
                 : "Con este número te identificamos y con él entras a tu cuenta."
             }
           />
-          <Field
-            label="Tu correo (opcional)"
-            type="email"
-            inputMode="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            ayuda="Opcional. No lo necesitas para registrarte."
-          />
+          {!corta && (
+            <Field
+              label="Tu correo (opcional)"
+              type="email"
+              inputMode="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              ayuda="Opcional. No lo necesitas para registrarte."
+            />
+          )}
 
           {/* La dirección solo le sirve a quien quiere que pasemos por su
               perro. Preguntársela a todos es un campo largo, en un celular,
@@ -385,7 +398,7 @@ export function AltaForm({
               cotizacion={cotizacion}
               foto={fotos[i] ?? null}
               onCambio={(cambios) => actualizarPerro(i, cambios)}
-              onFoto={(archivo) => setFotos((prev) => prev.map((f, j) => (i === j ? archivo : f)))}
+              onFoto={corta ? null : (archivo) => setFotos((prev) => prev.map((f, j) => (i === j ? archivo : f)))}
               onQuitar={perros.length > 1 ? () => quitarPerro(i) : null}
             />
           ))}
@@ -394,13 +407,20 @@ export function AltaForm({
             Agregar otro perro
           </Button>
 
+          {corta && aviso && <Alert variante="advertencia" titulo={aviso} />}
           <div className="flex justify-between">
             <Button type="button" variante="secundario" onClick={() => setPaso(PASO_DATOS)}>
               Atrás
             </Button>
-            <Button type="button" onClick={siguiente}>
-              Siguiente
-            </Button>
+            {corta ? (
+              <Button type="button" cargando={enviando.cargando} onClick={terminarCorta}>
+                {enviando.cargando ? "Guardando…" : "Terminar mi registro"}
+              </Button>
+            ) : (
+              <Button type="button" onClick={siguiente}>
+                Siguiente
+              </Button>
+            )}
           </div>
         </div>
       )}

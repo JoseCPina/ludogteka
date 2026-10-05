@@ -21,7 +21,7 @@ export default async function AgendarPage() {
     supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).eq("publico_general", false).order("nombre"),
     supabase
       .from("perros")
-      .select("id, cliente_id, nombre")
+      .select("id, cliente_id, nombre, pelaje:tipos_pelaje(clave, etiqueta)")
       .is("deleted_at", null)
       .eq("fallecido", false)
       .order("nombre"),
@@ -52,10 +52,18 @@ export default async function AgendarPage() {
       .in("estado", ["vencida", "sin_registro"]),
   ]);
   const [{ data: sinGrupoCrudo }, { data: gruposPrecio }] = await Promise.all([
-    supabase.from("perro_grupo_raza").select("perro_id, raza_id, raza_nombre, propuesta_id").eq("sin_grupo", true),
+    supabase.from("perro_grupo_raza").select("perro_id, raza_id, raza_nombre, propuesta_id, sin_grupo_motivo, grupo_nombre, pelaje_clave").eq("sin_grupo", true),
     supabase.from("grupos_raza").select("id, nombre").is("deleted_at", null).order("orden"),
   ]);
-  const perrosSinGrupo = ((sinGrupoCrudo ?? []) as { perro_id: string; raza_id: string | null; raza_nombre: string; propuesta_id: string | null }[]).map((r) => ({ perroId: r.perro_id, razaId: r.raza_id, propuestaId: r.propuesta_id, razaNombre: r.raza_nombre }));
+  const perrosSinGrupo = ((sinGrupoCrudo ?? []) as { perro_id: string; raza_id: string | null; raza_nombre: string; propuesta_id: string | null; sin_grupo_motivo: string | null; grupo_nombre: string | null; pelaje_clave: string | null }[]).map((r) => ({
+    perroId: r.perro_id,
+    razaId: r.raza_id,
+    propuestaId: r.propuesta_id,
+    razaNombre: r.raza_nombre,
+    motivo: (r.sin_grupo_motivo === "pelaje" ? "pelaje" : "sin_grupo") as "pelaje" | "sin_grupo",
+    grupoNombre: r.grupo_nombre,
+    pelajeClave: r.pelaje_clave,
+  }));
   const usanGh = new Set((conGuarderiaHotel ?? []).map((r) => r.perro_id as string));
   const perrosConAvisoSanitario = Array.from(
     new Set((conRequisitoPendiente ?? []).map((r) => r.perro_id as string).filter((id) => usanGh.has(id)))
@@ -76,9 +84,19 @@ export default async function AgendarPage() {
     .select("servicio_id, precio_pelo_maltratado")
     .not("precio_pelo_maltratado", "is", null);
   const claves = new Set((conMaltratado ?? []).map((t) => t.servicio_id as string));
+  // Lo que incluye cada servicio y a qué pelajes no se ofrece (el rapado, a
+  // pelo corto): salen de la configuración del servicio, no de aquí.
+  const { data: detalleServicios } = await supabase
+    .from("servicios")
+    .select("id, incluye, no_incluye, pelajes_excluidos")
+    .in("id", (servicios ?? []).map((s) => s.id as string));
+  const detalle = new Map((detalleServicios ?? []).map((d) => [d.id as string, d]));
   const serviciosConMarca = (servicios ?? []).map((s) => ({
     ...s,
     tiene_precio_maltratado: claves.has(s.id as string),
+    incluye: ((detalle.get(s.id as string)?.incluye as string[] | null) ?? []),
+    no_incluye: (detalle.get(s.id as string)?.no_incluye as string | null) ?? null,
+    pelajes_excluidos: ((detalle.get(s.id as string)?.pelajes_excluidos as string[] | null) ?? []),
   }));
 
   return (
@@ -95,7 +113,10 @@ export default async function AgendarPage() {
       ) : (
         <AgendarForm
           clientes={armarClientesBuscables((clientes ?? []) as { id: string; nombre: string; telefono: string }[], (perros ?? []) as { id: string; cliente_id: string; nombre: string }[])}
-          perros={perros ?? []}
+          perros={((perros ?? []) as unknown as { id: string; cliente_id: string; nombre: string; pelaje: { clave: string; etiqueta: string } | { clave: string; etiqueta: string }[] | null }[]).map((p) => {
+            const pe = Array.isArray(p.pelaje) ? p.pelaje[0] : p.pelaje;
+            return { id: p.id, cliente_id: p.cliente_id, nombre: p.nombre, pelajeClave: pe?.clave ?? null, pelajeEtiqueta: pe?.etiqueta ?? null };
+          })}
           servicios={serviciosConMarca}
           empleados={((empleados ?? []) as { id: string; nombre: string; rol: string }[]).map((e) => ({
             id: e.id,

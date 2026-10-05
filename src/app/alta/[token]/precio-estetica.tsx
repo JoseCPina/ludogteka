@@ -73,13 +73,15 @@ export function PrecioEstetica({
   razaId,
   razaEscrita,
   tamanoId,
+  pelajeId = "",
 }: {
   cotizacion: CotizacionEstetica;
   razaId: string | null;
   razaEscrita: string;
   tamanoId: string;
+  pelajeId?: string;
 }) {
-  const cotizado = cotizarPerro(cotizacion, razaId, razaEscrita, tamanoId);
+  const cotizado = cotizarPerro(cotizacion, razaId, razaEscrita, tamanoId, pelajeId);
 
   if (!cotizado) {
     return (
@@ -106,10 +108,18 @@ export function PrecioEstetica({
         <TarjetaServicio key={s.clave} servicio={s} />
       ))}
 
+      <p data-nota-costo className="text-sm text-n-600">El costo puede aumentar según el tipo de pelo y el cuidado previo.</p>
+
       {cotizado.firmeza === "sin_dato" && (
         <p className="text-sm text-n-700">
           Todavía no tenemos precio para un perro como el tuyo. Regístralo igual: recepción te
           dice el precio cuando lo lleves.
+        </p>
+      )}
+
+      {cotizado.firmeza === "depende_pelo" && (
+        <p className="text-sm text-n-700">
+          Estos precios son para perros de pelo corto. Si el pelo de tu perro es medio o largo, escógelo arriba; si no, recepción te dice su precio cuando lo lleves.
         </p>
       )}
 

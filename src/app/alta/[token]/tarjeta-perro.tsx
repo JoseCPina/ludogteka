@@ -141,6 +141,7 @@ export function TarjetaPerro({
           razaId={perro.raza_propuesta ? "raza-propuesta" : perro.raza_id}
           razaEscrita={perro.raza}
           tamanoId={perro.tamano_id}
+          pelajeId={perro.pelaje_id}
         />
       )}
 

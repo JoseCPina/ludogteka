@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { tienePermiso } from "@/lib/auth/permisos";
 import { AlertaCriticaBanner } from "@/app/(staff)/perros/alerta-critica-banner";
 import { ResumenSanitario, type EstadoRequisitoItem } from "@/app/(staff)/perros/resumen-sanitario";
 import { NotaSoloEstetica } from "@/app/(staff)/perros/nota-solo-estetica";
@@ -22,7 +23,7 @@ export default async function CitaDetallePage({
   const { data: cita, error } = await supabase
     .from("citas_estetica")
     .select(
-      "id, perro_id, servicio_id, tamano_id, empleado_id, estancia_id, inicio, fin, estado, precio, fuera_de_horario, entregado_por_nombre, recogido_por_nombre, recogido_por_es_dueno, perros(nombre), servicios(nombre)"
+      "id, perro_id, servicio_id, tamano_id, empleado_id, estancia_id, inicio, fin, estado, precio, recargo, recargo_motivo, fuera_de_horario, entregado_por_nombre, recogido_por_nombre, recogido_por_es_dueno, perros(nombre), servicios(nombre)"
     )
     .eq("id", citaId)
     .single();
@@ -141,6 +142,9 @@ export default async function CitaDetallePage({
           estado={cita.estado}
           inicio={cita.inicio}
           precio={cita.precio}
+          recargo={Number(cita.recargo ?? 0)}
+          recargoMotivo={(cita.recargo_motivo as string | null) ?? null}
+          puedeRecargo={tienePermiso(sesion, "excepciones_reserva")}
           esStandalone={!cita.estancia_id}
           entregadoPorNombre={cita.entregado_por_nombre}
           recogidoPorNombre={cita.recogido_por_nombre}

@@ -264,7 +264,9 @@ try {
   const { data: tarifaPrueba, error: errTarifa } = await SB.from("tarifas").insert({ servicio_id: servicioPrueba.id, grupo_raza_id: grupoPrueba.id, tamano_id: null, pelaje_id: null, cantidad_desde: 1, vigencia_desde: "2026-01-01", precio: 123, no_aplica: false }).select("id").single();
   if (errTarifa) throw new Error(`tarifa de prueba: ${errTarifa.message}`);
   creados.tarifas = [tarifaPrueba.id];
-  const tarifas = [{ servicio_id: servicioPrueba.id, grupo_raza_id: grupoPrueba.id, precio: 123 }];
+  // Si Huellitas ya trae su tabla de precios (estetica-dev.mjs), el vigente manda.
+  const { data: vigentes } = await SB.from("tarifas_vigentes").select("precio").eq("servicio_id", servicioPrueba.id).eq("grupo_raza_id", grupoPrueba.id).is("tamano_id", null).is("pelaje_id", null);
+  const tarifas = [{ servicio_id: servicioPrueba.id, grupo_raza_id: grupoPrueba.id, precio: Number(vigentes?.[0]?.precio ?? 123) }];
   const candidato = { servicio: servicioPrueba, grupo: grupoPrueba };
   if (!candidato) {
     hallazgo("Huellitas no tiene un servicio de estética con tarifa en un grupo sin talla: no se pudo probar la cita");
@@ -323,7 +325,8 @@ try {
   }
   // Una raza SIN raza_id sigue como hoy (grupo por defecto + pantalla de normalizar): no es lo que cambió.
   const { data: pd } = await SB.from("perro_grupo_raza").select("por_defecto, sin_grupo").eq("perro_id", dMestiza).single();
-  if (!pd.por_defecto || pd.sin_grupo) hallazgo("un perro con la raza escrita a mano dejó de comportarse como hasta hoy (grupo por defecto)");
+  // (Sin pelaje capturado, el grupo por defecto —«Por talla», solo pelo corto— no se da por bueno: sin_grupo por pelaje.)
+  if (!pd.por_defecto) hallazgo("un perro con la raza escrita a mano dejó de comportarse como hasta hoy (grupo por defecto)");
   else bien("un perro con la raza escrita a mano sigue con el grupo por defecto, como hasta hoy (lo resuelve la normalización)");
 
   // ── 6. Razas desde el formulario del perro ──

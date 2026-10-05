@@ -20,6 +20,7 @@ import {
 import { BonosCliente, type BonoCatalogo, type BonoFila } from "../bonos-cliente";
 import { DistanciaSeccion } from "./distancia-seccion";
 import { LinkComplemento, type LinkPendiente } from "./link-complemento";
+import { InvitarPortal } from "./invitar-portal";
 import { RestablecerPassword } from "./restablecer-password";
 import { usaEstancias } from "@/lib/plan/modulos";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -323,6 +324,8 @@ export default async function EditarClientePage({
             clienteNombre={cliente.nombre}
             tieneCuenta={Boolean(cuentaCliente)}
           />
+
+          <InvitarPortal clienteId={id} clienteNombre={cliente.nombre} tieneCuenta={Boolean(cuentaCliente)} />
 
           <LinkComplemento
             clienteId={id}

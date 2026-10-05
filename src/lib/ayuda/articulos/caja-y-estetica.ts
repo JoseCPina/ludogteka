@@ -350,6 +350,32 @@ Si agendas una cita de estética antes de asignarlo, la pantalla te pide el grup
 En el link de alta, el dueño también puede apretar **No la encuentro: agregar esta raza**: solo escribe el nombre, otros nombres y cómo es. No ve precios ni grupos de precio. Su propuesta te llega igual, con sus notas, y la ves en [Razas sin catalogar](/perros/razas).`,
   },
   {
+    slug: "precios-de-estetica",
+    titulo: "Cómo funcionan los precios de estética",
+    resumen: "El precio sale del servicio, del grupo de la raza y del pelaje del perro; nunca se adivina.",
+    grupo: "estetica",
+    modulo: "estetica",
+    roles: ["admin", "recepcion"],
+    rutas: ["/servicios", "/perros/razas/grupos"],
+    palabras: ["tarifas", "precios", "baño", "rapado", "exprés", "grupo de raza", "pelaje", "talla"],
+    cuerpo: `Cada servicio de estética tiene un precio por **grupo de raza** (por ejemplo, poodle y maltés, o pastores de pelo largo). Un grupo especial, **Por talla**, es para perros de pelo corto: ahí el precio depende de si es chico, mediano o grande. No hay talla gigante en estética.
+
+1. Abre [Servicios](/servicios) (necesitas el permiso «Precios y tarifas») y entra al servicio.
+2. En la matriz, cada celda es un servicio, un grupo y, si aplica, un pelaje. Escribe el precio y guárdalo. Una celda vacía es «sin precio»: la app no cobra por adivinación.
+3. El **precio de pelo maltratado** es una columna aparte del baño completo; en grupos donde no se cobra, queda vacío.
+4. El **rapado** solo aplica a perros de pelo medio o largo.
+
+Cambiar un precio solo vale para las citas nuevas. Las que ya están agendadas o cobradas conservan el que tenían.
+
+## Qué grupo le toca a cada perro
+
+Lo decide su raza. Las razas que todavía no tienen grupo en tu negocio salen en [Razas sin grupo de precio](/perros/razas/grupos): ahí las asignas. Mientras no tengan grupo, el perro de pelo medio o largo no tiene precio automático y la cita pide asignar el grupo o registrar una excepción con motivo.
+
+## Si algo no sale
+
+- «No hay tarifa»: el mensaje dice qué falta (servicio, grupo o pelaje) y trae el link para capturarlo.`,
+  },
+  {
     slug: "agendar-cita-estetica",
     titulo: "Cómo agendar una cita de estética",
     resumen: "Apartar un baño o corte con el servicio, el estilista y la hora.",
@@ -365,9 +391,12 @@ En el link de alta, el dueño también puede apretar **No la encuentro: agregar 
 2. Busca al cliente por perro, dueño o teléfono. Si es nuevo, dalo de alta con **Nuevo cliente**.
 3. Escoge el **Perro**.
 4. Si el perro ya está en guardería u hotel, puedes ligar la cita a esa estancia.
-5. Escoge el **Servicio** y el **Empleado** que lo atiende.
-6. Si el servicio tiene precio de pelo maltratado y así llegó, marca **Llegó con el pelo maltratado**: cobra el precio alternativo del mismo baño.
-7. Pon la **Fecha y hora** y aprieta **Agendar cita**.
+5. Escoge el **Servicio** y el **Empleado** que lo atiende. Son tres baños: el **completo** (baño, cepillado, deslanado o corte de pelo, uñas, orejas y dientes, corte higiénico, hidratación de nariz y huellitas), el **rapado** (igual, pero con corte de pelo rapado) y el **exprés** (baño con shampoo y secado).
+6. Si el perro llegó con el pelo maltratado, marca **Llegó con el pelo maltratado**: cobra el precio alternativo del mismo baño. Es una condición de la cita, no otro servicio.
+7. Si necesitas cobrar de más (mucho pelo, nudos, cuidado previo), escribe el **Recargo manual (opcional)** y su **Motivo del recargo**. Se suma al precio, y queda registrado con tu nombre y el motivo. Solo lo hace admin o quien tenga el permiso «Excepciones al reservar».
+8. Pon la **Fecha y hora** y aprieta **Agendar cita**.
+
+El precio sale del grupo de raza del perro, de su pelaje y del servicio; al dueño le aclaramos que **el costo puede aumentar según el tipo de pelo y el cuidado previo**. El rapado solo se ofrece a perros de pelo medio o largo. Cambiar las tarifas después no mueve el precio de las citas que ya están agendadas o cobradas. Para cambiar el recargo de una cita, ábrela y aprieta **Cambiar el recargo**.
 
 Una cita fuera del horario sale resaltada en naranja en la agenda.
 
@@ -377,6 +406,7 @@ Una cita fuera del horario sale resaltada en naranja en la agenda.
 
 - «Este perro no tiene talla registrada…»: captúrala en su expediente con el link del mensaje.
 - «No hay nadie que pueda quedar como responsable de la cita»: falta dar de alta al personal de estética.
+- «El grupo de este perro no cobra automático a su pelaje»: pasa con un perro de pelo medio o largo sin grupo de precio (por ejemplo un mestizo). No se adivina un precio: corrige su pelaje en el expediente, asígnale su grupo, o con el permiso «Excepciones al reservar» registra una excepción con el grupo y el motivo, solo para esa cita.
 - Sale el recuadro **La raza … todavía no tiene grupo de precio**: es una raza nueva (del catálogo o propuesta desde el formulario del perro) y tu negocio aún no decide su precio. Mira [Cómo agregar una raza que no aparece](/ayuda/agregar-una-raza-que-no-aparece).`,
   },
   {
