@@ -11,13 +11,13 @@ export default {
     },
     {
       titulo: "Entrada y salida",
-      dice: "Quien tiene cuenta registra su propia entrada y su salida desde «Mi asistencia». Quien no, la registra recepción, y el admin puede registrar la de cualquiera. Cada registro guarda quién lo hizo y a qué hora.",
-      pasos: [["ir", "/mi-trabajo"], ["resaltar", "Registrar mi entrada", 3000]],
+      dice: "Quien tiene cuenta registra su propia entrada y su salida desde su propia pantalla. Quien no, la registra recepción, y el admin puede registrar la de cualquiera. Cada registro guarda quién lo hizo y a qué hora.",
+      pasos: [["resaltar", "Registrar entrada", 3000], ["clic", "Daniela Ríos", { nav: true }], ["resaltar", "Asistencia", 2800]],
     },
     {
       titulo: "Retardos y faltas",
       dice: "La app calcula sola los retardos y las faltas con el horario de cada persona, y una tolerancia de diez minutos. Solo el admin corrige un registro, y siempre con un motivo.",
-      pasos: [["resaltar", "Últimos 30 días", 2800], ["resaltar", "Mis ausencias", 2400]],
+      pasos: [["resaltar", "Horario", 2800], ["resaltar", "Ausencias", 2400]],
     },
     {
       titulo: "Un empleado nuevo",

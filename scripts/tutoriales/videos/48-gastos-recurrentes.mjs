@@ -16,9 +16,9 @@ export default {
     },
     {
       titulo: "Te avisa antes",
-      dice: "Quince días antes de cada vencimiento, aparece en «Por pagar». Si vence o se acerca, sale en «Necesita atención» del tablero. Solo lo ve quien tiene el permiso de gastos, porque trae montos.",
+      dice: "Quince días antes de cada vencimiento, aparece en «Por pagar». Si vence o se acerca, sale en Necesita atención del tablero. Solo lo ve quien tiene el permiso de gastos, porque trae montos.",
       pasos: [["ir", "/gastos"], ["resaltar", "Por pagar", 3000]],
     },
   ],
-  resumen: ["Una plantilla genera el gasto esperado antes de cada vencimiento.", "Dices qué periodo cubre cada pago.", "Los vencidos y próximos salen en «Necesita atención»."],
+  resumen: ["Una plantilla genera el gasto esperado antes de cada vencimiento.", "Dices qué periodo cubre cada pago.", "Los vencidos y próximos salen en Necesita atención."],
 };

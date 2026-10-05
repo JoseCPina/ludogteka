@@ -20,7 +20,7 @@ export default {
     },
     {
       titulo: "Tu propio reporte",
-      dice: "Y quien administra decide qué preguntas lleva el reporte, sus colores y cuántos días se conservan las fotos, en la sección «Reporte y fotos».",
+      dice: "Y quien administra decide qué preguntas lleva el reporte, sus colores y cuántos días se conservan las fotos, en la sección Reporte y fotos.",
       pasos: [["ir", "/admin/reporte-guarderia"], ["esperar", 3500]],
     },
   ],

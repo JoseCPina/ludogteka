@@ -6,7 +6,7 @@ export default {
     {
       titulo: "Elige la salida",
       dice: "En «Check-out» están los perros que se van hoy. Toca el que están recogiendo.",
-      pasos: [["resaltar", "Check-out — Guardería", 2400], ["ir", "/recepcion"], ["clic", "Bruno", { nav: true }]],
+      pasos: [["resaltar", "Check-out — Guardería", 2400], ["clic", "css:a[href$='/checkout']", { nav: true }]],
     },
     {
       titulo: "Quién recoge",

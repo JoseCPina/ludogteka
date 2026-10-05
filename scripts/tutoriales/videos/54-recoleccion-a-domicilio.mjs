@@ -15,7 +15,7 @@ export default {
     },
     {
       titulo: "Se cobra con el servicio",
-      dice: "El cargo de recolección se suma a la cuenta, por kilómetro. Lo aplicas desde el check-out, con «Aplicar cargo», y se cobra junto con lo demás.",
+      dice: "El cargo de recolección se suma a la cuenta, por kilómetro. Lo aplicas desde el check-out, con Aplicar cargo, y se cobra junto con lo demás.",
       pasos: [["ir", "/caja/cargo"], ["esperar", 3000]],
     },
   ],
