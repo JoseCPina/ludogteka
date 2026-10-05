@@ -597,10 +597,16 @@ console.log("\n── Reasignar la estilista: el historial y la función son de 
     const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: cabeceras(tAdminB, B), body: JSON.stringify(args) });
     return { ok: r.ok, cuerpo: await r.json().catch(() => null) };
   };
-  let citaId = null, reservaId = null;
+  let citaId = null, reservaId = null, perroPrueba = null;
   try {
-    const { data: modelo } = await SB.from("citas_estetica").select("perro_id, servicio_id, empleado_id").eq("negocio_id", B).not("empleado_id", "is", null).limit(1).maybeSingle();
-    if (!modelo) hallazgo("reasignar: Huellitas no tiene una cita de modelo para probar (corre estetica-dev.mjs)");
+    const { data: razaP } = await A.from("razas").select("id").eq("nombre", "Poodle").single();
+    const { data: tallaP } = await A.from("tamanos_categoria").select("id").eq("clave", "chico").single();
+    const { data: peloP } = await A.from("tipos_pelaje").select("id").eq("clave", "medio").single();
+    const { data: servP } = await SB.from("servicios").select("id").eq("clave", "estetica_estetico").maybeSingle();
+    const pr = await SB.from("perros").insert({ cliente_id: datos.clienteSoloB, nombre: `ZZ reasignar entre ${Date.now()}`, raza: "Poodle", raza_id: razaP.id, tamano_id: tallaP.id, pelaje_id: peloP.id }).select("id").single();
+    perroPrueba = pr.data?.id ?? null;
+    const modelo = { perro_id: perroPrueba, servicio_id: servP?.id, empleado_id: datos.esteticaB };
+    if (!perroPrueba || !servP) hallazgo("reasignar: no se pudo armar el perro o el servicio de prueba en Huellitas (corre negocio-prueba-dev y cargar-tarifas)");
     else {
       const rr = await SB.from("reservas").insert({ cliente_id: datos.clienteSoloB }).select("id").single();
       reservaId = rr.data.id;
@@ -648,6 +654,7 @@ console.log("\n── Reasignar la estilista: el historial y la función son de 
   } finally {
     if (citaId) await SB.from("citas_estetica").delete().eq("id", citaId);
     if (reservaId) await SB.from("reservas").delete().eq("id", reservaId);
+    if (perroPrueba) await SB.from("perros").update({ deleted_at: new Date().toISOString() }).eq("id", perroPrueba);
   }
 }
 
