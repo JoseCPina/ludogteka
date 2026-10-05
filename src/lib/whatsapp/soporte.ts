@@ -31,6 +31,7 @@ import {
   piezasDeSalida,
   ponerLinks,
   SEPARADOR_MENSAJES,
+  type SeguimientoContexto,
   systemPrompt,
   TEXTO_ESCALAMIENTO,
   textoCaptura,
@@ -135,7 +136,7 @@ export interface DepsSoporte {
   /** "28 de septiembre de 2026", en la zona de la plataforma. */
   hoyTexto(): string;
   cuenta(telefono: string): Promise<Cuenta>;
-  contexto(cuenta: Cuenta): Promise<ContextoAgente>;
+  contexto(cuenta: Cuenta, seguimiento?: SeguimientoContexto | null): Promise<ContextoAgente>;
   /**
    * Los tickets de soporte de la app, que también avisan en esta bandeja.
    * Responder a su aviso contesta el ticket (sin esto, solo hilos de WhatsApp).
@@ -185,7 +186,7 @@ function negocioDelHilo(c: Cuenta): { id: string | null; nombre: string | null }
  * escala y la persona recibe el acuse. Un mensaje sin contestar es peor que
  * uno escalado de más.
  */
-export async function atender(telefono: string, texto: string, deps: DepsSoporte, tiempos?: Tiempos): Promise<Desenlace> {
+export async function atender(telefono: string, texto: string, deps: DepsSoporte, tiempos?: Tiempos, seguimiento?: SeguimientoContexto | null): Promise<Desenlace> {
   const marcar = cronometro(tiempos);
   const ahora = deps.ahora();
   // Todo lo que no depende de nada, a la vez: cada consulta en serie eran
@@ -231,7 +232,7 @@ export async function atender(telefono: string, texto: string, deps: DepsSoporte
   }
 
   try {
-    const [historial, aprendido, ctx] = await Promise.all([historialP, aprendidoP, deps.contexto(cuenta)]);
+    const [historial, aprendido, ctx] = await Promise.all([historialP, aprendidoP, deps.contexto(cuenta, seguimiento)]);
     marcar("preparar");
     const texto_ = systemPrompt(deps.base, aprendido, ctx, deps.hoyTexto());
     // La documentación de uso (admin y personal) va primero y en caché: es

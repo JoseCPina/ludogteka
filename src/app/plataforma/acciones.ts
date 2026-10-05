@@ -11,6 +11,7 @@ import { generarPasswordTemporal } from "@/lib/auth/identidad";
 import type { ResultadoPlataforma } from "@/lib/plataforma/tipos";
 import { sincronizarPreciosPlan, type PlanParaStripe } from "@/lib/cobro/precios";
 import { mensajeDeErrorStripe, stripeConfigurado } from "@/lib/cobro/stripe";
+import { eliminarNegocioCompleto } from "@/lib/plataforma/eliminar-negocio";
 
 // La administración de PeluDesk. Toda escritura va con la sesión de quien
 // administra (su JWT): la base comprueba es_admin_plataforma() en cada
@@ -424,4 +425,18 @@ export async function topeMapsPlan(planId: string, fd: FormData): Promise<Result
   if (error) return { error: error.message };
   revalidatePath("/plataforma/maps");
   return { error: null, exito: "Tope del plan guardado." };
+}
+
+// Borrar un negocio de prueba o suspendido (sin cobros reales), con el nombre
+// escrito como confirmación. La base decide si se puede y borra por
+// negocio_id; ver src/lib/plataforma/eliminar-negocio.ts.
+export async function eliminarNegocio(negocioId: string, fd: FormData): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const confirmacion = texto(fd, "confirmacion");
+  if (!confirmacion) return { error: "Escribe el nombre del negocio para confirmar." };
+  const r = await eliminarNegocioCompleto(s.supabase, negocioId, confirmacion);
+  if (r.error) return { error: r.error };
+  revalidatePath("/plataforma");
+  return { error: null, exito: r.exito, ir: "/plataforma" };
 }

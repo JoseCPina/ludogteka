@@ -21,8 +21,9 @@
 //      scope de TikTok salen sus seguidores;
 //  10. ningún token en Telegram, en la respuesta de la tarea ni en los logs.
 import http from "node:http";
-import { spawn, execFileSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { A, URL, env } from "./sesiones-dev.mjs";
+import { clienteApi, DEV } from "../nube/migraciones-api.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const PUERTO = 4458;
@@ -126,7 +127,8 @@ const DIA = "2026-09-13"; // domingo: el lunes siguiente lleva la comparación s
 async function limpiar() {
   await A.from("resumenes_diarios").delete().gte("fecha", "2001-01-01").lte("fecha", "2026-09-29");
   // registros_prueba no la ve la secret key de la prueba (corre con el encabezado de negocio): se borra por el CLI, ligado a desarrollo.
-  execFileSync(process.execPath, ["node_modules/supabase/dist/supabase.js", "db", "query", "--linked", `delete from public.registros_prueba where telefono like '${T}%'`], { stdio: "ignore" });
+  // Por la API de gestión (el CLI necesita Postgres directo, que la nube no alcanza).
+  await (await clienteApi(DEV)).sql(`delete from public.registros_prueba where telefono like '${T}%'`);
   await A.from("redes_publicaciones").delete().like("video", "test-resumen-%");
   await A.from("wa_mensajes").delete().like("telefono", "52100000000%");
   await A.from("wa_uso_ia").delete().like("telefono", "52100000000%");
@@ -200,6 +202,7 @@ try {
   ok(/Registros de prueba: 3 \(ayer 1\)/.test(t1) || /Registros de prueba: 3 /.test(t1), "registros nuevos con su comparación", `registros: ${t1.split("NEGOCIOS")[1]?.slice(0, 200)}`);
   ok(t1.includes("Llegaron desde:") && t1.includes("meta"), "«Llegó desde» por anuncio", "falta el origen de los registros");
   ok(t1.includes("Pruebas activas:") && t1.includes("Ingreso mensual recurrente:") && t1.includes("Convertidas a pago:"), "pruebas, conversiones e ingreso recurrente", "faltan cifras de negocios");
+  ok(t1.includes("Seguimiento de pruebas por WhatsApp:"), "la línea del seguimiento de pruebas (WhatsApp) va en NEGOCIOS", "falta la línea del seguimiento de pruebas");
   ok(t1.includes("Semana: ") && t1.includes("contra"), "el lunes agrega la comparación contra la semana anterior", "falta la línea semanal del lunes");
   ok(t1.includes("$265.00") && t1.includes("de $8,000.00") && t1.includes("3 según Meta") && t1.includes("2 reales"), "campaña: gasto, presupuesto y registros de Meta contra reales", `campaña: ${t1.split("CAMPAÑA DE PELUDESK")[1]?.slice(0, 500)}`);
   ok(t1.includes("Ese perro no está vacunado") && t1.includes("$10.00"), "desglose por anuncio", "falta el desglose por anuncio");

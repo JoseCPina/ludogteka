@@ -3,6 +3,7 @@ import { Alert } from "@/components/ui/alert";
 import { Field } from "@/components/ui/field";
 import { FormularioPlataforma } from "@/components/plataforma/formulario-plataforma";
 import { topeMapsNegocio, topeMapsPlan } from "../../acciones";
+import { cuentaEnTotales, esDemo } from "@/lib/plataforma/metricas";
 
 type Fila = { negocio_id: string; nombre: string; slug: string; plan: string; usadas: number; geocodificar: number; rutas: number; tope: number; propio: boolean };
 
@@ -19,10 +20,12 @@ export default async function MapsPlataforma({ searchParams }: { searchParams: P
     supabase.from("planes").select("id, nombre, tipo, maps_consultas_mes").eq("tipo", "plan").is("deleted_at", null).order("orden"),
   ]);
   const filas = ((data ?? []) as Fila[]).map((f) => ({ ...f, usadas: Number(f.usadas), geocodificar: Number(f.geocodificar), rutas: Number(f.rutas) }));
-  const total = filas.reduce((a, f) => a + f.usadas, 0);
-  const geo = filas.reduce((a, f) => a + f.geocodificar, 0);
-  const rutas = filas.reduce((a, f) => a + f.rutas, 0);
-  const conConsumo = filas.filter((f) => f.usadas > 0);
+  // Totales sin el demo (se ve en la lista, con su etiqueta «Demo»).
+  const contadas = filas.filter(cuentaEnTotales);
+  const total = contadas.reduce((a, f) => a + f.usadas, 0);
+  const geo = contadas.reduce((a, f) => a + f.geocodificar, 0);
+  const rutas = contadas.reduce((a, f) => a + f.rutas, 0);
+  const conConsumo = contadas.filter((f) => f.usadas > 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -44,7 +47,7 @@ export default async function MapsPlataforma({ searchParams }: { searchParams: P
         <div className="rounded-lg border border-n-200 bg-white px-4 py-3">
           <p className="text-sm text-n-600">Negocios que consultaron</p>
           <p className="text-2xl font-bold tabular-nums text-n-900">{conConsumo.length}</p>
-          <p className="text-xs text-n-600">de {filas.length}</p>
+          <p className="text-xs text-n-600">de {contadas.length}</p>
         </div>
       </section>
 
@@ -74,7 +77,7 @@ export default async function MapsPlataforma({ searchParams }: { searchParams: P
               <li key={f.negocio_id} className="flex flex-col gap-2 py-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="font-semibold text-n-900">
-                    {f.nombre} <span className="text-sm font-normal text-n-600">· {f.slug} · {f.plan}</span>
+                    {f.nombre} {esDemo(f) && <span className="rounded-full bg-morado-suave px-2 py-0.5 text-xs font-bold uppercase text-morado">Demo</span>} <span className="text-sm font-normal text-n-600">· {f.slug} · {f.plan}</span>
                   </span>
                   <span className={`tabular-nums text-sm ${pct >= 100 ? "font-semibold text-coral-oscuro" : pct >= 80 ? "text-ambar-oscuro" : "text-n-700"}`}>
                     {f.usadas} / {f.tope}

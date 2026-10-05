@@ -5,7 +5,7 @@ import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { ZONAS_MEXICO } from "@/lib/plataforma/tipos";
 import { urlDelNegocio } from "@/lib/negocio/actual";
-import { actualizarNegocio, agregarAdmin, asignarPlan, cambiarPlan } from "../../../acciones";
+import { actualizarNegocio, agregarAdmin, asignarPlan, cambiarPlan, eliminarNegocio } from "../../../acciones";
 import { formatearFecha } from "@/lib/formato";
 import { pesosDeCentavos } from "@/lib/cobro/iva";
 import { estadoCobro } from "@/lib/cobro/estados";
@@ -26,6 +26,10 @@ type Fila = {
   ciudad: string | null; activo: boolean; plan: "activo" | "prueba" | "demo"; prueba_termina_at: string | null;
   plan_id: string | null; plan_nombre: string | null; complementos: string[]; modulos_cortesia: string[]; web_gratis_at: string | null; marca: { color?: string | null; favicon?: string | null; logo?: string | null; imagen_compartir?: string | null } | null; admins: string[] | null;
 };
+
+// Se puede borrar un negocio en prueba o suspendido que no sea el demo ni el de
+// la casa; la base decide el resto (cobros reales) y lo dice al intentarlo.
+const puedeBorrarse = (n: { plan: string; activo: boolean }, exento: boolean) => !exento && n.plan !== "demo" && (n.plan === "prueba" || !n.activo);
 
 export default async function NegocioPlataforma({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -181,6 +185,20 @@ export default async function NegocioPlataforma({ params }: { params: Promise<{ 
           <Field label="Nombre" name="admin_nombre" />
         </FormularioPlataforma>
       </section>
+
+      {puedeBorrarse(n, cobro?.estado === "exento") && (
+        <section className="flex flex-col gap-4 rounded-lg border border-coral-oscuro/40 bg-white p-5">
+          <h2 className="font-bold text-coral-oscuro">Borrar este negocio</h2>
+          <p className="-mt-2 text-sm text-n-700">
+            Borra el negocio completo: todos sus datos, sus archivos, su suscripción y cliente en Stripe, las credenciales de cobro que haya conectado y
+            las cuentas que se queden sin negocio. No se puede deshacer. Solo para negocios de prueba o suspendidos sin cobros reales; si tiene cobros
+            reales, la base lo rechaza. Queda en la bitácora.
+          </p>
+          <FormularioPlataforma accion={eliminarNegocio.bind(null, n.id)} textoBoton="Borrar el negocio para siempre" variante="peligro">
+            <Field label={`Escribe «${n.nombre}» para confirmar`} name="confirmacion" required autoComplete="off" />
+          </FormularioPlataforma>
+        </section>
+      )}
     </div>
   );
 }

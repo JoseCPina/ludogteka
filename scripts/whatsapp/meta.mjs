@@ -14,6 +14,11 @@
 //   perfil               descripción, sitio, categoría y foto del perfil de WhatsApp
 //                        (public/marca/peludesk/perfil-640.jpg: el isotipo a cuadro completo)
 //   plantillas           crea la plantilla de seguimiento (reabre la ventana de 24 h)
+//   plantillas-seguimiento [enviar]
+//                        las 4 plantillas del seguimiento de pruebas (textos de
+//                        src/lib/seguimiento/plantillas.ts): sin «enviar» solo dice el
+//                        estado de cada una en Meta; con «enviar» manda a revisión
+//                        (MARKETING, es_MX) las que Meta todavía no tiene
 //
 // Variables del entorno (nunca se imprimen):
 //   WHATSAPP_TOKEN        token del usuario de sistema del portafolio de Checaíto
@@ -203,6 +208,23 @@ const pasos = {
       },
     });
     console.log(`✔ Plantilla ${PLANTILLA} enviada a revisión: ${r.status ?? "?"} (${r.category ?? "?"}).`);
+  },
+
+  async "plantillas-seguimiento"(modo) {
+    const waba = requerir("PELUDESK_WABA_ID");
+    const { PLANTILLAS, componentesParaMeta } = await import("../../src/lib/seguimiento/plantillas.ts");
+    const ya = await graph(`/${waba}/message_templates?name=peludesk_prueba&fields=name,status,category,language,rejected_reason&limit=100`);
+    for (const p of PLANTILLAS) {
+      const en = (ya.data ?? []).find((x) => x.name === p.nombre && x.language === "es_MX");
+      if (en) { console.log(`${p.nombre}: ${en.status} (${en.category})${en.rejected_reason && en.rejected_reason !== "NONE" ? ` · motivo: ${en.rejected_reason}` : ""}`); continue; }
+      if (modo !== "enviar") { console.log(`${p.nombre}: no existe en Meta (usa «enviar»)`); continue; }
+      try {
+        const r = await graph(`/${waba}/message_templates`, { method: "POST", body: { name: p.nombre, language: "es_MX", category: p.categoria, components: componentesParaMeta(p) } });
+        console.log(`${p.nombre}: enviada a revisión → ${r.status ?? "?"} (${r.category ?? "?"})`);
+      } catch (e) {
+        console.log(`${p.nombre}: Meta la rechazó al crearla → ${e.message}`);
+      }
+    }
   },
 };
 

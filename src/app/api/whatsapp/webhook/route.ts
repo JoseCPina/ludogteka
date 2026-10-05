@@ -2,6 +2,7 @@ import { after, NextResponse, type NextRequest } from "next/server";
 import { TEXTO_SOLO_TEXTO } from "@/lib/whatsapp/agente";
 import { configWhatsApp, construirSoporte, firmaMetaValida, igualSeguro, telefonoCanonico } from "@/lib/whatsapp/infra";
 import { atender, type Tiempos } from "@/lib/whatsapp/soporte";
+import { TEXTO_AHORA_NO, TEXTO_BAJA } from "@/lib/seguimiento/respuestas";
 
 /**
  * Webhook de WhatsApp (Cloud API) del número de PeluDesk. Vive en el dominio
@@ -114,13 +115,23 @@ export async function POST(request: NextRequest) {
     for (const m of nuevas) {
       const inicio = Date.now();
       try {
+        // Si es la respuesta a un mensaje de seguimiento de su prueba, se registra
+        // (detiene el seguimiento) y el bot sabe de qué se trata; «Ahora no» y las
+        // bajas se contestan con una línea fija, sin IA.
+        const seguimiento = await datos.registrarRespuestaSeguimiento(m.telefono, m.texto ?? "[mensaje sin texto]");
+        if (seguimiento?.tipo === "ahora_no" || seguimiento?.tipo === "baja") {
+          const aviso = seguimiento.tipo === "baja" ? TEXTO_BAJA : TEXTO_AHORA_NO;
+          await wa.texto(m.telefono, aviso);
+          await datos.apuntarMensaje(m.telefono, "agente", aviso);
+          continue;
+        }
         if (!m.texto) {
           await wa.texto(m.telefono, TEXTO_SOLO_TEXTO);
           await datos.apuntarMensaje(m.telefono, "agente", TEXTO_SOLO_TEXTO);
           continue;
         }
         const tiempos: Tiempos = {};
-        const r = await atender(m.telefono, m.texto, deps, tiempos);
+        const r = await atender(m.telefono, m.texto, deps, tiempos, seguimiento);
         console.info("[whatsapp] tiempos", {
           desenlace: r,
           // Del envío en el celular a que Meta nos lo entregó (su reloj contra el nuestro).

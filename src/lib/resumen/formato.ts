@@ -158,6 +158,17 @@ function negocios(r: Reunido): string[] {
   const mrr = Math.round(n.mrr_centavos / (1 + TASA_IVA));
   const m0 = r.previo?.mrr_centavos;
   l.push(`Ingreso mensual recurrente: ${centavos(mrr)} + IVA${m0 == null ? "" : ` (ayer ${centavos(Math.round(m0 / (1 + TASA_IVA)))})`}.`);
+  const sg = r.db.datos.seguimiento;
+  if (sg) {
+    const salieron = sg.dia5 + sg.dia10 + sg.dia15;
+    l.push(
+      sg.pausa
+        ? "Seguimiento de pruebas por WhatsApp: en pausa."
+        : salieron === 0 && sg.fallidos === 0 && sg.respuestas === 0
+          ? "Seguimiento de pruebas por WhatsApp: ayer no salió ningún mensaje."
+          : `Seguimiento de pruebas por WhatsApp: ${num(salieron)} mensajes ayer (día 5: ${num(sg.dia5)}, día 10: ${num(sg.dia10)}, día 15: ${num(sg.dia15)}) · ${num(sg.respuestas)} respuestas · ${num(sg.bajas)} bajas · ${num(sg.fallidos)} con error.`,
+    );
+  }
   if (r.lunes) l.push(`Semana: ${num(g.semana)} registros contra ${num(g.semana_antes)} la semana anterior.`);
   return l;
 }
