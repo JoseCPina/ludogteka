@@ -95,16 +95,13 @@ Una orden **cancelada**, **vencida**, **fallida** o en cola nunca marca nada com
 ## Si la terminal no muestra el cobro
 
 - Revisa que esté encendida y con internet.
-- Con Mercado Pago, si sale «La terminal no está en modo PDV (integrado).», el admin aprieta **Poner en modo integrado** en [Cobro con terminal](/admin/pagos).
-- Si sale «La terminal ya tiene una orden en curso.», cancela en la terminal la orden anterior.
-- Si la terminal sigue pidiendo cobros «vinculados» o no recibe el cobro aunque esté escogida, en la terminal entra a **Más opciones → Ajustes → Modo de vinculación** y regrésala a modo independiente (standalone); después vuelve a mandar el cobro.
+- «La terminal no está en modo PDV (integrado).»: el admin aprieta **Poner en modo integrado** en [Cobro con terminal](/admin/pagos).
+- «La terminal ya tiene una orden en curso.»: cancela esa orden en la terminal.
+- Si pide cobros «vinculados» o no recibe nada: en la terminal, **Más opciones → Ajustes → Modo de vinculación**, y regrésala a modo independiente.
 
 ## Si pasan los 2 minutos
 
-Sale «La terminal no ha respondido».
-
-1. Si el cliente no pagó, aprieta **Cancelar y registrar a mano** y cóbrale en **Registrar cobro** con efectivo o transferencia (con Mercado Pago o Clip elegidos, el método **Terminal** no se captura a mano: vuelve a mandarlo con **Cobrar con terminal**).
-2. Si tienes duda, aprieta **Seguir esperando**.
+Sale «La terminal no ha respondido». Si el cliente no pagó, aprieta **Cancelar y registrar a mano** y cóbrale en **Registrar cobro** con efectivo o transferencia (con Mercado Pago o Clip elegidos, el método **Terminal** no se captura a mano: vuelve a mandarlo con **Cobrar con terminal**). Si tienes duda, aprieta **Seguir esperando**.
 
 > Si el cliente SÍ pagó en la terminal, no registres nada a mano: en cuanto el proveedor lo confirme, el cobro entra solo aunque hayas cancelado aquí.
 
@@ -544,7 +541,7 @@ Cada cambio queda en **Historial de estilista**, al pie de la cita: de quién a 
     roles: ["admin", "recepcion"],
     rutas: ["/estetica/[citaId]", "/caja/ajustes-servicio"],
     palabras: ["corregir servicio", "servicio equivocado", "cambiar servicio", "me equivoqué", "precio de la cita", "cobro de más", "cobro de menos", "saldo a favor", "cobro adicional", "el servicio de esta cita no existe"],
-    cuerpo: `Si en recepción se capturó un servicio que no era (por ejemplo baño completo y en realidad fue rapado), se corrige desde la cita, en cualquier momento: antes de empezar, con el servicio en curso o ya terminado y cobrado.
+    cuerpo: `Si en recepción se capturó un servicio que no era (por ejemplo se capturó «Baño completo» y en realidad era el «Rapado»), se corrige desde la cita, en cualquier momento: antes de empezar, con el servicio en curso o ya terminado y cobrado.
 
 Hace falta ser admin o tener el permiso **Corregir servicio de citas** (el admin lo da en [Permisos](/admin/permisos); viene apagado). Cambiar el servicio con otra herramienta no se puede: así queda siempre su historial.
 
