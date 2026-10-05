@@ -17,6 +17,7 @@ import {
   aplicarRecargoCita,
   type AjusteConsumo,
 } from "../agenda-actions";
+import { SelectorEstilista, type Estilista } from "../selector-estilista";
 
 export type RecetaItem = {
   insumo_id: string;
@@ -39,6 +40,7 @@ export function CitaDetalle({
   recogidoPorNombre,
   recogidoPorEsDueno,
   recetaItems,
+  estilista,
 }: {
   citaId: string;
   perroNombre: string;
@@ -54,6 +56,8 @@ export function CitaDetalle({
   recogidoPorNombre: string | null;
   recogidoPorEsDueno: boolean | null;
   recetaItems: RecetaItem[];
+  // Solo admin y recepción cambian la estilista; para los demás va null.
+  estilista: { empleadoId: string | null; nombreActual: string | null; estilistas: Estilista[]; puedeCorregir: boolean } | null;
 }) {
   const zona = useZonaNegocio();
   const router = useRouter();
@@ -200,6 +204,18 @@ export function CitaDetalle({
             {recargo > 0 ? "Cambiar el recargo" : "Aplicar un recargo"}
           </Button>
         )
+      )}
+
+      {estilista && (
+        <SelectorEstilista
+          citaId={citaId}
+          estado={estado}
+          perroNombre={perroNombre}
+          empleadoId={estilista.empleadoId}
+          nombreActual={estilista.nombreActual}
+          estilistas={estilista.estilistas}
+          puedeCorregir={estilista.puedeCorregir}
+        />
       )}
 
       {error && (

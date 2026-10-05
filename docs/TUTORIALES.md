@@ -17,7 +17,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 06 | Empieza aquí | Módulos y plan: prende solo lo que usas | admin | 2.5 min | — | — |
 | 07 | Empieza aquí | Configura tu horario, cupo y datos del negocio | admin | 2.5 min | — | configuracion_negocio |
 | 08 | Empieza aquí | Invita a tu equipo y entiende los roles | admin | 2.5 min | — | personal |
-| 09 | Empieza aquí | Dale permisos extra a una persona de recepción | admin | 2.5 min | — | inventario_costos, tarifas, reportes_financieros, personal, configuracion_negocio, excepciones_reserva, descuentos_sin_tope, plantillas_contrato, nomina, gastos, reportes_guarderia |
+| 09 | Empieza aquí | Dale permisos extra a una persona de recepción | admin | 2.5 min | — | inventario_costos, tarifas, reportes_financieros, personal, configuracion_negocio, excepciones_reserva, descuentos_sin_tope, plantillas_contrato, nomina, gastos, reportes_guarderia, corregir_estilista |
 | 10 | Clientes y perros | Captura a un cliente y a su perro en el mostrador | recepcion | 2.5 min | — | — |
 | 11 | Clientes y perros | Da de alta a un cliente con un link de WhatsApp | recepcion | 2.5 min | portal | — |
 | 12 | Clientes y perros | Vacunas, alertas y datos del perro en su expediente | recepcion | 2.5 min | — | — |
@@ -31,7 +31,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 20 | Estética | Cómo funcionan los precios de estética | admin | 2.5 min | estetica | tarifas |
 | 21 | Estética | Agenda una cita de estética en 2 minutos | recepcion | 2.5 min | estetica | — |
 | 22 | Estética | Atiende y termina una cita de estética | estetica | 2.5 min | estetica | — |
-| 23 | Estética | Pelo maltratado, recargos y excepciones en estética | recepcion | 2.5 min | estetica | excepciones_reserva |
+| 23 | Estética | Pelo maltratado, recargos y excepciones en estética | recepcion | 2.5 min | estetica | excepciones_reserva, corregir_estilista |
 | 24 | Estética | Receta de consumo: descuenta el inventario solo | admin | 2.5 min | estetica, inventario | — |
 | 25 | Guardería y hotel | Reserva guardería: por día, por hora y con cupo | recepcion | 2.5 min | guarderia | — |
 | 26 | Guardería y hotel | Reserva el hotel: noches, cupo y precios por talla | recepcion | 2.5 min | hotel | — |
@@ -231,6 +231,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Nómina (`nomina`) | 09, 46 |
 | Gastos del local (`gastos`) | 09, 47, 48 |
 | Reportes de guardería (`reportes_guarderia`) | 09, 31 |
+| Corregir estilista de servicios cerrados (`corregir_estilista`) | 09, 23 |
 
 ## Artículos de ayuda → videos
 
@@ -264,6 +265,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | agregar-una-raza-que-no-aparece | 14 |
 | precios-de-estetica | 20 |
 | agendar-cita-estetica | 21 |
+| cambiar-estilista-cita-estetica | 23 |
 | atender-cita-estetica | 22 |
 | leer-el-tablero-del-dia | 01, 04 |
 | que-hacer-con-necesita-atencion | 05 |

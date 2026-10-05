@@ -406,8 +406,63 @@ Una cita fuera del horario sale resaltada en naranja en la agenda.
 
 - «Este perro no tiene talla registrada…»: captúrala en su expediente con el link del mensaje.
 - «No hay nadie que pueda quedar como responsable de la cita»: falta dar de alta al personal de estética.
+- ¿Escogiste mal a la estilista? Mira [Cómo cambiar o corregir la estilista de una cita](/ayuda/cambiar-estilista-cita-estetica).
 - «El grupo de este perro no cobra automático a su pelaje»: pasa con un perro de pelo medio o largo sin grupo de precio (por ejemplo un mestizo). No se adivina un precio: corrige su pelaje en el expediente, asígnale su grupo, o con el permiso «Excepciones al reservar» registra una excepción con el grupo y el motivo, solo para esa cita.
 - Sale el recuadro **La raza … todavía no tiene grupo de precio**: es una raza nueva (del catálogo o propuesta desde el formulario del perro) y tu negocio aún no decide su precio. Mira [Cómo agregar una raza que no aparece](/ayuda/agregar-una-raza-que-no-aparece).`,
+  },
+  {
+    slug: "cambiar-estilista-cita-estetica",
+    titulo: "Cómo cambiar o corregir la estilista de una cita",
+    resumen: "Pasar un perro a otra estilista, dejarlo sin asignar o corregir quién lo atendió.",
+    grupo: "estetica",
+    modulo: "estetica",
+    roles: ["admin", "recepcion"],
+    rutas: ["/estetica/[citaId]", "/recepcion", "/admin"],
+    palabras: ["estilista", "reasignar", "cambiar estilista", "sin asignar", "corregir", "comisión", "otra estilista", "quién atendió"],
+    cuerpo: `La estilista de una cita se cambia desde el [tablero del día](/recepcion) (en **Citas de estética hoy**) y desde el detalle de la cita. Lo que puedes hacer depende de cómo va la cita:
+
+## Antes de empezar (Reservada o Confirmada)
+
+1. En la cita, abre la lista **Estilista** y escoge a otra persona. Queda en el momento, sin motivo.
+2. Si todavía no sabes quién la va a atender, escoge **Sin asignar**. La cita aparece en una columna **Sin asignar** de la agenda.
+3. Abajo de la lista verás un aviso verde con quién quedó y quién la tenía antes.
+
+Una cita sin estilista no se puede iniciar: primero asígnale una.
+
+## Con el servicio en curso
+
+Por ejemplo, otra estilista toma al perro a la mitad.
+
+1. Abre la cita y aprieta **Cambiar estilista**.
+2. Escoge a quién se la pasas en **Pasar a**.
+3. Si quieres, escribe el **Motivo (opcional)**.
+4. Aprieta **Cambiar estilista**.
+
+## Cuando ya terminó (Finalizada, cobrada o no)
+
+Para corregir quién atendió un servicio que ya se cerró, hace falta ser admin o tener el permiso **Corregir estilista de servicios cerrados** (el admin lo da en [Permisos](/admin/permisos)).
+
+1. Abre la cita y aprieta **Corregir estilista**.
+2. Escoge a la estilista correcta.
+3. Escribe el **Motivo de la corrección (obligatorio)**.
+4. Aprieta **Corregir estilista**.
+
+## Qué queda registrado
+
+Cada cambio queda en **Historial de estilista**, al pie de la cita: de quién a quién, quién lo hizo, cuándo, en qué momento estaba la cita y el motivo. Nada se reescribe en silencio.
+
+## Qué pasa con la comisión y la propina
+
+- Los cobros y el corte de caja no cambian.
+- Si la nómina de quien la tenía **todavía no se paga**, la comisión y la propina se van solas a la nueva estilista.
+- Si esa nómina **ya se pagó**, el pago no se toca: la diferencia aparece como un **Ajuste por cambio de estilista** (negativo para quien ya cobró de más, positivo para quien no cobró) en el siguiente pago de cada una. Lo ves en [Nómina](/empleados/nomina).
+
+## Si algo no sale
+
+- «… ya tiene otra cita a esa hora»: esa estilista está ocupada; escoge a otra o mueve primero su otra cita.
+- «Corregir la estilista de un servicio ya terminado es de admin…»: pídele al admin el permiso o que lo corrija él.
+- Una cita **Cancelada** o **No llegó** ya no se reasigna.
+- Solo aparecen estilistas activas del negocio; si falta alguien, revisa que esté dada de alta en el personal de estética (en [Administración](/admin)) y que no tenga baja.`,
   },
   {
     slug: "atender-cita-estetica",
@@ -439,12 +494,13 @@ Si la cita está ligada a una estancia, no se piden esos datos: el perro sigue a
 
 ## Antes de iniciarla
 
-Puedes **Reagendar**, **Marcar no llegó** o **Cancelar**.
+Puedes **Reagendar**, **Marcar no llegó** o **Cancelar**. Si la estilista cambió, mira [Cómo cambiar o corregir la estilista de una cita](/ayuda/cambiar-estilista-cita-estetica).
 
 > El pelo maltratado se marca al agendar: cambia el precio del mismo baño, no es un cargo aparte.
 
 ## Si algo no sale
 
-- «Solo se puede finalizar una cita que está en curso.»: primero iníciala.`,
+- «Solo se puede finalizar una cita que está en curso.»: primero iníciala.
+- «Esta cita no tiene estilista asignada»: asígnale una antes de iniciarla o terminarla (arriba de los botones, en **Estilista**).`,
   },
 ];
