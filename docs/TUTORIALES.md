@@ -91,6 +91,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/caja` | 33 |  |
 | `/caja/cargo` | 36 |  |
 | `/caja/cobrar/[reservaId]` | 33, 34, 37 |  |
+| `/caja/conciliacion` | 38 |  |
 | `/caja/pases` | 39 |  |
 | `/caja/reembolsos` | 38 |  |
 | `/caja/turno` | 32 |  |
@@ -255,6 +256,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | cobrar-una-cuenta | 33 |
 | cobrar-con-terminal | 34 |
 | terminal-no-recibe-el-cobro | 34 |
+| corregir-un-cobro-con-terminal-mal-marcado | 38 |
 | link-de-pago-whatsapp | 34 |
 | venta-rapida | 35 |
 | devolver-un-cobro | 38 |
@@ -292,12 +294,14 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | cobro | 05, 33 |
 | comprobantes | 05 |
 | con | 05, 29 |
+| conciliacion | 05 |
 | contratos-firmar | 05, 17 |
 | contratos-regenerar | 05, 19 |
 | eval | 05, 29 |
 | gastos-proximos | 05, 47 |
 | gastos-vencidos | 05, 47 |
 | hotel | 05, 29 |
+| por-confirmar | 05 |
 | razas-sin-grupo | 05, 14 |
 | reembolsos | 05, 38 |
 | saldos | 05 |

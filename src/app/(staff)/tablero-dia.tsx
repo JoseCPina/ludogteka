@@ -464,6 +464,40 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     }
   }
 
+  // Cobros con terminal que no cuadran con Mercado Pago (conciliación por
+  // hora, solo marca) y órdenes que no se pudieron confirmar: dinero que
+  // alguien tiene que revisar. Con su antigüedad.
+  if (sesion && ["admin", "recepcion"].includes(sesion.rol)) {
+    const [{ data: conciliacion }, { data: porConfirmar }] = await Promise.all([
+      supabase.from("conciliacion_terminal").select("tipo, monto, detectada_at").is("resuelta_at", null),
+      supabase.from("mp_ordenes").select("monto, created_at").eq("estado", "por_confirmar").is("deleted_at", null),
+    ]);
+    const filas = (conciliacion ?? []) as { tipo: string; monto: number; detectada_at: string }[];
+    if (filas.length > 0) {
+      const sinPago = filas.filter((f) => f.tipo === "cobro_sin_pago").length;
+      atencion.push({
+        clave: "conciliacion",
+        texto:
+          filas.length === 1
+            ? sinPago ? "Un cobro con terminal no aparece como pagado en Mercado Pago" : "Mercado Pago tiene un pago que la caja no registró"
+            : `${filas.length} diferencias entre la caja y Mercado Pago`,
+        detalle: `$${filas.reduce((a, f) => a + Number(f.monto), 0).toFixed(2)} · revisa cada una`,
+        href: "/caja/conciliacion",
+        ...masViejo(filas.map((f) => f.detectada_at), hoy, zona),
+      });
+    }
+    const pc = (porConfirmar ?? []) as { monto: number; created_at: string }[];
+    if (pc.length > 0) {
+      atencion.push({
+        clave: "por-confirmar",
+        texto: pc.length === 1 ? "Un cobro con terminal está por confirmar con Mercado Pago" : `${pc.length} cobros con terminal están por confirmar con Mercado Pago`,
+        detalle: "No cuentan como cobrados hasta que Mercado Pago lo confirme: en la cuenta, «Revisar con Mercado Pago»",
+        href: "/caja/conciliacion",
+        ...masViejo(pc.map((f) => f.created_at), hoy, zona),
+      });
+    }
+  }
+
   const fechasComprobantes = (comprobantes ?? []).map((c) => c.created_at as string);
   const comprobantesPorRevisar = fechasComprobantes.length;
   if (comprobantesPorRevisar > 0 && mods.includes("portal")) {

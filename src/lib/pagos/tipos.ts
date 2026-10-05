@@ -58,6 +58,8 @@ export type ConexionCobro = {
   origen: OrigenConexion;
   cuentaId: string | null;
   terminalId: string | null;
+  // Desde cuándo está conectada la cuenta (la conexión actual).
+  conectadaAt: string | null;
   mp: CredencialesMp | null;
   clip: CredencialesClip | null;
 };
@@ -75,7 +77,9 @@ export type ResumenCobro = {
   esperaSegundos: number;
 };
 
-export type EstadoOrden = "creada" | "en_terminal" | "pagada" | "cancelada" | "expirada" | "fallida" | "reembolsada";
+// «por_confirmar»: el proveedor dijo algo que no alcanza para dar el cobro por
+// pagado (monto distinto, pago sin verificar…). Nunca cuenta como dinero.
+export type EstadoOrden = "creada" | "en_terminal" | "pagada" | "cancelada" | "expirada" | "fallida" | "reembolsada" | "por_confirmar";
 
 export type PagoConfirmado = {
   paymentId: string | null;

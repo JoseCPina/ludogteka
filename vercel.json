@@ -6,6 +6,10 @@
       "schedule": "17 9 * * *"
     },
     {
+      "path": "/api/cron/conciliacion",
+      "schedule": "41 * * * *"
+    },
+    {
       "path": "/api/cron/reportes-archivos",
       "schedule": "37 9 * * *"
     },

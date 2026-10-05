@@ -172,6 +172,7 @@ export async function guardarClip(datos: { apiKey: string; secretKey: string; se
     negocio: { id: negocio.id, nombre: negocio.nombre, url: "" },
     simulado: false,
     origen: "credenciales",
+    conectadaAt: null,
     cuentaId: null,
     terminalId: creds.serie,
     mp: null,

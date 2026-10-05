@@ -14,6 +14,7 @@ import { conexionDeCobro, resumenDeCobro } from "@/lib/pagos/conexion";
 import { leerOrdenLocal, sincronizarTerminal } from "@/lib/pagos/registro";
 import { pedirReembolso, sincronizarReembolsos } from "@/lib/pagos/reembolsos";
 import { mensajeDeError, type ConexionCobro, type ResultadoSincronizacion, type ResumenCobro } from "@/lib/pagos/tipos";
+import { revisarCobroConProveedor } from "@/lib/pagos/no-recibido";
 
 // El cobro integrado desde la cuenta: terminal y link de pago, con el
 // proveedor que el negocio haya conectado (src/lib/pagos). Nada de aquí sabe
@@ -85,10 +86,10 @@ export async function iniciarCobroTerminal(
     .eq("negocio_id", negocio.id)
     .eq("reserva_id", reservaId)
     .eq("tipo", "point")
-    .in("estado", ["creada", "en_terminal"])
+    .in("estado", ["creada", "en_terminal", "por_confirmar"])
     .is("deleted_at", null)
     .maybeSingle();
-  if (viva) return { error: "Ya hay un cobro en la terminal para esta cuenta. Espéralo o cancélalo antes de mandar otro.", ordenId: viva.id as string };
+  if (viva) return { error: "Ya hay un cobro en la terminal (o por confirmar) para esta cuenta. Espéralo, revísalo con Mercado Pago o cancélalo antes de mandar otro.", ordenId: viva.id as string };
 
   const sesion = await obtenerSesionConRol();
   const { data: orden, error: errorOrden } = await admin
@@ -105,6 +106,7 @@ export async function iniciarCobroTerminal(
       terminal_id: cx.terminalId,
       installments: plazos && plazos > 1 ? plazos : null,
       simulado: cx.simulado,
+      conexion_desde: cx.conectadaAt,
       expira_at: new Date(Date.now() + (TERMINAL_ESPERA_SEGUNDOS + 60) * 1000).toISOString(),
       created_by: sesion?.user.id ?? null,
     })
@@ -141,7 +143,7 @@ export async function consultarCobroTerminal(ordenId: string): Promise<Resultado
   if (!orden) return { error: "Orden no encontrada." };
   try {
     const r = await sincronizarTerminal(admin, acceso.cx, orden);
-    if (r.pagada || ["cancelada", "expirada", "fallida"].includes(r.estado)) {
+    if (r.pagada || ["cancelada", "expirada", "fallida", "por_confirmar"].includes(r.estado)) {
       const { data } = await admin.from("mp_ordenes").select("reserva_id").eq("id", ordenId).eq("negocio_id", negocio.id).single();
       if (data) revalidarCuenta(data.reserva_id as string);
     }
@@ -162,6 +164,22 @@ export async function cancelarCobroTerminal(ordenId: string, motivo: string): Pr
   const orden = await leerOrdenLocal(admin, ordenId, negocio.id);
   if (!orden) return { error: "Orden no encontrada." };
   if (orden.estado === "pagada" || orden.cobro_id) return { error: "Este cobro ya se pagó; si hay que devolverlo, usa una devolución." };
+  if (orden.estado === "por_confirmar") {
+    // Por confirmar puede ser dinero real: solo un admin la cancela, y después de volver a preguntarle al proveedor.
+    const sesionCancela = await obtenerSesionConRol();
+    if (sesionCancela?.rol !== "admin") return { error: "Este cobro está por confirmar: revísalo con Mercado Pago. Solo un admin lo cancela si de verdad no se pagó." };
+    if (orden.tipo === "point") {
+      try {
+        const r = await sincronizarTerminal(admin, acceso.cx, orden);
+        if (r.pagada) {
+          revalidatePath("/caja");
+          return { error: "Mercado Pago ya confirmó este pago: el cobro quedó registrado." };
+        }
+      } catch {
+        // Si no se pudo consultar, el admin decide con lo que sabe.
+      }
+    }
+  }
 
   let aviso: string | undefined;
   if (orden.mp_order_id && orden.proveedor === acceso.cx.proveedor) {
@@ -365,4 +383,27 @@ export async function marcarReembolsoRevisado(reembolsoId: string): Promise<{ er
   revalidatePath("/caja/reembolsos");
   revalidatePath("/recepcion");
   return { error: null };
+}
+
+export type ResultadoNoRecibido = { error: string | null; aviso?: string };
+
+/**
+ * «Marcar como no recibido»: corrige un cobro con terminal que quedó como
+ * pagado sin que el proveedor tenga un pago aprobado. Solo admin, con motivo.
+ * Antes de tocar nada se le pregunta al proveedor (src/lib/pagos/no-recibido.ts);
+ * si hay un pago aprobado que pueda corresponder, se niega. La corrección entra
+ * como un movimiento en el turno abierto: un turno cerrado nunca cambia.
+ */
+export async function marcarCobroNoRecibido(reservaId: string, cobroId: string, motivo: string): Promise<ResultadoNoRecibido> {
+  const sesion = await obtenerSesionConRol();
+  if (sesion?.rol !== "admin") return { error: "Solo un admin marca un cobro como no recibido." };
+  if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_SOLO_LECTURA };
+  if (motivo.trim().length < 5) return { error: "Escribe el motivo: qué pasó con este cobro." };
+  const negocio = await negocioActual();
+  const r = await revisarCobroConProveedor(negocio, cobroId, motivo, sesion.user.id);
+  revalidarCuenta(reservaId);
+  revalidatePath("/caja/conciliacion");
+  revalidatePath("/recepcion");
+  if (!r.ok) return { error: r.error };
+  return { error: null, aviso: r.aviso };
 }
