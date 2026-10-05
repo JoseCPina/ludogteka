@@ -196,3 +196,7 @@ La tabla de precios se cargó con `node scripts/estetica/cargar-tarifas.mjs --ne
 **Cómo se deshace**: `node scripts/estetica/cargar-tarifas.mjs --negocio ludogteka --revertir 2287090b-89a2-4502-bca1-975c951ddc1c --prod --aplicar`.
 
 **Textos de «incluye» sin confirmar**: el cartel del baño exprés venía cortado; el texto «baño con shampoo y secado» es el del encargo, no el del cartel.
+
+## 5 de octubre de 2026 · Serie de 55 videos tutoriales (publicación a producción por script)
+
+Los videos (`scripts/tutoriales/`, mapa en `docs/TUTORIALES.md`) se graban SOLO en desarrollo, con el demo ficticio, y `node scripts/tutoriales/tutoriales.mjs --prod` los publica: archivos en los buckets `tutoriales` (720p, póster, VTT; público) y `tutoriales-masters` (1080p, SRT, guion, voz; privado) y el catálogo en la tabla `tutoriales` por las funciones `plataforma_tutoriales_*` (solo `service_role`). No se escribió SQL a mano: la migración `20261005170000` (y sus dos arreglos) fue por el despliegue. Resultado: 55 de 55 publicados con voz (duración media 79 s, máxima 136 s), 117 MB en `tutoriales` y 409 MB en `tutoriales-masters`; cuota de ElevenLabs usada ≈ 35,000 de 142,046 caracteres. El caché de voz (`scripts/tutoriales/audio/`) no se versiona: vive respaldado en Storage (`_voz/`). En la nube, `fetch` de Node necesita `NODE_USE_ENV_PROXY=1` para llegar a ElevenLabs. Para regenerar un video: `npm run tutoriales -- --video NN --regrabar --prod`; solo voz: `--solo-voz`.
