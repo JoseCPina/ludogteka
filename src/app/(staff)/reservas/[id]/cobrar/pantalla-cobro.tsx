@@ -78,7 +78,7 @@ export async function PantallaCobro({
     supabase.rpc("resolver_tope_descuento_recepcion"),
   ]);
 
-  const [{ data: ordenesMpCrudo }, mpDisponible] = await Promise.all([
+  const [{ data: ordenesMpCrudo }, mpDisponible, { data: terminalManualBloqueada }] = await Promise.all([
     supabase
       .from("mp_ordenes_estado")
       .select("id, tipo, monto, descripcion, estado, url_pago, installments, simulado, pendiente_de_registrar, detalle_error, created_at, expira_at, cobro_id, proveedor, monto_reembolsado")
@@ -86,6 +86,8 @@ export async function PantallaCobro({
       .order("created_at", { ascending: false })
       .limit(20),
     estadoCobroIntegrado(),
+    // Con un proveedor de terminal elegido, «Terminal» no se captura a mano.
+    supabase.rpc("terminal_manual_bloqueada"),
   ]);
   const ordenesMp: OrdenCobroFila[] = (ordenesMpCrudo ?? []).map((o) => ({
     id: o.id as string,
@@ -289,7 +291,7 @@ export async function PantallaCobro({
           topeRecepcion={topeRecepcion}
           esAdmin={sesion?.rol === "admin"}
           puedeSinTope={tienePermiso(sesion, "descuentos_sin_tope")}
-          mp={{ disponible: mpDisponible, ordenes: ordenesMp, clienteTelefono: (cliente?.telefono as string | null) ?? null }}
+          mp={{ disponible: mpDisponible, ordenes: ordenesMp, clienteTelefono: (cliente?.telefono as string | null) ?? null, terminalManualBloqueada: Boolean(terminalManualBloqueada) }}
         />
       )}
     </div>

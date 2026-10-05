@@ -196,3 +196,12 @@ La tabla de precios se cargó con `node scripts/estetica/cargar-tarifas.mjs --ne
 **Cómo se deshace**: `node scripts/estetica/cargar-tarifas.mjs --negocio ludogteka --revertir 2287090b-89a2-4502-bca1-975c951ddc1c --prod --aplicar`.
 
 **Textos de «incluye» sin confirmar**: el cartel del baño exprés venía cortado; el texto «baño con shampoo y secado» es el del encargo, no el del cartel.
+
+## 5 de octubre de 2026 (UTC) — cobro con terminal que nunca ocurrió (Ludogteka)
+
+**Qué se encontró (solo lectura, producción):** en el turno abierto de Ludogteka hay UN cobro con método `terminal` de hoy: $350.00, creado a las 16:25:59 UTC (10:25 hora de la Ciudad de México) por la persona de recepción (`created_by` 5fcb4a04…), `origen = manual`, sin ninguna fila en `mp_ordenes`, en la cuenta (reserva 66491ff2…) a la que a las 16:01 UTC se le había generado un link de pago de $350 que sigue «creada» (nadie lo pagó). No viene de una orden de la terminal: lo tecleó una persona en «Registrar cobro» con el método «Terminal», y la base lo aceptó sin verificar nada. Las demás órdenes de la terminal de hoy fueron bien: la de $10 de las 16:52 UTC (prueba del dueño) llegó como `cancelada` («cancel_by_terminal») y quedó cancelada, sin cobro. Solo hay otro cobro con terminal en toda la historia: el de $10 del 28 de septiembre (orden pagada, pago PAY01M3N6N02VT9XC31K8KQMSQAS9 aprobado y reembolsado).
+
+**Qué NO se hizo:** no se revirtió el cobro de $350. A las 17:02:54 UTC el dueño desconectó Mercado Pago desde Administración (la integración quedó `desconectada` y sin secreto en Vault), así que no hubo credenciales para preguntarle a Mercado Pago si existe un pago aprobado de $350; sin esa comprobación el caso es ambiguo. Se corrige con «Marcar como no recibido» (admin), que sí consulta a Mercado Pago antes de dejarlo (ver CLAUDE.md, «Cobros con terminal verificados»).
+
+**Revisión histórica de cobros con terminal en Ludogteka:** ver el reporte de la sesión; los conteos de producción antes y después de la migración `20261006120000_terminal_verificada` (solo DDL, sin backfill) quedan en la bitácora del despliegue.
+

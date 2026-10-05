@@ -43,6 +43,7 @@ type FilaIntegracion = {
   terminal_id: string | null;
   terminal_compatible: boolean | null;
   ultimo_error: string | null;
+  conectada_at: string | null;
 };
 
 type Estado = {
@@ -57,7 +58,7 @@ async function leerEstado(admin: SupabaseClient, negocio: NegocioParaCobro): Pro
   const [{ data: filas }, { data: neg }] = await Promise.all([
     admin
       .from("integraciones_cobro")
-      .select("proveedor, elegida, estado, modo, cuenta_id, terminal_id, terminal_compatible, ultimo_error")
+      .select("proveedor, elegida, estado, modo, cuenta_id, terminal_id, terminal_compatible, ultimo_error, conectada_at")
       .eq("negocio_id", negocio.id)
       .is("deleted_at", null),
     admin.from("negocios").select("plan").eq("id", negocio.id).maybeSingle(),
@@ -84,6 +85,7 @@ function simulada(negocio: NegocioParaCobro, proveedor: ProveedorIntegrado, term
     origen: "simulacion",
     cuentaId: null,
     terminalId: terminalId ?? (proveedor === "mercadopago" ? TERMINAL_SIMULADA : "SIMULADA-CLIP-01"),
+    conectadaAt: null,
     mp: null,
     clip: null,
   };
@@ -110,6 +112,7 @@ export async function conexionDeCobro(negocio: NegocioParaCobro): Promise<Conexi
           origen: mp.simulada ? "simulacion" : "oauth",
           cuentaId: mp.userId ?? fila.cuenta_id,
           terminalId: fila.terminal_id ?? (mp.simulada ? TERMINAL_SIMULADA : null),
+          conectadaAt: fila.conectada_at,
           mp,
           clip: null,
         };
@@ -121,6 +124,7 @@ export async function conexionDeCobro(negocio: NegocioParaCobro): Promise<Conexi
         origen: clip.simulada ? "simulacion" : "credenciales",
         cuentaId: fila.cuenta_id,
         terminalId: clip.serie,
+        conectadaAt: fila.conectada_at,
         mp: null,
         clip,
       };
@@ -134,6 +138,7 @@ export async function conexionDeCobro(negocio: NegocioParaCobro): Promise<Conexi
       origen: "llave_entorno",
       cuentaId: null,
       terminalId: terminalLegado(),
+      conectadaAt: null,
       mp: { accessToken: accessTokenLegado()! },
       clip: null,
     };

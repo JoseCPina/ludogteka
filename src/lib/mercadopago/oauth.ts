@@ -6,6 +6,7 @@ import { MP_AUTH, RENOVAR_ANTES_DIAS, appId, appSecret, esProduccion, hayAplicac
 import { ErrorMercadoPago } from "./errores";
 import { urlPlataforma, urlRegresoOauthMp } from "@/lib/pagos/urls";
 import type { CredencialesMp } from "@/lib/pagos/tipos";
+import { cancelarOrdenesEnCola, restaurarTerminal } from "@/lib/pagos/reconexion";
 
 /**
  * "Conectar Mercado Pago" por OAuth (con PKCE), para que cada negocio cobre
@@ -253,6 +254,14 @@ export async function completarConexion(state: string | null, code: string | nul
     await cerrar("error_guardado");
     return { negocioId, ok: false, error: "Se autorizó, pero no pudimos guardar la conexión. Vuelve a intentar." };
   }
+  // Reconectar deja todo consistente: órdenes viejas fuera de la cola y la
+  // terminal de antes (en modo integrado). Nada de esto frena la conexión.
+  try {
+    await cancelarOrdenesEnCola(admin, negocioId, creds.accessToken, "Orden de antes de reconectar la cuenta de Mercado Pago.");
+    if (!creds.simulada) await restaurarTerminal(admin, negocioId, creds.accessToken);
+  } catch (e) {
+    console.warn("[oauth] no se pudo dejar la terminal lista tras reconectar", e instanceof Error ? e.message : e);
+  }
   await cerrar("conectada");
   return { negocioId, ok: true, error: null };
 }
@@ -317,6 +326,23 @@ export async function renovarSiHaceFalta(
  */
 export async function desconectar(negocioId: string): Promise<void> {
   const admin = createSupabaseAdminClient(negocioId);
+  // Antes de borrar las credenciales: las órdenes en cola se cancelan (con las
+  // credenciales todavía vigentes) y se recuerda la terminal para reconectar.
+  let token: string | null = null;
+  try {
+    const { data: s } = await admin.rpc("integracion_leer_secreto", { p_proveedor: "mercadopago" });
+    if (typeof s === "string" && s) token = (JSON.parse(s) as CredencialesMp).accessToken ?? null;
+  } catch {
+    token = null;
+  }
+  await cancelarOrdenesEnCola(admin, negocioId, token, "Se desconectó la cuenta de Mercado Pago.");
+  const { data: previa } = await admin
+    .from("integraciones_cobro")
+    .select("terminal_id")
+    .eq("negocio_id", negocioId)
+    .eq("proveedor", "mercadopago")
+    .is("deleted_at", null)
+    .maybeSingle();
   const { error } = await admin.rpc("integracion_borrar_secreto", { p_proveedor: "mercadopago" });
   if (error) throw new Error(error.message);
   await admin
@@ -329,6 +355,7 @@ export async function desconectar(negocioId: string): Promise<void> {
       terminal_id: null,
       terminal_nombre: null,
       terminal_compatible: null,
+      ...(previa?.terminal_id ? { terminal_previa_id: previa.terminal_id } : {}),
       desconectada_at: new Date().toISOString(),
       ultimo_error: null,
     })

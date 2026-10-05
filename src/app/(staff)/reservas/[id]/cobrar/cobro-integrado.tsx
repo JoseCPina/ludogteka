@@ -63,6 +63,7 @@ const ETIQUETA_ESTADO: Record<string, string> = {
   expirada: "Venció",
   fallida: "Falló",
   reembolsada: "Reembolsado",
+  por_confirmar: "Por confirmar con Mercado Pago",
 };
 
 /**
@@ -130,6 +131,12 @@ export function CobroIntegrado({
           router.refresh();
           return;
         }
+        if (r.estado === "por_confirmar") {
+          setError(`${r.detalle ?? "No se pudo confirmar el pago."} Revísalo con Mercado Pago antes de cobrar de otra forma.`);
+          setOrdenActiva(null);
+          router.refresh();
+          return;
+        }
         if (["cancelada", "expirada", "fallida"].includes(r.estado)) {
           setError(r.detalle ?? ETIQUETA_ESTADO[r.estado]);
           setOrdenActiva(null);
@@ -192,6 +199,23 @@ export function CobroIntegrado({
   }
 
   const historial = ordenes.filter((o) => o.id !== ordenActiva);
+
+  // «Por confirmar»: el proveedor dijo algo que no alcanza para dar el cobro
+  // por pagado. «Revisar con Mercado Pago» vuelve a consultar y resuelve.
+  const [revisando, setRevisando] = useState<string | null>(null);
+  const revisandoEnvio = useEspera();
+  async function revisar(ordenId: string) {
+    setError(null);
+    setAviso(null);
+    setRevisando(ordenId);
+    const r = await revisandoEnvio.ejecutar(() => consultarCobroTerminal(ordenId));
+    setRevisando(null);
+    if (r.error) setError(r.error);
+    else if (r.pagada) setAviso("Mercado Pago confirmó el pago: el cobro quedó registrado.");
+    else if (r.estado === "por_confirmar") setError(r.detalle ?? "Sigue sin poder confirmarse con Mercado Pago.");
+    else setAviso(r.estado ? `Mercado Pago dice: ${ETIQUETA_ESTADO[r.estado] ?? r.estado}.` : "Revisado.");
+    router.refresh();
+  }
 
   // Sin cobro integrado conectado no se ofrece (el manual está arriba).
   if (!disponible.activo) {
@@ -343,12 +367,17 @@ export function CobroIntegrado({
                 {o.detalle_error && o.estado !== "pagada" ? ` · ${o.detalle_error}` : ""}
               </span>
               <span className="flex items-center gap-2">
+                {o.estado === "por_confirmar" && (
+                  <Button type="button" variante="secundario" cargando={revisando === o.id && revisandoEnvio.cargando} onClick={() => revisar(o.id)}>
+                    Revisar con Mercado Pago
+                  </Button>
+                )}
                 {o.tipo === "link" && o.estado === "creada" && o.url_pago && (
                   <CampoCopiable valor={o.url_pago} textoBoton="Copiar" className="w-64" />
                 )}
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                    o.estado === "pagada" && o.monto_reembolsado > 0 ? "bg-coral-suave text-coral-oscuro" : o.estado === "pagada" ? "bg-menta-suave text-menta-oscuro" : o.estado === "creada" || o.estado === "en_terminal" ? "bg-morado-suave text-morado" : "bg-n-100 text-n-600"
+                    o.estado === "pagada" && o.monto_reembolsado > 0 ? "bg-coral-suave text-coral-oscuro" : o.estado === "pagada" ? "bg-menta-suave text-menta-oscuro" : o.estado === "creada" || o.estado === "en_terminal" ? "bg-morado-suave text-morado" : o.estado === "por_confirmar" ? "bg-ambar-suave text-ambar-oscuro" : "bg-n-100 text-n-600"
                   }`}
                 >
                   {o.pendiente_de_registrar ? "Pagado, sin turno" : etiquetaDe(o)}
