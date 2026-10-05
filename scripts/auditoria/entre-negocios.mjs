@@ -597,14 +597,17 @@ console.log("\n── Reasignar la estilista: el historial y la función son de 
     const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: cabeceras(tAdminB, B), body: JSON.stringify(args) });
     return { ok: r.ok, cuerpo: await r.json().catch(() => null) };
   };
-  let citaId = null, reservaId = null, perroPrueba = null;
+  let citaId = null, reservaId = null, perroPrueba = null, perroOriginal = null;
   try {
     const { data: razaP } = await A.from("razas").select("id").eq("nombre", "Poodle").single();
     const { data: tallaP } = await A.from("tamanos_categoria").select("id").eq("clave", "chico").single();
     const { data: peloP } = await A.from("tipos_pelaje").select("id").eq("clave", "medio").single();
     const { data: servP } = await SB.from("servicios").select("id").eq("clave", "estetica_estetico").maybeSingle();
-    const pr = await SB.from("perros").insert({ cliente_id: datos.clienteSoloB, nombre: `ZZ reasignar entre ${Date.now()}`, raza: "Poodle", raza_id: razaP.id, tamano_id: tallaP.id, pelaje_id: peloP.id }).select("id").single();
-    perroPrueba = pr.data?.id ?? null;
+    // Se usa el perro de Huellitas con los datos que pide el precio y se restaura al final.
+    const { data: orig } = await SB.from("perros").select("raza, raza_id, tamano_id, pelaje_id").eq("id", datos.perroSoloB).single();
+    perroOriginal = orig;
+    await SB.from("perros").update({ raza: "Poodle", raza_id: razaP.id, tamano_id: tallaP.id, pelaje_id: peloP.id }).eq("id", datos.perroSoloB);
+    perroPrueba = datos.perroSoloB;
     const modelo = { perro_id: perroPrueba, servicio_id: servP?.id, empleado_id: datos.esteticaB };
     if (!perroPrueba || !servP) hallazgo("reasignar: no se pudo armar el perro o el servicio de prueba en Huellitas (corre negocio-prueba-dev y cargar-tarifas)");
     else {
@@ -615,10 +618,10 @@ console.log("\n── Reasignar la estilista: el historial y la función son de 
       if (c.error) hallazgo(`reasignar: no se pudo crear la cita de prueba en Huellitas (${c.error.message})`);
       else {
         citaId = c.data.id;
-        const { data: otras } = await rpcB("estilistas_asignables");
+        const otras = (await rpcB("estilistas_asignables")).cuerpo;
         const otra = (otras ?? []).find((e) => e.id !== modelo.empleado_id);
         const ok1 = await rpcB("reasignar_estilista_cita", { p_cita_id: citaId, p_empleado_id: otra?.id, p_motivo: null });
-        const { data: h } = await rpcB("historial_asignaciones_cita", { p_cita_id: citaId });
+        const h = (await rpcB("historial_asignaciones_cita", { p_cita_id: citaId })).cuerpo;
         if (!ok1.ok || !Array.isArray(h) || h.length !== 1) hallazgo(`reasignar: control positivo, el admin de Huellitas no reasigna o no ve su historial (${JSON.stringify(ok1.cuerpo).slice(0, 120)})`);
         else console.log("  ✔ control positivo: el admin de Huellitas reasigna y ve el historial de su cita");
         const estadoAntes = JSON.stringify([(await SB.from("citas_estetica").select("empleado_id, updated_at").eq("id", citaId).single()).data, (await SB.from("citas_estetica_asignaciones").select("id").eq("cita_id", citaId)).data]);
@@ -654,7 +657,7 @@ console.log("\n── Reasignar la estilista: el historial y la función son de 
   } finally {
     if (citaId) await SB.from("citas_estetica").delete().eq("id", citaId);
     if (reservaId) await SB.from("reservas").delete().eq("id", reservaId);
-    if (perroPrueba) await SB.from("perros").update({ deleted_at: new Date().toISOString() }).eq("id", perroPrueba);
+    if (perroOriginal) await SB.from("perros").update(perroOriginal).eq("id", datos.perroSoloB);
   }
 }
 
