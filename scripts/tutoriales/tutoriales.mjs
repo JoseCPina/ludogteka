@@ -49,6 +49,7 @@ const OPC = {
   area: val("--area"),
   regrabar: flag("--regrabar"),
   soloVoz: flag("--solo-voz"),
+  soloPublicar: flag("--solo-publicar"),
   prod: flag("--prod"),
   sinPublicar: flag("--sin-publicar"),
   listar: flag("--listar"),
@@ -135,12 +136,16 @@ async function producir(v, ctx) {
   const duracionPlan = total(p);
 
   // ── Grabación ──
-  const valores = { tel: telefonoNuevo(ctx.telefonos), tel2: telefonoNuevo(ctx.telefonos), tel3: telefonoNuevo(ctx.telefonos) };
+  const f = new Date(Date.now() + (3 + Math.floor(Math.random() * 25)) * 86400000);
+  const pad = (x) => String(x).padStart(2, "0");
+  const dia = (n) => { const d = new Date(Date.now() + n * 86400000); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  const base0 = 20 + Math.floor(Math.random() * 40);
+  const valores = { n3: String(Math.floor(Math.random() * 900) + 100), fechaDia: dia(base0), fechaDia2: dia(base0 + 2), fechaCita: `${f.getFullYear()}-${pad(f.getMonth() + 1)}-${pad(f.getDate())}T${pad(10 + Math.floor(Math.random() * 6))}:${pad(Math.floor(Math.random() * 4) * 15)}`, tel: telefonoNuevo(ctx.telefonos), tel2: telefonoNuevo(ctx.telefonos), tel3: telefonoNuevo(ctx.telefonos) };
   const sb = ctx.sbDemo;
   if (guion.preparar) await guion.preparar({ sb, negocioId: ctx.negocioId, ...valores, vid: v });
   const guionEjecutable = { ...guion, escenas: guion.escenas.map((e) => ({ ...e, pasos: sustituir(e.pasos ?? [], valores) })) };
-  const rol = v.rol;
-  const cookies = await cookiesDe(cd, rol, ID_DEMO_HOST.split(":")[0], ctx.anon);
+  const rol = guion.rol ?? v.rol;
+  const cookies = guion.sinSesion ? [] : await cookiesDe(cd, rol, ID_DEMO_HOST.split(":")[0], ctx.anon);
   const area = AREAS.find((a) => a.clave === v.area).nombre;
   const tarjetas = {
     titulo: tarjetaTitulo({ numero: v.id, area, titulo: v.titulo, subtitulo: guion.subtitulo ?? v.resumen }),
@@ -243,6 +248,27 @@ async function main() {
     } catch (e) { console.warn(`(no pude medir Storage de producción: ${e.message})`); }
   }
 
+  if (OPC.soloPublicar) {
+    // Sube lo ya terminado (salida/<NN>/) a desarrollo y, con --prod, a producción; no graba nada.
+    let n = 0;
+    for (const v of VIDEOS.filter((x) => !OPC.videos || OPC.videos.includes(x.id)).sort((a, b) => ordenCola(a) - ordenCola(b))) {
+      const e = leerEstado(v.id);
+      const dir = path.join(DIR_SALIDA, v.id);
+      const master = path.join(dir, "master-1080p.mp4");
+      if (!["listo", "listo_sin_voz"].includes(e.estado) || !fs.existsSync(master)) continue;
+      const rutas = { master, video720: path.join(dir, "video-720p.mp4"), poster: path.join(dir, "poster.jpg"), miniatura: path.join(dir, "miniatura.jpg"), srt: path.join(dir, "subtitulos.es-MX.srt"), vtt: path.join(dir, "subtitulos.es-MX.vtt"), texto: path.join(dir, "youtube.txt") };
+      const txt = fs.readFileSync(rutas.texto, "utf8");
+      const descripcion = txt.split("DESCRIPCIÓN\n")[1]?.split("\n\nETIQUETAS")[0] ?? v.resumen;
+      const meta = { descripcion, duracion: e.duracion, conVoz: e.estado === "listo", commit: e.commit ?? ctx.commit };
+      await publicarVideo({ c: cd, video: v, rutas, meta, masterAqui: true });
+      if (OPC.prod) await publicarVideo({ c: ctx.cprod, video: v, rutas, meta, masterAqui: ctx.mastersEnProd });
+      console.log(`  ↑ ${v.id} publicado (${OPC.prod ? "desarrollo y producción" : "desarrollo"})`);
+      n++;
+    }
+    console.log(`${n} videos publicados.`);
+    return;
+  }
+
   let cola = [...VIDEOS].filter((v) => !OPC.videos || OPC.videos.includes(v.id)).filter((v) => !OPC.area || v.area === OPC.area).sort((a, b) => ordenCola(a) - ordenCola(b));
   const hechos = [], saltados = [], errores = [];
   let listosEnTanda = 0, erroresSeguidos = 0;
@@ -253,7 +279,7 @@ async function main() {
   cola = cola.filter((v) => fs.existsSync(path.join(DIR_VIDEOS, `${v.id}-${v.slug}.mjs`)));
   if (OPC.limite) cola = cola.slice(0, OPC.limite);
 
-  const aprobados = cola.filter((v) => { const e = leerEstado(v.id); return OPC.regrabar || OPC.soloVoz || !["listo", "listo_sin_voz"].includes(e.estado); });
+  const aprobados = cola.filter((v) => { const e = leerEstado(v.id); return OPC.regrabar || OPC.soloVoz || !["listo", "listo_sin_voz"].includes(e.estado) || (e.estado === "listo_sin_voz" && hayLlave()); });
   await aviso(`🎬 Tutoriales: arranca la producción\n• Videos en la cola: ${aprobados.length} de ${VIDEOS.length}.\n• Voz: ${hayLlave() ? (q?.limite ? `${q.usados.toLocaleString("es-MX")} de ${q.limite.toLocaleString("es-MX")} caracteres usados este mes; piso del ${PISO_PRESUPUESTO * 100} %.` : "con llave (no pude leer la cuota).") : "SIN ELEVENLABS_API_KEY en el entorno: los videos salen «listos menos voz» (pista en silencio, subtítulos y locución en guion.txt)."}\n• App: commit ${ctx.commit.slice(0, 7)} · demo con ${demo.clientes} clientes y ${demo.perros} perros.`);
 
   for (const v of cola) {
@@ -261,7 +287,9 @@ async function main() {
     const listo = ["listo", "listo_sin_voz"].includes(previo.estado);
     const g = await cargarGuion(v);
     const hashActual = g ? hashDe(v, g, path.join(DIR_VIDEOS, `${v.id}-${v.slug}.mjs`)) : null;
-    if (listo && !OPC.regrabar && !OPC.soloVoz && previo.hash === hashActual) { saltados.push(v.id); continue; }
+    // «Listo menos voz» deja de estar listo en cuanto hay llave: se vuelve a producir con voz.
+    const faltaLaVoz = previo.estado === "listo_sin_voz" && hayLlave() && !previo.sinPresupuesto;
+    if (listo && !faltaLaVoz && !OPC.regrabar && !OPC.soloVoz && previo.hash === hashActual) { saltados.push(v.id); continue; }
     console.log(`\n▶ ${v.id} ${v.titulo}  [${v.rol}]`);
     let ok = false, ultimo = null;
     const t0 = Date.now();

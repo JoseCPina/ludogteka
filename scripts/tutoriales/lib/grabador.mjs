@@ -30,6 +30,7 @@ export function estimar(paso) {
     case "clic": return 1700 + (c?.espera ?? 0);
     case "escribir": return 1500 + String(b ?? "").length * 75;
     case "elegir": return 1900;
+    case "rellenar": return 1700;
     case "marcar": return 1500;
     case "resaltar": return typeof b === "number" ? b : 2600;
     case "zoom": return (typeof c === "number" ? c : 2800) + 900;
@@ -77,7 +78,7 @@ export async function grabarVideo({ base, cookies, inicio, guion, tarjetas, plan
 
   const navegador = await abrirNavegador();
   const ctx = await navegador.newContext({ viewport: { width: ANCHO, height: ALTO }, deviceScaleFactor: 1, locale: "es-MX", timezoneId: "America/Mexico_City" });
-  await ctx.addCookies(cookies);
+  if (cookies?.length) await ctx.addCookies(cookies);
   const logo = `${base}/marca/peludesk/isotipo.svg`;
   await ctx.addInitScript(scriptCursor("flecha"));
   await ctx.addInitScript(scriptHud(logo));
@@ -88,7 +89,7 @@ export async function grabarVideo({ base, cookies, inicio, guion, tarjetas, plan
 
   // Entra a la pantalla de inicio y espera a que cargue de verdad.
   const r = await page.goto(base + inicio, { waitUntil: "networkidle", timeout: 120000 });
-  if (!r || r.status() >= 400 || /\/login|\/sin-acceso/.test(page.url())) throw new Error(`No se pudo entrar a ${inicio} (${page.url()}).`);
+  if (!r || r.status() >= 400 || (cookies?.length && /\/login|\/sin-acceso/.test(page.url()))) throw new Error(`No se pudo entrar a ${inicio} (${page.url()}).`);
   await page.evaluate(() => document.fonts.ready);
   await page.addStyleTag({ content: "nextjs-portal{display:none!important}input[type=file]{visibility:hidden!important}*{caret-color:transparent!important}html{scrollbar-width:none}::-webkit-scrollbar{display:none}" });
 
@@ -116,7 +117,20 @@ export async function grabarVideo({ base, cookies, inicio, guion, tarjetas, plan
   const muestrear = async (escenaN) => {
     const url = page.url();
     const texto = await page.locator("body").innerText({ timeout: 5000 }).catch(() => "");
-    muestras.push({ escena: escenaN, t: Number(ahora().toFixed(2)), url, texto: texto.slice(0, 6000) });
+    // Lo que de verdad se ve en pantalla en este momento (el QC es estricto con esto).
+    const visible = await page.evaluate(() => {
+      const sal = [];
+      const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      for (let n = w.nextNode(); n; n = w.nextNode()) {
+        const t = n.textContent.trim();
+        if (!t) continue;
+        const r = document.createRange(); r.selectNodeContents(n);
+        const b = r.getBoundingClientRect();
+        if (b.width > 0 && b.height > 0 && b.bottom > 0 && b.top < innerHeight && b.right > 0 && b.left < innerWidth) sal.push(t);
+      }
+      return sal.join("\n");
+    }).catch(() => "");
+    muestras.push({ escena: escenaN, t: Number(ahora().toFixed(2)), url, texto: texto.slice(0, 6000), visible: visible.slice(0, 6000) });
   };
 
   const reponer = async () => {
@@ -172,6 +186,13 @@ export async function grabarVideo({ base, cookies, inicio, guion, tarjetas, plan
       await loc.click({ timeout: 10000 }).catch(() => {});
       await page.keyboard.press("Control+A");
       await page.keyboard.type(String(valor), { delay: 65 });
+    },
+    // Campos que no se teclean (fecha y hora): se rellenan de golpe, con el cursor encima.
+    async rellenar(etiqueta, valor) {
+      const { loc } = await mover(etiqueta, { ms: 700 });
+      await page.evaluate(() => { window.__pdCursor.onda(); });
+      await loc.fill(String(valor));
+      await espera(500);
     },
     async elegir(etiqueta, opcion) {
       const { loc } = await mover(etiqueta, { ms: 750 });

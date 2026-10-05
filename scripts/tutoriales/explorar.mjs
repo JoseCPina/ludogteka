@@ -12,9 +12,14 @@ const c = conectar(false);
 const anon = fs.readFileSync(".env.local", "utf8").match(/NEXT_PUBLIC_SUPABASE_ANON_KEY=(.+)/)[1].trim();
 const nav = await abrirNavegador();
 const ctx = await nav.newContext({ viewport: { width: 1920, height: 1080 }, locale: "es-MX" });
-await ctx.addCookies(await cookiesDe(c, rol, "patitasyco.localhost", anon));
+if (rol !== "ninguno") await ctx.addCookies(await cookiesDe(c, rol, "patitasyco.localhost", anon));
 const pag = await ctx.newPage();
 await pag.goto(`http://patitasyco.localhost:3001${ruta}`, { waitUntil: "networkidle" });
+for (let i = 0; i < process.argv.length; i++) {
+  if (process.argv[i] === "--clic") { await pag.getByRole("button", { name: process.argv[i + 1] }).first().click(); await pag.waitForTimeout(1200); }
+  if (process.argv[i] === "--check") { await pag.getByLabel(process.argv[i + 1]).first().check(); await pag.waitForTimeout(1200); }
+  if (process.argv[i] === "--ir") { await pag.goto(`http://patitasyco.localhost:3001${process.argv[i + 1]}`, { waitUntil: "networkidle" }); }
+}
 const r = await pag.evaluate(() => {
   const vis = (e) => { const b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0 && getComputedStyle(e).visibility !== "hidden"; };
   const t = (e) => (e.innerText || e.value || e.getAttribute("aria-label") || "").trim().replace(/\s+/g, " ").slice(0, 90);

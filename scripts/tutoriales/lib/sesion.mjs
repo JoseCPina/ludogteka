@@ -9,6 +9,7 @@ export const CUENTAS = {
   recepcion: "demo.recepcion@peludesk.mx",
   estetica: "demo.estetica@peludesk.mx",
   cliente: "t4420000201@telefono.ludogteka.mx",
+  clienteAna: "t4420000203@telefono.ludogteka.mx", // Ana Sofía Treviño: tiene un contrato por firmar
 };
 
 export async function cookiesDe(c, rol, dominio, anon) {
