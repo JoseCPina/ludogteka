@@ -14,7 +14,7 @@ import { marcarCobroNoRecibido } from "@/app/(staff)/caja/cobro-integrado-action
  * Pago: si tiene un pago aprobado que pueda ser de este cobro, se niega.
  * El cobro no se borra: queda con su historial y la cuenta recupera el saldo.
  */
-export function MarcarNoRecibido({ reservaId, cobroId, monto }: { reservaId: string; cobroId: string; monto: number }) {
+export function MarcarNoRecibido({ reservaId, cobroId, monto, cuentasDelGrupo = 1 }: { reservaId: string; cobroId: string; monto: number; cuentasDelGrupo?: number }) {
   const router = useRouter();
   const envio = useEspera();
   const [abierto, setAbierto] = useState(false);
@@ -45,6 +45,7 @@ export function MarcarNoRecibido({ reservaId, cobroId, monto }: { reservaId: str
       <p className="text-sm font-semibold text-ambar-oscuro">
         ¿Este cobro de ${monto.toFixed(2)} con terminal no se recibió? Antes de marcarlo se revisa con Mercado Pago: si hay un pago aprobado que pueda ser
         suyo, no se deja.
+        {cuentasDelGrupo > 1 ? ` Este cobro se hizo junto con otras ${cuentasDelGrupo - 1}: se deshace el cobro completo, en todas sus cuentas.` : ""}
       </p>
       <Textarea label="Motivo (obligatorio)" rows={2} maxLength={300} value={motivo} onChange={(e) => setMotivo(e.target.value)} ayuda="Queda en el historial con tu nombre. La cuenta vuelve a quedar con saldo para cobrarse." />
       <AccionesFormulario error={error}>

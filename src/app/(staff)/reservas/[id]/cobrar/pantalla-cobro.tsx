@@ -11,6 +11,7 @@ import {
   type CobroHistorial,
   type DevolucionHistorial,
   type DescuentoHistorial,
+  type GrupoHistorial,
   type MotivoDescuento,
 } from "./cuenta-cobro";
 
@@ -59,7 +60,7 @@ export async function PantallaCobro({
     supabase.from("turnos_caja").select("id").eq("estado", "abierto").maybeSingle(),
     supabase
       .from("cobros")
-      .select("id, notas, created_at, created_by, origen, cobro_metodos(metodo, monto, propina)")
+      .select("id, notas, created_at, created_by, origen, grupo_id, cobro_metodos(metodo, monto, propina)")
       .eq("reserva_id", id)
       .order("created_at"),
     supabase
@@ -81,8 +82,9 @@ export async function PantallaCobro({
   const [{ data: ordenesMpCrudo }, mpDisponible, { data: terminalManualBloqueada }] = await Promise.all([
     supabase
       .from("mp_ordenes_estado")
-      .select("id, tipo, monto, descripcion, estado, url_pago, installments, simulado, pendiente_de_registrar, detalle_error, created_at, expira_at, cobro_id, proveedor, monto_reembolsado")
-      .eq("reserva_id", id)
+      .select("id, tipo, monto, descripcion, estado, url_pago, installments, simulado, pendiente_de_registrar, detalle_error, created_at, expira_at, cobro_id, proveedor, monto_reembolsado, grupo_cuentas")
+      // Las órdenes de esta cuenta y las de un cobro junto en el que va incluida.
+      .or(`reserva_id.eq.${id},grupo_cuentas.cs.${JSON.stringify([{ reserva_id: id }])}`)
       .order("created_at", { ascending: false })
       .limit(20),
     estadoCobroIntegrado(),
@@ -105,18 +107,41 @@ export async function PantallaCobro({
     cobro_id: (o.cobro_id as string | null) ?? null,
     proveedor: (o.proveedor as "mercadopago" | "clip") ?? "mercadopago",
     monto_reembolsado: Number(o.monto_reembolsado ?? 0),
+    grupo_cuentas: (o.grupo_cuentas as { reserva_id: string; monto: number }[] | null) ?? null,
   }));
 
   const cobroIds = (cobrosCrudo ?? []).map((c) => c.id as string);
   // Los renglones de «Tarjeta (registro manual)» de estos cobros (folio, estado de revisión).
+  // Un cobro junto: UN registro de tarjeta (un folio) para todas sus cuentas, y
+  // el detalle del pago con las otras cuentas que se cobraron en el mismo movimiento.
+  const grupoIds = Array.from(new Set((cobrosCrudo ?? []).map((c) => c.grupo_id as string | null).filter((g): g is string => Boolean(g))));
   const { data: tarjetasCrudo } = cobroIds.length
     ? await supabase
         .from("tarjetas_manuales")
-        .select("id, cobro_id, folio, estado, monto, motivo, motivo_texto, ultimos4, banco, sobre_tope")
-        .in("cobro_id", cobroIds)
+        .select("id, cobro_id, grupo_id, folio, estado, monto, motivo, motivo_texto, ultimos4, banco, sobre_tope")
+        .or([`cobro_id.in.(${cobroIds.join(",")})`, ...(grupoIds.length ? [`grupo_id.in.(${grupoIds.join(",")})`] : [])].join(","))
         .is("deleted_at", null)
         .order("created_at")
     : { data: [] as never[] };
+  const detallesGrupo = new Map<string, GrupoHistorial>();
+  for (const gid of grupoIds) {
+    const { data: det } = await supabase.rpc("cobro_grupo_detalle", { p_grupo_id: gid });
+    const d = (Array.isArray(det) ? det[0] : det) as {
+      recibo: string;
+      total: number;
+      propina: number;
+      cuentas: { reserva_id: string; monto: number; descripcion: string }[];
+    } | null;
+    if (d) {
+      detallesGrupo.set(gid, {
+        id: gid,
+        recibo: d.recibo,
+        total: Number(d.total),
+        propina: Number(d.propina),
+        cuentas: d.cuentas.map((c) => ({ reservaId: c.reserva_id, descripcion: c.descripcion, monto: Number(c.monto) })),
+      });
+    }
+  }
   const { data: devolucionesCrudo, error: errorDevoluciones } = cobroIds.length
     ? await supabase
         .from("devoluciones")
@@ -241,8 +266,9 @@ export async function PantallaCobro({
     creadoPorNombre: nombrePorId.get(c.created_by as string) ?? "—",
     metodos: (c.cobro_metodos as { metodo: string; monto: number; propina: number }[]) ?? [],
     origen: ((c.origen as string | null) ?? "manual") as CobroHistorial["origen"],
+    grupo: c.grupo_id ? detallesGrupo.get(c.grupo_id as string) ?? null : null,
     tarjetasManuales: (tarjetasCrudo ?? [])
-      .filter((t) => t.cobro_id === c.id)
+      .filter((t) => t.cobro_id === c.id || (t.grupo_id && t.grupo_id === c.grupo_id))
       .map((t) => ({
         id: t.id as string,
         folio: t.folio as string,

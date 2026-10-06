@@ -86,6 +86,7 @@ export default async function TurnoCajaPage() {
     monto: Number(m.monto),
     propina: Number(m.propina ?? 0),
     origen: (m.origen as string) ?? "manual",
+    grupoId: (m.grupo_id as string | null) ?? null,
     hechoPorNombre: nombrePorId.get(m.hecho_por as string) ?? "—",
   }));
 

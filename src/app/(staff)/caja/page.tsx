@@ -15,7 +15,7 @@ export default async function CajaPage() {
   const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
 
-  const [{ data: turno, error: errorTurno }, { data: cuentasCrudo, error: errorCuentas }, { clientes }, { data: pendientesCrudo }] =
+  const [{ data: turno, error: errorTurno }, { data: cuentasCrudo, error: errorCuentas }, { clientes }, { data: pendientesCrudo }, { data: publicoGeneral }] =
     await Promise.all([
       supabase
         .from("turnos_caja")
@@ -29,6 +29,7 @@ export default async function CajaPage() {
         .select("id, tipo, monto, cliente_nombre, pagada_at, simulado")
         .eq("pendiente_de_registrar", true)
         .order("pagada_at"),
+      supabase.from("clientes").select("id").eq("publico_general", true).is("deleted_at", null).maybeSingle(),
     ]);
 
   const error = errorTurno ?? errorCuentas;
@@ -104,7 +105,7 @@ export default async function CajaPage() {
           Recarga la página. Si el problema sigue, avísale al equipo técnico.
         </Alert>
       ) : (
-        <MostradorCaja clientes={clientes} cuentas={cuentas} hoy={hoy} turnoAbierto={Boolean(turno)} pendientesMp={pendientesMp} />
+        <MostradorCaja clientes={clientes} cuentas={cuentas} hoy={hoy} turnoAbierto={Boolean(turno)} pendientesMp={pendientesMp} publicoGeneralId={(publicoGeneral?.id as string | undefined) ?? null} />
       )}
     </div>
   );

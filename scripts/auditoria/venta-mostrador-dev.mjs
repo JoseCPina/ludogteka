@@ -88,6 +88,8 @@ if (eProd) throw eProd;
 const existencia = async () => Number((await A.from("insumos_existencia_actual").select("existencia_actual").eq("insumo_id", producto.id).single()).data.existencia_actual);
 
 await A.from("negocios").update({ plan: "prueba", prueba_termina_at: new Date(Date.now() + 10 * 86400000).toISOString() }).eq("id", H);
+// La terminal y el link cobran en simulación solo con un proveedor elegido (otras pruebas lo dejan en «solo manual»).
+await adminJ.rpc("elegir_proveedor_cobro", { p_proveedor: "mercadopago" });
 const nav = await abrirNavegador();
 const ctxAdmin = await nav.newContext();
 await ctxAdmin.addCookies(await cookiesDe(idAdmin));
@@ -253,10 +255,11 @@ try {
   if (pg.nombre !== "Público en general") hallazgo(`se pudo renombrar al público general (${eEditar?.message})`);
   else bien("«Público en general» no se edita");
 } catch (e) {
-  hallazgo(`el recorrido tronó: ${e instanceof Error ? e.message.split("\n")[0] : e}`);
+  hallazgo(`el recorrido tronó: ${e instanceof Error ? e.message.split("\n")[0] : (e?.message ?? JSON.stringify(e))}`);
   await recep.screenshot({ path: "/tmp/venta-recepcion.png" }).catch(() => {});
   await admin.screenshot({ path: "/tmp/venta-admin.png" }).catch(() => {});
 } finally {
+  await adminJ.rpc("elegir_proveedor_cobro", { p_proveedor: "manual" });
   await A.from("negocios").update({ plan: planOriginal }).eq("id", H);
   if (!(await turnoAbierto())) await abrirTurno(0).catch(() => {});
   await A.from("insumos").update({ deleted_at: new Date().toISOString() }).eq("negocio_id", H).eq("id", producto.id);

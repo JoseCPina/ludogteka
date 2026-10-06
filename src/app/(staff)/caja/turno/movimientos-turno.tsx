@@ -12,6 +12,8 @@ export type MovimientoTurno = {
   monto: number;
   propina: number;
   origen: string;
+  // Si el cobro fue parte de un cobro junto (varias cuentas, un solo pago).
+  grupoId?: string | null;
   hechoPorNombre: string;
 };
 
@@ -132,6 +134,11 @@ export function MovimientosTurno({
                   <td className="border-b border-n-200 px-3 py-2 text-n-900">
                     {ETIQUETA_TIPO[m.tipo] ?? m.tipo}
                     {m.origen !== "manual" && <span className="ml-2 rounded-full bg-morado-suave px-2 py-0.5 text-xs font-semibold text-morado">{ETIQUETA_ORIGEN[m.origen]}</span>}
+                    {m.grupoId && (
+                      <Link href={`/caja/recibo-junto/${m.grupoId}`} className="ml-2 rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-700 hover:underline" data-movimiento-junto>
+                        cobro junto
+                      </Link>
+                    )}
                   </td>
                   <td className="border-b border-n-200 px-3 py-2 text-n-700">
                     {m.reservaId ? (

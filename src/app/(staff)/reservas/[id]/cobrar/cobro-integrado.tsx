@@ -16,6 +16,8 @@ import {
   consultarCobroTerminal,
   cancelarCobroTerminal,
   crearLinkPago,
+  iniciarCobroTerminalGrupo,
+  crearLinkPagoGrupo,
 } from "@/app/(staff)/caja/cobro-integrado-actions";
 import type { ResumenCobro } from "@/lib/pagos/tipos";
 import { useZonaNegocio } from "@/components/zona-negocio";
@@ -36,6 +38,8 @@ export type OrdenCobroFila = {
   cobro_id: string | null;
   proveedor: "mercadopago" | "clip";
   monto_reembolsado: number;
+  // Una orden de cobro junto: las cuentas que paga (una sola orden por el total).
+  grupo_cuentas?: { reserva_id: string; monto: number }[] | null;
 };
 
 // Un link sin pagar no está "mandándose a la terminal": espera al cliente,
@@ -81,8 +85,11 @@ export function CobroIntegrado({
   ordenes,
   clienteTelefono,
   esAdmin = false,
+  grupo,
 }: {
-  reservaId: string;
+  // En un cobro junto no hay una sola cuenta: la orden es por el total de las cuentas del grupo.
+  reservaId?: string;
+  grupo?: { partes: { reservaId: string; monto: number }[] };
   saldo: number;
   turnoAbierto: boolean;
   disponible: ResumenCobro;
@@ -93,7 +100,9 @@ export function CobroIntegrado({
   const zona = useZonaNegocio();
   const router = useRouter();
   const [modo, setModo] = useState<"ninguno" | "terminal" | "link">("ninguno");
-  const [monto, setMonto] = useState(saldo > 0 ? saldo.toFixed(2) : "");
+  const totalGrupo = grupo ? Math.round(grupo.partes.reduce((a, p) => a + p.monto, 0) * 100) / 100 : 0;
+  const [montoEscrito, setMonto] = useState(saldo > 0 ? saldo.toFixed(2) : "");
+  const monto = grupo ? totalGrupo.toFixed(2) : montoEscrito;
   const [plazos, setPlazos] = useState("1");
   const [concepto, setConcepto] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -165,7 +174,9 @@ export function CobroIntegrado({
     const m = Number(monto);
     if (!Number.isFinite(m) || m <= 0) return setError("Escribe el monto a cobrar.");
     const res = await iniciando.ejecutar(() =>
-      iniciarCobroTerminal(reservaId, m, Number(plazos) > 1 ? Number(plazos) : null, concepto || "Cobro en mostrador")
+      grupo
+        ? iniciarCobroTerminalGrupo(grupo.partes, Number(plazos) > 1 ? Number(plazos) : null)
+        : iniciarCobroTerminal(reservaId ?? "", m, Number(plazos) > 1 ? Number(plazos) : null, concepto || "Cobro en mostrador")
     );
     if (res.error) {
       setError(res.error);
@@ -193,7 +204,7 @@ export function CobroIntegrado({
     setError(null);
     const m = Number(monto);
     if (!Number.isFinite(m) || m <= 0) return setError("Escribe el monto del link.");
-    const res = await generando.ejecutar(() => crearLinkPago(reservaId, m, concepto));
+    const res = await generando.ejecutar(() => (grupo ? crearLinkPagoGrupo(grupo.partes, concepto) : crearLinkPago(reservaId ?? "", m, concepto)));
     if (res.error || !res.url) return setError(res.error ?? "No pudimos generar el link.");
     setLink({ url: res.url, urlWhatsApp: res.urlWhatsApp, simulado: Boolean(res.simulado) });
     setModo("ninguno");
@@ -294,10 +305,22 @@ export function CobroIntegrado({
         </div>
       ) : (
         <div className="flex flex-col gap-3 rounded-md border border-n-200 bg-white p-4">
-          <p className="font-semibold text-n-900">{modo === "terminal" ? "Mandar a la terminal" : "Link de pago por WhatsApp"}</p>
+          <p className="font-semibold text-n-900">
+            {modo === "terminal" ? "Mandar a la terminal" : "Link de pago por WhatsApp"}
+            {grupo ? ` · UNA orden por las ${grupo.partes.length} cuentas` : ""}
+          </p>
           <div className="flex flex-wrap items-end gap-3">
             <div className="w-36">
-              <Field label="Monto" type="number" min="0" step="0.01" value={monto} onChange={(e) => setMonto(e.target.value)} autoFocus />
+              <Field
+                label={grupo ? "Total de las cuentas" : "Monto"}
+                type="number"
+                min="0"
+                step="0.01"
+                value={monto}
+                onChange={(e) => setMonto(e.target.value)}
+                readOnly={Boolean(grupo)}
+                autoFocus={!grupo}
+              />
             </div>
             {modo === "terminal" && disponible.proveedor === "mercadopago" && (
               <div className="w-44">
@@ -310,6 +333,7 @@ export function CobroIntegrado({
                 </Select>
               </div>
             )}
+            {!(grupo && modo === "terminal") && (
             <div className="min-w-[220px] flex-1">
               <Field
                 label={modo === "terminal" ? "Concepto (opcional)" : "Concepto"}
@@ -318,6 +342,7 @@ export function CobroIntegrado({
                 placeholder={modo === "terminal" ? "ej. Guardería de Motita" : "ej. Anticipo de hotel de Motita"}
               />
             </div>
+            )}
           </div>
           {modo === "terminal" && Number(plazos) > 1 && (
             <p className="text-sm text-n-600">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
@@ -81,6 +82,15 @@ export type DescuentoHistorial = {
   creadoPorNombre: string;
 };
 
+// El pago junto del que fue parte un cobro: las demás cuentas cobradas en el mismo movimiento.
+export type GrupoHistorial = {
+  id: string;
+  recibo: string;
+  total: number;
+  propina: number;
+  cuentas: { reservaId: string; descripcion: string; monto: number }[];
+};
+
 export type CobroHistorial = {
   id: string;
   notas: string | null;
@@ -88,6 +98,7 @@ export type CobroHistorial = {
   creadoPorNombre: string;
   metodos: { metodo: string; monto: number; propina: number }[];
   origen: "manual" | "mercadopago_point" | "mercadopago_link" | "clip_terminal";
+  grupo: GrupoHistorial | null;
   // Los renglones de «Tarjeta (registro manual)» de este cobro (sin verificar).
   tarjetasManuales: {
     id: string;
@@ -238,8 +249,14 @@ export function CuentaCobro({
     .reduce((sum, d) => sum + d.montoAplicado, 0);
   const saldoDisponibleParaDescuento = totales.totalCuenta - totalDescontadoActivo;
   const valorNumDescuento = Number(valorDescuento) || 0;
+  // Igual que la base (aplicar_descuento): un descuento por porcentaje deja lo que
+  // queda por pagar en pesos enteros, para no generar saldos de centavos.
   const montoEstimadoDescuento =
-    tipoDescuento === "porcentaje" ? round2((totales.totalCuenta * valorNumDescuento) / 100) : valorNumDescuento;
+    tipoDescuento === "porcentaje"
+      ? round2(
+          totales.totalCuenta - totalDescontadoActivo - Math.round(totales.totalCuenta - totalDescontadoActivo - (totales.totalCuenta * valorNumDescuento) / 100)
+        )
+      : valorNumDescuento;
   const pasaTope = montoEstimadoDescuento > topeRecepcion;
 
   function round2(v: number) {
@@ -839,18 +856,33 @@ export function CuentaCobro({
                   </p>
                   {c.notas && <p className="mt-1 text-sm text-n-500">{c.notas}</p>}
 
+                  {c.grupo && (
+                    <div data-cobrado-junto className="mt-2 flex flex-col gap-1 rounded-md border border-morado bg-morado-suave/40 p-3 text-sm text-n-700">
+                      <p className="font-semibold text-n-900">
+                        Cobrado junto con: {c.grupo.cuentas.filter((x) => x.reservaId !== reservaId).map((x) => `${x.descripcion} (${dinero(x.monto)})`).join(" · ") || "—"}
+                      </p>
+                      <p>
+                        Un solo pago de {dinero(c.grupo.total + c.grupo.propina)} por {c.grupo.cuentas.length} cuentas
+                        {c.grupo.propina > 0 ? `, con ${dinero(c.grupo.propina)} de propina` : ""}. A esta cuenta le tocaron {dinero(totalCobro)}.
+                      </p>
+                      <Link href={`/caja/recibo-junto/${c.grupo.id}`} className="font-semibold text-morado hover:underline">
+                        Ver el recibo del cobro junto ({c.grupo.recibo})
+                      </Link>
+                    </div>
+                  )}
+
                   {c.tarjetasManuales.map((t) => (
                     <div key={t.id} data-tarjeta-manual-cobro className="mt-2 flex flex-col gap-2 rounded-md border border-ambar bg-ambar-suave p-3">
                       <p className="text-sm text-ambar-oscuro">
                         <span className="font-semibold">
                           {t.estado === "por_revisar" ? "Sin verificar" : t.estado === "revisada" ? "Revisada con voucher" : "No recibida"}
                         </span>{" "}
-                        · {ETIQUETA_TARJETA_MANUAL} {dinero(t.monto)} · folio {t.folio}
+                        · {ETIQUETA_TARJETA_MANUAL} {dinero(t.monto)}{c.grupo ? ` (voucher de todo el cobro junto)` : ""} · folio {t.folio}
                         {t.ultimos4 ? ` · •••• ${t.ultimos4}` : ""}
                         {t.banco ? ` · ${t.banco}` : ""} · {etiquetaMotivo(t.motivo, t.motivoTexto)}
                         {t.sobreTope ? " · arriba del tope de alerta" : ""}
                       </p>
-                      {esAdmin && t.estado === "por_revisar" && <RevisarTarjetaManual tarjetaId={t.id} monto={t.monto} reservaId={reservaId} />}
+                      {esAdmin && t.estado === "por_revisar" && <RevisarTarjetaManual tarjetaId={t.id} monto={t.monto} reservaId={reservaId} cuentas={c.grupo?.cuentas.length ?? 1} />}
                     </div>
                   ))}
 
@@ -871,6 +903,7 @@ export function CuentaCobro({
                         reservaId={reservaId}
                         cobroId={c.id}
                         monto={c.metodos.filter((m) => m.metodo === "terminal").reduce((s, m) => s + Number(m.monto), 0)}
+                        cuentasDelGrupo={c.grupo?.cuentas.length ?? 1}
                       />
                     </div>
                   )}

@@ -272,7 +272,7 @@ const ctxRecep = await nav.newContext();
 await ctxRecep.addCookies(await cookiesDe("recepcion"));
 const recep = await ctxRecep.newPage();
 
-const { data: reserva } = await A.from("reservas").select("id").eq("negocio_id", H).order("created_at").limit(1).single();
+const { data: reserva } = await A.from("reservas").select("id, cliente_id").eq("negocio_id", H).order("created_at").limit(1).single();
 const fila = async (proveedor) => (await A.from("integraciones_cobro").select("*").eq("negocio_id", H).eq("proveedor", proveedor).maybeSingle()).data;
 const secreto = async (proveedor) => (await servicioH.rpc("integracion_leer_secreto", { p_proveedor: proveedor })).data;
 
@@ -770,6 +770,64 @@ try {
     const { data: filasL } = await A.from("conciliacion_terminal").select("id").eq("negocio_id", ludogteka.id);
     if ((filasL ?? []).length) hallazgo("hay diferencias de conciliación en Ludogteka dev por esta prueba");
     mock.busqueda = [];
+  }
+
+  console.log("\n4f. Cobro junto (varias cuentas, UNA orden): se reparte al verificarse y la conciliación lo ve como un solo pago");
+  {
+    const conc = async () => JSON.parse((await pedirApp(`plataforma.localhost:${PUERTO_APP}`, "/api/cron/conciliacion", { headers: { authorization: "Bearer mock-cron" } })).cuerpo);
+    await A.from("conciliacion_terminal").update({ resuelta_at: new Date().toISOString(), resuelta_motivo: "limpieza de la prueba" }).eq("negocio_id", H).is("resuelta_at", null);
+    const { data: r2, error: er2 } = await A.from("reservas").insert({ negocio_id: H, cliente_id: reserva.cliente_id, updated_at: new Date().toISOString() }).select("id").single();
+    if (er2) throw new Error(`reserva de prueba: ${er2.message}`);
+    const mpId = `ORDG${Date.now()}`;
+    const total = 100 + Math.floor(Math.random() * 90);
+    const parteA = Math.round(total * 0.6 * 100) / 100;
+    const parteB = Math.round((total - parteA) * 100) / 100;
+    const { data: og, error: eog } = await A.from("mp_ordenes")
+      .insert({ negocio_id: H, proveedor: "mercadopago", tipo: "point", reserva_id: reserva.id, monto: total, estado: "en_terminal", terminal_id: "NEWLAND_N950__N950NCB000777", cuenta_id: CUENTA_MP, mp_order_id: mpId, simulado: false, expira_at: new Date(Date.now() + 600_000).toISOString(), grupo_cuentas: [{ reserva_id: reserva.id, monto: parteA }, { reserva_id: r2.id, monto: parteB }], grupo_cliente_id: reserva.cliente_id, updated_at: new Date().toISOString() })
+      .select("id")
+      .single();
+    if (eog) throw new Error(`orden de grupo de prueba: ${eog.message}`);
+    const refId = `8${Date.now()}`.slice(0, 13);
+    mock.pagos.set(refId, { id: refId, status: "approved", transaction_amount: total, collector_id: CUENTA_MP });
+    mock.guion.set(mpId, {
+      id: mpId, status: "processed", status_detail: "accredited", external_reference: og.id, user_id: CUENTA_MP,
+      transactions: { payments: [{ id: `PAY01${mpId.slice(-8)}`, amount: String(total), paid_amount: String(total), status: "processed", status_detail: "accredited", reference_id: refId, payment_method: { type: "debit_card", installments: 1 } }] },
+    });
+    const w = await webhookMp({ tipo: "order", id: mpId });
+    const ordenG = (await A.from("mp_ordenes").select("estado, cobro_id, grupo_id").eq("negocio_id", H).eq("id", og.id).single()).data;
+    const cobrosG = ordenG.grupo_id ? (await A.from("cobros").select("id, reserva_id, origen, cobro_metodos(metodo, monto)").eq("negocio_id", H).eq("grupo_id", ordenG.grupo_id).order("grupo_orden")).data : [];
+    if (ordenG.estado !== "pagada" || cobrosG.length !== 2 || cobrosG[0].id !== ordenG.cobro_id) hallazgo(`la orden de grupo no se repartió en dos cobros: ${JSON.stringify(ordenG)} ${JSON.stringify(w).slice(0, 120)}`);
+    else bien(`una orden de $${total} verificada → UN pago agrupado con un cobro por cuenta (origen ${cobrosG[0].origen})`);
+    const sumaPartes = cobrosG.flatMap((c) => c.cobro_metodos).reduce((a, m) => a + Number(m.monto), 0);
+    if (Math.abs(sumaPartes - total) > 0.005 || Math.abs(Number(cobrosG[0].cobro_metodos[0].monto) - parteA) > 0.005) hallazgo(`las partes no suman el total o no respetan el reparto: ${JSON.stringify(cobrosG)}`);
+    else bien(`cada cuenta recibe su parte ($${parteA} y $${parteB}) y suman $${total} una sola vez`);
+    const w2 = await webhookMp({ tipo: "order", id: mpId });
+    const cuantosG = (await A.from("cobros").select("id", { count: "exact", head: true }).eq("negocio_id", H).eq("grupo_id", ordenG.grupo_id)).count;
+    if (cuantosG !== 2) hallazgo(`el aviso repetido duplicó el reparto (${cuantosG} cobros) ${JSON.stringify(w2).slice(0, 80)}`);
+    else bien("el webhook repetido no duplica nada");
+    // Conciliación: UN pago de Mercado Pago contra el grupo completo.
+    const hace1h = new Date(Date.now() - 3_600_000).toISOString();
+    await A.from("cobros").update({ created_at: hace1h }).eq("negocio_id", H).eq("grupo_id", ordenG.grupo_id);
+    mock.busqueda = [];
+    await conc();
+    const abiertasG = (await A.from("conciliacion_terminal").select("tipo, clave, monto").eq("negocio_id", H).is("resuelta_at", null)).data ?? [];
+    if (abiertasG.some((a) => a.clave === ordenG.cobro_id || cobrosG.some((c) => c.id === a.clave))) hallazgo(`la conciliación marcó un cobro junto que sí tiene su pago: ${JSON.stringify(abiertasG)}`);
+    else bien("con el pago aprobado en Mercado Pago, el grupo no genera diferencias (se compara como UN pago)");
+    mock.pagos.set(refId, { id: refId, status: "rejected", transaction_amount: total, collector_id: CUENTA_MP });
+    await conc();
+    const marcadas = ((await A.from("conciliacion_terminal").select("tipo, clave, monto").eq("negocio_id", H).is("resuelta_at", null)).data ?? []).filter((a) => cobrosG.some((c) => c.id === a.clave));
+    if (marcadas.length !== 1 || marcadas[0].clave !== ordenG.cobro_id || Math.abs(Number(marcadas[0].monto) - total) > 0.005) hallazgo(`un pago rechazado debía marcar UNA diferencia por $${total} para todo el grupo: ${JSON.stringify(marcadas)}`);
+    else bien(`si el pago deja de tener dinero, UNA sola diferencia por el total ($${total}), no una por cuenta`);
+    mock.pagos.set(refId, { id: refId, status: "approved", transaction_amount: total, collector_id: CUENTA_MP });
+    await conc();
+    const siguen = ((await A.from("conciliacion_terminal").select("clave").eq("negocio_id", H).is("resuelta_at", null)).data ?? []).filter((a) => cobrosG.some((c) => c.id === a.clave));
+    if (siguen.length) hallazgo("la diferencia del grupo no se resolvió sola al volver el pago");
+    else bien("y se resuelve sola cuando el pago vuelve a estar aprobado");
+    // Una cuenta del grupo ya no admite otra orden de terminal viva (la del grupo ya se pagó: sí), y las dos ven su orden.
+    const { data: ord2 } = await A.from("mp_ordenes_estado").select("id, grupo_cuentas").eq("id", og.id).single();
+    if (!ord2?.grupo_cuentas || ord2.grupo_cuentas.length !== 2) hallazgo("la vista de órdenes no trae las cuentas del grupo");
+    else bien("la vista de órdenes trae las cuentas del grupo para mostrarlas en cada cuenta");
+    await A.from("conciliacion_terminal").update({ resuelta_at: new Date().toISOString(), resuelta_motivo: "limpieza de la prueba" }).eq("negocio_id", H).is("resuelta_at", null);
   }
 
   console.log("\n5. Webhooks que NO se aplican");
