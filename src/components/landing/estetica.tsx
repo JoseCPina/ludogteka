@@ -87,7 +87,7 @@ export async function Estetica() {
           ))}
           <li className="lp-revela overflow-hidden rounded-[1.5rem] bg-white shadow-[0_6px_0_rgb(27_33_64/0.12)] sm:col-span-2 lg:col-span-3">
             <p className="lp-display bg-[var(--lp-turquesa-hondo)] px-5 py-3 text-lg font-bold text-white">
-              Por talla, solo para perros de pelo corto sin grupo de raza
+              Mestizos y perros sin grupo de raza: pelo corto, por talla
             </p>
             <dl className="grid gap-x-8 px-5 py-4 sm:grid-cols-3">
               {ESTETICA_POR_TALLA.map((t) => (

@@ -189,3 +189,72 @@ export async function finalizarCita(
   revalidatePath("/estetica");
   return { error: null };
 }
+
+// ── Agendar: cotizar y completar los datos del perro ahí mismo ───────
+
+export type CotizacionCita =
+  | { error: string }
+  | {
+      error: null;
+      estado: "ok" | "faltan_datos" | "sin_grupo" | "sin_precio" | "no_aplica" | "pelaje_no_ofrecido";
+      precio?: number;
+      faltan?: ("tamano" | "pelaje")[];
+      motivo?: string | null;
+      grupoNombre?: string | null;
+      razaNombre?: string | null;
+      rutaPrecios: string;
+      maltratadoAplicado?: boolean;
+    };
+
+/** Lo que va a cobrar esta cita (sin escribir nada) o lo único que falta para saberlo. */
+export async function cotizarCitaEstetica(
+  perroId: string,
+  servicioId: string,
+  peloMaltratado: boolean,
+  grupoExcepcionId: string | null
+): Promise<CotizacionCita> {
+  if (!perroId || !servicioId) return { error: "Elige un perro y un servicio." };
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("cotizar_cita_estetica", {
+    p_perro_id: perroId,
+    p_servicio_id: servicioId,
+    p_pelo_maltratado: peloMaltratado,
+    p_grupo_excepcion_id: grupoExcepcionId,
+  });
+  if (error) return { error: traducirError(error) };
+  const d = data as {
+    estado: "ok" | "faltan_datos" | "sin_grupo" | "sin_precio" | "no_aplica" | "pelaje_no_ofrecido";
+    precio?: number;
+    faltan?: ("tamano" | "pelaje")[];
+    motivo?: string | null;
+    grupo_nombre?: string | null;
+    raza_nombre?: string | null;
+    ruta_precios: string;
+    maltratado_aplicado?: boolean;
+  };
+  return {
+    error: null,
+    estado: d.estado,
+    precio: d.precio === undefined ? undefined : Number(d.precio),
+    faltan: d.faltan,
+    motivo: d.motivo ?? null,
+    grupoNombre: d.grupo_nombre ?? null,
+    razaNombre: d.raza_nombre ?? null,
+    rutaPrecios: d.ruta_precios,
+    maltratadoAplicado: d.maltratado_aplicado,
+  };
+}
+
+/** Guarda en el expediente del perro la talla y/o el pelaje que faltaban para cotizar. */
+export async function completarTallaPelajeDelPerro(perroId: string, tamanoId: string | null, pelajeId: string | null): Promise<EstadoAccion> {
+  if (!tamanoId && !pelajeId) return { error: "Elige lo que falta." };
+  const supabase = await createSupabaseServerClient();
+  const cambios: { tamano_id?: string; pelaje_id?: string } = {};
+  if (tamanoId) cambios.tamano_id = tamanoId;
+  if (pelajeId) cambios.pelaje_id = pelajeId;
+  const { data, error } = await supabase.from("perros").update(cambios).eq("id", perroId).select("id");
+  if (error) return { error: traducirError(error) };
+  if (!data || data.length === 0) return { error: "No pudimos guardar: solo admin o recepción editan los datos del perro." };
+  revalidatePath(`/perros/${perroId}`);
+  return { error: null };
+}

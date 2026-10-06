@@ -1,5 +1,5 @@
 {
- "_nota": "Tabla de estética de Ludogteka (5 de octubre de 2026). Rapados y maltratado de shih tzu calculados por criterio del dueño. El rapado no se ofrece a pelo corto; el grupo «por talla» solo cobra automático a pelo corto.",
+ "_nota": "Tabla de estética de Ludogteka (5 de octubre de 2026; el grupo «por talla» pasó a «Mestizo / sin raza» el 9 de octubre: ver ludogteka-mestizo.json). Rapados y maltratado de shih tzu calculados por criterio del dueño. El rapado no se ofrece a pelo corto.",
  "servicios": [
   {
    "clave": "estetica_rapado",
@@ -10,10 +10,9 @@
  ],
  "grupos": [
   {
-   "clave": "pelo_corto",
-   "pelajes_permitidos": [
-    "corto"
-   ]
+   "clave": "mestizo",
+   "pelajes_permitidos": null,
+   "depende_pelaje": true
   }
  ],
  "tarifas": [
@@ -127,63 +126,72 @@
   },
   {
    "servicio": "estetica_estetico",
-   "grupo": "pelo_corto",
+   "grupo": "mestizo",
    "tamano": "chico",
    "precio": 250,
-   "maltratado": null
+   "maltratado": null,
+   "pelaje": "corto"
   },
   {
    "servicio": "estetica_expres",
-   "grupo": "pelo_corto",
+   "grupo": "mestizo",
    "tamano": "chico",
    "precio": 150,
-   "maltratado": null
+   "maltratado": null,
+   "pelaje": "corto"
   },
   {
    "servicio": "estetica_rapado",
-   "grupo": "pelo_corto",
+   "grupo": "mestizo",
    "tamano": "chico",
-   "no_aplica": true
+   "no_aplica": true,
+   "pelaje": "corto"
   },
   {
    "servicio": "estetica_estetico",
-   "grupo": "pelo_corto",
+   "grupo": "mestizo",
    "tamano": "mediano",
    "precio": 350,
-   "maltratado": null
+   "maltratado": null,
+   "pelaje": "corto"
   },
   {
    "servicio": "estetica_expres",
-   "grupo": "pelo_corto",
+   "grupo": "mestizo",
    "tamano": "mediano",
    "precio": 190,
-   "maltratado": null
+   "maltratado": null,
+   "pelaje": "corto"
   },
   {
    "servicio": "estetica_rapado",
-   "grupo": "pelo_corto",
+   "grupo": "mestizo",
    "tamano": "mediano",
-   "no_aplica": true
+   "no_aplica": true,
+   "pelaje": "corto"
   },
   {
    "servicio": "estetica_estetico",
-   "grupo": "pelo_corto",
+   "grupo": "mestizo",
    "tamano": "grande",
    "precio": 490,
-   "maltratado": null
+   "maltratado": null,
+   "pelaje": "corto"
   },
   {
    "servicio": "estetica_expres",
-   "grupo": "pelo_corto",
+   "grupo": "mestizo",
    "tamano": "grande",
    "precio": 230,
-   "maltratado": null
+   "maltratado": null,
+   "pelaje": "corto"
   },
   {
    "servicio": "estetica_rapado",
-   "grupo": "pelo_corto",
+   "grupo": "mestizo",
    "tamano": "grande",
-   "no_aplica": true
+   "no_aplica": true,
+   "pelaje": "corto"
   }
  ]
 }

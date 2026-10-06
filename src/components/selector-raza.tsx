@@ -62,6 +62,7 @@ export function SelectorRaza({
   valorId,
   valorTexto,
   onCambio,
+  onElegida,
   label = "Raza",
   ayuda,
   disabled = false,
@@ -74,6 +75,9 @@ export function SelectorRaza({
   valorId?: string | null;
   valorTexto?: string | null;
   onCambio?: (valor: { raza_id: string | null; raza: string; propuesta?: DatosRazaPropuesta | null }) => void;
+  // Solo avisa lo elegido (también en modo no controlado), para quien necesita
+  // reaccionar a la raza (pedir talla y pelaje de un mestizo) sin controlarla.
+  onElegida?: (valor: { raza_id: string | null; raza: string; propuesta: boolean }) => void;
   label?: string;
   ayuda?: string;
   disabled?: boolean;
@@ -124,7 +128,8 @@ export function SelectorRaza({
       ? internaPropuesta
       : null;
 
-  function emitir(raza_id: string | null, raza: string, nuevaPropuesta: DatosRazaPropuesta | null = null) {
+  function emitir(raza_id: string | null, raza: string, nuevaPropuesta: DatosRazaPropuesta | null = null, esPropuesta = false) {
+    onElegida?.({ raza_id, raza, propuesta: esPropuesta || Boolean(nuevaPropuesta) });
     if (controlado) onCambio!({ raza_id, raza, propuesta: nuevaPropuesta });
     else {
       setInternoId(raza_id);
@@ -171,7 +176,7 @@ export function SelectorRaza({
         enviada: true,
         datos: null,
       });
-      emitir(null, datos.nombre);
+      emitir(null, datos.nombre, null, true);
     } else if (propuestas.modo === "personal") {
       setInternaPropuesta({
         nombre: datos.nombre,
@@ -179,7 +184,7 @@ export function SelectorRaza({
         enviada: false,
         datos,
       });
-      emitir(null, datos.nombre);
+      emitir(null, datos.nombre, null, true);
     } else {
       emitir(null, datos.nombre, datos);
     }

@@ -272,6 +272,8 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | aplicar-descuento | 37 |
 | agregar-una-raza-que-no-aparece | 14 |
 | precios-de-estetica | 20 |
+| precio-de-estetica-mestizo | 20 |
+| que-hacer-sin-precio-estetica | 23 |
 | agendar-cita-estetica | 21 |
 | cambiar-estilista-cita-estetica | 23 |
 | corregir-servicio-de-una-cita | 55 |

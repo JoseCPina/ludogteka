@@ -23,7 +23,7 @@ export function AvisoRazasSinCatalogar({ cuantos }: { cuantos: number }) {
       }
     >
       Tienen la raza escrita a mano, de antes del catálogo, y sin raza del catálogo su baño se
-      cobra como pelo corto. Un shih tzu ahí paga como chihuahua.{" "}
+      cobra como mestizo: por su talla y su pelaje. Un shih tzu ahí paga como cualquier mestizo.{" "}
       <Link href="/perros/razas" className="font-semibold text-morado hover:underline">
         Asignarles su raza →
       </Link>

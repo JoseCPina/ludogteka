@@ -22,7 +22,7 @@ import {
   type OpcionDimension,
 } from "@/lib/tarifas/matriz";
 import { CeldaTarifa, type ValorCelda } from "./celda-tarifa";
-import { guardarTarifas, type FilaTarifaGuardar } from "./tarifas-actions";
+import { confirmarTarifasCalculadas, guardarTarifas, type FilaTarifaGuardar } from "./tarifas-actions";
 import { useZonaNegocio } from "@/components/zona-negocio";
 
 type Tramo = { clientId: string; desde: number; hasta: number | null };
@@ -71,9 +71,9 @@ export function MatrizTarifas({
     depende_cantidad: dependeCantidad,
   };
   const filas = useMemo(
-    () => filasDeMatriz(dimensiones, { grupos, tamanos }),
+    () => filasDeMatriz(dimensiones, { grupos, tamanos, pelajes }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [dependeGrupoRaza, dependeTamano, grupos, tamanos]
+    [dependeGrupoRaza, dependeTamano, grupos, tamanos, pelajes]
   );
   const columnas = useMemo(
     () => columnasDeMatriz(dimensiones, pelajes),
@@ -101,7 +101,7 @@ export function MatrizTarifas({
   const baselineMap = useMemo(() => {
     const m = new Map<
       string,
-      { precio: number | null; precioMaltratado: number | null; no_aplica: boolean }
+      { precio: number | null; precioMaltratado: number | null; no_aplica: boolean; calculado: boolean }
     >();
     for (const v of vigentes) {
       m.set(
@@ -110,6 +110,7 @@ export function MatrizTarifas({
           precio: v.precio,
           precioMaltratado: v.precio_pelo_maltratado ?? null,
           no_aplica: v.no_aplica,
+          calculado: Boolean(v.calculado),
         }
       );
     }
@@ -118,7 +119,7 @@ export function MatrizTarifas({
 
   function obtenerBaseline(tramo: Tramo, fila: FilaMatriz, pelajeId: string) {
     const baseline = baselineMap.get(
-      claveCelda(tramo.desde, tramo.hasta, fila.grupo_raza_id, fila.tamano_id, pelajeId || null)
+      claveCelda(tramo.desde, tramo.hasta, fila.grupo_raza_id, fila.tamano_id, fila.pelaje_id ?? (pelajeId || null))
     );
     if (!baseline) {
       return {
@@ -126,9 +127,11 @@ export function MatrizTarifas({
         precio: null as number | null,
         precioMaltratado: null as number | null,
         no_aplica: false,
+        calculado: false,
       };
     }
     return {
+      calculado: baseline.calculado,
       estado: (baseline.no_aplica ? "no_aplica" : "disponible") as "no_aplica" | "disponible",
       precio: baseline.precio,
       precioMaltratado: baseline.precioMaltratado,
@@ -274,7 +277,7 @@ export function MatrizTarifas({
             cantidad_hasta: tramo.hasta,
             grupo_raza_id: fila.grupo_raza_id,
             tamano_id: fila.tamano_id,
-            pelaje_id: col.id || null,
+            pelaje_id: fila.pelaje_id ?? (col.id || null),
             precio: valor.no_aplica ? null : Number(valor.precio),
             precio_pelo_maltratado:
               valor.no_aplica || !valor.precioMaltratado ? null : Number(valor.precioMaltratado),
@@ -325,6 +328,23 @@ export function MatrizTarifas({
     setExito(true);
     setPrevisualizando(false);
     setValores(new Map());
+    router.refresh();
+  }
+
+  const gruposConCalculadas = useMemo(() => {
+    const cuenta = new Map<string, number>();
+    for (const v of vigentes) if (v.calculado && v.grupo_raza_id && !v.no_aplica) cuenta.set(v.grupo_raza_id, (cuenta.get(v.grupo_raza_id) ?? 0) + 1);
+    return grupos.filter((g) => cuenta.has(g.id)).map((g) => ({ id: g.id, nombre: g.nombre, cuantas: cuenta.get(g.id) ?? 0 }));
+  }, [vigentes, grupos]);
+  const confirmando = useEspera();
+  const [errorConfirmar, setErrorConfirmar] = useState<string | null>(null);
+  const [exitoConfirmar, setExitoConfirmar] = useState<string | null>(null);
+  async function confirmarCalculadas(grupoId: string) {
+    setErrorConfirmar(null);
+    setExitoConfirmar(null);
+    const r = await confirmando.ejecutar(() => confirmarTarifasCalculadas(grupoId, servicioId));
+    if (r.error) return setErrorConfirmar(r.error);
+    setExitoConfirmar(`Listo: ${r.confirmadas ?? 0} precios confirmados.`);
     router.refresh();
   }
 
@@ -397,6 +417,23 @@ export function MatrizTarifas({
     <div className="flex flex-col gap-6">
       {exito && <Alert variante="exito" titulo="Tarifas guardadas" />}
 
+      {gruposConCalculadas.map((g) => (
+        <div key={g.id} data-precios-calculados className="flex flex-col gap-3 rounded-lg border-l-4 border-ambar bg-ambar-suave p-4">
+          <p className="font-bold text-n-900">
+            {g.cuantas} {g.cuantas === 1 ? "precio" : "precios"} de «{g.nombre}» {g.cuantas === 1 ? "lo calculó" : "los calculó"} el sistema
+          </p>
+          <p className="text-sm text-n-800">
+            Se calcularon por proporción a partir de tus grupos de raza (están marcados «Calculado», en ámbar) para que puedas agendar desde hoy. Revísalos: si uno
+            no te cuadra, cámbialo y guárdalo (queda como tuyo); si te cuadran todos, confírmalos.
+          </p>
+          <AccionesFormulario error={errorConfirmar} exito={exitoConfirmar}>
+            <Button type="button" cargando={confirmando.cargando} onClick={() => confirmarCalculadas(g.id)}>
+              Confirmar los precios calculados
+            </Button>
+          </AccionesFormulario>
+        </div>
+      ))}
+
       {huecos > 0 && (
         <Alert
           variante="advertencia"
@@ -455,7 +492,8 @@ export function MatrizTarifas({
         <p className="text-sm text-n-600">
           Este servicio se cobra por <strong>grupo de raza</strong>. El cliente escoge la raza de su
           perro y la app deriva el grupo sola; el tamaño solo abre renglones en los grupos que se
-          cobran por talla.
+          cobran por talla, y el grupo <strong>Mestizo / sin raza</strong> además por pelaje (corto,
+          medio y largo).
         </p>
       )}
 
@@ -588,6 +626,7 @@ export function MatrizTarifas({
                         <td key={col.id || "unica"} className="p-1">
                           <CeldaTarifa
                             estadoBase={obtenerBaseline(tramo, fila, col.id).estado}
+                            calculado={obtenerBaseline(tramo, fila, col.id).calculado && !valores.has(claveValor(tramo.clientId, fila.key, col.id))}
                             valor={obtenerValor(tramo, fila, col.id)}
                             pidePeloMaltratado={aceptaPeloMaltratado}
                             onChange={(nuevo) => setValor(tramo.clientId, fila.key, col.id, nuevo)}

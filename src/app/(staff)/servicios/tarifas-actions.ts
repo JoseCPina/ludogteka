@@ -147,3 +147,16 @@ export async function quitarPrecioPorDia(id: string, servicioId: string): Promis
   revalidatePath(`/servicios/${servicioId}/tarifas`);
   return { error: null, ok: true };
 }
+
+// El admin da por buenos los precios que el sistema calculó por proporción en
+// un grupo (el mestizo): quedan como capturados por el negocio.
+export async function confirmarTarifasCalculadas(grupoId: string, servicioId: string): Promise<EstadoGuardarTarifas & { confirmadas?: number }> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("confirmar_tarifas_calculadas", { p_grupo_id: grupoId, p_servicio_id: servicioId });
+  if (error) {
+    if (error.code === "42501") return { error: "Confirmar precios es de admin o de quien tenga el permiso «Precios y tarifas»." };
+    return { error: "No pudimos confirmar los precios. Intenta de nuevo." };
+  }
+  revalidatePath(`/servicios/${servicioId}/tarifas`);
+  return { error: null, ok: true, confirmadas: Number(data ?? 0) };
+}

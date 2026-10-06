@@ -13,6 +13,7 @@ export function CeldaTarifa({
   onChange,
   disabled,
   pidePeloMaltratado = false,
+  calculado = false,
 }: {
   estadoBase: EstadoBase;
   valor: ValorCelda;
@@ -22,12 +23,16 @@ export function CeldaTarifa({
   // enredado. Es el segundo número de la misma celda del cartel, no otra
   // celda: dejarlo vacío significa que ese grupo no cobra distinto.
   pidePeloMaltratado?: boolean;
+  // El precio lo calculó el sistema por proporción y nadie lo ha confirmado:
+  // editarlo (o confirmarlo con el botón de arriba) quita la marca.
+  calculado?: boolean;
 }) {
   const sinCapturarAun = estadoBase === "sin_tarifa" && !valor.no_aplica && valor.precio === "";
 
   let estilo = "border-n-300 bg-white";
   if (valor.no_aplica) estilo = "border-n-300 bg-n-100";
   else if (sinCapturarAun) estilo = "border-2 border-coral-oscuro bg-coral-suave";
+  else if (calculado) estilo = "border-ambar bg-ambar-suave";
 
   return (
     <div className={`flex flex-col gap-1 rounded-md border-[1.5px] p-2 ${estilo}`}>
@@ -73,6 +78,7 @@ export function CeldaTarifa({
       {sinCapturarAun && (
         <span className="text-xs font-bold text-coral-oscuro">Sin tarifa</span>
       )}
+      {calculado && !valor.no_aplica && <span data-celda-calculada className="text-xs font-bold text-ambar-oscuro">Calculado</span>}
     </div>
   );
 }

@@ -198,13 +198,17 @@ t("recoleccion", D.PRECIOS.recoleccion);
 for (const [clave, precio] of Object.entries(D.PRECIOS.bonos)) t(clave, precio);
 const ESTETICA = ["estetica_estetico", "estetica_rapado", "estetica_expres"];
 for (const [grupo, precios] of Object.entries(D.PRECIOS.estetica)) {
-  const filas = Array.isArray(precios) ? [[null, precios]] : Object.entries(precios).map(([talla, p]) => [tamanos[talla].id, p]);
-  for (const [tamanoId, [completo, rapado, expres]] of filas) {
+  // Un grupo puede ser un precio único, por talla, o por talla Y pelaje (el mestizo).
+  const filas = Array.isArray(precios)
+    ? [[null, null, precios]]
+    : Object.entries(precios).flatMap(([talla, p]) => (Array.isArray(p) ? [[tamanos[talla].id, null, p]] : Object.entries(p).map(([pel, v]) => [tamanos[talla].id, pelajes[pel].id, v])));
+  for (const [tamanoId, pelajeId, [completo, rapado, expres]] of filas) {
     ESTETICA.forEach((clave, i) => {
       const precio = [completo, rapado, expres][i];
       t(clave, precio, {
         grupo_raza_id: grupos[grupo].id,
         tamano_id: tamanoId,
+        pelaje_id: pelajeId,
         precio_pelo_maltratado: clave === "estetica_estetico" && precio !== null ? precio + D.PRECIOS.pelo_maltratado_extra : null,
       });
     });
@@ -319,7 +323,7 @@ for (const [ci, c] of D.CLIENTES.entries()) {
     const ruta = `${cli.id}/${fila.id}/perfil/${p.foto}.jpg`;
     exigir(await A.storage.from(BUCKET).upload(ruta, fs.readFileSync(path.join(AQUI, "fotos", `${p.foto}.jpg`)), { contentType: "image/jpeg", upsert: true }), `foto ${p.nombre}`);
     exigir(await REC.from("perros").update({ foto_path: ruta }).eq("id", fila.id), `foto_path ${p.nombre}`);
-    const perro = { ...p, id: fila.id, cliente, grupo: grupoDeRaza[raza.id] ?? "pelo_corto" };
+    const perro = { ...p, id: fila.id, cliente, grupo: grupoDeRaza[raza.id] ?? "mestizo", pelaje: D.PELAJE[D_FOTO(p.foto).raza] ?? "corto" };
     cliente.perros.push(perro);
     PERROS.push(perro);
     if ((p.usos.includes("G") || p.usos.includes("H")) && !p.nueva) {
@@ -456,7 +460,7 @@ function agendaDelDia(fecha, cuantas) {
     if (usados.has(p.nombre)) continue;
     let servicio = p.talla === "grande" && azar() < 0.4 ? "estetica_expres" : elegir(["estetica_estetico", "estetica_estetico", "estetica_rapado", "estetica_expres"]);
     // El rapado no aplica a los de pelo corto (no tiene precio en su grupo).
-    if (servicio === "estetica_rapado" && ["pelo_corto", "pastor_corto"].includes(p.grupo)) servicio = "estetica_estetico";
+    if (servicio === "estetica_rapado" && (p.grupo === "pastor_corto" || p.pelaje === "corto")) servicio = "estetica_estetico";
     const dur = servicios[servicio].duracion_minutos ?? 60;
     if (libres[quien] + dur > fin) continue;
     usados.add(p.nombre);

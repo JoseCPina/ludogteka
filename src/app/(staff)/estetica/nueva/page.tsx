@@ -21,7 +21,7 @@ export default async function AgendarPage() {
     supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).eq("publico_general", false).order("nombre"),
     supabase
       .from("perros")
-      .select("id, cliente_id, nombre, pelaje:tipos_pelaje(clave, etiqueta)")
+      .select("id, cliente_id, nombre, tamano_id, pelaje_id, pelaje:tipos_pelaje(clave, etiqueta)")
       .is("deleted_at", null)
       .eq("fallecido", false)
       .order("nombre"),
@@ -50,6 +50,10 @@ export default async function AgendarPage() {
       .from("perro_requisitos_sanitarios_estado")
       .select("perro_id")
       .in("estado", ["vencida", "sin_registro"]),
+  ]);
+  const [{ data: tamanosCrudo }, { data: pelajesCrudo }] = await Promise.all([
+    supabase.from("tamanos_categoria").select("id, etiqueta, clave").is("deleted_at", null).order("orden"),
+    supabase.from("tipos_pelaje").select("id, etiqueta, clave").is("deleted_at", null).order("orden"),
   ]);
   const [{ data: sinGrupoCrudo }, { data: gruposPrecio }] = await Promise.all([
     supabase.from("perro_grupo_raza").select("perro_id, raza_id, raza_nombre, propuesta_id, sin_grupo_motivo, grupo_nombre, pelaje_clave").eq("sin_grupo", true),
@@ -113,9 +117,9 @@ export default async function AgendarPage() {
       ) : (
         <AgendarForm
           clientes={armarClientesBuscables((clientes ?? []) as { id: string; nombre: string; telefono: string }[], (perros ?? []) as { id: string; cliente_id: string; nombre: string }[])}
-          perros={((perros ?? []) as unknown as { id: string; cliente_id: string; nombre: string; pelaje: { clave: string; etiqueta: string } | { clave: string; etiqueta: string }[] | null }[]).map((p) => {
+          perros={((perros ?? []) as unknown as { id: string; cliente_id: string; nombre: string; tamano_id: string | null; pelaje_id: string | null; pelaje: { clave: string; etiqueta: string } | { clave: string; etiqueta: string }[] | null }[]).map((p) => {
             const pe = Array.isArray(p.pelaje) ? p.pelaje[0] : p.pelaje;
-            return { id: p.id, cliente_id: p.cliente_id, nombre: p.nombre, pelajeClave: pe?.clave ?? null, pelajeEtiqueta: pe?.etiqueta ?? null };
+            return { id: p.id, cliente_id: p.cliente_id, nombre: p.nombre, pelajeClave: pe?.clave ?? null, pelajeEtiqueta: pe?.etiqueta ?? null, tamanoId: p.tamano_id, pelajeId: p.pelaje_id };
           })}
           servicios={serviciosConMarca}
           empleados={((empleados ?? []) as { id: string; nombre: string; rol: string }[]).map((e) => ({
@@ -126,6 +130,8 @@ export default async function AgendarPage() {
           perrosConAvisoSanitario={perrosConAvisoSanitario}
           perrosSinGrupo={perrosSinGrupo}
           gruposPrecio={(gruposPrecio ?? []) as { id: string; nombre: string }[]}
+          tamanos={((tamanosCrudo ?? []) as { id: string; etiqueta: string; clave: string }[]).filter((t) => ["chico", "mediano", "grande"].includes(t.clave))}
+          pelajes={((pelajesCrudo ?? []) as { id: string; etiqueta: string; clave: string }[]).filter((p) => ["corto", "medio", "largo"].includes(p.clave))}
           puedeAsignarGrupo={tienePermiso(sesion, "tarifas")}
           puedeExcepcion={tienePermiso(sesion, "excepciones_reserva")}
           rolActual={sesion?.rol ?? "cliente"}

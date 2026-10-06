@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
@@ -67,6 +67,20 @@ export function PerroForm({
   const [estado, formAction, enviando] = useActionState(useAccionConTope(action), ESTADO_INICIAL);
   const deshabilitado = enviando || soloLectura;
 
+  // Un mestizo (o una raza que este negocio no mete en ningún grupo de precio)
+  // se cobra por talla Y pelaje: sin los dos, no hay precio de estética.
+  const [razaElegida, setRazaElegida] = useState<{ raza_id: string | null; raza: string; propuesta?: boolean }>({
+    raza_id: valoresIniciales?.raza_id ?? null,
+    raza: valoresIniciales?.raza ?? "",
+  });
+  const razaCatalogo = razas.find((r) => r.id === razaElegida.raza_id) ?? null;
+  // Una raza nueva en revisión no es un mestizo: su precio sale del grupo que se le dé.
+  const conPropuesta = Boolean(razaElegida.propuesta) || (Boolean(propuestaInicial) && razaElegida.raza_id === null);
+  const pideTallaYPelaje =
+    !conPropuesta &&
+    Boolean(razaElegida.raza.trim() || razaElegida.raza_id) &&
+    (!razaCatalogo || Boolean(razaCatalogo.es_desconocida) || /mestiz|criollo/i.test(razaCatalogo.nombre) || !razaCatalogo.grupo_nombre || razaCatalogo.grupo_nombre === "Mestizo / sin raza");
+
   return (
     <form action={formAction} className="flex max-w-lg flex-col gap-4">
       {estado.error && (
@@ -95,6 +109,7 @@ export function PerroForm({
         mostrarGrupo
         valorId={valoresIniciales?.raza_id ?? null}
         valorTexto={valoresIniciales?.raza ?? ""}
+        onElegida={setRazaElegida}
         ayuda="De aquí sale el precio de estética. Si no está en la lista, usa «No la encuentro: agregar esta raza»."
         propuestas={{
           modo: "personal",
@@ -149,14 +164,21 @@ export function PerroForm({
         </>
       )}
 
+      {pideTallaYPelaje && (
+        <p data-pide-talla-pelaje className="-mb-2 rounded-md border-l-4 border-ambar bg-ambar-suave px-3 py-2 text-sm text-n-800">
+          Es mestizo o sin raza de catálogo: su precio de estética sale de su <strong>tamaño</strong> y su <strong>pelaje</strong> (corto, medio o largo). Sin los dos no se
+          puede agendar.
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-4">
         <Select
-          label="Tamaño"
+          label={pideTallaYPelaje ? "Tamaño (obligatorio)" : "Tamaño"}
           name="tamano_id"
+          required={pideTallaYPelaje}
           disabled={deshabilitado}
           defaultValue={valoresIniciales?.tamano_id ?? ""}
         >
-          <option value="">No especificado</option>
+          <option value="">{pideTallaYPelaje ? "Elige el tamaño" : "No especificado"}</option>
           {tamanos.map((t) => (
             <option key={t.id} value={t.id}>
               {t.etiqueta}
@@ -164,12 +186,13 @@ export function PerroForm({
           ))}
         </Select>
         <Select
-          label="Pelaje"
+          label={pideTallaYPelaje ? "Pelaje (obligatorio)" : "Pelaje"}
           name="pelaje_id"
+          required={pideTallaYPelaje}
           disabled={deshabilitado}
           defaultValue={valoresIniciales?.pelaje_id ?? ""}
         >
-          <option value="">No especificado</option>
+          <option value="">{pideTallaYPelaje ? "Elige el pelaje" : "No especificado"}</option>
           {pelajes.map((p) => (
             <option key={p.id} value={p.id}>
               {p.etiqueta}

@@ -36,9 +36,9 @@ export default async function ServiciosPage() {
           "id, nombre, categoria, unidad, depende_grupo_raza, depende_tamano, depende_pelaje, depende_cantidad, monto_libre, deleted_at"
         )
         .order("orden"),
-      supabase.from("grupos_raza").select("id, nombre, depende_tamano").is("deleted_at", null).order("orden"),
+      supabase.from("grupos_raza").select("id, nombre, depende_tamano, depende_pelaje").is("deleted_at", null).order("orden"),
       supabase.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
-      supabase.from("tipos_pelaje").select("id, etiqueta").is("deleted_at", null).order("orden"),
+      supabase.from("tipos_pelaje").select("id, etiqueta, clave").is("deleted_at", null).order("orden"),
       supabase
         .from("tarifas_vigentes")
         .select("servicio_id, grupo_raza_id, tamano_id, pelaje_id, cantidad_desde, cantidad_hasta, precio, no_aplica"),
