@@ -1,12 +1,12 @@
 // 22 · Atiende y termina una cita (estética)
 export default {
   rol: "estetica",
-  inicio: "/estetica",
+  inicio: "/estetica?vista=semana",
   gancho: "Llega el perro y empieza el baño. Así registras cada paso de la cita, y la app descuenta sola lo que gastaste del inventario.",
   escenas: [
     {
       titulo: "Tu agenda",
-      dice: "Esta es la agenda de la persona de estética: sus citas del día con la hora, el perro y su estado. Toca una cita para abrirla.",
+      dice: "Esta es la agenda de la persona de estética: sus citas de la semana con la hora, el perro y su estado. Toca una cita para abrirla.",
       pasos: [["resaltar", "Estética", 2400], ["clic", "Reservada", { nav: true }]],
     },
     {
