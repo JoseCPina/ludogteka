@@ -106,7 +106,7 @@ export function AgendarForm({
   const asignando = useEspera();
   const completando = useEspera();
   const enviando = useEspera();
-  const [cot, setCot] = useState<CotizacionCita | null>(null);
+  const [cotizacion, setCotizacion] = useState<{ clave: string; valor: CotizacionCita } | null>(null);
   const [version, setVersion] = useState(0);
   const [tamanoFalta, setTamanoFalta] = useState("");
   const [pelajeFalta, setPelajeFalta] = useState("");
@@ -130,25 +130,25 @@ export function AgendarForm({
   const recargoNumero = Number(recargo.replace(",", "."));
   const grupoDeExcepcion = excepcion && grupoElegido ? grupoElegido : null;
 
-  // El precio que va a cobrar esta cita, o lo único que falta para saberlo.
+  // El precio que va a cobrar esta cita, o lo único que falta para saberlo. Se
+  // guarda con la clave de lo que se preguntó: una respuesta vieja nunca se ve
+  // como la de otro perro o servicio.
+  const claveCot = `${perroId}|${servicioActual?.id ?? ""}|${peloMaltratado}|${grupoDeExcepcion ?? ""}|${version}`;
+  const cot: CotizacionCita | null = cotizacion?.clave === claveCot ? cotizacion.valor : null;
   useEffect(() => {
+    if (!perroId || !servicioActual?.id) return;
     let vigente = true;
-    if (!perroId || !servicioActual?.id) {
-      setCot(null);
-      return;
-    }
-    setCot(null);
     conTope(cotizarCitaEstetica(perroId, servicioActual.id, peloMaltratado, grupoDeExcepcion))
       .then((r) => {
-        if (vigente) setCot(r);
+        if (vigente) setCotizacion({ clave: claveCot, valor: r });
       })
       .catch((e) => {
-        if (vigente) setCot({ error: mensajeDeFallo(e) });
+        if (vigente) setCotizacion({ clave: claveCot, valor: { error: mensajeDeFallo(e) } });
       });
     return () => {
       vigente = false;
     };
-  }, [perroId, servicioActual?.id, peloMaltratado, grupoDeExcepcion, version]);
+  }, [claveCot, perroId, servicioActual?.id, peloMaltratado, grupoDeExcepcion]);
 
   async function asignarGrupo() {
     if (!sinGrupo || !grupoElegido) return;
