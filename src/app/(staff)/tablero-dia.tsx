@@ -498,6 +498,53 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     }
   }
 
+  // Tarjetas registradas a mano («Tarjeta (registro manual)»): cuentan como
+  // pagadas pero nadie las ha verificado. Solo el admin las revisa (trae
+  // montos y folios); sube también la que pasó el tope y el patrón de uso.
+  if (sesion?.rol === "admin") {
+    const [{ data: tarjetas }, { data: aviso }] = await Promise.all([
+      supabase.rpc("tarjetas_manuales_por_revisar", { p_historial: false }),
+      supabase.rpc("tarjetas_manuales_atencion"),
+    ]);
+    const lista = (tarjetas ?? []) as { monto: number; sobre_tope: boolean; registrada_at: string }[];
+    if (lista.length > 0) {
+      const total = lista.reduce((s2, t) => s2 + Number(t.monto), 0);
+      atencion.push({
+        clave: "tarjetas-manuales",
+        texto: lista.length === 1 ? "Una tarjeta registrada a mano espera revisión" : `${lista.length} tarjetas registradas a mano esperan revisión`,
+        detalle: `$${total.toFixed(2)} sin verificar · contrástalas con el voucher en Conciliación`,
+        href: "/caja/conciliacion",
+        ...masViejo(lista.map((t) => t.registrada_at), hoy, zona, "a"),
+      });
+      const sobre = lista.filter((t) => t.sobre_tope);
+      if (sobre.length > 0) {
+        atencion.push({
+          clave: "tarjetas-manuales-tope",
+          texto: sobre.length === 1 ? "Una tarjeta manual pasó el tope de alerta" : `${sobre.length} tarjetas manuales pasaron el tope de alerta`,
+          detalle: `$${sobre.reduce((s2, t) => s2 + Number(t.monto), 0).toFixed(2)} · se registraron igual; revisa el voucher primero`,
+          href: "/caja/conciliacion",
+          ...masViejo(sobre.map((t) => t.registrada_at), hoy, zona, "a"),
+        });
+      }
+    }
+    const av = aviso as { patron_por_dia?: boolean; patron_por_turno?: boolean; manuales_hoy?: number; pct_turno?: number; pct_manuales?: number; pct_total?: number } | null;
+    if (av?.patron_por_dia || av?.patron_por_turno) {
+      atencion.push({
+        clave: "tarjetas-manuales-patron",
+        texto: "Se están registrando muchas tarjetas a mano con la terminal conectada",
+        detalle: [
+          av.patron_por_dia ? `${av.manuales_hoy} hoy (más de 3)` : null,
+          av.patron_por_turno ? `${av.pct_manuales} de ${av.pct_total} cobros con tarjeta del turno (${av.pct_turno} %)` : null,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+        href: "/caja/conciliacion",
+        dias: 0,
+        antiguedad: "Pasa hoy",
+      });
+    }
+  }
+
   // Servicios corregidos después de cobrarse: la cuenta quedó con un cobro
   // adicional o un saldo a favor que nadie ha resuelto. Con su antigüedad.
   if (conEstetica && sesion && ["admin", "recepcion"].includes(sesion.rol)) {

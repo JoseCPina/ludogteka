@@ -14,11 +14,13 @@ type Fila = { negocio_id: string; tipo: string; monto: number; ocurrio_at: strin
 export default async function ConciliacionPlataforma() {
   await exigirPlataforma();
   const admin = createSupabaseAdminClient();
-  const [{ data: filas, error }, { data: negocios }, { data: porConfirmar }] = await Promise.all([
+  const [{ data: filas, error }, { data: negocios }, { data: porConfirmar }, { data: patron }] = await Promise.all([
     admin.from("conciliacion_terminal").select("negocio_id, tipo, monto, ocurrio_at, detectada_at, detalle").is("resuelta_at", null).order("detectada_at"),
     admin.from("negocios").select("id, nombre, slug"),
     admin.from("mp_ordenes").select("negocio_id, created_at").eq("estado", "por_confirmar").is("deleted_at", null),
+    admin.rpc("plataforma_tarjetas_manuales_patron"),
   ]);
+  const usoTarjetas = (patron ?? []) as { negocio_id: string; negocio_nombre: string; proveedor: string; manuales_hoy: number; pct_turno: number; manuales_turno: number; tarjetas_turno: number; por_revisar: number; sobre_tope: number }[];
   const nombre = new Map((negocios ?? []).map((n) => [n.id as string, n.nombre as string]));
   const porNegocio = new Map<string, Fila[]>();
   for (const f of (filas ?? []) as Fila[]) porNegocio.set(f.negocio_id, [...(porNegocio.get(f.negocio_id) ?? []), f]);
@@ -38,6 +40,24 @@ export default async function ConciliacionPlataforma() {
         </p>
       </div>
       {error && <Alert variante="error" titulo="No pudimos cargar la conciliación">{error.message}</Alert>}
+      {usoTarjetas.length > 0 && (
+        <section className="flex flex-col gap-2 rounded-lg border border-ambar bg-ambar-suave p-4" data-patron-tarjetas-manuales>
+          <h2 className="font-bold text-ambar-oscuro">Tarjetas registradas a mano de más</h2>
+          <p className="text-sm text-n-700">
+            Negocios con Mercado Pago o Clip conectado que hoy registraron más de 3 tarjetas manuales, o más del 30 % de las tarjetas de un turno. Solo
+            avisa: no bloquea nada. Puede ser una terminal con falla o un mal hábito en el mostrador.
+          </p>
+          <ul className="flex flex-col gap-1 text-sm text-n-800">
+            {usoTarjetas.map((u) => (
+              <li key={u.negocio_id}>
+                <strong>{u.negocio_nombre}</strong> ({u.proveedor === "clip" ? "Clip" : "Mercado Pago"}) · {u.manuales_hoy} hoy
+                {u.pct_turno ? ` · ${u.manuales_turno} de ${u.tarjetas_turno} tarjetas del turno (${u.pct_turno} %)` : ""} · {u.por_revisar} por revisar
+                {u.sobre_tope ? ` (${u.sobre_tope} arriba del tope)` : ""}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {porNegocio.size === 0 && (pcPorNegocio.size === 0) ? (
         <p className="text-sm text-n-600">Todo cuadra: ningún negocio tiene diferencias abiertas.</p>
       ) : (

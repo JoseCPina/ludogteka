@@ -8,6 +8,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { formatearFecha } from "@/lib/formato";
 import { abrirTurno } from "../../turno-actions";
 import { registrarCobro, registrarDevolucion, type MetodoPago } from "../../cobro-actions";
@@ -15,6 +16,17 @@ import { CobroIntegrado, type OrdenCobroFila } from "./cobro-integrado";
 import { DevolucionIntegrada } from "./devolucion-integrada";
 import { CancelarRenglonVenta } from "./cancelar-renglon-venta";
 import { MarcarNoRecibido } from "./marcar-no-recibido";
+import { CamposTarjetaManual } from "@/components/cobro/campos-tarjeta-manual";
+import { RevisarTarjetaManual } from "@/components/cobro/revisar-tarjeta-manual";
+import {
+  AVISO_COBRO_TARJETA,
+  ETIQUETA_TARJETA_MANUAL,
+  cargaTarjetaManual,
+  datosVacios,
+  etiquetaMotivo,
+  validarTarjetaManual,
+  type DatosTarjetaManual,
+} from "@/lib/cobro/tarjeta-manual";
 import type { ResumenCobro } from "@/lib/pagos/tipos";
 import { consumirBono, type ItemTipoBono } from "../../bono-actions";
 import { aplicarDescuento, cancelarDescuento, type TipoDescuento } from "../../descuento-actions";
@@ -76,6 +88,18 @@ export type CobroHistorial = {
   creadoPorNombre: string;
   metodos: { metodo: string; monto: number; propina: number }[];
   origen: "manual" | "mercadopago_point" | "mercadopago_link" | "clip_terminal";
+  // Los renglones de «Tarjeta (registro manual)» de este cobro (sin verificar).
+  tarjetasManuales: {
+    id: string;
+    folio: string;
+    estado: "por_revisar" | "revisada" | "no_recibida";
+    monto: number;
+    motivo: string;
+    motivoTexto: string | null;
+    ultimos4: string | null;
+    banco: string | null;
+    sobreTope: boolean;
+  }[];
 };
 
 export type DevolucionHistorial = {
@@ -91,6 +115,7 @@ const ETIQUETA_METODO: Record<string, string> = {
   efectivo: "Efectivo",
   terminal: "Terminal",
   transferencia: "Transferencia",
+  tarjeta_manual: ETIQUETA_TARJETA_MANUAL,
 };
 
 const ETIQUETA_TIPO: Record<string, string> = {
@@ -104,10 +129,10 @@ function dinero(v: number): string {
   return `$${v.toFixed(2)}`;
 }
 
-type FilaMetodo = { metodo: MetodoPago; monto: string; propina: string };
+type FilaMetodo = { metodo: MetodoPago; monto: string; propina: string; tarjeta: DatosTarjetaManual };
 
 function NuevaFilaMetodo(): FilaMetodo {
-  return { metodo: "efectivo", monto: "", propina: "0" };
+  return { metodo: "efectivo", monto: "", propina: "0", tarjeta: datosVacios() };
 }
 
 export function CuentaCobro({
@@ -123,6 +148,7 @@ export function CuentaCobro({
   topeRecepcion,
   esAdmin,
   puedeSinTope,
+  puedeTarjetaManual,
   mp,
 }: {
   reservaId: string;
@@ -138,6 +164,7 @@ export function CuentaCobro({
   esAdmin: boolean;
   // Admin o recepción con «Descuentos sin tope». Devoluciones: solo admin.
   puedeSinTope: boolean;
+  puedeTarjetaManual: boolean;
   mp: { disponible: ResumenCobro; ordenes: OrdenCobroFila[]; clienteTelefono: string | null; terminalManualBloqueada: boolean };
 }) {
   const zona = useZonaNegocio();
@@ -318,10 +345,19 @@ export function CuentaCobro({
       metodo: m.metodo,
       monto: Number(m.monto) || 0,
       propina: Number(m.propina) || 0,
+      ...(m.metodo === "tarjeta_manual" ? cargaTarjetaManual(m.tarjeta) : {}),
     }));
     if (payload.some((m) => m.monto <= 0)) {
       setError("Cada método debe tener un monto mayor a cero.");
       return;
+    }
+    for (const m of metodos) {
+      if (m.metodo !== "tarjeta_manual") continue;
+      const falla = validarTarjetaManual(m.tarjeta);
+      if (falla) {
+        setError(falla);
+        return;
+      }
     }
     setError(null);
     const res = await cobrando.ejecutar(() => registrarCobro(reservaId, notasCobro, payload));
@@ -692,8 +728,7 @@ export function CuentaCobro({
           <p className="font-semibold text-n-900">Registrar cobro</p>
           {mp.terminalManualBloqueada && (
             <p data-terminal-bloqueada className="text-sm text-n-600">
-              El cobro con tarjeta se hace con «Cobrar con terminal» (arriba): así queda registrado solo cuando Mercado Pago confirma el pago. A mano solo
-              efectivo y transferencia.
+              {AVISO_COBRO_TARJETA}
             </p>
           )}
           {metodos.map((m, i) => (
@@ -707,6 +742,7 @@ export function CuentaCobro({
                   <option value="efectivo">Efectivo</option>
                   {!mp.terminalManualBloqueada && <option value="terminal">Terminal</option>}
                   <option value="transferencia">Transferencia</option>
+                  {puedeTarjetaManual && <option value="tarjeta_manual">{ETIQUETA_TARJETA_MANUAL}</option>}
                 </Select>
               </div>
               <div className="w-32">
@@ -738,6 +774,9 @@ export function CuentaCobro({
                   Quitar
                 </Button>
               )}
+              {m.metodo === "tarjeta_manual" && (
+                <CamposTarjetaManual valor={m.tarjeta} onChange={(cambios) => actualizarMetodo(i, { tarjeta: { ...m.tarjeta, ...cambios } })} />
+              )}
             </div>
           ))}
           <Button
@@ -755,9 +794,11 @@ export function CuentaCobro({
             Total de este cobro: <span className="font-semibold text-n-900">{dinero(totalMetodos)}</span>
           </p>
 
-          <Button type="button" cargando={cobrando.cargando} onClick={enviarCobro} className="self-start">
-            {cobrando.cargando ? "Cobrando…" : "Registrar cobro"}
-          </Button>
+          <AccionesFormulario error={error}>
+            <Button type="button" cargando={cobrando.cargando} onClick={enviarCobro}>
+              {cobrando.cargando ? "Cobrando…" : "Registrar cobro"}
+            </Button>
+          </AccionesFormulario>
         </div>
       )}
 
@@ -797,6 +838,21 @@ export function CuentaCobro({
                       .join(" · ")}
                   </p>
                   {c.notas && <p className="mt-1 text-sm text-n-500">{c.notas}</p>}
+
+                  {c.tarjetasManuales.map((t) => (
+                    <div key={t.id} data-tarjeta-manual-cobro className="mt-2 flex flex-col gap-2 rounded-md border border-ambar bg-ambar-suave p-3">
+                      <p className="text-sm text-ambar-oscuro">
+                        <span className="font-semibold">
+                          {t.estado === "por_revisar" ? "Sin verificar" : t.estado === "revisada" ? "Revisada con voucher" : "No recibida"}
+                        </span>{" "}
+                        · {ETIQUETA_TARJETA_MANUAL} {dinero(t.monto)} · folio {t.folio}
+                        {t.ultimos4 ? ` · •••• ${t.ultimos4}` : ""}
+                        {t.banco ? ` · ${t.banco}` : ""} · {etiquetaMotivo(t.motivo, t.motivoTexto)}
+                        {t.sobreTope ? " · arriba del tope de alerta" : ""}
+                      </p>
+                      {esAdmin && t.estado === "por_revisar" && <RevisarTarjetaManual tarjetaId={t.id} monto={t.monto} reservaId={reservaId} />}
+                    </div>
+                  ))}
 
                   {devolucionesDeEste.length > 0 && (
                     <div className="mt-2 border-t border-n-200 pt-2">
@@ -846,7 +902,12 @@ export function CuentaCobro({
                           onClick={() => {
                             setDevolviendoCobroId(c.id);
                             setMotivoDevolucion("");
-                            setMetodosDevolucion([{ metodo: c.origen === "clip_terminal" ? "terminal" : "efectivo", monto: "" }]);
+                            setMetodosDevolucion([
+                              {
+                                metodo: c.origen === "clip_terminal" ? "terminal" : c.tarjetasManuales.length > 0 ? "tarjeta_manual" : "efectivo",
+                                monto: "",
+                              },
+                            ]);
                           }}
                         >
                           Registrar devolución
@@ -857,6 +918,12 @@ export function CuentaCobro({
                             <p className="text-sm text-n-700">
                               Este cobro entró por la terminal Clip. La devolución se hace en Clip (en la terminal o en tu panel de Clip); aquí solo se
                               registra para que cuadre la caja. Regístrala con el método «Terminal».
+                            </p>
+                          )}
+                          {c.tarjetasManuales.length > 0 && (
+                            <p className="text-sm text-n-700">
+                              Este cobro tiene una tarjeta manual: la devolución es manual (no se pide a Mercado Pago). Devuelve el dinero por donde lo
+                              recibiste y regístrala aquí con el método «{ETIQUETA_TARJETA_MANUAL}»; queda con su motivo y se ve en la conciliación.
                             </p>
                           )}
                           {metodosDevolucion.map((m, i) => (
@@ -876,6 +943,7 @@ export function CuentaCobro({
                                   <option value="efectivo">Efectivo</option>
                                   <option value="terminal">Terminal</option>
                                   <option value="transferencia">Transferencia</option>
+                                  {c.tarjetasManuales.length > 0 && <option value="tarjeta_manual">{ETIQUETA_TARJETA_MANUAL}</option>}
                                 </Select>
                               </div>
                               <div className="w-32">

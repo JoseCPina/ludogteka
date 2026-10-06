@@ -93,6 +93,9 @@ export default async function ReportesPage({
     cobros_efectivo: number;
     cobros_terminal: number;
     cobros_transferencia: number;
+    cobros_tarjeta_manual: number;
+    propinas_tarjeta_manual: number;
+    devoluciones_tarjeta_manual: number;
     propinas_efectivo: number;
     propinas_terminal: number;
     propinas_transferencia: number;
@@ -337,7 +340,7 @@ export default async function ReportesPage({
           </div>
 
           <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-            <table className="w-full min-w-[560px] border-collapse">
+            <table className="w-full min-w-[720px] border-collapse">
               <thead>
                 <tr>
                   <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
@@ -351,6 +354,9 @@ export default async function ReportesPage({
                   </th>
                   <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
                     Transferencia
+                  </th>
+                  <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+                    Tarjeta manual (sin verificar)
                   </th>
                 </tr>
               </thead>
@@ -366,6 +372,9 @@ export default async function ReportesPage({
                   <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
                     {formatearMoneda(reporte.cobros_transferencia)}
                   </td>
+                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                    {formatearMoneda(reporte.cobros_tarjeta_manual)}
+                  </td>
                 </tr>
                 <tr>
                   <td className="border-b border-n-200 px-4 py-2.5 text-n-700">Propinas</td>
@@ -377,6 +386,9 @@ export default async function ReportesPage({
                   </td>
                   <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-600">
                     {formatearMoneda(reporte.propinas_transferencia)}
+                  </td>
+                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-600">
+                    {formatearMoneda(reporte.propinas_tarjeta_manual)}
                   </td>
                 </tr>
                 <tr>
@@ -390,6 +402,9 @@ export default async function ReportesPage({
                   <td className="border-b border-n-200 px-4 py-2.5 text-right text-coral-oscuro">
                     −{formatearMoneda(reporte.devoluciones_transferencia)}
                   </td>
+                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-coral-oscuro">
+                    −{formatearMoneda(reporte.devoluciones_tarjeta_manual)}
+                  </td>
                 </tr>
                 <tr>
                   <td className="px-4 py-2.5 text-n-700">Retiros de caja</td>
@@ -398,10 +413,23 @@ export default async function ReportesPage({
                   </td>
                   <td className="px-4 py-2.5 text-right text-n-400">—</td>
                   <td className="px-4 py-2.5 text-right text-n-400">—</td>
+                  <td className="px-4 py-2.5 text-right text-n-400">—</td>
                 </tr>
               </tbody>
             </table>
           </div>
+          <p className="text-sm text-n-700" data-total-tarjeta-reporte>
+            Total con tarjeta:{" "}
+            <strong>
+              {formatearMoneda(
+                reporte.cobros_terminal + reporte.propinas_terminal - reporte.devoluciones_terminal +
+                  reporte.cobros_tarjeta_manual + reporte.propinas_tarjeta_manual - reporte.devoluciones_tarjeta_manual
+              )}
+            </strong>{" "}
+            = terminal (verificada por el proveedor){" "}
+            {formatearMoneda(reporte.cobros_terminal + reporte.propinas_terminal - reporte.devoluciones_terminal)} + tarjeta manual (sin verificar){" "}
+            {formatearMoneda(reporte.cobros_tarjeta_manual + reporte.propinas_tarjeta_manual - reporte.devoluciones_tarjeta_manual)}.
+          </p>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="rounded-lg border border-n-200 bg-white p-4">

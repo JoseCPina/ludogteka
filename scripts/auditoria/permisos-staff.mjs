@@ -13,7 +13,7 @@ import { A, NEGOCIO, URL, env, tokenDe } from "./sesiones-dev.mjs";
 
 const PERMISOS = [
   "inventario_costos", "tarifas", "reportes_financieros", "personal", "nomina", "gastos",
-  "configuracion_negocio", "excepciones_reserva", "descuentos_sin_tope", "plantillas_contrato", "corregir_estilista", "corregir_servicio",
+  "configuracion_negocio", "excepciones_reserva", "descuentos_sin_tope", "plantillas_contrato", "corregir_estilista", "corregir_servicio", "tarjeta_manual",
 ];
 
 const conToken = (t) => createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
@@ -80,6 +80,7 @@ const { data: tope } = await A.rpc("resolver_tope_descuento_recepcion", { p_fech
 const topeRec = Number(tope?.[0]?.tope_recepcion ?? 0);
 const { data: motivoDesc } = await A.from("catalogo_descuentos").select("id").is("deleted_at", null).limit(1).single();
 
+let turnoTarjeta = null;
 // ── Una prueba por permiso: devuelve true si la base lo DEJÓ hacer ────
 const pruebas = {
   async inventario_costos() {
@@ -192,6 +193,27 @@ const pruebas = {
     }
     return { dejo: false, ve: false, detalle: "no hay una cita (abierta o terminada) con otro servicio cotizable en desarrollo" };
   },
+  // «Registrar tarjeta manual»: cobrar con «Tarjeta (registro manual)» (folio + motivo).
+  // Se usa un turno abierto (si no hay, se abre uno de prueba y se cierra al final).
+  async tarjeta_manual() {
+    if (!turnoTarjeta) {
+      const { data: abierto } = await A.from("turnos_caja").select("id").eq("estado", "abierto").maybeSingle();
+      if (abierto) turnoTarjeta = { id: abierto.id, propio: false };
+      else {
+        const t = await ADM.from("turnos_caja").insert({ fondo_inicial: 0, notas_apertura: "prueba de permisos" }).select("id").single();
+        if (t.error) return { dejo: false, ve: false, detalle: `no se pudo abrir un turno de prueba: ${t.error.message}` };
+        turnoTarjeta = { id: t.data.id, propio: true };
+      }
+    }
+    const folio = `PERM-${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    const r = await R.rpc("registrar_cobro", { p_reserva_id: reservaDesc.id, p_notas: "prueba de permisos (tarjeta manual)", p_metodos: [{ metodo: "tarjeta_manual", monto: 1, propina: 0, folio, motivo: "sin_senal" }] });
+    const dejo = !r.error;
+    if (dejo) {
+      await A.from("tarjetas_manuales").update({ deleted_at: new Date().toISOString() }).eq("cobro_id", r.data);
+      await A.from("cobros").update({ deleted_at: new Date().toISOString() }).eq("id", r.data);
+    }
+    return { dejo, ve: dejo, detalle: r.error?.message };
+  },
   async plantillas_contrato() {
     const r = await R.rpc("marcar_requiere_refirma", { p_plantilla_id: plantilla.id, p_valor: plantilla.requiere_refirma });
     return { dejo: !r.error, ve: !r.error, detalle: r.error?.message };
@@ -248,6 +270,9 @@ for (const [fn, args] of [["tiene_permiso", { p_permiso: "tarifas" }], ["mis_per
 
 // Limpieza: la estancia de prueba del descuento.
 await A.from("estancias").update({ estado: "cancelada" }).eq("id", estDesc.data.id);
+// «Registrar tarjeta manual» viene prendido por omisión para toda la recepción: se deja como estaba.
+await dar("tarjeta_manual");
+if (turnoTarjeta?.propio) await A.from("turnos_caja").update({ estado: "cerrado", cerrado_at: new Date().toISOString(), deleted_at: new Date().toISOString() }).eq("id", turnoTarjeta.id);
 
 console.log(`\n${fallas.length === 0 ? "TODO BIEN" : `FALLAS: ${fallas.length}`}`);
 for (const f of fallas) console.log("  -", f);

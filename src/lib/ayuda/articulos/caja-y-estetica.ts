@@ -6,7 +6,7 @@ export const ARTICULOS_CAJA_Y_ESTETICA: Articulo[] = [
   {
     slug: "cobrar-una-cuenta",
     titulo: "Cómo cobrar una cuenta",
-    resumen: "Cobrar en efectivo, transferencia o terminal, con propina y en varios métodos a la vez.",
+    resumen: "Cobrar en efectivo, transferencia o tarjeta, con propina y en varios métodos a la vez.",
     grupo: "caja",
     modulo: null,
     roles: ["admin", "recepcion"],
@@ -18,11 +18,11 @@ export const ARTICULOS_CAJA_Y_ESTETICA: Articulo[] = [
 1. Entra a [Caja](/caja) y busca la cuenta en **Cuentas abiertas de hoy**, o escribe el perro, el dueño o el teléfono en **¿A quién le cobras?**.
 2. Abre la cuenta y revisa los conceptos y el **Saldo**.
 3. Si no hay turno, aprieta **Abrir turno**, escribe el **Fondo inicial** y **Confirmar apertura**.
-4. En **Registrar cobro** escoge el **Método** (Efectivo, Terminal o Transferencia), escribe el **Monto** y, si dejó, la **Propina**.
+4. En **Registrar cobro** escoge el **Método** (Efectivo, Transferencia o **Tarjeta (registro manual)**; **Terminal** solo si tu negocio no tiene Mercado Pago ni Clip), escribe el **Monto** y, si dejó, la **Propina**.
 5. ¿Paga una parte en efectivo y otra con tarjeta? Aprieta **+ Repartir en otro método** y llena el segundo renglón.
 6. Aprieta **Registrar cobro**. El saldo baja y el cobro queda en **Cobros de esta reserva**.
 
-> El método **Terminal** solo se captura a mano en un negocio que no tiene Mercado Pago ni Clip. Con alguno de los dos elegido, el cobro con tarjeta se hace con **Cobrar con terminal** ([Cómo cobrar con la terminal](/ayuda/cobrar-con-terminal)): así queda registrado solo cuando el proveedor confirma el pago. A mano solo se registra efectivo o transferencia.
+> El cobro con tarjeta se hace con **Cobrar con terminal** ([Cómo cobrar con la terminal](/ayuda/cobrar-con-terminal)): así se confirma solo con Mercado Pago. El método **Terminal** no se captura a mano en un negocio con Mercado Pago o Clip. Si la terminal no se puede usar, usa **Tarjeta (registro manual)** con el folio del voucher ([Cuándo usar Tarjeta (registro manual)](/ayuda/tarjeta-registro-manual)). A mano también: efectivo y transferencia.
 
 Si el perro tiene day pass o mensualidad, junto a su línea sale **Pagar con bono**.
 
@@ -65,6 +65,8 @@ Si el perro tiene day pass o mensualidad, junto a su línea sale **Pagar con bon
 
 ## Qué significa «Por confirmar»
 
+Si la terminal no se puede usar (está caída, no hay señal, el cobro se hizo en otra terminal), no la dejes parada: usa **Tarjeta (registro manual)** con el folio del voucher ([Cuándo usar Tarjeta (registro manual)](/ayuda/tarjeta-registro-manual)). Ese cobro cuenta como pagado pero queda **sin verificar** hasta que el admin lo revisa.
+
 Un cobro con terminal solo cuenta como cobrado cuando Mercado Pago confirma un **pago aprobado**: la app lo consulta directo, con el mismo monto y de tu cuenta. Si algo no cuadra (otro monto, el pago todavía no existe, no se pudo comprobar), la orden queda **Por confirmar con Mercado Pago**: **no cuenta como dinero** y aparece en **Necesita atención**.
 
 1. Abre la cuenta y, en la orden por confirmar, aprieta **Revisar con Mercado Pago**.
@@ -101,7 +103,7 @@ Una orden **cancelada**, **vencida**, **fallida** o en cola nunca marca nada com
 
 ## Si pasan los 2 minutos
 
-Sale «La terminal no ha respondido». Si el cliente no pagó, aprieta **Cancelar y registrar a mano** y cóbrale en **Registrar cobro** con efectivo o transferencia (con Mercado Pago o Clip elegidos, el método **Terminal** no se captura a mano: vuelve a mandarlo con **Cobrar con terminal**). Si tienes duda, aprieta **Seguir esperando**.
+Sale «La terminal no ha respondido». Si el cliente no pagó, aprieta **Cancelar y registrar a mano** y cóbrale en **Registrar cobro** con efectivo o transferencia (con Mercado Pago o Clip elegidos, el método **Terminal** no se captura a mano: vuelve a mandarlo con **Cobrar con terminal**). Si el cliente SÍ pasó la tarjeta en otra terminal o en una que no responde, registra el cobro con **Tarjeta (registro manual)** y el folio del voucher ([Cuándo usar Tarjeta (registro manual)](/ayuda/tarjeta-registro-manual)). Si tienes duda, aprieta **Seguir esperando**.
 
 > Si el cliente SÍ pagó en la terminal, no registres nada a mano: en cuanto el proveedor lo confirme, el cobro entra solo aunque hayas cancelado aquí.
 
@@ -146,11 +148,89 @@ Antes de cambiar nada, la app le **pregunta a Mercado Pago**: si tiene un pago a
 
 Si ya confirmaste que el cliente pagó, el admin puede apretar **Dar por revisada** en la diferencia y escribir qué revisó.
 
+## Tarjetas manuales por revisar
+
+En la misma pantalla, el admin ve **Tarjetas manuales por revisar**: los cobros que se registraron con **Tarjeta (registro manual)** y nadie ha verificado, con su folio y su motivo. Cómo revisarlas: [Cómo revisar las tarjetas manuales](/ayuda/revisar-tarjetas-manuales).
+
 ## Si algo no sale
 
 - «Mercado Pago SÍ tiene un pago aprobado… que podría ser de este cobro»: no se marca; confírmalo con el cliente.
 - «…la cuenta no está conectada»: reconéctala en [Cobro con terminal](/admin/pagos) y vuelve a intentarlo.
 - «No hay turno de caja abierto»: ábrelo; la corrección se anota en el turno abierto.`,
+  },
+  {
+    slug: "tarjeta-registro-manual",
+    titulo: "Cuándo usar «Tarjeta (registro manual)»",
+    resumen: "Registrar un cobro con tarjeta cuando no se puede usar la terminal vinculada, con el folio del voucher.",
+    grupo: "caja",
+    modulo: null,
+    roles: ["admin", "recepcion"],
+    rutas: [],
+    palabras: ["tarjeta manual", "registro manual", "voucher", "folio", "autorización", "terminal caída", "sin señal", "sin internet", "otra terminal", "terminal no responde", "sin verificar", "cobro con tarjeta a mano"],
+    cuerpo: `El cobro con tarjeta se hace con **Cobrar con terminal** ([Cómo cobrar con la terminal](/ayuda/cobrar-con-terminal)): se confirma solo con Mercado Pago. Pero a veces no se puede: la terminal vinculada no responde, no hay señal o se cobró en otra terminal. Para eso existe **Tarjeta (registro manual)**: el cobro cuenta como pagado desde que lo registras, para que no se quede nadie esperando.
+
+1. Abre la cuenta y, en **Registrar cobro**, escoge **Tarjeta (registro manual)** en **Método**.
+2. Escribe el **Monto** (y la **Propina**, si dejó).
+3. En **Folio o autorización del voucher** escribe el número del voucher (mínimo 4 caracteres, y no se repite).
+4. En **¿Por qué no se cobró con la terminal vinculada?** elige: **Terminal vinculada no responde**, **Sin señal o sin internet**, **Cobro en otra terminal** u **Otro (escríbelo)**.
+5. Si quieres, anota los **Últimos 4 dígitos** y el **Banco**. Nunca captures la tarjeta completa.
+6. Aprieta **Registrar cobro**.
+
+El cobro queda marcado **Sin verificar**: nadie lo confirmó con Mercado Pago ni con Clip. El admin lo contrasta con el voucher en [Conciliación](/caja/conciliacion) ([Cómo revisar las tarjetas manuales](/ayuda/revisar-tarjetas-manuales)).
+
+- **No es lo mismo que Terminal.** En un negocio con Mercado Pago o Clip, **Terminal** no se captura a mano: solo entra cuando el proveedor confirma el pago.
+- En el turno, el corte y los reportes sale en una línea aparte: **Tarjeta manual (sin verificar)**, separada de la terminal verificada. El total con tarjeta suma las dos, a la vista.
+- Sirve igual para estética, guardería, hotel, venta rápida y venta de pases, y se puede repartir con otro método.
+- Una devolución de un cobro con tarjeta manual es **manual**: la registra el admin con **Registrar devolución** y el método **Tarjeta (registro manual)**; no usa el reembolso de Mercado Pago.
+- Si el monto pasa el tope de alerta del negocio, se registra igual y sube a **Necesita atención** para que el admin lo revise primero.
+
+## Si algo no sale
+
+- «Escribe el folio o número de autorización del voucher (mínimo 4 caracteres).»: sin folio no se guarda.
+- «El folio … ya está registrado en otro cobro de este negocio.»: revisa el voucher; un mismo folio no se registra dos veces.
+- «No tienes el permiso «Registrar tarjeta manual».»: pídeselo al admin en [Permisos](/admin/permisos). Viene prendido para toda la recepción.
+- No ves **Tarjeta (registro manual)** en el método: tu cuenta no tiene ese permiso.`,
+  },
+  {
+    slug: "revisar-tarjetas-manuales",
+    titulo: "Cómo revisar las tarjetas manuales",
+    resumen: "Contrastar con el voucher los cobros de «Tarjeta (registro manual)»: revisarlos o marcarlos como no recibidos, el tope de alerta y los avisos.",
+    grupo: "caja",
+    modulo: null,
+    roles: ["admin"],
+    rutas: ["/caja/conciliacion"],
+    palabras: ["tarjeta manual", "revisado con voucher", "no recibida", "sin verificar", "tope de alerta", "tarjetas por revisar", "conciliación", "muchas tarjetas a mano"],
+    cuerpo: `Los cobros de **Tarjeta (registro manual)** ([Cuándo usar Tarjeta (registro manual)](/ayuda/tarjeta-registro-manual)) cuentan como pagados, pero nadie los verificó. Tú, como admin, los contrastas con el voucher y el estado de cuenta.
+
+Los ves en **Necesita atención** del [tablero](/recepcion) («tarjetas registradas a mano esperan revisión», del más viejo al más nuevo) y en [Conciliación](/caja/conciliacion), en **Tarjetas manuales por revisar**, con el folio, el motivo, quién lo registró y cuándo.
+
+## Si el voucher es bueno
+
+1. En la tarjeta aprieta **Revisado con voucher**.
+2. Si quieres, escribe una **Nota (opcional)**.
+3. Aprieta **Guardar como revisada**.
+
+## Si el cobro no se recibió
+
+1. En la tarjeta aprieta **Marcar como no recibida**.
+2. Escribe el **Motivo (obligatorio)**.
+3. Aprieta **Marcar como no recibida**.
+
+El cobro no se borra: queda con su historial y la cuenta **vuelve a tener saldo** para cobrarse. La corrección entra como un movimiento aparte en el **turno abierto**: si el cobro era de un turno que ya cerró, ese corte **no cambia**. Para marcarla necesitas un turno abierto. No se marca una que ya tiene devoluciones ni una con propina.
+
+## Tope de alerta
+
+En [Cobro con terminal](/admin/pagos), **Tope de alerta por cobro (MXN)** (por omisión $2,000): arriba de ese monto la tarjeta se registra igual, pero sale marcada **arriba del tope** y en **Necesita atención** para que la revises primero.
+
+## Si se usan de más
+
+Si tu terminal está conectada y en un día se registran más de 3 tarjetas manuales, o más del 30 % de las tarjetas de un turno, sale en **Necesita atención** «Se están registrando muchas tarjetas a mano con la terminal conectada». Solo avisa: no bloquea a nadie. Puede ser una terminal con falla o un mal hábito en el mostrador.
+
+## Si algo no sale
+
+- «No hay turno de caja abierto…»: ábrelo; la corrección se anota en el turno abierto.
+- «Este cobro ya tiene devoluciones…»: ya no se puede marcar como no recibida.
+- Recepción no ve estas tarjetas ni los botones: es solo del admin.`,
   },
   {
     slug: "link-de-pago-whatsapp",
@@ -229,6 +309,10 @@ Abre la cuenta desde [Caja](/caja) y busca el cobro en **Cobros de esta reserva*
 3. Aprieta **Devolver con Mercado Pago**.
 
 El dinero regresa a la tarjeta o cuenta del cliente y la devolución queda en caja en el mismo paso. Si Mercado Pago lo rechaza, no se registra nada. Si Mercado Pago regresa la comisión, se quita sola de los gastos.
+
+## Cobro con Tarjeta (registro manual)
+
+La devolución es **manual**: no usa el reembolso de Mercado Pago. Aprieta **Registrar devolución**, deja el método **Tarjeta (registro manual)** (solo se puede devolver hasta lo que ese cobro pasó por tarjeta manual), escribe el **Motivo** y **Confirmar devolución**. Devuelve el dinero por donde lo recibiste (en la terminal o con el banco). La devolución queda en caja y se ve en [Conciliación](/caja/conciliacion). Si el cobro nunca se recibió, no es una devolución: usa **Marcar como no recibida** ([Cómo revisar las tarjetas manuales](/ayuda/revisar-tarjetas-manuales)).
 
 ## Cobro de Clip
 

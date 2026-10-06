@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { cargarOpcionesCobroManual } from "@/lib/cobro/opciones-manual";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
@@ -354,6 +355,7 @@ export default async function EditarClientePage({
           catalogo={(catalogoBonos as BonoCatalogo[]) ?? []}
           bonos={(bonosCliente as BonoFila[]) ?? []}
           perros={(perros ?? []).filter((p) => !p.fallecido).map((p) => ({ id: p.id as string, nombre: p.nombre as string }))}
+          opcionesCobro={await cargarOpcionesCobroManual()}
         />
       </div>
       )}

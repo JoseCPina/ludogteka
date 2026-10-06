@@ -89,6 +89,12 @@ export const PERMISOS = [
     implica:
       "Cambia el servicio de una cita de estética cuando se capturó mal (abierta o ya terminada y cobrada), con un motivo por escrito que queda en el historial de la cita. El precio se recalcula con las reglas de hoy y, si ya se había cobrado, la cuenta queda con un cobro adicional o un saldo a favor (nunca se toca el cobro original). Si el servicio ya se terminó, también ajusta el inventario y, si su nómina ya se pagó, la comisión en el siguiente pago.",
   },
+  {
+    clave: "tarjeta_manual",
+    etiqueta: "Registrar tarjeta manual",
+    implica:
+      "Registra un cobro con «Tarjeta (registro manual)» cuando no se puede usar la terminal vinculada (terminal caída, sin señal, otra terminal), con el folio del voucher y el motivo. Viene prendido para toda la recepción; quítalo a quien no deba. El cobro cuenta como pagado pero queda «sin verificar» hasta que un admin lo revisa en Caja → Conciliación.",
+  },
 ] as const;
 
 export type ClavePermiso = (typeof PERMISOS)[number]["clave"];

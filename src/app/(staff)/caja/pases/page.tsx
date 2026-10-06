@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cargarOpcionesCobroManual } from "@/lib/cobro/opciones-manual";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { BonosCliente, type BonoCatalogo, type BonoFila } from "@/app/(staff)/clientes/bonos-cliente";
@@ -102,6 +103,7 @@ export default async function PasesCajaPage({ searchParams }: { searchParams: Pr
             bonos={(bonos ?? []) as BonoFila[]}
             perros={(perrosCliente ?? []) as { id: string; nombre: string }[]}
             perroInicial={perroInicial ?? null}
+            opcionesCobro={await cargarOpcionesCobroManual()}
           />
         </div>
       )}
