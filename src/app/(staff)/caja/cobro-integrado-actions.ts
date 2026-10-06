@@ -80,15 +80,9 @@ export async function iniciarCobroTerminal(
   const { negocio, admin } = await adminDelNegocio();
   const { data: reservaDelNegocio } = await admin.from("reservas").select("id").eq("id", reservaId).eq("negocio_id", negocio.id).maybeSingle();
   if (!reservaDelNegocio) return { error: "Cuenta no encontrada." };
-  const { data: viva } = await admin
-    .from("mp_ordenes")
-    .select("id")
-    .eq("negocio_id", negocio.id)
-    .eq("reserva_id", reservaId)
-    .eq("tipo", "point")
-    .in("estado", ["creada", "en_terminal", "por_confirmar"])
-    .is("deleted_at", null)
-    .maybeSingle();
+  // (también cuenta una orden de un cobro junto en la que esté esta cuenta)
+  const { data: vivas } = await supabase.rpc("ordenes_abiertas_de_reservas", { p_reservas: [reservaId] });
+  const viva = ((vivas ?? []) as { id: string; tipo: string }[]).find((o) => o.tipo === "point");
   if (viva) return { error: "Ya hay un cobro en la terminal (o por confirmar) para esta cuenta. Espéralo, revísalo con Mercado Pago o cancélalo antes de mandar otro.", ordenId: viva.id as string };
 
   const sesion = await obtenerSesionConRol();
@@ -406,4 +400,178 @@ export async function marcarCobroNoRecibido(reservaId: string, cobroId: string, 
   revalidatePath("/recepcion");
   if (!r.ok) return { error: r.error };
   return { error: null, aviso: r.aviso };
+}
+
+// ── Cobro junto: varias cuentas de la misma persona, UNA orden ──────────
+
+export type ParteGrupo = { reservaId: string; monto: number };
+
+type GrupoValidado = {
+  clienteId: string;
+  cliente: { nombre: string; telefono: string | null };
+  partes: { reserva_id: string; monto: number }[];
+  total: number;
+};
+
+// Antes de pedirle nada al proveedor: las cuentas son del negocio, de la MISMA
+// persona (nunca «Público en general»), cada monto cabe en su saldo y no deja
+// menos de un peso, y ninguna tiene ya una orden viva en la terminal. La base
+// vuelve a decidir lo mismo al registrar el pago.
+async function validarGrupo(partes: ParteGrupo[], opciones: { revisarTerminal: boolean }): Promise<{ error: string } | GrupoValidado> {
+  if (!Array.isArray(partes) || partes.length < 2) return { error: "Para cobrar juntas se necesitan al menos dos cuentas." };
+  const ids = partes.map((p) => p.reservaId);
+  if (new Set(ids).size !== ids.length) return { error: "Una cuenta aparece dos veces en el cobro." };
+  for (const p of partes) {
+    if (!Number.isFinite(p.monto) || p.monto <= 0 || Math.round(p.monto * 100) / 100 !== p.monto) {
+      return { error: "El monto de cada cuenta tiene que ser mayor a cero (a lo más dos decimales)." };
+    }
+  }
+  const supabase = await createSupabaseServerClient();
+  const { data: reservas } = await supabase.from("reservas").select("id, cliente_id, clientes(nombre, telefono, publico_general)").in("id", ids).is("deleted_at", null);
+  if ((reservas ?? []).length !== ids.length) return { error: "Una de las cuentas no existe en este negocio." };
+  const clientes = new Set((reservas ?? []).map((r) => r.cliente_id as string));
+  if (clientes.size !== 1) return { error: "Solo se cobran juntas las cuentas de la misma persona: nunca se mezclan clientas." };
+  const primera = reservas![0];
+  const cliente = (Array.isArray(primera.clientes) ? primera.clientes[0] : primera.clientes) as { nombre: string; telefono: string | null; publico_general: boolean } | null;
+  if (!cliente || cliente.publico_general) return { error: "Las ventas de «Público en general» no se agrupan: cada una se cobra aparte." };
+  for (const p of partes) {
+    const { data: t } = await supabase.rpc("cuenta_totales_reserva", { p_reserva_id: p.reservaId });
+    const saldo = Number((Array.isArray(t) ? t[0] : t)?.saldo ?? 0);
+    if (p.monto > saldo + 0.005) return { error: `Una cuenta recibiría $${p.monto.toFixed(2)} pero solo debe $${saldo.toFixed(2)}: baja el monto de esa cuenta.` };
+    const resto = Math.round((saldo - p.monto) * 100) / 100;
+    if (resto > 0 && resto < 1) return { error: `Con este cobro una cuenta se quedaría debiendo $${resto.toFixed(2)} (menos de un peso). Ajusta el monto de esa cuenta para saldarla o dejar al menos $1.` };
+  }
+  if (opciones.revisarTerminal) {
+    const { data: vivas } = await supabase.rpc("ordenes_abiertas_de_reservas", { p_reservas: ids });
+    const viva = ((vivas ?? []) as { id: string; tipo: string }[]).find((o) => o.tipo === "point");
+    if (viva) return { error: "Una de estas cuentas ya tiene un cobro en la terminal (o por confirmar). Espéralo, revísalo con Mercado Pago o cancélalo antes de mandar otro." };
+  }
+  const total = Math.round(partes.reduce((a, p) => a + p.monto, 0) * 100) / 100;
+  return { clienteId: primera.cliente_id as string, cliente: { nombre: cliente.nombre, telefono: cliente.telefono }, partes: partes.map((p) => ({ reserva_id: p.reservaId, monto: p.monto })), total };
+}
+
+function revalidarGrupo(ids: string[]) {
+  for (const id of ids) revalidarCuenta(id);
+  revalidatePath("/caja/cobrar-junto");
+}
+
+/** «Cobrar con terminal» de varias cuentas: UNA orden por el total del grupo. */
+export async function iniciarCobroTerminalGrupo(partes: ParteGrupo[], plazos: number | null): Promise<ResultadoIniciarTerminal> {
+  const acceso = await exigirCaja();
+  if ("error" in acceso) return { error: acceso.error };
+  const { cx } = acceso;
+  if (plazos !== null && ![1, 3, 6, 9, 12].includes(plazos)) return { error: "Plazo no válido." };
+  if (plazos && plazos > 1 && cx.proveedor !== "mercadopago") return { error: "Los meses sin intereses desde la app solo están con Mercado Pago." };
+  if (!cx.terminalId) return { error: "No hay terminal escogida. El admin la escoge en Administración → Cobro con terminal; mientras, cobra a mano." };
+
+  const supabase = await createSupabaseServerClient();
+  const { data: turno } = await supabase.from("turnos_caja").select("id").eq("estado", "abierto").maybeSingle();
+  if (!turno) return { error: "No hay turno de caja abierto. Ábrelo antes de cobrar." };
+
+  const g = await validarGrupo(partes, { revisarTerminal: true });
+  if ("error" in g) return { error: g.error };
+  const descripcion = `Cobro junto de ${g.cliente.nombre} · ${g.partes.length} cuentas`;
+
+  const { negocio, admin } = await adminDelNegocio();
+  const sesion = await obtenerSesionConRol();
+  const { data: orden, error: errorOrden } = await admin
+    .from("mp_ordenes")
+    .insert({
+      negocio_id: negocio.id,
+      proveedor: cx.proveedor,
+      cuenta_id: cx.cuentaId,
+      tipo: "point",
+      reserva_id: g.partes[0].reserva_id,
+      monto: g.total,
+      descripcion: descripcion.slice(0, 120),
+      estado: "creada",
+      terminal_id: cx.terminalId,
+      installments: plazos && plazos > 1 ? plazos : null,
+      simulado: cx.simulado,
+      conexion_desde: cx.conectadaAt,
+      expira_at: new Date(Date.now() + (TERMINAL_ESPERA_SEGUNDOS + 60) * 1000).toISOString(),
+      grupo_cuentas: g.partes,
+      grupo_cliente_id: g.clienteId,
+      created_by: sesion?.user.id ?? null,
+    })
+    .select("id")
+    .single();
+  if (errorOrden || !orden) return { error: "No pudimos registrar la orden. Intenta de nuevo." };
+
+  try {
+    const remota = await adaptador(cx.proveedor).crearCobroTerminal(cx, { ordenId: orden.id as string, monto: g.total, descripcion, plazos });
+    await admin
+      .from("mp_ordenes")
+      .update({ mp_order_id: remota.idRemoto, estado: remota.estado, ultimo_evento: remota.crudo as object })
+      .eq("id", orden.id)
+      .eq("negocio_id", negocio.id);
+  } catch (e) {
+    await admin.from("mp_ordenes").update({ estado: "fallida", detalle_error: mensajeDeError(e) }).eq("id", orden.id).eq("negocio_id", negocio.id);
+    return { error: mensajeDeError(e), ordenId: orden.id as string };
+  }
+  revalidarGrupo(g.partes.map((p) => p.reserva_id));
+  return { error: null, ordenId: orden.id as string, simulado: cx.simulado };
+}
+
+/** «Mandar link de pago» de varias cuentas: UN link por el total del grupo. */
+export async function crearLinkPagoGrupo(partes: ParteGrupo[], concepto: string): Promise<ResultadoLink> {
+  const acceso = await exigirCaja();
+  if ("error" in acceso) return { error: acceso.error };
+  const { cx } = acceso;
+  const ad = adaptador(cx.proveedor);
+  if (!ad.soportaLink || !ad.crearLinkPago) return { error: `Los links de pago no están disponibles con ${ad.nombre}.` };
+
+  const g = await validarGrupo(partes, { revisarTerminal: false });
+  if ("error" in g) return { error: g.error };
+  const { negocio, admin } = await adminDelNegocio();
+  const sesion = await obtenerSesionConRol();
+  const expira = vigenciaLink();
+  const titulo = concepto.trim() || `Pago a ${negocio.nombre}`;
+  const { data: orden, error: errorOrden } = await admin
+    .from("mp_ordenes")
+    .insert({
+      negocio_id: negocio.id,
+      proveedor: cx.proveedor,
+      cuenta_id: cx.cuentaId,
+      tipo: "link",
+      reserva_id: g.partes[0].reserva_id,
+      monto: g.total,
+      descripcion: titulo.slice(0, 120),
+      estado: "creada",
+      simulado: cx.simulado,
+      expira_at: expira.toISOString(),
+      grupo_cuentas: g.partes,
+      grupo_cliente_id: g.clienteId,
+      created_by: sesion?.user.id ?? null,
+    })
+    .select("id")
+    .single();
+  if (errorOrden || !orden) return { error: "No pudimos registrar el link. Intenta de nuevo." };
+
+  try {
+    const link = await ad.crearLinkPago(cx, {
+      ordenId: orden.id as string,
+      monto: g.total,
+      titulo,
+      clienteNombre: g.cliente.nombre,
+      clienteTelefono: g.cliente.telefono?.replace(/\D/g, "") ?? null,
+      expiraAt: expira,
+    });
+    await admin
+      .from("mp_ordenes")
+      .update({ mp_preference_id: link.idRemoto, url_pago: link.url, ultimo_evento: link.crudo as object })
+      .eq("id", orden.id)
+      .eq("negocio_id", negocio.id);
+    const mensaje =
+      `Hola ${g.cliente.nombre}, te mandamos el link para pagar ${titulo.toLowerCase()} en ${negocio.nombre}: $${g.total.toFixed(2)}. ` +
+      `Puedes pagar con tarjeta o desde tu cuenta de ${ad.nombre} aquí: ${link.url} ` +
+      `(vence en 7 días). ¡Gracias!`;
+    const telefono = g.cliente.telefono?.replace(/\D/g, "") ?? "";
+    const urlWhatsApp = telefono ? `https://wa.me/52${telefono}?text=${encodeURIComponent(mensaje)}` : undefined;
+    revalidarGrupo(g.partes.map((p) => p.reserva_id));
+    return { error: null, ordenId: orden.id as string, url: link.url, urlWhatsApp, simulado: cx.simulado };
+  } catch (e) {
+    await admin.from("mp_ordenes").update({ estado: "fallida", detalle_error: mensajeDeError(e) }).eq("id", orden.id).eq("negocio_id", negocio.id);
+    return { error: mensajeDeError(e) };
+  }
 }

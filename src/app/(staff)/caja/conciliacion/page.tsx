@@ -31,6 +31,8 @@ type TarjetaFila = {
   revisada_at: string | null;
   revisada_por_nombre: string | null;
   nota_revision: string | null;
+  grupo_id: string | null;
+  cuentas: number;
 };
 
 type Fila = {
@@ -122,6 +124,7 @@ export default async function ConciliacionPage() {
                 <li key={t.id} data-tarjeta-por-revisar className="flex flex-col gap-2 rounded-lg border border-ambar bg-ambar-suave p-4">
                   <p className="font-semibold text-n-900">
                     ${Number(t.monto).toFixed(2)} · folio {t.folio}
+                    {t.cuentas > 1 ? <span className="ml-2 rounded-full bg-morado-suave px-2 py-0.5 text-xs font-semibold text-morado">cobro junto · {t.cuentas} cuentas</span> : null}
                     {t.sobre_tope ? <span className="ml-2 rounded-full bg-coral-suave px-2 py-0.5 text-xs font-semibold text-coral-oscuro">arriba del tope</span> : null}
                     <Antiguedad dias={diasDesde(t.registrada_at, hoy, zona)} />
                   </p>
@@ -140,7 +143,7 @@ export default async function ConciliacionPage() {
                       Abrir la cuenta →
                     </Link>
                   </div>
-                  <RevisarTarjetaManual tarjetaId={t.id} monto={Number(t.monto)} reservaId={t.reserva_id} />
+                  <RevisarTarjetaManual tarjetaId={t.id} monto={Number(t.monto)} reservaId={t.reserva_id} cuentas={t.cuentas} />
                 </li>
               ))}
             </ul>
@@ -151,7 +154,7 @@ export default async function ConciliacionPage() {
               <ul className="mt-2 flex flex-col gap-1">
                 {tarjetasHechas.map((t) => (
                   <li key={t.id}>
-                    ${Number(t.monto).toFixed(2)} · folio {t.folio} · {t.estado === "revisada" ? "revisada con voucher" : "marcada como no recibida"}
+                    ${Number(t.monto).toFixed(2)}{t.cuentas > 1 ? ` (${t.cuentas} cuentas)` : ""} · folio {t.folio} · {t.estado === "revisada" ? "revisada con voucher" : "marcada como no recibida"}
                     {t.revisada_por_nombre ? ` por ${t.revisada_por_nombre}` : ""}
                     {t.nota_revision ? ` — ${t.nota_revision}` : ""}
                   </li>

@@ -330,7 +330,7 @@ try {
   // ── 8. Aislamiento ──
   console.log("── 8. Otro negocio, cliente y anónimo");
   const tLudo = await tokenDe((await A.from("membresias").select("profile_id").eq("negocio_id", LUDOGTEKA).eq("rol", "admin").is("deleted_at", null).limit(1).single()).data.profile_id);
-  const verLudo = await get(tLudo, "tarjetas_manuales?select=id", LUDOGTEKA);
+  const verLudo = await get(tLudo, "tarjetas_manuales?select=id&deleted_at=is.null", LUDOGTEKA);
   comprobar(verLudo.ok && verLudo.cuerpo.length === 0, "Ludogteka no ve ninguna tarjeta manual de Huellitas");
   const cruzado = await get(tLudo, `tarjetas_manuales?select=id&id=eq.${t1.id}`, B);
   comprobar(!cruzado.ok || (cruzado.cuerpo ?? []).length === 0, "con el encabezado de Huellitas, un admin de Ludogteka tampoco la lee (no es miembro)");

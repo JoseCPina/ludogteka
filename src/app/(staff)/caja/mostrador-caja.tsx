@@ -25,6 +25,17 @@ export type CuentaAbierta = {
   saldo: number;
 };
 
+// Las cuentas del mismo dueño que se pueden cobrar juntas, en el orden de la lista.
+function agruparPorCliente(cuentas: CuentaAbierta[]): { clienteId: string; cuentas: CuentaAbierta[] }[] {
+  const grupos: { clienteId: string; cuentas: CuentaAbierta[] }[] = [];
+  for (const c of cuentas) {
+    const g = grupos.find((x) => x.clienteId === c.clienteId);
+    if (g) g.cuentas.push(c);
+    else grupos.push({ clienteId: c.clienteId, cuentas: [c] });
+  }
+  return grupos;
+}
+
 export type PagoMpPendiente = { id: string; tipo: string; monto: number; clienteNombre: string; pagadaAt: string | null; simulado: boolean };
 
 function dinero(v: number): string {
@@ -43,18 +54,32 @@ export function MostradorCaja({
   hoy,
   turnoAbierto,
   pendientesMp,
+  publicoGeneralId,
 }: {
   clientes: ClienteBuscable[];
   cuentas: CuentaAbierta[];
   hoy: string;
   turnoAbierto: boolean;
   pendientesMp: PagoMpPendiente[];
+  // «Público en general» nunca se agrupa: cada venta es de alguien distinto.
+  publicoGeneralId: string | null;
 }) {
   const router = useRouter();
   const [cliente, setCliente] = useState<ClienteBuscable | null>(null);
   const tieneBonos = useModulos().tiene("bonos");
   const [error, setError] = useState<string | null>(null);
   const registrando = useEspera();
+  // Las cuentas marcadas para cobrar juntas: solo de la misma persona.
+  const [seleccion, setSeleccion] = useState<string[]>([]);
+  const seleccionadas = cuentas.filter((c) => seleccion.includes(c.reservaId));
+  const clienteSeleccion = seleccionadas[0]?.clienteId ?? null;
+  const totalSeleccion = seleccionadas.reduce((s, c) => s + c.saldo, 0);
+  const sePuedeAgrupar = (c: CuentaAbierta) => c.clienteId !== publicoGeneralId;
+
+  function alternar(c: CuentaAbierta) {
+    setSeleccion((prev) => (prev.includes(c.reservaId) ? prev.filter((id) => id !== c.reservaId) : [...prev, c.reservaId]));
+  }
+  const hrefJunto = (ids: string[]) => `/caja/cobrar-junto?cuentas=${ids.join(",")}`;
 
   const deHoy = cuentas.filter((c) => c.fechaActividad === hoy);
   const otras = cuentas.filter((c) => c.fechaActividad !== hoy);
@@ -67,12 +92,30 @@ export function MostradorCaja({
     router.refresh();
   }
 
-  function FilaCuenta({ c }: { c: CuentaAbierta }) {
+  function filaCuenta(c: CuentaAbierta) {
+    const marcable = sePuedeAgrupar(c);
+    const bloqueada = marcable && clienteSeleccion !== null && clienteSeleccion !== c.clienteId;
     return (
-      <li>
+      <li key={c.reservaId} className="flex items-stretch gap-2" data-cuenta-fila={c.reservaId}>
+        {marcable && (
+          <label
+            className={`flex w-11 shrink-0 cursor-pointer items-center justify-center rounded-md border border-n-200 bg-white ${bloqueada ? "cursor-not-allowed opacity-40" : "hover:border-morado"}`}
+            title={bloqueada ? "Solo se cobran juntas las cuentas de la misma persona" : "Marcar para cobrar junto con otras cuentas de esta persona"}
+          >
+            <input
+              type="checkbox"
+              className="h-5 w-5 accent-morado"
+              checked={seleccion.includes(c.reservaId)}
+              disabled={bloqueada}
+              onChange={() => alternar(c)}
+              aria-label={`Marcar la cuenta de ${c.clienteNombre}: ${c.descripcion}`}
+              data-cuenta-casilla
+            />
+          </label>
+        )}
         <Link
           href={`/caja/cobrar/${c.reservaId}`}
-          className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-4 py-3 hover:border-morado hover:bg-n-50"
+          className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-4 py-3 hover:border-morado hover:bg-n-50"
         >
           <span className="flex min-w-0 flex-col">
             <span className="font-semibold text-n-900">
@@ -93,8 +136,65 @@ export function MostradorCaja({
     );
   }
 
+  // Una lista de cuentas: las de la misma persona juntas, con su total combinado
+  // y «Cobrar todo junto».
+  function listaCuentas(lista: CuentaAbierta[]) {
+    return (
+      <ul className="flex flex-col gap-3">
+        {agruparPorCliente(lista).map((g) => {
+          if (g.cuentas.length < 2 || g.clienteId === publicoGeneralId) {
+            return g.cuentas.map((c) => filaCuenta(c));
+          }
+          const total = g.cuentas.reduce((s, c) => s + c.saldo, 0);
+          return (
+            <li key={g.clienteId} data-grupo-cliente={g.clienteId} className="flex flex-col gap-2 rounded-lg border-[1.5px] border-morado bg-n-50 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-bold text-n-900">
+                  {g.cuentas[0].clienteNombre}
+                  <span className="font-normal text-n-600"> · {g.cuentas.length} cuentas</span>
+                </p>
+                <p className="text-sm text-n-600">
+                  Total junto: <span className="text-lg font-bold tabular-nums text-coral-oscuro">{dinero(total)}</span>
+                </p>
+              </div>
+              <ul className="flex flex-col gap-2">
+                {g.cuentas.map((c) => filaCuenta(c))}
+              </ul>
+              <Link href={hrefJunto(g.cuentas.map((c) => c.reservaId))} className="self-start">
+                <Button type="button" data-cobrar-todo-junto>Cobrar todo junto</Button>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
+      {seleccionadas.length > 0 && (
+        <div
+          data-seleccion-junto
+          className="sticky bottom-2 z-20 flex flex-wrap items-center justify-between gap-3 rounded-lg border-[1.5px] border-morado bg-white p-3 shadow-lg"
+        >
+          <p className="text-sm text-n-700">
+            <span className="font-semibold text-n-900">{seleccionadas[0].clienteNombre}</span> · {seleccionadas.length} {seleccionadas.length === 1 ? "cuenta marcada" : "cuentas marcadas"} ·{" "}
+            <span className="text-lg font-bold tabular-nums text-coral-oscuro">{dinero(totalSeleccion)}</span>
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {seleccionadas.length >= 2 ? (
+              <Link href={hrefJunto(seleccionadas.map((c) => c.reservaId))}>
+                <Button type="button" data-cobrar-seleccion>Cobrar las marcadas juntas</Button>
+              </Link>
+            ) : (
+              <span className="self-center text-xs text-n-500">Marca otra cuenta de esta persona para cobrarlas juntas.</span>
+            )}
+            <Button type="button" variante="secundario" onClick={() => setSeleccion([])}>
+              Quitar marcas
+            </Button>
+          </div>
+        </div>
+      )}
       {error && (
         <Alert variante="error" titulo="No se pudo completar">
           {error}
@@ -149,9 +249,7 @@ export function MostradorCaja({
 
             {delCliente.length > 0 ? (
               <ul className="flex flex-col gap-2">
-                {delCliente.map((c) => (
-                  <FilaCuenta key={c.reservaId} c={c} />
-                ))}
+                {delCliente.map((c) => filaCuenta(c))}
               </ul>
             ) : (
               <p className="text-sm text-n-600">No tiene cuentas con saldo pendiente.</p>
@@ -184,22 +282,14 @@ export function MostradorCaja({
         {deHoy.length === 0 ? (
           <p className="text-sm text-n-600">Nada pendiente de cobrar hoy.</p>
         ) : (
-          <ul className="flex flex-col gap-2">
-            {deHoy.map((c) => (
-              <FilaCuenta key={c.reservaId} c={c} />
-            ))}
-          </ul>
+          listaCuentas(deHoy)
         )}
       </section>
 
       {otras.length > 0 && (
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Otras cuentas con saldo (±30 días)</h2>
-          <ul className="flex flex-col gap-2">
-            {otras.map((c) => (
-              <FilaCuenta key={c.reservaId} c={c} />
-            ))}
-          </ul>
+          {listaCuentas(otras)}
         </section>
       )}
     </div>

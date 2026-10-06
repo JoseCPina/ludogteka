@@ -24,6 +24,8 @@ export const ARTICULOS_CAJA_Y_ESTETICA: Articulo[] = [
 
 > El cobro con tarjeta se hace con **Cobrar con terminal** ([Cómo cobrar con la terminal](/ayuda/cobrar-con-terminal)): así se confirma solo con Mercado Pago. El método **Terminal** no se captura a mano en un negocio con Mercado Pago o Clip. Si la terminal no se puede usar, usa **Tarjeta (registro manual)** con el folio del voucher ([Cuándo usar Tarjeta (registro manual)](/ayuda/tarjeta-registro-manual)). A mano también: efectivo y transferencia.
 
+¿La misma persona tiene varias cuentas abiertas (baño y guardería, por ejemplo)? Cóbralas juntas, con un solo pago y un solo recibo: [Cobrar varios servicios juntos](/ayuda/cobrar-varios-servicios-juntos).
+
 Si el perro tiene day pass o mensualidad, junto a su línea sale **Pagar con bono**.
 
 ¿Un servicio de estética se capturó mal? Se corrige desde la cita y el saldo de la cuenta cambia solo, sin tocar lo ya cobrado: un **cobro adicional** aparece como saldo por cobrar. Mira [Cómo corregir el servicio de una cita](/ayuda/corregir-servicio-de-una-cita).
@@ -31,7 +33,54 @@ Si el perro tiene day pass o mensualidad, junto a su línea sale **Pagar con bon
 ## Si algo no sale
 
 - «No hay turno de caja abierto. Ábrelo antes de cobrar.»: abre el turno en el mismo aviso.
-- «Cada método debe tener un monto mayor a cero.»: quita el renglón vacío con **Quitar**.`,
+- «Cada método debe tener un monto mayor a cero.»: quita el renglón vacío con **Quitar**.
+- «Con este cobro la cuenta se quedaría debiendo $… (menos de un peso)»: una cuenta no puede quedar con centavos. Cobra la cuenta completa, o aplica un descuento de redondeo por esa diferencia.`,
+  },
+  {
+    slug: "cobrar-varios-servicios-juntos",
+    titulo: "Cobrar varios servicios juntos",
+    resumen: "Cobrar en un solo movimiento (un pago, un folio, un recibo) varias cuentas abiertas de la misma persona.",
+    grupo: "caja",
+    modulo: null,
+    roles: ["admin", "recepcion"],
+    rutas: ["/caja", "/caja/cobrar-junto", "/caja/recibo-junto/[grupoId]"],
+    palabras: ["cobrar junto", "cobrar todo junto", "varias cuentas", "un solo voucher", "un solo folio", "baño y guardería", "estética y guardería", "juntar cuentas", "un solo pago", "recibo", "pago parcial varias cuentas"],
+    cuerpo: `Si una persona tiene varias cuentas abiertas (por ejemplo, el baño de Osito y una hora de guardería), las cobras de una vez: un solo pago, un solo voucher y un solo recibo. El dinero se reparte entre las cuentas.
+
+## Cómo se hace
+
+1. En [Caja](/caja), las cuentas de la misma persona salen **juntas**, con su **Total junto**. Aprieta **Cobrar todo junto**.
+2. Si solo quieres juntar algunas, marca su casilla: abajo sale cuántas marcaste y cuánto suman. Aprieta **Cobrar las marcadas juntas**. Solo se juntan cuentas de la misma persona: si marcas una de otra persona, las demás casillas se bloquean.
+3. Revisa **Cuentas incluidas**: cada una dice cuánto debe y cuánto **Se le aplica**.
+4. Escoge el **Método**, escribe el **Monto** (viene con el total) y, si dejó, **una sola Propina**. Si paga en dos métodos, **+ Repartir en otro método**.
+5. Aprieta **Registrar cobro de $…**. Sale el **recibo único**, con el total, el desglose por cuenta y los métodos. Lo imprimes o lo guardas con **Imprimir o guardar PDF**.
+
+## Si paga solo una parte
+
+Escribe en **Total que paga hoy** lo que recibiste: se aplica de la cuenta **más antigua a la más nueva**. Puedes ajustar a mano cuánto **Se le aplica** a cada cuenta; lo que falte queda como saldo de cada una. Una cuenta no puede quedar debiendo menos de un peso: o se salda, o queda con $1 o más.
+
+## Con la terminal o con un link
+
+**Cobrar con terminal** y **Mandar link de pago** mandan **una sola orden** por el total de las cuentas. Cuando Mercado Pago o Clip confirma el pago, se reparte entre las cuentas solo. No se mandan órdenes por cada cuenta.
+
+## Con Tarjeta (registro manual)
+
+Se escribe **un solo folio** para todo el grupo, el del voucher. Ese folio no se puede usar en otro cobro, pero sí vale para todas las cuentas de este. Revisarla con voucher o marcarla como no recibida ([Cómo revisar las tarjetas manuales](/ayuda/revisar-tarjetas-manuales)) se hace una sola vez y aplica a todo el grupo.
+
+## Después del cobro
+
+- En cada cuenta, el cobro dice **Cobrado junto con:** las otras cuentas, con el enlace al recibo.
+- En el turno y el corte, el pago cuenta **una sola vez**; cada cuenta conserva lo que le tocó para los reportes por servicio.
+- Una **devolución** o un **reembolso** se hacen por cuenta, hasta lo que esa cuenta recibió del pago ([Cómo devolver un cobro](/ayuda/devolver-un-cobro)). Corregir el servicio o la estilista de una cita, el inventario, las comisiones y la nómina siguen por cuenta.
+
+## Si algo no sale
+
+- «Solo se cobran juntas las cuentas de la misma persona»: quita la que es de otra persona.
+- «Las ventas de «Público en general» no se agrupan»: cada una se cobra aparte.
+- «Una cuenta se quedaría debiendo menos de un peso»: ajusta el monto de esa cuenta para saldarla o dejar al menos $1.
+- «Lo que se paga no coincide con lo que se reparte»: el total de los métodos tiene que ser igual al total de las cuentas.
+- «Una de estas cuentas ya tiene un cobro en la terminal»: espéralo o cancélalo antes de mandar otro.
+- «No hay turno de caja abierto»: ábrelo con **Abrir turno**.`,
   },
   {
     slug: "cobrar-con-terminal",
@@ -53,6 +102,8 @@ Si el perro tiene day pass o mensualidad, junto a su línea sale **Pagar con bon
 6. Cuando la terminal lo confirma, sale «Pago confirmado. El cobro ya quedó registrado.» y el saldo baja.
 
 > Los meses sin intereses los absorbe el negocio y tienen que estar activados en su cuenta de Mercado Pago.
+
+> ¿Son varias cuentas de la misma persona? Cobra con la terminal desde **Cobrar todo junto**: va **una sola orden** por el total y, al confirmarse, se reparte entre las cuentas ([Cobrar varios servicios juntos](/ayuda/cobrar-varios-servicios-juntos)).
 
 > La terminal la conecta el admin en [Cobro con terminal](/admin/pagos). Con Mercado Pago funciona la Point Smart.
 
@@ -140,6 +191,7 @@ Para un cobro a mano con método **Terminal** que en realidad no se recibió:
 
 Antes de cambiar nada, la app le **pregunta a Mercado Pago**: si tiene un pago aprobado del mismo monto que pueda ser de este cobro, **no te deja**. Si no lo tiene, el cobro queda como no recibido: la cuenta **vuelve a tener saldo** para cobrarse, y queda en el historial quién lo hizo, cuándo, el motivo y cómo estaba antes.
 
+- Si el cobro fue un **cobro junto** (varias cuentas, un solo pago), se deshace **completo**, en todas sus cuentas, y la conciliación lo compara como **un solo pago** por el total.
 - El corte de un turno que ya cerró **no cambia**: la corrección se anota en el turno abierto.
 - Para marcarlo, Mercado Pago tiene que estar conectado (para poder comprobarlo).
 - Un cobro que entró con un pago confirmado por Mercado Pago **no** se marca así: si hay que devolverlo, usa **Devolver con Mercado Pago**.
@@ -181,6 +233,7 @@ El cobro queda marcado **Sin verificar**: nadie lo confirmó con Mercado Pago ni
 - **No es lo mismo que Terminal.** En un negocio con Mercado Pago o Clip, **Terminal** no se captura a mano: solo entra cuando el proveedor confirma el pago.
 - En el turno, el corte y los reportes sale en una línea aparte: **Tarjeta manual (sin verificar)**, separada de la terminal verificada. El total con tarjeta suma las dos, a la vista.
 - Sirve igual para estética, guardería, hotel, venta rápida y venta de pases, y se puede repartir con otro método.
+- ¿Un solo voucher para varias cuentas de la misma persona? Usa **Cobrar todo junto** y escribe **un solo folio** para todo el grupo ([Cobrar varios servicios juntos](/ayuda/cobrar-varios-servicios-juntos)). Ese folio vale para todas las cuentas de ese cobro; en otro cobro distinto no se puede repetir.
 - Una devolución de un cobro con tarjeta manual es **manual**: la registra el admin con **Registrar devolución** y el método **Tarjeta (registro manual)**; no usa el reembolso de Mercado Pago.
 - Si el monto pasa el tope de alerta del negocio, se registra igual y sube a **Necesita atención** para que el admin lo revise primero.
 
@@ -216,7 +269,7 @@ Los ves en **Necesita atención** del [tablero](/recepcion) («tarjetas registra
 2. Escribe el **Motivo (obligatorio)**.
 3. Aprieta **Marcar como no recibida**.
 
-El cobro no se borra: queda con su historial y la cuenta **vuelve a tener saldo** para cobrarse. La corrección entra como un movimiento aparte en el **turno abierto**: si el cobro era de un turno que ya cerró, ese corte **no cambia**. Para marcarla necesitas un turno abierto. No se marca una que ya tiene devoluciones ni una con propina.
+El cobro no se borra: queda con su historial y la cuenta **vuelve a tener saldo** para cobrarse. Si la tarjeta era de un **cobro junto** (varias cuentas con un solo voucher), la tarjeta sale con «cobro junto · N cuentas» y la marca se aplica a **todo el grupo**: **todas** las cuentas vuelven a tener saldo, cada una por lo que le tocó. La corrección entra como un movimiento aparte en el **turno abierto**: si el cobro era de un turno que ya cerró, ese corte **no cambia**. Para marcarla necesitas un turno abierto. No se marca una que ya tiene devoluciones ni una con propina.
 
 ## Tope de alerta
 
@@ -310,6 +363,10 @@ Abre la cuenta desde [Caja](/caja) y busca el cobro en **Cobros de esta reserva*
 
 El dinero regresa a la tarjeta o cuenta del cliente y la devolución queda en caja en el mismo paso. Si Mercado Pago lo rechaza, no se registra nada. Si Mercado Pago regresa la comisión, se quita sola de los gastos.
 
+## Cobro que se hizo junto con otras cuentas
+
+Si el cobro fue un **cobro junto** ([Cobrar varios servicios juntos](/ayuda/cobrar-varios-servicios-juntos)), la devolución se hace **en la cuenta** que se quiere devolver, hasta lo que esa cuenta recibió de ese pago (no de todo el pago). Las otras cuentas del grupo no se tocan. Con Mercado Pago, **Devolver con Mercado Pago** reembolsa solo esa parte de la orden.
+
 ## Cobro con Tarjeta (registro manual)
 
 La devolución es **manual**: no usa el reembolso de Mercado Pago. Aprieta **Registrar devolución**, deja el método **Tarjeta (registro manual)** (solo se puede devolver hasta lo que ese cobro pasó por tarjeta manual), escribe el **Motivo** y **Confirmar devolución**. Devuelve el dinero por donde lo recibiste (en la terminal o con el banco). La devolución queda en caja y se ve en [Conciliación](/caja/conciliacion). Si el cobro nunca se recibió, no es una devolución: usa **Marcar como no recibida** ([Cómo revisar las tarjetas manuales](/ayuda/revisar-tarjetas-manuales)).
@@ -386,6 +443,10 @@ Aprieta **Registrar retiro**, escribe **Monto** y **Motivo** y aprieta **Confirm
 
 > Una diferencia nunca se ajusta en silencio: queda escrita con su explicación.
 
+## Cobros juntos
+
+Un pago de **varias cuentas juntas** ([Cobrar varios servicios juntos](/ayuda/cobrar-varios-servicios-juntos)) cuenta **una sola vez** en el turno y en el corte, aunque se reparta entre cuentas. En los movimientos sale cada parte con la marca **cobro junto**, que lleva a su recibo.
+
 ## Correcciones de servicio
 
 Corregir el servicio de una cita ya cobrada no mueve ningún corte: el cobro adicional o la devolución que resulten entran al turno en el que se hacen, y los cortes ya cerrados quedan igual.
@@ -433,7 +494,7 @@ Corregir el servicio de una cita ya cobrada no mueve ningún corte: el cobro adi
 1. Abre la cuenta desde [Caja](/caja).
 2. En **Descuentos** aprieta **Aplicar descuento**.
 3. Escoge el **Motivo** y el **Tipo** (Porcentaje o Monto fijo) y escribe el valor.
-4. Revisa cuánto equivale en pesos.
+4. Revisa cuánto equivale en pesos. Un descuento por **Porcentaje** se ajusta para que lo que quede por pagar sea un número entero de pesos: así no quedan centavos que nadie puede cobrar.
 5. Si pasa el tope, llena **Motivo (obligatorio arriba del tope)**.
 6. Aprieta **Confirmar descuento**. El saldo baja.
 

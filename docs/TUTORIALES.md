@@ -92,9 +92,11 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/caja` | 33 |  |
 | `/caja/ajustes-servicio` | 55 |  |
 | `/caja/cargo` | 36 |  |
+| `/caja/cobrar-junto` | 33 |  |
 | `/caja/cobrar/[reservaId]` | 33, 34, 37 |  |
 | `/caja/conciliacion` | 38 |  |
 | `/caja/pases` | 39 |  |
+| `/caja/recibo-junto/[grupoId]` | 33 |  |
 | `/caja/reembolsos` | 38 |  |
 | `/caja/turno` | 32 |  |
 | `/caja/venta` | 35, 43 |  |
@@ -258,6 +260,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | perfil-y-pagina-web | 52 |
 | pedir-ayuda | 53 |
 | cobrar-una-cuenta | 33 |
+| cobrar-varios-servicios-juntos | 33 |
 | cobrar-con-terminal | 34 |
 | terminal-no-recibe-el-cobro | 34 |
 | corregir-un-cobro-con-terminal-mal-marcado | 38 |

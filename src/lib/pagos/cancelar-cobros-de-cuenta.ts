@@ -18,10 +18,12 @@ export async function cancelarCobrosEnCurso(
   admin: SupabaseClient,
   negocioId: string,
   cx: ConexionCobro | null,
-  ordenes: { id: string; tipo: string; estado: string }[],
+  ordenesCrudas: { id: string; tipo: string; estado: string }[],
   motivo: string
 ): Promise<{ error: string | null; canceladas: { id: string; tipo: string; estado_antes: string }[] }> {
   const canceladas: { id: string; tipo: string; estado_antes: string }[] = [];
+  // Una orden de un cobro junto puede venir una vez por cada cuenta del grupo.
+  const ordenes = ordenesCrudas.filter((o, i) => ordenesCrudas.findIndex((x) => x.id === o.id) === i);
   for (const o of ordenes) {
     if (o.estado === "por_confirmar") {
       return { error: "Hay un cobro por confirmar con el proveedor: ábrelo en la cuenta y usa «Revisar con Mercado Pago» antes de corregir el servicio.", canceladas };

@@ -38,16 +38,28 @@ export async function revisarCobroConProveedor(negocio: NegocioParaCobro, cobroI
   const admin = createSupabaseAdminClient(negocio.id);
   const { data: cobro } = await admin
     .from("cobros")
-    .select("id, created_at, origen, cobro_metodos(metodo, monto, propina)")
+    .select("id, created_at, origen, grupo_id, cobro_metodos(metodo, monto, propina)")
     .eq("id", cobroId)
     .eq("negocio_id", negocio.id)
     .is("deleted_at", null)
     .maybeSingle();
   if (!cobro) return { ok: false, error: "Cobro no encontrado." };
+  // Un cobro de un pago agrupado se revisa (y se deshace) completo: el monto que
+  // Mercado Pago tendría que mostrar es el de TODAS las cuentas del grupo.
+  let grupoCobros: { cobro_metodos: unknown }[] = [cobro];
+  if (cobro.grupo_id) {
+    const { data: delGrupo } = await admin
+      .from("cobros")
+      .select("id, cobro_metodos(metodo, monto, propina)")
+      .eq("negocio_id", negocio.id)
+      .eq("grupo_id", cobro.grupo_id as string)
+      .is("deleted_at", null);
+    grupoCobros = delGrupo ?? [cobro];
+  }
   if ((cobro.origen ?? "manual") !== "manual") {
     return { ok: false, error: "Este cobro entró con un pago que el proveedor confirmó: si hay que devolverlo, usa «Devolver con Mercado Pago»." };
   }
-  const metodos = (cobro.cobro_metodos ?? []) as { metodo: string; monto: number; propina: number }[];
+  const metodos = grupoCobros.flatMap((c) => (c.cobro_metodos ?? []) as { metodo: string; monto: number; propina: number }[]);
   const terminal = metodos.filter((m) => m.metodo === "terminal");
   const monto = Math.round(terminal.reduce((s, m) => s + Number(m.monto), 0) * 100) / 100;
   if (monto <= 0) return { ok: false, error: "Este cobro no tiene un método de terminal." };
@@ -96,7 +108,7 @@ export async function revisarCobroConProveedor(negocio: NegocioParaCobro, cobroI
   const r = data as { turno_del_cobro_cerrado?: boolean; monto: number };
   return {
     ok: true,
-    aviso: `Listo: el cobro de ${dinero(r.monto)} quedó como no recibido y la cuenta vuelve a tener saldo para cobrarse.${r.turno_del_cobro_cerrado ? " Ese cobro era de un turno ya cerrado: el corte no cambió, la corrección quedó en el turno abierto." : ""}`,
+    aviso: `Listo: el cobro de ${dinero(r.monto)} quedó como no recibido y ${cobro.grupo_id ? "las cuentas del cobro junto vuelven" : "la cuenta vuelve"} a tener saldo para cobrarse.${r.turno_del_cobro_cerrado ? " Ese cobro era de un turno ya cerrado: el corte no cambió, la corrección quedó en el turno abierto." : ""}`,
   };
 }
 

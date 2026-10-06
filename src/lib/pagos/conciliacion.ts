@@ -40,10 +40,37 @@ type CobroFila = {
   id: string;
   created_at: string;
   origen: string | null;
+  grupo_id?: string | null;
+  grupo_orden?: number | null;
   cobro_metodos: { metodo: string; monto: number }[];
   devoluciones: { origen: string; deleted_at: string | null }[];
 };
 const redondea = (v: number) => Math.round(v * 100) / 100;
+
+/**
+ * Un pago agrupado son varios cobros (uno por cuenta) de UN solo pago en el
+ * proveedor: para conciliar se ve como un solo cobro, el de la cuenta número 1
+ * (el que la orden tiene ligado), con la suma de sus partes. Así un pago de
+ * $355 se compara con UN pago de $355 de Mercado Pago, no con dos de $320 y $35.
+ */
+export function fusionarGrupos<T extends CobroFila>(cobros: T[]): T[] {
+  const grupos = new Map<string, T[]>();
+  const sueltos: T[] = [];
+  for (const c of cobros) {
+    if (c.grupo_id) grupos.set(c.grupo_id, [...(grupos.get(c.grupo_id) ?? []), c]);
+    else sueltos.push(c);
+  }
+  const fusionados: T[] = [];
+  for (const miembros of grupos.values()) {
+    const ordenados = [...miembros].sort((a, b) => (a.grupo_orden ?? 0) - (b.grupo_orden ?? 0) || a.id.localeCompare(b.id));
+    fusionados.push({
+      ...ordenados[0],
+      cobro_metodos: ordenados.flatMap((m) => m.cobro_metodos),
+      devoluciones: ordenados.flatMap((m) => m.devoluciones),
+    });
+  }
+  return [...sueltos, ...fusionados];
+}
 
 /** La parte pura (probable sin red): los hallazgos a partir de cobros y pagos. */
 export function hallazgosDeConciliacion(args: {
@@ -126,7 +153,7 @@ export async function conciliarNegocio(negocio: NegocioParaCobro, ahora = new Da
   const [{ data: cobrosCrudo }, { data: ordenes }, ligados] = await Promise.all([
     admin
       .from("cobros")
-      .select("id, created_at, origen, cobro_metodos(metodo, monto), devoluciones(origen, deleted_at)")
+      .select("id, created_at, origen, grupo_id, grupo_orden, cobro_metodos(metodo, monto), devoluciones(origen, deleted_at)")
       .eq("negocio_id", negocio.id)
       .is("deleted_at", null)
       .gte("created_at", desde.toISOString()),
@@ -134,7 +161,7 @@ export async function conciliarNegocio(negocio: NegocioParaCobro, ahora = new Da
     pagosYaLigados(admin, negocio.id),
   ]);
   const porCobro = new Map((ordenes ?? []).map((o) => [o.cobro_id as string, { id: o.id as string, mp_payment_id: o.mp_payment_id as string | null, mp_payment_ref: o.mp_payment_ref as string | null }]));
-  const cobros = ((cobrosCrudo ?? []) as unknown as CobroFila[])
+  const cobros = fusionarGrupos((cobrosCrudo ?? []) as unknown as CobroFila[])
     .filter((c) => c.cobro_metodos.some((m) => m.metodo === "terminal") || porCobro.has(c.id))
     // Los de transferencia a mano también pueden haberse pagado con un pago de MP: solo se juzga terminal.
     .map((c) => ({ ...c, orden: porCobro.get(c.id) ?? null }));

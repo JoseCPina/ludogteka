@@ -14,7 +14,7 @@ import { marcarTarjetaManualNoRecibida, revisarTarjetaManual } from "@/app/(staf
  * voucher» (con nota opcional) o «Marcar como no recibida» (con motivo). La
  * segunda no borra nada: entra como un movimiento aparte en el turno abierto.
  */
-export function RevisarTarjetaManual({ tarjetaId, monto, reservaId }: { tarjetaId: string; monto: number; reservaId?: string | null }) {
+export function RevisarTarjetaManual({ tarjetaId, monto, reservaId, cuentas = 1 }: { tarjetaId: string; monto: number; reservaId?: string | null; cuentas?: number }) {
   const router = useRouter();
   const revisando = useEspera();
   const marcando = useEspera();
@@ -60,7 +60,7 @@ export function RevisarTarjetaManual({ tarjetaId, monto, reservaId }: { tarjetaI
       ) : (
         <>
           <p className="text-sm font-semibold text-ambar-oscuro">
-            ¿Esta tarjeta de ${monto.toFixed(2)} no se recibió? El cobro no se borra: queda con su historial y la cuenta vuelve a tener saldo.
+            ¿Esta tarjeta de ${monto.toFixed(2)} no se recibió? El cobro no se borra: queda con su historial y {cuentas > 1 ? `las ${cuentas} cuentas que se cobraron con ese voucher vuelven` : "la cuenta vuelve"} a tener saldo.
           </p>
           <Textarea label="Motivo (obligatorio)" rows={2} maxLength={300} value={texto} onChange={(e) => setTexto(e.target.value)} ayuda="Queda en el historial con tu nombre." />
         </>
