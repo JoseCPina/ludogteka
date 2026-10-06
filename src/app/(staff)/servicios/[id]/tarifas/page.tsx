@@ -35,15 +35,15 @@ export default async function TarifasServicioPage({
       .single(),
     supabase
       .from("grupos_raza")
-      .select("id, nombre, depende_tamano")
+      .select("id, nombre, depende_tamano, depende_pelaje")
       .is("deleted_at", null)
       .order("orden"),
     supabase.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
-    supabase.from("tipos_pelaje").select("id, etiqueta").is("deleted_at", null).order("orden"),
+    supabase.from("tipos_pelaje").select("id, etiqueta, clave").is("deleted_at", null).order("orden"),
     supabase
       .from("tarifas_vigentes")
       .select(
-        "grupo_raza_id, tamano_id, pelaje_id, cantidad_desde, cantidad_hasta, precio, precio_pelo_maltratado, no_aplica"
+        "grupo_raza_id, tamano_id, pelaje_id, cantidad_desde, cantidad_hasta, precio, precio_pelo_maltratado, no_aplica, calculado"
       )
       .eq("servicio_id", id),
     supabase

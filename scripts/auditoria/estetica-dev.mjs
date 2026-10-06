@@ -139,10 +139,13 @@ try {
   await precioEs("Por talla grande · estético", pg, "estetico", 490);
   await precioEs("Por talla grande · exprés", pg, "expres", 230);
   await precioEs("Por talla · rapado (pelo corto) no se ofrece", pg, "rapado", null);
-  // Sin grupo con pelo medio o largo: sin precio automático.
+  // Mestizo de pelo medio o largo: cobra la celda de la matriz talla × pelaje (calculada hasta que el admin la confirme).
   const mestizo = await mkPerro("mestizo medio", { tam: "mediano", pel: "medio", texto: "criollo" });
-  const sinPrecio = await precioEs("Mestizo de pelo medio: sin precio automático", mestizo, "estetico", null);
-  if (sinPrecio.mensaje && !/grupo|pelaje|excepci/i.test(sinPrecio.mensaje)) hallazgo(`el mensaje de «sin precio» no dice qué falta: ${sinPrecio.mensaje}`);
+  await precioEs("Mestizo mediano de pelo medio: celda de la matriz", mestizo, "estetico", 470);
+  // Una combinación sin celda (pelaje rizado) sigue sin precio automático y dice qué hacer.
+  const rizado = await mkPerro("mestizo rizado", { tam: "mediano", pel: "rizado", texto: "criollo" });
+  const sinPrecio = await precioEs("Mestizo rizado: sin precio automático", rizado, "estetico", null);
+  if (sinPrecio.mensaje && !/no tiene precio|excepci/i.test(sinPrecio.mensaje)) hallazgo(`el mensaje de «sin precio» no dice qué falta: ${sinPrecio.mensaje}`);
   const grupos = (await get(tAdmin, "grupos_raza?select=id,clave,nombre&deleted_at=is.null")).cuerpo;
   const grupoPorTalla = grupos.find((g) => /talla/i.test(g.nombre));
   const grupoPoodle = grupos.find((g) => /poodle/i.test(g.nombre));

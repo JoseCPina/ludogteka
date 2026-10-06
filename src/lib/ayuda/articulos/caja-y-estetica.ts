@@ -484,7 +484,7 @@ Entra a [Razas sin catalogar](/perros/razas). Arriba, en **Textos de raza fuera 
 4. ¿Te equivocaste? Baja a **Asignaciones recientes** y aprieta **Deshacer**.
 5. Si de verdad es una raza nueva, aprieta **Es una raza nueva** y llena la propuesta (la hace admin o quien tenga «Precios y tarifas»).
 
-«Mestizo», «criollo» y «corriente» ya son una raza del catálogo: **Mestizo**.
+«Mestizo», «criollo» y «corriente» ya son una raza del catálogo: **Mestizo**. A un mestizo se le pide su tamaño y su pelaje para cobrarle ([Cómo se cobra a un mestizo](/ayuda/precio-de-estetica-mestizo)).
 
 ## Su grupo de precio
 
@@ -510,7 +510,7 @@ En el link de alta, el dueño también puede apretar **No la encuentro: agregar 
     roles: ["admin", "recepcion"],
     rutas: ["/servicios", "/perros/razas/grupos"],
     palabras: ["tarifas", "precios", "baño", "rapado", "exprés", "grupo de raza", "pelaje", "talla"],
-    cuerpo: `Cada servicio de estética tiene un precio por **grupo de raza** (por ejemplo, poodle y maltés, o pastores de pelo largo). Un grupo especial, **Por talla**, es para perros de pelo corto: ahí el precio depende de si es chico, mediano o grande. No hay talla gigante en estética.
+    cuerpo: `Cada servicio de estética tiene un precio por **grupo de raza** (por ejemplo, poodle y maltés, o pastores de pelo largo). Un grupo especial, **Mestizo / sin raza**, es para mestizos y perros sin raza de catálogo: ahí el precio depende de su **tamaño** (chico, mediano o grande) y de su **pelaje** (corto, medio o largo). No hay talla gigante en estética. Mira [Cómo se cobra a un mestizo](/ayuda/precio-de-estetica-mestizo).
 
 1. Abre [Servicios](/servicios) (necesitas el permiso «Precios y tarifas») y entra al servicio.
 2. En la matriz, cada celda es un servicio, un grupo y, si aplica, un pelaje. Escribe el precio y guárdalo. Una celda vacía es «sin precio»: la app no cobra por adivinación.
@@ -521,11 +521,86 @@ Cambiar un precio solo vale para las citas nuevas. Las que ya están agendadas o
 
 ## Qué grupo le toca a cada perro
 
-Lo decide su raza. Las razas que todavía no tienen grupo en tu negocio salen en [Razas sin grupo de precio](/perros/razas/grupos): ahí las asignas. Mientras no tengan grupo, el perro de pelo medio o largo no tiene precio automático y la cita pide asignar el grupo o registrar una excepción con motivo.
+Lo decide su raza. Las razas que todavía no tienen grupo en tu negocio salen en [Razas sin grupo de precio](/perros/razas/grupos): ahí las asignas. Mientras no tengan grupo, la cita pide asignar el grupo o registrar una excepción con motivo.
+
+## Si una combinación no tiene precio
+
+La celda vacía no se cobra por adivinación. Al agendar sale **un solo aviso**: «Esta combinación no tiene precio: agrega el precio en Servicios y precios, o registra una excepción con motivo». Mira [Qué hacer cuando no hay precio](/ayuda/que-hacer-sin-precio-estetica).
 
 ## Si algo no sale
 
-- «No hay tarifa»: el mensaje dice qué falta (servicio, grupo o pelaje) y trae el link para capturarlo.`,
+- «Esta combinación no tiene precio»: el mensaje dice qué falta (servicio, grupo, talla o pelaje) y trae el link a la matriz para capturarlo.`,
+  },
+  {
+    slug: "precio-de-estetica-mestizo",
+    titulo: "Cómo se cobra a un mestizo (o perro sin raza de catálogo)",
+    resumen: "El grupo «Mestizo / sin raza» cobra por tamaño y pelaje: cómo se captura el perro, cómo se llena la matriz y qué significa «Calculado».",
+    grupo: "estetica",
+    modulo: "estetica",
+    roles: ["admin", "recepcion"],
+    rutas: ["/servicios", "/clientes", "/perros"],
+    palabras: ["mestizo", "criollo", "sin raza", "talla", "pelaje", "pelo largo", "pelo medio", "matriz", "calculado", "Osito", "precio de un mestizo", "alta de perro mestizo"],
+    cuerpo: `A un perro **Mestizo** (o con una raza que tu negocio no mete en ningún grupo) se le cobra por **tamaño** y **pelaje**: chico, mediano o grande, y pelo corto, medio o largo. Eso son 9 combinaciones por servicio.
+
+## Al dar de alta al perro
+
+1. En **Raza** escribe y escoge **Mestizo**.
+2. Salen marcados **Tamaño (obligatorio)** y **Pelaje (obligatorio)**, con un aviso: sin los dos no se puede agendar.
+3. Elige el tamaño y el pelaje (corto, medio o largo) y guarda.
+
+Si se te pasó, no pasa nada: al agendar la pantalla te los pide ahí mismo ([Cómo agendar una cita de estética](/ayuda/agendar-cita-estetica)).
+
+## La matriz de precios (admin o «Precios y tarifas»)
+
+1. Entra a [Servicios](/servicios) y abre el baño, el rapado o el exprés.
+2. Busca **Mestizo / sin raza**: tiene un renglón por tamaño y pelaje (**Chico · pelo corto**, **Chico · pelo medio**…).
+3. Escribe el precio en cada celda. En el baño completo, la segunda casilla es el precio **Si llega maltratado**.
+4. El **rapado** solo se ofrece a pelo medio o largo (a pelo corto está en «No aplica»). El **exprés** tiene precio en los tres pelajes.
+5. Aprieta **Revisar y guardar** y **Confirmar y guardar**.
+
+En un negocio nuevo la matriz empieza **vacía**: hasta que pongas el precio, esa combinación pide una excepción con motivo.
+
+## Qué significa «Calculado»
+
+Para que pudieras agendar desde el primer día, a algunos negocios se les **calculó** el precio de pelo medio y largo por proporción a partir de sus propios grupos de raza. Esas celdas salen en ámbar con la marca **Calculado** y un aviso arriba.
+
+- Si un precio no te cuadra, cámbialo y guárdalo: queda como tuyo y pierde la marca.
+- Si te cuadran todos, aprieta **Confirmar los precios calculados**.
+
+Cambiar la matriz solo vale para las citas nuevas.
+
+## Si algo no sale
+
+- «Este perro no tiene pelaje registrado»: capturalo en su expediente, o escógelo en el aviso al agendar.
+- Un perro de pelo **rizado** no tiene celda en la matriz: pide excepción con motivo, o corrígele el pelaje si está mal capturado.`,
+  },
+  {
+    slug: "que-hacer-sin-precio-estetica",
+    titulo: "Qué hacer cuando no hay precio al agendar estética",
+    resumen: "El aviso «Esta combinación no tiene precio»: agregar el precio o registrar una excepción con motivo.",
+    grupo: "estetica",
+    modulo: "estetica",
+    roles: ["admin", "recepcion"],
+    rutas: ["/estetica/nueva"],
+    palabras: ["sin precio", "no tiene precio", "celda vacía", "excepción con motivo", "no me deja agendar", "no deja avanzar", "falta el precio", "no aplica", "falta talla", "falta pelaje"],
+    cuerpo: `Al escoger perro y servicio, la pantalla de agendar calcula el precio. Si no se puede, sale **un solo aviso** que dice qué hacer. Nunca te quedas sin salida.
+
+## Falta el tamaño o el pelaje
+
+El aviso dice «Para calcular el precio falta el pelaje de …». Escógelo ahí mismo (**Tamaño** o **Pelaje**) y aprieta **Guardar en su expediente y calcular**: se guarda en el perro y el precio sale al instante.
+
+## «Esta combinación no tiene precio»
+
+La combinación de servicio, grupo, tamaño y pelaje no tiene precio capturado (o está en «No aplica»). Tienes dos salidas:
+
+1. **Agregar el precio en Servicios y precios**: te lleva a la matriz de ese servicio. Necesitas ser admin o tener el permiso «Precios y tarifas».
+2. **Registrar excepción con motivo**: escoge el **Grupo de precio** con el que quieres cobrar solo esta cita, escribe el **Motivo de la excepción** y el precio sale. Queda con tu nombre. Necesitas ser admin o tener el permiso «Excepciones al reservar».
+
+## La raza no tiene grupo de precio
+
+Es otra cosa: la raza es nueva y tu negocio no decidió su precio. Asigna el grupo o haz la excepción ([Cómo agregar una raza que no aparece](/ayuda/agregar-una-raza-que-no-aparece)).
+
+> «Agendar cita» se activa cuando ya hay un precio.`,
   },
   {
     slug: "agendar-cita-estetica",
@@ -544,6 +619,7 @@ Lo decide su raza. Las razas que todavía no tienen grupo en tu negocio salen en
 3. Escoge el **Perro**.
 4. Si el perro ya está en guardería u hotel, puedes ligar la cita a esa estancia.
 5. Escoge el **Servicio** y el **Empleado** que lo atiende. Son tres baños: el **completo** (baño, cepillado, deslanado o corte de pelo, uñas, orejas y dientes, corte higiénico, hidratación de nariz y huellitas), el **rapado** (igual, pero con corte de pelo rapado) y el **exprés** (baño con shampoo y secado).
+5b. Debajo sale el **Precio** de la cita. Si falta el tamaño o el pelaje del perro, el aviso te los pide ahí mismo; si la combinación no tiene precio, te da dos salidas ([Qué hacer cuando no hay precio](/ayuda/que-hacer-sin-precio-estetica)). **Agendar cita** se activa cuando ya hay precio.
 6. Si el perro llegó con el pelo maltratado, marca **Llegó con el pelo maltratado**: cobra el precio alternativo del mismo baño. Es una condición de la cita, no otro servicio.
 7. Si necesitas cobrar de más (mucho pelo, nudos, cuidado previo), escribe el **Recargo manual (opcional)** y su **Motivo del recargo**. Se suma al precio, y queda registrado con tu nombre y el motivo. Solo lo hace admin o quien tenga el permiso «Excepciones al reservar».
 8. Pon la **Fecha y hora** y aprieta **Agendar cita**.
@@ -559,7 +635,7 @@ Una cita fuera del horario sale resaltada en naranja en la agenda.
 - «Este perro no tiene talla registrada…»: captúrala en su expediente con el link del mensaje.
 - «No hay nadie que pueda quedar como responsable de la cita»: falta dar de alta al personal de estética.
 - ¿Escogiste mal a la estilista? Mira [Cómo cambiar o corregir la estilista de una cita](/ayuda/cambiar-estilista-cita-estetica).
-- «El grupo de este perro no cobra automático a su pelaje»: pasa con un perro de pelo medio o largo sin grupo de precio (por ejemplo un mestizo). No se adivina un precio: corrige su pelaje en el expediente, asígnale su grupo, o con el permiso «Excepciones al reservar» registra una excepción con el grupo y el motivo, solo para esa cita.
+- «Esta combinación no tiene precio»: agrega el precio en Servicios y precios, o registra una excepción con motivo ([Qué hacer cuando no hay precio](/ayuda/que-hacer-sin-precio-estetica)). Un mestizo se cobra por tamaño y pelaje ([Cómo se cobra a un mestizo](/ayuda/precio-de-estetica-mestizo)).
 - Sale el recuadro **La raza … todavía no tiene grupo de precio**: es una raza nueva (del catálogo o propuesta desde el formulario del perro) y tu negocio aún no decide su precio. Mira [Cómo agregar una raza que no aparece](/ayuda/agregar-una-raza-que-no-aparece).`,
   },
   {

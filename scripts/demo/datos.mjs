@@ -56,7 +56,12 @@ export const PRECIOS = {
     pastor_corto: [520, null, 300],
     pastor_largo: [690, 620, 380],
     viejo_pastor: [860, 760, 450],
-    pelo_corto: { chico: [300, null, 200], mediano: [380, null, 250], grande: [470, null, 300] },
+    // Mestizo / sin raza: talla × pelaje, cada uno [completo, rapado, exprés].
+    mestizo: {
+      chico: { corto: [300, null, 200], medio: [360, 300, 230], largo: [420, 340, 260] },
+      mediano: { corto: [380, null, 250], medio: [450, 380, 290], largo: [520, 430, 330] },
+      grande: { corto: [470, null, 300], medio: [550, 480, 350], largo: [630, 560, 400] },
+    },
   },
   pelo_maltratado_extra: 120,
   bonos: { bono_pases_10: 2300, bono_pases_20: 4300, bono_mensualidad: 4600 },

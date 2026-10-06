@@ -60,9 +60,11 @@ const SOLO_STAFF = [
   "cobro_correcciones", "conciliacion_terminal",
   // Tarjeta (registro manual): folios, revisión y tope (8 de octubre de 2026).
   "tarjetas_manuales", "tarjetas_manuales_eventos", "tarjeta_manual_ajustes",
+  // Bitácora de precios: confirmar precios calculados (9 de octubre de 2026).
+  "tarifas_eventos",
 ];
 // RPC que un cliente con sesión no debe poder llamar (tienen que rechazarlo).
-const RPC_SOLO_STAFF = ["mi_cobro", "plataforma_cobros", "calendario_ocupacion", "insumos_sin_costo", "asistencia_periodo", "calcular_nomina", "reporte_utilidad_periodo", "cuentas_para_empleado", "gastos_por_atender", "gastos_por_categoria_periodo", "maps_consumo_mes", "plataforma_maps_consumo", "elegir_proveedor_cobro", "reporte_ventas_mostrador_periodo", "cliente_publico_general", "crear_venta_mostrador", "preparar_reembolso", "crear_ticket", "plataforma_tickets", "reporte_guardar", "reporte_asegurar_plantilla", "reporte_registrar_tarjeta", "reporte_crear_enlace", "media_preparar", "media_confirmar", "media_quitar", "galeria_crear", "plataforma_almacenamiento_reportes", "razas_fuera_de_catalogo", "razas_sin_grupo", "razas_asignaciones_recientes", "razas_asignar_texto", "razas_revertir_normalizacion", "razas_proponer", "asignar_grupo_raza", "plataforma_razas_propuestas", "plataforma_resolver_propuesta", "plataforma_agregar_raza", "reasignar_estilista_cita", "ajustes_nomina_interno", "corregir_servicio_cita", "cotizar_correccion_servicio", "cobro_marcar_no_recibido", "conciliacion_sincronizar", "conciliacion_dar_por_revisada", "tarjeta_manual_revisar", "tarjeta_manual_no_recibida", "guardar_tope_tarjeta_manual", "plataforma_tarjetas_manuales_patron"];
+const RPC_SOLO_STAFF = ["mi_cobro", "plataforma_cobros", "calendario_ocupacion", "insumos_sin_costo", "asistencia_periodo", "calcular_nomina", "reporte_utilidad_periodo", "cuentas_para_empleado", "gastos_por_atender", "gastos_por_categoria_periodo", "maps_consumo_mes", "plataforma_maps_consumo", "elegir_proveedor_cobro", "reporte_ventas_mostrador_periodo", "cliente_publico_general", "crear_venta_mostrador", "preparar_reembolso", "crear_ticket", "plataforma_tickets", "reporte_guardar", "reporte_asegurar_plantilla", "reporte_registrar_tarjeta", "reporte_crear_enlace", "media_preparar", "media_confirmar", "media_quitar", "galeria_crear", "plataforma_almacenamiento_reportes", "razas_fuera_de_catalogo", "razas_sin_grupo", "razas_asignaciones_recientes", "razas_asignar_texto", "razas_revertir_normalizacion", "razas_proponer", "asignar_grupo_raza", "plataforma_razas_propuestas", "plataforma_resolver_propuesta", "plataforma_agregar_raza", "reasignar_estilista_cita", "ajustes_nomina_interno", "corregir_servicio_cita", "cotizar_correccion_servicio", "cobro_marcar_no_recibido", "conciliacion_sincronizar", "conciliacion_dar_por_revisada", "tarjeta_manual_revisar", "tarjeta_manual_no_recibida", "guardar_tope_tarjeta_manual", "plataforma_tarjetas_manuales_patron", "cotizar_cita_estetica", "confirmar_tarifas_calculadas", "plataforma_revertir_carga_tarifas"];
 
 const spec = await (await fetch(URL + "/rest/v1/", { headers: { apikey: env.SUPABASE_SECRET_KEY, Authorization: `Bearer ${env.SUPABASE_SECRET_KEY}` } })).json();
 const relaciones = Object.keys(spec.definitions).sort();
@@ -173,6 +175,10 @@ for (const cli of clientes) {
     ["tarjetas_manuales_por_revisar", { p_historial: true }],
     ["tarjetas_manuales_atencion", {}],
     ["tarjeta_manual_tope", {}],
+    // Precio de estética: cotizar es del personal; confirmar y revertir precios, de admin / plataforma.
+    ["cotizar_cita_estetica", { p_perro_id: ID_VACIO, p_servicio_id: ID_VACIO }],
+    ["confirmar_tarifas_calculadas", { p_grupo_id: ID_VACIO }],
+    ["plataforma_revertir_carga_tarifas", { p_evento_id: ID_VACIO }],
   ];
   for (const [fn, args] of sondas) {
     const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(args) });

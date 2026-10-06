@@ -1,0 +1,174 @@
+{
+ "_nota": "Matriz «Mestizo / sin raza» de Ludogteka calculada por proporción desde sus grupos de referencia (calcular-mestizo.mjs, 9 de octubre de 2026). Pelo corto no se toca; medio ≈ 0.85 × largo; todo a múltiplos de 10; maltratado con el recargo proporcional de los grupos de referencia (×1.154). Marcado «calculado» hasta que el admin lo confirme.",
+ "grupos": [
+  {
+   "clave": "mestizo",
+   "pelajes_permitidos": null,
+   "depende_pelaje": true
+  }
+ ],
+ "tarifas": [
+  {
+   "servicio": "estetica_estetico",
+   "grupo": "mestizo",
+   "tamano": "chico",
+   "pelaje": "medio",
+   "precio": 330,
+   "maltratado": 380,
+   "calculado": true
+  },
+  {
+   "servicio": "estetica_estetico",
+   "grupo": "mestizo",
+   "tamano": "chico",
+   "pelaje": "largo",
+   "precio": 390,
+   "maltratado": 450,
+   "calculado": true
+  },
+  {
+   "servicio": "estetica_estetico",
+   "grupo": "mestizo",
+   "tamano": "mediano",
+   "pelaje": "medio",
+   "precio": 470,
+   "maltratado": 540,
+   "calculado": true
+  },
+  {
+   "servicio": "estetica_estetico",
+   "grupo": "mestizo",
+   "tamano": "mediano",
+   "pelaje": "largo",
+   "precio": 550,
+   "maltratado": 630,
+   "calculado": true
+  },
+  {
+   "servicio": "estetica_estetico",
+   "grupo": "mestizo",
+   "tamano": "grande",
+   "pelaje": "medio",
+   "precio": 550,
+   "maltratado": 630,
+   "calculado": true
+  },
+  {
+   "servicio": "estetica_estetico",
+   "grupo": "mestizo",
+   "tamano": "grande",
+   "pelaje": "largo",
+   "precio": 650,
+   "maltratado": 750,
+   "calculado": true
+  },
+  {
+   "servicio": "estetica_rapado",
+   "grupo": "mestizo",
+   "tamano": "chico",
+   "pelaje": "medio",
+   "precio": 270,
+   "maltratado": null,
+   "calculado": true
+  },
+  {
+   "servicio": "estetica_rapado",
+   "grupo": "mestizo",
+   "tamano": "chico",
+   "pelaje": "largo",
+   "precio": 320,
+   "maltratado": null,
+   "calculado": true
+  },
+  {
+   "servicio": "estetica_rapado",
+   "grupo": "mestizo",
+   "tamano": "mediano",
+   "pelaje": "medio",
+   "precio": 370,
+   "maltratado": null,
+   "calculado": true
+  },
+  {
+   "servicio": "estetica_rapado",
+   "grupo": "mestizo",
+   "tamano": "mediano",
+   "pelaje": "largo",
+   "precio": 430,
+   "maltratado": null,
+   "calculado": true
+  },
+  {
+   "servicio": "estetica_rapado",
+   "grupo": "mestizo",
+   "tamano": "grande",
+   "pelaje": "medio",
+   "precio": 430,
+   "maltratado": null,
+   "calculado": true
+  },
+  {
+   "servicio": "estetica_rapado",
+   "grupo": "mestizo",
+   "tamano": "grande",
+   "pelaje": "largo",
+   "precio": 500,
+   "maltratado": null,
+   "calculado": true
+  },
+  {
+   "servicio": "estetica_expres",
+   "grupo": "mestizo",
+   "tamano": "chico",
+   "pelaje": "medio",
+   "precio": 160,
+   "maltratado": null,
+   "calculado": true
+  },
+  {
+   "servicio": "estetica_expres",
+   "grupo": "mestizo",
+   "tamano": "chico",
+   "pelaje": "largo",
+   "precio": 190,
+   "maltratado": null,
+   "calculado": true
+  },
+  {
+   "servicio": "estetica_expres",
+   "grupo": "mestizo",
+   "tamano": "mediano",
+   "pelaje": "medio",
+   "precio": 240,
+   "maltratado": null,
+   "calculado": true
+  },
+  {
+   "servicio": "estetica_expres",
+   "grupo": "mestizo",
+   "tamano": "mediano",
+   "pelaje": "largo",
+   "precio": 280,
+   "maltratado": null,
+   "calculado": true
+  },
+  {
+   "servicio": "estetica_expres",
+   "grupo": "mestizo",
+   "tamano": "grande",
+   "pelaje": "medio",
+   "precio": 310,
+   "maltratado": null,
+   "calculado": true
+  },
+  {
+   "servicio": "estetica_expres",
+   "grupo": "mestizo",
+   "tamano": "grande",
+   "pelaje": "largo",
+   "precio": 370,
+   "maltratado": null,
+   "calculado": true
+  }
+ ]
+}

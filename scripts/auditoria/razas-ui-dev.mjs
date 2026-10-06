@@ -138,13 +138,13 @@ try {
   await pag.getByText(`ZZ sin grupo ${sufijo}`).first().click();
   await pag.waitForTimeout(500);
   await pag.getByLabel("Perro").selectOption({ label: `ZZ sin grupo ${sufijo}` });
+  await pag.locator("[data-aviso-precio=sin_grupo]").waitFor({ timeout: 15000 });
   const panel = await pag.locator("body").innerText();
-  if (!panel.includes("todavía no tiene grupo de precio") || !panel.includes("Asignarlo a la raza") || !panel.includes("Solo para esta cita")) hallazgo("el perro de una raza sin grupo no muestra el recuadro de asignar grupo o excepción");
+  if (!panel.includes("todavía no tiene grupo de precio") || !panel.includes("Asignarlo a la raza") || !panel.includes("Registrar excepción con motivo")) hallazgo("el perro de una raza sin grupo no muestra el recuadro de asignar grupo o excepción");
   else bien("al elegir el perro sale «todavía no tiene grupo de precio» con asignar el grupo y la excepción");
-  await pag.getByRole("button", { name: "Agendar cita" }).click();
-  await pag.waitForTimeout(1200);
-  if (!(await pag.locator("body").innerText()).includes("Asígnaselo arriba")) hallazgo("agendar sin grupo ni excepción no explica qué hacer");
-  else bien("agendar sin asignar el grupo ni hacer excepción se detiene y dice qué hacer");
+  // Sin grupo ni excepción no hay precio: «Agendar cita» espera (ya no hay callejón: el aviso trae las dos salidas).
+  if (!(await pag.getByRole("button", { name: "Agendar cita" }).isDisabled())) hallazgo("«Agendar cita» debía esperar a que haya precio");
+  else bien("sin asignar el grupo ni hacer excepción no se puede agendar, y el aviso dice qué hacer");
   await A.from("razas").delete().eq("id", otra.id).then(() => {}, () => {});
 
   console.log("\n5. Formulario del perro: una raza que no está en el catálogo (celular, 390 px)");

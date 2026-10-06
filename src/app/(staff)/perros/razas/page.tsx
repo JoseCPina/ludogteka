@@ -136,9 +136,11 @@ export default async function NormalizarRazasPage() {
                 : `${perros.length} perros cotizan con el grupo por defecto`
             }
           >
-            El grupo por defecto es el de <strong>pelo corto</strong>, el más barato. Un shih tzu ahí
-            se cotiza como si fuera un chihuahua: recepción lo corrige en el mostrador, si se da
-            cuenta.
+            El grupo por defecto es <strong>Mestizo / sin raza</strong>: cobra por <strong>talla y
+            pelaje</strong> (corto, medio o largo). Un shih tzu ahí se cotiza como cualquier mestizo
+            de su talla y pelaje, y no con el precio de su raza: asígnale su raza para que cobre lo
+            que le toca. A un mestizo de verdad solo le falta tener capturados su tamaño y su pelaje
+            para poder agendarlo.
             {conSugerencia > 0 && (
               <>
                 {" "}

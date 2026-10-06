@@ -41,6 +41,18 @@ console.log(`${PROD ? "PRODUCCIÓN" : "desarrollo"} · negocio ${neg.nombre} (${
 
 let config;
 if (revertir) {
+  const [evx] = await get(`plataforma_eventos?id=eq.${revertir}&accion=eq.cargar_tarifas_estetica&select=detalle`);
+  if (evx?.detalle?.creadas) {
+    // Reversa exacta: da de baja lo que esa carga creó y devuelve lo que cambió.
+    if (evx.detalle.negocio_id !== neg.id) throw new Error("Ese evento es de otro negocio.");
+    console.log(`Revertir el evento ${revertir}: ${evx.detalle.creadas.length} tarifa(s) creadas se dan de baja, ${evx.detalle.actualizadas.length} se devuelven.`);
+    if (!APLICAR) { console.log("Sin --aplicar no escribo nada."); process.exit(0); }
+    const rr = await fetch(`${base}/rpc/plataforma_revertir_carga_tarifas`, { method: "POST", headers: H, body: JSON.stringify({ p_evento_id: revertir }) });
+    const cr = await rr.text();
+    if (!rr.ok) { console.log(`✘ ${rr.status}: ${cr.slice(0, 400)}`); process.exit(1); }
+    console.log(`✔ Revertido: ${cr}`);
+    process.exit(0);
+  }
   const [ev] = await get(`plataforma_eventos?id=eq.${revertir}&accion=eq.cargar_tarifas_estetica&select=detalle`);
   if (!ev || ev.detalle?.negocio_id !== neg.id) throw new Error("Ese evento no existe o es de otro negocio.");
   const antes = ev.detalle.antes ?? [];
@@ -48,7 +60,7 @@ if (revertir) {
     // Las reglas de pelaje vuelven a su valor de fábrica (sin restricción).
     servicios: (ev.detalle.config?.servicios ?? []).map((s) => ({ clave: s.clave, pelajes_excluidos: [] })),
     grupos: (ev.detalle.config?.grupos ?? []).map((g) => ({ clave: g.clave, pelajes_permitidos: null })),
-    tarifas: antes.map((t) => ({ servicio: t.servicio, grupo: t.grupo, tamano: t.tamano, precio: t.precio, maltratado: t.maltratado, no_aplica: t.no_aplica })),
+    tarifas: antes.map((t) => ({ servicio: t.servicio, grupo: t.grupo, tamano: t.tamano, pelaje: t.pelaje ?? null, precio: t.precio, maltratado: t.maltratado, no_aplica: t.no_aplica, calculado: t.calculado ?? false })),
   };
   console.log(`Revertir el evento ${revertir}: ${config.tarifas.length} tarifas como estaban.`);
 } else {
@@ -60,21 +72,23 @@ if (revertir) {
 const servicios = await get(`servicios?negocio_id=eq.${neg.id}&categoria=eq.estetica&deleted_at=is.null&select=id,clave`);
 const grupos = await get(`grupos_raza?negocio_id=eq.${neg.id}&deleted_at=is.null&select=id,clave,nombre`);
 const tallas = await get("tamanos_categoria?select=id,clave");
+const pelajesCat = await get("tipos_pelaje?select=id,clave");
 const hoy = new Date().toISOString().slice(0, 10);
-const vigentes = await get(`tarifas?negocio_id=eq.${neg.id}&deleted_at=is.null&vigencia_desde=lte.${hoy}&select=servicio_id,grupo_raza_id,tamano_id,precio,precio_pelo_maltratado,no_aplica,vigencia_desde&order=vigencia_desde.desc`);
+const vigentes = await get(`tarifas?negocio_id=eq.${neg.id}&deleted_at=is.null&vigencia_desde=lte.${hoy}&select=servicio_id,grupo_raza_id,tamano_id,pelaje_id,precio,precio_pelo_maltratado,no_aplica,vigencia_desde&order=vigencia_desde.desc`);
 let cambian = 0, iguales = 0;
 for (const t of config.tarifas) {
   const sv = servicios.find((s) => s.clave === t.servicio)?.id;
   const gr = grupos.find((g) => g.clave === t.grupo);
   const tm = t.tamano ? tallas.find((x) => x.clave === t.tamano)?.id : null;
   if (!sv || !gr) { console.log(`  ✘ no existe ${t.servicio} / ${t.grupo}`); process.exit(1); }
-  const act = vigentes.find((v) => v.servicio_id === sv && v.grupo_raza_id === gr.id && (v.tamano_id ?? null) === (tm ?? null));
+  const pl = t.pelaje ? pelajesCat.find((x) => x.clave === t.pelaje)?.id : null;
+  const act = vigentes.find((v) => v.servicio_id === sv && v.grupo_raza_id === gr.id && (v.tamano_id ?? null) === (tm ?? null) && (v.pelaje_id ?? null) === (pl ?? null));
   const na = Boolean(t.no_aplica);
   const mismo = act && act.no_aplica === na && (na || (Number(act.precio) === Number(t.precio) && (act.precio_pelo_maltratado === null ? null : Number(act.precio_pelo_maltratado)) === (t.maltratado ?? null)));
   if (mismo) iguales += 1;
   else {
     cambian += 1;
-    console.log(`  ${act ? "cambia " : "nueva  "} ${t.servicio.replace("estetica_", "")} · ${gr.nombre}${t.tamano ? ` · ${t.tamano}` : ""}: ${act ? (act.no_aplica ? "no aplica" : `$${act.precio}${act.precio_pelo_maltratado ? `/$${act.precio_pelo_maltratado}` : ""}`) : "—"} → ${na ? "no aplica" : `$${t.precio}${t.maltratado ? `/$${t.maltratado}` : ""}`}`);
+    console.log(`  ${act ? "cambia " : "nueva  "} ${t.servicio.replace("estetica_", "")} · ${gr.nombre}${t.tamano ? ` · ${t.tamano}` : ""}${t.pelaje ? ` · pelo ${t.pelaje}` : ""}${t.calculado ? " (calculado)" : ""}: ${act ? (act.no_aplica ? "no aplica" : `$${act.precio}${act.precio_pelo_maltratado ? `/$${act.precio_pelo_maltratado}` : ""}`) : "—"} → ${na ? "no aplica" : `$${t.precio}${t.maltratado ? `/$${t.maltratado}` : ""}`}`);
   }
 }
 console.log(`${cambian} tarifa(s) cambian, ${iguales} ya están igual.`);
@@ -82,7 +96,7 @@ if (!APLICAR) { console.log("Sin --aplicar no escribo nada."); process.exit(0); 
 
 const r = await fetch(`${base}/rpc/plataforma_cargar_tarifas_estetica`, {
   method: "POST", headers: H,
-  body: JSON.stringify({ p_negocio_id: neg.id, p_config: config, p_motivo: revertir ? `Reversión del evento ${revertir}` : "Tabla de precios de estética del negocio (5 de octubre de 2026)" }),
+  body: JSON.stringify({ p_negocio_id: neg.id, p_config: config, p_motivo: revertir ? `Reversión del evento ${revertir}` : (config._motivo ?? "Tabla de precios de estética del negocio") }),
 });
 const cuerpo = await r.text();
 if (!r.ok) { console.log(`✘ ${r.status}: ${cuerpo.slice(0, 400)}`); process.exit(1); }
