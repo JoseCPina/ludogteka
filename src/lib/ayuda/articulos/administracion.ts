@@ -300,6 +300,7 @@ Cada casilla dice qué incluye. Por ejemplo:
 - **Personal**: invitar a gente de recepción y estética.
 - **Corregir estilista de servicios cerrados**: cambiar quién atendió un servicio que ya terminó.
 - **Corregir servicio de citas**: cambiar el servicio de una cita de estética que se capturó mal (abierta o ya cobrada); el precio se recalcula y la cuenta se ajusta.
+- **Registrar tarjeta manual**: cobrar con **Tarjeta (registro manual)** cuando la terminal no se puede usar. Viene prendido para toda la recepción; quítaselo a quien no deba. Esos cobros los revisas tú en [Conciliación](/caja/conciliacion).
 
 Todo cambio queda en la **Bitácora** de abajo.
 
@@ -368,13 +369,17 @@ Si contratas durante la prueba, no pierdes días: el primer cobro es al terminar
 4. Si tu Point Smart dice «No está en modo integrado (PDV)», aprieta **Poner en modo integrado**.
 5. Aprieta **Usar esta**.
 
-Solo Point Smart recibe cobros desde la app. Con otras terminales, registra el cobro a mano.
+Solo Point Smart recibe cobros desde la app. Con otras terminales, o si la terminal no se puede usar, registra el cobro con **Tarjeta (registro manual)** y el folio del voucher ([Cuándo usar Tarjeta (registro manual)](/ayuda/tarjeta-registro-manual)): con Mercado Pago o Clip elegidos, **Terminal** no se captura a mano.
 
 ## Clip
 
 1. Llena **API key**, **Clave secreta**, **Número de serie de la terminal** y **Correo del usuario de Clip**. Las generas en el portal de desarrolladores de Clip.
 2. Aprieta **Conectar Clip**.
 3. Copia la URL de notificaciones con **Copiar URL** y pégala en ese mismo portal.
+
+## Tope de alerta de tarjeta manual
+
+Más abajo, en **Tarjeta registrada a mano**, pon el **Tope de alerta por cobro (MXN)** y aprieta **Guardar tope** (por omisión $2,000). Arriba de ese monto, una tarjeta registrada a mano se guarda igual pero sube a **Necesita atención** para que la revises ([Cómo revisar las tarjetas manuales](/ayuda/revisar-tarjetas-manuales)).
 
 ## Si algo no sale
 

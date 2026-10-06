@@ -108,6 +108,15 @@ export async function PantallaCobro({
   }));
 
   const cobroIds = (cobrosCrudo ?? []).map((c) => c.id as string);
+  // Los renglones de «Tarjeta (registro manual)» de estos cobros (folio, estado de revisión).
+  const { data: tarjetasCrudo } = cobroIds.length
+    ? await supabase
+        .from("tarjetas_manuales")
+        .select("id, cobro_id, folio, estado, monto, motivo, motivo_texto, ultimos4, banco, sobre_tope")
+        .in("cobro_id", cobroIds)
+        .is("deleted_at", null)
+        .order("created_at")
+    : { data: [] as never[] };
   const { data: devolucionesCrudo, error: errorDevoluciones } = cobroIds.length
     ? await supabase
         .from("devoluciones")
@@ -232,6 +241,19 @@ export async function PantallaCobro({
     creadoPorNombre: nombrePorId.get(c.created_by as string) ?? "—",
     metodos: (c.cobro_metodos as { metodo: string; monto: number; propina: number }[]) ?? [],
     origen: ((c.origen as string | null) ?? "manual") as CobroHistorial["origen"],
+    tarjetasManuales: (tarjetasCrudo ?? [])
+      .filter((t) => t.cobro_id === c.id)
+      .map((t) => ({
+        id: t.id as string,
+        folio: t.folio as string,
+        estado: t.estado as CobroHistorial["tarjetasManuales"][number]["estado"],
+        monto: Number(t.monto),
+        motivo: t.motivo as string,
+        motivoTexto: (t.motivo_texto as string | null) ?? null,
+        ultimos4: (t.ultimos4 as string | null) ?? null,
+        banco: (t.banco as string | null) ?? null,
+        sobreTope: Boolean(t.sobre_tope),
+      })),
   }));
 
   const devoluciones: DevolucionHistorial[] = (devolucionesCrudo ?? []).map((d) => ({
@@ -291,6 +313,7 @@ export async function PantallaCobro({
           topeRecepcion={topeRecepcion}
           esAdmin={sesion?.rol === "admin"}
           puedeSinTope={tienePermiso(sesion, "descuentos_sin_tope")}
+          puedeTarjetaManual={tienePermiso(sesion, "tarjeta_manual")}
           mp={{ disponible: mpDisponible, ordenes: ordenesMp, clienteTelefono: (cliente?.telefono as string | null) ?? null, terminalManualBloqueada: Boolean(terminalManualBloqueada) }}
         />
       )}

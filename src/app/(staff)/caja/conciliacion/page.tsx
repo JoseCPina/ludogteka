@@ -7,6 +7,31 @@ import { Antiguedad } from "@/components/ui/antiguedad";
 import { diasDesde } from "@/lib/antiguedad";
 import { formatearFecha, horaLocalDeInstante } from "@/lib/formato";
 import { DarPorRevisada } from "./dar-por-revisada";
+import { RevisarTarjetaManual } from "@/components/cobro/revisar-tarjeta-manual";
+import { ETIQUETA_TARJETA_MANUAL, etiquetaMotivo } from "@/lib/cobro/tarjeta-manual";
+
+type TarjetaFila = {
+  id: string;
+  cobro_id: string;
+  reserva_id: string;
+  turno_cerrado: boolean;
+  monto: number;
+  propina: number;
+  folio: string;
+  motivo: string;
+  motivo_texto: string | null;
+  ultimos4: string | null;
+  banco: string | null;
+  sobre_tope: boolean;
+  estado: "por_revisar" | "revisada" | "no_recibida";
+  registrada_at: string;
+  registrada_por_nombre: string;
+  cliente_nombre: string;
+  devuelto: number;
+  revisada_at: string | null;
+  revisada_por_nombre: string | null;
+  nota_revision: string | null;
+};
 
 type Fila = {
   id: string;
@@ -33,10 +58,16 @@ export default async function ConciliacionPage() {
   const supabase = await createSupabaseServerClient();
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
   const hoy = String(hoyData);
-  const [{ data, error }, { data: porConfirmar }] = await Promise.all([
+  const esAdminSesion = sesion?.rol === "admin";
+  const [{ data, error }, { data: porConfirmar }, { data: tarjetasCrudo }] = await Promise.all([
     supabase.from("conciliacion_terminal").select("id, tipo, monto, ocurrio_at, detectada_at, cobro_id, orden_id, mp_pago_id, detalle").is("resuelta_at", null).order("detectada_at"),
     supabase.from("mp_ordenes").select("id, monto, created_at, detalle_error, reserva_id").eq("estado", "por_confirmar").is("deleted_at", null).order("created_at"),
+    // Tarjetas manuales: solo el admin las revisa (la función ya devuelve vacío a los demás).
+    esAdminSesion ? supabase.rpc("tarjetas_manuales_por_revisar", { p_historial: true }) : Promise.resolve({ data: [] as TarjetaFila[] }),
   ]);
+  const tarjetas = (tarjetasCrudo ?? []) as TarjetaFila[];
+  const tarjetasPorRevisar = tarjetas.filter((t) => t.estado === "por_revisar");
+  const tarjetasHechas = tarjetas.filter((t) => t.estado !== "por_revisar");
   const filas = (data ?? []) as Fila[];
   // Para ir a la cuenta del cobro dudoso.
   const ids = filas.map((f) => f.cobro_id).filter(Boolean) as string[];
@@ -48,9 +79,10 @@ export default async function ConciliacionPage() {
     <div className="flex flex-col gap-6">
       <div>
         <Link href="/caja" className="text-sm font-semibold text-morado hover:underline">← Caja</Link>
-        <h1 className="mt-1 text-2xl font-bold text-n-900">Conciliación con Mercado Pago</h1>
+        <h1 className="mt-1 text-2xl font-bold text-n-900">Conciliación</h1>
         <p className="mt-1 text-n-600">
-          Cada hora la app compara los cobros con terminal contra los pagos de Mercado Pago. Aquí salen las diferencias: no se corrige nada solo.
+          Cada hora la app compara los cobros con terminal contra los pagos de Mercado Pago. Aquí salen las diferencias y las tarjetas registradas a mano
+          que faltan por revisar: no se corrige nada solo.
         </p>
       </div>
       {error && <Alert variante="error" titulo="No pudimos cargar la conciliación">Recarga la página.</Alert>}
@@ -72,6 +104,61 @@ export default async function ConciliacionPage() {
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {esAdmin && (
+        <section className="flex flex-col gap-2" data-tarjetas-manuales>
+          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Tarjetas manuales por revisar</h2>
+          <p className="text-sm text-n-600">
+            Cobros que se registraron con «{ETIQUETA_TARJETA_MANUAL}» (la terminal vinculada no se pudo usar). Cuentan como pagados, pero no los verificó ningún
+            proveedor: contrástalos con el voucher y el estado de cuenta, del más viejo al más nuevo.
+          </p>
+          {tarjetasPorRevisar.length === 0 ? (
+            <p className="text-sm text-n-600">No hay tarjetas manuales por revisar.</p>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {tarjetasPorRevisar.map((t) => (
+                <li key={t.id} data-tarjeta-por-revisar className="flex flex-col gap-2 rounded-lg border border-ambar bg-ambar-suave p-4">
+                  <p className="font-semibold text-n-900">
+                    ${Number(t.monto).toFixed(2)} · folio {t.folio}
+                    {t.sobre_tope ? <span className="ml-2 rounded-full bg-coral-suave px-2 py-0.5 text-xs font-semibold text-coral-oscuro">arriba del tope</span> : null}
+                    <Antiguedad dias={diasDesde(t.registrada_at, hoy, zona)} />
+                  </p>
+                  <p className="text-sm text-n-700">
+                    {t.cliente_nombre} · {formatearFecha(t.registrada_at, zona)} {horaLocalDeInstante(t.registrada_at, zona)} · lo registró {t.registrada_por_nombre}
+                    {t.ultimos4 ? ` · •••• ${t.ultimos4}` : ""}
+                    {t.banco ? ` · ${t.banco}` : ""}
+                  </p>
+                  <p className="text-sm text-n-700">Motivo: {etiquetaMotivo(t.motivo, t.motivo_texto)}</p>
+                  {t.turno_cerrado && (
+                    <p className="text-sm text-n-600">Se registró en un turno que ya cerró: si la marcas como no recibida, el ajuste cae en el turno abierto y ese corte no cambia.</p>
+                  )}
+                  {t.devuelto > 0 && <p className="text-sm text-coral-oscuro">Ya tiene una devolución manual de ${Number(t.devuelto).toFixed(2)}.</p>}
+                  <div className="flex flex-wrap items-start gap-3">
+                    <Link href={`/caja/cobrar/${t.reserva_id}`} className="font-semibold text-morado hover:underline">
+                      Abrir la cuenta →
+                    </Link>
+                  </div>
+                  <RevisarTarjetaManual tarjetaId={t.id} monto={Number(t.monto)} reservaId={t.reserva_id} />
+                </li>
+              ))}
+            </ul>
+          )}
+          {tarjetasHechas.length > 0 && (
+            <details className="text-sm text-n-700">
+              <summary className="cursor-pointer font-semibold text-n-800">Ya revisadas (últimos 60 días): {tarjetasHechas.length}</summary>
+              <ul className="mt-2 flex flex-col gap-1">
+                {tarjetasHechas.map((t) => (
+                  <li key={t.id}>
+                    ${Number(t.monto).toFixed(2)} · folio {t.folio} · {t.estado === "revisada" ? "revisada con voucher" : "marcada como no recibida"}
+                    {t.revisada_por_nombre ? ` por ${t.revisada_por_nombre}` : ""}
+                    {t.nota_revision ? ` — ${t.nota_revision}` : ""}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </section>
       )}
 

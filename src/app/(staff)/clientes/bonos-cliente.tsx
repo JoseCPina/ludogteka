@@ -11,6 +11,16 @@ import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { formatearFechaCalendario } from "@/lib/formato";
 import { comprarBono } from "../reservas/bono-actions";
 import type { MetodoPago } from "../reservas/cobro-actions";
+import { CamposTarjetaManual } from "@/components/cobro/campos-tarjeta-manual";
+import {
+  AVISO_COBRO_TARJETA,
+  ETIQUETA_TARJETA_MANUAL,
+  cargaTarjetaManual,
+  datosVacios,
+  validarTarjetaManual,
+  type DatosTarjetaManual,
+} from "@/lib/cobro/tarjeta-manual";
+import type { OpcionesCobroManual } from "@/lib/cobro/opciones-manual";
 import { describirBono, describirPaquete } from "@/lib/bonos/descripcion";
 
 export type BonoCatalogo = {
@@ -56,7 +66,9 @@ const ESTILO_ESTADO: Record<string, string> = {
   cancelado: "bg-n-100 text-n-500",
 };
 
-type FilaMetodo = { metodo: MetodoPago; monto: string; propina: string };
+type FilaMetodo = { metodo: MetodoPago; monto: string; propina: string; tarjeta: DatosTarjetaManual };
+
+const nuevaFila = (): FilaMetodo => ({ metodo: "efectivo", monto: "", propina: "0", tarjeta: datosVacios() });
 
 // Los paquetes agrupados por perro, en el orden en que llegan (los más
 // recientes primero).
@@ -81,12 +93,15 @@ export function BonosCliente({
   bonos,
   perros,
   perroInicial,
+  opcionesCobro = { terminalManualBloqueada: false, puedeTarjetaManual: false },
 }: {
   catalogo: BonoCatalogo[];
   bonos: BonoFila[];
   // Los perros vivos del cliente, a los que se les puede vender.
   perros: PerroParaBono[];
   perroInicial?: string | null;
+  // Qué métodos se pueden capturar a mano (ver cargarOpcionesCobroManual).
+  opcionesCobro?: OpcionesCobroManual;
 }) {
   const router = useRouter();
   const [vendiendo, setVendiendo] = useState(false);
@@ -99,7 +114,7 @@ export function BonosCliente({
   );
   const [servicioId, setServicioId] = useState(catalogo[0]?.id ?? "");
   const [notas, setNotas] = useState("");
-  const [metodos, setMetodos] = useState<FilaMetodo[]>([{ metodo: "efectivo", monto: "", propina: "0" }]);
+  const [metodos, setMetodos] = useState<FilaMetodo[]>([nuevaFila()]);
   const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
@@ -119,6 +134,7 @@ export function BonosCliente({
       metodo: m.metodo,
       monto: Number(m.monto) || 0,
       propina: Number(m.propina) || 0,
+      ...(m.metodo === "tarjeta_manual" ? cargaTarjetaManual(m.tarjeta) : {}),
     }));
     if (!perroId) {
       setError("Escoge el perro para el que es el paquete.");
@@ -127,6 +143,13 @@ export function BonosCliente({
     if (payload.some((m) => m.monto <= 0)) {
       setError("Cada método debe tener un monto mayor a cero.");
       return;
+    }
+    for (const m of metodos) {
+      const falla = m.metodo === "tarjeta_manual" ? validarTarjetaManual(m.tarjeta) : null;
+      if (falla) {
+        setError(falla);
+        return;
+      }
     }
     setError(null);
     const res = await enviando.ejecutar(() => comprarBono(perroId, servicioId, notas, payload));
@@ -137,7 +160,7 @@ export function BonosCliente({
     setExito(`Paquete vendido para ${perros.find((p) => p.id === perroId)?.nombre ?? "el perro"}`);
     setVendiendo(false);
     setNotas("");
-    setMetodos([{ metodo: "efectivo", monto: "", propina: "0" }]);
+    setMetodos([nuevaFila()]);
     router.refresh();
   }
 
@@ -216,6 +239,7 @@ export function BonosCliente({
             ))}
           </Select>
 
+          {opcionesCobro.terminalManualBloqueada && <p className="text-sm text-n-600">{AVISO_COBRO_TARJETA}</p>}
           {metodos.map((m, i) => (
             <div key={i} className="flex flex-wrap items-end gap-3">
               <div className="w-40">
@@ -225,8 +249,9 @@ export function BonosCliente({
                   onChange={(e) => actualizarMetodo(i, { metodo: e.target.value as MetodoPago })}
                 >
                   <option value="efectivo">Efectivo</option>
-                  <option value="terminal">Terminal</option>
+                  {!opcionesCobro.terminalManualBloqueada && <option value="terminal">Terminal</option>}
                   <option value="transferencia">Transferencia</option>
+                  {opcionesCobro.puedeTarjetaManual && <option value="tarjeta_manual">{ETIQUETA_TARJETA_MANUAL}</option>}
                 </Select>
               </div>
               <div className="w-32">
@@ -258,13 +283,16 @@ export function BonosCliente({
                   Quitar
                 </Button>
               )}
+              {m.metodo === "tarjeta_manual" && (
+                <CamposTarjetaManual valor={m.tarjeta} onChange={(cambios) => actualizarMetodo(i, { tarjeta: { ...m.tarjeta, ...cambios } })} />
+              )}
             </div>
           ))}
           <Button
             type="button"
             variante="secundario"
             className="self-start"
-            onClick={() => setMetodos((prev) => [...prev, { metodo: "efectivo", monto: "", propina: "0" }])}
+            onClick={() => setMetodos((prev) => [...prev, nuevaFila()])}
           >
             + Repartir en otro método
           </Button>

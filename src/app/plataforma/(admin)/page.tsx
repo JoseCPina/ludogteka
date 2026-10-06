@@ -75,6 +75,9 @@ export default async function NegociosPlataforma() {
   const { supabase } = await exigirPlataforma();
   const { data, error } = await supabase.rpc("plataforma_negocios");
   const negocios = (data ?? []) as Fila[];
+  // Negocios con terminal conectada que hoy registran tarjetas a mano de más (solo avisa).
+  const { data: patronTarjetas } = await supabase.rpc("plataforma_tarjetas_manuales_patron");
+  const usoTarjetas = (patronTarjetas ?? []) as { negocio_id: string; negocio_nombre: string; manuales_hoy: number; pct_turno: number }[];
   // De qué campaña llegó cada negocio en prueba (registros_prueba: solo la plataforma la lee).
   const { data: registros } = await supabase
     .from("registros_prueba")
@@ -103,6 +106,15 @@ export default async function NegociosPlataforma() {
         </Link>
       </div>
       {error && <Alert variante="error" titulo="No pudimos cargar los negocios">{error.message}</Alert>}
+      {usoTarjetas.length > 0 && (
+        <Alert variante="advertencia" titulo="Tarjetas registradas a mano de más">
+          <span data-aviso-tarjetas-manuales>
+            Estos negocios tienen su terminal conectada y hoy registran muchas tarjetas a mano:{" "}
+            {usoTarjetas.map((u) => `${u.negocio_nombre} (${u.manuales_hoy} hoy${u.pct_turno ? `, ${u.pct_turno} % del turno` : ""})`).join(" · ")}.{" "}
+            <Link href="/plataforma/conciliacion" className="font-semibold underline">Ver detalle</Link>
+          </span>
+        </Alert>
+      )}
       <section className="flex flex-wrap gap-3">
         {[...porPlan].map(([plan, cuantos]) => (
           <div key={plan} className="rounded-lg border border-n-200 bg-white px-4 py-3">

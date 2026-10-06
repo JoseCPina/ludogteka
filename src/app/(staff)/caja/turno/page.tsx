@@ -148,6 +148,9 @@ export default async function TurnoCajaPage() {
             // que abrió ella (regla de cerrar_turno desde el 29 de julio).
             puedeCerrar={sesion?.rol === "admin" || turnoAbierto.abierto_por === sesion?.user.id}
             abiertoPorMi={turnoAbierto.abierto_por === sesion?.user.id}
+            tarjetaManualSinVerificar={resumen
+              .filter((r) => r.metodo === "tarjeta_manual")
+              .reduce((s, r) => s + r.cobrado + r.propinas - r.devuelto, 0)}
           />
           <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
             <h2 className="text-lg font-bold text-n-900">Movimientos de este turno</h2>

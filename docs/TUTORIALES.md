@@ -17,7 +17,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 06 | Empieza aquí | Módulos y plan: prende solo lo que usas | admin | 2.5 min | — | — |
 | 07 | Empieza aquí | Configura tu horario, cupo y datos del negocio | admin | 2.5 min | — | configuracion_negocio |
 | 08 | Empieza aquí | Invita a tu equipo y entiende los roles | admin | 2.5 min | — | personal |
-| 09 | Empieza aquí | Dale permisos extra a una persona de recepción | admin | 2.5 min | — | inventario_costos, tarifas, reportes_financieros, personal, configuracion_negocio, excepciones_reserva, descuentos_sin_tope, plantillas_contrato, nomina, gastos, reportes_guarderia, corregir_estilista, corregir_servicio |
+| 09 | Empieza aquí | Dale permisos extra a una persona de recepción | admin | 2.5 min | — | inventario_costos, tarifas, reportes_financieros, personal, configuracion_negocio, excepciones_reserva, descuentos_sin_tope, plantillas_contrato, nomina, gastos, reportes_guarderia, corregir_estilista, corregir_servicio, tarjeta_manual |
 | 10 | Clientes y perros | Captura a un cliente y a su perro en el mostrador | recepcion | 2.5 min | — | — |
 | 11 | Clientes y perros | Da de alta a un cliente con un link de WhatsApp | recepcion | 2.5 min | portal | — |
 | 12 | Clientes y perros | Vacunas, alertas y datos del perro en su expediente | recepcion | 2.5 min | — | — |
@@ -236,6 +236,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Reportes de guardería (`reportes_guarderia`) | 09, 31 |
 | Corregir estilista de servicios cerrados (`corregir_estilista`) | 09, 23 |
 | Corregir servicio de citas (`corregir_servicio`) | 09, 55 |
+| Registrar tarjeta manual (`tarjeta_manual`) | 09 |
 
 ## Artículos de ayuda → videos
 
@@ -260,6 +261,8 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | cobrar-con-terminal | 34 |
 | terminal-no-recibe-el-cobro | 34 |
 | corregir-un-cobro-con-terminal-mal-marcado | 38 |
+| tarjeta-registro-manual | 34 |
+| revisar-tarjetas-manuales | 38 |
 | link-de-pago-whatsapp | 34 |
 | venta-rapida | 35 |
 | devolver-un-cobro | 38 |
@@ -311,6 +314,9 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | reembolsos | 05, 38 |
 | saldos | 05 |
 | san | 05, 29 |
+| tarjetas-manuales | 38 |
+| tarjetas-manuales-patron | 38 |
+| tarjetas-manuales-tope | 38 |
 | turno | 05, 32 |
 | vincular | 05, 15 |
 

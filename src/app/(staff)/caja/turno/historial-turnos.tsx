@@ -14,6 +14,7 @@ export type TurnoCerrado = {
 const ETIQUETA_METODO: Record<string, string> = {
   efectivo: "Efectivo",
   terminal: "Terminal",
+  tarjeta_manual: "Tarjeta manual (sin verificar)",
   transferencia: "Transferencia",
 };
 

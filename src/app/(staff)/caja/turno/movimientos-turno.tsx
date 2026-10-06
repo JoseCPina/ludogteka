@@ -24,7 +24,12 @@ const ETIQUETA_TIPO: Record<string, string> = {
   devolucion: "Devolución",
   retiro: "Retiro",
 };
-const ETIQUETA_METODO: Record<string, string> = { efectivo: "Efectivo", terminal: "Terminal", transferencia: "Transferencia" };
+const ETIQUETA_METODO: Record<string, string> = {
+  efectivo: "Efectivo",
+  terminal: "Terminal",
+  transferencia: "Transferencia",
+  tarjeta_manual: "Tarjeta manual (sin verificar)",
+};
 const ETIQUETA_ORIGEN: Record<string, string> = {
   manual: "a mano",
   mercadopago_point: "terminal Mercado Pago",
@@ -52,7 +57,7 @@ export function MovimientosTurno({
   resumen: ResumenMetodo[];
   zona: string;
 }) {
-  const porMetodo = ["efectivo", "terminal", "transferencia"].map((m) => {
+  const porMetodo = ["efectivo", "terminal", "transferencia", "tarjeta_manual"].map((m) => {
     const filas = resumen.filter((r) => r.metodo === m);
     const manual = filas.find((r) => r.origen === "manual");
     const app = filas.filter((r) => r.origen !== "manual");
@@ -61,6 +66,10 @@ export function MovimientosTurno({
     const devuelto = filas.reduce((s, r) => s + r.devuelto, 0);
     return { metodo: m, cobrado, propinas, devuelto, neto: cobrado + propinas - devuelto, manual: manual?.cobrado ?? 0, app: app.reduce((s, r) => s + r.cobrado, 0) };
   });
+
+  // El total de tarjeta se suma explícito y separado: lo verificado y lo sin verificar.
+  const neto = (m: string) => porMetodo.find((x) => x.metodo === m)?.neto ?? 0;
+  const totalTarjeta = { verificada: neto("terminal"), manual: neto("tarjeta_manual") };
 
   // Lo que entró por venta de mostrador, aparte de los servicios.
   const ventasMostrador = movimientos.filter((m) => m.tipo === "venta_mostrador").reduce((s, m) => s + m.monto, 0);
@@ -73,7 +82,13 @@ export function MovimientosTurno({
           Servicios y pases: <strong>{dinero(servicios)}</strong> · Ventas de mostrador: <strong>{dinero(ventasMostrador)}</strong>
         </p>
       )}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {totalTarjeta.manual !== 0 && (
+        <p className="text-sm text-n-700" data-total-tarjeta>
+          Total con tarjeta: <strong>{dinero(totalTarjeta.verificada + totalTarjeta.manual)}</strong> = terminal {dinero(totalTarjeta.verificada)} (verificada
+          por el proveedor) + tarjeta manual {dinero(totalTarjeta.manual)} (sin verificar).
+        </p>
+      )}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {porMetodo.map((m) => (
           <div key={m.metodo} className="rounded-lg border border-n-200 bg-white p-4">
             <p className="text-xs font-bold uppercase tracking-wide text-n-500">{ETIQUETA_METODO[m.metodo]}</p>
@@ -83,10 +98,14 @@ export function MovimientosTurno({
               {m.propinas > 0 ? ` · propinas ${dinero(m.propinas)}` : ""}
               {m.devuelto > 0 ? ` · devuelto ${dinero(m.devuelto)}` : ""}
             </p>
-            {m.metodo !== "efectivo" && (
-              <p className="mt-1 text-xs text-n-600">
-                por la app {dinero(m.app)} · a mano {dinero(m.manual)}
-              </p>
+            {m.metodo === "tarjeta_manual" ? (
+              <p className="mt-1 text-xs text-ambar-oscuro">Se revisa contra el voucher en Caja → Conciliación.</p>
+            ) : (
+              m.metodo !== "efectivo" && (
+                <p className="mt-1 text-xs text-n-600">
+                  por la app {dinero(m.app)} · a mano {dinero(m.manual)}
+                </p>
+              )
             )}
           </div>
         ))}

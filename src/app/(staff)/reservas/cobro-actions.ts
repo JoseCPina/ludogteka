@@ -4,9 +4,20 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
 
-export type MetodoPago = "efectivo" | "terminal" | "transferencia";
+export type MetodoPago = "efectivo" | "terminal" | "transferencia" | "tarjeta_manual";
 
-export type LineaMetodo = { metodo: MetodoPago; monto: number; propina: number };
+// Una línea de «tarjeta_manual» trae además el folio del voucher y el motivo
+// (los valida la base; ver src/lib/cobro/tarjeta-manual.ts).
+export type LineaMetodo = {
+  metodo: MetodoPago;
+  monto: number;
+  propina: number;
+  folio?: string;
+  motivo?: string;
+  motivo_texto?: string;
+  ultimos4?: string;
+  banco?: string;
+};
 
 export type EstadoCobro = { error: string | null; cobroId?: string };
 
