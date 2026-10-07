@@ -33,6 +33,14 @@ export function telefonoDeCorreoSintetico(email: string | null | undefined): str
   return /^t\d{10}$/.test(local) ? local.slice(1) : null;
 }
 
+// Cómo se le muestra una cuenta a una persona: quien entra con teléfono nunca ve
+// su correo interno (t4421234567@…), sino su teléfono; una cuenta con correo real, el correo.
+export function etiquetaDeCuenta(email: string | null | undefined): string {
+  const tel = telefonoDeCorreoSintetico(email);
+  if (!tel) return email ?? "";
+  return `Tel. ${tel.slice(0, 3)} ${tel.slice(3, 6)} ${tel.slice(6)}`;
+}
+
 export function esCorreoSintetico(email: string | null | undefined): boolean {
   return Boolean(email?.toLowerCase().endsWith(`@${DOMINIO_SINTETICO}`));
 }

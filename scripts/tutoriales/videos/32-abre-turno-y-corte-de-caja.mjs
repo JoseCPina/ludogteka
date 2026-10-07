@@ -10,7 +10,7 @@ export default {
     },
     {
       titulo: "Movimientos del turno",
-      dice: "En «Turno de caja» están los «Movimientos de este turno»: cada cobro, venta, devolución y retiro, por método de pago. Aquí está todo lo que entró y salió.",
+      dice: "En «Turno de caja» están los «Movimientos de este turno»: cada cobro, venta, devolución y retiro, por método de pago. Un pago de varias cuentas juntas sale marcado como cobro junto y cuenta una sola vez. La tarjeta de registro manual sale en su propia línea, sin verificar.",
       pasos: [["resaltar", "Movimientos de este turno", 2800], ["zoom", "Movimientos de este turno", 1.3, 3500]],
     },
     {

@@ -1,5 +1,6 @@
 "use client";
 
+import { etiquetaDeCuenta } from "@/lib/auth/identidad";
 import { useMemo, useState } from "react";
 import { Field } from "@/components/ui/field";
 import { ChipRol } from "@/components/ui/chip-rol";
@@ -68,7 +69,7 @@ export function ListaCuentas({ cuentas }: { cuentas: Cuenta[] }) {
           <tbody>
             {filtradas.map((cuenta) => (
               <tr key={cuenta.id} className="hover:bg-n-50">
-                <td className="border-b border-n-200 px-4 py-3 text-n-900">{cuenta.email}</td>
+                <td className="border-b border-n-200 px-4 py-3 text-n-900">{etiquetaDeCuenta(cuenta.email)}</td>
                 <td className="border-b border-n-200 px-4 py-3">
                   <ChipRol rol={cuenta.rol} />
                 </td>

@@ -2,7 +2,7 @@
 
 Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scripts/tutoriales/catalogo.mjs` y de lo que la app tiene hoy (código). No se edita a mano: se cambia el catálogo.
 
-**56 videos** (el 00 es el avance) en 9 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
+**60 videos** (el 00 es el avance) en 9 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
 
 ## Catálogo
 
@@ -64,6 +64,10 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 53 | Tu negocio | Pide ayuda: el asistente, los videos y los tickets | recepcion | 2.5 min | — | — |
 | 54 | Tu negocio | Recolección a domicilio: cotiza, cobra y la ves en la cuenta | recepcion | 2.5 min | recoleccion | — |
 | 55 | Estética | Cómo corregir el servicio de una cita | admin | 2.5 min | estetica | corregir_servicio |
+| 56 | Caja y cobros | Tarjeta (registro manual): cuándo usarla y cómo se revisa | admin | 2.5 min | — | tarjeta_manual |
+| 57 | Caja y cobros | Cobrar varios servicios juntos: un pago, un folio, un recibo | recepcion | 2.5 min | — | — |
+| 58 | Estética | Cómo se cobra a un mestizo y qué hacer si no hay precio | admin | 2.5 min | estetica | tarifas, excepciones_reserva |
+| 59 | Caja y cobros | Terminal de Mercado Pago: escogerla, «Por confirmar» y reconectar | admin | 2.5 min | — | — |
 
 ## Pantallas → videos
 
@@ -92,11 +96,11 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/caja` | 33 |  |
 | `/caja/ajustes-servicio` | 55 |  |
 | `/caja/cargo` | 36 |  |
-| `/caja/cobrar-junto` | 33 |  |
+| `/caja/cobrar-junto` | 57 |  |
 | `/caja/cobrar/[reservaId]` | 33, 34, 37 |  |
 | `/caja/conciliacion` | 38 |  |
 | `/caja/pases` | 39 |  |
-| `/caja/recibo-junto/[grupoId]` | 33 |  |
+| `/caja/recibo-junto/[grupoId]` | 57 |  |
 | `/caja/reembolsos` | 38 |  |
 | `/caja/turno` | 32 |  |
 | `/caja/venta` | 35, 43 |  |
@@ -188,7 +192,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Servicios | `/servicios` | 20, 24 |
 | Clientes | `/clientes` | 10, 11 |
 | Vinculación | `/vinculacion` | 15 |
-| Caja | `/caja` | 32, 33, 34, 35, 36, 37, 38, 39, 43, 55 |
+| Caja | `/caja` | 32, 33, 34, 35, 36, 37, 38, 39, 43, 55, 57 |
 | Contratos | `/contratos` | 16, 19 |
 | Inventario | `/inventario` | 40, 41, 42, 43 |
 | Reportes | `/reportes` | 49 |
@@ -210,7 +214,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | --- | --- |
 | guarderia | 25, 27, 28, 29, 30, 31 |
 | hotel | 26, 27, 28, 29, 30, 31 |
-| estetica | 20, 21, 22, 23, 24, 55 |
+| estetica | 20, 21, 22, 23, 24, 55, 58 |
 | bonos | 39 |
 | recoleccion | 54 |
 | contratos | 16, 17, 18, 19 |
@@ -226,11 +230,11 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Permiso | Videos |
 | --- | --- |
 | Costos y compras de inventario (`inventario_costos`) | 09, 40, 42 |
-| Precios y tarifas (`tarifas`) | 09, 14, 20 |
+| Precios y tarifas (`tarifas`) | 09, 14, 20, 58 |
 | Reportes financieros (`reportes_financieros`) | 09, 49 |
 | Personal (`personal`) | 08, 09 |
 | Configuración del negocio (`configuracion_negocio`) | 07, 09, 51, 52 |
-| Excepciones al reservar (`excepciones_reserva`) | 09, 23 |
+| Excepciones al reservar (`excepciones_reserva`) | 09, 23, 58 |
 | Descuentos sin tope (`descuentos_sin_tope`) | 09, 37 |
 | Plantillas de contrato (`plantillas_contrato`) | 09, 16 |
 | Nómina (`nomina`) | 09, 46 |
@@ -238,7 +242,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Reportes de guardería (`reportes_guarderia`) | 09, 31 |
 | Corregir estilista de servicios cerrados (`corregir_estilista`) | 09, 23 |
 | Corregir servicio de citas (`corregir_servicio`) | 09, 55 |
-| Registrar tarjeta manual (`tarjeta_manual`) | 09 |
+| Registrar tarjeta manual (`tarjeta_manual`) | 09, 56 |
 
 ## Artículos de ayuda → videos
 
@@ -260,12 +264,12 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | perfil-y-pagina-web | 52 |
 | pedir-ayuda | 53 |
 | cobrar-una-cuenta | 33 |
-| cobrar-varios-servicios-juntos | 33 |
-| cobrar-con-terminal | 34 |
-| terminal-no-recibe-el-cobro | 34 |
+| cobrar-varios-servicios-juntos | 57 |
+| cobrar-con-terminal | 34, 59 |
+| terminal-no-recibe-el-cobro | 34, 59 |
 | corregir-un-cobro-con-terminal-mal-marcado | 38 |
-| tarjeta-registro-manual | 34 |
-| revisar-tarjetas-manuales | 38 |
+| tarjeta-registro-manual | 34, 56 |
+| revisar-tarjetas-manuales | 38, 56 |
 | link-de-pago-whatsapp | 34 |
 | venta-rapida | 35 |
 | devolver-un-cobro | 38 |
@@ -275,8 +279,8 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | aplicar-descuento | 37 |
 | agregar-una-raza-que-no-aparece | 14 |
 | precios-de-estetica | 20 |
-| precio-de-estetica-mestizo | 20 |
-| que-hacer-sin-precio-estetica | 23 |
+| precio-de-estetica-mestizo | 20, 58 |
+| que-hacer-sin-precio-estetica | 23, 58 |
 | agendar-cita-estetica | 21 |
 | cambiar-estilista-cita-estetica | 23 |
 | corregir-servicio-de-una-cita | 55 |
@@ -314,12 +318,12 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | gastos-proximos | 05, 47 |
 | gastos-vencidos | 05, 47 |
 | hotel | 05, 29 |
-| por-confirmar | 05 |
+| por-confirmar | 05, 59 |
 | razas-sin-grupo | 05, 14 |
 | reembolsos | 05, 38 |
 | saldos | 05 |
 | san | 05, 29 |
-| tarjetas-manuales | 38 |
+| tarjetas-manuales | 38, 56 |
 | tarjetas-manuales-patron | 38 |
 | tarjetas-manuales-tope | 38 |
 | turno | 05, 32 |

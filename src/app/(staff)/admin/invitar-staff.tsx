@@ -1,4 +1,5 @@
 "use client";
+import { etiquetaDeCuenta } from "@/lib/auth/identidad";
 import { TOPE_MS, mensajeDeFallo } from "@/lib/ui/espera";
 
 import { FormEvent, useState } from "react";
@@ -93,7 +94,7 @@ export function InvitarStaff() {
     return (
       <div className="flex flex-col gap-4">
         <Alert variante="exito" titulo="Cuenta creada">
-          Se creó la cuenta de {resultado.email} como{" "}
+          Se creó la cuenta de {etiquetaDeCuenta(resultado.email)} como{" "}
           {resultado.rol === "recepcion" ? "recepción" : "estética"}.
         </Alert>
 
@@ -102,7 +103,7 @@ export function InvitarStaff() {
             Cópialo ahora — este link no se vuelve a mostrar
           </p>
           <p className="mb-3 text-sm text-n-700">
-            Pásaselo a {resultado.email} para que entre y elija su contraseña. Si cierras esta
+            Pásaselo a {etiquetaDeCuenta(resultado.email)} para que entre y elija su contraseña. Si cierras esta
             pantalla sin copiarlo, no hay forma de recuperarlo: la única salida es invitar nuevamente
             (y esa vez el correo ya estará registrado, así que tampoco funcionará). Cópialo antes de
             seguir.

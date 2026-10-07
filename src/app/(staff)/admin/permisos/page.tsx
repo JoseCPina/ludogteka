@@ -1,3 +1,4 @@
+import { etiquetaDeCuenta } from "@/lib/auth/identidad";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
@@ -24,7 +25,7 @@ export default async function PermisosPage() {
     supabase.from("membresias").select("id:profile_id, profiles(nombre_completo)").in("rol", ["admin", "recepcion"]),
   ]);
   const { data: cuentas } = await supabase.rpc("listar_cuentas");
-  const correo = new Map(((cuentas as { id: string; email: string }[] | null) ?? []).map((c) => [c.id, c.email]));
+  const correo = new Map(((cuentas as { id: string; email: string }[] | null) ?? []).map((c) => [c.id, etiquetaDeCuenta(c.email)]));
   const nombreDe = (n: { profiles: unknown }) => ((n.profiles as { nombre_completo: string | null } | null)?.nombre_completo ?? null);
   const nombre = new Map((nombres ?? []).map((n) => [n.id as string, nombreDe(n) ?? correo.get(n.id as string) ?? "—"]));
 

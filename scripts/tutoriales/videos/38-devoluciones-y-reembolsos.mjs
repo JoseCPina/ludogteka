@@ -6,7 +6,7 @@ export default {
   escenas: [
     {
       titulo: "Devolver un cobro",
-      dice: "Las devoluciones las hace solo el admin. Se hacen desde la cuenta ya cobrada: escoges el cobro, el monto y el motivo, y la devolución sale del turno abierto con el método con el que se pagó.",
+      dice: "Las devoluciones las hace solo el admin. Se hacen desde la cuenta ya cobrada: escoges el cobro, el monto y el motivo, y la devolución sale del turno abierto con el método con el que se pagó. Si el cobro fue de varias cuentas juntas, la devolución se hace en la cuenta que corresponde, hasta lo que esa cuenta recibió.",
       pasos: [["esperar", 3500]],
     },
     {

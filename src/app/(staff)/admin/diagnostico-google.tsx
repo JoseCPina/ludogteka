@@ -83,7 +83,7 @@ export function DiagnosticoGoogle() {
     <div className="flex flex-col gap-4">
       <p className="text-sm text-n-600">
         Comprueba que el cotizador de recolección pueda hablar con Google: geocodifica una dirección
-        conocida y mide la ruta base → domicilio → Ludogteka, que es exactamente lo que hace cuando
+        conocida y mide la ruta base → domicilio → tu negocio, que es exactamente lo que hace cuando
         recepción captura la dirección de un cliente. Si algo está mal en Google Cloud (una API sin
         habilitar, la facturación caída, una restricción de la llave), aquí se ve — y no con el
         cliente enfrente.

@@ -5,7 +5,7 @@ export default {
   escenas: [
     {
       titulo: "Cuentas abiertas",
-      dice: "En «Caja» aparecen las «Cuentas abiertas de hoy», con el cliente, el perro, el servicio y cuánto falta por cobrar. Si buscas a otro cliente, usa el buscador. Toca la cuenta que vas a cobrar.",
+      dice: "En «Caja» aparecen las «Cuentas abiertas de hoy», con el cliente, el perro, el servicio y cuánto falta por cobrar. Si buscas a otro cliente, usa el buscador. Si una persona tiene varias cuentas, salen juntas y se cobran de una vez; eso lo ves en otro video. Toca la cuenta que vas a cobrar.",
       pasos: [["resaltar", "Cuentas abiertas de hoy", 2800], ["clic", "css:a[href^='/caja/cobrar/']", { nav: true }]],
     },
     {
@@ -15,8 +15,8 @@ export default {
     },
     {
       titulo: "Registrar el cobro",
-      dice: "En «Registrar cobro» escoges el «Método»: efectivo, terminal o transferencia. Puedes agregar una propina, y si el cliente paga con dos métodos, usa «+ Repartir en otro método».",
-      pasos: [["elegir", "Método", "Efectivo"], ["resaltar", "Propina", 2400], ["resaltar", "+ Repartir en otro método", 2400]],
+      dice: "En «Registrar cobro» escoges el «Método»: efectivo, transferencia o «Tarjeta (registro manual)», y el «Monto». Puedes agregar una propina, y si el cliente paga con dos métodos, usa «+ Repartir en otro método».",
+      pasos: [["elegir", "Método", "Efectivo"], ["escribir", "Monto", "500"], ["resaltar", "Propina", 2400], ["resaltar", "+ Repartir en otro método", 2400]],
     },
     {
       titulo: "Confirmar",

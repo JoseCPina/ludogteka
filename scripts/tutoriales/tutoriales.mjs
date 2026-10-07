@@ -138,7 +138,7 @@ async function producir(v, ctx) {
   // ── Grabación ──
   const f = new Date(Date.now() + (3 + Math.floor(Math.random() * 25)) * 86400000);
   const pad = (x) => String(x).padStart(2, "0");
-  const dia = (n) => { const d = new Date(Date.now() + n * 86400000); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  const dia = (n) => { const d = new Date(Date.now() + n * 86400000); if (d.getDay() === 0) d.setDate(d.getDate() + 1); /* guardería no abre en domingo */ return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
   const base0 = 20 + Math.floor(Math.random() * 40);
   const valores = { n3: String(Math.floor(Math.random() * 900) + 100), fechaDia: dia(base0), fechaDia2: dia(base0 + 2), fechaCita: `${f.getFullYear()}-${pad(f.getMonth() + 1)}-${pad(f.getDate())}T${pad(10 + Math.floor(Math.random() * 6))}:${pad(Math.floor(Math.random() * 4) * 15)}`, tel: telefonoNuevo(ctx.telefonos), tel2: telefonoNuevo(ctx.telefonos), tel3: telefonoNuevo(ctx.telefonos) };
   const sb = ctx.sbDemo;

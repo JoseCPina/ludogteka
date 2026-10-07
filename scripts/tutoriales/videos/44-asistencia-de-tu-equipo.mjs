@@ -7,12 +7,12 @@ export default {
     {
       titulo: "Empleados",
       dice: "En «Empleados» ves a todo tu equipo y su asistencia de hoy. Una persona del equipo no necesita tener cuenta en la app: un empleado y una cuenta son cosas distintas.",
-      pasos: [["resaltar", "Empleados", 2400], ["resaltar", "Registrar entrada", 2800]],
+      pasos: [["resaltar", "Asistencia y personal", 2400], ["resaltar", "Daniela Ríos", 2800]],
     },
     {
       titulo: "Entrada y salida",
       dice: "Quien tiene cuenta registra su propia entrada y su salida desde su propia pantalla. Quien no, la registra recepción, y el admin puede registrar la de cualquiera. Cada registro guarda quién lo hizo y a qué hora.",
-      pasos: [["resaltar", "Registrar entrada", 3000], ["clic", "Daniela Ríos", { nav: true }], ["resaltar", "Asistencia", 2800]],
+      pasos: [["resaltar", "Érick Salas", 3000], ["clic", "Daniela Ríos", { nav: true }], ["resaltar", "Asistencia", 2800]],
     },
     {
       titulo: "Retardos y faltas",
