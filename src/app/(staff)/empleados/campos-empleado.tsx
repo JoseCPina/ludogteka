@@ -1,3 +1,4 @@
+import { etiquetaDeCuenta } from "@/lib/auth/identidad";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,7 +43,7 @@ export function CamposEmpleado({
         <option value="">No usa la app</option>
         {libres.map((c) => (
           <option key={c.id} value={c.id}>
-            {(c.nombre_completo ?? c.email) + ` · ${ROL[c.rol] ?? c.rol}`}
+            {(c.nombre_completo ?? etiquetaDeCuenta(c.email)) + ` · ${ROL[c.rol] ?? c.rol}`}
           </option>
         ))}
       </Select>

@@ -95,7 +95,7 @@ export async function grabarVideo({ base, cookies, inicio, guion, tarjetas, plan
       if (!document.body) return;
       const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
       for (let n = w.nextNode(); n; n = w.nextNode()) {
-        if (/ludogteka/i.test(n.textContent) && n.parentElement && !n.parentElement.dataset.pdOculto) {
+        if (/ludogteka/i.test(n.textContent) && n.parentElement && !["SCRIPT", "STYLE", "NOSCRIPT"].includes(n.parentElement.tagName) && !n.parentElement.dataset.pdOculto) {
           n.parentElement.dataset.pdOculto = n.textContent.trim().slice(0, 80);
           n.parentElement.style.visibility = "hidden";
         }

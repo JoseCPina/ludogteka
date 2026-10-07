@@ -75,15 +75,15 @@ export function CobroJunto({
   const valor = (i: number) => (Number.isFinite(Number(montos[i])) ? Number(montos[i]) : 0);
   const totalCuentas = cuentas.reduce((s, _c, i) => s + valor(i), 0);
   const totalSaldo = cuentas.reduce((s, c) => s + c.saldo, 0);
-  const totalMetodos = metodos.reduce((s, m) => s + (Number(m.monto) || 0), 0);
   const propinaTotal = metodos.reduce((s, m) => s + (Number(m.propina) || 0), 0);
-  const diferencia = Math.round((totalMetodos - totalCuentas) * 100) / 100;
 
   // Con un solo método y sin haberlo tocado, el monto es el total de las cuentas.
   function montoDeMetodo(i: number, m: FilaMetodo) {
     return metodos.length === 1 && !montoTocado && i === 0 ? totalCuentas.toFixed(2) : m.monto;
   }
   const metodosEfectivos = metodos.map((m, i) => ({ ...m, monto: montoDeMetodo(i, m) }));
+  const totalMetodos = metodosEfectivos.reduce((s, m) => s + (Number(m.monto) || 0), 0);
+  const diferencia = Math.round((totalMetodos - totalCuentas) * 100) / 100;
 
   function actualizarMetodo(i: number, cambios: Partial<FilaMetodo>) {
     if (cambios.monto !== undefined) setMontoTocado(true);

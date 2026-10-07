@@ -16,7 +16,7 @@ export default {
     },
     {
       titulo: "La tabla de tarifas",
-      dice: "En la tabla pones el precio por cada grupo de raza. Si el pelo llega maltratado, hay un precio alterno en «Si llega maltratado». Y con «No aplica» marcas lo que ese grupo no ofrece. Un grupo sin precio no se cotiza: la app nunca adivina.",
+      dice: "En la tabla pones el precio por cada grupo de raza. Si el pelo llega maltratado, hay un precio alterno en «Si llega maltratado». Y con «No aplica» marcas lo que ese grupo no ofrece. El grupo «Mestizo / sin raza» cobra además por tamaño y largo del pelo. Un grupo sin precio no se cotiza: la app nunca adivina.",
       pasos: [["clic", "Ver/editar tarifas", { nav: true }], ["zoom", "Si llega maltratado", 1.35, 4000]],
     },
     {

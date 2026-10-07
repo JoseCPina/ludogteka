@@ -1,3 +1,4 @@
+import { etiquetaDeCuenta } from "@/lib/auth/identidad";
 import { formatearFecha } from "@/lib/formato";
 
 export type PersonaStaff = {
@@ -19,8 +20,8 @@ export function ListaPersonal({ personas, zona }: { personas: PersonaStaff[]; zo
       {personas.map((p) => (
         <li key={p.id} className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-3">
           <span className="flex flex-col">
-            <span className="font-semibold text-n-900">{p.nombre_completo || p.email}</span>
-            <span className="text-sm text-n-600">{p.email}</span>
+            <span className="font-semibold text-n-900">{p.nombre_completo || etiquetaDeCuenta(p.email)}</span>
+            <span className="text-sm text-n-600">{etiquetaDeCuenta(p.email)}</span>
           </span>
           <span className="text-sm text-n-600">
             {p.rol === "recepcion" ? "Recepción" : "Estética"} ·{" "}
