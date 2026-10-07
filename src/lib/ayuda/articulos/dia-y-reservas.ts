@@ -329,7 +329,8 @@ Si el perro ya está en la puerta sin reserva, usa **Walk-in (sin reserva)** des
 ## Si algo no sale
 
 - «Registra quién entrega al perro.»: escribe el nombre de quien lo deja.
-- Si no tiene reserva, usa **Walk-in (sin reserva)** en la lista de check-in.`,
+- Si no tiene reserva, usa **Walk-in (sin reserva)** en la lista de check-in.
+- Si el check-in se hizo por error y el perro venía con pase, quien tenga el permiso «Ajustar días de pases» toca **Deshacer este check-in** (ver [Cómo ajustar los días usados de un pase](/ayuda/ajustar-dias-usados-de-un-pase)).`,
   },
   {
     slug: "registrar-check-out-y-cobrar",
@@ -382,11 +383,54 @@ En hotel, si se queda una noche más, toca **Extender 1 noche**. Si un perro de 
 
 En la misma pantalla ves los pases que le quedan a cada perro. Al venderlo se genera el contrato de guardería, que el dueño firma desde su portal.
 
+Si el pase ya se venía usando antes de registrarlo, marca **Este paquete ya lleva días usados** y escribe **Días que ya lleva usados** (así nace con el saldo descontado y sin cobrar nada de más). Eso y corregir días después lo explica [Cómo ajustar los días usados de un pase](/ayuda/ajustar-dias-usados-de-un-pase).
+
 ## Si algo no sale
 
 - «No hay turno de caja abierto. Ábrelo antes de vender un bono.»: abre el turno en [Caja](/caja).
 - «Escoge el perro para el que es el paquete.»: el paquete siempre es de un perro.
-- «Este perro está marcado como fallecido: no se le puede vender un paquete.»`,
+- «Este perro está marcado como fallecido: no se le puede vender un paquete.»
+- «Registrar un pase con días ya usados requiere el permiso «Ajustar días de pases».»: pídeselo a un admin, o vende el pase completo.`,
+  },
+  {
+    slug: "ajustar-dias-usados-de-un-pase",
+    titulo: "Cómo ajustar los días usados de un pase",
+    resumen: "Corriges cuántos días lleva usados un pase, con motivo y sin tocar dinero ni caja.",
+    grupo: "bonos",
+    modulo: "bonos",
+    roles: ["admin", "recepcion"],
+    rutas: ["/guarderia/pases", "/caja/pases"],
+    palabras: ["días usados", "saldo del pase", "corregir pase", "pase de más", "pase de menos", "check-in por error", "pase que ya traía", "deshacer check-in", "devolver un día"],
+    cuerpo: `Cada check-in con pase descuenta un día. Si se descontó de más, de menos o por error, o si el pase ya traía días usados de antes de PeluDesk, lo corriges aquí. Un ajuste solo cambia el saldo de días: no cobra nada, no mueve la caja ni los reportes de dinero, y queda en el historial del pase.
+
+Necesitas el permiso «Ajustar días de pases» (los admin lo tienen siempre; a recepción se lo da un admin en [Permisos](/admin/permisos)).
+
+## Corregir los días usados de un pase
+
+1. Entra a [Day pass y mensualidad](/guarderia/pases), busca al dueño y ubica el pase del perro. También lo encuentras en el expediente del perro y en el check-in.
+2. Toca **Ajustar días usados**.
+3. Pon el total de días usados que debe llevar, o usa **−1** y **+1**.
+4. Si sabes qué días fueron, pon sus fechas (son opcionales).
+5. Elige el **Motivo**: Check-in marcado por error, Día no registrado, Uso previo a PeluDesk, u Otro (y escribe cuál).
+6. Revisa el cuadro **Antes → después** (días usados, restantes y vencimiento) y toca **Confirmar ajuste**.
+
+Si el pase se había acabado y el ajuste le devuelve días, te lo avisa: se reabre y se respeta su vigencia. Si ya venció, el ajuste se guarda pero el pase sigue vencido: un admin puede poner una nueva vigencia en **Extender la vigencia hasta**.
+
+## Deshacer un check-in hecho por error
+
+En el check-in de un perro que viene con pase y ya está adentro, toca **Deshacer este check-in**, elige el motivo y confirma. El perro vuelve a «reservada», el día regresa al pase y el check-in que se había capturado queda guardado en el historial del pase. Si el perro de verdad no llegó, cancela la estancia o márcala «no llegó».
+
+## Ver qué se ajustó
+
+Toca **Ver historial de ajustes** en el pase: cada renglón dice antes y después, fechas, motivo, quién y cuándo. No se edita ni se borra: un ajuste se corrige con otro ajuste. En [Reportes](/reportes), «Días de pase» separa los días reales de los ajustados a mano.
+
+## Si algo no sale
+
+- «Los días usados no pueden ser menos de 0.» o «Este pase es de N días: no puede llevar X usados.»: el total va de 0 al total del pase.
+- «Con «Otro», escribe el motivo.»: explica en una frase qué pasó.
+- «Marcaste X fecha(s) pero el ajuste es de Y día(s).»: pon una fecha por día o deja todas vacías.
+- «No tienes el permiso «Ajustar días de pases».»: pídeselo a un admin.
+- «Solo un admin puede cambiar la vigencia de un pase.»: pídele a un admin que la extienda.`,
   },
   {
     slug: "cotizar-y-cobrar-recoleccion",

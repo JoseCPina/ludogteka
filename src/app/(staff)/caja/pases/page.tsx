@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { cargarOpcionesCobroManual } from "@/lib/cobro/opciones-manual";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { tienePermiso } from "@/lib/auth/permisos";
 import { Alert } from "@/components/ui/alert";
 import { BonosCliente, type BonoCatalogo, type BonoFila } from "@/app/(staff)/clientes/bonos-cliente";
 import { BuscadorClientes } from "@/components/buscador-clientes";
@@ -13,6 +15,7 @@ import { formatearTelefono } from "@/lib/telefono";
 export default async function PasesCajaPage({ searchParams }: { searchParams: Promise<{ cliente?: string; perro?: string }> }) {
   const { cliente: clienteId, perro: perroInicial } = await searchParams;
   const supabase = await createSupabaseServerClient();
+  const sesion = await obtenerSesionConRol();
 
   const [{ clientes }, { data: bonosCatalogo }, { data: turno }] = await Promise.all([
     cargarClientesBuscables(supabase),
@@ -104,6 +107,8 @@ export default async function PasesCajaPage({ searchParams }: { searchParams: Pr
             perros={(perrosCliente ?? []) as { id: string; nombre: string }[]}
             perroInicial={perroInicial ?? null}
             opcionesCobro={await cargarOpcionesCobroManual()}
+            puedeAjustar={tienePermiso(sesion, "ajustar_pases")}
+            esAdmin={sesion?.rol === "admin"}
           />
         </div>
       )}

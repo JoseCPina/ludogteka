@@ -95,6 +95,12 @@ export const PERMISOS = [
     implica:
       "Registra un cobro con «Tarjeta (registro manual)» cuando no se puede usar la terminal vinculada (terminal caída, sin señal, otra terminal), con el folio del voucher y el motivo. Viene prendido para toda la recepción; quítalo a quien no deba. El cobro cuenta como pagado pero queda «sin verificar» hasta que un admin lo revisa en Caja → Conciliación.",
   },
+  {
+    clave: "ajustar_pases",
+    etiqueta: "Ajustar días de pases",
+    implica:
+      "Corrige los días usados de un pase de guardería (day pass o mensualidad) con un motivo por escrito que queda en el historial del pase, deshace un check-in hecho por error devolviendo el día al pase, y registra un pase nuevo que ya lleva días usados. No mueve dinero ni la caja. Extender la vigencia de un pase sigue siendo de admin. Viene apagado: dáselo solo a quien deba corregir saldos.",
+  },
 ] as const;
 
 export type ClavePermiso = (typeof PERMISOS)[number]["clave"];

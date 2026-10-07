@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { cargarOpcionesCobroManual } from "@/lib/cobro/opciones-manual";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { tienePermiso } from "@/lib/auth/permisos";
 import { Alert } from "@/components/ui/alert";
 import { BonosCliente, type BonoCatalogo, type BonoFila } from "@/app/(staff)/clientes/bonos-cliente";
 import { BuscadorCliente } from "./buscador-cliente";
@@ -17,6 +19,7 @@ export default async function PasesGuarderiaPage({
 }) {
   const { cliente: clienteId, perro: perroInicial } = await searchParams;
   const supabase = await createSupabaseServerClient();
+  const sesion = await obtenerSesionConRol();
 
   const [{ clientes }, { data: bonosCatalogo }, { data: serviciosGuarderia }, { data: turno }] =
     await Promise.all([
@@ -121,6 +124,8 @@ export default async function PasesGuarderiaPage({
             perros={(perrosCliente ?? []) as { id: string; nombre: string }[]}
             perroInicial={perroInicial ?? null}
             opcionesCobro={await cargarOpcionesCobroManual()}
+            puedeAjustar={tienePermiso(sesion, "ajustar_pases")}
+            esAdmin={sesion?.rol === "admin"}
           />
         </div>
       )}

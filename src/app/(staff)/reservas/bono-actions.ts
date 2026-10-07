@@ -13,7 +13,10 @@ export async function comprarBono(
   perroId: string,
   servicioId: string,
   notas: string,
-  metodos: LineaMetodo[]
+  metodos: LineaMetodo[],
+  // Pase que ya se venía usando antes de registrarlo (requiere el permiso
+  // «Ajustar días de pases» si diasUsados > 0): solo baja el saldo de días.
+  usoPrevio?: { diasUsados: number; fechas: string[]; nota: string }
 ): Promise<EstadoComprarBono> {
   if (metodos.length === 0) return { error: "Agrega al menos un método de pago." };
   if (metodos.some((m) => !Number.isFinite(m.monto) || m.monto <= 0)) {
@@ -26,6 +29,9 @@ export async function comprarBono(
     p_servicio_id: servicioId,
     p_notas: notas,
     p_metodos: metodos,
+    p_dias_usados: usoPrevio?.diasUsados ?? 0,
+    p_fechas_usados: usoPrevio?.fechas?.filter(Boolean) ?? null,
+    p_nota_usados: usoPrevio?.nota?.trim() || null,
   });
 
   if (error) return { error: traducirError(error) };

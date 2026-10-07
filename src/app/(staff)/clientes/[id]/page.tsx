@@ -25,6 +25,7 @@ import { InvitarPortal } from "./invitar-portal";
 import { RestablecerPassword } from "./restablecer-password";
 import { usaEstancias } from "@/lib/plan/modulos";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { tienePermiso } from "@/lib/auth/permisos";
 import { cargarPendientesEstancia } from "@/lib/perros/pendientes-estancia";
 import { PendientesEstancia, type CatalogosPerro } from "../../perros/pendientes-estancia";
 import { cargarRazas } from "@/lib/razas";
@@ -42,7 +43,8 @@ export default async function EditarClientePage({
 
   const supabase = await createSupabaseServerClient();
   // Solo lo de los módulos que el negocio tiene prendidos.
-  const mods = (await obtenerSesionConRol())?.modulos ?? [];
+  const sesionActual = await obtenerSesionConRol();
+  const mods = sesionActual?.modulos ?? [];
   const conEstancias = usaEstancias(mods);
   const { data: cliente } = await supabase
     .from("clientes")
@@ -356,6 +358,8 @@ export default async function EditarClientePage({
           bonos={(bonosCliente as BonoFila[]) ?? []}
           perros={(perros ?? []).filter((p) => !p.fallecido).map((p) => ({ id: p.id as string, nombre: p.nombre as string }))}
           opcionesCobro={await cargarOpcionesCobroManual()}
+          puedeAjustar={tienePermiso(sesionActual, "ajustar_pases")}
+          esAdmin={sesionActual?.rol === "admin"}
         />
       </div>
       )}
