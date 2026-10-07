@@ -2,7 +2,7 @@
 
 Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scripts/tutoriales/catalogo.mjs` y de lo que la app tiene hoy (código). No se edita a mano: se cambia el catálogo.
 
-**60 videos** (el 00 es el avance) en 9 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
+**61 videos** (el 00 es el avance) en 9 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
 
 ## Catálogo
 
@@ -68,6 +68,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 57 | Caja y cobros | Cobrar varios servicios juntos: un pago, un folio, un recibo | recepcion | 2.5 min | — | — |
 | 58 | Estética | Cómo se cobra a un mestizo y qué hacer si no hay precio | admin | 2.5 min | estetica | tarifas, excepciones_reserva |
 | 59 | Caja y cobros | Terminal de Mercado Pago: escogerla, «Por confirmar» y reconectar | admin | 2.5 min | — | — |
+| 60 | Caja y cobros | Cómo ajustar los días usados de un pase | recepcion | 2.5 min | bonos | ajustar_pases |
 
 ## Pantallas → videos
 
@@ -215,7 +216,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | guarderia | 25, 27, 28, 29, 30, 31 |
 | hotel | 26, 27, 28, 29, 30, 31 |
 | estetica | 20, 21, 22, 23, 24, 55, 58 |
-| bonos | 39 |
+| bonos | 39, 60 |
 | recoleccion | 54 |
 | contratos | 16, 17, 18, 19 |
 | portal | 11, 13, 15, 18 |
@@ -243,6 +244,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Corregir estilista de servicios cerrados (`corregir_estilista`) | 09, 23 |
 | Corregir servicio de citas (`corregir_servicio`) | 09, 55 |
 | Registrar tarjeta manual (`tarjeta_manual`) | 09, 56 |
+| Ajustar días de pases (`ajustar_pases`) | 60 |
 
 ## Artículos de ayuda → videos
 
@@ -299,6 +301,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | registrar-check-in | 29 |
 | registrar-check-out-y-cobrar | 30 |
 | vender-day-pass-o-mensualidad | 39 |
+| ajustar-dias-usados-de-un-pase | 60 |
 | cotizar-y-cobrar-recoleccion | 54 |
 | llenar-el-reporte-de-comportamiento | 31 |
 | enviar-fotos-y-videos | 31 |

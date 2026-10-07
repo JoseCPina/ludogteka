@@ -14,6 +14,8 @@ import { CheckinForm } from "./checkin-form";
 import { PaseCheckin, type EstadoPaseCheckin } from "./pase-checkin";
 import { describirBono } from "@/lib/bonos/descripcion";
 import { zonaActual } from "@/lib/negocio/actual";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { tienePermiso } from "@/lib/auth/permisos";
 
 export default async function CheckinEstanciaPage({
   params,
@@ -21,6 +23,7 @@ export default async function CheckinEstanciaPage({
   params: Promise<{ estanciaId: string }>;
 }) {
   const zona = await zonaActual();
+  const sesion = await obtenerSesionConRol();
   const { estanciaId } = await params;
   const supabase = await createSupabaseServerClient();
 
@@ -116,6 +119,7 @@ export default async function CheckinEstanciaPage({
       estadoPase = {
         tipo: "cubierto",
         descripcion: bono ? `${bono.servicio_nombre}: ${describirBono(bono)}` : "Cubierto con bono",
+        bono: bono ?? undefined,
       };
     } else {
       const { data: disponibles } = await supabase
@@ -136,6 +140,7 @@ export default async function CheckinEstanciaPage({
             tipo: "disponible",
             descripcion: `${bono.servicio_nombre}: ${describirBono(bono)}`,
             precioDia: Number(estancia.precio_unitario) * dias,
+            bono,
           }
         : { tipo: "paga", precioDia: Number(estancia.precio_unitario) * dias };
     }
@@ -162,7 +167,14 @@ export default async function CheckinEstanciaPage({
         </p>
       </div>
 
-      <PaseCheckin estanciaId={estanciaId} estado={estadoPase} />
+      <PaseCheckin
+        estanciaId={estanciaId}
+        estado={estadoPase}
+        perroNombre={perro.nombre}
+        enCurso={estancia.estado === "en_curso"}
+        puedeAjustar={tienePermiso(sesion, "ajustar_pases")}
+        esAdmin={sesion?.rol === "admin"}
+      />
 
       <AlertaCriticaBanner alertas={alertasActivas} alergiasGraves={alergiasGraves} tamano="grande" />
       <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />

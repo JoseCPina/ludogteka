@@ -47,6 +47,7 @@ export default async function ReportesPage({
     { data: gastosCategoria },
     { data: gastosCategoriaAnterior },
     { data: ventasData, error: errorVentas },
+    { data: diasPaseData },
   ] = await Promise.all([
     supabase.rpc("reporte_financiero_periodo", { p_desde: desde, p_hasta: hasta }).single(),
     supabase.rpc("reporte_costos_periodo", { p_desde: desde, p_hasta: hasta }).single(),
@@ -58,6 +59,7 @@ export default async function ReportesPage({
     supabase.rpc("gastos_por_categoria_periodo", { p_desde: desde, p_hasta: hasta }),
     supabase.rpc("gastos_por_categoria_periodo", { p_desde: anterior.desde, p_hasta: anterior.hasta }),
     supabase.rpc("reporte_ventas_mostrador_periodo", { p_desde: desde, p_hasta: hasta }).single(),
+    supabase.rpc("reporte_dias_pase_periodo", { p_desde: desde, p_hasta: hasta }).single(),
   ]);
   // Venta de mostrador: aparte de los servicios (ya está dentro de lo cobrado).
   const ventas = ventasData as {
@@ -136,6 +138,16 @@ export default async function ReportesPage({
     citas_estetica_finalizadas: number;
     estancias_canceladas: number;
     citas_no_llego: number;
+  } | null;
+
+  // Días de pase: los reales (check-ins que cubrió un pase) aparte de los que
+  // se movieron a mano (ajustes de saldo, sin dinero de por medio).
+  const diasPase = diasPaseData as {
+    dias_reales: number;
+    dias_ajustados_mas: number;
+    dias_ajustados_menos: number;
+    dias_uso_previo: number;
+    ajustes: number;
   } | null;
 
   const estadoActual = estadoActualData as {
@@ -639,6 +651,36 @@ export default async function ReportesPage({
           </div>
         )}
       </div>
+
+      {diasPase && (
+        <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+          <div>
+            <h2 className="text-lg font-bold text-n-900">Días de pase: reales y ajustados a mano</h2>
+            <p className="mt-1 text-sm text-n-600">
+              Los días reales son los que cubrió un pase en una estancia. Los ajustados se corrigieron a mano en el
+              saldo del pase: no son asistencia y no mueven dinero.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div className="rounded-lg border border-n-200 bg-white p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-n-600">Días reales con pase</p>
+              <p className="mt-1 text-xl font-bold text-n-900">{diasPase.dias_reales}</p>
+            </div>
+            <div className="rounded-lg border border-n-200 bg-white p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-n-600">Ajustados: se sumaron</p>
+              <p className="mt-1 text-xl font-bold text-n-900">{diasPase.dias_ajustados_mas}</p>
+            </div>
+            <div className="rounded-lg border border-n-200 bg-white p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-n-600">Ajustados: se devolvieron</p>
+              <p className="mt-1 text-xl font-bold text-n-900">{diasPase.dias_ajustados_menos}</p>
+            </div>
+            <div className="rounded-lg border border-n-200 bg-white p-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-n-600">Uso previo a PeluDesk</p>
+              <p className="mt-1 text-xl font-bold text-n-900">{diasPase.dias_uso_previo}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
         <div>

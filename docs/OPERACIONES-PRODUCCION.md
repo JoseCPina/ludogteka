@@ -263,3 +263,20 @@ Los videos (`scripts/tutoriales/`, mapa en `docs/TUTORIALES.md`) se graban SOLO 
 **Reversa:** DDL aditivo: se deja de usar `registrar_cobro_grupo` y, si hiciera falta, `drop` de las tablas y columnas nuevas antes de que exista un pago agrupado; con uno registrado se corrige hacia adelante (las devoluciones por cuenta y «no recibido» ya deshacen un grupo). El respaldo físico de menos de 26 h lo exige `npm run desplegar`.
 
 **Cómo se opera:** en Caja → Cuentas abiertas las cuentas de la misma persona salen juntas con «Cobrar todo junto» (o se marcan casillas), `/caja/cobrar-junto`; el recibo único está en `/caja/recibo-junto/<id>`. Los tutoriales 33, 34, 38, 09 y 32 quedan «por actualizar» (no se regrabaron en esta tarea). Prueba: `node scripts/auditoria/cobro-grupo-dev.mjs`.
+
+## 11 de octubre de 2026 — Ajustar los días usados de un pase de guardería (migraciones `20261011000000` y `20261011000100`)
+
+**Por qué:** un day pass se vende por N días y cada check-in descuenta uno, pero no había forma de dar de alta un pase que ya llevaba días usados (se empezó a usar antes de registrarlo en PeluDesk) ni de corregir después los días cuando un check-in se marcó de más, de menos o por error.
+
+**Qué cambia en la base (solo esquema y funciones; ningún dato de negocio se escribe ni se modifica):**
+- Tabla nueva `bonos_ajustes` (vacía al migrar; inmutable salvo altas; dos redes + tres políticas de solo lectura; lectura solo admin y recepción).
+- Permiso nuevo `ajustar_pases` (check de `permisos_staff`, `mis_permisos()`, `tiene_permiso()`): apagado por omisión, **no se siembra a nadie**.
+- Funciones nuevas (`peludesk_definer`, sin `public`/`anon`): `ajustar_dias_pase`, `deshacer_checkin_estancia`, `historial_ajustes_pase`, `reporte_dias_pase_periodo`, `pase_fechas_validas`. `comprar_bono` cambia de firma (se agregan tres parámetros con valor por omisión; la de cuatro se borra y todo llamador de siempre sigue funcionando). `transicion_estado_reserva_valida` pasa a `stable` y acepta en_curso→reservada solo con la puerta `app.deshacer_checkin`. `demo_vaciar` incluye la tabla nueva.
+
+**Diseño contable:** un ajuste solo mueve `bonos_clientes.cantidad_disponible` (y, solo por admin, `fecha_vencimiento`); NO escribe en `movimientos_bono`, así que cobros, turnos, cortes, comisiones y el ingreso reconocido no cambian. Deshacer un check-in sí agrega una fila `devolucion` al libro (la misma que ya genera cancelar una estancia con pase), porque esa línea deja de estar cubierta por el pase; no crea ni borra cobros.
+
+**Conteos de producción esperados antes y después:** idénticos salvo `plataforma_eventos` (+ la migración y, en su caso, la marca de tutoriales) y la tabla nueva `bonos_ajustes` en 0. `bonos_clientes` (17 en desarrollo; en producción el que haya) y `movimientos_bono` no cambian al migrar.
+
+**Reversa (antes de que se use):** `drop` de las funciones nuevas y de `bonos_ajustes`; volver a poner `comprar_bono` de `20260923192442`, `transicion_estado_reserva_valida` de `20260729002707`, `tiene_permiso`/`mis_permisos` y el check de `permisos_staff` sin `ajustar_pases`. Un pase con saldo ya ajustado conserva su saldo; cada fila de `bonos_ajustes` trae el «antes» para revertirlo a mano con un ajuste de admin.
+
+**Cómo se opera:** admin da el permiso en `/admin/permisos`; «Ajustar días usados» en el pase (ficha del cliente, Guardería → Pases, Caja → Pases, expediente del perro y check-in), «Este paquete ya lleva días usados» al vender, «Deshacer este check-in» en el check-in de un perro adentro con pase. Nunca SQL manual para esto.

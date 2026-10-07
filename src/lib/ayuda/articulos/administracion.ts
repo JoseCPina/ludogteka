@@ -245,6 +245,7 @@ El gasto se queda tachado con su motivo y ya no cuenta en la utilidad. Nada se b
 - **Ventas de mostrador**: lo vendido en Venta rápida, productos y conceptos libres.
 - **Costos y margen — estética**: compras, costo de lo que se usó en cada servicio y merma.
 - **Operación del periodo**: días de guardería, noches de hotel, citas y cancelaciones.
+- **Días de pase: reales y ajustados a mano**: los días que cubrió un pase en una estancia, aparte de los que se corrigieron a mano en el saldo del pase (esos no son asistencia ni mueven dinero).
 
 > Si ves «Mes en curso: es un mes parcial», los gastos fijos van prorrateados a los días que llevan. Para el número cerrado, usa **Último mes completo**.`,
   },
@@ -300,6 +301,7 @@ Cada casilla dice qué incluye. Por ejemplo:
 - **Personal**: invitar a gente de recepción y estética.
 - **Corregir estilista de servicios cerrados**: cambiar quién atendió un servicio que ya terminó.
 - **Corregir servicio de citas**: cambiar el servicio de una cita de estética que se capturó mal (abierta o ya cobrada); el precio se recalcula y la cuenta se ajusta.
+- **Ajustar días de pases**: corregir los días usados de un pase, deshacer un check-in hecho por error y registrar un pase que ya traía días usados. No mueve dinero. Viene apagado: dáselo solo a quien deba corregir saldos.
 - **Registrar tarjeta manual**: cobrar con **Tarjeta (registro manual)** cuando la terminal no se puede usar. Viene prendido para toda la recepción; quítaselo a quien no deba. Esos cobros los revisas tú en [Conciliación](/caja/conciliacion).
 
 Todo cambio queda en la **Bitácora** de abajo.

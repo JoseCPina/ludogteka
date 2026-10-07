@@ -13,7 +13,7 @@ import { A, NEGOCIO, URL, env, tokenDe } from "./sesiones-dev.mjs";
 
 const PERMISOS = [
   "inventario_costos", "tarifas", "reportes_financieros", "personal", "nomina", "gastos",
-  "configuracion_negocio", "excepciones_reserva", "descuentos_sin_tope", "plantillas_contrato", "corregir_estilista", "corregir_servicio", "tarjeta_manual",
+  "configuracion_negocio", "excepciones_reserva", "descuentos_sin_tope", "plantillas_contrato", "corregir_estilista", "corregir_servicio", "tarjeta_manual", "ajustar_pases",
 ];
 
 const conToken = (t) => createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
@@ -192,6 +192,16 @@ const pruebas = {
       }
     }
     return { dejo: false, ve: false, detalle: "no hay una cita (abierta o terminada) con otro servicio cotizable en desarrollo" };
+  },
+  // «Ajustar días de pases»: mover los días usados de un pase (y deshacerlo). Un ajuste solo
+  // cambia el saldo de días; se regresa con otro ajuste de admin (el historial no se borra).
+  async ajustar_pases() {
+    const { data: bono } = await A.from("bonos_clientes").select("id, cantidad_total, cantidad_disponible").is("deleted_at", null).gt("cantidad_disponible", 0).limit(1).maybeSingle();
+    if (!bono) return { dejo: false, ve: false, detalle: "no hay un pase con días disponibles en desarrollo" };
+    const usados = bono.cantidad_total - bono.cantidad_disponible;
+    const r = await R.rpc("ajustar_dias_pase", { p_bono_id: bono.id, p_usados: usados + 1, p_fechas: [], p_motivo: "otro", p_motivo_texto: "prueba de permisos" });
+    if (!r.error) await ADM.rpc("ajustar_dias_pase", { p_bono_id: bono.id, p_usados: usados, p_fechas: [], p_motivo: "otro", p_motivo_texto: "prueba de permisos: se regresa" });
+    return { dejo: !r.error, ve: !r.error, detalle: r.error?.message };
   },
   // «Registrar tarjeta manual»: cobrar con «Tarjeta (registro manual)» (folio + motivo).
   // Se usa un turno abierto (si no hay, se abre uno de prueba y se cierra al final).

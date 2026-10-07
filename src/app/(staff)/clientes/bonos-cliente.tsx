@@ -22,6 +22,10 @@ import {
 } from "@/lib/cobro/tarjeta-manual";
 import type { OpcionesCobroManual } from "@/lib/cobro/opciones-manual";
 import { describirBono, describirPaquete } from "@/lib/bonos/descripcion";
+import { AjustarDiasPase } from "@/components/pases/ajustar-dias-pase";
+import { HistorialPase } from "@/components/pases/historial-pase";
+import { useZonaNegocio } from "@/components/zona-negocio";
+import { hoyNegocio } from "@/lib/formato";
 
 export type BonoCatalogo = {
   id: string;
@@ -94,6 +98,8 @@ export function BonosCliente({
   perros,
   perroInicial,
   opcionesCobro = { terminalManualBloqueada: false, puedeTarjetaManual: false },
+  puedeAjustar = false,
+  esAdmin = false,
 }: {
   catalogo: BonoCatalogo[];
   bonos: BonoFila[];
@@ -102,8 +108,17 @@ export function BonosCliente({
   perroInicial?: string | null;
   // Qué métodos se pueden capturar a mano (ver cargarOpcionesCobroManual).
   opcionesCobro?: OpcionesCobroManual;
+  // Permiso «Ajustar días de pases»: corregir los días usados y registrar un
+  // pase que ya venía usándose. esAdmin además puede extender la vigencia.
+  puedeAjustar?: boolean;
+  esAdmin?: boolean;
 }) {
   const router = useRouter();
+  const hoy = hoyNegocio(useZonaNegocio());
+  const [usoPrevio, setUsoPrevio] = useState(false);
+  const [diasUsados, setDiasUsados] = useState("");
+  const [fechasUsados, setFechasUsados] = useState<string[]>([]);
+  const [notaUsados, setNotaUsados] = useState("");
   const [vendiendo, setVendiendo] = useState(false);
   const [perroId, setPerroId] = useState(
     perroInicial && perros.some((p) => p.id === perroInicial)
@@ -151,8 +166,28 @@ export function BonosCliente({
         return;
       }
     }
+    const n = usoPrevio ? Number(diasUsados) : 0;
+    const paquete = catalogo.find((c) => c.id === servicioId);
+    if (usoPrevio) {
+      if (!Number.isInteger(n) || n < 1) {
+        setError("Escribe cuántos días ya lleva usados (mínimo 1), o desmarca la casilla.");
+        return;
+      }
+      if (paquete && !paquete.ilimitado && paquete.cantidad_incluida && n > paquete.cantidad_incluida) {
+        setError(`Este paquete es de ${paquete.cantidad_incluida} días: no puede empezar con ${n} usados.`);
+        return;
+      }
+      const fechasLlenas = fechasUsados.slice(0, n).filter(Boolean);
+      if (fechasLlenas.length !== 0 && fechasLlenas.length !== Math.min(n, 10)) {
+        setError("Completa las fechas de los días usados o déjalas todas vacías.");
+        return;
+      }
+    }
     setError(null);
-    const res = await enviando.ejecutar(() => comprarBono(perroId, servicioId, notas, payload));
+    const fechasEnvio = usoPrevio && n <= 10 && fechasUsados.slice(0, n).filter(Boolean).length === n ? fechasUsados.slice(0, n) : [];
+    const res = await enviando.ejecutar(() =>
+      comprarBono(perroId, servicioId, notas, payload, usoPrevio ? { diasUsados: n, fechas: fechasEnvio, nota: notaUsados } : undefined)
+    );
     if (res.error) {
       setError(res.error);
       return;
@@ -161,6 +196,10 @@ export function BonosCliente({
     setVendiendo(false);
     setNotas("");
     setMetodos([nuevaFila()]);
+    setUsoPrevio(false);
+    setDiasUsados("");
+    setFechasUsados([]);
+    setNotaUsados("");
     router.refresh();
   }
 
@@ -193,6 +232,12 @@ export function BonosCliente({
                     Comprado {formatearFechaCalendario(b.fecha_compra)}
                     {b.fecha_vencimiento ? ` · vence ${formatearFechaCalendario(b.fecha_vencimiento)}` : " · sin vencimiento"}
                   </p>
+                  {b.estado !== "cancelado" && (
+                    <div className="mt-2 flex flex-col gap-1">
+                      {puedeAjustar && <AjustarDiasPase pase={{ ...b, perro_nombre: b.perro_nombre }} esAdmin={esAdmin} />}
+                      <HistorialPase bonoId={b.id} />
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -296,6 +341,56 @@ export function BonosCliente({
           >
             + Repartir en otro método
           </Button>
+
+          {puedeAjustar && (
+            <div className="flex flex-col gap-2 rounded-md border border-n-200 bg-white p-3">
+              <label className="flex min-h-11 items-center gap-2 text-sm font-medium text-n-800">
+                <input
+                  type="checkbox"
+                  className="h-5 w-5"
+                  checked={usoPrevio}
+                  onChange={(e) => setUsoPrevio(e.target.checked)}
+                />
+                Este paquete ya lleva días usados
+              </label>
+              {usoPrevio && (
+                <>
+                  <div className="w-44">
+                    <Field
+                      label="Días que ya lleva usados"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      step={1}
+                      value={diasUsados}
+                      onChange={(e) => setDiasUsados(e.target.value)}
+                    />
+                  </div>
+                  {Number(diasUsados) >= 1 && Number(diasUsados) <= 10 && (
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                      {Array.from({ length: Number(diasUsados) }, (_, i) => (
+                        <Field
+                          key={i}
+                          label={`Fecha del día ${i + 1} (opcional)`}
+                          type="date"
+                          max={hoy}
+                          value={fechasUsados[i] ?? ""}
+                          onChange={(e) => {
+                            const valor = e.target.value;
+                            setFechasUsados(Array.from({ length: Number(diasUsados) }, (_, j) => (j === i ? valor : (fechasUsados[j] ?? ""))));
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <Textarea label="Nota (opcional)" value={notaUsados} onChange={(e) => setNotaUsados(e.target.value)} />
+                  <p className="text-sm text-n-600">
+                    Solo baja el saldo de días: no genera ningún cobro extra ni mueve la caja. Queda en el historial del pase.
+                  </p>
+                </>
+              )}
+            </div>
+          )}
 
           <Textarea label="Notas (opcional)" value={notas} onChange={(e) => setNotas(e.target.value)} />
 

@@ -3,6 +3,9 @@ import { PendientesEstancia } from "../pendientes-estancia";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { describirBono } from "@/lib/bonos/descripcion";
+import { AjustarDiasPase } from "@/components/pases/ajustar-dias-pase";
+import { HistorialPase } from "@/components/pases/historial-pase";
+import { tienePermiso } from "@/lib/auth/permisos";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarRazas } from "@/lib/razas";
 import { contextoRazaFormulario } from "@/lib/razas-form";
@@ -565,7 +568,8 @@ export default async function PerroPage({
           ) : (
             <ul className="flex flex-col gap-2">
               {paquetes.map((b) => (
-                <li key={b.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-n-200 bg-white px-4 py-3">
+                <li key={b.id} className="flex flex-col gap-2 rounded-md border border-n-200 bg-white px-4 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                   <span>
                     <span className="font-semibold text-n-900">{b.servicio_nombre}</span>
                     <span className="block text-sm text-n-700">{describirBono(b)}</span>
@@ -577,6 +581,11 @@ export default async function PerroPage({
                   >
                     {b.estado === "activo" ? "Activo" : b.estado === "vencido" ? "Vencido" : "Agotado"}
                   </span>
+                  </div>
+                  {tienePermiso(sesion, "ajustar_pases") && (
+                    <AjustarDiasPase pase={{ ...b, perro_nombre: perro.nombre }} esAdmin={sesion.rol === "admin"} />
+                  )}
+                  <HistorialPase bonoId={b.id} />
                 </li>
               ))}
             </ul>
