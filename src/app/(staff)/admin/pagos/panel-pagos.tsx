@@ -139,6 +139,7 @@ export function PanelPagos({
             )}
           </div>
 
+          <p className="text-sm text-n-600" data-solo-pagos-propios>PeluDesk solo concilia los pagos que cobra desde aquí; los demás pagos de tu cuenta se ignoran.</p>
           {mp.error && <Alert variante="error" titulo="La conexión tiene un problema">{mp.error}</Alert>}
           {mp.conectada && (
             <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-[10rem_1fr]">
@@ -244,6 +245,7 @@ export function PanelPagos({
               <Etiqueta tono="no">Sin conectar</Etiqueta>
             )}
           </div>
+          <p className="text-sm text-n-600" data-solo-pagos-propios>PeluDesk solo concilia los pagos que cobra desde aquí; los demás pagos de tu cuenta se ignoran.</p>
           {clip.conectada && (
             <>
               <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-[10rem_1fr]">

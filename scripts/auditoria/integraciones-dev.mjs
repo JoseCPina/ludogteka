@@ -109,7 +109,7 @@ const servidor = http.createServer(async (req, res) => {
   }
   if (!token.startsWith("APP_USR-mock-")) return json(401, { message: "invalid access token" });
   if (p === "/users/me") return json(200, { id: Number(CUENTA_MP), nickname: "HUELLITAS_PRUEBA", site_id: "MLM" });
-  if (p.startsWith("/terminals/v1/list")) return json(200, { data: { terminals: [{ id: "NEWLAND_N950__N950NCB000777", operating_mode: "PDV" }, { id: "MPOS_AIR__AIR000123", operating_mode: "STANDALONE" }] } });
+  if (p.startsWith("/terminals/v1/list")) return json(200, { data: { terminals: [{ id: "NEWLAND_N950__N950NCB000777", pos_id: 7001, store_id: "8001", operating_mode: "PDV" }, { id: "MPOS_AIR__AIR000123", operating_mode: "STANDALONE" }] } });
   if (p === "/terminals/v1/setup" && req.method === "PATCH") {
     const b = JSON.parse(cuerpo);
     mock.setup.push(b);
@@ -734,7 +734,7 @@ try {
     const hace1h = new Date(Date.now() - 3_600_000).toISOString();
     await A.from("cobros").update({ created_at: hace1h }).eq("negocio_id", H).eq("id", cx.id);
     // Y un pago aprobado en Mercado Pago que la caja no tiene.
-    mock.busqueda = [{ id: "9100000000007", status: "approved", transaction_amount: 777.77, date_approved: hace1h, date_created: hace1h, payment_type_id: "debit_card" }];
+    mock.busqueda = [{ id: "9100000000007", status: "approved", transaction_amount: 777.77, date_approved: hace1h, date_created: hace1h, payment_type_id: "debit_card", pos_id: 7001, store_id: "8001" }];
     const r1 = await conc();
     const abiertas = (await A.from("conciliacion_terminal").select("tipo, clave, monto").eq("negocio_id", H).is("resuelta_at", null)).data ?? [];
     const sinPago = abiertas.find((a) => a.tipo === "cobro_sin_pago" && a.clave === cx.id);
@@ -755,7 +755,7 @@ try {
     if (siguen !== abiertas.length) hallazgo(`correr la conciliación otra vez duplicó diferencias: ${abiertas.length} → ${siguen} ${JSON.stringify(dos)}`);
     else bien("correrla otra vez no duplica");
     // Aparece el pago de $350 → la diferencia del cobro se resuelve sola.
-    mock.busqueda.push({ id: "9100000000008", status: "approved", transaction_amount: montoConc, date_approved: hace1h, date_created: hace1h, payment_type_id: "debit_card" });
+    mock.busqueda.push({ id: "9100000000008", status: "approved", transaction_amount: montoConc, date_approved: hace1h, date_created: hace1h, payment_type_id: "debit_card", pos_id: 7001, store_id: "8001" });
     await conc();
     const resuelta = (await A.from("conciliacion_terminal").select("resuelta_at").eq("negocio_id", H).eq("clave", cx.id).order("created_at", { ascending: false }).limit(1).single()).data;
     if (!resuelta.resuelta_at) hallazgo("la diferencia no se resolvió sola al aparecer el pago");

@@ -52,7 +52,7 @@ Si la ocupación dice «Cupo sin configurar», falta capturar el cupo de ese dí
 - **Cuentas nuevas que esperan vincularse**: van a [Vinculación de cuentas](/vinculacion).
 - **Cuentas con saldo pendiente** de perros que ya se fueron: van a la cuenta o a la lista de saldos.
 - **Reembolsos de Mercado Pago**, por ejemplo uno hecho desde el panel de Mercado Pago: se revisan en Caja, en [Reembolsos](/caja/reembolsos).
-- **Diferencias entre la caja y Mercado Pago** y **cobros con terminal por confirmar**: salen cada hora de la conciliación y se revisan en [Conciliación](/caja/conciliacion).
+- **Diferencias entre la caja y Mercado Pago** y **cobros con terminal por confirmar**: salen cada hora de la conciliación (solo de pagos cobrados desde PeluDesk: los otros pagos de tu cuenta de Mercado Pago se ignoran) y se revisan en [Conciliación](/caja/conciliacion).
 - **Servicios corregidos con ajuste de cuenta pendiente**: un cobro adicional por cobrar o un saldo a favor por devolver después de corregir el servicio de una cita ya cobrada. Van a [Ajustes por corrección de servicio](/caja/ajustes-servicio).
 - **Gastos del local vencidos o por vencer**: solo los ve quien tiene el permiso de Gastos.
 - **No hay turno de caja abierto**: sin turno no se puede cobrar ni vender paquetes.

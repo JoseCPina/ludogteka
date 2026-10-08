@@ -61,12 +61,18 @@ export default async function ConciliacionPage() {
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
   const hoy = String(hoyData);
   const esAdminSesion = sesion?.rol === "admin";
-  const [{ data, error }, { data: porConfirmar }, { data: tarjetasCrudo }] = await Promise.all([
-    supabase.from("conciliacion_terminal").select("id, tipo, monto, ocurrio_at, detectada_at, cobro_id, orden_id, mp_pago_id, detalle").is("resuelta_at", null).order("detectada_at"),
+  const [{ data, error }, { data: porConfirmar }, { data: tarjetasCrudo }, { data: mostrarAjenos }] = await Promise.all([
+    supabase.from("conciliacion_terminal").select("id, tipo, monto, ocurrio_at, detectada_at, cobro_id, orden_id, mp_pago_id, detalle").is("resuelta_at", null).neq("tipo", "pago_ajeno").order("detectada_at"),
     supabase.from("mp_ordenes").select("id, monto, created_at, detalle_error, reserva_id").eq("estado", "por_confirmar").is("deleted_at", null).order("created_at"),
     // Tarjetas manuales: solo el admin las revisa (la función ya devuelve vacío a los demás).
     esAdminSesion ? supabase.rpc("tarjetas_manuales_por_revisar", { p_historial: true }) : Promise.resolve({ data: [] as TarjetaFila[] }),
+    supabase.rpc("conciliacion_mostrar_ajenos"),
   ]);
+  // Otros pagos de la cuenta (no cobrados desde PeluDesk): solo si el admin lo pidió.
+  const { data: ajenosCrudo } = mostrarAjenos === true
+    ? await supabase.from("conciliacion_terminal").select("id, tipo, monto, ocurrio_at, detectada_at, cobro_id, orden_id, mp_pago_id, detalle").eq("tipo", "pago_ajeno").is("resuelta_at", null).order("detectada_at")
+    : { data: [] as Fila[] };
+  const ajenos = (ajenosCrudo ?? []) as Fila[];
   const tarjetas = (tarjetasCrudo ?? []) as TarjetaFila[];
   const tarjetasPorRevisar = tarjetas.filter((t) => t.estado === "por_revisar");
   const tarjetasHechas = tarjetas.filter((t) => t.estado !== "por_revisar");
@@ -83,8 +89,8 @@ export default async function ConciliacionPage() {
         <Link href="/caja" className="text-sm font-semibold text-morado hover:underline">← Caja</Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Conciliación</h1>
         <p className="mt-1 text-n-600">
-          Cada hora la app compara los cobros con terminal contra los pagos de Mercado Pago. Aquí salen las diferencias y las tarjetas registradas a mano
-          que faltan por revisar: no se corrige nada solo.
+          Cada hora la app compara los cobros con terminal contra los pagos de Mercado Pago que se cobraron desde PeluDesk. Aquí salen las diferencias y las
+          tarjetas registradas a mano que faltan por revisar: no se corrige nada solo. Los demás pagos de tu cuenta de Mercado Pago se ignoran.
         </p>
       </div>
       {error && <Alert variante="error" titulo="No pudimos cargar la conciliación">Recarga la página.</Alert>}
@@ -204,6 +210,29 @@ export default async function ConciliacionPage() {
           </ul>
         )}
       </section>
+
+      {mostrarAjenos === true && (
+        <section className="flex flex-col gap-2" data-pagos-ajenos>
+          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Otros pagos de tu cuenta (informativo)</h2>
+          <p className="text-sm text-n-600">
+            Pagos aprobados en tu cuenta de Mercado Pago que no se cobraron desde PeluDesk (otra tienda, una transferencia, otra terminal…). No son alertas ni
+            cuentan en «Necesita atención». Apaga esta lista en Administración → Cobro con terminal.
+          </p>
+          {ajenos.length === 0 ? (
+            <p className="text-sm text-n-600">No hay otros pagos por ver.</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {ajenos.map((f) => (
+                <li key={f.id} data-pago-ajeno className="flex flex-col gap-1 rounded-lg border border-n-200 bg-n-50 p-3">
+                  <p className="font-semibold text-n-900">${Number(f.monto).toFixed(2)}{f.mp_pago_id ? ` · pago ${f.mp_pago_id}` : ""}</p>
+                  <p className="text-sm text-n-700">{formatearFecha(f.ocurrio_at, zona)} {horaLocalDeInstante(f.ocurrio_at, zona)}</p>
+                  {esAdmin && <DarPorRevisada id={f.id} />}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
     </div>
   );
 }
