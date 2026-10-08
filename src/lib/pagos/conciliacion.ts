@@ -1,6 +1,8 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { buscarPagos, ESTADOS_CON_DINERO, type PagoDeBusqueda } from "@/lib/mercadopago/busqueda";
 import { consultarPago } from "@/lib/mercadopago/links";
+import { listarTerminales } from "@/lib/mercadopago/point";
+import { origenDelPago, type ContextoOrigen } from "./origen-pago";
 import { conexionDeCobro, type NegocioParaCobro } from "./conexion";
 import { pagosYaLigados } from "./no-recibido";
 
@@ -11,7 +13,15 @@ import { pagosYaLigados } from "./no-recibido";
  *   cobro_sin_pago  la app dice cobrado con terminal y Mercado Pago no tiene
  *                   un pago que el dinero haya entrado (o no se encuentra uno
  *                   del mismo monto cerca de la hora, en un cobro a mano).
- *   pago_sin_cobro  Mercado Pago tiene un pago aprobado que la caja no tiene.
+ *   pago_sin_cobro  Mercado Pago tiene un pago aprobado, ORIGINADO POR
+ *                   PELUDESK, que la caja no tiene.
+ *   pago_ajeno      (solo si el admin lo pidió) pago de la cuenta que PeluDesk no
+ *                   originó: informativo, nunca alerta ni cuenta.
+ *
+ * Solo cuentan los pagos de origen PeluDesk (origen-pago.ts): una cuenta de
+ * Mercado Pago recibe pagos de otras tiendas, transferencias y cobros
+ * personales, y esos se ignoran. Un pago que no se puede clasificar con
+ * certeza es ajeno.
  *
  * NO corrige nada: solo marca (conciliacion_sincronizar) para «Necesita
  * atención» del negocio y la administración de la plataforma, con antigüedad.
@@ -22,7 +32,7 @@ const MARGEN_RECIENTE_MIN = 20;
 const VENTANA_MANUAL_HORAS = 6;
 
 export type Hallazgo = {
-  tipo: "cobro_sin_pago" | "pago_sin_cobro";
+  tipo: "cobro_sin_pago" | "pago_sin_cobro" | "pago_ajeno";
   clave: string;
   cobro_id?: string;
   orden_id?: string;
@@ -77,11 +87,17 @@ export function hallazgosDeConciliacion(args: {
   cobros: (CobroFila & { orden?: { id: string; mp_payment_ref: string | null; mp_payment_id: string | null } | null })[];
   pagos: PagoDeBusqueda[];
   ligados: Set<string>;
+  // De quién es cada pago. Sin esto (o con el pago sin clasificar) es ajeno.
+  origen: ContextoOrigen;
+  // Si el admin pidió ver también los pagos ajenos (como informativos).
+  mostrarAjenos?: boolean;
   ahora: Date;
   // Pagos que se pidieron por id porque no salieron en la búsqueda.
   pagosPorId?: Map<string, PagoDeBusqueda | null>;
 }): Hallazgo[] {
-  const { cobros, pagos, ligados, ahora } = args;
+  const { cobros, ligados, ahora } = args;
+  const pagos = args.pagos;
+  const esPropio = (p: PagoDeBusqueda) => origenDelPago(p, args.origen) !== "ajeno";
   const hallazgos: Hallazgo[] = [];
   const reclamados = new Set<string>();
   const porId = new Map(pagos.map((p) => [String(p.id), p]));
@@ -108,12 +124,14 @@ export function hallazgosDeConciliacion(args: {
       continue;
     }
     if (terminal <= 0) continue;
-    // Cobro a mano con terminal: debe haber un pago de Mercado Pago del mismo
-    // monto cerca de la hora que ningún otro cobro haya reclamado.
+    // Cobro a mano con terminal: debe haber un pago de la terminal vinculada o
+    // de una orden de PeluDesk, del mismo monto y cerca de la hora, que ningún
+    // otro cobro haya reclamado. Un pago ajeno del mismo monto NO lo respalda.
     const cuando = new Date(c.created_at).getTime();
     const candidato = pagos.find(
       (p) =>
         ESTADOS_CON_DINERO.includes(p.status) &&
+        esPropio(p) &&
         !ligados.has(String(p.id)) &&
         !reclamados.has(String(p.id)) &&
         Math.abs(Number(p.transaction_amount) - terminal) <= 0.005 &&
@@ -129,16 +147,30 @@ export function hallazgosDeConciliacion(args: {
     }
   }
 
-  // Pagos aprobados que la caja no tiene.
+  // Pagos aprobados de PeluDesk que la caja no tiene. Los ajenos se ignoran
+  // (o, si el admin lo pidió, salen aparte como informativos).
   for (const p of pagos) {
     const id = String(p.id);
     if (!["approved", "partially_refunded"].includes(p.status)) continue;
     if (ligados.has(id) || reclamados.has(id)) continue;
     const cuando = new Date(p.date_approved ?? p.date_created ?? 0);
     if (cuando.getTime() > margen) continue;
+    const origen = origenDelPago(p, args.origen);
+    if (origen === "ajeno") {
+      if (args.mostrarAjenos) {
+        hallazgos.push({
+          tipo: "pago_ajeno", clave: id, mp_pago_id: id, monto: redondea(Number(p.transaction_amount)), ocurrio_at: cuando.toISOString(),
+          detalle: { motivo: "Pago de tu cuenta de Mercado Pago que no se cobró desde PeluDesk. Solo informativo.", tipo_pago: p.payment_type_id ?? null, referencia: p.external_reference ?? null },
+        });
+      }
+      continue;
+    }
     hallazgos.push({
       tipo: "pago_sin_cobro", clave: id, mp_pago_id: id, monto: redondea(Number(p.transaction_amount)), ocurrio_at: cuando.toISOString(),
-      detalle: { motivo: "Mercado Pago tiene este pago aprobado y la caja no lo tiene registrado.", tipo_pago: p.payment_type_id ?? null, referencia: p.external_reference ?? null },
+      detalle: {
+        motivo: "Mercado Pago tiene este pago aprobado, cobrado desde PeluDesk, y la caja no lo tiene registrado.",
+        origen, tipo_pago: p.payment_type_id ?? null, referencia: p.external_reference ?? null,
+      },
     });
   }
   return hallazgos;
@@ -150,7 +182,7 @@ export async function conciliarNegocio(negocio: NegocioParaCobro, ahora = new Da
   const admin = createSupabaseAdminClient(negocio.id);
   const desde = new Date(ahora.getTime() - DIAS_CONCILIACION * 86_400_000);
 
-  const [{ data: cobrosCrudo }, { data: ordenes }, ligados] = await Promise.all([
+  const [{ data: cobrosCrudo }, { data: ordenes }, ligados, { data: todasOrdenes }, { data: ajuste }, terminales] = await Promise.all([
     admin
       .from("cobros")
       .select("id, created_at, origen, grupo_id, grupo_orden, cobro_metodos(metodo, monto), devoluciones(origen, deleted_at)")
@@ -159,7 +191,21 @@ export async function conciliarNegocio(negocio: NegocioParaCobro, ahora = new Da
       .gte("created_at", desde.toISOString()),
     admin.from("mp_ordenes").select("id, cobro_id, mp_payment_id, mp_payment_ref").eq("negocio_id", negocio.id).is("deleted_at", null).not("cobro_id", "is", null),
     pagosYaLigados(admin, negocio.id),
+    admin.from("mp_ordenes").select("id, mp_order_id").eq("negocio_id", negocio.id),
+    admin.from("conciliacion_ajustes").select("mostrar_pagos_ajenos").eq("negocio_id", negocio.id).is("deleted_at", null).maybeSingle(),
+    // La terminal vinculada: de ahí sale su pos_id/store_id. Si Mercado Pago no
+    // la lista, no hay criterio de terminal y solo valen las órdenes de PeluDesk.
+    listarTerminales(cx).catch(() => []),
   ]);
+  const terminal = terminales.find((t) => cx.terminalId && t.id === cx.terminalId);
+  const origen: ContextoOrigen = {
+    negocioId: negocio.id,
+    ligados,
+    ordenIds: new Set((todasOrdenes ?? []).map((o) => String(o.id))),
+    ordenesMp: new Set((todasOrdenes ?? []).map((o) => (o.mp_order_id ? String(o.mp_order_id) : "")).filter(Boolean)),
+    terminal: terminal ? { pos_id: terminal.pos_id != null ? String(terminal.pos_id) : null, store_id: terminal.store_id ?? null } : null,
+  };
+  const mostrarAjenos = Boolean(ajuste?.mostrar_pagos_ajenos);
   const porCobro = new Map((ordenes ?? []).map((o) => [o.cobro_id as string, { id: o.id as string, mp_payment_id: o.mp_payment_id as string | null, mp_payment_ref: o.mp_payment_ref as string | null }]));
   const cobros = fusionarGrupos((cobrosCrudo ?? []) as unknown as CobroFila[])
     .filter((c) => c.cobro_metodos.some((m) => m.metodo === "terminal") || porCobro.has(c.id))
@@ -181,7 +227,7 @@ export async function conciliarNegocio(negocio: NegocioParaCobro, ahora = new Da
     }
   }
 
-  const hallazgos = hallazgosDeConciliacion({ cobros, pagos, ligados, ahora, pagosPorId });
+  const hallazgos = hallazgosDeConciliacion({ cobros, pagos, ligados, ahora, pagosPorId, origen, mostrarAjenos });
   const { data, error } = await admin.rpc("conciliacion_sincronizar", {
     p_hallazgos: hallazgos,
     p_desde: desde.toISOString(),

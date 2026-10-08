@@ -371,6 +371,8 @@ Si contratas durante la prueba, no pierdes días: el primer cobro es al terminar
 4. Si tu Point Smart dice «No está en modo integrado (PDV)», aprieta **Poner en modo integrado**.
 5. Aprieta **Usar esta**.
 
+> **PeluDesk solo concilia los pagos que cobra desde aquí**; los demás pagos de tu cuenta de Mercado Pago (otra tienda, transferencias, otra terminal, cobros personales) se ignoran. Si quieres verlos solo como información, enciende **Mostrar también otros pagos de mi cuenta de Mercado Pago** en esta misma pantalla: salen en Caja → Conciliación, en **Otros pagos de tu cuenta (informativo)**, sin alertas.
+
 Solo Point Smart recibe cobros desde la app. Con otras terminales, o si la terminal no se puede usar, registra el cobro con **Tarjeta (registro manual)** y el folio del voucher ([Cuándo usar Tarjeta (registro manual)](/ayuda/tarjeta-registro-manual)): con Mercado Pago o Clip elegidos, **Terminal** no se captura a mano.
 
 ## Clip

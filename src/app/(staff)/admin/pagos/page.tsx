@@ -12,6 +12,7 @@ import { urlPlataforma } from "@/lib/pagos/urls";
 import { Alert } from "@/components/ui/alert";
 import { PanelPagos, type EstadoConexion } from "./panel-pagos";
 import { TopeTarjetaManual } from "./tope-tarjeta-manual";
+import { OtrosPagos } from "./otros-pagos";
 
 // Con qué cobra el negocio en su terminal y por link: Mercado Pago (su
 // cuenta, por OAuth), Clip (sus credenciales) o solo manual. Solo admin.
@@ -22,7 +23,7 @@ export default async function PagosPage({ searchParams }: { searchParams: Promis
   const negocio = await negocioActual();
   const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
-  const [{ data: filas }, { data: neg }, resumen, { data: topeTarjeta }] = await Promise.all([
+  const [{ data: filas }, { data: neg }, resumen, { data: topeTarjeta }, { data: mostrarAjenos }] = await Promise.all([
     supabase
       .from("integraciones_cobro")
       .select("proveedor, elegida, estado, modo, cuenta_nombre, live_mode, terminal_id, terminal_nombre, token_expira_at, conectada_at, ultimo_error")
@@ -30,6 +31,7 @@ export default async function PagosPage({ searchParams }: { searchParams: Promis
     supabase.from("negocios").select("plan").maybeSingle(),
     resumenDeCobro(negocio),
     supabase.rpc("tarjeta_manual_tope"),
+    supabase.rpc("conciliacion_mostrar_ajenos"),
   ]);
   const fila = (p: string) => (filas ?? []).find((f) => f.proveedor === p);
 
@@ -111,6 +113,8 @@ export default async function PagosPage({ searchParams }: { searchParams: Promis
         oauthSimulado={oauthSimulado()}
         legado={legado}
       />
+
+      <OtrosPagos activo={mostrarAjenos === true} />
 
       <TopeTarjetaManual tope={Number(topeTarjeta ?? 2000)} />
     </div>

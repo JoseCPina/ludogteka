@@ -17,6 +17,14 @@ export type PagoDeBusqueda = {
   collector_id?: number | string;
   payment_type_id?: string;
   transaction_amount_refunded?: number;
+  // Con qué se cobró, para saber de quién es el pago (origen-pago.ts):
+  // la terminal (pos_id / store_id), la orden de Orders (order.id) y la
+  // metadata de la preferencia de un link.
+  pos_id?: number | string | null;
+  store_id?: number | string | null;
+  order?: { id?: number | string; type?: string } | null;
+  metadata?: Record<string, unknown> | null;
+  point_of_interaction?: { type?: string } | null;
 };
 
 // Un pago que el dinero sí entró (aunque después se reembolsara).

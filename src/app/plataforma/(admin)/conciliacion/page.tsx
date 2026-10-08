@@ -15,7 +15,7 @@ export default async function ConciliacionPlataforma() {
   await exigirPlataforma();
   const admin = createSupabaseAdminClient();
   const [{ data: filas, error }, { data: negocios }, { data: porConfirmar }, { data: patron }] = await Promise.all([
-    admin.from("conciliacion_terminal").select("negocio_id, tipo, monto, ocurrio_at, detectada_at, detalle").is("resuelta_at", null).order("detectada_at"),
+    admin.from("conciliacion_terminal").select("negocio_id, tipo, monto, ocurrio_at, detectada_at, detalle").is("resuelta_at", null).neq("tipo", "pago_ajeno").order("detectada_at"),
     admin.from("negocios").select("id, nombre, slug"),
     admin.from("mp_ordenes").select("negocio_id, created_at").eq("estado", "por_confirmar").is("deleted_at", null),
     admin.rpc("plataforma_tarjetas_manuales_patron"),
@@ -35,7 +35,7 @@ export default async function ConciliacionPlataforma() {
       <div>
         <h1 className="text-2xl font-bold text-n-900">Conciliación de terminales</h1>
         <p className="mt-1 text-n-600">
-          Cada hora se compara, negocio por negocio, lo cobrado con terminal contra los pagos aprobados de su Mercado Pago. Solo marca; no corrige. Un cobro de
+          Cada hora se compara, negocio por negocio, lo cobrado con terminal contra los pagos aprobados de su Mercado Pago que PeluDesk originó (los demás pagos de la cuenta se ignoran). Solo marca; no corrige. Un cobro de
           terminal solo se da por pagado cuando Mercado Pago confirma el pago.
         </p>
       </div>

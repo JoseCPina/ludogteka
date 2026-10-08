@@ -469,7 +469,8 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // alguien tiene que revisar. Con su antigüedad.
   if (sesion && ["admin", "recepcion"].includes(sesion.rol)) {
     const [{ data: conciliacion }, { data: porConfirmar }] = await Promise.all([
-      supabase.from("conciliacion_terminal").select("tipo, monto, detectada_at").is("resuelta_at", null),
+      // Los pagos ajenos (informativos) nunca cuentan en «Necesita atención».
+      supabase.from("conciliacion_terminal").select("tipo, monto, detectada_at").is("resuelta_at", null).neq("tipo", "pago_ajeno"),
       supabase.from("mp_ordenes").select("monto, created_at").eq("estado", "por_confirmar").is("deleted_at", null),
     ]);
     const filas = (conciliacion ?? []) as { tipo: string; monto: number; detectada_at: string }[];

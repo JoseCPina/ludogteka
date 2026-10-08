@@ -126,7 +126,7 @@ Un cobro con terminal solo cuenta como cobrado cuando Mercado Pago confirma un *
 
 Una orden **cancelada**, **vencida**, **fallida** o en cola nunca marca nada como pagado.
 
-> Una vez a la hora, la app compara los cobros con terminal contra los pagos de Mercado Pago y avisa en **Necesita atención** lo que no cuadra: mira [Conciliación con Mercado Pago](/ayuda/corregir-un-cobro-con-terminal-mal-marcado).
+> Una vez a la hora, la app compara los cobros con terminal contra los pagos de Mercado Pago **que se cobraron desde PeluDesk** y avisa en **Necesita atención** lo que no cuadra: mira [Conciliación con Mercado Pago](/ayuda/corregir-un-cobro-con-terminal-mal-marcado). Los demás pagos de tu cuenta de Mercado Pago se ignoran.
 
 ## Si desconectas y vuelves a conectar Mercado Pago
 
@@ -172,13 +172,21 @@ Si un pago se confirma sin turno abierto, la orden dice «Pagado, sin turno» y 
     modulo: null,
     roles: ["admin", "recepcion"],
     rutas: ["/caja/conciliacion"],
-    palabras: ["no recibido", "cobro falso", "cobrado sin pago", "conciliación", "terminal", "corregir cobro", "diferencia", "mercado pago no tiene el pago"],
+    palabras: ["no recibido", "cobro falso", "cobrado sin pago", "conciliación", "terminal", "corregir cobro", "diferencia", "mercado pago no tiene el pago", "pago ajeno", "otros pagos de mi cuenta", "cuenta compartida", "pago que no es mío", "pago aprobado sin cobro"],
     cuerpo: `Cada hora la app compara los cobros con terminal contra los pagos de Mercado Pago y **marca** (no corrige) lo que no cuadra. Lo ves en **Necesita atención** del [tablero](/recepcion) y en [Conciliación](/caja/conciliacion), del más viejo al más nuevo.
 
 Hay dos tipos de diferencia:
 
 - **Cobrado en la app, sin pago aprobado en Mercado Pago**: la caja dice que se cobró con terminal y Mercado Pago no tiene el pago.
-- **Pago aprobado en Mercado Pago, sin cobro en la caja**: Mercado Pago recibió dinero que la caja no tiene. Revisa en tu panel de Mercado Pago de quién es.
+- **Pago aprobado en Mercado Pago, sin cobro en la caja**: Mercado Pago recibió dinero, cobrado desde PeluDesk (una orden o link de PeluDesk, o tu terminal vinculada), que la caja no tiene. Revisa en tu panel de Mercado Pago de quién es.
+
+## Qué pagos cuenta la conciliación (cuenta compartida de Mercado Pago)
+
+Tu cuenta de Mercado Pago puede recibir pagos que **no se cobraron desde PeluDesk**: otra tienda, una transferencia, un cobro personal, otra terminal. **PeluDesk solo concilia los pagos que cobra desde aquí**; los demás se **ignoran por completo**: no generan alertas, no salen en **Necesita atención** y no cuentan en ningún contador. Un pago que no se puede reconocer con certeza como de PeluDesk también se ignora.
+
+Un cobro a mano con método **Terminal** solo se respalda con un pago de la terminal vinculada o de una orden de PeluDesk: un pago ajeno del mismo monto **no** lo respalda (así no tapa un cobro que nadie recibió).
+
+Si quieres verlos, el admin enciende **Mostrar también otros pagos de mi cuenta de Mercado Pago** en [Cobro con terminal](/admin/pagos) (viene apagado). Salen aparte en **Otros pagos de tu cuenta (informativo)**, sin alertas, y el admin puede apretar **Dar por revisada**.
 
 ## Marcar como no recibido (solo admin)
 
