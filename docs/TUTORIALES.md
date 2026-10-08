@@ -334,7 +334,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 
 ## Cambios que afectan a la grabación
 
-- **12 de octubre de 2026 — la conciliación solo considera pagos de origen PeluDesk.** Cambian Administración → Cobro con terminal (línea de «solo concilia lo que cobra desde aquí» y el interruptor «Mostrar también otros pagos de mi cuenta de Mercado Pago») y Caja → Conciliación (sección «Otros pagos de tu cuenta (informativo)», solo si el admin la enciende). Videos que enseñan esas pantallas o los artículos tocados (`cobrar-con-terminal`, `corregir-un-cobro-con-terminal-mal-marcado`, `que-hacer-con-necesita-atencion`, conexión de Mercado Pago): **05, 34, 38, 50 y 59**. No se regrabaron: `npm run desplegar` los deja «por actualizar» en `/plataforma/tutoriales` y se regraban en el siguiente lote.
+- **12 de octubre de 2026 — la conciliación solo considera pagos de origen PeluDesk.** Cambian Administración → Cobro con terminal (línea de «solo concilia lo que cobra desde aquí» y el interruptor «Mostrar también otros pagos de mi cuenta de Mercado Pago») y Caja → Conciliación (sección «Otros pagos de tu cuenta (informativo)», solo si el admin la enciende). Videos que enseñan esas pantallas o los artículos tocados (`cobrar-con-terminal`, `corregir-un-cobro-con-terminal-mal-marcado`, `que-hacer-con-necesita-atencion`, conexión de Mercado Pago): **01, 04, 05, 07, 08, 33, 34, 38, 50 y 59**. No se regrabaron: `npm run desplegar` los deja «por actualizar» en `/plataforma/tutoriales` y se regraban en el siguiente lote.
 
 ## Excluidos
 
