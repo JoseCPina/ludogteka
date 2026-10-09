@@ -3,7 +3,7 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { navStaffPara } from "@/lib/nav/config";
 import { StaffShell } from "@/components/chrome/staff-shell";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
-import { MarcaDelNegocio } from "@/components/marca/marca-negocio";
+import { LogoNegocio } from "@/components/marca/logo-negocio";
 import { AvisoPlan } from "@/components/aviso-plan";
 import { ProveedorModulos } from "@/components/modulos-contexto";
 import { articulosDelNegocio } from "@/lib/ayuda";
@@ -24,7 +24,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
 
   return (
     <StaffShell
-      marca={<MarcaDelNegocio nombre={negocio.nombre} marca={negocio.marca} />}
+      marca={<LogoNegocio nombre={negocio.nombre} marca={negocio.marca} variante="barra" />}
       aviso={
         <>
           <AvisoPlan esPersonal />

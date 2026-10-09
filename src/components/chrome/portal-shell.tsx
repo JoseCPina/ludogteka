@@ -14,7 +14,7 @@ export function PortalShell({
   nombreCompleto,
   children,
 }: {
-  // La marca del negocio (MarcaDelNegocio): el dueño de un perro ve a su
+  // La marca del negocio (LogoNegocio): el dueño de un perro ve a su
   // guardería, no a PeluDesk.
   marca: ReactNode;
   aviso?: ReactNode;

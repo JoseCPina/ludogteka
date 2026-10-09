@@ -460,7 +460,7 @@ Cada regla solo se muestra con el módulo que la usa prendido: sin hotel no se h
 
 1. Entra a [Perfil y página web](/admin/perfil).
 2. En **Datos** escribe una **Descripción** corta (qué ofreces y qué te hace distinto) y tu **Dirección**. Aprieta **Guardar datos**.
-3. En **Logo**, escoge el archivo y aprieta **Subir logo**.
+3. En **Logo**, escoge el archivo (PNG, JPG, WebP o SVG, de hasta 2 MB). Antes de guardar ves cómo se va a ver en tu registro de clientes, en un recibo y en tu portal, y te avisamos si es muy ancho o muy alto, si trae fondo blanco o si tiene márgenes grandes. Si te gusta, aprieta **Guardar logo** (o **Guardar el logo nuevo**). Lo mejor es un PNG o SVG con fondo transparente, recortado cerca del dibujo.
 4. En **Fotos del negocio**, sube al menos 3 con **Agregar foto**: tu local, tu equipo, perros felices.
 
 ## Gánala gratis de por vida
@@ -477,7 +477,9 @@ Arriba de la pantalla ves cuántos llevas y cuántos días te quedan. Si no, la 
 
 ## Si algo no sale
 
-- «La foto tiene que ser JPG, PNG o WebP.»
+- «El logo tiene que ser PNG, JPG, WebP o SVG», «El logo pesa … el máximo es 2 MB» o «es muy chico»: sube otro archivo que cumpla; el botón **Guardar logo** no se activa mientras haya un error.
+- Tu logo se ve dentro de un cuadro blanco en la franja de tu registro: tiene fondo sólido. Súbelo como PNG o SVG con fondo transparente.
+- «La foto tiene que ser JPG, PNG o WebP.» (en las fotos del negocio)
 - «La foto pesa demasiado (máximo 6 MB).»: usa una foto más ligera.`,
   },
 

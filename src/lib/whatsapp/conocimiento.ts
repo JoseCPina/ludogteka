@@ -49,7 +49,7 @@ Cada negocio tiene su propia dirección: <su-nombre>.peludesk.mx.
 - 15 días gratis, sin tarjeta. Se registra en https://peludesk.mx/registro con su teléfono, una contraseña, el nombre del negocio, su ciudad y los servicios que ofrece (guardería, hotel, estética).
 - Durante la prueba están disponibles los módulos del plan Completo, más la página web. Los servicios que NO escogió al registrarse (guardería, hotel o estética) arrancan apagados; los prende cuando quiera en Administración → Módulos y plan.
 - Al entrar hay cinco primeros pasos para dejarlo listo.
-- Página web gratis de por vida si en los primeros 7 días de la prueba completa su perfil: primeros pasos, logo, 3 fotos, al menos un precio, horario y dirección. Si no, la página web es un complemento con costo.
+- Página web gratis de por vida si en los primeros 7 días de la prueba completa su perfil: primeros pasos, logo (PNG, JPG, WebP o SVG de hasta 2 MB; antes de guardar ve cómo se verá en su registro, recibos y portal, y la app avisa si es muy ancho o trae fondo blanco), 3 fotos, al menos un precio, horario y dirección. Si no, la página web es un complemento con costo.
 - Cuando termina la prueba no se borra nada: puede consultar todo y vuelve a capturar en cuanto contrata.
 - En la prueba, mientras no conecte su cuenta de Mercado Pago o Clip, la terminal y los links funcionan en simulación (no mueven dinero). Si ya conectó su cuenta real, los cobros son de verdad.
 
