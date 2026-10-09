@@ -12,7 +12,9 @@ import { Alert } from "@/components/ui/alert";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { BuscadorClientes } from "@/components/buscador-clientes";
 import type { ClienteBuscable } from "@/lib/clientes/buscables";
-import { hoyNegocio, instanteDeHoraLocal } from "@/lib/formato";
+import { hoyNegocio, horaLocalParaInput, instanteDeHoraLocal } from "@/lib/formato";
+import { SelectorRaza, type RazaOpcion } from "@/components/selector-raza";
+import { crearPerritoEstetica } from "../perritos-actions";
 import { completarTallaPelajeDelPerro, cotizarCitaEstetica, crearCita, type CotizacionCita } from "../agenda-actions";
 import { conTope, mensajeDeFallo } from "@/lib/ui/espera";
 import { asignarGrupoDePropuesta, asignarGrupoDeRaza } from "../../perros/razas/grupos-actions";
@@ -57,6 +59,7 @@ export function AgendarForm({
   pelajes,
   puedeAsignarGrupo,
   puedeExcepcion,
+  razas = [],
 }: {
   clientes: ClienteBuscable[];
   perros: Perro[];
@@ -86,12 +89,26 @@ export function AgendarForm({
   pelajes: Opcion[];
   puedeAsignarGrupo: boolean;
   puedeExcepcion: boolean;
+  // Catálogo de razas, para dar de alta otro perrito del cliente sin salir de aquí.
+  razas?: RazaOpcion[];
   rolActual: string;
   userIdActual: string;
 }) {
   const zona = useZonaNegocio();
   const router = useRouter();
   const [clienteId, setClienteId] = useState<string | null>(null);
+  // Varios perritos del mismo dueño en una visita: cada uno con su cita y su cuenta.
+  const [agendadas, setAgendadas] = useState<{ citaId: string; reservaId: string; perroNombre: string; servicio: string; precio: number; tarifa: boolean }[]>([]);
+  const [perrosExtra, setPerrosExtra] = useState<Perro[]>([]);
+  const [nuevoPerro, setNuevoPerro] = useState(false);
+  const [npNombre, setNpNombre] = useState("");
+  const [npRaza, setNpRaza] = useState<{ raza_id: string | null; raza: string }>({ raza_id: null, raza: "" });
+  const [npTamano, setNpTamano] = useState("");
+  const [npPelaje, setNpPelaje] = useState("");
+  const creandoPerro = useEspera();
+  // Tarifa «cliente de guardería»: la propone la base; quien tiene el permiso de excepciones la quita o la pone a mano.
+  const [tarifaModo, setTarifaModo] = useState<"auto" | "si" | "no">("auto");
+  const [motivoTarifa, setMotivoTarifa] = useState("");
   const [perroId, setPerroId] = useState("");
   const [servicioId, setServicioId] = useState(servicios[0]?.id ?? "");
   const [empleadoId, setEmpleadoId] = useState(rolActual === "estetica" ? userIdActual : empleados[0]?.id ?? "");
@@ -115,10 +132,10 @@ export function AgendarForm({
   const [error, setError] = useState<string | null>(null);
 
   const clienteElegido = clientes.find((c) => c.id === clienteId) ?? null;
-  const perrosDelCliente = useMemo(() => perros.filter((p) => p.cliente_id === clienteId), [perros, clienteId]);
+  const perrosDelCliente = useMemo(() => [...perros, ...perrosExtra].filter((p) => p.cliente_id === clienteId), [perros, perrosExtra, clienteId]);
   const estanciasDelPerro = estanciasEnCurso.filter((e) => e.perroId === perroId);
   const sinGrupo = perrosSinGrupo.find((p) => p.perroId === perroId) ?? null;
-  const perroBase = perros.find((p) => p.id === perroId) ?? null;
+  const perroBase = [...perros, ...perrosExtra].find((p) => p.id === perroId) ?? null;
   const perroElegido = perroBase
     ? { ...perroBase, pelajeClave: pelajeLocal[perroBase.id]?.clave ?? perroBase.pelajeClave, pelajeEtiqueta: pelajeLocal[perroBase.id]?.etiqueta ?? perroBase.pelajeEtiqueta }
     : null;
@@ -133,12 +150,12 @@ export function AgendarForm({
   // El precio que va a cobrar esta cita, o lo único que falta para saberlo. Se
   // guarda con la clave de lo que se preguntó: una respuesta vieja nunca se ve
   // como la de otro perro o servicio.
-  const claveCot = `${perroId}|${servicioActual?.id ?? ""}|${peloMaltratado}|${grupoDeExcepcion ?? ""}|${version}`;
+  const claveCot = `${perroId}|${servicioActual?.id ?? ""}|${peloMaltratado}|${grupoDeExcepcion ?? ""}|${tarifaModo}|${version}`;
   const cot: CotizacionCita | null = cotizacion?.clave === claveCot ? cotizacion.valor : null;
   useEffect(() => {
     if (!perroId || !servicioActual?.id) return;
     let vigente = true;
-    conTope(cotizarCitaEstetica(perroId, servicioActual.id, peloMaltratado, grupoDeExcepcion))
+    conTope(cotizarCitaEstetica(perroId, servicioActual.id, peloMaltratado, grupoDeExcepcion, tarifaModo))
       .then((r) => {
         if (vigente) setCotizacion({ clave: claveCot, valor: r });
       })
@@ -148,7 +165,7 @@ export function AgendarForm({
     return () => {
       vigente = false;
     };
-  }, [claveCot, perroId, servicioActual?.id, peloMaltratado, grupoDeExcepcion]);
+  }, [claveCot, perroId, servicioActual?.id, peloMaltratado, grupoDeExcepcion, tarifaModo]);
 
   async function asignarGrupo() {
     if (!sinGrupo || !grupoElegido) return;
@@ -208,8 +225,14 @@ export function AgendarForm({
       setError("El recargo necesita un motivo.");
       return;
     }
+    if (tarifaModo === "no" && motivoTarifa.trim().length < 3) {
+      setError("Para quitar la tarifa de guardería escribe el motivo.");
+      return;
+    }
     setError(null);
     const res = await enviando.ejecutar(() => crearCita({
+      tarifaModo,
+      motivoTarifa: tarifaModo === "no" ? motivoTarifa.trim() : null,
       grupoExcepcionId: grupoDeExcepcion,
       motivoExcepcion: grupoDeExcepcion ? motivoExcepcion.trim() : null,
       perroId,
@@ -227,7 +250,47 @@ export function AgendarForm({
       setError(res.error);
       return;
     }
-    router.push(`/estetica/${res.citaId}`);
+    // En vez de salirse: se anota la cita y se ofrece agregar a otro perrito del mismo dueño.
+    setAgendadas((prev) => [
+      ...prev,
+      { citaId: res.citaId as string, reservaId: res.reservaId as string, perroNombre: perroElegido?.nombre ?? "—", servicio: servicioActual?.nombre ?? "", precio: res.precio ?? 0, tarifa: Boolean(res.tarifaGuarderia) },
+    ]);
+    if (res.fin) setFechaHora(horaLocalParaInput(res.fin, zona));
+    setPerroId("");
+    setTarifaModo("auto");
+    setMotivoTarifa("");
+    setPeloMaltratado(false);
+    setRecargo("");
+    setMotivoRecargo("");
+    setExcepcion(false);
+    setGrupoElegido("");
+    setMotivoExcepcion("");
+    setNuevoPerro(false);
+    router.refresh();
+  }
+
+  async function guardarNuevoPerro() {
+    setError(null);
+    if (!clienteId) return;
+    const res = await creandoPerro.ejecutar(() =>
+      crearPerritoEstetica(clienteId, { nombre: npNombre, razaId: npRaza.raza_id, razaTexto: npRaza.raza, tamanoId: npTamano, pelajeId: npPelaje })
+    );
+    if (res.error || !res.perroId) {
+      setError(res.error ?? "No pudimos guardar al perrito.");
+      return;
+    }
+    const pel = pelajes.find((x) => x.id === npPelaje);
+    setPerrosExtra((prev) => [
+      ...prev,
+      { id: res.perroId as string, cliente_id: clienteId, nombre: npNombre.trim(), pelajeClave: pel?.clave ?? null, pelajeEtiqueta: pel?.etiqueta ?? null, tamanoId: npTamano, pelajeId: npPelaje },
+    ]);
+    setPerroId(res.perroId as string);
+    setNuevoPerro(false);
+    setNpNombre("");
+    setNpRaza({ raza_id: null, raza: "" });
+    setNpTamano("");
+    setNpPelaje("");
+    setVersion((v) => v + 1);
   }
 
   if (!clienteElegido) {
@@ -255,11 +318,37 @@ export function AgendarForm({
       );
     } else if (cot.estado === "ok") {
       avisoPrecio = (
-        <p data-aviso-precio="ok" className="rounded-md border-l-4 border-menta bg-menta-suave px-3 py-2 text-n-900">
-          Precio: <strong className="tabular-nums">${(cot.precio ?? 0).toFixed(2)}</strong>
-          {cot.maltratadoAplicado ? " (pelo maltratado)" : ""}
-          {grupoDeExcepcion ? " · con excepción de grupo" : ""}
-        </p>
+        <div data-aviso-precio="ok" className="flex flex-col gap-2 rounded-md border-l-4 border-menta bg-menta-suave px-3 py-2 text-n-900">
+          <p>
+            Precio: <strong className="tabular-nums">${(cot.precio ?? 0).toFixed(2)}</strong>
+            {cot.maltratadoAplicado ? " (pelo maltratado)" : ""}
+            {grupoDeExcepcion ? " · con excepción de grupo" : ""}
+          </p>
+          {cot.tarifaGuarderia && (
+            <p data-tarifa-guarderia className="text-sm font-semibold text-menta-oscuro">
+              Tarifa de cliente de guardería{cot.tarifaServicio ? `: el precio de «${cot.tarifaServicio}»` : ""}
+              {cot.precioNormal != null ? ` (el baño normal costaría $${cot.precioNormal.toFixed(2)})` : ""}
+              {cot.tarifaOrigen === "manual" ? " · puesta a mano" : " · automática, porque tiene guardería"}. No es un descuento.
+            </p>
+          )}
+          {cot.tarifaAviso && <p className="text-sm text-ambar-oscuro">{cot.tarifaAviso}</p>}
+          {puedeExcepcion && cot.tarifaGuarderia && tarifaModo !== "no" && (
+            <div className="flex flex-col gap-2">
+              <Field label="Motivo para quitar la tarifa" value={motivoTarifa} onChange={(e) => setMotivoTarifa(e.target.value)} ayuda="Solo si el dueño no la quiere o no corresponde. Queda con tu nombre." />
+              <Button type="button" variante="secundario" className="self-start" disabled={motivoTarifa.trim().length < 3} onClick={() => setTarifaModo("no")}>
+                Quitar la tarifa de guardería
+              </Button>
+            </div>
+          )}
+          {puedeExcepcion && !cot.tarifaGuarderia && cot.tarifaAplicable && (
+            <Button type="button" variante="secundario" className="self-start" onClick={() => { setTarifaModo("si"); setMotivoTarifa(""); }}>
+              {tarifaModo === "no" ? "Volver a poner la tarifa de guardería" : "Aplicar la tarifa de guardería a mano"}
+            </Button>
+          )}
+          {tarifaModo === "no" && !cot.tarifaGuarderia && (
+            <p className="text-sm text-n-700">Sin la tarifa de guardería (motivo: {motivoTarifa}).</p>
+          )}
+        </div>
       );
     } else if (cot.estado === "faltan_datos") {
       avisoPrecio = (
@@ -397,13 +486,79 @@ export function AgendarForm({
         </Button>
       </div>
 
-      {perrosDelCliente.length === 0 ? (
-        <Alert variante="advertencia" titulo="Este cliente no tiene perros registrados">
-          Da de alta al perro antes de poder agendarle una cita.
-        </Alert>
+      {agendadas.length > 0 && (
+        <div data-citas-agendadas className="flex flex-col gap-3 rounded-lg border-[1.5px] border-menta bg-menta-suave p-4">
+          <p className="font-bold text-menta-oscuro">
+            {agendadas.length === 1 ? "Cita agendada" : `${agendadas.length} citas agendadas para ${clienteElegido.nombre}`}
+          </p>
+          <ul className="flex flex-col gap-1 text-sm text-n-900">
+            {agendadas.map((a) => (
+              <li key={a.citaId}>
+                <Link href={`/estetica/${a.citaId}`} className="font-semibold text-morado hover:underline">
+                  {a.perroNombre} — {a.servicio}
+                </Link>{" "}
+                · ${a.precio.toFixed(2)}
+                {a.tarifa ? " (tarifa de guardería)" : ""} · su propia cuenta
+              </li>
+            ))}
+          </ul>
+          <div className="flex flex-wrap gap-3">
+            <Button type="button" variante="secundario" data-agregar-otro-perrito onClick={() => { setPerroId(""); setNuevoPerro(false); }}>
+              Agregar otro perrito de {clienteElegido.nombre}
+            </Button>
+            {agendadas.length > 1 && (
+              <Link
+                href={`/caja/cobrar-junto?cuentas=${agendadas.map((a) => a.reservaId).join(",")}`}
+                data-cobrar-juntas
+                className="inline-flex min-h-12 items-center justify-center rounded-md border-[1.5px] border-morado bg-white px-5 text-base font-semibold text-morado hover:bg-morado-suave"
+              >
+                Cobrar las {agendadas.length} cuentas juntas
+              </Link>
+            )}
+            <Link href="/estetica" className="inline-flex min-h-12 items-center justify-center rounded-md px-5 text-base font-semibold text-n-700 hover:bg-n-100">
+              Listo, ir a la agenda
+            </Link>
+          </div>
+          <p className="text-sm text-n-700">Cada perrito tiene su cita y su cuenta. Al cobrar puedes juntarlas en un solo pago (Caja → Cobrar todo junto).</p>
+        </div>
+      )}
+
+      {nuevoPerro || perrosDelCliente.length === 0 ? (
+        <div data-nuevo-perrito className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
+          <p className="font-bold text-n-900">
+            {perrosDelCliente.length === 0 ? `Registra el perrito de ${clienteElegido.nombre}` : `Otro perrito de ${clienteElegido.nombre}`}
+          </p>
+          <p className="text-sm text-n-600">Solo lo que hace falta para el baño: nombre, raza, tamaño y pelaje. Nada de guardería u hotel.</p>
+          <Field label="Nombre del perrito" value={npNombre} onChange={(e) => setNpNombre(e.target.value)} />
+          <SelectorRaza razas={razas} label="Raza" mostrarGrupo valorId={npRaza.raza_id} valorTexto={npRaza.raza} onCambio={(v) => setNpRaza({ raza_id: v.raza_id, raza: v.raza })} />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Select label="Tamaño" value={npTamano} onChange={(e) => setNpTamano(e.target.value)}>
+              <option value="">Elige el tamaño</option>
+              {tamanos.map((t) => (
+                <option key={t.id} value={t.id}>{t.etiqueta}</option>
+              ))}
+            </Select>
+            <Select label="Pelaje" value={npPelaje} onChange={(e) => setNpPelaje(e.target.value)}>
+              <option value="">Elige el pelaje</option>
+              {pelajes.map((p) => (
+                <option key={p.id} value={p.id}>{p.etiqueta}</option>
+              ))}
+            </Select>
+          </div>
+          <AccionesFormulario error={error}>
+            <Button type="button" cargando={creandoPerro.cargando} onClick={guardarNuevoPerro}>
+              Guardar y agendarle su cita
+            </Button>
+            {perrosDelCliente.length > 0 && (
+              <Button type="button" variante="secundario" onClick={() => { setNuevoPerro(false); setError(null); }}>
+                Mejor elegir uno que ya tiene
+              </Button>
+            )}
+          </AccionesFormulario>
+        </div>
       ) : (
         <>
-          <Select label="Perro" value={perroId} onChange={(e) => { setPerroId(e.target.value); setEstanciaId(""); setGrupoElegido(""); setExcepcion(false); setMotivoExcepcion(""); setTamanoFalta(""); setPelajeFalta(""); }}>
+          <Select label="Perro" value={perroId} onChange={(e) => { setPerroId(e.target.value); setEstanciaId(""); setGrupoElegido(""); setExcepcion(false); setMotivoExcepcion(""); setTamanoFalta(""); setPelajeFalta(""); setTarifaModo("auto"); setMotivoTarifa(""); }}>
             <option value="">Elige un perro</option>
             {perrosDelCliente.map((p) => (
               <option key={p.id} value={p.id}>
@@ -411,6 +566,10 @@ export function AgendarForm({
               </option>
             ))}
           </Select>
+
+          <Button type="button" variante="secundario" className="self-start" data-agregar-perrito onClick={() => { setNuevoPerro(true); setError(null); }}>
+            Agregar otro perrito de este cliente
+          </Button>
 
           {perroId && perrosConAvisoSanitario.includes(perroId) && (
             <Alert variante="advertencia" titulo="Trae requisitos sanitarios vencidos o sin registro">
@@ -439,7 +598,7 @@ export function AgendarForm({
           )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Select label="Servicio" value={servicioActual?.id ?? ""} onChange={(e) => setServicioId(e.target.value)}>
+            <Select label="Servicio" value={servicioActual?.id ?? ""} onChange={(e) => { setServicioId(e.target.value); setTarifaModo("auto"); setMotivoTarifa(""); }}>
               {serviciosOfrecidos.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.nombre}

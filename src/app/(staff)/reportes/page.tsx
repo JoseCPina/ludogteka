@@ -110,6 +110,7 @@ export default async function ReportesPage({
     descuentos_otorgados: number;
     ingreso_caja_neto: number;
     ingreso_reconocido: number;
+    efectivo_agregado?: number;
   } | null;
 
   const costos = costosData as {
@@ -430,6 +431,12 @@ export default async function ReportesPage({
               </tbody>
             </table>
           </div>
+          {Number(reporte.efectivo_agregado ?? 0) > 0 && (
+            <p className="text-sm text-n-700" data-efectivo-agregado-reporte>
+              Efectivo agregado a la caja en el periodo (cambio, préstamos, aportaciones):{" "}
+              <strong>{formatearMoneda(Number(reporte.efectivo_agregado))}</strong>. Es movimiento del cajón, no una venta: no está sumado en los ingresos de arriba.
+            </p>
+          )}
           <p className="text-sm text-n-700" data-total-tarjeta-reporte>
             Total con tarjeta:{" "}
             <strong>

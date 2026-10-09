@@ -14,7 +14,16 @@ import { A, NEGOCIO, URL, env, tokenDe } from "./sesiones-dev.mjs";
 const PERMISOS = [
   "inventario_costos", "tarifas", "reportes_financieros", "personal", "nomina", "gastos",
   "configuracion_negocio", "excepciones_reserva", "descuentos_sin_tope", "plantillas_contrato", "corregir_estilista", "corregir_servicio", "tarjeta_manual", "ajustar_pases",
+  "anular_cobros", "editar_monto_cobros", "corregir_turnos_cerrados", "agregar_efectivo", "eliminar_citas",
 ];
+
+
+// Un RPC con id inexistente: si el error es de permiso, "no lo dejó"; si es "no existe", la guardia ya pasó.
+async function porGuardia(promesa) {
+  const r = await promesa;
+  const permiso = r.error && (r.error.code === "42501" || /permiso|Solo admin|Necesitas/i.test(r.error.message));
+  return { dejo: !permiso, ve: !permiso, detalle: r.error?.message };
+}
 
 const conToken = (t) => createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -223,6 +232,17 @@ const pruebas = {
       await A.from("cobros").update({ deleted_at: new Date().toISOString() }).eq("id", r.data);
     }
     return { dejo, ve: dejo, detalle: r.error?.message };
+  },
+
+  // Caja y agenda (13 de octubre): la guardia de permiso va ANTES de buscar el registro, así que
+  // con un id inexistente "sin permiso" se distingue de "no existe" por el mensaje.
+  async anular_cobros() { return porGuardia(R.rpc("anular_cobro", { p_cobro_id: crypto.randomUUID(), p_motivo: "prueba de permisos" })); },
+  async editar_monto_cobros() { return porGuardia(R.rpc("editar_monto_cobro", { p_cobro_id: crypto.randomUUID(), p_metodo: "efectivo", p_monto_nuevo: 1, p_motivo: "prueba de permisos" })); },
+  async agregar_efectivo() { return porGuardia(R.rpc("cancelar_efectivo_agregado", { p_id: crypto.randomUUID(), p_motivo: "prueba de permisos" })); },
+  async eliminar_citas() { return porGuardia(R.rpc("eliminar_cita_estetica", { p_cita_id: crypto.randomUUID(), p_motivo: "prueba de permisos" })); },
+  async corregir_turnos_cerrados() {
+    const r = await R.rpc("tiene_permiso", { p_permiso: "corregir_turnos_cerrados" });
+    return { dejo: r.data === true, ve: r.data === true };
   },
   async plantillas_contrato() {
     const r = await R.rpc("marcar_requiere_refirma", { p_plantilla_id: plantilla.id, p_valor: plantilla.requiere_refirma });

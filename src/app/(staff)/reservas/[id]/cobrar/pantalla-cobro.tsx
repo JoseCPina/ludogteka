@@ -60,7 +60,7 @@ export async function PantallaCobro({
     supabase.from("turnos_caja").select("id").eq("estado", "abierto").maybeSingle(),
     supabase
       .from("cobros")
-      .select("id, notas, created_at, created_by, origen, grupo_id, cobro_metodos(metodo, monto, propina)")
+      .select("id, notas, created_at, created_by, origen, grupo_id, turno_id, anulado_at, anulacion_motivo, cobro_metodos(metodo, monto, propina, ajuste_id)")
       .eq("reserva_id", id)
       .order("created_at"),
     supabase
@@ -130,7 +130,7 @@ export async function PantallaCobro({
       recibo: string;
       total: number;
       propina: number;
-      cuentas: { reserva_id: string; monto: number; descripcion: string }[];
+      cuentas: { reserva_id: string; monto: number; descripcion: string; anulado?: boolean }[];
     } | null;
     if (d) {
       detallesGrupo.set(gid, {
@@ -138,10 +138,25 @@ export async function PantallaCobro({
         recibo: d.recibo,
         total: Number(d.total),
         propina: Number(d.propina),
-        cuentas: d.cuentas.map((c) => ({ reservaId: c.reserva_id, descripcion: c.descripcion, monto: Number(c.monto) })),
+        cuentas: d.cuentas.map((c) => ({ reservaId: c.reserva_id, descripcion: c.descripcion, monto: Number(c.monto), anulado: Boolean(c.anulado) })),
       });
     }
   }
+  // Historial de correcciones (anulaciones y montos corregidos) y si el turno de
+  // cada cobro ya se cerró (corregirlo pide un permiso más).
+  const { data: correccionesCrudo } = cobroIds.length
+    ? await supabase
+        .from("cobro_correcciones")
+        .select("cobro_id, tipo, motivo, created_at, hecha_por, estado_anterior, evidencia")
+        .in("cobro_id", cobroIds)
+        .in("tipo", ["anulacion", "edicion_monto"])
+        .order("created_at")
+    : { data: [] as never[] };
+  const turnoIds = Array.from(new Set((cobrosCrudo ?? []).map((c) => c.turno_id as string))).filter(Boolean);
+  const { data: turnosEstado } = turnoIds.length
+    ? await supabase.from("turnos_caja").select("id, estado").in("id", turnoIds)
+    : { data: [] as { id: string; estado: string }[] };
+  const turnoCerradoDe = new Map((turnosEstado ?? []).map((t) => [t.id as string, (t.estado as string) !== "abierto"]));
   const { data: devolucionesCrudo, error: errorDevoluciones } = cobroIds.length
     ? await supabase
         .from("devoluciones")
@@ -249,6 +264,7 @@ export async function PantallaCobro({
   const idsCreadores = Array.from(
     new Set([
       ...(cobrosCrudo ?? []).map((c) => c.created_by as string | null),
+      ...(correccionesCrudo ?? []).map((x) => x.hecha_por as string | null),
       ...(devolucionesCrudo ?? []).map((d) => d.autorizado_por as string | null),
       ...(descuentosCrudo ?? []).map((d) => d.created_by as string | null),
     ]).values()
@@ -259,12 +275,39 @@ export async function PantallaCobro({
     : { data: [] as { id: string; nombre_completo: string | null }[] };
   const nombrePorId = new Map((perfiles ?? []).map((p) => [p.id, p.nombre_completo ?? "—"]));
 
+  // Lo cobrado por método es NETO de correcciones (los renglones compensatorios
+  // restan); el monto original es lo que se capturó.
+  const netoPorMetodo = (filas: { metodo: string; monto: number; propina: number }[]) => {
+    const m = new Map<string, { metodo: string; monto: number; propina: number }>();
+    for (const f of filas) {
+      const x = m.get(f.metodo) ?? { metodo: f.metodo, monto: 0, propina: 0 };
+      x.monto = Math.round((x.monto + Number(f.monto)) * 100) / 100;
+      x.propina = Math.round((x.propina + Number(f.propina)) * 100) / 100;
+      m.set(f.metodo, x);
+    }
+    return Array.from(m.values()).filter((x) => x.monto !== 0 || x.propina !== 0);
+  };
   const cobros: CobroHistorial[] = (cobrosCrudo ?? []).map((c) => ({
     id: c.id as string,
     notas: c.notas as string | null,
     creadoEn: c.created_at as string,
     creadoPorNombre: nombrePorId.get(c.created_by as string) ?? "—",
-    metodos: (c.cobro_metodos as { metodo: string; monto: number; propina: number }[]) ?? [],
+    metodos: netoPorMetodo((c.cobro_metodos as { metodo: string; monto: number; propina: number }[]) ?? []),
+    anulado: Boolean(c.anulado_at),
+    anulacionMotivo: (c.anulacion_motivo as string | null) ?? null,
+    montoOriginal: ((c.cobro_metodos as { monto: number; ajuste_id: string | null }[]) ?? []).filter((m) => !m.ajuste_id).reduce((s, m) => s + Number(m.monto), 0),
+    turnoCerrado: turnoCerradoDe.get(c.turno_id as string) ?? false,
+    correcciones: (correccionesCrudo ?? [])
+      .filter((x) => x.cobro_id === c.id)
+      .map((x) => {
+        const antes = x.estado_anterior as { metodo?: string; monto?: number; metodos?: { monto: number }[] } | null;
+        const ev = x.evidencia as { monto_nuevo?: number; monto?: number } | null;
+        const detalle =
+          x.tipo === "edicion_monto"
+            ? `de $${Number(antes?.monto ?? 0).toFixed(2)} a $${Number(ev?.monto_nuevo ?? 0).toFixed(2)}`
+            : `cobro de $${Number(ev?.monto ?? 0).toFixed(2)}`;
+        return { tipo: x.tipo as string, motivo: x.motivo as string, creadoEn: x.created_at as string, porNombre: nombrePorId.get(x.hecha_por as string) ?? "—", detalle };
+      }),
     origen: ((c.origen as string | null) ?? "manual") as CobroHistorial["origen"],
     grupo: c.grupo_id ? detallesGrupo.get(c.grupo_id as string) ?? null : null,
     tarjetasManuales: (tarjetasCrudo ?? [])
@@ -340,6 +383,9 @@ export async function PantallaCobro({
           esAdmin={sesion?.rol === "admin"}
           puedeSinTope={tienePermiso(sesion, "descuentos_sin_tope")}
           puedeTarjetaManual={tienePermiso(sesion, "tarjeta_manual")}
+          puedeAnular={tienePermiso(sesion, "anular_cobros")}
+          puedeEditarMonto={tienePermiso(sesion, "editar_monto_cobros")}
+          puedeTurnosCerrados={tienePermiso(sesion, "corregir_turnos_cerrados")}
           mp={{ disponible: mpDisponible, ordenes: ordenesMp, clienteTelefono: (cliente?.telefono as string | null) ?? null, terminalManualBloqueada: Boolean(terminalManualBloqueada) }}
         />
       )}

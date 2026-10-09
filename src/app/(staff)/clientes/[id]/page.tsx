@@ -305,18 +305,33 @@ export default async function EditarClientePage({
             Lo que le falta a cada perro para poder reservarle. Si el dueño está enfrente, captúralo
             aquí; si no, mándale el link de abajo.
           </p>
-          {perrosVivos.map((p) => (
-            <PendientesEstancia
-              key={p.id}
-              perroId={p.id as string}
-              perroNombre={p.nombre as string}
-              clienteId={id}
-              pendientes={pendientesPorPerro.get(p.id as string) ?? []}
-              catalogos={catalogos}
-              enSuExpediente={false}
-              puedeEscribir
-            />
-          ))}
+          {perrosVivos.map((p) => {
+            const panel = (
+              <PendientesEstancia
+                key={p.id}
+                perroId={p.id as string}
+                perroNombre={p.nombre as string}
+                clienteId={id}
+                pendientes={pendientesPorPerro.get(p.id as string) ?? []}
+                catalogos={catalogos}
+                enSuExpediente={false}
+                puedeEscribir
+              />
+            );
+            // Un perro que solo viene a estética no tiene nada «pendiente» de
+            // guardería u hotel: la lista queda cerrada, a la mano por si un día
+            // la usa, sin pintarle faltantes que no le aplican.
+            return usanGuarderiaHotel.has(p.id as string) ? (
+              panel
+            ) : (
+              <details key={p.id} data-pendientes-solo-estetica className="rounded-md border border-n-200 bg-white px-4 py-3">
+                <summary className="cursor-pointer text-sm font-semibold text-n-700">
+                  {p.nombre as string}: solo viene a estética. Si algún día va a guardería u hotel, esto es lo que le faltaría
+                </summary>
+                <div className="mt-3">{panel}</div>
+              </details>
+            );
+          })}
         </div>
       )}
 

@@ -15,6 +15,8 @@ export type MovimientoTurno = {
   // Si el cobro fue parte de un cobro junto (varias cuentas, un solo pago).
   grupoId?: string | null;
   hechoPorNombre: string;
+  // «anulacion» o «edicion_monto» si es un ajuste de un cobro; «original_anulado» si es un cobro que se anuló después.
+  ajusteTipo?: string | null;
 };
 
 export type ResumenMetodo = { metodo: string; origen: string; cobrado: number; propinas: number; devuelto: number };
@@ -25,6 +27,12 @@ const ETIQUETA_TIPO: Record<string, string> = {
   venta_mostrador: "Venta de mostrador",
   devolucion: "Devolución",
   retiro: "Retiro",
+  ingreso_efectivo: "Efectivo agregado",
+};
+const ETIQUETA_AJUSTE: Record<string, string> = {
+  anulacion: "ajuste: anulación",
+  edicion_monto: "ajuste: monto corregido",
+  original_anulado: "anulado después",
 };
 const ETIQUETA_METODO: Record<string, string> = {
   efectivo: "Efectivo",
@@ -129,10 +137,11 @@ export function MovimientosTurno({
             </thead>
             <tbody>
               {movimientos.map((m) => (
-                <tr key={`${m.tipo}-${m.id}`}>
+                <tr key={`${m.tipo}-${m.id}`} data-movimiento-ajuste={m.ajusteTipo ?? undefined} className={m.ajusteTipo === "original_anulado" ? "opacity-60" : ""}>
                   <td className="border-b border-n-200 px-3 py-2 tabular-nums text-n-600">{formatearFecha(m.fecha, zona)}</td>
                   <td className="border-b border-n-200 px-3 py-2 text-n-900">
                     {ETIQUETA_TIPO[m.tipo] ?? m.tipo}
+                    {m.ajusteTipo && <span className="ml-2 rounded-full bg-ambar-suave px-2 py-0.5 text-xs font-semibold text-ambar-oscuro">{ETIQUETA_AJUSTE[m.ajusteTipo] ?? m.ajusteTipo}</span>}
                     {m.origen !== "manual" && <span className="ml-2 rounded-full bg-morado-suave px-2 py-0.5 text-xs font-semibold text-morado">{ETIQUETA_ORIGEN[m.origen]}</span>}
                     {m.grupoId && (
                       <Link href={`/caja/recibo-junto/${m.grupoId}`} className="ml-2 rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-700 hover:underline" data-movimiento-junto>

@@ -2,7 +2,7 @@
 
 Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scripts/tutoriales/catalogo.mjs` y de lo que la app tiene hoy (código). No se edita a mano: se cambia el catálogo.
 
-**61 videos** (el 00 es el avance) en 9 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
+**65 videos** (el 00 es el avance) en 9 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
 
 ## Catálogo
 
@@ -69,6 +69,10 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 58 | Estética | Cómo se cobra a un mestizo y qué hacer si no hay precio | admin | 2.5 min | estetica | tarifas, excepciones_reserva |
 | 59 | Caja y cobros | Terminal de Mercado Pago: escogerla, «Por confirmar» y reconectar | admin | 2.5 min | — | — |
 | 60 | Caja y cobros | Cómo ajustar los días usados de un pase | recepcion | 2.5 min | bonos | ajustar_pases |
+| 61 | Caja y cobros | Cómo anular o corregir un cobro sin usar un descuento | admin | 2.5 min | — | anular_cobros, editar_monto_cobros, corregir_turnos_cerrados |
+| 62 | Caja y cobros | Cómo agregar efectivo a la caja | admin | 2.5 min | — | agregar_efectivo |
+| 63 | Estética | Reprogramar, cancelar o eliminar una cita de estética | admin | 2.5 min | estetica | eliminar_citas |
+| 64 | Estética | La tarifa «Cliente de guardería» en estética | admin | 2.5 min | estetica | — |
 
 ## Pantallas → videos
 
@@ -85,6 +89,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/admin/permisos` | 09 |  |
 | `/admin/politicas` | 51 |  |
 | `/admin/reporte-guarderia` | 31 |  |
+| `/admin/tarifa-guarderia` | 64 |  |
 | `/alta/[token]` | 11 |  |
 | `/auth/nueva-password` | 03 |  |
 | `/ayuda` | 53 |  |
@@ -200,11 +205,12 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Empleados | `/empleados` | 44, 45, 46 |
 | Gastos | `/gastos` | 47, 48 |
 | Mi asistencia | `/mi-trabajo` | 44 |
-| Administración | `/admin` | 01, 06, 07, 08, 09, 31, 50, 51, 52 |
+| Administración | `/admin` | 01, 06, 07, 08, 09, 31, 50, 51, 52, 64 |
 | Permisos | `/admin/permisos` | 09 |
 | Perfil y página web | `/admin/perfil` | 52 |
 | Políticas y reglas | `/admin/politicas` | 51 |
 | Reporte y fotos | `/admin/reporte-guarderia` | 31 |
+| Tarifa de guardería | `/admin/tarifa-guarderia` | 64 |
 | Módulos y plan | `/admin/modulos` | 06 |
 | Cobro con terminal | `/admin/pagos` | 50 |
 | Ayuda | `/ayuda` | 53 |
@@ -215,7 +221,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | --- | --- |
 | guarderia | 25, 27, 28, 29, 30, 31 |
 | hotel | 26, 27, 28, 29, 30, 31 |
-| estetica | 20, 21, 22, 23, 24, 55, 58 |
+| estetica | 20, 21, 22, 23, 24, 55, 58, 63, 64 |
 | bonos | 39, 60 |
 | recoleccion | 54 |
 | contratos | 16, 17, 18, 19 |
@@ -245,6 +251,11 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Corregir servicio de citas (`corregir_servicio`) | 09, 55 |
 | Registrar tarjeta manual (`tarjeta_manual`) | 09, 56 |
 | Ajustar días de pases (`ajustar_pases`) | 60 |
+| Anular cobros (`anular_cobros`) | 61 |
+| Editar monto de cobros (`editar_monto_cobros`) | 61 |
+| Corregir cobros de turnos cerrados (`corregir_turnos_cerrados`) | 61 |
+| Agregar efectivo a caja (`agregar_efectivo`) | 62 |
+| Eliminar citas (`eliminar_citas`) | 63 |
 
 ## Artículos de ayuda → videos
 
@@ -287,6 +298,11 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | cambiar-estilista-cita-estetica | 23 |
 | corregir-servicio-de-una-cita | 55 |
 | atender-cita-estetica | 22 |
+| anular-o-corregir-un-cobro | 61 |
+| agregar-efectivo-a-caja | 62 |
+| reprogramar-o-cancelar-cita-de-estetica | 63 |
+| agregar-otro-perrito-en-estetica | 63 |
+| tarifa-cliente-de-guarderia | 64 |
 | leer-el-tablero-del-dia | 01, 04 |
 | que-hacer-con-necesita-atencion | 05 |
 | alta-de-cliente-con-link | 11 |

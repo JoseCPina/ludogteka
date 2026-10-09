@@ -101,6 +101,36 @@ export const PERMISOS = [
     implica:
       "Corrige los días usados de un pase de guardería (day pass o mensualidad) con un motivo por escrito que queda en el historial del pase, deshace un check-in hecho por error devolviendo el día al pase, y registra un pase nuevo que ya lleva días usados. No mueve dinero ni la caja. Extender la vigencia de un pase sigue siendo de admin. Viene apagado: dáselo solo a quien deba corregir saldos.",
   },
+  {
+    clave: "anular_cobros",
+    etiqueta: "Anular cobros",
+    implica:
+      "Anula un cobro hecho a mano (efectivo, transferencia o tarjeta manual) con un motivo por escrito. El cobro no se borra: queda en el historial, sale de los totales de la caja y de los reportes, y la cuenta vuelve a quedar por cobrar. Los cobros por la terminal o el link de pago no se anulan: se devuelven. Con el turno ya cerrado hace falta también «Corregir cobros de turnos cerrados». Viene apagado.",
+  },
+  {
+    clave: "editar_monto_cobros",
+    etiqueta: "Editar monto de cobros",
+    implica:
+      "Corrige cuánto se cobró en un cobro hecho a mano, y corrige el precio de una línea de la cuenta, con un motivo por escrito y sin generar un descuento. Queda el valor anterior, el nuevo y quién lo hizo. Con el turno ya cerrado hace falta también «Corregir cobros de turnos cerrados». Viene apagado.",
+  },
+  {
+    clave: "corregir_turnos_cerrados",
+    etiqueta: "Corregir cobros de turnos cerrados",
+    implica:
+      "Permite anular o corregir (con «Anular cobros» o «Editar monto de cobros») un cobro de un turno que ya se cerró. El corte de ese turno no cambia: la corrección queda como un ajuste visible en el turno abierto. Viene apagado: dáselo solo a quien deba corregir días anteriores.",
+  },
+  {
+    clave: "agregar_efectivo",
+    etiqueta: "Agregar efectivo a caja",
+    implica:
+      "Registra efectivo que entra al cajón del turno abierto sin ser una venta (se acabó el cambio, un préstamo de otra caja, una aportación del dueño) y cancela los que registró con motivo. Cuenta en el efectivo esperado del corte. Viene apagado.",
+  },
+  {
+    clave: "eliminar_citas",
+    etiqueta: "Eliminar citas",
+    implica:
+      "Elimina una cita de estética capturada por error o duplicada, con un motivo por escrito: sale de la agenda y libera el horario, pero no se borra (queda en el historial de la cita). Cancelar una cita y marcar que no se presentó no necesitan este permiso. Una cita con cobro se elimina hasta anular el cobro. Viene apagado.",
+  },
 ] as const;
 
 export type ClavePermiso = (typeof PERMISOS)[number]["clave"];

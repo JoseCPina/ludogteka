@@ -183,7 +183,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     supabase.rpc("calendario_ocupacion", { p_desde: hoy, p_hasta: hoy }),
     supabase
       .from("citas_estetica")
-      .select("id, inicio, estado, empleado_id, perros(nombre), servicio_nombre, servicios(nombre)")
+      .select("id, inicio, estado, empleado_id, perros(nombre), servicio_nombre, servicios!citas_estetica_servicio_id_fkey(nombre)")
       .is("deleted_at", null)
       .gte("inicio", sumarDiasFecha(hoy, -1))
       .lt("inicio", sumarDiasFecha(hoy, 2))

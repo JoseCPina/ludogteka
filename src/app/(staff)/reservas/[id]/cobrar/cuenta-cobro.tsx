@@ -17,6 +17,8 @@ import { CobroIntegrado, type OrdenCobroFila } from "./cobro-integrado";
 import { DevolucionIntegrada } from "./devolucion-integrada";
 import { CancelarRenglonVenta } from "./cancelar-renglon-venta";
 import { MarcarNoRecibido } from "./marcar-no-recibido";
+import { CorregirCobro } from "./corregir-cobro";
+import { CorregirPrecioLinea } from "./corregir-precio-linea";
 import { CamposTarjetaManual } from "@/components/cobro/campos-tarjeta-manual";
 import { RevisarTarjetaManual } from "@/components/cobro/revisar-tarjeta-manual";
 import {
@@ -88,7 +90,7 @@ export type GrupoHistorial = {
   recibo: string;
   total: number;
   propina: number;
-  cuentas: { reservaId: string; descripcion: string; monto: number }[];
+  cuentas: { reservaId: string; descripcion: string; monto: number; anulado?: boolean }[];
 };
 
 export type CobroHistorial = {
@@ -99,11 +101,17 @@ export type CobroHistorial = {
   metodos: { metodo: string; monto: number; propina: number }[];
   origen: "manual" | "mercadopago_point" | "mercadopago_link" | "clip_terminal";
   grupo: GrupoHistorial | null;
+  // Anulado (nunca se borra): el cobro original, el motivo y su historial de correcciones.
+  anulado: boolean;
+  anulacionMotivo: string | null;
+  montoOriginal: number;
+  turnoCerrado: boolean;
+  correcciones: { tipo: string; motivo: string; creadoEn: string; porNombre: string; detalle: string }[];
   // Los renglones de «Tarjeta (registro manual)» de este cobro (sin verificar).
   tarjetasManuales: {
     id: string;
     folio: string;
-    estado: "por_revisar" | "revisada" | "no_recibida";
+    estado: "por_revisar" | "revisada" | "no_recibida" | "anulada";
     monto: number;
     motivo: string;
     motivoTexto: string | null;
@@ -134,6 +142,8 @@ const ETIQUETA_TIPO: Record<string, string> = {
   estancia: "Estancia",
   cargo: "Cargo",
   estetica: "Estética",
+  bono: "Pase",
+  ajuste: "Corrección",
 };
 
 function dinero(v: number): string {
@@ -160,6 +170,9 @@ export function CuentaCobro({
   esAdmin,
   puedeSinTope,
   puedeTarjetaManual,
+  puedeAnular = false,
+  puedeEditarMonto = false,
+  puedeTurnosCerrados = false,
   mp,
 }: {
   reservaId: string;
@@ -176,12 +189,17 @@ export function CuentaCobro({
   // Admin o recepción con «Descuentos sin tope». Devoluciones: solo admin.
   puedeSinTope: boolean;
   puedeTarjetaManual: boolean;
+  // «Anular cobros», «Editar monto de cobros» y «Corregir cobros de turnos cerrados».
+  puedeAnular?: boolean;
+  puedeEditarMonto?: boolean;
+  puedeTurnosCerrados?: boolean;
   mp: { disponible: ResumenCobro; ordenes: OrdenCobroFila[]; clienteTelefono: string | null; terminalManualBloqueada: boolean };
 }) {
   const zona = useZonaNegocio();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
+  const [corrigiendoPrecioIdx, setCorrigiendoPrecioIdx] = useState<number | null>(null);
   const [aplicandoBonoIdx, setAplicandoBonoIdx] = useState<number | null>(null);
   const [bonoElegidoId, setBonoElegidoId] = useState("");
   const [cantidadBono, setCantidadBono] = useState("1");
@@ -480,6 +498,11 @@ export function CuentaCobro({
                       {l.tipo === "venta" && cobrosIniciales.length === 0 && (
                         <CancelarRenglonVenta ventaId={l.origenId} reservaId={reservaId} onError={setError} />
                       )}
+                      {puedeEditarMonto && l.tipo !== "ajuste" && l.cantidadCubiertaPorBono === 0 && (
+                        <Button type="button" variante="secundario" className="ml-2" onClick={() => setCorrigiendoPrecioIdx(i)}>
+                          Corregir precio
+                        </Button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -488,6 +511,18 @@ export function CuentaCobro({
           </tbody>
         </table>
       </div>
+
+      {corrigiendoPrecioIdx !== null && lineas[corrigiendoPrecioIdx] && (
+        <CorregirPrecioLinea
+          key={corrigiendoPrecioIdx}
+          reservaId={reservaId}
+          tipo={lineas[corrigiendoPrecioIdx].tipo}
+          origenId={lineas[corrigiendoPrecioIdx].origenId}
+          descripcion={lineas[corrigiendoPrecioIdx].descripcion}
+          total={lineas[corrigiendoPrecioIdx].total}
+          onCerrar={() => setCorrigiendoPrecioIdx(null)}
+        />
+      )}
 
       {aplicandoBonoIdx !== null && (
         <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-menta bg-menta-suave p-4">
@@ -834,16 +869,22 @@ export function CuentaCobro({
                 0
               );
               return (
-                <li key={c.id} data-cobro-id={c.id} className="rounded-lg border border-n-200 bg-white p-4">
+                <li key={c.id} data-cobro-id={c.id} data-cobro-anulado={c.anulado ? "si" : "no"} className={`rounded-lg border bg-white p-4 ${c.anulado ? "border-coral opacity-90" : "border-n-200"}`}>
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="font-semibold text-n-900">
-                      {dinero(totalCobro)}
+                    <p className={`font-semibold ${c.anulado ? "text-n-500 line-through" : "text-n-900"}`}>
+                      {dinero(c.anulado ? c.montoOriginal : totalCobro)}
                       {totalPropina > 0 ? ` + ${dinero(totalPropina)} propina` : ""}
+                      {c.anulado && <span className="ml-2 rounded-full bg-coral-suave px-2 py-0.5 text-xs font-bold uppercase text-coral-oscuro no-underline">Anulado</span>}
                     </p>
                     <p className="text-xs text-n-500">
                       {formatearFecha(c.creadoEn, zona)} · {c.creadoPorNombre}
                     </p>
                   </div>
+                  {c.anulado && (
+                    <p className="mt-1 text-sm font-semibold text-coral-oscuro" data-cobro-anulado-motivo>
+                      Anulado: {c.anulacionMotivo}. No cuenta en la caja ni en los reportes; la cuenta volvió a quedar por cobrar.
+                    </p>
+                  )}
                   <p className="mt-1 text-sm text-n-600">
                     {c.metodos
                       .map(
@@ -875,7 +916,7 @@ export function CuentaCobro({
                     <div key={t.id} data-tarjeta-manual-cobro className="mt-2 flex flex-col gap-2 rounded-md border border-ambar bg-ambar-suave p-3">
                       <p className="text-sm text-ambar-oscuro">
                         <span className="font-semibold">
-                          {t.estado === "por_revisar" ? "Sin verificar" : t.estado === "revisada" ? "Revisada con voucher" : "No recibida"}
+                          {t.estado === "por_revisar" ? "Sin verificar" : t.estado === "revisada" ? "Revisada con voucher" : t.estado === "anulada" ? "Anulada" : "No recibida"}
                         </span>{" "}
                         · {ETIQUETA_TARJETA_MANUAL} {dinero(t.monto)}{c.grupo ? ` (voucher de todo el cobro junto)` : ""} · folio {t.folio}
                         {t.ultimos4 ? ` · •••• ${t.ultimos4}` : ""}
@@ -885,6 +926,32 @@ export function CuentaCobro({
                       {esAdmin && t.estado === "por_revisar" && <RevisarTarjetaManual tarjetaId={t.id} monto={t.monto} reservaId={reservaId} cuentas={c.grupo?.cuentas.length ?? 1} />}
                     </div>
                   ))}
+
+                  {c.correcciones.length > 0 && (
+                    <ul data-correcciones-historial className="mt-2 flex flex-col gap-1 border-t border-n-200 pt-2">
+                      {c.correcciones.map((x, k) => (
+                        <li key={k} className="text-sm text-n-700">
+                          <span className="font-semibold">{x.tipo === "anulacion" ? "Anulación" : "Monto corregido"}</span> — {x.detalle} · {x.motivo} ({x.porNombre}, {formatearFecha(x.creadoEn, zona)})
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {!c.anulado && c.origen === "manual" && c.metodos.every((m) => m.metodo !== "terminal") && (puedeAnular || puedeEditarMonto) && (
+                    <div className="mt-2 border-t border-n-200 pt-2">
+                      <CorregirCobro
+                        reservaId={reservaId}
+                        cobroId={c.id}
+                        metodos={c.metodos.map((m) => ({ metodo: m.metodo, monto: m.monto }))}
+                        grupoId={c.grupo?.id ?? null}
+                        cuentasDelGrupo={c.grupo?.cuentas.filter((x) => !x.anulado).length ?? 1}
+                        puedeAnular={puedeAnular && totalDevuelto === 0}
+                        puedeEditar={puedeEditarMonto}
+                        puedeTurnosCerrados={puedeTurnosCerrados}
+                        turnoCerrado={c.turnoCerrado}
+                      />
+                    </div>
+                  )}
 
                   {devolucionesDeEste.length > 0 && (
                     <div className="mt-2 border-t border-n-200 pt-2">
