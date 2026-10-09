@@ -4,6 +4,7 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { urlPublicaArchivo } from "@/lib/negocio/publico";
 import { AvanceWeb } from "@/components/avance-web";
+import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { PerfilForm } from "./perfil-form";
 
 // El perfil público del negocio: lo que sale en su página web (logo, fotos,
@@ -13,8 +14,9 @@ export default async function PerfilPage() {
   const sesion = await obtenerSesionConRol();
   if (!tienePermiso(sesion, "configuracion_negocio")) redirect("/admin");
   const supabase = await createSupabaseServerClient();
+  const negocio = await cargarNegocioLanding();
   const [{ data: perfil }, { data: fotos }] = await Promise.all([
-    supabase.from("negocio_perfil").select("descripcion, direccion, logo_path").is("deleted_at", null).maybeSingle(),
+    supabase.from("negocio_perfil").select("descripcion, direccion, logo_path, logo_ancho, logo_alto").is("deleted_at", null).maybeSingle(),
     supabase.from("negocio_fotos").select("id, path").is("deleted_at", null).order("orden").order("created_at"),
   ]);
   return (
@@ -28,6 +30,10 @@ export default async function PerfilPage() {
         descripcion={(perfil?.descripcion as string | null) ?? ""}
         direccion={(perfil?.direccion as string | null) ?? ""}
         logoUrl={urlPublicaArchivo(perfil?.logo_path as string | null)}
+        logoAncho={(perfil?.logo_ancho as number | null) ?? null}
+        logoAlto={(perfil?.logo_alto as number | null) ?? null}
+        nombreNegocio={negocio.nombre}
+        colorNegocio={negocio.marca?.color ?? null}
         fotos={(fotos ?? []).map((f) => ({ id: f.id as string, url: urlPublicaArchivo(f.path as string)! }))}
       />
     </div>

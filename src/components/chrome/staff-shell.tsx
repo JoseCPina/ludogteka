@@ -66,7 +66,7 @@ export function StaffShell({
   videos,
   children,
 }: {
-  // La marca del negocio (MarcaDelNegocio, la arma el layout del servidor):
+  // La marca del negocio (LogoNegocio, la arma el layout del servidor):
   // el staff trabaja en SU negocio; PeluDesk solo firma al pie del menú.
   marca: ReactNode;
   // El aviso del plan (demo, prueba, solo lectura): components/aviso-plan.tsx.

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { WhatsappLogo, MapPin, Clock, SignIn } from "@phosphor-icons/react/dist/ssr";
 import { cargarNegocioLanding, linkWhatsAppDe, pesos } from "@/lib/landing/negocio";
 import { urlPublicaArchivo } from "@/lib/negocio/publico";
-import { MarcaDelNegocio } from "@/components/marca/marca-negocio";
+import { LogoNegocio } from "@/components/marca/logo-negocio";
 import { HechoConPeluDesk } from "@/components/marca/peludesk";
 
 export type DatosPagina = {
@@ -56,8 +56,8 @@ export async function PaginaNegocio({ datos }: { datos: DatosPagina }) {
       <header className="border-b border-n-200 bg-white">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-4 px-4 sm:px-6">
           <span className="flex min-w-0 items-center gap-2.5">
-            <MarcaDelNegocio nombre={datos.nombre} marca={negocio.marca} />
-            {/* Con logo de imagen, el nombre va junto (sin logo, MarcaDelNegocio ya lo pone). */}
+            <LogoNegocio nombre={datos.nombre} marca={negocio.marca} variante="barra" />
+            {/* Con logo de imagen, el nombre va junto (sin logo, LogoNegocio ya lo pone). */}
             {negocio.marca?.logo && <span className="truncate text-lg font-bold tracking-tight">{datos.nombre}</span>}
           </span>
           <nav className="flex items-center gap-2">

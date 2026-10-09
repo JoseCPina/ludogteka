@@ -107,7 +107,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
   if (problema) {
     return (
       <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-4 p-6">
-        <EncabezadoNegocio />
+        <EncabezadoNegocio banner />
         <h1 className="text-2xl font-bold text-n-900">Alta en {negocio.nombre}</h1>
         <Alert variante="advertencia" titulo="No podemos abrir este link">
           {problema}
@@ -240,7 +240,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
 
     return (
       <main className="mx-auto flex min-h-screen max-w-lg flex-col gap-6 p-6">
-        <EncabezadoNegocio />
+        <EncabezadoNegocio banner />
         <header>
           <h1 className="text-2xl font-bold text-n-900">Hola de nuevo, {cliente.nombre}</h1>
           <p className="mt-1 text-n-600">
@@ -277,7 +277,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
   // ───── Alta nueva ─────
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col gap-6 p-6">
-      <EncabezadoNegocio />
+      <EncabezadoNegocio banner />
       <header>
         <h1 className="text-2xl font-bold text-n-900">Bienvenido a {negocio.nombre}</h1>
         <p className="mt-1 text-n-600">
@@ -326,7 +326,7 @@ async function LinkCumplido({ clienteId, tipo }: { clienteId: string | null; tip
 
   return (
     <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-4 p-6">
-      <EncabezadoNegocio />
+      <EncabezadoNegocio banner />
       <h1 className="text-2xl font-bold text-n-900">{faltan ? "Tu registro ya quedó" : "Ya quedó todo"}</h1>
       <ResumenRequisitos resumen={resumen} dondeSubir={perfil ? "Súbelas desde tu portal, o tráenos el carnet." : "Tráenos el carnet cuando vengas."} />
       {perfil ? (

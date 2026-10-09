@@ -4,6 +4,8 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { formatearFecha } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
+import { cargarNegocioLanding } from "@/lib/landing/negocio";
+import { LogoNegocio } from "@/components/marca/logo-negocio";
 import { ETIQUETA_TARJETA_MANUAL } from "@/lib/cobro/tarjeta-manual";
 import { BotonImprimir } from "./boton-imprimir";
 
@@ -42,6 +44,7 @@ export default async function ReciboJuntoPage({ params }: { params: Promise<{ gr
   const { grupoId } = await params;
   const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
+  const negocio = await cargarNegocioLanding();
   const { data } = await supabase.rpc("cobro_grupo_detalle", { p_grupo_id: grupoId });
   const d = (Array.isArray(data) ? data[0] : data) as DetalleGrupo | null;
 
@@ -70,6 +73,7 @@ export default async function ReciboJuntoPage({ params }: { params: Promise<{ gr
       </Alert>
 
       <article className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
+        <LogoNegocio nombre={negocio.nombre} marca={negocio.marca} variante="recibo" />
         <header className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <p className="text-xs uppercase tracking-wide text-n-500">Recibo</p>

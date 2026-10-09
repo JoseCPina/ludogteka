@@ -8,7 +8,8 @@ import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
-import { guardarPerfil, quitarFoto, subirFoto, subirLogo, type ResultadoPerfil } from "./actions";
+import { SubirLogo } from "./subir-logo";
+import { guardarPerfil, quitarFoto, subirFoto, type ResultadoPerfil } from "./actions";
 
 export type FotoPerfil = { id: string; url: string };
 
@@ -67,11 +68,19 @@ export function PerfilForm({
   descripcion,
   direccion,
   logoUrl,
+  logoAncho,
+  logoAlto,
+  nombreNegocio,
+  colorNegocio,
   fotos,
 }: {
   descripcion: string;
   direccion: string;
   logoUrl: string | null;
+  logoAncho: number | null;
+  logoAlto: number | null;
+  nombreNegocio: string;
+  colorNegocio: string | null;
   fotos: FotoPerfil[];
 }) {
   const router = useRouter();
@@ -111,13 +120,7 @@ export function PerfilForm({
 
       <section className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
         <h2 className="text-lg font-bold text-n-900">Logo</h2>
-        {logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={logoUrl} alt="Logo actual" className="h-20 w-auto self-start rounded-md border border-n-200 bg-white p-2" />
-        ) : (
-          <p className="text-sm text-n-600">Todavía no subes tu logo.</p>
-        )}
-        <Subir etiqueta={logoUrl ? "Cambiar logo" : "Subir logo"} esLogo accion={subirLogo} />
+        <SubirLogo nombre={nombreNegocio} color={colorNegocio} logoUrl={logoUrl} ancho={logoAncho} alto={logoAlto} />
       </section>
 
       <section className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
