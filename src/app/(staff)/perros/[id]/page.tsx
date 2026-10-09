@@ -400,17 +400,31 @@ export default async function PerroPage({
         <NotaSoloEstetica />
       ))}
 
-      {!perro.fallecido && conEstancias && (
-        <PendientesEstancia
-          perroId={id}
-          perroNombre={perro.nombre}
-          clienteId={perro.cliente_id ?? null}
-          pendientes={pendientesEstancia}
-          catalogos={{ razas, tamanos: tamanos ?? [], pelajes: pelajes ?? [] }}
-          enSuExpediente
-          puedeEscribir={!soloLectura}
-        />
-      )}
+      {!perro.fallecido && conEstancias && (() => {
+        const panel = (
+          <PendientesEstancia
+            perroId={id}
+            perroNombre={perro.nombre}
+            clienteId={perro.cliente_id ?? null}
+            pendientes={pendientesEstancia}
+            catalogos={{ razas, tamanos: tamanos ?? [], pelajes: pelajes ?? [] }}
+            enSuExpediente
+            puedeEscribir={!soloLectura}
+          />
+        );
+        // Un perro que solo viene a estética no tiene «pendientes» de guardería u
+        // hotel: la lista queda cerrada, a la mano por si un día la usa.
+        return aplicanRequisitos ? (
+          panel
+        ) : (
+          <details data-pendientes-solo-estetica className="rounded-md border border-n-200 bg-white px-4 py-3">
+            <summary className="cursor-pointer text-sm font-semibold text-n-700">
+              Solo viene a estética. Si algún día va a guardería u hotel, esto es lo que le faltaría
+            </summary>
+            <div className="mt-3">{panel}</div>
+          </details>
+        );
+      })()}
 
       {perro.fallecido && (
         <Alert variante="advertencia" titulo="Este perro falleció">

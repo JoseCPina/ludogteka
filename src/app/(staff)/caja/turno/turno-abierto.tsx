@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
 import { registrarRetiro, cerrarTurno, cancelarRetiro } from "../caja-actions";
+import { agregarEfectivo, cancelarEfectivoAgregado } from "../correcciones-actions";
+import { Select } from "@/components/ui/select";
 import { useZonaNegocio } from "@/components/zona-negocio";
 
 export type Retiro = {
@@ -21,6 +23,27 @@ export type Retiro = {
   motivoCancelacion: string | null;
   canceladoPorNombre: string | null;
   puedeCancelar: boolean;
+};
+
+// Efectivo que entró al cajón sin ser una venta (se acabó el cambio, préstamo de otra caja…).
+export type EfectivoAgregado = {
+  id: string;
+  monto: number;
+  origen: string;
+  nota: string | null;
+  creadoEn: string;
+  creadoPorNombre: string;
+  cancelado: boolean;
+  motivoCancelacion: string | null;
+  canceladoPorNombre: string | null;
+  puedeCancelar: boolean;
+};
+
+const ETIQUETA_ORIGEN_EFECTIVO: Record<string, string> = {
+  cambio: "Cambio",
+  prestamo_caja: "Préstamo de otra caja",
+  aportacion_dueno: "Aportación del dueño",
+  otro: "Otro",
 };
 
 function dinero(v: number): string {
@@ -40,6 +63,8 @@ export function TurnoAbierto({
   abiertoPorNombre,
   notasApertura,
   retiros,
+  ingresos = [],
+  puedeAgregarEfectivo = false,
   puedeCerrar,
   abiertoPorMi,
   tarjetaManualSinVerificar = 0,
@@ -50,6 +75,8 @@ export function TurnoAbierto({
   abiertoPorNombre: string;
   notasApertura: string | null;
   retiros: Retiro[];
+  ingresos?: EfectivoAgregado[];
+  puedeAgregarEfectivo?: boolean;
   puedeCerrar: boolean;
   abiertoPorMi: boolean;
   // Lo cobrado con «Tarjeta (registro manual)» en este turno (neto de devoluciones).
@@ -63,6 +90,16 @@ export function TurnoAbierto({
   const [montoRetiro, setMontoRetiro] = useState("");
   const [motivoRetiro, setMotivoRetiro] = useState("");
   const guardandoRetiro = useEspera();
+
+  const [agregandoEfectivo, setAgregandoEfectivo] = useState(false);
+  const [montoEfectivo, setMontoEfectivo] = useState("");
+  const [origenEfectivo, setOrigenEfectivo] = useState("cambio");
+  const [notaEfectivo, setNotaEfectivo] = useState("");
+  const guardandoEfectivo = useEspera();
+  const [cancelandoEfectivo, setCancelandoEfectivo] = useState<string | null>(null);
+  const [motivoEfectivo, setMotivoEfectivo] = useState("");
+  const cancelandoEfectivoEnvio = useEspera();
+  const [avisoEfectivo, setAvisoEfectivo] = useState<string | null>(null);
 
   const [cerrando, setCerrando] = useState(false);
   const [conteoEfectivo, setConteoEfectivo] = useState("");
@@ -95,6 +132,44 @@ export function TurnoAbierto({
     }
     setCancelando(null);
     setMotivoCancelacion("");
+    router.refresh();
+  }
+
+  const totalEfectivoAgregado = ingresos.filter((r) => !r.cancelado).reduce((sum, r) => sum + r.monto, 0);
+
+  async function enviarEfectivo() {
+    const monto = Number(montoEfectivo);
+    if (!Number.isFinite(monto) || monto <= 0) {
+      setError("El monto del efectivo agregado debe ser mayor a cero.");
+      return;
+    }
+    if (origenEfectivo === "otro" && notaEfectivo.trim().length < 3) {
+      setError("Con «Otro», cuenta de dónde viene el efectivo en la nota.");
+      return;
+    }
+    setError(null);
+    const res = await guardandoEfectivo.ejecutar(() => agregarEfectivo(monto, origenEfectivo, notaEfectivo));
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    setAvisoEfectivo(res.aviso ?? "Listo.");
+    setMontoEfectivo("");
+    setNotaEfectivo("");
+    setOrigenEfectivo("cambio");
+    setAgregandoEfectivo(false);
+    router.refresh();
+  }
+
+  async function confirmarCancelacionEfectivo(id: string) {
+    setError(null);
+    const res = await cancelandoEfectivoEnvio.ejecutar(() => cancelarEfectivoAgregado(id, motivoEfectivo));
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    setCancelandoEfectivo(null);
+    setMotivoEfectivo("");
     router.refresh();
   }
 
@@ -224,6 +299,11 @@ export function TurnoAbierto({
           <Button type="button" variante="secundario" onClick={() => setRegistrandoRetiro((v) => !v)}>
             {registrandoRetiro ? "Ya no registrar retiro" : "Registrar retiro"}
           </Button>
+          {puedeAgregarEfectivo && (
+            <Button type="button" variante="secundario" data-agregar-efectivo onClick={() => setAgregandoEfectivo((v) => !v)}>
+              {agregandoEfectivo ? "Ya no agregar efectivo" : "Agregar efectivo"}
+            </Button>
+          )}
           {puedeCerrar && (
             <Button type="button" variante="peligro" onClick={iniciarCierre}>
               Cerrar turno
@@ -255,6 +335,81 @@ export function TurnoAbierto({
           <Button type="button" cargando={guardandoRetiro.cargando} onClick={enviarRetiro}>
             {guardandoRetiro.cargando ? "Guardando…" : "Confirmar retiro"}
           </Button>
+        </div>
+      )}
+
+      {agregandoEfectivo && !cerrando && (
+        <div data-form-efectivo className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
+          <p className="text-sm text-n-700">
+            Efectivo que entra al cajón sin ser una venta: se acabó el cambio, se pidió prestado a otra caja o el dueño aportó. Cuenta en el efectivo esperado del
+            corte y no aparece como ingreso en los reportes de ventas.
+          </p>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="w-32">
+              <Field label="Monto" type="number" min="0" step="0.01" value={montoEfectivo} onChange={(e) => setMontoEfectivo(e.target.value)} />
+            </div>
+            <div className="w-56">
+              <Select label="De dónde viene" value={origenEfectivo} onChange={(e) => setOrigenEfectivo(e.target.value)}>
+                {Object.entries(ETIQUETA_ORIGEN_EFECTIVO).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </Select>
+            </div>
+            <div className="min-w-[240px] flex-1">
+              <Field label={origenEfectivo === "otro" ? "Nota (obligatoria)" : "Nota (opcional)"} value={notaEfectivo} onChange={(e) => setNotaEfectivo(e.target.value)} placeholder="ej. Cambio de la caja de al lado" />
+            </div>
+            <Button type="button" cargando={guardandoEfectivo.cargando} onClick={enviarEfectivo}>
+              {guardandoEfectivo.cargando ? "Guardando…" : "Confirmar efectivo agregado"}
+            </Button>
+          </div>
+        </div>
+      )}
+      {avisoEfectivo && <p role="status" className="text-sm font-semibold text-menta-oscuro">{avisoEfectivo}</p>}
+
+      {(ingresos.length > 0 || puedeAgregarEfectivo) && (
+        <div className="flex flex-col gap-2" data-efectivo-agregado>
+          <p className="text-sm font-bold uppercase tracking-wide text-n-600">
+            Efectivo agregado a este turno {ingresos.length > 0 ? `— total ${dinero(totalEfectivoAgregado)}` : ""}
+          </p>
+          {ingresos.length === 0 ? (
+            <p className="text-sm text-n-500">Ninguno todavía.</p>
+          ) : (
+            <ul className="flex flex-col gap-1">
+              {ingresos.map((r) => (
+                <li key={r.id} data-ingreso={r.cancelado ? "cancelado" : "vivo"} className={`flex flex-col gap-2 rounded-md border border-n-200 bg-white px-3 py-2 text-sm ${r.cancelado ? "opacity-70" : ""}`}>
+                  <div className="flex justify-between gap-3">
+                    <span className={`text-n-700 ${r.cancelado ? "line-through" : ""}`}>
+                      {ETIQUETA_ORIGEN_EFECTIVO[r.origen] ?? r.origen}{r.nota ? ` — ${r.nota}` : ""} — {r.creadoPorNombre} · {formatearFecha(r.creadoEn, zona)}
+                    </span>
+                    <span className={`font-semibold ${r.cancelado ? "text-n-400 line-through" : "text-n-900"}`}>{dinero(r.monto)}</span>
+                  </div>
+                  {r.cancelado && (
+                    <p className="text-xs font-semibold text-coral-oscuro">
+                      Cancelado{r.canceladoPorNombre ? ` por ${r.canceladoPorNombre}` : ""}{r.motivoCancelacion ? `: ${r.motivoCancelacion}` : ""}
+                    </p>
+                  )}
+                  {r.puedeCancelar && !cerrando && cancelandoEfectivo !== r.id && (
+                    <button type="button" className="self-start text-xs font-semibold text-coral-oscuro hover:underline" onClick={() => { setCancelandoEfectivo(r.id); setMotivoEfectivo(""); }}>
+                      Cancelar este efectivo agregado…
+                    </button>
+                  )}
+                  {cancelandoEfectivo === r.id && (
+                    <div className="flex flex-wrap items-end gap-2 rounded-md bg-coral-suave p-2">
+                      <div className="min-w-[240px] flex-1">
+                        <Field label="¿Por qué se cancela?" value={motivoEfectivo} onChange={(e) => setMotivoEfectivo(e.target.value)} placeholder="ej. Se registró dos veces" />
+                      </div>
+                      <Button type="button" variante="peligro" cargando={cancelandoEfectivoEnvio.cargando} onClick={() => confirmarCancelacionEfectivo(r.id)}>
+                        Cancelar efectivo agregado
+                      </Button>
+                      <Button type="button" variante="secundario" disabled={cancelandoEfectivoEnvio.cargando} onClick={() => setCancelandoEfectivo(null)}>
+                        Dejarlo
+                      </Button>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 

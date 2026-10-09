@@ -9,9 +9,10 @@ import { Alert } from "@/components/ui/alert";
 import { horaLocalParaInput, instanteDeHoraLocal } from "@/lib/formato";
 import { useZonaNegocio } from "@/components/zona-negocio";
 import {
-  reagendarCita,
+  reprogramarCita,
   cancelarCita,
-  marcarCitaNoLlego,
+  eliminarCita,
+  cambiarTarifaGuarderia,
   iniciarCita,
   finalizarCita,
   aplicarRecargoCita,
@@ -41,6 +42,9 @@ export function CitaDetalle({
   recogidoPorEsDueno,
   recetaItems,
   estilista,
+  puedeEliminar = false,
+  tarifa = null,
+  abrirReprogramar = false,
 }: {
   citaId: string;
   perroNombre: string;
@@ -58,6 +62,12 @@ export function CitaDetalle({
   recetaItems: RecetaItem[];
   // Solo admin y recepción cambian la estilista; para los demás va null.
   estilista: { empleadoId: string | null; nombreActual: string | null; estilistas: Estilista[]; puedeCorregir: boolean } | null;
+  // Permiso «Eliminar citas».
+  puedeEliminar?: boolean;
+  // Tarifa «cliente de guardería»: lo que tiene la cita y lo que puede hacer quien mira.
+  tarifa?: { aplicada: boolean; origen: "auto" | "manual" | null; servicioNombre: string | null; aplicable: boolean; puedeCambiar: boolean } | null;
+  // Viene de «Reprogramar» en la agenda: abre el formulario de una vez.
+  abrirReprogramar?: boolean;
 }) {
   const zona = useZonaNegocio();
   const router = useRouter();
@@ -65,7 +75,16 @@ export function CitaDetalle({
   const [error, setError] = useState<string | null>(null);
   const cargando = useEspera();
 
-  const [reagendando, setReagendando] = useState(false);
+  const [reagendando, setReagendando] = useState(abrirReprogramar);
+  const [motivoReprogramar, setMotivoReprogramar] = useState("");
+  // Después de un cambio: el aviso al cliente (la app deja listo el WhatsApp, no lo manda sola).
+  const [aviso, setAviso] = useState<{ texto: string; url?: string } | null>(null);
+  const [motivoCancelar, setMotivoCancelar] = useState("");
+  const [motivoNoLlego, setMotivoNoLlego] = useState("");
+  const [eliminando, setEliminando] = useState(false);
+  const [motivoEliminar, setMotivoEliminar] = useState("");
+  const [quitandoTarifa, setQuitandoTarifa] = useState(false);
+  const [motivoTarifa, setMotivoTarifa] = useState("");
   // El datetime-local no trae huso horario: lo que se precarga y lo que se
   // teclea es la hora EN EL NEGOCIO (su zona), no la del navegador.
   const [nuevoInicio, setNuevoInicio] = useState(horaLocalParaInput(inicio, zona));
@@ -102,33 +121,72 @@ export function CitaDetalle({
 
   async function accionReagendar() {
     setError(null);
-    const res = await cargando.ejecutar(() => reagendarCita(citaId, instanteDeHoraLocal(nuevoInicio, zona)));
+    const res = await cargando.ejecutar(() => reprogramarCita(citaId, instanteDeHoraLocal(nuevoInicio, zona), motivoReprogramar));
     if (res.error) {
       setError(res.error);
       return;
     }
     setReagendando(false);
+    setMotivoReprogramar("");
+    setAviso({
+      texto: res.fueraDeHorario ? "Cita reprogramada. Ojo: termina después del cierre del negocio." : "Cita reprogramada. Quedó en el historial.",
+      url: res.urlWhatsApp,
+    });
     router.refresh();
   }
 
   async function accionCancelar() {
     setError(null);
-    const res = await cargando.ejecutar(() => cancelarCita(citaId));
+    if (motivoCancelar.trim().length < 3) {
+      setError("Escribe el motivo de la cancelación.");
+      return;
+    }
+    const res = await cargando.ejecutar(() => cancelarCita(citaId, motivoCancelar, false));
     if (res.error) {
       setError(res.error);
       return;
     }
     setEstado("cancelada");
+    setAviso({ texto: "Cita cancelada. El horario quedó libre y el motivo en el historial.", url: res.urlWhatsApp });
+    router.refresh();
   }
 
   async function accionNoLlego() {
     setError(null);
-    const res = await cargando.ejecutar(() => marcarCitaNoLlego(citaId));
+    const res = await cargando.ejecutar(() => cancelarCita(citaId, motivoNoLlego, true));
     if (res.error) {
       setError(res.error);
       return;
     }
     setEstado("no_llego");
+    router.refresh();
+  }
+
+  async function accionEliminar() {
+    setError(null);
+    const res = await cargando.ejecutar(() => eliminarCita(citaId, motivoEliminar));
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    router.push("/estetica");
+  }
+
+  async function accionTarifa(modo: "auto" | "si" | "no") {
+    setError(null);
+    if (modo === "no" && motivoTarifa.trim().length < 3) {
+      setError("Quitar la tarifa necesita un motivo.");
+      return;
+    }
+    const res = await cargando.ejecutar(() => cambiarTarifaGuarderia(citaId, modo, motivoTarifa));
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    setQuitandoTarifa(false);
+    setMotivoTarifa("");
+    setAviso({ texto: `Tarifa ${modo === "no" ? "quitada" : "aplicada"}: la cita ahora cuesta $${(res.precio ?? 0).toFixed(2)}.` });
+    router.refresh();
   }
 
   async function accionIniciar() {
@@ -189,6 +247,44 @@ export function CitaDetalle({
       </p>
       <p className="-mt-2 text-sm text-n-600">El costo puede aumentar según el tipo de pelo y el cuidado previo.</p>
 
+      {tarifa && (tarifa.aplicada || (tarifa.aplicable && tarifa.puedeCambiar)) && (estado === "reservada" || estado === "confirmada" || estado === "en_curso") && (
+        <div data-tarifa-guarderia className={`flex flex-col gap-2 rounded-md border p-3 ${tarifa.aplicada ? "border-menta bg-menta-suave" : "border-n-200 bg-n-50"}`}>
+          {tarifa.aplicada ? (
+            <p className="text-sm font-semibold text-menta-oscuro">
+              Tarifa de cliente de guardería{tarifa.servicioNombre ? ` (precio de «${tarifa.servicioNombre}»)` : ""}
+              {tarifa.origen === "manual" ? " · puesta a mano" : " · automática"}. No es un descuento: es el precio de esta cita.
+            </p>
+          ) : (
+            <p className="text-sm text-n-700">Este perro no es cliente de guardería, pero la tarifa se puede poner a mano para esta cita.</p>
+          )}
+          {tarifa.puedeCambiar && (
+            quitandoTarifa ? (
+              <div className="flex flex-col gap-2">
+                <Field label="Motivo para quitar la tarifa" value={motivoTarifa} onChange={(e) => setMotivoTarifa(e.target.value)} ayuda="Queda en el historial con tu nombre." />
+                <div className="flex gap-2">
+                  <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={() => accionTarifa("no")}>Quitar la tarifa</Button>
+                  <Button type="button" variante="secundario" onClick={() => setQuitandoTarifa(false)}>Dejarla</Button>
+                </div>
+              </div>
+            ) : tarifa.aplicada ? (
+              <Button type="button" variante="secundario" className="self-start" onClick={() => setQuitandoTarifa(true)}>Quitar la tarifa de guardería</Button>
+            ) : (
+              <Button type="button" variante="secundario" className="self-start" cargando={cargando.cargando} onClick={() => accionTarifa("si")}>Poner la tarifa de guardería</Button>
+            )
+          )}
+        </div>
+      )}
+
+      {aviso && (
+        <Alert variante="exito" titulo={aviso.texto}>
+          {aviso.url && (
+            <a href={aviso.url} target="_blank" rel="noopener noreferrer" data-avisar-cliente className="font-semibold underline">
+              Avisarle al cliente por WhatsApp
+            </a>
+          )}
+        </Alert>
+      )}
+
       {puedeRecargo && (estado === "reservada" || estado === "confirmada" || estado === "en_curso") && (
         editandoRecargo ? (
           <div className="flex flex-col gap-2 rounded-md border border-n-200 p-3">
@@ -242,26 +338,37 @@ export function CitaDetalle({
       {editable && (
         <div className="flex flex-col gap-3 border-t border-n-200 pt-3">
           {reagendando ? (
-            <div className="flex flex-wrap items-end gap-3">
-              <Field
-                label="Nueva fecha y hora"
-                type="datetime-local"
-                value={nuevoInicio}
-                onChange={(e) => setNuevoInicio(e.target.value)}
-              />
-              <Button type="button" cargando={cargando.cargando} onClick={accionReagendar}>
-                {cargando.cargando ? "Guardando…" : "Guardar"}
-              </Button>
-              <Button type="button" variante="secundario" onClick={() => setReagendando(false)}>
-                Cancelar
-              </Button>
+            <div data-reprogramar className="flex flex-col gap-3 rounded-md border border-n-200 bg-n-50 p-3">
+              <p className="text-sm text-n-700">
+                La cita se mueve con su precio. Se revisa que la estilista no tenga otra cita a esa hora; queda en el historial y puedes avisarle al cliente por WhatsApp.
+              </p>
+              <div className="flex flex-wrap items-end gap-3">
+                <Field
+                  label="Nueva fecha y hora"
+                  type="datetime-local"
+                  value={nuevoInicio}
+                  onChange={(e) => setNuevoInicio(e.target.value)}
+                />
+                <div className="min-w-[220px] flex-1">
+                  <Field label="Motivo (opcional)" value={motivoReprogramar} onChange={(e) => setMotivoReprogramar(e.target.value)} placeholder="ej. La clienta pidió otro día" />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" cargando={cargando.cargando} onClick={accionReagendar}>
+                  {cargando.cargando ? "Guardando…" : "Guardar la nueva hora"}
+                </Button>
+                <Button type="button" variante="secundario" onClick={() => setReagendando(false)}>
+                  Dejarla como estaba
+                </Button>
+              </div>
             </div>
           ) : confirmandoCancelar ? (
             <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
-              <p className="text-sm font-semibold text-coral-oscuro">¿Cancelar esta cita?</p>
+              <p className="text-sm font-semibold text-coral-oscuro">¿Cancelar esta cita? Avisaste que no viene o ya no la quiere: el horario queda libre.</p>
+              <Field label="Motivo de la cancelación" value={motivoCancelar} onChange={(e) => setMotivoCancelar(e.target.value)} placeholder="ej. La clienta se enfermó" />
               <div className="flex gap-2">
                 <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={accionCancelar}>
-                  {cargando.cargando ? "Cancelando…" : "Sí, cancelar"}
+                  {cargando.cargando ? "Cancelando…" : "Sí, cancelar la cita"}
                 </Button>
                 <Button type="button" variante="secundario" onClick={() => setConfirmandoCancelar(false)}>
                   No
@@ -271,11 +378,12 @@ export function CitaDetalle({
           ) : confirmandoNoLlego ? (
             <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
               <p className="text-sm font-semibold text-coral-oscuro">
-                ¿Marcar que {perroNombre} no llegó?
+                ¿Marcar que {perroNombre} no se presentó? (Es distinto de cancelar: la persona no avisó o no llegó.)
               </p>
+              <Field label="Nota (opcional)" value={motivoNoLlego} onChange={(e) => setMotivoNoLlego(e.target.value)} />
               <div className="flex gap-2">
                 <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={accionNoLlego}>
-                  {cargando.cargando ? "Guardando…" : "Sí, no llegó"}
+                  {cargando.cargando ? "Guardando…" : "Sí, no se presentó"}
                 </Button>
                 <Button type="button" variante="secundario" onClick={() => setConfirmandoNoLlego(false)}>
                   No
@@ -313,18 +421,43 @@ export function CitaDetalle({
           ) : (
             <div className="flex flex-wrap gap-3">
               <Button type="button" variante="secundario" onClick={() => setReagendando(true)}>
-                Reagendar
+                Reprogramar
               </Button>
               <Button type="button" onClick={() => setIniciando(true)}>
                 Iniciar cita
               </Button>
               <Button type="button" variante="secundario" onClick={() => setConfirmandoNoLlego(true)}>
-                Marcar no llegó
+                No se presentó
               </Button>
               <Button type="button" variante="peligro" onClick={() => setConfirmandoCancelar(true)}>
-                Cancelar
+                Cancelar cita
               </Button>
             </div>
+          )}
+        </div>
+      )}
+
+      {puedeEliminar && ["reservada", "confirmada", "cancelada", "no_llego"].includes(estado) && (
+        <div data-eliminar-cita className="flex flex-col gap-2 border-t border-n-200 pt-3">
+          {eliminando ? (
+            <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
+              <p className="text-sm font-semibold text-coral-oscuro">
+                ¿Eliminar esta cita? Úsalo para una cita capturada por error o duplicada. Sale de la agenda y libera el horario; no se borra: queda en el historial con su motivo. Para una cita que ya no va, usa «Cancelar cita».
+              </p>
+              <Field label="Motivo (obligatorio)" value={motivoEliminar} onChange={(e) => setMotivoEliminar(e.target.value)} placeholder="ej. Se capturó dos veces" />
+              <div className="flex gap-2">
+                <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={accionEliminar}>
+                  {cargando.cargando ? "Eliminando…" : "Sí, eliminar la cita"}
+                </Button>
+                <Button type="button" variante="secundario" onClick={() => setEliminando(false)}>
+                  No
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button type="button" variante="secundario" className="self-start" onClick={() => setEliminando(true)}>
+              Eliminar cita
+            </Button>
           )}
         </div>
       )}

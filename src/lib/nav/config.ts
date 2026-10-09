@@ -48,6 +48,7 @@ export const SECCIONES_STAFF: ItemNav[] = [
   { etiqueta: "Perfil y página web", href: "/admin/perfil", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { etiqueta: "Políticas y reglas", href: "/admin/politicas", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { etiqueta: "Reporte y fotos", href: "/admin/reporte-guarderia", roles: ["admin"], modulo: ["guarderia", "hotel"] },
+  { etiqueta: "Tarifa de guardería", href: "/admin/tarifa-guarderia", roles: ["admin"], permisos: ["tarifas"], modulo: "estetica" },
   { etiqueta: "Módulos y plan", href: "/admin/modulos", roles: ["admin"] },
   { etiqueta: "Cobro con terminal", href: "/admin/pagos", roles: ["admin"] },
   // Artículos, asistente y tickets de soporte: sin permiso especial.

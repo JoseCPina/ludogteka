@@ -856,4 +856,143 @@ Puedes **Reagendar**, **Marcar no llegó** o **Cancelar**. Si la estilista cambi
 - «Solo se puede finalizar una cita que está en curso.»: primero iníciala.
 - «Esta cita no tiene estilista asignada»: asígnale una antes de iniciarla o terminarla (arriba de los botones, en **Estilista**).`,
   },
+
+  {
+    slug: "anular-o-corregir-un-cobro",
+    titulo: "Cómo anular o corregir un cobro sin usar un descuento",
+    resumen: "Anular un cobro capturado por error, corregir el monto recibido o el precio de una línea: con motivo, sin borrar nada.",
+    grupo: "caja",
+    modulo: null,
+    roles: ["admin", "recepcion"],
+    rutas: ["/reservas/[id]/cobrar", "/caja/cobrar/[reservaId]", "/caja/recibo-junto/[grupoId]"],
+    palabras: ["anular cobro", "cobro equivocado", "me equivoqué al cobrar", "corregir monto", "corregir precio", "cobré de más", "cobré cuenta equivocada", "cancelar cobro", "descuento para corregir"],
+    cuerpo: `Si un cobro se capturó mal, **no uses un descuento** para arreglarlo: el descuento cambia lo que vale el servicio y ensucia los reportes. Para eso están **Anular cobro**, **Corregir monto** y **Corregir precio**. En los tres hace falta un **motivo (obligatorio)**; nunca se borra nada: queda quién, cuándo, el valor de antes y el de ahora.
+
+## Quién puede
+
+Admin siempre. A una persona de recepción el admin le da en [Permisos](/admin/permisos): **Anular cobros**, **Editar monto de cobros** y **Corregir cobros de turnos cerrados**. Vienen apagados.
+
+## Anular cobro
+
+1. Abre la cuenta en [Caja](/caja) y busca el cobro.
+2. Aprieta **Anular cobro**, escribe el motivo y confirma.
+
+El cobro queda marcado como **ANULADO** con su motivo, **sale de los totales del turno, los reportes, las comisiones y la conciliación**, y la cuenta (o la cita) **vuelve a quedar por cobrar**. Si el cobro traía propina, se anula junto con él.
+
+## Corregir monto
+
+Para cuando el dinero que se recibió fue otro (se tecleó $300 y eran $400): **Corregir monto** cambia lo recibido en ese método. Queda el monto anterior y el nuevo. No genera ningún descuento.
+
+## Corregir precio
+
+Para cuando el precio de **una línea de la cuenta** estaba mal. En la línea, **Corregir precio**: escribe el **Precio correcto de la línea** y el motivo. La cuenta muestra la corrección como un renglón aparte; no cuenta como descuento.
+
+## Qué sí se puede anular o corregir
+
+- **Efectivo, transferencia y tarjeta (registro manual):** sí.
+- **Cobros con la terminal o el link de Mercado Pago (o Clip):** no. Se devuelven con **Devolver con Mercado Pago** (mira [Cómo devolver un cobro](/ayuda/devolver-un-cobro)); así el dinero y la caja cuadran con lo que realmente pasó.
+- **Con el turno abierto:** quien tenga el permiso corrige directo.
+- **Con el turno ya cerrado:** hace falta **Corregir cobros de turnos cerrados**. El corte cerrado **no cambia**: la corrección entra al turno abierto de hoy y se ve como ajuste, en el turno actual y en el historial.
+- **Cobro con devoluciones:** primero se resuelven las devoluciones.
+
+## Cobros juntos (varias cuentas de una clienta)
+
+En el recibo del cobro junto hay **Anular el cobro junto completo** o **Anular solo:** una de las cuentas. Si anulas una sola, el recibo marca esa parte como anulada y el total y el folio quedan con lo que sigue vigente.
+
+## Si algo no sale
+
+- «Escribe el motivo…»: el motivo es obligatorio y debe explicar qué pasó.
+- Sin el botón: no tienes el permiso o el cobro es de terminal o link.
+- Cobro de un turno cerrado sin permiso: pídele al admin **Corregir cobros de turnos cerrados**.`,
+  },
+  {
+    slug: "agregar-efectivo-a-caja",
+    titulo: "Cómo agregar efectivo a la caja",
+    resumen: "Meter efectivo al turno (cambio, préstamo, aportación) sin que cuente como venta.",
+    grupo: "caja",
+    modulo: null,
+    roles: ["admin", "recepcion"],
+    rutas: ["/caja/turno"],
+    palabras: ["agregar efectivo", "falta cambio", "meter dinero a la caja", "préstamo de otra caja", "aportación del dueño", "cambio para la caja", "arqueo no cuadra"],
+    cuerpo: `Cuando se acaba el cambio o el dueño pone dinero, se registra en el turno con **Agregar efectivo**, junto a **Registrar retiro**, en [Turno](/caja/turno).
+
+## Cómo
+
+1. Con el turno abierto, aprieta **Agregar efectivo**.
+2. Escribe el **Monto**, escoge **De dónde viene** (cambio, préstamo de otra caja, aportación del dueño u otro) y una nota.
+3. Guarda. Sale en **Efectivo agregado a este turno** y en **Movimientos del turno**.
+
+## Cómo cuenta
+
+El efectivo agregado **no es una venta ni un ingreso**: no sale en los reportes de ingreso. Sí entra al arqueo:
+
+esperado = fondo + cobros en efectivo + efectivo agregado − retiros.
+
+## Si te equivocaste
+
+Se cancela con motivo (queda tachado y con quién lo canceló) mientras el turno siga abierto.
+
+Hace falta ser admin o tener el permiso **Agregar efectivo a caja** (apagado por omisión para recepción; se da en [Permisos](/admin/permisos)).`,
+  },
+  {
+    slug: "reprogramar-o-cancelar-cita-de-estetica",
+    titulo: "Cómo reprogramar, cancelar o eliminar una cita de estética",
+    resumen: "Cambiar la fecha o la hora, cancelar con motivo, marcar «no se presentó» o eliminar una cita capturada por error.",
+    grupo: "estetica",
+    modulo: "estetica",
+    roles: ["admin", "recepcion"],
+    rutas: ["/estetica", "/estetica/[citaId]"],
+    palabras: ["reprogramar cita", "cambiar fecha", "cambiar hora", "mover cita", "cancelar cita", "no se presentó", "no llegó", "eliminar cita", "cita duplicada", "avisar al cliente"],
+    cuerpo: `## Reprogramar
+
+En la [agenda](/estetica) cada cita por empezar trae **Reprogramar** (también está dentro de la cita). Escribe la **Nueva fecha y hora** y, si quieres, el motivo; aprieta **Guardar la nueva hora**. La app revisa que la estilista no tenga otra cita encimada. La cita se mueve con su precio y el cambio queda en **Historial de cambios**.
+
+Al guardar sale el botón para **avisar al cliente por WhatsApp** con el mensaje ya escrito. La app no manda nada sola: tú decides si lo envías.
+
+Una cita **ya cobrada** no se reprograma: primero se anula el cobro (mira [Cómo anular o corregir un cobro](/ayuda/anular-o-corregir-un-cobro)).
+
+## Cancelar y «No se presentó»
+
+Son dos cosas distintas:
+
+- **Cancelar cita:** la clienta avisó que no viene. Pide motivo; el horario queda libre.
+- **No se presentó:** nadie avisó y no llegó. Queda como «no llegó».
+
+En los dos casos la cita no se borra y queda el historial. Si ya tenía cobro, se anula primero.
+
+## Eliminar
+
+**Eliminar cita** es solo para una cita capturada por error o duplicada. Sale de la agenda y libera el horario, con motivo, y no se borra físicamente. Es de admin o de quien tenga el permiso **Eliminar citas** (apagado por omisión; se da en [Permisos](/admin/permisos)).`,
+  },
+  {
+    slug: "agregar-otro-perrito-en-estetica",
+    titulo: "Cómo agendar a otro perrito del mismo cliente",
+    resumen: "Después de agendar una cita, sumar otro perro del dueño con su propia cita y cobrarlas juntas.",
+    grupo: "estetica",
+    modulo: "estetica",
+    roles: ["admin", "recepcion"],
+    rutas: ["/estetica/nueva"],
+    palabras: ["otro perro", "dos perros", "segundo perrito", "otro perrito", "mismo dueño", "cobrar juntos", "agregar perro"],
+    cuerpo: `Al agendar en [Agendar](/estetica/nueva), cuando ya escogiste al cliente, aparece **Agregar otro perrito de este cliente**.
+
+1. Aprieta el botón y elige a otro perro del dueño, o créalo ahí mismo con un alta corta (nombre, raza, tamaño y pelaje; **sin** datos de hotel ni guardería).
+2. Agenda su cita con su servicio. La hora que propone la app es después de la cita del primer perro.
+3. Cada perro tiene **su propia cita y su propia cuenta**.
+4. Para cobrar, la pantalla ofrece el atajo para cobrarlas juntas: un solo pago repartido entre las cuentas (mira [Cómo cobrar varios servicios juntos](/ayuda/cobrar-varios-servicios-juntos)).`,
+  },
+  {
+    slug: "tarifa-cliente-de-guarderia",
+    titulo: "Cómo funciona la tarifa «Cliente de guardería» en estética",
+    resumen: "Un precio especial (el del baño exprés) para los perros que usan la guardería, configurable por negocio.",
+    grupo: "administracion",
+    modulo: "estetica",
+    roles: ["admin", "recepcion"],
+    rutas: ["/admin/tarifa-guarderia", "/estetica/nueva", "/estetica/[citaId]"],
+    palabras: ["cliente de guardería", "tarifa guardería", "precio exprés", "descuento guardería", "perro de guardería estética"],
+    cuerpo: `Es una **tarifa**, no un descuento: se ve en la cita como «Tarifa de cliente de guardería» y en los reportes cuenta como el precio del servicio.
+
+El admin la activa y la configura en [Tarifa de guardería](/admin/tarifa-guarderia): **Ofrecer la tarifa de cliente de guardería**, el servicio con cuyo precio se cobra y **los servicios que**, para un cliente de guardería, **se cobran a ese precio**. Viene **apagada**: mientras no se active, todos pagan el precio normal de su baño.
+
+Encendida, se aplica sola al agendar a un perro que usa la guardería. Para quitarla en una cita se usa **Quitar la tarifa**, con motivo, y hace falta el permiso **Excepciones al reservar**; **Poner la tarifa de guardería** la regresa. El precio de una cita ya agendada no cambia si luego cambias la configuración.`,
+  },
 ];

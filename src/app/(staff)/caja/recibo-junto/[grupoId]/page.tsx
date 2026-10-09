@@ -8,6 +8,9 @@ import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { LogoNegocio } from "@/components/marca/logo-negocio";
 import { ETIQUETA_TARJETA_MANUAL } from "@/lib/cobro/tarjeta-manual";
 import { BotonImprimir } from "./boton-imprimir";
+import { CorreccionesRecibo } from "./correcciones-recibo";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { tienePermiso } from "@/lib/auth/permisos";
 
 export type DetalleGrupo = {
   grupo_id: string;
@@ -21,7 +24,10 @@ export type DetalleGrupo = {
   notas: string | null;
   tarjeta: { id: string; folio: string; estado: string; monto: number } | null;
   metodos: { metodo: string; monto: number; propina: number }[];
-  cuentas: { reserva_id: string; cobro_id: string; monto: number; propina: number; devuelto: number; descripcion: string; perros: string }[];
+  cuentas: { reserva_id: string; cobro_id: string; monto: number; propina: number; devuelto: number; descripcion: string; perros: string; anulado?: boolean; anulacion_motivo?: string | null; editado?: boolean }[];
+  turno_id?: string;
+  anulado?: boolean;
+  correcciones?: { tipo: string; motivo: string; fecha: string; cobro_id: string; estado_anterior: { metodo?: string; monto?: number } | null; evidencia: { monto_nuevo?: number; monto?: number } | null }[];
 };
 
 const ETIQUETA_METODO: Record<string, string> = {
@@ -59,6 +65,12 @@ export default async function ReciboJuntoPage({ params }: { params: Promise<{ gr
     );
   }
 
+  const sesion = await obtenerSesionConRol();
+  const { data: turnoDelCobro } = d.turno_id ? await supabase.from("turnos_caja").select("estado").eq("id", d.turno_id).maybeSingle() : { data: null };
+  const turnoCerrado = turnoDelCobro ? (turnoDelCobro.estado as string) !== "abierto" : false;
+  const anulado = Boolean(d.anulado);
+  const hayAnuladas = d.cuentas.some((c) => c.anulado);
+
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-4" data-recibo-junto>
       <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
@@ -68,9 +80,19 @@ export default async function ReciboJuntoPage({ params }: { params: Promise<{ gr
         <BotonImprimir />
       </div>
 
-      <Alert variante="exito" titulo="Cobro registrado">
-        Las {d.cuentas.length} cuentas quedaron cobradas con un solo pago.
-      </Alert>
+      {anulado ? (
+        <Alert variante="error" titulo="Cobro junto ANULADO">
+          Este cobro se anuló. Las cuentas volvieron a quedar por cobrar y no cuenta en la caja ni en los reportes. El recibo queda como historial.
+        </Alert>
+      ) : hayAnuladas ? (
+        <Alert variante="advertencia" titulo="Una parte de este cobro junto se anuló">
+          Las cuentas marcadas como anuladas volvieron a quedar por cobrar. El total y el folio son los de las partes que siguen.
+        </Alert>
+      ) : (
+        <Alert variante="exito" titulo="Cobro registrado">
+          Las {d.cuentas.length} cuentas quedaron cobradas con un solo pago.
+        </Alert>
+      )}
 
       <article className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
         <LogoNegocio nombre={negocio.nombre} marca={negocio.marca} variante="recibo" />
@@ -91,10 +113,12 @@ export default async function ReciboJuntoPage({ params }: { params: Promise<{ gr
           {d.cuentas.map((c) => (
             <li key={c.cobro_id} className="flex flex-wrap items-start justify-between gap-2 py-2">
               <div className="min-w-0">
-                <p className="font-medium text-n-900">{c.descripcion}</p>
+                <p className={`font-medium ${c.anulado ? "text-n-500 line-through" : "text-n-900"}`}>{c.descripcion}</p>
                 {c.perros && <p className="text-xs text-n-500">{c.perros}</p>}
+                {c.anulado && <p className="text-xs font-bold uppercase text-coral-oscuro">Anulado — {c.anulacion_motivo}</p>}
+                {c.editado && !c.anulado && <p className="text-xs font-semibold text-ambar-oscuro">Monto corregido</p>}
               </div>
-              <p className="font-semibold tabular-nums text-n-900">{dinero(c.monto)}</p>
+              <p className={`font-semibold tabular-nums ${c.anulado ? "text-n-400 line-through" : "text-n-900"}`}>{dinero(c.anulado ? (d.correcciones ?? []).find((x) => x.cobro_id === c.cobro_id && x.tipo === "anulacion")?.evidencia?.monto ?? 0 : c.monto)}</p>
             </li>
           ))}
         </ul>
@@ -128,12 +152,34 @@ export default async function ReciboJuntoPage({ params }: { params: Promise<{ gr
           </ul>
           {d.tarjeta && (
             <p className="mt-1 text-n-600">
-              Voucher de tarjeta · folio <span className="font-semibold">{d.tarjeta.folio}</span> ({d.tarjeta.estado === "por_revisar" ? "sin verificar" : d.tarjeta.estado === "revisada" ? "revisada" : "no recibida"})
+              Voucher de tarjeta · folio <span className="font-semibold">{d.tarjeta.folio}</span> ({d.tarjeta.estado === "por_revisar" ? "sin verificar" : d.tarjeta.estado === "revisada" ? "revisada" : d.tarjeta.estado === "anulada" ? "anulada" : "no recibida"})
             </p>
           )}
           {d.notas && <p className="mt-1 text-n-600">{d.notas}</p>}
         </div>
+        {(d.correcciones ?? []).length > 0 && (
+          <div className="text-sm text-n-700" data-recibo-correcciones>
+            <p className="text-xs uppercase tracking-wide text-n-500">Correcciones</p>
+            <ul>
+              {(d.correcciones ?? []).map((x, i) => (
+                <li key={i}>
+                  {x.tipo === "anulacion" ? "Anulación" : "Monto corregido"}
+                  {x.tipo === "edicion_monto" ? ` de ${dinero(Number(x.estado_anterior?.monto ?? 0))} a ${dinero(Number(x.evidencia?.monto_nuevo ?? 0))}` : ""} — {x.motivo} ({formatearFecha(x.fecha, zona)})
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </article>
+
+      {d.origen === "manual" && !d.metodos.some((m) => m.metodo === "terminal") && tienePermiso(sesion, "anular_cobros") && (
+        <CorreccionesRecibo
+          grupoId={d.grupo_id}
+          cuentas={d.cuentas.map((c) => ({ cobroId: c.cobro_id, reservaId: c.reserva_id, descripcion: c.descripcion, anulado: Boolean(c.anulado) }))}
+          turnoCerrado={turnoCerrado}
+          puedeTurnosCerrados={tienePermiso(sesion, "corregir_turnos_cerrados")}
+        />
+      )}
 
       <div className="flex flex-wrap gap-2 print:hidden">
         <Link href="/caja">

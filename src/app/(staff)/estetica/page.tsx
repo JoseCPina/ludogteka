@@ -84,7 +84,7 @@ export default async function AgendaPage({
       })),
       supabase
         .from("citas_estetica")
-        .select("id, inicio, estado, fuera_de_horario, empleado_id, perros(nombre), servicio_nombre, servicios(nombre)")
+        .select("id, inicio, estado, fuera_de_horario, empleado_id, perros(nombre), servicio_nombre, servicios!citas_estetica_servicio_id_fkey(nombre)")
         .is("deleted_at", null)
         .gte("inicio", desdeConsulta)
         .lt("inicio", hastaConsulta)
@@ -199,24 +199,35 @@ export default async function AgendaPage({
                             </p>
                           )}
                           {citasDelDia.map((c) => (
-                            <Link
-                              key={c.id}
-                              href={
-                                puedeEditarTodos || esPropia ? `/estetica/${c.id}` : "#"
-                              }
-                              className={`flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm ${
-                                c.fuera_de_horario ? "border-ambar bg-ambar-suave" : "border-n-200 bg-n-50"
-                              } ${puedeEditarTodos || esPropia ? "hover:opacity-80" : "cursor-default"}`}
-                            >
-                              <span className="font-semibold text-n-900">
-                                {horaLocalDeInstante(c.inicio, zona)} · {c.perro_nombre}
-                              </span>
-                              <span
-                                className={`rounded-full px-2 py-0.5 text-xs font-semibold ${ESTILO_ESTADO[c.estado] ?? "bg-n-100"}`}
+                            <div key={c.id} className="flex items-stretch gap-1.5">
+                              <Link
+                                href={
+                                  puedeEditarTodos || esPropia ? `/estetica/${c.id}` : "#"
+                                }
+                                className={`flex flex-1 items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm ${
+                                  c.fuera_de_horario ? "border-ambar bg-ambar-suave" : "border-n-200 bg-n-50"
+                                } ${puedeEditarTodos || esPropia ? "hover:opacity-80" : "cursor-default"}`}
                               >
-                                {ETIQUETA_ESTADO[c.estado] ?? c.estado}
-                              </span>
-                            </Link>
+                                <span className="font-semibold text-n-900">
+                                  {horaLocalDeInstante(c.inicio, zona)} · {c.perro_nombre}
+                                </span>
+                                <span
+                                  className={`rounded-full px-2 py-0.5 text-xs font-semibold ${ESTILO_ESTADO[c.estado] ?? "bg-n-100"}`}
+                                >
+                                  {ETIQUETA_ESTADO[c.estado] ?? c.estado}
+                                </span>
+                              </Link>
+                              {(puedeEditarTodos || esPropia) && (c.estado === "reservada" || c.estado === "confirmada") && (
+                                <Link
+                                  href={`/estetica/${c.id}?reprogramar=1`}
+                                  data-reprogramar-agenda
+                                  className="inline-flex items-center rounded-md border border-n-200 bg-white px-2.5 text-xs font-semibold text-morado hover:bg-morado-suave"
+                                  title="Cambiar la fecha o la hora de esta cita"
+                                >
+                                  Reprogramar
+                                </Link>
+                              )}
+                            </div>
                           ))}
                         </div>
                       );

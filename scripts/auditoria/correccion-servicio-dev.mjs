@@ -135,7 +135,7 @@ try {
     comprobar(inicia.ok, `con el servicio dado de baja, la cita se puede iniciar («${inicia.mensaje.slice(0, 70)}»)`);
     comprobar(await terminar(c1.id), "y terminar");
     const mover = await llamar(`${URL}/rest/v1/citas_estetica?id=eq.${c1.id}`, { method: "PATCH", headers: cab(tAdmin), body: JSON.stringify({ inicio: `${sumarDias(hoyB, 650)}T10:00:00-06:00` }) });
-    comprobar(!mover.ok && /Corregir servicio|ya no se ofrece/i.test(mover.mensaje), `moverle la fecha con el servicio retirado se rechaza diciendo qué hacer («${mover.mensaje.slice(0, 90)}»)`);
+    comprobar(!mover.ok && /Reprogramar|Corregir servicio|ya no se ofrece/i.test(mover.mensaje), `moverle la fecha a mano a una cita terminada con el servicio retirado se rechaza diciendo qué hacer («${mover.mensaje.slice(0, 90)}»)`);
     const nuevaConRetirado = await llamar(`${URL}/rest/v1/citas_estetica`, { method: "POST", headers: cab(tAdmin), body: JSON.stringify({ reserva_id: c1.reserva_id, perro_id: perro, servicio_id: idExpres, empleado_id: datos.esteticaB, inicio: `${sumarDias(hoyB, 700)}T10:00:00-06:00` }) });
     comprobar(!nuevaConRetirado.ok, "una cita NUEVA con un servicio retirado se sigue rechazando");
     const c1d = await cita(c1.id);

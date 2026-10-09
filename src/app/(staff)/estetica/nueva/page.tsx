@@ -3,6 +3,8 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { armarClientesBuscables } from "@/lib/clientes/buscables";
 import { tienePermiso } from "@/lib/auth/permisos";
+import { cargarRazas } from "@/lib/razas";
+import { negocioIdActual } from "@/lib/negocio/actual";
 import { AgendarForm } from "./agendar-form";
 
 export default async function AgendarPage() {
@@ -73,6 +75,7 @@ export default async function AgendarPage() {
     new Set((conRequisitoPendiente ?? []).map((r) => r.perro_id as string).filter((id) => usanGh.has(id)))
   );
 
+  const razas = await cargarRazas(supabase, await negocioIdActual(), { conGrupo: true });
   const error = errorClientes ?? errorPerros ?? errorServicios ?? errorEmpleados ?? errorEstancias;
 
   const estanciasLista = (estanciasEnCurso ?? []).map((e) => {
@@ -132,6 +135,7 @@ export default async function AgendarPage() {
           gruposPrecio={(gruposPrecio ?? []) as { id: string; nombre: string }[]}
           tamanos={((tamanosCrudo ?? []) as { id: string; etiqueta: string; clave: string }[]).filter((t) => ["chico", "mediano", "grande"].includes(t.clave))}
           pelajes={((pelajesCrudo ?? []) as { id: string; etiqueta: string; clave: string }[]).filter((p) => ["corto", "medio", "largo"].includes(p.clave))}
+          razas={razas}
           puedeAsignarGrupo={tienePermiso(sesion, "tarifas")}
           puedeExcepcion={tienePermiso(sesion, "excepciones_reserva")}
           rolActual={sesion?.rol ?? "cliente"}
