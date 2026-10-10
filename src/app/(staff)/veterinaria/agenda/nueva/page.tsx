@@ -1,0 +1,102 @@
+import Link from "next/link";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { FormularioAccion } from "@/components/formulario-accion";
+import { buscarMascotas, etiquetaEspecie } from "@/lib/veterinaria/buscar";
+import { hoyNegocio } from "@/lib/formato";
+import { zonaActual } from "@/lib/negocio/actual";
+import type { MedicoVet, TipoCitaConfig } from "@/lib/veterinaria/expediente";
+import { agendarCita } from "../../expediente/actions";
+
+export default async function NuevaCitaVet({ searchParams }: { searchParams: Promise<{ q?: string; perro?: string; fecha?: string }> }) {
+  const { q: qCrudo, perro, fecha } = await searchParams;
+  const supabase = await createSupabaseServerClient();
+  const zona = await zonaActual();
+  const hoy = hoyNegocio(zona);
+
+  if (!perro) {
+    const filas = await buscarMascotas(supabase, qCrudo ?? "");
+    return (
+      <div className="flex flex-col gap-5">
+        <div>
+          <Link href="/veterinaria/agenda" className="text-sm font-semibold text-morado hover:underline">← Agenda clínica</Link>
+          <h1 className="mt-1 text-2xl font-bold text-n-900">Agendar una cita</h1>
+          <p className="mt-1 text-n-600">Primero elige a la mascota: busca por su nombre, el de su dueño o su teléfono.</p>
+        </div>
+        <form className="flex max-w-xl items-end gap-3">
+          <input type="hidden" name="fecha" value={fecha ?? ""} />
+          <div className="flex-1"><Field label="Buscar mascota o dueño" name="q" defaultValue={qCrudo ?? ""} placeholder="Motita, Ana, 444…" /></div>
+          <Button type="submit">Buscar</Button>
+        </form>
+        {filas.length === 0 ? (
+          <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">No encontramos a nadie con eso. Da de alta al dueño y a su mascota en <Link href="/clientes" className="font-semibold text-morado underline">Clientes</Link>.</p>
+        ) : (
+          <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
+            {filas.map((f) => (
+              <li key={f.id}>
+                <Link href={`/veterinaria/agenda/nueva?perro=${f.id}${fecha ? `&fecha=${fecha}` : ""}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50">
+                  <span className="font-semibold text-n-900">{f.nombre} <span className="font-normal text-n-500">· {etiquetaEspecie(f.especie)}</span></span>
+                  <span className="text-sm text-n-600">{f.dueno}{f.telefono ? ` · ${f.telefono}` : ""}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
+
+  const [{ data: mascota }, { data: tiposCrudo }, { data: medicosCrudo }, { data: miMedico }] = await Promise.all([
+    supabase.from("perros").select("id, nombre, especie, clientes(nombre, telefono)").eq("id", perro).maybeSingle(),
+    supabase.rpc("vet_tipos_cita_lista"),
+    supabase.rpc("vet_medicos_lista"),
+    supabase.rpc("vet_mi_medico"),
+  ]);
+  const tipos = ((tiposCrudo ?? []) as TipoCitaConfig[]).filter((t) => t.activo);
+  const medicos = (medicosCrudo ?? []) as MedicoVet[];
+  const dueno = mascota ? ((Array.isArray(mascota.clientes) ? mascota.clientes[0] : mascota.clientes) as { nombre: string } | null) : null;
+
+  return (
+    <div className="flex max-w-2xl flex-col gap-5">
+      <div>
+        <Link href="/veterinaria/agenda/nueva" className="text-sm font-semibold text-morado hover:underline">← Elegir otra mascota</Link>
+        <h1 className="mt-1 text-2xl font-bold text-n-900">Agendar una cita</h1>
+        {mascota && <p className="mt-1 text-n-700">{mascota.nombre} · {etiquetaEspecie(mascota.especie as string | null)} · de {dueno?.nombre ?? "—"}</p>}
+      </div>
+      {!mascota ? (
+        <Alert variante="error" titulo="No encontramos a esa mascota">Búscala de nuevo.</Alert>
+      ) : medicos.length === 0 ? (
+        <Alert variante="advertencia" titulo="Todavía no hay médicos veterinarios">Un admin designa al menos uno en <Link href="/veterinaria/medicos" className="font-semibold underline">Médicos</Link>.</Alert>
+      ) : (
+        <FormularioAccion accion={agendarCita} textoBoton="Agendar cita" className="rounded-lg border border-n-200 bg-white p-5">
+          <input type="hidden" name="perro_id" value={perro} />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Select label="Tipo de cita" name="tipo" defaultValue="consulta" ayuda="La duración sale del tipo; se cambia en Ajustes de Veterinaria.">
+              {tipos.map((t) => (
+                <option key={t.clave} value={t.clave}>
+                  {t.nombre} · {t.duracion_min} min
+                </option>
+              ))}
+            </Select>
+            <Select label="Médico" name="medico_id" defaultValue={(miMedico as string | null) ?? medicos[0]?.id} required>
+              {medicos.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.nombre}
+                </option>
+              ))}
+            </Select>
+            <Field label="Fecha" name="fecha" type="date" min={hoy} defaultValue={fecha && fecha >= hoy ? fecha : hoy} required />
+            <Field label="Hora" name="hora" type="time" defaultValue="09:00" required />
+            <Field label="Duración en minutos (opcional)" name="duracion" type="number" min={5} max={480} ayuda="Vacío: la del tipo de cita." />
+          </div>
+          <Textarea label="Motivo (opcional)" name="motivo" rows={2} />
+          <p className="text-sm text-n-600">Un médico no puede tener dos citas encimadas; una urgencia sí entra y se avisa.</p>
+        </FormularioAccion>
+      )}
+    </div>
+  );
+}

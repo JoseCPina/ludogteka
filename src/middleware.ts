@@ -32,7 +32,7 @@ async function negocioFirmado(h: Headers): Promise<NegocioBasico | null> {
 // extra (permisos_staff, 24 de septiembre de 2026) también entra. El orden
 // importa: gana el primer prefijo que coincide, así que lo más específico
 // va primero (/admin/permisos antes de /admin).
-type Zona = { prefijo: string; rolesPermitidos: string[]; permisos?: string[] };
+type Zona = { prefijo: string; rolesPermitidos: string[]; permisos?: string[]; accesoVeterinaria?: boolean };
 const ZONAS_PROTEGIDAS: Zona[] = [
   // Dar y quitar permisos nunca se delega.
   { prefijo: "/admin/permisos", rolesPermitidos: ["admin"] },
@@ -67,7 +67,9 @@ const ZONAS_PROTEGIDAS: Zona[] = [
   { prefijo: "/hotel", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/caja", rolesPermitidos: ["admin", "recepcion"] },
   // Veterinaria (Fase 0): inicio, inventario clínico y médicos.
-  { prefijo: "/veterinaria", rolesPermitidos: ["admin", "recepcion"] },
+  // Entra cualquier rol del personal que sea médico veterinario designado o tenga algún permiso
+  // del módulo (`acceso_veterinaria()`); cada pantalla vuelve a validar el suyo.
+  { prefijo: "/veterinaria", rolesPermitidos: ["admin", "recepcion"], accesoVeterinaria: true },
   { prefijo: "/contratos", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/inventario", rolesPermitidos: ["admin", "recepcion", "estetica"] },
   { prefijo: "/reportes", rolesPermitidos: ["admin"], permisos: ["reportes_financieros"] },
@@ -241,6 +243,11 @@ export async function middleware(request: NextRequest) {
     const { data: mios } = await supabase.rpc("mis_permisos");
     const propios = new Set(((mios as string[] | null) ?? []).map(String));
     entraPorPermiso = zona.permisos.some((p) => propios.has(p));
+  }
+
+  if (!zona.rolesPermitidos.includes(rol) && !entraPorPermiso && zona.accesoVeterinaria && rol !== "cliente") {
+    const { data: acceso } = await supabase.rpc("acceso_veterinaria");
+    entraPorPermiso = acceso === true;
   }
 
   if (!zona.rolesPermitidos.includes(rol) && !entraPorPermiso) {

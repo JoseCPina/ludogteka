@@ -185,6 +185,24 @@ export const PERMISOS = [
     implica:
       "Ingresa y da de alta mascotas hospitalizadas, indica y marca las dosis de la hoja de medicación (descuenta el lote), registra el monitoreo, agrega cargos a la cuenta y crea y firma consentimientos informados (con el módulo Veterinaria prendido). Un médico veterinario designado ya lo tiene. Viene apagado.",
   },
+  {
+    clave: "atender_consultas",
+    etiqueta: "Atender consultas",
+    implica:
+      "Abre y escribe consultas en el expediente clínico (motivo, examen, diagnósticos, plan), captura resultados de laboratorio, sube archivos y ve el expediente y la línea de tiempo de las mascotas (con el módulo Veterinaria prendido). La firma es solo del médico veterinario a cargo. Un médico veterinario designado ya lo tiene. Viene apagado.",
+  },
+  {
+    clave: "firmar_expediente",
+    etiqueta: "Firmar expediente",
+    implica:
+      "Firma consultas, agrega adendas y anula consultas del expediente clínico (con el módulo Veterinaria prendido). Solo un médico veterinario designado puede firmar con su cédula: este permiso no sustituye esa designación. Un médico veterinario designado ya lo tiene. Viene apagado.",
+  },
+  {
+    clave: "crear_estimados",
+    etiqueta: "Crear estimados",
+    implica:
+      "Crea, envía, versiona y cancela estimados de consultas y cirugías, y registra su aceptación en el mostrador; al aceptarse, sus líneas pasan a la cuenta de la mascota (con el módulo Veterinaria prendido). Un médico veterinario designado ya lo tiene. Viene apagado.",
+  },
 ] as const;
 
 export type ClavePermiso = (typeof PERMISOS)[number]["clave"];

@@ -14,6 +14,9 @@ export type ItemNav = {
   // Solo si el negocio tiene ese módulo prendido (src/lib/plan/modulos.ts);
   // con una lista, basta con cualquiera de ellos.
   modulo?: string | string[];
+  // También la ve quien sea médico veterinario designado o tenga algún permiso del módulo,
+  // sin importar su rol (`acceso_veterinaria()`).
+  conAccesoVeterinaria?: boolean;
 };
 
 // Agregar una sección nueva (Fase 4+) es agregar una entrada aquí, no
@@ -52,7 +55,7 @@ export const SECCIONES_STAFF: ItemNav[] = [
   { etiqueta: "Módulos y plan", href: "/admin/modulos", roles: ["admin"], permisos: ["administrar_modulos"] },
   { etiqueta: "Cobro con terminal", href: "/admin/pagos", roles: ["admin"] },
   // Veterinaria (Fase 0): su inicio y, para quien lo administra, los módulos.
-  { etiqueta: "Veterinaria", href: "/veterinaria", roles: ["admin", "recepcion"], modulo: "veterinaria" },
+  { etiqueta: "Veterinaria", href: "/veterinaria", roles: ["admin", "recepcion"], modulo: "veterinaria", conAccesoVeterinaria: true },
   { etiqueta: "Facturación", href: "/admin/facturacion", roles: ["admin"], permisos: ["editar_datos_fiscales", "facturar"] },
   { etiqueta: "Facturas", href: "/caja/facturas", roles: ["admin"], permisos: ["facturar", "cancelar_facturas"] },
   // Artículos, asistente y tickets de soporte: sin permiso especial.
@@ -64,7 +67,7 @@ export const SECCIONES_STAFF: ItemNav[] = [
 // en cuanto tenga elementos.
 export const SECCIONES_PORTAL: ItemNav[] = [];
 
-export function navStaffPara(rol: string, permisos: string[] = [], modulos: string[] = []): ItemNav[] {
+export function navStaffPara(rol: string, permisos: string[] = [], modulos: string[] = [], accesoVeterinaria = false): ItemNav[] {
   const inicio = rutaPorRol(rol);
   return [
     { etiqueta: "Inicio", href: inicio, roles: [rol] },
@@ -74,6 +77,7 @@ export function navStaffPara(rol: string, permisos: string[] = [], modulos: stri
     ...SECCIONES_STAFF.filter(
       (seccion) =>
         (seccion.roles.includes(rol) ||
+          (accesoVeterinaria && seccion.conAccesoVeterinaria === true) ||
           (rol === "recepcion" && (seccion.permisos ?? []).some((p) => permisos.includes(p)))) &&
         (!seccion.modulo || (Array.isArray(seccion.modulo) ? seccion.modulo : [seccion.modulo]).some((m) => modulos.includes(m))) &&
         seccion.href !== inicio

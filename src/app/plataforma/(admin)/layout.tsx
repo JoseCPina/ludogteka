@@ -19,6 +19,7 @@ const SECCIONES = [
   { href: "/plataforma/personas", texto: "Personas" },
   { href: "/plataforma/catalogos", texto: "Catálogos compartidos" },
   { href: "/plataforma/principios-activos", texto: "Principios activos" },
+  { href: "/plataforma/diagnosticos", texto: "Diagnósticos" },
   { href: "/plataforma/facturacion", texto: "Facturación" },
 ];
 

@@ -254,7 +254,11 @@ console.log("  PATCH, DELETE e INSERT revisados");
 console.log("\n── Personas de los dos negocios");
 {
   const t = tokens.cliente_de_los_dos;
-  const leer = async (rel, negocio, q = "") => (await (await fetch(`${URL}/rest/v1/${rel}?select=id${q}`, { headers: cabeceras(t, negocio) })).json());
+  const leer = async (rel, negocio, q = "") => {
+    const cuerpo = await (await fetch(`${URL}/rest/v1/${rel}?select=id${q}`, { headers: cabeceras(t, negocio) })).json();
+    if (!Array.isArray(cuerpo)) throw new Error(`lectura de ${rel} falló: ${JSON.stringify(cuerpo).slice(0, 200)}`);
+    return cuerpo;
+  };
   const cliA = (await leer("clientes", LUDOGTEKA)).map((f) => f.id);
   const cliB = (await leer("clientes", B)).map((f) => f.id);
   if (cliA.length !== 1 || cliA[0] !== datos.clienteAmbosA) hallazgo(`cliente de los dos, en A: ve ${JSON.stringify(cliA)} (esperado solo ${datos.clienteAmbosA})`);
@@ -343,6 +347,8 @@ const COMPARTIDAS = {
   planes: { cambio: { precio_mensual: 1, modulos: ["hotel", "reportes"] }, alta: { clave: "intruso", nombre: "Gratis para mí", precio_mensual: 0, precio_anual: 0, modulos: ["hotel"] } },
   // Los precios de Stripe y los eventos del webhook (28 de septiembre de 2026): solo la plataforma y el servidor.
   planes_precios_stripe: { cambio: { total_centavos: 1, stripe_price_id: "price_intruso" }, alta: { periodicidad: "mensual", neto: 0, total_centavos: 0, lookup_key: "peludesk_intruso_mensual", stripe_price_id: "price_intruso", stripe_product_id: "prod_intruso", modo: "test" } },
+  // El catálogo de diagnósticos de Veterinaria (Fase 3): solo la plataforma.
+  vet_diagnosticos: { cambio: { nombre: "hackeado por un negocio" }, alta: { nombre: `Diagnóstico intruso ${MARCA}`, categoria: "intruso" } },
   eventos_stripe: { cambio: { procesado_at: null, error: "intruso" }, alta: { stripe_event_id: `evt_intruso_${MARCA}`, tipo: "invoice.paid", modo: "test", payload: {} } },
 };
 async function huellaCompartida() {

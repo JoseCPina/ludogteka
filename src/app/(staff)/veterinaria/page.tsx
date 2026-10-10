@@ -43,7 +43,7 @@ export default async function VeterinariaInicio() {
     supabase.rpc("veterinaria_atencion"),
     supabase.rpc("hospitalizacion_censo"),
   ]);
-  const atencion = (atencionCrudo ?? {}) as { recordatorios_pendientes?: number; dosis_atrasadas?: number; consentimientos_pendientes?: number };
+  const atencion = (atencionCrudo ?? {}) as { recordatorios_pendientes?: number; dosis_atrasadas?: number; consentimientos_pendientes?: number; consultas_sin_firmar?: number; estimados_sin_respuesta?: number };
   const internados = Array.isArray(censoCrudo) ? censoCrudo.length : 0;
   const alertas = ((alertasCrudo ?? {}) as Alertas) ?? {};
   const permisos = (permisosCrudo ?? []) as Permiso[];
@@ -54,10 +54,28 @@ export default async function VeterinariaInicio() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold text-n-900">Veterinaria</h1>
-        <p className="mt-1 max-w-3xl text-n-600">Carnets y certificados, hospitalización, inventario clínico por lote, médicos veterinarios y los permisos del establecimiento.</p>
+        <p className="mt-1 max-w-3xl text-n-600">Agenda clínica y expediente, carnets y certificados, hospitalización, estimados, inventario clínico por lote, médicos veterinarios y los permisos del establecimiento.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
+        <Tarjeta href="/veterinaria/agenda" titulo="Agenda clínica">
+          <p>Citas por médico y por tipo (consulta, vacuna, cirugía, seguimiento, urgencia), sin empalmes.</p>
+        </Tarjeta>
+
+        <Tarjeta href="/veterinaria/expediente" titulo="Expediente clínico">
+          <p>Consultas firmadas por el médico, estudios, archivos y la línea de tiempo de cada mascota.</p>
+          <span className="flex flex-wrap gap-2">
+            <Contador n={Number(atencion.consultas_sin_firmar ?? 0)} texto="sin firmar" estilo="bg-ambar-suave text-ambar-oscuro" />
+          </span>
+        </Tarjeta>
+
+        <Tarjeta href="/veterinaria/estimados" titulo="Estimados">
+          <p>Lo que costará una consulta o una cirugía, con mínimo y máximo, para que el dueño lo acepte.</p>
+          <span className="flex flex-wrap gap-2">
+            <Contador n={Number(atencion.estimados_sin_respuesta ?? 0)} texto="sin respuesta" estilo="bg-ambar-suave text-ambar-oscuro" />
+          </span>
+        </Tarjeta>
+
         <Tarjeta href="/veterinaria/carnet" titulo="Carnets">
           <p>Vacunas y desparasitaciones de cada mascota, con su carnet imprimible y verificable.</p>
         </Tarjeta>
@@ -132,10 +150,6 @@ export default async function VeterinariaInicio() {
           )}
         </Tarjeta>
 
-        <Tarjeta titulo="Pacientes y consultas">
-          <span className="w-fit rounded-full bg-morado-suave px-2.5 py-1 text-xs font-semibold text-morado">Próximamente</span>
-          <p>Todavía no está disponible. Llegará en las siguientes fases del módulo.</p>
-        </Tarjeta>
       </div>
     </div>
   );
