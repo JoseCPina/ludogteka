@@ -7,6 +7,7 @@ import { negocioActual } from "@/lib/negocio/actual";
 import { normalizarTelefono } from "@/lib/telefono";
 import { geocodificarYCalcularDistancia } from "@/lib/google-maps/distancia-cliente";
 import { rutaDeVuelta } from "@/lib/clientes/volver";
+import { descartarBorradorGuardado } from "@/lib/borradores/servidor";
 
 export type EstadoClienteForm = { error: string | null; ok?: boolean };
 
@@ -85,6 +86,10 @@ async function altaCliente(formData: FormData, volver: string | null): Promise<E
   if (direccion) {
     await geocodificarYCalcularDistancia(supabase, data.id, direccion, await negocioActual());
   }
+
+  // El alta quedó guardada: el borrador (si había) ya no hace falta.
+  await descartarBorradorGuardado(supabase, "cliente_nuevo", "");
+  await descartarBorradorGuardado(supabase, "cliente_nuevo", "corta");
 
   revalidatePath("/clientes");
   if (volver) redirect(`/clientes/${data.id}/perros/nuevo?volver=${encodeURIComponent(volver)}`);

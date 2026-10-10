@@ -58,6 +58,7 @@ export const SECCIONES_STAFF: ItemNav[] = [
   { etiqueta: "Veterinaria", href: "/veterinaria", roles: ["admin", "recepcion"], modulo: "veterinaria", conAccesoVeterinaria: true },
   { etiqueta: "Facturación", href: "/admin/facturacion", roles: ["admin"], permisos: ["editar_datos_fiscales", "facturar"] },
   { etiqueta: "Facturas", href: "/caja/facturas", roles: ["admin"], permisos: ["facturar", "cancelar_facturas"] },
+  { etiqueta: "Importar", href: "/admin/importar", roles: ["admin"], permisos: ["importar_datos"] },
   // Artículos, asistente y tickets de soporte: sin permiso especial.
   { etiqueta: "Ayuda", href: "/ayuda", roles: ["admin", "recepcion"] },
 ];

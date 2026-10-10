@@ -43,6 +43,9 @@ const nextConfig: NextConfig = {
       // El demo (Patitas & Co.) es para verlo, no para que un buscador lo indexe.
       // Además robots.txt del demo lo prohíbe y sus páginas traen meta noindex.
       { source: "/:ruta*", has: [{ type: "host", value: "patitasyco.peludesk.mx" }], headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
+      // El service worker de la app instalable: siempre se revisa si hay uno nuevo, y puede
+      // controlar todo el sitio.
+      { source: "/sw.js", headers: [{ key: "Cache-Control", value: "no-cache, no-store, must-revalidate" }, { key: "Service-Worker-Allowed", value: "/" }, { key: "Content-Type", value: "text/javascript; charset=utf-8" }] },
     ];
   },
   async redirects() {

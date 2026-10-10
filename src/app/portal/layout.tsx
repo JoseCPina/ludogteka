@@ -7,6 +7,7 @@ import { PortalShell } from "@/components/chrome/portal-shell";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { esCorreoSintetico } from "@/lib/auth/identidad";
 import { formatearTelefono } from "@/lib/telefono";
+import { PwaNegocio } from "@/components/pwa/pwa-negocio";
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const sesion = await obtenerSesionConRol();
@@ -30,6 +31,7 @@ export default async function PortalLayout({ children }: { children: React.React
 
   return (
     <PortalShell marca={<LogoNegocio nombre={negocio.nombre} marca={negocio.marca} variante="barra" />} aviso={<AvisoPlan esPersonal={false} />} identidad={identidad} nombreCompleto={sesion.nombreCompleto}>
+      <PwaNegocio usuarioId={sesion.user.id} precargar={false} />
       {children}
     </PortalShell>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AvisoBorrador, useAutoguardado } from "@/lib/borradores/use-autoguardado";
 import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
@@ -193,14 +194,27 @@ function FormularioNuevoTipo({ onListo }: { onListo: () => void }) {
   const [cuerpo, setCuerpo] = useState("");
   const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
+  const borrador = useAutoguardado({
+    formulario: "contrato_tipo_nuevo",
+    valor: { nombre, categorias, titulo, cuerpo },
+    esVacio: (v) => !v.nombre.trim() && !v.titulo.trim() && !v.cuerpo.trim() && v.categorias.length === 0,
+    alRecuperar: (d) => {
+      setNombre(d.nombre ?? "");
+      setCategorias((d.categorias ?? []) as CategoriaServicioContrato[]);
+      setTitulo(d.titulo ?? "");
+      setCuerpo(d.cuerpo ?? "");
+    },
+  });
 
   async function guardar() {
     setError(null);
+    borrador.pausar();
     const res = await enviando.ejecutar(() => crearTipoContrato(nombre, categorias, titulo, cuerpo));
     if (res.error) {
       setError(res.error);
       return;
     }
+    borrador.descartar();
     onListo();
     router.refresh();
   }
@@ -208,6 +222,7 @@ function FormularioNuevoTipo({ onListo }: { onListo: () => void }) {
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-n-200 bg-n-50 p-5">
       <h2 className="text-lg font-bold text-n-900">Nuevo contrato</h2>
+      <AvisoBorrador estado={borrador} />
 
       {error && (
         <Alert variante="error" titulo="No se pudo crear">
@@ -266,20 +281,35 @@ function FormularioNuevaVersion({
   const [requiereRefirma, setRequiereRefirma] = useState(false);
   const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
+  const borrador = useAutoguardado({
+    formulario: "contrato_version",
+    clave: tipo.id,
+    valor: { titulo, cuerpo, requiereRefirma },
+    // Sin cambios respecto de la versión activa no hay nada que guardar.
+    esVacio: (v) => v.titulo === (activa?.titulo ?? "") && v.cuerpo === (activa?.cuerpo ?? ""),
+    alRecuperar: (d) => {
+      setTitulo(d.titulo ?? "");
+      setCuerpo(d.cuerpo ?? "");
+      setRequiereRefirma(Boolean(d.requiereRefirma));
+    },
+  });
 
   async function guardar() {
     setError(null);
+    borrador.pausar();
     const res = await enviando.ejecutar(() => publicarPlantilla(tipo.id, titulo, cuerpo, requiereRefirma));
     if (res.error) {
       setError(res.error);
       return;
     }
+    borrador.descartar();
     onListo();
     router.refresh();
   }
 
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-n-200 bg-n-50 p-5">
+      <AvisoBorrador estado={borrador} />
       <Alert variante="advertencia" titulo="Esto publica una versión nueva">
         Los contratos ya firmados conservan el texto de su propia versión — no se modifican. Esta
         edición solo aplica a los contratos de <strong>{tipo.nombre}</strong> que se generen de aquí
