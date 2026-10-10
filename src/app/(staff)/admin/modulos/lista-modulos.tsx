@@ -26,9 +26,9 @@ function Modulo({ m, todos }: { m: FilaModulo; todos: FilaModulo[] }) {
   const [aviso, setAviso] = useState<ImpactoModulo | null>(null);
   const falta = m.requiere.map((r) => todos.find((t) => t.clave === r)).filter((t): t is FilaModulo => Boolean(t && !t.activo));
 
-  async function cambiar(activo: boolean) {
+  async function cambiar(activo: boolean, confirmado = false) {
     setError(null);
-    const res = await envio.ejecutar(() => cambiarModulo(m.clave, activo));
+    const res = await envio.ejecutar(() => cambiarModulo(m.clave, activo, confirmado));
     if (res.error) return setError(res.error);
     setAviso(null);
     router.refresh();
@@ -74,7 +74,7 @@ function Modulo({ m, todos }: { m: FilaModulo; todos: FilaModulo[] }) {
               <p className="w-full text-sm text-n-800">
                 Hay <strong>{aviso.pendientes}</strong> {aviso.que}. Al apagarlo se esconden, pero no se borran: siguen ahí si lo vuelves a prender.
               </p>
-              <Button type="button" variante="peligro" cargando={envio.cargando} onClick={() => cambiar(false)}>
+              <Button type="button" variante="peligro" cargando={envio.cargando} onClick={() => cambiar(false, true)}>
                 Apagar de todos modos
               </Button>
               <Button type="button" variante="secundario" onClick={() => setAviso(null)}>

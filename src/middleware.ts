@@ -40,6 +40,8 @@ const ZONAS_PROTEGIDAS: Zona[] = [
   { prefijo: "/admin/pagos", rolesPermitidos: ["admin"] },
   // La plantilla del reporte de guardería y los días de retención: solo admin.
   { prefijo: "/admin/reporte-guarderia", rolesPermitidos: ["admin"] },
+  // Prender y apagar módulos: admin, o recepción con «Administrar módulos».
+  { prefijo: "/admin/modulos", rolesPermitidos: ["admin"], permisos: ["administrar_modulos"] },
   { prefijo: "/admin", rolesPermitidos: ["admin"], permisos: ["personal", "configuracion_negocio", "tarifas"] },
   { prefijo: "/recepcion", rolesPermitidos: ["recepcion", "admin"] },
   // Los primeros pasos de un negocio recién abierto en peludesk.mx.
@@ -62,6 +64,8 @@ const ZONAS_PROTEGIDAS: Zona[] = [
   { prefijo: "/adentro", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/hotel", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/caja", rolesPermitidos: ["admin", "recepcion"] },
+  // Veterinaria (Fase 0): inicio, inventario clínico y médicos.
+  { prefijo: "/veterinaria", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/contratos", rolesPermitidos: ["admin", "recepcion"] },
   { prefijo: "/inventario", rolesPermitidos: ["admin", "recepcion", "estetica"] },
   { prefijo: "/reportes", rolesPermitidos: ["admin"], permisos: ["reportes_financieros"] },
