@@ -2,7 +2,7 @@
 
 Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scripts/tutoriales/catalogo.mjs` y de lo que la app tiene hoy (código). No se edita a mano: se cambia el catálogo.
 
-**80 videos** (el 00 es el avance) en 10 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
+**85 videos** (el 00 es el avance) en 10 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
 
 ## Catálogo
 
@@ -88,6 +88,11 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 81 | Veterinaria | Estudios, archivos y la línea de tiempo de la mascota | recepcion | 2.5 min | veterinaria | — |
 | 82 | Veterinaria | Un estimado que el dueño acepta | recepcion | 2.5 min | veterinaria | crear_estimados |
 | 83 | Veterinaria | Plantillas de consulta, duración de citas y portal del dueño | admin | 2.5 min | veterinaria | — |
+| 84 | Veterinaria | Cómo emitir una receta | recepcion | 2.5 min | veterinaria | emitir_recetas |
+| 85 | Veterinaria | Registrar una receta cuantificada del SITPV (Grupo I) | recepcion | 2.5 min | veterinaria | registrar_recetas_sitpv |
+| 86 | Veterinaria | Sacar del inventario un producto controlado y el recetario especial | recepcion | 2.5 min | veterinaria | registrar_recetas_sitpv |
+| 87 | Veterinaria | El libro de control: consultarlo y exportarlo | recepcion | 2.5 min | veterinaria | ver_libro_control |
+| 88 | Veterinaria | El reporte mensual del SITPV | recepcion | 2.5 min | veterinaria | registrar_recetas_sitpv |
 
 ## Pantallas → videos
 
@@ -200,6 +205,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/reservas/estancias/[estanciaId]/checkin` | 29 |  |
 | `/reservas/estancias/[estanciaId]/checkout` | 30 |  |
 | `/reservas/series/[id]` | 27 |  |
+| `/rx/[token]` | 84 |  |
 | `/servicios` | 20 |  |
 | `/servicios/[id]` | 20 |  |
 | `/servicios/[id]/receta` | 24 |  |
@@ -229,7 +235,16 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/veterinaria/inventario` | 72 |  |
 | `/veterinaria/inventario/[id]` | 72 |  |
 | `/veterinaria/inventario/nuevo` | 72 |  |
+| `/veterinaria/libro-control` | 87 |  |
 | `/veterinaria/medicos` | 73 |  |
+| `/veterinaria/recetas` | 84 |  |
+| `/veterinaria/recetas/[id]` | 84 |  |
+| `/veterinaria/recetas/especial` | 86 |  |
+| `/veterinaria/recetas/nueva` | 84 |  |
+| `/veterinaria/recetas/sitpv` | 85 |  |
+| `/veterinaria/recetas/sitpv/[id]` | 85 |  |
+| `/veterinaria/recetas/sitpv/nuevo` | 85 |  |
+| `/veterinaria/recetas/sitpv/reporte` | 88 |  |
 | `/veterinaria/recordatorios` | 75 |  |
 | `/vinculacion` | 15 |  |
 
@@ -259,7 +274,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Tarifa de guardería | `/admin/tarifa-guarderia` | 64 |
 | Módulos y plan | `/admin/modulos` | 06 |
 | Cobro con terminal | `/admin/pagos` | 50 |
-| Veterinaria | `/veterinaria` | 70, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83 |
+| Veterinaria | `/veterinaria` | 70, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88 |
 | Facturación | `/admin/facturacion` | 65 |
 | Facturas | `/caja/facturas` | 65 |
 | Ayuda | `/ayuda` | 53 |
@@ -271,7 +286,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | guarderia | 25, 27, 28, 29, 30, 31 |
 | hotel | 26, 27, 28, 29, 30, 31 |
 | estetica | 20, 21, 22, 23, 24, 55, 58, 63, 64 |
-| veterinaria | 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83 |
+| veterinaria | 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88 |
 | bonos | 39, 60 |
 | recoleccion | 54 |
 | contratos | 16, 17, 18, 19 |
@@ -318,6 +333,9 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Atender consultas (`atender_consultas`) | 80 |
 | Firmar expediente (`firmar_expediente`) | 80 |
 | Crear estimados (`crear_estimados`) | 82 |
+| Emitir recetas (`emitir_recetas`) | 84 |
+| Registrar recetas SITPV (`registrar_recetas_sitpv`) | 85, 86, 88 |
+| Ver libro de control (`ver_libro_control`) | 87 |
 
 ## Artículos de ayuda → videos
 
@@ -397,6 +415,12 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | estudios-archivos-y-linea-de-tiempo | 81 |
 | estimados-veterinarios | 82 |
 | veterinaria-ajustes-consulta-y-portal | 83 |
+| emitir-receta-veterinaria | 84 |
+| registrar-receta-sitpv | 85 |
+| surtir-producto-controlado | 86 |
+| recetario-especial-veterinaria | 86 |
+| libro-de-control-veterinaria | 87 |
+| reporte-mensual-sitpv | 88 |
 | veterinaria-que-incluye | 70 |
 | ficha-clinica-de-la-mascota | 71 |
 | inventario-clinico-con-lotes | 72 |
@@ -438,6 +462,8 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | reembolsos | 05, 38 |
 | saldos | 05 |
 | san | 05, 29 |
+| sitpv-folios-bajos | 85 |
+| sitpv-reporte-mensual | 88 |
 | tarjetas-manuales | 38, 56 |
 | tarjetas-manuales-patron | 38 |
 | tarjetas-manuales-tope | 38 |
