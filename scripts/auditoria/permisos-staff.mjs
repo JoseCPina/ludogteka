@@ -70,10 +70,11 @@ const { data: perroPrueba } = await A.from("perros").select("id, cliente_id").is
 const { data: servDia } = await A.from("servicios").select("id").eq("categoria", "guarderia").eq("unidad", "dia").is("deleted_at", null).limit(1).single();
 // Cada corrida deja su estancia (cancelada) y el perro no puede traslapar:
 // se busca el primer día hábil libre a partir de 40 días.
-let fechaPrueba = new Date(Date.now() + 40 * 86400000);
+// Arranca en un día al azar (a 40–640 días) porque las corridas anteriores ya ocuparon los primeros.
+let fechaPrueba = new Date(Date.now() + (40 + Math.floor(Math.random() * 600)) * 86400000);
 const { data: reservaDesc } = await ADM.from("reservas").insert({ cliente_id: perroPrueba.cliente_id, notas: "Prueba de permisos (descuento)" }).select("id").single();
 let estDesc, fecha;
-for (let intento = 0; intento < 60; intento++, fechaPrueba = new Date(fechaPrueba.getTime() + 86400000)) {
+for (let intento = 0; intento < 120; intento++, fechaPrueba = new Date(fechaPrueba.getTime() + 86400000)) {
   if ([0, 6].includes(fechaPrueba.getUTCDay())) continue;
   fecha = fechaPrueba.toISOString().slice(0, 10);
   const masUno = new Date(fechaPrueba.getTime() + 86400000).toISOString().slice(0, 10);

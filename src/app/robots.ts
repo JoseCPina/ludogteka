@@ -65,6 +65,9 @@ const PRIVADAS = [
   "/servicios",
   "/vinculacion",
   "/ayuda",
+  "/veterinaria",
+  "/e/",
+  "/c/",
 ];
 
 // Solo la landing de un negocio con plan activo y landing propia es para

@@ -31,6 +31,15 @@ const nextConfig: NextConfig = {
         source: "/f/:token",
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "private, no-store" }, { key: "Referrer-Policy", value: "no-referrer" }],
       },
+      // El estimado (/e/<token>) y el carnet verificable (/c/<token>) de Veterinaria: personales, nada que indexar ni guardar.
+      {
+        source: "/e/:token",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "private, no-store" }, { key: "Referrer-Policy", value: "no-referrer" }],
+      },
+      {
+        source: "/c/:token",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "private, no-store" }, { key: "Referrer-Policy", value: "no-referrer" }],
+      },
       // El demo (Patitas & Co.) es para verlo, no para que un buscador lo indexe.
       // Además robots.txt del demo lo prohíbe y sus páginas traen meta noindex.
       { source: "/:ruta*", has: [{ type: "host", value: "patitasyco.peludesk.mx" }], headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },

@@ -25,7 +25,7 @@ export const ARTICULOS_VETERINARIA: Articulo[] = [
 - **Médicos veterinarios** con su cédula, su CPA del SITPV y sus folios.
 - **Establecimiento y permisos**: tu aviso de funcionamiento, tu MVRA y tus permisos con su vencimiento.
 - **Carnet** de vacunas y desparasitaciones (con QR verificable y recordatorios), **certificados de salud**, **hospitalización** con hoja de medicación y **consentimientos informados**.
-- **Consultas y recetas**: vienen en las siguientes fases.
+- **Agenda clínica, expediente por consulta, estudios y estimados**: ya están. Las **recetas** vienen en las siguientes fases.
 
 ## Cómo prenderlo
 

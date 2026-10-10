@@ -458,6 +458,10 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       dosis_mas_vieja?: string | null;
       consentimientos_pendientes?: number;
       consentimiento_mas_viejo?: string | null;
+      consultas_sin_firmar?: number;
+      consulta_mas_vieja?: string | null;
+      estimados_sin_respuesta?: number;
+      estimado_mas_viejo?: string | null;
     };
     if (Number(vet.dosis_atrasadas ?? 0) > 0) {
       const n = Number(vet.dosis_atrasadas);
@@ -479,6 +483,29 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
         href: "/veterinaria/consentimientos",
         dias,
         antiguedad: n === 1 ? `Esperando ${desdeCuando(dias)}` : `El más viejo, ${desdeCuando(dias)}`,
+      });
+    }
+    // Fase 3: consultas en borrador de más de un día y estimados enviados sin respuesta.
+    if (Number(vet.consultas_sin_firmar ?? 0) > 0) {
+      const n = Number(vet.consultas_sin_firmar);
+      const dias = vet.consulta_mas_vieja ? diasDesde(vet.consulta_mas_vieja, hoy, zona) : 0;
+      atencion.push({
+        clave: "consultas-sin-firmar",
+        texto: n === 1 ? "1 consulta lleva más de un día en borrador sin firmar" : `${n} consultas llevan más de un día en borrador sin firmar`,
+        href: "/veterinaria/expediente",
+        dias,
+        antiguedad: n === 1 ? `En borrador ${desdeCuando(dias)}` : `La más vieja, ${desdeCuando(dias)}`,
+      });
+    }
+    if (Number(vet.estimados_sin_respuesta ?? 0) > 0) {
+      const n = Number(vet.estimados_sin_respuesta);
+      const dias = vet.estimado_mas_viejo ? diasDesde(vet.estimado_mas_viejo, hoy, zona) : 0;
+      atencion.push({
+        clave: "estimados-sin-respuesta",
+        texto: n === 1 ? "1 estimado enviado no ha tenido respuesta del dueño" : `${n} estimados enviados no han tenido respuesta del dueño`,
+        href: "/veterinaria/estimados?estado=enviado",
+        dias,
+        antiguedad: n === 1 ? `Enviado ${desdeCuando(dias)}` : `El más viejo, ${desdeCuando(dias)}`,
       });
     }
     if (Number(vet.recordatorios_pendientes ?? 0) > 0) {

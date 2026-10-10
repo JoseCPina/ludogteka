@@ -2,7 +2,7 @@
 
 Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scripts/tutoriales/catalogo.mjs` y de lo que la app tiene hoy (código). No se edita a mano: se cambia el catálogo.
 
-**75 videos** (el 00 es el avance) en 10 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
+**80 videos** (el 00 es el avance) en 10 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
 
 ## Catálogo
 
@@ -83,6 +83,11 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 76 | Veterinaria | Cómo emitir un certificado de salud | recepcion | 2.5 min | veterinaria | emitir_certificados |
 | 77 | Veterinaria | Hospitalizar a una mascota | recepcion | 2.5 min | veterinaria | hospitalizar |
 | 78 | Veterinaria | Consentimientos informados | recepcion | 2.5 min | veterinaria | — |
+| 79 | Veterinaria | La agenda clínica con varios médicos | recepcion | 2.5 min | veterinaria | — |
+| 80 | Veterinaria | Hacer una consulta y firmarla | recepcion | 2.5 min | veterinaria | atender_consultas, firmar_expediente |
+| 81 | Veterinaria | Estudios, archivos y la línea de tiempo de la mascota | recepcion | 2.5 min | veterinaria | — |
+| 82 | Veterinaria | Un estimado que el dueño acepta | recepcion | 2.5 min | veterinaria | crear_estimados |
+| 83 | Veterinaria | Plantillas de consulta, duración de citas y portal del dueño | admin | 2.5 min | veterinaria | — |
 
 ## Pantallas → videos
 
@@ -129,6 +134,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/clientes/invitaciones` | 11 |  |
 | `/clientes/nuevo` | 10 |  |
 | `/contratos` | 16, 19 |  |
+| `/e/[token]` | 82 |  |
 | `/empleados` | 44 |  |
 | `/empleados/[id]` | 44 |  |
 | `/empleados/ausencias` | 45 |  |
@@ -201,7 +207,9 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/servicios/nuevo` | 20 |  |
 | `/sin-acceso` | 01 |  |
 | `/veterinaria` | 70 |  |
-| `/veterinaria/ajustes` | 75 |  |
+| `/veterinaria/agenda` | 79 |  |
+| `/veterinaria/agenda/nueva` | 79 |  |
+| `/veterinaria/ajustes` | 75, 83 |  |
 | `/veterinaria/carnet` | 74 |  |
 | `/veterinaria/carnet/[perroId]` | 74 |  |
 | `/veterinaria/carnet/[perroId]/imprimir` | 74 |  |
@@ -210,6 +218,12 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/veterinaria/certificados/nuevo` | 76 |  |
 | `/veterinaria/consentimientos` | 78 |  |
 | `/veterinaria/consentimientos/[id]` | 78 |  |
+| `/veterinaria/consulta/[id]` | 80 |  |
+| `/veterinaria/estimados` | 82 |  |
+| `/veterinaria/estimados/[id]` | 82 |  |
+| `/veterinaria/estimados/nuevo` | 82 |  |
+| `/veterinaria/expediente` | 81 |  |
+| `/veterinaria/expediente/[perroId]` | 81 |  |
 | `/veterinaria/hospitalizacion` | 77 |  |
 | `/veterinaria/hospitalizacion/[id]` | 77 |  |
 | `/veterinaria/inventario` | 72 |  |
@@ -245,7 +259,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Tarifa de guardería | `/admin/tarifa-guarderia` | 64 |
 | Módulos y plan | `/admin/modulos` | 06 |
 | Cobro con terminal | `/admin/pagos` | 50 |
-| Veterinaria | `/veterinaria` | 70, 72, 73, 74, 75, 76, 77, 78 |
+| Veterinaria | `/veterinaria` | 70, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83 |
 | Facturación | `/admin/facturacion` | 65 |
 | Facturas | `/caja/facturas` | 65 |
 | Ayuda | `/ayuda` | 53 |
@@ -257,7 +271,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | guarderia | 25, 27, 28, 29, 30, 31 |
 | hotel | 26, 27, 28, 29, 30, 31 |
 | estetica | 20, 21, 22, 23, 24, 55, 58, 63, 64 |
-| veterinaria | 70, 71, 72, 73, 74, 75, 76, 77, 78 |
+| veterinaria | 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83 |
 | bonos | 39, 60 |
 | recoleccion | 54 |
 | contratos | 16, 17, 18, 19 |
@@ -301,6 +315,9 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Registrar vacunas y desparasitaciones (`registrar_vacunas`) | 74 |
 | Emitir certificados (`emitir_certificados`) | 76 |
 | Hospitalizar y medicar (`hospitalizar`) | 77 |
+| Atender consultas (`atender_consultas`) | 80 |
+| Firmar expediente (`firmar_expediente`) | 80 |
+| Crear estimados (`crear_estimados`) | 82 |
 
 ## Artículos de ayuda → videos
 
@@ -375,6 +392,11 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | ver-mis-facturas | 65 |
 | llenar-el-reporte-de-comportamiento | 31 |
 | enviar-fotos-y-videos | 31 |
+| agenda-clinica-veterinaria | 79 |
+| consulta-veterinaria-soap | 80 |
+| estudios-archivos-y-linea-de-tiempo | 81 |
+| estimados-veterinarios | 82 |
+| veterinaria-ajustes-consulta-y-portal | 83 |
 | veterinaria-que-incluye | 70 |
 | ficha-clinica-de-la-mascota | 71 |
 | inventario-clinico-con-lotes | 72 |
@@ -400,10 +422,12 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | con | 05, 29 |
 | conciliacion | 05 |
 | consentimientos-pendientes | 78 |
+| consultas-sin-firmar | 80 |
 | contratos-firmar | 05, 17 |
 | contratos-regenerar | 05, 19 |
 | establecimiento-por-vencer | 73 |
 | establecimiento-vencidos | 73 |
+| estimados-sin-respuesta | 82 |
 | eval | 05, 29 |
 | gastos-proximos | 05, 47 |
 | gastos-vencidos | 05, 47 |
