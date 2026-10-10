@@ -1,0 +1,90 @@
+[
+  {
+    "numero": "01",
+    "motivo": "cambió src/app/(staff)/admin/importar/[id]/acciones.tsx; cambió src/app/(staff)/admin/importar/[id]/page.tsx; cambió src/app/(staff)/admin/importar/actions.ts"
+  },
+  {
+    "numero": "03",
+    "motivo": "cambió src/app/login/page.tsx"
+  },
+  {
+    "numero": "04",
+    "motivo": "cambió src/lib/nav/config.ts (menú y estructura)"
+  },
+  {
+    "numero": "06",
+    "motivo": "cambió src/app/(staff)/admin/page.tsx"
+  },
+  {
+    "numero": "07",
+    "motivo": "cambió src/app/(staff)/admin/importar/[id]/acciones.tsx; cambió src/app/(staff)/admin/importar/[id]/page.tsx; cambió src/app/(staff)/admin/importar/actions.ts"
+  },
+  {
+    "numero": "08",
+    "motivo": "cambió src/app/(staff)/admin/importar/[id]/acciones.tsx; cambió src/app/(staff)/admin/importar/[id]/page.tsx; cambió src/app/(staff)/admin/importar/actions.ts"
+  },
+  {
+    "numero": "09",
+    "motivo": "cambió src/app/(staff)/admin/page.tsx"
+  },
+  {
+    "numero": "10",
+    "motivo": "cambió src/app/(staff)/clientes/[id]/perros/nuevo/page.tsx; cambió src/app/(staff)/clientes/actions.ts; cambió src/app/(staff)/clientes/cliente-form.tsx"
+  },
+  {
+    "numero": "11",
+    "motivo": "cambió src/app/(staff)/clientes/actions.ts; cambió src/app/(staff)/clientes/cliente-form.tsx"
+  },
+  {
+    "numero": "12",
+    "motivo": "cambió src/app/(staff)/perros/actions.ts; cambió src/app/(staff)/perros/perro-form.tsx"
+  },
+  {
+    "numero": "14",
+    "motivo": "cambió src/app/(staff)/perros/actions.ts; cambió src/app/(staff)/perros/perro-form.tsx"
+  },
+  {
+    "numero": "15",
+    "motivo": "cambió src/app/portal/layout.tsx"
+  },
+  {
+    "numero": "16",
+    "motivo": "cambió src/app/(staff)/contratos/plantillas-contrato.tsx"
+  },
+  {
+    "numero": "18",
+    "motivo": "cambió src/app/portal/layout.tsx"
+  },
+  {
+    "numero": "19",
+    "motivo": "cambió src/app/(staff)/contratos/plantillas-contrato.tsx"
+  },
+  {
+    "numero": "25",
+    "motivo": "cambió src/app/(staff)/reservas/estancias/[estanciaId]/checkin/checkin-form.tsx"
+  },
+  {
+    "numero": "29",
+    "motivo": "cambió src/app/(staff)/reservas/estancias/[estanciaId]/checkin/checkin-form.tsx"
+  },
+  {
+    "numero": "31",
+    "motivo": "cambió src/app/(staff)/admin/page.tsx"
+  },
+  {
+    "numero": "50",
+    "motivo": "cambió src/app/(staff)/admin/page.tsx"
+  },
+  {
+    "numero": "51",
+    "motivo": "cambió src/app/(staff)/admin/page.tsx"
+  },
+  {
+    "numero": "52",
+    "motivo": "cambió src/app/(staff)/admin/page.tsx; cambió src/app/(staff)/layout.tsx"
+  },
+  {
+    "numero": "64",
+    "motivo": "cambió src/app/(staff)/admin/page.tsx"
+  }
+]

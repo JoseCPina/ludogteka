@@ -91,6 +91,8 @@ try {
   const ctxA = await nav.newContext();
   await ctxA.addCookies(await cookiesDe(P.adminId));
   const pag = await ctxA.newPage();
+  // La base de desarrollo está lejos: una ficha tarda de 6 a 20 s en cargar.
+  pag.setDefaultNavigationTimeout(90000);
   const seen = (re, ms = 30000) => pag.getByText(re).first().waitFor({ timeout: ms }).then(() => true).catch(() => false);
 
   // ── B1 ──
@@ -286,9 +288,11 @@ try {
     await pag.goto(`${BASE}/clientes/${cNuevo.id}/perros/nuevo`, { waitUntil: "networkidle" });
     comprobar(await pag.getByTestId("aviso-borrador").isVisible(), "…y vuelve a ofrecerse");
     await pag.getByRole("button", { name: "Recuperar borrador" }).click();
-    comprobar((await pag.locator('input[name="nombre"]').inputValue()) === `${MARCA} Mascota Borrador`, "…y se recupera");
+    comprobar(await esperarHasta(async () => (await pag.locator('input[name="nombre"]').inputValue()) === `${MARCA} Mascota Borrador`, 5000, 200), "…y se recupera");
     await pag.goto(`${BASE}/clientes/${dueno2.data.id}/perros/nuevo`, { waitUntil: "networkidle" });
     comprobar(!(await pag.getByTestId("aviso-borrador").isVisible().catch(() => false)), "…y no aparece en la ficha de otro dueño");
+    await new Promise((r) => setTimeout(r, 3500));
+    comprobar(!(await borradores("mascota_nueva")).some((b) => b.clave === dueno2.data.id), "abrir un formulario y no escribir nada NO deja un borrador (los valores de arranque no cuentan)");
   }
   await pag.goto(`${BASE}/contratos`, { waitUntil: "networkidle" });
   await pag.getByRole("button", { name: "Nuevo contrato" }).click();

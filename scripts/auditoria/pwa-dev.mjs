@@ -118,7 +118,12 @@ try {
   const ctx = await nav.newContext({ serviceWorkers: "allow" });
   await ctx.addCookies(await cookiesDe(P.adminId));
   const pag = await ctx.newPage();
+  // La base de desarrollo está lejos: una ficha tarda de 6 a 20 s en cargar.
+  pag.setDefaultNavigationTimeout(90000);
   const cdp = await ctx.newCDPSession(pag);
+  const erroresPagina = [];
+  pag.on("pageerror", (e) => erroresPagina.push(String(e.message)));
+  pag.on("console", (m) => { if (m.type() === "error") erroresPagina.push(m.text()); });
   await pag.goto(`${BASE}/recepcion`, { waitUntil: "networkidle" });
   comprobar(await pag.locator('link[rel="manifest"]').count() === 1, "la página enlaza el manifiesto");
   const ctrl = await esperarHasta(() => pag.evaluate(async () => { await navigator.serviceWorker.ready; return Boolean(navigator.serviceWorker.controller); }), 20000);
@@ -159,14 +164,15 @@ try {
   comprobar(await pag.getByTestId("aviso-sin-guardar").waitFor({ timeout: 6000 }).then(() => true).catch(() => false), "guardar sin conexión se detiene con un aviso claro");
   const rechazo = await pag.evaluate(async () => { try { await fetch("/clientes/nuevo", { method: "POST", body: "x" }); return "salió"; } catch (e) { return String(e.message); } });
   comprobar(/Sin conexión: no se guardó nada/.test(rechazo), `una acción (POST) ni sale: ${rechazo.slice(0, 60)}`);
-  await ctx.setOffline(false);
-  await new Promise((r) => setTimeout(r, 800));
+  // La base se mira con la llave de servidor: el navegador sigue SIN conexión.
   comprobar(!(await SB.from("clientes").select("id").eq("negocio_id", B).eq("telefono", T).maybeSingle()).data, "…y nada se guardó en la base");
-  await ctx.setOffline(true);
   await pag.goto(`${BASE}/recepcion`, { waitUntil: "domcontentloaded" });
   const textoOff = await pag.locator("main").first().innerText().catch(() => "");
-  comprobar(textoOff.length > 50 && textoOff.slice(0, 80) === textoOnline.slice(0, 80), "el tablero del día se abre sin conexión con lo último que se vio");
-  comprobar(await pag.getByTestId("aviso-sin-conexion").waitFor({ timeout: 8000 }).then(() => true).catch(() => false), "…con el aviso de «Sin conexión»");
+  const titulo = textoOnline.split(/\r?\n/).map((l) => l.trim()).find(Boolean) ?? "";
+  comprobar(textoOff.length > 50 && titulo.length > 3 && textoOff.includes(titulo), `el tablero del día se abre sin conexión con lo último que se vio (${titulo.slice(0, 40)})`);
+  const avisoOff = await pag.getByTestId("aviso-sin-conexion").waitFor({ timeout: 12000 }).then(() => true).catch(() => false);
+  const estadoOff = avisoOff ? "" : ` [onLine=${await pag.evaluate(() => navigator.onLine)}, marca=${await pag.evaluate(() => document.documentElement.hasAttribute("data-sin-conexion"))}, errores=${erroresPagina.slice(-2).join(" | ").slice(0, 200)}]`;
+  comprobar(avisoOff, `…con el aviso de «Sin conexión»${estadoOff}`);
   await pag.goto(`${BASE}/estetica`, { waitUntil: "domcontentloaded" });
   comprobar((await pag.locator("main").first().innerText().catch(() => "")).length > 20, "la agenda de estética también");
   await pag.goto(`${BASE}/clientes/${cli.id}`, { waitUntil: "domcontentloaded" });

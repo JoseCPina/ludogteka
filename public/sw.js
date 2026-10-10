@@ -14,7 +14,6 @@ const ESTATICOS = `peludesk-estaticos-${VERSION}`;
 const PAGINAS = `peludesk-paginas-${VERSION}`;
 const META = `peludesk-meta-${VERSION}`;
 const OFFLINE = "/sin-conexion";
-const ESPERA_RED_MS = 6000;
 
 // Lo único que se guarda para verlo sin conexión (ruta exacta o con un id).
 const GUARDABLES = [
@@ -45,7 +44,12 @@ self.addEventListener("activate", (evento) => {
   );
 });
 
+// Cada vez que se borra todo sube la «generación»: una descarga que ya estaba en camino
+// (una pantalla o una precarga) y termina DESPUÉS de borrar no se guarda — sería de la sesión anterior.
+let generacion = 0;
+
 async function borrarCopias() {
+  generacion++;
   await caches.delete(PAGINAS);
   await caches.delete(META);
 }
@@ -79,8 +83,9 @@ self.addEventListener("message", (evento) => {
           .filter((u) => typeof u === "string" && u.startsWith("/") && esGuardable(u.split("?")[0]))
           .map(async (u) => {
             try {
+              const g = generacion;
               const r = await fetch(u, { credentials: "same-origin", redirect: "manual" });
-              if (r.ok && r.status === 200) await guardarPagina(new Request(u), r);
+              if (r.ok && r.status === 200 && g === generacion) await guardarPagina(new Request(u), r);
             } catch {
               /* sin red: se queda lo que había */
             }
@@ -98,25 +103,17 @@ function claveDe(solicitud) {
 
 // OJO: `respuesta` ya viene clonada por quien llama, SÍNCRONAMENTE. Clonar aquí, después de un
 // await, falla («body already used») cuando el navegador ya empezó a leer la original.
+// La copia sale marcada con `Server-Timing: desde-copia`: la página lo lee de su propia navegación
+// y sabe que está SIN conexión aunque el navegador diga lo contrario (red sin internet).
+function comoCopia(copia) {
+  const h = new Headers(copia.headers);
+  h.set("Server-Timing", "desde-copia");
+  return new Response(copia.body, { status: copia.status, statusText: copia.statusText, headers: h });
+}
+
 async function guardarPagina(solicitud, respuesta) {
   const cache = await caches.open(PAGINAS);
   await cache.put(claveDe(solicitud), respuesta);
-}
-
-function conTope(promesa, ms) {
-  return new Promise((resolver, rechazar) => {
-    const t = setTimeout(() => rechazar(new Error("tiempo")), ms);
-    promesa.then(
-      (v) => {
-        clearTimeout(t);
-        resolver(v);
-      },
-      (e) => {
-        clearTimeout(t);
-        rechazar(e);
-      }
-    );
-  });
 }
 
 self.addEventListener("fetch", (evento) => {
@@ -154,17 +151,20 @@ self.addEventListener("fetch", (evento) => {
   }
   evento.respondWith(
     (async () => {
-      const cache = await caches.open(PAGINAS);
-      const copia = await cache.match(claveDe(solicitud));
       try {
-        // Con copia guardada, si el servidor tarda de más se enseña la copia; SIN copia se
-        // espera al servidor lo que haga falta (una pantalla lenta no es una pantalla sin conexión).
-        const r = copia ? await conTope(fetch(solicitud), ESPERA_RED_MS) : await fetch(solicitud);
+        // SOLO si la red falla de verdad se enseña la copia. Nunca por lentitud: una copia
+        // servida mientras la red todavía responde podría ser de OTRA persona (cambió la sesión
+        // y la página aún no avisa quién es) o estar vieja sin que nadie lo note.
+        const g = generacion;
+        const r = await fetch(solicitud);
         // Solo una respuesta de verdad de la pantalla (no un redirect al login ni un error).
-        if (r.ok && r.status === 200 && !r.redirected) evento.waitUntil(guardarPagina(solicitud, r.clone()));
+        // La copia se clona AQUÍ, sin esperar: después el navegador ya empezó a leer la original.
+        if (r.ok && r.status === 200 && !r.redirected && g === generacion) evento.waitUntil(guardarPagina(solicitud, r.clone()));
         return r;
       } catch {
-        if (copia) return copia;
+        const cache = await caches.open(PAGINAS);
+        const copia = await cache.match(claveDe(solicitud));
+        if (copia) return comoCopia(copia);
         const aviso = await (await caches.open(ESTATICOS)).match(OFFLINE);
         return aviso || Response.error();
       }

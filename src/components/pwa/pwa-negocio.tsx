@@ -31,8 +31,27 @@ function suscribirConexion(avisar: () => void) {
   };
 }
 
+// ¿Esta pantalla la entregó el service worker desde su copia? Entonces NO hay conexión,
+// diga lo que diga navigator.onLine (por ejemplo, un wifi sin internet).
+function leerDesdeCopia(): boolean {
+  try {
+    const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+    return Boolean(nav?.serverTiming?.some((s) => s.name === "desde-copia"));
+  } catch {
+    return false;
+  }
+}
+const sinSuscripcion = () => () => {};
+
 export function PwaNegocio({ usuarioId, precargar = true }: { usuarioId: string; precargar?: boolean }) {
-  const enLinea = useSyncExternalStore(suscribirConexion, () => navigator.onLine, () => true);
+  const onLine = useSyncExternalStore(suscribirConexion, () => navigator.onLine, () => true);
+  const desdeCopia = useSyncExternalStore(sinSuscripcion, leerDesdeCopia, () => false);
+  const [reconectado, setReconectado] = useState(false);
+  const enLinea = onLine && (!desdeCopia || reconectado);
+  const sinConexionRef = useRef(false);
+  useEffect(() => {
+    sinConexionRef.current = !enLinea;
+  });
   const [volvio, setVolvio] = useState(false);
   const [bloqueo, setBloqueo] = useState<string | null>(null);
   const [instalable, setInstalable] = useState<EventoInstalar | null>(null);
@@ -48,7 +67,7 @@ export function PwaNegocio({ usuarioId, precargar = true }: { usuarioId: string;
       .then(() => {
         if (!vivo) return;
         enviarAlSw({ tipo: "sesion", usuario: usuarioId });
-        if (precargar && navigator.onLine) {
+        if (precargar && navigator.onLine && !leerDesdeCopia()) {
           // Una vez que el SW ya controla la página, se piden las pantallas de consulta del día.
           setTimeout(() => enviarAlSw({ tipo: "precargar", urls: PRECARGAR }), 2500);
         }
@@ -62,6 +81,7 @@ export function PwaNegocio({ usuarioId, precargar = true }: { usuarioId: string;
   // Estado de la conexión.
   useEffect(() => {
     const alVolver = () => {
+      setReconectado(true);
       setVolvio(true);
       setTimeout(() => setVolvio(false), 5000);
     };
@@ -87,7 +107,7 @@ export function PwaNegocio({ usuarioId, precargar = true }: { usuarioId: string;
       tempBloqueo.current = setTimeout(() => setBloqueo(null), 6000);
     };
     const alEnviar = (e: Event) => {
-      if (navigator.onLine) return;
+      if (navigator.onLine && !sinConexionRef.current) return;
       e.preventDefault();
       e.stopImmediatePropagation();
       avisar();
@@ -96,7 +116,7 @@ export function PwaNegocio({ usuarioId, precargar = true }: { usuarioId: string;
     const fetchOriginal = window.fetch.bind(window);
     window.fetch = (entrada: RequestInfo | URL, init?: RequestInit) => {
       const metodo = (init?.method ?? (entrada instanceof Request ? entrada.method : "GET")).toUpperCase();
-      if (!navigator.onLine && metodo !== "GET" && metodo !== "HEAD") {
+      if ((!navigator.onLine || sinConexionRef.current) && metodo !== "GET" && metodo !== "HEAD") {
         avisar();
         return Promise.reject(new Error(MENSAJE_SIN_CONEXION));
       }

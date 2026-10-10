@@ -75,6 +75,9 @@ export function BorradorFormulario({ formulario, clave = "", activo = true }: { 
   const [form, setForm] = useState<HTMLFormElement | null>(null);
   const [valor, setValor] = useState<Valores>({});
   const pausa = useRef<() => void>(() => {});
+  // Cómo estaba el formulario al abrirlo (con sus valores de arranque: una especie «perro», un
+  // select en su primera opción…): un borrador igual a eso NO es un borrador.
+  const inicial = useRef<Valores>({});
 
   useEffect(() => {
     setForm(ancla.current?.closest("form") ?? null);
@@ -84,6 +87,7 @@ export function BorradorFormulario({ formulario, clave = "", activo = true }: { 
     if (!form || !activo) return;
     const alCambiar = () => setValor(leerCampos(form));
     const alEnviar = () => pausa.current();
+    inicial.current = leerCampos(form);
     alCambiar();
     form.addEventListener("input", alCambiar);
     form.addEventListener("change", alCambiar);
@@ -100,7 +104,7 @@ export function BorradorFormulario({ formulario, clave = "", activo = true }: { 
     clave,
     valor,
     activo: activo && form !== null,
-    esVacio: (v) => Object.values(v).every((x) => x === "" || x === false),
+    esVacio: (v) => Object.entries(v).every(([k, x]) => x === (inicial.current[k] ?? (typeof x === "boolean" ? false : ""))),
     alRecuperar: (datos) => {
       if (!form) return;
       ponerCampos(form, datos);
