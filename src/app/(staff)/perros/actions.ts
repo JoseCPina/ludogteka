@@ -6,6 +6,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hrefDeVuelta, rutaDeVuelta } from "@/lib/clientes/volver";
 import { leerPropuestaJson } from "@/lib/razas-propuesta";
 import { ligarRazaPropuesta } from "./raza-propuesta-actions";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { tienePermiso } from "@/lib/auth/permisos";
+import { usaVeterinaria } from "@/lib/plan/modulos";
+import { leerCamposClinicos, mensajeErrorClinico, type CamposClinicos } from "@/lib/perros/ficha-clinica";
 
 export type EstadoPerroForm = { error: string | null; ok?: boolean };
 
@@ -44,6 +48,22 @@ function leerCampos(formData: FormData) {
     veterinario_telefono: texto("veterinario_telefono"),
     veterinario_clinica: texto("veterinario_clinica"),
   };
+}
+
+// Campos clínicos del formulario de mostrador: solo si el formulario los
+// pintó (campo oculto `clinico`) Y la persona de verdad puede escribirlos
+// (módulo Veterinaria activo + permiso). Si no, se ignoran: así el trigger
+// de la base nunca salta por una alta de quien no tiene el permiso.
+async function clinicosDelFormulario(
+  formData: FormData
+): Promise<{ error: string } | { campos: CamposClinicos | null }> {
+  if (String(formData.get("clinico") ?? "") !== "1") return { campos: null };
+  const sesion = await obtenerSesionConRol();
+  if (!sesion || !usaVeterinaria(sesion.modulos) || !tienePermiso(sesion, "editar_ficha_clinica")) {
+    return { campos: null };
+  }
+  const leido = leerCamposClinicos(formData);
+  return "error" in leido ? { error: leido.error } : { campos: leido.campos };
 }
 
 // Lo que se puede llenar desde "Capturar ahora" (pendientes para guardería
@@ -124,16 +144,22 @@ export async function crearPerroYVolver(
 async function altaPerro(clienteId: string, formData: FormData, volver: string | null): Promise<EstadoPerroForm> {
   const campos = leerCampos(formData);
   if (!campos.nombre) return { error: "Escribe el nombre del perro." };
+  const clinicos = await clinicosDelFormulario(formData);
+  if ("error" in clinicos) return { error: clinicos.error };
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("perros")
-    .insert({ cliente_id: clienteId, ...campos })
+    .insert({ cliente_id: clienteId, ...campos, ...(clinicos.campos ?? {}) })
     .select("id")
     .single();
 
   if (error) {
-    return { error: "No pudimos guardar al perro. Intenta de nuevo." };
+    return {
+      error: clinicos.campos
+        ? mensajeErrorClinico(error)
+        : "No pudimos guardar al perro. Intenta de nuevo.",
+    };
   }
 
   // La raza que se propuso en el formulario viaja con el perro nuevo: se liga
@@ -157,17 +183,23 @@ export async function actualizarPerro(
 ): Promise<EstadoPerroForm> {
   const campos = leerCampos(formData);
   if (!campos.nombre) return { error: "Escribe el nombre del perro." };
+  const clinicos = await clinicosDelFormulario(formData);
+  if ("error" in clinicos) return { error: clinicos.error };
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("perros")
-    .update(campos)
+    .update({ ...campos, ...(clinicos.campos ?? {}) })
     .eq("id", perroId)
     .select("cliente_id")
     .single();
 
   if (error) {
-    return { error: "No pudimos guardar los cambios. Intenta de nuevo." };
+    return {
+      error: clinicos.campos
+        ? mensajeErrorClinico(error)
+        : "No pudimos guardar los cambios. Intenta de nuevo.",
+    };
   }
 
   revalidatePath(`/perros/${perroId}`);

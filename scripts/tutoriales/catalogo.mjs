@@ -21,6 +21,7 @@ export const AREAS = [
   { clave: "inventario", nombre: "Inventario" },
   { clave: "empleados", nombre: "Empleados y gastos" },
   { clave: "negocio", nombre: "Tu negocio" },
+  { clave: "veterinaria", nombre: "Veterinaria" },
 ];
 
 const v = (id, slug, area, titulo, resumen, o = {}) => ({
@@ -111,6 +112,12 @@ export const VIDEOS = [
   v("62", "agregar-efectivo-a-caja", "caja", "Cómo agregar efectivo a la caja", "Metes cambio o una aportación al turno sin que cuente como venta y ves cómo cambia el arqueo.", { rol: "admin", permisos: ["agregar_efectivo"], rutas: [], articulos: ["agregar-efectivo-a-caja"], etiquetas: ["efectivo", "cambio", "arqueo"] }),
   v("63", "reprogramar-cancelar-o-eliminar-una-cita", "estetica", "Reprogramar, cancelar o eliminar una cita de estética", "Cambias fecha y hora, avisas por WhatsApp, cancelas o marcas que no se presentó, y eliminas una cita por error.", { rol: "admin", modulos: ["estetica"], permisos: ["eliminar_citas"], rutas: [], articulos: ["reprogramar-o-cancelar-cita-de-estetica", "agregar-otro-perrito-en-estetica"], etiquetas: ["reprogramar", "cancelar", "otro perrito"] }),
   v("64", "tarifa-cliente-de-guarderia", "estetica", "La tarifa «Cliente de guardería» en estética", "Activas la tarifa del perro de guardería (precio exprés), eliges a qué servicios aplica y la quitas en una cita.", { rol: "admin", modulos: ["estetica"], rutas: ["/admin/tarifa-guarderia"], articulos: ["tarifa-cliente-de-guarderia"], etiquetas: ["tarifa", "guardería", "exprés"] }),
+
+  // ── VETERINARIA (Fase 0; carril A usa los folios 70 en adelante) ──
+  v("70", "veterinaria-que-incluye-y-como-prenderla", "veterinaria", "Veterinaria: qué incluye y cómo prenderla", "Prendes el módulo, ves su inicio y entiendes qué trae hoy y qué viene.", { rol: "admin", modulos: ["veterinaria"], permisos: ["administrar_modulos"], rutas: ["/veterinaria"], articulos: ["veterinaria-que-incluye"], etiquetas: ["veterinaria", "módulos"] }),
+  v("71", "ficha-clinica-de-la-mascota", "veterinaria", "La ficha clínica de la mascota", "Capturas especie, microchip, folio de registro y notas clínicas, y ves el peso y las alergias.", { modulos: ["veterinaria"], permisos: ["editar_ficha_clinica"], rutas: [], articulos: ["ficha-clinica-de-la-mascota"], etiquetas: ["mascota", "microchip"] }),
+  v("72", "inventario-clinico-con-lotes", "veterinaria", "Inventario clínico: lotes, caducidades y clasificaciones", "Das de alta un producto clínico, registras lotes, surtes y entiendes los avisos de caducidad.", { modulos: ["veterinaria"], permisos: ["lotes_clinicos"], rutas: ["/veterinaria/inventario", "/veterinaria/inventario/nuevo", "/veterinaria/inventario/[id]"], articulos: ["inventario-clinico-con-lotes"], avisos: ["clinico-caducados", "clinico-por-caducar", "clinico-bajo-minimo"], etiquetas: ["lotes", "caducidad", "SENASICA"] }),
+  v("73", "medicos-y-establecimiento-veterinario", "veterinaria", "Médicos veterinarios, folios y permisos del establecimiento", "Designas a tu médico con su cédula y folios y capturas tus permisos con su vencimiento.", { rol: "admin", modulos: ["veterinaria"], rutas: ["/veterinaria/medicos"], articulos: ["medicos-veterinarios-y-folios", "establecimiento-y-permisos-veterinarios"], avisos: ["establecimiento-vencidos", "establecimiento-por-vencer"], etiquetas: ["médico", "cédula", "permisos"] }),
 ];
 
 // Lo que NO se graba, y por qué (cada ruta o aviso excluido lleva su motivo).

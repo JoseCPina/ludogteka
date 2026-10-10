@@ -7,6 +7,9 @@ import { cargarRazas } from "@/lib/razas";
 import { contextoRazaFormulario } from "@/lib/razas-form";
 import { negocioIdActual } from "@/lib/negocio/actual";
 import { Alert } from "@/components/ui/alert";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { tienePermiso } from "@/lib/auth/permisos";
+import { usaVeterinaria } from "@/lib/plan/modulos";
 import { hrefDeVuelta, rutaDeVuelta } from "@/lib/clientes/volver";
 
 export default async function NuevoPerroPage({
@@ -33,6 +36,9 @@ export default async function NuevoPerroPage({
 
   if (!cliente) notFound();
   const contextoRaza = await contextoRazaFormulario(supabase, null);
+  const sesion = await obtenerSesionConRol();
+  const conFichaClinica =
+    Boolean(sesion) && usaVeterinaria(sesion!.modulos) && tienePermiso(sesion, "editar_ficha_clinica");
 
   // Viene de agendar una cita de estética: alta corta del perro.
   const corta = Boolean(volver?.startsWith("/estetica"));
@@ -63,6 +69,7 @@ export default async function NuevoPerroPage({
         tamanos={tamanos ?? []}
         pelajes={pelajes ?? []}
         corta={corta}
+        clinico={conFichaClinica}
         grupos={contextoRaza.grupos}
         puedeAsignarGrupo={contextoRaza.puedeAsignarGrupo}
         textoBoton={volver ? "Guardar perro y seguir" : "Guardar perro"}

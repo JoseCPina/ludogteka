@@ -18,6 +18,7 @@ const SECCIONES = [
   { href: "/plataforma/soporte", texto: "Soporte" },
   { href: "/plataforma/personas", texto: "Personas" },
   { href: "/plataforma/catalogos", texto: "Catálogos compartidos" },
+  { href: "/plataforma/principios-activos", texto: "Principios activos" },
 ];
 
 export default async function AdminPlataformaLayout({ children }: { children: React.ReactNode }) {

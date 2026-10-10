@@ -24,6 +24,13 @@ export type PerroAlta = {
   veterinario_nombre: string;
   veterinario_telefono: string;
   veterinario_clinica: string;
+  // Ficha clínica, opcional y SOLO con el módulo Veterinaria activo en el
+  // negocio (el servidor ignora estos campos si no lo está).
+  especie: string;
+  especie_detalle: string;
+  microchip: string;
+  // "" = no sé, "si", "no".
+  esterilizado: string;
 };
 
 export type DatosAlta = {
@@ -103,5 +110,9 @@ export function perroVacio(): PerroAlta {
     veterinario_nombre: "",
     veterinario_telefono: "",
     veterinario_clinica: "",
+    especie: "perro",
+    especie_detalle: "",
+    microchip: "",
+    esterilizado: "",
   };
 }

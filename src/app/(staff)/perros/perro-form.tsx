@@ -12,6 +12,7 @@ import { SelectorRaza, type RazaOpcion } from "@/components/selector-raza";
 import type { EstadoPerroForm } from "./actions";
 import { proponerRazaDesdeFormulario } from "./raza-propuesta-actions";
 import type { PropuestaRazaVista } from "@/lib/razas-propuesta";
+import { ESPECIES, ETIQUETA_ESPECIE, type Especie } from "@/lib/perros/ficha-clinica";
 
 const ESTADO_INICIAL: EstadoPerroForm = { error: null };
 
@@ -30,6 +31,8 @@ export function PerroForm({
   puedeAsignarGrupo = false,
   propuestaInicial = null,
   corta = false,
+  clinico = false,
+  clinicoIniciales,
 }: {
   action: (estadoPrevio: EstadoPerroForm, formData: FormData) => Promise<EstadoPerroForm>;
   razas: RazaOpcion[];
@@ -63,9 +66,20 @@ export function PerroForm({
   // Alta corta de estética: nombre, raza, tamaño y pelaje. Lo demás se
   // captura después en el expediente.
   corta?: boolean;
+  // Campos de ficha clínica (especie, microchip, folio, notas): el padre solo
+  // lo prende con Veterinaria activa Y el permiso «Editar ficha clínica».
+  clinico?: boolean;
+  clinicoIniciales?: {
+    especie: Especie;
+    especie_detalle: string | null;
+    microchip: string | null;
+    folio_registro: string | null;
+    notas_clinicas: string | null;
+  };
 }) {
   const [estado, formAction, enviando] = useActionState(useAccionConTope(action), ESTADO_INICIAL);
   const deshabilitado = enviando || soloLectura;
+  const [especie, setEspecie] = useState<Especie>(clinicoIniciales?.especie ?? "perro");
 
   // Un mestizo (o una raza que este negocio no mete en ningún grupo de precio)
   // se cobra por talla Y pelaje: sin los dos, no hay precio de estética.
@@ -255,6 +269,57 @@ export function PerroForm({
         defaultValue={valoresIniciales?.veterinario_clinica ?? ""}
       />
 
+        </>
+      )}
+
+      {clinico && !corta && (
+        <>
+          <input type="hidden" name="clinico" value="1" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Select
+              label="Especie"
+              name="especie"
+              disabled={deshabilitado}
+              value={especie}
+              onChange={(e) => setEspecie(e.target.value as Especie)}
+            >
+              {ESPECIES.map((e) => (
+                <option key={e} value={e}>
+                  {ETIQUETA_ESPECIE[e]}
+                </option>
+              ))}
+            </Select>
+            {especie === "otro" && (
+              <Field
+                label="¿Cuál?"
+                name="especie_detalle"
+                required
+                disabled={deshabilitado}
+                defaultValue={clinicoIniciales?.especie_detalle ?? ""}
+              />
+            )}
+            <Field
+              label="Microchip (opcional)"
+              name="microchip"
+              disabled={deshabilitado}
+              defaultValue={clinicoIniciales?.microchip ?? ""}
+              ayuda="De 9 a 20 letras o números, sin espacios."
+            />
+            <Field
+              label="Folio de registro (opcional)"
+              name="folio_registro"
+              disabled={deshabilitado}
+              defaultValue={clinicoIniciales?.folio_registro ?? ""}
+              ayuda="Por ejemplo, el folio del RUAC."
+            />
+          </div>
+          <Textarea
+            label="Notas clínicas (opcional)"
+            name="notas_clinicas"
+            disabled={deshabilitado}
+            defaultValue={clinicoIniciales?.notas_clinicas ?? ""}
+            ayuda="Son internas del negocio: el dueño no las ve."
+          />
         </>
       )}
 

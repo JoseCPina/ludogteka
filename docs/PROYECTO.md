@@ -2045,3 +2045,6 @@ Helpers nuevos: `src/lib/supabase/server.ts` (cliente ligado a cookies, para pá
 ## Nota: puerto de dev
 
 `CLAUDE.md` fija el puerto 3001; el script `dev` en `package.json` tenía solo `next dev` (caía en 3000 por default, que en esta máquina puede estar ocupado por otro proyecto). Corregido a `next dev -p 3001`.
+
+## Veterinaria (Fase 0, octubre de 2026)
+Tercer servicio del negocio, junto a Hotel y guardería y Estética: un módulo que viene apagado y que cada negocio prende (en Administración → Módulos y plan, o al registrarse). Fase 0 deja la base: ficha clínica de la mascota (especie, microchip, folio de registro, notas clínicas), médico veterinario con cédula, CPA del SITPV y folios, datos del establecimiento y sus permisos con vencimiento, e inventario clínico con lotes, caducidades y las clasificaciones SENASICA y Ley General de Salud. Consultas, expediente, recetas y facturación veterinaria quedan para las siguientes fases. El detalle técnico y las reglas de convivencia con el otro carril de trabajo están en CLAUDE.md («Dos carriles» y «Veterinaria, Fase 0»).

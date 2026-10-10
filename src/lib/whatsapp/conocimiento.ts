@@ -50,7 +50,7 @@ Cada negocio tiene su propia dirección: <su-nombre>.peludesk.mx.
 - Módulos: el admin prende y apaga los módulos de su plan en Administración → Módulos y plan. Apagar un módulo nunca borra nada.
 
 # Prueba gratis
-- 15 días gratis, sin tarjeta. Se registra en https://peludesk.mx/registro con su teléfono, una contraseña, el nombre del negocio, su ciudad y los servicios que ofrece (guardería, hotel, estética).
+- 15 días gratis, sin tarjeta. Se registra en https://peludesk.mx/registro con su teléfono, una contraseña, el nombre del negocio, su ciudad y los servicios que ofrece (guardería, hotel, estética, veterinaria).
 - Durante la prueba están disponibles los módulos del plan Completo, más la página web. Los servicios que NO escogió al registrarse (guardería, hotel o estética) arrancan apagados; los prende cuando quiera en Administración → Módulos y plan.
 - Al entrar hay cinco primeros pasos para dejarlo listo.
 - Página web gratis de por vida si en los primeros 7 días de la prueba completa su perfil: primeros pasos, logo (PNG, JPG, WebP o SVG de hasta 2 MB; antes de guardar ve cómo se verá en su registro, recibos y portal, y la app avisa si es muy ancho o trae fondo blanco), 3 fotos, al menos un precio, horario y dirección. Si no, la página web es un complemento con costo.
@@ -82,4 +82,12 @@ Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado.
 - El tablero del día está en la pantalla de inicio de recepción.
 - Clientes y sus perros: Clientes. Reservas de guardería y hotel: Guardería y Hotel. Citas: Estética. Cobros: Caja.
 - La contraseña de un cliente la restablece el negocio desde la ficha del cliente.
+
+# Veterinaria (módulo nuevo, Fase 0)
+- Es un módulo aparte, junto a Hotel y guardería y Estética. Viene apagado: el admin lo prende en Administración → Módulos y plan (necesita Inventario prendido) y también puede escogerlo al registrarse en la prueba gratis. Apagarlo no borra nada.
+- Hoy incluye: ficha clínica de la mascota (especie perro, gato u otro; esterilización; peso con historial por fecha; alergias; microchip; folio de registro como el RUAC; notas clínicas), inventario clínico con lotes y caducidades, médicos veterinarios con cédula, CPA del SITPV y folios, y los datos del establecimiento (aviso de funcionamiento ante SENASICA, MVRA y permisos con fecha de vencimiento y recordatorio).
+- Cada producto clínico tiene dos clasificaciones independientes y editables: grupo SENASICA (I, II, III o ninguno) y Ley General de Salud (estupefaciente art. 234, psicotrópico fracción II, III o IV del art. 245, o ninguna), más la marca antimicrobiano. Hay un catálogo de principios activos precargado que PeluDesk mantiene; lo marcado «por confirmar» hay que confirmarlo con el médico responsable.
+- Los productos del Grupo I o de la Ley General de Salud llevan un campo de folio de receta: por ahora solo avisa si falta; más adelante será obligatorio.
+- NO existe todavía: consultas, expediente clínico, recetas, vacunación clínica, hospitalización ni facturación veterinaria. Si alguien lo pide, se dice que viene en las siguientes fases y se escala; no se promete fecha.
+- Nuevos permisos que el admin le da a recepción: Administrar módulos, Editar ficha clínica y Administrar lotes e inventario clínico.
 `.trim();

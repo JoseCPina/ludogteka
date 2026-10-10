@@ -37,8 +37,19 @@ const { data: unCliente } = await A.from("clientes").select("id, nombre").eq("ne
 const { data: unPerro } = await A.from("perros").select("id, nombre").eq("negocio_id", negocio.id).is("deleted_at", null).order("created_at").limit(1).maybeSingle();
 if (!unCliente || !unPerro) console.log("  · sin clientes o perros todavía: se saltan la ficha del cliente y la del perro");
 
+// Veterinaria (Fase 0): solo se revisa en un negocio que la tenga prendida (Huellitas).
+const { data: moduloVet } = await A.from("negocio_modulos").select("activo").eq("negocio_id", negocio.id).eq("modulo", "veterinaria").is("deleted_at", null).maybeSingle();
+const conVet = moduloVet?.activo === true;
+const { data: unProductoClinico } = conVet ? await A.from("insumos").select("id").eq("negocio_id", negocio.id).eq("controla_lotes", true).is("deleted_at", null).limit(1).maybeSingle() : { data: null };
+const RUTAS_VET = conVet
+  ? {
+      admin: ["/veterinaria", "/veterinaria/inventario", "/veterinaria/inventario/nuevo", "/veterinaria/medicos", "/admin/perfil", "/admin/modulos", ...(unProductoClinico ? [`/veterinaria/inventario/${unProductoClinico.id}`] : [])],
+      recepcion: ["/veterinaria", "/veterinaria/inventario"],
+    }
+  : { admin: [], recepcion: [] };
+
 const RUTAS = {
-  admin: ["/admin", "/admin/pagos", "/reportes", "/servicios", "/empleados", "/gastos", "/admin/permisos", "/inventario", "/ayuda", "/ayuda/videos", "/ayuda/pedir-ayuda", "/caja/reembolsos", "/perros/razas", "/perros/razas/grupos", "/estetica/nueva", "/ayuda/agregar-una-raza-que-no-aparece"],
+  admin: [...RUTAS_VET.admin, "/admin", "/admin/pagos", "/reportes", "/servicios", "/empleados", "/gastos", "/admin/permisos", "/inventario", "/ayuda", "/ayuda/videos", "/ayuda/pedir-ayuda", "/caja/reembolsos", "/perros/razas", "/perros/razas/grupos", "/estetica/nueva", "/ayuda/agregar-una-raza-que-no-aparece"],
   recepcion: ["/recepcion", "/clientes", ...(unCliente ? [`/clientes/${unCliente.id}`] : []), ...(unPerro ? [`/perros/${unPerro.id}`] : []), ...(unCliente ? [`/clientes/${unCliente.id}/perros/nuevo`] : []), "/caja", "/caja/turno", "/guarderia", "/hotel", "/estetica", "/recepcion/contratos", "/vinculacion", "/clientes/invitaciones", "/caja/venta", "/caja/reembolsos", "/ayuda", "/ayuda/videos", "/ayuda/corte-de-caja", "/ayuda/tickets/nuevo", "/perros/razas", "/perros/razas/grupos", "/estetica/nueva"],
   estetica: ["/estetica"],
   cliente: ["/portal"],

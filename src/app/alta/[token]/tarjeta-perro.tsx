@@ -9,6 +9,7 @@ import type { CotizacionEstetica } from "@/lib/estetica/cotizacion";
 import type { CampoPerro } from "@/lib/alta/campos-perro";
 import type { PerroAlta } from "../tipos";
 import { PrecioEstetica } from "./precio-estetica";
+import { ESPECIES, ETIQUETA_ESPECIE } from "@/lib/perros/ficha-clinica";
 
 export type Catalogo = { id: string; etiqueta: string };
 
@@ -25,6 +26,7 @@ export function TarjetaPerro({
   onFoto,
   onQuitar,
   pedirNombre = true,
+  clinico = false,
 }: {
   perro: PerroAlta;
   titulo: string;
@@ -41,6 +43,8 @@ export function TarjetaPerro({
   onFoto: ((archivo: File | null) => void) | null;
   onQuitar: (() => void) | null;
   pedirNombre?: boolean;
+  // Con Veterinaria activa: especie, microchip y esterilizado (opcionales).
+  clinico?: boolean;
 }) {
   const pide = (campo: CampoPerro) => campos.includes(campo);
   const pideEmergencia = pide("contacto_emergencia_nombre") || pide("contacto_emergencia_telefono");
@@ -131,6 +135,48 @@ export function TarjetaPerro({
             </Select>
           )}
         </div>
+      )}
+
+      {clinico && (
+        <fieldset className="flex flex-col gap-3 rounded-md border border-n-200 p-3">
+          <legend className="px-1 text-sm font-bold text-n-700">Datos de salud (opcional)</legend>
+          <div className="grid grid-cols-2 gap-3">
+            <Select
+              label="Especie"
+              value={perro.especie}
+              onChange={(e) => onCambio({ especie: e.target.value })}
+            >
+              {ESPECIES.map((e) => (
+                <option key={e} value={e}>
+                  {ETIQUETA_ESPECIE[e]}
+                </option>
+              ))}
+            </Select>
+            <Select
+              label="¿Está esterilizado?"
+              value={perro.esterilizado}
+              onChange={(e) => onCambio({ esterilizado: e.target.value })}
+            >
+              <option value="">No sé</option>
+              <option value="si">Sí</option>
+              <option value="no">No</option>
+            </Select>
+          </div>
+          {perro.especie === "otro" && (
+            <Field
+              label="¿Qué animal es?"
+              value={perro.especie_detalle}
+              onChange={(e) => onCambio({ especie_detalle: e.target.value })}
+              ayuda="Por ejemplo: conejo, hurón."
+            />
+          )}
+          <Field
+            label="Número de microchip"
+            value={perro.microchip}
+            onChange={(e) => onCambio({ microchip: e.target.value })}
+            ayuda="Si lo sabes. De 9 a 20 letras o números, sin espacios."
+          />
+        </fieldset>
       )}
 
       {cotizacion && (

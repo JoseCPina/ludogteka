@@ -438,6 +438,88 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     }
   }
 
+  // Veterinaria (solo con el módulo prendido; sin él no se pide nada a la
+  // base). Inventario clínico: lotes caducados o por caducar y productos
+  // bajo su mínimo, para quien tiene «Administrar lotes e inventario
+  // clínico». Permisos del establecimiento vencidos o por vencer, para quien
+  // tiene «Configuración del negocio».
+  if (mods.includes("veterinaria")) {
+    const cuando = (n: number) => (n <= 0 ? "hoy" : n === 1 ? "mañana" : `en ${n} días`);
+    const [{ data: alertasCrudo }, { data: permisosCrudo }] = await Promise.all([
+      tienePermiso(sesion, "lotes_clinicos") ? supabase.rpc("inventario_clinico_alertas") : Promise.resolve({ data: null }),
+      tienePermiso(sesion, "configuracion_negocio") ? supabase.rpc("permisos_establecimiento_por_vencer") : Promise.resolve({ data: null }),
+    ]);
+    const clinico = (alertasCrudo ?? {}) as {
+      caducados?: number;
+      por_caducar?: number;
+      caducado_desde?: string | null;
+      por_caducar_primero?: string | null;
+      bajo_minimo?: number;
+      bajo_minimo_desde?: string | null;
+    };
+    const caducados = Number(clinico.caducados ?? 0);
+    const porCaducar = Number(clinico.por_caducar ?? 0);
+    const bajoMinimo = Number(clinico.bajo_minimo ?? 0);
+    if (caducados > 0) {
+      const dias = clinico.caducado_desde ? diasDesde(clinico.caducado_desde, hoy, zona) : 0;
+      atencion.push({
+        clave: "clinico-caducados",
+        texto: caducados === 1 ? "1 lote del inventario clínico está caducado y todavía tiene existencia" : `${caducados} lotes del inventario clínico están caducados y todavía tienen existencia`,
+        detalle: "Sácalos del inventario como «Caducado»",
+        href: "/veterinaria/inventario?filtro=alerta",
+        dias,
+        antiguedad: caducados === 1 ? `Caducado ${haceCuanto(dias)}` : `El más viejo caducó ${haceCuanto(dias)}`,
+      });
+    }
+    if (porCaducar > 0) {
+      const faltan = clinico.por_caducar_primero ? diasDesde(hoy, clinico.por_caducar_primero, zona) : 0;
+      atencion.push({
+        clave: "clinico-por-caducar",
+        texto: porCaducar === 1 ? "1 lote del inventario clínico está por caducar" : `${porCaducar} lotes del inventario clínico están por caducar`,
+        href: "/veterinaria/inventario?filtro=alerta",
+        dias: 0,
+        antiguedad: porCaducar === 1 ? `Caduca ${cuando(faltan)}` : `El primero caduca ${cuando(faltan)}`,
+      });
+    }
+    if (bajoMinimo > 0) {
+      // Desde el último movimiento del producto que quedó bajo (el más viejo de todos).
+      const dias = clinico.bajo_minimo_desde ? diasDesde(clinico.bajo_minimo_desde, hoy, zona) : 0;
+      atencion.push({
+        clave: "clinico-bajo-minimo",
+        texto: bajoMinimo === 1 ? "1 producto clínico está bajo su mínimo" : `${bajoMinimo} productos clínicos están bajo su mínimo`,
+        href: "/veterinaria/inventario?filtro=alerta",
+        dias,
+        antiguedad: bajoMinimo === 1 ? `Bajo ${desdeCuando(dias)}` : `El más viejo, ${desdeCuando(dias)}`,
+      });
+    }
+
+    const permisos = (permisosCrudo ?? []) as { tipo: string; vencimiento: string; dias: number; estado: string }[];
+    const vencidos = permisos.filter((p) => p.estado === "vencido").sort((a, b) => a.dias - b.dias);
+    const porVencer = permisos.filter((p) => p.estado !== "vencido").sort((a, b) => a.dias - b.dias);
+    if (vencidos.length > 0) {
+      const dias = Math.max(...vencidos.map((p) => -p.dias));
+      atencion.push({
+        clave: "establecimiento-vencidos",
+        texto: vencidos.length === 1 ? `${vencidos[0].tipo} del establecimiento está vencido` : `${vencidos.length} permisos del establecimiento están vencidos`,
+        detalle: vencidos.length > 1 ? vencidos.map((p) => p.tipo).slice(0, 4).join(", ") : undefined,
+        href: "/admin/perfil",
+        dias,
+        antiguedad: vencidos.length === 1 ? `Vencido ${haceCuanto(dias)}` : `El más viejo venció ${haceCuanto(dias)}`,
+      });
+    }
+    if (porVencer.length > 0) {
+      const primero = Math.max(0, porVencer[0].dias);
+      atencion.push({
+        clave: "establecimiento-por-vencer",
+        texto: porVencer.length === 1 ? `${porVencer[0].tipo} del establecimiento vence ${cuando(primero)}` : `${porVencer.length} permisos del establecimiento están por vencer`,
+        detalle: porVencer.length > 1 ? porVencer.map((p) => p.tipo).slice(0, 4).join(", ") : undefined,
+        href: "/admin/perfil",
+        dias: 0,
+        antiguedad: porVencer.length === 1 ? `Vence ${cuando(primero)}` : `El primero vence ${cuando(primero)}`,
+      });
+    }
+  }
+
   // Reembolsos de Mercado Pago que alguien tiene que ver: hechos desde el
   // panel del proveedor (ya en caja, pero nadie en el mostrador los pidió),
   // hechos sin turno abierto, o pedidos cuya respuesta no ha llegado.

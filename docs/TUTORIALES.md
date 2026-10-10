@@ -2,7 +2,7 @@
 
 Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scripts/tutoriales/catalogo.mjs` y de lo que la app tiene hoy (código). No se edita a mano: se cambia el catálogo.
 
-**65 videos** (el 00 es el avance) en 9 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
+**69 videos** (el 00 es el avance) en 10 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
 
 ## Catálogo
 
@@ -73,6 +73,10 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 62 | Caja y cobros | Cómo agregar efectivo a la caja | admin | 2.5 min | — | agregar_efectivo |
 | 63 | Estética | Reprogramar, cancelar o eliminar una cita de estética | admin | 2.5 min | estetica | eliminar_citas |
 | 64 | Estética | La tarifa «Cliente de guardería» en estética | admin | 2.5 min | estetica | — |
+| 70 | Veterinaria | Veterinaria: qué incluye y cómo prenderla | admin | 2.5 min | veterinaria | administrar_modulos |
+| 71 | Veterinaria | La ficha clínica de la mascota | recepcion | 2.5 min | veterinaria | editar_ficha_clinica |
+| 72 | Veterinaria | Inventario clínico: lotes, caducidades y clasificaciones | recepcion | 2.5 min | veterinaria | lotes_clinicos |
+| 73 | Veterinaria | Médicos veterinarios, folios y permisos del establecimiento | admin | 2.5 min | veterinaria | — |
 
 ## Pantallas → videos
 
@@ -185,6 +189,11 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/servicios/[id]/tarifas` | 20 |  |
 | `/servicios/nuevo` | 20 |  |
 | `/sin-acceso` | 01 |  |
+| `/veterinaria` | 70 |  |
+| `/veterinaria/inventario` | 72 |  |
+| `/veterinaria/inventario/[id]` | 72 |  |
+| `/veterinaria/inventario/nuevo` | 72 |  |
+| `/veterinaria/medicos` | 73 |  |
 | `/vinculacion` | 15 |  |
 
 ## Menú del personal → videos
@@ -213,6 +222,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Tarifa de guardería | `/admin/tarifa-guarderia` | 64 |
 | Módulos y plan | `/admin/modulos` | 06 |
 | Cobro con terminal | `/admin/pagos` | 50 |
+| Veterinaria | `/veterinaria` | 70, 72, 73 |
 | Ayuda | `/ayuda` | 53 |
 
 ## Módulos → videos
@@ -222,6 +232,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | guarderia | 25, 27, 28, 29, 30, 31 |
 | hotel | 26, 27, 28, 29, 30, 31 |
 | estetica | 20, 21, 22, 23, 24, 55, 58, 63, 64 |
+| veterinaria | 70, 71, 72, 73 |
 | bonos | 39, 60 |
 | recoleccion | 54 |
 | contratos | 16, 17, 18, 19 |
@@ -256,6 +267,9 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Corregir cobros de turnos cerrados (`corregir_turnos_cerrados`) | 61 |
 | Agregar efectivo a caja (`agregar_efectivo`) | 62 |
 | Eliminar citas (`eliminar_citas`) | 63 |
+| Administrar módulos (`administrar_modulos`) | 70 |
+| Editar ficha clínica (`editar_ficha_clinica`) | 71 |
+| Administrar lotes e inventario clínico (`lotes_clinicos`) | 72 |
 
 ## Artículos de ayuda → videos
 
@@ -321,18 +335,28 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | cotizar-y-cobrar-recoleccion | 54 |
 | llenar-el-reporte-de-comportamiento | 31 |
 | enviar-fotos-y-videos | 31 |
+| veterinaria-que-incluye | 70 |
+| ficha-clinica-de-la-mascota | 71 |
+| inventario-clinico-con-lotes | 72 |
+| medicos-veterinarios-y-folios | 73 |
+| establecimiento-y-permisos-veterinarios | 73 |
 
 ## Avisos de «Necesita atención» → videos
 
 | Aviso | Videos |
 | --- | --- |
 | ajustes-servicio | 05, 55 |
+| clinico-bajo-minimo | 72 |
+| clinico-caducados | 72 |
+| clinico-por-caducar | 72 |
 | cobro | 05, 33 |
 | comprobantes | 05 |
 | con | 05, 29 |
 | conciliacion | 05 |
 | contratos-firmar | 05, 17 |
 | contratos-regenerar | 05, 19 |
+| establecimiento-por-vencer | 73 |
+| establecimiento-vencidos | 73 |
 | eval | 05, 29 |
 | gastos-proximos | 05, 47 |
 | gastos-vencidos | 05, 47 |

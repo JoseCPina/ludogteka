@@ -49,6 +49,7 @@ export function AltaForm({
   requisitos,
   comoSeAgenda,
   ofreceRecoleccion,
+  conVeterinaria = false,
 }: {
   token: string;
   tipo: TipoLinkAlta;
@@ -63,6 +64,8 @@ export function AltaForm({
   comoSeAgenda: string;
   // Con recolección prendida se le pregunta si quiere que pasen por su perro.
   ofreceRecoleccion: boolean;
+  // Veterinaria activa: la tarjeta del perro pide especie, microchip y esterilizado.
+  conVeterinaria?: boolean;
 }) {
   const router = useRouter();
   const definicion = TIPOS_LINK_ALTA[tipo];
@@ -396,6 +399,7 @@ export function AltaForm({
               tamanos={tamanos}
               pelajes={pelajes}
               cotizacion={cotizacion}
+              clinico={conVeterinaria}
               foto={fotos[i] ?? null}
               onCambio={(cambios) => actualizarPerro(i, cambios)}
               onFoto={corta ? null : (archivo) => setFotos((prev) => prev.map((f, j) => (i === j ? archivo : f)))}

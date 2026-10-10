@@ -66,6 +66,7 @@ export function CompletarForm({
   requisitos,
   comoSeAgenda,
   ofreceRecoleccion,
+  conVeterinaria = false,
 }: {
   token: string;
   tipo: TipoLinkAlta;
@@ -81,6 +82,7 @@ export function CompletarForm({
   requisitos: TipoRequisitoAlta[] | null;
   comoSeAgenda: string;
   ofreceRecoleccion: boolean;
+  conVeterinaria?: boolean;
 }) {
   const router = useRouter();
   const definicion = TIPOS_LINK_ALTA[tipo];
@@ -426,6 +428,7 @@ export function CompletarForm({
               tamanos={tamanos}
               pelajes={pelajes}
               cotizacion={cotizacion}
+              clinico={conVeterinaria}
               foto={fotosNuevos[i] ?? null}
               onCambio={(cambios) =>
                 setNuevos((prev) => prev.map((p, j) => (i === j ? { ...p, ...cambios } : p)))

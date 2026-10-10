@@ -159,6 +159,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
   const politicas = politicasVisibles(textosPoliticas, modulos);
   const comoSeAgenda = textoPolitica(textosPoliticas, definicion.expedienteCompleto ? "como_reservar" : "como_agendar_estetica");
   const ofreceRecoleccion = modulos.includes("recoleccion");
+  const conVeterinaria = modulos.includes("veterinaria");
 
   // El horario vigente lo decide la base (horario_semana_vigente): la
   // misma generación de configuración que usan las reservas.
@@ -268,6 +269,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
           requisitos={requisitosAlta}
           comoSeAgenda={comoSeAgenda}
           ofreceRecoleccion={ofreceRecoleccion}
+          conVeterinaria={conVeterinaria}
           {...catalogos}
         />
       </main>
@@ -293,7 +295,7 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
 
       {bloqueRequisitos}
 
-      <AltaForm token={token} tipo={tipo} requisitos={requisitosAlta} comoSeAgenda={comoSeAgenda} ofreceRecoleccion={ofreceRecoleccion} {...catalogos} />
+      <AltaForm token={token} tipo={tipo} requisitos={requisitosAlta} comoSeAgenda={comoSeAgenda} ofreceRecoleccion={ofreceRecoleccion} conVeterinaria={conVeterinaria} {...catalogos} />
     </main>
   );
 }
