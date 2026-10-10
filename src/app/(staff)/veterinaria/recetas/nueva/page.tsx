@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
+import { miMedico } from "@/lib/veterinaria/lotes";
 import { buscarMascotas, etiquetaEspecie } from "@/lib/veterinaria/buscar";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -13,12 +14,13 @@ import { EditorReceta, type ProductoReceta } from "./editor-receta";
 export default async function NuevaReceta({ searchParams }: { searchParams: Promise<{ q?: string; perro?: string; consulta?: string }> }) {
   const { q, perro, consulta } = await searchParams;
   const supabase = await createSupabaseServerClient();
-  const puede = await vetPuede(supabase, "emitir_recetas");
+  const [puedeBase, medico] = await Promise.all([vetPuede(supabase, "emitir_recetas"), miMedico(supabase)]);
+  const puede = puedeBase && Boolean(medico);
   if (!puede) {
     return (
       <div className="flex max-w-2xl flex-col gap-4">
         <Link href="/veterinaria/recetas" className="text-sm font-semibold text-morado hover:underline">← Recetas</Link>
-        <Alert variante="advertencia" titulo="Emitir recetas es de un médico veterinario">Pídele a un admin que te designe médico en Veterinaria → Médicos, o que te dé el permiso «Emitir recetas».</Alert>
+        <Alert variante="advertencia" titulo="Emitir recetas es de un médico veterinario">Una receta la firma un médico veterinario designado con su cédula. Un admin o una recepcionista con el permiso «Emitir recetas» pueden ver y mandar las recetas, pero no emitirlas: pídele a un admin que te designe médico en Veterinaria → Médicos.</Alert>
       </div>
     );
   }

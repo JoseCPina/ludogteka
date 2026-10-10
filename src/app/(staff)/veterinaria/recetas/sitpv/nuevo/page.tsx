@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
-import { cargarProductosConLotes } from "@/lib/veterinaria/lotes";
+import { cargarProductosConLotes, miMedico } from "@/lib/veterinaria/lotes";
 import { buscarMascotas, etiquetaEspecie } from "@/lib/veterinaria/buscar";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import { registrarEspejo } from "../../actions";
 export default async function NuevoEspejo({ searchParams }: { searchParams: Promise<{ q?: string; perro?: string; uso?: string }> }) {
   const { q, perro, uso } = await searchParams;
   const supabase = await createSupabaseServerClient();
-  const puede = await vetPuede(supabase, "registrar_recetas_sitpv");
+  const puede = (await vetPuede(supabase, "registrar_recetas_sitpv")) && Boolean(await miMedico(supabase));
   const cabecera = (
     <div>
       <Link href="/veterinaria/recetas/sitpv" className="text-sm font-semibold text-morado hover:underline">← Registro SITPV</Link>
