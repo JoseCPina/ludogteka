@@ -131,6 +131,24 @@ export const PERMISOS = [
     implica:
       "Elimina una cita de estética capturada por error o duplicada, con un motivo por escrito: sale de la agenda y libera el horario, pero no se borra (queda en el historial de la cita). Cancelar una cita y marcar que no se presentó no necesitan este permiso. Una cita con cobro se elimina hasta anular el cobro. Viene apagado.",
   },
+  {
+    clave: "facturar",
+    etiqueta: "Facturar",
+    implica:
+      "Emite la factura (CFDI) de un cobro o de un cobro junto, la factura global al público en general, y manda las facturas al cliente por WhatsApp o correo. No cancela facturas ni edita datos fiscales. Viene apagado.",
+  },
+  {
+    clave: "cancelar_facturas",
+    etiqueta: "Cancelar facturas",
+    implica:
+      "Cancela facturas ante el SAT (motivos 01 a 04) y sustituye una factura con errores por otra. Una cancelación no se deshace. Viene apagado.",
+  },
+  {
+    clave: "editar_datos_fiscales",
+    etiqueta: "Editar datos fiscales",
+    implica:
+      "Captura y cambia el RFC, la razón social, el régimen y el código postal fiscal de los clientes y del negocio, el IVA de cada concepto y la llave del timbrado. Viene apagado.",
+  },
 ] as const;
 
 export type ClavePermiso = (typeof PERMISOS)[number]["clave"];

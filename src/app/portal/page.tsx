@@ -43,6 +43,9 @@ export default async function PortalPage() {
     );
   }
 
+  const { data: facturasCliente } = await supabase.rpc("mis_facturas");
+  const cuantasFacturas = (facturasCliente ?? []).length;
+
   // RLS de perros ya combina "míos" + "acceso compartido" — no hace falta
   // filtrar por cliente_id aquí, la política lo hace por nosotros.
   const { data: perros } = await supabase
@@ -171,6 +174,15 @@ export default async function PortalPage() {
           </ul>
         )}
       </div>
+      {cuantasFacturas > 0 && (
+        <Link
+          href="/portal/facturas"
+          className="flex items-center justify-between rounded-md border-[1.5px] border-n-200 bg-white px-4 py-3 font-semibold text-n-900 hover:border-morado"
+        >
+          <span>Mis facturas</span>
+          <span className="text-sm font-normal text-n-600">{cuantasFacturas} {cuantasFacturas === 1 ? "factura" : "facturas"} →</span>
+        </Link>
+      )}
     </div>
   );
 }

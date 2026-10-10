@@ -82,4 +82,16 @@ Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado.
 - El tablero del día está en la pantalla de inicio de recepción.
 - Clientes y sus perros: Clientes. Reservas de guardería y hotel: Guardería y Hotel. Citas: Estética. Cobros: Caja.
 - La contraseña de un cliente la restablece el negocio desde la ficha del cliente.
+
+# Facturación (CFDI 4.0) a los clientes del negocio
+- Es distinto de la factura de PeluDesk al negocio: esto es que el negocio le facture a SUS clientes.
+- Se configura en Administración → Facturación: RFC, razón social, régimen, código postal de expedición, serie y la llave del PAC (Facturapi). Sin la llave no se timbra. Con una llave de pruebas (sk_test) las facturas salen en sandbox y NO tienen validez fiscal.
+- Se factura desde un cobro ya registrado (botón Facturar) o desde un cobro junto (una sola factura). Se factura lo cobrado, sin la propina. Hace falta el permiso «Facturar» y los datos fiscales del cliente (RFC, nombre tal cual su constancia, código postal, régimen y uso del CFDI); se capturan en su ficha con el permiso «Editar datos fiscales».
+- IVA por concepto: medicinas veterinarias de patente 0 %; alimento para mascotas, estética, hospedaje y guardería 16 %; consulta veterinaria exenta solo si el negocio es persona física o sociedad civil. Se ajusta en Facturación. Las claves del SAT de arranque son genéricas: el negocio debe poner las suyas.
+- Factura global al público en general: junta los cobros que nadie facturó, por periodo (diario, semanal o mensual; en RESICO solo mensual) y debe emitirse dentro de las 24 horas siguientes al cierre del periodo. Puede ser a mano o, si el negocio lo prende, automática.
+- Se puede bajar el PDF y el XML, mandar un link por WhatsApp o enviar la factura por correo. Si el cliente tiene portal, la ve en Mis facturas.
+- Cancelar o sustituir: con el permiso «Cancelar facturas»; motivos 01 a 04 (el 01 lleva el UUID de la factura que sustituye). Algunas cancelaciones quedan pendientes hasta 3 días a que el cliente las acepte. No se cancela una factura que tiene otra vigente relacionada.
+- Un cobro ya facturado no se puede anular, corregir ni devolver mientras su factura esté vigente.
+- Cada negocio tiene un tope de timbres al mes; la app avisa al acercarse y PeluDesk puede ampliarlo.
+- Lo que NO hace todavía: complemento de pago ni facturar cobros a crédito, notas de crédito (egreso) por devoluciones, ni CFDI de nómina. Si lo piden, se escala.
 `.trim();

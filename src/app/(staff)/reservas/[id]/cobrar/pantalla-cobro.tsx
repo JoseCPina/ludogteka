@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
+import { SeccionFacturar } from "@/components/cfdi/seccion-facturar";
 import { estadoCobroIntegrado } from "@/app/(staff)/caja/cobro-integrado-actions";
 import type { OrdenCobroFila } from "./cobro-integrado";
 import {
@@ -32,7 +33,7 @@ export async function PantallaCobro({
 
   const { data: reserva, error: errorReserva } = await supabase
     .from("reservas")
-    .select("id, notas, cliente_id, clientes(nombre, telefono)")
+    .select("id, notas, cliente_id, clientes(nombre, telefono, publico_general)")
     .eq("id", id)
     .single();
 
@@ -387,6 +388,13 @@ export async function PantallaCobro({
           puedeEditarMonto={tienePermiso(sesion, "editar_monto_cobros")}
           puedeTurnosCerrados={tienePermiso(sesion, "corregir_turnos_cerrados")}
           mp={{ disponible: mpDisponible, ordenes: ordenesMp, clienteTelefono: (cliente?.telefono as string | null) ?? null, terminalManualBloqueada: Boolean(terminalManualBloqueada) }}
+        />
+      )}
+      {!error && (
+        <SeccionFacturar
+          clienteId={reserva.cliente_id as string}
+          publicoGeneral={Boolean((cliente as { publico_general?: boolean } | null)?.publico_general)}
+          cobros={cobros.map((c) => ({ id: c.id, anulado: c.anulado, creadoEn: c.creadoEn, monto: c.metodos.reduce((s, m) => s + m.monto, 0) }))}
         />
       )}
     </div>

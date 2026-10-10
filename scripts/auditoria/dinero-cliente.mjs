@@ -62,9 +62,11 @@ const SOLO_STAFF = [
   "tarjetas_manuales", "tarjetas_manuales_eventos", "tarjeta_manual_ajustes", "cobros_grupo", "cobros_grupo_eventos",
   // Bitácora de precios: confirmar precios calculados (9 de octubre de 2026).
   "tarifas_eventos",
+  // Facturación CFDI (14 de octubre de 2026)
+  "cfdi_config_negocio", "cfdi_datos_fiscales", "cfdi_clases", "cfdi_insumo_fiscal", "cfdi_servicio_fiscal", "cfdi_facturas", "cfdi_conceptos", "cfdi_factura_cobros", "cfdi_eventos",
 ];
 // RPC que un cliente con sesión no debe poder llamar (tienen que rechazarlo).
-const RPC_SOLO_STAFF = ["mi_cobro", "plataforma_cobros", "calendario_ocupacion", "insumos_sin_costo", "asistencia_periodo", "calcular_nomina", "reporte_utilidad_periodo", "cuentas_para_empleado", "gastos_por_atender", "gastos_por_categoria_periodo", "maps_consumo_mes", "plataforma_maps_consumo", "elegir_proveedor_cobro", "reporte_ventas_mostrador_periodo", "cliente_publico_general", "crear_venta_mostrador", "preparar_reembolso", "crear_ticket", "plataforma_tickets", "reporte_guardar", "reporte_asegurar_plantilla", "reporte_registrar_tarjeta", "reporte_crear_enlace", "media_preparar", "media_confirmar", "media_quitar", "galeria_crear", "plataforma_almacenamiento_reportes", "razas_fuera_de_catalogo", "razas_sin_grupo", "razas_asignaciones_recientes", "razas_asignar_texto", "razas_revertir_normalizacion", "razas_proponer", "asignar_grupo_raza", "plataforma_razas_propuestas", "plataforma_resolver_propuesta", "plataforma_agregar_raza", "reasignar_estilista_cita", "ajustes_nomina_interno", "corregir_servicio_cita", "cotizar_correccion_servicio", "cobro_marcar_no_recibido", "conciliacion_sincronizar", "conciliacion_dar_por_revisada", "tarjeta_manual_revisar", "tarjeta_manual_no_recibida", "guardar_tope_tarjeta_manual", "plataforma_tarjetas_manuales_patron", "cotizar_cita_estetica", "confirmar_tarifas_calculadas", "plataforma_revertir_carga_tarifas", "registrar_cobro_grupo", "plataforma_saldos_centavos", "plataforma_corregir_saldos_centavos", "plataforma_revertir_saldos_centavos"];
+const RPC_SOLO_STAFF = ["mi_cobro", "plataforma_cobros", "calendario_ocupacion", "insumos_sin_costo", "asistencia_periodo", "calcular_nomina", "reporte_utilidad_periodo", "cuentas_para_empleado", "gastos_por_atender", "gastos_por_categoria_periodo", "maps_consumo_mes", "plataforma_maps_consumo", "elegir_proveedor_cobro", "reporte_ventas_mostrador_periodo", "cliente_publico_general", "crear_venta_mostrador", "preparar_reembolso", "crear_ticket", "plataforma_tickets", "reporte_guardar", "reporte_asegurar_plantilla", "reporte_registrar_tarjeta", "reporte_crear_enlace", "media_preparar", "media_confirmar", "media_quitar", "galeria_crear", "plataforma_almacenamiento_reportes", "razas_fuera_de_catalogo", "razas_sin_grupo", "razas_asignaciones_recientes", "razas_asignar_texto", "razas_revertir_normalizacion", "razas_proponer", "asignar_grupo_raza", "plataforma_razas_propuestas", "plataforma_resolver_propuesta", "plataforma_agregar_raza", "reasignar_estilista_cita", "ajustes_nomina_interno", "corregir_servicio_cita", "cotizar_correccion_servicio", "cobro_marcar_no_recibido", "conciliacion_sincronizar", "conciliacion_dar_por_revisada", "tarjeta_manual_revisar", "tarjeta_manual_no_recibida", "guardar_tope_tarjeta_manual", "plataforma_tarjetas_manuales_patron", "cotizar_cita_estetica", "confirmar_tarifas_calculadas", "plataforma_revertir_carga_tarifas", "registrar_cobro_grupo", "plataforma_saldos_centavos", "plataforma_corregir_saldos_centavos", "plataforma_revertir_saldos_centavos", "cfdi_preparar_cobros", "cfdi_preparar_global", "cfdi_global_periodos", "cfdi_iniciar_timbrado", "cfdi_descartar", "cfdi_iniciar_cancelacion", "cfdi_guardar_config", "cfdi_guardar_datos_fiscales", "cfdi_guardar_clase", "cfdi_guardar_insumo", "cfdi_guardar_servicio", "cfdi_guardar_enlace", "cfdi_registrar_envio", "cfdi_timbres_mes", "plataforma_cfdi_tope", "plataforma_cfdi_uso"];
 
 const spec = await (await fetch(URL + "/rest/v1/", { headers: { apikey: env.SUPABASE_SECRET_KEY, Authorization: `Bearer ${env.SUPABASE_SECRET_KEY}` } })).json();
 const relaciones = Object.keys(spec.definitions).sort();
@@ -186,6 +188,22 @@ for (const cli of clientes) {
     ["plataforma_revertir_saldos_centavos", { p_evento_id: ID_VACIO }],
     ["cobro_grupo_detalle", { p_grupo_id: ID_VACIO }],
     ["cobro_grupos_de_reserva", { p_reserva_id: ID_VACIO }],
+    ["cfdi_preparar_cobros", { p_cobro_ids: [ID_VACIO], p_receptor: null, p_sustituye: null }],
+    ["cfdi_preparar_global", { p_desde: "2026-01-01", p_hasta: "2026-01-31" }],
+    ["cfdi_global_periodos", {}],
+    ["cfdi_iniciar_timbrado", { p_factura_id: ID_VACIO }],
+    ["cfdi_descartar", { p_factura_id: ID_VACIO }],
+    ["cfdi_iniciar_cancelacion", { p_factura_id: ID_VACIO, p_motivo: "02", p_sustituta: null }],
+    ["cfdi_guardar_config", { p: {} }],
+    ["cfdi_guardar_datos_fiscales", { p_cliente_id: ID_VACIO, p: {} }],
+    ["cfdi_guardar_clase", { p_clase: "estetica", p_tratamiento: "tasa", p_tasa: 0.16, p_clave_prod_serv: "", p_clave_unidad: "", p_unidad: "" }],
+    ["cfdi_guardar_insumo", { p_insumo_id: ID_VACIO, p_de_patente: true, p_clase: "otro_producto" }],
+    ["cfdi_guardar_servicio", { p_servicio_id: ID_VACIO, p_clase: null }],
+    ["cfdi_guardar_enlace", { p_factura_id: ID_VACIO, p_hash: "0".repeat(64), p_dias: 30 }],
+    ["cfdi_registrar_envio", { p_factura_id: ID_VACIO, p_canal: "correo" }],
+    ["cfdi_timbres_mes", {}],
+    ["plataforma_cfdi_tope", { p_negocio_id: ID_VACIO, p_tope: 1, p_aviso_pct: 80, p_motivo: "prueba" }],
+    ["plataforma_cfdi_uso", {}],
   ];
   for (const [fn, args] of sondas) {
     const r = await fetch(`${URL}/rest/v1/rpc/${fn}`, { method: "POST", headers: { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(args) });

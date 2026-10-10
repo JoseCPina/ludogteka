@@ -647,6 +647,23 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     }
   }
 
+  // Facturación (CFDI): global por emitir (24 h después del cierre del periodo),
+  // timbres por agotarse, cancelaciones esperando al cliente y timbrados por
+  // revisar. La base solo las entrega a quien factura o cancela.
+  {
+    const { data: cfdi } = await supabase.rpc("cfdi_atencion");
+    for (const [i, a] of ((cfdi ?? []) as { clave: string; texto: string; desde: string; urgente: boolean; ruta: string }[]).entries()) {
+      const dias = diasDesde(a.desde, hoy, zona);
+      atencion.push({
+        clave: `${a.clave}-${i}`,
+        texto: a.texto,
+        href: a.ruta,
+        dias,
+        antiguedad: a.urgente ? `Urgente · ${haceCuanto(dias)}` : `Desde ${haceCuanto(dias)}`,
+      });
+    }
+  }
+
   const ocupacionDiurna = hoyCal ? `${hoyCal.ocupado_diurno}${hoyCal.cupo_diurno != null ? ` / ${hoyCal.cupo_diurno}` : ""}` : "—";
   const ocupacionNocturna = hoyCal ? `${hoyCal.ocupado_nocturno}${hoyCal.cupo_nocturno != null ? ` / ${hoyCal.cupo_nocturno}` : ""}` : "—";
 

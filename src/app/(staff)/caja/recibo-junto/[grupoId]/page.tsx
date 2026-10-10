@@ -8,6 +8,7 @@ import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { LogoNegocio } from "@/components/marca/logo-negocio";
 import { ETIQUETA_TARJETA_MANUAL } from "@/lib/cobro/tarjeta-manual";
 import { BotonImprimir } from "./boton-imprimir";
+import { SeccionFacturarGrupo } from "@/components/cfdi/seccion-facturar";
 import { CorreccionesRecibo } from "./correcciones-recibo";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
@@ -179,6 +180,10 @@ export default async function ReciboJuntoPage({ params }: { params: Promise<{ gr
           turnoCerrado={turnoCerrado}
           puedeTurnosCerrados={tienePermiso(sesion, "corregir_turnos_cerrados")}
         />
+      )}
+
+      {!anulado && (
+        <SeccionFacturarGrupo grupoId={d.grupo_id} clienteId={d.cliente_id} cobroIds={d.cuentas.filter((c) => !c.anulado).map((c) => c.cobro_id)} />
       )}
 
       <div className="flex flex-wrap gap-2 print:hidden">

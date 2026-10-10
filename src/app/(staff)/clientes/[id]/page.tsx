@@ -30,6 +30,7 @@ import { cargarPendientesEstancia } from "@/lib/perros/pendientes-estancia";
 import { PendientesEstancia, type CatalogosPerro } from "../../perros/pendientes-estancia";
 import { cargarRazas } from "@/lib/razas";
 import { negocioIdActual } from "@/lib/negocio/actual";
+import { DatosFiscalesCliente } from "@/components/cfdi/datos-fiscales-cliente";
 
 export default async function EditarClientePage({
   params,
@@ -378,6 +379,8 @@ export default async function EditarClientePage({
         />
       </div>
       )}
+
+      <DatosFiscalesCliente clienteId={id} />
 
       <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Dar de baja</h2>

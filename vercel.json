@@ -28,6 +28,10 @@
     {
       "path": "/api/cron/avisos",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/cfdi",
+      "schedule": "23 * * * *"
     }
   ]
 }
