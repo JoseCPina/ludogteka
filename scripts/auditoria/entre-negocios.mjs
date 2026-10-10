@@ -254,7 +254,11 @@ console.log("  PATCH, DELETE e INSERT revisados");
 console.log("\n── Personas de los dos negocios");
 {
   const t = tokens.cliente_de_los_dos;
-  const leer = async (rel, negocio, q = "") => (await (await fetch(`${URL}/rest/v1/${rel}?select=id${q}`, { headers: cabeceras(t, negocio) })).json());
+  const leer = async (rel, negocio, q = "") => {
+    const cuerpo = await (await fetch(`${URL}/rest/v1/${rel}?select=id${q}`, { headers: cabeceras(t, negocio) })).json();
+    if (!Array.isArray(cuerpo)) throw new Error(`lectura de ${rel} falló: ${JSON.stringify(cuerpo).slice(0, 200)}`);
+    return cuerpo;
+  };
   const cliA = (await leer("clientes", LUDOGTEKA)).map((f) => f.id);
   const cliB = (await leer("clientes", B)).map((f) => f.id);
   if (cliA.length !== 1 || cliA[0] !== datos.clienteAmbosA) hallazgo(`cliente de los dos, en A: ve ${JSON.stringify(cliA)} (esperado solo ${datos.clienteAmbosA})`);
