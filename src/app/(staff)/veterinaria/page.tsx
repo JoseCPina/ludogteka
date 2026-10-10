@@ -37,10 +37,14 @@ export default async function VeterinariaInicio() {
   const puedeConfig = tienePermiso(sesion, "configuracion_negocio");
   const esAdmin = sesion?.rol === "admin";
 
-  const [{ data: alertasCrudo }, { data: permisosCrudo }] = await Promise.all([
+  const [{ data: alertasCrudo }, { data: permisosCrudo }, { data: atencionCrudo }, { data: censoCrudo }] = await Promise.all([
     puedeLotes ? supabase.rpc("inventario_clinico_alertas") : Promise.resolve({ data: null }),
     puedeConfig ? supabase.rpc("permisos_establecimiento_por_vencer") : Promise.resolve({ data: null }),
+    supabase.rpc("veterinaria_atencion"),
+    supabase.rpc("hospitalizacion_censo"),
   ]);
+  const atencion = (atencionCrudo ?? {}) as { recordatorios_pendientes?: number; dosis_atrasadas?: number; consentimientos_pendientes?: number };
+  const internados = Array.isArray(censoCrudo) ? censoCrudo.length : 0;
   const alertas = ((alertasCrudo ?? {}) as Alertas) ?? {};
   const permisos = (permisosCrudo ?? []) as Permiso[];
   const vencidos = permisos.filter((p) => p.estado === "vencido");
@@ -50,10 +54,44 @@ export default async function VeterinariaInicio() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold text-n-900">Veterinaria</h1>
-        <p className="mt-1 max-w-3xl text-n-600">Inventario clínico por lote, médicos veterinarios y los permisos del establecimiento.</p>
+        <p className="mt-1 max-w-3xl text-n-600">Carnets y certificados, hospitalización, inventario clínico por lote, médicos veterinarios y los permisos del establecimiento.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
+        <Tarjeta href="/veterinaria/carnet" titulo="Carnets">
+          <p>Vacunas y desparasitaciones de cada mascota, con su carnet imprimible y verificable.</p>
+        </Tarjeta>
+
+        <Tarjeta href="/veterinaria/hospitalizacion" titulo="Hospitalización">
+          <p>Quién está internado, su hoja de medicación, monitoreo y cuenta.</p>
+          <span className="flex flex-wrap gap-2">
+            <Contador n={internados} texto="internados" estilo="bg-morado-suave text-morado" />
+            <Contador n={Number(atencion.dosis_atrasadas ?? 0)} texto="dosis atrasadas" estilo="bg-ambar-suave text-ambar-oscuro" />
+          </span>
+        </Tarjeta>
+
+        <Tarjeta href="/veterinaria/certificados" titulo="Certificados de salud">
+          <p>Los certificados emitidos, con la vigencia y el médico que firma.</p>
+        </Tarjeta>
+
+        <Tarjeta href="/veterinaria/recordatorios" titulo="Recordatorios de dosis">
+          <p>Vacunas y desparasitaciones que ya les toca a las mascotas.</p>
+          <span className="flex flex-wrap gap-2">
+            <Contador n={Number(atencion.recordatorios_pendientes ?? 0)} texto="por mandar" estilo="bg-ambar-suave text-ambar-oscuro" />
+          </span>
+        </Tarjeta>
+
+        <Tarjeta href="/veterinaria/consentimientos" titulo="Consentimientos">
+          <p>Hospitalización, cirugía, anestesia y eutanasia: textos y firmas.</p>
+          <span className="flex flex-wrap gap-2">
+            <Contador n={Number(atencion.consentimientos_pendientes ?? 0)} texto="sin firmar" estilo="bg-ambar-suave text-ambar-oscuro" />
+          </span>
+        </Tarjeta>
+
+        <Tarjeta href="/veterinaria/ajustes" titulo="Ajustes de Veterinaria">
+          <p>Recordatorios, vigencia de certificados, carnet como comprobante y precio del día.</p>
+        </Tarjeta>
+
         <Tarjeta href="/veterinaria/inventario" titulo="Inventario clínico">
           <p>Medicamentos y material clínico por lote, con caducidades y clasificación.</p>
           {puedeLotes ? (

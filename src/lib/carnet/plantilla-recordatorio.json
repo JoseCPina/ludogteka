@@ -1,0 +1,7 @@
+{
+  "nombre": "peludesk_recordatorio_dosis_v1",
+  "idioma": "es_MX",
+  "categoria": "UTILITY",
+  "cuerpo": "Hola {{1}}, te escribimos de parte de {{3}}. A {{2}} le toca {{4}} {{5}}. Para agendar su cita comunícate directamente con {{3}} al {{6}}. Este número no recibe respuestas.",
+  "ejemplos": ["Ana", "Motita", "Clínica Patitas", "la vacuna Antirrábica", "el 15 de octubre", "444 123 4567"]
+}

@@ -5,13 +5,14 @@ import { ARTICULOS_CAJA_Y_ESTETICA } from "./articulos/caja-y-estetica";
 import { ARTICULOS_ADMINISTRACION } from "./articulos/administracion";
 import { ARTICULOS_REPORTE_Y_FOTOS } from "./articulos/reporte-y-fotos";
 import { ARTICULOS_VETERINARIA } from "./articulos/veterinaria";
+import { ARTICULOS_FACTURACION } from "./articulos/facturacion";
 
 /**
  * El centro de ayuda de PeluDesk: todos los artículos y cómo se encuentran.
  * Los artículos viven en ./articulos (uno por tarea real). Todo cambio que
  * altere cómo se usa una pantalla actualiza su artículo en el mismo cambio.
  */
-export const ARTICULOS: Articulo[] = [...ARTICULOS_DIA_Y_RESERVAS, ...ARTICULOS_CAJA_Y_ESTETICA, ...ARTICULOS_ADMINISTRACION, ...ARTICULOS_REPORTE_Y_FOTOS, ...ARTICULOS_VETERINARIA];
+export const ARTICULOS: Articulo[] = [...ARTICULOS_DIA_Y_RESERVAS, ...ARTICULOS_CAJA_Y_ESTETICA, ...ARTICULOS_ADMINISTRACION, ...ARTICULOS_REPORTE_Y_FOTOS, ...ARTICULOS_VETERINARIA, ...ARTICULOS_FACTURACION];
 
 export { NOMBRE_GRUPO };
 export type { Articulo };

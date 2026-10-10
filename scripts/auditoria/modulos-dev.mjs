@@ -69,7 +69,7 @@ try {
   const otorgado = await dar(P.admin, P.recConId, "administrar_modulos");
   comprobar(otorgado.ok, "admin le da «Administrar módulos» a una recepcionista");
   comprobar(((await rpc(P.recCon, "mis_permisos")).cuerpo ?? []).includes("administrar_modulos"), "y ella lo trae en su sesión");
-  const prendeRec = await rpc(P.recCon, "cambiar_modulo", { p_modulo: "veterinaria", p_activo: false });
+  const prendeRec = await rpc(P.recCon, "cambiar_modulo", { p_modulo: "veterinaria", p_activo: false, p_confirmado: true });
   comprobar(prendeRec.ok, "con el permiso, recepción apaga un módulo");
   comprobar(!(await activos(P.admin)).includes("veterinaria"), "y el módulo quedó apagado");
   const prendeRec2 = await rpc(P.recCon, "cambiar_modulo", { p_modulo: "veterinaria", p_activo: true });
@@ -203,8 +203,8 @@ try {
 
   // ── 7. Aislamiento ──
   seccion("7. Aislamiento entre negocios");
-  const ajenoLec = await get(tLud, "negocio_modulos_eventos?select=id", LUDOGTEKA);
-  comprobar(ajenoLec.ok && (ajenoLec.cuerpo ?? []).length === 0, "Ludogteka no lee el historial de módulos de Huellitas");
+  const ajenoLec = await get(tLud, "negocio_modulos_eventos?select=id,negocio_id", LUDOGTEKA);
+  comprobar(ajenoLec.ok && (ajenoLec.cuerpo ?? []).every((e) => e.negocio_id !== B), "Ludogteka no lee el historial de módulos de Huellitas");
   const suplanta = await get(tLud, `negocio_modulos_eventos?select=id&negocio_id=eq.${B}`, LUDOGTEKA);
   comprobar(suplanta.ok && (suplanta.cuerpo ?? []).length === 0, "ni pidiéndolo por id");
   const apagaAjeno = await rpc(tLud, "cambiar_modulo", { p_modulo: "veterinaria", p_activo: true }, LUDOGTEKA);

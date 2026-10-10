@@ -445,10 +445,53 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // tiene «Configuración del negocio».
   if (mods.includes("veterinaria")) {
     const cuando = (n: number) => (n <= 0 ? "hoy" : n === 1 ? "mañana" : `en ${n} días`);
-    const [{ data: alertasCrudo }, { data: permisosCrudo }] = await Promise.all([
+    const [{ data: alertasCrudo }, { data: permisosCrudo }, { data: vetCrudo }] = await Promise.all([
       tienePermiso(sesion, "lotes_clinicos") ? supabase.rpc("inventario_clinico_alertas") : Promise.resolve({ data: null }),
       tienePermiso(sesion, "configuracion_negocio") ? supabase.rpc("permisos_establecimiento_por_vencer") : Promise.resolve({ data: null }),
+      supabase.rpc("veterinaria_atencion"),
     ]);
+    // Carnet, hospitalización y consentimientos (Fase 1): la base solo responde lo que a esta persona le toca.
+    const vet = (vetCrudo ?? {}) as {
+      recordatorios_pendientes?: number;
+      recordatorio_mas_viejo?: string | null;
+      dosis_atrasadas?: number;
+      dosis_mas_vieja?: string | null;
+      consentimientos_pendientes?: number;
+      consentimiento_mas_viejo?: string | null;
+    };
+    if (Number(vet.dosis_atrasadas ?? 0) > 0) {
+      const n = Number(vet.dosis_atrasadas);
+      const dias = vet.dosis_mas_vieja ? diasDesde(vet.dosis_mas_vieja, hoy, zona) : 0;
+      atencion.push({
+        clave: "hospitalizacion-dosis-atrasadas",
+        texto: n === 1 ? "1 dosis de una mascota hospitalizada está atrasada" : `${n} dosis de mascotas hospitalizadas están atrasadas`,
+        href: "/veterinaria/hospitalizacion",
+        dias,
+        antiguedad: dias === 0 ? "La más vieja es de hoy" : `La más vieja es ${desdeCuando(dias)}`,
+      });
+    }
+    if (Number(vet.consentimientos_pendientes ?? 0) > 0) {
+      const n = Number(vet.consentimientos_pendientes);
+      const dias = vet.consentimiento_mas_viejo ? diasDesde(vet.consentimiento_mas_viejo, hoy, zona) : 0;
+      atencion.push({
+        clave: "consentimientos-pendientes",
+        texto: n === 1 ? "1 consentimiento informado espera la firma del propietario" : `${n} consentimientos informados esperan la firma del propietario`,
+        href: "/veterinaria/consentimientos",
+        dias,
+        antiguedad: n === 1 ? `Esperando ${desdeCuando(dias)}` : `El más viejo, ${desdeCuando(dias)}`,
+      });
+    }
+    if (Number(vet.recordatorios_pendientes ?? 0) > 0) {
+      const n = Number(vet.recordatorios_pendientes);
+      const dias = vet.recordatorio_mas_viejo ? Math.max(0, diasDesde(vet.recordatorio_mas_viejo, hoy, zona)) : 0;
+      atencion.push({
+        clave: "carnet-recordatorios",
+        texto: n === 1 ? "1 mascota tiene una vacuna o desparasitación por recordar" : `${n} dosis de vacunas o desparasitaciones por recordar`,
+        href: "/veterinaria/recordatorios",
+        dias,
+        antiguedad: vet.recordatorio_mas_viejo && vet.recordatorio_mas_viejo < hoy ? `La más vieja venció ${haceCuanto(dias)}` : "Les toca esta semana o la próxima",
+      });
+    }
     const clinico = (alertasCrudo ?? {}) as {
       caducados?: number;
       por_caducar?: number;
@@ -466,7 +509,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
         clave: "clinico-caducados",
         texto: caducados === 1 ? "1 lote del inventario clínico está caducado y todavía tiene existencia" : `${caducados} lotes del inventario clínico están caducados y todavía tienen existencia`,
         detalle: "Sácalos del inventario como «Caducado»",
-        href: "/veterinaria/inventario?filtro=alerta",
+        href: "/veterinaria/inventario?filtro=caducidad",
         dias,
         antiguedad: caducados === 1 ? `Caducado ${haceCuanto(dias)}` : `El más viejo caducó ${haceCuanto(dias)}`,
       });
@@ -476,7 +519,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       atencion.push({
         clave: "clinico-por-caducar",
         texto: porCaducar === 1 ? "1 lote del inventario clínico está por caducar" : `${porCaducar} lotes del inventario clínico están por caducar`,
-        href: "/veterinaria/inventario?filtro=alerta",
+        href: "/veterinaria/inventario?filtro=caducidad",
         dias: 0,
         antiguedad: porCaducar === 1 ? `Caduca ${cuando(faltan)}` : `El primero caduca ${cuando(faltan)}`,
       });
@@ -487,7 +530,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       atencion.push({
         clave: "clinico-bajo-minimo",
         texto: bajoMinimo === 1 ? "1 producto clínico está bajo su mínimo" : `${bajoMinimo} productos clínicos están bajo su mínimo`,
-        href: "/veterinaria/inventario?filtro=alerta",
+        href: "/veterinaria/inventario?filtro=bajo_minimo",
         dias,
         antiguedad: bajoMinimo === 1 ? `Bajo ${desdeCuando(dias)}` : `El más viejo, ${desdeCuando(dias)}`,
       });
@@ -725,6 +768,23 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
             : "Paga la factura pendiente y todo vuelve a funcionar solo",
         href: "/admin/modulos",
         ...masViejo([cobro.primer_fallo_at], hoy, zona),
+      });
+    }
+  }
+
+  // Facturación (CFDI): global por emitir (24 h después del cierre del periodo),
+  // timbres por agotarse, cancelaciones esperando al cliente y timbrados por
+  // revisar. La base solo las entrega a quien factura o cancela.
+  {
+    const { data: cfdi } = await supabase.rpc("cfdi_atencion");
+    for (const [i, a] of ((cfdi ?? []) as { clave: string; texto: string; desde: string; urgente: boolean; ruta: string }[]).entries()) {
+      const dias = diasDesde(a.desde, hoy, zona);
+      atencion.push({
+        clave: `${a.clave}-${i}`,
+        texto: a.texto,
+        href: a.ruta,
+        dias,
+        antiguedad: a.urgente ? `Urgente · ${haceCuanto(dias)}` : `Desde ${haceCuanto(dias)}`,
       });
     }
   }
