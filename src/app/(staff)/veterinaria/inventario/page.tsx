@@ -70,13 +70,24 @@ export default async function InventarioClinicoPage({ searchParams }: { searchPa
     return Boolean(existenciaDe.get(i.id)?.bajo_minimo) || Boolean(l && (l.caducados > 0 || l.porCaducar > 0));
   };
 
+  // Cada número de «Necesita atención» lleva a la lista que lo produce: los productos bajo su mínimo
+  // y los lotes por caducar o caducados (con existencia).
+  const bajoMinimoDe = (i: Insumo) => Boolean(existenciaDe.get(i.id)?.bajo_minimo);
+  const caducidadDe = (i: Insumo) => {
+    const l = lotesDe.get(i.id);
+    return Boolean(l && (l.caducados > 0 || l.porCaducar > 0));
+  };
   const visibles = insumos.filter((i) => {
     if (filtro === "alerta" && !alertaDe(i)) return false;
+    if (filtro === "bajo_minimo" && !bajoMinimoDe(i)) return false;
+    if (filtro === "caducidad" && !caducidadDe(i)) return false;
     if (grupo === "ninguno") return !i.grupo_senasica;
     if (grupo && ["I", "II", "III"].includes(grupo)) return i.grupo_senasica === grupo;
     return true;
   });
   const conAlerta = insumos.filter(alertaDe).length;
+  const nBajoMinimo = insumos.filter(bajoMinimoDe).length;
+  const nLotesCaducidad = [...lotesDe.values()].reduce((suma, l) => suma + l.caducados + l.porCaducar, 0);
   const href = (f?: string, g?: string) => {
     const q = new URLSearchParams();
     if (f) q.set("filtro", f);
@@ -109,11 +120,17 @@ export default async function InventarioClinicoPage({ searchParams }: { searchPa
       )}
 
       <div className="flex flex-wrap gap-2" aria-label="Filtros">
-        <Filtro href={href(undefined, grupo)} activo={filtro !== "alerta"}>
+        <Filtro href={href(undefined, grupo)} activo={!filtro || !["alerta", "bajo_minimo", "caducidad"].includes(filtro)}>
           Todos ({insumos.length})
         </Filtro>
         <Filtro href={href("alerta", grupo)} activo={filtro === "alerta"}>
           Con alerta ({conAlerta})
+        </Filtro>
+        <Filtro href={href("bajo_minimo", grupo)} activo={filtro === "bajo_minimo"}>
+          Bajo mínimo ({nBajoMinimo})
+        </Filtro>
+        <Filtro href={href("caducidad", grupo)} activo={filtro === "caducidad"}>
+          Caducidad ({nLotesCaducidad} {nLotesCaducidad === 1 ? "lote" : "lotes"})
         </Filtro>
         <span className="mx-1 self-center text-n-300">|</span>
         <Filtro href={href(filtro, undefined)} activo={!grupo}>

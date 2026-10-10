@@ -15,7 +15,6 @@ const PERMISOS = [
   "inventario_costos", "tarifas", "reportes_financieros", "personal", "nomina", "gastos",
   "configuracion_negocio", "excepciones_reserva", "descuentos_sin_tope", "plantillas_contrato", "corregir_estilista", "corregir_servicio", "tarjeta_manual", "ajustar_pases",
   "anular_cobros", "editar_monto_cobros", "corregir_turnos_cerrados", "agregar_efectivo", "eliminar_citas",
-  "registrar_vacunas", "emitir_certificados", "hospitalizar",
 ];
 
 
@@ -206,7 +205,7 @@ const pruebas = {
   // «Ajustar días de pases»: mover los días usados de un pase (y deshacerlo). Un ajuste solo
   // cambia el saldo de días; se regresa con otro ajuste de admin (el historial no se borra).
   async ajustar_pases() {
-    const { data: bono } = await A.from("bonos_clientes").select("id, cantidad_total, cantidad_disponible").is("deleted_at", null).gt("cantidad_disponible", 0).limit(1).maybeSingle();
+    const { data: bono } = await A.from("bonos_clientes").select("id, cantidad_total, cantidad_disponible").is("deleted_at", null).not("perro_id", "is", null).gt("cantidad_disponible", 0).limit(1).maybeSingle();
     if (!bono) return { dejo: false, ve: false, detalle: "no hay un pase con días disponibles en desarrollo" };
     const usados = bono.cantidad_total - bono.cantidad_disponible;
     const r = await R.rpc("ajustar_dias_pase", { p_bono_id: bono.id, p_usados: usados + 1, p_fechas: [], p_motivo: "otro", p_motivo_texto: "prueba de permisos" });
@@ -246,11 +245,6 @@ const pruebas = {
     return { dejo: r.data === true, ve: r.data === true };
   },
 
-  // Veterinaria, Fase 1: la guardia de permiso va antes de buscar la mascota, así que con una
-  // mascota inexistente "sin permiso" (42501) se distingue de "no existe".
-  async registrar_vacunas() { return porGuardia(R.rpc("carnet_recordatorios_mascota", { p_perro_id: crypto.randomUUID(), p_apagados: true })); },
-  async emitir_certificados() { return porGuardia(R.rpc("anular_certificado", { p_id: crypto.randomUUID(), p_motivo: "prueba de permisos" })); },
-  async hospitalizar() { return porGuardia(R.rpc("hospitalizar_omitir_dosis", { p_dosis_id: crypto.randomUUID(), p_motivo: "prueba de permisos" })); },
   async plantillas_contrato() {
     const r = await R.rpc("marcar_requiere_refirma", { p_plantilla_id: plantilla.id, p_valor: plantilla.requiere_refirma });
     return { dejo: !r.error, ve: !r.error, detalle: r.error?.message };

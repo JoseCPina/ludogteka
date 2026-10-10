@@ -509,7 +509,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
         clave: "clinico-caducados",
         texto: caducados === 1 ? "1 lote del inventario clínico está caducado y todavía tiene existencia" : `${caducados} lotes del inventario clínico están caducados y todavía tienen existencia`,
         detalle: "Sácalos del inventario como «Caducado»",
-        href: "/veterinaria/inventario?filtro=alerta",
+        href: "/veterinaria/inventario?filtro=caducidad",
         dias,
         antiguedad: caducados === 1 ? `Caducado ${haceCuanto(dias)}` : `El más viejo caducó ${haceCuanto(dias)}`,
       });
@@ -519,7 +519,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       atencion.push({
         clave: "clinico-por-caducar",
         texto: porCaducar === 1 ? "1 lote del inventario clínico está por caducar" : `${porCaducar} lotes del inventario clínico están por caducar`,
-        href: "/veterinaria/inventario?filtro=alerta",
+        href: "/veterinaria/inventario?filtro=caducidad",
         dias: 0,
         antiguedad: porCaducar === 1 ? `Caduca ${cuando(faltan)}` : `El primero caduca ${cuando(faltan)}`,
       });
@@ -530,7 +530,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       atencion.push({
         clave: "clinico-bajo-minimo",
         texto: bajoMinimo === 1 ? "1 producto clínico está bajo su mínimo" : `${bajoMinimo} productos clínicos están bajo su mínimo`,
-        href: "/veterinaria/inventario?filtro=alerta",
+        href: "/veterinaria/inventario?filtro=bajo_minimo",
         dias,
         antiguedad: bajoMinimo === 1 ? `Bajo ${desdeCuando(dias)}` : `El más viejo, ${desdeCuando(dias)}`,
       });
