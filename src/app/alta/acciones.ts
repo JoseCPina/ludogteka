@@ -7,6 +7,7 @@ import { geocodificarYCalcularDistancia } from "@/lib/google-maps/distancia-clie
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { negocioActual } from "@/lib/negocio/actual";
 import { cargarRequisitosAlta } from "@/lib/alta/requisitos";
+import { esEspecie, normalizarMicrochip } from "@/lib/perros/ficha-clinica";
 import type { DatosRazaPropuesta } from "@/lib/razas-propuesta";
 import type {
   ContratoPendiente,
@@ -24,6 +25,82 @@ function sinPropuesta<T extends { raza_propuesta?: unknown }>(p: T): Omit<T, "ra
   const { raza_propuesta, ...resto } = p;
   void raza_propuesta;
   return resto;
+}
+
+// La ficha clínica (especie, microchip, esterilizado) no viaja por las
+// funciones de la base del alta: se escribe después, con la llave de servidor,
+// y SOLO si el negocio tiene Veterinaria activa.
+type ClinicosAlta = { especie?: string; especie_detalle?: string; microchip?: string; esterilizado?: string };
+
+function sinClinicos<T extends ClinicosAlta>(p: T): Omit<T, "especie" | "especie_detalle" | "microchip" | "esterilizado"> {
+  const { especie, especie_detalle, microchip, esterilizado, ...resto } = p;
+  void especie;
+  void especie_detalle;
+  void microchip;
+  void esterilizado;
+  return resto;
+}
+
+async function negocioTieneVeterinaria(admin: ReturnType<typeof createSupabaseAdminClient>): Promise<boolean> {
+  const { data } = await admin.rpc("modulos_activos");
+  return ((data as string[] | null) ?? []).includes("veterinaria");
+}
+
+/**
+ * Escribe la ficha clínica opcional de los perros recién creados. Valida en
+ * el servidor (especie ∈ perro/gato/otro, microchip de 9 a 20 letras/números)
+ * y nunca acepta nada si el negocio no tiene Veterinaria. Es "lo mejor
+ * posible": el alta ya quedó guardada, así que un microchip repetido o mal
+ * escrito se omite sin romper el alta (recepción lo captura en la ficha).
+ */
+async function aplicarClinicosAlta(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  negocioId: string,
+  clienteId: string | undefined,
+  enviados: (ClinicosAlta & { nombre?: string })[],
+  creados: PerroCreado[]
+): Promise<void> {
+  if (!clienteId || enviados.length === 0 || creados.length === 0) return;
+  const hayAlgo = enviados.some(
+    (p) => (p.especie && p.especie !== "perro") || (p.microchip ?? "").trim() || (p.esterilizado ?? "") !== ""
+  );
+  if (!hayAlgo) return;
+  if (!(await negocioTieneVeterinaria(admin))) return;
+
+  const usados = new Set<string>();
+  for (let i = 0; i < enviados.length; i++) {
+    const p = enviados[i];
+    const nombre = (p.nombre ?? "").trim();
+    const creado =
+      creados.find((c) => !usados.has(c.id) && c.nombre === nombre) ??
+      (creados[i] && !usados.has(creados[i].id) ? creados[i] : undefined);
+    if (!creado) continue;
+    usados.add(creado.id);
+
+    const especie = p.especie && esEspecie(p.especie) ? p.especie : "perro";
+    const detalle = especie === "otro" ? (p.especie_detalle ?? "").trim() : "";
+    const microchip = normalizarMicrochip((p.microchip ?? "").trim());
+    const cambios: Record<string, unknown> = {};
+    if (especie !== "perro" && (especie !== "otro" || detalle)) {
+      cambios.especie = especie;
+      if (especie === "otro") cambios.especie_detalle = detalle;
+    }
+    if (microchip && /^[A-Za-z0-9]{9,20}$/.test(microchip)) cambios.microchip = microchip;
+    if (p.esterilizado === "si" || p.esterilizado === "no") cambios.esterilizado = p.esterilizado === "si";
+    if (Object.keys(cambios).length === 0) continue;
+
+    const aplicar = (c: Record<string, unknown>) =>
+      admin.from("perros").update(c).eq("id", creado.id).eq("negocio_id", negocioId).eq("cliente_id", clienteId);
+    const { error } = await aplicar(cambios);
+    if (error && cambios.microchip) {
+      // Lo más probable: ese microchip ya es de otra mascota. Se guarda el resto.
+      const { microchip: omitido, ...sinChip } = cambios;
+      void omitido;
+      if (Object.keys(sinChip).length > 0) await aplicar(sinChip);
+    } else if (error) {
+      console.error("[alta] no se pudo guardar la ficha clínica", creado.id, error.message);
+    }
+  }
 }
 
 // Todo el alta pasa por el servidor con la secret key, nunca por el
@@ -208,6 +285,7 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
     perros: PerroCreado[];
     contratos: ContratoPendiente[];
   } | null;
+  await aplicarClinicosAlta(admin, negocio.id, salida?.cliente_id, datos.perros, salida?.perros ?? []);
   return {
     error: null,
     clienteId: salida?.cliente_id,
@@ -336,7 +414,7 @@ export async function completarExpediente(
     // los perros nuevos: si no, el mismo número entra con guiones desde
     // un flujo y sin ellos desde el otro, y buscar por teléfono deja de
     // encontrarlo.
-    p_perros: datos.perros.map(sinPropuesta).map((p) => ({
+    p_perros: datos.perros.map(sinPropuesta).map(sinClinicos).map((p) => ({
       ...p,
       ...(p.contacto_emergencia_telefono !== undefined && {
         contacto_emergencia_telefono:
@@ -347,7 +425,7 @@ export async function completarExpediente(
           normalizarTelefono(p.veterinario_telefono) ?? p.veterinario_telefono,
       }),
     })),
-    p_perros_nuevos: datos.perrosNuevos.map(sinPropuesta).map((p) => ({
+    p_perros_nuevos: datos.perrosNuevos.map(sinPropuesta).map(sinClinicos).map((p) => ({
       ...p,
       contacto_emergencia_telefono:
         normalizarTelefono(p.contacto_emergencia_telefono) ?? p.contacto_emergencia_telefono,
@@ -371,6 +449,16 @@ export async function completarExpediente(
     perros: PerroCreado[];
     contratos: ContratoPendiente[];
   } | null;
+  // Solo los perros NUEVOS del complemento traen ficha clínica; se buscan
+  // entre los creados por nombre, y los que ya existían no se tocan.
+  const idsPrevios = new Set(datos.perros.map((p) => p.id));
+  await aplicarClinicosAlta(
+    admin,
+    negocio.id,
+    salida?.cliente_id,
+    datos.perrosNuevos,
+    (salida?.perros ?? []).filter((c) => !idsPrevios.has(c.id))
+  );
   return {
     error: null,
     clienteId: salida?.cliente_id,

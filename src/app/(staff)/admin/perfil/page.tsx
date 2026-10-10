@@ -5,7 +5,9 @@ import { tienePermiso } from "@/lib/auth/permisos";
 import { urlPublicaArchivo } from "@/lib/negocio/publico";
 import { AvanceWeb } from "@/components/avance-web";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
+import { usaVeterinaria } from "@/lib/plan/modulos";
 import { PerfilForm } from "./perfil-form";
+import { Establecimiento } from "./establecimiento";
 
 // El perfil público del negocio: lo que sale en su página web (logo, fotos,
 // descripción, dirección). Los servicios y precios salen de Servicios; el
@@ -36,6 +38,7 @@ export default async function PerfilPage() {
         colorNegocio={negocio.marca?.color ?? null}
         fotos={(fotos ?? []).map((f) => ({ id: f.id as string, url: urlPublicaArchivo(f.path as string)! }))}
       />
+      {usaVeterinaria(sesion?.modulos ?? []) && <Establecimiento />}
     </div>
   );
 }

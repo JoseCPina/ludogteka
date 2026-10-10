@@ -17,6 +17,8 @@ import { FirmarContrato } from "@/components/firmar-contrato";
 import { BitacoraCliente, type EntradaBitacoraCliente } from "./bitacora-cliente";
 import { MedicamentosCliente, type MedicamentoFilaCliente } from "./medicamentos-cliente";
 import { zonaActual } from "@/lib/negocio/actual";
+import { usaVeterinaria } from "@/lib/plan/modulos";
+import { ETIQUETA_ESPECIE, esEspecie } from "@/lib/perros/ficha-clinica";
 
 const ESTILO_GRAVEDAD: Record<string, string> = {
   grave: "border-coral bg-coral-suave text-coral-oscuro",
@@ -76,6 +78,12 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
   if (!perro) notFound();
 
   const esPropio = perro.cliente_id === sesion.clienteId;
+
+  // Ficha de la mascota (solo con Veterinaria activa). Las notas clínicas son
+  // internas del negocio: NO se consultan aquí.
+  const { data: clinico } = usaVeterinaria(sesion.modulos ?? [])
+    ? await supabase.from("perros").select("especie, especie_detalle, microchip, folio_registro").eq("id", id).maybeSingle()
+    : { data: null };
 
   // Solo el dueño principal firma — un acceso compartido nunca puede
   // firmar en nombre de otro, aunque vea el resto del expediente.
@@ -240,6 +248,25 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
           <p className="text-xs font-bold uppercase tracking-wide text-n-600">Pelaje</p>
           <p className="text-n-900">{pelaje?.etiqueta ?? "—"}</p>
         </div>
+        {clinico && (
+          <>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-n-600">Especie</p>
+              <p className="text-n-900">
+                {esEspecie(clinico.especie) ? ETIQUETA_ESPECIE[clinico.especie] : "—"}
+                {clinico.especie === "otro" && clinico.especie_detalle ? ` · ${clinico.especie_detalle}` : ""}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-n-600">Microchip</p>
+              <p className="break-all text-n-900">{clinico.microchip ?? "—"}</p>
+            </div>
+            <div className="col-span-2">
+              <p className="text-xs font-bold uppercase tracking-wide text-n-600">Folio de registro</p>
+              <p className="break-all text-n-900">{clinico.folio_registro ?? "—"}</p>
+            </div>
+          </>
+        )}
         {perro.temperamento_notas && (
           <div className="col-span-2">
             <p className="text-xs font-bold uppercase tracking-wide text-n-600">Temperamento</p>

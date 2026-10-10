@@ -26,7 +26,7 @@ export type EstadoRegistro = { error: string | null; valores?: ValoresRegistro; 
 // alertas, horario): el mismo modelo que usa la plataforma al dar de alta.
 const MODELO = process.env.PELUDESK_NEGOCIO_MODELO_ID ?? NEGOCIO_ORIGINAL_ID;
 const DIAS_PRUEBA = 15;
-const SERVICIOS = ["estetica", "guarderia", "hotel"];
+const SERVICIOS = ["estetica", "guarderia", "hotel", "veterinaria"];
 
 /**
  * Prueba gratis desde peludesk.mx, sin que nadie de PeluDesk intervenga:

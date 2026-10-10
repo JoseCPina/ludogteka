@@ -131,6 +131,24 @@ export const PERMISOS = [
     implica:
       "Elimina una cita de estética capturada por error o duplicada, con un motivo por escrito: sale de la agenda y libera el horario, pero no se borra (queda en el historial de la cita). Cancelar una cita y marcar que no se presentó no necesitan este permiso. Una cita con cobro se elimina hasta anular el cobro. Viene apagado.",
   },
+  {
+    clave: "administrar_modulos",
+    etiqueta: "Administrar módulos",
+    implica:
+      "Prende y apaga los módulos del plan (Hotel y guardería, Estética, Veterinaria…) desde Administración → Módulos. Apagar nunca borra nada, y si hay pendientes (estancias, citas, pacientes hospitalizados) avisa y pide confirmar. Contratar o cambiar el plan y el cobro siguen siendo de admin. Viene apagado.",
+  },
+  {
+    clave: "editar_ficha_clinica",
+    etiqueta: "Editar ficha clínica",
+    implica:
+      "Captura y corrige la ficha clínica de las mascotas: especie, microchip, folio de registro y notas clínicas (con el módulo Veterinaria prendido). El peso y las alergias siguen pudiéndolos registrar quienes ya lo hacían. Viene apagado.",
+  },
+  {
+    clave: "lotes_clinicos",
+    etiqueta: "Administrar lotes e inventario clínico",
+    implica:
+      "Da de alta productos clínicos, edita su clasificación (grupo SENASICA, Ley General de Salud, antimicrobiano) y registra entradas por lote, surtidos, mermas, caducados y ajustes (con el módulo Veterinaria prendido). No ve costos: eso sigue siendo «Costos y compras de inventario». Viene apagado.",
+  },
 ] as const;
 
 export type ClavePermiso = (typeof PERMISOS)[number]["clave"];

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { tienePermiso } from "@/lib/auth/permisos";
 import { formatearFecha } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { Alert } from "@/components/ui/alert";
@@ -13,14 +14,16 @@ import type { MiCobro, PlanOferta } from "@/lib/cobro/tipos";
 // nunca borra: lo capturado se queda y reaparece al prender.
 export default async function ModulosPage({ searchParams }: { searchParams: Promise<{ apagado?: string; pago?: string }> }) {
   const sesion = await obtenerSesionConRol();
-  if (sesion?.rol !== "admin") redirect("/admin");
+  // Admin, o recepción con «Administrar módulos» (que no ve el cobro del plan).
+  if (!tienePermiso(sesion, "administrar_modulos")) redirect("/admin");
+  const esAdmin = sesion?.rol === "admin";
   const { apagado, pago } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const zona = await zonaActual();
   const [{ data: filas }, { data: negocio }, { data: cobro }, { data: ofertas }] = await Promise.all([
     supabase.rpc("mis_modulos"),
     supabase.from("negocios").select("plan, plan_id, prueba_termina_at, planes(nombre)").maybeSingle(),
-    supabase.rpc("mi_cobro"),
+    esAdmin ? supabase.rpc("mi_cobro") : Promise.resolve({ data: null }),
     supabase
       .from("planes")
       .select("id, clave, nombre, descripcion, tipo, precio_mensual, modulos")

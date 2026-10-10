@@ -12,6 +12,7 @@ export type ClaveModulo =
   | "guarderia"
   | "hotel"
   | "estetica"
+  | "veterinaria"
   | "bonos"
   | "recoleccion"
   | "contratos"
@@ -35,6 +36,7 @@ export const RUTAS_DE_MODULO: { prefijo: string; modulo: ClaveModulo | ClaveModu
   { prefijo: "/guarderia", modulo: "guarderia" },
   { prefijo: "/hotel", modulo: "hotel" },
   { prefijo: "/estetica", modulo: "estetica" },
+  { prefijo: "/veterinaria", modulo: "veterinaria" },
   { prefijo: "/recepcion/contratos", modulo: "contratos" },
   { prefijo: "/contratos", modulo: "contratos" },
   { prefijo: "/inventario", modulo: "inventario" },
@@ -69,4 +71,9 @@ export function usaEstancias(modulos: readonly string[]): boolean {
 export function tipoContratoAplica(categorias: readonly string[] | null | undefined, modulos: readonly string[]): boolean {
   const cats = categorias ?? [];
   return cats.length === 0 ? usaEstancias(modulos) : cats.some((c) => modulos.includes(c));
+}
+
+/** ¿El negocio usa Veterinaria? (ficha clínica, inventario con lotes, médico, permisos del establecimiento). */
+export function usaVeterinaria(modulos: readonly string[]): boolean {
+  return modulos.includes("veterinaria");
 }

@@ -302,6 +302,9 @@ Cada casilla dice qué incluye. Por ejemplo:
 - **Corregir estilista de servicios cerrados**: cambiar quién atendió un servicio que ya terminó.
 - **Corregir servicio de citas**: cambiar el servicio de una cita de estética que se capturó mal (abierta o ya cobrada); el precio se recalcula y la cuenta se ajusta.
 - **Ajustar días de pases**: corregir los días usados de un pase, deshacer un check-in hecho por error y registrar un pase que ya traía días usados. No mueve dinero. Viene apagado: dáselo solo a quien deba corregir saldos.
+- **Administrar módulos**: prender y apagar los módulos del plan en [Módulos y plan](/admin/modulos). No ve ni cambia el cobro del plan: eso es del admin. Viene apagado.
+- **Editar ficha clínica**: capturar la especie, el microchip, el folio de registro y las notas clínicas de una mascota (con el módulo Veterinaria prendido). Viene apagado.
+- **Administrar lotes e inventario clínico**: dar de alta productos clínicos, cambiar su clasificación y registrar entradas por lote, surtidos, mermas, caducados y ajustes (con Veterinaria prendido). No ve costos. Viene apagado.
 - **Registrar tarjeta manual**: cobrar con **Tarjeta (registro manual)** cuando la terminal no se puede usar. Viene prendido para toda la recepción; quítaselo a quien no deba. Esos cobros los revisas tú en [Conciliación](/caja/conciliacion).
 
 Todo cambio queda en la **Bitácora** de abajo.
@@ -330,7 +333,11 @@ Un permiso de un módulo apagado no hace nada hasta que lo prendas.
 
 1. Entra a [Módulos y plan](/admin/modulos).
 2. Junto al módulo aprieta **Apagar** o **Prender**.
-3. Si hay cosas pendientes, te dice cuántas. Aprieta **Apagar de todos modos** o **Cancelar**.
+3. Si hay cosas pendientes (estancias, citas, pacientes hospitalizados, lotes con existencia), te dice cuántas. Aprieta **Apagar de todos modos** o **Cancelar**. Sin confirmar, el sistema no apaga.
+
+Los servicios son tres: **Hotel y guardería**, **Estética** y **Veterinaria**. Veterinaria viene apagada y necesita **Inventario** prendido; la prendes aquí cuando la vayas a usar. Cada cambio queda en un historial.
+
+Si eres de recepción y el admin te dio el permiso **Administrar módulos**, también puedes prender y apagar; el cobro del plan sigue siendo del admin.
 
 Apagar no borra nada: si lo vuelves a prender, todo sigue ahí. Caja y clientes siempre están. Lo que dice «Fuera de tu plan» se prende cambiando de plan.
 

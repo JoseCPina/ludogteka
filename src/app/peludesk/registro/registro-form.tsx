@@ -67,6 +67,7 @@ export function RegistroForm({ origen }: { origen: Partial<Record<ParametroOrige
           ["estetica", "Estética"],
           ["guarderia", "Guardería"],
           ["hotel", "Hotel"],
+          ["veterinaria", "Veterinaria"],
         ].map(([valor, etiqueta]) => (
           <label key={valor} className="flex min-h-11 items-center gap-3 rounded-md border-[1.5px] border-borde bg-white px-3.5 text-n-900 has-[:checked]:border-morado has-[:checked]:bg-morado-suave/40">
             <input type="checkbox" name="servicios" value={valor} defaultChecked={v?.servicios.includes(valor)} className="h-5 w-5 accent-morado" />

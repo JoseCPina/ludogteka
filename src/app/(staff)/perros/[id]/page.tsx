@@ -11,7 +11,9 @@ import { cargarRazas } from "@/lib/razas";
 import { contextoRazaFormulario } from "@/lib/razas-form";
 import { negocioIdActual, zonaActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
-import { tipoContratoAplica, usaEstancias } from "@/lib/plan/modulos";
+import { tipoContratoAplica, usaEstancias, usaVeterinaria } from "@/lib/plan/modulos";
+import { FichaClinica } from "../ficha-clinica";
+import { esEspecie } from "@/lib/perros/ficha-clinica";
 import { Alert } from "@/components/ui/alert";
 import { PerroForm } from "../perro-form";
 import { PerroFoto } from "../perro-foto";
@@ -191,6 +193,15 @@ export default async function PerroPage({
     : { data: [] as { id: string; perro_medicamento_id: string; administrado_at: string; omitida: boolean; notas: string | null }[] };
 
   if (!perro) notFound();
+  // Ficha clínica: solo se consulta (y se muestra) con Veterinaria activa.
+  const conVeterinaria = usaVeterinaria(sesion.modulos);
+  const { data: clinicoCrudo } = conVeterinaria
+    ? await supabase
+        .from("perros")
+        .select("especie, especie_detalle, microchip, folio_registro, notas_clinicas")
+        .eq("id", id)
+        .maybeSingle()
+    : { data: null };
   const contextoRaza = await contextoRazaFormulario(supabase, perro.id);
 
   let urlFoto: string | null = null;
@@ -372,7 +383,7 @@ export default async function PerroPage({
           </Link>
         )}
         <h1 className="mt-1 text-2xl font-bold text-n-900">{perro.nombre}</h1>
-        <p className="mt-1 text-n-600">Expediente del perro.</p>
+        <p className="mt-1 text-n-600">{conVeterinaria ? "Expediente de la mascota." : "Expediente del perro."}</p>
       </div>
 
       <AlertaCriticaBanner alertas={alertasActivas} alergiasGraves={alergiasGraves} tamano="grande" />
@@ -441,6 +452,26 @@ export default async function PerroPage({
         soloLectura={soloLectura}
         tamano="grande"
       />
+
+      {conVeterinaria && clinicoCrudo && (
+        <FichaClinica
+          perroId={id}
+          nombre={perro.nombre}
+          puedeEditar={tienePermiso(sesion, "editar_ficha_clinica")}
+          pesoActual={
+            pesos && pesos.length > 0 ? { peso_kg: Number(pesos[0].peso_kg), fecha: String(pesos[0].fecha) } : null
+          }
+          alergias={alergiasFilas.map((a) => ({ alergeno: a.alergeno, gravedad: a.gravedad }))}
+          valores={{
+            especie: esEspecie(clinicoCrudo.especie) ? clinicoCrudo.especie : "perro",
+            especie_detalle: (clinicoCrudo.especie_detalle as string | null) ?? null,
+            esterilizado: perro.esterilizado,
+            microchip: (clinicoCrudo.microchip as string | null) ?? null,
+            folio_registro: (clinicoCrudo.folio_registro as string | null) ?? null,
+            notas_clinicas: (clinicoCrudo.notas_clinicas as string | null) ?? null,
+          }}
+        />
+      )}
 
       <PerroForm
         action={actualizarConId}
@@ -529,7 +560,7 @@ export default async function PerroPage({
       </>
       )}
 
-      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+      <div id="peso" className="flex scroll-mt-6 flex-col gap-4 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Peso</h2>
         <PesoForm perroId={id} />
         <PesoResumen historial={(pesos as PesoFila[]) ?? []} />
@@ -544,7 +575,7 @@ export default async function PerroPage({
         />
       </div>
 
-      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+      <div id="alergias" className="flex scroll-mt-6 flex-col gap-4 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Alergias</h2>
         <AlergiasSeccion perroId={id} alergias={alergiasFilas} />
       </div>

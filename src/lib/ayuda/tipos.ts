@@ -64,4 +64,5 @@ export const NOMBRE_GRUPO: Record<string, string> = {
   pagina_web: "Página web",
   admin: "Administración",
   ayuda: "Ayuda y soporte",
+  veterinaria: "Veterinaria",
 };
