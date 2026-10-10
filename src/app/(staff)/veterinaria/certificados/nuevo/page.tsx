@@ -38,7 +38,7 @@ export default async function NuevoCertificado({ searchParams }: { searchParams:
       ) : medicos.length === 0 ? (
         <Alert variante="advertencia" titulo="Falta un médico veterinario">Un certificado va a nombre de un médico veterinario con cédula. Un admin lo designa en Veterinaria → Médicos.</Alert>
       ) : (
-        <FormularioAccion accion={(fd) => emitirCertificado(perroId, fd)} textoBoton="Emitir certificado" className="rounded-lg border border-n-200 bg-white p-5">
+        <FormularioAccion accion={emitirCertificado.bind(null, perroId)} textoBoton="Emitir certificado" className="rounded-lg border border-n-200 bg-white p-5">
           <Select label="Médico veterinario que firma" name="medico_id" defaultValue={propio ?? ""} required>
             <option value="">— Elige —</option>
             {medicos.map((m) => <option key={m.id} value={m.id}>{m.nombre}</option>)}

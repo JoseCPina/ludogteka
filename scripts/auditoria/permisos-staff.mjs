@@ -15,6 +15,7 @@ const PERMISOS = [
   "inventario_costos", "tarifas", "reportes_financieros", "personal", "nomina", "gastos",
   "configuracion_negocio", "excepciones_reserva", "descuentos_sin_tope", "plantillas_contrato", "corregir_estilista", "corregir_servicio", "tarjeta_manual", "ajustar_pases",
   "anular_cobros", "editar_monto_cobros", "corregir_turnos_cerrados", "agregar_efectivo", "eliminar_citas",
+  "registrar_vacunas", "emitir_certificados", "hospitalizar",
 ];
 
 
@@ -244,6 +245,12 @@ const pruebas = {
     const r = await R.rpc("tiene_permiso", { p_permiso: "corregir_turnos_cerrados" });
     return { dejo: r.data === true, ve: r.data === true };
   },
+
+  // Veterinaria, Fase 1: la guardia de permiso va antes de buscar la mascota, así que con una
+  // mascota inexistente "sin permiso" (42501) se distingue de "no existe".
+  async registrar_vacunas() { return porGuardia(R.rpc("carnet_recordatorios_mascota", { p_perro_id: crypto.randomUUID(), p_apagados: true })); },
+  async emitir_certificados() { return porGuardia(R.rpc("anular_certificado", { p_id: crypto.randomUUID(), p_motivo: "prueba de permisos" })); },
+  async hospitalizar() { return porGuardia(R.rpc("hospitalizar_omitir_dosis", { p_dosis_id: crypto.randomUUID(), p_motivo: "prueba de permisos" })); },
   async plantillas_contrato() {
     const r = await R.rpc("marcar_requiere_refirma", { p_plantilla_id: plantilla.id, p_valor: plantilla.requiere_refirma });
     return { dejo: !r.error, ve: !r.error, detalle: r.error?.message };

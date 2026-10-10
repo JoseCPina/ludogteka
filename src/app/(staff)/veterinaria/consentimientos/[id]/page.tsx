@@ -47,7 +47,7 @@ export default async function Consentimiento({ params }: { params: Promise<{ id:
         <div className="flex flex-col gap-3">
           <FirmaConsentimiento id={id} firmanteInicial={dueno?.nombre ?? ""} />
           <Desplegable texto="Cancelar este consentimiento">
-            <FormularioAccion accion={(fd) => cancelarConsentimiento(id, fd)} textoBoton="Cancelar consentimiento" variante="peligro">
+            <FormularioAccion accion={cancelarConsentimiento.bind(null, id)} textoBoton="Cancelar consentimiento" variante="peligro">
               <Textarea label="Motivo" name="motivo" rows={2} required />
             </FormularioAccion>
           </Desplegable>

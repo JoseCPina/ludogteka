@@ -107,7 +107,7 @@ export default async function Certificado({ params }: { params: Promise<{ id: st
       {puede && !anulado && (
         <div className="print:hidden">
           <Desplegable texto="Anular este certificado" variante="secundario">
-            <FormularioAccion accion={(fd) => anularCertificado(id, fd)} textoBoton="Anular certificado" variante="peligro">
+            <FormularioAccion accion={anularCertificado.bind(null, id)} textoBoton="Anular certificado" variante="peligro">
               <Textarea label="Motivo de la anulación" name="motivo" rows={2} required ayuda="No se borra: queda anulado con este motivo y tu nombre." />
             </FormularioAccion>
           </Desplegable>

@@ -43,8 +43,8 @@ const conVet = moduloVet?.activo === true;
 const { data: unProductoClinico } = conVet ? await A.from("insumos").select("id").eq("negocio_id", negocio.id).eq("controla_lotes", true).is("deleted_at", null).limit(1).maybeSingle() : { data: null };
 const RUTAS_VET = conVet
   ? {
-      admin: ["/veterinaria", "/veterinaria/inventario", "/veterinaria/inventario/nuevo", "/veterinaria/medicos", "/admin/perfil", "/admin/modulos", ...(unProductoClinico ? [`/veterinaria/inventario/${unProductoClinico.id}`] : [])],
-      recepcion: ["/veterinaria", "/veterinaria/inventario"],
+      admin: ["/veterinaria", "/veterinaria/carnet", "/veterinaria/certificados", "/veterinaria/recordatorios", "/veterinaria/hospitalizacion", "/veterinaria/consentimientos", "/veterinaria/ajustes", "/veterinaria/inventario", "/veterinaria/inventario/nuevo", "/veterinaria/medicos", "/admin/perfil", "/admin/modulos", ...(unProductoClinico ? [`/veterinaria/inventario/${unProductoClinico.id}`] : [])],
+      recepcion: ["/veterinaria", "/veterinaria/carnet", "/veterinaria/certificados", "/veterinaria/recordatorios", "/veterinaria/hospitalizacion", "/veterinaria/consentimientos", "/veterinaria/ajustes", "/veterinaria/inventario"],
     }
   : { admin: [], recepcion: [] };
 

@@ -149,7 +149,7 @@ try {
   comprobar(/no está disponible/i.test(await cuerpo(pub)), "y un token inventado tampoco");
   await anonCtx.close();
   await pa.goto(`${BASE}/veterinaria/carnet/${rid}/imprimir`, { waitUntil: "networkidle" });
-  comprobar(/Carnet de vacunación/.test(await cuerpo(pa)) && new RegExp(`Vacuna UI ${sufijo}`).test(await cuerpo(pa)) && !new RegExp(`Pipeta ${sufijo}`).test(await cuerpo(pa)), "la hoja imprimible trae lo vigente y no lo anulado");
+  comprobar(/Carnet de vacunación/i.test(await cuerpo(pa)) && new RegExp(`Vacuna UI ${sufijo}`).test(await cuerpo(pa)) && !new RegExp(`Pipeta ${sufijo}`).test(await cuerpo(pa)), "la hoja imprimible trae lo vigente y no lo anulado");
   await sinDesborde(pa, "hoja del carnet");
 
   // ── 2. Recordatorios ──
@@ -161,7 +161,12 @@ try {
   await sinDesborde(pa, "recordatorios");
   await pa.getByRole("button", { name: "Ya lo mandé" }).first().click();
   await pa.getByText("Anotado como enviado").first().waitFor({ timeout: 15000 }).catch(() => {});
-  comprobar((await SB.from("carnet_recordatorios").select("estado").eq("perro_id", rid)).data.some((r) => r.estado === "manual"), "«Ya lo mandé» lo anota");
+  let anotado = false;
+  for (let i = 0; i < 20 && !anotado; i++) {
+    anotado = (await SB.from("carnet_recordatorios").select("estado").eq("perro_id", rid)).data.some((r) => r.estado === "manual");
+    if (!anotado) await espera(500);
+  }
+  comprobar(anotado, "«Ya lo mandé» lo anota");
 
   // ── 3. Certificado ──
   console.log("3. Certificado de salud");
@@ -206,9 +211,13 @@ try {
   await pa.locator("input[name=precio_dosis]").fill("40");
   await pa.locator("select[name=medico_id]").last().selectOption({ index: 1 });
   await pa.getByRole("button", { name: "Indicar medicación" }).last().click();
-  await pa.getByText("Medicación indicada").first().waitFor({ timeout: 15000 }).catch(() => {});
+  const t0 = Date.now();
+  while (Date.now() - t0 < 45000 && !(await SB.from("hospitalizacion_medicacion").select("id").eq("hospitalizacion_id", hospId)).data?.length) await espera(500);
+  console.log(`   (la medicación tardó ${Date.now() - t0} ms en quedar guardada; aviso en pantalla: ${await pa.getByText("Medicación indicada").count()})`);
   await pa.reload({ waitUntil: "networkidle" });
-  comprobar(new RegExp(`Cefalexina ${sufijo}`).test(await cuerpo(pa)) && (await pa.getByRole("button", { name: "Aplicar", exact: true }).count()) === 2, "la hoja trae las dos dosis con su botón «Aplicar»");
+  const nAplicar = await pa.getByRole("button", { name: "Aplicar", exact: true }).count();
+  if (nAplicar !== 2) console.log("   DIAGNÓSTICO:", (await cuerpo(pa)).slice(0, 1500));
+  comprobar(new RegExp(`Cefalexina ${sufijo}`).test(await cuerpo(pa)) && nAplicar === 2, "la hoja trae las dos dosis con su botón «Aplicar»");
   await sinDesborde(pa, "hospitalización");
   await pa.getByRole("button", { name: "Aplicar", exact: true }).first().click();
   await pa.getByRole("button", { name: "Confirmar: ya se aplicó" }).click();
@@ -242,6 +251,7 @@ try {
   await pa.getByRole("button", { name: "Firmar en pantalla" }).click();
   const canvas = pa.locator("canvas");
   await canvas.waitFor();
+  await canvas.scrollIntoViewIfNeeded();
   const caja = await canvas.boundingBox();
   await pa.mouse.move(caja.x + 30, caja.y + 40);
   await pa.mouse.down();
