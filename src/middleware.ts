@@ -42,6 +42,8 @@ const ZONAS_PROTEGIDAS: Zona[] = [
   { prefijo: "/admin/reporte-guarderia", rolesPermitidos: ["admin"] },
   // Prender y apagar módulos: admin, o recepción con «Administrar módulos».
   { prefijo: "/admin/modulos", rolesPermitidos: ["admin"], permisos: ["administrar_modulos"] },
+  // Facturación: datos fiscales, llave del PAC e IVA (solo admin o con permiso).
+  { prefijo: "/admin/facturacion", rolesPermitidos: ["admin"], permisos: ["editar_datos_fiscales", "facturar"] },
   { prefijo: "/admin", rolesPermitidos: ["admin"], permisos: ["personal", "configuracion_negocio", "tarifas"] },
   { prefijo: "/recepcion", rolesPermitidos: ["recepcion", "admin"] },
   // Los primeros pasos de un negocio recién abierto en peludesk.mx.

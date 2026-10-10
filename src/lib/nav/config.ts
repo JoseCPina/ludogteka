@@ -53,6 +53,8 @@ export const SECCIONES_STAFF: ItemNav[] = [
   { etiqueta: "Cobro con terminal", href: "/admin/pagos", roles: ["admin"] },
   // Veterinaria (Fase 0): su inicio y, para quien lo administra, los módulos.
   { etiqueta: "Veterinaria", href: "/veterinaria", roles: ["admin", "recepcion"], modulo: "veterinaria" },
+  { etiqueta: "Facturación", href: "/admin/facturacion", roles: ["admin"], permisos: ["editar_datos_fiscales", "facturar"] },
+  { etiqueta: "Facturas", href: "/caja/facturas", roles: ["admin"], permisos: ["facturar", "cancelar_facturas"] },
   // Artículos, asistente y tickets de soporte: sin permiso especial.
   { etiqueta: "Ayuda", href: "/ayuda", roles: ["admin", "recepcion"] },
 ];

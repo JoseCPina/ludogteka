@@ -440,3 +440,18 @@ export async function eliminarNegocio(negocioId: string, fd: FormData): Promise<
   revalidatePath("/plataforma");
   return { error: null, exito: r.exito, ir: "/plataforma" };
 }
+
+// Facturación (CFDI): el tope mensual de timbres de un negocio y el porcentaje
+// al que se le avisa. Solo la plataforma lo cambia (plataforma_cfdi_tope).
+export async function topeTimbres(negocioId: string, fd: FormData): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const tope = Number(texto(fd, "tope"));
+  const aviso = Number(texto(fd, "aviso") || "80");
+  if (!Number.isInteger(tope) || tope < 0) return { error: "El tope es un número entero de cero para arriba." };
+  if (!Number.isInteger(aviso) || aviso < 1 || aviso > 100) return { error: "El aviso va entre 1 y 100 por ciento." };
+  const { error } = await s.supabase.rpc("plataforma_cfdi_tope", { p_negocio_id: negocioId, p_tope: tope, p_aviso_pct: aviso, p_motivo: texto(fd, "motivo") });
+  if (error) return { error: error.message };
+  revalidatePath("/plataforma/facturacion");
+  return { error: null, exito: `Tope de ${tope} timbres al mes (aviso al ${aviso} %).` };
+}
