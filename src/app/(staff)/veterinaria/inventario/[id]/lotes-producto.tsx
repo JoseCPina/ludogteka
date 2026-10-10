@@ -8,7 +8,7 @@ import { FormularioAccion } from "@/components/formulario-accion";
 import { formatearFecha, formatearFechaCalendario } from "@/lib/formato";
 import { useZonaNegocio } from "@/components/zona-negocio";
 import { registrarAjusteLote, registrarEntradaLote, registrarSalidaLote } from "../../actions";
-import { AVISO_FOLIO_RECETA, ESTADOS_CADUCIDAD, TIPOS_MOVIMIENTO_LOTE } from "../../comun";
+import { AVISO_PRODUCTO_CONTROLADO, ESTADOS_CADUCIDAD, TIPOS_MOVIMIENTO_LOTE } from "../../comun";
 
 export type MovimientoLote = {
   id: string;
@@ -36,14 +36,14 @@ const TITULO: Record<Accion, string> = { surtido: "Surtir", merma: "Registrar me
 export function LotesProducto({
   insumoId,
   puedeEscribir,
-  exigeFolio,
+  controlado,
   unidadCompra,
   unidadConsumo,
   lotes,
 }: {
   insumoId: string;
   puedeEscribir: boolean;
-  exigeFolio: boolean;
+  controlado: boolean;
   unidadCompra: string;
   unidadConsumo: string;
   lotes: LoteFila[];
@@ -54,9 +54,9 @@ export function LotesProducto({
 
   return (
     <div className="flex flex-col gap-4">
-      {exigeFolio && (
+      {controlado && (
         <p role="note" className="rounded-md border-l-4 border-ambar bg-ambar-suave px-3 py-2 text-sm font-semibold text-ambar-oscuro">
-          {AVISO_FOLIO_RECETA}
+          {AVISO_PRODUCTO_CONTROLADO}
         </p>
       )}
 
@@ -120,7 +120,7 @@ export function LotesProducto({
                 {puedeEscribir && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {(["surtido", "merma", "caducado", "ajuste"] as Accion[])
-                      .filter((a) => a === "ajuste" || !vacio)
+                      .filter((a) => (a === "ajuste" || !vacio) && !(controlado && a === "surtido"))
                       .map((a) => (
                         <Button
                           key={a}
@@ -161,7 +161,7 @@ export function LotesProducto({
                         <Field label={`Cantidad (${unidadConsumo})`} name="cantidad" type="number" step="0.01" min="0" required />
                         {abierto.accion === "surtido" ? (
                           <>
-                            <Field label="Folio de receta (opcional)" name="folio_receta" ayuda={exigeFolio ? AVISO_FOLIO_RECETA : undefined} />
+                            <Field label="Folio de receta (opcional)" name="folio_receta" />
                             <Field label="Nota (opcional)" name="motivo" />
                           </>
                         ) : (

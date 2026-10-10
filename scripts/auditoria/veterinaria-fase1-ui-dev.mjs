@@ -316,7 +316,7 @@ try {
       const j = d ? JSON.parse(d) : {};
       res.setHeader("content-type", "application/json");
       if (req.method === "GET" && req.url.includes("/message_templates")) {
-        return res.end(JSON.stringify({ data: [{ name: "peludesk_recordatorio_dosis_v1", status: estadoPlantilla.valor, language: "es_MX", category: "UTILITY" }] }));
+        return res.end(JSON.stringify({ data: [{ name: "peludesk_recordatorio_dosis_v2", status: estadoPlantilla.valor, language: "es_MX", category: "UTILITY" }] }));
       }
       if (req.url.includes("/messages")) {
         enviados.push(j);
@@ -376,7 +376,7 @@ try {
   comprobar(res1.enviados >= 1 && enviados.length >= 1, `con todo en orden sale el recordatorio (${r.texto})`);
   const msg = enviados.find((m) => JSON.stringify(m).includes(`Aviso ${sufijo}`));
   const ps = msg?.template?.components?.[0]?.parameters?.map((p) => p.text) ?? [];
-  comprobar(msg?.template?.name === "peludesk_recordatorio_dosis_v1" && msg.to === `52${cliente.telefono.replace(/\D/g, "")}` && ps[1] === `Aviso ${sufijo}` && /Triple felina/.test(ps[3]) && ps[4] === "mañana" && ps[5] === "444 555 1234", `la plantilla lleva dueño, mascota, vacuna, «mañana» y el teléfono del negocio (${ps.join(" | ")})`);
+  comprobar(msg?.template?.name === "peludesk_recordatorio_dosis_v2" && msg.to === `52${cliente.telefono.replace(/\D/g, "")}` && ps[1] === `Aviso ${sufijo}` && /Triple felina/.test(ps[3]) && ps[4] === "mañana" && ps[5] === "444 555 1234", `la plantilla lleva dueño, mascota, vacuna, «mañana» y el teléfono del negocio (${ps.join(" | ")})`);
   const antes = enviados.length;
   await pedir(q);
   await pedir(q);

@@ -9,6 +9,7 @@ import { FormularioAccion } from "@/components/formulario-accion";
 import { Textarea } from "@/components/ui/textarea";
 import { TIPOS_CITA, type TipoCitaConfig } from "@/lib/veterinaria/expediente";
 import { guardarAjustesVeterinaria } from "../carnet/actions";
+import { guardarEspejoAntimicrobianos } from "../recetas/actions";
 import { guardarPlantillaConsulta, guardarPortalExpediente, guardarTipoCita } from "../expediente/actions";
 
 export default async function AjustesVeterinaria() {
@@ -19,7 +20,7 @@ export default async function AjustesVeterinaria() {
   const [{ data: tiposCrudo }, { data: plantillasCrudo }] = await Promise.all([supabase.rpc("vet_tipos_cita_lista"), supabase.rpc("vet_plantillas_consulta")]);
   const tipos = (tiposCrudo ?? []) as TipoCitaConfig[];
   const plantillas = (plantillasCrudo ?? {}) as Record<string, { version: number; texto: Record<string, string> }>;
-  const a = (data ?? {}) as { portal_expediente?: boolean; recordatorios_activos?: boolean; dias_anticipacion?: number; certificado_vigencia_dias?: number; carnet_reemplaza_comprobante?: boolean; hospitalizacion_precio_dia?: number | null };
+  const a = (data ?? {}) as { portal_expediente?: boolean; recordatorios_activos?: boolean; dias_anticipacion?: number; certificado_vigencia_dias?: number; carnet_reemplaza_comprobante?: boolean; hospitalizacion_precio_dia?: number | null; espejo_antimicrobianos?: boolean };
 
   return (
     <div className="flex max-w-3xl flex-col gap-5">
@@ -57,6 +58,19 @@ export default async function AjustesVeterinaria() {
             <Select label="Mostrar las consultas en el portal" name="portal_expediente" defaultValue={a.portal_expediente ? "si" : "no"} ayuda="Apagado por omisión: cada negocio decide si lo comparte.">
               <option value="no">No: el dueño no ve el expediente</option>
               <option value="si">Sí: fecha, diagnóstico definitivo y plan</option>
+            </Select>
+          </fieldset>
+        </FormularioAccion>
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
+        <h2 className="text-lg font-bold text-n-900">Recetas y controlados</h2>
+        <p className="text-n-700">Los antimicrobianos son Grupo II y piden receta simple. El SITPV permite llevar además un registro cuantificado; si prefieres llevarlo, actívalo: entonces piden folio del SITPV, candado de salida y libro de control igual que el Grupo I.</p>
+        <FormularioAccion accion={guardarEspejoAntimicrobianos} textoBoton="Guardar" className="max-w-xl">
+          <fieldset disabled={!puede}>
+            <Select label="Espejo cuantificado de antimicrobianos" name="espejo" defaultValue={a.espejo_antimicrobianos ? "si" : "no"} ayuda="Apagado por omisión. Al prenderlo, los antimicrobianos del inventario clínico solo salen contra un folio registrado.">
+              <option value="no">No: receta simple</option>
+              <option value="si">Sí: llevar espejo cuantificado</option>
             </Select>
           </fieldset>
         </FormularioAccion>

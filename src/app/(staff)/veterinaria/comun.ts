@@ -34,8 +34,8 @@ export const TIPOS_MOVIMIENTO_LOTE: Record<string, { etiqueta: string; entrada: 
   ajuste_negativo: { etiqueta: "Ajuste (−)", entrada: false, estilo: "bg-coral-suave text-coral-oscuro" },
 };
 
-export const AVISO_FOLIO_RECETA =
-  "Más adelante el sistema exigirá el folio de receta al surtirlo; por ahora el campo es opcional.";
+export const AVISO_PRODUCTO_CONTROLADO =
+  "Este producto sale del inventario solo con su receta (según su clasificación). Surte desde Veterinaria → Recetas y controlados: así queda en el lote y en el libro de control.";
 
 export type PrincipioActivo = {
   id: string;

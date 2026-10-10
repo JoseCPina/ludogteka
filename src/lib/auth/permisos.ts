@@ -203,6 +203,24 @@ export const PERMISOS = [
     implica:
       "Crea, envía, versiona y cancela estimados de consultas y cirugías, y registra su aceptación en el mostrador; al aceptarse, sus líneas pasan a la cuenta de la mascota (con el módulo Veterinaria prendido). Un médico veterinario designado ya lo tiene. Viene apagado.",
   },
+  {
+    clave: "emitir_recetas",
+    etiqueta: "Emitir recetas",
+    implica:
+      "Emite recetas simples (Grupos II y III y las fracciones III y IV de la Ley General de Salud) a nombre de un médico veterinario, las manda al dueño, las anula con motivo y las archiva cuando vence su plazo de conservación (con el módulo Veterinaria prendido). Solo un médico veterinario designado puede emitir: este permiso no sustituye esa designación. Un médico veterinario designado ya lo tiene. Viene apagado.",
+  },
+  {
+    clave: "registrar_recetas_sitpv",
+    etiqueta: "Registrar recetas SITPV",
+    implica:
+      "Registra el espejo de las recetas cuantificadas del SITPV (Grupo I) y los folios del recetario especial, surte contra ellos, cancela folios, marca el reporte mensual como reportado y ve los folios que le quedan a cada médico (con el módulo Veterinaria prendido). Registrar exige ser médico veterinario designado, con su CPA. Un médico veterinario designado ya lo tiene. Viene apagado.",
+  },
+  {
+    clave: "ver_libro_control",
+    etiqueta: "Ver libro de control",
+    implica:
+      "Ve y exporta el libro de control de los productos de Grupo I y de los estupefacientes y psicotrópicos de la fracción II: fecha, folio de la receta, producto, laboratorio, lote, entradas, salidas, saldo, paciente y médico (con el módulo Veterinaria prendido). Un médico veterinario designado ya lo tiene. Viene apagado.",
+  },
 ] as const;
 
 export type ClavePermiso = (typeof PERMISOS)[number]["clave"];

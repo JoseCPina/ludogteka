@@ -43,7 +43,7 @@ export default async function VeterinariaInicio() {
     supabase.rpc("veterinaria_atencion"),
     supabase.rpc("hospitalizacion_censo"),
   ]);
-  const atencion = (atencionCrudo ?? {}) as { recordatorios_pendientes?: number; dosis_atrasadas?: number; consentimientos_pendientes?: number; consultas_sin_firmar?: number; estimados_sin_respuesta?: number };
+  const atencion = (atencionCrudo ?? {}) as { recordatorios_pendientes?: number; dosis_atrasadas?: number; consentimientos_pendientes?: number; consultas_sin_firmar?: number; estimados_sin_respuesta?: number; sitpv_reportes_pendientes?: number; sitpv_folios_bajos?: number };
   const internados = Array.isArray(censoCrudo) ? censoCrudo.length : 0;
   const alertas = ((alertasCrudo ?? {}) as Alertas) ?? {};
   const permisos = (permisosCrudo ?? []) as Permiso[];
@@ -73,6 +73,14 @@ export default async function VeterinariaInicio() {
           <p>Lo que costará una consulta o una cirugía, con mínimo y máximo, para que el dueño lo acepte.</p>
           <span className="flex flex-wrap gap-2">
             <Contador n={Number(atencion.estimados_sin_respuesta ?? 0)} texto="sin respuesta" estilo="bg-ambar-suave text-ambar-oscuro" />
+          </span>
+        </Tarjeta>
+
+        <Tarjeta href="/veterinaria/recetas" titulo="Recetas y controlados">
+          <p>Recetas con original y copias, registro de las recetas cuantificadas del SITPV, recetario especial y libro de control.</p>
+          <span className="flex flex-wrap gap-2">
+            <Contador n={Number(atencion.sitpv_reportes_pendientes ?? 0)} texto="reportes por marcar" estilo="bg-ambar-suave text-ambar-oscuro" />
+            <Contador n={Number(atencion.sitpv_folios_bajos ?? 0)} texto="con pocos folios" estilo="bg-ambar-suave text-ambar-oscuro" />
           </span>
         </Tarjeta>
 

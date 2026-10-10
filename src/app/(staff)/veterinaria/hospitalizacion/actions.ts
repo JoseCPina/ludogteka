@@ -77,6 +77,7 @@ export async function aplicarDosis(hospId: string, dosisId: string, fd: FormData
     p_lote_texto: o(texto(fd, "lote_texto")),
     p_cantidad: cantidad,
     p_nota: o(texto(fd, "nota")),
+    p_espejo: o(texto(fd, "espejo_id")),
   });
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/hospitalizacion/${hospId}`);

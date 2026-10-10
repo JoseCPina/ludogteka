@@ -18,6 +18,7 @@ import { BitacoraCliente, type EntradaBitacoraCliente } from "./bitacora-cliente
 import { MedicamentosCliente, type MedicamentoFilaCliente } from "./medicamentos-cliente";
 import { CarnetCliente, type CarnetDelDueno } from "./carnet-cliente";
 import { ExpedienteCliente, type ExpedienteDelDueno } from "./expediente-cliente";
+import { RecetasCliente, type RecetaDelDueno } from "./recetas-cliente";
 import { zonaActual } from "@/lib/negocio/actual";
 import { usaVeterinaria } from "@/lib/plan/modulos";
 import { ETIQUETA_ESPECIE, esEspecie } from "@/lib/perros/ficha-clinica";
@@ -93,6 +94,8 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
   // Las consultas firmadas, solo si el negocio lo permite (opción apagada por omisión): por su función, sin notas internas.
   const { data: expedienteCrudo } = usaVeterinaria(sesion.modulos ?? []) ? await supabase.rpc("mi_expediente", { p_perro: id }) : { data: null };
   const expedienteDelDueno = (expedienteCrudo as ExpedienteDelDueno | null) ?? null;
+  const { data: recetasCrudo } = usaVeterinaria(sesion.modulos ?? []) ? await supabase.rpc("mis_recetas", { p_perro: id }) : { data: null };
+  const recetasDelDueno = (recetasCrudo ?? []) as RecetaDelDueno[];
 
   // Solo el dueño principal firma — un acceso compartido nunca puede
   // firmar en nombre de otro, aunque vea el resto del expediente.
@@ -303,6 +306,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
 
       {carnetDelDueno && <CarnetCliente carnet={carnetDelDueno} />}
       {expedienteDelDueno && <ExpedienteCliente expediente={expedienteDelDueno} />}
+      <RecetasCliente recetas={recetasDelDueno} />
 
       {esPropio && contratos.length > 0 && (sesion?.modulos ?? []).includes("contratos") && (
         <div className="flex flex-col gap-3">
