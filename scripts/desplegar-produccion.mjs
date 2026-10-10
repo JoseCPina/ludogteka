@@ -688,11 +688,108 @@ if (EN_NUBE) {
 // ---------------------------------------------------------------- 7
 titulo("Esperando el build de Vercel");
 
+// Un build que falla por la INFRAESTRUCTURA de Vercel (git_info_fail y parecidos:
+// el 10 de octubre de 2026 el build murió sin tocar el código) no es un fallo del
+// despliegue. Se distingue del fallo de código por el errorCode/errorMessage del
+// deployment, se reintenta con `vercel redeploy` y, si sigue, se crea el deployment
+// por la API desde el commit fusionado de main. Un fallo de CÓDIGO no se reintenta.
+const PROYECTO_VERCEL = (() => {
+  try { return JSON.parse(readFileSync(".vercel/project.json", "utf8")); } catch { return {}; }
+})();
+async function vercelApi(ruta, { method = "GET", body } = {}) {
+  if (!VERCEL_TOKEN) throw new Error("falta VERCEL_TOKEN para hablar con la API de Vercel");
+  const sep = ruta.includes("?") ? "&" : "?";
+  const team = process.env.VERCEL_ORG_ID || PROYECTO_VERCEL.orgId || "";
+  const r = await fetch(`https://api.vercel.com${ruta}${team ? `${sep}teamId=${team}` : ""}`, {
+    method,
+    headers: { Authorization: `Bearer ${VERCEL_TOKEN}`, "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+    signal: AbortSignal.timeout(30000),
+  });
+  const texto = await r.text();
+  let json = null;
+  try { json = texto ? JSON.parse(texto) : null; } catch {}
+  if (!r.ok) throw new Error(`Vercel ${method} ${ruta}: HTTP ${r.status} ${sinSecreto(json?.error?.message ?? texto).slice(0, 300)}`);
+  return json;
+}
+function esFalloDeCodigo(info) {
+  const t = `${info?.errorCode ?? ""} ${info?.errorMessage ?? ""}`;
+  return /build_failed|BUILD_FAILED|exited with|Command .* exited|Type error|Failed to compile|compile/i.test(t);
+}
+async function esperarDeployment(id, minutos = 10) {
+  const limiteLocal = Date.now() + minutos * 60 * 1000;
+  let info = null;
+  while (Date.now() < limiteLocal) {
+    info = await vercelApi(`/v13/deployments/${id}`).catch(() => null);
+    const estado = info?.readyState ?? info?.status;
+    if (estado === "READY") return { listo: true, info };
+    if (estado === "ERROR" || estado === "CANCELED") return { listo: false, info };
+    await new Promise((r) => setTimeout(r, 10000));
+  }
+  return { listo: false, info, vencio: true };
+}
+async function idDeDeployment(url) {
+  const host = String(url).replace(/^https?:\/\//, "");
+  const info = await vercelApi(`/v13/deployments/${encodeURIComponent(host)}`);
+  return info?.id ?? "";
+}
+// Devuelve { listo, detalle }. `fallo` es lo que dijo `vercel ls` del deployment que murió.
+async function recuperarBuild(fallo) {
+  const bitacora = [];
+  let info = null;
+  try {
+    const id = await idDeDeployment(fallo.url);
+    info = await vercelApi(`/v13/deployments/${id}`);
+    bitacora.push(`deployment ${fallo.url}: ${info?.readyState ?? "?"} · errorCode=${info?.errorCode ?? "(ninguno)"} · ${String(info?.errorMessage ?? "").slice(0, 200)}`);
+    if (esFalloDeCodigo(info)) {
+      return { listo: false, codigo: true, detalle: bitacora.join("\n") + "\nEs un fallo de CÓDIGO (el build no compiló): no se reintenta." };
+    }
+    // 1) Reintento: el mismo deployment otra vez.
+    console.log("   El build falló por algo que no parece del código: reintento con `vercel redeploy`.");
+    let nuevoId = "";
+    try {
+      const re = await vercelApi(`/v13/deployments?forceNew=1`, { method: "POST", body: { name: PROYECTO_VERCEL.projectName || "ludogteka", deploymentId: id, target: "production" } });
+      nuevoId = re?.id ?? "";
+      bitacora.push(`redeploy → ${re?.url ?? "?"}`);
+    } catch (e) {
+      bitacora.push(`redeploy falló: ${sinSecreto(e.message)}`);
+    }
+    if (nuevoId) {
+      const r1 = await esperarDeployment(nuevoId);
+      bitacora.push(`redeploy terminó en ${r1.info?.readyState ?? "?"}`);
+      if (r1.listo) return { listo: true, detalle: bitacora.join("\n") };
+      if (r1.info && esFalloDeCodigo(r1.info)) return { listo: false, codigo: true, detalle: bitacora.join("\n") + "\nEl reintento reveló un fallo de CÓDIGO." };
+    }
+    // 2) Crear el deployment por la API desde el commit fusionado de main.
+    console.log("   Sigue fallando: creo el deployment por la API de Vercel desde main.");
+    const sha = git("rev-parse", `origin/${RAMA}`);
+    const repo = await github("");
+    const nuevo = await vercelApi(`/v13/deployments?forceNew=1`, {
+      method: "POST",
+      body: {
+        name: PROYECTO_VERCEL.projectName || "ludogteka",
+        project: PROYECTO_VERCEL.projectId,
+        target: "production",
+        gitSource: { type: "github", repoId: repo.id, ref: RAMA, sha },
+      },
+    });
+    bitacora.push(`deployment por API (${String(sha).slice(0, 7)}) → ${nuevo?.url ?? "?"}`);
+    const r2 = await esperarDeployment(nuevo.id);
+    bitacora.push(`deployment por API terminó en ${r2.info?.readyState ?? "?"}`);
+    return { listo: r2.listo, detalle: bitacora.join("\n"), codigo: !!(r2.info && esFalloDeCodigo(r2.info)) };
+  } catch (e) {
+    bitacora.push(`no se pudo recuperar: ${sinSecreto(e.message)}`);
+    return { listo: false, detalle: bitacora.join("\n") };
+  }
+}
+
 const limite = Date.now() + 8 * 60 * 1000;
 let listo = false;
 let fallosSeguidos = 0;
 let ultimoError = "";
 let sesionVercelCaducada = false;
+let falloBuild = null;
+let recuperacion = null;
 
 while (Date.now() < limite && !listo) {
   await new Promise((r) => setTimeout(r, 10000));
@@ -723,16 +820,51 @@ while (Date.now() < limite && !listo) {
   if (d.url !== deployPrevio) {
     if (d.estado === "Ready") listo = true;
     if (d.estado === "Error" || d.estado === "Canceled") {
-      abortar(`el build de Vercel terminó en ${d.estado}`, `Revisa: ${d.url}`);
+      falloBuild = d;
+      break;
     }
   }
 }
 
+if (falloBuild) {
+  console.log(`\n   El build de Vercel terminó en ${falloBuild.estado}. Se intenta recuperar antes de rendirse.`);
+  recuperacion = await recuperarBuild(falloBuild);
+  console.log(recuperacion.detalle.split("\n").map((l) => `   ${l}`).join("\n"));
+  listo = recuperacion.listo;
+}
+
+// ---------------------------------------------------------------- 8
+// Pasos posteriores al código: SIEMPRE se intentan (aunque el build haya fallado, el
+// código ya está en main y los videos hay que marcarlos), y lo que no se pueda hacer
+// queda impreso como PENDIENTE con el comando exacto.
+titulo("Videos tutoriales en producción");
+const PENDIENTES = [];
+{
+  const s = spawnSync(process.execPath, ["scripts/tutoriales/sincronizar.mjs", "--prod"], { encoding: "utf8" });
+  console.log(sinSecreto((s.stdout || "") + (s.stderr || "")).trimEnd().split("\n").map((l) => `   ${l}`).join("\n"));
+  if (s.status !== 0) PENDIENTES.push("node scripts/tutoriales/sincronizar.mjs --prod");
+}
 if (VIDEOS_POR_ACTUALIZAR.length) {
-  // El código ya está fusionado: se marcan los videos. Aviso, no bloqueo.
   const m = spawnSync(process.execPath, ["scripts/tutoriales/marcar.mjs", "--json", JSON.stringify(VIDEOS_POR_ACTUALIZAR), "--prod"], { encoding: "utf8" });
   console.log(`\n   Videos «por actualizar»: ${VIDEOS_POR_ACTUALIZAR.map((v) => v.numero).join(", ")}`);
   console.log(sinSecreto((m.stdout || "") + (m.stderr || "")).trimEnd().split("\n").map((l) => `   ${l}`).join("\n"));
+  if (m.status !== 0) {
+    const archivo = path.join(os.tmpdir(), "marcas-videos-pendientes.json");
+    writeFileSync(archivo, JSON.stringify(VIDEOS_POR_ACTUALIZAR));
+    PENDIENTES.push(`node scripts/tutoriales/marcar.mjs --archivo ${archivo} --prod`);
+  }
+}
+if (PENDIENTES.length) {
+  console.log(`\n   PENDIENTE (corre en este orden):`);
+  for (const c of PENDIENTES) console.log(`     ${c}`);
+}
+
+if (falloBuild && !listo) {
+  console.log(`\n${"!".repeat(72)}`);
+  console.log(`El código YA está en main y la base migrada, pero el build de Vercel NO quedó Ready${recuperacion?.codigo ? " (fallo de CÓDIGO)" : ""}.`);
+  console.log("Revisa el deployment en Vercel; si fue de infraestructura, crea otro con la API (ver CLAUDE.md > «Cuando el build de Vercel falla por infraestructura»).");
+  console.log(`${"!".repeat(72)}\n`);
+  process.exit(1);
 }
 
 if (!listo) {

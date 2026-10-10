@@ -34,7 +34,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
       rol={sesion.rol}
       email={sesion.user.email ?? ""}
       nombreCompleto={sesion.nombreCompleto}
-      items={navStaffPara(sesion.rol, sesion.permisos, sesion.modulos)}
+      items={navStaffPara(sesion.rol, sesion.permisos, sesion.modulos, sesion.accesoVeterinaria)}
       videos={videos.map((v) => ({ slug: v.slug, rutas: v.rutas }))}
       ayuda={conAyuda ? articulosDelNegocio(sesion.modulos).map((a) => ({ slug: a.slug, rutas: a.rutas })) : undefined}
     >
