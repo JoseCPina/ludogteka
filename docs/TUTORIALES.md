@@ -2,7 +2,7 @@
 
 Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scripts/tutoriales/catalogo.mjs` y de lo que la app tiene hoy (código). No se edita a mano: se cambia el catálogo.
 
-**69 videos** (el 00 es el avance) en 10 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
+**75 videos** (el 00 es el avance) en 10 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
 
 ## Catálogo
 
@@ -77,6 +77,12 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 71 | Veterinaria | La ficha clínica de la mascota | recepcion | 2.5 min | veterinaria | editar_ficha_clinica |
 | 72 | Veterinaria | Inventario clínico: lotes, caducidades y clasificaciones | recepcion | 2.5 min | veterinaria | lotes_clinicos |
 | 73 | Veterinaria | Médicos veterinarios, folios y permisos del establecimiento | admin | 2.5 min | veterinaria | — |
+| 65 | Caja y cobros | Facturar un cobro: datos fiscales, timbrado, PDF y envío | admin | 2.5 min | — | facturar, cancelar_facturas, editar_datos_fiscales |
+| 74 | Veterinaria | El carnet de vacunas y desparasitaciones | recepcion | 2.5 min | veterinaria | registrar_vacunas |
+| 75 | Veterinaria | Carnet verificable con QR y recordatorios de dosis | admin | 2.5 min | veterinaria | — |
+| 76 | Veterinaria | Cómo emitir un certificado de salud | recepcion | 2.5 min | veterinaria | emitir_certificados |
+| 77 | Veterinaria | Hospitalizar a una mascota | recepcion | 2.5 min | veterinaria | hospitalizar |
+| 78 | Veterinaria | Consentimientos informados | recepcion | 2.5 min | veterinaria | — |
 
 ## Pantallas → videos
 
@@ -86,6 +92,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/activar/[token]` | 15 |  |
 | `/adentro` | 31 |  |
 | `/admin` | 01, 07, 08 |  |
+| `/admin/facturacion` | 65 |  |
 | `/admin/modulos` | 06 |  |
 | `/admin/modulos/pago` | 06 |  |
 | `/admin/pagos` | 50 |  |
@@ -103,12 +110,14 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/ayuda/videos` | 53 |  |
 | `/ayuda/videos/[slug]` | 53 |  |
 | `/bienvenida` | 02 |  |
+| `/c/[token]` | 75 |  |
 | `/caja` | 33 |  |
 | `/caja/ajustes-servicio` | 55 |  |
 | `/caja/cargo` | 36 |  |
 | `/caja/cobrar-junto` | 57 |  |
 | `/caja/cobrar/[reservaId]` | 33, 34, 37 |  |
 | `/caja/conciliacion` | 38 |  |
+| `/caja/facturas` | 65 |  |
 | `/caja/pases` | 39 |  |
 | `/caja/recibo-junto/[grupoId]` | 57 |  |
 | `/caja/reembolsos` | 38 |  |
@@ -131,6 +140,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/estetica/[citaId]` | 22, 23, 55 |  |
 | `/estetica/nueva` | 21, 23 |  |
 | `/f/[token]` | 31 |  |
+| `/fac/[token]` | — | Enlace público de una factura para el cliente; se enseña solo como resultado en el video 65. |
 | `/gastos` | 47 |  |
 | `/gastos/categorias` | 47 |  |
 | `/gastos/recurrentes` | 48 |  |
@@ -170,6 +180,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/perros/razas` | 14 |  |
 | `/perros/razas/grupos` | 14 |  |
 | `/portal` | 15, 18 |  |
+| `/portal/facturas` | 65 |  |
 | `/portal/perros/[id]` | 15 |  |
 | `/r/[token]` | 31 |  |
 | `/recepcion` | 01, 04, 05 |  |
@@ -190,10 +201,22 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/servicios/nuevo` | 20 |  |
 | `/sin-acceso` | 01 |  |
 | `/veterinaria` | 70 |  |
+| `/veterinaria/ajustes` | 75 |  |
+| `/veterinaria/carnet` | 74 |  |
+| `/veterinaria/carnet/[perroId]` | 74 |  |
+| `/veterinaria/carnet/[perroId]/imprimir` | 74 |  |
+| `/veterinaria/certificados` | 76 |  |
+| `/veterinaria/certificados/[id]` | 76 |  |
+| `/veterinaria/certificados/nuevo` | 76 |  |
+| `/veterinaria/consentimientos` | 78 |  |
+| `/veterinaria/consentimientos/[id]` | 78 |  |
+| `/veterinaria/hospitalizacion` | 77 |  |
+| `/veterinaria/hospitalizacion/[id]` | 77 |  |
 | `/veterinaria/inventario` | 72 |  |
 | `/veterinaria/inventario/[id]` | 72 |  |
 | `/veterinaria/inventario/nuevo` | 72 |  |
 | `/veterinaria/medicos` | 73 |  |
+| `/veterinaria/recordatorios` | 75 |  |
 | `/vinculacion` | 15 |  |
 
 ## Menú del personal → videos
@@ -207,14 +230,14 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Servicios | `/servicios` | 20, 24 |
 | Clientes | `/clientes` | 10, 11 |
 | Vinculación | `/vinculacion` | 15 |
-| Caja | `/caja` | 32, 33, 34, 35, 36, 37, 38, 39, 43, 55, 57 |
+| Caja | `/caja` | 32, 33, 34, 35, 36, 37, 38, 39, 43, 55, 57, 65 |
 | Contratos | `/contratos` | 16, 19 |
 | Inventario | `/inventario` | 40, 41, 42, 43 |
 | Reportes | `/reportes` | 49 |
 | Empleados | `/empleados` | 44, 45, 46 |
 | Gastos | `/gastos` | 47, 48 |
 | Mi asistencia | `/mi-trabajo` | 44 |
-| Administración | `/admin` | 01, 06, 07, 08, 09, 31, 50, 51, 52, 64 |
+| Administración | `/admin` | 01, 06, 07, 08, 09, 31, 50, 51, 52, 64, 65 |
 | Permisos | `/admin/permisos` | 09 |
 | Perfil y página web | `/admin/perfil` | 52 |
 | Políticas y reglas | `/admin/politicas` | 51 |
@@ -222,7 +245,9 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Tarifa de guardería | `/admin/tarifa-guarderia` | 64 |
 | Módulos y plan | `/admin/modulos` | 06 |
 | Cobro con terminal | `/admin/pagos` | 50 |
-| Veterinaria | `/veterinaria` | 70, 72, 73 |
+| Veterinaria | `/veterinaria` | 70, 72, 73, 74, 75, 76, 77, 78 |
+| Facturación | `/admin/facturacion` | 65 |
+| Facturas | `/caja/facturas` | 65 |
 | Ayuda | `/ayuda` | 53 |
 
 ## Módulos → videos
@@ -232,7 +257,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | guarderia | 25, 27, 28, 29, 30, 31 |
 | hotel | 26, 27, 28, 29, 30, 31 |
 | estetica | 20, 21, 22, 23, 24, 55, 58, 63, 64 |
-| veterinaria | 70, 71, 72, 73 |
+| veterinaria | 70, 71, 72, 73, 74, 75, 76, 77, 78 |
 | bonos | 39, 60 |
 | recoleccion | 54 |
 | contratos | 16, 17, 18, 19 |
@@ -270,6 +295,12 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Administrar módulos (`administrar_modulos`) | 70 |
 | Editar ficha clínica (`editar_ficha_clinica`) | 71 |
 | Administrar lotes e inventario clínico (`lotes_clinicos`) | 72 |
+| Facturar (`facturar`) | 65 |
+| Cancelar facturas (`cancelar_facturas`) | 65 |
+| Editar datos fiscales (`editar_datos_fiscales`) | 65 |
+| Registrar vacunas y desparasitaciones (`registrar_vacunas`) | 74 |
+| Emitir certificados (`emitir_certificados`) | 76 |
+| Hospitalizar y medicar (`hospitalizar`) | 77 |
 
 ## Artículos de ayuda → videos
 
@@ -333,6 +364,15 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | vender-day-pass-o-mensualidad | 39 |
 | ajustar-dias-usados-de-un-pase | 60 |
 | cotizar-y-cobrar-recoleccion | 54 |
+| configurar-la-facturacion | 65 |
+| datos-fiscales-de-un-cliente | 65 |
+| facturar-un-cobro | 65 |
+| facturar-un-cobro-junto | 65 |
+| factura-global-publico-en-general | 65 |
+| cancelar-o-sustituir-una-factura | 65 |
+| mandar-una-factura-al-cliente | 65 |
+| iva-y-claves-sat-de-productos-y-servicios | 65 |
+| ver-mis-facturas | 65 |
 | llenar-el-reporte-de-comportamiento | 31 |
 | enviar-fotos-y-videos | 31 |
 | veterinaria-que-incluye | 70 |
@@ -340,12 +380,18 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | inventario-clinico-con-lotes | 72 |
 | medicos-veterinarios-y-folios | 73 |
 | establecimiento-y-permisos-veterinarios | 73 |
+| carnet-de-la-mascota | 74 |
+| carnet-verificable-y-recordatorios | 75 |
+| certificado-de-salud | 76 |
+| hospitalizar-una-mascota | 77 |
+| consentimientos-informados | 78 |
 
 ## Avisos de «Necesita atención» → videos
 
 | Aviso | Videos |
 | --- | --- |
 | ajustes-servicio | 05, 55 |
+| carnet-recordatorios | 75 |
 | clinico-bajo-minimo | 72 |
 | clinico-caducados | 72 |
 | clinico-por-caducar | 72 |
@@ -353,6 +399,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | comprobantes | 05 |
 | con | 05, 29 |
 | conciliacion | 05 |
+| consentimientos-pendientes | 78 |
 | contratos-firmar | 05, 17 |
 | contratos-regenerar | 05, 19 |
 | establecimiento-por-vencer | 73 |
@@ -360,6 +407,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | eval | 05, 29 |
 | gastos-proximos | 05, 47 |
 | gastos-vencidos | 05, 47 |
+| hospitalizacion-dosis-atrasadas | 77 |
 | hotel | 05, 29 |
 | por-confirmar | 05, 59 |
 | razas-sin-grupo | 05, 14 |
@@ -381,5 +429,6 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 - Pantalla `/`: Es la landing o la página pública del negocio; se enseña en el video 52 solo como resultado.
 - Pantalla `/negocio-no-encontrado`: Pantalla de error técnica (dominio sin negocio); no es una tarea del usuario.
 - Pantalla `/pagina-no-encontrada`: Pantalla de error técnica (404); no es una tarea del usuario.
+- Pantalla `/fac/[token]`: Enlace público de una factura para el cliente; se enseña solo como resultado en el video 65.
 
 Fuera de la serie por diseño (no son del personal del negocio): la administración de la plataforma (`/plataforma`), el sitio público de peludesk.mx y el negocio de demostración.

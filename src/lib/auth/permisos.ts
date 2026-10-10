@@ -167,6 +167,24 @@ export const PERMISOS = [
     implica:
       "Captura y cambia el RFC, la razón social, el régimen y el código postal fiscal de los clientes y del negocio, el IVA de cada concepto y la llave del timbrado. Viene apagado.",
   },
+  {
+    clave: "registrar_vacunas",
+    etiqueta: "Registrar vacunas y desparasitaciones",
+    implica:
+      "Captura en el carnet de las mascotas las vacunas y desparasitaciones aplicadas (con el médico que las aplica), las anula con motivo, apaga sus recordatorios de próxima dosis y genera el enlace verificable del carnet (con el módulo Veterinaria prendido). Un médico veterinario designado ya lo tiene. Viene apagado.",
+  },
+  {
+    clave: "emitir_certificados",
+    etiqueta: "Emitir certificados",
+    implica:
+      "Emite certificados de salud de las mascotas a nombre de un médico veterinario y los anula con motivo (con el módulo Veterinaria prendido). Un médico veterinario designado ya lo tiene. Viene apagado.",
+  },
+  {
+    clave: "hospitalizar",
+    etiqueta: "Hospitalizar y medicar",
+    implica:
+      "Ingresa y da de alta mascotas hospitalizadas, indica y marca las dosis de la hoja de medicación (descuenta el lote), registra el monitoreo, agrega cargos a la cuenta y crea y firma consentimientos informados (con el módulo Veterinaria prendido). Un médico veterinario designado ya lo tiene. Viene apagado.",
+  },
 ] as const;
 
 export type ClavePermiso = (typeof PERMISOS)[number]["clave"];

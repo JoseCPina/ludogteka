@@ -32,6 +32,10 @@
     {
       "path": "/api/cron/cfdi",
       "schedule": "23 * * * *"
+    },
+    {
+      "path": "/api/cron/carnet",
+      "schedule": "17 * * * *"
     }
   ]
 }

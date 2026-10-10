@@ -14,6 +14,8 @@
 //   perfil               descripción, sitio, categoría y foto del perfil de WhatsApp
 //                        (public/marca/peludesk/perfil-640.jpg: el isotipo a cuadro completo)
 //   plantillas           crea la plantilla de seguimiento (reabre la ventana de 24 h)
+//   plantilla-carnet [enviar]
+//                        la plantilla del recordatorio de próxima dosis del carnet (Veterinaria)
 //   plantillas-seguimiento [enviar]
 //                        las 4 plantillas del seguimiento de pruebas (textos de
 //                        src/lib/seguimiento/plantillas.ts): sin «enviar» solo dice el
@@ -225,6 +227,33 @@ const pasos = {
         console.log(`${p.nombre}: Meta la rechazó al crearla → ${e.message}`);
       }
     }
+  },
+
+  // Veterinaria, Fase 1: la plantilla del recordatorio de próxima dosis del carnet
+  // (texto en src/lib/carnet/plantilla-recordatorio.json). Sin «enviar» solo dice su estado.
+  async "plantilla-carnet"(modo) {
+    const waba = requerir("PELUDESK_WABA_ID");
+    const p = JSON.parse(readFileSync(new URL("../../src/lib/carnet/plantilla-recordatorio.json", import.meta.url), "utf8"));
+    const ya = await graph(`/${waba}/message_templates?name=${p.nombre}&fields=name,status,category,language,rejected_reason&limit=10`);
+    const en = (ya.data ?? []).find((x) => x.name === p.nombre && x.language === p.idioma);
+    if (en) {
+      console.log(`${p.nombre}: ${en.status} (${en.category})${en.rejected_reason && en.rejected_reason !== "NONE" ? ` · motivo: ${en.rejected_reason}` : ""}`);
+      return;
+    }
+    if (modo !== "enviar") {
+      console.log(`${p.nombre}: no existe en Meta (usa «enviar»)`);
+      return;
+    }
+    const r = await graph(`/${waba}/message_templates`, {
+      method: "POST",
+      body: {
+        name: p.nombre,
+        language: p.idioma,
+        category: p.categoria,
+        components: [{ type: "BODY", text: p.cuerpo, example: { body_text: [p.ejemplos] } }],
+      },
+    });
+    console.log(`${p.nombre}: enviada a revisión → ${r.status ?? "?"} (${r.category ?? "?"})`);
   },
 };
 
