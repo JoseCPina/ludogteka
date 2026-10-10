@@ -7,7 +7,7 @@
 // dinero con valor? Y las RPC que tocan dinero, con sus propios ids.
 import { A, NEGOCIO, URL, env, tokenDe } from "./sesiones-dev.mjs";
 
-const DINERO = /precio|monto|costo|total|importe|pagad|saldo|descuento|tarifa|pago|efectivo|retiro|fondo|arqueo|diferencia|ingreso|margen|valor|subtotal|comision|tope|reconoc|adeudo|propina|cobrado/i;
+const DINERO = /precio|monto|costo|total|importe|(?<!a)pagad|saldo|descuento|tarifa|pago|efectivo|retiro|fondo|arqueo|diferencia|ingreso|margen|valor|subtotal|comision|tope|reconoc|adeudo|propina|cobrado/i;
 // Columnas cuyo nombre suena a dinero pero no lo son (revisadas a mano).
 const NO_ES_DINERO = new Set([
   "servicios.monto_libre", "servicios_cotizables.monto_libre", // sí/no: el importe se captura al aplicar
@@ -38,6 +38,9 @@ const SOLO_STAFF = [
   "llegadas_hoy", "quienes_estan_adentro",
   // Permisos del personal: el cliente no tiene ninguno y no ve los de nadie.
   "permisos_staff",
+  // Veterinaria, Fase 0 (10 de octubre de 2026): inventario clínico, médicos, folios y establecimiento.
+  "insumo_lotes", "lotes_movimientos", "insumo_lotes_saldo", "medicos_veterinarios", "medico_folios", "medico_folios_usados",
+  "medico_folios_resumen", "negocio_establecimiento", "establecimiento_permisos", "negocio_modulos_eventos",
   // La suscripción del negocio a PeluDesk (28 de septiembre de 2026): solo su admin.
   "suscripciones", "pagos_suscripcion",
   // Lo de Stripe de la plataforma: ni el negocio lo ve.
