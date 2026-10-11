@@ -69,6 +69,7 @@ export default async function NuevoPerroPage({
         tamanos={tamanos ?? []}
         pelajes={pelajes ?? []}
         corta={corta}
+        borrador={{ formulario: "mascota_nueva", clave: id }}
         clinico={conFichaClinica}
         grupos={contextoRaza.grupos}
         puedeAsignarGrupo={contextoRaza.puedeAsignarGrupo}

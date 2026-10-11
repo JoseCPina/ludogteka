@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
+import { AvisoBorrador, useAutoguardado } from "@/lib/borradores/use-autoguardado";
 import {
   confirmarCheckin,
   agregarPertenencia,
@@ -49,6 +50,18 @@ export function CheckinForm({
 
   const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
+  // Autoguardado por estancia: quién entrega y cómo llegó. La foto y las pertenencias ya se guardan solas.
+  const borrador = useAutoguardado({
+    formulario: "checkin",
+    clave: estanciaId,
+    valor: { entregadoNombre, entregadoTelefono, estadoLlegada },
+    esVacio: (v) => !v.entregadoNombre.trim() && !v.entregadoTelefono.trim() && !v.estadoLlegada.trim(),
+    alRecuperar: (d) => {
+      setEntregadoNombre(d.entregadoNombre ?? "");
+      setEntregadoTelefono(d.entregadoTelefono ?? "");
+      setEstadoLlegada(d.estadoLlegada ?? "");
+    },
+  });
 
   async function subirFoto(evento: React.ChangeEvent<HTMLInputElement>) {
     const archivo = evento.target.files?.[0];
@@ -96,6 +109,7 @@ export function CheckinForm({
       return;
     }
     setError(null);
+    borrador.pausar();
     const res = await enviando.ejecutar(() => confirmarCheckin(estanciaId, {
       entregadoPorNombre: entregadoNombre,
       entregadoPorTelefono: entregadoTelefono,
@@ -106,11 +120,13 @@ export function CheckinForm({
       setError(res.error);
       return;
     }
+    borrador.descartar();
     router.refresh();
   }
 
   return (
     <div className="flex flex-col gap-6">
+      <AvisoBorrador estado={borrador} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field
           label="Quién entrega al perro"

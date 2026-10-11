@@ -5,6 +5,7 @@ import { negocioActual } from "@/lib/negocio/actual";
 import { rutaPorRol } from "@/lib/auth/rutas";
 import { LoginForm } from "./login-form";
 import { EncabezadoNegocio } from "@/components/marca/encabezado-negocio";
+import { LimpiarCopiasSinConexion } from "@/components/pwa/pwa-negocio";
 
 export default async function LoginPage({
   searchParams,
@@ -40,6 +41,8 @@ export default async function LoginPage({
 
   return (
     <main className="flex flex-1 items-center justify-center px-4 py-12">
+      {/* Quien llega al login ya no tiene sesión: las copias para ver sin conexión se borran. */}
+      <LimpiarCopiasSinConexion />
       <div className="w-full max-w-sm">
         <div className="mb-3 flex justify-center">
           <EncabezadoNegocio />

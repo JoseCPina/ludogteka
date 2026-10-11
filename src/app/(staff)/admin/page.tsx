@@ -141,6 +141,20 @@ export default async function AdminPage() {
         </section>
       )}
 
+      {esAdmin && (
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-n-200 bg-white p-5">
+          <div>
+            <h2 className="text-lg font-bold text-n-900">Importar clientes y mascotas</h2>
+            <p className="mt-1 text-sm text-n-600">
+              Pasa tu lista de un Excel o CSV al sistema, con vista previa y con opción de deshacer.
+            </p>
+          </div>
+          <Link href="/admin/importar" className="font-semibold text-morado hover:underline">
+            Importar →
+          </Link>
+        </section>
+      )}
+
       {puedeConfig && (
         <section id="configuracion" className="scroll-mt-20 rounded-lg border border-n-200 bg-white p-5">
           <h2 className="mb-4 text-lg font-bold text-n-900">Configuración del negocio</h2>

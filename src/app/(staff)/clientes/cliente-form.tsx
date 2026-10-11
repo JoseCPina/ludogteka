@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { useModulos } from "@/components/modulos-contexto";
+import { BorradorFormulario } from "@/lib/borradores/borrador-formulario";
 import type { EstadoClienteForm } from "./actions";
 
 const ESTADO_INICIAL: EstadoClienteForm = { error: null };
@@ -36,6 +37,8 @@ export function ClienteForm({
 
   return (
     <form action={formAction} className="flex max-w-lg flex-col gap-4">
+      {/* Solo el alta: una edición ya trae sus datos. */}
+      {!valoresIniciales && <BorradorFormulario formulario="cliente_nuevo" clave={corta ? "corta" : ""} />}
       {estado.error && (
         <Alert variante="error" titulo="No se pudo guardar">
           {estado.error}

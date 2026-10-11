@@ -46,6 +46,8 @@ export async function generateMetadata(): Promise<Metadata> {
     // Con ícono propio, ese (y también para iOS); sin él, el generado en cada tamaño.
     icons: iconoPropio ? { icon: iconoPropio, apple: iconoPropio } : ICONOS_GENERADOS,
     manifest: "/manifest.webmanifest",
+    // Al instalarla en iPhone: nombre del negocio y sin la barra del navegador.
+    appleWebApp: { capable: true, title: nombre, statusBarStyle: "default" },
     openGraph: {
       type: "website",
       locale: "es_MX",
