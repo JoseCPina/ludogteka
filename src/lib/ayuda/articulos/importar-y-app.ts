@@ -25,7 +25,7 @@ export const ARTICULOS_IMPORTAR_Y_APP: Articulo[] = [
 
 ## Qué datos acepta
 
-- **Del dueño:** nombre, teléfono, correo y dirección. Las notas del dueño se conservan en el historial de la importación, pero el sistema todavía no tiene dónde mostrarlas.
+- **Del dueño:** nombre, teléfono, correo y dirección. Las notas del dueño (hasta 500 caracteres) pasan a las **Notas internas** de su ficha, que solo ve el personal. Si el dueño ya existía y su fila trae una nota, la nota se reemplaza; **Deshacer importación** regresa la anterior.
 - **De la mascota:** nombre, raza, sexo, fecha de nacimiento (día/mes/año), tamaño, pelaje y si está esterilizada.
 - **Clínicos**, solo si el módulo Veterinaria está prendido y tienes el permiso **Editar ficha clínica**: especie, peso, alergias, microchip y folio de registro.
 - La raza se liga al catálogo cuando coincide con una sola. Lo que no coincide queda como texto y aparece en un resumen al terminar, con un enlace para corregirlo en [Perros → Razas](/perros/razas).

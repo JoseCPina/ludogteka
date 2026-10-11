@@ -169,7 +169,10 @@ try {
   const f5 = filasDb.find((f) => f.n === 5);
   comprobar(/otro dueño/.test(f5.mensaje ?? ""), "el motivo de la mascota omitida se explica en la fila");
   const f2 = filasDb.find((f) => f.n === 2);
-  comprobar(/Las notas del cliente no se guardaron/.test(f2.mensaje ?? ""), "las notas del dueño avisan que aún no tienen dónde guardarse");
+  comprobar(!/notas del cliente no se guardaron/i.test(f2.mensaje ?? ""), "las notas del dueño ya no avisan que no se guardan");
+  const ana = await clientePorTel(T1);
+  const notaAna = (await SB.from("clientes").select("notas").eq("id", ana.id).single()).data?.notas;
+  comprobar(notaAna === "Prefiere WhatsApp", `la nota del dueño quedó en clientes.notas (${notaAna})`);
   comprobar(pf.clientes_creados === 3 && pf.mascotas_creadas === 3, `contadores: 3 dueños (Ana, Beto y Carla) y 3 mascotas (${pf.clientes_creados}/${pf.mascotas_creadas})`);
 
   // ═══ A3. Idempotencia ═══
