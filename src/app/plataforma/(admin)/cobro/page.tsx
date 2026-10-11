@@ -5,7 +5,8 @@ import { Alert } from "@/components/ui/alert";
 import { TASA_IVA, pesosDeCentavos } from "@/lib/cobro/iva";
 import { estadoCobro } from "@/lib/cobro/estados";
 import { modoStripe, stripeConfigurado } from "@/lib/cobro/stripe";
-import { cuentaEnTotales, esDemo } from "@/lib/plataforma/metricas";
+import { cuentaEnTotales, esDemo, esInterno } from "@/lib/plataforma/metricas";
+import { conInterno } from "@/lib/plataforma/internos";
 
 type Fila = {
   negocio_id: string; slug: string; nombre: string; estado: string; plan: string; plan_nombre: string | null;
@@ -27,7 +28,7 @@ const RECURRENTE = new Set(["al_corriente", "gracia"]);
 export default async function CobroPlataforma() {
   const { supabase } = await exigirPlataforma();
   const { data, error } = await supabase.rpc("plataforma_cobros");
-  const filas = ((data ?? []) as Fila[]).sort((a, b) => ORDEN.indexOf(a.estado) - ORDEN.indexOf(b.estado));
+  const filas = (await conInterno(supabase, (data ?? []) as Fila[])).sort((a, b) => ORDEN.indexOf(a.estado) - ORDEN.indexOf(b.estado));
   // Totales y conteos: sin el demo (se ve en la tabla, con su etiqueta).
   const contadas = filas.filter(cuentaEnTotales);
   const mrr = contadas.filter((f) => RECURRENTE.has(f.estado) && !f.cancela_al_terminar).reduce((a, f) => a + (f.mensual_centavos ?? 0), 0);
@@ -88,7 +89,7 @@ export default async function CobroPlataforma() {
                 <tr key={f.negocio_id}>
                   <td className="px-3 py-2">
                     <Link href={`/plataforma/negocios/${f.negocio_id}`} className="font-semibold text-n-900 hover:underline">{f.nombre}</Link>
-                    {esDemo(f) && <span className="ml-2 rounded-full bg-morado-suave px-2 py-0.5 text-xs font-bold uppercase text-morado">Demo</span>}
+                    {esDemo(f) && <span className="ml-2 rounded-full bg-morado-suave px-2 py-0.5 text-xs font-bold uppercase text-morado">Demo</span>} {f.interno && <span className="ml-2 rounded-full bg-morado-suave px-2 py-0.5 text-xs font-bold uppercase text-morado">Interno</span>}
                     <span className="block text-xs text-n-600">{f.slug}</span>
                   </td>
                   <td className="px-3 py-2">

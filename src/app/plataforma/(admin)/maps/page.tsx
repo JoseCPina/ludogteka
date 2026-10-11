@@ -4,6 +4,7 @@ import { Field } from "@/components/ui/field";
 import { FormularioPlataforma } from "@/components/plataforma/formulario-plataforma";
 import { topeMapsNegocio, topeMapsPlan } from "../../acciones";
 import { cuentaEnTotales, esDemo } from "@/lib/plataforma/metricas";
+import { conInterno } from "@/lib/plataforma/internos";
 
 type Fila = { negocio_id: string; nombre: string; slug: string; plan: string; usadas: number; geocodificar: number; rutas: number; tope: number; propio: boolean };
 
@@ -19,7 +20,7 @@ export default async function MapsPlataforma({ searchParams }: { searchParams: P
     supabase.rpc("plataforma_maps_consumo", { p_mes: mes }),
     supabase.from("planes").select("id, nombre, tipo, maps_consultas_mes").eq("tipo", "plan").is("deleted_at", null).order("orden"),
   ]);
-  const filas = ((data ?? []) as Fila[]).map((f) => ({ ...f, usadas: Number(f.usadas), geocodificar: Number(f.geocodificar), rutas: Number(f.rutas) }));
+  const filas = (await conInterno(supabase, (data ?? []) as Fila[])).map((f) => ({ ...f, usadas: Number(f.usadas), geocodificar: Number(f.geocodificar), rutas: Number(f.rutas) }));
   // Totales sin el demo (se ve en la lista, con su etiqueta «Demo»).
   const contadas = filas.filter(cuentaEnTotales);
   const total = contadas.reduce((a, f) => a + f.usadas, 0);
@@ -77,7 +78,7 @@ export default async function MapsPlataforma({ searchParams }: { searchParams: P
               <li key={f.negocio_id} className="flex flex-col gap-2 py-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="font-semibold text-n-900">
-                    {f.nombre} {esDemo(f) && <span className="rounded-full bg-morado-suave px-2 py-0.5 text-xs font-bold uppercase text-morado">Demo</span>} <span className="text-sm font-normal text-n-600">· {f.slug} · {f.plan}</span>
+                    {f.nombre} {esDemo(f) && <span className="rounded-full bg-morado-suave px-2 py-0.5 text-xs font-bold uppercase text-morado">Demo</span>} {f.interno && <span className="rounded-full bg-morado-suave px-2 py-0.5 text-xs font-bold uppercase text-morado">Interno</span>} <span className="text-sm font-normal text-n-600">· {f.slug} · {f.plan}</span>
                   </span>
                   <span className={`tabular-nums text-sm ${pct >= 100 ? "font-semibold text-coral-oscuro" : pct >= 80 ? "text-ambar-oscuro" : "text-n-700"}`}>
                     {f.usadas} / {f.tope}

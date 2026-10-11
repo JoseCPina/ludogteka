@@ -5,7 +5,7 @@ import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { ZONAS_MEXICO } from "@/lib/plataforma/tipos";
 import { urlDelNegocio } from "@/lib/negocio/actual";
-import { actualizarNegocio, agregarAdmin, asignarPlan, cambiarPlan, eliminarNegocio } from "../../../acciones";
+import { actualizarNegocio, agregarAdmin, asignarPlan, cambiarPlan, eliminarNegocio, marcarInterno } from "../../../acciones";
 import { formatearFecha } from "@/lib/formato";
 import { pesosDeCentavos } from "@/lib/cobro/iva";
 import { estadoCobro } from "@/lib/cobro/estados";
@@ -23,7 +23,7 @@ const fechaMx = (iso: string | null) => (iso ? formatearFecha(iso, "America/Mexi
 
 type Fila = {
   id: string; slug: string; nombre: string; dominio: string | null; url_publica: string | null; zona_horaria: string;
-  ciudad: string | null; activo: boolean; plan: "activo" | "prueba" | "demo"; prueba_termina_at: string | null;
+  ciudad: string | null; activo: boolean; plan: "activo" | "prueba" | "demo"; interno?: boolean; prueba_termina_at: string | null;
   plan_id: string | null; plan_nombre: string | null; complementos: string[]; modulos_cortesia: string[]; web_gratis_at: string | null; marca: { color?: string | null; favicon?: string | null; logo?: string | null; imagen_compartir?: string | null } | null; admins: string[] | null;
 };
 
@@ -174,6 +174,20 @@ export default async function NegocioPlataforma({ params }: { params: Promise<{ 
           </Select>
           <Field label="Prueba hasta (solo si es prueba)" name="prueba_hasta" type="date" defaultValue={n.prueba_termina_at ? new Date(n.prueba_termina_at).toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }) : ""} />
           <Field label="Motivo" name="motivo" required placeholder="Pagó octubre por transferencia" />
+        </FormularioPlataforma>
+      </section>
+
+      <section className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
+        <h2 className="font-bold text-n-900">Negocio interno</h2>
+        <p className="-mt-2 text-sm text-n-600">
+          Un negocio de PeluDesk para pruebas y demos de venta, con los módulos de verdad. Sale con la etiqueta «Interno», no suma en ningún conteo ni ingreso y no se le cobra la suscripción. Queda en la bitácora con el motivo.
+        </p>
+        <FormularioPlataforma accion={marcarInterno.bind(null, n.id)} textoBoton="Guardar" variante="secundario">
+          <Select label="¿Es interno?" name="interno" defaultValue={n.interno ? "si" : "no"}>
+            <option value="no">No: es un cliente</option>
+            <option value="si">Sí: es de PeluDesk</option>
+          </Select>
+          <Field label="Motivo" name="motivo" required placeholder="Clínica de pruebas y demo de ventas de Veterinaria" />
         </FormularioPlataforma>
       </section>
 

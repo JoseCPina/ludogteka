@@ -1,3 +1,4 @@
+import { conInterno } from "@/lib/plataforma/internos";
 import { exigirPlataforma } from "@/lib/plataforma/sesion";
 import { Alert } from "@/components/ui/alert";
 import { Field } from "@/components/ui/field";
@@ -11,10 +12,10 @@ type Fila = { negocio_id: string; nombre: string; slug: string; activa: boolean;
 export default async function FacturacionPlataforma() {
   const { supabase } = await exigirPlataforma();
   const { data, error } = await supabase.rpc("plataforma_cfdi_uso");
-  const filas = ((data ?? []) as Fila[]).map((f) => ({ ...f, usados: Number(f.usados), tope: Number(f.tope), aviso_pct: Number(f.aviso_pct) }));
+  const filas = (await conInterno(supabase, (data ?? []) as Fila[])).map((f) => ({ ...f, usados: Number(f.usados), tope: Number(f.tope), aviso_pct: Number(f.aviso_pct) }));
   // El demo (Patitas & Co.) no cuenta en el total.
   const esDemo = (f: Fila) => f.slug === "patitasyco";
-  const contadas = filas.filter((f) => !esDemo(f));
+  const contadas = filas.filter((f) => !esDemo(f) && !f.interno);
   const total = contadas.reduce((a, f) => a + f.usados, 0);
 
   return (

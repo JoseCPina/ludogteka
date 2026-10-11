@@ -293,6 +293,18 @@ export async function cambiarPlan(negocioId: string, fd: FormData): Promise<Resu
   return { error: null, exito: "Plan guardado." };
 }
 
+// Negocio interno: de PeluDesk, para pruebas y demos de venta con módulos reales. Fuera de los totales y del cobro.
+export async function marcarInterno(negocioId: string, fd: FormData): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const interno = texto(fd, "interno") === "si";
+  const { error } = await s.supabase.rpc("plataforma_marcar_interno", { p_negocio_id: negocioId, p_interno: interno, p_motivo: texto(fd, "motivo") });
+  if (error) return { error: error.message };
+  revalidatePath(`/plataforma/negocios/${negocioId}`);
+  revalidatePath("/plataforma");
+  return { error: null, exito: interno ? "Marcado como interno." : "Ya no es interno." };
+}
+
 // Los planes (nombre, precios y módulos): viven en la base, nunca en el código.
 // El anual lo calcula la base (diez mensualidades). Al guardar se
 // sincronizan sus precios con Stripe: si el importe cambió se CREA un precio
