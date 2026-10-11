@@ -133,7 +133,7 @@ try {
   comprobar(pf.estado === "completada" && pf.pendientes === 0, "los lotes terminan y la importación queda «completada»");
   comprobar(pf.errores === 1, `la fila con error de validación queda como error (errores = ${pf.errores})`);
 
-  const ana = await clientePorTel(T1);
+  const anaFila = await clientePorTel(T1);
   comprobar(ana && ana.nombre === `${MARCA} Ana` && ana.direccion === "Calle 1" && ana.email?.includes(".ana@"), "dueño nuevo con correo y dirección");
   const perrosAna = ana ? await perrosDe(ana.id) : [];
   comprobar(perrosAna.length === 2, `un teléfono con dos filas = un dueño con dos mascotas (${perrosAna.length})`);
@@ -170,8 +170,8 @@ try {
   comprobar(/otro dueño/.test(f5.mensaje ?? ""), "el motivo de la mascota omitida se explica en la fila");
   const f2 = filasDb.find((f) => f.n === 2);
   comprobar(!/notas del cliente no se guardaron/i.test(f2.mensaje ?? ""), "las notas del dueño ya no avisan que no se guardan");
-  const ana = await clientePorTel(T1);
-  const notaAna = (await SB.from("clientes").select("notas").eq("id", ana.id).single()).data?.notas;
+  const anaFila = await clientePorTel(T1);
+  const notaAna = (await SB.from("clientes").select("notas").eq("id", anaFila.id).single()).data?.notas;
   comprobar(notaAna === "Prefiere WhatsApp", `la nota del dueño quedó en clientes.notas (${notaAna})`);
   comprobar(pf.clientes_creados === 3 && pf.mascotas_creadas === 3, `contadores: 3 dueños (Ana, Beto y Carla) y 3 mascotas (${pf.clientes_creados}/${pf.mascotas_creadas})`);
 
