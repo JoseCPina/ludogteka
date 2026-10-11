@@ -9,13 +9,14 @@ import { ARTICULOS_VETERINARIA_EXPEDIENTE } from "./articulos/veterinaria-expedi
 import { ARTICULOS_VETERINARIA_RECETAS } from "./articulos/veterinaria-recetas";
 import { ARTICULOS_FACTURACION } from "./articulos/facturacion";
 import { ARTICULOS_IMPORTAR_Y_APP } from "./articulos/importar-y-app";
+import { ARTICULOS_SERVICIOS_EXTRA } from "./articulos/servicios-extra";
 
 /**
  * El centro de ayuda de PeluDesk: todos los artículos y cómo se encuentran.
  * Los artículos viven en ./articulos (uno por tarea real). Todo cambio que
  * altere cómo se usa una pantalla actualiza su artículo en el mismo cambio.
  */
-export const ARTICULOS: Articulo[] = [...ARTICULOS_DIA_Y_RESERVAS, ...ARTICULOS_CAJA_Y_ESTETICA, ...ARTICULOS_ADMINISTRACION, ...ARTICULOS_REPORTE_Y_FOTOS, ...ARTICULOS_VETERINARIA, ...ARTICULOS_VETERINARIA_EXPEDIENTE, ...ARTICULOS_VETERINARIA_RECETAS, ...ARTICULOS_FACTURACION, ...ARTICULOS_IMPORTAR_Y_APP];
+export const ARTICULOS: Articulo[] = [...ARTICULOS_DIA_Y_RESERVAS, ...ARTICULOS_CAJA_Y_ESTETICA, ...ARTICULOS_ADMINISTRACION, ...ARTICULOS_REPORTE_Y_FOTOS, ...ARTICULOS_VETERINARIA, ...ARTICULOS_VETERINARIA_EXPEDIENTE, ...ARTICULOS_VETERINARIA_RECETAS, ...ARTICULOS_FACTURACION, ...ARTICULOS_IMPORTAR_Y_APP, ...ARTICULOS_SERVICIOS_EXTRA];
 
 export { NOMBRE_GRUPO };
 export type { Articulo };
