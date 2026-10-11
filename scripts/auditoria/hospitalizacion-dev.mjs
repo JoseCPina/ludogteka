@@ -166,7 +166,7 @@ try {
 
   seccion("6. Consentimientos");
   const pl = await rpc(P.recCon, "consentimientos_plantillas_lista");
-  comprobar(pl.ok && pl.cuerpo.length === 4 && pl.cuerpo.every((x) => x.activa && x.version >= 1), "el negocio recibe sus 4 plantillas base");
+  comprobar(pl.ok && pl.cuerpo.length === 5 && pl.cuerpo.every((x) => x.activa && x.version >= 1), "el negocio recibe sus 5 plantillas base (con la de teleconsulta)");
   comprobar(!(await rpc(P.recSin, "guardar_plantilla_consentimiento", { p_tipo: "cirugia", p_titulo: "T", p_cuerpo: "C" })).ok, "recepción sin «Plantillas de contrato» no las edita");
   await dar(P.admin, P.recSinId, "plantillas_contrato");
   const g1 = await rpc(P.recSin, "guardar_plantilla_consentimiento", { p_tipo: "cirugia", p_titulo: `Cirugía ${MARCA}`, p_cuerpo: "Yo {{cliente_nombre}} autorizo {{procedimiento}} para {{mascota_nombre}}." });

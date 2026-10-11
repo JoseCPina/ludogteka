@@ -343,7 +343,8 @@
   "updated_at",
   "deleted_at",
   "created_by",
-  "maps_consultas_mes"
+  "maps_consultas_mes",
+  "dictado_minutos_mes"
  ],
  "plantillas_contrato": [
   "id",
