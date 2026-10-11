@@ -22,6 +22,7 @@ const nuevoPerro = async (nombre) => {
   if (r.error) throw new Error(`perro: ${r.error.message}`);
   return r.data.id;
 };
+const notasDe = async (id) => (await SB.from("perros_notas_clinicas").select("notas").eq("perro_id", id).maybeSingle()).data?.notas ?? null;
 const fila = async (id) => (await SB.from("perros").select("*").eq("id", id).single()).data;
 
 try {
@@ -34,10 +35,12 @@ try {
 
   seccion("1. Con el permiso");
   const c1 = chip(1);
-  const ok = await patch(P.admin, `perros?id=eq.${p1}`, { especie: "gato", microchip: `${c1.slice(0, 3)} ${c1.slice(3, 9)}-${c1.slice(9)}`, folio_registro: "RUAC-123", notas_clinicas: "Alergia a penicilinas, ver expediente." });
-  comprobar(ok.ok, `admin captura especie, microchip, folio y notas (${ok.mensaje})`);
+  const ok = await patch(P.admin, `perros?id=eq.${p1}`, { especie: "gato", microchip: `${c1.slice(0, 3)} ${c1.slice(3, 9)}-${c1.slice(9)}`, folio_registro: "RUAC-123" });
+  comprobar(ok.ok, `admin captura especie, microchip y folio (${ok.mensaje})`);
+  const notasOk = await rpc(P.admin, "perro_notas_clinicas_guardar", { p_perro: p1, p_notas: "Alergia a penicilinas, ver expediente." });
+  comprobar(notasOk.ok, `admin guarda las notas clínicas (tabla propia, no una columna de perros) (${notasOk.mensaje ?? ""})`);
   let f = await fila(p1);
-  comprobar(f.especie === "gato" && f.microchip === c1 && f.folio_registro === "RUAC-123" && /penicilinas/.test(f.notas_clinicas), "quedaron guardados, con el microchip sin espacios ni guiones");
+  comprobar(f.especie === "gato" && f.microchip === c1 && f.folio_registro === "RUAC-123" && /penicilinas/.test(await notasDe(p1)), "quedaron guardados, con el microchip sin espacios ni guiones");
   const otro = await patch(P.admin, `perros?id=eq.${p1}`, { especie: "otro", especie_detalle: "Conejo" });
   f = await fila(p1);
   comprobar(otro.ok && f.especie === "otro" && f.especie_detalle === "Conejo", "especie «otro» guarda cuál es");
@@ -59,10 +62,14 @@ try {
   seccion("2. Sin el permiso");
   const sinPermiso = [["recepción sin permiso", P.recSin], ["estética", P.estetica]];
   for (const [quien, token] of sinPermiso) {
-    for (const campo of [{ microchip: chip(2) }, { folio_registro: "X-1" }, { notas_clinicas: "algo" }, { especie: "gato" }]) {
+    for (const campo of [{ microchip: chip(2) }, { folio_registro: "X-1" }, { especie: "gato" }]) {
       const r = await patch(token, `perros?id=eq.${p2}`, campo);
       comprobar(!r.ok || (Array.isArray(r.cuerpo) && r.cuerpo.length === 0), `${quien} no escribe ${Object.keys(campo)[0]}`);
     }
+  }
+  for (const [quien, token] of sinPermiso) {
+    const r = await rpc(token, "perro_notas_clinicas_guardar", { p_perro: p2, p_notas: "algo" });
+    comprobar(!r.ok, `${quien} no escribe las notas clínicas`);
   }
   const nuevoSin = await post(P.recSin, "perros", { cliente_id: datos.clienteSoloB, nombre: `Nuevo ${MARCA}`, microchip: chip(3) });
   comprobar(!nuevoSin.ok, "recepción sin permiso no da de alta una mascota con microchip");
@@ -81,8 +88,9 @@ try {
   await dar(P.admin, P.recConId, "editar_ficha_clinica");
   comprobar(((await rpc(P.recCon, "mis_permisos")).cuerpo ?? []).includes("editar_ficha_clinica"), "admin le da «Editar ficha clínica» a una recepcionista");
   const c2 = chip(6);
-  const conPermiso = await patch(P.recCon, `perros?id=eq.${p2}`, { microchip: c2, notas_clinicas: "Revisión anual" });
-  comprobar(conPermiso.ok && (await fila(p2)).microchip === c2, "y con él recepción captura la ficha");
+  const conPermiso = await patch(P.recCon, `perros?id=eq.${p2}`, { microchip: c2 });
+  const conNotas = await rpc(P.recCon, "perro_notas_clinicas_guardar", { p_perro: p2, p_notas: "Revisión anual" });
+  comprobar(conPermiso.ok && conNotas.ok && (await fila(p2)).microchip === c2, "y con él recepción captura la ficha y las notas");
   const nuevoCon = await post(P.recCon, "perros", { cliente_id: datos.clienteSoloB, nombre: `Con chip ${MARCA}`, especie: "gato", microchip: chip(7) });
   comprobar(nuevoCon.ok, "y da de alta una mascota con especie y microchip");
   const rechazo = await patch(P.recSin, `perros?id=eq.${p2}`, { microchip: chip(8) });
@@ -98,7 +106,7 @@ try {
   const normal = await patch(P.admin, `perros?id=eq.${p2}`, { nombre: `Segundo ${MARCA}` });
   comprobar(normal.ok, "apagado: editar una mascota normal funciona igual que siempre");
   const f2 = await fila(p2);
-  comprobar(f2.microchip === c2 && f2.notas_clinicas === "Revisión anual", "apagado: los datos clínicos se conservan");
+  comprobar(f2.microchip === c2 && (await notasDe(p2)) === "Revisión anual", "apagado: los datos clínicos se conservan");
   const servidor = await SB.from("perros").update({ folio_registro: "SERV-1" }).eq("id", p2);
   comprobar(!servidor.error, "la llave de servidor (el alta por link) queda exenta");
   await fijarModulo("veterinaria", true);

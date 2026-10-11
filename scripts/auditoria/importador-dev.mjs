@@ -170,7 +170,7 @@ try {
   comprobar(/otro dueño/.test(f5.mensaje ?? ""), "el motivo de la mascota omitida se explica en la fila");
   const f2 = filasDb.find((f) => f.n === 2);
   comprobar(!/notas del cliente no se guardaron/i.test(f2.mensaje ?? ""), "las notas del dueño ya no avisan que no se guardan");
-  const notaAna = (await SB.from("clientes").select("notas").eq("id", ana.id).single()).data?.notas;
+  const notaAna = (await SB.from("clientes_notas_internas").select("notas").eq("cliente_id", ana.id).maybeSingle()).data?.notas;
   comprobar(notaAna === "Prefiere WhatsApp", `la nota del dueño quedó en clientes.notas (${notaAna})`);
   comprobar(pf.clientes_creados === 3 && pf.mascotas_creadas === 3, `contadores: 3 dueños (Ana, Beto y Carla) y 3 mascotas (${pf.clientes_creados}/${pf.mascotas_creadas})`);
 

@@ -57,7 +57,7 @@ async function altaCliente(formData: FormData, volver: string | null): Promise<E
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("clientes")
-    .insert({ nombre, telefono: validado.telefono, email, notas })
+    .insert({ nombre, telefono: validado.telefono, email })
     .select("id")
     .single();
 
@@ -77,6 +77,9 @@ async function altaCliente(formData: FormData, volver: string | null): Promise<E
     }
     return { error: "No pudimos guardar al cliente. Intenta de nuevo." };
   }
+
+  // Las notas internas viven en su propia tabla (solo personal): el dueño no las puede leer.
+  if (notas) await supabase.rpc("cliente_notas_guardar", { p_cliente: data.id, p_notas: notas });
 
   // La distancia se calcula aquí, en el alta, y no cuando alguien se
   // acuerde de abrir la ficha: capturarla después es justo lo que hizo
@@ -109,7 +112,7 @@ export async function actualizarCliente(
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from("clientes")
-    .update({ nombre, telefono: validado.telefono, email, notas })
+    .update({ nombre, telefono: validado.telefono, email })
     .eq("id", id);
 
   if (error) {
@@ -127,6 +130,12 @@ export async function actualizarCliente(
       return { error: "Ya existe un cliente activo con ese correo." };
     }
     return { error: "No pudimos guardar los cambios. Intenta de nuevo." };
+  }
+
+  // Notas internas: tabla propia, solo personal (recepción y admin las editan).
+  const { error: errorNotas } = await supabase.rpc("cliente_notas_guardar", { p_cliente: id, p_notas: notas ?? "" });
+  if (errorNotas) {
+    return { error: "Guardamos los datos, pero no las notas internas. Intenta de nuevo." };
   }
 
   revalidatePath("/clientes");
