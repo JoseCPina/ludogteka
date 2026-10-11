@@ -57,14 +57,14 @@ function leerCampos(formData: FormData) {
 // de la base nunca salta por una alta de quien no tiene el permiso.
 async function clinicosDelFormulario(
   formData: FormData
-): Promise<{ error: string } | { campos: CamposClinicos | null }> {
-  if (String(formData.get("clinico") ?? "") !== "1") return { campos: null };
+): Promise<{ error: string } | { campos: CamposClinicos | null; notas: string | null }> {
+  if (String(formData.get("clinico") ?? "") !== "1") return { campos: null, notas: null };
   const sesion = await obtenerSesionConRol();
   if (!sesion || !usaVeterinaria(sesion.modulos) || !tienePermiso(sesion, "editar_ficha_clinica")) {
-    return { campos: null };
+    return { campos: null, notas: null };
   }
   const leido = leerCamposClinicos(formData);
-  return "error" in leido ? { error: leido.error } : { campos: leido.campos };
+  return "error" in leido ? { error: leido.error } : { campos: leido.campos, notas: leido.notas };
 }
 
 // Lo que se puede llenar desde "Capturar ahora" (pendientes para guardería
@@ -163,6 +163,12 @@ async function altaPerro(clienteId: string, formData: FormData, volver: string |
     };
   }
 
+  // Notas clínicas: tabla propia, solo personal con permiso.
+  if (clinicos.campos && clinicos.notas) {
+    const { error: errorNotas } = await supabase.rpc("perro_notas_clinicas_guardar", { p_perro: data.id, p_notas: clinicos.notas });
+    if (errorNotas) console.error("[perros] no se guardaron las notas clínicas", data.id, errorNotas.code);
+  }
+
   // La raza que se propuso en el formulario viaja con el perro nuevo: se liga
   // ahora que ya existe. Si falla, el perro ya quedó guardado (con su texto) y
   // su ficha vuelve a ofrecer «agregar esta raza».
@@ -203,6 +209,11 @@ export async function actualizarPerro(
         ? mensajeErrorClinico(error)
         : "No pudimos guardar los cambios. Intenta de nuevo.",
     };
+  }
+
+  if (clinicos.campos) {
+    const { error: errorNotas } = await supabase.rpc("perro_notas_clinicas_guardar", { p_perro: perroId, p_notas: clinicos.notas ?? "" });
+    if (errorNotas) return { error: mensajeErrorClinico(errorNotas) };
   }
 
   revalidatePath(`/perros/${perroId}`);

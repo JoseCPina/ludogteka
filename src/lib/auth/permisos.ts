@@ -222,10 +222,34 @@ export const PERMISOS = [
       "Ve y exporta el libro de control de los productos de Grupo I y de los estupefacientes y psicotrópicos de la fracción II: fecha, folio de la receta, producto, laboratorio, lote, entradas, salidas, saldo, paciente y médico (con el módulo Veterinaria prendido). Un médico veterinario designado ya lo tiene. Viene apagado.",
   },
   {
+    clave: "usar_dictado",
+    etiqueta: "Usar dictado",
+    implica:
+      "Dicta la consulta por voz: el audio se transcribe, la IA arma un borrador SOAP y sugiere diagnósticos del catálogo, y el médico lo revisa antes de firmar (con el módulo Veterinaria prendido). Cuenta contra los minutos de dictado del mes del negocio. Un médico veterinario designado ya lo tiene. Viene apagado.",
+  },
+  {
+    clave: "atender_teleconsultas",
+    etiqueta: "Atender teleconsultas",
+    implica:
+      "Entra a la sala de una teleconsulta, genera la liga del dueño y documenta la consulta a distancia (con el módulo Veterinaria prendido). Un médico veterinario designado ya lo tiene. Viene apagado.",
+  },
+  {
     clave: "importar_datos",
     etiqueta: "Importar clientes y mascotas",
     implica:
       "Sube un Excel o CSV desde Administración → Importar para dar de alta muchos clientes y mascotas de una vez, revisa la vista previa, aplica la importación y la deshace desde el historial. Con el módulo Veterinaria prendido, los datos clínicos (especie, microchip, folio, peso, alergias) solo se importan si también tiene «Editar ficha clínica». Viene apagado.",
+  },
+  {
+    clave: "agregar_servicios_extra",
+    etiqueta: "Agregar servicios extra",
+    implica:
+      "Agrega y programa servicios extra (paseo, entrenamiento, traslado a domicilio, baño de salida, medicamento, cuidado especial…) a una estancia o a un día de guardería, los marca como hechos desde el tablero (el cargo entra a la cuenta), saca los traslados y los cancela con motivo (con Hotel o Guardería prendidos). Recepción lo trae encendido; admin se lo puede quitar a una persona.",
+  },
+  {
+    clave: "editar_catalogo_extras",
+    etiqueta: "Editar catálogo de servicios extra",
+    implica:
+      "Crea y edita los servicios extra del negocio: precio, unidad, zonas de un traslado, paquete de sesiones, clave del SAT y clase fiscal (IVA). Los precios ya agregados a una estancia no cambian. Viene apagado.",
   },
 ] as const;
 

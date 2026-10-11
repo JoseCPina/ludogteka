@@ -70,7 +70,7 @@ try {
 
   seccion("1. Agenda clínica");
   const tipos = await rpc(P.recSin, "vet_tipos_cita_lista");
-  comprobar(tipos.ok && tipos.cuerpo.length === 5 && ["consulta", "vacuna", "cirugia", "seguimiento", "urgencia"].every((c) => tipos.cuerpo.some((t) => t.clave === c)), "los cinco tipos de cita existen (se siembran solos)");
+  comprobar(tipos.ok && tipos.cuerpo.length === 6 && ["consulta", "vacuna", "cirugia", "seguimiento", "urgencia", "teleconsulta"].every((c) => tipos.cuerpo.some((t) => t.clave === c)), "los seis tipos de cita existen (se siembran solos)");
   comprobar(tipos.cuerpo.find((t) => t.clave === "cirugia")?.duracion_min === 90, "con la duración de cada tipo (cirugía 90 min)");
   comprobar(!(await rpc(P.recSin, "guardar_tipo_cita", { p_clave: "vacuna", p_nombre: "Vacuna", p_duracion_min: 20, p_activo: true })).ok, "recepción sin «Configuración» no cambia la duración");
   comprobar((await rpc(P.admin, "guardar_tipo_cita", { p_clave: "vacuna", p_nombre: "Vacuna", p_duracion_min: 20, p_activo: true })).ok, "admin sí");

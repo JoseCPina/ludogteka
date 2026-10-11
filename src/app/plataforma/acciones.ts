@@ -416,6 +416,19 @@ export async function topeMapsNegocio(negocioId: string, fd: FormData): Promise<
   return { error: null, exito: tope === null ? "Ahora usa el tope de su plan." : `Tope de ${tope} consultas al mes.` };
 }
 
+// Dictado por voz: minutos al mes por negocio (vacío = el de su plan).
+export async function topeDictadoNegocio(negocioId: string, fd: FormData): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const crudo = texto(fd, "tope");
+  const tope = crudo === "" ? null : Number(crudo);
+  if (tope !== null && (!Number.isInteger(tope) || tope < 0)) return { error: "El tope es un número entero de minutos de cero para arriba (vacío = el de su plan)." };
+  const { error } = await s.supabase.rpc("plataforma_dictado_tope_negocio", { p_negocio_id: negocioId, p_tope: tope, p_motivo: texto(fd, "motivo") });
+  if (error) return { error: error.message };
+  revalidatePath("/plataforma/dictado");
+  return { error: null, exito: tope === null ? "Ahora usa el tope de su plan." : `Tope de ${tope} minutos al mes.` };
+}
+
 export async function topeMapsPlan(planId: string, fd: FormData): Promise<ResultadoPlataforma> {
   const s = await sesionPlataforma();
   if (!s) return NO_AUTORIZADO;

@@ -6,6 +6,7 @@ import { formatearFechaCalendario, formatearFecha, hoyNegocio } from "@/lib/form
 import { moduloDeCategoria } from "@/lib/modulos";
 import { CheckoutForm } from "./checkout-form";
 import { ConvertirHotel, type SugerenciaHotel } from "./convertir-hotel";
+import { SeccionServiciosExtra } from "@/components/extras/seccion-servicios-extra";
 import { CargosSeccion, type Cargo, type ServicioCargo } from "../../../cargos-seccion";
 import { zonaActual } from "@/lib/negocio/actual";
 
@@ -65,6 +66,7 @@ export default async function CheckoutEstanciaPage({
       .from("servicios_cotizables")
       .select("id, nombre, clave, monto_libre")
       .eq("categoria", "cargo")
+      .not("clave", "like", "extra\_%")
       .order("orden"),
     supabase
       .from("cargos_aplicados")
@@ -205,6 +207,10 @@ export default async function CheckoutEstanciaPage({
           precioBase={estancia.precio_unitario * cantidad}
           distanciaClienteKm={distanciaClienteKm}
         />
+      </div>
+
+      <div className="border-t border-n-200 pt-4">
+        <SeccionServiciosExtra estanciaId={estanciaId} />
       </div>
     </div>
   );

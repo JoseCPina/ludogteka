@@ -27,7 +27,6 @@ export type CamposClinicos = {
   especie_detalle: string | null;
   microchip: string | null;
   folio_registro: string | null;
-  notas_clinicas: string | null;
 };
 
 /**
@@ -36,7 +35,7 @@ export type CamposClinicos = {
  */
 export function leerCamposClinicos(
   formData: FormData
-): { error: string } | { campos: CamposClinicos } {
+): { error: string } | { campos: CamposClinicos; notas: string | null } {
   const especieCruda = String(formData.get("especie") ?? "perro").trim() || "perro";
   if (!esEspecie(especieCruda)) return { error: "Elige una especie válida: perro, gato u otro." };
   const detalle = String(formData.get("especie_detalle") ?? "").trim();
@@ -54,8 +53,9 @@ export function leerCamposClinicos(
       especie_detalle: especieCruda === "otro" ? detalle : null,
       microchip: microchip || null,
       folio_registro: texto("folio_registro"),
-      notas_clinicas: texto("notas_clinicas"),
     },
+    // Las notas clínicas viven en su propia tabla (perros_notas_clinicas): solo personal con permiso.
+    notas: texto("notas_clinicas"),
   };
 }
 

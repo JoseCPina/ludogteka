@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * ¿Puede hacer esto en Veterinaria? El permiso, o ser médico veterinario designado
  * (la base lo decide con `vet_puede`; esto solo lo pregunta para mostrar u ocultar botones).
  */
-export async function vetPuede(supabase: SupabaseClient, permiso: "registrar_vacunas" | "emitir_certificados" | "hospitalizar" | "emitir_recetas" | "registrar_recetas_sitpv" | "ver_libro_control"): Promise<boolean> {
+export async function vetPuede(supabase: SupabaseClient, permiso: "registrar_vacunas" | "emitir_certificados" | "hospitalizar" | "emitir_recetas" | "registrar_recetas_sitpv" | "ver_libro_control" | "usar_dictado" | "atender_teleconsultas"): Promise<boolean> {
   const { data } = await supabase.rpc("vet_puede", { p_permiso: permiso });
   return data === true;
 }

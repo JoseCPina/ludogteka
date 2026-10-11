@@ -41,6 +41,12 @@ export async function guardarFichaClinica(
 
   if (error) return { error: mensajeErrorClinico(error) };
 
+  const { error: errorNotas } = await supabase.rpc("perro_notas_clinicas_guardar", {
+    p_perro: perroId,
+    p_notas: leido.notas ?? "",
+  });
+  if (errorNotas) return { error: mensajeErrorClinico(errorNotas) };
+
   revalidatePath(`/perros/${perroId}`);
   if (data?.cliente_id) revalidatePath(`/clientes/${data.cliente_id}`);
   return { error: null, ok: true };

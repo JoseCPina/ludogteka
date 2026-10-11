@@ -61,6 +61,8 @@ export const SECCIONES_STAFF: ItemNav[] = [
   { etiqueta: "Importar", href: "/admin/importar", roles: ["admin"], permisos: ["importar_datos"] },
   // Artículos, asistente y tickets de soporte: sin permiso especial.
   { etiqueta: "Ayuda", href: "/ayuda", roles: ["admin", "recepcion"] },
+  // Servicios extra cobrables de Hotel y guardería (carril B).
+  { etiqueta: "Servicios extra", href: "/extras", roles: ["admin", "recepcion"], modulo: ["guarderia", "hotel"] },
 ];
 
 // Vacío por ahora — Fase 2/6/9 agregan aquí Mis perros, Mis reservas,

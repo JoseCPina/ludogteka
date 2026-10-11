@@ -16,6 +16,7 @@
 //   plantillas           crea la plantilla de seguimiento (reabre la ventana de 24 h)
 //   plantilla-carnet-retirar [borrar]   quita la v1 de Meta cuando la v2 ya es UTILITY aprobada
 //   plantilla-carnet [enviar]
+//   plantilla-teleconsulta [enviar]
 //                        la plantilla del recordatorio de próxima dosis del carnet (Veterinaria)
 //   plantillas-seguimiento [enviar]
 //                        las 4 plantillas del seguimiento de pruebas (textos de
@@ -253,6 +254,28 @@ const pasos = {
         category: p.categoria,
         components: [{ type: "BODY", text: p.cuerpo, example: { body_text: [p.ejemplos] } }],
       },
+    });
+    console.log(`${p.nombre}: enviada a revisión → ${r.status ?? "?"} (${r.category ?? "?"})`);
+  },
+
+  // Veterinaria, Fase 5: la plantilla de la liga de la teleconsulta (src/lib/telemedicina/plantilla-teleconsulta.json).
+  // Sin «enviar» solo dice su estado.
+  async "plantilla-teleconsulta"(modo) {
+    const waba = requerir("PELUDESK_WABA_ID");
+    const p = JSON.parse(readFileSync(new URL("../../src/lib/telemedicina/plantilla-teleconsulta.json", import.meta.url), "utf8"));
+    const ya = await graph(`/${waba}/message_templates?name=${p.nombre}&fields=name,status,category,language,rejected_reason&limit=10`);
+    const en = (ya.data ?? []).find((x) => x.name === p.nombre && x.language === p.idioma);
+    if (en) {
+      console.log(`${p.nombre}: ${en.status} (${en.category})${en.rejected_reason && en.rejected_reason !== "NONE" ? ` · motivo: ${en.rejected_reason}` : ""}`);
+      return;
+    }
+    if (modo !== "enviar") {
+      console.log(`${p.nombre}: no existe en Meta (usa «enviar»)`);
+      return;
+    }
+    const r = await graph(`/${waba}/message_templates`, {
+      method: "POST",
+      body: { name: p.nombre, language: p.idioma, category: p.categoria, components: [{ type: "BODY", text: p.cuerpo, example: { body_text: [p.ejemplos] } }] },
     });
     console.log(`${p.nombre}: enviada a revisión → ${r.status ?? "?"} (${r.category ?? "?"})`);
   },

@@ -36,6 +36,10 @@
     {
       "path": "/api/cron/carnet",
       "schedule": "17 * * * *"
+    },
+    {
+      "path": "/api/cron/dictados",
+      "schedule": "47 9 * * *"
     }
   ]
 }

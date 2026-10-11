@@ -48,6 +48,7 @@ export default async function ReportesPage({
     { data: gastosCategoriaAnterior },
     { data: ventasData, error: errorVentas },
     { data: diasPaseData },
+    { data: extrasData },
   ] = await Promise.all([
     supabase.rpc("reporte_financiero_periodo", { p_desde: desde, p_hasta: hasta }).single(),
     supabase.rpc("reporte_costos_periodo", { p_desde: desde, p_hasta: hasta }).single(),
@@ -60,7 +61,16 @@ export default async function ReportesPage({
     supabase.rpc("gastos_por_categoria_periodo", { p_desde: anterior.desde, p_hasta: anterior.hasta }),
     supabase.rpc("reporte_ventas_mostrador_periodo", { p_desde: desde, p_hasta: hasta }).single(),
     supabase.rpc("reporte_dias_pase_periodo", { p_desde: desde, p_hasta: hasta }).single(),
+    supabase.rpc("reporte_servicios_extra_periodo", { p_desde: desde, p_hasta: hasta }),
   ]);
+  // Servicios extra de Hotel y guardería: ingreso por servicio y por empleado.
+  const extras = ((extrasData ?? []) as { agrupacion: string; clave: string; nombre: string; veces: number; cantidad: number; ingreso: number; cubierto_paquete: number }[]).map((r) => ({
+    ...r,
+    veces: Number(r.veces),
+    cantidad: Number(r.cantidad),
+    ingreso: Number(r.ingreso),
+    cubierto_paquete: Number(r.cubierto_paquete),
+  }));
   // Venta de mostrador: aparte de los servicios (ya está dentro de lo cobrado).
   const ventas = ventasData as {
     ventas: number;
@@ -686,6 +696,48 @@ export default async function ReportesPage({
               <p className="mt-1 text-xl font-bold text-n-900">{diasPase.dias_uso_previo}</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {extras.length > 0 && (
+        <div className="flex flex-col gap-4 border-t border-n-200 pt-6" data-reporte-extras>
+          <div>
+            <h2 className="text-lg font-bold text-n-900">Servicios extra de Hotel y guardería</h2>
+            <p className="mt-1 text-sm text-n-600">
+              Lo que se hizo y se cobró en el periodo (paseos, traslados, entrenamiento…), por servicio y por la persona que
+              lo marcó como hecho. Lo cubierto con un paquete de sesiones va aparte: no se cobró en ese momento.
+            </p>
+          </div>
+          {(["servicio", "empleado"] as const).map((grupo) => {
+            const filas = extras.filter((r) => r.agrupacion === grupo);
+            if (filas.length === 0) return null;
+            return (
+              <div key={grupo} className="overflow-x-auto rounded-lg border border-n-200 bg-white">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-n-50 text-xs font-bold uppercase tracking-wide text-n-600">
+                    <tr>
+                      <th className="px-3 py-2">{grupo === "servicio" ? "Servicio" : "Empleado"}</th>
+                      <th className="px-3 py-2 text-right">Veces</th>
+                      <th className="px-3 py-2 text-right">Cantidad</th>
+                      <th className="px-3 py-2 text-right">Ingreso</th>
+                      <th className="px-3 py-2 text-right">Cubierto con paquete</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filas.map((r) => (
+                      <tr key={r.clave} className="border-t border-n-100">
+                        <td className="px-3 py-2 font-semibold text-n-900">{r.nombre}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{r.veces}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{r.cantidad}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">${r.ingreso.toFixed(2)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">${r.cubierto_paquete.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
         </div>
       )}
 

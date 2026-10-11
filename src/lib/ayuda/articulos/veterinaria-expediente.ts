@@ -157,6 +157,11 @@ Un estimado aceptado no se cambia; si hay algo más que cobrar, haz otro. Los en
     palabras: ["plantilla", "consulta", "duración", "cita", "portal", "dueño", "expediente", "ajustes"],
     cuerpo: `Todo esto está en [Ajustes de Veterinaria](/veterinaria/ajustes) y es de admin o de quien tenga **Configuración del negocio**.
 
+## Dictado y teleconsulta
+
+- **Dictado por voz → Conservar el audio**: apagado por omisión (el audio se borra al transcribirse). Si lo prendes, queda 30 días ligado a la consulta. Ver [Cómo dictar una consulta](/ayuda/dictar-la-consulta).
+- **Teleconsulta → Cobro anticipado y precio**: si lo prendes, la sala solo abre cuando la teleconsulta está pagada. Ver [Cómo agendar y atender una teleconsulta](/ayuda/agendar-y-atender-una-teleconsulta).
+
 ## Portal del dueño
 
 **Mostrar las consultas en el portal**: apagado por omisión. Si lo prendes, el dueño ve en su portal, por cada consulta **firmada**, la fecha, el médico, el **diagnóstico definitivo** y el **plan**. Nunca ve las notas internas, el tratamiento ni los datos de la firma, ni las consultas anuladas o en borrador.

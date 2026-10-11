@@ -67,7 +67,7 @@ export default async function PerroPage({
     supabase
       .from("perros")
       .select(
-        "id, nombre, raza, raza_id, sexo, esterilizado, fecha_nacimiento, tamano_id, pelaje_id, alimentacion_notas, temperamento_notas, contacto_emergencia_nombre, contacto_emergencia_telefono, veterinario_nombre, veterinario_telefono, veterinario_clinica, fallecido, foto_path, cliente_id, en_celo, gestante, evaluacion_comportamiento_fecha, evaluacion_comportamiento_por, evaluacion_comportamiento_notas, clientes(nombre)"
+        "id, nombre, raza, raza_id, sexo, esterilizado, fecha_nacimiento, tamano_id, pelaje_id, alimentacion_notas, temperamento_notas, contacto_emergencia_nombre, contacto_emergencia_telefono, veterinario_nombre, veterinario_telefono, veterinario_clinica, fallecido, foto_path, cliente_id, en_celo, gestante, evaluacion_comportamiento_fecha, clientes(nombre)"
       )
       .eq("id", id)
       .is("deleted_at", null)
@@ -149,7 +149,7 @@ export default async function PerroPage({
   const { data: contratosCrudo } = await supabase
     .from("contratos")
     .select(
-      "id, estado, storage_path, fecha_firma, created_at, motivo_cancelacion, regenerar_motivo, plantillas_contrato(version, tipo_contrato_id, tipos_contrato(nombre)), bonos_clientes(servicios(nombre))"
+      "id, estado, storage_path, fecha_firma, created_at, contratos_internos(motivo_cancelacion, regenerar_motivo), plantillas_contrato(version, tipo_contrato_id, tipos_contrato(nombre)), bonos_clientes(servicios(nombre))"
     )
     .eq("perro_id", id)
     .order("created_at", { ascending: false });
@@ -198,9 +198,13 @@ export default async function PerroPage({
   const { data: clinicoCrudo } = conVeterinaria
     ? await supabase
         .from("perros")
-        .select("especie, especie_detalle, microchip, folio_registro, notas_clinicas")
+        .select("especie, especie_detalle, microchip, folio_registro")
         .eq("id", id)
         .maybeSingle()
+    : { data: null };
+  // Notas clínicas: tabla propia, solo personal con permiso (si no puede, vienen vacías).
+  const { data: notasClinicasFila } = conVeterinaria
+    ? await supabase.from("perros_notas_clinicas").select("notas").eq("perro_id", id).maybeSingle()
     : { data: null };
   const contextoRaza = await contextoRazaFormulario(supabase, perro.id);
 
@@ -277,7 +281,13 @@ export default async function PerroPage({
   // Requisitos de estancia: quién registró la evaluación (nombre, no
   // uuid) y qué alertas activas bloquean guardería/hotel según el
   // catálogo — la misma regla que aplica el trigger de estancias.
-  const evaluadoPorId = perro.evaluacion_comportamiento_por as string | null;
+  // Notas y autor de la evaluación: tabla propia que solo lee el personal.
+  const { data: evaluacionInterna } = await supabase
+    .from("perros_evaluaciones")
+    .select("notas, por")
+    .eq("perro_id", id)
+    .maybeSingle();
+  const evaluadoPorId = (evaluacionInterna?.por as string | null | undefined) ?? null;
   const { data: evaluador } = evaluadoPorId
     ? await supabase.from("profiles").select("nombre_completo").eq("id", evaluadoPorId).maybeSingle()
     : { data: null };
@@ -299,6 +309,10 @@ export default async function PerroPage({
     return s?.nombre ?? null;
   }
 
+  // Lo interno de un contrato (motivos): otra tabla que solo lee el personal.
+  const internoDe = (v: unknown): { motivo_cancelacion: string | null; regenerar_motivo: string | null } | null =>
+    (Array.isArray(v) ? v[0] : v) as { motivo_cancelacion: string | null; regenerar_motivo: string | null } | null ?? null;
+
   const contratos: ContratoFila[] = (contratosCrudo ?? []).map((c) => {
     const plantilla = (Array.isArray(c.plantillas_contrato)
       ? c.plantillas_contrato[0]
@@ -314,11 +328,11 @@ export default async function PerroPage({
       storagePath: c.storage_path,
       fechaFirma: c.fecha_firma,
       createdAt: c.created_at,
-      motivoCancelacion: c.motivo_cancelacion,
+      motivoCancelacion: internoDe(c.contratos_internos)?.motivo_cancelacion ?? null,
       tipoContratoId: plantilla?.tipo_contrato_id ?? null,
       tipoNombre: tipo?.nombre ?? "Contrato",
       version: plantilla?.version ?? null,
-      regenerarMotivo: (c.regenerar_motivo as string | null) ?? null,
+      regenerarMotivo: internoDe(c.contratos_internos)?.regenerar_motivo ?? null,
       paqueteNombre: nombrePaquete(c.bonos_clientes),
     };
   });
@@ -468,7 +482,7 @@ export default async function PerroPage({
             esterilizado: perro.esterilizado,
             microchip: (clinicoCrudo.microchip as string | null) ?? null,
             folio_registro: (clinicoCrudo.folio_registro as string | null) ?? null,
-            notas_clinicas: (clinicoCrudo.notas_clinicas as string | null) ?? null,
+            notas_clinicas: (notasClinicasFila?.notas as string | null) ?? null,
           }}
         />
       )}
@@ -517,7 +531,7 @@ export default async function PerroPage({
             en_celo: Boolean(perro.en_celo),
             gestante: Boolean(perro.gestante),
             evaluacion_comportamiento_fecha: perro.evaluacion_comportamiento_fecha,
-            evaluacion_comportamiento_notas: perro.evaluacion_comportamiento_notas,
+            evaluacion_comportamiento_notas: (evaluacionInterna?.notas as string | null | undefined) ?? null,
             evaluadoPorNombre: evaluador?.nombre_completo ?? null,
             alertasBloqueantes,
           }}

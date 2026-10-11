@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { BorradorFormulario } from "@/lib/borradores/borrador-formulario";
 import { SECCIONES_CONSULTA, type ConsultaVet, type Diagnostico, type DiagnosticoBuscado } from "@/lib/veterinaria/expediente";
+import { DictadoPanel } from "./dictado-panel";
 import { agregarDiagnosticoNegocio, buscarDiagnosticos, descartarBorrador, firmarConsulta, guardarBorrador, type DatosBorrador } from "../../expediente/actions";
 
 type Valores = Record<string, string>;
@@ -125,6 +126,12 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico }:
     router.refresh();
   }
 
+  // El borrador del dictado entra por las mismas rutas que lo que se escribe a mano (se autoguarda).
+  function aplicarDictado(campos: Record<string, string>, nuevos: Diagnostico[]) {
+    for (const [clave, valor] of Object.entries(campos)) cambiar(clave, valor);
+    if (nuevos.length > 0) cambiarDx([...ultimo.current.dx, ...nuevos.filter((n) => !ultimo.current.dx.some((d) => d.ref_id === n.ref_id))]);
+  }
+
   const grupos = Array.from(new Set(SECCIONES_CONSULTA.map((s) => s.grupo)));
 
   return (
@@ -135,6 +142,8 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico }:
         {ETIQUETA_ESTADO[estado] || "Borrador: se guarda solo mientras escribes."}
         {errorGuardado && <span> · {errorGuardado}</span>}
       </div>
+
+      <DictadoPanel consultaId={consulta.id} valores={v} diagnosticos={dx} onAplicar={aplicarDictado} />
 
       {grupos.map((g) => (
         <section key={g} className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">

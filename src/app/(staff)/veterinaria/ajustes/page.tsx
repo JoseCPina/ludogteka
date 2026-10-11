@@ -8,7 +8,7 @@ import { Select } from "@/components/ui/select";
 import { FormularioAccion } from "@/components/formulario-accion";
 import { Textarea } from "@/components/ui/textarea";
 import { TIPOS_CITA, type TipoCitaConfig } from "@/lib/veterinaria/expediente";
-import { guardarAjustesVeterinaria } from "../carnet/actions";
+import { guardarAjustesVeterinaria, guardarDictadoAjustes, guardarTeleconsultaAjustes } from "../carnet/actions";
 import { guardarEspejoAntimicrobianos } from "../recetas/actions";
 import { guardarPlantillaConsulta, guardarPortalExpediente, guardarTipoCita } from "../expediente/actions";
 
@@ -20,7 +20,7 @@ export default async function AjustesVeterinaria() {
   const [{ data: tiposCrudo }, { data: plantillasCrudo }] = await Promise.all([supabase.rpc("vet_tipos_cita_lista"), supabase.rpc("vet_plantillas_consulta")]);
   const tipos = (tiposCrudo ?? []) as TipoCitaConfig[];
   const plantillas = (plantillasCrudo ?? {}) as Record<string, { version: number; texto: Record<string, string> }>;
-  const a = (data ?? {}) as { portal_expediente?: boolean; recordatorios_activos?: boolean; dias_anticipacion?: number; certificado_vigencia_dias?: number; carnet_reemplaza_comprobante?: boolean; hospitalizacion_precio_dia?: number | null; espejo_antimicrobianos?: boolean };
+  const a = (data ?? {}) as { portal_expediente?: boolean; recordatorios_activos?: boolean; dias_anticipacion?: number; certificado_vigencia_dias?: number; carnet_reemplaza_comprobante?: boolean; hospitalizacion_precio_dia?: number | null; espejo_antimicrobianos?: boolean; dictado_conservar_audio?: boolean; teleconsulta_cobro_anticipado?: boolean; teleconsulta_precio?: number | null };
 
   return (
     <div className="flex max-w-3xl flex-col gap-5">
@@ -59,6 +59,33 @@ export default async function AjustesVeterinaria() {
               <option value="no">No: el dueño no ve el expediente</option>
               <option value="si">Sí: fecha, diagnóstico definitivo y plan</option>
             </Select>
+          </fieldset>
+        </FormularioAccion>
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
+        <h2 className="text-lg font-bold text-n-900">Dictado por voz</h2>
+        <p className="text-n-700">El audio se transcribe y se borra al terminar. Si prefieres conservarlo para poder volver a escucharlo, queda ligado a la consulta 30 días y se avisa en pantalla antes de grabar.</p>
+        <FormularioAccion accion={guardarDictadoAjustes} textoBoton="Guardar" className="max-w-xl">
+          <fieldset disabled={!puede}>
+            <Select label="Conservar el audio" name="conservar" defaultValue={a.dictado_conservar_audio ? "si" : "no"} ayuda="Apagado por omisión: el audio se borra en cuanto se transcribe.">
+              <option value="no">No: se borra al transcribir</option>
+              <option value="si">Sí: conservarlo 30 días</option>
+            </Select>
+          </fieldset>
+        </FormularioAccion>
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
+        <h2 className="text-lg font-bold text-n-900">Teleconsulta</h2>
+        <p className="text-n-700">Si cobras por adelantado, la sala solo abre cuando la teleconsulta está pagada (con la liga de pago de la terminal que ya usas).</p>
+        <FormularioAccion accion={guardarTeleconsultaAjustes} textoBoton="Guardar" className="max-w-xl">
+          <fieldset disabled={!puede} className="flex flex-col gap-3">
+            <Select label="Cobro anticipado" name="cobro" defaultValue={a.teleconsulta_cobro_anticipado ? "si" : "no"}>
+              <option value="no">No: se cobra después, como siempre</option>
+              <option value="si">Sí: pagar antes de entrar a la sala</option>
+            </Select>
+            <Field label="Precio de la teleconsulta" name="precio" type="number" min={0} step="0.01" defaultValue={a.teleconsulta_precio ?? ""} />
           </fieldset>
         </FormularioAccion>
       </section>

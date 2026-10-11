@@ -50,13 +50,20 @@ export default async function EditarClientePage({
   const { data: cliente } = await supabase
     .from("clientes")
     .select(
-      "id, nombre, telefono, email, notas, direccion, distancia_base_km, distancia_calculada_at, distancia_ajustada_manualmente, alta_por_cliente, datos_revisados_at"
+      "id, nombre, telefono, email, direccion, distancia_base_km, distancia_calculada_at, distancia_ajustada_manualmente, alta_por_cliente, datos_revisados_at"
     )
     .eq("id", id)
     .is("deleted_at", null)
     .single();
 
   if (!cliente) notFound();
+
+  // Notas internas: otra tabla, que solo lee el personal (el dueño no la alcanza).
+  const { data: notasInternas } = await supabase
+    .from("clientes_notas_internas")
+    .select("notas")
+    .eq("cliente_id", id)
+    .maybeSingle();
 
   // La cuenta de este expediente es la membresía de cliente en ESTE negocio.
   const { data: cuentaCliente } = await supabase
@@ -228,7 +235,7 @@ export default async function EditarClientePage({
           nombre: cliente.nombre,
           telefono: formatearTelefono(cliente.telefono),
           email: cliente.email,
-          notas: cliente.notas as string | null,
+          notas: (notasInternas?.notas as string | undefined) ?? null,
         }}
         textoBoton="Guardar cambios"
       />

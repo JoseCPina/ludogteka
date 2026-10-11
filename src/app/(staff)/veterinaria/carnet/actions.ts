@@ -148,3 +148,23 @@ export async function marcarRecordatorio(id: string, estado: "manual" | "omitido
   revalidatePath("/veterinaria/recordatorios");
   return { error: null, exito: estado === "manual" ? "Anotado como enviado." : "Recordatorio omitido." };
 }
+
+export async function guardarDictadoAjustes(fd: FormData): Promise<ResultadoAccion> {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("guardar_veterinaria_dictado", { p_conservar: fd.get("conservar") === "si" });
+  if (error) return { error: traducirError(error) };
+  revalidatePath("/veterinaria/ajustes");
+  return { error: null, exito: "Opción del dictado guardada." };
+}
+
+export async function guardarTeleconsultaAjustes(fd: FormData): Promise<ResultadoAccion> {
+  const cobro = fd.get("cobro") === "si";
+  const precio = texto(fd, "precio");
+  if (precio !== "" && !(Number(precio) >= 0)) return { error: "El precio no es válido." };
+  if (cobro && !(Number(precio) > 0)) return { error: "Para cobrar por adelantado escribe el precio de la teleconsulta." };
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("guardar_veterinaria_teleconsulta", { p_cobro: cobro, p_precio: precio === "" ? null : Number(precio) });
+  if (error) return { error: traducirError(error) };
+  revalidatePath("/veterinaria/ajustes");
+  return { error: null, exito: "Opciones de la teleconsulta guardadas." };
+}

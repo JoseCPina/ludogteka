@@ -93,11 +93,12 @@ export default async function AgendaVeterinaria({ searchParams }: { searchParams
                                 <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${e.estilo}`}>{e.etiqueta}</span>
                               </div>
                               <p className="text-n-700">
-                                {c.tipo}{c.urgencia ? " · urgencia" : ""} · {c.dueno}
+                                {c.tipo}{c.tipo_clave === "teleconsulta" ? " · telemedicina" : ""}{c.urgencia ? " · urgencia" : ""} · {c.dueno}
                               </p>
                               {c.motivo && <p className="text-n-600">{c.motivo}</p>}
                               {c.cancelada_motivo && <p className="text-coral-oscuro">Motivo: {c.cancelada_motivo}</p>}
                               <div className="mt-1 flex flex-wrap gap-3 text-xs font-semibold">
+                                {c.tipo_clave === "teleconsulta" && <Link href={`/veterinaria/teleconsulta/${c.id}`} className="text-morado hover:underline">Teleconsulta (liga y sala)</Link>}
                                 {puedeLeer && <Link href={`/veterinaria/expediente/${c.perro_id}`} className="text-morado hover:underline">Expediente</Link>}
                                 <Link href={`/veterinaria/carnet/${c.perro_id}`} className="text-morado hover:underline">Carnet</Link>
                               </div>

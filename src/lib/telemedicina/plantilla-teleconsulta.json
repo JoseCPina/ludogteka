@@ -1,0 +1,7 @@
+{
+  "nombre": "peludesk_teleconsulta_v1",
+  "idioma": "es_MX",
+  "categoria": "UTILITY",
+  "cuerpo": "Hola {{1}}. {{2}} tiene una teleconsulta con {{3}} en {{4}} el {{5}}. Para entrar, firma el consentimiento y abre este enlace desde tu celular, sin instalar nada: {{6}} Teléfono del consultorio: {{7}}. Este número no recibe respuestas.",
+  "ejemplos": ["Ana", "Motita", "la médica Rosa Pérez", "Clínica Patitas", "jueves 16 de octubre a las 5:30 pm", "https://patitas.peludesk.mx/t/AbC123", "444 123 4567"]
+}
