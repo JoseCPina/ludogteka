@@ -599,8 +599,13 @@ titulo("Verificando que la base quedó como se esperaba");
 
 try {
   const aplicadas = await consulta(
-    `select version from supabase_migrations.schema_migrations
-     order by version desc limit ${Math.max(migracionesUnicas.length, 1)}`
+    // Por versión exacta, no "las N más recientes": con --incluir-todas una migración vieja
+    // queda fuera de esa ventana aunque sí se haya registrado.
+    migracionesUnicas.length
+      ? `select version from supabase_migrations.schema_migrations
+         where version in (${migracionesUnicas.map((m) => `'${m.slice(0, 14).replace(/[^0-9]/g, "")}'`).join(", ")})
+         order by version desc`
+      : `select version from supabase_migrations.schema_migrations order by version desc limit 1`
   );
   const registradas = new Set(aplicadas.map((r) => r.version));
   const faltantes = migracionesUnicas.filter((m) => !registradas.has(m.slice(0, 14)));
