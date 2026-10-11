@@ -28,6 +28,7 @@ export type ClaveModulo =
 // guardería y a hotel: «Adentro ahora», fotos y videos).
 export const RUTAS_DE_MODULO: { prefijo: string; modulo: ClaveModulo | ClaveModulo[] }[] = [
   { prefijo: "/adentro", modulo: ["guarderia", "hotel"] },
+  { prefijo: "/extras", modulo: ["guarderia", "hotel"] },
   { prefijo: "/admin/reporte-guarderia", modulo: ["guarderia", "hotel"] },
   { prefijo: "/guarderia/pases", modulo: "bonos" },
   { prefijo: "/caja/pases", modulo: "bonos" },

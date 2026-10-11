@@ -16,6 +16,7 @@ import { describirBono } from "@/lib/bonos/descripcion";
 import { zonaActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
+import { SeccionServiciosExtra } from "@/components/extras/seccion-servicios-extra";
 
 export default async function CheckinEstanciaPage({
   params,
@@ -208,6 +209,12 @@ export default async function CheckinEstanciaPage({
           clienteId={perro.cliente_id}
           pertenenciasIniciales={pertenencias ?? []}
         />
+      )}
+
+      {servicio?.categoria !== "estetica" && (
+        <div className="border-t border-n-200 pt-4">
+          <SeccionServiciosExtra estanciaId={estanciaId} />
+        </div>
       )}
     </div>
   );
