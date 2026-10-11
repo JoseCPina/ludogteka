@@ -56,9 +56,9 @@ try {
     comprobar(de(n)?.por_confirmar === true, `${n}: marcado «por confirmar»`);
   }
   comprobar(de("sevoflurano")?.grupo_senasica === null, "sevoflurano queda sin grupo");
-  comprobar(de("marbofloxacina")?.grupo_senasica === "II" && de("fipronil")?.grupo_senasica === "III", "marbofloxacina en II y fipronil en III, por analogía");
-  const antim = ["amoxicilina", "ampicilina", "cefalexina", "ceftiofur", "doxiciclina", "oxitetraciclina", "enrofloxacina", "ciprofloxacina", "marbofloxacina", "clindamicina", "lincomicina", "gentamicina", "amikacina", "trimetoprim-sulfa", "metronidazol", "florfenicol"];
-  comprobar(antim.every((n) => de(n)?.es_antimicrobiano && de(n)?.grupo_senasica === "II"), "los 16 antimicrobianos: Grupo II y marca antimicrobiano");
+  comprobar(de("marbofloxacina")?.grupo_senasica === null && de("fipronil")?.grupo_senasica === null, "marbofloxacina y fipronil sin grupo (ya no se asignan por analogía; verificación 9-oct-2026)");
+  const antim = ["amoxicilina", "ampicilina", "cefalexina", "ceftiofur", "doxiciclina", "oxitetraciclina", "enrofloxacina", "ciprofloxacina", "clindamicina", "lincomicina", "gentamicina", "amikacina", "trimetoprim-sulfa", "metronidazol", "florfenicol", "cloranfenicol"];
+  comprobar(antim.every((n) => de(n)?.es_antimicrobiano && de(n)?.grupo_senasica === "II"), "los antimicrobianos verificados (con cloranfenicol, sin marbofloxacina): Grupo II y marca antimicrobiano");
   comprobar(["ketamina", "meloxicam", "tramadol"].every((n) => de(n)?.es_antimicrobiano === false), "los que no lo son no llevan la marca");
   comprobar(cat.filter((x) => x.grupo_senasica === "I").length >= 35, "Grupo I completo");
   // Edición: solo la plataforma

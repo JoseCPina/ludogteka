@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
+import { BorradorFormulario } from "@/lib/borradores/borrador-formulario";
 import { SelectorRaza, type RazaOpcion } from "@/components/selector-raza";
 import type { EstadoPerroForm } from "./actions";
 import { proponerRazaDesdeFormulario } from "./raza-propuesta-actions";
@@ -33,6 +34,7 @@ export function PerroForm({
   corta = false,
   clinico = false,
   clinicoIniciales,
+  borrador,
 }: {
   action: (estadoPrevio: EstadoPerroForm, formData: FormData) => Promise<EstadoPerroForm>;
   razas: RazaOpcion[];
@@ -76,6 +78,8 @@ export function PerroForm({
     folio_registro: string | null;
     notas_clinicas: string | null;
   };
+  // Autoguardado del alta: el formulario y el registro (el dueño al que se le agrega la mascota).
+  borrador?: { formulario: string; clave?: string };
 }) {
   const [estado, formAction, enviando] = useActionState(useAccionConTope(action), ESTADO_INICIAL);
   const deshabilitado = enviando || soloLectura;
@@ -97,6 +101,7 @@ export function PerroForm({
 
   return (
     <form action={formAction} className="flex max-w-lg flex-col gap-4">
+      {borrador && !soloLectura && <BorradorFormulario formulario={borrador.formulario} clave={borrador.clave} />}
       {estado.error && (
         <Alert variante="error" titulo="No se pudo guardar">
           {estado.error}

@@ -1,22 +1,37 @@
 import { type NextRequest } from "next/server";
 import { CACHE_ICONO, marcaDeIcono } from "@/lib/negocio/icono";
 
-// El manifest de cada negocio: su nombre, su color y sus íconos (nunca los de
-// PeluDesk en el dominio de un negocio).
+// El manifest de cada negocio: su nombre, su color y su logo (nunca los de PeluDesk en el
+// dominio de un negocio). Con él la app se instala en la pantalla de inicio y abre sin la
+// barra del navegador. El ícono sale de /icono-pwa: el logo del negocio o, si no tiene,
+// su inicial sobre su color.
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const { nombre, color } = await marcaDeIcono(request.headers.get("host"));
   const cuerpo = {
+    id: "/",
     name: nombre,
-    short_name: nombre.slice(0, 12),
+    short_name: nombre.length > 12 ? nombre.slice(0, 12).trim() : nombre,
+    description: `${nombre}: la agenda, los clientes y las mascotas en tu celular.`,
+    lang: "es-MX",
+    dir: "ltr",
     start_url: "/",
-    display: "browser",
+    scope: "/",
+    display: "standalone",
+    orientation: "any",
     background_color: "#ffffff",
     theme_color: color,
+    categories: ["business", "productivity"],
     icons: [
+      { src: "/icono-pwa?s=192", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icono-pwa?s=512", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/icono-pwa?s=512&m=1", sizes: "512x512", type: "image/png", purpose: "maskable" },
       { src: "/icono-negocio?s=180", sizes: "180x180", type: "image/png" },
-      { src: "/icono-negocio?s=512", sizes: "512x512", type: "image/png" },
+    ],
+    shortcuts: [
+      { name: "Tablero del día", short_name: "Hoy", url: "/recepcion", icons: [{ src: "/icono-pwa?s=192", sizes: "192x192", type: "image/png" }] },
+      { name: "Clientes", short_name: "Clientes", url: "/clientes", icons: [{ src: "/icono-pwa?s=192", sizes: "192x192", type: "image/png" }] },
     ],
   };
   return new Response(JSON.stringify(cuerpo), { headers: { "Content-Type": "application/manifest+json", "Cache-Control": CACHE_ICONO } });

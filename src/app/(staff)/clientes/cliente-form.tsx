@@ -3,10 +3,12 @@
 import { useActionState, useState } from "react";
 import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { useModulos } from "@/components/modulos-contexto";
+import { BorradorFormulario } from "@/lib/borradores/borrador-formulario";
 import type { EstadoClienteForm } from "./actions";
 
 const ESTADO_INICIAL: EstadoClienteForm = { error: null };
@@ -19,7 +21,7 @@ export function ClienteForm({
   corta = false,
 }: {
   action: (estadoPrevio: EstadoClienteForm, formData: FormData) => Promise<EstadoClienteForm>;
-  valoresIniciales?: { nombre: string; telefono: string; email: string | null };
+  valoresIniciales?: { nombre: string; telefono: string; email: string | null; notas?: string | null };
   textoBoton: string;
   // Solo en el alta. En la ficha de un cliente que ya existe, la
   // direccion se edita en "Distancia y recoleccion", que ademas muestra
@@ -36,6 +38,8 @@ export function ClienteForm({
 
   return (
     <form action={formAction} className="flex max-w-lg flex-col gap-4">
+      {/* Solo el alta: una edición ya trae sus datos. */}
+      {!valoresIniciales && <BorradorFormulario formulario="cliente_nuevo" clave={corta ? "corta" : ""} />}
       {estado.error && (
         <Alert variante="error" titulo="No se pudo guardar">
           {estado.error}
@@ -66,6 +70,18 @@ export function ClienteForm({
           type="email"
           disabled={enviando}
           defaultValue={valoresIniciales?.email ?? ""}
+        />
+      )}
+
+      {!corta && (
+        <Textarea
+          label="Notas internas (opcional)"
+          name="notas"
+          rows={3}
+          maxLength={2000}
+          disabled={enviando}
+          defaultValue={valoresIniciales?.notas ?? ""}
+          ayuda="Solo las ve el personal; el dueño no las ve en su portal."
         />
       )}
 

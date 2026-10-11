@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { negocioActual, urlDelNegocio, zonaActual } from "@/lib/negocio/actual";
 import { instanteDeHoraLocal } from "@/lib/formato";
+import { descartarBorradorGuardado } from "@/lib/borradores/servidor";
 import { nuevoToken } from "@/lib/reporte/enlaces";
 import { traducirError } from "../../reservas/traducir-error";
 import type { ResultadoAccion } from "@/lib/empleados/tipos";
@@ -110,6 +111,8 @@ export async function firmarConsulta(id: string): Promise<ResultadoAccion> {
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("vet_consulta_firmar", { p_id: id });
   if (error) return { error: traducirError(error) };
+  // Firmada: la copia que el navegador guardaba del formulario ya no hace falta.
+  await descartarBorradorGuardado(supabase, "consulta", id);
   revalidatePath(`/veterinaria/consulta/${id}`);
   return { error: null, exito: "Consulta firmada. Ya no se edita: solo admite una adenda." };
 }
@@ -118,6 +121,7 @@ export async function descartarBorrador(id: string, perroId: string): Promise<Re
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("vet_consulta_descartar", { p_id: id });
   if (error) return { error: traducirError(error) };
+  await descartarBorradorGuardado(supabase, "consulta", id);
   return { error: null, ir: `/veterinaria/expediente/${perroId}` };
 }
 

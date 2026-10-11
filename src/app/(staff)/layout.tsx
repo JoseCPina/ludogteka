@@ -10,6 +10,7 @@ import { articulosDelNegocio } from "@/lib/ayuda";
 import { AvisoTickets } from "@/components/ayuda/aviso-tickets";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarTutorialesVisibles } from "@/lib/tutoriales";
+import { PwaNegocio } from "@/components/pwa/pwa-negocio";
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const sesion = await obtenerSesionConRol();
@@ -38,6 +39,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
       videos={videos.map((v) => ({ slug: v.slug, rutas: v.rutas }))}
       ayuda={conAyuda ? articulosDelNegocio(sesion.modulos).map((a) => ({ slug: a.slug, rutas: a.rutas })) : undefined}
     >
+      <PwaNegocio usuarioId={sesion.user.id} />
       <ProveedorModulos modulos={sesion.modulos}>{children}</ProveedorModulos>
     </StaffShell>
   );

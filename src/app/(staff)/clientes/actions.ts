@@ -7,6 +7,7 @@ import { negocioActual } from "@/lib/negocio/actual";
 import { normalizarTelefono } from "@/lib/telefono";
 import { geocodificarYCalcularDistancia } from "@/lib/google-maps/distancia-cliente";
 import { rutaDeVuelta } from "@/lib/clientes/volver";
+import { descartarBorradorGuardado } from "@/lib/borradores/servidor";
 
 export type EstadoClienteForm = { error: string | null; ok?: boolean };
 
@@ -15,7 +16,8 @@ function leerCampos(formData: FormData) {
   const telefonoCrudo = String(formData.get("telefono") ?? "");
   const email = String(formData.get("email") ?? "").trim();
   const direccion = String(formData.get("direccion") ?? "").trim();
-  return { nombre, telefonoCrudo, email: email || null, direccion };
+  const notas = String(formData.get("notas") ?? "").trim().slice(0, 2000);
+  return { nombre, telefonoCrudo, email: email || null, direccion, notas: notas || null };
 }
 
 function validar(nombre: string, telefonoCrudo: string): EstadoClienteForm & { telefono?: string } {
@@ -48,14 +50,14 @@ export async function crearClienteYVolver(
 }
 
 async function altaCliente(formData: FormData, volver: string | null): Promise<EstadoClienteForm> {
-  const { nombre, telefonoCrudo, email, direccion } = leerCampos(formData);
+  const { nombre, telefonoCrudo, email, direccion, notas } = leerCampos(formData);
   const validado = validar(nombre, telefonoCrudo);
   if (validado.error) return validado;
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("clientes")
-    .insert({ nombre, telefono: validado.telefono, email })
+    .insert({ nombre, telefono: validado.telefono, email, notas })
     .select("id")
     .single();
 
@@ -86,6 +88,10 @@ async function altaCliente(formData: FormData, volver: string | null): Promise<E
     await geocodificarYCalcularDistancia(supabase, data.id, direccion, await negocioActual());
   }
 
+  // El alta quedó guardada: el borrador (si había) ya no hace falta.
+  await descartarBorradorGuardado(supabase, "cliente_nuevo", "");
+  await descartarBorradorGuardado(supabase, "cliente_nuevo", "corta");
+
   revalidatePath("/clientes");
   if (volver) redirect(`/clientes/${data.id}/perros/nuevo?volver=${encodeURIComponent(volver)}`);
   redirect(`/clientes/${data.id}?creado=1`);
@@ -96,14 +102,14 @@ export async function actualizarCliente(
   _estadoPrevio: EstadoClienteForm,
   formData: FormData
 ): Promise<EstadoClienteForm> {
-  const { nombre, telefonoCrudo, email } = leerCampos(formData);
+  const { nombre, telefonoCrudo, email, notas } = leerCampos(formData);
   const validado = validar(nombre, telefonoCrudo);
   if (validado.error) return validado;
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from("clientes")
-    .update({ nombre, telefono: validado.telefono, email })
+    .update({ nombre, telefono: validado.telefono, email, notas })
     .eq("id", id);
 
   if (error) {

@@ -44,6 +44,8 @@ const ZONAS_PROTEGIDAS: Zona[] = [
   { prefijo: "/admin/modulos", rolesPermitidos: ["admin"], permisos: ["administrar_modulos"] },
   // Facturación: datos fiscales, llave del PAC e IVA (solo admin o con permiso).
   { prefijo: "/admin/facturacion", rolesPermitidos: ["admin"], permisos: ["editar_datos_fiscales", "facturar"] },
+  // Importar clientes y mascotas desde Excel o CSV (admin o con «Importar clientes y mascotas»).
+  { prefijo: "/admin/importar", rolesPermitidos: ["admin"], permisos: ["importar_datos"] },
   { prefijo: "/admin", rolesPermitidos: ["admin"], permisos: ["personal", "configuracion_negocio", "tarifas"] },
   { prefijo: "/recepcion", rolesPermitidos: ["recepcion", "admin"] },
   // Los primeros pasos de un negocio recién abierto en peludesk.mx.
@@ -112,6 +114,10 @@ const RUTAS_PUBLICAS_EXACTAS = new Set([
   "/sitemap.xml",
   "/icono-negocio",
   "/manifest.webmanifest",
+  // La app instalable: su service worker, el ícono con el logo y la pantalla «sin conexión».
+  "/sw.js",
+  "/icono-pwa",
+  "/sin-conexion",
 ]);
 
 export async function middleware(request: NextRequest) {

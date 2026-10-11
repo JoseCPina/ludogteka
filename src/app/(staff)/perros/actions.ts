@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hrefDeVuelta, rutaDeVuelta } from "@/lib/clientes/volver";
+import { descartarBorradorGuardado } from "@/lib/borradores/servidor";
 import { leerPropuestaJson } from "@/lib/razas-propuesta";
 import { ligarRazaPropuesta } from "./raza-propuesta-actions";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -170,6 +171,8 @@ async function altaPerro(clienteId: string, formData: FormData, volver: string |
     const res = await ligarRazaPropuesta(data.id, propuesta);
     if (res.error) console.error("[perros] no se pudo ligar la propuesta de raza", data.id, res.error);
   }
+
+  await descartarBorradorGuardado(supabase, "mascota_nueva", clienteId);
 
   revalidatePath(`/clientes/${clienteId}`);
   if (volver) redirect(hrefDeVuelta(volver, clienteId));

@@ -1,3 +1,4 @@
+import { FuenteVerificada } from "@/components/plataforma/fuente-verificada";
 import { exigirPlataforma } from "@/lib/plataforma/sesion";
 import { FormularioPlataforma } from "@/components/plataforma/formulario-plataforma";
 import { Field } from "@/components/ui/field";
@@ -14,6 +15,8 @@ type Principio = {
   por_confirmar: boolean;
   nota: string | null;
   fuente: string | null;
+  fuente_url: string | null;
+  verificado_at: string | null;
 };
 
 const selectClase = "mt-1.5 min-h-12 w-full rounded-md border-[1.5px] border-borde bg-white px-3.5 text-base text-n-900";
@@ -72,7 +75,7 @@ export default async function PrincipiosActivos({
   const { supabase } = await exigirPlataforma();
   const { data, error } = await supabase
     .from("principios_activos")
-    .select("id, nombre, grupo_senasica, clasificacion_lgs, es_antimicrobiano, por_confirmar, nota, fuente")
+    .select("id, nombre, grupo_senasica, clasificacion_lgs, es_antimicrobiano, por_confirmar, nota, fuente, fuente_url, verificado_at")
     .is("deleted_at", null)
     .order("nombre");
   const todos = (data ?? []) as Principio[];
@@ -166,7 +169,7 @@ export default async function PrincipiosActivos({
                   {p.por_confirmar && <span className="rounded-full bg-ambar-suave px-2 py-0.5 text-xs font-semibold text-ambar-oscuro">Por confirmar</span>}
                 </summary>
                 <div className="flex flex-col gap-4 border-t border-n-200 p-4">
-                  {p.fuente && <p className="text-xs text-n-500">Fuente: {p.fuente}</p>}
+                  <FuenteVerificada fuente={p.fuente} urls={p.fuente_url} verificado={p.verificado_at} />
                   <FormularioPlataforma accion={guardarPrincipioActivo} textoBoton="Guardar">
                     <Campos p={p} />
                   </FormularioPlataforma>

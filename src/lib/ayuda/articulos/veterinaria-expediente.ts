@@ -58,7 +58,7 @@ Nace como **borrador** con la plantilla de su tipo (el negocio la edita en Ajust
 
 ## Escribirla
 
-Se **guarda sola** unos segundos después de que dejas de escribir; arriba ves «Borrador guardado». El peso que captures entra al historial de pesos cuando la firmas.
+Se **guarda sola** unos segundos después de que dejas de escribir; arriba ves «Borrador guardado». Si se va la conexión o cierras la pestaña a medias, al volver sale «Tienes un borrador sin guardar» con **Recuperar borrador**. El peso que captures entra al historial de pesos cuando la firmas.
 
 Para el diagnóstico, **Buscar diagnóstico**: escribe el nombre o como se le conoce («tos de perrera», «FLUTD»). Elígelo como **presuntivo** o **definitivo** y cámbialo cuando lo confirmes. Si no está, escríbelo y, si quieres, guárdalo en el catálogo de tu negocio.
 

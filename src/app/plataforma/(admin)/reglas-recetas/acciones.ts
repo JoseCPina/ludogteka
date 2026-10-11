@@ -24,7 +24,7 @@ export async function guardarRegla(fd: FormData): Promise<ResultadoPlataforma> {
   const s = await sesionPlataforma();
   if (!s) return NO_AUTORIZADO;
   const clave = texto(fd, "clave");
-  const esLeyenda = clave.startsWith("leyenda_") || clave === "sitpv_url";
+  const esLeyenda = clave.startsWith("leyenda_") || clave === "sitpv_url" || clave === "sitpv_url_registro";
   const crudo = texto(fd, "valor");
   if (!clave || crudo === "") return { error: "Escribe el valor." };
   const valor = esLeyenda ? crudo : Number(crudo);

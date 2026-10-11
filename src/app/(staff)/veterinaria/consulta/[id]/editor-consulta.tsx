@@ -9,6 +9,7 @@ import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
+import { BorradorFormulario } from "@/lib/borradores/borrador-formulario";
 import { SECCIONES_CONSULTA, type ConsultaVet, type Diagnostico, type DiagnosticoBuscado } from "@/lib/veterinaria/expediente";
 import { agregarDiagnosticoNegocio, buscarDiagnosticos, descartarBorrador, firmarConsulta, guardarBorrador, type DatosBorrador } from "../../expediente/actions";
 
@@ -127,7 +128,9 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico }:
   const grupos = Array.from(new Set(SECCIONES_CONSULTA.map((s) => s.grupo)));
 
   return (
-    <div className="flex flex-col gap-6">
+    <form className="flex flex-col gap-6" onSubmit={(e) => e.preventDefault()}>
+      {/* Respaldo en el servidor de lo escrito, por si se pierde la conexión o se cierra la pestaña a medias. */}
+      <BorradorFormulario formulario="consulta" clave={consulta.id} />
       <div role="status" aria-live="polite" className={`sticky top-0 z-10 -mx-1 rounded-md px-3 py-2 text-sm font-semibold ${estado === "error" ? "bg-coral-suave text-coral-oscuro" : "bg-n-50 text-n-600"}`}>
         {ETIQUETA_ESTADO[estado] || "Borrador: se guarda solo mientras escribes."}
         {errorGuardado && <span> · {errorGuardado}</span>}
@@ -207,7 +210,7 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico }:
           </Button>
         </AccionesFormulario>
       </section>
-    </div>
+    </form>
   );
 }
 

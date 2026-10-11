@@ -2,7 +2,7 @@
 
 Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scripts/tutoriales/catalogo.mjs` y de lo que la app tiene hoy (código). No se edita a mano: se cambia el catálogo.
 
-**85 videos** (el 00 es el avance) en 10 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
+**89 videos** (el 00 es el avance) en 10 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
 
 ## Catálogo
 
@@ -93,6 +93,10 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 86 | Veterinaria | Sacar del inventario un producto controlado y el recetario especial | recepcion | 2.5 min | veterinaria | registrar_recetas_sitpv |
 | 87 | Veterinaria | El libro de control: consultarlo y exportarlo | recepcion | 2.5 min | veterinaria | ver_libro_control |
 | 88 | Veterinaria | El reporte mensual del SITPV | recepcion | 2.5 min | veterinaria | registrar_recetas_sitpv |
+| 66 | Tu negocio | Importar tus clientes y mascotas desde Excel | admin | 2.5 min | — | importar_datos |
+| 67 | Tu negocio | Ver el historial de importaciones y deshacer una | admin | 2.5 min | — | importar_datos |
+| 68 | Empieza aquí | Recupera lo que estabas escribiendo: borradores | recepcion | 2.5 min | — | — |
+| 69 | Empieza aquí | Instala la app y consulta la agenda sin conexión | recepcion | 2.5 min | — | — |
 
 ## Pantallas → videos
 
@@ -103,6 +107,8 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/adentro` | 31 |  |
 | `/admin` | 01, 07, 08 |  |
 | `/admin/facturacion` | 65 |  |
+| `/admin/importar` | 66 |  |
+| `/admin/importar/[id]` | 67 |  |
 | `/admin/modulos` | 06 |  |
 | `/admin/modulos/pago` | 06 |  |
 | `/admin/pagos` | 50 |  |
@@ -212,6 +218,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/servicios/[id]/tarifas` | 20 |  |
 | `/servicios/nuevo` | 20 |  |
 | `/sin-acceso` | 01 |  |
+| `/sin-conexion` | 69 |  |
 | `/veterinaria` | 70 |  |
 | `/veterinaria/agenda` | 79 |  |
 | `/veterinaria/agenda/nueva` | 79 |  |
@@ -266,7 +273,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Empleados | `/empleados` | 44, 45, 46 |
 | Gastos | `/gastos` | 47, 48 |
 | Mi asistencia | `/mi-trabajo` | 44 |
-| Administración | `/admin` | 01, 06, 07, 08, 09, 31, 50, 51, 52, 64, 65 |
+| Administración | `/admin` | 01, 06, 07, 08, 09, 31, 50, 51, 52, 64, 65, 66, 67 |
 | Permisos | `/admin/permisos` | 09 |
 | Perfil y página web | `/admin/perfil` | 52 |
 | Políticas y reglas | `/admin/politicas` | 51 |
@@ -277,6 +284,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Veterinaria | `/veterinaria` | 70, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88 |
 | Facturación | `/admin/facturacion` | 65 |
 | Facturas | `/caja/facturas` | 65 |
+| Importar | `/admin/importar` | 66, 67 |
 | Ayuda | `/ayuda` | 53 |
 
 ## Módulos → videos
@@ -336,6 +344,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Emitir recetas (`emitir_recetas`) | 84 |
 | Registrar recetas SITPV (`registrar_recetas_sitpv`) | 85, 86, 88 |
 | Ver libro de control (`ver_libro_control`) | 87 |
+| Importar clientes y mascotas (`importar_datos`) | 66, 67 |
 
 ## Artículos de ayuda → videos
 
@@ -408,6 +417,10 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | mandar-una-factura-al-cliente | 65 |
 | iva-y-claves-sat-de-productos-y-servicios | 65 |
 | ver-mis-facturas | 65 |
+| importar-clientes-y-mascotas | 66 |
+| deshacer-una-importacion | 67 |
+| recuperar-un-borrador | 68 |
+| instalar-la-app-y-sin-conexion | 69 |
 | llenar-el-reporte-de-comportamiento | 31 |
 | enviar-fotos-y-videos | 31 |
 | agenda-clinica-veterinaria | 79 |

@@ -4,9 +4,11 @@
 // app y no está en un video ni excluido con motivo, `cobertura.mjs` lo dice.
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const RAIZ = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../../..");
-const leer = (r) => fs.readFileSync(path.join(RAIZ, r), "utf8");
+const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
+// Se lee con saltos de línea \n aunque el checkout sea CRLF (Windows): los análisis son por regex.
+const leer = (r) => fs.readFileSync(path.join(RAIZ, r), "utf8").replace(/\r\n/g, "\n");
 
 // Rutas de pantalla del personal y del dueño (sin plataforma, demo, páginas legales).
 export function rutasDePantalla() {
@@ -47,7 +49,7 @@ export function articulosDeAyuda() {
   const dir = path.join(RAIZ, "src/lib/ayuda/articulos");
   const sal = [];
   for (const f of fs.readdirSync(dir).filter((x) => x.endsWith(".ts"))) {
-    const t = fs.readFileSync(path.join(dir, f), "utf8");
+    const t = fs.readFileSync(path.join(dir, f), "utf8").replace(/\r\n/g, "\n");
     for (const b of t.split(/\n  \{\n    slug: /).slice(1)) {
       const slug = b.match(/^"([^"]+)"/)?.[1];
       const titulo = b.match(/titulo: "([^"]+)"/)?.[1];

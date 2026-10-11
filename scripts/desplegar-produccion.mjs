@@ -73,6 +73,9 @@ if (EN_NUBE && process.env.HTTPS_PROXY && process.env.NODE_USE_ENV_PROXY !== "1"
 const args = new Set(process.argv.slice(2));
 const APLICAR = args.has("--aplicar");
 const REVISAR = args.has("--revisar") || !APLICAR;
+// Como el --include-all del CLI: aplica también pendientes más viejas que la última aplicada
+// (una migración de otro carril que entró a main después de otra más nueva).
+const INCLUIR_TODAS = args.has("--incluir-todas");
 
 let paso = 0;
 
@@ -462,7 +465,7 @@ if (EN_NUBE) {
   // El "dry-run": las mismas reglas que el CLI, leídas por la API.
   let estado;
   try {
-    estado = await estadoMigraciones(cliProd);
+    estado = await estadoMigraciones(cliProd, { incluirTodas: INCLUIR_TODAS });
   } catch (e) {
     abortar("no se pudo leer el historial de migraciones de producción", sinSecreto(e.message));
   }
@@ -558,7 +561,7 @@ if (migrado) {
 for (let intento = 1; EN_NUBE && intento <= REINTENTOS_MIGRACION && !migrado; intento += 1) {
   console.log(`   intento ${intento} de ${REINTENTOS_MIGRACION}…`);
   try {
-    const estado = await estadoMigraciones(cliProd);
+    const estado = await estadoMigraciones(cliProd, { incluirTodas: INCLUIR_TODAS });
     if (estado.problema) abortar(estado.problema);
     await aplicarPendientes(cliProd, estado.pendientes);
     migrado = true;
@@ -596,8 +599,13 @@ titulo("Verificando que la base quedó como se esperaba");
 
 try {
   const aplicadas = await consulta(
-    `select version from supabase_migrations.schema_migrations
-     order by version desc limit ${Math.max(migracionesUnicas.length, 1)}`
+    // Por versión exacta, no "las N más recientes": con --incluir-todas una migración vieja
+    // queda fuera de esa ventana aunque sí se haya registrado.
+    migracionesUnicas.length
+      ? `select version from supabase_migrations.schema_migrations
+         where version in (${migracionesUnicas.map((m) => `'${m.slice(0, 14).replace(/[^0-9]/g, "")}'`).join(", ")})
+         order by version desc`
+      : `select version from supabase_migrations.schema_migrations order by version desc limit 1`
   );
   const registradas = new Set(aplicadas.map((r) => r.version));
   const faltantes = migracionesUnicas.filter((m) => !registradas.has(m.slice(0, 14)));

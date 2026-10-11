@@ -15,6 +15,7 @@ const PERMISOS = [
   "inventario_costos", "tarifas", "reportes_financieros", "personal", "nomina", "gastos",
   "configuracion_negocio", "excepciones_reserva", "descuentos_sin_tope", "plantillas_contrato", "corregir_estilista", "corregir_servicio", "tarjeta_manual", "ajustar_pases",
   "anular_cobros", "editar_monto_cobros", "corregir_turnos_cerrados", "agregar_efectivo", "eliminar_citas",
+  "importar_datos",
 ];
 
 
@@ -246,6 +247,17 @@ const pruebas = {
     return { dejo: r.data === true, ve: r.data === true };
   },
 
+  // «Importar clientes y mascotas»: crear una importación (y detenerla, sin tocar a nadie).
+  async importar_datos() {
+    const huella = Array.from({ length: 64 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
+    const r = await R.rpc("importacion_crear", { p_nombre_archivo: "prueba de permisos.csv", p_huella: huella, p_modo: "omitir", p_con_clinicos: false, p_mapeo: {}, p_total: 1 });
+    if (!r.error && r.data?.id) {
+      await ADM.rpc("importacion_cancelar", { p_id: r.data.id });
+      await A.from("importaciones").update({ deleted_at: new Date().toISOString() }).eq("id", r.data.id);
+    }
+    return { dejo: !r.error, ve: !r.error, detalle: r.error?.message };
+  },
+
   async plantillas_contrato() {
     const r = await R.rpc("marcar_requiere_refirma", { p_plantilla_id: plantilla.id, p_valor: plantilla.requiere_refirma });
     return { dejo: !r.error, ve: !r.error, detalle: r.error?.message };
@@ -301,7 +313,8 @@ for (const [fn, args] of [["tiene_permiso", { p_permiso: "tarifas" }], ["mis_per
 }
 
 // Limpieza: la estancia de prueba del descuento.
-await A.from("estancias").update({ estado: "cancelada" }).eq("id", estDesc.data.id);
+await A.from("estancias").update({ estado: "cancelada", deleted_at: new Date().toISOString() }).eq("id", estDesc.data.id);
+await A.from("reservas").update({ deleted_at: new Date().toISOString() }).eq("id", reservaDesc.id);
 // «Registrar tarjeta manual» viene prendido por omisión para toda la recepción: se deja como estaba.
 await dar("tarjeta_manual");
 if (turnoTarjeta?.propio) await A.from("turnos_caja").update({ estado: "cerrado", cerrado_at: new Date().toISOString(), deleted_at: new Date().toISOString() }).eq("id", turnoTarjeta.id);

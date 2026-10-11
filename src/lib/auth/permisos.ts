@@ -221,6 +221,12 @@ export const PERMISOS = [
     implica:
       "Ve y exporta el libro de control de los productos de Grupo I y de los estupefacientes y psicotrópicos de la fracción II: fecha, folio de la receta, producto, laboratorio, lote, entradas, salidas, saldo, paciente y médico (con el módulo Veterinaria prendido). Un médico veterinario designado ya lo tiene. Viene apagado.",
   },
+  {
+    clave: "importar_datos",
+    etiqueta: "Importar clientes y mascotas",
+    implica:
+      "Sube un Excel o CSV desde Administración → Importar para dar de alta muchos clientes y mascotas de una vez, revisa la vista previa, aplica la importación y la deshace desde el historial. Con el módulo Veterinaria prendido, los datos clínicos (especie, microchip, folio, peso, alergias) solo se importan si también tiene «Editar ficha clínica». Viene apagado.",
+  },
 ] as const;
 
 export type ClavePermiso = (typeof PERMISOS)[number]["clave"];
