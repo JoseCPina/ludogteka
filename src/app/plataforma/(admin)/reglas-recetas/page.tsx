@@ -1,25 +1,26 @@
 import { exigirPlataforma } from "@/lib/plataforma/sesion";
 import { FormularioPlataforma } from "@/components/plataforma/formulario-plataforma";
 import { Field } from "@/components/ui/field";
+import { FuenteVerificada } from "@/components/plataforma/fuente-verificada";
 import { DOCUMENTOS } from "@/lib/veterinaria/recetas";
 import { guardarClasificacion, guardarRegla } from "./acciones";
 
-type Regla = { clave: string; valor: number | string; titulo: string; descripcion: string | null; fuente: string | null };
+type Regla = { clave: string; valor: number | string; titulo: string; descripcion: string | null; fuente: string | null; fuente_url: string | null; verificado_at: string | null };
 type Clasificacion = {
   clave: string; etiqueta: string; documento: keyof typeof DOCUMENTOS; surtidos_max: number | null; ventana_meses: number | null;
-  retencion_meses: number | null; libro_control: boolean; nota: string | null; fuente: string | null;
+  retencion_meses: number | null; libro_control: boolean; nota: string | null; fuente: string | null; fuente_url: string | null; verificado_at: string | null;
 };
 
 const claseCaja = "mt-1.5 min-h-12 w-full rounded-md border-[1.5px] border-borde bg-white px-3.5 text-base text-n-900";
 
 // Lo regulatorio de las recetas y los controlados de Veterinaria NO está fijo en el código: se edita aquí
 // y cada cambio queda en los eventos de la plataforma. Los valores sembrados salen de lo que dictó el
-// dueño de PeluDesk y no se han contrastado contra el texto del DOF.
+// dueño de PeluDesk, contrastados el 9 de octubre de 2026 con los textos originales.
 export default async function ReglasRecetas() {
   const { supabase } = await exigirPlataforma();
   const [{ data: reglasCrudo }, { data: clasCrudo }] = await Promise.all([
-    supabase.from("vet_reglas").select("clave, valor, titulo, descripcion, fuente").order("orden"),
-    supabase.from("vet_reglas_clasificacion").select("clave, etiqueta, documento, surtidos_max, ventana_meses, retencion_meses, libro_control, nota, fuente").order("orden"),
+    supabase.from("vet_reglas").select("clave, valor, titulo, descripcion, fuente, fuente_url, verificado_at").order("orden"),
+    supabase.from("vet_reglas_clasificacion").select("clave, etiqueta, documento, surtidos_max, ventana_meses, retencion_meses, libro_control, nota, fuente, fuente_url, verificado_at").order("orden"),
   ]);
   const reglas = (reglasCrudo ?? []) as Regla[];
   const clasificaciones = (clasCrudo ?? []) as Clasificacion[];
@@ -30,7 +31,7 @@ export default async function ReglasRecetas() {
         <h1 className="text-2xl font-bold text-n-900">Reglas de recetas y controlados</h1>
         <p className="mt-1 max-w-3xl text-n-600">
           Plazos, copias, umbrales y qué documento pide cada clasificación de un producto. Lo usan todos los negocios con Veterinaria; un cambio vale desde la siguiente receta o salida (lo ya emitido conserva la regla con la que se emitió).
-          Los valores sembrados salen de lo que se dictó y <strong>no se han contrastado contra el texto del DOF</strong>: revísalos antes de prender Veterinaria en producción.
+          Los valores sembrados salen de lo que se dictó y verificados contra los textos originales el 9 de octubre de 2026 (cada valor muestra su fuente y su fecha). Lo que dice «sin verificar» es criterio de PeluDesk, no de un texto oficial.
         </p>
       </div>
 
@@ -45,7 +46,7 @@ export default async function ReglasRecetas() {
                   <div>
                     <p className="font-semibold text-n-900">{r.titulo}</p>
                     {r.descripcion && <p className="text-sm text-n-600">{r.descripcion}</p>}
-                    {r.fuente && <p className="text-xs text-n-500">Fuente: {r.fuente}</p>}
+                    <FuenteVerificada fuente={r.fuente} urls={r.fuente_url} verificado={r.verificado_at} />
                   </div>
                   <Field label="Valor" name="valor" defaultValue={String(r.valor)} type={typeof r.valor === "number" ? "number" : "text"} required />
                 </div>
@@ -65,7 +66,7 @@ export default async function ReglasRecetas() {
                 <input type="hidden" name="clave" value={c.clave} />
                 <div>
                   <p className="font-semibold text-n-900">{c.etiqueta}</p>
-                  {c.fuente && <p className="text-xs text-n-500">Fuente: {c.fuente}</p>}
+                  <FuenteVerificada fuente={c.fuente} urls={c.fuente_url} verificado={c.verificado_at} />
                 </div>
                 <div className="grid gap-3 sm:grid-cols-4">
                   <label className="block text-sm font-medium text-n-800 sm:col-span-2">
