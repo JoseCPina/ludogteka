@@ -2,7 +2,7 @@
 
 Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scripts/tutoriales/catalogo.mjs` y de lo que la app tiene hoy (código). No se edita a mano: se cambia el catálogo.
 
-**89 videos** (el 00 es el avance) en 10 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
+**90 videos** (el 00 es el avance) en 10 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
 
 ## Catálogo
 
@@ -93,6 +93,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 86 | Veterinaria | Sacar del inventario un producto controlado y el recetario especial | recepcion | 2.5 min | veterinaria | registrar_recetas_sitpv |
 | 87 | Veterinaria | El libro de control: consultarlo y exportarlo | recepcion | 2.5 min | veterinaria | ver_libro_control |
 | 88 | Veterinaria | El reporte mensual del SITPV | recepcion | 2.5 min | veterinaria | registrar_recetas_sitpv |
+| 89 | Guardería y hotel | Servicios extra | recepcion | 2.5 min | guarderia, hotel | agregar_servicios_extra, editar_catalogo_extras |
 | 66 | Tu negocio | Importar tus clientes y mascotas desde Excel | admin | 2.5 min | — | importar_datos |
 | 67 | Tu negocio | Ver el historial de importaciones y deshacer una | admin | 2.5 min | — | importar_datos |
 | 68 | Empieza aquí | Recupera lo que estabas escribiendo: borradores | recepcion | 2.5 min | — | — |
@@ -156,6 +157,8 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/estetica` | 01, 21 |  |
 | `/estetica/[citaId]` | 22, 23, 55 |  |
 | `/estetica/nueva` | 21, 23 |  |
+| `/extras` | 89 |  |
+| `/extras/catalogo` | 89 |  |
 | `/f/[token]` | 31 |  |
 | `/fac/[token]` | — | Enlace público de una factura para el cliente; se enseña solo como resultado en el video 65. |
 | `/gastos` | 47 |  |
@@ -286,13 +289,14 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Facturas | `/caja/facturas` | 65 |
 | Importar | `/admin/importar` | 66, 67 |
 | Ayuda | `/ayuda` | 53 |
+| Servicios extra | `/extras` | 89 |
 
 ## Módulos → videos
 
 | Módulo | Videos |
 | --- | --- |
-| guarderia | 25, 27, 28, 29, 30, 31 |
-| hotel | 26, 27, 28, 29, 30, 31 |
+| guarderia | 25, 27, 28, 29, 30, 31, 89 |
+| hotel | 26, 27, 28, 29, 30, 31, 89 |
 | estetica | 20, 21, 22, 23, 24, 55, 58, 63, 64 |
 | veterinaria | 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88 |
 | bonos | 39, 60 |
@@ -345,6 +349,8 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Registrar recetas SITPV (`registrar_recetas_sitpv`) | 85, 86, 88 |
 | Ver libro de control (`ver_libro_control`) | 87 |
 | Importar clientes y mascotas (`importar_datos`) | 66, 67 |
+| Agregar servicios extra (`agregar_servicios_extra`) | 89 |
+| Editar catálogo de servicios extra (`editar_catalogo_extras`) | 89 |
 
 ## Artículos de ayuda → videos
 
@@ -423,6 +429,10 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | instalar-la-app-y-sin-conexion | 69 |
 | llenar-el-reporte-de-comportamiento | 31 |
 | enviar-fotos-y-videos | 31 |
+| agregar-servicios-extra | 89 |
+| servicios-extra-del-dia-y-traslados | 89 |
+| catalogo-de-servicios-extra | 89 |
+| paquete-de-sesiones-de-un-servicio-extra | 89 |
 | agenda-clinica-veterinaria | 79 |
 | consulta-veterinaria-soap | 80 |
 | estudios-archivos-y-linea-de-tiempo | 81 |
