@@ -349,12 +349,15 @@ const COMPARTIDAS = {
   planes_precios_stripe: { cambio: { total_centavos: 1, stripe_price_id: "price_intruso" }, alta: { periodicidad: "mensual", neto: 0, total_centavos: 0, lookup_key: "peludesk_intruso_mensual", stripe_price_id: "price_intruso", stripe_product_id: "prod_intruso", modo: "test" } },
   // El catálogo de diagnósticos de Veterinaria (Fase 3): solo la plataforma.
   vet_diagnosticos: { cambio: { nombre: "hackeado por un negocio" }, alta: { nombre: `Diagnóstico intruso ${MARCA}`, categoria: "intruso" } },
+  // Las reglas de recetas y controlados (Fase 4): solo la plataforma. Su llave es `clave`.
+  vet_reglas: { llave: "clave", cambio: { valor: 99 }, alta: { clave: "intrusa", valor: 1, titulo: "intrusa" } },
+  vet_reglas_clasificacion: { llave: "clave", cambio: { documento: "libre" }, alta: { clave: "intrusa", etiqueta: "intrusa", documento: "libre" } },
   eventos_stripe: { cambio: { procesado_at: null, error: "intruso" }, alta: { stripe_event_id: `evt_intruso_${MARCA}`, tipo: "invoice.paid", modo: "test", payload: {} } },
 };
 async function huellaCompartida() {
   const h = {};
   for (const t of [...Object.keys(COMPARTIDAS), "negocios", "plataforma_admins", "modulos"]) {
-    const { data, error } = await A.from(t).select("*").order(t === "modulos" ? "clave" : "id");
+    const { data, error } = await A.from(t).select("*").order(t === "modulos" ? "clave" : (COMPARTIDAS[t]?.llave ?? "id"));
     if (error) throw new Error(`huella ${t}: ${error.message}`);
     h[t] = JSON.stringify(data);
   }
@@ -364,7 +367,7 @@ async function huellaCompartida() {
 }
 const compartidoAntes = await huellaCompartida();
 const unaFila = {};
-for (const t of Object.keys(COMPARTIDAS)) unaFila[t] = (await A.from(t).select("id").limit(1).single()).data.id;
+for (const t of Object.keys(COMPARTIDAS)) { const k = COMPARTIDAS[t].llave ?? "id"; unaFila[t] = (await A.from(t).select(k).limit(1).single()).data[k]; }
 
 // Todos los de Ludogteka, y además el admin de Huellitas (el de otro negocio).
 const escritores = { ...tokens, admin_de_huellitas: await tokenDe(datos.adminB) };
@@ -375,10 +378,10 @@ for (const [rol, token] of Object.entries(escritores)) {
     for (const [t, { cambio, alta }] of Object.entries(COMPARTIDAS)) {
       const ins = await fetch(`${URL}/rest/v1/${t}`, { method: "POST", headers: { ...cabeceras(token, negocio), Prefer: "return=representation" }, body: JSON.stringify(alta) });
       if (ins.ok) hallazgo(`${rol} [${donde}] pudo AGREGAR a ${t} (compartida)`);
-      const up = await fetch(`${URL}/rest/v1/${t}?id=eq.${unaFila[t]}`, { method: "PATCH", headers: { ...cabeceras(token, negocio), Prefer: "return=representation" }, body: JSON.stringify(cambio) });
+      const up = await fetch(`${URL}/rest/v1/${t}?${COMPARTIDAS[t].llave ?? "id"}=eq.${unaFila[t]}`, { method: "PATCH", headers: { ...cabeceras(token, negocio), Prefer: "return=representation" }, body: JSON.stringify(cambio) });
       const upFilas = await up.json().catch(() => null);
       if (up.ok && Array.isArray(upFilas) && upFilas.length) hallazgo(`${rol} [${donde}] pudo CAMBIAR ${t} (compartida)`);
-      const del = await fetch(`${URL}/rest/v1/${t}?id=eq.${unaFila[t]}`, { method: "DELETE", headers: { ...cabeceras(token, negocio), Prefer: "return=representation" } });
+      const del = await fetch(`${URL}/rest/v1/${t}?${COMPARTIDAS[t].llave ?? "id"}=eq.${unaFila[t]}`, { method: "DELETE", headers: { ...cabeceras(token, negocio), Prefer: "return=representation" } });
       const delFilas = await del.json().catch(() => null);
       if (del.ok && Array.isArray(delFilas) && delFilas.length) hallazgo(`${rol} [${donde}] pudo BORRAR de ${t} (compartida)`);
       intentos += 3;

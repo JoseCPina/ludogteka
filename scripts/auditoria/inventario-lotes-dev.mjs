@@ -14,7 +14,7 @@
 // 6. Lo que otras partes de la app mueven (consumo, regreso de venta) se
 //    reparte solo entre lotes, primero el que caduca antes; una compra sin
 //    lote se rechaza.
-// 7. Folio de receta: solo aviso en esta fase.
+// 7. Folio de receta: desde la Fase 4 es un candado de salida (el detalle está en sitpv-espejo-dev).
 // 8. Pasar un insumo existente a lotes; aislamiento entre negocios.
 import { A, B, SB, LUDOGTEKA, rpc, get, post, patch, borrar, personas, dar, quitar, fijarModulo, productoClinico, materialClinico, hoy, sumaDias, comprobar, seccion, terminar } from "./veterinaria-comun-dev.mjs";
 import { tokenDe } from "./sesiones-dev.mjs";
@@ -192,19 +192,19 @@ try {
   const viejoSalida = await rpc(P.admin, "registrar_salida", { p_insumo_id: prodF, p_cantidad_consumo: 100, p_tipo: "consumo" });
   comprobar(viejoSalida.ok && (await existencia(prodF)) === 800 && (await sumaLotes(prodF)) === 800, "la salida de siempre (inventario normal) también se reparte entre lotes");
 
-  // ── 7. Folio de receta ──
-  seccion("7. Folio de receta: solo aviso");
+  // ── 7. Folio de receta: desde la Fase 4 es un candado (ver sitpv-espejo-dev.mjs) ──
+  seccion("7. Un controlado ya no sale por «Surtir» (candado de la Fase 4)");
   const lk = (await rpc(P.admin, "registrar_lote_entrada", { p_insumo_id: prodKet, p_codigo: `K-${MARCA}`, p_caducidad: sumaDias(hoyB, 120), p_cantidad_compra: 1 })).cuerpo;
   const sinFolio = await rpc(P.admin, "registrar_lote_salida", { p_lote_id: lk, p_cantidad_consumo: 5, p_tipo: "surtido" });
-  comprobar(sinFolio.ok && /Grupo I/.test(sinFolio.cuerpo?.aviso ?? "") && /folio de receta/.test(sinFolio.cuerpo.aviso), "surtir un Grupo I sin folio funciona y avisa que más adelante se exigirá");
+  comprobar(!sinFolio.ok && /controlado/.test(sinFolio.mensaje), "surtir un Grupo I sin receta se rechaza");
   const conFolio = await rpc(P.admin, "registrar_lote_salida", { p_lote_id: lk, p_cantidad_consumo: 5, p_tipo: "surtido", p_folio_receta: "RX-0001" });
-  comprobar(conFolio.ok && !conFolio.cuerpo.aviso, "con folio no hay aviso");
-  comprobar((await SB.from("lotes_movimientos").select("folio_receta").eq("lote_id", lk).eq("folio_receta", "RX-0001")).data?.length === 1, "el folio queda guardado en el movimiento");
+  comprobar(!conFolio.ok, "y un folio escrito a mano no lo abre");
+  comprobar((await SB.from("lotes_movimientos").select("id").eq("lote_id", lk).eq("tipo", "salida_surtido")).data?.length === 0, "no queda ningún movimiento de surtido");
   const lLgs = (await rpc(P.admin, "registrar_lote_entrada", { p_insumo_id: soloLgs, p_codigo: `S-${MARCA}`, p_caducidad: sumaDias(hoyB, 120), p_cantidad_compra: 1 })).cuerpo;
   const avisoLgs = await rpc(P.admin, "registrar_lote_salida", { p_lote_id: lLgs, p_cantidad_consumo: 5, p_tipo: "surtido" });
-  comprobar(/Ley General de Salud/.test(avisoLgs.cuerpo?.aviso ?? ""), "un producto con clasificación LGS también avisa");
+  comprobar(!avisoLgs.ok, "un producto con clasificación LGS también se rechaza");
   const lN = (await rpc(P.admin, "registrar_lote_entrada", { p_insumo_id: ninguna, p_codigo: `N-${MARCA}`, p_caducidad: sumaDias(hoyB, 120), p_cantidad_compra: 1 })).cuerpo;
-  comprobar(!(await rpc(P.admin, "registrar_lote_salida", { p_lote_id: lN, p_cantidad_consumo: 5, p_tipo: "surtido" })).cuerpo?.aviso, "uno sin clasificación no avisa");
+  comprobar((await rpc(P.admin, "registrar_lote_salida", { p_lote_id: lN, p_cantidad_consumo: 5, p_tipo: "surtido" })).ok, "uno sin clasificación sale como siempre");
 
   // ── 8. Activar lotes y aislamiento ──
   seccion("8. Pasar un insumo existente a lotes; aislamiento");

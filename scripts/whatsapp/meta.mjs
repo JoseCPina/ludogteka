@@ -14,6 +14,7 @@
 //   perfil               descripción, sitio, categoría y foto del perfil de WhatsApp
 //                        (public/marca/peludesk/perfil-640.jpg: el isotipo a cuadro completo)
 //   plantillas           crea la plantilla de seguimiento (reabre la ventana de 24 h)
+//   plantilla-carnet-retirar [borrar]   quita la v1 de Meta cuando la v2 ya es UTILITY aprobada
 //   plantilla-carnet [enviar]
 //                        la plantilla del recordatorio de próxima dosis del carnet (Veterinaria)
 //   plantillas-seguimiento [enviar]
@@ -254,6 +255,22 @@ const pasos = {
       },
     });
     console.log(`${p.nombre}: enviada a revisión → ${r.status ?? "?"} (${r.category ?? "?"})`);
+  },
+
+  // Retira la plantilla anterior del recordatorio (v1, que Meta clasificó como marketing) de Meta.
+  // Solo si la vigente está APROBADA como UTILITY; sin «borrar» solo dice qué haría.
+  async "plantilla-carnet-retirar"(modo) {
+    const waba = requerir("PELUDESK_WABA_ID");
+    const p = JSON.parse(readFileSync(new URL("../../src/lib/carnet/plantilla-recordatorio.json", import.meta.url), "utf8"));
+    if (!p.anterior) return console.log("No hay plantilla anterior que retirar");
+    const l = await graph(`/${waba}/message_templates?name=${p.nombre}&fields=name,status,category,language&limit=10`);
+    const nueva = (l.data ?? []).find((x) => x.name === p.nombre && x.language === p.idioma);
+    if (!nueva || nueva.status !== "APPROVED" || nueva.category !== "UTILITY") {
+      return console.log(`${p.nombre} aún no está APROBADA como UTILITY (${nueva ? `${nueva.status}/${nueva.category}` : "no existe"}): no se retira ${p.anterior}`);
+    }
+    if (modo !== "borrar") return console.log(`${p.nombre} está aprobada como UTILITY. Con «borrar» se elimina ${p.anterior} de Meta.`);
+    await graph(`/${waba}/message_templates?name=${p.anterior}`, { method: "DELETE" });
+    console.log(`${p.anterior}: eliminada de Meta`);
   },
 };
 

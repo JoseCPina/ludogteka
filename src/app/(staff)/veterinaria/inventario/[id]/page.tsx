@@ -5,9 +5,13 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { Alert } from "@/components/ui/alert";
 import { cargarAreas } from "../../../inventario/comun";
+import { FormularioAccion } from "@/components/formulario-accion";
+import { Field } from "@/components/ui/field";
+import { DOCUMENTOS, type Requisito } from "@/lib/veterinaria/recetas";
+import { guardarRegulatorioProducto } from "../../recetas/actions";
 import { ProductoForm } from "../producto-form";
 import { LotesProducto, type LoteFila } from "./lotes-producto";
-import { AVISO_FOLIO_RECETA, etiquetaGrupo, etiquetaLgs, type PrincipioActivo } from "../../comun";
+import { AVISO_PRODUCTO_CONTROLADO, etiquetaGrupo, etiquetaLgs, type PrincipioActivo } from "../../comun";
 
 type Unidad = { etiqueta: string; equivalencia_en_base: number } | null;
 
@@ -17,11 +21,13 @@ export default async function ProductoClinicoPage({ params }: { params: Promise<
   const sesion = await obtenerSesionConRol();
   const puedeEscribir = tienePermiso(sesion, "lotes_clinicos");
 
+  const [{ data: requisitoCrudo }] = await Promise.all([supabase.rpc("vet_requisito_insumo", { p_insumo: id })]);
+  const requisito = (requisitoCrudo ?? { documento: "libre" }) as Requisito;
   const [{ data: insumo }, areas, { data: principios }, { data: existencia }, { data: lotesCrudo }, { data: movs }] = await Promise.all([
     supabase
       .from("insumos")
       .select(
-        "id, nombre, area_id, stock_minimo, dias_aviso_caducidad, controla_lotes, principio_activo_id, grupo_senasica, clasificacion_lgs, es_antimicrobiano, clasificacion_por_confirmar, exige_folio_receta, unidad_compra:unidades_medida!unidad_compra_id(etiqueta), unidad_consumo:unidades_medida!unidad_consumo_id(etiqueta, equivalencia_en_base)"
+        "id, nombre, area_id, stock_minimo, dias_aviso_caducidad, controla_lotes, principio_activo_id, grupo_senasica, clasificacion_lgs, es_antimicrobiano, clasificacion_por_confirmar, exige_folio_receta, registro_senasica, laboratorio, presentacion, unidad_compra:unidades_medida!unidad_compra_id(etiqueta), unidad_consumo:unidades_medida!unidad_consumo_id(etiqueta, equivalencia_en_base)"
       )
       .eq("id", id)
       .is("deleted_at", null)
@@ -96,9 +102,10 @@ export default async function ProductoClinicoPage({ params }: { params: Promise<
         </div>
       </div>
 
-      {insumo.exige_folio_receta && (
-        <Alert variante="advertencia" titulo="Producto controlado">
-          {AVISO_FOLIO_RECETA}
+      {requisito.documento !== "libre" && (
+        <Alert variante={requisito.documento === "receta_simple" ? "info" : "advertencia"} titulo={`Pide: ${DOCUMENTOS[requisito.documento].etiqueta}`}>
+          {requisito.documento === "receta_simple" ? "Se vende o usa con receta simple; el candado de salida no lo bloquea." : AVISO_PRODUCTO_CONTROLADO}
+          {requisito.libro_control ? " Sus movimientos van al libro de control." : ""}
         </Alert>
       )}
 
@@ -107,12 +114,26 @@ export default async function ProductoClinicoPage({ params }: { params: Promise<
         <LotesProducto
           insumoId={id}
           puedeEscribir={puedeEscribir}
-          exigeFolio={Boolean(insumo.exige_folio_receta)}
+          controlado={["espejo_sitpv", "receta_especial", "receta_cedula"].includes(requisito.documento)}
           unidadCompra={unidadCompra?.etiqueta ?? ""}
           unidadConsumo={etiquetaConsumo}
           lotes={lotes}
         />
       </section>
+
+      {puedeEscribir && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-lg font-bold text-n-900">Datos regulatorios</h2>
+          <p className="max-w-3xl text-sm text-n-600">El registro SENASICA, el laboratorio y la presentación salen en el espejo del SITPV y en el libro de control.</p>
+          <FormularioAccion accion={guardarRegulatorioProducto.bind(null, id)} textoBoton="Guardar datos" className="max-w-3xl rounded-lg border border-n-200 bg-white p-4">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field label="Registro SENASICA" name="registro_senasica" defaultValue={(insumo.registro_senasica as string | null) ?? ""} />
+              <Field label="Laboratorio" name="laboratorio" defaultValue={(insumo.laboratorio as string | null) ?? ""} />
+              <Field label="Presentación" name="presentacion" defaultValue={(insumo.presentacion as string | null) ?? ""} placeholder="Frasco de 100 ml" />
+            </div>
+          </FormularioAccion>
+        </section>
+      )}
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-bold text-n-900">Datos y clasificación</h2>

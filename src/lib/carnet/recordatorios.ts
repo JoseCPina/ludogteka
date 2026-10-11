@@ -45,18 +45,18 @@ export function cuandoEnTexto(proxima: string, hoy: string): string {
 
 const limpiar = (t: string) => t.replace(/[\n\t]+/g, " ").replace(/ {2,}/g, " ").trim().slice(0, 60);
 
-/** ¿Meta aprobó la plantilla? Se pregunta en cada corrida. */
+/** ¿Meta aprobó la plantilla COMO UTILITY? Se pregunta en cada corrida (una reclasificada a marketing no sale). */
 export async function plantillaAprobada(): Promise<boolean> {
   const waba = process.env.PELUDESK_WABA_ID?.trim();
   const token = process.env.WHATSAPP_TOKEN;
   if (!waba || !token) return false;
   try {
-    const r = await fetch(`${graphBase()}/${VERSION_GRAPH}/${waba}/message_templates?name=${plantilla.nombre}&fields=name,status,language&limit=10`, {
+    const r = await fetch(`${graphBase()}/${VERSION_GRAPH}/${waba}/message_templates?name=${plantilla.nombre}&fields=name,status,language,category&limit=10`, {
       headers: { Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(20_000),
     });
-    const j = (await r.json().catch(() => ({}))) as { data?: { name: string; status: string; language?: string }[] };
-    return (j.data ?? []).some((p) => p.name === plantilla.nombre && p.status === "APPROVED" && (!p.language || p.language === plantilla.idioma));
+    const j = (await r.json().catch(() => ({}))) as { data?: { name: string; status: string; language?: string; category?: string }[] };
+    return (j.data ?? []).some((p) => p.name === plantilla.nombre && p.status === "APPROVED" && p.category === "UTILITY" && (!p.language || p.language === plantilla.idioma));
   } catch {
     return false;
   }
@@ -113,7 +113,7 @@ export async function correrRecordatorios(opciones: { ahora?: Date; solo?: strin
         resumen.fallidos++;
         continue;
       }
-      const que = f.origen_tipo === "vacuna" ? `la vacuna ${limpiar(f.detalle)}` : `la desparasitación (${limpiar(f.detalle)})`;
+      const que = f.origen_tipo === "vacuna" ? `vacuna ${limpiar(f.detalle)}` : `desparasitación (${limpiar(f.detalle)})`;
       const parametros = [limpiar(f.cliente_nombre.split(" ")[0] ?? "") || "cliente", limpiar(f.perro_nombre), limpiar(f.negocio_nombre), que, cuandoEnTexto(f.proxima_dosis, hoy), `${telNegocio.slice(-10, -7)} ${telNegocio.slice(-7, -4)} ${telNegocio.slice(-4)}`];
       const r = await wa.plantillaConParametros(`52${digitos}`, plantilla.nombre, parametros, []);
       await sb.rpc("carnet_recordatorio_resultado", {

@@ -59,8 +59,10 @@ export function FormularioMedicacion({
   );
 }
 
+export type EspejoAbierto = { id: string; folio: string; fecha: string; uso_hospitalario: boolean; mascota: string | null; restante: number };
+
 /** Marcar una dosis como aplicada (quién y cuándo los pone la base) o como no aplicada. */
-export function AccionesDosis({ hospId, dosisId, insumoId, productos }: { hospId: string; dosisId: string; insumoId: string | null; productos: ProductoConLotes[] }) {
+export function AccionesDosis({ hospId, dosisId, insumoId, productos, espejos = [] }: { hospId: string; dosisId: string; insumoId: string | null; productos: ProductoConLotes[]; espejos?: EspejoAbierto[] }) {
   const [modo, setModo] = useState<null | "aplicar" | "omitir">(null);
   const [loteId, setLoteId] = useState("");
   const candidatos = insumoId ? productos.filter((p) => p.id === insumoId) : productos;
@@ -102,6 +104,14 @@ export function AccionesDosis({ hospId, dosisId, insumoId, productos }: { hospId
               </option>
             ))}
           </Select>
+          {loteId && espejos.length > 0 && (
+            <Select label="Folio del SITPV (producto de Grupo I)" name="espejo_id" ayuda="Un producto de Grupo I solo se descuenta contra su folio: la aplicación queda como parcialidad con este paciente.">
+              <option value="">— Elige el folio —</option>
+              {espejos.map((e) => (
+                <option key={e.id} value={e.id}>Folio {e.folio}{e.uso_hospitalario ? " · uso hospitalario" : e.mascota ? ` · ${e.mascota}` : ""} · quedan {e.restante}</option>
+              ))}
+            </Select>
+          )}
           {loteId && <Field label="Cantidad que se descuenta" name="cantidad" type="number" min={0} step="0.01" defaultValue={1} ayuda="En la unidad de consumo del producto." />}
         </div>
       ) : (

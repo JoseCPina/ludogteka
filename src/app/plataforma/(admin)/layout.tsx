@@ -20,6 +20,7 @@ const SECCIONES = [
   { href: "/plataforma/catalogos", texto: "Catálogos compartidos" },
   { href: "/plataforma/principios-activos", texto: "Principios activos" },
   { href: "/plataforma/diagnosticos", texto: "Diagnósticos" },
+  { href: "/plataforma/reglas-recetas", texto: "Reglas de recetas" },
   { href: "/plataforma/facturacion", texto: "Facturación" },
 ];
 

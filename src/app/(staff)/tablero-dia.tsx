@@ -462,7 +462,38 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       consulta_mas_vieja?: string | null;
       estimados_sin_respuesta?: number;
       estimado_mas_viejo?: string | null;
+      sitpv_reportes_pendientes?: number;
+      sitpv_reporte_desde?: string | null;
+      sitpv_reporte_aviso?: boolean;
+      sitpv_reporte_bloqueo?: number;
+      sitpv_folios_bajos?: number;
     };
+    // Fase 4: reporte mensual del SITPV por marcar (recordatorio el día 1, aviso desde el día 3: editable por la plataforma)
+    // y folios por agotarse.
+    if (Number(vet.sitpv_reportes_pendientes ?? 0) > 0) {
+      const n = Number(vet.sitpv_reportes_pendientes);
+      const dias = vet.sitpv_reporte_desde ? Math.max(0, diasDesde(vet.sitpv_reporte_desde, hoy, zona)) : 0;
+      const bloqueo = Number(vet.sitpv_reporte_bloqueo ?? 0) > 0;
+      atencion.push({
+        clave: "sitpv-reporte-mensual",
+        texto: n === 1 ? "1 reporte mensual del SITPV está por marcar como reportado" : `${n} reportes mensuales del SITPV están por marcar como reportados`,
+        detalle: bloqueo ? "Con varios meses sin reporte, el SITPV no entrega folios nuevos" : vet.sitpv_reporte_aviso ? "Ya pasaron los primeros días del mes" : undefined,
+        href: "/veterinaria/recetas/sitpv",
+        dias,
+        antiguedad: dias === 0 ? "Toca reportarlo hoy" : `Tocaba reportarlo ${haceCuanto(dias)}`,
+      });
+    }
+    if (Number(vet.sitpv_folios_bajos ?? 0) > 0) {
+      const n = Number(vet.sitpv_folios_bajos);
+      atencion.push({
+        clave: "sitpv-folios-bajos",
+        texto: n === 1 ? "A 1 médico le quedan pocos folios del SITPV" : `A ${n} médicos les quedan pocos folios del SITPV`,
+        detalle: "Pide otro bloque en el SITPV y captúralo en Veterinaria → Médicos",
+        href: "/veterinaria/recetas/sitpv",
+        dias: 0,
+        antiguedad: "Se agotan pronto",
+      });
+    }
     if (Number(vet.dosis_atrasadas ?? 0) > 0) {
       const n = Number(vet.dosis_atrasadas);
       const dias = vet.dosis_mas_vieja ? diasDesde(vet.dosis_mas_vieja, hoy, zona) : 0;

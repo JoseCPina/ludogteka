@@ -8,6 +8,7 @@ import { Desplegable } from "@/components/formulario-accion";
 import { formatearFecha, formatearFechaCalendario, horaLocalDeInstante, horaLocalParaInput } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { ETIQUETA_CONSENTIMIENTO, TURNOS_MONITOREO } from "@/lib/veterinaria/carnet";
+import type { EspejoAbierto } from "./paneles";
 import { AccionesDosis, FormularioAlta, FormularioCargo, FormularioMedicacion, FormularioMonitoreo, NuevoConsentimiento, SuspenderMedicacion } from "./paneles";
 
 type Dosis = { id: string; programada_at: string; estado: string; aplicada_at: string | null; aplicada_por: string | null; lote: string | null; motivo_omision: string | null; nota: string | null; atrasada: boolean };
@@ -53,6 +54,13 @@ export default async function Hospitalizacion({ params }: { params: Promise<{ id
     return <Alert variante="error" titulo="No pudimos cargar la hospitalización">{error?.message ?? "Inténtalo de nuevo."}</Alert>;
   }
   const internada = d.estado === "ingresado";
+  // Folios del SITPV abiertos de cada producto de la hoja (un Grupo I se aplica contra su folio).
+  const insumosHoja = Array.from(new Set(d.medicacion.map((m) => m.insumo_id).filter((x): x is string => Boolean(x))));
+  const espejosPorInsumo = new Map<string, EspejoAbierto[]>();
+  await Promise.all(insumosHoja.map(async (i) => {
+    const { data: abiertos } = await supabase.rpc("vet_espejos_abiertos", { p_insumo: i });
+    espejosPorInsumo.set(i, (abiertos ?? []) as EspejoAbierto[]);
+  }));
   const vivos = d.cargos.filter((c) => !c.cancelado);
   const total = vivos.reduce((s, c) => s + Number(c.importe), 0);
   const ahoraLocal = horaLocalParaInput(new Date().toISOString(), zona);
@@ -169,7 +177,7 @@ export default async function Hospitalizacion({ params }: { params: Promise<{ id
                         </p>
                       )}
                       {x.estado === "omitida" && <p className="text-xs text-n-600">{x.motivo_omision}</p>}
-                      {puede && internada && !m.suspendida && x.estado === "pendiente" && <AccionesDosis hospId={d.id} dosisId={x.id} insumoId={m.insumo_id} productos={productos} />}
+                      {puede && internada && !m.suspendida && x.estado === "pendiente" && <AccionesDosis hospId={d.id} dosisId={x.id} insumoId={m.insumo_id} productos={productos} espejos={m.insumo_id ? (espejosPorInsumo.get(m.insumo_id) ?? []) : []} />}
                     </li>
                   ))}
                 </ul>
