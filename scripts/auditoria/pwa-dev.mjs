@@ -17,10 +17,11 @@ import { spawn } from "node:child_process";
 import http from "node:http";
 import { createClient } from "@supabase/supabase-js";
 import { abrirNavegador } from "../lib/navegador.mjs";
-import { A, B, SB, URL, env, personas, comprobar, hallazgo, seccion, terminar } from "./veterinaria-comun-dev.mjs";
+import { datosDelNegocio } from "./lib/negocio-prueba.mjs";
+import { A, B, SB, URL, env, SLUG, HOST, personas, comprobar, hallazgo, seccion, terminar } from "./veterinaria-comun-dev.mjs";
 
 const PUERTO = 3006;
-const BASE = `http://huellitas.localhost:${PUERTO}`;
+const BASE = `http://${HOST}:${PUERTO}`;
 const REF = new globalThis.URL(URL).hostname.split(".")[0];
 const P = await personas();
 
@@ -52,7 +53,7 @@ async function cookiesDe(profileId) {
   const valor = "base64-" + Buffer.from(JSON.stringify(ses.session)).toString("base64url");
   const trozos = valor.match(/.{1,3180}/g);
   const nombre = `sb-${REF}-auth-token`;
-  return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: "huellitas.localhost", path: "/" }));
+  return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: HOST, path: "/" }));
 }
 const dimensionesPng = (buf) => (buf.length > 24 && buf.toString("latin1", 1, 4) === "PNG" ? { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) } : null);
 
@@ -60,7 +61,7 @@ let nav;
 const MARCA = `ZZPWA${String(Date.now()).slice(-5)}`;
 let marcaOriginal = null;
 try {
-  const listo = await esperarHasta(async () => (await pedir("huellitas.localhost", "/login").catch(() => null))?.status === 200, 60000, 1000);
+  const listo = await esperarHasta(async () => (await pedir(HOST, "/login").catch(() => null))?.status === 200, 60000, 1000);
   comprobar(listo, "el servidor de la prueba arrancó (necesita `npm run build`)");
   if (!listo) throw new Error("sin servidor:\n" + bitacora.slice(-1500));
 
@@ -69,7 +70,7 @@ try {
 
   // ═══ 1. Manifiesto e íconos ═══
   seccion("1. Manifiesto e íconos");
-  const m = await pedir("huellitas.localhost", "/manifest.webmanifest");
+  const m = await pedir(HOST, "/manifest.webmanifest");
   const man = JSON.parse(m.cuerpo.toString("utf8"));
   comprobar(m.status === 200 && /manifest\+json/.test(m.headers["content-type"] ?? ""), "el manifiesto responde como application/manifest+json");
   comprobar(man.name === neg.nombre && man.display === "standalone" && man.start_url === "/" && man.scope === "/" && man.lang === "es-MX", `nombre del negocio (${man.name}), standalone, start_url y scope`);
@@ -80,14 +81,14 @@ try {
   const manL = JSON.parse(ludo.cuerpo.toString("utf8"));
   comprobar(manL.name !== man.name && !/peludesk/i.test(manL.name), `otro negocio, otro manifiesto (${manL.name})`);
   for (const [ruta, lado] of [["/icono-pwa?s=192", 192], ["/icono-pwa?s=512", 512], ["/icono-pwa?s=512&m=1", 512]]) {
-    const r = await pedir("huellitas.localhost", ruta);
+    const r = await pedir(HOST, ruta);
     const d = dimensionesPng(r.cuerpo);
     comprobar(r.status === 200 && d && d.w === lado && d.h === lado, `${ruta}: PNG de ${lado}×${lado}`);
   }
-  const sinLogo = await pedir("huellitas.localhost", "/icono-pwa?s=192");
+  const sinLogo = await pedir(HOST, "/icono-pwa?s=192");
   await SB.from("negocios").update({ marca: { ...(neg.marca ?? {}), logo: "/marca/peludesk/favicon-180.png" } }).eq("id", B);
   await new Promise((r) => setTimeout(r, 400));
-  const conLogo = await pedir("huellitas.localhost", "/icono-pwa?s=192");
+  const conLogo = await pedir(HOST, "/icono-pwa?s=192");
   comprobar(conLogo.status === 200 && dimensionesPng(conLogo.cuerpo)?.w === 192 && !conLogo.cuerpo.equals(sinLogo.cuerpo), "con logo configurado, el ícono cambia (lleva el logo del negocio)");
   await SB.from("negocios").update({ marca: neg.marca }).eq("id", B);
   const plat = await pedir("plataforma.localhost", "/icono-pwa?s=192");
@@ -95,15 +96,15 @@ try {
 
   // ═══ 2. Service worker y pantalla sin conexión: públicos y sin datos ═══
   seccion("2. Service worker y pantalla «sin conexión»");
-  const sw = await pedir("huellitas.localhost", "/sw.js");
+  const sw = await pedir(HOST, "/sw.js");
   comprobar(sw.status === 200 && /javascript/.test(sw.headers["content-type"] ?? ""), "/sw.js se sirve sin sesión, como JavaScript");
   comprobar(/no-cache|no-store/.test(sw.headers["cache-control"] ?? "") && sw.headers["service-worker-allowed"] === "/", "…siempre se revisa si hay uno nuevo y controla todo el sitio");
   const textoSw = sw.cuerpo.toString("utf8");
   comprobar(!/eyJ|sb-|apikey|service_role|Bearer/.test(textoSw), "…y no lleva llaves ni datos");
   comprobar(/method !== "GET"\) return/.test(textoSw), "…y por código ignora todo lo que no sea un GET (ninguna acción de la app pasa por él)");
-  const off = await pedir("huellitas.localhost", "/sin-conexion");
+  const off = await pedir(HOST, "/sin-conexion");
   comprobar(off.status === 200 && off.cuerpo.toString("utf8").includes("Sin conexión"), "/sin-conexion se abre sin sesión");
-  const priv = await pedir("huellitas.localhost", "/recepcion");
+  const priv = await pedir(HOST, "/recepcion");
   comprobar(priv.status >= 300 && priv.status < 400, `una pantalla del personal sin sesión sigue pidiendo login (${priv.status})`);
 
   // ═══ 3. Con el service worker real ═══
@@ -206,7 +207,7 @@ try {
 
   // El portal de un cliente: ni precarga pantallas del personal.
   const ctxC = await nav.newContext({ serviceWorkers: "allow" });
-  const datosB = JSON.parse((await import("node:fs")).readFileSync((await import("node:path")).join((await import("node:os")).tmpdir(), "peludesk-negocio-b.json"), "utf8"));
+  const datosB = datosDelNegocio(SLUG);
   await ctxC.addCookies(await cookiesDe(datosB.cuentaSoloB));
   const pc = await ctxC.newPage();
   await pc.goto(`${BASE}/portal`, { waitUntil: "networkidle" });

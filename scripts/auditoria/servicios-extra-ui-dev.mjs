@@ -15,9 +15,12 @@ import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { abrirNavegador } from "../lib/navegador.mjs";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { slugDePrueba, hostDe, datosDelNegocio, negocioPorSlug } from "./lib/negocio-prueba.mjs";
+const SLUG = slugDePrueba();
+const HOST = hostDe(SLUG);
 
 const PUERTO = 3007;
-const BASE = `http://huellitas.localhost:${PUERTO}`;
+const BASE = `http://${HOST}:${PUERTO}`;
 const REF = new globalThis.URL(URL).hostname.split(".")[0];
 
 export async function correrUi({ comprobar, datos, hoy }) {
@@ -40,7 +43,7 @@ export async function correrUi({ comprobar, datos, hoy }) {
   servidor.stderr.on("data", (d) => (bitacora += d));
   process.on("exit", () => { try { servidor.kill(); } catch { /* ya cerró */ } });
   const pedir = (ruta) => new Promise((resolve, reject) => {
-    const q = http.request({ host: "127.0.0.1", port: PUERTO, path: ruta, method: "GET", headers: { host: `huellitas.localhost:${PUERTO}` } }, (r) => { r.resume(); r.on("end", () => resolve({ status: r.statusCode })); });
+    const q = http.request({ host: "127.0.0.1", port: PUERTO, path: ruta, method: "GET", headers: { host: `${HOST}:${PUERTO}` } }, (r) => { r.resume(); r.on("end", () => resolve({ status: r.statusCode })); });
     q.on("error", reject);
     q.end();
   });
@@ -54,7 +57,7 @@ export async function correrUi({ comprobar, datos, hoy }) {
     const valor = "base64-" + Buffer.from(JSON.stringify(ses.session)).toString("base64url");
     const trozos = valor.match(/.{1,3180}/g);
     const nombre = `sb-${REF}-auth-token`;
-    return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: "huellitas.localhost", path: "/" }));
+    return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: HOST, path: "/" }));
   }
 
   let nav;
@@ -253,7 +256,7 @@ export async function correrUi({ comprobar, datos, hoy }) {
 
 // Solo: node scripts/auditoria/servicios-extra-ui-dev.mjs
 if (process.argv[1] && process.argv[1].endsWith("servicios-extra-ui-dev.mjs")) {
-  const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
+  const datos = datosDelNegocio(SLUG);
   const bad = [];
   const comprobar = (c, t) => { console.log(`  ${c ? "✔" : "✘"} ${t}`); if (!c) bad.push(t); };
   const tAdmin = await tokenDe(datos.adminB);

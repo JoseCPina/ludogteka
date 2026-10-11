@@ -19,6 +19,7 @@ import http from "node:http";
 import { abrirNavegador } from "../lib/navegador.mjs";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
 import { levantarFacturapiFalso } from "./lib/facturapi-falso.mjs";
+import { slugDePrueba, hostDe, negocioPorSlug } from "./lib/negocio-prueba.mjs";
 
 // Diagnóstico: una petición que pasa de 8 s se reporta (peticiones lentas).
 const fetchLento = globalThis.fetch;
@@ -38,7 +39,9 @@ const comprobar = (cond, t) => (cond ? bien(t) : hallazgo(t));
 const MARCA = "ZZCFDI";
 const hoyISO = (d = 0) => new Date(Date.now() + d * 86400000).toISOString().slice(0, 10);
 
-const { data: hue } = await A.from("negocios").select("id").eq("slug", "huellitas").single();
+const SLUG = slugDePrueba(); // --negocio <slug>; por omisión Huellitas en la nube y patitas-pruebas-b en la PC
+const HOST = hostDe(SLUG);
+const hue = await negocioPorSlug(A, SLUG);
 const H = hue.id;
 const SH = createClient(URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: false }, global: { headers: { "x-negocio-id": H } } });
 const jwt = async (id, negocio = H) => createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false }, global: { headers: { Authorization: `Bearer ${await tokenDe(id)}`, "x-negocio-id": negocio } } });
@@ -145,7 +148,7 @@ try {
   const selStar = await adminJ.from("cfdi_config_negocio").select("rfc, razon_social, tope_timbres_mes").single();
   comprobar(!selStar.error && selStar.data.rfc === rfcEmisor, "…pero la configuración sí (lista explícita de columnas)");
   const ajeno = await ajenoJ.from("cfdi_config_negocio").select("rfc");
-  comprobar(!ajeno.error ? (ajeno.data ?? []).length === 0 : true, "un admin de otro negocio con el encabezado de Huellitas no ve nada");
+  comprobar(!ajeno.error ? (ajeno.data ?? []).length === 0 : true, "un admin de otro negocio con el encabezado de este negocio no ve nada");
 
   // ═══ A2. Datos fiscales ═════════════════════════════════════════════════════
   console.log("── A2. Datos fiscales del cliente");
@@ -418,7 +421,7 @@ try {
 // ═══ PARTE B: el servidor real + el PAC de mentiras + el navegador ═══════════
 console.log("\n══ PARTE B · servidor real + Facturapi de mentiras");
 const PUERTO = 3003;
-const BASE = `http://huellitas.localhost:${PUERTO}`;
+const BASE = `http://${HOST}:${PUERTO}`;
 const SECRETO_CRON = "cfdi-dev-secreto";
 const REF = new globalThis.URL(URL).hostname.split(".")[0];
 const falso = await levantarFacturapiFalso(4459);
@@ -452,12 +455,12 @@ async function cookiesDe(profileId) {
   const valor = "base64-" + Buffer.from(JSON.stringify(s.session)).toString("base64url");
   const trozos = valor.match(/.{1,3180}/g);
   const nombre = `sb-${REF}-auth-token`;
-  return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: "huellitas.localhost", path: "/" }));
+  return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: HOST, path: "/" }));
 }
 
 let nav;
 try {
-  const listo = await esperarHasta(async () => (await pedir("huellitas.localhost", "/login").catch(() => null))?.status === 200, 60000, 1000);
+  const listo = await esperarHasta(async () => (await pedir(HOST, "/login").catch(() => null))?.status === 200, 60000, 1000);
   comprobar(listo, "el servidor de la prueba arrancó (necesita `npm run build`)");
   if (!listo) throw new Error("sin servidor:\n" + bitacora.slice(-1500));
 
@@ -566,11 +569,11 @@ try {
   comprobar(pend && pend.cancelacion_limite, "pendiente de aceptación del cliente: sigue vigente y con límite de 3 días");
   const dPend = [...falso.facturas.values()].find((x) => x.uuid === f2.uuid_fiscal);
   dPend.status = "canceled"; dPend.cancellation_status = "accepted"; // el cliente aceptó en el SAT
-  const cron1 = await pedir("huellitas.localhost", "/api/cron/cfdi", { cabeceras: { authorization: `Bearer ${SECRETO_CRON}` } });
+  const cron1 = await pedir(HOST, "/api/cron/cfdi", { cabeceras: { authorization: `Bearer ${SECRETO_CRON}` } });
   comprobar(cron1.status === 200, `la tarea programada responde (${cron1.status})`);
   const aceptada = await esperarHasta(async () => { const f = await factura(f2.id); return f.estado === "cancelada" ? f : null; });
   comprobar(aceptada, "la tarea programada le pregunta al PAC y cierra la cancelación aceptada");
-  const sinSecreto = await pedir("huellitas.localhost", "/api/cron/cfdi");
+  const sinSecreto = await pedir(HOST, "/api/cron/cfdi");
   comprobar(sinSecreto.status === 401, "sin el secreto del cron: 401");
 
   // ── B4. Corregir y sustituir (motivo 01) ──
@@ -608,18 +611,18 @@ try {
     const token = link[1];
     const enBase = (await SH.from("cfdi_enlaces").select("token_hash, vence_at").eq("factura_id", nueva.id)).data ?? [];
     comprobar(enBase.length >= 1 && enBase.every((e) => e.token_hash !== token) && enBase.some((e) => e.token_hash === createHash("sha256").update(token).digest("hex")), "en la base solo está el sha256 del token, nunca el token");
-    const pub = await pedir("huellitas.localhost", `/fac/${token}`);
+    const pub = await pedir(HOST, `/fac/${token}`);
     comprobar(pub.status === 200 && /noindex/i.test(String(pub.headers["x-robots-tag"] ?? "") + pub.cuerpo.toString()), "la página pública abre sin sesión y es noindex");
-    const pubPdf = await pedir("huellitas.localhost", `/fac/${token}/pdf`);
+    const pubPdf = await pedir(HOST, `/fac/${token}/pdf`);
     comprobar(pubPdf.status === 200 && pubPdf.cuerpo.toString().startsWith("%PDF"), "…y baja el PDF");
-    const malo = await pedir("huellitas.localhost", `/fac/${"0".repeat(64)}`);
-    const maloPdf = await pedir("huellitas.localhost", `/fac/${"0".repeat(64)}/pdf`);
+    const malo = await pedir(HOST, `/fac/${"0".repeat(64)}`);
+    const maloPdf = await pedir(HOST, `/fac/${"0".repeat(64)}/pdf`);
     comprobar(!malo.cuerpo.toString().includes("Descargar PDF") && maloPdf.status === 404, "un token inventado no entrega nada (página «no disponible» y 404 en la descarga)");
     const otroNegocio = await pedir("ludogteka.localhost", `/fac/${token}`);
     const otroPdf = await pedir("ludogteka.localhost", `/fac/${token}/pdf`);
     comprobar(!otroNegocio.cuerpo.toString().includes("Descargar PDF") && otroPdf.status === 404, "el mismo link en el dominio de OTRO negocio no entrega nada");
     await SH.from("cfdi_enlaces").update({ vence_at: new Date(Date.now() - 1000).toISOString() }).eq("factura_id", nueva.id);
-    const vencido = await pedir("huellitas.localhost", `/fac/${token}`);
+    const vencido = await pedir(HOST, `/fac/${token}`);
     comprobar(vencido.status === 404 || /venci/i.test(vencido.cuerpo.toString()), "vencido el link, ya no entrega la factura");
   }
   await fila.getByRole("button", { name: "Mandar por correo" }).click();
@@ -643,7 +646,7 @@ try {
   const per2 = ((await recepJ.rpc("cfdi_global_periodos")).data ?? []).find((p) => p.desde === mesDesde);
   comprobar(per2, "hay un periodo cerrado con cobros sin facturar");
   const antesGlobal = [...falso.facturas.values()].filter((x) => x.global).length;
-  const cron2 = await pedir("huellitas.localhost", "/api/cron/cfdi", { cabeceras: { authorization: `Bearer ${SECRETO_CRON}` } });
+  const cron2 = await pedir(HOST, "/api/cron/cfdi", { cabeceras: { authorization: `Bearer ${SECRETO_CRON}` } });
   const j2 = JSON.parse(cron2.cuerpo.toString() || "{}");
   comprobar(cron2.status === 200 && j2.globales >= 1, `la tarea emite la global del periodo cerrado (${cron2.cuerpo.toString().slice(0, 100)})`);
   const glob = [...falso.facturas.values()].filter((x) => x.global);
@@ -653,7 +656,7 @@ try {
   comprobar(dg.items.some((i) => i.product.taxes[0].rate === 0) && dg.items.some((i) => i.product.taxes[0].rate === 0.16), "…con el IVA separado por tasa (0 % y 16 %)");
   const gdb = (await SH.from("cfdi_facturas").select("*").eq("negocio_id", H).eq("tipo", "global").eq("periodo_desde", mesDesde).eq("estado", "vigente")).data;
   comprobar(gdb.length === 1 && Math.abs(Number(gdb[0].total) - Number(gdb[0].total_esperado)) <= 0.05, "en la base: una global vigente por periodo, con el total de lo cobrado");
-  await pedir("huellitas.localhost", "/api/cron/cfdi", { cabeceras: { authorization: `Bearer ${SECRETO_CRON}` } });
+  await pedir(HOST, "/api/cron/cfdi", { cabeceras: { authorization: `Bearer ${SECRETO_CRON}` } });
   comprobar([...falso.facturas.values()].filter((x) => x.global).length === glob.length, "una segunda corrida NO emite otra global del mismo periodo");
   await SH.from("cfdi_config_negocio").update({ global_automatica: false }).eq("negocio_id", H);
 

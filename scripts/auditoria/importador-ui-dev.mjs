@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 import { zipSync, strToU8 } from "fflate";
 import { createClient } from "@supabase/supabase-js";
 import { abrirNavegador } from "../lib/navegador.mjs";
-import { A, B, SB, URL, env, rpc, personas, dar, quitar, fijarModulo, comprobar, hallazgo, seccion, terminar } from "./veterinaria-comun-dev.mjs";
+import { A, B, SB, URL, env, HOST, rpc, personas, dar, quitar, fijarModulo, comprobar, hallazgo, seccion, terminar } from "./veterinaria-comun-dev.mjs";
 
 const MARCA = `ZZIMU${String(Date.now()).slice(-5)}`;
 const rnd = (n) => String(Math.floor(Math.random() * 10 ** n)).padStart(n, "0");
@@ -28,7 +28,7 @@ const clientePorTel = async (t) => (await SB.from("clientes").select("*").eq("ne
 const perrosDe = async (id) => (await SB.from("perros").select("*").eq("cliente_id", id).is("deleted_at", null).order("created_at")).data;
 
 const PUERTO = 3005;
-const BASE = `http://huellitas.localhost:${PUERTO}`;
+const BASE = `http://${HOST}:${PUERTO}`;
 const REF = new globalThis.URL(URL).hostname.split(".")[0];
 
 console.log("\n══ PARTE B · servidor real + navegador");
@@ -55,7 +55,7 @@ async function cookiesDe(profileId) {
   const valor = "base64-" + Buffer.from(JSON.stringify(ses.session)).toString("base64url");
   const trozos = valor.match(/.{1,3180}/g);
   const nombre = `sb-${REF}-auth-token`;
-  return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: "huellitas.localhost", path: "/" }));
+  return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: HOST, path: "/" }));
 }
 
 // Un .xlsx de verdad (zip con una hoja): lo que Excel entrega, sin depender de Excel.
@@ -79,7 +79,7 @@ function xlsx(filas) {
 let nav;
 const clientesCreados = [];
 try {
-  const listo = await esperarHasta(async () => (await pedir("huellitas.localhost", "/login").catch(() => null))?.status === 200, 60000, 1000);
+  const listo = await esperarHasta(async () => (await pedir(HOST, "/login").catch(() => null))?.status === 200, 60000, 1000);
   comprobar(listo, "el servidor de la prueba arrancó (necesita `npm run build`)");
   if (!listo) throw new Error("sin servidor:\n" + bitacora.slice(-1500));
   await fijarModulo("veterinaria", true);

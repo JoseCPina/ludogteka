@@ -1,5 +1,9 @@
-// Uso: node scripts/auditoria/entre-negocios.mjs   (SOLO DESARROLLO)
-// Antes: node scripts/auditoria/negocio-prueba-dev.mjs (arma Huellitas).
+// Uso: node scripts/auditoria/entre-negocios.mjs [--a <slug>] [--b <slug>]   (SOLO DESARROLLO)
+//   --a  negocio de quien ataca (por omisión ludogteka, el modelo de desarrollo).
+//   --b  negocio vigilado (por omisión huellitas en la nube y patitas-pruebas-b en la PC).
+//   Sus textos dicen «Ludogteka» y «Huellitas» por historia: son el negocio A y el negocio B de esta corrida.
+// Antes: node scripts/auditoria/negocio-prueba-dev.mjs (arma Huellitas) o
+//        node scripts/plataforma/sembrar-pruebas-b.mjs (arma patitas-pruebas-b, el de la PC).
 //
 // ¿Alguien de Ludogteka (negocio A) alcanza ALGO de Huellitas (negocio B)?
 // Con el JWT real de cada rol de A — admin, recepción, estética, cliente, la
@@ -32,12 +36,20 @@ import os from "node:os";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { argumento, slugDePrueba, datosDelNegocio, negocioPorSlug } from "./lib/negocio-prueba.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 
-const LUDOGTEKA = "10000000-0000-4000-8000-000000000001";
-const MARCA = "ZZSECRETOB";
-const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
+const MODELO = "10000000-0000-4000-8000-000000000001";
+const SLUG_A = argumento("a") ?? "ludogteka";
+const SLUG_B = argumento("b") ?? slugDePrueba("b");
+const LUDOGTEKA = (await negocioPorSlug(A, SLUG_A)).id; // el negocio A de esta corrida (el nombre es histórico)
+const datos = datosDelNegocio(SLUG_B);
+const MARCA = datos.marca ?? "ZZSECRETOB";
+if (datos.B === LUDOGTEKA) throw new Error("A y B son el mismo negocio.");
+// La estilista y la clienta «de los dos» se sembraron contra un negocio A (por omisión el modelo): solo son de los dos si A es ese.
+const hayDeLosDos = (datos.A ?? MODELO) === LUDOGTEKA;
+console.log(`A = ${SLUG_A} (${LUDOGTEKA}) · B = ${SLUG_B} (${datos.B})${hayDeLosDos ? "" : " · sin personas «de los dos» (B se sembró contra otro negocio)"}`);
 const B = datos.B;
 const idsB = new Set(datos.idsB);
 const hallazgos = [];
@@ -58,11 +70,11 @@ const personasA = {
   admin: await unoDe("admin"),
   recepcion: await unoDe("recepcion"),
   estetica: await unoDe("estetica", [datos.esteticaAmbos]),
-  estetica_de_los_dos: datos.esteticaAmbos,
+  ...(hayDeLosDos ? { estetica_de_los_dos: datos.esteticaAmbos } : {}),
   cliente: await unoDe("cliente", [datos.cuentaAmbos]),
-  cliente_de_los_dos: datos.cuentaAmbos,
+  ...(hayDeLosDos ? { cliente_de_los_dos: datos.cuentaAmbos } : {}),
 };
-const miembrosDeB = new Set([datos.esteticaAmbos, datos.cuentaAmbos]);
+const miembrosDeB = new Set(hayDeLosDos ? [datos.esteticaAmbos, datos.cuentaAmbos] : []);
 for (const [rol, id] of Object.entries(personasA)) if (!id) throw new Error(`No hay ${rol} en Ludogteka de desarrollo.`);
 
 const tokens = {};
@@ -120,7 +132,7 @@ const conNegocio = new Set(relaciones.filter((r) => spec.definitions[r].properti
 // Positivo: si recepción de B no viera sus propias filas, la prueba no
 // demostraría nada.
 {
-  const { data: recB } = await SB.rpc("usuario_por_email", { p_email: "recepcion@huellitas.prueba" });
+  const recB = datos.recepcionB;
   const r = await fetch(`${URL}/rest/v1/clientes?select=id,nombre&id=eq.${datos.clienteSoloB}`, { headers: cabeceras(await tokenDe(recB), B) });
   const filas = await r.json();
   if (!Array.isArray(filas) || filas.length !== 1) hallazgo(`control positivo: recepción de Huellitas no ve su propio cliente (${JSON.stringify(filas).slice(0, 120)})`);
@@ -255,7 +267,7 @@ console.log("  PATCH, DELETE e INSERT revisados");
 
 // ── 5. Quien está en los dos negocios ──
 console.log("\n── Personas de los dos negocios");
-{
+if (hayDeLosDos) {
   const t = tokens.cliente_de_los_dos;
   const leer = async (rel, negocio, q = "") => {
     const cuerpo = await (await fetch(`${URL}/rest/v1/${rel}?select=id${q}`, { headers: cabeceras(t, negocio) })).json();
@@ -310,7 +322,7 @@ for (const [rol, token] of Object.entries(tokens)) {
   }
 }
 {
-  const { data: recB } = await SB.rpc("usuario_por_email", { p_email: "recepcion@huellitas.prueba" });
+  const recB = datos.recepcionB;
   const cli = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${await tokenDe(recB)}`, "x-negocio-id": B } } });
   const firmada = await cli.storage.from("perros-archivos").createSignedUrl(datos.rutaFoto, 60);
   if (!firmada.data?.signedUrl) hallazgo(`control positivo: recepción de B no puede firmar la foto de su propio perro (${firmada.error?.message})`);
@@ -566,7 +578,7 @@ console.log("\n── Razas: propuestas y normalizaciones");
     console.log("  ✔ ninguna escritura ni función de razas de Ludogteka alcanzó propuestas, historial ni perros de Huellitas");
 
     // Quién puede proponer: recepción de Huellitas sin el permiso «tarifas» no.
-    const { data: recB } = await SB.rpc("usuario_por_email", { p_email: "recepcion@huellitas.prueba" });
+    const recB = datos.recepcionB;
     const sinPermiso = await rpcB("razas_proponer", { p_nombre: `Otra ${MARCA}`, p_variantes: [], p_tamano_id: null, p_pelaje_id: null, p_texto_norm: null }, await tokenDe(recB));
     if (sinPermiso.ok) hallazgo("razas: recepción sin el permiso de tarifas pudo proponer una raza");
     else console.log("  ✔ recepción sin «Precios y tarifas» no puede proponer razas ni asignar grupos");

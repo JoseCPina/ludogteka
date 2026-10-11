@@ -9,10 +9,14 @@ import os from "node:os";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { slugDePrueba, hostDe, datosDelNegocio } from "./lib/negocio-prueba.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 export { A, URL, env };
-export const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
+// Negocio de prueba de esta corrida: --negocio <slug>; por omisión Huellitas en la nube y patitas-pruebas-b en la PC.
+export const SLUG = slugDePrueba();
+export const HOST = hostDe(SLUG);
+export const datos = datosDelNegocio(SLUG);
 export const B = datos.B;
 export const LUDOGTEKA = "10000000-0000-4000-8000-000000000001";
 
@@ -50,7 +54,7 @@ export const borrar = (token, ruta, negocio = B) => llamar(`${URL}/rest/v1/${rut
 /** Las personas de Huellitas: admin, dos recepcionistas (una con permisos y otra sin), estética, un cliente y la llave anónima. */
 export async function personas() {
   const { data: recepciones } = await SB.from("membresias").select("profile_id").eq("negocio_id", B).eq("rol", "recepcion").is("deleted_at", null).order("created_at");
-  if (recepciones.length < 2) throw new Error("Huellitas necesita al menos dos recepcionistas (corre negocio-prueba-dev.mjs).");
+  if (recepciones.length < 2) throw new Error(`${SLUG} necesita al menos dos recepcionistas (corre scripts/plataforma/sembrar-pruebas-b.mjs o negocio-prueba-dev.mjs --slug ${SLUG}).`);
   const recCon = recepciones[0].profile_id;
   const recSin = recepciones[1].profile_id;
   return {

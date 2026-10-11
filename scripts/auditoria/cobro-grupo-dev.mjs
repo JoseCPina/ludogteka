@@ -25,9 +25,12 @@ import os from "node:os";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { slugDePrueba, hostDe, datosDelNegocio, negocioPorSlug } from "./lib/negocio-prueba.mjs";
+const SLUG = slugDePrueba();
+const HOST = hostDe(SLUG);
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
-const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
+const datos = datosDelNegocio(SLUG);
 const B = datos.B;
 const LUDOGTEKA = "10000000-0000-4000-8000-000000000001";
 const hallazgos = [];
@@ -49,7 +52,7 @@ const cmp = (a, b) => Math.abs(Number(a) - Number(b)) < 0.005;
 
 const tAdmin = await tokenDe(datos.adminB);
 const { data: recepciones } = await A.from("membresias").select("profile_id").eq("negocio_id", B).eq("rol", "recepcion").is("deleted_at", null).order("created_at");
-if (recepciones.length < 2) throw new Error("Huellitas necesita al menos dos recepcionistas (corre negocio-prueba-dev.mjs).");
+if (recepciones.length < 2) throw new Error(`${SLUG} necesita al menos dos recepcionistas (corre scripts/plataforma/sembrar-pruebas-b.mjs o negocio-prueba-dev.mjs --slug ${SLUG}).`);
 const recSinPermiso = recepciones[1].profile_id;
 const tRec = await tokenDe(recepciones[0].profile_id);
 const tRecSin = await tokenDe(recSinPermiso);

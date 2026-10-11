@@ -27,6 +27,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { abrirNavegador } from "../lib/navegador.mjs";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { slugDePrueba, hostDe, datosDelNegocio, negocioPorSlug } from "./lib/negocio-prueba.mjs";
+const SLUG = slugDePrueba();
+const HOST = hostDe(SLUG);
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const PUERTO = 3001;
@@ -36,9 +39,8 @@ const hallazgo = (t) => { hallazgos.push(t); console.log(`  ✘ ${t}`); };
 const bien = (t) => console.log(`  ✔ ${t}`);
 const MARCA = "ZZCAJA";
 
-const { data: huellitas } = await A.from("negocios").select("id").eq("slug", "huellitas").single();
-const H = huellitas.id;
-const BASE = `http://huellitas.localhost:${PUERTO}`;
+const H = (await negocioPorSlug(A, SLUG)).id;
+const BASE = `http://${HOST}:${PUERTO}`;
 // Tablas por SH (encabezado de Huellitas): `A` sin encabezado queda acotado a Ludogteka.
 const SH = createClient(URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: false }, global: { headers: { "x-negocio-id": H } } });
 const jwt = async (id) => createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false }, global: { headers: { Authorization: `Bearer ${await tokenDe(id)}`, "x-negocio-id": H } } });
@@ -62,7 +64,7 @@ async function cookiesDe(profileId) {
   const valor = "base64-" + Buffer.from(JSON.stringify(s.session)).toString("base64url");
   const trozos = valor.match(/.{1,3180}/g);
   const nombre = `sb-${REF}-auth-token`;
-  return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: "huellitas.localhost", path: "/" }));
+  return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: HOST, path: "/" }));
 }
 
 const turnoAbierto = async () => (await SH.from("turnos_caja").select("id, abierto_por").eq("negocio_id", H).eq("estado", "abierto").maybeSingle()).data;
