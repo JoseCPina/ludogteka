@@ -83,10 +83,13 @@ for (const t of ["clientes", "perros", "reservas", "cobros", "contratos", "emple
 
 // Huella de B: cuántas filas y la última modificación, tabla por tabla.
 const TABLAS_HUELLA = ["clientes", "perros", "reservas", "cargos_aplicados", "cobros", "cobro_metodos", "turnos_caja", "contratos", "plantillas_contrato", "empleados", "gastos", "membresias", "permisos_staff", "servicios", "tarifas"];
+// Solo cuentan las filas que YA existían cuando empezó la auditoría: la base de desarrollo la comparten
+// otras corridas (la nube, otras auditorías) que crean y borran filas propias en Huellitas mientras esta corre.
+const INICIO_AUDITORIA = new Date().toISOString();
 async function huellaB() {
   const h = {};
   for (const t of TABLAS_HUELLA) {
-    const { data, error } = await SB.from(t).select("id, updated_at, deleted_at").eq("negocio_id", B);
+    const { data, error } = await SB.from(t).select("id, updated_at, deleted_at").eq("negocio_id", B).lte("created_at", INICIO_AUDITORIA);
     if (error) throw new Error(`huella ${t}: ${error.message}`);
     // El bloque de razas (10) edita y restaura UN perro de B con la llave de servicio; ese perro se
     // revisa ahí mismo (que Ludogteka no lo toque), no por su updated_at.
