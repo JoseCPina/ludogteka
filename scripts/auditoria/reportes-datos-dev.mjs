@@ -15,12 +15,13 @@ import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "node:crypto";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { marcaDe } from "./lib/negocio-prueba.mjs";
 import { comoPersona } from "./reportes-sesion-dev.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 
-export const SALIDA = path.join(os.tmpdir(), "reportes-datos.json");
-const MARCA = "ZZSECRETOB";
+export let SALIDA = path.join(os.tmpdir(), "reportes-datos.json");
+let MARCA = "ZZSECRETOB"; // cambia con el negocio que se prepara (marcaDe)
 
 const servicioEn = (negocio) =>
   createClient(URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: false }, global: { headers: { "x-negocio-id": negocio } } });
@@ -29,9 +30,11 @@ const exigir = (r, que) => {
   return r.data;
 };
 
-export async function prepararHuellitas() {
-  const { data: negocio } = await A.from("negocios").select("id").eq("slug", "huellitas").maybeSingle();
-  if (!negocio) throw new Error("Falta Huellitas: corre antes scripts/auditoria/negocio-prueba-dev.mjs");
+export async function prepararHuellitas(slug = "huellitas") {
+  MARCA = marcaDe(slug);
+  if (slug !== "huellitas") SALIDA = path.join(os.tmpdir(), `reportes-datos-${slug}.json`);
+  const { data: negocio } = await A.from("negocios").select("id").eq("slug", slug).maybeSingle();
+  if (!negocio) throw new Error(`Falta el negocio ${slug}: corre antes scripts/auditoria/negocio-prueba-dev.mjs`);
   const H = negocio.id;
   const SH = servicioEn(H);
   const hoyData = exigir(await SH.rpc("fecha_negocio"), "fecha_negocio");
@@ -40,15 +43,15 @@ export async function prepararHuellitas() {
   const manana = new Date(new Date(`${hoy}T12:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10);
 
   const quien = async (email) => exigir(await A.rpc("usuario_por_email", { p_email: email }), `usuario ${email}`);
-  const adminB = await quien("admin@huellitas.prueba");
-  const recepcionB = await quien("recepcion@huellitas.prueba");
-  const esteticaB = await quien("estetica@huellitas.prueba");
+  const adminB = await quien(`admin@${slug}.prueba`);
+  const recepcionB = await quien(`recepcion@${slug}.prueba`);
+  const esteticaB = await quien(`estetica@${slug}.prueba`);
 
   // Otra recepción, sin el permiso.
-  let sinPermiso = (await A.rpc("usuario_por_email", { p_email: "sinpermiso@huellitas.prueba" })).data;
+  let sinPermiso = (await A.rpc("usuario_por_email", { p_email: `sinpermiso@${slug}.prueba` })).data;
   if (!sinPermiso) {
     const creado = exigir(
-      await A.auth.admin.createUser({ email: "sinpermiso@huellitas.prueba", password: `Prueba-${crypto.randomUUID()}`, email_confirm: true, user_metadata: { nombre_completo: `Recepción sin permiso ${MARCA}` } }),
+      await A.auth.admin.createUser({ email: `sinpermiso@${slug}.prueba`, password: `Prueba-${crypto.randomUUID()}`, email_confirm: true, user_metadata: { nombre_completo: `Recepción sin permiso ${MARCA}` } }),
       "crear sinpermiso"
     );
     sinPermiso = creado.user.id;
@@ -67,8 +70,14 @@ export async function prepararHuellitas() {
   const por = (inicio) => perros.find((p) => p.nombre.startsWith(inicio));
   const firulais = por("Firulais");
   const canela = por("Canela");
-  const pelusa = por("Pelusa");
-  const bolita = por("Bolita");
+  // Un negocio recién sembrado no trae a Pelusa ni a Bolita (en Huellitas las dejó el propio reporte): se crean.
+  const crearPerro = async (nombre) => {
+    const nuevo = exigir(await comoAdmin.from("perros").insert({ cliente_id: firulais.cliente_id, nombre: `${nombre} ${MARCA}`, raza: "Criollo" }).select("id, nombre, cliente_id").single(), `perro ${nombre}`);
+    perros.push(nuevo);
+    return nuevo;
+  };
+  const pelusa = por("Pelusa") ?? (await crearPerro("Pelusa"));
+  const bolita = por("Bolita") ?? (await crearPerro("Bolita"));
 
   const { data: servicios } = await SH.from("servicios").select("id, categoria, unidad").eq("negocio_id", H).is("deleted_at", null).in("categoria", ["guarderia", "hotel"]);
   const guarderia = servicios.find((s) => s.categoria === "guarderia" && s.unidad === "dia");
