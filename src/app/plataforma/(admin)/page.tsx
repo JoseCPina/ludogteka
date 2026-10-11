@@ -6,12 +6,12 @@ import { Alert } from "@/components/ui/alert";
 import { telefonoDeCorreoSintetico } from "@/lib/auth/identidad";
 import { formatearTelefono } from "@/lib/telefono";
 import { textoDeOrigen, type Origen } from "@/lib/peludesk/origen";
-import { cuentaEnPruebas, cuentaEnTotales, esDemo } from "@/lib/plataforma/metricas";
+import { cuentaEnPruebas, cuentaEnTotales, esDemo, esInterno } from "@/lib/plataforma/metricas";
 
 type Fila = {
   id: string; slug: string; nombre: string; dominio: string | null; url_publica: string | null;
   zona_horaria: string; ciudad: string | null; activo: boolean; admins: string[] | null; clientes: number;
-  plan: "activo" | "prueba" | "demo"; prueba_termina_at: string | null; perros: number; reservas: number; cobros: number;
+  plan: "activo" | "prueba" | "demo"; interno?: boolean; prueba_termina_at: string | null; perros: number; reservas: number; cobros: number;
   ultima_actividad: string | null; ultimo_acceso: string | null;
   plan_nombre: string | null; complementos: string[]; modulos_cortesia: string[]; web_gratis_at: string | null;
 };
@@ -46,6 +46,7 @@ function Negocio({ n, ahora, origen }: { n: Fila; ahora: number; origen?: Partia
         <span className="flex flex-wrap items-baseline gap-2">
           <Link href={`/plataforma/negocios/${n.id}`} className="text-lg font-bold text-n-900 hover:underline">{n.nombre}</Link>
           {esDemo(n) && <span className="rounded-full bg-morado-suave px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-morado">Demo</span>}
+          {esInterno(n) && <span className="rounded-full bg-morado-suave px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-morado">Interno</span>}
         </span>
         <span className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${estado.clase}`}>{estado.texto}</span>
       </div>

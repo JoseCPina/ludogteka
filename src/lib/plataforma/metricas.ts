@@ -4,7 +4,7 @@
 // un total o un ingreso. Un negocio suspendido tampoco cuenta como «en
 // prueba». Todo conteo de negocios de /plataforma pasa por aquí.
 
-type ConPlan = { plan: string };
+type ConPlan = { plan: string; interno?: boolean };
 type ConPlanYEstado = ConPlan & { activo: boolean };
 
 export const PLAN_DEMO = "demo";
@@ -12,8 +12,11 @@ export const PLAN_DEMO = "demo";
 /** El negocio de demostración: visible, con etiqueta, fuera de los totales. */
 export const esDemo = (n: ConPlan): boolean => n.plan === PLAN_DEMO;
 
-/** Entra en los totales y las métricas (todo menos el demo). */
-export const cuentaEnTotales = (n: ConPlan): boolean => !esDemo(n);
+/** Negocio interno de PeluDesk (pruebas y demos de venta con módulos reales): visible, con etiqueta, fuera de los totales. */
+export const esInterno = (n: ConPlan): boolean => n.interno === true;
+
+/** Entra en los totales y las métricas (todo menos el demo y los internos). */
+export const cuentaEnTotales = (n: ConPlan): boolean => !esDemo(n) && !esInterno(n);
 
 /** «En prueba»: negocio real, en plan prueba y que no está suspendido. */
 export const cuentaEnPruebas = (n: ConPlanYEstado): boolean => cuentaEnTotales(n) && n.plan === "prueba" && n.activo;

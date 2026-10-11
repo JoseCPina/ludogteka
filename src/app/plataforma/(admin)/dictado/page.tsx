@@ -4,6 +4,7 @@ import { Field } from "@/components/ui/field";
 import { FormularioPlataforma } from "@/components/plataforma/formulario-plataforma";
 import { topeDictadoNegocio } from "../../acciones";
 import { cuentaEnTotales, esDemo } from "@/lib/plataforma/metricas";
+import { conInterno } from "@/lib/plataforma/internos";
 
 type Fila = { negocio_id: string; nombre: string; slug: string; plan: string; dictados: number; minutos: number; tope: number; propio: boolean; conserva_audio: boolean };
 
@@ -14,7 +15,7 @@ export default async function DictadoPlataforma({ searchParams }: { searchParams
   const hoy = new Date();
   const mes = /^\d{4}-\d{2}$/.test(mesParam ?? "") ? `${mesParam}-01` : `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-01`;
   const { data, error } = await supabase.rpc("plataforma_dictado_resumen", { p_mes: mes });
-  const filas = ((data ?? []) as Fila[]).map((f) => ({ ...f, dictados: Number(f.dictados), minutos: Number(f.minutos), tope: Number(f.tope) }));
+  const filas = (await conInterno(supabase, (data ?? []) as Fila[])).map((f) => ({ ...f, dictados: Number(f.dictados), minutos: Number(f.minutos), tope: Number(f.tope) }));
   const contadas = filas.filter(cuentaEnTotales);
   const total = contadas.reduce((a, f) => a + f.minutos, 0);
   const conUso = contadas.filter((f) => f.minutos > 0);
@@ -49,7 +50,7 @@ export default async function DictadoPlataforma({ searchParams }: { searchParams
               <li key={f.negocio_id} className="flex flex-col gap-2 py-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="font-semibold text-n-900">
-                    {f.nombre} {esDemo(f) && <span className="rounded-full bg-morado-suave px-2 py-0.5 text-xs font-bold uppercase text-morado">Demo</span>} <span className="text-sm font-normal text-n-600">· {f.slug} · {f.plan}{f.conserva_audio ? " · conserva audio 30 días" : ""}</span>
+                    {f.nombre} {esDemo(f) && <span className="rounded-full bg-morado-suave px-2 py-0.5 text-xs font-bold uppercase text-morado">Demo</span>} {f.interno && <span className="rounded-full bg-morado-suave px-2 py-0.5 text-xs font-bold uppercase text-morado">Interno</span>} <span className="text-sm font-normal text-n-600">· {f.slug} · {f.plan}{f.conserva_audio ? " · conserva audio 30 días" : ""}</span>
                   </span>
                   <span className={`tabular-nums text-sm ${pct >= 100 ? "font-semibold text-coral-oscuro" : pct >= 80 ? "text-ambar-oscuro" : "text-n-700"}`}>
                     {f.minutos} / {f.tope} min{f.propio ? " (tope propio)" : ""} · {f.dictados} dictados
