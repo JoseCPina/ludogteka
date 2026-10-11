@@ -87,3 +87,8 @@ export function mensajeTraslado(o: { dueno: string | null; perro: string; negoci
     ? `${saludo}, ya salimos de ${o.negocio} a recoger a ${o.perro}${hora}. Estamos en camino.`
     : `${saludo}, ya salimos de ${o.negocio} para llevar a ${o.perro} a tu domicilio${hora}. Estamos en camino.`;
 }
+
+/** wa.me al dueño (10 dígitos). Nunca manda nada solo: abre WhatsApp con el texto escrito. */
+export function enlaceWhatsAppExtra(telefono10: string, mensaje: string): string {
+  return `https://wa.me/52${telefono10.replace(/\D/g, "")}?text=${encodeURIComponent(mensaje)}`;
+}

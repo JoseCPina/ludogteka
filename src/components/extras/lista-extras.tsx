@@ -7,10 +7,9 @@ import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Alert } from "@/components/ui/alert";
-import { enlaceWhatsApp } from "@/lib/reporte/enlaces";
 import { normalizarTelefono } from "@/lib/telefono";
 import { formatearFechaCalendario } from "@/lib/formato";
-import { etiquetaEstadoExtra, mensajeTraslado, type ExtraFila } from "@/lib/extras/tipos";
+import { enlaceWhatsAppExtra, etiquetaEstadoExtra, mensajeTraslado, type ExtraFila } from "@/lib/extras/tipos";
 import { avisoTrasladoEnviado, cancelarExtra, marcarExtraHecho, salirTraslado } from "@/app/(staff)/extras/actions";
 
 const ESTILO: Record<string, string> = {
@@ -67,7 +66,7 @@ export function ListaExtras({
       setError("Este cliente no tiene un teléfono válido para avisarle.");
       return;
     }
-    const url = enlaceWhatsApp(
+    const url = enlaceWhatsAppExtra(
       tel,
       mensajeTraslado({ dueno: f.cliente_nombre.split(" ")[0] ?? null, perro: f.perro_nombre, negocio, sentido: f.sentido, hora: f.hora })
     );
