@@ -18,6 +18,7 @@ export default async function CargoSueltoPage({ searchParams }: { searchParams: 
       .from("servicios")
       .select("id, nombre, monto_libre, depende_tamano, orden")
       .eq("categoria", "cargo")
+      .not("clave", "like", "extra_%")
       .is("deleted_at", null)
       .order("orden"),
   ]);

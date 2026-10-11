@@ -1,0 +1,90 @@
+[
+  {
+    "numero": "01",
+    "motivo": "cambió src/app/(staff)/admin/page.tsx; cambió src/app/(staff)/recepcion/page.tsx; cambió src/lib/nav/config.ts (menú y estructura)"
+  },
+  {
+    "numero": "04",
+    "motivo": "cambió src/app/(staff)/recepcion/page.tsx; cambió src/lib/nav/config.ts (menú y estructura)"
+  },
+  {
+    "numero": "05",
+    "motivo": "cambió src/app/(staff)/recepcion/page.tsx"
+  },
+  {
+    "numero": "06",
+    "motivo": "cambió src/app/(staff)/admin/page.tsx"
+  },
+  {
+    "numero": "07",
+    "motivo": "cambió src/app/(staff)/admin/page.tsx"
+  },
+  {
+    "numero": "08",
+    "motivo": "cambió src/app/(staff)/admin/page.tsx"
+  },
+  {
+    "numero": "09",
+    "motivo": "cambió src/app/(staff)/admin/page.tsx"
+  },
+  {
+    "numero": "13",
+    "motivo": "cambió src/app/(staff)/recepcion/page.tsx"
+  },
+  {
+    "numero": "17",
+    "motivo": "cambió src/app/(staff)/recepcion/page.tsx"
+  },
+  {
+    "numero": "19",
+    "motivo": "cambió src/app/(staff)/recepcion/page.tsx"
+  },
+  {
+    "numero": "25",
+    "motivo": "cambió src/app/(staff)/reservas/[id]/page.tsx; cambió src/app/(staff)/reservas/estancias/[estanciaId]/checkin/page.tsx; cambió src/app/(staff)/reservas/estancias/[estanciaId]/checkout/page.tsx"
+  },
+  {
+    "numero": "29",
+    "motivo": "cambió src/app/(staff)/reservas/estancias/[estanciaId]/checkin/page.tsx"
+  },
+  {
+    "numero": "30",
+    "motivo": "cambió src/app/(staff)/reservas/[id]/page.tsx; cambió src/app/(staff)/reservas/estancias/[estanciaId]/checkout/page.tsx"
+  },
+  {
+    "numero": "31",
+    "motivo": "cambió src/app/(staff)/admin/page.tsx"
+  },
+  {
+    "numero": "33",
+    "motivo": "cambió src/app/(staff)/caja/cargo/page.tsx"
+  },
+  {
+    "numero": "36",
+    "motivo": "cambió src/app/(staff)/caja/cargo/page.tsx"
+  },
+  {
+    "numero": "49",
+    "motivo": "cambió src/app/(staff)/reportes/page.tsx"
+  },
+  {
+    "numero": "50",
+    "motivo": "cambió src/app/(staff)/admin/page.tsx"
+  },
+  {
+    "numero": "51",
+    "motivo": "cambió src/app/(staff)/admin/page.tsx"
+  },
+  {
+    "numero": "52",
+    "motivo": "cambió src/app/(staff)/admin/page.tsx"
+  },
+  {
+    "numero": "64",
+    "motivo": "cambió src/app/(staff)/admin/page.tsx"
+  },
+  {
+    "numero": "65",
+    "motivo": "cambió src/app/(staff)/admin/page.tsx"
+  }
+]

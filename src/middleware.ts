@@ -36,6 +36,9 @@ type Zona = { prefijo: string; rolesPermitidos: string[]; permisos?: string[]; a
 const ZONAS_PROTEGIDAS: Zona[] = [
   // Dar y quitar permisos nunca se delega.
   { prefijo: "/admin/permisos", rolesPermitidos: ["admin"] },
+  // Servicios extra (Hotel y guardería): el catálogo es de admin o de quien tenga el permiso.
+  { prefijo: "/extras/catalogo", rolesPermitidos: ["admin"], permisos: ["editar_catalogo_extras"] },
+  { prefijo: "/extras", rolesPermitidos: ["admin", "recepcion"] },
   // Con qué cobra el negocio y sus credenciales: solo admin, nunca se delega.
   { prefijo: "/admin/pagos", rolesPermitidos: ["admin"] },
   // La plantilla del reporte de guardería y los días de retención: solo admin.

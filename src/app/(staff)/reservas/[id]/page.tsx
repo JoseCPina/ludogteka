@@ -69,6 +69,7 @@ export default async function DetalleReservaPage({
       .from("servicios_cotizables")
       .select("id, nombre, clave, monto_libre")
       .eq("categoria", "cargo")
+      .not("clave", "like", "extra_%")
       .order("orden"),
     estanciaIds.length > 0
       ? supabase

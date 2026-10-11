@@ -1,5 +1,8 @@
 // Uso: node scripts/auditoria/negocio-prueba-dev.mjs   (SOLO DESARROLLO)
 //
+// Uso: node scripts/auditoria/negocio-prueba-dev.mjs [--slug huellitas] [--nombre Huellitas] [--zona America/Tijuana] [--ciudad Tijuana]
+//   Sin argumentos arma Huellitas (carril A). El carril B arma el suyo con scripts/plataforma/sembrar-pruebas-b.mjs.
+//
 // Crea (o reutiliza) el negocio de prueba "Huellitas" en desarrollo, con
 // operación real hecha por SU personal (JWT de cada quien, con el negocio
 // en el encabezado): clientes, perros, una cuenta con cargo y cobro, turno
@@ -16,12 +19,17 @@ import os from "node:os";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { copiarTarifasBase } from "./lib/tarifas-base.mjs";
+import { argumento, archivoDatos, marcaDe, SLUG_CARRIL_A } from "./lib/negocio-prueba.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 
 const LUDOGTEKA = "10000000-0000-4000-8000-000000000001";
-const MARCA = "ZZSECRETOB";
-const SALIDA = path.join(os.tmpdir(), "peludesk-negocio-b.json");
+const SLUG = argumento("slug") ?? SLUG_CARRIL_A;
+const NOMBRE = argumento("nombre") ?? (SLUG === SLUG_CARRIL_A ? "Huellitas" : SLUG);
+// Cada negocio de prueba lleva SU marca (la de Huellitas no cambia; las demás se derivan del slug).
+const MARCA = argumento("marca") ?? marcaDe(SLUG);
+const SALIDA = archivoDatos(SLUG);
 const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
 
 const servicioEn = (negocio) =>
@@ -37,16 +45,21 @@ const exigir = (r, que) => {
 };
 
 // ── Negocio ──
-let { data: negocio } = await A.from("negocios").select("id").eq("slug", "huellitas").maybeSingle();
+let { data: negocio } = await A.from("negocios").select("id").eq("slug", SLUG).maybeSingle();
 if (!negocio) {
   const id = exigir(
-    await A.rpc("crear_negocio", { p_slug: "huellitas", p_nombre: "Huellitas", p_zona_horaria: "America/Monterrey", p_ciudad: "Monterrey" }),
+    await A.rpc("crear_negocio", { p_slug: SLUG, p_nombre: NOMBRE, p_zona_horaria: argumento("zona") ?? "America/Monterrey", p_ciudad: argumento("ciudad") ?? "Monterrey" }),
     "crear_negocio"
   );
   negocio = { id };
   console.log("negocio creado", id);
 }
 const B = negocio.id;
+// Un negocio de prueba que no es Huellitas nace sin precios: se le copian los del modelo (Ludogteka de desarrollo).
+if (SLUG !== SLUG_CARRIL_A) {
+  const t = await copiarTarifasBase(B, LUDOGTEKA);
+  if (t.copiadas) console.log(`tarifas copiadas del modelo: ${t.copiadas} (por día: ${t.porDia})`);
+}
 const SB = servicioEn(B);
 const SA = servicioEn(LUDOGTEKA);
 
@@ -64,12 +77,12 @@ async function membresia(profileId, negocioId) {
   return (await A.from("membresias").select("rol, cliente_id").eq("profile_id", profileId).eq("negocio_id", negocioId).is("deleted_at", null).maybeSingle()).data;
 }
 
-const adminB = await cuenta("admin@huellitas.prueba", `Admin Huellitas ${MARCA}`);
+const adminB = await cuenta(`admin@${SLUG}.prueba`, `Admin ${NOMBRE} ${MARCA}`);
 if (!(await membresia(adminB, B))) exigir(await A.rpc("agregar_admin_negocio", { p_negocio_id: B, p_profile_id: adminB }), "agregar_admin_negocio");
-const recepcionB = await cuenta("recepcion@huellitas.prueba", `Recepción Huellitas ${MARCA}`);
-if (!(await membresia(recepcionB, B))) exigir(await SB.rpc("asignar_rol_staff", { p_user_id: recepcionB, p_rol: "recepcion", p_nombre_completo: `Recepción Huellitas ${MARCA}` }), "rol recepción");
-const esteticaB = await cuenta("estetica@huellitas.prueba", `Estética Huellitas ${MARCA}`);
-if (!(await membresia(esteticaB, B))) exigir(await SB.rpc("asignar_rol_staff", { p_user_id: esteticaB, p_rol: "estetica", p_nombre_completo: `Estética Huellitas ${MARCA}` }), "rol estética");
+const recepcionB = await cuenta(`recepcion@${SLUG}.prueba`, `Recepción ${NOMBRE} ${MARCA}`);
+if (!(await membresia(recepcionB, B))) exigir(await SB.rpc("asignar_rol_staff", { p_user_id: recepcionB, p_rol: "recepcion", p_nombre_completo: `Recepción ${NOMBRE} ${MARCA}` }), "rol recepción");
+const esteticaB = await cuenta(`estetica@${SLUG}.prueba`, `Estética ${NOMBRE} ${MARCA}`);
+if (!(await membresia(esteticaB, B))) exigir(await SB.rpc("asignar_rol_staff", { p_user_id: esteticaB, p_rol: "estetica", p_nombre_completo: `Estética ${NOMBRE} ${MARCA}` }), "rol estética");
 
 // La estilista que trabaja en los dos: una de Ludogteka, con acceso también a Huellitas.
 const { data: estLudo } = await A.from("membresias").select("profile_id").eq("negocio_id", LUDOGTEKA).eq("rol", "estetica").is("deleted_at", null).order("created_at").limit(1).single();
@@ -78,6 +91,20 @@ if (!(await membresia(esteticaAmbos, B))) exigir(await SB.rpc("asignar_rol_staff
 
 const ADM = await comoPersona(adminB, B);
 const REC = await comoPersona(recepcionB, B);
+
+// Un negocio de prueba que no es Huellitas abre los siete días (9:00 a 19:00) y su configuración rige desde
+// antes (la que copia crear_negocio nace con la fecha de hoy y las estancias de ayer no tendrían cupo):
+// las auditorías no dependen del día en que corren (la guardería de Ludogteka no abre en domingo).
+if (SLUG !== SLUG_CARRIL_A) {
+  const { data: cfgs } = await SB.from("cupo_configuracion").select("id").eq("negocio_id", B).is("deleted_at", null).order("created_at");
+  const base = cfgs[0];
+  for (const extra of cfgs.slice(1)) {
+    exigir(await SB.from("horario_semana").update({ deleted_at: new Date().toISOString() }).eq("cupo_configuracion_id", extra.id), "horario de la configuración repetida");
+    exigir(await SB.from("cupo_configuracion").update({ deleted_at: new Date().toISOString() }).eq("id", extra.id), "configuración repetida");
+  }
+  exigir(await SB.from("cupo_configuracion").update({ vigencia_desde: "2026-01-01" }).eq("id", base.id), "vigencia de la configuración");
+  exigir(await SB.from("horario_semana").update({ hora_apertura: "09:00", hora_cierre: "19:00" }).eq("cupo_configuracion_id", base.id).is("deleted_at", null), "horario de siete días");
+}
 
 // ── Clientes y perros de Huellitas (los captura recepción de Huellitas) ──
 async function clienteB(nombre, telefono) {
@@ -92,9 +119,9 @@ async function perroB(clienteId, nombre) {
 }
 
 // Cliente solo de Huellitas, con cuenta.
-const clienteSoloB = await clienteB(`Dueña Huellitas ${MARCA}`, "8110000001");
+const clienteSoloB = await clienteB(`Dueña ${NOMBRE} ${MARCA}`, "8110000001");
 const perroSoloB = await perroB(clienteSoloB, `Firulais ${MARCA}`);
-const cuentaSoloB = await cuenta("cliente@huellitas.prueba", `Dueña Huellitas ${MARCA}`);
+const cuentaSoloB = await cuenta(`cliente@${SLUG}.prueba`, `Dueña ${NOMBRE} ${MARCA}`);
 if (!(await membresia(cuentaSoloB, B))) exigir(await SB.rpc("vincular_membresia_cliente", { p_user_id: cuentaSoloB, p_cliente_id: clienteSoloB }), "vincular cliente B");
 
 // Cliente de los dos: un cliente de Ludogteka con cuenta, dado de alta
@@ -105,7 +132,7 @@ const { data: ambos } = await A.from("membresias")
   .order("created_at").limit(1).single();
 const cuentaAmbos = ambos.profile_id;
 const clienteAmbosA = ambos.cliente_id;
-const clienteAmbosB = await clienteB(`${ambos.clientes.nombre} en Huellitas ${MARCA}`, ambos.clientes.telefono);
+const clienteAmbosB = await clienteB(`${ambos.clientes.nombre} en ${NOMBRE} ${MARCA}`, ambos.clientes.telefono);
 const perroAmbosB = await perroB(clienteAmbosB, `Canela ${MARCA}`);
 if (!(await membresia(cuentaAmbos, B))) exigir(await SB.rpc("vincular_membresia_cliente", { p_user_id: cuentaAmbos, p_cliente_id: clienteAmbosB }), "vincular cliente de los dos");
 
@@ -128,7 +155,7 @@ if (!cobroPrevio) exigir(await REC.rpc("registrar_cobro", { p_reserva_id: reserv
 // ── Contrato: plantilla publicada y contrato generado ──
 const { data: tipo } = await SB.from("tipos_contrato").select("id").eq("negocio_id", B).is("deleted_at", null).order("orden").limit(1).single();
 const { data: plantilla } = await SB.from("plantillas_contrato").select("id").eq("negocio_id", B).eq("tipo_contrato_id", tipo.id).limit(1).maybeSingle();
-if (!plantilla) exigir(await ADM.rpc("publicar_plantilla", { p_tipo_contrato_id: tipo.id, p_titulo: `Contrato Huellitas ${MARCA}`, p_cuerpo: `Contrato de prueba ${MARCA} para {{perro_nombre}}.` }), "publicar plantilla");
+if (!plantilla) exigir(await ADM.rpc("publicar_plantilla", { p_tipo_contrato_id: tipo.id, p_titulo: `Contrato ${NOMBRE} ${MARCA}`, p_cuerpo: `Contrato de prueba ${MARCA} para {{perro_nombre}}.` }), "publicar plantilla");
 const { data: contratoPrevio } = await SB.from("contratos").select("id").eq("negocio_id", B).eq("perro_id", perroSoloB).limit(1).maybeSingle();
 if (!contratoPrevio) exigir(await REC.rpc("generar_contrato", { p_perro_id: perroSoloB, p_tipo_contrato_id: tipo.id }), "generar contrato");
 
@@ -144,7 +171,7 @@ if (!gastoPrevio) {
 // ── Las políticas y reglas de Huellitas, con la marca: la auditoría entre
 // negocios comprueba que nadie de Ludogteka las alcance y que el alta de
 // Ludogteka no las muestre ──
-exigir(await ADM.rpc("guardar_politicas_negocio", { p_textos: { agresivos: `Regla de Huellitas ${MARCA}: no recibimos perros que muerdan.` } }), "políticas");
+exigir(await ADM.rpc("guardar_politicas_negocio", { p_textos: { agresivos: `Regla de ${NOMBRE} ${MARCA}: no recibimos perros que muerdan.` } }), "políticas");
 
 // ── Una foto en Storage bajo el expediente de Huellitas ──
 const rutaFoto = `${clienteSoloB}/${perroSoloB}/perfil/foto.jpg`;
@@ -153,7 +180,7 @@ await SB.storage.from("perros-archivos").upload(rutaFoto, new Blob([Buffer.from(
 // ── Reporte de comportamiento, fotos y videos, galería y ligas (con la marca) ──
 {
   const { prepararHuellitas, sembrarReportesConMarca } = await import("./reportes-datos-dev.mjs");
-  await sembrarReportesConMarca(await prepararHuellitas());
+  await sembrarReportesConMarca(await prepararHuellitas(SLUG));
 }
 
 // ── Lo que la auditoría necesita ──
@@ -166,9 +193,9 @@ for (const t of tablasB) {
 }
 fs.writeFileSync(
   SALIDA,
-  JSON.stringify({ B, adminB, recepcionB, esteticaB, esteticaAmbos, cuentaSoloB, cuentaAmbos, clienteSoloB, clienteAmbosA, clienteAmbosB, perroSoloB, perroAmbosB, reservaB: reserva.id, rutaFoto, idsB: [...new Set(idsB)] }, null, 1)
+  JSON.stringify({ B, slug: SLUG, marca: MARCA, A: LUDOGTEKA, adminB, recepcionB, esteticaB, esteticaAmbos, cuentaSoloB, cuentaAmbos, clienteSoloB, clienteAmbosA, clienteAmbosB, perroSoloB, perroAmbosB, reservaB: reserva.id, rutaFoto, idsB: [...new Set(idsB)] }, null, 1)
 );
 const conteo = async (t) => (await SB.from(t).select("id", { count: "exact", head: true }).eq("negocio_id", B)).count;
-console.log(`Huellitas ${B}: clientes ${await conteo("clientes")}, perros ${await conteo("perros")}, reservas ${await conteo("reservas")}, cobros ${await conteo("cobros")}, contratos ${await conteo("contratos")}, empleados ${await conteo("empleados")}, gastos ${await conteo("gastos")}, membresías ${await conteo("membresias")}`);
+console.log(`${NOMBRE} ${B}: clientes ${await conteo("clientes")}, perros ${await conteo("perros")}, reservas ${await conteo("reservas")}, cobros ${await conteo("cobros")}, contratos ${await conteo("contratos")}, empleados ${await conteo("empleados")}, gastos ${await conteo("gastos")}, membresías ${await conteo("membresias")}`);
 console.log(`ids para la auditoría: ${idsB.length} → ${SALIDA}`);
 void SA;

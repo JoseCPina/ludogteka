@@ -20,11 +20,14 @@ import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
 import { abrirNavegador } from "../lib/navegador.mjs";
+import { slugDePrueba, hostDe, datosDelNegocio, negocioPorSlug } from "./lib/negocio-prueba.mjs";
+const SLUG = slugDePrueba();
+const HOST = hostDe(SLUG);
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
-const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
+const datos = datosDelNegocio(SLUG);
 const B = datos.B;
-const BASE = "http://huellitas.localhost:3001";
+const BASE = `http://${HOST}:3001`;
 const REF = new globalThis.URL(URL).hostname.split(".")[0];
 const hallazgos = [];
 const hallazgo = (t) => { hallazgos.push(t); console.log(`  ✘ ${t}`); };
@@ -42,7 +45,7 @@ async function cookiesDe(profileId) {
   const valor = "base64-" + Buffer.from(JSON.stringify(s.session)).toString("base64url");
   const trozos = valor.match(/.{1,3180}/g);
   const nombre = `sb-${REF}-auth-token`;
-  return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: "huellitas.localhost", path: "/" }));
+  return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: HOST, path: "/" }));
 }
 const comoPersona = async (id) => createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${await tokenDe(id)}`, "x-negocio-id": B } } });
 const sinDesborde = async (pag, donde) => {

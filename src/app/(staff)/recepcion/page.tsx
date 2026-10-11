@@ -1,5 +1,6 @@
 import { TableroDia } from "../tablero-dia";
 import { VideosInicio } from "@/components/ayuda/videos-inicio";
+import { ExtrasTablero } from "@/components/extras/extras-tablero";
 
 // El inicio de recepción: el tablero del día de toda la casa. Guardería,
 // Hotel y Estética siguen teniendo su propia pantalla filtrada; esta es
@@ -9,6 +10,7 @@ export default async function RecepcionPage() {
     <div className="flex flex-col gap-6">
       <VideosInicio />
       <TableroDia />
+      <ExtrasTablero />
     </div>
   );
 }
