@@ -7,7 +7,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { generarPdfContrato } from "@/lib/contratos/generar-pdf";
 import { fechaLocalDeInstante, horaLocalDeInstante } from "@/lib/formato";
-import { zonaActual } from "@/lib/negocio/actual";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { llenarConsentimiento, variablesDesconocidas } from "@/lib/veterinaria/carnet";
 import { traducirError } from "../../reservas/traducir-error";
 import type { ResultadoAccion } from "@/lib/empleados/tipos";
@@ -60,7 +61,13 @@ export async function firmarConsentimiento(consentimientoId: string, firmanteNom
   });
   const hash = crypto.createHash("sha256").update(pdfBytes).digest("hex");
   const ruta = `${c.cliente_id}/${c.perro_id}/consentimientos/${c.id}.pdf`;
-  const { error: errorSubida } = await supabase.storage.from(BUCKET).upload(ruta, pdfBytes, { contentType: "application/pdf", upsert: false });
+  // El PDF lo sube el servidor: un médico designado con rol de estética no tiene permiso de escritura en el
+  // almacenamiento de las mascotas, así que la autorización se comprueba aquí (la base vuelve a comprobarla al
+  // registrar la firma) y la ruta sale del consentimiento que la RLS dejó leer, nunca del navegador.
+  const { data: puede } = await supabase.rpc("vet_puede", { p_permiso: "hospitalizar" });
+  if (puede !== true) return { error: "Firmar un consentimiento en el mostrador es de un médico veterinario, de admin o de quien tenga «Hospitalizar y medicar»." };
+  const negocio = await negocioActual();
+  const { error: errorSubida } = await createSupabaseAdminClient(negocio.id).storage.from(BUCKET).upload(ruta, pdfBytes, { contentType: "application/pdf", upsert: false });
   if (errorSubida) return { error: "No pudimos guardar el PDF firmado. Intenta de nuevo." };
 
   const { error } = await supabase.rpc("consentimiento_registrar_firma", { p_id: consentimientoId, p_firmante: nombre, p_metodo: "mostrador", p_ip: ip, p_hash: hash, p_path: ruta });
