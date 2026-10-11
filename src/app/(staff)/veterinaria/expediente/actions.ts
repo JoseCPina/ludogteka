@@ -1,5 +1,6 @@
 "use server";
 
+import { prepararSalaTeleconsulta } from "../agenda/telemedicina-actions";
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -40,7 +41,12 @@ export async function agendarCita(fd: FormData): Promise<ResultadoAccion> {
   });
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/agenda");
-  const aviso = (data as { empalmada?: boolean } | null)?.empalmada ? "Urgencia agendada; se empalma con otra cita de ese médico." : null;
+  const resultado = data as { id?: string; empalmada?: boolean } | null;
+  if (texto(fd, "tipo") === "teleconsulta" && resultado?.id) {
+    const sala = await prepararSalaTeleconsulta(resultado.id);
+    return { error: null, ir: `/veterinaria/teleconsulta/${resultado.id}${sala.error ? "?aviso=sala" : "?nueva=1"}` };
+  }
+  const aviso = resultado?.empalmada ? "Urgencia agendada; se empalma con otra cita de ese médico." : null;
   return { error: null, ir: `/veterinaria/agenda?fecha=${fecha}${aviso ? "&aviso=urgencia" : ""}` };
 }
 

@@ -8,6 +8,7 @@ export const TIPOS_CITA: Record<string, string> = {
   cirugia: "Cirugía",
   seguimiento: "Seguimiento",
   urgencia: "Urgencia",
+  teleconsulta: "Teleconsulta",
 };
 
 export const ESTADOS_CITA: Record<string, { etiqueta: string; estilo: string }> = {
@@ -69,6 +70,8 @@ export type ConsultaVet = {
   cliente_id: string;
   cita_id: string | null;
   tipo_clave: string;
+  /** «telemedicina» si fue una teleconsulta. */
+  modalidad?: "presencial" | "telemedicina";
   medico_id: string;
   estado: "borrador" | "firmada" | "anulada";
   atendida_at: string;

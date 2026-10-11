@@ -10,6 +10,10 @@ import { SECCIONES_CONSULTA, TIPOS_CITA, etiquetaBandera, type DetalleConsulta }
 import { AccionesFirmada, AnularItem } from "../../expediente/anular-item";
 import { CapturarResultado, SubirAdjunto } from "../../expediente/captura";
 import { EditorConsulta } from "./editor-consulta";
+import { UsoDictado } from "./uso-dictado";
+
+// El dictado transcribe y arma el borrador dentro de una acción del servidor: puede tardar más de lo normal.
+export const maxDuration = 120;
 
 const VITALES: { clave: string; etiqueta: string; unidad: string }[] = [
   { clave: "peso_kg", etiqueta: "Peso", unidad: "kg" },
@@ -62,6 +66,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
           <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${c.estado === "firmada" ? "bg-menta-suave text-menta-oscuro" : c.estado === "anulada" ? "bg-coral-suave text-coral-oscuro" : "bg-ambar-suave text-ambar-oscuro"}`}>
             {c.estado === "firmada" ? "Firmada" : c.estado === "anulada" ? "Anulada" : "Borrador"}
           </span>
+          {c.modalidad === "telemedicina" && <span className="rounded-full bg-morado-suave px-2.5 py-1 text-xs font-semibold text-morado">Telemedicina</span>}
         </div>
         <p className="mt-1 text-n-700">
           {etiquetaEspecie(d.mascota.especie)}{d.mascota.raza ? ` · ${d.mascota.raza}` : ""} · de {d.dueno.nombre}{d.dueno.telefono ? ` · ${d.dueno.telefono}` : ""} · {formatearFecha(c.atendida_at, zona)}
@@ -74,6 +79,8 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
           Motivo: {c.anulada_motivo}. Su contenido se conserva abajo, sin cambios, como parte del historial.
         </Alert>
       )}
+
+      <UsoDictado consultaId={id} />
 
       {c.estado === "borrador" && puedeAtender === true ? (
         <EditorConsulta consulta={c} especie={d.mascota.especie} soyElMedico={soyElMedico} nombreMedico={d.medico.nombre} />

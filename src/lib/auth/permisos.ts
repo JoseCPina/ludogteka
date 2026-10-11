@@ -222,6 +222,18 @@ export const PERMISOS = [
       "Ve y exporta el libro de control de los productos de Grupo I y de los estupefacientes y psicotrópicos de la fracción II: fecha, folio de la receta, producto, laboratorio, lote, entradas, salidas, saldo, paciente y médico (con el módulo Veterinaria prendido). Un médico veterinario designado ya lo tiene. Viene apagado.",
   },
   {
+    clave: "usar_dictado",
+    etiqueta: "Usar dictado",
+    implica:
+      "Dicta la consulta por voz: el audio se transcribe, la IA arma un borrador SOAP y sugiere diagnósticos del catálogo, y el médico lo revisa antes de firmar (con el módulo Veterinaria prendido). Cuenta contra los minutos de dictado del mes del negocio. Un médico veterinario designado ya lo tiene. Viene apagado.",
+  },
+  {
+    clave: "atender_teleconsultas",
+    etiqueta: "Atender teleconsultas",
+    implica:
+      "Entra a la sala de una teleconsulta, genera la liga del dueño y documenta la consulta a distancia (con el módulo Veterinaria prendido). Un médico veterinario designado ya lo tiene. Viene apagado.",
+  },
+  {
     clave: "importar_datos",
     etiqueta: "Importar clientes y mascotas",
     implica:
