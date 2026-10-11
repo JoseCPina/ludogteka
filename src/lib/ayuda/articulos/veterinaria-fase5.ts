@@ -22,7 +22,7 @@ export const ARTICULOS_VETERINARIA_FASE5: Articulo[] = [
 2. Lee el aviso y marca **Ya le avisé al dueño que voy a grabar mi dictado de esta consulta**. Sin esa casilla no empieza.
 3. Habla como le hablarías a un colega: motivo, lo que cuenta el dueño, examen físico, hallazgos y plan.
 4. Termina y espera unos segundos. Aparece el **Borrador hecho con IA** con los textos de cada sección, los signos vitales que dictaste y los **diagnósticos sugeridos del catálogo**.
-5. Revisa y corrige. Elige qué pasa a la consulta: lo que ya tenía escrito no se pierde, el dictado se agrega al final.
+5. Revisa cada parte, marca lo que quieres y aprieta **Pasar al expediente**: lo que ya tenías escrito no se pierde, el dictado se agrega al final. Después corriges y firmas como siempre.
 
 > Nada se firma solo. Es un borrador: tú lo revisas y tú firmas con tu cédula.
 
@@ -93,7 +93,7 @@ Atender teleconsultas es del médico veterinario designado, de un admin o de qui
 1. Ve el nombre de su mascota, el médico, la fecha y la hora.
 2. Lee y firma el **consentimiento de teleconsulta** con su nombre. Sin firma no puede entrar.
 3. Si el negocio cobra por adelantado, ve el botón de pago. Sin pago no puede entrar.
-4. Cuando falta poco para la hora, la pantalla se actualiza sola y aparece **Entrar a la sala**. Su navegador le pide permiso para la cámara y el micrófono.
+4. Cuando falta poco para la hora, la pantalla se actualiza sola y aparece **Entrar a la videollamada**. Su navegador le pide permiso para la cámara y el micrófono.
 
 ## Si dice que no puede entrar
 
