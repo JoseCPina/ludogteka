@@ -16,6 +16,7 @@ const PERMISOS = [
   "configuracion_negocio", "excepciones_reserva", "descuentos_sin_tope", "plantillas_contrato", "corregir_estilista", "corregir_servicio", "tarjeta_manual", "ajustar_pases",
   "anular_cobros", "editar_monto_cobros", "corregir_turnos_cerrados", "agregar_efectivo", "eliminar_citas",
   "importar_datos",
+  "agregar_servicios_extra", "editar_catalogo_extras",
 ];
 
 
@@ -242,6 +243,8 @@ const pruebas = {
   async editar_monto_cobros() { return porGuardia(R.rpc("editar_monto_cobro", { p_cobro_id: crypto.randomUUID(), p_metodo: "efectivo", p_monto_nuevo: 1, p_motivo: "prueba de permisos" })); },
   async agregar_efectivo() { return porGuardia(R.rpc("cancelar_efectivo_agregado", { p_id: crypto.randomUUID(), p_motivo: "prueba de permisos" })); },
   async eliminar_citas() { return porGuardia(R.rpc("eliminar_cita_estetica", { p_cita_id: crypto.randomUUID(), p_motivo: "prueba de permisos" })); },
+  async agregar_servicios_extra() { return porGuardia(R.rpc("extra_marcar_hecho", { p_id: crypto.randomUUID() })); },
+  async editar_catalogo_extras() { return porGuardia(R.rpc("extra_zona_guardar", { p_id: null, p_extra: crypto.randomUUID(), p_nombre: "x", p_km_hasta: null, p_precio: 1, p_activo: true })); },
   async corregir_turnos_cerrados() {
     const r = await R.rpc("tiene_permiso", { p_permiso: "corregir_turnos_cerrados" });
     return { dejo: r.data === true, ve: r.data === true };
@@ -317,6 +320,8 @@ await A.from("estancias").update({ estado: "cancelada", deleted_at: new Date().t
 await A.from("reservas").update({ deleted_at: new Date().toISOString() }).eq("id", reservaDesc.id);
 // «Registrar tarjeta manual» viene prendido por omisión para toda la recepción: se deja como estaba.
 await dar("tarjeta_manual");
+// «Agregar servicios extra» también viene prendido por omisión en recepción.
+await dar("agregar_servicios_extra");
 if (turnoTarjeta?.propio) await A.from("turnos_caja").update({ estado: "cerrado", cerrado_at: new Date().toISOString(), deleted_at: new Date().toISOString() }).eq("id", turnoTarjeta.id);
 
 console.log(`\n${fallas.length === 0 ? "TODO BIEN" : `FALLAS: ${fallas.length}`}`);

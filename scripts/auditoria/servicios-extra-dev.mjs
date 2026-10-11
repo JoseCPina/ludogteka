@@ -111,6 +111,24 @@ try {
   const misRec = await rpc(tRec, "mis_permisos");
   comprobar(misRec.ok && misRec.cuerpo.includes("agregar_servicios_extra"), "recepción trae «Agregar servicios extra» encendido");
   comprobar(!misRec.cuerpo.includes("editar_catalogo_extras"), "…y «Editar catálogo» apagado");
+  // Toda la recepción de todos los negocios tiene su fila del permiso (sembrada por la migración o por el trigger).
+  const { data: recs } = await A.from("membresias").select("negocio_id, profile_id").eq("rol", "recepcion").is("deleted_at", null);
+  const { data: filasPerm } = await A.from("permisos_staff").select("negocio_id, profile_id").eq("permiso", "agregar_servicios_extra");
+  const conFila = new Set((filasPerm ?? []).map((x) => `${x.negocio_id}:${x.profile_id}`));
+  comprobar((recs ?? []).every((m) => conFila.has(`${m.negocio_id}:${m.profile_id}`)), `toda la recepción (${(recs ?? []).length} cuentas) tiene su fila de «Agregar servicios extra»: encendido por omisión`);
+  // …y la que llegue después también (trigger de membresías).
+  const correoNuevo = `recepcion-extras-${MARCA}@peludesk.test`;
+  const { data: nuevoU, error: errU } = await A.auth.admin.createUser({ email: correoNuevo, password: `Prueba-${MARCA}-x1`, email_confirm: true });
+  if (!errU && nuevoU?.user) {
+    const m = await SB.from("membresias").insert({ negocio_id: B, profile_id: nuevoU.user.id, rol: "recepcion" });
+    const { data: pn } = await A.from("permisos_staff").select("permiso, revocado_at").eq("negocio_id", B).eq("profile_id", nuevoU.user.id);
+    comprobar(!m.error && (pn ?? []).some((x) => x.permiso === "agregar_servicios_extra" && !x.revocado_at) && !(pn ?? []).some((x) => x.permiso === "editar_catalogo_extras"), `una recepcionista nueva trae «Agregar servicios extra» encendido y el catálogo apagado (${m.error?.message ?? "ok"})`);
+    await A.from("permisos_staff").delete().eq("profile_id", nuevoU.user.id);
+    await A.from("membresias").delete().eq("profile_id", nuevoU.user.id);
+    await A.auth.admin.deleteUser(nuevoU.user.id);
+  } else {
+    console.log("   (no se pudo crear la cuenta de prueba:", errU?.message, ")");
+  }
   await rpc(tAdmin, "otorgar_permiso", { p_profile_id: recSinPermiso, p_permiso: "agregar_servicios_extra" });
   const quitar = await rpc(tAdmin, "revocar_permiso", { p_profile_id: recSinPermiso, p_permiso: "agregar_servicios_extra" });
   comprobar(quitar.ok, `admin le quita «Agregar servicios extra» a una recepcionista (${quitar.mensaje || "ok"})`);
