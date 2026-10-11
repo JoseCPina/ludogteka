@@ -95,7 +95,9 @@ Puedes negarte a las finalidades secundarias eligiendo «Rechazar» en el aviso 
 | **Vercel** | Alojamiento de la aplicación y del sitio, registros de servidor; estadísticas de visitas si aceptas «Analítica» | Estados Unidos |
 | **Stripe** | Cobro de la suscripción. Es responsable de los datos de pago que recibe directamente de ti | Estados Unidos y donde Stripe opere |
 | **Meta (WhatsApp, Facebook, Instagram)** | WhatsApp Business para atender mensajes; píxel y API de conversiones para medir publicidad, **solo si aceptas «Marketing»** | Estados Unidos y donde Meta opere |
-| **Anthropic** | Inteligencia artificial que redacta las respuestas del bot de WhatsApp y del asistente de ayuda; recibe el texto de la conversación necesario para responder | Estados Unidos |
+| **Anthropic** | Inteligencia artificial que redacta las respuestas del bot de WhatsApp y del asistente de ayuda, y que ordena el texto dictado en un borrador de consulta que el médico revisa y firma; recibe el texto necesario para responder | Estados Unidos |
+| **ElevenLabs** | Solo si un negocio usa el dictado por voz del módulo Veterinaria: transcribe el audio que dicta el médico. El audio se borra al transcribirse, salvo que el negocio elija conservarlo 30 días y lo avise en pantalla | Estados Unidos y donde ElevenLabs opere |
+| **Daily** | Solo si un negocio hace teleconsultas: transmite el video y el audio de la llamada entre el médico y el dueño. **PeluDesk no graba las videollamadas** | Estados Unidos y donde Daily opere |
 | **Telegram** | Bandeja interna del equipo de PeluDesk: avisos de mensajes de WhatsApp y de tickets para poder atenderlos | Donde Telegram opere |
 | **Google (Maps Platform)** | Calcular distancias y ubicar direcciones, únicamente cuando un negocio cotiza una recolección a domicilio. Son datos de los clientes de ese negocio (Menteo como encargado) | Estados Unidos y donde Google opere |
 | **Mercado Pago y Clip** | Solo cuando un negocio conecta su propia cuenta para cobrar a sus clientes; los usa el negocio y Menteo solo guarda la conexión | México y donde el proveedor opere |

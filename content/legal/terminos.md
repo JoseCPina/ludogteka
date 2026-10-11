@@ -64,6 +64,7 @@ PeluDesk puede conectarse con servicios que no son de Menteo:
 - **Mercado Pago y Clip**, para que tu negocio cobre a sus clientes con tu propia cuenta o terminal. Los términos, comisiones, disponibilidad y devoluciones de esos cobros son entre tú y el proveedor; Menteo no es parte de esa relación ni responde por sus fallas, comisiones o retenciones.
 - **Google Maps**, para cotizar recolecciones a domicilio. Hay un límite mensual de consultas por negocio; al llegar a él, los kilómetros se capturan a mano.
 - **Stripe**, para cobrar la suscripción de PeluDesk.
+- **ElevenLabs y Anthropic**, en el dictado por voz de Veterinaria (transcripción y borrador de la consulta, que el médico siempre revisa y firma) y **Daily**, para la videollamada de una teleconsulta (sin grabación). Hay un límite mensual de minutos de dictado por negocio.
 - **WhatsApp y otros canales**, cuando los uses para escribirles a tus clientes.
 
 Tú decides si conectas cada integración y puedes desconectarla cuando quieras. Un tercero puede cambiar su servicio o sus condiciones sin que Menteo pueda evitarlo.
@@ -110,7 +111,7 @@ El Encargado mantiene medidas administrativas, técnicas y físicas razonables, 
 
 ### E. Subencargados
 
-El Responsable autoriza a los siguientes subencargados, que tratan datos por cuenta de Menteo: **Supabase** (base de datos, autenticación, archivos y bóveda de credenciales; Estados Unidos), **Vercel** (alojamiento de la aplicación; Estados Unidos), **Google Maps Platform** (solo direcciones al cotizar una recolección a domicilio) y, según lo que el Responsable conecte, **Mercado Pago** o **Clip** (cobros a sus clientes). Menteo exige a sus subencargados obligaciones equivalentes a estas. Si agrega o cambia un subencargado, actualizará esta lista y avisará dentro de la aplicación; el Responsable puede oponerse cancelando el servicio.
+El Responsable autoriza a los siguientes subencargados, que tratan datos por cuenta de Menteo: **Supabase** (base de datos, autenticación, archivos y bóveda de credenciales; Estados Unidos), **Vercel** (alojamiento de la aplicación; Estados Unidos), **Google Maps Platform** (solo direcciones al cotizar una recolección a domicilio), **ElevenLabs** y **Anthropic** (solo el dictado por voz de Veterinaria) y **Daily** (solo las teleconsultas) y, según lo que el Responsable conecte, **Mercado Pago** o **Clip** (cobros a sus clientes). Menteo exige a sus subencargados obligaciones equivalentes a estas. Si agrega o cambia un subencargado, actualizará esta lista y avisará dentro de la aplicación; el Responsable puede oponerse cancelando el servicio.
 
 ### F. Transferencias internacionales
 
