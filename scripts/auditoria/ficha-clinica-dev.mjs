@@ -96,6 +96,19 @@ try {
   const rechazo = await patch(P.recSin, `perros?id=eq.${p2}`, { microchip: chip(8) });
   comprobar(!rechazo.ok, "la otra recepcionista, sin permiso, sigue sin poder");
 
+  seccion("2b. El médico designado con rol de estética (no se le pueden dar permisos por persona)");
+  const desig = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: datos.esteticaB, p_cedula: `CEDF${String(Date.now()).slice(-6)}`, p_cpa: null });
+  comprobar(desig.ok, `admin designa a estética como médico (${desig.mensaje ?? ""})`);
+  const pm = await nuevoPerro("DelMedico");
+  const m1 = await patch(P.estetica, `perros?id=eq.${pm}`, { especie: "gato", microchip: chip(7) });
+  comprobar(m1.ok, `el médico designado captura especie y microchip (${m1.mensaje ?? ""})`);
+  const m2 = await rpc(P.estetica, "perro_notas_clinicas_guardar", { p_perro: pm, p_notas: "Nota del médico." });
+  comprobar(m2.ok && /Nota del médico/.test(await notasDe(pm)), `y guarda las notas clínicas (${m2.mensaje ?? ""})`);
+  if (desig.ok) await SB.from("medicos_veterinarios").update({ deleted_at: new Date().toISOString() }).eq("negocio_id", B).eq("profile_id", datos.esteticaB);
+  const m3 = await patch(P.estetica, `perros?id=eq.${pm}`, { microchip: chip(8) });
+  comprobar(!m3.ok || (Array.isArray(m3.cuerpo) && m3.cuerpo.length === 0), "sin la designación, estética vuelve a no poder");
+  comprobar((await fila(pm)).microchip === (await fila(pm)).microchip && !String((await fila(pm)).microchip).endsWith("8"), "y el microchip no cambió");
+
   seccion("3. Veterinaria apagada");
   await fijarModulo("veterinaria", false);
   const gato = await patch(P.admin, `perros?id=eq.${p2}`, { especie: "gato" });

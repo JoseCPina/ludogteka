@@ -1,5 +1,6 @@
 "use server";
 
+import { puedeEditarFichaClinica } from "@/lib/veterinaria/ficha-permiso";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -60,7 +61,7 @@ async function clinicosDelFormulario(
 ): Promise<{ error: string } | { campos: CamposClinicos | null; notas: string | null }> {
   if (String(formData.get("clinico") ?? "") !== "1") return { campos: null, notas: null };
   const sesion = await obtenerSesionConRol();
-  if (!sesion || !usaVeterinaria(sesion.modulos) || !tienePermiso(sesion, "editar_ficha_clinica")) {
+  if (!sesion || !usaVeterinaria(sesion.modulos) || !(await puedeEditarFichaClinica(sesion))) {
     return { campos: null, notas: null };
   }
   const leido = leerCamposClinicos(formData);
