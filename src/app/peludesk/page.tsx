@@ -1,4 +1,6 @@
-import { MODULOS_TRES, FUNCIONES_VET, MENSAJES_CLAVE } from "@/lib/peludesk/veterinaria";
+import { CAPTURAS_VET, FUNCIONES_VET, MENSAJES_CLAVE, MODULOS_TRES, PREGUNTAS_VET } from "@/lib/peludesk/veterinaria";
+import { PrecioPlan } from "@/components/peludesk/precio-plan";
+import { pesos, planUnico, SIN_COSTO_INICIAL } from "@/lib/peludesk/plan";
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -15,33 +17,38 @@ import { TarjetaArticulo } from "@/components/peludesk/blog";
 import { todosLosArticulos } from "@/lib/peludesk/blog";
 import { JsonLd, preguntasFrecuentes } from "@/lib/peludesk/seo";
 import { Revelar } from "@/components/peludesk/revelar";
-import { CASO_REAL, CELULAR, ESCRITORIO, REDES_PELUDESK, urlDemo, whatsappPeluDesk } from "@/lib/peludesk/landing";
+import { CELULAR, ESCRITORIO, REDES_PELUDESK, urlDemo, whatsappPeluDesk } from "@/lib/peludesk/landing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import "./peludesk.css";
 
-// peludesk.mx. Reglas de esta página (pedido del dueño, 28 de septiembre de
-// 2026): lenguaje de quien conoce el día a día de una guardería o una
-// estética (qué le quita de encima, no qué módulos tiene); ningún párrafo de
-// más de tres renglones en celular; botones con texto concreto repartidos
-// en toda la página; las ilustraciones son las de la marca (Drive, "todos
-// los paquetes"); las capturas, del demo con datos inventados; los planes,
-// de la base. Nada de testimonios, cifras ni logos que no existan.
+// peludesk.mx. Reglas de esta página (pedido del dueño, 22 de octubre de
+// 2026): Veterinaria va al frente (es el nicho principal); hotel, guardería y
+// estética salen como valor extra ya incluido. Un solo plan, con el precio de
+// la base (planUnico), nunca escrito aquí. Ningún párrafo de más de tres
+// renglones en celular; botones con texto concreto; capturas del demo con datos
+// inventados; nada de testimonios, cifras de clientes ni competidores.
 
-export const metadata: Metadata = {
-  metadataBase: new URL("https://peludesk.mx"),
-  title: { absolute: "PeluDesk — software para guarderías, hoteles, estéticas y clínicas veterinarias" },
-  description:
-    "Reservas, citas de estética, expediente veterinario, cobros, facturas CFDI, contratos firmados desde el celular y vacunas al día, en un solo lugar. Prueba PeluDesk 15 días gratis, sin tarjeta.",
-  alternates: { canonical: "/" },
-  robots: { index: true, follow: true },
-  openGraph: {
-    title: "PeluDesk — deja la libreta",
-    description: "Para guarderías, hoteles, estéticas y clínicas veterinarias. Pruébalo 15 días gratis, sin tarjeta.",
-    images: [{ url: "/peludesk/capturas/tablero-escritorio-1600.webp", width: 1600, height: 1000 }],
-    locale: "es_MX",
-    type: "website",
-  },
-};
+const TITULO = "Software para veterinarias en México | PeluDesk";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const plan = await planUnico();
+  const precio = plan ? ` ${pesos(plan.mensual)} + IVA al mes, sin costo inicial.` : "";
+  const descripcion = `Sistema para clínica veterinaria en México: expediente con dictado por IA, recetas SITPV, carnet QR y CFDI.${precio} 15 días gratis.`;
+  return {
+    metadataBase: new URL("https://peludesk.mx"),
+    title: { absolute: TITULO },
+    description: descripcion,
+    alternates: { canonical: "/" },
+    robots: { index: true, follow: true },
+    openGraph: {
+      title: "PeluDesk — el sistema de tu clínica veterinaria",
+      description: descripcion,
+      images: [{ url: "/peludesk/capturas/vet-expediente-escritorio-1600.webp", width: 1600, height: 1000 }],
+      locale: "es_MX",
+      type: "website",
+    },
+  };
+}
 
 // ───────────────────────────── piezas
 
@@ -119,137 +126,45 @@ function BotonDemo({ className = "", claro = false, texto = "Ve el demo en 1 min
 function Etiqueta({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <p className={`text-sm font-semibold uppercase tracking-[0.1em] text-menta-oscuro ${className}`}>{children}</p>;
 }
-
 // ───────────────────────────── contenido
 
-const ALIVIOS: { ilus: NombreIlustracion; antes: string; ahora: string }[] = [
-  {
-    ilus: "escena-agenda",
-    antes: "Contar en la mañana quién llega",
-    ahora: "Abres y ya está: llegadas, salidas, citas de estética y el cupo de día y de noche.",
-  },
-  {
-    ilus: "escena-vacunas",
-    antes: "Revisar cartillas a la carrera",
-    ahora: "Si una vacuna venció, no te deja reservarle guardería ni hotel. Y te dice cuál.",
-  },
-  {
-    ilus: "escena-bano",
-    antes: "Calcular el precio de cada baño",
-    ahora: "Sale solo, por raza o talla, con su precio aparte si llega con el pelo maltratado.",
-  },
-  {
-    ilus: "escena-hotel",
-    antes: "Adivinar si cabe uno más",
-    ahora: "Guardería y hotel cuentan del mismo cupo. No aceptas un perro que no cabe.",
-  },
-];
-
-type Momento = {
-  id: string;
-  cuando: string;
-  titulo: string;
-  texto: string;
-  captura: string;
-  alt: string;
-  ilus: NombreIlustracion;
-  segunda?: { captura: string; alt: string };
-  celular?: { captura: string; alt: string };
-};
-
-const DIA: Momento[] = [
-  {
-    id: "manana",
-    cuando: "En la mañana",
-    titulo: "Abres y sabes cómo viene el día",
-    texto: "Quién llega, quién se va y lo que está esperando: firmas, cartillas y saldos, con los días que lleva cada uno.",
-    captura: "tablero",
-    alt: "Tablero del día: llegan hoy, se van hoy, adentro ahora, ocupación de día y de noche, pendientes y citas de estética",
-    ilus: "calendario",
-  },
-  {
-    id: "llega",
-    cuando: "Llega un perro",
-    titulo: "Sus alertas antes de que cruce la puerta",
-    texto: "Si se escapa, si es alérgico, si come aparte. Lo ves en su ficha, junto a su foto y sus vacunas.",
-    captura: "expediente",
-    alt: "Expediente de un perro con alerta de manejo y el estado de cada vacuna",
-    ilus: "expediente",
-  },
-  {
-    id: "estetica",
-    cuando: "Durante el día",
-    titulo: "Cada estilista con su agenda",
-    texto: "Una columna por persona y ninguna cita encimada. Al terminar, se descuenta del inventario lo que se usó.",
-    captura: "estetica",
-    alt: "Agenda de estética del día con una columna por estilista",
-    ilus: "bano",
-    segunda: { captura: "precios", alt: "Precios del baño por grupo de raza, con precio para pelo maltratado" },
-  },
-  {
-    id: "salida",
-    cuando: "A la hora de la salida",
-    titulo: "La cuenta ya está sumada",
-    texto: "Noches, guardería, baño y extras en una sola cuenta. Cobras, das cambio y en la noche cuadras la caja.",
-    captura: "cobro",
-    alt: "Pantalla de cobro de una cuenta de hotel con el saldo y las formas de pago",
-    ilus: "fluffy-feliz",
-  },
-  {
-    id: "casa",
-    cuando: "Desde su casa",
-    titulo: "El dueño firma y ve lo suyo, sin llamarte",
-    texto: "Firma el contrato con el dedo, ve sus citas y las fotos del día. Nunca ve tus precios ni a otros clientes.",
-    captura: "contratos",
-    alt: "Lista de contratos por firmar con los días que llevan esperando",
-    ilus: "chihuahua-feliz",
-    celular: { captura: "portal-perro", alt: "Ficha del perro en el portal del dueño: fotos del día, vacunas y contratos" },
-  },
-  {
-    id: "cierre-dia",
-    cuando: "Al cerrar",
-    titulo: "Sabes cuánto ganaste, de verdad",
-    texto: "Lo cobrado menos insumos, nómina y gastos del local, junto al mes anterior. Sin sumar a mano.",
-    captura: "utilidad",
-    alt: "Reporte de utilidad del mes con ingreso, insumos, nómina y gastos del local",
-    ilus: "xolo-sentado",
-  },
-];
-
-const ATRAS = [
-  { captura: "inventario", titulo: "Lo que se acaba, antes de que se acabe", texto: "Champú, bolsas y croquetas con su mínimo; secadoras y jaulas con su mantenimiento.", alt: "Inventario de consumibles por área con existencia y mínimo" },
-  { captura: "nomina", titulo: "La nómina sin calculadora", texto: "Asistencia, retardos, comisiones de estética, propinas y adelantos de cada quien.", alt: "Nómina del periodo por empleado con días, comisiones, propinas y total a pagar" },
-];
-
-const PREGUNTAS = [
-  ["¿Necesito tarjeta para probarlo?", "No. Son 15 días con todo abierto. La tarjeta solo se pide cuando decides contratar."],
-  ["¿Qué pasa cuando termina la prueba?", "No se borra nada. Consultas todo lo tuyo y vuelves a capturar en cuanto contratas."],
-  ["¿Mis clientes tienen que instalar algo?", "No. Entran a su portal desde el navegador del celular con su teléfono y su contraseña."],
-  ["¿Sirve en el celular?", "Sí. En la computadora del mostrador, en una tableta o en el celular de cualquiera de tu equipo."],
-  ["¿Cobran por perro o por cliente?", "No. Pagas por tu negocio al mes, atiendas los perros que atiendas."],
-  ["¿Cómo cancelo?", "Desde tu cuenta, cuando quieras. Lo sigues usando hasta que termina lo que ya pagaste."],
+const ENLACES_MENU = [
+  ["/veterinaria", "Veterinaria"],
+  ["#funciones", "Funciones"],
+  ["#demo", "Demo"],
+  ["#tambien", "Hotel y estética"],
+  ["#planes", "Precio"],
+  ["#preguntas", "Preguntas"],
+  ["/blog", "Blog"],
 ] as const;
 
 const DEMO_ROLES = [
-  ["recepcion", "Recepción", "El día, las reservas y la caja"],
-  ["estetica", "Estilista", "Su agenda de hoy"],
   ["veterinaria", "Médica veterinaria", "Expediente, carnet, recetas y hospitalizados"],
-  ["admin", "Dueña del negocio", "Ganancias, nómina y precios"],
-  ["cliente", "Dueña de un perro", "Lo que ven tus clientes"],
+  ["recepcion", "Recepción", "El día, las citas y la caja"],
+  ["admin", "Dueña de la clínica", "Ganancias, nómina y precios"],
+  ["estetica", "Estilista", "Su agenda de hoy"],
+  ["cliente", "Dueña de una mascota", "Lo que ven tus clientes"],
 ] as const;
 
-type Plan = { clave: string; nombre: string; descripcion: string | null; tipo: string; precio_mensual: number; precio_anual: number; modulos: string[] };
-const pesos = (n: number) => `$${Number(n).toLocaleString("es-MX", { maximumFractionDigits: 0 })}`;
+const ALIVIOS_VET = [
+  { ilus: "escena-vacunas" as NombreIlustracion, antes: "Buscar la vacuna en un carnet de papel", ahora: "El carnet de la mascota con su lote y su próxima dosis, y un QR para verificarlo." },
+  { ilus: "expediente" as NombreIlustracion, antes: "Escribir la consulta a mano", ahora: "Dictas y PeluDesk arma el borrador. Tú lo revisas y lo firmas." },
+  { ilus: "escena-agenda" as NombreIlustracion, antes: "Perseguir al dueño para la siguiente dosis", ahora: "El recordatorio sale por WhatsApp. Si no llega, te lo marca para que lo mandes tú." },
+  { ilus: "clipboard" as NombreIlustracion, antes: "Llevar el libro de control a mano", ahora: "Se arma solo con cada salida del inventario, ligada a su receta y a su paciente." },
+];
 
-// Los planes salen de la base (los edita la plataforma), nunca del código.
-async function cargarPlanes() {
+const PREGUNTAS_BASE = [
+  ...PREGUNTAS_VET,
+  ["¿Necesito tarjeta para probarlo?", "No. Son 15 días con todo abierto. La tarjeta solo se pide cuando decides contratar."],
+  ["¿Qué pasa cuando termina la prueba?", "No se borra nada. Consultas todo lo tuyo y vuelves a capturar en cuanto contratas."],
+  ["¿Cobran por mascota o por cliente?", "No. Pagas por tu negocio al mes, atiendas las mascotas que atiendas."],
+  ["¿Cómo cancelo?", "Desde tu cuenta, cuando quieras. Lo sigues usando hasta que termina lo que ya pagaste."],
+] as const satisfies readonly (readonly [string, string])[];
+
+async function nombresDeModulos() {
   const supabase = await createSupabaseServerClient();
-  const [{ data: planes }, { data: modulos }] = await Promise.all([
-    supabase.from("planes").select("clave, nombre, descripcion, tipo, precio_mensual, precio_anual, modulos").eq("activo", true).order("orden"),
-    supabase.from("modulos").select("clave, nombre").order("orden"),
-  ]);
-  const nombres = Object.fromEntries((modulos ?? []).map((m) => [m.clave as string, m.nombre as string]));
-  return { planes: (planes ?? []) as Plan[], nombres };
+  const { data: modulos } = await supabase.from("modulos").select("clave, nombre").order("orden");
+  return Object.fromEntries((modulos ?? []).map((m) => [m.clave as string, m.nombre as string]));
 }
 
 // ───────────────────────────── página
@@ -257,15 +172,16 @@ async function cargarPlanes() {
 export default async function PeluDeskLanding() {
   const demo = urlDemo();
   const whatsapp = await whatsappPeluDesk("Hola, quiero saber más de PeluDesk.");
-  const { planes, nombres } = await cargarPlanes();
-  const planesBase = planes.filter((p) => p.tipo === "plan");
-  const web = planes.find((p) => p.tipo === "complemento" && p.modulos.includes("pagina_web"));
+  const [plan, nombres] = await Promise.all([planUnico(), nombresDeModulos()]);
   const articulosRecientes = todosLosArticulos().slice(0, 3);
-  const destacado = planesBase.length >= 3 ? planesBase[planesBase.length - 1].clave : null;
+  const PREGUNTAS: readonly (readonly [string, string])[] = plan
+    ? [
+        ["¿Cuánto cuesta?", `Un solo plan: ${pesos(plan.mensual)} + IVA al mes (${pesos(plan.total)} con IVA). ${SIN_COSTO_INICIAL}: no hay cargo de alta ni de activación, y Veterinaria, Hotel y guardería, Estética y la página web van incluidos.`],
+        ...PREGUNTAS_BASE,
+      ]
+    : PREGUNTAS_BASE;
 
-  // Datos estructurados: quién es PeluDesk y sus redes (sameAs), y el
-  // producto con el rango de precios que hay hoy en la base.
-  const precios = planesBase.map((p) => Number(p.precio_mensual)).filter((n) => n > 0);
+  // Datos estructurados: quién es PeluDesk (sameAs) y el producto con su oferta única.
   const datos = [
     {
       "@context": "https://schema.org",
@@ -282,12 +198,32 @@ export default async function PeluDeskLanding() {
       name: "PeluDesk",
       url: "https://peludesk.mx",
       applicationCategory: "BusinessApplication",
-      operatingSystem: "Web",
+      applicationSubCategory: "Software para clínicas veterinarias",
+      operatingSystem: "Web, iOS y Android (se instala desde el navegador)",
       inLanguage: "es-MX",
-      description: "Software para guarderías, hoteles, estéticas caninas y clínicas veterinarias: reservas, citas, cobros, facturas CFDI, contratos y expediente de cada mascota.",
-      featureList: ["Hotel y guardería", "Estética", "Veterinaria", ...FUNCIONES_VET.map((f) => f.titulo)],
-      ...(precios.length
-        ? { offers: { "@type": "AggregateOffer", priceCurrency: "MXN", lowPrice: Math.min(...precios), highPrice: Math.max(...precios), offerCount: precios.length } }
+      description:
+        "Sistema para clínica veterinaria en México: expediente por consulta con dictado por IA, recetas alineadas al SITPV, carnet de vacunas con QR, hospitalización, inventario con lotes y facturación CFDI. También hotel, guardería y estética canina.",
+      featureList: [...FUNCIONES_VET.map((f) => f.titulo), "Hotel y guardería", "Estética", "Página web del negocio"],
+      ...(plan
+        ? {
+            offers: {
+              "@type": "Offer",
+              name: `${plan.nombre}, plan único`,
+              price: plan.mensual,
+              priceCurrency: "MXN",
+              priceSpecification: {
+                "@type": "UnitPriceSpecification",
+                price: plan.mensual,
+                priceCurrency: "MXN",
+                billingDuration: 1,
+                unitCode: "MON",
+                valueAddedTaxIncluded: false,
+              },
+              description: `${SIN_COSTO_INICIAL}. Más IVA. 15 días de prueba gratis, sin tarjeta.`,
+              availability: "https://schema.org/InStock",
+              url: "https://peludesk.mx/#planes",
+            },
+          }
         : {}),
     },
   ];
@@ -303,42 +239,28 @@ export default async function PeluDeskLanding() {
           <Link href="/" aria-label="PeluDesk, inicio" className="rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave">
             <LogoPeluDesk tamano={30} />
           </Link>
-          <nav aria-label="Principal" className="hidden items-center gap-1 md:flex">
-            {[
-              ["#dia", "Cómo te ayuda"],
-              ["#modulos", "Módulos"],
-              ["#demo", "Demo"],
-              ["#planes", "Planes"],
-              ["#preguntas", "Preguntas"],
-              ["/blog", "Blog"],
-            ].map(([href, texto]) => (
+          <nav aria-label="Principal" className="hidden items-center gap-1 lg:flex">
+            {ENLACES_MENU.map(([href, texto]) => (
               <a key={href} href={href} className="rounded-md px-3 py-2 text-sm font-semibold text-n-700 hover:text-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave">
                 {texto}
               </a>
             ))}
             <BotonDemo className="!min-h-10 !border-[1.5px] !px-4 text-sm lg:ml-2" texto="Ver demo" />
-            <BotonPrueba className="!min-h-10 !px-4 text-sm" texto="Pruébalo gratis" />
+            <BotonPrueba className="!min-h-10 !px-4 text-sm" texto="Probar 15 días" />
           </nav>
-          <div className="flex items-center gap-1 md:hidden">
-            <BotonPrueba className="!min-h-10 !px-4 text-sm" texto="Pruébalo gratis" />
+          <div className="flex items-center gap-1 lg:hidden">
+            <BotonPrueba className="!min-h-10 !px-4 text-sm" texto="Probar 15 días" />
             <MenuCelular>
               <nav aria-label="Principal" className="flex flex-col">
-                {[
-                  ["#dia", "Cómo te ayuda"],
-                  ["#modulos", "Módulos"],
-                  ["#demo", "Demo"],
-                  ["#planes", "Planes"],
-                  ["#preguntas", "Preguntas"],
-                  ["/blog", "Blog"],
-                ].map(([href, texto]) => (
+                {ENLACES_MENU.map(([href, texto]) => (
                   <a key={href} href={href} className="flex min-h-12 items-center border-b border-n-200 text-base font-semibold text-n-900">
                     {texto}
                   </a>
                 ))}
               </nav>
               <div className="mt-5 grid gap-3">
-                <BotonPrueba />
-                <BotonDemo />
+                <BotonPrueba texto="Probar 15 días" />
+                <BotonDemo texto="Ver demo" />
               </div>
               {whatsapp && (
                 <a href={whatsapp} target="_blank" rel="noopener" className="mt-4 flex min-h-12 items-center justify-center rounded-full text-base font-semibold text-morado hover:bg-morado-suave">
@@ -355,45 +277,40 @@ export default async function PeluDeskLanding() {
       </header>
 
       <main>
-        {/* ── Encabezado ── */}
+        {/* ── Hero veterinario ── */}
         <section id="inicio" className="relative">
           <Ilustracion nombre="textura-menta" className="pd-paralaje absolute -right-24 top-6 w-[420px] opacity-70 lg:right-0 lg:w-[560px]" sizes="560px" />
           <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-10 sm:px-6 lg:grid-cols-12 lg:gap-10 lg:pb-24 lg:pt-16">
             <div className="lg:col-span-5">
-              <Etiqueta>Guarderías, hoteles, estéticas y veterinarias</Etiqueta>
-              <h1 className="mt-4 text-[2.5rem] font-bold leading-[1.05] tracking-[-0.03em] text-n-900 md:text-[3.4rem]">
-                Deja la libreta. <span className="text-morado">Los perros ya te dan suficiente trabajo.</span>
+              <Etiqueta>Para clínicas veterinarias de México</Etiqueta>
+              <h1 className="mt-4 text-[2.4rem] font-bold leading-[1.05] tracking-[-0.03em] text-n-900 md:text-[3.2rem]">
+                Tu clínica completa, <span className="text-morado">en un solo sistema.</span>
               </h1>
-              <p className="mt-5 max-w-[44ch] text-lg leading-relaxed text-n-700">
-                Reservas, citas, cobros, contratos y vacunas en un solo lugar, para ti, tu equipo y los dueños.
+              <p className="mt-5 max-w-[46ch] text-lg leading-relaxed text-n-700">
+                Expediente con dictado por IA, recetas alineadas al SITPV, carnet con QR y recordatorios por WhatsApp, hospitalización, inventario con lotes y facturación CFDI.
               </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                <BotonPrueba />
-                <BotonDemo />
+              {plan && <PrecioPlan plan={plan} className="mt-6" />}
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <BotonDemo texto="Ver demo" />
+                <BotonPrueba texto="Probar 15 días" />
               </div>
-              <p className="mt-4 text-sm text-n-600">Sin tarjeta. Tu negocio queda en tunegocio.peludesk.mx.</p>
+              <p className="mt-4 text-sm text-n-600">15 días gratis, sin tarjeta. El demo es de solo lectura y no manda mensajes.</p>
             </div>
             <div className="relative lg:col-span-7">
-              {/* Se asoma por detrás de la captura (el corte del dibujo queda tapado). */}
-              <Ilustracion
-                nombre="chihuahua-asomandose"
-                prioridad
-                className="pd-flotar absolute -right-[100px] top-[14%] z-0 hidden w-[124px] lg:block"
-                sizes="124px"
-              />
+              <Ilustracion nombre="chihuahua-asomandose" prioridad className="pd-flotar absolute -right-[100px] top-[14%] z-0 hidden w-[124px] lg:block" sizes="124px" />
               <div className="relative z-10">
                 <CapturasEnMovimiento
                   capturas={[
-                    { captura: "tablero", etiqueta: "El día", alt: "Tablero del día: llegadas, salidas, perros adentro, ocupación y pendientes" },
-                    { captura: "estetica", etiqueta: "Estética", alt: "Agenda de estética del día con una columna por estilista" },
-                    { captura: "hotel", etiqueta: "Hotel", alt: "Hotel: llegadas, salidas, perros hospedados y ocupación por día" },
-                    { captura: "cobro", etiqueta: "Caja", alt: "Cobro de una cuenta con el saldo y las formas de pago" },
+                    { captura: "vet-expediente", etiqueta: "Expediente", alt: "Expediente clínico de una perrita con su línea de tiempo: consulta, peso y vacunas" },
+                    { captura: "vet-agenda", etiqueta: "Agenda clínica", alt: "Agenda clínica del día con una columna por médico" },
+                    { captura: "vet-carnet", etiqueta: "Carnet", alt: "Carnet de vacunación de una perrita con sus vacunas aplicadas" },
+                    { captura: "vet-receta", etiqueta: "Receta", alt: "Receta veterinaria emitida con su diagnóstico y su medicamento" },
                   ]}
                 />
               </div>
               <Celular
-                captura="portal"
-                alt="Portal del dueño en el celular con sus próximas reservas"
+                captura="vet-expediente"
+                alt="Expediente de una mascota en el celular"
                 className="absolute -bottom-6 -left-4 z-20 hidden w-[20%] min-w-[112px] sm:block lg:-left-6"
               />
             </div>
@@ -406,11 +323,11 @@ export default async function PeluDeskLanding() {
             <Revelar className="max-w-2xl">
               <Etiqueta>Lo que te quita de encima</Etiqueta>
               <h2 id="t-alivio" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
-                Lo que hoy haces de memoria, ya no.
+                Lo clínico y lo del mostrador, en el mismo lugar.
               </h2>
             </Revelar>
             <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {ALIVIOS.map((a, i) => (
+              {ALIVIOS_VET.map((a, i) => (
                 <li key={a.ilus}>
                   <Revelar retraso={i * 90} className="h-full">
                     <div className="pd-tarjeta flex h-full items-center gap-4 rounded-[22px] border border-n-200 bg-crema p-4 sm:flex-col sm:items-stretch sm:p-5">
@@ -424,166 +341,44 @@ export default async function PeluDeskLanding() {
                 </li>
               ))}
             </ul>
-            <Revelar className="mt-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-              <BotonPrueba />
-              <a href="#demo" className="group inline-flex min-h-12 items-center font-semibold text-morado underline decoration-morado/30 underline-offset-4 hover:decoration-morado">
-                o entra al demo sin registrarte
-                <Flecha />
-              </a>
-            </Revelar>
           </div>
         </section>
 
-        {/* ── Un día en tu negocio ── */}
-        <section id="dia" aria-labelledby="t-dia" className="scroll-mt-16">
-          <div className="mx-auto max-w-6xl px-4 pt-16 sm:px-6 lg:pt-24">
-            <Revelar className="relative max-w-2xl">
-              <Etiqueta>Un día normal</Etiqueta>
-              <h2 id="t-dia" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
-                De la primera llegada al corte de caja.
-              </h2>
-              <Ilustracion nombre="huellitas" className="pd-huellitas absolute -right-40 -top-6 hidden w-[150px] rotate-[30deg] opacity-80 md:block" sizes="150px" />
-            </Revelar>
-          </div>
-
-          {DIA.map((m, i) => {
-            const derecha = i % 2 === 1;
-            return (
-              <div key={m.id}>
-                <article aria-labelledby={`t-${m.id}`} className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-12 lg:gap-14 lg:py-20">
-                  <Revelar className={`relative lg:col-span-4 ${derecha ? "lg:order-2" : ""}`}>
-                    <p className="inline-flex items-center gap-2 rounded-full bg-menta-suave px-3 py-1 text-sm font-semibold text-menta-oscuro">
-                      <span aria-hidden className="h-2 w-2 rounded-full bg-menta-oscuro" />
-                      {m.cuando}
-                    </p>
-                    <h3 id={`t-${m.id}`} className="mt-4 text-2xl font-bold leading-tight tracking-[-0.02em] md:text-3xl">
-                      {m.titulo}
-                    </h3>
-                    <p className="mt-3 max-w-[40ch] leading-relaxed text-n-700">{m.texto}</p>
-                    <div className="mt-6 hidden w-[150px] overflow-hidden lg:block">
-                      <Ilustracion nombre={m.ilus} className="pd-ladeo h-auto w-full" sizes="150px" />
-                    </div>
-                  </Revelar>
-                  <Revelar retraso={80} className={`relative lg:col-span-8 ${derecha ? "lg:order-1" : ""}`}>
-                    <Escritorio captura={m.captura} alt={m.alt} />
-                    {m.segunda && (
-                      <Escritorio captura={m.segunda.captura} alt={m.segunda.alt} className="mt-4 lg:absolute lg:-bottom-12 lg:-right-8 lg:mt-0 lg:w-[56%]" />
-                    )}
-                    {m.celular && (
-                      <Celular
-                        captura={m.celular.captura}
-                        alt={m.celular.alt}
-                        className={`absolute -bottom-8 hidden w-[22%] min-w-[110px] sm:block ${derecha ? "-right-6" : "-left-6"}`}
-                      />
-                    )}
-                  </Revelar>
-                </article>
-
-                {/* Una invitación a media página, después de la agenda de estética. */}
-                {m.id === "estetica" && (
-                  <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-                    <Revelar>
-                      <div className="relative overflow-hidden rounded-[26px] bg-morado px-6 py-10 text-crema sm:px-10">
-                        <Ilustracion nombre="blob-lila" className="pd-paralaje absolute -right-20 -top-24 w-[340px] opacity-25" sizes="340px" />
-                        <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-                          <div>
-                            <p className="text-2xl font-bold leading-tight text-white md:text-3xl">¿Te imaginas tu mañana así?</p>
-                            <p className="mt-2 text-crema/85">Abres tu negocio con tu nombre y tu teléfono. Te guiamos en cinco pasos.</p>
-                          </div>
-                          <BotonPrueba claro className="self-start md:self-auto" />
-                        </div>
-                      </div>
-                    </Revelar>
-                  </div>
-                )}
-                {m.id === "salida" && (
-                  <div className="mx-auto flex max-w-6xl justify-center px-4 sm:px-6">
-                    <Revelar className="flex flex-col items-center gap-2 text-center">
-                      <p className="font-semibold text-n-700">¿Quieres ver cómo se cobra una cuenta de hotel?</p>
-                      <BotonDemo texto="Ve el demo en 1 minuto" />
-                    </Revelar>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-
-          {/* Lo de atrás del mostrador */}
-          <div className="mx-auto max-w-6xl px-4 pb-16 pt-4 sm:px-6 lg:pb-24">
-            <Revelar>
-              <h3 className="text-2xl font-bold tracking-[-0.02em]">Y lo de atrás del mostrador</h3>
-            </Revelar>
-            <ul className="mt-6 grid gap-6 md:grid-cols-2">
-              {ATRAS.map((a, i) => (
-                <li key={a.captura}>
-                  <Revelar retraso={i * 90} className="h-full">
-                    <div className="pd-tarjeta h-full overflow-hidden rounded-[22px] border border-n-200 bg-white">
-                      <div className="aspect-[16/8] overflow-hidden border-b border-n-200 bg-n-50">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={`/peludesk/capturas/${a.captura}-escritorio-800.webp`}
-                          width={800}
-                          height={500}
-                          alt={a.alt}
-                          loading="lazy"
-                          decoding="async"
-                          className="h-full w-full object-cover object-top"
-                        />
-                      </div>
-                      <div className="p-5">
-                        <p className="text-lg font-bold text-n-900">{a.titulo}</p>
-                        <p className="mt-1 text-n-700">{a.texto}</p>
-                      </div>
-                    </div>
-                  </Revelar>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        {/* ── Tres módulos ── */}
-        <section id="modulos" aria-labelledby="t-modulos" className="relative scroll-mt-16 border-y border-n-200 bg-white">
+        {/* ── Funciones veterinarias ── */}
+        <section id="funciones" aria-labelledby="t-funciones" className="scroll-mt-16">
           <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
             <Revelar className="max-w-2xl">
-              <Etiqueta>Tres módulos</Etiqueta>
-              <h2 id="t-modulos" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
-                Prendes lo que haces. Apagas lo que no.
+              <Etiqueta>Veterinaria</Etiqueta>
+              <h2 id="t-funciones" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
+                Lo que ya hace por tu clínica
               </h2>
-              <p className="mt-4 max-w-[52ch] leading-relaxed text-n-700">
-                Cada módulo se prende o se apaga desde el panel de administración, y apagar uno nunca borra lo que ya tenías.
-              </p>
+              <p className="mt-3 max-w-[52ch] leading-relaxed text-n-700">Solo lo que la app hace hoy. Mira cada pantalla en el demo, sin registrarte.</p>
             </Revelar>
-            <ul className="mt-10 grid gap-5 md:grid-cols-3">
-              {MODULOS_TRES.map((m, i) => (
-                <li key={m.clave}>
-                  <Revelar retraso={i * 90} className="h-full">
-                    <div className="pd-tarjeta flex h-full flex-col rounded-[22px] border border-n-200 bg-crema p-5">
-                      <h3 className="text-xl font-bold text-n-900">{m.nombre}</h3>
-                      <p className="mt-2 leading-snug text-n-700">{m.texto}</p>
-                      {"href" in m && (
-                        <a href={m.href} className="group mt-4 inline-flex min-h-11 items-center font-semibold text-morado underline decoration-morado/30 underline-offset-4 hover:decoration-morado">
-                          Conoce Veterinaria
-                          <Flecha />
-                        </a>
-                      )}
+            <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {FUNCIONES_VET.map((f, i) => (
+                <li key={f.titulo}>
+                  <Revelar retraso={(i % 3) * 80} className="h-full">
+                    <div className="pd-tarjeta h-full rounded-[22px] border border-n-200 bg-white p-5">
+                      <h3 className="text-lg font-bold text-n-900">{f.titulo}</h3>
+                      <p className="mt-2 leading-snug text-n-700">{f.texto}</p>
                     </div>
                   </Revelar>
                 </li>
               ))}
             </ul>
-            <Revelar className="mt-8">
-              <p className="font-semibold text-n-900">Y en los tres:</p>
-              <ul className="mt-3 flex flex-wrap gap-2">
-                {MENSAJES_CLAVE.map((m) => (
-                  <li key={m} className="rounded-full bg-menta-suave px-4 py-2 text-sm font-semibold text-morado">
-                    {m}
-                  </li>
-                ))}
-              </ul>
-            </Revelar>
+            <ul className="mt-12 grid gap-8 md:grid-cols-2">
+              {CAPTURAS_VET.slice(0, 2).map((c) => (
+                <li key={c.captura} className="flex flex-col gap-3">
+                  <Revelar>
+                    <Escritorio captura={c.captura} alt={c.alt} />
+                    <h3 className="mt-4 text-lg font-bold text-n-900">{c.titulo}</h3>
+                    <p className="mt-1 text-n-700">{c.texto}</p>
+                  </Revelar>
+                </li>
+              ))}
+            </ul>
             <Revelar className="mt-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-              <BotonPrueba />
+              <BotonPrueba texto="Probar 15 días" />
               <a href="/veterinaria" className="group inline-flex min-h-12 items-center font-semibold text-morado underline decoration-morado/30 underline-offset-4 hover:decoration-morado">
                 Mira todo lo de Veterinaria
                 <Flecha />
@@ -591,20 +386,6 @@ export default async function PeluDeskLanding() {
             </Revelar>
           </div>
         </section>
-
-        {CASO_REAL && (
-          <section aria-labelledby="caso" className="bg-white">
-            <div className="mx-auto max-w-3xl px-4 py-20 sm:px-6">
-              <Etiqueta>Caso real</Etiqueta>
-              <h2 id="caso" className="mt-3 text-3xl font-bold tracking-tight">
-                {CASO_REAL.negocio}, {CASO_REAL.ciudad}
-              </h2>
-              <blockquote className="mt-6 text-xl leading-relaxed text-n-800">“{CASO_REAL.cita}”</blockquote>
-              <p className="mt-3 text-sm text-n-600">{CASO_REAL.quien}</p>
-              <p className="mt-6 text-n-700">Usan: {CASO_REAL.usan.join(", ")}.</p>
-            </div>
-          </section>
-        )}
 
         {/* ── La demo, sin registro ── */}
         <section id="demo" aria-labelledby="t-demo" className="relative scroll-mt-16 overflow-hidden bg-morado text-crema">
@@ -614,12 +395,12 @@ export default async function PeluDeskLanding() {
                 <Ilustracion nombre="clipboard" className="h-auto w-full" sizes="180px" />
               </Revelar>
               <Revelar>
-                <p className="mt-4 text-sm font-semibold uppercase tracking-[0.1em] text-menta">Ve el demo en 1 minuto</p>
+                <p className="mt-4 text-sm font-semibold uppercase tracking-[0.1em] text-menta">Ver demo</p>
                 <h2 id="t-demo" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] text-white md:text-4xl">
                   Pícale a todo. No se rompe nada.
                 </h2>
                 <p className="mt-4 max-w-[42ch] leading-relaxed text-crema/90">
-                  Patitas &amp; Co. es un negocio de ejemplo con dos meses de movimiento. Todo es inventado y nada se guarda.
+                  Patitas &amp; Co. es un negocio de ejemplo con expedientes, vacunas, recetas y un hospitalizado. Todo es inventado, nada se guarda y no se manda ningún mensaje.
                 </p>
               </Revelar>
             </div>
@@ -631,6 +412,7 @@ export default async function PeluDeskLanding() {
                     <Revelar retraso={i * 70} className="h-full">
                       <a
                         href={`${demo}/demo/entrar/${rol}`}
+                        data-pixel-evento="Lead"
                         className="pd-boton group flex h-full min-h-[76px] items-center justify-between gap-4 rounded-[20px] border border-white/15 bg-white/[0.07] px-5 py-4 hover:border-menta/60 hover:bg-white/[0.12] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-menta"
                       >
                         <span>
@@ -649,90 +431,119 @@ export default async function PeluDeskLanding() {
           </div>
         </section>
 
-        {/* ── Planes ── */}
-        {planesBase.length > 0 && (
+        {/* ── También hotel, guardería y estética ── */}
+        <section id="tambien" aria-labelledby="t-tambien" className="relative scroll-mt-16 border-b border-n-200 bg-white">
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
+            <Revelar className="max-w-2xl">
+              <Etiqueta>Valor extra, ya incluido</Etiqueta>
+              <h2 id="t-tambien" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
+                También para hotel, guardería y estética.
+              </h2>
+              <p className="mt-3 max-w-[52ch] leading-relaxed text-n-700">
+                Si tu clínica tiene hotel, guardería o estética, ya va incluido en el mismo precio. Los prendes o los apagas desde tu panel y apagar uno nunca borra lo que ya tenías.
+              </p>
+            </Revelar>
+            <ul className="mt-10 grid gap-6 md:grid-cols-2">
+              {MODULOS_TRES.filter((m) => m.clave !== "veterinaria").map((m, i) => (
+                <li key={m.clave}>
+                  <Revelar retraso={i * 90} className="h-full">
+                    <div className="pd-tarjeta h-full overflow-hidden rounded-[22px] border border-n-200 bg-crema">
+                      <div className="aspect-[16/8] overflow-hidden border-b border-n-200 bg-n-50">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`/peludesk/capturas/${m.clave === "estetica" ? "estetica" : "hotel"}-escritorio-800.webp`}
+                          width={800}
+                          height={500}
+                          alt={m.clave === "estetica" ? "Agenda de estética del día con una columna por estilista" : "Hotel: llegadas, salidas, perros hospedados y ocupación por día"}
+                          loading="lazy"
+                          decoding="async"
+                          className="h-full w-full object-cover object-top"
+                        />
+                      </div>
+                      <div className="p-5">
+                        <h3 className="text-xl font-bold text-n-900">{m.nombre}</h3>
+                        <p className="mt-2 leading-snug text-n-700">{m.texto}</p>
+                      </div>
+                    </div>
+                  </Revelar>
+                </li>
+              ))}
+            </ul>
+            <Revelar className="mt-8">
+              <p className="font-semibold text-n-900">Y en todo PeluDesk:</p>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {MENSAJES_CLAVE.map((m) => (
+                  <li key={m} className="rounded-full bg-menta-suave px-4 py-2 text-sm font-semibold text-morado">
+                    {m}
+                  </li>
+                ))}
+              </ul>
+            </Revelar>
+            <Revelar className="mt-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+              <BotonPrueba texto="Probar 15 días" />
+              <a href="#demo" className="group inline-flex min-h-12 items-center font-semibold text-morado underline decoration-morado/30 underline-offset-4 hover:decoration-morado">
+                o entra al demo sin registrarte
+                <Flecha />
+              </a>
+            </Revelar>
+          </div>
+        </section>
+
+        {/* ── Precio único ── */}
+        {plan && (
           <section id="planes" aria-labelledby="t-planes" className="relative scroll-mt-16">
-            <div className="mx-auto max-w-6xl px-4 pt-16 sm:px-6 lg:pt-24">
+            <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
               <div className="flex items-end justify-between gap-6">
                 <Revelar className="max-w-2xl">
-                  <Etiqueta>Planes</Etiqueta>
+                  <Etiqueta>Un solo plan</Etiqueta>
                   <h2 id="t-planes" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
-                    Pagas por lo que tu negocio ofrece.
+                    Un precio, todo incluido.
                   </h2>
                   <p className="mt-3 max-w-[56ch] leading-relaxed text-n-700">
-                    Precios al mes, más IVA. Si pagas el año, pagas diez meses. Caja y clientes van en todos.
+                    Sin costo inicial y sin planes por servicio. Todos los módulos van incluidos, para todos.
                   </p>
                 </Revelar>
                 <Revelar desde="asomar" className="hidden w-[130px] shrink-0 sm:block">
                   <Ilustracion nombre="xolo-sentado" className="h-auto w-full" sizes="130px" />
                 </Revelar>
               </div>
-              <ul className={`mt-10 grid gap-5 ${planesBase.length >= 3 ? "lg:grid-cols-3" : "md:grid-cols-2"}`}>
-                {planesBase.map((p, i) => {
-                  const esDestacado = p.clave === destacado;
-                  return (
-                    <li key={p.clave}>
-                      <Revelar retraso={i * 90} className="h-full">
-                        <div
-                          className={`pd-tarjeta relative flex h-full flex-col rounded-[24px] border bg-white p-6 ${
-                            esDestacado ? "border-morado ring-1 ring-morado" : "border-n-200"
-                          }`}
-                        >
-                          {esDestacado && (
-                            <span className="absolute -top-3 left-6 rounded-full bg-menta px-3 py-0.5 text-xs font-bold uppercase tracking-[0.08em] text-morado">
-                              Todo incluido
-                            </span>
-                          )}
-                          <h3 className="text-xl font-bold text-n-900">{p.nombre}</h3>
-                          {p.descripcion && <p className="mt-1 text-sm text-n-600">{p.descripcion}</p>}
-                          <p className="mt-5 text-4xl font-bold tabular-nums tracking-[-0.02em] text-n-900">
-                            {pesos(p.precio_mensual)}
-                            <span className="text-base font-medium text-n-600"> al mes + IVA</span>
-                          </p>
-                          <p className="mt-1 text-sm tabular-nums text-n-600">o {pesos(p.precio_anual)} al año + IVA</p>
-                          <ul className="mt-5 flex flex-1 flex-col gap-2 border-t border-n-200 pt-5 text-sm text-n-800">
-                            {p.modulos.map((m) => (
-                              <li key={m} className="flex items-start gap-2">
-                                <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" className="mt-px shrink-0 text-menta-oscuro" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M4.5 10.5l3.5 3.5 7.5-8" />
-                                </svg>
-                                {nombres[m] ?? m}
-                              </li>
-                            ))}
-                          </ul>
-                          <BotonPrueba className={`mt-6 w-full ${esDestacado ? "" : "!bg-white !text-morado ring-2 ring-inset ring-morado/25 hover:!bg-morado-suave"}`} />
-                        </div>
-                      </Revelar>
-                    </li>
-                  );
-                })}
-              </ul>
-              {web && (
-                <Revelar className="mt-6">
-                  <div className="flex flex-col gap-5 rounded-[24px] border border-n-200 bg-menta-suave p-6 sm:flex-row sm:items-center">
-                    <Ilustracion nombre="laptop" className="h-auto w-[120px] shrink-0" sizes="120px" />
-                    <div className="flex-1">
-                      <p className="text-lg font-bold text-n-900">
-                        Tu página web, {pesos(web.precio_mensual)} al mes + IVA en cualquier plan.
-                      </p>
-                      <p className="mt-1 text-n-800">
-                        <strong>Gratis de por vida</strong> si completas tu perfil en los primeros 7 días de tu prueba.
-                      </p>
+              <Revelar className="mt-10">
+                <div className="pd-tarjeta mx-auto grid max-w-3xl gap-8 rounded-[28px] border border-morado bg-white p-6 ring-1 ring-morado sm:p-8 md:grid-cols-2">
+                  <div>
+                    <h3 className="text-xl font-bold text-n-900">{plan.nombre}</h3>
+                    <PrecioPlan plan={plan} desglose className="mt-4" />
+                    <p className="mt-3 text-sm tabular-nums text-n-600">
+                      Si pagas el año, pagas diez meses: {pesos(plan.anual)} + IVA.
+                    </p>
+                    <p className="mt-2 text-sm text-n-600">15 días gratis, sin tarjeta.</p>
+                    <div className="mt-6 flex flex-col gap-3">
+                      <BotonPrueba texto="Probar 15 días" className="w-full" />
+                      <BotonDemo texto="Ver demo" className="w-full" />
                     </div>
                   </div>
-                </Revelar>
-              )}
+                  <ul className="flex flex-col gap-2 border-t border-n-200 pt-6 text-sm text-n-800 md:border-l md:border-t-0 md:pl-8 md:pt-0">
+                    {plan.modulos.map((m) => (
+                      <li key={m} className="flex items-start gap-2">
+                        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" className="mt-px shrink-0 text-menta-oscuro" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M4.5 10.5l3.5 3.5 7.5-8" />
+                        </svg>
+                        {nombres[m] ?? m}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </Revelar>
             </div>
           </section>
         )}
 
         {/* ── Preguntas ── */}
-        <section id="preguntas" aria-labelledby="t-preguntas" className="scroll-mt-16">
+        <section id="preguntas" aria-labelledby="t-preguntas" className="scroll-mt-16 border-t border-n-200 bg-white">
           <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-12 lg:py-24">
             <Revelar className="lg:col-span-4">
               <Etiqueta>Sin letras chiquitas</Etiqueta>
               <h2 id="t-preguntas" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em]">
-                Lo que nos preguntan
+                Lo que nos preguntan las clínicas
               </h2>
               <div className="mt-6 hidden w-[140px] lg:block">
                 <Ilustracion nombre="corazon" className="pd-latido h-auto w-full" sizes="140px" />
@@ -762,21 +573,22 @@ export default async function PeluDeskLanding() {
           </div>
         </section>
 
-        {/* ── Aprende: aterrizajes por tipo de negocio y lo último del blog ── */}
-        <section aria-labelledby="t-aprende" className="border-t border-n-200 bg-white">
+        {/* ── Aprende: páginas por tipo de negocio y lo último del blog ── */}
+        <section aria-labelledby="t-aprende" className="border-t border-n-200">
           <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
             <Etiqueta>Para cada negocio</Etiqueta>
             <h2 id="t-aprende" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
               Mira cómo te ayuda según lo que haces
             </h2>
-            <ul className="mt-6 grid gap-3 sm:grid-cols-3">
+            <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {[
+                ["/veterinaria", "Software para clínicas veterinarias"],
                 ["/software-para-guarderias-caninas", "Software para guarderías caninas"],
                 ["/software-para-esteticas-caninas", "Software para estéticas caninas"],
                 ["/software-para-hoteles-caninos", "Software para hoteles caninos"],
               ].map(([href, texto]) => (
                 <li key={href}>
-                  <Link href={href} className="flex min-h-14 items-center justify-between gap-3 rounded-2xl border border-n-200 bg-crema px-5 font-semibold text-n-900 hover:border-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave">
+                  <Link href={href} className="flex min-h-14 items-center justify-between gap-3 rounded-2xl border border-n-200 bg-white px-5 font-semibold text-n-900 hover:border-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave">
                     {texto}
                     <Flecha />
                   </Link>
@@ -811,13 +623,15 @@ export default async function PeluDeskLanding() {
               <Revelar desde="asomar" className="mx-auto w-[220px] sm:w-[260px]">
                 <Ilustracion nombre="durmiendo" className="h-auto w-full" sizes="260px" />
               </Revelar>
-              <h2 id="t-cierre" className="mx-auto mt-6 max-w-[22ch] text-3xl font-bold leading-tight tracking-[-0.02em] text-white md:text-4xl">
-                Que el día termine con los perros dormidos y la caja cuadrada.
+              <h2 id="t-cierre" className="mx-auto mt-6 max-w-[24ch] text-3xl font-bold leading-tight tracking-[-0.02em] text-white md:text-4xl">
+                Que tu consulta termine firmada y tu caja cuadrada.
               </h2>
-              <p className="mx-auto mt-4 max-w-[46ch] text-crema/90">15 días gratis, sin tarjeta. Si no te sirve, no pagas nada.</p>
+              <p className="mx-auto mt-4 max-w-[46ch] text-crema/90">
+                15 días gratis, sin tarjeta{plan ? `. Después, ${pesos(plan.mensual)} + IVA al mes, sin costo inicial` : ""}.
+              </p>
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <BotonPrueba claro />
-                <BotonDemo claro />
+                <BotonPrueba claro texto="Probar 15 días" />
+                <BotonDemo claro texto="Ver demo" />
               </div>
             </div>
           </div>
@@ -827,7 +641,7 @@ export default async function PeluDeskLanding() {
       <PieSitio whatsapp={whatsapp} />
 
       <BarraCelular>
-        <BotonPrueba className="w-full" />
+        <BotonPrueba className="w-full" texto="Probar 15 días" />
       </BarraCelular>
     </div>
   );

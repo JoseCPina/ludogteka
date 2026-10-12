@@ -45,8 +45,8 @@ export default async function ModulosPage({ searchParams }: { searchParams: Prom
             <>
               Estás en la prueba gratis
               {negocio?.prueba_termina_at ? ` (hasta el ${formatearFecha(negocio.prueba_termina_at as string, zona)})` : ""}: tienes todos
-              los módulos del plan Completo para que los conozcas. El plan que te sugerimos por lo que ofreces es{" "}
-              <strong>{plan?.nombre ?? "Completo"}</strong>.
+              todos los módulos para que los conozcas. Después es un solo plan,{" "}
+              <strong>{plan?.nombre ?? "PeluDesk"}</strong>: $649 al mes + IVA, sin costo inicial.
             </>
           ) : (
             <>

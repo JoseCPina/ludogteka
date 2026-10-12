@@ -83,11 +83,11 @@ try {
   const { data: neg } = await A.from("negocios").select("id, slug, plan, prueba_termina_at, planes(clave)").eq("slug", host.split(".")[0]).single();
   const dias = Math.round((Date.parse(neg.prueba_termina_at) - Date.now()) / 86_400_000);
   ok(neg.plan === "prueba" && dias >= 14 && dias <= 15, `prueba por 15 días (quedan ${dias})`);
-  ok(neg.planes?.clave === "estetica", `plan sugerido: ${neg.planes?.clave}`);
+  ok(neg.planes?.clave === "completo", `plan único (el registro ya no sugiere un plan por servicios): ${neg.planes?.clave}`);
   const { data: apagados } = await A.from("negocio_modulos").select("modulo").eq("negocio_id", neg.id).eq("activo", false);
   const off = (apagados ?? []).map((x) => x.modulo).sort().join(",");
   ok(off === "bonos,contratos,guarderia,hotel,recoleccion", `solo estética prendida (apagados: ${off})`);
-  ok((await texto()).includes("Gana tu página web gratis"), "la bienvenida muestra el avance para ganar la web");
+  ok((await texto()).includes("Completa tu perfil y tu página web queda lista"), "la bienvenida muestra el avance del perfil (la web viene incluida)");
   const menu = await page.locator("nav").first().innerText();
   ok(!/Hotel|Guardería/.test(menu) && /Estética/.test(menu), "el menú no tiene hotel ni guardería");
   await page.goto(`${base}/hotel`);
@@ -149,9 +149,9 @@ try {
     await page.waitForTimeout(1500);
   }
   const { data: web } = await A.from("negocios").select("web_gratis_at").eq("id", neg.id).single();
-  ok(Boolean(web.web_gratis_at), "perfil completo en los primeros 7 días: la web quedó gratis de por vida");
+  ok(Boolean(web.web_gratis_at), "perfil completo: la base lo registra (la web ya viene incluida en el plan)");
   await page.goto(`${base}/bienvenida`);
-  ok((await texto()).includes("Tu página web está incluida"), "la bienvenida dice que la web está incluida");
+  ok((await texto()).includes("Tu página web está lista"), "con el perfil completo la bienvenida dice que la web está lista");
   const publica = await ctx.newPage();
   await publica.goto(`${base}/`);
   const tPagina = (await publica.locator("body").innerText()).replace(/\s+/g, " ");

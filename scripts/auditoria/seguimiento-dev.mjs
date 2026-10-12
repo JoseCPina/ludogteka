@@ -46,7 +46,7 @@ const ok = (c, si, no) => (c ? bien(si) : hallazgo(no));
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 const LUDO = "10000000-0000-4000-8000-000000000001";
 const sufijo = String(Date.now()).slice(-6);
-const NOMBRES = ["peludesk_prueba_dia5_v1", "peludesk_prueba_dia5_perfil_v1", "peludesk_prueba_dia10_v1", "peludesk_prueba_dia15_v1"];
+const NOMBRES = ["peludesk_prueba_dia5_v2", "peludesk_prueba_dia5_perfil_v2", "peludesk_prueba_dia10_v1", "peludesk_prueba_dia15_v1"];
 
 // ── Dobles ──
 const mock = { wa: [], leidos: [], tg: [], ia: [], otras: [] };
@@ -225,14 +225,14 @@ async function ejecutar() {
   // Si el día 5 cae en domingo, la etapa sale el lunes: se prueba ese día.
   const dia5Real = partes(ya5, MX).dow === 0 ? dia(N1, 6) : dia(N1, 5);
   const t5 = local(dia5Real, 14, 0, MX);
-  E.estados["peludesk_prueba_dia5_v1"] = "PENDING";
+  E.estados["peludesk_prueba_dia5_v2"] = "PENDING";
   let r = await cron({ ahora: t5, solo: [N1.id] });
   ok(r.status === 200 && r.json.candidatos === 1, "la tarea corre y ve el candidato", `la tarea: ${r.status} ${r.texto}`);
   ok(Object.values(r.json?.en_espera_plantilla ?? {})[0] === 1 && (r.json?.fallidos ?? 1) === 0, "con la plantilla en revisión: en espera, 0 errores", `no quedó en espera: ${r.texto}`);
   ok((await envios(N1)).length === 0 && enviadosA(N1).length === 0, "no se apartó ni se mandó nada", "se mandó con la plantilla sin aprobar");
   const { data: pl } = await A.from("seguimiento_pruebas_plantillas").select("nombre, estado").is("deleted_at", null);
-  ok(pl?.find((p) => p.nombre === "peludesk_prueba_dia5_v1")?.estado === "PENDING" && pl.filter((p) => p.estado === "APPROVED").length >= 3, "el estado de Meta quedó guardado", `estados guardados: ${JSON.stringify(pl)}`);
-  E.estados["peludesk_prueba_dia5_v1"] = "APPROVED";
+  ok(pl?.find((p) => p.nombre === "peludesk_prueba_dia5_v2")?.estado === "PENDING" && pl.filter((p) => p.estado === "APPROVED").length >= 3, "el estado de Meta quedó guardado", `estados guardados: ${JSON.stringify(pl)}`);
+  E.estados["peludesk_prueba_dia5_v2"] = "APPROVED";
 
   // ───────── 2/3. Etapas, textos, idempotencia
   sep("2. Etapas por día, textos y botones; una sola vez");
@@ -240,10 +240,9 @@ async function ejecutar() {
   ok(enviadosA(N1).length === 0, "el día 4 no sale nada", "salió algo el día 4");
   r = await cron({ ahora: t5, solo: [N1.id] });
   const m5 = enviadosA(N1)[0];
-  ok(enviadosA(N1).length === 1 && m5.template.name === "peludesk_prueba_dia5_v1", "día 5 sin perfil completo: peludesk_prueba_dia5_v1", `día 5: ${JSON.stringify(m5?.template?.name)} ${r.texto}`);
+  ok(enviadosA(N1).length === 1 && m5.template.name === "peludesk_prueba_dia5_v2", "día 5 sin perfil completo: peludesk_prueba_dia5_v2", `día 5: ${JSON.stringify(m5?.template?.name)} ${r.texto}`);
   const params5 = m5?.template.components.find((c) => c.type === "body")?.parameters.map((p) => p.text) ?? [];
-  const limite = textoFecha(new Date(D0.getTime() + 7 * DIA), MX);
-  ok(params5[0] === "Ana" && params5[1] === N1.nombre && params5[2] === limite, `variables: «${params5.join("» · «")}» (límite = día 7 real: ${limite})`, `variables del día 5: ${JSON.stringify(params5)} esperaba [Ana, ${N1.nombre}, ${limite}]`);
+  ok(params5.length === 2 && params5[0] === "Ana" && params5[1] === N1.nombre, `variables: «${params5.join("» · «")}» (la página web ya viene incluida: sin fecha límite)`, `variables del día 5: ${JSON.stringify(params5)} esperaba [Ana, ${N1.nombre}]`);
   const botones5 = m5?.template.components.filter((c) => c.type === "button") ?? [];
   ok(m5?.template.language.code === "es_MX" && botones5.length === 2 && botones5[0].parameters[0].payload === "seg:dia5:ayuda" && botones5[1].parameters[0].payload === "seg:dia5:ahora_no", "idioma es_MX y dos botones de respuesta rápida", `botones: ${JSON.stringify(botones5)}`);
   ok(params5.every((p) => !/[\n\t]/.test(p)), "ninguna variable trae saltos de línea", "una variable trae saltos de línea");
@@ -313,12 +312,12 @@ async function ejecutar() {
   // Dos corridas a la vez: una sola vez.
   const [c1, c2] = await Promise.all([cron({ ahora: t5b, solo: [N2.id] }), cron({ ahora: t5b, solo: [N2.id] })]);
   const m5p = enviadosA(N2);
-  ok(m5p.length === 1 && m5p[0].template.name === "peludesk_prueba_dia5_perfil_v1", "día 5 con perfil completo: peludesk_prueba_dia5_perfil_v1, y dos corridas a la vez mandan UNA", `perfil completo: ${m5p.length} mensajes ${m5p.map((m) => m.template.name)} (${c1.texto} | ${c2.texto})`);
+  ok(m5p.length === 1 && m5p[0].template.name === "peludesk_prueba_dia5_perfil_v2", "día 5 con perfil completo: peludesk_prueba_dia5_perfil_v2, y dos corridas a la vez mandan UNA", `perfil completo: ${m5p.length} mensajes ${m5p.map((m) => m.template.name)} (${c1.texto} | ${c2.texto})`);
   const pp = m5p[0]?.template.components.find((c) => c.type === "body")?.parameters.map((p) => p.text) ?? [];
   ok(pp.length === 2 && pp[0] === "Ana" && pp[1] === N2.nombre, "…con 2 variables (persona y negocio)", `variables: ${JSON.stringify(pp)}`);
   ok((await envios(N2)).length === 1, "una sola fila de envío (único por negocio y etapa)", "más de una fila de envío");
 
-  sep("3b. La fecha límite sale del día 7 REAL de la prueba, en la zona del negocio");
+  sep("3b. El día 5 ya no lleva fecha límite (la página web viene incluida)");
   const creadoNoche = new Date(Date.UTC(hoyUTC.getUTCFullYear(), hoyUTC.getUTCMonth(), hoyUTC.getUTCDate() - 1, 3, 0)); // 21:00 locales del día anterior
   const Nz = await negocio("zona-fecha", { creado: creadoNoche });
   const diaLocal = partes(creadoNoche, MX).fecha;
@@ -326,10 +325,7 @@ async function ejecutar() {
   if (partes(t5z, MX).dow === 0) t5z = local(sumarFecha(diaLocal, 6), 14, 0, MX);
   await cron({ ahora: t5z, solo: [Nz.id] });
   const pz = enviadosA(Nz)[0]?.template.components.find((c) => c.type === "body")?.parameters.map((p) => p.text) ?? [];
-  const esperadoZ = textoFecha(new Date(creadoNoche.getTime() + 7 * DIA), MX);
-  const utcMal = textoFecha(new Date(creadoNoche.getTime() + 7 * DIA), "UTC");
-  ok(pz[2] === esperadoZ && (esperadoZ !== utcMal), `fecha límite «${pz[2]}» (en la zona del negocio; en UTC sería «${utcMal}»)`, `fecha límite: «${pz[2]}», esperaba «${esperadoZ}»`);
-  ok(pz[2] !== textoFecha(new Date(t5z.getTime() + 2 * DIA), MX) || true, "(la fecha no depende del día del envío)", "");
+  ok(pz.length === 2, `el día 5 manda dos variables (${pz.join(" · ")}), sin fecha límite`, `variables del día 5: ${JSON.stringify(pz)}`);
 
   // Sin nombre de persona: «equipo de {negocio}».
   const Nn = await negocio("sin-nombre", { sinNombre: true });
@@ -535,7 +531,7 @@ async function ejecutar() {
   const enNegocio = await pedir("/plataforma/seguimiento", {}, "ludogteka.localhost:3001");
   ok(enNegocio.status === 404, "en el dominio de un negocio la pantalla no existe (404)", `en un negocio: ${enNegocio.status}`);
   const { data: resumenP } = await P.rpc("plataforma_seguimiento_resumen");
-  ok(resumenP.plantillas.length === 4 && resumenP.etapas.dia5.enviados >= 3 && resumenP.respuestas.total >= 5 && resumenP.bajas >= 1 && resumenP.recientes.length > 0, "el resumen de la plataforma trae plantillas, envíos por etapa, respuestas, bajas y recientes", `resumen: ${JSON.stringify(resumenP).slice(0, 400)}`);
+  ok(resumenP.plantillas.length >= 4 && resumenP.etapas.dia5.enviados >= 3 && resumenP.respuestas.total >= 5 && resumenP.bajas >= 1 && resumenP.recientes.length > 0, "el resumen de la plataforma trae plantillas, envíos por etapa, respuestas, bajas y recientes", `resumen: ${JSON.stringify(resumenP).slice(0, 400)}`);
   const { data: delDia } = await P.rpc("seguimiento_resumen_dia", { p_desde: new Date(Date.now() - DIA).toISOString(), p_hasta: new Date(Date.now() + 3600_000).toISOString() });
   ok(delDia.dia5 >= 3 && delDia.fallidos >= 1 && delDia.respuestas >= 5, "seguimiento_resumen_dia (línea del resumen de Telegram) cuenta lo enviado", `resumen del día: ${JSON.stringify(delDia)}`);
 

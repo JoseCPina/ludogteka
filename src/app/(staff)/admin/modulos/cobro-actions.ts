@@ -7,7 +7,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { negocioActual, urlDelNegocio } from "@/lib/negocio/actual";
 import { stripe, mensajeDeErrorStripe, modoStripe } from "@/lib/cobro/stripe";
-import { precioParaCobrar } from "@/lib/cobro/precios";
+import { precioParaCobrar, sincronizarPreciosPlan } from "@/lib/cobro/precios";
 import { configuracionPortal } from "@/lib/cobro/portal";
 import { METADATA_NEGOCIO, aplicarSuscripcion, guardarCliente } from "@/lib/cobro/suscripcion";
 import { tipoDeCambio } from "@/lib/cobro/cambio";
@@ -53,6 +53,19 @@ async function catalogo(ctx: Contexto): Promise<PlanOferta[]> {
   return ((data ?? []) as PlanOferta[]).map((p) => ({ ...p, precio_mensual: Number(p.precio_mensual) }));
 }
 
+// El precio de Stripe de un plan. Si la plataforma cambió el precio en la base y
+// Stripe todavía no lo tiene (un plan nuevo, o el cambio al plan único), se crea
+// aquí el precio nuevo con la misma lookup key —el anterior no se toca— y se
+// vuelve a comprobar: lo que se cobra es siempre lo que dice la base.
+async function precioDeStripe(oferta: PlanOferta, periodicidad: Seleccion["periodicidad"]): Promise<Stripe.Price> {
+  try {
+    return await precioParaCobrar(oferta.clave, oferta.precio_mensual, periodicidad);
+  } catch {
+    await sincronizarPreciosPlan({ id: oferta.id, clave: oferta.clave, nombre: oferta.nombre, tipo: oferta.tipo, precio_mensual: oferta.precio_mensual, activo: true });
+    return precioParaCobrar(oferta.clave, oferta.precio_mensual, periodicidad);
+  }
+}
+
 // Los precios de Stripe de lo que escogió, comprobando que el importe es el
 // de la base (lo que vio en pantalla).
 async function preciosDeSeleccion(ctx: Contexto, sel: Seleccion): Promise<{ plan: Stripe.Price; web: Stripe.Price | null; oferta: PlanOferta }> {
@@ -60,13 +73,13 @@ async function preciosDeSeleccion(ctx: Contexto, sel: Seleccion): Promise<{ plan
   const oferta = planes.find((p) => p.clave === sel.plan && p.tipo === "plan" && p.precio_mensual > 0);
   if (!oferta) throw new Error("Ese plan no está disponible.");
   if (sel.periodicidad !== "mensual" && sel.periodicidad !== "anual") throw new Error("Escoge mensual o anual.");
-  const plan = await precioParaCobrar(oferta.clave, oferta.precio_mensual, sel.periodicidad);
+  const plan = await precioDeStripe(oferta, sel.periodicidad);
   // La página web ganada en la prueba nunca se cobra.
   let web: Stripe.Price | null = null;
   if (sel.web && !ctx.cobro.web_gratis && !oferta.modulos.includes("pagina_web")) {
     const complemento = planes.find((p) => p.tipo === "complemento" && p.modulos.includes("pagina_web"));
     if (!complemento) throw new Error("La página web no está disponible como complemento.");
-    web = await precioParaCobrar(complemento.clave, complemento.precio_mensual, sel.periodicidad);
+    web = await precioDeStripe(complemento, sel.periodicidad);
   }
   return { plan, web, oferta };
 }

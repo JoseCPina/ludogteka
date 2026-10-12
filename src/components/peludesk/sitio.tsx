@@ -19,8 +19,8 @@ const CLASE_PRUEBA =
   "pd-boton pd-boton-primario inline-flex min-h-10 items-center justify-center whitespace-nowrap rounded-full bg-morado px-4 text-sm font-semibold text-white hover:bg-morado-oscuro focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave";
 
 const ENLACES = [
-  ["/#dia", "Cómo te ayuda"],
-  ["/#planes", "Planes"],
+  ["/veterinaria", "Veterinaria"],
+  ["/#planes", "Precio"],
   ["/blog", "Blog"],
   ["/ayuda", "Ayuda"],
 ] as const;
@@ -74,7 +74,7 @@ export function PieSitio({ whatsapp = null }: { whatsapp?: string | null }) {
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
         <div>
           <LogoPeluDesk tamano={26} />
-          <p className="mt-3 max-w-[30ch] text-sm text-n-600">Para guarderías, hoteles y estéticas caninas. Hecho en México.</p>
+          <p className="mt-3 max-w-[30ch] text-sm text-n-600">Para clínicas veterinarias, guarderías, hoteles y estéticas caninas. Hecho en México.</p>
           <RedesPeluDesk className="-ml-3 mt-2" />
         </div>
         <nav aria-label="Producto" className="flex flex-col gap-2 text-sm font-semibold text-n-700">
@@ -88,6 +88,7 @@ export function PieSitio({ whatsapp = null }: { whatsapp?: string | null }) {
         <nav aria-label="Aprende" className="flex flex-col gap-2 text-sm font-semibold text-n-700">
           <p className="text-xs font-bold uppercase tracking-[0.1em] text-n-600">Aprende</p>
           <Link href="/blog" className={ENLACE_PIE}>Blog</Link>
+          <Link href="/veterinaria" className={ENLACE_PIE}>Software para clínicas veterinarias</Link>
           <Link href="/software-para-guarderias-caninas" className={ENLACE_PIE}>Software para guarderías</Link>
           <Link href="/software-para-esteticas-caninas" className={ENLACE_PIE}>Software para estéticas</Link>
           <Link href="/software-para-hoteles-caninos" className={ENLACE_PIE}>Software para hoteles</Link>

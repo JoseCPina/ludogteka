@@ -10,7 +10,7 @@ PeluDesk tiene hoy Facebook, Instagram y TikTok (`src/components/peludesk/redes.
 
 ## Calendario (3 por semana: lunes, miércoles y viernes)
 
-Primero lo que más duele en una guardería, después caja y papeleo, luego estética y el dueño, y al final la oferta (la página web gratis), para que quien vio la serie tenga un motivo para abrir la prueba.
+Primero lo que más duele en una guardería, después caja y papeleo, luego estética y el dueño, y al final la oferta (la página web gratis; retirada el 22 de octubre de 2026 con el plan único), para que quien vio la serie tenga un motivo para abrir la prueba.
 
 | Fecha | Video | Dónde |
 | --- | --- | --- |

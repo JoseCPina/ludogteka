@@ -6,10 +6,12 @@ import { EventoPixelAlVer } from "@/components/peludesk/consentimiento/evento-pi
 import { Ilustracion } from "@/components/peludesk/ilustracion";
 import { urlDemo } from "@/lib/peludesk/landing";
 import { CAPTURAS_VET, DESCRIPCION_VET, FUNCIONES_VET, MENSAJES_CLAVE, MODULOS_TRES, PREGUNTAS_VET } from "@/lib/peludesk/veterinaria";
+import { PrecioPlan } from "@/components/peludesk/precio-plan";
+import { planUnico, pesos, SIN_COSTO_INICIAL } from "@/lib/peludesk/plan";
 import { JsonLd, ORGANIZACION, SITIO, metaPagina, migas, preguntasFrecuentes } from "@/lib/peludesk/seo";
 
 const RUTA = "/veterinaria";
-const TITULO = "Software para clínicas veterinarias | PeluDesk";
+const TITULO = "Expediente, recetas y carnet para clínicas veterinarias | PeluDesk";
 
 export const metadata: Metadata = metaPagina({
   titulo: TITULO,
@@ -23,7 +25,8 @@ const botonPrimario =
 const botonSecundario =
   "pd-boton inline-flex min-h-12 items-center justify-center whitespace-nowrap rounded-full border-2 border-morado/25 bg-white px-6 text-base font-semibold text-morado hover:border-morado/50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave";
 
-export default function PaginaVeterinaria() {
+export default async function PaginaVeterinaria() {
+  const plan = await planUnico();
   const demo = `${urlDemo()}/demo/entrar/veterinaria`;
   return (
     <MarcoSitio>
@@ -43,6 +46,17 @@ export default function PaginaVeterinaria() {
             description: DESCRIPCION_VET,
             featureList: FUNCIONES_VET.map((f) => f.titulo),
             isPartOf: { "@type": "SoftwareApplication", name: "PeluDesk", url: SITIO },
+            ...(plan
+              ? {
+                  offers: {
+                    "@type": "Offer",
+                    price: plan.mensual,
+                    priceCurrency: "MXN",
+                    priceSpecification: { "@type": "UnitPriceSpecification", price: plan.mensual, priceCurrency: "MXN", billingDuration: 1, unitCode: "MON", valueAddedTaxIncluded: false },
+                    description: `${SIN_COSTO_INICIAL}. Más IVA.`,
+                  },
+                }
+              : {}),
             publisher: ORGANIZACION,
           },
         ]}
@@ -60,7 +74,8 @@ export default function PaginaVeterinaria() {
             Lo clínico y lo del mostrador en el mismo lugar: la consulta se firma, la vacuna se recuerda, la receta queda ligada al lote y todo lo que se hace
             llega a la cuenta para cobrarlo.
           </p>
-          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+          {plan && <PrecioPlan plan={plan} tamano="mediano" className="mt-6" />}
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <EnlaceRegistro className={botonPrimario}>Pruébalo 15 días gratis</EnlaceRegistro>
             <a href={demo} data-pixel-evento="Lead" className={botonSecundario}>
               Ver demo
@@ -136,9 +151,9 @@ export default function PaginaVeterinaria() {
 
       {/* ── Los tres módulos ── */}
       <section aria-labelledby="modulos" className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-        <h2 id="modulos" className="text-2xl font-bold text-n-900">Tres módulos, los prendes o apagas tú</h2>
+        <h2 id="modulos" className="text-2xl font-bold text-n-900">Y también hotel, guardería y estética, ya incluidos</h2>
         <p className="mt-2 max-w-[62ch] text-n-700">
-          Usa solo lo que tu negocio hace. Cada módulo se prende o se apaga desde el panel de administración, y apagar uno nunca borra lo que ya tenías.
+          {plan ? `Todo va en el mismo plan de ${pesos(plan.mensual)} + IVA al mes. ` : ""}Usa solo lo que tu negocio hace: cada módulo se prende o se apaga desde el panel de administración, y apagar uno nunca borra lo que ya tenías.
         </p>
         <ul className="mt-6 grid gap-5 md:grid-cols-3">
           {MODULOS_TRES.map((m) => (

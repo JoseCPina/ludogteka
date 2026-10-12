@@ -50,10 +50,10 @@ Cada negocio tiene su propia dirección: <su-nombre>.peludesk.mx.
 - Módulos: el admin prende y apaga los módulos de su plan en Administración → Módulos y plan. Apagar un módulo nunca borra nada.
 
 # Prueba gratis
-- 15 días gratis, sin tarjeta. Se registra en https://peludesk.mx/registro con su teléfono, una contraseña, el nombre del negocio, su ciudad y los servicios que ofrece (guardería, hotel, estética, veterinaria).
-- Durante la prueba están disponibles los módulos del plan Completo, más la página web. Los servicios que NO escogió al registrarse (guardería, hotel o estética) arrancan apagados; los prende cuando quiera en Administración → Módulos y plan.
+- 15 días gratis, sin tarjeta. Se registra en https://peludesk.mx/registro con su teléfono, una contraseña, el nombre del negocio, su ciudad y los servicios que ofrece (veterinaria, guardería, hotel, estética).
+- Hay un solo plan: PeluDesk, con todos los módulos (Veterinaria, Hotel y guardería, Estética, inventario, empleados, gastos, reportes, portal y página web) y sin costo inicial. Durante la prueba están todos disponibles. Los servicios que NO escogió al registrarse arrancan apagados; los prende cuando quiera en Administración → Módulos y plan.
 - Al entrar hay cinco primeros pasos para dejarlo listo.
-- Página web gratis de por vida si en los primeros 7 días de la prueba completa su perfil: primeros pasos, logo (PNG, JPG, WebP o SVG de hasta 2 MB; antes de guardar ve cómo se verá en su registro, recibos y portal, y la app avisa si es muy ancho o trae fondo blanco), 3 fotos, al menos un precio, horario y dirección. Si no, la página web es un complemento con costo.
+- La página web viene incluida en el plan, sin costo aparte. Se arma sola con el perfil del negocio: primeros pasos, logo (PNG, JPG, WebP o SVG de hasta 2 MB; antes de guardar ve cómo se verá en su registro, recibos y portal, y la app avisa si es muy ancho o trae fondo blanco), 3 fotos, al menos un precio, horario y dirección. No hay fecha límite para completarlo.
 - Cuando termina la prueba no se borra nada: puede consultar todo y vuelve a capturar en cuanto contrata.
 - En la prueba, mientras no conecte su cuenta de Mercado Pago o Clip, la terminal y los links funcionan en simulación (no mueven dinero). Si ya conectó su cuenta real, los cobros son de verdad.
 
@@ -61,11 +61,10 @@ Cada negocio tiene su propia dirección: <su-nombre>.peludesk.mx.
 Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado. Se puede entrar como recepción, estilista, dueña del negocio o dueña de un perro. Es de solo lectura: nada se guarda.
 
 # Contratar y pagar PeluDesk
-- Se paga por negocio, al mes o al año. No se cobra por perro ni por cliente.
-- Los precios son más IVA (16 %). Si paga el año, paga diez meses.
+- Hay un solo plan, PeluDesk, con todos los módulos y sin costo inicial: no hay cargo de alta ni de activación. Se paga por negocio, al mes o al año; no se cobra por perro ni por cliente. El precio exacto sale de la tabla de planes (siempre más IVA, 16 %). Si paga el año, paga diez meses.
 - Se contrata desde la app: Administración → Módulos y plan. El pago es con tarjeta, por Stripe.
 - Si contrata durante la prueba no pierde días: el primer cobro es cuando termina la prueba.
-- Subir de plan (o pasar de mensual a anual) es inmediato, cobrando la diferencia proporcional. Bajar de plan toma efecto al terminar el periodo pagado, y antes avisa qué módulos se apagan.
+- Pasar de mensual a anual es inmediato, cobrando la diferencia proporcional; de anual a mensual toma efecto al terminar el periodo pagado. Si el precio del plan cambia, quien ya paga lo nuevo lo ve desde su siguiente cargo, sin cobros dobles.
 - Cambiar la tarjeta, ver facturas de Stripe o cancelar: desde Administración → Módulos y plan, en el portal de pagos.
 - Cancelar: cuando quiera; lo sigue usando hasta que termina lo que ya pagó.
 - Si un cobro falla: todo sigue funcionando 7 días (gracia) mientras actualiza la tarjeta. Desde el día 8 la cuenta queda en solo lectura: nada se borra y todo se puede consultar. En cuanto se paga, se reactiva solo.
@@ -84,7 +83,7 @@ Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado.
 - La contraseña de un cliente la restablece el negocio desde la ficha del cliente.
 
 # Veterinaria (módulo nuevo, Fase 0)
-- Es un módulo aparte, junto a Hotel y guardería y Estética. Viene apagado: el admin lo prende en Administración → Módulos y plan (necesita Inventario prendido) y también puede escogerlo al registrarse en la prueba gratis. Apagarlo no borra nada.
+- Es un módulo, junto a Hotel y guardería y Estética, y va incluido en el plan único. Viene apagado: el admin lo prende en Administración → Módulos y plan (necesita Inventario prendido) y también puede escogerlo al registrarse en la prueba gratis. Apagarlo no borra nada.
 - Hoy incluye: ficha clínica de la mascota (especie perro, gato u otro; esterilización; peso con historial por fecha; alergias; microchip; folio de registro como el RUAC; notas clínicas), inventario clínico con lotes y caducidades, médicos veterinarios con cédula, CPA del SITPV y folios, y los datos del establecimiento (aviso de funcionamiento ante SENASICA, MVRA y permisos con fecha de vencimiento y recordatorio).
 - Cada producto clínico tiene dos clasificaciones independientes y editables: grupo SENASICA (I, II, III o ninguno) y Ley General de Salud (estupefaciente art. 234, psicotrópico fracción II, III o IV del art. 245, o ninguna), más la marca antimicrobiano. Hay un catálogo de principios activos precargado que PeluDesk mantiene; lo marcado «por confirmar» hay que confirmarlo con el médico responsable.
 - Los productos del Grupo I o de la Ley General de Salud llevan un campo de folio de receta: por ahora solo avisa si falta; más adelante será obligatorio.

@@ -19,18 +19,18 @@ PeluDesk es una herramienta de gestión. **No presta servicios veterinarios, leg
 
 ## 4. Prueba gratis de 15 días
 
-- Abrir un negocio de prueba es gratis, dura **15 días**, no pide tarjeta y trae todos los módulos del plan Completo; se dejan activos solo los servicios que escogiste al registrarte.
+- Abrir un negocio de prueba es gratis, dura **15 días**, no pide tarjeta y trae todos los módulos; se dejan activos solo los servicios que escogiste al registrarte.
 - Se permite **un negocio de prueba por teléfono**, y limitamos los registros por conexión para evitar abusos.
-- Si completas el perfil de tu negocio en los primeros 7 días de la prueba en las condiciones que la aplicación te muestra, ganas la página web del negocio sin costo mientras el negocio siga activo.
+- La página web del negocio viene incluida en el plan, sin costo aparte.
 - Al terminar la prueba sin contratar, el negocio pasa a **solo lectura**: puedes consultar todo lo que capturaste, pero no capturar nada nuevo hasta contratar. **No se borra tu información.**
 
 ## 5. Planes, precios y cobro
 
-- Los planes, sus módulos y sus precios vigentes se muestran en [peludesk.mx](/#planes) y en la pantalla de contratación de la aplicación. **Los precios se muestran sin IVA** y al total se le suma el **IVA (16 %)**; el total con IVA aparece en el resumen y en el Checkout antes de que pagues.
+- PeluDesk tiene un **plan único**, con todos los módulos incluidos y **sin costo inicial** (no hay cargo de alta ni de activación). Su precio vigente se muestra en [peludesk.mx](/#planes) y en la pantalla de contratación de la aplicación. **Los precios se muestran sin IVA** y al total se le suma el **IVA (16 %)**; el total con IVA aparece en el resumen y en el Checkout antes de que pagues.
 - Hay pago **mensual** y **anual**; el anual equivale a diez mensualidades.
 - El cobro lo procesa **Stripe** con tarjeta y es **recurrente y automático** al final de cada periodo hasta que canceles. Menteo no recibe ni guarda los datos de tu tarjeta.
-- **Subir de plan** (uno más caro, o de mensual a anual) aplica de inmediato y se cobra la diferencia proporcional; si el banco rechaza el pago, no cambia nada. **Bajar de plan** aplica al final del periodo pagado, y la aplicación te avisa qué módulos se apagan.
-- Podemos cambiar los precios: el cambio no afecta lo que ya pagaste ni el periodo en curso, y quien ya paga conserva lo que aceptó hasta que cambie de plan o se cancele su suscripción.
+- **Pasar de mensual a anual** aplica de inmediato y se cobra la diferencia proporcional; si el banco rechaza el pago, no cambia nada. **Pasar de anual a mensual** aplica al final del periodo pagado.
+- Podemos cambiar los precios: el cambio no afecta lo que ya pagaste ni el periodo en curso, aplica desde tu siguiente cargo y la aplicación te avisa con anticipación el nuevo precio y la fecha en que empieza. Nunca se cobra dos veces el mismo periodo.
 - Si el cobro de un periodo falla, tienes **7 días de gracia** durante los cuales todo sigue funcionando; pasados esos días sin pago, el negocio queda en **solo lectura** hasta que el pago se regularice, y en cuanto se regulariza se reactiva solo. Nunca se borra tu información por falta de pago.
 - El IVA y demás impuestos de tu propia operación son tu responsabilidad. PeluDesk todavía no emite facturas CFDI de tus ventas a tus clientes.
 
