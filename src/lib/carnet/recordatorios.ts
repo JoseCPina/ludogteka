@@ -115,7 +115,13 @@ export async function correrRecordatorios(opciones: { ahora?: Date; solo?: strin
       }
       const que = f.origen_tipo === "vacuna" ? `vacuna ${limpiar(f.detalle)}` : `desparasitación (${limpiar(f.detalle)})`;
       const parametros = [limpiar(f.cliente_nombre.split(" ")[0] ?? "") || "cliente", limpiar(f.perro_nombre), limpiar(f.negocio_nombre), que, cuandoEnTexto(f.proxima_dosis, hoy), `${telNegocio.slice(-10, -7)} ${telNegocio.slice(-7, -4)} ${telNegocio.slice(-4)}`];
-      const r = await wa.plantillaConParametros(`52${digitos}`, plantilla.nombre, parametros, []);
+      const r = await wa.plantillaConParametros(`52${digitos}`, plantilla.nombre, parametros, [], {
+        origen: "carnet_recordatorio",
+        negocioId,
+        refId: f.id,
+        etiqueta: `Recordatorio de ${f.origen_tipo === "vacuna" ? "vacuna" : "desparasitación"} de ${limpiar(f.perro_nombre)}`,
+        href: "/veterinaria/recordatorios",
+      });
       await sb.rpc("carnet_recordatorio_resultado", {
         p_id: f.id,
         p_ok: r.ok,

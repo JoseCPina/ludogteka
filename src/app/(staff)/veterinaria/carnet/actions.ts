@@ -149,6 +149,16 @@ export async function marcarRecordatorio(id: string, estado: "manual" | "omitido
   return { error: null, exito: estado === "manual" ? "Anotado como enviado." : "Recordatorio omitido." };
 }
 
+/** «Reintentar envío»: el recordatorio vuelve a pendiente y la tarea lo manda otra vez en su siguiente corrida. */
+export async function reintentarRecordatorio(id: string): Promise<ResultadoAccion> {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("carnet_recordatorio_reintentar", { p_id: id });
+  if (error) return { error: traducirError(error) };
+  revalidatePath("/veterinaria/recordatorios");
+  revalidatePath("/recepcion");
+  return { error: null, exito: "Listo: se vuelve a mandar en la siguiente corrida (cada hora, de 9:00 a 20:00)." };
+}
+
 export async function guardarDictadoAjustes(fd: FormData): Promise<ResultadoAccion> {
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("guardar_veterinaria_dictado", { p_conservar: fd.get("conservar") === "si" });

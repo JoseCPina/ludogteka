@@ -68,8 +68,8 @@ export default async function Recordatorios() {
                   <p className="text-sm text-n-700">
                     Le toca {formatearFechaCalendario(f.proxima_dosis)} ({cuandoEs(f.dias)}) · {f.cliente_nombre}{f.cliente_telefono ? ` · ${f.cliente_telefono}` : " · sin teléfono"}
                   </p>
-                  {f.error && <p className="text-sm text-coral-oscuro">No salió por la API: {f.error}</p>}
-                  <AccionesRecordatorio id={f.id} enlace={enlace} />
+                  {f.error && <p className="text-sm text-coral-oscuro">No salió: {f.error}</p>}
+                  <AccionesRecordatorio id={f.id} enlace={enlace} fallido={f.estado === "fallido"} />
                 </li>
               );
             })}

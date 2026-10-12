@@ -303,6 +303,7 @@ const PUBLICAS_PLATAFORMA: Record<string, string> = {
   "/software-para-guarderias-caninas": "/peludesk/software/software-para-guarderias-caninas",
   "/software-para-esteticas-caninas": "/peludesk/software/software-para-esteticas-caninas",
   "/software-para-hoteles-caninos": "/peludesk/software/software-para-hoteles-caninos",
+  "/veterinaria": "/peludesk/veterinaria",
 };
 // Con parámetro: artículos del centro de ayuda y del blog, páginas del índice
 // del blog y sus categorías. Una lista cerrada de formas, nunca por prefijo.

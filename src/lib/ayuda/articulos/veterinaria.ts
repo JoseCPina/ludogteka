@@ -225,9 +225,13 @@ Cada recordatorio tiene tres botones:
 
 En [Ajustes de Veterinaria](/veterinaria/ajustes), **Envío automático por WhatsApp** → **Prendido**: los recordatorios salen solos, una vez por dosis, de 9:00 a 20:00, con una plantilla aprobada de WhatsApp. El mensaje sale del número de PeluDesk y dice que ese número no recibe respuestas y a qué teléfono del negocio llamar para agendar; por eso el negocio necesita tener un teléfono público. Si algo falla, el recordatorio queda en **Por mandar** para que lo mandes tú.
 
+### Cuando WhatsApp no lo entrega
+
+WhatsApp acepta el mensaje y avisa después si llegó. Si no llegó (el número del dueño no tiene WhatsApp, o la cuenta de PeluDesk tiene un problema), el recordatorio vuelve a **Por mandar** con el motivo escrito, y en **Necesita atención** del tablero aparece «Un mensaje de WhatsApp no llegó». Ahí tienes tres opciones: **Reintentar envío** (sale otra vez en la siguiente corrida), **Abrir en WhatsApp** para mandarlo tú, o **Ya lo mandé** si ya lo resolviste. La liga de una teleconsulta que no llegó se manda desde su pantalla con **Abrir en WhatsApp**.
+
 Para que una mascota no reciba recordatorios, en su carnet aprieta **Apagar recordatorios de esta mascota**.
 
-Lo que está por mandar también sale en **Necesita atención** del tablero.`,
+Lo que está por mandar y los mensajes que no llegaron también salen en **Necesita atención** del tablero.`,
   },
   {
     slug: "certificado-de-salud",

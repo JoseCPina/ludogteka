@@ -81,6 +81,8 @@ if (neg) {
   // Las fotos y PDFs del demo viven bajo la carpeta de cada cliente.
   const { data: previos } = await A.from("clientes").select("id").eq("negocio_id", neg.id);
   for (const c of previos ?? []) await borrarCarpeta(c.id);
+  // Lo clínico (Veterinaria) y lo que cuelga de perros y clientes va primero: demo_vaciar no lo conoce.
+  exigir(await createClient(C.url, C.secreta, { ...sinSesion, global: { headers: { "x-negocio-id": neg.id } } }).rpc("demo_vaciar_veterinaria", { p_negocio_id: neg.id, p_todo: true }), "demo_vaciar_veterinaria");
   const borrado = exigir(await createClient(C.url, C.secreta, { ...sinSesion, global: { headers: { "x-negocio-id": neg.id } } }).rpc("demo_vaciar", { p_negocio_id: neg.id }), "demo_vaciar");
   console.log("vaciado:", borrado.filter((b) => b.borradas > 0).map((b) => `${b.tabla} ${b.borradas}`).join(", "));
 } else {
@@ -728,3 +730,6 @@ for (const tabla of ["clientes", "perros", "estancias", "citas_estetica", "cobro
 console.log(resumen);
 console.log(`ingreso cobrado en la historia: $${RESERVAS_DIA.reduce((s, [, t]) => s + t, 0)}`);
 console.log(`cuentas del demo (solo lectura): ${cuentasDemo.length} · dueña del portal: ${telefonoACorreo(D.CLIENTES.find((c) => c.portal).telefono)}`);
+
+// ── Veterinaria (21 de octubre de 2026): la clínica del demo, con sus propios datos de ejemplo ──
+execSync(`node scripts/demo/sembrar-demo-veterinaria.mjs${PROD ? " --prod" : ""}`, { stdio: "inherit" });

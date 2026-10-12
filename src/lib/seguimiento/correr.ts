@@ -100,7 +100,7 @@ export async function correrSeguimiento(opciones: { ahora?: Date; solo?: string[
     if (eRes) { console.error("[seguimiento] reservar", eRes.message); continue; }
     if (!id) { resumen.ya_apartados++; continue; }
 
-    const r = await wa.plantillaConParametros(telefonoCanonico(c.telefono), plantilla.nombre, parametros, plantilla.botones.map((b) => b.payload));
+    const r = await wa.plantillaConParametros(telefonoCanonico(c.telefono), plantilla.nombre, parametros, plantilla.botones.map((b) => b.payload), { origen: "seguimiento", negocioId: c.negocio_id, etiqueta: `Seguimiento de la prueba (${etapa})` });
     const definitivo = !r.ok && !esTransitorio(r.estado, r.codigo);
     await sb.rpc("seguimiento_resultado", { p_id: id as string, p_ok: r.ok, p_wa_id: r.id ?? null, p_error: r.ok ? null : `${r.estado ?? "red"}${r.codigo ? `/${r.codigo}` : ""}: ${r.error ?? "sin detalle"}`, p_reintentable: !r.ok && !definitivo });
     if (r.ok) {

@@ -1,3 +1,4 @@
+import { MODULOS_TRES, FUNCIONES_VET, MENSAJES_CLAVE } from "@/lib/peludesk/veterinaria";
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -28,14 +29,14 @@ import "./peludesk.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://peludesk.mx"),
-  title: { absolute: "PeluDesk — software para guarderías, hoteles y estéticas caninas" },
+  title: { absolute: "PeluDesk — software para guarderías, hoteles, estéticas y clínicas veterinarias" },
   description:
-    "Reservas, citas de estética, cobros, contratos firmados desde el celular y vacunas al día, en un solo lugar. Prueba PeluDesk 15 días gratis, sin tarjeta.",
+    "Reservas, citas de estética, expediente veterinario, cobros, facturas CFDI, contratos firmados desde el celular y vacunas al día, en un solo lugar. Prueba PeluDesk 15 días gratis, sin tarjeta.",
   alternates: { canonical: "/" },
   robots: { index: true, follow: true },
   openGraph: {
     title: "PeluDesk — deja la libreta",
-    description: "Para guarderías, hoteles y estéticas caninas. Pruébalo 15 días gratis, sin tarjeta.",
+    description: "Para guarderías, hoteles, estéticas y clínicas veterinarias. Pruébalo 15 días gratis, sin tarjeta.",
     images: [{ url: "/peludesk/capturas/tablero-escritorio-1600.webp", width: 1600, height: 1000 }],
     locale: "es_MX",
     type: "website",
@@ -232,6 +233,7 @@ const PREGUNTAS = [
 const DEMO_ROLES = [
   ["recepcion", "Recepción", "El día, las reservas y la caja"],
   ["estetica", "Estilista", "Su agenda de hoy"],
+  ["veterinaria", "Médica veterinaria", "Expediente, carnet, recetas y hospitalizados"],
   ["admin", "Dueña del negocio", "Ganancias, nómina y precios"],
   ["cliente", "Dueña de un perro", "Lo que ven tus clientes"],
 ] as const;
@@ -282,7 +284,8 @@ export default async function PeluDeskLanding() {
       applicationCategory: "BusinessApplication",
       operatingSystem: "Web",
       inLanguage: "es-MX",
-      description: "Software para guarderías, hoteles y estéticas caninas: reservas, citas, cobros, contratos y expediente de cada perro.",
+      description: "Software para guarderías, hoteles, estéticas caninas y clínicas veterinarias: reservas, citas, cobros, facturas CFDI, contratos y expediente de cada mascota.",
+      featureList: ["Hotel y guardería", "Estética", "Veterinaria", ...FUNCIONES_VET.map((f) => f.titulo)],
       ...(precios.length
         ? { offers: { "@type": "AggregateOffer", priceCurrency: "MXN", lowPrice: Math.min(...precios), highPrice: Math.max(...precios), offerCount: precios.length } }
         : {}),
@@ -303,6 +306,7 @@ export default async function PeluDeskLanding() {
           <nav aria-label="Principal" className="hidden items-center gap-1 md:flex">
             {[
               ["#dia", "Cómo te ayuda"],
+              ["#modulos", "Módulos"],
               ["#demo", "Demo"],
               ["#planes", "Planes"],
               ["#preguntas", "Preguntas"],
@@ -321,6 +325,7 @@ export default async function PeluDeskLanding() {
               <nav aria-label="Principal" className="flex flex-col">
                 {[
                   ["#dia", "Cómo te ayuda"],
+                  ["#modulos", "Módulos"],
                   ["#demo", "Demo"],
                   ["#planes", "Planes"],
                   ["#preguntas", "Preguntas"],
@@ -355,7 +360,7 @@ export default async function PeluDeskLanding() {
           <Ilustracion nombre="textura-menta" className="pd-paralaje absolute -right-24 top-6 w-[420px] opacity-70 lg:right-0 lg:w-[560px]" sizes="560px" />
           <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-10 sm:px-6 lg:grid-cols-12 lg:gap-10 lg:pb-24 lg:pt-16">
             <div className="lg:col-span-5">
-              <Etiqueta>Guarderías, hoteles y estéticas caninas</Etiqueta>
+              <Etiqueta>Guarderías, hoteles, estéticas y veterinarias</Etiqueta>
               <h1 className="mt-4 text-[2.5rem] font-bold leading-[1.05] tracking-[-0.03em] text-n-900 md:text-[3.4rem]">
                 Deja la libreta. <span className="text-morado">Los perros ya te dan suficiente trabajo.</span>
               </h1>
@@ -534,6 +539,56 @@ export default async function PeluDeskLanding() {
                 </li>
               ))}
             </ul>
+          </div>
+        </section>
+
+        {/* ── Tres módulos ── */}
+        <section id="modulos" aria-labelledby="t-modulos" className="relative scroll-mt-16 border-y border-n-200 bg-white">
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
+            <Revelar className="max-w-2xl">
+              <Etiqueta>Tres módulos</Etiqueta>
+              <h2 id="t-modulos" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
+                Prendes lo que haces. Apagas lo que no.
+              </h2>
+              <p className="mt-4 max-w-[52ch] leading-relaxed text-n-700">
+                Cada módulo se prende o se apaga desde el panel de administración, y apagar uno nunca borra lo que ya tenías.
+              </p>
+            </Revelar>
+            <ul className="mt-10 grid gap-5 md:grid-cols-3">
+              {MODULOS_TRES.map((m, i) => (
+                <li key={m.clave}>
+                  <Revelar retraso={i * 90} className="h-full">
+                    <div className="pd-tarjeta flex h-full flex-col rounded-[22px] border border-n-200 bg-crema p-5">
+                      <h3 className="text-xl font-bold text-n-900">{m.nombre}</h3>
+                      <p className="mt-2 leading-snug text-n-700">{m.texto}</p>
+                      {"href" in m && (
+                        <a href={m.href} className="group mt-4 inline-flex min-h-11 items-center font-semibold text-morado underline decoration-morado/30 underline-offset-4 hover:decoration-morado">
+                          Conoce Veterinaria
+                          <Flecha />
+                        </a>
+                      )}
+                    </div>
+                  </Revelar>
+                </li>
+              ))}
+            </ul>
+            <Revelar className="mt-8">
+              <p className="font-semibold text-n-900">Y en los tres:</p>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {MENSAJES_CLAVE.map((m) => (
+                  <li key={m} className="rounded-full bg-menta-suave px-4 py-2 text-sm font-semibold text-morado">
+                    {m}
+                  </li>
+                ))}
+              </ul>
+            </Revelar>
+            <Revelar className="mt-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+              <BotonPrueba />
+              <a href="/veterinaria" className="group inline-flex min-h-12 items-center font-semibold text-morado underline decoration-morado/30 underline-offset-4 hover:decoration-morado">
+                Mira todo lo de Veterinaria
+                <Flecha />
+              </a>
+            </Revelar>
           </div>
         </section>
 

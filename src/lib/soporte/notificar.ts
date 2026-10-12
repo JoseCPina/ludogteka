@@ -91,7 +91,7 @@ export async function avisarWhatsAppRespuesta(r: {
       if (env.ok) await datos.apuntarMensaje(destino, "humano", cuerpo);
       return env.ok ? "whatsapp" : "fallo";
     }
-    const env = await wa.plantilla(destino, PLANTILLA_SEGUIMIENTO);
+    const env = await wa.plantilla(destino, PLANTILLA_SEGUIMIENTO, { origen: "soporte", negocioId: r.negocioId, refId: r.ticketId, etiqueta: `Aviso del ticket #${r.numero}` });
     return env.ok ? "plantilla" : "fallo";
   } catch (e) {
     console.error("[soporte] no salió el WhatsApp del ticket", r.ticketId, e instanceof Error ? e.message : e);
@@ -145,5 +145,25 @@ export async function proponerArticulo(t: {
   } catch (e) {
     console.error("[soporte] no salió la propuesta de artículo", e instanceof Error ? e.message : e);
     return `${plantilla}\n\n/* Hilo del ticket:\n${hilo}\n*/`;
+  }
+}
+
+/** Un mensaje que Meta aceptó y no entregó: aviso al operador (a lo más uno por código cada 6 horas; lo decide la base). */
+export async function avisarFalloDeEntrega(a: { origen?: string; etiqueta?: string | null; codigo?: number | null; motivo?: string; cuenta: boolean }): Promise<void> {
+  try {
+    const chat = await chatOperador();
+    if (!chat) return console.warn("[whatsapp] fallo de entrega sin bandeja de Telegram vinculada", a.codigo);
+    const html = [
+      `⚠️ <b>WhatsApp no entregó un mensaje</b>${a.codigo ? ` · código ${a.codigo}` : ""}`,
+      a.etiqueta ? escaparHtml(a.etiqueta) : null,
+      a.motivo ? `<i>${escaparHtml(a.motivo)}</i>` : null,
+      a.cuenta ? "Es un problema de la CUENTA de WhatsApp Business de PeluDesk (pago o número): ningún mensaje con plantilla está saliendo hasta que se resuelva en Meta." : null,
+      `${urlPlataforma()}/plataforma/whatsapp`,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+    await new TelegramHttp(configWhatsApp().telegramToken).enviar(chat, html);
+  } catch (e) {
+    console.error("[whatsapp] no salió el aviso de fallo de entrega", e instanceof Error ? e.message : e);
   }
 }
