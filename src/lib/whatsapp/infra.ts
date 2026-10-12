@@ -1,3 +1,4 @@
+import { registrarEnvio, type ContextoEnvio } from "./entregas";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -395,8 +396,8 @@ export class ClienteWA implements SalidaWA {
     return this.enviar({ messaging_product: "whatsapp", recipient_type: "individual", to: a, type: "text", text: { preview_url: true, body: cuerpo } });
   }
 
-  plantilla(a: string, nombre: string) {
-    return this.enviar({ messaging_product: "whatsapp", recipient_type: "individual", to: a, type: "template", template: { name: nombre, language: { code: "es_MX" } } });
+  plantilla(a: string, nombre: string, contexto?: ContextoEnvio) {
+    return this.enviar({ messaging_product: "whatsapp", recipient_type: "individual", to: a, type: "template", template: { name: nombre, language: { code: "es_MX" } } }, { contexto });
   }
 
   /**
@@ -404,13 +405,13 @@ export class ClienteWA implements SalidaWA {
    * (el seguimiento de pruebas). UN solo intento de red: el reintento, si toca,
    * lo decide quien llama (una sola vez, en otra corrida) para no mandar dos veces.
    */
-  plantillaConParametros(a: string, nombre: string, parametros: string[], payloadsBotones: string[]) {
+  plantillaConParametros(a: string, nombre: string, parametros: string[], payloadsBotones: string[], contexto?: ContextoEnvio) {
     const components: Record<string, unknown>[] = [];
     if (parametros.length > 0) components.push({ type: "body", parameters: parametros.map((text) => ({ type: "text", text })) });
     payloadsBotones.forEach((payload, index) => components.push({ type: "button", sub_type: "quick_reply", index: String(index), parameters: [{ type: "payload", payload }] }));
     return this.enviar(
       { messaging_product: "whatsapp", recipient_type: "individual", to: a, type: "template", template: { name: nombre, language: { code: "es_MX" }, components } },
-      { intentos: 1 },
+      { intentos: 1, contexto },
     );
   }
 
@@ -470,7 +471,7 @@ export class ClienteWA implements SalidaWA {
     return j.id;
   }
 
-  private async enviar(cuerpo: Record<string, unknown>, opciones: { intentos?: number } = {}): Promise<{ ok: boolean; estado?: number; error?: string; id?: string; codigo?: number }> {
+  private async enviar(cuerpo: Record<string, unknown>, opciones: { intentos?: number; contexto?: ContextoEnvio } = {}): Promise<{ ok: boolean; estado?: number; error?: string; id?: string; codigo?: number }> {
     if (!this.configurado) {
       console.error("[whatsapp] WHATSAPP_TOKEN / WHATSAPP_PHONE_NUMBER_ID sin configurar");
       return { ok: false, error: "sin configurar" };
@@ -496,7 +497,12 @@ export class ClienteWA implements SalidaWA {
       if (intento < maximo) await new Promise((res) => setTimeout(res, 300 * 2 ** (intento - 1)));
     }
     if (!ultimo.ok) console.error("[whatsapp] envío rechazado", { estado: ultimo.estado, error: ultimo.error, tipo: cuerpo.type ?? cuerpo.status });
-    else if (cuerpo.type && this.alContestar) await this.alContestar().catch(() => {});
+    else if (cuerpo.type) {
+      // Todo mensaje que Meta acepta se anota: su estado de entrega llega después por el webhook.
+      const tipo = cuerpo.type === "template" ? `plantilla:${(cuerpo.template as { name?: string } | undefined)?.name ?? "?"}` : String(cuerpo.type);
+      await registrarEnvio({ id: ultimo.id, tipo, telefono: String(cuerpo.to ?? ""), contexto: opciones.contexto });
+      if (this.alContestar) await this.alContestar().catch(() => {});
+    }
     return ultimo;
   }
 }

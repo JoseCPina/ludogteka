@@ -12,6 +12,7 @@ export const metadata: Metadata = { title: "Demo de PeluDesk", robots: { index: 
 const QUE_VE: Record<RolDemo, string> = {
   recepcion: "El tablero del día: quién llega, quién se va, la ocupación, las citas y la caja.",
   estetica: "La agenda de estética con las citas de cada estilista, y la ficha de cada perro.",
+  veterinaria: "La clínica: agenda clínica, expediente con consultas firmadas, carnet de vacunas, hospitalizados, recetas, inventario con lotes y estimados.",
   admin: "Todo lo anterior más reportes, utilidad del mes, nómina, gastos, inventario y precios.",
   cliente: "El portal del dueño: sus perros, vacunas, fotos del día, pases y contratos firmados.",
 };

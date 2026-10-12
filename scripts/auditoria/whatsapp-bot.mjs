@@ -32,6 +32,9 @@
 //      no sale (solo el de A).
 //   4. bot_cuenta_por_telefono y las tablas wa_* cerradas para anon y para
 //      un JWT de admin de un negocio.
+//   4b. Estados de entrega: el webhook guarda sent/delivered/read/failed (con firma y solo
+//      del número de PeluDesk), un fallo queda con su código y su motivo en palabras
+//      claras, aparece en «Necesita atención» solo del negocio dueño, y se resuelve.
 //   5. Telegram: secreto malo → 401; chat ajeno ignorado; vincular con código;
 //      el escalamiento llega; contestar respondiendo sale por WhatsApp;
 //      /aprender guarda.
@@ -454,6 +457,95 @@ const CHAT = 424242;
 // Se regresa la bandeja como estaba.
 await A.from("wa_config").update({ deleted_at: new Date().toISOString() }).in("clave", ["telegram_chat_operador", "telegram_codigo_inicio"]).is("deleted_at", null);
 if (previos?.length) await A.from("wa_config").insert(previos);
+
+// ───────────── 6b. Estados de entrega: el webhook los registra y un fallo llega a «Necesita atención»
+console.log("\n6b. Estados de entrega (sent, delivered, read, failed)");
+{
+  const estado = (id, status, extra = {}) => {
+    const cuerpo = JSON.stringify({ object: "whatsapp_business_account", entry: [{ id: "WABA", changes: [{ field: "messages", value: { messaging_product: "whatsapp", metadata: { phone_number_id: extra.phoneId ?? PHONE_ID, display_phone_number: "525649160742" }, statuses: [{ id, status, timestamp: `${Math.floor(Date.now() / 1000)}`, recipient_id: "5214441234567", ...(extra.errors ? { errors: extra.errors } : {}) }] } }] }] });
+    return pedir("/api/whatsapp/webhook", { method: "POST", body: cuerpo, headers: { "x-hub-signature-256": extra.firma ?? firmar(cuerpo) } });
+  };
+  const fila = async (id) => (await A.from("wa_entregas").select("*").eq("wa_message_id", id).maybeSingle()).data;
+  const ok = `wamid.entrega-ok-${randomUUID()}`;
+  const mal = `wamid.entrega-mal-${randomUUID()}`;
+  const nuevo = `wamid.entrega-nuevo-${randomUUID()}`;
+  const reg = (id, extra = {}) => A.rpc("wa_entrega_registrar", { p_wa_id: id, p_tipo: "plantilla:peludesk_recordatorio_dosis_v2", p_origen: "teleconsulta", p_negocio: negA.id, p_ref: extra.ref ?? null, p_etiqueta: extra.etiqueta ?? "Liga de la teleconsulta de Firulais", p_href: "/veterinaria/agenda", p_ult4: "4567" });
+
+  // Firma mala y otro número: no escriben nada.
+  const sinFirma = await estado(ok, "delivered", { firma: "sha256=00" });
+  sinFirma.status === 401 ? bien("estado con firma mala → 401") : hallazgo(`estado con firma mala → ${sinFirma.status}`);
+  await estado(`wamid.otro-numero-${randomUUID()}`, "failed", { phoneId: "OTRO_NUMERO", errors: [{ code: 131042, title: "x" }] });
+  const { count: ajenos } = await A.from("wa_entregas").select("id", { count: "exact", head: true }).like("wa_message_id", "wamid.otro-numero-%");
+  ajenos === 0 ? bien("un estado de OTRO número de WhatsApp se ignora") : hallazgo("se guardó un estado de otro número");
+
+  // Camino feliz: aceptado → enviado → entregado → leído, y nunca retrocede.
+  (await reg(ok)).error ? hallazgo("no se pudo registrar el envío") : bien("el envío aceptado se registra (solo los últimos 4 dígitos del teléfono)");
+  for (const st of ["sent", "delivered", "read"]) await estado(ok, st);
+  await estado(ok, "sent"); // un aviso atrasado no retrocede
+  const f1 = await fila(ok);
+  f1?.estado === "leido" && f1.enviado_at && f1.entregado_at && f1.leido_at ? bien("aceptado → enviado → entregado → leído, con la hora de cada paso") : hallazgo(`estados del envío feliz: ${JSON.stringify(f1)}`);
+  f1?.telefono_ult4 === "4567" ? bien("del teléfono solo se guardan los últimos 4 dígitos") : hallazgo("el teléfono no quedó como últimos 4 dígitos");
+
+  // Un fallo: queda con código y motivo claro, y aparece en «Necesita atención» del negocio.
+  await reg(mal);
+  await estado(mal, "sent");
+  const r = await estado(mal, "failed", { errors: [{ code: 131042, title: "Business eligibility payment issue", message: "x", error_data: { details: "Message failed to send because there were one or more errors related to your payment method." } }] });
+  r.status === 200 ? bien("el webhook acepta el estado «failed»") : hallazgo(`webhook con failed → ${r.status}`);
+  const f2 = await fila(mal);
+  f2?.estado === "fallido" && f2.error_codigo === 131042 && /método de pago/.test(f2.motivo ?? "") ? bien("el fallo guarda el código 131042 y su motivo en palabras claras") : hallazgo(`fallo guardado: ${JSON.stringify(f2)}`);
+  const tg = mock.tg.filter((m) => /no entregó un mensaje/.test(m.text ?? ""));
+  tg.length ? bien("el primer fallo de ese código avisa al operador por Telegram") : console.log("  · (sin bandeja de Telegram vinculada: no hay aviso que comprobar)");
+
+  const { data: link } = await A.auth.admin.generateLink({ type: "magiclink", email: `t${TEL.A}@telefono.ludogteka.mx` });
+  const cliA = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+  const { data: sA, error: eA } = await cliA.auth.verifyOtp({ type: "magiclink", token_hash: link.properties.hashed_token });
+  if (eA) throw eA;
+  const como = (token, negocio) => createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${token}`, "x-negocio-id": negocio } } });
+  const adminA = como(sA.session.access_token, negA.id);
+  const fallosA = await adminA.rpc("wa_fallos_atencion");
+  fallosA.data?.some((x) => x.etiqueta === "Liga de la teleconsulta de Firulais" && /método de pago/.test(x.motivo ?? "")) ? bien("«Necesita atención» del admin de A trae el fallo con su motivo") : hallazgo(`wa_fallos_atencion de A: ${JSON.stringify(fallosA.error ?? fallosA.data)}`);
+  const { data: linkB } = await A.auth.admin.generateLink({ type: "magiclink", email: `t${TEL.B}@telefono.ludogteka.mx` });
+  const cliB = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+  const { data: sB } = await cliB.auth.verifyOtp({ type: "magiclink", token_hash: linkB.properties.hashed_token });
+  const fallosB = await como(sB.session.access_token, negB.id).rpc("wa_fallos_atencion");
+  (fallosB.data ?? []).length === 0 ? bien("el admin de B no ve los fallos de A") : hallazgo("un negocio ve fallos de otro");
+  const cruzado = await como(sB.session.access_token, negA.id).rpc("wa_fallos_atencion");
+  (cruzado.data ?? []).length === 0 ? bien("B suplantando el encabezado de A tampoco los ve") : hallazgo("suplantar el encabezado deja ver fallos ajenos");
+  const anon = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+  const aF = await anon.rpc("wa_fallos_atencion");
+  aF.error || !(aF.data ?? []).length ? bien("anon no puede leer los fallos") : hallazgo("anon lee fallos de entrega");
+  const aE = await anon.from("wa_entregas").select("id").limit(1);
+  aE.error || !(aE.data ?? []).length ? bien("anon: wa_entregas cerrada") : hallazgo("anon lee wa_entregas");
+  const tabla = await adminA.from("wa_entregas").select("id").limit(1);
+  tabla.error || !(tabla.data ?? []).length ? bien("un admin de negocio no lee la tabla wa_entregas directo") : hallazgo("un admin de negocio lee wa_entregas");
+  const escribe = await adminA.rpc("wa_entrega_estado", { p_wa_id: mal, p_estado: "entregado", p_ts: null, p_codigo: null, p_titulo: null, p_detalle: null, p_motivo: null });
+  escribe.error ? bien("un admin de negocio no puede falsear el estado de un mensaje") : hallazgo("un admin de negocio cambió un estado de entrega");
+
+  // Resolver: «enterado» lo quita; un envío nuevo para la misma cosa también.
+  const enterado = await adminA.rpc("wa_fallo_enterado", { p_id: f2.id });
+  const despues = await adminA.rpc("wa_fallos_atencion");
+  !enterado.error && !(despues.data ?? []).some((x) => x.id === f2.id) ? bien("«Enterado» quita el aviso") : hallazgo(`enterado: ${enterado.error?.message}`);
+  const cruzadoE = await como(sB.session.access_token, negB.id).rpc("wa_fallo_enterado", { p_id: f2.id });
+  cruzadoE.error ? bien("otro negocio no puede resolver el aviso de A") : hallazgo("otro negocio resolvió un aviso ajeno");
+  const ref = randomUUID();
+  await reg(`wamid.ref1-${randomUUID()}`, { ref });
+  const primero = (await A.from("wa_entregas").select("wa_message_id").eq("ref_id", ref).single()).data.wa_message_id;
+  await estado(primero, "failed", { errors: [{ code: 131026, title: "Message undeliverable" }] });
+  await reg(nuevo, { ref });
+  const f3 = await fila(primero);
+  f3?.resuelto_at ? bien("un envío nuevo para la misma cosa deja resuelto el fallo anterior") : hallazgo("el fallo anterior sigue abierto tras reenviar");
+  const fMotivo = await fila(primero);
+  /número|WhatsApp/.test(fMotivo?.motivo ?? "") ? bien("131026 se explica como número sin WhatsApp") : hallazgo(`motivo de 131026: ${fMotivo?.motivo}`);
+
+  // Un «entregado» que llega después de un «failed» no deja el aviso abierto.
+  const tarde = `wamid.tarde-${randomUUID()}`;
+  await reg(tarde);
+  await estado(tarde, "failed", { errors: [{ code: 131000, title: "x" }] });
+  await estado(tarde, "delivered");
+  const f4 = await fila(tarde);
+  f4?.estado === "entregado" && f4.resuelto_at ? bien("si por fin se entrega, el fallo deja de contar") : hallazgo(`entregado tras fallo: ${JSON.stringify(f4)}`);
+  await A.from("wa_entregas").delete().in("wa_message_id", [ok, mal, nuevo, tarde, primero]);
+}
 
 if (IA_REAL) {
   console.log("\n7. Conversaciones con la IA de verdad");

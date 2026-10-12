@@ -113,6 +113,8 @@ async function datosParaLiga(citaId: string, liga: string): Promise<{ datos: Dat
 /** Manda la liga con la plantilla UTILITY de Meta (si ya está aprobada). Si no, queda el wa.me manual. */
 export async function enviarLigaPorWhatsApp(citaId: string, liga: string): Promise<{ error: string | null; enviado?: boolean }> {
   const negocio = await negocioActual();
+  // La demostración no manda nada a nadie: ni WhatsApp, ni correo, ni facturas.
+  if ((await cargarNegocioLanding()).plan === "demo") return { error: "Es una demostración: aquí no se manda ningún mensaje de verdad. Con tu negocio, este botón lo manda por WhatsApp." };
   if (!liga.startsWith(`${urlDelNegocio(negocio)}/t/`)) return { error: "Esa liga no es de este negocio." };
   const supabase = await createSupabaseServerClient();
   const { data: puede } = await supabase.rpc("vet_telemedicina_detalle", { p_cita: citaId });
@@ -127,7 +129,13 @@ export async function enviarLigaPorWhatsApp(citaId: string, liga: string): Promi
     return { error: "La plantilla de WhatsApp todavía está en revisión con Meta. Usa «Abrir en WhatsApp» para mandarla tú." };
   }
   const wa = new ClienteWA(cfg.token, cfg.phoneNumberId, marcarNumeroContesta);
-  const r = await wa.plantillaConParametros(`52${digitos}`, NOMBRE_PLANTILLA_TELECONSULTA, parametrosPlantilla(d.datos), []);
+  const r = await wa.plantillaConParametros(`52${digitos}`, NOMBRE_PLANTILLA_TELECONSULTA, parametrosPlantilla(d.datos), [], {
+    origen: "teleconsulta",
+    negocioId: negocio.id,
+    refId: citaId,
+    etiqueta: "Liga de la teleconsulta por WhatsApp",
+    href: `/veterinaria/teleconsulta/${citaId}`,
+  });
   if (!r.ok) {
     console.error("[telemedicina] envío fallido", { estado: r.estado, codigo: r.codigo });
     return { error: "WhatsApp no aceptó el mensaje. Usa «Abrir en WhatsApp» para mandarla tú." };

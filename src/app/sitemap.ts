@@ -22,6 +22,7 @@ function sitemapPlataforma(): MetadataRoute.Sitemap {
   return [
     { url: `${SITIO}/`, changeFrequency: "weekly", priority: 1 },
     { url: `${SITIO}/registro`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${SITIO}/veterinaria`, changeFrequency: "monthly", priority: 0.8 },
     ...SLUGS_ATERRIZAJE.map((s) => ({ url: `${SITIO}/${s}`, changeFrequency: "monthly" as const, priority: 0.8 })),
     { url: `${SITIO}/blog`, lastModified: ultimaEntrada ? fechaIso(ultimaEntrada) : undefined, changeFrequency: "weekly", priority: 0.7 },
     ...Array.from({ length: Math.max(0, paginas - 1) }, (_, i) => ({ url: `${SITIO}/blog/pagina/${i + 2}`, changeFrequency: "weekly" as const, priority: 0.4 })),

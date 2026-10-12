@@ -5,10 +5,10 @@ import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { useRouter } from "next/navigation";
-import { marcarRecordatorio } from "../carnet/actions";
+import { marcarRecordatorio, reintentarRecordatorio } from "../carnet/actions";
 
 /** Mandarlo a mano (wa.me) y anotarlo, u omitirlo. */
-export function AccionesRecordatorio({ id, enlace }: { id: string; enlace: string | null }) {
+export function AccionesRecordatorio({ id, enlace, fallido = false }: { id: string; enlace: string | null; fallido?: boolean }) {
   const router = useRouter();
   const envio = useEspera();
   const [error, setError] = useState<string | null>(null);
@@ -16,6 +16,13 @@ export function AccionesRecordatorio({ id, enlace }: { id: string; enlace: strin
   async function marcar(estado: "manual" | "omitido") {
     setError(null);
     const r = await envio.ejecutar(() => marcarRecordatorio(id, estado));
+    if (r.error) return setError(r.error);
+    setExito(r.exito ?? "Listo");
+    router.refresh();
+  }
+  async function reintentar() {
+    setError(null);
+    const r = await envio.ejecutar(() => reintentarRecordatorio(id));
     if (r.error) return setError(r.error);
     setExito(r.exito ?? "Listo");
     router.refresh();
@@ -32,6 +39,11 @@ export function AccionesRecordatorio({ id, enlace }: { id: string; enlace: strin
         >
           Abrir en WhatsApp
         </a>
+      )}
+      {fallido && (
+        <Button type="button" variante="secundario" className="min-h-10 px-3 text-sm" cargando={envio.cargando} onClick={reintentar}>
+          Reintentar envío
+        </Button>
       )}
       <Button type="button" variante="secundario" className="min-h-10 px-3 text-sm" cargando={envio.cargando} onClick={() => marcar("manual")}>
         Ya lo mandé

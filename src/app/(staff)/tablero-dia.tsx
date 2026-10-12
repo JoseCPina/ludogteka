@@ -539,6 +539,20 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
         antiguedad: n === 1 ? `Enviado ${desdeCuando(dias)}` : `El más viejo, ${desdeCuando(dias)}`,
       });
     }
+    // Mensajes de WhatsApp que Meta aceptó y no entregó (estado «failed» del webhook): con el motivo en palabras claras.
+    const { data: fallosWa } = await supabase.rpc("wa_fallos_atencion");
+    const fallos = (fallosWa ?? []) as { id: string; etiqueta: string | null; href: string | null; motivo: string | null; fallido_at: string }[];
+    if (fallos.length > 0) {
+      const masViejo = fallos[0];
+      const dias = Math.max(0, diasDesde(fechaLocalDeInstante(masViejo.fallido_at, zona), hoy, zona));
+      atencion.push({
+        clave: "whatsapp-no-llego",
+        texto: fallos.length === 1 ? `Un mensaje de WhatsApp no llegó: ${masViejo.etiqueta ?? "mensaje"}. ${masViejo.motivo ?? ""}` : `${fallos.length} mensajes de WhatsApp no llegaron. ${masViejo.motivo ?? ""}`,
+        href: fallos.length === 1 && masViejo.href ? masViejo.href : "/veterinaria/recordatorios",
+        dias,
+        antiguedad: fallos.length === 1 ? `Falló ${desdeCuando(dias)}` : `El más viejo falló ${desdeCuando(dias)}`,
+      });
+    }
     if (Number(vet.recordatorios_pendientes ?? 0) > 0) {
       const n = Number(vet.recordatorios_pendientes);
       const dias = vet.recordatorio_mas_viejo ? Math.max(0, diasDesde(vet.recordatorio_mas_viejo, hoy, zona)) : 0;

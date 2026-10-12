@@ -3,6 +3,8 @@ import { TEXTO_SOLO_TEXTO } from "@/lib/whatsapp/agente";
 import { configWhatsApp, construirSoporte, firmaMetaValida, igualSeguro, telefonoCanonico } from "@/lib/whatsapp/infra";
 import { atender, type Tiempos } from "@/lib/whatsapp/soporte";
 import { TEXTO_AHORA_NO, TEXTO_BAJA } from "@/lib/seguimiento/respuestas";
+import { guardarEstado, esFalloDeCuenta, type EstadoMeta } from "@/lib/whatsapp/entregas";
+import { avisarFalloDeEntrega } from "@/lib/soporte/notificar";
 
 /**
  * Webhook de WhatsApp (Cloud API) del número de PeluDesk. Vive en el dominio
@@ -73,7 +75,7 @@ export async function POST(request: NextRequest) {
     console.warn("[whatsapp] firma inválida");
     return new NextResponse("Firma inválida", { status: 401 });
   }
-  let payload: { entry?: { changes?: { value?: { metadata?: { phone_number_id?: string }; messages?: MensajeMeta[] } }[] }[] };
+  let payload: { entry?: { changes?: { value?: { metadata?: { phone_number_id?: string }; messages?: MensajeMeta[]; statuses?: EstadoMeta[] } }[] }[] };
   try {
     payload = JSON.parse(crudo);
   } catch {
@@ -81,10 +83,12 @@ export async function POST(request: NextRequest) {
   }
 
   const entradas: Entrada[] = [];
+  const estados: EstadoMeta[] = [];
   for (const e of payload.entry ?? []) {
     for (const c of e.changes ?? []) {
       const v = c.value;
-      if (!v?.messages?.length) continue; // estados de entrega, etc.
+      if (v?.statuses?.length && v.metadata?.phone_number_id === cfg.phoneNumberId) estados.push(...v.statuses);
+      if (!v?.messages?.length) continue;
       if (v.metadata?.phone_number_id !== cfg.phoneNumberId) {
         console.warn("[whatsapp] mensaje de otro número ignorado", { phone_number_id: v.metadata?.phone_number_id });
         continue;
@@ -96,7 +100,21 @@ export async function POST(request: NextRequest) {
       }
     }
   }
-  if (entradas.length === 0) return NextResponse.json({ ok: true });
+
+  // Estados de entrega (sent, delivered, read, failed): se guardan SIEMPRE. Si no se pudo, 500 para que Meta reintente.
+  const avisos: { origen?: string; etiqueta?: string | null; codigo?: number | null; motivo?: string; cuenta: boolean }[] = [];
+  try {
+    for (const st of estados) {
+      const r = await guardarEstado(st);
+      if (r?.avisar) avisos.push({ origen: r.origen, etiqueta: r.etiqueta, codigo: r.codigo, motivo: r.motivo, cuenta: esFalloDeCuenta(r.codigo) });
+      if (st.status === "failed") console.warn("[whatsapp] mensaje fallido", { codigo: st.errors?.[0]?.code, titulo: st.errors?.[0]?.title });
+    }
+  } catch (e) {
+    console.error("[whatsapp] no se pudo guardar el estado de entrega", e instanceof Error ? e.message : e);
+    return new NextResponse("No se guardó", { status: 500 });
+  }
+  if (avisos.length) after(async () => { for (const a of avisos) await avisarFalloDeEntrega(a); });
+  if (entradas.length === 0) return NextResponse.json({ ok: true, estados: estados.length });
 
   const { deps, datos, wa } = construirSoporte();
   const nuevas: Entrada[] = [];

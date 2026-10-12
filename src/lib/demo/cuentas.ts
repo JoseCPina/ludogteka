@@ -10,6 +10,7 @@
 export const CUENTAS_DEMO = {
   recepcion: { email: "demo.recepcion@peludesk.mx", nombre: "Recepción", destino: "/recepcion" },
   estetica: { email: "demo.estetica@peludesk.mx", nombre: "Estética", destino: "/estetica" },
+  veterinaria: { email: "demo.veterinaria@peludesk.mx", nombre: "Médica veterinaria", destino: "/veterinaria" },
   admin: { email: "demo.admin@peludesk.mx", nombre: "Dueña del negocio", destino: "/admin" },
   cliente: { email: "t4420000201@telefono.ludogteka.mx", nombre: "Dueña de un perro", destino: "/portal" },
 } as const;
