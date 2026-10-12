@@ -45,9 +45,10 @@ const CACHE = path.join(os.tmpdir(), "ludogteka-tokens-dev.json");
 const cache = fs.existsSync(CACHE) ? JSON.parse(fs.readFileSync(CACHE, "utf8")) : {};
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
-export async function tokenDe(profileId) {
+// `margenMin`: minutos de vida que debe quedarle al token guardado para reutilizarlo (una corrida larga pide más).
+export async function tokenDe(profileId, margenMin = 5) {
   const c = cache[profileId];
-  if (c && c.exp * 1000 > Date.now() + 5 * 60_000) return c.token;
+  if (c && c.exp * 1000 > Date.now() + margenMin * 60_000) return c.token;
   for (let intento = 0; intento < 6; intento++) {
     const { data: u } = await A.auth.admin.getUserById(profileId);
     const { data: link } = await A.auth.admin.generateLink({ type: "magiclink", email: u.user.email });

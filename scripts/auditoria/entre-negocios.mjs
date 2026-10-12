@@ -35,7 +35,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
-import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { A, URL, env, tokenDe as tokenBase } from "./sesiones-dev.mjs";
+// Una corrida larga (más de una hora en una máquina cargada) no puede dejar vencer sus tokens:
+// todo token se pide con 40 min de vida por delante y se renueva al empezar cada sección.
+const tokenDe = (id) => tokenBase(id, 40);
 import { argumento, slugDePrueba, datosDelNegocio, negocioPorSlug } from "./lib/negocio-prueba.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
@@ -78,7 +81,8 @@ const miembrosDeB = new Set(hayDeLosDos ? [datos.esteticaAmbos, datos.cuentaAmbo
 for (const [rol, id] of Object.entries(personasA)) if (!id) throw new Error(`No hay ${rol} en Ludogteka de desarrollo.`);
 
 const tokens = {};
-for (const [rol, id] of Object.entries(personasA)) tokens[rol] = await tokenDe(id);
+const renovar = async () => { for (const [rol, id] of Object.entries(personasA)) tokens[rol] = await tokenDe(id); };
+await renovar();
 const cabeceras = (token, negocio) => ({
   apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   Authorization: `Bearer ${token ?? env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
@@ -141,6 +145,7 @@ const conNegocio = new Set(relaciones.filter((r) => spec.definitions[r].properti
 
 // ── 1 y 2. Tablas y vistas ──
 console.log("\n── Tablas y vistas");
+await renovar();
 for (const [rol, token] of Object.entries(tokens)) {
   const esMiembroB = miembrosDeB.has(personasA[rol]);
   for (const negocio of [LUDOGTEKA, B]) {
@@ -168,6 +173,7 @@ for (const [rol, token] of Object.entries(tokens)) {
 
 // ── 3. RPC ──
 console.log("\n── Funciones (RPC)");
+await renovar();
 const idsPorTabla = {};
 for (const t of ["clientes", "perros", "reservas", "contratos", "turnos_caja", "gastos", "empleados", "tipos_contrato", "servicios", "cobros", "categorias_gasto", "cargos_aplicados", "plantillas_contrato"]) {
   const { data } = await SB.from(t).select("id").eq("negocio_id", B).limit(1).maybeSingle();
@@ -235,6 +241,7 @@ console.log(`  ${llamadas} llamadas (${soloLectura.size} funciones de lectura, l
 
 // ── 4. Escrituras directas sobre filas de B ──
 console.log("\n── Escribir sobre filas de B");
+await renovar();
 const objetivos = [
   ["clientes", datos.clienteSoloB, { nombre: "hackeado desde A" }],
   ["perros", datos.perroSoloB, { nombre: "hackeado desde A" }],
@@ -267,6 +274,7 @@ console.log("  PATCH, DELETE e INSERT revisados");
 
 // ── 5. Quien está en los dos negocios ──
 console.log("\n── Personas de los dos negocios");
+await renovar();
 if (hayDeLosDos) {
   const t = tokens.cliente_de_los_dos;
   const leer = async (rel, negocio, q = "") => {
@@ -309,6 +317,7 @@ if (hayDeLosDos) {
 
 // ── 6. Storage ──
 console.log("\n── Storage");
+await renovar();
 for (const [rol, token] of Object.entries(tokens)) {
   if (miembrosDeB.has(personasA[rol])) continue;
   for (const negocio of [LUDOGTEKA, B]) {
@@ -332,6 +341,7 @@ console.log("  firmar, listar y descargar revisados");
 
 // ── 7. Llave anónima ──
 console.log("\n── Llave anónima");
+await renovar();
 for (const negocio of [LUDOGTEKA, B]) {
   for (const rel of relaciones) {
     const r = await fetch(`${URL}/rest/v1/${rel}?select=*&limit=1000`, { headers: cabeceras(null, negocio) });
@@ -353,6 +363,7 @@ console.log(`  ${relaciones.length} relaciones y ${soloLectura.size} funciones d
 
 // ── 9. Lo compartido: solo la plataforma lo escribe ──
 console.log("\n── Lo compartido entre negocios");
+await renovar();
 const COMPARTIDAS = {
   razas: { cambio: { nombre: "hackeado por un negocio" }, alta: { nombre: `Raza intrusa ${MARCA}` } },
   tamanos_categoria: { cambio: { etiqueta: "hackeado por un negocio" }, alta: { clave: "intrusa", etiqueta: "intrusa", orden: 99 } },
@@ -497,6 +508,7 @@ else {
 // razas (fuera del catálogo, sin grupo, asignaciones) solo hablan del negocio
 // de la petición, y la bandeja de la plataforma es solo de la plataforma.
 console.log("\n── Razas: propuestas y normalizaciones");
+await renovar();
 {
   const tAdminB = await tokenDe(datos.adminB);
   const { data: perroB } = await SB.from("perros").select("id, raza, raza_id").eq("id", datos.perroSoloB).single();
@@ -615,6 +627,7 @@ console.log("\n── Razas: propuestas y normalizaciones");
 // Ludogteka (ni el anónimo, ni suplantando el encabezado de Huellitas) lee el
 // historial de una cita de B, ve a sus estilistas ni la reasigna.
 console.log("\n── Reasignar la estilista: el historial y la función son de un solo negocio");
+await renovar();
 {
   const tAdminB = await tokenDe(datos.adminB);
   const rpcB = async (fn, args) => {
