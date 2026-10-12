@@ -2,6 +2,7 @@
 // silencio), master 1080p, versión 720p para la app, subtítulos SRT y VTT
 // (es-MX), póster y miniatura de YouTube.
 import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import { abrirNavegador } from "../../lib/navegador.mjs";
@@ -9,7 +10,7 @@ import { partirSubtitulos, srt as aSrt } from "../../videos/lib/subtitulos.mjs";
 import { mezclar } from "../../videos/lib/voz.mjs";
 import { COLA } from "../../videos/lib/voz.mjs";
 
-const AQUI = path.dirname(new URL(import.meta.url).pathname);
+const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const FUENTE = path.join(AQUI, "../../../src/fuentes/outfit-latin.woff2");
 export const MAX_MASTER_BYTES = 48 * 1024 * 1024; // el límite del proyecto es 50 MB por archivo
 export const MAX_720_BYTES = 14.5 * 1024 * 1024;
@@ -83,7 +84,7 @@ export function pistaDeAudio({ dir, duracion, secciones, voces, largos, musica }
 
 /** Master 1080p (H.264 CRF 18, 30 cps). Si pasa de 48 MB se vuelve a codificar con tope de bitrate. */
 export function exportarMaster({ crudo, wav, salida, duracion }) {
-  const base = ["-y", "-loglevel", "error", "-i", crudo, "-i", wav, "-map", "0:v:0", "-map", "1:a:0", "-r", "30", "-c:v", "libx264", "-preset", "slow", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-shortest", "-movflags", "+faststart"];
+  const base = ["-y", "-loglevel", "error", "-i", crudo, "-i", wav, "-map", "0:v:0", "-map", "1:a:0", "-r", "30", "-vf", "scale=in_range=pc:out_range=tv,format=yuv420p", "-color_range", "tv", "-c:v", "libx264", "-preset", "slow", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-shortest", "-movflags", "+faststart"];
   execFileSync("ffmpeg", [...base, "-crf", "18", salida], { maxBuffer: 1 << 26 });
   let tam = fs.statSync(salida).size;
   let aplicado = "crf18";

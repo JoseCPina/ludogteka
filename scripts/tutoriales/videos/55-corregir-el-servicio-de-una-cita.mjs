@@ -1,4 +1,11 @@
 // 55 · Cómo corregir el servicio de una cita (admin)
+// Citas ya finalizadas: las del último día hábil (la agenda abre en hoy y el demo no trabaja domingos).
+const AYER = (() => {
+  const d = new Date(Date.now() - 86400000);
+  while (new Date(d.toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }) + "T12:00:00Z").getUTCDay() === 0) d.setDate(d.getDate() - 1);
+  return d.toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
+})();
+
 export default {
   rol: "admin",
   inicio: "/estetica",
@@ -7,7 +14,7 @@ export default {
     {
       titulo: "Abre la cita",
       dice: "Entra a Estética y abre la cita que se capturó mal. Funciona antes de empezar, con el servicio en curso y también cuando ya terminó y se cobró, como esta.",
-      pasos: [["resaltar", "Estética", 2200], ["clic", "Finalizada", { nav: true }]],
+      pasos: [["resaltar", "Estética", 2200], ["ir", `/estetica?vista=dia&fecha=${AYER}`], ["clic", "Finalizada", { nav: true }]],
     },
     {
       titulo: "Corregir servicio",
@@ -32,7 +39,7 @@ export default {
     {
       titulo: "Queda el historial",
       dice: "Todo queda en el «Historial de servicio» de la cita: el servicio y el precio de antes y de ahora, quién lo corrigió, cuándo y por qué. Nada se borra ni se edita.",
-      pasos: [["ir", "/estetica"], ["clic", "Finalizada", { nav: true }], ["desplazar", "Historial de servicio"], ["resaltar", "Historial de servicio", 3500]],
+      pasos: [["ir", `/estetica?vista=dia&fecha=${AYER}`], ["clic", "Finalizada", { nav: true }], ["desplazar", "Historial de servicio"], ["resaltar", "Historial de servicio", 3500]],
     },
     {
       titulo: "Ajustes pendientes",

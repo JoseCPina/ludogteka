@@ -11,8 +11,8 @@ export default {
     },
     {
       titulo: "La cita",
-      dice: "En la cita ves el servicio, el perro y el precio. Desde aquí puedes «Reagendar», marcar «Marcar no llegó» o «Cancelar» si algo cambió.",
-      pasos: [["resaltar", "Reagendar", 2400], ["resaltar", "Marcar no llegó", 2400]],
+      dice: "En la cita ves el servicio, el perro y el precio. Desde aquí puedes «Reprogramar», marcar «No se presentó» o «Cancelar» si algo cambió.",
+      pasos: [["resaltar", "Reprogramar", 2400], ["resaltar", "No se presentó", 2400]],
     },
     {
       titulo: "Iniciar la cita",

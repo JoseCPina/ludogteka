@@ -3,10 +3,11 @@
 // (para verlo en /plataforma/tutoriales). Estados: pendiente → guion → voz →
 // grabado → render → qc → listo | listo_sin_voz | error.
 import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { rpc } from "./db.mjs";
 
-const AQUI = path.dirname(new URL(import.meta.url).pathname);
+const AQUI = path.dirname(fileURLToPath(import.meta.url));
 export const DIR_SALIDA = path.join(AQUI, "../salida");
 
 export const archivoEstado = (id) => path.join(DIR_SALIDA, id, "estado.json");

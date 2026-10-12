@@ -8,6 +8,8 @@ export const CUENTAS = {
   admin: "demo.admin@peludesk.mx",
   recepcion: "demo.recepcion@peludesk.mx",
   estetica: "demo.estetica@peludesk.mx",
+  mvz: "demo.mvz@peludesk.mx", // Dr. Emilio Navarro, médico veterinario designado (lo siembra scripts/demo/sembrar-veterinaria.mjs)
+  mvz2: "demo.mvz2@peludesk.mx", // Dra. Paulina Reyes
   cliente: "t4420000201@telefono.ludogteka.mx",
   clienteAna: "t4420000203@telefono.ludogteka.mx", // Ana Sofía Treviño: tiene un contrato por firmar
 };

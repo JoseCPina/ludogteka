@@ -17,7 +17,7 @@ export default {
     {
       titulo: "Al agendar",
       dice: "Al agendar una cita de un mestizo, la app pide solo lo que falta: la talla y el pelaje del perro. Con eso calcula el precio sola, y el botón «Agendar cita» se activa cuando hay precio.",
-      pasos: [["ir", "/estetica/nueva"], ["clic", "Ricardo Olmos"], ["elegir", "Servicio", 1], ["esperar", 3000]],
+      pasos: [["ir", "/estetica/nueva"], ["clic", "Ricardo Olmos"], ["elegir", "Perro", 1], ["elegir", "Servicio", 1], ["esperar", 3000]],
     },
     {
       titulo: "Cuando no hay precio",

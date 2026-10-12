@@ -11,8 +11,8 @@ export default {
     },
     {
       titulo: "Logo y fotos",
-      dice: "Con «Subir logo» pones tu logo, y con «Agregar foto» las fotos de tu negocio. Con «Guardar datos» quedan guardados los textos.",
-      pasos: [["resaltar", "Subir logo", 2600], ["resaltar", "Agregar foto", 2600], ["resaltar", "Guardar datos", 2400]],
+      dice: "Con «Guardar logo» guardas tu logo, y con «Agregar foto» las fotos de tu negocio. Con «Guardar datos» quedan guardados los textos.",
+      pasos: [["resaltar", "Guardar logo", 2600], ["resaltar", "Agregar foto", 2600], ["resaltar", "Guardar datos", 2400]],
     },
     {
       titulo: "Tu página web",

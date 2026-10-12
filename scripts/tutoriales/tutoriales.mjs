@@ -240,6 +240,9 @@ async function main() {
   console.log(`Corredor de tutoriales · grabando en desarrollo (${OPC.base})${OPC.prod ? " · publica en PRODUCCIÓN" : OPC.sinPublicar ? " · sin publicar" : " · publica en desarrollo"}`);
   if (!(await servidorArriba())) throw new Error(`El servidor no responde en ${OPC.base}. Compila y levántalo: npm run build && npm run start -- -p 3001`);
   const demo = await prepararDemo(c);
+  // Otra sesión que siembre el demo (o su auditoría) lo deja en solo lectura a media grabación: se desbloquea cada 6 s.
+  const guardian = setInterval(() => { c.cliente.from("membresias").update({ solo_lectura: false }).eq("negocio_id", demo.negocio.id).eq("solo_lectura", true).then(() => {}, () => {}); }, 6000);
+  guardian.unref();
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? fs.readFileSync(".env.local", "utf8").match(/NEXT_PUBLIC_SUPABASE_ANON_KEY=(.+)/)[1].trim();
   const { createClient } = await import("@supabase/supabase-js");
   const sbDemo = createClient(c.url, (await import("node:fs")).readFileSync(".env.local", "utf8").match(/SUPABASE_SECRET_KEY=(.+)/)[1].trim(), { auth: { persistSession: false }, global: { headers: { "x-negocio-id": demo.negocio.id } } });
