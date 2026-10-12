@@ -28,12 +28,12 @@ import "./peludesk.css";
 // renglones en celular; botones con texto concreto; capturas del demo con datos
 // inventados; nada de testimonios, cifras de clientes ni competidores.
 
-const TITULO = "Software para veterinarias en México | PeluDesk";
+const TITULO = "Software para veterinarias y negocios caninos | PeluDesk";
 
 export async function generateMetadata(): Promise<Metadata> {
   const plan = await planUnico();
   const precio = plan ? ` ${pesos(plan.mensual)} + IVA al mes, sin costo inicial.` : "";
-  const descripcion = `Sistema para clínica veterinaria en México: expediente con dictado por IA, recetas SITPV, carnet QR y CFDI.${precio} 15 días gratis.`;
+  const descripcion = `Software para clínicas veterinarias, guarderías, hoteles y estéticas caninas: expediente, reservas, citas, cobros y CFDI.${precio} 15 días gratis.`;
   return {
     metadataBase: new URL("https://peludesk.mx"),
     title: { absolute: TITULO },
@@ -41,7 +41,7 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: { canonical: "/" },
     robots: { index: true, follow: true },
     openGraph: {
-      title: "PeluDesk — el sistema de tu clínica veterinaria",
+      title: "PeluDesk — el sistema de tu negocio canino o veterinario",
       description: descripcion,
       images: [{ url: "/peludesk/capturas/vet-expediente-escritorio-1600.webp", width: 1600, height: 1000 }],
       locale: "es_MX",
@@ -130,28 +130,34 @@ function Etiqueta({ children, className = "" }: { children: ReactNode; className
 
 const ENLACES_MENU = [
   ["/veterinaria", "Veterinaria"],
-  ["#funciones", "Funciones"],
+  ["#tambien", "Módulos"],
   ["#demo", "Demo"],
-  ["#tambien", "Hotel y estética"],
   ["#planes", "Precio"],
   ["#preguntas", "Preguntas"],
   ["/blog", "Blog"],
 ] as const;
 
 const DEMO_ROLES = [
+  ["recepcion", "Recepción", "El día, las reservas, las citas y la caja"],
   ["veterinaria", "Médica veterinaria", "Expediente, carnet, recetas y hospitalizados"],
-  ["recepcion", "Recepción", "El día, las citas y la caja"],
-  ["admin", "Dueña de la clínica", "Ganancias, nómina y precios"],
+  ["admin", "Dueña del negocio", "Ganancias, nómina y precios"],
   ["estetica", "Estilista", "Su agenda de hoy"],
   ["cliente", "Dueña de una mascota", "Lo que ven tus clientes"],
 ] as const;
 
-const ALIVIOS_VET = [
-  { ilus: "escena-vacunas" as NombreIlustracion, antes: "Buscar la vacuna en un carnet de papel", ahora: "El carnet de la mascota con su lote y su próxima dosis, y un QR para verificarlo." },
-  { ilus: "expediente" as NombreIlustracion, antes: "Escribir la consulta a mano", ahora: "Dictas y PeluDesk arma el borrador. Tú lo revisas y lo firmas." },
-  { ilus: "escena-agenda" as NombreIlustracion, antes: "Perseguir al dueño para la siguiente dosis", ahora: "El recordatorio sale por WhatsApp. Si no llega, te lo marca para que lo mandes tú." },
-  { ilus: "clipboard" as NombreIlustracion, antes: "Llevar el libro de control a mano", ahora: "Se arma solo con cada salida del inventario, ligada a su receta y a su paciente." },
+const ALIVIOS = [
+  { ilus: "escena-vacunas" as NombreIlustracion, antes: "Revisar cartillas a la carrera", ahora: "Si una vacuna venció, no te deja reservar guardería ni hotel. Y el carnet de la mascota trae su lote y su próxima dosis." },
+  { ilus: "expediente" as NombreIlustracion, antes: "Escribir cada consulta a mano", ahora: "En la clínica dictas y PeluDesk arma el borrador. Tú lo revisas y lo firmas." },
+  { ilus: "escena-hotel" as NombreIlustracion, antes: "Adivinar si cabe uno más", ahora: "Guardería y hotel cuentan del mismo cupo. No aceptas un perro que no cabe." },
+  { ilus: "escena-bano" as NombreIlustracion, antes: "Calcular el precio de cada baño", ahora: "Sale solo, por raza o talla, con su precio aparte si llega con el pelo maltratado." },
 ];
+
+const CAPTURA_MODULO: Record<string, string> = { "guarderia-hotel": "hotel", estetica: "estetica", veterinaria: "vet-expediente" };
+const ALT_MODULO: Record<string, string> = {
+  "guarderia-hotel": "Hotel: llegadas, salidas, perros hospedados y ocupación por día",
+  estetica: "Agenda de estética del día con una columna por estilista",
+  veterinaria: "Expediente clínico de una perrita con su línea de tiempo",
+};
 
 const PREGUNTAS_BASE = [
   ...PREGUNTAS_VET,
@@ -202,7 +208,7 @@ export default async function PeluDeskLanding() {
       operatingSystem: "Web, iOS y Android (se instala desde el navegador)",
       inLanguage: "es-MX",
       description:
-        "Sistema para clínica veterinaria en México: expediente por consulta con dictado por IA, recetas alineadas al SITPV, carnet de vacunas con QR, hospitalización, inventario con lotes y facturación CFDI. También hotel, guardería y estética canina.",
+        "Software para negocios caninos y veterinarios en México: clínica veterinaria (expediente por consulta con dictado por IA, recetas alineadas al SITPV, carnet con QR, hospitalización, inventario con lotes), hotel y guardería, estética canina, cobros, contratos y facturación CFDI.",
       featureList: [...FUNCIONES_VET.map((f) => f.titulo), "Hotel y guardería", "Estética", "Página web del negocio"],
       ...(plan
         ? {
@@ -282,12 +288,12 @@ export default async function PeluDeskLanding() {
           <Ilustracion nombre="textura-menta" className="pd-paralaje absolute -right-24 top-6 w-[420px] opacity-70 lg:right-0 lg:w-[560px]" sizes="560px" />
           <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-10 sm:px-6 lg:grid-cols-12 lg:gap-10 lg:pb-24 lg:pt-16">
             <div className="lg:col-span-5">
-              <Etiqueta>Para clínicas veterinarias de México</Etiqueta>
+              <Etiqueta>Negocios caninos y veterinarios de México</Etiqueta>
               <h1 className="mt-4 text-[2.4rem] font-bold leading-[1.05] tracking-[-0.03em] text-n-900 md:text-[3.2rem]">
-                Tu clínica completa, <span className="text-morado">en un solo sistema.</span>
+                Tu negocio canino o veterinario, <span className="text-morado">en un solo sistema.</span>
               </h1>
               <p className="mt-5 max-w-[46ch] text-lg leading-relaxed text-n-700">
-                Expediente con dictado por IA, recetas alineadas al SITPV, carnet con QR y recordatorios por WhatsApp, hospitalización, inventario con lotes y facturación CFDI.
+                Clínica veterinaria, guardería, hotel y estética en el mismo lugar: reservas y citas, expediente con dictado por IA, recetas alineadas al SITPV, carnet con QR, cobros, contratos y facturación CFDI.
               </p>
               {plan && <PrecioPlan plan={plan} className="mt-6" />}
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -301,16 +307,16 @@ export default async function PeluDeskLanding() {
               <div className="relative z-10">
                 <CapturasEnMovimiento
                   capturas={[
-                    { captura: "vet-expediente", etiqueta: "Expediente", alt: "Expediente clínico de una perrita con su línea de tiempo: consulta, peso y vacunas" },
-                    { captura: "vet-agenda", etiqueta: "Agenda clínica", alt: "Agenda clínica del día con una columna por médico" },
-                    { captura: "vet-carnet", etiqueta: "Carnet", alt: "Carnet de vacunación de una perrita con sus vacunas aplicadas" },
-                    { captura: "vet-receta", etiqueta: "Receta", alt: "Receta veterinaria emitida con su diagnóstico y su medicamento" },
+                    { captura: "tablero", etiqueta: "El día", alt: "Tablero del día: llegadas, salidas, perros adentro, ocupación y pendientes" },
+                    { captura: "vet-expediente", etiqueta: "Veterinaria", alt: "Expediente clínico de una perrita con su línea de tiempo: consulta, peso y vacunas" },
+                    { captura: "hotel", etiqueta: "Hotel y guardería", alt: "Hotel: llegadas, salidas, perros hospedados y ocupación por día" },
+                    { captura: "estetica", etiqueta: "Estética", alt: "Agenda de estética del día con una columna por estilista" },
                   ]}
                 />
               </div>
               <Celular
-                captura="vet-expediente"
-                alt="Expediente de una mascota en el celular"
+                captura="portal"
+                alt="Portal del dueño en el celular con sus próximas reservas"
                 className="absolute -bottom-6 -left-4 z-20 hidden w-[20%] min-w-[112px] sm:block lg:-left-6"
               />
             </div>
@@ -323,11 +329,11 @@ export default async function PeluDeskLanding() {
             <Revelar className="max-w-2xl">
               <Etiqueta>Lo que te quita de encima</Etiqueta>
               <h2 id="t-alivio" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
-                Lo clínico y lo del mostrador, en el mismo lugar.
+                Lo que hoy haces de memoria, ya no.
               </h2>
             </Revelar>
             <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {ALIVIOS_VET.map((a, i) => (
+              {ALIVIOS.map((a, i) => (
                 <li key={a.ilus}>
                   <Revelar retraso={i * 90} className="h-full">
                     <div className="pd-tarjeta flex h-full items-center gap-4 rounded-[22px] border border-n-200 bg-crema p-4 sm:flex-col sm:items-stretch sm:p-5">
@@ -344,13 +350,71 @@ export default async function PeluDeskLanding() {
           </div>
         </section>
 
+        {/* ── También hotel, guardería y estética ── */}
+        <section id="tambien" aria-labelledby="t-tambien" className="relative scroll-mt-16 border-b border-n-200 bg-white">
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
+            <Revelar className="max-w-2xl">
+              <Etiqueta>Todo lo que ofrecemos</Etiqueta>
+              <h2 id="t-tambien" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
+                Tres módulos, un solo precio.
+              </h2>
+              <p className="mt-3 max-w-[52ch] leading-relaxed text-n-700">
+                Todo va incluido en el mismo precio. Prendes lo que tu negocio hace y apagas lo que no desde tu panel; apagar un módulo nunca borra lo que ya tenías.
+              </p>
+            </Revelar>
+            <ul className="mt-10 grid gap-6 md:grid-cols-3">
+              {MODULOS_TRES.map((m, i) => (
+                <li key={m.clave}>
+                  <Revelar retraso={i * 90} className="h-full">
+                    <div className="pd-tarjeta h-full overflow-hidden rounded-[22px] border border-n-200 bg-crema">
+                      <div className="aspect-[16/8] overflow-hidden border-b border-n-200 bg-n-50">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={`/peludesk/capturas/${CAPTURA_MODULO[m.clave]}-escritorio-800.webp`}
+                          width={800}
+                          height={500}
+                          alt={ALT_MODULO[m.clave]}
+                          loading="lazy"
+                          decoding="async"
+                          className="h-full w-full object-cover object-top"
+                        />
+                      </div>
+                      <div className="p-5">
+                        <h3 className="text-xl font-bold text-n-900">{m.nombre}</h3>
+                        <p className="mt-2 leading-snug text-n-700">{m.texto}</p>
+                      </div>
+                    </div>
+                  </Revelar>
+                </li>
+              ))}
+            </ul>
+            <Revelar className="mt-8">
+              <p className="font-semibold text-n-900">Y en todo PeluDesk:</p>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {MENSAJES_CLAVE.map((m) => (
+                  <li key={m} className="rounded-full bg-menta-suave px-4 py-2 text-sm font-semibold text-morado">
+                    {m}
+                  </li>
+                ))}
+              </ul>
+            </Revelar>
+            <Revelar className="mt-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+              <BotonPrueba texto="Probar 15 días" />
+              <a href="#demo" className="group inline-flex min-h-12 items-center font-semibold text-morado underline decoration-morado/30 underline-offset-4 hover:decoration-morado">
+                o entra al demo sin registrarte
+                <Flecha />
+              </a>
+            </Revelar>
+          </div>
+        </section>
+
         {/* ── Funciones veterinarias ── */}
         <section id="funciones" aria-labelledby="t-funciones" className="scroll-mt-16">
           <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
             <Revelar className="max-w-2xl">
               <Etiqueta>Veterinaria</Etiqueta>
               <h2 id="t-funciones" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
-                Lo que ya hace por tu clínica
+                Si tienes clínica veterinaria, esto ya hace por ti
               </h2>
               <p className="mt-3 max-w-[52ch] leading-relaxed text-n-700">Solo lo que la app hace hoy. Mira cada pantalla en el demo, sin registrarte.</p>
             </Revelar>
@@ -431,64 +495,6 @@ export default async function PeluDeskLanding() {
           </div>
         </section>
 
-        {/* ── También hotel, guardería y estética ── */}
-        <section id="tambien" aria-labelledby="t-tambien" className="relative scroll-mt-16 border-b border-n-200 bg-white">
-          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
-            <Revelar className="max-w-2xl">
-              <Etiqueta>Valor extra, ya incluido</Etiqueta>
-              <h2 id="t-tambien" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
-                También para hotel, guardería y estética.
-              </h2>
-              <p className="mt-3 max-w-[52ch] leading-relaxed text-n-700">
-                Si tu clínica tiene hotel, guardería o estética, ya va incluido en el mismo precio. Los prendes o los apagas desde tu panel y apagar uno nunca borra lo que ya tenías.
-              </p>
-            </Revelar>
-            <ul className="mt-10 grid gap-6 md:grid-cols-2">
-              {MODULOS_TRES.filter((m) => m.clave !== "veterinaria").map((m, i) => (
-                <li key={m.clave}>
-                  <Revelar retraso={i * 90} className="h-full">
-                    <div className="pd-tarjeta h-full overflow-hidden rounded-[22px] border border-n-200 bg-crema">
-                      <div className="aspect-[16/8] overflow-hidden border-b border-n-200 bg-n-50">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={`/peludesk/capturas/${m.clave === "estetica" ? "estetica" : "hotel"}-escritorio-800.webp`}
-                          width={800}
-                          height={500}
-                          alt={m.clave === "estetica" ? "Agenda de estética del día con una columna por estilista" : "Hotel: llegadas, salidas, perros hospedados y ocupación por día"}
-                          loading="lazy"
-                          decoding="async"
-                          className="h-full w-full object-cover object-top"
-                        />
-                      </div>
-                      <div className="p-5">
-                        <h3 className="text-xl font-bold text-n-900">{m.nombre}</h3>
-                        <p className="mt-2 leading-snug text-n-700">{m.texto}</p>
-                      </div>
-                    </div>
-                  </Revelar>
-                </li>
-              ))}
-            </ul>
-            <Revelar className="mt-8">
-              <p className="font-semibold text-n-900">Y en todo PeluDesk:</p>
-              <ul className="mt-3 flex flex-wrap gap-2">
-                {MENSAJES_CLAVE.map((m) => (
-                  <li key={m} className="rounded-full bg-menta-suave px-4 py-2 text-sm font-semibold text-morado">
-                    {m}
-                  </li>
-                ))}
-              </ul>
-            </Revelar>
-            <Revelar className="mt-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-              <BotonPrueba texto="Probar 15 días" />
-              <a href="#demo" className="group inline-flex min-h-12 items-center font-semibold text-morado underline decoration-morado/30 underline-offset-4 hover:decoration-morado">
-                o entra al demo sin registrarte
-                <Flecha />
-              </a>
-            </Revelar>
-          </div>
-        </section>
-
         {/* ── Precio único ── */}
         {plan && (
           <section id="planes" aria-labelledby="t-planes" className="relative scroll-mt-16">
@@ -543,7 +549,7 @@ export default async function PeluDeskLanding() {
             <Revelar className="lg:col-span-4">
               <Etiqueta>Sin letras chiquitas</Etiqueta>
               <h2 id="t-preguntas" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em]">
-                Lo que nos preguntan las clínicas
+                Lo que nos preguntan
               </h2>
               <div className="mt-6 hidden w-[140px] lg:block">
                 <Ilustracion nombre="corazon" className="pd-latido h-auto w-full" sizes="140px" />
@@ -624,7 +630,7 @@ export default async function PeluDeskLanding() {
                 <Ilustracion nombre="durmiendo" className="h-auto w-full" sizes="260px" />
               </Revelar>
               <h2 id="t-cierre" className="mx-auto mt-6 max-w-[24ch] text-3xl font-bold leading-tight tracking-[-0.02em] text-white md:text-4xl">
-                Que tu consulta termine firmada y tu caja cuadrada.
+                Que el día termine con la caja cuadrada y todo en su lugar.
               </h2>
               <p className="mx-auto mt-4 max-w-[46ch] text-crema/90">
                 15 días gratis, sin tarjeta{plan ? `. Después, ${pesos(plan.mensual)} + IVA al mes, sin costo inicial` : ""}.
