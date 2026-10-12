@@ -45,15 +45,17 @@ const S = createClient(url, llave, { auth: { persistSession: false } });
 console.log(`${prod ? "PRODUCCIÓN" : "desarrollo"} · ${aplicar ? "SE BORRA" : "solo revisión (sin --aplicar)"}`);
 
 // Guarda de identidad
-const { data: negocios, error: e1 } = await S.from("negocios").select("id, slug, nombre, plan, activo").eq("slug", slug);
+const { data: negocios, error: e1 } = await S.from("negocios").select("id, slug, nombre, plan, activo, interno").eq("slug", slug);
 if (e1) parar(e1.message);
 if (negocios.length !== 1) parar(`El slug «${slug}» coincide con ${negocios.length} negocios. No se borra nada.`);
 const n = negocios[0];
 const { data: regs, error: e2 } = await S.from("registros_prueba").select("telefono").eq("negocio_id", n.id);
 if (e2) parar(e2.message);
 const telefonos = [...new Set((regs ?? []).map((r) => String(r.telefono).replace(/\D/g, "").slice(-10)))];
-if (telefonos.length !== 1 || telefonos[0] !== telefono) parar(`El teléfono de registro de «${slug}» (${telefonos.map((t) => `…${t.slice(-4)}`).join(", ") || "ninguno"}) no es el esperado (…${telefono.slice(-4)}). No se borra nada.`);
-console.log(`✔ «${n.nombre}» (${n.slug}) · plan ${n.plan} · ${n.activo ? "activo" : "suspendido"} · teléfono …${telefono.slice(-4)} coincide`);
+// Un negocio interno (de la casa, dado de alta desde la plataforma) no pasó por /registro: no tiene teléfono de registro.
+const sinRegistro = n.interno && telefonos.length === 0;
+if (!sinRegistro && (telefonos.length !== 1 || telefonos[0] !== telefono)) parar(`El teléfono de registro de «${slug}» (${telefonos.map((t) => `…${t.slice(-4)}`).join(", ") || "ninguno"}) no es el esperado (…${telefono.slice(-4)}). No se borra nada.`);
+console.log(`✔ «${n.nombre}» (${n.slug}) · plan ${n.plan} · ${n.activo ? "activo" : "suspendido"} · ${sinRegistro ? "negocio interno (sin teléfono de registro)" : `teléfono …${telefono.slice(-4)} coincide`}`);
 
 // Qué hay que limpiar (la base ya aplica sus guardas aquí)
 const { data: m, error: e3 } = await S.rpc("plataforma_negocio_a_borrar", { p_negocio_id: n.id });
