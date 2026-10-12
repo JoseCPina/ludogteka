@@ -40,8 +40,9 @@ try {
   // Inventario clínico: tres productos con lote, uno por clasificación.
   const { data: areas } = await A.from("areas_inventario").select("id, nombre").is("deleted_at", null);
   const area = areas.find((a) => /botiqu|cl[ií]nic/i.test(a.nombre)) ?? areas[0];
-  const { data: unidades } = await A.from("unidades_medida").select("id, nombre").is("deleted_at", null);
-  const unidad = (n) => unidades.find((u) => u.nombre.toLowerCase() === n)?.id;
+  const { data: unidades, error: eU } = await S.from("unidades_medida").select("id, etiqueta");
+  if (eU) throw new Error(`unidades: ${eU.message}`);
+  const unidad = (n) => unidades.find((u) => u.etiqueta.toLowerCase() === n)?.id;
   const { data: principios } = await A.from("principios_activos").select("*").is("deleted_at", null);
   const PRODUCTOS = [
     { nombre: "Ketamina 10 % (anestésico)", p: /^ketamina/i, lote: "KET-2026-01" },
