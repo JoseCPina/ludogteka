@@ -21,6 +21,7 @@ export const AREAS_TUTORIALES: Record<string, string> = {
   caja: "Caja y cobros",
   inventario: "Inventario",
   empleados: "Empleados y gastos",
+  veterinaria: "Veterinaria",
   negocio: "Tu negocio",
 };
 
