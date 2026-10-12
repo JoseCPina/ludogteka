@@ -27,7 +27,7 @@ import { execFileSync } from "node:child_process";
 import { AREAS, VIDEOS } from "./catalogo.mjs";
 import { conectar, rpc } from "./lib/db.mjs";
 import { prepararDemo, SLUG_DEMO } from "./lib/demo.mjs";
-import { cookiesDe } from "./lib/sesion.mjs";
+import { cookiesDe, CUENTAS, ROLES_DUENO } from "./lib/sesion.mjs";
 import { cerrarActores } from "./lib/teleconsulta.mjs";
 import { borrarSalasDelDemo } from "./lib/daily.mjs";
 import { cargarGuion, validarGuion, locuciones, plan, total, DIR_VIDEOS } from "./lib/guion.mjs";
@@ -147,6 +147,9 @@ async function producir(v, ctx) {
   if (guion.preparar) await guion.preparar({ sb, negocioId: ctx.negocioId, ...valores, vid: v });
   const guionEjecutable = { ...guion, escenas: guion.escenas.map((e) => ({ ...e, pasos: sustituir(e.pasos ?? [], valores) })) };
   const rol = guion.rol ?? v.rol;
+  // Los dueños del portal usan las cuentas del visitante (una cuenta por cliente): se abren SOLO mientras graba su video.
+  const cuentaDueno = ROLES_DUENO.has(rol) ? (await cd.cliente.auth.admin.listUsers({ perPage: 1000 })).data.users.find((u) => u.email === CUENTAS[rol])?.id : null;
+  if (cuentaDueno) await cd.cliente.from("membresias").update({ solo_lectura: false }).eq("negocio_id", ctx.negocioId).eq("profile_id", cuentaDueno);
   const cookies = guion.sinSesion ? [] : await cookiesDe(cd, rol, ID_DEMO_HOST.split(":")[0], ctx.anon);
   const area = AREAS.find((a) => a.clave === v.area).nombre;
   const tarjetas = {
@@ -159,6 +162,7 @@ async function producir(v, ctx) {
   try {
     grab = await grabarVideo({ base: OPC.base, cookies: sustituir(cookies, {}), inicio: guion.inicio, guion: guionEjecutable, tarjetas, plan: p, salida: dir, nombre: "video", medios: guion.medios ? { audio: guion.medios.audio ?? null } : null });
   } finally {
+    if (cuentaDueno) await cd.cliente.from("membresias").update({ solo_lectura: true }).eq("negocio_id", ctx.negocioId).eq("profile_id", cuentaDueno);
     // Las salas reales de Daily que el corredor creó en el demo se borran al terminar la grabación (también si falló).
     if (guion.medios) {
       await cerrarActores().catch(() => {});
@@ -252,9 +256,6 @@ async function main() {
   console.log(`Corredor de tutoriales · grabando en desarrollo (${OPC.base})${OPC.prod ? " · publica en PRODUCCIÓN" : OPC.sinPublicar ? " · sin publicar" : " · publica en desarrollo"}`);
   if (!(await servidorArriba())) throw new Error(`El servidor no responde en ${OPC.base}. Compila y levántalo: npm run build && npm run start -- -p 3001`);
   const demo = await prepararDemo(c);
-  // Otra sesión que siembre el demo (o su auditoría) lo deja en solo lectura a media grabación: se desbloquea cada 6 s.
-  const guardian = setInterval(() => { c.cliente.from("membresias").update({ solo_lectura: false }).eq("negocio_id", demo.negocio.id).eq("solo_lectura", true).then(() => {}, () => {}); }, 6000);
-  guardian.unref();
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? fs.readFileSync(".env.local", "utf8").match(/NEXT_PUBLIC_SUPABASE_ANON_KEY=(.+)/)[1].trim();
   const { createClient } = await import("@supabase/supabase-js");
   const sbDemo = createClient(c.url, (await import("node:fs")).readFileSync(".env.local", "utf8").match(/SUPABASE_SECRET_KEY=(.+)/)[1].trim(), { auth: { persistSession: false }, global: { headers: { "x-negocio-id": demo.negocio.id } } });

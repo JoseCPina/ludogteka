@@ -42,7 +42,9 @@ async function comoPersona(email) {
   return createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { ...sin, global: { headers: { Authorization: `Bearer ${s.session.access_token}`, "x-negocio-id": NEG } } });
 }
 
-// El demo se graba con las cuentas desbloqueadas (como lo deja `prepararDemo`): aquí también hace falta para escribir.
+// Para escribir con admin y recepción se abren las cuentas que estén en solo lectura y AL FINAL se vuelven a cerrar las mismas
+// (las del visitante de «Ver demo» nunca se quedan abiertas).
+const { data: cerradas } = await A.from("membresias").select("id").eq("negocio_id", NEG).eq("solo_lectura", true);
 await A.from("membresias").update({ solo_lectura: false }).eq("negocio_id", NEG).eq("solo_lectura", true);
 const ADM = await comoPersona("demo.admin@peludesk.mx");
 const REC = await comoPersona("demo.recepcion@peludesk.mx");
@@ -199,3 +201,6 @@ console.log("\nListo: Veterinaria prendida en el demo con 2 médicos, 4 producto
     }
   } else if (!estup?.length) console.log("  · sin estupefaciente en el catálogo: el recetario especial queda vacío");
 }
+
+// Se cierran de nuevo las cuentas que estaban en solo lectura al empezar.
+if (cerradas?.length) await A.from("membresias").update({ solo_lectura: true }).in("id", cerradas.map((m) => m.id));
