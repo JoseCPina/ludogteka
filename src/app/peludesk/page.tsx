@@ -292,8 +292,8 @@ export default async function PeluDeskLanding() {
               <h1 className="mt-4 text-[2.4rem] font-bold leading-[1.05] tracking-[-0.03em] text-n-900 md:text-[3.2rem]">
                 Tu negocio canino o veterinario, <span className="text-morado">en un solo sistema.</span>
               </h1>
-              <p className="mt-5 max-w-[46ch] text-lg leading-relaxed text-n-700">
-                Clínica veterinaria, guardería, hotel y estética en el mismo lugar: reservas y citas, expediente con dictado por IA, recetas alineadas al SITPV, carnet con QR, cobros, contratos y facturación CFDI.
+              <p className="mt-5 max-w-[46ch] text-base leading-relaxed text-n-700 sm:text-lg">
+                Clínica veterinaria, guardería, hotel y estética en un solo lugar: citas, expediente con dictado por IA, recetas, cobros y facturación CFDI.
               </p>
               {plan && <PrecioPlan plan={plan} className="mt-6" />}
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">

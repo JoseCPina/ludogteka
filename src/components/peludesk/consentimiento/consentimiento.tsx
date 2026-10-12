@@ -135,16 +135,16 @@ export function ConsentimientoCookies({ inicial, pixelId }: { inicial: Consentim
           data-fijo-inferior
           className="fixed inset-x-0 bottom-0 z-[60] p-3 sm:bottom-4 sm:left-4 sm:right-auto sm:max-w-[26rem] sm:p-0"
         >
-          <div className="rounded-2xl border border-n-200 bg-white p-5 shadow-[0_12px_40px_rgb(75_63_114/0.22)]">
+          <div className="rounded-2xl border border-n-200 bg-white p-4 shadow-[0_12px_40px_rgb(75_63_114/0.22)] sm:p-5">
             <p className="text-base font-bold text-n-900">Tú decides qué cookies usamos</p>
             <p className="mt-2 text-sm leading-relaxed text-n-700">
               Usamos una cookie necesaria para recordar tu elección. La analítica y la publicidad (píxel de Meta) solo se
-              activan si las aceptas. Puedes cambiarlo cuando quieras en «Preferencias de cookies», al final de la página.{" "}
+              activan si las aceptas. Puedes cambiarlo en «Preferencias de cookies», al final de la página.{" "}
               <Link href="/cookies" className="font-semibold text-morado underline underline-offset-2">
-                Más información
+                Más información sobre cookies
               </Link>
             </p>
-            <div className="mt-4 flex gap-3">
+            <div className="mt-3 flex gap-3 sm:mt-4">
               <button type="button" className={BOTON} onClick={() => decidir(false, false)}>
                 Rechazar
               </button>
@@ -155,7 +155,7 @@ export function ConsentimientoCookies({ inicial, pixelId }: { inicial: Consentim
             <button
               type="button"
               onClick={abrir}
-              className="mt-3 flex min-h-11 w-full items-center justify-center rounded-full text-sm font-semibold text-morado underline underline-offset-2 hover:bg-morado-suave focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
+              className="mt-1 flex min-h-11 w-full items-center justify-center rounded-full text-sm font-semibold text-morado underline underline-offset-2 hover:bg-morado-suave focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
             >
               Configurar
             </button>
