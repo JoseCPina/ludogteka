@@ -96,14 +96,8 @@ export const SERIE: Entrada[] = [
     texto: "Vendiste bien este mes. ¿Pero cuánto ganaste de verdad?\n\nPeluDesk le resta a lo que cobraste los insumos, la nómina y los gastos del local, y te lo compara con el mes anterior. Sin sumar a mano.\n\nPruébalo 15 días gratis en peludesk.mx",
     hashtags: ["#negociocanino", "#guarderiacanina", "#emprendedores"],
   },
-  {
-    video: "tu-pagina-web-gratis",
-    titulo: "Tu página web, gratis",
-    fecha: "2026-10-19",
-    redes: [REEL_IG, TIKTOK, REEL_FB],
-    texto: "¿Tu negocio todavía no tiene página web?\n\nEn tu prueba, completa tu perfil la primera semana: logo, tres fotos, horario, dirección y un precio. Tu página queda gratis de por vida.\n\nEmpieza tus 15 días gratis en peludesk.mx",
-    hashtags: ["#guarderiacanina", "#esteticacanina", "#paginaweb"],
-  },
+  // «Tu página web, gratis» (19 de octubre) se retiró del calendario el 22 de octubre de 2026: prometía la página gratis por completar el perfil
+  // en la primera semana y desde el plan único la página viene incluida para todos. Sus 3 publicaciones se cancelaron; el video narra la oferta vieja.
   // ── Tríptico «¿Eres dueña o dueño…?»: dos imágenes de la cuadrícula y el video con tomas de IA, con 3 minutos entre cada una ──
   {
     video: "2-de-cada-3",

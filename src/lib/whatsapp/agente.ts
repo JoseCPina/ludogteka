@@ -9,6 +9,8 @@
 // cuenta de quien escribe. Todo lo demás se escala a Telegram. Es más barato
 // quedar como lento que inventar un precio.
 
+import { conIva } from "@/lib/cobro/iva";
+
 /** Modelo fijo (29 de septiembre de 2026, pedido del dueño: Haiku vendía como catálogo). */
 export const MODELO_IA = "claude-sonnet-5";
 /** Dos mensajes cortos no necesitan más, y acota el gasto por respuesta. */
@@ -282,31 +284,25 @@ function pesos(n: number): string {
   return `$${Number(n).toLocaleString("es-MX", { maximumFractionDigits: 2 })}`;
 }
 
-/** El precio con el que se abre: el plan más barato, al mes. */
+/** El precio del plan único, al mes (si algún día hubiera más de uno, el más barato). */
 export function precioDesde(planes: PlanPublico[]): number | null {
   const mensuales = planes.filter((p) => p.tipo === "plan" && p.mensual > 0).map((p) => p.mensual);
   return mensuales.length ? Math.min(...mensuales) : null;
 }
 
 function bloquePlanes(planes: PlanPublico[]): string {
-  if (planes.length === 0) return "PLANES Y PRECIOS: no hay planes publicados ahora mismo. Si preguntan precios, escala.";
-  const desde = precioDesde(planes);
-  const lineas = planes.map((p) => {
-    const desc = p.descripcion ? ` ${p.descripcion}` : "";
-    if (p.tipo === "complemento") {
-      return (
-        `- «${p.nombre}»: se da de REGALO si completa su perfil en la primera semana de la prueba. ` +
-        `Solo si pregunta qué pasa si no lo completa: ${pesos(p.mensual)} al mes + IVA. Nunca la ofrezcas primero como extra con precio.`
-      );
-    }
-    const mods = p.modulos.length ? ` Módulos (para ti, no para listarlos): ${p.modulos.join(", ")}.` : "";
-    return `- Plan ${p.nombre}: ${pesos(p.mensual)} al mes + IVA.${desc}${mods} [Pago anual, SOLO si pregunta por pagar el año: ${pesos(p.anual)} + IVA; nunca lo menciones por tu cuenta.]`;
+  const base = planes.filter((p) => p.tipo === "plan");
+  if (base.length === 0) return "PLAN Y PRECIO: no hay un plan publicado ahora mismo. Si preguntan el precio, escala.";
+  const lineas = base.map((p) => {
+    const total = conIva(p.mensual).total / 100;
+    const mods = p.modulos.length ? ` Incluye (para ti, no para listarlos): ${p.modulos.join(", ")}.` : "";
+    return (
+      `- ${p.nombre}: ${pesos(p.mensual)} al mes + IVA (${pesos(total)} con IVA). Sin costo inicial: no hay cargo de alta ni de activación. ` +
+      `Todos los módulos van incluidos (Veterinaria, Hotel y guardería, Estética y la página web) para todos los clientes.${mods} ` +
+      `[Pago anual, SOLO si pregunta por pagar el año: ${pesos(p.anual)} + IVA; nunca lo menciones por tu cuenta.]`
+    );
   });
-  return [
-    "PLANES Y PRECIOS (de la base, vigentes hoy; caja y clientes van en todos):",
-    ...(desde ? [`- Desde ${pesos(desde)} al mes + IVA.`] : []),
-    ...lineas,
-  ].join("\n");
+  return ["PLAN ÚNICO Y PRECIO (de la base, vigente hoy; caja y clientes van incluidos). No hay planes por servicio ni complementos:", ...lineas].join("\n");
 }
 
 /** Un escalamiento sin motivo real («placeholder», vacío): el modelo se trabó, no hay duda que escalar. */
@@ -322,19 +318,19 @@ function comoVender(ctx: ContextoAgente): string {
     desde
       ? [
           "- El precio, solo cuando lo pregunten, y siempre directo: nunca contestes «¿cuánto cuesta?» solo con una pregunta.",
-          `- Si NO sabes qué servicios tiene: el PRIMER renglón es «Desde *${pesos(desde)} al mes + IVA*, y los primeros *15 días son gratis*, sin tarjeta». Después le preguntas qué tiene (guardería, hotel o estética) para darle su plan.`,
-          "- Si YA sabes qué servicios tiene (lo dijo en este mensaje o antes en la conversación): directo el precio de SU plan en negritas con los 15 días gratis, sin «desde»: «Para guardería y estética te toca el Plan Completo: *$X al mes + IVA*, y los primeros *15 días son gratis*, sin tarjeta».",
+          `- Es UN solo plan para todos, con todos los módulos: el PRIMER renglón es «*${pesos(desde)} al mes + IVA*, sin costo inicial, con todos los módulos, y los primeros *15 días son gratis*, sin tarjeta». Nunca digas «desde», ni «según los servicios que tengas», ni hables de planes distintos. Después le preguntas qué tiene (clínica veterinaria, guardería, hotel o estética) para conectar con lo suyo.`,
+          "- Nunca hables de cargo de alta ni de activación: no existe.",
         ].join("\n")
       : "- No hay precios publicados: si preguntan, escala.",
     "- Precio anual solo si lo pregunta.",
     "- Nunca listes módulos ni funciones, ni en una frase con comas («agenda, precios, inventario y caja» es un catálogo), ni digas «trae todo: esto, esto y lo demás». Escoge UNA cosa que le quite de encima, la que va con lo que te contó: la libreta, los recordatorios que manda a mano por WhatsApp, el corte de caja que no cuadra, las vacunas vencidas que se le pasan.",
     "- Pregúntale cómo lo lleva hoy (libreta, Excel, WhatsApp, otra app) y conecta su respuesta con lo que PeluDesk le resuelve, con la captura que corresponda.",
     "- Si ya usa otra app, no la critiques: pregúntale qué le falta o qué le cuesta trabajo, y conecta con eso. Nunca prometas migrar sus datos.",
-    "- La página web es un regalo: «si completas tu perfil en la primera semana, tu página web te queda gratis para siempre». Nunca la ofrezcas primero como extra con precio.",
+    "- La página web viene incluida en el plan, sin costo aparte: dilo como un extra sin costo, nunca como un cargo ni como un regalo condicionado.",
     "- Cada respuesta termina empujando a UN siguiente paso concreto, con su link en el último renglón: ver el demo o empezar la prueba. Aunque le hagas una pregunta, el último renglón es ese link (demo si apenas está conociendo; prueba si ya se interesó o quiere meter sus datos).",
     "- Un solo link por mensaje: nunca el demo y la prueba juntos. Escoge el que va con lo que pidió.",
     `- Los dos links NO los escribes tú: pon en su propio renglón [[link:demo]] o [[link:prueba]] y el sistema pone la dirección (demo: ${ctx.enlaces.demo} · prueba: ${ctx.enlaces.registro}; así se ven en el historial y son los correctos).`,
-    "- Si no sabes qué negocio tiene, pregúntale «¿Qué tienes: guardería, hotel o estética?». Quien pregunta por PeluDesk casi siempre es dueño o encargado de un negocio, no dueño de un perro.",
+    "- Si no sabes qué negocio tiene, pregúntale «¿Qué tienes: clínica veterinaria, guardería, hotel o estética?». Quien pregunta por PeluDesk casi siempre es dueño o encargado de un negocio, no dueño de un perro. Si tiene clínica veterinaria, abre con lo suyo: expediente con dictado, recetas, carnet con QR y recordatorios por WhatsApp.",
     "- Si te cuenta que lo lleva en libreta, Excel o WhatsApp, manda la captura de lo que más le duele (estética → estetica; guardería u hotel → hotel; cobros → caja; vacunas → vacunas).",
   ].join("\n");
 }
@@ -435,15 +431,13 @@ const ETIQUETA_ETAPA = { dia5: "del día 5", dia10: "del día 10", dia15: "del �
 export function bloqueSeguimiento(s: SeguimientoContexto): string {
   const oferta =
     s.perfilCompleto
-      ? "Ya completó su perfil: la página web gratis de por vida ya es suya."
-      : s.dia <= 7
-        ? `Todavía NO completa su perfil: si lo hace antes de que termine el día 7 de su prueba (le quedan ${Math.max(0, 7 - s.dia)} días), su página web es gratis de por vida; se completa desde su panel (Administración → Perfil del negocio).`
-        : "No completó su perfil a tiempo: la página web gratis de por vida ya NO aplica; no se la ofrezcas.";
+      ? "Ya completó su perfil: su página web está lista para compartirla."
+      : "Todavía NO completa su perfil: la página web viene incluida en el plan, y se arma sola cuando lo completa desde su panel (Administración → Perfil del negocio). No hay fecha límite ni premio: no se lo presentes como oferta.";
   const accion =
     s.tipo === "boton_ayuda"
       ? "Pulsó «Necesito ayuda»: pregúntale en qué le ayudas, con una sola pregunta corta. Si pide hablar con una persona, escala."
       : s.tipo === "boton_plan"
-        ? "Pulsó «Elegir un plan»: guíalo a escoger plan. Pregúntale qué servicios tiene (guardería, hotel, estética), dale SU plan con el precio de la tabla de planes y los pasos para contratarlo (Administración → Módulos y plan); si quiere pagar ya, usa la herramienta del portal de pagos."
+        ? "Pulsó «Elegir un plan»: guíalo a contratar. Hay un solo plan: dale el precio de la tabla de planes (sin costo inicial, todos los módulos) y los pasos para contratarlo (Administración → Módulos y plan); si quiere pagar ya, usa la herramienta del portal de pagos."
         : "Contestó el mensaje: atiende lo que escribió como a cualquier admin, sin repetirle el mensaje.";
   return [
     "SEGUIMIENTO DE SU PRUEBA (un mensaje automático que le mandamos nosotros; NO es un número desconocido ni un prospecto):",

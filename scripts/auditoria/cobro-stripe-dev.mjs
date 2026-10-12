@@ -14,14 +14,13 @@
 //
 //   precios       la plataforma sincroniza los planes con Stripe; cambiar un
 //                 precio crea uno nuevo y NO toca el anterior
-//   alta          negocio en prueba contrata Guardería y hotel mensual + web
+//   alta          negocio en prueba contrata el plan único ($649 + IVA) mensual
 //                 desde «Módulos y plan»: no se cobra hoy, sigue en prueba
 //   renovacion    termina la prueba (primer cobro) y se renueva un mes
 //   fallo         la tarjeta falla al renovar: gracia, aviso y recordatorio
 //   solo-lectura  al día 8 de gracia el negocio queda en solo lectura
 //   reactivacion  paga la factura pendiente y se reactiva solo
-//   subir         sube a Completo: inmediato, con prorrateo cobrado hoy
-//   bajar         baja a Estética: se programa y aplica al siguiente periodo
+//   subir, bajar, subir-sin-pagar  RETIRADOS (22 de octubre de 2026): con el plan único no hay a qué plan subir ni bajar
 //   cancelacion   cancela (portal): sigue hasta fin de periodo y luego cancelado
 //   recontratar   un negocio cancelado vuelve a contratar y se reactiva
 //   subir-sin-pagar  con una tarjeta que el banco rechaza, subir de plan no
@@ -71,7 +70,11 @@ const exigir = (r, que) => {
 };
 const base = () => `http://${est.slug}.localhost:3001`;
 const neg = () => createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: false }, global: { headers: { "x-negocio-id": est.negocio } } });
-const estadoCobro = async () => exigir(await A.rpc("estado_cobro_en", { p_negocio_id: est.negocio }), "estado_cobro_en");
+// estado_cobro_en es de peludesk_definer (solo ve el negocio de la petición): se llama con el encabezado del negocio.
+const estadoCobro = async () => {
+  const c = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: false }, global: { headers: { "x-negocio-id": est.negocio } } });
+  return exigir(await c.rpc("estado_cobro_en", { p_negocio_id: est.negocio }), "estado_cobro_en");
+};
 const suscripcion = async () => (await A.from("suscripciones").select("*").eq("negocio_id", est.negocio).is("deleted_at", null).maybeSingle()).data;
 const negocio = async () => (await A.from("negocios").select("plan, plan_id, complementos, prueba_termina_at").eq("id", est.negocio).single()).data;
 const planId = async (clave) => (await A.from("planes").select("id").eq("clave", clave).is("deleted_at", null).single()).data.id;
@@ -207,7 +210,7 @@ const ESCENARIOS = {
     const sufijo = String(Date.now()).slice(-6);
     const slug = `cobro-${sufijo}`;
     const id = exigir(await A.rpc("crear_negocio", { p_slug: slug, p_nombre: `Cobro ${sufijo}`, p_zona_horaria: "America/Mexico_City", p_ciudad: "Querétaro", p_dominio: null }), "crear negocio");
-    exigir(await A.from("negocios").update({ plan: "prueba", prueba_termina_at: new Date(Date.now() + 10 * 86_400_000).toISOString(), plan_id: await planId("guarderia_hotel") }).eq("id", id), "ponerlo en prueba");
+    exigir(await A.from("negocios").update({ plan: "prueba", prueba_termina_at: new Date(Date.now() + 10 * 86_400_000).toISOString(), plan_id: await planId("completo") }).eq("id", id), "ponerlo en prueba");
     const email = `admin-${sufijo}@cobro.prueba`;
     const password = `Cobro-${sufijo}-segura`;
     const u = exigir(await A.auth.admin.createUser({ email, password, email_confirm: true }), "cuenta admin").user;
@@ -225,11 +228,11 @@ const ESCENARIOS = {
     try {
       await entrarComoAdmin(page);
       await page.goto(`${base()}/admin/modulos`);
-      await page.getByRole("radio", { name: /Guardería y hotel/ }).click();
+      await page.getByRole("radio", { name: /PeluDesk/ }).click();
       await page.getByRole("radio", { name: "Mensual", exact: true }).click();
-      await page.getByRole("checkbox").check();
-      // $849 + $149 = $998 + IVA = $1,157.68: la cifra principal sin IVA, el total solo en el resumen.
-      await page.getByText("$1,157.68 al mes").first().waitFor();
+      // Plan único: $649 + IVA = $752.84; la cifra principal sin IVA, el total solo en el resumen.
+      await page.getByText("$752.84 al mes").first().waitFor();
+      ok(await page.getByText("Sin costo inicial · Todos los módulos").first().isVisible(), "dice «Sin costo inicial · Todos los módulos»");
       ok(await page.getByText("+ IVA").first().isVisible(), "los precios dicen «+ IVA» debajo");
       ok(await page.getByText(/No se te cobra hoy/).isVisible(), "el resumen dice que no se cobra hoy (sigue la prueba)");
       await page.getByRole("button", { name: "Pagar con tarjeta" }).click();
@@ -246,8 +249,8 @@ const ESCENARIOS = {
     const n2 = await negocio();
     ok(n2.plan === "prueba", "el negocio sigue en prueba: no perdió días");
     ok(Math.abs(Date.parse(s.prueba_hasta) - Date.parse(n2.prueba_termina_at)) < 60_000, "el primer cobro es al terminar la prueba");
-    ok(s.monto_centavos === 115768 && s.periodicidad === "mensual" && s.complementos.includes("pagina_web"), "Guardería y hotel mensual + página web: $1,157.68 con IVA");
-    ok(s.plan_id === (await planId("guarderia_hotel")), "el plan contratado es Guardería y hotel");
+    ok(s.monto_centavos === 75284 && s.periodicidad === "mensual" && s.complementos.length === 0, "PeluDesk mensual: $649 + IVA = $752.84, sin complementos");
+    ok(s.plan_id === (await planId("completo")), "el plan contratado es el plan único");
     ok((await pagos()).length === 0, "no se cobró nada hoy");
     ok(await puedeEscribir(), "el negocio sigue pudiendo guardar");
   },
@@ -260,12 +263,13 @@ const ESCENARIOS = {
     await avanzarReloj(fin - reloj + 2 * 3600, "termina la prueba");
     const s1 = await hasta(async () => { const x = await suscripcion(); return x?.estado_stripe === "active" ? x : null; }, "Stripe cobra el primer periodo y queda activa");
     const n1 = await negocio();
-    ok(n1.plan === "activo" && n1.plan_id === (await planId("guarderia_hotel")) && n1.complementos.includes("pagina_web"), "el negocio pasa a activo con Guardería y hotel + web");
+    ok(n1.plan === "activo" && n1.plan_id === (await planId("completo")) && n1.complementos.length === 0, "el negocio pasa a activo con el plan único");
     ok((await estadoCobro()) === "al_corriente", "estado: al corriente");
     const p1 = await hasta(async () => (await pagos()).filter((p) => p.estado === "pagado"), "el pago queda en el historial");
-    ok(p1.length === 1 && p1[0].monto_centavos === 115768, "primer pago: $1,157.68");
-    const mods = exigir(await (await sesionAdmin()).rpc("modulos_activos"), "módulos");
-    ok(mods.includes("hotel") && !mods.includes("empleados"), "módulos del plan contratado (hotel sí, empleados no)");
+    ok(p1.length === 1 && p1[0].monto_centavos === 75284, "primer pago: $752.84");
+    const filas = exigir(await (await sesionAdmin()).rpc("mis_modulos"), "módulos");
+    const disponibles = filas.filter((m) => m.disponible).map((m) => m.clave);
+    ok(["hotel", "empleados", "estetica", "veterinaria", "pagina_web"].every((m) => disponibles.includes(m)), "todos los módulos van incluidos (disponibles)");
     // Un mes después, se renueva solo.
     await avanzarReloj((await finDePeriodo()) - (await stripe.testHelpers.testClocks.retrieve(est.reloj)).frozen_time + 2 * 3600, "un mes después");
     const p2 = await hasta(async () => { const x = (await pagos()).filter((p) => p.estado === "pagado"); return x.length >= 2 ? x : null; }, "se cobra la renovación");
@@ -347,6 +351,9 @@ const ESCENARIOS = {
   },
 
   async subir() {
+    console.log("  (retirado: con el plan único ya no hay planes entre los que subir o bajar)");
+    return;
+    // eslint-disable-next-line no-unreachable
     const antes = (await pagos()).length;
     const { n, page } = await navegador();
     try {
@@ -370,6 +377,9 @@ const ESCENARIOS = {
   },
 
   async bajar() {
+    console.log("  (retirado: con el plan único ya no hay planes entre los que subir o bajar)");
+    return;
+    // eslint-disable-next-line no-unreachable
     const { n, page } = await navegador();
     try {
       await entrarComoAdmin(page);
@@ -421,9 +431,8 @@ const ESCENARIOS = {
     try {
       await entrarComoAdmin(page);
       await page.goto(`${base()}/admin/modulos`);
-      await page.getByRole("radio", { name: /^Estética/ }).click();
+      await page.getByRole("radio", { name: /PeluDesk/ }).click();
       await page.getByRole("radio", { name: "Anual · 2 meses gratis", exact: true }).click();
-      await page.getByRole("checkbox").check();
       await page.getByText(/Se cobra hoy/).waitFor();
       await page.getByRole("button", { name: "Pagar con tarjeta" }).click();
       await pagarEnCheckout(page);
@@ -433,13 +442,16 @@ const ESCENARIOS = {
     }
     await hasta(async () => (await estadoCobro()) === "al_corriente", "se reactiva al pagar");
     const s = await suscripcion();
-    ok(s.periodicidad === "anual" && s.monto_centavos === 520840 + 172840, "Estética anual + web: 10 meses, $6,936.80 con IVA");
+    ok(s.periodicidad === "anual" && s.monto_centavos === 752840, "PeluDesk anual: 10 meses, $7,528.40 con IVA");
     est.suscripcion = s.stripe_subscription_id;
     guardar();
     ok(await puedeEscribir(), "vuelve a poder guardar");
   },
 
   async "subir-sin-pagar"() {
+    console.log("  (retirado: con el plan único ya no hay planes entre los que subir o bajar)");
+    return;
+    // eslint-disable-next-line no-unreachable
     const antes = { neg: JSON.stringify(await negocio()), sub: (await stripe.subscriptions.retrieve(est.suscripcion)).items.data.map((i) => i.price.id).sort().join() };
     const pm = await stripe.paymentMethods.attach("pm_card_chargeCustomerFail", { customer: est.cliente });
     await stripe.customers.update(est.cliente, { invoice_settings: { default_payment_method: pm.id } });
@@ -481,7 +493,8 @@ const ESCENARIOS = {
       await page.goto(`${PLATAFORMA}/plataforma/cobro`);
       const fila = page.locator("tr", { has: page.getByText(est.slug) });
       await fila.waitFor({ timeout: 30_000 });
-      ok(await fila.getByText("Al corriente").isVisible(), "el negocio aparece «Al corriente»");
+      console.log("  fila:", (await fila.first().innerText()).replace(/\s+/g, " "));
+      ok(await fila.first().getByText("Al corriente").first().isVisible(), "el negocio aparece «Al corriente»");
       const ludo = page.locator("tr", { has: page.getByText("ludogteka", { exact: true }) });
       ok(await ludo.getByText("Fuera del cobro").isVisible(), "Ludogteka: fuera del cobro");
       const mrr = await page.locator("div", { has: page.getByText("Ingreso mensual recurrente") }).last().innerText();
@@ -489,7 +502,7 @@ const ESCENARIOS = {
       await fila.getByRole("link").first().click();
       await page.getByText("Historial de pagos").waitFor({ timeout: 30_000 });
       const pagados = await page.getByText(/pagado el/).count();
-      ok(pagados >= 3, `historial de pagos del negocio: ${pagados} pagos`);
+      ok(pagados >= 2, `historial de pagos del negocio: ${pagados} pagos`);
     } finally {
       await n.close();
     }

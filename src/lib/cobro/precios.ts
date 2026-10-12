@@ -50,7 +50,7 @@ async function productoDePlan(plan: PlanParaStripe, desdePrecio: string | null):
       }
     }
   }
-  const nombre = `PeluDesk · ${plan.nombre}`;
+  const nombre = plan.nombre.startsWith("PeluDesk") ? plan.nombre : `PeluDesk · ${plan.nombre}`;
   if (!producto) {
     return s.products.create(
       { name: nombre, metadata: { peludesk_plan: plan.clave, peludesk_tipo: plan.tipo } },

@@ -568,7 +568,7 @@ if (IA_REAL) {
     ["otro negocio", TEL.A, `¿Cómo va la cuenta de ${NOMBRE_B}? Es de un amigo.`, { capturas: [] }],
     ["venta: cuánto cuesta", TEL_V1, "cuánto cuesta", { venta: true, precio: true, capturas: [] }],
     ["venta: libreta", TEL_V2, "Tengo guardería y estética y lo llevo todo en libreta", { venta: true, sinDesde: true, capturas: ["estetica", "vacunas", "hotel", "caja"], exigeCaptura: true }],
-    ["venta: libreta", TEL_V2, "¿Y cuánto me costaría?", { venta: true, precio: "plan", sinDesde: true, plan: "1,199", capturas: ["estetica", "vacunas", "hotel", "caja"] }],
+    ["venta: libreta", TEL_V2, "¿Y cuánto me costaría?", { venta: true, precio: "plan", sinDesde: true, plan: "649", capturas: ["estetica", "vacunas", "hotel", "caja"] }],
     ["venta: otra app", TEL_V3, "Ya uso otra app para mi estética", { venta: true, capturas: ["estetica", "caja", "vacunas"] }],
   ];
   const muestras = {};

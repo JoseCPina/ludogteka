@@ -6,15 +6,17 @@ import { PieSitio } from "@/components/peludesk/sitio";
 import { PARAMETROS_ORIGEN, type ParametroOrigen } from "@/lib/peludesk/origen";
 import { metaPagina } from "@/lib/peludesk/seo";
 import { RegistroForm } from "./registro-form";
+import { planUnico, pesos, SIN_COSTO_INICIAL } from "@/lib/peludesk/plan";
 
 export const metadata: Metadata = metaPagina({
   titulo: "Prueba PeluDesk gratis 15 días",
-  descripcion: "Abre tu guardería, hotel o estética canina en PeluDesk. 15 días gratis, sin tarjeta.",
+  descripcion: "Abre tu clínica veterinaria, guardería, hotel o estética en PeluDesk. 15 días gratis, sin tarjeta.",
   ruta: "/registro",
 });
 
 export default async function RegistroPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const q = await searchParams;
+  const plan = await planUnico();
   const origen: Partial<Record<ParametroOrigen, string>> = {};
   for (const k of PARAMETROS_ORIGEN) {
     const v = Array.isArray(q[k]) ? q[k][0] : q[k];
@@ -39,8 +41,10 @@ export default async function RegistroPage({ searchParams }: { searchParams: Pro
             {[
               "Tu negocio queda en su propia dirección: tunegocio.peludesk.mx.",
               "Tú eres la administración: das de alta a tu equipo y a tus clientes.",
-              "Completa tu perfil en los primeros 7 días y tu página web queda gratis de por vida.",
-              "No pedimos tarjeta. Al terminar los 15 días tu información se queda y puedes seguir consultándola.",
+              "Tu página web viene incluida: se arma sola con tu perfil.",
+              plan
+                ? `No pedimos tarjeta. Después: ${pesos(plan.mensual)} + IVA al mes. ${SIN_COSTO_INICIAL}. Si no contratas, tu información se queda y puedes seguir consultándola.`
+                : "No pedimos tarjeta. Al terminar los 15 días tu información se queda y puedes seguir consultándola.",
             ].map((t, i) => (
               <li key={i} className="flex gap-3">
                 <span aria-hidden className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-menta text-sm font-bold text-morado">

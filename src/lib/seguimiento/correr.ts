@@ -115,8 +115,8 @@ export async function correrSeguimiento(opciones: { ahora?: Date; solo?: string[
   return resumen;
 }
 
-function parametrosDe(etapa: EtapaSeguimiento, variante: string | undefined, v: { persona: string; negocio: string; limite: string; dias: string }): string[] {
-  if (etapa === "dia5") return variante === "perfil" ? [v.persona, v.negocio] : [v.persona, v.negocio, v.limite];
+function parametrosDe(etapa: EtapaSeguimiento, _variante: string | undefined, v: { persona: string; negocio: string; limite: string; dias: string }): string[] {
+  if (etapa === "dia5") return [v.persona, v.negocio];
   if (etapa === "dia10") return [v.persona, v.dias, v.negocio];
   return [v.persona];
 }

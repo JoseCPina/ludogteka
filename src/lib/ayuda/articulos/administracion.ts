@@ -339,19 +339,21 @@ Los servicios son tres: **Hotel y guardería**, **Estética** y **Veterinaria**.
 
 Si eres de recepción y el admin te dio el permiso **Administrar módulos**, también puedes prender y apagar; el cobro del plan sigue siendo del admin.
 
-Apagar no borra nada: si lo vuelves a prender, todo sigue ahí. Caja y clientes siempre están. Lo que dice «Fuera de tu plan» se prende cambiando de plan.
+Apagar no borra nada: si lo vuelves a prender, todo sigue ahí. Caja y clientes siempre están. Todos los módulos vienen incluidos en tu plan: prenderlos no cuesta más.
 
 ## Contratar
 
+Hay un solo plan, **PeluDesk**: $649 al mes + IVA ($752.84 con IVA), **sin costo inicial** y con **todos los módulos** (Veterinaria, Hotel y guardería, Estética y tu página web).
+
 1. Escoge **Mensual** o **Anual · 2 meses gratis**.
-2. Escoge tu plan y revisa el **Resumen** con el IVA.
+2. Revisa el **Resumen** con el IVA.
 3. Aprieta **Pagar con tarjeta**. El pago lo procesa Stripe.
 
 Si contratas durante la prueba, no pierdes días: el primer cobro es al terminar.
 
 ## Después
 
-- **Cambiar a este plan**: subir es inmediato; bajar entra al final del periodo.
+- **Cambiar a este plan**: pasar de mensual a anual es inmediato; de anual a mensual entra al final del periodo. Si el precio del plan cambia, lo ves desde tu siguiente cargo, sin cobros dobles.
 - **Tarjeta, facturas y cancelación**: cambias tarjeta, bajas facturas o cancelas. Sigues con acceso hasta el final de lo que pagaste.
 
 > Si un cobro falla, todo sigue funcionando 7 días. Después el negocio queda en solo lectura hasta que se pague.`,
@@ -461,7 +463,7 @@ Cada regla solo se muestra con el módulo que la usa prendido: sin hotel no se h
     modulo: "pagina_web",
     roles: ["admin", "recepcion"],
     rutas: ["/admin/perfil"],
-    palabras: ["sitio web", "página", "logo", "fotos", "dirección", "web gratis", "internet"],
+    palabras: ["sitio web", "página", "logo", "fotos", "dirección", "web incluida", "internet"],
     captura: "perfil-y-pagina-web.jpg",
     cuerpo: `Tu página web se arma sola con tu perfil, tus servicios, tus precios y tu horario. Tú solo pones lo que la hace tuya: logo, fotos y dirección.
 
@@ -470,17 +472,17 @@ Cada regla solo se muestra con el módulo que la usa prendido: sin hotel no se h
 3. En **Logo**, escoge el archivo (PNG, JPG, WebP o SVG, de hasta 2 MB). Antes de guardar ves cómo se va a ver en tu registro de clientes, en un recibo y en tu portal, y te avisamos si es muy ancho o muy alto, si trae fondo blanco o si tiene márgenes grandes. Si te gusta, aprieta **Guardar logo** (o **Guardar el logo nuevo**). Lo mejor es un PNG o SVG con fondo transparente, recortado cerca del dibujo.
 4. En **Fotos del negocio**, sube al menos 3 con **Agregar foto**: tu local, tu equipo, perros felices.
 
-## Gánala gratis de por vida
+## Tu página web ya viene incluida
 
-Si en los primeros 7 días de tu prueba completas todo, la página web te queda gratis para siempre:
+La página web va en tu plan, sin costo aparte ni fecha límite. Para que se vea completa, termina:
 
-- Terminar los primeros pasos
-- Subir tu logo y al menos 3 fotos
-- Ponerle precio a un servicio
-- Guardar tu horario
-- Escribir tu dirección
+- Los primeros pasos
+- Tu logo y al menos 3 fotos
+- El precio de un servicio
+- Tu horario
+- Tu dirección
 
-Arriba de la pantalla ves cuántos llevas y cuántos días te quedan. Si no, la página es un complemento que se contrata aparte.
+Arriba de la pantalla ves cuántos llevas.
 
 ## Si algo no sale
 

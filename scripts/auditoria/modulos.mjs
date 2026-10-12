@@ -74,7 +74,7 @@ try {
   console.log("── Plan Estética: lo que no incluye no se usa por la API");
   const { data: mods } = await ADM.rpc("mis_modulos");
   const disp = mods.filter((x) => x.disponible).map((x) => x.clave).sort().join(",");
-  if (disp === "estetica,portal") bien(`disponibles: ${disp}`); else mal(`disponibles inesperados: ${disp}`);
+  if (disp === "estetica,portal,veterinaria") bien(`disponibles: ${disp}`); else mal(`disponibles inesperados: ${disp}`);
   const modulo = /módulo/;
   debeRechazar(await ADM.from("estancias").insert({ reserva_id: reserva.id, perro_id: perro.id, servicio_id: serv.hotel_noche, fecha_entrada: hoy, fecha_salida: manana }).select("id"), "reservar hotel", modulo);
   debeRechazar(await ADM.from("estancias").insert({ reserva_id: reserva.id, perro_id: perro.id, servicio_id: serv.guarderia_dia, fecha_entrada: hoy, fecha_salida: manana }).select("id"), "reservar guardería", modulo);

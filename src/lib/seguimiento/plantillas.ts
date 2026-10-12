@@ -26,28 +26,28 @@ const PIE = "PeluDesk · Para estéticas y guarderías caninas";
 
 export const PLANTILLAS: PlantillaSeguimiento[] = [
   {
-    nombre: "peludesk_prueba_dia5_v1",
+    nombre: "peludesk_prueba_dia5_v2",
     etapa: "dia5",
     variante: "sin_perfil",
     categoria: "MARKETING",
     encabezado: "Tu prueba de PeluDesk",
     cuerpo:
-      "Hola {{1}} 👋\n\nSoy del equipo de PeluDesk. Van 5 días de tu prueba y quería preguntarte:\n\n*¿Te ayudamos con algo?*\n\n🎁 Y un recordatorio: si completas el perfil de *{{2}}* antes del *{{3}}*, tu *página web es gratis de por vida*.\n\nSe completa desde tu panel.",
+      "Hola {{1}} 👋\n\nSoy del equipo de PeluDesk. Van 5 días de tu prueba y quería preguntarte:\n\n*¿Te ayudamos con algo?*\n\n🐾 Un dato: tu *página web ya viene incluida*. Completa el perfil de *{{2}}* desde tu panel y queda lista para compartirla.",
     pie: PIE,
     botones: [
       { texto: "Necesito ayuda", payload: "seg:dia5:ayuda" },
       { texto: "Ahora no", payload: "seg:dia5:ahora_no" },
     ],
-    ejemplos: ["Ana", "Patitas Felices", "miércoles 7 de octubre"],
+    ejemplos: ["Ana", "Patitas Felices"],
   },
   {
-    nombre: "peludesk_prueba_dia5_perfil_v1",
+    nombre: "peludesk_prueba_dia5_perfil_v2",
     etapa: "dia5",
     variante: "perfil",
     categoria: "MARKETING",
     encabezado: "Tu prueba de PeluDesk",
     cuerpo:
-      "Hola {{1}} 👋\n\nVan 5 días de tu prueba y vimos que ya completaste el perfil de *{{2}}*. ¡Muy bien! 🙌\n\n🎁 Con eso, tu *página web gratis de por vida* ya es tuya.\n\n*¿Te ayudamos con algo?* Escríbenos aquí mismo.",
+      "Hola {{1}} 👋\n\nVan 5 días de tu prueba y vimos que ya completaste el perfil de *{{2}}*. ¡Muy bien! 🙌\n\n🐾 Con eso, tu *página web* ya está lista para compartirla.\n\n*¿Te ayudamos con algo?* Escríbenos aquí mismo.",
     pie: PIE,
     botones: [
       { texto: "Necesito ayuda", payload: "seg:dia5p:ayuda" },

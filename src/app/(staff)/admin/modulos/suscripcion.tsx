@@ -17,11 +17,12 @@ const POR = { mensual: "al mes", anual: "al año" } as const;
 function Precio({ neto, periodicidad }: { neto: number; periodicidad: Periodicidad }) {
   return (
     <div>
-      <p className="text-2xl font-bold text-n-900">
-        {pesosDeCentavos(neto)}
-        <span className="text-base font-medium text-n-600"> {POR[periodicidad]}</span>
+      <p className="flex flex-wrap items-baseline gap-x-1.5 text-n-900">
+        <span className="text-3xl font-bold tabular-nums">{pesosDeCentavos(neto)}</span>
+        <span className="text-sm font-semibold text-n-600">+ IVA</span>
+        <span className="text-base font-medium text-n-600">{POR[periodicidad]}</span>
       </p>
-      <p className="text-sm text-n-600">+ IVA{periodicidad === "anual" ? " · 2 meses gratis" : ""}</p>
+      <p className="text-sm text-n-600">{periodicidad === "anual" ? "2 meses gratis · " : ""}Sin costo inicial · Todos los módulos</p>
     </div>
   );
 }
@@ -154,7 +155,7 @@ export function Suscripcion({
         </div>
       </div>
 
-      <div role="radiogroup" aria-label="Plan" className="grid gap-3 md:grid-cols-3">
+      <div role="radiogroup" aria-label="Plan" className={`grid gap-3 ${deCobro.length > 1 ? "md:grid-cols-3" : "max-w-md"}`}>
         {deCobro.map((p) => {
           const d = conIva(netoDe(p.precio_mensual, sel.periodicidad));
           const escogido = sel.plan === p.clave;
