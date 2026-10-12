@@ -16,9 +16,9 @@
 // mover, desplazar, esperar, tecla, subir, js (ver lib/grabador.mjs).
 import fs from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
 
-const AQUI = path.dirname(new URL(import.meta.url).pathname);
+const AQUI = path.dirname(fileURLToPath(import.meta.url));
 export const DIR_VIDEOS = path.join(AQUI, "../videos");
 
 // Español de plática: unas 150 palabras por minuto.

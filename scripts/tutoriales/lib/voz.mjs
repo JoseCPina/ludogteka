@@ -14,11 +14,12 @@
 // ya generado no se vuelve a pagar. Si no alcanza, ese video queda «listo
 // menos voz» y el corredor sigue con los demás.
 import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { frase } from "../../videos/lib/voz.mjs";
 import { finDelSonido, generarMusica } from "../../videos/lib/voz.mjs";
 
-const AQUI = path.dirname(new URL(import.meta.url).pathname);
+const AQUI = path.dirname(fileURLToPath(import.meta.url));
 export const DIR_AUDIO = path.join(AQUI, "../audio");
 export const PISO_PRESUPUESTO = 0.05;
 

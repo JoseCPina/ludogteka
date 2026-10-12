@@ -15,6 +15,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { abrirNavegador } from "../../lib/navegador.mjs";
+import { argsDeMedios } from "./teleconsulta.mjs";
 import { scriptCursor } from "../../videos/lib/grabar.mjs";
 import { scriptHud, tarjetaTitulo, tarjetaResumen, tarjetaSiguiente } from "./hud.mjs";
 
@@ -76,14 +77,15 @@ async function localizar(page, objetivo, { visibleEn = 20000, indice = 0, campo 
   throw new Error(`No encontré «${objetivo}» en ${page.url()}`);
 }
 
-export async function grabarVideo({ base, cookies, inicio, guion, tarjetas, plan, salida, nombre, depurar = false, alAccion }) {
+export async function grabarVideo({ base, cookies, inicio, guion, tarjetas, plan, salida, nombre, depurar = false, alAccion, medios = null }) {
   fs.mkdirSync(salida, { recursive: true });
   const cuadros = path.join(salida, `${nombre}-cuadros`);
   fs.rmSync(cuadros, { recursive: true, force: true });
   fs.mkdirSync(cuadros);
 
-  const navegador = await abrirNavegador();
-  const ctx = await navegador.newContext({ viewport: { width: ANCHO, height: ALTO }, deviceScaleFactor: 1, locale: "es-MX", timezoneId: "America/Mexico_City" });
+  // `medios`: el guion usa cámara y micrófono (teleconsulta, dictado): dispositivos falsos de Chromium, con el audio del dictado si hay.
+  const navegador = await abrirNavegador(medios ? argsDeMedios(medios) : []);
+  const ctx = await navegador.newContext({ viewport: { width: ANCHO, height: ALTO }, deviceScaleFactor: 1, locale: "es-MX", timezoneId: "America/Mexico_City", ...(medios ? { permissions: ["camera", "microphone"] } : {}) });
   if (cookies?.length) await ctx.addCookies(cookies);
   const logo = `${base}/marca/peludesk/isotipo.svg`;
   await ctx.addInitScript(scriptCursor("flecha"));
@@ -274,7 +276,9 @@ export async function grabarVideo({ base, cookies, inicio, guion, tarjetas, plan
     const [verbo, ...args] = paso;
     if (!accion[verbo]) throw new Error(`Verbo desconocido en el guion: ${verbo}`);
     if (alAccion) alAccion(verbo, args);
+    const t0p = Date.now();
     await accion[verbo](...args);
+    if (process.env.TUT_TIEMPOS && Date.now() - t0p > 4000) console.log(`     · paso lento: ${verbo} ${typeof args[0] === "string" ? args[0] : ""} ${((Date.now() - t0p) / 1000).toFixed(1)} s`);
   };
 
   async function escena(def, seg, numero, total) {

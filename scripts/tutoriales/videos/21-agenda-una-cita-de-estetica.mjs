@@ -11,7 +11,7 @@ export default {
     {
       titulo: "Busca al cliente",
       dice: "Busca al cliente por el nombre del perro, del dueño o por su teléfono, y escógelo de la lista. Si es nuevo, tienes el botón «Nuevo cliente» para darlo de alta ahí mismo, con solo su nombre y su WhatsApp.",
-      pasos: [["resaltar", "Nuevo cliente", 2600], ["clic", "Ricardo Olmos"]],
+      pasos: [["resaltar", "Nuevo cliente", 2600], ["clic", "Ricardo Olmos"], ["elegir", "Perro", 1]],
     },
     {
       titulo: "Perro, baño y estilista",

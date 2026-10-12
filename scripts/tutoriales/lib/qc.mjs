@@ -106,6 +106,7 @@ export function qcVideo({ video, guion, master, vtt, muestras, conVoz, wav, secc
     try { ruta = new URL(s.url).pathname; } catch { ruta = s.url; }
     if (PROHIBIDAS_RUTA.some((r) => r.test(ruta)) && !permitirRutas.some((p) => ruta.startsWith(p))) errores.push(`escena ${s.escena}: estuvo en ${ruta}`);
     for (const o of new Set(s.ocultos ?? [])) defectos.push(`escena ${s.escena}: la app dice «${o.slice(0, 70)}…» (texto de otro negocio); se ocultó en la grabación`);
+    if (ruta !== "/" && /este negocio est[aá] en solo lectura|negocio de demostraci[oó]n/i.test(s.texto)) errores.push(`escena ${s.escena}: el demo estaba en solo lectura (se grabó el aviso de la demostración o un cambio rechazado)`);
     for (const [re, motivo] of PROHIBIDOS_TEXTO) {
       if (re.test(s.visible ?? s.texto)) errores.push(`escena ${s.escena}: ${motivo} (a la vista)`);
       else if (re.test(s.texto) && !(s.ocultos ?? []).length) defectos.push(`escena ${s.escena}: ${motivo} en la página, fuera de lo que se ve`);

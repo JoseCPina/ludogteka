@@ -733,3 +733,6 @@ console.log(`cuentas del demo (solo lectura): ${cuentasDemo.length} · dueña de
 
 // ── Veterinaria (21 de octubre de 2026): la clínica del demo, con sus propios datos de ejemplo ──
 execSync(`node scripts/demo/sembrar-demo-veterinaria.mjs${PROD ? " --prod" : ""}`, { stdio: "inherit" });
+
+// ── Cuentas del corredor de tutoriales (solo desarrollo): siempre con escritura, aparte de las del visitante ──
+if (!PROD) execSync("node scripts/demo/cuentas-corredor.mjs", { stdio: "inherit" });

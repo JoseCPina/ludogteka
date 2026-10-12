@@ -27,7 +27,9 @@ import { execFileSync } from "node:child_process";
 import { AREAS, VIDEOS } from "./catalogo.mjs";
 import { conectar, rpc } from "./lib/db.mjs";
 import { prepararDemo, SLUG_DEMO } from "./lib/demo.mjs";
-import { cookiesDe } from "./lib/sesion.mjs";
+import { cookiesDe, CUENTAS, ROLES_DUENO } from "./lib/sesion.mjs";
+import { cerrarActores } from "./lib/teleconsulta.mjs";
+import { borrarSalasDelDemo } from "./lib/daily.mjs";
 import { cargarGuion, validarGuion, locuciones, plan, total, DIR_VIDEOS } from "./lib/guion.mjs";
 import { grabarVideo, tarjetaTitulo, tarjetaResumen, tarjetaSiguiente } from "./lib/grabador.mjs";
 import { cuota, generarLocuciones, hayLlave, musicaDeLaSerie, PISO_PRESUPUESTO, caracteres, respaldarVoz, restaurarVoz } from "./lib/voz.mjs";
@@ -145,6 +147,9 @@ async function producir(v, ctx) {
   if (guion.preparar) await guion.preparar({ sb, negocioId: ctx.negocioId, ...valores, vid: v });
   const guionEjecutable = { ...guion, escenas: guion.escenas.map((e) => ({ ...e, pasos: sustituir(e.pasos ?? [], valores) })) };
   const rol = guion.rol ?? v.rol;
+  // Los dueños del portal usan las cuentas del visitante (una cuenta por cliente): se abren SOLO mientras graba su video.
+  const cuentaDueno = ROLES_DUENO.has(rol) ? (await cd.cliente.auth.admin.listUsers({ perPage: 1000 })).data.users.find((u) => u.email === CUENTAS[rol])?.id : null;
+  if (cuentaDueno) await cd.cliente.from("membresias").update({ solo_lectura: false }).eq("negocio_id", ctx.negocioId).eq("profile_id", cuentaDueno);
   const cookies = guion.sinSesion ? [] : await cookiesDe(cd, rol, ID_DEMO_HOST.split(":")[0], ctx.anon);
   const area = AREAS.find((a) => a.clave === v.area).nombre;
   const tarjetas = {
@@ -153,7 +158,18 @@ async function producir(v, ctx) {
     cierre: tarjetaSiguiente({ siguiente, ultimo: !siguiente }),
   };
   console.log(`  grabando (${Math.round(duracionPlan)} s planeados${voz ? ", con voz" : ", sin voz"})…`);
-  const grab = await grabarVideo({ base: OPC.base, cookies: sustituir(cookies, {}), inicio: guion.inicio, guion: guionEjecutable, tarjetas, plan: p, salida: dir, nombre: "video" });
+  let grab;
+  try {
+    grab = await grabarVideo({ base: OPC.base, cookies: sustituir(cookies, {}), inicio: guion.inicio, guion: guionEjecutable, tarjetas, plan: p, salida: dir, nombre: "video", medios: guion.medios ? { audio: guion.medios.audio ?? null } : null });
+  } finally {
+    if (cuentaDueno) await cd.cliente.from("membresias").update({ solo_lectura: true }).eq("negocio_id", ctx.negocioId).eq("profile_id", cuentaDueno);
+    // Las salas reales de Daily que el corredor creó en el demo se borran al terminar la grabación (también si falló).
+    if (guion.medios) {
+      await cerrarActores().catch(() => {});
+      const n = await borrarSalasDelDemo(sb, ctx.negocioId).catch((e) => { console.warn(`  (no pude borrar las salas de Daily: ${e.message})`); return 0; });
+      console.log(`  salas de Daily borradas: ${n}`);
+    }
+  }
   await guardarEstado(cd, v.id, { estado: "grabado", duracion: grab.duracion });
   return await terminar({ v, guion, locs, voz, siguiente, grab, dir, hash, sinPresupuesto, ctx, area });
 }

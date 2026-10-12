@@ -1,5 +1,6 @@
 // 31 · Reporte del día, fotos y videos (recepción)
 export default {
+  rol: "admin", // «Reportes de guardería» es un permiso por persona: con admin no sale el aviso de falta de permiso
   inicio: "/adentro",
   gancho: "Tus clientes quieren saber cómo le fue a su perro. Con las fotos, los videos y el reporte del día, se lo cuentas sin escribir un mensaje largo.",
   escenas: [
