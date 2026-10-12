@@ -265,6 +265,45 @@ try {
   const bytes = bajado.data ? Buffer.from(await bajado.data.arrayBuffer()) : Buffer.alloc(0);
   comprobar(bytes.slice(0, 5).toString() === "%PDF-" && bytes.length > 1500, `el PDF existe en Storage (${bytes.length} bytes)`);
   comprobar((await pa.getByRole("button", { name: "Ver el PDF firmado" }).count()) === 1, "y se puede abrir desde la pantalla");
+
+  // Regresión (21-oct-2026, hallazgo de la Clínica Demo): un médico designado con rol de ESTÉTICA no puede escribir en
+  // el bucket de las mascotas (la política solo admite admin y recepción), así que el PDF firmado lo sube el servidor
+  // tras comprobar el permiso. Antes la firma se perdía con «No pudimos guardar el PDF firmado».
+  {
+    const dEst = await admin.rpc("guardar_medico_veterinario", { p_profile_id: datos.esteticaB, p_cedula: `EST${sufijo}`, p_cpa: null });
+    comprobar(!dEst.error, `estética designada como médica (${dEst.error?.message ?? "ok"})`);
+    const ctxE = await nav.newContext({ viewport: { width: 390, height: 844 } });
+    await ctxE.addCookies(await cookiesDe(datos.esteticaB));
+    const pe = await ctxE.newPage();
+    pe.on("dialog", (d) => d.accept());
+    await pe.goto(`${BASE}/veterinaria/hospitalizacion/${hospId}`, { waitUntil: "networkidle" });
+    await pe.getByRole("button", { name: "Crear un consentimiento" }).click();
+    await pe.locator("select[name=medico_id]").last().selectOption({ value: dEst.data });
+    await pe.getByRole("button", { name: "Crear y firmar" }).click();
+    await pe.waitForURL(/\/veterinaria\/consentimientos\/[0-9a-f-]{36}/, { timeout: 20000 });
+    const consE = pe.url().split("/").pop();
+    await pe.getByRole("button", { name: "Firmar en pantalla" }).click();
+    const cv = pe.locator("canvas");
+    await cv.waitFor();
+    await cv.scrollIntoViewIfNeeded();
+    const cj = await cv.boundingBox();
+    await pe.mouse.move(cj.x + 30, cj.y + 40);
+    await pe.mouse.down();
+    for (let i = 0; i < 12; i++) await pe.mouse.move(cj.x + 30 + i * 18, cj.y + 40 + (i % 2 ? 40 : 0), { steps: 3 });
+    await pe.mouse.up();
+    await pe.getByRole("button", { name: "Confirmar firma" }).click();
+    await pe.getByText("Firmado", { exact: false }).first().waitFor({ timeout: 20000 }).catch(() => {});
+    const fe = (await SB.from("consentimientos").select("estado, storage_path, hash_pdf").eq("id", consE).single()).data;
+    comprobar(fe?.estado === "firmado" && fe.hash_pdf?.length === 64 && fe.storage_path, "REGRESIÓN: el MVZ con rol de estética firma y el consentimiento queda firmado");
+    const bj = fe?.storage_path ? await SB.storage.from("perros-archivos").download(fe.storage_path) : { data: null };
+    const by = bj.data ? Buffer.from(await bj.data.arrayBuffer()) : Buffer.alloc(0);
+    comprobar(by.slice(0, 5).toString() === "%PDF-" && by.length > 1500, `REGRESIÓN: su PDF firmado existe en Storage (${by.length} bytes)`);
+    comprobar(!/No pudimos guardar el PDF/.test(await cuerpo(pe)), "REGRESIÓN: la pantalla no muestra «No pudimos guardar el PDF firmado»");
+    await sinDesborde(pe, "consentimiento firmado por la médica de estética");
+    await ctxE.close();
+    // Sin la designación (y sin permiso) la base y el servidor siguen negando.
+    await SB.from("medicos_veterinarios").update({ deleted_at: new Date().toISOString() }).eq("negocio_id", B).eq("profile_id", datos.esteticaB);
+  }
   await pa.goto(`${BASE}/veterinaria/hospitalizacion/${hospId}`, { waitUntil: "networkidle" });
   comprobar(!/Falta el consentimiento/.test(await cuerpo(pa)) || true, "la hospitalización lista el consentimiento");
   // Alta
