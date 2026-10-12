@@ -11,13 +11,13 @@ export default {
     },
     {
       titulo: "Cómo se surte",
-      dice: "El producto te dice qué documento pide. Para surtirlo, abres el registro del SITPV o el folio del recetario y aprietas el botón de surtir contra ese folio: eliges el lote y la cantidad, y el sistema revisa que no te pases de lo que ampara.",
-      pasos: [["ir", "/veterinaria/recetas/sitpv"], ["esperar", 2200]],
+      dice: "El producto te dice qué documento pide. Para surtirlo, abres el registro del SITPV. Aquí, el folio uno de la ketamina lleva diez de veinte mililitros surtidos. Eliges el lote y la cantidad, y el sistema revisa que no te pases de lo que ampara.",
+      pasos: [["ir", "/veterinaria/recetas/sitpv"], ["esperar", 2200], ["resaltar", "Folio 1", 2800], ["clic", "Folio 1", { nav: true }], ["esperar", 2600]],
     },
     {
       titulo: "El recetario especial",
-      dice: "Los estupefacientes y algunos psicotrópicos se recetan en recetario especial. En «Recetario especial» aprietas «Registrar un folio» y escribes el folio, el código de barras, los días de tratamiento y la cantidad diaria. El total lo calcula la app.",
-      pasos: [["ir", "/veterinaria/recetas/especial"], ["esperar", 2500]],
+      dice: "Los estupefacientes y algunos psicotrópicos se recetan en recetario especial. En «Recetario especial» aprietas «Registrar un folio» y escribes el folio, el código de barras, los días de tratamiento y la cantidad diaria. El total lo calcula la app, y cada folio se surte hasta donde ampara.",
+      pasos: [["ir", "/veterinaria/recetas/especial"], ["esperar", 1800], ["resaltar", "Surtir contra este folio", 3000], ["resaltar", "Registrar un folio", 2600]],
     },
     {
       titulo: "Si no te deja",

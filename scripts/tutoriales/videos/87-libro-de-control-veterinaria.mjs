@@ -7,7 +7,7 @@ export default {
     {
       titulo: "El rango y el producto",
       dice: "Elige la fecha desde y hasta, y si quieres, un solo producto. Después aprieta «Ver».",
-      pasos: [["esperar", 1800], ["resaltar", "Desde", 2600], ["resaltar", "Hasta", 2400]],
+      pasos: [["esperar", 1800], ["resaltar", "Desde", 2600], ["resaltar", "Hasta", 2400], ["clic", "Ver", { nav: true }], ["esperar", 2000]],
     },
     {
       titulo: "Entradas, salidas y saldo",

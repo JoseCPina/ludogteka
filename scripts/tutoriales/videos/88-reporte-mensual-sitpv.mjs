@@ -12,7 +12,7 @@ export default {
     {
       titulo: "Lo que hay que reportar",
       dice: "El reporte junta los folios usados, los folios cancelados en ceros con su observación, las parcialidades con el paciente o el uso hospitalario y la fecha, y los pacientes.",
-      pasos: [["resaltar", "Folios cancelados, en ceros", 3000]],
+      pasos: [["resaltar", "Folios usados", 2600], ["resaltar", "Folios cancelados, en ceros", 3200], ["resaltar", "Parcialidades", 2600]],
     },
     {
       titulo: "Capturarlo en el SITPV",

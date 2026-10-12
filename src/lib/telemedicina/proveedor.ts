@@ -137,12 +137,13 @@ class Simulado implements ProveedorVideo {
 }
 
 /**
- * El proveedor para un negocio. El demo siempre simula; sin llave, fuera de producción también;
+ * El proveedor para un negocio. El demo siempre simula, salvo para las cuentas del corredor de videos tutoriales
+ * (`corredor`, ver corredor.ts), que sí crean salas reales si hay llave; sin llave, fuera de producción también simula;
  * en producción sin llave no se crea ninguna sala (se dice claro qué falta).
  */
-export function proveedorDeVideo(opciones: { demo?: boolean } = {}): ProveedorVideo {
-  if (opciones.demo) return new Simulado();
+export function proveedorDeVideo(opciones: { demo?: boolean; corredor?: boolean } = {}): ProveedorVideo {
   const llave = process.env.DAILY_API_KEY?.trim();
+  if (opciones.demo && !(opciones.corredor && llave)) return new Simulado();
   if (llave) return new Daily(llave);
   if (process.env.VERCEL_ENV !== "production") return new Simulado();
   throw new ErrorVideo("La videollamada todavía no está configurada en PeluDesk (falta la llave del proveedor de video). Avísale a PeluDesk.");

@@ -123,6 +123,7 @@ const PRODUCTOS = [
   { nombre: "Enrofloxacina 5 % (antibiótico)", p: /^enrofloxacina/i, lote: "ENR-2026-01", litros: 0.5, cad: 300 },
   { nombre: "Meloxicam 0.5 % (antiinflamatorio)", p: /^meloxicam/i, lote: "MEL-2026-01", litros: 0.25, cad: 45 },
   { nombre: "Probiótico oral", p: /probi[óo]ticos/i, lote: "PRO-2026-01", litros: 0.5, cad: 500 },
+  { nombre: "Morfina 10 mg/mL (analgésico)", p: /^morfina/i, lote: "MOR-2026-01", litros: 0.1, cad: 380 },
 ];
 for (const x of PRODUCTOS) {
   const pa = principios.find((q) => x.p.test(q.nombre));
@@ -171,3 +172,30 @@ if (!citas?.length) {
   for (const c of CITAS) exigir(await REC.rpc("vet_agendar_cita", { p_perro: id[c.perro], p_tipo: c.tipo, p_inicia: c.inicia, p_medico: med[c.medico].medico }), `cita de ${c.perro} (${c.tipo})`);
 }
 console.log("\nListo: Veterinaria prendida en el demo con 2 médicos, 4 productos con lote, vacunas, 2 consultas firmadas y 3 citas.");
+
+// 9. Controlados para los videos 86 a 88: un registro del SITPV con dos surtidos (alimenta el libro de control),
+//    un folio cancelado en ceros y, si hay un estupefaciente en el catálogo, un folio del recetario especial.
+{
+  const { data: espejos } = await S.from("vet_sitpv_recetas").select("id").eq("negocio_id", NEG).limit(1);
+  const { data: ket } = await S.from("insumos").select("id").eq("negocio_id", NEG).eq("nombre", "Ketamina 10 % (anestésico)").is("deleted_at", null).maybeSingle();
+  const { data: lotesK } = await S.from("insumo_lotes").select("id").eq("negocio_id", NEG).eq("insumo_id", ket?.id).is("deleted_at", null).limit(1);
+  if (!espejos?.length && ket && lotesK?.length) {
+    const lote = lotesK[0].id;
+    const reg = (extra = {}) => V.rpc("vet_sitpv_registrar", { p_perro: id.Tigre, p_uso_hospitalario: false, p_insumo: ket.id, p_registro_senasica: "Q-0000-000", p_lote: lote, p_presentacion: "Frasco de 50 mL", p_dosis: "10 mg/kg", p_intervalo: null, p_duracion: null, p_cantidad_total: 20, p_parcialidades: true, p_comprobante_compra: "FAC-DEMO-0001", p_observaciones: "Sedación para limpieza dental", p_fecha: null, ...extra });
+    const esp = exigir(await reg(), "registro del SITPV de Tigre (ketamina)");
+    const espId = esp?.id ?? esp;
+    exigir(await V.rpc("vet_surtir_controlado", { p_tipo: "espejo", p_doc: espId, p_salidas: [{ lote_id: lote, cantidad: 6 }], p_perro: null, p_consulta: null, p_motivo: null }), "primer surtido");
+    exigir(await V.rpc("vet_surtir_controlado", { p_tipo: "espejo", p_doc: espId, p_salidas: [{ lote_id: lote, cantidad: 4 }], p_perro: null, p_consulta: null, p_motivo: null }), "segundo surtido");
+    const mal = exigir(await reg({ p_perro: id.Nube, p_cantidad_total: 5, p_observaciones: "Folio capturado de más" }), "otro registro, para cancelarlo");
+    exigir(await V.rpc("vet_sitpv_cancelar", { p_id: mal?.id ?? mal, p_motivo: "Error de captura" }), "folio cancelado (sale en ceros)");
+  }
+  const { data: estup } = await S.from("insumos").select("id, nombre").eq("negocio_id", NEG).is("deleted_at", null).eq("clasificacion_lgs", "estupefaciente_234").limit(1);
+  const { data: esps } = await S.from("vet_recetario_especial").select("id").eq("negocio_id", NEG).limit(1);
+  if (estup?.length && !esps?.length) {
+    const { data: lotesE } = await S.from("insumo_lotes").select("id").eq("negocio_id", NEG).eq("insumo_id", estup[0].id).is("deleted_at", null).limit(1);
+    if (lotesE?.length) {
+      const re = exigir(await V.rpc("vet_recetario_registrar", { p_perro: id.Bruno, p_insumo: estup[0].id, p_folio: "REC-DEMO-0001", p_codigo_barras: "7501000000012", p_fecha: null, p_dias: 5, p_cantidad_diaria: 2, p_indicaciones: "Dolor postoperatorio" }), `folio del recetario especial (${estup[0].nombre})`);
+      exigir(await V.rpc("vet_surtir_controlado", { p_tipo: "recetario", p_doc: re?.id ?? re, p_salidas: [{ lote_id: lotesE[0].id, cantidad: 4 }], p_perro: null, p_consulta: null, p_motivo: null }), "surtido del recetario");
+    }
+  } else if (!estup?.length) console.log("  · sin estupefaciente en el catálogo: el recetario especial queda vacío");
+}

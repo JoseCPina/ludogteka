@@ -8,6 +8,7 @@ import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { nuevoToken } from "@/lib/reporte/enlaces";
 import { ClienteWA, configWhatsApp, marcarNumeroContesta } from "@/lib/whatsapp/infra";
 import { ErrorVideo, proveedorDeSala, proveedorDeVideo } from "@/lib/telemedicina/proveedor";
+import { esCuentaDelCorredor } from "@/lib/telemedicina/corredor";
 import {
   mensajeManual,
   NOMBRE_PLANTILLA_TELECONSULTA,
@@ -35,9 +36,11 @@ export async function prepararSalaTeleconsulta(citaId: string): Promise<{ error:
   const { data: ya } = await supabase.rpc("vet_telemedicina_detalle", { p_cita: citaId });
   if (ya) return { error: null };
   const demo = (await cargarNegocioLanding()).plan === "demo";
+  // En el demo la sala es simulada, salvo la que crea una cuenta del corredor de tutoriales (nunca el visitante).
+  const corredor = demo && esCuentaDelCorredor((await supabase.auth.getUser()).data.user?.email);
   let sala;
   try {
-    const proveedor = proveedorDeVideo({ demo });
+    const proveedor = proveedorDeVideo({ demo, corredor });
     sala = await proveedor.crearSala({ vencimiento: new Date(Date.now() + VIGENCIA_SALA_DIAS * 86_400_000) });
   } catch (e) {
     return { error: e instanceof ErrorVideo ? e.message : "No pudimos crear la sala de videollamada." };
@@ -51,7 +54,7 @@ export async function prepararSalaTeleconsulta(citaId: string): Promise<{ error:
     p_token_hash: descartado.hash,
   });
   if (error) {
-    await proveedorDeVideo({ demo }).borrarSala(sala.nombre).catch(() => undefined);
+    await proveedorDeVideo({ demo, corredor }).borrarSala(sala.nombre).catch(() => undefined);
     return { error: mensajeDe(error) };
   }
   revalidatePath("/veterinaria/agenda");
