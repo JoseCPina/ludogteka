@@ -57,7 +57,7 @@ El **peso** y las **alergias** se registran en sus secciones de siempre; la fich
 
 ## Quién puede editarla
 
-El admin, y recepción con el permiso **Editar ficha clínica** (se da en [Permisos](/admin/permisos)). Los demás la ven sin poder cambiarla.
+El admin, un médico veterinario designado (aunque su rol sea estética) y recepción con el permiso **Editar ficha clínica** (se da en [Permisos](/admin/permisos)). Los demás la ven sin poder cambiarla.
 
 ## Para tu cliente
 
