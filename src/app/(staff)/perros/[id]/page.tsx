@@ -1,3 +1,4 @@
+import { puedeEditarFichaClinica } from "@/lib/veterinaria/ficha-permiso";
 import { cargarPendientesEstancia } from "@/lib/perros/pendientes-estancia";
 import { PendientesEstancia } from "../pendientes-estancia";
 import { notFound } from "next/navigation";
@@ -471,7 +472,7 @@ export default async function PerroPage({
         <FichaClinica
           perroId={id}
           nombre={perro.nombre}
-          puedeEditar={tienePermiso(sesion, "editar_ficha_clinica")}
+          puedeEditar={await puedeEditarFichaClinica(sesion)}
           pesoActual={
             pesos && pesos.length > 0 ? { peso_kg: Number(pesos[0].peso_kg), fecha: String(pesos[0].fecha) } : null
           }

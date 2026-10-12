@@ -1,5 +1,6 @@
 "use server";
 
+import { puedeEditarFichaClinica } from "@/lib/veterinaria/ficha-permiso";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -20,7 +21,7 @@ export async function guardarFichaClinica(
   formData: FormData
 ): Promise<EstadoFichaClinica> {
   const sesion = await obtenerSesionConRol();
-  if (!sesion || !usaVeterinaria(sesion.modulos) || !tienePermiso(sesion, "editar_ficha_clinica")) {
+  if (!sesion || !usaVeterinaria(sesion.modulos) || !(await puedeEditarFichaClinica(sesion))) {
     return { error: mensajeErrorClinico({ code: "42501" }) };
   }
 

@@ -26,5 +26,9 @@ export async function tramo(c) {
 
   const ex = await A.rpc("extra_guardar", { p_id: null, p_nombre: "Paseo de 30 minutos", p_descripcion: "Paseo por el parque", p_tipo: "general", p_unidad: "vez", p_precio: 80, p_clase_fiscal: "otro_servicio", p_clave_prod_serv: null, p_activo: true });
   comprobar(!ex.error || /ya existe|duplic/i.test(ex.error?.message ?? ""), `servicio extra «Paseo de 30 minutos» ($80) (${ex.error?.message ?? "ok"})`);
+  // La demo abre todos los días (9:00 a 19:00): así se puede probar y enseñar en cualquier día de la semana.
+  const dias = [0, 1, 2, 3, 4, 5, 6].map((d) => ({ dia_semana: d, hora_apertura: "09:00", hora_cierre: "19:00" }));
+  const h = await A.rpc("guardar_horario_semana", { p_dias: dias });
+  comprobar(!h.error, `horario de lunes a domingo 9:00–19:00 (${h.error?.message ?? "ok"})`);
   c.guardarEstado({ preparado: true });
 }

@@ -22,6 +22,8 @@ export async function tramo(c) {
   seccion("6a. Ingreso a hospitalización (MVZ)");
   const mvz = await c.abrir("mvz");
   const p = mvz.p;
+  let hospId = c.e.hospId;
+  if (!hospId) {
   await p.goto(`${BASE}/veterinaria/hospitalizacion?perro=${gato}`, { waitUntil: "networkidle" });
   await p.getByLabel("Motivo del ingreso").fill("Deshidratación y vómito (PRUEBA)");
   await p.locator('select[name="medico_id"]').first().selectOption({ index: 1 });
@@ -31,23 +33,30 @@ export async function tramo(c) {
   await sinDesborde(p, "ingreso a hospitalización");
   await p.getByRole("button", { name: "Ingresar a hospitalización" }).click();
   await p.waitForURL(/\/veterinaria\/hospitalizacion\/[0-9a-f-]{36}/, { timeout: 30000 });
-  const hospId = p.url().split("/").pop();
+  hospId = p.url().split("/").pop();
   c.guardarEstado({ hospId });
-  let t = await cuerpo(p);
-  comprobar(/Internada · día 1|Internado · día 1/.test(t) && /Jaula 2/.test(t), "queda internado, día 1");
-  comprobar(/Total de la cuenta \$950\.00/.test(t), "la cuenta trae el día ($450) y el depósito ($500)");
-  comprobar(/Falta el consentimiento de hospitalización/.test(t), "avisa que falta el consentimiento");
+  const t0 = await cuerpo(p);
+  comprobar(/Internada · día 1|Internado · día 1/.test(t0) && /Jaula 2/.test(t0), "queda internado, día 1");
+  comprobar(/Total de la cuenta \$950\.00/.test(t0), "la cuenta trae el día ($450) y el depósito ($500)");
+  comprobar(/Falta el consentimiento de hospitalización/.test(t0), "avisa que falta el consentimiento");
+  }
 
   seccion("6b. Consentimiento firmado en pantalla");
-  await p.getByRole("button", { name: "Crear un consentimiento" }).click();
-  await p.locator("select[name=medico_id]").last().selectOption({ index: 1 });
-  await p.getByRole("button", { name: "Crear y firmar" }).click();
-  await p.waitForURL(/\/veterinaria\/consentimientos\/[0-9a-f-]{36}/, { timeout: 30000 });
-  const consId = p.url().split("/").pop();
-  t = await cuerpo(p);
+  let consId = (await S.from("consentimientos").select("id").eq("negocio_id", NEG).eq("hospitalizacion_id", hospId).eq("estado", "pendiente_firma").limit(1).maybeSingle()).data?.id;
+  if (consId) await p.goto(`${BASE}/veterinaria/consentimientos/${consId}`, { waitUntil: "networkidle" });
+  else {
+    await p.goto(`${BASE}/veterinaria/hospitalizacion/${hospId}`, { waitUntil: "networkidle" });
+    await p.getByRole("button", { name: "Crear un consentimiento" }).click();
+    await p.locator("select[name=medico_id]").last().selectOption({ index: 1 });
+    await p.getByRole("button", { name: "Crear y firmar" }).click();
+    await p.waitForURL(/\/veterinaria\/consentimientos\/[0-9a-f-]{36}/, { timeout: 30000 });
+    consId = p.url().split("/").pop();
+  }
+  let t = await cuerpo(p);
   comprobar(!/\{\{/.test(t) && /Michi/.test(t) && /PRUEBA-0000001/.test(t), "el texto sale con los campos llenos y la cédula de PRUEBA");
   await sinDesborde(p, "consentimiento");
   await firmar(p);
+  await p.waitForTimeout(2000);
   const { data: f } = await S.from("consentimientos").select("estado, storage_path, hash_pdf").eq("id", consId).single();
   comprobar(f.estado === "firmado" && f.hash_pdf?.length === 64 && f.storage_path, "firmado con hash y PDF en Storage");
 
@@ -55,6 +64,8 @@ export async function tramo(c) {
   await p.goto(`${BASE}/veterinaria/hospitalizacion/${hospId}`, { waitUntil: "networkidle" });
   const { data: prob } = await S.from("insumos").select("id").eq("negocio_id", NEG).ilike("nombre", "Probiótico oral PRUEBA%").single();
   const antes = (await S.from("insumo_lotes_saldo").select("saldo").eq("negocio_id", NEG).eq("insumo_id", prob.id).single()).data.saldo;
+  const { data: yaMed } = await S.from("hospitalizacion_medicacion").select("id").eq("hospitalizacion_id", hospId);
+  if (!yaMed?.length) {
   await p.getByRole("button", { name: "Indicar medicación" }).first().click();
   await p.locator("select[name=insumo_id]").selectOption({ label: (await p.locator("select[name=insumo_id] option").allInnerTexts()).find((x) => /Probi/.test(x)) });
   await p.locator("input[name=dosis]").fill("2 mL");
@@ -65,6 +76,7 @@ export async function tramo(c) {
   await p.locator("select[name=medico_id]").last().selectOption({ index: 1 });
   await p.getByRole("button", { name: "Indicar medicación" }).last().click();
   await p.getByText("Medicación indicada").first().waitFor({ timeout: 30000 }).catch(() => {});
+  }
   await p.reload({ waitUntil: "networkidle" });
   const nAplicar = await p.getByRole("button", { name: "Aplicar", exact: true }).count();
   comprobar(nAplicar === 2, `la hoja trae las dos dosis con su botón «Aplicar» (${nAplicar})`);

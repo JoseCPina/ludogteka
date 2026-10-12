@@ -1,3 +1,4 @@
+import { puedeEditarFichaClinica } from "@/lib/veterinaria/ficha-permiso";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -38,7 +39,7 @@ export default async function NuevoPerroPage({
   const contextoRaza = await contextoRazaFormulario(supabase, null);
   const sesion = await obtenerSesionConRol();
   const conFichaClinica =
-    Boolean(sesion) && usaVeterinaria(sesion!.modulos) && tienePermiso(sesion, "editar_ficha_clinica");
+    Boolean(sesion) && usaVeterinaria(sesion!.modulos) && (await puedeEditarFichaClinica(sesion));
 
   // Viene de agendar una cita de estética: alta corta del perro.
   const corta = Boolean(volver?.startsWith("/estetica"));
