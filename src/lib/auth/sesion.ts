@@ -1,3 +1,4 @@
+import { getUserConReintento } from "@/lib/supabase/get-user";
 import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -14,7 +15,7 @@ export const obtenerSesionConRol = cache(async () => {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getUserConReintento(supabase);
 
   if (!user) return null;
 

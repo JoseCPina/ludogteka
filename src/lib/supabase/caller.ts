@@ -1,3 +1,4 @@
+import { getUserConReintento } from "@/lib/supabase/get-user";
 import type { User } from "@supabase/supabase-js";
 import { createSupabaseAnonClient } from "./anon";
 import { createSupabaseServerClient } from "./server";
@@ -16,6 +17,6 @@ export async function getCallerUser(request: Request): Promise<User | null> {
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.getUser();
-  return error ? null : data.user;
+  const { data } = await getUserConReintento(supabase);
+  return data.user ?? null;
 }

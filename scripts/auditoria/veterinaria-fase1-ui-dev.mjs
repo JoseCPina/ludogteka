@@ -30,6 +30,14 @@ const REF = new globalThis.URL(URL).hostname.split(".")[0];
 const hallazgos = [];
 const hallazgo = (t) => { hallazgos.push(t); console.log(`  ✘ ${t}`); };
 const bien = (t) => console.log(`  ✔ ${t}`);
+// Espera el aviso de que una acción del servidor terminó (hasta 45 s) ANTES de recargar: con 15 s y
+// «catch», una acción lenta se daba por buena y la recarga la cortaba a la mitad.
+const esperarAviso = async (pag, texto) => {
+  const t0 = Date.now();
+  await pag.getByText(texto).first().waitFor({ timeout: 45000 }).catch(() => console.log(`   (sin aviso «${texto}» tras 45 s)`));
+  const ms = Date.now() - t0;
+  if (ms > 8000) console.log(`   (la acción «${texto}» tardó ${ms} ms)`);
+};
 const comprobar = (c, t) => (c ? bien(t) : hallazgo(t));
 const SB = createClient(URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: false }, global: { headers: { "x-negocio-id": B } } });
 const sufijo = String(Date.now()).slice(-6);
@@ -114,7 +122,7 @@ try {
   await pa.getByLabel("Médico veterinario que aplica").selectOption({ index: 1 });
   await sinDesborde(pa, "formulario de vacuna");
   await pa.getByRole("button", { name: "Registrar vacuna" }).last().click();
-  await pa.getByText("Vacuna registrada").first().waitFor({ timeout: 15000 }).catch(() => {});
+  await esperarAviso(pa, "Vacuna registrada");
   await pa.reload({ waitUntil: "networkidle" });
   comprobar(new RegExp(`Vacuna UI ${sufijo}`).test(await cuerpo(pa)) && /lote UI-/.test(await cuerpo(pa)), "la vacuna sale en el carnet con su lote");
   const { data: lotes } = await SB.from("insumo_lotes_saldo").select("saldo").eq("insumo_id", prod.data);
@@ -123,7 +131,7 @@ try {
   await pa.locator("input[name=producto]").fill(`Pipeta ${sufijo}`);
   await pa.locator("select[name=medico_id]").last().selectOption({ index: 1 });
   await pa.getByRole("button", { name: "Registrar desparasitación" }).last().click();
-  await pa.getByText("Desparasitación registrada").first().waitFor({ timeout: 15000 }).catch(() => {});
+  await esperarAviso(pa, "Desparasitación registrada");
   await pa.reload({ waitUntil: "networkidle" });
   comprobar(new RegExp(`Pipeta ${sufijo}`).test(await cuerpo(pa)), "la desparasitación sale en el carnet");
   await sinDesborde(pa, "carnet completo");
@@ -131,7 +139,7 @@ try {
   await pa.getByRole("button", { name: "Anular", exact: true }).last().click();
   await pa.getByLabel("Motivo de la anulación").fill("Se capturó el producto equivocado");
   await pa.getByRole("button", { name: "Anular registro" }).click();
-  await pa.getByText("Registro anulado").first().waitFor({ timeout: 15000 }).catch(() => {});
+  await esperarAviso(pa, "Registro anulado");
   await pa.reload({ waitUntil: "networkidle" });
   comprobar(/Registros anulados \(1\)/.test(await cuerpo(pa)), "queda en «Registros anulados» con su motivo");
   // Enlace verificable
@@ -151,7 +159,7 @@ try {
   comprobar(!/UI-\d+|CPA-UI|\$|lote/i.test(textoPub), "y nada de lote, médico ni dinero");
   await sinDesborde(pub, "carnet público");
   await pa.getByRole("button", { name: "Desactivar el enlace" }).click();
-  await pa.getByText("dejó de funcionar").first().waitFor({ timeout: 15000 }).catch(() => {});
+  await esperarAviso(pa, "dejó de funcionar");
   await pub.reload({ waitUntil: "networkidle" });
   comprobar(/no está disponible/i.test(await cuerpo(pub)), "al desactivarlo, el enlace ya no abre nada");
   await pub.goto(`${BASE}/c/${"x".repeat(43)}`, { waitUntil: "networkidle" });
@@ -163,13 +171,17 @@ try {
 
   // ── 2. Recordatorios ──
   console.log("2. Recordatorios");
+  // Se trabaja con la fila de ESTA mascota: en Huellitas quedan recordatorios pendientes de corridas
+  // anteriores y «.first()» hacía clic en el de otra mascota (la base de pruebas no se vacía).
+  const filaRec = () => pa.locator("li", { has: pa.getByRole("link", { name: nombrePerro, exact: true }) });
   await pa.goto(`${BASE}/veterinaria/recordatorios`, { waitUntil: "networkidle" });
-  comprobar(new RegExp(nombrePerro).test(await cuerpo(pa)) && /Por mandar/.test(await cuerpo(pa)), "la vacuna con próxima dosis cercana está en «Por mandar»");
-  const wa = await pa.locator('a:has-text("Abrir en WhatsApp")').first().getAttribute("href").catch(() => null);
+  for (let i = 0; i < 3 && (await filaRec().count()) === 0; i++) await pa.reload({ waitUntil: "networkidle" });
+  comprobar((await filaRec().count()) > 0 && /Por mandar/.test(await cuerpo(pa)), "la vacuna con próxima dosis cercana está en «Por mandar»");
+  const wa = await filaRec().locator('a:has-text("Abrir en WhatsApp")').first().getAttribute("href").catch(() => null);
   comprobar(!wa || /^https:\/\/wa\.me\/52/.test(wa), "«Abrir en WhatsApp» arma el enlace con el mensaje (o falta el teléfono)");
   await sinDesborde(pa, "recordatorios");
-  await pa.getByRole("button", { name: "Ya lo mandé" }).first().click();
-  await pa.getByText("Anotado como enviado").first().waitFor({ timeout: 15000 }).catch(() => {});
+  await filaRec().getByRole("button", { name: "Ya lo mandé" }).first().click();
+  await esperarAviso(pa, "Anotado como enviado");
   let anotado = false;
   for (let i = 0; i < 20 && !anotado; i++) {
     anotado = (await SB.from("carnet_recordatorios").select("estado").eq("perro_id", rid)).data.some((r) => r.estado === "manual");
@@ -183,15 +195,17 @@ try {
   await pa.getByLabel("Médico veterinario que firma").selectOption({ index: 1 });
   await pa.getByLabel("Exploración física").fill("Sin hallazgos, mucosas rosadas.");
   await sinDesborde(pa, "formulario del certificado");
+  const tCert = Date.now();
   await pa.getByRole("button", { name: "Emitir certificado" }).click();
-  await pa.waitForURL(/\/veterinaria\/certificados\/[0-9a-f-]{36}/, { timeout: 20000 });
+  await pa.waitForURL(/\/veterinaria\/certificados\/[0-9a-f-]{36}/, { timeout: 60000 });
+  console.log(`   (emitir certificado: ${Date.now() - tCert} ms)`);
   const hoja = await cuerpo(pa);
   comprobar(/Certificado de salud/i.test(hoja) && new RegExp(cedula).test(hoja) && new RegExp(nombrePerro).test(hoja) && /Sin hallazgos/.test(hoja) && new RegExp(`Vacuna UI ${sufijo}`).test(hoja), "la hoja lleva médico con cédula, mascota, exploración y la vacuna vigente");
   await sinDesborde(pa, "certificado");
   await pa.getByRole("button", { name: "Anular este certificado" }).click();
   await pa.getByLabel("Motivo de la anulación").fill("Se emitió a la mascota equivocada");
   await pa.getByRole("button", { name: "Anular certificado" }).click();
-  await pa.getByText("Certificado anulado").first().waitFor({ timeout: 15000 }).catch(() => {});
+  await esperarAviso(pa, "Certificado anulado");
   await pa.reload({ waitUntil: "networkidle" });
   comprobar(/ANULADO/.test(await cuerpo(pa)), "anular lo marca como anulado");
   await pa.goto(`${BASE}/veterinaria/certificados`, { waitUntil: "networkidle" });
@@ -207,7 +221,7 @@ try {
   await pa.getByLabel("Precio del día").fill("350");
   await sinDesborde(pa, "ingreso");
   await pa.getByRole("button", { name: "Ingresar a hospitalización" }).click();
-  await pa.waitForURL(/\/veterinaria\/hospitalizacion\/[0-9a-f-]{36}/, { timeout: 20000 });
+  await pa.waitForURL(/\/veterinaria\/hospitalizacion\/[0-9a-f-]{36}/, { timeout: 60000 });
   const hospId = pa.url().split("/").pop();
   comprobar(/Internada · día 1/.test(await cuerpo(pa)) && /Jaula 2/.test(await cuerpo(pa)), "queda internada, día 1");
   comprobar(/Total de la cuenta \$850\.00/.test(await cuerpo(pa)) && /Depósito de hospitalización|Depósito inicial/.test(await cuerpo(pa)), "la cuenta trae el día y el depósito");
@@ -230,7 +244,7 @@ try {
   await sinDesborde(pa, "hospitalización");
   await pa.getByRole("button", { name: "Aplicar", exact: true }).first().click();
   await pa.getByRole("button", { name: "Confirmar: ya se aplicó" }).click();
-  await pa.getByText("Dosis aplicada").first().waitFor({ timeout: 15000 }).catch(() => {});
+  await esperarAviso(pa, "Dosis aplicada");
   await pa.reload({ waitUntil: "networkidle" });
   comprobar(/La aplicó/.test(await cuerpo(pa)) && /Total de la cuenta \$890\.00/.test(await cuerpo(pa)), "la dosis queda con quién y cuándo y se cobra ($40 más)");
   await pa.getByRole("button", { name: "Registrar monitoreo" }).first().click();
@@ -238,21 +252,22 @@ try {
   await pa.locator("input[name=peso]").fill("11.2");
   await pa.getByLabel("Notas del turno").fill("Bebió agua, activo");
   await pa.getByRole("button", { name: "Registrar monitoreo" }).last().click();
-  await pa.getByText("Monitoreo registrado").first().waitFor({ timeout: 15000 }).catch(() => {});
+  await esperarAviso(pa, "Monitoreo registrado");
   await pa.reload({ waitUntil: "networkidle" });
   comprobar(/38\.7 °C/.test(await cuerpo(pa)) && /11\.2 kg/.test(await cuerpo(pa)), "el monitoreo sale en la tabla");
   await pa.getByRole("button", { name: "Agregar un procedimiento o cargo" }).click();
   await pa.getByLabel("Qué se cobra").fill("Radiografía");
   await pa.getByLabel("Importe").fill("450");
   await pa.getByRole("button", { name: "Agregar a la cuenta" }).click();
-  await pa.getByText("Cargo agregado").first().waitFor({ timeout: 15000 }).catch(() => {});
+  await esperarAviso(pa, "Cargo agregado");
   await pa.reload({ waitUntil: "networkidle" });
-  comprobar(/Total de la cuenta \$1,340\.00/.test(await cuerpo(pa)), "el procedimiento suma a la cuenta");
+  const totalCuenta = (await cuerpo(pa)).match(/Total de la cuenta \$[\d,.]+/)?.[0];
+  comprobar(/Total de la cuenta \$1,340\.00/.test(await cuerpo(pa)), `el procedimiento suma a la cuenta (${totalCuenta ?? "sin total"})`);
   // Consentimiento
   await pa.getByRole("button", { name: "Crear un consentimiento" }).click();
   await pa.locator("select[name=medico_id]").last().selectOption({ index: 1 });
   await pa.getByRole("button", { name: "Crear y firmar" }).click();
-  await pa.waitForURL(/\/veterinaria\/consentimientos\/[0-9a-f-]{36}/, { timeout: 20000 });
+  await pa.waitForURL(/\/veterinaria\/consentimientos\/[0-9a-f-]{36}/, { timeout: 60000 });
   const consId = pa.url().split("/").pop();
   const textoCons = await cuerpo(pa);
   comprobar(new RegExp(nombrePerro).test(textoCons) && new RegExp(cedula).test(textoCons) && !/\{\{/.test(textoCons), "el texto sale con los campos llenos (sin llaves)");
@@ -267,8 +282,15 @@ try {
   for (let i = 0; i < 12; i++) await pa.mouse.move(caja.x + 30 + i * 18, caja.y + 40 + (i % 2 ? 40 : 0), { steps: 3 });
   await pa.mouse.up();
   await pa.getByRole("button", { name: "Confirmar firma" }).click();
-  await pa.getByText("Firmado", { exact: false }).first().waitFor({ timeout: 20000 });
-  const firmado = (await SB.from("consentimientos").select("estado, storage_path, hash_pdf, firmante_nombre, ip_firma").eq("id", consId).single()).data;
+  // El título del aviso («Firmado», exacto): con coincidencia parcial «Firmado» ya estaba en el texto del
+  // consentimiento y la prueba leía la base antes de que la firma se guardara.
+  await pa.getByText("Firmado", { exact: true }).first().waitFor({ timeout: 30000 });
+  let firmado;
+  for (let i = 0; i < 20; i++) {
+    firmado = (await SB.from("consentimientos").select("estado, storage_path, hash_pdf, firmante_nombre, ip_firma").eq("id", consId).single()).data;
+    if (firmado?.estado === "firmado") break;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
   comprobar(firmado.estado === "firmado" && firmado.hash_pdf?.length === 64 && firmado.storage_path && firmado.firmante_nombre, "la firma queda con hash, IP y la ruta del PDF");
   const bajado = await SB.storage.from("perros-archivos").download(firmado.storage_path);
   const bytes = bajado.data ? Buffer.from(await bajado.data.arrayBuffer()) : Buffer.alloc(0);
@@ -289,7 +311,7 @@ try {
     await pe.getByRole("button", { name: "Crear un consentimiento" }).click();
     await pe.locator("select[name=medico_id]").last().selectOption({ value: dEst.data });
     await pe.getByRole("button", { name: "Crear y firmar" }).click();
-    await pe.waitForURL(/\/veterinaria\/consentimientos\/[0-9a-f-]{36}/, { timeout: 20000 });
+    await pe.waitForURL(/\/veterinaria\/consentimientos\/[0-9a-f-]{36}/, { timeout: 60000 });
     const consE = pe.url().split("/").pop();
     await pe.getByRole("button", { name: "Firmar en pantalla" }).click();
     const cv = pe.locator("canvas");
@@ -301,7 +323,7 @@ try {
     for (let i = 0; i < 12; i++) await pe.mouse.move(cj.x + 30 + i * 18, cj.y + 40 + (i % 2 ? 40 : 0), { steps: 3 });
     await pe.mouse.up();
     await pe.getByRole("button", { name: "Confirmar firma" }).click();
-    await pe.getByText("Firmado", { exact: false }).first().waitFor({ timeout: 20000 }).catch(() => {});
+    await pe.getByText("Firmado", { exact: false }).first().waitFor({ timeout: 60000 }).catch(() => {});
     const fe = (await SB.from("consentimientos").select("estado, storage_path, hash_pdf").eq("id", consE).single()).data;
     comprobar(fe?.estado === "firmado" && fe.hash_pdf?.length === 64 && fe.storage_path, "REGRESIÓN: el MVZ con rol de estética firma y el consentimiento queda firmado");
     const bj = fe?.storage_path ? await SB.storage.from("perros-archivos").download(fe.storage_path) : { data: null };
@@ -318,7 +340,7 @@ try {
   // Alta
   await pa.getByLabel("Resumen del alta").fill("Sale estable, dieta blanda cinco días.");
   await pa.getByRole("button", { name: "Dar de alta" }).click();
-  await pa.getByText("Alta registrada").first().waitFor({ timeout: 20000 }).catch(() => {});
+  await pa.getByText("Alta registrada").first().waitFor({ timeout: 60000 }).catch(() => {});
   await pa.reload({ waitUntil: "networkidle" });
   const trasAlta = await cuerpo(pa);
   comprobar(/Dada de alta/.test(trasAlta) && /Sale estable/.test(trasAlta) && /Total de la cuenta \$840\.00/.test(trasAlta), "el alta cierra: la cuenta queda en lo real ($840, sin el depósito)");
@@ -331,7 +353,7 @@ try {
   await pa.getByRole("button", { name: "Editar el texto" }).first().click();
   await pa.getByLabel("Título").fill(`Hospitalización UI ${sufijo}`);
   await pa.getByRole("button", { name: "Guardar como versión nueva" }).click();
-  await pa.getByText("Guardado: es la versión").first().waitFor({ timeout: 15000 }).catch(() => {});
+  await esperarAviso(pa, "Guardado: es la versión");
   comprobar((await SB.from("consentimientos_plantillas").select("titulo").eq("negocio_id", B).eq("tipo", "hospitalizacion").eq("activa", true).single()).data.titulo === `Hospitalización UI ${sufijo}`, "editar una plantilla crea la versión nueva");
   await pa.goto(`${BASE}/veterinaria/ajustes`, { waitUntil: "networkidle" });
   comprobar(/Envío automático por WhatsApp/.test(await cuerpo(pa)), "Ajustes de Veterinaria existe");
@@ -398,7 +420,16 @@ try {
 
   // Una mascota con próxima dosis mañana; teléfono público del negocio; envío automático prendido.
   const { data: perroR } = await SB.from("perros").insert({ negocio_id: B, cliente_id: datos.clienteSoloB, nombre: `Aviso ${sufijo}`, especie: "gato" }).select("id").single();
-  await admin.rpc("registrar_vacuna", { p_perro_id: perroR.id, p_biologico: `Triple felina ${sufijo}`, p_tipo_requisito_id: null, p_insumo_id: null, p_lote_id: null, p_lote_texto: null, p_laboratorio: null, p_fecha: sumaDias(hoyB, -300), p_proxima: sumaDias(hoyB, 1), p_medico_id: med.data, p_dosis: null, p_notas: null, p_descontar: true });
+  // Se reintenta si la llamada falla un instante (red/Auth): antes el error se ignoraba y la prueba
+  // seguía sin vacuna, y el envío automático «no tenía nada que mandar».
+  let vac;
+  for (let intento = 1; intento <= 3; intento++) {
+    vac = await admin.rpc("registrar_vacuna", { p_perro_id: perroR.id, p_biologico: `Triple felina ${sufijo}`, p_tipo_requisito_id: null, p_insumo_id: null, p_lote_id: null, p_lote_texto: null, p_laboratorio: null, p_fecha: sumaDias(hoyB, -300), p_proxima: sumaDias(hoyB, 1), p_medico_id: med.data, p_dosis: null, p_notas: null, p_descontar: true });
+    if (!vac.error) break;
+    console.log(`   (registrar_vacuna falló, intento ${intento}: ${vac.error.message})`);
+    await espera(1500);
+  }
+  if (vac.error) throw new Error(`no se pudo registrar la vacuna de la mascota del aviso: ${vac.error.message}`);
   const { data: cupo } = await SB.from("cupo_configuracion").select("id, telefono_recepcion").eq("negocio_id", B).is("deleted_at", null).order("vigencia_desde", { ascending: false }).limit(1).maybeSingle();
   if (cupo) {
     salvaTelefono.guardado = true; salvaTelefono.id = cupo.id; salvaTelefono.valor = cupo.telefono_recepcion;

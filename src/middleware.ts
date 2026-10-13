@@ -1,3 +1,4 @@
+import { getUserConReintento } from "@/lib/supabase/get-user";
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { rutaPorRol } from "@/lib/auth/rutas";
@@ -212,9 +213,10 @@ export async function middleware(request: NextRequest) {
 
   // getUser() (no getSession()) revalida el token contra el servidor de
   // Auth en vez de confiar en lo que ya traiga la cookie.
+  // (con un reintento si Auth o la red fallaron un instante: ver get-user.ts)
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getUserConReintento(supabase);
 
   const zonaPagina = ZONAS_PROTEGIDAS.find((z) => pathname.startsWith(z.prefijo));
   const zonaApi = ZONAS_API_PROTEGIDAS.find((z) => pathname.startsWith(z.prefijo));
@@ -236,7 +238,13 @@ export async function middleware(request: NextRequest) {
   // request — nunca de un claim ni de estado guardado en el navegador.
   // Sin membresía aquí ("anonimo"), la cuenta existe pero no es de este
   // negocio.
-  const { data: rolData } = await supabase.rpc("current_rol");
+  // El módulo de la ruta se pregunta en paralelo con el rol (dos viajes a la base
+  // en vez de uno tras otro: cada pantalla del personal paga este camino).
+  const moduloZona = zonaPagina ? moduloDeRuta(pathname) : null;
+  const [{ data: rolData }, activosResp] = await Promise.all([
+    supabase.rpc("current_rol"),
+    moduloZona ? supabase.rpc("modulos_activos") : Promise.resolve(null),
+  ]);
   const rol = (rolData as string | null) ?? "anonimo";
   if (rol === "anonimo") {
     if (zonaApi) {
@@ -272,9 +280,8 @@ export async function middleware(request: NextRequest) {
   // Un módulo que el negocio no tiene (su plan o lo que el admin apagó) no
   // se abre: el admin va a la pantalla de módulos, los demás a una página
   // que lo explica. La base lo bloquea de todos modos.
-  const moduloZona = zonaPagina ? moduloDeRuta(pathname) : null;
   if (moduloZona) {
-    const { data: activos } = await supabase.rpc("modulos_activos");
+    const activos = activosResp?.data;
     if (!moduloRequeridoActivo(moduloZona, ((activos as string[] | null) ?? []).map(String))) {
       const primero = Array.isArray(moduloZona) ? moduloZona[0] : moduloZona;
       const destino = rol === "admin" ? `/admin/modulos?apagado=${primero}` : `/modulo-apagado?m=${primero}`;
