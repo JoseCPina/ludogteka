@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
-import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { formatearFechaCalendario, unidadSegunCantidad } from "@/lib/formato";
 import { nombreMes, type EspejoResumen, type EstadoMedicoSitpv } from "@/lib/veterinaria/recetas";
 import { NavRecetas } from "../nav";
+import { AvisoErrorClinico } from "../../aviso-error";
 
 // El espejo del SITPV: PeluDesk NO emite la receta cuantificada del Grupo I (se emite en el SITPV de
 // SENASICA); aquí queda el registro de cada una, con su folio, para surtir, reportar y llevar el libro.
@@ -68,7 +68,7 @@ export default async function Sitpv({ searchParams }: { searchParams: Promise<{ 
       )}
 
       {error ? (
-        <Alert variante="error" titulo="No pudimos cargar los registros">Recarga la página. Si sigue, avísale al equipo técnico.</Alert>
+        <AvisoErrorClinico error={error} titulo="No pudimos cargar los registros" />
       ) : (
         <>
           <div className="flex flex-wrap gap-2 text-sm">

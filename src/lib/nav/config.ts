@@ -73,7 +73,8 @@ export const SECCIONES_STAFF: ItemNav[] = [
 export const SECCIONES_PORTAL: ItemNav[] = [];
 
 export function navStaffPara(rol: string, permisos: string[] = [], modulos: string[] = [], accesoVeterinaria = false): ItemNav[] {
-  const inicio = rutaPorRol(rol);
+  // Estética sin su módulo no tiene a dónde aterrizar en /estetica: su inicio pasa a lo que sí puede usar.
+  const inicio = rol === "estetica" && !modulos.includes("estetica") ? (modulos.includes("empleados") ? "/mi-trabajo" : rutaPorRol(rol)) : rutaPorRol(rol);
   return [
     { etiqueta: "Inicio", href: inicio, roles: [rol] },
     // El rol de estética aterriza justamente en /estetica, que además es

@@ -6,6 +6,7 @@ import { negocioActual, urlDelNegocio } from "@/lib/negocio/actual";
 import { nuevoToken } from "@/lib/reporte/enlaces";
 import { traducirError } from "../../reservas/traducir-error";
 import type { ResultadoAccion } from "@/lib/empleados/tipos";
+import { AYUDA_CANTIDAD, leerCantidad } from "@/lib/veterinaria/cantidad";
 
 // Recetas simples, espejo del SITPV, recetario especial y reporte mensual. Todo pasa por funciones
 // de la base que comprueban el permiso (y que el emisor sea médico veterinario designado).
@@ -67,9 +68,9 @@ export async function enviarReceta(id: string): Promise<{ error: string | null; 
 
 export async function surtirControlado(tipo: "receta" | "espejo" | "recetario", docId: string, fd: FormData): Promise<ResultadoAccion> {
   const lote = texto(fd, "lote_id");
-  const cantidad = num(texto(fd, "cantidad"));
+  const cantidad = leerCantidad(texto(fd, "cantidad"));
   if (!lote) return { error: "Elige el lote." };
-  if (cantidad === null || !(cantidad > 0)) return { error: "Escribe la cantidad." };
+  if (cantidad === null) return { error: `No entendí la cantidad. ${AYUDA_CANTIDAD}` };
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("vet_surtir_controlado", {
     p_tipo: tipo,
@@ -89,6 +90,8 @@ export async function surtirControlado(tipo: "receta" | "espejo" | "recetario", 
 
 export async function registrarEspejo(fd: FormData): Promise<ResultadoAccion> {
   const hospitalario = texto(fd, "uso") === "hospitalario";
+  const cantidadTotal = leerCantidad(texto(fd, "cantidad_total"));
+  if (cantidadTotal === null) return { error: `No entendí la cantidad total. ${AYUDA_CANTIDAD}` };
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("vet_sitpv_registrar", {
     p_perro: o(texto(fd, "perro_id")),
@@ -100,7 +103,7 @@ export async function registrarEspejo(fd: FormData): Promise<ResultadoAccion> {
     p_dosis: o(texto(fd, "dosis")),
     p_intervalo: o(texto(fd, "intervalo")),
     p_duracion: o(texto(fd, "duracion")),
-    p_cantidad_total: num(texto(fd, "cantidad_total")),
+    p_cantidad_total: cantidadTotal,
     p_parcialidades: texto(fd, "parcialidades") === "si",
     p_comprobante_compra: o(texto(fd, "comprobante_compra")),
     p_observaciones: o(texto(fd, "observaciones")),
@@ -130,6 +133,8 @@ export async function archivarEspejo(id: string): Promise<ResultadoAccion> {
 // ── Recetario especial ───────────────────────────────────────────────
 
 export async function registrarRecetario(fd: FormData): Promise<ResultadoAccion> {
+  const cantidadDiaria = leerCantidad(texto(fd, "cantidad_diaria"));
+  if (cantidadDiaria === null) return { error: `No entendí la cantidad diaria. ${AYUDA_CANTIDAD}` };
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("vet_recetario_registrar", {
     p_perro: texto(fd, "perro_id"),
@@ -138,7 +143,7 @@ export async function registrarRecetario(fd: FormData): Promise<ResultadoAccion>
     p_codigo_barras: texto(fd, "codigo_barras"),
     p_fecha: o(texto(fd, "fecha")),
     p_dias: num(texto(fd, "dias")),
-    p_cantidad_diaria: num(texto(fd, "cantidad_diaria")),
+    p_cantidad_diaria: cantidadDiaria,
     p_indicaciones: o(texto(fd, "indicaciones")),
   });
   if (error) return { error: traducirError(error) };

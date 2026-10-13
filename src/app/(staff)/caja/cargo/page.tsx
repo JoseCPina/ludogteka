@@ -19,6 +19,8 @@ export default async function CargoSueltoPage({ searchParams }: { searchParams: 
       .select("id, nombre, monto_libre, depende_tamano, orden")
       .eq("categoria", "cargo")
       .not("clave", "like", "extra_%")
+      // Los cargos internos de Veterinaria (hospitalización, estimados…) no se aplican a mano aquí.
+      .not("clave", "like", "vet\\_%")
       .is("deleted_at", null)
       .order("orden"),
   ]);

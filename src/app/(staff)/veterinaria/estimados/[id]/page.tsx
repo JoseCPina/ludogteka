@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
-import { formatearFecha, formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
+import { formatearFecha, formatearFechaCalendario, hoyNegocio, unidadSegunCantidad } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { ESTADOS_ESTIMADO, TIPOS_LINEA, dinero, totalLinea, type DetalleEstimado, type MedicoVet } from "@/lib/veterinaria/expediente";
 import { opcionesDeEstimado } from "../../expediente/actions";
@@ -97,7 +97,7 @@ export default async function DetalleEstimadoPagina({ params }: { params: Promis
               return (
                 <tr key={i} className="border-t border-n-100">
                   <td className="py-1.5"><span className="text-xs font-semibold text-n-500">{TIPOS_LINEA[l.tipo]}</span><br />{l.descripcion}</td>
-                  <td>{l.cantidad}{l.unidad ? ` ${l.unidad}` : ""}</td>
+                  <td>{l.cantidad}{l.unidad ? ` ${unidadSegunCantidad(l.cantidad, l.unidad)}` : ""}</td>
                   <td className="text-right">{dinero(t.min)}</td>
                   <td className="text-right">{dinero(t.max)}</td>
                 </tr>

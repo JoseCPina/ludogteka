@@ -99,7 +99,7 @@ export default async function EspejoSitpv({ params }: { params: Promise<{ id: st
                 ))}
               </tbody>
             </table>
-            <p className="mt-1 text-sm text-n-700">Surtido {d.surtido} de {d.cantidad_total}{d.unidad ? ` ${d.unidad}` : ""}.</p>
+            <p className="mt-1 text-sm text-n-700">Surtido {d.surtido} de {d.cantidad_total}{d.unidad ? ` ${unidadSegunCantidad(d.cantidad_total, d.unidad)}` : ""}.</p>
           </section>
         )}
         <p className="text-center text-xs font-semibold text-coral-oscuro">{d.leyenda}</p>
@@ -110,7 +110,7 @@ export default async function EspejoSitpv({ params }: { params: Promise<{ id: st
           {pendiente > 0 && (d.parcialidades || d.surtido === 0) ? (
             <>
               <h2 className="text-lg font-bold text-n-900">{d.parcialidades ? "Registrar una aplicación (parcialidad)" : "Surtir"}</h2>
-              <p className="text-sm text-n-600">Queda por surtir {pendiente}{d.unidad ? ` ${d.unidad}` : ""}. La salida baja el lote y entra al libro de control con este folio{d.uso_hospitalario ? " y el paciente que elijas" : ` y ${d.mascota}`}.</p>
+              <p className="text-sm text-n-600">Queda por surtir {pendiente}{d.unidad ? ` ${unidadSegunCantidad(pendiente, d.unidad)}` : ""}. La salida baja el lote y entra al libro de control con este folio{d.uso_hospitalario ? " y el paciente que elijas" : ` y ${d.mascota}`}.</p>
               <SurtirDocumento
                 tipo="espejo" docId={d.id} lotes={lotes} unidad={d.unidad}
                 pacientes={d.uso_hospitalario ? internados : d.perro_id ? [{ perro_id: d.perro_id, nombre: d.mascota ?? "Paciente" }] : []}

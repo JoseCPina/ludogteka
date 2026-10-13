@@ -29,6 +29,11 @@ export default async function StaffLayout({ children }: { children: React.ReactN
       aviso={
         <>
           <AvisoPlan esPersonal />
+          {sesion.rol === "estetica" && !sesion.modulos.includes("estetica") && (
+            <p role="status" className="rounded-lg border border-ambar-oscuro/30 bg-ambar-suave px-4 py-3 text-sm text-ambar-oscuro" data-modulo-apagado-aviso>
+              El módulo de Estética está apagado en este negocio. Lo enciende quien administra, en «Módulos y plan». Mientras tanto puedes usar lo que sí tienes en el menú.
+            </p>
+          )}
           {conAyuda && <AvisoTickets />}
         </>
       }

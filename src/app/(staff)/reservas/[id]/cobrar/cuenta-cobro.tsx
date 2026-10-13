@@ -786,6 +786,14 @@ export function CuentaCobro({
             </div>
           )}
         </div>
+      ) : totales.saldo <= 0.005 ? (
+        <div className="flex flex-col gap-1 rounded-lg border border-menta-oscuro/30 bg-menta-suave p-4" data-cuenta-pagada>
+          <p className="font-semibold text-menta-oscuro">Cuenta pagada</p>
+          <p className="text-sm text-n-700">
+            {exitoCobro ?? "No hay saldo por cobrar."}
+            {totales.saldo < -0.005 ? ` Hay ${dinero(-totales.saldo)} a favor del cliente: se devuelve con «Registrar devolución».` : ""}
+          </p>
+        </div>
       ) : (
         <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
           <p className="font-semibold text-n-900">Registrar cobro</p>

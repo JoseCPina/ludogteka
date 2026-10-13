@@ -54,7 +54,13 @@ const sinDesborde = async (pag, donde) => {
 const { data: recepciones } = await A.from("membresias").select("profile_id").eq("negocio_id", B).eq("rol", "recepcion").is("deleted_at", null).order("created_at");
 const recId = recepciones[0].profile_id;
 const admin = await comoPersona(datos.adminB);
-const nuevaReserva = async () => (await admin.from("reservas").insert({ cliente_id: datos.clienteSoloB }).select("id").single()).data.id;
+// Una cuenta con $1,000 por cobrar: un cobro no pasa del saldo, así que la cuenta vacía ya no sirve para probar el formulario.
+const nuevaReserva = async (importe = 1000) => {
+  const { data: comida } = await SB.from("servicios").select("id").eq("monto_libre", true).is("deleted_at", null).limit(1).single();
+  const r = await admin.rpc("crear_cargo_suelto", { p_cliente_id: datos.clienteSoloB, p_servicio_id: comida.id, p_cantidad: 1, p_importe: importe, p_descripcion: "Prueba UI tarjeta manual", p_perro_id: null, p_notas: null });
+  if (r.error) throw new Error(r.error.message);
+  return r.data.reserva_id;
+};
 
 const nav = await abrirNavegador();
 const ctxAdmin = await nav.newContext({ viewport: { width: 390, height: 844 } });
@@ -161,7 +167,7 @@ try {
 
   // ── 5. Necesita atención ──
   console.log("5. Necesita atención");
-  const reserva3 = await nuevaReserva();
+  const reserva3 = await nuevaReserva(2600);
   const r3 = await (await comoPersona(recId)).rpc("registrar_cobro", { p_reserva_id: reserva3, p_notas: "prueba ui tarjeta manual", p_metodos: [{ metodo: "tarjeta_manual", monto: 2600, propina: 0, folio: `UI-${sufijo}C`, motivo: "terminal_no_responde" }] });
   if (r3.error) throw new Error(r3.error.message);
   await pa.goto(`${BASE}/recepcion`, { waitUntil: "networkidle" });
@@ -185,7 +191,7 @@ try {
   await pa.goto(`${BASE}/admin/pagos`, { waitUntil: "networkidle" });
   await pa.getByLabel("Tope de alerta por cobro (MXN)").fill("1500");
   await pa.getByRole("button", { name: "Guardar tope" }).click();
-  await pa.waitForTimeout(2000);
+  await pa.getByText(/Tope guardado/).first().waitFor({ timeout: 30_000 }).catch(() => {});
   comprobar(/Tope guardado/.test(await pa.locator("body").innerText()), "el admin guarda el tope y el aviso sale junto al botón");
   comprobar(Number((await SB.from("tarjeta_manual_ajustes").select("tope_alerta").single()).data.tope_alerta) === 1500, "el tope quedó en $1,500");
   await sinDesborde(pa, "Administración → Cobro con terminal");

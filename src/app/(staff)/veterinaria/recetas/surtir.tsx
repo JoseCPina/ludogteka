@@ -1,5 +1,6 @@
 "use client";
 
+import { unidadSegunCantidad } from "@/lib/formato";
 import { FormularioAccion } from "@/components/formulario-accion";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
@@ -26,10 +27,10 @@ export function SurtirDocumento({
       <div className="grid gap-3 sm:grid-cols-3">
         <Select label="Lote" name="lote_id" required>
           {lotes.map((l) => (
-            <option key={l.id} value={l.id}>{l.codigo} · {l.dosis} {unidad ?? ""}{l.caducidad ? ` · caduca ${l.caducidad}` : ""}</option>
+            <option key={l.id} value={l.id}>{l.codigo} · {l.dosis} {unidadSegunCantidad(l.dosis, unidad)}{l.caducidad ? ` · caduca ${l.caducidad}` : ""}</option>
           ))}
         </Select>
-        <Field label={`Cantidad${unidad ? ` (${unidad})` : ""}`} name="cantidad" inputMode="decimal" required />
+        <Field label={`Cantidad${unidad ? ` (${unidad})` : ""}`} name="cantidad" inputMode="decimal" required ayuda="Un número, con o sin unidad (2 o 2 ml)." />
         {pacientes && pacientes.length > 0 ? (
           <Select label={`${etiquetaPaciente} (opcional)`} name="perro_id">
             <option value="">— Sin paciente —</option>
