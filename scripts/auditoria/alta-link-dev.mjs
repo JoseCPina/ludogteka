@@ -150,7 +150,7 @@ const reservaRechazada = async (cliente, perro, quien, etiqueta, extra = {}) => 
   await SH.from("estancias").delete().eq("reserva_id", res.id);
   await SH.from("reservas").delete().eq("id", res.id);
   if (!error) hallazgo(`${etiqueta}: la base ACEPTÓ una estancia de un perro con requisitos sin registro`);
-  else if (!/sanitario|permission denied/i.test(error.message)) hallazgo(`${etiqueta}: rechazada, pero no por lo sanitario: ${error.message}`);
+  else if (!/sanitario|vigentes? de |permission denied/i.test(error.message)) hallazgo(`${etiqueta}: rechazada, pero no por lo sanitario: ${error.message}`);
   return Boolean(error);
 };
 
@@ -218,7 +218,7 @@ try {
   await recep.getByLabel(`Perro ${MARCA}`).check();
   await recep.getByRole("button", { name: "Crear reserva" }).click();
   await recep.getByText("No se pudo reservar").waitFor({ timeout: 30_000 }).catch(() => hallazgo("la pantalla de reserva no rechazó al perro sin vacunas"));
-  if (!(await recep.getByText(/requisito sanitario/).count())) hallazgo("la pantalla de reserva no dice que es por lo sanitario");
+  if (!(await recep.getByText(/requisito sanitario|vigentes? de /).count())) hallazgo("la pantalla de reserva no dice que es por lo sanitario");
   else bien("por pantalla: «No se pudo reservar» por requisito sanitario");
 
   console.log("\n4. Recepción confirma el comprobante");

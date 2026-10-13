@@ -37,7 +37,7 @@ export function ListaCuentas({ cuentas }: { cuentas: Cuenta[] }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-w-0 max-w-full flex-col gap-4">
       <div className="max-w-xs">
         <Field
           label="Buscar por correo o rol"
@@ -48,7 +48,7 @@ export function ListaCuentas({ cuentas }: { cuentas: Cuenta[] }) {
         />
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
+      <div className="w-full max-w-full overflow-x-auto rounded-lg border border-n-200 bg-white">
         <table className="w-full min-w-[560px] border-collapse">
           <thead>
             <tr>

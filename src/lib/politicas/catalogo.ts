@@ -116,6 +116,11 @@ export function textoPolitica(textos: TextosPoliticas, clave: ClavePolitica): st
   return CATALOGO_POLITICAS.find((p) => p.clave === clave)?.omision ?? "";
 }
 
+/** El texto neutro por omisión de una regla. */
+export function omisionPolitica(clave: ClavePolitica): string {
+  return CATALOGO_POLITICAS.find((p) => p.clave === clave)?.omision ?? "";
+}
+
 /**
  * Las reglas que se le enseñan al dueño con estos módulos: solo las que
  * aplican y tienen texto, en el orden del catálogo.

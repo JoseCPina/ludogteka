@@ -8,7 +8,7 @@ import { MisVisitas } from "./mis-visitas";
 import { hoyNegocio } from "@/lib/formato";
 import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { cargarTextosPoliticas } from "@/lib/politicas/cargar";
-import { politicasVisibles, textoPolitica } from "@/lib/politicas/catalogo";
+import { omisionPolitica, politicasVisibles, textoPolitica } from "@/lib/politicas/catalogo";
 
 export default async function PortalPage() {
   const zona = await zonaActual();
@@ -71,12 +71,13 @@ export default async function PortalPage() {
   const modulos = sesion.modulos ?? [];
   // Cómo se reserva o agenda ya sale en «Citas y reservas»: no se repite en las reglas.
   const politicas = politicasVisibles(textosPoliticas, modulos).filter((p) => p.clave !== "como_reservar" && p.clave !== "como_agendar_estetica");
-  const comoSeAgenda = [
-    modulos.includes("guarderia") || modulos.includes("hotel") ? textoPolitica(textosPoliticas, "como_reservar") : "",
-    modulos.includes("estetica") ? textoPolitica(textosPoliticas, "como_agendar_estetica") : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const textoReserva = modulos.includes("guarderia") || modulos.includes("hotel") ? textoPolitica(textosPoliticas, "como_reservar") : "";
+  const textoCita = modulos.includes("estetica") ? textoPolitica(textosPoliticas, "como_agendar_estetica") : "";
+  // Con los textos por omisión las dos frases dicen lo mismo («nos escribes por WhatsApp»): se dice una sola vez.
+  const comoSeAgenda =
+    textoReserva && textoCita && textoReserva === omisionPolitica("como_reservar") && textoCita === omisionPolitica("como_agendar_estetica")
+      ? "Para reservar, agendar, cambiar o cancelar nos escribes por WhatsApp."
+      : [textoReserva, textoCita].filter(Boolean).join(" ");
 
   const urlsFotos = new Map<string, string>();
   await Promise.all(

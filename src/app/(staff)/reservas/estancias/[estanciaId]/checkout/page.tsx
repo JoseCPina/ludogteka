@@ -67,6 +67,8 @@ export default async function CheckoutEstanciaPage({
       .select("id, nombre, clave, monto_libre")
       .eq("categoria", "cargo")
       .not("clave", "like", "extra\_%")
+      // Los cargos internos de Veterinaria (hospitalización, estimados…) no se aplican a mano aquí.
+      .not("clave", "like", "vet\\_%")
       .order("orden"),
     supabase
       .from("cargos_aplicados")

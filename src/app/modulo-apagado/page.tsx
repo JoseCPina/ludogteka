@@ -12,7 +12,16 @@ export default async function ModuloApagadoPage({ searchParams }: { searchParams
   const sesion = await obtenerSesionConRol();
   const { data: modulo } = m ? await supabase.from("modulos").select("nombre").eq("clave", m).maybeSingle() : { data: null };
   const nombre = (modulo?.nombre as string | undefined) ?? "esta sección";
-  const inicio = sesion ? rutaPorRol(sesion.rol) : "/login";
+  const modulosActivos = sesion?.modulos ?? [];
+  // Quien no administra y se queda sin su módulo (p. ej. estética con Estética apagada) va a lo que sí puede usar.
+  const inicio = !sesion
+    ? "/login"
+    : sesion.rol === "estetica" && !modulosActivos.includes("estetica")
+      ? modulosActivos.includes("empleados")
+        ? "/mi-trabajo"
+        : "/login"
+      : rutaPorRol(sesion.rol);
+  const esAdmin = sesion?.rol === "admin";
   const esCliente = sesion?.rol === "cliente";
   return (
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col justify-center gap-5 p-6">
@@ -24,11 +33,13 @@ export default async function ModuloApagadoPage({ searchParams }: { searchParams
         <p className="mt-2 text-n-700">
           {esCliente
             ? "Para tus citas, reservas y pagos, comunícate directo con el negocio."
-            : "Quien administra el negocio puede prenderlo en «Módulos y plan», si su plan lo incluye."}
+            : esAdmin
+              ? "Puedes prenderlo en «Módulos y plan», si tu plan lo incluye."
+              : "Este módulo está apagado. Lo enciende quien administra el negocio, en «Módulos y plan»: avísale si lo necesitas."}
         </p>
-        {!esCliente && inicio !== `/${m}` && (
+        {!esCliente && inicio !== `/${m}` && inicio !== "/login" && (
           <Link href={inicio} className="mt-4 inline-flex font-semibold text-morado hover:underline">
-            Ir al inicio →
+            {inicio === "/mi-trabajo" ? "Ir a mi asistencia →" : "Ir al inicio →"}
           </Link>
         )}
       </div>
