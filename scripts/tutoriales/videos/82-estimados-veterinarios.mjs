@@ -16,7 +16,7 @@ export default {
     },
     {
       titulo: "Mandarlo",
-      dice: "Guárdalo como borrador y, cuando esté listo, lo envías: te da una liga para el dueño, que se muestra una sola vez. Un estimado enviado ya no se cambia; si hay que ajustarlo, haces una versión nueva.",
+      dice: "Guárdalo como borrador y, cuando esté listo, lo envías: te da una liga para el dueño y un mensaje listo para copiar por WhatsApp. La liga solo se guarda en esa pantalla, así que cópiala al enviarlo. Un estimado enviado ya no se cambia; si hay que ajustarlo, haces una versión nueva.",
       pasos: [["resaltar", "Guardar borrador", 2800]],
     },
     {

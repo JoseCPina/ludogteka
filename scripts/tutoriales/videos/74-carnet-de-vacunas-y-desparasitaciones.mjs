@@ -11,7 +11,7 @@ export default {
     },
     {
       titulo: "Registrar una vacuna",
-      dice: "Aprieta «Registrar vacuna». Elige el producto del inventario clínico y su lote, y se descuenta una dosis del lote. Si no está en el inventario, escribe el nombre y el lote.",
+      dice: "Aprieta «Registrar vacuna». Elige el producto del inventario clínico, que aquí solo lista vacunas, y su lote, y se descuenta una dosis del lote. Si no está en el inventario, escribe el nombre y el lote.",
       pasos: [["clic", "Registrar vacuna"], ["escribir", "Lote (texto, si no es del inventario)", "FEL-2026-04"], ["resaltar", "Médico veterinario que aplica", 2600]],
     },
     {

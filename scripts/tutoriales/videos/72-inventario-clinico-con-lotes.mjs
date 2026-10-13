@@ -11,8 +11,8 @@ export default {
     },
     {
       titulo: "Un producto nuevo",
-      dice: "Para dar de alta uno, aprieta «Nuevo producto clínico». Escribe el nombre, el área, la unidad en que se compra y la unidad en que se surte, el mínimo y con cuántos días de anticipación quieres el aviso de caducidad.",
-      pasos: [["clic", "Nuevo producto clínico", { nav: true }], ["escribir", "Nombre del producto", "Dexametasona 0.2 %"], ["resaltar", "Unidad de compra", 2400], ["resaltar", "Avisar de la caducidad con (días)", 2600]],
+      dice: "Para dar de alta uno, aprieta «Nuevo producto clínico». Escribe el nombre, el área, la unidad en que se compra y la unidad en que se surte, el mínimo y con cuántos días de anticipación quieres el aviso de caducidad. Escoge también el tipo de producto: vacuna, desparasitante u otro, y de eso depende en qué lista del carnet aparece.",
+      pasos: [["clic", "Nuevo producto clínico", { nav: true }], ["escribir", "Nombre del producto", "Dexametasona 0.2 %"], ["resaltar", "Unidad de compra", 2400], ["resaltar", "Avisar de la caducidad con (días)", 2600], ["resaltar", "Tipo de producto", 2600]],
     },
     {
       titulo: "Las dos clasificaciones",
