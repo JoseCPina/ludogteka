@@ -20,8 +20,8 @@ export default {
     },
     {
       titulo: "Tu página web",
-      dice: "Y si completas tu perfil, tu página web se activa gratis. Lo vemos en otro video.",
-      pasos: [["desplazar", "Tu página web está incluida"], ["resaltar", "Tu página web está incluida", 3000]],
+      dice: "Y tu página web viene incluida en tu plan: se arma sola con tu perfil. Lo vemos en otro video.",
+      pasos: [["desplazar", "Tu página web viene incluida"], ["resaltar", "Tu página web viene incluida", 3000]],
     },
   ],
   resumen: ["La guía de bienvenida tiene cinco pasos y se marca sola.", "Cada paso te lleva a la pantalla donde se hace de verdad.", "Puedes volver cuando quieras desde el aviso de arriba."],
