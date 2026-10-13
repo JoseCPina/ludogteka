@@ -52,6 +52,7 @@ const OPC = {
   regrabar: flag("--regrabar"),
   soloVoz: flag("--solo-voz"),
   soloPublicar: flag("--solo-publicar"),
+  todos: flag("--todos"),
   prod: flag("--prod"),
   sinPublicar: flag("--sin-publicar"),
   listar: flag("--listar"),
@@ -280,7 +281,7 @@ async function main() {
 
   if (OPC.soloPublicar) {
     // Sube lo ya terminado (salida/<NN>/) a desarrollo y, con --prod, a producción; no graba nada.
-    let n = 0;
+    let n = 0, sinCambio = 0;
     for (const v of VIDEOS.filter((x) => !OPC.videos || OPC.videos.includes(x.id)).sort((a, b) => ordenCola(a) - ordenCola(b))) {
       const e = leerEstado(v.id);
       const dir = path.join(DIR_SALIDA, v.id);
@@ -290,12 +291,23 @@ async function main() {
       const txt = fs.readFileSync(rutas.texto, "utf8");
       const descripcion = txt.split("DESCRIPCIÓN\n")[1]?.split("\n\nETIQUETAS")[0] ?? v.resumen;
       const meta = { descripcion, duracion: e.duracion, conVoz: e.estado === "listo", commit: e.commit ?? ctx.commit };
-      await publicarVideo({ c: cd, video: v, rutas, meta, masterAqui: true });
-      if (OPC.prod) await publicarVideo({ c: ctx.cprod, video: v, rutas, meta, masterAqui: ctx.mastersEnProd });
-      console.log(`  ↑ ${v.id} publicado (${OPC.prod ? "desarrollo y producción" : "desarrollo"})`);
+      // Solo lo que cambió: un video ya publicado con el mismo commit, duración y voz no se
+      // vuelve a subir (cada subida sube su versión, limpia su marca «por actualizar» y
+      // gasta ancho de banda). `--todos` fuerza la resubida de lo que se pida.
+      const cambio = async (cx) => {
+        if (OPC.todos) return true;
+        const { data } = await cx.cliente.from("tutoriales").select("publicado,commit_app,duracion_s,con_voz,video_path").eq("numero", v.id).is("deleted_at", null).maybeSingle();
+        return !(data?.publicado && data.video_path && data.commit_app === meta.commit && data.duracion_s === Math.round(meta.duracion) && data.con_voz === meta.conVoz);
+      };
+      const enDev = await cambio(cd);
+      const enProd = OPC.prod ? await cambio(ctx.cprod) : false;
+      if (!enDev && !enProd) { sinCambio++; continue; }
+      if (enDev) await publicarVideo({ c: cd, video: v, rutas, meta, masterAqui: true });
+      if (enProd) await publicarVideo({ c: ctx.cprod, video: v, rutas, meta, masterAqui: ctx.mastersEnProd });
+      console.log(`  ↑ ${v.id} publicado (${[enDev && "desarrollo", enProd && "producción"].filter(Boolean).join(" y ")})`);
       n++;
     }
-    console.log(`${n} videos publicados.`);
+    console.log(`${n} videos publicados; ${sinCambio} sin cambios (ya estaban publicados con el mismo commit; --todos los vuelve a subir).`);
     return;
   }
 

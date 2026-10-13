@@ -17,7 +17,7 @@ npm run tutoriales -- --listar                      # estado de cada video
 npm run tutoriales -- --video 04 --sin-publicar     # uno solo, sin subir nada
 npm run tutoriales -- --prod                        # toda la cola; publica en desarrollo y PRODUCCIÓN, y avisa por Telegram
 npm run tutoriales -- --video 04 --regrabar         # vuelve a grabar uno (la app cambió)
-npm run tutoriales -- --solo-publicar --prod        # sube lo ya terminado (salida/) sin grabar
+npm run tutoriales -- --solo-publicar --prod        # sube SOLO lo que cambió (commit, duración o voz distintos al publicado); --todos fuerza la resubida
 ```
 
 Fases por video (persistidas en `salida/<NN>/estado.json` y en `tutoriales_progreso`): guion → voz → grabado → render → qc → listo | listo menos voz. Tres intentos; una falla no detiene a los demás (a los 3 errores seguidos se detiene y avisa). `--reanudar` es el comportamiento por omisión: salta lo que ya está listo con el mismo guion.
