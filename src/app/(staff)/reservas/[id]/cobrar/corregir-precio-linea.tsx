@@ -8,8 +8,8 @@ import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { corregirPrecioCuenta } from "@/app/(staff)/caja/correcciones-actions";
+import { dinero } from "@/lib/dinero";
 
-const dinero = (v: number) => `$${v.toFixed(2)}`;
 
 /**
  * Corregir el PRECIO de una línea de la cuenta (el servicio salió con un precio

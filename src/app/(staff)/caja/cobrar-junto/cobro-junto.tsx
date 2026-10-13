@@ -24,6 +24,7 @@ import type { ResumenCobro } from "@/lib/pagos/tipos";
 import type { MetodoPago } from "@/app/(staff)/reservas/cobro-actions";
 import { CobroIntegrado, type OrdenCobroFila } from "@/app/(staff)/reservas/[id]/cobrar/cobro-integrado";
 import { registrarCobroGrupo } from "../cobro-grupo-actions";
+import { dinero } from "@/lib/dinero";
 
 export type CuentaJunto = {
   reservaId: string;
@@ -38,7 +39,6 @@ type FilaMetodo = { metodo: MetodoPago; monto: string; propina: string; tarjeta:
 const nuevaFila = (): FilaMetodo => ({ metodo: "efectivo", monto: "", propina: "0", tarjeta: datosVacios() });
 
 const centavos = (v: number) => Math.round(v * 100);
-const dinero = (v: number) => `$${v.toFixed(2)}`;
 
 /**
  * Cobro de varias cuentas de la misma persona en un solo movimiento: un

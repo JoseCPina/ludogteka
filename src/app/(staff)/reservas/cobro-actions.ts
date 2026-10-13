@@ -19,7 +19,8 @@ export type LineaMetodo = {
   banco?: string;
 };
 
-export type EstadoCobro = { error: string | null; cobroId?: string };
+/** `cambio` = efectivo recibido de más: no entra a la caja, se devuelve al cliente. */
+export type EstadoCobro = { error: string | null; cobroId?: string; cambio?: number };
 
 export async function registrarCobro(
   reservaId: string,
@@ -32,6 +33,9 @@ export async function registrarCobro(
   }
 
   const supabase = await createSupabaseServerClient();
+  // El saldo antes de cobrar: la base cobra solo hasta el saldo y lo que sobra en efectivo es cambio.
+  const { data: totales } = await supabase.rpc("cuenta_totales_reserva", { p_reserva_id: reservaId });
+  const saldoAntes = Number((Array.isArray(totales) ? totales[0] : totales)?.saldo ?? 0);
   const { data, error } = await supabase.rpc("registrar_cobro", {
     p_reserva_id: reservaId,
     p_notas: notas,
@@ -42,7 +46,9 @@ export async function registrarCobro(
 
   revalidatePath(`/reservas/${reservaId}`);
   revalidatePath(`/reservas/${reservaId}/cobrar`);
-  return { error: null, cobroId: data as string };
+  const recibido = metodos.reduce((s, m) => s + m.monto, 0);
+  const cambio = Math.round((recibido - saldoAntes) * 100) / 100;
+  return { error: null, cobroId: data as string, cambio: cambio > 0.005 ? cambio : undefined };
 }
 
 export type EstadoDevolucion = { error: string | null; devolucionId?: string };

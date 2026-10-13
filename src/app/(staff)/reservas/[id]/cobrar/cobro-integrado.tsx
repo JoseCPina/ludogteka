@@ -21,6 +21,7 @@ import {
 } from "@/app/(staff)/caja/cobro-integrado-actions";
 import type { ResumenCobro } from "@/lib/pagos/tipos";
 import { useZonaNegocio } from "@/components/zona-negocio";
+import { dinero } from "@/lib/dinero";
 
 export type OrdenCobroFila = {
   id: string;
@@ -53,10 +54,6 @@ function etiquetaDe(o: OrdenCobroFila): string {
     return o.expira_at && new Date(o.expira_at).getTime() < Date.now() ? "Venció sin pagarse" : "Esperando el pago";
   }
   return ETIQUETA_ESTADO[o.estado] ?? o.estado;
-}
-
-function dinero(v: number): string {
-  return `$${v.toFixed(2)}`;
 }
 
 const ETIQUETA_ESTADO: Record<string, string> = {

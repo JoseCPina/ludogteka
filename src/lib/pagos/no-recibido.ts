@@ -3,6 +3,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { buscarPagos, ESTADOS_CON_DINERO } from "@/lib/mercadopago/busqueda";
 import { conexionDeCobro, type NegocioParaCobro } from "./conexion";
 import { mensajeDeError } from "./tipos";
+import { dinero } from "@/lib/dinero";
 
 /**
  * «Marcar como no recibido» (5 de octubre de 2026): corregir un cobro con
@@ -17,7 +18,6 @@ import { mensajeDeError } from "./tipos";
 export type ResultadoRevision = { ok: true; aviso: string } | { ok: false; error: string };
 
 const VENTANA_HORAS = 6;
-const dinero = (v: number) => `$${v.toFixed(2)}`;
 
 /** Pagos ya ligados a un cobro nuestro (no pueden ser «el pago de este cobro»). */
 export async function pagosYaLigados(admin: SupabaseClient, negocioId: string): Promise<Set<string>> {

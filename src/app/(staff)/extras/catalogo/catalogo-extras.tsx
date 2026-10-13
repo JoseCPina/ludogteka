@@ -15,10 +15,10 @@ import {
   type ZonaExtra,
 } from "@/lib/extras/tipos";
 import { guardarExtraCatalogo, guardarPaqueteExtra, guardarZonaExtra } from "../actions";
+import { dinero } from "@/lib/dinero";
 
 export type PaqueteExtra = { sesiones: number; vigenciaDias: number | null; precio: number };
 
-const dinero = (v: number) => `$${v.toFixed(2)}`;
 
 // Servicios que casi todo negocio con guardería u hotel ofrece: un toque llena el formulario.
 const SUGERIDOS: { nombre: string; tipo: "general" | "traslado"; unidad: string }[] = [

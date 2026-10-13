@@ -10,9 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { anularCobro, anularCobroGrupo, editarMontoCobro } from "@/app/(staff)/caja/correcciones-actions";
 import { ETIQUETA_TARJETA_MANUAL } from "@/lib/cobro/tarjeta-manual";
+import { dinero } from "@/lib/dinero";
 
 const ETIQUETA: Record<string, string> = { efectivo: "Efectivo", transferencia: "Transferencia", tarjeta_manual: ETIQUETA_TARJETA_MANUAL };
-const dinero = (v: number) => `$${v.toFixed(2)}`;
 
 /**
  * Anular un cobro o corregir su monto, SIN descuentos. El cobro no se borra:
