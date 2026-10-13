@@ -87,6 +87,28 @@ const hora = () => {
   return `${f.getFullYear()}-${pad(f.getMonth() + 1)}-${pad(f.getDate())}T${pad(10 + Math.floor(Math.random() * 8))}:${pad(Math.floor(Math.random() * 6) * 10)}`;
 };
 
+// La fecha de la cita es al azar entre 90 y 490 días: puede caer en un día cerrado o empalmarse con otra
+// cita de corridas anteriores, y la base la rechaza con su aviso. Se lee el aviso y se prueba con otra
+// fecha (hasta 4 veces). Desde que agendar deja la pantalla abierta para sumar «otro perrito», la
+// confirmación es el recuadro «Cita agendada» (`data-citas-agendadas`), no un cambio de URL: de ahí se
+// abre la cita con su enlace.
+async function agendarConReintento(pag) {
+  for (let intento = 1; intento <= 4; intento++) {
+    await pag.getByLabel("Fecha y hora").fill(hora());
+    await pag.getByRole("button", { name: "Agendar cita" }).click();
+    try {
+      await pag.locator("[data-citas-agendadas]").waitFor({ timeout: 45000 });
+      await pag.locator('[data-citas-agendadas] a[href^="/estetica/"]').last().click();
+      await pag.waitForURL(/\/estetica\/[0-9a-f-]{36}/, { timeout: 45000 });
+      return;
+    } catch (e) {
+      const aviso = (await pag.locator('[role="alert"]').allInnerTexts().catch(() => [])).join(" | ").slice(0, 200);
+      console.log(`   (intento ${intento}: la cita no se agendó; aviso: «${aviso || "ninguno"}»; url ${pag.url()})`);
+      if (intento === 4) throw e;
+    }
+  }
+}
+
 try {
   // ── 1. Osito ──
   console.log("1. Osito: mestizo, chico, pelo largo");
@@ -100,9 +122,7 @@ try {
   comprobar(!/no cobra automático|todavía no tiene grupo|callejón/i.test(cuerpo), "ya no salen los avisos de «no cobra automático»");
   await sinDesborde(pa, "agendar con Osito");
   await pa.getByLabel("Empleado").selectOption({ index: 1 });
-  await pa.getByLabel("Fecha y hora").fill(hora());
-  await pa.getByRole("button", { name: "Agendar cita" }).click();
-  await pa.waitForURL(/\/estetica\/[0-9a-f-]{36}/, { timeout: 30000 });
+  await agendarConReintento(pa);
   const detalle = await pa.locator("body").innerText();
   comprobar(/390/.test(detalle), "la cita se agenda y su detalle dice $390");
   const citaId = pa.url().split("/").pop();
@@ -129,9 +149,7 @@ try {
   const { data: pg } = await SB.from("perros").select("pelaje_id").eq("nombre", sinPelo).single();
   comprobar(pg.pelaje_id === pelaje("medio"), "y el pelaje quedó en su expediente");
   await pa.getByLabel("Empleado").selectOption({ index: 1 });
-  await pa.getByLabel("Fecha y hora").fill(hora());
-  await pa.getByRole("button", { name: "Agendar cita" }).click();
-  await pa.waitForURL(/\/estetica\/[0-9a-f-]{36}/, { timeout: 30000 });
+  await agendarConReintento(pa);
   bien("se agenda sin salir de la pantalla");
 
   // ── 3. Celda vacía + excepción ──
@@ -154,9 +172,7 @@ try {
     await pa.locator("[data-aviso-precio=ok]").waitFor({ timeout: 15000 });
     comprobar(/\$190\.00/.test(await pa.locator("[data-aviso-precio]").innerText()), "con la excepción sale el precio ($190) y se puede agendar");
     await pa.getByLabel("Empleado").selectOption({ index: 1 });
-    await pa.getByLabel("Fecha y hora").fill(hora());
-    await pa.getByRole("button", { name: "Agendar cita" }).click();
-    await pa.waitForURL(/\/estetica\/[0-9a-f-]{36}/, { timeout: 30000 });
+    await agendarConReintento(pa);
     const id3 = pa.url().split("/").pop();
     const { data: c3 } = await SB.from("citas_estetica").select("precio, excepcion_grupo_motivo").eq("id", id3).single();
     comprobar(Number(c3.precio) === 190 && c3.excepcion_grupo_motivo === "Mientras capturamos el precio", "la cita queda con la excepción y su motivo");

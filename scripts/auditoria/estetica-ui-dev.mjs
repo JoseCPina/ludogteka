@@ -274,6 +274,15 @@ try {
   if (errCitaR) throw new Error(`cita de hoy: ${errCitaR.message}`);
   creados.citas.push(citaR.id);
   const empleadoDe = async () => (await SB.from("citas_estetica").select("empleado_id, estado").eq("id", citaR.id).single()).data;
+  // Espera a que la base tenga la estilista esperada (hasta 25 s): con el servidor lento un
+  // «waitForTimeout(1500)» leía la base antes de que la acción terminara.
+  const esperarEmpleado = async (esperado) => {
+    for (let i = 0; i < 50; i++) {
+      if ((await empleadoDe()).empleado_id === esperado) return true;
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    return false;
+  };
 
   const ctxRec = await nav.newContext({ viewport: { width: 390, height: 844 } });
   await ctxRec.addCookies(await cookiesDe(datos.recepcionB));
@@ -287,16 +296,17 @@ try {
     const caja = await lista.boundingBox();
     if (caja && caja.height < 44) hallazgo(`el selector del tablero mide ${Math.round(caja.height)}px de alto: poco para el dedo`);
     await lista.selectOption(S2);
-    await recep.locator("[data-estilista-aviso]").first().waitFor({ timeout: 8000 }).catch(() => {});
+    await recep.locator("[data-estilista-aviso]").first().waitFor({ timeout: 25000 }).catch(() => {});
+    await esperarEmpleado(S2);
     const aviso = (await recep.locator("[data-estilista-aviso]").allInnerTexts()).join(" | ");
     if (!/Quedó con .* \(antes: .*\)/.test(aviso) || (await empleadoDe()).empleado_id !== S2) hallazgo(`el tablero no confirmó el cambio a la otra estilista o no se guardó («${aviso.slice(0, 120)}»)`);
     else bien(`un toque en el tablero: ${aviso.split("|")[0].trim()}`);
     await lista.selectOption("");
-    await recep.waitForTimeout(1500);
+    await esperarEmpleado(null);
     if ((await empleadoDe()).empleado_id !== null) hallazgo("«Sin asignar» desde el tablero no dejó la cita sin estilista");
     else bien("«Sin asignar» desde el tablero");
     await lista.selectOption(S1);
-    await recep.waitForTimeout(1500);
+    await esperarEmpleado(S1);
   }
 
   // Detalle de la cita (recepción): selector, historial y confirmación
@@ -306,8 +316,8 @@ try {
   if (!(await selDetalle.count())) hallazgo("el detalle de la cita no trae la lista «Estilista»");
   else {
     await selDetalle.selectOption(S2);
-    await recep.locator("[data-estilista-aviso]").first().waitFor({ timeout: 8000 }).catch(() => {});
-    await recep.waitForFunction(() => /historial de estilista/i.test(document.body.innerText), null, { timeout: 8000 }).catch(() => {});
+    await recep.locator("[data-estilista-aviso]").first().waitFor({ timeout: 25000 }).catch(() => {});
+    await recep.waitForFunction(() => /historial de estilista/i.test(document.body.innerText), null, { timeout: 25000 }).catch(() => {});
     const cuerpo = await recep.locator("body").innerText();
     if (!/Quedó con/.test(cuerpo) || !/historial de estilista/i.test(cuerpo)) hallazgo("el detalle no confirma con quién quedó ni muestra el historial");
     else bien("detalle: confirma con quién quedó y muestra «Historial de estilista»");
@@ -321,7 +331,8 @@ try {
   await recep.getByLabel("Pasar a").selectOption(S1);
   await recep.getByLabel("Motivo (opcional)").fill("Tomó al perro a la mitad");
   await recep.getByRole("button", { name: "Cambiar estilista" }).last().click();
-  await recep.locator("[data-estilista-aviso]").first().waitFor({ timeout: 8000 }).catch(() => {});
+  await recep.locator("[data-estilista-aviso]").first().waitFor({ timeout: 25000 }).catch(() => {});
+  await esperarEmpleado(S1);
   const aviso2 = (await recep.locator("[data-estilista-aviso]").allInnerTexts()).join(" ");
   if (!/Quedó con/.test(aviso2) || (await empleadoDe()).empleado_id !== S1) hallazgo(`en curso: no confirmó o no se guardó («${aviso2.slice(0, 100)}»)`);
   else bien("en curso: «Cambiar estilista» con motivo opcional, con confirmación");
@@ -344,8 +355,8 @@ try {
   else bien("terminada: sin motivo no deja corregir");
   await admin.getByLabel("Motivo de la corrección (obligatorio)").fill("Fue otra estilista");
   await admin.getByRole("button", { name: "Corregir estilista" }).last().click();
-  await admin.locator("[data-estilista-aviso]").first().waitFor({ timeout: 8000 }).catch(() => {});
-  await admin.waitForFunction(() => /Fue otra estilista/.test(document.body.innerText), null, { timeout: 8000 }).catch(() => {});
+  await admin.locator("[data-estilista-aviso]").first().waitFor({ timeout: 25000 }).catch(() => {});
+  await admin.waitForFunction(() => /Fue otra estilista/.test(document.body.innerText), null, { timeout: 25000 }).catch(() => {});
   const txtAdmin = await admin.locator("body").innerText();
   if ((await empleadoDe()).empleado_id !== S2 || !/Fue otra estilista/.test(txtAdmin)) hallazgo("terminada: el admin no pudo corregir con motivo o no se ve en el historial");
   else bien("terminada: el admin corrige con motivo y queda en el historial de la cita");

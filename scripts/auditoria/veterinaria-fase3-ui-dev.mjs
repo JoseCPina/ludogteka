@@ -95,7 +95,7 @@ try {
   comprobar(new globalThis.URL(est.p.url()).pathname === "/veterinaria", "el médico con rol de ESTÉTICA entra a /veterinaria");
   comprobar(/Agenda clínica/.test(await cuerpo(est.p)) && /Expediente clínico/.test(await cuerpo(est.p)) && /Estimados/.test(await cuerpo(est.p)), "y ve las tarjetas nuevas");
   await sinDesborde(est.p, "inicio de Veterinaria (celular)");
-  comprobar(/Veterinaria/.test(await est.p.locator("nav, header").first().innerText().catch(() => "")) || (await est.p.getByRole("link", { name: "Veterinaria" }).count()) > 0, "y «Veterinaria» sale en su menú");
+  comprobar(/Veterinaria/.test(await est.p.locator("nav, header").first().innerText().catch(() => "")) || (await est.p.getByRole("link", { name: "Veterinaria", exact: true, includeHidden: true }).count()) > 0, "y «Veterinaria» sale en su menú");
   await rsin.p.goto(`${BASE}/veterinaria/agenda`, { waitUntil: "networkidle" });
   comprobar(new globalThis.URL(rsin.p.url()).pathname === "/veterinaria/agenda", "recepción sin permisos entra a la agenda");
   await rsin.p.goto(`${BASE}/veterinaria/expediente/${rid}`, { waitUntil: "networkidle" });

@@ -69,7 +69,8 @@ export default async function PortalPage() {
   // Las reglas del negocio, redactadas por él y filtradas por sus módulos.
   const textosPoliticas = await cargarTextosPoliticas(supabase, (await negocioActual()).id);
   const modulos = sesion.modulos ?? [];
-  const politicas = politicasVisibles(textosPoliticas, modulos);
+  // Cómo se reserva o agenda ya sale en «Citas y reservas»: no se repite en las reglas.
+  const politicas = politicasVisibles(textosPoliticas, modulos).filter((p) => p.clave !== "como_reservar" && p.clave !== "como_agendar_estetica");
   const comoSeAgenda = [
     modulos.includes("guarderia") || modulos.includes("hotel") ? textoPolitica(textosPoliticas, "como_reservar") : "",
     modulos.includes("estetica") ? textoPolitica(textosPoliticas, "como_agendar_estetica") : "",

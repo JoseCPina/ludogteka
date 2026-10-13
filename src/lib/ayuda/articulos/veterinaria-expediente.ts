@@ -131,7 +131,7 @@ Cada vez que alguien abre un expediente, una consulta o un archivo queda anotado
 
 ## Mandarlo
 
-**Enviar el estimado** genera una liga para el dueño. La liga se muestra **una sola vez**: cópiala o ábrela con **Abrir WhatsApp con el mensaje**. Si se pierde, **Generar una liga nueva** (la anterior deja de servir).
+**Enviar el estimado** genera una liga para el dueño. La liga queda a la vista junto con el mensaje para WhatsApp (cópialos o ábrelos con **Abrir WhatsApp con el mensaje**). La liga no se puede volver a ver desde otra pantalla ni en otro navegador: si se pierde, **Generar una liga nueva** (la anterior deja de servir).
 
 Al enviarlo, el contenido **queda congelado**. Si hay que cambiar algo, **Hacer una versión nueva**: reemplaza a la anterior y su liga deja de servir.
 

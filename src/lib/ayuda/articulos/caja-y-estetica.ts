@@ -662,7 +662,7 @@ El aviso dice «Para calcular el precio falta el pelaje de …». Escógelo ahí
 
 La combinación de servicio, grupo, tamaño y pelaje no tiene precio capturado (o está en «No aplica»). Tienes dos salidas:
 
-1. **Agregar el precio en Servicios y precios**: te lleva a la matriz de ese servicio. Necesitas ser admin o tener el permiso «Precios y tarifas».
+1. **Agregar el precio en Servicios y precios**: te lleva a la matriz de ese servicio. Necesitas ser admin o tener el permiso «Precios y tarifas»; si no lo tienes, el botón no aparece y la pantalla te dice que se lo pidas al administrador.
 2. **Registrar excepción con motivo**: escoge el **Grupo de precio** con el que quieres cobrar solo esta cita, escribe el **Motivo de la excepción** y el precio sale. Queda con tu nombre. Necesitas ser admin o tener el permiso «Excepciones al reservar».
 
 ## La raza no tiene grupo de precio

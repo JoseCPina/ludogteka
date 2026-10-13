@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CampoCopiable } from "@/components/ui/campo-copiable";
 import { BotonImprimirPagina } from "@/components/boton-imprimir";
 import { FormularioAccion, Desplegable, BotonAccion } from "@/components/formulario-accion";
-import { formatearFechaCalendario } from "@/lib/formato";
+import { formatearFechaCalendario, unidadSegunCantidad } from "@/lib/formato";
 import type { EspejoDetalle } from "@/lib/veterinaria/recetas";
 import { archivarEspejo, cancelarEspejo } from "../../actions";
 import { SurtirDocumento } from "../../surtir";
@@ -36,7 +36,7 @@ export default async function EspejoSitpv({ params }: { params: Promise<{ id: st
     ["Folio", d.folio], ["CPA", d.cpa], ["Fecha", formatearFechaCalendario(d.fecha)], ["Paciente", paciente],
     ["Producto", d.producto], ["Registro SENASICA", d.registro_senasica], ["Principio activo", d.principio_activo ?? ""], ["Lote", d.lote ?? ""],
     ["Presentación", d.presentacion ?? ""], ["Dosis", d.dosis ?? ""], ["Intervalo", d.intervalo ?? ""], ["Duración", d.duracion ?? ""],
-    ["Cantidad total", `${d.cantidad_total}${d.unidad ? ` ${d.unidad}` : ""}`], ["Comprobante de compra", d.comprobante_compra ?? ""],
+    ["Cantidad total", `${d.cantidad_total}${d.unidad ? ` ${unidadSegunCantidad(d.cantidad_total, d.unidad)}` : ""}`], ["Comprobante de compra", d.comprobante_compra ?? ""],
   ];
 
   return (
@@ -84,7 +84,7 @@ export default async function EspejoSitpv({ params }: { params: Promise<{ id: st
           <p><span className="text-n-500">Laboratorio:</span> {d.laboratorio ?? "—"}</p>
           <p><span className="text-n-500">Lote:</span> {d.lote ?? "—"}</p>
           <p><span className="text-n-500">Dosis:</span> {d.dosis ?? "—"} · <span className="text-n-500">Intervalo:</span> {d.intervalo ?? "—"} · <span className="text-n-500">Duración:</span> {d.duracion ?? "—"}</p>
-          <p><span className="text-n-500">Cantidad total:</span> <strong>{d.cantidad_total}{d.unidad ? ` ${d.unidad}` : ""}</strong>{d.parcialidades ? " · en parcialidades" : ""}</p>
+          <p><span className="text-n-500">Cantidad total:</span> <strong>{d.cantidad_total}{d.unidad ? ` ${unidadSegunCantidad(d.cantidad_total, d.unidad)}` : ""}</strong>{d.parcialidades ? " · en parcialidades" : ""}</p>
           <p className="sm:col-span-2"><span className="text-n-500">Comprobante de compra:</span> {d.comprobante_compra ?? "—"}</p>
           {d.observaciones && <p className="whitespace-pre-line sm:col-span-2"><span className="text-n-500">Observaciones:</span> {d.observaciones}</p>}
         </section>

@@ -5,7 +5,7 @@ import { vetPuede } from "@/lib/veterinaria/permisos";
 import { cargarProductosConLotes } from "@/lib/veterinaria/lotes";
 import { EncabezadoNegocio } from "@/components/marca/encabezado-negocio";
 import { Alert } from "@/components/ui/alert";
-import { formatearFechaCalendario } from "@/lib/formato";
+import { formatearFechaCalendario, unidadSegunCantidad } from "@/lib/formato";
 import { DOCUMENTOS, type RecetaDetalle } from "@/lib/veterinaria/recetas";
 import { AccionesReceta } from "./acciones-receta";
 import { SurtirDocumento } from "../surtir";
@@ -46,7 +46,7 @@ function Cuerpo({ d, etiqueta, pie }: { d: RecetaDetalle; etiqueta: string; pie:
             <p className="mt-1 text-n-800">
               <strong>Dosis:</strong> {l.dosis} · <strong>Vía:</strong> {l.via} · <strong>Frecuencia:</strong> {l.frecuencia} · <strong>Duración:</strong> {l.duracion_dias} {l.duracion_dias === 1 ? "día" : "días"}
             </p>
-            <p className="text-n-800"><strong>Cantidad a surtir:</strong> {l.cantidad_surtir}{l.cantidad_unidad ? ` ${l.cantidad_unidad}` : ""}{l.tiempo_retiro ? <> · <strong>Tiempo de retiro:</strong> {l.tiempo_retiro}</> : null}</p>
+            <p className="text-n-800"><strong>Cantidad a surtir:</strong> {l.cantidad_surtir}{l.cantidad_unidad ? ` ${unidadSegunCantidad(l.cantidad_surtir, l.cantidad_unidad)}` : ""}{l.tiempo_retiro ? <> · <strong>Tiempo de retiro:</strong> {l.tiempo_retiro}</> : null}</p>
             {l.indicaciones && <p className="text-n-700">{l.indicaciones}</p>}
             {l.documento === "receta_cedula" && <p className="mt-1 text-xs font-semibold text-ambar-oscuro">{l.clasificacion}: {l.surtidos_max === 1 ? "se surte una sola vez y se retiene" : `hasta ${l.surtidos_max ?? "—"} surtidos${l.ventana_meses ? ` en ${l.ventana_meses} meses` : ""}`}.</p>}
           </div>
@@ -107,7 +107,7 @@ export default async function Receta({ params }: { params: Promise<{ id: string 
               <div key={l.id} className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-4">
                 <p className="font-semibold text-n-900">{l.producto} <span className="font-normal text-n-600">· {DOCUMENTOS[l.documento].corta}</span></p>
                 <p className="text-sm text-n-600">
-                  Surtida {l.surtidos} {l.surtidos === 1 ? "vez" : "veces"}{l.surtidos_max ? ` de ${l.surtidos_max}` : ""} · {l.surtido_cantidad} de {l.cantidad_surtir}{l.cantidad_unidad ? ` ${l.cantidad_unidad}` : ""}
+                  Surtida {l.surtidos} {l.surtidos === 1 ? "vez" : "veces"}{l.surtidos_max ? ` de ${l.surtidos_max}` : ""} · {l.surtido_cantidad} de {l.cantidad_surtir}{l.cantidad_unidad ? ` ${unidadSegunCantidad(l.cantidad_surtir, l.cantidad_unidad)}` : ""}
                 </p>
                 <SurtirDocumento tipo="receta" docId={l.id} lotes={prod?.lotes ?? []} unidad={l.cantidad_unidad} pacientes={[{ perro_id: d.perro_id, nombre: d.snapshot.mascota.nombre }]} />
               </div>

@@ -55,12 +55,13 @@ export default async function CarnetDeMascota({ params }: { params: Promise<{ pe
   if (!perro) notFound();
   const dueno = (Array.isArray(perro.clientes) ? perro.clientes[0] : perro.clientes) as { nombre: string; telefono: string | null } | null;
 
-  const [permisos, { data: carnetCrudo, error }, medicos, productos, medicoPropio, { data: requisitosCrudo }, { data: enlace }, { data: ajustes }, { data: hospitalizaciones }] =
+  const [permisos, { data: carnetCrudo, error }, medicos, vacunasInv, desparasitantesInv, medicoPropio, { data: requisitosCrudo }, { data: enlace }, { data: ajustes }, { data: hospitalizaciones }] =
     await Promise.all([
       vetPermisos(supabase),
       supabase.rpc("carnet_de_mascota", { p_perro_id: perroId }),
       cargarMedicos(supabase),
-      cargarProductosConLotes(supabase),
+      cargarProductosConLotes(supabase, "vacuna"),
+      cargarProductosConLotes(supabase, "desparasitante"),
       miMedico(supabase),
       supabase.from("tipos_requisito_sanitario").select("id, etiqueta").is("deleted_at", null).eq("obligatoria", true).order("orden"),
       supabase.from("carnet_enlaces").select("id").eq("perro_id", perroId).is("revocado_at", null).is("deleted_at", null).maybeSingle(),
@@ -148,7 +149,7 @@ export default async function CarnetDeMascota({ params }: { params: Promise<{ pe
         )}
         {permisos.vacunas ? (
           <Desplegable texto="Registrar vacuna" variante="primario">
-            <FormularioVacuna perroId={perroId} hoy={hoy} productos={productos} medicos={medicos} medicoPropio={medicoPropio} requisitos={requisitos} />
+            <FormularioVacuna perroId={perroId} hoy={hoy} productos={vacunasInv} medicos={medicos} medicoPropio={medicoPropio} requisitos={requisitos} />
           </Desplegable>
         ) : (
           <p className="text-sm text-n-600">Registrar vacunas es de un médico veterinario o de quien tenga el permiso «Registrar vacunas y desparasitaciones».</p>
@@ -182,7 +183,7 @@ export default async function CarnetDeMascota({ params }: { params: Promise<{ pe
         )}
         {permisos.vacunas && (
           <Desplegable texto="Registrar desparasitación" variante="primario">
-            <FormularioDesparasitacion perroId={perroId} hoy={hoy} productos={productos} medicos={medicos} medicoPropio={medicoPropio} />
+            <FormularioDesparasitacion perroId={perroId} hoy={hoy} productos={desparasitantesInv} medicos={medicos} medicoPropio={medicoPropio} />
           </Desplegable>
         )}
       </Seccion>

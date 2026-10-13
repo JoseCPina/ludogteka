@@ -3,7 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { formatearFechaCalendario } from "@/lib/formato";
+import { formatearFechaCalendario, unidadSegunCantidad } from "@/lib/formato";
 import { nombreMes, type EspejoResumen, type EstadoMedicoSitpv } from "@/lib/veterinaria/recetas";
 import { NavRecetas } from "../nav";
 
@@ -90,7 +90,7 @@ export default async function Sitpv({ searchParams }: { searchParams: Promise<{ 
                       {r.uso_hospitalario && <span className="rounded-full bg-morado-suave px-2 py-0.5 text-xs font-semibold text-morado">Uso hospitalario</span>}
                       {r.archivada_at && <span className="rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-600">Archivado</span>}
                     </span>
-                    <span className="text-sm text-n-700">{r.uso_hospitalario ? "USO HOSPITALARIO" : r.mascota} · {r.surtido} de {r.cantidad_total}{r.unidad ? ` ${r.unidad}` : ""} surtidos</span>
+                    <span className="text-sm text-n-700">{r.uso_hospitalario ? "USO HOSPITALARIO" : r.mascota} · {r.surtido} de {r.cantidad_total}{r.unidad ? ` ${unidadSegunCantidad(r.cantidad_total, r.unidad)}` : ""} surtidos</span>
                     <span className="text-sm text-n-500">{formatearFechaCalendario(r.fecha)} · {r.medico ?? "—"}</span>
                   </Link>
                 </li>

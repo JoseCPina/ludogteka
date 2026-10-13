@@ -54,6 +54,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
   const esAdmin = sesion?.rol === "admin";
   const anulada = c.estado === "anulada";
   const rutas = [`/veterinaria/consulta/${id}`, `/veterinaria/expediente/${c.perro_id}`];
+  const vitalesConValor = VITALES.filter((v) => { const x = c[v.clave as keyof typeof c]; return x != null && String(x).trim() !== ""; });
   const definitivos = c.diagnosticos.filter((x) => x.tipo === "definitivo");
   const presuntivos = c.diagnosticos.filter((x) => x.tipo === "presuntivo");
 
@@ -90,10 +91,11 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
           {SECCIONES_CONSULTA.filter((s) => s.clave === "motivo" || s.clave === "anamnesis").map((s) => (
             <Bloque key={s.clave} etiqueta={s.etiqueta} texto={c[s.clave]} />
           ))}
+          {vitalesConValor.length > 0 && (
           <div>
             <h3 className="text-sm font-bold uppercase tracking-wide text-n-600">Signos vitales</h3>
             <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-4">
-              {VITALES.filter((v) => c[v.clave as keyof typeof c] != null && c[v.clave as keyof typeof c] !== "").map((v) => (
+              {vitalesConValor.map((v) => (
                 <div key={v.clave}>
                   <dt className="text-n-500">{v.etiqueta}</dt>
                   <dd className="font-semibold text-n-900">{String(c[v.clave as keyof typeof c])} {v.unidad}</dd>
@@ -101,6 +103,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
               ))}
             </dl>
           </div>
+          )}
           {SECCIONES_CONSULTA.filter((s) => s.clave === "examen_fisico" || s.clave === "hallazgos").map((s) => (
             <Bloque key={s.clave} etiqueta={s.etiqueta} texto={c[s.clave]} />
           ))}
@@ -215,7 +218,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
 }
 
 function Bloque({ etiqueta, texto }: { etiqueta: string; texto: string | null }) {
-  if (!texto) return null;
+  if (!texto || !texto.trim()) return null;
   return (
     <div>
       <h3 className="text-sm font-bold uppercase tracking-wide text-n-600">{etiqueta}</h3>

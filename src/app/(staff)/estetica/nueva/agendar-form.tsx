@@ -412,15 +412,21 @@ export function AgendarForm({
           ) : (
             <>
               <p className="font-bold text-n-900">
-                Esta combinación no tiene precio{cot.grupoNombre ? ` en «${cot.grupoNombre}»` : ""}: agrega el precio en Servicios y precios, o registra una excepción con motivo.
+                Esta combinación no tiene precio{cot.grupoNombre ? ` en «${cot.grupoNombre}»` : ""}
+                {puedeAsignarGrupo ? ": agrega el precio en Servicios y precios, o registra una excepción con motivo." : "."}
               </p>
+              {!puedeAsignarGrupo && (
+                <p className="text-sm text-n-800">Pídele al administrador que agregue el precio en Servicios y precios.</p>
+              )}
               <div className="flex flex-wrap gap-3">
-                <Link
-                  href={cot.rutaPrecios}
-                  className="inline-flex min-h-12 items-center justify-center rounded-md border-[1.5px] border-morado bg-white px-5 text-base font-semibold text-morado hover:bg-morado-suave"
-                >
-                  Agregar el precio en Servicios y precios
-                </Link>
+                {puedeAsignarGrupo && (
+                  <Link
+                    href={cot.rutaPrecios}
+                    className="inline-flex min-h-12 items-center justify-center rounded-md border-[1.5px] border-morado bg-white px-5 text-base font-semibold text-morado hover:bg-morado-suave"
+                  >
+                    Agregar el precio en Servicios y precios
+                  </Link>
+                )}
                 {puedeExcepcion && !excepcion && (
                   <Button type="button" variante="secundario" onClick={() => setExcepcion(true)}>
                     Registrar excepción con motivo

@@ -151,3 +151,23 @@ export function inicioSemana(fechaISO: string): string {
   const diaSemanaIso = fecha.getDay() === 0 ? 7 : fecha.getDay(); // 1=lunes..7=domingo
   return sumarDiasFecha(fechaISO, 1 - diaSemanaIso);
 }
+
+const UNIDADES_PLURAL: Record<string, string> = {
+  mililitro: "mililitros", litro: "litros", galón: "galones", galon: "galones", gramo: "gramos",
+  kilogramo: "kilogramos", pieza: "piezas", tableta: "tabletas", frasco: "frascos", ampolleta: "ampolletas",
+  cápsula: "cápsulas", capsula: "cápsulas", dosis: "dosis", sobre: "sobres", caja: "cajas", tubo: "tubos",
+};
+
+/** La unidad en singular si la cantidad es 1 y en plural si no («1 Mililitro», «5 Mililitros»). Respeta mayúsculas; lo que no conoce lo deja igual. */
+export function unidadSegunCantidad(cantidad: number | string, unidad: string | null | undefined): string {
+  const u = (unidad ?? "").trim();
+  if (!u) return "";
+  const n = Number(cantidad);
+  const minus = u.toLowerCase();
+  const adaptar = (nuevo: string) => (u[0] === u[0].toUpperCase() && u[0] !== u[0].toLowerCase() ? nuevo[0].toUpperCase() + nuevo.slice(1) : nuevo);
+  if (n === 1) {
+    const singular = Object.entries(UNIDADES_PLURAL).find(([s, p]) => p === minus && s !== p && s !== "galon" && s !== "capsula")?.[0];
+    return singular ? adaptar(singular) : u;
+  }
+  return UNIDADES_PLURAL[minus] && UNIDADES_PLURAL[minus] !== minus ? adaptar(UNIDADES_PLURAL[minus]) : u;
+}

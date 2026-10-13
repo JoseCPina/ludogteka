@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,24 @@ import { aceptarEnMostrador, cancelarEstimado, enviarEstimado, versionNuevaEstim
 export function EnviarEstimado({ id, telefono, mascota, titulo, yaEnviado }: { id: string; telefono: string | null; mascota: string; titulo: string; yaEnviado: boolean }) {
   const router = useRouter();
   const envio = useEspera();
-  const [url, setUrl] = useState<string | null>(null);
+  const [generada, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const llave = `estimado-liga-${id}`;
+
+  // Al enviar, la página pasa de «borrador» a «enviado» y este componente se vuelve a montar: la liga (que no se puede
+  // recuperar de la base, solo guarda su huella) se conserva en esta pestaña para seguir mostrándola.
+  const guardada = useSyncExternalStore(
+    () => () => {},
+    () => {
+      try {
+        return window.sessionStorage.getItem(llave);
+      } catch {
+        return null; // sin almacenamiento: la liga se ve mientras no se recargue
+      }
+    },
+    () => null
+  );
+  const url = generada ?? guardada;
   const mensaje = url ? `Hola, te compartimos el estimado de ${titulo} para ${mascota}. Puedes revisarlo y aceptarlo aquí: ${url}` : "";
   const enlace = url ? wa(telefono, mensaje) : null;
   return (
@@ -31,6 +47,11 @@ export function EnviarEstimado({ id, telefono, mascota, titulo, yaEnviado }: { i
             const r = await envio.ejecutar(() => enviarEstimado(id));
             if (r.error) return setError(r.error);
             setUrl(r.url ?? null);
+            try {
+              if (r.url) window.sessionStorage.setItem(llave, r.url);
+            } catch {
+              // ver arriba
+            }
             router.refresh();
           }}
         >
@@ -39,8 +60,9 @@ export function EnviarEstimado({ id, telefono, mascota, titulo, yaEnviado }: { i
       </AccionesFormulario>
       {url && (
         <div className="flex flex-col gap-2 rounded-md border border-menta bg-menta-suave p-3">
-          <p className="text-sm font-semibold text-n-900">Esta liga solo se muestra ahora. Mándasela al dueño:</p>
+          <p className="text-sm font-semibold text-n-900">{yaEnviado ? "Liga del estimado (la última que generaste en esta pantalla). Mándasela al dueño:" : "Estimado enviado. Mándale esta liga al dueño:"}</p>
           <CampoCopiable valor={url} etiqueta="Liga del estimado" />
+          <CampoCopiable valor={mensaje} etiqueta="Mensaje para WhatsApp" />
           {enlace ? (
             <a href={enlace} target="_blank" rel="noopener" className="w-fit text-sm font-semibold text-morado underline">Abrir WhatsApp con el mensaje</a>
           ) : (
