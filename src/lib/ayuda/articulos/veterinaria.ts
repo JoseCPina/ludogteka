@@ -174,7 +174,7 @@ Cada permiso dice si está vigente, por vencer o vencido. Los vencidos y los que
 ## Registrar una vacuna
 
 1. En el carnet, aprieta **Registrar vacuna**.
-2. Elige la vacuna del inventario clínico y su **lote** (se descuenta una dosis del lote), o escríbela si no está en el inventario.
+2. Elige la vacuna del inventario clínico (solo salen los productos que en su ficha tienen **Tipo de producto: Vacuna**; el desparasitante, igual con **Desparasitante**) y su **lote** (se descuenta una dosis del lote), o escríbela si no está en el inventario.
 3. Pon la **fecha de aplicación**, la **próxima dosis** (con ella se programan los recordatorios) y el **médico veterinario que aplica**.
 4. Aprieta **Registrar vacuna**.
 

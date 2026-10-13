@@ -5,7 +5,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { BotonImprimirPagina } from "@/components/boton-imprimir";
-import { formatearFechaCalendario, hoyNegocio, sumarDiasFecha } from "@/lib/formato";
+import { formatearFechaCalendario, hoyNegocio, sumarDiasFecha, unidadSegunCantidad } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { NOMBRE_TIPO_MOVIMIENTO, type Libro } from "@/lib/veterinaria/recetas";
 import { NavRecetas } from "../recetas/nav";
@@ -92,7 +92,7 @@ export default async function LibroControl({ searchParams }: { searchParams: Pro
                             <td>{m.lote}{m.caducidad ? <span className="block text-xs text-n-500">caduca {m.caducidad}</span> : null}</td>
                             <td className="text-right">{m.entrada ?? ""}</td>
                             <td className="text-right">{m.salida ?? ""}</td>
-                            <td className="text-right font-semibold">{m.saldo} {m.unidad}</td>
+                            <td className="text-right font-semibold">{m.saldo} {unidadSegunCantidad(m.saldo, m.unidad)}</td>
                             <td className="px-3">{m.paciente ?? "—"}</td>
                             <td>{m.medico ?? "—"}</td>
                           </tr>

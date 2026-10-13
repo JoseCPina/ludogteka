@@ -5,7 +5,7 @@ import { Alert } from "@/components/ui/alert";
 import { Field } from "@/components/ui/field";
 import { BotonImprimirPagina } from "@/components/boton-imprimir";
 import { FormularioAccion } from "@/components/formulario-accion";
-import { formatearFechaCalendario } from "@/lib/formato";
+import { formatearFechaCalendario, unidadSegunCantidad } from "@/lib/formato";
 import { nombreMes, type ReporteSitpv } from "@/lib/veterinaria/recetas";
 import { marcarReporte } from "../../actions";
 
@@ -50,7 +50,7 @@ export default async function ReporteMensual({ searchParams }: { searchParams: P
                 <thead><tr className="text-left text-n-500"><th>Folio</th><th>Fecha</th><th>Producto</th><th>Registro SENASICA</th><th>Paciente</th><th className="text-right">Cantidad</th></tr></thead>
                 <tbody>
                   {r.usados.map((u) => (
-                    <tr key={u.id} className="border-t border-n-200"><td className="font-semibold">{u.folio}</td><td>{formatearFechaCalendario(u.fecha)}</td><td>{u.producto}</td><td>{u.registro_senasica}</td><td>{u.paciente}</td><td className="text-right">{u.cantidad_total}{u.unidad ? ` ${u.unidad}` : ""}{u.parcialidades ? " (parc.)" : ""}</td></tr>
+                    <tr key={u.id} className="border-t border-n-200"><td className="font-semibold">{u.folio}</td><td>{formatearFechaCalendario(u.fecha)}</td><td>{u.producto}</td><td>{u.registro_senasica}</td><td>{u.paciente}</td><td className="text-right">{u.cantidad_total}{u.unidad ? ` ${unidadSegunCantidad(u.cantidad_total, u.unidad)}` : ""}{u.parcialidades ? " (parc.)" : ""}</td></tr>
                   ))}
                 </tbody>
               </table>

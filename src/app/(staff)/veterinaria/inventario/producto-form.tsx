@@ -21,6 +21,7 @@ export type ProductoClinico = {
   clasificacion_lgs: string | null;
   es_antimicrobiano: boolean;
   clasificacion_por_confirmar: boolean;
+  tipo_clinico?: string | null;
   unidad_compra_etiqueta?: string;
   unidad_consumo_etiqueta?: string;
 };
@@ -133,6 +134,11 @@ export function ProductoForm({
             </Select>
           </>
         )}
+        <Select label="Tipo de producto" name="tipo_clinico" defaultValue={producto?.tipo_clinico ?? ""} disabled={bloqueado} ayuda="Define en qué lista del carnet aparece: las vacunas solo en «Vacuna», los desparasitantes solo en «Desparasitación».">
+          <option value="">Otro (medicamento o material)</option>
+          <option value="vacuna">Vacuna</option>
+          <option value="desparasitante">Desparasitante</option>
+        </Select>
         <Field
           label={`Stock mínimo${producto?.unidad_consumo_etiqueta ? ` (${producto.unidad_consumo_etiqueta})` : " (en unidad de consumo)"}`}
           name="stock_minimo"

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
+import { ProductoYLoteEspejo } from "./producto-lote";
 import { cargarProductosConLotes, miMedico } from "@/lib/veterinaria/lotes";
 import { buscarMascotas, etiquetaEspecie } from "@/lib/veterinaria/buscar";
 import { Alert } from "@/components/ui/alert";
@@ -79,18 +80,7 @@ export default async function NuevoEspejo({ searchParams }: { searchParams: Prom
           <input type="hidden" name="uso" value={hospitalario ? "hospitalario" : "paciente"} />
           <input type="hidden" name="perro_id" value={perro ?? ""} />
           <div className="grid gap-3 sm:grid-cols-2">
-            <Select label="Producto (Grupo I)" name="insumo_id" required>
-              {productos.map((p) => (
-                <option key={p.id} value={p.id}>{p.nombre}{p.registro_senasica ? ` · reg. ${p.registro_senasica}` : ""}</option>
-              ))}
-            </Select>
-            <Field label="Número de registro SENASICA" name="registro_senasica" ayuda="Vacío: el que ya tiene el producto. Si no tiene, captúralo aquí." />
-            <Select label="Lote (opcional)" name="lote_id">
-              <option value="">— Sin lote —</option>
-              {conLotes.flatMap((p) => p.lotes.map((l) => (
-                <option key={l.id} value={l.id}>{p.nombre} · {l.codigo}{l.caducidad ? ` · caduca ${l.caducidad}` : ""}</option>
-              )))}
-            </Select>
+            <ProductoYLoteEspejo productos={productos} conLotes={conLotes} />
             <Field label="Fecha de la receta" name="fecha" type="date" max={hoyNegocio(zona)} defaultValue={hoyNegocio(zona)} />
             <Field label="Presentación (opcional)" name="presentacion" />
             <Field label="Cantidad total que ampara" name="cantidad_total" inputMode="decimal" required ayuda="En la unidad de consumo del producto (ml, tabletas…)." />

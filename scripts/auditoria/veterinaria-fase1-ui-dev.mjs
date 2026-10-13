@@ -84,6 +84,13 @@ try {
   const prod = await admin.rpc("guardar_producto_clinico", { p_id: null, p_nombre: `Vacuna UI ${sufijo}`, p_area_id: area.id, p_unidad_compra_id: u("l"), p_unidad_consumo_id: u("ml"), p_stock_minimo: 0, p_dias_aviso_caducidad: 30, p_principio_activo_id: null, p_grupo_senasica: null, p_clasificacion_lgs: null, p_es_antimicrobiano: false, p_clasificacion_por_confirmar: false });
   const lote = await admin.rpc("registrar_lote_entrada", { p_insumo_id: prod.data, p_codigo: `UI-${sufijo}`, p_caducidad: sumaDias(hoyB, 200), p_cantidad_compra: 1 });
   if (lote.error) throw new Error(`lote: ${lote.error.message}`);
+  // El carnet solo ofrece vacunas en «Vacuna»: este producto se clasifica y otro con lotes (un sedante) no debe aparecer.
+  const tipo = await admin.rpc("producto_clinico_tipo_guardar", { p_id: prod.data, p_tipo: "vacuna" });
+  if (tipo.error) throw new Error(`tipo: ${tipo.error.message}`);
+  const sedante = await admin.rpc("guardar_producto_clinico", { p_id: null, p_nombre: `Sedante UI ${sufijo}`, p_area_id: area.id, p_unidad_compra_id: u("l"), p_unidad_consumo_id: u("ml"), p_stock_minimo: 0, p_dias_aviso_caducidad: 30, p_principio_activo_id: null, p_grupo_senasica: null, p_clasificacion_lgs: null, p_es_antimicrobiano: false, p_clasificacion_por_confirmar: false });
+  if (sedante.error) throw new Error(`sedante: ${sedante.error.message}`);
+  const loteSedante = await admin.rpc("registrar_lote_entrada", { p_insumo_id: sedante.data, p_codigo: `SED-${sufijo}`, p_caducidad: sumaDias(hoyB, 200), p_cantidad_compra: 1 });
+  if (loteSedante.error) throw new Error(`lote sedante: ${loteSedante.error.message}`);
   const nombrePerro = `Fase1 ${sufijo}`;
   const { data: perro } = await SB.from("perros").insert({ negocio_id: B, cliente_id: datos.clienteSoloB, nombre: nombrePerro, especie: "perro" }).select("id").single();
   const rid = perro.id;
@@ -99,6 +106,8 @@ try {
   await pa.waitForURL(/\/veterinaria\/carnet\//);
   comprobar(new RegExp(`Carnet de ${nombrePerro}`).test(await cuerpo(pa)), "abre el carnet");
   await pa.getByRole("button", { name: "Registrar vacuna", exact: true }).first().click();
+  const opcionesVacuna = await pa.getByLabel("Vacuna del inventario (opcional)").locator("option").allTextContents();
+  comprobar(opcionesVacuna.some((o) => o.includes(`Vacuna UI ${sufijo}`)) && !opcionesVacuna.some((o) => o.includes(`Sedante UI ${sufijo}`)), "«Vacuna del inventario» solo lista productos de tipo vacuna");
   await pa.getByLabel("Vacuna del inventario (opcional)").selectOption({ label: `Vacuna UI ${sufijo}` });
   await pa.getByLabel("Lote", { exact: true }).selectOption({ index: 1 });
   await pa.getByLabel("Próxima dosis (opcional)").first().fill(sumaDias(hoyB, 3));

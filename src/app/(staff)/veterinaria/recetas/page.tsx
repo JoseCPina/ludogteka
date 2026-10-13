@@ -32,7 +32,9 @@ export default async function Recetas({ searchParams }: { searchParams: Promise<
         )}
       </div>
       <NavRecetas activa="recetas" />
-      {error ? (
+      {error?.code === "42501" ? (
+        <Alert variante="advertencia" titulo="No tienes acceso">Las recetas son de un médico veterinario, de admin o de quien tenga «Emitir recetas».</Alert>
+      ) : error ? (
         <Alert variante="error" titulo="No pudimos cargar las recetas">Recarga la página. Si sigue, avísale al equipo técnico.</Alert>
       ) : (
         <>

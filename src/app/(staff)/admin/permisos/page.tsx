@@ -27,7 +27,10 @@ export default async function PermisosPage() {
   const { data: cuentas } = await supabase.rpc("listar_cuentas");
   const correo = new Map(((cuentas as { id: string; email: string }[] | null) ?? []).map((c) => [c.id, etiquetaDeCuenta(c.email)]));
   const nombreDe = (n: { profiles: unknown }) => ((n.profiles as { nombre_completo: string | null } | null)?.nombre_completo ?? null);
-  const nombre = new Map((nombres ?? []).map((n) => [n.id as string, nombreDe(n) ?? correo.get(n.id as string) ?? "—"]));
+  const nombre = new Map((nombres ?? []).map((n) => [n.id as string, nombreDe(n)?.trim() || correo.get(n.id as string) || "—"]));
+
+  // Con nombre; si el perfil no tiene, con su correo (o teléfono); solo si no hay nada, «—».
+  const quienEs = (id: string) => nombre.get(id) ?? correo.get(id) ?? "—";
 
   const activosDe = (id: string) =>
     (filas ?? []).filter((f) => f.profile_id === id && !f.revocado_at).map((f) => f.permiso as string);
@@ -83,8 +86,8 @@ export default async function PermisosPage() {
             {eventos.map((e, i) => (
               <li key={i} className="flex flex-wrap items-baseline justify-between gap-2 py-2">
                 <span className="text-n-900">
-                  <strong>{e.quien ? nombre.get(e.quien) ?? "—" : "—"}</strong> {e.accion} «{etiquetaDePermiso(e.permiso)}»{" "}
-                  {e.accion === "dio" ? "a" : "a"} <strong>{nombre.get(e.a) ?? "—"}</strong>
+                  <strong>{e.quien ? quienEs(e.quien) : "—"}</strong> {e.accion} «{etiquetaDePermiso(e.permiso)}»{" "}
+                  {e.accion === "dio" ? "a" : "a"} <strong>{quienEs(e.a)}</strong>
                 </span>
                 <span className="tabular-nums text-n-600">
                   {formatearFecha(e.cuando, zona)} · {horaLocalDeInstante(e.cuando, zona)}

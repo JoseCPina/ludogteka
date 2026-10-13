@@ -160,7 +160,7 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico }:
                   <option value="">—</option>
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
                     <option key={n} value={n}>
-                      {n}{n === 5 ? " · ideal" : n < 4 ? " · delgado" : n > 6 ? " · sobrepeso" : ""}
+                      {n} · {n <= 3 ? "delgado" : n <= 5 ? "ideal" : n <= 7 ? "sobrepeso" : "obesidad"}
                     </option>
                   ))}
                 </Select>

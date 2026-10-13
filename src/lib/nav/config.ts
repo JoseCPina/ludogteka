@@ -14,6 +14,8 @@ export type ItemNav = {
   // Solo si el negocio tiene ese módulo prendido (src/lib/plan/modulos.ts);
   // con una lista, basta con cualquiera de ellos.
   modulo?: string | string[];
+  // Además de `modulo`, con al menos uno de estos prendido (p. ej. contratos solo existen para guardería u hotel).
+  ademas?: string[];
   // También la ve quien sea médico veterinario designado o tenga algún permiso del módulo,
   // sin importar su rol (`acceso_veterinaria()`).
   conAccesoVeterinaria?: boolean;
@@ -38,7 +40,7 @@ export const SECCIONES_STAFF: ItemNav[] = [
   { etiqueta: "Clientes", href: "/clientes", roles: ["admin", "recepcion"] },
   { etiqueta: "Vinculación", href: "/vinculacion", roles: ["admin", "recepcion"], modulo: "portal" },
   { etiqueta: "Caja", href: "/caja", roles: ["admin", "recepcion"] },
-  { etiqueta: "Contratos", href: "/contratos", roles: ["admin", "recepcion"], modulo: "contratos" },
+  { etiqueta: "Contratos", href: "/contratos", roles: ["admin", "recepcion"], modulo: "contratos", ademas: ["guarderia", "hotel"] },
   { etiqueta: "Inventario", href: "/inventario", roles: ["admin", "recepcion", "estetica"], modulo: "inventario" },
   { etiqueta: "Reportes", href: "/reportes", roles: ["admin"], permisos: ["reportes_financieros"], modulo: "reportes" },
   { etiqueta: "Empleados", href: "/empleados", roles: ["admin", "recepcion"], modulo: "empleados" },
@@ -51,7 +53,7 @@ export const SECCIONES_STAFF: ItemNav[] = [
   { etiqueta: "Perfil y página web", href: "/admin/perfil", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { etiqueta: "Políticas y reglas", href: "/admin/politicas", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { etiqueta: "Reporte y fotos", href: "/admin/reporte-guarderia", roles: ["admin"], modulo: ["guarderia", "hotel"] },
-  { etiqueta: "Tarifa de guardería", href: "/admin/tarifa-guarderia", roles: ["admin"], permisos: ["tarifas"], modulo: "estetica" },
+  { etiqueta: "Tarifa de guardería", href: "/admin/tarifa-guarderia", roles: ["admin"], permisos: ["tarifas"], modulo: "estetica", ademas: ["guarderia"] },
   { etiqueta: "Módulos y plan", href: "/admin/modulos", roles: ["admin"], permisos: ["administrar_modulos"] },
   { etiqueta: "Cobro con terminal", href: "/admin/pagos", roles: ["admin"] },
   // Veterinaria (Fase 0): su inicio y, para quien lo administra, los módulos.
@@ -83,6 +85,7 @@ export function navStaffPara(rol: string, permisos: string[] = [], modulos: stri
           (accesoVeterinaria && seccion.conAccesoVeterinaria === true) ||
           (rol === "recepcion" && (seccion.permisos ?? []).some((p) => permisos.includes(p)))) &&
         (!seccion.modulo || (Array.isArray(seccion.modulo) ? seccion.modulo : [seccion.modulo]).some((m) => modulos.includes(m))) &&
+        (!seccion.ademas || seccion.ademas.some((m) => modulos.includes(m))) &&
         seccion.href !== inicio
     ),
   ];

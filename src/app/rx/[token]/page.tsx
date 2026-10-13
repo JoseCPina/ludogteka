@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { negocioActual } from "@/lib/negocio/actual";
-import { formatearFechaCalendario } from "@/lib/formato";
+import { formatearFechaCalendario, unidadSegunCantidad } from "@/lib/formato";
 import { hashDeToken, tokenPlausible } from "@/lib/reporte/enlaces";
 import { LigaNoDisponible, MarcoLiga } from "@/components/publico/marco-liga";
 import { BotonImprimirPagina } from "@/components/boton-imprimir";
@@ -65,7 +65,7 @@ export default async function RecetaPublica({ params }: { params: Promise<{ toke
               <p className="font-bold text-n-900">{l.producto}{l.presentacion ? ` — ${l.presentacion}` : ""}</p>
               {l.principio_activo && <p className="text-n-600">Principio activo: {l.principio_activo}</p>}
               <p className="mt-1 text-n-800"><strong>Dosis:</strong> {l.dosis} · <strong>Vía:</strong> {l.via} · <strong>Frecuencia:</strong> {l.frecuencia} · <strong>Duración:</strong> {l.duracion_dias} {l.duracion_dias === 1 ? "día" : "días"}</p>
-              <p className="text-n-800"><strong>Cantidad:</strong> {l.cantidad_surtir}{l.cantidad_unidad ? ` ${l.cantidad_unidad}` : ""}{l.tiempo_retiro ? <> · <strong>Tiempo de retiro:</strong> {l.tiempo_retiro}</> : null}</p>
+              <p className="text-n-800"><strong>Cantidad:</strong> {l.cantidad_surtir}{l.cantidad_unidad ? ` ${unidadSegunCantidad(l.cantidad_surtir, l.cantidad_unidad)}` : ""}{l.tiempo_retiro ? <> · <strong>Tiempo de retiro:</strong> {l.tiempo_retiro}</> : null}</p>
               {l.indicaciones && <p className="text-n-700">{l.indicaciones}</p>}
             </div>
           ))}
