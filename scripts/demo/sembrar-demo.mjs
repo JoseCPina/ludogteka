@@ -72,10 +72,26 @@ const azar = () => ((semilla = (semilla * 1664525 + 1013904223) >>> 0) / 2 ** 32
 const elegir = (lista) => lista[Math.floor(azar() * lista.length)];
 
 const exigir = (r, que) => { if (r.error) throw new Error(`${que}: ${r.error.message}`); return r.data; };
+// Una llamada por PostgREST con la llave de servicio corre con el tope de 8 s del rol authenticator (statement_timeout);
+// las que borran mucho (demo_vaciar*) lo rozan cuando la base de desarrollo anda cargada (es un Postgres chico).
+// La transacción cancelada se deshace sola y la función es idempotente: se reintenta con espera, ya con el caché caliente.
+async function conReintento(llamada, que, intentos = 6) {
+  let r;
+  for (let i = 1; i <= intentos; i++) {
+    r = await llamada();
+    if (!r.error || !/statement timeout|upstream request timeout|connection timeout|timed out/i.test(r.error.message)) return r;
+    console.log(`  ${que}: tope de tiempo de la base (intento ${i}/${intentos}); espero y reintento…`);
+    await new Promise((x) => setTimeout(x, 5000 * i));
+  }
+  return r;
+}
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ── Negocio ──
-let { data: neg } = await A.from("negocios").select("id, plan").eq("slug", D.NEGOCIO.slug).is("deleted_at", null).maybeSingle();
+const { data: negBuscado, error: errNeg } = await A.from("negocios").select("id, plan").eq("slug", D.NEGOCIO.slug).is("deleted_at", null).maybeSingle();
+// Un error al buscar NO es «no existe»: crearía el negocio duplicado o saltaría el vaciado.
+if (errNeg) throw new Error(`No pude buscar el negocio demo (${errNeg.message}). No se siembra nada.`);
+let neg = negBuscado;
 if (neg && !REHACER) throw new Error(`El demo ya existe (${neg.id}). Para volver a sembrarlo: --rehacer.`);
 if (neg) {
   if (neg.plan !== "demo") throw new Error("El negocio con ese slug no es un demo: no se toca.");
@@ -83,8 +99,9 @@ if (neg) {
   const { data: previos } = await A.from("clientes").select("id").eq("negocio_id", neg.id);
   for (const c of previos ?? []) await borrarCarpeta(c.id);
   // Lo clínico (Veterinaria) y lo que cuelga de perros y clientes va primero: demo_vaciar no lo conoce.
-  exigir(await createClient(C.url, C.secreta, { ...sinSesion, global: { headers: { "x-negocio-id": neg.id } } }).rpc("demo_vaciar_veterinaria", { p_negocio_id: neg.id, p_todo: true }), "demo_vaciar_veterinaria");
-  const borrado = exigir(await createClient(C.url, C.secreta, { ...sinSesion, global: { headers: { "x-negocio-id": neg.id } } }).rpc("demo_vaciar", { p_negocio_id: neg.id }), "demo_vaciar");
+  const Sneg = createClient(C.url, C.secreta, { ...sinSesion, global: { headers: { "x-negocio-id": neg.id } } });
+  exigir(await conReintento(() => Sneg.rpc("demo_vaciar_veterinaria", { p_negocio_id: neg.id, p_todo: true }), "demo_vaciar_veterinaria"), "demo_vaciar_veterinaria");
+  const borrado = exigir(await conReintento(() => Sneg.rpc("demo_vaciar", { p_negocio_id: neg.id }), "demo_vaciar"), "demo_vaciar");
   console.log("vaciado:", borrado.filter((b) => b.borradas > 0).map((b) => `${b.tabla} ${b.borradas}`).join(", "));
 } else {
   const id = exigir(await A.rpc("crear_negocio", { p_slug: D.NEGOCIO.slug, p_nombre: D.NEGOCIO.nombre, p_zona_horaria: ZONA, p_ciudad: D.NEGOCIO.ciudad, p_dominio: null, p_modelo: MODELO }), "crear_negocio");
