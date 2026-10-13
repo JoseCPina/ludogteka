@@ -13,6 +13,7 @@ import { formatearTelefono } from "@/lib/telefono";
 import { useModulos } from "@/components/modulos-contexto";
 import { registrarPagosMpPendientes } from "./cobro-integrado-actions";
 import { dinero } from "@/lib/dinero";
+import { CancelarCuenta } from "@/components/cuentas/cancelar-cuenta";
 
 export type CuentaAbierta = {
   reservaId: string;
@@ -52,6 +53,8 @@ export function MostradorCaja({
   turnoAbierto,
   pendientesMp,
   publicoGeneralId,
+  puedeCancelar,
+  esAdmin,
 }: {
   clientes: ClienteBuscable[];
   cuentas: CuentaAbierta[];
@@ -60,6 +63,9 @@ export function MostradorCaja({
   pendientesMp: PagoMpPendiente[];
   // «Público en general» nunca se agrupa: cada venta es de alguien distinto.
   publicoGeneralId: string | null;
+  // «Cancelar cuenta»: admin o el permiso; cortesía de un servicio ya hecho, solo admin.
+  puedeCancelar: boolean;
+  esAdmin: boolean;
 }) {
   const router = useRouter();
   const [cliente, setCliente] = useState<ClienteBuscable | null>(null);
@@ -78,8 +84,11 @@ export function MostradorCaja({
   }
   const hrefJunto = (ids: string[]) => `/caja/cobrar-junto?cuentas=${ids.join(",")}`;
 
+  // «Por cobrar»: hoy y fechas pasadas. «Próximas»: citas o estancias de fechas futuras
+  // (todavía no se cobran; no se mezclan con lo vencido).
   const deHoy = cuentas.filter((c) => c.fechaActividad === hoy);
-  const otras = cuentas.filter((c) => c.fechaActividad !== hoy);
+  const vencidas = cuentas.filter((c) => c.fechaActividad < hoy);
+  const proximas = cuentas.filter((c) => c.fechaActividad > hoy);
   const delCliente = cliente ? cuentas.filter((c) => c.clienteId === cliente.id) : [];
 
   async function registrarPendientes() {
@@ -93,7 +102,8 @@ export function MostradorCaja({
     const marcable = sePuedeAgrupar(c);
     const bloqueada = marcable && clienteSeleccion !== null && clienteSeleccion !== c.clienteId;
     return (
-      <li key={c.reservaId} className="flex items-stretch gap-2" data-cuenta-fila={c.reservaId}>
+      <li key={c.reservaId} className="flex flex-col gap-2" data-cuenta-fila={c.reservaId}>
+        <div className="flex items-stretch gap-2">
         {marcable && (
           <label
             className={`flex w-11 shrink-0 cursor-pointer items-center justify-center rounded-md border border-n-200 bg-white ${bloqueada ? "cursor-not-allowed opacity-40" : "hover:border-morado"}`}
@@ -129,6 +139,10 @@ export function MostradorCaja({
             <span className="text-xs text-n-500">de {dinero(c.totalCuenta)}</span>
           </span>
         </Link>
+        </div>
+        {puedeCancelar && (
+          <CancelarCuenta reservaId={c.reservaId} descripcion={c.descripcion} saldo={c.saldo} esAdmin={esAdmin} compacto />
+        )}
       </li>
     );
   }
@@ -274,19 +288,25 @@ export function MostradorCaja({
         )}
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Cuentas abiertas de hoy</h2>
-        {deHoy.length === 0 ? (
-          <p className="text-sm text-n-600">Nada pendiente de cobrar hoy.</p>
-        ) : (
-          listaCuentas(deHoy)
+      <section className="flex flex-col gap-4" data-seccion-por-cobrar>
+        <h2 className="text-lg font-bold text-n-900">Por cobrar</h2>
+        <div className="flex flex-col gap-3">
+          <h3 className="text-base font-bold text-n-900">Cuentas abiertas de hoy</h3>
+          {deHoy.length === 0 ? <p className="text-sm text-n-600">Nada pendiente de cobrar hoy.</p> : listaCuentas(deHoy)}
+        </div>
+        {vencidas.length > 0 && (
+          <div className="flex flex-col gap-3" data-seccion-vencidas>
+            <h3 className="text-sm font-bold uppercase tracking-wide text-n-600">Días anteriores (hasta 30 días)</h3>
+            {listaCuentas(vencidas)}
+          </div>
         )}
       </section>
 
-      {otras.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Otras cuentas con saldo (±30 días)</h2>
-          {listaCuentas(otras)}
+      {proximas.length > 0 && (
+        <section className="flex flex-col gap-3" data-seccion-proximas>
+          <h2 className="text-lg font-bold text-n-900">Próximas</h2>
+          <p className="text-sm text-n-600">Citas y estancias con fecha futura: todavía no se cobran.</p>
+          {listaCuentas(proximas)}
         </section>
       )}
     </div>

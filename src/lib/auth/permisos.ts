@@ -251,6 +251,12 @@ export const PERMISOS = [
     implica:
       "Crea y edita los servicios extra del negocio: precio, unidad, zonas de un traslado, paquete de sesiones, clave del SAT y clase fiscal (IVA). Los precios ya agregados a una estancia no cambian. Viene apagado.",
   },
+  {
+    clave: "cancelar_cuentas",
+    etiqueta: "Cancelar cuentas",
+    implica:
+      "Cancela una cuenta por cobrar que no se va a cobrar (no se presentó, cita cancelada, error de captura u otro motivo escrito) desde Caja, con el motivo y su nombre en el historial; si la cuenta viene de una cita que no empezó, puede cancelarla en el mismo paso. No cancela cuentas con cobros (se anulan primero). Una cortesía sobre un servicio que ya se realizó solo la hace admin. Viene apagado.",
+  },
 ] as const;
 
 export type ClavePermiso = (typeof PERMISOS)[number]["clave"];

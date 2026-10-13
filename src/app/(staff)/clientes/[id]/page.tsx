@@ -26,6 +26,7 @@ import { RestablecerPassword } from "./restablecer-password";
 import { usaEstancias } from "@/lib/plan/modulos";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
+import { CuentasCanceladasCliente } from "@/components/cuentas/cuentas-canceladas-cliente";
 import { cargarPendientesEstancia } from "@/lib/perros/pendientes-estancia";
 import { PendientesEstancia, type CatalogosPerro } from "../../perros/pendientes-estancia";
 import { cargarRazas } from "@/lib/razas";
@@ -389,6 +390,8 @@ export default async function EditarClientePage({
       )}
 
       <DatosFiscalesCliente clienteId={id} />
+
+      <CuentasCanceladasCliente clienteId={id} />
 
       <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Dar de baja</h2>

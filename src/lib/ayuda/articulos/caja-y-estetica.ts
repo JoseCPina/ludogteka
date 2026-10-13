@@ -11,11 +11,11 @@ export const ARTICULOS_CAJA_Y_ESTETICA: Articulo[] = [
     modulo: null,
     roles: ["admin", "recepcion"],
     rutas: ["/caja", "/caja/cobrar/[reservaId]", "/reservas/[id]/cobrar"],
-    palabras: ["cobrar", "pagar", "saldo", "propina", "efectivo", "transferencia", "cuenta abierta"],
+    palabras: ["cobrar", "pagar", "saldo", "propina", "efectivo", "transferencia", "cuenta abierta", "cancelar cuenta", "no se presentó", "cortesía", "cuenta que no se cobra", "próximas"],
     captura: "cobrar-una-cuenta.jpg",
     cuerpo: `Todo lo que se le debe a un cliente (estancias, citas de estética, cargos y ventas) aparece en Caja con su saldo. Desde ahí lo cobras en uno o varios métodos.
 
-1. Entra a [Caja](/caja) y busca la cuenta en **Cuentas abiertas de hoy**, o escribe el perro, el dueño o el teléfono en **¿A quién le cobras?**.
+1. Entra a [Caja](/caja) y busca la cuenta en **Por cobrar** (**Cuentas abiertas de hoy**, o los **Días anteriores** si se quedó pendiente), o escribe el perro, el dueño o el teléfono en **¿A quién le cobras?**.
 2. Abre la cuenta y revisa los conceptos y el **Saldo**.
 3. Si no hay turno, aprieta **Abrir turno**, escribe el **Fondo inicial** y **Confirmar apertura**.
 4. En **Registrar cobro** escoge el **Método** (Efectivo, Transferencia o **Tarjeta (registro manual)**; **Terminal** solo si tu negocio no tiene Mercado Pago ni Clip), escribe el **Monto** y, si dejó, la **Propina**.
@@ -31,6 +31,21 @@ Si el perro tiene day pass o mensualidad, junto a su línea sale **Pagar con bon
 Un cobro nunca pasa del saldo. Si el cliente paga **de más en efectivo**, la pantalla te dice cuánto es el **cambio** y registra solo lo que se debía. Con transferencia, tarjeta o terminal el monto no puede ser mayor al saldo, y una cuenta en cero ya no se cobra.
 
 ¿Un servicio de estética se capturó mal? Se corrige desde la cita y el saldo de la cuenta cambia solo, sin tocar lo ya cobrado: un **cobro adicional** aparece como saldo por cobrar. Mira [Cómo corregir el servicio de una cita](/ayuda/corregir-servicio-de-una-cita).
+
+## Cuando la cuenta no se va a cobrar
+
+Las citas y estancias con fecha futura salen aparte, en **Próximas**, para que no se mezclen con lo que ya toca cobrar. Si una cuenta con saldo no se debe cobrar (el dueño no llegó, se canceló la cita, es una cortesía o se capturó mal), no la dejes ahí: cancélala.
+
+1. En [Caja](/caja), en la cuenta, aprieta **Cancelar cuenta** (también dentro de la cuenta). Si no ves el botón, pídele a un admin el permiso **Cancelar cuentas** en Administración → Permisos.
+2. Escoge el **Motivo**: **No se presentó**, **Cita cancelada**, **Cortesía**, **Error de captura** u **Otro** (con **Otro** escribe qué pasó).
+3. Si la cuenta viene de una cita que todavía no empieza, sale la casilla para **cancelar también la cita**. Con **No se presentó** la cita queda como «No llegó».
+4. Aprieta **Cancelar la cuenta**.
+
+La cuenta sale de lo que falta por cobrar, pero **no se borra**: queda cancelada con el motivo, quién la canceló y cuándo, y la ves en **Cuentas canceladas** de la ficha del cliente. Una cuenta cancelada ya no admite cobros ni cargos.
+
+- Si la cuenta **ya tiene cobros**, no se cancela: primero anula el cobro ([Cómo anular o corregir un cobro](/ayuda/anular-o-corregir-un-cobro)) y luego cancélala.
+- Una **Cortesía** sobre un servicio que ya se realizó solo la hace un admin.
+- Si la cita ya empezó, no se cancela desde aquí.
 
 ## Si algo no sale
 
