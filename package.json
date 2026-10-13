@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "prepare": "git config core.hooksPath .githooks || true",
+    "secretos": "node scripts/seguridad/escanear-secretos.mjs --todo",
     "desplegar": "node scripts/desplegar-produccion.mjs",
     "tutoriales": "node scripts/tutoriales/tutoriales.mjs"
   },

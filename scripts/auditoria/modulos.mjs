@@ -13,6 +13,7 @@
 // si algo que debía rechazarse pasó.
 import fs from "node:fs";
 import { createClient } from "@supabase/supabase-js";
+import { claveAleatoria } from "../lib/clave.mjs";
 
 const env = Object.fromEntries(fs.readFileSync(".env.local", "utf8").split(/\r?\n/).filter((l) => l.includes("=") && !l.startsWith("#")).map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }));
 const URL = env.NEXT_PUBLIC_SUPABASE_URL;
@@ -44,7 +45,7 @@ const ponerPlan = async (clave) => exigir(await A.from("negocios").update({ plan
 async function cuenta(email) {
   const { data: ya } = await A.rpc("usuario_por_email", { p_email: email });
   if (ya) return ya;
-  return exigir(await A.auth.admin.createUser({ email, password: `Prueba-${crypto.randomUUID()}`, email_confirm: true }), email).user.id;
+  return exigir(await A.auth.admin.createUser({ email, password: claveAleatoria(), email_confirm: true }), email).user.id;
 }
 const admin = await cuenta("admin@modulos.prueba");
 const { data: m } = await A.from("membresias").select("id").eq("negocio_id", N).eq("profile_id", admin).is("deleted_at", null).maybeSingle();

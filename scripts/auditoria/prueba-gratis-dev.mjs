@@ -18,6 +18,7 @@ import os from "node:os";
 import path from "node:path";
 import { abrirNavegador } from "../lib/navegador.mjs";
 import { createClient } from "@supabase/supabase-js";
+import { claveAleatoria } from "../lib/clave.mjs";
 
 const env = Object.fromEntries(fs.readFileSync(".env.local", "utf8").split(/\r?\n/).filter((l) => l.includes("=") && !l.startsWith("#")).map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }));
 if (!env.NEXT_PUBLIC_SUPABASE_URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
@@ -25,7 +26,7 @@ const A = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SECRET_KEY, { 
 const PLATAFORMA = "http://plataforma.localhost:3001";
 const sufijo = String(Date.now()).slice(-4);
 const TEL = `442099${sufijo}`;
-const PASSWORD = `Prueba-${sufijo}-segura`;
+const PASSWORD = claveAleatoria();
 const NEGOCIO = `Prueba Gratis ${sufijo}`;
 const SALIDA = process.argv[2] ?? os.tmpdir();
 
@@ -186,11 +187,11 @@ try {
 
   console.log("── Un teléfono que ya tiene cuenta en PeluDesk");
   const TEL2 = `442097${sufijo}`;
-  const PASS2 = `Cliente-${sufijo}-segura`;
+  const PASS2 = claveAleatoria();
   const { data: yaCliente } = await A.auth.admin.createUser({ email: `t${TEL2}@telefono.ludogteka.mx`, password: PASS2, email_confirm: true });
   const p2 = await (await navegador.newContext({ locale: "es-MX" })).newPage();
   p2.setDefaultTimeout(90_000);
-  await registrar(p2, { negocio: `Cuenta Previa ${sufijo}`, tel: TEL2, password: "otra-contrasena-mala" });
+  await registrar(p2, { negocio: `Cuenta Previa ${sufijo}`, tel: TEL2, password: claveAleatoria() });
   await p2.getByText("Escribe la contraseña con la que ya entras").first().waitFor();
   ok(true, "con otra contraseña no toma la cuenta");
   await registrar(p2, { negocio: `Cuenta Previa ${sufijo}`, tel: TEL2, password: PASS2 });

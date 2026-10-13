@@ -30,6 +30,7 @@ import { createHmac, randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, sesion, tokenDe } from "./sesiones-dev.mjs";
 import { clienteApi, DEV } from "../nube/migraciones-api.mjs";
+import { claveAleatoria } from "../lib/clave.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const PUERTO = 4459;
@@ -157,7 +158,7 @@ const creados = [];
 let contador = 0;
 async function negocio(etiqueta, { creado = base(18, 0, -2), zona = MX, dias = 15, nombrePersona = "Ana Pérez", sinNombre = false } = {}) {
   const i = ++contador;
-  const { data: u, error: eu } = await A.auth.admin.createUser({ email: `aud-seg-${etiqueta}-${sufijo}@auditoria.invalid`, email_confirm: true, password: `Aud-${sufijo}-x!` });
+  const { data: u, error: eu } = await A.auth.admin.createUser({ email: `aud-seg-${etiqueta}-${sufijo}@auditoria.invalid`, email_confirm: true, password: claveAleatoria() });
   if (eu) throw eu;
   personas.push(u.user.id);
   const tel = `55${sufijo}${String(i).padStart(2, "0")}`;

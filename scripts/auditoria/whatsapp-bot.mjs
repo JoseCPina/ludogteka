@@ -42,6 +42,7 @@ import fs from "node:fs";
 import http from "node:http";
 import { createHmac, randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import { claveAleatoria } from "../lib/clave.mjs";
 
 const env = Object.fromEntries(
   fs.readFileSync(".env.local", "utf8").split(/\r?\n/).filter((l) => l.includes("=") && !l.startsWith("#")).map((l) => {
@@ -291,7 +292,7 @@ const NOMBRE_A = `Bot Prueba A ${sufijo}`;
 const NOMBRE_B = `Bot Prueba B ${sufijo}`;
 
 async function cuenta(telefono) {
-  const { data, error } = await A.auth.admin.createUser({ email: `t${telefono}@telefono.ludogteka.mx`, password: `Prueba-${randomUUID()}`, email_confirm: true });
+  const { data, error } = await A.auth.admin.createUser({ email: `t${telefono}@telefono.ludogteka.mx`, password: claveAleatoria(), email_confirm: true });
   if (error) throw error;
   return data.user.id;
 }

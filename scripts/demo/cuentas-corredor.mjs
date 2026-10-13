@@ -9,6 +9,7 @@
 import fs from "node:fs";
 import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import { claveAleatoria } from "../lib/clave.mjs";
 
 if (process.argv.includes("--prod")) throw new Error("Las cuentas del corredor son SOLO de desarrollo.");
 const env = Object.fromEntries(fs.readFileSync(".env.local", "utf8").split(/\r?\n/).filter((l) => l.includes("=") && !l.startsWith("#")).map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }));
@@ -25,7 +26,7 @@ const exigir = (r, t) => { if (r.error) throw new Error(`${t}: ${r.error.message
 
 async function cuenta(email, nombre) {
   const { data: existente } = await A.rpc("usuario_por_email", { p_email: email });
-  const id = existente ?? exigir(await A.auth.admin.createUser({ email, password: `Corredor-${crypto.randomUUID()}`, email_confirm: true, user_metadata: { nombre_completo: nombre } }), `crear ${email}`).user.id;
+  const id = existente ?? exigir(await A.auth.admin.createUser({ email, password: claveAleatoria(), email_confirm: true, user_metadata: { nombre_completo: nombre } }), `crear ${email}`).user.id;
   exigir(await A.from("profiles").update({ nombre_completo: nombre }).eq("id", id), `nombre ${email}`);
   return id;
 }

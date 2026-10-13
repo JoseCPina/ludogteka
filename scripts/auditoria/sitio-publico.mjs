@@ -23,6 +23,8 @@ import http from "node:http";
 import { spawn } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 import { abrirNavegador } from "../lib/navegador.mjs";
+import { claveAleatoria } from "../lib/clave.mjs";
+const CLAVE_PRUEBA = claveAleatoria(); // la clave de las cuentas que se registran por pantalla: se genera al correr
 
 const env = Object.fromEntries(fs.readFileSync(".env.local", "utf8").split(/\r?\n/).filter((l) => l.includes("=") && !l.startsWith("#")).map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }));
 if (!env.NEXT_PUBLIC_SUPABASE_URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
@@ -227,7 +229,7 @@ try {
     await page.getByLabel("Tu nombre").fill("Persona de Auditoría");
     await page.getByLabel("Nombre de tu negocio").fill(negocio);
     await page.getByLabel("Teléfono").fill(tel);
-    await page.getByLabel("Contraseña", { exact: true }).fill(`Audit-${sufijo}-segura`);
+    await page.getByLabel("Contraseña", { exact: true }).fill(CLAVE_PRUEBA);
     await page.getByLabel(servicio).check();
   };
   {

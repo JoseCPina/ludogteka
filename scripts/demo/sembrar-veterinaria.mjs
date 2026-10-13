@@ -14,6 +14,7 @@
 // el escenario.
 import fs from "node:fs";
 import { createClient } from "@supabase/supabase-js";
+import { claveAleatoria } from "../lib/clave.mjs";
 
 const env = Object.fromEntries(fs.readFileSync(".env.local", "utf8").split(/\r?\n/).filter((l) => l.includes("=") && !l.startsWith("#")).map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }));
 if (!env.NEXT_PUBLIC_SUPABASE_URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
@@ -67,7 +68,7 @@ const med = {};
 for (const m of MEDICOS) {
   let id = await idPorCorreo(m.email);
   if (!id) {
-    const r = await A.auth.admin.createUser({ email: m.email, password: `Demo-${crypto.randomUUID()}`, email_confirm: true, user_metadata: { nombre_completo: m.nombre } });
+    const r = await A.auth.admin.createUser({ email: m.email, password: claveAleatoria(), email_confirm: true, user_metadata: { nombre_completo: m.nombre } });
     if (r.error) throw new Error(`crear ${m.email}: ${r.error.message}`);
     id = r.data.user.id;
   }

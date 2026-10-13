@@ -20,6 +20,7 @@
 //   6. el bucket de capturas no se lista ni se lee con una sesión.
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { claveAleatoria } from "../lib/clave.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const LUDOGTEKA = "10000000-0000-4000-8000-000000000001";
@@ -44,7 +45,7 @@ async function recepcion2() {
   const email = "recepcion2@huellitas.prueba";
   let { data: id } = await A.rpc("usuario_por_email", { p_email: email });
   if (!id) {
-    const { data, error } = await A.auth.admin.createUser({ email, password: `Prueba-${crypto.randomUUID()}`, email_confirm: true, user_metadata: { nombre_completo: "Recepción 2 Huellitas" } });
+    const { data, error } = await A.auth.admin.createUser({ email, password: claveAleatoria(), email_confirm: true, user_metadata: { nombre_completo: "Recepción 2 Huellitas" } });
     if (error) throw error;
     id = data.user.id;
   }

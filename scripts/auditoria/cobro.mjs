@@ -23,6 +23,7 @@ import fs from "node:fs";
 import http from "node:http";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
+import { claveAleatoria } from "../lib/clave.mjs";
 
 const env = Object.fromEntries(fs.readFileSync(".env.local", "utf8").split(/\r?\n/).filter((l) => l.includes("=") && !l.startsWith("#")).map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }));
 const URL = env.NEXT_PUBLIC_SUPABASE_URL;
@@ -53,7 +54,7 @@ async function negocio(slug, nombre) {
 async function cuenta(email) {
   const { data: ya } = await A.rpc("usuario_por_email", { p_email: email });
   if (ya) return ya;
-  return exigir(await A.auth.admin.createUser({ email, password: `Prueba-${crypto.randomUUID()}`, email_confirm: true }), email).user.id;
+  return exigir(await A.auth.admin.createUser({ email, password: claveAleatoria(), email_confirm: true }), email).user.id;
 }
 async function miembro(negocioId, email, rol, clienteId = null) {
   const id = await cuenta(email);
@@ -208,7 +209,7 @@ try {
   const precioCo = (await stripe.prices.list({ lookup_keys: ["peludesk_completo_mensual"], limit: 1 })).data[0];
   const checkoutA = await stripe.checkout.sessions.create({ mode: "subscription", line_items: [{ price: precioCo.id, quantity: 1 }], metadata: { peludesk_negocio_id: NA }, subscription_data: { metadata: { peludesk_negocio_id: NA } }, success_url: "http://x.localhost/ok", cancel_url: "http://x.localhost/no" });
   const { data: uB } = await A.auth.admin.getUserById(await cuenta("admin@cobro-b.prueba"));
-  const pw = `Prueba-${crypto.randomUUID()}`;
+  const pw = claveAleatoria();
   exigir(await A.auth.admin.updateUserById(uB.user.id, { password: pw }), "contraseña admin B");
   const { abrirNavegador } = await import("../lib/navegador.mjs");
   const nav = await abrirNavegador();

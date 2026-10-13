@@ -25,6 +25,7 @@ import os from "node:os";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { claveAleatoria } from "../lib/clave.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
@@ -118,7 +119,7 @@ try {
   comprobar((recs ?? []).every((m) => conFila.has(`${m.negocio_id}:${m.profile_id}`)), `toda la recepción (${(recs ?? []).length} cuentas) tiene su fila de «Agregar servicios extra»: encendido por omisión`);
   // …y la que llegue después también (trigger de membresías).
   const correoNuevo = `recepcion-extras-${MARCA}@peludesk.test`;
-  const { data: nuevoU, error: errU } = await A.auth.admin.createUser({ email: correoNuevo, password: `Prueba-${MARCA}-x1`, email_confirm: true });
+  const { data: nuevoU, error: errU } = await A.auth.admin.createUser({ email: correoNuevo, password: claveAleatoria(), email_confirm: true });
   if (!errU && nuevoU?.user) {
     const m = await SB.from("membresias").insert({ negocio_id: B, profile_id: nuevoU.user.id, rol: "recepcion" });
     const { data: pn } = await A.from("permisos_staff").select("permiso, revocado_at").eq("negocio_id", B).eq("profile_id", nuevoU.user.id);
