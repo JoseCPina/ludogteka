@@ -174,30 +174,38 @@ const ESCENARIOS = {
             `Stripe: peludesk_${p.clave}_${per} = ${total / 100} MXN con IVA incluido`);
         }
       }
-      // Cambiar el precio de Estética crea un precio nuevo; el anterior no se toca.
-      const antes = (await stripe.prices.list({ lookup_keys: ["peludesk_estetica_mensual"], limit: 1 })).data[0];
-      const seccion = page.locator("section", { has: page.getByRole("heading", { name: /^Estética/ }) });
-      await seccion.getByLabel("Precio mensual (sin IVA)").fill("459");
-      await seccion.getByRole("button", { name: "Guardar plan" }).click();
-      await seccion.getByText(/Plan guardado/).waitFor({ timeout: 60_000 });
-      const despues = (await stripe.prices.list({ lookup_keys: ["peludesk_estetica_mensual"], limit: 1 })).data[0];
-      const viejo = await stripe.prices.retrieve(antes.id);
-      ok(despues.id !== antes.id && despues.unit_amount === 53244, "459 + IVA: precio NUEVO de $532.44 con la lookup key");
-      ok(viejo.unit_amount === antes.unit_amount && viejo.active, "el precio anterior sigue igual y activo (quien ya pagaba, sigue pagando eso)");
-      const anual = (await A.from("planes").select("precio_anual").eq("clave", "estetica").single()).data;
-      ok(Number(anual.precio_anual) === 4590, "el anual lo calcula la base: 10 mensualidades");
-      await seccion.getByLabel("Precio mensual (sin IVA)").fill("449");
-      await seccion.getByRole("button", { name: "Guardar plan" }).click();
-      await seccion.getByText(/Plan guardado/).waitFor({ timeout: 60_000 });
-      const vuelta = (await stripe.prices.list({ lookup_keys: ["peludesk_estetica_mensual"], limit: 1 })).data[0];
-      ok(vuelta.unit_amount === 52084, "de regreso a 449: la lookup key apunta a un precio de $520.84");
-      const filas = (await A.from("planes_precios_stripe").select("stripe_price_id").eq("vigente", true).eq("lookup_key", "peludesk_estetica_mensual")).data;
+      // Cambiar el precio del plan PeluDesk (el único activo) crea un precio nuevo; el anterior no se toca.
+      // El plan se deja SIEMPRE como estaba, pase lo que pase (también si un paso falla).
+      const LK = "peludesk_completo_mensual";
+      const original = Number((await A.from("planes").select("precio_mensual").eq("clave", "completo").single()).data.precio_mensual);
+      const nuevoPrecio = original + 40;
+      const totalNuevo = Math.round(nuevoPrecio * 100 * 1.16);
+      const antes = (await stripe.prices.list({ lookup_keys: [LK], limit: 1 })).data[0];
+      const seccion = page.locator("section", { has: page.getByRole("heading", { name: /^PeluDesk/ }) });
+      try {
+        await seccion.getByLabel("Precio mensual (sin IVA)").fill(String(nuevoPrecio));
+        await seccion.getByRole("button", { name: "Guardar plan" }).click();
+        await seccion.getByText(/Plan guardado/).waitFor({ timeout: 60_000 });
+        const despues = (await stripe.prices.list({ lookup_keys: [LK], limit: 1 })).data[0];
+        const viejo = await stripe.prices.retrieve(antes.id);
+        ok(despues.id !== antes.id && despues.unit_amount === totalNuevo, `${nuevoPrecio} + IVA: precio NUEVO de $${totalNuevo / 100} con la lookup key`);
+        ok(viejo.unit_amount === antes.unit_amount && viejo.active, "el precio anterior sigue igual y activo (quien ya pagaba, sigue pagando eso)");
+        const anual = (await A.from("planes").select("precio_anual").eq("clave", "completo").single()).data;
+        ok(Number(anual.precio_anual) === nuevoPrecio * 10, "el anual lo calcula la base: 10 mensualidades");
+      } finally {
+        await seccion.getByLabel("Precio mensual (sin IVA)").fill(String(original));
+        await seccion.getByRole("button", { name: "Guardar plan" }).click();
+        await seccion.getByText(/Plan guardado/).waitFor({ timeout: 60_000 });
+      }
+      const vuelta = (await stripe.prices.list({ lookup_keys: [LK], limit: 1 })).data[0];
+      ok(vuelta.unit_amount === Math.round(original * 100 * 1.16), `de regreso a ${original}: la lookup key apunta a un precio de $${Math.round(original * 100 * 1.16) / 100}`);
+      const filas = (await A.from("planes_precios_stripe").select("stripe_price_id").eq("vigente", true).eq("lookup_key", LK)).data;
       ok(filas.length === 1 && filas[0].stripe_price_id === vuelta.id, "planes_precios_stripe: un solo precio vigente, el de Stripe");
       // Idempotente: sincronizar otra vez no crea nada.
-      const cuantos = (await stripe.prices.list({ lookup_keys: ["peludesk_estetica_mensual", "peludesk_estetica_anual"], limit: 10 })).data.map((p) => p.id).sort().join();
+      const cuantos = (await stripe.prices.list({ lookup_keys: ["peludesk_completo_mensual", "peludesk_completo_anual"], limit: 10 })).data.map((p) => p.id).sort().join();
       await page.getByRole("button", { name: "Sincronizar todos con Stripe" }).click();
       await page.getByText(/Stripe ya tenía esos precios/).first().waitFor({ timeout: 90_000 });
-      const otraVez = (await stripe.prices.list({ lookup_keys: ["peludesk_estetica_mensual", "peludesk_estetica_anual"], limit: 10 })).data.map((p) => p.id).sort().join();
+      const otraVez = (await stripe.prices.list({ lookup_keys: ["peludesk_completo_mensual", "peludesk_completo_anual"], limit: 10 })).data.map((p) => p.id).sort().join();
       ok(cuantos === otraVez, "sincronizar dos veces no crea precios");
     } finally {
       await n.close();

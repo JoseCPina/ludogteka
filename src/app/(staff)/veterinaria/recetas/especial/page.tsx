@@ -14,6 +14,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 import type { RecetarioFila } from "@/lib/veterinaria/recetas";
 import type { ProductoReceta } from "../nueva/editor-receta";
 import { NavRecetas } from "../nav";
+import { AvisoErrorClinico } from "../../aviso-error";
 import { archivarRecetario, cancelarRecetario, registrarRecetario } from "../actions";
 import { SurtirDocumento } from "../surtir";
 
@@ -76,7 +77,7 @@ export default async function RecetarioEspecial({ searchParams }: { searchParams
               <Field label="Folio del recetario" name="folio" required />
               <Field label="Código de barras" name="codigo_barras" required />
               <Field label={`Días de tratamiento (máximo ${tope})`} name="dias" type="number" min={1} max={tope} required />
-              <Field label="Cantidad diaria" name="cantidad_diaria" inputMode="decimal" required ayuda="En la unidad de consumo del producto." />
+              <Field label="Cantidad diaria" name="cantidad_diaria" inputMode="decimal" required ayuda="Un número, con o sin unidad (2 o 2 ml). Se mide en la unidad de consumo del producto." />
             </div>
             <Textarea label="Indicaciones (opcional)" name="indicaciones" rows={2} />
           </FormularioAccion>
@@ -98,7 +99,7 @@ export default async function RecetarioEspecial({ searchParams }: { searchParams
       <NavRecetas activa="especial" />
       {formulario}
       {error ? (
-        <Alert variante="error" titulo="No pudimos cargar los folios">Recarga la página. Si sigue, avísale al equipo técnico.</Alert>
+        <AvisoErrorClinico error={error} titulo="No pudimos cargar los folios" />
       ) : filas.length === 0 ? (
         <p className="rounded-lg border border-n-200 bg-white p-5 text-n-700">Todavía no hay folios del recetario especial.</p>
       ) : (

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { negocioActual } from "@/lib/negocio/actual";
-import { formatearFechaCalendario } from "@/lib/formato";
+import { formatearFechaCalendario, unidadSegunCantidad } from "@/lib/formato";
 import { hashDeToken, tokenPlausible } from "@/lib/reporte/enlaces";
 import { LigaNoDisponible, MarcoLiga } from "@/components/publico/marco-liga";
 import { TIPOS_LINEA, dinero, totalLinea, type LineaEstimado } from "@/lib/veterinaria/expediente";
@@ -74,7 +74,7 @@ export default async function EstimadoPublico({ params }: { params: Promise<{ to
                   <td className="py-2">
                     <span className="text-xs font-semibold text-n-500">{TIPOS_LINEA[l.tipo]}</span>
                     <br />
-                    {Number(l.cantidad) !== 1 ? `${l.cantidad}${l.unidad ? ` ${l.unidad}` : ""} × ` : ""}{l.descripcion}
+                    {Number(l.cantidad) !== 1 ? `${l.cantidad}${l.unidad ? ` ${unidadSegunCantidad(l.cantidad, l.unidad)}` : ""} × ` : ""}{l.descripcion}
                   </td>
                   <td className="text-right">{dinero(t.min)}</td>
                   <td className="text-right">{dinero(t.max)}</td>

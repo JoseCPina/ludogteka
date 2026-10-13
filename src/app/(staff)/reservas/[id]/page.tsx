@@ -70,6 +70,8 @@ export default async function DetalleReservaPage({
       .select("id, nombre, clave, monto_libre")
       .eq("categoria", "cargo")
       .not("clave", "like", "extra_%")
+      // Los cargos internos de Veterinaria (hospitalización, estimados…) no se aplican a mano aquí.
+      .not("clave", "like", "vet\\_%")
       .order("orden"),
     estanciaIds.length > 0
       ? supabase

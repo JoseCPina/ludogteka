@@ -50,6 +50,8 @@ export function CheckinForm({
 
   const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
+  // Ya quedó registrado: el formulario se cierra y la pantalla lo dice (sin esperar al refresco del servidor).
+  const [registrado, setRegistrado] = useState(false);
   // Autoguardado por estancia: quién entrega y cómo llegó. La foto y las pertenencias ya se guardan solas.
   const borrador = useAutoguardado({
     formulario: "checkin",
@@ -121,12 +123,19 @@ export function CheckinForm({
       return;
     }
     borrador.descartar();
+    setRegistrado(true);
     router.refresh();
   }
 
   return (
     <div className="flex flex-col gap-6">
+      {registrado && (
+        <Alert variante="exito" titulo="Check-in registrado">
+          La estancia ya está en curso. Cuando el perro salga, haz el check-out desde su estancia.
+        </Alert>
+      )}
       <AvisoBorrador estado={borrador} />
+      <fieldset disabled={registrado} className="m-0 flex min-w-0 flex-col gap-6 border-0 p-0">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field
           label="Quién entrega al perro"
@@ -221,11 +230,14 @@ export function CheckinForm({
         </Alert>
       )}
 
-      <AccionesFormulario error={error}>
-        <Button type="button" cargando={enviando.cargando} onClick={confirmar}>
-          {enviando.cargando ? "Guardando…" : "Confirmar check-in"}
-        </Button>
-      </AccionesFormulario>
+      {!registrado && (
+        <AccionesFormulario error={error}>
+          <Button type="button" cargando={enviando.cargando} onClick={confirmar}>
+            {enviando.cargando ? "Guardando…" : "Confirmar check-in"}
+          </Button>
+        </AccionesFormulario>
+      )}
+      </fieldset>
     </div>
   );
 }

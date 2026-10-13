@@ -21,6 +21,7 @@ export const ARTICULOS_CAJA_Y_ESTETICA: Articulo[] = [
 4. En **Registrar cobro** escoge el **Método** (Efectivo, Transferencia o **Tarjeta (registro manual)**; **Terminal** solo si tu negocio no tiene Mercado Pago ni Clip), escribe el **Monto** y, si dejó, la **Propina**.
 5. ¿Paga una parte en efectivo y otra con tarjeta? Aprieta **+ Repartir en otro método** y llena el segundo renglón.
 6. Aprieta **Registrar cobro**. El saldo baja y el cobro queda en **Cobros de esta reserva**.
+7. Cuando el saldo llega a cero, el formulario se cambia por **Cuenta pagada**: ya no hay nada más que cobrar. Si el cliente entrega de más en efectivo, la pantalla te dice el cambio.
 
 > El cobro con tarjeta se hace con **Cobrar con terminal** ([Cómo cobrar con la terminal](/ayuda/cobrar-con-terminal)): así se confirma solo con Mercado Pago. El método **Terminal** no se captura a mano en un negocio con Mercado Pago o Clip. Si la terminal no se puede usar, usa **Tarjeta (registro manual)** con el folio del voucher ([Cuándo usar Tarjeta (registro manual)](/ayuda/tarjeta-registro-manual)). A mano también: efectivo y transferencia.
 
