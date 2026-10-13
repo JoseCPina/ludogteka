@@ -1,0 +1,7 @@
+#!/bin/sh
+# Bloquea el commit si lo que está en stage trae una contraseña, un par correo + contraseña, una llave de API o un token.
+# Se activa solo con `npm install` / `npm ci` (script "prepare": core.hooksPath = .githooks).
+node scripts/seguridad/escanear-secretos.mjs || {
+  echo "Commit cancelado por el escaneo de secretos." >&2
+  exit 1
+}

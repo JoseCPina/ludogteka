@@ -19,6 +19,8 @@ import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
 import { abrirNavegador } from "../lib/navegador.mjs";
+import { claveAleatoria } from "../lib/clave.mjs";
+const CLAVE_PRUEBA = claveAleatoria(); // la clave de las cuentas que esta prueba da de alta por pantalla: se genera al correr, no vive en el código
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
@@ -197,12 +199,12 @@ try {
   if (!(await inv1.locator("body").innerText()).includes(`Invitada ${sufijo}`)) hallazgo("el enlace no saluda al cliente por su nombre");
   await sinDesborde(inv1, "activar");
   // Contraseñas distintas / cortas.
-  await inv1.getByLabel("Escoge tu contraseña").fill("Prueba-123456");
-  await inv1.getByLabel("Repítela").fill("otra-cosa-123");
+  await inv1.getByLabel("Escoge tu contraseña").fill(CLAVE_PRUEBA);
+  await inv1.getByLabel("Repítela").fill(claveAleatoria());
   await inv1.getByRole("button", { name: "Abrir mi cuenta" }).click();
   await inv1.waitForTimeout(500);
   if (!(await inv1.locator("body").innerText()).includes("no coinciden")) hallazgo("contraseñas distintas no se avisan");
-  await inv1.getByLabel("Repítela").fill("Prueba-123456");
+  await inv1.getByLabel("Repítela").fill(CLAVE_PRUEBA);
   await inv1.getByRole("button", { name: "Abrir mi cuenta" }).click();
   await inv1.waitForURL(/\/portal/, { timeout: 40_000 }).catch(() => {});
   if (!/\/portal/.test(inv1.url())) hallazgo(`activar no llevó al portal: ${inv1.url()} · ${(await inv1.locator("body").innerText()).slice(0, 200)}`);
@@ -244,8 +246,8 @@ try {
   const [pa, pb] = await Promise.all([ctxOtro.newPage(), (await nav.newContext()).newPage()]);
   for (const p of [pa, pb]) {
     await p.goto(`${BASE}${new globalThis.URL(url5).pathname}`, { waitUntil: "networkidle" });
-    await p.getByLabel("Escoge tu contraseña").fill("Prueba-123456");
-    await p.getByLabel("Repítela").fill("Prueba-123456");
+    await p.getByLabel("Escoge tu contraseña").fill(CLAVE_PRUEBA);
+    await p.getByLabel("Repítela").fill(CLAVE_PRUEBA);
   }
   await Promise.all([pa.getByRole("button", { name: "Abrir mi cuenta" }).click(), pb.getByRole("button", { name: "Abrir mi cuenta" }).click()]);
   await Promise.all([pa.waitForTimeout(8000), pb.waitForTimeout(8000)]);

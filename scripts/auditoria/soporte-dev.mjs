@@ -41,6 +41,7 @@ import { createHmac, randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { abrirNavegador } from "../lib/navegador.mjs";
 import { A, URL, env } from "./sesiones-dev.mjs";
+import { claveAleatoria } from "../lib/clave.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const PUERTO = 3001;
@@ -194,7 +195,7 @@ async function adminDeTelefono() {
   const email = `t${TEL_ADMIN}@telefono.ludogteka.mx`;
   let { data: id } = await A.rpc("usuario_por_email", { p_email: email });
   if (!id) {
-    const { data, error } = await A.auth.admin.createUser({ email, password: `Prueba-${randomUUID()}`, email_confirm: true, user_metadata: { nombre_completo: "Admin 2 Huellitas" } });
+    const { data, error } = await A.auth.admin.createUser({ email, password: claveAleatoria(), email_confirm: true, user_metadata: { nombre_completo: "Admin 2 Huellitas" } });
     if (error) throw error;
     id = data.user.id;
   }

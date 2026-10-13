@@ -13,6 +13,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import { execSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
+import { claveAleatoria } from "../lib/clave.mjs";
 
 const PROD = process.argv.includes("--prod");
 const SLUG = "patitasyco";
@@ -66,7 +67,7 @@ const idDe = async (email) => exigir(await A.rpc("usuario_por_email", { p_email:
 
 let medicaId = await idDe(EMAIL_MEDICA);
 if (!medicaId) {
-  medicaId = exigir(await A.auth.admin.createUser({ email: EMAIL_MEDICA, password: `Demo-${crypto.randomUUID()}`, email_confirm: true, user_metadata: { nombre_completo: "Dra. Valeria Montes" } }), "crear la cuenta de la médica").user.id;
+  medicaId = exigir(await A.auth.admin.createUser({ email: EMAIL_MEDICA, password: claveAleatoria(), email_confirm: true, user_metadata: { nombre_completo: "Dra. Valeria Montes" } }), "crear la cuenta de la médica").user.id;
 }
 await A.from("profiles").update({ nombre_completo: "Dra. Valeria Montes" }).eq("id", medicaId);
 const tieneMembresia = (await A.from("membresias").select("rol").eq("profile_id", medicaId).eq("negocio_id", NEG).is("deleted_at", null).maybeSingle()).data;

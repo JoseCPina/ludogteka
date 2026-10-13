@@ -16,6 +16,7 @@ import { createClient } from "@supabase/supabase-js";
 import crypto from "node:crypto";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
 import { comoPersona } from "./reportes-sesion-dev.mjs";
+import { claveAleatoria } from "../lib/clave.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 
@@ -48,7 +49,7 @@ export async function prepararHuellitas() {
   let sinPermiso = (await A.rpc("usuario_por_email", { p_email: "sinpermiso@huellitas.prueba" })).data;
   if (!sinPermiso) {
     const creado = exigir(
-      await A.auth.admin.createUser({ email: "sinpermiso@huellitas.prueba", password: `Prueba-${crypto.randomUUID()}`, email_confirm: true, user_metadata: { nombre_completo: `Recepción sin permiso ${MARCA}` } }),
+      await A.auth.admin.createUser({ email: "sinpermiso@huellitas.prueba", password: claveAleatoria(), email_confirm: true, user_metadata: { nombre_completo: `Recepción sin permiso ${MARCA}` } }),
       "crear sinpermiso"
     );
     sinPermiso = creado.user.id;

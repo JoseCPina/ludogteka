@@ -31,6 +31,8 @@ import http from "node:http";
 import { createClient } from "@supabase/supabase-js";
 import { abrirNavegador } from "../lib/navegador.mjs";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { claveAleatoria } from "../lib/clave.mjs";
+const CLAVE_PRUEBA = claveAleatoria(); // la clave de las cuentas que esta prueba da de alta por pantalla: se genera al correr, no vive en el código
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const PUERTO = 3001;
@@ -171,8 +173,8 @@ try {
   await primero.getByLabel("Fecha en que se aplicó").fill("2026-09-01");
   await primero.locator('input[type="file"]').setInputFiles({ name: "carnet.pdf", mimeType: "application/pdf", buffer: PDF });
   await dueno.getByRole("button", { name: "Siguiente" }).click();
-  await dueno.getByLabel("Tu contraseña", { exact: true }).fill("Prueba-123456");
-  await dueno.getByLabel("Repite tu contraseña").fill("Prueba-123456");
+  await dueno.getByLabel("Tu contraseña", { exact: true }).fill(CLAVE_PRUEBA);
+  await dueno.getByLabel("Repite tu contraseña").fill(CLAVE_PRUEBA);
   await dueno.getByRole("button", { name: "Terminar mi registro" }).click();
   await dueno.locator("[data-resumen-requisitos]").waitFor({ timeout: 60_000 });
   const sinRegistro = (await dueno.locator("[data-resumen-requisitos]").getAttribute("data-sin-registro")) ?? "";
@@ -246,7 +248,7 @@ try {
   const ctx2 = await nav.newContext();
   const dueno2 = await ctx2.newPage();
   await dueno2.goto(`${BASE}/alta/${token2}`, { waitUntil: "networkidle" });
-  await dueno2.getByLabel("Tu contraseña").fill("Prueba-123456");
+  await dueno2.getByLabel("Tu contraseña").fill(CLAVE_PRUEBA);
   await dueno2.getByRole("button", { name: "Continuar" }).click();
   await dueno2.locator("[data-comprobantes-perro]").waitFor({ timeout: 30_000 }).catch(() => hallazgo("el complemento no pide las vacunas que faltan"));
   const faltantes = await dueno2.locator("[data-requisito]").evaluateAll((els) => els.map((e) => e.getAttribute("data-requisito")));
@@ -276,7 +278,7 @@ try {
   const ctx3 = await nav.newContext();
   const dueno3 = await ctx3.newPage();
   await dueno3.goto(`${BASE}/alta/${token3}`, { waitUntil: "networkidle" });
-  await dueno3.getByLabel("Tu contraseña").fill("Prueba-123456");
+  await dueno3.getByLabel("Tu contraseña").fill(CLAVE_PRUEBA);
   await dueno3.getByRole("button", { name: /Continuar/ }).click();
   await dueno3.waitForTimeout(3000);
   if (await dueno3.locator("[data-comprobantes-perro]").count()) hallazgo("con guardería y hotel apagados, el link sigue pidiendo vacunas");

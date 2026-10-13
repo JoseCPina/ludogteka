@@ -36,6 +36,7 @@ import path from "node:path";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 import { abrirNavegador } from "../lib/navegador.mjs";
+import { claveAleatoria } from "../lib/clave.mjs";
 
 const env = Object.fromEntries(fs.readFileSync(".env.local", "utf8").split(/\r?\n/).filter((l) => l.includes("=") && !l.startsWith("#")).map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }));
 if (!env.NEXT_PUBLIC_SUPABASE_URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
@@ -151,7 +152,7 @@ const ESCENARIOS = {
   async precios() {
     const { data: pa } = await A.from("plataforma_admins").select("profile_id").limit(1).single();
     const { data: u } = await A.auth.admin.getUserById(pa.profile_id);
-    const pw = `Plataforma-${Date.now()}`;
+    const pw = claveAleatoria();
     exigir(await A.auth.admin.updateUserById(pa.profile_id, { password: pw }), "contraseña de la cuenta de plataforma de desarrollo");
     const { n, page } = await navegador();
     try {
@@ -212,7 +213,7 @@ const ESCENARIOS = {
     const id = exigir(await A.rpc("crear_negocio", { p_slug: slug, p_nombre: `Cobro ${sufijo}`, p_zona_horaria: "America/Mexico_City", p_ciudad: "Querétaro", p_dominio: null }), "crear negocio");
     exigir(await A.from("negocios").update({ plan: "prueba", prueba_termina_at: new Date(Date.now() + 10 * 86_400_000).toISOString(), plan_id: await planId("completo") }).eq("id", id), "ponerlo en prueba");
     const email = `admin-${sufijo}@cobro.prueba`;
-    const password = `Cobro-${sufijo}-segura`;
+    const password = claveAleatoria();
     const u = exigir(await A.auth.admin.createUser({ email, password, email_confirm: true }), "cuenta admin").user;
     exigir(await A.rpc("agregar_admin_negocio", { p_negocio_id: id, p_profile_id: u.id }), "membresía admin");
     Object.assign(est, { negocio: id, slug, email, password });
@@ -481,7 +482,7 @@ const ESCENARIOS = {
   async plataforma() {
     const { data: pa } = await A.from("plataforma_admins").select("profile_id").limit(1).single();
     const { data: u } = await A.auth.admin.getUserById(pa.profile_id);
-    const pw = `Plataforma-${Date.now()}`;
+    const pw = claveAleatoria();
     exigir(await A.auth.admin.updateUserById(pa.profile_id, { password: pw }), "contraseña de la cuenta de plataforma de desarrollo");
     const { n, page } = await navegador();
     try {

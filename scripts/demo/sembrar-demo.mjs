@@ -27,6 +27,7 @@ import sharp from "sharp";
 import { generarPdfContrato } from "../../src/lib/contratos/generar-pdf.ts";
 import { resolverPlantilla } from "../../src/lib/contratos/plantilla.ts";
 import * as D from "./datos.mjs";
+import { claveAleatoria } from "../lib/clave.mjs";
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const PROD = process.argv.includes("--prod");
@@ -112,7 +113,7 @@ exigir(await S.from("configuracion_descuentos").update({ vigencia_desde: dia(-12
 // ── Cuentas y sesiones ──
 async function cuenta(email, nombre) {
   const { data: existente } = await A.rpc("usuario_por_email", { p_email: email });
-  const id = existente ?? exigir(await A.auth.admin.createUser({ email, password: `Demo-${crypto.randomUUID()}`, email_confirm: true, user_metadata: { nombre_completo: nombre } }), `crear ${email}`).user.id;
+  const id = existente ?? exigir(await A.auth.admin.createUser({ email, password: claveAleatoria(), email_confirm: true, user_metadata: { nombre_completo: nombre } }), `crear ${email}`).user.id;
   // El nombre que ve la app en el encabezado y en la agenda.
   exigir(await A.from("profiles").update({ nombre_completo: nombre }).eq("id", id), `nombre ${email}`);
   return id;

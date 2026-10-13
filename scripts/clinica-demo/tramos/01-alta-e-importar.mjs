@@ -1,6 +1,8 @@
 // Tramo 1 · Alta del cliente por liga (con campos clínicos) y 5 clientes importados desde un .xlsx.
 import { BASE, comprobar, seccion, cuerpo, sinDesborde, PDF, hoyISO } from "../comun.mjs";
 import { xlsx } from "../xlsx.mjs";
+import { claveAleatoria } from "../../lib/clave.mjs";
+const CLAVE_LIGA = claveAleatoria(); // la cuenta del cliente de ejemplo de la clínica demo se da de alta con una clave que solo vive en esta corrida
 
 const TEL_LIGA = "4441300002";
 export async function tramo(c) {
@@ -47,8 +49,8 @@ export async function tramo(c) {
     await req.locator('input[type="file"]').setInputFiles({ name: "carnet.pdf", mimeType: "application/pdf", buffer: PDF });
   } else comprobar(false, "no apareció el paso de vacunas");
   await p.getByRole("button", { name: "Siguiente" }).click();
-  await p.getByLabel("Tu contraseña", { exact: true }).fill("Prueba-Liga-2026");
-  await p.getByLabel("Repite tu contraseña").fill("Prueba-Liga-2026");
+  await p.getByLabel("Tu contraseña", { exact: true }).fill(CLAVE_LIGA);
+  await p.getByLabel("Repite tu contraseña").fill(CLAVE_LIGA);
   await sinDesborde(p, "alta (contraseña)");
   await p.getByRole("button", { name: "Terminar mi registro" }).click();
   await p.waitForLoadState("networkidle");

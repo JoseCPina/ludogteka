@@ -17,6 +17,7 @@
 import { spawnSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, sesion, tokenDe } from "./sesiones-dev.mjs";
+import { claveAleatoria } from "../lib/clave.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const hallazgos = [];
@@ -28,7 +29,7 @@ const sufijo = String(Date.now()).slice(-6);
 
 const personas = [];
 async function persona(etiqueta) {
-  const { data, error } = await A.auth.admin.createUser({ email: `aud-neg-${etiqueta}-${sufijo}@auditoria.invalid`, email_confirm: true, password: `Aud-${sufijo}-x!` });
+  const { data, error } = await A.auth.admin.createUser({ email: `aud-neg-${etiqueta}-${sufijo}@auditoria.invalid`, email_confirm: true, password: claveAleatoria() });
   if (error) throw error;
   personas.push(data.user.id);
   return data.user.id;

@@ -16,6 +16,7 @@ import os from "node:os";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { claveAleatoria } from "../lib/clave.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 
@@ -55,7 +56,7 @@ async function cuenta(email, nombre) {
   const { data: existente } = await A.rpc("usuario_por_email", { p_email: email });
   if (existente) return existente;
   const creado = exigir(
-    await A.auth.admin.createUser({ email, password: `Prueba-${crypto.randomUUID()}`, email_confirm: true, user_metadata: { nombre_completo: nombre } }),
+    await A.auth.admin.createUser({ email, password: claveAleatoria(), email_confirm: true, user_metadata: { nombre_completo: nombre } }),
     `crear ${email}`
   );
   return creado.user.id;

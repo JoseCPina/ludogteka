@@ -25,6 +25,7 @@ import {
 } from "./veterinaria-comun-dev.mjs";
 import { tokenDe } from "./sesiones-dev.mjs";
 import { createClient } from "@supabase/supabase-js";
+import { claveAleatoria } from "../lib/clave.mjs";
 
 const P = await personas();
 const activos = async (token, negocio = B) => (await rpc(token, "modulos_activos", {}, negocio)).cuerpo ?? [];
@@ -170,7 +171,7 @@ try {
   const creados = [];
   const registrar = async (servicios, n) => {
     const email = `reg-vet-${MARCA}-${n}@ejemplo.test`;
-    const { data: u, error } = await A.auth.admin.createUser({ email, password: "Prueba-12345", email_confirm: true });
+    const { data: u, error } = await A.auth.admin.createUser({ email, password: claveAleatoria(), email_confirm: true });
     if (error) throw new Error(`usuario de prueba: ${error.message}`);
     const tel = `55${String(Date.now()).slice(-7)}${n}`.slice(0, 10);
     const r = await SB.rpc("registrar_negocio_prueba", {
