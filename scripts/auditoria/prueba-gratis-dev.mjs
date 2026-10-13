@@ -140,8 +140,9 @@ try {
   await page.getByLabel("Dirección").fill("Calle de Prueba 12, Col. Centro");
   await page.getByRole("button", { name: "Guardar datos" }).click();
   await page.getByText("Perfil guardado").first().waitFor();
-  await page.getByLabel("Foto para: subir logo").setInputFiles(fotoDePrueba);
-  await page.getByRole("button", { name: "Subir logo", exact: true }).click();
+  await page.getByLabel("Archivo del logo").setInputFiles(fotoDePrueba);
+  await page.getByText("Así se va a ver:").waitFor(); // vista previa antes de guardar
+  await page.getByRole("button", { name: "Guardar logo", exact: true }).click();
   await page.getByText("Logo guardado").first().waitFor();
   for (let i = 0; i < 3; i++) {
     await page.getByLabel("Foto para: agregar foto").setInputFiles(fotoDePrueba);
