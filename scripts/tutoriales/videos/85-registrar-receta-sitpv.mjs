@@ -16,7 +16,7 @@ export default {
     },
     {
       titulo: "El producto y la cantidad",
-      dice: "Elige el producto, solo salen los de Grupo I, su registro de SENASICA, el lote, la dosis, el intervalo, la duración y la cantidad total que ampara la receta. Anota el comprobante de compra.",
+      dice: "Elige el producto, solo salen los de Grupo I, su registro de SENASICA, el lote, que solo ofrece los de ese producto, la dosis, el intervalo, la duración y la cantidad total que ampara la receta. Anota el comprobante de compra.",
       pasos: [["resaltar", "Producto (Grupo I)", 2600], ["resaltar", "Cantidad total que ampara", 2800], ["resaltar", "Comprobante de compra", 2600]],
     },
     {
