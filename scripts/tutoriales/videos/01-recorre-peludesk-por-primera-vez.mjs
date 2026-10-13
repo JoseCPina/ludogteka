@@ -10,7 +10,7 @@ export default {
     },
     {
       titulo: "El menú de la izquierda",
-      dice: "A la izquierda está el menú. Ahí viven los servicios de tu negocio, como «Guardería», «Hotel» y «Estética», y también «Clientes», «Caja», «Inventario», «Empleados» y «Reportes». Cada persona solo ve lo que le toca y lo que tu plan incluye.",
+      dice: "A la izquierda está el menú. Ahí viven los servicios de tu negocio, como «Guardería», «Hotel» y «Estética», y también «Clientes», «Caja», «Inventario», «Empleados» y «Reportes». Cada persona solo ve lo que le toca, y lo que apagues en «Módulos y plan» tampoco aparece.",
       pasos: [["resaltar", "css:nav[aria-label='Secciones']", 4200]],
     },
     {
@@ -29,5 +29,5 @@ export default {
       pasos: [["resaltar", "css:a[aria-label='Ayuda de esta pantalla']", 2800], ["clic", "Ayuda", { nav: true }], ["esperar", 1800]],
     },
   ],
-  resumen: ["El «Panel de admin» es tu inicio; recepción y estética tienen el suyo.", "El menú de la izquierda muestra solo lo que tu rol y tu plan incluyen.", "El signo de interrogación y la sección «Ayuda» te acompañan en cada pantalla."],
+  resumen: ["El «Panel de admin» es tu inicio; recepción y estética tienen el suyo.", "El menú de la izquierda muestra solo lo que tu rol puede ver y los módulos que tienes prendidos.", "El signo de interrogación y la sección «Ayuda» te acompañan en cada pantalla."],
 };

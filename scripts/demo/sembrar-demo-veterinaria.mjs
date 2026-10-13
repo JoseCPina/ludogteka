@@ -159,7 +159,8 @@ try {
 
   // ── Agenda clínica ──
   const CITAS = [
-    [M.Kiwi, "consulta", dia(0), "16:00", "Revisión por estornudos"],
+    // Si ya pasó la hora de hoy, la base rechaza la cita («Esa hora ya pasó»): pasa a mañana.
+    [M.Kiwi, "consulta", dia(new Date(inst(dia(0), "16:00")) > Date.now() + 3600000 ? 0 : 1), "16:00", "Revisión por estornudos"],
     [M.Luna, "vacuna", dia(1), "10:00", "Refuerzo de vacuna"],
     [M.Rocco, "seguimiento", dia(1), "12:30", "Control tras gastroenteritis"],
     [M.Canela, "consulta", dia(2), "11:00", "Revisión de oídos"],

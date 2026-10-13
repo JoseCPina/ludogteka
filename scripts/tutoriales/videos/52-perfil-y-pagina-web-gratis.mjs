@@ -1,8 +1,8 @@
-// 52 · Perfil y página web (admin)
+// 52 · Perfil y página web incluida (admin)
 export default {
   rol: "admin",
   inicio: "/admin/perfil",
-  gancho: "Tu negocio puede tener su propia página web sin pagar a nadie: la armas con tu perfil. Mira cómo se activa.",
+  gancho: "Tu negocio puede tener su propia página web, incluida en tu plan y sin costo aparte: se arma con tu perfil. Mira cómo.",
   escenas: [
     {
       titulo: "El perfil del negocio",
@@ -16,8 +16,8 @@ export default {
     },
     {
       titulo: "Tu página web",
-      dice: "Si completas tu perfil en los primeros días, tu página web es gratis. Se arma sola con tu logo, tus fotos, tus precios y tu horario, y el único contacto es tu WhatsApp.",
-      pasos: [["resaltar", "Tu página web está incluida", 3200]],
+      dice: "Tu página web viene incluida en tu plan, sin costo aparte. Se arma sola con tu logo, tus fotos, tus precios y tu horario, y el único contacto es tu WhatsApp. Mientras te falte algo del perfil, aquí te dice qué.",
+      pasos: [["resaltar", "Tu página web viene incluida en tu plan", 3200]],
     },
     {
       titulo: "Así se ve",
@@ -25,5 +25,5 @@ export default {
       pasos: [["ir", "/"], ["esperar", 3500], ["desplazar", 900], ["esperar", 2500]],
     },
   ],
-  resumen: ["Capturas tu perfil: descripción, dirección, logo y fotos.", "Tu página web se arma sola con esos datos.", "Si completas tu perfil a tiempo, es gratis."],
+  resumen: ["Capturas tu perfil: descripción, dirección, logo y fotos.", "Tu página web se arma sola con esos datos.", "Viene incluida en tu plan, sin costo aparte."],
 };

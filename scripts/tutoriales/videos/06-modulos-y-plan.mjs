@@ -5,12 +5,12 @@ export default {
   escenas: [
     {
       titulo: "Entra a Módulos y plan",
-      dice: "Desde el menú entra a «Módulos y plan». Aquí ves todo lo que PeluDesk puede hacer, dividido en módulos.",
+      dice: "Desde el menú entra a «Módulos y plan». Aquí ves todo lo que PeluDesk puede hacer, dividido en módulos, y tu plan.",
       pasos: [["clic", "Módulos y plan", { nav: true }], ["resaltar", "Módulos y plan", 2200]],
     },
     {
       titulo: "Los módulos",
-      dice: "Están «Guardería», «Hotel», «Estética», los paquetes de day pass, la recolección a domicilio, los contratos, el portal de clientes, el inventario, los empleados, los gastos, los reportes y tu página web.",
+      dice: "Están «Guardería», «Hotel», «Estética», los paquetes de day pass, la recolección a domicilio, los contratos, el portal de clientes, el inventario, los empleados, los gastos, los reportes y tu página web. Todos vienen incluidos en tu plan.",
       pasos: [["zoom", "Guardería", 1.5, 3500], ["desplazar", "Página web"], ["resaltar", "Página web", 2400]],
     },
     {
@@ -20,9 +20,9 @@ export default {
     },
     {
       titulo: "Tu plan",
-      dice: "Los módulos que puedes prender dependen de tu plan. Si necesitas uno más, lo cambias aquí mismo.",
+      dice: "PeluDesk tiene un solo plan: seiscientos cuarenta y nueve pesos al mes más IVA, sin costo inicial y con todos los módulos. Pruébalo quince días gratis, y prende o apaga lo que quieras sin pagar de más.",
       pasos: [["esperar", 3000]],
     },
   ],
-  resumen: ["Prende solo los módulos que usas.", "Antes de apagar uno, la app te avisa qué quedaría pendiente.", "Apagar no borra datos."],
+  resumen: ["Prende solo los módulos que usas; todos vienen en tu plan.", "Antes de apagar uno, la app te avisa qué quedaría pendiente.", "Apagar no borra datos.", "Un solo plan: $649 al mes más IVA, sin costo inicial."],
 };
