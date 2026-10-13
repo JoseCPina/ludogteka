@@ -1,3 +1,4 @@
+import { getUserConReintento } from "@/lib/supabase/get-user";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { esPlataforma } from "@/lib/negocio/actual";
@@ -14,7 +15,7 @@ export async function sesionPlataforma() {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getUserConReintento(supabase);
   if (!user) return null;
   const { data: es } = await supabase.rpc("es_admin_plataforma");
   if (es !== true) return null;
