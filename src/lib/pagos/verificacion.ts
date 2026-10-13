@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { consultarPago } from "@/lib/mercadopago/links";
 import type { OrdenPoint } from "@/lib/mercadopago/point";
 import { mensajeDeError, type ConexionCobro, type EstadoRemoto, type OrdenLocal } from "./tipos";
+import { dinero } from "@/lib/dinero";
 
 /**
  * Verificar contra el proveedor, por consulta directa, que un cobro con
@@ -20,7 +21,6 @@ import { mensajeDeError, type ConexionCobro, type EstadoRemoto, type OrdenLocal 
 export type Verificacion = { ok: true; detalle: Record<string, unknown> } | { ok: false; motivo: string };
 
 const igual = (a: number, b: number) => Math.abs(a - b) <= 0.005;
-const dinero = (v: number) => `$${v.toFixed(2)}`;
 
 export async function verificarPagoDeOrden(
   admin: SupabaseClient,

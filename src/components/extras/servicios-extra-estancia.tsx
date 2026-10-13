@@ -12,8 +12,8 @@ import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { ListaExtras } from "./lista-extras";
 import { etiquetaUnidadExtra, type CatalogoExtra, type ExtraFila } from "@/lib/extras/tipos";
 import { agregarExtra, programarExtra } from "@/app/(staff)/extras/actions";
+import { dinero } from "@/lib/dinero";
 
-const dinero = (v: number) => `$${v.toFixed(2)}`;
 
 /**
  * Servicios extra de UNA estancia (o de un día de guardería): lo ya agregado y el

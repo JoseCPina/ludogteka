@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatearFecha } from "@/lib/formato";
+import { dinero } from "@/lib/dinero";
 
 export type MovimientoTurno = {
   id: string;
@@ -46,10 +47,6 @@ const ETIQUETA_ORIGEN: Record<string, string> = {
   mercadopago_link: "link de pago",
   clip_terminal: "terminal Clip",
 };
-
-function dinero(v: number): string {
-  return `${v < 0 ? "−" : ""}$${Math.abs(v).toFixed(2)}`;
-}
 
 /**
  * Lo que movió dinero en el turno, y el acumulado por método. El
@@ -125,8 +122,8 @@ export function MovimientosTurno({
         <p className="text-sm text-n-500">Todavía no hay movimientos en este turno.</p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-          <table className="w-full min-w-[640px] border-collapse text-sm">
-            <thead>
+          <table className="w-full border-collapse text-sm max-sm:block">
+            <thead className="max-sm:hidden">
               <tr>
                 {["Hora", "Movimiento", "Cliente / motivo", "Método", "Monto"].map((h) => (
                   <th key={h} className={`border-b border-n-200 bg-n-100 px-3 py-2 text-xs font-bold uppercase tracking-wide text-n-600 ${h === "Monto" ? "text-right" : "text-left"}`}>
@@ -135,11 +132,11 @@ export function MovimientosTurno({
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="max-sm:block">
               {movimientos.map((m) => (
-                <tr key={`${m.tipo}-${m.id}`} data-movimiento-ajuste={m.ajusteTipo ?? undefined} className={m.ajusteTipo === "original_anulado" ? "opacity-60" : ""}>
-                  <td className="border-b border-n-200 px-3 py-2 tabular-nums text-n-600">{formatearFecha(m.fecha, zona)}</td>
-                  <td className="border-b border-n-200 px-3 py-2 text-n-900">
+                <tr key={`${m.tipo}-${m.id}`} data-movimiento-ajuste={m.ajusteTipo ?? undefined} className={`max-sm:block max-sm:border-b max-sm:border-n-200 max-sm:px-3 max-sm:py-2 ${m.ajusteTipo === "original_anulado" ? "opacity-60" : ""}`}>
+                  <td className="border-b border-n-200 px-3 py-2 max-sm:flex max-sm:justify-between max-sm:gap-3 max-sm:border-0 max-sm:px-0 max-sm:py-0.5 tabular-nums text-n-600">{formatearFecha(m.fecha, zona)}</td>
+                  <td className="border-b border-n-200 px-3 py-2 max-sm:block max-sm:border-0 max-sm:px-0 max-sm:py-0.5 text-n-900">
                     {ETIQUETA_TIPO[m.tipo] ?? m.tipo}
                     {m.ajusteTipo && <span className="ml-2 rounded-full bg-ambar-suave px-2 py-0.5 text-xs font-semibold text-ambar-oscuro">{ETIQUETA_AJUSTE[m.ajusteTipo] ?? m.ajusteTipo}</span>}
                     {m.origen !== "manual" && <span className="ml-2 rounded-full bg-morado-suave px-2 py-0.5 text-xs font-semibold text-morado">{ETIQUETA_ORIGEN[m.origen]}</span>}
@@ -149,7 +146,7 @@ export function MovimientosTurno({
                       </Link>
                     )}
                   </td>
-                  <td className="border-b border-n-200 px-3 py-2 text-n-700">
+                  <td className="border-b border-n-200 px-3 py-2 max-sm:block max-sm:border-0 max-sm:px-0 max-sm:py-0.5 text-n-700">
                     {m.reservaId ? (
                       <Link href={`/caja/cobrar/${m.reservaId}`} className="font-semibold text-morado hover:underline">
                         {m.clienteNombre ?? "Cuenta"}
@@ -160,8 +157,8 @@ export function MovimientosTurno({
                     {m.descripcion ? <span className="block text-xs text-n-500">{m.descripcion}</span> : null}
                     <span className="block text-xs text-n-500">{m.hechoPorNombre}</span>
                   </td>
-                  <td className="border-b border-n-200 px-3 py-2 text-n-700">{ETIQUETA_METODO[m.metodo] ?? m.metodo}</td>
-                  <td className={`border-b border-n-200 px-3 py-2 text-right tabular-nums font-semibold ${m.monto < 0 ? "text-coral-oscuro" : "text-n-900"}`}>
+                  <td className="border-b border-n-200 px-3 py-2 max-sm:flex max-sm:justify-between max-sm:gap-3 max-sm:border-0 max-sm:px-0 max-sm:py-0.5 text-n-700"><span className="hidden text-xs font-bold uppercase text-n-500 max-sm:inline">Método</span>{ETIQUETA_METODO[m.metodo] ?? m.metodo}</td>
+                  <td className={`border-b border-n-200 px-3 py-2 text-right tabular-nums font-semibold max-sm:block max-sm:border-0 max-sm:px-0 max-sm:py-0.5 max-sm:text-left max-sm:text-base ${m.monto < 0 ? "text-coral-oscuro" : "text-n-900"}`}>
                     {dinero(m.monto)}
                     {m.propina > 0 ? <span className="block text-xs font-normal text-n-500">+ propina {dinero(m.propina)}</span> : null}
                   </td>

@@ -15,6 +15,7 @@ import { leerOrdenLocal, sincronizarTerminal } from "@/lib/pagos/registro";
 import { pedirReembolso, sincronizarReembolsos } from "@/lib/pagos/reembolsos";
 import { mensajeDeError, type ConexionCobro, type ResultadoSincronizacion, type ResumenCobro } from "@/lib/pagos/tipos";
 import { revisarCobroConProveedor } from "@/lib/pagos/no-recibido";
+import { dinero } from "@/lib/dinero";
 
 // El cobro integrado desde la cuenta: terminal y link de pago, con el
 // proveedor que el negocio haya conectado (src/lib/pagos). Nada de aquí sabe
@@ -72,6 +73,12 @@ export async function iniciarCobroTerminal(
   if (!cx.terminalId) return { error: "No hay terminal escogida. El admin la escoge en Administración → Cobro con terminal; mientras, cobra a mano." };
 
   const supabase = await createSupabaseServerClient();
+  {
+    const { data: t } = await supabase.rpc("cuenta_totales_reserva", { p_reserva_id: reservaId });
+    const saldo = Number((Array.isArray(t) ? t[0] : t)?.saldo ?? 0);
+    if (saldo <= 0.005) return { error: "Esta cuenta no tiene saldo por cobrar." };
+    if (monto > saldo + 0.005) return { error: `El monto (${dinero(monto)}) pasa del saldo de la cuenta (${dinero(saldo)}). Cobra hasta el saldo.` };
+  }
   const { data: turno } = await supabase.from("turnos_caja").select("id").eq("estado", "abierto").maybeSingle();
   if (!turno) return { error: "No hay turno de caja abierto. Ábrelo antes de cobrar." };
 
@@ -207,6 +214,12 @@ export async function crearLinkPago(reservaId: string, monto: number, concepto: 
   if (!Number.isFinite(monto) || monto <= 0) return { error: "El monto del link debe ser mayor a cero." };
 
   const supabase = await createSupabaseServerClient();
+  {
+    const { data: t } = await supabase.rpc("cuenta_totales_reserva", { p_reserva_id: reservaId });
+    const saldo = Number((Array.isArray(t) ? t[0] : t)?.saldo ?? 0);
+    if (saldo <= 0.005) return { error: "Esta cuenta no tiene saldo por cobrar." };
+    if (monto > saldo + 0.005) return { error: `El monto (${dinero(monto)}) pasa del saldo de la cuenta (${dinero(saldo)}). Cobra hasta el saldo.` };
+  }
   const { data: reserva } = await supabase.from("reservas").select("id, clientes(nombre, telefono)").eq("id", reservaId).maybeSingle();
   if (!reserva) return { error: "Cuenta no encontrada." };
   const cliente = (Array.isArray(reserva.clientes) ? reserva.clientes[0] : reserva.clientes) as { nombre: string; telefono: string | null } | null;
