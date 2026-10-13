@@ -28,10 +28,13 @@ export const ARTICULOS_CAJA_Y_ESTETICA: Articulo[] = [
 
 Si el perro tiene day pass o mensualidad, junto a su línea sale **Pagar con bono**.
 
+Un cobro nunca pasa del saldo. Si el cliente paga **de más en efectivo**, la pantalla te dice cuánto es el **cambio** y registra solo lo que se debía. Con transferencia, tarjeta o terminal el monto no puede ser mayor al saldo, y una cuenta en cero ya no se cobra.
+
 ¿Un servicio de estética se capturó mal? Se corrige desde la cita y el saldo de la cuenta cambia solo, sin tocar lo ya cobrado: un **cobro adicional** aparece como saldo por cobrar. Mira [Cómo corregir el servicio de una cita](/ayuda/corregir-servicio-de-una-cita).
 
 ## Si algo no sale
 
+- «El monto es mayor al saldo»: baja el monto al saldo (en efectivo, entrega el cambio).
 - «No hay turno de caja abierto. Ábrelo antes de cobrar.»: abre el turno en el mismo aviso.
 - «Cada método debe tener un monto mayor a cero.»: quita el renglón vacío con **Quitar**.
 - «Con este cobro la cuenta se quedaría debiendo $… (menos de un peso)»: una cuenta no puede quedar con centavos. Cobra la cuenta completa, o aplica un descuento de redondeo por esa diferencia.`,
