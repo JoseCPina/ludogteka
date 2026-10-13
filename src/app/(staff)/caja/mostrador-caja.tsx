@@ -12,6 +12,7 @@ import { formatearFechaCalendario } from "@/lib/formato";
 import { formatearTelefono } from "@/lib/telefono";
 import { useModulos } from "@/components/modulos-contexto";
 import { registrarPagosMpPendientes } from "./cobro-integrado-actions";
+import { dinero } from "@/lib/dinero";
 
 export type CuentaAbierta = {
   reservaId: string;
@@ -37,10 +38,6 @@ function agruparPorCliente(cuentas: CuentaAbierta[]): { clienteId: string; cuent
 }
 
 export type PagoMpPendiente = { id: string; tipo: string; monto: number; clienteNombre: string; pagadaAt: string | null; simulado: boolean };
-
-function dinero(v: number): string {
-  return `$${v.toFixed(2)}`;
-}
 
 /**
  * El mostrador: quién está enfrente y qué se le cobra. Las cuentas con

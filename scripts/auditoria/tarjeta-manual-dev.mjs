@@ -62,7 +62,8 @@ let n = 0;
 const folio = (p = "AUT") => `${p}-${sufijo}${String(++n).padStart(2, "0")}`;
 const creadas = { reservas: [] };
 const nuevaReserva = async () => {
-  const r = await llamar(`${URL}/rest/v1/reservas`, { method: "POST", headers: cab(tAdmin), body: JSON.stringify({ cliente_id: datos.clienteSoloB }) });
+  const vm = await rpc(tAdmin, "crear_venta_mostrador", { p_cliente_id: datos.clienteSoloB, p_lineas: [{ concepto: "Cuenta de prueba", precio: 3000, cantidad: 1 }], p_notas: "prueba tarjeta manual" });
+  const r = { cuerpo: vm.ok ? [{ id: vm.cuerpo }] : null, mensaje: vm.mensaje };
   const id = r.cuerpo?.[0]?.id;
   if (!id) throw new Error(`reserva de prueba: ${r.mensaje}`);
   creadas.reservas.push(id);
@@ -110,7 +111,7 @@ try {
   comprobar(t1 && t1.estado === "por_revisar" && t1.folio === f1 && t1.motivo === "sin_senal" && t1.ultimos4 === "4242" && t1.banco === "BBVA" && t1.turno_id === turno.id && t1.created_by === recConPermiso,
     "queda con folio, motivo, últimos 4, banco, turno y quién lo registró, «por revisar» (sin verificar)");
   comprobar(!t1 || !JSON.stringify(t1).match(/\b\d{13,19}\b/), "nunca guarda un número de tarjeta completo");
-  comprobar(await saldo(r1) === -350, "cuenta como pagado desde que se registra (saldo −350 en una cuenta sin cargos)");
+  comprobar(await saldo(r1) === 2650, "cuenta como pagado desde que se registra (baja el saldo: 3000 − 350)");
   const ev1 = await eventos(t1.id);
   comprobar(ev1.some((e) => e.tipo === "registrada" && e.actor === recConPermiso), "deja el evento «registrada» con quién");
 

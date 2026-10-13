@@ -1,4 +1,5 @@
 import { formatearFecha } from "@/lib/formato";
+import { dinero } from "@/lib/dinero";
 
 export type TurnoCerrado = {
   id: string;
@@ -17,10 +18,6 @@ const ETIQUETA_METODO: Record<string, string> = {
   tarjeta_manual: "Tarjeta manual (sin verificar)",
   transferencia: "Transferencia",
 };
-
-function dinero(v: number): string {
-  return `$${v.toFixed(2)}`;
-}
 
 export function HistorialTurnos({ turnos, zona }: { turnos: TurnoCerrado[]; zona: string }) {
   if (turnos.length === 0) {

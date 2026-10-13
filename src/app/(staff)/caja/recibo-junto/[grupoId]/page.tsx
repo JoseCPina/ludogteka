@@ -12,6 +12,7 @@ import { SeccionFacturarGrupo } from "@/components/cfdi/seccion-facturar";
 import { CorreccionesRecibo } from "./correcciones-recibo";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
+import { dinero } from "@/lib/dinero";
 
 export type DetalleGrupo = {
   grupo_id: string;
@@ -43,7 +44,6 @@ const ETIQUETA_ORIGEN: Record<string, string> = {
   mercadopago_link: "Link de pago Mercado Pago",
   clip_terminal: "Terminal Clip",
 };
-const dinero = (v: number) => `$${Number(v).toFixed(2)}`;
 
 // El recibo único de un cobro junto: el total, el desglose por cuenta y los
 // métodos, con un solo folio. Se imprime o se guarda como PDF desde el navegador.

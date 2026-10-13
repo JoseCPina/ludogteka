@@ -13,12 +13,12 @@ import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { formatearTelefono } from "@/lib/telefono";
 import type { ClienteBuscable } from "@/lib/clientes/buscables";
 import { crearVentaRapida } from "./venta-actions";
+import { dinero } from "@/lib/dinero";
 
 export type ProductoVenta = { id: string; nombre: string; precio: number; unidad: string; disponible: number };
 
 type Renglon = { clave: number; insumoId: string | null; concepto: string; precio: string; cantidad: string };
 
-const dinero = (v: number) => `$${v.toFixed(2)}`;
 let siguiente = 1;
 
 export function VentaRapida({

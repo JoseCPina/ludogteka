@@ -34,6 +34,7 @@ import type { ResumenCobro } from "@/lib/pagos/tipos";
 import { consumirBono, type ItemTipoBono } from "../../bono-actions";
 import { aplicarDescuento, cancelarDescuento, type TipoDescuento } from "../../descuento-actions";
 import { useZonaNegocio } from "@/components/zona-negocio";
+import { dinero } from "@/lib/dinero";
 
 export type LineaCuenta = {
   tipo: string;
@@ -145,10 +146,6 @@ const ETIQUETA_TIPO: Record<string, string> = {
   bono: "Pase",
   ajuste: "Corrección",
 };
-
-function dinero(v: number): string {
-  return `$${v.toFixed(2)}`;
-}
 
 type FilaMetodo = { metodo: MetodoPago; monto: string; propina: string; tarjeta: DatosTarjetaManual };
 
@@ -354,6 +351,10 @@ export function CuentaCobro({
   const devolviendo = useEspera();
 
   const totalMetodos = metodos.reduce((sum, m) => sum + (Number(m.monto) || 0), 0);
+  const [exitoCobro, setExitoCobro] = useState<string | null>(null);
+  // Solo el efectivo admite cambio; los demás métodos no pueden pasar del saldo.
+  const sinEfectivo = metodos.filter((m) => m.metodo !== "efectivo").reduce((s, m) => s + (Number(m.monto) || 0), 0);
+  const cambioPrevisto = Math.round((totalMetodos - Math.max(totales.saldo, 0)) * 100) / 100;
 
   async function accionAbrirTurno() {
     const fondo = Number(fondoInicial);
@@ -394,12 +395,22 @@ export function CuentaCobro({
         return;
       }
     }
+    if (totales.saldo <= 0.005) {
+      setError("Esta cuenta no tiene saldo por cobrar.");
+      return;
+    }
+    if (sinEfectivo > totales.saldo + 0.005) {
+      setError(`Con terminal, transferencia o tarjeta no se puede cobrar más que el saldo (${dinero(totales.saldo)}). Solo el efectivo admite cambio.`);
+      return;
+    }
     setError(null);
+    setExitoCobro(null);
     const res = await cobrando.ejecutar(() => registrarCobro(reservaId, notasCobro, payload));
     if (res.error) {
       setError(res.error);
       return;
     }
+    setExitoCobro(res.cambio ? `Cobro registrado. Cambio: ${dinero(res.cambio)} (a la caja entró solo el saldo).` : "Cobro registrado.");
     setNotasCobro("");
     setMetodos([NuevaFilaMetodo()]);
     router.refresh();
@@ -846,7 +857,11 @@ export function CuentaCobro({
             Total de este cobro: <span className="font-semibold text-n-900">{dinero(totalMetodos)}</span>
           </p>
 
-          <AccionesFormulario error={error}>
+          {cambioPrevisto > 0.005 && sinEfectivo <= totales.saldo + 0.005 && (
+            <p className="text-sm font-semibold text-menta-oscuro" data-cambio>Cambio: {dinero(cambioPrevisto)}</p>
+          )}
+
+          <AccionesFormulario error={error} exito={exitoCobro}>
             <Button type="button" cargando={cobrando.cargando} onClick={enviarCobro}>
               {cobrando.cargando ? "Cobrando…" : "Registrar cobro"}
             </Button>

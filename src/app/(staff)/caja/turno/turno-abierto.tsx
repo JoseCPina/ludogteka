@@ -12,6 +12,7 @@ import { registrarRetiro, cerrarTurno, cancelarRetiro } from "../caja-actions";
 import { agregarEfectivo, cancelarEfectivoAgregado } from "../correcciones-actions";
 import { Select } from "@/components/ui/select";
 import { useZonaNegocio } from "@/components/zona-negocio";
+import { dinero } from "@/lib/dinero";
 
 export type Retiro = {
   id: string;
@@ -45,10 +46,6 @@ const ETIQUETA_ORIGEN_EFECTIVO: Record<string, string> = {
   aportacion_dueno: "Aportación del dueño",
   otro: "Otro",
 };
-
-function dinero(v: number): string {
-  return `$${v.toFixed(2)}`;
-}
 
 const ETIQUETA_METODO: Record<string, string> = {
   efectivo: "Efectivo",

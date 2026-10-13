@@ -11,6 +11,7 @@ import { normalizarTelefono } from "@/lib/telefono";
 import { formatearFechaCalendario } from "@/lib/formato";
 import { enlaceWhatsAppExtra, etiquetaEstadoExtra, mensajeTraslado, type ExtraFila } from "@/lib/extras/tipos";
 import { avisoTrasladoEnviado, cancelarExtra, marcarExtraHecho, salirTraslado } from "@/app/(staff)/extras/actions";
+import { dinero } from "@/lib/dinero";
 
 const ESTILO: Record<string, string> = {
   pendiente: "bg-ambar-suave text-ambar-oscuro",
@@ -19,7 +20,6 @@ const ESTILO: Record<string, string> = {
   cancelado: "bg-n-100 text-n-500",
 };
 
-const dinero = (v: number) => `$${v.toFixed(2)}`;
 
 /**
  * Las tareas de servicios extra (paseo, baño de salida, traslado…) con lo que el
