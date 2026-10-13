@@ -58,6 +58,8 @@ export async function guardarProductoClinico(fd: FormData): Promise<ResultadoAcc
     p_clasificacion_por_confirmar: fd.get("clasificacion_por_confirmar") === "on",
   });
   if (error) return { error: traducirError(error) };
+  const { error: errorTipo } = await supabase.rpc("producto_clinico_tipo_guardar", { p_id: data as string, p_tipo: texto(fd, "tipo_clinico") || null });
+  if (errorTipo) return { error: traducirError(errorTipo) };
   refrescar(data as string);
   return id ? { error: null, exito: "Producto guardado." } : { error: null, ir: `/veterinaria/inventario/${data as string}` };
 }

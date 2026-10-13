@@ -82,6 +82,9 @@ export default async function ReportesPage({
   } | null;
 
   // Utilidad = ingreso reconocido − consumo de insumos − costo de nómina.
+  // Si la utilidad falla, que los logs digan por qué (antes el motivo se perdía y solo se veía el aviso).
+  if (errorUtilidad) console.error("[reportes] reporte_utilidad_periodo falló", { desde, hasta, codigo: errorUtilidad.code, mensaje: errorUtilidad.message });
+
   const utilidad = utilidadData as {
     ingreso_reconocido: number;
     costo_insumos: number;

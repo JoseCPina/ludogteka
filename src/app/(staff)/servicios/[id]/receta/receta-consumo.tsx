@@ -1,4 +1,5 @@
 "use client";
+import { unidadSegunCantidad } from "@/lib/formato";
 import { esperarConTope } from "@/lib/ui/espera";
 
 import { useState } from "react";
@@ -95,7 +96,7 @@ export function RecetaConsumo({
                 {filas.map((f) => (
                   <li key={f.id} className="flex items-center justify-between gap-3 text-sm">
                     <span className="text-n-700">
-                      {f.insumo_nombre} — {f.cantidad_consumo} {f.unidad_etiqueta}
+                      {f.insumo_nombre} — {f.cantidad_consumo} {unidadSegunCantidad(f.cantidad_consumo, f.unidad_etiqueta)}
                     </span>
                     {esAdmin && (
                       <button

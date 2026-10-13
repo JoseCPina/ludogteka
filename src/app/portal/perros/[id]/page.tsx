@@ -97,6 +97,16 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
   const { data: recetasCrudo } = usaVeterinaria(sesion.modulos ?? []) ? await supabase.rpc("mis_recetas", { p_perro: id }) : { data: null };
   const recetasDelDueno = (recetasCrudo ?? []) as RecetaDelDueno[];
 
+  // Los servicios que este perro de verdad usa (para la nota de salud de quien no viene a guardería ni hotel).
+  const { data: visitasCrudo } = await supabase.rpc("mis_visitas");
+  const serviciosQueUsa: string[] = [];
+  if (((visitasCrudo ?? []) as { tipo: string; perro_id: string }[]).some((v) => v.tipo === "estetica" && v.perro_id === id)) serviciosQueUsa.push("estética");
+  if (
+    (carnetDelDueno?.vacunas.length ?? 0) + (carnetDelDueno?.desparasitaciones.length ?? 0) + (expedienteDelDueno?.consultas.length ?? 0) + recetasDelDueno.length > 0
+  ) {
+    serviciosQueUsa.push("veterinaria");
+  }
+
   // Solo el dueño principal firma — un acceso compartido nunca puede
   // firmar en nombre de otro, aunque vea el resto del expediente.
   // Todos, no solo el último: ahora hay varios contratos a la vez
@@ -300,6 +310,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
           propuestas={(propuestas as PropuestaCliente[]) ?? []}
           tipos={(tiposRequisito as TipoRequisitoCliente[]) ?? []}
           aplica={Boolean(usaGuarderiaHotel)}
+          servicios={serviciosQueUsa}
         />
       </div>
       )}

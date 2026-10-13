@@ -33,7 +33,7 @@ export const RUTAS_DE_MODULO: { prefijo: string; modulo: ClaveModulo | ClaveModu
   { prefijo: "/guarderia/pases", modulo: "bonos" },
   { prefijo: "/caja/pases", modulo: "bonos" },
   { prefijo: "/caja/ajustes-servicio", modulo: "estetica" },
-  { prefijo: "/admin/tarifa-guarderia", modulo: "estetica" },
+  { prefijo: "/admin/tarifa-guarderia", modulo: "guarderia" },
   { prefijo: "/guarderia", modulo: "guarderia" },
   { prefijo: "/hotel", modulo: "hotel" },
   { prefijo: "/estetica", modulo: "estetica" },

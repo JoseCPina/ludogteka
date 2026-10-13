@@ -27,7 +27,7 @@ export default async function ProductoClinicoPage({ params }: { params: Promise<
     supabase
       .from("insumos")
       .select(
-        "id, nombre, area_id, stock_minimo, dias_aviso_caducidad, controla_lotes, principio_activo_id, grupo_senasica, clasificacion_lgs, es_antimicrobiano, clasificacion_por_confirmar, exige_folio_receta, registro_senasica, laboratorio, presentacion, unidad_compra:unidades_medida!unidad_compra_id(etiqueta), unidad_consumo:unidades_medida!unidad_consumo_id(etiqueta, equivalencia_en_base)"
+        "id, nombre, area_id, stock_minimo, dias_aviso_caducidad, controla_lotes, principio_activo_id, grupo_senasica, clasificacion_lgs, es_antimicrobiano, clasificacion_por_confirmar, tipo_clinico, exige_folio_receta, registro_senasica, laboratorio, presentacion, unidad_compra:unidades_medida!unidad_compra_id(etiqueta), unidad_consumo:unidades_medida!unidad_consumo_id(etiqueta, equivalencia_en_base)"
       )
       .eq("id", id)
       .is("deleted_at", null)
@@ -149,6 +149,7 @@ export default async function ProductoClinicoPage({ params }: { params: Promise<
             clasificacion_lgs: (insumo.clasificacion_lgs as string | null) ?? null,
             es_antimicrobiano: Boolean(insumo.es_antimicrobiano),
             clasificacion_por_confirmar: Boolean(insumo.clasificacion_por_confirmar),
+            tipo_clinico: (insumo.tipo_clinico as string | null) ?? null,
             unidad_compra_etiqueta: unidadCompra?.etiqueta,
             unidad_consumo_etiqueta: etiquetaConsumo,
           }}

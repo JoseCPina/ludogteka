@@ -37,12 +37,19 @@ export default async function VeterinariaInicio() {
   const puedeConfig = tienePermiso(sesion, "configuracion_negocio");
   const esAdmin = sesion?.rol === "admin";
 
-  const [{ data: alertasCrudo }, { data: permisosCrudo }, { data: atencionCrudo }, { data: censoCrudo }] = await Promise.all([
+  const [{ data: alertasCrudo }, { data: permisosCrudo }, { data: atencionCrudo }, { data: censoCrudo }, { data: leerCrudo }, { data: estimadosCrudo }, { data: recetasCrudo }] = await Promise.all([
     puedeLotes ? supabase.rpc("inventario_clinico_alertas") : Promise.resolve({ data: null }),
     puedeConfig ? supabase.rpc("permisos_establecimiento_por_vencer") : Promise.resolve({ data: null }),
     supabase.rpc("veterinaria_atencion"),
     supabase.rpc("hospitalizacion_censo"),
+    supabase.rpc("vet_puede_leer"),
+    supabase.rpc("vet_puede", { p_permiso: "crear_estimados" }),
+    supabase.rpc("vet_recetas_puede_leer"),
   ]);
+  // Solo se muestran los mosaicos que esta persona puede abrir (cada pantalla vuelve a validar en la base).
+  const puedeExpediente = leerCrudo === true;
+  const puedeEstimados = estimadosCrudo === true;
+  const puedeRecetas = recetasCrudo === true;
   const atencion = (atencionCrudo ?? {}) as { recordatorios_pendientes?: number; dosis_atrasadas?: number; consentimientos_pendientes?: number; consultas_sin_firmar?: number; estimados_sin_respuesta?: number; sitpv_reportes_pendientes?: number; sitpv_folios_bajos?: number };
   const internados = Array.isArray(censoCrudo) ? censoCrudo.length : 0;
   const alertas = ((alertasCrudo ?? {}) as Alertas) ?? {};
@@ -62,27 +69,33 @@ export default async function VeterinariaInicio() {
           <p>Citas por médico y por tipo (consulta, vacuna, cirugía, seguimiento, urgencia), sin empalmes.</p>
         </Tarjeta>
 
-        <Tarjeta href="/veterinaria/expediente" titulo="Expediente clínico">
+        {puedeExpediente && (
+<Tarjeta href="/veterinaria/expediente" titulo="Expediente clínico">
           <p>Consultas firmadas por el médico, estudios, archivos y la línea de tiempo de cada mascota.</p>
           <span className="flex flex-wrap gap-2">
             <Contador n={Number(atencion.consultas_sin_firmar ?? 0)} texto="sin firmar" estilo="bg-ambar-suave text-ambar-oscuro" />
           </span>
         </Tarjeta>
+        )}
 
-        <Tarjeta href="/veterinaria/estimados" titulo="Estimados">
+        {puedeEstimados && (
+<Tarjeta href="/veterinaria/estimados" titulo="Estimados">
           <p>Lo que costará una consulta o una cirugía, con mínimo y máximo, para que el dueño lo acepte.</p>
           <span className="flex flex-wrap gap-2">
             <Contador n={Number(atencion.estimados_sin_respuesta ?? 0)} texto="sin respuesta" estilo="bg-ambar-suave text-ambar-oscuro" />
           </span>
         </Tarjeta>
+        )}
 
-        <Tarjeta href="/veterinaria/recetas" titulo="Recetas y controlados">
+        {puedeRecetas && (
+<Tarjeta href="/veterinaria/recetas" titulo="Recetas y controlados">
           <p>Recetas con original y copias, registro de las recetas cuantificadas del SITPV, recetario especial y libro de control.</p>
           <span className="flex flex-wrap gap-2">
             <Contador n={Number(atencion.sitpv_reportes_pendientes ?? 0)} texto="reportes por marcar" estilo="bg-ambar-suave text-ambar-oscuro" />
             <Contador n={Number(atencion.sitpv_folios_bajos ?? 0)} texto="con pocos folios" estilo="bg-ambar-suave text-ambar-oscuro" />
           </span>
         </Tarjeta>
+        )}
 
         <Tarjeta href="/veterinaria/carnet" titulo="Carnets">
           <p>Vacunas y desparasitaciones de cada mascota, con su carnet imprimible y verificable.</p>
@@ -114,9 +127,11 @@ export default async function VeterinariaInicio() {
           </span>
         </Tarjeta>
 
-        <Tarjeta href="/veterinaria/ajustes" titulo="Ajustes de Veterinaria">
+        {puedeConfig && (
+<Tarjeta href="/veterinaria/ajustes" titulo="Ajustes de Veterinaria">
           <p>Recordatorios, vigencia de certificados, carnet como comprobante y precio del día.</p>
         </Tarjeta>
+        )}
 
         <Tarjeta href="/veterinaria/inventario" titulo="Inventario clínico">
           <p>Medicamentos y material clínico por lote, con caducidades y clasificación.</p>

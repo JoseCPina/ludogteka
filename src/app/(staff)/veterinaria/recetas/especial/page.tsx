@@ -9,7 +9,7 @@ import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { FormularioAccion, Desplegable, BotonAccion } from "@/components/formulario-accion";
-import { formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
+import { formatearFechaCalendario, hoyNegocio, unidadSegunCantidad } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import type { RecetarioFila } from "@/lib/veterinaria/recetas";
 import type { ProductoReceta } from "../nueva/editor-receta";
@@ -112,8 +112,8 @@ export default async function RecetarioEspecial({ searchParams }: { searchParams
                   <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${r.estado === "cancelada" ? "bg-coral-suave text-coral-oscuro" : "bg-menta-suave text-menta-oscuro"}`}>{r.estado === "cancelada" ? "Cancelado" : "Vigente"}</span>
                   {r.archivada_at && <span className="rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-600">Archivado</span>}
                 </div>
-                <p className="text-sm text-n-700">{r.mascota} · {formatearFechaCalendario(r.fecha)} · {r.dias} días × {r.cantidad_diaria}{r.unidad ? ` ${r.unidad}` : ""} = {r.cantidad_total} · código {r.codigo_barras} · {r.medico ?? "—"}</p>
-                <p className="text-sm text-n-600">Surtido {r.surtido} de {r.cantidad_total}{r.unidad ? ` ${r.unidad}` : ""}.{r.cancelada_motivo ? ` Cancelado: ${r.cancelada_motivo}.` : ""}</p>
+                <p className="text-sm text-n-700">{r.mascota} · {formatearFechaCalendario(r.fecha)} · {r.dias} días × {r.cantidad_diaria}{r.unidad ? ` ${unidadSegunCantidad(r.cantidad_diaria, r.unidad)}` : ""} = {r.cantidad_total} · código {r.codigo_barras} · {r.medico ?? "—"}</p>
+                <p className="text-sm text-n-600">Surtido {r.surtido} de {r.cantidad_total}{r.unidad ? ` ${unidadSegunCantidad(r.cantidad_total, r.unidad)}` : ""}.{r.cancelada_motivo ? ` Cancelado: ${r.cancelada_motivo}.` : ""}</p>
                 {puede && r.estado === "vigente" && (
                   <div className="flex flex-col gap-2">
                     {r.surtido < r.cantidad_total && (
