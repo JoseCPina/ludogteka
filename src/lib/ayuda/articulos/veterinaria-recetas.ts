@@ -102,7 +102,7 @@ Qué documento pide cada producto sale de sus clasificaciones y de las reglas de
 
 - **Receta con cédula**: en la receta, sección **Surtir del inventario**.
 - **Grupo I**: en el registro del SITPV, **Registrar una aplicación (parcialidad)** o **Surtir**.
-- **Recetario especial**: en el folio, **Surtir contra este folio**. La **Cantidad** (y la **Cantidad diaria** al registrar el folio) se escribe como número, con o sin unidad: `2` o `2 ml`.
+- **Recetario especial**: en el folio, **Surtir contra este folio**. La **Cantidad** (y la **Cantidad diaria** al registrar el folio) se escribe como número, con o sin unidad: «2» o «2 ml».
 - **Hospitalización**: al **Aplicar** la dosis de un producto de Grupo I, elige el **Folio del SITPV**; la aplicación queda como parcialidad con el paciente internado.
 
 Cada salida baja el lote y entra al [Libro de control](/veterinaria/libro-control).
