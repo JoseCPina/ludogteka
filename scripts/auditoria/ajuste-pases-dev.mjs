@@ -82,12 +82,26 @@ const nuevoPerro = async () => {
   return r.data;
 };
 const PRECIO = 800;
+// Ludogteka de desarrollo trae ajustes de otras pruebas (permisos-staff.mjs: «prueba de permisos»); la tabla es inmutable.
+const ajustesLudAntes = ((await A.from("bonos_ajustes").select("id").eq("negocio_id", LUDOGTEKA)).data ?? []).length;
 const turnoAbierto = async () => (await SB.from("turnos_caja").select("id").eq("estado", "abierto").maybeSingle()).data;
+
+// PostgREST devuelve a lo más 1,000 filas: Huellitas acumula más y la suma quedaba congelada (el cobro nuevo no se veía).
+async function todosLosMetodos() {
+  const filas = [];
+  for (let desde = 0; ; desde += 1000) {
+    const { data, error } = await SB.from("cobro_metodos").select("monto, propina").eq("negocio_id", B).order("id").range(desde, desde + 999);
+    if (error) throw new Error(`cobro_metodos: ${error.message}`);
+    filas.push(...data);
+    if (data.length < 1000) break;
+  }
+  return { data: filas };
+}
 
 const foto = async () => {
   const [cobros, metodos, devs, mov, turnos, reporte] = await Promise.all([
     SB.from("cobros").select("id", { count: "exact", head: true }).eq("negocio_id", B),
-    SB.from("cobro_metodos").select("monto, propina").eq("negocio_id", B),
+    todosLosMetodos(),
     SB.from("devoluciones").select("id", { count: "exact", head: true }).eq("negocio_id", B),
     SB.from("movimientos_caja").select("id", { count: "exact", head: true }).eq("negocio_id", B),
     SB.from("turnos_caja").select("id", { count: "exact", head: true }).eq("negocio_id", B),
@@ -149,7 +163,7 @@ try {
   const f1 = await pase(bono1);
   comprobar(f1.cantidad_total === 10 && f1.cantidad_disponible === 7, "el saldo nace descontado: 10 de total, 7 disponibles");
   const des1 = await foto();
-  comprobar(des1.cobros === antes1.cobros + 1 && Math.abs(des1.cobrado - antes1.cobrado - PRECIO) < 0.01, "la venta genera su único cobro de siempre ($800); los días usados no agregan cobros");
+  comprobar(des1.cobros === antes1.cobros + 1 && Math.abs(des1.cobrado - antes1.cobrado - PRECIO) < 0.01, `la venta genera su único cobro de siempre ($800); los días usados no agregan cobros (cobros ${antes1.cobros}→${des1.cobros}, cobrado ${antes1.cobrado}→${des1.cobrado})`);
   const { data: ventaMov } = await SB.from("movimientos_bono").select("tipo, cantidad, monto").eq("bono_cliente_id", bono1);
   comprobar(ventaMov.length === 1 && ventaMov[0].tipo === "venta" && ventaMov[0].cantidad === 10 && Number(ventaMov[0].monto) === PRECIO, "el libro solo tiene la venta (ningún consumo inventado)");
   const h1 = await ajustes(bono1);
@@ -250,16 +264,29 @@ try {
 
   // ── 5. Deshacer un check-in ──
   console.log("── 5. Deshacer un check-in");
-  async function estanciaConPase(perro, pasaId) {
+  // La prueba no depende de cuántas estancias haya dejado otra auditoría en Huellitas: toma el primer día
+  // con cupo y que abra la guardería (hoy puede estar lleno: el cupo diurno es de toda la casa).
+  let diaPrueba = hoy;
+  async function crearEstancia(perro, extra = {}) {
     const reserva = await llamar(`${URL}/rest/v1/reservas`, { method: "POST", headers: cab(tAdmin), body: JSON.stringify({ cliente_id: perro.cliente_id }) });
     const rid = reserva.cuerpo?.[0]?.id;
     if (!rid) throw new Error(`reserva: ${reserva.mensaje}`);
-    const e = await llamar(`${URL}/rest/v1/estancias`, {
-      method: "POST", headers: cab(tAdmin),
-      body: JSON.stringify({ reserva_id: rid, perro_id: perro.id, servicio_id: guarderiaDia.id, fecha_entrada: hoy, fecha_salida: suma(1), estado: "reservada", bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: `Prueba ${MARCA}`, bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: `Prueba ${MARCA}` }),
-    });
-    const id = e.cuerpo?.[0]?.id;
-    if (!id) throw new Error(`estancia: ${e.mensaje}`);
+    let ultimo = null;
+    for (let d = 0; d <= 20; d++) {
+      const dia = suma(d);
+      const e = await llamar(`${URL}/rest/v1/estancias`, {
+        method: "POST", headers: cab(tAdmin),
+        body: JSON.stringify({ reserva_id: rid, perro_id: perro.id, servicio_id: guarderiaDia.id, fecha_entrada: dia, fecha_salida: suma(d + 1), estado: "reservada", bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: `Prueba ${MARCA}`, bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: `Prueba ${MARCA}`, ...extra }),
+      });
+      const id = e.cuerpo?.[0]?.id;
+      if (id) { diaPrueba = dia; return { id, rid, dia }; }
+      ultimo = e.mensaje;
+      if (!/cupo|cerrad|no abre|d[ií]a/i.test(String(ultimo))) break;
+    }
+    throw new Error(`estancia: ${ultimo}`);
+  }
+  async function estanciaConPase(perro, pasaId) {
+    const { id, rid } = await crearEstancia(perro);
     const ap = await rpc(tRec, "aplicar_bono_a_estancia", { p_estancia_id: id });
     return { id, rid, aplicado: ap.cuerpo?.aplicado === true, ap };
   }
@@ -300,8 +327,11 @@ try {
 
   // Estancia sin pase.
   const pSin = (await nuevoPerro());
-  const rsin = await llamar(`${URL}/rest/v1/reservas`, { method: "POST", headers: cab(tAdmin), body: JSON.stringify({ cliente_id: pSin.cliente_id }) });
-  const esin = await llamar(`${URL}/rest/v1/estancias`, { method: "POST", headers: cab(tAdmin), body: JSON.stringify({ reserva_id: rsin.cuerpo[0].id, perro_id: pSin.id, servicio_id: guarderiaDia.id, fecha_entrada: hoy, fecha_salida: suma(1), estado: "en_curso", entregado_por_nombre: "x", bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: `Prueba ${MARCA}`, bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: `Prueba ${MARCA}` }) });
+  let esin = { cuerpo: null, mensaje: "" };
+  try {
+    const sp = await crearEstancia(pSin, { estado: "en_curso", entregado_por_nombre: "x" });
+    esin = { cuerpo: [{ id: sp.id }], mensaje: "" };
+  } catch (e) { esin = { cuerpo: null, mensaje: e.message }; }
   if (esin.cuerpo?.[0]?.id) {
     const sinPase = await rpc(tRec, "deshacer_checkin_estancia", { p_estancia_id: esin.cuerpo[0].id, p_motivo: "checkin_por_error" });
     comprobar(!sinPase.ok && /no usó un pase/.test(sinPase.mensaje), "un check-in que no usó pase no se «deshace» (se cancela o se marca no llegó)");
@@ -333,7 +363,7 @@ try {
   const cruzadoTabla = await get(tAdmin, "bonos_ajustes?select=id", LUDOGTEKA);
   comprobar(!cruzadoTabla.ok || cruzadoTabla.cuerpo.length === 0, "ni la tabla de ajustes");
   const { data: filaLud } = await A.from("bonos_ajustes").select("id").eq("negocio_id", LUDOGTEKA);
-  comprobar((filaLud ?? []).length === 0, "Ludogteka no tiene ningún ajuste (la prueba no lo tocó)");
+  comprobar((filaLud ?? []).length === ajustesLudAntes, `Ludogteka conserva sus ${ajustesLudAntes} ajustes de antes (la prueba no agregó ni quitó ninguno)`);
   const cruzadoVender = await vender(tRec, (await nuevoPerro()), { p_dias_usados: 1 });
   comprobar(cruzadoVender.ok, "(control) la venta con permiso sigue funcionando en Huellitas");
 
