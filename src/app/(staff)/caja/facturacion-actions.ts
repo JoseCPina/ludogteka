@@ -6,7 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { negocioActual, urlDelNegocioActual } from "@/lib/negocio/actual";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
-import { MENSAJE_SOLO_LECTURA } from "@/lib/solo-lectura";
+import { MENSAJE_DEMO } from "@/lib/solo-lectura";
 import {
   cancelarFactura,
   enviarPorCorreo,
@@ -26,7 +26,7 @@ export type ResultadoFactura = Resultado & { facturaId?: string; enlaceWhatsapp?
 export type ReceptorManual = { rfc: string; nombre_fiscal: string; cp: string; regimen_fiscal: string; uso_cfdi: string; email?: string };
 
 async function enDemo(): Promise<ResultadoFactura | null> {
-  return (await cargarNegocioLanding()).plan === "demo" ? { error: MENSAJE_SOLO_LECTURA } : null;
+  return (await cargarNegocioLanding()).plan === "demo" ? { error: MENSAJE_DEMO } : null;
 }
 
 function refrescar() {

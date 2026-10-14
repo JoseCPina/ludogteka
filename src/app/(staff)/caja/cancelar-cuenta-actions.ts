@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
-import { MENSAJE_SOLO_LECTURA } from "@/lib/solo-lectura";
+import { MENSAJE_DEMO } from "@/lib/solo-lectura";
 import { traducirError } from "../reservas/traducir-error";
 import type { InfoCancelarCuenta } from "./cancelar-cuenta-tipos";
 
@@ -26,7 +26,7 @@ export async function cancelarCuenta(
   motivoTexto: string,
   cancelarCita: boolean
 ): Promise<ResultadoCancelarCuenta> {
-  if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_SOLO_LECTURA };
+  if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_DEMO };
   if (!motivo) return { error: "Escoge el motivo." };
   if (motivo === "otro" && motivoTexto.trim().length < 5) return { error: "Con «Otro», escribe el motivo." };
   const supabase = await createSupabaseServerClient();

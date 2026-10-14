@@ -2,14 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { esErrorSoloLectura, MENSAJE_SOLO_LECTURA } from "@/lib/solo-lectura";
+import { esErrorSoloLectura, mensajeSoloLectura } from "@/lib/solo-lectura";
 
 export type ResultadoEstablecimiento = { error: string | null; exito?: string };
 
 const MENSAJE_PERMISO = "Solo un admin, o quien tenga el permiso «Configuración del negocio», edita los datos del establecimiento.";
 
 function mensaje(error: { code?: string; message?: string }): string {
-  if (esErrorSoloLectura(error)) return MENSAJE_SOLO_LECTURA;
+  if (esErrorSoloLectura(error)) return mensajeSoloLectura(error);
   if (error.code === "42501") return MENSAJE_PERMISO;
   // Los mensajes que escribe la base para la persona (sin código técnico) se muestran tal cual.
   if (error.code === "P0001" && error.message) return error.message;

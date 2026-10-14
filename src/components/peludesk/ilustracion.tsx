@@ -1,3 +1,5 @@
+import { ImgDiferida } from "@/components/peludesk/img-diferida";
+
 // Ilustraciones de la marca (paquetes 1 a 5 de marca-peludesk/, en Drive:
 // "todos los paquetes"). Se recortan y pasan a WebP en 1x y 2x con
 // scripts/diseno/ilustraciones-peludesk.py → public/peludesk/ilustraciones.
@@ -31,16 +33,34 @@ export function Ilustracion({
   alt = "",
   className = "",
   prioridad = false,
+  diferida = false,
   sizes,
 }: {
   nombre: NombreIlustracion;
   alt?: string;
   className?: string;
   prioridad?: boolean;
+  /** No se pide hasta estar a ~400 px de la pantalla (las de debajo del primer pliego de la landing). */
+  diferida?: boolean;
   sizes?: string;
 }) {
   const [ancho, alto] = ILUSTRACIONES[nombre];
   const base = `/peludesk/ilustraciones/${nombre}`;
+  if (diferida) {
+    return (
+      <ImgDiferida
+        src={`${base}.webp`}
+        srcSet={`${base}.webp ${ancho}w, ${base}@2x.webp ${ancho * 2}w`}
+        sizes={sizes ?? `${ancho}px`}
+        width={ancho}
+        height={alto}
+        alt={alt}
+        aria-hidden={alt ? undefined : true}
+        draggable={false}
+        className={`pointer-events-none select-none ${className}`}
+      />
+    );
+  }
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img

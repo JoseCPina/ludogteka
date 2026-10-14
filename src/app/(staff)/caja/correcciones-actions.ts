@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
-import { MENSAJE_SOLO_LECTURA } from "@/lib/solo-lectura";
+import { MENSAJE_DEMO } from "@/lib/solo-lectura";
 import { traducirError } from "../reservas/traducir-error";
 
 // Anular y corregir cobros, corregir el precio de una cuenta y agregar efectivo
@@ -13,7 +13,7 @@ import { traducirError } from "../reservas/traducir-error";
 export type ResultadoCorreccion = { error: string | null; aviso?: string };
 
 async function demo(): Promise<ResultadoCorreccion | null> {
-  return (await cargarNegocioLanding()).plan === "demo" ? { error: MENSAJE_SOLO_LECTURA } : null;
+  return (await cargarNegocioLanding()).plan === "demo" ? { error: MENSAJE_DEMO } : null;
 }
 
 function refrescar(reservaId?: string | null, grupoId?: string | null) {

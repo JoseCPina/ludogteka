@@ -5,7 +5,7 @@ import type { NombreIlustracion } from "@/components/peludesk/ilustracion";
 /**
  * Las tres páginas de aterrizaje por intención (guarderías, estéticas y
  * hoteles caninos): content/aterrizajes/<slug>.json. Solo dicen lo que la app
- * hace hoy (mismas fuentes que la landing y el centro de ayuda).
+ * hace (mismas fuentes que la landing y el centro de ayuda).
  */
 export type Aterrizaje = {
   slug: string;
