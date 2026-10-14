@@ -7,6 +7,7 @@ import { estadoCobro } from "@/lib/cobro/estados";
 import { modoStripe, stripeConfigurado } from "@/lib/cobro/stripe";
 import { cuentaEnTotales, esDemo, esInterno } from "@/lib/plataforma/metricas";
 import { conInterno } from "@/lib/plataforma/internos";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 type Fila = {
   negocio_id: string; slug: string; nombre: string; estado: string; plan: string; plan_nombre: string | null;
@@ -27,7 +28,7 @@ const RECURRENTE = new Set(["al_corriente", "gracia"]);
 // Ludogteka y el demo están fuera del cobro.
 export default async function CobroPlataforma() {
   const { supabase } = await exigirPlataforma();
-  const { data, error } = await supabase.rpc("plataforma_cobros");
+  const { data, error } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("plataforma_cobros").order("negocio_id"));
   const filas = (await conInterno(supabase, (data ?? []) as Fila[])).sort((a, b) => ORDEN.indexOf(a.estado) - ORDEN.indexOf(b.estado));
   // Totales y conteos: sin el demo (se ve en la tabla, con su etiqueta).
   const contadas = filas.filter(cuentaEnTotales);

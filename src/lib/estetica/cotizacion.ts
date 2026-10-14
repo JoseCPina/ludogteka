@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 /**
  * Los precios de estética, listos para enseñárselos a alguien que
@@ -104,13 +105,15 @@ export async function cargarCotizacionEstetica(
     .eq("negocio_id", negocioId)
     .is("deleted_at", null);
 
-  const { data: tarifas } = await supabase
-    .from("tarifas_vigentes")
-    .select("servicio_id, grupo_raza_id, tamano_id, pelaje_id, precio, precio_pelo_maltratado, no_aplica")
-    .in(
-      "servicio_id",
-      servicios.map((s) => s.id)
-    );
+  const { data: tarifas } = await leerTodo<Record<string, unknown>>(() =>
+    supabase
+      .from("tarifas_vigentes")
+      .select("servicio_id, grupo_raza_id, tamano_id, pelaje_id, cantidad_desde, precio, precio_pelo_maltratado, no_aplica")
+      .in(
+        "servicio_id",
+        servicios.map((s) => s.id)
+      ).order("servicio_id").order("grupo_raza_id").order("tamano_id").order("pelaje_id").order("cantidad_desde")
+  );
 
   const grupoPredeterminado = (grupos ?? []).find((g) => g.es_predeterminado);
   if (!grupoPredeterminado) return null;

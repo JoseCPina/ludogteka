@@ -25,6 +25,7 @@ import os from "node:os";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { todas, contar } from "../lib/paginar.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
@@ -83,7 +84,7 @@ const nuevoPerro = async () => {
 };
 const PRECIO = 800;
 // Ludogteka de desarrollo trae ajustes de otras pruebas (permisos-staff.mjs: «prueba de permisos»); la tabla es inmutable.
-const ajustesLudAntes = ((await A.from("bonos_ajustes").select("id").eq("negocio_id", LUDOGTEKA)).data ?? []).length;
+const ajustesLudAntes = await contar(A.from("bonos_ajustes").select("id", { count: "exact", head: true }).eq("negocio_id", LUDOGTEKA));
 const turnoAbierto = async () => (await SB.from("turnos_caja").select("id").eq("estado", "abierto").maybeSingle()).data;
 
 // PostgREST devuelve a lo más 1,000 filas: Huellitas acumula más y la suma quedaba congelada (el cobro nuevo no se veía).
@@ -362,8 +363,8 @@ try {
   comprobar(!cruzadoLeer.ok || cruzadoLeer.cuerpo.length === 0, "ni lee su historial desde el otro negocio");
   const cruzadoTabla = await get(tAdmin, "bonos_ajustes?select=id", LUDOGTEKA);
   comprobar(!cruzadoTabla.ok || cruzadoTabla.cuerpo.length === 0, "ni la tabla de ajustes");
-  const { data: filaLud } = await A.from("bonos_ajustes").select("id").eq("negocio_id", LUDOGTEKA);
-  comprobar((filaLud ?? []).length === ajustesLudAntes, `Ludogteka conserva sus ${ajustesLudAntes} ajustes de antes (la prueba no agregó ni quitó ninguno)`);
+  const ajustesLudDespues = await contar(A.from("bonos_ajustes").select("id", { count: "exact", head: true }).eq("negocio_id", LUDOGTEKA));
+  comprobar(ajustesLudDespues === ajustesLudAntes, `Ludogteka conserva sus ${ajustesLudAntes} ajustes de antes (la prueba no agregó ni quitó ninguno)`);
   const cruzadoVender = await vender(tRec, (await nuevoPerro()), { p_dias_usados: 1 });
   comprobar(cruzadoVender.ok, "(control) la venta con permiso sigue funcionando en Huellitas");
 

@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { cargarAreas } from "../comun";
 import { EditorAreas } from "./editor-areas";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 // Áreas del inventario: solo admin las edita (la base también lo aplica).
 export default async function AreasPage() {
@@ -12,8 +13,8 @@ export default async function AreasPage() {
   const supabase = await createSupabaseServerClient();
   const [areas, { data: insumos }, { data: equipos }] = await Promise.all([
     cargarAreas(supabase),
-    supabase.from("insumos").select("area_id").is("deleted_at", null),
-    supabase.from("equipos").select("area_id").is("deleted_at", null),
+    leerTodo<{ area_id: string }>(() => supabase.from("insumos").select("area_id").is("deleted_at", null).order("id")),
+    leerTodo<{ area_id: string }>(() => supabase.from("equipos").select("area_id").is("deleted_at", null).order("id")),
   ]);
   const cuenta = (lista: { area_id: string }[] | null, id: string) => (lista ?? []).filter((x) => x.area_id === id).length;
 

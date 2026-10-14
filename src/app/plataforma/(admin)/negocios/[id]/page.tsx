@@ -9,6 +9,7 @@ import { actualizarNegocio, agregarAdmin, asignarPlan, cambiarPlan, eliminarNego
 import { formatearFecha } from "@/lib/formato";
 import { pesosDeCentavos } from "@/lib/cobro/iva";
 import { estadoCobro } from "@/lib/cobro/estados";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 type Cobro = {
   negocio_id: string; estado: string; plan_nombre: string | null; periodicidad: string | null; monto_centavos: number | null;
@@ -35,10 +36,10 @@ export default async function NegocioPlataforma({ params }: { params: Promise<{ 
   const { id } = await params;
   const { supabase } = await exigirPlataforma();
   const [{ data }, { data: planesCrudo }, { data: modulosCrudo }, { data: cobros }, { data: pagosCrudo }] = await Promise.all([
-    supabase.rpc("plataforma_negocios"),
+    leerTodo<Record<string, unknown>>(() => supabase.rpc("plataforma_negocios").order("id")),
     supabase.from("planes").select("id, nombre, tipo, precio_mensual, modulos").eq("activo", true).order("orden"),
     supabase.from("modulos").select("clave, nombre").order("orden"),
-    supabase.rpc("plataforma_cobros"),
+    leerTodo<Record<string, unknown>>(() => supabase.rpc("plataforma_cobros").order("negocio_id")),
     supabase.rpc("plataforma_pagos_negocio", { p_negocio_id: id }),
   ]);
   const cobro = ((cobros ?? []) as Cobro[]).find((c) => c.negocio_id === id) ?? null;

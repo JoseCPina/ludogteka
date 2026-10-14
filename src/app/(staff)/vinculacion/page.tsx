@@ -7,6 +7,7 @@ import { cargarClientesBuscables } from "@/lib/clientes/buscables";
 import { diasDesde } from "@/lib/antiguedad";
 import { hoyNegocio } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 export default async function VinculacionPage() {
   const zona = await zonaActual();
@@ -14,8 +15,8 @@ export default async function VinculacionPage() {
 
   const [pendientesRes, vinculadasRes, clientesRes, { data: hoyData }] = await Promise.all([
     // Viene de la más vieja a la más nueva (order by created_at).
-    supabase.rpc("listar_cuentas_sin_vincular"),
-    supabase.rpc("listar_cuentas_vinculadas"),
+    leerTodo<Record<string, unknown>>(() => supabase.rpc("listar_cuentas_sin_vincular").order("creado_en").order("id")),
+    leerTodo<Record<string, unknown>>(() => supabase.rpc("listar_cuentas_vinculadas").order("vinculado_en").order("profile_id")),
     cargarClientesBuscables(supabase),
     supabase.rpc("fecha_negocio"),
   ]);

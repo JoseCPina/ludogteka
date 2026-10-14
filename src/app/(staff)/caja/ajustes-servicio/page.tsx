@@ -5,6 +5,7 @@ import { Alert } from "@/components/ui/alert";
 import { Antiguedad } from "@/components/ui/antiguedad";
 import { diasDesde } from "@/lib/antiguedad";
 import { formatearFecha } from "@/lib/formato";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 type Fila = {
   correccion_id: string;
@@ -33,7 +34,7 @@ export default async function AjustesServicioPage() {
   const supabase = await createSupabaseServerClient();
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
   const hoy = String(hoyData);
-  const { data, error } = await supabase.rpc("ajustes_servicio_por_atender");
+  const { data, error } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("ajustes_servicio_por_atender").order("correccion_id"));
   const filas = (data ?? []) as Fila[];
 
   return (

@@ -5,6 +5,7 @@ import { formatearFecha, formatearFechaCalendario, hoyNegocio } from "@/lib/form
 import { diasDesde } from "@/lib/antiguedad";
 import { BandejaComprobantes, type ComprobantePendiente } from "./bandeja-comprobantes";
 import { zonaActual } from "@/lib/negocio/actual";
+import { leerTodo, leerTodoPorIds } from "@/lib/supabase/paginar";
 
 const BUCKET = "perros-archivos";
 
@@ -17,14 +18,17 @@ export default async function ComprobantesPage() {
   const supabase = await createSupabaseServerClient();
 
   const [{ data: pendientesCrudo, error }, { data: revisadosCrudo }, { data: hoyData }] = await Promise.all([
-    supabase
-      .from("requisitos_sanitarios_propuestos")
-      .select(
-        "id, perro_id, fecha_aplicacion, detalle, comprobante_path, created_at, perros(nombre, cliente_id, clientes(nombre)), tipos_requisito_sanitario(id, etiqueta, vigencia_meses)"
-      )
-      .eq("estado", "pendiente")
-      .is("deleted_at", null)
-      .order("created_at"),
+    leerTodo<Record<string, unknown> & { perro_id: string }>(() =>
+      supabase
+        .from("requisitos_sanitarios_propuestos")
+        .select(
+          "id, perro_id, fecha_aplicacion, detalle, comprobante_path, created_at, perros(nombre, cliente_id, clientes(nombre)), tipos_requisito_sanitario(id, etiqueta, vigencia_meses)"
+        )
+        .eq("estado", "pendiente")
+        .is("deleted_at", null)
+        .order("created_at")
+        .order("id")
+    ),
     supabase
       .from("requisitos_sanitarios_propuestos")
       .select("id, estado, fecha_aplicacion, motivo_rechazo, revisado_at, perros(nombre), tipos_requisito_sanitario(etiqueta)")
@@ -37,12 +41,9 @@ export default async function ComprobantesPage() {
   const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
 
   const idsPerros = Array.from(new Set((pendientesCrudo ?? []).map((p) => p.perro_id as string)));
-  const { data: estados } = idsPerros.length
-    ? await supabase
-        .from("perro_requisitos_sanitarios_estado")
-        .select("perro_id, tipo_requisito_id, estado")
-        .in("perro_id", idsPerros)
-    : { data: [] as { perro_id: string; tipo_requisito_id: string; estado: string }[] };
+  const { data: estados } = await leerTodoPorIds<{ perro_id: string; tipo_requisito_id: string; estado: string }, string>(idsPerros, (bloque) =>
+    supabase.from("perro_requisitos_sanitarios_estado").select("perro_id, tipo_requisito_id, estado").in("perro_id", bloque).order("perro_id").order("tipo_requisito_id")
+  );
 
   const pendientes: ComprobantePendiente[] = await Promise.all(
     (pendientesCrudo ?? []).map(async (p) => {

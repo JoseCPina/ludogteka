@@ -6,6 +6,7 @@ import { Alert } from "@/components/ui/alert";
 import { estadoCobroIntegrado } from "@/app/(staff)/caja/cobro-integrado-actions";
 import type { OrdenCobroFila } from "@/app/(staff)/reservas/[id]/cobrar/cobro-integrado";
 import { CobroJunto, type CuentaJunto } from "./cobro-junto";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 // Cobrar en UN movimiento varias cuentas abiertas de la misma persona:
 // un pago, un folio, una propina; el monto se reparte entre las cuentas.
@@ -35,7 +36,7 @@ export default async function CobrarJuntoPage({ searchParams }: { searchParams: 
   }
 
   const [{ data: abiertas, error }, { data: turno }, mpDisponible, { data: terminalManualBloqueada }] = await Promise.all([
-    supabase.rpc("cuentas_abiertas", { p_dias: 30 }),
+    supabase.rpc("cuentas_abiertas_json", { p_dias: 30 }),
     supabase.from("turnos_caja").select("id").eq("estado", "abierto").maybeSingle(),
     estadoCobroIntegrado(),
     supabase.rpc("terminal_manual_bloqueada"),

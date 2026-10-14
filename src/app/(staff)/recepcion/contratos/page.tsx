@@ -6,6 +6,7 @@ import { diasDesde } from "@/lib/antiguedad";
 import { Antiguedad } from "@/components/ui/antiguedad";
 import { urlDelNegocioActual, zonaActual } from "@/lib/negocio/actual";
 import { BotonRegenerar } from "./boton-regenerar";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 type Fila = {
   situacion: "por_firmar" | "por_regenerar";
@@ -43,12 +44,15 @@ export default async function ContratosPorAtenderPage() {
   const urlPublica = await urlDelNegocioActual();
   const supabase = await createSupabaseServerClient();
   const [{ data, error }, { data: hoyData }] = await Promise.all([
-    supabase
-      .from("contratos_por_atender")
-      .select(
-        "situacion, contrato_id, perro_id, perro_nombre, cliente_nombre, cliente_telefono, tipo_nombre, paquete_nombre, created_at, fecha_firma, regenerar_motivo, espera_desde"
-      )
-      .order("espera_desde"),
+    leerTodo<Fila>(() =>
+      supabase
+        .from("contratos_por_atender")
+        .select(
+          "situacion, contrato_id, perro_id, perro_nombre, cliente_nombre, cliente_telefono, tipo_nombre, paquete_nombre, created_at, fecha_firma, regenerar_motivo, espera_desde"
+        )
+        .order("espera_desde")
+        .order("contrato_id")
+    ),
     supabase.rpc("fecha_negocio"),
   ]);
   const hoy = (hoyData as string | null) ?? hoyNegocio(zona);

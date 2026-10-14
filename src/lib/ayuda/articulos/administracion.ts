@@ -37,6 +37,8 @@ Abre el consumible desde la lista y usa los botones de **Movimientos**:
 
 > Lo que se usa en una cita de estética con receta se descuenta solo al finalizarla.
 
+En la lista de **Movimientos** de un producto se ven los últimos 500; si tiene más, la pantalla lo avisa. La existencia de arriba siempre cuenta todos.
+
 ## Si algo no sale
 
 - ¿No ves **Registrar entrada (compra)**? Se necesita ser admin o tener el permiso «Costos y compras de inventario».

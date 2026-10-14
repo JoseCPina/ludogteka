@@ -8,6 +8,7 @@ import { MostradorCaja, type CuentaAbierta, type PagoMpPendiente } from "./mostr
 import { zonaActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 // Caja es el mostrador de cobro: cuentas abiertas, buscador, pases,
 // cargos sueltos y el cobro mismo (que sigue siendo el de la reserva,
@@ -25,13 +26,17 @@ export default async function CajaPage() {
         .select("id, abierto_at, abierto_por, fondo_inicial")
         .eq("estado", "abierto")
         .maybeSingle(),
-      supabase.rpc("cuentas_abiertas", { p_dias: 30 }),
+      // Todas las cuentas con saldo en UN jsonb (cuentas_abiertas_json): la API corta en 1,000 filas y una cuenta sin mostrar es dinero sin cobrar.
+      supabase.rpc("cuentas_abiertas_json", { p_dias: 30 }),
       cargarClientesBuscables(supabase),
-      supabase
-        .from("mp_ordenes_estado")
-        .select("id, tipo, monto, cliente_nombre, pagada_at, simulado")
-        .eq("pendiente_de_registrar", true)
-        .order("pagada_at"),
+      leerTodo<Record<string, unknown>>(() =>
+        supabase
+          .from("mp_ordenes_estado")
+          .select("id, tipo, monto, cliente_nombre, pagada_at, simulado")
+          .eq("pendiente_de_registrar", true)
+          .order("pagada_at")
+          .order("id")
+      ),
       supabase.from("clientes").select("id").eq("publico_general", true).is("deleted_at", null).maybeSingle(),
     ]);
 

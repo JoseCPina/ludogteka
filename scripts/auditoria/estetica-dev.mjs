@@ -30,6 +30,7 @@ import { execFileSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
 import { abrirNavegador } from "../lib/navegador.mjs";
+import { todas, contar } from "../lib/paginar.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
@@ -445,8 +446,8 @@ try {
   const antesCaja = async () => JSON.stringify([
     (await SB.from("cobros").select("id, reserva_id, turno_id").eq("reserva_id", cita2.reserva_id)).data,
     (await SB.from("cobro_metodos").select("cobro_id, monto, propina").in("cobro_id", ((await SB.from("cobros").select("id").eq("reserva_id", cita2.reserva_id)).data ?? []).map((x) => x.id))).data,
-    (await SB.from("turnos_caja").select("id, estado, cerrado_at").eq("estado", "cerrado").order("id")).data,
-    (await SB.from("cortes_caja").select("id, diferencia").order("id")).data,
+    (await todas(() => SB.from("turnos_caja").select("id, estado, cerrado_at").eq("estado", "cerrado").order("id"))).data,
+    (await todas(() => SB.from("cortes_caja").select("id, diferencia").order("id"))).data,
   ]);
   const pagoA1 = await pagar(E1, P1);
   comprobar(pagoA1.ok, `se paga el periodo ${P1[0]}…${P1[1]} a la primera (incluye su comisión de $${X})`);

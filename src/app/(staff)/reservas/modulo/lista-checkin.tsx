@@ -8,6 +8,7 @@ import {
   type ContratoResumen,
 } from "@/app/(staff)/perros/contrato-estado-banner";
 import type { ModuloEstancia } from "@/lib/modulos";
+import { leerTodoPorIds } from "@/lib/supabase/paginar";
 
 export async function ListaCheckin({ modulo }: { modulo: ModuloEstancia }) {
   const supabase = await createSupabaseServerClient();
@@ -18,12 +19,11 @@ export async function ListaCheckin({ modulo }: { modulo: ModuloEstancia }) {
     .order("perro_nombre");
 
   const perroIds = [...new Set((llegadas ?? []).map((l) => l.perro_id))];
-  const { data: contratoEstados } = perroIds.length
-    ? await supabase
-        .from("perros_contrato_resumen")
-        .select("perro_id, estado, faltantes, desactualizados")
-        .in("perro_id", perroIds)
-    : { data: [] as { perro_id: string; estado: string; faltantes: string[]; desactualizados: string[] }[] };
+  const { data: contratoEstados } = await leerTodoPorIds<{ perro_id: string; estado: string; faltantes: string[]; desactualizados: string[] }, string>(
+    perroIds,
+    (bloque) => supabase.from("perros_contrato_resumen").select("perro_id, estado, faltantes, desactualizados").in("perro_id", bloque).order("perro_id"),
+    100
+  );
   const contratoPorPerro = new Map<string, ContratoResumen>(
     (contratoEstados ?? []).map((c) => [
       c.perro_id,

@@ -6,6 +6,7 @@ import { formatearFechaCalendario } from "@/lib/formato";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AVISOS_EQUIPO, ESTADOS_EQUIPO, abreviarUnidad, cargarAreas, puedeDarDeAlta } from "./comun";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 // Inventario en dos listas que no se mezclan: CONSUMIBLES (se gastan y se
 // reponen: existencia y stock mínimo) y EQUIPO (no se gasta: cuántos hay, en
@@ -26,16 +27,21 @@ export default async function InventarioPage({
   const [areas, { data: insumos, error: errorInsumos }, { data: existencias }, { data: caducidades }, { data: equipos, error: errorEquipos }] =
     await Promise.all([
       cargarAreas(supabase),
-      supabase
-        .from("insumos")
-        .select("id, nombre, area_id, unidades_medida!unidad_consumo_id(clave, equivalencia_en_base)")
-        .is("deleted_at", null)
-        .order("nombre"),
-      supabase.from("insumos_existencia_actual").select("insumo_id, existencia_actual, stock_minimo, bajo_minimo"),
-      supabase.from("insumos_proxima_caducidad").select("insumo_id, estado"),
-      supabase.from("equipos_estado").select("*").order("nombre"),
+      leerTodo<Record<string, unknown> & { id: string; nombre: string; area_id: string }>(() =>
+        supabase
+          .from("insumos")
+          .select("id, nombre, area_id, unidades_medida!unidad_consumo_id(clave, equivalencia_en_base)")
+          .is("deleted_at", null)
+          .order("nombre")
+          .order("id")
+      ),
+      leerTodo<{ insumo_id: string; existencia_actual: number; stock_minimo: number; bajo_minimo: boolean }>(() =>
+        supabase.from("insumos_existencia_actual").select("insumo_id, existencia_actual, stock_minimo, bajo_minimo").order("insumo_id")
+      ),
+      leerTodo<{ insumo_id: string; estado: string }>(() => supabase.from("insumos_proxima_caducidad").select("insumo_id, estado").order("insumo_id")),
+      leerTodo<Record<string, unknown> & { aviso?: unknown }>(() => supabase.from("equipos_estado").select("*").order("nombre").order("id")),
     ]);
-  const { data: sinCosto } = puedeCostos ? await supabase.rpc("insumos_sin_costo") : { data: null };
+  const { data: sinCosto } = puedeCostos ? await leerTodo<Record<string, unknown>>(() => supabase.rpc("insumos_sin_costo").order("id")) : { data: null };
 
   const existenciaDe = new Map((existencias ?? []).map((e) => [e.insumo_id as string, e]));
   const caducidadDe = new Map((caducidades ?? []).map((c) => [c.insumo_id as string, c.estado as string]));

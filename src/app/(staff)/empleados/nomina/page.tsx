@@ -10,6 +10,7 @@ import { moneda, quincenaDe } from "@/lib/empleados/textos";
 import type { Desglose } from "@/lib/empleados/tipos";
 import { SubnavEmpleados } from "../subnav";
 import { zonaActual } from "@/lib/negocio/actual";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 // La nómina del periodo: cuánto le toca a cada quien y si ya se le pagó.
 // El detalle y el "marcar pagado" están en la página de cada empleado.
@@ -27,7 +28,10 @@ export default async function NominaPage({ searchParams }: { searchParams: Promi
 
   const [{ data: empleados }, { data: pagos }, { count: porAprobar }] = await Promise.all([
     supabase.from("empleados").select("id, nombre, puesto, fecha_ingreso, fecha_baja").is("deleted_at", null).order("nombre"),
-    supabase.from("nomina_pagos").select("id, empleado_id, tipo, reverso_de, periodo_desde, periodo_hasta, total").is("deleted_at", null),
+    // Todos los pagos de todos los empleados: con el tiempo pasan de 1,000 y un pago sin ver se pagaría dos veces.
+    leerTodo<{ id: string; empleado_id: string; tipo: string; reverso_de: string | null; periodo_desde: string; periodo_hasta: string; total: number }>(() =>
+      supabase.from("nomina_pagos").select("id, empleado_id, tipo, reverso_de, periodo_desde, periodo_hasta, total").is("deleted_at", null).order("created_at").order("id")
+    ),
     supabase.from("ausencias").select("id", { count: "exact", head: true }).eq("estado", "solicitada").is("deleted_at", null),
   ]);
   // Quien trabajó en algún día del periodo.

@@ -16,7 +16,7 @@ export default async function WhatsAppPlataforma() {
   const inicioMes = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)).toISOString();
   const [{ data: hilos }, { data: uso }, { data: chat }, { data: contesta }, webhook, { data: entregasCrudo }] = await Promise.all([
     supabase.from("wa_hilos").select("telefono, tipo, negocio_nombre, resumen, estado, urgencia, updated_at").is("deleted_at", null).order("updated_at", { ascending: false }).limit(40),
-    supabase.from("wa_uso_ia").select("costo_mxn, resultado").gte("created_at", inicioMes),
+    supabase.rpc("wa_uso_ia_resumen", { p_desde: inicioMes }),
     supabase.from("wa_config").select("id").eq("clave", "telegram_chat_operador").is("deleted_at", null).maybeSingle(),
     supabase.from("wa_config").select("valor").eq("clave", "whatsapp_contesta_desde").is("deleted_at", null).maybeSingle(),
     cfg.telegramToken ? new TelegramHttp(cfg.telegramToken).llamar("getWebhookInfo") : Promise.resolve(null),
@@ -27,8 +27,9 @@ export default async function WhatsAppPlataforma() {
     fallos: { origen: string; tipo: string; etiqueta: string | null; error_codigo: number | null; motivo: string | null; fallido_at: string; telefono_ult4: string | null; negocio: string | null }[];
   };
   const NOMBRE_ESTADO: [string, string][] = [["aceptado", "Aceptados (sin aviso aún)"], ["enviado", "Enviados"], ["entregado", "Entregados"], ["leido", "Leídos"], ["fallido", "Fallidos"]];
-  const gasto = (uso ?? []).reduce((s, f) => s + Number(f.costo_mxn ?? 0), 0);
-  const escalados = (uso ?? []).filter((f) => f.resultado === "escalo").length;
+  const resumenUso = (uso ?? {}) as { gasto_mxn?: number; respuestas?: number; escalados?: number };
+  const gasto = Number(resumenUso.gasto_mxn ?? 0);
+  const escalados = Number(resumenUso.escalados ?? 0);
   const urlWebhook = (webhook?.resultado as { url?: string } | null)?.url ?? "";
   const variables: [string, boolean][] = [
     ["WHATSAPP_TOKEN", Boolean(cfg.token)],
@@ -105,7 +106,7 @@ export default async function WhatsAppPlataforma() {
         <div className="rounded-lg border border-n-200 bg-white px-4 py-3">
           <p className="text-sm text-n-600">IA este mes</p>
           <p className="text-2xl font-bold tabular-nums text-n-900">${gasto.toFixed(2)}</p>
-          <p className="text-xs text-n-600">{(uso ?? []).length} llamadas · {escalados} escaladas</p>
+          <p className="text-xs text-n-600">{Number(resumenUso.respuestas ?? 0)} llamadas · {escalados} escaladas</p>
         </div>
       </section>
 

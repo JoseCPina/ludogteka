@@ -4,6 +4,7 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { Alert } from "@/components/ui/alert";
 import { PerroAdentro, type PerroAdentroDato } from "./perro-adentro";
+import { leerTodoPorIds } from "@/lib/supabase/paginar";
 
 // «Adentro ahora»: los perros que están en el negocio ahora mismo (estancia
 // en curso de guardería u hotel), con lo que se hace al momento: tomar o
@@ -42,7 +43,7 @@ export default async function AdentroPage() {
   const [{ data: retData }, { data: hoyData }, { data: telefonos }] = await Promise.all([
     supabase.rpc("reporte_retencion_dias"),
     supabase.rpc("fecha_negocio"),
-    ids.length ? supabase.from("perros").select("id, clientes(telefono)").in("id", ids) : Promise.resolve({ data: [] }),
+    leerTodoPorIds<{ id: string; clientes: { telefono: string | null } | { telefono: string | null }[] | null }, string>(ids, (bloque) => supabase.from("perros").select("id, clientes(telefono)").in("id", bloque).order("id"), 100),
   ]);
   const retencion = Number(retData ?? 7);
   const sinTelefono = new Set<string>();
@@ -53,12 +54,9 @@ export default async function AdentroPage() {
 
   const estadoReporte = new Map<string, string>();
   if (permiso && conGuarderia && ids.length) {
-    const { data: reportes } = await supabase
-      .from("reportes_guarderia")
-      .select("perro_id, estado")
-      .eq("fecha", hoyData as string)
-      .in("perro_id", ids)
-      .is("deleted_at", null);
+    const { data: reportes } = await leerTodoPorIds<{ perro_id: string; estado: string }, string>(ids, (bloque) =>
+      supabase.from("reportes_guarderia").select("perro_id, estado").eq("fecha", hoyData as string).in("perro_id", bloque).is("deleted_at", null).order("perro_id")
+    );
     for (const r of reportes ?? []) estadoReporte.set(r.perro_id as string, r.estado as string);
   }
 

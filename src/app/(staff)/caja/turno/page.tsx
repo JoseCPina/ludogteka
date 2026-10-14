@@ -8,6 +8,7 @@ import { AbrirTurnoForm } from "./abrir-turno-form";
 import { HistorialTurnos, type TurnoCerrado } from "./historial-turnos";
 import { MovimientosTurno, type MovimientoTurno, type ResumenMetodo } from "./movimientos-turno";
 import { zonaActual } from "@/lib/negocio/actual";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 // El turno de caja: apertura, movimientos en curso con el acumulado por
 // método (y por origen: por la app o a mano), retiros, arqueo ciego e
@@ -25,14 +26,18 @@ export default async function TurnoCajaPage() {
 
   const [{ data: retirosCrudo }, { data: movimientosCrudo }, { data: resumenCrudo }] = turnoAbierto
     ? await Promise.all([
-        supabase
-          .from("movimientos_caja")
-          // Los cancelados (gasto cancelado con el turno abierto, o retiro
-          // cancelado con motivo) se enseñan tachados y no suman.
-          .select("id, monto, motivo, created_at, created_by, deleted_at, motivo_cancelacion, cancelado_por, tipo, origen_ingreso, nota")
-          .eq("turno_id", turnoAbierto.id)
-          .order("created_at"),
-        supabase.rpc("movimientos_turno", { p_turno_id: turnoAbierto.id }),
+        leerTodo<Record<string, unknown> & { created_by: string | null; cancelado_por: string | null; tipo: string }>(() =>
+          supabase
+            .from("movimientos_caja")
+            // Los cancelados (gasto cancelado con el turno abierto, o retiro
+            // cancelado con motivo) se enseñan tachados y no suman.
+            .select("id, monto, motivo, created_at, created_by, deleted_at, motivo_cancelacion, cancelado_por, tipo, origen_ingreso, nota")
+            .eq("turno_id", turnoAbierto.id)
+            .order("created_at")
+            .order("id")
+        ),
+        // Los movimientos del turno se suman por método en pantalla: tienen que llegar TODOS, no los primeros 1,000.
+        leerTodo<Record<string, unknown>>(() => supabase.rpc("movimientos_turno", { p_turno_id: turnoAbierto.id }).order("fecha").order("id")),
         supabase.rpc("resumen_turno", { p_turno_id: turnoAbierto.id }),
       ])
     : [{ data: [] as never[] }, { data: [] as never[] }, { data: [] as never[] }];

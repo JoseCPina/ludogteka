@@ -2,6 +2,7 @@ import { exigirPlataforma } from "@/lib/plataforma/sesion";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { formatearFecha } from "@/lib/formato";
 import { Alert } from "@/components/ui/alert";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 const ZONA = "America/Mexico_City";
 
@@ -15,10 +16,10 @@ export default async function ConciliacionPlataforma() {
   await exigirPlataforma();
   const admin = createSupabaseAdminClient();
   const [{ data: filas, error }, { data: negocios }, { data: porConfirmar }, { data: patron }] = await Promise.all([
-    admin.from("conciliacion_terminal").select("negocio_id, tipo, monto, ocurrio_at, detectada_at, detalle").is("resuelta_at", null).neq("tipo", "pago_ajeno").order("detectada_at"),
-    admin.from("negocios").select("id, nombre, slug"),
-    admin.from("mp_ordenes").select("negocio_id, created_at").eq("estado", "por_confirmar").is("deleted_at", null),
-    admin.rpc("plataforma_tarjetas_manuales_patron"),
+    leerTodo<Record<string, unknown>>(() => admin.from("conciliacion_terminal").select("id, negocio_id, tipo, monto, ocurrio_at, detectada_at, detalle").is("resuelta_at", null).neq("tipo", "pago_ajeno").order("detectada_at").order("id")),
+    leerTodo<{ id: string; nombre: string; slug: string }>(() => admin.from("negocios").select("id, nombre, slug").order("id")),
+    leerTodo<Record<string, unknown>>(() => admin.from("mp_ordenes").select("id, negocio_id, created_at").eq("estado", "por_confirmar").is("deleted_at", null).order("created_at").order("id")),
+    leerTodo<Record<string, unknown>>(() => admin.rpc("plataforma_tarjetas_manuales_patron").order("negocio_id")),
   ]);
   const usoTarjetas = (patron ?? []) as { negocio_id: string; negocio_nombre: string; proveedor: string; manuales_hoy: number; pct_turno: number; manuales_turno: number; tarjetas_turno: number; por_revisar: number; sobre_tope: number }[];
   const nombre = new Map((negocios ?? []).map((n) => [n.id as string, n.nombre as string]));

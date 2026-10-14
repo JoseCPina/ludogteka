@@ -6,6 +6,7 @@ import { etiquetaDePermiso } from "@/lib/auth/permisos";
 import { formatearFecha, horaLocalDeInstante } from "@/lib/formato";
 import { CasillasPermisos } from "./casillas-permisos";
 import { zonaActual } from "@/lib/negocio/actual";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 // Permisos extra por persona de recepción (solo admin: el middleware no
 // deja entrar a nadie más y la base rechaza otorgar/revocar a quien no es
@@ -24,7 +25,7 @@ export default async function PermisosPage() {
       .order("created_at", { ascending: false }),
     supabase.from("membresias").select("id:profile_id, profiles(nombre_completo)").in("rol", ["admin", "recepcion"]),
   ]);
-  const { data: cuentas } = await supabase.rpc("listar_cuentas");
+  const { data: cuentas } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("listar_cuentas").order("id"));
   const correo = new Map(((cuentas as { id: string; email: string }[] | null) ?? []).map((c) => [c.id, etiquetaDeCuenta(c.email)]));
   const nombreDe = (n: { profiles: unknown }) => ((n.profiles as { nombre_completo: string | null } | null)?.nombre_completo ?? null);
   const nombre = new Map((nombres ?? []).map((n) => [n.id as string, nombreDe(n)?.trim() || correo.get(n.id as string) || "—"]));

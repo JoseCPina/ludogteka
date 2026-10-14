@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { diasDesde } from "@/lib/antiguedad";
+import { leerTodoPorIds } from "@/lib/supabase/paginar";
 
 export type SaldoDeSalida = {
   reservaId: string;
@@ -19,7 +20,7 @@ export type SaldoDeSalida = {
 // llevan semanas sin cobrarse, que son justo las que no se pueden perder.
 // Ordenadas de la más vieja a la más nueva.
 export async function cargarSaldosDeSalidas(supabase: SupabaseClient, hoy: string, zona: string, dias = 120): Promise<SaldoDeSalida[]> {
-  const { data: cuentas } = await supabase.rpc("cuentas_abiertas", { p_dias: dias });
+  const { data: cuentas } = await supabase.rpc("cuentas_abiertas_json", { p_dias: dias });
   const filas = (cuentas ?? []) as {
     reserva_id: string;
     cliente_nombre: string;
@@ -29,9 +30,14 @@ export async function cargarSaldosDeSalidas(supabase: SupabaseClient, hoy: strin
   }[];
   if (filas.length === 0) return [];
   const ids = filas.map((c) => c.reserva_id);
+  // Con cientos de cuentas el `.in()` se pasa del largo de la URL y trae más de 1,000 filas: por bloques y por páginas.
   const [{ data: estancias }, { data: citas }] = await Promise.all([
-    supabase.from("estancias").select("reserva_id, estado, hora_salida_real").in("reserva_id", ids).is("deleted_at", null),
-    supabase.from("citas_estetica").select("reserva_id, estado, fin").in("reserva_id", ids).is("deleted_at", null),
+    leerTodoPorIds<{ reserva_id: string; estado: string; hora_salida_real: string | null }, string>(ids, (bloque) =>
+      supabase.from("estancias").select("reserva_id, estado, hora_salida_real").in("reserva_id", bloque).is("deleted_at", null).order("id")
+    ),
+    leerTodoPorIds<{ reserva_id: string; estado: string; fin: string | null }, string>(ids, (bloque) =>
+      supabase.from("citas_estetica").select("reserva_id, estado, fin").in("reserva_id", bloque).is("deleted_at", null).order("id")
+    ),
   ]);
   const PENDIENTE = new Set(["reservada", "confirmada", "en_curso"]);
   const porReserva = new Map<string, { pendiente: boolean; salida: string | null }>();

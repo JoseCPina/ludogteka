@@ -4,6 +4,7 @@ import { Alert } from "@/components/ui/alert";
 import { Field } from "@/components/ui/field";
 import { FormularioPlataforma } from "@/components/plataforma/formulario-plataforma";
 import { topeTimbres } from "../../acciones";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 type Fila = { negocio_id: string; nombre: string; slug: string; activa: boolean; modo: string; llave: boolean; tope: number; aviso_pct: number; usados: number };
 
@@ -11,7 +12,7 @@ type Fila = { negocio_id: string; nombre: string; slug: string; activa: boolean;
 // llave del PAC, cuántos timbres lleva este mes y su tope.
 export default async function FacturacionPlataforma() {
   const { supabase } = await exigirPlataforma();
-  const { data, error } = await supabase.rpc("plataforma_cfdi_uso");
+  const { data, error } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("plataforma_cfdi_uso").order("negocio_id"));
   const filas = (await conInterno(supabase, (data ?? []) as Fila[])).map((f) => ({ ...f, usados: Number(f.usados), tope: Number(f.tope), aviso_pct: Number(f.aviso_pct) }));
   // El demo (Patitas & Co.) no cuenta en el total.
   const esDemo = (f: Fila) => f.slug === "patitasyco";

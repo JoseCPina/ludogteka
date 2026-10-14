@@ -2,6 +2,7 @@ import Link from "next/link";
 import { exigirPlataforma } from "@/lib/plataforma/sesion";
 import { Alert } from "@/components/ui/alert";
 import { ETIQUETA_ESTADO_TICKET } from "@/lib/soporte/textos";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 type Fila = {
   id: string; negocio: string; slug: string; numero: number; asunto: string; estado: string; rol: string; persona: string;
@@ -17,7 +18,7 @@ export default async function SoportePlataforma({ searchParams }: { searchParams
   const { supabase } = await exigirPlataforma();
   const { estado } = await searchParams;
   const filtro = estado && ["abierto", "en_proceso", "resuelto"].includes(estado) ? estado : null;
-  const { data, error } = await supabase.rpc("plataforma_tickets", { p_estado: filtro });
+  const { data, error } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("plataforma_tickets", { p_estado: filtro }).order("created_at", { ascending: false }).order("id"));
   const filas = (data ?? []) as Fila[];
   return (
     <div className="flex flex-col gap-6">

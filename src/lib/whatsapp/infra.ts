@@ -210,8 +210,10 @@ export class DatosSupabase implements DatosSoporte {
   }
 
   async gastoIADesde(desde: string) {
-    const { data } = await this.#sb.from("wa_uso_ia").select("costo_mxn").gte("created_at", desde);
-    return (data ?? []).reduce((s, f) => s + Number(f.costo_mxn ?? 0), 0);
+    // Se suma en la base: la API corta en 1,000 filas y un tope de gasto que se queda corto no protege.
+    const { data, error } = await this.#sb.rpc("wa_uso_ia_resumen", { p_desde: desde });
+    if (error) throw new Error(`wa_uso_ia_resumen: ${error.message}`);
+    return Number((data as { gasto_mxn?: number } | null)?.gasto_mxn ?? 0);
   }
 
   async registrarUsoIA(u: { telefono: string; tokensIn: number; tokensOut: number; costoMxn: number; resultado: string }) {

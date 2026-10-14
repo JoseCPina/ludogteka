@@ -5,6 +5,7 @@ import { Select } from "@/components/ui/select";
 import { guardarPlan, sincronizarPreciosStripe } from "../../acciones";
 import { conIva, netoDe, pesosDeCentavos } from "@/lib/cobro/iva";
 import { modoStripe, stripeConfigurado } from "@/lib/cobro/stripe";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 type Plan = {
   id: string; clave: string; nombre: string; descripcion: string | null; tipo: string;
@@ -77,7 +78,7 @@ export default async function PlanesPlataforma() {
   const [{ data: planes }, { data: modulos }, { data: negocios }, { data: precios }] = await Promise.all([
     supabase.from("planes").select("id, clave, nombre, descripcion, tipo, precio_mensual, precio_anual, modulos, orden, activo").order("orden"),
     supabase.from("modulos").select("clave, nombre").order("orden"),
-    supabase.rpc("plataforma_negocios"),
+    leerTodo<Record<string, unknown>>(() => supabase.rpc("plataforma_negocios").order("id")),
     supabase
       .from("planes_precios_stripe")
       .select("plan_id, periodicidad, total_centavos, stripe_price_id, lookup_key")

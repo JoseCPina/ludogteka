@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { describirBono, diasParaVencer } from "@/lib/bonos/descripcion";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 type Fila = {
   id: string;
@@ -55,13 +56,16 @@ function Lista({ titulo, items, vacio }: { titulo: string; items: Fila[]; vacio:
 
 export async function PasesTablero({ hoy }: { hoy: string }) {
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase
-    .from("bonos_clientes_estado")
-    .select(
-      "id, cliente_id, cliente_nombre, perro_id, perro_nombre, servicio_nombre, cantidad_total, cantidad_disponible, fecha_vencimiento, fecha_compra, estado, ilimitado"
-    )
-    .in("estado", ["activo", "agotado", "vencido"])
-    .order("fecha_vencimiento", { ascending: true, nullsFirst: false });
+  const { data } = await leerTodo<Fila>(() =>
+    supabase
+      .from("bonos_clientes_estado")
+      .select(
+        "id, cliente_id, cliente_nombre, perro_id, perro_nombre, servicio_nombre, cantidad_total, cantidad_disponible, fecha_vencimiento, fecha_compra, estado, ilimitado"
+      )
+      .in("estado", ["activo", "agotado", "vencido"])
+      .order("fecha_vencimiento", { ascending: true, nullsFirst: false })
+      .order("id")
+  );
 
   const filas = ((data as Fila[] | null) ?? []).filter((f) => {
     const dias = diasParaVencer(f.fecha_vencimiento, hoy);

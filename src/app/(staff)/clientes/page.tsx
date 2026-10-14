@@ -3,26 +3,31 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { ListaClientes, type ClienteFila } from "./lista-clientes";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 export default async function ClientesPage() {
   const supabase = await createSupabaseServerClient();
   const [{ data, error }, { data: perros }] = await Promise.all([
-    supabase
-      .from("clientes")
-      .select("id, nombre, telefono, email, created_at, alta_por_cliente, datos_revisados_at")
-      .is("deleted_at", null)
-      .eq("publico_general", false)
-      .order("nombre"),
+    // Todos, página por página: la API corta en 1,000 filas y un negocio con más clientes quedaba con la lista a medias.
+    leerTodo<Omit<ClienteFila, "perros">>(() =>
+      supabase
+        .from("clientes")
+        .select("id, nombre, telefono, email, created_at, alta_por_cliente, datos_revisados_at")
+        .is("deleted_at", null)
+        .eq("publico_general", false)
+        .order("nombre")
+        .order("id")
+    ),
     // Para buscar por nombre del perro, como en todos los buscadores.
-    supabase.from("perros").select("id, cliente_id, nombre").is("deleted_at", null).eq("fallecido", false).order("nombre"),
+    leerTodo<{ id: string; cliente_id: string; nombre: string }>(() => supabase.from("perros").select("id, cliente_id, nombre").is("deleted_at", null).eq("fallecido", false).order("nombre").order("id")),
   ]);
   const perrosPorCliente = new Map<string, { id: string; nombre: string }[]>();
-  for (const p of perros ?? []) {
+  for (const p of perros) {
     const lista = perrosPorCliente.get(p.cliente_id as string) ?? [];
     lista.push({ id: p.id as string, nombre: p.nombre as string });
     perrosPorCliente.set(p.cliente_id as string, lista);
   }
-  const filas: ClienteFila[] = ((data ?? []) as Omit<ClienteFila, "perros">[]).map((c) => ({
+  const filas: ClienteFila[] = data.map((c) => ({
     ...c,
     perros: perrosPorCliente.get(c.id) ?? [],
   }));

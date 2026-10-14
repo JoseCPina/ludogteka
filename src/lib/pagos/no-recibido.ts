@@ -4,6 +4,7 @@ import { buscarPagos, ESTADOS_CON_DINERO } from "@/lib/mercadopago/busqueda";
 import { conexionDeCobro, type NegocioParaCobro } from "./conexion";
 import { mensajeDeError } from "./tipos";
 import { dinero } from "@/lib/dinero";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 /**
  * «Marcar como no recibido» (5 de octubre de 2026): corregir un cobro con
@@ -21,11 +22,10 @@ const VENTANA_HORAS = 6;
 
 /** Pagos ya ligados a un cobro nuestro (no pueden ser «el pago de este cobro»). */
 export async function pagosYaLigados(admin: SupabaseClient, negocioId: string): Promise<Set<string>> {
-  const { data } = await admin
-    .from("mp_ordenes")
-    .select("mp_payment_id, mp_payment_ref")
-    .eq("negocio_id", negocioId)
-    .is("deleted_at", null);
+  // Todas las órdenes del negocio: si faltaran las de más allá de la fila 1,000, un pago ya ligado a otro cobro parecería libre.
+  const { data } = await leerTodo<{ mp_payment_id: string | null; mp_payment_ref: string | null }>(() =>
+    admin.from("mp_ordenes").select("mp_payment_id, mp_payment_ref").eq("negocio_id", negocioId).is("deleted_at", null).order("id")
+  );
   const s = new Set<string>();
   for (const o of data ?? []) {
     if (o.mp_payment_id) s.add(String(o.mp_payment_id));

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { RecetaConsumo, type LineaReceta } from "./receta-consumo";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 export default async function RecetaServicioPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -20,11 +21,14 @@ export default async function RecetaServicioPage({ params }: { params: Promise<{
 
   const [{ data: tamanos }, { data: insumos }, { data: lineasCrudo }] = await Promise.all([
     supabase.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
-    supabase
-      .from("insumos")
-      .select("id, nombre, unidades_medida!unidad_consumo_id(etiqueta)")
-      .is("deleted_at", null)
-      .order("nombre"),
+    leerTodo<Record<string, unknown> & { id: string; nombre: string }>(() =>
+      supabase
+        .from("insumos")
+        .select("id, nombre, unidades_medida!unidad_consumo_id(etiqueta)")
+        .is("deleted_at", null)
+        .order("nombre")
+        .order("id")
+    ),
     supabase
       .from("recetas_consumo")
       .select(

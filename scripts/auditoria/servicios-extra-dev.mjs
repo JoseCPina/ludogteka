@@ -26,6 +26,7 @@ import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
 import { claveAleatoria } from "../lib/clave.mjs";
+import { todas, contar } from "../lib/paginar.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
@@ -93,7 +94,7 @@ const cuenta = async (reserva) => {
 const foto = async () => {
   const [cobros, metodos, devs, mov, turnos] = await Promise.all([
     SB.from("cobros").select("id", { count: "exact", head: true }).eq("negocio_id", B),
-    SB.from("cobro_metodos").select("monto, propina").eq("negocio_id", B),
+    todas(() => SB.from("cobro_metodos").select("monto, propina").eq("negocio_id", B).order("id")),
     SB.from("devoluciones").select("id", { count: "exact", head: true }).eq("negocio_id", B),
     SB.from("movimientos_caja").select("id", { count: "exact", head: true }).eq("negocio_id", B),
     SB.from("turnos_caja").select("id", { count: "exact", head: true }).eq("negocio_id", B),

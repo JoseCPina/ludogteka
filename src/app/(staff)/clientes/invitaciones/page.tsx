@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { esTipoLinkAlta, type TipoLinkAlta } from "@/lib/alta/tipos-link";
 import { InvitacionesPanel, type InvitacionFila } from "./invitaciones-panel";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 // El tipo puede venir en la URL: es como los botones de "Nuevo cliente"
 // de Guardería, Hotel y Estética llegan aquí con el flujo correcto ya
@@ -17,12 +18,16 @@ export default async function InvitacionesPage({
   const tipoInicial: TipoLinkAlta = tipo && esTipoLinkAlta(tipo) ? tipo : "guarderia_hotel";
 
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("invitaciones_cliente_estado")
-    .select(
-      "id, nombre_referencia, telefono, tipo, es_complemento, expira_at, alta_completada_at, usada_at, cancelada_at, cliente_id, cliente_nombre, created_at, estado"
-    )
-    .order("created_at", { ascending: false });
+  // Todas las invitaciones de la historia del negocio: pasan de 1,000 con el tiempo.
+  const { data, error } = await leerTodo<Record<string, unknown>>(() =>
+    supabase
+      .from("invitaciones_cliente_estado")
+      .select(
+        "id, nombre_referencia, telefono, tipo, es_complemento, expira_at, alta_completada_at, usada_at, cancelada_at, cliente_id, cliente_nombre, created_at, estado"
+      )
+      .order("created_at", { ascending: false })
+      .order("id")
+  );
 
   return (
     <div className="flex flex-col gap-6">

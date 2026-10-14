@@ -8,6 +8,7 @@ import { Select } from "@/components/ui/select";
 import { FormularioAccion } from "@/components/formulario-accion";
 import { abreviar, etiquetaGrupo, etiquetaLgs } from "../comun";
 import { activarLotesDeInsumo } from "../actions";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 type Insumo = {
   id: string;
@@ -42,17 +43,26 @@ export default async function InventarioClinicoPage({ searchParams }: { searchPa
   const puedeEscribir = tienePermiso(sesion, "lotes_clinicos");
 
   const [{ data: crudo, error }, { data: existencias }, { data: lotes }, { data: candidatos }] = await Promise.all([
-    supabase
-      .from("insumos")
-      .select(
-        "id, nombre, grupo_senasica, clasificacion_lgs, es_antimicrobiano, clasificacion_por_confirmar, exige_folio_receta, unidad:unidades_medida!unidad_consumo_id(clave, equivalencia_en_base)"
-      )
-      .eq("controla_lotes", true)
-      .is("deleted_at", null)
-      .order("nombre"),
-    supabase.from("insumos_existencia_actual").select("insumo_id, existencia_actual, stock_minimo, bajo_minimo"),
-    supabase.from("insumo_lotes_saldo").select("insumo_id, saldo, estado_caducidad").gt("saldo", 0),
-    puedeEscribir ? supabase.from("insumos").select("id, nombre").eq("controla_lotes", false).is("deleted_at", null).order("nombre") : Promise.resolve({ data: null }),
+    leerTodo<Record<string, unknown>>(() =>
+      supabase
+        .from("insumos")
+        .select(
+          "id, nombre, grupo_senasica, clasificacion_lgs, es_antimicrobiano, clasificacion_por_confirmar, exige_folio_receta, unidad:unidades_medida!unidad_consumo_id(clave, equivalencia_en_base)"
+        )
+        .eq("controla_lotes", true)
+        .is("deleted_at", null)
+        .order("nombre")
+        .order("id")
+    ),
+    leerTodo<{ insumo_id: string; existencia_actual: number; stock_minimo: number; bajo_minimo: boolean }>(() =>
+      supabase.from("insumos_existencia_actual").select("insumo_id, existencia_actual, stock_minimo, bajo_minimo").order("insumo_id")
+    ),
+    leerTodo<{ lote_id: string; insumo_id: string; saldo: number; estado_caducidad: string }>(() =>
+      supabase.from("insumo_lotes_saldo").select("lote_id, insumo_id, saldo, estado_caducidad").gt("saldo", 0).order("lote_id")
+    ),
+    puedeEscribir
+      ? leerTodo<{ id: string; nombre: string }>(() => supabase.from("insumos").select("id, nombre").eq("controla_lotes", false).is("deleted_at", null).order("nombre").order("id"))
+      : Promise.resolve({ data: null }),
   ]);
 
   const insumos = (crudo ?? []) as unknown as Insumo[];

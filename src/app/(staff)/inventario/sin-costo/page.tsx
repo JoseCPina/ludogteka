@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { CostoReferencia } from "../costo-referencia";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 // Los consumibles que se dieron de alta sin costo (recepción no ve ni
 // captura costos), para que admin —o quien tenga el permiso de costos— no
@@ -12,7 +13,7 @@ export default async function SinCostoPage() {
   const sesion = await obtenerSesionConRol();
   if (!tienePermiso(sesion, "inventario_costos")) redirect("/inventario");
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.rpc("insumos_sin_costo");
+  const { data } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("insumos_sin_costo").order("id"));
   const filas = (data ?? []) as { id: string; nombre: string; area_nombre: string; unidad_compra: string }[];
 
   return (

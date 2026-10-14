@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarClientesBuscables } from "@/lib/clientes/buscables";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { VentaRapida, type ProductoVenta } from "./venta-rapida";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 // Venta rápida: cobrar algo sin reserva, sin perro y sin servicio. Un
 // concepto libre con su monto, o un producto del inventario marcado «Se
@@ -16,14 +17,19 @@ export default async function VentaRapidaPage({ searchParams }: { searchParams: 
   const [{ clientes }, { data: productosCrudo }, { data: existencias }, { data: turno }] = await Promise.all([
     cargarClientesBuscables(supabase),
     conInventario
-      ? supabase
-          .from("insumos")
-          .select("id, nombre, precio_venta, unidad_compra:unidades_medida!unidad_compra_id(etiqueta, equivalencia_en_base)")
-          .eq("se_vende", true)
-          .is("deleted_at", null)
-          .order("nombre")
+      ? leerTodo<{ id: string; nombre: string; precio_venta: number; unidad_compra: unknown }>(() =>
+          supabase
+            .from("insumos")
+            .select("id, nombre, precio_venta, unidad_compra:unidades_medida!unidad_compra_id(etiqueta, equivalencia_en_base)")
+            .eq("se_vende", true)
+            .is("deleted_at", null)
+            .order("nombre")
+            .order("id")
+        )
       : Promise.resolve({ data: [] as never[] }),
-    conInventario ? supabase.from("insumos_existencia_actual").select("insumo_id, existencia_actual") : Promise.resolve({ data: [] as never[] }),
+    conInventario
+      ? leerTodo<{ insumo_id: string; existencia_actual: number }>(() => supabase.from("insumos_existencia_actual").select("insumo_id, existencia_actual").order("insumo_id"))
+      : Promise.resolve({ data: [] as never[] }),
     supabase.from("turnos_caja").select("id").eq("estado", "abierto").maybeSingle(),
   ]);
   const existenciaPor = new Map((existencias ?? []).map((e) => [e.insumo_id as string, Number(e.existencia_actual)]));

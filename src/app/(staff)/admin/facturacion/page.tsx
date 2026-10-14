@@ -8,6 +8,7 @@ import { ConfigFiscalForm } from "./config-form";
 import { LlavePac } from "./llave-pac";
 import { TablaIva, type ClaseGuardada } from "./tabla-iva";
 import { Clasificacion } from "./clasificacion";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 export const metadata = { title: "Facturación" };
 
@@ -39,7 +40,7 @@ export default async function FacturacionAdminPage() {
         .maybeSingle(),
       sb.from("cfdi_catalogos").select("tipo, clave, descripcion, persona").eq("tipo", "regimen_fiscal").is("deleted_at", null).order("clave"),
       sb.from("cfdi_clases").select("clase, tratamiento, tasa, clave_prod_serv, clave_unidad, unidad").eq("negocio_id", negocioId).is("deleted_at", null),
-      sb.from("insumos").select("id, nombre").eq("negocio_id", negocioId).eq("se_vende", true).is("deleted_at", null).order("nombre"),
+      leerTodo<{ id: string; nombre: string }>(() => sb.from("insumos").select("id, nombre").eq("negocio_id", negocioId).eq("se_vende", true).is("deleted_at", null).order("nombre").order("id")),
       sb.from("cfdi_insumo_fiscal").select("insumo_id, de_patente, clase").eq("negocio_id", negocioId).is("deleted_at", null),
       sb.from("servicios").select("id, nombre, categoria").eq("negocio_id", negocioId).is("deleted_at", null).order("nombre"),
       sb.from("cfdi_servicio_fiscal").select("servicio_id, clase").eq("negocio_id", negocioId).is("deleted_at", null),

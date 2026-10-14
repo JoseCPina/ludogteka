@@ -154,6 +154,7 @@ export async function contextoDeOrden(
   filtro: { id: string } | { mp_order_id: string; proveedor: "mercadopago" | "clip" } | { pago: string },
   negocioEsperado?: string
 ): Promise<{ admin: SupabaseClient; orden: OrdenLocal } | null> {
+  // limite-filas-ok: se filtra enseguida por una sola orden (id, referencia de pago o mp_order_id) y termina en maybeSingle()
   let consulta = createSupabaseAdminClient().from("mp_ordenes").select("id, negocio_id").is("deleted_at", null);
   if ("id" in filtro) {
     if (!/^[0-9a-f-]{36}$/i.test(filtro.id)) return null;

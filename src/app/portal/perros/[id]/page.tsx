@@ -22,6 +22,7 @@ import { RecetasCliente, type RecetaDelDueno } from "./recetas-cliente";
 import { zonaActual } from "@/lib/negocio/actual";
 import { usaVeterinaria } from "@/lib/plan/modulos";
 import { ETIQUETA_ESPECIE, esEspecie } from "@/lib/perros/ficha-clinica";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 const ESTILO_GRAVEDAD: Record<string, string> = {
   grave: "border-coral bg-coral-suave text-coral-oscuro",
@@ -98,7 +99,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
   const recetasDelDueno = (recetasCrudo ?? []) as RecetaDelDueno[];
 
   // Los servicios que este perro de verdad usa (para la nota de salud de quien no viene a guardería ni hotel).
-  const { data: visitasCrudo } = await supabase.rpc("mis_visitas");
+  const { data: visitasCrudo } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("mis_visitas").order("tipo").order("id"));
   const serviciosQueUsa: string[] = [];
   if (((visitasCrudo ?? []) as { tipo: string; perro_id: string }[]).some((v) => v.tipo === "estetica" && v.perro_id === id)) serviciosQueUsa.push("estética");
   if (

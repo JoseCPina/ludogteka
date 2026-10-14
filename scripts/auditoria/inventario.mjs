@@ -3,6 +3,7 @@
 // Crea datos de prueba en desarrollo; nunca correr contra producción.
 import { createClient } from "@supabase/supabase-js";
 import { A, NEGOCIO, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { todas, contar } from "../lib/paginar.mjs";
 
 const conToken = (t) => createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -32,8 +33,8 @@ const { data: unidades } = await A.from("unidades_medida").select("id, clave");
 const u = (clave) => unidades.find((x) => x.clave === clave).id;
 
 console.log("── Catálogo inicial sembrado");
-const { data: sembrados } = await A.from("insumos").select("nombre, area_id").is("deleted_at", null);
-const { data: equiposSem } = await A.from("equipos").select("nombre, area_id, frecuencia_mantenimiento_dias").is("deleted_at", null);
+const { data: sembrados } = await todas(() => A.from("insumos").select("nombre, area_id").is("deleted_at", null).order("id"));
+const { data: equiposSem } = await todas(() => A.from("equipos").select("nombre, area_id, frecuencia_mantenimiento_dias").is("deleted_at", null).order("id"));
 ok(areas.map((a) => a.nombre).join(",").startsWith("Estética,Guardería y hotel,Limpieza,Botiquín"), `áreas: ${areas.map((a) => a.nombre).join(", ")}`);
 ok((sembrados ?? []).filter((x) => x.area_id === area("estetica")).length >= 11, `consumibles de estética: ${(sembrados ?? []).filter((x) => x.area_id === area("estetica")).length}`);
 ok((equiposSem ?? []).filter((x) => x.area_id === area("estetica")).length >= 13, `equipo de estética: ${(equiposSem ?? []).filter((x) => x.area_id === area("estetica")).length}`);
