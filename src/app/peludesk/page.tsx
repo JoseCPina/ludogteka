@@ -6,8 +6,12 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { LogoPeluDesk } from "@/components/marca/peludesk";
 import { BarraCelular } from "@/components/peludesk/barra-celular";
-import { CapturasEnMovimiento } from "@/components/peludesk/capturas-en-movimiento";
+import { AppFalsa } from "@/components/peludesk/animacion/app-falsa";
+import { DemoDiferida, type IdDemo } from "@/components/peludesk/animacion/demo-diferida";
+import { FrasesLudogteka, PreguntalesModal } from "@/components/peludesk/animacion/ludogteka";
+import { Mascota, type TipoMascota } from "@/components/peludesk/animacion/mascotas";
 import { Ilustracion, type NombreIlustracion } from "@/components/peludesk/ilustracion";
+import { ImgDiferida } from "@/components/peludesk/img-diferida";
 import { MenuCelular } from "@/components/peludesk/menu-celular";
 import { RedesPeluDesk } from "@/components/peludesk/redes";
 import { EnlaceRegistro } from "@/components/peludesk/enlace-registro";
@@ -17,9 +21,10 @@ import { TarjetaArticulo } from "@/components/peludesk/blog";
 import { todosLosArticulos } from "@/lib/peludesk/blog";
 import { JsonLd, preguntasFrecuentes } from "@/lib/peludesk/seo";
 import { Revelar } from "@/components/peludesk/revelar";
-import { CELULAR, ESCRITORIO, REDES_PELUDESK, urlDemo, whatsappPeluDesk } from "@/lib/peludesk/landing";
+import { ESCRITORIO, REDES_PELUDESK, urlDemo, whatsappPeluDesk } from "@/lib/peludesk/landing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import "./peludesk.css";
+import "./animaciones.css";
 
 // peludesk.mx. Reglas de esta página (pedido del dueño, 22 de octubre de
 // 2026): Veterinaria va al frente (es el nicho principal); hotel, guardería y
@@ -54,32 +59,14 @@ export async function generateMetadata(): Promise<Metadata> {
 
 function Escritorio({ captura, alt, className = "" }: { captura: string; alt: string; className?: string }) {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <ImgDiferida
       src={`/peludesk/capturas/${captura}-escritorio-1600.webp`}
       srcSet={`/peludesk/capturas/${captura}-escritorio-800.webp 800w, /peludesk/capturas/${captura}-escritorio-1600.webp 1600w`}
       sizes="(min-width: 1024px) 680px, 100vw"
       width={ESCRITORIO.ancho}
       height={ESCRITORIO.alto}
       alt={alt}
-      loading="lazy"
-      decoding="async"
       className={`pd-captura h-auto w-full rounded-[18px] border border-n-200 bg-white ${className}`}
-    />
-  );
-}
-
-function Celular({ captura, alt, className = "" }: { captura: string; alt: string; className?: string }) {
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={`/peludesk/capturas/${captura}-celular.webp`}
-      width={CELULAR.ancho}
-      height={CELULAR.alto}
-      alt={alt}
-      loading="lazy"
-      decoding="async"
-      className={`pd-captura h-auto rounded-[26px] border-[5px] border-grafito bg-white ${className}`}
     />
   );
 }
@@ -92,10 +79,10 @@ function Flecha() {
   );
 }
 
-function BotonPrueba({ className = "", texto = "Pruébalo 15 días gratis", claro = false }: { className?: string; texto?: string; claro?: boolean }) {
+function BotonPrueba({ className = "", texto = "Pruébalo 15 días gratis", claro = false, brillo = false }: { className?: string; texto?: string; claro?: boolean; brillo?: boolean }) {
   return (
     <EnlaceRegistro
-      className={`pd-boton pd-boton-primario inline-flex min-h-12 items-center justify-center whitespace-nowrap rounded-full px-6 text-base font-semibold focus-visible:outline-none focus-visible:ring-[3px] ${
+      className={`pd-boton pd-boton-primario ${brillo ? "pd-borde-brillo" : ""} inline-flex min-h-12 items-center justify-center whitespace-nowrap rounded-full px-6 text-base font-semibold focus-visible:outline-none focus-visible:ring-[3px] ${
         claro
           ? "bg-menta text-morado hover:bg-menta-hover focus-visible:ring-white"
           : "bg-morado text-white hover:bg-morado-oscuro focus-visible:ring-morado-suave"
@@ -150,6 +137,32 @@ const ALIVIOS = [
   { ilus: "expediente" as NombreIlustracion, antes: "Escribir cada consulta a mano", ahora: "En la clínica dictas y PeluDesk arma el borrador. Tú lo revisas y lo firmas." },
   { ilus: "escena-hotel" as NombreIlustracion, antes: "Adivinar si cabe uno más", ahora: "Guardería y hotel cuentan del mismo cupo. No aceptas un perro que no cabe." },
   { ilus: "escena-bano" as NombreIlustracion, antes: "Calcular el precio de cada baño", ahora: "Sale solo, por raza o talla, con su precio aparte si llega con el pelo maltratado." },
+];
+
+const MASCOTA_MODULO: Record<string, TipoMascota> = { "guarderia-hotel": "hotel", estetica: "estetica", veterinaria: "veterinaria" };
+
+const TIPOS_DE_NEGOCIO = [
+  "Clínicas veterinarias",
+  "Guarderías caninas",
+  "Hoteles caninos",
+  "Estéticas caninas",
+  "Consultas y vacunas",
+  "Baño y corte",
+  "Hospitalización",
+  "Day pass y mensualidades",
+  "Recetas y carnet",
+  "Cobros y corte de caja",
+  "Recolección a domicilio",
+  "Facturas CFDI",
+];
+
+const MINIDEMOS: { id: IdDemo; mascota: TipoMascota; titulo: string; texto: string; ancho?: boolean; reserva: string }[] = [
+  { id: "vet", mascota: "veterinaria", titulo: "Veterinaria: dictas y queda la nota", texto: "Del dictado a la nota clínica, y de ahí a la receta con su folio SITPV y el carnet con QR.", ancho: true, reserva: "h-[560px] sm:h-[300px]" },
+  { id: "hotel", mascota: "hotel", titulo: "Hotel y guardería: cuántos caben hoy", texto: "El cupo se ve de un vistazo y cada check-in o check-out lo actualiza.", reserva: "h-[300px]" },
+  { id: "estetica", mascota: "estetica", titulo: "Estética: agenda y precio sin calcular", texto: "Las citas del día y el precio por talla y pelaje, ya puesto.", reserva: "h-[500px] sm:h-[330px]" },
+  { id: "reportes", mascota: "recepcion", titulo: "Reportes: cómo va la semana", texto: "Ingresos por día y por servicio, sin armar una hoja de cálculo.", reserva: "h-[330px]" },
+  { id: "cobros", mascota: "recepcion", titulo: "Cobros: la caja cuadra", texto: "Cada cobro con su palomita y el corte al cerrar el turno.", reserva: "h-[470px] sm:h-[330px]" },
+  { id: "memoria", mascota: "estetica", titulo: "Memoria del negocio", texto: "Lo que el equipo aprende de cada mascota se queda en su ficha.", ancho: true, reserva: "h-[190px] sm:h-[150px]" },
 ];
 
 const CAPTURA_MODULO: Record<string, string> = { "guarderia-hotel": "hotel", estetica: "estetica", veterinaria: "vet-expediente" };
@@ -285,12 +298,17 @@ export default async function PeluDeskLanding() {
       <main>
         {/* ── Hero veterinario ── */}
         <section id="inicio" className="relative">
-          <Ilustracion nombre="textura-menta" className="pd-paralaje absolute -right-24 top-6 w-[420px] opacity-70 lg:right-0 lg:w-[560px]" sizes="560px" />
+          {/* En celular el fondo menta es un degradado (no una imagen que compita con el texto por el primer pintado). */}
+          <div aria-hidden="true" className="pointer-events-none absolute -right-24 top-6 h-[380px] w-[380px] rounded-full opacity-70 md:hidden" style={{ background: "radial-gradient(closest-side, #e3f3ed 0%, #e3f3ed 55%, rgb(227 243 237 / 0) 100%)" }} />
+          <Ilustracion nombre="textura-menta" className="pd-paralaje absolute -right-24 top-6 hidden w-[420px] opacity-70 md:block lg:right-0 lg:w-[560px]" sizes="560px" />
           <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-10 sm:px-6 lg:grid-cols-12 lg:gap-10 lg:pb-24 lg:pt-16">
             <div className="lg:col-span-5">
-              <Etiqueta>Negocios caninos y veterinarios de México</Etiqueta>
+              <div className="flex items-center gap-3">
+                <Mascota tipo="recepcion" tamano={64} titulo="Toby, la mascota de recepción de PeluDesk" />
+                <Etiqueta>Negocios caninos y veterinarios de México</Etiqueta>
+              </div>
               <h1 className="mt-4 text-[2.4rem] font-bold leading-[1.05] tracking-[-0.03em] text-n-900 md:text-[3.2rem]">
-                Tu negocio canino o veterinario, <span className="text-morado">en un solo sistema.</span>
+                Tu negocio canino o veterinario, <span className="pd-brillo-titulo text-morado">en un solo sistema.</span>
               </h1>
               <p className="mt-5 max-w-[46ch] text-base leading-relaxed text-n-700 sm:text-lg">
                 Clínica veterinaria, guardería, hotel y estética en un solo lugar: citas, expediente con dictado por IA, recetas, cobros y facturación CFDI.
@@ -298,28 +316,33 @@ export default async function PeluDeskLanding() {
               {plan && <PrecioPlan plan={plan} className="mt-6" />}
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <BotonDemo texto="Ver demo" />
-                <BotonPrueba texto="Probar 15 días" />
+                <BotonPrueba brillo texto="Probar 15 días" />
               </div>
               <p className="mt-4 text-sm text-n-600">15 días gratis, sin tarjeta. El demo es de solo lectura y no manda mensajes.</p>
             </div>
             <div className="relative lg:col-span-7">
-              <Ilustracion nombre="chihuahua-asomandose" prioridad className="pd-flotar absolute -right-[100px] top-[14%] z-0 hidden w-[124px] lg:block" sizes="124px" />
-              <div className="relative z-10">
-                <CapturasEnMovimiento
-                  capturas={[
-                    { captura: "tablero", etiqueta: "El día", alt: "Tablero del día: llegadas, salidas, perros adentro, ocupación y pendientes" },
-                    { captura: "vet-expediente", etiqueta: "Veterinaria", alt: "Expediente clínico de una perrita con su línea de tiempo: consulta, peso y vacunas" },
-                    { captura: "hotel", etiqueta: "Hotel y guardería", alt: "Hotel: llegadas, salidas, perros hospedados y ocupación por día" },
-                    { captura: "estetica", etiqueta: "Estética", alt: "Agenda de estética del día con una columna por estilista" },
-                  ]}
-                />
-              </div>
-              <Celular
-                captura="portal"
-                alt="Portal del dueño en el celular con sus próximas reservas"
-                className="absolute -bottom-6 -left-4 z-20 hidden w-[20%] min-w-[112px] sm:block lg:-left-6"
-              />
+              <AppFalsa />
             </div>
+          </div>
+        </section>
+
+        {/* ── Marquee: para quién es ── */}
+        <section aria-label="Para quién es PeluDesk" className="border-y border-n-200 bg-white py-4">
+          <div className="pd-marquee">
+            <ul className="pd-marquee-pista">
+              {[0, 1].map((copia) =>
+                TIPOS_DE_NEGOCIO.map((t) => (
+                  <li
+                    key={`${copia}-${t}`}
+                    aria-hidden={copia === 1 ? true : undefined}
+                    className={`flex items-center gap-3 whitespace-nowrap pr-3 text-base font-semibold text-n-700 ${copia === 1 ? "pd-marquee-copia" : ""}`}
+                  >
+                    {t}
+                    <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-menta" />
+                  </li>
+                ))
+              )}
+            </ul>
           </div>
         </section>
 
@@ -337,7 +360,7 @@ export default async function PeluDeskLanding() {
                 <li key={a.ilus}>
                   <Revelar retraso={i * 90} className="h-full">
                     <div className="pd-tarjeta flex h-full items-center gap-4 rounded-[22px] border border-n-200 bg-crema p-4 sm:flex-col sm:items-stretch sm:p-5">
-                      <Ilustracion nombre={a.ilus} className="h-auto w-[104px] shrink-0 sm:mx-auto sm:w-full sm:max-w-[240px]" sizes="(min-width: 640px) 240px, 104px" />
+                      <Ilustracion diferida nombre={a.ilus} className="h-auto w-[104px] shrink-0 sm:mx-auto sm:w-full sm:max-w-[240px]" sizes="(min-width: 640px) 240px, 104px" />
                       <div>
                         <p className="text-sm font-semibold text-n-500 line-through decoration-coral decoration-2 sm:mt-4">{a.antes}</p>
                         <p className="mt-1.5 leading-snug text-n-800 sm:mt-2">{a.ahora}</p>
@@ -368,20 +391,20 @@ export default async function PeluDeskLanding() {
                   <Revelar retraso={i * 90} className="h-full">
                     <div className="pd-tarjeta h-full overflow-hidden rounded-[22px] border border-n-200 bg-crema">
                       <div className="aspect-[16/8] overflow-hidden border-b border-n-200 bg-n-50">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <ImgDiferida
                           src={`/peludesk/capturas/${CAPTURA_MODULO[m.clave]}-escritorio-800.webp`}
                           width={800}
                           height={500}
                           alt={ALT_MODULO[m.clave]}
-                          loading="lazy"
-                          decoding="async"
                           className="h-full w-full object-cover object-top"
                         />
                       </div>
                       <div className="p-5">
-                        <h3 className="text-xl font-bold text-n-900">{m.nombre}</h3>
-                        <p className="mt-2 leading-snug text-n-700">{m.texto}</p>
+                        <div className="flex items-center gap-3">
+                          <Mascota tipo={MASCOTA_MODULO[m.clave] ?? "recepcion"} tamano={52} retraso={i * 0.6} />
+                          <h3 className="text-xl font-bold text-n-900">{m.nombre}</h3>
+                        </div>
+                        <p className="mt-3 leading-snug text-n-700">{m.texto}</p>
                       </div>
                     </div>
                   </Revelar>
@@ -451,6 +474,37 @@ export default async function PeluDeskLanding() {
           </div>
         </section>
 
+        {/* ── Míralo trabajar: minidemos animados ── */}
+        <section id="minidemos" aria-labelledby="t-minidemos" className="scroll-mt-16 border-y border-n-200 bg-white">
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
+            <Revelar className="max-w-2xl">
+              <Etiqueta>Míralo trabajar</Etiqueta>
+              <h2 id="t-minidemos" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
+                Así se ve el día cuando todo está en su lugar.
+              </h2>
+              <p className="mt-3 max-w-[52ch] leading-relaxed text-n-700">Cada pantalla se arma sola al llegar a ella. Son ejemplos con datos inventados.</p>
+            </Revelar>
+            <ul className="mt-10 grid gap-6 lg:grid-cols-2">
+              {MINIDEMOS.map((d) => (
+                <li key={d.id} className={d.ancho ? "lg:col-span-2" : ""}>
+                  <div className="pd-tarjeta h-full rounded-[22px] border border-n-200 bg-crema p-4 sm:p-5">
+                    <div className="flex items-center gap-3">
+                      <Mascota tipo={d.mascota} tamano={52} retraso={0.3} />
+                      <div>
+                        <h3 className="text-lg font-bold leading-snug text-n-900">{d.titulo}</h3>
+                        <p className="text-sm leading-snug text-n-700">{d.texto}</p>
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <DemoDiferida id={d.id} reserva={d.reserva} />
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
         {/* ── La demo, sin registro ── */}
         <section id="demo" aria-labelledby="t-demo" className="relative scroll-mt-16 overflow-hidden bg-morado text-crema">
           <div className="relative mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-12 lg:items-center lg:py-24">
@@ -492,6 +546,23 @@ export default async function PeluDeskLanding() {
                 ))}
               </ul>
             </div>
+          </div>
+        </section>
+
+        {/* ── Ludogteka ya lo usa ── */}
+        <section id="ludogteka" aria-labelledby="t-ludogteka" className="scroll-mt-16 bg-menta-suave">
+          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
+            <Revelar className="max-w-2xl">
+              <Etiqueta>Un negocio de verdad</Etiqueta>
+              <h2 id="t-ludogteka" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
+                Ludogteka ya lo usa
+              </h2>
+              <p className="mt-3 max-w-[52ch] leading-relaxed text-n-700">Guardería, hotel y estética canina en San Luis Potosí. Pregúntales si les gusta.</p>
+            </Revelar>
+            <FrasesLudogteka />
+            <Revelar className="mt-8">
+              <PreguntalesModal />
+            </Revelar>
           </div>
         </section>
 
