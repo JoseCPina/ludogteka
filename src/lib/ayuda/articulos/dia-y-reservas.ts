@@ -322,7 +322,7 @@ Si el perro ya está en la puerta sin reserva, usa **Walk-in (sin reserva)** des
 4. Escribe **Quién entrega al perro** y, si quieres, su teléfono.
 5. Anota el **Estado del perro a la llegada (opcional)** y toca **Tomar/subir foto**.
 6. En **Agregar pertenencia** escribe lo que trae (correa, cama, juguete) y toca **Agregar**.
-7. Toca **Confirmar check-in**. Aparece **Check-in registrado**, el formulario se cierra y la estancia pasa a **en curso**.
+7. Toca **Confirmar check-in**. El formulario se cierra, queda **Check-in registrado a las** (la hora) y la estancia pasa a **en curso**.
 
 > Las vacunas vencidas, la falta de evaluación, el celo, la gestación y las alertas que bloquean se revisan al reservar: si el perro tiene reserva, ya pasó por ahí. Aun así, fíjate en los avisos antes de recibirlo.
 
