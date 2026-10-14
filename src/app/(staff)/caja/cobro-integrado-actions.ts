@@ -6,7 +6,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { negocioActual } from "@/lib/negocio/actual";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
-import { MENSAJE_SOLO_LECTURA } from "@/lib/solo-lectura";
+import { MENSAJE_DEMO, mensajeSoloLectura } from "@/lib/solo-lectura";
 import { vigenciaLink } from "@/lib/mercadopago/links";
 import { TERMINAL_ESPERA_SEGUNDOS } from "@/lib/mercadopago/config";
 import { adaptador } from "@/lib/pagos/adaptadores";
@@ -26,7 +26,7 @@ import { dinero } from "@/lib/dinero";
 async function exigirCaja(): Promise<{ error: string } | { cx: ConexionCobro }> {
   const sesion = await obtenerSesionConRol();
   if (!sesion || !["admin", "recepcion"].includes(sesion.rol)) return { error: "Solo admin o recepción pueden cobrar." };
-  if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_SOLO_LECTURA };
+  if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_DEMO };
   const cx = await conexionDeCobro(await negocioActual());
   if (!cx) return { error: "Este negocio no tiene terminal ni links de pago conectados. Cobra a mano, o pide al admin que conecte su cuenta en Administración → Cobro con terminal." };
   return { cx };
@@ -283,7 +283,7 @@ export async function crearLinkPago(reservaId: string, monto: number, concepto: 
 export async function registrarPagosMpPendientes(): Promise<{ error: string | null; registrados: number }> {
   const sesion = await obtenerSesionConRol();
   if (!sesion || !["admin", "recepcion"].includes(sesion.rol)) return { error: "Solo admin o recepción pueden cobrar.", registrados: 0 };
-  if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_SOLO_LECTURA, registrados: 0 };
+  if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_DEMO, registrados: 0 };
   const { negocio, admin } = await adminDelNegocio();
   const { data: pendientes } = await admin
     .from("mp_ordenes")
@@ -320,7 +320,7 @@ export type ResultadoDevolucionIntegrada = { error: string | null; aviso?: strin
 export async function devolverConProveedor(reservaId: string, cobroId: string, monto: number, motivo: string): Promise<ResultadoDevolucionIntegrada> {
   if (!Number.isFinite(monto) || monto <= 0) return { error: "El monto a devolver debe ser mayor a cero." };
   if (!motivo.trim()) return { error: "Escribe el motivo de la devolución." };
-  if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_SOLO_LECTURA };
+  if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_DEMO };
 
   const supabase = await createSupabaseServerClient();
   const { data: prep, error } = await supabase.rpc("preparar_reembolso", {
@@ -359,7 +359,7 @@ export async function devolverConProveedor(reservaId: string, cobroId: string, m
 }
 
 function traducirErrorCaja(msg: string): string {
-  if (/solo lectura/i.test(msg)) return MENSAJE_SOLO_LECTURA;
+  if (/solo lectura|En la demo no se guardan/i.test(msg)) return mensajeSoloLectura({ message: msg });
   return msg.replace(/^.*?ERROR:\s*/, "");
 }
 
@@ -367,7 +367,7 @@ function traducirErrorCaja(msg: string): string {
 export async function consultarReembolsosDeOrden(ordenId: string): Promise<{ error: string | null; nuevos?: number }> {
   const sesion = await obtenerSesionConRol();
   if (!sesion || !["admin", "recepcion"].includes(sesion.rol)) return { error: "Solo admin o recepción." };
-  if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_SOLO_LECTURA };
+  if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_DEMO };
   const { negocio, admin } = await adminDelNegocio();
   const orden = await leerOrdenLocal(admin, ordenId, negocio.id);
   if (!orden) return { error: "Orden no encontrada." };
@@ -404,7 +404,7 @@ export type ResultadoNoRecibido = { error: string | null; aviso?: string };
 export async function marcarCobroNoRecibido(reservaId: string, cobroId: string, motivo: string): Promise<ResultadoNoRecibido> {
   const sesion = await obtenerSesionConRol();
   if (sesion?.rol !== "admin") return { error: "Solo un admin marca un cobro como no recibido." };
-  if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_SOLO_LECTURA };
+  if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_DEMO };
   if (motivo.trim().length < 5) return { error: "Escribe el motivo: qué pasó con este cobro." };
   const negocio = await negocioActual();
   const r = await revisarCobroConProveedor(negocio, cobroId, motivo, sesion.user.id);

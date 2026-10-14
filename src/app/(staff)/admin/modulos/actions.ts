@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { esErrorSoloLectura, MENSAJE_SOLO_LECTURA } from "@/lib/solo-lectura";
+import { esErrorSoloLectura, mensajeSoloLectura } from "@/lib/solo-lectura";
 
 export type ImpactoModulo = { pendientes: number; que: string | null };
 
@@ -21,7 +21,7 @@ export async function impactoDeApagar(modulo: string): Promise<{ error: string |
 export async function cambiarModulo(modulo: string, activo: boolean, confirmado = false): Promise<{ error: string | null }> {
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("cambiar_modulo", { p_modulo: modulo, p_activo: activo, p_confirmado: confirmado });
-  if (error) return { error: esErrorSoloLectura(error) ? MENSAJE_SOLO_LECTURA : error.message };
+  if (error) return { error: esErrorSoloLectura(error) ? mensajeSoloLectura(error) : error.message };
   revalidatePath("/", "layout");
   return { error: null };
 }

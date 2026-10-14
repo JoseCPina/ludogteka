@@ -1,6 +1,6 @@
 /**
  * Lo que la landing (peludesk.mx) y /veterinaria dicen de Veterinaria y de los tres módulos. Solo funciones que
- * la app hace HOY (src/lib/whatsapp/conocimiento.ts es la fuente de verdad): si una función cambia, se cambia aquí.
+ * la app hace (src/lib/whatsapp/conocimiento.ts es la fuente de verdad): si una función cambia, se cambia aquí.
  * Sin cifras de clientes, sin testimonios, sin sellos, sin nombrar a nadie más, y sin precios (esos viven en la base).
  */
 export const MODULOS_TRES = [
@@ -17,7 +17,7 @@ export const MODULOS_TRES = [
   {
     clave: "veterinaria",
     nombre: "Veterinaria",
-    texto: "Expediente por consulta, carnet de vacunas, hospitalización, recetas, inventario con lotes y estimados que el dueño firma desde su celular.",
+    texto: "Expediente por consulta, carnet de vacunas, hospitalización, recetas, inventario con lotes y cotizaciones que el dueño firma desde su celular.",
     href: "/veterinaria",
   },
 ] as const;
@@ -29,8 +29,8 @@ export const FUNCIONES_VET: readonly { titulo: string; texto: string }[] = [
   { titulo: "Hospitalización con hoja de medicación", texto: "Ingreso, dosis programadas que se marcan al aplicarlas, monitoreo de signos y una cuenta abierta que se cobra al dar el alta." },
   { titulo: "Recetas y registro espejo del SITPV", texto: "Receta simple con los campos de la NOM-064 y registro espejo de las recetas del SITPV de SENASICA, con su libro de control. Un controlado no sale del inventario sin su receta." },
   { titulo: "Inventario con lotes y caducidades", texto: "Cada medicamento por lote, con aviso de caducidad. Se surte primero lo que caduca antes y cada salida queda ligada a la mascota." },
-  { titulo: "Estimados que se firman por liga", texto: "Mandas el estimado por WhatsApp, el dueño lo acepta y firma desde su celular, y lo aceptado pasa a la cuenta para cobrarlo en Caja." },
-  { titulo: "Teleconsulta por liga", texto: "Videollamada que se abre desde el navegador, sin instalar nada, con el consentimiento firmado antes de entrar." },
+  { titulo: "Cotizaciones que se firman por link", texto: "Mandas la cotización por WhatsApp, el dueño lo acepta y firma desde su celular, y lo aceptado pasa a la cuenta para cobrarlo en Caja." },
+  { titulo: "Teleconsulta por link", texto: "Videollamada que se abre desde el navegador, sin instalar nada, con el consentimiento firmado antes de entrar." },
   { titulo: "Factura CFDI desde el cobro", texto: "Facturas desde la misma cuenta que cobras, con tu proveedor autorizado de timbrado y sin capturar el cobro dos veces." },
 ];
 
@@ -57,8 +57,8 @@ export const PREGUNTAS_VET: readonly (readonly [string, string])[] = [
   ["¿Puedo pasar mis clientes y mascotas de Excel?", "Sí. Subes tu archivo, revisas qué se va a importar y, si algo no te gusta, deshaces la importación."],
   ["¿Cómo facturo?", "Desde el cobro. Conectas tu cuenta con un proveedor autorizado de timbrado y emites la factura CFDI 4.0 de esa misma cuenta."],
   ["¿Tengo que usar los tres módulos?", "No. Hotel y guardería, Estética y Veterinaria se prenden o se apagan desde el panel de administración. Apagar un módulo nunca borra lo que ya tenías."],
-  ["¿Puedo verlo antes de registrarme?", "Sí. El demo es un negocio de ejemplo con datos inventados, de solo lectura: puedes abrir cualquier pantalla, pero nada se guarda y no se manda ningún mensaje."],
+  ["¿Puedo verlo antes de registrarme?", "Sí. Abre el demo sin registrarte: es un negocio de ejemplo con clientes, expedientes, vacunas y recetas, y puedes entrar a cualquier pantalla."],
 ];
 
 export const DESCRIPCION_VET =
-  "Expediente por consulta con dictado, carnet de vacunas con QR, hospitalización, recetas con registro espejo del SITPV, inventario con lotes y estimados firmados por liga. Pruébalo 15 días gratis, sin tarjeta.";
+  "Expediente por consulta con dictado, carnet de vacunas con QR, hospitalización, recetas con registro espejo del SITPV, inventario con lotes y cotizaciones firmadas por link. Pruébalo 15 días gratis, sin tarjeta.";

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
-import { MENSAJE_SOLO_LECTURA } from "@/lib/solo-lectura";
+import { MENSAJE_DEMO } from "@/lib/solo-lectura";
 import { traducirError } from "../reservas/traducir-error";
 
 // Revisión de las tarjetas manuales (migración 20261008000000). Todo es del
@@ -17,7 +17,7 @@ export type ResultadoTarjeta = { error: string | null; aviso?: string };
 async function exigirAdmin(): Promise<ResultadoTarjeta | null> {
   const sesion = await obtenerSesionConRol();
   if (sesion?.rol !== "admin") return { error: "Solo un admin revisa las tarjetas manuales." };
-  if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_SOLO_LECTURA };
+  if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_DEMO };
   return null;
 }
 

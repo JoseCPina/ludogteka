@@ -1,12 +1,12 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { esErrorSoloLectura, MENSAJE_SOLO_LECTURA } from "@/lib/solo-lectura";
+import { esErrorSoloLectura, mensajeSoloLectura } from "@/lib/solo-lectura";
 import type { DatosRazaPropuesta } from "@/lib/razas-propuesta";
 
 // Los RAISE de la base ya vienen en español (P0001 y los de permiso, 42501).
 function limpio(e: { code?: string; message: string }) {
-  if (esErrorSoloLectura(e)) return MENSAJE_SOLO_LECTURA;
+  if (esErrorSoloLectura(e)) return mensajeSoloLectura(e);
   return e.code === "P0001" || e.code === "42501" ? e.message : "No pudimos guardar la raza. Intenta de nuevo.";
 }
 

@@ -5,7 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { negocioActual } from "@/lib/negocio/actual";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
-import { MENSAJE_SOLO_LECTURA } from "@/lib/solo-lectura";
+import { MENSAJE_DEMO } from "@/lib/solo-lectura";
 import { Facturapi } from "@/lib/cfdi/facturapi";
 import { ErrorPac } from "@/lib/cfdi/errores";
 import { buscarClaves, hayLlave, traducir } from "@/lib/cfdi/servicio";
@@ -17,7 +17,7 @@ import { buscarClaves, hayLlave, traducir } from "@/lib/cfdi/servicio";
 export type Res = { error: string | null; aviso?: string };
 
 async function demo(): Promise<Res | null> {
-  return (await cargarNegocioLanding()).plan === "demo" ? { error: MENSAJE_SOLO_LECTURA } : null;
+  return (await cargarNegocioLanding()).plan === "demo" ? { error: MENSAJE_DEMO } : null;
 }
 
 async function puede(): Promise<boolean> {

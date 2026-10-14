@@ -1,7 +1,7 @@
 /**
  * Lo que el bot de WhatsApp de PeluDesk puede afirmar (28 de septiembre de 2026).
  *
- * Regla: aquí solo entra lo que la app HACE HOY, con las palabras de la
+ * Regla: aquí solo entra lo que la app HACE, con las palabras de la
  * landing. Los planes y precios NO van aquí: salen de la base en cada
  * conversación (tabla `planes`, que edita la plataforma). Si una función
  * cambia en la app, se cambia aquí también; si no está aquí, el bot no lo

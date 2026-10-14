@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
  * navegador, ahora desde el servidor y con el MISMO event_id, para que Meta
  * los cuente como uno solo (deduplicación).
  *
- * Solo hoy para CompleteRegistration, y SOLO si la persona aceptó la categoría
+ * Solo para CompleteRegistration, y SOLO si la persona aceptó la categoría
  * de marketing (quien llama lo comprueba con la cookie de consentimiento):
  *  · el teléfono va con hash SHA-256 (nunca en claro), y no se manda nombre,
  *    negocio, ciudad ni nada que identifique al negocio o a sus clientes;
