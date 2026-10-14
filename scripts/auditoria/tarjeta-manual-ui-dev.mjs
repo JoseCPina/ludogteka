@@ -128,7 +128,7 @@ try {
   await pr.getByLabel("¿Por qué no se cobró con la terminal vinculada?").selectOption("otro");
   await pr.getByLabel("Cuéntanos el motivo").fill("La terminal de otra sucursal");
   await pr.getByRole("button", { name: "Registrar cobro" }).click();
-  await pr.waitForTimeout(1500);
+  await pr.locator("[role=alert]", { hasText: /ya está registrado/ }).first().waitFor({ timeout: 45000 }).catch(() => {});
   const dup = (await pr.locator("[role=alert]").allInnerTexts()).join(" | ");
   comprobar(/ya está registrado/.test(dup), `el folio repetido se frena con aviso junto al botón («${dup.slice(0, 100)}»)`);
   await pr.getByLabel("Folio o autorización del voucher").fill(folio2);
@@ -148,7 +148,7 @@ try {
   await filaUno.getByRole("button", { name: "Revisado con voucher" }).click();
   await filaUno.getByLabel("Nota (opcional)").fill("Voucher a la vista");
   await filaUno.getByRole("button", { name: "Guardar como revisada" }).click();
-  await pa.waitForTimeout(2500);
+  for (let i = 0; i < 40; i++) { const e = (await SB.from("tarjetas_manuales").select("estado").eq("folio", folio1).single()).data?.estado; if (e === "revisada") break; await pa.waitForTimeout(1500); }
   const hecho = (await SB.from("tarjetas_manuales").select("estado, nota_revision").eq("folio", folio1).single()).data;
   comprobar(hecho.estado === "revisada" && hecho.nota_revision === "Voucher a la vista", "«Revisado con voucher» (con nota) la deja revisada");
   await pa.reload({ waitUntil: "networkidle" });

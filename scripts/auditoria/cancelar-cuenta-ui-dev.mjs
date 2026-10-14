@@ -97,15 +97,15 @@ try {
     await fila.getByRole("button", { name: "Cancelar cuenta" }).click();
     const hoja = pa.locator(`[data-cancelar-cuenta="${hoyCuenta}"]`);
     await hoja.waitFor();
-    await hoja.getByLabel("Motivo (obligatorio)").waitFor();
+    await hoja.locator("[data-cancelar-cuenta-motivo]").waitFor();
     await hoja.getByRole("button", { name: "Cancelar la cuenta" }).click();
     await pa.waitForTimeout(500);
     comprobar(/Escoge el motivo/.test(await sec(`[data-cancelar-cuenta="${hoyCuenta}"]`)), "sin motivo, frena con el aviso junto al botón");
-    await hoja.getByLabel("Motivo (obligatorio)").selectOption("otro");
+    await hoja.locator("[data-cancelar-cuenta-motivo]").selectOption("otro");
     await hoja.getByRole("button", { name: "Cancelar la cuenta" }).click();
     await pa.waitForTimeout(500);
     comprobar(/Otro/.test(await sec(`[data-cancelar-cuenta="${hoyCuenta}"]`)) && /escribe el motivo/i.test(await sec(`[data-cancelar-cuenta="${hoyCuenta}"]`)), "«Otro» sin texto también frena");
-    await hoja.getByLabel("Motivo (obligatorio)").selectOption("no_se_presento");
+    await hoja.locator("[data-cancelar-cuenta-motivo]").selectOption("no_se_presento");
     await hoja.getByRole("button", { name: "Cancelar la cuenta" }).click();
     await hoja.getByText("Cuenta cancelada").waitFor({ timeout: 90000 }).catch(() => {});
     comprobar(/Cuenta cancelada/.test(await sec(`[data-cancelar-cuenta="${hoyCuenta}"]`)), "confirma «Cuenta cancelada» junto al botón");
@@ -118,11 +118,11 @@ try {
     await pa.goto(`${BASE}/caja/cobrar/${rr.id}`, { waitUntil: "networkidle", timeout: 120000 });
     await pa.getByRole("button", { name: "Cancelar cuenta" }).click();
     const hoja2 = pa.locator(`[data-cancelar-cuenta="${rr.id}"]`);
-    await hoja2.getByLabel("Motivo (obligatorio)").waitFor();
+    await hoja2.locator("[data-cancelar-cuenta-motivo]").waitFor();
     comprobar((await hoja2.locator("[data-cancelar-cuenta-cita]").count()) === 1, "una cuenta con cita que no empieza ofrece cancelarla también");
     const w2 = await pa.evaluate(() => document.documentElement.scrollWidth);
     comprobar(w2 <= ancho + 2, `la cuenta con la hoja abierta no se desborda (${w2}px)`);
-    await hoja2.getByLabel("Motivo (obligatorio)").selectOption("no_se_presento");
+    await hoja2.locator("[data-cancelar-cuenta-motivo]").selectOption("no_se_presento");
     await hoja2.getByRole("button", { name: "Cancelar la cuenta" }).click();
     await hoja2.getByText("Cuenta cancelada").waitFor({ timeout: 90000 }).catch(() => {});
     await pa.reload({ waitUntil: "networkidle" });
@@ -141,7 +141,7 @@ try {
     const pr = await ctx2.newPage();
     pr.setDefaultTimeout(60000);
     await pr.goto(`${BASE}/caja`, { waitUntil: "networkidle", timeout: 120000 });
-    comprobar((await pr.locator(`[data-cuenta-fila="${lista2}"]`).count()) === 1 && (await pr.getByRole("button", { name: "Cancelar cuenta" }).count()) === 0, "recepción sin el permiso ve la cuenta pero no el botón");
+    { await pr.locator(`[data-cuenta-fila="${lista2}"]`).waitFor().catch(() => {}); const nf = await pr.locator(`[data-cuenta-fila="${lista2}"]`).count(); const nb = await pr.getByRole("button", { name: "Cancelar cuenta" }).count(); comprobar(nf === 1 && nb === 0, `recepción sin el permiso ve la cuenta pero no el botón (fila ${nf}, botones ${nb})`); }
     await pr.goto(`${BASE}/caja/cobrar/${lista2}`, { waitUntil: "networkidle", timeout: 120000 });
     comprobar((await pr.getByRole("button", { name: "Cancelar cuenta" }).count()) === 0, "ni dentro de la cuenta");
     // Limpieza de lo que dejó esta vista.

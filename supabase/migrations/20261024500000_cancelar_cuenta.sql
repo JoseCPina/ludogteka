@@ -92,6 +92,8 @@ begin
   raise exception 'Una cuenta cancelada no se edita ni se borra: queda en el historial.';
 end;
 $$;
+revoke execute on function public.cuentas_canceladas_inmutable() from public, anon;
+grant execute on function public.cuentas_canceladas_inmutable() to authenticated, service_role;
 create trigger cuentas_canceladas_inmutable before update or delete on public.cuentas_canceladas
   for each row execute function public.cuentas_canceladas_inmutable();
 
