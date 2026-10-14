@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { sesionPlataforma } from "@/lib/plataforma/sesion";
-import { esErrorSoloLectura, MENSAJE_SOLO_LECTURA } from "@/lib/solo-lectura";
+import { esErrorSoloLectura, mensajeSoloLectura } from "@/lib/solo-lectura";
 import type { ResultadoPlataforma } from "@/lib/plataforma/tipos";
 
 // Reglas regulatorias de recetas y controlados de Veterinaria. Solo la administración de PeluDesk las
@@ -14,7 +14,7 @@ const entero = (v: string) => (v === "" ? null : Number(v));
 const NO_AUTORIZADO: ResultadoPlataforma = { error: "Tu sesión de administración de PeluDesk terminó. Vuelve a entrar." };
 
 function traducir(error: { code?: string; message: string }): string {
-  if (esErrorSoloLectura(error)) return MENSAJE_SOLO_LECTURA;
+  if (esErrorSoloLectura(error)) return mensajeSoloLectura(error);
   if (error.code === "42501") return "Esto solo lo hace la administración de PeluDesk.";
   if (error.code === "P0001") return error.message;
   return "No pudimos guardar esto. Intenta de nuevo.";

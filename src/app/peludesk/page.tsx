@@ -8,7 +8,7 @@ import { LogoPeluDesk } from "@/components/marca/peludesk";
 import { BarraCelular } from "@/components/peludesk/barra-celular";
 import { AppFalsa } from "@/components/peludesk/animacion/app-falsa";
 import { DemoDiferida, type IdDemo } from "@/components/peludesk/animacion/demo-diferida";
-import { FrasesLudogteka, PreguntalesModal } from "@/components/peludesk/animacion/ludogteka";
+import { SeccionLudogteka } from "@/components/peludesk/animacion/ludogteka";
 import { Mascota, type TipoMascota } from "@/components/peludesk/animacion/mascotas";
 import { Ilustracion, type NombreIlustracion } from "@/components/peludesk/ilustracion";
 import { ImgDiferida } from "@/components/peludesk/img-diferida";
@@ -318,7 +318,7 @@ export default async function PeluDeskLanding() {
                 <BotonDemo texto="Ver demo" />
                 <BotonPrueba brillo texto="Probar 15 días" />
               </div>
-              <p className="mt-4 text-sm text-n-600">15 días gratis, sin tarjeta. El demo es de solo lectura y no manda mensajes.</p>
+              <p className="mt-4 text-sm text-n-600">15 días gratis, sin tarjeta.</p>
             </div>
             <div className="relative lg:col-span-7">
               <AppFalsa />
@@ -352,7 +352,7 @@ export default async function PeluDeskLanding() {
             <Revelar className="max-w-2xl">
               <Etiqueta>Lo que te quita de encima</Etiqueta>
               <h2 id="t-alivio" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
-                Lo que hoy haces de memoria, ya no.
+                Lo que haces de memoria, ya no.
               </h2>
             </Revelar>
             <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -439,7 +439,7 @@ export default async function PeluDeskLanding() {
               <h2 id="t-funciones" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
                 Si tienes clínica veterinaria, esto ya hace por ti
               </h2>
-              <p className="mt-3 max-w-[52ch] leading-relaxed text-n-700">Solo lo que la app hace hoy. Mira cada pantalla en el demo, sin registrarte.</p>
+              <p className="mt-3 max-w-[52ch] leading-relaxed text-n-700">Solo lo que la app hace. Mira cada pantalla en el demo, sin registrarte.</p>
             </Revelar>
             <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {FUNCIONES_VET.map((f, i) => (
@@ -482,7 +482,7 @@ export default async function PeluDeskLanding() {
               <h2 id="t-minidemos" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
                 Así se ve el día cuando todo está en su lugar.
               </h2>
-              <p className="mt-3 max-w-[52ch] leading-relaxed text-n-700">Cada pantalla se arma sola al llegar a ella. Son ejemplos con datos inventados.</p>
+              <p className="mt-3 max-w-[52ch] leading-relaxed text-n-700">Cada pantalla se arma sola al llegar a ella. Son ejemplos con datos de muestra.</p>
             </Revelar>
             <ul className="mt-10 grid gap-6 lg:grid-cols-2">
               {MINIDEMOS.map((d) => (
@@ -515,10 +515,10 @@ export default async function PeluDeskLanding() {
               <Revelar>
                 <p className="mt-4 text-sm font-semibold uppercase tracking-[0.1em] text-menta">Ver demo</p>
                 <h2 id="t-demo" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] text-white md:text-4xl">
-                  Pícale a todo. No se rompe nada.
+                  Prueba la demo
                 </h2>
                 <p className="mt-4 max-w-[42ch] leading-relaxed text-crema/90">
-                  Patitas &amp; Co. es un negocio de ejemplo con expedientes, vacunas, recetas y un hospitalizado. Todo es inventado, nada se guarda y no se manda ningún mensaje.
+                  Patitas &amp; Co. ya tiene clientes, expedientes, vacunas, recetas y un hospitalizado. Pruébalo como si fuera tu negocio.
                 </p>
               </Revelar>
             </div>
@@ -551,19 +551,7 @@ export default async function PeluDeskLanding() {
 
         {/* ── Ludogteka ya lo usa ── */}
         <section id="ludogteka" aria-labelledby="t-ludogteka" className="scroll-mt-16 bg-menta-suave">
-          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
-            <Revelar className="max-w-2xl">
-              <Etiqueta>Un negocio de verdad</Etiqueta>
-              <h2 id="t-ludogteka" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
-                Ludogteka ya lo usa
-              </h2>
-              <p className="mt-3 max-w-[52ch] leading-relaxed text-n-700">Guardería, hotel y estética canina en San Luis Potosí. Pregúntales si les gusta.</p>
-            </Revelar>
-            <FrasesLudogteka />
-            <Revelar className="mt-8">
-              <PreguntalesModal />
-            </Revelar>
-          </div>
+          <SeccionLudogteka />
         </section>
 
         {/* ── Precio único ── */}

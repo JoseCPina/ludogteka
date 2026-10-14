@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { esErrorSoloLectura, MENSAJE_SOLO_LECTURA } from "@/lib/solo-lectura";
+import { esErrorSoloLectura, mensajeSoloLectura } from "@/lib/solo-lectura";
 import { CATALOGO_POLITICAS, LARGO_MAXIMO_POLITICA, type TextosPoliticas } from "@/lib/politicas/catalogo";
 
 export type ResultadoPoliticas = { error: string | null; exito?: string };
@@ -23,7 +23,7 @@ export async function guardarPoliticas(textos: TextosPoliticas): Promise<Resulta
   }
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("guardar_politicas_negocio", { p_textos: limpio });
-  if (error) return { error: esErrorSoloLectura(error) ? MENSAJE_SOLO_LECTURA : error.message };
+  if (error) return { error: esErrorSoloLectura(error) ? mensajeSoloLectura(error) : error.message };
   revalidatePath("/admin/politicas");
   revalidatePath("/portal");
   return { error: null, exito: "Políticas guardadas" };

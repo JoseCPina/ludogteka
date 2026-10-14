@@ -5,7 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { negocioActual } from "@/lib/negocio/actual";
 import { BUCKET_PUBLICO } from "@/lib/negocio/publico";
-import { esErrorSoloLectura, MENSAJE_SOLO_LECTURA } from "@/lib/solo-lectura";
+import { esErrorSoloLectura, MENSAJE_SOLO_LECTURA, mensajeSoloLectura } from "@/lib/solo-lectura";
 import sharp from "sharp";
 import { avisosDeLogo, extensionDeLogo, svgPeligroso } from "@/lib/logo";
 
@@ -15,7 +15,7 @@ const TIPOS = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES = 6 * 1024 * 1024;
 
 function mensaje(error: { code?: string; message?: string }): string {
-  return esErrorSoloLectura(error) ? MENSAJE_SOLO_LECTURA : "No se pudo guardar. Intenta de nuevo.";
+  return esErrorSoloLectura(error) ? mensajeSoloLectura(error) : "No se pudo guardar. Intenta de nuevo.";
 }
 
 async function puedeEditar() {

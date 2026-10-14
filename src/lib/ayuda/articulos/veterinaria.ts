@@ -86,7 +86,7 @@ En el alta por link, si tienes Veterinaria prendida, el dueño puede decir la es
 3. Si eliges un **principio activo**, se llenan solas las dos clasificaciones; puedes cambiarlas.
 4. Aprieta **Guardar producto**.
 
-Si ya tienes el producto en [Inventario](/inventario), usa **Pasar a lotes**: lo que hay hoy queda en un lote «INICIAL».
+Si ya tienes el producto en [Inventario](/inventario), usa **Pasar a lotes**: la existencia actual queda en un lote «INICIAL».
 
 ## Las dos clasificaciones
 

@@ -1,34 +1,52 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Mascota, type TipoMascota } from "./mascotas";
-import { useReducido } from "./usar";
+import { Mascota } from "./mascotas";
+import { ImgDiferida } from "../img-diferida";
 
 // Frases cortas del equipo de Ludogteka. Sin cifras ni superlativos. Las tres
 // primeras las dio el negocio; las otras tres se redactaron en el mismo tono
 // sobre lo que de verdad usan (agenda, caja, recordatorios por WhatsApp):
 // confirmarlas con el equipo antes de cambiarlas de lugar o de citarlas fuera
 // de esta página.
-const FRASES: { texto: string; mascota: TipoMascota }[] = [
-  { texto: "Nos hizo la vida mucho más fácil.", mascota: "recepcion" },
-  { texto: "Es muy práctico.", mascota: "estetica" },
-  { texto: "Tenemos mejor control.", mascota: "hotel" },
-  { texto: "La agenda ya no se nos empalma.", mascota: "estetica" },
-  { texto: "Con la caja sabemos cómo cerró el día.", mascota: "recepcion" },
-  { texto: "Mandar el recordatorio por WhatsApp es un solo toque.", mascota: "veterinaria" },
+const FRASES = [
+  "Nos hizo la vida mucho más fácil.",
+  "Es muy práctico.",
+  "Tenemos mejor control.",
+  "La agenda ya no se nos empalma.",
+  "Con la caja sabemos cómo cerró el día.",
+  "Mandar el recordatorio por WhatsApp es un solo toque.",
 ];
 
+// Fotos reales del negocio (public/ludogteka, WebP a 480 y 960 px), con su alto/ancho para no saltar.
+const FOTOS = [
+  { n: "patio-letrero", w: 1400, h: 1456, alt: "Un pastor belga en el patio de Ludogteka, con el letrero de la guardería al fondo" },
+  { n: "patio-pelotas", w: 1400, h: 1599, alt: "Un gran danés negro sentado en el pasto sintético de la guardería, rodeado de pelotas de colores" },
+  { n: "hotel-camita", w: 1200, h: 1408, alt: "Un perro acostado en su camita del hotel de Ludogteka, con una pelota de tenis" },
+  { n: "patio-murete", w: 960, h: 1100, alt: "Una perrita negra con collar rosa parada sobre el murete del patio" },
+  { n: "patio-sonrisa", w: 1400, h: 1580, alt: "Un pastor malinois con pañuelo, sonriendo hacia la cámara sobre el pasto sintético" },
+  { n: "recoleccion-coche", w: 1400, h: 1488, alt: "Recolección a domicilio: un perrito sube al coche de Ludogteka" },
+] as const;
+
 const INSTAGRAM = "https://www.instagram.com/ludogteka/";
+const REEL = "https://www.instagram.com/ludogteka/reel/DeSs34zBXwx/";
 const MENSAJE = "https://ig.me/m/ludogteka";
 
-export function FrasesLudogteka() {
-  const caja = useRef<HTMLUListElement>(null);
-  const reducido = useReducido();
-  const [vistas, setVistas] = useState(0);
-  const [en, setEn] = useState(false);
+// Portada del reel: public/ludogteka/reel-portada-{480,960}.webp. Mientras no esté la imagen de Instagram
+// (og:image del reel) se usa una foto real del negocio con el mismo nombre; basta reemplazar los dos archivos.
+const PORTADA = { src: "/ludogteka/reel-portada-960.webp", srcSet: "/ludogteka/reel-portada-480.webp 480w, /ludogteka/reel-portada-960.webp 960w" };
 
+declare global {
+  interface Window {
+    instgrm?: { Embeds: { process: () => void } };
+  }
+}
+
+function useEntra<T extends Element>() {
+  const ref = useRef<T>(null);
+  const [en, setEn] = useState(false);
   useEffect(() => {
-    const el = caja.current;
+    const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
       ([e]) => {
@@ -36,36 +54,203 @@ export function FrasesLudogteka() {
         setEn(true);
         obs.disconnect();
       },
-      { threshold: 0.2 }
+      { threshold: 0.15 }
     );
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
+  return [ref, en] as const;
+}
 
-  // Las tarjetas aparecen una por una, cada 420 ms.
-  useEffect(() => {
-    if (!en || reducido) return;
-    const ids = FRASES.map((_, i) => window.setTimeout(() => setVistas(i + 1), i * 420));
-    return () => ids.forEach((id) => window.clearTimeout(id));
-  }, [en, reducido]);
-
-  const mostradas = reducido ? FRASES.length : vistas;
+/** Encabezado, galería, reel, frases y «Pregúntales» de «Ludogteka ya lo usa». */
+export function SeccionLudogteka() {
+  const [refGaleria, enGaleria] = useEntra<HTMLUListElement>();
+  const [refFrases, enFrases] = useEntra<HTMLUListElement>();
   return (
-    <ul ref={caja} className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {FRASES.map((f, i) => (
-        <li key={f.texto} className="min-h-[104px] sm:min-h-[148px]">
-          {i < mostradas && (
-            <figure className="pd-pop flex h-full items-start gap-3 rounded-[22px] border border-n-200 bg-white p-5">
-              <Mascota tipo={f.mascota} tamano={56} retraso={i * 0.5} />
-              <div>
-                <blockquote className="text-lg font-semibold leading-snug text-n-900">«{f.texto}»</blockquote>
-                <figcaption className="mt-2 text-sm text-n-600">Equipo Ludogteka</figcaption>
-              </div>
-            </figure>
+    <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
+      <header className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
+        <ImgDiferida
+          src="/ludogteka/logo.webp"
+          srcSet="/ludogteka/logo-240.webp 240w, /ludogteka/logo.webp 480w"
+          sizes="112px"
+          alt="Logotipo de Ludogteka: la cara de un perro dentro de un círculo y el nombre en letras azules y naranja"
+          width={112}
+          height={112}
+          className="h-28 w-28 shrink-0 rounded-[24px] border border-n-200 bg-white object-contain p-1"
+        />
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.1em] text-morado">Un negocio de verdad</p>
+          <h2 id="t-ludogteka" className="mt-2 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
+            Ludogteka ya lo usa
+          </h2>
+          <p className="mt-2 max-w-[52ch] leading-relaxed text-n-700">Guardería, hotel y estética canina en San Luis Potosí.</p>
+        </div>
+        <div className="hidden sm:ml-auto sm:block" aria-hidden="true">
+          <Mascota tipo="hotel" tamano={72} />
+        </div>
+      </header>
+
+      <div className="mt-10 grid gap-6 lg:grid-cols-12 lg:items-start">
+        <ul ref={refGaleria} className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:col-span-7" aria-label="Fotos de Ludogteka">
+          {FOTOS.map((f, i) => (
+            <li key={f.n} className="aspect-[4/5] overflow-hidden rounded-[20px] bg-n-100">
+              {enGaleria && (
+                <div className="pd-pop h-full w-full" style={{ animationDelay: `${i * 110}ms` }}>
+                  <ImgDiferida
+                    src={`/ludogteka/${f.n}-960.webp`}
+                    srcSet={`/ludogteka/${f.n}-480.webp 480w, /ludogteka/${f.n}-960.webp 960w`}
+                    sizes="(min-width: 1024px) 22vw, (min-width: 640px) 30vw, 46vw"
+                    alt={f.alt}
+                    width={f.w}
+                    height={f.h}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+
+        <div className="flex flex-col gap-5 lg:col-span-5">
+          <ReelTarjeta />
+          <ul ref={refFrases} className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2" aria-label="Lo que dice el equipo de Ludogteka">
+            {FRASES.map((t, i) => (
+              <li key={t} className="min-h-[76px]">
+                {enFrases && (
+                  <figure className="pd-pop h-full rounded-[16px] border border-n-200 border-l-4 border-l-menta bg-white px-4 py-3" style={{ animationDelay: `${i * 140}ms` }}>
+                    <blockquote className="text-[15px] font-semibold leading-snug text-n-900">«{t}»</blockquote>
+                    <figcaption className="mt-1 text-xs text-n-600">Equipo Ludogteka</figcaption>
+                  </figure>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <PreguntalesModal />
+      </div>
+    </div>
+  );
+}
+
+/** Tarjeta con la portada del reel y un botón de play; al tocarla abre el reel en un modal (embed oficial de Instagram). */
+function ReelTarjeta() {
+  const dialogo = useRef<HTMLDialogElement>(null);
+  const contenedor = useRef<HTMLDivElement>(null);
+  const [estado, setEstado] = useState<"cerrado" | "cargando" | "listo" | "falla">("cerrado");
+
+  function cerrado() {
+    document.documentElement.classList.remove("pd-sin-scroll");
+    if (contenedor.current) contenedor.current.innerHTML = "";
+    setEstado("cerrado");
+  }
+
+  useEffect(() => {
+    const d = dialogo.current;
+    if (!d) return;
+    d.addEventListener("close", cerrado);
+    return () => d.removeEventListener("close", cerrado);
+  }, []);
+
+  function abrir() {
+    dialogo.current?.showModal();
+    document.documentElement.classList.add("pd-sin-scroll");
+    setEstado("cargando");
+    const cont = contenedor.current;
+    if (!cont) return;
+    // El embed se arma a mano (no con React) porque embed.js reemplaza el <blockquote> por un iframe.
+    cont.innerHTML = `<blockquote class="instagram-media" data-instgrm-permalink="${REEL}" data-instgrm-version="14" style="background:#fff;border:0;margin:0 auto;max-width:540px;min-width:260px;width:100%"></blockquote>`;
+    const procesar = () => {
+      window.instgrm?.Embeds.process();
+      window.setTimeout(() => setEstado(cont.querySelector("iframe") ? "listo" : "falla"), 6000);
+    };
+    if (window.instgrm) {
+      procesar();
+    } else {
+      const s = document.createElement("script");
+      s.src = "https://www.instagram.com/embed.js";
+      s.async = true;
+      s.onload = procesar;
+      s.onerror = () => setEstado("falla");
+      document.body.appendChild(s);
+    }
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={abrir}
+        aria-haspopup="dialog"
+        className="group relative block aspect-[16/10] w-full overflow-hidden rounded-[24px] bg-n-100 text-left focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
+      >
+        <ImgDiferida
+          src={PORTADA.src}
+          srcSet={PORTADA.srcSet}
+          sizes="(min-width: 1024px) 40vw, 92vw"
+          alt=""
+          width={1400}
+          height={1580}
+          className="absolute inset-0 h-full w-full object-cover object-[50%_30%] transition-transform duration-500 group-hover:scale-[1.03]"
+        />
+        <span className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" aria-hidden="true" />
+        <span className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white text-morado shadow-lg transition-transform group-hover:scale-110" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z" /></svg>
+        </span>
+        <span className="absolute inset-x-0 bottom-0 p-4 text-white">
+          <span className="block text-lg font-bold leading-tight">Mira el reel de Ludogteka</span>
+          <span className="block text-sm text-white/85">Así se vive un día en su guardería</span>
+        </span>
+        <span className="sr-only">Reproducir el reel de Ludogteka (se abre en una ventana)</span>
+      </button>
+
+      <dialog
+        ref={dialogo}
+        aria-labelledby="t-reel-modal"
+        onClick={(e) => {
+          if (e.target === dialogo.current) dialogo.current?.close();
+        }}
+        className="pd-modal m-auto max-h-[92vh] w-[min(94vw,34rem)] overflow-y-auto rounded-[24px] border border-n-200 bg-white p-0 text-n-900 shadow-2xl"
+      >
+        <div className="p-4 sm:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <h3 id="t-reel-modal" className="text-xl font-bold tracking-[-0.02em]">
+              Reel de Ludogteka
+            </h3>
+            <button
+              type="button"
+              onClick={() => dialogo.current?.close()}
+              aria-label="Cerrar"
+              className="-mr-2 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-n-700 hover:bg-n-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
+            >
+              <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <path d="M5 5l10 10M15 5L5 15" />
+              </svg>
+            </button>
+          </div>
+          <div ref={contenedor} className={estado === "falla" ? "hidden" : "mt-3 min-h-[200px]"} />
+          {estado === "cargando" && <p className="text-sm text-n-600" role="status">Cargando el reel…</p>}
+          {estado === "falla" && (
+            <div className="mt-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={PORTADA.src} srcSet={PORTADA.srcSet} sizes="34rem" alt="Una foto de Ludogteka" width={1400} height={1580} className="max-h-[50vh] w-full rounded-2xl object-cover" />
+              <p className="mt-3 text-sm text-n-700" role="status">No pudimos cargar el reel aquí.</p>
+              <a
+                href={REEL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="pd-boton pd-boton-primario mt-3 inline-flex min-h-12 items-center justify-center rounded-full bg-morado px-6 text-base font-semibold text-white hover:bg-morado-oscuro focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
+              >
+                Ver en Instagram
+                <span className="sr-only"> (se abre en otra pestaña)</span>
+              </a>
+            </div>
           )}
-        </li>
-      ))}
-    </ul>
+        </div>
+      </dialog>
+    </>
   );
 }
 
