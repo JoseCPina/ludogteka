@@ -6,6 +6,7 @@
 // tutoriales no las usa: graba con estas cuentas gemelas (mismo nombre y mismo rol, otro correo), que nunca se ponen en
 // solo lectura. Así no hace falta desbloquear nada mientras se graba y el visitante no puede escribir jamás.
 // Los dueños del portal no tienen gemelo (ver abajo). Los médicos del corredor (demo.mvz y demo.mvz2) los crea sembrar-veterinaria.mjs y también son de escritura.
+import { cerrarAlFallar } from "./solo-lectura.mjs";
 import fs from "node:fs";
 import crypto from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
@@ -21,6 +22,7 @@ const { data: neg } = await A.from("negocios").select("id, plan").eq("slug", "pa
 if (!neg || neg.plan !== "demo") throw new Error("No hay un negocio demo «patitasyco».");
 const NEG = neg.id;
 const S = createClient(URL, env.SUPABASE_SECRET_KEY, { ...sin, global: { headers: { "x-negocio-id": NEG } } });
+cerrarAlFallar(S); // si el script revienta, las cuentas del visitante quedan en solo lectura
 const ok = (t) => console.log(`  ✔ ${t}`);
 const exigir = (r, t) => { if (r.error) throw new Error(`${t}: ${r.error.message}`); return r.data; };
 

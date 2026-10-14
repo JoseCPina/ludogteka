@@ -9,6 +9,7 @@
 // sembrar-demo.mjs; la secret key solo da de alta la cuenta de la médica y abre/cierra la «solo lectura» de las
 // cuentas mientras se siembra. Nunca datos de Ludogteka ni de un cliente real; ningún teléfono real.
 // Al final las cuentas del demo quedan en SOLO LECTURA y el envío automático de recordatorios, apagado.
+import { cerrarAlFallar } from "./solo-lectura.mjs";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import { execSync } from "node:child_process";
@@ -47,6 +48,7 @@ if (!neg) throw new Error("No existe el demo: primero sembrar-demo.mjs.");
 if (neg.plan !== "demo") throw new Error("Ese negocio no es un demo: no se toca.");
 const NEG = neg.id;
 const S = createClient(C.url, C.secreta, { ...sinSesion, global: { headers: { "x-negocio-id": NEG } } });
+cerrarAlFallar(S); // si el script revienta, las cuentas del visitante quedan en solo lectura
 
 // ── Cuentas ──
 const tokens = new Map();

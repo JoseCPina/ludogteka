@@ -12,6 +12,7 @@
 //   · carnet con vacunas (una por vencer), consultas firmadas del historial y citas de la agenda clínica.
 // Los demás tutoriales de Veterinaria hacen lo suyo EN VIVO (hospitalizar, estimar, recetar…): aquí solo queda
 // el escenario.
+import { cerrarAlFallar } from "./solo-lectura.mjs";
 import fs from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 import { claveAleatoria } from "../lib/clave.mjs";
@@ -26,6 +27,7 @@ const { data: neg } = await A.from("negocios").select("id, plan, nombre").eq("sl
 if (!neg || neg.plan !== "demo") throw new Error("No hay demo en desarrollo: node scripts/demo/sembrar-demo.mjs");
 const NEG = neg.id;
 const S = createClient(URL, env.SUPABASE_SECRET_KEY, { ...sin, global: { headers: { "x-negocio-id": NEG } } });
+cerrarAlFallar(S); // si el script revienta, las cuentas del visitante quedan en solo lectura
 const hoy = (d = 0) => new Date(Date.now() + d * 86400000).toISOString().slice(0, 10);
 const ok = (t) => console.log(`  ✔ ${t}`);
 const exigir = (r, t) => { if (r.error) throw new Error(`${t}: ${r.error.message}`); ok(t); return r.data; };

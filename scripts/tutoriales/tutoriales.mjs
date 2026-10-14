@@ -41,6 +41,7 @@ import { leerEstado, guardarEstado, DIR_SALIDA } from "./lib/estado.mjs";
 import { sincronizarCatalogo } from "./sincronizar.mjs";
 import { articuloPorSlugArchivo } from "./lib/articulos.mjs";
 import { avisar } from "./avisar.mjs";
+import { cerrarAlFallar, cerrarCuentasDemo } from "../demo/solo-lectura.mjs";
 
 // ── Argumentos ──
 const args = process.argv.slice(2);
@@ -65,6 +66,8 @@ const ID_DEMO_HOST = new URL(OPC.base).host;
 if (!ID_DEMO_HOST.startsWith(`${SLUG_DEMO}.`)) throw new Error(`Se graba SOLO en el negocio demo (${SLUG_DEMO}.*), no en ${ID_DEMO_HOST}.`);
 
 const cd = conectar(false);
+// Si el corredor revienta o lo interrumpen, las cuentas del visitante de «Ver demo» quedan en solo lectura.
+cerrarAlFallar(cd.cliente);
 let cp = null;
 const aviso = async (t) => { console.log(`\n📣 ${t.split("\n")[0]}`); if (OPC.prod) { try { await avisar(t, { prod: true }); } catch (e) { console.warn(`  (no pude encolar el aviso: ${e.message})`); } } };
 
@@ -150,7 +153,6 @@ async function producir(v, ctx) {
   const rol = guion.rol ?? v.rol;
   // Los dueños del portal usan las cuentas del visitante (una cuenta por cliente): se abren SOLO mientras graba su video.
   const cuentaDueno = ROLES_DUENO.has(rol) ? (await cd.cliente.auth.admin.listUsers({ perPage: 1000 })).data.users.find((u) => u.email === CUENTAS[rol])?.id : null;
-  if (cuentaDueno) await cd.cliente.from("membresias").update({ solo_lectura: false }).eq("negocio_id", ctx.negocioId).eq("profile_id", cuentaDueno);
   const cookies = guion.sinSesion ? [] : await cookiesDe(cd, rol, ID_DEMO_HOST.split(":")[0], ctx.anon);
   const area = AREAS.find((a) => a.clave === v.area).nombre;
   const tarjetas = {
@@ -161,6 +163,8 @@ async function producir(v, ctx) {
   console.log(`  grabando (${Math.round(duracionPlan)} s planeados${voz ? ", con voz" : ", sin voz"})…`);
   let grab;
   try {
+  // Se abre ya dentro del try: pase lo que pase después, el finally la vuelve a cerrar.
+  if (cuentaDueno) await cd.cliente.from("membresias").update({ solo_lectura: false }).eq("negocio_id", ctx.negocioId).eq("profile_id", cuentaDueno);
     grab = await grabarVideo({ base: OPC.base, cookies: sustituir(cookies, {}), inicio: guion.inicio, guion: guionEjecutable, tarjetas, plan: p, salida: dir, nombre: "video", medios: guion.medios ? { audio: guion.medios.audio ?? null } : null });
   } finally {
     if (cuentaDueno) await cd.cliente.from("membresias").update({ solo_lectura: true }).eq("negocio_id", ctx.negocioId).eq("profile_id", cuentaDueno);
@@ -378,7 +382,8 @@ async function main() {
   void rpc;
 }
 
-main().catch(async (e) => {
+main().then(() => cerrarCuentasDemo(cd.cliente)).catch(async (e) => {
+  await cerrarCuentasDemo(cd.cliente);
   console.error(`\n✘ El corredor se detuvo: ${e.message}`);
   if (OPC.prod) await aviso(`⛔ Tutoriales: el corredor se detuvo\n• ${e.message.slice(0, 400)}`).catch(() => {});
   process.exit(1);

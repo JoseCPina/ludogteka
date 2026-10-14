@@ -8,7 +8,7 @@ import {
   resumenVacio,
   type ContratoResumen,
 } from "@/app/(staff)/perros/contrato-estado-banner";
-import { formatearFechaCalendario, formatearFecha } from "@/lib/formato";
+import { formatearFechaCalendario, formatearFecha, horaLocalDeInstante } from "@/lib/formato";
 import { moduloDeCategoria } from "@/lib/modulos";
 import { CheckinForm } from "./checkin-form";
 import { PaseCheckin, type EstadoPaseCheckin } from "./pase-checkin";
@@ -193,7 +193,11 @@ export default async function CheckinEstanciaPage({
 
       {yaHizoCheckin ? (
         <div className="rounded-lg border border-n-200 bg-n-50 p-4">
-          <p className="font-semibold text-n-900">
+          <p className="font-semibold text-n-900" role="status">
+            Check-in registrado
+            {estancia.hora_entrada_real ? ` a las ${horaLocalDeInstante(estancia.hora_entrada_real, zona)}` : ""}
+          </p>
+          <p className="mt-1 text-sm text-n-700">
             Este perro ya hizo check-in
             {estancia.hora_entrada_real ? ` el ${formatearFecha(estancia.hora_entrada_real, zona)}` : ""}.
           </p>
