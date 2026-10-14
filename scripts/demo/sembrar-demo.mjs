@@ -17,6 +17,7 @@
 // desde "Ver demo" explora, no escribe.
 //
 // Datos: scripts/demo/datos.mjs (todos inventados). Fotos: scripts/demo/fotos.
+import { cerrarAlFallar } from "./solo-lectura.mjs";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -111,6 +112,7 @@ if (neg) {
 }
 const NEG = neg.id;
 const S = createClient(C.url, C.secreta, { ...sinSesion, global: { headers: { "x-negocio-id": NEG } } });
+cerrarAlFallar(S); // si el script revienta, las cuentas del visitante quedan en solo lectura
 const deNeg = (tabla, sel = "id") => S.from(tabla).select(sel).eq("negocio_id", NEG);
 
 async function borrarCarpeta(prefijo) {
