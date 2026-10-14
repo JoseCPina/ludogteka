@@ -18,6 +18,7 @@ import { spawnSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, sesion, tokenDe } from "./sesiones-dev.mjs";
 import { claveAleatoria } from "../lib/clave.mjs";
+import { todas, contar } from "../lib/paginar.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const hallazgos = [];
@@ -74,25 +75,25 @@ try {
   const { cuentaEnPruebas, cuentaEnTotales, esDemo } = await import("../../src/lib/plataforma/metricas.ts").catch(() => ({}));
   const A1 = await negocio("conteo", 1);
   creados.push(A1);
-  const { data: lista } = await P.rpc("plataforma_negocios");
+  const { data: lista } = await todas(() => P.rpc("plataforma_negocios").order("id"));
   ok(Array.isArray(lista) && lista.some((n) => n.id === A1.id), "plataforma_negocios devuelve el negocio de prueba", "plataforma_negocios no lo devuelve");
   const demo = lista.find((n) => n.plan === "demo");
   ok(demo, "hay un negocio demo (plan 'demo') en la lista, visible", "no hay demo en desarrollo");
   const reglaPrueba = (n) => n.plan === "prueba" && n.activo && n.plan !== "demo";
   const antes = lista.filter(reglaPrueba).length;
   await A.from("negocios").update({ activo: false }).eq("id", A1.id);
-  const { data: lista2 } = await P.rpc("plataforma_negocios");
+  const { data: lista2 } = await todas(() => P.rpc("plataforma_negocios").order("id"));
   ok(lista2.filter(reglaPrueba).length === antes - 1, "suspender un negocio en prueba lo saca de «En prueba»", "suspendido sigue contando en prueba");
   ok(!lista2.filter(reglaPrueba).some((n) => n.plan === "demo"), "el demo nunca cuenta en «En prueba»", "el demo cuenta en prueba");
   if (cuentaEnPruebas) {
     const veredicto = lista2.filter(cuentaEnPruebas).length === lista2.filter(reglaPrueba).length && !cuentaEnTotales({ plan: "demo" }) && esDemo({ plan: "demo" }) && !cuentaEnPruebas({ plan: "prueba", activo: false });
     ok(veredicto, "los helpers de metricas.ts dan lo mismo que la regla", "metricas.ts no coincide con la regla");
   } else console.log("  · (metricas.ts no se importa desde Node sin transpilar: la regla se cubre arriba y con tsc)");
-  const { data: alm } = await A.rpc("plataforma_almacenamiento_reportes");
+  const { data: alm } = await todas(() => A.rpc("plataforma_almacenamiento_reportes").order("negocio_id"));
   ok(alm?.every((f) => typeof f.plan === "string"), "plataforma_almacenamiento_reportes trae el plan de cada negocio", "almacenamiento sin plan");
-  const { data: maps } = await P.rpc("plataforma_maps_consumo", { p_mes: new Date().toISOString().slice(0, 10) });
+  const { data: maps } = await todas(() => P.rpc("plataforma_maps_consumo", { p_mes: new Date().toISOString().slice(0, 10) }).order("negocio_id"));
   ok(maps?.every((f) => typeof f.plan === "string"), "plataforma_maps_consumo trae el plan", "maps sin plan");
-  const { data: cobros } = await P.rpc("plataforma_cobros");
+  const { data: cobros } = await todas(() => P.rpc("plataforma_cobros").order("negocio_id"));
   ok(cobros?.every((f) => typeof f.plan === "string"), "plataforma_cobros trae el plan", "cobros sin plan");
 
   // ───────── 2. Borrado

@@ -18,6 +18,7 @@ import { COLUMNAS_GASTO, METODOS_GASTO, mesAnterior, montoEnRango, rangoMes, typ
 import { CamposPago, type Opcion } from "./campos-gasto";
 import { CampoComprobante } from "./campo-comprobante";
 import { adjuntarComprobante, cancelarGasto, corregirGasto, pagarGastoEsperado, registrarGasto } from "./gastos-actions";
+import { leerTodo, leerTodoPorIds } from "@/lib/supabase/paginar";
 
 type PorAtender = { id: string; concepto: string; categoria: string; monto_estimado: number | null; vencimiento: string; dias: number; vencido: boolean };
 
@@ -40,25 +41,29 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
 
   const [{ data: porAtender, error: errorAtender }, { data: categorias }, { data: proveedores }, { data: delMes }, { data: resumen }, { data: resumenAnterior }, { data: turno }] =
     await Promise.all([
-      supabase.rpc("gastos_por_atender"),
+      leerTodo<Record<string, unknown>>(() => supabase.rpc("gastos_por_atender").order("id")),
       supabase.from("categorias_gasto").select("id, nombre").is("deleted_at", null).order("orden"),
       supabase.from("proveedores").select("id, nombre").is("deleted_at", null).order("nombre"),
       // Lo pagado en el mes, y lo que sin pagarse en el mes cubre parte de él.
-      supabase
-        .from("gastos")
-        .select(COLUMNAS_GASTO)
-        .is("deleted_at", null)
-        .neq("estado", "pendiente")
-        .or(`and(fecha_pago.gte.${desde},fecha_pago.lte.${hasta}),and(periodo_desde.lte.${hasta},periodo_hasta.gte.${desde})`)
-        .order("fecha_pago", { ascending: false }),
+      leerTodo<Record<string, unknown>>(() =>
+        supabase
+          .from("gastos")
+          .select(COLUMNAS_GASTO)
+          .is("deleted_at", null)
+          .neq("estado", "pendiente")
+          .or(`and(fecha_pago.gte.${desde},fecha_pago.lte.${hasta}),and(periodo_desde.lte.${hasta},periodo_hasta.gte.${desde})`)
+          .order("fecha_pago", { ascending: false })
+          .order("id")
+      ),
       supabase.rpc("gastos_por_categoria_periodo", { p_desde: desde, p_hasta: hasta }),
       supabase.rpc("gastos_por_categoria_periodo", { p_desde: anterior.desde, p_hasta: anterior.hasta }),
       supabase.from("turnos_caja").select("id").eq("estado", "abierto").maybeSingle(),
     ]);
   const pendientes = ((porAtender ?? []) as PorAtender[]).sort((a, b) => a.vencimiento.localeCompare(b.vencimiento));
-  const { data: periodosPendientes } = pendientes.length
-    ? await supabase.from("gastos").select("id, periodo_desde, periodo_hasta").in("id", pendientes.map((p) => p.id))
-    : { data: [] };
+  const { data: periodosPendientes } = await leerTodoPorIds<{ id: string; periodo_desde: string; periodo_hasta: string }, string>(
+    pendientes.map((p) => p.id),
+    (bloque) => supabase.from("gastos").select("id, periodo_desde, periodo_hasta").in("id", bloque).order("id")
+  );
   const periodoDe = new Map((periodosPendientes ?? []).map((g) => [g.id as string, g]));
   const gastos = (delMes ?? []) as unknown as GastoFila[];
 

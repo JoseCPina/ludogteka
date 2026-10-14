@@ -9,6 +9,7 @@ import { formatearFecha, horaLocalDeInstante } from "@/lib/formato";
 import { DarPorRevisada } from "./dar-por-revisada";
 import { RevisarTarjetaManual } from "@/components/cobro/revisar-tarjeta-manual";
 import { ETIQUETA_TARJETA_MANUAL, etiquetaMotivo } from "@/lib/cobro/tarjeta-manual";
+import { leerTodo, leerTodoPorIds } from "@/lib/supabase/paginar";
 
 type TarjetaFila = {
   id: string;
@@ -62,15 +63,17 @@ export default async function ConciliacionPage() {
   const hoy = String(hoyData);
   const esAdminSesion = sesion?.rol === "admin";
   const [{ data, error }, { data: porConfirmar }, { data: tarjetasCrudo }, { data: mostrarAjenos }] = await Promise.all([
-    supabase.from("conciliacion_terminal").select("id, tipo, monto, ocurrio_at, detectada_at, cobro_id, orden_id, mp_pago_id, detalle").is("resuelta_at", null).neq("tipo", "pago_ajeno").order("detectada_at"),
-    supabase.from("mp_ordenes").select("id, monto, created_at, detalle_error, reserva_id").eq("estado", "por_confirmar").is("deleted_at", null).order("created_at"),
+    leerTodo<Fila>(() => supabase.from("conciliacion_terminal").select("id, tipo, monto, ocurrio_at, detectada_at, cobro_id, orden_id, mp_pago_id, detalle").is("resuelta_at", null).neq("tipo", "pago_ajeno").order("detectada_at").order("id")),
+    leerTodo<{ id: string; monto: number; created_at: string; detalle_error: string | null; reserva_id: string }>(() =>
+      supabase.from("mp_ordenes").select("id, monto, created_at, detalle_error, reserva_id").eq("estado", "por_confirmar").is("deleted_at", null).order("created_at").order("id")
+    ),
     // Tarjetas manuales: solo el admin las revisa (la función ya devuelve vacío a los demás).
-    esAdminSesion ? supabase.rpc("tarjetas_manuales_por_revisar", { p_historial: true }) : Promise.resolve({ data: [] as TarjetaFila[] }),
+    esAdminSesion ? leerTodo<TarjetaFila>(() => supabase.rpc("tarjetas_manuales_por_revisar", { p_historial: true }).order("id")) : Promise.resolve({ data: [] as TarjetaFila[] }),
     supabase.rpc("conciliacion_mostrar_ajenos"),
   ]);
   // Otros pagos de la cuenta (no cobrados desde PeluDesk): solo si el admin lo pidió.
   const { data: ajenosCrudo } = mostrarAjenos === true
-    ? await supabase.from("conciliacion_terminal").select("id, tipo, monto, ocurrio_at, detectada_at, cobro_id, orden_id, mp_pago_id, detalle").eq("tipo", "pago_ajeno").is("resuelta_at", null).order("detectada_at")
+    ? await leerTodo<Fila>(() => supabase.from("conciliacion_terminal").select("id, tipo, monto, ocurrio_at, detectada_at, cobro_id, orden_id, mp_pago_id, detalle").eq("tipo", "pago_ajeno").is("resuelta_at", null).order("detectada_at").order("id"))
     : { data: [] as Fila[] };
   const ajenos = (ajenosCrudo ?? []) as Fila[];
   const tarjetas = (tarjetasCrudo ?? []) as TarjetaFila[];
@@ -79,7 +82,7 @@ export default async function ConciliacionPage() {
   const filas = (data ?? []) as Fila[];
   // Para ir a la cuenta del cobro dudoso.
   const ids = filas.map((f) => f.cobro_id).filter(Boolean) as string[];
-  const { data: cobros } = ids.length ? await supabase.from("cobros").select("id, reserva_id").in("id", ids) : { data: [] as { id: string; reserva_id: string }[] };
+  const { data: cobros } = await leerTodoPorIds<{ id: string; reserva_id: string }, string>(ids, (bloque) => supabase.from("cobros").select("id, reserva_id").in("id", bloque).order("id"));
   const reservaDe = new Map((cobros ?? []).map((c) => [c.id as string, c.reserva_id as string]));
   const esAdmin = sesion?.rol === "admin";
 

@@ -4,6 +4,7 @@
 // cita y un cobro con propina); nunca correr contra producción.
 import { createClient } from "@supabase/supabase-js";
 import { A, NEGOCIO, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { todas, contar } from "../lib/paginar.mjs";
 
 const conToken = (t) => createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -247,7 +248,7 @@ ok(Boolean(quitado.error), "al quitarle «Nómina», se le vuelve a rechazar");
 
 console.log("\n── Reportes: la nómina resta en la utilidad; la comisión en el margen");
 const { data: util } = await ADM.rpc("reporte_utilidad_periodo", { p_desde: desde, p_hasta: hoy }).single();
-const { data: pagosPeriodo } = await A.from("nomina_pagos").select("costo").gte("fecha_pago", desde).lte("fecha_pago", hoy).is("deleted_at", null);
+const { data: pagosPeriodo } = await todas(() => A.from("nomina_pagos").select("costo").gte("fecha_pago", desde).lte("fecha_pago", hoy).is("deleted_at", null).order("id"));
 const costoNomina = Math.round(pagosPeriodo.reduce((s, p) => s + Number(p.costo), 0) * 100) / 100;
 ok(util && Number(util.nomina_costo) === costoNomina && Math.abs(Number(util.utilidad) - (Number(util.ingreso_reconocido) - Number(util.costo_insumos) - costoNomina - Number(util.gastos_local))) < 0.01,
   `utilidad = ingreso ${util?.ingreso_reconocido} − insumos ${util?.costo_insumos} − nómina ${util?.nomina_costo} − gastos ${util?.gastos_local} = ${util?.utilidad}`);

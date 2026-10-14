@@ -6,6 +6,7 @@ import { Alert } from "@/components/ui/alert";
 import { contarSinTarifa, type CeldaVigente } from "@/lib/tarifas/matriz";
 import { contarPerrosSinRazaCatalogo } from "@/lib/razas";
 import { AvisoRazasSinCatalogar } from "@/components/aviso-razas-sin-catalogar";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 const ETIQUETA_CATEGORIA: Record<string, string> = {
   guarderia: "Guardería",
@@ -39,9 +40,11 @@ export default async function ServiciosPage() {
       supabase.from("grupos_raza").select("id, nombre, depende_tamano, depende_pelaje").is("deleted_at", null).order("orden"),
       supabase.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
       supabase.from("tipos_pelaje").select("id, etiqueta, clave").is("deleted_at", null).order("orden"),
-      supabase
-        .from("tarifas_vigentes")
-        .select("servicio_id, grupo_raza_id, tamano_id, pelaje_id, cantidad_desde, cantidad_hasta, precio, no_aplica"),
+      leerTodo<CeldaVigente & { servicio_id: string }>(() =>
+        supabase
+          .from("tarifas_vigentes")
+          .select("servicio_id, grupo_raza_id, tamano_id, pelaje_id, cantidad_desde, cantidad_hasta, precio, no_aplica").order("servicio_id").order("grupo_raza_id").order("tamano_id").order("pelaje_id").order("cantidad_desde")
+      ),
       contarPerrosSinRazaCatalogo(supabase),
     ]);
 

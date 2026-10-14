@@ -6,6 +6,7 @@ import { tienePermiso } from "@/lib/auth/permisos";
 import { cargarRazas } from "@/lib/razas";
 import { negocioIdActual } from "@/lib/negocio/actual";
 import { AgendarForm } from "./agendar-form";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 export default async function AgendarPage() {
   const supabase = await createSupabaseServerClient();
@@ -20,13 +21,17 @@ export default async function AgendarPage() {
     { data: conGuarderiaHotel },
     { data: conRequisitoPendiente },
   ] = await Promise.all([
-    supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).eq("publico_general", false).order("nombre"),
-    supabase
-      .from("perros")
-      .select("id, cliente_id, nombre, tamano_id, pelaje_id, pelaje:tipos_pelaje(clave, etiqueta)")
-      .is("deleted_at", null)
-      .eq("fallecido", false)
-      .order("nombre"),
+    // Todos los clientes y perros, de 1,000 en 1,000: la API corta ahí sin avisar.
+    leerTodo<{ id: string; nombre: string; telefono: string }>(() => supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).eq("publico_general", false).order("nombre").order("id")),
+    leerTodo<Record<string, unknown>>(() =>
+      supabase
+        .from("perros")
+        .select("id, cliente_id, nombre, tamano_id, pelaje_id, pelaje:tipos_pelaje(clave, etiqueta)")
+        .is("deleted_at", null)
+        .eq("fallecido", false)
+        .order("nombre")
+        .order("id")
+    ),
     // De servicios_cotizables y no de servicios: un servicio vivo sin
     // ningún precio con el que cobrar no se ofrece, porque la cita truena
     // al guardar. Así quedaron siete servicios viejos en producción hasta
@@ -39,26 +44,25 @@ export default async function AgendarPage() {
     // Por la RPC, no por profiles: el RLS de profiles no le deja a
     // recepción leer al personal, y el selector salía vacío.
     supabase.rpc("listar_personal_estetica"),
-    supabase
-      .from("estancias")
-      .select("id, perro_id, servicios(nombre)")
-      .eq("estado", "en_curso")
-      .is("deleted_at", null),
+    leerTodo<{ id: string; perro_id: string; servicios: { nombre: string } | { nombre: string }[] | null }>(() =>
+      supabase.from("estancias").select("id, perro_id, servicios(nombre)").eq("estado", "en_curso").is("deleted_at", null).order("id")
+    ),
     // Aviso (no bloqueo) para el caso mixto: el perro sí usa guardería u
     // hotel y trae requisitos vencidos. La cita se agenda igual; el
     // bloqueo real está en la estancia.
-    supabase.from("perros_con_guarderia_hotel").select("perro_id"),
-    supabase
-      .from("perro_requisitos_sanitarios_estado")
-      .select("perro_id")
-      .in("estado", ["vencida", "sin_registro"]),
+    leerTodo<{ perro_id: string }>(() => supabase.from("perros_con_guarderia_hotel").select("perro_id").order("perro_id")),
+    leerTodo<{ perro_id: string; tipo_requisito_id: string }>(() =>
+      supabase.from("perro_requisitos_sanitarios_estado").select("perro_id, tipo_requisito_id").in("estado", ["vencida", "sin_registro"]).order("perro_id").order("tipo_requisito_id")
+    ),
   ]);
   const [{ data: tamanosCrudo }, { data: pelajesCrudo }] = await Promise.all([
     supabase.from("tamanos_categoria").select("id, etiqueta, clave").is("deleted_at", null).order("orden"),
     supabase.from("tipos_pelaje").select("id, etiqueta, clave").is("deleted_at", null).order("orden"),
   ]);
   const [{ data: sinGrupoCrudo }, { data: gruposPrecio }] = await Promise.all([
-    supabase.from("perro_grupo_raza").select("perro_id, raza_id, raza_nombre, propuesta_id, sin_grupo_motivo, grupo_nombre, pelaje_clave").eq("sin_grupo", true),
+    leerTodo<{ perro_id: string; raza_id: string | null; raza_nombre: string; propuesta_id: string | null; sin_grupo_motivo: string | null; grupo_nombre: string | null; pelaje_clave: string | null }>(() =>
+      supabase.from("perro_grupo_raza").select("perro_id, raza_id, raza_nombre, propuesta_id, sin_grupo_motivo, grupo_nombre, pelaje_clave").eq("sin_grupo", true).order("perro_id")
+    ),
     supabase.from("grupos_raza").select("id, nombre").is("deleted_at", null).order("orden"),
   ]);
   const perrosSinGrupo = ((sinGrupoCrudo ?? []) as { perro_id: string; raza_id: string | null; raza_nombre: string; propuesta_id: string | null; sin_grupo_motivo: string | null; grupo_nombre: string | null; pelaje_clave: string | null }[]).map((r) => ({
@@ -86,10 +90,17 @@ export default async function AgendarPage() {
   // Qué servicios tienen capturado un precio alternativo para pelo
   // maltratado. Solo en esos se le ofrece la casilla a quien agenda: en
   // los demás no haría nada y sería una pregunta de más en el mostrador.
-  const { data: conMaltratado } = await supabase
-    .from("tarifas_vigentes")
-    .select("servicio_id, precio_pelo_maltratado")
-    .not("precio_pelo_maltratado", "is", null);
+  const { data: conMaltratado } = await leerTodo<{ servicio_id: string; precio_pelo_maltratado: number | null }>(() =>
+    supabase
+      .from("tarifas_vigentes")
+      .select("servicio_id, precio_pelo_maltratado")
+      .not("precio_pelo_maltratado", "is", null)
+      .order("servicio_id")
+      .order("grupo_raza_id")
+      .order("tamano_id")
+      .order("pelaje_id")
+      .order("cantidad_desde")
+  );
   const claves = new Set((conMaltratado ?? []).map((t) => t.servicio_id as string));
   // Lo que incluye cada servicio y a qué pelajes no se ofrece (el rapado, a
   // pelo corto): salen de la configuración del servicio, no de aquí.

@@ -7,6 +7,7 @@ import { credencialesMeta } from "@/lib/redes/meta";
 import { estadoTikTok, REDIRECT_TIKTOK } from "@/lib/redes/tiktok";
 import { SERIE, TITULOS } from "@/lib/redes/serie";
 import { agregarARed, cancelar, cargarSerie, reprogramarVideo, conectarTikTok, linkTikTok, pausar, probar, publicarAhora, reprogramar, resolver } from "./acciones";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 // Las acciones de esta pantalla pueden correr el publicador (Meta tarda).
 export const maxDuration = 300;
@@ -34,7 +35,7 @@ const ESTADO: Record<string, { texto: string; clase: string }> = {
 export default async function RedesPlataforma() {
   const { supabase } = await exigirPlataforma();
   const [{ data, error }, { data: ajustes }, tiktok] = await Promise.all([
-    supabase.from("redes_publicaciones").select("id, video, red, formato, archivo, programada_at, pie, estado, intentos, proximo_intento_at, url, error, publicada_at, prueba").is("deleted_at", null).order("programada_at").order("red"),
+    leerTodo<Record<string, unknown>>(() => supabase.from("redes_publicaciones").select("id, video, red, formato, archivo, programada_at, pie, estado, intentos, proximo_intento_at, url, error, publicada_at, prueba").is("deleted_at", null).order("programada_at").order("red").order("id")),
     supabase.from("redes_ajustes").select("clave, valor").is("deleted_at", null),
     estadoTikTok().catch(() => ({ conectada: false, cuenta: null, app: false })),
   ]);

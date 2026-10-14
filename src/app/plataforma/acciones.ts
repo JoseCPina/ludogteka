@@ -12,6 +12,7 @@ import type { ResultadoPlataforma } from "@/lib/plataforma/tipos";
 import { sincronizarPreciosPlan, type PlanParaStripe } from "@/lib/cobro/precios";
 import { mensajeDeErrorStripe, stripeConfigurado } from "@/lib/cobro/stripe";
 import { eliminarNegocioCompleto } from "@/lib/plataforma/eliminar-negocio";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 // La administración de PeluDesk. Toda escritura va con la sesión de quien
 // administra (su JWT): la base comprueba es_admin_plataforma() en cada
@@ -75,7 +76,7 @@ async function darAdmin(
 }
 
 async function negocioParaLink(s: NonNullable<Awaited<ReturnType<typeof sesionPlataforma>>>, id: string): Promise<NegocioParaLink | null> {
-  const { data } = await s.supabase.rpc("plataforma_negocios");
+  const { data } = await leerTodo<Record<string, unknown>>(() => s.supabase.rpc("plataforma_negocios").order("id"));
   const n = ((data ?? []) as NegocioParaLink[]).find((x) => x.id === id);
   return n ?? null;
 }

@@ -6,6 +6,7 @@ import { formatearFechaCalendario } from "@/lib/formato";
 import { cuandoEs, mensajeRecordatorio } from "@/lib/veterinaria/carnet";
 import { Alert } from "@/components/ui/alert";
 import { AccionesRecordatorio } from "./acciones";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 type Fila = {
   id: string; perro_id: string; perro_nombre: string; cliente_nombre: string; cliente_telefono: string | null;
@@ -23,7 +24,7 @@ const ESTADO: Record<string, { texto: string; estilo: string }> = {
 export default async function Recordatorios() {
   const supabase = await createSupabaseServerClient();
   const negocio = await negocioActual();
-  const [{ data, error }, { data: ajustes }] = await Promise.all([supabase.rpc("carnet_recordatorios_lista"), supabase.rpc("veterinaria_ajustes_actuales")]);
+  const [{ data, error }, { data: ajustes }] = await Promise.all([leerTodo<Record<string, unknown>>(() => supabase.rpc("carnet_recordatorios_lista").order("id")), supabase.rpc("veterinaria_ajustes_actuales")]);
   const filas = (data ?? []) as Fila[];
   const pendientes = filas.filter((f) => f.estado === "pendiente" || f.estado === "fallido");
   const resueltos = filas.filter((f) => !(f.estado === "pendiente" || f.estado === "fallido"));

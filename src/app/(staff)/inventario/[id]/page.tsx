@@ -10,6 +10,10 @@ import { actualizarInsumo, darDeBajaInsumo } from "../actions";
 import { cargarAreas, puedeDarDeAlta } from "../comun";
 import { CostoReferencia } from "../costo-referencia";
 import Link from "next/link";
+import { leerTodoPorIds } from "@/lib/supabase/paginar";
+
+// Cuántos renglones del historial se traen. La existencia NO sale de esta lista: sale de la base.
+const MOVIMIENTOS_MOSTRADOS = 500;
 
 export default async function EditarInsumoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -34,7 +38,10 @@ export default async function EditarInsumoPage({ params }: { params: Promise<{ i
         .from("movimientos_inventario")
         .select("id, tipo, cantidad_base, fecha_caducidad, motivo, created_at")
         .eq("insumo_id", id)
-        .order("created_at", { ascending: false }),
+        .order("created_at", { ascending: false })
+        .order("id")
+        // Un producto de mucho movimiento pasa de 1,000 renglones; la existencia sale de la base (vista), no de esta lista.
+        .limit(MOVIMIENTOS_MOSTRADOS),
       supabase.from("insumos_existencia_actual").select("existencia_actual, stock_minimo, bajo_minimo").eq("insumo_id", id).maybeSingle(),
     ]);
 
@@ -54,10 +61,11 @@ export default async function EditarInsumoPage({ params }: { params: Promise<{ i
     const { data: costo } = await supabase.from("insumos_costos").select("costo_unitario_compra").eq("insumo_id", id).maybeSingle();
     costoReferencia = costo ? Number(costo.costo_unitario_compra) : null;
     const [{ data: compras }, { data: proveedoresData }] = await Promise.all([
-      supabase
-        .from("compras_insumos")
-        .select("movimiento_id, cantidad_compra, costo_unitario, costo_total, proveedores(nombre)")
-        .in("movimiento_id", (movimientosCrudo ?? []).map((m) => m.id)),
+      leerTodoPorIds<{ movimiento_id: string; cantidad_compra: number; costo_unitario: number; costo_total: number; proveedores: unknown }, string>(
+        (movimientosCrudo ?? []).map((m) => m.id as string),
+        (bloque) => supabase.from("compras_insumos").select("movimiento_id, cantidad_compra, costo_unitario, costo_total, proveedores(nombre)").in("movimiento_id", bloque).order("movimiento_id"),
+        100
+      ),
       supabase.from("proveedores").select("id, nombre").is("deleted_at", null).order("nombre"),
     ]);
     proveedores = proveedoresData ?? [];
@@ -125,6 +133,9 @@ export default async function EditarInsumoPage({ params }: { params: Promise<{ i
 
       <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Movimientos</h2>
+        {movimientos.length >= MOVIMIENTOS_MOSTRADOS && (
+          <p className="text-sm text-n-600">Se muestran los últimos {MOVIMIENTOS_MOSTRADOS} movimientos. La existencia de arriba cuenta todos.</p>
+        )}
         <MovimientosInsumo
           insumoId={id}
           esAdmin={puedeCostos}

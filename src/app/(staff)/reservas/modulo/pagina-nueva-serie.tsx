@@ -9,6 +9,7 @@ import { diasSinGuarderia } from "@/lib/horario";
 import { NuevaSerieForm } from "../series/nueva/nueva-serie-form";
 import { cargarPaquetesDePerros } from "@/lib/bonos/cargar-paquetes";
 import { zonaActual } from "@/lib/negocio/actual";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 export async function PaginaNuevaSerie({ modulo }: { modulo: ModuloEstancia }) {
   const zona = await zonaActual();
@@ -24,20 +25,14 @@ export async function PaginaNuevaSerie({ modulo }: { modulo: ModuloEstancia }) {
     { data: seriesActivas, error: errorSeries },
     cerrados,
   ] = await Promise.all([
-    supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).eq("publico_general", false).order("nombre"),
-    supabase
-      .from("perros")
-      .select("id, cliente_id, nombre")
-      .is("deleted_at", null)
-      .eq("fallecido", false)
-      .order("nombre"),
+    leerTodo<{ id: string; nombre: string; telefono: string }>(() => supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).eq("publico_general", false).order("nombre").order("id")),
+    leerTodo<{ id: string; cliente_id: string; nombre: string }>(() => supabase.from("perros").select("id, cliente_id, nombre").is("deleted_at", null).eq("fallecido", false).order("nombre").order("id")),
     // Una serie es de días completos: la guardería por hora se queda
     // fuera (generar_estancias_serie no sabe de horas, y no tiene por qué).
     cargarServiciosOfrecibles(supabase, [modulo.categoria], { excluirUnidades: ["hora"] }),
-    supabase
-      .from("series_recurrentes")
-      .select("perro_id, dias_semana, servicios(nombre)")
-      .is("deleted_at", null),
+    leerTodo<{ perro_id: string; dias_semana: number[]; servicios: { nombre: string } | { nombre: string }[] | null }>(() =>
+      supabase.from("series_recurrentes").select("perro_id, dias_semana, servicios(nombre)").is("deleted_at", null).order("id")
+    ),
     diasSinGuarderia(supabase, hoy),
   ]);
   const paquetes = await cargarPaquetesDePerros(supabase);

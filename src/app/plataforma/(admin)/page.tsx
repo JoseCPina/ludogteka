@@ -7,6 +7,7 @@ import { telefonoDeCorreoSintetico } from "@/lib/auth/identidad";
 import { formatearTelefono } from "@/lib/telefono";
 import { textoDeOrigen, type Origen } from "@/lib/peludesk/origen";
 import { cuentaEnPruebas, cuentaEnTotales, esDemo, esInterno } from "@/lib/plataforma/metricas";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 type Fila = {
   id: string; slug: string; nombre: string; dominio: string | null; url_publica: string | null;
@@ -74,16 +75,19 @@ function Negocio({ n, ahora, origen }: { n: Fila; ahora: number; origen?: Partia
 
 export default async function NegociosPlataforma() {
   const { supabase } = await exigirPlataforma();
-  const { data, error } = await supabase.rpc("plataforma_negocios");
+  const { data, error } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("plataforma_negocios").order("id"));
   const negocios = (data ?? []) as Fila[];
   // Negocios con terminal conectada que hoy registran tarjetas a mano de más (solo avisa).
-  const { data: patronTarjetas } = await supabase.rpc("plataforma_tarjetas_manuales_patron");
+  const { data: patronTarjetas } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("plataforma_tarjetas_manuales_patron").order("negocio_id"));
   const usoTarjetas = (patronTarjetas ?? []) as { negocio_id: string; negocio_nombre: string; manuales_hoy: number; pct_turno: number }[];
   // De qué campaña llegó cada negocio en prueba (registros_prueba: solo la plataforma la lee).
-  const { data: registros } = await supabase
-    .from("registros_prueba")
-    .select("negocio_id, utm_source, utm_medium, utm_campaign, utm_content, fbclid, referente")
-    .not("negocio_id", "is", null);
+  const { data: registros } = await leerTodo<Record<string, unknown>>(() =>
+    supabase
+      .from("registros_prueba")
+      .select("negocio_id, utm_source, utm_medium, utm_campaign, utm_content, fbclid, referente")
+      .not("negocio_id", "is", null)
+      .order("negocio_id")
+  );
   const origenDe = new Map((registros ?? []).map((r) => [r.negocio_id as string, r as Partial<Origen>]));
   const ahora = instanteActual();
   // «En prueba» = negocios reales en plan prueba y sin suspender. El demo y

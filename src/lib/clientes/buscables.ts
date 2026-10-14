@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 /**
  * Lo que necesita cualquier buscador de clientes de la app: el dueño, su
@@ -48,19 +49,15 @@ export function armarClientesBuscables(clientes: ClienteCrudo[], perros: PerroCr
 export async function cargarClientesBuscables(
   supabase: SupabaseClient
 ): Promise<{ clientes: ClienteBuscable[]; error: Error | null }> {
+  // Todos los clientes y perros del negocio, página por página: la API corta en 1,000 filas.
   const [{ data: clientes, error: e1 }, { data: perros, error: e2 }] = await Promise.all([
-    supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).eq("publico_general", false).order("nombre"),
-    supabase
-      .from("perros")
-      .select("id, cliente_id, nombre")
-      .is("deleted_at", null)
-      .eq("fallecido", false)
-      .order("nombre"),
+    leerTodo<ClienteCrudo>(() => supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).eq("publico_general", false).order("nombre").order("id")),
+    leerTodo<PerroCrudo>(() => supabase.from("perros").select("id, cliente_id, nombre").is("deleted_at", null).eq("fallecido", false).order("nombre").order("id")),
   ]);
   const error = e1 ?? e2;
   if (error) return { clientes: [], error: new Error(error.message) };
   return {
-    clientes: armarClientesBuscables((clientes ?? []) as ClienteCrudo[], (perros ?? []) as PerroCrudo[]),
+    clientes: armarClientesBuscables(clientes, perros),
     error: null,
   };
 }

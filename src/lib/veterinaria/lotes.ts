@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 export type ProductoConLotes = {
   id: string;
@@ -10,15 +11,21 @@ export type MedicoOpcion = { id: string; nombre: string };
 
 /** Productos clínicos (con lotes) que tienen existencia sin caducar (de un tipo, si se pide), con sus lotes y cuántas dosis quedan en cada uno (unidad de consumo). */
 export async function cargarProductosConLotes(supabase: SupabaseClient, tipo?: "vacuna" | "desparasitante"): Promise<ProductoConLotes[]> {
-  let consulta = supabase
-    .from("insumos")
-    .select("id, nombre, unidad_consumo:unidades_medida!unidad_consumo_id(equivalencia_en_base)")
-    .eq("controla_lotes", true)
-    .is("deleted_at", null);
-  if (tipo) consulta = consulta.eq("tipo_clinico", tipo);
+  const construirProductos = () => {
+    // limite-filas-ok: esta consulta se pagina con leerTodo(construirProductos) más abajo
+    let consulta = supabase
+      .from("insumos")
+      .select("id, nombre, unidad_consumo:unidades_medida!unidad_consumo_id(equivalencia_en_base)")
+      .eq("controla_lotes", true)
+      .is("deleted_at", null);
+    if (tipo) consulta = consulta.eq("tipo_clinico", tipo);
+    return consulta.order("nombre").order("id");
+  };
   const [{ data: productos }, { data: saldos }] = await Promise.all([
-    consulta.order("nombre"),
-    supabase.from("insumo_lotes_saldo").select("lote_id, insumo_id, codigo, fecha_caducidad, saldo, estado_caducidad").gt("saldo", 0),
+    leerTodo<Record<string, unknown> & { id: string; nombre: string }>(construirProductos),
+    leerTodo<{ lote_id: string; insumo_id: string; codigo: string; fecha_caducidad: string | null; saldo: number; estado_caducidad: string }>(() =>
+      supabase.from("insumo_lotes_saldo").select("lote_id, insumo_id, codigo, fecha_caducidad, saldo, estado_caducidad").gt("saldo", 0).order("lote_id")
+    ),
   ]);
   return (productos ?? [])
     .map((p) => {

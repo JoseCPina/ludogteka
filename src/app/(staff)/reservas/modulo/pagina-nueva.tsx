@@ -10,6 +10,7 @@ import { cargarServiciosOfrecibles } from "@/lib/servicios/ofrecibles";
 import { NuevaReservaForm } from "../nueva/nueva-reserva-form";
 import { cargarPaquetesDePerros } from "@/lib/bonos/cargar-paquetes";
 import { zonaActual } from "@/lib/negocio/actual";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 // Sirve a los dos puntos de entrada del mismo formulario: la reserva
 // normal y el walk-in (el perro ya está en la puerta). La única
@@ -40,17 +41,14 @@ export async function PaginaNuevaReserva({
     { servicios, error: errorServicios },
     { data: seriesActivas, error: errorSeries },
   ] = await Promise.all([
-    supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).eq("publico_general", false).order("nombre"),
-    supabase
-      .from("perros")
-      .select("id, cliente_id, nombre")
-      .is("deleted_at", null)
-      .eq("fallecido", false)
-      .order("nombre"),
+    leerTodo<{ id: string; nombre: string; telefono: string }>(() => supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).eq("publico_general", false).order("nombre").order("id")),
+    leerTodo<{ id: string; cliente_id: string; nombre: string }>(() => supabase.from("perros").select("id, cliente_id, nombre").is("deleted_at", null).eq("fallecido", false).order("nombre").order("id")),
     // Todos los del módulo, con la marca de cuál se puede cobrar: el que
     // no tiene precio se muestra deshabilitado, no se esconde.
     cargarServiciosOfrecibles(supabase, [modulo.categoria]),
-    supabase.from("series_recurrentes").select("perro_id, dias_semana, servicios(nombre)").is("deleted_at", null),
+    leerTodo<{ perro_id: string; dias_semana: number[]; servicios: { nombre: string } | { nombre: string }[] | null }>(() =>
+      supabase.from("series_recurrentes").select("perro_id, dias_semana, servicios(nombre)").is("deleted_at", null).order("id")
+    ),
   ]);
   const paquetes = await cargarPaquetesDePerros(supabase);
 

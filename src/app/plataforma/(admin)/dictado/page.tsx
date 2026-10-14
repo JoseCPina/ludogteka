@@ -5,6 +5,7 @@ import { FormularioPlataforma } from "@/components/plataforma/formulario-platafo
 import { topeDictadoNegocio } from "../../acciones";
 import { cuentaEnTotales, esDemo } from "@/lib/plataforma/metricas";
 import { conInterno } from "@/lib/plataforma/internos";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 type Fila = { negocio_id: string; nombre: string; slug: string; plan: string; dictados: number; minutos: number; tope: number; propio: boolean; conserva_audio: boolean };
 
@@ -14,7 +15,7 @@ export default async function DictadoPlataforma({ searchParams }: { searchParams
   const { mes: mesParam } = await searchParams;
   const hoy = new Date();
   const mes = /^\d{4}-\d{2}$/.test(mesParam ?? "") ? `${mesParam}-01` : `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-01`;
-  const { data, error } = await supabase.rpc("plataforma_dictado_resumen", { p_mes: mes });
+  const { data, error } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("plataforma_dictado_resumen", { p_mes: mes }).order("negocio_id"));
   const filas = (await conInterno(supabase, (data ?? []) as Fila[])).map((f) => ({ ...f, dictados: Number(f.dictados), minutos: Number(f.minutos), tope: Number(f.tope) }));
   const contadas = filas.filter(cuentaEnTotales);
   const total = contadas.reduce((a, f) => a + f.minutos, 0);

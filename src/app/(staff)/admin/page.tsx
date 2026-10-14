@@ -21,6 +21,7 @@ import { tienePermiso } from "@/lib/auth/permisos";
 import { ListaPersonal, type PersonaStaff } from "./lista-personal";
 import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { resumenDeCobro } from "@/lib/pagos/conexion";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 // Admin ve todo. Una persona de recepción con permisos extra llega aquí
 // solo con las secciones que le tocan (el middleware la deja entrar con
@@ -62,7 +63,7 @@ export default async function AdminPage() {
     { data: vigentesCat },
     { data: horarioVigente },
   ] = await Promise.all([
-    esAdmin ? supabase.rpc("listar_cuentas") : nada,
+    esAdmin ? leerTodo<Record<string, unknown>>(() => supabase.rpc("listar_cuentas").order("id")) : nada,
     esAdmin ? supabase.rpc("resolver_tope_descuento_recepcion") : nada,
     supabase.rpc("resolver_cupo_configuracion"),
     supabase
@@ -76,9 +77,11 @@ export default async function AdminPage() {
     supabase.from("grupos_raza").select("id, nombre, depende_tamano").is("deleted_at", null).order("orden"),
     supabase.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
     supabase.from("tipos_pelaje").select("id, etiqueta").is("deleted_at", null).order("orden"),
-    supabase
-      .from("tarifas_vigentes")
-      .select("servicio_id, grupo_raza_id, tamano_id, pelaje_id, cantidad_desde, cantidad_hasta, precio, no_aplica"),
+    leerTodo<CeldaVigente & { servicio_id: string }>(() =>
+      supabase
+        .from("tarifas_vigentes")
+        .select("servicio_id, grupo_raza_id, tamano_id, pelaje_id, cantidad_desde, cantidad_hasta, precio, no_aplica").order("servicio_id").order("grupo_raza_id").order("tamano_id").order("pelaje_id").order("cantidad_desde")
+    ),
     supabase.rpc("horario_semana_vigente"),
   ]);
   const { data: personal } = !esAdmin && puedePersonal ? await supabase.rpc("listar_personal") : { data: null };

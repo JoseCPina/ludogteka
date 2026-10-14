@@ -19,6 +19,7 @@ import {
   hoyNegocio,
   sumarDiasFecha,
 } from "@/lib/formato";
+import { leerTodo, leerTodoPorIds } from "@/lib/supabase/paginar";
 
 /**
  * El tablero del día: lo que recepción necesita ver al abrir la app.
@@ -181,33 +182,38 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     supabase.from("salidas_hoy").select(columnas).order("perro_nombre"),
     supabase.from("quienes_estan_adentro").select(columnas).order("perro_nombre"),
     supabase.rpc("calendario_ocupacion", { p_desde: hoy, p_hasta: hoy }),
-    supabase
-      .from("citas_estetica")
-      .select("id, inicio, estado, empleado_id, perros(nombre), servicio_nombre, servicios!citas_estetica_servicio_id_fkey(nombre)")
-      .is("deleted_at", null)
-      .gte("inicio", sumarDiasFecha(hoy, -1))
-      .lt("inicio", sumarDiasFecha(hoy, 2))
-      .order("inicio"),
-    supabase.rpc("listar_cuentas_sin_vincular"),
+    leerTodo<Record<string, unknown>>(() =>
+      supabase
+        .from("citas_estetica")
+        .select("id, inicio, estado, empleado_id, perros(nombre), servicio_nombre, servicios!citas_estetica_servicio_id_fkey(nombre)")
+        .is("deleted_at", null)
+        .gte("inicio", sumarDiasFecha(hoy, -1))
+        .lt("inicio", sumarDiasFecha(hoy, 2))
+        .order("inicio")
+        .order("id")
+    ),
+    leerTodo<Record<string, unknown>>(() => supabase.rpc("listar_cuentas_sin_vincular").order("id")),
     supabase.rpc("minutos_retraso_cierre", { p_fecha: hoy }),
     // Lo que llega en la próxima semana: es donde un requisito vencido o
     // una evaluación faltante se vuelve un problema con fecha.
-    supabase
-      .from("estancias")
-      .select("id, perro_id, fecha_entrada, reserva_id, created_at, perros(nombre, evaluacion_comportamiento_fecha)")
-      .in("estado", ["reservada", "confirmada"])
-      .is("deleted_at", null)
-      .gte("fecha_entrada", hoy)
-      .lte("fecha_entrada", sumarDiasFecha(hoy, DIAS_ADELANTE))
-      .order("fecha_entrada"),
+    // La semana que viene puede traer más de 1,000 llegadas en un negocio grande: página por página.
+    leerTodo<Record<string, unknown>>(() =>
+      supabase
+        .from("estancias")
+        .select("id, perro_id, fecha_entrada, reserva_id, created_at, perros(nombre, evaluacion_comportamiento_fecha)")
+        .in("estado", ["reservada", "confirmada"])
+        .is("deleted_at", null)
+        .gte("fecha_entrada", hoy)
+        .lte("fecha_entrada", sumarDiasFecha(hoy, DIAS_ADELANTE))
+        .order("fecha_entrada")
+        .order("id")
+    ),
     supabase.from("turnos_caja").select("id").eq("estado", "abierto").is("deleted_at", null).limit(1),
     // Comprobantes que los dueños mandaron desde el portal y nadie ha
     // revisado: no cuentan hasta que recepción los confirme.
-    supabase
-      .from("requisitos_sanitarios_propuestos")
-      .select("created_at")
-      .eq("estado", "pendiente")
-      .is("deleted_at", null),
+    leerTodo<{ id: string; created_at: string }>(() =>
+      supabase.from("requisitos_sanitarios_propuestos").select("id, created_at").eq("estado", "pendiente").is("deleted_at", null).order("created_at").order("id")
+    ),
     // El último turno cerrado: si no hay abierto, cuánto lleva la caja sin turno.
     supabase
       .from("turnos_caja")
@@ -218,7 +224,9 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       .limit(1),
     // Contratos que el dueño debe firmar en su portal (el de guardería se
     // genera al vender un paquete) o que hay que volver a generar.
-    supabase.from("contratos_por_atender").select("situacion, espera_desde"),
+    leerTodo<{ situacion: string; espera_desde: string | null; contrato_id: string }>(() =>
+      supabase.from("contratos_por_atender").select("contrato_id, situacion, espera_desde").order("contrato_id")
+    ),
     // Quién atiende cada cita de estética y a quién se le puede pasar (solo
     // admin y recepción cambian la estilista).
     conEstetica && puedeReasignar
@@ -267,16 +275,26 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   const idsProximos = Array.from(new Set((proximas ?? []).map((p) => p.perro_id as string)));
   if (idsProximos.length > 0) {
     const [{ data: sanitario }, { data: contratos }] = await Promise.all([
-      supabase
-        .from("perro_requisitos_sanitarios_estado")
-        .select("perro_id, etiqueta, estado, fecha_vencimiento")
-        .in("perro_id", idsProximos)
-        .in("estado", ["vencida", "sin_registro"]),
-      supabase
-        .from("perros_contrato_resumen")
-        .select("perro_id, estado, faltantes")
-        .in("perro_id", idsProximos)
-        .in("estado", ["sin_contrato", "requiere_actualizacion"]),
+      // Por bloques de perros: con cientos de llegadas el `.in()` se pasa del largo de la URL y de las 1,000 filas.
+      leerTodoPorIds<Record<string, unknown>, string>(idsProximos, (bloque) =>
+        supabase
+          .from("perro_requisitos_sanitarios_estado")
+          .select("perro_id, tipo_requisito_id, etiqueta, estado, fecha_vencimiento")
+          .in("perro_id", bloque)
+          .in("estado", ["vencida", "sin_registro"])
+          .order("perro_id")
+          .order("tipo_requisito_id"),
+        100
+      ),
+      leerTodoPorIds<Record<string, unknown>, string>(idsProximos, (bloque) =>
+        supabase
+          .from("perros_contrato_resumen")
+          .select("perro_id, estado, faltantes")
+          .in("perro_id", bloque)
+          .in("estado", ["sin_contrato", "requiere_actualizacion"])
+          .order("perro_id"),
+        100
+      ),
     ]);
     const bloqueosSanitarios = new Map<string, string[]>();
     // La vencida más vieja de cada perro: "vencida hace 12 días".
@@ -409,7 +427,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // tiene «Gastos»). La lista a la que manda va del vencimiento más viejo
   // al más nuevo.
   if (tienePermiso(sesion, "gastos") && mods.includes("gastos")) {
-    const { data: porPagar } = await supabase.rpc("gastos_por_atender");
+    const { data: porPagar } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("gastos_por_atender").order("id"));
     const lista = (porPagar ?? []) as { concepto: string; vencimiento: string; dias: number; vencido: boolean }[];
     const vencidos = lista.filter((g) => g.vencido);
     const proximos = lista.filter((g) => !g.vencido);
@@ -639,7 +657,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // panel del proveedor (ya en caja, pero nadie en el mostrador los pidió),
   // hechos sin turno abierto, o pedidos cuya respuesta no ha llegado.
   if (sesion && ["admin", "recepcion"].includes(sesion.rol)) {
-    const { data: reembolsos } = await supabase.rpc("reembolsos_por_atender");
+    const { data: reembolsos } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("reembolsos_por_atender").order("id"));
     const lista = (reembolsos ?? []) as { origen: string; estado: string; registrado: boolean; monto: number; desde: string }[];
     if (lista.length > 0) {
       const panel = lista.filter((r) => r.origen === "proveedor");
@@ -667,8 +685,12 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   if (sesion && ["admin", "recepcion"].includes(sesion.rol)) {
     const [{ data: conciliacion }, { data: porConfirmar }] = await Promise.all([
       // Los pagos ajenos (informativos) nunca cuentan en «Necesita atención».
-      supabase.from("conciliacion_terminal").select("tipo, monto, detectada_at").is("resuelta_at", null).neq("tipo", "pago_ajeno"),
-      supabase.from("mp_ordenes").select("monto, created_at").eq("estado", "por_confirmar").is("deleted_at", null),
+      leerTodo<{ id: string; tipo: string; monto: number; detectada_at: string }>(() =>
+        supabase.from("conciliacion_terminal").select("id, tipo, monto, detectada_at").is("resuelta_at", null).neq("tipo", "pago_ajeno").order("detectada_at").order("id")
+      ),
+      leerTodo<{ id: string; monto: number; created_at: string }>(() =>
+        supabase.from("mp_ordenes").select("id, monto, created_at").eq("estado", "por_confirmar").is("deleted_at", null).order("created_at").order("id")
+      ),
     ]);
     const filas = (conciliacion ?? []) as { tipo: string; monto: number; detectada_at: string }[];
     if (filas.length > 0) {
@@ -701,7 +723,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // montos y folios); sube también la que pasó el tope y el patrón de uso.
   if (sesion?.rol === "admin") {
     const [{ data: tarjetas }, { data: aviso }] = await Promise.all([
-      supabase.rpc("tarjetas_manuales_por_revisar", { p_historial: false }),
+      leerTodo<Record<string, unknown>>(() => supabase.rpc("tarjetas_manuales_por_revisar", { p_historial: false }).order("id")),
       supabase.rpc("tarjetas_manuales_atencion"),
     ]);
     const lista = (tarjetas ?? []) as { monto: number; sobre_tope: boolean; registrada_at: string }[];
@@ -746,7 +768,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // Servicios corregidos después de cobrarse: la cuenta quedó con un cobro
   // adicional o un saldo a favor que nadie ha resuelto. Con su antigüedad.
   if (conEstetica && sesion && ["admin", "recepcion"].includes(sesion.rol)) {
-    const { data: ajustes } = await supabase.rpc("ajustes_servicio_por_atender");
+    const { data: ajustes } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("ajustes_servicio_por_atender").order("correccion_id"));
     const lista = (ajustes ?? []) as { tipo_ajuste: string; saldo: number; desde: string }[];
     if (lista.length > 0) {
       const aFavor = lista.filter((x) => x.tipo_ajuste === "saldo_a_favor");

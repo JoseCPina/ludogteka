@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ItemCatalogo } from "./textos";
+import { leerTodoPorIds } from "@/lib/supabase/paginar";
 
 // Lo que las pantallas necesitan saber para ofrecer «Facturar»: si la persona
 // puede, si el negocio tiene la facturación activa, los catálogos del SAT y qué
@@ -31,12 +32,16 @@ export type CobroFacturado = { facturaId: string; etiqueta: string; estado: stri
 /** Cobro → su factura vigente (si la tiene). */
 export async function facturasDeCobros(sb: SupabaseClient, negocioId: string, cobroIds: string[]): Promise<Record<string, CobroFacturado>> {
   if (!cobroIds.length) return {};
-  const { data } = await sb
-    .from("cfdi_factura_cobros")
-    .select("cobro_id, factura_id, cfdi_facturas(serie, folio, estado, tipo)")
-    .eq("negocio_id", negocioId)
-    .eq("vigente", true)
-    .in("cobro_id", cobroIds);
+  const { data } = await leerTodoPorIds<Record<string, unknown>, string>(cobroIds, (bloque) =>
+    sb
+      .from("cfdi_factura_cobros")
+      .select("cobro_id, factura_id, cfdi_facturas(serie, folio, estado, tipo)")
+      .eq("negocio_id", negocioId)
+      .eq("vigente", true)
+      .in("cobro_id", bloque)
+      .order("cobro_id")
+      .order("factura_id")
+  );
   const salida: Record<string, CobroFacturado> = {};
   for (const f of data ?? []) {
     const fa = (Array.isArray(f.cfdi_facturas) ? f.cfdi_facturas[0] : f.cfdi_facturas) as { serie: string | null; folio: string | null; estado: string; tipo: string } | null;

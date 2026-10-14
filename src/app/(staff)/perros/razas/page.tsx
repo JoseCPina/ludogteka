@@ -11,6 +11,7 @@ import { diasDesde } from "@/lib/antiguedad";
 import { hoyNegocio } from "@/lib/formato";
 import { NormalizarRazas, type PerroSinRaza } from "./normalizar-razas";
 import { FueraDeCatalogo, type Asignacion, type GrupoFuera } from "./fuera-catalogo";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 /**
  * Normalización en bloque de las razas escritas a mano.
@@ -33,16 +34,19 @@ export default async function NormalizarRazasPage() {
   const [razas, cotizacion, { data: perrosCrudo }, { data: tamanos }, { data: pelajes }, { data: gruposCrudo }, { data: asignacionesCrudo }, { data: sinGrupo }] = await Promise.all([
     cargarRazas(supabase, await negocioIdActual(), { conGrupo: true }),
     cargarCotizacionEstetica(supabase, await negocioIdActual()),
-    supabase
-      .from("perros")
-      .select("id, nombre, raza, tamano_id, cliente_id, clientes(nombre)")
-      .is("raza_id", null)
-      .is("deleted_at", null)
-      .eq("fallecido", false)
-      .order("nombre"),
+    leerTodo<Record<string, unknown>>(() =>
+      supabase
+        .from("perros")
+        .select("id, nombre, raza, tamano_id, cliente_id, clientes(nombre)")
+        .is("raza_id", null)
+        .is("deleted_at", null)
+        .eq("fallecido", false)
+        .order("nombre")
+        .order("id")
+    ),
     supabase.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
     supabase.from("tipos_pelaje").select("id, etiqueta").is("deleted_at", null).order("orden"),
-    supabase.rpc("razas_fuera_de_catalogo"),
+    leerTodo<Record<string, unknown>>(() => supabase.rpc("razas_fuera_de_catalogo").order("texto_norm")),
     soloLectura ? Promise.resolve({ data: [] }) : supabase.rpc("razas_asignaciones_recientes"),
     supabase.rpc("razas_sin_grupo"),
   ]);

@@ -5,6 +5,7 @@ import { listarTerminales } from "@/lib/mercadopago/point";
 import { origenDelPago, type ContextoOrigen } from "./origen-pago";
 import { conexionDeCobro, type NegocioParaCobro } from "./conexion";
 import { pagosYaLigados } from "./no-recibido";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 /**
  * Conciliación de los cobros con terminal contra Mercado Pago (5 de octubre
@@ -183,15 +184,23 @@ export async function conciliarNegocio(negocio: NegocioParaCobro, ahora = new Da
   const desde = new Date(ahora.getTime() - DIAS_CONCILIACION * 86_400_000);
 
   const [{ data: cobrosCrudo }, { data: ordenes }, ligados, { data: todasOrdenes }, { data: ajuste }, terminales] = await Promise.all([
-    admin
-      .from("cobros")
-      .select("id, created_at, origen, grupo_id, grupo_orden, cobro_metodos(metodo, monto), devoluciones(origen, deleted_at)")
-      .eq("negocio_id", negocio.id)
-      .is("deleted_at", null)
-      .gte("created_at", desde.toISOString()),
-    admin.from("mp_ordenes").select("id, cobro_id, mp_payment_id, mp_payment_ref").eq("negocio_id", negocio.id).is("deleted_at", null).not("cobro_id", "is", null),
+    // Los cobros de 7 días y todas las órdenes del negocio, de 1,000 en 1,000: la API corta ahí sin avisar, y una
+    // orden o un cobro que no llega aquí se leería como «pago sin cobro» o «cobro sin pago».
+    leerTodo<Record<string, unknown>>(() =>
+      admin
+        .from("cobros")
+        .select("id, created_at, origen, grupo_id, grupo_orden, cobro_metodos(metodo, monto), devoluciones(origen, deleted_at)")
+        .eq("negocio_id", negocio.id)
+        .is("deleted_at", null)
+        .gte("created_at", desde.toISOString())
+        .order("created_at")
+        .order("id")
+    ),
+    leerTodo<{ id: string; cobro_id: string; mp_payment_id: string | null; mp_payment_ref: string | null }>(() =>
+      admin.from("mp_ordenes").select("id, cobro_id, mp_payment_id, mp_payment_ref").eq("negocio_id", negocio.id).is("deleted_at", null).not("cobro_id", "is", null).order("id")
+    ),
     pagosYaLigados(admin, negocio.id),
-    admin.from("mp_ordenes").select("id, mp_order_id").eq("negocio_id", negocio.id),
+    leerTodo<{ id: string; mp_order_id: string | null }>(() => admin.from("mp_ordenes").select("id, mp_order_id").eq("negocio_id", negocio.id).order("id")),
     admin.from("conciliacion_ajustes").select("mostrar_pagos_ajenos").eq("negocio_id", negocio.id).is("deleted_at", null).maybeSingle(),
     // La terminal vinculada: de ahí sale su pos_id/store_id. Si Mercado Pago no
     // la lista, no hay criterio de terminal y solo valen las órdenes de PeluDesk.

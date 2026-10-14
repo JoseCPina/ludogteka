@@ -5,6 +5,7 @@ import { formatearFecha } from "@/lib/formato";
 import { diasDesde } from "@/lib/antiguedad";
 import { zonaActual } from "@/lib/negocio/actual";
 import { BandejaReembolsos, type ReembolsoPorAtender } from "./bandeja-reembolsos";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 // Reembolsos de Mercado Pago que alguien tiene que ver (del más viejo al
 // más nuevo): hechos en el panel de Mercado Pago (ya están en caja, pero
@@ -14,7 +15,7 @@ export default async function ReembolsosPage() {
   const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
   const [{ data, error }, { data: hoyData }, { data: recientes }] = await Promise.all([
-    supabase.rpc("reembolsos_por_atender"),
+    leerTodo<Record<string, unknown>>(() => supabase.rpc("reembolsos_por_atender").order("id")),
     supabase.rpc("fecha_negocio"),
     supabase
       .from("reembolsos_cobro")

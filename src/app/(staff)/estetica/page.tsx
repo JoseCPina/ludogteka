@@ -16,6 +16,7 @@ import {
   inicioSemana,
 } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 const ETIQUETA_ESTADO: Record<string, string> = {
   reservada: "Reservada",
@@ -82,13 +83,16 @@ export default async function AgendaPage({
         })),
         error: r.error,
       })),
-      supabase
-        .from("citas_estetica")
-        .select("id, inicio, estado, fuera_de_horario, empleado_id, perros(nombre), servicio_nombre, servicios!citas_estetica_servicio_id_fkey(nombre)")
-        .is("deleted_at", null)
-        .gte("inicio", desdeConsulta)
-        .lt("inicio", hastaConsulta)
-        .order("inicio"),
+      leerTodo<Record<string, unknown>>(() =>
+        supabase
+          .from("citas_estetica")
+          .select("id, inicio, estado, fuera_de_horario, empleado_id, perros(nombre), servicio_nombre, servicios!citas_estetica_servicio_id_fkey(nombre)")
+          .is("deleted_at", null)
+          .gte("inicio", desdeConsulta)
+          .lt("inicio", hastaConsulta)
+          .order("inicio")
+          .order("id")
+      ),
       contarPerrosSinRazaCatalogo(supabase),
     ]);
 

@@ -44,6 +44,7 @@ export async function metaDeReporte(
   filtro: { reporteId: string } | { perroId: string; fecha: string },
   nombreDescarga: string
 ): Promise<MetaReporte> {
+  // limite-filas-ok: se acota enseguida por id o por perro y fecha, y termina en maybeSingle()
   let q = supabase.from("reportes_guarderia").select(COLUMNAS).is("deleted_at", null);
   q = "reporteId" in filtro ? q.eq("id", filtro.reporteId) : q.eq("perro_id", filtro.perroId).eq("fecha", filtro.fecha);
   const { data } = await q.maybeSingle();

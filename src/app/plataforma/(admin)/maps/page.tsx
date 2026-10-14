@@ -5,6 +5,7 @@ import { FormularioPlataforma } from "@/components/plataforma/formulario-platafo
 import { topeMapsNegocio, topeMapsPlan } from "../../acciones";
 import { cuentaEnTotales, esDemo } from "@/lib/plataforma/metricas";
 import { conInterno } from "@/lib/plataforma/internos";
+import { leerTodo } from "@/lib/supabase/paginar";
 
 type Fila = { negocio_id: string; nombre: string; slug: string; plan: string; usadas: number; geocodificar: number; rutas: number; tope: number; propio: boolean };
 
@@ -17,7 +18,7 @@ export default async function MapsPlataforma({ searchParams }: { searchParams: P
   const hoy = new Date();
   const mes = /^\d{4}-\d{2}$/.test(mesParam ?? "") ? `${mesParam}-01` : `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-01`;
   const [{ data, error }, { data: planes }] = await Promise.all([
-    supabase.rpc("plataforma_maps_consumo", { p_mes: mes }),
+    leerTodo<Record<string, unknown>>(() => supabase.rpc("plataforma_maps_consumo", { p_mes: mes }).order("negocio_id")),
     supabase.from("planes").select("id, nombre, tipo, maps_consultas_mes").eq("tipo", "plan").is("deleted_at", null).order("orden"),
   ]);
   const filas = (await conInterno(supabase, (data ?? []) as Fila[])).map((f) => ({ ...f, usadas: Number(f.usadas), geocodificar: Number(f.geocodificar), rutas: Number(f.rutas) }));

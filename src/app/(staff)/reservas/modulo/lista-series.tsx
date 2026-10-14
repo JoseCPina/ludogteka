@@ -6,6 +6,7 @@ import { formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
 import type { ModuloEstancia } from "@/lib/modulos";
 import { formatearDiasSemana } from "../series/dias-semana";
 import { zonaActual } from "@/lib/negocio/actual";
+import { leerTodo, leerTodoPorIds } from "@/lib/supabase/paginar";
 
 // Las series se filtran por la categoría del servicio de la propia serie:
 // una serie de guardería (el perro que viene todos los martes) no tiene
@@ -18,24 +19,29 @@ export async function ListaSeries({ modulo }: { modulo: ModuloEstancia }) {
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
   const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
 
-  const { data: series, error } = await supabase
-    .from("series_recurrentes")
-    .select("id, dias_semana, fecha_inicio, fecha_fin, perros(nombre), servicios!inner(nombre, categoria)")
-    .eq("servicios.categoria", modulo.categoria)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
+  const { data: series, error } = await leerTodo<{ id: string; dias_semana: number[]; fecha_inicio: string; fecha_fin: string | null; perros: { nombre: string } | { nombre: string }[] | null; servicios: { nombre: string; categoria: string } | { nombre: string; categoria: string }[] | null }>(() =>
+    supabase
+      .from("series_recurrentes")
+      .select("id, dias_semana, fecha_inicio, fecha_fin, perros(nombre), servicios!inner(nombre, categoria)")
+      .eq("servicios.categoria", modulo.categoria)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .order("id")
+  );
 
   const serieIds = (series ?? []).map((s) => s.id as string);
-  const { data: proximas } = serieIds.length
-    ? await supabase
-        .from("estancias")
-        .select("serie_id, fecha_entrada")
-        .in("serie_id", serieIds)
-        .is("deleted_at", null)
-        .in("estado", ["reservada", "confirmada"])
-        .gte("fecha_entrada", hoy)
-        .order("fecha_entrada")
-    : { data: [] as { serie_id: string; fecha_entrada: string }[] };
+  // Cada serie tiene varias estancias por venir: con muchas series pasan de 1,000 filas.
+  const { data: proximas } = await leerTodoPorIds<{ serie_id: string; fecha_entrada: string }, string>(serieIds, (bloque) =>
+    supabase
+      .from("estancias")
+      .select("serie_id, fecha_entrada")
+      .in("serie_id", bloque)
+      .is("deleted_at", null)
+      .in("estado", ["reservada", "confirmada"])
+      .gte("fecha_entrada", hoy)
+      .order("fecha_entrada")
+      .order("id")
+  );
 
   const proximaPorSerie = new Map<string, string>();
   for (const p of proximas ?? []) {
