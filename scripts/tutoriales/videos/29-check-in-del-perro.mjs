@@ -20,8 +20,8 @@ export default {
     },
     {
       titulo: "Confirmar",
-      dice: "Cuando todo está listo, aprieta «Confirmar check-in». El perro pasa a Siguen aquí ahora. Si algo le falta al perro, como una vacuna, aquí también te avisa.",
-      pasos: [["clic", "Confirmar check-in", { nav: true }], ["esperar", 2500]],
+      dice: "Cuando todo está listo, aprieta «Confirmar check-in». El formulario se cierra y la pantalla queda como «Este perro ya hizo check-in», con la hora y quién lo entregó: ya no se puede registrar dos veces. El perro pasa a Siguen aquí ahora. Si le falta algo, como una vacuna, el aviso te dice cuál.",
+      pasos: [["clic", "Confirmar check-in"], ["esperar", 3500], ["resaltar", "Este perro ya hizo check-in", 3000]],
     },
   ],
   resumen: ["El check-in registra quién entrega al perro, cómo llega y qué trae.", "La foto de llegada queda en su bitácora.", "Al confirmar, el perro pasa a Siguen aquí ahora."],
