@@ -18,13 +18,11 @@ const FRASES = [
   "Mandar el recordatorio por WhatsApp es un solo toque.",
 ];
 
-// Fotos reales del negocio (public/ludogteka, WebP a 480 y 960 px), con su alto/ancho para no saltar.
+// Fotos reales del negocio (public/ludogteka, WebP a 480 y 960 px; patio-sonrisa es la portada provisional del reel), con su alto/ancho para no saltar.
 const FOTOS = [
   { n: "patio-letrero", w: 1400, h: 1456, alt: "Un pastor belga en el patio de Ludogteka, con el letrero de la guardería al fondo" },
   { n: "patio-pelotas", w: 1400, h: 1599, alt: "Un gran danés negro sentado en el pasto sintético de la guardería, rodeado de pelotas de colores" },
   { n: "hotel-camita", w: 1200, h: 1408, alt: "Un perro acostado en su camita del hotel de Ludogteka, con una pelota de tenis" },
-  { n: "patio-murete", w: 960, h: 1100, alt: "Una perrita negra con collar rosa parada sobre el murete del patio" },
-  { n: "patio-sonrisa", w: 1400, h: 1580, alt: "Un pastor malinois con pañuelo, sonriendo hacia la cámara sobre el pasto sintético" },
   { n: "recoleccion-coche", w: 1400, h: 1488, alt: "Recolección a domicilio: un perrito sube al coche de Ludogteka" },
 ] as const;
 
@@ -91,7 +89,7 @@ export function SeccionLudogteka() {
       </header>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-12 lg:items-start">
-        <ul ref={refGaleria} className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:col-span-7" aria-label="Fotos de Ludogteka">
+        <ul ref={refGaleria} className="grid grid-cols-2 gap-3 lg:col-span-7" aria-label="Fotos de Ludogteka">
           {FOTOS.map((f, i) => (
             <li key={f.n} className="aspect-[4/5] overflow-hidden rounded-[20px] bg-n-100">
               {enGaleria && (
@@ -99,7 +97,7 @@ export function SeccionLudogteka() {
                   <ImgDiferida
                     src={`/ludogteka/${f.n}-960.webp`}
                     srcSet={`/ludogteka/${f.n}-480.webp 480w, /ludogteka/${f.n}-960.webp 960w`}
-                    sizes="(min-width: 1024px) 22vw, (min-width: 640px) 30vw, 46vw"
+                    sizes="(min-width: 1024px) 33vw, 46vw"
                     alt={f.alt}
                     width={f.w}
                     height={f.h}
