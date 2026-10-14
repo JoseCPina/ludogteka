@@ -14,9 +14,9 @@ const MENTA_LOGO = "#6fc3a9";
 
 // Una sola fuente del dibujo: public/marca/peludesk/isotipo.svg (de ahí
 // salen también los favicons: scripts/diseno/favicons-peludesk.mjs).
-export function IsotipoPeluDesk({ tamano = 40, className = "" }: { tamano?: number; className?: string }) {
+export function IsotipoPeluDesk({ tamano = 40, className = "", alt = "PeluDesk" }: { tamano?: number; className?: string; alt?: string }) {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/marca/peludesk/isotipo.svg" width={tamano} height={tamano} alt="PeluDesk" className={className} />;
+  return <img src="/marca/peludesk/isotipo.svg" width={tamano} height={tamano} alt={alt} className={className} />;
 }
 
 export function LogoPeluDesk({
@@ -31,8 +31,9 @@ export function LogoPeluDesk({
 }) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
+      {/* El isotipo dice el nombre y el logotipo de palabras lo repite: el lector de pantalla lo lee una sola vez. */}
       <IsotipoPeluDesk tamano={tamano} />
-      <span className="font-bold leading-none tracking-[-0.02em]" style={{ fontSize: tamano * 0.72 }}>
+      <span aria-hidden="true" className="font-bold leading-none tracking-[-0.02em]" style={{ fontSize: tamano * 0.72 }}>
         <span className={claro ? "text-crema" : "text-morado"}>pelu</span>
         <span style={{ color: claro ? "#a7d8c8" : MENTA_LOGO }}>desk</span>
       </span>
