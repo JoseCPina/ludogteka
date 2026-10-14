@@ -18,21 +18,30 @@ const FRASES = [
   "Mandar el recordatorio por WhatsApp es un solo toque.",
 ];
 
-// Fotos reales del negocio (public/ludogteka, WebP a 480 y 960 px; patio-sonrisa es la portada provisional del reel), con su alto/ancho para no saltar.
+// Fotos reales del negocio (public/ludogteka, WebP a 480 y 960 px; las nuevas salen del Instagram del negocio), con su alto/ancho para no saltar.
 const FOTOS = [
   { n: "patio-letrero", w: 1400, h: 1456, alt: "Un pastor belga en el patio de Ludogteka, con el letrero de la guardería al fondo" },
   { n: "patio-pelotas", w: 1400, h: 1599, alt: "Un gran danés negro sentado en el pasto sintético de la guardería, rodeado de pelotas de colores" },
   { n: "hotel-camita", w: 1200, h: 1408, alt: "Un perro acostado en su camita del hotel de Ludogteka, con una pelota de tenis" },
   { n: "recoleccion-coche", w: 1400, h: 1488, alt: "Recolección a domicilio: un perrito sube al coche de Ludogteka" },
+  { n: "patio-sonrisa", w: 960, h: 1083, alt: "Un pastor con paliacate sonriendo sobre el pasto sintético de la guardería" },
+  { n: "patio-huskies", w: 960, h: 1707, alt: "Varios perros jugando en el patio de la guardería de Ludogteka" },
+  { n: "paseo-collie", w: 960, h: 1066, alt: "Una integrante del equipo de Ludogteka abraza a un border collie en un paseo" },
+  { n: "paseo-lago", w: 960, h: 1707, alt: "Un perro con chaleco salvavidas nada en un lago durante un paseo de Ludogteka" },
+  { n: "cumple-loki", w: 960, h: 1200, alt: "Loki, un dóberman, celebra sus 2 años con pastel y globos en una tarjeta de Ludogteka" },
+  { n: "retrato-pastor", w: 960, h: 1199, alt: "Retrato de un pastor alemán echado en su camita" },
 ] as const;
 
 const INSTAGRAM = "https://www.instagram.com/ludogteka/";
 const REEL = "https://www.instagram.com/ludogteka/reel/DeSs34zBXwx/";
+// El embed solo funciona con la ruta canónica /reel/<código>/: con el usuario en la ruta Instagram redirige a su portada,
+// que prohíbe iframes (X-Frame-Options: deny) y el iframe queda en blanco.
+const REEL_EMBED = "https://www.instagram.com/reel/DeSs34zBXwx/";
 const MENSAJE = "https://ig.me/m/ludogteka";
 
-// Portada del reel: public/ludogteka/reel-portada-{480,960}.webp. Mientras no esté la imagen de Instagram
-// (og:image del reel) se usa una foto real del negocio con el mismo nombre; basta reemplazar los dos archivos.
-const PORTADA = { src: "/ludogteka/reel-portada-960.webp", srcSet: "/ludogteka/reel-portada-480.webp 480w, /ludogteka/reel-portada-960.webp 960w" };
+// Portada del reel: la imagen real de Instagram (og:image del reel) en public/ludogteka/reel-portada-{480,960}.webp
+// (el archivo grande mide 640 px de ancho: es lo que Instagram publica).
+const PORTADA = { src: "/ludogteka/reel-portada-960.webp", srcSet: "/ludogteka/reel-portada-480.webp 480w, /ludogteka/reel-portada-960.webp 640w" };
 
 declare global {
   interface Window {
@@ -138,8 +147,14 @@ function ReelTarjeta() {
   const dialogo = useRef<HTMLDialogElement>(null);
   const contenedor = useRef<HTMLDivElement>(null);
   const [estado, setEstado] = useState<"cerrado" | "cargando" | "listo" | "falla">("cerrado");
+  const temporizadores = useRef<number[]>([]);
+  function limpiarTemporizadores() {
+    temporizadores.current.forEach((t) => window.clearTimeout(t));
+    temporizadores.current = [];
+  }
 
   function cerrado() {
+    limpiarTemporizadores();
     document.documentElement.classList.remove("pd-sin-scroll");
     if (contenedor.current) contenedor.current.innerHTML = "";
     setEstado("cerrado");
@@ -152,28 +167,43 @@ function ReelTarjeta() {
     return () => d.removeEventListener("close", cerrado);
   }, []);
 
+  // Instagram arma el iframe del embed con alto 0 y lo ajusta cuando le llega su mensaje de medida: si eso
+  // pasa con el modal cerrado o sin pintar, nunca crece. Por eso se pide el embed DESPUÉS de que el modal
+  // está abierto y visible, y si en 4 s el iframe sigue sin alto se muestra el respaldo.
+
   function abrir() {
+    limpiarTemporizadores();
     dialogo.current?.showModal();
     document.documentElement.classList.add("pd-sin-scroll");
     setEstado("cargando");
     const cont = contenedor.current;
     if (!cont) return;
     // El embed se arma a mano (no con React) porque embed.js reemplaza el <blockquote> por un iframe.
-    cont.innerHTML = `<blockquote class="instagram-media" data-instgrm-permalink="${REEL}" data-instgrm-version="14" style="background:#fff;border:0;margin:0 auto;max-width:540px;min-width:260px;width:100%"></blockquote>`;
-    const procesar = () => {
-      window.instgrm?.Embeds.process();
-      window.setTimeout(() => setEstado(cont.querySelector("iframe") ? "listo" : "falla"), 6000);
+    cont.innerHTML = `<blockquote class="instagram-media" data-instgrm-permalink="${REEL_EMBED}" data-instgrm-version="14" style="background:#fff;border:0;margin:0 auto;max-width:540px;min-width:260px;width:100%"></blockquote>`;
+    const procesar = () => window.instgrm?.Embeds.process();
+    const alto = () => cont.querySelector("iframe")?.getBoundingClientRect().height ?? 0;
+    // Dos cuadros después del showModal: el diálogo ya se pintó y tiene ancho.
+    window.requestAnimationFrame(() =>
+      window.requestAnimationFrame(() => {
+        if (window.instgrm) {
+          procesar();
+        } else {
+          const s = document.createElement("script");
+          s.src = "https://www.instagram.com/embed.js";
+          s.async = true;
+          s.onload = procesar;
+          s.onerror = () => setEstado("falla");
+          document.body.appendChild(s);
+        }
+      })
+    );
+    const inicio = Date.now();
+    const vigilar = () => {
+      if (alto() > 120) return setEstado("listo");
+      if (Date.now() - inicio >= 4000) return setEstado("falla");
+      temporizadores.current.push(window.setTimeout(vigilar, 250));
     };
-    if (window.instgrm) {
-      procesar();
-    } else {
-      const s = document.createElement("script");
-      s.src = "https://www.instagram.com/embed.js";
-      s.async = true;
-      s.onload = procesar;
-      s.onerror = () => setEstado("falla");
-      document.body.appendChild(s);
-    }
+    temporizadores.current.push(window.setTimeout(vigilar, 250));
   }
 
   return (
@@ -228,12 +258,16 @@ function ReelTarjeta() {
               </svg>
             </button>
           </div>
-          <div ref={contenedor} className={estado === "falla" ? "hidden" : "mt-3 min-h-[200px]"} />
+          <div
+            ref={contenedor}
+            className={estado === "falla" ? "hidden" : "mt-3 min-h-[420px] overflow-hidden rounded-2xl bg-n-100 bg-cover bg-center sm:min-h-[520px]"}
+            style={estado === "cargando" ? { backgroundImage: `linear-gradient(rgba(255,255,255,.55), rgba(255,255,255,.55)), url(${PORTADA.src})` } : undefined}
+          />
           {estado === "cargando" && <p className="text-sm text-n-600" role="status">Cargando el reel…</p>}
           {estado === "falla" && (
             <div className="mt-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={PORTADA.src} srcSet={PORTADA.srcSet} sizes="34rem" alt="Una foto de Ludogteka" width={1400} height={1580} className="max-h-[50vh] w-full rounded-2xl object-cover" />
+              <img src={PORTADA.src} srcSet={PORTADA.srcSet} sizes="34rem" alt="Portada del reel de Ludogteka" width={640} height={1136} className="max-h-[50vh] w-full rounded-2xl object-cover object-[50%_30%]" />
               <p className="mt-3 text-sm text-n-700" role="status">No pudimos cargar el reel aquí.</p>
               <a
                 href={REEL}
