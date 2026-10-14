@@ -4,6 +4,11 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { SeccionFacturar } from "@/components/cfdi/seccion-facturar";
+import { CancelarCuenta } from "@/components/cuentas/cancelar-cuenta";
+import { etiquetaMotivoCuenta, type InfoCancelarCuenta } from "@/app/(staff)/caja/cancelar-cuenta-tipos";
+import { zonaActual } from "@/lib/negocio/actual";
+import { formatearFecha } from "@/lib/formato";
+import { dinero } from "@/lib/dinero";
 import { estadoCobroIntegrado } from "@/app/(staff)/caja/cobro-integrado-actions";
 import type { OrdenCobroFila } from "./cobro-integrado";
 import {
@@ -45,6 +50,11 @@ export async function PantallaCobro({
     );
   }
   const cliente = Array.isArray(reserva.clientes) ? reserva.clientes[0] : reserva.clientes;
+  // Si la cuenta se canceló (o se puede cancelar): la base lo dice.
+  const { data: infoCancelCruda } = await supabase.rpc("cuenta_para_cancelar", { p_reserva_id: id });
+  const infoCancelar = (infoCancelCruda as InfoCancelarCuenta | null) ?? null;
+  const cancelada = infoCancelar?.cancelada ?? null;
+  const zona = await zonaActual();
 
   const [
     { data: lineasCrudo, error: errorLineas },
@@ -356,6 +366,8 @@ export async function PantallaCobro({
     };
   });
 
+  const puedeCancelarCuenta = tienePermiso(sesion, "cancelar_cuentas");
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -365,8 +377,27 @@ export async function PantallaCobro({
         <h1 className="mt-1 text-2xl font-bold text-n-900">Cobrar — {cliente?.nombre ?? "Cliente"}</h1>
       </div>
 
-      {error ? (
+      {cancelada && (
+        <Alert variante="advertencia" titulo="Esta cuenta está cancelada">
+          <span data-cuenta-cancelada>
+            {etiquetaMotivoCuenta(cancelada.motivo)}
+            {cancelada.motivo_texto ? " — " + cancelada.motivo_texto : ""}. La canceló {cancelada.por_nombre} el {formatearFecha(cancelada.cuando, zona)}; se dejaron de cobrar{" "}
+            {dinero(cancelada.saldo_cancelado)}. Ya no admite cobros ni cargos.
+          </span>
+        </Alert>
+      )}
+      {!cancelada && !error && puedeCancelarCuenta && totales.saldo > 0.005 && (
+        <CancelarCuenta
+          reservaId={id}
+          descripcion={lineas.map((l) => l.descripcion).join(" · ") || "Cuenta"}
+          saldo={totales.saldo}
+          esAdmin={sesion?.rol === "admin"}
+        />
+      )}
+
+      {cancelada ? null : error ? (
         <Alert variante="error" titulo="No pudimos cargar la cuenta">
+
           Recarga la página. Si el problema sigue, avísale al equipo técnico.
         </Alert>
       ) : (
@@ -390,7 +421,7 @@ export async function PantallaCobro({
           mp={{ disponible: mpDisponible, ordenes: ordenesMp, clienteTelefono: (cliente?.telefono as string | null) ?? null, terminalManualBloqueada: Boolean(terminalManualBloqueada) }}
         />
       )}
-      {!error && (
+      {!error && !cancelada && (
         <SeccionFacturar
           clienteId={reserva.cliente_id as string}
           publicoGeneral={Boolean((cliente as { publico_general?: boolean } | null)?.publico_general)}

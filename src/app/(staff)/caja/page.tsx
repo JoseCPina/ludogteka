@@ -6,6 +6,8 @@ import { hoyNegocio, formatearFecha } from "@/lib/formato";
 import { cargarClientesBuscables } from "@/lib/clientes/buscables";
 import { MostradorCaja, type CuentaAbierta, type PagoMpPendiente } from "./mostrador-caja";
 import { zonaActual } from "@/lib/negocio/actual";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { tienePermiso } from "@/lib/auth/permisos";
 
 // Caja es el mostrador de cobro: cuentas abiertas, buscador, pases,
 // cargos sueltos y el cobro mismo (que sigue siendo el de la reserva,
@@ -14,6 +16,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 export default async function CajaPage() {
   const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
+  const sesion = await obtenerSesionConRol();
 
   const [{ data: turno, error: errorTurno }, { data: cuentasCrudo, error: errorCuentas }, { clientes }, { data: pendientesCrudo }, { data: publicoGeneral }] =
     await Promise.all([
@@ -105,7 +108,7 @@ export default async function CajaPage() {
           Recarga la página. Si el problema sigue, avísale al equipo técnico.
         </Alert>
       ) : (
-        <MostradorCaja clientes={clientes} cuentas={cuentas} hoy={hoy} turnoAbierto={Boolean(turno)} pendientesMp={pendientesMp} publicoGeneralId={(publicoGeneral?.id as string | undefined) ?? null} />
+        <MostradorCaja clientes={clientes} cuentas={cuentas} hoy={hoy} turnoAbierto={Boolean(turno)} pendientesMp={pendientesMp} publicoGeneralId={(publicoGeneral?.id as string | undefined) ?? null} puedeCancelar={tienePermiso(sesion, "cancelar_cuentas")} esAdmin={sesion?.rol === "admin"} />
       )}
     </div>
   );

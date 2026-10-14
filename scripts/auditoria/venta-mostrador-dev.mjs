@@ -120,7 +120,7 @@ async function armarVenta({ cliente, productos = [], conceptos = [] }) {
   await recep.waitForURL(/\/caja\/cobrar\//, { timeout: 30_000 });
   return recep.url().split("/caja/cobrar/")[1].split("?")[0];
 }
-const cobrosDe = async (reservaId) => (await A.from("cobros").select("id, origen, cobro_metodos(metodo, monto, propina)").eq("negocio_id", H).eq("reserva_id", reservaId)).data ?? [];
+const cobrosDe = async (reservaId) => (await adminJ.from("cobros").select("id, origen, cobro_metodos(metodo, monto, propina)").eq("negocio_id", H).eq("reserva_id", reservaId)).data ?? [];
 const saldoDe = async (reservaId) => Number((await adminJ.rpc("cuenta_totales_reserva", { p_reserva_id: reservaId }).single()).data.saldo);
 
 let turno;
