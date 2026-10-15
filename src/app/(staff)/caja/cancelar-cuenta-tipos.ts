@@ -19,5 +19,7 @@ export type InfoCancelarCuenta = {
   total_cobrado: number;
   servicio_realizado: boolean;
   citas_pendientes: { id: string; estado: string; inicio: string }[];
+  /** Reservas de guardería u hotel que todavía no empiezan (se cancelan en el mismo paso). */
+  estancias_pendientes?: { id: string; estado: string; fecha_entrada: string }[];
   cancelada: { motivo: string; motivo_texto: string | null; cuando: string; saldo_cancelado: number; por_nombre: string } | null;
 };

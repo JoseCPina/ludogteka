@@ -50,6 +50,8 @@ export function CheckinForm({
 
   const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
+  // El campo obligatorio que falta: se marca y se enfoca.
+  const [faltaEntrega, setFaltaEntrega] = useState(false);
   // Ya quedó registrado: el formulario se cierra y la pantalla lo dice (sin esperar al refresco del servidor).
   const [registrado, setRegistrado] = useState(false);
   // Autoguardado por estancia: quién entrega y cómo llegó. La foto y las pertenencias ya se guardan solas.
@@ -107,9 +109,12 @@ export function CheckinForm({
 
   async function confirmar() {
     if (!entregadoNombre.trim()) {
-      setError("Registra quién entrega al perro.");
+      setFaltaEntrega(true);
+      setError("Escribe quién entrega al perro.");
+      document.getElementById("checkin-entrega-nombre")?.focus();
       return;
     }
+    setFaltaEntrega(false);
     setError(null);
     borrador.pausar();
     const res = await enviando.ejecutar(() => confirmarCheckin(estanciaId, {
@@ -138,10 +143,15 @@ export function CheckinForm({
       <fieldset disabled={registrado} className="m-0 flex min-w-0 flex-col gap-6 border-0 p-0">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field
+          id="checkin-entrega-nombre"
           label="Quién entrega al perro (obligatorio)"
           required
+          error={faltaEntrega ? "Escribe quién entrega al perro." : undefined}
           value={entregadoNombre}
-          onChange={(e) => setEntregadoNombre(e.target.value)}
+          onChange={(e) => {
+            setEntregadoNombre(e.target.value);
+            setFaltaEntrega(false);
+          }}
           placeholder="Nombre de quien lo deja"
           autoFocus
         />

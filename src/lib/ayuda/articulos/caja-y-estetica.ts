@@ -39,14 +39,14 @@ Las citas y estancias con fecha futura salen aparte, en **Próximas**, para que 
 
 1. En [Caja](/caja), en la cuenta, aprieta **Cancelar cuenta** (también dentro de la cuenta). Si no ves el botón, pídele a un admin el permiso **Cancelar cuentas** en Administración → Permisos.
 2. Escoge el **Motivo**: **No se presentó**, **Cita cancelada**, **Cortesía**, **Error de captura** u **Otro** (con **Otro** escribe qué pasó).
-3. Si la cuenta viene de una cita que todavía no empieza, sale la casilla para **cancelar también la cita**. Con **No se presentó** la cita queda como «No llegó».
+3. Si la cuenta viene de una cita de estética o de una reserva de guardería u hotel que todavía no empieza, sale la casilla para **cancelar también la reserva**. Con **No se presentó** queda como «No llegó»; con los demás motivos queda cancelada y su lugar en el cupo se libera (si usó un pase, se le devuelve). Si la dejas sin marcar, la reserva sigue abierta y ocupando cupo: la ves en el [Calendario de reservas](/ayuda/calendario-de-reservas) con la cuenta cancelada.
 4. Aprieta **Cancelar la cuenta**.
 
 La cuenta sale de lo que falta por cobrar, pero **no se borra**: queda cancelada con el motivo, quién la canceló y cuándo, y la ves en **Cuentas canceladas** de la ficha del cliente. Una cuenta cancelada ya no admite cobros ni cargos.
 
 - Si la cuenta **ya tiene cobros**, no se cancela: primero anula el cobro ([Cómo anular o corregir un cobro](/ayuda/anular-o-corregir-un-cobro)) y luego cancélala.
 - Una **Cortesía** sobre un servicio que ya se realizó solo la hace un admin.
-- Si la cita ya empezó, no se cancela desde aquí.
+- Si la cita o la estancia ya empezó, no se cancela desde aquí.
 
 ## Si algo no sale
 
@@ -712,7 +712,7 @@ Es otra cosa: la raza es nueva y tu negocio no decidió su precio. Asigna el gru
 5b. Debajo sale el **Precio** de la cita. Si falta el tamaño o el pelaje del perro, el aviso te los pide ahí mismo; si la combinación no tiene precio, te da dos salidas ([Qué hacer cuando no hay precio](/ayuda/que-hacer-sin-precio-estetica)). **Agendar cita** se activa cuando ya hay precio.
 6. Si el perro llegó con el pelo maltratado, marca **Llegó con el pelo maltratado**: cobra el precio alternativo del mismo baño. Es una condición de la cita, no otro servicio.
 7. Si necesitas cobrar de más (mucho pelo, nudos, cuidado previo), escribe el **Recargo manual (opcional)** y su **Motivo del recargo**. Se suma al precio, y queda registrado con tu nombre y el motivo. Solo lo hace admin o quien tenga el permiso «Excepciones al reservar».
-8. Pon la **Fecha y hora** y aprieta **Agendar cita**.
+8. Pon la **Fecha y hora** y aprieta **Agendar cita**. La hora ya viene propuesta: la siguiente hora en punto de hoy que todavía no pasa, o la primera hora de apertura de mañana si hoy ya no queda ninguna.
 
 El precio sale del grupo de raza del perro, de su pelaje y del servicio; al dueño le aclaramos que **el costo puede aumentar según el tipo de pelo y el cuidado previo**. El rapado solo se ofrece a perros de pelo medio o largo. Cambiar las tarifas después no mueve el precio de las citas que ya están agendadas o cobradas. Para cambiar el recargo de una cita, ábrela y aprieta **Cambiar el recargo**.
 
@@ -850,14 +850,13 @@ En **Historial de servicio**, al pie de la cita: el servicio y el precio de ante
 
 1. En [Estética](/estetica) abre la cita.
 2. Aprieta **Iniciar cita**.
-3. Si es una visita suelta, escribe **Quién entrega al perro** y, si quieres, su teléfono.
-4. Aprieta **Confirmar inicio**.
+3. Si es una visita suelta, escribe **Quién entrega al perro** (obligatorio) y, si quieres, su teléfono.
+4. Aprieta **Confirmar inicio**. Si falta el nombre, el campo se marca en rojo y dice qué falta.
 
 ## Cuando se lo llevan
 
 1. Aprieta **Finalizar cita**.
-2. Escribe **Quién recoge al perro** y marca **Sí, es el dueño** o **No, persona autorizada**.
-3. Si el servicio tiene receta, revisa el **Consumo de inventario** y ajusta si se usó más o menos.
+2. Escribe **Quién recoge al perro** (obligatorio) y marca **Sí, es el dueño** o **No, persona autorizada**. Lo que falte se marca en la propia pantalla: el nombre en su campo, la pregunta del dueño en su recuadro., revisa el **Consumo de inventario** y ajusta si se usó más o menos.
 4. Aprieta **Confirmar cierre**. El consumo se descuenta del inventario y la cuenta queda en [Caja](/caja) para cobrarla.
 
 Si la cita está ligada a una estancia, no se piden esos datos: el perro sigue adentro.

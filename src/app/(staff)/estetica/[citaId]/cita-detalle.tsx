@@ -115,6 +115,13 @@ export function CitaDetalle({
   const [recogidoNombre, setRecogidoNombre] = useState("");
   const [recogidoTelefono, setRecogidoTelefono] = useState("");
   const [esDueno, setEsDueno] = useState<boolean | null>(null);
+  // Lo que falta en el formulario de entrega o recogida: se marca el campo y se dice qué es.
+  const [falta, setFalta] = useState<{ campo: "entrega" | "recoge" | "dueno"; texto: string } | null>(null);
+  function marcarFalta(campo: "entrega" | "recoge" | "dueno", texto: string, idCampo: string) {
+    setError(null);
+    setFalta({ campo, texto });
+    document.getElementById(idCampo)?.focus();
+  }
   const [cantidadesConsumo, setCantidadesConsumo] = useState<Record<string, string>>(() =>
     Object.fromEntries(recetaItems.map((r) => [r.insumo_id, String(r.cantidad_sugerida)]))
   );
@@ -191,9 +198,10 @@ export function CitaDetalle({
 
   async function accionIniciar() {
     if (esStandalone && !entregadoNombre.trim()) {
-      setError("Registra quién entrega al perro.");
+      marcarFalta("entrega", "Escribe quién entrega al perro.", "cita-entrega-nombre");
       return;
     }
+    setFalta(null);
     setError(null);
     const res = await cargando.ejecutar(() => iniciarCita(
       citaId,
@@ -209,10 +217,15 @@ export function CitaDetalle({
   }
 
   async function accionFinalizar() {
-    if (esStandalone && (!recogidoNombre.trim() || esDueno === null)) {
-      setError("Registra quién recoge al perro e indica si es el dueño.");
+    if (esStandalone && !recogidoNombre.trim()) {
+      marcarFalta("recoge", "Escribe quién recoge al perro.", "cita-recoge-nombre");
       return;
     }
+    if (esStandalone && esDueno === null) {
+      marcarFalta("dueno", "Indica si quien recoge es el dueño registrado o una persona autorizada.", "cita-recoge-dueno");
+      return;
+    }
+    setFalta(null);
     setError(null);
     const ajustes: AjusteConsumo[] = recetaItems.map((r) => ({
       insumo_id: r.insumo_id,
@@ -395,9 +408,14 @@ export function CitaDetalle({
               {esStandalone ? (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Field
-                    label="Quién entrega al perro"
+                    id="cita-entrega-nombre"
+                    label="Quién entrega al perro (obligatorio)"
                     value={entregadoNombre}
-                    onChange={(e) => setEntregadoNombre(e.target.value)}
+                    onChange={(e) => {
+                      setEntregadoNombre(e.target.value);
+                      setFalta(null);
+                    }}
+                    error={falta?.campo === "entrega" ? falta.texto : undefined}
                     autoFocus
                   />
                   <Field
@@ -470,9 +488,14 @@ export function CitaDetalle({
                 <>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Field
-                      label="Quién recoge al perro"
+                      id="cita-recoge-nombre"
+                      label="Quién recoge al perro (obligatorio)"
                       value={recogidoNombre}
-                      onChange={(e) => setRecogidoNombre(e.target.value)}
+                      onChange={(e) => {
+                        setRecogidoNombre(e.target.value);
+                        setFalta(null);
+                      }}
+                      error={falta?.campo === "recoge" ? falta.texto : undefined}
                       autoFocus
                     />
                     <Field
@@ -481,20 +504,31 @@ export function CitaDetalle({
                       onChange={(e) => setRecogidoTelefono(e.target.value)}
                     />
                   </div>
-                  <div>
-                    <p className="mb-1.5 text-sm font-semibold text-n-800">¿Es el dueño registrado?</p>
+                  <div
+                    id="cita-recoge-dueno"
+                    tabIndex={-1}
+                    className={falta?.campo === "dueno" ? "rounded-md border-[1.5px] border-coral-oscuro bg-coral-suave p-2" : undefined}
+                  >
+                    <p className="mb-1.5 text-sm font-semibold text-n-800">¿Es el dueño registrado? (obligatorio)</p>
+                    {falta?.campo === "dueno" && <p className="mb-1.5 text-sm font-semibold text-coral-oscuro">{falta.texto}</p>}
                     <div className="flex gap-3">
                       <Button
                         type="button"
                         variante={esDueno === true ? "exito" : "secundario"}
-                        onClick={() => setEsDueno(true)}
+                        onClick={() => {
+                          setEsDueno(true);
+                          setFalta(null);
+                        }}
                       >
                         Sí, es el dueño
                       </Button>
                       <Button
                         type="button"
                         variante={esDueno === false ? "peligro" : "secundario"}
-                        onClick={() => setEsDueno(false)}
+                        onClick={() => {
+                          setEsDueno(false);
+                          setFalta(null);
+                        }}
                       >
                         No, persona autorizada
                       </Button>

@@ -39,6 +39,8 @@ export function CheckoutForm({
   const [confirmandoConPendientes, setConfirmandoConPendientes] = useState(false);
   const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
+  // Lo que falta en el formulario: se marca el campo y se enfoca.
+  const [falta, setFalta] = useState<"nombre" | "dueno" | null>(null);
 
   const pendientes = pertenencias.filter((p) => !p.devuelto);
 
@@ -65,13 +67,18 @@ export function CheckoutForm({
 
   async function enviarCheckout() {
     if (!recogidoNombre.trim()) {
-      setError("Registra quién recoge al perro.");
+      setFalta("nombre");
+      setError("Escribe quién recoge al perro.");
+      document.getElementById("checkout-recoge-nombre")?.focus();
       return;
     }
     if (esDueno === null) {
+      setFalta("dueno");
       setError("Indica si quien recoge es el dueño registrado o una persona autorizada.");
+      document.getElementById("checkout-recoge-dueno")?.focus();
       return;
     }
+    setFalta(null);
     if (pendientes.length > 0 && !confirmandoConPendientes) {
       setConfirmandoConPendientes(true);
       return;
@@ -140,10 +147,15 @@ export function CheckoutForm({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field
+          id="checkout-recoge-nombre"
           label="Quién recoge al perro (obligatorio)"
           required
+          error={falta === "nombre" ? "Escribe quién recoge al perro." : undefined}
           value={recogidoNombre}
-          onChange={(e) => setRecogidoNombre(e.target.value)}
+          onChange={(e) => {
+            setRecogidoNombre(e.target.value);
+            setFalta(null);
+          }}
           placeholder="Nombre de quien lo recoge"
           autoFocus
         />
@@ -155,20 +167,33 @@ export function CheckoutForm({
         />
       </div>
 
-      <div>
-        <p className="mb-1.5 text-sm font-semibold text-n-800">¿Es el dueño registrado?</p>
+      <div
+        id="checkout-recoge-dueno"
+        tabIndex={-1}
+        className={falta === "dueno" ? "rounded-md border-[1.5px] border-coral-oscuro bg-coral-suave p-2" : undefined}
+      >
+        <p className="mb-1.5 text-sm font-semibold text-n-800">¿Es el dueño registrado? (obligatorio)</p>
+        {falta === "dueno" && (
+          <p className="mb-1.5 text-sm font-semibold text-coral-oscuro">Indica si quien recoge es el dueño registrado o una persona autorizada.</p>
+        )}
         <div className="flex gap-3">
           <Button
             type="button"
             variante={esDueno === true ? "exito" : "secundario"}
-            onClick={() => setEsDueno(true)}
+            onClick={() => {
+              setEsDueno(true);
+              setFalta(null);
+            }}
           >
             Sí, es el dueño
           </Button>
           <Button
             type="button"
             variante={esDueno === false ? "peligro" : "secundario"}
-            onClick={() => setEsDueno(false)}
+            onClick={() => {
+              setEsDueno(false);
+              setFalta(null);
+            }}
           >
             No, persona autorizada
           </Button>

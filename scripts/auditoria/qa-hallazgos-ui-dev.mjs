@@ -28,6 +28,7 @@ async function cookiesDe(profileId, host) {
   const nombre = `sb-${REF}-auth-token`;
   return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: host, path: "/" }));
 }
+const comoAdmin = async () => createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${P.admin}`, "x-negocio-id": B } } });
 const nav = await abrirNavegador();
 const abrir = async (profileId, ancho = 1100) => {
   const c = await nav.newContext({ viewport: { width: ancho, height: 900 } });
@@ -124,8 +125,9 @@ try {
   await esperarTexto(p, /Precio de esta consulta: falta el de/);
   await p.getByRole("button", { name: "Poner el precio" }).click();
   comprobar((await p.getByText("Guardar como precio de catálogo").count()) > 0, "admin sí ve «Guardar como precio de catálogo»");
+  // Mejora de B4: con permiso y sin precio en el catálogo, «Guardar como precio de catálogo» ya viene marcado.
+  comprobar(await p.getByLabel(/Guardar como precio de catálogo/).isChecked(), "y viene MARCADO (el catálogo no tiene precio para ese servicio)");
   await p.getByLabel("Precio de esta consulta ($)").fill("650");
-  await p.getByText(/Guardar como precio de catálogo/).first().click();
   await p.getByRole("button", { name: "Guardar el precio" }).click();
   comprobar(await esperarTexto(p, /\$650/), "el precio queda en la línea");
   const sid = await servicioId("vet_consulta_general");
@@ -161,6 +163,78 @@ try {
   comprobar(/Labrador retriever no tiene un precio propio/.test(tB) && !/Es mestizo o sin raza de catálogo/.test(tB), "dice que se cobra por tamaño y pelaje, no que es mestizo");
   comprobar(/se cobra por tamaño y pelaje/.test(tB), "y el aviso del grupo habla de tamaño y pelaje");
   await c.close();
+
+  // ── 7: B18, lo que falta se marca en el campo ──────────────────────
+  seccion("B18. Estética: «Quién recoge/entrega» marca el campo y dice qué falta");
+  {
+    const { data: tallas } = await A.from("tamanos_categoria").select("id, clave");
+    const { data: pelajes } = await A.from("tipos_pelaje").select("id, clave");
+    const { data: razasC } = await A.from("razas").select("id, nombre");
+    const { data: srvs } = await SB.from("servicios").select("id, clave").eq("negocio_id", B).eq("categoria", "estetica").is("deleted_at", null);
+    const perroE = (await SB.from("perros").insert({ negocio_id: B, cliente_id: datos.clienteSoloB, nombre: `QH est ${sufijo}`, raza: "Poodle", raza_id: razasC.find((r) => r.nombre === "Poodle").id, tamano_id: tallas.find((t) => t.clave === "chico").id, pelaje_id: pelajes.find((t) => t.clave === "medio").id }).select("id").single()).data;
+    limpieza.push(async () => { await SB.from("perros").update({ deleted_at: new Date().toISOString() }).eq("id", perroE.id); });
+    const rr = (await SB.from("reservas").insert({ cliente_id: datos.clienteSoloB }).select("id").single()).data;
+    const dia = new Date(Date.now() + 40 * 86400000).toISOString().slice(0, 10);
+    const cita = await SB.from("citas_estetica").insert({ reserva_id: rr.id, perro_id: perroE.id, servicio_id: srvs.find((x) => x.clave === "estetica_estetico").id, empleado_id: datos.esteticaB, inicio: `${dia}T11:00:00-06:00` }).select("id").single();
+    if (cita.error) throw new Error(`cita: ${cita.error.message}`);
+    limpieza.push(async () => { await SB.from("citas_estetica").update({ deleted_at: new Date().toISOString() }).eq("id", cita.data.id); });
+    ({ c, p } = await abrir(datos.adminB, 390));
+    await p.goto(`${BASE}/estetica/${cita.data.id}`, { waitUntil: "networkidle" });
+    await p.getByRole("button", { name: "Iniciar cita" }).click();
+    await p.getByRole("button", { name: "Confirmar inicio" }).click();
+    const campoEntrega = p.locator("#cita-entrega-nombre");
+    comprobar(await esperarTexto(p, /Escribe quién entrega al perro/) && (await campoEntrega.getAttribute("aria-invalid")) === "true", "al iniciar sin «Quién entrega»: el campo se marca y dice qué falta");
+    comprobar(await campoEntrega.evaluate((el) => document.activeElement === el), "y el cursor queda en ese campo");
+    await campoEntrega.fill("Ana Prueba");
+    comprobar((await campoEntrega.getAttribute("aria-invalid")) !== "true", "al escribir, la marca se quita");
+    await p.getByRole("button", { name: "Confirmar inicio" }).click();
+    await esperarTexto(p, /Finalizar cita/);
+    await p.getByRole("button", { name: "Finalizar cita" }).click();
+    await p.getByRole("button", { name: "Confirmar cierre" }).click();
+    const campoRecoge = p.locator("#cita-recoge-nombre");
+    comprobar(await esperarTexto(p, /Escribe quién recoge al perro/) && (await campoRecoge.getAttribute("aria-invalid")) === "true", "al cerrar sin «Quién recoge»: el campo se marca y dice qué falta");
+    comprobar(!(await texto(p)).includes("No se pudo completar la acción"), "y ya no sale el aviso genérico «No se pudo completar la acción»");
+    await campoRecoge.fill("Luis Prueba");
+    await p.getByRole("button", { name: "Confirmar cierre" }).click();
+    comprobar(await esperarTexto(p, /Indica si quien recoge es el dueño/) && (await p.locator("#cita-recoge-dueno").count()) === 1, "sin indicar si es el dueño: se marca esa pregunta");
+    await p.getByRole("button", { name: "Sí, es el dueño" }).click();
+    await p.getByRole("button", { name: "Confirmar cierre" }).click();
+    await esperarTexto(p, /Recogió|Finalizada/);
+    comprobar((await SB.from("citas_estetica").select("estado").eq("id", cita.data.id).single()).data.estado === "finalizada", "con todo lleno, la cita se cierra");
+    await c.close();
+    // Check-in y check-out de guardería: mismo trato.
+    const { data: gD } = await SB.from("servicios").select("id").eq("negocio_id", B).eq("categoria", "guarderia").eq("unidad", "dia").is("deleted_at", null).limit(1).single();
+    const diaG = (() => { let d = new Date(Date.now() + 60 * 86400000); while (d.getUTCDay() === 0) d = new Date(d.getTime() + 86400000); return d.toISOString().slice(0, 10); })();
+    const cliente = await comoAdmin();
+    const rG = (await cliente.from("reservas").insert({ cliente_id: datos.clienteSoloB }).select("id").single()).data;
+    const eG = await cliente.from("estancias").insert({ reserva_id: rG.id, perro_id: perroE.id, servicio_id: gD.id, fecha_entrada: diaG, fecha_salida: new Date(new Date(`${diaG}T12:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10), bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: "Prueba", bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: "Prueba" }).select("id").single();
+    if (eG.error) throw new Error(`estancia: ${eG.error.message}`);
+    limpieza.push(async () => { await SB.from("estancias").update({ deleted_at: new Date().toISOString() }).eq("id", eG.data.id); });
+    ({ c, p } = await abrir(datos.adminB, 390));
+    await p.goto(`${BASE}/reservas/estancias/${eG.data.id}/checkin`, { waitUntil: "networkidle" });
+    await p.getByRole("button", { name: /Confirmar (check-in|entrada)/ }).first().click();
+    comprobar(await esperarTexto(p, /Escribe quién entrega al perro/) && (await p.locator("#checkin-entrega-nombre").getAttribute("aria-invalid")) === "true", "check-in de guardería/hotel: marca «Quién entrega» y dice qué falta");
+    await c.close();
+  }
+
+  // ── B19: la hora que propone «Agendar» ──────────────────────────
+  seccion("B19. «Agendar» propone una hora que todavía no pasa");
+  {
+    const zona = (await SB.from("negocios").select("zona_horaria").eq("id", B).single()).data.zona_horaria;
+    ({ c, p } = await abrir(datos.adminB, 390));
+    await p.goto(`${BASE}/estetica/nueva`, { waitUntil: "networkidle" });
+    const nombreCliente = (await SB.from("clientes").select("nombre").eq("id", datos.clienteSoloB).single()).data.nombre;
+    await p.locator("input[type=text], input[type=search], input:not([type])").first().fill(nombreCliente);
+    await p.waitForTimeout(500);
+    await p.locator("button", { hasText: nombreCliente }).first().click();
+    const valor = await p.locator('input[type="datetime-local"]').first().inputValue();
+    const ahoraLocal = new Intl.DateTimeFormat("en-CA", { timeZone: zona, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).formatToParts(new Date());
+    const g = (t) => ahoraLocal.find((x) => x.type === t).value;
+    const ahora = `${g("year")}-${g("month")}-${g("day")}T${g("hour")}:${g("minute")}`;
+    comprobar(valor > ahora, `la hora propuesta (${valor}) es posterior a ahora (${ahora}, ${zona})`);
+    comprobar(/T\d{2}:00$/.test(valor), "y es una hora en punto");
+    await c.close();
+  }
 
   // ── 6: obligatorios y monto del cobro ───────────────────────────
   seccion("6. Quién entrega/recoge obligatorios y el monto abre con el saldo");

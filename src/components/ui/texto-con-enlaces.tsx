@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 // cambia por un enlace que se lee dentro de la frase; si un mensaje llega a
 // mostrarse sin pasar por aquí, la ruta sigue entendiéndose.
 const RUTAS = [
+  { patron: /\/reservas\/calendario(\?dia=\d{4}-\d{2}-\d{2})?/, etiqueta: "el calendario" },
   { patron: /\/servicios\/[0-9a-f-]{36}\/tarifas/, etiqueta: "la pantalla de tarifas" },
   { patron: /\/perros\/[0-9a-f-]{36}/, etiqueta: "su expediente" },
   { patron: /\/servicios(?![\w/-])/, etiqueta: "Servicios" },

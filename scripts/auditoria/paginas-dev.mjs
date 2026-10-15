@@ -49,8 +49,8 @@ const RUTAS_VET = conVet
   : { admin: [], recepcion: [] };
 
 const RUTAS = {
-  admin: [...RUTAS_VET.admin, "/admin", "/admin/pagos", "/reportes", "/servicios", "/empleados", "/gastos", "/admin/permisos", "/inventario", "/ayuda", "/ayuda/videos", "/ayuda/pedir-ayuda", "/caja/reembolsos", "/perros/razas", "/perros/razas/grupos", "/estetica/nueva", "/ayuda/agregar-una-raza-que-no-aparece"],
-  recepcion: ["/recepcion", "/clientes", ...(unCliente ? [`/clientes/${unCliente.id}`] : []), ...(unPerro ? [`/perros/${unPerro.id}`] : []), ...(unCliente ? [`/clientes/${unCliente.id}/perros/nuevo`] : []), "/caja", "/caja/turno", "/guarderia", "/hotel", "/estetica", "/recepcion/contratos", "/vinculacion", "/clientes/invitaciones", "/caja/venta", "/caja/reembolsos", "/ayuda", "/ayuda/videos", "/ayuda/corte-de-caja", "/ayuda/tickets/nuevo", "/perros/razas", "/perros/razas/grupos", "/estetica/nueva"],
+  admin: [...RUTAS_VET.admin, "/admin", "/admin/pagos", "/reportes", "/servicios", "/empleados", "/gastos", "/admin/permisos", "/inventario", "/ayuda", "/ayuda/videos", "/ayuda/pedir-ayuda", "/caja/reembolsos", "/perros/razas", "/perros/razas/grupos", "/estetica/nueva", "/reservas/calendario", "/ayuda/agregar-una-raza-que-no-aparece"],
+  recepcion: ["/recepcion", "/clientes", ...(unCliente ? [`/clientes/${unCliente.id}`] : []), ...(unPerro ? [`/perros/${unPerro.id}`] : []), ...(unCliente ? [`/clientes/${unCliente.id}/perros/nuevo`] : []), "/caja", "/caja/turno", "/guarderia", "/hotel", "/reservas/calendario", "/estetica", "/recepcion/contratos", "/vinculacion", "/clientes/invitaciones", "/caja/venta", "/caja/reembolsos", "/ayuda", "/ayuda/videos", "/ayuda/corte-de-caja", "/ayuda/tickets/nuevo", "/perros/razas", "/perros/razas/grupos", "/estetica/nueva"],
   estetica: ["/estetica"],
   cliente: ["/portal"],
 };

@@ -10,12 +10,12 @@
 // para restricciones que el trigger no controla directamente (el EXCLUDE
 // de traslape de perro/empleado).
 import { esErrorSoloLectura, mensajeSoloLectura } from "@/lib/solo-lectura";
+import { mensajeTraslape } from "@/lib/reservas/traslape";
 
-export function traducirError(error: { code?: string; message: string }): string {
+export function traducirError(error: { code?: string; message: string }, contexto?: { fecha?: string }): string {
   if (esErrorSoloLectura(error)) return mensajeSoloLectura(error);
-  if (error.code === "23P01") {
-    return "Este perro ya tiene una reserva en fechas que se traslapan con estas. Revisa el calendario antes de intentar de nuevo.";
-  }
+  // El detalle de Postgres no trae el rango que choca: la fecha la da quien llama (la que intentó reservar).
+  if (error.code === "23P01") return mensajeTraslape(contexto?.fecha);
   // Los permisos de la base (recargos, excepciones) ya vienen explicados.
   if (error.code === "P0001" || error.code === "42501" || error.code === "53400") {
     return error.message;
