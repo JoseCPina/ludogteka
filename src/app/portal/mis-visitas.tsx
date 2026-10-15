@@ -88,21 +88,23 @@ function Fila({ v, zona, enHistorial = false }: { v: Visita; zona: string; enHis
           {v.servicio_nombre} · {v.perro_nombre}
         </span>
       </span>
-      <span
-        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-          sinCerrar
-            ? "bg-n-100 text-n-600"
-            : v.estado === "en_curso"
-            ? "bg-menta-suave text-menta-oscuro"
-            : apagada
+      {etiqueta && (
+        <span
+          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+            sinCerrar
               ? "bg-n-100 text-n-600"
-              : ACTIVAS.has(v.estado)
-                ? "bg-morado-suave text-morado"
-                : "bg-menta-suave text-menta-oscuro"
-        }`}
-      >
-        {etiqueta}
-      </span>
+              : v.estado === "en_curso"
+              ? "bg-menta-suave text-menta-oscuro"
+              : apagada
+                ? "bg-n-100 text-n-600"
+                : ACTIVAS.has(v.estado)
+                  ? "bg-morado-suave text-morado"
+                  : "bg-menta-suave text-menta-oscuro"
+          }`}
+        >
+          {etiqueta}
+        </span>
+      )}
     </li>
   );
 }

@@ -13,6 +13,9 @@ import { EditorConsulta } from "./editor-consulta";
 import { UsoDictado } from "./uso-dictado";
 import { CargosConsulta } from "./cargos-consulta";
 import type { CargosConsulta as DatosCargos } from "@/lib/veterinaria/cargos-consulta";
+import { vetPuede } from "@/lib/veterinaria/permisos";
+import { cargarMedicos, cargarProductosConLotes, miMedico as cargarMiMedico } from "@/lib/veterinaria/lotes";
+import { FormularioVacuna } from "../../carnet/[perroId]/formularios";
 
 // El dictado transcribe y arma el borrador dentro de una acción del servidor: puede tardar más de lo normal.
 export const maxDuration = 120;
@@ -27,6 +30,10 @@ const VITALES: { clave: string; etiqueta: string; unidad: string }[] = [
   { clave: "mucosas", etiqueta: "Mucosas", unidad: "" },
   { clave: "hidratacion", etiqueta: "Hidratación", unidad: "" },
 ];
+
+function esAdminSesion(sesion: Awaited<ReturnType<typeof obtenerSesionConRol>>): boolean {
+  return sesion?.rol === "admin" || (sesion?.permisos ?? []).includes("tarifas");
+}
 
 export default async function ConsultaPagina({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -56,6 +63,27 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
     supabase.rpc("vet_puede", { p_permiso: "crear_estimados" }),
   ]);
   const soyElMedico = miMedico === c.medico_id;
+  // «Aplicar vacuna» dentro de la consulta: el mismo formulario del carnet (producto y lote del inventario, fecha, médico).
+  let aplicarVacuna: React.ReactNode = null;
+  if (c.estado === "borrador" && puedeAtender === true && (await vetPuede(supabase, "registrar_vacunas"))) {
+    const [productos, medicos, medicoPropio, { data: requisitosCrudo }] = await Promise.all([
+      cargarProductosConLotes(supabase, "vacuna"),
+      cargarMedicos(supabase),
+      cargarMiMedico(supabase),
+      supabase.from("tipos_requisito_sanitario").select("id, etiqueta").is("deleted_at", null).eq("obligatoria", true).order("orden"),
+    ]);
+    aplicarVacuna = (
+      <FormularioVacuna
+        perroId={c.perro_id}
+        hoy={hoy}
+        productos={productos}
+        medicos={medicos}
+        medicoPropio={medicoPropio ?? c.medico_id}
+        requisitos={(requisitosCrudo ?? []).map((r) => ({ id: r.id as string, etiqueta: r.etiqueta as string }))}
+      />
+    );
+  }
+  const puedeCatalogo = esAdminSesion(sesion);
   const esAdmin = sesion?.rol === "admin";
   const anulada = c.estado === "anulada";
   const rutas = [`/veterinaria/consulta/${id}`, `/veterinaria/expediente/${c.perro_id}`];
@@ -89,7 +117,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
       <UsoDictado consultaId={id} />
 
       {c.estado === "borrador" && puedeAtender === true ? (
-        <EditorConsulta consulta={c} especie={d.mascota.especie} soyElMedico={soyElMedico} nombreMedico={d.medico.nombre} cargosIniciales={cargos} />
+        <EditorConsulta consulta={c} especie={d.mascota.especie} soyElMedico={soyElMedico} nombreMedico={d.medico.nombre} cargosIniciales={cargos} puedeCatalogo={puedeCatalogo} aplicarVacuna={aplicarVacuna} />
       ) : (
         <article className={`flex flex-col gap-5 rounded-lg border border-n-200 bg-white p-5 ${anulada ? "opacity-80" : ""}`}>
           {c.estado === "borrador" && <Alert variante="info" titulo="Borrador">Solo quien atiende consultas lo edita.</Alert>}

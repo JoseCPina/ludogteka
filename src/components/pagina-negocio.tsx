@@ -4,6 +4,7 @@ import { cargarNegocioLanding, linkWhatsAppDe, pesos } from "@/lib/landing/negoc
 import { urlPublicaArchivo } from "@/lib/negocio/publico";
 import { LogoNegocio } from "@/components/marca/logo-negocio";
 import { HechoConPeluDesk } from "@/components/marca/peludesk";
+import { FotoNegocio } from "@/components/foto-negocio";
 
 export type DatosPagina = {
   nombre: string;
@@ -103,10 +104,8 @@ export async function PaginaNegocio({ datos }: { datos: DatosPagina }) {
               </a>
             )}
           </div>
-          {principal && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={principal} alt={`${datos.nombre}`} className="aspect-[4/3] w-full rounded-[18px] border border-n-200 object-cover" />
-          )}
+          {/* Sin foto (o con el archivo roto) se ve un fondo con la huella de la marca, nunca el texto de la ranura. */}
+          <FotoNegocio url={principal ?? null} color={color} className="aspect-[4/3] w-full rounded-[18px] border border-n-200" />
         </section>
 
         {grupos.length > 0 && (
@@ -164,8 +163,7 @@ export async function PaginaNegocio({ datos }: { datos: DatosPagina }) {
             <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
               {galeria.map((url) => (
                 <li key={url}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt="" loading="lazy" className="aspect-square w-full rounded-[14px] border border-n-200 object-cover" />
+                  <FotoNegocio url={url} color={color} className="aspect-square w-full rounded-[14px] border border-n-200" />
                 </li>
               ))}
             </ul>

@@ -6,12 +6,13 @@
 // 1. Catálogo base en Servicios y precios (se siembra al prender el módulo).
 // 2. La propuesta de cargos: tipo de consulta, vacunas, medicamentos, procedimientos; quién ve, quita y ajusta.
 // 3. Firmar pasa los cargos a la cuenta (Caja) y es idempotente.
-// 4. Sin precio: se firma igual y los cargos quedan pendientes hasta que se captura el precio.
+// 4. Sin precio no se firma: se pone el precio en el momento (con o sin precio de catálogo) o se marca «Sin cobro» con motivo.
+// 4b. Una vacuna va al carnet (lote y fecha), no como «otro procedimiento».
 // 5. Mascota hospitalizada: los cargos van a la cuenta de la hospitalización.
 // 6. Estimado aceptado de la consulta: nada se cobra dos veces.
 // 7. Anular: se cancela lo que no tiene cobros.
 // 8. Aislamiento, módulo apagado y llave anónima.
-import { B, SB, LUDOGTEKA, datos, rpc, get, personas, dar, quitar, fijarModulo, hoy, productoClinico, comprobar, seccion, terminar } from "./veterinaria-comun-dev.mjs";
+import { B, SB, LUDOGTEKA, datos, rpc, get, personas, dar, quitar, fijarModulo, hoy, sumaDias as sumaDiasV, productoClinico, comprobar, seccion, terminar } from "./veterinaria-comun-dev.mjs";
 
 const P = await personas();
 const MARCA = `ccg-${String(Date.now()).slice(-6)}`;
@@ -137,17 +138,75 @@ try {
   comprobar(!(await rpc(P.recSin, "vet_consulta_cargo_agregar", { p_consulta: c1, p_tipo: "procedimiento", p_concepto: "x", p_cantidad: 1, p_precio: 1, p_servicio: null, p_insumo: null })).ok, "una consulta firmada ya no admite cargos");
   comprobar(!(await rpc(P.recCon, "vet_consulta_cargo_quitar", { p_id: base1.id, p_motivo: "tarde" })).ok, "ni quitar líneas");
 
-  seccion("4. Sin precio");
+  seccion("4. Sin precio: se pide en el momento y sin precio no se firma");
   const perro2 = await nuevoPerro("Sinprecio");
   const c2 = (await rpc(P.recSin, "vet_consulta_iniciar", { p_perro: perro2, p_cita: null, p_tipo: "urgencia", p_medico: medico })).cuerpo;
   d = await lineas(P.recSin, c2);
   comprobar(d.sin_precio === 1 && d.lineas[0].precio_unitario === null, "la urgencia sin precio capturado se marca «sin precio»");
   await guardarDx(P.recSin, c2);
   const f2 = await rpc(P.recCon, "vet_consulta_firmar", { p_id: c2 });
-  comprobar(f2.ok && f2.cuerpo.cobro.cargos === 0 && !f2.cuerpo.cobro.reserva_id, "se firma igual; no se crea cuenta con importes vacíos");
-  await precioDe("vet_consulta_urgencia", 700);
-  const pend = await rpc(P.recCon, "vet_consulta_cobrar_pendientes", { p_consulta: c2 });
-  comprobar(pend.ok && pend.cuerpo.cargos === 1 && Number(pend.cuerpo.total) === 700, `capturado el precio, «pasar a Caja» cobra $700 (${pend.mensaje})`);
+  comprobar(!f2.ok && /Falta el precio/.test(f2.mensaje ?? ""), `sin precio la consulta NO se firma y dice cuál falta (${f2.mensaje})`);
+  const lineaSin = d.lineas[0].id;
+  comprobar(!(await rpc(P.recSin, "vet_consulta_cargo_precio", { p_id: lineaSin, p_precio: 0, p_guardar_catalogo: false })).ok, "un precio de cero se rechaza (para no cobrar existe «Sin cobro»)");
+  comprobar(!(await rpc(P.recSin, "vet_consulta_cargo_precio", { p_id: lineaSin, p_precio: 700, p_guardar_catalogo: true })).ok, "guardarlo como precio de catálogo exige admin o «Precios y tarifas»");
+  comprobar(!(await rpc(P.cliente, "vet_consulta_cargo_precio", { p_id: lineaSin, p_precio: 700, p_guardar_catalogo: false })).ok && !(await rpc(null, "vet_consulta_cargo_precio", { p_id: lineaSin, p_precio: 700, p_guardar_catalogo: false })).ok, "ni el cliente ni la llave anónima ponen precio");
+  const pr = await rpc(P.recSin, "vet_consulta_cargo_precio", { p_id: lineaSin, p_precio: 700, p_guardar_catalogo: false });
+  comprobar(pr.ok, `quien atiende pone el precio de esta consulta ($700) (${pr.mensaje})`);
+  d = await lineas(P.recSin, c2);
+  comprobar(d.sin_precio === 0 && Number(d.lineas[0].precio_unitario) === 700, "la línea queda con $700 y ya no hay cargos sin precio");
+  comprobar(!(await rpc(P.recSin, "vet_consulta_cargo_precio", { p_id: lineaSin, p_precio: 800, p_guardar_catalogo: false })).ok, "una línea que ya tiene precio no se vuelve a fijar por aquí");
+  const f2b = await rpc(P.recCon, "vet_consulta_firmar", { p_id: c2 });
+  comprobar(f2b.ok && f2b.cuerpo.cobro.cargos === 1 && Number(f2b.cuerpo.cobro.total) === 700, `con precio se firma y pasa a Caja $700 (${f2b.mensaje})`);
+  const cat0 = (await SB.from("tarifas_vigentes").select("precio").eq("servicio_id", (await SB.from("servicios").select("id").eq("negocio_id", B).eq("clave", "vet_consulta_urgencia").single()).data.id)).data ?? [];
+  comprobar(cat0.length === 0, "usar el precio solo en esta consulta NO toca el catálogo");
+
+  // Guardarlo como precio de catálogo (admin): las próximas consultas ya lo traen.
+  const perro2b = await nuevoPerro("Catalogo");
+  const c2b = (await rpc(P.recSin, "vet_consulta_iniciar", { p_perro: perro2b, p_cita: null, p_tipo: "urgencia", p_medico: medico })).cuerpo;
+  d = await lineas(P.recSin, c2b);
+  const prc = await rpc(P.admin, "vet_consulta_cargo_precio", { p_id: d.lineas[0].id, p_precio: 900, p_guardar_catalogo: true });
+  comprobar(prc.ok, `admin lo guarda además como precio de catálogo (${prc.mensaje})`);
+  const perro2c = await nuevoPerro("Catalogo2");
+  const c2c = (await rpc(P.recSin, "vet_consulta_iniciar", { p_perro: perro2c, p_cita: null, p_tipo: "urgencia", p_medico: medico })).cuerpo;
+  d = await lineas(P.recSin, c2c);
+  comprobar(d.sin_precio === 0 && Number(d.lineas[0].precio_unitario) === 900, "la siguiente urgencia ya trae $900 del catálogo");
+  await precioDe("vet_consulta_urgencia", null);
+
+  // «Sin cobro» con motivo: la única forma de firmar sin precio.
+  const perro2d = await nuevoPerro("Cortesia");
+  const c2d = (await rpc(P.recSin, "vet_consulta_iniciar", { p_perro: perro2d, p_cita: null, p_tipo: "urgencia", p_medico: medico })).cuerpo;
+  d = await lineas(P.recSin, c2d);
+  await guardarDx(P.recSin, c2d);
+  comprobar(!(await rpc(P.recSin, "vet_consulta_cargo_quitar", { p_id: d.lineas[0].id, p_motivo: "Sin cobro: cortesía" })).ok, "«Sin cobro» lo marca el médico (o quien puede ajustar cargos), no cualquiera");
+  comprobar(!(await rpc(P.recCon, "vet_consulta_cargo_quitar", { p_id: d.lineas[0].id, p_motivo: "" })).ok, "y pide su motivo");
+  comprobar((await rpc(P.recCon, "vet_consulta_cargo_quitar", { p_id: d.lineas[0].id, p_motivo: "Sin cobro: seguimiento incluido" })).ok, "el médico la marca «Sin cobro» con su motivo");
+  const f2d = await rpc(P.recCon, "vet_consulta_firmar", { p_id: c2d });
+  comprobar(f2d.ok && f2d.cuerpo.cobro.cargos === 0 && !f2d.cuerpo.cobro.reserva_id, `con «Sin cobro» se firma y no se crea cuenta con importes vacíos (${f2d.mensaje})`);
+
+  seccion("4b. Una vacuna va al carnet, no como «otro procedimiento»");
+  const perroV = await nuevoPerro("Vacunada");
+  const cV = (await rpc(P.recSin, "vet_consulta_iniciar", { p_perro: perroV, p_cita: null, p_tipo: "consulta", p_medico: medico })).cuerpo;
+  const libre = await rpc(P.recSin, "vet_consulta_cargo_agregar", { p_consulta: cV, p_tipo: "procedimiento", p_concepto: "Vacuna antirrábica", p_cantidad: 1, p_precio: 150, p_servicio: null, p_insumo: null });
+  comprobar(!libre.ok && /Aplicar vacuna/.test(libre.mensaje ?? ""), `una vacuna escrita como procedimiento se rechaza y manda a «Aplicar vacuna» (${libre.mensaje})`);
+  comprobar((await rpc(P.recSin, "vet_consulta_cargo_agregar", { p_consulta: cV, p_tipo: "procedimiento", p_concepto: "Prueba rápida de parvovirus", p_cantidad: 1, p_precio: 300, p_servicio: null, p_insumo: null })).ok, "pero una prueba de diagnóstico con ese nombre sí es un procedimiento");
+  comprobar((await rpc(P.admin, "vet_es_vacuna", { p_nombre: "Quíntuple canina" })).cuerpo === true && (await rpc(P.admin, "vet_es_vacuna", { p_nombre: "Desparasitación con vacunación" })).cuerpo === false, "el reconocedor entiende «Quíntuple» y no confunde una desparasitación");
+  comprobar(!(await rpc(null, "vet_es_vacuna", { p_nombre: "vacuna" })).ok, "la llave anónima no puede preguntar");
+  // Un producto clasificado como vacuna, con lote, se registra como vacuna aplicada.
+  const prodVac = await productoClinico(P.admin, `Vacuna carnet ${MARCA}`);
+  await SB.from("insumos").update({ tipo_clinico: "vacuna", se_vende: true, precio_venta: 100 }).eq("id", prodVac);
+  const sinLote = await rpc(P.recSin, "vet_consulta_cargo_agregar", { p_consulta: cV, p_tipo: "medicamento", p_concepto: null, p_cantidad: 1, p_precio: null, p_servicio: null, p_insumo: prodVac });
+  comprobar(!sinLote.ok && /lote/.test(sinLote.mensaje ?? ""), `sin un lote con existencia no se registra a ciegas (${sinLote.mensaje})`);
+  await dar(P.admin, P.recSinId, "registrar_vacunas");
+  const loteV = (await rpc(P.admin, "registrar_lote_entrada", { p_insumo_id: prodVac, p_codigo: `VC-${MARCA}`, p_caducidad: sumaDiasV(hoyB, 200), p_cantidad_compra: 1 })).cuerpo;
+  const conLote = await rpc(P.recSin, "vet_consulta_cargo_agregar", { p_consulta: cV, p_tipo: "medicamento", p_concepto: null, p_cantidad: 1, p_precio: null, p_servicio: null, p_insumo: prodVac });
+  comprobar(conLote.ok, `con lote, el producto-vacuna se registra como vacuna aplicada (${conLote.mensaje})`);
+  const enCarnet = (await SB.from("carnet_vacunas").select("lote_id, fecha_aplicacion, insumo_id").eq("perro_id", perroV).is("anulada_at", null)).data ?? [];
+  comprobar(enCarnet.length === 1 && enCarnet[0].lote_id === loteV && enCarnet[0].fecha_aplicacion === hoyB, "queda en el carnet con su lote y la fecha de hoy");
+  d = await lineas(P.recSin, cV);
+  comprobar(d.lineas.filter((l) => l.tipo === "vacuna").length === 1 && !d.lineas.some((l) => l.tipo === "medicamento" && l.concepto.includes("Vacuna carnet")), "y en el cobro es UNA línea de vacuna (no un medicamento aparte)");
+  await quitar(P.admin, P.recSinId, "registrar_vacunas");
+  const otraV = await rpc(P.recSin, "vet_consulta_cargo_agregar", { p_consulta: cV, p_tipo: "medicamento", p_concepto: null, p_cantidad: 1, p_precio: null, p_servicio: null, p_insumo: prodVac });
+  comprobar(!otraV.ok, "quien no puede registrar vacunas no la mete por esta puerta");
 
   seccion("5. Mascota hospitalizada");
   const perro3 = await nuevoPerro("Internado");

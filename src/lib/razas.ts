@@ -26,13 +26,13 @@ export async function cargarRazas(
   const [{ data }, { data: gruposCrudo }] = await Promise.all([
     supabase
       .from("razas")
-      .select("id, nombre, alias, es_desconocida")
+      .select("id, nombre, alias, es_desconocida, tamano_tipico_id, pelaje_tipico_id")
       .is("deleted_at", null)
       .order("nombre"),
     opciones.conGrupo
       ? supabase
           .from("razas_grupo")
-          .select("raza_id, grupos_raza(nombre, depende_tamano)")
+          .select("raza_id, grupos_raza(nombre, depende_tamano, depende_pelaje)")
           .eq("negocio_id", negocioId)
           .is("deleted_at", null)
       : Promise.resolve({ data: null }),
@@ -41,7 +41,7 @@ export async function cargarRazas(
   const grupoDe = new Map(
     ((gruposCrudo ?? []) as unknown as {
       raza_id: string;
-      grupos_raza: { nombre: string; depende_tamano: boolean } | null;
+      grupos_raza: { nombre: string; depende_tamano: boolean; depende_pelaje: boolean } | null;
     }[]).map((g) => [g.raza_id, g.grupos_raza])
   );
 
@@ -50,6 +50,8 @@ export async function cargarRazas(
     nombre: string;
     alias: string[] | null;
     es_desconocida: boolean | null;
+    tamano_tipico_id: string | null;
+    pelaje_tipico_id: string | null;
   }[]).map((r) => ({
     id: r.id,
     nombre: r.nombre,
@@ -62,6 +64,11 @@ export async function cargarRazas(
       ? {
           grupo_nombre: grupoDe.get(r.id)?.nombre,
           grupo_depende_tamano: grupoDe.get(r.id)?.depende_tamano ?? false,
+          // El grupo cobra por talla Y pelaje (la matriz de «Mestizo / sin raza»): se decide por el dato, no por el nombre del grupo.
+          grupo_depende_pelaje: grupoDe.get(r.id)?.depende_pelaje ?? false,
+          // Talla y pelo típicos de la raza: la forma del perro los sugiere (nunca los impone).
+          tamano_tipico_id: r.tamano_tipico_id,
+          pelaje_tipico_id: r.pelaje_tipico_id,
         }
       : {}),
   }));

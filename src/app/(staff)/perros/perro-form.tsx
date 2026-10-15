@@ -92,12 +92,23 @@ export function PerroForm({
     raza: valoresIniciales?.raza ?? "",
   });
   const razaCatalogo = razas.find((r) => r.id === razaElegida.raza_id) ?? null;
+  // Tamaño y pelaje: la raza del catálogo los sugiere (Labrador: grande, corto) cuando aún están vacíos.
+  const [tamanoId, setTamanoId] = useState(valoresIniciales?.tamano_id ?? "");
+  const [pelajeId, setPelajeId] = useState(valoresIniciales?.pelaje_id ?? "");
+  function alElegirRaza(v: { raza_id: string | null; raza: string; propuesta?: boolean }) {
+    setRazaElegida(v);
+    const r = razas.find((x) => x.id === v.raza_id);
+    if (r?.tamano_tipico_id && !tamanoId) setTamanoId(r.tamano_tipico_id);
+    if (r?.pelaje_tipico_id && !pelajeId) setPelajeId(r.pelaje_tipico_id);
+  }
   // Una raza nueva en revisión no es un mestizo: su precio sale del grupo que se le dé.
   const conPropuesta = Boolean(razaElegida.propuesta) || (Boolean(propuestaInicial) && razaElegida.raza_id === null);
   const pideTallaYPelaje =
     !conPropuesta &&
     Boolean(razaElegida.raza.trim() || razaElegida.raza_id) &&
-    (!razaCatalogo || Boolean(razaCatalogo.es_desconocida) || /mestiz|criollo/i.test(razaCatalogo.nombre) || !razaCatalogo.grupo_nombre || razaCatalogo.grupo_nombre === "Mestizo / sin raza");
+    (!razaCatalogo || Boolean(razaCatalogo.es_desconocida) || /mestiz|criollo/i.test(razaCatalogo.nombre) || !razaCatalogo.grupo_nombre || Boolean(razaCatalogo.grupo_depende_pelaje));
+  // Una raza con nombre propio (Labrador) cuyo precio sale de la matriz de tamaño y pelaje: no es «mestizo», solo se cobra así.
+  const razaPorMatriz = Boolean(razaCatalogo && !razaCatalogo.es_desconocida && !/mestiz|criollo/i.test(razaCatalogo.nombre) && razaCatalogo.grupo_depende_pelaje);
 
   return (
     <form action={formAction} className="flex max-w-lg flex-col gap-4">
@@ -128,7 +139,7 @@ export function PerroForm({
         mostrarGrupo
         valorId={valoresIniciales?.raza_id ?? null}
         valorTexto={valoresIniciales?.raza ?? ""}
-        onElegida={setRazaElegida}
+        onElegida={alElegirRaza}
         ayuda="De aquí sale el precio de estética. Si no está en la lista, usa «No la encuentro: agregar esta raza»."
         propuestas={{
           modo: "personal",
@@ -185,8 +196,17 @@ export function PerroForm({
 
       {pideTallaYPelaje && (
         <p data-pide-talla-pelaje className="-mb-2 rounded-md border-l-4 border-ambar bg-ambar-suave px-3 py-2 text-sm text-n-800">
-          Es mestizo o sin raza de catálogo: su precio de estética sale de su <strong>tamaño</strong> y su <strong>pelaje</strong> (corto, medio o largo). Sin los dos no se
-          puede agendar.
+          {razaPorMatriz && razaCatalogo ? (
+            <>
+              {razaCatalogo.nombre} no tiene un precio propio en la lista: su precio de estética sale de su <strong>tamaño</strong> y su <strong>pelaje</strong> (corto, medio o largo).
+              {razaCatalogo.tamano_tipico_id || razaCatalogo.pelaje_tipico_id ? " Ya van sugeridos los típicos de la raza: confírmalos o cámbialos." : ""} Sin los dos no se puede agendar.
+            </>
+          ) : (
+            <>
+              Es mestizo o sin raza de catálogo: su precio de estética sale de su <strong>tamaño</strong> y su <strong>pelaje</strong> (corto, medio o largo). Sin los dos no se
+              puede agendar.
+            </>
+          )}
         </p>
       )}
       <div className="grid grid-cols-2 gap-4">
@@ -195,7 +215,8 @@ export function PerroForm({
           name="tamano_id"
           required={pideTallaYPelaje}
           disabled={deshabilitado}
-          defaultValue={valoresIniciales?.tamano_id ?? ""}
+          value={tamanoId}
+          onChange={(e) => setTamanoId(e.target.value)}
         >
           <option value="">{pideTallaYPelaje ? "Elige el tamaño" : "No especificado"}</option>
           {tamanos.map((t) => (
@@ -209,7 +230,8 @@ export function PerroForm({
           name="pelaje_id"
           required={pideTallaYPelaje}
           disabled={deshabilitado}
-          defaultValue={valoresIniciales?.pelaje_id ?? ""}
+          value={pelajeId}
+          onChange={(e) => setPelajeId(e.target.value)}
         >
           <option value="">{pideTallaYPelaje ? "Elige el pelaje" : "No especificado"}</option>
           {pelajes.map((p) => (

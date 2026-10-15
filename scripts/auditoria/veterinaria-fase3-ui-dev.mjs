@@ -257,7 +257,8 @@ try {
   const { data: estFila } = await SB.from("vet_estimados").select("estado, aceptado_via, aceptado_ip, firma_png, reserva_id").eq("id", estId).single();
   comprobar(estFila.estado === "aceptado" && estFila.aceptado_via === "liga" && estFila.firma_png?.startsWith("data:image/png") && estFila.reserva_id, "la base guarda la vía, la IP y la firma");
   const { data: cargos } = await SB.from("cargos_aplicados").select("precio, descripcion").eq("reserva_id", estFila.reserva_id);
-  comprobar(cargos.length === 2 && cargos.some((c) => Number(c.precio) === 1800) && cargos.some((c) => /2 × Sutura/.test(c.descripcion) && Number(c.precio) === 120), "los cargos del mínimo llegaron a la cuenta de la mascota");
+  // La cuenta puede traer además el cargo de la consulta ya firmada (si el catálogo tiene su precio): lo que importa es que el mínimo del estimado llegó.
+  comprobar(cargos.length >= 2 && cargos.some((c) => Number(c.precio) === 1800) && cargos.some((c) => /2 × Sutura/.test(c.descripcion) && Number(c.precio) === 120), "los cargos del mínimo llegaron a la cuenta de la mascota");
   await mvz.p.goto(`${BASE}/veterinaria/estimados/${estId}`, { waitUntil: "networkidle" });
   const tEst = await cuerpo(mvz.p);
   comprobar(/Aceptado por/.test(tEst) && (await mvz.p.getByRole("link", { name: "Cobrar en Caja" }).count()) === 1, "el estimado muestra quién lo aceptó y lleva a cobrar en Caja");

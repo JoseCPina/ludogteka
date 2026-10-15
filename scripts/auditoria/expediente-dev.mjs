@@ -125,6 +125,14 @@ try {
   comprobar(gp.ok && gp.cuerpo === v0 + 1, "admin guarda una versión nueva (queda la historia)");
   comprobar(!(await rpc(P.admin, "guardar_plantilla_consulta", { p_tipo: "consulta", p_texto: { anamnesis: "x".repeat(5000) } })).ok, "un texto de 5,000 caracteres se rechaza");
 
+  // Sin precio de catálogo una consulta no se firma (migración 20261029000000): estos servicios llevan precio.
+  await rpc(P.admin, "vet_asegurar_servicios");
+  for (const [clave, precio] of [["vet_consulta_general", 450], ["vet_consulta_urgencia", 700], ["vet_revision_seguimiento", 300], ["vet_aplicacion_vacuna", 120]]) {
+    const sv = (await SB.from("servicios").select("id").eq("negocio_id", B).eq("clave", clave).is("deleted_at", null).single()).data;
+    await SB.from("tarifas").update({ deleted_at: new Date().toISOString() }).eq("servicio_id", sv.id).is("deleted_at", null);
+    await SB.from("tarifas").insert({ negocio_id: B, servicio_id: sv.id, precio, no_aplica: false, cantidad_desde: 1, cantidad_hasta: null, vigencia_desde: "2026-01-01" });
+  }
+
   seccion("3. La consulta (SOAP)");
   const perroC = await nuevoPerro("Consultin");
   const iniciar = (token, extra = {}) => rpc(token, "vet_consulta_iniciar", { p_perro: perroC, p_cita: null, p_tipo: "consulta", p_medico: medA, ...extra });

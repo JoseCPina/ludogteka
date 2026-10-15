@@ -35,3 +35,12 @@ export const ETIQUETA_TIPO_CARGO: Record<LineaCargo["tipo"], string> = {
   medicamento: "Medicamento",
   procedimiento: "Procedimiento",
 };
+
+/**
+ * ¿El texto de un procedimiento es el nombre de una vacuna? (la gemela de `vet_es_vacuna` en la base).
+ * Una vacuna no se cobra como «otro procedimiento»: se aplica con «Aplicar vacuna» y entra al carnet.
+ */
+export function pareceVacuna(texto: string): boolean {
+  const t = texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  return /(vacun|antirrab|quintuple|sextuple|octuple|polivalente|triple felina|triple viral|inmunizacion)/.test(t) && !/(desparasit|prueba|test|certificado|carnet|constancia)/.test(t);
+}

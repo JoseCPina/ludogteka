@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { Alert } from "@/components/ui/alert";
@@ -37,7 +37,7 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 };
 
 /** El borrador de una consulta: se guarda solo (a los 1.5 s de dejar de escribir) y se firma desde aquí. */
-export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, cargosIniciales }: { consulta: ConsultaVet; especie: string | null; soyElMedico: boolean; nombreMedico: string; cargosIniciales: DatosCargos | null }) {
+export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, cargosIniciales, puedeCatalogo = false, aplicarVacuna }: { consulta: ConsultaVet; especie: string | null; soyElMedico: boolean; nombreMedico: string; cargosIniciales: DatosCargos | null; puedeCatalogo?: boolean; aplicarVacuna?: ReactNode }) {
   const router = useRouter();
   const [v, setV] = useState<Valores>(() => inicial(consulta));
   const [dx, setDx] = useState<Diagnostico[]>(consulta.diagnosticos ?? []);
@@ -45,6 +45,12 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
   const [errorGuardado, setErrorGuardado] = useState<string | null>(null);
   const [errorFirma, setErrorFirma] = useState<string | null>(null);
   const [cargos, setCargos] = useState<DatosCargos | null>(cargosIniciales);
+  // Lo que el servidor recalcula (p. ej. al aplicar una vacuna) reemplaza lo mostrado.
+  const [cargosPrevios, setCargosPrevios] = useState(cargosIniciales);
+  if (cargosIniciales !== cargosPrevios) {
+    setCargosPrevios(cargosIniciales);
+    setCargos(cargosIniciales);
+  }
   const ultimo = useRef<{ v: Valores; dx: Diagnostico[] }>({ v: inicial(consulta), dx: consulta.diagnosticos ?? [] });
   const sucios = useRef<Set<string>>(new Set());
   const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -117,7 +123,11 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
 
   async function firmar() {
     setErrorFirma(null);
-    const resumenCobro = cargos && cargos.total > 0 ? ` Pasarán a Caja ${dinero(cargos.total)} en cargos.` : cargos && cargos.sin_precio > 0 ? " Hay cargos sin precio: no pasarán a Caja hasta que lo captures." : "";
+    if (cargos && cargos.sin_precio > 0) {
+      setErrorFirma(`Falta el precio de ${cargos.sin_precio === 1 ? "un cargo" : `${cargos.sin_precio} cargos`}. Ponlo en «Cargos de esta consulta» (o márcalo «Sin cobro» con su motivo) y vuelve a firmar.`);
+      return;
+    }
+    const resumenCobro = cargos && cargos.total > 0 ? ` Pasarán a Caja ${dinero(cargos.total)} en cargos.` : "";
     if (!window.confirm(`Al firmar, la consulta ya no se edita: solo admitirá una adenda firmada.${resumenCobro} ¿Firmar con tu cédula?`)) return;
     if (!(await guardarAhora())) {
       setErrorFirma("No se pudo guardar el borrador; revisa el aviso de arriba antes de firmar.");
@@ -140,7 +150,7 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
   const grupos = Array.from(new Set(SECCIONES_CONSULTA.map((s) => s.grupo)));
 
   return (
-    <form className="flex flex-col gap-6" onSubmit={(e) => e.preventDefault()}>
+    <div className="flex flex-col gap-6">
       {/* Respaldo en el servidor de lo escrito, por si se pierde la conexión o se cierra la pestaña a medias. */}
       <BorradorFormulario formulario="consulta" clave={consulta.id} />
       <div role="status" aria-live="polite" className={`sticky top-0 z-10 -mx-1 rounded-md px-3 py-2 text-sm font-semibold ${estado === "error" ? "bg-coral-suave text-coral-oscuro" : "bg-n-50 text-n-600"}`}>
@@ -190,7 +200,7 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
         </section>
       ))}
 
-      {cargos && <CargosConsulta consultaId={consulta.id} inicial={cargos} puedeAgregar onResumen={setCargos} />}
+      {cargos && <CargosConsulta consultaId={consulta.id} inicial={cargos} puedeAgregar onResumen={setCargos} puedeCatalogo={puedeCatalogo} aplicarVacuna={aplicarVacuna} />}
 
       <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
         <h2 className="text-lg font-bold text-n-900">Firmar</h2>
@@ -226,7 +236,7 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
           </Button>
         </AccionesFormulario>
       </section>
-    </form>
+    </div>
   );
 }
 

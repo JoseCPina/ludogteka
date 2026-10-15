@@ -341,6 +341,8 @@ export function CuentaCobro({
 
   const [notasCobro, setNotasCobro] = useState("");
   const [metodos, setMetodos] = useState<FilaMetodo[]>([NuevaFilaMetodo()]);
+  // Con un solo método y sin haberlo tocado, el monto abre con el saldo pendiente.
+  const [montoTocado, setMontoTocado] = useState(false);
   const cobrando = useEspera();
 
   const [devolviendoCobroId, setDevolviendoCobroId] = useState<string | null>(null);
@@ -350,10 +352,13 @@ export function CuentaCobro({
   ]);
   const devolviendo = useEspera();
 
-  const totalMetodos = metodos.reduce((sum, m) => sum + (Number(m.monto) || 0), 0);
+  const montoDeMetodo = (i: number, m: FilaMetodo) =>
+    metodos.length === 1 && !montoTocado && i === 0 && totales.saldo > 0.005 ? (Math.round(totales.saldo * 100) / 100).toFixed(2) : m.monto;
+  const metodosEfectivos = metodos.map((m, i) => ({ ...m, monto: montoDeMetodo(i, m) }));
+  const totalMetodos = metodosEfectivos.reduce((sum, m) => sum + (Number(m.monto) || 0), 0);
   const [exitoCobro, setExitoCobro] = useState<string | null>(null);
   // Solo el efectivo admite cambio; los demás métodos no pueden pasar del saldo.
-  const sinEfectivo = metodos.filter((m) => m.metodo !== "efectivo").reduce((s, m) => s + (Number(m.monto) || 0), 0);
+  const sinEfectivo = metodosEfectivos.filter((m) => m.metodo !== "efectivo").reduce((s, m) => s + (Number(m.monto) || 0), 0);
   const cambioPrevisto = Math.round((totalMetodos - Math.max(totales.saldo, 0)) * 100) / 100;
 
   async function accionAbrirTurno() {
@@ -373,11 +378,12 @@ export function CuentaCobro({
   }
 
   function actualizarMetodo(i: number, cambios: Partial<FilaMetodo>) {
+    if (cambios.monto !== undefined) setMontoTocado(true);
     setMetodos((prev) => prev.map((m, idx) => (idx === i ? { ...m, ...cambios } : m)));
   }
 
   async function enviarCobro() {
-    const payload = metodos.map((m) => ({
+    const payload = metodosEfectivos.map((m) => ({
       metodo: m.metodo,
       monto: Number(m.monto) || 0,
       propina: Number(m.propina) || 0,
@@ -413,6 +419,7 @@ export function CuentaCobro({
     setExitoCobro(res.cambio ? `Cobro registrado. Cambio: ${dinero(res.cambio)} (a la caja entró solo el saldo).` : "Cobro registrado.");
     setNotasCobro("");
     setMetodos([NuevaFilaMetodo()]);
+    setMontoTocado(false);
     router.refresh();
   }
 
@@ -822,7 +829,7 @@ export function CuentaCobro({
                   type="number"
                   min="0"
                   step="0.01"
-                  value={m.monto}
+                  value={montoDeMetodo(i, m)}
                   onChange={(e) => actualizarMetodo(i, { monto: e.target.value })}
                 />
               </div>
@@ -854,7 +861,11 @@ export function CuentaCobro({
             type="button"
             variante="secundario"
             className="self-start"
-            onClick={() => setMetodos((prev) => [...prev, NuevaFilaMetodo()])}
+            onClick={() => {
+              // El primer método conserva lo que se veía (el saldo) y el nuevo se captura aparte.
+              setMetodos((prev) => [...prev.map((m, i) => (i === 0 ? { ...m, monto: montoDeMetodo(0, m) } : m)), NuevaFilaMetodo()]);
+              setMontoTocado(true);
+            }}
           >
             + Repartir en otro método
           </Button>

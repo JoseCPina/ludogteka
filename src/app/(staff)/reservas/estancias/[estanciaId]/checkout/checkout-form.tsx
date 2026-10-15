@@ -140,7 +140,8 @@ export function CheckoutForm({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field
-          label="Quién recoge al perro"
+          label="Quién recoge al perro (obligatorio)"
+          required
           value={recogidoNombre}
           onChange={(e) => setRecogidoNombre(e.target.value)}
           placeholder="Nombre de quien lo recoge"

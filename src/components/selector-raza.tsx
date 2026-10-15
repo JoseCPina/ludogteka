@@ -18,6 +18,9 @@ export type RazaOpcion = {
   // conGrupo). En la pantalla del cliente no se mandan.
   grupo_nombre?: string;
   grupo_depende_tamano?: boolean;
+  grupo_depende_pelaje?: boolean;
+  tamano_tipico_id?: string | null;
+  pelaje_tipico_id?: string | null;
 };
 
 /**
@@ -426,9 +429,19 @@ function AvisoGrupo({
   );
 
   if (elegida?.grupo_nombre) {
+    // Una raza con nombre propio que cae en la matriz de tamaño y pelaje no es «mestizo»: solo se cobra así.
+    const porMatriz = Boolean(elegida.grupo_depende_pelaje) && !elegida.es_desconocida && !/mestiz|criollo/i.test(elegida.nombre);
     return (
       <p data-aviso-grupo="ok" className="mt-1.5 text-sm text-n-600">
-        Grupo de precio de estética: <strong>{elegida.grupo_nombre}</strong>
+        {porMatriz ? (
+          <>
+            Estética: se cobra por <strong>tamaño y pelaje</strong> (grupo «{elegida.grupo_nombre}»)
+          </>
+        ) : (
+          <>
+            Grupo de precio de estética: <strong>{elegida.grupo_nombre}</strong>
+          </>
+        )}
       </p>
     );
   }
