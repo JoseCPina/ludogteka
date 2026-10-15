@@ -70,7 +70,7 @@ async function insertarEstancia(reservaId: string, linea: LineaReserva): Promise
     .single();
 
   if (error) {
-    return { perroId: linea.perroId, exito: false, motivo: traducirError(error), estanciaId: null };
+    return { perroId: linea.perroId, exito: false, motivo: traducirError(error, { fecha: linea.fechaEntrada }), estanciaId: null };
   }
 
   // Guardería de día completo: si el perro tiene pases o mensualidad
@@ -228,7 +228,7 @@ export async function moverFechas(
     .update({ fecha_entrada: fechaEntrada, fecha_salida: fechaSalida })
     .eq("id", estanciaId);
 
-  if (error) return { error: traducirError(error) };
+  if (error) return { error: traducirError(error, { fecha: fechaEntrada }) };
   revalidarModulosEstancia();
   return { error: null };
 }

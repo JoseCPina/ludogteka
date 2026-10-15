@@ -60,7 +60,7 @@ const { data: razas } = await A.from("razas").select("id, nombre");
 const { data: servicios } = await SB.from("servicios").select("id, clave").eq("categoria", "estetica").is("deleted_at", null);
 const srv = (c) => servicios.find((s) => s.clave === `estetica_${c}`).id;
 const sufijo = String(Date.now()).slice(-6);
-const creados = { perros: [], reservas: [], citas: [], ordenes: [] };
+const creados = { perros: [], reservas: [], citas: [], ordenes: [], estancias: [] };
 
 const mkPerro = async (nombre) => {
   const { data, error } = await SB.from("perros").insert({
@@ -197,6 +197,47 @@ try {
   comprobar(rD.ok && (await citaFila(cD.cita)).estado === "en_curso", "la cita en curso no se cancela desde aquí (la cuenta sí)");
   comprobar((await filaCancelada(cD.reserva))?.citas_no_canceladas?.includes(cD.cita), "y queda anotado que esa cita no se canceló");
 
+  // ── 4b. Reserva de guardería ligada (QA externa B16) ──
+  console.log("── 4b. Reserva de guardería u hotel ligada");
+  const { data: gDia } = await SB.from("servicios").select("id").eq("negocio_id", B).eq("categoria", "guarderia").eq("unidad", "dia").is("deleted_at", null).limit(1).single();
+  const esDom = (d) => new Date(`${d}T12:00:00Z`).getUTCDay() === 0;
+  let diaE = suma(70 + Math.floor(Math.random() * 200));
+  while (esDom(diaE)) diaE = new Date(new Date(`${diaE}T12:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10);
+  const nuevaEstancia = async (perroId, dia, estado = "reservada") => {
+    while (esDom(dia)) dia = new Date(new Date(`${dia}T12:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10);
+    const rr = await llamar(`${URL}/rest/v1/reservas`, { method: "POST", headers: cab(tAdmin), body: JSON.stringify({ cliente_id: datos.clienteSoloB }) });
+    const reserva = rr.cuerpo?.[0]?.id;
+    if (!reserva) throw new Error(`reserva: ${rr.mensaje}`);
+    creados.reservas.push(reserva);
+    const e = await llamar(`${URL}/rest/v1/estancias`, {
+      method: "POST", headers: cab(tAdmin),
+      body: JSON.stringify({ reserva_id: reserva, perro_id: perroId, servicio_id: gDia.id, fecha_entrada: dia, fecha_salida: new Date(new Date(`${dia}T12:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10), estado, bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: "Prueba cancelar cuenta", bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: "Prueba cancelar cuenta" }),
+    });
+    const id = e.cuerpo?.[0]?.id;
+    if (!id) throw new Error(`estancia: ${e.mensaje}`);
+    creados.estancias.push(id);
+    return { id, reserva };
+  };
+  const estFila = async (id) => (await SB.from("estancias").select("estado").eq("id", id).single()).data;
+  const perroE = await mkPerro("estancia");
+  const eA = await nuevaEstancia(perroE, diaE);
+  const infoE = await rpc(tRec, "cuenta_para_cancelar", { p_reserva_id: eA.reserva });
+  comprobar(infoE.ok && infoE.cuerpo.estancias_pendientes?.length === 1, "la hoja ve la reserva de guardería que no empieza");
+  const rEA = await cancelar(tRec, eA.reserva, "cita_cancelada", null, true);
+  comprobar(rEA.ok && (await estFila(eA.id)).estado === "cancelada", `«Cita cancelada» + cancelar la reserva: la estancia queda cancelada y libera cupo (${rEA.mensaje || "ok"})`);
+  comprobar((await filaCancelada(eA.reserva))?.estancias_canceladas?.includes(eA.id), "la cuenta registra qué estancia se canceló");
+  comprobar(!(await enAbiertas(eA.reserva)), "la cuenta salió de Caja");
+  const eB = await nuevaEstancia(perroE, suma(60 + Math.floor(Math.random() * 200)) );
+  const rEB = await cancelar(tRec, eB.reserva, "no_se_presento", null, true);
+  comprobar(rEB.ok && (await estFila(eB.id)).estado === "no_llego", "«No se presentó» deja la estancia en «no llegó»");
+  const eC = await nuevaEstancia(perroE, suma(300 + Math.floor(Math.random() * 100)));
+  const rEC = await cancelar(tRec, eC.reserva, "error_captura", "captura doble", false);
+  comprobar(rEC.ok && (await estFila(eC.id)).estado === "reservada", "sin pedirlo, la estancia se queda como estaba");
+  const eD = await nuevaEstancia(perroE, suma(420 + Math.floor(Math.random() * 100)));
+  { const u = await SB.from("estancias").update({ estado: "en_curso", entregado_por_nombre: "Prueba" }).eq("id", eD.id); if (u.error) console.log("   (en_curso:", u.error.message, ")"); }
+  const rED = await cancelar(tRec, eD.reserva, "otro", "el dueño no pagó nada", true);
+  comprobar(rED.ok && (await estFila(eD.id)).estado === "en_curso" && (await filaCancelada(eD.reserva))?.estancias_no_canceladas?.includes(eD.id), "una estancia en curso no se cancela desde aquí y queda anotado");
+
   // ── 5. Cortesía ──
   console.log("── 5. Cortesía sobre un servicio realizado");
   const cE = await nuevaCita(perro);
@@ -275,6 +316,7 @@ try {
 } finally {
   for (const p of ["cancelar_cuentas", "anular_cobros"]) { await quitar(idRecConPermiso, p); await quitar(idRecSinPermiso, p); }
   if (creados.ordenes.length) await SB.from("mp_ordenes").update({ estado: "cancelada" }).in("id", creados.ordenes);
+  if (creados.estancias.length) await SB.from("estancias").update({ deleted_at: new Date().toISOString() }).in("id", creados.estancias).is("deleted_at", null);
   if (creados.citas.length) await SB.from("citas_estetica").update({ deleted_at: new Date().toISOString() }).in("id", creados.citas).is("deleted_at", null);
 }
 

@@ -274,7 +274,8 @@ En **Series recurrentes** toca **Nueva serie**, escoge el perro, el servicio y l
 - «Este perro tiene un requisito sanitario obligatorio vencido o sin registro.»: registra la vacuna en su expediente. Un admin puede autorizar una excepción con motivo.
 - «Este perro no tiene evaluación previa de comportamiento.»: el aviso sale en cuanto eliges a la mascota, con un enlace para completar la evaluación en su expediente. Un admin (o quien tenga el permiso de excepciones) puede reservar sin ella marcando la excepción ahí mismo y escribiendo el motivo.
 - «No hay cupo disponible (diurno) para el …»: ese día ya está lleno.
-- «Guardería no abre en …»: escoge un día con horario.`,
+- «Guardería no abre en …»: escoge un día con horario.
+- «Este perro ya tiene una reserva en fechas que se traslapan con estas»: toca **el calendario** al final del aviso para ver qué reservas hay ese día ([Calendario de reservas](/ayuda/calendario-de-reservas)).`,
   },
   {
     slug: "reservar-hotel",
@@ -305,6 +306,46 @@ Si el perro ya está en la puerta sin reserva, usa **Walk-in (sin reserva)** des
 - «Esta perra está marcada en celo…»: no se puede quedar mientras dure.`,
   },
   {
+    slug: "calendario-de-reservas",
+    titulo: "Calendario de reservas de guardería y hotel",
+    resumen: "Ves la ocupación de cada día contra el cupo y todas las reservas por venir, y las abres, mueves o cancelas desde ahí.",
+    grupo: "guarderia",
+    modulo: ["guarderia", "hotel"],
+    roles: ["admin", "recepcion"],
+    rutas: ["/reservas/calendario"],
+    palabras: ["calendario", "cupo", "ocupación", "reservas futuras", "próximas reservas", "lista de reservas", "mover reserva", "cancelar reserva", "semana", "mes"],
+    cuerpo: `El calendario junta la guardería y el hotel: cuántos perros hay cada día contra el cupo y todas las reservas por venir. Está en el menú, en **Calendario**.
+
+## Ver la ocupación
+
+1. Escoge **Semana** o **Mes**. Con **←**, **Hoy** y **→** te mueves de fecha.
+2. Cada día dice cuántos perros hay contra el cupo (por ejemplo, 12/35) y, en pantallas grandes, cuántos son de guardería y cuántos de hotel (contra el cupo de noche). Verde: hay reservas; ámbar: casi lleno (80 % o más); rojo: lleno.
+3. El cupo es el de toda la casa: guardería y hotel comparten el mismo espacio.
+
+## Ver las reservas de un día
+
+Toca el día. Abajo salen sus reservas con la mascota, el dueño, el estado y la cuenta (por ejemplo, «Debe $350.00», «Pagada» o «Cuenta cancelada»).
+
+## Próximas reservas
+
+Más abajo está la lista de lo que viene. Filtra por **Módulo**, **Estado** y **Desde** y toca **Filtrar**. De cada reserva puedes:
+
+- **Abrir**: va a la reserva, con su cuenta y sus cargos.
+- **Mover fechas**: escoge la nueva fecha (y la salida, si es hotel) y toca **Guardar fechas**.
+- **Cancelar**: pide confirmar; libera el cupo y, si usó un pase, se lo devuelve.
+
+Solo se pueden mover o cancelar las reservas **Reservada** o **Confirmada**. Si el perro ya hizo check-in, la salida se hace desde su estancia.
+
+## Cuando una cuenta se cancela pero la reserva sigue
+
+Al cancelar una cuenta en [Caja](/caja), marca la casilla para cancelar también la reserva. Si no se marcó, la reserva sigue ocupando cupo: aquí la ves con **Cuenta cancelada** y la puedes cancelar.
+
+## Si algo no sale
+
+- «No hay cupo disponible…»: ese día ya está lleno; mira el calendario y escoge otro.
+- «Este perro ya tiene una reserva en fechas que se traslapan»: el aviso trae un enlace al calendario en esa fecha.`,
+  },
+  {
     slug: "registrar-check-in",
     titulo: "Cómo registrar un check-in",
     resumen: "Anotas quién deja al perro, cómo llega y qué trae, y queda adentro.",
@@ -328,7 +369,7 @@ Si el perro ya está en la puerta sin reserva, usa **Walk-in (sin reserva)** des
 
 ## Si algo no sale
 
-- «Registra quién entrega al perro.»: escribe el nombre de quien lo deja.
+- El campo **Quién entrega al perro** se marca en rojo y dice «Escribe quién entrega al perro»: escribe el nombre de quien lo deja.
 - Si no tiene reserva, usa **Walk-in (sin reserva)** en la lista de check-in.
 - Si el check-in se hizo por error y el perro venía con pase, quien tenga el permiso «Ajustar días de pases» toca **Deshacer este check-in** (ver [Cómo ajustar los días usados de un pase](/ayuda/ajustar-dias-usados-de-un-pase)).`,
   },
@@ -360,7 +401,7 @@ En hotel, si se queda una noche más, toca **Extender 1 noche**. Si un perro de 
 ## Si algo no sale
 
 - «No hay turno de caja abierto. Ábrelo antes de cobrar.»: toca **Abrir turno**, pon el **Fondo inicial** y **Confirmar apertura**.
-- «Registra quién recoge al perro.»: escribe el nombre.`,
+- El campo **Quién recoge al perro** (o la pregunta del dueño) se marca en rojo y dice qué falta: escribe el nombre e indica si es el dueño.`,
   },
   {
     slug: "vender-day-pass-o-mensualidad",

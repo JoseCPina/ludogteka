@@ -12,6 +12,10 @@ import { dinero as formatearMoneda } from "@/lib/dinero";
 import { ETIQUETA_TIPO_CARGO, pareceVacuna, type CargosConsulta, type LineaCargo } from "@/lib/veterinaria/cargos-consulta";
 import { agregarCargoConsulta, ajustarCargoConsulta, pasarCargosACaja, ponerPrecioCargo, quitarCargoConsulta, restaurarCargoConsulta, sinCobroCargo, type ResultadoCargos } from "./cargos-actions";
 
+// Una línea sin precio de un servicio del catálogo es, por definición, un servicio al que el catálogo no le
+// pone precio: quien puede editar precios la guarda como precio de catálogo (viene marcada, se puede desmarcar).
+const sePuedeGuardarEnCatalogo = (l: LineaCargo) => l.tipo === "consulta" || l.tipo === "vacuna" || (l.tipo === "procedimiento" && l.origen === "catalogo");
+
 const num = (t: string) => Number(t.replace(",", ".").trim());
 
 /**
@@ -201,7 +205,7 @@ export function CargosConsulta({
                   {precioDe === l.id ? (
                     <div className="grid items-end gap-3 sm:grid-cols-3">
                       <Field label="Precio de esta consulta ($)" name="precio_faltante" inputMode="decimal" value={precioNuevo} onChange={(e) => setPrecioNuevo(e.target.value)} />
-                      {puedeCatalogo && (l.tipo === "consulta" || l.tipo === "vacuna" || (l.tipo === "procedimiento" && l.origen === "catalogo")) && (
+                      {puedeCatalogo && sePuedeGuardarEnCatalogo(l) && (
                         <label className="flex items-center gap-2 text-sm text-n-800 sm:col-span-2">
                           <input type="checkbox" checked={aCatalogo} onChange={(e) => setACatalogo(e.target.checked)} className="h-4 w-4" />
                           Guardar como precio de catálogo (las próximas consultas ya lo traen)
@@ -224,7 +228,7 @@ export function CargosConsulta({
                     </div>
                   ) : (
                     <div className="flex flex-wrap gap-2">
-                      <Button type="button" onClick={() => { setPrecioDe(l.id); setSinCobroDe(null); setPrecioNuevo(""); setACatalogo(false); setError(null); }}>Poner el precio</Button>
+                      <Button type="button" onClick={() => { setPrecioDe(l.id); setSinCobroDe(null); setPrecioNuevo(""); setACatalogo(puedeCatalogo && sePuedeGuardarEnCatalogo(l)); setError(null); }}>Poner el precio</Button>
                       {(d.puede_ajustar || l.origen === "manual") && (
                         <Button type="button" variante="secundario" onClick={() => { setSinCobroDe(l.id); setPrecioDe(null); setMotivoSinCobro(""); setError(null); }}>Sin cobro</Button>
                       )}

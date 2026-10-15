@@ -2,7 +2,7 @@
 
 Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scripts/tutoriales/catalogo.mjs` y de lo que la app tiene hoy (código). No se edita a mano: se cambia el catálogo.
 
-**94 videos** (el 00 es el avance) en 10 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
+**95 videos** (el 00 es el avance) en 10 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
 
 ## Catálogo
 
@@ -98,6 +98,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 92 | Veterinaria | Cómo entra el dueño a una teleconsulta | recepcion | 2.5 min | veterinaria | — |
 | 93 | Veterinaria | Cómo se cobra una consulta veterinaria | recepcion | 2.5 min | veterinaria | atender_consultas, ajustar_cargos_consulta |
 | 89 | Guardería y hotel | Servicios extra | recepcion | 2.5 min | guarderia, hotel | agregar_servicios_extra, editar_catalogo_extras |
+| 94 | Guardería y hotel | Calendario de reservas y cancelar una cuenta con su reserva | recepcion | 2.5 min | guarderia, hotel | cancelar_cuentas |
 | 66 | Tu negocio | Importar tus clientes y mascotas desde Excel | admin | 2.5 min | — | importar_datos |
 | 67 | Tu negocio | Ver el historial de importaciones y deshacer una | admin | 2.5 min | — | importar_datos |
 | 68 | Empieza aquí | Recupera lo que estabas escribiendo: borradores | recepcion | 2.5 min | — | — |
@@ -215,6 +216,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/reservas` | 25 |  |
 | `/reservas/[id]` | 25 |  |
 | `/reservas/[id]/cobrar` | 30 |  |
+| `/reservas/calendario` | 94 |  |
 | `/reservas/estancias/[estanciaId]/checkin` | 29 |  |
 | `/reservas/estancias/[estanciaId]/checkout` | 30 |  |
 | `/reservas/series/[id]` | 27 |  |
@@ -270,6 +272,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | --- | --- | --- |
 | Guardería | `/guarderia` | 25, 27, 28, 29, 30, 31, 39 |
 | Hotel | `/hotel` | 26, 27, 28, 29, 30 |
+| Calendario | `/reservas/calendario` | 94 |
 | Adentro ahora | `/adentro` | 31 |
 | Estética | `/estetica` | 01, 21, 22, 23, 55 |
 | Servicios | `/servicios` | 20, 24 |
@@ -301,8 +304,8 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 
 | Módulo | Videos |
 | --- | --- |
-| guarderia | 25, 27, 28, 29, 30, 31, 89 |
-| hotel | 26, 27, 28, 29, 30, 31, 89 |
+| guarderia | 25, 27, 28, 29, 30, 31, 89, 94 |
+| hotel | 26, 27, 28, 29, 30, 31, 89, 94 |
 | estetica | 20, 21, 22, 23, 24, 55, 58, 63, 64 |
 | veterinaria | 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 90, 91, 92, 93 |
 | bonos | 39, 60 |
@@ -359,7 +362,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Importar clientes y mascotas (`importar_datos`) | 66, 67 |
 | Agregar servicios extra (`agregar_servicios_extra`) | 89 |
 | Editar catálogo de servicios extra (`editar_catalogo_extras`) | 89 |
-| Cancelar cuentas (`cancelar_cuentas`) | — |
+| Cancelar cuentas (`cancelar_cuentas`) | 94 |
 
 ## Artículos de ayuda → videos
 
@@ -380,7 +383,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | politicas-y-reglas | 51 |
 | perfil-y-pagina-web | 52 |
 | pedir-ayuda | 53 |
-| cobrar-una-cuenta | 33 |
+| cobrar-una-cuenta | 33, 94 |
 | cobrar-varios-servicios-juntos | 57 |
 | cobrar-con-terminal | 34, 59 |
 | terminal-no-recibe-el-cobro | 34, 59 |
@@ -418,6 +421,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | mandar-a-firmar-un-contrato | 17 |
 | reservar-guarderia | 25 |
 | reservar-hotel | 26 |
+| calendario-de-reservas | 94 |
 | registrar-check-in | 29 |
 | registrar-check-out-y-cobrar | 30 |
 | vender-day-pass-o-mensualidad | 39 |

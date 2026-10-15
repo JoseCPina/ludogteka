@@ -60,6 +60,7 @@ export function AgendarForm({
   puedeAsignarGrupo,
   puedeExcepcion,
   razas = [],
+  horaInicial,
 }: {
   clientes: ClienteBuscable[];
   perros: Perro[];
@@ -91,6 +92,8 @@ export function AgendarForm({
   puedeExcepcion: boolean;
   // Catálogo de razas, para dar de alta otro perrito del cliente sin salir de aquí.
   razas?: RazaOpcion[];
+  // La siguiente hora disponible (nunca una que ya pasó); la calcula el servidor con el horario del negocio.
+  horaInicial?: string;
   rolActual: string;
   userIdActual: string;
 }) {
@@ -112,7 +115,7 @@ export function AgendarForm({
   const [perroId, setPerroId] = useState("");
   const [servicioId, setServicioId] = useState(servicios[0]?.id ?? "");
   const [empleadoId, setEmpleadoId] = useState(rolActual === "estetica" ? userIdActual : empleados[0]?.id ?? "");
-  const [fechaHora, setFechaHora] = useState(`${hoyNegocio(zona)}T10:00`);
+  const [fechaHora, setFechaHora] = useState(horaInicial ?? `${hoyNegocio(zona)}T10:00`);
   const [estanciaId, setEstanciaId] = useState("");
   const [peloMaltratado, setPeloMaltratado] = useState(false);
   const [grupoElegido, setGrupoElegido] = useState("");

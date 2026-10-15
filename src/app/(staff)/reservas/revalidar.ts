@@ -17,6 +17,7 @@ export function revalidarModulosEstancia() {
     revalidatePath(`${modulo.base}/checkout`);
   }
   revalidatePath("/reservas");
+  revalidatePath("/reservas/calendario");
 }
 
 export function revalidarSeriesModulos() {

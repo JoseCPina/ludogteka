@@ -33,6 +33,8 @@ export const SECCIONES_STAFF: ItemNav[] = [
   // src/lib/modulos.ts.
   { etiqueta: "Guardería", href: "/guarderia", roles: ["admin", "recepcion"], modulo: "guarderia" },
   { etiqueta: "Hotel", href: "/hotel", roles: ["admin", "recepcion"], modulo: "hotel" },
+  // Ocupación por día contra el cupo y la lista de próximas reservas de guardería y hotel.
+  { etiqueta: "Calendario", href: "/reservas/calendario", roles: ["admin", "recepcion"], modulo: ["guarderia", "hotel"] },
   // Los que están adentro, con fotos, videos y el reporte del día.
   { etiqueta: "Adentro ahora", href: "/adentro", roles: ["admin", "recepcion"], modulo: ["guarderia", "hotel"] },
   { etiqueta: "Estética", href: "/estetica", roles: ["admin", "recepcion", "estetica"], modulo: "estetica" },

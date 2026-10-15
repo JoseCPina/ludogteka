@@ -40,16 +40,21 @@ export async function cancelarCuenta(
   revalidatePath("/caja");
   revalidatePath("/recepcion");
   revalidatePath("/estetica");
+  revalidatePath("/guarderia");
+  revalidatePath("/hotel");
+  revalidatePath("/reservas/calendario");
   revalidatePath(`/caja/cobrar/${reservaId}`);
   revalidatePath(`/reservas/${reservaId}/cobrar`);
-  const d = data as { citas_canceladas?: string[]; citas_no_canceladas?: string[] } | null;
+  const d = data as { citas_canceladas?: string[]; citas_no_canceladas?: string[]; estancias_canceladas?: string[]; estancias_no_canceladas?: string[] } | null;
   const citas = d?.citas_canceladas?.length ?? 0;
-  const sin = d?.citas_no_canceladas?.length ?? 0;
+  const sin = (d?.citas_no_canceladas?.length ?? 0) + (d?.estancias_no_canceladas?.length ?? 0);
+  const estancias = d?.estancias_canceladas?.length ?? 0;
   return {
     error: null,
     aviso:
       "Cuenta cancelada: salió de las cuentas por cobrar y quedó en el historial del cliente con el motivo y tu nombre." +
       (citas ? ` También se ${citas === 1 ? "canceló la cita" : "cancelaron las citas"}.` : "") +
-      (sin ? " Una cita ya empezada no se cancela desde aquí." : ""),
+      (estancias ? ` También se ${estancias === 1 ? "canceló la reserva" : "cancelaron las reservas"} y quedó libre su cupo.` : "") +
+      (sin ? " Una cita o estancia ya empezada no se cancela desde aquí." : ""),
   };
 }

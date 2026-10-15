@@ -56,6 +56,8 @@ export function CancelarCuenta({
   }
 
   const citas = info?.citas_pendientes ?? [];
+  const estancias = info?.estancias_pendientes ?? [];
+  const pendientes = citas.length + estancias.length;
   const cortesiaBloqueada = Boolean(info?.servicio_realizado) && !esAdmin;
   const conCobros = Boolean(info && info.total_cobrado > 0.005);
 
@@ -63,7 +65,7 @@ export function CancelarCuenta({
     setError(null);
     if (!motivo) return setError("Escoge el motivo.");
     if (motivo === "otro" && texto.trim().length < 5) return setError("Con «Otro», escribe el motivo.");
-    const r = await envio.ejecutar(() => cancelarCuenta(reservaId, motivo, texto, citas.length > 0 && cancelarCita));
+    const r = await envio.ejecutar(() => cancelarCuenta(reservaId, motivo, texto, pendientes > 0 && cancelarCita));
     if (r.error) return setError(r.error);
     setAviso(r.aviso ?? "Cuenta cancelada.");
     router.refresh();
@@ -117,7 +119,7 @@ export function CancelarCuenta({
                 onChange={(e) => setTexto(e.target.value)}
               />
             )}
-            {citas.length > 0 && (
+            {pendientes > 0 && (
               <label className="flex items-start gap-3 rounded-md border border-n-200 bg-white p-3 text-sm text-n-800">
                 <input
                   type="checkbox"
@@ -127,8 +129,8 @@ export function CancelarCuenta({
                   data-cancelar-cuenta-cita
                 />
                 <span>
-                  {citas.length === 1 ? "La cita de esta cuenta todavía no empieza." : `Esta cuenta tiene ${citas.length} citas que todavía no empiezan.`} Cancelarla también
-                  {motivo === "no_se_presento" ? " (se marca «No llegó»)." : "."}
+                  {textoPendientes(citas.length, estancias.length)} Cancelar {pendientes === 1 ? "la reserva" : "las reservas"} también
+                  {motivo === "no_se_presento" ? " (se marca «No llegó»)." : estancias.length > 0 ? " (libera el cupo)." : "."}
                 </span>
               </label>
             )}
@@ -150,4 +152,11 @@ export function CancelarCuenta({
       </AccionesFormulario>
     </div>
   );
+}
+
+function textoPendientes(citas: number, estancias: number): string {
+  const partes: string[] = [];
+  if (citas > 0) partes.push(citas === 1 ? "una cita de estética" : `${citas} citas de estética`);
+  if (estancias > 0) partes.push(estancias === 1 ? "una reserva de guardería u hotel" : `${estancias} reservas de guardería u hotel`);
+  return `Esta cuenta tiene ${partes.join(" y ")} que todavía no ${citas + estancias === 1 ? "empieza" : "empiezan"}.`;
 }
