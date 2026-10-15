@@ -5,8 +5,7 @@ import { armarClientesBuscables } from "@/lib/clientes/buscables";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { cargarRazas } from "@/lib/razas";
 import { negocioIdActual, zonaActual } from "@/lib/negocio/actual";
-import { proximaHoraDisponible, type HorarioDia } from "@/lib/estetica/proxima-hora";
-import { sumarDiasFecha, hoyNegocio } from "@/lib/formato";
+import { proponerHora } from "@/lib/estetica/proponer-hora";
 import { AgendarForm } from "./agendar-form";
 import { leerTodo } from "@/lib/supabase/paginar";
 
@@ -161,17 +160,4 @@ export default async function AgendarPage() {
       )}
     </div>
   );
-}
-
-async function proponerHora(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, zona: string): Promise<string> {
-  const hoy = hoyNegocio(zona);
-  const fechas = Array.from({ length: 15 }, (_, i) => sumarDiasFecha(hoy, i));
-  const respuestas = await Promise.all(fechas.map((f) => supabase.rpc("resolver_cupo_configuracion", { p_fecha: f })));
-  const horarios = new Map<string, HorarioDia | null>();
-  fechas.forEach((f, i) => {
-    const fila = (Array.isArray(respuestas[i].data) ? respuestas[i].data[0] : respuestas[i].data) as { estado?: string; hora_apertura?: string | null; hora_cierre?: string | null } | null;
-    // Sin configurar (o sin respuesta) se usa el horario de siempre, 09:00 a 19:00.
-    horarios.set(f, fila && fila.estado === "configurado" ? { abre: fila.hora_apertura != null, apertura: fila.hora_apertura ?? null, cierre: fila.hora_cierre ?? null } : null);
-  });
-  return proximaHoraDisponible(new Date().toISOString(), zona, (f) => horarios.get(f) ?? null);
 }

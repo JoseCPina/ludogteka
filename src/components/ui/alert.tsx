@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { conEnlaces } from "./texto-con-enlaces";
+import { tituloDeError } from "@/lib/validacion";
 
 type Variante = "error" | "advertencia" | "exito" | "info";
 
@@ -46,6 +47,8 @@ export function Alert({
   children?: ReactNode;
 }) {
   const s = estilos[variante];
+  // Un error de validación no se titula como si el sistema hubiera fallado.
+  const tituloFinal = variante === "error" ? tituloDeError(titulo, children) : titulo;
   return (
     <div
       role={variante === "error" ? "alert" : "status"}
@@ -55,7 +58,7 @@ export function Alert({
         <Simbolo variante={variante} />
       </span>
       <div>
-        <strong className={`block font-semibold ${s.texto}`}>{titulo}</strong>
+        <strong className={`block font-semibold ${s.texto}`}>{tituloFinal}</strong>
         {children && <span className="text-sm text-n-700">{conEnlaces(children)}</span>}
       </div>
     </div>

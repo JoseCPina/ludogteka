@@ -45,6 +45,33 @@ function iconoValido(v: unknown): string | null {
   return null;
 }
 
+/**
+ * El subdominio de un negocio que se mudó: si `<viejo>.peludesk.mx` ya no es de nadie pero fue de un negocio
+ * activo, devuelve el host nuevo (`<nuevo>.peludesk.mx`, mismo puerto) para redirigir con un 308. Solo para
+ * subdominios (nunca un dominio propio) y solo cuando no hay un negocio con ese slug.
+ */
+export async function hostPorMudanza(hostCrudo: string | null): Promise<string | null> {
+  const busqueda = busquedaPorHost(hostCrudo);
+  if (!busqueda?.slug || busqueda.dominio) return null;
+  const host = (hostCrudo ?? "").trim();
+  const [nombre, ...resto] = host.split(".");
+  if (!resto.length || nombre.toLowerCase() !== busqueda.slug) return null;
+  const r = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/negocio_slug_actual`, {
+    method: "POST",
+    headers: {
+      apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ p_slug: busqueda.slug }),
+    signal: AbortSignal.timeout(5_000),
+  });
+  if (!r.ok) return null;
+  const nuevo = (await r.json()) as string | null;
+  if (typeof nuevo !== "string" || !/^[a-z0-9]([a-z0-9-]{0,40}[a-z0-9])?$/.test(nuevo) || nuevo === busqueda.slug) return null;
+  return [nuevo, ...resto].join(".");
+}
+
 // Caché por instancia: el dominio de un negocio casi nunca cambia, y el
 // middleware corre en cada petición.
 const CACHE = new Map<string, { valor: NegocioBasico | null; hasta: number }>();

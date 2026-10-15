@@ -306,6 +306,20 @@ export async function marcarInterno(negocioId: string, fd: FormData): Promise<Re
   return { error: null, exito: interno ? "Marcado como interno." : "Ya no es interno." };
 }
 
+// Cambia el subdominio (dirección corta) de un negocio existente. El anterior queda como redirección
+// permanente: los links, QR y la página pública ya enviados siguen sirviendo.
+export async function cambiarSubdominio(negocioId: string, fd: FormData): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const nuevo = texto(fd, "subdominio").toLowerCase().replace(/^https?:\/\//, "").replace(/\.peludesk\.mx.*$/, "").trim();
+  if (!nuevo) return { error: "Escribe el subdominio nuevo." };
+  const { data, error } = await s.supabase.rpc("plataforma_cambiar_subdominio", { p_negocio_id: negocioId, p_slug_nuevo: nuevo });
+  if (error) return { error: error.message };
+  revalidatePath(`/plataforma/negocios/${negocioId}`);
+  revalidatePath("/plataforma");
+  return { error: null, exito: `Listo: ahora es ${data}.peludesk.mx. La dirección anterior redirige a la nueva.` };
+}
+
 // Los planes (nombre, precios y módulos): viven en la base, nunca en el código.
 // El anual lo calcula la base (diez mensualidades). Al guardar se
 // sincronizan sus precios con Stripe: si el importe cambió se CREA un precio

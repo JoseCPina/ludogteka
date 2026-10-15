@@ -23,6 +23,10 @@ ok(proximaHoraDisponible(ahora("12:00"), ZONA, (f) => sinSabado(f)) === "2026-10
 ok(proximaHoraDisponible(ahora("13:05"), ZONA, () => null) === "2026-10-14T14:00", "sin horario configurado usa 09:00 a 19:00");
 ok(proximaHoraDisponible(ahora("13:05"), ZONA, abre("09:30:00", "19:00:00")) === "2026-10-14T14:00", "con apertura a las 9:30 sigue en horas en punto");
 ok(proximaHoraDisponible(ahora("05:00"), ZONA, abre("09:30:00", "19:00:00")) === "2026-10-14T10:00", "apertura 9:30: la primera hora en punto posterior es las 10:00");
+console.log("── Con un día ya escogido");
+ok(proximaHoraDisponible(ahora("13:05"), ZONA, abre("09:00", "19:00"), 14, "2026-10-20") === "2026-10-20T09:00", "un día futuro escogido abre a la primera hora");
+ok(proximaHoraDisponible(ahora("13:05"), ZONA, abre("09:00", "19:00"), 14, "2026-10-14") === "2026-10-14T14:00", "el mismo día de hoy sigue pidiendo la siguiente hora");
+ok(proximaHoraDisponible(ahora("13:05"), ZONA, abre("09:00", "19:00"), 14, "2026-10-01") === "2026-10-14T14:00", "un día pasado cuenta como hoy");
 // Cambio de día en UTC: 20:30 locales ya es el día siguiente en UTC.
 ok(proximaHoraDisponible(ahora("20:30"), ZONA, abre("09:00", "19:00")).startsWith("2026-10-15"), "usa el día del negocio, no el de UTC");
 console.log(fallos ? `\nHALLAZGOS: ${fallos}` : "\n✔ Sin hallazgos.");

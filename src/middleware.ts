@@ -2,7 +2,7 @@ import { getUserConReintento } from "@/lib/supabase/get-user";
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { rutaPorRol } from "@/lib/auth/rutas";
-import { ENCABEZADOS_NEGOCIO, ENCABEZADO_PLATAFORMA, resolverNegocio, type NegocioBasico } from "@/lib/negocio/resolver";
+import { ENCABEZADOS_NEGOCIO, ENCABEZADO_PLATAFORMA, hostPorMudanza, resolverNegocio, type NegocioBasico } from "@/lib/negocio/resolver";
 import { ENCABEZADO_FIRMA, firmaValida, firmarNegocio, firmarPlataforma, plataformaFirmada } from "@/lib/negocio/firma";
 import { DOMINIO_PLATAFORMA, esHostPlataforma } from "@/lib/negocio/host";
 import { moduloDeRuta, moduloRequeridoActivo } from "@/lib/plan/modulos";
@@ -170,6 +170,17 @@ export async function middleware(request: NextRequest) {
     return new NextResponse("No pudimos cargar este sitio. Intenta de nuevo en un momento.", { status: 503 });
   }
   if (!negocio) {
+    // ¿Es el subdominio de un negocio que se mudó? Redirección permanente a la dirección nueva, con la misma
+    // ruta y parámetros, para que los links, QR y la página pública ya enviados sigan sirviendo.
+    try {
+      const nuevoHost = await hostPorMudanza(request.headers.get("host"));
+      if (nuevoHost) {
+        const protocolo = request.headers.get("x-forwarded-proto")?.split(",")[0].trim() || request.nextUrl.protocol.replace(":", "");
+        return NextResponse.redirect(`${protocolo}://${nuevoHost}${request.nextUrl.pathname}${request.nextUrl.search}`, 308);
+      }
+    } catch {
+      // Sin respuesta de la base: se queda en "no encontrado" (no se inventa un destino).
+    }
     return NextResponse.rewrite(new URL("/negocio-no-encontrado", request.url), {
       request: { headers: cabeceras },
       status: 404,
