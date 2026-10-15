@@ -78,11 +78,13 @@ export function RegistroForm({ origen }: { origen: Partial<Record<ParametroOrige
       </fieldset>
       <Field label="Teléfono" name="telefono" type="tel" inputMode="tel" autoComplete="tel" required defaultValue={v?.telefono} ayuda="A diez dígitos. Con él entras a PeluDesk. También te escribimos por WhatsApp para saber si necesitas ayuda con tu prueba; escribe BAJA y dejamos de hacerlo." />
       <Field label="Contraseña" name="password" type="password" autoComplete="new-password" required minLength={8} ayuda="Al menos 8 caracteres." />
-      {/* Campo trampa: una persona no lo ve ni lo llena. */}
-      <div aria-hidden className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+      {/* Campo trampa antibots: una persona no lo ve ni lo llena. Fuera del árbol de accesibilidad (aria-hidden
+          en el contenedor y en el campo, inert, sin foco por teclado) y sin autocompletado del navegador ni de los
+          gestores de contraseñas. */}
+      <div aria-hidden="true" inert className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
         <label>
           Sitio web
-          <input name="sitio_web" tabIndex={-1} autoComplete="off" />
+          <input name="sitio_web" aria-hidden="true" tabIndex={-1} autoComplete="off" data-lpignore="true" data-1p-ignore="true" data-form-type="other" />
         </label>
       </div>
       <label className="flex items-start gap-3 rounded-md border-[1.5px] border-borde bg-white p-3.5 text-sm leading-relaxed text-n-800 has-[:checked]:border-morado has-[:checked]:bg-morado-suave/40">

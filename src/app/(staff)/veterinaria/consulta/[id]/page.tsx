@@ -11,6 +11,8 @@ import { AccionesFirmada, AnularItem } from "../../expediente/anular-item";
 import { CapturarResultado, SubirAdjunto } from "../../expediente/captura";
 import { EditorConsulta } from "./editor-consulta";
 import { UsoDictado } from "./uso-dictado";
+import { CargosConsulta } from "./cargos-consulta";
+import type { CargosConsulta as DatosCargos } from "@/lib/veterinaria/cargos-consulta";
 
 // El dictado transcribe y arma el borrador dentro de una acción del servidor: puede tardar más de lo normal.
 export const maxDuration = 120;
@@ -45,6 +47,9 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
   }
   const d = data as DetalleConsulta;
   const c = d.consulta;
+  // Los cargos solo los ven quien atiende o un médico (llevan precios); si no hay permiso, simplemente no salen.
+  const { data: cargosData } = await supabase.rpc("vet_consulta_cargos", { p_consulta: id });
+  const cargos = (cargosData ?? null) as DatosCargos | null;
   const [{ data: miMedico }, { data: puedeAtender }, { data: puedeEstimar }] = await Promise.all([
     supabase.rpc("vet_mi_medico"),
     supabase.rpc("vet_puede", { p_permiso: "atender_consultas" }),
@@ -84,7 +89,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
       <UsoDictado consultaId={id} />
 
       {c.estado === "borrador" && puedeAtender === true ? (
-        <EditorConsulta consulta={c} especie={d.mascota.especie} soyElMedico={soyElMedico} nombreMedico={d.medico.nombre} />
+        <EditorConsulta consulta={c} especie={d.mascota.especie} soyElMedico={soyElMedico} nombreMedico={d.medico.nombre} cargosIniciales={cargos} />
       ) : (
         <article className={`flex flex-col gap-5 rounded-lg border border-n-200 bg-white p-5 ${anulada ? "opacity-80" : ""}`}>
           {c.estado === "borrador" && <Alert variante="info" titulo="Borrador">Solo quien atiende consultas lo edita.</Alert>}
@@ -133,6 +138,10 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
             </footer>
           )}
         </article>
+      )}
+
+      {c.estado !== "borrador" && cargos && (cargos.lineas.length > 0 || cargos.reserva_id) && (
+        <CargosConsulta consultaId={id} inicial={cargos} puedeAgregar={false} />
       )}
 
       {d.adendas.length > 0 && (

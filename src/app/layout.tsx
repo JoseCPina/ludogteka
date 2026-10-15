@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { ENCABEZADOS_NEGOCIO, ENCABEZADO_PLATAFORMA } from "@/lib/negocio/resolver";
 import { urlDelNegocio } from "@/lib/negocio/actual";
 import { ProveedorZonaNegocio } from "@/components/zona-negocio";
+import { ValidacionEnEspanol } from "@/components/validacion-en-espanol";
 import { outfit } from "@/fuentes";
 import { SLUG_DEMO } from "@/lib/peludesk/landing";
 import { ICONOS_GENERADOS } from "@/lib/negocio/icono";
@@ -81,7 +82,10 @@ export default async function RootLayout({
       className={`${outfit.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-background text-foreground font-sans">{cuerpo}</body>
+      <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
+        <ValidacionEnEspanol />
+        {cuerpo}
+      </body>
     </html>
   );
 }

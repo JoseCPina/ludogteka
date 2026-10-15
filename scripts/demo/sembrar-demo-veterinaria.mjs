@@ -172,6 +172,23 @@ try {
   }
   ok(`${CITAS.length} citas clínicas`);
 
+  // ── Precios de los servicios veterinarios (la consulta firmada genera su cuenta en Caja) ──
+  {
+    const BASE = [
+      ["vet_consulta_general", "Consulta general", 450, 800],
+      ["vet_consulta_urgencia", "Consulta de urgencia", 750, 801],
+      ["vet_revision_seguimiento", "Revisión o seguimiento", 300, 802],
+      ["vet_aplicacion_vacuna", "Aplicación de vacuna", 120, 803],
+    ];
+    for (const [clave, nombre, precio, orden] of BASE) {
+      let { data: sv } = await S.from("servicios").select("id").eq("negocio_id", NEG).eq("clave", clave).is("deleted_at", null).maybeSingle();
+      if (!sv) sv = exigir(await S.from("servicios").insert({ negocio_id: NEG, clave, nombre, categoria: "veterinaria", unidad: "evento", orden }).select("id").single(), `servicio ${clave}`);
+      const { data: t } = await S.from("tarifas").select("id").eq("negocio_id", NEG).eq("servicio_id", sv.id).is("deleted_at", null).limit(1);
+      if (!t?.length) exigir(await S.from("tarifas").insert({ negocio_id: NEG, servicio_id: sv.id, precio, no_aplica: false, cantidad_desde: 1, cantidad_hasta: null, vigencia_desde: "2026-01-01" }), `tarifa ${clave}`);
+    }
+    ok("precios de consulta, urgencia, seguimiento y vacuna");
+  }
+
   // ── Consultas: dos firmadas y una en borrador ──
   async function consulta(perro, datos, firmar) {
     const id = exigir(await MED.rpc("vet_consulta_iniciar", { p_perro: perro, p_cita: null, p_tipo: "consulta", p_medico: medicoId }), "consulta iniciada");

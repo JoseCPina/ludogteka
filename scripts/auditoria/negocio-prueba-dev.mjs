@@ -114,17 +114,41 @@ if (!(await membresia(cuentaAmbos, B))) exigir(await SB.rpc("vincular_membresia_
 let { data: turno } = await SB.from("turnos_caja").select("id").eq("negocio_id", B).eq("estado", "abierto").maybeSingle();
 if (!turno) turno = exigir(await REC.from("turnos_caja").insert({ fondo_inicial: 500, notas_apertura: MARCA }).select("id").single(), "abrir turno");
 const { data: comida } = await SB.from("servicios").select("id").eq("negocio_id", B).eq("monto_libre", true).is("deleted_at", null).limit(1).single();
-let { data: reserva } = await SB.from("reservas").select("id").eq("negocio_id", B).eq("cliente_id", clienteSoloB).is("deleted_at", null).limit(1).maybeSingle();
+// Repetible: la regla «no se cobra una cuenta sin saldo» hace que una cuenta ya cobrada (o vacía) de una
+// corrida anterior no sirva para cobrar otra vez. Se busca (1) una cuenta del cliente que ya tenga su cobro:
+// con eso basta; (2) una con saldo por cobrar: se cobra; (3) si no hay, se abre una cuenta nueva con un cargo
+// suelto y se cobra. Nunca se intenta cobrar una cuenta en cero.
+const saldoDe = async (id) => {
+  const r = await REC.rpc("cuenta_totales_reserva", { p_reserva_id: id });
+  const f = Array.isArray(r.data) ? r.data[0] : r.data;
+  return Number(f?.saldo ?? 0);
+};
+const { data: cuentasDelCliente } = await SB.from("reservas").select("id").eq("negocio_id", B).eq("cliente_id", clienteSoloB).is("deleted_at", null).order("created_at");
+let reserva = null;
+for (const c of cuentasDelCliente ?? []) {
+  const { data: cobrado } = await SB.from("cobros").select("id").eq("negocio_id", B).eq("reserva_id", c.id).limit(1).maybeSingle();
+  if (cobrado) { reserva = c; break; }
+}
+if (!reserva) {
+  for (const c of cuentasDelCliente ?? []) {
+    const saldo = await saldoDe(c.id);
+    if (saldo > 0) {
+      exigir(await REC.rpc("registrar_cobro", { p_reserva_id: c.id, p_notas: MARCA, p_metodos: [{ metodo: "efectivo", monto: saldo }] }), "cobro");
+      reserva = c;
+      break;
+    }
+  }
+}
 if (!reserva) {
   const cargo = exigir(
     await REC.rpc("crear_cargo_suelto", { p_cliente_id: clienteSoloB, p_servicio_id: comida.id, p_cantidad: 1, p_importe: 123, p_descripcion: `Croquetas ${MARCA}`, p_perro_id: perroSoloB, p_notas: MARCA }),
     "cargo suelto"
   );
   const reservaId = typeof cargo === "string" ? cargo : cargo?.reserva_id ?? cargo?.[0]?.reserva_id;
-  reserva = reservaId ? { id: reservaId } : (await SB.from("reservas").select("id").eq("negocio_id", B).eq("cliente_id", clienteSoloB).limit(1).single()).data;
+  if (!reservaId) throw new Error("el cargo suelto no devolvió la cuenta");
+  reserva = { id: reservaId };
+  exigir(await REC.rpc("registrar_cobro", { p_reserva_id: reserva.id, p_notas: MARCA, p_metodos: [{ metodo: "efectivo", monto: 123 }] }), "cobro");
 }
-const { data: cobroPrevio } = await SB.from("cobros").select("id").eq("negocio_id", B).eq("reserva_id", reserva.id).limit(1).maybeSingle();
-if (!cobroPrevio) exigir(await REC.rpc("registrar_cobro", { p_reserva_id: reserva.id, p_notas: MARCA, p_metodos: [{ metodo: "efectivo", monto: 123 }] }), "cobro");
 
 // ── Contrato: plantilla publicada y contrato generado ──
 const { data: tipo } = await SB.from("tipos_contrato").select("id").eq("negocio_id", B).is("deleted_at", null).order("orden").limit(1).single();

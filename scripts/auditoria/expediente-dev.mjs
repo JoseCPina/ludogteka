@@ -208,18 +208,28 @@ try {
 
   seccion("4. Portal del dueño");
   const mx = () => rpc(P.cliente, "mi_expediente", { p_perro: perroC });
-  comprobar((await SB.from("veterinaria_ajustes").select("portal_expediente").eq("negocio_id", B).maybeSingle()).data?.portal_expediente !== true, "la opción del portal viene apagada");
+  await SB.from("veterinaria_ajustes").delete().eq("negocio_id", B).eq("portal_expediente", false);
+  comprobar((await SB.from("veterinaria_ajustes").select("portal_expediente").eq("negocio_id", B).maybeSingle()).data?.portal_expediente !== false, "la opción del portal viene prendida por omisión");
+  comprobar(!(await rpc(P.recSin, "guardar_veterinaria_portal", { p_expediente: false })).ok, "recepción sin «Configuración» no la apaga");
+  await dar(P.admin, P.recSinId, "configuracion_negocio");
+  comprobar((await rpc(P.recSin, "guardar_veterinaria_portal", { p_expediente: false })).ok, "con «Configuración» sí");
+  await quitar(P.admin, P.recSinId, "configuracion_negocio");
   let mi = await mx();
   comprobar(mi.ok && mi.cuerpo?.habilitado === false && mi.cuerpo.consultas.length === 0, "apagada, el dueño no ve nada del expediente");
-  comprobar(!(await rpc(P.recSin, "guardar_veterinaria_portal", { p_expediente: true })).ok, "recepción sin «Configuración» no la prende");
-  await dar(P.admin, P.recSinId, "configuracion_negocio");
-  comprobar((await rpc(P.recSin, "guardar_veterinaria_portal", { p_expediente: true })).ok, "con «Configuración» sí");
-  await quitar(P.admin, P.recSinId, "configuracion_negocio");
+  await rpc(P.admin, "guardar_veterinaria_portal", { p_expediente: true });
   mi = await mx();
   const txt = JSON.stringify(mi.cuerpo);
   comprobar(mi.cuerpo?.habilitado === true && mi.cuerpo.consultas.length === 1, "prendida, ve su consulta firmada (la anulada no aparece)");
-  comprobar(/Dieta blanda/.test(txt) && !/llegó tarde/.test(txt) && !/Omeprazol/.test(txt) && !/firma_hash|notas_internas|cedula/.test(txt), "con el plan y sin notas internas, tratamiento ni datos de firma");
-  comprobar(mi.cuerpo.consultas[0].diagnostico === "", "el diagnóstico presuntivo no sale: solo el definitivo");
+  const resumen1 = mi.cuerpo.consultas[0];
+  comprobar(Object.keys(resumen1).sort().join(",") === "diagnostico,fecha,indicaciones,motivo,tipo", `cada consulta trae solo fecha, tipo, motivo, diagnóstico e indicaciones (${Object.keys(resumen1).join(",")})`);
+  comprobar(resumen1.motivo === "Vómito desde ayer" && /Dieta blanda/.test(resumen1.indicaciones) && /Omeprazol/.test(resumen1.indicaciones), "con el motivo y las indicaciones (plan y tratamiento)");
+  comprobar(!/llegó tarde/.test(txt) && !/firma_hash|notas_internas|cedula|medico|examen|hallazgos|temperatura/.test(txt), "sin notas internas, examen, signos vitales, firma ni datos del personal");
+  for (const tabla of ["vet_consultas", "vet_consulta_adendas", "vet_resultados_lab", "vet_adjuntos", "vet_estimados", "vet_consulta_cargos", "medicos_veterinarios", "vet_lecturas"]) {
+    const l = await get(P.cliente, `${tabla}?select=*&limit=5`);
+    comprobar(!l.ok || (Array.isArray(l.cuerpo) && l.cuerpo.length === 0), `el dueño no lee ${tabla} por la API`);
+  }
+  comprobar(!(await rpc(P.cliente, "vet_consulta_detalle", { p_id: cId })).ok, "ni el detalle de la consulta");
+  comprobar(!(await rpc(P.cliente, "vet_consulta_cargos", { p_consulta: cId })).ok, "ni sus cargos");
   const otroPerro = await nuevoPerro("Ajeno");
   comprobar(!(await rpc(null, "mi_expediente", { p_perro: perroC })).ok, "la llave anónima no ve el portal");
   await rpc(P.admin, "guardar_veterinaria_portal", { p_expediente: false });

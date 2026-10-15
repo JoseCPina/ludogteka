@@ -2,7 +2,7 @@
 
 Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scripts/tutoriales/catalogo.mjs` y de lo que la app tiene hoy (código). No se edita a mano: se cambia el catálogo.
 
-**93 videos** (el 00 es el avance) en 10 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
+**94 videos** (el 00 es el avance) en 10 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
 
 ## Catálogo
 
@@ -60,7 +60,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 49 | Tu negocio | Lee tus reportes: ingresos, costos, margen y utilidad | admin | 2.5 min | reportes | reportes_financieros |
 | 50 | Tu negocio | Conecta tu terminal: Mercado Pago o Clip | admin | 2.5 min | — | — |
 | 51 | Tu negocio | Políticas y reglas de tu negocio: lo que le dices a tus clientes | admin | 2.5 min | — | configuracion_negocio |
-| 52 | Tu negocio | Tu perfil y tu página web gratis | admin | 2.5 min | pagina_web | configuracion_negocio |
+| 52 | Tu negocio | Tu perfil y tu página web incluida | admin | 2.5 min | pagina_web | configuracion_negocio |
 | 53 | Tu negocio | Pide ayuda: el asistente, los videos y los tickets | recepcion | 2.5 min | — | — |
 | 54 | Tu negocio | Recolección a domicilio: cotiza, cobra y la ves en la cuenta | recepcion | 2.5 min | recoleccion | — |
 | 55 | Estética | Cómo corregir el servicio de una cita | admin | 2.5 min | estetica | corregir_servicio |
@@ -96,6 +96,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 90 | Veterinaria | Dictar la consulta por voz | recepcion | 2.5 min | veterinaria | usar_dictado |
 | 91 | Veterinaria | Agendar y atender una teleconsulta | recepcion | 2.5 min | veterinaria | atender_teleconsultas |
 | 92 | Veterinaria | Cómo entra el dueño a una teleconsulta | recepcion | 2.5 min | veterinaria | — |
+| 93 | Veterinaria | Cómo se cobra una consulta veterinaria | recepcion | 2.5 min | veterinaria | atender_consultas, ajustar_cargos_consulta |
 | 89 | Guardería y hotel | Servicios extra | recepcion | 2.5 min | guarderia, hotel | agregar_servicios_extra, editar_catalogo_extras |
 | 66 | Tu negocio | Importar tus clientes y mascotas desde Excel | admin | 2.5 min | — | importar_datos |
 | 67 | Tu negocio | Ver el historial de importaciones y deshacer una | admin | 2.5 min | — | importar_datos |
@@ -238,7 +239,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/veterinaria/certificados/nuevo` | 76 |  |
 | `/veterinaria/consentimientos` | 78 |  |
 | `/veterinaria/consentimientos/[id]` | 78 |  |
-| `/veterinaria/consulta/[id]` | 80, 90 |  |
+| `/veterinaria/consulta/[id]` | 80, 90, 93 |  |
 | `/veterinaria/estimados` | 82 |  |
 | `/veterinaria/estimados/[id]` | 82 |  |
 | `/veterinaria/estimados/nuevo` | 82 |  |
@@ -289,7 +290,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Tarifa de guardería | `/admin/tarifa-guarderia` | 64 |
 | Módulos y plan | `/admin/modulos` | 06 |
 | Cobro con terminal | `/admin/pagos` | 50 |
-| Veterinaria | `/veterinaria` | 70, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 90, 91 |
+| Veterinaria | `/veterinaria` | 70, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 90, 91, 93 |
 | Facturación | `/admin/facturacion` | 65 |
 | Facturas | `/caja/facturas` | 65 |
 | Importar | `/admin/importar` | 66, 67 |
@@ -303,7 +304,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | guarderia | 25, 27, 28, 29, 30, 31, 89 |
 | hotel | 26, 27, 28, 29, 30, 31, 89 |
 | estetica | 20, 21, 22, 23, 24, 55, 58, 63, 64 |
-| veterinaria | 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 90, 91, 92 |
+| veterinaria | 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 90, 91, 92, 93 |
 | bonos | 39, 60 |
 | recoleccion | 54 |
 | contratos | 16, 17, 18, 19 |
@@ -347,7 +348,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Registrar vacunas y desparasitaciones (`registrar_vacunas`) | 74 |
 | Emitir certificados (`emitir_certificados`) | 76 |
 | Hospitalizar y medicar (`hospitalizar`) | 77 |
-| Atender consultas (`atender_consultas`) | 80 |
+| Atender consultas (`atender_consultas`) | 80, 93 |
 | Firmar expediente (`firmar_expediente`) | 80 |
 | Crear estimados (`crear_estimados`) | 82 |
 | Emitir recetas (`emitir_recetas`) | 84 |
@@ -358,6 +359,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Importar clientes y mascotas (`importar_datos`) | 66, 67 |
 | Agregar servicios extra (`agregar_servicios_extra`) | 89 |
 | Editar catálogo de servicios extra (`editar_catalogo_extras`) | 89 |
+| Cancelar cuentas (`cancelar_cuentas`) | — |
 
 ## Artículos de ayuda → videos
 
@@ -442,6 +444,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | paquete-de-sesiones-de-un-servicio-extra | 89 |
 | agenda-clinica-veterinaria | 79 |
 | consulta-veterinaria-soap | 80 |
+| cobrar-una-consulta-veterinaria | 93 |
 | estudios-archivos-y-linea-de-tiempo | 81 |
 | estimados-veterinarios | 82 |
 | veterinaria-ajustes-consulta-y-portal | 83 |
@@ -502,6 +505,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | tarjetas-manuales-tope | 38 |
 | turno | 05, 32 |
 | vincular | 05, 15 |
+| whatsapp-no-llego | 75 |
 
 ## Cambios que afectan a la grabación
 

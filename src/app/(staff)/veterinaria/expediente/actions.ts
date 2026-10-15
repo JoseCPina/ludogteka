@@ -115,12 +115,18 @@ export async function guardarBorrador(id: string, datos: DatosBorrador): Promise
 
 export async function firmarConsulta(id: string): Promise<ResultadoAccion> {
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("vet_consulta_firmar", { p_id: id });
+  const { data, error } = await supabase.rpc("vet_consulta_firmar", { p_id: id });
   if (error) return { error: traducirError(error) };
+  const cobro = (data as { cobro?: { cargos?: number; total?: number; error?: string; avisos?: string[] } } | null)?.cobro;
+  const notaCobro = cobro?.error
+    ? " Los cargos no pasaron a Caja: ábrelos en la consulta para pasarlos."
+    : cobro && Number(cobro.cargos) > 0
+      ? ` ${cobro.cargos} ${Number(cobro.cargos) === 1 ? "cargo pasó" : "cargos pasaron"} a Caja.${cobro.avisos?.length ? ` ${cobro.avisos.join(" ")}` : ""}`
+      : "";
   // Firmada: la copia que el navegador guardaba del formulario ya no hace falta.
   await descartarBorradorGuardado(supabase, "consulta", id);
   revalidatePath(`/veterinaria/consulta/${id}`);
-  return { error: null, exito: "Consulta firmada. Ya no se edita: solo admite una adenda." };
+  return { error: null, exito: `Consulta firmada. Ya no se edita: solo admite una adenda.${notaCobro}` };
 }
 
 export async function descartarBorrador(id: string, perroId: string): Promise<ResultadoAccion> {

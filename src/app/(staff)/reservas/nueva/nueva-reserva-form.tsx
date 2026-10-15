@@ -26,7 +26,7 @@ import {
   type ResultadoLinea,
 } from "../reserva-actions";
 
-type Perro = { id: string; cliente_id: string; nombre: string };
+type Perro = { id: string; cliente_id: string; nombre: string; evaluado: boolean };
 type Servicio = ServicioOfrecible;
 type SerieActiva = { perroId: string; diasSemana: number[]; servicioNombre: string };
 
@@ -156,6 +156,12 @@ export function NuevaReservaForm({
       ];
     });
   }
+
+  // Una mascota sin evaluación solo se reserva con la excepción (y su motivo) puesta aquí mismo.
+  const sinEvaluacionPendiente = lineas.some((l) => {
+    const p = perros.find((x) => x.id === l.perroId);
+    return p && !p.evaluado && !(l.bloqueoComportamientoSuperado && l.motivoExcepcionComportamiento.trim());
+  });
 
   function actualizarLinea(perroId: string, cambios: Partial<Linea>) {
     setLineas((prev) => prev.map((l) => (l.perroId === perroId ? { ...l, ...cambios } : l)));
@@ -376,6 +382,38 @@ export function NuevaReservaForm({
                   {perro.nombre}
                 </label>
 
+                {linea && !perro.evaluado && (
+                  <div className="mt-3 rounded-md border border-ambar bg-ambar-suave p-3 text-sm text-ambar-oscuro" role="alert">
+                    <p className="font-semibold">{perro.nombre} no tiene evaluación de comportamiento.</p>
+                    <p className="mt-1">
+                      Sin ella no se puede reservar guardería ni hotel.{" "}
+                      <Link href={`/perros/${perro.id}`} className="font-semibold text-morado hover:underline">
+                        Completar la evaluación en su expediente →
+                      </Link>
+                    </p>
+                    {esAdmin && (
+                      <div className="mt-3 flex flex-col gap-2 border-t border-ambar pt-3">
+                        <label className="flex items-center gap-2 font-semibold">
+                          <input
+                            type="checkbox"
+                            checked={linea.bloqueoComportamientoSuperado}
+                            onChange={(e) => actualizarLinea(perro.id, { bloqueoComportamientoSuperado: e.target.checked })}
+                          />
+                          Reservar sin evaluación (excepción de admin o con permiso)
+                        </label>
+                        {linea.bloqueoComportamientoSuperado && (
+                          <Field
+                            label="Motivo de la excepción"
+                            value={linea.motivoExcepcionComportamiento}
+                            onChange={(e) => actualizarLinea(perro.id, { motivoExcepcionComportamiento: e.target.value })}
+                            placeholder="ej. Se evalúa hoy al llegar, autoriza admin"
+                          />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {seriesDelPerro.length > 0 && (
                   <p className="mt-2 rounded-md bg-morado-suave px-3 py-2 text-sm text-morado">
                     Ya tiene serie recurrente:{" "}
@@ -466,12 +504,15 @@ export function NuevaReservaForm({
 
       <Button
         type="button"
-        disabled={lineas.length === 0 || enviando.cargando}
+        disabled={lineas.length === 0 || enviando.cargando || sinEvaluacionPendiente}
         onClick={enviar}
         className="self-start"
       >
         {enviando.cargando ? "Guardando…" : "Crear reserva"}
       </Button>
+      {sinEvaluacionPendiente && (
+        <p className="text-sm text-ambar-oscuro">Hay mascotas sin evaluación de comportamiento: complétala o, si tienes permiso, autoriza la excepción con su motivo.</p>
+      )}
     </div>
   );
 }

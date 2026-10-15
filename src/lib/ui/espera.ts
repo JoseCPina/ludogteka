@@ -14,6 +14,8 @@
  * repetir el patrón.
  */
 
+import { mensajeSiSoloLectura } from "@/lib/ui/solo-lectura-actions";
+
 export const TOPE_MS = 20_000;
 
 export class TiempoAgotado extends Error {
@@ -65,12 +67,29 @@ export function mensajeDeFallo(e: unknown): string {
 // cada pantalla ya tiene lo muestra sin que haya que tocar nada más.
 export type ConError = { error: string | null };
 
+// El aviso genérico con que una acción tapa un rechazo de la base («No pudimos guardar al cliente»,
+// «No se pudo guardar. Intenta de nuevo.»). Si el negocio está en solo lectura (el demo, una prueba
+// vencida, una cuenta de solo lectura), ESE era el motivo y el mensaje correcto es el de solo lectura.
+// Se traduce aquí, en el único lugar por donde pasa toda acción, y no archivo por archivo. Una
+// validación («Escribe el nombre…») y cualquier otro error conservan su propio texto.
+const AVISO_GENERICO = /\bno\s+(se\s+)?pud(o|imos)\b|\bintenta\s+de\s+nuevo\b|\bno\s+fue\s+posible\b/i;
+
+async function traducirSoloLectura<T extends ConError>(resultado: T): Promise<T> {
+  if (!resultado || !resultado.error || !AVISO_GENERICO.test(resultado.error)) return resultado;
+  try {
+    const mensaje = await conTope(mensajeSiSoloLectura(), 8000);
+    return mensaje ? { ...resultado, error: mensaje } : resultado;
+  } catch {
+    return resultado;
+  }
+}
+
 export async function esperarConTope<T extends ConError>(
   fn: () => Promise<T>,
   ms: number = TOPE_MS
 ): Promise<T> {
   try {
-    return await conTope(fn(), ms);
+    return await traducirSoloLectura(await conTope(fn(), ms));
   } catch (e) {
     return { error: mensajeDeFallo(e) } as T;
   }

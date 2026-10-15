@@ -5,6 +5,7 @@ import { formatearFecha } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { usaEstancias } from "@/lib/plan/modulos";
+import { cargarServiciosConHuecos } from "@/lib/tarifas/huecos";
 import { AvanceWeb } from "@/components/avance-web";
 import { cargarTutorialesVisibles } from "@/lib/tutoriales";
 import { VideosParaEmpezar } from "@/components/ayuda/videos-para-empezar";
@@ -26,9 +27,10 @@ export default async function BienvenidaPage() {
   const videos = await cargarTutorialesVisibles(supabase, { rol: sesion?.rol ?? "", permisos: sesion?.permisos ?? [], modulos: mods }).catch(() => []);
   const videoDe = (numero: string) => videos.find((v) => v.numero === numero)?.slug;
   const conEstancias = usaEstancias(mods);
-  const servicios = [mods.includes("guarderia") && "guardería", mods.includes("hotel") && "hotel", mods.includes("estetica") && "estética"].filter(Boolean).join(", ");
+  const servicios = [mods.includes("guarderia") && "guardería", mods.includes("hotel") && "hotel", mods.includes("estetica") && "estética", mods.includes("veterinaria") && "veterinaria"].filter(Boolean).join(", ");
   const cuenta = (tabla: string) => supabase.from(tabla).select("id", { count: "exact", head: true }).is("deleted_at", null);
-  const [{ data: config }, { data: cupoPropio }, tarifas, empleados, clientes] = await Promise.all([
+  if (mods.includes("veterinaria")) await supabase.rpc("vet_asegurar_servicios");
+  const [{ data: config }, { data: cupoPropio }, tarifas, empleados, clientes, conHuecos] = await Promise.all([
     supabase.rpc("resolver_cupo_configuracion"),
     // El cupo y el horario que trae un negocio nuevo son los de base (sin
     // autor); en cuanto la administración guarda los suyos, hay uno con autor.
@@ -36,6 +38,7 @@ export default async function BienvenidaPage() {
     cuenta("tarifas"),
     cuenta("empleados"),
     cuenta("clientes"),
+    cargarServiciosConHuecos(supabase, mods),
   ]);
   const vigente = (Array.isArray(config) ? config[0] : config) as { telefono_recepcion?: string | null } | null;
 
@@ -50,11 +53,12 @@ export default async function BienvenidaPage() {
     },
     {
       titulo: "Servicios y precios",
-      que: `Ya tienes dados de alta los servicios de ${servicios || "tu negocio"}. Ponles tu precio${mods.includes("estetica") ? ": en estética, por grupo de raza o por talla" : ""}${conEstancias ? "; en hotel, por talla; en guardería, por día o por hora" : ""}.`,
+      que: `Ya tienes dados de alta los servicios de ${servicios || "tu negocio"}. Ponles tu precio${mods.includes("estetica") ? ": en estética, por grupo de raza o por talla" : ""}${conEstancias ? "; en hotel, por talla; en guardería, por día o por hora" : ""}${mods.includes("veterinaria") ? "; en veterinaria, la consulta, la urgencia, el seguimiento y la aplicación de vacuna" : ""}.`,
       href: "/servicios",
       accion: "Poner precios",
       video: videoDe(mods.includes("estetica") ? "20" : "07"),
-      listo: (tarifas.count ?? 0) > 0,
+      // Listo cuando hay precios Y no falta ninguno de los módulos prendidos.
+      listo: (tarifas.count ?? 0) > 0 && conHuecos.length === 0,
     },
     {
       titulo: conEstancias ? "Horario y cupo" : "Horario",

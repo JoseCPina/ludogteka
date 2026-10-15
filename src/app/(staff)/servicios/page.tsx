@@ -7,6 +7,7 @@ import { contarSinTarifa, type CeldaVigente } from "@/lib/tarifas/matriz";
 import { contarPerrosSinRazaCatalogo } from "@/lib/razas";
 import { AvisoRazasSinCatalogar } from "@/components/aviso-razas-sin-catalogar";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { servicioActivo } from "@/lib/tarifas/huecos";
 
 const ETIQUETA_CATEGORIA: Record<string, string> = {
   guarderia: "Guardería",
@@ -14,12 +15,16 @@ const ETIQUETA_CATEGORIA: Record<string, string> = {
   estetica: "Estética",
   cargo: "Cargo adicional",
   bono: "Bono",
+  veterinaria: "Veterinaria",
 };
 
 export default async function ServiciosPage() {
   const sesion = await obtenerSesionConRol();
   const esAdmin = sesion?.rol === "admin";
+  const modulos = sesion?.modulos ?? [];
   const supabase = await createSupabaseServerClient();
+  // Con Veterinaria prendida, su catálogo base (consulta, urgencia, seguimiento, vacuna) existe para capturarle precio.
+  if (modulos.includes("veterinaria")) await supabase.rpc("vet_asegurar_servicios");
   // Sin filtrar deleted_at: esta pantalla ES el histórico del catálogo.
   // Quien arme un selector para cobrar (Fase 4/5) sí debe filtrar
   // deleted_at is null — aquí un servicio inactivo se ve, solo marcado.
@@ -66,6 +71,11 @@ export default async function ServiciosPage() {
   const huecos = new Map<string, number>();
   for (const s of servicios ?? []) {
     if (s.deleted_at) continue;
+    // Un servicio de un módulo apagado no se cobra: sus precios vacíos no son un hueco.
+    if (!servicioActivo(s, modulos)) {
+      huecos.set(s.id, 0);
+      continue;
+    }
     // Monto libre (comida especial): sin celda que capturar, el importe
     // se pone al aplicarlo. Cero huecos por definición.
     if (s.monto_libre) {
@@ -82,7 +92,7 @@ export default async function ServiciosPage() {
         <div>
           <h1 className="text-2xl font-bold text-n-900">Servicios</h1>
           <p className="mt-1 text-n-600">
-            Catálogo de guardería, hotel, estética, cargos adicionales y bonos.
+            Catálogo de guardería, hotel, estética, veterinaria, cargos adicionales y bonos.
           </p>
         </div>
         {esAdmin && (
