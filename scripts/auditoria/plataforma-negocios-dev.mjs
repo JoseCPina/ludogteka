@@ -17,8 +17,20 @@
 import { spawnSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, sesion, tokenDe } from "./sesiones-dev.mjs";
+
+// Cuenta secretos de Vault por la API de gestión (vault no se expone por REST).
+async function vaultCuenta(donde) {
+  const ref = new globalThis.URL(URL).hostname.split(".")[0];
+  const r = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ query: `select count(*)::int n from vault.secrets where ${donde}` }),
+  });
+  if (!r.ok) throw new Error(`Vault: ${r.status}`);
+  return (await r.json())[0].n;
+}
 import { claveAleatoria } from "../lib/clave.mjs";
-import { todas, contar } from "../lib/paginar.mjs";
+import { todas } from "../lib/paginar.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const hallazgos = [];
@@ -134,6 +146,8 @@ try {
   const conNegocio = createClient(URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: false }, global: { headers: { "x-negocio-id": X.id } } });
   const sec = await conNegocio.rpc("integracion_guardar_secreto", { p_proveedor: "mercadopago", p_secreto: `{"access_token":"APP-AUD-${sufijo}"}` });
   ok(!sec.error, "credencial de Mercado Pago guardada en Vault", `no se guardó la credencial: ${sec.error?.message}`);
+  const cfdi = await conNegocio.rpc("cfdi_guardar_llave", { p_llave: `sk_test_AUD${sufijo}`, p_modo: "pruebas" });
+  ok(!cfdi.error, "llave del PAC (CFDI) guardada en Vault", `no se guardó la llave del PAC: ${cfdi.error?.message}`);
   const { data: filasX } = await A.from("integraciones_cobro").select("secreto_id").eq("negocio_id", X.id).maybeSingle();
   const secretoId = filasX?.secreto_id;
   const fx = await filasDe(X.id);
@@ -163,9 +177,11 @@ try {
   ok((publico.data ?? []).length === 0, "Storage: negocios-publico vacío", "quedaron archivos en negocios-publico");
   if (cli.data) ok(((await A.storage.from("perros-archivos").list(`${cli.data.id}/perro`)).data ?? []).length === 0, "Storage: perros-archivos vacío", "quedaron archivos en perros-archivos");
   if (secretoId) {
-    const r = spawnSync(process.execPath, ["scripts/.dev-sql.mjs", `select count(*) n from vault.secrets where id='${secretoId}'`], { encoding: "utf8" });
-    ok(/"n": "?0"?/.test(r.stdout), "Vault: la credencial se desvinculó", `la credencial sigue en Vault: ${r.stdout}`);
+    const n = await vaultCuenta(`id = '${secretoId}'`);
+    ok(n === 0, "Vault: la credencial de cobro se desvinculó", `la credencial sigue en Vault (${n})`);
   }
+  const huerfanos = await vaultCuenta(`name like 'peludesk:${X.id}:%'`);
+  ok(huerfanos === 0, "Vault: ningún secreto con el id del negocio (cobro ni llave del PAC)", `quedaron ${huerfanos} secretos del negocio en Vault`);
   const { data: auth } = await A.auth.admin.getUserById(X.persona);
   ok(!auth?.user, "su cuenta de Auth (sin otro negocio) se borró", "la cuenta de Auth sigue");
   const { data: ev } = await P.from("plataforma_eventos").select("accion, negocio_id, detalle").eq("accion", "eliminar_negocio").order("created_at", { ascending: false }).limit(1);

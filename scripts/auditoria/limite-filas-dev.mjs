@@ -1,6 +1,7 @@
-// El límite de 1,000 filas de la API de Supabase (SOLO DESARROLLO, en Huellitas; nunca Ludogteka).
+// El límite de 1,000 filas de la API de Supabase (SOLO DESARROLLO). Trabaja en un negocio DESECHABLE que crea él mismo
+// (registrar_negocio_prueba) y borra completo al terminar —también si la prueba falla— con las funciones de
+// eliminar-negocio: no deja un solo registro en Huellitas ni en ningún otro negocio.
 //
-//   node scripts/auditoria/negocio-prueba-dev.mjs        (si Huellitas no existe)
 //   npm run build && npm run start -- -p 3001             (para las pantallas; SOLO=base salta el navegador)
 //   node scripts/auditoria/limite-filas-dev.mjs
 //
@@ -10,25 +11,24 @@
 //   0. Comprueba la premisa: el límite existe en desarrollo (una lectura sin acotar trae 1,000 de 1,120).
 //   1. Revisa TODO el código (src/): cada consulta de lista sin acotar tiene que estar en leerTodo/leerTodoPorIds,
 //      acotada por la llave de un registro, o justificada (scripts/auditoria/lib/limite-filas-escaner.mjs).
-//   2. Siembra MÁS de 1,000 registros en Huellitas: clientes y perros, cuentas abiertas, cobros en efectivo en un
-//      turno, gastos, insumos, movimientos de un insumo y llamadas de IA.
+//   2. Siembra MÁS de 1,000 registros en el negocio desechable: clientes y perros, cuentas abiertas, cobros en efectivo
+//      en un turno, gastos, insumos, movimientos de un insumo y llamadas de IA.
 //   3. Los ayudantes (src/lib/supabase/paginar.ts) leen todo; el gasto de IA se suma en la base.
 //   4. Caja, corte, reportes y cuentas: lo que entrega la base cuadra con el cálculo hecho con SQL por la API de
-//      gestión (que no tiene el límite).
+//      gestión (que no tiene el límite). cuentas_abiertas con la sesión de un admin (RLS) responde bien por debajo
+//      del statement_timeout de 8 s.
 //   5. Las pantallas (clientes, caja, turno, gastos, inventario) enseñan TODO, no los primeros 1,000.
-// Deja Huellitas con esos datos de prueba marcados; los clientes, perros e insumos se dan de baja al final.
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
+//   6. Se borra el negocio desechable (Storage, base, Vault y Auth) y se comprueba que no quedó nada.
+import { spawnSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { claveAleatoria } from "../lib/clave.mjs";
 import { escanear, sinAcotar } from "./lib/limite-filas-escaner.mjs";
 import { leerTodo, leerTodoPorIds } from "../../src/lib/supabase/paginar.ts";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const REF = "sgfolltpvktbsiisfuzq";
 const SOLO_BASE = process.env.SOLO === "base";
-let lentaPorRls = false;
 const hallazgos = [];
 const hallazgo = (t) => { hallazgos.push(t); console.log(`  ✘ ${t}`); };
 const bien = (t) => console.log(`  ✔ ${t}`);
@@ -44,11 +44,12 @@ const N_MOVIMIENTOS = 1010;
 const N_IA = 1010;
 const PRECIO = 10;
 
-const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
-const H = datos.B;
+const LUDO = "10000000-0000-4000-8000-000000000001"; // solo es el MODELO de configuración que copia el negocio de prueba
 const sufijo = String(Date.now()).slice(-7);
 const MARCA = `L1K${sufijo}`;
-const SB = createClient(URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: false }, global: { headers: { "x-negocio-id": H } } });
+let H = null; // el negocio desechable
+let SB = null; // llave de servicio con el encabezado del negocio desechable
+const personas = [];
 const jwt = async (profileId) =>
   createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -87,6 +88,8 @@ async function enParalelo(tareas, maximo = 10) {
 }
 const lotes = (lista, tam) => Array.from({ length: Math.ceil(lista.length / tam) }, (_, i) => lista.slice(i * tam, (i + 1) * tam));
 
+let negocio = null; // { id, slug, nombre, telefono }
+try {
 // ───────────────────────────────────────────────────────────── 0. La premisa
 console.log("\n── 0. El límite existe (si no, esta prueba no demostraría nada)");
 {
@@ -108,10 +111,29 @@ console.log("\n── 1. Ninguna consulta de lista del código queda sin acotar"
 }
 
 // ───────────────────────────────────────────────────────────── 2. Siembra
-console.log(`\n── 2. Siembra de más de 1,000 registros en Huellitas (marca ${MARCA})`);
-const miembros = async (rol) => (await A.from("membresias").select("profile_id").eq("negocio_id", H).eq("rol", rol).is("deleted_at", null).order("created_at")).data.map((m) => m.profile_id);
-const [idAdmin] = await miembros("admin");
-const [idRecep] = await miembros("recepcion");
+console.log(`\n── 2. Siembra de más de 1,000 registros en un negocio desechable (marca ${MARCA})`);
+const persona = async (etiqueta) => {
+  const { data, error } = await A.auth.admin.createUser({ email: `aud-lim-${etiqueta}-${sufijo}@auditoria.invalid`, email_confirm: true, password: claveAleatoria(), user_metadata: { nombre_completo: `${etiqueta} ${MARCA}` } });
+  if (error) throw new Error(`crear ${etiqueta}: ${error.message}`);
+  personas.push(data.user.id);
+  return data.user.id;
+};
+const idAdmin = await persona("admin");
+const idRecep = await persona("recepcion");
+{
+  const telefono = `55${sufijo.slice(-6)}07`;
+  const ip = `10.77.${Number(sufijo.slice(-6, -3)) % 250}.${Number(sufijo.slice(-3)) % 250}`;
+  const nombre = `Aud Limite ${sufijo}`;
+  const { data, error } = await A.rpc("registrar_negocio_prueba", { p_nombre: nombre, p_ciudad: "Ciudad de México", p_telefono: telefono, p_ip: ip, p_persona_id: idAdmin, p_modelo: LUDO, p_dias: 15 });
+  if (error) throw new Error(`registrar_negocio_prueba: ${error.message}`);
+  const f = Array.isArray(data) ? data[0] : data;
+  negocio = { id: f.negocio_id, slug: f.slug, nombre, telefono };
+  H = negocio.id;
+  SB = createClient(URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: false }, global: { headers: { "x-negocio-id": H } } });
+  const rol = await SB.rpc("asignar_rol_staff", { p_user_id: idRecep, p_rol: "recepcion", p_nombre_completo: `Recepción ${MARCA}` });
+  if (rol.error) throw new Error(`asignar_rol_staff: ${rol.error.message}`);
+  bien(`negocio desechable «${nombre}» (${negocio.slug}) con su admin y su recepción`);
+}
 const adminJ = await jwt(idAdmin);
 const recJ = await jwt(idRecep);
 const hoy = (await adminJ.rpc("fecha_negocio")).data;
@@ -127,8 +149,6 @@ async function cerrarConLoEsperado(turnoId, nota) {
   if (segundo.error) throw new Error(`cerrar_turno 2: ${segundo.error.message}`);
   return Array.isArray(segundo.data) ? segundo.data[0] : segundo.data;
 }
-const previo = await turnoAbierto();
-if (previo) await cerrarConLoEsperado(previo.id, "límite de filas: se cierra el turno anterior");
 const abrir = await recJ.from("turnos_caja").insert({ fondo_inicial: 100, notas_apertura: MARCA, abierto_por: idRecep, estado: "abierto" });
 if (abrir.error) throw new Error(`abrir turno: ${abrir.error.message}`);
 const turno = await turnoAbierto();
@@ -172,6 +192,7 @@ bien(`${cobradas.length} cobros en efectivo en el turno`);
 
 // Gastos: $1 cada uno, por transferencia (no mueven el efectivo del turno).
 const { data: categorias } = await adminJ.from("categorias_gasto").select("id, clave");
+if (!categorias?.length) throw new Error("El negocio de prueba no trae categorías de gasto.");
 const catOtros = (categorias.find((c) => c.clave === "otros") ?? categorias[0]).id;
 await enParalelo(
   Array.from({ length: N_GASTOS }, (_, i) => async () => {
@@ -183,7 +204,10 @@ await enParalelo(
 bien(`${N_GASTOS} gastos de $1`);
 
 // Insumos y movimientos de uno.
-const molde = (await SB.from("insumos").select("unidad_compra_id, unidad_consumo_id, area_id").eq("negocio_id", H).is("deleted_at", null).limit(1).single()).data;
+const { data: unidades } = await A.from("unidades_medida").select("id").order("id").limit(2);
+const { data: areas } = await SB.from("areas_inventario").select("id").eq("negocio_id", H).is("deleted_at", null).order("id").limit(1);
+if (!unidades?.length || !areas?.length) throw new Error("El negocio de prueba no trae áreas de inventario o unidades de medida.");
+const molde = { unidad_compra_id: unidades[0].id, unidad_consumo_id: unidades[0].id, area_id: areas[0].id };
 const idsInsumos = [];
 for (const bloque of lotes(Array.from({ length: N_INSUMOS }, (_, i) => i), 250)) {
   const r = await SB.from("insumos").insert(bloque.map((i) => ({ nombre: `${MARCA} insumo ${String(i).padStart(4, "0")}`, ...molde }))).select("id");
@@ -203,6 +227,9 @@ for (const bloque of lotes(Array.from({ length: N_IA }, (_, i) => i), 250)) {
   if (r.error) throw new Error(`wa_uso_ia: ${r.error.message}`);
 }
 bien(`${N_IA} llamadas de IA de $0.07`);
+
+// Con meses de operación el autovacuum ya analizó las tablas; aquí se hace a mano para medir con estadísticas reales.
+await sql("analyze public.reservas, public.clientes, public.perros, public.ventas_mostrador, public.cobros, public.cobro_metodos, public.cuentas_canceladas, public.estancias, public.citas_estetica, public.cargos_aplicados, public.descuentos_aplicados");
 
 // ───────────────────────────────────────────────────────────── 3. Los ayudantes y el gasto de IA
 console.log("\n── 3. Lo que de verdad pasa con 1,000+ filas");
@@ -247,14 +274,15 @@ console.log("\n── 4. Caja, corte y reportes contra SQL (sin el límite)");
   const netoEfectivo = resumen.filter((r) => r.metodo === "efectivo").reduce((s, r) => s + Number(r.cobrado) + Number(r.propinas) - Number(r.devuelto), 0);
   comprobar(cerca(netoEfectivo, verdadTurno.efectivo), `resumen_turno (agregado en la base): efectivo $${netoEfectivo} = SQL`);
 
-  // cuentas_abiertas_json: las mismas cuentas, en UN jsonb (la función cruda tarda segundos y la API la corta en 1,000 filas).
-  // Con miles de cuentas en la ventana, la función con RLS de una sesión pasa del statement_timeout de 8 s de la API (con
-  // la llave de servicio, que no evalúa RLS, tarda ~2.6 s). Es un límite de rendimiento aparte del de las 1,000 filas: si
-  // pasa, se dice y la prueba de «no se corta en 1,000» se hace con la llave de servicio.
+  // cuentas_abiertas_json: las mismas cuentas, en UN jsonb (la API corta toda lectura en 1,000 filas). Con la sesión
+  // de un admin (RLS) tiene que responder muy por debajo del statement_timeout de 8 s de la API: antes llamaba
+  // cuenta_lineas_reserva por cada cuenta y con miles de cuentas pasaba de 30 s.
+  const t0 = Date.now();
   const conSesion = await adminJ.rpc("cuentas_abiertas_json", { p_dias: 30 });
-  lentaPorRls = Boolean(conSesion.error);
-  if (lentaPorRls) console.log(`  · cuentas_abiertas con la sesión de un admin: «${conSesion.error.message}» (rendimiento con RLS a este volumen; ver informe). Se prueba con la llave de servicio.`);
-  const abiertasJson = lentaPorRls ? await SB.rpc("cuentas_abiertas_json", { p_dias: 30 }) : conSesion;
+  const ms = Date.now() - t0;
+  comprobar(!conSesion.error, `cuentas_abiertas_json con la sesión de un admin (RLS) responde sin timeout${conSesion.error ? `: ${conSesion.error.message}` : ""}`);
+  comprobar(ms < 1500, `…en ${ms} ms con ${N_ABIERTAS + N_COBRADAS} cuentas en la ventana (tope de esta prueba: 1,500 ms; el de la API es 8,000)`);
+  const abiertasJson = conSesion;
   const cuentasAbiertas = Array.isArray(abiertasJson.data) ? abiertasJson.data : [];
   const nuestras = cuentasAbiertas.filter((c) => String(c.descripcion).includes(MARCA) && String(c.descripcion).includes("abierta"));
   comprobar(!abiertasJson.error && nuestras.length === N_ABIERTAS, `cuentas_abiertas_json trae las ${nuestras.length} cuentas abiertas sembradas (de ${cuentasAbiertas.length} en total, más de 1,000 filas)`);
@@ -296,7 +324,7 @@ if (SOLO_BASE) {
 } else {
   console.log("\n── 5. Pantallas: enseñan todo, no los primeros 1,000");
   const { abrirNavegador } = await import("../lib/navegador.mjs");
-  const BASE = "http://huellitas.localhost:3001";
+  const BASE = `http://${negocio.slug}.localhost:3001`;
   const nombreCookie = `sb-${REF}-auth-token`;
   const { data: u } = await A.auth.admin.getUserById(idAdmin);
   const { data: link } = await A.auth.admin.generateLink({ type: "magiclink", email: u.user.email });
@@ -305,7 +333,7 @@ if (SOLO_BASE) {
   if (errSesion) throw errSesion;
   const valor = "base64-" + Buffer.from(JSON.stringify(s.session)).toString("base64url");
   const trozos = valor.match(/.{1,3180}/g);
-  const cookies = (trozos.length === 1 ? [[nombreCookie, valor]] : trozos.map((t, i) => [`${nombreCookie}.${i}`, t])).map(([name, value]) => ({ name, value, domain: "huellitas.localhost", path: "/" }));
+  const cookies = (trozos.length === 1 ? [[nombreCookie, valor]] : trozos.map((t, i) => [`${nombreCookie}.${i}`, t])).map(([name, value]) => ({ name, value, domain: `${negocio.slug}.localhost`, path: "/" }));
   const navegador = await abrirNavegador();
   try {
     const ctx = await navegador.newContext({ viewport: { width: 1280, height: 900 } });
@@ -322,16 +350,19 @@ if (SOLO_BASE) {
     const enLista = await pag.evaluate(() => new Set([...document.querySelectorAll('a[href^="/clientes/"]')].map((a) => a.getAttribute("href")).filter((h) => /^\/clientes\/[0-9a-f-]{36}$/.test(h))).size);
     comprobar(enLista === verdadClientes, `/clientes: ${enLista} clientes en la lista = ${verdadClientes} en la base (más de 1,000)`);
 
-    if (lentaPorRls) console.log("  · /caja: se omite (la función de cuentas con RLS pasa del statement_timeout a este volumen; ver informe)");
-    else {
+    {
+    // El corte de la sección 4 cerró el turno: se abre otro para que la Caja enseñe «Pendiente de cobrar hoy».
+    const reabrir = await recJ.from("turnos_caja").insert({ fondo_inicial: 0, notas_apertura: `${MARCA} pantallas`, abierto_por: idRecep, estado: "abierto" });
+    if (reabrir.error) throw new Error(`abrir turno para /caja: ${reabrir.error.message}`);
     await abrirPantalla("/caja");
-    const cuerpoCaja = await pag.evaluate(() => document.body.textContent ?? "");
-    const filasCaja = new Set(cuerpoCaja.match(new RegExp(`${MARCA} abierta \\d+`, "g")) ?? []).size;
+    // innerText separa cada bloque con un salto de línea; con textContent los números de una fila se pegaban a los de la siguiente.
+    const cuerpoCaja = await pag.evaluate(() => document.body.innerText ?? "");
+    const filasCaja = new Set(cuerpoCaja.match(new RegExp(`${MARCA} abierta \\d+(?!\\d)`, "g")) ?? []).size;
     comprobar(filasCaja === N_ABIERTAS, `/caja: ${filasCaja} de las ${N_ABIERTAS} cuentas abiertas sembradas se ven en pantalla`);
     const pendiente = /Pendiente de cobrar hoy:\s*\$([\d,]+\.\d{2})/.exec(cuerpoCaja);
     const todasAbiertas = (await adminJ.rpc("cuentas_abiertas_json", { p_dias: 30 })).data ?? [];
     const esperadoHoy = todasAbiertas.filter((c) => c.fecha_actividad === hoy).reduce((t, c) => t + Number(c.saldo), 0);
-    comprobar(pendiente && cerca(pendiente[1].replace(/,/g, ""), esperadoHoy), `/caja: «Pendiente de cobrar hoy» $${pendiente?.[1]} = suma de todas las cuentas de hoy $${esperadoHoy.toFixed(2)}`);
+    comprobar(pendiente && cerca(pendiente[1].replace(/,/g, ""), esperadoHoy), `/caja: «Pendiente de cobrar hoy» $${pendiente?.[1]} = suma de todas las cuentas de hoy $${esperadoHoy.toFixed(2)}${pendiente ? "" : ` (texto de la pantalla: «${cuerpoCaja.replace(/\s+/g, " ").slice(0, 160)}»)`}`);
     }
 
     await abrirPantalla("/caja/turno");
@@ -350,26 +381,37 @@ if (SOLO_BASE) {
     comprobar(enInventario === verdadInsumos, `/inventario: ${enInventario} insumos en la lista = ${verdadInsumos} en la base (más de 1,000)`);
 
     await abrirPantalla(`/inventario/${idsInsumos[0]}`);
-    const cuerpoInsumo = await pag.evaluate(() => document.body.textContent ?? "");
+    const cuerpoInsumo = await pag.evaluate(() => document.body.innerText ?? "");
     comprobar(cuerpoInsumo.includes("Se muestran los últimos 500 movimientos"), "/inventario/<insumo>: con 1,010 movimientos avisa que enseña los últimos 500");
-    comprobar(new RegExp(`Hay\\s+${N_MOVIMIENTOS}\\b`).test(cuerpoInsumo.replace(/,/g, "")), `/inventario/<insumo>: la existencia ("Hay ${N_MOVIMIENTOS}") cuenta los ${N_MOVIMIENTOS} movimientos, no solo los 500 de la lista`);
+    comprobar(new RegExp(`Hay\\s+${N_MOVIMIENTOS}(?!\\d)`).test(cuerpoInsumo.replace(/,/g, "")), `/inventario/<insumo>: la existencia ("Hay ${N_MOVIMIENTOS}") cuenta los ${N_MOVIMIENTOS} movimientos, no solo los 500 de la lista`);
   } finally {
     await navegador.close();
   }
 }
 
-// ───────────────────────────────────────────────────────────── 6. Limpieza
-console.log("\n── 6. Limpieza: baja lógica de lo que se puede dar de baja");
-{
-  const ahora = new Date().toISOString();
-  // Las bajas pasan por los disparadores de módulo, que preguntan por el negocio de la petición: se le dice cuál.
-  const enNegocio = (consulta) => sql(`select set_config('app.negocio_id', '${H}', true); ${consulta}`);
-  // Se limpia también lo que dejó una corrida anterior (todas las marcas L1K…).
-  await enNegocio(`update insumos set deleted_at = '${ahora}' where negocio_id = '${H}' and nombre like 'L1K% insumo %' and deleted_at is null`);
-  await enNegocio(`update perros set deleted_at = '${ahora}' where negocio_id = '${H}' and nombre like 'L1K% perro %' and deleted_at is null`);
-  await enNegocio(`update clientes set deleted_at = '${ahora}' where negocio_id = '${H}' and nombre like 'L1K% cliente %' and deleted_at is null`);
-  await sql(`update wa_uso_ia set deleted_at = '${ahora}' where modelo = 'limite-filas' and deleted_at is null`);
-  bien("insumos, perros, clientes y llamadas de IA de la prueba dados de baja (los cobros y gastos son inmutables y quedan marcados)");
+} catch (e) {
+  hallazgo(`La prueba se detuvo: ${e?.message ?? e}`);
+} finally {
+  // ─────────────────────────────────────────────────────────── 6. Se borra el negocio desechable (también si falló)
+  console.log("\n── 6. Limpieza: se borra el negocio desechable completo");
+  try {
+    if (negocio) {
+      const borrar = spawnSync(process.execPath, ["scripts/plataforma/eliminar-negocio.mjs", negocio.slug, "--telefono", negocio.telefono, "--aplicar"], { encoding: "utf8", env: process.env, maxBuffer: 64 * 1024 * 1024 });
+      comprobar(borrar.status === 0, `eliminar-negocio borró «${negocio.slug}»${borrar.status === 0 ? "" : `: ${borrar.stderr || borrar.stdout}`}`);
+      const queda = (await A.from("negocios").select("id").eq("id", negocio.id).maybeSingle()).data;
+      comprobar(!queda, "el negocio desechable ya no existe");
+      const filas = await sql(`select count(*)::int as n from public.reservas where negocio_id = '${negocio.id}'`);
+      comprobar(filas[0].n === 0, "…y no quedó ni una cuenta suya");
+    }
+    // Las llamadas de IA son de la plataforma (sin negocio): se borran de verdad, no hay nada que conservar.
+    await sql(`alter table public.wa_uso_ia disable trigger user; delete from public.wa_uso_ia where modelo = 'limite-filas'; alter table public.wa_uso_ia enable trigger user`);
+    const ia = await sql(`select count(*)::int as n from public.wa_uso_ia where modelo = 'limite-filas'`);
+    comprobar(ia[0].n === 0, "sin llamadas de IA de la prueba");
+    // Cuentas de Auth que eliminar-negocio no alcanzó (si la prueba se detuvo antes de crear el negocio).
+    for (const id of personas) await A.auth.admin.deleteUser(id).catch(() => {});
+  } catch (e) {
+    hallazgo(`La limpieza falló: ${e?.message ?? e}. Negocio a borrar a mano: ${negocio ? `node scripts/plataforma/eliminar-negocio.mjs ${negocio.slug} --telefono ${negocio.telefono} --aplicar` : "ninguno"}`);
+  }
 }
 
 console.log(hallazgos.length === 0 ? "\n✔ Sin hallazgos." : `\n${hallazgos.length} HALLAZGO(S):\n${hallazgos.map((h) => `- ${h}`).join("\n")}`);
