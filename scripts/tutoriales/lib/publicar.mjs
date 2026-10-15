@@ -24,6 +24,8 @@ export async function publicarVideo({ c, video, rutas, meta, masterAqui = true }
     await subir(c, "tutoriales-masters", `${dir}/miniatura-1280x720.jpg`, rutas.miniatura, "image/jpeg");
     await subir(c, "tutoriales-masters", `${dir}/subtitulos.es-MX.srt`, rutas.srt, "application/x-subrip");
     await subir(c, "tutoriales-masters", `${dir}/youtube.txt`, rutas.texto, "text/plain");
+    // Los tiempos de cada escena: el verificador visual los usa para saber en qué segundos sale cada pantalla.
+    if (rutas.tiempos && fs.existsSync(rutas.tiempos)) await subir(c, "tutoriales-masters", `${dir}/tiempos.json`, rutas.tiempos, "application/json");
     masterPath = `${dir}/master-1080p.mp4`;
   }
   await rpc(c, "plataforma_tutorial_publicar", {

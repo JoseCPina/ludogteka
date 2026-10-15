@@ -853,6 +853,32 @@ const PENDIENTES = [];
   if (s.status !== 0) PENDIENTES.push("node scripts/tutoriales/sincronizar.mjs --prod");
 }
 if (VIDEOS_POR_ACTUALIZAR.length) {
+  // El código cambió en estos videos; ¿cambió algo que SE VE? (scripts/tutoriales/verificar-visual.mjs: abre en el demo las
+  // pantallas de cada video y las compara contra sus fotogramas grabados). Solo se marcan los que sí; si el verificador no
+  // puede correr, se marcan todos como antes (y queda dicho): es preferible un video de más por revisar a uno de menos.
+  const candidatos = VIDEOS_POR_ACTUALIZAR.map((v) => v.numero);
+  console.log(`\n   Verificación visual de ${candidatos.length} video(s) con cambios de código (${candidatos.join(", ")})…`);
+  const vv = spawnSync(process.execPath, ["scripts/tutoriales/verificar-visual.mjs", "--videos", candidatos.join(","), "--levantar", "--subir", "--prod", "--json", "-"], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024, timeout: 45 * 60 * 1000 });
+  console.log(sinSecreto(vv.stderr || "").trimEnd().split("\n").slice(-30).map((l) => `   ${l}`).join("\n"));
+  try {
+    const dicho = JSON.parse((vv.stdout || "").trim());
+    if (!Array.isArray(dicho) || !dicho.length) throw new Error("sin resultados");
+    const por = new Map(dicho.map((d) => [d.numero, d]));
+    const antes = VIDEOS_POR_ACTUALIZAR.length;
+    VIDEOS_POR_ACTUALIZAR = VIDEOS_POR_ACTUALIZAR.flatMap((v) => {
+      const d = por.get(v.numero);
+      if (!d) return [v];
+      if (d.estado === "igual" || d.estado === "sin_grabar") return [];
+      const captura = d.imagen ? ` (captura: ${v.numero}-…/diferencias/${d.imagen.split("/").pop()})` : "";
+      return [{ numero: v.numero, motivo: (d.estado === "cambio" ? `se ve distinto: ${d.motivo}` : `no pude compararlo (${d.motivo}); cambió el código: ${v.motivo}`).slice(0, 260) + captura }];
+    });
+    console.log(`   Se ven igual ${antes - VIDEOS_POR_ACTUALIZAR.length} de ${antes}: no se marcan.`);
+  } catch (e) {
+    console.log(`   (la verificación visual no dio resultados: ${e.message}; se marcan todos los que cambiaron por código)`);
+    PENDIENTES.push("node scripts/tutoriales/verificar-visual.mjs --marcados --aplicar --prod   (desmarca los que se ven igual)");
+  }
+}
+if (VIDEOS_POR_ACTUALIZAR.length) {
   const m = spawnSync(process.execPath, ["scripts/tutoriales/marcar.mjs", "--json", JSON.stringify(VIDEOS_POR_ACTUALIZAR), "--prod"], { encoding: "utf8" });
   console.log(`\n   Videos «por actualizar»: ${VIDEOS_POR_ACTUALIZAR.map((v) => v.numero).join(", ")}`);
   console.log(sinSecreto((m.stdout || "") + (m.stderr || "")).trimEnd().split("\n").map((l) => `   ${l}`).join("\n"));

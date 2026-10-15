@@ -291,7 +291,7 @@ async function main() {
       const dir = path.join(DIR_SALIDA, v.id);
       const master = path.join(dir, "master-1080p.mp4");
       if (!["listo", "listo_sin_voz"].includes(e.estado) || !fs.existsSync(master)) continue;
-      const rutas = { master, video720: path.join(dir, "video-720p.mp4"), poster: path.join(dir, "poster.jpg"), miniatura: path.join(dir, "miniatura.jpg"), srt: path.join(dir, "subtitulos.es-MX.srt"), vtt: path.join(dir, "subtitulos.es-MX.vtt"), texto: path.join(dir, "youtube.txt") };
+      const rutas = { master, video720: path.join(dir, "video-720p.mp4"), poster: path.join(dir, "poster.jpg"), miniatura: path.join(dir, "miniatura.jpg"), srt: path.join(dir, "subtitulos.es-MX.srt"), vtt: path.join(dir, "subtitulos.es-MX.vtt"), texto: path.join(dir, "youtube.txt"), tiempos: path.join(dir, "tiempos.json") };
       const txt = fs.readFileSync(rutas.texto, "utf8");
       const descripcion = txt.split("DESCRIPCIÓN\n")[1]?.split("\n\nETIQUETAS")[0] ?? v.resumen;
       const meta = { descripcion, duracion: e.duracion, conVoz: e.estado === "listo", commit: e.commit ?? ctx.commit };

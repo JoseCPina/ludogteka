@@ -37,7 +37,24 @@ Para agregar la voz a lo ya grabado: `npm run tutoriales -- --prod` (un «listo 
 
 ## Si la app cambia
 
-`node scripts/tutoriales/afectados.mjs [base]` dice qué videos enseñan una pantalla o un artículo que cambió (`npm run desplegar` lo imprime como aviso). Se vuelve a grabar con `--regrabar`. Un defecto de la app que sale en pantalla se anota (`defectos` en el estado), no se parcha desde aquí.
+`node scripts/tutoriales/afectados.mjs [base]` propone qué videos enseñan una pantalla o un artículo que cambió (`npm run desplegar` lo imprime como aviso). Se vuelve a grabar con `--regrabar`. Un defecto de la app que sale en pantalla se anota (`defectos` en el estado), no se parcha desde aquí.
+
+### Qué se marca «por actualizar»: lo que SE VE, no el código que cambió
+
+`afectados.mjs` es solo el primer filtro (barato): propone los videos cuya pantalla o artículo tocó el diff. Un cambio de código que no mueve nada visible (un arreglo de consulta, un tope de filas) marcaba decenas de videos de más. La decisión la toma `verificar-visual.mjs`:
+
+```bash
+node scripts/tutoriales/verificar-visual.mjs --marcados [--aplicar]   # los hoy «por actualizar»; --aplicar desmarca los que se ven igual
+node scripts/tutoriales/verificar-visual.mjs --desde origin/main      # los que propone afectados.mjs
+node scripts/tutoriales/verificar-visual.mjs --videos 01,32,80 [--guardar-todo] [--depurar] [--sensibilidad 1.5]
+#   --levantar   compila y levanta la app si no hay servidor   ·   --subir [--prod]   sube las capturas de diferencia   ·   --json -   resultado por stdout
+```
+
+Para cada video abre en el demo (cuentas gemelas del corredor, 1920×1080 como la grabación) las pantallas que enseña, **solo leyendo**: sigue el guion en `ir` y en los clics a un *enlace* y se detiene donde habría que escribir o apretar un botón (nunca escribe nada). Cada captura se compara contra los fotogramas del master (el más parecido dentro de las escenas en que sale esa pantalla; si el master no está en `salida/`, lo baja de Storage). Además comprueba que cada botón o texto que el guion nombra en una pantalla limpia siga existiendo.
+
+La comparación (`lib/visual.mjs`) es de **estructura**, no de tinta: por bloques de 24 px mira cuánta «tinta» (borde) y cuánto brillo hay, y un bloque difiere solo si hay tinta en una imagen y ninguna en los vecinos de la otra, o el fondo cambió de brillo. Así ignora el cursor, el resaltado, la etiqueta del paso, la compresión y los datos que cambian solos (una fecha, un contador, un nombre: siguen siendo una línea de texto del mismo tamaño); y marca una mancha grande (un aviso, una tarjeta, una columna, una sección que aparece o desaparece, todo corrido hacia abajo). Umbrales en `UMBRALES` (ajustables por entorno `VIS_*` o `--sensibilidad`); `node scripts/tutoriales/prueba-visual.mjs` los prueba con pantallas sintéticas.
+
+Resultado por video: `cambio` (guarda la captura «grabado | hoy | manchas» en `scripts/tutoriales/diferencias/<NN>/`, y con `--subir` en `tutoriales-masters/<NN>-<slug>/diferencias/`), `igual`, `sin_comparar` (no hubo con qué comparar: no se puede afirmar que sigue igual, se trata como cambio) o `sin_grabar`. Lo corre `npm run desplegar` antes de marcar (si no puede correr, marca todos como antes y lo dice) y se corre a mano igual. **Límite conocido**: no distingue una palabra cambiada dentro de un texto del mismo largo; eso lo cubre la comprobación de los nombres que el guion usa y el QC de la grabación.
 
 ## Piezas
 
