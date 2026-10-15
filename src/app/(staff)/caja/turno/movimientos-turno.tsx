@@ -59,10 +59,19 @@ export function MovimientosTurno({
   movimientos,
   resumen,
   zona,
+  totalMovimientos,
+  servicios,
+  ventasMostrador,
+  verMasHref,
 }: {
+  // Solo los más recientes (la página que se ve); los totales vienen de la base.
   movimientos: MovimientoTurno[];
   resumen: ResumenMetodo[];
   zona: string;
+  totalMovimientos: number;
+  servicios: number;
+  ventasMostrador: number;
+  verMasHref: string | null;
 }) {
   const porMetodo = ["efectivo", "terminal", "transferencia", "tarjeta_manual"].map((m) => {
     const filas = resumen.filter((r) => r.metodo === m);
@@ -77,10 +86,6 @@ export function MovimientosTurno({
   // El total de tarjeta se suma explícito y separado: lo verificado y lo sin verificar.
   const neto = (m: string) => porMetodo.find((x) => x.metodo === m)?.neto ?? 0;
   const totalTarjeta = { verificada: neto("terminal"), manual: neto("tarjeta_manual") };
-
-  // Lo que entró por venta de mostrador, aparte de los servicios.
-  const ventasMostrador = movimientos.filter((m) => m.tipo === "venta_mostrador").reduce((s, m) => s + m.monto, 0);
-  const servicios = movimientos.filter((m) => m.tipo === "cobro" || m.tipo === "venta_bono").reduce((s, m) => s + m.monto, 0);
 
   return (
     <div className="flex flex-col gap-4">
@@ -118,6 +123,11 @@ export function MovimientosTurno({
         ))}
       </div>
 
+      {totalMovimientos > movimientos.length && (
+        <p className="text-sm text-n-600" data-movimientos-conteo>
+          Se muestran los {movimientos.length} movimientos más recientes de {totalMovimientos}. Los totales de arriba cuentan todos.
+        </p>
+      )}
       {movimientos.length === 0 ? (
         <p className="text-sm text-n-500">Todavía no hay movimientos en este turno.</p>
       ) : (
@@ -167,6 +177,11 @@ export function MovimientosTurno({
             </tbody>
           </table>
         </div>
+      )}
+      {verMasHref && (
+        <Link href={verMasHref} scroll={false} className="self-start rounded-md border border-n-200 bg-white px-4 py-2 text-sm font-semibold text-morado hover:bg-n-50" data-movimientos-ver-mas>
+          Ver más movimientos
+        </Link>
       )}
     </div>
   );

@@ -35,7 +35,7 @@ Un cobro nunca pasa del saldo. Si el cliente paga **de más en efectivo**, la pa
 
 ## Cuando la cuenta no se va a cobrar
 
-Las citas y estancias con fecha futura salen aparte, en **Próximas**, para que no se mezclen con lo que ya toca cobrar. Si una cuenta con saldo no se debe cobrar (el dueño no llegó, se canceló la cita, es una cortesía o se capturó mal), no la dejes ahí: cancélala.
+Las citas y estancias con fecha futura salen aparte, en **Próximas**, para que no se mezclen con lo que ya toca cobrar: todavía no se deben y no suman en «Pendiente de cobrar hoy». Si el cliente quiere pagar por adelantado, abre la cuenta (dice **Cobrar por adelantado (opcional)**) y cobra; si no, no hagas nada. Si una cuenta con saldo no se debe cobrar (el dueño no llegó, se canceló la cita, es una cortesía o se capturó mal), no la dejes ahí: cancélala.
 
 1. En [Caja](/caja), en la cuenta, aprieta **Cancelar cuenta** (también dentro de la cuenta). Si no ves el botón, pídele a un admin el permiso **Cancelar cuentas** en Administración → Permisos.
 2. Escoge el **Motivo**: **No se presentó**, **Cita cancelada**, **Cortesía**, **Error de captura** u **Otro** (con **Otro** escribe qué pasó).
@@ -447,7 +447,7 @@ Con **Ver la cuenta** abres la cuenta del cliente. Abajo, en **Últimos reembols
     rutas: ["/caja/turno"],
     palabras: ["corte", "arqueo", "cerrar caja", "abrir caja", "fondo", "retiro", "turno"],
     captura: "corte-de-caja.jpg",
-    cuerpo: `El turno junta todo lo que entra y sale de la caja desde que abres hasta que cierras. Sin turno abierto no se puede cobrar.
+    cuerpo: `El turno junta todo lo que entra y sale de la caja desde que abres hasta que cierras. Sin turno abierto no se puede cobrar. En **Movimientos de este turno** ves primero los 50 más recientes; aprieta **Ver más movimientos** para ampliar la lista. Los totales por método de arriba siempre cuentan todos los movimientos.
 
 ## Abrir el turno
 

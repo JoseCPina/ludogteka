@@ -13,18 +13,36 @@ import { leerTodo } from "@/lib/supabase/paginar";
 // El turno de caja: apertura, movimientos en curso con el acumulado por
 // método (y por origen: por la app o a mano), retiros, arqueo ciego e
 // historial. El cobro en sí vive en /caja (mostrador).
-export default async function TurnoCajaPage() {
+// Cuántos movimientos se pintan de entrada y de cuánto en cuánto se amplía: con más de mil cobros en el turno,
+// una fila por cobro tardaba segundos en llegar y en dibujarse. Los totales por método salen de la base, no de la lista.
+const MOVIMIENTOS_INICIAL = 50;
+const MOVIMIENTOS_TOPE = 2000;
+
+export default async function TurnoCajaPage({ searchParams }: { searchParams: Promise<{ mov?: string }> }) {
+  const { mov } = await searchParams;
+  const limiteMovimientos = Math.min(Math.max(Number.parseInt(mov ?? "", 10) || MOVIMIENTOS_INICIAL, MOVIMIENTOS_INICIAL), MOVIMIENTOS_TOPE);
   const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
 
-  const { data: turnoAbierto, error: errorTurno } = await supabase
-    .from("turnos_caja")
-    .select("id, fondo_inicial, abierto_at, abierto_por, notas_apertura")
-    .eq("estado", "abierto")
-    .maybeSingle();
+  // El turno abierto y el historial no dependen uno del otro: un solo viaje.
+  const [{ data: turnoAbierto, error: errorTurno }, { data: turnosCerradosCrudo, error: errorHistorial }] = await Promise.all([
+    supabase
+      .from("turnos_caja")
+      .select("id, fondo_inicial, abierto_at, abierto_por, notas_apertura")
+      .eq("estado", "abierto")
+      .maybeSingle(),
+    supabase
+      .from("turnos_caja")
+      .select(
+        "id, fondo_inicial, abierto_at, cerrado_at, abierto_por, cerrado_por, cortes_caja(id, explicacion_diferencias, corte_metodos(metodo, conteo, esperado, diferencia))"
+      )
+      .eq("estado", "cerrado")
+      .order("cerrado_at", { ascending: false })
+      .limit(20),
+  ]);
 
-  const [{ data: retirosCrudo }, { data: movimientosCrudo }, { data: resumenCrudo }] = turnoAbierto
+  const [{ data: retirosCrudo }, { data: paginaCrudo }, { data: resumenCrudo }] = turnoAbierto
     ? await Promise.all([
         leerTodo<Record<string, unknown> & { created_by: string | null; cancelado_por: string | null; tipo: string }>(() =>
           supabase
@@ -36,20 +54,15 @@ export default async function TurnoCajaPage() {
             .order("created_at")
             .order("id")
         ),
-        // Los movimientos del turno se suman por método en pantalla: tienen que llegar TODOS, no los primeros 1,000.
-        leerTodo<Record<string, unknown>>(() => supabase.rpc("movimientos_turno", { p_turno_id: turnoAbierto.id }).order("fecha").order("id")),
+        // Una sola respuesta (jsonb, sin el tope de 1,000 filas de la API): el total, las sumas de servicios y de ventas
+        // de mostrador, y SOLO la página de movimientos que se ve. Los totales por método vienen de resumen_turno.
+        supabase.rpc("movimientos_turno_pagina", { p_turno_id: turnoAbierto.id, p_limite: limiteMovimientos, p_desplazamiento: 0 }),
         supabase.rpc("resumen_turno", { p_turno_id: turnoAbierto.id }),
       ])
-    : [{ data: [] as never[] }, { data: [] as never[] }, { data: [] as never[] }];
+    : [{ data: [] as never[] }, { data: null }, { data: [] as never[] }];
 
-  const { data: turnosCerradosCrudo, error: errorHistorial } = await supabase
-    .from("turnos_caja")
-    .select(
-      "id, fondo_inicial, abierto_at, cerrado_at, abierto_por, cerrado_por, cortes_caja(id, explicacion_diferencias, corte_metodos(metodo, conteo, esperado, diferencia))"
-    )
-    .eq("estado", "cerrado")
-    .order("cerrado_at", { ascending: false })
-    .limit(20);
+  const pagina = (paginaCrudo ?? null) as { total: number; servicios: number; ventas_mostrador: number; movimientos: Record<string, unknown>[] } | null;
+  const movimientosCrudo = pagina?.movimientos ?? [];
 
   const error = errorTurno ?? errorHistorial;
 
@@ -57,7 +70,7 @@ export default async function TurnoCajaPage() {
     new Set([
       turnoAbierto?.abierto_por,
       ...(retirosCrudo ?? []).flatMap((r) => [r.created_by, r.cancelado_por]),
-      ...((movimientosCrudo ?? []) as { hecho_por: string | null }[]).map((m) => m.hecho_por),
+      ...(movimientosCrudo as { hecho_por: string | null }[]).map((m) => m.hecho_por),
       ...(turnosCerradosCrudo ?? []).flatMap((t) => [t.abierto_por, t.cerrado_por]),
     ])
   ).filter((x): x is string => Boolean(x));
@@ -97,7 +110,7 @@ export default async function TurnoCajaPage() {
       puedeCancelar: !r.deleted_at && tienePermiso(sesion, "agregar_efectivo") && (sesion?.rol === "admin" || r.created_by === sesion?.user.id),
     }));
 
-  const movimientos: MovimientoTurno[] = ((movimientosCrudo ?? []) as Record<string, unknown>[]).map((m) => ({
+  const movimientos: MovimientoTurno[] = movimientosCrudo.map((m) => ({
     id: m.id as string,
     tipo: m.tipo as string,
     fecha: m.fecha as string,
@@ -180,7 +193,17 @@ export default async function TurnoCajaPage() {
           />
           <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
             <h2 className="text-lg font-bold text-n-900">Movimientos de este turno</h2>
-            <MovimientosTurno zona={zona} movimientos={movimientos} resumen={resumen} />
+            <MovimientosTurno
+              zona={zona}
+              movimientos={movimientos}
+              resumen={resumen}
+              totalMovimientos={Number(pagina?.total ?? 0)}
+              servicios={Number(pagina?.servicios ?? 0)}
+              ventasMostrador={Number(pagina?.ventas_mostrador ?? 0)}
+              verMasHref={
+                Number(pagina?.total ?? 0) > movimientos.length ? `/caja/turno?mov=${Math.min(limiteMovimientos + 150, MOVIMIENTOS_TOPE)}` : null
+              }
+            />
           </div>
         </>
       )}
