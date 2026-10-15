@@ -100,6 +100,8 @@ export function MostradorCaja({
 
   function filaCuenta(c: CuentaAbierta) {
     const marcable = sePuedeAgrupar(c);
+    // Una cuenta de fecha futura es un anticipo opcional: no es deuda de hoy.
+    const adelantado = c.fechaActividad > hoy;
     const bloqueada = marcable && clienteSeleccion !== null && clienteSeleccion !== c.clienteId;
     return (
       <li key={c.reservaId} className="flex flex-col gap-2" data-cuenta-fila={c.reservaId}>
@@ -137,6 +139,11 @@ export function MostradorCaja({
           <span className="flex flex-col items-end">
             <span className="text-lg font-bold tabular-nums text-coral-oscuro">{dinero(c.saldo)}</span>
             <span className="text-xs text-n-500">de {dinero(c.totalCuenta)}</span>
+            {adelantado && (
+              <span className="mt-1 rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-700" data-cuenta-adelantado>
+                Cobrar por adelantado (opcional)
+              </span>
+            )}
           </span>
         </Link>
         </div>
@@ -259,9 +266,21 @@ export function MostradorCaja({
             </div>
 
             {delCliente.length > 0 ? (
-              <ul className="flex flex-col gap-2">
-                {delCliente.map((c) => filaCuenta(c))}
-              </ul>
+              <>
+                {delCliente.some((c) => c.fechaActividad <= hoy) && (
+                  <ul className="flex flex-col gap-2">
+                    {delCliente.filter((c) => c.fechaActividad <= hoy).map((c) => filaCuenta(c))}
+                  </ul>
+                )}
+                {delCliente.some((c) => c.fechaActividad > hoy) && (
+                  <div className="flex flex-col gap-2" data-del-cliente-proximas>
+                    <p className="text-xs font-bold uppercase tracking-wide text-n-600">Próximas (aún no se deben)</p>
+                    <ul className="flex flex-col gap-2">
+                      {delCliente.filter((c) => c.fechaActividad > hoy).map((c) => filaCuenta(c))}
+                    </ul>
+                  </div>
+                )}
+              </>
             ) : (
               <p className="text-sm text-n-600">No tiene cuentas con saldo pendiente.</p>
             )}
@@ -305,7 +324,10 @@ export function MostradorCaja({
       {proximas.length > 0 && (
         <section className="flex flex-col gap-3" data-seccion-proximas>
           <h2 className="text-lg font-bold text-n-900">Próximas</h2>
-          <p className="text-sm text-n-600">Citas y estancias con fecha futura: todavía no se cobran.</p>
+          <p className="text-sm text-n-600">
+            Citas y estancias con fecha futura. Todavía no se deben: no suman en «Pendiente de cobrar hoy». Si el cliente quiere pagar por adelantado, abre la
+            cuenta y cobra.
+          </p>
           {listaCuentas(proximas)}
         </section>
       )}
