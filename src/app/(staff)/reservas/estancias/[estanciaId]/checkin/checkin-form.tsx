@@ -138,7 +138,8 @@ export function CheckinForm({
       <fieldset disabled={registrado} className="m-0 flex min-w-0 flex-col gap-6 border-0 p-0">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field
-          label="Quién entrega al perro"
+          label="Quién entrega al perro (obligatorio)"
+          required
           value={entregadoNombre}
           onChange={(e) => setEntregadoNombre(e.target.value)}
           placeholder="Nombre de quien lo deja"

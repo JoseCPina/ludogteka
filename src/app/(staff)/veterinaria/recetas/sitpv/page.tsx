@@ -2,7 +2,8 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
 import { Button } from "@/components/ui/button";
-import { formatearFechaCalendario, unidadSegunCantidad } from "@/lib/formato";
+import { formatearFechaCalendario, hoyNegocio, unidadSegunCantidad } from "@/lib/formato";
+import { zonaActual } from "@/lib/negocio/actual";
 import { nombreMes, type EspejoResumen, type EstadoMedicoSitpv } from "@/lib/veterinaria/recetas";
 import { NavRecetas } from "../nav";
 import { AvisoErrorClinico } from "../../aviso-error";
@@ -12,6 +13,7 @@ import { AvisoErrorClinico } from "../../aviso-error";
 export default async function Sitpv({ searchParams }: { searchParams: Promise<{ estado?: string; archivadas?: string }> }) {
   const { estado, archivadas } = await searchParams;
   const supabase = await createSupabaseServerClient();
+  const mesActual = `${hoyNegocio(await zonaActual()).slice(0, 8)}01`; // el mes del negocio, no el UTC del servidor
   const [puede, { data, error }, { data: estadoCrudo }, { data: reglaMeses }, { data: reglaDia }] = await Promise.all([
     vetPuede(supabase, "registrar_recetas_sitpv"),
     supabase.rpc("vet_sitpv_lista", { p_estado: estado === "cancelada" || estado === "registrada" ? estado : null, p_archivadas: archivadas === "1", p_limite: 300 }),
@@ -61,7 +63,7 @@ export default async function Sitpv({ searchParams }: { searchParams: Promise<{ 
                   </span>
                 </div>
               )}
-              <Link href={`/veterinaria/recetas/sitpv/reporte?medico=${m.medico_id}&periodo=${new Date().toISOString().slice(0, 8)}01`} className="w-fit text-sm font-semibold text-morado hover:underline">Ver el reporte de este mes</Link>
+              <Link href={`/veterinaria/recetas/sitpv/reporte?medico=${m.medico_id}&periodo=${mesActual}`} className="w-fit text-sm font-semibold text-morado hover:underline">Ver el reporte de este mes</Link>
             </div>
           ))}
         </section>

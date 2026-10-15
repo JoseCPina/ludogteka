@@ -636,6 +636,8 @@ La celda vacía no se cobra por adivinación. Al agendar sale **un solo aviso**:
 2. Salen marcados **Tamaño (obligatorio)** y **Pelaje (obligatorio)**, con un aviso: sin los dos no se puede agendar.
 3. Elige el tamaño y el pelaje (corto, medio o largo) y guarda.
 
+Una raza con nombre propio que tu lista de precios no nombra (por ejemplo **Labrador retriever**) cae en este mismo grupo: no es un mestizo, solo se cobra por tamaño y pelaje. Al escogerla, el formulario ya **sugiere el tamaño y el pelaje típicos de la raza** (Labrador: grande, pelo corto); confírmalos o cámbialos según el perro.
+
 Si se te pasó, no pasa nada: al agendar la pantalla te los pide ahí mismo ([Cómo agendar una cita de estética](/ayuda/agendar-cita-estetica)).
 
 ## La matriz de precios (admin o «Precios y tarifas»)

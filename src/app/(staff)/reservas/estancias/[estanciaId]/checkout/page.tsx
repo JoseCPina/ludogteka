@@ -158,7 +158,8 @@ export default async function CheckoutEstanciaPage({
       <div>
         <h1 className="text-2xl font-bold text-n-900">Check-out — {perro.nombre}</h1>
         <p className="mt-1 text-n-600">
-          {servicio?.nombre} · Salida programada: {formatearFechaCalendario(estancia.fecha_salida)}
+          {/* Una visita de guardería es de un día: su fecha_salida guardada es el día siguiente (convención de noches), no se muestra. */}
+          {servicio?.nombre} · {esGuarderia ? `Fecha: ${formatearFechaCalendario(estancia.fecha_entrada)}` : `Salida programada: ${formatearFechaCalendario(estancia.fecha_salida)}`}
           {porHora ? ` · ${cantidad} hora${cantidad === 1 ? "" : "s"} estimada${cantidad === 1 ? "" : "s"}` : ""}
         </p>
         {porHora && puedeCheckout && (

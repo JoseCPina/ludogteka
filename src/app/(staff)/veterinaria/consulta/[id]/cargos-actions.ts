@@ -47,6 +47,21 @@ export async function quitarCargoConsulta(id: string, cargoId: string, motivo: s
   return resumen(id);
 }
 
+/** El precio de un cargo que no lo tenía, capturado al firmar; con permiso, también como precio de catálogo. */
+export async function ponerPrecioCargo(id: string, cargoId: string, precio: number, guardarCatalogo: boolean): Promise<ResultadoCargos> {
+  if (!Number.isFinite(precio) || precio <= 0) return { error: "Escribe un precio mayor a cero. Para no cobrarlo usa «Sin cobro» con su motivo." };
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("vet_consulta_cargo_precio", { p_id: cargoId, p_precio: precio, p_guardar_catalogo: guardarCatalogo });
+  if (error) return { error: traducirError(error) };
+  return resumen(id);
+}
+
+/** «Sin cobro» (cortesía o seguimiento incluido): la línea queda fuera de Caja, con su motivo a la vista. */
+export async function sinCobroCargo(id: string, cargoId: string, motivo: string): Promise<ResultadoCargos> {
+  if (motivo.trim().length < 3) return { error: "Escribe por qué no se cobra (cortesía, seguimiento incluido…)." };
+  return quitarCargoConsulta(id, cargoId, `Sin cobro: ${motivo.trim()}`);
+}
+
 export async function restaurarCargoConsulta(id: string, cargoId: string): Promise<ResultadoCargos> {
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("vet_consulta_cargo_restaurar", { p_id: cargoId });

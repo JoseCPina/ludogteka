@@ -5,7 +5,8 @@ import { Alert } from "@/components/ui/alert";
 import { Field } from "@/components/ui/field";
 import { BotonImprimirPagina } from "@/components/boton-imprimir";
 import { FormularioAccion } from "@/components/formulario-accion";
-import { formatearFechaCalendario, unidadSegunCantidad } from "@/lib/formato";
+import { formatearFechaCalendario, hoyNegocio, unidadSegunCantidad } from "@/lib/formato";
+import { zonaActual } from "@/lib/negocio/actual";
 import { nombreMes, type ReporteSitpv } from "@/lib/veterinaria/recetas";
 import { marcarReporte } from "../../actions";
 
@@ -18,7 +19,7 @@ export default async function ReporteMensual({ searchParams }: { searchParams: P
   const valido = medico && /^[0-9a-f-]{36}$/.test(medico) && periodo && /^\d{4}-\d{2}-\d{2}$/.test(periodo);
   const { data, error } = valido && puede ? await supabase.rpc("vet_sitpv_reporte", { p_medico: medico, p_periodo: periodo }) : { data: null, error: null };
   const r = data as ReporteSitpv | null;
-  const mesActual = new Date().toISOString().slice(0, 8) + "01";
+  const mesActual = `${hoyNegocio(await zonaActual()).slice(0, 8)}01`; // el mes del negocio, no el UTC del servidor
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">

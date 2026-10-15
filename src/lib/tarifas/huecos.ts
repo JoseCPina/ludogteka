@@ -53,6 +53,8 @@ type FilaServicio = {
  * contara por su lado, una diría «todo listo» mientras otra avisa de huecos.
  */
 export async function cargarServiciosConHuecos(supabase: SupabaseClient, modulos: readonly string[]): Promise<ServicioConHuecos[]> {
+  // Con Veterinaria prendida sus cuatro servicios tienen que existir para que «Precios sin capturar» y la bienvenida los cuenten.
+  if (modulos.includes("veterinaria")) await supabase.rpc("vet_asegurar_servicios");
   const [{ data: servicios }, { data: grupos }, { data: tamanos }, { data: pelajes }, { data: vigentes }] = await Promise.all([
     supabase
       .from("servicios")

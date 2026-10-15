@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useEspera } from "@/hooks/use-espera";
 import { Alert } from "@/components/ui/alert";
@@ -9,8 +9,8 @@ import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { dinero as formatearMoneda } from "@/lib/dinero";
-import { ETIQUETA_TIPO_CARGO, type CargosConsulta, type LineaCargo } from "@/lib/veterinaria/cargos-consulta";
-import { agregarCargoConsulta, ajustarCargoConsulta, pasarCargosACaja, quitarCargoConsulta, restaurarCargoConsulta, type ResultadoCargos } from "./cargos-actions";
+import { ETIQUETA_TIPO_CARGO, pareceVacuna, type CargosConsulta, type LineaCargo } from "@/lib/veterinaria/cargos-consulta";
+import { agregarCargoConsulta, ajustarCargoConsulta, pasarCargosACaja, ponerPrecioCargo, quitarCargoConsulta, restaurarCargoConsulta, sinCobroCargo, type ResultadoCargos } from "./cargos-actions";
 
 const num = (t: string) => Number(t.replace(",", ".").trim());
 
@@ -24,13 +24,30 @@ export function CargosConsulta({
   inicial,
   puedeAgregar,
   onResumen,
+  puedeCatalogo = false,
+  aplicarVacuna,
 }: {
   consultaId: string;
   inicial: CargosConsulta;
   puedeAgregar: boolean;
   onResumen?: (d: CargosConsulta) => void;
+  // Admin o «Precios y tarifas»: puede dejar el precio capturado como precio de catálogo.
+  puedeCatalogo?: boolean;
+  // El formulario de «Aplicar vacuna» (carnet), aparte de «Otro procedimiento».
+  aplicarVacuna?: ReactNode;
 }) {
   const [d, setD] = useState<CargosConsulta>(inicial);
+  // Lo que llega del servidor (p. ej. después de aplicar una vacuna) vuelve a reemplazar lo mostrado.
+  const [inicialPrevio, setInicialPrevio] = useState(inicial);
+  if (inicial !== inicialPrevio) {
+    setInicialPrevio(inicial);
+    setD(inicial);
+  }
+  const [precioDe, setPrecioDe] = useState<string | null>(null); // id de la línea a la que se le pone precio
+  const [precioNuevo, setPrecioNuevo] = useState("");
+  const [aCatalogo, setACatalogo] = useState(false);
+  const [sinCobroDe, setSinCobroDe] = useState<string | null>(null);
+  const [motivoSinCobro, setMotivoSinCobro] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [abierta, setAbierta] = useState<string | null>(null); // id de la línea en edición
@@ -97,6 +114,23 @@ export function CargosConsulta({
     }
   }
 
+  async function guardarPrecio(l: LineaCargo) {
+    const ok = await correr(() => ponerPrecioCargo(consultaId, l.id, num(precioNuevo), aCatalogo));
+    if (ok) {
+      setPrecioDe(null);
+      setPrecioNuevo("");
+      setACatalogo(false);
+    }
+  }
+
+  async function marcarSinCobro(l: LineaCargo) {
+    const ok = await correr(() => sinCobroCargo(consultaId, l.id, motivoSinCobro));
+    if (ok) {
+      setSinCobroDe(null);
+      setMotivoSinCobro("");
+    }
+  }
+
   const visibles = d.lineas;
   const pendientesSinPrecio = d.sin_precio;
 
@@ -136,7 +170,11 @@ export function CargosConsulta({
                 </div>
                 <div className="flex items-center gap-3">
                   {l.estado === "propuesto" && l.importe == null ? (
-                    <Link href="/servicios" className="text-sm font-semibold text-coral-oscuro hover:underline">Sin precio: captúralo</Link>
+                    borrador ? (
+                      <span className="text-sm font-semibold text-coral-oscuro">Sin precio</span>
+                    ) : (
+                      <Link href="/servicios" className="text-sm font-semibold text-coral-oscuro hover:underline">Sin precio: captúralo</Link>
+                    )
                   ) : l.importe != null ? (
                     <span className={`font-semibold ${l.estado === "quitado" || l.estado === "cubierto" ? "text-n-400 line-through" : "text-n-900"}`}>{formatearMoneda(l.importe)}</span>
                   ) : null}
@@ -157,6 +195,43 @@ export function CargosConsulta({
                   )}
                 </div>
               </div>
+              {borrador && l.estado === "propuesto" && l.importe == null && (
+                <div data-precio-faltante className="flex flex-col gap-3 rounded-md border-l-4 border-ambar bg-ambar-suave p-3">
+                  <p className="text-sm font-semibold text-n-900">Precio de esta consulta: falta el de «{l.concepto}». Sin precio no se puede firmar.</p>
+                  {precioDe === l.id ? (
+                    <div className="grid items-end gap-3 sm:grid-cols-3">
+                      <Field label="Precio de esta consulta ($)" name="precio_faltante" inputMode="decimal" value={precioNuevo} onChange={(e) => setPrecioNuevo(e.target.value)} />
+                      {puedeCatalogo && (l.tipo === "consulta" || l.tipo === "vacuna" || (l.tipo === "procedimiento" && l.origen === "catalogo")) && (
+                        <label className="flex items-center gap-2 text-sm text-n-800 sm:col-span-2">
+                          <input type="checkbox" checked={aCatalogo} onChange={(e) => setACatalogo(e.target.checked)} className="h-4 w-4" />
+                          Guardar como precio de catálogo (las próximas consultas ya lo traen)
+                        </label>
+                      )}
+                      <div className="flex gap-2 sm:col-span-3">
+                        <Button type="button" cargando={envio.cargando} onClick={() => guardarPrecio(l)}>Guardar el precio</Button>
+                        <Button type="button" variante="secundario" onClick={() => setPrecioDe(null)}>Cancelar</Button>
+                      </div>
+                    </div>
+                  ) : sinCobroDe === l.id ? (
+                    <div className="grid items-end gap-3 sm:grid-cols-3">
+                      <div className="sm:col-span-2">
+                        <Field label="Motivo de «Sin cobro» (obligatorio)" name="motivo_sin_cobro" value={motivoSinCobro} onChange={(e) => setMotivoSinCobro(e.target.value)} placeholder="Cortesía, seguimiento incluido…" />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button type="button" cargando={envio.cargando} onClick={() => marcarSinCobro(l)}>Marcar sin cobro</Button>
+                        <Button type="button" variante="secundario" onClick={() => setSinCobroDe(null)}>Cancelar</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" onClick={() => { setPrecioDe(l.id); setSinCobroDe(null); setPrecioNuevo(""); setACatalogo(false); setError(null); }}>Poner el precio</Button>
+                      {(d.puede_ajustar || l.origen === "manual") && (
+                        <Button type="button" variante="secundario" onClick={() => { setSinCobroDe(l.id); setPrecioDe(null); setMotivoSinCobro(""); setError(null); }}>Sin cobro</Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               {abierta === l.id && (
                 <div className="grid gap-3 rounded-md bg-n-50 p-3 sm:grid-cols-3">
                   {modo === "ajustar" && (
@@ -178,8 +253,8 @@ export function CargosConsulta({
       )}
 
       {pendientesSinPrecio > 0 && borrador && (
-        <Alert variante="advertencia" titulo={`${pendientesSinPrecio} ${pendientesSinPrecio === 1 ? "cargo sin precio" : "cargos sin precio"}`}>
-          Lo que no tiene precio no pasa a Caja. Captúralo en <Link href="/servicios" className="font-semibold text-morado hover:underline">Servicios y precios</Link> (o en Inventario, si es un producto) y vuelve a abrir esta consulta; también puedes firmar y pasarlo a Caja después.
+        <Alert variante="advertencia" titulo={`${pendientesSinPrecio} ${pendientesSinPrecio === 1 ? "cargo sin precio" : "cargos sin precio"}: no se puede firmar todavía`}>
+          Pon el precio aquí mismo con «Poner el precio» (puedes dejarlo como precio de catálogo si tienes «Precios y tarifas») o márcalo «Sin cobro» con su motivo si es cortesía o un seguimiento incluido. También lo puedes capturar en <Link href="/servicios" className="font-semibold text-morado hover:underline">Servicios y precios</Link>.
         </Alert>
       )}
       {!borrador && pendientesSinPrecio > 0 && (
@@ -193,6 +268,14 @@ export function CargosConsulta({
         </Alert>
       )}
 
+      {borrador && puedeAgregar && aplicarVacuna && (
+        <details data-aplicar-vacuna className="rounded-md border border-dashed border-n-300 p-3">
+          <summary className="cursor-pointer text-sm font-semibold text-morado">Aplicar vacuna</summary>
+          <p className="mb-3 mt-2 text-xs text-n-600">Queda en el carnet de la mascota con su lote y su fecha, y se cobra con esta consulta. Una vacuna no se agrega como «otro procedimiento».</p>
+          {aplicarVacuna}
+        </details>
+      )}
+
       {borrador && puedeAgregar && (
         <details className="rounded-md border border-dashed border-n-300 p-3">
           <summary className="cursor-pointer text-sm font-semibold text-morado">Agregar un procedimiento o medicamento</summary>
@@ -200,7 +283,7 @@ export function CargosConsulta({
             <Select label="Qué agregas" name="nuevo_tipo_cargo" value={nuevoTipo} onChange={(e) => setNuevoTipo(e.target.value as typeof nuevoTipo)}>
               <option value="catalogo">Un servicio de mi catálogo veterinario</option>
               <option value="producto">Un medicamento o producto del inventario</option>
-              <option value="libre">Otro procedimiento (lo escribo)</option>
+              <option value="libre">Otro procedimiento (lo escribo; las vacunas van en «Aplicar vacuna»)</option>
             </Select>
             {nuevoTipo === "catalogo" && (
               <Select label="Servicio" name="nuevo_servicio_cargo" value={nuevoServicio} onChange={(e) => setNuevoServicio(e.target.value)}>
@@ -223,6 +306,11 @@ export function CargosConsulta({
                 <Field label="Concepto" name="nuevo_concepto_cargo" value={nuevoConcepto} onChange={(e) => setNuevoConcepto(e.target.value)} placeholder="Sutura, curación…" />
                 <Field label="Precio ($)" name="nuevo_precio_cargo" inputMode="decimal" value={nuevoPrecio} onChange={(e) => setNuevoPrecio(e.target.value)} />
               </>
+            )}
+            {nuevoTipo === "libre" && pareceVacuna(nuevoConcepto) && (
+              <p data-aviso-vacuna className="rounded-md border-l-4 border-ambar bg-ambar-suave px-3 py-2 text-sm text-n-800 sm:col-span-2">
+                Eso es una vacuna: no va como procedimiento. Usa <strong>Aplicar vacuna</strong> (arriba) para que entre al carnet con su lote y su fecha.
+              </p>
             )}
             <Field label={nuevoTipo === "producto" ? "Cantidad (en la unidad de consumo)" : "Cantidad"} name="nueva_cantidad_cargo" inputMode="decimal" value={nuevaCantidad} onChange={(e) => setNuevaCantidad(e.target.value)} />
             <div className="flex items-end">

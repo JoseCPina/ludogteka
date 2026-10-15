@@ -92,7 +92,7 @@ Antes del botón de firmar está el recuadro **Cargos de esta consulta**: lo que
 
 ## Antes de empezar: los precios
 
-En [Servicios y precios](/servicios) hay cuatro servicios de Veterinaria (aparecen solos al prender el módulo): **Consulta general**, **Consulta de urgencia**, **Revisión o seguimiento** y **Aplicación de vacuna**. Entra a cada uno y captura su precio. Mientras no tenga precio no se cobra, y el cargo sale marcado **Sin precio**. Los procedimientos (sutura, curación…) los puedes dar de alta como servicios nuevos de categoría **Veterinaria**.
+En [Servicios y precios](/servicios) hay cuatro servicios de Veterinaria (aparecen solos al prender el módulo): **Consulta general**, **Consulta de urgencia**, **Revisión o seguimiento** y **Aplicación de vacuna**. Entra a cada uno y captura su precio. Si falta alguno, la consulta te lo pide al firmar (ver abajo). Los procedimientos (sutura, curación…) los puedes dar de alta como servicios nuevos de categoría **Veterinaria**.
 
 ## Qué trae el cobro
 
@@ -102,6 +102,14 @@ En la consulta, antes de **Firmar**, está el recuadro **Cargos de esta consulta
 - Las **vacunas** que registraste ese día a la mascota en su carnet.
 - Los **medicamentos** que surtiste con esa consulta (los controlados salen solos con su receta) y los que agregues del inventario. Se cobran al precio de venta del inventario, por la unidad que usas.
 - Los **procedimientos** que agregues desde tu catálogo o escribiendo el concepto y el precio.
+- Una **vacuna** no se agrega como «otro procedimiento»: se aplica con el botón **Aplicar vacuna** (producto y lote del inventario, fecha y médico), queda en el carnet de la mascota y entra al cobro sola. Si escribes el nombre de una vacuna como procedimiento, la pantalla te manda a **Aplicar vacuna**.
+
+## Si falta un precio
+
+Una consulta **no se firma con un cargo sin precio**. El cargo sale con el recuadro amarillo **Precio de esta consulta**:
+
+- **Poner el precio** lo captura para esta consulta. Si eres admin o tienes **Precios y tarifas**, marca **Guardar como precio de catálogo** y las próximas consultas ya lo traen.
+- **Sin cobro** (con su motivo: cortesía, seguimiento incluido…) deja el cargo fuera de Caja. Lo marca el médico veterinario, el admin o quien tenga **Quitar o ajustar cargos de la consulta**.
 
 Abajo ves el **total**. Al firmar, la pantalla te lo repite.
 
@@ -120,7 +128,7 @@ Abajo ves el **total**. Al firmar, la pantalla te lo repite.
 
 ## Después de firmar
 
-La consulta firmada muestra **Cobro de esta consulta** con sus cargos y el enlace **Abrir la cuenta en Caja**. Si algún cargo no tenía precio, captúralo en Servicios y precios y aprieta **Pasar a Caja lo que falta**. Firmar nunca se bloquea por un precio faltante.
+La consulta firmada muestra **Cobro de esta consulta** con sus cargos y el enlace **Abrir la cuenta en Caja**. Si una consulta firmada antes de este cambio quedó con un cargo **Sin precio**, captúralo en Servicios y precios y aprieta **Pasar a Caja lo que falta**.
 
 Si **anulas** la consulta y su cuenta todavía no tiene cobros, los cargos se cancelan solos; si ya hay cobros, se quedan y se devuelve en Caja con la devolución de siempre.`,
   },

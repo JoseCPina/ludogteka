@@ -61,7 +61,9 @@ export function ResumenSanitario({
   items: EstadoRequisitoItem[];
   tamano?: "grande" | "compacto";
 }) {
-  const ordenados = ordenarEstadoRequisitos(items);
+  // Un chip sin nombre o un contenedor sin chips no se muestra (en el portal se veía como una etiqueta vacía).
+  const ordenados = ordenarEstadoRequisitos(items).filter((i) => i.etiqueta?.trim() && ESTILOS_ESTADO[i.estado]);
+  if (ordenados.length === 0) return null;
   const esGrande = tamano === "grande";
 
   return (
