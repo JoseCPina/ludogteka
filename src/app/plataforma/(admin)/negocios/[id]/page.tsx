@@ -5,7 +5,7 @@ import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { ZONAS_MEXICO } from "@/lib/plataforma/tipos";
 import { urlDelNegocio } from "@/lib/negocio/actual";
-import { actualizarNegocio, agregarAdmin, asignarPlan, cambiarPlan, eliminarNegocio, marcarInterno } from "../../../acciones";
+import { actualizarNegocio, agregarAdmin, asignarPlan, cambiarPlan, cambiarSubdominio, eliminarNegocio, marcarInterno } from "../../../acciones";
 import { formatearFecha } from "@/lib/formato";
 import { pesosDeCentavos } from "@/lib/cobro/iva";
 import { estadoCobro } from "@/lib/cobro/estados";
@@ -42,6 +42,8 @@ export default async function NegocioPlataforma({ params }: { params: Promise<{ 
     leerTodo<Record<string, unknown>>(() => supabase.rpc("plataforma_cobros").order("negocio_id")),
     supabase.rpc("plataforma_pagos_negocio", { p_negocio_id: id }),
   ]);
+  const { data: anterioresCrudo } = await supabase.from("negocios_slugs_anteriores").select("slug").eq("negocio_destino", id).is("deleted_at", null).order("created_at").limit(50);
+  const anteriores = ((anterioresCrudo ?? []) as { slug: string }[]).map((a) => a.slug);
   const cobro = ((cobros ?? []) as Cobro[]).find((c) => c.negocio_id === id) ?? null;
   const pagos = (pagosCrudo ?? []) as Pago[];
   const planes = (planesCrudo ?? []) as { id: string; nombre: string; tipo: string; precio_mensual: number; modulos: string[] }[];
@@ -175,6 +177,21 @@ export default async function NegocioPlataforma({ params }: { params: Promise<{ 
           </Select>
           <Field label="Prueba hasta (solo si es prueba)" name="prueba_hasta" type="date" defaultValue={n.prueba_termina_at ? new Date(n.prueba_termina_at).toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }) : ""} />
           <Field label="Motivo" name="motivo" required placeholder="Pagó octubre por transferencia" />
+        </FormularioPlataforma>
+      </section>
+
+      <section className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5" data-subdominio>
+        <h2 className="font-bold text-n-900">Subdominio</h2>
+        <p className="-mt-2 text-sm text-n-600">
+          Hoy es <b>{n.slug}</b>.peludesk.mx. Al cambiarlo, la dirección anterior queda como redirección permanente a la nueva (misma ruta): no se rompen links, QR ni la página pública. Va en minúsculas, números y guiones, sin acentos ni ñ.
+        </p>
+        {anteriores.length > 0 && (
+          <p className="text-sm text-n-700" data-subdominios-anteriores>
+            Redirigen a este negocio: {anteriores.map((a) => `${a}.peludesk.mx`).join(", ")}.
+          </p>
+        )}
+        <FormularioPlataforma accion={cambiarSubdominio.bind(null, n.id)} textoBoton="Cambiar el subdominio" variante="secundario">
+          <Field label="Subdominio nuevo" name="subdominio" required placeholder="mi-negocio" ayuda="Solo la primera parte: mi-negocio.peludesk.mx." />
         </FormularioPlataforma>
       </section>
 

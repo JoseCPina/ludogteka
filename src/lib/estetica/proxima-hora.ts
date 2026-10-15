@@ -35,21 +35,23 @@ function minutosLocales(iso: string, zona: string): number {
  * @param horarioDe horario de una fecha (AAAA-MM-DD); sin configurar, 09:00 a 19:00.
  * @returns "AAAA-MM-DDTHH:MM" (hora del negocio), listo para un datetime-local.
  */
-export function proximaHoraDisponible(ahoraISO: string, zona: string, horarioDe: (fecha: string) => HorarioDia | null, dias = 14): string {
+export function proximaHoraDisponible(ahoraISO: string, zona: string, horarioDe: (fecha: string) => HorarioDia | null, dias = 14, desdeFecha?: string): string {
   const hoy = fechaLocal(ahoraISO, zona);
+  // Si piden un día futuro, se busca desde ese día (a la apertura); un día pasado cuenta como hoy.
+  const inicioBusqueda = desdeFecha && desdeFecha > hoy ? desdeFecha : hoy;
   const ahora = minutosLocales(ahoraISO, zona);
   let primeraAbierta: string | null = null;
   for (let i = 0; i <= dias; i++) {
-    const fecha = masDias(hoy, i);
+    const fecha = masDias(inicioBusqueda, i);
     const h = horarioDe(fecha) ?? { abre: true, apertura: "09:00", cierre: "19:00" };
     if (!h.abre) continue;
     const apertura = minutos(h.apertura ?? "09:00");
     const cierre = minutos(h.cierre ?? "19:00");
     // Primera hora en punto estrictamente posterior a este momento (en hoy) o a la apertura (otro día).
     let inicio = Math.ceil(apertura / 60) * 60;
-    if (i === 0) inicio = Math.max(inicio, (Math.floor(ahora / 60) + 1) * 60);
+    if (fecha === hoy) inicio = Math.max(inicio, (Math.floor(ahora / 60) + 1) * 60);
     if (inicio < cierre) return `${fecha}T${aTexto(inicio)}`;
     primeraAbierta ??= `${fecha}T${aTexto(Math.ceil(apertura / 60) * 60)}`;
   }
-  return primeraAbierta ?? `${masDias(hoy, 1)}T09:00`;
+  return primeraAbierta ?? `${masDias(inicioBusqueda, 1)}T09:00`;
 }

@@ -9,6 +9,7 @@ import { FormularioAccion } from "@/components/formulario-accion";
 import { buscarMascotas, etiquetaEspecie } from "@/lib/veterinaria/buscar";
 import { hoyNegocio } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
+import { proponerHora } from "@/lib/estetica/proponer-hora";
 import type { MedicoVet, TipoCitaConfig } from "@/lib/veterinaria/expediente";
 import { agendarCita } from "../../expediente/actions";
 
@@ -58,6 +59,8 @@ export default async function NuevaCitaVet({ searchParams }: { searchParams: Pro
   ]);
   const tipos = ((tiposCrudo ?? []) as TipoCitaConfig[]).filter((t) => t.activo);
   const medicos = (medicosCrudo ?? []) as MedicoVet[];
+  // Fecha y hora propuestas: la siguiente hora en punto que no ha pasado (o, con un día ya escogido, la primera de ese día).
+  const propuesta = await proponerHora(supabase, zona, fecha && fecha > hoy ? fecha : undefined);
   const dueno = mascota ? ((Array.isArray(mascota.clientes) ? mascota.clientes[0] : mascota.clientes) as { nombre: string } | null) : null;
 
   return (
@@ -89,8 +92,8 @@ export default async function NuevaCitaVet({ searchParams }: { searchParams: Pro
                 </option>
               ))}
             </Select>
-            <Field label="Fecha" name="fecha" type="date" min={hoy} defaultValue={fecha && fecha >= hoy ? fecha : hoy} required />
-            <Field label="Hora" name="hora" type="time" defaultValue="09:00" required />
+            <Field label="Fecha" name="fecha" type="date" min={hoy} defaultValue={propuesta.slice(0, 10)} required />
+            <Field label="Hora" name="hora" type="time" defaultValue={propuesta.slice(11)} required />
             <Field label="Duración en minutos (opcional)" name="duracion" type="number" min={5} max={480} ayuda="Vacío: la del tipo de cita." />
           </div>
           <Textarea label="Motivo (opcional)" name="motivo" rows={2} />

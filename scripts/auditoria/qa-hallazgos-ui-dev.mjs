@@ -234,6 +234,14 @@ try {
     comprobar(valor > ahora, `la hora propuesta (${valor}) es posterior a ahora (${ahora}, ${zona})`);
     comprobar(/T\d{2}:00$/.test(valor), "y es una hora en punto");
     await c.close();
+    // La agenda clínica (Veterinaria) usa la MISMA función: ya no abre con las 09:00 fijas.
+    const perroV = await nuevoPerro("HoraVet");
+    ({ c, p } = await abrir(datos.adminB, 390));
+    await p.goto(`${BASE}/veterinaria/agenda/nueva?perro=${perroV}`, { waitUntil: "networkidle" });
+    const fV = await p.locator('input[name="fecha"]').inputValue();
+    const hV = await p.locator('input[name="hora"]').inputValue();
+    comprobar(`${fV}T${hV}` === valor, `la agenda clínica propone la misma hora (${fV} ${hV})`);
+    await c.close();
   }
 
   // ── 6: obligatorios y monto del cobro ───────────────────────────
