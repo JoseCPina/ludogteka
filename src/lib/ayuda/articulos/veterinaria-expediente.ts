@@ -114,6 +114,7 @@ Abajo ves el **total**. Al firmar, la pantalla te lo repite.
 
 - Si la mascota está **hospitalizada**, a la cuenta de su hospitalización.
 - Si hay un **estimado aceptado** de esa consulta, a la cuenta del estimado, y lo que el estimado ya cubre (procedimientos y medicamentos cotizados) **no se cobra otra vez**: sale como «ya está en el estimado». Si quieres cobrarlo aparte, **Cobrar aparte**.
+- Si el estimado se acepta **después** de firmar la consulta, entra a la misma cuenta que ya tiene los cargos de la consulta y lo que el estimado cubre se descuenta de ella (esos cargos quedan cancelados con el motivo «Cubierto por el estimado», y la consulta los muestra como cubiertos). Así no se cobra dos veces. Si la cuenta ya tenía cobros, queda saldo a favor y se devuelve en Caja con la devolución de siempre.
 - Si la teleconsulta se pagó por adelantado, la consulta no se cobra de nuevo.
 - En cualquier otro caso se abre una cuenta nueva.
 

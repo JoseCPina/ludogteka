@@ -184,6 +184,37 @@ try {
   const enCuenta = (await SB.from("cargos_aplicados").select("precio, descripcion").eq("reserva_id", reservaEst).eq("cancelado", false)).data;
   comprobar(enCuenta.length === 3, `la cuenta del estimado tiene 3 cargos (2 del estimado + la consulta), sin duplicados (${enCuenta.length})`);
 
+  seccion("6b. Estimado aceptado DESPUÉS de firmar la consulta");
+  const perro5 = await nuevoPerro("Despues");
+  const c5 = (await rpc(P.recSin, "vet_consulta_iniciar", { p_perro: perro5, p_cita: null, p_tipo: "consulta", p_medico: medico })).cuerpo;
+  await rpc(P.recSin, "vet_consulta_cargo_agregar", { p_consulta: c5, p_tipo: "procedimiento", p_concepto: `Sutura ${MARCA}`, p_cantidad: 1, p_precio: 1800, p_servicio: null, p_insumo: null });
+  await rpc(P.recSin, "vet_consulta_cargo_agregar", { p_consulta: c5, p_tipo: "medicamento", p_concepto: null, p_cantidad: 1, p_precio: null, p_servicio: null, p_insumo: antibiotico });
+  await guardarDx(P.recSin, c5);
+  const f5 = await rpc(P.recCon, "vet_consulta_firmar", { p_id: c5 });
+  comprobar(f5.ok && f5.cuerpo.cobro.cargos === 3, `la consulta firmada manda 3 cargos a Caja: consulta, procedimiento y medicamento (${f5.mensaje ?? f5.cuerpo?.cobro?.cargos})`);
+  const reserva5 = f5.cuerpo?.cobro?.reserva_id;
+  const vivos = async (r) => (await SB.from("cargos_aplicados").select("precio, cantidad, descripcion").eq("reserva_id", r).eq("cancelado", false)).data ?? [];
+  const suma = (filas) => Math.round(filas.reduce((t, c) => t + Number(c.precio) * Number(c.cantidad), 0) * 100) / 100;
+  comprobar(suma(await vivos(reserva5)) === Math.round((450 + 1800 + porMl) * 100) / 100, `la cuenta antes del estimado suma consulta + procedimiento + medicamento ($${450 + 1800 + porMl})`);
+  const est5 = await rpc(P.recSin, "vet_estimado_guardar", { p_id: null, p_perro: perro5, p_consulta: c5, p_cita: null, p_tipo: "cirugia", p_titulo: `Cirugía tardía ${MARCA}`, p_notas: null, p_vigente_hasta: null, p_medico: null,
+    p_lineas: [{ tipo: "procedimiento", descripcion: "Sutura y cirugía", cantidad: 1, unidad: "pieza", precio_min: 2000, precio_max: 2500 }] });
+  comprobar(est5.ok, `se arma un estimado de la consulta ya firmada (${est5.mensaje})`);
+  const acepta5 = await rpc(P.recSin, "vet_estimado_aceptar_mostrador", { p_id: est5.cuerpo, p_nombre: "Rosa Pérez", p_firma: null });
+  comprobar(acepta5.ok && acepta5.cuerpo.reserva_id === reserva5, `el estimado entra a la MISMA cuenta que la consulta (${acepta5.mensaje})`);
+  comprobar(acepta5.cuerpo?.compensados === 1 && Number(acepta5.cuerpo?.compensado_total) === 1800, "compensa 1 cargo ($1,800): el procedimiento que el estimado ya cubre");
+  const despues5 = await vivos(reserva5);
+  comprobar(suma(despues5) === Math.round((450 + porMl + 2000) * 100) / 100, `la cuenta queda en consulta + medicamento + estimado, sin cobrar el procedimiento dos veces ($${450 + porMl + 2000})`);
+  const comps = (await SB.from("vet_estimado_compensaciones").select("tipo, concepto, importe, cuenta_con_cobros, motivo").eq("estimado_id", est5.cuerpo).is("deleted_at", null)).data ?? [];
+  comprobar(comps.length === 1 && comps[0].tipo === "procedimiento" && Number(comps[0].importe) === 1800 && comps[0].cuenta_con_cobros === false, "queda el registro de lo compensado (qué, cuánto y si la cuenta ya tenía cobros)");
+  d = await lineas(P.recSin, c5);
+  comprobar(d.lineas.find((l) => l.tipo === "procedimiento")?.estado === "cubierto" && d.lineas.find((l) => l.tipo === "procedimiento")?.cubierto_por === "estimado", "la línea de la consulta pasa a «cubierto por estimado»");
+  comprobar(d.lineas.find((l) => l.tipo === "medicamento")?.estado === "cobrado", "lo que el estimado no cotizó (el medicamento) sigue cobrado");
+  comprobar(!(await get(P.admin, "vet_estimado_compensaciones?select=id")).ok || (await get(P.admin, "vet_estimado_compensaciones?select=id")).cuerpo.length === 0, "la tabla de compensaciones no se lee directo por la API");
+  const anulaAntes = await rpc(P.recCon, "vet_consulta_anular", { p_id: c5, p_motivo: "Prueba de anulación después del estimado" });
+  comprobar(anulaAntes.ok, "anular la consulta no toca lo que ya cubrió el estimado");
+  const tras = await vivos(reserva5);
+  comprobar(tras.some((c) => Number(c.precio) === 2000), "el cargo del estimado sigue en la cuenta");
+
   seccion("7. Anular");
   const anula = await rpc(P.recCon, "vet_consulta_anular", { p_id: c4, p_motivo: "Se capturó en la mascota equivocada" });
   comprobar(anula.ok, `el médico anula la consulta (${anula.mensaje})`);
