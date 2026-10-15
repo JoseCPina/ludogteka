@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Alert } from "@/components/ui/alert";
 
-export type ServicioConHuecos = { id: string; nombre: string; faltan: number };
+import type { ServicioConHuecos } from "@/lib/tarifas/huecos";
 
 /**
  * Precios sin capturar, en el panel de admin.

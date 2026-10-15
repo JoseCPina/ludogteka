@@ -272,7 +272,7 @@ En **Series recurrentes** toca **Nueva serie**, escoge el perro, el servicio y l
 ## Si algo no sale
 
 - «Este perro tiene un requisito sanitario obligatorio vencido o sin registro.»: registra la vacuna en su expediente. Un admin puede autorizar una excepción con motivo.
-- «Este perro no tiene evaluación previa de comportamiento.»: márcala en su expediente.
+- «Este perro no tiene evaluación previa de comportamiento.»: el aviso sale en cuanto eliges a la mascota, con un enlace para completar la evaluación en su expediente. Un admin (o quien tenga el permiso de excepciones) puede reservar sin ella marcando la excepción ahí mismo y escribiendo el motivo.
 - «No hay cupo disponible (diurno) para el …»: ese día ya está lleno.
 - «Guardería no abre en …»: escoge un día con horario.`,
   },

@@ -45,7 +45,13 @@ try {
     await ver("/veterinaria/carnet", /Canela|Kiwi/, "carnets");
 
     // Solo lectura: abrir el expediente de Canela y la receta, y ver que no hay nada privado de otro negocio.
-    const { data: canela } = await A.from("perros").select("id").eq("nombre", "Canela").eq("negocio_id", ID_DEMO).limit(1).maybeSingle();
+    // El demo tiene dos «Canela» (una del demo base y la de Veterinaria): se toma la que tiene carnet.
+    const { data: canelas } = await A.from("perros").select("id").eq("nombre", "Canela").eq("negocio_id", ID_DEMO);
+    let canela = canelas?.[0] ?? null;
+    for (const c of canelas ?? []) {
+      const { count } = await A.from("carnet_vacunas").select("id", { count: "exact", head: true }).eq("perro_id", c.id).is("anulada_at", null);
+      if ((count ?? 0) > 0) { canela = c; break; }
+    }
     await ver(`/veterinaria/expediente/${canela.id}`, /Otitis|Canela/, "expediente de Canela con su consulta firmada");
     await ver(`/veterinaria/carnet/${canela.id}`, /Séxtuple|Antirrábica/, "carnet de Canela");
 
@@ -63,7 +69,7 @@ try {
     const { data: perro } = await A.from("perros").select("id").eq("negocio_id", ID_DEMO).eq("nombre", "Kiwi").limit(1).maybeSingle();
     const { data: medico } = await A.from("medicos_veterinarios").select("id").eq("negocio_id", ID_DEMO).is("deleted_at", null).limit(1).maybeSingle();
     const intento = await med.rpc("vet_consulta_iniciar", { p_perro: perro.id, p_cita: null, p_tipo: "consulta", p_medico: medico.id });
-    comprobar(Boolean(intento.error) && /solo lectura/i.test(intento.error.message), `iniciar una consulta se rechaza («${intento.error?.message?.slice(0, 60)}»)`);
+    comprobar(Boolean(intento.error) && /solo lectura|En la demo no se guardan/i.test(intento.error.message), `iniciar una consulta se rechaza («${intento.error?.message?.slice(0, 60)}»)`);
     const vacuna = await med.rpc("registrar_vacuna", { p_perro_id: perro.id, p_biologico: "X", p_tipo_requisito_id: null, p_insumo_id: null, p_lote_id: null, p_lote_texto: "L", p_laboratorio: null, p_fecha: new Date().toISOString().slice(0, 10), p_proxima: null, p_medico_id: medico.id, p_dosis: null, p_notas: null, p_descontar: false });
     comprobar(Boolean(vacuna.error), "registrar una vacuna se rechaza");
     const lee = await med.rpc("vet_linea_tiempo", { p_perro: perro.id });

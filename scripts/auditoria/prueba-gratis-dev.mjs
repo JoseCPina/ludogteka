@@ -110,6 +110,25 @@ try {
   await page.getByText("Tarifas guardadas").first().waitFor();
   ok(true, "precio de estética capturado");
 
+  // Con UN solo precio el paso «Servicios y precios» sigue pendiente: faltan los de los demás servicios de los
+  // módulos prendidos. Se completa capturando todas las celdas de la estética (único módulo prendido).
+  await page.goto(`${base}/bienvenida`);
+  await page.waitForLoadState("networkidle");
+  ok(!(await texto()).includes("Servicios y precios Listo") && !/Servicios y precios\s*Listo/.test(await texto()), "con un solo precio, «Servicios y precios» sigue pendiente");
+  const { data: estServ } = await A.from("servicios").select("id").eq("negocio_id", neg.id).eq("categoria", "estetica").eq("monto_libre", false).is("deleted_at", null);
+  for (const sv of estServ ?? []) {
+    await page.goto(`${base}/servicios/${sv.id}/tarifas`);
+    await page.waitForLoadState("networkidle");
+    const vacias = page.getByPlaceholder("Sin capturar");
+    // El campo deja de ser «Sin capturar» en cuanto se llena: siempre se toma el primero que queda.
+    if ((await vacias.count()) === 0) continue;
+    for (let i = 0; i < 80 && (await vacias.count()) > 0; i++) await vacias.first().fill("300");
+    await page.getByRole("button", { name: "Revisar y guardar" }).click();
+    await page.getByRole("button", { name: "Confirmar y guardar" }).click();
+    await page.getByText("Tarifas guardadas").first().waitFor();
+  }
+  ok(true, "precios del resto de la estética capturados");
+
   await page.goto(`${base}/admin#horario`);
   await page.getByRole("button", { name: "Guardar horario" }).click();
   await page.waitForTimeout(3000);

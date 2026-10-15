@@ -6,7 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type EstadoServicioForm = { error: string | null; ok?: boolean };
 
-const CATEGORIAS = ["guarderia", "hotel", "estetica", "cargo", "bono"] as const;
+const CATEGORIAS = ["guarderia", "hotel", "estetica", "veterinaria", "cargo", "bono"] as const;
 const UNIDADES = ["dia", "noche", "sesion", "evento", "km", "hora"] as const;
 
 function leerCampos(formData: FormData) {

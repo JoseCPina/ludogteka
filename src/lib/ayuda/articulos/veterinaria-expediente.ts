@@ -75,7 +75,53 @@ Las **notas internas** son solo para el equipo: el dueño nunca las ve.
 
 Una consulta de consulta, cirugía o urgencia pide al menos un diagnóstico para firmarse. Un borrador que no quieras se **descarta**.
 
+Antes del botón de firmar está el recuadro **Cargos de esta consulta**: lo que pasará a Caja. Mira [Cómo se cobra una consulta veterinaria](/ayuda/cobrar-una-consulta-veterinaria).
+
 > Una consulta firmada sin diagnóstico definitivo aún se puede completar con una adenda. Lo que lleva más de un día en borrador sale en **Necesita atención**.`,
+  },
+  {
+    slug: "cobrar-una-consulta-veterinaria",
+    titulo: "Cómo se cobra una consulta veterinaria",
+    resumen: "Al firmar, la consulta pasa a Caja con su tipo, las vacunas, los medicamentos y los procedimientos; el médico ve el resumen antes y puede quitar o ajustar.",
+    grupo: "veterinaria",
+    modulo: "veterinaria",
+    roles: ["admin", "recepcion"],
+    rutas: ["/veterinaria/consulta/[id]", "/servicios"],
+    palabras: ["cobrar", "consulta", "cargo", "caja", "precio", "vacuna", "medicamento", "procedimiento", "firmar", "cuenta", "sin precio", "ajustar", "quitar"],
+    cuerpo: `Cuando firmas una consulta, lo que se cobra pasa solo a la **cuenta de la mascota en Caja**: recepción la cobra como cualquier otra cuenta (efectivo, tarjeta, link), con descuentos, cobro junto y factura de siempre.
+
+## Antes de empezar: los precios
+
+En [Servicios y precios](/servicios) hay cuatro servicios de Veterinaria (aparecen solos al prender el módulo): **Consulta general**, **Consulta de urgencia**, **Revisión o seguimiento** y **Aplicación de vacuna**. Entra a cada uno y captura su precio. Mientras no tenga precio no se cobra, y el cargo sale marcado **Sin precio**. Los procedimientos (sutura, curación…) los puedes dar de alta como servicios nuevos de categoría **Veterinaria**.
+
+## Qué trae el cobro
+
+En la consulta, antes de **Firmar**, está el recuadro **Cargos de esta consulta**:
+
+- El **tipo de consulta** que elegiste (consulta general, urgencia o seguimiento) con su precio. Una consulta de cirugía no trae cargo base: agrega el procedimiento.
+- Las **vacunas** que registraste ese día a la mascota en su carnet.
+- Los **medicamentos** que surtiste con esa consulta (los controlados salen solos con su receta) y los que agregues del inventario. Se cobran al precio de venta del inventario, por la unidad que usas.
+- Los **procedimientos** que agregues desde tu catálogo o escribiendo el concepto y el precio.
+
+Abajo ves el **total**. Al firmar, la pantalla te lo repite.
+
+## Quitar o ajustar
+
+- **Quitar** un cargo pide un motivo; **Ajustar** cambia la cantidad o el precio (cero si es cortesía) y pide el motivo. Lo hace el médico veterinario, el admin o quien tenga el permiso **Quitar o ajustar cargos de la consulta**. Quien atiende puede quitar lo que él mismo agregó.
+- Un cargo quitado se puede **Restaurar** antes de firmar.
+
+## A qué cuenta va
+
+- Si la mascota está **hospitalizada**, a la cuenta de su hospitalización.
+- Si hay un **estimado aceptado** de esa consulta, a la cuenta del estimado, y lo que el estimado ya cubre (procedimientos y medicamentos cotizados) **no se cobra otra vez**: sale como «ya está en el estimado». Si quieres cobrarlo aparte, **Cobrar aparte**.
+- Si la teleconsulta se pagó por adelantado, la consulta no se cobra de nuevo.
+- En cualquier otro caso se abre una cuenta nueva.
+
+## Después de firmar
+
+La consulta firmada muestra **Cobro de esta consulta** con sus cargos y el enlace **Abrir la cuenta en Caja**. Si algún cargo no tenía precio, captúralo en Servicios y precios y aprieta **Pasar a Caja lo que falta**. Firmar nunca se bloquea por un precio faltante.
+
+Si **anulas** la consulta y su cuenta todavía no tiene cobros, los cargos se cancelan solos; si ya hay cobros, se quedan y se devuelve en Caja con la devolución de siempre.`,
   },
   {
     slug: "estudios-archivos-y-linea-de-tiempo",
@@ -149,7 +195,7 @@ Un estimado aceptado no se cambia; si hay algo más que cobrar, haz otro. Los en
   {
     slug: "veterinaria-ajustes-consulta-y-portal",
     titulo: "Cómo cambiar las plantillas de consulta, la duración de las citas y lo que ve el dueño",
-    resumen: "Textos con que arranca cada tipo de consulta, minutos de cada tipo de cita y si el dueño ve sus consultas en el portal.",
+    resumen: "Textos con que arranca cada tipo de consulta, minutos de cada tipo de cita y si el dueño ve el resumen de sus consultas en el portal.",
     grupo: "veterinaria",
     modulo: "veterinaria",
     roles: ["admin", "recepcion"],
@@ -164,7 +210,7 @@ Un estimado aceptado no se cambia; si hay algo más que cobrar, haz otro. Los en
 
 ## Portal del dueño
 
-**Mostrar las consultas en el portal**: apagado por omisión. Si lo prendes, el dueño ve en su portal, por cada consulta **firmada**, la fecha, el médico, el **diagnóstico definitivo** y el **plan**. Nunca ve las notas internas, el tratamiento ni los datos de la firma, ni las consultas anuladas o en borrador.
+**Mostrar las consultas en el portal**: viene prendido; lo puedes apagar. Con él prendido, el dueño ve en su portal, por cada consulta **firmada**, un resumen: la fecha, el **motivo**, el **diagnóstico** y las **indicaciones** (plan y tratamiento). Nunca ve las notas internas, el examen, los signos vitales, el nombre del médico ni los datos de la firma, ni las consultas anuladas o en borrador.
 
 ## Tipos de cita y duración
 

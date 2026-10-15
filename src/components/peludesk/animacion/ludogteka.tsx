@@ -146,7 +146,7 @@ export function SeccionLudogteka() {
 function ReelTarjeta() {
   const dialogo = useRef<HTMLDialogElement>(null);
   const contenedor = useRef<HTMLDivElement>(null);
-  const [estado, setEstado] = useState<"cerrado" | "cargando" | "listo" | "falla">("cerrado");
+  const [estado, setEstado] = useState<"cerrado" | "cargando" | "listo" | "falla" | "sin-consentimiento">("cerrado");
   const temporizadores = useRef<number[]>([]);
   function limpiarTemporizadores() {
     temporizadores.current.forEach((t) => window.clearTimeout(t));
@@ -175,6 +175,12 @@ function ReelTarjeta() {
     limpiarTemporizadores();
     dialogo.current?.showModal();
     document.documentElement.classList.add("pd-sin-scroll");
+    // El embed de Instagram carga su propio script y pone cookies de Meta: es una tecnología de
+    // marketing. Sin el consentimiento de marketing no se pide NADA a Instagram; se muestra el respaldo.
+    if (!window.PeluDeskConsentimiento?.obtener().marketing) {
+      setEstado("sin-consentimiento");
+      return;
+    }
     setEstado("cargando");
     const cont = contenedor.current;
     if (!cont) return;
@@ -260,15 +266,28 @@ function ReelTarjeta() {
           </div>
           <div
             ref={contenedor}
-            className={estado === "falla" ? "hidden" : "mt-3 min-h-[420px] overflow-hidden rounded-2xl bg-n-100 bg-cover bg-center sm:min-h-[520px]"}
+            className={estado === "falla" || estado === "sin-consentimiento" ? "hidden" : "mt-3 min-h-[420px] overflow-hidden rounded-2xl bg-n-100 bg-cover bg-center sm:min-h-[520px]"}
             style={estado === "cargando" ? { backgroundImage: `linear-gradient(rgba(255,255,255,.55), rgba(255,255,255,.55)), url(${PORTADA.src})` } : undefined}
           />
           {estado === "cargando" && <p className="text-sm text-n-600" role="status">Cargando el reel…</p>}
-          {estado === "falla" && (
+          {(estado === "falla" || estado === "sin-consentimiento") && (
             <div className="mt-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={PORTADA.src} srcSet={PORTADA.srcSet} sizes="34rem" alt="Portada del reel de Ludogteka" width={640} height={1136} className="max-h-[50vh] w-full rounded-2xl object-cover object-[50%_30%]" />
-              <p className="mt-3 text-sm text-n-700" role="status">No pudimos cargar el reel aquí.</p>
+              <p className="mt-3 text-sm text-n-700" role="status">
+                {estado === "sin-consentimiento"
+                  ? "Para verlo aquí hay que aceptar las cookies de marketing (el video lo sirve Instagram). Sin eso, míralo directo en Instagram."
+                  : "No pudimos cargar el reel aquí."}
+              </p>
+              {estado === "sin-consentimiento" && (
+                <button
+                  type="button"
+                  className="mt-2 text-sm font-semibold text-morado underline"
+                  onClick={() => window.PeluDeskConsentimiento?.abrirPreferencias()}
+                >
+                  Cambiar mis preferencias de cookies
+                </button>
+              )}
               <a
                 href={REEL}
                 target="_blank"

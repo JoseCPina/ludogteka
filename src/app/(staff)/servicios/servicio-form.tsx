@@ -84,6 +84,7 @@ export function ServicioForm({
           <option value="guarderia">Guardería</option>
           <option value="hotel">Hotel</option>
           <option value="estetica">Estética</option>
+          <option value="veterinaria">Veterinaria</option>
           <option value="cargo">Cargo adicional</option>
           <option value="bono">Bono</option>
         </Select>

@@ -42,7 +42,7 @@ export async function PaginaNuevaReserva({
     { data: seriesActivas, error: errorSeries },
   ] = await Promise.all([
     leerTodo<{ id: string; nombre: string; telefono: string }>(() => supabase.from("clientes").select("id, nombre, telefono").is("deleted_at", null).eq("publico_general", false).order("nombre").order("id")),
-    leerTodo<{ id: string; cliente_id: string; nombre: string }>(() => supabase.from("perros").select("id, cliente_id, nombre").is("deleted_at", null).eq("fallecido", false).order("nombre").order("id")),
+    leerTodo<{ id: string; cliente_id: string; nombre: string; evaluacion_comportamiento_fecha: string | null }>(() => supabase.from("perros").select("id, cliente_id, nombre, evaluacion_comportamiento_fecha").is("deleted_at", null).eq("fallecido", false).order("nombre").order("id")),
     // Todos los del módulo, con la marca de cuál se puede cobrar: el que
     // no tiene precio se muestra deshabilitado, no se esconde.
     cargarServiciosOfrecibles(supabase, [modulo.categoria]),
@@ -92,7 +92,7 @@ export async function PaginaNuevaReserva({
       ) : (
         <NuevaReservaForm
           clientes={armarClientesBuscables((clientes ?? []) as { id: string; nombre: string; telefono: string }[], (perros ?? []) as { id: string; cliente_id: string; nombre: string }[])}
-          perros={perros ?? []}
+          perros={(perros ?? []).map((p) => ({ id: p.id, cliente_id: p.cliente_id, nombre: p.nombre, evaluado: Boolean(p.evaluacion_comportamiento_fecha) }))}
           servicios={servicios ?? []}
           seriesActivas={seriesActivasLista}
           paquetes={paquetes}

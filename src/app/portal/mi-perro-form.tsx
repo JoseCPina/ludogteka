@@ -59,18 +59,12 @@ export function MiPerroForm({
         />
       </div>
 
-      <Field
-        label="Veterinario de cabecera"
-        name="veterinario_nombre"
-        disabled={enviando}
-        defaultValue={valoresIniciales.veterinario_nombre ?? ""}
-      />
       <div className="grid grid-cols-2 gap-4">
         <Field
-          label="Teléfono del veterinario"
-          name="veterinario_telefono"
+          label="Veterinario de cabecera"
+          name="veterinario_nombre"
           disabled={enviando}
-          defaultValue={valoresIniciales.veterinario_telefono ?? ""}
+          defaultValue={valoresIniciales.veterinario_nombre ?? ""}
         />
         <Field
           label="Clínica"
@@ -79,6 +73,12 @@ export function MiPerroForm({
           defaultValue={valoresIniciales.veterinario_clinica ?? ""}
         />
       </div>
+      <Field
+        label="Teléfono del veterinario"
+        name="veterinario_telefono"
+        disabled={enviando}
+        defaultValue={valoresIniciales.veterinario_telefono ?? ""}
+      />
 
       <Textarea
         label="Autorización médica"

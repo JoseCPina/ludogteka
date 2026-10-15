@@ -8,8 +8,8 @@ import { UbicacionNegocio } from "./ubicacion-negocio";
 import { ConfiguracionNegocio, type ConfiguracionVigente } from "./configuracion-negocio";
 import { HorarioNegocio } from "./horario-negocio";
 import type { DiaHorario } from "./configuracion-actions";
-import { TarifasFaltantes, type ServicioConHuecos } from "./tarifas-faltantes";
-import { contarSinTarifa, type CeldaVigente } from "@/lib/tarifas/matriz";
+import { TarifasFaltantes } from "./tarifas-faltantes";
+import { cargarServiciosConHuecos } from "@/lib/tarifas/huecos";
 import { TableroDia } from "../tablero-dia";
 import { ExtrasTablero } from "@/components/extras/extras-tablero";
 import { RecordatorioPago } from "./recordatorio-pago";
@@ -56,57 +56,18 @@ export default async function AdminPage() {
     { data, error },
     { data: topeData },
     { data: configData },
-    { data: serviciosCat },
-    { data: gruposCat },
-    { data: tamanosCat },
-    { data: pelajesCat },
-    { data: vigentesCat },
     { data: horarioVigente },
   ] = await Promise.all([
     esAdmin ? leerTodo<Record<string, unknown>>(() => supabase.rpc("listar_cuentas").order("id")) : nada,
     esAdmin ? supabase.rpc("resolver_tope_descuento_recepcion") : nada,
     supabase.rpc("resolver_cupo_configuracion"),
-    supabase
-      .from("servicios")
-      .select("id, nombre, depende_grupo_raza, depende_tamano, depende_pelaje, depende_cantidad, monto_libre")
-      .is("deleted_at", null)
-      // Un cargo de monto libre no tiene celda que capturar: el importe
-      // se pone al aplicarlo. No es un hueco.
-      .eq("monto_libre", false)
-      .order("orden"),
-    supabase.from("grupos_raza").select("id, nombre, depende_tamano").is("deleted_at", null).order("orden"),
-    supabase.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
-    supabase.from("tipos_pelaje").select("id, etiqueta").is("deleted_at", null).order("orden"),
-    leerTodo<CeldaVigente & { servicio_id: string }>(() =>
-      supabase
-        .from("tarifas_vigentes")
-        .select("servicio_id, grupo_raza_id, tamano_id, pelaje_id, cantidad_desde, cantidad_hasta, precio, no_aplica").order("servicio_id").order("grupo_raza_id").order("tamano_id").order("pelaje_id").order("cantidad_desde")
-    ),
     supabase.rpc("horario_semana_vigente"),
   ]);
   const { data: personal } = !esAdmin && puedePersonal ? await supabase.rpc("listar_personal") : { data: null };
 
-  // Mismo cálculo que la matriz, del mismo módulo: si cada pantalla
-  // derivara las combinaciones por su cuenta, el aviso y la matriz
-  // dirían números distintos.
-  const catalogosTarifas = {
-    grupos: gruposCat ?? [],
-    tamanos: tamanosCat ?? [],
-    pelajes: pelajesCat ?? [],
-  };
-  const vigentesPorServicio = new Map<string, CeldaVigente[]>();
-  for (const v of vigentesCat ?? []) {
-    const lista = vigentesPorServicio.get(v.servicio_id) ?? [];
-    lista.push(v);
-    vigentesPorServicio.set(v.servicio_id, lista);
-  }
-  const serviciosSinTarifa: ServicioConHuecos[] = (serviciosCat ?? [])
-    .map((s) => ({
-      id: s.id as string,
-      nombre: s.nombre as string,
-      faltan: contarSinTarifa(s, catalogosTarifas, vigentesPorServicio.get(s.id) ?? []),
-    }))
-    .filter((s) => s.faltan > 0);
+  // Mismo cálculo que la matriz y la lista de Servicios (src/lib/tarifas/huecos.ts) y solo de los
+  // módulos que el negocio tiene prendidos: un servicio apagado no se cobra, no es un hueco.
+  const serviciosSinTarifa = await cargarServiciosConHuecos(supabase, sesion?.modulos ?? []);
   const topeFila = Array.isArray(topeData) ? topeData[0] : topeData;
   const configVigente = (Array.isArray(configData) ? configData[0] : configData) as
     | ConfiguracionVigente
