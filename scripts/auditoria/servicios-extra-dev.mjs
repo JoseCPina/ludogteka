@@ -62,8 +62,17 @@ const suma = (dias) => new Date(new Date(`${hoy}T12:00:00Z`).getTime() + dias * 
 // La guardería no abre en domingo: la estancia de prueba empieza y termina en días abiertos.
 const mas = (base, dias) => new Date(new Date(`${base}T12:00:00Z`).getTime() + dias * 86400000).toISOString().slice(0, 10);
 const esDomingo = (d) => new Date(`${d}T12:00:00Z`).getUTCDay() === 0;
+// …y con cupo diurno libre: otras auditorías dejan estancias en Huellitas y, si hoy ya está lleno, la reserva se rechaza.
+const { data: cupoCfg } = await SB.from("cupo_configuracion").select("cupo_diurno").eq("negocio_id", B).is("deleted_at", null).order("vigencia_desde", { ascending: false }).limit(1).single();
+const ocupacionDelDia = async (dia) =>
+  (await SB.from("estancias").select("id", { count: "exact", head: true }).eq("negocio_id", B).is("deleted_at", null).not("estado", "in", "(cancelada,no_llego)").lte("fecha_entrada", dia).gte("fecha_salida", dia)).count ?? 0;
 let d0 = hoy;
-while ([0, 1, 2, 3].some((i) => esDomingo(mas(d0, i)))) d0 = mas(d0, 1);
+for (let intento = 0; intento < 60; intento++) {
+  const dias = [0, 1, 2, 3].map((i) => mas(d0, i));
+  const llenos = dias.some((d) => esDomingo(d)) || (await Promise.all(dias.map(ocupacionDelDia))).some((n) => n >= cupoCfg.cupo_diurno - 6);
+  if (!llenos) break;
+  d0 = mas(d0, 1);
+}
 const sal = mas(d0, 3);
 const MARCA = `extras-${String(Date.now()).slice(-6)}`;
 const num = (v) => Number(v);
@@ -371,7 +380,7 @@ if (process.env.SOLO_A !== "1") {
     if (/Cannot find module|ERR_MODULE_NOT_FOUND/.test(String(e?.message))) return null;
     throw e;
   });
-  if (ui?.correrUi) await ui.correrUi({ comprobar, hallazgo, bien, datos, hoy, suma });
+  if (ui?.correrUi) await ui.correrUi({ comprobar, hallazgo, bien, datos, hoy, suma, diaLibre: d0 });
 }
 
 console.log(hallazgos.length ? `\n${hallazgos.length} HALLAZGO(S):\n- ${hallazgos.join("\n- ")}` : "\nSin hallazgos.");

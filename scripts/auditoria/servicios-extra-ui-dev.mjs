@@ -20,7 +20,7 @@ const PUERTO = 3007;
 const BASE = `http://huellitas.localhost:${PUERTO}`;
 const REF = new globalThis.URL(URL).hostname.split(".")[0];
 
-export async function correrUi({ comprobar, datos, hoy }) {
+export async function correrUi({ comprobar, datos, hoy, diaLibre }) {
   const B = datos.B;
   const SB = createClient(URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: false }, global: { headers: { "x-negocio-id": B } } });
   const cab = (t) => ({ apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY, Authorization: `Bearer ${t}`, "x-negocio-id": B, "Content-Type": "application/json", Prefer: "return=representation" });
@@ -136,7 +136,8 @@ export async function correrUi({ comprobar, datos, hoy }) {
     await SB.from("clientes").update({ direccion: "Calle Prueba 10, Centro" }).eq("id", perro.cliente_id);
     const mas = (b, d) => new Date(new Date(`${b}T12:00:00Z`).getTime() + d * 86400000).toISOString().slice(0, 10);
     const dom = (d) => new Date(`${d}T12:00:00Z`).getUTCDay() === 0;
-    let d0 = hoy;
+    // `diaLibre`: primer día con cupo diurno libre que calculó la parte de base (otras auditorías dejan estancias en Huellitas).
+    let d0 = diaLibre ?? hoy;
     while ([0, 1, 2].some((i) => dom(mas(d0, i)))) d0 = mas(d0, 1);
     const reserva = (await (await fetch(`${URL}/rest/v1/reservas`, { method: "POST", headers: cab(tAdmin), body: JSON.stringify({ cliente_id: perro.cliente_id }) })).json())[0];
     const estR = await (await fetch(`${URL}/rest/v1/estancias`, { method: "POST", headers: cab(tAdmin), body: JSON.stringify({ reserva_id: reserva.id, perro_id: perro.id, servicio_id: guarderiaDia.id, fecha_entrada: d0, fecha_salida: mas(d0, 2), estado: "reservada", bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: MARCA, bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: MARCA }) })).json();
@@ -206,6 +207,8 @@ export async function correrUi({ comprobar, datos, hoy }) {
     comprobar(await esperarHasta(async () => (await SB.from("servicios_extra_aplicados").select("estado").eq("id", trasDia.id).single()).data.estado === "en_camino", 30000, 600), "«Salió el traslado» lo pasa a «en camino»");
     await ppag.reload({ waitUntil: "networkidle" });
     const lt2 = ppag.locator(`[data-extra-id="${trasDia.id}"]`);
+    // La red de la nube no llega a wa.me: la petición se atiende aquí para que la pestaña conserve la URL que se abrió.
+    await ctxRec.route(/^https:\/\/(wa\.me|api\.whatsapp\.com|web\.whatsapp\.com)\//, (ruta) => ruta.fulfill({ status: 200, contentType: "text/html", body: `<html><body>${decodeURIComponent(new globalThis.URL(ruta.request().url()).search.replace(/^\?text=/, "").split("+").join(" "))}</body></html>` }));
     const [popup] = await Promise.all([
       ctxRec.waitForEvent("page", { timeout: 30000 }).catch(() => null),
       lt2.getByRole("button", { name: /Avisar por WhatsApp/ }).click(),
