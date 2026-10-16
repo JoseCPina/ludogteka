@@ -305,6 +305,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
           <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
         )}
         <RecordatorioSanitario
+          zona={zona}
           items={(estadoSanitario as EstadoRequisitoItem[]) ?? []}
           perroId={id}
           puedeProponer={esPropio && !perro.fallecido}

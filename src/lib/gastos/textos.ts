@@ -62,6 +62,7 @@ export function rangoMes(mes: string): { desde: string; hasta: string } {
 export function mesAnterior(mes: string): string {
   const [y, m] = mes.split("-").map(Number);
   const d = new Date(Date.UTC(y, m - 2, 1));
+  // utc-ok: aritmética de calendario sobre una fecha AAAA-MM-DD, sin instante
   return d.toISOString().slice(0, 7);
 }
 
@@ -75,6 +76,7 @@ export function periodoAnterior(desde: string, hasta: string): { desde: string; 
   const d = Date.parse(`${desde}T12:00:00Z`);
   const h = Date.parse(`${hasta}T12:00:00Z`);
   const largo = Math.round((h - d) / dia) + 1;
+  // utc-ok: aritmética de calendario sobre una fecha AAAA-MM-DD, sin instante
   const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
   return { desde: iso(d - largo * dia), hasta: iso(d - dia) };
 }

@@ -1,3 +1,4 @@
+import { hoyNegocio } from "@/lib/formato";
 import { exigirPlataforma } from "@/lib/plataforma/sesion";
 import { Alert } from "@/components/ui/alert";
 import { Field } from "@/components/ui/field";
@@ -13,8 +14,8 @@ type Fila = { negocio_id: string; nombre: string; slug: string; plan: string; di
 export default async function DictadoPlataforma({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
   const { supabase } = await exigirPlataforma();
   const { mes: mesParam } = await searchParams;
-  const hoy = new Date();
-  const mes = /^\d{4}-\d{2}$/.test(mesParam ?? "") ? `${mesParam}-01` : `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-01`;
+  const hoy = hoyNegocio("America/Mexico_City"); // el mes de la plataforma, no el UTC del servidor
+  const mes = /^\d{4}-\d{2}$/.test(mesParam ?? "") ? `${mesParam}-01` : `${hoy.slice(0, 7)}-01`;
   const { data, error } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("plataforma_dictado_resumen", { p_mes: mes }).order("negocio_id"));
   const filas = (await conInterno(supabase, (data ?? []) as Fila[])).map((f) => ({ ...f, dictados: Number(f.dictados), minutos: Number(f.minutos), tope: Number(f.tope) }));
   const contadas = filas.filter(cuentaEnTotales);

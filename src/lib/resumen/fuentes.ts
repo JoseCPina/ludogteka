@@ -48,6 +48,7 @@ export function horaCDMX(d: Date): number {
 export function sumarDias(fecha: string, n: number): string {
   const d = new Date(`${fecha}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + n);
+  // utc-ok: aritmética de calendario sobre una fecha AAAA-MM-DD, sin instante
   return d.toISOString().slice(0, 10);
 }
 export const diaSemana = (fecha: string) => new Date(`${fecha}T12:00:00Z`).getUTCDay(); // 0 domingo … 1 lunes

@@ -271,11 +271,11 @@ En **Series recurrentes** toca **Nueva serie**, escoge el perro, el servicio y l
 
 ## Si algo no sale
 
-- «Este perro tiene un requisito sanitario obligatorio vencido o sin registro.»: registra la vacuna en su expediente. Un admin puede autorizar una excepción con motivo.
+- «Falta … vigente de …» (vacunas vencidas o sin registro): registra la vacuna en su expediente. Un admin, o quien tenga el permiso «Excepciones al reservar», ve ahí mismo, bajo el aviso, la casilla **Autorizar excepción**; la marca, escribe el motivo y toca **Reintentar con excepción**.
 - «Este perro no tiene evaluación previa de comportamiento.»: el aviso sale en cuanto eliges a la mascota, con un enlace para completar la evaluación en su expediente. Un admin (o quien tenga el permiso de excepciones) puede reservar sin ella marcando la excepción ahí mismo y escribiendo el motivo.
 - «No hay cupo disponible (diurno) para el …»: ese día ya está lleno.
 - «Guardería no abre en …»: escoge un día con horario.
-- «Este perro ya tiene una reserva en fechas que se traslapan con estas»: toca **el calendario** al final del aviso para ver qué reservas hay ese día ([Calendario de reservas](/ayuda/calendario-de-reservas)).`,
+- «Nina ya tiene una reserva de guardería el … (reservada) que se traslapa con estas fechas»: el aviso dice con qué reserva choca (mascota, módulo, fechas y estado). Toca **el calendario** al final para ver ese día ([Calendario de reservas](/ayuda/calendario-de-reservas)). Una visita ya **Finalizada** no impide reservar otra el mismo día.`,
   },
   {
     slug: "reservar-hotel",
@@ -327,6 +327,8 @@ Si el perro ya está en la puerta sin reserva, usa **Walk-in (sin reserva)** des
 Toca el día. Abajo salen sus reservas con la mascota, el dueño, el estado y la cuenta (por ejemplo, «Debe $350.00», «Pagada» o «Cuenta cancelada»).
 
 ## Próximas reservas
+
+Al tocar un día, el panel enseña todas sus reservas, también las finalizadas y las canceladas, cada una con su estado.
 
 Más abajo está la lista de lo que viene. Filtra por **Módulo**, **Estado** y **Desde** y toca **Filtrar**. De cada reserva puedes:
 

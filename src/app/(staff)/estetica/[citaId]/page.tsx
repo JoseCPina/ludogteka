@@ -6,7 +6,7 @@ import { tienePermiso } from "@/lib/auth/permisos";
 import { AlertaCriticaBanner } from "@/app/(staff)/perros/alerta-critica-banner";
 import { ResumenSanitario, type EstadoRequisitoItem } from "@/app/(staff)/perros/resumen-sanitario";
 import { NotaSoloEstetica } from "@/app/(staff)/perros/nota-solo-estetica";
-import { formatearFecha, formatearFechaCalendario, horaLocalDeInstante } from "@/lib/formato";
+import { formatearDiaDeInstante, formatearFecha, formatearFechaCalendario, horaLocalDeInstante } from "@/lib/formato";
 import { CitaDetalle, type RecetaItem } from "./cita-detalle";
 import { CorregirServicio } from "./corregir-servicio";
 import type { Estilista } from "../selector-estilista";
@@ -180,7 +180,7 @@ export default async function CitaDetallePage({
           {servicio?.nombre ?? (cita.servicio_nombre as string | null) ?? "Servicio"} — {perro.nombre}
         </h1>
         <p className="mt-1 text-n-600">
-          {formatearFechaCalendario(cita.inicio)} · {horaLocalDeInstante(cita.inicio, zona)}
+          {formatearDiaDeInstante(cita.inicio, zona)} · {horaLocalDeInstante(cita.inicio, zona)}
           {cita.fin ? ` – ${horaLocalDeInstante(cita.fin, zona)}` : ""} · {cita.empleado_id ? (empleado?.nombre_completo ?? "—") : "Sin asignar"}
         </p>
         {cita.fuera_de_horario && (
@@ -299,7 +299,7 @@ export default async function CitaDetallePage({
                 <span className="font-semibold text-n-900">{ETIQUETA_CAMBIO[k.tipo] ?? k.tipo}</span>
                 {k.tipo === "reprogramacion" && (
                   <span className="block">
-                    {formatearFechaCalendario(k.inicio_antes)} {horaLocalDeInstante(k.inicio_antes, zona)} → {formatearFechaCalendario(k.inicio_despues)} {horaLocalDeInstante(k.inicio_despues, zona)}
+                    {formatearDiaDeInstante(k.inicio_antes, zona)} {horaLocalDeInstante(k.inicio_antes, zona)} → {formatearDiaDeInstante(k.inicio_despues, zona)} {horaLocalDeInstante(k.inicio_despues, zona)}
                   </span>
                 )}
                 {k.tipo === "tarifa_guarderia" && k.detalle && (

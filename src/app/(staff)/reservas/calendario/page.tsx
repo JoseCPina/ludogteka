@@ -209,7 +209,7 @@ export default async function CalendarioReservasPage({ searchParams }: { searchP
                 Recarga la página.
               </Alert>
             ) : dia && dia.filas.length === 0 ? (
-              <p className="text-n-600">No hay reservas ese día con estos filtros.</p>
+              <p className="text-n-600">No hay reservas ese día con este módulo y estado.</p>
             ) : (
               <ul className="flex flex-col gap-3" data-lista="dia">
                 {(dia?.filas ?? []).map((e) => (
@@ -310,8 +310,11 @@ async function cargarEstancias(
     q = q.gte("fecha_entrada", f.desde);
   }
   if (f.modulo !== "todos") q = q.eq("servicios.categoria", f.modulo);
-  if (f.estado === "activas") q = q.in("estado", ["reservada", "confirmada", "en_curso"]);
-  else if (f.estado !== "todas") q = q.eq("estado", f.estado);
+  // El panel de un día enseña TODAS las reservas de ese día (también finalizadas y canceladas, con su estado:
+  // QA B21); la lista de próximas sí parte de las activas.
+  if (f.estado === "activas") {
+    if (!("dia" in que)) q = q.in("estado", ["reservada", "confirmada", "en_curso"]);
+  } else if (f.estado !== "todas") q = q.eq("estado", f.estado);
   q = q.order("fecha_entrada").order("id");
   if ("dia" in que) {
     const { data, error } = await q.limit(TOPE_DIA + 1);

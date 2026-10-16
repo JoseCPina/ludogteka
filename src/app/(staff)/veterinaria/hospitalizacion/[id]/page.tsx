@@ -5,7 +5,7 @@ import { vetPuede } from "@/lib/veterinaria/permisos";
 import { cargarMedicos, cargarProductosConLotes, miMedico } from "@/lib/veterinaria/lotes";
 import { Alert } from "@/components/ui/alert";
 import { Desplegable } from "@/components/formulario-accion";
-import { formatearFecha, formatearFechaCalendario, horaLocalDeInstante, horaLocalParaInput } from "@/lib/formato";
+import { formatearDiaDeInstante, formatearFecha, formatearFechaCalendario, horaLocalDeInstante, horaLocalParaInput } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { ETIQUETA_CONSENTIMIENTO, TURNOS_MONITOREO } from "@/lib/veterinaria/carnet";
 import type { EspejoAbierto } from "./paneles";
@@ -246,7 +246,7 @@ export default async function Hospitalizacion({ params }: { params: Promise<{ id
                   {ETIQUETA_CONSENTIMIENTO[c.tipo]}{c.procedimiento ? ` — ${c.procedimiento}` : ""}
                 </Link>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${c.estado === "firmado" ? "bg-menta-suave text-menta-oscuro" : c.estado === "cancelado" ? "bg-n-100 text-n-600" : "bg-ambar-suave text-ambar-oscuro"}`}>
-                  {c.estado === "firmado" ? `Firmado${c.firmado_at ? ` el ${formatearFechaCalendario(c.firmado_at.slice(0, 10))}` : ""}` : c.estado === "cancelado" ? "Cancelado" : "Pendiente de firma"}
+                  {c.estado === "firmado" ? `Firmado${c.firmado_at ? ` el ${formatearDiaDeInstante(c.firmado_at, zona)}` : ""}` : c.estado === "cancelado" ? "Cancelado" : "Pendiente de firma"}
                 </span>
               </li>
             ))}

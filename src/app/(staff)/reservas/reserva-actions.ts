@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { revalidarModulosEstancia } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
+import { mensajeTraslapeDeEstancia } from "@/lib/reservas/traslape-detalle";
 import { describirDevolucion } from "@/lib/bonos/descripcion";
 
 export type LineaReserva = {
@@ -70,7 +71,10 @@ async function insertarEstancia(reservaId: string, linea: LineaReserva): Promise
     .single();
 
   if (error) {
-    return { perroId: linea.perroId, exito: false, motivo: traducirError(error, { fecha: linea.fechaEntrada }), estanciaId: null };
+    const motivo = error.code === "23P01"
+      ? await mensajeTraslapeDeEstancia(supabase, { perroId: linea.perroId, entrada: linea.fechaEntrada, salida: linea.fechaSalida })
+      : traducirError(error, { fecha: linea.fechaEntrada });
+    return { perroId: linea.perroId, exito: false, motivo, estanciaId: null };
   }
 
   // Guardería de día completo: si el perro tiene pases o mensualidad
@@ -228,7 +232,13 @@ export async function moverFechas(
     .update({ fecha_entrada: fechaEntrada, fecha_salida: fechaSalida })
     .eq("id", estanciaId);
 
-  if (error) return { error: traducirError(error, { fecha: fechaEntrada }) };
+  if (error) {
+    if (error.code === "23P01") {
+      const { data: est } = await supabase.from("estancias").select("perro_id").eq("id", estanciaId).maybeSingle();
+      if (est?.perro_id) return { error: await mensajeTraslapeDeEstancia(supabase, { perroId: est.perro_id, entrada: fechaEntrada, salida: fechaSalida, excluir: estanciaId }) };
+    }
+    return { error: traducirError(error, { fecha: fechaEntrada }) };
+  }
   revalidarModulosEstancia();
   return { error: null };
 }

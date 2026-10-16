@@ -1,5 +1,6 @@
 "use client";
 
+import { tipoDeBloqueo } from "@/lib/reservas/bloqueos";
 import { useMemo, useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { conTope, mensajeDeFallo } from "@/lib/ui/espera";
@@ -62,18 +63,6 @@ function lineaAPayload(linea: Linea, servicios: Servicio[]): LineaReserva {
     motivoExcepcionComportamiento: linea.motivoExcepcionComportamiento,
     usarPase: linea.usarPase,
   };
-}
-
-// Qué bloqueo trae un rechazo de la base, leído del mensaje del trigger.
-// Solo los dos con excepción de admin se ofrecen para reintentar; celo,
-// gestación y agresividad no tienen excepción y se quedan como rechazo.
-function tipoDeBloqueo(motivo: string | null): "sanitario" | "comportamiento" | null {
-  const m = (motivo ?? "").toLowerCase();
-  if (m.includes("sanitario")) return "sanitario";
-  if (m.includes("evaluación previa de comportamiento") || m.includes("evaluacion previa de comportamiento")) {
-    return "comportamiento";
-  }
-  return null;
 }
 
 export function NuevaReservaForm({

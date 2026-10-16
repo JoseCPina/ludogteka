@@ -40,6 +40,7 @@ export function moverAncla(vista: VistaCalendario, ancla: string, sentido: -1 | 
   if (vista === "semana") return sumarDiasFecha(ancla, 7 * sentido);
   const [a, m] = ancla.split("-").map(Number);
   const d = new Date(Date.UTC(a, m - 1 + sentido, 1));
+  // utc-ok: aritmética de calendario sobre una fecha AAAA-MM-DD, sin instante
   return d.toISOString().slice(0, 10);
 }
 
