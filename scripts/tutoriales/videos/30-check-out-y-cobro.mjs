@@ -10,7 +10,7 @@ export default {
     },
     {
       titulo: "Quién recoge",
-      dice: "La app pregunta si quien llega es el dueño. Escoge «Sí, es el dueño» o «No, persona autorizada», y escribe «Quién recoge al perro». Así queda registrado a quién se le entregó.",
+      dice: "La app pregunta si quien llega es el dueño. Escoge «Sí, es el dueño» o «No, persona autorizada», y escribe «Quién recoge al perro», que es obligatorio. Así queda registrado a quién se le entregó.",
       pasos: [["resaltar", "Sí, es el dueño", 2400], ["clic", "No, persona autorizada"], ["escribir", "Quién recoge al perro", "Héctor Ibarra"]],
     },
     {
