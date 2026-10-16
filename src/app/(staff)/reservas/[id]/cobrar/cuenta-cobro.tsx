@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
@@ -156,7 +156,7 @@ function NuevaFilaMetodo(): FilaMetodo {
 export function CuentaCobro({
   reservaId,
   lineas,
-  totales,
+  totales: totalesServidor,
   turnoAbierto,
   cobros: cobrosIniciales,
   devoluciones,
@@ -194,6 +194,18 @@ export function CuentaCobro({
 }) {
   const zona = useZonaNegocio();
   const router = useRouter();
+  // router.refresh() devuelve el control antes de que la página nueva llegue: sin esto el botón se
+  // reactivaba y la pantalla seguía 1–2 s con el saldo y el formulario de antes del cobro.
+  const [refrescando, iniciarRefresco] = useTransition();
+  const refrescar = () => iniciarRefresco(() => router.refresh());
+  const [aplicadoPendiente, setAplicadoPendiente] = useState(0);
+  const totales: Totales = refrescando && aplicadoPendiente > 0
+    ? {
+        ...totalesServidor,
+        totalCobrado: totalesServidor.totalCobrado + aplicadoPendiente,
+        saldo: Math.round((totalesServidor.saldo - aplicadoPendiente) * 100) / 100,
+      }
+    : totalesServidor;
   const [error, setError] = useState<string | null>(null);
 
   const [corrigiendoPrecioIdx, setCorrigiendoPrecioIdx] = useState<number | null>(null);
@@ -249,7 +261,7 @@ export function CuentaCobro({
       return;
     }
     setAplicandoBonoIdx(null);
-    router.refresh();
+    refrescar();
   }
 
   const [aplicandoDescuento, setAplicandoDescuento] = useState(false);
@@ -308,7 +320,7 @@ export function CuentaCobro({
     setAplicandoDescuento(false);
     setValorDescuento("");
     setMotivoAdicionalDescuento("");
-    router.refresh();
+    refrescar();
   }
 
   const [cancelandoDescuentoId, setCancelandoDescuentoId] = useState<string | null>(null);
@@ -329,7 +341,7 @@ export function CuentaCobro({
     }
     setCancelandoDescuentoId(null);
     setMotivoCancelarDescuento("");
-    router.refresh();
+    refrescar();
   }
 
   // Bloque D trae la pantalla completa de turno — aquí solo lo mínimo
@@ -374,7 +386,7 @@ export function CuentaCobro({
       return;
     }
     setAbriendoTurno(false);
-    router.refresh();
+    refrescar();
   }
 
   function actualizarMetodo(i: number, cambios: Partial<FilaMetodo>) {
@@ -383,6 +395,7 @@ export function CuentaCobro({
   }
 
   async function enviarCobro() {
+    if (cobrando.cargando || refrescando) return;
     const payload = metodosEfectivos.map((m) => ({
       metodo: m.metodo,
       monto: Number(m.monto) || 0,
@@ -416,11 +429,12 @@ export function CuentaCobro({
       setError(res.error);
       return;
     }
+    setAplicadoPendiente(Math.max(0, Math.min(totalMetodos - (res.cambio ?? 0), totales.saldo)));
     setExitoCobro(res.cambio ? `Cobro registrado. Cambio: ${dinero(res.cambio)} (a la caja entró solo el saldo).` : "Cobro registrado.");
     setNotasCobro("");
     setMetodos([NuevaFilaMetodo()]);
     setMontoTocado(false);
-    router.refresh();
+    refrescar();
   }
 
   async function enviarDevolucion() {
@@ -443,7 +457,7 @@ export function CuentaCobro({
     setDevolviendoCobroId(null);
     setMotivoDevolucion("");
     setMetodosDevolucion([{ metodo: "efectivo", monto: "" }]);
-    router.refresh();
+    refrescar();
   }
 
   return (
@@ -881,8 +895,8 @@ export function CuentaCobro({
           )}
 
           <AccionesFormulario error={error} exito={exitoCobro}>
-            <Button type="button" cargando={cobrando.cargando} onClick={enviarCobro}>
-              {cobrando.cargando ? "Cobrando…" : "Registrar cobro"}
+            <Button type="button" cargando={cobrando.cargando || refrescando} onClick={enviarCobro}>
+              {cobrando.cargando ? "Cobrando…" : refrescando ? "Actualizando…" : "Registrar cobro"}
             </Button>
           </AccionesFormulario>
         </div>

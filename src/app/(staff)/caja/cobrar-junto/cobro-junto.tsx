@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
@@ -71,6 +71,9 @@ export function CobroJunto({
   const [notas, setNotas] = useState("");
   const [error, setError] = useState<string | null>(null);
   const cobrando = useEspera();
+  // Cobrado: el botón sigue ocupado hasta que cargue el recibo (si no, se reactivaba y permitía un segundo clic).
+  const [yaCobrado, setYaCobrado] = useState(false);
+  const [yendo, iniciarIr] = useTransition();
 
   const valor = (i: number) => (Number.isFinite(Number(montos[i])) ? Number(montos[i]) : 0);
   const totalCuentas = cuentas.reduce((s, _c, i) => s + valor(i), 0);
@@ -119,6 +122,7 @@ export function CobroJunto({
   }
 
   async function enviar() {
+    if (yaCobrado || yendo) return;
     const falla = validarCuentas();
     if (falla) return setError(falla);
     const payload = metodosEfectivos.map((m) => ({
@@ -139,7 +143,8 @@ export function CobroJunto({
     setError(null);
     const res = await cobrando.ejecutar(() => registrarCobroGrupo(partes, notas, payload));
     if (res.error) return setError(res.error);
-    router.push(`/caja/recibo-junto/${res.grupoId}`);
+    setYaCobrado(true);
+    iniciarIr(() => router.push(`/caja/recibo-junto/${res.grupoId}`));
   }
 
   return (
@@ -301,8 +306,8 @@ export function CobroJunto({
           </div>
 
           <AccionesFormulario error={error}>
-            <Button type="button" cargando={cobrando.cargando} onClick={enviar} data-registrar-junto>
-              {cobrando.cargando ? "Cobrando…" : `Registrar cobro de ${dinero(totalCuentas)}`}
+            <Button type="button" cargando={cobrando.cargando || yaCobrado || yendo} onClick={enviar} data-registrar-junto>
+              {cobrando.cargando ? "Cobrando…" : yaCobrado || yendo ? "Abriendo el recibo…" : `Registrar cobro de ${dinero(totalCuentas)}`}
             </Button>
           </AccionesFormulario>
         </div>
