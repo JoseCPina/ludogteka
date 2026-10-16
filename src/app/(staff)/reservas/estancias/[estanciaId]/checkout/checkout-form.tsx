@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
@@ -28,9 +29,9 @@ export function CheckoutForm({
   pertenenciasIniciales: Pertenencia[];
 }) {
   const router = useRouter();
-  // Lo normal es que todo regrese con el dueño: llegan marcadas como entregadas y se desmarca lo que no se entrega.
-  // Se guardan al confirmar la salida.
-  const [pertenencias, setPertenencias] = useState(() => pertenenciasIniciales.map((p) => ({ ...p, devuelto: true })));
+  // Cada pertenencia se confirma a mano (o todas de un toque con «Entregué todo»). Se guardan al confirmar la salida.
+  const [pertenencias, setPertenencias] = useState(() => pertenenciasIniciales.map((p) => ({ ...p, devuelto: false })));
+  const [motivoSinEntrega, setMotivoSinEntrega] = useState("");
   const [salidaActual, setSalidaActual] = useState(fechaSalida);
   const extendiendo = useEspera();
 
@@ -38,16 +39,19 @@ export function CheckoutForm({
   const [recogidoTelefono, setRecogidoTelefono] = useState("");
   const [esDueno, setEsDueno] = useState<boolean | null>(null);
 
-  const [confirmandoConPendientes, setConfirmandoConPendientes] = useState(false);
   const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
   // Lo que falta en el formulario: se marca el campo y se enfoca.
-  const [falta, setFalta] = useState<"nombre" | "dueno" | null>(null);
+  const [falta, setFalta] = useState<"nombre" | "dueno" | "motivo" | null>(null);
 
   const pendientes = pertenencias.filter((p) => !p.devuelto);
 
   function toggle(p: Pertenencia) {
     setPertenencias((prev) => prev.map((x) => (x.id === p.id ? { ...x, devuelto: !x.devuelto } : x)));
+  }
+
+  function entregueTodo() {
+    setPertenencias((prev) => prev.map((x) => ({ ...x, devuelto: true })));
   }
 
   async function extenderEstancia() {
@@ -75,8 +79,10 @@ export function CheckoutForm({
       return;
     }
     setFalta(null);
-    if (pendientes.length > 0 && !confirmandoConPendientes) {
-      setConfirmandoConPendientes(true);
+    if (pendientes.length > 0 && motivoSinEntrega.trim().length < 3) {
+      setFalta("motivo");
+      setError("Hay pertenencias sin entregar: escribe el motivo para cerrar la salida.");
+      document.getElementById("checkout-motivo-sin-entrega")?.focus();
       return;
     }
 
@@ -86,6 +92,7 @@ export function CheckoutForm({
       recogidoPorTelefono: recogidoTelefono,
       recogidoPorEsDueno: esDueno,
       pertenenciasEntregadas: pertenencias.filter((p) => p.devuelto).map((p) => p.id),
+      motivoSinEntrega: pendientes.length > 0 ? motivoSinEntrega : "",
     }));
     if (res.error) {
       setError(res.error);
@@ -113,7 +120,14 @@ export function CheckoutForm({
       )}
 
       <div className="flex flex-col gap-3">
-        <p className="text-sm font-semibold text-n-800">Pertenencias — confirma la entrega</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-n-800">Pertenencias — confirma la entrega de cada una</p>
+          {pertenencias.length > 0 && (
+            <Button type="button" variante="secundario" onClick={entregueTodo} disabled={pendientes.length === 0} data-entregue-todo>
+              Entregué todo
+            </Button>
+          )}
+        </div>
         {pertenencias.length === 0 ? (
           <p className="text-sm text-n-500">No se registraron pertenencias al llegar.</p>
         ) : (
@@ -202,13 +216,26 @@ export function CheckoutForm({
         )}
       </div>
 
-      {confirmandoConPendientes && (
-        <Alert variante="advertencia" titulo="Quedan pertenencias sin confirmar">
-          {pendientes.length === 1
-            ? `"${pendientes[0].descripcion}" no está marcada como entregada.`
-            : `${pendientes.length} pertenencias no están marcadas como entregadas.`}{" "}
-          Pulsa &quot;Confirmar salida&quot; otra vez para cerrar el check-out de todos modos.
-        </Alert>
+      {pendientes.length > 0 && (
+        <div id="checkout-motivo-sin-entrega-bloque" className="flex flex-col gap-2">
+          <Alert variante="advertencia" titulo="Quedan pertenencias sin entregar">
+            {pendientes.length === 1
+              ? `"${pendientes[0].descripcion}" no está marcada como entregada.`
+              : `${pendientes.length} pertenencias no están marcadas como entregadas.`}{" "}
+            Para cerrar la salida escribe el motivo; queda registrado.
+          </Alert>
+          <Textarea
+            id="checkout-motivo-sin-entrega"
+            label="Motivo de lo que no se entrega (obligatorio)"
+            value={motivoSinEntrega}
+            error={falta === "motivo" ? "Escribe el motivo." : undefined}
+            onChange={(e) => {
+              setMotivoSinEntrega(e.target.value);
+              setFalta(null);
+            }}
+            placeholder="ej. El dueño la dejará para la próxima visita"
+          />
+        </div>
       )}
 
       {error && (

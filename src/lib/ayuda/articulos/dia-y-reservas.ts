@@ -106,7 +106,7 @@ Si tienes guardería u hotel prendidos, el link de guardería y hotel trae el pa
 
 > Si vienes de agendar estética, el alta es corta: nombre del dueño y WhatsApp, y del perro nombre, raza, tamaño y pelaje. Sin dirección, vacunas, correo ni contraseña.
 
-> Si va a usar guardería u hotel, el contrato queda pendiente y se firma después. Lo que le falte al perro aparece en su ficha, en **Para guardería y hotel**.
+> Si va a usar guardería u hotel, el contrato queda pendiente y se firma después. Lo que le falte al perro aparece en su ficha, en **Para guardería y hotel**: lo que impide reservar (vacunas obligatorias y evaluación) sale por separado de lo **Recomendado para hotel y guardería**, que no impide reservar.
 
 ## Si algo no sale
 
@@ -396,7 +396,7 @@ Al cancelar una cuenta en [Caja](/caja), marca la casilla para cancelar también
 
 1. Toca **Check-out** en el tablero o en Guardería u Hotel, y escoge al perro.
 2. Si hace falta, agrega cargos en **Aplicar cargo** y toca **Aplicar**.
-3. Las pertenencias vienen palomeadas como entregadas al dueño; quita la palomita de la que no se lleva. Al confirmar la salida quedan marcadas como entregadas.
+3. Las pertenencias salen sin palomear: confirma cada una con su casilla, o toca **Entregué todo** para marcarlas de un toque. Si confirmas la salida con alguna **sin entregar**, escribe el **Motivo de lo que no se entrega**: es obligatorio y queda registrado. Al terminar, la pantalla de salida lista lo que se devolvió y lo que no, con ese motivo.
 4. Escribe **Quién recoge al perro** y marca **Sí, es el dueño** o **No, persona autorizada**.
 5. Toca **Confirmar salida**.
 

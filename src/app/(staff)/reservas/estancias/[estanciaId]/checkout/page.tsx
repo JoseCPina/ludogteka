@@ -22,7 +22,7 @@ export default async function CheckoutEstanciaPage({
   const { data: estancia, error } = await supabase
     .from("estancias")
     .select(
-      "id, perro_id, fecha_entrada, fecha_salida, estado, precio_unitario, horas, hora_entrada_real, hora_salida_real, recogido_por_nombre, recogido_por_es_dueno, perros(nombre, clientes(distancia_base_km)), servicios(nombre, categoria, unidad)"
+      "id, perro_id, fecha_entrada, fecha_salida, estado, precio_unitario, horas, hora_entrada_real, hora_salida_real, recogido_por_nombre, recogido_por_es_dueno, pertenencias_sin_entrega_motivo, perros(nombre, clientes(distancia_base_km)), servicios(nombre, categoria, unidad)"
     )
     .eq("id", estanciaId)
     .single();
@@ -56,7 +56,7 @@ export default async function CheckoutEstanciaPage({
       .is("deleted_at", null),
     supabase
       .from("estancia_pertenencias")
-      .select("id, descripcion, devuelto")
+      .select("id, descripcion, devuelto, devuelto_at")
       .eq("estancia_id", estanciaId)
       .is("deleted_at", null)
       .order("created_at"),
@@ -185,6 +185,21 @@ export default async function CheckoutEstanciaPage({
                 Recogió: {estancia.recogido_por_nombre ?? "—"}
                 {estancia.recogido_por_es_dueno === false ? " (persona autorizada, no el dueño)" : ""}
               </p>
+              {(pertenencias ?? []).length > 0 && (
+                <div className="mt-3" data-pertenencias-salida>
+                  <p className="text-sm font-semibold text-n-800">Pertenencias</p>
+                  <ul className="mt-1 flex flex-col gap-1 text-sm">
+                    {(pertenencias ?? []).map((p) => (
+                      <li key={p.id} className={p.devuelto ? "text-n-800" : "font-semibold text-coral-oscuro"}>
+                        {p.descripcion} — {p.devuelto ? "Entregada" : "No se entregó"}
+                      </li>
+                    ))}
+                  </ul>
+                  {estancia.pertenencias_sin_entrega_motivo && (
+                    <p className="mt-1 text-sm text-n-700">Motivo: {estancia.pertenencias_sin_entrega_motivo}</p>
+                  )}
+                </div>
+              )}
             </>
           ) : (
             <p className="font-semibold text-n-900">
