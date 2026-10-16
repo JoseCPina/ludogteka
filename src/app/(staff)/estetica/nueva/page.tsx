@@ -6,6 +6,7 @@ import { tienePermiso } from "@/lib/auth/permisos";
 import { cargarRazas } from "@/lib/razas";
 import { negocioIdActual, zonaActual } from "@/lib/negocio/actual";
 import { proponerHora } from "@/lib/estetica/proponer-hora";
+import { cargarHorarioSemana } from "@/lib/estetica/horario-semana";
 import { AgendarForm } from "./agendar-form";
 import { leerTodo } from "@/lib/supabase/paginar";
 
@@ -59,6 +60,7 @@ export default async function AgendarPage() {
   // La hora que se propone al abrir: la siguiente en punto de hoy que no ha pasado (o la primera de mañana).
   const zona = await zonaActual();
   const horaInicial = await proponerHora(supabase, zona);
+  const horarioSemana = await cargarHorarioSemana(supabase, zona);
   const [{ data: tamanosCrudo }, { data: pelajesCrudo }] = await Promise.all([
     supabase.from("tamanos_categoria").select("id, etiqueta, clave").is("deleted_at", null).order("orden"),
     supabase.from("tipos_pelaje").select("id, etiqueta, clave").is("deleted_at", null).order("orden"),
@@ -110,7 +112,7 @@ export default async function AgendarPage() {
   // pelo corto): salen de la configuración del servicio, no de aquí.
   const { data: detalleServicios } = await supabase
     .from("servicios")
-    .select("id, incluye, no_incluye, pelajes_excluidos")
+    .select("id, incluye, no_incluye, pelajes_excluidos, duracion_minutos")
     .in("id", (servicios ?? []).map((s) => s.id as string));
   const detalle = new Map((detalleServicios ?? []).map((d) => [d.id as string, d]));
   const serviciosConMarca = (servicios ?? []).map((s) => ({
@@ -119,6 +121,7 @@ export default async function AgendarPage() {
     incluye: ((detalle.get(s.id as string)?.incluye as string[] | null) ?? []),
     no_incluye: (detalle.get(s.id as string)?.no_incluye as string | null) ?? null,
     pelajes_excluidos: ((detalle.get(s.id as string)?.pelajes_excluidos as string[] | null) ?? []),
+    duracion_minutos: (detalle.get(s.id as string)?.duracion_minutos as number | null) ?? 60,
   }));
 
   return (
@@ -152,6 +155,7 @@ export default async function AgendarPage() {
           pelajes={((pelajesCrudo ?? []) as { id: string; etiqueta: string; clave: string }[]).filter((p) => ["corto", "medio", "largo"].includes(p.clave))}
           razas={razas}
           horaInicial={horaInicial}
+          horarioSemana={horarioSemana}
           puedeAsignarGrupo={tienePermiso(sesion, "tarifas")}
           puedeExcepcion={tienePermiso(sesion, "excepciones_reserva")}
           rolActual={sesion?.rol ?? "cliente"}

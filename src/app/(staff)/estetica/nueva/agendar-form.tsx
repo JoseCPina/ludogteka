@@ -19,6 +19,8 @@ import { completarTallaPelajeDelPerro, cotizarCitaEstetica, crearCita, type Coti
 import { conTope, mensajeDeFallo } from "@/lib/ui/espera";
 import { asignarGrupoDePropuesta, asignarGrupoDeRaza } from "../../perros/razas/grupos-actions";
 import { useZonaNegocio } from "@/components/zona-negocio";
+import { AvisoFueraDeHorario } from "@/components/aviso-fuera-de-horario";
+import type { HorarioSemana } from "@/lib/estetica/aviso-horario";
 
 type Perro = {
   id: string;
@@ -40,6 +42,8 @@ type Servicio = {
   incluye: string[];
   no_incluye: string | null;
   pelajes_excluidos: string[];
+  // Minutos que dura (la base pone 60 si no hay); con la hora, para avisar si se sale del horario.
+  duracion_minutos?: number;
 };
 type Empleado = { id: string; nombre_completo: string | null };
 type EstanciaEnCurso = { id: string; perroId: string; servicioNombre: string };
@@ -61,6 +65,7 @@ export function AgendarForm({
   puedeExcepcion,
   razas = [],
   horaInicial,
+  horarioSemana,
 }: {
   clientes: ClienteBuscable[];
   perros: Perro[];
@@ -94,6 +99,8 @@ export function AgendarForm({
   razas?: RazaOpcion[];
   // La siguiente hora disponible (nunca una que ya pasó); la calcula el servidor con el horario del negocio.
   horaInicial?: string;
+  // Horario del negocio por día de la semana, para avisar (sin bloquear) de una cita fuera de horario.
+  horarioSemana?: HorarioSemana | null;
   rolActual: string;
   userIdActual: string;
 }) {
@@ -700,6 +707,12 @@ export function AgendarForm({
             type="datetime-local"
             value={fechaHora}
             onChange={(e) => setFechaHora(e.target.value)}
+          />
+          <AvisoFueraDeHorario
+            fecha={fechaHora.slice(0, 10)}
+            hora={fechaHora.slice(11, 16)}
+            duracionMin={servicioActual?.duracion_minutos ?? 60}
+            horario={horarioSemana ?? null}
           />
 
           <AccionesFormulario error={error}>

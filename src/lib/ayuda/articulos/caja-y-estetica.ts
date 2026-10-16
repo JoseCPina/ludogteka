@@ -716,7 +716,7 @@ Es otra cosa: la raza es nueva y tu negocio no decidió su precio. Asigna el gru
 
 El precio sale del grupo de raza del perro, de su pelaje y del servicio; al dueño le aclaramos que **el costo puede aumentar según el tipo de pelo y el cuidado previo**. El rapado solo se ofrece a perros de pelo medio o largo. Cambiar las tarifas después no mueve el precio de las citas que ya están agendadas o cobradas. Para cambiar el recargo de una cita, ábrela y aprieta **Cambiar el recargo**.
 
-Una cita fuera del horario sale resaltada en naranja en la agenda.
+Si la hora o la duración del servicio se salen del horario del negocio de ese día de la semana, debajo de **Fecha y hora** aparece un aviso naranja **Fuera de horario**: «Termina a las 8:30 p.m., después del cierre de las 7:00 p.m.», «Empieza a las 8:00 a.m., antes de la apertura de las 9:00 a.m.» o «Ese día el negocio no abre». Se actualiza solo al cambiar la fecha, la hora o el servicio, y **no te bloquea**: puedes agendar la cita igual. Ya agendada, una cita que se sale del horario sale resaltada en naranja en la agenda y con la etiqueta **Fuera de horario**.
 
 > Las vacunas no detienen una cita de estética. Si el perro también usa guardería u hotel y las trae vencidas, la app te avisa para ponerlo al día.
 
