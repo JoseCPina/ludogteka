@@ -23,6 +23,7 @@ export const ARTICULOS_VETERINARIA_EXPEDIENTE: Articulo[] = [
 1. Aprieta **Agendar**.
 2. Busca a la mascota por su nombre, el de su dueño o su teléfono y elígela.
 3. Elige el **tipo de cita** (consulta, vacuna, cirugía, seguimiento o urgencia), el **médico**, la fecha y la hora (ya vienen propuestas: la siguiente hora en punto que no ha pasado). La duración sale del tipo; si hace falta, escríbela.
+   Si la hora o la duración se salen del horario del negocio de ese día de la semana, sale un aviso naranja **Fuera de horario** («Termina a las 7:20 p.m., después del cierre de las 7:00 p.m.»). Se actualiza al cambiar el tipo, la fecha, la hora o la duración, y no te bloquea: puedes agendar igual.
 4. Aprieta **Agendar cita**.
 
 Un médico **no puede tener dos citas encimadas**: si lo intentas, te dice a qué hora tiene su otra cita. Una **urgencia** sí entra aunque se empalme, y te avisa.

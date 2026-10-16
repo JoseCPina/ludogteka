@@ -244,6 +244,94 @@ try {
     await c.close();
   }
 
+  // ── Aviso de «fuera de horario» al agendar (QA B20) ─────────────
+  seccion("B20. Aviso de cita fuera de horario, en Estética y en la agenda clínica");
+  {
+    const adm = await comoAdmin();
+    // Un martes lejano; el horario de ese día sale de la base.
+    let dia = new Date(Date.now() + 40 * 86400000).toISOString().slice(0, 10);
+    while (new Date(`${dia}T12:00:00Z`).getUTCDay() !== 2) dia = new Date(new Date(`${dia}T12:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10);
+    const hz = (await adm.rpc("resolver_cupo_configuracion", { p_fecha: dia })).data;
+    const fh = Array.isArray(hz) ? hz[0] : hz;
+    const [ah, am] = String(fh.hora_apertura).split(":").map(Number);
+    const [ch, cm] = String(fh.hora_cierre).split(":").map(Number);
+    const abre = ah * 60 + am, cierra = ch * 60 + cm;
+    const hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+    const { data: srvs } = await SB.from("servicios").select("nombre, duracion_minutos").eq("negocio_id", B).eq("categoria", "estetica").is("deleted_at", null);
+    const durMax = Math.max(...(srvs ?? []).map((x) => x.duracion_minutos ?? 60));
+    const nombreCliente = (await SB.from("clientes").select("nombre").eq("id", datos.clienteSoloB).single()).data.nombre;
+    for (const ancho of [390, 1280]) {
+      ({ c, p } = await abrir(datos.adminB, ancho));
+      await p.goto(`${BASE}/estetica/nueva`, { waitUntil: "networkidle" });
+      await p.locator("input[type=text], input[type=search], input:not([type])").first().fill(nombreCliente);
+      await p.waitForTimeout(500);
+      await p.locator("button", { hasText: nombreCliente }).first().click();
+      const campo = p.locator('input[type="datetime-local"]').first();
+      await campo.waitFor();
+      const aviso = p.locator("[data-aviso-horario]");
+      const textoAviso = async () => ((await aviso.count()) ? (await aviso.first().innerText()).replace(/\s+/g, " ") : "");
+      // Dentro del horario: sin aviso.
+      await campo.fill(`${dia}T${hhmm(abre + 60)}`);
+      comprobar((await aviso.count()) === 0, `${ancho}px: dentro del horario no hay aviso`);
+      // Termina después del cierre: la hora de inicio deja menos de la duración del servicio elegido.
+      await campo.fill(`${dia}T${hhmm(cierra - 15)}`);
+      const t1 = await textoAviso();
+      comprobar(/Fuera de horario/.test(t1) && /después del cierre/.test(t1), `${ancho}px: empieza 15 min antes del cierre → avisa (${t1.slice(0, 90)})`);
+      // Antes de abrir.
+      await campo.fill(`${dia}T${hhmm(abre - 60)}`);
+      const t2 = await textoAviso();
+      comprobar(/antes de la apertura/.test(t2), `${ancho}px: antes de abrir → avisa (${t2.slice(0, 90)})`);
+      // Se actualiza al volver al horario, y sin bloquear el botón de agendar por el aviso.
+      await campo.fill(`${dia}T${hhmm(abre + 60)}`);
+      comprobar((await aviso.count()) === 0, `${ancho}px: al volver al horario el aviso se va`);
+      // Cambiar la fecha a un domingo (cerrado): lo dice.
+      let dom = dia;
+      while (new Date(`${dom}T12:00:00Z`).getUTCDay() !== 0) dom = new Date(new Date(`${dom}T12:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10);
+      const hd = (await adm.rpc("resolver_cupo_configuracion", { p_fecha: dom })).data;
+      const fd = Array.isArray(hd) ? hd[0] : hd;
+      await campo.fill(`${dom}T10:00`);
+      if (!fd?.hora_apertura) comprobar(/no abre/.test(await textoAviso()), `${ancho}px: domingo cerrado → «Ese día el negocio no abre»`);
+      // Sin desborde.
+      await campo.fill(`${dia}T${hhmm(cierra - 15)}`);
+      comprobar((await p.evaluate(() => document.documentElement.scrollWidth)) <= ancho + 2, `${ancho}px: sin desborde con el aviso`);
+      // Cambiar de servicio recalcula con su duración (si hay servicios de distinta duración).
+      const selServicio = p.getByLabel("Servicio").first();
+      if (await selServicio.count()) {
+        const opciones = await selServicio.locator("option").allTextContents();
+        if (opciones.length > 1 && new Set((srvs ?? []).map((x) => x.duracion_minutos ?? 60)).size > 1) {
+          const antes = await textoAviso();
+          await selServicio.selectOption({ index: opciones.length - 1 });
+          const despues = await textoAviso();
+          comprobar(antes !== despues || durMax <= 60, `${ancho}px: al cambiar el servicio el aviso se recalcula`);
+        }
+      }
+      await c.close();
+    }
+    // Agenda clínica: tipo, fecha, hora y duración.
+    const perroH = await nuevoPerro("HorarioVet");
+    for (const ancho of [390, 1280]) {
+      ({ c, p } = await abrir(datos.adminB, ancho));
+      await p.goto(`${BASE}/veterinaria/agenda/nueva?perro=${perroH}`, { waitUntil: "networkidle" });
+      const aviso = p.locator("[data-aviso-horario]");
+      await p.locator('input[name="fecha"]').fill(dia);
+      await p.locator('input[name="hora"]').fill(hhmm(abre + 60));
+      comprobar((await aviso.count()) === 0, `agenda clínica ${ancho}px: dentro del horario no hay aviso`);
+      await p.locator('input[name="hora"]').fill(hhmm(cierra - 10));
+      const tv = (await aviso.count()) ? (await aviso.first().innerText()).replace(/\s+/g, " ") : "";
+      comprobar(/después del cierre/.test(tv), `agenda clínica ${ancho}px: termina después del cierre → avisa (${tv.slice(0, 80)})`);
+      // La duración manual cambia el aviso: 5 minutos cabe, 300 no.
+      await p.locator('input[name="hora"]').fill(hhmm(cierra - 30));
+      await p.locator('input[name="duracion"]').fill("5");
+      comprobar((await aviso.count()) === 0, `agenda clínica ${ancho}px: con duración de 5 min cabe y no avisa`);
+      await p.locator('input[name="duracion"]').fill("300");
+      comprobar((await aviso.count()) === 1, `agenda clínica ${ancho}px: con 300 min avisa`);
+      await p.locator('input[name="hora"]').fill(hhmm(abre - 60));
+      comprobar(/antes de la apertura/.test((await aviso.first().innerText())), `agenda clínica ${ancho}px: antes de abrir → avisa`);
+      comprobar((await p.evaluate(() => document.documentElement.scrollWidth)) <= ancho + 2, `agenda clínica ${ancho}px: sin desborde`);
+      await c.close();
+    }
+  }
+
   // ── 6: obligatorios y monto del cobro ───────────────────────────
   seccion("6. Quién entrega/recoge obligatorios y el monto abre con el saldo");
   // La cuenta de la consulta de B4 (600) en Caja, con turno abierto.

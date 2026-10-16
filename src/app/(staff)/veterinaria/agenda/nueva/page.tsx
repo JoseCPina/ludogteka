@@ -3,13 +3,14 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
-import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { FormularioAccion } from "@/components/formulario-accion";
 import { buscarMascotas, etiquetaEspecie } from "@/lib/veterinaria/buscar";
 import { hoyNegocio } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { proponerHora } from "@/lib/estetica/proponer-hora";
+import { cargarHorarioSemana } from "@/lib/estetica/horario-semana";
+import { CamposCitaVet } from "./campos-cita";
 import type { MedicoVet, TipoCitaConfig } from "@/lib/veterinaria/expediente";
 import { agendarCita } from "../../expediente/actions";
 
@@ -60,6 +61,7 @@ export default async function NuevaCitaVet({ searchParams }: { searchParams: Pro
   const tipos = ((tiposCrudo ?? []) as TipoCitaConfig[]).filter((t) => t.activo);
   const medicos = (medicosCrudo ?? []) as MedicoVet[];
   // Fecha y hora propuestas: la siguiente hora en punto que no ha pasado (o, con un día ya escogido, la primera de ese día).
+  const horarioSemana = await cargarHorarioSemana(supabase, zona);
   const propuesta = await proponerHora(supabase, zona, fecha && fecha > hoy ? fecha : undefined);
   const dueno = mascota ? ((Array.isArray(mascota.clientes) ? mascota.clientes[0] : mascota.clientes) as { nombre: string } | null) : null;
 
@@ -77,25 +79,15 @@ export default async function NuevaCitaVet({ searchParams }: { searchParams: Pro
       ) : (
         <FormularioAccion accion={agendarCita} textoBoton="Agendar cita" className="rounded-lg border border-n-200 bg-white p-5">
           <input type="hidden" name="perro_id" value={perro} />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Select label="Tipo de cita" name="tipo" defaultValue="consulta" ayuda="La duración sale del tipo; se cambia en Ajustes de Veterinaria.">
-              {tipos.map((t) => (
-                <option key={t.clave} value={t.clave}>
-                  {t.nombre} · {t.duracion_min} min
-                </option>
-              ))}
-            </Select>
-            <Select label="Médico" name="medico_id" defaultValue={(miMedico as string | null) ?? medicos[0]?.id} required>
-              {medicos.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.nombre}
-                </option>
-              ))}
-            </Select>
-            <Field label="Fecha" name="fecha" type="date" min={hoy} defaultValue={propuesta.slice(0, 10)} required />
-            <Field label="Hora" name="hora" type="time" defaultValue={propuesta.slice(11)} required />
-            <Field label="Duración en minutos (opcional)" name="duracion" type="number" min={5} max={480} ayuda="Vacío: la del tipo de cita." />
-          </div>
+          <CamposCitaVet
+            tipos={tipos}
+            medicos={medicos}
+            medicoInicial={(miMedico as string | null) ?? medicos[0]?.id}
+            hoy={hoy}
+            fechaInicial={propuesta.slice(0, 10)}
+            horaInicial={propuesta.slice(11)}
+            horario={horarioSemana}
+          />
           <Textarea label="Motivo (opcional)" name="motivo" rows={2} />
           <p className="text-sm text-n-600">Un médico no puede tener dos citas encimadas; una urgencia sí entra y se avisa.</p>
         </FormularioAccion>
