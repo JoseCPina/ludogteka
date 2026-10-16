@@ -38,8 +38,9 @@ async function cookiesDe(profileId) {
   if (error) throw error;
   const valor = "base64-" + Buffer.from(JSON.stringify(s.session)).toString("base64url");
   const trozos = valor.match(/.{1,3180}/g);
-  const nombre = `sb-${REF}-auth-token`;
-  return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: "huellitas.localhost", path: "/" }));
+  // Dos cookies de sesión (personal y portal): el servidor lee la que le toca por la ruta.
+  const galletas = (nombre) => (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t]));
+  return [...galletas(`sb-${REF}-auth-token`), ...galletas(`sb-${REF}-portal-auth-token`)].map(([name, value]) => ({ name, value, domain: "huellitas.localhost", path: "/" }));
 }
 
 const admin = await como(datos.adminB);
@@ -129,6 +130,32 @@ try {
   comprobar(tipoDeBloqueo("Este perro no tiene evaluación previa de comportamiento. Márcala en su expediente, o un admin puede autorizar una excepción con motivo.") === "comportamiento", "el de comportamiento sigue siendo de comportamiento");
   comprobar(tipoDeBloqueo("Este perro está en celo.") === null, "celo no ofrece excepción");
   await ctx.close();
+
+  console.log("── 5. El traslape cruza módulos (N10): hotel ↔ guardería del mismo perro");
+  const { data: hotelSrv } = await SB.from("servicios").select("id").eq("negocio_id", B).eq("categoria", "hotel").is("deleted_at", null).limit(1).maybeSingle();
+  if (!hotelSrv) console.log("    (Huellitas no tiene servicio de hotel: se salta)");
+  else {
+    const bruno = await mkPerro("bruno");
+    const entH = suma(D, 30), salH = suma(D, 33);
+    const rH = await admin.from("estancias").insert({ reserva_id: await reserva(), perro_id: bruno.id, servicio_id: hotelSrv.id, fecha_entrada: entH, fecha_salida: salH, estado: "reservada", ...EXC }).select("id").single();
+    if (rH.data?.id) creados.estancias.push(rH.data.id);
+    if (rH.error) console.log(`    (no se pudo crear el hotel: ${rH.error.message})`);
+    else {
+      const g = await admin.from("estancias").insert({ reserva_id: await reserva(), perro_id: bruno.id, servicio_id: gDia.id, fecha_entrada: suma(D, 31), fecha_salida: suma(D, 32), estado: "reservada", ...EXC }).select("id").single();
+      comprobar(g.error?.code === "23P01", `guardería dentro de unas noches de hotel del mismo perro se rechaza (${g.error?.code ?? "sin error"})`);
+      const q = await admin.rpc("estancia_que_choca", { p_perro: bruno.id, p_entrada: suma(D, 31), p_salida: suma(D, 32) });
+      const m = q.data ? mensajeTraslapeConDetalle(q.data) : "";
+      comprobar(q.data?.modulo === "hotel" && m.includes("reserva de hotel") && m.includes("/reservas/calendario?dia="), `el aviso dice «reserva de hotel» y lleva al calendario (${m.slice(0, 80)}…)`);
+      const otroPerro = await mkPerro("otro");
+      const g2 = await admin.from("estancias").insert({ reserva_id: await reserva(), perro_id: otroPerro.id, servicio_id: gDia.id, fecha_entrada: suma(D, 31), fecha_salida: suma(D, 32), estado: "reservada", ...EXC }).select("id").single();
+      if (g2.data?.id) creados.estancias.push(g2.data.id);
+      comprobar(!g2.error, `otro perro sí puede reservar guardería esos días (${g2.error?.message ?? "ok"})`);
+      // Un perro hospedado (en curso) no puede tener guardería ese día aunque se salte la reserva.
+      const ci = await SB.from("estancias").update({ estado: "en_curso", entregado_por_nombre: "Prueba" }).eq("id", rH.data.id);
+      const g3 = await admin.from("estancias").insert({ reserva_id: await reserva(), perro_id: bruno.id, servicio_id: gDia.id, fecha_entrada: suma(D, 32), fecha_salida: suma(D, 33), estado: "reservada", ...EXC }).select("id").single();
+      comprobar(!ci.error && g3.error?.code === "23P01", "con el hotel EN CURSO la guardería tampoco entra");
+    }
+  }
 } finally {
   await nav.close();
   if (creados.estancias.length) await SB.from("estancias").update({ deleted_at: new Date().toISOString() }).in("id", creados.estancias);

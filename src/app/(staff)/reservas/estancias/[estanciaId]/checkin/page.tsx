@@ -31,7 +31,7 @@ export default async function CheckinEstanciaPage({
   const { data: estancia, error } = await supabase
     .from("estancias")
     .select(
-      "id, perro_id, servicio_id, fecha_entrada, fecha_salida, estado, precio_unitario, entregado_por_nombre, entregado_por_telefono, estado_llegada, foto_llegada_path, hora_entrada_real, perros(nombre, cliente_id), servicios(nombre, categoria, unidad)"
+      "id, perro_id, servicio_id, fecha_entrada, fecha_salida, estado, precio_unitario, entregado_por_nombre, entregado_por_telefono, estado_llegada, foto_llegada_path, hora_entrada_real, pertenencias, perros(nombre, cliente_id), servicios(nombre, categoria, unidad)"
     )
     .eq("id", estanciaId)
     .single();
@@ -205,6 +205,13 @@ export default async function CheckinEstanciaPage({
             Entregó: {estancia.entregado_por_nombre ?? "—"}
             {estancia.estado_llegada ? ` · Estado a la llegada: ${estancia.estado_llegada}` : ""}
           </p>
+          <p className="mt-1 text-sm text-n-600" data-pertenencias-recibidas>
+            Pertenencias recibidas:{" "}
+            {(pertenencias ?? []).length > 0 || estancia.pertenencias?.trim()
+              ? [...(estancia.pertenencias?.trim() ? [estancia.pertenencias.trim()] : []), ...(pertenencias ?? []).map((p) => p.descripcion)].join(", ")
+              : "ninguna"}
+            .
+          </p>
         </div>
       ) : (
         <CheckinForm
@@ -212,6 +219,7 @@ export default async function CheckinEstanciaPage({
           perroId={estancia.perro_id}
           clienteId={perro.cliente_id}
           pertenenciasIniciales={pertenencias ?? []}
+          declaradas={estancia.pertenencias?.trim() || null}
         />
       )}
 

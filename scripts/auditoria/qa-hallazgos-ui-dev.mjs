@@ -25,8 +25,9 @@ async function cookiesDe(profileId, host) {
   if (error) throw error;
   const valor = "base64-" + Buffer.from(JSON.stringify(s.session)).toString("base64url");
   const trozos = valor.match(/.{1,3180}/g);
-  const nombre = `sb-${REF}-auth-token`;
-  return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: host, path: "/" }));
+  // Dos cookies de sesión (personal y portal): el servidor lee la que le toca por la ruta.
+  const galletas = (nombre) => (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t]));
+  return [...galletas(`sb-${REF}-auth-token`), ...galletas(`sb-${REF}-portal-auth-token`)].map(([name, value]) => ({ name, value, domain: host, path: "/" }));
 }
 const comoAdmin = async () => createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${P.admin}`, "x-negocio-id": B } } });
 const nav = await abrirNavegador();
@@ -136,10 +137,11 @@ try {
   comprobar((await p.getByText("Aplicar vacuna").count()) > 0, "B13: la consulta tiene su botón «Aplicar vacuna»");
   // ── B13 ─────────────────────────────────────────────────────────
   seccion("B13. «Aplicar vacuna» aparte de «Otro procedimiento»");
-  const resumen = p.locator("[data-aplicar-vacuna] summary");
-  comprobar((await resumen.count()) === 1 && /Aplicar vacuna/.test(await resumen.innerText()), "«Aplicar vacuna» es su propio apartado");
+  const resumen = p.getByRole("button", { name: "Aplicar vacuna", exact: true });
+  comprobar((await resumen.count()) === 1, "«Aplicar vacuna» es un botón real (rol button) y su propio apartado");
   await resumen.click();
   comprobar((await p.locator("[data-aplicar-vacuna]").getByRole("button", { name: "Registrar vacuna" }).count()) === 1, "con el formulario del carnet (lote, fecha y médico)");
+  comprobar((await p.getByLabel("Cantidad aplicada (opcional)").count()) === 1 && (await p.getByLabel("Próxima dosis (opcional)").count()) === 1, "«Cantidad aplicada» y «Próxima dosis» tienen nombres accesibles distintos");
   await p.getByText("Agregar un procedimiento o medicamento").click();
   await p.getByLabel("Qué agregas").selectOption("libre");
   await p.getByLabel("Concepto").fill("Vacuna antirrábica");

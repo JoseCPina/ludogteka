@@ -184,7 +184,7 @@ export function PerroForm({
       </div>
 
       <Field
-        label="Fecha de nacimiento (opcional)"
+        label="Fecha de nacimiento (recomendado)"
         name="fecha_nacimiento"
         type="date"
         disabled={deshabilitado}
@@ -245,7 +245,7 @@ export function PerroForm({
       {!corta && (
         <>
       <Textarea
-        label="Notas de alimentación"
+        label="Notas de alimentación (recomendado)"
         name="alimentacion_notas"
         disabled={deshabilitado}
         defaultValue={valoresIniciales?.alimentacion_notas ?? ""}
@@ -263,26 +263,26 @@ export function PerroForm({
           link del dueño: recepción no tenía dónde capturarlos. */}
       <div className="grid gap-4 sm:grid-cols-2">
         <Field
-          label="Contacto de emergencia"
+          label="Contacto de emergencia (recomendado)"
           name="contacto_emergencia_nombre"
           disabled={deshabilitado}
           defaultValue={valoresIniciales?.contacto_emergencia_nombre ?? ""}
         />
         <Field
-          label="Teléfono de emergencia"
+          label="Teléfono de emergencia (recomendado)"
           name="contacto_emergencia_telefono"
           inputMode="tel"
           disabled={deshabilitado}
           defaultValue={valoresIniciales?.contacto_emergencia_telefono ?? ""}
         />
         <Field
-          label="Veterinario"
+          label="Veterinario (recomendado)"
           name="veterinario_nombre"
           disabled={deshabilitado}
           defaultValue={valoresIniciales?.veterinario_nombre ?? ""}
         />
         <Field
-          label="Teléfono del veterinario"
+          label="Teléfono del veterinario (recomendado)"
           name="veterinario_telefono"
           inputMode="tel"
           disabled={deshabilitado}
@@ -290,7 +290,7 @@ export function PerroForm({
         />
       </div>
       <Field
-        label="Clínica del veterinario"
+        label="Clínica del veterinario (recomendado)"
         name="veterinario_clinica"
         disabled={deshabilitado}
         defaultValue={valoresIniciales?.veterinario_clinica ?? ""}

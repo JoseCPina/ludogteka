@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { clienteSinSesion, guardarSesionEnSuArea, rolDeSesion } from "@/lib/supabase/sesion-por-rol";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { rutaPorRol } from "@/lib/auth/rutas";
 import { clasificarIdentificador, correoSinteticoDeTelefono } from "@/lib/auth/identidad";
@@ -46,14 +46,15 @@ export async function iniciarSesion(
     email = (data as string | null) ?? correoSinteticoDeTelefono(quien.telefono);
   }
 
-  const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  // Se canjea sin cookies: la sesión se guarda después, en la del área que le toca por su rol (portal o personal).
+  const supabase = clienteSinSesion();
+  const { data: ingreso, error } = await supabase.auth.signInWithPassword({ email, password });
 
-  if (error) {
-    if (error.code === "email_not_confirmed") {
+  if (error || !ingreso.session) {
+    if (error?.code === "email_not_confirmed") {
       return { error: "Tu cuenta todavía no está confirmada. Avísale a recepción." };
     }
-    if (error.code === "invalid_credentials") {
+    if (error?.code === "invalid_credentials") {
       return {
         error:
           quien.tipo === "telefono"
@@ -66,11 +67,12 @@ export async function iniciarSesion(
 
   // El rol es el de su membresía EN ESTE negocio. Una cuenta que existe
   // (por ejemplo, de otro negocio) pero no es de este, no entra aquí.
-  const { data: rol } = await supabase.rpc("current_rol");
+  const rol = await rolDeSesion(ingreso.session);
   if (!rol || rol === "anonimo") {
     await supabase.auth.signOut();
     const negocio = await negocioActual();
     return { error: `Tu cuenta no tiene acceso a ${negocio.nombre}. Si eres cliente, pídele a recepción tu link de registro.` };
   }
+  await guardarSesionEnSuArea(ingreso.session);
   redirect(rutaPorRol(rol as string));
 }

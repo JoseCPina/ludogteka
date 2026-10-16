@@ -104,6 +104,8 @@ export type CamposCheckout = {
   recogidoPorNombre: string;
   recogidoPorTelefono: string;
   recogidoPorEsDueno: boolean;
+  // Las pertenencias que se entregan al dueño en esta salida (las que no vienen aquí quedan «sin entregar»).
+  pertenenciasEntregadas?: string[];
 };
 
 export async function confirmarCheckout(
@@ -126,6 +128,17 @@ export async function confirmarCheckout(
     .eq("id", estanciaId);
 
   if (error) return { error: traducirError(error) };
+
+  // Lo entregado queda registrado: quién y cuándo.
+  const entregadas = (campos.pertenenciasEntregadas ?? []).filter((id) => /^[0-9a-f-]{36}$/.test(id));
+  if (entregadas.length > 0) {
+    const { data: u } = await supabase.auth.getUser();
+    await supabase
+      .from("estancia_pertenencias")
+      .update({ devuelto: true, devuelto_at: new Date().toISOString(), devuelto_por: u.user?.id ?? null })
+      .eq("estancia_id", estanciaId)
+      .in("id", entregadas);
+  }
 
   revalidarModulosEstancia();
   revalidatePath(`/reservas/estancias/${estanciaId}/checkout`);

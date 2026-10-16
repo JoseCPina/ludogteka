@@ -211,7 +211,9 @@ Abajo, en **Últimos revisados**, ves lo que ya se resolvió.
 - Sus contratos por firmar, con un aviso en la portada.
 - **Tus datos**, que puede corregir él.
 
-Nunca ve precios de otros clientes ni la caja del negocio. Para reservar, cambiar o cancelar te sigue escribiendo por WhatsApp.
+Nunca ve precios de otros clientes ni la caja del negocio. En cada visita y en cada tarjeta, el nombre de la mascota abre su ficha.
+
+El portal tiene su propia sesión, aparte de la del personal: si alguien del equipo abre el portal en el mismo navegador, su sesión de trabajo no se cierra. Un dueño que ya tenía sesión abierta antes de este cambio entra una sola vez más con su teléfono y contraseña. Para reservar, cambiar o cancelar te sigue escribiendo por WhatsApp.
 
 ## Invitar al portal a un cliente que ya existe
 
@@ -259,7 +261,9 @@ Si alguien tiene cuenta pero no quedó ligada a su expediente, aparece en [Vincu
     rutas: ["/guarderia/nueva", "/guarderia/series", "/guarderia/walkin", "/guarderia"],
     palabras: ["reserva", "apartar día", "serie", "recurrente", "walk-in", "day care"],
     captura: "reservar-guarderia.jpg",
-    cuerpo: `Una reserva aparta el lugar del perro y revisa, antes de guardar, que tenga todo en regla y que haya cupo.
+    cuerpo: `Si la mascota ya tiene otra reserva en esas fechas, de guardería o de hotel, el aviso sale al elegirla, dice con cuál choca y lleva al calendario de ese día; «Crear reserva» no se activa hasta cambiar las fechas o quitarla. Si faltan datos que se recomiendan para hotel y guardería (fecha de nacimiento, alimentación, contacto de emergencia, veterinario) sale un aviso que no impide reservar, con enlace a la ficha. Los días que el negocio no atiende no se pueden escoger: el campo lo marca y dice la regla (por ejemplo, el hotel no recibe ni entrega perros en domingo).
+
+Una reserva aparta el lugar del perro y revisa, antes de guardar, que tenga todo en regla y que haya cupo.
 
 1. En [Guardería](/guarderia) toca **Nueva reserva**.
 2. Busca al dueño por perro, nombre o teléfono. Si es nuevo, usa **Nuevo cliente**.
@@ -288,7 +292,9 @@ En **Series recurrentes** toca **Nueva serie**, escoge el perro, el servicio y l
     roles: ["admin", "recepcion"],
     rutas: ["/hotel/nueva", "/hotel/series", "/hotel/walkin", "/hotel"],
     palabras: ["hospedaje", "noches", "pensión", "reserva de hotel", "dormir", "vacaciones"],
-    cuerpo: `El hotel se reserva igual que la guardería, pero con entrada y salida: se cobran las noches que hay entre las dos fechas.
+    cuerpo: `Si la mascota ya tiene otra reserva en esas fechas, de guardería o de hotel, el aviso sale al elegirla, dice con cuál choca y lleva al calendario de ese día; «Crear reserva» no se activa hasta cambiar las fechas o quitarla. Si faltan datos que se recomiendan para hotel y guardería (fecha de nacimiento, alimentación, contacto de emergencia, veterinario) sale un aviso que no impide reservar, con enlace a la ficha. Los días que el negocio no atiende no se pueden escoger: el campo lo marca y dice la regla (por ejemplo, el hotel no recibe ni entrega perros en domingo).
+
+El hotel se reserva igual que la guardería, pero con entrada y salida: se cobran las noches que hay entre las dos fechas.
 
 1. En [Hotel](/hotel) toca **Nueva reserva**.
 2. Busca al dueño por perro, nombre o teléfono. Si es nuevo, usa **Nuevo cliente**.
@@ -366,8 +372,8 @@ Al cancelar una cuenta en [Caja](/caja), marca la casilla para cancelar también
 3. Si viene con pase, lo verás. Si **Tiene pases sin aplicar**, toca **Usar el pase para hoy**.
 4. Escribe **Quién entrega al perro** y, si quieres, su teléfono.
 5. Anota el **Estado del perro a la llegada (opcional)** y toca **Tomar/subir foto**.
-6. En **Agregar pertenencia** escribe lo que trae (correa, cama, juguete) y toca **Agregar**.
-7. Toca **Confirmar check-in**. El formulario se cierra, queda **Check-in registrado a las** (la hora) y la estancia pasa a **en curso**.
+6. En **Agregar pertenencia** escribe lo que trae (correa, cama, juguete) y toca **Agregar**. Las que se anotaron al reservar salen ahí como **Ya declaradas en la reserva**.
+7. Toca **Confirmar check-in**. El formulario se cierra, queda **Check-in registrado a las** (la hora), la confirmación lista las **Pertenencias recibidas** y la estancia pasa a **en curso**.
 
 > Las vacunas vencidas, la falta de evaluación, el celo, la gestación y las alertas que bloquean se revisan al reservar: si el perro tiene reserva, ya pasó por ahí. Aun así, fíjate en los avisos antes de recibirlo.
 
@@ -390,7 +396,7 @@ Al cancelar una cuenta en [Caja](/caja), marca la casilla para cancelar también
 
 1. Toca **Check-out** en el tablero o en Guardería u Hotel, y escoge al perro.
 2. Si hace falta, agrega cargos en **Aplicar cargo** y toca **Aplicar**.
-3. Palomea cada pertenencia que entregas.
+3. Las pertenencias vienen palomeadas como entregadas al dueño; quita la palomita de la que no se lleva. Al confirmar la salida quedan marcadas como entregadas.
 4. Escribe **Quién recoge al perro** y marca **Sí, es el dueño** o **No, persona autorizada**.
 5. Toca **Confirmar salida**.
 

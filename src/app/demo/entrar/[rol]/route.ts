@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { clienteSinSesion, guardarSesionEnSuArea } from "@/lib/supabase/sesion-por-rol";
 import { negocioActual } from "@/lib/negocio/actual";
 import { CUENTAS_DEMO, esRolDemo } from "@/lib/demo/cuentas";
 
@@ -39,10 +39,11 @@ export async function GET(_request: NextRequest, contexto: { params: Promise<{ r
     console.error("[demo] generateLink", errorLink?.message);
     return ir("/demo?error=sesion");
   }
-  const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.verifyOtp({ type: "magiclink", token_hash: link.properties.hashed_token });
-  if (error) {
-    console.error("[demo] verifyOtp", error.message);
+  // Sin cookies hasta saber el rol: el dueño del portal queda en su sesión y el personal en la suya.
+  const { data: canje, error } = await clienteSinSesion().auth.verifyOtp({ type: "magiclink", token_hash: link.properties.hashed_token });
+  if (!error && canje.session) await guardarSesionEnSuArea(canje.session);
+  if (error || !canje.session) {
+    console.error("[demo] verifyOtp", error?.message);
     return ir("/demo?error=sesion");
   }
   return ir(cuenta.destino);
