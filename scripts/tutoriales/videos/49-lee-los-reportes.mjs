@@ -10,6 +10,21 @@ export default {
       pasos: [["resaltar", "Desde", 2400], ["resaltar", "Actualizar", 2400]],
     },
     {
+      titulo: "El desglose de una cifra",
+      dice: "¿No sabes de dónde sale una cifra? Tócala. Se abre el desglose: la lista de las operaciones que la forman, con el cliente, la mascota, el método y el monto, y el total al pie cuadra con la tarjeta. Con «Descargar en Excel» te llevas la lista, y con «Volver a Reportes» regresas al mismo periodo.",
+      pasos: [
+        ["desplazar", "css:[data-desglose-enlace] >> nth=0"],
+        ["resaltar", "css:[data-desglose-enlace] >> nth=0", 2200],
+        ["clic", "css:[data-desglose-enlace] >> nth=0", { nav: true }],
+        ["esperar", 2200],
+        ["resaltar", "Descargar en Excel", 2600],
+        ["clic", "Descargar en Excel"],
+        ["esperar", 2500],
+        ["clic", "Volver a Reportes", { nav: true }],
+        ["esperar", 1800],
+      ],
+    },
+    {
       titulo: "Costos y margen",
       dice: "En «Costos y margen — estética» ves cuánto ingresa cada servicio, cuánto cuestan sus insumos y la comisión de quien lo hace, y el margen que te queda. Así sabes qué baño te deja más.",
       pasos: [["desplazar", "Costos y margen — estética"], ["zoom", "Costos y margen — estética", 1.25, 4200]],

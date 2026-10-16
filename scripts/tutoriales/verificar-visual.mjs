@@ -1,6 +1,6 @@
 // ¿Un video tutorial quedó DESACTUALIZADO de verdad? Decide por lo que se ve, no por el código que cambió.
 //
-//   node scripts/tutoriales/verificar-visual.mjs --marcados [--aplicar]       los videos hoy «por actualizar» (desarrollo)
+//   node scripts/tutoriales/verificar-visual.mjs --marcados [--aplicar] [--prod]   los videos hoy «por actualizar» (desarrollo; con --prod, también los de producción)
 //   node scripts/tutoriales/verificar-visual.mjs --desde origin/main          los que afectados.mjs propone por el diff de código
 //   node scripts/tutoriales/verificar-visual.mjs --videos 01,32,80            esos videos
 //   … [--base http://patitasyco.localhost:3001] [--levantar] [--json salida.json] [--subir [--prod]] [--depurar]
@@ -52,9 +52,16 @@ const cd = conectar(false);
 async function elegirVideos() {
   if (val("--videos")) return val("--videos").split(",").map((s) => s.trim().padStart(2, "0"));
   if (flag("--marcados")) {
-    const { data, error } = await cd.cliente.from("tutoriales").select("numero, por_actualizar_motivo").not("por_actualizar_desde", "is", null).is("deleted_at", null).order("numero");
-    if (error) throw new Error(error.message);
-    return (data ?? []).map((x) => x.numero);
+    // Con --prod se juntan los marcados de desarrollo Y de producción (las marcas de cada base pueden diferir): un solo comando
+    // cubre los dos, y --aplicar desmarca o deja la marca en las dos.
+    const numeros = new Set();
+    for (const prod of flag("--prod") ? [false, true] : [false]) {
+      const c = prod ? conectar(true) : cd;
+      const { data, error } = await c.cliente.from("tutoriales").select("numero").not("por_actualizar_desde", "is", null).is("deleted_at", null).order("numero");
+      if (error) throw new Error(`${prod ? "producción" : "desarrollo"}: ${error.message}`);
+      for (const x of data ?? []) numeros.add(x.numero);
+    }
+    return [...numeros].sort();
   }
   if (val("--desde")) {
     const r = spawnSync(process.execPath, [path.join(AQUI, "afectados.mjs"), val("--desde"), "--json"], { encoding: "utf8" });
@@ -203,6 +210,7 @@ function esDeLaApp(texto) {
 // Una pantalla de UN registro (/caja/cobrar/<id>, /portal/perros/<id>) cambia de contenido con los datos del demo (otra cuenta, otro
 // perro): se le pide el doble de mancha para marcarla.
 const umbralesDe = (url) => (/[0-9a-f]{8}-[0-9a-f]{4}-/.test(url) ? { ...U, mancha: U.mancha * 2, fraccion: U.fraccion * 2 } : U);
+const doble = (u) => ({ ...u, mancha: u.mancha * 2, fraccion: u.fraccion * 2 });
 const dependeDeDatos = (x) => JSON.stringify(x, (k, y) => (typeof y === "function" ? "{fn}" : y)).includes("{");
 const slugRuta = (u) => (new URL(u, "http://x").pathname.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "") || "inicio").slice(0, 50);
 
@@ -216,15 +224,19 @@ async function recorrer(ctx, guion) {
   const notas = [];
   let sucio = false;
   const ausente = (escena, objetivo, page) => { if (esDeLaApp(String(objetivo))) ausentes.push({ escena, texto: String(objetivo), en: new URL(page.url()).pathname }); else notas.push(`«${objetivo}» no se encontró, pero depende de los datos del demo`); };
-  const tomar = async (escena, motivo) => {
+  // `paso`: índice del paso del guion tras el que se tomó (-1 = al abrir la pantalla de inicio de la escena 1). Sirve para buscar
+  // en el video el fotograma EQUIVALENTE (lo que se veía en ese momento), no uno de más adelante con el formulario ya lleno.
+  const tomar = async (escena, motivo, paso = -1) => {
     const png = await page.screenshot({ type: "png" });
-    pantallas.push({ escena, url: new URL(page.url()).pathname, motivo, png });
+    // Una lista larga (clientes, mascotas, reservas) cambia con los datos del demo: se le pide más mancha para marcarla.
+    const lista = await page.evaluate(() => document.querySelectorAll("main li, main tbody tr").length >= 10).catch(() => false);
+    pantallas.push({ escena, paso, lista, url: new URL(page.url()).pathname, motivo, png });
   };
-  const irA = async (ruta, escena, motivo) => {
+  const irA = async (ruta, escena, motivo, paso = -1) => {
     const r = await page.goto(BASE + ruta, { waitUntil: "load", timeout: 60000 }).catch((e) => ({ error: e }));
     if (!r || r.error || (r.status && r.status() >= 400) || /\/login|\/sin-acceso/.test(page.url())) { notas.push(`no abrió ${ruta} (${r?.status?.() ?? "error"}, ${new URL(page.url()).pathname})`); return false; }
     await asentar(page);
-    await tomar(escena, motivo);
+    await tomar(escena, motivo, paso);
     sucio = false;
     return true;
   };
@@ -233,12 +245,12 @@ async function recorrer(ctx, guion) {
   if (!abrio) { await page.close(); return { pantallas, ausentes, notas }; }
   let ruta = true;
   for (const [i, escena] of guion.escenas.entries()) {
-    for (const paso of escena.pasos ?? []) {
+    for (const [j, paso] of (escena.pasos ?? []).entries()) {
       const [verbo, objetivo] = paso;
       const opciones = typeof paso.at(-1) === "object" && !Array.isArray(paso.at(-1)) ? paso.at(-1) : {};
-      if (!ruta) { if (verbo === "ir" && typeof objetivo === "string" && !dependeDeDatos(objetivo)) ruta = await irA(objetivo, i + 1, "ir"); continue; }
+      if (!ruta) { if (verbo === "ir" && typeof objetivo === "string" && !dependeDeDatos(objetivo)) ruta = await irA(objetivo, i + 1, "ir", j); continue; }
       if (verbo === "ir") {
-        if (dependeDeDatos(objetivo)) { sucio = true; notas.push(`ir a una ruta con datos (${objetivo})`); } else ruta = await irA(objetivo, i + 1, "ir");
+        if (dependeDeDatos(objetivo)) { sucio = true; notas.push(`ir a una ruta con datos (${objetivo})`); } else ruta = await irA(objetivo, i + 1, "ir", j);
       } else if (verbo === "clic" || verbo === "marcar") {
         if (dependeDeDatos(objetivo)) { sucio = true; continue; }
         if (!sucio && !(await existe(page, objetivo))) { ausente(i + 1, objetivo, page); sucio = true; continue; }
@@ -250,7 +262,7 @@ async function recorrer(ctx, guion) {
           if (page.url() === antes) { notas.push(`«${objetivo}» no cambió de pantalla`); continue; }
           if (/\/login|\/sin-acceso/.test(page.url())) { notas.push(`«${objetivo}» llevó a ${new URL(page.url()).pathname}`); ruta = false; continue; }
           await asentar(page);
-          await tomar(i + 1, `clic «${objetivo}»`);
+          await tomar(i + 1, `clic «${objetivo}»`, j);
         } else sucio = true;
       } else if (["resaltar", "zoom", "desplazar", "mover"].includes(verbo)) {
         if (!sucio && !dependeDeDatos(objetivo) && !(await existe(page, objetivo))) ausente(i + 1, objetivo, page);
@@ -287,11 +299,28 @@ async function verificar(navegador, v, cookiesPorRol) {
     const hasta = tiempos.resumenIni ?? tiempos.escenas.at(-1).fin;
     const cuadros = fotogramasGris(master, { desde: 0, hasta });
     const n = tiempos.escenas.length;
+    // Momento (estimado, repartiendo la escena entre sus pasos) en que ocurre el paso j de la escena s del guion.
+    const MODIFICAN = new Set(["clic", "marcar", "escribir", "rellenar", "elegir", "subir", "tecla", "js", "ir"]);
+    const momento = (s, j) => { const e = tiempos.escenas[Math.min(s, n) - 1]; const np = (guion.escenas[s - 1]?.pasos ?? []).length; return j < 0 ? e.ini : e.ini + ((j + 1) / (np + 1)) * (e.fin - e.ini); };
+    /** Cuándo el guion toca por primera vez la pantalla después del paso (s, j): ahí deja de ser «la pantalla recién abierta». */
+    const siguienteToque = (s, j) => {
+      for (let es = s; es <= guion.escenas.length; es++) {
+        const pasos = guion.escenas[es - 1]?.pasos ?? [];
+        for (let q = es === s ? j + 1 : 0; q < pasos.length; q++) if (MODIFICAN.has(pasos[q][0])) return momento(es, q);
+      }
+      return null;
+    };
     for (const [k, p] of rec.pantallas.entries()) {
       const sig = rec.pantallas[k + 1];
       const ini = tiempos.escenas[Math.min(p.escena, n) - 1].ini;
       const fin = !sig ? tiempos.escenas[n - 1].fin : sig.escena === p.escena ? tiempos.escenas[p.escena - 1].fin : tiempos.escenas[sig.escena - 2].fin + 0.8;
-      const candidatos = cuadros.filter((c) => c.t >= ini - 0.2 && c.t <= fin + 0.2);
+      // Ventana de fotogramas equivalentes: desde que se abre la pantalla hasta el primer paso que la cambia (formulario que se llena,
+      // opción que se escoge). Sin ella se comparaba contra un fotograma de más adelante, con el formulario ya lleno.
+      const t0 = p.paso < 0 ? ini : momento(p.escena, p.paso);
+      const toque = siguienteToque(p.escena, p.paso);
+      const tope = Math.min(toque == null ? fin : toque + 1.2, fin);
+      let candidatos = cuadros.filter((c) => c.t >= t0 - 1.2 && c.t <= tope);
+      if (candidatos.length < 2) candidatos = cuadros.filter((c) => c.t >= ini - 0.2 && c.t <= fin + 0.2);
       if (!candidatos.length) { res.notas.push(`${p.url}: sin fotogramas entre ${ini.toFixed(1)} y ${fin.toFixed(1)} s`); continue; }
       const vivoGrueso = await grisDe(p.png, { w: 480, h: 270, z: true });
       // Los 8 fotogramas más parecidos a primera vista (a ≥ 1 s uno de otro) se comparan a fondo y gana el que menos difiere:
@@ -304,7 +333,7 @@ async function verificar(navegador, v, cookiesPorRol) {
       let mejor = null, cmp = null, grabadoPng = null;
       for (const c of elegidos) {
         const png = fotogramaPng(master, c.t);
-        const r = compararBloques(await grisDe(png), grisVivo, umbralesDe(p.url));
+        const r = compararBloques(await grisDe(png), grisVivo, p.lista ? doble(umbralesDe(p.url)) : umbralesDe(p.url));
         const peso = r.manchaMayor * 1000 + r.bloquesDistintos;
         if (!cmp || peso < cmp.peso) { cmp = { ...r, peso }; mejor = c; grabadoPng = png; }
       }
