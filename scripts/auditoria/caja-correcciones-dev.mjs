@@ -357,7 +357,7 @@ try {
   await dar(idRecepA, "agregar_efectivo");
   const rep9a = await reporteHoy();
   const res9 = neto(await resumen(turno.id), "efectivo");
-  for (const [m, o, nota, esperado] of [[0, "cambio", null, /mayor a cero/], [50, "xxx", null, /de dónde/], [50, "otro", "", /nota/]]) {
+  for (const [m, o, nota, esperado] of [[0, "cambio", null, /mayor a cero/], [50, "xxx", null, /motivo/], [50, "otro", "", /nota/]]) {
     const r = await recA.rpc("registrar_efectivo_agregado", { p_monto: m, p_origen: o, p_nota: nota });
     comprobar(r.error && esperado.test(r.error.message), `rechaza monto ${m} / origen ${o}`);
   }
@@ -369,6 +369,8 @@ try {
   comprobar(neto(await resumen(turno.id), "efectivo") === res9, "no es un cobro: el efectivo cobrado del turno no cambia");
   const movs9 = (await adminJ.rpc("movimientos_turno", { p_turno_id: turno.id })).data ?? [];
   comprobar(movs9.filter((m) => m.tipo === "ingreso_efectivo").length === 2 && movs9.find((m) => m.id === ef1.data)?.monto === 150, "aparece en Movimientos del turno como ingreso de efectivo");
+  const fila9 = movs9.find((m) => m.id === ef1.data);
+  comprobar(fila9?.descripcion === "Cambio de la caja de al lado" && fila9?.origen === "cambio", "N7: la nota va tal cual en la descripción y el motivo (cambio) viaja aparte, sin «Cambio — nota»");
   const rep9b = await reporteHoy();
   comprobar(Number(rep9b.efectivo_agregado) === Number(rep9a.efectivo_agregado) + 200, "el reporte lo muestra aparte (efectivo agregado, $200)");
   comprobar(Number(rep9b.ingreso_caja_neto) === Number(rep9a.ingreso_caja_neto) && Number(rep9b.ingreso_reconocido) === Number(rep9a.ingreso_reconocido), "…y NO es ingreso: ni el neto de caja ni el ingreso reconocido se mueven");

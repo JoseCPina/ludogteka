@@ -106,6 +106,8 @@ export type CamposCheckout = {
   recogidoPorEsDueno: boolean;
   // Las pertenencias que se entregan al dueño en esta salida (las que no vienen aquí quedan «sin entregar»).
   pertenenciasEntregadas?: string[];
+  // Obligatorio si queda alguna pertenencia sin entregar.
+  motivoSinEntrega?: string;
 };
 
 export async function confirmarCheckout(
@@ -117,6 +119,21 @@ export async function confirmarCheckout(
   }
 
   const supabase = await createSupabaseServerClient();
+  const entregadas = (campos.pertenenciasEntregadas ?? []).filter((id) => /^[0-9a-f-]{36}$/.test(id));
+
+  // Lo que no se entrega se confirma con un motivo, que queda registrado con quién cerró la salida.
+  const { data: registradas } = await supabase
+    .from("estancia_pertenencias")
+    .select("id")
+    .eq("estancia_id", estanciaId)
+    .is("deleted_at", null);
+  const sinEntregar = (registradas ?? []).filter((p) => !entregadas.includes(p.id as string)).length;
+  const motivoSinEntrega = (campos.motivoSinEntrega ?? "").trim();
+  if (sinEntregar > 0 && motivoSinEntrega.length < 3) {
+    return { error: "Hay pertenencias sin entregar: escribe el motivo para cerrar la salida." };
+  }
+  const { data: quien } = await supabase.auth.getUser();
+
   const { error } = await supabase
     .from("estancias")
     .update({
@@ -124,15 +141,16 @@ export async function confirmarCheckout(
       recogido_por_nombre: campos.recogidoPorNombre.trim(),
       recogido_por_telefono: campos.recogidoPorTelefono.trim() || null,
       recogido_por_es_dueno: campos.recogidoPorEsDueno,
+      pertenencias_sin_entrega_motivo: sinEntregar > 0 ? motivoSinEntrega : null,
+      pertenencias_sin_entrega_por: sinEntregar > 0 ? (quien.user?.id ?? null) : null,
     })
     .eq("id", estanciaId);
 
   if (error) return { error: traducirError(error) };
 
   // Lo entregado queda registrado: quién y cuándo.
-  const entregadas = (campos.pertenenciasEntregadas ?? []).filter((id) => /^[0-9a-f-]{36}$/.test(id));
   if (entregadas.length > 0) {
-    const { data: u } = await supabase.auth.getUser();
+    const u = quien;
     await supabase
       .from("estancia_pertenencias")
       .update({ devuelto: true, devuelto_at: new Date().toISOString(), devuelto_por: u.user?.id ?? null })

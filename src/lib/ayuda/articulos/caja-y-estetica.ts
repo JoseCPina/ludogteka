@@ -940,7 +940,7 @@ En el recibo del cobro junto hay **Anular el cobro junto completo** o **Anular s
 
 1. Con el turno abierto, aprieta **Agregar efectivo**.
 2. Escribe el **Monto**, escoge el **Motivo** (Cambio, Ingreso u Otro) y, si quieres, una nota: se guarda tal como la escribes.
-3. Guarda. El arqueo es a ciegas: el esperado no se muestra hasta cerrar el turno. Sale en **Efectivo agregado a este turno** y en **Movimientos del turno**.
+3. Guarda. El arqueo es a ciegas: el esperado no se muestra hasta cerrar el turno. Sale en **Efectivo agregado a este turno** y en **Movimientos de este turno**, donde el motivo va como etiqueta propia y la nota aparece debajo, tal cual.
 
 ## Cómo cuenta
 

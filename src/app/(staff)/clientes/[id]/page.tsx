@@ -312,8 +312,8 @@ export default async function EditarClientePage({
         <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
           <h2 className="text-lg font-bold text-n-900">Para guardería y hotel</h2>
           <p className="text-sm text-n-600">
-            Lo que le falta a cada perro para poder reservarle. Si el dueño está enfrente, captúralo
-            aquí; si no, mándale el link de abajo.
+            Lo que impide reservar (vacunas obligatorias y evaluación) se dice por separado de lo que solo se
+            recomienda tener en el expediente. Si el dueño está enfrente, captúralo aquí; si no, mándale el link de abajo.
           </p>
           {perrosVivos.map((p) => {
             const panel = (

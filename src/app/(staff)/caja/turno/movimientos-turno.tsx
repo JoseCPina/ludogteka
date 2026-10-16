@@ -41,6 +41,13 @@ const ETIQUETA_METODO: Record<string, string> = {
   transferencia: "Transferencia",
   tarjeta_manual: "Tarjeta manual (sin verificar)",
 };
+const MOTIVO_EFECTIVO: Record<string, string> = {
+  cambio: "Cambio",
+  ingreso: "Ingreso",
+  prestamo_caja: "Préstamo de otra caja",
+  aportacion_dueno: "Aportación del dueño",
+  otro: "Otro",
+};
 const ETIQUETA_ORIGEN: Record<string, string> = {
   manual: "a mano",
   mercadopago_point: "terminal Mercado Pago",
@@ -151,7 +158,11 @@ export function MovimientosTurno({
                   <td className="border-b border-n-200 px-3 py-2 max-sm:block max-sm:border-0 max-sm:px-0 max-sm:py-0.5 text-n-900">
                     {ETIQUETA_TIPO[m.tipo] ?? m.tipo}
                     {m.ajusteTipo && <span className="ml-2 rounded-full bg-ambar-suave px-2 py-0.5 text-xs font-semibold text-ambar-oscuro">{ETIQUETA_AJUSTE[m.ajusteTipo] ?? m.ajusteTipo}</span>}
-                    {m.origen !== "manual" && <span className="ml-2 rounded-full bg-morado-suave px-2 py-0.5 text-xs font-semibold text-morado">{ETIQUETA_ORIGEN[m.origen]}</span>}
+                    {m.tipo === "ingreso_efectivo" ? (
+                      <span className="ml-2 rounded-full bg-n-100 px-2 py-0.5 text-xs font-bold text-n-700" data-motivo-efectivo>{MOTIVO_EFECTIVO[m.origen] ?? m.origen}</span>
+                    ) : (
+                      m.origen !== "manual" && <span className="ml-2 rounded-full bg-morado-suave px-2 py-0.5 text-xs font-semibold text-morado">{ETIQUETA_ORIGEN[m.origen]}</span>
+                    )}
                     {m.grupoId && (
                       <Link href={`/caja/recibo-junto/${m.grupoId}`} className="ml-2 rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-700 hover:underline" data-movimiento-junto>
                         cobro junto
