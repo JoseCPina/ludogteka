@@ -30,8 +30,8 @@ if (error) throw error;
 const vencida = { ...s.session, expires_at: Math.floor(Date.now() / 1000) - 600, expires_in: 0 };
 const valor = "base64-" + Buffer.from(JSON.stringify(vencida)).toString("base64url");
 const trozos = valor.match(/.{1,3180}/g);
-const nombre = `sb-${REF}-auth-token`;
-const cookie = (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([k, v]) => `${k}=${v}`).join("; ");
+const galletas = (nombre) => (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t]));
+const cookie = [...galletas(`sb-${REF}-auth-token`), ...galletas(`sb-${REF}-portal-auth-token`)].map(([k, v]) => `${k}=${v}`).join("; ");
 
 let log = "";
 const srv = spawn("node", ["node_modules/next/dist/bin/next", "start", "-p", String(PUERTO)], { env: { ...process.env, PORT: String(PUERTO) } });

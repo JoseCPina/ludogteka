@@ -10,7 +10,6 @@ import { SECCIONES_PORTAL } from "@/lib/nav/config";
 export function PortalShell({
   marca,
   aviso,
-  identidad,
   nombreCompleto,
   children,
 }: {
@@ -18,11 +17,8 @@ export function PortalShell({
   // guardería, no a PeluDesk.
   marca: ReactNode;
   aviso?: ReactNode;
-  // Cómo se llama quien está viendo esto. NUNCA el correo con el que Auth
-  // lo conoce: desde que la cuenta se arma con el teléfono, ese correo es
-  // sintético (t4441234567@telefono.ludogteka.mx) y enseñárselo al dueño
-  // es mostrarle una dirección que no existe y que él nunca tecleó.
-  identidad: string;
+  // Cómo se llama quien está viendo esto (el nombre de su expediente). NUNCA el correo con el que Auth lo conoce ni su
+  // teléfono: si no hay nombre, la cabecera no saluda.
   nombreCompleto: string | null;
   children: ReactNode;
 }) {
@@ -36,7 +32,7 @@ export function PortalShell({
           <Link href="/portal" className="self-start rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado">
             {marca}
           </Link>
-          <p className="text-sm text-n-600">Hola, {nombreCompleto ?? identidad}</p>
+          {nombreCompleto && <p className="text-sm text-n-600" data-saludo-portal>Hola, {nombreCompleto}</p>}
         </div>
         <form action={cerrarSesion}>
           <Button type="submit" variante="secundario" className="min-h-11 px-4">

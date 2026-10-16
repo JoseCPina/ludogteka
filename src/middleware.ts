@@ -1,6 +1,7 @@
 import { getUserConReintento } from "@/lib/supabase/get-user";
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { ENCABEZADO_AREA, areaDeRuta, opcionesCookieSesion } from "@/lib/supabase/area";
 import { rutaPorRol } from "@/lib/auth/rutas";
 import { ENCABEZADOS_NEGOCIO, ENCABEZADO_PLATAFORMA, hostPorMudanza, resolverNegocio, type NegocioBasico } from "@/lib/negocio/resolver";
 import { ENCABEZADO_FIRMA, firmaValida, firmarNegocio, firmarPlataforma, plataformaFirmada } from "@/lib/negocio/firma";
@@ -195,6 +196,9 @@ export async function middleware(request: NextRequest) {
   cabeceras.set(ENCABEZADOS_NEGOCIO.icono, negocio.icono ?? "");
   cabeceras.set(ENCABEZADOS_NEGOCIO.imagen, negocio.imagen ?? "");
   cabeceras.set(ENCABEZADO_FIRMA, await firmarNegocio(negocio));
+  // Qué sesión corresponde a esta ruta (personal o portal): siempre la pone el middleware, nunca el navegador.
+  const areaSesion = areaDeRuta(pathname);
+  cabeceras.set(ENCABEZADO_AREA, areaSesion);
   const siguiente = () => NextResponse.next({ request: { headers: cabeceras } });
 
   if (RUTAS_PUBLICAS_EXACTAS.has(pathname)) return siguiente();
@@ -206,6 +210,7 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       global: { headers: { [ENCABEZADOS_NEGOCIO.id]: negocio.id } },
+      cookieOptions: opcionesCookieSesion(areaSesion),
       cookies: {
         getAll() {
           return request.cookies.getAll();

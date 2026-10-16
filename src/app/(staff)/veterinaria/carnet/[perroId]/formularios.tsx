@@ -77,7 +77,7 @@ export function FormularioVacuna({
       <ProductoYLote productos={productos} etiquetaProducto="Vacuna" nombreTexto="biologico" />
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Laboratorio (opcional)" name="laboratorio" />
-        <Field label="Dosis (opcional)" name="dosis" placeholder="1 mL" />
+        <Field label="Cantidad aplicada (opcional)" name="dosis" placeholder="1 mL" />
         <Field label="Fecha de aplicación" name="fecha" type="date" max={hoy} defaultValue={hoy} required />
         <Field label="Próxima dosis (opcional)" name="proxima" type="date" min={hoy} ayuda="Con esta fecha se programan los recordatorios." />
         <Select label="Médico veterinario que aplica" name="medico_id" defaultValue={medicoPropio ?? ""} required>
@@ -116,7 +116,7 @@ export function FormularioDesparasitacion({
           <option value="externa">Externa</option>
           <option value="ambas">Interna y externa</option>
         </Select>
-        <Field label="Dosis (opcional)" name="dosis" placeholder="1 tableta" />
+        <Field label="Cantidad aplicada (opcional)" name="dosis" placeholder="1 tableta" />
         <Field label="Fecha de aplicación" name="fecha" type="date" max={hoy} defaultValue={hoy} required />
         <Field label="Próxima dosis (opcional)" name="proxima" type="date" min={hoy} />
         <Select label="Médico veterinario (opcional)" name="medico_id" defaultValue={medicoPropio ?? ""}>

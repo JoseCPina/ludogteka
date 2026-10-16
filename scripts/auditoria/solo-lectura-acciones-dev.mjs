@@ -35,8 +35,9 @@ async function cookiesDe(email, host) {
   if (e2) throw e2;
   const valor = "base64-" + Buffer.from(JSON.stringify(s.session)).toString("base64url");
   const trozos = valor.match(/.{1,3180}/g);
-  const nombre = `sb-${REF}-auth-token`;
-  return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: host, path: "/" }));
+  // Dos cookies de sesión (personal y portal): el servidor lee la que le toca por la ruta.
+  const galletas = (nombre) => (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t]));
+  return [...galletas(`sb-${REF}-auth-token`), ...galletas(`sb-${REF}-portal-auth-token`)].map(([name, value]) => ({ name, value, domain: host, path: "/" }));
 }
 
 const SB = (neg) => createClient(URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: false }, global: { headers: { "x-negocio-id": neg } } });

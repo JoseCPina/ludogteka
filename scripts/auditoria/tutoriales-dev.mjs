@@ -42,8 +42,9 @@ async function cookiesDe(profileId, dominio = "huellitas.localhost") {
   if (error) throw error;
   const valor = "base64-" + Buffer.from(JSON.stringify(s.session)).toString("base64url");
   const trozos = valor.match(/.{1,3180}/g);
-  const nombre = `sb-${REF}-auth-token`;
-  return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: dominio, path: "/" }));
+  // Dos cookies de sesión (personal y portal): el servidor lee la que le toca por la ruta.
+  const galletas = (nombre) => (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t]));
+  return [...galletas(`sb-${REF}-auth-token`), ...galletas(`sb-${REF}-portal-auth-token`)].map(([name, value]) => ({ name, value, domain: dominio, path: "/" }));
 }
 const sinDesborde = async (pag, donde) => {
   const w = await pag.evaluate(() => document.documentElement.scrollWidth);

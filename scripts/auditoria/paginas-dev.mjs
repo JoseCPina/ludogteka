@@ -27,8 +27,8 @@ async function cookieDe(profileId) {
   const valor = "base64-" + Buffer.from(JSON.stringify(s.session)).toString("base64url");
   // @supabase/ssr parte la cookie en trozos de 3180.
   const trozos = valor.match(/.{1,3180}/g);
-  const nombre = `sb-${REF}-auth-token`;
-  return trozos.length === 1 ? `${nombre}=${valor}` : trozos.map((t, i) => `${nombre}.${i}=${t}`).join("; ");
+  const galletas = (nombre) => (trozos.length === 1 ? `${nombre}=${valor}` : trozos.map((t, i) => `${nombre}.${i}=${t}`).join("; "));
+  return `${galletas(`sb-${REF}-auth-token`)}; ${galletas(`sb-${REF}-portal-auth-token`)}`;
 }
 
 // Un negocio recién dado de alta no tiene clientes ni perros: esas dos

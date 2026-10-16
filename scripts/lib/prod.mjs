@@ -60,8 +60,9 @@ export async function sesionDe(profileId, dominioCookie = DOMINIO_CLINICA) {
   if (e2) throw e2;
   const valor = "base64-" + Buffer.from(JSON.stringify(s.session)).toString("base64url");
   const trozos = valor.match(/.{1,3180}/g);
-  const nombre = `sb-${REF_PROD}-auth-token`;
-  const cookies = (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({
+  const galletas = (nombre) => (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t]));
+  // Dos cookies de sesión (personal y portal): el servidor lee la que le toca por la ruta.
+  const cookies = [...galletas(`sb-${REF_PROD}-auth-token`), ...galletas(`sb-${REF_PROD}-portal-auth-token`)].map(([name, value]) => ({
     name, value, domain: dominioCookie, path: "/", secure: true, sameSite: "Lax",
   }));
   return { token: s.session.access_token, session: s.session, cookies };

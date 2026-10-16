@@ -28,7 +28,9 @@ export function CheckoutForm({
   pertenenciasIniciales: Pertenencia[];
 }) {
   const router = useRouter();
-  const [pertenencias, setPertenencias] = useState(pertenenciasIniciales);
+  // Lo normal es que todo regrese con el dueño: llegan marcadas como entregadas y se desmarca lo que no se entrega.
+  // Se guardan al confirmar la salida.
+  const [pertenencias, setPertenencias] = useState(() => pertenenciasIniciales.map((p) => ({ ...p, devuelto: true })));
   const [salidaActual, setSalidaActual] = useState(fechaSalida);
   const extendiendo = useEspera();
 
@@ -44,14 +46,8 @@ export function CheckoutForm({
 
   const pendientes = pertenencias.filter((p) => !p.devuelto);
 
-  async function toggle(p: Pertenencia) {
-    const nuevoValor = !p.devuelto;
-    setPertenencias((prev) => prev.map((x) => (x.id === p.id ? { ...x, devuelto: nuevoValor } : x)));
-    const res = await esperarConTope(() => alternarPertenencia(p.id, nuevoValor));
-    if (res.error) {
-      setPertenencias((prev) => prev.map((x) => (x.id === p.id ? { ...x, devuelto: !nuevoValor } : x)));
-      setError(res.error);
-    }
+  function toggle(p: Pertenencia) {
+    setPertenencias((prev) => prev.map((x) => (x.id === p.id ? { ...x, devuelto: !x.devuelto } : x)));
   }
 
   async function extenderEstancia() {
@@ -89,6 +85,7 @@ export function CheckoutForm({
       recogidoPorNombre: recogidoNombre,
       recogidoPorTelefono: recogidoTelefono,
       recogidoPorEsDueno: esDueno,
+      pertenenciasEntregadas: pertenencias.filter((p) => p.devuelto).map((p) => p.id),
     }));
     if (res.error) {
       setError(res.error);

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   fechaLocalDeInstante,
@@ -85,7 +86,10 @@ function Fila({ v, zona, enHistorial = false }: { v: Visita; zona: string; enHis
       <span className="flex min-w-0 flex-col">
         <span className={`font-semibold ${apagada ? "text-n-500 line-through" : "text-n-900"}`}>{cuando(v, zona)}</span>
         <span className="text-sm text-n-600">
-          {v.servicio_nombre} · {v.perro_nombre}
+          {v.servicio_nombre} ·{" "}
+          <Link href={`/portal/perros/${v.perro_id}`} className="font-semibold text-morado underline">
+            {v.perro_nombre}
+          </Link>
         </span>
       </span>
       {etiqueta && (

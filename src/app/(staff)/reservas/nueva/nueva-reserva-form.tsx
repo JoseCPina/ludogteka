@@ -24,6 +24,7 @@ import {
   crearReserva,
   agregarEstanciaAReserva,
   consultarSanitariosPendientes,
+  consultarChoqueReserva,
   type LineaReserva,
   type ResultadoLinea,
 } from "../reserva-actions";
@@ -66,6 +67,14 @@ function lineaAPayload(linea: Linea, servicios: Servicio[]): LineaReserva {
   };
 }
 
+const NOMBRES_DIA = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+
+// Día de la semana (0 = domingo) de una fecha AAAA-MM-DD, sin zona horaria.
+function diaDeFecha(fecha: string): number {
+  const [a, m, d] = fecha.split("-").map(Number);
+  return new Date(a, m - 1, d).getDay();
+}
+
 export function NuevaReservaForm({
   clientes,
   perros,
@@ -74,6 +83,7 @@ export function NuevaReservaForm({
   paquetes,
   esAdmin,
   hoy,
+  diasSinAtencion = [],
   base,
 }: {
   clientes: ClienteBuscable[];
@@ -85,6 +95,9 @@ export function NuevaReservaForm({
   paquetes: PaqueteDePerro[];
   esAdmin: boolean;
   hoy: string;
+  // Días de la semana (1 = lunes … 7 = domingo) en que el negocio no atiende,
+  // según horario_semana: el hotel no recibe ni entrega ese día.
+  diasSinAtencion?: number[];
   // Modulo desde el que se abrio el formulario ("/guarderia" u "/hotel"):
   // los enlaces de despues de guardar tienen que regresar al mismo lado,
   // no a un modulo que el usuario no eligio.
@@ -100,12 +113,35 @@ export function NuevaReservaForm({
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
   // Vacunas que le faltan a cada mascota marcada (se consultan al elegirla): se avisa antes de «Crear reserva».
   const [sanitarios, setSanitarios] = useState<Record<string, string[]>>({});
+  // Datos del expediente que se recomiendan para hotel y guardería (no bloquean).
+  const [recomendados, setRecomendados] = useState<Record<string, string[]>>({});
   function revisarSanitarios(perroId: string) {
     if (sanitarios[perroId] !== undefined) return;
     setSanitarios((prev) => ({ ...prev, [perroId]: [] }));
     void conTope(consultarSanitariosPendientes(perroId))
-      .then((r) => setSanitarios((prev) => ({ ...prev, [perroId]: r.faltan })))
+      .then((r) => {
+        setSanitarios((prev) => ({ ...prev, [perroId]: r.faltan }));
+        setRecomendados((prev) => ({ ...prev, [perroId]: r.recomendados }));
+      })
       .catch(() => setSanitarios((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => k !== perroId))));
+  }
+
+  // N10: con qué reserva (hotel o guardería) choca cada mascota marcada. La clave lleva las fechas, así que al
+  // cambiarlas o cambiar el servicio se vuelve a preguntar; «null» = no choca (o todavía no se sabe).
+  const [choques, setChoques] = useState<Record<string, string | null>>({});
+  const claveChoque = (l: Linea) => {
+    const p = lineaAPayload(l, servicios);
+    return `${l.perroId}|${p.fechaEntrada}|${p.fechaSalida}`;
+  };
+  function revisarChoque(l: Linea) {
+    const p = lineaAPayload(l, servicios);
+    if (!p.fechaEntrada || !p.fechaSalida || p.fechaSalida <= p.fechaEntrada) return;
+    const k = claveChoque(l);
+    if (choques[k] !== undefined) return;
+    setChoques((prev) => ({ ...prev, [k]: null }));
+    void conTope(consultarChoqueReserva(l.perroId, p.fechaEntrada, p.fechaSalida))
+      .then((r) => setChoques((prev) => ({ ...prev, [k]: r.mensaje })))
+      .catch(() => setChoques((prev) => Object.fromEntries(Object.entries(prev).filter(([x]) => x !== k))));
   }
 
   const clienteElegido = clientes.find((c) => c.id === clienteId) ?? null;
@@ -131,7 +167,14 @@ export function NuevaReservaForm({
   }
 
   function alternarPerro(perro: Perro) {
-    if (!lineas.some((l) => l.perroId === perro.id)) revisarSanitarios(perro.id);
+    if (!lineas.some((l) => l.perroId === perro.id)) {
+      revisarSanitarios(perro.id);
+      const primero = primerCotizable(servicios);
+      revisarChoque({
+        perroId: perro.id, perroNombre: perro.nombre, servicioId: primero?.id ?? "", fechaEntrada: hoy, fechaSalida: sumarDiasFecha(hoy, 1), horas: "1",
+        bloqueoSanitarioSuperado: false, motivoExcepcionSanitaria: "", bloqueoComportamientoSuperado: false, motivoExcepcionComportamiento: "", usarPase: true,
+      });
+    }
     setLineas((prev) => {
       const existe = prev.some((l) => l.perroId === perro.id);
       if (existe) return prev.filter((l) => l.perroId !== perro.id);
@@ -167,7 +210,24 @@ export function NuevaReservaForm({
     (l) => (sanitarios[l.perroId]?.length ?? 0) > 0 && !(l.bloqueoSanitarioSuperado && l.motivoExcepcionSanitaria.trim())
   );
 
+  // Mascotas cuyas fechas chocan con otra reserva suya: no se puede crear hasta cambiar fechas o quitarla.
+  const conChoque = lineas.some((l) => Boolean(choques[claveChoque(l)]));
+
+  // Días sin atención (horario_semana): el hotel no recibe ni entrega perros y guardería no abre.
+  const isoDe = (fecha: string) => (diaDeFecha(fecha) === 0 ? 7 : diaDeFecha(fecha));
+  const sinAtencion = (fecha: string) => Boolean(fecha) && diasSinAtencion.includes(isoDe(fecha));
+  const reglaDias =
+    diasSinAtencion.length > 0
+      ? `El negocio no atiende los ${diasSinAtencion.map((d) => NOMBRES_DIA[d % 7]).join(" ni los ")}: ese día no hay entradas ni entregas.`
+      : undefined;
+  const conDiaCerrado = lineas.some((l) => {
+    const sv = servicios.find((x) => x.id === l.servicioId);
+    return sinAtencion(l.fechaEntrada) || (sv?.categoria === "hotel" && sinAtencion(l.fechaSalida));
+  });
+
   function actualizarLinea(perroId: string, cambios: Partial<Linea>) {
+    const actual = lineas.find((l) => l.perroId === perroId);
+    if (actual && ("fechaEntrada" in cambios || "fechaSalida" in cambios || "servicioId" in cambios)) revisarChoque({ ...actual, ...cambios });
     setLineas((prev) => prev.map((l) => (l.perroId === perroId ? { ...l, ...cambios } : l)));
   }
 
@@ -427,6 +487,24 @@ export function NuevaReservaForm({
                   </div>
                 )}
 
+                {linea && (recomendados[perro.id]?.length ?? 0) > 0 && (
+                  <p className="mt-3 rounded-md bg-n-50 px-3 py-2 text-sm text-n-700" data-datos-recomendados>
+                    Recomendado para hotel y guardería: a {perro.nombre} le faltan {recomendados[perro.id].join(", ")}. No impide reservar.{" "}
+                    <Link href={`/perros/${perro.id}`} className="font-semibold text-morado hover:underline">
+                      Completarlos en su expediente →
+                    </Link>
+                  </p>
+                )}
+
+                {linea && choques[claveChoque(linea)] && (
+                  <div className="mt-3 rounded-md border border-coral bg-coral-suave p-3 text-sm text-coral-oscuro" role="alert" data-choque-reserva>
+                    <p className="font-semibold">
+                      <TextoConEnlaces texto={choques[claveChoque(linea)] as string} />
+                    </p>
+                    <p className="mt-1">Cambia las fechas o quita esta mascota para poder crear la reserva.</p>
+                  </div>
+                )}
+
                 {linea && (sanitarios[perro.id]?.length ?? 0) > 0 && (
                   <div className="mt-3 rounded-md border border-ambar bg-ambar-suave p-3 text-sm text-ambar-oscuro" role="alert" data-sanitarios-pendientes>
                     <p className="font-semibold">A {perro.nombre} le falta: {sanitarios[perro.id].join(", ")}.</p>
@@ -482,6 +560,8 @@ export function NuevaReservaForm({
                       label={esGuarderia ? "Fecha" : "Entrada"}
                       type="date"
                       value={linea.fechaEntrada}
+                      error={sinAtencion(linea.fechaEntrada) ? (esGuarderia ? "Guardería" : "El hotel") + ` no ${esGuarderia ? "abre" : "recibe perros"} los ${NOMBRES_DIA[diaDeFecha(linea.fechaEntrada)]}. Elige otro día.` : undefined}
+                      ayuda={reglaDias}
                       onChange={(e) => {
                         // El hotel se cobra por noche: si la entrada alcanza a la
                         // salida, la salida se recorre a la mañana siguiente. Con
@@ -513,6 +593,8 @@ export function NuevaReservaForm({
                         type="date"
                         value={linea.fechaSalida}
                         min={linea.fechaEntrada ? sumarDiasFecha(linea.fechaEntrada, 1) : undefined}
+                        error={sinAtencion(linea.fechaSalida) ? `El hotel no entrega perros los ${NOMBRES_DIA[diaDeFecha(linea.fechaSalida)]}. Elige otro día de salida.` : undefined}
+                        ayuda={reglaDias}
                         onChange={(e) => actualizarLinea(perro.id, { fechaSalida: e.target.value })}
                       />
                     )}
@@ -549,12 +631,15 @@ export function NuevaReservaForm({
 
       <Button
         type="button"
-        disabled={lineas.length === 0 || enviando.cargando || sinEvaluacionPendiente || sinVacunasPendiente}
+        disabled={lineas.length === 0 || enviando.cargando || sinEvaluacionPendiente || sinVacunasPendiente || conChoque || conDiaCerrado}
         onClick={enviar}
         className="self-start"
       >
         {enviando.cargando ? "Guardando…" : "Crear reserva"}
       </Button>
+      {conChoque && (
+        <p className="text-sm text-coral-oscuro">Hay mascotas que ya tienen otra reserva en esas fechas: cambia las fechas o quítalas para continuar.</p>
+      )}
       {sinVacunasPendiente && (
         <p className="text-sm text-ambar-oscuro">Hay mascotas con vacunas pendientes: regístralas en su expediente o, si tienes permiso, autoriza la excepción con su motivo.</p>
       )}

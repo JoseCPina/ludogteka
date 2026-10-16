@@ -939,8 +939,8 @@ En el recibo del cobro junto hay **Anular el cobro junto completo** o **Anular s
 ## Cómo
 
 1. Con el turno abierto, aprieta **Agregar efectivo**.
-2. Escribe el **Monto**, escoge **De dónde viene** (cambio, préstamo de otra caja, aportación del dueño u otro) y una nota.
-3. Guarda. Sale en **Efectivo agregado a este turno** y en **Movimientos del turno**.
+2. Escribe el **Monto**, escoge el **Motivo** (Cambio, Ingreso u Otro) y, si quieres, una nota: se guarda tal como la escribes.
+3. Guarda. El arqueo es a ciegas: el esperado no se muestra hasta cerrar el turno. Sale en **Efectivo agregado a este turno** y en **Movimientos del turno**.
 
 ## Cómo cuenta
 

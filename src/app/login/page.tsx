@@ -12,14 +12,16 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (user) {
-    const { data: rol } = await supabase.rpc("current_rol");
-    if (rol && rol !== "anonimo") redirect(rutaPorRol(rol as string));
+  // Hay dos sesiones posibles en este navegador (personal y portal): con cualquiera activa no se muestra el login.
+  for (const area of ["personal", "portal"] as const) {
+    const supabase = await createSupabaseServerClient(area);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      const { data: rol } = await supabase.rpc("current_rol");
+      if (rol && rol !== "anonimo") redirect(rutaPorRol(rol as string));
+    }
   }
 
   // El teléfono de recepción se lee con la secret key: esta pantalla es

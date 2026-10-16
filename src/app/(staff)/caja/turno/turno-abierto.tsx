@@ -42,10 +42,14 @@ export type EfectivoAgregado = {
 
 const ETIQUETA_ORIGEN_EFECTIVO: Record<string, string> = {
   cambio: "Cambio",
+  ingreso: "Ingreso",
   prestamo_caja: "Préstamo de otra caja",
   aportacion_dueno: "Aportación del dueño",
   otro: "Otro",
 };
+
+// Lo que se ofrece al agregar efectivo; los demás motivos solo se muestran en lo ya registrado.
+const MOTIVOS_EFECTIVO = ["cambio", "ingreso", "otro"] as const;
 
 const ETIQUETA_METODO: Record<string, string> = {
   efectivo: "Efectivo",
@@ -346,14 +350,14 @@ export function TurnoAbierto({
               <Field label="Monto" type="number" min="0" step="0.01" value={montoEfectivo} onChange={(e) => setMontoEfectivo(e.target.value)} />
             </div>
             <div className="w-56">
-              <Select label="De dónde viene" value={origenEfectivo} onChange={(e) => setOrigenEfectivo(e.target.value)}>
-                {Object.entries(ETIQUETA_ORIGEN_EFECTIVO).map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
+              <Select label="Motivo" value={origenEfectivo} onChange={(e) => setOrigenEfectivo(e.target.value)}>
+                {MOTIVOS_EFECTIVO.map((k) => (
+                  <option key={k} value={k}>{ETIQUETA_ORIGEN_EFECTIVO[k]}</option>
                 ))}
               </Select>
             </div>
             <div className="min-w-[240px] flex-1">
-              <Field label={origenEfectivo === "otro" ? "Nota (obligatoria)" : "Nota (opcional)"} value={notaEfectivo} onChange={(e) => setNotaEfectivo(e.target.value)} placeholder="ej. Cambio de la caja de al lado" />
+              <Field label={origenEfectivo === "otro" ? "Nota (obligatoria)" : "Nota (opcional)"} value={notaEfectivo} onChange={(e) => setNotaEfectivo(e.target.value)} placeholder="ej. Billetes chicos para el cambio" />
             </div>
             <Button type="button" cargando={guardandoEfectivo.cargando} onClick={enviarEfectivo}>
               {guardandoEfectivo.cargando ? "Guardando…" : "Confirmar efectivo agregado"}
@@ -376,7 +380,9 @@ export function TurnoAbierto({
                 <li key={r.id} data-ingreso={r.cancelado ? "cancelado" : "vivo"} className={`flex flex-col gap-2 rounded-md border border-n-200 bg-white px-3 py-2 text-sm ${r.cancelado ? "opacity-70" : ""}`}>
                   <div className="flex justify-between gap-3">
                     <span className={`text-n-700 ${r.cancelado ? "line-through" : ""}`}>
-                      {ETIQUETA_ORIGEN_EFECTIVO[r.origen] ?? r.origen}{r.nota ? ` — ${r.nota}` : ""} — {r.creadoPorNombre} · {formatearFecha(r.creadoEn, zona)}
+                      <span className="mr-2 rounded-full bg-n-100 px-2 py-0.5 text-xs font-bold text-n-700" data-motivo-efectivo>{ETIQUETA_ORIGEN_EFECTIVO[r.origen] ?? r.origen}</span>
+                      {r.nota ? <span data-nota-efectivo>{r.nota}</span> : null}
+                      <span className="block text-xs text-n-500">{r.creadoPorNombre} · {formatearFecha(r.creadoEn, zona)}</span>
                     </span>
                     <span className={`font-semibold ${r.cancelado ? "text-n-400 line-through" : "text-n-900"}`}>{dinero(r.monto)}</span>
                   </div>

@@ -51,8 +51,9 @@ async function cookiesDe(profileId) {
   if (error) throw error;
   const valor = "base64-" + Buffer.from(JSON.stringify(ses.session)).toString("base64url");
   const trozos = valor.match(/.{1,3180}/g);
-  const nombre = `sb-${REF}-auth-token`;
-  return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: "huellitas.localhost", path: "/" }));
+  // Dos cookies de sesión (personal y portal): el servidor lee la que le toca por la ruta.
+  const galletas = (nombre) => (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t]));
+  return [...galletas(`sb-${REF}-auth-token`), ...galletas(`sb-${REF}-portal-auth-token`)].map(([name, value]) => ({ name, value, domain: "huellitas.localhost", path: "/" }));
 }
 const dimensionesPng = (buf) => (buf.length > 24 && buf.toString("latin1", 1, 4) === "PNG" ? { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) } : null);
 

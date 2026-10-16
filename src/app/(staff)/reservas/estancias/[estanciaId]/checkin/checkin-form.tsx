@@ -27,11 +27,14 @@ export function CheckinForm({
   perroId,
   clienteId,
   pertenenciasIniciales,
+  declaradas,
 }: {
   estanciaId: string;
   perroId: string;
   clienteId: string;
   pertenenciasIniciales: Pertenencia[];
+  // Lo que la reserva ya traía declarado (texto libre de la estancia), si algo.
+  declaradas: string | null;
 }) {
   const router = useRouter();
   const inputFotoRef = useRef<HTMLInputElement>(null);
@@ -137,6 +140,10 @@ export function CheckinForm({
       {registrado && (
         <Alert variante="exito" titulo="Check-in registrado">
           La estancia ya está en curso. Cuando el perro salga, haz el check-out desde su estancia.
+          <span className="mt-2 block font-semibold" data-pertenencias-recibidas>
+            Pertenencias recibidas:{" "}
+            {pertenencias.length > 0 || declaradas ? [...(declaradas ? [declaradas] : []), ...pertenencias.map((p) => p.descripcion)].join(", ") : "ninguna"}.
+          </span>
         </Alert>
       )}
       <AvisoBorrador estado={borrador} />
@@ -200,8 +207,13 @@ export function CheckinForm({
         <p className="text-sm font-semibold text-n-800">
           Pertenencias que llegan con el perro
         </p>
+        {declaradas && (
+          <p className="text-sm text-n-700">
+            Ya declaradas en la reserva: <strong>{declaradas}</strong>. Agrega aquí lo que lleguen de más.
+          </p>
+        )}
         {pertenencias.length === 0 ? (
-          <p className="text-sm text-n-500">Nada capturado todavía.</p>
+          <p className="text-sm text-n-500">{declaradas ? "Nada más capturado todavía." : "Nada capturado todavía."}</p>
         ) : (
           <ul className="flex flex-wrap gap-2">
             {pertenencias.map((p) => (

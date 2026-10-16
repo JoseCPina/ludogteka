@@ -95,7 +95,11 @@ export function PendientesEstancia({
 
   return (
     <div className="flex flex-col gap-4 rounded-lg border-[1.5px] border-ambar bg-ambar-suave/40 p-4">
-      <p className="font-bold text-n-900">Para guardería y hotel, a {perroNombre} le falta:</p>
+      {bloquean.length + condiciones.length + contratos.length > 0 ? (
+        <p className="font-bold text-n-900">Para guardería y hotel, a {perroNombre} le falta:</p>
+      ) : (
+        <p className="font-bold text-n-900" data-recomendado-hotel>Recomendado para hotel y guardería</p>
+      )}
 
       {(bloquean.length > 0 || condiciones.length > 0) && (
         <div>
@@ -118,8 +122,11 @@ export function PendientesEstancia({
 
       {expediente.length > 0 && (
         <div>
-          <p className="text-sm font-bold text-n-800">Datos del expediente que pide guardería y hotel</p>
-          <p className="mt-1 text-n-900">{expediente.map((p) => p.etiqueta).join(", ")}.</p>
+          {bloquean.length + condiciones.length + contratos.length > 0 && (
+            <p className="text-sm font-bold text-n-800">Recomendado para hotel y guardería</p>
+          )}
+          <p className="mt-1 text-n-900">A {perroNombre} le faltan: {expediente.map((p) => p.etiqueta).join(", ")}.</p>
+          <p className="mt-1 text-xs text-n-600">Son datos que conviene tener a la mano en la estancia. No impiden reservar.</p>
         </div>
       )}
 
@@ -223,7 +230,7 @@ function FormularioCaptura({
       )}
       {pide("fecha_nacimiento") && (
         <Field
-          label="Fecha de nacimiento"
+          label="Fecha de nacimiento (recomendado)"
           name="fecha_nacimiento"
           type="date"
           disabled={enviando}
@@ -232,7 +239,7 @@ function FormularioCaptura({
       )}
       {pide("alimentacion_notas") && (
         <Textarea
-          label="Alimentación"
+          label="Alimentación (recomendado)"
           name="alimentacion_notas"
           disabled={enviando}
           placeholder="Qué come, cuánto y a qué horas. Si trae su propia comida."
@@ -241,23 +248,23 @@ function FormularioCaptura({
       {(pide("contacto_emergencia_nombre") || pide("contacto_emergencia_telefono")) && (
         <div className="grid gap-4 sm:grid-cols-2">
           {pide("contacto_emergencia_nombre") && (
-            <Field label="Contacto de emergencia" name="contacto_emergencia_nombre" disabled={enviando} />
+            <Field label="Contacto de emergencia (recomendado)" name="contacto_emergencia_nombre" disabled={enviando} />
           )}
           {pide("contacto_emergencia_telefono") && (
-            <Field label="Teléfono de emergencia" name="contacto_emergencia_telefono" inputMode="tel" disabled={enviando} />
+            <Field label="Teléfono de emergencia (recomendado)" name="contacto_emergencia_telefono" inputMode="tel" disabled={enviando} />
           )}
         </div>
       )}
       {(pide("veterinario_nombre") || pide("veterinario_telefono")) && (
         <div className="grid gap-4 sm:grid-cols-2">
-          {pide("veterinario_nombre") && <Field label="Veterinario" name="veterinario_nombre" disabled={enviando} />}
+          {pide("veterinario_nombre") && <Field label="Veterinario (recomendado)" name="veterinario_nombre" disabled={enviando} />}
           {pide("veterinario_telefono") && (
-            <Field label="Teléfono del veterinario" name="veterinario_telefono" inputMode="tel" disabled={enviando} />
+            <Field label="Teléfono del veterinario (recomendado)" name="veterinario_telefono" inputMode="tel" disabled={enviando} />
           )}
         </div>
       )}
       {pide("veterinario_clinica") && (
-        <Field label="Clínica del veterinario" name="veterinario_clinica" disabled={enviando} />
+        <Field label="Clínica del veterinario (recomendado)" name="veterinario_clinica" disabled={enviando} />
       )}
 
       <AccionesFormulario error={estado.error} exito={estado.ok && "Guardado"}>

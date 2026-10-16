@@ -7,6 +7,7 @@ import { armarClientesBuscables } from "@/lib/clientes/buscables";
 import { hoyNegocio } from "@/lib/formato";
 import type { ModuloEstancia } from "@/lib/modulos";
 import { cargarServiciosOfrecibles } from "@/lib/servicios/ofrecibles";
+import { diasSinGuarderia } from "@/lib/horario";
 import { NuevaReservaForm } from "../nueva/nueva-reserva-form";
 import { cargarPaquetesDePerros } from "@/lib/bonos/cargar-paquetes";
 import { zonaActual } from "@/lib/negocio/actual";
@@ -34,6 +35,7 @@ export async function PaginaNuevaReserva({
 
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
   const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
+  const diasSinAtencion = await diasSinGuarderia(supabase, hoy);
 
   const [
     { data: clientes, error: errorClientes },
@@ -98,6 +100,7 @@ export async function PaginaNuevaReserva({
           paquetes={paquetes}
           esAdmin={tienePermiso(sesion, "excepciones_reserva")}
           hoy={hoy}
+          diasSinAtencion={diasSinAtencion}
           base={modulo.base}
         />
       )}

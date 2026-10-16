@@ -1,5 +1,6 @@
 "use client";
 
+import { Desplegable } from "@/components/desplegable";
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useEspera } from "@/hooks/use-espera";
@@ -273,11 +274,10 @@ export function CargosConsulta({
       )}
 
       {borrador && puedeAgregar && aplicarVacuna && (
-        <details data-aplicar-vacuna className="rounded-md border border-dashed border-n-300 p-3">
-          <summary className="cursor-pointer text-sm font-semibold text-morado">Aplicar vacuna</summary>
-          <p className="mb-3 mt-2 text-xs text-n-600">Queda en el carnet de la mascota con su lote y su fecha, y se cobra con esta consulta. Una vacuna no se agrega como «otro procedimiento».</p>
+        <Desplegable titulo="Aplicar vacuna" atributos={{ "data-aplicar-vacuna": "" }} className="rounded-md border border-dashed border-n-300 p-3">
+          <p className="mb-3 text-xs text-n-600">Queda en el carnet de la mascota con su lote y su fecha, y se cobra con esta consulta. Una vacuna no se agrega como «otro procedimiento».</p>
           {aplicarVacuna}
-        </details>
+        </Desplegable>
       )}
 
       {borrador && puedeAgregar && (

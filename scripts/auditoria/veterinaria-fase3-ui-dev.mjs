@@ -41,8 +41,9 @@ async function cookiesDe(profileId) {
   if (error) throw error;
   const valor = "base64-" + Buffer.from(JSON.stringify(s.session)).toString("base64url");
   const trozos = valor.match(/.{1,3180}/g);
-  const nombre = `sb-${REF}-auth-token`;
-  return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: "huellitas.localhost", path: "/" }));
+  // Dos cookies de sesión (personal y portal): el servidor lee la que le toca por la ruta.
+  const galletas = (nombre) => (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t]));
+  return [...galletas(`sb-${REF}-auth-token`), ...galletas(`sb-${REF}-portal-auth-token`)].map(([name, value]) => ({ name, value, domain: "huellitas.localhost", path: "/" }));
 }
 const comoPersona = async (id) => createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${await tokenDe(id)}`, "x-negocio-id": B } } });
 const sinDesborde = async (pag, donde) => {
@@ -155,6 +156,13 @@ try {
   await new Promise((r) => setTimeout(r, 2500));
   const g2 = (await SB.from("vet_consultas").select("diagnosticos, plan").eq("id", consultaId).single()).data;
   comprobar(g2.diagnosticos?.[0]?.nombre === "Gastroenteritis aguda" && g2.diagnosticos[0].tipo === "definitivo" && g2.plan === "Dieta blanda 3 días", "el diagnóstico del catálogo (definitivo) y el plan también");
+  // Sin precio de catálogo una consulta no se firma: la consulta general lleva precio.
+  {
+    const sv = (await SB.from("servicios").select("id").eq("negocio_id", B).eq("clave", "vet_consulta_general").is("deleted_at", null).single()).data;
+    await SB.from("tarifas").update({ deleted_at: new Date().toISOString() }).eq("servicio_id", sv.id).is("deleted_at", null);
+    await SB.from("tarifas").insert({ negocio_id: B, servicio_id: sv.id, precio: 450, no_aplica: false, cantidad_desde: 1, cantidad_hasta: null, vigencia_desde: "2026-01-01" });
+    await mvz.p.reload({ waitUntil: "networkidle" });
+  }
   // Firmar.
   await mvz.p.getByRole("button", { name: "Firmar la consulta" }).click();
   await mvz.p.getByText(/Firmada por/).first().waitFor({ timeout: 20000 }).catch(() => {});

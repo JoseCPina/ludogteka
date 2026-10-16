@@ -27,6 +27,7 @@ export async function cookiesDe(c, rol, dominio, anon) {
   if (error) throw new Error(`verifyOtp ${rol}: ${error.message}`);
   const valor = "base64-" + Buffer.from(JSON.stringify(s.session)).toString("base64url");
   const trozos = valor.match(/.{1,3180}/g);
-  const nombre = `sb-${c.ref}-auth-token`;
-  return (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t])).map(([name, value]) => ({ name, value, domain: dominio, path: "/" }));
+  // Dos cookies de sesión (personal y portal): el servidor lee la que le toca por la ruta.
+  const galletas = (nombre) => (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t]));
+  return [...galletas(`sb-${c.ref}-auth-token`), ...galletas(`sb-${c.ref}-portal-auth-token`)].map(([name, value]) => ({ name, value, domain: dominio, path: "/" }));
 }

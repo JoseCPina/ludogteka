@@ -1,4 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
+import { areaDeRuta, opcionesCookieSesion } from "@/lib/supabase/area";
 
 // Para llamadas desde el navegador que necesitan la sesión real del
 // usuario (p. ej. subir un archivo a Storage respetando RLS). Comparte
@@ -10,6 +11,10 @@ export function createSupabaseBrowserClient() {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { global: { headers: negocioId ? { "x-negocio-id": negocioId } : {} } }
+    {
+      global: { headers: negocioId ? { "x-negocio-id": negocioId } : {} },
+      // La sesión del portal y la del personal viven en cookies distintas: la de este navegador sale de la ruta.
+      cookieOptions: opcionesCookieSesion(typeof location !== "undefined" ? areaDeRuta(location.pathname) : "personal"),
+    }
   );
 }

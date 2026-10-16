@@ -5,6 +5,7 @@ import { revalidarModulosEstancia } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
 import { mensajeTraslapeDeEstancia } from "@/lib/reservas/traslape-detalle";
+import { mensajeTraslapeConDetalle, type EstanciaQueChoca } from "@/lib/reservas/traslape";
 import { describirDevolucion } from "@/lib/bonos/descripcion";
 
 export type LineaReserva = {
@@ -290,12 +291,32 @@ export async function cancelarReserva(reservaId: string): Promise<ResultadoCance
 // Lo que le falta a una mascota para reservar guardería u hotel y la base rechazaría (vacunas vencidas o sin
 // registro): se consulta al elegirla, para avisar antes de «Crear reserva». Mismas reglas que
 // pendientes_para_estancia(), que a su vez replica el trigger de estancias.
-export async function consultarSanitariosPendientes(perroId: string): Promise<{ error: string | null; faltan: string[] }> {
+export async function consultarSanitariosPendientes(
+  perroId: string
+): Promise<{ error: string | null; faltan: string[]; recomendados: string[] }> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("pendientes_para_estancia", { p_perro_ids: [perroId] });
-  if (error) return { error: "No pudimos revisar las vacunas de esta mascota.", faltan: [] };
-  const faltan = ((data ?? []) as { clave: string; etiqueta: string }[])
-    .filter((f) => f.clave.startsWith("sanitario:"))
-    .map((f) => f.etiqueta);
-  return { error: null, faltan };
+  if (error) return { error: "No pudimos revisar las vacunas de esta mascota.", faltan: [], recomendados: [] };
+  const filas = (data ?? []) as { clave: string; etiqueta: string }[];
+  const faltan = filas.filter((f) => f.clave.startsWith("sanitario:")).map((f) => f.etiqueta);
+  // N8: los datos del expediente (nacimiento, alimentación, contacto de emergencia, veterinario…) se recomiendan para
+  // hotel y guardería, pero no impiden reservar.
+  const recomendados = filas.filter((f) => f.clave.startsWith("campo:")).map((f) => f.etiqueta);
+  return { error: null, faltan, recomendados };
+}
+
+// N10: ¿la mascota ya tiene una reserva (hotel O guardería) que se traslapa con estas fechas? Se consulta al elegirla
+// y al cambiar fechas o servicio, para avisar antes de «Crear reserva». Es la misma comprobación que hace la base al
+// guardar (un perro no puede estar en dos estancias a la vez, sea del mismo módulo o del otro).
+export async function consultarChoqueReserva(
+  perroId: string,
+  entrada: string,
+  salida: string
+): Promise<{ error: string | null; mensaje: string | null }> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(entrada) || !/^\d{4}-\d{2}-\d{2}$/.test(salida) || salida <= entrada) return { error: null, mensaje: null };
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("estancia_que_choca", { p_perro: perroId, p_entrada: entrada, p_salida: salida, p_excluir: null });
+  if (error) return { error: "No pudimos revisar las reservas de esta mascota.", mensaje: null };
+  if (!data) return { error: null, mensaje: null };
+  return { error: null, mensaje: mensajeTraslapeConDetalle(data as EstanciaQueChoca) };
 }
