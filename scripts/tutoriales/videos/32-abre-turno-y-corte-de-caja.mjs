@@ -1,5 +1,14 @@
 // 32 · Turno y corte de caja (recepción)
 export default {
+  // El turno abierto del demo lo abre la cuenta del visitante y recepción solo cierra el turno que abrió: se le pasa la apertura
+  // a la cuenta gemela del corredor (la misma persona), como si lo hubiera abierto ella.
+  async preparar({ sb, negocioId }) {
+    const { data } = await sb.auth.admin.listUsers({ perPage: 1000 });
+    const gemela = data.users.find((u) => u.email === "tutoriales.recepcion@peludesk.mx");
+    if (!gemela) throw new Error("No hay cuenta gemela de recepción (scripts/demo/cuentas-corredor.mjs).");
+    const { error } = await sb.from("turnos_caja").update({ abierto_por: gemela.id }).eq("negocio_id", negocioId).eq("estado", "abierto");
+    if (error) throw new Error(`No pude pasar el turno abierto a la cuenta del corredor: ${error.message}`);
+  },
   inicio: "/caja",
   gancho: "Al final del día, el dinero que debe haber en la caja tiene que coincidir con lo que hay. El turno de caja y el corte te lo dicen en un minuto.",
   escenas: [
