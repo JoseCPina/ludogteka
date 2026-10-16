@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatearFecha } from "@/lib/formato";
+import { formatearFecha, formatearHoraNegocio } from "@/lib/formato";
 import { dinero } from "@/lib/dinero";
 
 export type MovimientoTurno = {
@@ -145,7 +145,9 @@ export function MovimientosTurno({
             <tbody className="max-sm:block">
               {movimientos.map((m) => (
                 <tr key={`${m.tipo}-${m.id}`} data-movimiento-ajuste={m.ajusteTipo ?? undefined} className={`max-sm:block max-sm:border-b max-sm:border-n-200 max-sm:px-3 max-sm:py-2 ${m.ajusteTipo === "original_anulado" ? "opacity-60" : ""}`}>
-                  <td className="border-b border-n-200 px-3 py-2 max-sm:flex max-sm:justify-between max-sm:gap-3 max-sm:border-0 max-sm:px-0 max-sm:py-0.5 tabular-nums text-n-600">{formatearFecha(m.fecha, zona)}</td>
+                  <td className="border-b border-n-200 px-3 py-2 max-sm:flex max-sm:justify-between max-sm:gap-3 max-sm:border-0 max-sm:px-0 max-sm:py-0.5 tabular-nums text-n-600"><span data-hora-movimiento>{formatearHoraNegocio(m.fecha, zona)}</span>
+                  <span className="ml-2 text-xs text-n-500 sm:ml-0 sm:block">{formatearFecha(m.fecha, zona)}</span>
+                </td>
                   <td className="border-b border-n-200 px-3 py-2 max-sm:block max-sm:border-0 max-sm:px-0 max-sm:py-0.5 text-n-900">
                     {ETIQUETA_TIPO[m.tipo] ?? m.tipo}
                     {m.ajusteTipo && <span className="ml-2 rounded-full bg-ambar-suave px-2 py-0.5 text-xs font-semibold text-ambar-oscuro">{ETIQUETA_AJUSTE[m.ajusteTipo] ?? m.ajusteTipo}</span>}

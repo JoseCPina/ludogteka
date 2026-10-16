@@ -38,7 +38,8 @@ export async function crearRequisitoAplicado(
     .select("id")
     .single();
 
-  if (error) return { error: "No pudimos guardar el registro. Intenta de nuevo." };
+  // 23505: ya hay uno del mismo tipo y fecha (el mensaje de la base dice qué hacer).
+  if (error) return { error: error.code === "23505" ? error.message : "No pudimos guardar el registro. Intenta de nuevo." };
 
   revalidatePath(`/perros/${perroId}`);
   return { error: null, id: data.id };
@@ -76,4 +77,37 @@ export async function obtenerUrlComprobante(requisitoAplicadoId: string): Promis
     .createSignedUrl(registro.comprobante_path, 60 * 60);
 
   return error ? null : data.signedUrl;
+}
+
+export async function corregirRequisitoAplicado(
+  perroId: string,
+  id: string,
+  datos: { fechaAplicacion: string; detalle: string; notas: string; motivo: string }
+): Promise<{ error: string | null }> {
+  if (!datos.fechaAplicacion) return { error: "Escribe la fecha de aplicación." };
+  if (datos.motivo.trim().length < 5) return { error: "Escribe el motivo de la corrección." };
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("corregir_requisito_aplicado", {
+    p_id: id,
+    p_fecha: datos.fechaAplicacion,
+    p_detalle: datos.detalle,
+    p_notas: datos.notas,
+    p_motivo: datos.motivo,
+  });
+  if (error) return { error: error.message };
+  revalidatePath(`/perros/${perroId}`);
+  return { error: null };
+}
+
+export async function anularRequisitoAplicado(
+  perroId: string,
+  id: string,
+  motivo: string
+): Promise<{ error: string | null }> {
+  if (motivo.trim().length < 5) return { error: "Escribe el motivo de la anulación." };
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("anular_requisito_aplicado", { p_id: id, p_motivo: motivo });
+  if (error) return { error: error.message };
+  revalidatePath(`/perros/${perroId}`);
+  return { error: null };
 }

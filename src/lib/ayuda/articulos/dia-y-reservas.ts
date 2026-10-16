@@ -126,7 +126,9 @@ Si tienes guardería u hotel prendidos, el link de guardería y hotel trae el pa
     cuerpo: `El expediente del perro es donde se guarda todo lo que necesitas saber antes de recibirlo. Se abre tocando al perro en la ficha de su dueño.
 
 1. Arriba están sus datos: raza, tamaño, alimentación, contacto de emergencia y veterinario. Cambia lo que haga falta y toca **Guardar cambios**.
-2. En **Requisitos sanitarios** escoge el **Tipo de requisito** y la **Fecha de aplicación**. Si tienes la foto del carnet, toca **Elegir foto**. Termina con **Registrar aplicación**.
+2. En **Requisitos sanitarios** escoge el **Tipo de requisito** y la **Fecha de aplicación**. Si tienes la foto del carnet, toca **Elegir foto**. Termina con **Registrar aplicación**. El registro aparece de inmediato en la tabla de abajo.
+   - Si ya hay uno del mismo tipo y la misma fecha, la pantalla avisa y no lo duplica.
+   - ¿Te equivocaste? En la tabla, **Corregir** cambia la fecha, el detalle o las notas (queda guardado lo que decía antes) y **Anular con motivo** lo marca como anulado sin borrarlo. Es de admin o de quien tenga «Registrar vacunas y desparasitaciones».
 3. En **Requisitos para guardería y hotel**, toca **Marcar evaluación hecha** cuando ya evaluaste su comportamiento. Si es hembra, marca **En celo** o **Gestante** cuando aplique.
 4. En **Alertas de manejo** escoge la alerta en **Registrar alerta**, agrega notas y toca **Registrar alerta**.
 5. En **Alergias** y **Peso** se registra cada cosa con su botón.
@@ -271,7 +273,7 @@ En **Series recurrentes** toca **Nueva serie**, escoge el perro, el servicio y l
 
 ## Si algo no sale
 
-- «Falta … vigente de …» (vacunas vencidas o sin registro): registra la vacuna en su expediente. Un admin, o quien tenga el permiso «Excepciones al reservar», ve ahí mismo, bajo el aviso, la casilla **Autorizar excepción**; la marca, escribe el motivo y toca **Reintentar con excepción**.
+- «Falta … vigente de …» (vacunas vencidas o sin registro): el aviso sale en cuanto marcas a la mascota, con su enlace al expediente, y **Crear reserva** se queda apagado mientras falte algo. Registra la vacuna en su expediente. Un admin, o quien tenga el permiso «Excepciones al reservar», ve ahí mismo, bajo el aviso, la casilla **Autorizar excepción**; la marca, escribe el motivo y toca **Reintentar con excepción**.
 - «Este perro no tiene evaluación previa de comportamiento.»: el aviso sale en cuanto eliges a la mascota, con un enlace para completar la evaluación en su expediente. Un admin (o quien tenga el permiso de excepciones) puede reservar sin ella marcando la excepción ahí mismo y escribiendo el motivo.
 - «No hay cupo disponible (diurno) para el …»: ese día ya está lleno.
 - «Guardería no abre en …»: escoge un día con horario.

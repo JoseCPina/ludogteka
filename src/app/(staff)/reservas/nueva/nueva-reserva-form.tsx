@@ -23,6 +23,7 @@ import { formatearDiasSemana } from "../series/dias-semana";
 import {
   crearReserva,
   agregarEstanciaAReserva,
+  consultarSanitariosPendientes,
   type LineaReserva,
   type ResultadoLinea,
 } from "../reserva-actions";
@@ -97,6 +98,15 @@ export function NuevaReservaForm({
   const enviando = useEspera();
   const [reintentando, setReintentando] = useState<Record<string, boolean>>({});
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
+  // Vacunas que le faltan a cada mascota marcada (se consultan al elegirla): se avisa antes de «Crear reserva».
+  const [sanitarios, setSanitarios] = useState<Record<string, string[]>>({});
+  function revisarSanitarios(perroId: string) {
+    if (sanitarios[perroId] !== undefined) return;
+    setSanitarios((prev) => ({ ...prev, [perroId]: [] }));
+    void conTope(consultarSanitariosPendientes(perroId))
+      .then((r) => setSanitarios((prev) => ({ ...prev, [perroId]: r.faltan })))
+      .catch(() => setSanitarios((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => k !== perroId))));
+  }
 
   const clienteElegido = clientes.find((c) => c.id === clienteId) ?? null;
   const perrosDelCliente = useMemo(
@@ -121,6 +131,7 @@ export function NuevaReservaForm({
   }
 
   function alternarPerro(perro: Perro) {
+    if (!lineas.some((l) => l.perroId === perro.id)) revisarSanitarios(perro.id);
     setLineas((prev) => {
       const existe = prev.some((l) => l.perroId === perro.id);
       if (existe) return prev.filter((l) => l.perroId !== perro.id);
@@ -151,6 +162,10 @@ export function NuevaReservaForm({
     const p = perros.find((x) => x.id === l.perroId);
     return p && !p.evaluado && !(l.bloqueoComportamientoSuperado && l.motivoExcepcionComportamiento.trim());
   });
+  // Lo mismo con las vacunas: sin excepción (con motivo) no se puede crear la reserva.
+  const sinVacunasPendiente = lineas.some(
+    (l) => (sanitarios[l.perroId]?.length ?? 0) > 0 && !(l.bloqueoSanitarioSuperado && l.motivoExcepcionSanitaria.trim())
+  );
 
   function actualizarLinea(perroId: string, cambios: Partial<Linea>) {
     setLineas((prev) => prev.map((l) => (l.perroId === perroId ? { ...l, ...cambios } : l)));
@@ -412,6 +427,38 @@ export function NuevaReservaForm({
                   </div>
                 )}
 
+                {linea && (sanitarios[perro.id]?.length ?? 0) > 0 && (
+                  <div className="mt-3 rounded-md border border-ambar bg-ambar-suave p-3 text-sm text-ambar-oscuro" role="alert" data-sanitarios-pendientes>
+                    <p className="font-semibold">A {perro.nombre} le falta: {sanitarios[perro.id].join(", ")}.</p>
+                    <p className="mt-1">
+                      Sin eso no se puede reservar guardería ni hotel.{" "}
+                      <Link href={`/perros/${perro.id}#sanitarios`} className="font-semibold text-morado hover:underline">
+                        Registrar las vacunas en su expediente →
+                      </Link>
+                    </p>
+                    {esAdmin && (
+                      <div className="mt-3 flex flex-col gap-2 border-t border-ambar pt-3">
+                        <label className="flex items-center gap-2 font-semibold">
+                          <input
+                            type="checkbox"
+                            checked={linea.bloqueoSanitarioSuperado}
+                            onChange={(e) => actualizarLinea(perro.id, { bloqueoSanitarioSuperado: e.target.checked })}
+                          />
+                          Reservar sin las vacunas (excepción de admin o con permiso)
+                        </label>
+                        {linea.bloqueoSanitarioSuperado && (
+                          <Field
+                            label="Motivo de la excepción"
+                            value={linea.motivoExcepcionSanitaria}
+                            onChange={(e) => actualizarLinea(perro.id, { motivoExcepcionSanitaria: e.target.value })}
+                            placeholder="ej. Dueño ya en el mostrador, autoriza admin"
+                          />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {seriesDelPerro.length > 0 && (
                   <p className="mt-2 rounded-md bg-morado-suave px-3 py-2 text-sm text-morado">
                     Ya tiene serie recurrente:{" "}
@@ -502,12 +549,15 @@ export function NuevaReservaForm({
 
       <Button
         type="button"
-        disabled={lineas.length === 0 || enviando.cargando || sinEvaluacionPendiente}
+        disabled={lineas.length === 0 || enviando.cargando || sinEvaluacionPendiente || sinVacunasPendiente}
         onClick={enviar}
         className="self-start"
       >
         {enviando.cargando ? "Guardando…" : "Crear reserva"}
       </Button>
+      {sinVacunasPendiente && (
+        <p className="text-sm text-ambar-oscuro">Hay mascotas con vacunas pendientes: regístralas en su expediente o, si tienes permiso, autoriza la excepción con su motivo.</p>
+      )}
       {sinEvaluacionPendiente && (
         <p className="text-sm text-ambar-oscuro">Hay mascotas sin evaluación de comportamiento: complétala o, si tienes permiso, autoriza la excepción con su motivo.</p>
       )}

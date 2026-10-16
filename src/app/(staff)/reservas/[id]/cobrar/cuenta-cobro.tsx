@@ -199,7 +199,13 @@ export function CuentaCobro({
   const [refrescando, iniciarRefresco] = useTransition();
   const [aplicadoPendiente, setAplicadoPendiente] = useState(0);
   // `aplicado` = lo que un cobro acaba de abonar; cualquier otro refresco lo deja en 0 (no reusa el de un cobro anterior).
-  const refrescar = (aplicado = 0) => { setAplicadoPendiente(aplicado); iniciarRefresco(() => router.refresh()); };
+  // `cobroNuevo` = el cobro recién registrado: se lista de inmediato (provisional) mientras llega el del servidor.
+  const [cobroNuevo, setCobroNuevo] = useState<{ metodos: { metodo: string; monto: number; propina: number }[]; creadoEn: string } | null>(null);
+  const refrescar = (aplicado = 0, cobro: { metodos: { metodo: string; monto: number; propina: number }[] } | null = null) => {
+    setAplicadoPendiente(aplicado);
+    setCobroNuevo(cobro ? { ...cobro, creadoEn: new Date().toISOString() } : null);
+    iniciarRefresco(() => router.refresh());
+  };
   const totales: Totales = refrescando && aplicadoPendiente > 0
     ? {
         ...totalesServidor,
@@ -435,7 +441,7 @@ export function CuentaCobro({
     setNotasCobro("");
     setMetodos([NuevaFilaMetodo()]);
     setMontoTocado(false);
-    refrescar(abonado);
+    refrescar(abonado, { metodos: payload.map((m) => ({ metodo: m.metodo, monto: m.monto, propina: m.propina })) });
   }
 
   async function enviarDevolucion() {
@@ -763,16 +769,6 @@ export function CuentaCobro({
         )}
       </div>
 
-      <CobroIntegrado
-        reservaId={reservaId}
-        saldo={totales.saldo}
-        turnoAbierto={turnoAbierto}
-        disponible={mp.disponible}
-        ordenes={mp.ordenes}
-        clienteTelefono={mp.clienteTelefono}
-        esAdmin={esAdmin}
-      />
-
       {!turnoAbierto ? (
         <div className="rounded-lg border-[1.5px] border-ambar bg-ambar-suave p-4">
           <p className="font-bold text-ambar-oscuro">No hay turno de caja abierto</p>
@@ -903,12 +899,37 @@ export function CuentaCobro({
         </div>
       )}
 
+      {/* «Registrar cobro» (efectivo y métodos manuales) es la acción principal; la terminal va abajo como secundaria. */}
+      <CobroIntegrado
+        reservaId={reservaId}
+        saldo={totales.saldo}
+        turnoAbierto={turnoAbierto}
+        disponible={mp.disponible}
+        ordenes={mp.ordenes}
+        clienteTelefono={mp.clienteTelefono}
+        esAdmin={esAdmin}
+      />
+
       <div className="flex flex-col gap-3">
         <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Cobros de esta reserva</h2>
-        {cobrosIniciales.length === 0 ? (
+        {cobrosIniciales.length === 0 && !(refrescando && cobroNuevo) ? (
           <p className="text-sm text-n-500">Todavía no hay ningún cobro.</p>
         ) : (
           <ul className="flex flex-col gap-3">
+            {refrescando && cobroNuevo && (
+              <li data-cobro-provisional className="rounded-lg border border-n-200 bg-white p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-semibold text-n-900">
+                    {dinero(cobroNuevo.metodos.reduce((s, m) => s + m.monto, 0))}
+                    {cobroNuevo.metodos.some((m) => m.propina > 0) ? ` + ${dinero(cobroNuevo.metodos.reduce((s, m) => s + m.propina, 0))} propina` : ""}
+                  </p>
+                  <p className="text-xs text-n-500">{formatearFecha(cobroNuevo.creadoEn, zona)} · Actualizando…</p>
+                </div>
+                <p className="mt-1 text-sm text-n-600">
+                  {cobroNuevo.metodos.map((m) => `${ETIQUETA_METODO[m.metodo] ?? m.metodo}: ${dinero(m.monto)}`).join(" · ")}
+                </p>
+              </li>
+            )}
             {cobrosIniciales.map((c) => {
               const devolucionesDeEste = devoluciones.filter((d) => d.cobroId === c.id);
               const totalCobro = c.metodos.reduce((sum, m) => sum + m.monto, 0);
