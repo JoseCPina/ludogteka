@@ -1,4 +1,4 @@
-import { formatearFechaCalendario } from "@/lib/formato";
+import { formatearDiaDeInstante, formatearFechaCalendario } from "@/lib/formato";
 import type { EstadoRequisitoItem } from "@/app/(staff)/perros/resumen-sanitario";
 import { ProponerComprobante } from "./proponer-comprobante";
 
@@ -39,8 +39,10 @@ export function RecordatorioSanitario({
   tipos = [],
   aplica = true,
   servicios = [],
+  zona,
 }: {
   items: EstadoRequisitoItem[];
+  zona: string;
   perroId: string;
   // Solo el dueño principal manda comprobantes; un acceso compartido solo lee.
   puedeProponer: boolean;
@@ -93,7 +95,7 @@ export function RecordatorioSanitario({
               <p>{mensaje(item)}</p>
               {enRevision && (
                 <p className="mt-1 rounded-md bg-white/70 px-2 py-1 font-semibold">
-                  Nos mandaste el comprobante el {formatearFechaCalendario(propuesta.created_at.slice(0, 10))} (aplicación
+                  Nos mandaste el comprobante el {formatearDiaDeInstante(propuesta.created_at, zona)} (aplicación
                   del {formatearFechaCalendario(propuesta.fecha_aplicacion)}). Recepción lo está revisando; en cuanto lo
                   confirme contra el documento, queda registrado.
                 </p>

@@ -1,3 +1,4 @@
+import { formatearDiaDeInstante } from "@/lib/formato";
 import Link from "next/link";
 import { exigirPlataforma } from "@/lib/plataforma/sesion";
 import { Field } from "@/components/ui/field";
@@ -97,7 +98,7 @@ export default async function TutorialesPlataforma() {
                 </p>
                 {f.por_actualizar_desde && (
                   <p className="text-sm text-ambar-oscuro">
-                    Por actualizar desde {f.por_actualizar_desde.slice(0, 10)}: {f.por_actualizar_motivo}
+                    Por actualizar desde {formatearDiaDeInstante(f.por_actualizar_desde, "America/Mexico_City")}: {f.por_actualizar_motivo}
                   </p>
                 )}
                 {p?.error && <p className="text-sm text-coral-oscuro">Error en {p.fase_error ?? "?"} (intento {p.intentos}): {p.error}</p>}

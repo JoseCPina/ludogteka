@@ -79,5 +79,6 @@ export default async function ExtrasPage({ searchParams }: { searchParams: Promi
 function shiftDia(fecha: string, dias: number): string {
   const d = new Date(`${fecha}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + dias);
+  // utc-ok: aritmética de calendario sobre una fecha AAAA-MM-DD, sin instante
   return d.toISOString().slice(0, 10);
 }

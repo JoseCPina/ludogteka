@@ -5,7 +5,7 @@ import { Alert } from "@/components/ui/alert";
 import { Field } from "@/components/ui/field";
 import { BotonImprimirPagina } from "@/components/boton-imprimir";
 import { FormularioAccion } from "@/components/formulario-accion";
-import { formatearFechaCalendario, hoyNegocio, unidadSegunCantidad } from "@/lib/formato";
+import { formatearDiaDeInstante, formatearFechaCalendario, hoyNegocio, unidadSegunCantidad } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { nombreMes, type ReporteSitpv } from "@/lib/veterinaria/recetas";
 import { marcarReporte } from "../../actions";
@@ -19,7 +19,8 @@ export default async function ReporteMensual({ searchParams }: { searchParams: P
   const valido = medico && /^[0-9a-f-]{36}$/.test(medico) && periodo && /^\d{4}-\d{2}-\d{2}$/.test(periodo);
   const { data, error } = valido && puede ? await supabase.rpc("vet_sitpv_reporte", { p_medico: medico, p_periodo: periodo }) : { data: null, error: null };
   const r = data as ReporteSitpv | null;
-  const mesActual = `${hoyNegocio(await zonaActual()).slice(0, 8)}01`; // el mes del negocio, no el UTC del servidor
+  const zonaNegocio = await zonaActual();
+  const mesActual = `${hoyNegocio(zonaNegocio).slice(0, 8)}01`; // el mes del negocio, no el UTC del servidor
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
@@ -36,7 +37,7 @@ export default async function ReporteMensual({ searchParams }: { searchParams: P
             <h1 className="text-2xl font-bold text-n-900">Reporte mensual del SITPV · {nombreMes(r.periodo)}</h1>
             <p className="text-n-700">{r.medico} · cédula {r.cedula} · CPA {r.cpa ?? "sin capturar"}</p>
             {r.reportado ? (
-              <p className="mt-2 rounded-md bg-menta-suave px-3 py-2 text-menta-oscuro">Reportado en el SITPV el {formatearFechaCalendario(r.reportado.at.slice(0, 10))}{r.reportado.por ? ` por ${r.reportado.por}` : ""}{r.reportado.nota ? ` · ${r.reportado.nota}` : ""}.</p>
+              <p className="mt-2 rounded-md bg-menta-suave px-3 py-2 text-menta-oscuro">Reportado en el SITPV el {formatearDiaDeInstante(r.reportado.at, zonaNegocio)}{r.reportado.por ? ` por ${r.reportado.por}` : ""}{r.reportado.nota ? ` · ${r.reportado.nota}` : ""}.</p>
             ) : r.periodo >= mesActual ? (
               <p className="mt-2 rounded-md bg-n-100 px-3 py-2 text-n-700">Este mes todavía no termina: se reporta cuando acaba.</p>
             ) : (

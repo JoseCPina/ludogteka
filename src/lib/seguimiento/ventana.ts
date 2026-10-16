@@ -47,6 +47,7 @@ export function fechaLimiteWeb(creadoAt: Date, zona: string): string {
 
 export type EnviosPrevios = Partial<Record<EtapaSeguimiento, { estado: string; intentos: number; reintentable: boolean; updated_at: string; ultimo_intento_at?: string }>>;
 
+// utc-ok: aritmética de calendario sobre una fecha AAAA-MM-DD, sin instante
 const deDias = (n: number) => new Date(n * 86_400_000).toISOString().slice(0, 10);
 const esDomingo = (fecha: string) => new Date(`${fecha}T12:00:00Z`).getUTCDay() === 0;
 

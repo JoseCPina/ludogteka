@@ -21,6 +21,13 @@ export function formatearFecha(iso: string, zona: ZonaHoraria): string {
   }).format(new Date(iso));
 }
 
+// Día del NEGOCIO de un instante (timestamptz), con el mismo formato que
+// formatearFechaCalendario. Es el que se usa para fichas, recibos y
+// listas que muestran cuándo pasó algo.
+export function formatearDiaDeInstante(iso: string, zona: ZonaHoraria): string {
+  return formatearFecha(iso, zona);
+}
+
 // Para columnas `date` (calendario, sin hora ni huso horario) — a
 // diferencia de un timestamptz, "2026-07-28" no es un instante. new
 // Date("2026-07-28") lo interpreta como medianoche UTC, y en un huso
@@ -28,6 +35,16 @@ export function formatearFecha(iso: string, zona: ZonaHoraria): string {
 // Aquí se arma la fecha con año/mes/día locales para que el calendario
 // nunca se corra.
 export function formatearFechaCalendario(fechaISO: string): string {
+  // Un timestamp con hora es un instante, no un día: tomar sus 10
+  // primeros caracteres da el día UTC (B20: una cita de las 18:30
+  // aparecía al día siguiente). Para eso es formatearDiaDeInstante.
+  if (process.env.NODE_ENV !== "production" && fechaISO.length > 10) {
+    console.error(
+      "formatearFechaCalendario recibió un instante con hora (" +
+        fechaISO +
+        "): usa formatearDiaDeInstante(iso, zona)"
+    );
+  }
   const [anio, mes, dia] = fechaISO.slice(0, 10).split("-").map(Number);
   return new Intl.DateTimeFormat("es-MX", {
     day: "numeric",

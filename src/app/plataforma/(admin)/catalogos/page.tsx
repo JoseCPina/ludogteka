@@ -1,3 +1,4 @@
+import { formatearDiaDeInstante } from "@/lib/formato";
 import { exigirPlataforma } from "@/lib/plataforma/sesion";
 import { FormularioPlataforma } from "@/components/plataforma/formulario-plataforma";
 import { Field } from "@/components/ui/field";
@@ -20,6 +21,8 @@ const CATALOGOS: { tabla: string; titulo: string }[] = [
 // Lo que comparten TODOS los negocios. Solo la administración de PeluDesk
 // lo escribe (lo exige la base): un cambio aquí lo ven todos. El grupo de
 // precio de cada raza no está aquí: es de cada negocio.
+const ZONA_PLATAFORMA = "America/Mexico_City"; // la plataforma no es de un negocio
+
 export default async function Catalogos() {
   const { supabase } = await exigirPlataforma();
   const { data: razas } = await supabase.from("razas").select("id, nombre, alias, es_desconocida, tamano_tipico_id, pelaje_tipico_id").is("deleted_at", null).order("nombre");
@@ -57,7 +60,7 @@ export default async function Catalogos() {
           {propuestas.map((p) => (
             <li key={p.id} className="rounded-lg border border-n-200 bg-white p-4">
               <p className="font-bold text-n-900">
-                {p.nombre} <span className="font-normal text-n-600">· {p.negocio_nombre} · {p.perros} perro(s) · {new Date(p.creada_at).toLocaleDateString("es-MX")}</span>
+                {p.nombre} <span className="font-normal text-n-600">· {p.negocio_nombre} · {p.perros} perro(s) · {formatearDiaDeInstante(p.creada_at, ZONA_PLATAFORMA)}</span>
               </p>
               <p className="text-sm text-n-600">
                 {p.variantes.length ? `Variantes: ${p.variantes.join(", ")}. ` : ""}

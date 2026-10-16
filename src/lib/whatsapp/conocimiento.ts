@@ -182,4 +182,7 @@ Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado.
 - Los avisos de error de un formulario que piden un dato (falta un nombre, hay que escoger algo) llevan el título «Falta información», no el genérico «No se pudo guardar».
 - Al agendar una cita de estética o de la agenda clínica, la hora ya viene propuesta: la siguiente hora en punto de hoy que no ha pasado, o la primera de mañana si hoy ya no hay.
 - Al firmar una consulta con un cargo sin precio, quien puede editar precios ve «Guardar como precio de catálogo» ya marcado cuando el catálogo no tiene precio para ese servicio.
+- Si una mascota ya tiene otra reserva que choca, el aviso dice con cuál (mascota, módulo, fechas y estado) y lleva al calendario de ese día. Una visita de guardería u hotel ya finalizada no impide reservar otra el mismo día. El panel de un día del calendario muestra todas las reservas de ese día, también finalizadas y canceladas, con su estado.
+- Si faltan vacunas al reservar guardería u hotel, el aviso dice cuáles faltan; un admin, o quien tenga el permiso «Excepciones al reservar», ve ahí mismo la casilla para autorizar la excepción con motivo.
+- Las fechas y horas se muestran siempre en la zona horaria del negocio: una cita de las 6:30 p.m. aparece en su día, no en el siguiente.
 `.trim();

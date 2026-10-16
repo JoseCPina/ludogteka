@@ -12,6 +12,7 @@ function fechaLocal(iso: string, zona: string): string {
 
 function masDias(fecha: string, n: number): string {
   const [a, m, d] = fecha.split("-").map(Number);
+  // utc-ok: aritmética de calendario sobre una fecha AAAA-MM-DD, sin instante
   return new Date(Date.UTC(a, m - 1, d + n)).toISOString().slice(0, 10);
 }
 

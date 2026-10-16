@@ -5,3 +5,36 @@ export function mensajeTraslape(fecha?: string | null): string {
   const dia = fecha && /^\d{4}-\d{2}-\d{2}$/.test(fecha) ? `?dia=${fecha}` : "";
   return `Este perro ya tiene una reserva en fechas que se traslapan con estas. Revisa qué hay ese día en /reservas/calendario${dia}`;
 }
+
+// B21: el mensaje dice CON QUÉ reserva choca (mascota, módulo, fechas y
+// estado) y lleva al día correcto. `estancia_que_choca` lo trae de la base.
+export type EstanciaQueChoca = {
+  estancia_id: string;
+  perro: string;
+  modulo: string;
+  servicio: string;
+  entrada: string;
+  salida: string;
+  estado: string;
+  dia: string;
+};
+
+const ESTADO_TEXTO: Record<string, string> = {
+  reservada: "reservada",
+  confirmada: "confirmada",
+  en_curso: "en curso",
+};
+
+function fechaCorta(iso: string): string {
+  const [a, m, d] = iso.split("-").map(Number);
+  return new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "short", year: "numeric" }).format(new Date(a, m - 1, d));
+}
+
+export function mensajeTraslapeConDetalle(c: EstanciaQueChoca): string {
+  const modulo = c.modulo === "hotel" ? "hotel" : "guardería";
+  const rango = c.modulo === "hotel" && c.salida !== c.entrada
+    ? `del ${fechaCorta(c.entrada)} al ${fechaCorta(c.salida)}`
+    : `el ${fechaCorta(c.entrada)}`;
+  const estado = ESTADO_TEXTO[c.estado] ?? c.estado;
+  return `${c.perro} ya tiene una reserva de ${modulo} ${rango} (${estado}) que se traslapa con estas fechas. Revisa qué hay ese día en /reservas/calendario?dia=${c.dia}`;
+}
