@@ -286,3 +286,16 @@ export async function cancelarReserva(reservaId: string): Promise<ResultadoCance
   revalidatePath(`/reservas/${reservaId}`);
   return { error: null, canceladas, noCancelables, avisos };
 }
+
+// Lo que le falta a una mascota para reservar guardería u hotel y la base rechazaría (vacunas vencidas o sin
+// registro): se consulta al elegirla, para avisar antes de «Crear reserva». Mismas reglas que
+// pendientes_para_estancia(), que a su vez replica el trigger de estancias.
+export async function consultarSanitariosPendientes(perroId: string): Promise<{ error: string | null; faltan: string[] }> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("pendientes_para_estancia", { p_perro_ids: [perroId] });
+  if (error) return { error: "No pudimos revisar las vacunas de esta mascota.", faltan: [] };
+  const faltan = ((data ?? []) as { clave: string; etiqueta: string }[])
+    .filter((f) => f.clave.startsWith("sanitario:"))
+    .map((f) => f.etiqueta);
+  return { error: null, faltan };
+}

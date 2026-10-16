@@ -184,7 +184,7 @@ Las **desparasitaciones** se registran igual con **Registrar desparasitación** 
 
 ## Si te equivocaste
 
-Un registro **no se edita ni se borra**: aprieta **Anular**, escribe el motivo y captúralo de nuevo. El anulado queda en «Registros anulados» con tu nombre y el motivo. Lo que se descontó del lote no regresa solo: se corrige en el [inventario clínico](/veterinaria/inventario).
+Una vacuna o desparasitación del mismo producto y la misma fecha no se puede registrar dos veces. Un registro **no se edita ni se borra**: aprieta **Anular**, escribe el motivo y captúralo de nuevo. El anulado queda en «Registros anulados» con tu nombre y el motivo. Lo que se descontó del lote no regresa solo: se corrige en el [inventario clínico](/veterinaria/inventario).
 
 ## Imprimir el carnet
 

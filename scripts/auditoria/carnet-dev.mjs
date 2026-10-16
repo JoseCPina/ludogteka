@@ -90,7 +90,10 @@ try {
   const vLote = (await SB.from("carnet_vacunas").select("*").eq("id", conLote.cuerpo.id).single()).data;
   comprobar(vLote.biologico === `Vacuna ${MARCA}` && vLote.lote_texto === `V-${MARCA}` && vLote.lote_movimiento_id, "toma el nombre del producto, el código del lote y deja el movimiento");
   comprobar((await saldoLote(l1)) === antes - 1, "y descuenta una dosis del lote");
-  const sinDescontar = await vac(P.admin, { p_insumo_id: prod, p_lote_id: l1, p_descontar: false });
+  // N4 (QA externa): la misma vacuna del mismo día no se registra dos veces.
+  const duplicada = await vac(P.admin, { p_insumo_id: prod, p_lote_id: l1, p_descontar: false });
+  comprobar(!duplicada.ok && /Ya hay una vacuna/.test(duplicada.mensaje), `la misma vacuna el mismo día se rechaza (${duplicada.mensaje})`);
+  const sinDescontar = await vac(P.admin, { p_insumo_id: prod, p_lote_id: l1, p_descontar: false, p_fecha: sumaDias(hoyB, -1) });
   comprobar(sinDescontar.ok && (await saldoLote(l1)) === antes - 1, "con «no descontar» el saldo no se mueve");
   comprobar(!(await vac(P.admin, { p_insumo_id: prod, p_lote_id: l2 })).ok, "un lote de otro producto se rechaza");
   comprobar(!(await vac(P.admin, { p_lote_id: crypto.randomUUID() })).ok, "un lote que no existe se rechaza");

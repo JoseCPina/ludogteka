@@ -123,6 +123,10 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
 
   async function firmar() {
     setErrorFirma(null);
+    if (dx.length === 0) {
+      setErrorFirma("Agrega al menos un diagnóstico (presuntivo o definitivo) en «A · Diagnóstico» antes de firmar.");
+      return;
+    }
     if (cargos && cargos.sin_precio > 0) {
       setErrorFirma(`Falta el precio de ${cargos.sin_precio === 1 ? "un cargo" : `${cargos.sin_precio} cargos`}. Ponlo en «Cargos de esta consulta» (o márcalo «Sin cobro» con su motivo) y vuelve a firmar.`);
       return;
@@ -193,7 +197,13 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
           )}
           {g.startsWith("O") && (
             <div className="rounded-md border border-n-200 bg-n-50 p-4">
-              <h3 className="mb-2 text-sm font-bold text-n-800">A · Diagnósticos</h3>
+              <h3 className="mb-2 text-sm font-bold text-n-800">
+                A · Diagnóstico (mín. 1) <span className="text-coral-oscuro" aria-hidden="true">*</span>
+                <span className="sr-only">obligatorio para firmar</span>
+              </h3>
+              {dx.length === 0 && (
+                <p data-dx-obligatorio className="mb-2 text-sm font-semibold text-ambar-oscuro">Obligatorio para firmar: agrega al menos un diagnóstico, presuntivo o definitivo.</p>
+              )}
               <SelectorDiagnosticos valor={dx} onCambio={cambiarDx} especie={especie} />
             </div>
           )}

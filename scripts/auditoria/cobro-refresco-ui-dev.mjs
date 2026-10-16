@@ -79,6 +79,8 @@ try {
   const t0 = await p.locator("body").innerText();
   comprobar(/Cobrado:\s*\$220\.00/.test(t0), "al terminar de guardar ya dice «Cobrado: $220.00» (sin esperar el refresco)");
   comprobar(/Saldo:\s*\$0\.00/.test(t0), "y «Saldo: $0.00»");
+  // N1 (QA externa, 16 de octubre de 2026): la lista «Cobros de esta reserva» enseña el cobro nuevo de inmediato.
+  comprobar(!/Todavía no hay ningún cobro/.test(t0) && (await p.locator("[data-cobro-provisional], [data-cobro-id]").count()) > 0, "la lista «Cobros de esta reserva» ya enseña el cobro nuevo (sin esperar el refresco)");
   comprobar(/Cuenta pagada|No hay saldo por cobrar/i.test(t0) || (await p.getByText("Registrar cobro", { exact: true }).count()) === 0, "sin el formulario de cobrar ni el monto de antes");
   comprobar(await p.getByRole("button", { name: /Registrar cobro/ }).count() === 0 || await p.getByRole("button", { name: /Registrar cobro/ }).first().isDisabled(), "no hay un botón «Registrar cobro» activo para un segundo clic");
   await p.waitForTimeout(5000);

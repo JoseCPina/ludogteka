@@ -249,7 +249,43 @@ El gasto se queda tachado con su motivo y ya no cuenta en la utilidad. Nada se b
 - **Operación del periodo**: días de guardería, noches de hotel, citas y cancelaciones.
 - **Días de pase: reales y ajustados a mano**: los días que cubrió un pase en una estancia, aparte de los que se corrigieron a mano en el saldo del pase (esos no son asistencia ni mueven dinero).
 
-> Si ves «Mes en curso: es un mes parcial», los gastos fijos van prorrateados a los días que llevan. Para el número cerrado, usa **Último mes completo**.`,
+> Si ves «Mes en curso: es un mes parcial», los gastos fijos van prorrateados a los días que llevan. Para el número cerrado, usa **Último mes completo**.
+
+Casi cada cifra se puede tocar para ver las operaciones que la forman: mira [Cómo ver el detalle de una cifra de Reportes](/ayuda/ver-el-detalle-de-una-cifra).`,
+  },
+  {
+    slug: "ver-el-detalle-de-una-cifra",
+    titulo: "Cómo ver el detalle de una cifra de Reportes",
+    resumen: "Toca una cifra y ve las operaciones que la forman: quién, cuándo, qué, cómo pagó y cuánto. Se busca, se ordena y se baja a Excel.",
+    grupo: "reportes",
+    modulo: "reportes",
+    roles: ["admin", "recepcion"],
+    rutas: ["/reportes/desglose"],
+    palabras: ["desglose", "detalle", "de dónde sale", "no me cuadra", "cifra", "ventas de mostrador", "conceptos libres", "descuentos", "excel", "exportar", "cobrado neto"],
+    cuerpo: `Cuando una cifra de [Reportes](/reportes) no te cuadra, tócala: se abre la lista de las operaciones que la forman, del mismo periodo. Lo ve quien tenga el permiso «Reportes financieros».
+
+## Qué cifras se pueden tocar
+
+- La tabla de **Cobros, Propinas y Devoluciones** (cada método) y los **Retiros de caja**; también el **Efectivo agregado**.
+- **Bonos vendidos**, **Bonos consumidos** y **Descuentos otorgados**.
+- En **Ventas de mostrador**: **Vendido**, **Productos**, **Conceptos libres** y **Cobrado (neto)**.
+- En estética: **Ingreso de estética** y, en la tabla de servicios, las **Citas** y el **Ingreso** de cada uno.
+- En **Operación del periodo**: días de guardería, noches de hotel, citas de estética, estancias canceladas y citas en las que no llegó.
+
+## Qué ves en cada renglón
+
+Fecha y hora (de tu negocio), cliente, mascota, concepto o servicio, quién lo registró, método de pago, monto y descuento de la cuenta. **Abrir** te lleva a la cuenta o a la cita original.
+
+## Buscar, ordenar y bajar a Excel
+
+1. Escribe en **Buscar** (cliente, mascota, concepto o quién lo registró) y aprieta **Buscar**.
+2. Toca el nombre de una columna para ordenar; tócalo otra vez para invertir.
+3. Usa **Anterior** y **Siguiente** para pasar de página.
+4. **Descargar en Excel** baja todas las operaciones, no solo la página que ves.
+
+El total del pie es el de la tarjeta, al centavo. Si buscas algo, ves también el total de lo encontrado.
+
+> En **Cobrado (neto)** entra todo lo cobrado menos lo devuelto de las cuentas con venta de mostrador del periodo, aunque el cobro sea de otro día.`,
   },
 
   // ─── Administración ───────────────────────────────────────────────────
