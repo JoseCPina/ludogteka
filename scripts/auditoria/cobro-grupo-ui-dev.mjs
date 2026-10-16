@@ -174,7 +174,8 @@ try {
   comprobar(/2 cuentas/.test(await fila.innerText()), "al marcarla avisa que afecta a las 2 cuentas");
   await fila.getByLabel("Motivo (obligatorio)").fill("El banco no la acreditó");
   await fila.getByRole("button", { name: "Marcar como no recibida" }).last().click();
-  await pa.waitForTimeout(2500);
+  // Se sondea la base (no una espera fija): en la nube la acción tarda más de 2.5 s a veces.
+  for (let i = 0; i < 40 && !((await saldo(t1)) === 320 && (await saldo(t2)) === 35); i++) await pa.waitForTimeout(1000);
   comprobar((await saldo(t1)) === 320 && (await saldo(t2)) === 35, "queda no recibida y las dos cuentas vuelven a deber lo suyo");
   await pa.goto(`${BASE}/caja/turno`, { waitUntil: "networkidle" });
   comprobar((await pa.locator("[data-movimiento-junto]").count()) > 0, "el turno marca los movimientos de un cobro junto");

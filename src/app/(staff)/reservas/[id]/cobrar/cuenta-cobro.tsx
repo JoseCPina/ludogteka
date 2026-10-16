@@ -197,8 +197,9 @@ export function CuentaCobro({
   // router.refresh() devuelve el control antes de que la página nueva llegue: sin esto el botón se
   // reactivaba y la pantalla seguía 1–2 s con el saldo y el formulario de antes del cobro.
   const [refrescando, iniciarRefresco] = useTransition();
-  const refrescar = () => iniciarRefresco(() => router.refresh());
   const [aplicadoPendiente, setAplicadoPendiente] = useState(0);
+  // `aplicado` = lo que un cobro acaba de abonar; cualquier otro refresco lo deja en 0 (no reusa el de un cobro anterior).
+  const refrescar = (aplicado = 0) => { setAplicadoPendiente(aplicado); iniciarRefresco(() => router.refresh()); };
   const totales: Totales = refrescando && aplicadoPendiente > 0
     ? {
         ...totalesServidor,
@@ -429,12 +430,12 @@ export function CuentaCobro({
       setError(res.error);
       return;
     }
-    setAplicadoPendiente(Math.max(0, Math.min(totalMetodos - (res.cambio ?? 0), totales.saldo)));
+    const abonado = Math.max(0, Math.min(totalMetodos - (res.cambio ?? 0), totales.saldo));
     setExitoCobro(res.cambio ? `Cobro registrado. Cambio: ${dinero(res.cambio)} (a la caja entró solo el saldo).` : "Cobro registrado.");
     setNotasCobro("");
     setMetodos([NuevaFilaMetodo()]);
     setMontoTocado(false);
-    refrescar();
+    refrescar(abonado);
   }
 
   async function enviarDevolucion() {
