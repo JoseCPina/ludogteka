@@ -32,12 +32,12 @@ export default {
     {
       titulo: "Registrar el cobro",
       dice: "En «Registrar cobro» escoges el «Método»: efectivo, transferencia o «Tarjeta (registro manual)», y el «Monto». Puedes agregar una propina, y si el cliente paga con dos métodos, usa «+ Repartir en otro método».",
-      pasos: [["elegir", "Método", "Efectivo"], ["escribir", "Monto", "500"], ["resaltar", "Propina", 2400], ["resaltar", "+ Repartir en otro método", 2400]],
+      pasos: [["elegir", "Método", "Efectivo"], ["resaltar", "Propina", 2400], ["resaltar", "+ Repartir en otro método", 2400]],
     },
     {
       titulo: "Confirmar",
-      dice: "Aprieta «Registrar cobro». El cobro queda en el turno abierto y la cuenta se marca como pagada. Si todavía hay saldo, la cuenta sigue abierta.",
-      pasos: [["clic", "css:button:has-text('Registrar cobro') >> nth=-1"], ["esperar", 3500]],
+      dice: "Aprieta «Registrar cobro». El cobro queda en el turno abierto y se ve de inmediato: la cuenta dice «Cuenta pagada» y el saldo queda en cero. Si todavía hay saldo, la cuenta sigue abierta.",
+      pasos: [["clic", "css:button:has-text('Registrar cobro') >> nth=-1"], ["esperar", 1800], ["resaltar", "Cuenta pagada", 2800]],
     },
   ],
   resumen: ["«Cuentas abiertas de hoy» lista lo que falta por cobrar.", "Escoges el método, y puedes repartir el pago entre varios.", "El cobro queda en el turno abierto."],

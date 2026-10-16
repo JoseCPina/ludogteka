@@ -25,7 +25,7 @@ export default {
     },
     {
       titulo: "Fecha y hora",
-      dice: "Pon la «Fecha y hora» y aprieta «Agendar cita». Una cita fuera del horario sale resaltada en naranja en la agenda.",
+      dice: "La «Fecha y hora» ya viene con la siguiente hora disponible; cámbiala si hace falta y aprieta «Agendar cita». Si la hora queda fuera del horario, el formulario te avisa, y la cita sale resaltada en naranja en la agenda.",
       pasos: [["rellenar", "Fecha y hora", "{fechaCita}"], ["clic", "Agendar cita", { nav: true }], ["esperar", 2500]],
     },
   ],
