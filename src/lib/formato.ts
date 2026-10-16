@@ -110,6 +110,19 @@ export function horaLocalDeInstante(iso: string, zona: ZonaHoraria): string {
   }).format(new Date(iso));
 }
 
+// Hora del NEGOCIO de un instante en 12 horas, p. ej. «09:14 a.m.» (columna Hora de los movimientos de caja).
+export function formatearHoraNegocio(iso: string, zona: ZonaHoraria): string {
+  return new Intl.DateTimeFormat("es-MX", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: zona,
+  })
+    .format(new Date(iso))
+    .replace(/\u202f|\u00a0/g, " ")
+    .replace(/\s?([ap])\.?\s?m\.?$/i, (_m, x: string) => ` ${x.toLowerCase()}.m.`);
+}
+
 // Minutos que la zona está adelante de UTC en ese instante (negativo en
 // América; cambia con el horario de verano, p. ej. Tijuana).
 function desfaseMinutos(instante: Date, zona: ZonaHoraria): number {

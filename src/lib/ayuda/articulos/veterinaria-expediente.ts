@@ -48,7 +48,7 @@ Los filtros de arriba muestran solo a un médico. Cambiar cuánto dura cada tipo
     roles: ["admin", "recepcion"],
     rutas: ["/veterinaria/expediente", "/veterinaria/expediente/[perroId]", "/veterinaria/consulta/[id]"],
     palabras: ["consulta", "expediente", "SOAP", "anamnesis", "examen físico", "diagnóstico", "plan", "tratamiento", "firmar", "cédula", "adenda", "borrador", "signos vitales", "peso"],
-    cuerpo: `Cada consulta es un registro con sus partes: lo que cuenta el dueño (**motivo y anamnesis**), lo que encuentras (**signos vitales, examen físico y hallazgos**), el **diagnóstico** y el **plan y tratamiento**.
+    cuerpo: `Cada consulta es un registro con sus partes: lo que cuenta el dueño (**motivo y anamnesis**), lo que encuentras (**signos vitales, examen físico y hallazgos**), el **diagnóstico** (mínimo uno, obligatorio para firmar) y el **plan y tratamiento**.
 
 ## Abrir una consulta
 

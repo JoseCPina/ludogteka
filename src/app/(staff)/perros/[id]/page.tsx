@@ -92,10 +92,10 @@ export default async function PerroPage({
     supabase
       .from("requisitos_sanitarios_aplicados")
       .select(
-        "id, fecha_aplicacion, fecha_vencimiento, detalle, notas, comprobante_path, tipos_requisito_sanitario(etiqueta)"
+        "id, fecha_aplicacion, fecha_vencimiento, detalle, notas, comprobante_path, deleted_at, anulado_motivo, historial, tipos_requisito_sanitario(etiqueta)"
       )
       .eq("perro_id", id)
-      .is("deleted_at", null)
+      // Los anulados se quedan en la tabla (marcados): nada se borra.
       .order("fecha_aplicacion", { ascending: false }),
     supabase
       .from("pesos_registrados")
@@ -235,6 +235,9 @@ export default async function PerroPage({
         notas: fila.notas,
         tipo_etiqueta: tipo?.etiqueta ?? "—",
         comprobante_url,
+        anulado: Boolean(fila.deleted_at),
+        anulado_motivo: (fila.anulado_motivo as string | null) ?? null,
+        correcciones: Array.isArray(fila.historial) ? (fila.historial as unknown[]).filter((h) => (h as { tipo?: string }).tipo === "correccion").length : 0,
       };
     })
   );
@@ -570,7 +573,7 @@ export default async function PerroPage({
           />
         )}
 
-        <RequisitosHistorial filas={historial} />
+        <RequisitosHistorial filas={historial} perroId={id} puedeGestionar={!soloLectura && (sesion.rol === "admin" || tienePermiso(sesion, "registrar_vacunas"))} />
       </div>
       </>
       )}

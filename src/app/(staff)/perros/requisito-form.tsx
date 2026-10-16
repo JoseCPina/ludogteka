@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Select } from "@/components/ui/select";
@@ -39,6 +39,8 @@ export function RequisitoForm({
 }) {
   const zona = useZonaNegocio();
   const router = useRouter();
+  // El aviso de «guardado» sale cuando la tabla de abajo ya trae el registro nuevo.
+  const [actualizando, iniciarRefresco] = useTransition();
   const inputArchivoRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -108,12 +110,12 @@ export function RequisitoForm({
       return;
     }
 
-    setExito(true);
     formRef.current?.reset();
     setFecha(hoyNegocio(zona));
     setAvisoFechaAntigua(false);
     setArchivo(null);
-    router.refresh();
+    iniciarRefresco(() => { router.refresh(); });
+    setExito(true);
   }
 
   return (
@@ -123,7 +125,7 @@ export function RequisitoForm({
           {error}
         </Alert>
       )}
-      {exito && <Alert variante="exito" titulo="Registro guardado" />}
+      {exito && !actualizando && <Alert variante="exito" titulo="Registro guardado" />}
 
       <Select
         label="Tipo de requisito"
@@ -183,9 +185,9 @@ export function RequisitoForm({
         </Button>
       </div>
 
-      <AccionesFormulario error={error} exito={exito && "Registro guardado"}>
-        <Button type="submit" cargando={enviando.cargando}>
-          {enviando.cargando ? "Guardando…" : "Registrar aplicación"}
+      <AccionesFormulario error={error} exito={exito && !actualizando && "Registro guardado"}>
+        <Button type="submit" cargando={enviando.cargando || actualizando}>
+          {enviando.cargando ? "Guardando…" : actualizando ? "Actualizando…" : "Registrar aplicación"}
         </Button>
       </AccionesFormulario>
     </form>

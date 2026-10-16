@@ -238,12 +238,12 @@ export function CobroIntegrado({
     <div data-cobro-integrado className="flex flex-col gap-3 rounded-lg border-[1.5px] border-morado bg-morado-suave/40 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="font-semibold text-n-900">Cobrar con {disponible.nombre}</p>
-        {disponible.simulado && (
-          <span className="rounded-full bg-ambar-suave px-2 py-0.5 text-xs font-semibold text-ambar-oscuro">
-            Simulación: no mueve dinero
-          </span>
-        )}
       </div>
+      {disponible.simulado && (
+        <p data-simulacion className="rounded-md border border-ambar bg-ambar-suave px-3 py-2 text-sm font-semibold text-ambar-oscuro">
+          Simulación: no mueve dinero
+        </p>
+      )}
 
       {error && (
         <Alert variante="error" titulo="No se pudo completar">
@@ -285,7 +285,7 @@ export function CobroIntegrado({
         </div>
       ) : modo === "ninguno" ? (
         <div className="flex flex-wrap gap-2">
-          <Button type="button" disabled={!turnoAbierto || !disponible.terminal} onClick={() => setModo("terminal")}>
+          <Button type="button" variante="secundario" disabled={!turnoAbierto || !disponible.terminal} onClick={() => setModo("terminal")}>
             Cobrar con terminal
           </Button>
           {disponible.link && (

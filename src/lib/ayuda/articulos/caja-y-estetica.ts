@@ -20,7 +20,7 @@ export const ARTICULOS_CAJA_Y_ESTETICA: Articulo[] = [
 3. Si no hay turno, aprieta **Abrir turno**, escribe el **Fondo inicial** y **Confirmar apertura**.
 4. En **Registrar cobro** escoge el **Método** (Efectivo, Transferencia o **Tarjeta (registro manual)**; **Terminal** solo si tu negocio no tiene Mercado Pago ni Clip), escribe el **Monto** y, si dejó, la **Propina**.
 5. ¿Paga una parte en efectivo y otra con tarjeta? Aprieta **+ Repartir en otro método** y llena el segundo renglón.
-6. Aprieta **Registrar cobro**. El saldo baja y el cobro queda en **Cobros de esta reserva**.
+6. Aprieta **Registrar cobro**. El saldo baja y el cobro aparece al momento en **Cobros de esta reserva**. Es la acción principal; **Cobrar con terminal** queda debajo, como opción secundaria (si dice «Simulación: no mueve dinero», no se cobra de verdad).
 7. Cuando el saldo llega a cero, el formulario se cambia por **Cuenta pagada**: ya no hay nada más que cobrar. Si el cliente entrega de más en efectivo, la pantalla te dice el cambio.
 
 > El cobro con tarjeta se hace con **Cobrar con terminal** ([Cómo cobrar con la terminal](/ayuda/cobrar-con-terminal)): así se confirma solo con Mercado Pago. El método **Terminal** no se captura a mano en un negocio con Mercado Pago o Clip. Si la terminal no se puede usar, usa **Tarjeta (registro manual)** con el folio del voucher ([Cuándo usar Tarjeta (registro manual)](/ayuda/tarjeta-registro-manual)). A mano también: efectivo y transferencia.
@@ -447,7 +447,7 @@ Con **Ver la cuenta** abres la cuenta del cliente. Abajo, en **Últimos reembols
     rutas: ["/caja/turno"],
     palabras: ["corte", "arqueo", "cerrar caja", "abrir caja", "fondo", "retiro", "turno"],
     captura: "corte-de-caja.jpg",
-    cuerpo: `El turno junta todo lo que entra y sale de la caja desde que abres hasta que cierras. Sin turno abierto no se puede cobrar. En **Movimientos de este turno** ves primero los 50 más recientes; aprieta **Ver más movimientos** para ampliar la lista. Los totales por método de arriba siempre cuentan todos los movimientos.
+    cuerpo: `El turno junta todo lo que entra y sale de la caja desde que abres hasta que cierras. Sin turno abierto no se puede cobrar. En **Movimientos de este turno** la columna **Hora** muestra la hora del negocio (por ejemplo «09:14 a.m.») y debajo la fecha; ves primero los 50 más recientes; aprieta **Ver más movimientos** para ampliar la lista. Los totales por método de arriba siempre cuentan todos los movimientos.
 
 ## Abrir el turno
 
