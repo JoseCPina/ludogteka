@@ -50,5 +50,32 @@ for (const [clave, rol] of [["admin", "admin"], ["recepcion", "recepcion"], ["es
   exigir(await S.from("membresias").update({ solo_lectura: false }).eq("profile_id", id).eq("negocio_id", NEG), `abrir ${clave}`);
   ok(`${clave}: tutoriales.${clave}@peludesk.mx (${nombre})`);
 }
+// Citas por atender para la gemela de estética: la agenda de tutoriales.estetica nace vacía (las citas del demo son de
+// Karla Méndez, la del visitante) y el video 22 («Atiende y termina una cita») necesita abrir una cita reservada de SU agenda.
+// Se le pasan dos citas futuras por la función de siempre (reasignar_estilista_cita, con la sesión de la gemela de admin y
+// motivo), nunca con un UPDATE: el trigger lo rechaza. Idempotente: si ya tiene dos por atender, no hace nada.
+{
+  const anon = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const { data: gemelaEst } = await A.rpc("usuario_por_email", { p_email: "tutoriales.estetica@peludesk.mx" });
+  const { data: gemelaAdm } = await A.rpc("usuario_por_email", { p_email: "tutoriales.admin@peludesk.mx" });
+  const ahora = new Date().toISOString();
+  const { data: suyas } = await S.from("citas_estetica").select("id").eq("negocio_id", NEG).eq("empleado_id", gemelaEst).eq("estado", "reservada").is("deleted_at", null).gte("inicio", ahora);
+  if ((suyas ?? []).length < 2) {
+    const enlace = exigir(await A.auth.admin.generateLink({ type: "magiclink", email: "tutoriales.admin@peludesk.mx" }), "enlace de la gemela de admin");
+    const sinSesion = createClient(URL, anon, sin);
+    const { data: ses, error: eSes } = await sinSesion.auth.verifyOtp({ token_hash: enlace.properties.hashed_token, type: "magiclink" });
+    if (eSes) throw new Error(`sesión de la gemela de admin: ${eSes.message}`);
+    const ADM = createClient(URL, anon, { ...sin, global: { headers: { "x-negocio-id": NEG, Authorization: `Bearer ${ses.session.access_token}` } } });
+    const { data: candidatas } = await S.from("citas_estetica").select("id").eq("negocio_id", NEG).eq("estado", "reservada").neq("empleado_id", gemelaEst).is("deleted_at", null).gte("inicio", ahora).order("inicio");
+    let pasadas = (suyas ?? []).length;
+    for (const c of candidatas ?? []) {
+      if (pasadas >= 2) break;
+      const r = await ADM.rpc("reasignar_estilista_cita", { p_cita_id: c.id, p_empleado_id: gemelaEst, p_motivo: "Citas de ejemplo para la cuenta del corredor de tutoriales" });
+      if (!r.error) pasadas++; // si choca con otra cita de ella, se prueba con la siguiente
+    }
+    if (pasadas < 2) throw new Error("No pude pasarle dos citas por atender a tutoriales.estetica.");
+  }
+  ok("tutoriales.estetica: dos citas por atender en su agenda (video 22)");
+}
 // Dueños del portal: NO hay gemelos (una cuenta por cliente: `membresias_cliente_una_cuenta`). El corredor usa las mismas cuentas
 // que «Ver demo» y las abre SOLO mientras graba un video de dueño (tutoriales.mjs), volviéndolas a cerrar al terminar.

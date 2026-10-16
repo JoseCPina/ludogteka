@@ -2,7 +2,7 @@
 
 Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scripts/tutoriales/catalogo.mjs` y de lo que la app tiene hoy (código). No se edita a mano: se cambia el catálogo.
 
-**95 videos** (el 00 es el avance) en 10 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
+**96 videos** (el 00 es el avance) en 10 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
 
 ## Catálogo
 
@@ -99,6 +99,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 93 | Veterinaria | Cómo se cobra una consulta veterinaria | recepcion | 2.5 min | veterinaria | atender_consultas, ajustar_cargos_consulta |
 | 89 | Guardería y hotel | Servicios extra | recepcion | 2.5 min | guarderia, hotel | agregar_servicios_extra, editar_catalogo_extras |
 | 94 | Guardería y hotel | Calendario de reservas y cancelar una cuenta con su reserva | recepcion | 2.5 min | guarderia, hotel | cancelar_cuentas |
+| 95 | Guardería y hotel | Autorizar una excepción al reservar guardería u hotel | admin | 2.5 min | guarderia, hotel | excepciones_reserva |
 | 66 | Tu negocio | Importar tus clientes y mascotas desde Excel | admin | 2.5 min | — | importar_datos |
 | 67 | Tu negocio | Ver el historial de importaciones y deshacer una | admin | 2.5 min | — | importar_datos |
 | 68 | Empieza aquí | Recupera lo que estabas escribiendo: borradores | recepcion | 2.5 min | — | — |
@@ -172,7 +173,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/guarderia` | 25 |  |
 | `/guarderia/checkin` | 29 |  |
 | `/guarderia/checkout` | 30 |  |
-| `/guarderia/nueva` | 25 |  |
+| `/guarderia/nueva` | 25, 95 |  |
 | `/guarderia/pases` | 39 |  |
 | `/guarderia/reportes` | 31 |  |
 | `/guarderia/reportes/[perroId]` | 31 |  |
@@ -182,7 +183,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/hotel` | 26 |  |
 | `/hotel/checkin` | 29 |  |
 | `/hotel/checkout` | 30 |  |
-| `/hotel/nueva` | 26 |  |
+| `/hotel/nueva` | 26, 95 |  |
 | `/hotel/series` | 27 |  |
 | `/hotel/series/nueva` | 27 |  |
 | `/hotel/walkin` | 28 |  |
@@ -213,6 +214,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/recepcion/contratos` | 17, 19 |  |
 | `/recepcion/saldos` | 05 |  |
 | `/reportes` | 49 |  |
+| `/reportes/desglose` | 49 |  |
 | `/reservas` | 25 |  |
 | `/reservas/[id]` | 25 |  |
 | `/reservas/[id]/cobrar` | 30 |  |
@@ -270,8 +272,8 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 
 | Entrada | Ruta | Videos |
 | --- | --- | --- |
-| Guardería | `/guarderia` | 25, 27, 28, 29, 30, 31, 39 |
-| Hotel | `/hotel` | 26, 27, 28, 29, 30 |
+| Guardería | `/guarderia` | 25, 27, 28, 29, 30, 31, 39, 95 |
+| Hotel | `/hotel` | 26, 27, 28, 29, 30, 95 |
 | Calendario | `/reservas/calendario` | 94 |
 | Adentro ahora | `/adentro` | 31 |
 | Estética | `/estetica` | 01, 21, 22, 23, 55 |
@@ -304,8 +306,8 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 
 | Módulo | Videos |
 | --- | --- |
-| guarderia | 25, 27, 28, 29, 30, 31, 89, 94 |
-| hotel | 26, 27, 28, 29, 30, 31, 89, 94 |
+| guarderia | 25, 27, 28, 29, 30, 31, 89, 94, 95 |
+| hotel | 26, 27, 28, 29, 30, 31, 89, 94, 95 |
 | estetica | 20, 21, 22, 23, 24, 55, 58, 63, 64 |
 | veterinaria | 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 90, 91, 92, 93 |
 | bonos | 39, 60 |
@@ -327,7 +329,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Reportes financieros (`reportes_financieros`) | 09, 49 |
 | Personal (`personal`) | 08, 09 |
 | Configuración del negocio (`configuracion_negocio`) | 07, 09, 51, 52 |
-| Excepciones al reservar (`excepciones_reserva`) | 09, 23, 58 |
+| Excepciones al reservar (`excepciones_reserva`) | 09, 23, 58, 95 |
 | Descuentos sin tope (`descuentos_sin_tope`) | 09, 37 |
 | Plantillas de contrato (`plantillas_contrato`) | 09, 16 |
 | Nómina (`nomina`) | 09, 46 |
@@ -375,6 +377,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | pagar-la-nomina | 46 |
 | registrar-gastos-del-local | 47 |
 | leer-los-reportes | 49 |
+| ver-el-detalle-de-una-cifra | 49 |
 | invitar-a-tu-equipo | 08 |
 | permisos-extra-a-recepcion | 09 |
 | modulos-y-plan | 06 |
@@ -414,12 +417,12 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | que-hacer-con-necesita-atencion | 05 |
 | alta-de-cliente-con-link | 11 |
 | capturar-cliente-en-mostrador | 10 |
-| vacunas-alertas-y-datos-del-perro | 12 |
+| vacunas-alertas-y-datos-del-perro | 12, 95 |
 | revisar-comprobante-sanitario | 13 |
 | restablecer-contrasena-de-cliente | 03, 15 |
 | portal-del-dueno | 15 |
 | mandar-a-firmar-un-contrato | 17 |
-| reservar-guarderia | 25 |
+| reservar-guarderia | 25, 95 |
 | reservar-hotel | 26 |
 | calendario-de-reservas | 94 |
 | registrar-check-in | 29 |
