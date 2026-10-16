@@ -16,7 +16,7 @@ export default {
     },
     {
       titulo: "Sin empalmes",
-      dice: "Si el médico ya tiene otra cita a esa hora, la app no deja agendar y lo avisa. Una urgencia sí entra aunque se empalme, y te lo hace notar.",
+      dice: "Si el médico ya tiene otra cita a esa hora, la app no deja agendar y lo avisa. Una urgencia sí entra aunque se empalme, y te lo hace notar. Si la hora queda fuera del horario de la clínica, el formulario también te avisa.",
       pasos: [["rellenar", "Fecha", "{fechaDia}"], ["rellenar", "Hora", "10:00"], ["clic", "Agendar cita", { nav: true }], ["esperar", 2000]],
     },
     {

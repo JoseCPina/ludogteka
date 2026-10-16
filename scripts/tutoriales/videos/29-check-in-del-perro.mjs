@@ -10,7 +10,7 @@ export default {
     },
     {
       titulo: "Quién lo entrega",
-      dice: "Escribe «Quién entrega al perro» y, si quieres, su teléfono. Es útil para saber a quién llamar en el día.",
+      dice: "Escribe «Quién entrega al perro», que es obligatorio, y, si quieres, su teléfono. Es útil para saber a quién llamar en el día.",
       pasos: [["escribir", "Quién entrega al perro", "Emilio Navarro"], ["escribir", "Teléfono (opcional)", "4420000216"]],
     },
     {
