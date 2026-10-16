@@ -170,13 +170,22 @@ export function NuevaReservaForm({
   }
 
   async function reintentar(perroId: string) {
-    if (!reservaId) return;
     const linea = lineas.find((l) => l.perroId === perroId);
     if (!linea) return;
     setReintentando((prev) => ({ ...prev, [perroId]: true }));
     let resultado: ResultadoLinea;
     try {
-      resultado = await conTope(agregarEstanciaAReserva(reservaId, lineaAPayload(linea, servicios)));
+      if (reservaId) {
+        resultado = await conTope(agregarEstanciaAReserva(reservaId, lineaAPayload(linea, servicios)));
+      } else {
+        // Si ninguna línea se guardó, la reserva vacía se descartó (no hay reservaId): se crea ahora con esta línea.
+        // Antes el botón «Reintentar con excepción» no hacía nada en ese caso.
+        if (!clienteId) throw new Error("Elige un cliente.");
+        const nueva = await conTope(crearReserva(clienteId, notas, [lineaAPayload(linea, servicios)]));
+        if (nueva.error) throw new Error(nueva.error);
+        if (nueva.reservaId) setReservaId(nueva.reservaId);
+        resultado = nueva.resultados?.[0] ?? { perroId, exito: false, motivo: "No pudimos guardar esto. Intenta de nuevo.", estanciaId: null };
+      }
     } catch (e) {
       resultado = { perroId, exito: false, motivo: mensajeDeFallo(e), estanciaId: null };
     }
