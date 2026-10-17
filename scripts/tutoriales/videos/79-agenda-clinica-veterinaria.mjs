@@ -11,8 +11,8 @@ export default {
     },
     {
       titulo: "Agendar una cita",
-      dice: "Aprieta «Agendar», busca a la mascota por su nombre, el de su dueño o su teléfono y elígela. Escoge el tipo de cita, el médico, la fecha y la hora. La duración sale del tipo.",
-      pasos: [["clic", "Agendar", { nav: true }], ["escribir", "Buscar mascota o dueño", "Tigre"], ["esperar", 1200], ["clic", "Tigre"], ["elegir", "Tipo de cita", "Vacuna"], ["elegir", "Médico", 1]],
+      dice: "Aprieta «Agendar», busca a la mascota por su nombre, el de su dueño o su teléfono y elígela. Escoge el tipo de cita y el médico. La fecha y la hora ya vienen propuestas: la siguiente hora en punto dentro del horario. La duración sale del tipo.",
+      pasos: [["clic", "Agendar", { nav: true }], ["escribir", "Buscar mascota o dueño", "Tigre"], ["esperar", 1200], ["clic", "Tigre"], ["elegir", "Tipo de cita", "Vacuna"], ["elegir", "Médico", 1], ["resaltar", "css:input[name='hora']", 2800]],
     },
     {
       titulo: "Sin empalmes",

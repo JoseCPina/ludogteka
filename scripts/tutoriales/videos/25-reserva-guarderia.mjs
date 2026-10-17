@@ -21,7 +21,7 @@ export default {
     {
       titulo: "Crear la reserva",
       dice: "Aprieta «Crear reserva». Si el perro no cumple algo, por ejemplo una vacuna vencida, o ya no hay cupo, la app te lo dice con claridad y no deja reservar. La guardería tampoco se reserva en un día cerrado.",
-      pasos: [["clic", "Crear reserva", { nav: true }], ["esperar", 3000]],
+      pasos: [["clic", "Crear reserva"], ["esperar", 3000]],
     },
   ],
   resumen: ["«Nueva reserva» con el cliente, sus perros, el servicio y la fecha.", "La app revisa cupo, vacunas, evaluación y horario por ti.", "Si algo falta, te dice qué y no deja reservar."],

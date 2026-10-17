@@ -25,7 +25,7 @@ export default {
     },
     {
       titulo: "Fecha y hora",
-      dice: "La «Fecha y hora» ya viene con la siguiente hora disponible; cámbiala si hace falta y aprieta «Agendar cita». Si la hora queda fuera del horario, el formulario te avisa, y la cita sale resaltada en naranja en la agenda.",
+      dice: "La «Fecha y hora» ya viene con la siguiente hora disponible; cámbiala si hace falta y aprieta «Agendar cita». Si la hora queda fuera del horario, el formulario te avisa, y la cita sale resaltada en naranja en la agenda. Si la estilista está ausente o ya tiene otra cita a esa hora, la app te dice cuál y no la agenda.",
       pasos: [["rellenar", "Fecha y hora", "{fechaCita}"], ["clic", "Agendar cita", { nav: true }], ["esperar", 2500]],
     },
   ],

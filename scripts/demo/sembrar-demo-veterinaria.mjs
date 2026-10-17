@@ -10,6 +10,7 @@
 // cuentas mientras se siembra. Nunca datos de Ludogteka ni de un cliente real; ningún teléfono real.
 // Al final las cuentas del demo quedan en SOLO LECTURA y el envío automático de recordatorios, apagado.
 import { cerrarAlFallar } from "./solo-lectura.mjs";
+import { fetchConReintento } from "./fetch-con-reintento.mjs";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import { execSync } from "node:child_process";
@@ -33,7 +34,8 @@ function conexion() {
 }
 const C = conexion();
 if (!C.secreta || !C.anon) throw new Error("No se pudieron leer las llaves.");
-const sinSesion = { auth: { persistSession: false, autoRefreshToken: false } };
+const sinSesion = { auth: { persistSession: false, autoRefreshToken: false }, global: { fetch: fetchConReintento } };
+const conHeaders = (headers) => ({ ...sinSesion, global: { ...sinSesion.global, headers } });
 const A = createClient(C.url, C.secreta, sinSesion);
 const exigir = (r, que) => { if (r.error) throw new Error(`${que}: ${r.error.message}`); return r.data; };
 const ok = (t) => console.log(`  ✔ ${t}`);
@@ -47,7 +49,7 @@ const { data: neg } = await A.from("negocios").select("id, plan").eq("slug", SLU
 if (!neg) throw new Error("No existe el demo: primero sembrar-demo.mjs.");
 if (neg.plan !== "demo") throw new Error("Ese negocio no es un demo: no se toca.");
 const NEG = neg.id;
-const S = createClient(C.url, C.secreta, { ...sinSesion, global: { headers: { "x-negocio-id": NEG } } });
+const S = createClient(C.url, C.secreta, conHeaders({ "x-negocio-id": NEG }));
 cerrarAlFallar(S); // si el script revienta, las cuentas del visitante quedan en solo lectura
 
 // ── Cuentas ──
@@ -64,7 +66,7 @@ async function tokenDe(id) {
   }
   throw new Error("Auth sigue limitando");
 }
-const como = async (id) => createClient(C.url, C.anon, { ...sinSesion, global: { headers: { Authorization: `Bearer ${await tokenDe(id)}`, "x-negocio-id": NEG } } });
+const como = async (id) => createClient(C.url, C.anon, conHeaders({ Authorization: `Bearer ${await tokenDe(id)}`, "x-negocio-id": NEG }));
 const idDe = async (email) => exigir(await A.rpc("usuario_por_email", { p_email: email }), `buscar ${email}`);
 
 let medicaId = await idDe(EMAIL_MEDICA);
@@ -196,7 +198,7 @@ try {
     if (firmar) exigir(await MED.rpc("vet_consulta_firmar", { p_id: id }), "consulta firmada");
     return id;
   }
-  const cConsulta = await consulta(M.Canela, { motivo: "Sacude la cabeza y se rasca la oreja izquierda", anamnesis: "Desde hace 4 días. Come y bebe normal. Sin fiebre.", exploracion: "Conducto auditivo izquierdo con eritema y cerumen oscuro. Dolor leve a la palpación.", plan: "Limpieza ótica y gotas cada 12 horas por 7 días. Revisión en una semana.", peso_kg: 27.8, temperatura_c: 38.6, diagnosticos: [{ ref_id: null, origen: "libre", nombre: "Otitis externa", tipo: "definitivo", nota: "" }] }, true);
+  const cConsulta = await consulta(M.Canela, { motivo: "Sacude la cabeza y se rasca la oreja izquierda", anamnesis: "Desde hace 4 días. Come y bebe normal. Sin fiebre.", exploracion: "Conducto auditivo izquierdo con eritema y cerumen oscuro. Dolor leve a la palpación.", plan: "Limpieza ótica y gotas cada 12 horas por 7 días. Revisión en una semana.", tratamiento: "Enrofloxacina 5 %, 1 mL cada 12 horas por 7 días", peso_kg: 27.8, temperatura_c: 38.6, diagnosticos: [{ ref_id: null, origen: "libre", nombre: "Otitis externa", tipo: "definitivo", nota: "" }] }, true);
   await consulta(M.Rocco, { motivo: "Vómito y diarrea desde ayer", anamnesis: "Comió algo en el parque. Decaído, con poco apetito.", exploracion: "Deshidratación leve. Abdomen sensible, sin masas.", plan: "Dieta blanda 3 días, probiótico y suero oral. Vigilar cada 6 horas.", peso_kg: 9.4, temperatura_c: 39.1, diagnosticos: [{ ref_id: null, origen: "libre", nombre: "Gastroenteritis aguda", tipo: "definitivo", nota: "" }] }, true);
   await consulta(M.Luna, { motivo: "Revisión de rutina", anamnesis: "Sin molestias. Vive en interiores.", plan: "" }, false);
   ok("2 consultas firmadas y 1 en borrador");

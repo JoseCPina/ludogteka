@@ -131,6 +131,12 @@ export const VIDEOS_DE_ARTICULO: Record<string, string[]> = {
   "agendar-y-atender-una-teleconsulta": ["91"],
   "entrar-a-una-teleconsulta-como-dueno": ["92"],
   "cobrar-una-consulta-veterinaria": ["93"],
+
+  // ── Videos 96 a 99 (artículos que no tenían video; 17 de octubre de 2026) ──
+  "cambiar-estilista-cita-estetica": ["96"],
+  "corregir-un-cobro-con-terminal-mal-marcado": ["97", "38"],
+  "factura-global-publico-en-general": ["98"],
+  "iva-y-claves-sat-de-productos-y-servicios": ["99"],
 };
 
 /**
@@ -146,11 +152,7 @@ export const VIDEOS_SIN_ARTICULO: Record<string, string> = {
  * tenga video en VIDEOS_DE_ARTICULO o aparezca aquí: un artículo nuevo sin video se decide a propósito.
  */
 export const ARTICULOS_SIN_VIDEO: Record<string, string> = {
-  "cambiar-estilista-cita-estetica": "Pendiente de grabar: ningún video enseña a cambiar o corregir la estilista de una cita.",
-  "corregir-un-cobro-con-terminal-mal-marcado": "Pendiente de grabar: ningún video enseña «Marcar como no recibido» ni la conciliación.",
-  "factura-global-publico-en-general": "Pendiente de grabar: el video 65 no recorre la factura global.",
-  "iva-y-claves-sat-de-productos-y-servicios": "Pendiente de grabar: el video 65 no enseña el IVA ni las claves del SAT.",
-  "ver-mis-facturas": "Pendiente de grabar: ningún video muestra las facturas en el portal del dueño.",
+  "ver-mis-facturas": "Pendiente de grabar: ningún video muestra las facturas en el portal del dueño. El folio 100 necesita que `tutoriales.numero` admita tres dígitos (migración).",
 };
 
 /** Los números de los videos de un artículo (el principal primero); [] si no tiene. */

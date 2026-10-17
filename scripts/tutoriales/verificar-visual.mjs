@@ -18,6 +18,14 @@
 // «igual» o «sin_comparar» (no hubo con qué comparar: no se puede afirmar que sigue igual, así que se trata
 // como cambio). Con --aplicar, desmarca los «igual» y deja marcados los demás con el motivo visual.
 // Sale con 0 siempre; el JSON dice todo. Lo corre `npm run desplegar` y se puede correr a mano.
+//
+// LO QUE NO VE (17 de octubre de 2026): un estado que solo aparece DESPUÉS de un clic que no navega. Apretar un
+// botón que abre un panel, despliega una lista, cambia de pestaña sin cambiar la URL o muestra un aviso
+// («Entregué todo», «Agregar efectivo», el recuadro para reasignar al aprobar una ausencia, el aviso de choque
+// al agendar, la receta prellenada) es escribir o podría escribir: el detector se detiene ahí y lo que sigue
+// en esa escena queda sin comparar. Un video cuyo cambio vive en ese estado puede salir «igual» aunque esté
+// viejo; esos se revisan a mano (o se regraban) cuando el cambio de código toca un panel, modal o aviso.
+// Solo se sigue un clic cuando es un enlace del mismo sitio (a[href] sin /api, /auth ni pestaña nueva).
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
@@ -176,6 +184,13 @@ async function existe(page, objetivo, ms = 2500) {
   }
   return false;
 }
+/** Un enlace de lectura (ruta del sitio, sin /api ni /auth, sin pestaña nueva) que corresponde a ese objetivo, o null. */
+async function enlaceSeguro(page, objetivo) {
+  const e = await enlaceDe(page, objetivo);
+  if (!e) return null;
+  const ok = await e.evaluate((a) => { const h = a.getAttribute("href") ?? ""; return /^[\/?#]/.test(h) && !/^\/(api|auth)\b|salir|logout|cerrar-sesion/.test(h) && !a.getAttribute("target"); }).catch(() => false);
+  return ok ? e : null;
+}
 /** El enlace (a[href] del mismo sitio) que corresponde a ese texto, o null. Solo se sigue un enlace: nunca se aprieta un botón. */
 async function enlaceDe(page, objetivo) {
   if (typeof objetivo !== "string") return null;
@@ -223,6 +238,14 @@ async function recorrer(ctx, guion) {
   const ausentes = [];
   const notas = [];
   let sucio = false;
+  // Un selector css que nombra un botón o enlace por su texto (button:has-text('Mover fechas')) es un nombre de la app, no un dato del demo:
+  // si ese texto ya no está en ningún botón o enlace de la pantalla, ya no aparece (aunque el selector completo dependa de los datos).
+  const ausenteCss = async (escena, objetivo, page) => {
+    const s = String(objetivo);
+    const m = /css:.*?(?:button|a|\[role=[^\]]+\])\s*:(?:has-text|text-is)\((['"])(.+?)\1\)/.exec(s);
+    if (m && !(await existe(page, m[2], 1500))) { ausentes.push({ escena, texto: m[2], en: new URL(page.url()).pathname }); return; }
+    ausente(escena, objetivo, page);
+  };
   const ausente = (escena, objetivo, page) => { if (esDeLaApp(String(objetivo))) ausentes.push({ escena, texto: String(objetivo), en: new URL(page.url()).pathname }); else notas.push(`«${objetivo}» no se encontró, pero depende de los datos del demo`); };
   // `paso`: índice del paso del guion tras el que se tomó (-1 = al abrir la pantalla de inicio de la escena 1). Sirve para buscar
   // en el video el fotograma EQUIVALENTE (lo que se veía en ese momento), no uno de más adelante con el formulario ya lleno.
@@ -253,9 +276,12 @@ async function recorrer(ctx, guion) {
         if (dependeDeDatos(objetivo)) { sucio = true; notas.push(`ir a una ruta con datos (${objetivo})`); } else ruta = await irA(objetivo, i + 1, "ir", j);
       } else if (verbo === "clic" || verbo === "marcar") {
         if (dependeDeDatos(objetivo)) { sucio = true; continue; }
-        if (!sucio && !(await existe(page, objetivo))) { ausente(i + 1, objetivo, page); sucio = true; continue; }
-        if (opciones.nav && !sucio) {
-          const enlace = await enlaceDe(page, objetivo);
+        if (!sucio && !(await existe(page, objetivo))) { await ausenteCss(i + 1, objetivo, page); sucio = true; continue; }
+        // Un clic a un enlace del mismo sitio (un día del calendario, una pestaña) es solo lectura: se sigue aunque el guion no marque
+        // `nav`, o todo lo que sigue en esa pantalla (botones renombrados) quedaría sin revisar.
+        const enlaceLibre = !sucio && !opciones.nav ? await enlaceSeguro(page, objetivo) : null;
+        if ((opciones.nav || enlaceLibre) && !sucio) {
+          const enlace = enlaceLibre ?? (await enlaceDe(page, objetivo));
           if (!enlace) { notas.push(`«${objetivo}» no es un enlace: no se sigue`); sucio = true; continue; }
           const antes = page.url();
           await Promise.all([page.waitForURL((u) => u.href !== antes, { timeout: 20000 }).catch(() => {}), enlace.click({ timeout: 8000 }).catch(() => {})]);
@@ -265,7 +291,7 @@ async function recorrer(ctx, guion) {
           await tomar(i + 1, `clic «${objetivo}»`, j);
         } else sucio = true;
       } else if (["resaltar", "zoom", "desplazar", "mover"].includes(verbo)) {
-        if (!sucio && !dependeDeDatos(objetivo) && !(await existe(page, objetivo))) ausente(i + 1, objetivo, page);
+        if (!sucio && !dependeDeDatos(objetivo) && !(await existe(page, objetivo))) await ausenteCss(i + 1, objetivo, page);
       } else if (["escribir", "rellenar", "elegir", "subir", "tecla", "js"].includes(verbo)) {
         if (!sucio && ["escribir", "rellenar", "elegir"].includes(verbo) && !dependeDeDatos(objetivo) && !(await existe(page, objetivo))) ausente(i + 1, objetivo, page);
         sucio = true;

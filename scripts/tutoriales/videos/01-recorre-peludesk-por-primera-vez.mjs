@@ -25,8 +25,8 @@ export default {
     },
     {
       titulo: "Ayuda en cada pantalla",
-      dice: "En cualquier pantalla tienes el botón de signo de interrogación. Te lleva al artículo de ayuda de esa pantalla, y si hay un video, también lo encuentras en «Ayuda».",
-      pasos: [["resaltar", "css:a[aria-label='Ayuda de esta pantalla']", 2800], ["clic", "Ayuda", { nav: true }], ["esperar", 1800]],
+      dice: "En cualquier pantalla tienes el botón de signo de interrogación. Te lleva al artículo de ayuda de esa pantalla, con su video arriba cuando lo tiene. En «Ayuda» están todos los artículos y videos.",
+      pasos: [["resaltar", "css:a[aria-label='Ayuda de esta pantalla']", 2400], ["clic", "css:a[aria-label='Ayuda de esta pantalla']", { nav: true }], ["resaltar", "css:[data-videos-del-articulo]", 2600], ["clic", "Ayuda", { nav: true }], ["esperar", 1800]],
     },
   ],
   resumen: ["El «Panel de admin» es tu inicio; recepción y estética tienen el suyo.", "El menú de la izquierda muestra solo lo que tu rol puede ver y los módulos que tienes prendidos.", "El signo de interrogación y la sección «Ayuda» te acompañan en cada pantalla."],

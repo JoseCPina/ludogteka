@@ -7,7 +7,7 @@ export default {
     {
       titulo: "Elige al perro",
       dice: "Agenda la cita como siempre: escoge al cliente y a su perro, y el servicio.",
-      pasos: [["clic", "Ricardo Olmos"], ["elegir", "Perro", 1], ["elegir", "Servicio", 1], ["elegir", "Empleado", 1]],
+      pasos: [["clic", "Ricardo Olmos"], ["elegir", "Perro", 1], ["elegir", "Servicio", 1], ["elegir", "Empleado", "Karla Méndez"]],
     },
     {
       titulo: "Pelo maltratado",

@@ -17,11 +17,21 @@
 // desde "Ver demo" explora, no escribe.
 //
 // Datos: scripts/demo/datos.mjs (todos inventados). Fotos: scripts/demo/fotos.
-import { cerrarAlFallar } from "./solo-lectura.mjs";
+//
+// Aguante (17 de octubre de 2026): la siembra corre en un proceso hijo; si
+// truena a la mitad (tope de 8 s de la base, red), el padre la rehace desde
+// cero con --rehacer (demo_vaciar, hasta 3 intentos), así un relanzamiento
+// nunca deja un demo a medias. Toda llamada que choca con el tope de la base
+// se reintenta sola (fetchConReintento), las firmas se fechan por lotes y los
+// cobros se fechan con el id que devuelve registrar_cobro. Al final, pase lo
+// que pase, el padre deja las cuentas del visitante en solo lectura y lo
+// comprueba.
+import { cerrarAlFallar, cuentasDemo } from "./solo-lectura.mjs";
+import { fetchConReintento } from "./fetch-con-reintento.mjs";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { execSync } from "node:child_process";
+import { execSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import sharp from "sharp";
@@ -36,6 +46,30 @@ const REHACER = process.argv.includes("--rehacer");
 const MODELO = "10000000-0000-4000-8000-000000000001"; // de donde crear_negocio copia la configuración base
 const BUCKET = "perros-archivos";
 const IP_FIRMA = "203.0.113.24"; // rango de documentación (RFC 5737): no es de nadie
+const SIN_REINTENTO = 3; // código de salida del hijo cuando rehacer no lo arregla (el demo ya existe sin --rehacer, no es un demo)
+
+// ── Supervisor: siembra en un hijo, rehace si truena, y siempre cierra las cuentas del visitante ──
+if (!process.argv.includes("--hijo")) {
+  const { conectar } = await import("../tutoriales/lib/db.mjs");
+  const args = process.argv.slice(2);
+  let codigo = 1;
+  for (let intento = 1; intento <= 3; intento++) {
+    const estos = intento > 1 && !args.includes("--rehacer") ? [...args, "--rehacer"] : args;
+    if (intento > 1) console.log(`\n── Intento ${intento}/3: la siembra anterior no terminó; rehago el demo desde cero ──`);
+    codigo = spawnSync(process.execPath, [fileURLToPath(import.meta.url), ...estos, "--hijo"], { stdio: "inherit" }).status ?? 1;
+    if (codigo === 0 || codigo === SIN_REINTENTO) break;
+  }
+  let abiertas = 1;
+  try {
+    const r = await cuentasDemo(conectar(PROD).cliente, { cerrar: true });
+    abiertas = r.filas.filter((f) => f.estado.startsWith("ABIERTA")).length;
+    console.log(`\nCuentas del visitante: ${r.filas.map((f) => `${f.correo} ${f.estado}`).join(" · ")}`);
+  } catch (e) {
+    console.error(`✘ No pude cerrar las cuentas del visitante: ${e.message}. Corre: node scripts/demo/solo-lectura.mjs${PROD ? " --prod" : ""} --cerrar`);
+  }
+  console.log(codigo === 0 ? "✔ Demo sembrado completo." : `✘ La siembra no terminó (código ${codigo}).`);
+  process.exit(codigo !== 0 ? codigo : abiertas ? 1 : 0);
+}
 
 // ── Conexión ──
 function conexion() {
@@ -50,7 +84,8 @@ function conexion() {
 }
 const C = conexion();
 if (!C.secreta || !C.anon) throw new Error("No se pudieron leer las llaves.");
-const sinSesion = { auth: { persistSession: false, autoRefreshToken: false } };
+const sinSesion = { auth: { persistSession: false, autoRefreshToken: false }, global: { fetch: fetchConReintento } };
+const conHeaders = (headers) => ({ ...sinSesion, global: { ...sinSesion.global, headers } });
 const A = createClient(C.url, C.secreta, sinSesion);
 console.log(`Sembrando el demo en ${PROD ? "PRODUCCIÓN" : "desarrollo"}${REHACER ? " (rehacer)" : ""}`);
 
@@ -93,14 +128,14 @@ const { data: negBuscado, error: errNeg } = await A.from("negocios").select("id,
 // Un error al buscar NO es «no existe»: crearía el negocio duplicado o saltaría el vaciado.
 if (errNeg) throw new Error(`No pude buscar el negocio demo (${errNeg.message}). No se siembra nada.`);
 let neg = negBuscado;
-if (neg && !REHACER) throw new Error(`El demo ya existe (${neg.id}). Para volver a sembrarlo: --rehacer.`);
+if (neg && !REHACER) { console.error(`El demo ya existe (${neg.id}). Para volver a sembrarlo: --rehacer.`); process.exit(SIN_REINTENTO); }
 if (neg) {
-  if (neg.plan !== "demo") throw new Error("El negocio con ese slug no es un demo: no se toca.");
+  if (neg.plan !== "demo") { console.error("El negocio con ese slug no es un demo: no se toca."); process.exit(SIN_REINTENTO); }
   // Las fotos y PDFs del demo viven bajo la carpeta de cada cliente.
   const { data: previos } = await A.from("clientes").select("id").eq("negocio_id", neg.id);
   for (const c of previos ?? []) await borrarCarpeta(c.id);
   // Lo clínico (Veterinaria) y lo que cuelga de perros y clientes va primero: demo_vaciar no lo conoce.
-  const Sneg = createClient(C.url, C.secreta, { ...sinSesion, global: { headers: { "x-negocio-id": neg.id } } });
+  const Sneg = createClient(C.url, C.secreta, conHeaders({ "x-negocio-id": neg.id }));
   exigir(await conReintento(() => Sneg.rpc("demo_vaciar_veterinaria", { p_negocio_id: neg.id, p_todo: true }), "demo_vaciar_veterinaria"), "demo_vaciar_veterinaria");
   const borrado = exigir(await conReintento(() => Sneg.rpc("demo_vaciar", { p_negocio_id: neg.id }), "demo_vaciar"), "demo_vaciar");
   console.log("vaciado:", borrado.filter((b) => b.borradas > 0).map((b) => `${b.tabla} ${b.borradas}`).join(", "));
@@ -111,7 +146,7 @@ if (neg) {
   console.log("negocio creado", id);
 }
 const NEG = neg.id;
-const S = createClient(C.url, C.secreta, { ...sinSesion, global: { headers: { "x-negocio-id": NEG } } });
+const S = createClient(C.url, C.secreta, conHeaders({ "x-negocio-id": NEG }));
 cerrarAlFallar(S); // si el script revienta, las cuentas del visitante quedan en solo lectura
 const deNeg = (tabla, sel = "id") => S.from(tabla).select(sel).eq("negocio_id", NEG);
 
@@ -150,7 +185,7 @@ async function tokenDe(id) {
   }
   throw new Error("Auth sigue limitando");
 }
-const como = async (id) => createClient(C.url, C.anon, { ...sinSesion, global: { headers: { Authorization: `Bearer ${await tokenDe(id)}`, "x-negocio-id": NEG } } });
+const como = async (id) => createClient(C.url, C.anon, conHeaders({ Authorization: `Bearer ${await tokenDe(id)}`, "x-negocio-id": NEG }));
 async function membresia(id) {
   return (await A.from("membresias").select("rol").eq("profile_id", id).eq("negocio_id", NEG).is("deleted_at", null).maybeSingle()).data;
 }
@@ -407,7 +442,15 @@ async function firmar(contratoId, cliente, fecha, papel = false) {
   exigir(await A.storage.from(BUCKET).upload(ruta, pdf, { contentType: "application/pdf", upsert: true }), "subir contrato");
   if (papel) exigir(await REC.rpc("subir_contrato_papel", { p_contrato_id: contratoId, p_storage_path: ruta, p_hash_pdf: hash }), "contrato en papel");
   else exigir(await DUENO.rpc("finalizar_firma_contrato", { p_contrato_id: contratoId, p_storage_path: ruta, p_hash_pdf: hash, p_ip: IP_FIRMA }), "firmar");
-  exigir(await S.from("contratos").update({ fecha_firma: inst(fecha, "10:12"), created_at: inst(dia(-1, fecha), "17:30") }).eq("id", contratoId), "fechar firma");
+  // Se fecha después, por lotes (una actualización por fecha, no una por contrato): fecharFirmas().
+  porFechar.push([contratoId, fecha]);
+}
+const porFechar = []; // [contrato, fecha de firma]
+async function fecharFirmas() {
+  const lotes = Map.groupBy(porFechar.splice(0), ([, fecha]) => fecha);
+  for (const [fecha, filas] of lotes) {
+    exigir(await S.from("contratos").update({ fecha_firma: inst(fecha, "10:12"), created_at: inst(dia(-1, fecha), "17:30") }).eq("negocio_id", NEG).in("id", filas.map(([id]) => id)), "fechar firmas");
+  }
 }
 async function generar(p, tipo) {
   return exigir(await REC.rpc("generar_contrato", { p_perro_id: p.id, p_tipo_contrato_id: tiposContrato[tipo] }), `contrato ${tipo} ${p.nombre}`);
@@ -428,6 +471,7 @@ for (const p of PERROS) {
     else { await firmar(hotel, p.cliente, dia(-HISTORIA - 4 - (firmados % 20))); firmados++; }
   }
 }
+await fecharFirmas();
 console.log(`contratos firmados: ${firmados}`);
 
 // ── La historia: un turno por día, guardería, hotel, estética y cobros ──
@@ -450,20 +494,27 @@ async function reservaDe(cliente, notas = null) {
 async function estancia(reserva, p, servicio, entra, sale, extra = {}) {
   return exigir(await REC.from("estancias").insert({ reserva_id: reserva, perro_id: p.id, servicio_id: servicios[servicio].id, fecha_entrada: entra, fecha_salida: sale, ...extra }).select("id").single(), `estancia ${p.nombre} ${entra}`).id;
 }
-async function checkin(id, p, fecha, hora) {
+// Lo que trae el perro se registra en el check-in y se entrega en el check-out (`cosas`: descripciones).
+async function checkin(id, p, fecha, hora, cosas = []) {
   exigir(await REC.from("estancias").update({ estado: "en_curso", entregado_por_nombre: p.cliente.nombre, hora_entrada_real: inst(fecha, hora), estado_llegada: "Llega bien, con su correa." }).eq("id", id), "check-in");
+  if (cosas.length) exigir(await REC.from("estancia_pertenencias").insert(cosas.map((descripcion) => ({ estancia_id: id, descripcion, updated_at: inst(fecha, hora), created_at: inst(fecha, hora) }))), "pertenencias");
 }
-async function checkout(id, p, fecha, hora) {
-  exigir(await REC.from("estancias").update({ estado: "finalizada", recogido_por_nombre: p.cliente.nombre, recogido_por_es_dueno: true, hora_salida_real: inst(fecha, hora) }).eq("id", id), "check-out");
+// `sinEntregar`: el motivo de lo que no se entregó (se queda la última pertenencia).
+async function checkout(id, p, fecha, hora, sinEntregar = null) {
+  exigir(await REC.from("estancias").update({ estado: "finalizada", recogido_por_nombre: p.cliente.nombre, recogido_por_es_dueno: true, hora_salida_real: inst(fecha, hora), pertenencias_sin_entrega_motivo: sinEntregar, pertenencias_sin_entrega_por: sinEntregar ? P.recepcion.id : null }).eq("id", id), "check-out");
+  const { data: cosas } = await S.from("estancia_pertenencias").select("id").eq("negocio_id", NEG).eq("estancia_id", id).is("deleted_at", null).order("created_at").order("id");
+  const entregadas = (cosas ?? []).slice(0, sinEntregar ? -1 : undefined).map((c) => c.id);
+  if (entregadas.length) exigir(await REC.from("estancia_pertenencias").update({ devuelto: true, devuelto_at: inst(fecha, hora), devuelto_por: P.recepcion.id }).in("id", entregadas), "pertenencias entregadas");
 }
+const COSAS_HOTEL = [["Su cobija azul", "Croquetas de casa (bolsa de 2 kg)"], ["Correa roja", "Cama de viaje"], ["Juguete de cuerda", "Suéter gris"]];
 async function cobrar(reserva, fecha, hora, metodo, propina = 0) {
   const [tot] = exigir(await REC.rpc("cuenta_totales_reserva", { p_reserva_id: reserva }), "totales");
   const saldo = Number(tot?.saldo ?? 0);
   if (saldo <= 0) return 0;
-  exigir(await REC.rpc("registrar_cobro", { p_reserva_id: reserva, p_notas: null, p_metodos: [{ metodo, monto: saldo, propina }] }), "cobro");
-  const { data: c } = await S.from("cobros").select("id").eq("reserva_id", reserva).order("created_at", { ascending: false }).limit(1).single();
-  exigir(await S.from("cobros").update({ created_at: inst(fecha, hora) }).eq("id", c.id), "fechar cobro");
-  exigir(await S.from("cobro_metodos").update({ created_at: inst(fecha, hora) }).eq("cobro_id", c.id), "fechar métodos");
+  // registrar_cobro devuelve el id del cobro: se fecha con él, sin volver a leer la tabla de cobros.
+  const cobroId = exigir(await REC.rpc("registrar_cobro", { p_reserva_id: reserva, p_notas: null, p_metodos: [{ metodo, monto: saldo, propina }] }), "cobro");
+  exigir(await S.from("cobros").update({ created_at: inst(fecha, hora) }).eq("id", cobroId), "fechar cobro");
+  exigir(await S.from("cobro_metodos").update({ created_at: inst(fecha, hora) }).eq("cobro_id", cobroId), "fechar métodos");
   return saldo;
 }
 const metodoAlAzar = () => { const x = azar(); return x < 0.45 ? "terminal" : x < 0.8 ? "efectivo" : "transferencia"; };
@@ -530,7 +581,7 @@ async function venderBono(p, fecha) {
   const { data: bono } = await S.from("bonos_clientes").select("id, reserva_id").eq("negocio_id", NEG).eq("perro_id", p.id).order("created_at", { ascending: false }).limit(1).single();
   exigir(await S.from("bonos_clientes").update({ fecha_compra: fecha, fecha_vencimiento: dia(b.vigencia_dias, fecha), created_at: inst(fecha, "09:20") }).eq("id", bono.id), "fechar bono");
   exigir(await S.from("movimientos_bono").update({ created_at: inst(fecha, "09:20") }).eq("bono_cliente_id", bono.id).eq("tipo", "venta"), "fechar venta de bono");
-  const { data: cob } = await S.from("cobros").select("id").eq("reserva_id", bono.reserva_id);
+  const { data: cob } = await S.from("cobros").select("id").eq("negocio_id", NEG).eq("reserva_id", bono.reserva_id);
   for (const c of cob ?? []) {
     exigir(await S.from("cobros").update({ created_at: inst(fecha, "09:20") }).eq("id", c.id), "fechar cobro de bono");
     exigir(await S.from("cobro_metodos").update({ created_at: inst(fecha, "09:20") }).eq("cobro_id", c.id), "fechar métodos de bono");
@@ -541,6 +592,7 @@ async function venderBono(p, fecha) {
   if (con) await firmar(con.id, p.cliente, fecha);
 }
 
+let salidaConPendiente = false; // una salida de hotel reciente deja una pertenencia sin entregar, con su motivo
 const hotelActivo = new Map(); // perro → { reserva, estancia, sale }
 for (let n = -HISTORIA; n <= 0; n++) {
   const fecha = dia(n);
@@ -558,14 +610,14 @@ for (let n = -HISTORIA; n <= 0; n++) {
     if (entra === n) {
       const reserva = await reservaDe(p.cliente);
       const id = await estancia(reserva, p, "hotel_noche", fecha, dia(sale - entra, fecha));
-      if (!hoy) await checkin(id, p, fecha, "10:30");
+      if (!hoy) await checkin(id, p, fecha, "10:30", COSAS_HOTEL[nombre.length % COSAS_HOTEL.length]);
       hotelActivo.set(`${nombre}${entra}`, { reserva, id, sale, p });
     }
   }
   for (const [clave, h] of hotelActivo) {
     if (h.sale !== n) continue;
     if (hoy) continue; // la salida de hoy queda pendiente: cuenta abierta en caja
-    await checkout(h.id, h.p, fecha, "12:10");
+    await checkout(h.id, h.p, fecha, "12:10", !salidaConPendiente && n >= -8 ? ((salidaConPendiente = true), "Se quedó a lavar; el dueño pasa por ella mañana.") : null);
     cobrarLuego.push([h.reserva, "12:15", metodoAlAzar(), 0]);
     hotelActivo.delete(clave);
   }
@@ -580,11 +632,12 @@ for (let n = -HISTORIA; n <= 0; n++) {
     const tieneBono = p.bono && bonoVendido[p.nombre] && bonoVendido[p.nombre] <= fecha;
     if (tieneBono) await aplicarBono(id, fecha, "08:50");
     const llega = hhmm(510 + i * 9);
+    const cosas = n >= -7 && i % 3 === 0 ? [elegir(["Correa roja", "Juguete de cuerda", "Arnés negro", "Pelota de tenis"])] : [];
     if (hoy) {
-      if (i < roster.length - 2 || roster.length < 4) await checkin(id, p, fecha, llega);
+      if (i < roster.length - 2 || roster.length < 4) await checkin(id, p, fecha, llega, cosas.length ? cosas : ["Correa roja"]);
       continue; // se cobran al recogerlos: hoy quedan con saldo
     }
-    await checkin(id, p, fecha, llega);
+    await checkin(id, p, fecha, llega, cosas);
     await checkout(id, p, fecha, porHora ? hhmm(510 + i * 9 + 230) : hhmm(1020 + i * 7));
     cobrarLuego.push([reserva, hhmm(1025 + i * 7), metodoAlAzar(), 0]);
   }
@@ -608,11 +661,17 @@ for (let n = -HISTORIA; n <= 0; n++) {
   for (const [reserva, hora, metodo, propina] of cobrarLuego) total += await cobrar(reserva, fecha, hora, metodo, propina);
   if (!hoy) await cerrarTurno(fecha);
   RESERVAS_DIA.push([fecha, total]);
-  process.stdout.write(`${fecha.slice(5)} $${total} · `);
+  process.stdout.write(`${fecha.slice(5)} ${total} · `);
 }
 console.log();
+await fecharFirmas(); // los contratos de guardería que se firmaron al comprar un paquete
 
 // Hoy, lo que no cabe en el ciclo: una cuenta con comida especial, bitácora.
+// Efectivo agregado al turno abierto de hoy, con su motivo (lo agrega la dueña: el permiso viene apagado para recepción).
+{
+  const r = await ADM.rpc("registrar_efectivo_agregado", { p_monto: 500, p_origen: "cambio", p_nota: "Billetes chicos para el cambio" });
+  if (r.error) console.log(`  (efectivo agregado: ${r.error.message})`);
+}
 const mochi = hotelActivo.get("Mochi-2");
 if (mochi) {
   exigir(await REC.rpc("crear_cargo_suelto", { p_cliente_id: mochi.p.cliente.id, p_servicio_id: servicios.cargo_comida_especial.id, p_cantidad: 1, p_importe: 180, p_descripcion: "Pollo cocido con arroz (3 días)", p_perro_id: mochi.p.id, p_notas: null }), "comida especial");
@@ -708,6 +767,24 @@ exigir(await ADM.rpc("registrar_adelanto", { p_empleado_id: P.limpieza.empleado,
 exigir(await ADM.rpc("ajustar_vacaciones", { p_empleado_id: P.cuidador.empleado, p_dias: 12, p_tipo: "asignacion", p_motivo: "Vacaciones del año" }), "vacaciones");
 const aus = await ADM.rpc("solicitar_ausencia", { p_empleado_id: P.cuidador.empleado, p_tipo: "vacaciones", p_desde: dia(20), p_hasta: dia(24), p_motivo: "Viaje familiar" });
 if (aus.error) console.log(`  (ausencia: ${aus.error.message})`);
+// Ausencias APROBADAS de la segunda estilista, sobre días en que ya tiene citas: un día completo y un medio día.
+// Sus citas de esos tramos quedan «por reasignar» (marcadas en la agenda y en Inicio) y ella sale «ausente» al agendar.
+{
+  const trabaja = new Set(D.HORARIOS[P.estetica2.horario].map((h) => h.dia_semana));
+  const proximos = [1, 2, 3, 4, 5].map((n) => dia(n)).filter((f) => trabaja.has(dow(f)));
+  const AUSENCIAS = [
+    [proximos[0], "dia_personal", "Trámite personal", null, null],
+    [proximos[1], "falta_justificada", "Cita médica al mediodía", "11:00", "15:00"],
+  ];
+  for (const [fecha, tipo, motivo, horaDesde, horaHasta] of AUSENCIAS) {
+    if (!fecha) continue;
+    const r = await ADM.rpc("solicitar_ausencia", { p_empleado_id: P.estetica2.empleado, p_tipo: tipo, p_desde: fecha, p_hasta: fecha, p_motivo: motivo, p_hora_desde: horaDesde, p_hora_hasta: horaHasta });
+    if (r.error) { console.log(`  (ausencia de ${P.estetica2.nombre} el ${fecha}: ${r.error.message})`); continue; }
+    exigir(await ADM.rpc("resolver_ausencia", { p_ausencia_id: r.data, p_aprobar: true, p_motivo: null }), "aprobar ausencia");
+  }
+  const { data: porReasignar } = await ADM.rpc("citas_en_ausencia");
+  console.log(`ausencias aprobadas de ${P.estetica2.nombre}: ${AUSENCIAS.filter(([f]) => f).length}, citas por reasignar: ${porReasignar?.length ?? 0}`);
+}
 
 // ── Gastos del mes y recurrentes ──
 for (const mes of [meses(INICIO_MES, -1), INICIO_MES]) for (const [concepto, cat, monto, diaPago, metodo, cubre] of D.GASTOS) {
@@ -740,8 +817,8 @@ if (!fotosPrevias) {
 }
 
 // ── Cuentas de solo lectura ──
-const cuentasDemo = [...D.PERSONAL.filter((p) => P[p.clave].id).map((p) => P[p.clave].id), ...CLIENTES.filter((c) => c.cuenta).map((c) => c.cuenta)];
-exigir(await S.from("membresias").update({ solo_lectura: true }).eq("negocio_id", NEG).in("profile_id", cuentasDemo), "solo lectura");
+const cuentasSembradas = [...D.PERSONAL.filter((p) => P[p.clave].id).map((p) => P[p.clave].id), ...CLIENTES.filter((c) => c.cuenta).map((c) => c.cuenta)];
+exigir(await S.from("membresias").update({ solo_lectura: true }).eq("negocio_id", NEG).in("profile_id", cuentasSembradas), "solo lectura");
 
 // ── Resumen ──
 const conteo = async (tabla) => (await S.from(tabla).select("id", { count: "exact", head: true }).eq("negocio_id", NEG)).count;
@@ -749,7 +826,7 @@ const resumen = {};
 for (const tabla of ["clientes", "perros", "estancias", "citas_estetica", "cobros", "turnos_caja", "bonos_clientes", "contratos", "insumos", "equipos", "empleados", "asistencias", "nomina_pagos", "gastos"]) resumen[tabla] = await conteo(tabla);
 console.log(resumen);
 console.log(`ingreso cobrado en la historia: $${RESERVAS_DIA.reduce((s, [, t]) => s + t, 0)}`);
-console.log(`cuentas del demo (solo lectura): ${cuentasDemo.length} · dueña del portal: ${telefonoACorreo(D.CLIENTES.find((c) => c.portal).telefono)}`);
+console.log(`cuentas del demo (solo lectura): ${cuentasSembradas.length} · dueña del portal: ${telefonoACorreo(D.CLIENTES.find((c) => c.portal).telefono)}`);
 
 // ── Veterinaria (21 de octubre de 2026): la clínica del demo, con sus propios datos de ejemplo ──
 execSync(`node scripts/demo/sembrar-demo-veterinaria.mjs${PROD ? " --prod" : ""}`, { stdio: "inherit" });

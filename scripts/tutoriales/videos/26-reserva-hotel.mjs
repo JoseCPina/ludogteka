@@ -21,7 +21,7 @@ export default {
     {
       titulo: "Crear la reserva",
       dice: "Aprieta «Crear reserva». Si un perro tiene una vacuna vencida, o le falta la evaluación de comportamiento, la app no deja reservar y te dice qué falta.",
-      pasos: [["clic", "Crear reserva", { nav: true }], ["esperar", 3000]],
+      pasos: [["clic", "Crear reserva"], ["esperar", 3000]],
     },
   ],
   resumen: ["En el hotel pones entrada y salida, y la app cuenta las noches.", "El precio sale de la talla del perro.", "Si algo falta, la app te dice qué antes de reservar."],

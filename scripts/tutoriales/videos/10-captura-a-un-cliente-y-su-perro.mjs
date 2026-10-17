@@ -25,8 +25,8 @@ export default {
     },
     {
       titulo: "Tamaño y pelaje",
-      dice: "Escoge el «Tamaño» y el «Pelaje». Con eso, la estética ya puede cotizar el baño. Lo demás lo puedes llenar después, en su expediente.",
-      pasos: [["elegir", "Tamaño", "Grande"], ["elegir", "Pelaje", "Corto"], ["resaltar", "Veterinario", 2200]],
+      dice: "Revisa el «Tamaño» y el «Pelaje»: con una raza del catálogo ya vienen sugeridos. Con eso, la estética ya puede cotizar el baño. Lo que dice «recomendado» lo llenas después, en su expediente.",
+      pasos: [["elegir", "Tamaño", "Grande"], ["elegir", "Pelaje", "Corto"], ["resaltar", "Veterinario (recomendado)", 2200]],
     },
     {
       titulo: "Guardar al perro",

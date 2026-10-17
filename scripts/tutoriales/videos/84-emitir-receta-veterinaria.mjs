@@ -6,18 +6,18 @@ export default {
   escenas: [
     {
       titulo: "Una receta nueva",
-      dice: "En «Recetas», «Nueva receta», elige a la mascota. Si ya firmaste una consulta de esa mascota, puedes recetar desde esa consulta, y el diagnóstico se copia solo.",
-      pasos: [["escribir", "Buscar mascota o dueño", "Michi"], ["tecla", "Enter"], ["esperar", 1500], ["clic", "Michi", { nav: true }], ["esperar", 1200]],
+      dice: "En «Recetas», «Nueva receta», elige a la mascota. Si ya firmaste una consulta, recétale desde esa consulta: los medicamentos salen prellenados con su «Tratamiento».",
+      pasos: [["escribir", "Buscar mascota o dueño", "Canela"], ["tecla", "Enter"], ["esperar", 1500], ["clic", "css:a[href*='recetas/nueva?perro=']:has-text('Canela'):has-text('Mariana')", { nav: true }], ["esperar", 1200], ["clic", "css:a[href*='consulta='] >> nth=0", { nav: true }], ["esperar", 1200], ["resaltar", "css:[data-receta-prellenada]", 3000]],
     },
     {
       titulo: "Los medicamentos",
-      dice: "Agrega cada medicamento, del inventario clínico o escrito a mano. Cada uno pide la dosis, la vía, la frecuencia y la duración en días. El tiempo de retiro es opcional.",
-      pasos: [["elegir", "Del inventario clínico", "Meloxicam"], ["escribir", "Dosis (como se escribe)", "0.1 mL por toma"], ["escribir", "Vía de administración", "Oral"], ["escribir", "Frecuencia (como se escribe)", "Cada 24 horas"], ["resaltar", "Duración (días)", 2400]],
+      dice: "Revisa cada medicamento y corrige lo que haga falta: elígelo del inventario clínico o déjalo escrito a mano, con su dosis, vía, frecuencia y días. El tiempo de retiro es opcional.",
+      pasos: [["elegir", "Del inventario clínico", "Enrofloxacina"], ["escribir", "Vía de administración", "Ótica"], ["resaltar", "Frecuencia (como se escribe)", 2400]],
     },
     {
       titulo: "La cantidad a surtir",
-      dice: "La cantidad a surtir se calcula sola con la dosis por toma, cada cuántas horas y los días de tratamiento. Si necesitas otra cantidad, la escribes tú.",
-      pasos: [["escribir", "Dosis por toma (número, para calcular)", "0.1"], ["escribir", "Cada cuántas horas (número)", "24"], ["escribir", "Duración (días)", "5"], ["resaltar", "Cantidad a surtir", 3000]],
+      dice: "La cantidad a surtir se calcula sola con la dosis, la frecuencia y los días, aunque estén escritos como «1 mL» o «cada 12 horas». Si necesitas otra cantidad, la escribes tú.",
+      pasos: [["resaltar", "Cantidad a surtir", 3200]],
     },
     {
       titulo: "Emitir, imprimir y mandar",
@@ -30,5 +30,5 @@ export default {
       pasos: [["esperar", 2600]],
     },
   ],
-  resumen: ["La cantidad a surtir se calcula sola.", "Sale el original y las copias, a nombre del médico.", "Una receta no se edita: se anula con motivo."],
+  resumen: ["Desde una consulta firmada, la receta sale prellenada con su Tratamiento.", "La cantidad a surtir se calcula sola.", "Una receta no se edita: se anula con motivo."],
 };
