@@ -196,4 +196,7 @@ Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado.
 - El aviso «Solo estética · vacunas no requeridas» sale solo cuando el negocio da estética y el perro ya viene a estética sin haber usado guardería ni hotel; en un negocio de guardería u hotel un perro nuevo muestra lo que le falta, y con Veterinaria sola no sale.
 - En la ficha del cliente, si ya activó su cuenta del portal y se toca «Generar otro enlace», se oculta el enlace usado y se avisa que ya tiene cuenta activa.
 - En el portal, las consultas veterinarias no muestran los títulos de la plantilla que quedaron vacíos.
+- Un cliente con cuenta activa en el portal no recibe link de alta ni de complemento: la ficha dice «Este cliente ya tiene cuenta activa» y la base rechaza el link. Un link de alta que ya guardó sus datos también se puede cancelar desde «Altas por link».
+- En el formulario de la mascota, «Tamaño» y «Pelaje» se marcan obligatorios solo cuando la regla del negocio los exige (Estética con una raza que no fija el precio sola) y se recalculan al cambiar la raza; con solo guardería u hotel basta la raza.
+- La vista previa del importador marca con error la mascota nueva a la que le falta raza (o tamaño y pelaje con Estética), con la misma regla que al importar.
 `.trim();

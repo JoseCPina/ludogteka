@@ -223,6 +223,20 @@ try {
   await pag.setInputFiles('[data-testid="archivo-importar"]', { name: "vacio.csv", mimeType: "text/csv", buffer: Buffer.from("Nombre;Teléfono\r\n") });
   comprobar(await seen(/solo trae los encabezados/, 15000), "un archivo sin filas también");
 
+  // Rechequeo de la QA (17 de octubre de 2026): la vista previa aplica la regla de raza, tamaño y pelaje.
+  await fijarModulo("estetica", true);
+  const csvRegla = Buffer.from(`Dueño;Teléfono;Mascota;Raza;Tamaño;Pelaje\r\n${MARCA} Sin Raza;${tel()};${MARCA} Uno;;;\r\n${MARCA} Mestiza;${tel()};${MARCA} Dos;Mestizo;;\r\n${MARCA} Completa;${tel()};${MARCA} Tres;Mestizo;Grande;Corto\r\n`, "utf8");
+  await pag.goto(`${BASE}/admin/importar`, { waitUntil: "networkidle" });
+  await pag.setInputFiles('[data-testid="archivo-importar"]', { name: `${MARCA}-regla.csv`, mimeType: "text/csv", buffer: csvRegla });
+  await pag.getByText(/Revisa a qué campo corresponde/).first().waitFor({ timeout: 20000 });
+  await pag.getByRole("button", { name: "Revisar antes de importar" }).click();
+  await pag.getByText(/Se importan/).first().waitFor({ timeout: 30000 });
+  const tReg = await pag.locator("section").filter({ hasText: "Se importan" }).first().innerText();
+  const cReg = (et) => Number(new RegExp(`(\\d[\\d,]*)\\s*\\n?\\s*${et}`).exec(tReg)?.[1] ?? NaN);
+  comprobar(cReg("Se importan") === 1 && cReg("Con error \\(no entran\\)") === 2, `Estética: la vista previa deja entrar 1 y marca 2 con error (${cReg("Se importan")} / ${cReg("Con error \\(no entran\\)")})`);
+  comprobar((await pag.getByText(/le falta: raza/).count()) >= 1 && (await pag.getByText(/le falta: tamaño, pelaje/).count()) >= 1, "…y cada fila dice qué le falta");
+  await fijarModulo("estetica", false);
+
   // ── B5 ──
   seccion("B5. Historial y deshacer");
   await pag.goto(`${BASE}/admin/importar`, { waitUntil: "networkidle" });

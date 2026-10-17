@@ -1,6 +1,7 @@
 "use client";
 
 import { useModulos } from "@/components/modulos-contexto";
+import { faltantesAltaPerro } from "@/lib/perros/alta-requisitos";
 import { startTransition, useActionState, useState } from "react";
 import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
@@ -99,7 +100,10 @@ export function PerroForm({
   // Tamaño y pelaje: la raza del catálogo los sugiere (Labrador: grande, corto) cuando aún están vacíos.
   const [tamanoId, setTamanoId] = useState(valoresIniciales?.tamano_id ?? "");
   const [pelajeId, setPelajeId] = useState(valoresIniciales?.pelaje_id ?? "");
+  // El aviso del último intento de guardar se esconde en cuanto se cambia lo que decía que faltaba.
+  const [errorDescartado, setErrorDescartado] = useState<string | null>(null);
   function alElegirRaza(v: { raza_id: string | null; raza: string; propuesta?: boolean }) {
+    setErrorDescartado(estado.error ?? null);
     setRazaElegida(v);
     const r = razas.find((x) => x.id === v.raza_id);
     if (r?.tamano_tipico_id && !tamanoId) setTamanoId(r.tamano_tipico_id);
@@ -107,10 +111,15 @@ export function PerroForm({
   }
   // Una raza nueva en revisión no es un mestizo: su precio sale del grupo que se le dé.
   const conPropuesta = Boolean(razaElegida.propuesta) || (Boolean(propuestaInicial) && razaElegida.raza_id === null);
-  const pideTallaYPelaje =
-    !conPropuesta &&
-    Boolean(razaElegida.raza.trim() || razaElegida.raza_id) &&
-    (!razaCatalogo || Boolean(razaCatalogo.es_desconocida) || /mestiz|criollo/i.test(razaCatalogo.nombre) || !razaCatalogo.grupo_nombre || Boolean(razaCatalogo.grupo_depende_pelaje));
+  // La MISMA regla que valida al guardar (faltantesAltaPerro, gemela de perro_faltantes_alta): con Estética, tamaño y
+  // pelaje cuando la raza no fija el precio sola; con solo guardería u hotel, únicamente la raza.
+  const modulosActivos = ["estetica", "guarderia", "hotel"].filter((m) => modulos.tiene(m));
+  const pideTallaYPelaje = faltantesAltaPerro(
+    { raza: razaElegida.raza, raza_id: razaElegida.raza_id, raza_propuesta: conPropuesta },
+    modulosActivos,
+    razas
+  ).includes("tamaño");
+  const errorVisible = estado.error && estado.error !== errorDescartado ? estado.error : null;
   // Una raza con nombre propio (Labrador) cuyo precio sale de la matriz de tamaño y pelaje: no es «mestizo», solo se cobra así.
   const razaPorMatriz = Boolean(razaCatalogo && !razaCatalogo.es_desconocida && !/mestiz|criollo/i.test(razaCatalogo.nombre) && razaCatalogo.grupo_depende_pelaje);
 
@@ -121,12 +130,13 @@ export function PerroForm({
       onSubmit={(e) => {
         e.preventDefault();
         const datos = new FormData(e.currentTarget);
+        setErrorDescartado(null);
         startTransition(() => formAction(datos));
       }}
       className="flex max-w-lg flex-col gap-4"
     >
       {borrador && !soloLectura && <BorradorFormulario formulario={borrador.formulario} clave={borrador.clave} />}
-      {estado.error && (
+      {errorVisible && (
         <Alert variante="error" titulo="No se pudo guardar">
           {estado.error}
         </Alert>
@@ -229,7 +239,10 @@ export function PerroForm({
           required={pideTallaYPelaje}
           disabled={deshabilitado}
           value={tamanoId}
-          onChange={(e) => setTamanoId(e.target.value)}
+          onChange={(e) => {
+            setErrorDescartado(estado.error ?? null);
+            setTamanoId(e.target.value);
+          }}
         >
           <option value="">{pideTallaYPelaje ? "Elige el tamaño" : "No especificado"}</option>
           {tamanos.map((t) => (
@@ -244,7 +257,10 @@ export function PerroForm({
           required={pideTallaYPelaje}
           disabled={deshabilitado}
           value={pelajeId}
-          onChange={(e) => setPelajeId(e.target.value)}
+          onChange={(e) => {
+            setErrorDescartado(estado.error ?? null);
+            setPelajeId(e.target.value);
+          }}
         >
           <option value="">{pideTallaYPelaje ? "Elige el pelaje" : "No especificado"}</option>
           {pelajes.map((p) => (
@@ -364,7 +380,7 @@ export function PerroForm({
       )}
 
       {!soloLectura && (
-        <AccionesFormulario error={estado.error} exito={estado.ok && "Cambios guardados"}>
+        <AccionesFormulario error={errorVisible} exito={estado.ok && "Cambios guardados"}>
           <Button type="submit" cargando={enviando}>
             {enviando ? "Guardando…" : textoBoton}
           </Button>

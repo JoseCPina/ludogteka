@@ -418,6 +418,27 @@ try {
   comprobar((huerfano.data ?? []).length === 0, "la fila rechazada no deja al dueño creado a medias");
   const anon9 = await fetch(`${URL}/rest/v1/rpc/perro_faltantes_alta`, { method: "POST", headers: { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY, "Content-Type": "application/json", "x-negocio-id": B }, body: JSON.stringify({ p_raza: null, p_raza_id: null, p_tamano_id: null, p_pelaje_id: null }) });
   comprobar(anon9.status >= 400, `la llave anónima no ejecuta perro_faltantes_alta (${anon9.status})`);
+  // La vista previa aplica la MISMA regla antes de importar (rechequeo de la QA, 17 de octubre de 2026).
+  const vistaReglaEst = await rpc(P.admin, "importacion_revisar", { p_filas: [
+    { n: 1, telefono: tel(), mascota: `${MARCA} P1`, raza: "", tamano: "", pelaje: "" },
+    { n: 2, telefono: tel(), mascota: `${MARCA} P2`, raza: "Mestizo", tamano: "", pelaje: "" },
+    { n: 3, telefono: tel(), mascota: `${MARCA} P3`, raza: "Mestizo", tamano: "grande", pelaje: "corto" },
+    { n: 4, telefono: tel(), mascota: "", raza: "", tamano: "", pelaje: "" },
+  ] });
+  const pv = Object.fromEntries((vistaReglaEst.cuerpo ?? []).map((r) => [r.n, r.faltantes ?? []]));
+  comprobar(vistaReglaEst.ok && pv[1].length === 1 && /raza/.test(pv[1][0]), `vista previa, Estética, sin raza: dice que falta la raza (${JSON.stringify(pv[1])})`);
+  comprobar(pv[2]?.length === 2 && pv[2].includes("tamaño") && pv[2].includes("pelaje"), `vista previa, Mestizo sin tamaño ni pelaje: dice los dos (${JSON.stringify(pv[2])})`);
+  comprobar(pv[3]?.length === 0 && pv[4]?.length === 0, "vista previa: la mestiza completa y la fila de solo dueño no marcan nada");
+  await fijarModulo("estetica", false);
+  await fijarModulo("hotel", true);
+  const vistaReglaHotel = await rpc(P.admin, "importacion_revisar", { p_filas: [
+    { n: 1, telefono: tel(), mascota: `${MARCA} H1`, raza: "", tamano: "", pelaje: "" },
+    { n: 2, telefono: tel(), mascota: `${MARCA} H2`, raza: "Mestizo", tamano: "", pelaje: "" },
+  ] });
+  const ph = Object.fromEntries((vistaReglaHotel.cuerpo ?? []).map((r) => [r.n, r.faltantes ?? []]));
+  comprobar(ph[1]?.length === 1 && /raza/.test(ph[1][0]), `vista previa, solo Hotel, sin raza: falta la raza (${JSON.stringify(ph[1])})`);
+  comprobar(ph[2]?.length === 0, `vista previa, solo Hotel, Mestizo: no pide tamaño ni pelaje (${JSON.stringify(ph[2])})`);
+  await fijarModulo("hotel", false);
   await fijarModulo("estetica", false);
 } catch (e) {
   console.log(`  ✘ la prueba se detuvo: ${e.stack ?? e}`);

@@ -137,6 +137,9 @@ let clienteId = null;
 let perroId = null;
 
 const crearLink = async (tipo, cliente = null) => {
+  // Un complemento solo se genera para un cliente SIN cuenta activa: los recorridos de abajo quitan la que el alta le creó.
+  // (Un alta nueva con el teléfono de un cliente con cuenta también se rechaza: se le quita la cuenta al de esta prueba.)
+  if (cliente ?? clienteId) await SH.from("membresias").delete().eq("negocio_id", H).eq("cliente_id", cliente ?? clienteId);
   const { data, error } = await recepJ.rpc("crear_invitacion_cliente", { p_nombre_referencia: `Prueba ${MARCA}`, p_telefono: TEL, p_dias_vigencia: 7, p_tipo: tipo, p_cliente_id: cliente });
   if (error) throw new Error(`crear_invitacion_cliente: ${error.message}`);
   return (Array.isArray(data) ? data[0] : data).token;
@@ -255,11 +258,18 @@ try {
   // El link del alta sigue «en curso» (falta la firma): se da por cumplido
   // para poder mandarle el de complemento.
   await SH.from("invitaciones_cliente").update({ usada_at: new Date().toISOString() }).eq("token", token);
+  // Con cuenta activa no se genera link de complemento (rechequeo de la QA, 17 de octubre de 2026): la base lo rechaza.
+  const rechazo = await recepJ.rpc("crear_invitacion_cliente", { p_nombre_referencia: `Prueba ${MARCA}`, p_telefono: TEL, p_dias_vigencia: 7, p_tipo: "guarderia_hotel", p_cliente_id: clienteId });
+  if (/ya tiene cuenta activa/i.test(rechazo.error?.message ?? "")) bien("con la cuenta activa, el link de complemento se rechaza («Este cliente ya tiene cuenta activa»)");
+  else hallazgo(`el complemento a un cliente con cuenta activa no se rechazó: ${rechazo.error?.message ?? "sin error"}`);
+  // Para probar el flujo de complemento se le quita la cuenta (la contraseña ya existente en Auth se vuelve a ligar al entrar).
+  await SH.from("membresias").delete().eq("negocio_id", H).eq("cliente_id", clienteId);
   const token2 = await crearLink("guarderia_hotel", clienteId);
   const ctx2 = await nav.newContext();
   const dueno2 = await ctx2.newPage();
   await dueno2.goto(`${BASE}/alta/${token2}`, { waitUntil: "networkidle" });
-  await dueno2.getByLabel("Tu contraseña").fill(CLAVE_PRUEBA);
+  await dueno2.getByLabel("Tu contraseña", { exact: true }).fill(CLAVE_PRUEBA);
+  if (await dueno2.getByLabel("Repite tu contraseña").count()) await dueno2.getByLabel("Repite tu contraseña").fill(CLAVE_PRUEBA);
   await dueno2.getByRole("button", { name: "Continuar" }).click();
   await dueno2.locator("[data-comprobantes-perro]").waitFor({ timeout: 30_000 }).catch(() => hallazgo("el complemento no pide las vacunas que faltan"));
   const faltantes = await dueno2.locator("[data-requisito]").evaluateAll((els) => els.map((e) => e.getAttribute("data-requisito")));
@@ -289,7 +299,8 @@ try {
   const ctx3 = await nav.newContext();
   const dueno3 = await ctx3.newPage();
   await dueno3.goto(`${BASE}/alta/${token3}`, { waitUntil: "networkidle" });
-  await dueno3.getByLabel("Tu contraseña").fill(CLAVE_PRUEBA);
+  await dueno3.getByLabel("Tu contraseña", { exact: true }).fill(CLAVE_PRUEBA);
+  if (await dueno3.getByLabel("Repite tu contraseña").count()) await dueno3.getByLabel("Repite tu contraseña").fill(CLAVE_PRUEBA);
   await dueno3.getByRole("button", { name: /Continuar/ }).click();
   await dueno3.waitForTimeout(3000);
   if (await dueno3.locator("[data-comprobantes-perro]").count()) hallazgo("con guardería y hotel apagados, el link sigue pidiendo vacunas");
