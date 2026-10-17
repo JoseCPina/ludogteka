@@ -1,5 +1,7 @@
 "use server";
 
+import { cargarRazas } from "@/lib/razas";
+import { faltantesAltaPerro, mensajeFaltantesAlta } from "@/lib/perros/alta-requisitos";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { normalizarTelefono } from "@/lib/telefono";
 import { correoSinteticoDeTelefono } from "@/lib/auth/identidad";
@@ -139,6 +141,28 @@ async function cuentaExistentePorTelefono(
   return { userId: data.user.id, error: null, existe: true };
 }
 
+async function mensajeDePerrosIncompletos(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  negocioId: string,
+  perros: DatosAlta["perros"]
+): Promise<string | null> {
+  const { data: modulosNegocio } = await admin.rpc("modulos_activos");
+  const modulos = (modulosNegocio as string[] | null) ?? [];
+  const razas = modulos.includes("estetica") ? await cargarRazas(admin, negocioId, { conGrupo: true }) : [];
+  for (const p of perros) {
+    const faltan = faltantesAltaPerro(p, modulos, razas);
+    if (faltan.length > 0) return mensajeFaltantesAlta(p.nombre, faltan);
+  }
+  return null;
+}
+
+// El paso «Tus perros» lo consulta antes de dejar avanzar, para que lo que falta se diga ahí y no hasta el final.
+export async function validarPerrosAlta(perros: DatosAlta["perros"]): Promise<{ error: string | null }> {
+  const negocio = await negocioActual();
+  const error = await mensajeDePerrosIncompletos(createSupabaseAdminClient(negocio.id), negocio.id, perros);
+  return { error };
+}
+
 export async function completarAlta(token: string, datos: DatosAlta): Promise<ResultadoAlta> {
   const nombre = datos.nombre.trim();
   const email = datos.email.trim().toLowerCase();
@@ -161,6 +185,11 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
 
   const negocio = await negocioActual();
   const admin = createSupabaseAdminClient(negocio.id);
+
+  // Raza (o «Mestizo»), tamaño y pelaje según lo que ofrece el negocio: el alta no deja un perro sin lo que hace falta
+  // para cotizarlo (N16). Se valida aquí, en el servidor, aunque el formulario también lo pida.
+  const sinLoNecesario = await mensajeDePerrosIncompletos(admin, negocio.id, datos.perros);
+  if (sinLoNecesario) return { error: sinLoNecesario };
 
   // Se valida el token ANTES de crear la cuenta, aunque
   // completar_alta_cliente lo vuelva a validar dentro de su transacción:

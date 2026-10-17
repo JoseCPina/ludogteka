@@ -12,7 +12,7 @@ import { FirmarContrato } from "@/components/firmar-contrato";
 import type { RazaOpcion } from "@/components/selector-raza";
 import type { CotizacionEstetica } from "@/lib/estetica/cotizacion";
 import { TIPOS_LINK_ALTA, type TipoLinkAlta } from "@/lib/alta/tipos-link";
-import { completarAlta, subirFotoAlta, calcularDistanciaAlta, cerrarLinkSiCompleto, iniciarSesionPorTelefono, proponerRazaAlta } from "../acciones";
+import { validarPerrosAlta, completarAlta, subirFotoAlta, calcularDistanciaAlta, cerrarLinkSiCompleto, iniciarSesionPorTelefono, proponerRazaAlta } from "../acciones";
 import { perroVacio, type ContratoPendiente, type PerroAlta } from "../tipos";
 import { camposDeTipo } from "@/lib/alta/campos-perro";
 import { TarjetaPerro, type Catalogo } from "./tarjeta-perro";
@@ -132,7 +132,7 @@ export function AltaForm({
     setComprobantes((prev) => prev.filter((_, j) => j !== i));
   }
 
-  function siguiente() {
+  async function siguiente() {
     setError(null);
     if (paso === PASO_DATOS) {
       if (!nombre.trim()) return setError("Escribe tu nombre.");
@@ -147,6 +147,8 @@ export function AltaForm({
       if (perros.some((p) => !p.nombre.trim())) {
         return setError("Cada perro necesita al menos un nombre.");
       }
+      const validacion = await enviando.ejecutar(() => validarPerrosAlta(perros));
+      if (validacion.error) return setError(validacion.error);
     }
     if (paso === PASO_VACUNAS) {
       // Un archivo sin fecha, o una fecha futura, no se puede revisar.
@@ -159,6 +161,8 @@ export function AltaForm({
   async function terminarCorta() {
     setError(null);
     if (perros.some((p) => !p.nombre.trim())) return setError("Cada perro necesita al menos un nombre.");
+    const validacion = await enviando.ejecutar(() => validarPerrosAlta(perros));
+    if (validacion.error) return setError(validacion.error);
     await enviar();
   }
 

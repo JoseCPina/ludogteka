@@ -164,8 +164,18 @@ try {
   await dueno.getByLabel("Tu teléfono").fill(TEL);
   await dueno.getByRole("button", { name: "Siguiente" }).click();
   await dueno.getByLabel("¿Cómo se llama?").fill(`Perro ${MARCA}`);
-  await dueno.getByLabel("Tamaño").selectOption({ index: 1 });
+  // N16: el alta pide raza (o «Mestizo»), tamaño y pelaje; sin ellos el servidor no deja avanzar.
   await dueno.getByRole("button", { name: "Siguiente" }).click();
+  const sinRaza = await dueno.getByText(/le falta: raza/).first().waitFor({ timeout: 30_000 }).then(() => true).catch(() => false);
+  if (!sinRaza) hallazgo("el alta dejó pasar a un perro sin raza, tamaño ni pelaje");
+  else bien("sin raza, tamaño ni pelaje el alta no avanza y dice qué falta");
+  await dueno.getByLabel("¿De qué raza es?").fill("Mestizo");
+  await dueno.waitForTimeout(500);
+  await dueno.getByText("Mestizo", { exact: true }).first().click();
+  await dueno.getByLabel("Tamaño").selectOption({ index: 1 });
+  await dueno.getByLabel("Pelaje").selectOption({ index: 1 });
+  await dueno.getByRole("button", { name: "Siguiente" }).click();
+  await dueno.locator("[data-comprobantes-perro]").first().waitFor({ timeout: 30_000 }).catch(() => {});
   const tarjetas = await dueno.locator("[data-comprobantes-perro]").count();
   const renglones = await dueno.locator("[data-requisito]").count();
   if (tarjetas !== 1 || renglones !== tipos.length) hallazgo(`el paso de vacunas pide ${renglones} requisitos en ${tarjetas} tarjetas (esperaba ${tipos.length} en 1)`);

@@ -1,5 +1,7 @@
 "use server";
 
+import { negocioActual } from "@/lib/negocio/actual";
+import { cargarRazas } from "@/lib/razas";
 import { puedeEditarFichaClinica } from "@/lib/veterinaria/ficha-permiso";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -11,6 +13,7 @@ import { ligarRazaPropuesta } from "./raza-propuesta-actions";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { usaVeterinaria } from "@/lib/plan/modulos";
+import { faltantesAltaPerro, mensajeFaltantesAlta } from "@/lib/perros/alta-requisitos";
 import { leerCamposClinicos, mensajeErrorClinico, type CamposClinicos } from "@/lib/perros/ficha-clinica";
 
 export type EstadoPerroForm = { error: string | null; ok?: boolean };
@@ -50,6 +53,21 @@ function leerCampos(formData: FormData) {
     veterinario_telefono: texto("veterinario_telefono"),
     veterinario_clinica: texto("veterinario_clinica"),
   };
+}
+
+// Raza (o «Mestizo»), tamaño y pelaje según lo que el negocio ofrece (N16): el servidor lo exige aunque el formulario
+// del navegador se salte la validación. La raza propuesta (aún sin catálogo) cuenta como raza.
+async function faltantesDelFormulario(campos: ReturnType<typeof leerCampos>, formData: FormData): Promise<string | null> {
+  const sesion = await obtenerSesionConRol();
+  const modulos = sesion?.modulos ?? [];
+  const supabase = await createSupabaseServerClient();
+  const razas = modulos.includes("estetica") && campos.raza_id ? await cargarRazas(supabase, (await negocioActual()).id, { conGrupo: true }) : [];
+  const faltan = faltantesAltaPerro(
+    { ...campos, raza_propuesta: leerPropuestaJson(String(formData.get("raza_propuesta") ?? "")) },
+    modulos,
+    razas
+  );
+  return faltan.length > 0 ? mensajeFaltantesAlta(campos.nombre, faltan) : null;
 }
 
 // Campos clínicos del formulario de mostrador: solo si el formulario los
@@ -146,6 +164,8 @@ export async function crearPerroYVolver(
 async function altaPerro(clienteId: string, formData: FormData, volver: string | null): Promise<EstadoPerroForm> {
   const campos = leerCampos(formData);
   if (!campos.nombre) return { error: "Escribe el nombre del perro." };
+  const faltantes = await faltantesDelFormulario(campos, formData);
+  if (faltantes) return { error: faltantes };
   const clinicos = await clinicosDelFormulario(formData);
   if ("error" in clinicos) return { error: clinicos.error };
 
@@ -193,6 +213,8 @@ export async function actualizarPerro(
 ): Promise<EstadoPerroForm> {
   const campos = leerCampos(formData);
   if (!campos.nombre) return { error: "Escribe el nombre del perro." };
+  const faltantes = await faltantesDelFormulario(campos, formData);
+  if (faltantes) return { error: faltantes };
   const clinicos = await clinicosDelFormulario(formData);
   if ("error" in clinicos) return { error: clinicos.error };
 

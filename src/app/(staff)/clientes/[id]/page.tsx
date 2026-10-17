@@ -23,6 +23,7 @@ import { DistanciaSeccion } from "./distancia-seccion";
 import { LinkComplemento, type LinkPendiente } from "./link-complemento";
 import { InvitarPortal } from "./invitar-portal";
 import { RestablecerPassword } from "./restablecer-password";
+import { aplicanRequisitosDe, perrosConCitasEstetica } from "@/lib/perros/solo-estetica";
 import { usaEstancias } from "@/lib/plan/modulos";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
@@ -110,6 +111,8 @@ export default async function EditarClientePage({
       .in("perro_id", perros.map((p) => p.id));
     for (const fila of conGh ?? []) usanGuarderiaHotel.add(fila.perro_id as string);
   }
+
+  const conCitasEstetica = await perrosConCitasEstetica(supabase, (perros ?? []).map((p) => p.id));
 
   const estadoSanitarioPorPerro = new Map<string, EstadoRequisitoItem[]>();
   if (perros && perros.length > 0) {
@@ -288,14 +291,15 @@ export default async function EditarClientePage({
                       alergiasGraves={alergiasGravesPorPerro.get(perro.id) ?? []}
                       tamano="compacto"
                     />
-                    {usanGuarderiaHotel.has(perro.id) ? (
-                      <ResumenSanitario
-                        items={estadoSanitarioPorPerro.get(perro.id) ?? []}
-                        tamano="compacto"
-                      />
-                    ) : (
-                      <NotaSoloEstetica tamano="compacto" />
-                    )}
+                    {conEstancias &&
+                      (aplicanRequisitosDe({ modulos: mods, usaGuarderiaHotel: usanGuarderiaHotel.has(perro.id), tieneCitasEstetica: conCitasEstetica.has(perro.id) }) ? (
+                        <ResumenSanitario
+                          items={estadoSanitarioPorPerro.get(perro.id) ?? []}
+                          tamano="compacto"
+                        />
+                      ) : (
+                        <NotaSoloEstetica tamano="compacto" />
+                      ))}
                     <ContratoEstadoBanner
                       resumen={contratoPorPerro.get(perro.id) ?? resumenVacio()}
                       tamano="compacto"
@@ -331,7 +335,7 @@ export default async function EditarClientePage({
             // Un perro que solo viene a estética no tiene nada «pendiente» de
             // guardería u hotel: la lista queda cerrada, a la mano por si un día
             // la usa, sin pintarle faltantes que no le aplican.
-            return usanGuarderiaHotel.has(p.id as string) ? (
+            return aplicanRequisitosDe({ modulos: mods, usaGuarderiaHotel: usanGuarderiaHotel.has(p.id as string), tieneCitasEstetica: conCitasEstetica.has(p.id as string) }) ? (
               panel
             ) : (
               <details key={p.id} data-pendientes-solo-estetica className="rounded-md border border-n-200 bg-white px-4 py-3">
