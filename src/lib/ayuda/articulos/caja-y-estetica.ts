@@ -724,6 +724,7 @@ Si la hora o la duración del servicio se salen del horario del negocio de ese d
 
 - «Este perro no tiene talla registrada…»: captúrala en su expediente con el link del mensaje.
 - «No hay nadie que pueda quedar como responsable de la cita»: falta dar de alta al personal de estética.
+- Una estilista sale como **ausente** en la lista de **Empleado** y no se puede escoger: tiene una ausencia aprobada (vacaciones, incapacidad…) a esa fecha y hora. Escoge a otra persona u otra hora. Mira [Cómo pedir, aprobar y llevar las ausencias](/ayuda/ausencias-y-vacaciones-de-empleados).
 - ¿Escogiste mal a la estilista? Mira [Cómo cambiar o corregir la estilista de una cita](/ayuda/cambiar-estilista-cita-estetica).
 - «Esta combinación no tiene precio»: agrega el precio en Servicios y precios, o registra una excepción con motivo ([Qué hacer cuando no hay precio](/ayuda/que-hacer-sin-precio-estetica)). Un mestizo se cobra por tamaño y pelaje ([Cómo se cobra a un mestizo](/ayuda/precio-de-estetica-mestizo)).
 - Sale el recuadro **La raza … todavía no tiene grupo de precio**: es una raza nueva (del catálogo o propuesta desde el formulario del perro) y tu negocio aún no decide su precio. Mira [Cómo agregar una raza que no aparece](/ayuda/agregar-una-raza-que-no-aparece).`,
@@ -746,6 +747,8 @@ Si la hora o la duración del servicio se salen del horario del negocio de ese d
 3. Abajo de la lista verás un aviso verde con quién quedó y quién la tenía antes.
 
 Una cita sin estilista no se puede iniciar: primero asígnale una.
+
+No se le puede pasar una cita a quien tiene una ausencia aprobada que cubre esa fecha y hora: la app dice quién y cuándo, y escoges a otra persona. Las citas que se quedaron con alguien que ya está ausente salen en rojo («Estilista ausente») en la agenda y en el tablero: reasígnalas aquí, o desde [Ausencias](/empleados/ausencias).
 
 ## Con el servicio en curso
 
@@ -965,7 +968,7 @@ Hace falta ser admin o tener el permiso **Agregar efectivo a caja** (apagado por
     palabras: ["reprogramar cita", "cambiar fecha", "cambiar hora", "mover cita", "cancelar cita", "no se presentó", "no llegó", "eliminar cita", "cita duplicada", "avisar al cliente"],
     cuerpo: `## Reprogramar
 
-En la [agenda](/estetica) cada cita por empezar trae **Reprogramar** (también está dentro de la cita). Escribe la **Nueva fecha y hora** y, si quieres, el motivo; aprieta **Guardar la nueva hora**. La app revisa que la estilista no tenga otra cita encimada. La cita se mueve con su precio y el cambio queda en **Historial de cambios**.
+En la [agenda](/estetica) cada cita por empezar trae **Reprogramar** (también está dentro de la cita). Escribe la **Nueva fecha y hora** y, si quieres, el motivo; aprieta **Guardar la nueva hora**. La app revisa que la estilista no tenga otra cita encimada ni una ausencia aprobada (vacaciones, incapacidad…) a esa fecha y hora. La cita se mueve con su precio y el cambio queda en **Historial de cambios**.
 
 Al guardar sale el botón para **avisar al cliente por WhatsApp** con el mensaje ya escrito. La app no manda nada sola: tú decides si lo envías.
 

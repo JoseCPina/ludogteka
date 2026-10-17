@@ -617,7 +617,9 @@ No tienes que explicar dónde estabas: el ticket lleva sola la pantalla en la qu
 - **Quien tiene cuenta en la app:** entra a [Mi asistencia](/mi-trabajo), baja a **Pedir una ausencia**, elige el **Tipo**, el día **Desde** y **Hasta (incluido)** (déjalo vacío si es un solo día) y aprieta **Pedir ausencia**.
 - **Quien no tiene cuenta, o si te avisó por WhatsApp:** en [Ausencias](/empleados/ausencias) busca **Pedir una ausencia por alguien**, elige al **Empleado**, el **Tipo** y las fechas, y aprieta **Pedir ausencia**. Un admin la pide por cualquiera; recepción, solo por quien no tiene cuenta.
 
-La app cuenta los días que a esa persona le tocaba trabajar según su horario, no los de calendario. Una ausencia no puede pasar de 90 días ni cruzarse con otra pedida o aprobada.
+Si falta solo unas horas de un día, llena también **Desde la hora (medio día)** y **Hasta la hora (medio día)**: cuenta como medio día y solo aplica a ese día. Si no las llenas, es el día completo.
+
+La app cuenta los días que a esa persona le tocaba trabajar según su horario, no los de calendario. Una ausencia no puede pasar de 90 días ni cruzarse con otra pedida o aprobada (dos medios días del mismo día sí caben, si sus horas no se cruzan).
 
 ## Aprobarla o rechazarla
 
@@ -625,6 +627,8 @@ Solo un admin. En [Ausencias](/empleados/ausencias), la sección **Por aprobar**
 
 1. Aprieta **Aprobar**, o
 2. aprieta **Rechazar**, escribe por qué y confirma con **Rechazar**.
+
+La aprobación nunca se detiene por las citas de estética que la persona ya tenía. Si tiene alguna en esas fechas (o en esas horas), debajo de la ausencia, en **Aprobadas y resueltas**, aparece un recuadro naranja con la lista de citas. En cada una escoges a quién **Pasarla a** y aprietas **Reasignar**. El recuadro se va solo cuando ya no queda ninguna.
 
 Lo ya resuelto queda en **Aprobadas y resueltas**.
 
@@ -639,8 +643,17 @@ Al aprobar unas vacaciones, sus días se descuentan del saldo de esa persona. Ca
 
 ## Cómo afecta la asistencia y la nómina
 
-- Un día con ausencia aprobada se marca como **ausencia** en la asistencia: no cuenta como falta ni como retardo.
+- Un día con ausencia aprobada se marca como **ausencia** en la asistencia: no cuenta como falta ni como retardo (también si fue de medio día).
 - En la nómina no se descuenta falta por ese día. Si el pago es por día, los días de vacaciones se pagan; los de incapacidad, día personal y falta justificada no.
-- **No bloquea la agenda de estética**: la app no quita a la persona de las citas. Si va a faltar, reasigna sus citas desde [Estética](/estetica).`,
+
+## Cómo afecta la agenda de estética
+
+Una ausencia **aprobada** bloquea la agenda de esa persona:
+
+- Al agendar en [Estética](/estetica) (o al agendar otro perrito, o al mover una cita), esa persona sale como **ausente** en la lista de **Empleado** para esa fecha y hora y no se puede escoger. Con una ausencia de medio día, solo se bloquean esas horas.
+- La app tampoco deja pasarle una cita a mano (**Reasignar**, **Reprogramar**): avisa quién tiene la ausencia y cuándo.
+- Las citas que ya tenía se quedan donde estaban, pero salen marcadas en rojo en la agenda y en **Citas de estética hoy** de Inicio, con «Estilista ausente», y en **Necesita atención**. Se quitan cuando las reasignas.
+- Una ausencia solo **solicitada** todavía no bloquea nada. Si **cancelas** una aprobada, la agenda de esa persona se libera al momento.
+- Lo que ya se atendió o se cobró no cambia.`,
   },
 ];

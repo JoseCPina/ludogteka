@@ -13,6 +13,9 @@
 // 4. Invitar al portal: enlace de un solo uso en la ficha, su activación
 //    (escoge contraseña y entra al portal) y que el mismo enlace ya no sirve;
 //    vencido, de otro negocio y falso.
+// 9. Ausencia aprobada: la cita que ya tenía la estilista sale marcada en la
+//    agenda («Estilista ausente»), la lista de «Aprobadas y resueltas» deja
+//    reasignarla con «Pasarla a» + «Reasignar», y la marca desaparece.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -363,11 +366,69 @@ try {
   else bien("terminada: el admin corrige con motivo y queda en el historial de la cita");
   await sinDesborde(admin, "detalle de la cita terminada");
   await ctxRec.close();
+
+  // ── 9. Ausencia aprobada: marca en la agenda y reasignación desde Ausencias ──
+  console.log("9. Ausencia aprobada y citas por reasignar (celular)");
+  const ADM = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${await tokenDe(datos.adminB)}`, "x-negocio-id": B } } });
+  const { data: hoyB } = await ADM.rpc("fecha_negocio");
+  const sumar = (f, n) => { const [y, m, d] = f.split("-").map(Number); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); };
+  const fecha = sumar(hoyB, 260 + Math.floor(Math.random() * 60));
+  let emp = (await SB.from("empleados").select("id").eq("profile_id", S1).is("deleted_at", null).maybeSingle()).data?.id;
+  if (!emp) {
+    const e = await SB.from("empleados").insert({ nombre: `Prueba ausencia ui ${sufijo}`, puesto: "Estilista", fecha_ingreso: sumar(hoyB, -60), telefono: "4440000000", emergencia_nombre: "Contacto", emergencia_telefono: "4441111111", profile_id: S1 }).select("id").single();
+    if (e.error) throw new Error(`empleado: ${e.error.message}`);
+    emp = e.data.id;
+    creados.empleadosUi = [emp];
+  }
+  const { data: tl } = await A.from("tamanos_categoria").select("id, clave");
+  const { data: pl } = await A.from("tipos_pelaje").select("id, clave");
+  const { data: rz } = await A.from("razas").select("id").eq("nombre", "Poodle").single();
+  const { data: sv } = await SB.from("servicios").select("id").eq("clave", "estetica_estetico").is("deleted_at", null).single();
+  const perroAus = (await SB.from("perros").insert({ cliente_id: datos.clienteSoloB, nombre: `ZZ aus ui ${sufijo}`, raza: "Poodle", raza_id: rz.id, tamano_id: tl.find((t) => t.clave === "chico").id, pelaje_id: pl.find((t) => t.clave === "medio").id }).select("id").single()).data.id;
+  creados.perros.push(perroAus);
+  const reserva = (await SB.from("reservas").insert({ cliente_id: datos.clienteSoloB }).select("id").single()).data.id;
+  creados.reservas.push(reserva);
+  const citaAus = await SB.from("citas_estetica").insert({ reserva_id: reserva, perro_id: perroAus, servicio_id: sv.id, empleado_id: S1, inicio: `${fecha}T20:00:00Z` }).select("id").single();
+  if (citaAus.error) throw new Error(`cita: ${citaAus.error.message}`);
+  creados.citas.push(citaAus.data.id);
+  const pedida = await ADM.rpc("solicitar_ausencia", { p_empleado_id: emp, p_tipo: "dia_personal", p_desde: fecha, p_hasta: fecha, p_motivo: "prueba ui" });
+  if (pedida.error) throw new Error(`ausencia: ${pedida.error.message}`);
+  creados.ausenciasUi = [pedida.data];
+  const aprobada = await ADM.rpc("resolver_ausencia", { p_ausencia_id: pedida.data, p_aprobar: true, p_motivo: null });
+  if (aprobada.error) throw new Error(`aprobar: ${aprobada.error.message}`);
+
+  await admin.goto(`${BASE}/estetica?vista=dia&fecha=${fecha}`, { waitUntil: "domcontentloaded", timeout: 90000 });
+  await admin.locator("[data-cita-en-ausencia]").first().waitFor({ timeout: 45000 }).catch(() => {});
+  const marcada = await admin.locator("[data-cita-en-ausencia]").count();
+  if (marcada < 1 || !(await admin.locator("body").innerText()).includes("Estilista ausente")) hallazgo("agenda: la cita de la estilista ausente no sale marcada");
+  else bien("agenda: la cita de la estilista ausente sale marcada («Estilista ausente»)");
+  await sinDesborde(admin, "agenda con una cita marcada");
+
+  await admin.goto(`${BASE}/empleados/ausencias`, { waitUntil: "domcontentloaded", timeout: 90000 });
+  const bloque = admin.locator("[data-citas-por-reasignar]").first();
+  await bloque.waitFor({ timeout: 45000 }).catch(() => {});
+  if ((await bloque.count()) === 0) hallazgo("Ausencias: no sale el recuadro con las citas por reasignar");
+  else {
+    bien("Ausencias: la ausencia aprobada trae el recuadro con la cita por reasignar");
+    await sinDesborde(admin, "Ausencias con citas por reasignar");
+    await bloque.locator("select").first().selectOption(S2);
+    await bloque.getByRole("button", { name: "Reasignar" }).first().click();
+    await admin.waitForFunction(() => document.querySelectorAll("[data-cita-por-reasignar]").length === 0 || /Quedó con/.test(document.body.innerText), null, { timeout: 45000 }).catch(() => {});
+    const nuevo = (await SB.from("citas_estetica").select("empleado_id").eq("id", citaAus.data.id).single()).data?.empleado_id;
+    if (nuevo !== S2) hallazgo("Ausencias: «Reasignar» no pasó la cita a la otra estilista");
+    else bien("Ausencias: «Reasignar» pasa la cita a otra estilista");
+  }
+  await admin.goto(`${BASE}/estetica?vista=dia&fecha=${fecha}`, { waitUntil: "domcontentloaded", timeout: 90000 });
+  await admin.waitForTimeout(1500);
+  if ((await admin.locator("[data-cita-en-ausencia]").count()) !== 0) hallazgo("agenda: la marca sigue después de reasignar");
+  else bien("agenda: la marca desaparece al reasignar");
 } catch (e) {
   hallazgo(`la prueba tronó: ${e.message}`);
 } finally {
   await nav.close();
   for (const id of creados.citas) await SB.from("citas_estetica").delete().eq("id", id);
+  for (const id of creados.ausenciasUi ?? []) await SB.from("ausencias").delete().eq("id", id);
+  if (creados.empleadosUi?.length) await SB.from("empleados").update({ deleted_at: new Date().toISOString() }).in("id", creados.empleadosUi);
   for (const id of creados.reservas) await SB.from("reservas").delete().eq("id", id);
   if (creados.perros.length) await SB.from("perros").update({ deleted_at: new Date().toISOString() }).in("id", creados.perros);
   for (const c of creados.clientes) {

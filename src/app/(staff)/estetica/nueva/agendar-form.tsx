@@ -15,7 +15,7 @@ import type { ClienteBuscable } from "@/lib/clientes/buscables";
 import { hoyNegocio, horaLocalParaInput, instanteDeHoraLocal } from "@/lib/formato";
 import { SelectorRaza, type RazaOpcion } from "@/components/selector-raza";
 import { crearPerritoEstetica } from "../perritos-actions";
-import { completarTallaPelajeDelPerro, cotizarCitaEstetica, crearCita, type CotizacionCita } from "../agenda-actions";
+import { completarTallaPelajeDelPerro, cotizarCitaEstetica, crearCita, estilistasAusentesEnTramo, type CotizacionCita } from "../agenda-actions";
 import { conTope, mensajeDeFallo } from "@/lib/ui/espera";
 import { asignarGrupoDePropuesta, asignarGrupoDeRaza } from "../../perros/razas/grupos-actions";
 import { useZonaNegocio } from "@/components/zona-negocio";
@@ -124,6 +124,8 @@ export function AgendarForm({
   const [empleadoId, setEmpleadoId] = useState(rolActual === "estetica" ? userIdActual : empleados[0]?.id ?? "");
   const [fechaHora, setFechaHora] = useState(horaInicial ?? `${hoyNegocio(zona)}T10:00`);
   const [estanciaId, setEstanciaId] = useState("");
+  // Quien tiene una ausencia aprobada que cubre la hora elegida no se ofrece (la base también lo rechaza).
+  const [ausentes, setAusentes] = useState<Record<string, string>>({});
   const [peloMaltratado, setPeloMaltratado] = useState(false);
   const [grupoElegido, setGrupoElegido] = useState("");
   const [excepcion, setExcepcion] = useState(false);
@@ -154,6 +156,22 @@ export function AgendarForm({
   const noOfrecidos = servicios.filter((s) => perroElegido?.pelajeClave && s.pelajes_excluidos.includes(perroElegido.pelajeClave));
   const serviciosOfrecidos = servicios.filter((s) => !noOfrecidos.includes(s));
   const servicioActual = serviciosOfrecidos.find((s) => s.id === servicioId) ?? serviciosOfrecidos[0] ?? null;
+
+  const duracionMin = servicioActual?.duracion_minutos ?? 60;
+  useEffect(() => {
+    let vigente = true;
+    const inicio = fechaHora.length >= 16 ? instanteDeHoraLocal(fechaHora, zona) : "";
+    if (!inicio) return;
+    const fin = new Date(new Date(inicio).getTime() + duracionMin * 60000).toISOString();
+    estilistasAusentesEnTramo(inicio, fin).then((lista) => {
+      if (vigente) setAusentes(Object.fromEntries(lista.map((a) => [a.profileId, a.texto])));
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [fechaHora, duracionMin, zona]);
+  // Si quien está elegido queda ausente a esa hora, se avisa y no se deja agendar.
+  const elegidoAusente = empleadoId ? ausentes[empleadoId] : undefined;
   const recargoNumero = Number(recargo.replace(",", "."));
   const grupoDeExcepcion = excepcion && grupoElegido ? grupoElegido : null;
 
@@ -629,11 +647,19 @@ export function AgendarForm({
               ayuda={rolActual === "estetica" ? "Solo puedes agendar en tu propia agenda." : undefined}
             >
               {empleados.map((emp) => (
-                <option key={emp.id} value={emp.id}>
+                <option key={emp.id} value={emp.id} disabled={Boolean(ausentes[emp.id])}>
                   {emp.nombre_completo ?? "—"}
+                  {ausentes[emp.id] ? ` · ausente (${ausentes[emp.id]})` : ""}
                 </option>
               ))}
             </Select>
+            {elegidoAusente && (
+              <div className="sm:col-span-2">
+                <Alert variante="advertencia" titulo="Esa persona no está disponible a esa hora">
+                  {elegidoAusente}. Escoge a otra persona u otra hora.
+                </Alert>
+              </div>
+            )}
           </div>
 
           {noOfrecidos.length > 0 && (
@@ -718,7 +744,7 @@ export function AgendarForm({
           <AccionesFormulario error={error}>
             <Button
               type="button"
-              disabled={enviando.cargando || !perroId || !empleadoId || !(cot && cot.error === null && cot.estado === "ok")}
+              disabled={enviando.cargando || !perroId || !empleadoId || Boolean(elegidoAusente) || !(cot && cot.error === null && cot.estado === "ok")}
               onClick={enviar}
             >
               {enviando.cargando ? "Agendando…" : "Agendar cita"}

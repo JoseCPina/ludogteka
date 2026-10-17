@@ -483,6 +483,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | --- | --- |
 | ajustes-servicio | 05, 55 |
 | carnet-recordatorios | 75 |
+| citas-en-ausencia | 45 |
 | clinico-bajo-minimo | 72 |
 | clinico-caducados | 72 |
 | clinico-por-caducar | 72 |
