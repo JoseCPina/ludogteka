@@ -199,4 +199,6 @@ Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado.
 - Un cliente con cuenta activa en el portal no recibe link de alta ni de complemento: la ficha dice «Este cliente ya tiene cuenta activa» y la base rechaza el link. Un link de alta que ya guardó sus datos también se puede cancelar desde «Altas por link».
 - En el formulario de la mascota, «Tamaño» y «Pelaje» se marcan obligatorios solo cuando la regla del negocio los exige (Estética con una raza que no fija el precio sola) y se recalculan al cambiar la raza; con solo guardería u hotel basta la raza.
 - La vista previa del importador marca con error la mascota nueva a la que le falta raza (o tamaño y pelaje con Estética), con la misma regla que al importar.
+- Los artículos del centro de ayuda que tienen video lo traen arriba del texto, con su título y su duración (el negocio solo ve los videos de los módulos que tiene prendidos). Al contestar con un artículo que tiene video, se manda el link del artículo y se ofrece también el video.
+- En celular, las tablas del historial de turnos cerrados, del cierre con diferencia y de Reportes se ven como tarjetas, con todas sus cifras (contado, esperado, diferencia) sin recortes.
 `.trim();

@@ -544,7 +544,7 @@ Arriba de la pantalla ves cuántos llevas.
 
 1. En el menú, entra a **Ayuda**.
 2. Busca lo que necesitas o pregúntale al asistente con tus palabras.
-3. Si prefieres verlo, en **Videos** está la serie completa: cada tarea paso a paso, con subtítulos y a la velocidad que quieras. En cada pantalla, el botón **¿Cómo se hace?** (junto al **?**) te lleva directo al video de esa pantalla.
+3. Si prefieres verlo, en **Videos** está la serie completa: cada tarea paso a paso, con subtítulos y a la velocidad que quieras. En cada pantalla, el botón **¿Cómo se hace?** (junto al **?**) te lleva directo al video de esa pantalla. Y los artículos que tienen video lo traen arriba del texto, con su título y su duración: puedes verlo ahí mismo o leer los pasos debajo.
 4. Si no se resolvió, aprieta **Crear ticket**.
 5. Escribe un asunto y cuéntanos qué pasó. Si puedes, agrega una captura de pantalla.
 

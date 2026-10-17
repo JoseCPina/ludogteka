@@ -22,8 +22,8 @@
 //      solo los retiros vivos; queda cerrado_por = admin.
 //   5. Recepción abre su propio turno, registra un retiro y lo cierra ella.
 //   6. Anon y estética no leen ni escriben movimientos_caja.
-// Sale con 1 si algo falla. Deja Huellitas con un turno abierto (las otras
-// pruebas lo usan).
+// Sale con 1 si algo falla. Al terminar cierra el turno que dejó abierto (las
+// otras pruebas abren el suyo si no hay).
 import { createClient } from "@supabase/supabase-js";
 import { abrirNavegador } from "../lib/navegador.mjs";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
@@ -210,6 +210,9 @@ try {
   await recep.screenshot({ path: "/tmp/caja-turno-recepcion.png" }).catch(() => {});
 } finally {
   await nav.close();
+  // No deja un turno abierto en Huellitas: las demás pruebas abren el suyo si hace falta.
+  const restante = await turnoAbierto();
+  if (restante) await cerrarConLoEsperado(adminJ, restante.id).catch(() => {});
 }
 
 console.log(hallazgos.length ? `\n✘ ${hallazgos.length} hallazgo(s).` : "\n✔ Sin hallazgos.");

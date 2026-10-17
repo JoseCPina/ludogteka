@@ -309,10 +309,10 @@ export async function cuentaPorTelefono(telefono: string): Promise<Cuenta> {
 }
 
 /** Los videos tutoriales ya publicados (tabla compartida `tutoriales`), con los artículos que cubren. */
-export async function videosPublicados(): Promise<{ slug: string; articulos: string[] }[]> {
+export async function videosPublicados(): Promise<{ numero: string; slug: string }[]> {
   try {
-    const { data } = await createSupabaseAdminClient().from("tutoriales").select("slug, articulos, video_path, youtube_id").eq("publicado", true).is("deleted_at", null);
-    return (data ?? []).filter((v) => v.video_path || v.youtube_id).map((v) => ({ slug: v.slug as string, articulos: (v.articulos as string[]) ?? [] }));
+    const { data } = await createSupabaseAdminClient().from("tutoriales").select("numero, slug, video_path, youtube_id").eq("publicado", true).is("deleted_at", null);
+    return (data ?? []).filter((v) => v.video_path || v.youtube_id).map((v) => ({ numero: v.numero as string, slug: v.slug as string }));
   } catch {
     return [];
   }

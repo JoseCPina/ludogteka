@@ -8,6 +8,7 @@
 // «Necesita atención» tiene que estar en algún video, o excluido con motivo.
 import fs from "node:fs";
 import { AREAS, VIDEOS, EXCLUIDOS } from "./catalogo.mjs";
+import { VIDEOS_DE_ARTICULO, VIDEOS_SIN_ARTICULO, ARTICULOS_SIN_VIDEO } from "../../src/lib/ayuda/videos.ts";
 import { rutasDePantalla, menuDelPersonal, permisosCatalogo, modulosCatalogo, articulosDeAyuda, avisosNecesitaAtencion } from "./lib/fuentes.mjs";
 
 const huecos = [];
@@ -47,10 +48,25 @@ const filaPermisos = permisosCatalogo().map((p) => {
 // 5. Artículos de ayuda
 const filaArt = articulosDeAyuda().map((a) => {
   const ids = cubierto("articulos", a.slug);
-  if (!ids.length) huecos.push(`artículo de ayuda ${a.slug}: sin video`);
+  if (!ids.length && !ARTICULOS_SIN_VIDEO[a.slug]) huecos.push(`artículo de ayuda ${a.slug}: sin video (ponlo en VIDEOS_DE_ARTICULO o en ARTICULOS_SIN_VIDEO con su motivo)`);
+  if (ids.length && ARTICULOS_SIN_VIDEO[a.slug]) huecos.push(`artículo de ayuda ${a.slug}: ya tiene video, quítalo de ARTICULOS_SIN_VIDEO`);
   return { ...a, ids };
 });
 for (const v of VIDEOS) for (const s of v.articulos) if (!filaArt.some((a) => a.slug === s)) huecos.push(`video ${v.id}: el artículo ${s} no existe`);
+
+// 5b. El mapeo video ↔ artículo (src/lib/ayuda/videos.ts): ni artículos ni videos inventados, y todo video en algún artículo.
+const numerosVideo = new Set(VIDEOS.map((v) => v.id));
+for (const [slug, nums] of Object.entries(VIDEOS_DE_ARTICULO)) {
+  if (!filaArt.some((a) => a.slug === slug)) huecos.push(`mapeo de videos: el artículo ${slug} no existe`);
+  for (const n of nums) if (!numerosVideo.has(n)) huecos.push(`mapeo de videos: ${slug} apunta al video ${n}, que no existe`);
+  if (new Set(nums).size !== nums.length) huecos.push(`mapeo de videos: ${slug} repite un video`);
+}
+for (const slug of Object.keys(ARTICULOS_SIN_VIDEO)) if (!filaArt.some((a) => a.slug === slug)) huecos.push(`ARTICULOS_SIN_VIDEO: el artículo ${slug} no existe`);
+for (const n of Object.keys(VIDEOS_SIN_ARTICULO)) {
+  if (!numerosVideo.has(n)) huecos.push(`VIDEOS_SIN_ARTICULO: el video ${n} no existe`);
+  if (VIDEOS.find((v) => v.id === n)?.articulos.length) huecos.push(`VIDEOS_SIN_ARTICULO: el video ${n} ya está en un artículo, quítalo de la lista`);
+}
+for (const v of VIDEOS) if (!v.articulos.length && !VIDEOS_SIN_ARTICULO[v.id]) huecos.push(`video ${v.id} (${v.slug}): no está en ningún artículo (ponlo en VIDEOS_DE_ARTICULO o en VIDEOS_SIN_ARTICULO con su motivo)`);
 
 // 6. Avisos de «Necesita atención»
 const filaAvisos = avisosNecesitaAtencion().map((c) => {

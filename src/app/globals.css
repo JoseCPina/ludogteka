@@ -71,3 +71,53 @@ body {
   background: var(--color-background);
   color: var(--color-foreground);
 }
+
+/* Tablas que en celular (menos de 640 px) se vuelven tarjetas: cada fila es una tarjeta, la primera celda es su título y
+   cada cifra lleva su nombre (data-label). Así no hay desborde horizontal ni columnas recortadas. Se usa con
+   <table className="tabla-tarjetas"> y data-label en cada <td> de <tbody>. */
+@media (max-width: 639px) {
+  table.tabla-tarjetas,
+  table.tabla-tarjetas tbody {
+    display: block;
+    min-width: 0 !important;
+    width: 100%;
+  }
+  table.tabla-tarjetas thead {
+    display: none;
+  }
+  table.tabla-tarjetas tr {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--color-n-200);
+  }
+  table.tabla-tarjetas tr:last-child {
+    border-bottom: 0;
+  }
+  table.tabla-tarjetas td {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.75rem;
+    border: 0 !important;
+    padding: 0.15rem 0 !important;
+    text-align: right;
+  }
+  table.tabla-tarjetas td::before {
+    content: attr(data-label);
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--color-n-500);
+  }
+  table.tabla-tarjetas td:first-child {
+    display: block;
+    text-align: left;
+    font-weight: 700;
+    padding-bottom: 0.25rem !important;
+  }
+  table.tabla-tarjetas td:first-child::before {
+    content: none;
+  }
+}
