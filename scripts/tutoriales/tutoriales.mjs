@@ -168,6 +168,8 @@ async function producir(v, ctx) {
     grab = await grabarVideo({ base: OPC.base, cookies: sustituir(cookies, {}), inicio: guion.inicio, guion: guionEjecutable, tarjetas, plan: p, salida: dir, nombre: "video", medios: guion.medios ? { audio: guion.medios.audio ?? null } : null });
   } finally {
     if (cuentaDueno) await cd.cliente.from("membresias").update({ solo_lectura: true }).eq("negocio_id", ctx.negocioId).eq("profile_id", cuentaDueno);
+    // Lo que `preparar` sembró solo para grabar (una configuración, filas de ejemplo) se regresa, también si falló.
+    if (guion.despues) await guion.despues({ sb, negocioId: ctx.negocioId }).catch((e) => console.warn(`  (despues: ${e.message})`));
     // Las salas reales de Daily que el corredor creó en el demo se borran al terminar la grabación (también si falló).
     if (guion.medios) {
       await cerrarActores().catch(() => {});

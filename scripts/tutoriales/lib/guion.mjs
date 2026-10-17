@@ -6,6 +6,7 @@
 //     gancho: "Locución del gancho…",      // la voz mientras sale la tarjeta de título
 //     subtitulo: "Texto bajo el título",   // opcional
 //     preparar: async ({ sb, negocioId, tel }) => {},   // opcional: datos previos (invisible)
+//     despues: async ({ sb, negocioId }) => {},         // opcional: regresa lo que sembró preparar (corre aunque la grabación falle)
 //     escenas: [
 //       { titulo: "Abre Clientes", dice: "Locución…", pasos: [["clic", "Clientes", { nav: true }], ["resaltar", "Capturar a mano"]] },
 //     ],

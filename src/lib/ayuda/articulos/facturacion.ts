@@ -95,12 +95,12 @@ Necesitas el permiso **Facturar** y los [datos fiscales](/ayuda/datos-fiscales-d
     cuerpo: `Los cobros que **no** se facturaron a nadie van en una **factura global** a «Público en general», con el IVA separado por tasa. Se emite por periodo (diario, semanal o mensual, según [tu configuración](/ayuda/configurar-la-facturacion); en RESICO, solo mensual) y **dentro de las 24 horas siguientes al cierre del periodo**.
 
 1. Entra a [Facturas](/caja/facturas): arriba salen los periodos ya cerrados con cobros por facturar, cuántos cobros y cuánto suman, y hasta cuándo se puede emitir.
-2. Aprieta **Emitir global** en el periodo.
+2. Aprieta **Emitir la factura global** en el periodo.
 3. Revisa que quede **vigente** y baja el PDF y el XML si los necesitas.
 
 Si el periodo ya pasó de las 24 horas, sale marcado como vencido en «Necesita atención»: emítela de todos modos y no la dejes pasar.
 
-> Solo entran los cobros desde el día en que se activó la facturación. Si prefieres que se emita sola, el admin puede prender **Emitir la global automáticamente** en Facturación (viene apagado).`,
+> Solo entran los cobros desde el día en que se activó la facturación. Si prefieres que se emita sola, el admin puede prender **Emitir la factura global sola al cerrar cada periodo** en Facturación (viene apagado).`,
   },
   {
     slug: "cancelar-o-sustituir-una-factura",
@@ -162,10 +162,10 @@ La factura marca cuándo se mandó y por dónde. Si el cliente tiene portal, tam
 - **Consulta veterinaria:** exenta **solo** si tu negocio es persona física o sociedad civil; si no, 16 %.
 
 ## Productos que vendes
-En la sección de productos marca cuáles son **de patente** y cuáles son alimento para mascotas. Lo que no marques se factura como producto con IVA 16 %.
+En **Productos y servicios**, en «Productos que se venden en mostrador», marca **Medicina veterinaria «de patente» (IVA 0 %)** en las medicinas y escoge el tipo de producto del alimento para mascotas. Lo que no marques se factura como producto con IVA 16 %.
 
 ## Servicios
-Un servicio toma su clase solo (estética, guardería, hospedaje). Si uno no cae bien, escoge su clase a mano.
+Un servicio toma su clase solo (estética, guardería, hospedaje). Si uno no cae bien, escoge su clase a mano en **Se factura como**.
 
 ## Claves del SAT
 Cada clase trae una clave de producto o servicio y una clave de unidad. Las de arranque son genéricas (01010101): **cámbialas** por las que te indique tu contador. Con **Buscar** consultas el catálogo del PAC.

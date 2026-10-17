@@ -16,7 +16,7 @@ export default {
     },
     {
       titulo: "Lo que ya incluye",
-      dice: "Hoy trae el expediente por consulta, el carnet de vacunas, certificados de salud, hospitalización, consentimientos informados, estimados que el dueño acepta, recetas con el candado de controlados y el reporte mensual del SITPV.",
+      dice: "Trae el expediente por consulta, el carnet de vacunas, certificados de salud, hospitalización, consentimientos informados, estimados que el dueño acepta, recetas con el candado de controlados y el reporte mensual del SITPV.",
       pasos: [["desplazar", "Recetas y controlados"], ["resaltar", "Recetas y controlados", 3000]],
     },
     {

@@ -17,7 +17,7 @@ export default {
     },
     {
       titulo: "Si olvidaste tu contraseña",
-      dice: "Si la olvidaste, aprieta «¿Olvidaste tu contraseña?» y sigue las instrucciones. En un negocio, quien administra puede restablecerla desde la ficha de cada persona, y te llega un enlace para escoger una nueva.",
+      dice: "Si la olvidaste, aprieta «¿Olvidaste tu contraseña?». Si eres cliente, recepción te la restablece en el momento y te da una temporal. Si eres del personal, un admin te manda una invitación nueva.",
       pasos: [["clic", "¿Olvidaste tu contraseña?"], ["esperar", 3200]],
     },
   ],

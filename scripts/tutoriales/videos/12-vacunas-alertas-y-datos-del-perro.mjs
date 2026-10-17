@@ -9,9 +9,9 @@ export default {
       pasos: [["escribir", "Buscar por perro, dueño o teléfono", "Nube"], ["esperar", 1500], ["clic", "Ana Sofía Treviño", { nav: true }], ["clic", "Nube", { nav: true }]],
     },
     {
-      titulo: "Requisitos para guardería y hotel",
-      dice: "En «Requisitos para guardería y hotel» ves qué le falta para poder reservar: evaluación de comportamiento, vacunas, y los datos que pide el alta. Si algo falta, la app no deja reservarle.",
-      pasos: [["desplazar", "Requisitos para guardería y hotel"], ["zoom", "Requisitos para guardería y hotel", 1.35, 3800]],
+      titulo: "Lo que impide reservar",
+      dice: "Arriba ves lo que le falta para guardería y hotel. Lo que está en «No se le puede reservar hasta que esto quede», como las vacunas o la evaluación, detiene la reserva. Lo «Recomendado» conviene tenerlo, pero no impide reservar.",
+      pasos: [["desplazar", "No se le puede reservar hasta que esto quede"], ["zoom", "No se le puede reservar hasta que esto quede", 1.4, 3200], ["zoom", "Recomendado para hotel y guardería", 1.4, 3000]],
     },
     {
       titulo: "Vacunas",

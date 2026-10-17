@@ -72,7 +72,7 @@ export const VIDEOS = [
   v("27", "reservas-recurrentes", "guarderia", "Reservas recurrentes: la misma guardería cada semana", "Creas una serie, ves sus fechas y la cancelas o cambias.", { modulos: ["guarderia", "hotel"], rutas: ["/guarderia/series", "/guarderia/series/nueva", "/hotel/series", "/hotel/series/nueva", "/reservas/series/[id]"], etiquetas: ["serie", "recurrente"] }),
   v("28", "perro-que-llega-sin-reserva", "guarderia", "Perro que llega sin reserva (walk-in)", "Registras a un perro que llega sin aviso, en guardería o en hotel.", { modulos: ["guarderia", "hotel"], rutas: ["/guarderia/walkin", "/hotel/walkin"], etiquetas: ["walk-in"] }),
   v("29", "check-in-del-perro", "guarderia", "Check-in: recibe al perro con foto, pertenencias y avisos", "Haces el check-in con la foto de llegada y los avisos del perro.", { modulos: ["guarderia", "hotel"], rutas: ["/guarderia/checkin", "/hotel/checkin", "/reservas/estancias/[estanciaId]/checkin"], articulos: ["registrar-check-in"], avisos: ["hotel", "san", "eval", "con"], etiquetas: ["check-in"] }),
-  v("30", "check-out-y-cobro", "guarderia", "Check-out: entrega al perro y cobra la cuenta", "Entregas al perro, revisas los cargos y cobras en el mismo paso.", { modulos: ["guarderia", "hotel"], rutas: ["/guarderia/checkout", "/hotel/checkout", "/reservas/estancias/[estanciaId]/checkout", "/reservas/[id]/cobrar"], articulos: ["registrar-check-out-y-cobrar"], etiquetas: ["check-out", "cobro"] }),
+  v("30", "check-out-y-cobro", "guarderia", "Check-out: entrega al perro y cobra la cuenta", "Entregas al perro con sus pertenencias, revisas los cargos y la cuenta queda en Caja para cobrarla.", { modulos: ["guarderia", "hotel"], rutas: ["/guarderia/checkout", "/hotel/checkout", "/reservas/estancias/[estanciaId]/checkout", "/reservas/[id]/cobrar"], articulos: ["registrar-check-out-y-cobrar"], etiquetas: ["check-out", "cobro"] }),
   v("31", "reporte-de-comportamiento-fotos-y-videos", "guarderia", "Reporte del día, fotos y videos de los perros adentro", "Llenas el reporte, mandas fotos y videos y cuidas lo que ve el dueño.", { modulos: ["guarderia", "hotel"], permisos: ["reportes_guarderia"], rutas: ["/adentro", "/guarderia/reportes", "/guarderia/reportes/[perroId]", "/admin/reporte-guarderia", "/r/[token]", "/f/[token]"], articulos: ["llenar-el-reporte-de-comportamiento", "enviar-fotos-y-videos"], etiquetas: ["reporte", "fotos"] }),
 
   // ── CAJA Y COBROS ──
@@ -161,7 +161,18 @@ export const VIDEOS = [
   v("67", "deshacer-una-importacion", "negocio", "Ver el historial de importaciones y deshacer una", "Revisas qué pasó con cada fila, retomas una importación a medias y la deshaces si nadie tocó esos registros.", { rol: "admin", permisos: ["importar_datos"], rutas: ["/admin/importar/[id]"], articulos: ["deshacer-una-importacion"], etiquetas: ["importar", "deshacer"] }),
   v("68", "recuperar-un-borrador", "empieza", "Recupera lo que estabas escribiendo: borradores", "Los formularios largos se guardan solos y al volver recuperas el borrador o lo descartas.", { rutas: [], articulos: ["recuperar-un-borrador"], etiquetas: ["borrador", "autoguardado"] }),
   v("69", "instalar-la-app-y-sin-conexion", "empieza", "Instala la app y consulta la agenda sin conexión", "Pones el sistema en tu pantalla de inicio y ves qué sí y qué no se puede hacer sin internet.", { rutas: ["/sin-conexion"], articulos: ["instalar-la-app-y-sin-conexion"], etiquetas: ["app", "sin conexión", "instalar"] }),
+
 ].map((v) => ({ ...v, articulos: articulosDeVideo(v.id) }));
+
+// Folios 96 a 99: guion listo, SIN grabar (la grabación se pausó el 17 de octubre de 2026). No entran a VIDEOS
+// (ni a la tabla `tutoriales`, la ayuda o el bot) hasta grabarlos y publicarlos: entonces se pasan a VIDEOS y se
+// ligan en VIDEOS_DE_ARTICULO de src/lib/ayuda/videos.ts.
+export const VIDEOS_PENDIENTES = [
+  v("96", "cambiar-estilista-cita-estetica", "estetica", "Cambiar o corregir la estilista de una cita", "Pasas una cita a otra estilista o la dejas sin asignar, corriges quién atendió un servicio terminado y ves el historial.", { rol: "admin", duracion: 100, modulos: ["estetica"], permisos: ["corregir_estilista"], rutas: ["/estetica/[citaId]"], etiquetas: ["estilista", "reasignar", "comisión", "sin asignar"] }),
+  v("97", "corregir-un-cobro-con-terminal-mal-marcado", "caja", "Cobro con terminal mal marcado y la conciliación con Mercado Pago", "Lees una diferencia de la conciliación, la das por revisada o marcas el cobro como no recibido, con motivo.", { rol: "admin", duracion: 100, rutas: ["/caja/conciliacion"], avisos: ["conciliacion"], etiquetas: ["conciliación", "no recibido", "terminal", "mercado pago"] }),
+  v("98", "factura-global-publico-en-general", "caja", "La factura global al público en general", "Ves los periodos con cobros sin factura, emites la global a tiempo y ajustas su periodicidad.", { rol: "admin", duracion: 95, permisos: ["facturar"], rutas: ["/caja/facturas", "/admin/facturacion"], etiquetas: ["factura global", "público en general", "cfdi", "24 horas"] }),
+  v("99", "iva-y-claves-sat-de-productos-y-servicios", "negocio", "IVA y claves del SAT de lo que vendes", "Revisas el IVA de cada tipo de concepto, cambias las claves del SAT y clasificas productos y servicios.", { rol: "admin", duracion: 95, permisos: ["editar_datos_fiscales"], rutas: ["/admin/facturacion"], etiquetas: ["iva", "clave sat", "de patente", "cfdi"] }),
+];
 
 // Lo que NO se graba, y por qué (cada ruta o aviso excluido lleva su motivo).
 export const EXCLUIDOS = {

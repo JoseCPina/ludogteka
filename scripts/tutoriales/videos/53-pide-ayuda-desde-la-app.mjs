@@ -10,8 +10,8 @@ export default {
     },
     {
       titulo: "Videos y artículos",
-      dice: "En «Videos» están los tutoriales de esta serie, con subtítulos y a la velocidad que quieras. Y los artículos explican cada tarea paso a paso. Además, en cada pantalla, el signo de interrogación y el botón de video te llevan directo al de esa pantalla.",
-      pasos: [["desplazar", "Videos"], ["resaltar", "Videos", 2800], ["desplazar", "Artículos"], ["resaltar", "Artículos", 2800]],
+      dice: "En «Videos» están los tutoriales de esta serie, con subtítulos y a la velocidad que quieras. Y los artículos explican cada tarea paso a paso, con su video arriba. Además, en cada pantalla, el signo de interrogación y el botón de video te llevan directo al de esa pantalla.",
+      pasos: [["desplazar", "Videos"], ["resaltar", "Videos", 2800], ["desplazar", "Artículos"], ["resaltar", "Artículos", 2800], ["ir", "/ayuda/registrar-check-in"], ["resaltar", "css:[data-videos-del-articulo]", 3000], ["ir", "/ayuda"]],
     },
     {
       titulo: "El asistente",
