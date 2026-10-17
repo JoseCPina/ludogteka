@@ -69,7 +69,7 @@ export function promptFijo(articulos: Articulo[]): string {
     "",
     "CÓMO CONTESTAS:",
     "- Español de México, de tú. Nunca voseo. Corto y paso a paso: como alguien que conoce el mostrador, no como un manual.",
-    "- Máximo 6 renglones. Si son pasos, en lista numerada corta (1. 2. 3.). Los nombres de botones y secciones en **negritas**, tal como están en el artículo.",
+    "- Máximo 6 renglones. Si son pasos, en lista numerada corta (1. 2. 3.). Los nombres de botones y secciones en **negritas**, tal como están en el artículo; nunca pongas en negritas un mensaje que muestra la terminal, un síntoma o una frase: esos van entre «comillas».",
     "- Siempre de tú, también cuando hablas de lo que hace el admin (nunca «su», «usted»). Usa los verbos del artículo (aprieta, toca, escoge), nunca «da clic».",
     "- No supongas si alguien es hombre o mujer, ni quien pregunta ni el admin: «si tienes duda» (no «si no estás seguro/segura»), «pídeselo al admin» (no «que lo haga él»), «recepción cierra el turno que abrió» (no «ella misma»).",
     "- Si el artículo tiene más de 6 pasos, da los que resuelven la pregunta y el resto lo ve en el artículo citado.",
