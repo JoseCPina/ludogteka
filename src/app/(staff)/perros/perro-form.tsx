@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useModulos } from "@/components/modulos-contexto";
+import { startTransition, useActionState, useState } from "react";
 import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
@@ -81,6 +82,9 @@ export function PerroForm({
   // Autoguardado del alta: el formulario y el registro (el dueño al que se le agrega la mascota).
   borrador?: { formulario: string; clave?: string };
 }) {
+  // Con Estética, guardería u hotel la raza es obligatoria (si es mestizo, se escoge «Mestizo»): lo exige también el servidor.
+  const modulos = useModulos();
+  const pideRaza = modulos.tiene("estetica") || modulos.tiene("guarderia") || modulos.tiene("hotel");
   const [estado, formAction, enviando] = useActionState(useAccionConTope(action), ESTADO_INICIAL);
   const deshabilitado = enviando || soloLectura;
   const [especie, setEspecie] = useState<Especie>(clinicoIniciales?.especie ?? "perro");
@@ -111,7 +115,16 @@ export function PerroForm({
   const razaPorMatriz = Boolean(razaCatalogo && !razaCatalogo.es_desconocida && !/mestiz|criollo/i.test(razaCatalogo.nombre) && razaCatalogo.grupo_depende_pelaje);
 
   return (
-    <form action={formAction} className="flex max-w-lg flex-col gap-4">
+    // Se envía con onSubmit (no con action=): React 19 vacía los campos sin estado después de una acción del
+    // formulario, y un error de validación del servidor (falta la raza) borraba lo que ya se había escrito.
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const datos = new FormData(e.currentTarget);
+        startTransition(() => formAction(datos));
+      }}
+      className="flex max-w-lg flex-col gap-4"
+    >
       {borrador && !soloLectura && <BorradorFormulario formulario={borrador.formulario} clave={borrador.clave} />}
       {estado.error && (
         <Alert variante="error" titulo="No se pudo guardar">
@@ -134,7 +147,7 @@ export function PerroForm({
       />
       <SelectorRaza
         razas={razas}
-        label="Raza"
+        label={pideRaza ? "Raza (obligatoria)" : "Raza"}
         disabled={deshabilitado}
         mostrarGrupo
         valorId={valoresIniciales?.raza_id ?? null}

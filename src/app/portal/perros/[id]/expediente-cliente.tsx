@@ -1,4 +1,5 @@
 import { formatearFechaCalendario } from "@/lib/formato";
+import { sinTitulosVacios } from "@/lib/veterinaria/portal-texto";
 import { TIPOS_CITA } from "@/lib/veterinaria/expediente";
 
 export type ExpedienteDelDueno = {
@@ -16,7 +17,9 @@ export function ExpedienteCliente({ expediente }: { expediente: ExpedienteDelDue
         <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">Todavía no hay consultas registradas.</p>
       ) : (
         <ul className="flex flex-col gap-3">
-          {expediente.consultas.map((c, i) => (
+          {expediente.consultas.map((consulta, i) => {
+            const c = { ...consulta, motivo: sinTitulosVacios(consulta.motivo), diagnostico: sinTitulosVacios(consulta.diagnostico), indicaciones: sinTitulosVacios(consulta.indicaciones) };
+            return (
             <li key={i} className="flex flex-col gap-1 rounded-lg border border-n-200 bg-white p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <span className="font-semibold text-n-900">{TIPOS_CITA[c.tipo] ?? c.tipo}</span>
@@ -26,7 +29,8 @@ export function ExpedienteCliente({ expediente }: { expediente: ExpedienteDelDue
               {c.diagnostico && <p className="text-n-800"><span className="font-semibold">Diagnóstico:</span> {c.diagnostico}</p>}
               {c.indicaciones && <p className="whitespace-pre-wrap text-n-800"><span className="font-semibold">Indicaciones:</span> {c.indicaciones}</p>}
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>

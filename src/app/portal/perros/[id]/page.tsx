@@ -1,3 +1,4 @@
+import { aplicanRequisitosDe } from "@/lib/perros/solo-estetica";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -301,7 +302,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
       {(sesion?.modulos ?? []).some((m) => m === "guarderia" || m === "hotel") && (
       <div className="flex flex-col gap-3">
         <h2 className="text-lg font-bold text-n-900">Estado de salud</h2>
-        {Boolean(usaGuarderiaHotel) && (
+        {aplicanRequisitosDe({ modulos: sesion.modulos ?? [], usaGuarderiaHotel: Boolean(usaGuarderiaHotel), tieneCitasEstetica: serviciosQueUsa.includes("estética") }) && (
           <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
         )}
         <RecordatorioSanitario
@@ -311,7 +312,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
           puedeProponer={esPropio && !perro.fallecido}
           propuestas={(propuestas as PropuestaCliente[]) ?? []}
           tipos={(tiposRequisito as TipoRequisitoCliente[]) ?? []}
-          aplica={Boolean(usaGuarderiaHotel)}
+          aplica={aplicanRequisitosDe({ modulos: sesion.modulos ?? [], usaGuarderiaHotel: Boolean(usaGuarderiaHotel), tieneCitasEstetica: serviciosQueUsa.includes("estética") })}
           servicios={serviciosQueUsa}
         />
       </div>

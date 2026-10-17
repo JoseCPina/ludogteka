@@ -192,4 +192,8 @@ Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado.
 - Check-in de hotel: se confirman las pertenencias (las de la reserva más las nuevas) y la confirmación las lista; en el check-out cada una se confirma a mano (o con «Entregué todo»); si la salida se cierra con alguna sin entregar se pide un motivo, que queda registrado, y la pantalla de salida lista lo devuelto y lo no devuelto.
 - Agregar efectivo a la caja: el motivo se escoge (Cambio, Ingreso u Otro) y la nota se guarda tal cual y en Movimientos de este turno el motivo sale como etiqueta aparte de la nota; el arqueo no muestra el esperado antes de cerrar el turno.
 - El portal del dueño y la app del personal usan sesiones distintas en el mismo navegador: abrir el portal no cierra la sesión del personal. El nombre de la mascota abre su ficha.
+- El alta de una mascota (mostrador, link de alta e importador) exige la raza (si es mestizo, «Mestizo») con Estética, guardería u hotel, y con Estética también tamaño y pelaje cuando la raza no fija sola el precio; con Veterinaria sola no se exige. Si falta algo, el aviso dice qué y lo escrito se queda en el formulario.
+- El aviso «Solo estética · vacunas no requeridas» sale solo cuando el negocio da estética y el perro ya viene a estética sin haber usado guardería ni hotel; en un negocio de guardería u hotel un perro nuevo muestra lo que le falta, y con Veterinaria sola no sale.
+- En la ficha del cliente, si ya activó su cuenta del portal y se toca «Generar otro enlace», se oculta el enlace usado y se avisa que ya tiene cuenta activa.
+- En el portal, las consultas veterinarias no muestran los títulos de la plantilla que quedaron vacíos.
 `.trim();

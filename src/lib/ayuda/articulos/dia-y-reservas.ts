@@ -85,7 +85,8 @@ Si tienes guardería u hotel prendidos, el link de guardería y hotel trae el pa
 ## Si algo no sale
 
 - «El teléfono debe tener 10 dígitos.»: revisa el número; puede llevar espacios o guiones.
-- «Ya hay un link de este tipo esperando a ese cliente.»: reenvía el que ya existe o cancélalo antes de generar otro.`,
+- «Ya hay un link de este tipo esperando a ese cliente.»: reenvía el que ya existe o cancélalo antes de generar otro.
+- «A tu perro le falta: raza, tamaño…»: el dueño no puede pasar del paso **Tus perros** sin la raza (puede escribir **Mestizo** y escogerlo) y, con Estética, el tamaño y el pelaje cuando la raza no fija sola el precio.`,
   },
   {
     slug: "capturar-cliente-en-mostrador",
@@ -102,7 +103,7 @@ Si tienes guardería u hotel prendidos, el link de guardería y hotel trae el pa
 2. Llena **Nombre del dueño** y **Teléfono**. El correo y la dirección son opcionales.
 3. Toca **Crear cliente**. Si venías de reservar o cobrar, el botón dice **Crear cliente y seguir con su perro**.
 4. En la ficha del cliente, toca **Agregar perro**.
-5. Llena **Nombre del perro**, **Raza**, **Tamaño** y lo que sepas, y toca **Guardar perro**.
+5. Llena **Nombre del perro**, **Raza (obligatoria)** y lo que sepas, y toca **Guardar perro**. Con Estética, guardería u hotel la raza es obligatoria (si es mestizo, escoge **Mestizo**); con Estética, si la raza no fija sola el precio (mestizo, sin raza de catálogo o un grupo que cobra por tamaño y pelaje), también **Tamaño (obligatorio)** y **Pelaje (obligatorio)**. Si falta algo, el aviso dice qué y lo que ya escribiste se queda en el formulario.
 
 > Si vienes de agendar estética, el alta es corta: nombre del dueño y WhatsApp, y del perro nombre, raza, tamaño y pelaje. Sin dirección, vacunas, correo ni contraseña.
 
@@ -132,6 +133,8 @@ Si tienes guardería u hotel prendidos, el link de guardería y hotel trae el pa
 3. En **Requisitos para guardería y hotel**, toca **Marcar evaluación hecha** cuando ya evaluaste su comportamiento. Si es hembra, marca **En celo** o **Gestante** cuando aplique.
 4. En **Alertas de manejo** escoge la alerta en **Registrar alerta**, agrega notas y toca **Registrar alerta**.
 5. En **Alergias** y **Peso** se registra cada cosa con su botón.
+
+> En un negocio con guardería u hotel, un perro nuevo muestra lo que le falta para guardería y hotel. El aviso **Solo estética · vacunas no requeridas** sale solo cuando el negocio da estética y el perro ya viene a estética sin haber usado guardería ni hotel; con Veterinaria sola, sin guardería ni hotel, no sale ningún aviso de requisitos.
 
 > Si le falta algo para guardería u hotel, arriba aparece la lista. Con **Capturar ahora** llenas solo lo vacío; con **Mandarle un link** el dueño lo completa desde su casa.
 
@@ -217,7 +220,7 @@ El portal tiene su propia sesión, aparte de la del personal: si alguien del equ
 
 ## Invitar al portal a un cliente que ya existe
 
-Si lo diste de alta tú en el mostrador, todavía no tiene cuenta. En su ficha, baja a **Invitar al portal** y toca **Invitar al portal**: aparece un enlace de un solo uso (sirve 7 días). Toca **Mandar por WhatsApp** o cópialo. El dueño lo abre, escoge su contraseña y entra con su teléfono. Si lo pierdes, **Generar otro enlace** deja sin efecto el anterior.
+Si lo diste de alta tú en el mostrador, todavía no tiene cuenta. En su ficha, baja a **Invitar al portal** y toca **Invitar al portal**: aparece un enlace de un solo uso (sirve 7 días). Toca **Mandar por WhatsApp** o cópialo. El dueño lo abre, escoge su contraseña y entra con su teléfono. Si lo pierdes, **Generar otro enlace** deja sin efecto el anterior. Si el dueño ya activó su cuenta (por ejemplo, en otra ventana) y tocas **Generar otro enlace**, la pantalla oculta el enlace usado y dice **Este cliente ya tiene cuenta activa**: ya no hace falta mandar nada.
 
 ## Cuentas sin vincular
 

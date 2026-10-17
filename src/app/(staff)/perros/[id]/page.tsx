@@ -11,6 +11,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarRazas } from "@/lib/razas";
 import { contextoRazaFormulario } from "@/lib/razas-form";
 import { negocioIdActual, zonaActual } from "@/lib/negocio/actual";
+import { aplicanRequisitosDe, perrosConCitasEstetica } from "@/lib/perros/solo-estetica";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tipoContratoAplica, usaEstancias, usaVeterinaria } from "@/lib/plan/modulos";
 import { FichaClinica } from "../ficha-clinica";
@@ -126,7 +127,8 @@ export default async function PerroPage({
       .order("created_at"),
     supabase.from("perros_con_guarderia_hotel").select("perro_id").eq("perro_id", id).maybeSingle(),
   ]);
-  const aplicanRequisitos = Boolean(usaGuarderiaHotel);
+  const citasDelPerro = await perrosConCitasEstetica(supabase, [id]);
+  const aplicanRequisitos = aplicanRequisitosDe({ modulos: sesion.modulos, usaGuarderiaHotel: Boolean(usaGuarderiaHotel), tieneCitasEstetica: citasDelPerro.has(id) });
   // Qué le falta para guardería y hotel, aunque hoy solo use estética: es
   // justo el perro que llega a pedir guardería por primera vez.
   // Requisitos sanitarios, evaluación y celo/gestante solo si el negocio

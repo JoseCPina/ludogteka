@@ -11,6 +11,7 @@ import { CitaDetalle, type RecetaItem } from "./cita-detalle";
 import { CorregirServicio } from "./corregir-servicio";
 import type { Estilista } from "../selector-estilista";
 import { zonaActual } from "@/lib/negocio/actual";
+import { usaEstancias } from "@/lib/plan/modulos";
 
 const ESTADO_HISTORIAL: Record<string, string> = {
   reservada: "antes de empezar",
@@ -202,7 +203,7 @@ export default async function CitaDetallePage({
           )}
         </>
       ) : (
-        <NotaSoloEstetica />
+        usaEstancias(sesion?.modulos ?? []) && <NotaSoloEstetica />
       )}
 
       {cita.estancia_id && (

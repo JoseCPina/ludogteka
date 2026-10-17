@@ -220,7 +220,7 @@ Un estimado aceptado no se cambia; si hay algo más que cobrar, haz otro. Los en
 
 ## Portal del dueño
 
-**Mostrar las consultas en el portal**: viene prendido; lo puedes apagar. Con él prendido, el dueño ve en su portal, por cada consulta **firmada**, un resumen: la fecha, el **motivo**, el **diagnóstico** y las **indicaciones** (plan y tratamiento). Nunca ve las notas internas, el examen, los signos vitales, el nombre del médico ni los datos de la firma, ni las consultas anuladas o en borrador.
+**Mostrar las consultas en el portal**: viene prendido; lo puedes apagar. Con él prendido, el dueño ve en su portal, por cada consulta **firmada**, un resumen: la fecha, el **motivo**, el **diagnóstico** y las **indicaciones** (plan y tratamiento). Nunca ve las notas internas, el examen, los signos vitales, el nombre del médico ni los datos de la firma, ni las consultas anuladas o en borrador. Los títulos de la plantilla que quedaron sin llenar (por ejemplo «Estudios solicitados:» o «Seguimiento:» vacíos) tampoco se le muestran.
 
 ## Tipos de cita y duración
 

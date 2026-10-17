@@ -21,7 +21,7 @@
 // SOLO_A=1 omite la parte B (el navegador). Sale con 1 si algo falla.
 import { createHash } from "node:crypto";
 import { A, B, SB, LUDOGTEKA, rpc, get, post, personas, dar, quitar, fijarModulo, comprobar, seccion, terminar, servicioEn } from "./veterinaria-comun-dev.mjs";
-import { tokenDe } from "./sesiones-dev.mjs";
+import { tokenDe, URL, env } from "./sesiones-dev.mjs";
 
 const MARCA = `ZZIMP${String(Date.now()).slice(-5)}`;
 const rnd = (n) => String(Math.floor(Math.random() * 10 ** n)).padStart(n, "0");
@@ -56,6 +56,16 @@ const cliente = async (id) => (await SB.from("clientes").select("*").eq("id", id
 const clientePorTel = async (t) => (await SB.from("clientes").select("*").eq("negocio_id", B).eq("telefono", t).is("deleted_at", null).maybeSingle()).data;
 const perrosDe = async (clienteId) => (await SB.from("perros").select("*").eq("cliente_id", clienteId).is("deleted_at", null).order("created_at")).data;
 const fila = (n, datos, error) => ({ n, datos, ...(error ? { error } : {}) });
+
+// Raza, tamaño y pelaje son obligatorios con Estética, guardería u hotel (N16): las filas de ejemplo de esta prueba
+// no los traen, así que corre con esos módulos apagados y los restaura al final (la sección A10 los vuelve a prender).
+const modulosOriginales = {};
+for (const m of ["estetica", "guarderia", "hotel"]) {
+  const r = await SB.from("negocio_modulos").select("activo").eq("negocio_id", B).eq("modulo", m).is("deleted_at", null).maybeSingle();
+  modulosOriginales[m] = r.data ? r.data.activo : true;
+  await fijarModulo(m, false);
+}
+const restaurarModulos = async () => { for (const [m, a] of Object.entries(modulosOriginales)) await fijarModulo(m, a).catch(() => {}); };
 
 try {
   await fijarModulo("veterinaria", true);
@@ -386,6 +396,29 @@ try {
   const sigue = await rpc(P.recCon, "borrador_leer", { p_formulario: "checkin", p_clave: "est-1" });
   comprobar(delOtro.ok && sigue.cuerpo?.datos?.x === 1, "descartar solo borra el MÍO (el de otra persona se queda)");
   await rpc(P.recCon, "borrador_descartar", { p_formulario: "checkin", p_clave: "est-1" });
+
+  // ═══ A10. Raza, tamaño y pelaje obligatorios (N16) ═══
+  seccion("A10. Una mascota nueva sin raza, tamaño o pelaje se rechaza con Estética");
+  await fijarModulo("estetica", true);
+  const tA = tel(), tB = tel(), tC = tel();
+  const imp9 = await crear(P.admin, { total: 4 });
+  await agregar(P.admin, imp9.cuerpo.id, [
+    fila(2, { c_nombre: `${MARCA} Sin Nada`, c_telefono: tA, m_nombre: `${MARCA} Vacio` }),
+    fila(3, { c_nombre: `${MARCA} Sin Talla`, c_telefono: tB, m_nombre: `${MARCA} Mestiza`, m_raza: "Mestizo" }),
+    fila(4, { c_nombre: `${MARCA} Completa`, c_telefono: tC, m_nombre: `${MARCA} Completa`, m_raza: "Mestizo", m_tamano: "grande", m_pelaje: "corto" }),
+    fila(5, { c_nombre: `${MARCA} Solo Dueño`, c_telefono: tel() }),
+  ]);
+  await correr(P.admin, imp9.cuerpo.id);
+  const f9 = await filasDe(imp9.cuerpo.id);
+  comprobar(f9[0].estado === "error" && /raza/.test(f9[0].mensaje ?? ""), `sin raza: la fila se rechaza y dice que falta la raza (${f9[0].estado}: ${f9[0].mensaje})`);
+  comprobar(f9[1].estado === "error" && /tamaño/.test(f9[1].mensaje ?? "") && /pelaje/.test(f9[1].mensaje ?? ""), `mestizo sin tamaño ni pelaje: se rechaza (${f9[1].estado}: ${f9[1].mensaje})`);
+  comprobar(f9[2].estado === "creada", `completa: se crea (${f9[2].estado}: ${f9[2].mensaje})`);
+  comprobar(f9[3].estado === "creada", `una fila de solo dueño (sin mascota) no pide nada (${f9[3].estado}: ${f9[3].mensaje})`);
+  const huerfano = await SB.from("clientes").select("id").eq("negocio_id", B).eq("telefono", tA);
+  comprobar((huerfano.data ?? []).length === 0, "la fila rechazada no deja al dueño creado a medias");
+  const anon9 = await fetch(`${URL}/rest/v1/rpc/perro_faltantes_alta`, { method: "POST", headers: { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY, "Content-Type": "application/json", "x-negocio-id": B }, body: JSON.stringify({ p_raza: null, p_raza_id: null, p_tamano_id: null, p_pelaje_id: null }) });
+  comprobar(anon9.status >= 400, `la llave anónima no ejecuta perro_faltantes_alta (${anon9.status})`);
+  await fijarModulo("estetica", false);
 } catch (e) {
   console.log(`  ✘ la prueba se detuvo: ${e.stack ?? e}`);
   process.exitCode = 1;
@@ -404,4 +437,5 @@ try {
 }
 // Parte B: el asistente en el navegador (archivo aparte, mismo conteo de hallazgos).
 if (!process.env.SOLO_A) await import("./importador-ui-dev.mjs");
+await restaurarModulos();
 terminar();
