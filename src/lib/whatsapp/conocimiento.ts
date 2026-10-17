@@ -212,4 +212,9 @@ Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado.
 - Recetas: desde una consulta firmada, el medicamento sale prellenado con el campo Tratamiento (editable); la cantidad a surtir se calcula con dosis, frecuencia y días y se puede cambiar; sin productos clínicos, el selector dice «No hay productos cargados» con enlace a Inventario.
 - Reservas: el aviso de traslape de una mascota lleva a esa reserva y al calendario, y termina con punto.
 - Cobro: «Registrar cobro» muestra «Cobrando…» y «Actualizando…» y no acepta un segundo clic.
+
+## Ajustes de la QA del 17 de octubre (segunda revisión)
+- Receta: si escribes a mano la «Cantidad a surtir» y luego cambias dosis, frecuencia o días, la nota solo dice que la escribiste tú; aparece «Usar la cantidad calculada con dosis, frecuencia y días» para volver a la sugerida.
+- Personal: al invitar a alguien, «Nombre completo» es obligatorio. La agenda de estética, los selectores de «Empleado» y los historiales nombran a la persona por su ficha de Empleados (o, si no hay, por el nombre de su cuenta), nunca por su correo.
+- Reservas: quien no tiene el permiso «Excepciones al reservar» no ve la casilla de excepción; el aviso de una vacuna o evaluación que falta solo dice qué falta, que no se puede reservar y que le pida la excepción a un admin o a quien tenga el permiso.
 `.trim();

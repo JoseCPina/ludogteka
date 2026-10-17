@@ -71,6 +71,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Falta email." }, { status: 400 });
   }
 
+  // La agenda, los selectores y los historiales nombran a la persona: sin nombre saldría su correo.
+  const nombre = body.nombre_completo?.trim() ?? "";
+  if (nombre.length < 2) {
+    return NextResponse.json({ error: "Escribe el nombre de la persona: así sale en la agenda y en los historiales." }, { status: 400 });
+  }
+  body.nombre_completo = nombre.slice(0, 120);
+
   if (!esRolInvitable(body.rol)) {
     return NextResponse.json(
       { error: `rol debe ser uno de: ${ROLES_INVITABLES.join(", ")}` },

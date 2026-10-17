@@ -13,6 +13,7 @@
 // 4. Invitar al portal: enlace de un solo uso en la ficha, su activación
 //    (escoge contraseña y entra al portal) y que el mismo enlace ya no sirve;
 //    vencido, de otro negocio y falso.
+// 10. N19: invitar personal pide el nombre (pantalla y servidor).
 // 9. Ausencia aprobada: la cita que ya tenía la estilista sale marcada en la
 //    agenda («Estilista ausente»), la lista de «Aprobadas y resueltas» deja
 //    reasignarla con «Pasarla a» + «Reasignar», y la marca desaparece.
@@ -422,6 +423,21 @@ try {
   await admin.waitForTimeout(1500);
   if ((await admin.locator("[data-cita-en-ausencia]").count()) !== 0) hallazgo("agenda: la marca sigue después de reasignar");
   else bien("agenda: la marca desaparece al reasignar");
+
+  console.log("10. Invitar personal pide el nombre");
+  await admin.goto(`${BASE}/admin`, { waitUntil: "domcontentloaded", timeout: 90000 });
+  const campoNombre = admin.getByLabel("Nombre completo").first();
+  await campoNombre.waitFor({ timeout: 45000 }).catch(() => {});
+  if ((await campoNombre.count()) === 0) hallazgo("Administración: «Invitar personal» no pide el nombre");
+  else if (!(await campoNombre.evaluate((e) => e.required))) hallazgo("el nombre de «Invitar personal» no es obligatorio");
+  else bien("«Invitar personal» pide el nombre completo (obligatorio)");
+  const sinNombre = await admin.evaluate(async (correo) => {
+    const r = await fetch("/api/staff/invite", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: correo, rol: "estetica" }) });
+    return { status: r.status, cuerpo: await r.json().catch(() => ({})) };
+  }, `sin.nombre.${sufijo}@prueba.invalid`);
+  const cuerpoSin = sinNombre.cuerpo;
+  if (sinNombre.status !== 400 || !/nombre/i.test(String(cuerpoSin.error))) hallazgo(`el servidor aceptó invitar sin nombre (${sinNombre.status} ${JSON.stringify(cuerpoSin).slice(0, 80)})`);
+  else bien("el servidor rechaza invitar sin nombre (400)");
 } catch (e) {
   hallazgo(`la prueba tronó: ${e.message}`);
 } finally {

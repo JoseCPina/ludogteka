@@ -1,6 +1,6 @@
 "use client";
 
-import { tipoDeBloqueo } from "@/lib/reservas/bloqueos";
+import { textoDelBloqueo, tipoDeBloqueo } from "@/lib/reservas/bloqueos";
 import { useMemo, useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { conTope, mensajeDeFallo } from "@/lib/ui/espera";
@@ -311,7 +311,7 @@ export function NuevaReservaForm({
                     Hacer check-in ahora →
                   </Link>
                 )}
-                {!r.exito && r.motivo && <p className="mt-1 text-sm text-coral-oscuro"><TextoConEnlaces texto={r.motivo} /></p>}
+                {!r.exito && r.motivo && <p className="mt-1 text-sm text-coral-oscuro"><TextoConEnlaces texto={textoDelBloqueo(r.motivo, esAdmin)} /></p>}
                 {esBloqueoSanitario && esAdmin && linea && (
                   <div className="mt-3 flex flex-col gap-2 border-t border-coral pt-3">
                     <label className="flex items-center gap-2 text-sm font-semibold text-coral-oscuro">

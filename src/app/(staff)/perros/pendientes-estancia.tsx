@@ -114,7 +114,7 @@ export function PendientesEstancia({
           </ul>
           {bloquean.some((p) => p.clave === "evaluacion" || p.clave.startsWith("sanitario:")) && (
             <p className="mt-1 text-xs text-n-600">
-              Vacunas y evaluación: un admin puede autorizar una excepción con motivo al reservar.
+              Vacunas y evaluación: sin ellas no se puede reservar. Si hace falta una excepción, pídesela a un admin o a quien tenga el permiso «Excepciones al reservar».
             </p>
           )}
         </div>

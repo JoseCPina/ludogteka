@@ -344,7 +344,7 @@ El total del pie es el de la tarjeta, al centavo. Si buscas algo, ves también e
     cuerpo: `Cada persona de tu equipo entra con su propia cuenta: así cada quien ve lo que le toca y todo queda con su nombre. Invita admin o quien tenga el permiso «Personal».
 
 1. Entra a [Administración](/admin) y baja a **Invitar personal**.
-2. Escribe su **Correo** y escoge el **Rol**: Recepción o Estética.
+2. Escribe su **Nombre completo** (es obligatorio: así sale en la agenda, en los selectores y en los historiales, en vez de su correo), su **Correo** y escoge el **Rol**: Recepción o Estética.
 3. Aprieta **Invitar**.
 4. Sale un link: aprieta **Copiar link** y mándaselo por WhatsApp. Con él entra y escoge su contraseña.
 

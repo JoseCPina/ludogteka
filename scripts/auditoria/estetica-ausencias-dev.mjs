@@ -16,6 +16,7 @@
 // 9. N13: el aviso de un choque en la agenda de estética culpa a la estilista, no al perro: nombra la(s) cita(s)
 //    («X ya tiene a PERRO a las 11:00»), dice si está ausente y junta todo lo que choca; es el mismo texto al
 //    agendar y al reasignar.
+// 10. N19: una persona del personal se nombra por su ficha de empleado, no por la parte local de su correo.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -279,6 +280,37 @@ try {
   await rpc(tAdmin, "cancelar_ausencia", { p_ausencia_id: idDe(aN), p_motivo: "prueba" });
   const movOcupada = await rpc(tAdmin, "reprogramar_cita_estetica", { p_cita_id: c2.fila.id, p_inicio: `${fN}T20:00:00Z`, p_motivo: "prueba" });
   comprobar(!movOcupada.ok && /ya tiene a /.test(movOcupada.mensaje) && !/este perro/i.test(movOcupada.mensaje), `reprogramar a una hora ocupada: mismo texto («${movOcupada.mensaje.slice(0, 100)}»)`);
+
+  console.log("── 10. El nombre del personal sale de su ficha de empleado (N19)");
+  const ficha = (await SB.from("empleados").select("nombre").eq("id", E1).single()).data.nombre;
+  const perfilAntes = (await SB.from("profiles").select("nombre_completo").eq("id", S1).single()).data.nombre_completo;
+  try {
+    // Una cuenta invitada solo con correo y rol: el perfil no tiene nombre.
+    const sinNombre = await SB.from("profiles").update({ nombre_completo: null }).eq("id", S1);
+    comprobar(!sinNombre.error, `se deja el perfil sin nombre para la prueba${sinNombre.error ? ": " + sinNombre.error.message : ""}`);
+    const lista = await rpc(tRecep, "listar_personal_estetica");
+    const lo = lista.ok ? lista.cuerpo.find((x) => x.id === S1) : null;
+    comprobar(lo && lo.nombre === ficha, `la agenda y el selector (listar_personal_estetica) dicen «${lo?.nombre}», el de la ficha («${ficha}»)`);
+    comprobar(lista.ok && lista.cuerpo.every((x) => x.nombre && !x.nombre.includes("@")), "y nadie sale con un correo como nombre");
+    const asig = await rpc(tRecep, "estilistas_asignables");
+    comprobar(asig.ok && asig.cuerpo.find((x) => x.id === S1)?.nombre === ficha, "estilistas_asignables dice lo mismo");
+    const ocupada = await nuevaCita(tAdmin, S1, mas(durMin));
+    comprobar(!ocupada.ok && ocupada.mensaje.includes(ficha), "el aviso de choque nombra a la estilista por su ficha");
+    // Si la ficha cambia de nombre, todo lo que nombra a la persona lo sigue.
+    await SB.from("empleados").update({ nombre: `${ficha} bis` }).eq("id", E1);
+    const lista2 = await rpc(tRecep, "listar_personal_estetica");
+    comprobar(lista2.ok && lista2.cuerpo.find((x) => x.id === S1)?.nombre === `${ficha} bis`, "cambiar el nombre de la ficha cambia el de la agenda");
+    await SB.from("empleados").update({ nombre: ficha }).eq("id", E1);
+    // Sin ficha y sin nombre de cuenta: algo legible, nunca el correo.
+    await SB.from("empleados").update({ profile_id: null }).eq("id", E1);
+    const lista3 = await rpc(tRecep, "listar_personal_estetica");
+    const lo3 = lista3.ok ? lista3.cuerpo.find((x) => x.id === S1) : null;
+    comprobar(lo3 && lo3.nombre === "Sin nombre", `sin ficha ni nombre sale «${lo3?.nombre}», no el correo`);
+    await SB.from("empleados").update({ profile_id: S1 }).eq("id", E1);
+  } finally {
+    await SB.from("empleados").update({ nombre: ficha, profile_id: S1 }).eq("id", E1);
+    await SB.from("profiles").update({ nombre_completo: perfilAntes }).eq("id", S1);
+  }
 } finally {
   for (const id of creados.citas) await SB.from("citas_estetica").delete().eq("id", id);
   for (const id of creados.reservas) await SB.from("reservas").delete().eq("id", id);
