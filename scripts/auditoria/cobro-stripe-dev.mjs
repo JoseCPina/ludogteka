@@ -244,7 +244,17 @@ const ESCENARIOS = {
       ok(await page.getByText("Sin costo inicial · Todos los módulos").first().isVisible(), "dice «Sin costo inicial · Todos los módulos»");
       ok(await page.getByText("+ IVA").first().isVisible(), "los precios dicen «+ IVA» debajo");
       ok(await page.getByText(/No se te cobra hoy/).isVisible(), "el resumen dice que no se cobra hoy (sigue la prueba)");
+      ok(await page.getByText(/El cobro aparece como MENTEO, la empresa que opera PeluDesk/).first().isVisible(), "Módulos y plan dice que el cobro aparece como MENTEO, junto a «Pagar con tarjeta»");
+      const diasBanner = await page.getByText(/te quedan \d+ días?/).first().innerText();
       await page.getByRole("button", { name: "Pagar con tarjeta" }).click();
+      await page.waitForURL(/checkout\.stripe\.com/, { timeout: 60_000 });
+      await page.waitForLoadState("networkidle").catch(() => {});
+      const cuerpo = await page.locator("body").innerText();
+      ok(/No se te cobra hoy; el primer cobro es el \d{1,2} \w+/.test(cuerpo) && /Contratas PeluDesk/.test(cuerpo), "el Checkout dice «Contratas PeluDesk. No se te cobra hoy; el primer cobro es el <fecha>»");
+      ok(/MENTEO, la empresa que opera PeluDesk/.test(cuerpo), "el Checkout dice que el cobro aparece como MENTEO");
+      const diasStripe = Number((cuerpo.match(/(\d+)\s+d[ií]as?\s+gratis/i) ?? [])[1]);
+      const diasAviso = Number((diasBanner.match(/(\d+)/) ?? [])[1]);
+      ok(Number.isFinite(diasStripe) ? diasStripe === diasAviso : true, `Stripe y el aviso dicen los mismos días (${Number.isFinite(diasStripe) ? diasStripe : "Stripe no los muestra"} y ${diasAviso})`);
       await pagarEnCheckout(page);
       await page.waitForURL(/\/admin\/modulos\?pago=ok/, { timeout: 90_000 });
       ok(true, "Checkout pagado con 4242 y de regreso en «Módulos y plan»");
@@ -257,7 +267,9 @@ const ESCENARIOS = {
     guardar();
     const n2 = await negocio();
     ok(n2.plan === "prueba", "el negocio sigue en prueba: no perdió días");
-    ok(Math.abs(Date.parse(s.prueba_hasta) - Date.parse(n2.prueba_termina_at)) < 60_000, "el primer cobro es al terminar la prueba");
+    // El primer cobro es el último día de la prueba (hasta su último segundo en la zona del negocio).
+    const finEsperado = Date.parse(n2.prueba_termina_at);
+    ok(Date.parse(s.prueba_hasta) >= finEsperado && Date.parse(s.prueba_hasta) - finEsperado < 25 * 3600_000, "y no antes de lo prometido ni más de un día después");
     ok(s.monto_centavos === 75284 && s.periodicidad === "mensual" && s.complementos.length === 0, "PeluDesk mensual: $649 + IVA = $752.84, sin complementos");
     ok(s.plan_id === (await planId("completo")), "el plan contratado es el plan único");
     ok((await pagos()).length === 0, "no se cobró nada hoy");
@@ -443,7 +455,17 @@ const ESCENARIOS = {
       await page.getByRole("radio", { name: /PeluDesk/ }).click();
       await page.getByRole("radio", { name: "Anual · 2 meses gratis", exact: true }).click();
       await page.getByText(/Se cobra hoy/).waitFor();
+      ok(await page.getByText(/El cobro aparece como MENTEO, la empresa que opera PeluDesk/).first().isVisible(), "Módulos y plan dice que el cobro aparece como MENTEO, junto a «Pagar con tarjeta»");
+      const diasBanner = await page.getByText(/te quedan \d+ días?/).first().innerText();
       await page.getByRole("button", { name: "Pagar con tarjeta" }).click();
+      await page.waitForURL(/checkout\.stripe\.com/, { timeout: 60_000 });
+      await page.waitForLoadState("networkidle").catch(() => {});
+      const cuerpo = await page.locator("body").innerText();
+      ok(/No se te cobra hoy; el primer cobro es el \d{1,2} \w+/.test(cuerpo) && /Contratas PeluDesk/.test(cuerpo), "el Checkout dice «Contratas PeluDesk. No se te cobra hoy; el primer cobro es el <fecha>»");
+      ok(/MENTEO, la empresa que opera PeluDesk/.test(cuerpo), "el Checkout dice que el cobro aparece como MENTEO");
+      const diasStripe = Number((cuerpo.match(/(\d+)\s+d[ií]as?\s+gratis/i) ?? [])[1]);
+      const diasAviso = Number((diasBanner.match(/(\d+)/) ?? [])[1]);
+      ok(Number.isFinite(diasStripe) ? diasStripe === diasAviso : true, `Stripe y el aviso dicen los mismos días (${Number.isFinite(diasStripe) ? diasStripe : "Stripe no los muestra"} y ${diasAviso})`);
       await pagarEnCheckout(page);
       await page.waitForURL(/\/admin\/modulos\?pago=ok/, { timeout: 90_000 });
     } finally {

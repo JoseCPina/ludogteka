@@ -78,6 +78,12 @@ try {
   await mvz.p.locator('input[name="fh-0"]').fill("12");
   await mvz.p.locator('input[name="dur-0"]').fill("5");
   comprobar(/Calculada: 10/.test(await cuerpo(mvz.p)), "muestra la cantidad calculada (10) en vivo");
+  // N22 (medicamento escrito/elegido a mano): las indicaciones salen con los datos que hay.
+  const indManual = await mvz.p.locator('input[name="ind-0"]').inputValue();
+  comprobar(/^Meloxicam/.test(indManual) && /1 tableta cada 12 horas por 5 días$/.test(indManual), `N22: con el medicamento a mano, Indicaciones se genera («${indManual}»)`);
+  await mvz.p.locator('input[name="dur-0"]').fill("8");
+  comprobar(/por 8 días$/.test(await mvz.p.locator('input[name="ind-0"]').inputValue()), "N22: si cambias los días, las indicaciones los siguen (8)");
+  await mvz.p.locator('input[name="dur-0"]').fill("5");
   comprobar((await mvz.p.locator('input[name="cant-0"]').inputValue()) === "10", "y la deja escrita en «Cantidad a surtir» (10)");
   await mvz.p.locator('input[name="cant-0"]').fill("12");
   comprobar(/La escribiste tú/.test(await cuerpo(mvz.p)) && (await mvz.p.locator('input[name="cant-0"]').inputValue()) === "12", "se puede cambiar a mano (12) y lo dice");
@@ -221,6 +227,16 @@ try {
     comprobar((await mvz.p.locator('input[name="producto-0"]').inputValue()) === "Amoxicilina" && (await mvz.p.locator('input[name="producto-1"]').inputValue()) === "Meloxicam", "un medicamento por renglón del Tratamiento (Amoxicilina y Meloxicam)");
     comprobar((await mvz.p.locator('input[name="fh-0"]').inputValue()) === "12" && (await mvz.p.locator('input[name="dur-0"]').inputValue()) === "7", "con sus horas (12) y sus días (7)");
     comprobar((await mvz.p.locator('input[name="cant-0"]').inputValue()) === "14", "y la cantidad calculada (14) ya escrita, editable");
+    // N22: indicaciones generadas, con la frecuencia en el mismo formato que el placeholder.
+    comprobar((await mvz.p.locator('input[name="frec-0"]').inputValue()) === "Cada 12 horas" && (await mvz.p.locator('input[name="frec-1"]').inputValue()) === "Cada 24 horas", "N22: la frecuencia prellenada es «Cada 12 horas» / «Cada 24 horas» (no «cada 24 h»)");
+    comprobar((await mvz.p.locator('input[name="ind-1"]').inputValue()) === "Meloxicam 1 ml, 1 ml cada 24 horas por 3 días" || /^Meloxicam.*cada 24 horas por 3 días$/.test(await mvz.p.locator('input[name="ind-1"]').inputValue()), "N22: Indicaciones del Meloxicam dice «… cada 24 horas por 3 días»");
+    await mvz.p.locator('input[name="dur-1"]').fill("5");
+    comprobar(/cada 24 horas por 5 días$/.test(await mvz.p.locator('input[name="ind-1"]').inputValue()) && (await mvz.p.locator("[data-indicaciones-desfasadas]").count()) === 0, "N22: al cambiar la duración a 5, las indicaciones dicen «por 5 días» y no hay aviso");
+    await mvz.p.locator('input[name="ind-1"]').fill("Dar con comida");
+    await mvz.p.locator('input[name="dur-1"]').fill("6");
+    comprobar((await mvz.p.locator("[data-indicaciones-desfasadas]").count()) === 1 && (await mvz.p.locator('input[name="ind-1"]').inputValue()) === "Dar con comida", "N22: si las escribiste tú y ya no coinciden, avisa y no las pisa");
+    await mvz.p.locator("[data-regenerar-indicaciones]").click();
+    comprobar(/cada 24 horas por 6 días$/.test(await mvz.p.locator('input[name="ind-1"]').inputValue()) && (await mvz.p.locator("[data-indicaciones-desfasadas]").count()) === 0, "N22: «Regenerar las indicaciones» las vuelve a armar (6 días)");
     await mvz.p.locator('input[name="producto-0"]').fill("Amoxicilina 250 mg");
     comprobar((await mvz.p.locator('input[name="producto-0"]').inputValue()) === "Amoxicilina 250 mg", "el medicamento prellenado se puede editar");
     await sinDesborde(mvz.p, "receta prellenada");

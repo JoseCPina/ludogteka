@@ -9,6 +9,7 @@ import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { formatearFecha } from "@/lib/formato";
 import { conIva, netoDe, pesosDeCentavos, sumar, type Periodicidad } from "@/lib/cobro/iva";
 import { tipoDeCambio } from "@/lib/cobro/cambio";
+import { AVISO_COBRO_MENTEO, diasDePrueba } from "@/lib/cobro/prueba";
 import type { MiCobro, ModuloQueSeApaga, PlanOferta, Seleccion } from "@/lib/cobro/tipos";
 import { abrirPortalPagos, cambiarPlanSuscripcion, cancelarCambioProgramado, contratar, impactoDeCambio } from "./cobro-actions";
 
@@ -41,6 +42,11 @@ export function Suscripcion({
   const router = useRouter();
   const zona = useZonaNegocio();
   const fecha = (iso: string | null) => (iso ? formatearFecha(iso, zona) : "");
+  const diasQueQuedan = (iso: string | null) => {
+    if (!iso) return "";
+    const d = diasDePrueba(iso, zona);
+    return d === 0 ? "termina hoy" : `te quedan ${d} ${d === 1 ? "día" : "días"}`;
+  };
   const deCobro = planes.filter((p) => p.tipo === "plan" && p.precio_mensual > 0);
   const complementoWeb = planes.find((p) => p.tipo === "complemento" && p.modulos.includes("pagina_web")) ?? null;
   const contratado = planes.find((p) => p.id === cobro.plan_contratado) ?? null;
@@ -125,7 +131,7 @@ export function Suscripcion({
   const enPruebaSinContratar = cobro.plan === "prueba" && !tieneSub && cobro.estado === "prueba";
   const cuando = !tieneSub
     ? enPruebaSinContratar
-      ? `No se te cobra hoy. El primer cobro es el ${fecha(cobro.prueba_termina_at)}, al terminar tu prueba; después, ${pesosDeCentavos(total.total)} ${POR[sel.periodicidad]}.`
+      ? `No se te cobra hoy. El primer cobro es el ${fecha(cobro.prueba_termina_at)}, al terminar tu prueba (${diasQueQuedan(cobro.prueba_termina_at)}); después, ${pesosDeCentavos(total.total)} ${POR[sel.periodicidad]}.`
       : `Se cobra hoy y después ${pesosDeCentavos(total.total)} ${POR[sel.periodicidad]}.`
     : cobro.estado_stripe === "trialing"
       ? `Cambia lo que se cobrará al terminar tu prueba (${fecha(cobro.prueba_hasta)}): ${pesosDeCentavos(total.total)} ${POR[sel.periodicidad]}.`
@@ -135,7 +141,7 @@ export function Suscripcion({
 
   return (
     <section className="flex flex-col gap-5 rounded-xl border border-n-200 bg-white p-5">
-      <EstadoActual cobro={cobro} contratado={contratado} fecha={fecha} planes={planes} />
+      <EstadoActual cobro={cobro} contratado={contratado} fecha={fecha} diasQueQuedan={diasQueQuedan} planes={planes} />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-bold text-n-900">{tieneSub ? "Cambiar de plan" : "Contratar PeluDesk"}</h2>
@@ -258,6 +264,11 @@ export function Suscripcion({
           </Button>
         )}
       </AccionesFormulario>
+      {!tieneSub && (
+        <p data-aviso-menteo className="text-sm text-n-700">
+          {AVISO_COBRO_MENTEO} Los recibos y las facturas de Stripe dicen lo mismo.
+        </p>
+      )}
       <p className="text-xs text-n-600">
         El pago lo procesa Stripe; PeluDesk no guarda los datos de tu tarjeta. Desde «Tarjeta, facturas y cancelación» cambias la
         tarjeta, descargas tus facturas o cancelas (sigues con acceso hasta el final del periodo pagado).
@@ -270,11 +281,13 @@ function EstadoActual({
   cobro,
   contratado,
   fecha,
+  diasQueQuedan,
   planes,
 }: {
   cobro: MiCobro;
   contratado: PlanOferta | null;
   fecha: (iso: string | null) => string;
+  diasQueQuedan: (iso: string | null) => string;
   planes: PlanOferta[];
 }) {
   const monto = cobro.monto_centavos != null && cobro.periodicidad ? `${pesosDeCentavos(cobro.monto_centavos)} ${POR[cobro.periodicidad]} con IVA` : "";
@@ -291,7 +304,7 @@ function EstadoActual({
         </>
       ) : (
         <>
-          Estás en la prueba gratis hasta el <strong>{fecha(cobro.prueba_termina_at)}</strong>. Contrata cuando quieras: no pierdes los días que te
+          Estás en la prueba gratis hasta el <strong>{fecha(cobro.prueba_termina_at)}</strong> ({diasQueQuedan(cobro.prueba_termina_at)}). Contrata cuando quieras: no pierdes los días que te
           quedan, el primer cobro es al terminar.
         </>
       );

@@ -236,7 +236,30 @@ export function horasDeFrecuencia(texto: string): number | null {
   return null;
 }
 
+/** Cómo se escribe una frecuencia en todo el formulario: «Cada 12 horas», «2 veces al día». */
+export function formatoFrecuencia(texto: string): string {
+  const t = texto.replace(/\s+/g, " ").trim();
+  if (!t) return "";
+  const cada = t.match(/^(?:cada|c\/)\s*(\d+(?:[.,]\d+)?)\s*(?:h|hr|hrs|horas?)$/i);
+  if (cada) return `Cada ${cada[1].replace(",", ".")} horas`;
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+/** Las indicaciones que salen de los datos del renglón: «Meloxicam 1 mg, 1 tableta cada 24 horas por 3 días». */
+export function indicacionesGeneradas(d: { base: string; dosis: string; frecuencia: string; duracion_dias: string }): string {
+  const frec = d.frecuencia.trim();
+  const dias = Math.trunc(Number(String(d.duracion_dias).replace(",", ".")));
+  const cuerpo = [
+    d.dosis.trim(),
+    frec ? frec.charAt(0).toLowerCase() + frec.slice(1) : "",
+    Number.isFinite(dias) && dias > 0 ? `por ${dias} ${dias === 1 ? "día" : "días"}` : "",
+  ].filter(Boolean).join(" ");
+  return [d.base.trim(), cuerpo].filter(Boolean).join(", ");
+}
+
 export type MedicamentoDeTratamiento = {
+  /** Lo que va antes de la dosis en el renglón («Meloxicam 1 mg»): la base de las indicaciones generadas. */
+  base: string;
   producto: string;
   dosis: string;
   dosis_cantidad: string;
@@ -268,14 +291,16 @@ export function medicamentosDeTratamiento(texto: string | null | undefined): Med
       const toma = renglon.match(/(\d+(?:[.,]\d+)?\s*\/?\s*\d*\s*(?:tabletas?|tabs?|comprimidos?|c[aá]psulas?|gotas?|ml|sobres?|piezas?))/i);
       const dosis = toma ? toma[1].replace(/\s+/g, " ").trim() : "";
       const cantidad = dosis ? numeroInicial(dosis) : null;
+      const antes = toma && toma.index !== undefined ? renglon.slice(0, toma.index).replace(/[,\s]+$/, "").trim() : "";
       return {
+        base: antes || producto,
         producto,
         dosis,
         dosis_cantidad: cantidad ? String(cantidad) : "",
-        frecuencia: frase ? frase[1].replace(/\s+/g, " ") : "",
+        frecuencia: frase ? formatoFrecuencia(frase[1]) : "",
         frecuencia_horas: horas ? String(horas) : "",
         duracion_dias: dur ? dur[1] : "",
-        indicaciones: renglon,
+        indicaciones: indicacionesGeneradas({ base: antes || producto, dosis, frecuencia: frase ? formatoFrecuencia(frase[1]) : "", duracion_dias: dur ? dur[1] : "" }),
       };
     });
 }

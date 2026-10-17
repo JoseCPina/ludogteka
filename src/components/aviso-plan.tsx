@@ -4,6 +4,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 import { formatearFecha } from "@/lib/formato";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { whatsappPeluDesk } from "@/lib/peludesk/landing";
+import { diasDePrueba } from "@/lib/cobro/prueba";
 
 // El aviso del plan del negocio, arriba de todo en el staff y el portal:
 //   demo (cuenta de solo lectura) → qué es y cómo probar PeluDesk;
@@ -19,11 +20,10 @@ import { whatsappPeluDesk } from "@/lib/peludesk/landing";
 const URL_REGISTRO = "https://peludesk.mx/registro";
 
 
-// Días que le quedan a la prueba (negativo: ya venció). Fuera del render:
-// en un componente de servidor se calcula una vez por petición.
-function estadoPrueba(fin: Date): { vencida: boolean; dias: number } {
-  const ms = fin.getTime() - Date.now();
-  return { vencida: ms < 0, dias: Math.max(0, Math.ceil(ms / 86_400_000)) };
+// Días que le quedan a la prueba: de calendario, en la zona del negocio (los mismos que dice Stripe Checkout).
+// Fuera del render: en un componente de servidor se calcula una vez por petición.
+function estadoPrueba(fin: Date, zona: string): { vencida: boolean; dias: number } {
+  return { vencida: fin.getTime() - Date.now() < 0, dias: diasDePrueba(fin.toISOString(), zona) };
 }
 
 export async function AvisoPlan({ esPersonal }: { esPersonal: boolean }) {
@@ -53,7 +53,7 @@ export async function AvisoPlan({ esPersonal }: { esPersonal: boolean }) {
   }
 
   const fin = negocio.prueba_termina_at ? new Date(negocio.prueba_termina_at) : null;
-  const prueba = fin ? estadoPrueba(fin) : null;
+  const prueba = fin ? estadoPrueba(fin, zona) : null;
   const botonAdmin = (texto: string) =>
     esAdmin ? (
       <a href="/admin/modulos" className="rounded-md bg-morado px-3 py-1 font-semibold text-white hover:bg-morado-oscuro">
