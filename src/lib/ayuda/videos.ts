@@ -90,8 +90,10 @@ export const VIDEOS_DE_ARTICULO: Record<string, string[]> = {
 
   // ── Inventario, equipo, gastos y reportes ──
   "consumibles-compras-y-consumo": ["40", "42"],
+  "receta-de-consumo-por-servicio": ["24"],
   "equipo-y-mantenimiento": ["41"],
   "entrada-y-salida-de-empleados": ["44"],
+  "ausencias-y-vacaciones-de-empleados": ["45"],
   "pagar-la-nomina": ["46"],
   "registrar-gastos-del-local": ["47", "48"],
   "leer-los-reportes": ["49"],
@@ -137,8 +139,6 @@ export const VIDEOS_DE_ARTICULO: Record<string, string[]> = {
  */
 export const VIDEOS_SIN_ARTICULO: Record<string, string> = {
   "00": "Avance de la serie: un recorrido de 40 segundos por todo el catálogo; no explica una tarea.",
-  "24": "Receta de consumo por servicio: ningún artículo explica todavía cómo se arma (hace falta uno).",
-  "45": "Ausencias, incapacidades y vacaciones: ningún artículo las explica todavía (hace falta uno).",
 };
 
 /**
@@ -146,11 +146,11 @@ export const VIDEOS_SIN_ARTICULO: Record<string, string> = {
  * tenga video en VIDEOS_DE_ARTICULO o aparezca aquí: un artículo nuevo sin video se decide a propósito.
  */
 export const ARTICULOS_SIN_VIDEO: Record<string, string> = {
-  "cambiar-estilista-cita-estetica": "Ningún video enseña a cambiar o corregir la estilista de una cita.",
-  "corregir-un-cobro-con-terminal-mal-marcado": "Ningún video enseña «Marcar como no recibido» ni la conciliación.",
-  "factura-global-publico-en-general": "El video 65 no recorre la factura global.",
-  "iva-y-claves-sat-de-productos-y-servicios": "El video 65 no enseña el IVA ni las claves del SAT.",
-  "ver-mis-facturas": "Ningún video muestra las facturas en el portal del dueño.",
+  "cambiar-estilista-cita-estetica": "Pendiente de grabar: ningún video enseña a cambiar o corregir la estilista de una cita.",
+  "corregir-un-cobro-con-terminal-mal-marcado": "Pendiente de grabar: ningún video enseña «Marcar como no recibido» ni la conciliación.",
+  "factura-global-publico-en-general": "Pendiente de grabar: el video 65 no recorre la factura global.",
+  "iva-y-claves-sat-de-productos-y-servicios": "Pendiente de grabar: el video 65 no enseña el IVA ni las claves del SAT.",
+  "ver-mis-facturas": "Pendiente de grabar: ningún video muestra las facturas en el portal del dueño.",
 };
 
 /** Los números de los videos de un artículo (el principal primero); [] si no tiene. */
