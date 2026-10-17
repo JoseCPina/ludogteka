@@ -364,6 +364,7 @@ export default async function EditarClientePage({
             clienteNombre={cliente.nombre}
             clienteTelefono={cliente.telefono}
             pendientes={(linksPendientes as LinkPendiente[]) ?? []}
+            tieneCuenta={Boolean(cuentaCliente)}
           />
         </>
       )}

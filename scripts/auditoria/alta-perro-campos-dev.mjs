@@ -132,7 +132,10 @@ try {
 
   // Un perro que de verdad solo viene a estética: con citas y sin estancias.
   const { data: conCitas } = await SB.from("citas_estetica").select("perro_id").eq("negocio_id", B).is("deleted_at", null).neq("estado", "cancelada").limit(200);
-  const idsCitas = [...new Set((conCitas ?? []).map((c) => c.perro_id))];
+  const idsConCitas = [...new Set((conCitas ?? []).map((c) => c.perro_id))];
+  // Solo perros vivos: la ficha de uno dado de baja es un 404.
+  const { data: vivos } = idsConCitas.length ? await SB.from("perros").select("id").eq("negocio_id", B).in("id", idsConCitas).is("deleted_at", null) : { data: [] };
+  const idsCitas = (vivos ?? []).map((x) => x.id);
   const { data: conEst } = idsCitas.length ? await SB.from("perros_con_guarderia_hotel").select("perro_id").in("perro_id", idsCitas) : { data: [] };
   const usan = new Set((conEst ?? []).map((x) => x.perro_id));
   const soloEst = idsCitas.find((id) => !usan.has(id));
@@ -141,6 +144,10 @@ try {
     await p.goto(`${BASE}/perros/${soloEst}`, { waitUntil: "networkidle", timeout: 120000 });
     const ts = (await p.locator("body").innerText()).replace(/\s+/g, " ");
     comprobar(/Solo estética · vacunas no requeridas/.test(ts) || /Viene solo a estética/.test(ts), "un perro que de verdad solo viene a estética SÍ muestra el aviso");
+    // La agenda y la consulta de Veterinaria no hablan de requisitos de guardería para ese perro.
+    await p.goto(`${BASE}/veterinaria/agenda`, { waitUntil: "networkidle", timeout: 120000 });
+    const tva = (await p.locator("body").innerText()).replace(/\s+/g, " ");
+    comprobar(!/Solo estética · vacunas no requeridas/.test(tva) && !/Requisitos para guardería/.test(tva), "la agenda de Veterinaria no muestra avisos de «solo estética» ni requisitos de guardería");
   }
 
   seccion("4. N14: Veterinaria sin guardería ni hotel — ni aviso ni requisitos de estancia");
@@ -199,12 +206,101 @@ try {
   seccion("6. Portal: los títulos vacíos de la plantilla no se muestran");
   comprobar(sinTitulosVacios("Estudios solicitados:\nSeguimiento / próxima revisión:\nRecomendaciones al propietario:") === "", "todo vacío: no queda nada");
   comprobar(sinTitulosVacios("Estudios solicitados:\nSeguimiento / próxima revisión: en 7 días\nRecomendaciones al propietario:") === "Seguimiento / próxima revisión: en 7 días", "solo queda lo que se llenó");
+  comprobar(sinTitulosVacios("Estudios solicitados: Seguimiento / próxima revisión:") === "", "dos títulos vacíos en una sola línea tampoco se muestran");
+  comprobar(sinTitulosVacios("Estudios solicitados:\u00a0\r\nSeguimiento / próxima revisión:\r\nMedicamento · dosis · vía · frecuencia · duración:") === "", "con espacios duros, saltos de Windows y el título del tratamiento");
   comprobar(sinTitulosVacios("Tratamiento:\nAmoxicilina 1 tableta cada 12 h") === "Tratamiento:\nAmoxicilina 1 tableta cada 12 h", "un título con sus renglones se conserva");
+
+  seccion("7. N16 (a) y (b): las obligatorias y el aviso se recalculan al cambiar la raza; las etiquetas salen de la regla");
+  const elegirRaza = async (pg, nombre) => {
+    // Con una raza ya escogida el buscador se esconde tras «Cambiar».
+    const cambiar = pg.getByRole("button", { name: "Cambiar", exact: true });
+    if (await cambiar.count()) await cambiar.first().click();
+    await pg.getByLabel(/^Raza/).fill(nombre);
+    await pg.waitForTimeout(800);
+    await pg.getByRole("option", { name: new RegExp(`^${nombre}`) }).first().click().catch(async () => { await pg.getByText(nombre, { exact: true }).first().click(); });
+  };
+  const { data: poodle } = await A.from("razas").select("id,nombre").ilike("nombre", "poodle%").is("deleted_at", null).limit(1);
+  const poodleFalta = poodle?.[0] ? ((await admin.rpc("perro_faltantes_alta", { p_raza: poodle[0].nombre, p_raza_id: poodle[0].id, p_tamano_id: null, p_pelaje_id: null })).data ?? []) : null;
+  await p.goto(`${BASE}/clientes/${cli.id}/perros/nuevo`, { waitUntil: "networkidle", timeout: 120000 });
+  await p.getByLabel("Nombre del perro").fill(`ZZ Cambio ${sufijo}`);
+  await elegirRaza(p, "Mestizo");
+  comprobar((await p.getByLabel("Tamaño (obligatorio)").count()) === 1, "Estética + Hotel, Mestizo: tamaño obligatorio");
+  await p.getByLabel(/^Tamaño/).selectOption({ index: 1 });
+  await p.getByLabel(/^Pelaje/).selectOption({ index: 1 });
+  await p.getByRole("button", { name: "Guardar perro" }).click();
+  // Un error del servidor (quitamos la raza a propósito con otro intento sin raza) queda en pantalla…
+  await p.goto(`${BASE}/clientes/${cli.id}/perros/nuevo`, { waitUntil: "networkidle", timeout: 120000 });
+  await p.getByLabel("Nombre del perro").fill(`ZZ Cambio2 ${sufijo}`);
+  await p.getByRole("button", { name: "Guardar perro" }).click();
+  await p.getByText(/le falta: raza/).first().waitFor({ timeout: 30000 });
+  // …y se esconde en cuanto se escoge la raza.
+  await elegirRaza(p, "Mestizo");
+  comprobar((await p.getByText(/le falta: raza/).count()) === 0, "el aviso «le falta: raza» desaparece al escoger la raza");
+  if (poodle?.[0]) {
+    await elegirRaza(p, poodle[0].nombre);
+    const piden = poodleFalta.includes("tamaño");
+    comprobar((await p.getByLabel("Tamaño (obligatorio)").count()) === (piden ? 1 : 0), `cambiar Mestizo por ${poodle[0].nombre}: el tamaño ${piden ? "sigue" : "deja de ser"} obligatorio, como dice la base (${JSON.stringify(poodleFalta)})`);
+    if (!piden) {
+      await p.getByRole("button", { name: "Guardar perro" }).click();
+      await p.waitForURL(/\/perros\/[0-9a-f-]{36}/, { timeout: 60000 }).catch(() => {});
+      const idPoodle = p.url().match(/\/perros\/([0-9a-f-]{36})/)?.[1];
+      comprobar(Boolean(idPoodle), `y se guarda sin tamaño ni pelaje (${p.url()})`);
+      if (idPoodle) creados.perros.push(idPoodle);
+    }
+  }
+  // Solo Hotel: la raza es lo único que se exige, y las etiquetas lo dicen.
+  await fijar("estetica", false); await fijar("guarderia", false);
+  await p.goto(`${BASE}/clientes/${cli.id}/perros/nuevo`, { waitUntil: "networkidle", timeout: 120000 });
+  await p.getByLabel("Nombre del perro").fill(`ZZ Hotel ${sufijo}`);
+  await elegirRaza(p, "Mestizo");
+  comprobar((await p.getByLabel("Tamaño (obligatorio)").count()) === 0 && (await p.getByLabel("Pelaje (obligatorio)").count()) === 0, "solo Hotel, Mestizo: tamaño y pelaje NO se marcan «(obligatorio)»");
+  await p.getByRole("button", { name: "Guardar perro" }).click();
+  await p.waitForURL(/\/perros\/[0-9a-f-]{36}/, { timeout: 60000 }).catch(() => {});
+  const idHotel = p.url().match(/\/perros\/([0-9a-f-]{36})/)?.[1];
+  comprobar(Boolean(idHotel), `y se guarda solo con la raza (${p.url()})`);
+  if (idHotel) creados.perros.push(idHotel);
+  for (const m of MODS) await fijar(m, true);
+
+  seccion("8. N15: el link de alta/complemento no se genera para un cliente con cuenta activa");
+  const dueno = await como(datos.recepcionB);
+  const r1 = await dueno.rpc("crear_invitacion_cliente", { p_nombre_referencia: "ZZ Con cuenta", p_telefono: "4400000000", p_dias_vigencia: 7, p_tipo: "guarderia_hotel", p_cliente_id: cli2.id });
+  comprobar(/ya tiene cuenta activa/i.test(r1.error?.message ?? ""), `complemento por la API: «${r1.error?.message}»`);
+  const { data: tel2 } = await SB.from("clientes").select("telefono").eq("id", cli2.id).single();
+  const r2 = await dueno.rpc("crear_invitacion_cliente", { p_nombre_referencia: "ZZ Alta repetida", p_telefono: tel2.telefono, p_dias_vigencia: 7, p_tipo: "guarderia_hotel", p_cliente_id: null });
+  comprobar(/ya tiene cuenta activa/i.test(r2.error?.message ?? ""), `alta nueva con el teléfono de un cliente con cuenta: «${r2.error?.message}»`);
+  await pa.goto(`${BASE}/clientes/${cli2.id}`, { waitUntil: "networkidle", timeout: 120000 });
+  comprobar((await pa.locator("[data-link-cuenta-activa]").count()) === 1, "la ficha no ofrece «Generar link»: dice «Este cliente ya tiene cuenta activa»");
+  comprobar((await pa.getByRole("button", { name: "Generar link" }).count()) === 0, "no hay botón «Generar link»");
+  // Un cliente SIN cuenta sí puede recibir su link de complemento, y se cancela.
+  await pa.goto(`${BASE}/clientes/${cli.id}`, { waitUntil: "networkidle", timeout: 120000 });
+  await pa.getByRole("button", { name: "Generar link" }).click();
+  await pa.getByRole("button", { name: "Abrir WhatsApp" }).waitFor({ timeout: 30000 });
+  comprobar(true, "un cliente sin cuenta sí recibe su link de complemento");
+
+  seccion("9. Cancelar un link de alta (pendiente y en curso) y verlo en la ficha");
+  await pa.goto(`${BASE}/clientes/${cli.id}`, { waitUntil: "networkidle", timeout: 120000 });
+  comprobar((await pa.getByText("Ya tiene un link esperando").count()) === 1, "la ficha avisa que hay un link esperando");
+  await pa.goto(`${BASE}/clientes/invitaciones`, { waitUntil: "networkidle", timeout: 120000 });
+  const fila = pa.locator("li", { hasText: `ZZ Alta ${sufijo}` }).first();
+  await fila.getByRole("button", { name: "Cancelar" }).click();
+  await fila.getByRole("button", { name: "Sí, cancelar" }).click();
+  await pa.locator("li", { hasText: `ZZ Alta ${sufijo}` }).first().getByText(/Cancelada el/).waitFor({ timeout: 30000 });
+  comprobar(true, "el link se marca como cancelado");
+  // Uno «en curso» (ya guardó sus datos) también se cancela.
+  const { data: enCurso } = await SB.from("invitaciones_cliente").insert({ negocio_id: B, token: `zz${sufijo}${Date.now()}`, nombre_referencia: `ZZ EnCurso ${sufijo}`, telefono: "4400000001", tipo: "guarderia_hotel", cliente_id: cli.id, expira_at: new Date(Date.now() + 7 * 864e5).toISOString(), alta_completada_at: new Date().toISOString() }).select("id").single();
+  const rc = await dueno.rpc("cancelar_invitacion_cliente", { p_id: enCurso.id });
+  const { data: despues } = await SB.from("invitaciones_cliente_estado").select("estado").eq("id", enCurso.id).single();
+  comprobar(!rc.error && despues?.estado === "cancelada", `un link en curso se cancela (${rc.error?.message ?? despues?.estado})`);
+  await pa.goto(`${BASE}/clientes/${cli.id}`, { waitUntil: "networkidle", timeout: 120000 });
+  comprobar((await pa.getByText("Ya tiene un link esperando").count()) === 0, "y la ficha del cliente ya no lo lista como esperando");
+  await SB.from("invitaciones_cliente").delete().eq("negocio_id", B).like("nombre_referencia", "ZZ %");
   await ctx.close(); await adminCtx.close(); await duenoCtx.close();
 } finally {
   await nav.close();
   await restaurar();
   const ahora = new Date().toISOString();
+  // El autoguardado del formulario deja borradores de quien lo abrió: no se quedan para otras auditorías.
+  await SB.from("formulario_borradores").delete().eq("negocio_id", B).in("formulario", ["mascota_nueva", "cliente_nuevo"]);
   if (creados.perros.length) await SB.from("perros").update({ deleted_at: ahora }).in("id", creados.perros);
   if (creados.clientes.length) {
     await SB.from("perros").update({ deleted_at: ahora }).in("cliente_id", creados.clientes);

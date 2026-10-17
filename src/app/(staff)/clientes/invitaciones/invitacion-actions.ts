@@ -117,6 +117,8 @@ export async function cancelarInvitacion(invitacionId: string): Promise<{ error:
   if (error) return { error: traducirError(error) };
 
   revalidatePath("/clientes/invitaciones");
+  // La ficha del cliente también lista sus links vivos («Ya tiene un link esperando»).
+  revalidatePath("/clientes/[id]", "page");
   return { error: null };
 }
 

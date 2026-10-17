@@ -2,7 +2,8 @@
 // médico llena o no. Al dueño no se le muestran los que quedaron vacíos (QA externa, 16 de octubre de 2026): un
 // renglón que es solo un título, sin nada escrito después, se quita. Un título con su texto, o seguido de renglones
 // que lo desarrollan, se conserva.
-const SOLO_TITULO = /^[^\n:]{1,80}:\s*$/;
+// Un renglón que son solo títulos: «Estudios solicitados:» o varios seguidos («A: B:») si el texto quedó en una línea.
+const SOLO_TITULO = /^(?:[^\n:]{1,80}:\s*)+$/;
 const INICIA_TITULO = /^[^\n:]{1,80}:/;
 
 export function sinTitulosVacios(texto: string): string {

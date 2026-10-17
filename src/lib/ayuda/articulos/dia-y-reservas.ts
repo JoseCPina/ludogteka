@@ -76,7 +76,9 @@ Si la ocupación dice «Cupo sin configurar», falta capturar el cupo de ese dí
 4. Escoge la **Vigencia del link** y toca **Generar link**.
 5. Toca **Abrir WhatsApp** para mandárselo, o **Copiar link**.
 
-El link le sirve hasta que termine todo, datos y firma. Si lo deja a medias, lo vuelve a abrir y sigue. En **Links pendientes** puedes **Reenviar** o **Cancelar**.
+El link le sirve hasta que termine todo, datos y firma. Si lo deja a medias, lo vuelve a abrir y sigue. En **Links pendientes** puedes **Reenviar** o **Cancelar** (también uno que ya guardó sus datos y le falta firmar; al cancelarlo, su ficha deja de decir que hay un link esperando).
+
+Si el cliente ya tiene cuenta activa en el portal, no se genera link: la ficha dice **Este cliente ya tiene cuenta activa** y el link de alta con su teléfono se rechaza con el mismo aviso. No hace falta mandarle nada.
 
 ## Las vacunas en el alta
 

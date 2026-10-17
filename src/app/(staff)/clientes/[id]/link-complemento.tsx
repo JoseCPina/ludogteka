@@ -31,11 +31,13 @@ export function LinkComplemento({
   clienteNombre,
   clienteTelefono,
   pendientes,
+  tieneCuenta = false,
 }: {
   clienteId: string;
   clienteNombre: string;
   clienteTelefono: string;
   pendientes: LinkPendiente[];
+  tieneCuenta?: boolean;
 }) {
   const zona = useZonaNegocio();
   const router = useRouter();
@@ -43,17 +45,35 @@ export function LinkComplemento({
   const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<EstadoInvitacion | null>(null);
+  const [cuentaActiva, setCuentaActiva] = useState(tieneCuenta);
 
   async function generar() {
     setError(null);
     setResultado(null);
     const res = await enviando.ejecutar(() => crearInvitacion(clienteNombre, clienteTelefono, 7, tipo, clienteId));
     if (res.error) {
+      // El cliente activó su cuenta mientras esta pantalla seguía abierta: se acomoda la pantalla.
+      if (/ya tiene cuenta activa/i.test(res.error)) {
+        setCuentaActiva(true);
+        router.refresh();
+        return;
+      }
       setError(res.error);
       return;
     }
     setResultado(res);
     router.refresh();
+  }
+
+  if (cuentaActiva) {
+    return (
+      <div id="link-complemento" data-link-cuenta-activa className="flex scroll-mt-6 flex-col gap-3 border-t border-n-200 pt-6">
+        <h2 className="text-lg font-bold text-n-900">Mandarle un link para completar</h2>
+        <Alert variante="exito" titulo="Este cliente ya tiene cuenta activa">
+          No hace falta mandarle un link: {clienteNombre} entra a su portal con su teléfono y su contraseña.
+        </Alert>
+      </div>
+    );
   }
 
   return (

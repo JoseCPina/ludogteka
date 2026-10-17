@@ -88,6 +88,8 @@ export async function revisarFilas(
       microchip: v.datos!.m_microchip ?? "",
       especie: v.datos!.m_especie ?? "perro",
       raza: v.datos!.m_raza ?? "",
+      tamano: v.datos!.m_tamano ?? "",
+      pelaje: v.datos!.m_pelaje ?? "",
     }));
 
   const cruce = new Map<number, Record<string, unknown>>();
@@ -101,9 +103,15 @@ export async function revisarFilas(
   const salida: FilaRevisada[] = validadas.map((v) => {
     const c = cruce.get(v.n);
     const traeMascota = Boolean(v.datos?.m_nombre);
+    // La misma regla que valida al procesar: una mascota NUEVA sin lo obligatorio del negocio no se importa.
+    const faltantes = Array.isArray(c?.faltantes) ? (c.faltantes as string[]) : [];
+    const errorFaltantes =
+      !v.error && traeMascota && faltantes.length > 0
+        ? `A la mascota «${v.datos?.m_nombre}» le falta: ${faltantes.join(", ")}. Complétalo en el archivo (en «raza» puedes poner «Mestizo»).`
+        : null;
     return {
       n: v.n,
-      error: v.error,
+      error: v.error ?? errorFaltantes,
       avisos: v.avisos,
       datos: v.datos,
       cliente: !v.datos ? null : c?.cliente_id ? "existente" : "nuevo",
