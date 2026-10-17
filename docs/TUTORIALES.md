@@ -373,6 +373,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | consumibles-compras-y-consumo | 40, 42 |
 | vender-producto-en-mostrador | 43 |
 | equipo-y-mantenimiento | 41 |
+| receta-de-consumo-por-servicio | 24 |
 | entrada-y-salida-de-empleados | 44 |
 | pagar-la-nomina | 46 |
 | registrar-gastos-del-local | 47, 48 |
@@ -386,6 +387,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | politicas-y-reglas | 51 |
 | perfil-y-pagina-web | 02, 52 |
 | pedir-ayuda | 01, 53 |
+| ausencias-y-vacaciones-de-empleados | 45 |
 | cobrar-una-cuenta | 33, 94 |
 | cobrar-varios-servicios-juntos | 57 |
 | cobrar-con-terminal | 34, 59 |

@@ -110,6 +110,49 @@ Todo queda en la **Bitácora** del equipo.
 - «La fecha del mantenimiento no puede ser futura»: pon la fecha en que sí se hizo.`,
   },
 
+  {
+    slug: "receta-de-consumo-por-servicio",
+    titulo: "Cómo armar la receta de consumo de un servicio de estética",
+    resumen: "Deja escrito cuánto shampoo y otros insumos gasta cada baño, por tamaño de perro, y el inventario se descuenta solo al terminar la cita.",
+    grupo: "inventario",
+    modulo: "estetica",
+    roles: ["admin", "recepcion"],
+    rutas: ["/servicios/[id]/receta"],
+    palabras: ["receta", "consumo", "shampoo", "insumos por servicio", "descontar inventario", "cuánto gasta", "tamaño"],
+    cuerpo: `La receta dice qué insumos gasta un servicio de estética y cuánto, según el tamaño del perro. Con ella, cada vez que terminas una cita la app descuenta del inventario lo que se usó, sin que captures nada aparte.
+
+## Armar la receta
+
+Solo un admin la arma.
+
+1. Entra a [Servicios](/servicios) y abre el servicio, por ejemplo el baño completo.
+2. Aprieta **Receta de consumo**.
+3. En **Tamaño** elige para qué tamaño de perro es la línea.
+4. En **Insumo** elige lo que se gasta (si no aparece, primero dalo de alta en [Inventario](/inventario)).
+5. En **Cantidad** escribe cuánto se usa, en la unidad de consumo del insumo.
+6. Aprieta **Agregar línea**.
+
+Repite por cada insumo y por cada tamaño: un perro grande gasta más shampoo que uno chico, así que cada tamaño lleva sus propias líneas. Las líneas se agrupan por tamaño en la pantalla.
+
+## Quitar una línea
+
+Aprieta **Quitar** junto a la línea. La receta se corrige hacia adelante; lo que ya se descontó en citas pasadas se queda como estaba.
+
+## Qué pasa al terminar una cita
+
+1. Abre la cita y aprieta **Finalizar cita**.
+2. Si el servicio tiene receta para el tamaño de ese perro, verás **Consumo de inventario — ajusta si se usó más o menos**, con las cantidades de la receta.
+3. Cambia la cantidad si se usó más o menos de lo normal.
+4. Aprieta **Confirmar cierre**: se descuenta la existencia de cada insumo.
+
+Ese consumo es el que aparece en el costo de insumos de los reportes.
+
+## Si algo no sale
+
+- Si el perro de la cita no tiene **tamaño** capturado, la cita no trae receta: ponle el tamaño en su ficha.
+- Si el servicio no tiene líneas para ese tamaño, el cierre no descuenta nada.
+- La receta solo existe para servicios de estética.`,
+  },
   // ─── Empleados ────────────────────────────────────────────────────────
   {
     slug: "entrada-y-salida-de-empleados",
@@ -557,5 +600,47 @@ No tienes que explicar dónde estabas: el ticket lleva sola la pantalla en la qu
 - Recepción ve sus propios tickets; el admin ve todos los del negocio.
 
 > Entre más nos cuentes (qué apretaste, qué esperabas y qué salió), más rápido lo resolvemos.`,
+  },
+  {
+    slug: "ausencias-y-vacaciones-de-empleados",
+    titulo: "Cómo pedir, aprobar y llevar las ausencias y vacaciones de los empleados",
+    resumen: "Vacaciones, incapacidades, días personales y faltas justificadas: se piden, las aprueba un admin y las vacaciones se descuentan del saldo.",
+    grupo: "empleados",
+    modulo: "empleados",
+    roles: ["admin", "recepcion"],
+    rutas: ["/empleados/ausencias", "/mi-trabajo"],
+    palabras: ["vacaciones", "incapacidad", "día personal", "permiso", "falta justificada", "saldo de vacaciones", "ausencias", "aprobar"],
+    cuerpo: `Aquí se llaman **ausencias**, no permisos. Hay cuatro tipos: **Vacaciones**, **Incapacidad**, **Día personal** y **Falta justificada**. Cada una se pide, la aprueba un admin y queda registrada.
+
+## Pedirla
+
+- **Quien tiene cuenta en la app:** entra a [Mi asistencia](/mi-trabajo), baja a **Pedir una ausencia**, elige el **Tipo**, el día **Desde** y **Hasta (incluido)** (déjalo vacío si es un solo día) y aprieta **Pedir ausencia**.
+- **Quien no tiene cuenta, o si te avisó por WhatsApp:** en [Ausencias](/empleados/ausencias) busca **Pedir una ausencia por alguien**, elige al **Empleado**, el **Tipo** y las fechas, y aprieta **Pedir ausencia**. Un admin la pide por cualquiera; recepción, solo por quien no tiene cuenta.
+
+La app cuenta los días que a esa persona le tocaba trabajar según su horario, no los de calendario. Una ausencia no puede pasar de 90 días ni cruzarse con otra pedida o aprobada.
+
+## Aprobarla o rechazarla
+
+Solo un admin. En [Ausencias](/empleados/ausencias), la sección **Por aprobar** lista lo que espera decisión, de la más vieja a la más nueva.
+
+1. Aprieta **Aprobar**, o
+2. aprieta **Rechazar**, escribe por qué y confirma con **Rechazar**.
+
+Lo ya resuelto queda en **Aprobadas y resueltas**.
+
+## El saldo de vacaciones
+
+Al aprobar unas vacaciones, sus días se descuentan del saldo de esa persona. Cada quien ve su saldo en [Mi asistencia](/mi-trabajo). El admin asigna o ajusta los días en la ficha del empleado, con **Asignar o ajustar días de vacaciones**.
+
+## Cancelar
+
+- Quien la pidió puede cancelarla mientras está por aprobar.
+- Una ausencia aprobada solo la cancela un admin, con motivo, y las vacaciones regresan sus días al saldo.
+
+## Cómo afecta la asistencia y la nómina
+
+- Un día con ausencia aprobada se marca como **ausencia** en la asistencia: no cuenta como falta ni como retardo.
+- En la nómina no se descuenta falta por ese día. Si el pago es por día, los días de vacaciones se pagan; los de incapacidad, día personal y falta justificada no.
+- **No bloquea la agenda de estética**: la app no quita a la persona de las citas. Si va a faltar, reasigna sus citas desde [Estética](/estetica).`,
   },
 ];
