@@ -7,6 +7,7 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { negocioActual } from "@/lib/negocio/actual";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { articulosDelNegocio } from "@/lib/ayuda";
+import { articulosDeVideo } from "@/lib/ayuda/videos";
 import { cargarTutorialesVisibles } from "@/lib/tutoriales";
 import {
   LIMITE_HISTORIAL,
@@ -100,7 +101,7 @@ export async function preguntarAsistente(datos: { conversacionId: string | null;
       { type: "text" as const, text: promptFijo(articulos), cache_control: { type: "ephemeral" as const } },
       {
         type: "text" as const,
-        text: promptVariable({ negocio: negocio.nombre, rol: sesion.rol as "admin" | "recepcion", modulos: sesion.modulos, pantalla: datos.pantalla, hoy: hoyTexto, videos: videos.map((v) => ({ numero: v.numero, titulo: v.titulo, articulos: v.articulos })) }),
+        text: promptVariable({ negocio: negocio.nombre, rol: sesion.rol as "admin" | "recepcion", modulos: sesion.modulos, pantalla: datos.pantalla, hoy: hoyTexto, videos: videos.map((v) => ({ numero: v.numero, titulo: v.titulo, articulos: articulosDeVideo(v.numero) })) }),
       },
     ];
     // Sin herramientas: «no está documentado» y «fuera de alcance» van como

@@ -263,7 +263,7 @@ export default async function ReportesPage({
             </p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[480px] border-collapse text-sm">
+            <table className="tabla-tarjetas w-full min-w-[480px] border-collapse text-sm">
               <thead>
                 <tr className="text-left text-xs font-bold uppercase tracking-wide text-n-500">
                   <th className="py-1.5 pr-3" />
@@ -283,15 +283,15 @@ export default async function ReportesPage({
                   ] as const
                 ).map(([etiqueta, clave]) => (
                   <tr key={clave} className="border-t border-n-200">
-                    <td className="py-1.5 pr-3">{etiqueta}</td>
-                    <td className="py-1.5 pr-3 text-right tabular-nums">{formatearMoneda(Number(utilidad[clave]))}</td>
-                    <td className="py-1.5 pr-3 text-right tabular-nums text-n-600">{utilidadAnterior ? formatearMoneda(Number(utilidadAnterior[clave])) : "—"}</td>
+                    <td data-label="" className="py-1.5 pr-3">{etiqueta}</td>
+                    <td data-label="Este periodo" className="py-1.5 pr-3 text-right tabular-nums">{formatearMoneda(Number(utilidad[clave]))}</td>
+                    <td data-label="Periodo anterior" className="py-1.5 pr-3 text-right tabular-nums text-n-600">{utilidadAnterior ? formatearMoneda(Number(utilidadAnterior[clave])) : "—"}</td>
                   </tr>
                 ))}
                 <tr className="border-t-2 border-n-300 font-bold">
-                  <td className="py-1.5 pr-3">Utilidad</td>
-                  <td className="py-1.5 pr-3 text-right tabular-nums">{formatearMoneda(Number(utilidad.utilidad))}</td>
-                  <td className="py-1.5 pr-3 text-right tabular-nums text-n-600">{utilidadAnterior ? formatearMoneda(Number(utilidadAnterior.utilidad)) : "—"}</td>
+                  <td data-label="" className="py-1.5 pr-3">Utilidad</td>
+                  <td data-label="Este periodo" className="py-1.5 pr-3 text-right tabular-nums">{formatearMoneda(Number(utilidad.utilidad))}</td>
+                  <td data-label="Periodo anterior" className="py-1.5 pr-3 text-right tabular-nums text-n-600">{utilidadAnterior ? formatearMoneda(Number(utilidadAnterior.utilidad)) : "—"}</td>
                 </tr>
               </tbody>
             </table>
@@ -301,7 +301,7 @@ export default async function ReportesPage({
             <div className="flex flex-col gap-2">
               <p className="text-sm font-bold text-n-900">Gastos del local, por categoría</p>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[480px] border-collapse text-sm">
+                <table className="tabla-tarjetas w-full min-w-[480px] border-collapse text-sm">
                   <thead>
                     <tr className="text-left text-xs font-bold uppercase tracking-wide text-n-500">
                       <th className="py-1.5 pr-3">Categoría</th>
@@ -315,10 +315,10 @@ export default async function ReportesPage({
                       const dif = c.monto - c.anterior;
                       return (
                         <tr key={c.categoria_id} className="border-t border-n-200">
-                          <td className="py-1.5 pr-3">{c.categoria}</td>
-                          <td className="py-1.5 pr-3 text-right tabular-nums">{formatearMoneda(c.monto)}</td>
-                          <td className="py-1.5 pr-3 text-right tabular-nums text-n-600">{formatearMoneda(c.anterior)}</td>
-                          <td className={`py-1.5 pr-3 text-right tabular-nums ${dif > 0 ? "text-coral-oscuro" : "text-menta-oscuro"}`}>
+                          <td data-label="" className="py-1.5 pr-3">{c.categoria}</td>
+                          <td data-label="Este periodo" className="py-1.5 pr-3 text-right tabular-nums">{formatearMoneda(c.monto)}</td>
+                          <td data-label="Anterior" className="py-1.5 pr-3 text-right tabular-nums text-n-600">{formatearMoneda(c.anterior)}</td>
+                          <td data-label="Diferencia" className={`py-1.5 pr-3 text-right tabular-nums ${dif > 0 ? "text-coral-oscuro" : "text-menta-oscuro"}`}>
                             {dif > 0 ? "+" : ""}
                             {formatearMoneda(dif)}
                           </td>
@@ -377,7 +377,7 @@ export default async function ReportesPage({
           </div>
 
           <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-            <table className="w-full min-w-[720px] border-collapse">
+            <table className="tabla-tarjetas w-full min-w-[720px] border-collapse">
               <thead>
                 <tr>
                   <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
@@ -399,58 +399,58 @@ export default async function ReportesPage({
               </thead>
               <tbody>
                 <tr>
-                  <td className="border-b border-n-200 px-4 py-2.5 font-semibold text-n-900">Cobros</td>
-                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                  <td data-label="" className="border-b border-n-200 px-4 py-2.5 font-semibold text-n-900">Cobros</td>
+                  <td data-label="Efectivo" className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
                     <Toque href={D("cobros:efectivo")} etiqueta="Ver los cobros en efectivo">{formatearMoneda(reporte.cobros_efectivo)}</Toque>
                   </td>
-                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                  <td data-label="Terminal" className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
                     <Toque href={D("cobros:terminal")} etiqueta="Ver los cobros en terminal">{formatearMoneda(reporte.cobros_terminal)}</Toque>
                   </td>
-                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                  <td data-label="Transferencia" className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
                     <Toque href={D("cobros:transferencia")} etiqueta="Ver los cobros en transferencia">{formatearMoneda(reporte.cobros_transferencia)}</Toque>
                   </td>
-                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                  <td data-label="Tarjeta manual (sin verificar)" className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
                     <Toque href={D("cobros:tarjeta_manual")} etiqueta="Ver los cobros en tarjeta manual">{formatearMoneda(reporte.cobros_tarjeta_manual)}</Toque>
                   </td>
                 </tr>
                 <tr>
-                  <td className="border-b border-n-200 px-4 py-2.5 text-n-700">Propinas</td>
-                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-600">
+                  <td data-label="" className="border-b border-n-200 px-4 py-2.5 text-n-700">Propinas</td>
+                  <td data-label="Efectivo" className="border-b border-n-200 px-4 py-2.5 text-right text-n-600">
                     <Toque href={D("propinas:efectivo")} etiqueta="Ver los propinas en efectivo">{formatearMoneda(reporte.propinas_efectivo)}</Toque>
                   </td>
-                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-600">
+                  <td data-label="Terminal" className="border-b border-n-200 px-4 py-2.5 text-right text-n-600">
                     <Toque href={D("propinas:terminal")} etiqueta="Ver los propinas en terminal">{formatearMoneda(reporte.propinas_terminal)}</Toque>
                   </td>
-                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-600">
+                  <td data-label="Transferencia" className="border-b border-n-200 px-4 py-2.5 text-right text-n-600">
                     <Toque href={D("propinas:transferencia")} etiqueta="Ver los propinas en transferencia">{formatearMoneda(reporte.propinas_transferencia)}</Toque>
                   </td>
-                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-600">
+                  <td data-label="Tarjeta manual (sin verificar)" className="border-b border-n-200 px-4 py-2.5 text-right text-n-600">
                     <Toque href={D("propinas:tarjeta_manual")} etiqueta="Ver los propinas en tarjeta manual">{formatearMoneda(reporte.propinas_tarjeta_manual)}</Toque>
                   </td>
                 </tr>
                 <tr>
-                  <td className="border-b border-n-200 px-4 py-2.5 text-n-700">Devoluciones</td>
-                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-coral-oscuro">
+                  <td data-label="" className="border-b border-n-200 px-4 py-2.5 text-n-700">Devoluciones</td>
+                  <td data-label="Efectivo" className="border-b border-n-200 px-4 py-2.5 text-right text-coral-oscuro">
                     <Toque href={D("devoluciones:efectivo")} etiqueta="Ver las devoluciones en efectivo">−{formatearMoneda(reporte.devoluciones_efectivo)}</Toque>
                   </td>
-                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-coral-oscuro">
+                  <td data-label="Terminal" className="border-b border-n-200 px-4 py-2.5 text-right text-coral-oscuro">
                     <Toque href={D("devoluciones:terminal")} etiqueta="Ver las devoluciones en terminal">−{formatearMoneda(reporte.devoluciones_terminal)}</Toque>
                   </td>
-                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-coral-oscuro">
+                  <td data-label="Transferencia" className="border-b border-n-200 px-4 py-2.5 text-right text-coral-oscuro">
                     <Toque href={D("devoluciones:transferencia")} etiqueta="Ver las devoluciones en transferencia">−{formatearMoneda(reporte.devoluciones_transferencia)}</Toque>
                   </td>
-                  <td className="border-b border-n-200 px-4 py-2.5 text-right text-coral-oscuro">
+                  <td data-label="Tarjeta manual (sin verificar)" className="border-b border-n-200 px-4 py-2.5 text-right text-coral-oscuro">
                     <Toque href={D("devoluciones:tarjeta_manual")} etiqueta="Ver las devoluciones en tarjeta manual">−{formatearMoneda(reporte.devoluciones_tarjeta_manual)}</Toque>
                   </td>
                 </tr>
                 <tr>
-                  <td className="px-4 py-2.5 text-n-700">Retiros de caja</td>
-                  <td className="px-4 py-2.5 text-right text-coral-oscuro">
+                  <td data-label="" className="px-4 py-2.5 text-n-700">Retiros de caja</td>
+                  <td data-label="Efectivo" className="px-4 py-2.5 text-right text-coral-oscuro">
                     <Toque href={D("retiros")} etiqueta="Ver los retiros de caja">−{formatearMoneda(reporte.retiros_efectivo)}</Toque>
                   </td>
-                  <td className="px-4 py-2.5 text-right text-n-400">—</td>
-                  <td className="px-4 py-2.5 text-right text-n-400">—</td>
-                  <td className="px-4 py-2.5 text-right text-n-400">—</td>
+                  <td data-label="Terminal" className="px-4 py-2.5 text-right text-n-400">—</td>
+                  <td data-label="Transferencia" className="px-4 py-2.5 text-right text-n-400">—</td>
+                  <td data-label="Tarjeta manual (sin verificar)" className="px-4 py-2.5 text-right text-n-400">—</td>
                 </tr>
               </tbody>
             </table>
@@ -585,7 +585,7 @@ export default async function ReportesPage({
 
             {margenServicios.length > 0 && (
               <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-                <table className="w-full min-w-[760px] border-collapse">
+                <table className="tabla-tarjetas w-full min-w-[760px] border-collapse">
                   <thead>
                     <tr>
                       <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
@@ -614,25 +614,25 @@ export default async function ReportesPage({
                   <tbody>
                     {margenServicios.map((s) => (
                       <tr key={s.servicio_id}>
-                        <td className="border-b border-n-200 px-4 py-2.5 font-semibold text-n-900">
+                        <td data-label="" className="border-b border-n-200 px-4 py-2.5 font-semibold text-n-900">
                           {s.servicio_nombre}
                         </td>
-                        <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                        <td data-label="Citas" className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
                           <Toque href={D(`estetica_servicio:${s.servicio_id}`)} etiqueta={`Ver las citas de ${s.servicio_nombre}`}>{s.citas_finalizadas}</Toque>
                         </td>
-                        <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                        <td data-label="Ingreso" className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
                           <Toque href={D(`estetica_servicio:${s.servicio_id}`)} etiqueta={`Ver el ingreso de ${s.servicio_nombre}`}>{formatearMoneda(s.ingreso)}</Toque>
                         </td>
-                        <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                        <td data-label="Costo" className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
                           {formatearMoneda(s.costo_consumo)}
                         </td>
-                        <td className="border-b border-n-200 px-4 py-2.5 text-right font-semibold text-n-900">
+                        <td data-label="Margen" className="border-b border-n-200 px-4 py-2.5 text-right font-semibold text-n-900">
                           {formatearMoneda(s.margen)}
                         </td>
-                        <td className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                        <td data-label="Comisión" className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
                           {formatearMoneda(Number(s.comision))}
                         </td>
-                        <td className="border-b border-n-200 px-4 py-2.5 text-right font-semibold text-n-900">
+                        <td data-label="Margen tras comisión" className="border-b border-n-200 px-4 py-2.5 text-right font-semibold text-n-900">
                           {formatearMoneda(Number(s.margen_con_comision))}
                         </td>
                       </tr>
@@ -727,7 +727,7 @@ export default async function ReportesPage({
             if (filas.length === 0) return null;
             return (
               <div key={grupo} className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-                <table className="w-full text-left text-sm">
+                <table className="tabla-tarjetas w-full text-left text-sm">
                   <thead className="bg-n-50 text-xs font-bold uppercase tracking-wide text-n-600">
                     <tr>
                       <th className="px-3 py-2">{grupo === "servicio" ? "Servicio" : "Empleado"}</th>
@@ -740,11 +740,11 @@ export default async function ReportesPage({
                   <tbody>
                     {filas.map((r) => (
                       <tr key={r.clave} className="border-t border-n-100">
-                        <td className="px-3 py-2 font-semibold text-n-900">{r.nombre}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{r.veces}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{r.cantidad}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">${r.ingreso.toFixed(2)}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">${r.cubierto_paquete.toFixed(2)}</td>
+                        <td data-label="" className="px-3 py-2 font-semibold text-n-900">{r.nombre}</td>
+                        <td data-label="Veces" className="px-3 py-2 text-right tabular-nums">{r.veces}</td>
+                        <td data-label="Cantidad" className="px-3 py-2 text-right tabular-nums">{r.cantidad}</td>
+                        <td data-label="Ingreso" className="px-3 py-2 text-right tabular-nums">${r.ingreso.toFixed(2)}</td>
+                        <td data-label="Cubierto con paquete" className="px-3 py-2 text-right tabular-nums">${r.cubierto_paquete.toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>

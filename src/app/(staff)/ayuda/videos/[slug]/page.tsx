@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { cargarTutorialesVisibles, duracionTexto } from "@/lib/tutoriales";
 import { articuloPorSlug } from "@/lib/ayuda";
+import { articulosDeVideo } from "@/lib/ayuda/videos";
 import { ReproductorTutorial } from "@/components/ayuda/reproductor-tutorial";
 
 export default async function VideoPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -15,7 +16,7 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
   if (!video) notFound();
   // El que sigue en la serie; si ese todavía no está (o no es de tus módulos), el siguiente que sí.
   const siguiente = videos.find((v) => v.slug === video.siguiente) ?? videos.find((v) => v.orden > video.orden) ?? null;
-  const articulos = video.articulos.map((s) => articuloPorSlug(s)).filter((a) => a !== null);
+  const articulos = articulosDeVideo(video.numero).map((s) => articuloPorSlug(s)).filter((a) => a !== null);
 
   return (
     <div className="flex max-w-4xl flex-col gap-5">

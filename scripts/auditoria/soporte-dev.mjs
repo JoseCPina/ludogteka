@@ -296,8 +296,10 @@ try {
   const crudoDe = (desde) => mock.ia.slice(desde).map((x) => (x.salida ?? []).map((b) => (b.type === "text" ? b.text : b.type === "tool_use" ? `<<${b.name} ${JSON.stringify(b.input)}>>` : "")).join("\n")).join("\n");
   const juzgar = (p, r, crudo, sistema) => {
     const malos = [];
-    if (r.texto.length > 750) malos.push(`larga (${r.texto.length} caracteres)`);
-    if (r.texto.split("\n").filter((l) => l.trim()).length > 9) malos.push("más de 9 renglones");
+    // Lo que escribió el modelo: sin los renglones que agrega la pantalla («Del artículo: …» y «Míralo en video: …»).
+    const propio = r.texto.split("\n").filter((l) => !/^\s*(Del artículo|Míralo en video)/.test(l)).join("\n");
+    if (propio.length > 750) malos.push(`larga (${propio.length} caracteres)`);
+    if (propio.split("\n").filter((l) => l.trim()).length > 9) malos.push("más de 9 renglones");
     if (/(^|[^\p{L}])(tenés|podés|querés|sabés|hacé|andá|fijate|fijá|recordá|apretá|escribí|revisá|poné|tocá)(?![\p{L}])/iu.test(r.texto)) malos.push("voseo");
     if (/\b(usted|para su referencia)\b/i.test(r.texto)) malos.push("de usted");
     if (/\b(no est[aá]s segur[oa]|que lo haga (él|ella)|ella misma|él mismo|pídele que lo haga (él|ella))\b/i.test(r.texto)) malos.push("supone si es hombre o mujer");

@@ -370,42 +370,42 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 
 | Artículo | Videos |
 | --- | --- |
-| consumibles-compras-y-consumo | 40 |
+| consumibles-compras-y-consumo | 40, 42 |
 | vender-producto-en-mostrador | 43 |
 | equipo-y-mantenimiento | 41 |
 | entrada-y-salida-de-empleados | 44 |
 | pagar-la-nomina | 46 |
-| registrar-gastos-del-local | 47 |
+| registrar-gastos-del-local | 47, 48 |
 | leer-los-reportes | 49 |
 | ver-el-detalle-de-una-cifra | 49 |
 | invitar-a-tu-equipo | 08 |
 | permisos-extra-a-recepcion | 09 |
 | modulos-y-plan | 06 |
-| conectar-mercado-pago-o-clip | 50 |
-| horario-y-datos-del-negocio | 07 |
+| conectar-mercado-pago-o-clip | 50, 59 |
+| horario-y-datos-del-negocio | 02, 07 |
 | politicas-y-reglas | 51 |
-| perfil-y-pagina-web | 52 |
-| pedir-ayuda | 53 |
+| perfil-y-pagina-web | 02, 52 |
+| pedir-ayuda | 01, 53 |
 | cobrar-una-cuenta | 33, 94 |
 | cobrar-varios-servicios-juntos | 57 |
 | cobrar-con-terminal | 34, 59 |
 | terminal-no-recibe-el-cobro | 34, 59 |
-| corregir-un-cobro-con-terminal-mal-marcado | 38 |
-| tarjeta-registro-manual | 34, 56 |
-| revisar-tarjetas-manuales | 38, 56 |
+| corregir-un-cobro-con-terminal-mal-marcado | — |
+| tarjeta-registro-manual | 56 |
+| revisar-tarjetas-manuales | 56 |
 | link-de-pago-whatsapp | 34 |
-| venta-rapida | 35 |
+| venta-rapida | 35, 43 |
 | devolver-un-cobro | 38 |
 | reembolsos-mercado-pago | 38 |
 | corte-de-caja | 32 |
 | cargo-suelto | 36 |
 | aplicar-descuento | 37 |
 | agregar-una-raza-que-no-aparece | 14 |
-| precios-de-estetica | 20 |
-| precio-de-estetica-mestizo | 20, 58 |
+| precios-de-estetica | 20, 23 |
+| precio-de-estetica-mestizo | 58 |
 | que-hacer-sin-precio-estetica | 23, 58 |
-| agendar-cita-estetica | 21 |
-| cambiar-estilista-cita-estetica | 23 |
+| agendar-cita-estetica | 21, 23 |
+| cambiar-estilista-cita-estetica | — |
 | corregir-servicio-de-una-cita | 55 |
 | atender-cita-estetica | 22 |
 | anular-o-corregir-un-cobro | 61 |
@@ -417,15 +417,15 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | que-hacer-con-necesita-atencion | 05 |
 | alta-de-cliente-con-link | 11 |
 | capturar-cliente-en-mostrador | 10 |
-| vacunas-alertas-y-datos-del-perro | 12, 95 |
+| vacunas-alertas-y-datos-del-perro | 12 |
 | revisar-comprobante-sanitario | 13 |
 | restablecer-contrasena-de-cliente | 03, 15 |
-| portal-del-dueno | 15 |
-| mandar-a-firmar-un-contrato | 17 |
-| reservar-guarderia | 25, 95 |
-| reservar-hotel | 26 |
+| portal-del-dueno | 15, 18 |
+| mandar-a-firmar-un-contrato | 16, 17, 18, 19 |
+| reservar-guarderia | 25, 27, 28, 95 |
+| reservar-hotel | 26, 28, 95 |
 | calendario-de-reservas | 94 |
-| registrar-check-in | 29 |
+| registrar-check-in | 28, 29 |
 | registrar-check-out-y-cobrar | 30 |
 | vender-day-pass-o-mensualidad | 39 |
 | ajustar-dias-usados-de-un-pase | 60 |
@@ -433,12 +433,12 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | configurar-la-facturacion | 65 |
 | datos-fiscales-de-un-cliente | 65 |
 | facturar-un-cobro | 65 |
-| facturar-un-cobro-junto | 65 |
-| factura-global-publico-en-general | 65 |
+| facturar-un-cobro-junto | 57, 65 |
+| factura-global-publico-en-general | — |
 | cancelar-o-sustituir-una-factura | 65 |
 | mandar-una-factura-al-cliente | 65 |
-| iva-y-claves-sat-de-productos-y-servicios | 65 |
-| ver-mis-facturas | 65 |
+| iva-y-claves-sat-de-productos-y-servicios | — |
+| ver-mis-facturas | — |
 | importar-clientes-y-mascotas | 66 |
 | deshacer-una-importacion | 67 |
 | recuperar-un-borrador | 68 |
@@ -450,7 +450,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | catalogo-de-servicios-extra | 89 |
 | paquete-de-sesiones-de-un-servicio-extra | 89 |
 | agenda-clinica-veterinaria | 79 |
-| consulta-veterinaria-soap | 80 |
+| consulta-veterinaria-soap | 80, 90 |
 | cobrar-una-consulta-veterinaria | 93 |
 | estudios-archivos-y-linea-de-tiempo | 81 |
 | estimados-veterinarios | 82 |

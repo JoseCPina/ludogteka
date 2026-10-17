@@ -49,7 +49,7 @@ export function HistorialTurnos({ turnos, zona }: { turnos: TurnoCerrado[]; zona
             </p>
 
             <div className="mt-2 overflow-x-auto">
-              <table className="w-full min-w-[420px] border-collapse text-sm">
+              <table className="tabla-tarjetas w-full min-w-[420px] border-collapse text-sm">
                 <thead>
                   <tr>
                     <th className="border-b border-n-200 py-1 text-left text-xs font-bold uppercase tracking-wide text-n-500">
@@ -69,14 +69,14 @@ export function HistorialTurnos({ turnos, zona }: { turnos: TurnoCerrado[]; zona
                 <tbody>
                   {t.metodos.map((m) => (
                     <tr key={m.metodo}>
-                      <td className="border-b border-n-100 py-1 text-n-800">{ETIQUETA_METODO[m.metodo] ?? m.metodo}</td>
-                      <td className="border-b border-n-100 py-1 text-right tabular-nums text-n-700">
+                      <td data-label="" className="border-b border-n-100 py-1 text-n-800">{ETIQUETA_METODO[m.metodo] ?? m.metodo}</td>
+                      <td data-label="Contado" className="border-b border-n-100 py-1 text-right tabular-nums text-n-700">
                         {dinero(m.conteo)}
                       </td>
-                      <td className="border-b border-n-100 py-1 text-right tabular-nums text-n-700">
+                      <td data-label="Esperado" className="border-b border-n-100 py-1 text-right tabular-nums text-n-700">
                         {dinero(m.esperado)}
                       </td>
-                      <td
+                      <td data-label="Diferencia"
                         className={`border-b border-n-100 py-1 text-right tabular-nums font-semibold ${
                           m.diferencia === 0
                             ? "text-n-700"

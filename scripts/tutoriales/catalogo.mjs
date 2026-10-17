@@ -28,6 +28,9 @@ const v = (id, slug, area, titulo, resumen, o = {}) => ({
   id, slug, area, titulo, resumen, rol: "recepcion", duracion: 150, modulos: [], permisos: [], articulos: [], rutas: [], avisos: [], etiquetas: [], ...o,
 });
 
+// Los artículos que cubre cada video salen de UN mapeo: src/lib/ayuda/videos.ts (no se escriben aquí).
+import { articulosDeVideo } from "../../src/lib/ayuda/videos.ts";
+
 export const VIDEOS = [
   v("00", "avance-de-la-serie", "empieza", "PeluDesk: lo que vas a aprender en esta serie de videos", "Un recorrido de 40 segundos por todo lo que cubre la serie.", { duracion: 45, rol: "admin", rutas: [] }),
 
@@ -158,7 +161,7 @@ export const VIDEOS = [
   v("67", "deshacer-una-importacion", "negocio", "Ver el historial de importaciones y deshacer una", "Revisas qué pasó con cada fila, retomas una importación a medias y la deshaces si nadie tocó esos registros.", { rol: "admin", permisos: ["importar_datos"], rutas: ["/admin/importar/[id]"], articulos: ["deshacer-una-importacion"], etiquetas: ["importar", "deshacer"] }),
   v("68", "recuperar-un-borrador", "empieza", "Recupera lo que estabas escribiendo: borradores", "Los formularios largos se guardan solos y al volver recuperas el borrador o lo descartas.", { rutas: [], articulos: ["recuperar-un-borrador"], etiquetas: ["borrador", "autoguardado"] }),
   v("69", "instalar-la-app-y-sin-conexion", "empieza", "Instala la app y consulta la agenda sin conexión", "Pones el sistema en tu pantalla de inicio y ves qué sí y qué no se puede hacer sin internet.", { rutas: ["/sin-conexion"], articulos: ["instalar-la-app-y-sin-conexion"], etiquetas: ["app", "sin conexión", "instalar"] }),
-];
+].map((v) => ({ ...v, articulos: articulosDeVideo(v.id) }));
 
 // Lo que NO se graba, y por qué (cada ruta o aviso excluido lleva su motivo).
 export const EXCLUIDOS = {

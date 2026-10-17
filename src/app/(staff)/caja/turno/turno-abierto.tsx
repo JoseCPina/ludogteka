@@ -537,7 +537,7 @@ export function TurnoAbierto({
                 se ajusta en silencio.
               </p>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[420px] border-collapse text-sm">
+                <table className="tabla-tarjetas w-full min-w-[420px] border-collapse text-sm">
                   <thead>
                     <tr>
                       <th className="border-b border-coral py-1 text-left text-xs font-bold uppercase text-coral-oscuro">
@@ -568,14 +568,14 @@ export function TurnoAbierto({
                       ] as [string, number, number, number][]
                     ).map(([metodo, contado, esperado, diferencia]) => (
                       <tr key={metodo}>
-                        <td className="border-b border-coral/30 py-1 text-coral-oscuro">{ETIQUETA_METODO[metodo]}</td>
-                        <td className="border-b border-coral/30 py-1 text-right tabular-nums text-coral-oscuro">
+                        <td data-label="" className="border-b border-coral/30 py-1 text-coral-oscuro">{ETIQUETA_METODO[metodo]}</td>
+                        <td data-label="Contado" className="border-b border-coral/30 py-1 text-right tabular-nums text-coral-oscuro">
                           {dinero(contado)}
                         </td>
-                        <td className="border-b border-coral/30 py-1 text-right tabular-nums text-coral-oscuro">
+                        <td data-label="Esperado" className="border-b border-coral/30 py-1 text-right tabular-nums text-coral-oscuro">
                           {dinero(esperado)}
                         </td>
-                        <td className="border-b border-coral/30 py-1 text-right tabular-nums font-bold text-coral-oscuro">
+                        <td data-label="Diferencia" className="border-b border-coral/30 py-1 text-right tabular-nums font-bold text-coral-oscuro">
                           {diferencia > 0 ? "+" : ""}
                           {dinero(diferencia)}
                         </td>

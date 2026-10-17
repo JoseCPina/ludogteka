@@ -4,6 +4,9 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { articulosDelNegocio } from "@/lib/ayuda";
 import { ArticuloAyuda } from "@/components/ayuda/articulo-ayuda";
 import { Button } from "@/components/ui/button";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { cargarTutorialesVisibles } from "@/lib/tutoriales";
+import { videosParaArticulo } from "@/components/ayuda/videos-del-articulo";
 
 // Un artículo, dentro de la app: solo si es de un módulo activo del negocio.
 export default async function ArticuloEnApp({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ desde?: string }> }) {
@@ -12,6 +15,9 @@ export default async function ArticuloEnApp({ params, searchParams }: { params: 
   const sesion = await obtenerSesionConRol();
   const a = articulosDelNegocio(sesion?.modulos ?? []).find((x) => x.slug === slug);
   if (!a) notFound();
+  // Los videos del artículo que este negocio y esta persona pueden ver (módulos activos, permisos).
+  const supabase = await createSupabaseServerClient();
+  const videos = videosParaArticulo(slug, await cargarTutorialesVisibles(supabase, { rol: sesion?.rol ?? "", permisos: sesion?.permisos ?? [], modulos: sesion?.modulos ?? [] }));
   const pantalla = desde && desde.startsWith("/") ? desde : null;
   return (
     <div className="flex flex-col gap-6">
@@ -25,7 +31,7 @@ export default async function ArticuloEnApp({ params, searchParams }: { params: 
           Todos los artículos
         </Link>
       </div>
-      <ArticuloAyuda articulo={a} />
+      <ArticuloAyuda articulo={a} videos={videos} />
       {sesion?.rol === "recepcion" && !a.roles.includes("recepcion") && (
         <p className="max-w-3xl text-sm text-n-600">Esto lo hace el admin del negocio.</p>
       )}

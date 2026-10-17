@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { COLUMNAS_TUTORIAL, duracionTexto, tieneVideo, type Tutorial } from "@/lib/tutoriales";
 import { articuloPorSlug } from "@/lib/ayuda";
+import { articulosDeVideo } from "@/lib/ayuda/videos";
 import { ReproductorTutorial } from "@/components/ayuda/reproductor-tutorial";
 import { PieSitio } from "@/components/peludesk/sitio";
 import { metaPagina } from "@/lib/peludesk/seo";
@@ -34,7 +35,7 @@ export default async function VideoPublico({ params }: { params: Promise<{ slug:
   const r = await cargar((await params).slug);
   if (!r) notFound();
   const { video, siguiente } = r;
-  const articulos = video.articulos.map((s) => articuloPorSlug(s)).filter((a) => a !== null);
+  const articulos = articulosDeVideo(video.numero).map((s) => articuloPorSlug(s)).filter((a) => a !== null);
   return (
     <div className="min-h-full bg-n-50">
       <EncabezadoAyuda />
