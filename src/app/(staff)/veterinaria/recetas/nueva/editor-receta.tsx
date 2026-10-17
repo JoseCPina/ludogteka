@@ -8,7 +8,7 @@ import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import Link from "next/link";
-import { calcularCantidad, horasDeFrecuencia, medicamentosDeTratamiento, numeroInicial, type Requisito } from "@/lib/veterinaria/recetas";
+import { calcularCantidad, horasDeFrecuencia, indicacionesGeneradas, medicamentosDeTratamiento, numeroInicial, type Requisito } from "@/lib/veterinaria/recetas";
 import { emitirReceta } from "../actions";
 
 export type ProductoReceta = {
@@ -39,9 +39,13 @@ type Fila = {
   cantidad_manual: boolean;
   cantidad_unidad: string;
   indicaciones: string;
+  // true cuando el médico escribió las indicaciones: dejan de seguir a los datos del renglón.
+  indicaciones_manual: boolean;
+  // Lo que va antes de la dosis cuando el renglón vino del Tratamiento («Meloxicam 1 mg»); vacío = el medicamento.
+  base: string;
 };
 
-const vacia = (): Fila => ({ insumo_id: "", producto: "", principio_activo: "", presentacion: "", dosis: "", dosis_cantidad: "", via: "Oral", frecuencia: "", frecuencia_horas: "", duracion_dias: "", tiempo_retiro: "", cantidad_surtir: "", cantidad_manual: false, cantidad_unidad: "", indicaciones: "" });
+const vacia = (): Fila => ({ insumo_id: "", producto: "", principio_activo: "", presentacion: "", dosis: "", dosis_cantidad: "", via: "Oral", frecuencia: "", frecuencia_horas: "", duracion_dias: "", tiempo_retiro: "", cantidad_surtir: "", cantidad_manual: false, cantidad_unidad: "", indicaciones: "", indicaciones_manual: false, base: "" });
 const num = (t: string) => Number(String(t).replace(",", ".").trim());
 const caja = "mt-1.5 min-h-12 w-full rounded-md border-[1.5px] border-borde bg-white px-3.5 text-base text-n-900";
 
@@ -51,7 +55,7 @@ export function EditorReceta({ perroId, consultaId, productos, tratamiento = nul
   const envio = useEspera();
   // Con una consulta firmada, el borrador sale del campo «Tratamiento» (el médico lo revisa y lo corrige).
   const [prellenado] = useState(() => medicamentosDeTratamiento(tratamiento));
-  const [filas, setFilas] = useState<Fila[]>(() => (prellenado.length > 0 ? prellenado.map((m) => ({ ...vacia(), ...m })) : [vacia()]));
+  const [filas, setFilas] = useState<Fila[]>(() => (prellenado.length > 0 ? prellenado.map((m) => ({ ...vacia(), ...m, indicaciones_manual: false })) : [vacia()]));
   const [diagnostico, setDiagnostico] = useState("");
   const [observaciones, setObservaciones] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +80,9 @@ export function EditorReceta({ perroId, consultaId, productos, tratamiento = nul
     return calcularCantidad(dosis, horas, num(f.duracion_dias));
   };
   // Lo que se ve en «Cantidad a surtir»: lo que escribió el médico o, mientras no escriba, la cuenta.
+  const generadas = (f: Fila) => indicacionesGeneradas({ base: f.base || f.producto, dosis: f.dosis, frecuencia: f.frecuencia, duracion_dias: f.duracion_dias });
+  // Lo que se ve en «Indicaciones»: lo que escribió el médico o, mientras no escriba, lo que sale de los datos.
+  const indicacionesDe = (f: Fila) => (f.indicaciones_manual ? f.indicaciones : generadas(f));
   const cantidadDe = (f: Fila) => (f.cantidad_manual ? f.cantidad_surtir : (calculada(f) ?? ""));
 
   async function emitir() {
@@ -96,7 +103,7 @@ export function EditorReceta({ perroId, consultaId, productos, tratamiento = nul
         tiempo_retiro: f.tiempo_retiro.trim() || null,
         cantidad_surtir: cantidadDe(f) !== "" ? num(String(cantidadDe(f))) : null,
         cantidad_unidad: f.cantidad_unidad.trim() || null,
-        indicaciones: f.indicaciones.trim() || null,
+        indicaciones: indicacionesDe(f).trim() || null,
       }));
     if (lineas.length === 0) {
       setError("Agrega al menos un medicamento.");
@@ -173,7 +180,16 @@ export function EditorReceta({ perroId, consultaId, productos, tratamiento = nul
                 Usar la cantidad calculada con dosis, frecuencia y días ({calc})
               </button>
             )}
-            <Field label="Indicaciones (opcional)" name={`ind-${i}`} value={f.indicaciones} onChange={(e) => cambiar(i, { indicaciones: e.target.value })} />
+            <Field label="Indicaciones (opcional)" name={`ind-${i}`} value={indicacionesDe(f)} onChange={(e) => cambiar(i, { indicaciones: e.target.value, indicaciones_manual: true })}
+              ayuda={f.indicaciones_manual ? "Las escribiste tú." : "Se arman con la dosis, la frecuencia y los días. Puedes cambiarlas."} />
+            {f.indicaciones_manual && f.indicaciones.trim() !== generadas(f).trim() && (
+              <div data-indicaciones-desfasadas className="flex flex-col gap-1 rounded-md border-l-4 border-ambar bg-ambar-suave px-3 py-2 text-sm text-n-800">
+                <span>Las indicaciones ya no coinciden con la dosis, la frecuencia y los días de arriba.</span>
+                <button type="button" data-regenerar-indicaciones className="w-fit font-semibold text-morado hover:underline" onClick={() => cambiar(i, { indicaciones_manual: false })}>
+                  Regenerar las indicaciones{generadas(f) ? `: «${generadas(f)}»` : ""}
+                </button>
+              </div>
+            )}
             {filas.length > 1 && (
               <button type="button" className="w-fit text-sm font-semibold text-coral-oscuro hover:underline" onClick={() => setFilas((x) => x.filter((_, j) => j !== i))}>
                 Quitar este medicamento

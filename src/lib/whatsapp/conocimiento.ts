@@ -217,4 +217,7 @@ Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado.
 - Receta: si escribes a mano la «Cantidad a surtir» y luego cambias dosis, frecuencia o días, la nota solo dice que la escribiste tú; aparece «Usar la cantidad calculada con dosis, frecuencia y días» para volver a la sugerida.
 - Personal: al invitar a alguien, «Nombre completo» es obligatorio. La agenda de estética, los selectores de «Empleado» y los historiales nombran a la persona por su ficha de Empleados (o, si no hay, por el nombre de su cuenta), nunca por su correo.
 - Reservas: quien no tiene el permiso «Excepciones al reservar» no ve la casilla de excepción; el aviso de una vacuna o evaluación que falta solo dice qué falta, que no se puede reservar y que le pida la excepción a un admin o a quien tenga el permiso.
+## Ajustes de la QA del 17 de octubre (13 h)
+- Receta: las «Indicaciones» se arman con el medicamento, la dosis, la frecuencia y los días y se actualizan solas; si el médico las escribe, aparece un aviso cuando dejan de coincidir, con un botón para regenerarlas. La frecuencia se escribe «Cada 12 horas».
+- Cobro de PeluDesk: el cobro aparece como MENTEO, la empresa que opera PeluDesk (en el Checkout, el estado de cuenta, los recibos y las facturas de Stripe). Durante la prueba, quien contrata no paga hoy: el primer cobro es el último día de su prueba, con la misma fecha y los mismos días en el aviso, en Módulos y plan y en el Checkout.
 `.trim();

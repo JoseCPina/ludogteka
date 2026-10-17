@@ -430,7 +430,9 @@ Hay un solo plan, **PeluDesk**: $649 al mes + IVA ($752.84 con IVA), **sin costo
 2. Revisa el **Resumen** con el IVA.
 3. Aprieta **Pagar con tarjeta**. El pago lo procesa Stripe.
 
-Si contratas durante la prueba, no pierdes días: el primer cobro es al terminar.
+**El cobro aparece como MENTEO, la empresa que opera PeluDesk.** Así lo verás en el Checkout de Stripe, en tu estado de cuenta, en los recibos y en las facturas.
+
+Si contratas durante la prueba, no pierdes días: el primer cobro es el último día de tu prueba. «Módulos y plan», el aviso de arriba y Stripe dicen la misma fecha y los mismos días. El Checkout dice «Contratas PeluDesk. No se te cobra hoy; el primer cobro es el…» con esa fecha.
 
 ## Después
 

@@ -5,12 +5,13 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
-import { negocioActual, urlDelNegocio } from "@/lib/negocio/actual";
+import { negocioActual, urlDelNegocio, zonaActual } from "@/lib/negocio/actual";
 import { stripe, mensajeDeErrorStripe, modoStripe } from "@/lib/cobro/stripe";
 import { precioParaCobrar, sincronizarPreciosPlan } from "@/lib/cobro/precios";
 import { configuracionPortal } from "@/lib/cobro/portal";
 import { METADATA_NEGOCIO, aplicarSuscripcion, guardarCliente } from "@/lib/cobro/suscripcion";
 import { tipoDeCambio } from "@/lib/cobro/cambio";
+import { AVISO_COBRO_MENTEO, finDePrueba, textoCheckout } from "@/lib/cobro/prueba";
 import { esCorreoSintetico } from "@/lib/auth/identidad";
 import type { MiCobro, ModuloQueSeApaga, PlanOferta, ResultadoCobro, Seleccion } from "@/lib/cobro/tipos";
 
@@ -120,19 +121,23 @@ export async function contratar(sel: Seleccion): Promise<ResultadoCobro> {
   try {
     const { plan, web } = await preciosDeSeleccion(ctx, sel);
     const customer = await clienteStripe(ctx);
-    // Durante la prueba no pierde días: el primer cobro es al terminar.
+    // Durante la prueba no pierde días: el primer cobro es al terminar. La fecha es la misma que ve en el banner
+    // y en «Módulos y plan» (el último día de la prueba en la zona del negocio), y Stripe recibe el instante exacto.
+    const zona = await zonaActual();
     let trialEnd: number | undefined;
-    const fin = ctx.cobro.plan === "prueba" && ctx.cobro.prueba_termina_at ? new Date(ctx.cobro.prueba_termina_at).getTime() : 0;
-    if (fin > Date.now()) {
-      trialEnd = Math.ceil(Math.max(fin, Date.now() + HORAS_MIN_PRUEBA * 3600_000) / 1000);
+    const fin = ctx.cobro.plan === "prueba" && ctx.cobro.prueba_termina_at ? finDePrueba(ctx.cobro.prueba_termina_at, zona) : null;
+    if (fin && fin.getTime() > Date.now()) {
+      trialEnd = Math.ceil(Math.max(fin.getTime(), Date.now() + HORAS_MIN_PRUEBA * 3600_000) / 1000);
     }
+    // Para que el cobro de Stripe no sorprenda: sus facturas y recibos dicen a nombre de quién sale.
+    await stripe().customers.update(customer, { invoice_settings: { footer: AVISO_COBRO_MENTEO } });
     const base = urlDelNegocio(ctx.negocio);
     const metadata = { [METADATA_NEGOCIO]: ctx.negocio.id, peludesk_plan: sel.plan, periodicidad: sel.periodicidad };
     const sesion = await stripe().checkout.sessions.create({
       mode: "subscription",
       customer,
       line_items: [{ price: plan.id, quantity: 1 }, ...(web ? [{ price: web.id, quantity: 1 }] : [])],
-      subscription_data: { metadata, ...(trialEnd ? { trial_end: trialEnd } : {}) },
+      subscription_data: { metadata, description: `Suscripción a PeluDesk de ${ctx.negocio.nombre}. ${AVISO_COBRO_MENTEO}`, ...(trialEnd ? { trial_end: trialEnd } : {}) },
       payment_method_collection: "always",
       metadata,
       client_reference_id: ctx.negocio.id,
@@ -140,13 +145,7 @@ export async function contratar(sel: Seleccion): Promise<ResultadoCobro> {
       // Siempre en pesos: la cuenta (de Menteo) tiene la conversión de moneda
       // automática, que le enseñaría dólares a quien pague desde fuera de México.
       adaptive_pricing: { enabled: false },
-      custom_text: {
-        submit: {
-          message: trialEnd
-            ? "Precios con IVA incluido. No se te cobra hoy: el primer cobro es al terminar tu prueba gratis."
-            : "Precios con IVA incluido.",
-        },
-      },
+      custom_text: { submit: { message: textoCheckout(trialEnd ? new Date(trialEnd * 1000) : null, zona) } },
       success_url: `${base}/admin/modulos/pago?sesion={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/admin/modulos?pago=cancelado`,
     });
