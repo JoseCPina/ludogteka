@@ -162,12 +162,17 @@ export const VIDEOS = [
   v("68", "recuperar-un-borrador", "empieza", "Recupera lo que estabas escribiendo: borradores", "Los formularios largos se guardan solos y al volver recuperas el borrador o lo descartas.", { rutas: [], articulos: ["recuperar-un-borrador"], etiquetas: ["borrador", "autoguardado"] }),
   v("69", "instalar-la-app-y-sin-conexion", "empieza", "Instala la app y consulta la agenda sin conexión", "Pones el sistema en tu pantalla de inicio y ves qué sí y qué no se puede hacer sin internet.", { rutas: ["/sin-conexion"], articulos: ["instalar-la-app-y-sin-conexion"], etiquetas: ["app", "sin conexión", "instalar"] }),
 
-  // Videos para artículos que no tenían video (17 de octubre de 2026, carril B; folios 96 a 99).
+].map((v) => ({ ...v, articulos: articulosDeVideo(v.id) }));
+
+// Folios 96 a 99: guion listo, SIN grabar (la grabación se pausó el 17 de octubre de 2026). No entran a VIDEOS
+// (ni a la tabla `tutoriales`, la ayuda o el bot) hasta grabarlos y publicarlos: entonces se pasan a VIDEOS y se
+// ligan en VIDEOS_DE_ARTICULO de src/lib/ayuda/videos.ts.
+export const VIDEOS_PENDIENTES = [
   v("96", "cambiar-estilista-cita-estetica", "estetica", "Cambiar o corregir la estilista de una cita", "Pasas una cita a otra estilista o la dejas sin asignar, corriges quién atendió un servicio terminado y ves el historial.", { rol: "admin", duracion: 100, modulos: ["estetica"], permisos: ["corregir_estilista"], rutas: ["/estetica/[citaId]"], etiquetas: ["estilista", "reasignar", "comisión", "sin asignar"] }),
   v("97", "corregir-un-cobro-con-terminal-mal-marcado", "caja", "Cobro con terminal mal marcado y la conciliación con Mercado Pago", "Lees una diferencia de la conciliación, la das por revisada o marcas el cobro como no recibido, con motivo.", { rol: "admin", duracion: 100, rutas: ["/caja/conciliacion"], avisos: ["conciliacion"], etiquetas: ["conciliación", "no recibido", "terminal", "mercado pago"] }),
   v("98", "factura-global-publico-en-general", "caja", "La factura global al público en general", "Ves los periodos con cobros sin factura, emites la global a tiempo y ajustas su periodicidad.", { rol: "admin", duracion: 95, permisos: ["facturar"], rutas: ["/caja/facturas", "/admin/facturacion"], etiquetas: ["factura global", "público en general", "cfdi", "24 horas"] }),
   v("99", "iva-y-claves-sat-de-productos-y-servicios", "negocio", "IVA y claves del SAT de lo que vendes", "Revisas el IVA de cada tipo de concepto, cambias las claves del SAT y clasificas productos y servicios.", { rol: "admin", duracion: 95, permisos: ["editar_datos_fiscales"], rutas: ["/admin/facturacion"], etiquetas: ["iva", "clave sat", "de patente", "cfdi"] }),
-].map((v) => ({ ...v, articulos: articulosDeVideo(v.id) }));
+];
 
 // Lo que NO se graba, y por qué (cada ruta o aviso excluido lleva su motivo).
 export const EXCLUIDOS = {
