@@ -12,7 +12,10 @@ export function ProveedorModulos({ modulos, children }: { modulos: readonly stri
 }
 
 /** Sin proveedor (fuera del staff) no esconde nada. */
-export function useModulos(): { tiene: (m: string) => boolean } {
+export function useModulos(): { tiene: (m: string) => boolean; modulos: readonly string[] } {
   const modulos = useContext(ContextoModulos);
-  return { tiene: (m) => (modulos ? modulos.includes(m) : true) };
+  return {
+    tiene: (m) => (modulos ? modulos.includes(m) : true),
+    modulos: modulos ?? ["portal", "guarderia", "hotel", "estetica", "veterinaria"],
+  };
 }

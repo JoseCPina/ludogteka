@@ -157,7 +157,8 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
     ]);
   const modulos = (modulosCrudo as string[] | null) ?? [];
   const politicas = politicasVisibles(textosPoliticas, modulos);
-  const comoSeAgenda = textoPolitica(textosPoliticas, definicion.expedienteCompleto ? "como_reservar" : "como_agendar_estetica");
+  // Cómo se reserva o se agenda es una regla de guardería/hotel o de estética; la veterinaria no tiene una redactada.
+  const comoSeAgenda = tipo === "veterinaria" ? "" : textoPolitica(textosPoliticas, definicion.expedienteCompleto ? "como_reservar" : "como_agendar_estetica");
   const ofreceRecoleccion = modulos.includes("recoleccion");
   const conVeterinaria = modulos.includes("veterinaria");
 

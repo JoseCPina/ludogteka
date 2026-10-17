@@ -100,6 +100,22 @@ try {
   comprobar(await bj.count() === 0 || (await bj.isDisabled()), "tras guardar, el botón sigue deshabilitado mientras abre el recibo");
   await p.waitForURL(/recibo-junto/, { timeout: 30000 });
   comprobar(((await SB.from("cobros_grupo").select("id").eq("cliente_id", dos)).data ?? []).length === 1, "un solo cobro agrupado en la base");
+
+  // N-sugerencia (QA 17 de octubre): con el servidor rápido (1 a 2.5 s de confirmación), el botón enseña que
+  // está procesando y un doble clic en el mismo instante no manda dos cobros.
+  console.log("3. Doble clic rápido: un solo cobro, y el botón dice que procesa");
+  const pRapida = await ctx.newPage();
+  await pRapida.unroute?.("**/*").catch(() => {});
+  const tres = await nuevoCliente("Doble clic");
+  const c3 = await cuenta(tres, 130, `Baño doble ${sufijo}`);
+  await pRapida.goto(`${BASE}/caja/cobrar/${c3}`, { waitUntil: "networkidle" });
+  const b3 = pRapida.getByRole("button", { name: /Registrar cobro|Cobrando|Actualizando/ }).first();
+  await b3.dblclick({ delay: 0 });
+  const textoBoton = await pRapida.getByRole("button", { name: /Cobrando|Actualizando/ }).first().innerText().catch(() => "");
+  comprobar(/Cobrando|Actualizando/.test(textoBoton) || (await pRapida.getByText("Cobro registrado.").count()) > 0, `el botón muestra que está procesando («${textoBoton.trim()}») o ya terminó`);
+  await pRapida.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+  await pRapida.waitForTimeout(4000);
+  comprobar((await cobros(c3)) === 1, "un doble clic deja UN solo cobro en la base");
 } finally {
   await nav.close();
 }

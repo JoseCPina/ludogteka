@@ -361,7 +361,7 @@ try {
   const c2a = await nuevaCita(S1, f2);
   const c2b = await nuevaCita(S2, f2);
   const choque = await reasignar(tAdmin, c2b.id, S1);
-  comprobar(!choque.ok && /ya tiene otra cita/i.test(choque.mensaje) && (await empDe(c2b.id)).empleado_id === S2, `la que ya tiene cita a esa hora no se asigna: «${choque.mensaje.slice(0, 80)}»`);
+  comprobar(!choque.ok && /ya tiene a .* a las \d\d:\d\d/i.test(choque.mensaje) && (await empDe(c2b.id)).empleado_id === S2, `la que ya tiene cita a esa hora no se asigna: «${choque.mensaje.slice(0, 80)}»`);
   void c2a;
 
   // 8.5 En curso: motivo opcional, nunca sin estilista

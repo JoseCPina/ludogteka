@@ -208,6 +208,78 @@ export function calcularCantidad(dosis: number, frecuenciaHoras: number | null, 
   return Math.ceil(dosis * veces - 1e-9);
 }
 
+const NUMEROS_ESCRITOS: Record<string, number> = { un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, media: 0.5, medio: 0.5 };
+
+/** «1 tableta» → 1, «1/2 tableta» → 0.5, «media tableta» → 0.5; null si no empieza con un número. */
+export function numeroInicial(texto: string): number | null {
+  const t = texto.trim().toLowerCase();
+  const fr = t.match(/^(\d+)\s*\/\s*(\d+)/);
+  if (fr) return Number(fr[2]) > 0 ? Number(fr[1]) / Number(fr[2]) : null;
+  const n = t.match(/^(\d+(?:[.,]\d+)?)/);
+  if (n) return Number(n[1].replace(",", "."));
+  const w = t.match(/^([a-záéíóú]+)/);
+  return w && NUMEROS_ESCRITOS[w[1]] !== undefined ? NUMEROS_ESCRITOS[w[1]] : null;
+}
+
+/** «cada 12 horas», «c/8 h», «2 veces al día», «una vez al día» → cada cuántas horas; null si no se entiende. */
+export function horasDeFrecuencia(texto: string): number | null {
+  const t = texto.trim().toLowerCase();
+  if (!t) return null;
+  const cada = t.match(/(?:cada|c\/)\s*(\d+(?:[.,]\d+)?)\s*(?:h|hr|hrs|horas?)\b/);
+  if (cada) return Number(cada[1].replace(",", "."));
+  const veces = t.match(/(\d+|una|un|dos|tres|cuatro)\s*(?:veces|vez)\s*(?:al|por|cada)?\s*d[ií]a/);
+  if (veces) {
+    const v = /^\d+$/.test(veces[1]) ? Number(veces[1]) : NUMEROS_ESCRITOS[veces[1]];
+    return v > 0 ? 24 / v : null;
+  }
+  if (/\b(cada d[ií]a|diari[oa]|una vez al d[ií]a)\b/.test(t)) return 24;
+  return null;
+}
+
+export type MedicamentoDeTratamiento = {
+  producto: string;
+  dosis: string;
+  dosis_cantidad: string;
+  frecuencia: string;
+  frecuencia_horas: string;
+  duracion_dias: string;
+  indicaciones: string;
+};
+
+/**
+ * Del campo «Tratamiento» de una consulta firmada saca un borrador de medicamentos, uno por renglón (o separados
+ * por «;»): «Amoxicilina 250 mg, 1 tableta cada 12 horas por 7 días». Es solo un punto de partida: el médico lo
+ * revisa y lo corrige. Lo que no se entiende queda en indicaciones, tal cual.
+ */
+export function medicamentosDeTratamiento(texto: string | null | undefined): MedicamentoDeTratamiento[] {
+  if (!texto) return [];
+  return texto
+    .split(/\r?\n|;/)
+    .map((r) => r.replace(/^[\s\-•*\d.)]+(?=[A-Za-zÁÉÍÓÚáéíóúñÑ])/, "").trim())
+    .filter((r) => r.length >= 3)
+    .slice(0, 8)
+    .map((renglon) => {
+      const frase = renglon.match(/(cada\s*\d+(?:[.,]\d+)?\s*(?:h|hr|hrs|horas?)|c\/\s*\d+\s*(?:h|hr|hrs|horas?)|\d+\s*(?:veces|vez)\s*(?:al|por|cada)?\s*d[ií]a|(?:una|un|dos|tres|cuatro)\s*(?:veces|vez)\s*(?:al|por|cada)?\s*d[ií]a)/i);
+      const dur = renglon.match(/(?:por|durante|x)\s*(\d+)\s*d[ií]as?/i);
+      const horas = frase ? horasDeFrecuencia(frase[1]) : null;
+      // El nombre es lo que va antes de la primera cantidad, frecuencia o duración.
+      const corte = renglon.search(/[,:(]|\s\d|\s(?:cada|c\/|por|durante|x)\s/i);
+      const producto = (corte > 0 ? renglon.slice(0, corte) : renglon).trim().slice(0, 80);
+      const toma = renglon.match(/(\d+(?:[.,]\d+)?\s*\/?\s*\d*\s*(?:tabletas?|tabs?|comprimidos?|c[aá]psulas?|gotas?|ml|sobres?|piezas?))/i);
+      const dosis = toma ? toma[1].replace(/\s+/g, " ").trim() : "";
+      const cantidad = dosis ? numeroInicial(dosis) : null;
+      return {
+        producto,
+        dosis,
+        dosis_cantidad: cantidad ? String(cantidad) : "",
+        frecuencia: frase ? frase[1].replace(/\s+/g, " ") : "",
+        frecuencia_horas: horas ? String(horas) : "",
+        duracion_dias: dur ? dur[1] : "",
+        indicaciones: renglon,
+      };
+    });
+}
+
 export const NOMBRE_TIPO_MOVIMIENTO: Record<string, string> = {
   entrada_compra: "Entrada",
   entrada_inicial: "Existencia inicial",

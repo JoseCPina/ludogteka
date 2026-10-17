@@ -200,9 +200,12 @@ function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
 export function InvitacionesPanel({
   invitaciones,
   tipoInicial = "guarderia_hotel",
+  tipos = ["guarderia_hotel", "estetica", "veterinaria"],
 }: {
   invitaciones: InvitacionFila[];
   tipoInicial?: TipoLinkAlta;
+  // Los servicios que el negocio tiene: si es uno solo, no se pregunta «¿Para qué viene?».
+  tipos?: TipoLinkAlta[];
 }) {
   const router = useRouter();
   const [nombre, setNombre] = useState("");
@@ -262,18 +265,23 @@ export function InvitacionesPanel({
           inputMode="tel"
         />
         <div>
-          <Select
-            label="¿Para qué viene?"
-            value={tipo}
-            onChange={(e) => setTipo(e.target.value as TipoLinkAlta)}
-          >
-            {TIPOS_LINK_ALTA_LISTA.map((t) => (
-              <option key={t.clave} value={t.clave}>
-                {t.etiqueta}
-              </option>
-            ))}
-          </Select>
-          <p className="mt-1.5 text-sm text-n-600">{TIPOS_LINK_ALTA[tipo].descripcion}</p>
+          {tipos.length > 1 && (
+            <Select
+              label="¿Para qué viene?"
+              value={tipo}
+              onChange={(e) => setTipo(e.target.value as TipoLinkAlta)}
+            >
+              {TIPOS_LINK_ALTA_LISTA.filter((t) => tipos.includes(t.clave)).map((t) => (
+                <option key={t.clave} value={t.clave}>
+                  {t.etiqueta}
+                </option>
+              ))}
+            </Select>
+          )}
+          <p data-tipo-link className="mt-1.5 text-sm text-n-600">
+            {tipos.length === 1 && <span className="font-semibold text-n-800">Link de {TIPOS_LINK_ALTA[tipo].etiqueta.toLowerCase()}. </span>}
+            {TIPOS_LINK_ALTA[tipo].descripcion}
+          </p>
         </div>
         <Select label="Vigencia del link" value={dias} onChange={(e) => setDias(e.target.value)}>
           <option value="1">1 día</option>

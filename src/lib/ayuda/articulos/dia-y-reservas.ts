@@ -72,7 +72,7 @@ Si la ocupación dice «Cupo sin configurar», falta capturar el cupo de ese dí
 
 1. En [Clientes](/clientes) toca **Mandar link de alta**. También puedes usar **Nuevo cliente** → **Mandarle un link** desde Guardería, Hotel o Estética.
 2. Escribe **¿Para quién es?** (algo como «Ana, la del labrador») y su **Teléfono (WhatsApp)**.
-3. Escoge **¿Para qué viene?**: guardería y hotel pide el expediente completo, las vacunas y el contrato; estética es corta: solo pide el nombre y la raza de su perro, su tamaño, su pelaje, y el nombre y WhatsApp del dueño (sin dirección, sin vacunas, sin correo ni contraseña, sin contrato), y le enseña el precio del baño según su raza.
+3. Escoge **¿Para qué viene?**. Solo salen los servicios que tu negocio tiene prendidos, y si tiene uno solo no te lo pregunta: usa ese. Guardería y hotel pide el expediente completo, las vacunas y el contrato; veterinaria es corta (datos del dueño y de su mascota, sin contrato de guardería); estética es corta: solo pide el nombre y la raza de su perro, su tamaño, su pelaje, y el nombre y WhatsApp del dueño (sin dirección, sin vacunas, sin correo ni contraseña, sin contrato), y le enseña el precio del baño según su raza.
 4. Escoge la **Vigencia del link** y toca **Generar link**.
 5. Toca **Abrir WhatsApp** para mandárselo, o **Copiar link**.
 
@@ -358,7 +358,7 @@ Al cancelar una cuenta en [Caja](/caja), marca la casilla para cancelar también
 ## Si algo no sale
 
 - «No hay cupo disponible…»: ese día ya está lleno; mira el calendario y escoge otro.
-- «Este perro ya tiene una reserva en fechas que se traslapan»: el aviso trae un enlace al calendario en esa fecha.`,
+- «Este perro ya tiene una reserva en fechas que se traslapan» (o «… ya tiene una reserva de hotel … que se traslapa»): el aviso trae un enlace a **esa reserva** y otro al calendario en esa fecha.`,
   },
   {
     slug: "registrar-check-in",

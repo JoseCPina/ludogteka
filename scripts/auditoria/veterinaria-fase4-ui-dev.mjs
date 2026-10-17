@@ -11,6 +11,9 @@
 // 5. Recetario especial: registrar un folio y surtir contra él.
 // 6. Libro de control: renglones con folio y saldo, Excel y reporte mensual.
 // 7. Portal del dueño: ve su receta.
+// 8. Sugerencias de la QA (17 de octubre): la receta se prellena con el «Tratamiento» de la consulta firmada,
+//    la cantidad a surtir se calcula sola (y se puede cambiar) y, sin productos clínicos, el selector dice
+//    «No hay productos cargados» con enlace a Inventario.
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env } from "./sesiones-dev.mjs";
 import { abrirNavegador } from "../lib/navegador.mjs";
@@ -67,6 +70,7 @@ try {
   seccion("2. Receta simple");
   await mvz.p.goto(`${BASE}/veterinaria/recetas/nueva?perro=${perro}`, { waitUntil: "networkidle" });
   await sinDesborde(mvz.p, "nueva receta");
+  comprobar((await mvz.p.locator("[data-receta-prellenada]").count()) === 0, "desde la ficha no hay prellenado");
   await mvz.p.getByLabel("Del inventario clínico (opcional)").selectOption({ label: `Meloxicam ${E.MARCA}` });
   await mvz.p.locator('input[name="dosis-0"]').fill("1 tableta");
   await mvz.p.locator('input[name="dn-0"]').fill("1");
@@ -74,6 +78,10 @@ try {
   await mvz.p.locator('input[name="fh-0"]').fill("12");
   await mvz.p.locator('input[name="dur-0"]').fill("5");
   comprobar(/Calculada: 10/.test(await cuerpo(mvz.p)), "muestra la cantidad calculada (10) en vivo");
+  comprobar((await mvz.p.locator('input[name="cant-0"]').inputValue()) === "10", "y la deja escrita en «Cantidad a surtir» (10)");
+  await mvz.p.locator('input[name="cant-0"]').fill("12");
+  comprobar(/La escribiste tú/.test(await cuerpo(mvz.p)) && (await mvz.p.locator('input[name="cant-0"]').inputValue()) === "12", "se puede cambiar a mano (12) y lo dice");
+  await mvz.p.locator('input[name="cant-0"]').fill("10");
   await mvz.p.getByRole("button", { name: "Emitir receta" }).click();
   await mvz.p.waitForURL(/\/veterinaria\/recetas\/[0-9a-f-]{36}$/, { timeout: 20000 });
   const rxId = mvz.p.url().split("/").pop();
@@ -191,6 +199,36 @@ try {
   await sinDesborde(mvz.p, "reporte mensual");
   await adm.p.goto(`${BASE}/veterinaria/libro-control`, { waitUntil: "networkidle" });
   comprobar(!/Xilazina/.test(await cuerpo(adm.p)) === false || /Ver el libro es de un médico|Xilazina/.test(await cuerpo(adm.p)), "admin también entra al libro");
+
+  seccion("8. Receta desde una consulta firmada, cantidad y sin productos");
+  const cons = await rpc(P.recCon, "vet_consulta_iniciar", { p_perro: perro, p_cita: null, p_tipo: "consulta", p_medico: E.medA });
+  const cid = cons.cuerpo?.id ?? cons.cuerpo;
+  await rpc(P.recCon, "vet_consulta_guardar", { p_id: cid, p_datos: { motivo: "Infección", anamnesis: "x", examen_fisico: "x", diagnosticos: [{ origen: "libre", nombre: "Otitis", tipo: "definitivo" }], plan: "Tratar", tratamiento: "Amoxicilina 250 mg, 1 tableta cada 12 horas por 7 días\nMeloxicam 1 ml cada 24 h durante 3 días" } });
+  const firmada = await rpc(P.recCon, "vet_consulta_firmar", { p_id: cid });
+  comprobar(firmada.ok, `se firma una consulta con Tratamiento (${firmada.mensaje})`);
+  if (firmada.ok) {
+    await mvz.p.goto(`${BASE}/veterinaria/recetas/nueva?perro=${perro}&consulta=${cid}`, { waitUntil: "networkidle" });
+    comprobar((await mvz.p.locator("[data-receta-prellenada]").count()) === 1, "desde la consulta firmada avisa que prellenó el medicamento");
+    comprobar((await mvz.p.locator('input[name="producto-0"]').inputValue()) === "Amoxicilina" && (await mvz.p.locator('input[name="producto-1"]').inputValue()) === "Meloxicam", "un medicamento por renglón del Tratamiento (Amoxicilina y Meloxicam)");
+    comprobar((await mvz.p.locator('input[name="fh-0"]').inputValue()) === "12" && (await mvz.p.locator('input[name="dur-0"]').inputValue()) === "7", "con sus horas (12) y sus días (7)");
+    comprobar((await mvz.p.locator('input[name="cant-0"]').inputValue()) === "14", "y la cantidad calculada (14) ya escrita, editable");
+    await mvz.p.locator('input[name="producto-0"]').fill("Amoxicilina 250 mg");
+    comprobar((await mvz.p.locator('input[name="producto-0"]').inputValue()) === "Amoxicilina 250 mg", "el medicamento prellenado se puede editar");
+    await sinDesborde(mvz.p, "receta prellenada");
+  }
+  // Sin productos clínicos: mensaje con enlace a Inventario (se ocultan un momento y se restauran).
+  const { data: vivos } = await SB.from("insumos").select("id").eq("negocio_id", B).eq("controla_lotes", true).is("deleted_at", null);
+  const ids = (vivos ?? []).map((v) => v.id);
+  try {
+    if (ids.length) await SB.from("insumos").update({ deleted_at: new Date().toISOString() }).in("id", ids);
+    await mvz.p.goto(`${BASE}/veterinaria/recetas/nueva?perro=${perro}`, { waitUntil: "networkidle" });
+    const msg = mvz.p.locator("[data-sin-productos]").first();
+    comprobar((await msg.count()) === 1 && /No hay productos cargados/.test(await msg.innerText()), "sin productos clínicos dice «No hay productos cargados»");
+    comprobar((await msg.getByRole("link", { name: "Inventario" }).getAttribute("href").catch(() => null)) === "/veterinaria/inventario", "con enlace a Inventario");
+    comprobar((await mvz.p.getByLabel("Del inventario clínico (opcional)").count()) === 0, "y ya no ofrece un selector vacío");
+  } finally {
+    if (ids.length) await SB.from("insumos").update({ deleted_at: null }).in("id", ids);
+  }
 
   seccion("7. Portal del dueño");
   await cli.p.goto(`${BASE}/portal`, { waitUntil: "networkidle" });

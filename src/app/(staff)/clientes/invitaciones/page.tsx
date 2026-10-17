@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
-import { esTipoLinkAlta, type TipoLinkAlta } from "@/lib/alta/tipos-link";
+import { esTipoLinkAlta, tiposDisponibles, type TipoLinkAlta } from "@/lib/alta/tipos-link";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { InvitacionesPanel, type InvitacionFila } from "./invitaciones-panel";
 import { leerTodo } from "@/lib/supabase/paginar";
 
@@ -15,7 +16,10 @@ export default async function InvitacionesPage({
   searchParams: Promise<{ tipo?: string }>;
 }) {
   const { tipo } = await searchParams;
-  const tipoInicial: TipoLinkAlta = tipo && esTipoLinkAlta(tipo) ? tipo : "guarderia_hotel";
+  // Solo los servicios que el negocio tiene prendidos (una veterinaria sin hotel ni estética no ve «Guardería y hotel»).
+  const sesion = await obtenerSesionConRol();
+  const tipos = tiposDisponibles(sesion?.modulos ?? []);
+  const tipoInicial: TipoLinkAlta = tipo && esTipoLinkAlta(tipo) && tipos.includes(tipo) ? tipo : (tipos[0] ?? "guarderia_hotel");
 
   const supabase = await createSupabaseServerClient();
   // Todas las invitaciones de la historia del negocio: pasan de 1,000 con el tiempo.
@@ -49,6 +53,7 @@ export default async function InvitacionesPage({
         <InvitacionesPanel
           invitaciones={(data as InvitacionFila[]) ?? []}
           tipoInicial={tipoInicial}
+          tipos={tipos}
         />
       )}
     </div>

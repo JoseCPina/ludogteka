@@ -32,16 +32,19 @@ export function LinkComplemento({
   clienteTelefono,
   pendientes,
   tieneCuenta = false,
+  tipos = ["guarderia_hotel", "estetica", "veterinaria"],
 }: {
   clienteId: string;
   clienteNombre: string;
   clienteTelefono: string;
   pendientes: LinkPendiente[];
   tieneCuenta?: boolean;
+  // Los servicios que el negocio tiene: si es uno solo, no se pregunta «¿Para qué servicio?».
+  tipos?: TipoLinkAlta[];
 }) {
   const zona = useZonaNegocio();
   const router = useRouter();
-  const [tipo, setTipo] = useState<TipoLinkAlta>("guarderia_hotel");
+  const [tipo, setTipo] = useState<TipoLinkAlta>(tipos[0] ?? "guarderia_hotel");
   const enviando = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<EstadoInvitacion | null>(null);
@@ -110,6 +113,7 @@ export function LinkComplemento({
       )}
 
       <div className="flex flex-wrap items-end gap-3">
+        {tipos.length > 1 && (
         <div>
           <label
             htmlFor="tipo-complemento"
@@ -123,13 +127,14 @@ export function LinkComplemento({
             onChange={(e) => setTipo(e.target.value as TipoLinkAlta)}
             className="min-h-12 rounded-md border-[1.5px] border-n-400 bg-white px-3 text-n-900"
           >
-            {TIPOS_LINK_ALTA_LISTA.map((t) => (
+            {TIPOS_LINK_ALTA_LISTA.filter((t) => tipos.includes(t.clave)).map((t) => (
               <option key={t.clave} value={t.clave}>
                 {t.etiqueta}
               </option>
             ))}
           </select>
         </div>
+        )}
         <Button type="button" cargando={enviando.cargando} onClick={generar}>
           {enviando.cargando ? "Generando…" : "Generar link"}
         </Button>

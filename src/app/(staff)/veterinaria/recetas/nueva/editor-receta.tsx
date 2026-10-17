@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
-import { calcularCantidad, type Requisito } from "@/lib/veterinaria/recetas";
+import Link from "next/link";
+import { calcularCantidad, horasDeFrecuencia, medicamentosDeTratamiento, numeroInicial, type Requisito } from "@/lib/veterinaria/recetas";
 import { emitirReceta } from "../actions";
 
 export type ProductoReceta = {
@@ -34,19 +35,23 @@ type Fila = {
   duracion_dias: string;
   tiempo_retiro: string;
   cantidad_surtir: string;
+  // true cuando el médico escribió la cantidad: deja de seguir al cálculo.
+  cantidad_manual: boolean;
   cantidad_unidad: string;
   indicaciones: string;
 };
 
-const vacia = (): Fila => ({ insumo_id: "", producto: "", principio_activo: "", presentacion: "", dosis: "", dosis_cantidad: "", via: "Oral", frecuencia: "", frecuencia_horas: "", duracion_dias: "", tiempo_retiro: "", cantidad_surtir: "", cantidad_unidad: "", indicaciones: "" });
+const vacia = (): Fila => ({ insumo_id: "", producto: "", principio_activo: "", presentacion: "", dosis: "", dosis_cantidad: "", via: "Oral", frecuencia: "", frecuencia_horas: "", duracion_dias: "", tiempo_retiro: "", cantidad_surtir: "", cantidad_manual: false, cantidad_unidad: "", indicaciones: "" });
 const num = (t: string) => Number(String(t).replace(",", ".").trim());
 const caja = "mt-1.5 min-h-12 w-full rounded-md border-[1.5px] border-borde bg-white px-3.5 text-base text-n-900";
 
 /** El borrador de una receta simple: medicamentos del inventario o en texto libre, con la cantidad a surtir calculada. */
-export function EditorReceta({ perroId, consultaId, productos }: { perroId: string; consultaId: string | null; productos: ProductoReceta[] }) {
+export function EditorReceta({ perroId, consultaId, productos, tratamiento = null }: { perroId: string; consultaId: string | null; productos: ProductoReceta[]; tratamiento?: string | null }) {
   const router = useRouter();
   const envio = useEspera();
-  const [filas, setFilas] = useState<Fila[]>([vacia()]);
+  // Con una consulta firmada, el borrador sale del campo «Tratamiento» (el médico lo revisa y lo corrige).
+  const [prellenado] = useState(() => medicamentosDeTratamiento(tratamiento));
+  const [filas, setFilas] = useState<Fila[]>(() => (prellenado.length > 0 ? prellenado.map((m) => ({ ...vacia(), ...m })) : [vacia()]));
   const [diagnostico, setDiagnostico] = useState("");
   const [observaciones, setObservaciones] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +63,20 @@ export function EditorReceta({ perroId, consultaId, productos }: { perroId: stri
     const p = emitibles.find((x) => x.id === id);
     cambiar(i, p ? { insumo_id: id, producto: p.nombre, principio_activo: p.principio_activo ?? "", presentacion: p.presentacion ?? "", cantidad_unidad: p.unidad ?? "" } : { insumo_id: "" });
   }
-  const calculada = (f: Fila) => calcularCantidad(num(f.dosis_cantidad), f.frecuencia_horas ? num(f.frecuencia_horas) : null, num(f.duracion_dias));
+  // La cuenta usa los números escritos o, si faltan, los que se entienden de «1 tableta» y «Cada 12 horas».
+  // Con una frecuencia escrita que no se entiende no se calcula (no se inventa una cantidad).
+  const datosDeCuenta = (f: Fila) => {
+    const dosis = f.dosis_cantidad ? num(f.dosis_cantidad) : numeroInicial(f.dosis);
+    const horas = f.frecuencia_horas ? num(f.frecuencia_horas) : horasDeFrecuencia(f.frecuencia);
+    return { dosis, horas, sinEntender: !horas && f.frecuencia.trim() !== "" };
+  };
+  const calculada = (f: Fila) => {
+    const { dosis, horas, sinEntender } = datosDeCuenta(f);
+    if (sinEntender || dosis === null) return null;
+    return calcularCantidad(dosis, horas, num(f.duracion_dias));
+  };
+  // Lo que se ve en «Cantidad a surtir»: lo que escribió el médico o, mientras no escriba, la cuenta.
+  const cantidadDe = (f: Fila) => (f.cantidad_manual ? f.cantidad_surtir : (calculada(f) ?? ""));
 
   async function emitir() {
     setError(null);
@@ -70,13 +88,13 @@ export function EditorReceta({ perroId, consultaId, productos }: { perroId: stri
         principio_activo: f.principio_activo.trim() || null,
         presentacion: f.presentacion.trim() || null,
         dosis: f.dosis.trim(),
-        dosis_cantidad: f.dosis_cantidad ? num(f.dosis_cantidad) : null,
+        dosis_cantidad: datosDeCuenta(f).dosis ?? null,
         via: f.via.trim(),
         frecuencia: f.frecuencia.trim(),
-        frecuencia_horas: f.frecuencia_horas ? num(f.frecuencia_horas) : null,
+        frecuencia_horas: datosDeCuenta(f).horas ?? null,
         duracion_dias: f.duracion_dias ? Math.trunc(num(f.duracion_dias)) : null,
         tiempo_retiro: f.tiempo_retiro.trim() || null,
-        cantidad_surtir: f.cantidad_surtir ? num(f.cantidad_surtir) : null,
+        cantidad_surtir: cantidadDe(f) !== "" ? num(String(cantidadDe(f))) : null,
         cantidad_unidad: f.cantidad_unidad.trim() || null,
         indicaciones: f.indicaciones.trim() || null,
       }));
@@ -98,6 +116,11 @@ export function EditorReceta({ perroId, consultaId, productos }: { perroId: stri
 
   return (
     <div className="flex flex-col gap-5">
+      {prellenado.length > 0 && (
+        <p data-receta-prellenada className="rounded-md border-l-4 border-morado bg-morado-suave px-3 py-2 text-sm text-n-800">
+          Prellenamos {prellenado.length === 1 ? "el medicamento" : "los medicamentos"} con el «Tratamiento» de la consulta. Revísalo{prellenado.length === 1 ? "" : "s"}: puedes cambiar cualquier campo.
+        </p>
+      )}
       {filas.map((f, i) => {
         const elegido = emitibles.find((p) => p.id === f.insumo_id);
         const calc = calculada(f);
@@ -105,6 +128,11 @@ export function EditorReceta({ perroId, consultaId, productos }: { perroId: stri
           <fieldset key={i} className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
             <legend className="px-1 text-sm font-bold text-n-700">Medicamento {i + 1}</legend>
             <div className="grid gap-3 sm:grid-cols-2">
+              {emitibles.length === 0 ? (
+                <p data-sin-productos className="rounded-md border-l-4 border-ambar bg-ambar-suave px-3 py-2 text-sm text-n-800">
+                  No hay productos cargados. Dalos de alta en <Link href="/veterinaria/inventario" className="font-semibold text-morado hover:underline">Inventario</Link>, o escribe el medicamento a mano.
+                </p>
+              ) : (
               <label className="block text-sm font-medium text-n-800">
                 Del inventario clínico (opcional)
                 <select className={caja} value={f.insumo_id} onChange={(e) => elegirProducto(i, e.target.value)}>
@@ -114,6 +142,7 @@ export function EditorReceta({ perroId, consultaId, productos }: { perroId: stri
                   ))}
                 </select>
               </label>
+              )}
               <Field label="Medicamento" name={`producto-${i}`} value={f.producto} onChange={(e) => cambiar(i, { producto: e.target.value })} required />
               <Field label="Principio activo (opcional)" name={`pa-${i}`} value={f.principio_activo} onChange={(e) => cambiar(i, { principio_activo: e.target.value })} />
               <Field label="Presentación (opcional)" name={`pres-${i}`} value={f.presentacion} onChange={(e) => cambiar(i, { presentacion: e.target.value })} placeholder="Tabletas de 20 mg" />
@@ -132,8 +161,10 @@ export function EditorReceta({ perroId, consultaId, productos }: { perroId: stri
               <Field label="Duración (días)" name={`dur-${i}`} value={f.duracion_dias} onChange={(e) => cambiar(i, { duracion_dias: e.target.value })} inputMode="numeric" placeholder="5" required />
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
-              <Field label="Cantidad a surtir" name={`cant-${i}`} value={f.cantidad_surtir} onChange={(e) => cambiar(i, { cantidad_surtir: e.target.value })} inputMode="decimal"
-                ayuda={calc ? `Calculada: ${calc} (dosis × tomas al día × días). Déjala vacía para usar esa.` : "Escribe la cantidad, o llena dosis, horas y días para calcularla."} />
+              <Field label="Cantidad a surtir" name={`cant-${i}`} value={String(cantidadDe(f))} onChange={(e) => cambiar(i, { cantidad_surtir: e.target.value, cantidad_manual: true })} inputMode="decimal"
+                ayuda={f.cantidad_manual
+                  ? (calc ? `La escribiste tú. Calculada con dosis, frecuencia y días: ${calc}.` : "La escribiste tú.")
+                  : (calc ? `Calculada: ${calc} (dosis × tomas al día × días). Puedes cambiarla.` : "Escribe la cantidad, o llena dosis, frecuencia y días para calcularla.")} />
               <Field label="Unidad" name={`uni-${i}`} value={f.cantidad_unidad} onChange={(e) => cambiar(i, { cantidad_unidad: e.target.value })} placeholder="tabletas, ml, frasco" />
               <Field label="Tiempo de retiro (si aplica)" name={`ret-${i}`} value={f.tiempo_retiro} onChange={(e) => cambiar(i, { tiempo_retiro: e.target.value })} placeholder="28 días" />
             </div>
