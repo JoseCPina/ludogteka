@@ -55,6 +55,20 @@ export const TIPOS_LINK_ALTA = {
     mensajeComplemento: (nombre: string, url: string, negocio: string) =>
       `Hola ${nombre}, para el baño de tu perro nos falta completar un par de datos suyos. Es rápido, aquí: ${url}`,
   },
+  veterinaria: {
+    etiqueta: "Veterinaria",
+    descripcion: "El dueño y su mascota (especie, raza, nacimiento). Sin contrato de guardería.",
+    cuentaMuestra:
+      "el carnet de tu mascota con sus vacunas y desparasitaciones, sus recetas, el resumen de sus consultas cuando la clínica lo activa y su ficha con su foto",
+    categorias: ["veterinaria"] as const,
+    expedienteCompleto: false,
+    llevaContrato: false,
+    muestraPrecioEstetica: false,
+    mensajeWhatsApp: (nombre: string, url: string, negocio: string) =>
+      `Hola ${nombre}, aquí puedes registrarte en ${negocio} y registrar a tu mascota: ${url}`,
+    mensajeComplemento: (nombre: string, url: string, negocio: string) =>
+      `Hola ${nombre}, para la atención de tu mascota en ${negocio} nos falta completar unos datos suyos. Es rápido, aquí: ${url}`,
+  },
 } as const;
 
 export type TipoLinkAlta = keyof typeof TIPOS_LINK_ALTA;
@@ -72,5 +86,19 @@ export function esTipoLinkAlta(valor: string): valor is TipoLinkAlta {
 // flujo porque comparten expediente: el perro que se queda de día y el
 // que se queda a dormir necesitan los mismos datos.
 export function tipoLinkDeModulo(modulo: string): TipoLinkAlta {
+  if (modulo === "veterinaria") return "veterinaria";
   return modulo === "estetica" ? "estetica" : "guarderia_hotel";
+}
+
+/**
+ * Los links que el negocio puede mandar: uno por servicio que tiene prendido (guardería y hotel comparten el
+ * suyo). Es lo que ofrecen «¿Para qué viene?» y «¿Para qué servicio?»; la base lo vuelve a exigir
+ * (`crear_invitacion_cliente`).
+ */
+export function tiposDisponibles(modulos: readonly string[]): TipoLinkAlta[] {
+  const lista: TipoLinkAlta[] = [];
+  if (modulos.includes("guarderia") || modulos.includes("hotel")) lista.push("guarderia_hotel");
+  if (modulos.includes("estetica")) lista.push("estetica");
+  if (modulos.includes("veterinaria")) lista.push("veterinaria");
+  return lista;
 }

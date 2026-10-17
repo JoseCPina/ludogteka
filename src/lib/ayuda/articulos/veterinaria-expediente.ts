@@ -103,6 +103,7 @@ En la consulta, antes de **Firmar**, está el recuadro **Cargos de esta consulta
 - Las **vacunas** que registraste ese día a la mascota en su carnet.
 - Los **medicamentos** que surtiste con esa consulta (los controlados salen solos con su receta) y los que agregues del inventario. Se cobran al precio de venta del inventario, por la unidad que usas.
 - Los **procedimientos** que agregues desde tu catálogo o escribiendo el concepto y el precio.
+- Si al agregar un medicamento o un servicio no hay nada cargado, el selector dice «No hay productos cargados» (o «No hay servicios cargados») con un enlace a [Inventario](/veterinaria/inventario) o a [Servicios](/servicios).
 - Una **vacuna** no se agrega como «otro procedimiento»: se aplica con el botón **Aplicar vacuna** (producto y lote del inventario, fecha y médico), queda en el carnet de la mascota y entra al cobro sola. Si escribes el nombre de una vacuna como procedimiento, la pantalla te manda a **Aplicar vacuna**.
 
 ## Si falta un precio

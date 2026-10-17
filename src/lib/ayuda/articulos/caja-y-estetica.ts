@@ -20,7 +20,7 @@ export const ARTICULOS_CAJA_Y_ESTETICA: Articulo[] = [
 3. Si no hay turno, aprieta **Abrir turno**, escribe el **Fondo inicial** y **Confirmar apertura**.
 4. En **Registrar cobro** escoge el **Método** (Efectivo, Transferencia o **Tarjeta (registro manual)**; **Terminal** solo si tu negocio no tiene Mercado Pago ni Clip), escribe el **Monto** y, si dejó, la **Propina**.
 5. ¿Paga una parte en efectivo y otra con tarjeta? Aprieta **+ Repartir en otro método** y llena el segundo renglón.
-6. Aprieta **Registrar cobro**. El saldo baja y el cobro aparece al momento en **Cobros de esta reserva**. Es la acción principal; **Cobrar con terminal** queda debajo, como opción secundaria (si dice «Simulación: no mueve dinero», no se cobra de verdad).
+6. Aprieta **Registrar cobro**. El botón cambia a **Cobrando…** y luego a **Actualizando…** mientras se confirma, y no acepta otro clic (un doble clic no cobra dos veces). El saldo baja y el cobro aparece al momento en **Cobros de esta reserva**. Es la acción principal; **Cobrar con terminal** queda debajo, como opción secundaria (si dice «Simulación: no mueve dinero», no se cobra de verdad).
 7. Cuando el saldo llega a cero, el formulario se cambia por **Cuenta pagada**: ya no hay nada más que cobrar. Si el cliente entrega de más en efectivo, la pantalla te dice el cambio.
 
 > El cobro con tarjeta se hace con **Cobrar con terminal** ([Cómo cobrar con la terminal](/ayuda/cobrar-con-terminal)): así se confirma solo con Mercado Pago. El método **Terminal** no se captura a mano en un negocio con Mercado Pago o Clip. Si la terminal no se puede usar, usa **Tarjeta (registro manual)** con el folio del voucher ([Cuándo usar Tarjeta (registro manual)](/ayuda/tarjeta-registro-manual)). A mano también: efectivo y transferencia.
@@ -780,7 +780,7 @@ Cada cambio queda en **Historial de estilista**, al pie de la cita: de quién a 
 
 ## Si algo no sale
 
-- «… ya tiene otra cita a esa hora»: esa estilista está ocupada; escoge a otra o mueve primero su otra cita.
+- «Prueba ya tiene a Nina a las 11:00…»: la estilista está ocupada a esa hora; el aviso nombra a la mascota y la hora de su(s) cita(s), y si además tiene una ausencia aprobada lo dice también. Escoge a otra persona u otro horario. Es el mismo texto al agendar, mover o pasar una cita a otra estilista.
 - «Corregir la estilista de un servicio ya terminado es de admin…»: pídele al admin el permiso o que lo corrija él.
 - Una cita **Cancelada** o **No llegó** ya no se reasigna.
 - Solo aparecen estilistas activas del negocio; si falta alguien, revisa que esté dada de alta en el personal de estética (en [Administración](/admin)) y que no tenga baja.`,

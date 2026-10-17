@@ -289,7 +289,12 @@ export function CargosConsulta({
               <option value="producto">Un medicamento o producto del inventario</option>
               <option value="libre">Otro procedimiento (lo escribo; las vacunas van en «Aplicar vacuna»)</option>
             </Select>
-            {nuevoTipo === "catalogo" && (
+            {nuevoTipo === "catalogo" && d.catalogo.length === 0 && (
+              <p data-sin-catalogo className="rounded-md border-l-4 border-ambar bg-ambar-suave px-3 py-2 text-sm text-n-800">
+                No hay servicios cargados. Dalos de alta en <Link href="/servicios" className="font-semibold text-morado hover:underline">Servicios</Link> o escribe el procedimiento en «Otro procedimiento».
+              </p>
+            )}
+            {nuevoTipo === "catalogo" && d.catalogo.length > 0 && (
               <Select label="Servicio" name="nuevo_servicio_cargo" value={nuevoServicio} onChange={(e) => setNuevoServicio(e.target.value)}>
                 <option value="">Escoge uno</option>
                 {d.catalogo.map((s) => (
@@ -297,7 +302,12 @@ export function CargosConsulta({
                 ))}
               </Select>
             )}
-            {nuevoTipo === "producto" && (
+            {nuevoTipo === "producto" && d.productos.length === 0 && (
+              <p data-sin-productos className="rounded-md border-l-4 border-ambar bg-ambar-suave px-3 py-2 text-sm text-n-800">
+                No hay productos cargados. Dalos de alta en <Link href="/veterinaria/inventario" className="font-semibold text-morado hover:underline">Inventario</Link> para poder agregarlos a la consulta.
+              </p>
+            )}
+            {nuevoTipo === "producto" && d.productos.length > 0 && (
               <Select label="Producto" name="nuevo_producto_cargo" value={nuevoProducto} onChange={(e) => setNuevoProducto(e.target.value)}>
                 <option value="">Escoge uno</option>
                 {d.productos.map((p) => (

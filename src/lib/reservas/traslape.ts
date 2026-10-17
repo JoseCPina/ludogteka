@@ -3,13 +3,14 @@
 // (o sin fecha si no se sabe): `TextoConEnlaces` la vuelve el enlace «el calendario».
 export function mensajeTraslape(fecha?: string | null): string {
   const dia = fecha && /^\d{4}-\d{2}-\d{2}$/.test(fecha) ? `?dia=${fecha}` : "";
-  return `Este perro ya tiene una reserva en fechas que se traslapan con estas. Revisa qué hay ese día en /reservas/calendario${dia}`;
+  return `Este perro ya tiene una reserva en fechas que se traslapan con estas. Revisa qué hay ese día en /reservas/calendario${dia}.`;
 }
 
 // B21: el mensaje dice CON QUÉ reserva choca (mascota, módulo, fechas y
 // estado) y lleva al día correcto. `estancia_que_choca` lo trae de la base.
 export type EstanciaQueChoca = {
   estancia_id: string;
+  reserva_id?: string | null;
   perro: string;
   modulo: string;
   servicio: string;
@@ -36,5 +37,7 @@ export function mensajeTraslapeConDetalle(c: EstanciaQueChoca): string {
     ? `del ${fechaCorta(c.entrada)} al ${fechaCorta(c.salida)}`
     : `el ${fechaCorta(c.entrada)}`;
   const estado = ESTADO_TEXTO[c.estado] ?? c.estado;
-  return `${c.perro} ya tiene una reserva de ${modulo} ${rango} (${estado}) que se traslapa con estas fechas. Revisa qué hay ese día en /reservas/calendario?dia=${c.dia}`;
+  // Termina con punto, y las dos rutas se vuelven enlaces (TextoConEnlaces): la reserva que choca y el calendario.
+  const abrir = c.reserva_id ? `Ábrela en /reservas/${c.reserva_id} o revisa` : "Revisa";
+  return `${c.perro} ya tiene una reserva de ${modulo} ${rango} (${estado}) que se traslapa con estas fechas. ${abrir} qué hay ese día en /reservas/calendario?dia=${c.dia}.`;
 }

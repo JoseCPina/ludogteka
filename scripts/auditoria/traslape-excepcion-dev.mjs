@@ -88,7 +88,7 @@ try {
   const c = r.data;
   comprobar(c && c.estancia_id === e2.data.id && c.estado === "reservada" && c.modulo === "guarderia" && c.perro === nina.nombre, "devuelve la reserva viva (no la finalizada)");
   const msg = c ? mensajeTraslapeConDetalle(c) : "";
-  comprobar(msg.includes(nina.nombre) && msg.includes("guardería") && msg.includes("(reservada)") && msg.endsWith(`/reservas/calendario?dia=${D}`), `el mensaje dice mascota, módulo, estado y el día (${msg.slice(0, 90)}…)`);
+  comprobar(msg.includes(nina.nombre) && msg.includes("guardería") && msg.includes("(reservada)") && msg.endsWith(`/reservas/calendario?dia=${D}.`) && msg.includes(`/reservas/${c.reserva_id}`), `el mensaje dice mascota, módulo, estado y el día (${msg.slice(0, 90)}…)`);
   const sinChoque = await admin.rpc("estancia_que_choca", { p_perro: nina.id, p_entrada: suma(D, 5), p_salida: suma(D, 6) });
   comprobar(sinChoque.data === null, "sin conflicto devuelve nada");
   const anon = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false }, global: { headers: { "x-negocio-id": B } } });
@@ -146,6 +146,7 @@ try {
       const q = await admin.rpc("estancia_que_choca", { p_perro: bruno.id, p_entrada: suma(D, 31), p_salida: suma(D, 32) });
       const m = q.data ? mensajeTraslapeConDetalle(q.data) : "";
       comprobar(q.data?.modulo === "hotel" && m.includes("reserva de hotel") && m.includes("/reservas/calendario?dia="), `el aviso dice «reserva de hotel» y lleva al calendario (${m.slice(0, 80)}…)`);
+      comprobar(Boolean(q.data?.reserva_id) && m.includes(`/reservas/${q.data.reserva_id}`) && m.endsWith("."), `el aviso lleva a la reserva que choca (/reservas/<id>) y termina con punto («…${m.slice(-40)}»)`);
       const otroPerro = await mkPerro("otro");
       const g2 = await admin.from("estancias").insert({ reserva_id: await reserva(), perro_id: otroPerro.id, servicio_id: gDia.id, fecha_entrada: suma(D, 31), fecha_salida: suma(D, 32), estado: "reservada", ...EXC }).select("id").single();
       if (g2.data?.id) creados.estancias.push(g2.data.id);

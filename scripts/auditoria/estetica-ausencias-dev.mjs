@@ -13,6 +13,9 @@
 // 6. Quién ve qué: recepción y admin la lista; el cliente y la llave anónima nada; otro negocio nada.
 // 7. Las citas que ya existían siguen pudiendo cambiar de estado (la regla solo mira quién, cuándo y cuánto).
 // 8. Pedir una ausencia de medio día: horas completas, un solo día, fin después del inicio, 0.5 día.
+// 9. N13: el aviso de un choque en la agenda de estética culpa a la estilista, no al perro: nombra la(s) cita(s)
+//    («X ya tiene a PERRO a las 11:00»), dice si está ausente y junta todo lo que choca; es el mismo texto al
+//    agendar y al reasignar.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -244,6 +247,38 @@ try {
   const recepSinFicha = await pedir(tRecep, E1, "dia_personal", sumarDias(fV, 6), sumarDias(fV, 6));
   comprobar(!recepSinFicha.ok, `recepción no pide por quien tiene cuenta en la app${recepSinFicha.ok ? "" : ""}`);
   if (recepSinFicha.ok && idDe(recepSinFicha)) creados.ausencias.push(idDe(recepSinFicha));
+
+  console.log("── 9. El aviso de choque nombra a la estilista y a la cita (N13)");
+  const fN = sumarDias(hoyB, base + 40);
+  const durMin = Number((await SB.from("servicios").select("duracion_minutos").eq("id", srv("estetico")).single()).data?.duracion_minutos) || 60;
+  const mas = (min) => new Date(Date.parse(`${fN}T20:00:00Z`) + min * 60000).toISOString();
+  const c1 = await nuevaCita(tAdmin, S1, mas(0));
+  const c2 = await nuevaCita(tAdmin, S1, mas(durMin));
+  comprobar(c1.ok && c2.ok, "dos citas seguidas de la estilista (para los choques)");
+  const choque9 = await nuevaCita(tAdmin, S1, `${fN}T20:00:00Z`);
+  comprobar(!choque9.ok && /ya tiene a .+ a las \d\d:\d\d/.test(choque9.mensaje) && !/este perro/i.test(choque9.mensaje), `ocupada: nombra la cita y no culpa al perro («${choque9.mensaje.slice(0, 110)}»)`);
+  comprobar(choque9.mensaje.includes("ZZ ausencia"), "y dice a qué perro tiene");
+  const dos = await nuevaCita(tAdmin, S1, mas(Math.round(durMin / 2)));
+  comprobar(!dos.ok && (dos.mensaje.match(/ a las \d\d:\d\d/g) ?? []).length === 2 && / y a /.test(dos.mensaje), `si chocan dos citas, las dice las dos («${dos.mensaje.slice(0, 140)}»)`);
+  // La estilista también está ausente ese día: dice las dos cosas.
+  const aN = await pedir(tAdmin, E1, "dia_personal", fN, fN);
+  creados.ausencias.push(idDe(aN));
+  comprobar((await aprobar(idDe(aN))).ok, "se aprueba una ausencia ese mismo día");
+  const ambas = await nuevaCita(tAdmin, S1, `${fN}T20:00:00Z`);
+  comprobar(!ambas.ok && /ya tiene a /.test(ambas.mensaje) && /ausencia aprobada/.test(ambas.mensaje), `ocupada y ausente: dice las dos cosas («${ambas.mensaje.slice(0, 160)}»)`);
+  // Solo ausente (a otra hora libre)
+  const soloAus = await nuevaCita(tAdmin, S1, mas(-480));
+  comprobar(!soloAus.ok && /ausencia aprobada/.test(soloAus.mensaje) && !/ya tiene a /.test(soloAus.mensaje), "solo ausente: dice solo eso");
+  // Reasignar usa el mismo texto
+  const deOtra9 = await nuevaCita(tAdmin, S2, `${fN}T20:00:00Z`);
+  const reasN = await rpc(tAdmin, "reasignar_estilista_cita", { p_cita_id: deOtra9.fila.id, p_empleado_id: S1, p_motivo: null });
+  comprobar(!reasN.ok && /ya tiene a /.test(reasN.mensaje) && /ausencia aprobada/.test(reasN.mensaje), `reasignar dice lo mismo («${reasN.mensaje.slice(0, 100)}»)`);
+  // Reprogramar a una hora ocupada
+  const movN = await rpc(tAdmin, "reprogramar_cita_estetica", { p_cita_id: deOtra9.fila.id, p_inicio: mas(durMin), p_motivo: "prueba" });
+  comprobar(movN.ok, "reprogramar la cita de otra estilista a una hora suya libre sí se puede");
+  await rpc(tAdmin, "cancelar_ausencia", { p_ausencia_id: idDe(aN), p_motivo: "prueba" });
+  const movOcupada = await rpc(tAdmin, "reprogramar_cita_estetica", { p_cita_id: c2.fila.id, p_inicio: `${fN}T20:00:00Z`, p_motivo: "prueba" });
+  comprobar(!movOcupada.ok && /ya tiene a /.test(movOcupada.mensaje) && !/este perro/i.test(movOcupada.mensaje), `reprogramar a una hora ocupada: mismo texto («${movOcupada.mensaje.slice(0, 100)}»)`);
 } finally {
   for (const id of creados.citas) await SB.from("citas_estetica").delete().eq("id", id);
   for (const id of creados.reservas) await SB.from("reservas").delete().eq("id", id);

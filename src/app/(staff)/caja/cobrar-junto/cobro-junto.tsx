@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
@@ -121,8 +121,19 @@ export function CobroJunto({
     return null;
   }
 
+  // Un segundo clic en el mismo instante (antes de que React pinte «Cobrando…») no manda otro cobro.
+  const bloqueoCobro = useRef(false);
   async function enviar() {
-    if (yaCobrado || yendo) return;
+    if (bloqueoCobro.current || yaCobrado || yendo) return;
+    bloqueoCobro.current = true;
+    try {
+      await enviarInterno();
+    } finally {
+      bloqueoCobro.current = false;
+    }
+  }
+
+  async function enviarInterno() {
     const falla = validarCuentas();
     if (falla) return setError(falla);
     const payload = metodosEfectivos.map((m) => ({

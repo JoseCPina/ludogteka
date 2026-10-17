@@ -69,6 +69,15 @@ export async function crearCita(datos: {
 
   if (error) {
     await supabase.from("reservas").delete().eq("id", reservaCreada.id);
+    // Un «empalme» de la base (23P01) no es del perro: es de la estilista. Normalmente el trigger ya lo dijo con
+    // nombre y hora; si llega crudo, se arma el mismo mensaje.
+    if (error.code === "23P01") {
+      const { data: serv } = await supabase.from("servicios").select("duracion_minutos").eq("id", datos.servicioId).maybeSingle();
+      const fin = new Date(new Date(datos.inicio).getTime() + (Number(serv?.duracion_minutos) || 60) * 60000).toISOString();
+      const { data: texto } = await supabase.rpc("cita_estetica_choques_texto", { p_empleado: datos.empleadoId, p_inicio: datos.inicio, p_fin: fin, p_excluir: null });
+      if (typeof texto === "string" && texto) return { error: texto };
+      return { error: "Esa estilista ya tiene otra cita a esa hora. Escoge a otra persona u otro horario." };
+    }
     return { error: traducirError(error) };
   }
 

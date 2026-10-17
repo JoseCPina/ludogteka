@@ -294,8 +294,8 @@ try {
   if (rE.cuerpo.includes("Vacunas y desparasitación") || rE.cuerpo.includes("data-comprobantes-perro")) hallazgo("el link de estética habla de vacunas");
   else bien("el link de estética no pide vacunas");
   await SH.from("invitaciones_cliente").delete().eq("token", tokenE);
-  for (const m of ["guarderia", "hotel"]) await SH.from("negocio_modulos").insert({ negocio_id: H, modulo: m, activo: false, updated_at: new Date().toISOString() });
   const token3 = await crearLink("guarderia_hotel", clienteId);
+  for (const m of ["guarderia", "hotel"]) await SH.from("negocio_modulos").insert({ negocio_id: H, modulo: m, activo: false, updated_at: new Date().toISOString() });
   const ctx3 = await nav.newContext();
   const dueno3 = await ctx3.newPage();
   await dueno3.goto(`${BASE}/alta/${token3}`, { waitUntil: "networkidle" });
@@ -358,6 +358,65 @@ try {
   else bien("recepción sin el permiso no puede guardar las políticas");
   await adminJ.rpc("guardar_politicas_negocio", { p_textos: previas?.textos ?? {} });
   await A.from("invitaciones_cliente").delete().eq("token", tokenPol);
+
+  // ───── 9. N17: una veterinaria sin guardería, hotel ni estética solo ofrece Veterinaria
+  console.log("\n9. Veterinaria sola: el link y los selectores ofrecen solo lo que el negocio tiene");
+  const MODS = ["guarderia", "hotel", "estetica"];
+  const apagar = async () => {
+    for (const m of MODS) {
+      const { data: fila } = await SH.from("negocio_modulos").select("id").eq("negocio_id", H).eq("modulo", m).maybeSingle();
+      if (fila) await SH.from("negocio_modulos").update({ activo: false }).eq("id", fila.id);
+      else await SH.from("negocio_modulos").insert({ negocio_id: H, modulo: m, activo: false, updated_at: new Date().toISOString() });
+    }
+  };
+  const restaurar = async () => {
+    await SH.from("negocio_modulos").delete().eq("negocio_id", H).eq("modulo", "estetica");
+    for (const m of ["guarderia", "hotel"]) await SH.from("negocio_modulos").update({ activo: true }).eq("negocio_id", H).eq("modulo", m);
+  };
+  try {
+    await apagar();
+    const crear = (tipo) => recepJ.rpc("crear_invitacion_cliente", { p_nombre_referencia: `Vet ${MARCA}`, p_telefono: "8110007779", p_dias_vigencia: 1, p_tipo: tipo, p_cliente_id: null });
+    for (const tipo of ["guarderia_hotel", "estetica"]) {
+      const r = await crear(tipo);
+      if (!r.error || !/no tiene prendida/i.test(r.error.message)) hallazgo(`el servidor aceptó un link de ${tipo} sin ese servicio (${r.error?.message ?? "sin error"})`);
+      else bien(`el servidor rechaza un link de ${tipo} si el negocio no lo tiene («${r.error.message.slice(0, 70)}…»)`);
+    }
+    const rv = await crear("veterinaria");
+    const tokenV = (Array.isArray(rv.data) ? rv.data[0] : rv.data)?.token;
+    if (rv.error || !tokenV) hallazgo(`el link de veterinaria no se creó: ${rv.error?.message}`);
+    else bien("el servidor acepta el link de veterinaria");
+
+    // Pantallas del personal (recepción): sin selector, solo Veterinaria.
+    await recep.goto(`${BASE}/clientes/invitaciones`, { waitUntil: "networkidle" });
+    const textoInv = await recep.locator("body").innerText();
+    if ((await recep.getByLabel("¿Para qué viene?").count()) > 0) hallazgo("Altas por link: sigue el selector «¿Para qué viene?» con un solo servicio");
+    else bien("Altas por link: con un solo servicio no hay selector");
+    if (/Guardería y hotel|Estética/.test(textoInv.split("Links pendientes")[0] ?? textoInv) || !/Link de veterinaria/.test(textoInv)) hallazgo("Altas por link: ofrece servicios que el negocio no tiene o no dice «Link de veterinaria»");
+    else bien("Altas por link: dice «Link de veterinaria» y no ofrece guardería ni estética");
+    const { data: cli } = await SH.from("clientes").insert({ nombre: `Cliente ${MARCA} vet`, telefono: "8110007780" }).select("id").single();
+    await recep.goto(`${BASE}/clientes/${cli.id}`, { waitUntil: "networkidle" });
+    if ((await recep.locator("#tipo-complemento").count()) > 0) hallazgo("ficha del cliente: sigue «¿Para qué servicio?» con un solo servicio");
+    else bien("ficha del cliente: con un solo servicio no hay selector «¿Para qué servicio?»");
+    await SH.from("clientes").delete().eq("id", cli.id);
+
+    // El link del dueño: sin contrato ni vacunas de guardería, dos pasos.
+    if (tokenV) {
+      const rV = await pedir(`/alta/${tokenV}`);
+      if (/contrato/i.test(rV.cuerpo.replace(/<[^>]+>/g, " ")) || rV.cuerpo.includes("Vacunas y desparasitación") || rV.cuerpo.includes("data-comprobantes-perro")) hallazgo("el link de veterinaria pide contrato o vacunas de guardería");
+      else bien("el link de veterinaria no pide contrato ni vacunas de guardería");
+      const { data: contratosAlta } = await SH.rpc("tipos_contrato_de_alta", { p_tipo: "veterinaria" });
+      if ((contratosAlta ?? []).length) hallazgo("la base devuelve contratos de alta para el link de veterinaria");
+      else bien("tipos_contrato_de_alta('veterinaria') no devuelve ningún contrato");
+      await SH.from("invitaciones_cliente").delete().eq("token", tokenV);
+    }
+  } finally {
+    await restaurar();
+  }
+  // Con todos los servicios prendidos siguen los tres.
+  await recep.goto(`${BASE}/clientes/invitaciones`, { waitUntil: "networkidle" });
+  const opciones = await recep.getByLabel("¿Para qué viene?").locator("option").allInnerTexts().catch(() => []);
+  if (!(["Guardería y hotel", "Estética", "Veterinaria"].every((o) => opciones.includes(o)))) hallazgo(`con todos los servicios, «¿Para qué viene?» ofrece: ${opciones.join(", ")}`);
+  else bien("con todos los servicios prendidos, «¿Para qué viene?» ofrece guardería y hotel, estética y veterinaria");
 } catch (e) {
   hallazgo(`el recorrido tronó: ${e instanceof Error ? e.message.split("\n")[0] : e}`);
   await dueno.screenshot({ path: "/tmp/alta-link-dueno.png" }).catch(() => {});

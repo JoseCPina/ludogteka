@@ -66,6 +66,12 @@ export default async function NuevaReceta({ searchParams }: { searchParams: Prom
   const productos = (productosCrudo ?? []) as ProductoReceta[];
   const consultas = ((consultasCrudo ?? []) as { id: string; estado: string; tipo_clave: string; atendida_at: string; motivo: string | null }[]).filter((c) => c.estado === "firmada");
   const consultaElegida = consultas.find((c) => c.id === consulta) ?? null;
+  // El «Tratamiento» de la consulta firmada, para prellenar el medicamento (se lee con la misma regla de permisos del expediente).
+  let tratamiento: string | null = null;
+  if (consultaElegida) {
+    const { data: detalle } = await supabase.rpc("vet_consulta_detalle", { p_id: consultaElegida.id });
+    tratamiento = ((detalle as { consulta?: { tratamiento?: string | null } } | null)?.consulta?.tratamiento ?? null) || null;
+  }
 
   return (
     <div className="flex max-w-4xl flex-col gap-5">
@@ -91,7 +97,7 @@ export default async function NuevaReceta({ searchParams }: { searchParams: Prom
               </div>
             </div>
           )}
-          <EditorReceta perroId={perro} consultaId={consultaElegida?.id ?? null} productos={productos} />
+          <EditorReceta key={consultaElegida?.id ?? "ficha"} perroId={perro} consultaId={consultaElegida?.id ?? null} productos={productos} tratamiento={tratamiento} />
         </>
       )}
     </div>

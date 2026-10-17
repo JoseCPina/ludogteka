@@ -26,6 +26,7 @@ import { RestablecerPassword } from "./restablecer-password";
 import { aplicanRequisitosDe, perrosConCitasEstetica } from "@/lib/perros/solo-estetica";
 import { usaEstancias } from "@/lib/plan/modulos";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { tiposDisponibles } from "@/lib/alta/tipos-link";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { CuentasCanceladasCliente } from "@/components/cuentas/cuentas-canceladas-cliente";
 import { cargarPendientesEstancia } from "@/lib/perros/pendientes-estancia";
@@ -365,6 +366,7 @@ export default async function EditarClientePage({
             clienteTelefono={cliente.telefono}
             pendientes={(linksPendientes as LinkPendiente[]) ?? []}
             tieneCuenta={Boolean(cuentaCliente)}
+            tipos={tiposDisponibles(mods)}
           />
         </>
       )}
