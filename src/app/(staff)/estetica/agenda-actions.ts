@@ -90,6 +90,21 @@ export async function aplicarRecargoCita(citaId: string, recargo: number, motivo
   return { error: null };
 }
 
+export type AusenteEnTramo = { profileId: string; texto: string };
+
+/** Quién tiene una ausencia aprobada que cubre ese tramo (para no ofrecerlo al agendar). La base vuelve a revisar al guardar. */
+export async function estilistasAusentesEnTramo(inicio: string, fin: string): Promise<AusenteEnTramo[]> {
+  if (!inicio || !fin) return [];
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("estilistas_ausentes", { p_inicio: inicio, p_fin: fin });
+  if (error) return [];
+  const { textoAusencia } = await import("@/lib/estetica/ausencias");
+  return ((data ?? []) as { profile_id: string; tipo: string; desde: string; hasta: string; hora_desde: string | null; hora_hasta: string | null }[]).map((a) => ({
+    profileId: a.profile_id,
+    texto: textoAusencia(a),
+  }));
+}
+
 export type EstadoReasignar = { error: string | null; de?: string; a?: string; ajusteNomina?: boolean; sinCambio?: boolean };
 
 /**

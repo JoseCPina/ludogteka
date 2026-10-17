@@ -17,6 +17,7 @@ import {
 } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { textoDeCitaEnAusencia, type CitaEnAusencia } from "@/lib/estetica/ausencias";
 
 const ETIQUETA_ESTADO: Record<string, string> = {
   reservada: "Reservada",
@@ -97,6 +98,10 @@ export default async function AgendaPage({
     ]);
 
   const error = errorEmpleados ?? errorCitas;
+
+  // Citas que siguen con alguien que tiene una ausencia aprobada: se marcan hasta que se reasignen.
+  const { data: enAusenciaCrudo } = await supabase.rpc("citas_en_ausencia");
+  const enAusencia = new Map(((enAusenciaCrudo ?? []) as CitaEnAusencia[]).map((c) => [c.cita_id, textoDeCitaEnAusencia(c)]));
 
   const citas: Cita[] = (citasCrudo ?? [])
     .map((c) => {
@@ -208,8 +213,13 @@ export default async function AgendaPage({
                                 href={
                                   puedeEditarTodos || esPropia ? `/estetica/${c.id}` : "#"
                                 }
-                                className={`flex flex-1 items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm ${
-                                  c.fuera_de_horario ? "border-ambar bg-ambar-suave" : "border-n-200 bg-n-50"
+                                data-cita-en-ausencia={enAusencia.has(c.id) ? "" : undefined}
+                                className={`flex flex-1 flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm ${
+                                  enAusencia.has(c.id)
+                                    ? "border-coral bg-coral-suave"
+                                    : c.fuera_de_horario
+                                      ? "border-ambar bg-ambar-suave"
+                                      : "border-n-200 bg-n-50"
                                 } ${puedeEditarTodos || esPropia ? "hover:opacity-80" : "cursor-default"}`}
                               >
                                 <span className="font-semibold text-n-900">
@@ -220,6 +230,11 @@ export default async function AgendaPage({
                                 >
                                   {ETIQUETA_ESTADO[c.estado] ?? c.estado}
                                 </span>
+                                {enAusencia.has(c.id) && (
+                                  <span className="basis-full text-xs font-semibold text-coral-oscuro">
+                                    Estilista ausente ({enAusencia.get(c.id)}): reasigna esta cita
+                                  </span>
+                                )}
                               </Link>
                               {(puedeEditarTodos || esPropia) && (c.estado === "reservada" || c.estado === "confirmada") && (
                                 <Link

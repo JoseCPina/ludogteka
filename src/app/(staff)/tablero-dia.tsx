@@ -11,6 +11,7 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { usaEstancias } from "@/lib/plan/modulos";
 import { SelectorEstilista } from "./estetica/selector-estilista";
+import { textoDeCitaEnAusencia, type CitaEnAusencia } from "@/lib/estetica/ausencias";
 import {
   fechaLocalDeInstante,
   formatearFecha,
@@ -177,6 +178,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     { data: contratosPorAtender },
     { data: asignables },
     { data: personalEstetica },
+    { data: citasEnAusenciaCrudo },
   ] = await Promise.all([
     supabase.from("llegadas_hoy").select(columnas).order("perro_nombre"),
     supabase.from("salidas_hoy").select(columnas).order("perro_nombre"),
@@ -233,6 +235,8 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       ? supabase.rpc("estilistas_asignables")
       : Promise.resolve({ data: [] as { id: string; nombre: string }[] }),
     conEstetica ? supabase.rpc("listar_personal_estetica") : Promise.resolve({ data: [] as { id: string; nombre: string }[] }),
+    // Citas de estética que siguen con alguien que tiene una ausencia aprobada.
+    conEstetica ? supabase.rpc("citas_en_ausencia") : Promise.resolve({ data: [] as CitaEnAusencia[] }),
   ]);
 
   const error = e1 ?? e2 ?? e3 ?? e4 ?? e5;
@@ -269,6 +273,19 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
 
   // ── Lo que necesita atención ─────────────────────────────────────
   const atencion: Atencion[] = [];
+
+  // Citas de estética (de hoy en adelante) con una estilista que tiene una ausencia aprobada.
+  const citasEnAusencia = (citasEnAusenciaCrudo ?? []) as CitaEnAusencia[];
+  const enAusencia = new Map(citasEnAusencia.map((c) => [c.cita_id, textoDeCitaEnAusencia(c)]));
+  if (citasEnAusencia.length > 0) {
+    const masCercana = citasEnAusencia[0];
+    atencion.push({
+      clave: "citas-en-ausencia",
+      texto: `${citasEnAusencia.length} ${citasEnAusencia.length === 1 ? "cita de estética sigue" : "citas de estética siguen"} con una estilista ausente`,
+      detalle: `${masCercana.empleado_nombre}: ${textoDeCitaEnAusencia(masCercana)}. Reasígnalas para que alguien las atienda`,
+      href: puedeReasignar ? "/empleados/ausencias" : "/estetica",
+    });
+  }
 
   // Perros que llegan esta semana con algo que los va a detener en la
   // puerta. Se resuelve de una vez, no cuando el dueño ya está enfrente.
@@ -1017,6 +1034,11 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
                       <span className="block text-xs text-n-500">
                         Estilista: {c.empleado_id ? (nombreDe.get(c.empleado_id) ?? "—") : "Sin asignar"}
                       </span>
+                      {enAusencia.has(c.id) && (
+                        <span data-cita-en-ausencia className="block text-xs font-semibold text-coral-oscuro">
+                          Estilista ausente ({enAusencia.get(c.id)}): reasigna esta cita
+                        </span>
+                      )}
                     </span>
                     <span className="text-xs text-n-500">{ETIQUETA_ESTADO_CITA[c.estado] ?? c.estado}</span>
                   </Link>

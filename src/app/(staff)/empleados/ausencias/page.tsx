@@ -11,6 +11,9 @@ import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { TIPOS_AUSENCIA } from "@/lib/empleados/textos";
 import { zonaActual } from "@/lib/negocio/actual";
+import { formatearFechaCalendario, horaLocalDeInstante, fechaLocalDeInstante } from "@/lib/formato";
+import type { CitaEnAusencia } from "@/lib/estetica/ausencias";
+import type { CitaPorReasignar } from "../citas-por-reasignar";
 
 // Las que esperan aprobación primero (de la más vieja a la más nueva), y
 // abajo las próximas y recientes.
@@ -23,11 +26,25 @@ export default async function AusenciasPage() {
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
   const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
 
-  const [{ data: porAprobar }, { data: resto }, { data: empleados }] = await Promise.all([
+  const puedeReasignar = esAdmin || sesion?.rol === "recepcion";
+  const [{ data: porAprobar }, { data: resto }, { data: empleados }, { data: enAusencia }, { data: asignables }] = await Promise.all([
     supabase.from("ausencias").select(COLUMNAS_AUSENCIA).eq("estado", "solicitada").is("deleted_at", null).order("created_at"),
     supabase.from("ausencias").select(COLUMNAS_AUSENCIA).neq("estado", "solicitada").is("deleted_at", null).order("desde", { ascending: false }).limit(40),
     supabase.from("empleados").select("id, nombre, profile_id, fecha_baja").is("deleted_at", null).order("nombre"),
+    // Citas de estética que siguen con quien ya tiene una ausencia aprobada.
+    puedeReasignar ? supabase.rpc("citas_en_ausencia") : Promise.resolve({ data: [] }),
+    puedeReasignar ? supabase.rpc("estilistas_asignables") : Promise.resolve({ data: [] }),
   ]);
+  const citasPorAusencia: Record<string, CitaPorReasignar[]> = {};
+  for (const c of (enAusencia ?? []) as CitaEnAusencia[]) {
+    (citasPorAusencia[c.ausencia_id] ??= []).push({
+      citaId: c.cita_id,
+      cuando: `${formatearFechaCalendario(fechaLocalDeInstante(c.inicio, zona))} ${horaLocalDeInstante(c.inicio, zona)}`,
+      perro: c.perro,
+      servicio: c.servicio,
+    });
+  }
+  const estilistas = ((asignables ?? []) as { id: string; nombre: string }[]).map((e) => ({ id: e.id, nombre: e.nombre }));
   // Recepción pide por quien no tiene cuenta; admin, por cualquiera.
   const porQuienPuedePedir = (empleados ?? []).filter(
     (e) => (!e.fecha_baja || e.fecha_baja >= hoy) && (esAdmin || (sesion?.rol === "recepcion" && !e.profile_id))
@@ -79,6 +96,8 @@ export default async function AusenciasPage() {
               </Select>
               <Field label="Desde" name="desde" type="date" defaultValue={hoy} required />
               <Field label="Hasta (incluido)" name="hasta" type="date" ayuda="Vacío si es un solo día." />
+              <Field label="Desde la hora (medio día)" name="hora_desde" type="time" ayuda="Solo si falta unas horas de un día." />
+              <Field label="Hasta la hora (medio día)" name="hora_hasta" type="time" />
             </div>
             <Textarea label="Motivo (opcional)" name="motivo" rows={2} />
           </FormularioAccion>
@@ -89,6 +108,8 @@ export default async function AusenciasPage() {
         <h2 className="text-lg font-bold text-n-900">Aprobadas y resueltas</h2>
         <ListaAusencias zona={zona}
           ausencias={(resto ?? []) as unknown as Ausencia[]}
+          citasPorAusencia={citasPorAusencia}
+          estilistas={estilistas}
           esAdmin={esAdmin}
           puedeCancelarSolicitadas={false}
           mostrarNombre
