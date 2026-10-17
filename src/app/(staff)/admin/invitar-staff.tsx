@@ -42,6 +42,7 @@ export function InvitarStaff() {
     const formData = new FormData(evento.currentTarget);
     const email = String(formData.get("email") ?? "").trim();
     const rol = String(formData.get("rol") ?? "");
+    const nombre = String(formData.get("nombre_completo") ?? "").trim();
 
     setResultado({ estado: "cargando" });
 
@@ -49,7 +50,7 @@ export function InvitarStaff() {
       const respuesta = await fetch("/api/staff/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, rol }),
+        body: JSON.stringify({ email, rol, nombre_completo: nombre }),
         // Sin esto, un servidor que no contesta deja el formulario en
         // "cargando" para siempre.
         signal: AbortSignal.timeout(TOPE_MS),
@@ -134,6 +135,7 @@ export function InvitarStaff() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
+        <Field label="Nombre completo" name="nombre_completo" required minLength={2} maxLength={120} disabled={cargando} ayuda="Así aparece en la agenda, en los selectores y en los historiales." autoComplete="off" />
         <Field label="Correo" name="email" type="email" required disabled={cargando} />
         <Select label="Rol" name="rol" required disabled={cargando} defaultValue="">
           <option value="" disabled>

@@ -2,6 +2,7 @@
 // del 16 de octubre de 2026, N4. JWT reales de admin y recepción (con y sin «Registrar vacunas») y llave anónima.
 //
 //   node scripts/auditoria/requisitos-sanitarios-dev.mjs
+import { textoDelBloqueo, tipoDeBloqueo } from "../../src/lib/reservas/bloqueos.ts";
 import { personas, B, SB, rpc, post, patch, get, dar, quitar, hoy, sumaDias, datos, comprobar, seccion, terminar, fijarModulo } from "./veterinaria-comun-dev.mjs";
 
 const P = await personas();
@@ -67,6 +68,25 @@ try {
   seccion("6. Otro negocio");
   const LUD = "10000000-0000-4000-8000-000000000001";
   comprobar(!(await rpc(P.admin, "anular_requisito_aplicado", { p_id: idA, p_motivo: "Desde otro negocio" }, LUD)).ok, "un admin con el encabezado de otro negocio no anula");
+
+  seccion("7. N20: el aviso del bloqueo, según el permiso de «Excepciones al reservar»");
+  // Un bloqueo REAL de la base (perro sin evaluación de comportamiento), leído como recepción sin el permiso.
+  await quitar(P.admin, P.recSinId, "excepciones_reserva");
+  const srv = (await SB.from("servicios").select("id").eq("negocio_id", B).eq("categoria", "guarderia").neq("unidad", "hora").is("deleted_at", null).limit(1).maybeSingle()).data;
+  const reserva = await post(P.recSin, "reservas", { cliente_id: datos.clienteSoloB });
+  if (!srv || !reserva.ok) {
+    comprobar(false, `no se pudo armar la reserva de prueba (${reserva.mensaje})`);
+  } else {
+    const manana = sumaDias(hoyB, 40 + Math.floor(Math.random() * 100));
+    const r = await post(P.recSin, "estancias", { reserva_id: reserva.cuerpo[0].id, perro_id: perro, servicio_id: srv.id, fecha_entrada: manana, fecha_salida: sumaDias(manana, 1), estado: "reservada" });
+    const crudo = r.mensaje;
+    comprobar(!r.ok && tipoDeBloqueo(crudo) === "comportamiento", `la base rechaza por la evaluación («${crudo.slice(0, 90)}»)`);
+    const sinPermiso = textoDelBloqueo(crudo, false);
+    comprobar(!/puede autorizar|permiso «Excepciones/.test(sinPermiso.split("No se puede reservar")[0]), "sin el permiso, el aviso no le ofrece autorizar la excepción");
+    comprobar(/No se puede reservar hasta que se resuelva/.test(sinPermiso) && /pídesela a un admin o a quien tenga el permiso/.test(sinPermiso), "y dice que no se puede reservar y a quién pedírselo");
+    comprobar(textoDelBloqueo(crudo, true) === crudo, "con el permiso el aviso queda igual (ahí está la casilla)");
+    await SB.from("reservas").delete().eq("id", reserva.cuerpo[0].id);
+  }
 } finally {
   await quitar(P.admin, P.recConId, "registrar_vacunas");
 }

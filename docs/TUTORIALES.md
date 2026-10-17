@@ -392,7 +392,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | cobrar-varios-servicios-juntos | 57 |
 | cobrar-con-terminal | 34, 59 |
 | terminal-no-recibe-el-cobro | 34, 59 |
-| corregir-un-cobro-con-terminal-mal-marcado | — |
+| corregir-un-cobro-con-terminal-mal-marcado | 38 |
 | tarjeta-registro-manual | 56 |
 | revisar-tarjetas-manuales | 56 |
 | link-de-pago-whatsapp | 34 |

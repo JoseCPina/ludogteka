@@ -169,6 +169,8 @@ const pruebas = {
       bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: "prueba de permisos",
     }).select("id").single();
     if (r.data) await A.from("estancias").update({ estado: "cancelada" }).eq("id", r.data.id);
+    // N20: el rechazo nombra el permiso (el aviso que ve quien no lo tiene dice a quién pedírselo; la prueba de ese texto
+    // está en requisitos-sanitarios-dev, sección 7).
     const rechazoPorPermiso = /Excepciones al reservar/.test(r.error?.message ?? "");
     return { dejo: !r.error, ve: !r.error, detalle: r.error?.message, rechazoPorPermiso };
   },

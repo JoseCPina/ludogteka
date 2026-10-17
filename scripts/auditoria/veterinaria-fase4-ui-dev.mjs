@@ -82,6 +82,15 @@ try {
   await mvz.p.locator('input[name="cant-0"]').fill("12");
   comprobar(/La escribiste tú/.test(await cuerpo(mvz.p)) && (await mvz.p.locator('input[name="cant-0"]').inputValue()) === "12", "se puede cambiar a mano (12) y lo dice");
   await mvz.p.locator('input[name="cant-0"]').fill("10");
+  // N18: ya escrita a mano, cambiar la duración NO deja una nota con un cálculo que no coincide.
+  await mvz.p.locator('input[name="dur-0"]').fill("6");
+  const notaManual = await cuerpo(mvz.p);
+  comprobar((await mvz.p.locator('input[name="cant-0"]').inputValue()) === "10" && /La escribiste tú/.test(notaManual) && !/Calculada con dosis/.test(notaManual) && !/Calculada: 12/.test(notaManual), "editada a mano y cambiada la duración: sigue en 10 y la nota solo dice que la escribiste tú");
+  comprobar((await mvz.p.locator("[data-usar-calculada]").count()) === 1 && /\(12\)/.test(await mvz.p.locator("[data-usar-calculada]").innerText()), "y ofrece el botón «Usar la cantidad calculada…» (12) como sugerencia");
+  await mvz.p.locator("[data-usar-calculada]").click();
+  comprobar((await mvz.p.locator('input[name="cant-0"]').inputValue()) === "12" && /Calculada: 12/.test(await cuerpo(mvz.p)), "al usarla, la cantidad vuelve a seguir al cálculo (12)");
+  await mvz.p.locator('input[name="dur-0"]').fill("5");
+  comprobar((await mvz.p.locator('input[name="cant-0"]').inputValue()) === "10", "y si cambias los días otra vez, la sigue (10)");
   await mvz.p.getByRole("button", { name: "Emitir receta" }).click();
   await mvz.p.waitForURL(/\/veterinaria\/recetas\/[0-9a-f-]{36}$/, { timeout: 20000 });
   const rxId = mvz.p.url().split("/").pop();

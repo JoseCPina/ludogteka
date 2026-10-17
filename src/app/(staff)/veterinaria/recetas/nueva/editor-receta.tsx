@@ -163,11 +163,16 @@ export function EditorReceta({ perroId, consultaId, productos, tratamiento = nul
             <div className="grid gap-3 sm:grid-cols-3">
               <Field label="Cantidad a surtir" name={`cant-${i}`} value={String(cantidadDe(f))} onChange={(e) => cambiar(i, { cantidad_surtir: e.target.value, cantidad_manual: true })} inputMode="decimal"
                 ayuda={f.cantidad_manual
-                  ? (calc ? `La escribiste tú. Calculada con dosis, frecuencia y días: ${calc}.` : "La escribiste tú.")
+                  ? "La escribiste tú."
                   : (calc ? `Calculada: ${calc} (dosis × tomas al día × días). Puedes cambiarla.` : "Escribe la cantidad, o llena dosis, frecuencia y días para calcularla.")} />
               <Field label="Unidad" name={`uni-${i}`} value={f.cantidad_unidad} onChange={(e) => cambiar(i, { cantidad_unidad: e.target.value })} placeholder="tabletas, ml, frasco" />
               <Field label="Tiempo de retiro (si aplica)" name={`ret-${i}`} value={f.tiempo_retiro} onChange={(e) => cambiar(i, { tiempo_retiro: e.target.value })} placeholder="28 días" />
             </div>
+            {f.cantidad_manual && calc !== null && Number(String(f.cantidad_surtir).replace(",", ".")) !== calc && (
+              <button type="button" data-usar-calculada className="w-fit text-sm font-semibold text-morado hover:underline" onClick={() => cambiar(i, { cantidad_manual: false })}>
+                Usar la cantidad calculada con dosis, frecuencia y días ({calc})
+              </button>
+            )}
             <Field label="Indicaciones (opcional)" name={`ind-${i}`} value={f.indicaciones} onChange={(e) => cambiar(i, { indicaciones: e.target.value })} />
             {filas.length > 1 && (
               <button type="button" className="w-fit text-sm font-semibold text-coral-oscuro hover:underline" onClick={() => setFilas((x) => x.filter((_, j) => j !== i))}>
