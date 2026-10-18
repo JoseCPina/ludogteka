@@ -6,7 +6,8 @@ import { Alert } from "@/components/ui/alert";
 import { SeccionFacturar } from "@/components/cfdi/seccion-facturar";
 import { CancelarCuenta } from "@/components/cuentas/cancelar-cuenta";
 import { etiquetaMotivoCuenta, type InfoCancelarCuenta } from "@/app/(staff)/caja/cancelar-cuenta-tipos";
-import { zonaActual } from "@/lib/negocio/actual";
+import { zonaActual, negocioActual } from "@/lib/negocio/actual";
+import { nombresDePersonal } from "@/lib/personal/nombres";
 import { formatearFecha } from "@/lib/formato";
 import { dinero } from "@/lib/dinero";
 import { estadoCobroIntegrado } from "@/app/(staff)/caja/cobro-integrado-actions";
@@ -281,10 +282,8 @@ export async function PantallaCobro({
     ]).values()
   ).filter((x): x is string => Boolean(x));
 
-  const { data: perfiles } = idsCreadores.length
-    ? await supabase.from("profiles").select("id, nombre_completo").in("id", idsCreadores)
-    : { data: [] as { id: string; nombre_completo: string | null }[] };
-  const nombrePorId = new Map((perfiles ?? []).map((p) => [p.id, p.nombre_completo ?? "—"]));
+  // Nombre de la ficha de empleado o de la cuenta (nombre_de_persona): recepción no lee `profiles` del personal.
+  const nombrePorId = await nombresDePersonal(supabase, idsCreadores, { esAdmin: sesion?.rol === "admin", negocioId: (await negocioActual()).id });
 
   // Lo cobrado por método es NETO de correcciones (los renglones compensatorios
   // restan); el monto original es lo que se capturó.

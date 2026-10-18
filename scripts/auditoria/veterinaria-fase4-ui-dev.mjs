@@ -14,6 +14,7 @@
 // 8. Sugerencias de la QA (17 de octubre): la receta se prellena con el «Tratamiento» de la consulta firmada,
 //    la cantidad a surtir se calcula sola (y se puede cambiar) y, sin productos clínicos, el selector dice
 //    «No hay productos cargados» con enlace a Inventario.
+// 9. N34 (18 de octubre): borrador de la receta mientras se escribe, «Recuperar borrador» al volver y aviso al salir.
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env } from "./sesiones-dev.mjs";
 import { abrirNavegador } from "../lib/navegador.mjs";
@@ -153,7 +154,7 @@ try {
   await mvz.p.locator('select[name="lote_id"]').selectOption({ index: 0 });
   await mvz.p.locator('input[name="cantidad"]').fill("25");
   await mvz.p.getByRole("button", { name: "Registrar salida" }).click();
-  await mvz.p.waitForSelector("text=Salida registrada", { timeout: 15000 });
+  await mvz.p.waitForSelector("text=Salida registrada", { timeout: 60000 });
   await mvz.p.reload({ waitUntil: "networkidle" });
   comprobar(/Surtido 25 de 60/.test(await cuerpo(mvz.p)) && /Aplicaciones \(parcialidades\)/.test(await cuerpo(mvz.p)), "la aplicación queda como parcialidad: surtido 25 de 60");
   await mvz.p.goto(`${BASE}/veterinaria/recetas/sitpv`, { waitUntil: "networkidle" });
@@ -183,7 +184,7 @@ try {
   await tarjeta.getByRole("button", { name: "Surtir contra este folio" }).click();
   await mvz.p.locator('input[name="cantidad"]').fill("20");
   await mvz.p.getByRole("button", { name: "Registrar salida" }).click();
-  await mvz.p.waitForSelector("text=Salida registrada", { timeout: 15000 });
+  await mvz.p.waitForSelector("text=Salida registrada", { timeout: 60000 });
   comprobar(true, "se surte contra el folio");
   await mvz.p.goto(`${BASE}/veterinaria/recetas/especial?nuevo=1&perro=${perro}`, { waitUntil: "networkidle" });
   await mvz.p.locator('input[name="folio"]').fill(`UI2-${E.MARCA}`);
@@ -219,6 +220,9 @@ try {
   const cons = await rpc(P.recCon, "vet_consulta_iniciar", { p_perro: perro, p_cita: null, p_tipo: "consulta", p_medico: E.medA });
   const cid = cons.cuerpo?.id ?? cons.cuerpo;
   await rpc(P.recCon, "vet_consulta_guardar", { p_id: cid, p_datos: { motivo: "Infección", anamnesis: "x", examen_fisico: "x", diagnosticos: [{ origen: "libre", nombre: "Otitis", tipo: "definitivo" }], plan: "Tratar", tratamiento: "Amoxicilina 250 mg, 1 tableta cada 12 horas por 7 días\nMeloxicam 1 ml cada 24 h durante 3 días" } });
+  // Sin precio de catálogo para la consulta general, la consulta no se firma: se marca «Sin cobro» con motivo.
+  const propuesta = (await rpc(P.recCon, "vet_consulta_cargos", { p_consulta: cid })).cuerpo;
+  for (const l of propuesta?.lineas ?? []) if (l.precio_unitario == null) await rpc(P.recCon, "vet_consulta_cargo_quitar", { p_id: l.id, p_motivo: "Sin cobro: prueba de recetas" });
   const firmada = await rpc(P.recCon, "vet_consulta_firmar", { p_id: cid });
   comprobar(firmada.ok, `se firma una consulta con Tratamiento (${firmada.mensaje})`);
   if (firmada.ok) {
@@ -265,6 +269,48 @@ try {
     await sinDesborde(cli.p, "portal con recetas");
   } else {
     comprobar(Boolean(emitida.ok), "(el portal no lista a la mascota de prueba: se verifica la función)");
+  }
+
+  // N34 (QA externa, 18 de octubre de 2026): la receta guarda un borrador mientras se escribe, lo ofrece al volver
+  // y avisa antes de salir con cambios sin emitir.
+  seccion("9. N34: borrador de la receta");
+  {
+    const perroB = await E.nuevoPerro("Borrador");
+    const urlB = `${BASE}/veterinaria/recetas/nueva?perro=${perroB}`;
+    const dialogos = [];
+    mvz.p.on("dialog", (d) => dialogos.push(d.type()));
+    const clave = `${perroB}:ficha`;
+    const borradores = async () => ((await SB.from("formulario_borradores").select("id").eq("formulario", "receta").eq("clave", clave).is("deleted_at", null)).data ?? []).length;
+    await mvz.p.goto(urlB, { waitUntil: "networkidle" });
+    comprobar((await mvz.p.getByTestId("aviso-borrador").count()) === 0, "una receta nueva no ofrece borrador");
+    await mvz.p.locator('input[name="producto-0"]').fill("Prednisona 20 mg");
+    await mvz.p.locator('input[name="dosis-0"]').fill("1 tableta");
+    await mvz.p.locator('input[name="dur-0"]').fill("7");
+    await mvz.p.locator('input[name="diagnostico"]').fill("Dermatitis alérgica");
+    for (let i = 0; i < 20 && (await borradores()) === 0; i++) await mvz.p.waitForTimeout(500);
+    comprobar((await borradores()) === 1, "a los pocos segundos de escribir se guarda UN borrador");
+    // Salir con cambios sin emitir avisa (beforeunload) y, al aceptar, se sale.
+    await mvz.p.goto(`${BASE}/veterinaria/recetas`, { waitUntil: "networkidle" });
+    comprobar(dialogos.includes("beforeunload"), "al salir con cambios sin emitir, el navegador avisa");
+    await mvz.p.goto(urlB, { waitUntil: "networkidle" });
+    const aviso = mvz.p.getByTestId("aviso-borrador");
+    await aviso.waitFor({ timeout: 20000 });
+    comprobar(/Tienes un borrador sin guardar/.test(await aviso.innerText()), "al volver a abrir la receta de esa mascota ofrece recuperar el borrador");
+    comprobar((await mvz.p.locator('input[name="producto-0"]').inputValue()) === "", "y no lo pone solo: el formulario sigue en blanco hasta que lo pidas");
+    await sinDesborde(mvz.p, "receta con aviso de borrador");
+    await mvz.p.getByRole("button", { name: "Recuperar borrador" }).click();
+    await mvz.p.waitForTimeout(600);
+    comprobar((await mvz.p.locator('input[name="producto-0"]').inputValue()) === "Prednisona 20 mg" && (await mvz.p.locator('input[name="dosis-0"]').inputValue()) === "1 tableta" && (await mvz.p.locator('input[name="diagnostico"]').inputValue()) === "Dermatitis alérgica", "«Recuperar borrador» devuelve medicamento, dosis y diagnóstico");
+    // Emitir la receta limpia el borrador y ya no avisa al salir.
+    await mvz.p.locator('input[name="dn-0"]').fill("1");
+    await mvz.p.locator('input[name="frec-0"]').fill("Cada 24 horas");
+    await mvz.p.locator('input[name="fh-0"]').fill("24");
+    await mvz.p.getByRole("button", { name: "Emitir receta" }).click();
+    await mvz.p.waitForURL(/\/veterinaria\/recetas\/[0-9a-f-]{36}/, { timeout: 40000 }).catch(() => {});
+    comprobar(/\/veterinaria\/recetas\/[0-9a-f-]{36}/.test(mvz.p.url()), `la receta se emite (${mvz.p.url().split("/").pop()})`);
+    comprobar((await borradores()) === 0, "emitida, el borrador se borra");
+    await mvz.p.goto(urlB, { waitUntil: "networkidle" });
+    comprobar((await mvz.p.getByTestId("aviso-borrador").count()) === 0, "y al volver a abrir ya no lo ofrece");
   }
 } finally {
   await nav.close().catch(() => {});

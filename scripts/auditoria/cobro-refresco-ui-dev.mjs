@@ -6,6 +6,8 @@
 // al registrar un cobro: el botón sigue ocupado y no admite un segundo clic, el resumen enseña de inmediato
 // «Cobrado» y «Saldo $0.00» con «Cuenta pagada», nunca queda el formulario con el monto de antes, y se
 // registra UN solo cobro. Lo mismo en el cobro junto (el botón sigue ocupado hasta que abre el recibo).
+// Secciones 4 a 6 (QA externa del 18 de octubre de 2026, N28 y N29): dos sesiones a la vez sobre la misma cuenta
+// piden confirmación; y una cuenta movida desde otra sesión (anulación, cobro) se pone al día sola y avisa.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -116,6 +118,86 @@ try {
   await pRapida.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
   await pRapida.waitForTimeout(4000);
   comprobar((await cobros(c3)) === 1, "un doble clic deja UN solo cobro en la base");
+
+  // ── N28 (QA externa, 18 de octubre de 2026): dos personas cobran la misma cuenta casi a la vez ──
+  console.log("4. Dos sesiones a la vez (admin y recepción) sobre la misma cuenta: el segundo cobro pide confirmación");
+  const admB = await comoPersona(datos.adminB);
+  const ctxR = await nav.newContext({ viewport: { width: 390, height: 844 } });
+  await ctxR.addCookies(await cookiesDe(recId));
+  const ctxA = await nav.newContext({ viewport: { width: 390, height: 844 } });
+  await ctxA.addCookies(await cookiesDe(datos.adminB));
+  // Mientras se arma la escena, las acciones del servidor de la pantalla de recepción no salen (ni el sondeo de la
+  // cuenta ni nada): así la pantalla queda con lo que sabía al abrirse, como en la carrera real de 54 ms.
+  let bloquear = false;
+  await ctxR.route("**/*", async (ruta) => {
+    if (bloquear && ruta.request().method() === "POST" && ruta.request().headers()["next-action"]) return ruta.abort();
+    return ruta.continue();
+  });
+  const cuatro = await nuevoCliente("Simultaneo");
+  const c4 = await cuenta(cuatro, 900, `Hotel simultaneo ${sufijo}`);
+  const pR = await ctxR.newPage();
+  const pA = await ctxA.newPage();
+  await Promise.all([pR.goto(`${BASE}/caja/cobrar/${c4}`, { waitUntil: "networkidle" }), pA.goto(`${BASE}/caja/cobrar/${c4}`, { waitUntil: "networkidle" })]);
+  bloquear = true;
+  await pA.getByLabel("Monto").first().fill("10");
+  await pA.getByRole("button", { name: "Registrar cobro" }).first().click();
+  await pA.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+  // Recepción, con la pantalla de antes (saldo $900), cobra $10 más.
+  await pR.getByLabel("Monto").first().fill("10");
+  bloquear = false;
+  await pR.getByRole("button", { name: "Registrar cobro" }).first().click();
+  const caja4 = pR.locator("[data-confirmar-cobro]");
+  await caja4.waitFor({ timeout: 30000 });
+  const texto4 = await caja4.innerText();
+  comprobar(/Se acaba de registrar otro cobro de \$10\.00 por .+ hace \d+ s\. El saldo ahora es \$890\.00\. ¿Registrar de todos modos\?/.test(texto4), `el aviso dice el monto, quién, hace cuánto y el saldo («${texto4.replace(/\s+/g, " ").slice(0, 160)}»)`);
+  comprobar(!/—/.test(texto4.split("¿")[0]), "y el autor no sale como «—»");
+  comprobar((await cobros(c4)) === 1, "mientras nadie confirma, solo está el cobro de la primera sesión");
+  await pR.locator("[data-registrar-de-todos-modos]").click();
+  await pR.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+  comprobar((await cobros(c4)) === 2, "al confirmar «Registrar de todos modos» se registra el segundo cobro");
+
+  console.log("5. N29: se anula un cobro desde otra sesión y la pantalla de cobro se actualiza sola");
+  const cinco = await nuevoCliente("Refresco vivo");
+  const c5 = await cuenta(cinco, 300, `Baño vivo ${sufijo}`);
+  const r5 = await admB.rpc("registrar_cobro", { p_reserva_id: c5, p_notas: "prueba", p_metodos: [{ metodo: "efectivo", monto: 100, propina: 0 }] });
+  if (r5.error) throw new Error(r5.error.message);
+  const pV = await ctxR.newPage();
+  await pV.goto(`${BASE}/caja/cobrar/${c5}`, { waitUntil: "networkidle" });
+  comprobar(/Saldo:\s*\$200\.00/.test(await pV.locator("body").innerText()), "abre con saldo $200.00");
+  comprobar((await pV.getByLabel("Monto").first().inputValue()) === "200.00", "y el monto viene con $200.00");
+  const an = await admB.rpc("anular_cobro", { p_cobro_id: r5.data, p_motivo: "prueba de refresco" });
+  if (an.error) throw new Error(an.error.message);
+  const aviso5 = pV.locator("[data-saldo-cambio]");
+  await aviso5.waitFor({ timeout: 40000 });
+  await pV.waitForFunction(() => /Saldo:\s*\$300\.00/.test(document.body.innerText), null, { timeout: 30000 });
+  comprobar(/antes era \$200\.00 y ahora es \$300\.00/.test(await aviso5.innerText()), "avisa «El saldo cambió»: antes $200.00, ahora $300.00");
+  comprobar((await pV.getByLabel("Monto").first().inputValue()) === "300.00", "el monto prellenado se pone al día ($300.00)");
+  // Con un monto escrito a mano que ya no corresponde, el aviso lo dice.
+  await pV.getByLabel("Monto").first().fill("50");
+  const r5b = await admB.rpc("registrar_cobro", { p_reserva_id: c5, p_notas: "prueba", p_metodos: [{ metodo: "efectivo", monto: 120, propina: 0 }] });
+  if (r5b.error) throw new Error(r5b.error.message);
+  await pV.waitForFunction(() => /ahora es \$180\.00/.test(document.querySelector("[data-saldo-cambio]")?.textContent ?? ""), null, { timeout: 40000 });
+  comprobar(/ya no corresponde/.test(await pV.locator("[data-saldo-cambio]").innerText()), "con el monto escrito a mano ($50), avisa que ya no corresponde");
+  comprobar((await pV.getByLabel("Monto").first().inputValue()) === "50", "y NO le borra lo que escribió");
+
+  console.log("6. N28 en el cobro junto");
+  const seis = await nuevoCliente("Junto simultaneo");
+  const k1 = await cuenta(seis, 100, `Cargo K1 ${sufijo}`);
+  const k2 = await cuenta(seis, 60, `Cargo K2 ${sufijo}`);
+  const pJ = await ctxR.newPage();
+  await pJ.goto(`${BASE}/caja/cobrar-junto?cuentas=${k1},${k2}`, { waitUntil: "networkidle" });
+  bloquear = true;
+  const r6 = await admB.rpc("registrar_cobro", { p_reserva_id: k1, p_notas: "prueba", p_metodos: [{ metodo: "efectivo", monto: 10, propina: 0 }] });
+  if (r6.error) throw new Error(r6.error.message);
+  // Las cuentas ya no tienen el saldo de la pantalla: se ajusta el monto de la primera para que el cobro sea válido.
+  const campos = pJ.locator("[data-cuenta-junto] input[type=number]");
+  await campos.first().fill("90");
+  bloquear = false;
+  await pJ.locator("[data-registrar-junto]").click();
+  const caja6 = pJ.locator("[data-confirmar-cobro]");
+  await caja6.waitFor({ timeout: 30000 });
+  comprobar(/Se acaba de registrar otro cobro de \$10\.00/.test(await caja6.innerText()), "el cobro junto también avisa del cobro que entró a una de sus cuentas");
+  comprobar(((await SB.from("cobros_grupo").select("id").eq("cliente_id", seis)).data ?? []).length === 0, "y no registró nada todavía");
 } finally {
   await nav.close();
 }

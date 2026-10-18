@@ -3,9 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "@/app/(staff)/reservas/traducir-error";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { negocioIdActual } from "@/lib/negocio/actual";
+import { avisoCobroReciente, type ControlCobro } from "@/lib/cobro/reciente";
 import type { LineaMetodo } from "@/app/(staff)/reservas/cobro-actions";
 
-export type EstadoCobroGrupo = { error: string | null; grupoId?: string };
+export type EstadoCobroGrupo = { error: string | null; grupoId?: string; confirmar?: string };
 
 /**
  * Cobrar juntas varias cuentas de la MISMA persona: un solo pago, un solo
@@ -16,7 +19,8 @@ export type EstadoCobroGrupo = { error: string | null; grupoId?: string };
 export async function registrarCobroGrupo(
   partes: { reservaId: string; monto: number }[],
   notas: string,
-  metodos: LineaMetodo[]
+  metodos: LineaMetodo[],
+  control?: ControlCobro
 ): Promise<EstadoCobroGrupo> {
   if (partes.length < 2) return { error: "Para cobrar juntas se necesitan al menos dos cuentas." };
   if (metodos.length === 0) return { error: "Agrega al menos un método de pago." };
@@ -24,6 +28,11 @@ export async function registrarCobroGrupo(
   if (partes.some((p) => !Number.isFinite(p.monto) || p.monto <= 0)) return { error: "Cada cuenta debe recibir un monto mayor a cero." };
 
   const supabase = await createSupabaseServerClient();
+  if (control && !control.confirmado) {
+    const sesion = await obtenerSesionConRol();
+    const aviso = await avisoCobroReciente(supabase, partes.map((p) => p.reservaId), control, { esAdmin: sesion?.rol === "admin", negocioId: await negocioIdActual() });
+    if (aviso) return { error: null, confirmar: aviso };
+  }
   const { data, error } = await supabase.rpc("registrar_cobro_grupo", {
     p_partes: partes.map((p) => ({ reserva_id: p.reservaId, monto: p.monto })),
     p_notas: notas,

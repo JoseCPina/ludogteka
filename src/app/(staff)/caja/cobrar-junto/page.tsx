@@ -8,6 +8,8 @@ import type { OrdenCobroFila } from "@/app/(staff)/reservas/[id]/cobrar/cobro-in
 import { CobroJunto, type CuentaJunto } from "./cobro-junto";
 import { leerTodo } from "@/lib/supabase/paginar";
 
+const haceMinutos = (min: number) => new Date(Date.now() - min * 60 * 1000).toISOString();
+
 // Cobrar en UN movimiento varias cuentas abiertas de la misma persona:
 // un pago, un folio, una propina; el monto se reparte entre las cuentas.
 export default async function CobrarJuntoPage({ searchParams }: { searchParams: Promise<{ cuentas?: string }> }) {
@@ -79,6 +81,14 @@ export default async function CobrarJuntoPage({ searchParams }: { searchParams: 
         a.reservaId.localeCompare(b.reservaId)
     );
   const primera = filas[0];
+  // Los cobros recientes que ya existen al abrir la pantalla (N28): solo uno nuevo se avisa antes de registrar.
+  const { data: cobrosRecientes } = await supabase
+    .from("cobros")
+    .select("id")
+    .in("reserva_id", ids)
+    .is("anulado_at", null)
+    .gte("created_at", haceMinutos(10));
+  const cobrosVistos = (cobrosRecientes ?? []).map((c) => c.id as string);
 
   // Las órdenes de terminal o link de estas cuentas (la del grupo y las sueltas).
   const { data: ordenesCrudo } = await supabase
@@ -112,6 +122,7 @@ export default async function CobrarJuntoPage({ searchParams }: { searchParams: 
       <CobroJunto
         cliente={{ id: primera.cliente_id as string, nombre: primera.cliente_nombre as string, telefono: (primera.cliente_telefono as string | null) ?? null }}
         cuentas={cuentas}
+        cobrosVistos={cobrosVistos}
         turnoAbierto={Boolean(turno)}
         puedeTarjetaManual={tienePermiso(sesion, "tarjeta_manual")}
         terminalManualBloqueada={Boolean(terminalManualBloqueada)}

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { BotonNuevoCliente } from "@/components/boton-nuevo-cliente";
 import type { TipoLinkAlta } from "@/lib/alta/tipos-link";
 import { Field } from "@/components/ui/field";
@@ -68,6 +68,7 @@ export function BuscadorClientes({
   nuevoCliente?: TipoLinkAlta | "cualquiera";
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const hrefDe = hrefDeProp ?? (rutaAlElegir ? (c: ClienteBuscable) => `${rutaAlElegir}?cliente=${c.id}` : undefined);
   const [busqueda, setBusqueda] = useState("");
 
@@ -85,6 +86,18 @@ export function BuscadorClientes({
   const hayBusqueda = busqueda.trim().length > 0;
   const coincidencias = useMemo(() => filtrarClientesBuscables(clientes, busqueda), [clientes, busqueda]);
   const visibles = coincidencias.slice(0, maximo);
+
+  // N33: al escribir, la lista se reordena. Si entre que se aprieta una fila y se suelta la lista cambia, el clic
+  // puede caer en OTRA fila (o en el contenedor). Se queda con la fila que estaba bajo el dedo al APRETAR y esa es la
+  // que se elige, aunque la lista se mueva; con teclado (Enter/Espacio) vale la fila enfocada.
+  const presionado = useRef<string | null>(null);
+  const idDeFila = (destino: EventTarget | null) => (destino as HTMLElement | null)?.closest?.("[data-cliente-id]")?.getAttribute("data-cliente-id") ?? null;
+  function elegirPorId(id: string | null) {
+    const cliente = id ? clientes.find((x) => x.id === id) : undefined;
+    if (!cliente) return;
+    if (onElegir) onElegir(cliente);
+    else if (hrefDe) router.push(hrefDe(cliente));
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -116,20 +129,34 @@ export function BuscadorClientes({
               {nuevoCliente && hayBusqueda && " Si es nuevo, dalo de alta con «Nuevo cliente»."}
             </p>
           ) : (
-            <ul className="divide-y divide-n-200">
+            <ul
+              className="divide-y divide-n-200"
+              onPointerDownCapture={(e) => {
+                presionado.current = idDeFila(e.target);
+              }}
+              onClickCapture={(e) => {
+                // El clic que cayó en una fila distinta a la apretada, o en el contenedor, no elige la equivocada.
+                const id = e.detail === 0 ? idDeFila(e.target) : presionado.current ?? idDeFila(e.target);
+                presionado.current = null;
+                if (!id) return;
+                e.preventDefault();
+                e.stopPropagation();
+                elegirPorId(id);
+              }}
+            >
               {visibles.map((coincidencia) => {
                 const c = coincidencia.cliente;
                 const contenido = <FilaCliente coincidencia={coincidencia} />;
                 const clases =
                   "flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave";
                 return (
-                  <li key={c.id}>
+                  <li key={c.id} data-cliente-id={c.id}>
                     {hrefDe ? (
                       <Link href={hrefDe(c)} className={clases}>
                         {contenido}
                       </Link>
                     ) : (
-                      <button type="button" onClick={() => onElegir?.(c)} className={clases}>
+                      <button type="button" className={clases}>
                         {contenido}
                       </button>
                     )}

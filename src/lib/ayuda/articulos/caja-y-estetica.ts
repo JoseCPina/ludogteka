@@ -29,6 +29,10 @@ export const ARTICULOS_CAJA_Y_ESTETICA: Articulo[] = [
 
 Si el perro tiene day pass o mensualidad, junto a su línea sale **Pagar con bono**.
 
+## Si otra persona cobra la misma cuenta al mismo tiempo
+
+La pantalla de cobro se actualiza sola cada pocos segundos: si otra sesión cobra, anula un cobro o agrega un cargo a esta cuenta, sale el aviso **El saldo cambió** (antes era $X y ahora es $Y), el monto que viene prellenado se pone al día y, si ya habías escrito un monto que ya no corresponde, el aviso te lo dice sin borrarte lo que escribiste. Y si al apretar **Registrar cobro** entró otro cobro a esa cuenta que tu pantalla no conocía (o el saldo cambió), no se registra todavía: te pregunta «Se acaba de registrar otro cobro de $10 por <quien> hace 5 s. El saldo ahora es $880. ¿Registrar de todos modos?». Con **Registrar de todos modos** se cobra; con **No registrar** no pasa nada. Lo mismo vale en [Cobrar varios servicios juntos](/ayuda/cobrar-varios-servicios-juntos). En el historial, cada cobro dice quién lo registró con el nombre de su ficha de empleado; si la persona no tiene nombre, un admin ve «Sin nombre (correo)» para saber a quién ponérselo.
+
 Un cobro nunca pasa del saldo. Si el cliente paga **de más en efectivo**, la pantalla te dice cuánto es el **cambio** y registra solo lo que se debía. Con transferencia, tarjeta o terminal el monto no puede ser mayor al saldo, y una cuenta en cero ya no se cobra.
 
 ¿Un servicio de estética se capturó mal? Se corrige desde la cita y el saldo de la cuenta cambia solo, sin tocar lo ya cobrado: un **cobro adicional** aparece como saldo por cobrar. Mira [Cómo corregir el servicio de una cita](/ayuda/corregir-servicio-de-una-cita).
@@ -713,6 +717,8 @@ Es otra cosa: la raza es nueva y tu negocio no decidió su precio. Asigna el gru
 6. Si el perro llegó con el pelo maltratado, marca **Llegó con el pelo maltratado**: cobra el precio alternativo del mismo baño. Es una condición de la cita, no otro servicio.
 7. Si necesitas cobrar de más (mucho pelo, nudos, cuidado previo), escribe el **Recargo manual (opcional)** y su **Motivo del recargo**. Se suma al precio, y queda registrado con tu nombre y el motivo. Solo lo hace admin o quien tenga el permiso «Excepciones al reservar».
 8. Pon la **Fecha y hora** y aprieta **Agendar cita**. La hora ya viene propuesta: la siguiente hora en punto de hoy que todavía no pasa, o la primera hora de apertura de mañana si hoy ya no queda ninguna.
+
+Al agendar, junto al botón sale «Cita agendada: perro, servicio, fecha y hora» y el recuadro verde **Cita agendada** se lleva a la vista, con el enlace a la cita. Si ese mismo perro ya tiene una cita ese día (que no esté cancelada), antes de crear otra sale el aviso **Esta mascota ya tiene cita ese día** con el servicio y la hora; **Agendar otra de todos modos** la crea y **No agendar** la deja como estaba.
 
 El precio sale del grupo de raza del perro, de su pelaje y del servicio; al dueño le aclaramos que **el costo puede aumentar según el tipo de pelo y el cuidado previo**. El rapado solo se ofrece a perros de pelo medio o largo. Cambiar las tarifas después no mueve el precio de las citas que ya están agendadas o cobradas. Para cambiar el recargo de una cita, ábrela y aprieta **Cambiar el recargo**.
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
@@ -12,7 +12,7 @@ import { Alert } from "@/components/ui/alert";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { BuscadorClientes } from "@/components/buscador-clientes";
 import type { ClienteBuscable } from "@/lib/clientes/buscables";
-import { hoyNegocio, horaLocalParaInput, instanteDeHoraLocal } from "@/lib/formato";
+import { hoyNegocio, horaLocalParaInput, instanteDeHoraLocal, formatearFecha, horaLocalDeInstante } from "@/lib/formato";
 import { SelectorRaza, type RazaOpcion } from "@/components/selector-raza";
 import { crearPerritoEstetica } from "../perritos-actions";
 import { completarTallaPelajeDelPerro, cotizarCitaEstetica, crearCita, estilistasAusentesEnTramo, type CotizacionCita } from "../agenda-actions";
@@ -232,7 +232,15 @@ export function AgendarForm({
     router.refresh();
   }
 
-  async function enviar() {
+  // N30: un mismo perro con otra cita ese día pide confirmar; y la confirmación de una cita agendada se lleva a la vista.
+  const [duplicada, setDuplicada] = useState<string | null>(null);
+  const [exitoAgendar, setExitoAgendar] = useState<string | null>(null);
+  const cajaAgendadas = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (agendadas.length > 0) cajaAgendadas.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [agendadas.length]);
+
+  async function enviar(confirmarDuplicada = false) {
     if (!perroId) {
       setError("Elige un perro.");
       return;
@@ -258,7 +266,10 @@ export function AgendarForm({
       return;
     }
     setError(null);
+    setExitoAgendar(null);
+    setDuplicada(null);
     const res = await enviando.ejecutar(() => crearCita({
+      confirmarDuplicada,
       tarifaModo,
       motivoTarifa: tarifaModo === "no" ? motivoTarifa.trim() : null,
       grupoExcepcionId: grupoDeExcepcion,
@@ -274,10 +285,15 @@ export function AgendarForm({
       inicio: instanteDeHoraLocal(fechaHora, zona),
       estanciaId: estanciaId || null,
     }));
+    if (res.duplicada) {
+      setDuplicada(res.duplicada);
+      return;
+    }
     if (res.error) {
       setError(res.error);
       return;
     }
+    setExitoAgendar(`Cita agendada: ${perroElegido?.nombre ?? "la mascota"}, ${servicioActual?.nombre ?? "servicio"}, ${formatearFecha(instanteDeHoraLocal(fechaHora, zona), zona)} ${horaLocalDeInstante(instanteDeHoraLocal(fechaHora, zona), zona)}.`);
     // En vez de salirse: se anota la cita y se ofrece agregar a otro perrito del mismo dueño.
     setAgendadas((prev) => [
       ...prev,
@@ -521,7 +537,7 @@ export function AgendarForm({
       </div>
 
       {agendadas.length > 0 && (
-        <div data-citas-agendadas className="flex flex-col gap-3 rounded-lg border-[1.5px] border-menta bg-menta-suave p-4">
+        <div ref={cajaAgendadas} data-citas-agendadas className="flex flex-col gap-3 rounded-lg border-[1.5px] border-menta bg-menta-suave p-4">
           <p className="font-bold text-menta-oscuro">
             {agendadas.length === 1 ? "Cita agendada" : `${agendadas.length} citas agendadas para ${clienteElegido.nombre}`}
           </p>
@@ -741,11 +757,26 @@ export function AgendarForm({
             horario={horarioSemana ?? null}
           />
 
-          <AccionesFormulario error={error}>
+          {duplicada && (
+            <div data-cita-duplicada>
+              <Alert variante="advertencia" titulo="Esta mascota ya tiene cita ese día">
+                <p>{duplicada}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Button type="button" cargando={enviando.cargando} onClick={() => enviar(true)} data-agendar-de-todos-modos>
+                    Agendar otra de todos modos
+                  </Button>
+                  <Button type="button" variante="secundario" onClick={() => setDuplicada(null)}>
+                    No agendar
+                  </Button>
+                </div>
+              </Alert>
+            </div>
+          )}
+          <AccionesFormulario error={error} exito={exitoAgendar}>
             <Button
               type="button"
               disabled={enviando.cargando || !perroId || !empleadoId || Boolean(elegidoAusente) || !(cot && cot.error === null && cot.estado === "ok")}
-              onClick={enviar}
+              onClick={() => enviar()}
             >
               {enviando.cargando ? "Agendando…" : "Agendar cita"}
             </Button>

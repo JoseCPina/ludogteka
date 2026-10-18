@@ -4,7 +4,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { MatrizTarifas } from "../../matriz-tarifas";
 import { HistorialTarifas, type FilaHistorial } from "../../historial-tarifas";
 import { PreciosPorDia, type PrecioDia } from "../../precios-por-dia";
-import { zonaActual } from "@/lib/negocio/actual";
+import { zonaActual, negocioIdActual } from "@/lib/negocio/actual";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { nombresDePersonal } from "@/lib/personal/nombres";
 import { hoyNegocio } from "@/lib/formato";
 
 export default async function TarifasServicioPage({
@@ -72,14 +74,9 @@ export default async function TarifasServicioPage({
   const idsCreadores = Array.from(
     new Set((historialCrudo ?? []).map((f) => f.created_by).filter((v): v is string => Boolean(v)))
   );
-  let nombresCreadores = new Map<string, string>();
-  if (idsCreadores.length > 0) {
-    const { data: perfiles } = await supabase
-      .from("profiles")
-      .select("id, nombre_completo")
-      .in("id", idsCreadores);
-    nombresCreadores = new Map((perfiles ?? []).map((p) => [p.id, p.nombre_completo ?? "—"]));
-  }
+  // Nombre de la ficha de empleado o de la cuenta (nombre_de_persona), nunca un guion.
+  const sesion = await obtenerSesionConRol();
+  const nombresCreadores = await nombresDePersonal(supabase, idsCreadores, { esAdmin: sesion?.rol === "admin", negocioId: await negocioIdActual() });
 
   const historial: FilaHistorial[] = (historialCrudo ?? []).map((f) => ({
     id: f.id,
@@ -92,7 +89,7 @@ export default async function TarifasServicioPage({
     no_aplica: f.no_aplica,
     vigencia_desde: f.vigencia_desde,
     created_at: f.created_at,
-    creado_por: f.created_by ? (nombresCreadores.get(f.created_by) ?? "—") : "—",
+    creado_por: f.created_by ? (nombresCreadores.get(f.created_by) ?? "Sin nombre") : "—",
   }));
 
   return (

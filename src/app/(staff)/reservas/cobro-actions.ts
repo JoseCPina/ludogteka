@@ -3,6 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { negocioIdActual } from "@/lib/negocio/actual";
+import { avisoCobroReciente, type ControlCobro } from "@/lib/cobro/reciente";
 
 export type MetodoPago = "efectivo" | "terminal" | "transferencia" | "tarjeta_manual";
 
@@ -20,12 +23,19 @@ export type LineaMetodo = {
 };
 
 /** `cambio` = efectivo recibido de más: no entra a la caja, se devuelve al cliente. */
-export type EstadoCobro = { error: string | null; cobroId?: string; cambio?: number };
+export type EstadoCobro = {
+  error: string | null;
+  cobroId?: string;
+  cambio?: number;
+  /** Algo cambió en la cuenta desde que se abrió la pantalla (otro cobro, otro saldo): NO se registró, pide confirmación. */
+  confirmar?: string;
+};
 
 export async function registrarCobro(
   reservaId: string,
   notas: string,
-  metodos: LineaMetodo[]
+  metodos: LineaMetodo[],
+  control?: ControlCobro
 ): Promise<EstadoCobro> {
   if (metodos.length === 0) return { error: "Agrega al menos un método de pago." };
   if (metodos.some((m) => !Number.isFinite(m.monto) || m.monto <= 0)) {
@@ -33,6 +43,11 @@ export async function registrarCobro(
   }
 
   const supabase = await createSupabaseServerClient();
+  if (control && !control.confirmado) {
+    const sesion = await obtenerSesionConRol();
+    const aviso = await avisoCobroReciente(supabase, [reservaId], control, { esAdmin: sesion?.rol === "admin", negocioId: await negocioIdActual() });
+    if (aviso) return { error: null, confirmar: aviso };
+  }
   // El saldo antes de cobrar: la base cobra solo hasta el saldo y lo que sobra en efectivo es cambio.
   const { data: totales } = await supabase.rpc("cuenta_totales_reserva", { p_reserva_id: reservaId });
   const saldoAntes = Number((Array.isArray(totales) ? totales[0] : totales)?.saldo ?? 0);

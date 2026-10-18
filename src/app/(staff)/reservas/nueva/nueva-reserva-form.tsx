@@ -1,6 +1,6 @@
 "use client";
 
-import { textoDelBloqueo, tipoDeBloqueo } from "@/lib/reservas/bloqueos";
+import { avisoGeneralPendiente, textoDelBloqueo, tipoDeBloqueo } from "@/lib/reservas/bloqueos";
 import { useMemo, useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { conTope, mensajeDeFallo } from "@/lib/ui/espera";
@@ -68,6 +68,9 @@ function lineaAPayload(linea: Linea, servicios: Servicio[]): LineaReserva {
 }
 
 const NOMBRES_DIA = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+
+// «los domingos», «los lunes»: el plural de un día de la semana.
+const enPlural = (dia: string) => (dia.endsWith("s") ? dia : `${dia}s`);
 
 // Día de la semana (0 = domingo) de una fecha AAAA-MM-DD, sin zona horaria.
 function diaDeFecha(fecha: string): number {
@@ -218,7 +221,7 @@ export function NuevaReservaForm({
   const sinAtencion = (fecha: string) => Boolean(fecha) && diasSinAtencion.includes(isoDe(fecha));
   const reglaDias =
     diasSinAtencion.length > 0
-      ? `El negocio no atiende los ${diasSinAtencion.map((d) => NOMBRES_DIA[d % 7]).join(" ni los ")}: ese día no hay entradas ni entregas.`
+      ? `El negocio no atiende los ${diasSinAtencion.map((d) => enPlural(NOMBRES_DIA[d % 7])).join(" ni los ")}: ese día no hay entradas ni entregas.`
       : undefined;
   const conDiaCerrado = lineas.some((l) => {
     const sv = servicios.find((x) => x.id === l.servicioId);
@@ -560,8 +563,8 @@ export function NuevaReservaForm({
                       label={esGuarderia ? "Fecha" : "Entrada"}
                       type="date"
                       value={linea.fechaEntrada}
-                      error={sinAtencion(linea.fechaEntrada) ? (esGuarderia ? "Guardería" : "El hotel") + ` no ${esGuarderia ? "abre" : "recibe perros"} los ${NOMBRES_DIA[diaDeFecha(linea.fechaEntrada)]}. Elige otro día.` : undefined}
-                      ayuda={reglaDias}
+                      error={sinAtencion(linea.fechaEntrada) ? (esGuarderia ? "Guardería" : "El hotel") + ` no ${esGuarderia ? "abre" : "recibe perros"} los ${enPlural(NOMBRES_DIA[diaDeFecha(linea.fechaEntrada)])}. Elige otro día.` : undefined}
+                      ayuda={sinAtencion(linea.fechaEntrada) ? reglaDias : undefined}
                       onChange={(e) => {
                         // El hotel se cobra por noche: si la entrada alcanza a la
                         // salida, la salida se recorre a la mañana siguiente. Con
@@ -593,8 +596,8 @@ export function NuevaReservaForm({
                         type="date"
                         value={linea.fechaSalida}
                         min={linea.fechaEntrada ? sumarDiasFecha(linea.fechaEntrada, 1) : undefined}
-                        error={sinAtencion(linea.fechaSalida) ? `El hotel no entrega perros los ${NOMBRES_DIA[diaDeFecha(linea.fechaSalida)]}. Elige otro día de salida.` : undefined}
-                        ayuda={reglaDias}
+                        error={sinAtencion(linea.fechaSalida) ? `El hotel no entrega perros los ${enPlural(NOMBRES_DIA[diaDeFecha(linea.fechaSalida)])}. Elige otro día de salida.` : undefined}
+                        ayuda={sinAtencion(linea.fechaSalida) ? reglaDias : undefined}
                         onChange={(e) => actualizarLinea(perro.id, { fechaSalida: e.target.value })}
                       />
                     )}
@@ -640,12 +643,8 @@ export function NuevaReservaForm({
       {conChoque && (
         <p className="text-sm text-coral-oscuro">Hay mascotas que ya tienen otra reserva en esas fechas: cambia las fechas o quítalas para continuar.</p>
       )}
-      {sinVacunasPendiente && (
-        <p className="text-sm text-ambar-oscuro">Hay mascotas con vacunas pendientes: regístralas en su expediente o, si tienes permiso, autoriza la excepción con su motivo.</p>
-      )}
-      {sinEvaluacionPendiente && (
-        <p className="text-sm text-ambar-oscuro">Hay mascotas sin evaluación de comportamiento: complétala o, si tienes permiso, autoriza la excepción con su motivo.</p>
-      )}
+      {sinVacunasPendiente && <p className="text-sm text-ambar-oscuro">{avisoGeneralPendiente("sanitario", esAdmin)}</p>}
+      {sinEvaluacionPendiente && <p className="text-sm text-ambar-oscuro">{avisoGeneralPendiente("comportamiento", esAdmin)}</p>}
     </div>
   );
 }

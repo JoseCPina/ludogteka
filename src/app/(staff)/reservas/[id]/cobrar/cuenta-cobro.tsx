@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
@@ -12,6 +12,7 @@ import { Alert } from "@/components/ui/alert";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { formatearFecha } from "@/lib/formato";
 import { abrirTurno } from "../../turno-actions";
+import { useCuentaViva } from "@/hooks/use-cuenta-viva";
 import { registrarCobro, registrarDevolucion, type MetodoPago } from "../../cobro-actions";
 import { CobroIntegrado, type OrdenCobroFila } from "./cobro-integrado";
 import { DevolucionIntegrada } from "./devolucion-integrada";
@@ -375,7 +376,33 @@ export function CuentaCobro({
     metodos.length === 1 && !montoTocado && i === 0 && totales.saldo > 0.005 ? (Math.round(totales.saldo * 100) / 100).toFixed(2) : m.monto;
   const metodosEfectivos = metodos.map((m, i) => ({ ...m, monto: montoDeMetodo(i, m) }));
   const totalMetodos = metodosEfectivos.reduce((sum, m) => sum + (Number(m.monto) || 0), 0);
+  const totalMetodosRef = useRef(totalMetodos);
+  const montoTocadoRef = useRef(montoTocado);
+  useEffect(() => {
+    totalMetodosRef.current = totalMetodos;
+    montoTocadoRef.current = montoTocado;
+  });
   const [exitoCobro, setExitoCobro] = useState<string | null>(null);
+  // N28: lo que el servidor encontró distinto al intentar cobrar (otro cobro reciente o el saldo movido).
+  const [confirmacion, setConfirmacion] = useState<string | null>(null);
+  // N29: otra sesión movió la cuenta (un cobro, un cargo, una anulación) mientras esta pantalla estaba abierta.
+  const [avisoSaldo, setAvisoSaldo] = useState<string | null>(null);
+  useCuentaViva(
+    [{ id: reservaId, saldo: totalesServidor.saldo, total: totalesServidor.totalCuenta }],
+    (vivo, anterior) => {
+      const v = vivo[0];
+      const antes = anterior[0];
+      const escrito = Math.round(totalMetodosRef.current * 100) / 100;
+      const desfasado = montoTocadoRef.current && Math.abs(escrito - v.saldo) > 0.005;
+      setAvisoSaldo(
+        `El saldo cambió: antes era ${dinero(antes.saldo)} y ahora es ${dinero(v.saldo)}.` +
+          (desfasado ? ` El monto que escribiste (${dinero(escrito)}) ya no corresponde: revísalo antes de cobrar.` : "")
+      );
+      setConfirmacion(null);
+      refrescar();
+    },
+    !cobrando.cargando && !refrescando
+  );
   // Solo el efectivo admite cambio; los demás métodos no pueden pasar del saldo.
   const sinEfectivo = metodosEfectivos.filter((m) => m.metodo !== "efectivo").reduce((s, m) => s + (Number(m.monto) || 0), 0);
   const cambioPrevisto = Math.round((totalMetodos - Math.max(totales.saldo, 0)) * 100) / 100;
@@ -403,17 +430,17 @@ export function CuentaCobro({
 
   // Un segundo clic en el mismo instante (antes de que React pinte «Cobrando…») no manda otro cobro.
   const bloqueoCobro = useRef(false);
-  async function enviarCobro() {
+  async function enviarCobro(confirmado = false) {
     if (bloqueoCobro.current || cobrando.cargando || refrescando) return;
     bloqueoCobro.current = true;
     try {
-      await enviarCobroInterno();
+      await enviarCobroInterno(confirmado);
     } finally {
       bloqueoCobro.current = false;
     }
   }
 
-  async function enviarCobroInterno() {
+  async function enviarCobroInterno(confirmado: boolean) {
     const payload = metodosEfectivos.map((m) => ({
       metodo: m.metodo,
       monto: Number(m.monto) || 0,
@@ -442,7 +469,16 @@ export function CuentaCobro({
     }
     setError(null);
     setExitoCobro(null);
-    const res = await cobrando.ejecutar(() => registrarCobro(reservaId, notasCobro, payload));
+    setConfirmacion(null);
+    // N28: el servidor compara con lo que esta pantalla sabía; si entró otro cobro o cambió el saldo, pide confirmar.
+    const control = { saldoVisto: totalesServidor.saldo, cobrosVistos: cobrosIniciales.map((c) => c.id), confirmado };
+    const res = await cobrando.ejecutar(() => registrarCobro(reservaId, notasCobro, payload, control));
+    if (res.confirmar) {
+      setConfirmacion(res.confirmar);
+      // La pantalla se pone al día mientras la persona decide.
+      refrescar();
+      return;
+    }
     if (res.error) {
       setError(res.error);
       return;
@@ -905,8 +941,30 @@ export function CuentaCobro({
             <p className="text-sm font-semibold text-menta-oscuro" data-cambio>Cambio: {dinero(cambioPrevisto)}</p>
           )}
 
+          {avisoSaldo && (
+            <div data-saldo-cambio>
+              <Alert variante="advertencia" titulo="El saldo cambió">
+                {avisoSaldo}
+              </Alert>
+            </div>
+          )}
+          {confirmacion && (
+            <div data-confirmar-cobro>
+            <Alert variante="advertencia" titulo="Antes de registrar">
+              <p>{confirmacion}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button type="button" cargando={cobrando.cargando || refrescando} onClick={() => enviarCobro(true)} data-registrar-de-todos-modos>
+                  Registrar de todos modos
+                </Button>
+                <Button type="button" variante="secundario" onClick={() => setConfirmacion(null)} data-cancelar-confirmacion>
+                  No registrar
+                </Button>
+              </div>
+            </Alert>
+            </div>
+          )}
           <AccionesFormulario error={error} exito={exitoCobro}>
-            <Button type="button" cargando={cobrando.cargando || refrescando} onClick={enviarCobro}>
+            <Button type="button" cargando={cobrando.cargando || refrescando} onClick={() => enviarCobro()}>
               {cobrando.cargando ? "Cobrando…" : refrescando ? "Actualizando…" : "Registrar cobro"}
             </Button>
           </AccionesFormulario>

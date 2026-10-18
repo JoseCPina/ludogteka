@@ -16,6 +16,7 @@
 // 9. N13: el aviso de un choque en la agenda de estética culpa a la estilista, no al perro: nombra la(s) cita(s)
 //    («X ya tiene a PERRO a las 11:00»), dice si está ausente y junta todo lo que choca; es el mismo texto al
 //    agendar y al reasignar.
+// 11. N24 (18 de octubre): el autor de un cobro nunca sale como «—».
 // 10. N19: una persona del personal se nombra por su ficha de empleado, no por la parte local de su correo.
 import fs from "node:fs";
 import os from "node:os";
@@ -340,6 +341,68 @@ try {
   } finally {
     await SB.from("empleados").update({ nombre: ficha, profile_id: S1 }).eq("id", E1);
     await SB.from("profiles").update({ nombre_completo: perfilAntes }).eq("id", S1);
+  }
+
+  // N24 (parcial, QA externa del 18 de octubre de 2026): el autor de un cobro NUNCA sale como «—». Sin nombre ni ficha,
+  // el admin ve «Sin nombre (correo)» y los demás «Sin nombre»; con ficha, el nombre de la ficha (que recepción no
+  // podía leer de `profiles`).
+  console.log("── 11. El autor de un cobro sale con nombre (N24)");
+  {
+    const perfilRec = (await SB.from("profiles").select("nombre_completo").eq("id", recId).single()).data.nombre_completo;
+    const fichasRec = (await SB.from("empleados").select("id").eq("negocio_id", B).eq("profile_id", recId).is("deleted_at", null)).data ?? [];
+    const { data: ur } = await A.auth.admin.getUserById(recId);
+    const nav2 = await abrirNavegador();
+    const galletas = async (profileId) => {
+      const { data: u } = await A.auth.admin.getUserById(profileId);
+      const { data: link } = await A.auth.admin.generateLink({ type: "magiclink", email: u.user.email });
+      const cli = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+      const { data: ses } = await cli.auth.verifyOtp({ type: "magiclink", token_hash: link.properties.hashed_token });
+      const valor = "base64-" + Buffer.from(JSON.stringify(ses.session)).toString("base64url");
+      const trozos = valor.match(/.{1,3180}/g);
+      const gal = trozos.length === 1 ? [[`sb-${REF}-auth-token`, valor]] : trozos.map((t, i) => [`sb-${REF}-auth-token.${i}`, t]);
+      return gal.map(([name, value]) => ({ name, value, domain: "huellitas.localhost", path: "/" }));
+    };
+    const verCobros = async (profileId) => {
+      const ctx = await nav2.newContext({ viewport: { width: 1280, height: 900 } });
+      await ctx.addCookies(await galletas(profileId));
+      const pg = await ctx.newPage();
+      await pg.goto(`${BASE}/caja/cobrar/${cuentaN24}`, { waitUntil: "domcontentloaded", timeout: 120000 });
+      await pg.locator("[data-cobro-id]").first().waitFor({ timeout: 60000 });
+      const filaCobro = (await pg.locator("[data-cobro-id]").first().innerText()).replace(/\s+/g, " ");
+      const cabecera = (await pg.locator("header").first().innerText()).replace(/\s+/g, " ");
+      await ctx.close();
+      return { filaCobro, cabecera };
+    };
+    let cuentaN24;
+    try {
+      await SB.from("profiles").update({ nombre_completo: null }).eq("id", recId);
+      if (fichasRec.length) await SB.from("empleados").update({ profile_id: null }).in("id", fichasRec.map((x) => x.id));
+      let { data: turno } = await SB.from("turnos_caja").select("id").eq("estado", "abierto").maybeSingle();
+      if (!turno) turno = (await get(tRecep, "turnos_caja?select=id&estado=eq.abierto")).cuerpo?.[0] ?? (await llamar(`${URL}/rest/v1/turnos_caja`, { method: "POST", headers: cab(tRecep), body: JSON.stringify({ fondo_inicial: 100, notas_apertura: "prueba N24" }) })).cuerpo?.[0];
+      const cli = (await SB.from("clientes").insert({ nombre: `Autor cobro ${String(Date.now()).slice(-6)}`, telefono: `55${String(Date.now()).slice(-8)}` }).select("id").single()).data;
+      const venta = await rpc(tRecep, "crear_venta_mostrador", { p_cliente_id: cli.id, p_lineas: [{ concepto: "Prueba N24", precio: 80, cantidad: 1 }], p_notas: "prueba N24" });
+      cuentaN24 = venta.cuerpo;
+      const cobro = await rpc(tRecep, "registrar_cobro", { p_reserva_id: cuentaN24, p_notas: "prueba N24", p_metodos: [{ metodo: "efectivo", monto: 80, propina: 0 }] });
+      comprobar(venta.ok && cobro.ok, `recepción registra una venta y su cobro (${venta.mensaje || cobro.mensaje})`);
+      const comoAdmin = await verCobros(datos.adminB);
+      comprobar(!/ · —( |$)/.test(comoAdmin.filaCobro), `el autor del cobro no sale como «—» (${comoAdmin.filaCobro.slice(0, 90)})`);
+      comprobar(comoAdmin.filaCobro.includes(`Sin nombre (${ur.user.email})`), "el admin ve «Sin nombre (correo)» cuando la persona no tiene nombre ni ficha");
+      const comoRecep = await verCobros(recId);
+      comprobar(/Sin nombre(?! \()/.test(comoRecep.filaCobro) && !comoRecep.filaCobro.includes("@"), "la propia recepción ve «Sin nombre», sin correo");
+      comprobar(comoRecep.cabecera.includes("Sin nombre") && !comoRecep.cabecera.includes("@"), `y su encabezado dice «Sin nombre» (${comoRecep.cabecera.slice(0, 80)})`);
+      // Con ficha de empleado, el nombre de la ficha (recepción no puede leer `profiles` del personal).
+      const nueva = await SB.from("empleados").insert({ nombre: `Recepcionista Ficha ${String(Date.now()).slice(-4)}`, puesto: "Recepción", fecha_ingreso: sumarDias(hoyB, -60), telefono: "4440000001", emergencia_nombre: "Contacto", emergencia_telefono: "4441111112", profile_id: recId }).select("id, nombre").single();
+      creados.empleados.push(nueva.data.id);
+      const conFicha = await verCobros(datos.adminB);
+      comprobar(conFicha.filaCobro.includes(nueva.data.nombre), `con ficha de empleado el autor sale con su nombre («${nueva.data.nombre}»)`);
+      const recConFicha = await verCobros(recId);
+      comprobar(recConFicha.filaCobro.includes(nueva.data.nombre), "y recepción también lo ve (antes salía «—»)");
+      await SB.from("empleados").update({ deleted_at: new Date().toISOString() }).eq("id", nueva.data.id);
+    } finally {
+      await SB.from("profiles").update({ nombre_completo: perfilRec }).eq("id", recId);
+      if (fichasRec.length) await SB.from("empleados").update({ profile_id: recId }).in("id", fichasRec.map((x) => x.id));
+      await nav2.close();
+    }
   }
 } finally {
   for (const id of creados.citas) await SB.from("citas_estetica").delete().eq("id", id);

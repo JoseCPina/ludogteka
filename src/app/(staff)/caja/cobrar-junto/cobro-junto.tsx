@@ -4,6 +4,8 @@ import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
+import { useCuentaViva } from "@/hooks/use-cuenta-viva";
+import { Alert } from "@/components/ui/alert";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,6 +51,7 @@ const centavos = (v: number) => Math.round(v * 100);
 export function CobroJunto({
   cliente,
   cuentas,
+  cobrosVistos,
   turnoAbierto,
   puedeTarjetaManual,
   terminalManualBloqueada,
@@ -57,6 +60,8 @@ export function CobroJunto({
 }: {
   cliente: { id: string; nombre: string; telefono: string | null };
   cuentas: CuentaJunto[];
+  // Cobros que la cuenta ya tenía al abrir la pantalla: los demás, recientes, se avisan antes de registrar (N28).
+  cobrosVistos: string[];
   turnoAbierto: boolean;
   puedeTarjetaManual: boolean;
   terminalManualBloqueada: boolean;
@@ -71,6 +76,19 @@ export function CobroJunto({
   const [notas, setNotas] = useState("");
   const [error, setError] = useState<string | null>(null);
   const cobrando = useEspera();
+  const [confirmacion, setConfirmacion] = useState<string | null>(null);
+  // N29: otra sesión movió alguna de estas cuentas mientras la pantalla estaba abierta.
+  const [avisoSaldo, setAvisoSaldo] = useState<string | null>(null);
+  useCuentaViva(
+    cuentas.map((c) => ({ id: c.reservaId, saldo: c.saldo })),
+    (vivo) => {
+      setAvisoSaldo("El saldo cambió: una de estas cuentas se movió desde otra sesión. Se actualizó la pantalla; revisa los montos antes de cobrar.");
+      setConfirmacion(null);
+      void vivo;
+      router.refresh();
+    },
+    !cobrando.cargando
+  );
   // Cobrado: el botón sigue ocupado hasta que cargue el recibo (si no, se reactivaba y permitía un segundo clic).
   const [yaCobrado, setYaCobrado] = useState(false);
   const [yendo, iniciarIr] = useTransition();
@@ -123,17 +141,17 @@ export function CobroJunto({
 
   // Un segundo clic en el mismo instante (antes de que React pinte «Cobrando…») no manda otro cobro.
   const bloqueoCobro = useRef(false);
-  async function enviar() {
+  async function enviar(confirmado = false) {
     if (bloqueoCobro.current || yaCobrado || yendo) return;
     bloqueoCobro.current = true;
     try {
-      await enviarInterno();
+      await enviarInterno(confirmado);
     } finally {
       bloqueoCobro.current = false;
     }
   }
 
-  async function enviarInterno() {
+  async function enviarInterno(confirmado: boolean) {
     const falla = validarCuentas();
     if (falla) return setError(falla);
     const payload = metodosEfectivos.map((m) => ({
@@ -152,7 +170,14 @@ export function CobroJunto({
       if (f) return setError(f);
     }
     setError(null);
-    const res = await cobrando.ejecutar(() => registrarCobroGrupo(partes, notas, payload));
+    setConfirmacion(null);
+    // N28: si entró otro cobro a alguna de estas cuentas o su saldo cambió, el servidor pide confirmar.
+    const control = { saldoVisto: Math.round(totalSaldo * 100) / 100, cobrosVistos, confirmado };
+    const res = await cobrando.ejecutar(() => registrarCobroGrupo(partes, notas, payload, control));
+    if (res.confirmar) {
+      setConfirmacion(res.confirmar);
+      return;
+    }
     if (res.error) return setError(res.error);
     setYaCobrado(true);
     iniciarIr(() => router.push(`/caja/recibo-junto/${res.grupoId}`));
@@ -316,8 +341,30 @@ export function CobroJunto({
             )}
           </div>
 
+          {avisoSaldo && (
+            <div data-saldo-cambio>
+              <Alert variante="advertencia" titulo="El saldo cambió">
+                {avisoSaldo}
+              </Alert>
+            </div>
+          )}
+          {confirmacion && (
+            <div data-confirmar-cobro>
+              <Alert variante="advertencia" titulo="Antes de registrar">
+                <p>{confirmacion}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Button type="button" cargando={cobrando.cargando} onClick={() => enviar(true)} data-registrar-de-todos-modos>
+                    Registrar de todos modos
+                  </Button>
+                  <Button type="button" variante="secundario" onClick={() => setConfirmacion(null)} data-cancelar-confirmacion>
+                    No registrar
+                  </Button>
+                </div>
+              </Alert>
+            </div>
+          )}
           <AccionesFormulario error={error}>
-            <Button type="button" cargando={cobrando.cargando || yaCobrado || yendo} onClick={enviar} data-registrar-junto>
+            <Button type="button" cargando={cobrando.cargando || yaCobrado || yendo} onClick={() => enviar()} data-registrar-junto>
               {cobrando.cargando ? "Cobrando…" : yaCobrado || yendo ? "Abriendo el recibo…" : `Registrar cobro de ${dinero(totalCuentas)}`}
             </Button>
           </AccionesFormulario>

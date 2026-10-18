@@ -30,3 +30,15 @@ export function textoDelBloqueo(motivo: string, puedeExcepcion: boolean): string
     .trim();
   return `${sinOferta} No se puede reservar hasta que se resuelva. Si hace falta una excepción, pídesela a un admin o a quien tenga el permiso «Excepciones al reservar».`;
 }
+
+/**
+ * El aviso GENERAL de abajo de «Crear reserva» cuando hay mascotas con vacunas o evaluación pendientes (QA N20):
+ * solo ofrece autorizar la excepción a quien tiene el permiso «Excepciones al reservar» (o es admin); a los demás les
+ * dice qué falta, que no se puede reservar y a quién pedírsela. Nunca menciona un permiso a quien no lo tiene.
+ */
+export function avisoGeneralPendiente(tipo: "sanitario" | "comportamiento", puedeExcepcion: boolean): string {
+  const falta = tipo === "sanitario" ? "Hay mascotas con vacunas pendientes: regístralas en su expediente" : "Hay mascotas sin evaluación de comportamiento: complétala en su expediente";
+  return puedeExcepcion
+    ? `${falta} o autoriza la excepción con su motivo.`
+    : `${falta}. Sin eso no se puede reservar; si hace falta una excepción, pídesela a un admin o a quien tenga el permiso «Excepciones al reservar».`;
+}

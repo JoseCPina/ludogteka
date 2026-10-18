@@ -362,6 +362,43 @@ try {
       if (x && !x.cerrado) await rpc(P.admin, "cerrar_turno", { p_turno_id: t.id, p_conteo_efectivo: x.esperado_efectivo, p_conteo_terminal: x.esperado_terminal, p_conteo_transferencia: x.esperado_transferencia, p_explicacion_diferencias: null, p_notas_cierre: "qa-hallazgos" });
     }
   }
+
+  // ── N20, N31, N32: avisos de Nueva reserva de Hotel ─────────────
+  seccion("N20/N31/N32. Los avisos de «Nueva reserva» de Hotel");
+  {
+    const perroN = await nuevoPerro("Aviso hotel");
+    const sumar = (f, d) => { const x = new Date(`${f}T12:00:00Z`); x.setUTCDate(x.getUTCDate() + d); return x.toISOString().slice(0, 10); };
+    const hoyISO = new Date().toISOString().slice(0, 10);
+    const dow = new Date(`${hoyISO}T12:00:00Z`).getUTCDay();
+    const domingo = sumar(hoyISO, ((7 - dow) % 7) + 7); // un domingo futuro (Huellitas cierra los domingos)
+    const lunes = sumar(domingo, 1);
+    await quitar(P.admin, P.recSinId, "excepciones_reserva");
+    for (const [quien, id] of [["admin", datos.adminB], ["recepción sin permiso", P.recSinId]]) {
+      const { c, p } = await abrir(id);
+      await p.goto(`${BASE}/hotel/nueva?cliente=${datos.clienteSoloB}`, { waitUntil: "domcontentloaded" });
+      await p.getByText(`Aviso hotel ${sufijo}`).first().click({ timeout: 30000 });
+      const entrada = p.getByLabel("Entrada").first();
+      await entrada.fill(lunes);
+      await p.waitForTimeout(500);
+      let t = await texto(p);
+      comprobar(!/El negocio no atiende los/.test(t), `${quien}: con una fecha entre semana NO sale «El negocio no atiende los…» (N32)`);
+      await entrada.fill(domingo);
+      comprobar(await esperarTexto(p, /El hotel no recibe perros los domingos\. Elige otro día/, 10000), `${quien}: en domingo dice «los domingos» (N31)`);
+      t = await texto(p);
+      comprobar(/Elige otro día/.test(t), `${quien}: y el aviso del domingo (con la fecha elegida en domingo) pide escoger otro día (N32)`);
+      comprobar(!/los domingo[^s]/.test(t), `${quien}: nunca «los domingo.» en singular`);
+      await entrada.fill(lunes);
+      await p.waitForTimeout(400);
+      comprobar(!/El negocio no atiende los/.test(await texto(p)), `${quien}: al volver a un lunes la regla desaparece`);
+      // N20: el aviso general de abajo, según el permiso (la mascota nueva no tiene evaluación de comportamiento).
+      await esperarTexto(p, /sin evaluación de comportamiento/, 15000);
+      const general = (await texto(p)).match(/Hay mascotas sin evaluación de comportamiento[^]*?(?=Hay mascotas|$)/)?.[0] ?? "";
+      if (quien === "admin") comprobar(/autoriza la excepción con su motivo/.test(general) && !/si tienes permiso/i.test(general), "admin: el aviso general ofrece autorizar la excepción (N20)");
+      else comprobar(/Sin eso no se puede reservar/.test(general) && /«Excepciones al reservar»/.test(general) && !/si tienes permiso|autoriza la excepci/i.test(general), "recepción sin permiso: el aviso general no ofrece autorizar y dice a quién pedirla (N20)");
+      await c.close();
+    }
+    void perroN;
+  }
 } catch (e) {
   console.error(e);
   process.exitCode = 1;

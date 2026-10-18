@@ -5,9 +5,15 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../reservas/traducir-error";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { zonaActual } from "@/lib/negocio/actual";
+import { fechaLocalDeInstante, horaLocalDeInstante, instanteDeHoraLocal, sumarDiasFecha } from "@/lib/formato";
 
 export type EstadoAccion = { error: string | null };
-export type EstadoCrearCita = { error: string | null; citaId?: string; reservaId?: string; fin?: string; precio?: number; tarifaGuarderia?: boolean };
+export type EstadoCrearCita = {
+  error: string | null;
+  /** N30: el mismo perro ya tiene cita ese día; NO se agendó y se pide confirmar. */
+  duplicada?: string;
+  citaId?: string; reservaId?: string; fin?: string; precio?: number; tarifaGuarderia?: boolean;
+};
 
 export async function crearCita(datos: {
   peloMaltratado?: boolean;
@@ -25,6 +31,8 @@ export async function crearCita(datos: {
   // Tarifa «cliente de guardería»: «auto» (la propone la base), «si» (a mano) o «no» (quitarla, con motivo).
   tarifaModo?: "auto" | "si" | "no";
   motivoTarifa?: string | null;
+  // N30: la persona ya vio el aviso de «este perro ya tiene cita ese día» y quiere otra.
+  confirmarDuplicada?: boolean;
 }): Promise<EstadoCrearCita> {
   if (!datos.perroId || !datos.servicioId || !datos.empleadoId || !datos.inicio) {
     return { error: "Completa perro, servicio, empleado y hora." };
@@ -37,6 +45,32 @@ export async function crearCita(datos: {
     .eq("id", datos.perroId)
     .single();
   if (errorReserva || !reserva) return { error: "No pudimos encontrar al perro." };
+
+  // N30: la misma mascota con otra cita viva ese día (en la fecha del negocio): se avisa antes de crear una segunda.
+  if (!datos.confirmarDuplicada) {
+    const zona = await zonaActual();
+    const dia = fechaLocalDeInstante(datos.inicio, zona);
+    const { data: delDia } = await supabase
+      .from("citas_estetica")
+      .select("id, inicio, estado, perros(nombre), servicios!citas_estetica_servicio_id_fkey(nombre)")
+      .eq("perro_id", datos.perroId)
+      .is("deleted_at", null)
+      .not("estado", "in", "(cancelada,no_llego)")
+      .gte("inicio", instanteDeHoraLocal(`${dia}T00:00`, zona))
+      .lt("inicio", instanteDeHoraLocal(`${sumarDiasFecha(dia, 1)}T00:00`, zona))
+      .order("inicio");
+    if (delDia && delDia.length > 0) {
+      const una = (c: (typeof delDia)[number]) => {
+        const serv = Array.isArray(c.servicios) ? c.servicios[0] : c.servicios;
+        return `${(serv as { nombre?: string } | null)?.nombre ?? "una cita"} a las ${horaLocalDeInstante(c.inicio as string, zona)}`;
+      };
+      const perro = Array.isArray(delDia[0].perros) ? delDia[0].perros[0] : delDia[0].perros;
+      return {
+        error: null,
+        duplicada: `${(perro as { nombre?: string } | null)?.nombre ?? "Esta mascota"} ya tiene ${delDia.length === 1 ? "una cita" : "citas"} ese día: ${delDia.map(una).join(" y ")}. ¿Agendar otra de todos modos?`,
+      };
+    }
+  }
 
   const { data: reservaCreada, error: errorCrearReserva } = await supabase
     .from("reservas")

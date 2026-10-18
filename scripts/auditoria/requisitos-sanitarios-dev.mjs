@@ -2,7 +2,7 @@
 // del 16 de octubre de 2026, N4. JWT reales de admin y recepción (con y sin «Registrar vacunas») y llave anónima.
 //
 //   node scripts/auditoria/requisitos-sanitarios-dev.mjs
-import { textoDelBloqueo, tipoDeBloqueo } from "../../src/lib/reservas/bloqueos.ts";
+import { avisoGeneralPendiente, textoDelBloqueo, tipoDeBloqueo } from "../../src/lib/reservas/bloqueos.ts";
 import { personas, B, SB, rpc, post, patch, get, dar, quitar, hoy, sumaDias, datos, comprobar, seccion, terminar, fijarModulo } from "./veterinaria-comun-dev.mjs";
 
 const P = await personas();
@@ -87,6 +87,19 @@ try {
     comprobar(textoDelBloqueo(crudo, true) === crudo, "con el permiso el aviso queda igual (ahí está la casilla)");
     await SB.from("reservas").delete().eq("id", reserva.cuerpo[0].id);
   }
+
+  // N20 (sigue): los avisos GENERALES de abajo de «Crear reserva» tampoco ofrecen autorizar a quien no puede.
+  seccion("7b. N20: los avisos generales de «Crear reserva»");
+  for (const tipo of ["sanitario", "comportamiento"]) {
+    const sin = avisoGeneralPendiente(tipo, false);
+    comprobar(!/si tienes permiso|autoriza la excepci/i.test(sin), `(${tipo}) sin el permiso no ofrece autorizar la excepción`);
+    comprobar(/Sin eso no se puede reservar/.test(sin) && /pídesela a un admin o a quien tenga el permiso «Excepciones al reservar»/.test(sin), `(${tipo}) dice que no se puede reservar y a quién pedírsela`);
+    const con = avisoGeneralPendiente(tipo, true);
+    comprobar(/autoriza la excepción con su motivo/.test(con) && !/si tienes permiso/i.test(con), `(${tipo}) con el permiso sí ofrece autorizar, sin «si tienes permiso»`);
+  }
+  // Ningún texto de pantalla del flujo de reservas manda a "si tienes permiso".
+  const fuente = (await import("node:fs")).readFileSync("src/app/(staff)/reservas/nueva/nueva-reserva-form.tsx", "utf8");
+  comprobar(!/si tienes permiso/i.test(fuente), "el formulario de reservas ya no dice «si tienes permiso» en ningún aviso");
 } finally {
   await quitar(P.admin, P.recConId, "registrar_vacunas");
 }

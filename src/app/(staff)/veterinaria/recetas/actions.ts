@@ -1,5 +1,6 @@
 "use server";
 
+import { descartarBorradorGuardado } from "@/lib/borradores/servidor";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { negocioActual, urlDelNegocio } from "@/lib/negocio/actual";
@@ -33,6 +34,8 @@ export async function emitirReceta(perroId: string, consultaId: string | null, f
     p_observaciones: o(texto(fd, "observaciones")),
   });
   if (error) return { error: traducirError(error) };
+  // Emitida: el borrador que se guardaba mientras se escribía ya no hace falta (N34).
+  await descartarBorradorGuardado(supabase, "receta", `${perroId}:${consultaId ?? "ficha"}`);
   revalidatePath("/veterinaria/recetas");
   return { error: null, ir: `/veterinaria/recetas/${(data as { id: string }).id}` };
 }

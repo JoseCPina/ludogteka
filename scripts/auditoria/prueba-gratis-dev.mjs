@@ -85,6 +85,17 @@ try {
   const dias = Math.round((Date.parse(neg.prueba_termina_at) - Date.now()) / 86_400_000);
   ok(neg.plan === "prueba" && dias >= 14 && dias <= 15, `prueba por 15 días (quedan ${dias})`);
   ok(neg.planes?.clave === "completo", `plan único (el registro ya no sugiere un plan por servicios): ${neg.planes?.clave}`);
+  // N35 (QA externa, 18 de octubre de 2026): un negocio nuevo de Estética nace con los servicios sueltos comunes
+  // además de los baños, de precio único y sin precio capturado; los negocios que ya existían no los reciben.
+  const { data: sueltos } = await A.from("servicios").select("clave, nombre, categoria, depende_grupo_raza, depende_tamano, depende_pelaje, duracion_minutos").eq("negocio_id", neg.id).like("clave", "estetica_%").is("deleted_at", null);
+  const claves = (sueltos ?? []).map((x) => x.clave).sort();
+  for (const c of ["estetica_corte_unas", "estetica_limpieza_oidos", "estetica_corte_pelo", "estetica_deslanado"]) ok(claves.includes(c), `el catálogo nuevo trae «${c}»`);
+  ok(["estetica_estetico", "estetica_rapado", "estetica_expres"].every((c) => claves.includes(c)), "y conserva los tres baños");
+  ok((sueltos ?? []).filter((x) => x.clave !== "estetica_estetico" && x.clave !== "estetica_rapado" && x.clave !== "estetica_expres").every((x) => x.categoria === "estetica" && !x.depende_grupo_raza && !x.depende_tamano && !x.depende_pelaje && x.duracion_minutos > 0), "los sueltos son de precio único y con duración");
+  const idsSueltos = (await A.from("servicios").select("id").eq("negocio_id", neg.id).in("clave", ["estetica_corte_unas", "estetica_limpieza_oidos", "estetica_corte_pelo", "estetica_deslanado"])).data?.map((x) => x.id) ?? [];
+  ok(((await A.from("tarifas").select("id").in("servicio_id", idsSueltos)).data ?? []).length === 0, "sin ningún precio inventado: el negocio los captura");
+  const { data: lud } = await A.from("negocios").select("id").eq("slug", "ludogteka").maybeSingle();
+  if (lud) ok(((await A.from("servicios").select("id").eq("negocio_id", lud.id).like("clave", "estetica_corte_unas")).data ?? []).length === 0, "Ludogteka (negocio existente) NO recibió los servicios nuevos");
   const { data: apagados } = await A.from("negocio_modulos").select("modulo").eq("negocio_id", neg.id).eq("activo", false);
   const off = (apagados ?? []).map((x) => x.modulo).sort().join(",");
   ok(off === "bonos,contratos,guarderia,hotel,recoleccion", `solo estética prendida (apagados: ${off})`);
