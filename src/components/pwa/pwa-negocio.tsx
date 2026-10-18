@@ -9,10 +9,11 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 // Se monta en el layout del personal y en el del portal con el id de la persona: el
 // service worker guarda copia de las pantallas de consulta para UNA persona y la borra
 // si cambia la sesión.
+//
+// Nada de esto flota abajo (QA N26): el aviso de «no se guardó» sale arriba, y «Instalar la app» vive en
+// instalar.tsx (aviso cerrable en el flujo + opción del menú).
 
 export const MENSAJE_SIN_CONEXION = "Sin conexión: no se guardó nada. Vuelve a intentarlo cuando regrese la señal.";
-
-type EventoInstalar = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
 
 // Pantallas que se precargan al entrar para tenerlas sin conexión (las que el SW sabe guardar).
 const PRECARGAR = ["/recepcion", "/estetica"];
@@ -54,8 +55,6 @@ export function PwaNegocio({ usuarioId, precargar = true }: { usuarioId: string;
   });
   const [volvio, setVolvio] = useState(false);
   const [bloqueo, setBloqueo] = useState<string | null>(null);
-  const [instalable, setInstalable] = useState<EventoInstalar | null>(null);
-  const [instalada, setInstalada] = useState(false);
   const tempBloqueo = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Registro del service worker y su aviso de quién es la sesión.
@@ -128,24 +127,6 @@ export function PwaNegocio({ usuarioId, precargar = true }: { usuarioId: string;
     };
   }, []);
 
-  // «Instalar» (Chrome y Android): el aviso nativo se guarda para ofrecerlo desde un botón.
-  useEffect(() => {
-    const alOfrecer = (e: Event) => {
-      e.preventDefault();
-      setInstalable(e as EventoInstalar);
-    };
-    const alInstalar = () => {
-      setInstalada(true);
-      setInstalable(null);
-    };
-    window.addEventListener("beforeinstallprompt", alOfrecer);
-    window.addEventListener("appinstalled", alInstalar);
-    return () => {
-      window.removeEventListener("beforeinstallprompt", alOfrecer);
-      window.removeEventListener("appinstalled", alInstalar);
-    };
-  }, []);
-
   return (
     <>
       {!enLinea && (
@@ -164,25 +145,8 @@ export function PwaNegocio({ usuarioId, precargar = true }: { usuarioId: string;
         </div>
       )}
       {bloqueo && (
-        <div role="alert" data-testid="aviso-sin-guardar" className="fixed inset-x-4 bottom-4 z-[60] mx-auto max-w-md rounded-lg border border-coral bg-coral-suave p-3 text-sm font-semibold text-coral-oscuro shadow-lg">
+        <div role="alert" data-testid="aviso-sin-guardar" className="fixed inset-x-4 top-12 z-[60] mx-auto max-w-md rounded-lg border border-coral bg-coral-suave p-3 text-sm font-semibold text-coral-oscuro shadow-lg">
           {bloqueo}
-        </div>
-      )}
-      {instalable && !instalada && (
-        <div className="fixed bottom-4 left-4 z-40 print:hidden">
-          <button
-            type="button"
-            data-testid="instalar-app"
-            onClick={async () => {
-              const ev = instalable;
-              setInstalable(null);
-              await ev.prompt();
-              await ev.userChoice.catch(() => null);
-            }}
-            className="min-h-11 rounded-full bg-morado px-4 text-sm font-semibold text-white shadow-lg hover:bg-morado-oscuro"
-          >
-            Instalar la app
-          </button>
         </div>
       )}
     </>

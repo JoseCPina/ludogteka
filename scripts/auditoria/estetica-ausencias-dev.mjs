@@ -301,6 +301,36 @@ try {
     const lista2 = await rpc(tRecep, "listar_personal_estetica");
     comprobar(lista2.ok && lista2.cuerpo.find((x) => x.id === S1)?.nombre === `${ficha} bis`, "cambiar el nombre de la ficha cambia el de la agenda");
     await SB.from("empleados").update({ nombre: ficha }).eq("id", E1);
+    // N24: la lista «Cuenta en la app» de la ficha de empleado y el encabezado de la app usan el mismo nombre.
+    const cuentasEmp = await rpc(tAdmin, "cuentas_para_empleado");
+    const ce = cuentasEmp.ok ? cuentasEmp.cuerpo.find((x) => x.id === S1) : null;
+    comprobar(ce && ce.nombre_completo === ficha, `«Cuenta en la app» (cuentas_para_empleado) dice «${ce?.nombre_completo}», el de la ficha`);
+    comprobar(cuentasEmp.ok && cuentasEmp.cuerpo.every((x) => !String(x.nombre_completo ?? "").includes("@")), "ninguna cuenta sale con su correo como nombre");
+    const propio = await rpc(await tokenDe(S1), "nombre_de_persona", { p_profile: S1, p_vacio: null });
+    comprobar(propio.ok && propio.cuerpo === ficha, `el encabezado de la persona (nombre_de_persona) dice «${propio.cuerpo}»`);
+    {
+      const { data: u } = await A.auth.admin.getUserById(S1);
+      const { data: link } = await A.auth.admin.generateLink({ type: "magiclink", email: u.user.email });
+      const cli = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+      const { data: ses } = await cli.auth.verifyOtp({ type: "magiclink", token_hash: link.properties.hashed_token });
+      const valor = "base64-" + Buffer.from(JSON.stringify(ses.session)).toString("base64url");
+      const trozos = valor.match(/.{1,3180}/g);
+      const gal = trozos.length === 1 ? [[`sb-${REF}-auth-token`, valor]] : trozos.map((t, i) => [`sb-${REF}-auth-token.${i}`, t]);
+      const nav = await abrirNavegador();
+      try {
+        const ctx = await nav.newContext({ viewport: { width: 1280, height: 900 } });
+        await ctx.addCookies(gal.map(([name, value]) => ({ name, value, domain: "huellitas.localhost", path: "/" })));
+        const pg = await ctx.newPage();
+        await pg.goto(`${BASE}/estetica`, { waitUntil: "domcontentloaded", timeout: 120000 });
+        await pg.locator("header").first().waitFor();
+        const cabecera = await pg.locator("header").first().innerText();
+        comprobar(cabecera.includes(ficha) && !cabecera.includes(u.user.email), `el encabezado de la app muestra «${ficha}» y no el correo (${cabecera.replace(/\s+/g, " ").slice(0, 120)})`);
+      } catch (e) {
+        hallazgo(`no se pudo revisar el encabezado: ${e instanceof Error ? e.message : e} (¿next start en el 3001?)`);
+      } finally {
+        await nav.close();
+      }
+    }
     // Sin ficha y sin nombre de cuenta: algo legible, nunca el correo.
     await SB.from("empleados").update({ profile_id: null }).eq("id", E1);
     const lista3 = await rpc(tRecep, "listar_personal_estetica");

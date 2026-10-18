@@ -68,6 +68,7 @@ async function revisar(p, nombre, ancho) {
   return r;
 }
 
+const cuentasCreadas = [];
 const nav = await abrirNavegador();
 try {
   const previo = await abierto();
@@ -132,8 +133,41 @@ try {
     const r = await revisar(p, "Reportes", ancho);
     if (r.tablas.length < 2) hallazgo(`Reportes a ${ancho} px solo trae ${r.tablas.length} tabla(s) con tarjetas`);
   }
+  console.log("4. Caja › Cobrar, cobro junto y cuentas abiertas a 393 px (QA N27)");
+  {
+    const { data: cli } = await SH.from("clientes").select("id").eq("negocio_id", H).eq("publico_general", false).is("deleted_at", null).order("created_at").limit(1).single();
+    const venta = async (concepto, precio) => {
+      const r = await adminJ.rpc("crear_venta_mostrador", { p_cliente_id: cli.id, p_lineas: [{ concepto, precio, cantidad: 1 }], p_notas: MARCA });
+      if (r.error) throw new Error(r.error.message);
+      return r.data;
+    };
+    const c1 = await venta(`${MARCA} concepto con un nombre largo para ver que no se corta en el celular`, 1234.5);
+    const c2 = await venta(`${MARCA} segundo concepto`, 250);
+    cuentasCreadas.push(c1, c2);
+    await p.setViewportSize({ width: 393, height: 852 });
+    for (const [ruta, nombre] of [[`/caja/cobrar/${c1}`, "Caja › Cobrar"], [`/caja/cobrar-junto?cuentas=${c1},${c2}`, "Cobro junto"], ["/caja", "Cuentas abiertas"]]) {
+      await p.goto(`${BASE}${ruta}`, { waitUntil: "networkidle", timeout: 120000 });
+      const r = await revisar(p, nombre, 393);
+      if (nombre === "Caja › Cobrar") {
+        if (!r.tablas.length) hallazgo("Caja › Cobrar no usa tabla-tarjetas");
+        const vis = await p.evaluate(() => {
+          const w = window.innerWidth;
+          const dentro = (el) => el && el.getBoundingClientRect().right <= w + 1 && el.getBoundingClientRect().left >= -1;
+          const total = document.querySelector("table.tabla-tarjetas td[data-label='Total']");
+          const botones = [...document.querySelectorAll("table.tabla-tarjetas td[data-label='Bono'] button")];
+          return { total: dentro(total), totalTexto: total?.innerText ?? "", botones: botones.length, botonesFuera: botones.filter((b) => !dentro(b)).map((b) => b.innerText) };
+        });
+        const totalBien = vis.total && /1,?234\.50/.test(vis.totalTexto);
+        if (!totalBien) hallazgo(`Caja › Cobrar: el TOTAL no se ve completo (${vis.totalTexto})`);
+        if (!vis.botones) hallazgo("Caja › Cobrar: no aparecen los botones del concepto");
+        if (vis.botonesFuera.length) hallazgo(`Caja › Cobrar: botones fuera de la pantalla: ${vis.botonesFuera.join(", ")}`);
+        if (totalBien && vis.botones && !vis.botonesFuera.length) bien(`Caja › Cobrar: TOTAL completo (${vis.totalTexto}) y ${vis.botones} botón(es) del concepto dentro de la pantalla`);
+      }
+    }
+  }
   await ctx.close();
 } finally {
+  for (const c of cuentasCreadas) await adminJ.rpc("cancelar_cuenta", { p_reserva_id: c, p_motivo: "error_captura", p_motivo_texto: MARCA, p_cancelar_cita: false }).then(() => {}, () => {});
   await nav.close();
   const t = await abierto();
   if (t) await cerrarConLoEsperado(t.id).catch(() => {});

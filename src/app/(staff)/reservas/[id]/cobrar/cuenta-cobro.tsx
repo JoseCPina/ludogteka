@@ -487,7 +487,8 @@ export function CuentaCobro({
       )}
 
       <div className="overflow-hidden rounded-lg border border-n-200 bg-white">
-        <table className="w-full min-w-[560px] border-collapse text-sm">
+        {/* En celular, cada concepto es una tarjeta (tabla-tarjetas, QA N27): con 560 px fijos el TOTAL salía cortado. */}
+        <table className="tabla-tarjetas w-full border-collapse text-sm sm:min-w-[560px]">
           <thead>
             <tr>
               <th className="border-b border-n-200 bg-n-100 px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-n-600">
@@ -525,18 +526,19 @@ export function CuentaCobro({
                       </span>
                       {l.descripcion}
                     </td>
-                    <td className="border-b border-n-200 px-4 py-2.5 text-right tabular-nums text-n-700">
+                    <td data-label="Cantidad" className="border-b border-n-200 px-4 py-2.5 text-right tabular-nums text-n-700">
                       {l.cantidad}
                     </td>
-                    <td className="border-b border-n-200 px-4 py-2.5 text-right tabular-nums text-n-700">
+                    <td data-label="Precio unit." className="border-b border-n-200 px-4 py-2.5 text-right tabular-nums text-n-700">
                       {dinero(l.precioUnitario)}
                     </td>
-                    <td className="border-b border-n-200 px-4 py-2.5 text-right tabular-nums font-semibold text-n-900">
+                    <td data-label="Total" className="border-b border-n-200 px-4 py-2.5 text-right tabular-nums font-semibold text-n-900">
                       {dinero(l.total)}
                     </td>
-                    <td className="border-b border-n-200 px-4 py-2.5 text-right">
+                    <td data-label="Bono" className="border-b border-n-200 px-4 py-2.5 text-right">
+                      <div className="flex flex-wrap items-center justify-end gap-2">
                       {l.cantidadCubiertaPorBono > 0 && (
-                        <span className="mr-2 text-xs font-semibold text-menta-oscuro">
+                        <span className="text-xs font-semibold text-menta-oscuro">
                           {l.cantidadCubiertaPorBono}/{l.cantidad} con bono
                         </span>
                       )}
@@ -549,10 +551,11 @@ export function CuentaCobro({
                         <CancelarRenglonVenta ventaId={l.origenId} reservaId={reservaId} onError={setError} />
                       )}
                       {puedeEditarMonto && l.tipo !== "ajuste" && l.cantidadCubiertaPorBono === 0 && (
-                        <Button type="button" variante="secundario" className="ml-2" onClick={() => setCorrigiendoPrecioIdx(i)}>
+                        <Button type="button" variante="secundario" onClick={() => setCorrigiendoPrecioIdx(i)}>
                           Corregir precio
                         </Button>
                       )}
+                      </div>
                     </td>
                   </tr>
                 );

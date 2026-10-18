@@ -11,6 +11,7 @@ import { AvisoTickets } from "@/components/ayuda/aviso-tickets";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarTutorialesVisibles } from "@/lib/tutoriales";
 import { PwaNegocio } from "@/components/pwa/pwa-negocio";
+import { AvisoInstalar } from "@/components/pwa/instalar";
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const sesion = await obtenerSesionConRol();
@@ -28,6 +29,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
       marca={<LogoNegocio nombre={negocio.nombre} marca={negocio.marca} variante="barra" />}
       aviso={
         <>
+          <AvisoInstalar />
           <AvisoPlan esPersonal />
           {sesion.rol === "estetica" && !sesion.modulos.includes("estetica") && (
             <p role="status" className="rounded-lg border border-ambar-oscuro/30 bg-ambar-suave px-4 py-3 text-sm text-ambar-oscuro" data-modulo-apagado-aviso>
@@ -38,7 +40,6 @@ export default async function StaffLayout({ children }: { children: React.ReactN
         </>
       }
       rol={sesion.rol}
-      email={sesion.user.email ?? ""}
       nombreCompleto={sesion.nombreCompleto}
       items={navStaffPara(sesion.rol, sesion.permisos, sesion.modulos, sesion.accesoVeterinaria)}
       videos={videos.map((v) => ({ slug: v.slug, rutas: v.rutas }))}

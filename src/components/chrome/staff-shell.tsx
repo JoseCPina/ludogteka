@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import type { ItemNav } from "@/lib/nav/config";
 import { IconoSeccion } from "@/components/iconos-nav";
 import { HechoConPeluDesk } from "@/components/marca/peludesk";
+import { BotonInstalar } from "@/components/pwa/instalar";
 import { articuloDeRuta } from "@/lib/ayuda/rutas";
 
 // El «?» de cada pantalla: el artículo de la ruta más específica (o el
@@ -59,7 +60,6 @@ export function StaffShell({
   marca,
   aviso,
   rol,
-  email,
   nombreCompleto,
   items,
   ayuda,
@@ -72,7 +72,6 @@ export function StaffShell({
   // El aviso del plan (demo, prueba, solo lectura): components/aviso-plan.tsx.
   aviso?: ReactNode;
   rol: string;
-  email: string;
   nombreCompleto: string | null;
   items: ItemNav[];
   // Las pantallas con artículo de ayuda (los de los módulos del negocio):
@@ -127,7 +126,8 @@ export function StaffShell({
           {videos && videos.length > 0 && <BotonVideo videos={videos} pathname={pathname} />}
           {ayuda && <BotonAyuda ayuda={ayuda} pathname={pathname} />}
           <div className="hidden text-right leading-tight sm:block">
-            <p className="text-sm font-semibold text-n-900">{nombreCompleto ?? email}</p>
+            {/* Sin nombre se queda el rol: el correo de una cuenta nunca se muestra como si fuera su nombre (QA N24). */}
+            {nombreCompleto && <p className="text-sm font-semibold text-n-900" data-nombre-encabezado>{nombreCompleto}</p>}
             <p className="text-xs font-semibold uppercase tracking-wide text-n-500">
               {ETIQUETAS_ROL[rol] ?? rol}
             </p>
@@ -146,7 +146,10 @@ export function StaffShell({
           className="hidden w-64 flex-none flex-col justify-between border-r border-n-200 bg-white p-3 md:flex"
         >
           <ListaNav items={items} pathname={pathname} />
-          <HechoConPeluDesk className="mt-6 px-3 pb-1" />
+          <div>
+            <BotonInstalar className="mt-4" />
+            <HechoConPeluDesk className="mt-6 px-3 pb-1" />
+          </div>
         </nav>
 
         {menuAbierto && (
@@ -163,6 +166,7 @@ export function StaffShell({
               className="absolute inset-y-0 left-0 w-72 max-w-[80%] overflow-y-auto bg-white p-3 shadow-lg"
             >
               <ListaNav items={items} pathname={pathname} onNavegar={() => setMenuAbierto(false)} />
+              <BotonInstalar className="mt-4 border-t border-n-200 pt-3" />
               <HechoConPeluDesk className="mt-6 px-3 pb-1" />
             </nav>
           </div>

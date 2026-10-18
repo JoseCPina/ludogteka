@@ -143,6 +143,7 @@ export async function armarLista(o: OpcionesLista): Promise<ResultadoLista> {
     calificacion: e.p.calificacion,
     resenas: e.p.resenas,
     mensajeAnterior: anteriores.get(e.p.id) ?? null,
+    servicios: e.p.clasificacion?.servicios ?? null,
   }));
   const redactados = new Map<string, string>();
   for (let i = 0; i < paraMensaje.length; i += 10) {

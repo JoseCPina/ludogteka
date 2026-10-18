@@ -37,7 +37,7 @@ export default async function Personas({ searchParams }: { searchParams: Promise
         {personas.map((p) => (
           <li key={p.persona_id} className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
             <div>
-              <p className="font-bold text-n-900">{p.nombre ?? p.email}</p>
+              <p className="font-bold text-n-900">{p.nombre ?? "Sin nombre"}</p>
               <p className="text-sm text-n-600">
                 {p.email}
                 {(p.telefonos ?? []).length ? ` · tel. ${(p.telefonos ?? []).join(", ")}` : ""}

@@ -20,7 +20,7 @@ import { ciudadDeDireccion, claveMarca, agruparSucursales, procesarCalidad } fro
 import { clasificarLote, giroDeServicios } from "../../src/lib/prospectos/clasificar.ts";
 import { crearLlamarIA } from "../../src/lib/prospectos/ia.ts";
 import { armarLista } from "../../src/lib/prospectos/lista.ts";
-import { mensajeDePlantilla, redactarLote } from "../../src/lib/prospectos/mensajes.ts";
+import { mensajeDePlantilla, redactarLote, serviciosSeguros, serviciosAjenos, datosParaIA } from "../../src/lib/prospectos/mensajes.ts";
 
 let fallas = 0;
 const ok = (c, bien, mal) => {
@@ -336,6 +336,25 @@ try {
     paraPantalla.gua = pGua.id;
     paraPantalla.adies = pAdies.id;
     paraPantalla.slugGua = g1.slug;
+  }
+
+  console.log("\n9. Mensajes: solo los servicios que el negocio sí da");
+  {
+    ok(serviciosSeguros({ giro: "mixto", servicios: null }).length === 0 && serviciosSeguros({ giro: "hotel", servicios: null }).join() === "hotel" && serviciosSeguros({ giro: "mixto", servicios: ["hotel", "veterinaria"] }).join() === "hotel,veterinaria", "los servicios seguros salen de la clasificación; un mixto sin ella: no se sabe");
+    ok(serviciosAjenos("Te armo la agenda de estética y el hotel", ["hotel"], "Hotel Fido").join() === "estetica" && serviciosAjenos("Hotel Fido Spa: las reservas por noche", ["hotel"], "Hotel Fido Spa").length === 0, "detecta un servicio que no da (sin contar su propio nombre)");
+    const hotelSolo = { id: "h1", nombre: "Hotel Patitas", giro: "mixto", ciudad: "SLP", canal: "whatsapp", tipo: "primero", link: "https://x/para/h1", calificacion: 4.9, resenas: 500, servicios: ["hotel"] };
+    const sinSaber = { ...hotelSolo, id: "h2", nombre: "Casa Canina", servicios: null };
+    const dH = datosParaIA(hotelSolo, 0), dS = datosParaIA(sinSaber, 0);
+    ok(/servicios que da: hotel/.test(dH) && !/est[eé]tica|guarder|veterinari/i.test(dH.replace(/servicios que da[^\n]*/, "")), "a la IA solo le llegan los servicios que da y lo que les resuelve de ESOS", dH);
+    ok(/servicios que da: no se sabe/.test(dS) && serviciosAjenos(dS.split("\n").slice(3).join(" "), [], "Casa Canina").length === 0, "sin certeza, solo lo general (ningún servicio)", dS);
+    // Una IA que inventa estética para un hotel: ese mensaje no se usa y sale de plantilla, que tampoco la nombra.
+    const iaInventa = async ({ usuario }) => ({ mensajes: [...usuario.matchAll(/id: (\S+)/g)].map(([, id]) => ({ id, texto: `Hola. PeluDesk te lleva la estética y el hotel. ${id === "h1" ? hotelSolo.link : sinSaber.link}` })) });
+    const red = await redactarLote([hotelSolo, sinSaber], iaInventa, "José");
+    ok(!red.has("h1") && !red.has("h2"), "un mensaje de la IA que nombra un servicio que el negocio no da se descarta");
+    const plH = mensajeDePlantilla(hotelSolo, "José"), plS = mensajeDePlantilla(sinSaber, "José");
+    ok(serviciosAjenos(plH, ["hotel"], hotelSolo.nombre).length === 0 && serviciosAjenos(plS, [], sinSaber.nombre).length === 0, "las plantillas de respaldo tampoco nombran servicios que no da", `${plH} || ${plS}`);
+    const iaBien = async ({ usuario }) => ({ mensajes: [...usuario.matchAll(/id: (\S+)/g)].map(([, id]) => ({ id, texto: `Hola. PeluDesk te lleva las reservas por noche. ${hotelSolo.link}` })) });
+    ok((await redactarLote([hotelSolo], iaBien, "José")).has("h1"), "uno que solo habla de lo que da sí se usa");
   }
 
   console.log("\n6. auditoria_frontera()");

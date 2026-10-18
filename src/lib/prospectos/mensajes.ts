@@ -16,6 +16,8 @@ export type ParaMensaje = {
   calificacion: number | null;
   resenas: number | null;
   mensajeAnterior?: string | null;
+  /** Los servicios que la clasificación encontró (por su nombre, categorías de Google, reseñas y web). */
+  servicios?: string[] | null;
 };
 
 // Solo lo que PeluDesk hace (si cambia una función, se cambia aquí y en src/lib/whatsapp/conocimiento.ts).
@@ -44,12 +46,50 @@ export const LO_QUE_RESUELVE: Record<string, string[]> = {
     "las recetas y el inventario de medicamentos por lote",
     "la agenda por médico y el cobro de la consulta en caja",
   ],
-  mixto: [
-    "guardería, hotel y estética en un solo sistema, con la caja de todo junta",
-    "las reservas, el check-in con vacunas y el cobro en el mismo lugar",
-    "el portal donde cada dueño ve las citas y reservas de su perro",
-  ],
 };
+
+// Sin certeza de qué servicios da: solo lo que vale para cualquiera de los cuatro giros.
+const GENERAL = [
+  "la agenda, el cobro y el corte de caja en un solo lugar",
+  "la ficha de cada mascota con su historial",
+  "el portal donde cada dueño ve lo de su mascota desde su celular",
+  "su página web, que se arma sola con sus datos",
+];
+
+const SERVICIOS = ["guarderia", "hotel", "estetica", "veterinaria"];
+const NOMBRE_SERVICIO: Record<string, string> = { guarderia: "guardería", hotel: "hotel", estetica: "estética", veterinaria: "veterinaria" };
+
+/**
+ * Los servicios que SE SABE que da: los que la clasificación encontró en su nombre, categorías de Google, reseñas y
+ * web; sin clasificación, su giro si no es «mixto». Un mixto sin clasificación: no se sabe cuáles (lista vacía).
+ */
+export function serviciosSeguros(p: Pick<ParaMensaje, "giro" | "servicios">): string[] {
+  const s = [...new Set((p.servicios ?? []).filter((x) => SERVICIOS.includes(x)))];
+  if (s.length) return s;
+  return SERVICIOS.includes(p.giro) ? [p.giro] : [];
+}
+
+/** Qué le resuelve PeluDesk, solo con los servicios que da (o, sin certeza, lo general). */
+export function loQueResuelve(servicios: string[]): string[] {
+  if (servicios.length === 0) return GENERAL;
+  if (servicios.length === 1) return LO_QUE_RESUELVE[servicios[0]] ?? GENERAL;
+  const juntos = servicios.map((s) => NOMBRE_SERVICIO[s]).join(", ").replace(/, ([^,]*)$/, " y $1");
+  return [`${juntos} en un solo sistema, con la caja de todo junta`, ...servicios.map((s) => LO_QUE_RESUELVE[s][1]), GENERAL[2]];
+}
+
+// Palabras que delatan que un texto habla de un servicio.
+const PALABRAS: Record<string, RegExp> = {
+  guarderia: /guarder[ií]a|daycare|kinder/i,
+  hotel: /hotel|hosped|pensi[oó]n|por noche/i,
+  estetica: /est[eé]tica|grooming|ba[ñn]os?\b|corte de pelo|estilista|peluquer/i,
+  veterinaria: /veterinari|\bconsultas?\b|expediente|\brecetas?\b|\bpacientes?\b/i,
+};
+
+/** Los servicios que el texto nombra y el negocio NO da (sin contar lo que viene en su propio nombre). */
+export function serviciosAjenos(texto: string, servicios: string[], nombre: string): string[] {
+  const sinNombre = texto.split(nombre).join(" ");
+  return SERVICIOS.filter((s) => !servicios.includes(s) && PALABRAS[s].test(sinNombre));
+}
 
 const HERRAMIENTA = {
   name: "mensajes",
@@ -68,6 +108,7 @@ Reglas:
 - Español de México, de tú, como lo escribiría una persona: natural, cálido, directo. Nada de publicidad, mayúsculas, signos de exclamación seguidos, «estimado», «oferta», «promoción», «increíble», «revolucionario» ni listas.
 - Corto: WhatsApp de 2 a 4 renglones (máximo 330 caracteres sin contar el link); Instagram máximo 280 caracteres sin el link.
 - Menciona el nombre del negocio tal como viene (puedes simplificarlo si es muy largo) y UNA sola cosa concreta que PeluDesk les resuelve, escogida de la lista que viene con cada negocio. No inventes nada más del negocio ni de PeluDesk; no digas precios. Si tiene 4.5 o más con 20 reseñas o más, puedes mencionar que tienen muy buenas reseñas.
+- SERVICIOS: nombra solo los que vienen en «servicios que da». Nunca supongas otros (no digas estética a un hotel, ni hotel a una estética, ni veterinaria a una guardería). Si dice «no se sabe», no nombres ningún servicio (ni guardería, ni hotel, ni estética, ni veterinaria): habla de su negocio en general y de lo que viene en la lista.
 - Di que les armaste una vista previa de cómo se vería su negocio en PeluDesk y pon el link EXACTO que viene, una sola vez, al final o en su propio renglón.
 - Puedes decir que se prueba 15 días gratis sin tarjeta, pero no en todos.
 - Varía: cada mensaje debe empezar distinto y estar redactado distinto de los demás del lote (saludos, orden, palabras). No uses la misma frase dos veces en el lote. Alterna la entrada: unos empiezan por su negocio, otros con una pregunta corta, otros presentándote; no más de dos del lote empiezan con «Hola, soy ${firma}» o parecido. Firma como ${firma} solo a veces, y nunca con cargo.
@@ -80,32 +121,36 @@ Reglas:
 export async function redactarLote(lista: ParaMensaje[], llamar: LlamarIA, firma: string, modelo?: string): Promise<Map<string, string>> {
   const r = new Map<string, string>();
   if (lista.length === 0) return r;
-  const usuario = lista
-    .map((p, i) =>
-      [
-        `id: ${p.id}`,
-        `negocio: ${p.nombre} (${p.giro === "mixto" ? "varios servicios" : p.giro}, ${p.ciudad})`,
-        `canal: ${p.canal === "whatsapp" ? "WhatsApp" : "Instagram"}`,
-        `tipo: ${p.tipo === "primero" ? "primer mensaje" : p.tipo === "seguimiento_1" ? "seguimiento 1" : "seguimiento 2 (último)"}`,
-        p.calificacion != null ? `Google: ${p.calificacion} con ${p.resenas ?? 0} reseñas` : null,
-        `qué le resuelve PeluDesk (escoge una, de preferencia la número ${(i % (LO_QUE_RESUELVE[p.giro] ?? LO_QUE_RESUELVE.mixto).length) + 1}): ${(LO_QUE_RESUELVE[p.giro] ?? LO_QUE_RESUELVE.mixto).map((x, k) => `${k + 1}) ${x}`).join("; ")}`,
-        p.mensajeAnterior ? `lo que ya se le mandó: ${p.mensajeAnterior.replace(/\s+/g, " ").slice(0, 400)}` : null,
-        `link: ${p.link}`,
-      ]
-        .filter(Boolean)
-        .join("\n")
-    )
-    .join("\n\n");
+  const usuario = lista.map((p, i) => datosParaIA(p, i)).join("\n\n");
   const res = (await llamar({ sistema: sistemaMensajes(firma), usuario: `Escribe un mensaje para cada uno de estos ${lista.length}:\n\n${usuario}`, herramienta: HERRAMIENTA, modelo, maxTokens: 300 + lista.length * 220 })) as {
     mensajes?: { id?: string; texto?: string }[];
   };
   for (const m of res.mensajes ?? []) {
     const p = lista.find((x) => x.id === m.id);
     const texto = (m.texto ?? "").trim();
-    // El link tiene que ir tal cual; si la IA lo cambió o lo quitó, ese mensaje sale de plantilla.
-    if (p && texto && texto.includes(p.link) && texto.length <= 900) r.set(p.id, texto);
+    // El link tiene que ir tal cual, y no puede nombrar un servicio que el negocio no da: si no, sale de plantilla.
+    if (p && texto && texto.includes(p.link) && texto.length <= 900 && serviciosAjenos(texto, serviciosSeguros(p), p.nombre).length === 0) r.set(p.id, texto);
   }
   return r;
+}
+
+/** Lo que va a la IA por cada negocio: solo los servicios que se saben (exportado para la auditoría). */
+export function datosParaIA(p: ParaMensaje, i: number): string {
+  const servicios = serviciosSeguros(p);
+  const cosas = loQueResuelve(servicios);
+  return [
+    `id: ${p.id}`,
+    `negocio: ${p.nombre} (${p.ciudad})`,
+    `servicios que da: ${servicios.length ? servicios.map((s) => NOMBRE_SERVICIO[s]).join(", ") : "no se sabe"}`,
+    `canal: ${p.canal === "whatsapp" ? "WhatsApp" : "Instagram"}`,
+    `tipo: ${p.tipo === "primero" ? "primer mensaje" : p.tipo === "seguimiento_1" ? "seguimiento 1" : "seguimiento 2 (último)"}`,
+    p.calificacion != null ? `Google: ${p.calificacion} con ${p.resenas ?? 0} reseñas` : null,
+    `qué le resuelve PeluDesk (escoge una, de preferencia la número ${(i % cosas.length) + 1}): ${cosas.map((x, k) => `${k + 1}) ${x}`).join("; ")}`,
+    p.mensajeAnterior ? `lo que ya se le mandó: ${p.mensajeAnterior.replace(/\s+/g, " ").slice(0, 400)}` : null,
+    `link: ${p.link}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 // ── Plantillas de respaldo (variadas por prospecto) ───────────────────────────────────────────────────────────────
@@ -114,7 +159,7 @@ const hash = (t: string) => [...t].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >
 const escoge = <T>(lista: T[], semilla: string, sal = 0) => lista[(hash(semilla) + sal) % lista.length];
 
 export function mensajeDePlantilla(p: ParaMensaje, firma: string): string {
-  const cosas = LO_QUE_RESUELVE[p.giro] ?? LO_QUE_RESUELVE.mixto;
+  const cosas = loQueResuelve(serviciosSeguros(p));
   const cosa = escoge(cosas, p.id);
   const otra = escoge(cosas, p.id, 1);
   const n = p.nombre;

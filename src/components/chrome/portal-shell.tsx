@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { cerrarSesion } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
 import { SECCIONES_PORTAL } from "@/lib/nav/config";
+import { BotonInstalar } from "@/components/pwa/instalar";
 
 export function PortalShell({
   marca,
@@ -65,6 +66,10 @@ export function PortalShell({
       )}
 
       <main className="flex-1 bg-n-50 p-4 md:p-8">{children}</main>
+      {/* «Instalar la app» siempre a la mano, al final del portal (nunca flotando encima de nada). */}
+      <footer className="bg-n-50 px-4 pb-6 md:px-8">
+        <BotonInstalar className="max-w-xs" />
+      </footer>
     </div>
   );
 }

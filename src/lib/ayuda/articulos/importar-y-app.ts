@@ -85,7 +85,7 @@ Cada persona tiene sus propios borradores: nadie más ve lo que tú dejaste a me
 
 ## Instalarla
 
-- **Android o computadora (Chrome):** aprieta **Instalar la app**, el botón que aparece abajo a la izquierda. Si no lo ves, abre el menú del navegador y escoge «Instalar aplicación».
+- **Android o computadora (Chrome):** arriba de la pantalla sale un aviso con **Instalar**; apriétalo. Si lo cerraste con la **×**, ya no vuelve a salir, pero siempre está **Instalar la app** al final del menú (en el celular, en el menú de las tres rayas). Si el navegador no abre su aviso, abre su menú y escoge «Instalar aplicación».
 - **iPhone (Safari):** aprieta el botón de compartir y escoge **Agregar a pantalla de inicio**.
 
 ## Qué pasa sin conexión

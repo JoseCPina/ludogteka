@@ -8,8 +8,8 @@ export default {
   escenas: [
     {
       titulo: "Instalarla",
-      dice: "En Chrome, aprieta «Instalar la app», el botón que aparece abajo a la izquierda. En iPhone, el botón de compartir y la opción de agregar a la pantalla de inicio. Queda con el nombre y el logo de tu negocio y abre en pantalla completa.",
-      pasos: [["js", async ({ page }) => { await page.evaluate(() => window.dispatchEvent(new Event("beforeinstallprompt"))); }], ["esperar", 800], ["resaltar", "Instalar la app", 3600]],
+      dice: "En Chrome, arriba sale un aviso con «Instalar»; si lo cierras, siempre queda «Instalar la app» en el menú. En iPhone, el botón de compartir y la opción de agregar a la pantalla de inicio. Queda con el nombre y el logo de tu negocio y abre en pantalla completa.",
+      pasos: [["js", async ({ page }) => { await page.evaluate(() => window.dispatchEvent(new Event("beforeinstallprompt"))); }], ["esperar", 800], ["resaltar", "Instalar", 3600]],
     },
     {
       titulo: "Sin conexión",

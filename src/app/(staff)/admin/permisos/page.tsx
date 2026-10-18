@@ -27,11 +27,12 @@ export default async function PermisosPage() {
   ]);
   const { data: cuentas } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("listar_cuentas").order("id"));
   const correo = new Map(((cuentas as { id: string; email: string }[] | null) ?? []).map((c) => [c.id, etiquetaDeCuenta(c.email)]));
-  const nombreDe = (n: { profiles: unknown }) => ((n.profiles as { nombre_completo: string | null } | null)?.nombre_completo ?? null);
-  const nombre = new Map((nombres ?? []).map((n) => [n.id as string, nombreDe(n)?.trim() || correo.get(n.id as string) || "—"]));
-
-  // Con nombre; si el perfil no tiene, con su correo (o teléfono); solo si no hay nada, «—».
-  const quienEs = (id: string) => nombre.get(id) ?? correo.get(id) ?? "—";
+  // El nombre en ESTE negocio (ficha de empleado, luego la cuenta: nombre_de_persona); sin nombre, el correo va
+  // marcado como correo, nunca como si fuera el nombre (QA N24).
+  const ids = [...new Set((nombres ?? []).map((n) => n.id as string))];
+  const nombresBase = await Promise.all(ids.map(async (id) => [id, ((await supabase.rpc("nombre_de_persona", { p_profile: id, p_vacio: null })).data as string | null) ?? null] as const));
+  const nombre = new Map(nombresBase.map(([id, n]) => [id, n?.trim() || (correo.get(id) ? `Sin nombre (${correo.get(id)})` : "—")]));
+  const quienEs = (id: string) => nombre.get(id) ?? (correo.get(id) ? `Sin nombre (${correo.get(id)})` : "—");
 
   const activosDe = (id: string) =>
     (filas ?? []).filter((f) => f.profile_id === id && !f.revocado_at).map((f) => f.permiso as string);

@@ -43,7 +43,8 @@ export function CamposEmpleado({
         <option value="">No usa la app</option>
         {libres.map((c) => (
           <option key={c.id} value={c.id}>
-            {(c.nombre_completo ?? etiquetaDeCuenta(c.email)) + ` · ${ROL[c.rol] ?? c.rol}`}
+            {/* El nombre (ficha de empleado o cuenta, de nombre_de_persona); sin nombre, el correo va marcado como correo. */}
+            {(c.nombre_completo ? c.nombre_completo : `Sin nombre (${etiquetaDeCuenta(c.email)})`) + ` · ${ROL[c.rol] ?? c.rol}`}
           </option>
         ))}
       </Select>

@@ -20,7 +20,7 @@ export function ListaPersonal({ personas, zona }: { personas: PersonaStaff[]; zo
       {personas.map((p) => (
         <li key={p.id} className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-3">
           <span className="flex flex-col">
-            <span className="font-semibold text-n-900">{p.nombre_completo || etiquetaDeCuenta(p.email)}</span>
+            <span className="font-semibold text-n-900">{p.nombre_completo || "Sin nombre"}</span>
             <span className="text-sm text-n-600">{etiquetaDeCuenta(p.email)}</span>
           </span>
           <span className="text-sm text-n-600">
