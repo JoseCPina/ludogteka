@@ -35,7 +35,7 @@ const r = await procesarCalidad({
   presupuestoMs: 6 * 60 * 60 * 1000,
   avisar: (t) => console.log("  " + t),
 });
-console.log(`\n${prod ? "PRODUCCIÓN" : "desarrollo"} · ciudades corregidas ${r.ciudades} · clasificados ${r.clasificados} · descartados ${r.descartados} · giro cambiado ${r.giroCambiado} · sucursales ${r.sucursales} · hoteles para personas ${r.hotelesPersonas} · guarderías infantiles ${r.guarderiasInfantiles}`);
+console.log(`\n${prod ? "PRODUCCIÓN" : "desarrollo"} · ciudades corregidas ${r.ciudades} · clasificados ${r.clasificados} · descartados ${r.descartados} · giro cambiado ${r.giroCambiado} · sucursales ${r.sucursales} · hoteles para personas ${r.hotelesPersonas} · guarderías infantiles ${r.guarderiasInfantiles} · gobierno, refugio o escuela ${r.gobiernoRefugioEscuela}`);
 for (const e of r.errores) console.log("  error: " + e);
 
 if (args.includes("--lista")) {

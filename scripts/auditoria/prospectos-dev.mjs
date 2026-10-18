@@ -17,7 +17,7 @@ import { createClient } from "@supabase/supabase-js";
 import { correrProspeccion } from "../../src/lib/prospectos/correr.ts";
 import { buscarTexto } from "../../src/lib/prospectos/places.ts";
 import { revisarWeb, extraerContactos } from "../../src/lib/prospectos/web.ts";
-import { ciudadDeDireccion, claveMarca, agruparSucursales, procesarCalidad, revisarHotelGuarderia, MOTIVO_HOTEL, MOTIVO_GUARDERIA } from "../../src/lib/prospectos/calidad.ts";
+import { ciudadDeDireccion, claveMarca, agruparSucursales, procesarCalidad, revisarHotelGuarderia, revisarGobiernoRefugio, MOTIVO_HOTEL, MOTIVO_GUARDERIA, MOTIVO_GOBIERNO } from "../../src/lib/prospectos/calidad.ts";
 import { clasificarLote, giroDeServicios } from "../../src/lib/prospectos/clasificar.ts";
 import { crearLlamarIA } from "../../src/lib/prospectos/ia.ts";
 import { armarLista } from "../../src/lib/prospectos/lista.ts";
@@ -378,6 +378,11 @@ try {
     ok(R({ nombre: "Club Doggy Estancia Infantil y Centro de Estimulación Temprana", giro: "guarderia" }) === MOTIVO_GUARDERIA, "«estancia infantil» gana a «doggy»");
     ok(R({ nombre: "Hotel Mirador", giro: "mixto", giro_busqueda: "hotel" }) === MOTIVO_HOTEL && R({ nombre: "Estancia Pequeñines", giro: "mixto", giro_busqueda: "guarderia" }) === MOTIVO_GUARDERIA && R({ nombre: "Hotel Mirador", giro: "mixto", giro_busqueda: "estetica" }) === null, "un mixto que salió de búsqueda de hotel o guardería también; de otra búsqueda, no");
     ok(R({ nombre: "Clínica Vida", giro: "veterinaria" }) === null && R({ nombre: "Salón Bella", giro: "estetica" }) === null, "a veterinaria y estética no les aplica");
+    const G = (nombre, x = {}) => revisarGobiernoRefugio({ nombre, web_resumen: null, google_tipos: [], ...x });
+    ok(["Centro de Control Canino y Felino de Apodaca", "Centro antirrábico Iztapalapa", "Perrera Municipal de Veracruz", "Módulo de Bienestar Animal", "Bienestar Animal Apodaca", "Hospital Veterinario Municipal", "Centro Municipal De Atención Canina", "Refugio animal de sahuayo", "Albergue Corazón Canino", "Santuario de Patitas AC", "Facultad de Medicina Veterinaria y Zootecnia de la UJED", "Hospital Veterinario UJAT"].every((n) => G(n) === MOTIVO_GOBIERNO), "gobierno, antirrábico, perrera municipal, bienestar animal, refugio, santuario y facultad: «Gobierno, refugio o escuela»");
+    ok(G("CENTRO DE SALUD ANIMAL", { web_resumen: "Gobierno Municipal de Zapotlán El Grande, Jalisco." }) === MOTIVO_GOBIERNO && G("Clínica Veterinaria Bienestar y Adopción Animal Tláhuac", { web_resumen: "Alcaldía de Tláhuac clínica veterinaria" }) === MOTIVO_GOBIERNO, "una web que se presenta como gobierno o alcaldía también");
+    ok(["Veterinaria El Refugio", "Veterianaria EL Refugio", "Veterinaria Rescate Médico", "Clinica Veterinaria (médico egresado de la UNAM)", "Hospital Veterinario Animal Palace - Tecnológico", "Centro de Bienestar Animal y Clínica Veterinaria COYOTEPETS", "Clínica Veterinaria Bienestar Animal (No gubernamental)", "La Perrera de Gaby", "Escuela Canina Walkie Trainings", "Dog Jancke (hotel y escuela canina)"].every((n) => G(n) === null), "se quedan: «El Refugio» como nombre, egresado de la UNAM, avenida Tecnológico, clínicas privadas de «bienestar animal», perrera privada y escuelas de adiestramiento");
+    ok(G("Fryam ac", { web_resumen: "Fryam es un hospital veterinario y albergue para perros" }) === null && G("Grupo Agroveterinario El Progreso", { google_tipos: ["veterinary_care", "ranch", "government_office"] }) === null, "un refugio que cobra (hospital) y un comercio con «government_office» entre muchas categorías se quedan");
 
     // En la base: calidad descarta, «Contactar hoy» los saca y rellena, revertir aguanta la siguiente corrida.
     const DIR = (i) => `Calle ${i}, Centro, 78000 San Luis Potosí, S.L.P., México`;
@@ -387,6 +392,7 @@ try {
     const mX = await crear({ nombre: `Posada Las Flores ${SUF}`, giro: "mixto", giro_busqueda: "hotel", direccion: DIR(22), telefono: tel(122), google_tipos: ["lodging"] });
     const hC = await crear({ nombre: `Hotel para perros Toby ${SUF}`, giro: "hotel", direccion: DIR(23), telefono: tel(123), google_tipos: ["hotel"], resenas: 90000 });
     const hR = await crear({ nombre: `Pensión Doña Lupe ${SUF}`, giro: "hotel", direccion: DIR(24), telefono: tel(124), google_tipos: ["lodging"], resenas: 80000 });
+    const cC = await crear({ nombre: `Centro de Control Canino Municipal ${SUF}`, giro: "veterinaria", direccion: DIR(25), telefono: tel(125), google_tipos: ["veterinary_care"] });
     const lee = async (id) => (await A.from("prospectos").select("*").eq("id", id).single()).data;
     // La lista de hoy ya tenía al hotel para personas (se armó antes de la limpieza).
     const F5 = "2099-02-01";
@@ -398,6 +404,8 @@ try {
     ok(h1.etapa === "descartado" && h1.descarte_tipo === "no_es_del_giro" && h1.descarte_motivo === MOTIVO_HOTEL, "en la base: el hotel para personas queda «Descartado (no es del giro)» con «Hotel para personas»", JSON.stringify({ e: h1.etapa, m: h1.descarte_motivo }));
     ok(g1.etapa === "descartado" && g1.descarte_motivo === MOTIVO_GUARDERIA && m1.etapa === "descartado" && m1.descarte_motivo === MOTIVO_HOTEL, "la guardería infantil y el mixto de búsqueda de hotel también");
     ok(c1.etapa === "nuevo", "el hotel para perros se queda");
+    const cc1 = await lee(cC.id);
+    ok(cc1.etapa === "descartado" && cc1.descarte_tipo === "no_es_del_giro" && cc1.descarte_motivo === MOTIVO_GOBIERNO && rc.gobiernoRefugioEscuela >= 1, "en la base: el centro de control canino municipal queda descartado con «Gobierno, refugio o escuela»");
     ok(rc.hotelesPersonas >= 2 && rc.guarderiasInfantiles >= 1, `la corrida los cuenta (${rc.hotelesPersonas} hoteles, ${rc.guarderiasInfantiles} guarderías)`);
     const { data: ev } = await A.from("prospectos_eventos").select("texto").eq("prospecto_id", hP.id).eq("tipo", "clasificacion");
     ok(ev.some((e) => /Hotel para personas/.test(e.texto)), "queda en su historial");
