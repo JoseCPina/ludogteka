@@ -44,6 +44,10 @@
     {
       "path": "/api/cron/indexnow",
       "schedule": "53 * * * *"
+    },
+    {
+      "path": "/api/cron/prospectos",
+      "schedule": "0 13 * * *"
     }
   ]
 }
