@@ -227,6 +227,50 @@ export function revisarHotelGuarderia(p: ParaRevisar): string | null {
   return evidenciaMascotas(p) ? null : motivoLimpieza(p);
 }
 
+// ── Gobierno, refugio o escuela (18 de octubre de 2026) ─────────────────────────────────────────────────────────
+// Centros de control animal y antirrábicos, bienestar animal municipal o estatal, perreras, protectoras y refugios
+// sin servicio de pago, y facultades o escuelas de veterinaria: no compran un sistema. Aplica a todos los giros.
+// Se mira el nombre y el título/descripción de su web; un refugio o una protectora que además ofrece un servicio
+// de pago (pensión, estética, clínica…) se queda.
+export const MOTIVO_GOBIERNO = "Gobierno, refugio o escuela";
+
+const GOBIERNO = /\b(control (animal|canino|canina|de animales|de fauna|y (asistencia|bienestar) animal)|centro (de )?(control|atencion) (canin[oa]|animal)|antirrabic[oa]s?|perreras? municipal(es)?|caan|cecan|ceca|zoonosis|(bienestar|proteccion|atencion|salud) animal( (municipal|estatal|del municipio|del estado))?( [a-z]+)? (municipal|estatal)|(direccion|coordinacion|departamento|modulo|unidad|centro|instituto|jefatura|subdireccion) (municipal )?de (bienestar|proteccion|control|atencion) (y [a-z]+ )?animal|(municipio|municipal|ayuntamiento|gobierno|h\.? ayuntamiento|secretaria|dif) [^|]{0,40}animal|animal [^|]{0,20}(municipal|estatal))\b/;
+const REFUGIO = /\b(refugios?|albergues?\b[^|]{0,30}\b(animal(es)?|perr[oa]s?|gat[oa]s?|canin[oa]s?|felin[oa]s?|mascotas?|patitas|huellitas)|protector(a|as)|rescates?|rescatistas?|adopcion(es)?|adopta|adoptame|santuarios?|asociacion protectora|sociedad protectora|patrulla animal|sin hogar|callejer[oa]s)\b/;
+const ESCUELA = /\b(facultad|escuela de (medicina )?veterinaria|universidad|universitari[oa]|fmvz|licenciatura en medicina veterinaria)\b/;
+// Siglas de universidades: solo en el nombre y sin «egresado de» (un médico egresado de la UNAM no es la facultad).
+const SIGLAS_UNIVERSIDAD = /\b(unam|uanl|udeg|udg|uaslp|buap|uaq|uady|uabc|uan|uaa|uach|uaem|uacj|uv|uvm|ipn|uat|ujat|unach)\b/;
+const VETERINARIA_TEXTO = /\b(veterinari[ao]s?|medicina veterinaria|zootecnia|mvz|grandes especies|especies menores)\b/;
+// «Bienestar Animal Apodaca», «Casa de Bienestar Animal de San Nicolás»: el nombre ES la dependencia (sin clínica).
+const BIENESTAR_COMO_NOMBRE = /^(casa |centro |modulo |unidad |direccion |coordinacion )?(de )?(bienestar|proteccion|control) animal\b/;
+const CLINICA = /\b(clinica|veterinari[ao]|consultorio|hospital|estetica|pension|hotel)\b/;
+const VET_MUNICIPAL = /\b(veterinari[ao]|clinica|hospital|consultorio)\b[^|]{0,30}\bmunicipal\b|\bmunicipal\b[^|]{0,20}\b(veterinari[ao]|bienestar)\b/;
+// Un refugio o protectora que también cobra un servicio se queda.
+const SERVICIO_DE_PAGO = /\b(pension|hotel|hospedaje|guarderia|daycare|estetica|grooming|bano|banos|corte|spa|clinica|consultorio|consulta|hospital|veter[a-z]*|vet|medic[oa]|mvz|vacunacion|tienda|petshop|boutique|adiestramiento)\b/;
+
+/** null = se queda; MOTIVO_GOBIERNO si es gobierno, refugio o escuela. */
+export function revisarGobiernoRefugio(p: Pick<ParaRevisar, "nombre" | "web_resumen" | "google_tipos">): string | null {
+  const textos = [p.nombre, p.web_resumen].filter(Boolean).map((t) => norm(t as string));
+  const todo = textos.join(" | ");
+  const tipos = p.google_tipos ?? [];
+  const nombre = norm(p.nombre);
+  // «Centro de Bienestar Animal y Clínica Veterinaria X»: una clínica con ese nombre es privada, salvo que diga municipal.
+  const clinicaPrivada = /\b(clinica|consultorio)\b/.test(nombre) && !/\b(municipal|gobierno|estatal|ayuntamiento|dif)\b/.test(nombre);
+  if ((!clinicaPrivada && textos.some((t) => GOBIERNO.test(t))) || VET_MUNICIPAL.test(nombre)) return MOTIVO_GOBIERNO;
+  if (BIENESTAR_COMO_NOMBRE.test(nombre) && !CLINICA.test(nombre)) return MOTIVO_GOBIERNO;
+  // «Centro Municipal de Atención Canina», o una web que se presenta como gobierno municipal o del estado.
+  const deAnimales = /\b(canin[oa]s?|felin[oa]s?|animal(es)?|antirrabic[oa]|zoonosis)\b/.test(nombre);
+  if (deAnimales && /\b(municipal|estatal|ayuntamiento|gobierno)\b/.test(nombre)) return MOTIVO_GOBIERNO;
+  if (deAnimales && p.web_resumen && /\b(gobierno (municipal|del estado|estatal|de [a-z]+)|h\.? ?ayuntamiento|ayuntamiento de|alcaldia de [a-z]+)\b/.test(norm(p.web_resumen))) return MOTIVO_GOBIERNO;
+  // Google pone «government_office» entre muchas categorías de comercios; solo cuenta si es de las dos primeras.
+  if (tipos.slice(0, 2).some((t) => /^(local_government_office|city_hall|government_office)$/.test(t))) return MOTIVO_GOBIERNO;
+  const escuelaTipo = tipos.some((t) => /^(university|school|secondary_school)$/.test(t));
+  const siglas = SIGLAS_UNIVERSIDAD.test(nombre) && !/\b(egresad[oa]s?|certificad[oa]s?|formad[oa]s?)\b/.test(nombre);
+  if (VETERINARIA_TEXTO.test(todo) && (textos.some((t) => ESCUELA.test(t)) || escuelaTipo || siglas)) return MOTIVO_GOBIERNO;
+  // Un refugio o protectora que también cobra (lo dice su nombre o su web) se queda.
+  if (textos.some((t) => REFUGIO.test(t)) && !SERVICIO_DE_PAGO.test(todo)) return MOTIVO_GOBIERNO;
+  return null;
+}
+
 // ── El proceso ───────────────────────────────────────────────────────────────────────────────────────────────────
 
 export type OpcionesCalidad = {
@@ -241,7 +285,7 @@ export type OpcionesCalidad = {
   giroDeServicios: (s: Servicio[], respaldo: string) => string;
 };
 
-export type ResultadoCalidad = { ciudades: number; clasificados: number; descartados: number; giroCambiado: number; sucursales: number; hotelesPersonas: number; guarderiasInfantiles: number; errores: string[] };
+export type ResultadoCalidad = { ciudades: number; clasificados: number; descartados: number; giroCambiado: number; sucursales: number; hotelesPersonas: number; guarderiasInfantiles: number; gobiernoRefugioEscuela: number; errores: string[] };
 
 const COLS = "id, nombre, giro, giro_busqueda, ciudad, ciudad_norm, ciudad_busqueda, estado, direccion, google_tipos, calificacion, resenas, web, web_resumen, instagram, facebook, etapa, principal_id, negocio_cliente_id, clasificado_at, clasificacion_revertida_at, no_agrupar, descarte_tipo, descarte_motivo, etapa_antes_descarte";
 type Fila = {
@@ -271,7 +315,7 @@ export async function procesarCalidad(o: OpcionesCalidad): Promise<ResultadoCali
   const db = o.db;
   const inicio = Date.now();
   const queda = () => (o.presupuestoMs ?? 600_000) - (Date.now() - inicio);
-  const r: ResultadoCalidad = { ciudades: 0, clasificados: 0, descartados: 0, giroCambiado: 0, sucursales: 0, hotelesPersonas: 0, guarderiasInfantiles: 0, errores: [] };
+  const r: ResultadoCalidad = { ciudades: 0, clasificados: 0, descartados: 0, giroCambiado: 0, sucursales: 0, hotelesPersonas: 0, guarderiasInfantiles: 0, gobiernoRefugioEscuela: 0, errores: [] };
   const anotar = (m: string) => r.errores.length < 30 && r.errores.push(m.slice(0, 300));
   let filas = await todos(db);
 
@@ -349,7 +393,7 @@ export async function procesarCalidad(o: OpcionesCalidad): Promise<ResultadoCali
   filas = await todos(db);
   for (const p of filas) {
     if (p.etapa === "descartado" || p.negocio_cliente_id || p.clasificacion_revertida_at) continue;
-    const motivo = revisarHotelGuarderia(p);
+    const motivo = revisarHotelGuarderia(p) ?? revisarGobiernoRefugio(p);
     if (!motivo) continue;
     const { error } = await db.from("prospectos").update({ etapa_antes_descarte: p.etapa, etapa: "descartado", descarte_tipo: "no_es_del_giro", descarte_motivo: motivo }).eq("id", p.id);
     if (error) {
@@ -357,8 +401,9 @@ export async function procesarCalidad(o: OpcionesCalidad): Promise<ResultadoCali
       continue;
     }
     if (motivo === MOTIVO_GUARDERIA) r.guarderiasInfantiles++;
+    else if (motivo === MOTIVO_GOBIERNO) r.gobiernoRefugioEscuela++;
     else r.hotelesPersonas++;
-    await db.from("prospectos_eventos").insert({ prospecto_id: p.id, tipo: "clasificacion", texto: `Descartado (${motivo}): no menciona mascotas en su nombre, categorías de Google, web ni redes` });
+    await db.from("prospectos_eventos").insert({ prospecto_id: p.id, tipo: "clasificacion", texto: motivo === MOTIVO_GOBIERNO ? `Descartado (${motivo}): por su nombre o su web es una dependencia de gobierno, un refugio sin servicio de pago o una escuela` : `Descartado (${motivo}): no menciona mascotas en su nombre, categorías de Google, web ni redes` });
   }
 
   // 3. Sucursales: lo vivo y lo que descartó la clasificación (una sucursal de un negocio del giro con otra
@@ -379,7 +424,7 @@ export async function procesarCalidad(o: OpcionesCalidad): Promise<ResultadoCali
     if (p.principal_id === principal) continue;
     const pr0 = filas.find((x) => x.id === principal);
     // Lo que descartó la limpieza de hotel y guardería no se rescata por la marca: no habla de mascotas.
-    const deLimpieza = p.descarte_motivo === MOTIVO_HOTEL || p.descarte_motivo === MOTIVO_GUARDERIA;
+    const deLimpieza = p.descarte_motivo === MOTIVO_HOTEL || p.descarte_motivo === MOTIVO_GUARDERIA || p.descarte_motivo === MOTIVO_GOBIERNO;
     const quitarDescarte = p.etapa === "descartado" && p.descarte_tipo === "no_es_del_giro" && !deLimpieza && pr0?.etapa !== "descartado";
     const { error } = await db
       .from("prospectos")
