@@ -1,0 +1,35 @@
+{
+  "slug": "agendapro",
+  "nombre": "AgendaPro",
+  "sitio": "https://agendapro.com/mx",
+  "region": "latam",
+  "giro": "Agenda y gestión para negocios de servicios con cita en Latinoamérica, entre ellos estéticas caninas y veterinarias. No menciona hotel ni guardería.",
+  "resumen": "Plataforma latinoamericana de agenda en línea con precios en pesos para México; su directorio de reservas muestra veterinarias y estéticas caninas mexicanas que la usan.",
+  "precio": "En pesos (MXN) más IVA, al mes: Individual $299 (1 profesional), Básico desde $550, Premium desde $1,500 y Pro desde $4,500 (de 2 a 20 profesionales); con pago anual, 2 meses gratis. Aparte: recordatorios por WhatsApp desde $100 al mes por 50 mensajes y su terminal, $250 al mes o $2,500, con tasa de 2.29 % + IVA. Consultado el 17 de octubre de 2026.",
+  "idioma": "Español, con sitio y precios para México.",
+  "cfdi": "Su tabla de planes marca la facturación electrónica como «Próximamente».",
+  "pagos": "Pagos en línea de las citas y terminal propia opcional; no menciona Mercado Pago ni Clip.",
+  "modulos": "Agenda en línea, sitio de reservas, recordatorios y caja en todos los planes; ficha clínica personalizada, consentimiento informado, inventario, comisiones, marketing por correo y reportes desde Premium; videollamadas como complemento.",
+  "mejorEn": [
+    "Sitio de reservas donde el cliente agenda solo y aparece en su directorio; en PeluDesk el dueño consulta en su portal y agenda por WhatsApp.",
+    "Plan para un solo profesional desde $299 + IVA.",
+    "Videollamadas y asistente de marketing como complementos."
+  ],
+  "conviene": [
+    "Lo que más necesitas es que tus clientes reserven en línea y tu negocio es sobre todo de citas (estética o consulta).",
+    "Trabajas solo y quieres empezar con el plan más chico."
+  ],
+  "noConviene": [
+    "Necesitas facturar CFDI hoy desde el cobro.",
+    "Das hotel o guardería con cupo, pases y check-in, o recetas veterinarias con SITPV."
+  ],
+  "peludesk": "PeluDesk cobra un solo plan con todo, sin mensajes ni terminal aparte, factura CFDI y lleva hotel, guardería, estética y veterinaria juntos. AgendaPro es más fuerte en reservas en línea y marketing.",
+  "fuentes": {
+    "giro": [{ "nombre": "AgendaPro: software de estética canina", "url": "https://agendapro.com/blog/software-estetica-canina/" }, { "nombre": "Directorio de AgendaPro: veterinaria en México", "url": "https://agendapro.com/mp/mx/pl/veterinaria-la-pulga/55867" }],
+    "precio": [{ "nombre": "Planes de AgendaPro México", "url": "https://agendapro.com/mx/planes" }],
+    "idioma": [{ "nombre": "Planes de AgendaPro México", "url": "https://agendapro.com/mx/planes" }],
+    "cfdi": [{ "nombre": "Planes de AgendaPro México", "url": "https://agendapro.com/mx/planes" }],
+    "pagos": [{ "nombre": "Planes de AgendaPro México", "url": "https://agendapro.com/mx/planes" }],
+    "modulos": [{ "nombre": "Planes de AgendaPro México", "url": "https://agendapro.com/mx/planes" }]
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "slug": "qvet",
+  "nombre": "QVET",
+  "sitio": "https://qvet.net",
+  "region": "latam",
+  "giro": "Clínicas, grupos y hospitales veterinarios. Su edición estándar incluye servicios de peluquería y la profesional, residencia canina (hotel). No menciona guardería.",
+  "resumen": "Software veterinario de una empresa española (QSOFT) con oficina en la Ciudad de México y clientes en España, Portugal y Latinoamérica.",
+  "precio": "No publica precios: ofrece una demostración. Su pasarela de pago cobra en euros o dólares. Consultado el 17 de octubre de 2026.",
+  "idioma": "Español (también portugués).",
+  "cfdi": "Dice facturar conforme a los requisitos legales de México, entre otros países; no detalla versión del CFDI ni proveedor de timbrado.",
+  "pagos": "Su sitio no nombra procesador ni terminal integrada.",
+  "modulos": "Agenda múltiple, historia clínica, recetas, hospitalización, inventario y almacén, caja de clínica y tienda, peluquería, residencia canina, varias sucursales y empresas, campañas por WhatsApp y la app para dueños LaClinica (más de 500,000 descargas según su sitio).",
+  "mejorEn": [
+    "Experiencia con hospitales y grupos veterinarios grandes, con varias empresas y sucursales.",
+    "App para dueños con mucho uso (más de 500,000 descargas, según su sitio).",
+    "Lleva años en el mercado y tiene equipo en México."
+  ],
+  "conviene": [
+    "Tienes un hospital o un grupo de clínicas y quieres un sistema veterinario con años de recorrido.",
+    "La clínica es el centro y la peluquería y el hotel son servicios secundarios."
+  ],
+  "noConviene": [
+    "Quieres saber el precio antes de hablar con ventas.",
+    "Necesitas guardería con cupo, pases y check-in, o el control de folios del SITPV."
+  ],
+  "peludesk": "PeluDesk publica su precio, da el mismo plan a todos y trae guardería con pases además de hotel, estética y veterinaria. QVET tiene más recorrido en hospitales y grupos grandes.",
+  "fuentes": {
+    "giro": [{ "nombre": "qvet.net", "url": "https://qvet.net/" }, { "nombre": "Características de QVET", "url": "https://qvet.net/caracteristicas/" }],
+    "precio": [{ "nombre": "qvet.net", "url": "https://qvet.net/" }, { "nombre": "Pagos de QVET", "url": "https://pagos.qvet.net/tienda-online-compra.aspx" }],
+    "idioma": [{ "nombre": "qvet.net", "url": "https://qvet.net/" }],
+    "cfdi": [{ "nombre": "qvet.net", "url": "https://qvet.net/" }, { "nombre": "Características de QVET", "url": "https://qvet.net/caracteristicas/" }],
+    "pagos": [{ "nombre": "Características de QVET", "url": "https://qvet.net/caracteristicas/" }],
+    "modulos": [{ "nombre": "Características de QVET", "url": "https://qvet.net/caracteristicas/" }]
+  }
+}

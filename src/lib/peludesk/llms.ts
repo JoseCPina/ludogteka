@@ -100,7 +100,7 @@ export async function llmsFull(): Promise<string> {
   }
   l.push(`## Alternativas (revisado el ${REVISADO_ALTERNATIVAS})`, "");
   for (const a of todasLasAlternativas()) {
-    l.push(`### ${a.nombre}`, "", `URL: ${url(`/alternativas/${a.slug}`)} · Sitio: ${a.sitio}`, "", a.resumen, "", `- Giro: ${a.giro}`, `- Precio: ${a.precio}`, `- Idioma: ${a.idioma}`, `- CFDI: ${a.cfdi}`, `- Pagos: ${a.pagos}`, `- Conviene si: ${a.conviene.join(" ")}`, "");
+    l.push(`### ${a.nombre}`, "", `URL: ${url(`/alternativas/${a.slug}`)} · Sitio: ${a.sitio}`, "", a.resumen, "", `- Giro: ${a.giro}`, `- Precio: ${a.precio}`, `- Idioma: ${a.idioma}`, `- CFDI: ${a.cfdi}`, `- Pagos: ${a.pagos}`, `- Qué trae: ${a.modulos}`, `- Mejor que PeluDesk en: ${a.mejorEn.join(" ")}`, `- Conviene si: ${a.conviene.join(" ")}`, `- Fuentes: ${[...new Set(Object.values(a.fuentes).flat().map((f) => f.url))].join(" · ")}`, "");
   }
   l.push("## Centro de ayuda (texto completo)", "");
   for (const a of ARTICULOS) {

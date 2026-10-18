@@ -2,18 +2,32 @@
   "slug": "petexec",
   "nombre": "PetExec",
   "sitio": "https://www.petexec.net",
-  "giro": "Hoteles caninos (kennels), guarderías y estética.",
-  "resumen": "Software para pensiones y guarderías de mascotas de una empresa estadounidense, con reservas, expediente y facturación a clientes.",
-  "precio": "Los directorios la ubican en dólares por mes, con un precio de entrada que no coincide entre ellos. Pide la cotización a su equipo.",
-  "idioma": "No encontramos evidencia pública de interfaz o soporte en español.",
-  "cfdi": "No encontramos evidencia pública de facturación CFDI 4.0.",
-  "pagos": "Pagos con Stripe y otras pasarelas de Estados Unidos; no encontramos evidencia de Mercado Pago ni Clip.",
+  "region": "internacional",
+  "giro": "Hoteles caninos, guarderías, estéticas, entrenamiento y servicios programados. No menciona clínicas veterinarias.",
+  "resumen": "Software estadounidense para pensiones y guarderías de mascotas que desde noviembre de 2024 es de Togetherwork y forma parte de la familia de Gingr.",
+  "precio": "No publica precios vigentes: su antigua página de compra ya no existe y sus botones de contacto y de prueba llevan a un formulario de Gingr para pedir una demostración. Consultado el 17 de octubre de 2026.",
+  "idioma": "Su sitio está solo en inglés y no menciona otro idioma.",
+  "cfdi": "Su sitio no menciona CFDI ni facturación mexicana.",
+  "pagos": "Su sitio enlaza una sección de procesamiento de pagos que ya no carga; no nombra procesador ni países. No encontramos Mercado Pago ni Clip.",
+  "modulos": "Reservas, expediente de la mascota, app móvil, mensajes ilimitados, acompañamiento para el negocio (coaching) y migración de datos.",
+  "mejorEn": [
+    "Años en el mercado estadounidense de pensiones y guarderías, con soporte que, según su sitio, contesta el teléfono.",
+    "Respaldo de Togetherwork y de la familia de Gingr si ya eres su cliente."
+  ],
   "conviene": [
-    "Tienes un kennel tradicional en Estados Unidos y quieres una herramienta con años en ese mercado."
+    "Ya lo usas en Estados Unidos y quieres seguir dentro de la familia de Gingr."
   ],
   "noConviene": [
-    "Necesitas CFDI, terminal mexicana o portal del dueño en español.",
-    "Tienes también una clínica veterinaria."
+    "Buscas contratar hoy un sistema con precio publicado, en español y en pesos.",
+    "Necesitas CFDI, terminal en México o también llevas una clínica veterinaria."
   ],
-  "peludesk": "PeluDesk cubre reservas con cupo y pases como PetExec, con caja y facturación pensadas para México."
+  "peludesk": "PeluDesk cubre reservas con cupo, pases y check-in como PetExec, con caja, facturación y soporte pensados para México.",
+  "fuentes": {
+    "giro": [{ "nombre": "petexec.net", "url": "https://www.petexec.net" }],
+    "precio": [{ "nombre": "petexec.net", "url": "https://www.petexec.net" }, { "nombre": "Formulario de PetExec en Gingr", "url": "https://www.gingrapp.com/petexecinquiries" }],
+    "idioma": [{ "nombre": "petexec.net", "url": "https://www.petexec.net" }],
+    "cfdi": [{ "nombre": "petexec.net", "url": "https://www.petexec.net" }],
+    "pagos": [{ "nombre": "petexec.net", "url": "https://www.petexec.net" }],
+    "modulos": [{ "nombre": "petexec.net", "url": "https://www.petexec.net" }, { "nombre": "Togetherwork compra PetExec", "url": "https://petexec.net/resources/business-operations/togetherwork-acquires-petexec" }]
+  }
 }

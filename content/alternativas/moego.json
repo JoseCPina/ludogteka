@@ -2,19 +2,35 @@
   "slug": "moego",
   "nombre": "MoeGo",
   "sitio": "https://www.moego.pet",
-  "giro": "Estéticas y servicios de grooming, incluidas unidades móviles; también ofrece guardería y hotel.",
-  "resumen": "Software de agenda, cobros y comunicación con clientes pensado para grooming, de una empresa estadounidense.",
-  "precio": "Cobra en dólares por mes y, según su plan, por unidad móvil. Los directorios de software no coinciden entre sí, así que no publicamos cifras: míralas en su sitio.",
-  "idioma": "No encontramos evidencia pública de interfaz, portal o soporte en español.",
-  "cfdi": "No encontramos evidencia pública de facturación CFDI 4.0.",
-  "pagos": "Procesamiento de pagos propio pensado para Estados Unidos; no encontramos evidencia de Mercado Pago ni Clip.",
+  "region": "internacional",
+  "giro": "Estéticas de salón y móviles, guardería y hotel. Entrenamiento, venta de productos y cuidado a domicilio aparecen como «próximamente». No menciona clínicas veterinarias.",
+  "resumen": "Software estadounidense de agenda, cobros y comunicación con clientes, muy fuerte en estéticas móviles con varias unidades.",
+  "precio": "En dólares (USD), al mes: Basic US$49 (un solo miembro del equipo), Growth US$99 por unidad móvil, Ultimate US$159 por unidad móvil y Enterprise a cotizar. No publica comisiones de cobro ni cargos por mensajes de más. Consultado el 17 de octubre de 2026.",
+  "idioma": "Su sitio y su página de precios están solo en inglés y no mencionan español ni otro idioma.",
+  "cfdi": "Envía facturas en línea (invoices), pero su sitio no menciona CFDI ni facturación mexicana.",
+  "pagos": "Procesador de tarjetas propio integrado (MoeGo Pay). Para negocios fuera de Estados Unidos anuncia «MoeGo Pay International» en despliegue, sin lista de países. No menciona Mercado Pago ni Clip.",
+  "modulos": "Agenda inteligente, reservas en línea, rutas optimizadas para unidades móviles, lista de espera, recordatorios, reporte de grooming para el dueño, solicitud de reseñas, marketing automatizado, CRM y tablero de indicadores.",
+  "mejorEn": [
+    "Rutas optimizadas y agenda por unidad para estéticas móviles: PeluDesk no tiene rutas ni cuadrillas.",
+    "Marketing automatizado, recuperación de reservas abandonadas y solicitud de reseñas.",
+    "Reservas en línea que el dueño hace solo; en el portal de PeluDesk el dueño consulta y agenda por WhatsApp.",
+    "Declara certificaciones SOC 2 Tipo 2 y PCI DSS."
+  ],
   "conviene": [
-    "Tienes una operación de grooming móvil con varias unidades y vendes o facturas en Estados Unidos o Canadá.",
-    "Tu equipo trabaja cómodo en inglés."
+    "Tienes estéticas móviles con varias unidades y cobras en Estados Unidos o Canadá.",
+    "Tu equipo trabaja cómodo en inglés y no necesitas factura mexicana."
   ],
   "noConviene": [
-    "Necesitas factura mexicana y soporte en español.",
-    "También llevas veterinaria clínica con recetas y SITPV."
+    "Necesitas factura CFDI 4.0, cobro en pesos y todo en español.",
+    "También llevas consulta veterinaria con recetas y SITPV."
   ],
-  "peludesk": "PeluDesk no tiene rutas ni cuadrillas de unidades móviles. Sí tiene agenda por estilista, precios por raza y pelaje, comisiones y caja en pesos."
+  "peludesk": "PeluDesk no tiene rutas para unidades móviles. Sí tiene agenda por estilista, precios por raza, talla y pelaje, comisiones y caja en pesos, junto con hotel, guardería y veterinaria en el mismo plan.",
+  "fuentes": {
+    "giro": [{ "nombre": "moego.pet", "url": "https://www.moego.pet" }],
+    "precio": [{ "nombre": "Precios de MoeGo", "url": "https://www.moego.pet/pricing" }],
+    "idioma": [{ "nombre": "moego.pet", "url": "https://www.moego.pet" }, { "nombre": "Precios de MoeGo", "url": "https://www.moego.pet/pricing" }],
+    "cfdi": [{ "nombre": "Precios de MoeGo", "url": "https://www.moego.pet/pricing" }],
+    "pagos": [{ "nombre": "Precios de MoeGo", "url": "https://www.moego.pet/pricing" }, { "nombre": "Ayuda de MoeGo: MoeGo Pay fuera de EE. UU.", "url": "https://help.moego.pet/en/articles/13245992-smooth-transition-to-moego-pay-non-us" }],
+    "modulos": [{ "nombre": "moego.pet", "url": "https://www.moego.pet" }]
+  }
 }

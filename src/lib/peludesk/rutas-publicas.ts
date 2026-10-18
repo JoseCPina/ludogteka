@@ -11,4 +11,4 @@ export const SLUGS_GUIA = [
   "recordatorios-por-whatsapp-y-portal-para-duenos-de-mascotas",
 ] as const;
 
-export const SLUGS_ALTERNATIVA = ["moego", "gingr", "petexec"] as const;
+export const SLUGS_ALTERNATIVA = ["moego", "gingr", "petexec", "sicar", "agendapro", "qvet", "okvet"] as const;
