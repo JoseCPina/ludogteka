@@ -29,6 +29,15 @@ const CIUDAD_COMO_SE_DICE: Record<string, string> = {
   "san luis": "San Luis Potosí",
   "heroica puebla de zaragoza": "Puebla",
   "monterrey centro": "Monterrey",
+  queretaro: "Querétaro",
+  qro: "Querétaro",
+  slp: "San Luis Potosí",
+  "s l p": "San Luis Potosí",
+  gdl: "Guadalajara",
+  jal: "Guadalajara",
+  mty: "Monterrey",
+  "n l": "Monterrey",
+  cdmx: "Ciudad de México",
 };
 
 export const sinAcentos = (t: string) =>
@@ -55,6 +64,7 @@ export function ciudadDeDireccion(direccion: string | null | undefined): { ciuda
   if (!ciudad) return null;
   // En la capital, Google pone a veces la alcaldía en lugar de la ciudad.
   if (estado === "Ciudad de México") ciudad = "Ciudad de México";
+  ciudad = ciudad.replace(/^Cdad\.?\s+/i, "Ciudad ").replace(/^Cd\.\s+/i, "Ciudad ");
   ciudad = CIUDAD_COMO_SE_DICE[sinAcentos(ciudad)] ?? ciudad;
   return { ciudad, estado };
 }
@@ -65,7 +75,9 @@ const PALABRAS_DE_GIRO = new Set(
   ("estetica esteticas canina canino caninas caninos hotel hoteles guarderia guarderias veterinaria veterinario veterinarias veterinarios " +
     "clinica clinicas hospital consultorio spa daycare day care pet pets dog dogs perro perros perruno perrunos mascota mascotas grooming groomer " +
     "boutique y e de del la las el los para and the center centro club sucursal suc oficial mx mex slp cdmx gdl mty qro sa cv " +
-    "pension pensiones estancia resort kinder casa").split(" ")
+    "pension pensiones estancia resort kinder casa animal animales salud health vida vet vets medica medico medicina hogar servicio servicios " +
+    // Ciudades: «Club Dog Querétaro» y «Hospital Veterinario Querétaro» no son la misma marca.
+    "san luis potosi queretaro monterrey guadalajara mexico ciudad zapopan juriquilla pedro garza garcia nicolas soledad tlaquepaque apodaca santiago").split(" ")
 );
 
 /** La marca de un nombre: sin las palabras del giro, sin espacios. «CanHijos hotel & daycare» y «CAN HIJOS» → «canhijos». */
@@ -250,6 +262,14 @@ export async function procesarCalidad(o: OpcionesCalidad): Promise<ResultadoCali
   filas = await todos(db);
   const vivos = filas.filter((p) => !p.negocio_cliente_id && !p.no_agrupar && (p.etapa !== "descartado" || p.descarte_tipo === "no_es_del_giro"));
   const grupos = agruparSucursales(vivos.map((p) => ({ id: p.id, nombre: p.nombre, ciudad_norm: p.ciudad_norm, estado: p.estado, instagram: p.instagram, facebook: p.facebook, resenas: p.resenas, principal_id: p.principal_id, descartado: p.etapa === "descartado" })));
+  // Lo que se agrupó con reglas anteriores y ya no se agruparía (ni tiene el mismo nombre que su principal) se suelta.
+  for (const p of filas) {
+    if (!p.principal_id || grupos.has(p.id) || p.no_agrupar) continue;
+    const pr = filas.find((x) => x.id === p.principal_id);
+    if (pr && sinAcentos(pr.nombre) === sinAcentos(p.nombre)) continue;
+    await db.from("prospectos").update({ principal_id: null }).eq("id", p.id);
+    await db.from("prospectos_eventos").insert({ prospecto_id: p.id, tipo: "sucursal", texto: "Ya no se agrupa como sucursal (otra marca)" });
+  }
   for (const [id, principal] of grupos) {
     const p = filas.find((x) => x.id === id)!;
     if (p.principal_id === principal) continue;

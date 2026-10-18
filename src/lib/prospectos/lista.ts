@@ -25,13 +25,17 @@ type Fila = {
   id: string; nombre: string; giro: string; ciudad: string; slug: string; etapa: string; telefono_norm: string | null; whatsapp: string | null; instagram: string | null;
   calificacion: number | null; resenas: number | null; canal_ultimo_contacto: string | null; ultimo_contacto_at: string | null; seguimientos: number;
   contacto_pausado_at: string | null; principal_id: string | null; negocio_cliente_id: string | null;
+  clasificacion?: { servicios?: string[] } | null;
 };
 
 const PESO_GIRO: Record<string, number> = { guarderia: 3, hotel: 3, mixto: 3, estetica: 2, veterinaria: 1.5 };
 
 /** Prioridad de un prospecto nuevo: giro (guardería y hotel primero), calificación y reseñas. */
-export function puntaje(p: { giro: string; calificacion: number | null; resenas: number | null; whatsapp?: string | null }): number {
-  return (PESO_GIRO[p.giro] ?? 1) * 2 + (p.calificacion ?? 3.5) + Math.log10((p.resenas ?? 0) + 1) * 1.5 + (p.whatsapp ? 0.5 : 0);
+export function puntaje(p: { giro: string; calificacion: number | null; resenas: number | null; whatsapp?: string | null; clasificacion?: { servicios?: string[] } | null }): number {
+  // Un mixto vale como guardería u hotel solo si da alguno de los dos.
+  const s = p.clasificacion?.servicios ?? [];
+  const peso = p.giro === "mixto" && s.length ? (s.includes("guarderia") || s.includes("hotel") ? 3 : 2) : PESO_GIRO[p.giro] ?? 1;
+  return peso * 2 + (p.calificacion ?? 3.5) + Math.log10((p.resenas ?? 0) + 1) * 1.5 + (p.whatsapp ? 0.5 : 0);
 }
 
 export const linkDe = (sitio: string, slug: string) => `${sitio.replace(/\/$/, "")}/para/${slug}`;
@@ -66,7 +70,7 @@ export async function armarLista(o: OpcionesLista): Promise<ResultadoLista> {
   for (let d = 0; ; d += 1000) {
     const { data, error } = await db
       .from("prospectos")
-      .select("id, nombre, giro, ciudad, slug, etapa, telefono_norm, whatsapp, instagram, calificacion, resenas, canal_ultimo_contacto, ultimo_contacto_at, seguimientos, contacto_pausado_at, principal_id, negocio_cliente_id")
+      .select("id, nombre, giro, ciudad, slug, etapa, telefono_norm, whatsapp, instagram, calificacion, resenas, canal_ultimo_contacto, ultimo_contacto_at, seguimientos, contacto_pausado_at, principal_id, negocio_cliente_id, clasificacion")
       .is("deleted_at", null)
       .is("negocio_cliente_id", null)
       .is("principal_id", null)
