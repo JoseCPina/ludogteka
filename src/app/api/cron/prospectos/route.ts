@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { timingSafeEqual } from "node:crypto";
-import { correrBusqueda, correrCalidad, correrLista } from "@/lib/prospectos/motor";
+import { correrBusqueda, correrCalidad, correrLista, correrNacional } from "@/lib/prospectos/motor";
 
 /**
  * Prospección diaria (vercel.json → crons, 13:00 UTC = 7:00 de la Ciudad de México, que no cambia de horario):
@@ -26,6 +26,7 @@ const mensaje = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export async function GET(request: NextRequest) {
   if (!autorizado(request)) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
+  const inicio = Date.now();
   const salida: Record<string, unknown> = {};
   try {
     const r = await correrBusqueda({ origen: "cron", presupuestoMs: 160_000 });
@@ -33,6 +34,16 @@ export async function GET(request: NextRequest) {
   } catch (e) {
     console.error("[cron] prospectos búsqueda", mensaje(e));
     salida.errorBusqueda = mensaje(e);
+  }
+  // Rotación nacional: solo si PROSPECCION_NACIONAL_TOPE_DIA > 0 (apagada por omisión: cada búsqueda se cobra).
+  const topeNacional = Math.min(500, Number(process.env.PROSPECCION_NACIONAL_TOPE_DIA) || 0);
+  if (topeNacional > 0 && Date.now() - inicio < 100_000) {
+    try {
+      salida.nacional = await correrNacional({ tope: topeNacional, presupuestoMs: 110_000 });
+    } catch (e) {
+      console.error("[cron] prospectos nacional", mensaje(e));
+      salida.errorNacional = mensaje(e);
+    }
   }
   try {
     salida.calidad = await correrCalidad(70_000);
@@ -46,6 +57,6 @@ export async function GET(request: NextRequest) {
     console.error("[cron] prospectos lista", mensaje(e));
     salida.errorLista = mensaje(e);
   }
-  const ok = !salida.errorBusqueda && !salida.errorCalidad && !salida.errorLista;
+  const ok = !salida.errorBusqueda && !salida.errorCalidad && !salida.errorLista && !salida.errorNacional;
   return NextResponse.json({ ok, ...salida }, { status: ok ? 200 : 500 });
 }
