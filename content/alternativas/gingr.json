@@ -1,0 +1,20 @@
+{
+  "slug": "gingr",
+  "nombre": "Gingr",
+  "sitio": "https://www.gingrapp.com",
+  "giro": "Guarderías, hoteles, estética y entrenamiento caninos.",
+  "resumen": "Software de operación para guarderías y hoteles caninos de una empresa estadounidense, con reservas, expediente, comunicación y cobros.",
+  "precio": "Cobra en dólares por mes, con planes por tamaño de negocio y un plan a cotizar. Algunos servicios, como mensajes SMS, pueden costar aparte. Revisa su página de precios.",
+  "idioma": "No encontramos evidencia pública de interfaz o soporte en español.",
+  "cfdi": "No encontramos evidencia pública de facturación CFDI 4.0.",
+  "pagos": "Sus pagos integrados funcionan sobre Stripe y la terminal propia solo figura para algunos países (Estados Unidos, Canadá, Australia, Nueva Zelanda y Reino Unido); México no aparece.",
+  "conviene": [
+    "Operas varias sucursales de guardería y hotel en Estados Unidos, Canadá o el Reino Unido.",
+    "Quieres integraciones con su ecosistema de proveedores de ese mercado."
+  ],
+  "noConviene": [
+    "Quieres cobrar con terminal mexicana y facturar en pesos desde el mismo sistema.",
+    "Tu equipo y tus clientes necesitan todo en español."
+  ],
+  "peludesk": "PeluDesk comparte con Gingr el enfoque de guardería y hotel (cupo, expediente, pases, check-in), y agrega estética y clínica veterinaria en el mismo plan."
+}

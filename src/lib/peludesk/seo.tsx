@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { REDES_PELUDESK } from "@/lib/peludesk/landing";
+import { EMPRESA } from "@/lib/peludesk/legal";
 
 /**
  * SEO de peludesk.mx: el host canónico es UNO (https://peludesk.mx; www
@@ -52,9 +53,16 @@ export const ORGANIZACION = {
   name: "PeluDesk",
   url: SITIO,
   logo: `${SITIO}/marca/peludesk/favicon-180.png`,
+  legalName: EMPRESA.razonSocial,
   email: "contacto@peludesk.mx",
+  areaServed: "MX",
+  knowsLanguage: "es-MX",
+  contactPoint: { "@type": "ContactPoint", contactType: "ventas y soporte", email: "contacto@peludesk.mx", areaServed: "MX", availableLanguage: "es" },
   sameAs: REDES_PELUDESK.map((r) => r.url),
 };
+
+/** La organización como documento propio (la raíz de la gráfica de datos). */
+export const ORGANIZACION_RAIZ = { "@context": "https://schema.org", ...ORGANIZACION };
 
 export function JsonLd({ datos }: { datos: unknown }) {
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(datos).replace(/</g, "\\u003c") }} />;
@@ -75,4 +83,44 @@ export function preguntasFrecuentes(preguntas: readonly (readonly [string, strin
     inLanguage: "es-MX",
     mainEntity: preguntas.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
   };
+}
+
+/** El producto con su oferta única; sale del plan de la base (nunca una cifra escrita aquí). */
+export function aplicacionPeluDesk(plan: { nombre: string; mensual: number } | null, extra: { nombre?: string; url?: string; descripcion?: string } = {}) {
+  const url = extra.url ?? SITIO;
+  return {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "@id": `${SITIO}/#aplicacion`,
+    name: extra.nombre ?? "PeluDesk",
+    url,
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web, iOS y Android (se instala desde el navegador)",
+    inLanguage: "es-MX",
+    description:
+      extra.descripcion ??
+      "Software en español para clínicas veterinarias, guarderías, hoteles y estéticas caninas en México: reservas, caja, contratos, portal para dueños, recordatorios y facturación CFDI.",
+    publisher: { "@id": `${SITIO}/#organizacion` },
+    ...(plan
+      ? {
+          offers: [
+            {
+              "@type": "Offer",
+              name: `${plan.nombre}, plan único`,
+              price: plan.mensual,
+              priceCurrency: "MXN",
+              priceSpecification: { "@type": "UnitPriceSpecification", price: plan.mensual, priceCurrency: "MXN", billingDuration: 1, unitCode: "MON", valueAddedTaxIncluded: false },
+              description: "Más IVA. Sin costo inicial. Incluye todos los módulos.",
+              availability: "https://schema.org/InStock",
+              url: `${SITIO}/precios`,
+            },
+            { "@type": "Offer", name: "Prueba gratis de 15 días", price: 0, priceCurrency: "MXN", description: "15 días con todo abierto, sin tarjeta.", availability: "https://schema.org/InStock", url: `${SITIO}/registro` },
+          ],
+        }
+      : {}),
+  };
+}
+
+export function sitioWeb() {
+  return { "@context": "https://schema.org", "@type": "WebSite", "@id": `${SITIO}/#sitio`, url: SITIO, name: "PeluDesk", inLanguage: "es-MX", publisher: { "@id": `${SITIO}/#organizacion` } };
 }

@@ -9,7 +9,17 @@ import { Ilustracion } from "@/components/peludesk/ilustracion";
 import { aterrizaje, todosLosAterrizajes } from "@/lib/peludesk/aterrizajes";
 import { articuloPorSlug } from "@/lib/peludesk/blog";
 import { urlDemo } from "@/lib/peludesk/landing";
-import { JsonLd, ORGANIZACION, SITIO, metaPagina, migas, preguntasFrecuentes } from "@/lib/peludesk/seo";
+import { BloquePrecio, CapturaSeo, Relacionadas } from "@/components/peludesk/seo-bloques";
+import { CasoLudogteka } from "@/components/peludesk/seo-bloques";
+import { CASO_POR_GIRO } from "@/lib/peludesk/ludogteka";
+import { planUnico } from "@/lib/peludesk/plan";
+import { JsonLd, ORGANIZACION, SITIO, aplicacionPeluDesk, metaPagina, migas, preguntasFrecuentes } from "@/lib/peludesk/seo";
+
+const GIRO = {
+  "software-para-guarderias-caninas": { caso: "guarderia", captura: "tablero", alt: "Tablero del día de una guardería en PeluDesk con llegadas, salidas y perros adentro", rel: ["/guias/control-de-pagos-y-caja-en-una-guarderia-canina", "/guias/contratos-y-vacunas-obligatorias-en-guarderias-y-hoteles-caninos", "/guias/recordatorios-por-whatsapp-y-portal-para-duenos-de-mascotas"] },
+  "software-para-hoteles-caninos": { caso: "hotel", captura: "hotel", alt: "Pantalla de hotel de PeluDesk con cupo por noche y reservas", rel: ["/guias/contratos-y-vacunas-obligatorias-en-guarderias-y-hoteles-caninos", "/guias/control-de-pagos-y-caja-en-una-guarderia-canina", "/blog/como-controlar-el-cupo-de-un-hotel-canino-sin-sobrevender"] },
+  "software-para-esteticas-caninas": { caso: "estetica", captura: "estetica", alt: "Agenda de estética de PeluDesk con una columna por estilista", rel: ["/guias/facturacion-cfdi-para-esteticas-y-veterinarias", "/guias/recordatorios-por-whatsapp-y-portal-para-duenos-de-mascotas", "/blog/como-fijar-el-precio-de-una-guarderia-o-estetica-canina"] },
+} as const;
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -25,6 +35,8 @@ export default async function Aterrizaje({ params }: Props) {
   const arts = a.articulos.map((s) => articuloPorSlug(s)).filter((x) => x !== null);
   const otras = todosLosAterrizajes().filter((x) => x.slug !== a.slug);
   const ruta = `/${a.slug}`;
+  const plan = await planUnico();
+  const giro = GIRO[a.slug as keyof typeof GIRO];
   return (
     <MarcoSitio>
       <JsonLd
@@ -40,6 +52,7 @@ export default async function Aterrizaje({ params }: Props) {
             inLanguage: "es-MX",
             isPartOf: ORGANIZACION,
           },
+          aplicacionPeluDesk(plan, { nombre: a.h1, url: `${SITIO}${ruta}`, descripcion: a.descripcion }),
         ]}
       />
       <EventoPixelAlVer nombre="ViewContent" datos={{ content_name: a.titulo, content_category: "aterrizaje" }} />
@@ -94,6 +107,15 @@ export default async function Aterrizaje({ params }: Props) {
         </ul>
       </section>
 
+      <section aria-labelledby="captura" className="mx-auto max-w-6xl px-4 pb-4 sm:px-6">
+        <h2 id="captura" className="text-2xl font-bold text-n-900">Así se ve</h2>
+        <p className="mt-2 text-n-700">Captura del negocio de ejemplo: los datos son inventados.</p>
+        <div className="mt-5 max-w-3xl"><CapturaSeo nombre={giro.captura} alt={giro.alt} /></div>
+      </section>
+
+      <CasoLudogteka caso={CASO_POR_GIRO[giro.caso]} />
+      <BloquePrecio plan={plan} />
+
       {arts.length > 0 && (
         <section aria-labelledby="guias" className="border-t border-n-200 bg-white">
           <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
@@ -116,6 +138,7 @@ export default async function Aterrizaje({ params }: Props) {
             </div>
           ))}
         </dl>
+        <Relacionadas rutas={[...giro.rel, "/veterinaria", "/alternativas", "/ayuda"]} />
         <div className="mt-10">
           <LlamadaSobria />
         </div>

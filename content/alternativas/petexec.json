@@ -1,0 +1,19 @@
+{
+  "slug": "petexec",
+  "nombre": "PetExec",
+  "sitio": "https://www.petexec.net",
+  "giro": "Hoteles caninos (kennels), guarderías y estética.",
+  "resumen": "Software para pensiones y guarderías de mascotas de una empresa estadounidense, con reservas, expediente y facturación a clientes.",
+  "precio": "Los directorios la ubican en dólares por mes, con un precio de entrada que no coincide entre ellos. Pide la cotización a su equipo.",
+  "idioma": "No encontramos evidencia pública de interfaz o soporte en español.",
+  "cfdi": "No encontramos evidencia pública de facturación CFDI 4.0.",
+  "pagos": "Pagos con Stripe y otras pasarelas de Estados Unidos; no encontramos evidencia de Mercado Pago ni Clip.",
+  "conviene": [
+    "Tienes un kennel tradicional en Estados Unidos y quieres una herramienta con años en ese mercado."
+  ],
+  "noConviene": [
+    "Necesitas CFDI, terminal mexicana o portal del dueño en español.",
+    "Tienes también una clínica veterinaria."
+  ],
+  "peludesk": "PeluDesk cubre reservas con cupo y pases como PetExec, con caja y facturación pensadas para México."
+}

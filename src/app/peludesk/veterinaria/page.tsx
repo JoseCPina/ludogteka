@@ -6,12 +6,14 @@ import { EventoPixelAlVer } from "@/components/peludesk/consentimiento/evento-pi
 import { Ilustracion } from "@/components/peludesk/ilustracion";
 import { urlDemo } from "@/lib/peludesk/landing";
 import { CAPTURAS_VET, DESCRIPCION_VET, FUNCIONES_VET, MENSAJES_CLAVE, MODULOS_TRES, PREGUNTAS_VET } from "@/lib/peludesk/veterinaria";
+import { CasoLudogteka, Relacionadas } from "@/components/peludesk/seo-bloques";
+import { CASO_POR_GIRO } from "@/lib/peludesk/ludogteka";
 import { PrecioPlan } from "@/components/peludesk/precio-plan";
-import { planUnico, pesos, SIN_COSTO_INICIAL } from "@/lib/peludesk/plan";
-import { JsonLd, ORGANIZACION, SITIO, metaPagina, migas, preguntasFrecuentes } from "@/lib/peludesk/seo";
+import { planUnico, pesos } from "@/lib/peludesk/plan";
+import { JsonLd, SITIO, aplicacionPeluDesk, metaPagina, migas, preguntasFrecuentes } from "@/lib/peludesk/seo";
 
 const RUTA = "/veterinaria";
-const TITULO = "Expediente, recetas y carnet para clínicas veterinarias | PeluDesk";
+const TITULO = "Software para veterinarias en México: expediente, recetas y carnet | PeluDesk";
 
 export const metadata: Metadata = metaPagina({
   titulo: TITULO,
@@ -35,29 +37,11 @@ export default async function PaginaVeterinaria() {
           migas([{ nombre: "Inicio", ruta: "/" }, { nombre: "Veterinaria", ruta: RUTA }]),
           preguntasFrecuentes(PREGUNTAS_VET),
           {
-            "@context": "https://schema.org",
-            "@type": "SoftwareApplication",
-            name: "PeluDesk Veterinaria",
-            url: `${SITIO}${RUTA}`,
-            applicationCategory: "BusinessApplication",
+            ...aplicacionPeluDesk(plan, { nombre: "PeluDesk Veterinaria", url: `${SITIO}${RUTA}`, descripcion: DESCRIPCION_VET }),
+            "@id": `${SITIO}${RUTA}#aplicacion`,
             applicationSubCategory: "Software para clínicas veterinarias",
-            operatingSystem: "Web, iOS y Android (se instala desde el navegador)",
-            inLanguage: "es-MX",
-            description: DESCRIPCION_VET,
             featureList: FUNCIONES_VET.map((f) => f.titulo),
-            isPartOf: { "@type": "SoftwareApplication", name: "PeluDesk", url: SITIO },
-            ...(plan
-              ? {
-                  offers: {
-                    "@type": "Offer",
-                    price: plan.mensual,
-                    priceCurrency: "MXN",
-                    priceSpecification: { "@type": "UnitPriceSpecification", price: plan.mensual, priceCurrency: "MXN", billingDuration: 1, unitCode: "MON", valueAddedTaxIncluded: false },
-                    description: `${SIN_COSTO_INICIAL}. Más IVA.`,
-                  },
-                }
-              : {}),
-            publisher: ORGANIZACION,
+            isPartOf: { "@id": `${SITIO}/#aplicacion` },
           },
         ]}
       />
@@ -172,6 +156,8 @@ export default async function PaginaVeterinaria() {
         </ul>
       </section>
 
+      <CasoLudogteka caso={CASO_POR_GIRO.veterinaria} />
+
       {/* ── Preguntas ── */}
       <section aria-labelledby="preguntas" className="mx-auto max-w-3xl px-4 pb-12 sm:px-6">
         <h2 id="preguntas" className="text-2xl font-bold text-n-900">Preguntas frecuentes</h2>
@@ -183,6 +169,7 @@ export default async function PaginaVeterinaria() {
             </div>
           ))}
         </dl>
+        <Relacionadas rutas={["/precios", "/guias/facturacion-cfdi-para-esteticas-y-veterinarias", "/guias/recordatorios-por-whatsapp-y-portal-para-duenos-de-mascotas", "/alternativas", "/ayuda/carnet-de-la-mascota"]} />
         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
           <EnlaceRegistro className={botonPrimario}>Pruébalo 15 días gratis</EnlaceRegistro>
           <a href={demo} data-pixel-evento="Lead" className={botonSecundario}>

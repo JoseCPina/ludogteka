@@ -1,0 +1,66 @@
+{
+  "titulo": "Recordatorios por WhatsApp y portal para dueños de mascotas | PeluDesk",
+  "h1": "Recordatorios por WhatsApp y un portal para que el dueño vea lo suyo",
+  "descripcion": "El dueño entra con su teléfono, ve sus citas y reservas, sube el carnet y firma contratos. Los recordatorios de vacuna salen por WhatsApp y los demás avisos, con un toque.",
+  "gancho": "Menos mensajes de «¿a qué hora era?» y menos fotos de cartilla perdidas en el chat.",
+  "captura": {
+    "nombre": "portal",
+    "alt": "Portal del dueño de una mascota en el celular, con sus citas y reservas",
+    "celular": true
+  },
+  "secciones": [
+    {
+      "h2": "El portal del dueño",
+      "lista": [
+        "Entra desde el navegador con su teléfono y su contraseña; no instala nada.",
+        "Ve las próximas citas de estética y reservas de guardería u hotel de sus perros, y el historial.",
+        "Sube la foto del carnet (queda como propuesta hasta que recepción la confirma) y firma contratos pendientes.",
+        "Nunca ve montos ni cuentas, ni datos de otros clientes. Para agendar o cambiar una cita sigue hablando con el negocio."
+      ]
+    },
+    {
+      "h2": "Qué se manda automático y qué con un toque",
+      "lista": [
+        "Recordatorio de la próxima dosis de vacuna o desparasitación (módulo de Veterinaria): sale solo, de 9:00 a 20:00 hora del negocio, con una plantilla aprobada por WhatsApp, y una sola vez por dosis.",
+        "Liga de teleconsulta: sale por WhatsApp.",
+        "Los demás avisos (recordatorio de cita, reporte del día, fotos del perro) los arma PeluDesk y los mandas con un toque desde el WhatsApp del negocio: el mensaje ya viene escrito."
+      ]
+    },
+    {
+      "h2": "Si WhatsApp no entrega",
+      "parrafos": [
+        "Aceptar un mensaje no es entregarlo. PeluDesk registra el estado de cada recordatorio y, si falla, lo marca en «Necesita atención» con el motivo para que lo mandes tú o lo reintentes."
+      ]
+    },
+    {
+      "h2": "Reporte y fotos del día",
+      "parrafos": [
+        "En guardería y hotel puedes mandar un reporte de comportamiento del día y fotos o videos del perro con una liga privada que vence sola."
+      ]
+    }
+  ],
+  "preguntas": [
+    [
+      "¿Con qué número salen los recordatorios automáticos?",
+      "Con el número de WhatsApp de PeluDesk, no con el del negocio. El mensaje indica a qué teléfono del negocio llamar."
+    ],
+    [
+      "¿Pueden responder los dueños?",
+      "El número de PeluDesk no recibe respuestas de ellos hacia el negocio; para conversar usan el teléfono del negocio."
+    ],
+    [
+      "¿Hay que activar algo?",
+      "El envío automático es una opción que prendes en Veterinaria. Viene apagada."
+    ],
+    [
+      "¿Cuesta extra?",
+      "No hay cargo por los recordatorios en el plan único."
+    ]
+  ],
+  "relacionadas": [
+    "/veterinaria",
+    "/software-para-guarderias-caninas",
+    "/precios",
+    "/ayuda/portal-del-dueno"
+  ]
+}

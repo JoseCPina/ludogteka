@@ -1,0 +1,74 @@
+{
+  "titulo": "Control de pagos y caja en una guardería canina | PeluDesk",
+  "h1": "Cómo controlar los pagos y la caja de una guardería canina",
+  "descripcion": "Cuenta por perro, cobro en efectivo, transferencia o terminal, corte de turno con arqueo y conciliación con Mercado Pago. Así se lleva la caja de una guardería sin libreta.",
+  "gancho": "Que al cerrar el día el dinero cuadre con lo que se cobró, y que puedas ver de dónde salió cada peso.",
+  "captura": {
+    "nombre": "cobro",
+    "alt": "Pantalla de cobro de PeluDesk con la cuenta de un perro, métodos de pago y saldo"
+  },
+  "secciones": [
+    {
+      "h2": "Una cuenta por visita, no un cuaderno",
+      "parrafos": [
+        "Cada reserva abre una cuenta que suma la estancia, los cargos extra (comida especial, recolección) y los descuentos. Al recoger al perro ya sabes cuánto se debe.",
+        "Los perros que se fueron sin pagar siguen en Caja con su saldo y los días que llevan esperando. Nada se pierde porque alguien olvidó anotarlo."
+      ]
+    },
+    {
+      "h2": "Cobrar de la forma que el cliente pague",
+      "lista": [
+        "Efectivo, transferencia y tarjeta, con propina aparte si la hay.",
+        "Terminal de Mercado Pago (Point Smart) y link de pago: el cobro solo se registra cuando PeluDesk consulta a Mercado Pago y comprueba que el pago existe y es del monto.",
+        "Tarjeta (registro manual) para cuando la terminal falla: pide folio del voucher y queda marcada para revisarla.",
+        "Varias cuentas de la misma persona se cobran juntas, con un solo folio y un solo recibo."
+      ]
+    },
+    {
+      "h2": "Turno de caja con arqueo",
+      "parrafos": [
+        "Abres el turno con el fondo, registras retiros y efectivo agregado, y al cerrar cuentas el efectivo sin ver cuánto esperaba el sistema. El corte te dice la diferencia por método.",
+        "Un turno cerrado no se reescribe: una corrección entra al turno abierto y queda con su motivo."
+      ]
+    },
+    {
+      "h2": "Pases y mensualidades",
+      "parrafos": [
+        "El day pass y la mensualidad se venden por perro. Cada visita descuenta un día y si se cancela, el día regresa. Ajustar los días usados deja historial y no toca la caja."
+      ]
+    },
+    {
+      "h2": "Lo que se revisa solo",
+      "lista": [
+        "Conciliación por hora: compara los cobros con terminal contra los pagos de tu cuenta de Mercado Pago y marca lo que no cuadra, sin corregir nada por su cuenta.",
+        "«Necesita atención» avisa de saldos viejos y de tarjetas manuales por revisar.",
+        "En Reportes, cada cifra se toca y abre las operaciones que la forman, con descarga a Excel."
+      ]
+    }
+  ],
+  "preguntas": [
+    [
+      "¿Puedo cobrar sin terminal?",
+      "Sí. Registras efectivo, transferencia o tarjeta a mano. La terminal de Mercado Pago es opcional."
+    ],
+    [
+      "¿Cómo sé si alguien se quedó con dinero?",
+      "Cada cobro guarda quién lo registró y en qué turno. El corte compara lo esperado con lo contado y las correcciones quedan con motivo."
+    ],
+    [
+      "¿El cliente ve lo que cuesta?",
+      "No. El portal del dueño no muestra montos ni cuentas."
+    ],
+    [
+      "¿Sirve si tengo estética y hotel también?",
+      "Sí. Todo cae en la misma caja y el mismo corte."
+    ]
+  ],
+  "relacionadas": [
+    "/software-para-guarderias-caninas",
+    "/precios",
+    "/blog/como-hacer-el-corte-de-caja-de-un-negocio-canino",
+    "/ayuda/corte-de-caja",
+    "/ayuda/cobrar-con-terminal"
+  ]
+}

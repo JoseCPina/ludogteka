@@ -61,4 +61,4 @@ export const PREGUNTAS_VET: readonly (readonly [string, string])[] = [
 ];
 
 export const DESCRIPCION_VET =
-  "Expediente por consulta con dictado, carnet de vacunas con QR, hospitalización, recetas con registro espejo del SITPV, inventario con lotes y cotizaciones firmadas por link. Pruébalo 15 días gratis, sin tarjeta.";
+  "Software para veterinarias: expediente por consulta con dictado, carnet de vacunas con QR, recetas con registro espejo del SITPV e inventario con lotes. 15 días gratis.";

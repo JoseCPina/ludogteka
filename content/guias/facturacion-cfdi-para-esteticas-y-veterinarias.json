@@ -1,0 +1,71 @@
+{
+  "titulo": "Facturación CFDI 4.0 para estéticas caninas y veterinarias | PeluDesk",
+  "h1": "Facturar CFDI 4.0 desde la misma cuenta que cobras",
+  "descripcion": "Cómo factura PeluDesk: desde el cobro, con tu proveedor de timbrado, factura global del público en general, cancelación con motivo. Y en qué etapa está.",
+  "gancho": "Una sola captura: cobras la cuenta y facturas esa misma cuenta, sin volver a teclear conceptos ni importes.",
+  "captura": {
+    "nombre": "cobro",
+    "alt": "Cuenta cobrada en PeluDesk, de donde se emite la factura"
+  },
+  "secciones": [
+    {
+      "h2": "Cómo funciona",
+      "lista": [
+        "Conectas la llave de tu cuenta con un proveedor autorizado de timbrado (hoy, Facturapi). La llave se guarda cifrada y nadie puede leerla de vuelta.",
+        "Capturas los datos fiscales de tu cliente y emites desde el cobro. Los conceptos e importes los calcula el sistema a partir de lo que se cobró: descuentos repartidos y devoluciones descontadas.",
+        "Si algo se corta entre el proveedor y PeluDesk, la factura queda en «revisar» y se consulta al proveedor antes de intentar otra vez: no se timbra dos veces."
+      ]
+    },
+    {
+      "h2": "Impuestos por tipo de producto o servicio",
+      "parrafos": [
+        "Cada servicio y producto pertenece a una clase con su IVA y sus claves del SAT. PeluDesk trae valores por omisión (por ejemplo, medicina de patente a tasa 0 % y alimento para mascotas a 16 %) y tú ajustas las claves a tu caso. Confirma tu configuración con tu contador."
+      ]
+    },
+    {
+      "h2": "Público en general: factura global",
+      "parrafos": [
+        "El RFC genérico no se factura aparte: se junta en una factura global diaria, semanal o mensual, desde la fecha en que activaste la facturación. Puede salir a mano o de forma automática (viene apagada)."
+      ]
+    },
+    {
+      "h2": "Cancelación y límites",
+      "lista": [
+        "Motivos 01 a 04 del SAT; el 01 exige la factura que la sustituye.",
+        "Un cobro facturado no se anula, ni se edita su monto, ni se devuelve mientras su factura esté vigente.",
+        "Por ahora no genera complemento de pago ni nota de crédito."
+      ]
+    },
+    {
+      "h2": "En qué etapa está esta función",
+      "parrafos": [
+        "La conexión con Facturapi está construida y probada con un simulador. Todavía no hay negocios timbrando facturas reales en producción. Si facturar es indispensable desde el primer día, pruébala dentro de tus 15 días con la llave de pruebas de tu cuenta de Facturapi antes de contratar."
+      ]
+    }
+  ],
+  "preguntas": [
+    [
+      "¿PeluDesk es un proveedor autorizado de certificación (PAC)?",
+      "No. Timbra a través de un PAC; hoy, Facturapi. Pagas su servicio aparte."
+    ],
+    [
+      "¿Sirve para una veterinaria?",
+      "Sí. La clase del servicio define el IVA; una consulta puede ir exenta según tu tipo de persona, y eso lo confirmas con tu contador."
+    ],
+    [
+      "¿Hay tope de facturas?",
+      "Cada negocio tiene un tope mensual de timbres que ajusta la plataforma."
+    ],
+    [
+      "¿Factura retroactiva?",
+      "La factura global solo junta cobros desde que activas la facturación."
+    ]
+  ],
+  "relacionadas": [
+    "/software-para-esteticas-caninas",
+    "/veterinaria",
+    "/precios",
+    "/ayuda/configurar-la-facturacion",
+    "/ayuda/factura-global-publico-en-general"
+  ]
+}

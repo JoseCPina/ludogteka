@@ -71,6 +71,25 @@ const PRIVADAS = [
   "/rx/",
 ];
 
+// Buscadores y asistentes de IA que SÍ pueden leer el sitio público de
+// peludesk.mx. Cada uno lleva su propio grupo porque un rastreador que
+// nombra su grupo ignora el de «*». Para entrenamiento (GPTBot, ClaudeBot,
+// Google-Extended), búsqueda (OAI-SearchBot, Claude-SearchBot, PerplexityBot)
+// y consultas de un usuario (ChatGPT-User, Claude-User, Perplexity-User).
+const BUSCADORES_E_IA = [
+  "Googlebot", "Google-Extended", "Bingbot", "Applebot", "Applebot-Extended", "DuckDuckBot",
+  "GPTBot", "OAI-SearchBot", "ChatGPT-User",
+  "ClaudeBot", "Claude-SearchBot", "Claude-User",
+  "PerplexityBot", "Perplexity-User",
+];
+
+// Lo privado o interno del dominio de la plataforma: ni se indexa ni se lee.
+const PRIVADAS_PLATAFORMA = [
+  "/plataforma", "/demo", "/peludesk/redes", "/api", "/auth",
+  "/admin", "/portal", "/login", "/bienvenida", "/alta", "/activar",
+  "/e/", "/c/", "/rx/", "/t/", "/r/", "/f/", "/fac/",
+];
+
 // Solo la landing de un negocio con plan activo y landing propia es para
 // buscadores. El demo (plan demo) y los negocios en prueba no se indexan.
 // PeluDesk: la dirección es la del negocio del dominio.
@@ -82,7 +101,8 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
     return {
       rules: [
         { userAgent: VISTAS_PREVIAS, allow: "/" },
-        { userAgent: "*", allow: "/", disallow: ["/plataforma", "/demo", "/peludesk/redes", "/api", "/auth"] },
+        { userAgent: BUSCADORES_E_IA, allow: "/", disallow: PRIVADAS_PLATAFORMA },
+        { userAgent: "*", allow: "/", disallow: PRIVADAS_PLATAFORMA },
       ],
       sitemap: `${SITIO}/sitemap.xml`,
       host: SITIO,
