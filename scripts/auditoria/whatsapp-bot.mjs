@@ -263,7 +263,7 @@ function juzgar(caso, pregunta, r, pide, desdeTexto) {
   if (perdidas.length && !escalo) f.push(`se perdió texto del modelo al mandarlo: «${perdidas.slice(0, 8).join(" ")}»`);
   if (pide.venta) {
     const ultimo = r.textos[r.textos.length - 1] ?? "";
-    if (!/https?:\/\/\S+\/(registro|demo)\b/.test(ultimo.split("\n\n").pop() ?? "")) f.push("no termina con el siguiente paso (link al demo o a la prueba)");
+    if (!/https?:\/\/\S+\/(registro|demo|ir\/prueba)\b/.test(ultimo.split("\n\n").pop() ?? "")) f.push("no termina con el siguiente paso (link al demo o a la prueba)");
   }
   if (pide.precio === "plan") {
     // Ya sabemos qué servicios tiene: el precio de SU plan, directo y en negritas, con los 15 días.
@@ -383,6 +383,25 @@ for (const c of ["R", "C", "X"]) {
 vistos.B.includes("FALLÓ") ? bien("B: el modelo sabe que su cobro falló y hasta cuándo funciona") : hallazgo("B: el estado de pago fallido no llegó al modelo");
 vistos.A.includes("prueba gratis") ? bien("A: el modelo sabe que está en prueba y sus días") : hallazgo("A: el estado de prueba no llegó al modelo");
 /\$\d/.test(vistos.X) ? bien("prospecto: los planes con precio salen de la base") : hallazgo("prospecto: sin precios de la base en el prompt");
+
+console.log("\n3b. Prospecto que escribe desde su página (/para/<slug>)");
+const TEL_P = tel("60");
+const { data: prosP } = await A.from("prospectos").insert({ nombre: `Estética Bot ${sufijo}`, giro: "estetica", ciudad: "Querétaro", fuente: "manual", clasificacion: { servicios: ["estetica"] } }).select("id, slug").single();
+{
+  const r = await conversar(TEL_P, `Hola, vi la página que armaron para Estética Bot ${sufijo} (ref. ${prosP.slug.slice(-5)})`);
+  const prompt = r.ia.map((x) => (typeof x.system === "string" ? x.system : (x.system ?? []).map((b) => b.text).join("\n"))).join("\n");
+  prompt.includes("VIENE DE SU VISTA PREVIA") && prompt.includes(`Estética Bot ${sufijo}`) && prompt.includes(`/para/${prosP.slug}`)
+    ? bien("el bot sabe de qué negocio viene y cuál es su página (lo reconoció la base por la referencia)")
+    : hallazgo("el bot no recibió quién es el prospecto que llega desde su página");
+  const { data: pr } = await A.from("prospectos").select("etapa, canal_ultimo_contacto").eq("id", prosP.id).single();
+  pr.etapa === "respondio" && pr.canal_ultimo_contacto === "whatsapp_bot" ? bien("el CRM lo marca «respondió» con canal WhatsApp bot") : hallazgo(`el CRM no lo marcó: ${JSON.stringify(pr)}`);
+  const r2 = await conversar(TEL_P, "#guion:nada");
+  const p2 = r2.ia.map((x) => (typeof x.system === "string" ? x.system : (x.system ?? []).map((b) => b.text).join("\n"))).join("\n");
+  p2.includes(`Estética Bot ${sufijo}`) ? bien("y lo sigue reconociendo en los mensajes siguientes (sin la referencia), por el número desde el que escribió") : hallazgo("el segundo mensaje perdió quién es el prospecto");
+  const rx = await conversar(TEL.X, "Hola, vi la página que armaron para Otro Negocio (ref. zzzzz)");
+  const px = rx.ia.map((x) => (typeof x.system === "string" ? x.system : (x.system ?? []).map((b) => b.text).join("\n"))).join("\n");
+  !px.includes("VIENE DE SU VISTA PREVIA") ? bien("una referencia que no existe no liga a nadie") : hallazgo("una referencia inventada ligó a un prospecto");
+}
 
 console.log("\n4. El link del portal solo es del negocio de quien escribe");
 {
@@ -571,6 +590,9 @@ if (IA_REAL) {
     ["venta: libreta", TEL_V2, "Tengo guardería y estética y lo llevo todo en libreta", { venta: true, sinDesde: true, capturas: ["estetica", "vacunas", "hotel", "caja"], exigeCaptura: true }],
     ["venta: libreta", TEL_V2, "¿Y cuánto me costaría?", { venta: true, precio: "plan", sinDesde: true, plan: "649", capturas: ["estetica", "vacunas", "hotel", "caja"] }],
     ["venta: otra app", TEL_V3, "Ya uso otra app para mi estética", { venta: true, capturas: ["estetica", "caja", "vacunas"] }],
+    ["desde su página", TEL_P, "¿Cuánto cuesta y hay prueba gratis?", { venta: true, precio: "plan", sinDesde: true, plan: "649", capturas: ["estetica", "caja"] }],
+    ["desde su página", TEL_P, "¿Qué módulos trae? ¿También sirve para veterinaria?", { venta: true, capturas: ["estetica", "caja", "vacunas", "hotel"] }],
+    ["desde su página", TEL_P, "¿Y la página que me armaron se queda así si me registro?", { venta: true, capturas: [], contiene: /p[aá]gina/i }],
   ];
   const muestras = {};
   const tiemposIA = [];
@@ -595,6 +617,7 @@ if (IA_REAL) {
   console.log("\n7. Conversaciones con la IA de verdad: omitidas (sin ANTHROPIC_API_KEY en el entorno de este script).");
 }
 
+await A.from("prospectos").delete().eq("id", prosP.id);
 servidor.close();
 console.log(hallazgos.length ? `\n✘ ${hallazgos.length} hallazgo(s).` : "\n✔ Sin hallazgos.");
 process.exit(hallazgos.length ? 1 : 0);

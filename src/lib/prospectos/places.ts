@@ -114,16 +114,20 @@ export type LugarParaPagina = {
   resumen: string | null;
   mapsUri: string | null;
   fotos: FotoGoogle[];
+  /** regularOpeningHours.periods tal cual (lib/web-negocio/horario los convierte). */
+  periodos: { open?: { day?: number; hour?: number; minute?: number }; close?: { day?: number; hour?: number; minute?: number } }[];
+  /** Las reseñas que entrega Google (hasta 5), con su autor y su fecha relativa. */
+  opiniones: { autor: string; autorUri: string | null; calificacion: number; texto: string; cuando: string | null }[];
 };
 
 type FotoApi = { name?: string; authorAttributions?: { displayName?: string; uri?: string }[] };
 
-export async function detallesParaPagina(o: { apiKey: string; id: string; url?: string; fotos?: number }): Promise<LugarParaPagina | null> {
+export async function detallesParaPagina(o: { apiKey: string; id: string; url?: string; fotos?: number; anchoFoto?: number }): Promise<LugarParaPagina | null> {
   const base = o.url ?? PLACES_URL;
   const r = await fetch(`${base}/places/${encodeURIComponent(o.id)}?languageCode=es&regionCode=MX`, {
     headers: {
       "X-Goog-Api-Key": o.apiKey,
-      "X-Goog-FieldMask": "displayName,formattedAddress,rating,userRatingCount,regularOpeningHours.weekdayDescriptions,editorialSummary,googleMapsUri,photos",
+      "X-Goog-FieldMask": "displayName,formattedAddress,rating,userRatingCount,regularOpeningHours.weekdayDescriptions,regularOpeningHours.periods,editorialSummary,googleMapsUri,photos,reviews",
     },
     signal: AbortSignal.timeout(8_000),
     cache: "no-store",
@@ -134,7 +138,8 @@ export async function detallesParaPagina(o: { apiKey: string; id: string; url?: 
     formattedAddress?: string;
     rating?: number;
     userRatingCount?: number;
-    regularOpeningHours?: { weekdayDescriptions?: string[] };
+    regularOpeningHours?: { weekdayDescriptions?: string[]; periods?: LugarParaPagina["periodos"] };
+    reviews?: { rating?: number; text?: { text?: string }; originalText?: { text?: string }; relativePublishTimeDescription?: string; authorAttribution?: { displayName?: string; uri?: string } }[];
     editorialSummary?: { text?: string };
     googleMapsUri?: string;
     photos?: FotoApi[];
@@ -143,7 +148,7 @@ export async function detallesParaPagina(o: { apiKey: string; id: string; url?: 
     (j.photos ?? []).slice(0, o.fotos ?? 4).map(async (f): Promise<FotoGoogle | null> => {
       if (!f.name) return null;
       try {
-        const m = await fetch(`${base}/${f.name}/media?maxWidthPx=1200&skipHttpRedirect=true`, { headers: { "X-Goog-Api-Key": o.apiKey }, signal: AbortSignal.timeout(6_000), cache: "no-store" });
+        const m = await fetch(`${base}/${f.name}/media?maxWidthPx=${o.anchoFoto ?? 1200}&skipHttpRedirect=true`, { headers: { "X-Goog-Api-Key": o.apiKey }, signal: AbortSignal.timeout(6_000), cache: "no-store" });
         if (!m.ok) return null;
         const uri = ((await m.json()) as { photoUri?: string }).photoUri;
         return uri ? { uri, autores: (f.authorAttributions ?? []).map((a) => ({ nombre: a.displayName ?? "Google Maps", uri: a.uri ?? null })) } : null;
@@ -161,5 +166,15 @@ export async function detallesParaPagina(o: { apiKey: string; id: string; url?: 
     resumen: j.editorialSummary?.text ?? null,
     mapsUri: j.googleMapsUri ?? null,
     fotos: fotos.filter((x): x is FotoGoogle => x !== null),
+    periodos: j.regularOpeningHours?.periods ?? [],
+    opiniones: (j.reviews ?? [])
+      .map((r) => ({
+        autor: r.authorAttribution?.displayName ?? "Cliente en Google",
+        autorUri: r.authorAttribution?.uri ?? null,
+        calificacion: typeof r.rating === "number" ? r.rating : 0,
+        texto: (r.text?.text ?? r.originalText?.text ?? "").trim(),
+        cuando: r.relativePublishTimeDescription ?? null,
+      }))
+      .filter((r) => r.texto.length > 0),
   };
 }

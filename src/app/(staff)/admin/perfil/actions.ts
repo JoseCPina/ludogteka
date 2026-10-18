@@ -41,9 +41,14 @@ async function perfilId(supabase: Awaited<ReturnType<typeof createSupabaseServer
 export async function guardarPerfil(fd: FormData): Promise<ResultadoPerfil> {
   const { supabase, puede } = await puedeEditar();
   if (!puede) return { error: "Solo un admin, o quien tenga el permiso «Configuración del negocio», edita el perfil." };
+  const tema = String(fd.get("tema_web") ?? "");
+  const color = String(fd.get("color_web") ?? "");
   const campos = {
     descripcion: String(fd.get("descripcion") ?? "").trim().slice(0, 600) || null,
     direccion: String(fd.get("direccion") ?? "").trim().slice(0, 200) || null,
+    // Diseño de la página web: vacío = el de sus servicios y el color de sus fotos.
+    tema_web: ["veterinaria", "estetica", "guarderia", "hotel"].includes(tema) ? tema : null,
+    color_web: fd.get("color_auto") || !/^#[0-9a-fA-F]{6}$/.test(color) ? null : color.toLowerCase(),
   };
   const id = await perfilId(supabase);
   const { error } = id

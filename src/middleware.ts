@@ -335,7 +335,7 @@ const PUBLICAS_PLATAFORMA: Record<string, string> = {
 };
 // Con parámetro: artículos del centro de ayuda y del blog, páginas del índice
 // del blog y sus categorías. Una lista cerrada de formas, nunca por prefijo.
-const PUBLICAS_PLATAFORMA_PATRON = /^\/(ayuda\/[a-z0-9-]+|guias\/[a-z0-9-]+|alternativas\/[a-z0-9-]+|ayuda\/videos\/[a-z0-9-]+|blog\/[a-z0-9-]+|blog\/pagina\/\d{1,3}|blog\/categoria\/[a-z0-9-]+|para\/[a-z0-9-]{3,60}|para\/[a-z0-9-]{3,60}\/ir\/(?:prueba|whatsapp))$/;
+const PUBLICAS_PLATAFORMA_PATRON = /^\/(ayuda\/[a-z0-9-]+|guias\/[a-z0-9-]+|alternativas\/[a-z0-9-]+|ayuda\/videos\/[a-z0-9-]+|blog\/[a-z0-9-]+|blog\/pagina\/\d{1,3}|blog\/categoria\/[a-z0-9-]+|para\/[a-z0-9-]{3,60}|para\/[a-z0-9-]{3,60}\/ir\/(?:prueba|whatsapp|demo))$/;
 
 async function plataforma(request: NextRequest, cabeceras: Headers) {
   const { pathname } = request.nextUrl;
@@ -367,6 +367,8 @@ async function plataforma(request: NextRequest, cabeceras: Headers) {
     // El rewrite conserva los parámetros: /registro?utm_source=… los necesita.
     const destino = new URL(publica, request.url);
     destino.search = request.nextUrl.search;
+    // El layout de peludesk.mx no pone aviso de cookies, píxel ni botón flotante en la vista previa de un prospecto.
+    cabeceras.set("x-peludesk-ruta", pathname);
     return NextResponse.rewrite(destino, { request: { headers: cabeceras } });
   }
   if (pathname === "/peludesk" || pathname.startsWith("/peludesk/")) return NextResponse.redirect(new URL("/", request.url));

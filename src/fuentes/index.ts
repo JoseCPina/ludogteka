@@ -29,3 +29,31 @@ export const fredoka = localFont({
   variable: "--font-fredoka",
   display: "swap",
 });
+
+// Las de la página web de cada negocio (src/components/web-negocio): una por
+// giro. preload: false — el navegador solo baja la que la página usa.
+// Plus Jakarta Sans (veterinaria), Fraunces (estética) y DM Serif Display
+// (hotel); la guardería usa Fredoka. Subconjunto latino de Google Fonts (OFL).
+export const jakarta = localFont({
+  src: "./jakarta-latin.woff2",
+  weight: "400 800",
+  variable: "--font-jakarta",
+  display: "swap",
+  preload: false,
+});
+
+export const fraunces = localFont({
+  src: "./fraunces-latin.woff2",
+  weight: "500 700",
+  variable: "--font-fraunces",
+  display: "swap",
+  preload: false,
+});
+
+export const dmSerif = localFont({
+  src: "./dmserif-latin.woff2",
+  weight: "400",
+  variable: "--font-dmserif",
+  display: "swap",
+  preload: false,
+});

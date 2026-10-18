@@ -105,6 +105,19 @@ export interface SeguimientoContexto {
   enviadoAt: string;
 }
 
+/**
+ * Un prospecto de «Contactar hoy» que le escribe al bot, reconocido por la base (la referencia del mensaje
+ * prellenado de su página peludesk.mx/para/<slug>, o su teléfono), nunca por lo que diga.
+ */
+export interface ProspectoContexto {
+  nombre: string;
+  giro: string;
+  ciudad: string | null;
+  servicios: string[];
+  pagina: string;
+  por: "referencia" | "telefono";
+}
+
 export interface ContextoAgente {
   tipo: TipoInterlocutor;
   negocios: NegocioDeAdmin[];
@@ -114,6 +127,8 @@ export interface ContextoAgente {
   documentacion?: string;
   /** Si contesta un mensaje de seguimiento de su prueba. */
   seguimiento?: SeguimientoContexto | null;
+  /** Si es un prospecto al que le armamos su vista previa. */
+  prospecto?: ProspectoContexto | null;
 }
 
 export interface ParAprendido {
@@ -449,6 +464,20 @@ export function bloqueSeguimiento(s: SeguimientoContexto): string {
   ].join("\n");
 }
 
+const NOMBRE_GIRO: Record<string, string> = { veterinaria: "veterinaria", estetica: "estética", guarderia: "guardería", hotel: "hotel", mixto: "varios servicios" };
+
+/** Lo que el bot sabe de un prospecto que llega desde la página que le armamos. */
+export function bloqueProspecto(p: ProspectoContexto): string {
+  const servicios = p.servicios.length ? p.servicios.map((s) => NOMBRE_GIRO[s] ?? s).join(", ") : NOMBRE_GIRO[p.giro] ?? p.giro;
+  return [
+    "VIENE DE SU VISTA PREVIA (lo reconoció la base, no lo que dice):",
+    `- Le armamos a «${p.nombre}»${p.ciudad ? `, en ${p.ciudad},` : ""} una vista previa de su página web en PeluDesk: ${p.pagina}`,
+    `- Su negocio da: ${servicios}. No le preguntes de qué negocio es ni qué servicios tiene; háblale de lo suyo.`,
+    "- La vista previa es su página con sus fotos, reseñas y horario de Google; ahí sus clientes piden cita o reserva (le llega por WhatsApp para confirmarla), ven su portal, y hay una demo de cómo lo manejaría. Al registrarse con «Activar mi página gratis», esa página queda publicada en su subdominio.",
+    "- Siguiente paso: la prueba gratis desde su página (botón «Activar mi página gratis») o la demo. Si pregunta el precio, dale el del plan de la tabla.",
+  ].join("\n");
+}
+
 /** Arma el system prompt completo. Puro: la misma entrada da la misma salida. */
 export function systemPrompt(base: string, aprendido: ParAprendido[], ctx: ContextoAgente, hoy: string): string {
   const partes = [
@@ -468,6 +497,7 @@ export function systemPrompt(base: string, aprendido: ParAprendido[], ctx: Conte
     partes.push("", "DATOS DE SU CUENTA (solo de los negocios donde es admin):", ...ctx.negocios.map(describirNegocio));
   }
   if (ctx.seguimiento) partes.push("", bloqueSeguimiento(ctx.seguimiento));
+  if (ctx.prospecto && ctx.tipo !== "admin") partes.push("", bloqueProspecto(ctx.prospecto));
   partes.push("", bloquePlanes(ctx.planes), "", "=== BASE ===", base.trim());
   if (aprendido.length > 0) {
     partes.push("", "=== APRENDIDO (vale lo mismo que la BASE) ===", ...aprendido.map((p) => `P: ${p.pregunta}\nR: ${p.respuesta}`));

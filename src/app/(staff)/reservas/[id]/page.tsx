@@ -8,6 +8,11 @@ import { moduloDeCategoria } from "@/lib/modulos";
 import { EstanciaFila } from "./estancia-fila";
 import { CancelarReservaBoton } from "./cancelar-reserva-boton";
 import type { Cargo, ServicioCargo } from "../cargos-seccion";
+import { AvisosWhatsApp } from "@/components/avisos-whatsapp";
+import { negocioActual } from "@/lib/negocio/actual";
+import { diasEntre, hora12 } from "@/lib/web-negocio/horario";
+
+const fechaLarga = (iso: string) => new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${iso}T12:00:00Z`));
 
 export default async function DetalleReservaPage({
   params,
@@ -105,6 +110,15 @@ export default async function DetalleReservaPage({
     montoLibre: Boolean(s.monto_libre),
   }));
 
+  // «Avisar por WhatsApp» de la estancia de guardería u hotel que sigue viva (la primera).
+  const viva = filas.find((f) => (f.categoria === "guarderia" || f.categoria === "hotel") && !["cancelada", "no_llego"].includes(f.estado));
+  const enHotel = viva?.categoria === "hotel";
+  const [negocio, { data: cupoCrudo }] = viva
+    ? await Promise.all([negocioActual(), supabase.rpc("resolver_cupo_configuracion", { p_fecha: enHotel ? viva.fechaSalida : viva.fechaEntrada })])
+    : [null, { data: null }];
+  const cupoDia = (Array.isArray(cupoCrudo) ? cupoCrudo[0] : cupoCrudo) as { hora_apertura?: string | null; hora_cierre?: string | null } | null;
+  const mascotasVivas = [...new Set(filas.filter((f) => viva && f.categoria === viva.categoria && !["cancelada", "no_llego"].includes(f.estado)).map((f) => f.perroNombre))];
+
   const { data: totalesCrudo } = await supabase.rpc("cuenta_totales_reserva", { p_reserva_id: id });
   const totalesFila = Array.isArray(totalesCrudo) ? totalesCrudo[0] : totalesCrudo;
   const saldo = Number(totalesFila?.saldo ?? 0);
@@ -125,6 +139,24 @@ export default async function DetalleReservaPage({
               {cliente?.telefono ? formatearTelefono(cliente.telefono) : ""}
             </p>
             {reserva.notas && <p className="mt-2 text-n-700">{reserva.notas}</p>}
+            {viva && negocio && (
+              <div className="mt-3">
+                <AvisosWhatsApp
+                  telefono={cliente?.telefono}
+                  datos={{
+                    negocio: negocio.nombre,
+                    servicio: { nombre: viva.servicioNombre, categoria: enHotel ? "hotel" : "guarderia", modo: enHotel ? "noches" : "dia" },
+                    mascota: mascotasVivas.length > 1 ? `${mascotasVivas.slice(0, -1).join(", ")} y ${mascotasVivas[mascotasVivas.length - 1]}` : viva.perroNombre,
+                    cliente: cliente?.nombre ?? "",
+                    dia: fechaLarga(viva.fechaEntrada),
+                    salida: enHotel ? fechaLarga(viva.fechaSalida) : null,
+                    noches: enHotel ? diasEntre(viva.fechaEntrada, viva.fechaSalida) : undefined,
+                    abre: cupoDia?.hora_apertura ? hora12(cupoDia.hora_apertura) : null,
+                    cierra: cupoDia?.hora_cierre ? hora12(cupoDia.hora_cierre) : null,
+                  }}
+                />
+              </div>
+            )}
           </div>
           <div className="flex flex-col items-end gap-2">
             <p className={`text-sm font-bold ${saldo > 0 ? "text-coral-oscuro" : "text-menta-oscuro"}`}>

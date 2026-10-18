@@ -149,7 +149,9 @@ export async function POST(request: NextRequest) {
           continue;
         }
         const tiempos: Tiempos = {};
-        const r = await atender(m.telefono, m.texto, deps, tiempos, seguimiento);
+        // Un prospecto que llega desde su página (/para/<slug>): queda «respondió» en el CRM y el bot sabe quién es.
+        const prospecto = seguimiento ? null : await datos.registrarProspecto(m.telefono, m.texto);
+        const r = await atender(m.telefono, m.texto, deps, tiempos, seguimiento, prospecto);
         console.info("[whatsapp] tiempos", {
           desenlace: r,
           // Del envío en el celular a que Meta nos lo entregó (su reloj contra el nuestro).

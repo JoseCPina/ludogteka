@@ -40,12 +40,12 @@ for (const e of r.errores) console.log("  error: " + e);
 
 if (args.includes("--lista")) {
   const fecha = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Mexico_City" }).format(new Date());
-  const { data: aj } = await db.from("prospeccion_ajustes").select("firma").eq("id", 1).single();
+  const { data: aj } = await db.from("prospeccion_ajustes").select("firma, whatsapp_ventas").eq("id", 1).single();
   const sitio = prod ? "https://peludesk.mx" : (env.PELUDESK_SITIO_URL ?? "http://plataforma.localhost:3001");
   const l = await armarLista({
     db, fecha, sitio,
-    redactar: ia ? (lote) => redactarLote(lote, ia, aj.firma, MODELO_MENSAJES) : async () => new Map(),
-    plantilla: (p) => mensajeDePlantilla(p, aj.firma),
+    redactar: ia ? (lote) => redactarLote(lote, ia, aj.firma, MODELO_MENSAJES, aj.whatsapp_ventas) : async () => new Map(),
+    plantilla: (p) => mensajeDePlantilla(p, aj.firma, aj.whatsapp_ventas),
   });
   console.log(`lista ${fecha}: WhatsApp ${l.whatsapp} · Instagram ${l.instagram} · seguimientos ${l.seguimientos} · pausados ${l.pausados} · por IA ${l.porIA}`);
 }

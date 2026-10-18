@@ -102,7 +102,7 @@ const HERRAMIENTA = {
 };
 
 export function sistemaMensajes(firma: string) {
-  return `Escribes mensajes en frío de ${firma}, de PeluDesk (un sistema mexicano para guarderías, hoteles, estéticas caninas y veterinarias), a dueños de esos negocios. Los manda ${firma} a mano, uno por uno, por WhatsApp o por mensaje directo de Instagram.
+  return `Escribes mensajes en frío de ${firma} de PeluDesk (un sistema mexicano para guarderías, hoteles, estéticas caninas y veterinarias), a dueños de esos negocios. Los manda ${firma} a mano, uno por uno, por WhatsApp o por mensaje directo de Instagram.
 
 Reglas:
 - Español de México, de tú, como lo escribiría una persona: natural, cálido, directo. Nada de publicidad, mayúsculas, signos de exclamación seguidos, «estimado», «oferta», «promoción», «increíble», «revolucionario» ni listas.
@@ -111,14 +111,15 @@ Reglas:
 - SERVICIOS: nombra solo los que vienen en «servicios que da». Nunca supongas otros (no digas estética a un hotel, ni hotel a una estética, ni veterinaria a una guardería). Si dice «no se sabe», no nombres ningún servicio (ni guardería, ni hotel, ni estética, ni veterinaria): habla de su negocio en general y de lo que viene en la lista.
 - Di que les armaste una vista previa de cómo se vería su negocio en PeluDesk y pon el link EXACTO que viene, una sola vez, al final o en su propio renglón.
 - Puedes decir que se prueba 15 días gratis sin tarjeta, pero no en todos.
-- Varía: cada mensaje debe empezar distinto y estar redactado distinto de los demás del lote (saludos, orden, palabras). No uses la misma frase dos veces en el lote. Alterna la entrada: unos empiezan por su negocio, otros con una pregunta corta, otros presentándote; no más de dos del lote empiezan con «Hola, soy ${firma}» o parecido. Firma como ${firma} solo a veces, y nunca con cargo.
+- Varía: cada mensaje debe empezar distinto y estar redactado distinto de los demás del lote (saludos, orden, palabras). No uses la misma frase dos veces en el lote. Alterna la entrada: unos empiezan por su negocio, otros con una pregunta corta, otros presentándote; no más de dos del lote empiezan con «Hola, soy ${firma}» o parecido.
+- TODOS los mensajes dicen que los manda ${firma} de PeluDesk: al presentarse («soy ${firma}, de PeluDesk») o al firmar al final («${firma}, de PeluDesk»). Nunca con cargo.
 - Que se entienda qué es PeluDesk (un sistema para su negocio) aunque no lo conozcan.
 - Seguimiento 1 (no contestó al primero): una línea o dos, sin repetir el primero, con otro ángulo (otra cosa que les resuelve) y el link otra vez.
 - Seguimiento 2 (último): muy breve y amable, deja la puerta abierta sin presionar («si no es buen momento, no pasa nada»), con el link.
 - Máximo un emoji, y no en todos.`;
 }
 
-export async function redactarLote(lista: ParaMensaje[], llamar: LlamarIA, firma: string, modelo?: string): Promise<Map<string, string>> {
+export async function redactarLote(lista: ParaMensaje[], llamar: LlamarIA, firma: string, modelo?: string, whatsapp?: string | null): Promise<Map<string, string>> {
   const r = new Map<string, string>();
   if (lista.length === 0) return r;
   const usuario = lista.map((p, i) => datosParaIA(p, i)).join("\n\n");
@@ -129,7 +130,9 @@ export async function redactarLote(lista: ParaMensaje[], llamar: LlamarIA, firma
     const p = lista.find((x) => x.id === m.id);
     const texto = (m.texto ?? "").trim();
     // El link tiene que ir tal cual, y no puede nombrar un servicio que el negocio no da: si no, sale de plantilla.
-    if (p && texto && texto.includes(p.link) && texto.length <= 900 && serviciosAjenos(texto, serviciosSeguros(p), p.nombre).length === 0) r.set(p.id, texto);
+    // Tiene que decir que lo manda <firma> de PeluDesk.
+    const firmado = texto.toLowerCase().includes(firma.toLowerCase()) && /peludesk/i.test(texto);
+    if (p && texto && firmado && texto.includes(p.link) && texto.length <= 900 && serviciosAjenos(texto, serviciosSeguros(p), p.nombre).length === 0) r.set(p.id, conPie(texto, p, whatsapp));
   }
   return r;
 }
@@ -153,12 +156,26 @@ export function datosParaIA(p: ParaMensaje, i: number): string {
     .join("\n");
 }
 
+/**
+ * Instagram: por si prefiere contestar por WhatsApp, el número de ventas en frío (el que José usa a mano). Por
+ * WhatsApp no hace falta: el mensaje ya sale de ese número.
+ */
+export function conPie(texto: string, p: Pick<ParaMensaje, "canal">, whatsapp?: string | null): string {
+  const tel = (whatsapp ?? "").replace(/\D/g, "");
+  if (p.canal !== "instagram" || tel.length < 12 || texto.includes(`wa.me/${tel}`)) return texto;
+  return `${texto}\nSi prefieres WhatsApp: wa.me/${tel}`;
+}
+
 // ── Plantillas de respaldo (variadas por prospecto) ───────────────────────────────────────────────────────────────
 
 const hash = (t: string) => [...t].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
 const escoge = <T>(lista: T[], semilla: string, sal = 0) => lista[(hash(semilla) + sal) % lista.length];
 
-export function mensajeDePlantilla(p: ParaMensaje, firma: string): string {
+export function mensajeDePlantilla(p: ParaMensaje, firma: string, whatsapp?: string | null): string {
+  return conPie(plantillaBase(p, firma), p, whatsapp);
+}
+
+function plantillaBase(p: ParaMensaje, firma: string): string {
   const cosas = loQueResuelve(serviciosSeguros(p));
   const cosa = escoge(cosas, p.id);
   const otra = escoge(cosas, p.id, 1);
@@ -166,9 +183,9 @@ export function mensajeDePlantilla(p: ParaMensaje, firma: string): string {
   if (p.tipo === "seguimiento_1") {
     return escoge(
       [
-        `Hola de nuevo, ${n}. Por si se perdió mi mensaje: PeluDesk también les resuelve ${otra}. Su vista previa sigue aquí: ${p.link}`,
-        `¿Pudieron ver la vista previa de ${n}? Algo que les puede servir mucho es ${otra}. ${p.link}`,
-        `Te escribo otra vez por ${n}. Además de lo que te conté, PeluDesk lleva ${otra}. Échale un ojo: ${p.link}`,
+        `Hola de nuevo, ${n}. Por si se perdió mi mensaje: PeluDesk también les resuelve ${otra}. Su vista previa sigue aquí: ${p.link}\n${firma}, de PeluDesk`,
+        `¿Pudieron ver la vista previa de ${n}? Algo que les puede servir mucho es ${otra}. ${p.link}\n${firma}, de PeluDesk`,
+        `Te escribo otra vez por ${n}. Además de lo que te conté, PeluDesk lleva ${otra}. Échale un ojo: ${p.link}\n${firma}, de PeluDesk`,
       ],
       p.id
     );
@@ -176,9 +193,9 @@ export function mensajeDePlantilla(p: ParaMensaje, firma: string): string {
   if (p.tipo === "seguimiento_2") {
     return escoge(
       [
-        `Última vez que te molesto, lo prometo. Si en algún momento quieren probar PeluDesk en ${n}, aquí queda su vista previa: ${p.link}`,
-        `Si no es buen momento, no pasa nada. La vista previa de ${n} se queda aquí por si la quieren ver después: ${p.link}`,
-        `Solo para cerrar: si les interesa, se prueba 15 días gratis sin tarjeta. ${p.link} Un saludo, ${firma}`,
+        `Última vez que te molesto, lo prometo. Si en algún momento quieren probar PeluDesk en ${n}, aquí queda su vista previa: ${p.link}\n${firma}, de PeluDesk`,
+        `Si no es buen momento, no pasa nada. La vista previa de ${n} se queda aquí por si la quieren ver después: ${p.link}\n${firma}, de PeluDesk`,
+        `Solo para cerrar: si les interesa, se prueba 15 días gratis sin tarjeta. ${p.link} Un saludo, ${firma}, de PeluDesk`,
       ],
       p.id
     );

@@ -24,7 +24,7 @@ const sitio = prod ? "https://peludesk.mx" : (env.PELUDESK_SITIO_URL ?? "http://
 const llave = process.env.ANTHROPIC_API_KEY || env.ANTHROPIC_API_KEY;
 const ia = llave ? crearLlamarIA({ apiKey: llave, workspace: process.env.ANTHROPIC_WORKSPACE_ID || env.ANTHROPIC_WORKSPACE_ID }) : null;
 const hoy = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Mexico_City" }).format(new Date());
-const { data: aj } = await db.from("prospeccion_ajustes").select("firma").eq("id", 1).single();
+const { data: aj } = await db.from("prospeccion_ajustes").select("firma, whatsapp_ventas").eq("id", 1).single();
 
 const { data: filas, error } = await db
   .from("prospectos_contactos")
@@ -66,14 +66,14 @@ for (let i = 0; i < para.length; i += 10) {
   let r = new Map();
   if (ia) {
     try {
-      r = await redactarLote(lote, ia, aj.firma, MODELO_MENSAJES);
+      r = await redactarLote(lote, ia, aj.firma, MODELO_MENSAJES, aj.whatsapp_ventas);
     } catch (e) {
       console.log("  IA: " + (e instanceof Error ? e.message : e));
     }
   }
   for (const p of lote) {
     const fila = filas.find((f) => f.prospecto_id === p.id);
-    const texto = r.get(p.id) ?? mensajeDePlantilla(p, aj.firma);
+    const texto = r.get(p.id) ?? mensajeDePlantilla(p, aj.firma, aj.whatsapp_ventas);
     if (r.has(p.id)) porIA++;
     const { error: e2 } = await db.from("prospectos_contactos").update({ mensaje: texto, redactado_por: r.has(p.id) ? "ia" : "plantilla" }).eq("id", fila.id).eq("estado", "pendiente");
     if (e2) console.log(`  ${p.nombre}: ${e2.message}`);

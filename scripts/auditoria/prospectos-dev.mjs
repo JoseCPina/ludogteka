@@ -11,6 +11,7 @@
 // corrida sin nuevos, historial de etapa, el acceso (anon, admin de un negocio, admin de la plataforma), las
 // funciones solo del servidor y auditoria_frontera() vacía. Al final borra todo lo que creó.
 import http from "node:http";
+import { claveAleatoria } from "../lib/clave.mjs";
 import { A, URL, env, sesion } from "./sesiones-dev.mjs";
 import { createClient } from "@supabase/supabase-js";
 import { correrProspeccion } from "../../src/lib/prospectos/correr.ts";
@@ -48,7 +49,15 @@ for (const m of mAdmins ?? []) {
 }
 
 // ── Webs de mentiras ─────────────────────────────────────────────────────────────────────────────────────────
-const webs = http.createServer((req, res) => {
+// Fotos de un color (para la página por giro: el acento sale de la foto).
+const sharp = (await import("sharp")).default;
+const fotoDeColor = (hex) => sharp({ create: { width: 160, height: 120, channels: 3, background: hex } }).jpeg().toBuffer();
+const webs = http.createServer(async (req, res) => {
+  const mf = req.url.match(/^\/foto(?:-([0-9a-f]{6}))?\.jpg/);
+  if (mf) {
+    res.setHeader("Content-Type", "image/jpeg");
+    return res.end(await fotoDeColor(`#${mf[1] ?? "8a8a8a"}`));
+  }
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   if (req.url === "/fido") return res.end(`<a href="mailto:hola&#64;fido-${SUF}.mx">Escríbenos</a> <a href="https://instagram.com/fido_${SUF}">IG</a> <a href="https://wa.me/524441234567">WA</a> <a href="https://instagram.com/p/xyz">post</a>`);
   if (req.url === "/canspa") return res.end(`<a href="/contacto">Contacto</a> <a href="https://www.facebook.com/sharer.php">compartir</a> <a href="https://facebook.com/CanSpa${SUF}">FB</a>`);
@@ -102,7 +111,7 @@ const places = http.createServer(async (req, res) => {
     const input =
       herr === "clasificacion"
         ? { negocios: items.map((x) => ({ id: x.id, servicios: /hotel/i.test(x.nombre) ? ["hotel"] : ["guarderia"], es_del_giro: !/adiestramiento|refugio/i.test(x.nombre), motivo: /adiestramiento/i.test(x.nombre) ? "Adiestramiento canino, sin guardería ni hotel" : "Guardería" })) }
-        : { mensajes: items.map((x, i) => ({ id: x.id, texto: `${["Hola", "Qué tal", "Buen día"][i % 3]}, ${String(x.negocio).split(" (")[0]}. Mensaje de prueba ${x.tipo}.\n${x.link}` })) };
+        : { mensajes: items.map((x, i) => ({ id: x.id, texto: `${["Hola", "Qué tal", "Buen día"][i % 3]}, ${String(x.negocio).split(" (")[0]}. Mensaje de prueba ${x.tipo}.\n${x.link}\nJosé, de PeluDesk` })) };
     return res.end(JSON.stringify({ content: [{ type: "tool_use", name: herr, input }] }));
   }
   if (req.headers["x-goog-api-key"] !== "llave-de-prueba") {
@@ -110,7 +119,24 @@ const places = http.createServer(async (req, res) => {
     return res.end(JSON.stringify({ error: { message: "API key not valid", status: "PERMISSION_DENIED" } }));
   }
   // Place Details y la foto (para la página personalizada): lo que se pide al mostrarla.
-  if (req.method === "GET" && /\/media\?/.test(req.url)) return res.end(JSON.stringify({ photoUri: `${W}/foto.jpg` }));
+  if (req.method === "GET" && /\/media\?/.test(req.url)) {
+    const color = req.url.match(/photos\/c([0-9a-f]{6})/)?.[1];
+    return res.end(JSON.stringify({ photoUri: color ? `${W}/foto-${color}.jpg` : `${W}/foto.jpg` }));
+  }
+  const giroWeb = req.url.match(/^\/places\/aud\d+_web_(vet|est|hot)/)?.[1];
+  if (req.method === "GET" && giroWeb) {
+    const color = { vet: "1a8fb0", est: "d0457a", hot: "3f7a46" }[giroWeb];
+    const periodos = [1, 2, 3, 4, 5, 6].map((d) => ({ open: { day: d, hour: 9, minute: 0 }, close: { day: d, hour: d === 6 ? 14 : 19, minute: 0 } }));
+    return res.end(JSON.stringify({
+      displayName: { text: "Lugar" }, formattedAddress: "Av. Prueba 10, Centro, 78000 San Luis Potosí, S.L.P., México", rating: 4.7, userRatingCount: 210,
+      regularOpeningHours: { periods: periodos, weekdayDescriptions: [] }, googleMapsUri: "https://maps.google.com/?cid=2",
+      reviews: [
+        { rating: 5, text: { text: `Reseña destacada ${giroWeb}: nos atendieron con muchísimo cariño y muy puntuales.` }, relativePublishTimeDescription: "hace 2 semanas", authorAttribution: { displayName: "Clienta de Prueba", uri: "https://maps.google.com/contrib/2" } },
+        { rating: 1, text: { text: "Mala." }, authorAttribution: { displayName: "Otra" } },
+      ],
+      photos: [0, 1, 2].map((i) => ({ name: `places/x/photos/c${color}${i}`, authorAttributions: [{ displayName: "Fotógrafa de Prueba", uri: "https://maps.google.com/contrib/1" }] })),
+    }));
+  }
   if (req.method === "GET" && req.url.startsWith("/places/")) {
     return res.end(JSON.stringify({
       displayName: { text: "Lugar de prueba" }, formattedAddress: "Av. Prueba 1, Centro, 78000 San Luis Potosí, S.L.P., México", rating: 4.8, userRatingCount: 120,
@@ -353,8 +379,16 @@ try {
     ok(!red.has("h1") && !red.has("h2"), "un mensaje de la IA que nombra un servicio que el negocio no da se descarta");
     const plH = mensajeDePlantilla(hotelSolo, "José"), plS = mensajeDePlantilla(sinSaber, "José");
     ok(serviciosAjenos(plH, ["hotel"], hotelSolo.nombre).length === 0 && serviciosAjenos(plS, [], sinSaber.nombre).length === 0, "las plantillas de respaldo tampoco nombran servicios que no da", `${plH} || ${plS}`);
-    const iaBien = async ({ usuario }) => ({ mensajes: [...usuario.matchAll(/id: (\S+)/g)].map(([, id]) => ({ id, texto: `Hola. PeluDesk te lleva las reservas por noche. ${hotelSolo.link}` })) });
+    const iaBien = async ({ usuario }) => ({ mensajes: [...usuario.matchAll(/id: (\S+)/g)].map(([, id]) => ({ id, texto: `Hola, soy José de PeluDesk. PeluDesk te lleva las reservas por noche. ${hotelSolo.link}` })) });
     ok((await redactarLote([hotelSolo], iaBien, "José")).has("h1"), "uno que solo habla de lo que da sí se usa");
+    // Remitente: todos dicen que los manda José de PeluDesk; Instagram da el WhatsApp de ventas en frío.
+    const sinFirma = async ({ usuario }) => ({ mensajes: [...usuario.matchAll(/id: (\S+)/g)].map(([, id]) => ({ id, texto: `Hola. Les armamos su vista previa. ${hotelSolo.link}` })) });
+    ok(!(await redactarLote([hotelSolo], sinFirma, "José")).has("h1"), "un mensaje de la IA que no dice que lo manda José de PeluDesk se descarta (sale de plantilla)");
+    const tipos = ["primero", "seguimiento_1", "seguimiento_2"].flatMap((tipo) => ["whatsapp", "instagram"].flatMap((canal) => ["a1", "b2", "c3"].map((id) => ({ ...hotelSolo, id, tipo, canal }))));
+    ok(tipos.every((x) => /José, de PeluDesk|José de PeluDesk|soy José, de PeluDesk|José y trabajo en PeluDesk|José de PeluDesk/.test(mensajeDePlantilla(x, "José", "524443103236")) || (mensajeDePlantilla(x, "José", "524443103236").includes("José") && mensajeDePlantilla(x, "José", "524443103236").includes("PeluDesk"))), "todas las plantillas (primero y seguimientos, WhatsApp e Instagram) dicen que las manda José de PeluDesk");
+    const ig = mensajeDePlantilla({ ...hotelSolo, canal: "instagram" }, "José", "524443103236"), wa = mensajeDePlantilla(hotelSolo, "José", "524443103236");
+    const igIa = (await redactarLote([{ ...hotelSolo, canal: "instagram" }], iaBien, "José", undefined, "524443103236")).get("h1") ?? "";
+    ok(ig.includes("wa.me/524443103236") && igIa.includes("wa.me/524443103236") && !wa.includes("wa.me/"), "Instagram (IA y plantilla) da el WhatsApp de ventas en frío; WhatsApp no (ya sale de ese número)", `${ig} || ${igIa} || ${wa}`);
   }
 
   console.log("\n6. auditoria_frontera()");
@@ -456,19 +490,20 @@ try {
         ok(/noindex/.test(pg1.headers["x-robots-tag"] ?? "") && /<meta name="robots" content="noindex, nofollow"/.test(html), "noindex en el encabezado y en la página", pg1.headers["x-robots-tag"]);
         ok(html.includes("Vista previa hecha por PeluDesk para") && html.includes("No es su página oficial"), "arriba dice que es una vista previa de PeluDesk, no su página oficial");
         ok(html.includes("Fotógrafa de Prueba") && html.includes("Google Maps") && html.includes(`${W}/foto.jpg`), "fotos de Google pedidas al mostrarla, con el crédito de quien la tomó y la atribución");
-        ok(html.includes("Activar mi prueba gratis") && html.includes("Hablar por WhatsApp") && html.includes("Su agenda") && html.includes("Portal para sus clientes"), "trae la página web, la agenda, la caja, el portal y los dos botones");
+        ok(html.includes("Activar mi página gratis") && html.includes("Hablar por WhatsApp") && html.includes("data-pedir-cita") && html.includes("data-portal-demo") && html.includes("Ver cómo lo manejarías tú") && !html.includes("Datos de ejemplo</span>"), "trae su página con pedir cita, el portal, la demo de PeluDesk y los dos botones (sin las pantallas falsas)");
+        ok(!html.includes("Tú decides qué cookies usamos"), "sin el aviso de cookies de peludesk.mx (ahí no se mide nada: la visita va al CRM)");
         const v1 = (await A.from("prospectos").select("visitas, etapa").eq("id", paraPantalla.gua).single()).data;
         ok(v1.visitas === 1 && v1.etapa === "caliente", "la visita queda en el CRM y lo sube a «caliente»", JSON.stringify(v1));
         await pedir(`/para/${slug}`, { "user-agent": "WhatsApp/2.24.1 A" });
         await pedir(`/para/${slug}?interno=1`, UA);
         ok((await A.from("prospectos").select("visitas").eq("id", paraPantalla.gua).single()).data.visitas === 1, "la vista previa del link de WhatsApp y la que abre la plataforma no cuentan");
         const ir1 = await pedir(`/para/${slug}/ir/prueba`, UA);
-        ok(ir1.status === 302 && (ir1.headers.location ?? "").startsWith(`/registro?prospecto=${slug}`), "«Activar mi prueba gratis» lleva al registro con su negocio", ir1.headers.location);
+        ok(ir1.status === 302 && (ir1.headers.location ?? "").startsWith(`/registro?prospecto=${slug}`), "«Activar mi página gratis» lleva al registro con su negocio", ir1.headers.location);
         const reg = (await pedir(ir1.headers.location, UA)).cuerpo.toString();
         const nombreGua = (await A.from("prospectos").select("nombre").eq("id", paraPantalla.gua).single()).data.nombre;
         ok(reg.includes(`value="${nombreGua}"`) && reg.includes(`name="prospecto" value="${slug}"`), "el registro viene con el nombre de su negocio ya escrito");
         const ir2 = await pedir(`/para/${slug}/ir/whatsapp`, UA);
-        ok(ir2.status === 302 && /^https:\/\/wa\.me\/524441301539\?text=/.test(ir2.headers.location ?? ""), "«Hablar por WhatsApp» va al WhatsApp de contacto con el mensaje", ir2.headers.location);
+        ok(ir2.status === 302 && /^https:\/\/wa\.me\/524443103236\?text=/.test(ir2.headers.location ?? "") && decodeURIComponent(ir2.headers.location).includes(`vi la página que armaron para ${nombreGua} (ref. ${slug.slice(-5)})`), "«Hablar por WhatsApp» va al WhatsApp de ventas (sin PELUDESK_VENTAS_WHATSAPP, el de ventas en frío) y dice de qué negocio viene, con su referencia", ir2.headers.location);
         const v2 = (await A.from("prospectos").select("clic_prueba_at, clic_whatsapp_at").eq("id", paraPantalla.gua).single()).data;
         const { count: nv } = await A.from("prospectos_visitas").select("id", { count: "exact", head: true }).eq("prospecto_id", paraPantalla.gua);
         ok(v2.clic_prueba_at && v2.clic_whatsapp_at && nv === 3, "cada clic queda registrado (fecha, veces y en qué botón)", `${nv} visitas`);
@@ -522,6 +557,125 @@ try {
         await pg.goto(`http://plataforma.localhost:${PUERTO}/para/${slug}?interno=1`);
         ok(!(await pg.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)), "390 px: la página personalizada sin desplazamiento horizontal");
         await ctx.close();
+      }
+      // ── 7c. La página web de un prospecto por giro: diseño distinto, botones en demostración, nada escrito ──
+      console.log("\n7c. La página web de un prospecto, por giro (veterinaria, estética, hotel)");
+      const giros = [
+        { clave: "vet", giro: "veterinaria", servicios: ["veterinaria"], fuente: "jakarta", rol: "veterinaria", ir: "consulta", modo: "cita", visita: "Vacunación" },
+        { clave: "est", giro: "estetica", servicios: ["estetica"], fuente: "fraunces", rol: "recepcion", ir: "estetica", modo: "cita", visita: "Corte" },
+        { clave: "hot", giro: "hotel", servicios: ["hotel"], fuente: "dmserif", rol: "recepcion", ir: "calendario", modo: "noches", visita: "Hotel" },
+      ];
+      const { data: creados } = await A.from("prospectos")
+        .insert(giros.map((g, i) => ({ nombre: `Web ${g.giro} ${SUF}`, giro: g.giro, ciudad: CIUDAD, telefono: tel(300 + i), fuente: "manual", google_place_id: `aud${SUF}_web_${g.clave}`, clasificacion: { servicios: g.servicios } })))
+        .select("id, slug, nombre");
+      const TABLAS = ["citas_estetica", "estancias", "reservas", "vet_citas", "clientes", "perros", "cobros", "negocios"];
+      const contarTodo = async () => Object.fromEntries(await Promise.all(TABLAS.map(async (t) => [t, (await A.from(t).select("id", { count: "exact", head: true })).count])));
+      const antesDemo = await contarTodo();
+      const temas = [];
+      for (const [i, g] of giros.entries()) {
+        const p = creados[i];
+        for (const ancho of [390, 1280]) {
+          const ctx = await nav.newContext({ viewport: { width: ancho, height: 860 }, isMobile: ancho === 390, hasTouch: ancho === 390 });
+          const pg = await ctx.newPage();
+          const escrituras = [];
+          pg.on("request", (r) => { if (!["GET", "HEAD"].includes(r.method()) && /localhost/.test(r.url())) escrituras.push(`${r.method()} ${r.url()}`); });
+          await pg.goto(`http://plataforma.localhost:${PUERTO}/para/${p.slug}?interno=1`);
+          const d = await pg.locator("[data-pagina-web]").evaluate((e) => ({ ...e.dataset }));
+          if (ancho === 390) temas.push({ giro: g.giro, acento: d.acento, h1: await pg.locator("h1").evaluate((e) => getComputedStyle(e).fontFamily) });
+          ok(d.tema === g.giro && d.fuente === g.fuente && d.colorOrigen === "foto", `${g.giro} ${ancho} px: diseño ${d.tema}, letra ${d.fuente}, color ${d.acento} sacado de su foto`, JSON.stringify(d));
+          ok(!(await pg.evaluate(() => document.documentElement.scrollWidth > window.visualViewport.width + 1)), `${g.giro} ${ancho} px: sin desplazamiento horizontal`);
+          if (ancho === 390) {
+            ok(
+              (await pg.locator("[data-aviso-vista-previa]").isVisible()) && (await pg.locator("[data-resena]").count()) === 1 && (await pg.locator("[data-horario]").count()) === 1 && (await pg.locator("[data-mapa]").count()) === 1,
+              `${g.giro}: franja de vista previa, una reseña destacada (la mala no), horario de Google y mapa`
+            );
+            await pg.locator("[data-boton-pedir]").first().click();
+            await pg.locator("[data-pedir-cita] [data-servicio]").first().check();
+            await pg.locator("[data-siguiente]").click();
+            await pg.locator("[data-dia]").first().click();
+            ok(!(await pg.evaluate(() => document.documentElement.scrollWidth > window.visualViewport.width + 1)), `${g.giro}: escoger el día no desborda la pantalla (la fila de días se desliza sola)`);
+            if (g.modo === "cita") await pg.locator("[data-hora]").first().click();
+            else await pg.locator("[data-salida]").first().click();
+            if (g.modo === "noches") ok(/noche/.test(await pg.locator("[data-noches]").innerText()), `${g.giro}: escoge llegada y salida y cuenta las noches`);
+            await pg.locator("[data-siguiente]").click();
+            await pg.locator("[data-confirmar-pedido]").click();
+            await pg.locator("[data-pedido-listo]").waitFor();
+            const chat = await pg.locator("[data-chat-whatsapp]").innerText();
+            ok(chat.includes(p.nombre) && chat.includes("Luna") && /Confirmación/i.test(chat) && /Recordatorio/i.test(chat) && /Listo para recoger/i.test(chat), `${g.giro}: pedir ${g.modo === "noches" ? "reserva" : "cita"} llega al final y enseña confirmación, recordatorio y aviso de recoger por WhatsApp`, chat.slice(0, 200));
+            await pg.locator('[data-portal-demo] [data-pestana-portal="vacunas"]').click();
+            ok(/Vigente/.test(await pg.locator("[data-portal-demo]").innerText()), `${g.giro}: «Mi portal» enseña las vacunas de ejemplo`);
+            await pg.locator('[data-portal-demo] [data-pestana-portal="visitas"]').click();
+            ok((await pg.locator("[data-portal-demo]").innerText()).includes(g.visita), `${g.giro}: y sus ${g.modo === "noches" ? "reservas" : "citas"}`);
+            ok(escrituras.length === 0, `${g.giro}: ningún envío al servidor durante la demostración`, escrituras.join(" | "));
+            ok(!(await pg.evaluate(() => document.documentElement.scrollWidth > window.visualViewport.width + 1)), `${g.giro}: después de todo el recorrido sigue sin desplazamiento horizontal`);
+          }
+          await ctx.close();
+        }
+        const dm = await pedir(`/para/${p.slug}/ir/demo`, { "user-agent": "Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile" });
+        ok(dm.status === 302 && new RegExp(`/demo/entrar/${g.rol}\\?ir=${g.ir}$`).test(dm.headers.location ?? ""), `${g.giro}: «Ver cómo lo manejarías tú» abre la demo como ${g.rol} (${g.ir})`, dm.headers.location);
+      }
+      ok(new Set(temas.map((t) => t.acento)).size === 3 && new Set(temas.map((t) => t.h1)).size === 3, "las tres se ven distintas: otro color y otra letra", JSON.stringify(temas));
+      ok(JSON.stringify(antesDemo) === JSON.stringify(await contarTodo()), "nada se escribió en ningún negocio (citas, estancias, reservas, consultas, clientes, perros, cobros, negocios)");
+      const { data: vd } = await A.from("prospectos_visitas").select("tipo").in("prospecto_id", creados.map((c) => c.id));
+      ok((vd ?? []).filter((v) => v.tipo === "clic_demo").length === 3 && !(vd ?? []).some((v) => v.tipo === "visita"), "cada clic a la demo queda en el CRM y las visitas con ?interno=1 no cuentan", JSON.stringify(vd));
+      // El bot de WhatsApp liga al prospecto: por la referencia del mensaje prellenado y, si no trae, por su teléfono.
+      const [pe, ph] = [creados[1], creados[2]];
+      await A.from("prospectos_contactos").insert({ prospecto_id: pe.id, fecha: new Date().toISOString().slice(0, 10), canal: "instagram", tipo: "primero", orden: -5, mensaje: `Prueba ${pe.slug}`, estado: "enviado" });
+      const r1 = await A.rpc("prospecto_registrar_whatsapp", { p_telefono: "5215500000000", p_ref: pe.slug.slice(-5) });
+      const e1 = (await A.from("prospectos").select("etapa, canal_ultimo_contacto").eq("id", pe.id).single()).data;
+      const c1 = (await A.from("prospectos_contactos").select("estado").eq("prospecto_id", pe.id).single()).data;
+      ok(r1.data?.id === pe.id && r1.data?.por === "referencia" && e1.etapa === "respondio" && e1.canal_ultimo_contacto === "whatsapp_bot" && c1?.estado === "respondio",
+        "un mensaje al bot con «ref. …» marca al prospecto «respondió» con canal WhatsApp bot y saca su renglón de «Contactar hoy»", JSON.stringify({ r1: r1.data ?? r1.error, e1, c1 }));
+      const r2 = await A.rpc("prospecto_registrar_whatsapp", { p_telefono: `521${tel(302).replace(/\D/g, "")}`, p_ref: null });
+      ok(r2.data?.id === ph.id && r2.data?.por === "telefono", "sin referencia, lo reconoce por su teléfono", JSON.stringify(r2.data ?? r2.error));
+      await A.rpc("prospecto_registrar_whatsapp", { p_telefono: "5215500000000", p_ref: pe.slug.slice(-5) });
+      const { count: notas } = await A.from("prospectos_eventos").select("id", { count: "exact", head: true }).eq("prospecto_id", pe.id).eq("canal", "whatsapp_bot").eq("tipo", "contacto");
+      ok(notas === 1, "varios mensajes el mismo día dejan una sola nota en su historial", `${notas}`);
+      const r3 = await A.rpc("prospecto_registrar_whatsapp", { p_telefono: "5215511112222", p_ref: "zzzzz" });
+      ok(!r3.error && r3.data === null, "alguien que no es prospecto no se liga a nadie");
+      const anonR = await createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } }).rpc("prospecto_registrar_whatsapp", { p_telefono: "1", p_ref: pe.slug.slice(-5) });
+      ok(Boolean(anonR.error), "la llave anónima no puede llamarla", JSON.stringify(anonR.data));
+      // /demo/entrar con ?ir= (solo claves conocidas) en el demo de desarrollo.
+      const enDemo = (ruta) => new Promise((res) => http.get({ host: "127.0.0.1", port: PUERTO, path: ruta, headers: { host: `patitasyco.localhost:${PUERTO}` } }, (r) => res(r.headers.location ?? `status ${r.statusCode}`)));
+      const [eCal, eCons, eMala] = [await enDemo("/demo/entrar/recepcion?ir=calendario"), await enDemo("/demo/entrar/veterinaria?ir=consulta"), await enDemo("/demo/entrar/recepcion?ir=/admin/permisos")];
+      ok(eCal === "/reservas/calendario" && /^\/veterinaria\/(consulta\/[0-9a-f-]{36}|agenda)$/.test(eCons) && eMala === "/recepcion", "la demo abre en la pantalla del giro y no acepta una ruta suelta", `${eCal} · ${eCons} · ${eMala}`);
+
+      // «Activar mi página gratis» → registro → su página queda publicada en su subdominio con lo que vio.
+      const pv = creados[0];
+      // El tope de 3 registros por conexión al día: las corridas locales de hoy (127.0.0.1) se envejecen, como en prueba-gratis-dev.
+      // (Con un filtro de negocio_id propio: sesiones-dev acota a Ludogteka toda tabla con negocio_id que no lo traiga.)
+      await A.from("registros_prueba").update({ created_at: new Date(Date.now() - 2 * 86_400_000).toISOString() }).eq("ip", "127.0.0.1").not("negocio_id", "is", null).gte("created_at", new Date(Date.now() - 86_400_000).toISOString());
+      const telReg = `449${SUF}${String(Math.floor(Math.random() * 10))}`;
+      const ctxR = await nav.newContext({ viewport: { width: 390, height: 860 } });
+      const pr = await ctxR.newPage();
+      await pr.goto(`http://plataforma.localhost:${PUERTO}/para/${pv.slug}/ir/prueba?interno=1`);
+      await pr.getByRole("button", { name: "Rechazar" }).click({ timeout: 5000 }).catch(() => {});
+      await pr.getByLabel("Tu nombre").fill("Persona de Prueba");
+      await pr.getByLabel("Teléfono").fill(telReg);
+      await pr.getByLabel("Contraseña", { exact: true }).fill(claveAleatoria());
+      await pr.getByLabel(/Leí y acepto/).check();
+      await pr.getByRole("button", { name: "Abrir mi negocio" }).click();
+      let alta = null;
+      for (let i = 0; i < 40 && !alta; i++) { await new Promise((r) => setTimeout(r, 1000)); alta = (await A.from("registros_prueba").select("negocio_id").eq("telefono", telReg).not("negocio_id", "is", null).maybeSingle()).data; }
+      const avisoReg = alta ? "" : await pr.locator("form").last().innerText().catch(() => "");
+      await ctxR.close();
+      if (!alta) ok(false, "", `el registro desde la vista previa no creó el negocio: ${avisoReg.replace(/\s+/g, " ").slice(-300)}`);
+      else {
+        const { data: neg } = await A.from("negocios").select("slug, nombre").eq("id", alta.negocio_id).single();
+        try {
+          let perfil = null;
+          for (let i = 0; i < 10 && !perfil?.tema_web; i++) { await new Promise((r) => setTimeout(r, 800)); perfil = (await A.from("negocio_perfil").select("tema_web, color_web, google_place_id, direccion").eq("negocio_id", alta.negocio_id).is("deleted_at", null).maybeSingle()).data; }
+          const { data: sab } = await A.from("horario_semana").select("hora_cierre").eq("negocio_id", alta.negocio_id).eq("dia_semana", 6).is("deleted_at", null).limit(1).maybeSingle();
+          const { data: cc } = await A.from("cupo_configuracion").select("telefono_recepcion").eq("negocio_id", alta.negocio_id).is("deleted_at", null).limit(1).maybeSingle();
+          ok(perfil?.tema_web === "veterinaria" && /^#[0-9a-f]{6}$/.test(perfil?.color_web ?? "") && perfil?.google_place_id === `aud${SUF}_web_vet` && String(sab?.hora_cierre ?? "").startsWith("14:00") && cc?.telefono_recepcion === tel(300).replace(/\D/g, ""),
+            "al registrarse, su perfil queda con su diseño, su color, su lugar de Google, su horario y su WhatsApp", JSON.stringify({ perfil, sab, cc }));
+          const pub = await new Promise((res) => http.get({ host: "127.0.0.1", port: PUERTO, path: "/", headers: { host: `${neg.slug}.localhost:${PUERTO}` } }, (r) => { let b = ""; r.on("data", (c) => (b += c)); r.on("end", () => res({ status: r.statusCode, b })); }));
+          ok(pub.status === 200 && pub.b.includes('data-tema="veterinaria"') && pub.b.includes(neg.nombre) && pub.b.includes("Fotógrafa de Prueba") && !pub.b.includes("data-aviso-vista-previa") && !pub.b.includes("data-portal-demo"),
+            "y su página ya está publicada en su subdominio, en modo real (sin franja de vista previa ni portal de ejemplo)", `status ${pub.status}`);
+        } finally {
+          const { execFileSync } = await import("node:child_process");
+          try { execFileSync(process.execPath, ["scripts/plataforma/eliminar-negocio.mjs", neg.slug, "--telefono", telReg, "--aplicar"], { stdio: "ignore" }); } catch (e) { ok(false, "", `no se pudo borrar el negocio de prueba ${neg.slug}: ${e.message}`); }
+        }
       }
       await nav.close();
     } finally {

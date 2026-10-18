@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { ConsentimientoCookies } from "@/components/peludesk/consentimiento/consentimiento";
 import { COOKIE_CONSENTIMIENTO, leerConsentimiento } from "@/lib/peludesk/cookies";
 import { BotonWhatsApp } from "@/components/peludesk/boton-whatsapp";
@@ -14,6 +14,9 @@ import "./peludesk.css";
  * hay píxel aunque alguien acepte «Marketing».
  */
 export default async function PeluDeskLayout({ children }: { children: React.ReactNode }) {
+  // La vista previa de un prospecto (/para/<slug>) es SU página: sin aviso de cookies, sin píxel ni analítica
+  // (sus visitas se cuentan en el CRM, del lado del servidor) y sin el botón flotante de PeluDesk.
+  if ((await headers()).get("x-peludesk-ruta")?.startsWith("/para/")) return <>{children}</>;
   const jar = await cookies();
   const inicial = leerConsentimiento(jar.get(COOKIE_CONSENTIMIENTO)?.value);
   const whatsapp = await whatsappPeluDesk("Hola, quiero saber más de PeluDesk.");
