@@ -1,7 +1,8 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { SITIO } from "@/lib/peludesk/seo";
 import { hoyNegocio } from "@/lib/formato";
-import { correrProspeccion } from "./correr";
+import { correrProspeccion, leerAjustes } from "./correr";
+import { ciudadesNacionales, estimarCosto } from "./nacional";
 import { buscarTexto, PLACES_URL } from "./places";
 import { revisarWeb } from "./web";
 import { crearLlamarIA, MODELO_CLASIFICAR, MODELO_MENSAJES } from "./ia";
@@ -35,6 +36,42 @@ export async function correrBusqueda(o: { origen: "cron" | "manual"; tope?: numb
     ciudadDe: ciudadDeDireccion,
     ...o,
   });
+}
+
+const GIROS_TODOS = ["guarderia", "hotel", "estetica", "veterinaria"];
+
+/** Cuántas búsquedas a Google van en el mes (corridas de prospección), para descontar las 1,000 gratis. */
+async function busquedasDelMes(db: ReturnType<typeof piezas>["db"]): Promise<number> {
+  const desde = new Date();
+  desde.setUTCDate(1);
+  desde.setUTCHours(0, 0, 0, 0);
+  let total = 0;
+  for (let desplaza = 0; ; desplaza += 1000) {
+    const { data } = await db.from("prospeccion_corridas").select("busquedas").gte("inicio_at", desde.toISOString()).order("inicio_at").order("id").range(desplaza, desplaza + 999);
+    for (const f of data ?? []) total += Number(f.busquedas) || 0;
+    if ((data ?? []).length < 1000) break;
+  }
+  return total;
+}
+
+/** Cuánto costaría recorrer la lista nacional (o los estados / zonas pedidos), sin llamar a Google. */
+export async function estimarNacional(f: { estados?: string[]; zonas?: string[]; giros?: string[]; topeDiario?: number; precioPor1000Usd?: number }) {
+  const { db } = piezas();
+  const ajustes = await leerAjustes(db);
+  const giros = (f.giros?.length ? f.giros : GIROS_TODOS).filter((g) => GIROS_TODOS.includes(g));
+  const ciudades = ciudadesNacionales(f);
+  const consultas = giros.reduce((n, g) => n + (ajustes.consultas[g]?.length ?? 0), 0);
+  return { ...estimarCosto({ ciudades: ciudades.length, consultasPorCiudad: consultas, paginasPorConsulta: ajustes.paginas_por_consulta, yaUsadasEsteMes: await busquedasDelMes(db), topeDiario: f.topeDiario, precioPor1000Usd: f.precioPor1000Usd }), giros };
+}
+
+/**
+ * Una tanda de la prospección nacional: las combinaciones ciudad + consulta que llevan más sin buscarse (las nunca
+ * buscadas primero), hasta `tope` búsquedas. Llamarla cada día es la rotación: la siguiente tanda sigue donde quedó.
+ */
+export async function correrNacional(o: { tope: number; estados?: string[]; zonas?: string[]; giros?: string[]; presupuestoMs: number }) {
+  const ajustes = await leerAjustes(piezas().db);
+  if (ajustes.pausado) return { pausada: true as const };
+  return correrBusqueda({ origen: "manual", tope: o.tope, ciudades: ciudadesNacionales(o), giros: o.giros, presupuestoMs: o.presupuestoMs });
 }
 
 export async function correrCalidad(presupuestoMs: number, topeClasificar = 300) {
