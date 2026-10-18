@@ -40,6 +40,10 @@
     {
       "path": "/api/cron/dictados",
       "schedule": "47 9 * * *"
+    },
+    {
+      "path": "/api/cron/indexnow",
+      "schedule": "53 * * * *"
     }
   ]
 }

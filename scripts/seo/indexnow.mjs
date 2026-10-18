@@ -4,7 +4,7 @@
 // La llave es pública por diseño (src/lib/peludesk/indexnow.ts) y el sitio la
 // sirve en /indexnow-key.txt: el protocolo la usa para comprobar que el sitio
 // es tuyo, no hace falta entrar a ninguna consola.
-// Hay que correrlo DESPUÉS del despliegue (el archivo de llave y las páginas
+// Ya NO hace falta correrlo: la tarea /api/cron/indexnow lo hace sola cada hora (solo URL nuevas o cambiadas). Queda para forzar un envío completo a mano, DESPUÉS del despliegue y
 // tienen que estar en producción) y desde una máquina que llegue a
 // api.indexnow.org (la red de la nube no llega).
 import { createHash } from "node:crypto";
