@@ -35,7 +35,7 @@ const r = await procesarCalidad({
   presupuestoMs: 6 * 60 * 60 * 1000,
   avisar: (t) => console.log("  " + t),
 });
-console.log(`\n${prod ? "PRODUCCIÓN" : "desarrollo"} · ciudades corregidas ${r.ciudades} · clasificados ${r.clasificados} · descartados ${r.descartados} · giro cambiado ${r.giroCambiado} · sucursales ${r.sucursales}`);
+console.log(`\n${prod ? "PRODUCCIÓN" : "desarrollo"} · ciudades corregidas ${r.ciudades} · clasificados ${r.clasificados} · descartados ${r.descartados} · giro cambiado ${r.giroCambiado} · sucursales ${r.sucursales} · hoteles para personas ${r.hotelesPersonas} · guarderías infantiles ${r.guarderiasInfantiles}`);
 for (const e of r.errores) console.log("  error: " + e);
 
 if (args.includes("--lista")) {
@@ -47,6 +47,6 @@ if (args.includes("--lista")) {
     redactar: ia ? (lote) => redactarLote(lote, ia, aj.firma, MODELO_MENSAJES, aj.whatsapp_ventas) : async () => new Map(),
     plantilla: (p) => mensajeDePlantilla(p, aj.firma, aj.whatsapp_ventas),
   });
-  console.log(`lista ${fecha}: WhatsApp ${l.whatsapp} · Instagram ${l.instagram} · seguimientos ${l.seguimientos} · pausados ${l.pausados} · por IA ${l.porIA}`);
+  console.log(`lista ${fecha}: WhatsApp ${l.whatsapp} · Instagram ${l.instagram} · seguimientos ${l.seguimientos} · pausados ${l.pausados} · por IA ${l.porIA} · retirados ${l.retirados}`);
 }
 process.exit(r.errores.length ? 1 : 0);
