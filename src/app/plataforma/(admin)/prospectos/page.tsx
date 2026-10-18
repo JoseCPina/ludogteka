@@ -17,7 +17,7 @@ const POR_PAGINA = 25;
 
 type Resumen = { total: number; clientes: number; descartados?: number; descartados_no_giro?: number; sucursales?: number; calientes?: number; con_telefono: number; con_correo: number; con_instagram: number; por_ciudad_giro: { ciudad: string; giro: string; n: number }[]; por_etapa: Record<string, number> };
 type Corrida = { id: string; origen: string; estado: string; busquedas: number; resultados: number; nuevos: number; duplicados: number; clientes: number; errores: number; webs_revisadas: number; detalle: { errores?: string[] }; error: string | null; inicio_at: string };
-type Ajustes = { ciudades: string[]; consultas: Record<string, string[]>; tope_busquedas_dia: number; paginas_por_consulta: number; pausado: boolean; lista_whatsapp: number; lista_instagram: number; dias_seguimiento: number; max_seguimientos: number; firma: string };
+type Ajustes = { ciudades: string[]; consultas: Record<string, string[]>; tope_busquedas_dia: number; paginas_por_consulta: number; pausado: boolean; lista_whatsapp: number; lista_instagram: number; dias_seguimiento: number; max_seguimientos: number; firma: string; whatsapp_ventas: string };
 
 const ESTADO_CORRIDA: Record<string, string> = { corriendo: "Corriendo", terminada: "Terminada", fallida: "Falló", sin_llave: "Sin llave de Google", pausada: "En pausa" };
 
@@ -30,12 +30,12 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
   const pagina = Math.max(1, Number(sp.pagina) || 1);
   const [{ data: res }, { data: aj }, { data: corridas }, lista] = await Promise.all([
     supabase.rpc("prospectos_resumen"),
-    supabase.from("prospeccion_ajustes").select("ciudades, consultas, tope_busquedas_dia, paginas_por_consulta, pausado, lista_whatsapp, lista_instagram, dias_seguimiento, max_seguimientos, firma").eq("id", 1).maybeSingle(),
+    supabase.from("prospeccion_ajustes").select("ciudades, consultas, tope_busquedas_dia, paginas_por_consulta, pausado, lista_whatsapp, lista_instagram, dias_seguimiento, max_seguimientos, firma, whatsapp_ventas").eq("id", 1).maybeSingle(),
     supabase.from("prospeccion_corridas").select("id, origen, estado, busquedas, resultados, nuevos, duplicados, clientes, errores, webs_revisadas, detalle, error, inicio_at").is("deleted_at", null).order("inicio_at", { ascending: false }).limit(8),
     consultaProspectos(supabase, f).range((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA - 1),
   ]);
   const resumen = (res ?? { total: 0, clientes: 0, con_telefono: 0, con_correo: 0, con_instagram: 0, por_ciudad_giro: [], por_etapa: {} }) as Resumen;
-  const ajustes = (aj ?? { ciudades: [], consultas: {}, tope_busquedas_dia: 30, paginas_por_consulta: 3, pausado: false, lista_whatsapp: 15, lista_instagram: 15, dias_seguimiento: 3, max_seguimientos: 2, firma: "José" }) as Ajustes;
+  const ajustes = (aj ?? { ciudades: [], consultas: {}, tope_busquedas_dia: 30, paginas_por_consulta: 3, pausado: false, lista_whatsapp: 15, lista_instagram: 15, dias_seguimiento: 3, max_seguimientos: 2, firma: "José", whatsapp_ventas: "524443103236" }) as Ajustes;
   const filas = (lista.data ?? []) as unknown as Prospecto[];
   const total = lista.count ?? 0;
   const paginas = Math.max(1, Math.ceil(total / POR_PAGINA));
@@ -234,7 +234,8 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
             <Field label="Días sin respuesta para el seguimiento" name="dias_seguimiento" type="number" min={1} max={30} step={1} defaultValue={ajustes.dias_seguimiento} required />
             <Field label="Seguimientos antes de dejarlo en pausa" name="max_seguimientos" type="number" min={0} max={5} step={1} defaultValue={ajustes.max_seguimientos} required />
           </div>
-          <Field label="Nombre con el que se firman los mensajes" name="firma" defaultValue={ajustes.firma} required maxLength={40} />
+          <Field label="Nombre con el que se firman los mensajes" name="firma" defaultValue={ajustes.firma} required maxLength={40} ayuda="Todos los mensajes dicen que los manda este nombre, de PeluDesk." />
+          <Field label="WhatsApp de ventas en frío (52 + 10 dígitos)" name="whatsapp_ventas" defaultValue={ajustes.whatsapp_ventas} required pattern="52[0-9]{10}" ayuda="El número desde el que mandas los mensajes a mano. Los de Instagram lo dan para quien prefiera contestar por WhatsApp." />
           <label className="flex items-center gap-2 text-sm text-n-800">
             <input type="checkbox" name="pausado" value="si" defaultChecked={ajustes.pausado} /> Pausar la búsqueda diaria
           </label>

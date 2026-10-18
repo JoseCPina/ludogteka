@@ -3,6 +3,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { clienteSinSesion, guardarSesionEnSuArea } from "@/lib/supabase/sesion-por-rol";
 import { negocioActual } from "@/lib/negocio/actual";
 import { CUENTAS_DEMO, esRolDemo } from "@/lib/demo/cuentas";
+import { IR_DEMO, esIrDemo } from "@/lib/web-negocio/demo";
 
 // "Ver demo": abre sesión con la cuenta del rol escogido en el negocio de
 // demostración, sin registro. Solo si el negocio del dominio es un demo y
@@ -15,7 +16,7 @@ function ir(ruta: string) {
   return new NextResponse(null, { status: 303, headers: { Location: ruta, "Cache-Control": "no-store" } });
 }
 
-export async function GET(_request: NextRequest, contexto: { params: Promise<{ rol: string }> }) {
+export async function GET(request: NextRequest, contexto: { params: Promise<{ rol: string }> }) {
   const { rol } = await contexto.params;
   if (!esRolDemo(rol)) return ir("/demo");
   const cuenta = CUENTAS_DEMO[rol];
@@ -45,6 +46,23 @@ export async function GET(_request: NextRequest, contexto: { params: Promise<{ r
   if (error || !canje.session) {
     console.error("[demo] verifyOtp", error?.message);
     return ir("/demo?error=sesion");
+  }
+  // Desde la vista previa de un prospecto llega con la pantalla de su giro (?ir=, solo claves de IR_DEMO).
+  const pedido = request.nextUrl.searchParams.get("ir");
+  if (esIrDemo(pedido)) {
+    if (pedido === "consulta") {
+      const { data: c } = await admin
+        .from("vet_consultas")
+        .select("id")
+        .eq("negocio_id", negocio.id)
+        .eq("estado", "firmada")
+        .is("deleted_at", null)
+        .order("firmada_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (c?.id) return ir(`/veterinaria/consulta/${c.id}`);
+    }
+    return ir(IR_DEMO[pedido]);
   }
   return ir(cuenta.destino);
 }

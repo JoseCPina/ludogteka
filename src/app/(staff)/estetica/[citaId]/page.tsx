@@ -10,7 +10,8 @@ import { formatearDiaDeInstante, formatearFecha, formatearFechaCalendario, horaL
 import { CitaDetalle, type RecetaItem } from "./cita-detalle";
 import { CorregirServicio } from "./corregir-servicio";
 import type { Estilista } from "../selector-estilista";
-import { zonaActual } from "@/lib/negocio/actual";
+import { negocioActual, zonaActual } from "@/lib/negocio/actual";
+import { AvisosWhatsApp } from "@/components/avisos-whatsapp";
 import { usaEstancias } from "@/lib/plan/modulos";
 
 const ESTADO_HISTORIAL: Record<string, string> = {
@@ -170,6 +171,13 @@ export default async function CitaDetallePage({
   const puedeEditar =
     sesion?.rol === "admin" || sesion?.rol === "recepcion" || sesion?.user.id === cita.empleado_id;
 
+  // «Avisar por WhatsApp» (confirmación, recordatorio, ya puede pasar): solo para quien atiende el mostrador.
+  const avisa = (sesion?.rol === "admin" || sesion?.rol === "recepcion") && !["cancelada", "no_llego"].includes(cita.estado);
+  const [{ data: duenoCrudo }, negocio] = avisa
+    ? await Promise.all([supabase.from("perros").select("clientes(nombre, telefono)").eq("id", cita.perro_id).maybeSingle(), negocioActual()])
+    : [{ data: null }, null];
+  const dueno = duenoCrudo ? (Array.isArray(duenoCrudo.clientes) ? duenoCrudo.clientes[0] : duenoCrudo.clientes) as { nombre: string | null; telefono: string | null } | null : null;
+
   return (
     <div className="flex flex-col gap-6">
       <Link href="/estetica" className="text-sm font-semibold text-morado hover:underline">
@@ -184,6 +192,21 @@ export default async function CitaDetallePage({
           {formatearDiaDeInstante(cita.inicio, zona)} · {horaLocalDeInstante(cita.inicio, zona)}
           {cita.fin ? ` – ${horaLocalDeInstante(cita.fin, zona)}` : ""} · {cita.empleado_id ? (empleado?.nombre_completo ?? "—") : "Sin asignar"}
         </p>
+        {avisa && negocio && dueno && (
+          <div className="mt-3">
+            <AvisosWhatsApp
+              telefono={dueno.telefono}
+              datos={{
+                negocio: negocio.nombre,
+                servicio: { nombre: servicio?.nombre ?? (cita.servicio_nombre as string | null) ?? "su cita", categoria: "estetica", modo: "cita" },
+                mascota: perro.nombre,
+                cliente: dueno.nombre ?? "",
+                dia: new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", timeZone: zona }).format(new Date(cita.inicio)),
+                hora: new Intl.DateTimeFormat("es-MX", { hour: "numeric", minute: "2-digit", timeZone: zona }).format(new Date(cita.inicio)),
+              }}
+            />
+          </div>
+        )}
         {cita.fuera_de_horario && (
           <p className="mt-1 inline-block rounded-full bg-ambar-suave px-2.5 py-1 text-xs font-bold text-ambar-oscuro">
             Fuera de horario

@@ -3,7 +3,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { formatearFechaCalendario, formatearDiaSemana, fechaLocalDeInstante, horaLocalDeInstante, hoyNegocio, sumarDiasFecha, inicioSemana } from "@/lib/formato";
-import { zonaActual } from "@/lib/negocio/actual";
+import { negocioActual, zonaActual } from "@/lib/negocio/actual";
+import { AvisosWhatsApp } from "@/components/avisos-whatsapp";
 import { ESTADOS_CITA, type CitaVet, type MedicoVet } from "@/lib/veterinaria/expediente";
 import { AccionesCita } from "./acciones-cita";
 
@@ -26,6 +27,20 @@ export default async function AgendaVeterinaria({ searchParams }: { searchParams
     supabase.rpc("vet_puede_leer"),
   ]);
   const citas = (citasCrudo ?? []) as CitaVet[];
+  // «Avisar por WhatsApp» de cada cita viva: el teléfono del dueño de cada mascota de la agenda.
+  const perroIds = [...new Set(citas.filter((c) => !["cancelada", "no_llego"].includes(c.estado)).map((c) => c.perro_id))];
+  const [{ data: duenosCrudo }, negocio] = await Promise.all([
+    perroIds.length ? supabase.from("perros").select("id, clientes(nombre, telefono)").in("id", perroIds) : Promise.resolve({ data: [] as { id: string; clientes: unknown }[] }),
+    negocioActual(),
+  ]);
+  const duenoDe = new Map(
+    (duenosCrudo ?? []).map((f) => {
+      const c = (Array.isArray(f.clientes) ? f.clientes[0] : f.clientes) as { nombre: string | null; telefono: string | null } | null;
+      return [f.id as string, c];
+    })
+  );
+  const diaLargo = (iso: string) => new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", timeZone: zona }).format(new Date(iso));
+  const hora12 = (iso: string) => new Intl.DateTimeFormat("es-MX", { hour: "numeric", minute: "2-digit", timeZone: zona }).format(new Date(iso));
   const medicos = (medicosCrudo ?? []) as MedicoVet[];
   const puedeAtender = puedeAtenderCrudo === true;
   const puedeLeer = puedeLeerCrudo === true;
@@ -102,6 +117,21 @@ export default async function AgendaVeterinaria({ searchParams }: { searchParams
                                 {puedeLeer && <Link href={`/veterinaria/expediente/${c.perro_id}`} className="text-morado hover:underline">Expediente</Link>}
                                 <Link href={`/veterinaria/carnet/${c.perro_id}`} className="text-morado hover:underline">Carnet</Link>
                               </div>
+                              {!gris && duenoDe.get(c.perro_id) && (
+                                <div className="mt-2">
+                                  <AvisosWhatsApp
+                                    telefono={duenoDe.get(c.perro_id)?.telefono}
+                                    datos={{
+                                      negocio: negocio.nombre,
+                                      servicio: { nombre: c.tipo, categoria: "veterinaria", modo: "cita" },
+                                      mascota: c.mascota,
+                                      cliente: duenoDe.get(c.perro_id)?.nombre ?? "",
+                                      dia: diaLargo(c.inicia_at),
+                                      hora: hora12(c.inicia_at),
+                                    }}
+                                  />
+                                </div>
+                              )}
                               <AccionesCita
                                 id={c.id}
                                 estado={c.estado}

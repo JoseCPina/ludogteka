@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { comprimirImagen } from "@/lib/imagen";
+import { Select } from "@/components/ui/select";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,8 @@ function Subir({ etiqueta, esLogo, accion }: { etiqueta: string; esLogo: boolean
 export function PerfilForm({
   descripcion,
   direccion,
+  temaWeb,
+  colorWeb,
   logoUrl,
   logoAncho,
   logoAlto,
@@ -76,6 +79,8 @@ export function PerfilForm({
 }: {
   descripcion: string;
   direccion: string;
+  temaWeb: string | null;
+  colorWeb: string | null;
   logoUrl: string | null;
   logoAncho: number | null;
   logoAlto: number | null;
@@ -110,6 +115,23 @@ export function PerfilForm({
             ayuda="Dos o tres líneas: qué ofreces y qué te hace distinto. Sale arriba en tu página."
           />
           <Field label="Dirección" name="direccion" defaultValue={direccion} maxLength={200} ayuda="Calle, número y colonia. Sale en tu página con un link al mapa." />
+          <Select label="Diseño de tu página" name="tema_web" defaultValue={temaWeb ?? ""} ayuda="Cambia la tipografía, los colores y cómo se acomoda tu página.">
+            <option value="">Automático (según tus servicios)</option>
+            <option value="veterinaria">Clínica veterinaria</option>
+            <option value="estetica">Estética</option>
+            <option value="guarderia">Guardería</option>
+            <option value="hotel">Hotel</option>
+          </Select>
+          <div className="flex flex-wrap items-end gap-4">
+            <label className="flex flex-col gap-1.5 text-sm font-medium text-n-800">
+              Color de tu página
+              <input type="color" name="color_web" defaultValue={colorWeb ?? "#2f6f73"} className="h-12 w-20 cursor-pointer rounded-md border-[1.5px] border-borde bg-white p-1" />
+            </label>
+            <label className="flex min-h-12 items-center gap-2 text-sm text-n-800">
+              <input type="checkbox" name="color_auto" defaultChecked={!colorWeb} className="h-5 w-5 accent-morado" />
+              Usar el color de mis fotos
+            </label>
+          </div>
           <AccionesFormulario error={res?.error} exito={res && !res.error ? res.exito ?? true : null}>
             <Button type="submit" cargando={envio.cargando}>
               Guardar datos

@@ -546,7 +546,7 @@ Cada regla solo se muestra con el módulo que la usa prendido: sin hotel no se h
     modulo: "pagina_web",
     roles: ["admin", "recepcion"],
     rutas: ["/admin/perfil"],
-    palabras: ["sitio web", "página", "logo", "fotos", "dirección", "web incluida", "internet"],
+    palabras: ["sitio web", "página", "logo", "fotos", "dirección", "web incluida", "internet", "diseño", "color", "reservar en línea", "pedir cita", "avisar por whatsapp", "confirmación", "recordatorio"],
     captura: "perfil-y-pagina-web.jpg",
     cuerpo: `Tu página web se arma sola con tu perfil, tus servicios, tus precios y tu horario. Tú solo pones lo que la hace tuya: logo, fotos y dirección.
 
@@ -554,6 +554,19 @@ Cada regla solo se muestra con el módulo que la usa prendido: sin hotel no se h
 2. En **Datos** escribe una **Descripción** corta (qué ofreces y qué te hace distinto) y tu **Dirección**. Aprieta **Guardar datos**.
 3. En **Logo**, escoge el archivo (PNG, JPG, WebP o SVG, de hasta 2 MB). Antes de guardar ves cómo se va a ver en tu registro de clientes, en un recibo y en tu portal, y te avisamos si es muy ancho o muy alto, si trae fondo blanco o si tiene márgenes grandes. Si te gusta, aprieta **Guardar logo** (o **Guardar el logo nuevo**). Lo mejor es un PNG o SVG con fondo transparente, recortado cerca del dibujo.
 4. En **Fotos del negocio**, sube al menos 3 con **Agregar foto**: tu local, tu equipo, perros felices.
+5. En **Diseño de tu página** escoge cómo se ve: **Clínica veterinaria**, **Estética**, **Guardería** u **Hotel** (cambian la letra, los colores y cómo se acomoda), o déjalo en **Automático (según tus servicios)**. En **Color de tu página** puedes poner el tuyo o marcar **Usar el color de mis fotos**. Aprieta **Guardar datos**.
+
+## Qué hacen tus clientes en tu página
+
+- **Pedir su cita o reserva en línea**: escogen el servicio, el día y la hora (o la llegada y la salida del hotel) según tu horario, escriben el nombre de su mascota y les abrimos WhatsApp con la solicitud ya escrita para tu número de recepción. Tú la confirmas y la registras en PeluDesk. Si no tienes WhatsApp de recepción o todavía no hay precios, ese botón no sale.
+- **Entrar a su portal** con **Mi portal**: ven a sus mascotas, sus vacunas y sus citas y reservas.
+- Ver tu horario, tu dirección con mapa y **Cómo llegar**, y escribirte por WhatsApp o llamarte.
+
+Si llegaste desde la vista previa que te mandó PeluDesk, tu página nace con tu horario, tu dirección, tu WhatsApp, el diseño de tu giro y tus fotos y reseñas de Google. Las de Google se ven mientras no subas fotos propias; en cuanto subes las tuyas, salen las tuyas.
+
+## Avisar a tu cliente por WhatsApp
+
+En la cita de estética, en la reserva de guardería u hotel y en la agenda clínica tienes **Avisar por WhatsApp**: **Confirmación**, **Recordatorio** y **Listo para recoger**. Cada botón abre WhatsApp con el mensaje ya escrito para el teléfono del cliente; tú decides si lo mandas.
 
 ## Tu página web ya viene incluida
 

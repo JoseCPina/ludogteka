@@ -57,9 +57,11 @@ export async function guardarAjustes(fd: FormData): Promise<ResultadoPlataforma>
   if (!Number.isInteger(dias) || dias < 1 || dias > 30) return { error: "Los días para el seguimiento van de 1 a 30." };
   if (!Number.isInteger(maxSeg) || maxSeg < 0 || maxSeg > 5) return { error: "Los seguimientos van de 0 a 5." };
   if (!firma) return { error: "Escribe con qué nombre se firman los mensajes." };
+  const whatsappVentas = String(fd.get("whatsapp_ventas") ?? "").replace(/\D/g, "");
+  if (!/^52\d{10}$/.test(whatsappVentas)) return { error: "El WhatsApp de ventas va con 52 y los 10 dígitos (por ejemplo 524443103236)." };
   const { error } = await s.supabase
     .from("prospeccion_ajustes")
-    .update({ ciudades, consultas, tope_busquedas_dia: tope, paginas_por_consulta: paginas, pausado: fd.get("pausado") === "si", lista_whatsapp: listaWa, lista_instagram: listaIg, dias_seguimiento: dias, max_seguimientos: maxSeg, firma })
+    .update({ ciudades, consultas, tope_busquedas_dia: tope, paginas_por_consulta: paginas, pausado: fd.get("pausado") === "si", lista_whatsapp: listaWa, lista_instagram: listaIg, dias_seguimiento: dias, max_seguimientos: maxSeg, firma, whatsapp_ventas: whatsappVentas })
     .eq("id", 1);
   if (error) return { error: error.message };
   refrescar();

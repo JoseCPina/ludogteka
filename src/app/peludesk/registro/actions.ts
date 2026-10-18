@@ -1,5 +1,6 @@
 "use server";
 
+import { publicarPaginaDeProspecto } from "@/lib/web-negocio/publicar";
 import { cookies, headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -171,7 +172,11 @@ async function registrar(fd: FormData): Promise<EstadoRegistro> {
       .is("deleted_at", null)
       .select("id")
       .maybeSingle();
-    if (pr) await admin.from("prospectos_eventos").insert({ prospecto_id: pr.id, tipo: "etapa", texto: "Abrió su prueba gratis desde su vista previa" });
+    if (pr) {
+      await admin.from("prospectos_eventos").insert({ prospecto_id: pr.id, tipo: "etapa", texto: "Abrió su prueba gratis desde su vista previa" });
+      // Su página queda publicada en su subdominio con lo que vio en la vista previa.
+      await publicarPaginaDeProspecto(alta.negocio_id, slugProspecto);
+    }
   }
 
   // API de conversiones de Meta, deduplicada con el píxel por el mismo event_id. Solo con marketing aceptado.

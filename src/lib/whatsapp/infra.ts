@@ -8,7 +8,7 @@ import { urlDemo } from "@/lib/peludesk/landing";
 import { urlPlataforma } from "@/lib/pagos/urls";
 import { stripe } from "@/lib/cobro/stripe";
 import { configuracionPortal } from "@/lib/cobro/portal";
-import { type ClaveCaptura, MAX_TOKENS_IA, MODELO_IA, type NegocioDeAdmin, OPCIONES_IA, type PlanPublico, type SeguimientoContexto, type TipoInterlocutor, TOPE_MENSUAL_MXN } from "./agente";
+import { type ClaveCaptura, MAX_TOKENS_IA, MODELO_IA, type NegocioDeAdmin, OPCIONES_IA, type PlanPublico, type ProspectoContexto, type SeguimientoContexto, type TipoInterlocutor, TOPE_MENSUAL_MXN } from "./agente";
 import { clasificarRespuesta } from "@/lib/seguimiento/respuestas";
 import { CONOCIMIENTO } from "./conocimiento";
 import { documentacionParaWhatsApp } from "@/lib/ayuda/whatsapp";
@@ -225,6 +225,35 @@ export class DatosSupabase implements DatosSoporte {
       costo_mxn: u.costoMxn,
       resultado: u.resultado,
     });
+  }
+
+  /**
+   * Si quien escribe es un prospecto de «Contactar hoy» (la referencia «ref. abc12» del mensaje prellenado de su
+   * página, o su teléfono): la base lo marca «respondió» con canal whatsapp_bot y devuelve quién es para el bot.
+   * null = no es un prospecto. Nunca lanza.
+   */
+  async registrarProspecto(telefono: string, texto: string): Promise<ProspectoContexto | null> {
+    try {
+      const ref = texto.match(/\bref\.?\s*([a-z0-9]{5})\b/i)?.[1] ?? null;
+      const { data, error } = await this.#sb.rpc("prospecto_registrar_whatsapp", { p_telefono: telefono, p_ref: ref });
+      if (error) {
+        console.error("[whatsapp] prospecto_registrar_whatsapp", error.message);
+        return null;
+      }
+      const r = data as Record<string, unknown> | null;
+      if (!r) return null;
+      return {
+        nombre: String(r.nombre ?? ""),
+        giro: String(r.giro ?? ""),
+        ciudad: (r.ciudad as string | null) ?? null,
+        servicios: Array.isArray(r.servicios) ? (r.servicios as string[]) : [],
+        pagina: `${urlPlataforma()}/para/${r.slug}`,
+        por: r.por === "telefono" ? "telefono" : "referencia",
+      };
+    } catch (e) {
+      console.error("[whatsapp] prospecto", e instanceof Error ? e.message : e);
+      return null;
+    }
   }
 
   /**
@@ -667,12 +696,14 @@ export function construirSoporte(): { deps: DepsSoporte; datos: DatosSupabase; w
     ahora: () => new Date(),
     hoyTexto: () => new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: ZONA }).format(new Date()),
     cuenta: cuentaPorTelefono,
-    contexto: async (cuenta, seguimiento) => ({
+    contexto: async (cuenta, seguimiento, prospecto) => ({
+      prospecto: prospecto ?? null,
       seguimiento: seguimiento && Date.now() - Date.parse(seguimiento.enviadoAt) < 7 * 86_400_000 ? seguimiento : null,
       tipo: cuenta.tipo,
       negocios: cuenta.negocios,
       planes: await planesPublicos(),
-      enlaces: { registro: `${urlPlataforma()}/registro`, demo: `${urlDemo()}/demo` },
+      // Un prospecto que llega de su vista previa se registra desde ahí: queda con su negocio ya escrito y su página.
+      enlaces: { registro: prospecto ? `${prospecto.pagina}/ir/prueba` : `${urlPlataforma()}/registro`, demo: `${urlDemo()}/demo` },
       documentacion: cuenta.tipo === "admin" || cuenta.tipo === "personal" ? documentacionParaWhatsApp(urlPlataforma(), await videosPublicados()) : undefined,
     }),
     ligaPortal: ligaPortalDe,

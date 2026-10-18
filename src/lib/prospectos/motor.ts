@@ -88,13 +88,14 @@ export async function correrCalidad(presupuestoMs: number, topeClasificar = 300)
 
 export async function correrLista(fecha = hoyNegocio(ZONA_PROSPECTOS)) {
   const { db, ia, sitio } = piezas();
-  const { data: aj } = await db.from("prospeccion_ajustes").select("firma").eq("id", 1).single();
+  const { data: aj } = await db.from("prospeccion_ajustes").select("firma, whatsapp_ventas").eq("id", 1).single();
   const firma = (aj?.firma as string) ?? "José";
+  const whatsapp = (aj?.whatsapp_ventas as string | undefined) ?? null;
   return armarLista({
     db,
     fecha,
     sitio,
-    redactar: ia ? (lote) => redactarLote(lote, ia, firma, MODELO_MENSAJES) : async () => new Map(),
-    plantilla: (p) => mensajeDePlantilla(p, firma),
+    redactar: ia ? (lote) => redactarLote(lote, ia, firma, MODELO_MENSAJES, whatsapp) : async () => new Map(),
+    plantilla: (p) => mensajeDePlantilla(p, firma, whatsapp),
   });
 }
