@@ -141,6 +141,92 @@ export function agruparSucursales(lista: ParaAgrupar[]): Map<string, string> {
   return resultado;
 }
 
+// ── Limpieza estricta de hotel y guardería (18 de octubre de 2026) ──────────────────────────────────────────────
+// En Google, «hotel» y «guardería» traen sobre todo hoteles para personas y guarderías infantiles (IMSS, estancias,
+// CENDI, kínder). Un prospecto de esos giros —o un mixto que salió de una búsqueda de hotel o guardería— se queda
+// solo si algo de lo que sabemos de él habla de mascotas: su nombre, sus categorías de Google, el título y la
+// descripción de su web, su dominio o sus redes. Las reseñas no se guardan (Text Search no las trae y pedirlas por
+// lugar se cobra), así que no entran.
+
+export const MOTIVO_HOTEL = "Hotel para personas";
+export const MOTIVO_GUARDERIA = "Guardería infantil";
+
+const norm = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+// «Pet friendly», «aceptamos mascotas» o «ven con tu mascota» son de un hotel para personas que admite mascotas:
+// el texto que lo dice no cuenta como de mascotas (si el negocio es de perros lo dirán sus categorías u otro lado).
+const ACEPTA_MASCOTAS = /\b(pet[\s-]?friendly|petfriendly|(se )?(aceptan?|admiten?|permiten?|aceptamos|admitimos|permitimos) (a )?(tu |tus |su |sus )?mascotas?|mascotas? (bienvenidas?|permitidas?)|traiga su mascota|con (tu|tus|su|sus) mascotas?)\b/;
+
+// Palabras de mascotas, enteras (no «carpet», «competencia» ni «canal»).
+const PALABRAS = /\b(perr[oa]s?|perrit[oa]s?|perrun[oa]s?|perruqueria|mascotas?|pets?|petshop|petsitter|petcare|canin[oa]s?|canes|can|k9|k-9|dogs?|doggy|doggie|puppy|puppies|gat[oa]s?|gatit[oa]s?|felin[oa]s?|cats?|kitty|animal(es)?|animalit[oa]s?|veterinari[oa]s?|vet|grooming|groomer|cachorr[oa]s?|lomit[oa]s?|peludit[oa]s?|peludos?|huellitas?|patitas?|firulais|guau|miau|michis?|paws?|woof|bark)\b/;
+
+// Pegadas a otra palabra («doghotel», «dogtraining», «petsland», «mascotaslandia», «caninoshotel»).
+const PEGADAS = /(perr[oa]|mascota|canin[oa]|doggy|dog(s)?(hotel|house|land|zone|camp|care|spa|day|train|walk|sit|school|club|lover)|pet(s)?(hotel|house|land|zone|camp|care|spa|shop|lovers|friends?|club|resort|paradise)|(hotel|house|land|camp|spa|resort)pets?|(hotel|house|land|camp|spa|resort)dogs?|veterinari)/;
+
+// Palabras que también usan las guarderías infantiles («Guardería Cachorros», «El Gato con Botas», «Patitas»): con
+// categoría de Google de cuidado infantil o escuela no bastan.
+const DE_NINOS_TAMBIEN = /^(gat[oa]s?|gatit[oa]s?|cachorr[oa]s?|patitas?|huellitas?|peludit[oa]s?|kitty|puppy|puppies|doggy|doggie|animalit[oa]s?|miau|michis?)$/;
+const TIPOS_NINOS = /^(child_care_agency|preschool|primary_school|school|educational_institution)$/;
+// Señales de guardería infantil en el nombre o la web: ganan a cualquier palabra (no a una categoría de mascotas).
+const INFANTIL = /\b(infantil(es)?|estimulacion temprana|kinder|kindergarten|preescolar|maternal|lactantes|cendi|imss|issste|dif|bebes|ninos|ninas|nursery|daycare infantil)\b/;
+
+// Categorías de Google (types de Places) que son de animales.
+const TIPOS = /(pet|veterinar|animal|dog|cat_)/;
+
+export type ParaRevisar = {
+  nombre: string;
+  giro: string;
+  giro_busqueda: string | null;
+  google_tipos: string[] | null;
+  web: string | null;
+  web_resumen: string | null;
+  instagram: string | null;
+  facebook: string | null;
+};
+
+/** ¿Le aplica la regla? Hotel y guardería, y el mixto que salió de una búsqueda de hotel o guardería. */
+export function aplicaLimpieza(p: Pick<ParaRevisar, "giro" | "giro_busqueda">): boolean {
+  return p.giro === "hotel" || p.giro === "guarderia" || (p.giro === "mixto" && (p.giro_busqueda === "hotel" || p.giro_busqueda === "guarderia"));
+}
+
+/** Lo que dice algo de mascotas, o null si no hay nada. */
+export function evidenciaMascotas(p: ParaRevisar): string | null {
+  const tipo = (p.google_tipos ?? []).find((t) => TIPOS.test(t));
+  if (tipo) return `categoría de Google «${tipo}»`;
+  const fuentes: [string, string | null][] = [
+    ["nombre", p.nombre],
+    ["web", p.web_resumen],
+    ["dominio", p.web],
+    ["Instagram", p.instagram],
+    ["Facebook", p.facebook],
+  ];
+  const deNinos = (p.google_tipos ?? []).some((t) => TIPOS_NINOS.test(t));
+  if ([p.nombre, p.web_resumen].some((t) => t && INFANTIL.test(norm(t)))) return null;
+  for (const [donde, texto] of fuentes) {
+    if (!texto) continue;
+    const t = norm(texto);
+    if (ACEPTA_MASCOTAS.test(t)) continue;
+    const limpio = t.replace(/\bcan[\s-]?(inn|cun)\b|\bcancun\b/g, " ");
+    const m = limpio.match(PALABRAS) ?? limpio.replace(/[^a-z0-9]/g, "").match(PEGADAS);
+    if (!m) continue;
+    if (deNinos && DE_NINOS_TAMBIEN.test(m[0])) continue;
+    return `${donde}: «${m[0]}»`;
+  }
+  return null;
+}
+
+/** Motivo del descarte para un prospecto al que le aplica la regla y no habla de mascotas. */
+export function motivoLimpieza(p: Pick<ParaRevisar, "giro" | "giro_busqueda">): string {
+  const g = p.giro === "mixto" ? p.giro_busqueda : p.giro;
+  return g === "guarderia" ? MOTIVO_GUARDERIA : MOTIVO_HOTEL;
+}
+
+/** null = se queda; texto = el motivo del descarte. */
+export function revisarHotelGuarderia(p: ParaRevisar): string | null {
+  if (!aplicaLimpieza(p)) return null;
+  return evidenciaMascotas(p) ? null : motivoLimpieza(p);
+}
+
 // ── El proceso ───────────────────────────────────────────────────────────────────────────────────────────────────
 
 export type OpcionesCalidad = {
@@ -155,14 +241,14 @@ export type OpcionesCalidad = {
   giroDeServicios: (s: Servicio[], respaldo: string) => string;
 };
 
-export type ResultadoCalidad = { ciudades: number; clasificados: number; descartados: number; giroCambiado: number; sucursales: number; errores: string[] };
+export type ResultadoCalidad = { ciudades: number; clasificados: number; descartados: number; giroCambiado: number; sucursales: number; hotelesPersonas: number; guarderiasInfantiles: number; errores: string[] };
 
-const COLS = "id, nombre, giro, giro_busqueda, ciudad, ciudad_norm, ciudad_busqueda, estado, direccion, google_tipos, calificacion, resenas, web, web_resumen, instagram, facebook, etapa, principal_id, negocio_cliente_id, clasificado_at, clasificacion_revertida_at, no_agrupar, descarte_tipo, etapa_antes_descarte";
+const COLS = "id, nombre, giro, giro_busqueda, ciudad, ciudad_norm, ciudad_busqueda, estado, direccion, google_tipos, calificacion, resenas, web, web_resumen, instagram, facebook, etapa, principal_id, negocio_cliente_id, clasificado_at, clasificacion_revertida_at, no_agrupar, descarte_tipo, descarte_motivo, etapa_antes_descarte";
 type Fila = {
   id: string; nombre: string; giro: string; giro_busqueda: string | null; ciudad: string; ciudad_norm: string | null; ciudad_busqueda: string | null; estado: string | null;
   direccion: string | null; google_tipos: string[]; calificacion: number | null; resenas: number | null; web: string | null; web_resumen: string | null;
   instagram: string | null; facebook: string | null; etapa: string; principal_id: string | null; negocio_cliente_id: string | null;
-  clasificado_at: string | null; clasificacion_revertida_at: string | null; no_agrupar: boolean; descarte_tipo: string | null; etapa_antes_descarte: string | null;
+  clasificado_at: string | null; clasificacion_revertida_at: string | null; no_agrupar: boolean; descarte_tipo: string | null; descarte_motivo: string | null; etapa_antes_descarte: string | null;
 };
 
 async function todos(db: SupabaseClient): Promise<Fila[]> {
@@ -185,7 +271,7 @@ export async function procesarCalidad(o: OpcionesCalidad): Promise<ResultadoCali
   const db = o.db;
   const inicio = Date.now();
   const queda = () => (o.presupuestoMs ?? 600_000) - (Date.now() - inicio);
-  const r: ResultadoCalidad = { ciudades: 0, clasificados: 0, descartados: 0, giroCambiado: 0, sucursales: 0, errores: [] };
+  const r: ResultadoCalidad = { ciudades: 0, clasificados: 0, descartados: 0, giroCambiado: 0, sucursales: 0, hotelesPersonas: 0, guarderiasInfantiles: 0, errores: [] };
   const anotar = (m: string) => r.errores.length < 30 && r.errores.push(m.slice(0, 300));
   let filas = await todos(db);
 
@@ -257,6 +343,24 @@ export async function procesarCalidad(o: OpcionesCalidad): Promise<ResultadoCali
     });
   }
 
+  // 2b. Limpieza estricta de hotel y guardería (mascotas.ts): el que no dice nada de mascotas es un hotel para
+  //     personas o una guardería infantil. Corre después de la clasificación (que pudo cambiar el giro) y nunca
+  //     toca a un cliente ni lo que alguien ya revirtió a mano («Revertir: sí es del giro»).
+  filas = await todos(db);
+  for (const p of filas) {
+    if (p.etapa === "descartado" || p.negocio_cliente_id || p.clasificacion_revertida_at) continue;
+    const motivo = revisarHotelGuarderia(p);
+    if (!motivo) continue;
+    const { error } = await db.from("prospectos").update({ etapa_antes_descarte: p.etapa, etapa: "descartado", descarte_tipo: "no_es_del_giro", descarte_motivo: motivo }).eq("id", p.id);
+    if (error) {
+      anotar(`Descartar ${p.nombre}: ${error.message}`);
+      continue;
+    }
+    if (motivo === MOTIVO_GUARDERIA) r.guarderiasInfantiles++;
+    else r.hotelesPersonas++;
+    await db.from("prospectos_eventos").insert({ prospecto_id: p.id, tipo: "clasificacion", texto: `Descartado (${motivo}): no menciona mascotas en su nombre, categorías de Google, web ni redes` });
+  }
+
   // 3. Sucursales: lo vivo y lo que descartó la clasificación (una sucursal de un negocio del giro con otra
   //    categoría en Google sí es del giro: se le quita el descarte). Sin clientes ni lo separado a mano.
   filas = await todos(db);
@@ -274,7 +378,9 @@ export async function procesarCalidad(o: OpcionesCalidad): Promise<ResultadoCali
     const p = filas.find((x) => x.id === id)!;
     if (p.principal_id === principal) continue;
     const pr0 = filas.find((x) => x.id === principal);
-    const quitarDescarte = p.etapa === "descartado" && p.descarte_tipo === "no_es_del_giro" && pr0?.etapa !== "descartado";
+    // Lo que descartó la limpieza de hotel y guardería no se rescata por la marca: no habla de mascotas.
+    const deLimpieza = p.descarte_motivo === MOTIVO_HOTEL || p.descarte_motivo === MOTIVO_GUARDERIA;
+    const quitarDescarte = p.etapa === "descartado" && p.descarte_tipo === "no_es_del_giro" && !deLimpieza && pr0?.etapa !== "descartado";
     const { error } = await db
       .from("prospectos")
       .update({ principal_id: principal, ...(quitarDescarte ? { etapa: p.etapa_antes_descarte ?? "nuevo", descarte_tipo: null, descarte_motivo: null, etapa_antes_descarte: null } : {}) })
