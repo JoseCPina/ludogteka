@@ -19,9 +19,9 @@ import { EventoPixelAlVer } from "@/components/peludesk/consentimiento/evento-pi
 import { PieSitio } from "@/components/peludesk/sitio";
 import { TarjetaArticulo } from "@/components/peludesk/blog";
 import { todosLosArticulos } from "@/lib/peludesk/blog";
-import { JsonLd, preguntasFrecuentes } from "@/lib/peludesk/seo";
+import { JsonLd, ORGANIZACION_RAIZ, aplicacionPeluDesk, preguntasFrecuentes, sitioWeb } from "@/lib/peludesk/seo";
 import { Revelar } from "@/components/peludesk/revelar";
-import { ESCRITORIO, REDES_PELUDESK, urlDemo, whatsappPeluDesk } from "@/lib/peludesk/landing";
+import { ESCRITORIO, urlDemo, whatsappPeluDesk } from "@/lib/peludesk/landing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import "./peludesk.css";
 import "./animaciones.css";
@@ -202,48 +202,12 @@ export default async function PeluDeskLanding() {
 
   // Datos estructurados: quién es PeluDesk (sameAs) y el producto con su oferta única.
   const datos = [
+    ORGANIZACION_RAIZ,
+    sitioWeb(),
     {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      name: "PeluDesk",
-      url: "https://peludesk.mx",
-      logo: "https://peludesk.mx/marca/peludesk/favicon-180.png",
-      email: "contacto@peludesk.mx",
-      sameAs: REDES_PELUDESK.map((r) => r.url),
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      name: "PeluDesk",
-      url: "https://peludesk.mx",
-      applicationCategory: "BusinessApplication",
-      applicationSubCategory: "Software para clínicas veterinarias",
-      operatingSystem: "Web, iOS y Android (se instala desde el navegador)",
-      inLanguage: "es-MX",
-      description:
-        "Software para negocios caninos y veterinarios en México: clínica veterinaria (expediente por consulta con dictado por IA, recetas alineadas al SITPV, carnet con QR, hospitalización, inventario con lotes), hotel y guardería, estética canina, cobros, contratos y facturación CFDI.",
+      ...aplicacionPeluDesk(plan),
+      applicationSubCategory: "Software para clínicas veterinarias y negocios caninos",
       featureList: [...FUNCIONES_VET.map((f) => f.titulo), "Hotel y guardería", "Estética", "Página web del negocio"],
-      ...(plan
-        ? {
-            offers: {
-              "@type": "Offer",
-              name: `${plan.nombre}, plan único`,
-              price: plan.mensual,
-              priceCurrency: "MXN",
-              priceSpecification: {
-                "@type": "UnitPriceSpecification",
-                price: plan.mensual,
-                priceCurrency: "MXN",
-                billingDuration: 1,
-                unitCode: "MON",
-                valueAddedTaxIncluded: false,
-              },
-              description: `${SIN_COSTO_INICIAL}. Más IVA. 15 días de prueba gratis, sin tarjeta.`,
-              availability: "https://schema.org/InStock",
-              url: "https://peludesk.mx/#planes",
-            },
-          }
-        : {}),
     },
   ];
 
@@ -651,6 +615,12 @@ export default async function PeluDeskLanding() {
                 ["/software-para-guarderias-caninas", "Software para guarderías caninas"],
                 ["/software-para-esteticas-caninas", "Software para estéticas caninas"],
                 ["/software-para-hoteles-caninos", "Software para hoteles caninos"],
+                ["/precios", "Precios: un plan, todo incluido"],
+                ["/guias/control-de-pagos-y-caja-en-una-guarderia-canina", "Control de pagos y caja"],
+                ["/guias/contratos-y-vacunas-obligatorias-en-guarderias-y-hoteles-caninos", "Contratos y vacunas obligatorias"],
+                ["/guias/facturacion-cfdi-para-esteticas-y-veterinarias", "Facturación CFDI 4.0"],
+                ["/guias/recordatorios-por-whatsapp-y-portal-para-duenos-de-mascotas", "Recordatorios por WhatsApp y portal"],
+                ["/alternativas", "PeluDesk frente a otras opciones"],
               ].map(([href, texto]) => (
                 <li key={href}>
                   <Link href={href} className="flex min-h-14 items-center justify-between gap-3 rounded-2xl border border-n-200 bg-white px-5 font-semibold text-n-900 hover:border-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave">

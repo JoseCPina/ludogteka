@@ -20,7 +20,7 @@ const CLASE_PRUEBA =
 
 const ENLACES = [
   ["/veterinaria", "Veterinaria"],
-  ["/#planes", "Precio"],
+  ["/precios", "Precios"],
   ["/blog", "Blog"],
   ["/ayuda", "Ayuda"],
 ] as const;
@@ -79,7 +79,8 @@ export function PieSitio({ whatsapp = null }: { whatsapp?: string | null }) {
         </div>
         <nav aria-label="Producto" className="flex flex-col gap-2 text-sm font-semibold text-n-700">
           <p className="text-xs font-bold uppercase tracking-[0.1em] text-n-600">PeluDesk</p>
-          <Link href="/#planes" className={ENLACE_PIE}>Planes</Link>
+          <Link href="/precios" className={ENLACE_PIE}>Precios</Link>
+          <Link href="/alternativas" className={ENLACE_PIE}>Alternativas</Link>
           <Link href="/registro" className={ENLACE_PIE}>Pruébalo gratis</Link>
           <a href={`${urlDemo()}/demo`} data-pixel-evento="Lead" className={ENLACE_PIE}>Ver demo</a>
           <Link href="/ayuda" className={ENLACE_PIE}>Centro de ayuda</Link>
@@ -92,6 +93,10 @@ export function PieSitio({ whatsapp = null }: { whatsapp?: string | null }) {
           <Link href="/software-para-guarderias-caninas" className={ENLACE_PIE}>Software para guarderías</Link>
           <Link href="/software-para-esteticas-caninas" className={ENLACE_PIE}>Software para estéticas</Link>
           <Link href="/software-para-hoteles-caninos" className={ENLACE_PIE}>Software para hoteles</Link>
+          <Link href="/guias/control-de-pagos-y-caja-en-una-guarderia-canina" className={ENLACE_PIE}>Control de pagos y caja</Link>
+          <Link href="/guias/contratos-y-vacunas-obligatorias-en-guarderias-y-hoteles-caninos" className={ENLACE_PIE}>Contratos y vacunas</Link>
+          <Link href="/guias/facturacion-cfdi-para-esteticas-y-veterinarias" className={ENLACE_PIE}>Facturación CFDI</Link>
+          <Link href="/guias/recordatorios-por-whatsapp-y-portal-para-duenos-de-mascotas" className={ENLACE_PIE}>Recordatorios y portal</Link>
         </nav>
         <nav aria-label="Legal" className="flex flex-col gap-2 text-sm font-semibold text-n-700">
           <p className="text-xs font-bold uppercase tracking-[0.1em] text-n-600">Legal</p>

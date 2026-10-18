@@ -1,0 +1,20 @@
+{
+  "slug": "moego",
+  "nombre": "MoeGo",
+  "sitio": "https://www.moego.pet",
+  "giro": "Estéticas y servicios de grooming, incluidas unidades móviles; también ofrece guardería y hotel.",
+  "resumen": "Software de agenda, cobros y comunicación con clientes pensado para grooming, de una empresa estadounidense.",
+  "precio": "Cobra en dólares por mes y, según su plan, por unidad móvil. Los directorios de software no coinciden entre sí, así que no publicamos cifras: míralas en su sitio.",
+  "idioma": "No encontramos evidencia pública de interfaz, portal o soporte en español.",
+  "cfdi": "No encontramos evidencia pública de facturación CFDI 4.0.",
+  "pagos": "Procesamiento de pagos propio pensado para Estados Unidos; no encontramos evidencia de Mercado Pago ni Clip.",
+  "conviene": [
+    "Tienes una operación de grooming móvil con varias unidades y vendes o facturas en Estados Unidos o Canadá.",
+    "Tu equipo trabaja cómodo en inglés."
+  ],
+  "noConviene": [
+    "Necesitas factura mexicana y soporte en español.",
+    "También llevas veterinaria clínica con recetas y SITPV."
+  ],
+  "peludesk": "PeluDesk no tiene rutas ni cuadrillas de unidades móviles. Sí tiene agenda por estilista, precios por raza y pelaje, comisiones y caja en pesos."
+}

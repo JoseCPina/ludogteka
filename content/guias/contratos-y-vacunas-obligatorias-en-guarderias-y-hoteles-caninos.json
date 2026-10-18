@@ -1,0 +1,64 @@
+{
+  "titulo": "Contratos y vacunas obligatorias en guarderías y hoteles caninos | PeluDesk",
+  "h1": "Contratos firmados y vacunas al día en una guardería u hotel canino",
+  "descripcion": "El dueño firma el contrato desde su celular, sube el carnet de vacunas y PeluDesk bloquea la reserva si falta una vacuna. Cómo llevarlo sin cartillas en papel.",
+  "gancho": "Que ningún perro entre sin contrato firmado ni vacunas vigentes, y que no tengas que perseguirlas a mano.",
+  "captura": {
+    "nombre": "contratos",
+    "alt": "Pantalla de contratos de PeluDesk con plantillas y estado de firma"
+  },
+  "secciones": [
+    {
+      "h2": "Contratos que se firman en el celular",
+      "parrafos": [
+        "Tú escribes la plantilla de cada contrato (guardería, hotel) y PeluDesk la llena con los datos del dueño y del perro. El dueño firma con el dedo, y queda un PDF con la fecha, la huella del documento y los datos de la firma.",
+        "También puedes subir un contrato firmado en papel. En recepción ves qué contratos faltan y desde hace cuántos días."
+      ]
+    },
+    {
+      "h2": "Vacunas como requisito, no como recordatorio",
+      "parrafos": [
+        "Cada negocio define qué vacunas pide y cuánto dura cada una. Si falta una o venció, PeluDesk no deja reservar guardería u hotel y dice cuál es. Un administrador, o quien tenga el permiso, puede autorizar una excepción con motivo.",
+        "El dueño sube la foto del carnet desde su portal; recepción la confirma o la rechaza con motivo, y hasta entonces no cuenta."
+      ]
+    },
+    {
+      "h2": "Otras cosas que bloquean una reserva",
+      "lista": [
+        "Evaluación de comportamiento pendiente (con excepción de administrador).",
+        "Perra en celo o gestante, y alertas de manejo marcadas en el expediente."
+      ]
+    },
+    {
+      "h2": "Qué vacunas pedir",
+      "parrafos": [
+        "PeluDesk no decide por ti qué vacunas exigir: tú las capturas. Si estás armando tu lista, empieza por la guía del blog sobre qué vacunas pedir en una guardería u hotel."
+      ]
+    }
+  ],
+  "preguntas": [
+    [
+      "¿Quién redacta el contrato?",
+      "Tú. PeluDesk trae el mecanismo (plantillas versionadas, variables y firma), no un texto legal. Conviene que lo revise un abogado."
+    ],
+    [
+      "¿Qué pasa si cambio la plantilla?",
+      "Los contratos ya firmados no cambian. La plantilla nueva aplica a los siguientes."
+    ],
+    [
+      "¿Puedo reservar con una vacuna vencida?",
+      "Solo con la excepción de un administrador, con motivo. Queda registrada."
+    ],
+    [
+      "¿El dueño tiene que instalar una app?",
+      "No. Entra desde el navegador con su teléfono y su contraseña."
+    ]
+  ],
+  "relacionadas": [
+    "/software-para-hoteles-caninos",
+    "/blog/que-vacunas-pedir-en-una-guarderia-u-hotel-canino",
+    "/blog/que-suele-incluir-el-contrato-de-una-guarderia-canina",
+    "/ayuda/mandar-a-firmar-un-contrato",
+    "/ayuda/vacunas-alertas-y-datos-del-perro"
+  ]
+}
