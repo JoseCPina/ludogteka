@@ -15,9 +15,9 @@ export const maxDuration = 300;
 const ZONA = "America/Mexico_City";
 const POR_PAGINA = 25;
 
-type Resumen = { total: number; clientes: number; con_telefono: number; con_correo: number; con_instagram: number; por_ciudad_giro: { ciudad: string; giro: string; n: number }[]; por_etapa: Record<string, number> };
+type Resumen = { total: number; clientes: number; descartados?: number; descartados_no_giro?: number; sucursales?: number; calientes?: number; con_telefono: number; con_correo: number; con_instagram: number; por_ciudad_giro: { ciudad: string; giro: string; n: number }[]; por_etapa: Record<string, number> };
 type Corrida = { id: string; origen: string; estado: string; busquedas: number; resultados: number; nuevos: number; duplicados: number; clientes: number; errores: number; webs_revisadas: number; detalle: { errores?: string[] }; error: string | null; inicio_at: string };
-type Ajustes = { ciudades: string[]; consultas: Record<string, string[]>; tope_busquedas_dia: number; paginas_por_consulta: number; pausado: boolean };
+type Ajustes = { ciudades: string[]; consultas: Record<string, string[]>; tope_busquedas_dia: number; paginas_por_consulta: number; pausado: boolean; lista_whatsapp: number; lista_instagram: number; dias_seguimiento: number; max_seguimientos: number; firma: string };
 
 const ESTADO_CORRIDA: Record<string, string> = { corriendo: "Corriendo", terminada: "Terminada", fallida: "Falló", sin_llave: "Sin llave de Google", pausada: "En pausa" };
 
@@ -30,12 +30,12 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
   const pagina = Math.max(1, Number(sp.pagina) || 1);
   const [{ data: res }, { data: aj }, { data: corridas }, lista] = await Promise.all([
     supabase.rpc("prospectos_resumen"),
-    supabase.from("prospeccion_ajustes").select("ciudades, consultas, tope_busquedas_dia, paginas_por_consulta, pausado").eq("id", 1).maybeSingle(),
+    supabase.from("prospeccion_ajustes").select("ciudades, consultas, tope_busquedas_dia, paginas_por_consulta, pausado, lista_whatsapp, lista_instagram, dias_seguimiento, max_seguimientos, firma").eq("id", 1).maybeSingle(),
     supabase.from("prospeccion_corridas").select("id, origen, estado, busquedas, resultados, nuevos, duplicados, clientes, errores, webs_revisadas, detalle, error, inicio_at").is("deleted_at", null).order("inicio_at", { ascending: false }).limit(8),
     consultaProspectos(supabase, f).range((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA - 1),
   ]);
   const resumen = (res ?? { total: 0, clientes: 0, con_telefono: 0, con_correo: 0, con_instagram: 0, por_ciudad_giro: [], por_etapa: {} }) as Resumen;
-  const ajustes = (aj ?? { ciudades: [], consultas: {}, tope_busquedas_dia: 30, paginas_por_consulta: 3, pausado: false }) as Ajustes;
+  const ajustes = (aj ?? { ciudades: [], consultas: {}, tope_busquedas_dia: 30, paginas_por_consulta: 3, pausado: false, lista_whatsapp: 15, lista_instagram: 15, dias_seguimiento: 3, max_seguimientos: 2, firma: "José" }) as Ajustes;
   const filas = (lista.data ?? []) as unknown as Prospecto[];
   const total = lista.count ?? 0;
   const paginas = Math.max(1, Math.ceil(total / POR_PAGINA));
@@ -52,15 +52,22 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
           duplicar por teléfono, web ni nombre + ciudad. Los que ya son negocios de PeluDesk se marcan y no cuentan.
         </p>
       </div>
+      <Link href="/plataforma/prospectos/hoy" data-ir-hoy className="flex items-center justify-between rounded-[14px] bg-morado px-5 py-4 text-white">
+        <span><b className="text-lg">Contactar hoy</b><span className="block text-sm opacity-90">La lista del día con sus mensajes listos para WhatsApp e Instagram</span></span>
+        <span aria-hidden className="text-2xl">→</span>
+      </Link>
       {lista.error && <Alert variante="error" titulo="No pudimos cargar los prospectos">{lista.error.message}</Alert>}
       {ajustes.pausado && <Alert variante="advertencia" titulo="Búsqueda diaria en pausa">La de las 7:00 no corre hasta que la reanudes en Ajustes. «Buscar ahora» sigue funcionando.</Alert>}
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           ["Prospectos", resumen.total],
           ["Con teléfono", resumen.con_telefono],
           ["Con correo", resumen.con_correo],
           ["Con Instagram", resumen.con_instagram],
+          ["Calientes", resumen.calientes ?? 0],
+          ["Sucursales agrupadas", resumen.sucursales ?? 0],
+          ["Descartados", resumen.descartados ?? 0],
           ["Ya son de PeluDesk", resumen.clientes],
         ].map(([t, n]) => (
           <div key={t} className="rounded-lg border border-n-200 bg-white p-4">
@@ -140,6 +147,8 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
                   <td className="py-2 pr-3">
                     <Link href={`/plataforma/prospectos/${p.id}`} className="font-semibold text-indigo-700 hover:underline">{p.nombre}</Link>
                     {p.negocio_cliente_id && <span className="ml-2 rounded bg-menta-suave px-1.5 text-xs font-semibold text-menta-oscuro">Ya es de PeluDesk</span>}
+                    {p.etapa === "caliente" && <span className="ml-2 rounded bg-coral-suave px-1.5 text-xs font-semibold text-coral-oscuro">Caliente · {p.visitas} {p.visitas === 1 ? "visita" : "visitas"}</span>}
+                    {p.descarte_motivo && <span className="block text-xs text-n-500">{p.descarte_motivo}</span>}
                     <p className="text-xs text-n-500">Alta {formatearFecha(p.created_at, ZONA)}</p>
                   </td>
                   <td data-label="Giro" className="py-2 pr-3">{textoGiro(p.giro)}</td>
@@ -218,6 +227,14 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
             <Field label="Tope de búsquedas por día (0 a 500)" name="tope" type="number" min={0} max={500} step={1} defaultValue={ajustes.tope_busquedas_dia} required />
             <Field label="Páginas por consulta (1 a 3, 20 negocios cada una)" name="paginas" type="number" min={1} max={3} step={1} defaultValue={ajustes.paginas_por_consulta} required />
           </div>
+          <h3 className="font-bold text-n-900">Contactar hoy</h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Por WhatsApp cada día" name="lista_whatsapp" type="number" min={0} max={100} step={1} defaultValue={ajustes.lista_whatsapp} required />
+            <Field label="Por Instagram cada día" name="lista_instagram" type="number" min={0} max={100} step={1} defaultValue={ajustes.lista_instagram} required />
+            <Field label="Días sin respuesta para el seguimiento" name="dias_seguimiento" type="number" min={1} max={30} step={1} defaultValue={ajustes.dias_seguimiento} required />
+            <Field label="Seguimientos antes de dejarlo en pausa" name="max_seguimientos" type="number" min={0} max={5} step={1} defaultValue={ajustes.max_seguimientos} required />
+          </div>
+          <Field label="Nombre con el que se firman los mensajes" name="firma" defaultValue={ajustes.firma} required maxLength={40} />
           <label className="flex items-center gap-2 text-sm text-n-800">
             <input type="checkbox" name="pausado" value="si" defaultChecked={ajustes.pausado} /> Pausar la búsqueda diaria
           </label>

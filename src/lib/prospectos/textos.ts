@@ -12,6 +12,7 @@ export const GIROS = [
 export const ETAPAS = [
   { clave: "nuevo", texto: "Nuevo" },
   { clave: "contactado", texto: "Contactado" },
+  { clave: "caliente", texto: "Caliente" },
   { clave: "respondio", texto: "Respondió" },
   { clave: "en_prueba", texto: "En prueba" },
   { clave: "pagando", texto: "Pagando" },

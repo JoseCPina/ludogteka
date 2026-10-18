@@ -7,6 +7,7 @@ import { PARAMETROS_ORIGEN, type ParametroOrigen } from "@/lib/peludesk/origen";
 import { metaPagina } from "@/lib/peludesk/seo";
 import { RegistroForm } from "./registro-form";
 import { planUnico, pesos, SIN_COSTO_INICIAL } from "@/lib/peludesk/plan";
+import { prospectoPorSlug, serviciosDe } from "@/lib/prospectos/pagina";
 
 export const metadata: Metadata = metaPagina({
   titulo: "Prueba PeluDesk gratis 15 días",
@@ -22,6 +23,10 @@ export default async function RegistroPage({ searchParams }: { searchParams: Pro
     const v = Array.isArray(q[k]) ? q[k][0] : q[k];
     if (v) origen[k] = v.slice(0, 300);
   }
+  // Desde la vista previa de un prospecto (/para/<slug>): su negocio, ciudad, servicios y teléfono ya escritos.
+  const slug = Array.isArray(q.prospecto) ? q.prospecto[0] : q.prospecto;
+  const pr = slug ? await prospectoPorSlug(slug) : null;
+  const inicial = pr ? { slug: pr.slug, negocio: pr.nombre, ciudad: pr.ciudad, servicios: serviciosDe(pr), telefono: pr.telefono_norm ?? "" } : undefined;
   return (
     <div className="bg-crema">
     <main id="contenido" className="min-h-[100dvh]">
@@ -63,7 +68,7 @@ export default async function RegistroPage({ searchParams }: { searchParams: Pro
           </p>
         </div>
         <section className="relative rounded-2xl border border-n-200 bg-white p-6 shadow-[0_1px_2px_rgb(75_63_114/0.06)] sm:p-8">
-          <RegistroForm origen={origen} />
+          <RegistroForm origen={origen} inicial={inicial} />
         </section>
       </div>
       <div className="mx-auto w-full max-w-5xl px-4 pb-12 sm:px-6">

@@ -88,6 +88,8 @@ const PRIVADAS_PLATAFORMA = [
   "/plataforma", "/demo", "/peludesk/redes", "/api", "/auth",
   "/admin", "/portal", "/login", "/bienvenida", "/alta", "/activar",
   "/e/", "/c/", "/rx/", "/t/", "/r/", "/f/", "/fac/",
+  // La vista previa de cada prospecto (/para/<slug>): solo se llega por el link que se le manda.
+  "/para/",
 ];
 
 // Solo la landing de un negocio con plan activo y landing propia es para

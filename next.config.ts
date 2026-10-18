@@ -21,6 +21,11 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/peludesk/redes/:ruta*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
+      // La vista previa de un prospecto (peludesk.mx/para/<slug>): solo por el link, nada que indexar ni guardar.
+      {
+        source: "/para/:ruta*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "private, no-store" }, { key: "Referrer-Policy", value: "no-referrer" }],
+      },
       // Las ligas que se le mandan a un dueño (reporte /r/<token>, galería
       // /f/<token>) son personales: nada que indexar ni guardar en caché.
       {

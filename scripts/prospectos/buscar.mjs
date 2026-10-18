@@ -12,6 +12,7 @@ import { createClient } from "@supabase/supabase-js";
 import { correrProspeccion } from "../../src/lib/prospectos/correr.ts";
 import { buscarTexto, PLACES_URL } from "../../src/lib/prospectos/places.ts";
 import { revisarWeb } from "../../src/lib/prospectos/web.ts";
+import { ciudadDeDireccion } from "../../src/lib/prospectos/calidad.ts";
 
 const args = process.argv.slice(2);
 const valor = (k) => {
@@ -40,6 +41,7 @@ const r = await correrProspeccion({
   apiKey,
   buscar: (consulta, pageToken) => buscarTexto({ apiKey, consulta, pageToken, url }),
   revisarWeb: (w) => revisarWeb(w),
+  ciudadDe: ciudadDeDireccion,
   origen: "script",
   tope: valor("--tope") ? Number(valor("--tope")) : undefined,
   ciudades: lista("--ciudades"),

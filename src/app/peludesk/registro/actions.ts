@@ -161,6 +161,19 @@ async function registrar(fd: FormData): Promise<EstadoRegistro> {
     .eq("negocio_id", alta.negocio_id);
   if (errorOrigen) console.error("[registro] origen", errorOrigen.code, errorOrigen.message);
 
+  // Llegó desde su vista previa (peludesk.mx/para/<slug>): el prospecto pasa a «en prueba» y queda ligado al negocio.
+  const slugProspecto = String(fd.get("prospecto") ?? "");
+  if (/^[a-z0-9-]{3,60}$/.test(slugProspecto)) {
+    const { data: pr } = await admin
+      .from("prospectos")
+      .update({ etapa: "en_prueba", negocio_cliente_id: alta.negocio_id, cliente_por: "telefono" })
+      .eq("slug", slugProspecto)
+      .is("deleted_at", null)
+      .select("id")
+      .maybeSingle();
+    if (pr) await admin.from("prospectos_eventos").insert({ prospecto_id: pr.id, tipo: "etapa", texto: "Abrió su prueba gratis desde su vista previa" });
+  }
+
   // API de conversiones de Meta, deduplicada con el píxel por el mismo event_id. Solo con marketing aceptado.
   const eventId = crypto.randomUUID();
   if (consentimiento.marketing) {

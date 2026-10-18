@@ -98,3 +98,68 @@ export async function detallesLugar(o: { apiKey: string; id: string; url?: strin
   if (!r.ok) throw await errorDe(r);
   return aLugar((await r.json()) as LugarApi);
 }
+
+// ── Para la página personalizada (peludesk.mx/para/<slug>) ───────────────────────────────────────────────────────
+// Lo de Google se pide AL MOSTRAR la página y no se guarda (términos de Places: solo el place_id se conserva).
+// Las fotos se muestran con la URL temporal que entrega Google (skipHttpRedirect), sin pasar la llave al
+// navegador, y cada una con el nombre de quien la tomó.
+
+export type FotoGoogle = { uri: string; autores: { nombre: string; uri: string | null }[] };
+export type LugarParaPagina = {
+  nombre: string;
+  direccion: string | null;
+  calificacion: number | null;
+  resenas: number | null;
+  horario: string[];
+  resumen: string | null;
+  mapsUri: string | null;
+  fotos: FotoGoogle[];
+};
+
+type FotoApi = { name?: string; authorAttributions?: { displayName?: string; uri?: string }[] };
+
+export async function detallesParaPagina(o: { apiKey: string; id: string; url?: string; fotos?: number }): Promise<LugarParaPagina | null> {
+  const base = o.url ?? PLACES_URL;
+  const r = await fetch(`${base}/places/${encodeURIComponent(o.id)}?languageCode=es&regionCode=MX`, {
+    headers: {
+      "X-Goog-Api-Key": o.apiKey,
+      "X-Goog-FieldMask": "displayName,formattedAddress,rating,userRatingCount,regularOpeningHours.weekdayDescriptions,editorialSummary,googleMapsUri,photos",
+    },
+    signal: AbortSignal.timeout(8_000),
+    cache: "no-store",
+  });
+  if (!r.ok) throw await errorDe(r);
+  const j = (await r.json()) as {
+    displayName?: { text?: string };
+    formattedAddress?: string;
+    rating?: number;
+    userRatingCount?: number;
+    regularOpeningHours?: { weekdayDescriptions?: string[] };
+    editorialSummary?: { text?: string };
+    googleMapsUri?: string;
+    photos?: FotoApi[];
+  };
+  const fotos = await Promise.all(
+    (j.photos ?? []).slice(0, o.fotos ?? 4).map(async (f): Promise<FotoGoogle | null> => {
+      if (!f.name) return null;
+      try {
+        const m = await fetch(`${base}/${f.name}/media?maxWidthPx=1200&skipHttpRedirect=true`, { headers: { "X-Goog-Api-Key": o.apiKey }, signal: AbortSignal.timeout(6_000), cache: "no-store" });
+        if (!m.ok) return null;
+        const uri = ((await m.json()) as { photoUri?: string }).photoUri;
+        return uri ? { uri, autores: (f.authorAttributions ?? []).map((a) => ({ nombre: a.displayName ?? "Google Maps", uri: a.uri ?? null })) } : null;
+      } catch {
+        return null;
+      }
+    })
+  );
+  return {
+    nombre: j.displayName?.text ?? "",
+    direccion: j.formattedAddress ?? null,
+    calificacion: typeof j.rating === "number" ? Math.round(j.rating * 10) / 10 : null,
+    resenas: typeof j.userRatingCount === "number" ? j.userRatingCount : null,
+    horario: j.regularOpeningHours?.weekdayDescriptions ?? [],
+    resumen: j.editorialSummary?.text ?? null,
+    mapsUri: j.googleMapsUri ?? null,
+    fotos: fotos.filter((x): x is FotoGoogle => x !== null),
+  };
+}

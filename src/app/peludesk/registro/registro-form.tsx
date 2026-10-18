@@ -12,9 +12,12 @@ import { enviarEventoPixel, pixelCargado } from "@/lib/peludesk/pixel-cliente";
 import { DOCUMENTOS_LEGALES } from "@/lib/peludesk/legal";
 import type { ParametroOrigen } from "@/lib/peludesk/origen";
 
-export function RegistroForm({ origen }: { origen: Partial<Record<ParametroOrigen, string>> }) {
+export type InicialRegistro = { slug: string; negocio: string; ciudad: string; servicios: string[]; telefono: string };
+
+export function RegistroForm({ origen, inicial }: { origen: Partial<Record<ParametroOrigen, string>>; inicial?: InicialRegistro }) {
   const [estado, accion, enviando] = useActionState(useAccionConTope(registrarPrueba), { error: null } as EstadoRegistro);
-  const v = estado.valores;
+  // Lo que escribió (si el envío falló) o, la primera vez, lo que trae su vista previa.
+  const v = estado.valores ?? (inicial ? { nombre: "", negocio: inicial.negocio, ciudad: inicial.ciudad, telefono: inicial.telefono, servicios: inicial.servicios } : undefined);
   const empezado = useRef(false);
   const referente = useRef<HTMLInputElement>(null);
 
@@ -58,6 +61,7 @@ export function RegistroForm({ origen }: { origen: Partial<Record<ParametroOrige
         <input key={k} type="hidden" name={k} value={val} />
       ))}
       <input ref={referente} type="hidden" name="referente" defaultValue="" />
+      {inicial && <input type="hidden" name="prospecto" value={inicial.slug} />}
       <Field label="Tu nombre" name="nombre" autoComplete="name" required defaultValue={v?.nombre} />
       <Field label="Nombre de tu negocio" name="negocio" autoComplete="organization" required defaultValue={v?.negocio} ayuda="Con él se arma tu dirección: nombre.peludesk.mx" />
       <Field label="Ciudad" name="ciudad" autoComplete="address-level2" defaultValue={v?.ciudad} />

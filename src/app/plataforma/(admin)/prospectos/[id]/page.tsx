@@ -9,7 +9,10 @@ import { FormularioPlataforma } from "@/components/plataforma/formulario-platafo
 import { formatearFecha, horaLocalDeInstante } from "@/lib/formato";
 import { COLUMNAS, type Prospecto } from "@/lib/prospectos/consulta";
 import { CANALES, ETAPAS, GIROS, textoCanal, textoEtapa, textoGiro } from "@/lib/prospectos/textos";
-import { actualizarDesdeGoogle, agregarNota, cambiarEtapa, guardarDatos } from "../acciones";
+import { CampoCopiable } from "@/components/ui/campo-copiable";
+import { linkDe } from "@/lib/prospectos/lista";
+import { piezas } from "@/lib/prospectos/motor";
+import { actualizarDesdeGoogle, agregarNota, cambiarEtapa, cambiarEtapaA, guardarDatos, noLeInteresa, revertirClasificacion, separarSucursal } from "../acciones";
 
 const ZONA = "America/Mexico_City";
 
@@ -31,11 +34,19 @@ export default async function FichaProspecto({ params }: { params: Promise<{ id:
   const [{ data }, { data: ev }, { data: extra }] = await Promise.all([
     supabase.from("prospectos").select(COLUMNAS).eq("id", id).is("deleted_at", null).maybeSingle(),
     supabase.from("prospectos_eventos").select("id, tipo, etapa_anterior, etapa_nueva, canal, texto, created_at").eq("prospecto_id", id).is("deleted_at", null).order("created_at", { ascending: false }).limit(200),
-    supabase.from("prospectos").select("google_place_id, web_revisada_at, web_error").eq("id", id).maybeSingle(),
+    supabase.from("prospectos").select("google_place_id, web_revisada_at, web_error, giro_busqueda, clasificacion_revertida_at").eq("id", id).maybeSingle(),
   ]);
   if (!data) notFound();
   const p = data as unknown as Prospecto;
   const eventos = (ev ?? []) as Evento[];
+  type Suc = { id: string; nombre: string; ciudad: string; telefono: string | null; direccion: string | null };
+  const [{ data: suc }, { data: pri }] = await Promise.all([
+    supabase.from("prospectos").select("id, nombre, ciudad, telefono, direccion").eq("principal_id", p.id).is("deleted_at", null).order("nombre").limit(50),
+    p.principal_id ? supabase.from("prospectos").select("id, nombre, ciudad").eq("id", p.principal_id).maybeSingle() : Promise.resolve({ data: null }),
+  ]);
+  const sucursales = (suc ?? []) as Suc[];
+  const principal = pri as { id: string; nombre: string; ciudad: string } | null;
+  const linkPagina = linkDe(piezas().sitio, p.slug);
   const wa = (p.whatsapp ?? p.telefono)?.replace(/\D/g, "").slice(-10);
 
   return (
@@ -54,6 +65,66 @@ export default async function FichaProspecto({ params }: { params: Promise<{ id:
           <Link href={`/plataforma/negocios/${p.negocio_cliente_id}`} className="font-semibold underline">Ver el negocio</Link>
         </Alert>
       )}
+
+      {p.etapa === "descartado" && (
+        <Alert variante="advertencia" titulo={p.descarte_tipo === "no_es_del_giro" ? "Descartado (no es del giro)" : p.descarte_tipo === "no_le_interesa" ? "Descartado: no le interesa" : "Descartado"}>
+          {p.descarte_motivo ?? "Sin motivo."}
+          {p.descarte_tipo === "no_es_del_giro" && (
+            <FormularioPlataforma accion={revertirClasificacion.bind(null, p.id)} textoBoton="Revertir: sí es del giro" variante="secundario" className="mt-3" />
+          )}
+        </Alert>
+      )}
+      {p.etapa !== "descartado" && p.clasificacion?.motivo && (
+        <div className="rounded-lg border border-n-200 bg-white p-4 text-sm" data-clasificacion>
+          <p>
+            <b>Clasificación:</b> {textoGiro(p.giro)} · {p.clasificacion.motivo}
+            {extra?.giro_busqueda && extra.giro_busqueda !== p.giro ? <span className="text-n-600"> (la búsqueda decía {textoGiro(extra.giro_busqueda)})</span> : null}
+          </p>
+          {extra?.giro_busqueda && extra.giro_busqueda !== p.giro && !extra.clasificacion_revertida_at && (
+            <FormularioPlataforma accion={revertirClasificacion.bind(null, p.id)} textoBoton="Revertir el giro" variante="secundario" className="mt-2" />
+          )}
+        </div>
+      )}
+      {principal && (
+        <Alert variante="info" titulo="Es una sucursal">
+          Se agrupó con <Link href={`/plataforma/prospectos/${principal.id}`} className="font-semibold underline">{principal.nombre}</Link> ({principal.ciudad}) porque comparten marca.
+          <FormularioPlataforma accion={separarSucursal.bind(null, p.id)} textoBoton="Separar: es otro negocio" variante="secundario" className="mt-3" />
+        </Alert>
+      )}
+
+      <section className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-lg border border-n-200 bg-white p-5 text-sm" data-su-pagina>
+          <h2 className="text-lg font-bold text-n-900">Su página</h2>
+          <p className="mt-1 text-n-600">La vista previa «Así se vería {p.nombre} en PeluDesk». Solo se llega por este link.</p>
+          <div className="mt-3"><CampoCopiable valor={linkPagina} etiqueta="Link de su página" /></div>
+          <a href={`/para/${p.slug}?interno=1`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block font-semibold text-indigo-700 hover:underline">Ver su página (no cuenta como visita)</a>
+          <dl className="mt-3 grid grid-cols-[9rem_1fr] gap-x-3 gap-y-1">
+            <dt className="text-n-600">Visitas</dt><dd data-visitas>{p.visitas}{p.ultima_visita_at ? ` · la última ${formatearFecha(p.ultima_visita_at, ZONA)} ${horaLocalDeInstante(p.ultima_visita_at, ZONA)}` : ""}</dd>
+            <dt className="text-n-600">Clic en prueba</dt><dd>{p.clic_prueba_at ? `${formatearFecha(p.clic_prueba_at, ZONA)} ${horaLocalDeInstante(p.clic_prueba_at, ZONA)}` : "No"}</dd>
+            <dt className="text-n-600">Clic en WhatsApp</dt><dd>{p.clic_whatsapp_at ? `${formatearFecha(p.clic_whatsapp_at, ZONA)} ${horaLocalDeInstante(p.clic_whatsapp_at, ZONA)}` : "No"}</dd>
+            <dt className="text-n-600">Seguimientos</dt><dd>{p.seguimientos}{p.contacto_pausado_at ? " · en pausa" : ""}</dd>
+          </dl>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <FormularioPlataforma accion={cambiarEtapaA.bind(null, p.id, "respondio")} textoBoton="Respondió" variante="secundario" />
+            {p.etapa !== "descartado" && <FormularioPlataforma accion={noLeInteresa.bind(null, p.id)} textoBoton="No le interesa" variante="secundario" />}
+          </div>
+        </div>
+        <div className="rounded-lg border border-n-200 bg-white p-5 text-sm" data-sucursales>
+          <h2 className="text-lg font-bold text-n-900">Sucursales</h2>
+          {sucursales.length === 0 ? (
+            <p className="mt-1 text-n-600">{principal ? "Es sucursal de otro negocio (arriba)." : "Ninguna agrupada."}</p>
+          ) : (
+            <ul className="mt-2 flex flex-col divide-y divide-n-100">
+              {sucursales.map((x) => (
+                <li key={x.id} className="py-2">
+                  <Link href={`/plataforma/prospectos/${x.id}`} className="font-semibold text-indigo-700 hover:underline">{x.nombre}</Link>
+                  <span className="block text-n-600">{[x.ciudad, x.telefono, x.direccion].filter(Boolean).join(" · ")}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
 
       <section className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-lg border border-n-200 bg-white p-5 text-sm">

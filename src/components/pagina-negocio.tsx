@@ -1,4 +1,6 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
+import type { MarcaNegocio } from "@/lib/landing/negocio";
 import { WhatsappLogo, MapPin, Clock, SignIn } from "@phosphor-icons/react/dist/ssr";
 import { cargarNegocioLanding, linkWhatsAppDe, pesos } from "@/lib/landing/negocio";
 import { urlPublicaArchivo } from "@/lib/negocio/publico";
@@ -29,6 +31,7 @@ const GRUPOS: { categoria: string; titulo: string }[] = [
   { categoria: "guarderia", titulo: "Guardería" },
   { categoria: "hotel", titulo: "Hotel" },
   { categoria: "estetica", titulo: "Estética" },
+  { categoria: "veterinaria", titulo: "Veterinaria" },
   { categoria: "bono", titulo: "Paquetes de guardería" },
   { categoria: "cargo", titulo: "Recolección a domicilio" },
 ];
@@ -44,8 +47,28 @@ const POR_UNIDAD: Record<string, string> = { hora: "la hora", noche: "la noche",
 export async function PaginaNegocio({ datos }: { datos: DatosPagina }) {
   const negocio = await cargarNegocioLanding();
   const fotos = datos.fotos.map((p) => urlPublicaArchivo(p)!).filter(Boolean);
+  return <PlantillaPaginaNegocio datos={datos} marca={negocio.marca ?? null} fotos={fotos} />;
+}
+
+/**
+ * La misma página con todo dado. La usa también la vista previa de un prospecto (peludesk.mx/para/<slug>), que no
+ * tiene negocio en PeluDesk: ahí los botones son de muestra (no llevan a ningún lado), no se pone logo y cada foto
+ * lleva su crédito.
+ */
+export function PlantillaPaginaNegocio({
+  datos,
+  marca,
+  fotos,
+  vistaPrevia,
+}: {
+  datos: DatosPagina;
+  marca: MarcaNegocio | null;
+  fotos: string[];
+  vistaPrevia?: { creditos: ReactNode[] };
+}) {
+  const negocio = { marca };
   const [principal, ...galeria] = fotos;
-  const whatsapp = datos.whatsapp ? linkWhatsAppDe(`52${datos.whatsapp}`, `Hola, ${datos.nombre}. Quiero información.`) : null;
+  const whatsapp = vistaPrevia ? "#" : datos.whatsapp ? linkWhatsAppDe(`52${datos.whatsapp}`, `Hola, ${datos.nombre}. Quiero información.`) : null;
   const mapa = datos.direccion
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${datos.direccion}${datos.ciudad ? `, ${datos.ciudad}` : ""}`)}`
     : null;
@@ -53,7 +76,7 @@ export async function PaginaNegocio({ datos }: { datos: DatosPagina }) {
   const color = negocio.marca?.color && /^#[0-9a-fA-F]{6}$/.test(negocio.marca.color) ? negocio.marca.color : "#4b3f72";
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-crema text-n-900">
+    <div className={`flex flex-col bg-crema text-n-900 ${vistaPrevia ? "" : "min-h-[100dvh]"}`}>
       <header className="border-b border-n-200 bg-white">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-4 px-4 sm:px-6">
           <span className="flex min-w-0 items-center gap-2.5">
@@ -62,13 +85,15 @@ export async function PaginaNegocio({ datos }: { datos: DatosPagina }) {
             {negocio.marca?.logo && <span className="truncate text-lg font-bold tracking-tight">{datos.nombre}</span>}
           </span>
           <nav className="flex items-center gap-2">
-            <Link href="/login" className="inline-flex min-h-10 items-center gap-1.5 rounded-md px-3 text-sm font-semibold text-n-700 hover:bg-n-100">
-              <SignIn size={18} weight="bold" aria-hidden />
-              Entrar
-            </Link>
+            {!vistaPrevia && (
+              <Link href="/login" className="inline-flex min-h-10 items-center gap-1.5 rounded-md px-3 text-sm font-semibold text-n-700 hover:bg-n-100">
+                <SignIn size={18} weight="bold" aria-hidden />
+                Entrar
+              </Link>
+            )}
             {whatsapp && (
               <a
-                href={whatsapp}
+                href={vistaPrevia ? undefined : whatsapp}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hidden min-h-10 items-center gap-1.5 rounded-md px-4 text-sm font-semibold text-white sm:inline-flex"
@@ -93,7 +118,7 @@ export async function PaginaNegocio({ datos }: { datos: DatosPagina }) {
             {datos.descripcion && <p className="mt-4 max-w-[52ch] text-lg leading-relaxed text-n-700">{datos.descripcion}</p>}
             {whatsapp && (
               <a
-                href={whatsapp}
+                href={vistaPrevia ? undefined : whatsapp}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-7 inline-flex min-h-12 items-center gap-2 rounded-md px-6 text-base font-semibold text-white"
@@ -105,7 +130,10 @@ export async function PaginaNegocio({ datos }: { datos: DatosPagina }) {
             )}
           </div>
           {/* Sin foto (o con el archivo roto) se ve un fondo con la huella de la marca, nunca el texto de la ranura. */}
-          <FotoNegocio url={principal ?? null} color={color} className="aspect-[4/3] w-full rounded-[18px] border border-n-200" />
+          <figure>
+            <FotoNegocio url={principal ?? null} color={color} className="aspect-[4/3] w-full rounded-[18px] border border-n-200" />
+            {vistaPrevia?.creditos[0] && <figcaption className="mt-1 text-xs text-n-500">{vistaPrevia.creditos[0]}</figcaption>}
+          </figure>
         </section>
 
         {grupos.length > 0 && (
@@ -161,9 +189,10 @@ export async function PaginaNegocio({ datos }: { datos: DatosPagina }) {
         {galeria.length > 0 && (
           <section aria-label="Fotos" className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
             <ul className="grid grid-cols-2 gap-3 md:grid-cols-3">
-              {galeria.map((url) => (
+              {galeria.map((url, i) => (
                 <li key={url}>
                   <FotoNegocio url={url} color={color} className="aspect-square w-full rounded-[14px] border border-n-200" />
+                  {vistaPrevia?.creditos[i + 1] && <p className="mt-1 text-xs text-n-500">{vistaPrevia.creditos[i + 1]}</p>}
                 </li>
               ))}
             </ul>

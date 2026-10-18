@@ -27,6 +27,8 @@ export type OpcionesCorrida = {
   /** Máximo de webs a revisar en esta corrida (las que queden se revisan en la siguiente). */
   topeWebs?: number;
   avisar?: (texto: string) => void;
+  /** La ciudad y el estado salen de la dirección (calidad.ts: ciudadDeDireccion); la de la búsqueda queda aparte. */
+  ciudadDe?: (direccion: string | null) => { ciudad: string; estado: string | null } | null;
 };
 
 export type ResultadoCorrida = {
@@ -153,7 +155,7 @@ export async function correrProspeccion(o: OpcionesCorrida): Promise<ResultadoCo
           r.resultados++;
           encontrados++;
           const { data, error } = await db.rpc("prospecto_registrar", {
-            p: { nombre: l.nombre, giro: c.giro, ciudad: c.ciudad, direccion: l.direccion, telefono: l.telefono, web: l.web, calificacion: l.calificacion, resenas: l.resenas, google_place_id: l.id, google_tipos: l.tipos, fuente: "google_places" },
+            p: { nombre: l.nombre, giro: c.giro, ciudad: o.ciudadDe?.(l.direccion)?.ciudad ?? c.ciudad, estado: o.ciudadDe?.(l.direccion)?.estado ?? null, ciudad_busqueda: c.ciudad, direccion: l.direccion, telefono: l.telefono, web: l.web, calificacion: l.calificacion, resenas: l.resenas, google_place_id: l.id, google_tipos: l.tipos, fuente: "google_places" },
           });
           if (error) {
             anotar(`${l.nombre}: ${error.message}`);

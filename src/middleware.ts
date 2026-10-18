@@ -335,7 +335,7 @@ const PUBLICAS_PLATAFORMA: Record<string, string> = {
 };
 // Con parámetro: artículos del centro de ayuda y del blog, páginas del índice
 // del blog y sus categorías. Una lista cerrada de formas, nunca por prefijo.
-const PUBLICAS_PLATAFORMA_PATRON = /^\/(ayuda\/[a-z0-9-]+|guias\/[a-z0-9-]+|alternativas\/[a-z0-9-]+|ayuda\/videos\/[a-z0-9-]+|blog\/[a-z0-9-]+|blog\/pagina\/\d{1,3}|blog\/categoria\/[a-z0-9-]+)$/;
+const PUBLICAS_PLATAFORMA_PATRON = /^\/(ayuda\/[a-z0-9-]+|guias\/[a-z0-9-]+|alternativas\/[a-z0-9-]+|ayuda\/videos\/[a-z0-9-]+|blog\/[a-z0-9-]+|blog\/pagina\/\d{1,3}|blog\/categoria\/[a-z0-9-]+|para\/[a-z0-9-]{3,60}|para\/[a-z0-9-]{3,60}\/ir\/(?:prueba|whatsapp))$/;
 
 async function plataforma(request: NextRequest, cabeceras: Headers) {
   const { pathname } = request.nextUrl;

@@ -2,7 +2,7 @@
 // como wa.me o api.whatsapp.com: es la única forma de distinguir un WhatsApp de un teléfono fijo).
 // Sin imports (también lo usa scripts/prospectos/buscar.mjs con Node directo).
 
-export type ContactosWeb = { correo: string | null; instagram: string | null; facebook: string | null; whatsapp: string | null };
+export type ContactosWeb = { correo: string | null; instagram: string | null; facebook: string | null; whatsapp: string | null; resumen?: string | null };
 
 const CORREO = /[a-z0-9][a-z0-9._%+-]{0,63}@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}/gi;
 const CORREO_BASURA = /\.(png|jpe?g|gif|webp|svg|css|js)$|@(\d+x|example|domain|email|correo|sentry|wixpress|sentry-next|godaddy|ingest|mysite|tudominio|dominio)\./i;
@@ -44,9 +44,21 @@ export function whatsappDe(texto: string): string | null {
   return m ? m[1].slice(-10) : null;
 }
 
+// Título y descripción de su portada (texto del propio negocio, no de Google): ayuda a clasificar el giro.
+export function resumenDe(html: string): string | null {
+  const limpio = (x: string | undefined) => (x ?? "").replace(/<[^>]+>/g, " ").replace(/&[a-z#0-9]+;/gi, " ").replace(/\s+/g, " ").trim();
+  const titulo = limpio(html.match(/<title[^>]*>([\s\S]{0,300}?)<\/title>/i)?.[1]);
+  const desc = limpio(
+    html.match(/<meta[^>]+(?:name|property)=["'](?:description|og:description)["'][^>]*content=["']([^"']{0,400})/i)?.[1] ??
+      html.match(/<meta[^>]+content=["']([^"']{0,400})["'][^>]*(?:name|property)=["'](?:description|og:description)["']/i)?.[1]
+  );
+  const r = [titulo, desc].filter(Boolean).join(" — ").slice(0, 600);
+  return r || null;
+}
+
 export function extraerContactos(html: string, dominio: string | null): ContactosWeb {
   const t = decodificar(html);
-  return { correo: correoDe(t, dominio), instagram: instagramDe(t), facebook: facebookDe(t), whatsapp: whatsappDe(t) };
+  return { correo: correoDe(t, dominio), instagram: instagramDe(t), facebook: facebookDe(t), whatsapp: whatsappDe(t), resumen: resumenDe(html) };
 }
 
 const dominioDe = (url: string) => {
@@ -89,7 +101,7 @@ export async function revisarWeb(url: string, topeMs = 8_000): Promise<Contactos
           const destino = new URL(enlace, url);
           if (dominioDe(destino.href) === dominio) {
             const c2 = extraerContactos(await bajar(destino.href, topeMs), dominio);
-            return { correo: c2.correo, instagram: c.instagram ?? c2.instagram, facebook: c.facebook ?? c2.facebook, whatsapp: c.whatsapp ?? c2.whatsapp, error: null };
+            return { correo: c2.correo, instagram: c.instagram ?? c2.instagram, facebook: c.facebook ?? c2.facebook, whatsapp: c.whatsapp ?? c2.whatsapp, resumen: c.resumen ?? c2.resumen, error: null };
           }
         } catch {
           /* la de contacto no abrió: se queda con lo de la portada */

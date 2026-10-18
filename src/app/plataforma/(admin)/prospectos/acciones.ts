@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { sesionPlataforma } from "@/lib/plataforma/sesion";
 import type { ResultadoPlataforma } from "@/lib/plataforma/tipos";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { correrProspeccion } from "@/lib/prospectos/correr";
-import { buscarTexto, detallesLugar, PLACES_URL } from "@/lib/prospectos/places";
+import { detallesLugar, PLACES_URL } from "@/lib/prospectos/places";
+import { correrBusqueda, correrCalidad, correrLista } from "@/lib/prospectos/motor";
 import { revisarWeb } from "@/lib/prospectos/web";
 import { esCanal, esEtapa, esGiro } from "@/lib/prospectos/textos";
 
@@ -48,9 +48,18 @@ export async function guardarAjustes(fd: FormData): Promise<ResultadoPlataforma>
   const paginas = Number(fd.get("paginas"));
   if (!Number.isInteger(tope) || tope < 0 || tope > 500) return { error: "El tope de búsquedas por día va de 0 a 500." };
   if (![1, 2, 3].includes(paginas)) return { error: "Las páginas por consulta van de 1 a 3." };
+  const listaWa = Number(fd.get("lista_whatsapp"));
+  const listaIg = Number(fd.get("lista_instagram"));
+  const dias = Number(fd.get("dias_seguimiento"));
+  const maxSeg = Number(fd.get("max_seguimientos"));
+  const firma = texto(fd, "firma", 40);
+  if (![listaWa, listaIg].every((n) => Number.isInteger(n) && n >= 0 && n <= 100)) return { error: "La lista del día va de 0 a 100 por canal." };
+  if (!Number.isInteger(dias) || dias < 1 || dias > 30) return { error: "Los días para el seguimiento van de 1 a 30." };
+  if (!Number.isInteger(maxSeg) || maxSeg < 0 || maxSeg > 5) return { error: "Los seguimientos van de 0 a 5." };
+  if (!firma) return { error: "Escribe con qué nombre se firman los mensajes." };
   const { error } = await s.supabase
     .from("prospeccion_ajustes")
-    .update({ ciudades, consultas, tope_busquedas_dia: tope, paginas_por_consulta: paginas, pausado: fd.get("pausado") === "si" })
+    .update({ ciudades, consultas, tope_busquedas_dia: tope, paginas_por_consulta: paginas, pausado: fd.get("pausado") === "si", lista_whatsapp: listaWa, lista_instagram: listaIg, dias_seguimiento: dias, max_seguimientos: maxSeg, firma })
     .eq("id", 1);
   if (error) return { error: error.message };
   refrescar();
@@ -67,18 +76,13 @@ export async function buscarAhora(fd: FormData): Promise<ResultadoPlataforma> {
   const tope = Number(fd.get("tope") ?? 5);
   if (!Number.isInteger(tope) || tope < 1 || tope > 60) return { error: "Las búsquedas de esta corrida van de 1 a 60." };
   if (giro && !esGiro(giro)) return { error: "Giro no válido." };
-  const url = placesUrl();
-  const r = await correrProspeccion({
-    db: createSupabaseAdminClient(),
-    apiKey,
-    buscar: (consulta, pageToken) => buscarTexto({ apiKey, consulta, pageToken, url }),
-    revisarWeb: (w) => revisarWeb(w),
-    origen: "manual",
-    tope,
-    ciudades: ciudad ? [ciudad] : undefined,
-    giros: giro && giro !== "mixto" ? [giro] : undefined,
-    presupuestoMs: 240_000,
-  });
+  const r = await correrBusqueda({ origen: "manual", tope, ciudades: ciudad ? [ciudad] : undefined, giros: giro && giro !== "mixto" ? [giro] : undefined, presupuestoMs: 180_000 });
+  // Lo nuevo se clasifica y agrupa en la misma corrida.
+  try {
+    await correrCalidad(50_000, 200);
+  } catch (e) {
+    console.error("[prospectos] calidad", e instanceof Error ? e.message : e);
+  }
   refrescar();
   if (r.estado === "fallida") return { error: r.error ?? "La búsqueda falló. Revisa el registro de corridas." };
   return { error: null, exito: `Listo: ${r.busquedas} búsquedas, ${r.nuevos} nuevos, ${r.duplicados} duplicados, ${r.clientes} ya son de PeluDesk, ${r.errores} errores.` };
@@ -121,6 +125,12 @@ export async function cambiarEtapa(id: string, fd: FormData): Promise<ResultadoP
   if (nota) await s.supabase.from("prospectos_eventos").insert({ prospecto_id: id, tipo: "nota", texto: nota, canal: canal || null });
   refrescar(id);
   return { error: null, exito: "Etapa guardada." };
+}
+
+export async function cambiarEtapaA(id: string, etapa: string): Promise<ResultadoPlataforma> {
+  const fd = new FormData();
+  fd.set("etapa", etapa);
+  return cambiarEtapa(id, fd);
 }
 
 export async function agregarNota(id: string, fd: FormData): Promise<ResultadoPlataforma> {
@@ -185,5 +195,69 @@ export async function actualizarDesdeGoogle(id: string): Promise<ResultadoPlataf
     return { error: null, exito: l.cerrado ? "Actualizado. Google lo marca como cerrado definitivamente." : "Actualizado desde Google." };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "No se pudo consultar a Google." };
+  }
+}
+
+// ── Etapa 2: calidad, sucursales y «Contactar hoy» ────────────────────────────────────────────────────────────────
+
+export async function revertirClasificacion(id: string): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const { data: p } = await s.supabase.from("prospectos").select("id, etapa, etapa_antes_descarte, giro_busqueda, descarte_tipo").eq("id", id).maybeSingle();
+  if (!p) return { error: "Ese prospecto ya no existe." };
+  const cambio: Record<string, unknown> = { clasificacion_revertida_at: new Date().toISOString() };
+  if (p.etapa === "descartado") Object.assign(cambio, { etapa: p.etapa_antes_descarte ?? "nuevo", descarte_tipo: null, descarte_motivo: null, etapa_antes_descarte: null });
+  else if (p.giro_busqueda) cambio.giro = p.giro_busqueda;
+  const { error } = await s.supabase.from("prospectos").update(cambio).eq("id", id);
+  if (error) return { error: error.message };
+  await s.supabase.from("prospectos_eventos").insert({ prospecto_id: id, tipo: "clasificacion", texto: p.etapa === "descartado" ? "Se revirtió el descarte automático" : "Se revirtió el giro que puso la clasificación" });
+  refrescar(id);
+  return { error: null, exito: "Revertido. La clasificación automática ya no lo vuelve a tocar." };
+}
+
+export async function separarSucursal(id: string): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const { data: p } = await s.supabase.from("prospectos").select("principal_id").eq("id", id).maybeSingle();
+  const { error } = await s.supabase.from("prospectos").update({ principal_id: null, no_agrupar: true }).eq("id", id);
+  if (error) return { error: error.message };
+  await s.supabase.from("prospectos_eventos").insert({ prospecto_id: id, tipo: "sucursal", texto: "Separado: es otro negocio, no una sucursal" });
+  refrescar(id);
+  if (p?.principal_id) revalidatePath(`/plataforma/prospectos/${p.principal_id}`);
+  return { error: null, exito: "Separado. Ya no se agrupa como sucursal." };
+}
+
+export async function noLeInteresa(id: string): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const { data: p } = await s.supabase.from("prospectos").select("etapa").eq("id", id).maybeSingle();
+  if (!p) return { error: "Ese prospecto ya no existe." };
+  if (p.etapa === "descartado") return { error: null, exito: "Ya estaba descartado." };
+  const { error } = await s.supabase.from("prospectos").update({ etapa_antes_descarte: p.etapa, etapa: "descartado", descarte_tipo: "no_le_interesa", descarte_motivo: "No le interesa" }).eq("id", id);
+  if (error) return { error: error.message };
+  refrescar(id);
+  return { error: null, exito: "Descartado: no le interesa." };
+}
+
+/** Un renglón de «Contactar hoy»: se mandó, respondió o no le interesa. La base pasa al prospecto de etapa. */
+export async function marcarContacto(contactoId: string, accion: "enviado" | "respondio" | "no_interesa"): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const { error } = await s.supabase.rpc("plataforma_prospecto_contacto", { p_contacto: contactoId, p_accion: accion });
+  if (error) return { error: error.message };
+  revalidatePath("/plataforma/prospectos/hoy");
+  return { error: null, exito: accion === "enviado" ? "Marcado como contactado." : accion === "respondio" ? "Respondió." : "No le interesa." };
+}
+
+export async function armarListaHoy(): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  try {
+    const r = await correrLista();
+    revalidatePath("/plataforma/prospectos/hoy");
+    if (r.whatsapp + r.instagram === 0) return { error: null, exito: r.yaEstaba ? "La lista de hoy ya estaba completa." : "No hay prospectos que toque contactar hoy." };
+    return { error: null, exito: `Lista armada: ${r.whatsapp} por WhatsApp y ${r.instagram} por Instagram (${r.seguimientos} seguimientos).` };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "No se pudo armar la lista." };
   }
 }
