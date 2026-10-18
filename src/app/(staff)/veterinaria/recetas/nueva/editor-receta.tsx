@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AvisoBorrador, useAutoguardado } from "@/lib/borradores/use-autoguardado";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,34 @@ export function EditorReceta({ perroId, consultaId, productos, tratamiento = nul
   const [observaciones, setObservaciones] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  // N34: lo que se escribe se guarda como borrador (1.5 s después de dejar de escribir) y al volver a abrir la
+  // receta de esta mascota se ofrece recuperarlo; y se avisa antes de salir con cambios sin emitir.
+  const [inicial] = useState(() => JSON.stringify({ filas, diagnostico: "", observaciones: "" }));
+  const valorBorrador = { filas, diagnostico, observaciones };
+  const sinCambios = (v: typeof valorBorrador) => JSON.stringify(v) === inicial;
+  const borrador = useAutoguardado<typeof valorBorrador>({
+    formulario: "receta",
+    clave: `${perroId}:${consultaId ?? "ficha"}`,
+    valor: valorBorrador,
+    esVacio: sinCambios,
+    alRecuperar: (d) => {
+      if (Array.isArray(d.filas) && d.filas.length > 0) setFilas(d.filas);
+      setDiagnostico(typeof d.diagnostico === "string" ? d.diagnostico : "");
+      setObservaciones(typeof d.observaciones === "string" ? d.observaciones : "");
+    },
+  });
+  const [emitida, setEmitida] = useState(false);
+  const sinEmitir = !emitida && !sinCambios(valorBorrador);
+  useEffect(() => {
+    if (!sinEmitir) return;
+    const avisar = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", avisar);
+    return () => window.removeEventListener("beforeunload", avisar);
+  }, [sinEmitir]);
+
   const emitibles = productos.filter((p) => p.documento === "libre" || p.documento === "receta_simple" || p.documento === "receta_cedula");
   const cambiar = (i: number, parche: Partial<Fila>) => setFilas((f) => f.map((x, j) => (j === i ? { ...x, ...parche } : x)));
 
@@ -87,6 +116,8 @@ export function EditorReceta({ perroId, consultaId, productos, tratamiento = nul
 
   async function emitir() {
     setError(null);
+    // Un guardado pendiente del borrador no debe llegar después de emitir y volver a dejar un borrador (N34).
+    borrador.pausar();
     const lineas = filas
       .filter((f) => f.producto.trim() || f.insumo_id)
       .map((f) => ({
@@ -118,11 +149,13 @@ export function EditorReceta({ perroId, consultaId, productos, tratamiento = nul
       setError(r.error);
       return;
     }
+    setEmitida(true);
     if (r.ir) router.push(r.ir);
   }
 
   return (
     <div className="flex flex-col gap-5">
+      <AvisoBorrador estado={borrador} />
       {prellenado.length > 0 && (
         <p data-receta-prellenada className="rounded-md border-l-4 border-morado bg-morado-suave px-3 py-2 text-sm text-n-800">
           Prellenamos {prellenado.length === 1 ? "el medicamento" : "los medicamentos"} con el «Tratamiento» de la consulta. Revísalo{prellenado.length === 1 ? "" : "s"}: puedes cambiar cualquier campo.

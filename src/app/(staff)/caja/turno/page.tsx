@@ -7,7 +7,8 @@ import { tienePermiso } from "@/lib/auth/permisos";
 import { AbrirTurnoForm } from "./abrir-turno-form";
 import { HistorialTurnos, type TurnoCerrado } from "./historial-turnos";
 import { MovimientosTurno, type MovimientoTurno, type ResumenMetodo } from "./movimientos-turno";
-import { zonaActual } from "@/lib/negocio/actual";
+import { zonaActual, negocioActual } from "@/lib/negocio/actual";
+import { nombresDePersonal } from "@/lib/personal/nombres";
 import { leerTodo } from "@/lib/supabase/paginar";
 
 // El turno de caja: apertura, movimientos en curso con el acumulado por
@@ -75,11 +76,8 @@ export default async function TurnoCajaPage({ searchParams }: { searchParams: Pr
     ])
   ).filter((x): x is string => Boolean(x));
 
-  const { data: perfiles } = idsNombres.length
-    ? await supabase.from("profiles").select("id, nombre_completo").in("id", idsNombres)
-    : { data: [] as { id: string; nombre_completo: string | null }[] };
-  // Un perfil sin nombre no entra al mapa: quien lo use decide su respaldo.
-  const nombrePorId = new Map((perfiles ?? []).filter((p) => p.nombre_completo).map((p) => [p.id, p.nombre_completo as string]));
+  // Nombre de la ficha de empleado o de la cuenta (nombre_de_persona): recepción no lee `profiles` del personal.
+  const nombrePorId = await nombresDePersonal(supabase, idsNombres, { esAdmin: sesion?.rol === "admin", negocioId: (await negocioActual()).id });
 
   const retiros: Retiro[] = (retirosCrudo ?? []).filter((r) => r.tipo !== "ingreso").map((r) => ({
     id: r.id as string,

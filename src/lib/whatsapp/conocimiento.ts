@@ -220,4 +220,11 @@ Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado.
 ## Ajustes de la QA del 17 de octubre (13 h)
 - Receta: las «Indicaciones» se arman con el medicamento, la dosis, la frecuencia y los días y se actualizan solas; si el médico las escribe, aparece un aviso cuando dejan de coincidir, con un botón para regenerarlas. La frecuencia se escribe «Cada 12 horas».
 - Cobro de PeluDesk: el cobro aparece como MENTEO, la empresa que opera PeluDesk (en el Checkout, el estado de cuenta, los recibos y las facturas de Stripe). Durante la prueba, quien contrata no paga hoy: el primer cobro es el último día de su prueba, con la misma fecha y los mismos días en el aviso, en Módulos y plan y en el Checkout.
+## Ajustes de la QA del 18 de octubre
+- Cobro: si otra persona cobra la misma cuenta casi al mismo tiempo, «Registrar cobro» no la registra de inmediato: avisa «Se acaba de registrar otro cobro de $10 por <quien> hace 5 s. El saldo ahora es $880. ¿Registrar de todos modos?» y se confirma con «Registrar de todos modos»; igual en el cobro junto. La pantalla de cobro se actualiza sola cuando cambia el saldo (cobro, anulación o cargo desde otra sesión) y avisa «El saldo cambió».
+- El autor de un cobro, cargo o anulación sale con el nombre de su ficha de empleado; sin nombre, un admin ve «Sin nombre (correo)» y los demás «Sin nombre».
+- Buscadores de clientes: el clic elige la fila que se apretó aunque la lista cambie mientras escribes.
+- Estética: al agendar sale «Cita agendada…» junto al botón; si la mascota ya tiene una cita ese día, pide confirmar con «Agendar otra de todos modos». Un negocio nuevo de Estética trae además corte de uñas, limpieza de oídos, corte de pelo y deslanado (sin precio, el negocio los captura y los puede editar).
+- Reservas: la regla de días sin atención («El negocio no atiende los domingos…») sale solo cuando la fecha escogida cae en uno de esos días. Los avisos de vacunas o evaluación pendientes ofrecen la excepción solo a quien tiene el permiso «Excepciones al reservar».
+- Recetas: lo que se escribe se guarda como borrador; al volver a abrir la receta de esa mascota se ofrece «Recuperar borrador» y el navegador avisa antes de salir con cambios sin emitir.
 `.trim();

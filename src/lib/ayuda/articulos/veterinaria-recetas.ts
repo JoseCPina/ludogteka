@@ -28,6 +28,8 @@ export const ARTICULOS_VETERINARIA_RECETAS: Articulo[] = [
    Las **Indicaciones** se arman con el medicamento, la dosis, la frecuencia y los días («Meloxicam 1 mg, 1 tableta cada 24 horas por 3 días») y se actualizan solas si cambias alguno. Si las escribes tú, ya no se mueven: cuando dejan de coincidir con los datos de arriba aparece el aviso con **Regenerar las indicaciones**. La frecuencia se escribe siempre así: «Cada 12 horas».
 5. Aprieta **Emitir receta**.
 
+Mientras escribes, la receta guarda un borrador sola. Si sales sin emitirla, el navegador te avisa antes de irte; y al volver a abrir la receta de esa mascota sale **Tienes un borrador sin guardar** con **Recuperar borrador** y **Descartar**. Al emitirla, el borrador se borra.
+
 La receta lleva tu nombre y cédula, los datos del establecimiento, del dueño y de la mascota, la leyenda de uso veterinario y tu firma.
 
 ## Qué se receta aquí y qué no

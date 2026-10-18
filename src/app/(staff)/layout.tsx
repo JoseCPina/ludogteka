@@ -1,3 +1,4 @@
+import { textoSinNombre } from "@/lib/personal/nombres";
 import { redirect } from "next/navigation";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { navStaffPara } from "@/lib/nav/config";
@@ -40,7 +41,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
         </>
       }
       rol={sesion.rol}
-      nombreCompleto={sesion.nombreCompleto}
+      nombreCompleto={sesion.nombreCompleto ?? textoSinNombre(sesion.user.email, sesion.rol === "admin")}
       items={navStaffPara(sesion.rol, sesion.permisos, sesion.modulos, sesion.accesoVeterinaria)}
       videos={videos.map((v) => ({ slug: v.slug, rutas: v.rutas }))}
       ayuda={conAyuda ? articulosDelNegocio(sesion.modulos).map((a) => ({ slug: a.slug, rutas: a.rutas })) : undefined}

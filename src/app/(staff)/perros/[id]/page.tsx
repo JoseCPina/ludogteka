@@ -13,6 +13,7 @@ import { contextoRazaFormulario } from "@/lib/razas-form";
 import { negocioIdActual, zonaActual } from "@/lib/negocio/actual";
 import { aplicanRequisitosDe, perrosConCitasEstetica } from "@/lib/perros/solo-estetica";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { nombresDePersonal } from "@/lib/personal/nombres";
 import { tipoContratoAplica, usaEstancias, usaVeterinaria } from "@/lib/plan/modulos";
 import { FichaClinica } from "../ficha-clinica";
 import { esEspecie } from "@/lib/perros/ficha-clinica";
@@ -294,9 +295,9 @@ export default async function PerroPage({
     .eq("perro_id", id)
     .maybeSingle();
   const evaluadoPorId = (evaluacionInterna?.por as string | null | undefined) ?? null;
-  const { data: evaluador } = evaluadoPorId
-    ? await supabase.from("profiles").select("nombre_completo").eq("id", evaluadoPorId).maybeSingle()
-    : { data: null };
+  const evaluadorNombre = evaluadoPorId
+    ? (await nombresDePersonal(supabase, [evaluadoPorId], { esAdmin: sesion.rol === "admin", negocioId: await negocioIdActual() })).get(evaluadoPorId) ?? null
+    : null;
   const bloqueaPorAlertaId = new Map(
     (catalogoAlertas ?? []).map((c) => [c.id as string, Boolean(c.bloquea_estancia)])
   );
@@ -538,7 +539,7 @@ export default async function PerroPage({
             gestante: Boolean(perro.gestante),
             evaluacion_comportamiento_fecha: perro.evaluacion_comportamiento_fecha,
             evaluacion_comportamiento_notas: (evaluacionInterna?.notas as string | null | undefined) ?? null,
-            evaluadoPorNombre: evaluador?.nombre_completo ?? null,
+            evaluadoPorNombre: evaluadorNombre,
             alertasBloqueantes,
           }}
           soloLectura={soloLectura}

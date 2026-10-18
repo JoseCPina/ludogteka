@@ -169,11 +169,53 @@ try {
   const pad = (x) => String(x).padStart(2, "0");
   await admin.getByLabel("Fecha y hora").fill(`${f.getFullYear()}-${pad(f.getMonth() + 1)}-${pad(f.getDate())}T10:00`);
   await admin.getByRole("button", { name: "Agendar cita" }).click();
-  await admin.waitForTimeout(3500);
+  // Se espera a que la cita exista (la base responde en 0.3–0.6 s por viaje y la acción hace varios).
+  for (let i = 0; i < 40; i++) {
+    const { count } = await SB.from("citas_estetica").select("id", { count: "exact", head: true }).eq("perro_id", perroC.id).is("deleted_at", null);
+    if (count) break;
+    await admin.waitForTimeout(500);
+  }
+  await admin.waitForTimeout(1000);
   const { data: citaUi } = await SB.from("citas_estetica").select("id, reserva_id, precio, precio_base, recargo, recargo_motivo, recargo_por").eq("perro_id", perroC.id).is("deleted_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
-  if (!citaUi) hallazgo(`la cita con recargo no se agendó: ${(await admin.locator("body").innerText()).slice(0, 200)}`);
+  if (!citaUi) hallazgo(`la cita con recargo no se agendó: ${(await admin.locator("body").innerText()).replace(/\s+/g, " ").slice(0, 700)}`);
   else {
     creados.citas.push(citaUi.id); creados.reservas.push(citaUi.reserva_id);
+    // N30 (QA externa, 18 de octubre de 2026): al agendar hay una confirmación VISIBLE (junto al botón y la caja de
+    // citas agendadas a la vista) y un mismo perro con otra cita ese día pide confirmar antes de duplicarla.
+    {
+      const caja = admin.locator("[data-citas-agendadas]");
+      const visible = await caja.evaluate((el) => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= window.innerHeight + 4; }).catch(() => false);
+      if (!visible) hallazgo("N30: la confirmación «Cita agendada» no queda a la vista tras agendar");
+      else bien("N30: la caja de «Cita agendada» queda a la vista");
+      const estado = await admin.getByRole("status").filter({ hasText: /Cita agendada:/ }).count();
+      if (estado === 0) hallazgo("N30: junto al botón no sale «Cita agendada: …»");
+      else bien("N30: junto al botón sale «Cita agendada: perro, servicio, fecha y hora»");
+      if (!(await caja.getByRole("link", { name: new RegExp(`ZZ cita ${sufijo}`) }).count())) hallazgo("N30: la confirmación no lleva a la cita creada");
+      // Mismo perro, mismo día, otra hora.
+      await admin.getByLabel("Perro").selectOption({ label: `ZZ cita ${sufijo}` });
+      await admin.getByLabel("Fecha y hora").fill(`${f.getFullYear()}-${pad(f.getMonth() + 1)}-${pad(f.getDate())}T15:00`);
+      await admin.getByRole("button", { name: "Agendar cita" }).click();
+      const dup = admin.locator("[data-cita-duplicada]");
+      await dup.waitFor({ timeout: 30_000 }).catch(() => {});
+      const textoDup = (await dup.innerText().catch(() => "")).replace(/\s+/g, " ");
+      if (!/ya tiene una cita ese día: .* a las .*¿Agendar otra de todos modos\?/.test(textoDup)) hallazgo(`N30: no avisa que el perro ya tiene cita ese día («${textoDup.slice(0, 160)}»)`);
+      else bien("N30: avisa «ya tiene una cita ese día» con el servicio y la hora, antes de crear otra");
+      const cuantas = async () => ((await SB.from("citas_estetica").select("id").eq("perro_id", perroC.id).is("deleted_at", null).not("estado", "in", "(cancelada,no_llego)")).data ?? []).length;
+      if ((await cuantas()) !== 1) hallazgo("N30: se creó una segunda cita sin confirmar");
+      else bien("N30: mientras no se confirma, sigue habiendo UNA sola cita");
+      await admin.getByRole("button", { name: "No agendar" }).click();
+      await admin.waitForTimeout(500);
+      if ((await cuantas()) !== 1) hallazgo("N30: «No agendar» creó una cita");
+      await admin.getByRole("button", { name: "Agendar cita" }).click();
+      await dup.waitFor({ timeout: 30_000 });
+      await admin.locator("[data-agendar-de-todos-modos]").click();
+      for (let i = 0; i < 40 && (await cuantas()) < 2; i++) await admin.waitForTimeout(500);
+      const dos = await cuantas();
+      if (dos !== 2) hallazgo(`N30: con «Agendar otra de todos modos» debía haber 2 citas y hay ${dos}`);
+      else bien("N30: con «Agendar otra de todos modos» se crea la segunda");
+      const extra = (await SB.from("citas_estetica").select("id, reserva_id").eq("perro_id", perroC.id).neq("id", citaUi.id).is("deleted_at", null)).data ?? [];
+      for (const x of extra) { creados.citas.push(x.id); creados.reservas.push(x.reserva_id); }
+    }
     if (Number(citaUi.precio) !== 430 || Number(citaUi.recargo) !== 40 || citaUi.recargo_por !== datos.adminB) hallazgo(`la cita no quedó $390 + $40 con quien lo hizo: ${JSON.stringify(citaUi)}`);
     else bien("cita desde la pantalla: $390 + recargo $40 = $430, con motivo y quién");
     await admin.goto(`${BASE}/estetica/${citaUi.id}`, { waitUntil: "networkidle" });
