@@ -19,7 +19,7 @@ export type OpcionesLista = {
   ahora?: Date;
 };
 
-export type ResultadoLista = { whatsapp: number; instagram: number; seguimientos: number; pausados: number; nuevos: number; porIA: number; yaEstaba: boolean };
+export type ResultadoLista = { whatsapp: number; instagram: number; seguimientos: number; pausados: number; nuevos: number; porIA: number; yaEstaba: boolean; retirados: number };
 
 type Fila = {
   id: string; nombre: string; giro: string; ciudad: string; slug: string; etapa: string; telefono_norm: string | null; whatsapp: string | null; instagram: string | null;
@@ -43,10 +43,27 @@ export const linkDe = (sitio: string, slug: string) => `${sitio.replace(/\/$/, "
 export async function armarLista(o: OpcionesLista): Promise<ResultadoLista> {
   const db = o.db;
   const ahora = o.ahora ?? new Date();
-  const r: ResultadoLista = { whatsapp: 0, instagram: 0, seguimientos: 0, pausados: 0, nuevos: 0, porIA: 0, yaEstaba: false };
+  const r: ResultadoLista = { whatsapp: 0, instagram: 0, seguimientos: 0, pausados: 0, nuevos: 0, porIA: 0, yaEstaba: false, retirados: 0 };
   const { data: aj, error: ea } = await db.from("prospeccion_ajustes").select("lista_whatsapp, lista_instagram, dias_seguimiento, max_seguimientos, firma").eq("id", 1).single();
   if (ea) throw new Error(ea.message);
   const ajustes = aj as AjustesLista;
+
+  // Un renglón pendiente de un prospecto que se descartó después de armar la lista (p. ej. la limpieza de hotel y
+  // guardería) sale de la lista; su lugar lo toma otro más abajo.
+  const { data: pend, error: ep } = await db.from("prospectos_contactos").select("id, prospecto_id").eq("fecha", o.fecha).eq("estado", "pendiente").is("deleted_at", null).limit(1000);
+  if (ep) throw new Error(ep.message);
+  if ((pend ?? []).length) {
+    const { data: desc, error: ed } = await db.from("prospectos").select("id, descarte_motivo").in("id", (pend ?? []).map((x) => x.prospecto_id as string)).eq("etapa", "descartado");
+    if (ed) throw new Error(ed.message);
+    const motivos = new Map((desc ?? []).map((x) => [x.id as string, (x.descarte_motivo as string | null) ?? "descartado"]));
+    for (const x of pend ?? []) {
+      if (!motivos.has(x.prospecto_id as string)) continue;
+      const { error } = await db.from("prospectos_contactos").update({ deleted_at: ahora.toISOString() }).eq("id", x.id);
+      if (error) throw new Error(error.message);
+      await db.from("prospectos_eventos").insert({ prospecto_id: x.prospecto_id, tipo: "contacto", texto: `Sale de «Contactar hoy» (${motivos.get(x.prospecto_id as string)})` });
+      r.retirados++;
+    }
+  }
 
   const { data: hoy, error: eh } = await db.from("prospectos_contactos").select("prospecto_id, canal").eq("fecha", o.fecha).is("deleted_at", null).limit(1000);
   if (eh) throw new Error(eh.message);

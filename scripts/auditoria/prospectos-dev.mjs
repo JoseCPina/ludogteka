@@ -17,7 +17,7 @@ import { createClient } from "@supabase/supabase-js";
 import { correrProspeccion } from "../../src/lib/prospectos/correr.ts";
 import { buscarTexto } from "../../src/lib/prospectos/places.ts";
 import { revisarWeb, extraerContactos } from "../../src/lib/prospectos/web.ts";
-import { ciudadDeDireccion, claveMarca, agruparSucursales, procesarCalidad } from "../../src/lib/prospectos/calidad.ts";
+import { ciudadDeDireccion, claveMarca, agruparSucursales, procesarCalidad, revisarHotelGuarderia, MOTIVO_HOTEL, MOTIVO_GUARDERIA } from "../../src/lib/prospectos/calidad.ts";
 import { clasificarLote, giroDeServicios } from "../../src/lib/prospectos/clasificar.ts";
 import { crearLlamarIA } from "../../src/lib/prospectos/ia.ts";
 import { armarLista } from "../../src/lib/prospectos/lista.ts";
@@ -285,9 +285,9 @@ try {
     const base = { giro: "guarderia", ciudad: CIUDAD, fuente: "manual", calificacion: 5, resenas: 9000 };
     const crear = async (x) => (await A.from("prospectos").insert({ ...base, ...x }).select("*").single()).data;
     const pAdies = await crear({ nombre: `Adiestramiento Rex ${SUF}`, direccion: DIR(1), telefono: tel(101) });
-    const pGua = await crear({ nombre: `Guarderiamaxima ${SUF}`, direccion: DIR(2), telefono: tel(102), instagram: `https://www.instagram.com/gm${SUF}` });
-    const pSuc = await crear({ nombre: `GUARDERIAMAXIMA ${SUF} sucursal`, direccion: DIR(3), telefono: tel(103), resenas: 4 });
-    const pIg = await crear({ nombre: `Hotel Solo Insta ${SUF}`, giro: "hotel", direccion: DIR(4), instagram: `https://www.instagram.com/hsi${SUF}` });
+    const pGua = await crear({ nombre: `Guarderiamaxima canina ${SUF}`, direccion: DIR(2), telefono: tel(102), instagram: `https://www.instagram.com/gm${SUF}` });
+    const pSuc = await crear({ nombre: `GUARDERIAMAXIMA canina ${SUF} sucursal`, direccion: DIR(3), telefono: tel(103), resenas: 4 });
+    const pIg = await crear({ nombre: `Hotel Solo Insta para perros ${SUF}`, giro: "hotel", direccion: DIR(4), instagram: `https://www.instagram.com/hsi${SUF}` });
     const llamarFalso = crearLlamarIA({ apiKey: "x", url: PU });
     const rc = await procesarCalidad({ db: A, clasificar: (lote) => clasificarLote(lote, llamarFalso), giroDeServicios, presupuestoMs: 120_000 });
     const lee = async (id) => (await A.from("prospectos").select("*").eq("id", id).single()).data;
@@ -362,6 +362,56 @@ try {
     paraPantalla.gua = pGua.id;
     paraPantalla.adies = pAdies.id;
     paraPantalla.slugGua = g1.slug;
+  }
+
+  console.log("\n8b. Limpieza estricta de hotel y guardería (hoteles para personas y guarderías infantiles)");
+  {
+    const R = (x) => revisarHotelGuarderia({ giro_busqueda: null, google_tipos: [], web: null, web_resumen: null, instagram: null, facebook: null, ...x });
+    ok(R({ nombre: "Hotel Continental", giro: "hotel", google_tipos: ["hotel", "lodging"] }) === MOTIVO_HOTEL, "hotel sin nada de mascotas: «Hotel para personas»");
+    ok(R({ nombre: "Guardería 01 IMSS ORDINARIA", giro: "guarderia", google_tipos: ["child_care_agency"] }) === MOTIVO_GUARDERIA, "guardería del IMSS: «Guardería infantil»");
+    ok(R({ nombre: "Hotel Canino Tres Huellas", giro: "hotel", google_tipos: ["hotel", "lodging"] }) === null && R({ nombre: "Rancho Sol", giro: "hotel", google_tipos: ["pet_boarding_service"] }) === null, "con mascotas en el nombre o en la categoría de Google se queda");
+    ok(R({ nombre: "Rancho Paraíso", giro: "hotel", web_resumen: "Hotel canino 5 estrellas" }) === null && R({ nombre: "Casa Luna", giro: "hotel", web: "https://www.doghotelluna.mx" }) === null, "también por su web o su dominio («doghotel»)");
+    ok(R({ nombre: "DOGTRAINING TAMPICO", giro: "guarderia" }) === null && R({ nombre: "El Club de los Animalitos", giro: "guarderia" }) === null, "palabras pegadas («dogtraining») y diminutivos («animalitos») cuentan");
+    ok(R({ nombre: "Nuestra Casa-Sai", giro: "hotel", google_tipos: ["hotel"], web_resumen: "Pet Friendly Hotel en Acapulco, ideal para disfrutar con tus mascotas" }) === MOTIVO_HOTEL && R({ nombre: "Pata de perro, pet friendly", giro: "hotel", google_tipos: ["lodging"] }) === MOTIVO_HOTEL, "un hotel «pet friendly» que admite mascotas sigue siendo hotel para personas");
+    ok(R({ nombre: "Hotel Can Inn Sur", giro: "hotel" }) === MOTIVO_HOTEL && R({ nombre: "Enchúlame el Can", giro: "hotel" }) === null, "«Can Inn» no es «can»");
+    ok(R({ nombre: "GUARDERÍA CACHORROS", giro: "guarderia", google_tipos: ["preschool", "child_care_agency"] }) === MOTIVO_GUARDERIA && R({ nombre: "Guardería El Gato con Botas", giro: "guarderia", google_tipos: ["child_care_agency"] }) === MOTIVO_GUARDERIA, "«Cachorros» o «Gato con Botas» con categoría de escuela o cuidado infantil: guardería infantil");
+    ok(R({ nombre: "Club Doggy Estancia Infantil y Centro de Estimulación Temprana", giro: "guarderia" }) === MOTIVO_GUARDERIA, "«estancia infantil» gana a «doggy»");
+    ok(R({ nombre: "Hotel Mirador", giro: "mixto", giro_busqueda: "hotel" }) === MOTIVO_HOTEL && R({ nombre: "Estancia Pequeñines", giro: "mixto", giro_busqueda: "guarderia" }) === MOTIVO_GUARDERIA && R({ nombre: "Hotel Mirador", giro: "mixto", giro_busqueda: "estetica" }) === null, "un mixto que salió de búsqueda de hotel o guardería también; de otra búsqueda, no");
+    ok(R({ nombre: "Clínica Vida", giro: "veterinaria" }) === null && R({ nombre: "Salón Bella", giro: "estetica" }) === null, "a veterinaria y estética no les aplica");
+
+    // En la base: calidad descarta, «Contactar hoy» los saca y rellena, revertir aguanta la siguiente corrida.
+    const DIR = (i) => `Calle ${i}, Centro, 78000 San Luis Potosí, S.L.P., México`;
+    const crear = async (x) => (await A.from("prospectos").insert({ ciudad: CIUDAD, fuente: "manual", calificacion: 5, resenas: 99999, clasificado_at: new Date().toISOString(), ...x }).select("*").single()).data;
+    const hP = await crear({ nombre: `Hotel Posada Real ${SUF}`, giro: "hotel", direccion: DIR(20), telefono: tel(120), google_tipos: ["hotel", "lodging"] });
+    const gI = await crear({ nombre: `Guardería Pequeñines ${SUF}`, giro: "guarderia", direccion: DIR(21), telefono: tel(121), google_tipos: ["child_care_agency"] });
+    const mX = await crear({ nombre: `Posada Las Flores ${SUF}`, giro: "mixto", giro_busqueda: "hotel", direccion: DIR(22), telefono: tel(122), google_tipos: ["lodging"] });
+    const hC = await crear({ nombre: `Hotel para perros Toby ${SUF}`, giro: "hotel", direccion: DIR(23), telefono: tel(123), google_tipos: ["hotel"], resenas: 90000 });
+    const hR = await crear({ nombre: `Pensión Doña Lupe ${SUF}`, giro: "hotel", direccion: DIR(24), telefono: tel(124), google_tipos: ["lodging"], resenas: 80000 });
+    const lee = async (id) => (await A.from("prospectos").select("*").eq("id", id).single()).data;
+    // La lista de hoy ya tenía al hotel para personas (se armó antes de la limpieza).
+    const F5 = "2099-02-01";
+    fechasLista.push(F5);
+    await A.from("prospeccion_ajustes").update({ lista_whatsapp: 2, lista_instagram: 0 }).eq("id", 1);
+    await A.from("prospectos_contactos").insert([{ prospecto_id: hP.id, fecha: F5, canal: "whatsapp", tipo: "primero", orden: 0, mensaje: "x", redactado_por: "plantilla" }]);
+    const rc = await procesarCalidad({ db: A, clasificar: null, giroDeServicios, presupuestoMs: 60_000 });
+    const [h1, g1, m1, c1, r1] = await Promise.all([hP, gI, mX, hC, hR].map((x) => lee(x.id)));
+    ok(h1.etapa === "descartado" && h1.descarte_tipo === "no_es_del_giro" && h1.descarte_motivo === MOTIVO_HOTEL, "en la base: el hotel para personas queda «Descartado (no es del giro)» con «Hotel para personas»", JSON.stringify({ e: h1.etapa, m: h1.descarte_motivo }));
+    ok(g1.etapa === "descartado" && g1.descarte_motivo === MOTIVO_GUARDERIA && m1.etapa === "descartado" && m1.descarte_motivo === MOTIVO_HOTEL, "la guardería infantil y el mixto de búsqueda de hotel también");
+    ok(c1.etapa === "nuevo", "el hotel para perros se queda");
+    ok(rc.hotelesPersonas >= 2 && rc.guarderiasInfantiles >= 1, `la corrida los cuenta (${rc.hotelesPersonas} hoteles, ${rc.guarderiasInfantiles} guarderías)`);
+    const { data: ev } = await A.from("prospectos_eventos").select("texto").eq("prospecto_id", hP.id).eq("tipo", "clasificacion");
+    ok(ev.some((e) => /Hotel para personas/.test(e.texto)), "queda en su historial");
+    const lh = await armarLista({ db: A, fecha: F5, sitio: "http://plataforma.localhost:3007", redactar: async () => new Map(), plantilla: (p) => mensajeDePlantilla(p, "José") });
+    const { data: c5 } = await A.from("prospectos_contactos").select("prospecto_id").eq("fecha", F5).is("deleted_at", null);
+    ok(lh.retirados === 1 && !c5.some((x) => x.prospecto_id === hP.id), "«Contactar hoy»: el hotel para personas sale de la lista de hoy", JSON.stringify(lh));
+    ok(c5.length === 2 && c5.some((x) => x.prospecto_id === hC.id), `y su lugar lo toma otro (${c5.length} renglones, entre ellos el hotel para perros)`);
+    ok(!c5.some((x) => [gI.id, mX.id].includes(x.prospecto_id)), "ningún descartado entra al rellenar");
+    // Revertir desde la ficha (lo que hace «Revertir: sí es del giro») y otra corrida: ya no se descarta.
+    await A.from("prospectos").update({ etapa: h1.etapa_antes_descarte ?? "nuevo", descarte_tipo: null, descarte_motivo: null, etapa_antes_descarte: null, clasificacion_revertida_at: new Date().toISOString() }).eq("id", hP.id);
+    await procesarCalidad({ db: A, clasificar: null, giroDeServicios, presupuestoMs: 60_000 });
+    ok((await lee(hP.id)).etapa === "nuevo", "revertido a mano, la limpieza no lo vuelve a descartar");
+    ok(r1.etapa === "descartado", "«Pensión Doña Lupe» sin nada de mascotas también se va (pensión para personas)");
+    await A.from("prospeccion_ajustes").update({ lista_whatsapp: ajustesAntes.lista_whatsapp ?? 15, lista_instagram: ajustesAntes.lista_instagram ?? 15 }).eq("id", 1);
   }
 
   console.log("\n9. Mensajes: solo los servicios que el negocio sí da");
@@ -523,6 +573,8 @@ try {
         ]).select("id, canal");
         const ctx = await nav.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
         await ctx.addCookies(galletas.map(([name, value]) => ({ name, value, domain: "plataforma.localhost", path: "/" })));
+        // wa.me e Instagram no se alcanzan desde la nube: un doble para que la pestaña nueva conserve su URL.
+        await ctx.route(/^https:\/\/(wa\.me|api\.whatsapp\.com|(www\.)?instagram\.com)\//, (r) => r.fulfill({ status: 200, contentType: "text/html", body: "<p>doble</p>" }));
         const pg = await ctx.newPage();
         await pg.goto(`http://plataforma.localhost:${PUERTO}/plataforma/prospectos/hoy`);
         const cw = cs.find((c) => c.canal === "whatsapp").id, ci = cs.find((c) => c.canal === "instagram").id;
