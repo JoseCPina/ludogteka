@@ -2,19 +2,35 @@
   "slug": "gingr",
   "nombre": "Gingr",
   "sitio": "https://www.gingrapp.com",
-  "giro": "Guarderías, hoteles, estética y entrenamiento caninos.",
-  "resumen": "Software de operación para guarderías y hoteles caninos de una empresa estadounidense, con reservas, expediente, comunicación y cobros.",
-  "precio": "Cobra en dólares por mes, con planes por tamaño de negocio y un plan a cotizar. Algunos servicios, como mensajes SMS, pueden costar aparte. Revisa su página de precios.",
-  "idioma": "No encontramos evidencia pública de interfaz o soporte en español.",
-  "cfdi": "No encontramos evidencia pública de facturación CFDI 4.0.",
-  "pagos": "Sus pagos integrados funcionan sobre Stripe y la terminal propia solo figura para algunos países (Estados Unidos, Canadá, Australia, Nueva Zelanda y Reino Unido); México no aparece.",
+  "region": "internacional",
+  "giro": "Hoteles y guarderías caninas, estéticas, entrenamiento, parques y bares para perros, y cadenas con varias sucursales. No menciona clínicas veterinarias.",
+  "resumen": "Software estadounidense para guarderías y hoteles caninos, con reservas, app para el dueño, reportes con fotos y cobros integrados.",
+  "precio": "En dólares (la empresa está en Atlanta; la página usa «$» sin decir la moneda), al mes: Spa $109 ($100 con pago anual), Play $169 ($142 anual), Stay $179 con sus pagos integrados o $209 sin ellos ($154 anual) y Enterprise a cotizar. Configuración e importación de datos varían; pagos, horario del personal y mensajes son complementos sin precio publicado. Consultado el 17 de octubre de 2026.",
+  "idioma": "Su sitio y su página de precios están solo en inglés y no mencionan otro idioma.",
+  "cfdi": "Su sitio no menciona CFDI ni facturación mexicana.",
+  "pagos": "Gingr Payments funciona sobre Stripe; la terminal integrada solo está disponible en Estados Unidos, Canadá, Australia, Nueva Zelanda y Reino Unido, y México no aparece en su lista de países. Los mensajes SMS de ida y vuelta son solo para Estados Unidos y Canadá.",
+  "modulos": "Reservas con asignación de cuarto, corral o estilista, depósitos en línea, app del dueño para reservar y pagar, reportes con fotos al recoger, revisión previa de vacunas, permisos y pertenencias, cámaras web, horario del personal y analítica de varias sucursales.",
+  "mejorEn": [
+    "App para que el dueño reserve, pague y actualice el expediente por su cuenta; en PeluDesk el portal es de consulta y se agenda por WhatsApp.",
+    "Cámaras web para que el dueño vea a su perro, y soporte para entrenamiento, parques y bares de perros.",
+    "Escala: dice atender a más de 5,000 instalaciones y cadenas con muchas sucursales.",
+    "Declara certificación SOC 2 Tipo II."
+  ],
   "conviene": [
-    "Operas varias sucursales de guardería y hotel en Estados Unidos, Canadá o el Reino Unido.",
-    "Quieres integraciones con su ecosistema de proveedores de ese mercado."
+    "Operas guarderías y hoteles en Estados Unidos, Canadá o el Reino Unido, quizá con varias sucursales.",
+    "Quieres que tus clientes reserven y paguen solos desde una app."
   ],
   "noConviene": [
-    "Quieres cobrar con terminal mexicana y facturar en pesos desde el mismo sistema.",
+    "Quieres cobrar con terminal en México y facturar CFDI desde el mismo sistema.",
     "Tu equipo y tus clientes necesitan todo en español."
   ],
-  "peludesk": "PeluDesk comparte con Gingr el enfoque de guardería y hotel (cupo, expediente, pases, check-in), y agrega estética y clínica veterinaria en el mismo plan."
+  "peludesk": "PeluDesk comparte con Gingr el enfoque de guardería y hotel (cupo de toda la casa, expediente, vacunas, pases, check-in y check-out con pertenencias) y agrega estética y clínica veterinaria en el mismo plan, en pesos.",
+  "fuentes": {
+    "giro": [{ "nombre": "gingrapp.com", "url": "https://www.gingrapp.com" }, { "nombre": "Precios de Gingr", "url": "https://www.gingrapp.com/pricing" }],
+    "precio": [{ "nombre": "Precios de Gingr", "url": "https://www.gingrapp.com/pricing" }],
+    "idioma": [{ "nombre": "gingrapp.com", "url": "https://www.gingrapp.com" }],
+    "cfdi": [{ "nombre": "gingrapp.com", "url": "https://www.gingrapp.com" }],
+    "pagos": [{ "nombre": "Ayuda de Gingr: alta en Gingr Payments", "url": "https://support.gingrapp.com/hc/en-us/articles/25979777022989" }, { "nombre": "Ayuda de Gingr: terminales de Stripe", "url": "https://support.gingrapp.com/hc/en-us/articles/26626038348173" }, { "nombre": "Precios de Gingr", "url": "https://www.gingrapp.com/pricing" }],
+    "modulos": [{ "nombre": "gingrapp.com", "url": "https://www.gingrapp.com" }]
+  }
 }

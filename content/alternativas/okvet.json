@@ -1,0 +1,34 @@
+{
+  "slug": "okvet",
+  "nombre": "OkVet",
+  "sitio": "https://okvet.co",
+  "region": "latam",
+  "giro": "Clínicas y consultorios veterinarios. No menciona estética, hotel ni guardería.",
+  "resumen": "Software veterinario en la nube nacido en Colombia; dice tener más de 4,000 veterinarias en Colombia, México, Ecuador, Chile, Perú, Venezuela, Argentina y España.",
+  "precio": "Básico gratis con límites (50 citas y 50 correos al mes); Pro $132.999 al mes o $1.470.999 al año por clínica; One $69.900 al mes para un solo usuario. La página no dice la moneda; por sus referencias a la DIAN parecen pesos colombianos. Mensajes y documentos de más se compran aparte. Consultado el 17 de octubre de 2026.",
+  "idioma": "Español.",
+  "cfdi": "Su facturación electrónica es con la DIAN de Colombia; no menciona CFDI ni facturación mexicana.",
+  "pagos": "Su sitio no nombra procesador ni terminal integrada.",
+  "modulos": "Historia clínica, agenda, recordatorios por correo, firma digital de documentos y app OkPet para el dueño; en Pro, hospitalización (kardex), ventas e inventario, reportes, marketing y facturación con la DIAN.",
+  "mejorEn": [
+    "Tiene un plan gratis para empezar (con límites).",
+    "Firma digital de documentos y app para el dueño incluidas desde el plan gratis."
+  ],
+  "conviene": [
+    "Tienes un consultorio veterinario en Colombia y facturas con la DIAN.",
+    "Quieres probar sin pagar con un volumen pequeño de citas."
+  ],
+  "noConviene": [
+    "Necesitas CFDI 4.0 y cobro en pesos mexicanos.",
+    "También das estética, hotel o guardería."
+  ],
+  "peludesk": "PeluDesk está hecho para México (pesos, CFDI, SITPV y Mercado Pago) y junta la clínica con estética, hotel y guardería. OkVet es más fuerte si estás en Colombia o si quieres empezar gratis.",
+  "fuentes": {
+    "giro": [{ "nombre": "okvet.co", "url": "https://okvet.co/" }],
+    "precio": [{ "nombre": "Planes de OkVet", "url": "https://okvet.co/okvet-planes/" }],
+    "idioma": [{ "nombre": "okvet.co", "url": "https://okvet.co/" }],
+    "cfdi": [{ "nombre": "okvet.co", "url": "https://okvet.co/" }, { "nombre": "Planes de OkVet", "url": "https://okvet.co/okvet-planes/" }],
+    "pagos": [{ "nombre": "okvet.co", "url": "https://okvet.co/" }],
+    "modulos": [{ "nombre": "Planes de OkVet", "url": "https://okvet.co/okvet-planes/" }]
+  }
+}

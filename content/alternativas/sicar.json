@@ -1,0 +1,35 @@
+{
+  "slug": "sicar",
+  "nombre": "SICAR",
+  "sitio": "https://www.sicarx.com/sistema-para-veterinarias-punto-de-venta",
+  "region": "latam",
+  "giro": "Punto de venta mexicano para veterinarias, farmacias y tiendas de mascotas (y muchos otros giros). Cobra estética, consultas y cirugías como servicios. No menciona hotel ni guardería.",
+  "resumen": "Punto de venta e inventario hecho en México, con más de 120,000 negocios según su sitio, que tiene una versión para veterinarias con lotes, caducidades y control de antibióticos.",
+  "precio": "En pesos (MXN): SICAR X en la nube, plan anual de $4,788 por 12 meses, con 7 días de prueba y costo extra por sucursal. El SICAR de escritorio se vende con pago único: licencia de servidor $4,940 por computadora (con 100 timbres CFDI 4.0 y un año de soporte) y licencia de terminal adicional $1,320. Las páginas no dicen si los precios incluyen IVA. Consultado el 17 de octubre de 2026.",
+  "idioma": "Español de México.",
+  "cfdi": "Sí, CFDI 4.0. En SICAR X los timbres se compran en paquete aparte (sin precio publicado); la licencia de escritorio trae 100.",
+  "pagos": "Sus páginas no nombran un procesador ni una terminal integrada; venden equipo de mostrador (impresoras, lectores de código y básculas).",
+  "modulos": "Venta en mostrador, inventario con lotes y caducidades de vacunas y desparasitantes, informe de venta de antibióticos y controlados para Cofepris con los datos de la receta y del médico, venta a granel con báscula, clientes y descuentos, cobro de estética, consultas y cirugías, y sincronización de sucursales en la nube.",
+  "mejorEn": [
+    "Punto de venta e inventario de tienda muy maduros, con báscula, lector de código y venta a granel.",
+    "Opción de licencia de pago único en lugar de mensualidad.",
+    "Muy extendido en México: su sitio habla de más de 120,000 negocios."
+  ],
+  "conviene": [
+    "Tu negocio es sobre todo farmacia o tienda veterinaria y el mostrador pesa más que la agenda.",
+    "Prefieres pagar una licencia una vez y ya usas SICAR en otro negocio."
+  ],
+  "noConviene": [
+    "Necesitas expediente clínico por consulta con firma, recetas con SITPV o agenda por médico y estilista.",
+    "También das hotel o guardería y quieres el cupo, los pases y el check-in en el mismo sistema."
+  ],
+  "peludesk": "PeluDesk tiene venta de mostrador e inventario con lotes, pero su centro es la operación: expediente clínico, recetas, agenda, hotel y guardería con cupo, y caja con cortes. Si lo tuyo es una tienda grande, SICAR tiene un punto de venta más completo.",
+  "fuentes": {
+    "giro": [{ "nombre": "SICAR X para veterinarias", "url": "https://www.sicarx.com/sistema-para-veterinarias-punto-de-venta" }],
+    "precio": [{ "nombre": "SICAR X para veterinarias", "url": "https://www.sicarx.com/sistema-para-veterinarias-punto-de-venta" }, { "nombre": "SICAR para veterinarias", "url": "https://www.sicar.mx/sistema-para-veterinarias-punto-de-venta" }],
+    "idioma": [{ "nombre": "SICAR X para veterinarias", "url": "https://www.sicarx.com/sistema-para-veterinarias-punto-de-venta" }],
+    "cfdi": [{ "nombre": "Facturación de SICAR X", "url": "https://www.sicarx.com/facturacion-cfdi" }, { "nombre": "SICAR para veterinarias", "url": "https://www.sicar.mx/sistema-para-veterinarias-punto-de-venta" }],
+    "pagos": [{ "nombre": "SICAR para veterinarias", "url": "https://www.sicar.mx/sistema-para-veterinarias-punto-de-venta" }],
+    "modulos": [{ "nombre": "SICAR X para veterinarias", "url": "https://www.sicarx.com/sistema-para-veterinarias-punto-de-venta" }, { "nombre": "SICAR para veterinarias", "url": "https://www.sicar.mx/sistema-para-veterinarias-punto-de-venta" }]
+  }
+}

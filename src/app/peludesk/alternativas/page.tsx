@@ -2,39 +2,61 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { MarcoSitio } from "@/components/peludesk/sitio";
 import { LlamadaSobria, Migas } from "@/components/peludesk/blog";
+import { Fuentes } from "@/components/peludesk/fuentes";
 import { Relacionadas } from "@/components/peludesk/seo-bloques";
-import { REVISADO_ALTERNATIVAS, todasLasAlternativas } from "@/lib/peludesk/guias";
+import { CAMPOS_ALTERNATIVA, FILA_PELUDESK, REVISADO_ALTERNATIVAS, REVISADO_ALTERNATIVAS_TEXTO, todasLasAlternativas, type Alternativa } from "@/lib/peludesk/guias";
 import { pesos, planUnico } from "@/lib/peludesk/plan";
 import { JsonLd, SITIO, metaPagina, migas, preguntasFrecuentes } from "@/lib/peludesk/seo";
 
 export const metadata: Metadata = metaPagina({
-  titulo: "Alternativas a PeluDesk: MoeGo, Gingr y PetExec frente a un software hecho en México",
-  descripcion: "Qué hace cada software para guarderías, hoteles y estéticas caninas, en qué idioma funciona, si factura en México y cuándo conviene cada uno. Comparativa honesta.",
+  titulo: "Alternativas a PeluDesk: MoeGo, Gingr, SICAR, AgendaPro, QVET y más",
+  descripcion: "Software para guarderías, hoteles, estéticas y veterinarias, de Estados Unidos y de Latinoamérica: precio vigente, idioma, factura CFDI y en qué es mejor cada uno.",
   ruta: "/alternativas",
 });
 
 const PREGUNTAS_PROVEEDOR = [
-  "¿Cuánto cuesta en pesos, con IVA, y qué se cobra aparte (mensajes, usuarios, sucursales)?",
+  "¿Cuánto cuesta en pesos, con IVA, y qué se cobra aparte (mensajes, usuarios, sucursales, timbres)?",
   "¿La interfaz, el portal de mis clientes y el soporte están en español?",
   "¿Emite CFDI 4.0 y con qué proveedor de timbrado?",
-  "¿Puedo cobrar con una terminal de Mercado Pago o Clip y se concilia solo?",
+  "¿Puedo cobrar con una terminal de Mercado Pago o Clip y se concilia sola?",
   "¿Puedo sacar mis datos si me voy?",
 ];
+
+function Tabla({ alts, precioPeluDesk }: { alts: Alternativa[]; precioPeluDesk: string }) {
+  return (
+    <div className="mt-6 overflow-x-auto">
+      <table className="w-full min-w-[720px] border-collapse text-left text-sm">
+        <thead>
+          <tr className="border-b border-n-200">
+            <th scope="col" className="p-3"><span className="sr-only">Criterio</span></th>
+            {alts.map((a) => <th key={a.slug} scope="col" className="p-3 text-base font-bold text-n-900"><Link href={`/alternativas/${a.slug}`} className="text-morado underline underline-offset-2">{a.nombre}</Link></th>)}
+            <th scope="col" className="p-3 text-base font-bold text-n-900">PeluDesk</th>
+          </tr>
+        </thead>
+        <tbody>
+          {CAMPOS_ALTERNATIVA.map(([campo, etiqueta]) => (
+            <tr key={campo} className="border-b border-n-200 align-top">
+              <th scope="row" className="p-3 font-semibold text-n-900">{etiqueta}</th>
+              {alts.map((a) => <td key={a.slug} className="p-3 text-n-700">{a[campo]}<Fuentes fuentes={a.fuentes[campo]} /></td>)}
+              <td className="p-3 text-n-700">{campo === "precio" ? precioPeluDesk : FILA_PELUDESK[campo]}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export default async function Alternativas() {
   const plan = await planUnico();
   const alts = todasLasAlternativas();
+  const internacionales = alts.filter((a) => a.region === "internacional");
+  const latam = alts.filter((a) => a.region === "latam");
+  const precioPeluDesk = plan ? `Un plan: ${pesos(plan.mensual)} + IVA al mes, todo incluido.` : "Un plan con todo incluido.";
   const preguntas: [string, string][] = [
-    ["¿Qué software de gestión existe para guarderías y estéticas caninas?", "Hay opciones internacionales como MoeGo, Gingr y PetExec, pensadas para Estados Unidos y en inglés, y opciones hechas en México como PeluDesk, con cobro en pesos y facturación CFDI."],
-    ["¿Alguno de los otros factura CFDI 4.0?", "No encontramos evidencia pública de facturación CFDI en MoeGo, Gingr ni PetExec. Confírmalo con cada proveedor antes de contratar."],
-    ["¿PeluDesk es mejor que MoeGo o Gingr?", "Depende de tu negocio. Si operas en Estados Unidos o tienes unidades móviles de grooming, probablemente MoeGo o Gingr te convengan más. Si estás en México y necesitas pesos, español, Mercado Pago, CFDI y clínica veterinaria en el mismo sistema, PeluDesk."],
-  ];
-  const ficha = [
-    ["Giro", ...alts.map((a) => a.giro), "Clínica veterinaria, hotel y guardería, estética."],
-    ["Precio", ...alts.map((a) => a.precio), plan ? `Un plan: ${pesos(plan.mensual)} + IVA al mes, todo incluido.` : "Un plan con todo incluido."],
-    ["Español", ...alts.map((a) => a.idioma), "Sí: app, ayuda, portal del dueño y bot de WhatsApp."],
-    ["Factura CFDI 4.0", ...alts.map((a) => a.cfdi), "Sí, desde el cobro, con Facturapi (etapa inicial)."],
-    ["Pagos en México", ...alts.map((a) => a.pagos), "Mercado Pago (terminal y link), efectivo, transferencia y tarjeta manual."],
+    ["¿Qué software de gestión existe para guarderías, estéticas y veterinarias?", "De Estados Unidos, en inglés y en dólares: MoeGo, Gingr y PetExec (hoy parte de Gingr). En español: SICAR (punto de venta mexicano con versión para veterinarias), AgendaPro (agenda latinoamericana con precios en pesos), QVET (software veterinario español con oficina en la Ciudad de México), OkVet (software veterinario colombiano) y PeluDesk."],
+    ["¿Cuáles facturan CFDI 4.0?", "De los que revisamos, SICAR factura CFDI 4.0 y QVET dice facturar conforme a los requisitos de México. AgendaPro lo tiene como «próximamente», OkVet factura con la DIAN de Colombia y MoeGo, Gingr y PetExec no lo mencionan. PeluDesk factura CFDI 4.0 desde el cobro."],
+    ["¿PeluDesk es mejor que los demás?", "Depende de tu negocio. MoeGo es mejor para estéticas móviles, Gingr para cadenas de guarderías en Estados Unidos con app de reservas, SICAR para tiendas y farmacias veterinarias con mucho mostrador, AgendaPro para reservas en línea y QVET para hospitales y grupos grandes. PeluDesk conviene si estás en México y quieres veterinaria, hotel, guardería y estética en un solo plan, en pesos y con CFDI."],
   ];
   return (
     <MarcoSitio>
@@ -43,39 +65,22 @@ export default async function Alternativas() {
         <Migas items={[{ nombre: "Inicio", ruta: "/" }, { nombre: "Alternativas" }]} />
         <h1 className="mt-4 max-w-[24ch] text-3xl font-bold leading-tight tracking-tight text-n-900 md:text-[2.6rem]">Alternativas a PeluDesk, sin maquillaje</h1>
         <p className="mt-4 max-w-[62ch] text-lg text-n-700">
-          Somos PeluDesk, así que desconfía de esta página y verifica lo que importe. Aquí va lo que sabemos de cada alternativa, lo que no pudimos confirmar y cuándo te conviene otra.
+          Somos PeluDesk, así que desconfía de esta página y verifica lo que importe. Aquí va lo que dice cada proveedor en su propio sitio, lo que no pudimos confirmar, en qué es mejor que nosotros y cuándo te conviene.
         </p>
         <p className="mt-3 max-w-[62ch] rounded-2xl bg-menta-suave p-4 text-sm text-n-800">
-          Revisado el 18 de octubre de 2026 con información pública de directorios de software. No pudimos abrir los sitios de cada proveedor, así que no publicamos precios exactos: confírmalos en su sitio. Si algo está desactualizado, escríbenos a contacto@peludesk.mx y lo corregimos.
+          Revisado el {REVISADO_ALTERNATIVAS_TEXTO} contra el sitio oficial de cada proveedor; cada dato dice de qué página salió. Los precios cambian: confírmalos antes de contratar. Si algo está desactualizado, escríbenos a contacto@peludesk.mx y lo corregimos.
         </p>
 
-        <div className="mt-8 overflow-x-auto">
-          <table className="w-full min-w-[720px] border-collapse text-left text-sm">
-            <thead>
-              <tr className="border-b border-n-200">
-                <th scope="col" className="p-3"><span className="sr-only">Criterio</span></th>
-                {alts.map((a) => <th key={a.slug} scope="col" className="p-3 text-base font-bold text-n-900"><Link href={`/alternativas/${a.slug}`} className="text-morado underline underline-offset-2">{a.nombre}</Link></th>)}
-                <th scope="col" className="p-3 text-base font-bold text-n-900">PeluDesk</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ficha.map(([c, ...vals]) => (
-                <tr key={c} className="border-b border-n-200 align-top">
-                  <th scope="row" className="p-3 font-semibold text-n-900">{c}</th>
-                  {vals.map((v, i) => <td key={i} className="p-3 text-n-700">{v}</td>)}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <h2 className="mt-12 text-2xl font-bold text-n-900">Hechas para Estados Unidos</h2>
+        <p className="mt-3 max-w-[66ch] text-n-700">En inglés y en dólares. Muy buenas en lo suyo, pensadas para ese mercado.</p>
+        <Tabla alts={internacionales} precioPeluDesk={precioPeluDesk} />
 
-        <h2 className="mt-12 text-2xl font-bold text-n-900">Y las hechas en México</h2>
-        <p className="mt-3 max-w-[66ch] text-n-700">
-          Existen otros programas veterinarios en español. No pudimos verificar sus precios, su facturación ni su estado con fuentes confiables, así que no los listamos para no inventar nada. Si evalúas alguno, hazle estas preguntas, igual que a cualquiera:
-        </p>
+        <h2 className="mt-12 text-2xl font-bold text-n-900">En español, que se usan en México y Latinoamérica</h2>
+        <p className="mt-3 max-w-[66ch] text-n-700">Solo listamos las que pudimos confirmar en su sitio oficial. Hay más programas veterinarios en español; si evalúas otro, hazle estas preguntas:</p>
         <ul className="mt-3 list-disc space-y-1 pl-5 text-n-700">
           {PREGUNTAS_PROVEEDOR.map((q) => <li key={q}>{q}</li>)}
         </ul>
+        <Tabla alts={latam} precioPeluDesk={precioPeluDesk} />
 
         <h2 className="mt-12 text-2xl font-bold text-n-900">Preguntas frecuentes</h2>
         <dl className="mt-4 flex flex-col gap-3">

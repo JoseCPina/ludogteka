@@ -73,7 +73,7 @@ try {
   const sm = (await pedir("/sitemap.xml")).cuerpo;
   const urls = [...sm.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].replace("https://peludesk.mx", ""));
   ok(urls.length > 100, `${urls.length} URL en el sitemap`);
-  for (const r of ["/", "/precios", "/veterinaria", "/alternativas", "/alternativas/moego", "/guias/control-de-pagos-y-caja-en-una-guarderia-canina", "/guias/facturacion-cfdi-para-esteticas-y-veterinarias", "/software-para-guarderias-caninas", "/ayuda", "/blog"]) ok(urls.includes(r), `sitemap incluye ${r}`);
+  for (const r of ["/", "/precios", "/veterinaria", "/alternativas", "/alternativas/moego", "/alternativas/sicar", "/alternativas/agendapro", "/alternativas/qvet", "/alternativas/okvet", "/guias/control-de-pagos-y-caja-en-una-guarderia-canina", "/guias/facturacion-cfdi-para-esteticas-y-veterinarias", "/software-para-guarderias-caninas", "/ayuda", "/blog"]) ok(urls.includes(r), `sitemap incluye ${r}`);
   ok(!urls.some((u) => /^\/(plataforma|demo|admin|portal|api)(\/|$)/.test(u)), "el sitemap no trae nada privado");
 
   const paginas = new Map();
