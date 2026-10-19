@@ -32,7 +32,7 @@ export async function entrarPlataforma(_previo: { error: string | null }, fd: Fo
   if (error) return { error: "Correo o contraseña incorrectos." };
   const { data: es } = await supabase.rpc("es_admin_plataforma");
   if (es !== true) {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
     return { error: "Esa cuenta no es de la administración de PeluDesk." };
   }
   redirect("/plataforma");
@@ -40,7 +40,7 @@ export async function entrarPlataforma(_previo: { error: string | null }, fd: Fo
 
 export async function salirPlataforma() {
   const supabase = await createSupabaseServerClient();
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({ scope: "local" });
   redirect("/plataforma/entrar");
 }
 

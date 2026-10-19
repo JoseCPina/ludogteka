@@ -45,7 +45,7 @@ export async function registrarCobro(
   const supabase = await createSupabaseServerClient();
   if (control && !control.confirmado) {
     const sesion = await obtenerSesionConRol();
-    const aviso = await avisoCobroReciente(supabase, [reservaId], control, { esAdmin: sesion?.rol === "admin", negocioId: await negocioIdActual() });
+    const aviso = await avisoCobroReciente(supabase, [reservaId], control, { esAdmin: sesion?.rol === "admin", negocioId: await negocioIdActual(), usuarioId: sesion?.user.id ?? null });
     if (aviso) return { error: null, confirmar: aviso };
   }
   // El saldo antes de cobrar: la base cobra solo hasta el saldo y lo que sobra en efectivo es cambio.

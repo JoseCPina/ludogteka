@@ -14,7 +14,8 @@
 // 8. Sugerencias de la QA (17 de octubre): la receta se prellena con el «Tratamiento» de la consulta firmada,
 //    la cantidad a surtir se calcula sola (y se puede cambiar) y, sin productos clínicos, el selector dice
 //    «No hay productos cargados» con enlace a Inventario.
-// 9. N34 (18 de octubre): borrador de la receta mientras se escribe, «Recuperar borrador» al volver y aviso al salir.
+// 9. N34 (18 de octubre): borrador de la receta mientras se escribe, «Recuperar borrador» al volver y aviso al salir
+//    (también al salir por un enlace del menú: confirmar, cancelar se queda).
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env } from "./sesiones-dev.mjs";
 import { abrirNavegador } from "../lib/navegador.mjs";
@@ -301,6 +302,36 @@ try {
     await mvz.p.getByRole("button", { name: "Recuperar borrador" }).click();
     await mvz.p.waitForTimeout(600);
     comprobar((await mvz.p.locator('input[name="producto-0"]').inputValue()) === "Prednisona 20 mg" && (await mvz.p.locator('input[name="dosis-0"]').inputValue()) === "1 tableta" && (await mvz.p.locator('input[name="diagnostico"]').inputValue()) === "Dermatitis alérgica", "«Recuperar borrador» devuelve medicamento, dosis y diagnóstico");
+    // N34 (QA S13): salir por un enlace de la app (menú lateral, Inicio) también pide confirmar.
+    {
+      let aceptar = false;
+      const tipos = [];
+      mvz.p.removeAllListeners("dialog");
+      mvz.p.on("dialog", (d) => { tipos.push(`${d.type()}:${d.message().slice(0, 40)}`); (aceptar ? d.accept() : d.dismiss()).catch(() => {}); });
+      const antes = mvz.p.url();
+      const clicMenu = () => mvz.p.evaluate(() => {
+        const a = [...document.querySelectorAll("nav a[href^='/'], aside a[href^='/']")].find((x) => new URL(x.href).pathname !== location.pathname);
+        if (!a) return null;
+        a.click();
+        return a.getAttribute("href");
+      });
+      const destino = await clicMenu();
+      await mvz.p.waitForTimeout(1500);
+      comprobar(!!destino && tipos.some((t) => t.startsWith("confirm:")), `al tocar un enlace del menú (${destino}) pide confirmar antes de salir`);
+      comprobar(mvz.p.url() === antes, "y si se cancela, se queda en la receta");
+      comprobar((await mvz.p.locator('input[name="producto-0"]').inputValue()) === "Prednisona 20 mg", "con lo escrito intacto");
+      aceptar = true;
+      tipos.length = 0;
+      await clicMenu();
+      await mvz.p.waitForURL((u) => u.toString() !== antes, { timeout: 30000 }).catch(() => {});
+      comprobar(mvz.p.url() !== antes, `si se acepta, sale a ${new globalThis.URL(mvz.p.url()).pathname}`);
+      mvz.p.removeAllListeners("dialog");
+      mvz.p.on("dialog", (d) => d.accept().catch(() => {}));
+      await mvz.p.goto(urlB, { waitUntil: "networkidle" });
+      await mvz.p.getByTestId("aviso-borrador").waitFor({ timeout: 20000 });
+      await mvz.p.getByRole("button", { name: "Recuperar borrador" }).click();
+      await mvz.p.waitForTimeout(600);
+    }
     // Emitir la receta limpia el borrador y ya no avisa al salir.
     await mvz.p.locator('input[name="dn-0"]').fill("1");
     await mvz.p.locator('input[name="frec-0"]').fill("Cada 24 horas");

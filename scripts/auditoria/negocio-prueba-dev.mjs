@@ -54,7 +54,12 @@ const SA = servicioEn(LUDOGTEKA);
 // ── Personas ──
 async function cuenta(email, nombre) {
   const { data: existente } = await A.rpc("usuario_por_email", { p_email: email });
-  if (existente) return existente;
+  if (existente) {
+    // Una cuenta del personal sin nombre ve «¿cómo te llamas?» antes de cualquier pantalla (QA N24): las de prueba lo traen siempre.
+    const { data: p } = await A.from("profiles").select("nombre_completo").eq("id", existente).maybeSingle();
+    if (!p?.nombre_completo?.trim()) await A.from("profiles").update({ nombre_completo: nombre }).eq("id", existente);
+    return existente;
+  }
   const creado = exigir(
     await A.auth.admin.createUser({ email, password: claveAleatoria(), email_confirm: true, user_metadata: { nombre_completo: nombre } }),
     `crear ${email}`

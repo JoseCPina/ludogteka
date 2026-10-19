@@ -10,6 +10,7 @@ import { ResumenAsistencia, TablaAsistencia } from "../empleados/tabla-asistenci
 import { COLUMNAS_AUSENCIA, FormularioSolicitarAusencia, ListaAusencias, type Ausencia } from "../empleados/ausencias-lista";
 import { ListaPagos } from "../empleados/nomina-vistas";
 import { zonaActual } from "@/lib/negocio/actual";
+import { unirFrases } from "@/lib/texto/frases";
 
 // Lo de cada quien: su entrada y salida, su asistencia, sus ausencias y
 // sus pagos. Nunca lo de otra persona (lo aplica la base: RLS y las
@@ -59,7 +60,7 @@ export default async function MiTrabajoPage() {
         <h2 className="text-lg font-bold text-n-900">Hoy, {formatearFechaCalendario(hoy)}</h2>
         <p className="text-n-700">
           {deHoy?.hora_entrada_prog
-            ? `Tu horario: ${hora(deHoy.hora_entrada_prog)} a ${hora(deHoy.hora_salida_prog)}. Después de ${MINUTOS_TOLERANCIA} minutos cuenta como retardo.`
+            ? unirFrases(`Tu horario: ${hora(deHoy.hora_entrada_prog)} a ${hora(deHoy.hora_salida_prog)}`, `Después de ${MINUTOS_TOLERANCIA} minutos cuenta como retardo.`)
             : "Hoy no te toca según tu horario."}
         </p>
         {deHoy?.entrada_at && (

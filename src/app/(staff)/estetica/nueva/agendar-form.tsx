@@ -21,6 +21,7 @@ import { asignarGrupoDePropuesta, asignarGrupoDeRaza } from "../../perros/razas/
 import { useZonaNegocio } from "@/components/zona-negocio";
 import { AvisoFueraDeHorario } from "@/components/aviso-fuera-de-horario";
 import type { HorarioSemana } from "@/lib/estetica/aviso-horario";
+import { cerrarFrase } from "@/lib/texto/frases";
 
 type Perro = {
   id: string;
@@ -293,7 +294,7 @@ export function AgendarForm({
       setError(res.error);
       return;
     }
-    setExitoAgendar(`Cita agendada: ${perroElegido?.nombre ?? "la mascota"}, ${servicioActual?.nombre ?? "servicio"}, ${formatearFecha(instanteDeHoraLocal(fechaHora, zona), zona)} ${horaLocalDeInstante(instanteDeHoraLocal(fechaHora, zona), zona)}.`);
+    setExitoAgendar(cerrarFrase(`Cita agendada: ${perroElegido?.nombre ?? "la mascota"}, ${servicioActual?.nombre ?? "servicio"}, ${formatearFecha(instanteDeHoraLocal(fechaHora, zona), zona)} ${horaLocalDeInstante(instanteDeHoraLocal(fechaHora, zona), zona)}`));
     // En vez de salirse: se anota la cita y se ofrece agregar a otro perrito del mismo dueño.
     setAgendadas((prev) => [
       ...prev,

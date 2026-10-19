@@ -3,6 +3,7 @@
 // clasificación) con precios DE EJEMPLO y así se dice; en la página publicada son los suyos de PeluDesk.
 import { mensajeRecordatorio } from "../veterinaria/carnet";
 import type { GiroWeb } from "./tema";
+import { cerrarFrase } from "@/lib/texto/frases";
 
 /** cita = día y hora (estética, consulta); dia = un día (guardería); noches = llegada y salida (hotel). */
 export type ModoReserva = "cita" | "dia" | "noches";
@@ -98,7 +99,7 @@ export function mensajesAlCliente(d: DatosPedido): { titulo: string; cuando: str
     d.servicio.modo === "noches"
       ? `Hola ${n}, de ${d.negocio}: quedó la reserva de hotel de ${m}. Llega el ${d.dia} y sale el ${d.salida} (${d.noches} ${d.noches === 1 ? "noche" : "noches"}). Te mandamos fotos durante su estancia 🐾`
       : d.servicio.modo === "cita"
-        ? `Hola ${n}, de ${d.negocio}: quedó la cita de ${m} para ${d.servicio.nombre.toLowerCase()} el ${d.dia} a las ${d.hora}. Te esperamos 🐾`
+        ? `Hola ${n}, de ${d.negocio}: quedó la cita de ${m} para ${d.servicio.nombre.toLowerCase()} el ${d.dia} a las ${cerrarFrase(d.hora)} Te esperamos 🐾`
         : `Hola ${n}, de ${d.negocio}: quedó el día de guardería de ${m} para el ${d.dia}. ¡Te esperamos con todo y sus ganas de jugar! 🐾`;
   const recordatorio =
     d.servicio.categoria === "veterinaria"

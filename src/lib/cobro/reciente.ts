@@ -4,7 +4,8 @@ import { nombresDePersonal } from "@/lib/personal/nombres";
 
 // N28: dos personas cobraron $10 cada una sobre la misma cuenta con 54 ms de diferencia y se registraron los dos
 // sin aviso. Antes de registrar un cobro el servidor revisa si, desde que la pantalla se abrió, entró otro cobro a
-// la cuenta (en los últimos 2 minutos y que esa pantalla no haya visto) o si el saldo cambió; si pasó, no registra:
+// la cuenta (en los últimos 2 minutos: de otra persona siempre; propio, si la pantalla no lo vio) o si el saldo
+// cambió; si pasó, no registra:
 // pide confirmación con lo que encontró.
 
 export const VENTANA_COBRO_RECIENTE_MS = 2 * 60 * 1000;
@@ -44,7 +45,7 @@ export async function avisoCobroReciente(
   supabase: SupabaseClient,
   reservaIds: string[],
   control: ControlCobro,
-  ctx: { esAdmin: boolean; negocioId: string }
+  ctx: { esAdmin: boolean; negocioId: string; usuarioId?: string | null }
 ): Promise<string | null> {
   if (control.confirmado) return null;
   const desde = new Date(Date.now() - VENTANA_COBRO_RECIENTE_MS).toISOString();
@@ -66,8 +67,11 @@ export async function avisoCobroReciente(
       }, 0) * 100
     ) / 100;
 
+  // N28 (QA del 18 de octubre): un cobro de OTRA persona en los últimos 2 minutos siempre pide confirmación, aunque la
+  // pantalla ya lo muestre (se actualizó sola). Uno propio que la pantalla ya vio no pregunta; uno propio que no vio
+  // (otra pestaña) sí.
   const vistos = new Set(control.cobrosVistos);
-  const nuevos = (cobros ?? []).filter((c) => !vistos.has(c.id as string));
+  const nuevos = (cobros ?? []).filter((c) => (ctx.usuarioId && c.created_by !== ctx.usuarioId) || !vistos.has(c.id as string));
   let reciente: CobroReciente | null = null;
   let nombreAutor: string | null = null;
   if (nuevos.length > 0) {

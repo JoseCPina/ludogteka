@@ -11,7 +11,7 @@ import { precioParaCobrar, sincronizarPreciosPlan } from "@/lib/cobro/precios";
 import { configuracionPortal } from "@/lib/cobro/portal";
 import { METADATA_NEGOCIO, aplicarSuscripcion, guardarCliente } from "@/lib/cobro/suscripcion";
 import { tipoDeCambio } from "@/lib/cobro/cambio";
-import { AVISO_COBRO_MENTEO, finDePrueba, textoCheckout } from "@/lib/cobro/prueba";
+import { AVISO_COBRO_MENTEO, CHECKOUT_FIJO, finDePrueba, textoCheckout } from "@/lib/cobro/prueba";
 import { esCorreoSintetico } from "@/lib/auth/identidad";
 import type { MiCobro, ModuloQueSeApaga, PlanOferta, ResultadoCobro, Seleccion } from "@/lib/cobro/tipos";
 
@@ -138,13 +138,10 @@ export async function contratar(sel: Seleccion): Promise<ResultadoCobro> {
       customer,
       line_items: [{ price: plan.id, quantity: 1 }, ...(web ? [{ price: web.id, quantity: 1 }] : [])],
       subscription_data: { metadata, description: `Suscripción a PeluDesk de ${ctx.negocio.nombre}. ${AVISO_COBRO_MENTEO}`, ...(trialEnd ? { trial_end: trialEnd } : {}) },
-      payment_method_collection: "always",
+      ...CHECKOUT_FIJO,
+      payment_method_types: [...CHECKOUT_FIJO.payment_method_types],
       metadata,
       client_reference_id: ctx.negocio.id,
-      locale: "es-419",
-      // Siempre en pesos: la cuenta (de Menteo) tiene la conversión de moneda
-      // automática, que le enseñaría dólares a quien pague desde fuera de México.
-      adaptive_pricing: { enabled: false },
       custom_text: { submit: { message: textoCheckout(trialEnd ? new Date(trialEnd * 1000) : null, zona) } },
       success_url: `${base}/admin/modulos/pago?sesion={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/admin/modulos?pago=cancelado`,
@@ -275,7 +272,7 @@ export async function abrirPortalPagos(): Promise<ResultadoCobro> {
     const portal = await stripe().billingPortal.sessions.create({
       customer,
       configuration: await configuracionPortal(),
-      locale: "es-419",
+      locale: CHECKOUT_FIJO.locale,
       return_url: `${urlDelNegocio(ctx.negocio)}/admin/modulos`,
     });
     return { error: null, url: portal.url };

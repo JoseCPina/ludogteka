@@ -27,3 +27,18 @@ export function textoCheckout(trialEnd: Date | null, zona: string): string {
     : "Contratas PeluDesk. Se cobra hoy.";
   return `${base} Precios con IVA incluido. ${AVISO_COBRO_MENTEO}`;
 }
+
+/**
+ * Los parámetros FIJOS de todo Checkout de PeluDesk (QA N25, 18 de octubre de 2026): mismo idioma, mismo método
+ * (solo tarjeta: sin Link ni billeteras, que cambian el botón y la línea de autorización según el navegador o si
+ * la persona ya tiene Link) y la misma forma de pedir datos para TODOS los negocios. Lo único que cambia entre
+ * un negocio y otro es la fecha del primer cobro y si hay prueba (sin prueba Stripe dice «Suscribirse»).
+ */
+export const CHECKOUT_FIJO = {
+  locale: "es",
+  payment_method_types: ["card"],
+  payment_method_collection: "always",
+  billing_address_collection: "auto",
+  // Siempre en pesos: la cuenta (de Menteo) tiene la conversión de moneda automática.
+  adaptive_pricing: { enabled: false },
+} as const;

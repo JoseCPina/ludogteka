@@ -8,6 +8,8 @@
 // registra UN solo cobro. Lo mismo en el cobro junto (el botón sigue ocupado hasta que abre el recibo).
 // Secciones 4 a 6 (QA externa del 18 de octubre de 2026, N28 y N29): dos sesiones a la vez sobre la misma cuenta
 // piden confirmación; y una cuenta movida desde otra sesión (anulación, cobro) se pone al día sola y avisa.
+// Secciones 7 y 8 (QA S13, 18 de octubre): pide confirmar aunque la pantalla ya enseñe el cobro de otra persona,
+// no pregunta el segundo cobro propio, y «Actualizando saldo…» deshabilitado y sin aviso viejo.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -179,6 +181,20 @@ try {
   await pV.waitForFunction(() => /ahora es \$180\.00/.test(document.querySelector("[data-saldo-cambio]")?.textContent ?? ""), null, { timeout: 40000 });
   comprobar(/ya no corresponde/.test(await pV.locator("[data-saldo-cambio]").innerText()), "con el monto escrito a mano ($50), avisa que ya no corresponde");
   comprobar((await pV.getByLabel("Monto").first().inputValue()) === "50", "y NO le borra lo que escribió");
+  // N39/N41 (QA del 18 de octubre de 2026): el aviso usa las cifras vivas y desaparece cuando ya no aplica.
+  comprobar(/revísalo/.test(await pV.locator("[data-saldo-cambio]").innerText()), "«revísalo» lleva acento");
+  await pV.getByLabel("Monto").first().fill("180");
+  await pV.waitForTimeout(300);
+  comprobar((await pV.locator("[data-saldo-cambio]").count()) === 0, "al escribir el saldo vivo ($180), el aviso desaparece");
+  await pV.getByLabel("Monto").first().fill("50");
+  await pV.locator("[data-saldo-cambio]").waitFor({ timeout: 5000 });
+  await pV.getByRole("button", { name: "Registrar cobro" }).first().click();
+  const conf5 = pV.locator("[data-confirmar-cobro]");
+  await Promise.race([conf5.waitFor({ timeout: 30000 }), pV.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 })]);
+  if (await conf5.count()) await pV.locator("[data-registrar-de-todos-modos]").click();
+  await pV.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+  await pV.waitForTimeout(1500);
+  comprobar((await pV.locator("[data-saldo-cambio]").count()) === 0, "N41: después de «Cobro registrado.» ya no queda el aviso «El saldo cambió»");
 
   console.log("6. N28 en el cobro junto");
   const seis = await nuevoCliente("Junto simultaneo");
@@ -198,6 +214,66 @@ try {
   await caja6.waitFor({ timeout: 30000 });
   comprobar(/Se acaba de registrar otro cobro de \$10\.00/.test(await caja6.innerText()), "el cobro junto también avisa del cobro que entró a una de sus cuentas");
   comprobar(((await SB.from("cobros_grupo").select("id").eq("cliente_id", seis)).data ?? []).length === 0, "y no registró nada todavía");
+
+  console.log("7. N28-A: la pantalla de recepción ya enseña el cobro del admin y aun así se pide confirmar");
+  const siete = await nuevoCliente("Ya visto");
+  const c7 = await cuenta(siete, 900, `Hotel visto ${sufijo}`);
+  const pW = await ctxR.newPage();
+  await pW.goto(`${BASE}/caja/cobrar/${c7}`, { waitUntil: "networkidle" });
+  const r7 = await admB.rpc("registrar_cobro", { p_reserva_id: c7, p_notas: "prueba", p_metodos: [{ metodo: "efectivo", monto: 10, propina: 0 }] });
+  if (r7.error) throw new Error(r7.error.message);
+  await pW.waitForFunction(() => /Saldo:\s*\$890\.00/.test(document.body.innerText), null, { timeout: 40000 });
+  comprobar(true, "la pantalla de recepción se actualizó sola con el cobro del admin ($890.00)");
+  await pW.getByLabel("Monto").first().fill("10");
+  await pW.getByRole("button", { name: "Registrar cobro" }).first().click();
+  const caja7 = pW.locator("[data-confirmar-cobro]");
+  const pidio = await caja7.waitFor({ timeout: 20000 }).then(() => true, () => false);
+  comprobar(pidio && /Se acaba de registrar otro cobro de \$10\.00/.test(await caja7.innerText().catch(() => "")), "aunque ya lo enseñaba, pide confirmar porque otra persona cobró hace menos de 2 minutos");
+  comprobar((await cobros(c7)) === 1, "y no registró nada sin confirmar");
+  if (pidio) await pW.locator("[data-registrar-de-todos-modos]").click();
+  await pW.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+
+  console.log("7b. Un segundo cobro de la MISMA persona, que ya vio el suyo, no pregunta");
+  const ocho = await nuevoCliente("Misma persona");
+  const c8 = await cuenta(ocho, 300, `Baño misma ${sufijo}`);
+  const pM = await ctxR.newPage();
+  await pM.goto(`${BASE}/caja/cobrar/${c8}`, { waitUntil: "networkidle" });
+  await pM.getByLabel("Monto").first().fill("100");
+  await pM.getByRole("button", { name: "Registrar cobro" }).first().click();
+  await pM.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+  await pM.waitForFunction(() => /Saldo:\s*\$200\.00/.test(document.body.innerText), null, { timeout: 30000 });
+  await pM.getByLabel("Monto").first().fill("50");
+  await pM.getByRole("button", { name: "Registrar cobro" }).first().click();
+  await pM.waitForFunction(() => /Saldo:\s*\$150\.00/.test(document.body.innerText), null, { timeout: 30000 }).catch(() => {});
+  comprobar((await pM.locator("[data-confirmar-cobro]").count()) === 0 && (await cobros(c8)) === 2, "el segundo cobro propio entra sin pregunta");
+
+  console.log("8. N28-B/N39: mientras se actualiza, el botón dice «Actualizando saldo…», está deshabilitado y no hay aviso con cifras viejas");
+  const ctxL = await nav.newContext({ viewport: { width: 393, height: 852 } });
+  await ctxL.addCookies(await cookiesDe(recId));
+  let lento = false;
+  await ctxL.route((u) => u.searchParams.has("_rsc"), async (ruta) => {
+    if (lento) await new Promise((r) => setTimeout(r, 6000));
+    await ruta.continue();
+  });
+  const nueve = await nuevoCliente("Actualizando");
+  const c9 = await cuenta(nueve, 880, `Hotel actualizando ${sufijo}`);
+  const pL = await ctxL.newPage();
+  await pL.goto(`${BASE}/caja/cobrar/${c9}`, { waitUntil: "networkidle" });
+  lento = true;
+  const r9 = await admB.rpc("registrar_cobro", { p_reserva_id: c9, p_notas: "prueba", p_metodos: [{ metodo: "efectivo", monto: 10, propina: 0 }] });
+  if (r9.error) throw new Error(r9.error.message);
+  const bActualizando = pL.getByRole("button", { name: /Actualizando saldo/ }).first();
+  const vioActualizando = await bActualizando.waitFor({ timeout: 40000 }).then(() => true, () => false);
+  comprobar(vioActualizando, "el botón cambia a «Actualizando saldo…»");
+  if (vioActualizando) {
+    comprobar(await bActualizando.isDisabled(), "y se ve deshabilitado");
+    comprobar((await pL.locator("[data-saldo-cambio]").count()) === 0, "durante la actualización no se enseña el aviso con cifras de antes");
+  }
+  await pL.getByRole("button", { name: "Registrar cobro" }).first().waitFor({ timeout: 30000 });
+  comprobar(await pL.getByRole("button", { name: "Registrar cobro" }).first().isEnabled(), "al terminar queda listo («Registrar cobro» activo)");
+  const t9 = await pL.locator("[data-saldo-cambio]").innerText().catch(() => "");
+  comprobar(/antes era \$880\.00 y ahora es \$870\.00/.test(t9), `el aviso enseña el saldo anterior y el actual reales («${t9.slice(0, 90)}»)`);
+  comprobar((await pL.getByLabel("Monto").first().inputValue()) === "870.00", "y el monto se puso al día ($870.00)");
 } finally {
   await nav.close();
 }

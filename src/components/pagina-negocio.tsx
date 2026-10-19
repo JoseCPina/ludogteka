@@ -9,6 +9,7 @@ import { colorDeFoto, fotoChica } from "@/lib/web-negocio/color";
 import { creditoFoto, hoyEn, lugarDeGoogle, resenasDestacadas } from "@/lib/web-negocio/google";
 import { descripcionDe } from "@/lib/web-negocio/desde-prospecto";
 import type { LugarParaPagina } from "@/lib/prospectos/places";
+import { cerrarFrase } from "@/lib/texto/frases";
 
 export type DatosPagina = {
   nombre: string;
@@ -51,7 +52,7 @@ function catalogoDelNegocio(servicios: DatosPagina["servicios"]): ServicioWeb[] 
         clave: s.clave ?? `servicio-${i}`,
         categoria: s.categoria,
         nombre: s.nombre,
-        descripcion: s.incluye?.length ? `Incluye ${s.incluye.join(", ")}.` : null,
+        descripcion: s.incluye?.length ? cerrarFrase(`Incluye ${s.incluye.join(", ")}`) : null,
         modo: s.categoria === "hotel" ? "noches" : s.categoria === "guarderia" ? "dia" : "cita",
         duracionMin: s.duracion ?? (s.categoria === "veterinaria" ? 30 : 60),
         precio: precios.length ? Math.min(...precios) : null,

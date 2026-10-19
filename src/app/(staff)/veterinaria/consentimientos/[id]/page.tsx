@@ -10,6 +10,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 import { ETIQUETA_CONSENTIMIENTO, llenarConsentimiento } from "@/lib/veterinaria/carnet";
 import { cancelarConsentimiento } from "../actions";
 import { FirmaConsentimiento, VerFirmado } from "./firma";
+import { unirFrases } from "@/lib/texto/frases";
 
 export default async function Consentimiento({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -32,7 +33,7 @@ export default async function Consentimiento({ params }: { params: Promise<{ id:
       <Link href={c.hospitalizacion_id ? `/veterinaria/hospitalizacion/${c.hospitalizacion_id}` : "/veterinaria/consentimientos"} className="text-sm font-semibold text-morado hover:underline">← Volver</Link>
       {c.estado === "firmado" && (
         <Alert variante="exito" titulo="Firmado">
-          Lo firmó {c.firmante_nombre as string} el {formatearFecha(c.firmado_at as string, zona)} {horaLocalDeInstante(c.firmado_at as string, zona)}. El PDF quedó sellado con la hora, la IP y un hash.
+          {unirFrases(`Lo firmó ${c.firmante_nombre as string} el ${formatearFecha(c.firmado_at as string, zona)} ${horaLocalDeInstante(c.firmado_at as string, zona)}`, "El PDF quedó sellado con la hora, la IP y un hash.")}
         </Alert>
       )}
       {c.estado === "cancelado" && <Alert variante="error" titulo="Cancelado">{c.cancelado_motivo as string}</Alert>}

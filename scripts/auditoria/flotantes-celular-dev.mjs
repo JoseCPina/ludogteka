@@ -141,6 +141,13 @@ try {
   if (await aviso.count()) {
     const pos = await aviso.evaluate((el) => { let n = el; while (n) { const s = getComputedStyle(n).position; if (s === "fixed" || s === "sticky") return s; n = n.parentElement; } return "flujo"; });
     if (pos !== "flujo") hallazgo(`el aviso de instalar flota (${pos})`); else bien("el aviso de instalar va en el flujo de la página (no tapa nada)");
+    // QA S13 (18 de octubre de 2026): compacto, de una línea (antes ocupaba ~90 px arriba), con la × a la vista.
+    const caja = await aviso.boundingBox();
+    if (!caja || caja.height > 48) hallazgo(`el aviso de instalar ocupa ${Math.round(caja?.height ?? 0)} px de alto (debe ser una línea, ≤ 48 px)`);
+    else bien(`el aviso de instalar es de una línea (${Math.round(caja.height)} px de alto)`);
+    const equis = await p.locator("[data-cerrar-aviso-instalar]").boundingBox();
+    if (!equis || equis.x + equis.width > 393 || equis.y > (caja?.y ?? 0) + (caja?.height ?? 0)) hallazgo("la × del aviso no queda a la vista en la misma línea");
+    else bien("la × para cerrarlo queda en la misma línea");
     await p.locator("[data-cerrar-aviso-instalar]").click();
     if (await aviso.count()) hallazgo("el aviso no se cerró"); else bien("se cierra");
     await p.reload({ waitUntil: "networkidle" });

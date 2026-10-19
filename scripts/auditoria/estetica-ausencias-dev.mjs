@@ -387,9 +387,39 @@ try {
       const comoAdmin = await verCobros(datos.adminB);
       comprobar(!/ · —( |$)/.test(comoAdmin.filaCobro), `el autor del cobro no sale como «—» (${comoAdmin.filaCobro.slice(0, 90)})`);
       comprobar(comoAdmin.filaCobro.includes(`Sin nombre (${ur.user.email})`), "el admin ve «Sin nombre (correo)» cuando la persona no tiene nombre ni ficha");
-      const comoRecep = await verCobros(recId);
-      comprobar(/Sin nombre(?! \()/.test(comoRecep.filaCobro) && !comoRecep.filaCobro.includes("@"), "la propia recepción ve «Sin nombre», sin correo");
-      comprobar(comoRecep.cabecera.includes("Sin nombre") && !comoRecep.cabecera.includes("@"), `y su encabezado dice «Sin nombre» (${comoRecep.cabecera.slice(0, 80)})`);
+      // N24 (QA S13, 18 de octubre de 2026): una cuenta del personal sin nombre ya no trabaja como «Sin nombre»: la app
+      // le pide su nombre completo UNA vez antes de seguir y lo guarda en su perfil.
+      {
+        const ctx = await nav2.newContext({ viewport: { width: 393, height: 852 } });
+        await ctx.addCookies(await galletas(recId));
+        const pg = await ctx.newPage();
+        await pg.goto(`${BASE}/caja/cobrar/${cuentaN24}`, { waitUntil: "domcontentloaded", timeout: 120000 });
+        const forma = pg.locator("[data-pedir-nombre]");
+        const pide = await forma.waitFor({ timeout: 60000 }).then(() => true, () => false);
+        comprobar(pide, "la recepción sin nombre ve «Antes de seguir, ¿cómo te llamas?» en lugar de la pantalla");
+        comprobar((await pg.locator("[data-cobro-id]").count()) === 0, "y no trabaja (ni ve la cuenta) hasta escribirlo");
+        if (pide) {
+          await pg.getByLabel("Nombre completo").fill("Ana");
+          await pg.getByRole("button", { name: "Guardar y seguir" }).click();
+          await pg.getByText(/nombre completo \(nombre y apellido\)/).first().waitFor({ timeout: 30000 }).catch(() => {});
+          comprobar((await pg.getByText(/nombre completo \(nombre y apellido\)/).count()) > 0, "un solo nombre no basta: pide nombre y apellido");
+          await pg.getByLabel("Nombre completo").fill("Recepción Con Nombre");
+          await pg.getByRole("button", { name: "Guardar y seguir" }).click();
+          await pg.locator("[data-cobro-id]").first().waitFor({ timeout: 60000 }).catch(() => {});
+          const cab = (await pg.locator("[data-nombre-encabezado]").first().textContent().catch(() => "")) ?? "";
+          comprobar((await pg.locator("[data-cobro-id]").count()) > 0 && cab.includes("Recepción Con Nombre"), `al guardarlo sigue a la pantalla y el encabezado ya dice su nombre («${cab.trim()}»)`);
+          const guardado = (await SB.from("profiles").select("nombre_completo").eq("id", recId).single()).data.nombre_completo;
+          comprobar(guardado === "Recepción Con Nombre", "quedó guardado en su perfil");
+          await pg.reload({ waitUntil: "domcontentloaded" });
+          await pg.waitForTimeout(1500);
+          comprobar((await pg.locator("[data-pedir-nombre]").count()) === 0, "y ya no se lo vuelve a pedir");
+        }
+        const otraVez = await rpc(tRecep, "guardar_mi_nombre_personal", { p_nombre: "Otro Nombre Distinto" });
+        comprobar(otraVez.ok && otraVez.cuerpo === "Recepción Con Nombre", "la función no reescribe un nombre que ya existe");
+        const anon = await llamar(`${URL}/rest/v1/rpc/guardar_mi_nombre_personal`, { method: "POST", headers: { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ p_nombre: "Anónimo Intruso" }) });
+        comprobar(anon.status >= 400, `la llave anónima no la puede llamar (${anon.status})`);
+        await ctx.close();
+      }
       // Con ficha de empleado, el nombre de la ficha (recepción no puede leer `profiles` del personal).
       const nueva = await SB.from("empleados").insert({ nombre: `Recepcionista Ficha ${String(Date.now()).slice(-4)}`, puesto: "Recepción", fecha_ingreso: sumarDias(hoyB, -60), telefono: "4440000001", emergencia_nombre: "Contacto", emergencia_telefono: "4441111112", profile_id: recId }).select("id, nombre").single();
       creados.empleados.push(nueva.data.id);
