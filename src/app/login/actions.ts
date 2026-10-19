@@ -69,7 +69,7 @@ export async function iniciarSesion(
   // (por ejemplo, de otro negocio) pero no es de este, no entra aquí.
   const rol = await rolDeSesion(ingreso.session);
   if (!rol || rol === "anonimo") {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
     const negocio = await negocioActual();
     return { error: `Tu cuenta no tiene acceso a ${negocio.nombre}. Si eres cliente, pídele a recepción tu link de registro.` };
   }

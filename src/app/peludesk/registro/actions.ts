@@ -98,7 +98,7 @@ async function registrar(fd: FormData): Promise<EstadoRegistro> {
       return { error: "Ese teléfono ya tiene una cuenta en PeluDesk. Escribe la contraseña con la que ya entras para abrir tu negocio con esa misma cuenta." };
     }
     personaId = sesion.user.id;
-    await comprobar.auth.signOut();
+    await comprobar.auth.signOut({ scope: "local" });
   } else {
     email = correoSinteticoDeTelefono(telefono);
     const { data: creado, error: errorCuenta } = await admin.auth.admin.createUser({

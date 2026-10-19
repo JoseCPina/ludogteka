@@ -17,6 +17,7 @@ import { NavRecetas } from "../nav";
 import { AvisoErrorClinico } from "../../aviso-error";
 import { archivarRecetario, cancelarRecetario, registrarRecetario } from "../actions";
 import { SurtirDocumento } from "../surtir";
+import { cerrarFrase } from "@/lib/texto/frases";
 
 // Estupefacientes (art. 234) y psicotrópicos de la fracción II (art. 245): se recetan en el recetario
 // especial con código de barras, tratamientos de hasta 30 días (regla editable por la plataforma).
@@ -114,7 +115,7 @@ export default async function RecetarioEspecial({ searchParams }: { searchParams
                   {r.archivada_at && <span className="rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-600">Archivado</span>}
                 </div>
                 <p className="text-sm text-n-700">{r.mascota} · {formatearFechaCalendario(r.fecha)} · {r.dias} días × {r.cantidad_diaria}{r.unidad ? ` ${unidadSegunCantidad(r.cantidad_diaria, r.unidad)}` : ""} = {r.cantidad_total} · código {r.codigo_barras} · {r.medico ?? "—"}</p>
-                <p className="text-sm text-n-600">Surtido {r.surtido} de {r.cantidad_total}{r.unidad ? ` ${unidadSegunCantidad(r.cantidad_total, r.unidad)}` : ""}.{r.cancelada_motivo ? ` Cancelado: ${r.cancelada_motivo}.` : ""}</p>
+                <p className="text-sm text-n-600">Surtido {r.surtido} de {r.cantidad_total}{r.unidad ? ` ${unidadSegunCantidad(r.cantidad_total, r.unidad)}` : ""}.{r.cancelada_motivo ? ` ${cerrarFrase(`Cancelado: ${r.cancelada_motivo}`)}` : ""}</p>
                 {puede && r.estado === "vigente" && (
                   <div className="flex flex-col gap-2">
                     {r.surtido < r.cantidad_total && (

@@ -103,8 +103,11 @@ export function AvisoInstalar() {
     }
   };
   return (
-    <div role="region" aria-label="Instalar la app" data-aviso-instalar className="flex flex-wrap items-center gap-3 border-b border-morado/20 bg-morado-suave/60 px-4 py-2.5 text-sm text-n-800 print:hidden">
-      <p className="min-w-0 flex-1">{ayuda ?? "Instala la app en este equipo para abrirla como cualquier otra, con su propio ícono."}</p>
+    <div role="region" aria-label="Instalar la app" data-aviso-instalar className={`flex items-center gap-2 border-b border-morado/20 bg-morado-suave/60 px-4 py-1 text-sm text-n-800 print:hidden ${ayuda ? "flex-wrap" : "flex-nowrap"}`}>
+      {/* Una sola línea (QA del 18 de octubre de 2026: ocupaba ~90 px arriba en un celular). Las instrucciones de iPhone, si se piden, sí ocupan lo que necesiten. */}
+      <p className={`min-w-0 flex-1 ${ayuda ? "py-1" : "truncate"}`} title={ayuda ? undefined : "Instala la app en este equipo para abrirla como cualquier otra, con su propio ícono."}>
+        {ayuda ?? "Instala la app en este equipo."}
+      </p>
       {!ayuda && (
         <button
           type="button"
@@ -114,12 +117,12 @@ export function AvisoInstalar() {
             if (r === "instrucciones") setAyuda(INSTRUCCIONES.ios);
             else cerrar();
           }}
-          className="min-h-10 rounded-md bg-morado px-4 font-semibold text-white hover:bg-morado-oscuro"
+          className="min-h-8 shrink-0 rounded-md bg-morado px-3 font-semibold text-white hover:bg-morado-oscuro"
         >
           Instalar
         </button>
       )}
-      <button type="button" data-cerrar-aviso-instalar onClick={cerrar} className="grid h-10 w-10 place-items-center rounded-md text-n-600 hover:bg-white" aria-label="Cerrar el aviso de instalar la app">
+      <button type="button" data-cerrar-aviso-instalar onClick={cerrar} className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-n-600 hover:bg-white" aria-label="Cerrar el aviso de instalar la app">
         <span aria-hidden className="text-xl leading-none">×</span>
       </button>
     </div>

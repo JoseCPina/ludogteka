@@ -12,7 +12,7 @@ import { Alert } from "@/components/ui/alert";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { formatearFecha } from "@/lib/formato";
 import { abrirTurno } from "../../turno-actions";
-import { useCuentaViva } from "@/hooks/use-cuenta-viva";
+import { useCuentaViva, textoSaldoCambio } from "@/hooks/use-cuenta-viva";
 import { registrarCobro, registrarDevolucion, type MetodoPago } from "../../cobro-actions";
 import { CobroIntegrado, type OrdenCobroFila } from "./cobro-integrado";
 import { DevolucionIntegrada } from "./devolucion-integrada";
@@ -36,6 +36,7 @@ import { consumirBono, type ItemTipoBono } from "../../bono-actions";
 import { aplicarDescuento, cancelarDescuento, type TipoDescuento } from "../../descuento-actions";
 import { useZonaNegocio } from "@/components/zona-negocio";
 import { dinero } from "@/lib/dinero";
+import { unirFrases } from "@/lib/texto/frases";
 
 export type LineaCuenta = {
   tipo: string;
@@ -386,23 +387,25 @@ export function CuentaCobro({
   // N28: lo que el servidor encontró distinto al intentar cobrar (otro cobro reciente o el saldo movido).
   const [confirmacion, setConfirmacion] = useState<string | null>(null);
   // N29: otra sesión movió la cuenta (un cobro, un cargo, una anulación) mientras esta pantalla estaba abierta.
-  const [avisoSaldo, setAvisoSaldo] = useState<string | null>(null);
+  // Se guarda solo el saldo de ANTES; el de ahora y lo escrito se leen en vivo al pintar (N39/N41: nunca cifras viejas,
+  // nunca un aviso que contradiga el resumen, y se quita al registrar un cobro o cuando el monto ya coincide).
+  const [saldoAntesDelCambio, setSaldoAntesDelCambio] = useState<number | null>(null);
   useCuentaViva(
     [{ id: reservaId, saldo: totalesServidor.saldo, total: totalesServidor.totalCuenta }],
-    (vivo, anterior) => {
-      const v = vivo[0];
-      const antes = anterior[0];
-      const escrito = Math.round(totalMetodosRef.current * 100) / 100;
-      const desfasado = montoTocadoRef.current && Math.abs(escrito - v.saldo) > 0.005;
-      setAvisoSaldo(
-        `El saldo cambió: antes era ${dinero(antes.saldo)} y ahora es ${dinero(v.saldo)}.` +
-          (desfasado ? ` El monto que escribiste (${dinero(escrito)}) ya no corresponde: revísalo antes de cobrar.` : "")
-      );
+    (_vivo, anterior) => {
+      setSaldoAntesDelCambio((previo) => previo ?? anterior[0].saldo);
       setConfirmacion(null);
       refrescar();
     },
     !cobrando.cargando && !refrescando
   );
+  const avisoSaldo = textoSaldoCambio({
+    antes: saldoAntesDelCambio,
+    ahora: totalesServidor.saldo,
+    escrito: Math.round(totalMetodos * 100) / 100,
+    montoTocado,
+    actualizando: refrescando,
+  });
   // Solo el efectivo admite cambio; los demás métodos no pueden pasar del saldo.
   const sinEfectivo = metodosEfectivos.filter((m) => m.metodo !== "efectivo").reduce((s, m) => s + (Number(m.monto) || 0), 0);
   const cambioPrevisto = Math.round((totalMetodos - Math.max(totales.saldo, 0)) * 100) / 100;
@@ -430,7 +433,25 @@ export function CuentaCobro({
 
   // Un segundo clic en el mismo instante (antes de que React pinte «Cobrando…») no manda otro cobro.
   const bloqueoCobro = useRef(false);
+  // N28-B: un clic que llega mientras se actualiza el saldo se procesa al terminar, si el saldo no cambió; si cambió,
+  // se dice que hay que revisar y volver a apretar (nunca se queda callado).
+  const clicPendiente = useRef<{ saldo: number; confirmado: boolean } | null>(null);
+  useEffect(() => {
+    if (refrescando || cobrando.cargando || !clicPendiente.current) return;
+    const pendiente = clicPendiente.current;
+    clicPendiente.current = null;
+    if (Math.abs(pendiente.saldo - totalesServidor.saldo) > 0.005) {
+      setError(`El saldo se actualizó mientras apretabas (ahora es ${dinero(totalesServidor.saldo)}). Revisa el monto y vuelve a apretar «Registrar cobro».`);
+      return;
+    }
+    void enviarCobro(pendiente.confirmado);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refrescando, cobrando.cargando, totalesServidor.saldo]);
   async function enviarCobro(confirmado = false) {
+    if (refrescando && !cobrando.cargando) {
+      clicPendiente.current = { saldo: totalesServidor.saldo, confirmado };
+      return;
+    }
     if (bloqueoCobro.current || cobrando.cargando || refrescando) return;
     bloqueoCobro.current = true;
     try {
@@ -485,6 +506,7 @@ export function CuentaCobro({
     }
     const abonado = Math.max(0, Math.min(totalMetodos - (res.cambio ?? 0), totales.saldo));
     setExitoCobro(res.cambio ? `Cobro registrado. Cambio: ${dinero(res.cambio)} (a la caja entró solo el saldo).` : "Cobro registrado.");
+    setSaldoAntesDelCambio(null);
     setNotasCobro("");
     setMetodos([NuevaFilaMetodo()]);
     setMontoTocado(false);
@@ -942,7 +964,7 @@ export function CuentaCobro({
           )}
 
           {avisoSaldo && (
-            <div data-saldo-cambio>
+            <div data-saldo-cambio data-saldo-antes={saldoAntesDelCambio ?? ""} data-saldo-ahora={totalesServidor.saldo}>
               <Alert variante="advertencia" titulo="El saldo cambió">
                 {avisoSaldo}
               </Alert>
@@ -965,7 +987,7 @@ export function CuentaCobro({
           )}
           <AccionesFormulario error={error} exito={exitoCobro}>
             <Button type="button" cargando={cobrando.cargando || refrescando} onClick={() => enviarCobro()}>
-              {cobrando.cargando ? "Cobrando…" : refrescando ? "Actualizando…" : "Registrar cobro"}
+              {cobrando.cargando ? "Cobrando…" : refrescando ? "Actualizando saldo…" : "Registrar cobro"}
             </Button>
           </AccionesFormulario>
         </div>
@@ -1024,7 +1046,7 @@ export function CuentaCobro({
                   </div>
                   {c.anulado && (
                     <p className="mt-1 text-sm font-semibold text-coral-oscuro" data-cobro-anulado-motivo>
-                      Anulado: {c.anulacionMotivo}. No cuenta en la caja ni en los reportes; la cuenta volvió a quedar por cobrar.
+                      {unirFrases(`Anulado: ${c.anulacionMotivo ?? ""}`, "No cuenta en la caja ni en los reportes; la cuenta volvió a quedar por cobrar.")}
                     </p>
                   )}
                   <p className="mt-1 text-sm text-n-600">

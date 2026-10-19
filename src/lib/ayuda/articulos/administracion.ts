@@ -348,6 +348,8 @@ El total del pie es el de la tarjeta, al centavo. Si buscas algo, ves también e
 3. Aprieta **Invitar**.
 4. Sale un link: aprieta **Copiar link** y mándaselo por WhatsApp. Con él entra y escoge su contraseña.
 
+Si una cuenta del personal entra sin nombre (por ejemplo, una invitada antes de que el nombre fuera obligatorio), la app le pregunta **Antes de seguir, ¿cómo te llamas?** una sola vez: escribe su nombre y apellido, aprieta **Guardar y seguir** y queda en su perfil. Si ya tiene ficha de empleado, en los historiales sale el nombre de la ficha.
+
 > Cópialo en ese momento: el link no se vuelve a mostrar.
 
 Si esa persona ya tiene cuenta en otro negocio de PeluDesk, no hay link: sale «Acceso dado» y entra con la contraseña que ya usa.

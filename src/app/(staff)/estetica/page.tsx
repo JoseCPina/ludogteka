@@ -142,36 +142,47 @@ export default async function AgendaPage({
               : formatearFechaCalendario(fechaAncla)}
           </p>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <Link href={`/estetica?vista=dia&fecha=${sumarDiasFecha(fechaAncla, vista === "semana" ? -7 : -1)}`}>
-            <Button type="button" variante="secundario">
-              ← Anterior
-            </Button>
-          </Link>
-          <Link href={`/estetica?vista=dia&fecha=${hoy}`}>
-            <Button type="button" variante="secundario">
-              Hoy
-            </Button>
-          </Link>
-          <Link href={`/estetica?vista=${vista}&fecha=${sumarDiasFecha(fechaAncla, vista === "semana" ? 7 : 1)}`}>
-            <Button type="button" variante="secundario">
-              Siguiente →
-            </Button>
-          </Link>
-          <Link href={`/estetica?vista=dia&fecha=${fechaAncla}`}>
-            <Button type="button" variante={vista === "dia" ? "primario" : "secundario"}>
-              Día
-            </Button>
-          </Link>
-          <Link href={`/estetica?vista=semana&fecha=${fechaAncla}`}>
-            <Button type="button" variante={vista === "semana" ? "primario" : "secundario"}>
-              Semana
-            </Button>
-          </Link>
-          <BotonNuevoCliente tipo="estetica" />
-          <Link href="/estetica/nueva">
-            <Button type="button">Agendar</Button>
-          </Link>
+        {/* En celular (393 px) cada grupo va en su renglón y ningún botón se parte: Anterior y Siguiente quedan en
+            flecha con su nombre para lectores de pantalla (QA del 18 de octubre de 2026). */}
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:gap-3" data-barra-agenda>
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
+            <Link href={`/estetica?vista=dia&fecha=${sumarDiasFecha(fechaAncla, vista === "semana" ? -7 : -1)}`} aria-label="Anterior">
+              <Button type="button" variante="secundario" className="whitespace-nowrap px-3 sm:px-4" tabIndex={-1}>
+                <span aria-hidden>←</span>
+                <span className="hidden sm:inline">Anterior</span>
+              </Button>
+            </Link>
+            <Link href={`/estetica?vista=dia&fecha=${hoy}`}>
+              <Button type="button" variante="secundario" className="whitespace-nowrap px-3 sm:px-4" tabIndex={-1}>
+                Hoy
+              </Button>
+            </Link>
+            <Link href={`/estetica?vista=${vista}&fecha=${sumarDiasFecha(fechaAncla, vista === "semana" ? 7 : 1)}`} aria-label="Siguiente">
+              <Button type="button" variante="secundario" className="whitespace-nowrap px-3 sm:px-4" tabIndex={-1}>
+                <span className="hidden sm:inline">Siguiente</span>
+                <span aria-hidden>→</span>
+              </Button>
+            </Link>
+            <span className="ml-auto sm:ml-0 sm:mx-1 sm:block sm:w-px sm:bg-n-200" aria-hidden />
+            <Link href={`/estetica?vista=dia&fecha=${fechaAncla}`}>
+              <Button type="button" variante={vista === "dia" ? "primario" : "secundario"} className="whitespace-nowrap px-3 sm:px-4" tabIndex={-1}>
+                Día
+              </Button>
+            </Link>
+            <Link href={`/estetica?vista=semana&fecha=${fechaAncla}`}>
+              <Button type="button" variante={vista === "semana" ? "primario" : "secundario"} className="whitespace-nowrap px-3 sm:px-4" tabIndex={-1}>
+                Semana
+              </Button>
+            </Link>
+          </div>
+          <div className="flex flex-wrap gap-2 [&>*]:flex-1 sm:[&>*]:flex-none">
+            <BotonNuevoCliente tipo="estetica" />
+            <Link href="/estetica/nueva">
+              <Button type="button" className="w-full whitespace-nowrap" tabIndex={-1}>
+                Agendar
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -208,7 +219,7 @@ export default async function AgendaPage({
                             </p>
                           )}
                           {citasDelDia.map((c) => (
-                            <div key={c.id} className="flex items-stretch gap-1.5">
+                            <div key={c.id} className="flex flex-col gap-1.5 sm:flex-row sm:items-stretch">
                               <Link
                                 href={
                                   puedeEditarTodos || esPropia ? `/estetica/${c.id}` : "#"
@@ -240,7 +251,7 @@ export default async function AgendaPage({
                                 <Link
                                   href={`/estetica/${c.id}?reprogramar=1`}
                                   data-reprogramar-agenda
-                                  className="inline-flex items-center rounded-md border border-n-200 bg-white px-2.5 text-xs font-semibold text-morado hover:bg-morado-suave"
+                                  className="inline-flex min-h-9 items-center justify-center whitespace-nowrap rounded-md border border-n-200 bg-white px-3 text-xs font-semibold text-morado hover:bg-morado-suave"
                                   title="Cambiar la fecha o la hora de esta cita"
                                 >
                                   Reprogramar

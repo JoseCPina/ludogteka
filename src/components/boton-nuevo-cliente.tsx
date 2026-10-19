@@ -46,7 +46,7 @@ export function BotonNuevoCliente({
 
   if (!abierto) {
     return (
-      <Button type="button" variante="secundario" onClick={() => setAbierto(true)}>
+      <Button type="button" variante="secundario" className="whitespace-nowrap" onClick={() => setAbierto(true)}>
         Nuevo cliente
       </Button>
     );

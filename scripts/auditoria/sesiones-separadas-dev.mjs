@@ -10,6 +10,8 @@
 //   3. Volver a /recepcion: sigue siendo el admin (no redirige al portal). /portal sigue siendo del dueño.
 //   4. Un enlace de activación o alta no pisa la cookie del personal.
 //   5. El personal no entra al portal con su cookie, y el dueño no entra a /recepcion con la suya.
+//   6. N42: la misma persona en dos subdominios (Huellitas y qa-pruebas): fallar al entrar, entrar y salir en uno
+//      no cierra su sesión del otro, y la cookie es solo del subdominio.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -107,6 +109,72 @@ try {
   await p.goto(`${BASE}/recepcion`, { waitUntil: "networkidle", timeout: 120000 });
   comprobar(new globalThis.URL(p.url()).pathname.startsWith("/recepcion"), "y el admin sigue adentro");
   await ctx.close(); await ctxDueno.close(); await ctxSolo.close(); await ctxCli.close();
+
+  // ── N42 (QA externa, 18 de octubre de 2026): la sesión de un negocio no se cierra por lo que pase en otro ──
+  console.log("── 6. Dos subdominios a la vez: entrar, fallar y salir en uno no cierra la sesión del otro");
+  const { data: otro } = await A.from("negocios").select("id, slug").eq("slug", "qa-pruebas").single();
+  const OTRO = `http://${otro.slug}.localhost:3001`;
+  const sufijo = String(Date.now()).slice(-6);
+  const claveN42 = claveAleatoria();
+  const correoN42 = `aud-n42-${sufijo}@prueba.peludesk.mx`; // escaner-ok: correo de una cuenta temporal, sin contraseña escrita
+  const creada = await A.auth.admin.createUser({ email: correoN42, password: claveN42, email_confirm: true });
+  if (creada.error) throw creada.error;
+  const idN42 = creada.data.user.id;
+  const sinAcceso = await A.auth.admin.createUser({ email: `aud-n42-sin-${sufijo}@prueba.peludesk.mx`, password: claveN42, email_confirm: true });
+  if (sinAcceso.error) throw sinAcceso.error;
+  try {
+    await A.from("profiles").upsert({ id: idN42, nombre_completo: `Auditoría Sesiones ${sufijo}` });
+    const m1 = await A.from("membresias").insert({ profile_id: idN42, negocio_id: datos.B, rol: "admin" });
+    if (m1.error) throw m1.error;
+    const ctx6 = await nav.newContext({ viewport: { width: 1280, height: 800 } });
+    const entrar = async (base, correo) => {
+      const pg = await ctx6.newPage();
+      pg.setDefaultTimeout(60000);
+      await pg.goto(`${base}/login`, { waitUntil: "networkidle", timeout: 120000 });
+      await pg.getByLabel("Teléfono o correo").fill(correo);
+      await pg.locator('input[name="password"]').fill(claveN42);
+      await pg.getByRole("button", { name: "Entrar" }).click();
+      await pg.waitForFunction(() => !location.pathname.startsWith("/login") || /no tiene acceso|incorrectos|No pudimos/.test(document.body.innerText), null, { timeout: 60000 }).catch(() => {});
+      await pg.waitForLoadState("networkidle").catch(() => {});
+      return pg;
+    };
+    const sigueAdentro = async (pg) => {
+      await pg.goto(`${BASE}/recepcion`, { waitUntil: "networkidle", timeout: 120000 });
+      return new globalThis.URL(pg.url()).pathname.startsWith("/recepcion");
+    };
+    const pH = await entrar(BASE, correoN42);
+    comprobar(new globalThis.URL(pH.url()).pathname.startsWith("/recepcion") || new globalThis.URL(pH.url()).pathname.startsWith("/admin"), `entra como admin en Huellitas por /login (${pH.url()})`);
+    const galletas = (await ctx6.cookies()).filter((c) => c.name.startsWith("sb-"));
+    comprobar(galletas.length > 0 && galletas.every((c) => c.domain === "huellitas.localhost"), `la cookie de sesión es solo del subdominio de Huellitas (${[...new Set(galletas.map((c) => c.domain))].join(", ")})`);
+
+    // a) En el otro negocio, la MISMA persona intenta entrar sin tener acceso: antes eso cerraba su sesión en todos.
+    const pO = await entrar(OTRO, correoN42);
+    comprobar(/no tiene acceso/.test(await pO.locator("body").innerText()), "en el otro negocio le dice que su cuenta no tiene acceso");
+    comprobar(await sigueAdentro(pH), "y su sesión de Huellitas sigue abierta");
+
+    // b) Le damos acceso de recepción en el otro negocio: entra ahí y Huellitas sigue con su sesión.
+    const m2 = await A.from("membresias").insert({ profile_id: idN42, negocio_id: otro.id, rol: "recepcion" });
+    if (m2.error) throw m2.error;
+    const pO2 = await entrar(OTRO, correoN42);
+    comprobar(new globalThis.URL(pO2.url()).pathname.startsWith("/recepcion"), `entra como recepción en ${otro.slug} (${pO2.url()})`);
+    comprobar(await sigueAdentro(pH), "con las dos sesiones abiertas a la vez, Huellitas sigue adentro");
+
+    // d) Salir en el otro negocio no cierra la sesión de Huellitas.
+    await pO2.goto(`${OTRO}/recepcion`, { waitUntil: "networkidle", timeout: 120000 });
+    await pO2.getByRole("button", { name: "Salir" }).first().click();
+    await pO2.waitForURL(/\/login/, { timeout: 60000 }).catch(() => {});
+    comprobar(/\/login/.test(pO2.url()), "«Salir» en el otro negocio lo manda a su /login");
+    comprobar(await sigueAdentro(pH), "y la sesión de Huellitas sigue abierta");
+    // c) Otra cuenta (sin acceso) entra en el otro negocio en el mismo navegador: no toca Huellitas.
+    await entrar(OTRO, sinAcceso.data.user.email);
+    comprobar(await sigueAdentro(pH), "otra cuenta que falla al entrar en el otro negocio no cierra la de Huellitas");
+
+    await ctx6.close();
+  } finally {
+    await A.from("membresias").delete().eq("profile_id", idN42);
+    await A.auth.admin.deleteUser(idN42).catch(() => {});
+    await A.auth.admin.deleteUser(sinAcceso.data.user.id).catch(() => {});
+  }
 } finally {
   await nav.close();
   await A.auth.admin.updateUserById(datos.cuentaSoloB, { password: claveAleatoria() });

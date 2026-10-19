@@ -200,6 +200,10 @@ try {
       const textoDup = (await dup.innerText().catch(() => "")).replace(/\s+/g, " ");
       if (!/ya tiene una cita ese día: .* a las .*¿Agendar otra de todos modos\?/.test(textoDup)) hallazgo(`N30: no avisa que el perro ya tiene cita ese día («${textoDup.slice(0, 160)}»)`);
       else bien("N30: avisa «ya tiene una cita ese día» con el servicio y la hora, antes de crear otra");
+      // N38 (QA S13): la hora termina en «a.m.»/«p.m.» y no se le pega otro punto.
+      const textoEstado = (await admin.getByRole("status").filter({ hasText: /Cita agendada:/ }).first().innerText().catch(() => "")).replace(/\s+/g, " ");
+      if (/\.\./.test(textoDup) || /\.\./.test(textoEstado)) hallazgo(`N38: hay puntos dobles («${textoDup.slice(0, 120)}» / «${textoEstado.slice(0, 80)}»)`);
+      else bien("N38: ni el aviso de cita duplicada ni «Cita agendada» llevan puntos dobles");
       const cuantas = async () => ((await SB.from("citas_estetica").select("id").eq("perro_id", perroC.id).is("deleted_at", null).not("estado", "in", "(cancelada,no_llego)")).data ?? []).length;
       if ((await cuantas()) !== 1) hallazgo("N30: se creó una segunda cita sin confirmar");
       else bien("N30: mientras no se confirma, sigue habiendo UNA sola cita");
@@ -215,6 +219,30 @@ try {
       else bien("N30: con «Agendar otra de todos modos» se crea la segunda");
       const extra = (await SB.from("citas_estetica").select("id, reserva_id").eq("perro_id", perroC.id).neq("id", citaUi.id).is("deleted_at", null)).data ?? [];
       for (const x of extra) { creados.citas.push(x.id); creados.reservas.push(x.reserva_id); }
+    }
+    // Agenda de Estética a 393 px (QA S13): ningún botón de la barra se parte en dos renglones ni se sale de la
+    // pantalla, y «Reprogramar» no queda como una columna angosta.
+    {
+      const p393 = await admin.context().newPage();
+      await p393.setViewportSize({ width: 393, height: 852 });
+      await p393.goto(`${BASE}/estetica?vista=dia&fecha=${f.getFullYear()}-${pad(f.getMonth() + 1)}-${pad(f.getDate())}`, { waitUntil: "networkidle" });
+      const medidas = await p393.locator("[data-barra-agenda] button").evaluateAll((bs) => bs.map((b) => { const r = b.getBoundingClientRect(); const lh = parseFloat(getComputedStyle(b).lineHeight) || 24; return { t: (b.getAttribute("aria-label") || b.textContent || "").trim(), alto: r.height, renglones: Math.round((b.scrollHeight - 0) / lh), izq: r.left, der: r.right }; }));
+      const partidos = medidas.filter((m) => m.alto > 52 || m.izq < 0 || m.der > 393);
+      if (!medidas.length) hallazgo("agenda 393 px: no encontré la barra de botones");
+      else if (partidos.length) hallazgo(`agenda 393 px: botones partidos o fuera de la pantalla: ${partidos.map((m) => `${m.t} (${Math.round(m.alto)} px)`).join(", ")}`);
+      else bien(`agenda 393 px: ${medidas.length} botones en una línea cada uno y dentro de la pantalla`);
+      const anterior = await p393.getByRole("link", { name: "Anterior" }).count();
+      if (!anterior) hallazgo("agenda 393 px: «Anterior» no tiene nombre accesible");
+      else bien("agenda 393 px: «Anterior» y «Siguiente» conservan su nombre para lectores de pantalla");
+      const rep = p393.locator("[data-reprogramar-agenda]").first();
+      if (await rep.count()) {
+        const r = await rep.boundingBox();
+        if (!r || r.height > 44 || r.width < 90) hallazgo(`agenda 393 px: «Reprogramar» queda angosto (${Math.round(r?.width ?? 0)}×${Math.round(r?.height ?? 0)} px)`);
+        else bien(`agenda 393 px: «Reprogramar» en un renglón (${Math.round(r.width)}×${Math.round(r.height)} px)`);
+      } else hallazgo("agenda 393 px: no hay «Reprogramar» para revisar");
+      const ancho393 = await p393.evaluate(() => document.documentElement.scrollWidth);
+      if (ancho393 > 395) hallazgo(`agenda de estética 393 px: la página se desborda a ${ancho393}px`); else bien("agenda de estética 393 px: sin desborde");
+      await p393.close();
     }
     if (Number(citaUi.precio) !== 430 || Number(citaUi.recargo) !== 40 || citaUi.recargo_por !== datos.adminB) hallazgo(`la cita no quedó $390 + $40 con quien lo hizo: ${JSON.stringify(citaUi)}`);
     else bien("cita desde la pantalla: $390 + recargo $40 = $430, con motivo y quién");

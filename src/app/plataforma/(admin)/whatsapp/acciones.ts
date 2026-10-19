@@ -6,6 +6,7 @@ import { sesionPlataforma } from "@/lib/plataforma/sesion";
 import type { ResultadoPlataforma } from "@/lib/plataforma/tipos";
 import { urlPlataforma } from "@/lib/pagos/urls";
 import { configWhatsApp, DatosSupabase, TelegramHttp } from "@/lib/whatsapp/infra";
+import { unirFrases } from "@/lib/texto/frases";
 
 const NO_AUTORIZADO: ResultadoPlataforma = { error: "Solo la administración de PeluDesk." };
 
@@ -57,6 +58,6 @@ export async function ponerFotoBotTelegram(): Promise<ResultadoPlataforma> {
   const cfg = configWhatsApp();
   if (!cfg.telegramToken) return { error: "Falta TELEGRAM_BOT_TOKEN en las variables de Vercel." };
   const r = await new TelegramHttp(cfg.telegramToken).subirFotoPerfil(`${urlPlataforma()}/marca/peludesk/perfil-640.jpg`);
-  if (!r.ok) return { error: `Telegram no la aceptó: ${r.descripcion ?? "sin detalle"}. Se puede poner a mano con @BotFather → /setuserpic.` };
+  if (!r.ok) return { error: unirFrases(`Telegram no la aceptó: ${r.descripcion ?? "sin detalle"}`, "Se puede poner a mano con @BotFather → /setuserpic.") };
   return { error: null, exito: "Listo: el bot de Telegram ya tiene la foto de PeluDesk." };
 }

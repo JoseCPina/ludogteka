@@ -16,6 +16,7 @@ import type { CargosConsulta as DatosCargos } from "@/lib/veterinaria/cargos-con
 import { vetPuede } from "@/lib/veterinaria/permisos";
 import { cargarMedicos, cargarProductosConLotes, miMedico as cargarMiMedico } from "@/lib/veterinaria/lotes";
 import { FormularioVacuna } from "../../carnet/[perroId]/formularios";
+import { unirFrases } from "@/lib/texto/frases";
 
 // El dictado transcribe y arma el borrador dentro de una acción del servidor: puede tardar más de lo normal.
 export const maxDuration = 120;
@@ -110,7 +111,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
 
       {anulada && (
         <Alert variante="error" titulo="Esta consulta está anulada">
-          Motivo: {c.anulada_motivo}. Su contenido se conserva abajo, sin cambios, como parte del historial.
+          {unirFrases(`Motivo: ${c.anulada_motivo ?? ""}`, "Su contenido se conserva abajo, sin cambios, como parte del historial.")}
         </Alert>
       )}
 

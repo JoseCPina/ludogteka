@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { AvisoBorrador, useAutoguardado } from "@/lib/borradores/use-autoguardado";
+import { useAvisoAlSalir } from "@/hooks/use-aviso-al-salir";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
@@ -79,15 +80,8 @@ export function EditorReceta({ perroId, consultaId, productos, tratamiento = nul
   });
   const [emitida, setEmitida] = useState(false);
   const sinEmitir = !emitida && !sinCambios(valorBorrador);
-  useEffect(() => {
-    if (!sinEmitir) return;
-    const avisar = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    window.addEventListener("beforeunload", avisar);
-    return () => window.removeEventListener("beforeunload", avisar);
-  }, [sinEmitir]);
+  // N34: avisa al recargar, al cerrar y al salir por un enlace de la app (menú lateral, Inicio, Clientes).
+  useAvisoAlSalir(sinEmitir, "La receta no se ha emitido. Lo que escribiste queda en el borrador. ¿Salir de todos modos?");
 
   const emitibles = productos.filter((p) => p.documento === "libre" || p.documento === "receta_simple" || p.documento === "receta_cedula");
   const cambiar = (i: number, parche: Partial<Fila>) => setFilas((f) => f.map((x, j) => (j === i ? { ...x, ...parche } : x)));

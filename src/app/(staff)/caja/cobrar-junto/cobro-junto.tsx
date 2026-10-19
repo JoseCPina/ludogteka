@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
-import { useCuentaViva } from "@/hooks/use-cuenta-viva";
+import { useCuentaViva, textoSaldoCambio } from "@/hooks/use-cuenta-viva";
 import { Alert } from "@/components/ui/alert";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
@@ -77,18 +77,28 @@ export function CobroJunto({
   const [error, setError] = useState<string | null>(null);
   const cobrando = useEspera();
   const [confirmacion, setConfirmacion] = useState<string | null>(null);
-  // N29: otra sesión movió alguna de estas cuentas mientras la pantalla estaba abierta.
-  const [avisoSaldo, setAvisoSaldo] = useState<string | null>(null);
+  // N29: otra sesión movió alguna de estas cuentas mientras la pantalla estaba abierta. Se guarda el total de ANTES;
+  // el de ahora sale en vivo (N39/N41: sin cifras viejas, y el aviso se quita cuando los montos ya cuadran).
+  const [refrescando, iniciarRefresco] = useTransition();
+  const [saldoAntesDelCambio, setSaldoAntesDelCambio] = useState<number | null>(null);
   useCuentaViva(
     cuentas.map((c) => ({ id: c.reservaId, saldo: c.saldo })),
-    (vivo) => {
-      setAvisoSaldo("El saldo cambió: una de estas cuentas se movió desde otra sesión. Se actualizó la pantalla; revisa los montos antes de cobrar.");
+    (_vivo, anterior) => {
+      setSaldoAntesDelCambio((previo) => previo ?? anterior.reduce((s, c) => s + c.saldo, 0));
       setConfirmacion(null);
-      void vivo;
-      router.refresh();
+      iniciarRefresco(() => router.refresh());
     },
-    !cobrando.cargando
+    !cobrando.cargando && !refrescando
   );
+  // Al llegar los saldos nuevos, la cuenta cuyo monto era su saldo de antes toma su saldo nuevo.
+  const saldosPrevios = useRef(cuentas.map((c) => c.saldo));
+  const claveSaldos = cuentas.map((c) => c.saldo.toFixed(2)).join(",");
+  useEffect(() => {
+    const previos = saldosPrevios.current;
+    saldosPrevios.current = cuentas.map((c) => c.saldo);
+    setMontos((prev) => prev.map((v, i) => (Math.abs(Number(v) - (previos[i] ?? NaN)) <= 0.005 ? cuentas[i].saldo.toFixed(2) : v)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [claveSaldos]);
   // Cobrado: el botón sigue ocupado hasta que cargue el recibo (si no, se reactivaba y permitía un segundo clic).
   const [yaCobrado, setYaCobrado] = useState(false);
   const [yendo, iniciarIr] = useTransition();
@@ -97,6 +107,7 @@ export function CobroJunto({
   const totalCuentas = cuentas.reduce((s, _c, i) => s + valor(i), 0);
   const totalSaldo = cuentas.reduce((s, c) => s + c.saldo, 0);
   const propinaTotal = metodos.reduce((s, m) => s + (Number(m.propina) || 0), 0);
+  const avisoSaldo = textoSaldoCambio({ antes: saldoAntesDelCambio, ahora: Math.round(totalSaldo * 100) / 100, escrito: Math.round(totalCuentas * 100) / 100, montoTocado: true, actualizando: refrescando });
 
   // Con un solo método y sin haberlo tocado, el monto es el total de las cuentas.
   function montoDeMetodo(i: number, m: FilaMetodo) {
@@ -141,7 +152,24 @@ export function CobroJunto({
 
   // Un segundo clic en el mismo instante (antes de que React pinte «Cobrando…») no manda otro cobro.
   const bloqueoCobro = useRef(false);
+  // N28-B: un clic durante «Actualizando saldo…» se procesa al terminar si el saldo no cambió; si cambió, se avisa.
+  const clicPendiente = useRef<{ saldo: number; confirmado: boolean } | null>(null);
+  useEffect(() => {
+    if (refrescando || cobrando.cargando || !clicPendiente.current) return;
+    const pendiente = clicPendiente.current;
+    clicPendiente.current = null;
+    if (Math.abs(pendiente.saldo - totalSaldo) > 0.005) {
+      setError(`El saldo se actualizó mientras apretabas (ahora es ${dinero(totalSaldo)}). Revisa los montos y vuelve a apretar «Registrar cobro».`);
+      return;
+    }
+    void enviar(pendiente.confirmado);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refrescando, cobrando.cargando, totalSaldo]);
   async function enviar(confirmado = false) {
+    if (refrescando && !cobrando.cargando) {
+      clicPendiente.current = { saldo: totalSaldo, confirmado };
+      return;
+    }
     if (bloqueoCobro.current || yaCobrado || yendo) return;
     bloqueoCobro.current = true;
     try {
@@ -342,7 +370,7 @@ export function CobroJunto({
           </div>
 
           {avisoSaldo && (
-            <div data-saldo-cambio>
+            <div data-saldo-cambio data-saldo-antes={saldoAntesDelCambio ?? ""} data-saldo-ahora={totalSaldo}>
               <Alert variante="advertencia" titulo="El saldo cambió">
                 {avisoSaldo}
               </Alert>
@@ -364,8 +392,8 @@ export function CobroJunto({
             </div>
           )}
           <AccionesFormulario error={error}>
-            <Button type="button" cargando={cobrando.cargando || yaCobrado || yendo} onClick={() => enviar()} data-registrar-junto>
-              {cobrando.cargando ? "Cobrando…" : yaCobrado || yendo ? "Abriendo el recibo…" : `Registrar cobro de ${dinero(totalCuentas)}`}
+            <Button type="button" cargando={cobrando.cargando || yaCobrado || yendo || refrescando} onClick={() => enviar()} data-registrar-junto>
+              {cobrando.cargando ? "Cobrando…" : yaCobrado || yendo ? "Abriendo el recibo…" : refrescando ? "Actualizando saldo…" : `Registrar cobro de ${dinero(totalCuentas)}`}
             </Button>
           </AccionesFormulario>
         </div>

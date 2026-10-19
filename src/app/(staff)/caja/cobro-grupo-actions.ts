@@ -30,7 +30,7 @@ export async function registrarCobroGrupo(
   const supabase = await createSupabaseServerClient();
   if (control && !control.confirmado) {
     const sesion = await obtenerSesionConRol();
-    const aviso = await avisoCobroReciente(supabase, partes.map((p) => p.reservaId), control, { esAdmin: sesion?.rol === "admin", negocioId: await negocioIdActual() });
+    const aviso = await avisoCobroReciente(supabase, partes.map((p) => p.reservaId), control, { esAdmin: sesion?.rol === "admin", negocioId: await negocioIdActual(), usuarioId: sesion?.user.id ?? null });
     if (aviso) return { error: null, confirmar: aviso };
   }
   const { data, error } = await supabase.rpc("registrar_cobro_grupo", {

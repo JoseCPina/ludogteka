@@ -13,6 +13,7 @@ import { formatearFechaCalendario, unidadSegunCantidad } from "@/lib/formato";
 import type { EspejoDetalle } from "@/lib/veterinaria/recetas";
 import { archivarEspejo, cancelarEspejo } from "../../actions";
 import { SurtirDocumento } from "../../surtir";
+import { unirFrases } from "@/lib/texto/frases";
 
 export default async function EspejoSitpv({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -44,7 +45,7 @@ export default async function EspejoSitpv({ params }: { params: Promise<{ id: st
       <div className="print:hidden">
         <Link href="/veterinaria/recetas/sitpv" className="text-sm font-semibold text-morado hover:underline">← Registro SITPV</Link>
       </div>
-      {cancelada && <Alert variante="error" titulo="Folio CANCELADO">{d.cancelada_motivo}. Va en ceros, con esta observación, en el reporte del mes.</Alert>}
+      {cancelada && <Alert variante="error" titulo="Folio CANCELADO">{unirFrases(d.cancelada_motivo, "Va en ceros, con esta observación, en el reporte del mes.")}</Alert>}
 
       <div className="flex flex-wrap items-center gap-3 print:hidden">
         <BotonImprimirPagina texto="Imprimir PDF de referencia" />

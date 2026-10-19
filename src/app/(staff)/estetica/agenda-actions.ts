@@ -6,6 +6,7 @@ import { traducirError } from "../reservas/traducir-error";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { zonaActual } from "@/lib/negocio/actual";
 import { fechaLocalDeInstante, horaLocalDeInstante, instanteDeHoraLocal, sumarDiasFecha } from "@/lib/formato";
+import { unirFrases } from "@/lib/texto/frases";
 
 export type EstadoAccion = { error: string | null };
 export type EstadoCrearCita = {
@@ -67,7 +68,7 @@ export async function crearCita(datos: {
       const perro = Array.isArray(delDia[0].perros) ? delDia[0].perros[0] : delDia[0].perros;
       return {
         error: null,
-        duplicada: `${(perro as { nombre?: string } | null)?.nombre ?? "Esta mascota"} ya tiene ${delDia.length === 1 ? "una cita" : "citas"} ese día: ${delDia.map(una).join(" y ")}. ¿Agendar otra de todos modos?`,
+        duplicada: unirFrases(`${(perro as { nombre?: string } | null)?.nombre ?? "Esta mascota"} ya tiene ${delDia.length === 1 ? "una cita" : "citas"} ese día: ${delDia.map(una).join(" y ")}`, "¿Agendar otra de todos modos?"),
       };
     }
   }

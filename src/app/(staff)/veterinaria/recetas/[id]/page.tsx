@@ -9,6 +9,7 @@ import { formatearFechaCalendario, unidadSegunCantidad } from "@/lib/formato";
 import { DOCUMENTOS, type RecetaDetalle } from "@/lib/veterinaria/recetas";
 import { AccionesReceta } from "./acciones-receta";
 import { SurtirDocumento } from "../surtir";
+import { unirFrases } from "@/lib/texto/frases";
 
 const ETIQUETAS_COPIA = ["ORIGINAL", "COPIA 1", "COPIA 2", "COPIA 3", "COPIA 4"];
 
@@ -86,7 +87,7 @@ export default async function Receta({ params }: { params: Promise<{ id: string 
       <div className="print:hidden">
         <Link href="/veterinaria/recetas" className="text-sm font-semibold text-morado hover:underline">← Recetas</Link>
       </div>
-      {anulada && <Alert variante="error" titulo="Receta ANULADA">{d.anulada_motivo}. Ya no tiene validez.</Alert>}
+      {anulada && <Alert variante="error" titulo="Receta ANULADA">{unirFrases(d.anulada_motivo, "Ya no tiene validez.")}</Alert>}
       {!d.integra && <Alert variante="error" titulo="El contenido no coincide con su huella">Esta receta cambió después de emitirse. No la uses y avisa al equipo técnico.</Alert>}
       <AccionesReceta
         id={d.id} numero={d.numero} mascota={d.snapshot.mascota.nombre} telefono={d.snapshot.propietario.telefono} negocio={d.snapshot.establecimiento.nombre}

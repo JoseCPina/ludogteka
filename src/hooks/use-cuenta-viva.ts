@@ -2,11 +2,24 @@
 
 import { useEffect, useRef } from "react";
 import { conTope } from "@/lib/ui/espera";
+import { dinero } from "@/lib/dinero";
 import { estadoDeCuentas, type EstadoDeCuenta } from "@/app/(staff)/reservas/cuenta-estado-actions";
 
 export const SONDEO_CUENTA_MS = 8000;
 
 export type BaseCuenta = { id: string; saldo: number; total?: number };
+
+/**
+ * El aviso «El saldo cambió» (N39/N41), armado SIEMPRE con el saldo vivo: null mientras se actualiza, cuando no hubo
+ * cambio, cuando el saldo volvió al de antes o cuando el monto escrito ya coincide con el saldo de ahora.
+ */
+export function textoSaldoCambio(o: { antes: number | null; ahora: number; escrito: number; montoTocado: boolean; actualizando: boolean }): string | null {
+  if (o.actualizando || o.antes === null || Math.abs(o.antes - o.ahora) <= 0.005) return null;
+  const base = `El saldo cambió: antes era ${dinero(o.antes)} y ahora es ${dinero(o.ahora)}.`;
+  if (!o.montoTocado) return `${base} El monto ya se actualizó.`;
+  if (Math.abs(o.escrito - o.ahora) <= 0.005) return null;
+  return `${base} El monto que escribiste (${dinero(o.escrito)}) ya no corresponde: revísalo antes de cobrar.`;
+}
 
 /** ¿Cambió algo respecto a lo que la pantalla muestra? Pura: la usa la prueba. */
 export function cuentasCambiaron(base: BaseCuenta[], vivo: EstadoDeCuenta[]): boolean {
