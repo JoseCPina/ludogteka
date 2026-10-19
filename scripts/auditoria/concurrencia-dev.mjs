@@ -283,6 +283,61 @@ try {
       await SB.from("tarifas").delete().eq("servicio_id", serv.id).gte("vigencia_desde", "2099-01-01");
     }
   }
+  if (empleado) {
+    // Horario y esquema de pago del empleado: se guardan como filas nuevas; la versión es la del conjunto.
+    const ultima = async (tabla) => (await SB.from(tabla).select("updated_at").eq("empleado_id", empleado.id).order("updated_at", { ascending: false }).limit(1).maybeSingle()).data?.updated_at ?? "-infinity";
+    const detalleDe = (r) => { try { return JSON.parse(r.error?.details ?? "{}"); } catch { return {}; } };
+
+    console.log("\n· Horario del empleado (por guardar_horario_empleado)");
+    const { data: horOrig } = await SB.from("empleados_horario").select("dia_semana, hora_entrada, hora_salida").eq("empleado_id", empleado.id).is("deleted_at", null);
+    const horario = (salida) => [1, 2, 3].map((d) => ({ dia_semana: d, hora_entrada: "09:00", hora_salida: salida }));
+    const guardarH = (cli, salida, ver, forzar = false) => conEnc(cli.rpc("guardar_horario_empleado", { p_empleado_id: empleado.id, p_dias: horario(salida) }), enc(ver, forzar));
+    try {
+      const verH = [{ t: "horario_empleado", i: empleado.id, v: await ultima("empleados_horario") }];
+      const h2 = await guardarH(dos, "17:00", verH);
+      comprobar(!h2.error, `Horario: la segunda persona guarda con lo que leyó${h2.error ? ` (${h2.error.message})` : ""}`);
+      const h1 = await guardarH(uno, "18:00", verH);
+      comprobar(h1.error?.code === "PT409", `Horario: con la versión vieja NO se guarda (${h1.error?.code ?? "entró"})`);
+      comprobar(detalleDe(h1).quien === quienDos, `Horario: el aviso dice quién cambió (${detalleDe(h1).quien ?? "—"})`);
+      const { data: hVivo } = await SB.from("empleados_horario").select("hora_salida").eq("empleado_id", empleado.id).is("deleted_at", null).limit(1).maybeSingle();
+      comprobar(String(hVivo?.hora_salida).startsWith("17:00"), "Horario: se quedó lo de la otra persona");
+      const hf = await guardarH(uno, "18:00", verH, true);
+      comprobar(!hf.error, `Horario: «guardar encima» entra${hf.error ? ` (${hf.error.message})` : ""}`);
+      const verPropio = [{ t: "horario_empleado", i: empleado.id, v: await ultima("empleados_horario") }];
+      await new Promise((r) => setTimeout(r, 30));
+      await guardarH(uno, "18:30", verPropio);
+      const hm = await guardarH(uno, "19:00", verPropio);
+      comprobar(!hm.error, `Horario: la misma persona con una versión vieja de sus propios cambios entra${hm.error ? ` (${hm.error.code})` : ""}`);
+      const hs = await uno.rpc("guardar_horario_empleado", { p_empleado_id: empleado.id, p_dias: horario("17:30") });
+      comprobar(!hs.error, "Horario: sin versión entra como siempre");
+    } finally {
+      await uno.rpc("guardar_horario_empleado", { p_empleado_id: empleado.id, p_dias: (horOrig ?? []).map((h) => ({ dia_semana: h.dia_semana, hora_entrada: String(h.hora_entrada).slice(0, 5), hora_salida: String(h.hora_salida).slice(0, 5) })) });
+    }
+
+    console.log("\n· Esquema de pago del empleado (esquemas_pago)");
+    const esquema = (monto, dia) => ({ empleado_id: empleado.id, vigente_desde: `2099-0${dia}-01`, sueldo_monto: monto, sueldo_periodicidad: "quincenal", con_comision: false, recibe_propinas: false, notas: `Prueba concurrencia ${sufijo}` });
+    const guardarE = (cli, monto, dia, ver, forzar = false) => conEnc(cli.from("esquemas_pago").insert(esquema(monto, dia)).select("id"), enc(ver, forzar));
+    try {
+      const verE = [{ t: "esquemas_empleado", i: empleado.id, v: await ultima("esquemas_pago") }];
+      const e2 = await guardarE(dos, 5000, 1, verE);
+      comprobar(!e2.error, `Esquema: la segunda persona guarda con lo que leyó${e2.error ? ` (${e2.error.message})` : ""}`);
+      const e1 = await guardarE(uno, 6000, 2, verE);
+      comprobar(e1.error?.code === "PT409", `Esquema: con la versión vieja NO se guarda (${e1.error?.code ?? "entró"})`);
+      comprobar(detalleDe(e1).quien === quienDos, `Esquema: el aviso dice quién cambió (${detalleDe(e1).quien ?? "—"})`);
+      const ef = await guardarE(uno, 6000, 2, verE, true);
+      comprobar(!ef.error, `Esquema: «guardar encima» entra${ef.error ? ` (${ef.error.message})` : ""}`);
+      const verPropio = [{ t: "esquemas_empleado", i: empleado.id, v: await ultima("esquemas_pago") }];
+      await new Promise((r) => setTimeout(r, 30));
+      await guardarE(uno, 6500, 3, verPropio);
+      const em = await guardarE(uno, 7000, 4, verPropio);
+      comprobar(!em.error, `Esquema: la misma persona con una versión vieja de sus propios cambios entra${em.error ? ` (${em.error.code})` : ""}`);
+      const es = await uno.from("esquemas_pago").insert(esquema(7500, 5)).select("id");
+      comprobar(!es.error, "Esquema: sin versión entra como siempre");
+    } finally {
+      const borrar = await SB.from("esquemas_pago").delete().eq("empleado_id", empleado.id).like("notas", `Prueba concurrencia ${sufijo}`);
+      if (borrar.error) await SB.from("esquemas_pago").update({ deleted_at: new Date().toISOString() }).eq("empleado_id", empleado.id).like("notas", `Prueba concurrencia ${sufijo}`);
+    }
+  }
   {
     console.log("\n3. La llave anónima no lee la bitácora");
     const anon = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false }, global: { headers: { "x-negocio-id": B } } });
@@ -363,6 +418,41 @@ async function pantallas() {
     await pb.waitForTimeout(500);
     await pb.waitForLoadState("networkidle");
     comprobar((await pb.locator('input[name="nombre"]').inputValue()) === `${c0.nombre} A`, "Cliente: «Recargar con sus cambios» enseña lo de la otra persona");
+
+    console.log("\n4b. Pantallas: dos navegadores sobre el horario del mismo empleado");
+    {
+      const emp = (await SB.from("empleados").select("id").eq("negocio_id", B).is("deleted_at", null).is("fecha_baja", null).limit(1).maybeSingle()).data;
+      if (!emp) hallazgo("No hay un empleado en Huellitas para la pantalla del horario.");
+      else {
+        const { data: horOrig } = await SB.from("empleados_horario").select("dia_semana, hora_entrada, hora_salida").eq("empleado_id", emp.id).is("deleted_at", null);
+        try {
+          await pa.goto(`${BASE}/empleados/${emp.id}`, { waitUntil: "networkidle" });
+          await pb.goto(`${BASE}/empleados/${emp.id}`, { waitUntil: "networkidle" });
+          const formH = (p) => p.locator("form", { has: p.getByRole("button", { name: "Guardar horario" }) }).first();
+          await formH(pb).locator('input[name="entrada_1"]').fill("08:00");
+          await formH(pb).locator('input[name="salida_1"]').fill("16:00");
+          await formH(pb).getByRole("button", { name: "Guardar horario" }).click();
+          await formH(pb).getByText(/Horario guardado/).first().waitFor({ timeout: 40000 }).catch(() => {});
+          await formH(pa).locator('input[name="entrada_1"]').fill("10:00");
+          await formH(pa).locator('input[name="salida_1"]').fill("18:00");
+          await formH(pa).getByRole("button", { name: "Guardar horario" }).click();
+          const avisoH = formH(pa).locator("[data-conflicto-version]");
+          await avisoH.waitFor({ timeout: 40000 }).catch(() => {});
+          comprobar(await avisoH.isVisible().catch(() => false), "Horario del empleado: la pantalla vieja no guarda y enseña el aviso");
+          const tH = (await formH(pa).locator("[data-conflicto-texto]").textContent().catch(() => "")) ?? "";
+          comprobar(tH.includes(quienDos) && /el horario de este empleado/.test(tH), `Horario del empleado: el aviso nombra a quien cambió («${tH.slice(0, 90)}»)`);
+          const { data: h1 } = await SB.from("empleados_horario").select("hora_entrada").eq("empleado_id", emp.id).eq("dia_semana", 1).is("deleted_at", null).maybeSingle();
+          comprobar(String(h1?.hora_entrada).startsWith("08:00"), "Horario del empleado: se quedó lo de la otra persona");
+          await formH(pa).locator("[data-guardar-encima]").click();
+          await formH(pa).locator("[data-guardar-encima-confirmar]").click();
+          await formH(pa).getByText(/Horario guardado/).first().waitFor({ timeout: 40000 }).catch(() => {});
+          const { data: h2 } = await SB.from("empleados_horario").select("hora_entrada").eq("empleado_id", emp.id).eq("dia_semana", 1).is("deleted_at", null).maybeSingle();
+          comprobar(String(h2?.hora_entrada).startsWith("10:00"), "Horario del empleado: «Sí, guardar los míos encima» guarda");
+        } finally {
+          await uno.rpc("guardar_horario_empleado", { p_empleado_id: emp.id, p_dias: (horOrig ?? []).map((h) => ({ dia_semana: h.dia_semana, hora_entrada: String(h.hora_entrada).slice(0, 5), hora_salida: String(h.hora_salida).slice(0, 5) })) });
+        }
+      }
+    }
 
     console.log("\n5. Pantallas: mover fechas con vista previa del total");
     const est = await crearHotel(10).catch((e) => (hallazgo(`No se pudo crear la reserva de hotel de prueba (${e.message})`), null));

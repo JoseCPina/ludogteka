@@ -68,6 +68,12 @@ export default async function EmpleadoPage({
 
   const { data: e } = await supabase.from("empleados").select("*").eq("id", id).is("deleted_at", null).maybeSingle();
   if (!e) notFound();
+  // QA N43: lo último que esta pantalla vio del horario y de los esquemas de pago de este empleado (las dos cosas
+  // se guardan como filas nuevas, así que la versión es la del conjunto).
+  const ultimaVersion = async (tabla: "empleados_horario" | "esquemas_pago") =>
+    ((await supabase.from(tabla).select("updated_at").eq("empleado_id", id).order("updated_at", { ascending: false }).limit(1).maybeSingle()).data
+      ?.updated_at as string | undefined) ?? "-infinity";
+  const [versionHorario, versionEsquemas] = await Promise.all([ultimaVersion("empleados_horario"), ultimaVersion("esquemas_pago")]);
   const esSuyo = e.profile_id && e.profile_id === sesion?.user.id;
   const puedePedirPorEl = esAdmin || esSuyo || (sesion?.rol === "recepcion" && !e.profile_id);
 
@@ -156,7 +162,7 @@ export default async function EmpleadoPage({
 
       <Seccion titulo="Horario" sub="Cambiarlo vale desde hoy: los días de antes se siguen midiendo contra el horario que tenía.">
         {puedeNomina ? (
-          <FormularioAccion accion={guardarHorario.bind(null, id)} textoBoton="Guardar horario">
+          <FormularioAccion accion={guardarHorario.bind(null, id)} textoBoton="Guardar horario" versiones={[{ t: "horario_empleado", i: id, v: versionHorario }]} registro="el horario de este empleado">
             <div className="grid gap-2">
               {DIAS_SEMANA.map((nombre, d) => (
                 <div key={d} className="grid grid-cols-[7rem_1fr_1fr] items-end gap-3">
@@ -233,7 +239,7 @@ export default async function EmpleadoPage({
               <Alert variante="advertencia" titulo="Sin esquema de pago">Captúralo para que la nómina calcule sueldo o pago por día.</Alert>
             )}
             <Desplegable texto={vigente ? "Cambiar esquema de pago" : "Capturar esquema de pago"}>
-              <FormularioAccion accion={guardarEsquema.bind(null, id)} textoBoton="Guardar esquema">
+              <FormularioAccion accion={guardarEsquema.bind(null, id)} textoBoton="Guardar esquema" versiones={[{ t: "esquemas_empleado", i: id, v: versionEsquemas }]} registro="el esquema de pago de este empleado">
                 <div className="grid gap-3 sm:grid-cols-3">
                   <Field label="Vale desde" name="vigente_desde" type="date" defaultValue={hoy} required />
                   <Field label="Sueldo fijo (opcional)" name="sueldo_monto" type="number" step="0.01" min="0" defaultValue={vigente?.sueldo_monto ?? ""} />

@@ -243,4 +243,5 @@ Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado.
 - Estética: si una estilista intenta agendar en un horario que ya está ocupado, el aviso dice el choque real («Ya tienes a … a las 17:00. Escoge otro horario.»). Iniciar una cita que es de otro día pide confirmar («Sí, recibirla de todos modos»).
 - Una reserva cancelada sin saldo ya no ofrece «Cobrar»; si queda algo por cobrar, dice cuánto. «Cobro registrado» desaparece al anular el cobro.
 - Al registrar una desparasitación se pide el producto y también «Veterinario y clínica», igual que en una vacuna. El formulario de vacuna de Veterinaria queda en blanco después de registrar.
+- El horario y el esquema de pago de un empleado también avisan si otra persona los cambió mientras los tenías abiertos, con «Recargar con sus cambios» o «Guardar los míos encima».
 `.trim();
