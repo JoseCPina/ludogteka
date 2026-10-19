@@ -408,7 +408,7 @@ Un permiso de un módulo apagado no hace nada hasta que lo prendas.
     modulo: null,
     roles: ["admin"],
     rutas: ["/admin/modulos"],
-    palabras: ["plan", "suscripción", "pagar PeluDesk", "cancelar", "factura", "tarjeta", "funciones"],
+    palabras: ["plan", "suscripción", "pagar PeluDesk", "cancelar", "factura", "CFDI", "RFC", "datos de facturación", "tarjeta", "funciones", "sucursal", "sucursales", "otra sucursal", "soporte", "WhatsApp"],
     captura: "modulos-y-plan.jpg",
     cuerpo: `Si no usas hotel o inventario, apágalos y dejan de estorbar en el menú. Aquí también contratas tu plan.
 
@@ -439,9 +439,34 @@ Si contratas durante la prueba, no pierdes días: el primer cobro es el último 
 ## Después
 
 - **Cambiar a este plan**: pasar de mensual a anual es inmediato; de anual a mensual entra al final del periodo. Si el precio del plan cambia, lo ves desde tu siguiente cargo, sin cobros dobles.
-- **Tarjeta, facturas y cancelación**: cambias tarjeta, bajas facturas o cancelas. Sigues con acceso hasta el final de lo que pagaste.
+- **Tarjeta, facturas y cancelación**: cambias tarjeta, bajas los recibos de Stripe o cancelas. Sigues con acceso hasta el final de lo que pagaste.
 
-> Si un cobro falla, todo sigue funcionando 7 días. Después el negocio queda en solo lectura hasta que se pague.`,
+> Si un cobro falla, todo sigue funcionando 7 días. Después el negocio queda en solo lectura hasta que se pague.
+
+## Datos de facturación
+
+Sí hay factura (CFDI) de tu suscripción. La emite **Menteo, S.A.S.**, la empresa que opera PeluDesk.
+
+1. En [Módulos y plan](/admin/modulos), baja a **Datos de facturación**.
+2. Escribe tu **RFC**, tu **Razón social o nombre** tal cual tu constancia de situación fiscal, tu **Régimen fiscal**, tu **Código postal fiscal**, el **Uso del CFDI** y el **Correo para recibir la factura**.
+3. Aprieta **Guardar datos de facturación**.
+
+Con cada pago, la factura te llega por correo en los días siguientes. El recibo de Stripe no es la factura. Si tienes sucursales, la factura de todo sale a nombre de la primera y los datos se capturan ahí.
+
+## Sucursales
+
+Cada sucursal es un negocio en PeluDesk: su propia caja, agenda, personal, página y subdominio. La primera paga el plan; **cada sucursal adicional cuesta $325 al mes + IVA** y se suma a la misma suscripción como «Sucursal adicional». La prueba gratis es solo para la primera.
+
+1. Desde tu primera sucursal, entra a [Módulos y plan](/admin/modulos) y baja a **Sucursales**.
+2. Escribe el **Nombre de la sucursal** y revisa el **Subdominio** (su dirección en internet).
+3. Aprieta **Abrir sucursal**. Ese día se cobra la parte proporcional a lo que queda de tu periodo; después va junto con tu plan.
+4. Aprieta **Entrar a la sucursal nueva** e invita a su personal desde ahí.
+
+Solo se abre cuando tu plan ya está pagado: si contrataste durante la prueba, al terminar la prueba. Si trabajas en varias, cambias de una a otra en **Tus negocios**, abajo del menú: las sucursales del mismo dueño salen juntas.
+
+## Soporte
+
+Todo por WhatsApp, al +52 56 4916 0742: un asistente contesta las 24 horas y lo que no resuelve lo atiende una persona de PeluDesk el mismo día, en horario hábil. No hay que abrir tickets ni escribir correos.`,
   },
   {
     slug: "conectar-mercado-pago-o-clip",

@@ -8,6 +8,7 @@ const SECCIONES = [
   { href: "/plataforma/prospectos", texto: "Prospectos" },
   { href: "/plataforma/planes", texto: "Planes" },
   { href: "/plataforma/cobro", texto: "Cobro" },
+  { href: "/plataforma/facturas", texto: "Facturas por emitir" },
   { href: "/plataforma/conciliacion", texto: "Conciliación" },
   { href: "/plataforma/maps", texto: "Google Maps" },
   { href: "/plataforma/dictado", texto: "Dictado por voz" },

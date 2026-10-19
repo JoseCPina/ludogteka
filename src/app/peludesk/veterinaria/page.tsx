@@ -10,6 +10,7 @@ import { CasoLudogteka, Relacionadas } from "@/components/peludesk/seo-bloques";
 import { CASO_POR_GIRO } from "@/lib/peludesk/ludogteka";
 import { PrecioPlan } from "@/components/peludesk/precio-plan";
 import { planUnico, pesos } from "@/lib/peludesk/plan";
+import { preguntasDeContratacion } from "@/lib/peludesk/preguntas-contratacion";
 import { JsonLd, SITIO, aplicacionPeluDesk, metaPagina, migas, preguntasFrecuentes } from "@/lib/peludesk/seo";
 
 const RUTA = "/veterinaria";
@@ -28,14 +29,15 @@ const botonSecundario =
   "pd-boton inline-flex min-h-12 items-center justify-center whitespace-nowrap rounded-full border-2 border-morado/25 bg-white px-6 text-base font-semibold text-morado hover:border-morado/50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave";
 
 export default async function PaginaVeterinaria() {
-  const plan = await planUnico();
+  const [plan, contratacion] = await Promise.all([planUnico(), preguntasDeContratacion()]);
+  const preguntas = [...PREGUNTAS_VET, ...contratacion];
   const demo = `${urlDemo()}/demo/entrar/veterinaria`;
   return (
     <MarcoSitio>
       <JsonLd
         datos={[
           migas([{ nombre: "Inicio", ruta: "/" }, { nombre: "Veterinaria", ruta: RUTA }]),
-          preguntasFrecuentes(PREGUNTAS_VET),
+          preguntasFrecuentes(preguntas),
           {
             ...aplicacionPeluDesk(plan, { nombre: "PeluDesk Veterinaria", url: `${SITIO}${RUTA}`, descripcion: DESCRIPCION_VET }),
             "@id": `${SITIO}${RUTA}#aplicacion`,
@@ -162,7 +164,7 @@ export default async function PaginaVeterinaria() {
       <section aria-labelledby="preguntas" className="mx-auto max-w-3xl px-4 pb-12 sm:px-6">
         <h2 id="preguntas" className="text-2xl font-bold text-n-900">Preguntas frecuentes</h2>
         <dl className="mt-6 flex flex-col gap-3">
-          {PREGUNTAS_VET.map(([q, r]) => (
+          {preguntas.map(([q, r]) => (
             <div key={q} className="rounded-2xl border border-n-200 bg-white p-5">
               <dt className="text-lg font-bold text-n-900">{q}</dt>
               <dd className="mt-2 text-n-700">{r}</dd>

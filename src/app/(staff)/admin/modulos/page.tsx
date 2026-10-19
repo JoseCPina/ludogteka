@@ -3,11 +3,14 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { formatearFecha } from "@/lib/formato";
-import { zonaActual } from "@/lib/negocio/actual";
 import { Alert } from "@/components/ui/alert";
 import { ListaModulos, type FilaModulo } from "./lista-modulos";
 import { Suscripcion } from "./suscripcion";
 import type { MiCobro, PlanOferta } from "@/lib/cobro/tipos";
+import { negocioActual, urlDelNegocio } from "@/lib/negocio/actual";
+import { AVISO_FACTURA, datosFacturacionDeNegocio } from "@/lib/cobro/facturacion";
+import { DatosFacturacion } from "./datos-facturacion";
+import { Sucursales, type GrupoSucursales } from "./sucursales";
 
 // Los módulos del negocio: los de su plan se prenden y se apagan aquí; los
 // de otros planes se ven bloqueados con el plan que los incluye. Apagar
@@ -19,8 +22,9 @@ export default async function ModulosPage({ searchParams }: { searchParams: Prom
   const esAdmin = sesion?.rol === "admin";
   const { apagado, pago } = await searchParams;
   const supabase = await createSupabaseServerClient();
-  const zona = await zonaActual();
-  const [{ data: filas }, { data: negocio }, { data: cobro }, { data: ofertas }] = await Promise.all([
+  const actual = await negocioActual();
+  const zona = actual.zona_horaria;
+  const [{ data: filas }, { data: negocio }, { data: cobro }, { data: ofertas }, { data: grupo }, { data: catalogos }] = await Promise.all([
     supabase.rpc("mis_modulos"),
     supabase.from("negocios").select("plan, plan_id, prueba_termina_at, planes(nombre)").maybeSingle(),
     esAdmin ? supabase.rpc("mi_cobro") : Promise.resolve({ data: null }),
@@ -30,7 +34,21 @@ export default async function ModulosPage({ searchParams }: { searchParams: Prom
       .eq("activo", true)
       .is("deleted_at", null)
       .order("orden"),
+    esAdmin ? supabase.rpc("mis_sucursales") : Promise.resolve({ data: null }),
+    esAdmin
+      ? supabase.from("cfdi_catalogos").select("tipo, clave, descripcion").in("tipo", ["regimen_fiscal", "uso_cfdi"]).is("deleted_at", null).order("clave")
+      : Promise.resolve({ data: null }),
   ]);
+  const miCobro = cobro as MiCobro | null;
+  const planes = ((ofertas ?? []) as PlanOferta[]).map((p) => ({ ...p, precio_mensual: Number(p.precio_mensual) }));
+  const planSucursal = planes.find((p) => p.tipo === "sucursal") ?? null;
+  const grupoSucursales = grupo as GrupoSucursales | null;
+  const sucursalesAdicionales = grupoSucursales?.negocios.filter((n) => !n.es_principal && n.activo).length ?? 0;
+  // La que paga captura los datos de facturación (una sucursal no tiene suscripción propia).
+  const conFacturacion = Boolean(miCobro && !miCobro.exento && !miCobro.sucursal_de);
+  const datosFactura = conFacturacion ? await datosFacturacionDeNegocio(actual.id) : null;
+  const cat = (catalogos ?? []) as { tipo: string; clave: string; descripcion: string }[];
+  const dominio = new URL(urlDelNegocio({ slug: "x", dominio: null, url_publica: null })).host.replace(/^x\./, "");
   const modulos = (filas ?? []) as FilaModulo[];
   const plan = (Array.isArray(negocio?.planes) ? negocio?.planes[0] : negocio?.planes) as { nombre: string } | null | undefined;
   const enPrueba = negocio?.plan === "prueba";
@@ -67,13 +85,25 @@ export default async function ModulosPage({ searchParams }: { searchParams: Prom
           Saliste de la página de pago antes de terminar. Puedes contratar cuando quieras.
         </Alert>
       )}
-      {cobro && (
+      {miCobro && !miCobro.sucursal_de && (
         <Suscripcion
-          cobro={cobro as MiCobro}
-          planes={((ofertas ?? []) as PlanOferta[]).map((p) => ({ ...p, precio_mensual: Number(p.precio_mensual) }))}
+          cobro={miCobro}
+          planes={planes}
+          sucursales={planSucursal && sucursalesAdicionales > 0 ? { cantidad: sucursalesAdicionales, precioMensual: planSucursal.precio_mensual } : null}
           nombresModulos={Object.fromEntries(modulos.map((m) => [m.clave, m.nombre]))}
           planSugerido={(negocio?.plan_id as string | null) ?? null}
         />
+      )}
+      {conFacturacion && (
+        <DatosFacturacion
+          inicial={datosFactura}
+          aviso={AVISO_FACTURA}
+          regimenes={cat.filter((c) => c.tipo === "regimen_fiscal")}
+          usos={cat.filter((c) => c.tipo === "uso_cfdi")}
+        />
+      )}
+      {grupoSucursales && miCobro && !miCobro.exento && (
+        <Sucursales grupo={grupoSucursales} precioMensual={planSucursal?.precio_mensual ?? null} dominio={dominio} />
       )}
       {nombreApagado && (
         <Alert variante="info" titulo={`${nombreApagado} no está activo`}>

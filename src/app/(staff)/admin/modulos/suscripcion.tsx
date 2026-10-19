@@ -33,7 +33,10 @@ export function Suscripcion({
   planes,
   nombresModulos,
   planSugerido,
+  sucursales = null,
 }: {
+  // Las sucursales adicionales que ya van en la suscripción (o se sumarán al contratar).
+  sucursales?: { cantidad: number; precioMensual: number } | null;
   cobro: MiCobro;
   planes: PlanOferta[];
   nombresModulos: Record<string, string>;
@@ -70,7 +73,11 @@ export function Suscripcion({
   const webCobrada = sel.web && !cobro.web_gratis && !webIncluida && Boolean(complementoWeb);
   const desglosePlan = oferta ? conIva(netoDe(oferta.precio_mensual, sel.periodicidad)) : null;
   const desgloseWeb = webCobrada && complementoWeb ? conIva(netoDe(complementoWeb.precio_mensual, sel.periodicidad)) : null;
-  const total = sumar([desglosePlan, desgloseWeb].filter((d): d is NonNullable<typeof d> => Boolean(d)));
+  const unaSucursal = sucursales ? conIva(netoDe(sucursales.precioMensual, sel.periodicidad)) : null;
+  const desgloseSucursales = sucursales && unaSucursal
+    ? { neto: unaSucursal.neto * sucursales.cantidad, iva: unaSucursal.iva * sucursales.cantidad, total: unaSucursal.total * sucursales.cantidad }
+    : null;
+  const total = sumar([desglosePlan, desgloseWeb, desgloseSucursales].filter((d): d is NonNullable<typeof d> => Boolean(d)));
 
   const igualQueHoy =
     tieneSub && contratado?.clave === sel.plan && cobro.periodicidad === sel.periodicidad && cobro.complementos_contratados.includes("pagina_web") === webCobrada;
@@ -220,6 +227,14 @@ export function Suscripcion({
               <>
                 <dt>{complementoWeb.nombre}</dt>
                 <dd className="text-right">{pesosDeCentavos(desgloseWeb.neto)}</dd>
+              </>
+            )}
+            {desgloseSucursales && sucursales && (
+              <>
+                <dt>
+                  Sucursal adicional × {sucursales.cantidad}
+                </dt>
+                <dd className="text-right">{pesosDeCentavos(desgloseSucursales.neto)}</dd>
               </>
             )}
             <dt>IVA (16 %)</dt>

@@ -82,7 +82,7 @@ export interface NegocioDeAdmin {
 export interface PlanPublico {
   nombre: string;
   descripcion: string | null;
-  tipo: "plan" | "complemento";
+  tipo: "plan" | "complemento" | "sucursal";
   mensual: number;
   anual: number;
   modulos: string[];
@@ -317,6 +317,12 @@ function bloquePlanes(planes: PlanPublico[]): string {
       `[Pago anual, SOLO si pregunta por pagar el año: ${pesos(p.anual)} + IVA; nunca lo menciones por tu cuenta.]`
     );
   });
+  const sucursal = planes.find((p) => p.tipo === "sucursal" && p.mensual > 0);
+  if (sucursal) {
+    lineas.push(
+      `- Sucursal adicional (mismo dueño, después de la primera): ${pesos(sucursal.mensual)} al mes + IVA (${pesos(conIva(sucursal.mensual).total / 100)} con IVA) por cada una, en la misma suscripción. Cada sucursal tiene su propia caja, agenda, personal y página; la prueba gratis es solo para la primera. [Anual, SOLO si lo pregunta: ${pesos(sucursal.anual)} + IVA por sucursal.]`
+    );
+  }
   return ["PLAN ÚNICO Y PRECIO (de la base, vigente hoy; caja y clientes van incluidos). No hay planes por servicio ni complementos:", ...lineas].join("\n");
 }
 

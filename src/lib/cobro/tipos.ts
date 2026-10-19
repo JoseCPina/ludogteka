@@ -9,6 +9,8 @@ export type MiCobro = {
   complementos: string[];
   web_gratis: boolean;
   exento: boolean;
+  /** Si este negocio es sucursal: el id de su primera sucursal (la que paga). */
+  sucursal_de: string | null;
   tiene_suscripcion: boolean;
   tiene_cliente: boolean;
   estado_stripe: string | null;
@@ -31,7 +33,7 @@ export type PlanOferta = {
   clave: string;
   nombre: string;
   descripcion: string | null;
-  tipo: "plan" | "complemento";
+  tipo: "plan" | "complemento" | "sucursal";
   precio_mensual: number;
   modulos: string[];
 };

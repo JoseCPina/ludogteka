@@ -22,6 +22,11 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   const conAyuda = sesion.rol === "admin" || sesion.rol === "recepcion";
   // Los videos de la serie que esta persona ve (publicados, de sus módulos).
   // Nunca rompe la pantalla: sin videos, simplemente no hay «¿Cómo se hace?».
+  // «Tus negocios»: donde trabaja esta persona, con las sucursales del mismo dueño juntas.
+  const { data: suyos } = await (await createSupabaseServerClient()).rpc("mis_negocios");
+  const negocios = ((suyos ?? []) as { id: string; nombre: string; rol: string; grupo_id: string; grupo_nombre: string; es_principal: boolean }[])
+    .filter((n) => ["admin", "recepcion", "estetica"].includes(n.rol))
+    .map((n) => ({ id: n.id, nombre: n.nombre, grupoId: n.grupo_id, grupoNombre: n.grupo_nombre, esPrincipal: n.es_principal, actual: n.id === negocio.id }));
   const videos = conAyuda
     ? await cargarTutorialesVisibles(await createSupabaseServerClient(), { rol: sesion.rol, permisos: sesion.permisos, modulos: sesion.modulos }).catch(() => [])
     : [];
@@ -44,6 +49,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
       rol={sesion.rol}
       nombreCompleto={sesion.nombreCompleto ?? textoSinNombre(sesion.user.email, sesion.rol === "admin")}
       items={navStaffPara(sesion.rol, sesion.permisos, sesion.modulos, sesion.accesoVeterinaria)}
+      negocios={negocios}
       videos={videos.map((v) => ({ slug: v.slug, rutas: v.rutas }))}
       ayuda={conAyuda ? articulosDelNegocio(sesion.modulos).map((a) => ({ slug: a.slug, rutas: a.rutas })) : undefined}
     >

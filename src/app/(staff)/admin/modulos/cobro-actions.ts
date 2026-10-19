@@ -13,6 +13,8 @@ import { METADATA_NEGOCIO, aplicarSuscripcion, guardarCliente } from "@/lib/cobr
 import { tipoDeCambio } from "@/lib/cobro/cambio";
 import { AVISO_COBRO_MENTEO, CHECKOUT_FIJO, finDePrueba, textoCheckout } from "@/lib/cobro/prueba";
 import { esCorreoSintetico } from "@/lib/auth/identidad";
+import { ajustarSucursales, esItemSucursal, precioSucursal, sucursalesActivas } from "@/lib/cobro/sucursales";
+import { guardarEnCliente, validarDatosFacturacion, type DatosFacturacion } from "@/lib/cobro/facturacion";
 import type { MiCobro, ModuloQueSeApaga, PlanOferta, ResultadoCobro, Seleccion } from "@/lib/cobro/tipos";
 
 // La suscripción del negocio a PeluDesk, desde «Módulos y plan». Solo el
@@ -115,11 +117,15 @@ export async function contratar(sel: Seleccion): Promise<ResultadoCobro> {
   const ctx = await contexto();
   if (!ctx) return SIN_PERMISO;
   if (ctx.cobro.exento) return { error: "Este negocio está fuera del cobro de PeluDesk." };
+  if (ctx.cobro.sucursal_de) return { error: "Esta sucursal se paga en la suscripción de tu primera sucursal: contrata desde ahí." };
   if (ctx.fila?.stripe_subscription_id && VIVAS.has(String(ctx.fila.estado_stripe))) {
     return { error: "Ya tienes una suscripción. Para cambiar de plan usa «Cambiar a este plan»." };
   }
   try {
     const { plan, web } = await preciosDeSeleccion(ctx, sel);
+    // Si ya tenía sucursales (volvió a contratar después de cancelar), van en la misma suscripción.
+    const sucursales = await sucursalesActivas(ctx.negocio.id);
+    const sucursal = sucursales > 0 ? await precioSucursal(sel.periodicidad) : null;
     const customer = await clienteStripe(ctx);
     // Durante la prueba no pierde días: el primer cobro es al terminar. La fecha es la misma que ve en el banner
     // y en «Módulos y plan» (el último día de la prueba en la zona del negocio), y Stripe recibe el instante exacto.
@@ -136,7 +142,11 @@ export async function contratar(sel: Seleccion): Promise<ResultadoCobro> {
     const sesion = await stripe().checkout.sessions.create({
       mode: "subscription",
       customer,
-      line_items: [{ price: plan.id, quantity: 1 }, ...(web ? [{ price: web.id, quantity: 1 }] : [])],
+      line_items: [
+        { price: plan.id, quantity: 1 },
+        ...(web ? [{ price: web.id, quantity: 1 }] : []),
+        ...(sucursal ? [{ price: sucursal.id, quantity: sucursales }] : []),
+      ],
       subscription_data: { metadata, description: `Suscripción a PeluDesk de ${ctx.negocio.nombre}. ${AVISO_COBRO_MENTEO}`, ...(trialEnd ? { trial_end: trialEnd } : {}) },
       ...CHECKOUT_FIJO,
       payment_method_types: [...CHECKOUT_FIJO.payment_method_types],
@@ -162,8 +172,8 @@ async function suscripcionViva(ctx: Contexto): Promise<Stripe.Subscription> {
   return sub;
 }
 
-function totalDe(precios: (Stripe.Price | null)[]): number {
-  return precios.reduce((a, p) => a + (p?.unit_amount ?? 0), 0);
+function totalDe(conceptos: { price: Stripe.Price | null; quantity?: number | null }[]): number {
+  return conceptos.reduce((a, c) => a + (c.price?.unit_amount ?? 0) * (c.quantity ?? 1), 0);
 }
 
 /** Cambiar de plan, de periodicidad o la página web. Subir: hoy; bajar: al siguiente periodo. */
@@ -180,18 +190,22 @@ export async function cambiarPlanSuscripcion(sel: Seleccion): Promise<ResultadoC
       await s.subscriptionSchedules.release(idSchedule);
       sub = await s.subscriptions.retrieve(sub.id, { expand: ["items.data.price"] });
     }
-    const itemPlan = sub.items.data.find((i) => i.price.metadata?.peludesk_tipo !== "complemento");
+    const itemSucursal = sub.items.data.find(esItemSucursal);
+    const itemPlan = sub.items.data.find((i) => !esItemSucursal(i) && i.price.metadata?.peludesk_tipo !== "complemento");
     const itemWeb = sub.items.data.find((i) => i.price.metadata?.peludesk_tipo === "complemento");
     if (!itemPlan) throw new Error("No encontramos el plan en tu suscripción. Escríbenos.");
     const periodicidadActual = itemPlan.price.recurring?.interval === "year" ? "anual" : "mensual";
+    // Las sucursales adicionales cambian de periodicidad junto con el plan (Stripe no mezcla mensual y anual).
+    const sucursal = itemSucursal ? { price: await precioSucursal(sel.periodicidad), quantity: itemSucursal.quantity ?? 1 } : null;
     const tipo = tipoDeCambio(
-      { total: totalDe(sub.items.data.map((i) => i.price)), periodicidad: periodicidadActual },
-      { total: totalDe([plan, web]), periodicidad: sel.periodicidad }
+      { total: totalDe(sub.items.data), periodicidad: periodicidadActual },
+      { total: totalDe([{ price: plan }, { price: web }, ...(sucursal ? [sucursal] : [])]), periodicidad: sel.periodicidad }
     );
     const items: Stripe.SubscriptionUpdateParams.Item[] = [
       { id: itemPlan.id, price: plan.id, quantity: 1 },
       ...(web ? [itemWeb ? { id: itemWeb.id, price: web.id, quantity: 1 } : { price: web.id, quantity: 1 }] : []),
       ...(!web && itemWeb ? [{ id: itemWeb.id, deleted: true }] : []),
+      ...(sucursal && itemSucursal ? [{ id: itemSucursal.id, price: sucursal.price.id, quantity: sucursal.quantity }] : []),
     ];
 
     if (sub.status === "trialing") {
@@ -231,7 +245,11 @@ export async function cambiarPlanSuscripcion(sel: Seleccion): Promise<ResultadoC
           metadata: sub.metadata,
         },
         {
-          items: [{ price: plan.id, quantity: 1 }, ...(web ? [{ price: web.id, quantity: 1 }] : [])],
+          items: [
+            { price: plan.id, quantity: 1 },
+            ...(web ? [{ price: web.id, quantity: 1 }] : []),
+            ...(sucursal ? [{ price: sucursal.price.id, quantity: sucursal.quantity }] : []),
+          ],
           duration: { interval: sel.periodicidad === "anual" ? "year" : "month", interval_count: 1 },
           metadata: meta,
         },
@@ -314,4 +332,57 @@ export async function marcarRecordatorioVisto(): Promise<ResultadoCobro> {
   if (error) return { error: error.message };
   revalidatePath("/admin");
   return { error: null };
+}
+
+/** Los datos de facturación (CFDI de la suscripción): se guardan en el cliente de Stripe del negocio. */
+export async function guardarDatosFacturacion(d: Partial<DatosFacturacion>): Promise<ResultadoCobro> {
+  const ctx = await contexto();
+  if (!ctx) return SIN_PERMISO;
+  if (ctx.cobro.exento) return { error: "Este negocio está fuera del cobro de PeluDesk: no hay factura que emitir." };
+  if (ctx.cobro.sucursal_de) return { error: "La factura sale a nombre de tu primera sucursal, que es la que paga: captura los datos desde ahí." };
+  const v = validarDatosFacturacion(d);
+  if ("error" in v) return { error: v.error };
+  try {
+    const customer = await clienteStripe(ctx);
+    await guardarEnCliente(customer, v.datos);
+    revalidatePath("/admin/modulos");
+    return { error: null, exito: "Guardado. Con cada pago te llega la factura por correo en los días siguientes." };
+  } catch (e) {
+    if ((e as { code?: string }).code === "tax_id_invalid") return { error: "Stripe no aceptó ese RFC. Revísalo contra tu constancia de situación fiscal." };
+    return { error: mensajeDeErrorStripe(e) };
+  }
+}
+
+/**
+ * Abre otra sucursal: un negocio nuevo ligado a la cuenta del dueño, con su propia caja, agenda, personal y
+ * página. Primero se revisa nombre y subdominio, luego se cobra en Stripe la parte proporcional de la sucursal
+ * adicional (si el banco rechaza, no se abre nada) y al final se crea. Si crear falla, se regresa el cobro.
+ */
+export async function abrirSucursal(nombre: string, subdominio: string): Promise<ResultadoCobro & { negocioId?: string }> {
+  const sesion = await obtenerSesionConRol();
+  if (sesion?.rol !== "admin") return { error: "Solo el admin abre sucursales." };
+  const negocio = await negocioActual();
+  const servidor = createSupabaseAdminClient(negocio.id);
+  const base = { p_persona_id: sesion.user.id, p_desde_negocio: negocio.id, p_nombre: nombre, p_slug: subdominio };
+  const revision = await servidor.rpc("crear_sucursal", { ...base, p_solo_revisar: true });
+  if (revision.error) return { error: revision.error.message };
+  const principal = (revision.data as { principal_id: string }).principal_id;
+  let antes = 0;
+  try {
+    antes = await sucursalesActivas(principal);
+    await ajustarSucursales(principal, antes + 1);
+  } catch (e) {
+    if (e instanceof Error && !(e as { type?: string }).type) return { error: e.message };
+    return { error: mensajeDeErrorStripe(e) };
+  }
+  const creada = await servidor.rpc("crear_sucursal", base);
+  if (creada.error) {
+    console.error("[sucursal] se cobró y no se pudo crear; se regresa", creada.error);
+    await ajustarSucursales(principal, antes).catch((e) => console.error("[sucursal] no se pudo regresar el cobro", e));
+    return { error: `${creada.error.message} No se abrió la sucursal y el cobro se regresa como saldo a favor.` };
+  }
+  // Por si otra sucursal se abrió al mismo tiempo: la cantidad en Stripe = las que hay en la base.
+  await ajustarSucursales(principal, await sucursalesActivas(principal)).catch((e) => console.error("[sucursal] reconciliar", e));
+  revalidatePath("/", "layout");
+  return { error: null, exito: "Listo: tu sucursal quedó abierta y se sumó a tu suscripción.", negocioId: (creada.data as { negocio_id: string }).negocio_id };
 }

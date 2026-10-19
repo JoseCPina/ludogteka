@@ -4,13 +4,14 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 // Canje de un link de un solo uso que abre sesión en ESTE dominio y manda
 // a una pantalla de la app: lo usa el registro de prueba en peludesk.mx,
 // que crea el negocio en otro dominio (<slug>.peludesk.mx) y necesita que
-// la sesión nazca aquí. /auth/callback es otra cosa: invitaciones y
+// la sesión nazca aquí (y el selector de negocios del personal, para pasar
+// de una sucursal a otra sin volver a escribir la contraseña). /auth/callback es otra cosa: invitaciones y
 // recuperación, que terminan en escoger contraseña.
 //
 // `next` solo puede ser una de estas rutas: nunca una dirección de
 // afuera (un link así serviría para mandar a alguien, con sesión, a
 // cualquier lado).
-const DESTINOS = new Set(["/bienvenida", "/admin"]);
+const DESTINOS = new Set(["/bienvenida", "/admin", "/recepcion", "/estetica"]);
 
 function ir(ruta: string) {
   return new NextResponse(null, { status: 303, headers: { Location: ruta, "Cache-Control": "no-store" } });

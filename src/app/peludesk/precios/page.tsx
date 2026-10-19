@@ -8,6 +8,7 @@ import { PrecioPlan } from "@/components/peludesk/precio-plan";
 import { Relacionadas } from "@/components/peludesk/seo-bloques";
 import { MODULOS_TRES } from "@/lib/peludesk/veterinaria";
 import { pesos, planUnico } from "@/lib/peludesk/plan";
+import { preguntasDeContratacion } from "@/lib/peludesk/preguntas-contratacion";
 import { JsonLd, SITIO, aplicacionPeluDesk, metaPagina, migas, preguntasFrecuentes } from "@/lib/peludesk/seo";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -31,11 +32,12 @@ const INCLUYE = [
   "Inventario, empleados y nómina, gastos del local y reportes",
   "Facturación CFDI 4.0 con tu proveedor de timbrado",
   "Página web del negocio",
-  "Soporte con ayuda en la app, asistente y tickets",
+  "Soporte por WhatsApp: asistente las 24 horas y una persona de PeluDesk el mismo día en horario hábil",
+  "Factura (CFDI) de tu suscripción, emitida por Menteo, S.A.S.",
 ];
 
 export default async function Precios() {
-  const plan = await planUnico();
+  const [plan, contratacion] = await Promise.all([planUnico(), preguntasDeContratacion()]);
   const preguntas: [string, string][] = [
     ["¿Cuánto cuesta PeluDesk?", plan ? `Un solo plan: ${pesos(plan.mensual)} + IVA al mes (${pesos(plan.total)} con IVA). No hay costo inicial ni cargo de activación.` : "Un solo plan, sin costo inicial. Consulta el monto vigente en esta página."],
     ["¿Hay que pagar por cada módulo?", "No. El plan incluye Veterinaria, Hotel y guardería, Estética y la página web. Prendes solo lo que haces."],
@@ -44,6 +46,7 @@ export default async function Precios() {
     ["¿Hay plan anual?", plan ? `Sí: ${pesos(plan.anual)} + IVA al año, diez mensualidades por doce meses.` : "Sí, el anual cobra diez mensualidades por doce meses."],
     ["¿Cobran comisión por mis ventas?", "PeluDesk no cobra comisión por tus cobros. Mercado Pago cobra la suya por cada pago con tarjeta; PeluDesk la registra como gasto."],
     ["¿Puedo cancelar?", "Sí. Cancelas desde el portal de pagos y el plan sigue hasta el fin del periodo ya pagado."],
+    ...contratacion,
     ["¿Qué se paga aparte?", "El timbrado de facturas lo cobra tu proveedor autorizado, y Mercado Pago cobra según sus propias tarifas."],
   ];
   return (

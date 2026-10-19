@@ -60,6 +60,7 @@ Con esos datos te contactamos para presentarte PeluDesk y te mostramos publicida
 
 - El nombre del negocio, el plan contratado, el estado de la suscripción, los importes y las facturas de Stripe, y el correo electrónico si lo das en el Checkout.
 - **Los datos de tu tarjeta los recibe Stripe directamente y nosotros nunca los recibimos ni los guardamos.**
+- Si pides factura de tu suscripción: **RFC, razón social o nombre, régimen fiscal, código postal fiscal, uso del CFDI y el correo donde la quieres recibir.** Los guardamos en tu registro de cliente de Stripe y, con cada pago, en la lista interna de facturas por emitir de PeluDesk.
 
 ### Soporte y asistente de ayuda
 
@@ -81,7 +82,7 @@ PeluDesk es para personas mayores de edad con una actividad empresarial. No diri
 1. Crear y administrar tu cuenta y tu negocio de prueba o contratado, y autenticar tu acceso.
 2. Prestarte el servicio y darle soporte, incluido el asistente de ayuda y los tickets.
 3. Contestar tus mensajes y consultas por WhatsApp y darles seguimiento.
-4. Gestionar la prueba de 15 días, la suscripción, el cobro y las facturas, y pasar tu negocio a solo lectura cuando corresponda. Durante la prueba te escribimos por WhatsApp al teléfono que dejaste (hasta tres mensajes: a los 5, 10 y 15 días) para preguntarte si necesitas ayuda y recordarte lo que te falta para aprovecharla; si respondes, pulsas «Ahora no» o escribes BAJA, no te mandamos más.
+4. Gestionar la prueba de 15 días, la suscripción (incluidas las sucursales adicionales), el cobro y las facturas, emitir la factura (CFDI) de tu suscripción con tus datos fiscales, y pasar tu negocio a solo lectura cuando corresponda. Durante la prueba te escribimos por WhatsApp al teléfono que dejaste (hasta tres mensajes: a los 5, 10 y 15 días) para preguntarte si necesitas ayuda y recordarte lo que te falta para aprovecharla; si respondes, pulsas «Ahora no» o escribes BAJA, no te mandamos más.
 5. Proteger el servicio: limitar registros repetidos, detectar abusos y resolver fallas.
 6. Conservar evidencia de que aceptaste los términos y este aviso.
 7. Cumplir obligaciones legales y atender requerimientos de autoridad competente.
@@ -105,7 +106,8 @@ Puedes negarte a las finalidades secundarias eligiendo «Rechazar» en el aviso 
 |---|---|---|
 | **Supabase** | Base de datos, autenticación, archivos y bóveda de credenciales | Estados Unidos |
 | **Vercel** | Alojamiento de la aplicación y del sitio, registros de servidor; estadísticas de visitas si aceptas «Analítica» | Estados Unidos |
-| **Stripe** | Cobro de la suscripción. Es responsable de los datos de pago que recibe directamente de ti | Estados Unidos y donde Stripe opere |
+| **Stripe** | Cobro de la suscripción y resguardo de tus datos de facturación (RFC, razón social, régimen, código postal, uso del CFDI y correo). Es responsable de los datos de pago que recibe directamente de ti | Estados Unidos y donde Stripe opere |
+| **Proveedor autorizado de certificación (PAC) y Servicio de Administración Tributaria (SAT)** | Solo si pides factura: timbrar el CFDI de tu suscripción con tus datos fiscales, como exige la ley fiscal | México |
 | **Meta (WhatsApp, Facebook, Instagram)** | WhatsApp Business para atender mensajes; píxel y API de conversiones para medir publicidad, **solo si aceptas «Marketing»**; audiencias personalizadas de la cuenta publicitaria con el teléfono y el correo de negocios **cifrados con hash SHA-256** (prospección y negocios en prueba o que pagan) | Estados Unidos y donde Meta opere |
 | **Anthropic** | Inteligencia artificial que redacta las respuestas del bot de WhatsApp y del asistente de ayuda, y que ordena el texto dictado en un borrador de consulta que el médico revisa y firma; recibe el texto necesario para responder | Estados Unidos |
 | **ElevenLabs** | Solo si un negocio usa el dictado por voz del módulo Veterinaria: transcribe el audio que dicta el médico. El audio se borra al transcribirse, salvo que el negocio elija conservarlo 30 días y lo avise en pantalla | Estados Unidos y donde ElevenLabs opere |
