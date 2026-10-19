@@ -9,7 +9,11 @@ import { EstanciaFila } from "./estancia-fila";
 import { CancelarReservaBoton } from "./cancelar-reserva-boton";
 import type { Cargo, ServicioCargo } from "../cargos-seccion";
 import { AvisosWhatsApp } from "@/components/avisos-whatsapp";
-import { negocioActual } from "@/lib/negocio/actual";
+import { RefrescoCuenta } from "@/components/cuentas/refresco-cuenta";
+import { negocioActual, negocioIdActual, zonaActual } from "@/lib/negocio/actual";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { nombresDePersonal } from "@/lib/personal/nombres";
+import { formatearFecha } from "@/lib/formato";
 import { diasEntre, hora12 } from "@/lib/web-negocio/horario";
 
 const fechaLarga = (iso: string) => new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${iso}T12:00:00Z`));
@@ -35,12 +39,19 @@ export default async function DetalleReservaPage({
   const { data: estancias, error: errorEstancias } = await supabase
     .from("estancias")
     .select(
-      "id, perro_id, servicio_id, fecha_entrada, fecha_salida, estado, precio_unitario, horas, updated_at, perros(nombre), servicios(nombre, categoria, unidad)"
+      "id, perro_id, servicio_id, fecha_entrada, fecha_salida, estado, precio_unitario, horas, updated_at, motivo_cancelacion, cancelada_por, cancelada_at, perros(nombre), servicios(nombre, categoria, unidad)"
     )
     .eq("reserva_id", id)
     .is("deleted_at", null)
     .order("fecha_entrada");
 
+  // QA S15: quién canceló cada estancia (con el nombre del personal, nunca el correo) y por qué.
+  const canceladores = [...new Set((estancias ?? []).map((e) => e.cancelada_por as string | null).filter((x): x is string => Boolean(x)))];
+  const sesionReserva = canceladores.length ? await obtenerSesionConRol() : null;
+  const nombresCancel = canceladores.length
+    ? await nombresDePersonal(supabase, canceladores, { esAdmin: sesionReserva?.rol === "admin", negocioId: await negocioIdActual() })
+    : new Map<string, string>();
+  const zonaReserva = await zonaActual();
   const filas = (estancias ?? []).map((e) => {
     const perro = Array.isArray(e.perros) ? e.perros[0] : e.perros;
     const servicio = Array.isArray(e.servicios) ? e.servicios[0] : e.servicios;
@@ -56,6 +67,13 @@ export default async function DetalleReservaPage({
       unidad: (servicio?.unidad as string) ?? "dia",
       horas: (e.horas as number | null) ?? null,
       version: (e.updated_at as string | null) ?? null,
+      cancelacion: e.estado === "cancelada" && e.cancelada_at
+        ? {
+            quien: (e.cancelada_por ? nombresCancel.get(e.cancelada_por as string) : null) ?? "alguien del equipo",
+            cuando: formatearFecha(e.cancelada_at as string, zonaReserva),
+            motivo: (e.motivo_cancelacion as string | null) ?? null,
+          }
+        : null,
     };
   });
 
@@ -166,6 +184,7 @@ export default async function DetalleReservaPage({
             )}
           </div>
           <div className="flex flex-col items-end gap-2">
+            <RefrescoCuenta reservaId={id} saldo={saldo} total={totalCuenta} />
             <p className={`text-sm font-bold ${saldo > 0 ? "text-coral-oscuro" : "text-menta-oscuro"}`} data-saldo-reserva={saldo.toFixed(2)}>
               Saldo: ${saldo.toFixed(2)}
               {saldo < 0 ? " (a favor)" : ""}

@@ -274,7 +274,7 @@ export function CargosConsulta({
       )}
 
       {borrador && puedeAgregar && aplicarVacuna && (
-        <Desplegable titulo="Aplicar vacuna" atributos={{ "data-aplicar-vacuna": "" }} className="rounded-md border border-dashed border-n-300 p-3">
+        <Desplegable titulo="Aplicar vacuna" cerrarAlGuardar atributos={{ "data-aplicar-vacuna": "" }} className="rounded-md border border-dashed border-n-300 p-3">
           <p className="mb-3 text-xs text-n-600">Queda en el carnet de la mascota con su lote y su fecha, y se cobra con esta consulta. Una vacuna no se agrega como «otro procedimiento».</p>
           {aplicarVacuna}
         </Desplegable>

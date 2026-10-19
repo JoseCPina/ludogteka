@@ -8,6 +8,8 @@
 // registra UN solo cobro. Lo mismo en el cobro junto (el botón sigue ocupado hasta que abre el recibo).
 // Secciones 4 a 6 (QA externa del 18 de octubre de 2026, N28 y N29): dos sesiones a la vez sobre la misma cuenta
 // piden confirmación; y una cuenta movida desde otra sesión (anulación, cobro) se pone al día sola y avisa.
+// Secciones 7c, 7d, 11 y 12 (QA S15, 19 de octubre): tras F5 o desde otra ventana de la misma cuenta pide confirmar;
+// anular o registrar cambia el resumen al momento; el encabezado de la reserva y «Cancelar cuenta» se ponen al día.
 // Secciones 7 y 8 (QA S13, 18 de octubre): pide confirmar aunque la pantalla ya enseñe el cobro de otra persona,
 // no pregunta el segundo cobro propio, y «Actualizando saldo…» deshabilitado y sin aviso viejo.
 import fs from "node:fs";
@@ -233,6 +235,33 @@ try {
   if (pidio) await pW.locator("[data-registrar-de-todos-modos]").click();
   await pW.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
 
+  // QA S15 (19 de octubre de 2026): recepción recarga con F5 (o entra de nuevo a Cobrar) DESPUÉS del cobro del admin;
+  // la pantalla nace sabiendo ese cobro y aun así el servidor tiene que pedir confirmación.
+  console.log("7c. N28 tras F5: recepción abre Cobrar después del cobro del admin y aun así se pide confirmar");
+  for (const via of ["F5", "entrar de nuevo"]) {
+    const cF = await nuevoCliente(`Tras ${via}`);
+    const cuF = await cuenta(cF, 700, `Hotel ${via} ${sufijo}`);
+    const pF = await ctxR.newPage();
+    await pF.goto(`${BASE}/caja/cobrar/${cuF}`, { waitUntil: "networkidle" });
+    const rF = await admB.rpc("registrar_cobro", { p_reserva_id: cuF, p_notas: "prueba", p_metodos: [{ metodo: "efectivo", monto: 10, propina: 0 }] });
+    if (rF.error) throw new Error(rF.error.message);
+    if (via === "F5") await pF.reload({ waitUntil: "networkidle" });
+    else await pF.goto(`${BASE}/caja/cobrar/${cuF}`, { waitUntil: "networkidle" });
+    comprobar(/Saldo:\s*\$690\.00/.test(await pF.locator("body").innerText()), `(${via}) la pantalla nace con el cobro del admin ($690.00)`);
+    await pF.getByLabel("Monto").first().fill("10");
+    await pF.getByRole("button", { name: "Registrar cobro" }).first().click();
+    const cajaF = pF.locator("[data-confirmar-cobro]");
+    const pidioF = await cajaF.waitFor({ timeout: 20000 }).then(() => true, () => false);
+    comprobar(pidioF && /Se acaba de registrar otro cobro de \$10\.00 por .+ hace/.test(await cajaF.innerText().catch(() => "")), `(${via}) pide confirmar el cobro del admin de hace segundos`);
+    comprobar((await cobros(cuF)) === 1, `(${via}) y no registró nada sin confirmar`);
+    if (pidioF) {
+      await pF.locator("[data-registrar-de-todos-modos]").click();
+      await pF.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+      comprobar((await cobros(cuF)) === 2, `(${via}) al confirmar sí se registra`);
+    }
+    await pF.close();
+  }
+
   console.log("7b. Un segundo cobro de la MISMA persona, que ya vio el suyo, no pregunta");
   const ocho = await nuevoCliente("Misma persona");
   const c8 = await cuenta(ocho, 300, `Baño misma ${sufijo}`);
@@ -282,7 +311,11 @@ try {
   lento = false;
   await pAn.goto(`${BASE}/caja/cobrar/${c10}`, { waitUntil: "networkidle" });
   await pAn.getByRole("button", { name: "Registrar cobro" }).first().click();
-  await pAn.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+  const ok9 = await pAn.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 }).then(() => true, () => false);
+  if (!ok9) {
+    hallazgo(`sección 9: no salió «Cobro registrado.» (pantalla: «${(await pAn.locator("main").innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 600)}»)`);
+    throw new Error("sección 9");
+  }
   comprobar(await pAn.getByText("Cobro registrado.").first().isVisible(), "sale «Cobro registrado.»");
   const { data: cob10 } = await SB.from("cobros").select("id").eq("reserva_id", c10).order("created_at", { ascending: false }).limit(1).single();
   const an10 = await admB.rpc("anular_cobro", { p_cobro_id: cob10.id, p_motivo: "prueba QA S14" });
@@ -296,7 +329,9 @@ try {
   if (!hotelS) hallazgo("Huellitas no tiene hotel_noche");
   else {
     const dia = (d) => new Date(Date.now() + d * 86400000).toISOString().slice(0, 10);
-    const base = 300 + (Number(sufijo) % 100) * 3;
+    // Entrada en lunes o martes: ni la entrada ni la salida caen en un día en que el negocio no abre.
+    let base = 300 + (Number(sufijo) % 100) * 3;
+    while (![1, 2].includes(new Date(Date.now() + base * 86400000).getUTCDay())) base++;
     const { data: resC, error: erc } = await admB.from("reservas").insert({ cliente_id: datos.clienteSoloB, notas: `Cancelada ${sufijo}` }).select("id").single();
     if (erc) throw new Error(erc.message);
     const { data: estC, error: eec } = await admB.from("estancias").insert({
@@ -323,6 +358,95 @@ try {
         comprobar(/Cobrar \$75\.00/.test(await pC.locator("[data-cobrar-reserva]").innerText().catch(() => "")), "y el botón dice «Cobrar $75.00»");
       }
     }
+  }
+
+  // ── QA S15 (19 de octubre de 2026) ──
+  console.log("7d. N28 con la MISMA cuenta en otra ventana: la segunda ventana, recargada, también pide confirmar");
+  {
+    const ctxR2 = await nav.newContext({ viewport: { width: 390, height: 844 } });
+    await ctxR2.addCookies(await cookiesDe(recId));
+    const cM = await nuevoCliente("Otra ventana");
+    const cuM = await cuenta(cM, 500, `Hotel otra ventana ${sufijo}`);
+    const v1 = await ctxR.newPage();
+    const v2 = await ctxR2.newPage();
+    await Promise.all([v1.goto(`${BASE}/caja/cobrar/${cuM}`, { waitUntil: "networkidle" }), v2.goto(`${BASE}/caja/cobrar/${cuM}`, { waitUntil: "networkidle" })]);
+    await v1.getByLabel("Monto").first().fill("10");
+    await v1.getByRole("button", { name: "Registrar cobro" }).first().click();
+    await v1.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+    await v2.reload({ waitUntil: "networkidle" });
+    await v2.getByLabel("Monto").first().fill("10");
+    await v2.getByRole("button", { name: "Registrar cobro" }).first().click();
+    const cajaM = v2.locator("[data-confirmar-cobro]");
+    const pidioM = await cajaM.waitFor({ timeout: 20000 }).then(() => true, () => false);
+    comprobar(pidioM && /con tu cuenta desde otra ventana/.test(await cajaM.innerText().catch(() => "")), "la otra ventana (misma persona, tras F5) pide confirmar y dice que fue con su cuenta desde otra ventana");
+    comprobar((await cobros(cuM)) === 1, "y no registró nada sin confirmar");
+    await ctxR2.close();
+  }
+
+  console.log("11. N45: al anular un cobro, Cobrado y Saldo cambian de inmediato y el cobro sale «Anulado» (con el refresco lento)");
+  {
+    const ctxAd = await nav.newContext({ viewport: { width: 390, height: 844 } });
+    await ctxAd.addCookies(await cookiesDe(datos.adminB));
+    let lentoAd = false;
+    await ctxAd.route((u) => u.searchParams.has("_rsc"), async (ruta) => {
+      if (lentoAd) await new Promise((r) => setTimeout(r, 8000));
+      await ruta.continue();
+    });
+    const cA = await nuevoCliente("Anular rapido");
+    const cuA = await cuenta(cA, 430, `Hotel anular ${sufijo}`);
+    const rA = await admB.rpc("registrar_cobro", { p_reserva_id: cuA, p_notas: "prueba", p_metodos: [{ metodo: "efectivo", monto: 430, propina: 0 }] });
+    if (rA.error) throw new Error(rA.error.message);
+    const pA2 = await ctxAd.newPage();
+    await pA2.goto(`${BASE}/caja/cobrar/${cuA}`, { waitUntil: "networkidle" });
+    comprobar(/Saldo:\s*\$0\.00/.test(await pA2.locator("body").innerText()), "abre pagada (Saldo $0.00)");
+    lentoAd = true;
+    const tarjeta = pA2.locator(`[data-cobro-id="${rA.data}"]`);
+    await tarjeta.getByRole("button", { name: "Anular cobro" }).click();
+    await tarjeta.getByLabel("Motivo (obligatorio)").fill("Prueba QA S15 anular");
+    const t0 = Date.now();
+    await tarjeta.getByRole("button", { name: "Anular cobro" }).click();
+    await pA2.waitForFunction(() => /Saldo:\s*\$430\.00/.test(document.body.innerText), null, { timeout: 7000 }).catch(() => {});
+    const ms = Date.now() - t0;
+    const txtA = await pA2.locator("body").innerText();
+    comprobar(/Saldo:\s*\$430\.00/.test(txtA) && ms < 7000, `el saldo sube a $430.00 sin esperar el refresco (${ms} ms, con el refresco tardando 8 s)`);
+    comprobar(/Cobrado:\s*\$0\.00/.test(txtA), "y «Cobrado» baja a $0.00 al momento");
+    comprobar((await pA2.locator(`[data-cobro-id="${rA.data}"][data-cobro-anulado="si"]`).count()) === 1, "el cobro se marca «Anulado» al momento");
+    // Registrar: el resumen también sale de la respuesta (se espera a que termine el refresco de la anulación).
+    await pA2.getByRole("button", { name: "Registrar cobro" }).first().waitFor({ timeout: 40000 });
+    await pA2.getByLabel("Monto").first().fill("100");
+    const t1 = Date.now();
+    await pA2.getByRole("button", { name: "Registrar cobro" }).first().click();
+    const conf = pA2.locator("[data-confirmar-cobro]");
+    await Promise.race([conf.waitFor({ timeout: 30000 }), pA2.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 })]).catch(() => {});
+    if (await conf.count()) await pA2.locator("[data-registrar-de-todos-modos]").click();
+    await pA2.waitForFunction(() => /Saldo:\s*\$330\.00/.test(document.body.innerText), null, { timeout: 7000 }).catch(() => {});
+    comprobar(/Saldo:\s*\$330\.00/.test(await pA2.locator("body").innerText()), `al registrar $100 el saldo queda en $330.00 sin esperar el refresco (${Date.now() - t1} ms, con el refresco tardando 8 s)`);
+    lentoAd = false;
+    await ctxAd.close();
+  }
+
+  console.log("12. El encabezado de la reserva (saldo) y la tarjeta «Cancelar cuenta» se ponen al día solos");
+  {
+    const cE = await nuevoCliente("Encabezado");
+    const cuE = await cuenta(cE, 880, `Hotel encabezado ${sufijo}`);
+    const rE1 = await admB.rpc("registrar_cobro", { p_reserva_id: cuE, p_notas: "prueba", p_metodos: [{ metodo: "efectivo", monto: 450, propina: 0 }] });
+    if (rE1.error) throw new Error(rE1.error.message);
+    const ctxAd2 = await nav.newContext({ viewport: { width: 390, height: 844 } });
+    await ctxAd2.addCookies(await cookiesDe(datos.adminB));
+    const pE = await ctxAd2.newPage();
+    await pE.goto(`${BASE}/reservas/${cuE}`, { waitUntil: "networkidle" });
+    comprobar((await pE.locator("[data-saldo-reserva]").getAttribute("data-saldo-reserva")) === "430.00", "el encabezado abre con Saldo $430.00");
+    const pE2 = await ctxAd2.newPage();
+    await pE2.goto(`${BASE}/caja/cobrar/${cuE}`, { waitUntil: "networkidle" });
+    const an = await admB.rpc("anular_cobro", { p_cobro_id: rE1.data, p_motivo: "prueba encabezado" });
+    if (an.error) throw new Error(an.error.message);
+    await pE.waitForFunction(() => document.querySelector("[data-saldo-reserva]")?.getAttribute("data-saldo-reserva") === "880.00", null, { timeout: 40000 }).catch(() => {});
+    comprobar((await pE.locator("[data-saldo-reserva]").getAttribute("data-saldo-reserva")) === "880.00", "el encabezado de la reserva pasa solo a $880.00 (sin recargar)");
+    await pE2.waitForFunction(() => /Saldo:\s*\$880\.00/.test(document.body.innerText), null, { timeout: 40000 }).catch(() => {});
+    await pE2.getByRole("button", { name: "Cancelar cuenta" }).first().click();
+    const tCancel = await pE2.locator("[data-cancelar-cuenta] p").first().innerText().catch(() => "");
+    comprobar(/\$880\.00 por cobrar/.test(tCancel), `y en Cobrar, la tarjeta «Cancelar cuenta» dice lo mismo que el resumen («${tCancel}»)`);
+    await ctxAd2.close();
   }
 } finally {
   await nav.close();

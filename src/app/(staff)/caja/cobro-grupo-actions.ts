@@ -28,7 +28,8 @@ export async function registrarCobroGrupo(
   if (partes.some((p) => !Number.isFinite(p.monto) || p.monto <= 0)) return { error: "Cada cuenta debe recibir un monto mayor a cero." };
 
   const supabase = await createSupabaseServerClient();
-  if (control && !control.confirmado) {
+  // N28: la revisión corre SIEMPRE en el servidor (también si la pantalla no mandó lo que veía).
+  if (!control?.confirmado) {
     const sesion = await obtenerSesionConRol();
     const aviso = await avisoCobroReciente(supabase, partes.map((p) => p.reservaId), control, { esAdmin: sesion?.rol === "admin", negocioId: await negocioIdActual(), usuarioId: sesion?.user.id ?? null });
     if (aviso) return { error: null, confirmar: aviso };

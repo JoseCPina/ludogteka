@@ -1,4 +1,5 @@
-// N6 (QA externa, 16 de octubre de 2026): check-out con pertenencias confirmadas a mano. SOLO DESARROLLO (Huellitas),
+// N6 (QA externa, 16 de octubre de 2026): check-out con pertenencias confirmadas a mano. QA S15 (19 de octubre):
+// check-in con «Quién entrega» de la lista u «Otra persona» con nombre, y cancelar una reserva con motivo opcional. SOLO DESARROLLO (Huellitas),
 // con `next start` en el 3001.
 // Hallazgos de la QA externa del 15 de octubre de 2026, EN PANTALLA (SOLO DESARROLLO, Huellitas).
 // Con el servidor compilado en el 3001 (`npm run build && npm run start -- -p 3001`).
@@ -124,6 +125,108 @@ try {
   // La acción exige el motivo aunque se salte la pantalla: la base rechaza un motivo corto.
   const corto = await SB.from("estancias").update({ pertenencias_sin_entrega_motivo: "x" }).eq("id", e2.data.id);
   comprobar(corto.error, "la base rechaza un motivo de menos de 3 caracteres");
+
+  // ── QA S15 (19 de octubre de 2026) ──
+  seccion("Check-in: «Quién entrega» es de la lista o «Otra persona» con su nombre (QA S15)");
+  {
+    const { data: duenoB } = await SB.from("clientes").select("nombre").eq("id", datos.clienteSoloB).single();
+    const diaI = (() => { let d = new Date(Date.now() + 120 * 86400000 + (Number(sufijo) % 50) * 86400000); while (d.getUTCDay() === 0) d = new Date(d.getTime() + 86400000); return d.toISOString().slice(0, 10); })();
+    const sigI = new Date(new Date(`${diaI}T12:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10);
+    const nuevaEstancia = async (desfase = 0) => {
+      let d = new Date(new Date(`${diaI}T12:00:00Z`).getTime() + desfase * 86400000);
+      while (d.getUTCDay() === 0) d = new Date(d.getTime() + 86400000);
+      const ent = d.toISOString().slice(0, 10);
+      const sal = new Date(d.getTime() + 86400000).toISOString().slice(0, 10);
+      const r = await cliente.from("estancias").insert({ reserva_id: rG.id, perro_id: perro.id, servicio_id: gD.id, fecha_entrada: desfase ? ent : diaI, fecha_salida: desfase ? sal : sigI, bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: "Prueba", bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: "Prueba" }).select("id").single();
+      if (r.error) throw new Error(`estancia check-in: ${r.error.message}`);
+      limpieza.push(async () => { await SB.from("estancias").update({ deleted_at: new Date().toISOString() }).eq("id", r.data.id); });
+      return r.data.id;
+    };
+    const abrirCheckin = async (id) => {
+      const cx = await nav.newContext({ viewport: { width: 390, height: 900 } });
+      await cx.addCookies(await cookiesDe(datos.adminB, "huellitas.localhost"));
+      const px = await cx.newPage();
+      px.setDefaultTimeout(45000);
+      await px.goto(`${BASE}/reservas/estancias/${id}/checkin`, { waitUntil: "networkidle" });
+      return { cx, px };
+    };
+    // 1) Sin escoger: marca el campo y no deja confirmar.
+    const eI = await nuevaEstancia();
+    let { cx, px } = await abrirCheckin(eI);
+    const quien = px.locator("#checkin-entrega-quien");
+    const opciones = await quien.locator("option").allInnerTexts();
+    comprobar(opciones.some((o) => o.startsWith("Dueño:") && o.includes(duenoB.nombre)) && opciones.some((o) => /^Otra persona/.test(o)), `la lista trae al dueño y «Otra persona» (${opciones.join(" | ")})`);
+    comprobar((await px.locator("#checkin-entrega-nombre").count()) === 0, "no hay un campo de texto libre mientras no se escoja «Otra persona»");
+    await px.getByRole("button", { name: /Confirmar check-in/ }).click();
+    comprobar(await esperarTexto(px, /Escoge quién entrega al perro/) && (await quien.getAttribute("aria-invalid")) === "true", "sin escoger: marca el campo y dice qué falta");
+    // 2) «Otra persona» sin nombre: pide el nombre.
+    await quien.selectOption("otra");
+    comprobar((await px.locator("#checkin-entrega-nombre").count()) === 1, "«Otra persona» abre el campo «Nombre de la otra persona»");
+    await px.getByRole("button", { name: /Confirmar check-in/ }).click();
+    comprobar(await esperarTexto(px, /Escribe el nombre de la otra persona/), "con «Otra persona» y sin nombre, pide el nombre");
+    comprobar((await SB.from("estancias").select("estado").eq("id", eI).single()).data.estado !== "en_curso", "y no registra el check-in");
+    await px.locator("#checkin-entrega-nombre").fill("Tía Rosa Prueba");
+    await px.getByRole("button", { name: /Confirmar check-in/ }).click();
+    comprobar(await esperarTexto(px, /Check-in registrado/), "con el nombre de la otra persona, el check-in se registra");
+    const regI = (await SB.from("estancias").select("estado, entregado_por_nombre").eq("id", eI).single()).data;
+    comprobar(regI.estado === "en_curso" && regI.entregado_por_nombre === "Tía Rosa Prueba", `queda quién lo entregó (${regI.entregado_por_nombre})`);
+    await cx.close();
+    // 3) El dueño de la lista: se guarda su nombre.
+    await SB.from("estancias").update({ estado: "finalizada" }).eq("id", eI);
+    const eI2 = await nuevaEstancia(3);
+    ({ cx, px } = await abrirCheckin(eI2));
+    await px.locator("#checkin-entrega-quien").selectOption({ index: 1 });
+    await px.getByRole("button", { name: /Confirmar check-in/ }).click();
+    comprobar(await esperarTexto(px, /Check-in registrado/), "escogiendo al dueño, el check-in se registra");
+    comprobar((await SB.from("estancias").select("entregado_por_nombre").eq("id", eI2).single()).data.entregado_por_nombre === duenoB.nombre, "y queda el nombre del dueño");
+    await cx.close();
+    await SB.from("estancias").update({ estado: "finalizada" }).eq("id", eI2);
+  }
+
+  seccion("Cancelar una reserva de hotel pide motivo opcional y queda en la bitácora (QA S15)");
+  {
+    const { data: hotel } = await SB.from("servicios").select("id").eq("negocio_id", B).eq("clave", "hotel_noche").is("deleted_at", null).maybeSingle();
+    // El hotel cobra por talla: la mascota de prueba lleva una.
+    const { data: talla } = await A.from("tamanos_categoria").select("id").eq("clave", "chico").single();
+    await SB.from("perros").update({ tamano_id: talla.id }).eq("id", perro.id);
+    let base = 200 + (Number(sufijo) % 60) * 2;
+    while (![1, 2].includes(new Date(Date.now() + base * 86400000).getUTCDay())) base++;
+    const dH = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
+    const rH = (await cliente.from("reservas").insert({ cliente_id: datos.clienteSoloB }).select("id").single()).data;
+    const eH = await cliente.from("estancias").insert({ reserva_id: rH.id, perro_id: perro.id, servicio_id: hotel?.id ?? gD.id, fecha_entrada: dH(base), fecha_salida: dH(base + 1), bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: "Prueba", bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: "Prueba" }).select("id").single();
+    if (eH.error) throw new Error(`estancia hotel: ${eH.error.message}`);
+    limpieza.push(async () => { await SB.from("estancias").update({ deleted_at: new Date().toISOString() }).eq("id", eH.data.id); });
+    const cx = await nav.newContext({ viewport: { width: 390, height: 900 } });
+    await cx.addCookies(await cookiesDe(datos.adminB, "huellitas.localhost"));
+    const px = await cx.newPage();
+    px.setDefaultTimeout(45000);
+    await px.goto(`${BASE}/reservas/${rH.id}`, { waitUntil: "networkidle" });
+    await px.getByRole("button", { name: "Cancelar toda la reserva" }).click();
+    const motivo = px.getByLabel("Motivo (opcional)");
+    comprobar((await motivo.count()) === 1, "al cancelar, aparece «Motivo (opcional)»");
+    await motivo.fill("El cliente cambió de fechas");
+    await px.getByRole("button", { name: "Sí, cancelar todo" }).click();
+    comprobar(await esperarTexto(px, /Se cancelaron 1/), "se cancela");
+    const fH = (await SB.from("estancias").select("estado, motivo_cancelacion, cancelada_por, cancelada_at").eq("id", eH.data.id).single()).data;
+    comprobar(fH.estado === "cancelada" && fH.motivo_cancelacion === "El cliente cambió de fechas" && fH.cancelada_por === datos.adminB && fH.cancelada_at, "la estancia guarda el motivo, quién y cuándo");
+    const { data: bit } = await SB.from("registro_ediciones").select("cambios").eq("tabla", "estancias").eq("registro_id", eH.data.id).order("created_at", { ascending: false }).limit(1);
+    comprobar(JSON.stringify(bit?.[0]?.cambios ?? {}).includes("El cliente cambió de fechas"), "y la bitácora de ediciones anota el motivo junto con el cambio de estado");
+    await px.reload({ waitUntil: "networkidle" });
+    const tc = await px.locator("[data-cancelacion-estancia]").innerText().catch(() => "");
+    comprobar(/Cancelada por .+ el .+ Motivo: El cliente cambió de fechas/.test(tc) && !/@/.test(tc), `la reserva lo enseña con el nombre, la fecha y el motivo («${tc}»)`);
+    // Sin motivo también se puede.
+    const rH2 = (await cliente.from("reservas").insert({ cliente_id: datos.clienteSoloB }).select("id").single()).data;
+    const eH2 = await cliente.from("estancias").insert({ reserva_id: rH2.id, perro_id: perro.id, servicio_id: hotel?.id ?? gD.id, fecha_entrada: dH(base + 7), fecha_salida: dH(base + 8), bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: "Prueba", bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: "Prueba" }).select("id").single();
+    if (eH2.error) throw new Error(`estancia hotel 2: ${eH2.error.message}`);
+    limpieza.push(async () => { await SB.from("estancias").update({ deleted_at: new Date().toISOString() }).eq("id", eH2.data.id); });
+    await px.goto(`${BASE}/reservas/${rH2.id}`, { waitUntil: "networkidle" });
+    await px.getByRole("button", { name: "Cancelar toda la reserva" }).click();
+    await px.getByRole("button", { name: "Sí, cancelar todo" }).click();
+    comprobar(await esperarTexto(px, /Se cancelaron 1/), "sin motivo también se cancela (es opcional)");
+    const fH2 = (await SB.from("estancias").select("estado, motivo_cancelacion, cancelada_por").eq("id", eH2.data.id).single()).data;
+    comprobar(fH2.estado === "cancelada" && fH2.motivo_cancelacion === null && fH2.cancelada_por === datos.adminB, "queda quién la canceló, sin motivo");
+    await cx.close();
+  }
 } catch (err) {
   console.error(err);
   process.exitCode = 1;

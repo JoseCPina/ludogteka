@@ -19,6 +19,8 @@ import { DevolucionIntegrada } from "./devolucion-integrada";
 import { CancelarRenglonVenta } from "./cancelar-renglon-venta";
 import { MarcarNoRecibido } from "./marcar-no-recibido";
 import { CorregirCobro } from "./corregir-cobro";
+import { CancelarCuenta } from "@/components/cuentas/cancelar-cuenta";
+import { anotarCobroDePantalla, leerCobrosDePantalla } from "@/lib/cobro/cobros-de-pantalla";
 import { CorregirPrecioLinea } from "./corregir-precio-linea";
 import { CamposTarjetaManual } from "@/components/cobro/campos-tarjeta-manual";
 import { RevisarTarjetaManual } from "@/components/cobro/revisar-tarjeta-manual";
@@ -172,6 +174,7 @@ export function CuentaCobro({
   puedeAnular = false,
   puedeEditarMonto = false,
   puedeTurnosCerrados = false,
+  cancelarCuenta = null,
   mp,
 }: {
   reservaId: string;
@@ -192,6 +195,8 @@ export function CuentaCobro({
   puedeAnular?: boolean;
   puedeEditarMonto?: boolean;
   puedeTurnosCerrados?: boolean;
+  // «Cancelar cuenta» (permiso cancelar_cuentas): va aquí arriba para que su saldo sea el mismo que el resumen (QA S15).
+  cancelarCuenta?: { descripcion: string } | null;
   mp: { disponible: ResumenCobro; ordenes: OrdenCobroFila[]; clienteTelefono: string | null; terminalManualBloqueada: boolean };
 }) {
   const zona = useZonaNegocio();
@@ -208,7 +213,14 @@ export function CuentaCobro({
     setCobroNuevo(cobro ? { ...cobro, creadoEn: new Date().toISOString() } : null);
     iniciarRefresco(() => router.refresh());
   };
-  const totales: Totales = refrescando && aplicadoPendiente > 0
+  // QA S15 (N45): la acción (registrar, anular o corregir un cobro) ya devuelve la cuenta nueva; se pinta de
+  // inmediato y vale mientras la página refrescada no llega (cuando llega, `totalesServidor` es otro objeto).
+  const [provisional, setProvisional] = useState<{ base: Totales; totales: Totales } | null>(null);
+  // Cobros recién anulados desde esta pantalla: salen «Anulado» al momento, sin esperar al refresco.
+  const [anuladosAqui, setAnuladosAqui] = useState<Record<string, string>>({});
+  const totales: Totales = provisional && provisional.base === totalesServidor
+    ? provisional.totales
+    : refrescando && aplicadoPendiente > 0
     ? {
         ...totalesServidor,
         totalCobrado: totalesServidor.totalCobrado + aplicadoPendiente,
@@ -398,7 +410,7 @@ export function CuentaCobro({
   // nunca un aviso que contradiga el resumen, y se quita al registrar un cobro o cuando el monto ya coincide).
   const [saldoAntesDelCambio, setSaldoAntesDelCambio] = useState<number | null>(null);
   useCuentaViva(
-    [{ id: reservaId, saldo: totalesServidor.saldo, total: totalesServidor.totalCuenta }],
+    [{ id: reservaId, saldo: totales.saldo, total: totales.totalCuenta }],
     (_vivo, anterior) => {
       setSaldoAntesDelCambio((previo) => previo ?? anterior[0].saldo);
       setConfirmacion(null);
@@ -499,7 +511,8 @@ export function CuentaCobro({
     setExitoCobro(null);
     setConfirmacion(null);
     // N28: el servidor compara con lo que esta pantalla sabía; si entró otro cobro o cambió el saldo, pide confirmar.
-    const control = { saldoVisto: totalesServidor.saldo, cobrosVistos: cobrosIniciales.map((c) => c.id), confirmado };
+    // QA S15: solo los cobros que registró esta misma pestaña quedan exentos; cualquier otro de los últimos 2 minutos pregunta.
+    const control = { saldoVisto: totalesServidor.saldo, cobrosVistos: cobrosIniciales.map((c) => c.id), cobrosDeEstaPantalla: leerCobrosDePantalla([reservaId]), confirmado };
     const res = await cobrando.ejecutar(() => registrarCobro(reservaId, notasCobro, payload, control));
     if (res.confirmar) {
       setConfirmacion(res.confirmar);
@@ -518,7 +531,17 @@ export function CuentaCobro({
     setNotasCobro("");
     setMetodos([NuevaFilaMetodo()]);
     setMontoTocado(false);
+    anotarCobroDePantalla([reservaId], res.cobroId);
+    if (res.totales) setProvisional({ base: totalesServidor, totales: res.totales });
     refrescar(abonado, { metodos: payload.map((m) => ({ metodo: m.metodo, monto: m.monto, propina: m.propina })) });
+  }
+
+  // Al anular o corregir un cobro: la cuenta nueva que devolvió la acción, el cobro marcado «Anulado» y el refresco.
+  function alCorregirCobro(r: { cobroId: string; anulado: boolean; motivo: string; totales?: Totales }) {
+    if (r.totales) setProvisional({ base: totalesServidor, totales: r.totales });
+    if (r.anulado) setAnuladosAqui((prev) => ({ ...prev, [r.cobroId]: r.motivo }));
+    setSaldoAntesDelCambio(null);
+    refrescar();
   }
 
   async function enviarDevolucion() {
@@ -546,6 +569,9 @@ export function CuentaCobro({
 
   return (
     <div className="flex flex-col gap-6">
+      {cancelarCuenta && totales.saldo > 0.005 && (
+        <CancelarCuenta reservaId={reservaId} descripcion={cancelarCuenta.descripcion} saldo={totales.saldo} esAdmin={esAdmin} />
+      )}
       {error && (
         <Alert variante="error" titulo="No se pudo completar la acción">
           {error}
@@ -1032,7 +1058,10 @@ export function CuentaCobro({
                 </p>
               </li>
             )}
-            {cobrosIniciales.map((c) => {
+            {cobrosIniciales.map((c0) => {
+              const c = !c0.anulado && anuladosAqui[c0.id] !== undefined
+                ? { ...c0, anulado: true, anulacionMotivo: anuladosAqui[c0.id], montoOriginal: c0.montoOriginal || c0.metodos.reduce((sum, m) => sum + m.monto, 0) }
+                : c0;
               const devolucionesDeEste = devoluciones.filter((d) => d.cobroId === c.id);
               const totalCobro = c.metodos.reduce((sum, m) => sum + m.monto, 0);
               const totalPropina = c.metodos.reduce((sum, m) => sum + m.propina, 0);
@@ -1121,6 +1150,7 @@ export function CuentaCobro({
                         puedeEditar={puedeEditarMonto}
                         puedeTurnosCerrados={puedeTurnosCerrados}
                         turnoCerrado={c.turnoCerrado}
+                        alCorregir={alCorregirCobro}
                       />
                     </div>
                   )}

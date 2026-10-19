@@ -148,7 +148,7 @@ export default async function CarnetDeMascota({ params }: { params: Promise<{ pe
           </ul>
         )}
         {permisos.vacunas ? (
-          <Desplegable texto="Registrar vacuna" variante="primario">
+          <Desplegable texto="Registrar vacuna" variante="primario" cerrarAlGuardar>
             <FormularioVacuna perroId={perroId} hoy={hoy} productos={vacunasInv} medicos={medicos} medicoPropio={medicoPropio} requisitos={requisitos} />
           </Desplegable>
         ) : (
@@ -182,7 +182,7 @@ export default async function CarnetDeMascota({ params }: { params: Promise<{ pe
           </ul>
         )}
         {permisos.vacunas && (
-          <Desplegable texto="Registrar desparasitación" variante="primario">
+          <Desplegable texto="Registrar desparasitación" variante="primario" cerrarAlGuardar>
             <FormularioDesparasitacion perroId={perroId} hoy={hoy} productos={desparasitantesInv} medicos={medicos} medicoPropio={medicoPropio} />
           </Desplegable>
         )}

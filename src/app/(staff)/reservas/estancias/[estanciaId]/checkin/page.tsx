@@ -31,7 +31,7 @@ export default async function CheckinEstanciaPage({
   const { data: estancia, error } = await supabase
     .from("estancias")
     .select(
-      "id, perro_id, servicio_id, fecha_entrada, fecha_salida, estado, precio_unitario, entregado_por_nombre, entregado_por_telefono, estado_llegada, foto_llegada_path, hora_entrada_real, pertenencias, perros(nombre, cliente_id), servicios(nombre, categoria, unidad)"
+      "id, perro_id, servicio_id, fecha_entrada, fecha_salida, estado, precio_unitario, entregado_por_nombre, entregado_por_telefono, estado_llegada, foto_llegada_path, hora_entrada_real, pertenencias, perros(nombre, cliente_id, contacto_emergencia_nombre, contacto_emergencia_telefono, clientes(nombre, telefono)), servicios(nombre, categoria, unidad)"
     )
     .eq("id", estanciaId)
     .single();
@@ -220,6 +220,7 @@ export default async function CheckinEstanciaPage({
           clienteId={perro.cliente_id}
           pertenenciasIniciales={pertenencias ?? []}
           declaradas={estancia.pertenencias?.trim() || null}
+          conocidos={conocidosDeEntrega(perro)}
         />
       )}
 
@@ -230,4 +231,22 @@ export default async function CheckinEstanciaPage({
       )}
     </div>
   );
+}
+
+// QA S15: «Quién entrega al perro» se escoge de una lista (el dueño y su contacto de emergencia) o se marca
+// «Otra persona» con su nombre: así se ve claro cuando no es alguien conocido.
+type PerroConDueno = {
+  contacto_emergencia_nombre?: string | null;
+  contacto_emergencia_telefono?: string | null;
+  clientes?: { nombre: string | null; telefono: string | null } | { nombre: string | null; telefono: string | null }[] | null;
+};
+function conocidosDeEntrega(perro: PerroConDueno): { etiqueta: string; nombre: string; telefono: string }[] {
+  const dueno = Array.isArray(perro.clientes) ? perro.clientes[0] : perro.clientes;
+  const lista: { etiqueta: string; nombre: string; telefono: string }[] = [];
+  if (dueno?.nombre?.trim()) lista.push({ etiqueta: "Dueño", nombre: dueno.nombre.trim(), telefono: dueno.telefono ?? "" });
+  const emergencia = perro.contacto_emergencia_nombre?.trim();
+  if (emergencia && !lista.some((c) => c.nombre.toLowerCase() === emergencia.toLowerCase())) {
+    lista.push({ etiqueta: "Contacto de emergencia", nombre: emergencia, telefono: perro.contacto_emergencia_telefono ?? "" });
+  }
+  return lista;
 }

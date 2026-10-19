@@ -3,15 +3,20 @@ import { dinero } from "@/lib/dinero";
 import { nombresDePersonal } from "@/lib/personal/nombres";
 
 // N28: dos personas cobraron $10 cada una sobre la misma cuenta con 54 ms de diferencia y se registraron los dos
-// sin aviso. Antes de registrar un cobro el servidor revisa si, desde que la pantalla se abrió, entró otro cobro a
-// la cuenta (en los últimos 2 minutos: de otra persona siempre; propio, si la pantalla no lo vio) o si el saldo
-// cambió; si pasó, no registra:
-// pide confirmación con lo que encontró.
+// sin aviso. Antes de registrar un cobro el servidor revisa si en los últimos 2 minutos entró a la cuenta un cobro
+// que NO registró esta misma pantalla (de otra persona, o de la misma cuenta desde otra ventana) o si el saldo cambió
+// desde lo que la pantalla mostraba; si pasó, no registra: pide confirmación con lo que encontró.
+// QA S15 (19 de octubre de 2026): con F5 la pantalla nacía «sabiendo» el cobro de la otra ventana y la regla vieja
+// (los cobros que la pantalla ya listaba no contaban) lo dejaba pasar. Ahora no importa qué listaba la pantalla: solo
+// se exime lo que ESTA pantalla registró (`cobrosDeEstaPantalla`, que el navegador guarda por pestaña).
 
 export const VENTANA_COBRO_RECIENTE_MS = 2 * 60 * 1000;
 
-/** Lo que la pantalla sabía al abrirse: el saldo que mostraba y los cobros que ya listaba. */
-export type ControlCobro = { saldoVisto: number; cobrosVistos: string[]; confirmado?: boolean };
+/**
+ * Lo que la pantalla sabía: el saldo que mostraba, los cobros que listaba (informativo) y los cobros (o cobros junto)
+ * que registró ella misma: solo esos no piden confirmación.
+ */
+export type ControlCobro = { saldoVisto: number; cobrosVistos?: string[]; cobrosDeEstaPantalla?: string[]; confirmado?: boolean };
 
 export function hace(ms: number): string {
   const s = Math.max(0, Math.round(ms / 1000));
@@ -20,7 +25,7 @@ export function hace(ms: number): string {
   return `${m} min`;
 }
 
-export type CobroReciente = { monto: number; hechoPor: string | null; hace: number };
+export type CobroReciente = { monto: number; hechoPor: string | null; hace: number; mismaCuenta?: boolean };
 
 /** Texto del aviso, o null si no hay nada que confirmar. Pura: la usan las pruebas. */
 export function textoAvisoCobro(args: {
@@ -32,7 +37,7 @@ export function textoAvisoCobro(args: {
   const { reciente, nombreAutor, saldoVisto, saldoActual } = args;
   const cambioSaldo = Math.abs(saldoActual - saldoVisto) > 0.005;
   if (reciente) {
-    const quien = nombreAutor ? ` por ${nombreAutor}` : "";
+    const quien = reciente.mismaCuenta ? " con tu cuenta desde otra ventana" : nombreAutor ? ` por ${nombreAutor}` : "";
     return `Se acaba de registrar otro cobro de ${dinero(reciente.monto)}${quien} hace ${hace(reciente.hace)}. El saldo ahora es ${dinero(saldoActual)}. ¿Registrar de todos modos?`;
   }
   if (cambioSaldo) {
@@ -44,10 +49,10 @@ export function textoAvisoCobro(args: {
 export async function avisoCobroReciente(
   supabase: SupabaseClient,
   reservaIds: string[],
-  control: ControlCobro,
+  control: ControlCobro | undefined,
   ctx: { esAdmin: boolean; negocioId: string; usuarioId?: string | null }
 ): Promise<string | null> {
-  if (control.confirmado) return null;
+  if (control?.confirmado) return null;
   const desde = new Date(Date.now() - VENTANA_COBRO_RECIENTE_MS).toISOString();
   const [{ data: cobros }, totales] = await Promise.all([
     supabase
@@ -67,11 +72,10 @@ export async function avisoCobroReciente(
       }, 0) * 100
     ) / 100;
 
-  // N28 (QA del 18 de octubre): un cobro de OTRA persona en los últimos 2 minutos siempre pide confirmación, aunque la
-  // pantalla ya lo muestre (se actualizó sola). Uno propio que la pantalla ya vio no pregunta; uno propio que no vio
-  // (otra pestaña) sí.
-  const vistos = new Set(control.cobrosVistos);
-  const nuevos = (cobros ?? []).filter((c) => (ctx.usuarioId && c.created_by !== ctx.usuarioId) || !vistos.has(c.id as string));
+  // Todo cobro de los últimos 2 minutos que no registró esta pantalla pide confirmación, sin importar si la pantalla
+  // ya lo enseñaba (se actualizó sola, F5 o se volvió a entrar) ni quién lo hizo.
+  const propios = new Set(control?.cobrosDeEstaPantalla ?? []);
+  const nuevos = (cobros ?? []).filter((c) => !propios.has(c.id as string) && !(c.grupo_id && propios.has(c.grupo_id as string)));
   let reciente: CobroReciente | null = null;
   let nombreAutor: string | null = null;
   if (nuevos.length > 0) {
@@ -86,10 +90,12 @@ export async function avisoCobroReciente(
           .reduce((a, m) => a + Number(m.monto), 0),
       0
     );
-    reciente = { monto, hechoPor: (primero.created_by as string | null) ?? null, hace: Date.now() - new Date(primero.created_at as string).getTime() };
-    if (reciente.hechoPor) {
+    const hechoPor = (primero.created_by as string | null) ?? null;
+    reciente = { monto, hechoPor, hace: Date.now() - new Date(primero.created_at as string).getTime(), mismaCuenta: Boolean(ctx.usuarioId && hechoPor === ctx.usuarioId) };
+    if (reciente.hechoPor && !reciente.mismaCuenta) {
       nombreAutor = (await nombresDePersonal(supabase, [reciente.hechoPor], { esAdmin: ctx.esAdmin, negocioId: ctx.negocioId })).get(reciente.hechoPor) ?? null;
     }
   }
-  return textoAvisoCobro({ reciente, nombreAutor, saldoVisto: control.saldoVisto, saldoActual });
+  // Sin lo que la pantalla mostraba no se compara el saldo: solo los cobros recientes.
+  return textoAvisoCobro({ reciente, nombreAutor, saldoVisto: control?.saldoVisto ?? saldoActual, saldoActual });
 }

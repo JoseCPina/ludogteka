@@ -1,5 +1,6 @@
 "use client";
 
+import { anotarCobroDePantalla, leerCobrosDePantalla } from "@/lib/cobro/cobros-de-pantalla";
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -200,13 +201,17 @@ export function CobroJunto({
     setError(null);
     setConfirmacion(null);
     // N28: si entró otro cobro a alguna de estas cuentas o su saldo cambió, el servidor pide confirmar.
-    const control = { saldoVisto: Math.round(totalSaldo * 100) / 100, cobrosVistos, confirmado };
+    const ids = partes.map((p) => p.reservaId);
+    const control = { saldoVisto: Math.round(totalSaldo * 100) / 100, cobrosVistos, cobrosDeEstaPantalla: leerCobrosDePantalla(ids), confirmado };
     const res = await cobrando.ejecutar(() => registrarCobroGrupo(partes, notas, payload, control));
     if (res.confirmar) {
       setConfirmacion(res.confirmar);
       return;
     }
     if (res.error) return setError(res.error);
+    // El cobro junto lo hizo esta pestaña: no pregunta por él en estas cuentas (juntas o cada una).
+    anotarCobroDePantalla(ids, res.grupoId);
+    for (const id of ids) anotarCobroDePantalla([id], res.grupoId);
     setYaCobrado(true);
     iniciarIr(() => router.push(`/caja/recibo-junto/${res.grupoId}`));
   }
