@@ -11,6 +11,7 @@ import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { anularCobro, anularCobroGrupo, editarMontoCobro } from "@/app/(staff)/caja/correcciones-actions";
 import { ETIQUETA_TARJETA_MANUAL } from "@/lib/cobro/tarjeta-manual";
 import { dinero } from "@/lib/dinero";
+import type { TotalesCuenta } from "@/lib/cobro/totales";
 
 const ETIQUETA: Record<string, string> = { efectivo: "Efectivo", transferencia: "Transferencia", tarjeta_manual: ETIQUETA_TARJETA_MANUAL };
 
@@ -30,6 +31,7 @@ export function CorregirCobro({
   puedeEditar,
   puedeTurnosCerrados,
   turnoCerrado,
+  alCorregir,
 }: {
   reservaId: string;
   cobroId: string;
@@ -41,6 +43,8 @@ export function CorregirCobro({
   puedeEditar: boolean;
   puedeTurnosCerrados: boolean;
   turnoCerrado: boolean;
+  // QA S15 (N45): la pantalla de cobro pinta la cuenta nueva de inmediato con lo que devolvió la acción.
+  alCorregir?: (r: { cobroId: string; anulado: boolean; motivo: string; totales?: TotalesCuenta }) => void;
 }) {
   const router = useRouter();
   const envio = useEspera();
@@ -77,12 +81,14 @@ export function CorregirCobro({
       modo === "anular"
         ? await envio.ejecutar(() => anularCobro(cobroId, motivo, reservaId))
         : modo === "anular_grupo" && grupoId
-          ? await envio.ejecutar(() => anularCobroGrupo(grupoId, motivo))
+          ? await envio.ejecutar(() => anularCobroGrupo(grupoId, motivo, reservaId))
           : await envio.ejecutar(() => editarMontoCobro(cobroId, metodo, Number(monto), motivo, reservaId));
     if (r.error) return setError(r.error);
     setAviso(r.aviso ?? "Listo.");
+    const anulado = modo === "anular" || modo === "anular_grupo";
     cerrar();
-    router.refresh();
+    if (alCorregir) alCorregir({ cobroId, anulado, motivo: motivo.trim(), totales: r.totales });
+    else router.refresh();
   }
 
   if (!modo) {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { cancelarReserva } from "../reserva-actions";
 import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 import type { Conflicto, VersionLeida } from "@/lib/concurrencia/tipos";
@@ -22,11 +23,12 @@ export function CancelarReservaBoton({
   const [confirmando, setConfirmando] = useState(false);
   const cargando = useEspera();
   const [mensaje, setMensaje] = useState<string | null>(null);
+  const [motivo, setMotivo] = useState("");
   const [leidas, setLeidas] = useState(versiones);
   const [conflicto, setConflicto] = useState<Conflicto | null>(null);
 
   async function confirmar(forzar = false) {
-    const res = await cargando.ejecutar(() => cancelarReserva(reservaId, { versiones: leidas, forzar }));
+    const res = await cargando.ejecutar(() => cancelarReserva(reservaId, { versiones: leidas, forzar }, motivo));
     setConfirmando(false);
     if (res.conflicto) {
       setConflicto(res.conflicto);
@@ -74,6 +76,16 @@ export function CancelarReservaBoton({
       <p className="text-sm font-semibold text-coral-oscuro">
         ¿Cancelar los {cancelables} perro(s) que todavía se pueden cancelar de esta reserva?
       </p>
+      <Textarea
+        label="Motivo (opcional)"
+        name="motivo_cancelacion"
+        rows={2}
+        maxLength={500}
+        value={motivo}
+        onChange={(e) => setMotivo(e.target.value)}
+        placeholder="ej. El cliente cambió de fechas"
+        ayuda="Queda en la bitácora de la reserva con tu nombre y la hora."
+      />
       <div className="flex gap-2">
         <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={() => confirmar()}>
           {cargando.cargando ? "Cancelando…" : "Sí, cancelar todo"}

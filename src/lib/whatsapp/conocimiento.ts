@@ -244,4 +244,8 @@ Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado.
 - Una reserva cancelada sin saldo ya no ofrece «Cobrar»; si queda algo por cobrar, dice cuánto. «Cobro registrado» desaparece al anular el cobro.
 - Al registrar una desparasitación se pide el producto y también «Veterinario y clínica», igual que en una vacuna. El formulario de vacuna de Veterinaria queda en blanco después de registrar.
 - El horario y el esquema de pago de un empleado también avisan si otra persona los cambió mientras los tenías abiertos, con «Recargar con sus cambios» o «Guardar los míos encima».
+- Cobro de otra ventana (19 oct): si en los últimos 2 minutos entró a la cuenta un cobro que no se registró desde esa misma pantalla (de otra persona, o de la misma cuenta en otra ventana, aunque se haya recargado con F5), «Registrar cobro» pregunta antes de cobrar. Al registrar o anular un cobro, Cobrado y Saldo cambian al momento y el cobro anulado sale «Anulado» enseguida; el saldo del encabezado de la reserva se pone al día solo.
+- Check-in: «Quién entrega al perro» se escoge de una lista (el dueño o su contacto de emergencia); si lo trae alguien más, «Otra persona» pide su nombre.
+- Cancelar una reserva de guardería u hotel pide un motivo opcional; queda en la bitácora con quién y cuándo, y la reserva lo enseña.
+- En Veterinaria, al registrar una vacuna o desparasitación (en el carnet o con «Aplicar vacuna» en la consulta), el formulario se cierra con el aviso y al abrirlo otra vez está en blanco.
 `.trim();

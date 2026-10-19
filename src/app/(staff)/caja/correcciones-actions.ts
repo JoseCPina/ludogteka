@@ -5,12 +5,14 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { MENSAJE_DEMO } from "@/lib/solo-lectura";
 import { traducirError } from "../reservas/traducir-error";
+import { totalesDeCuenta, type TotalesCuenta } from "@/lib/cobro/totales";
 
 // Anular y corregir cobros, corregir el precio de una cuenta y agregar efectivo
 // al turno (migración 20261013000000). Los permisos y todas las reglas las
 // comprueba la base con la sesión de quien llama: aquí solo se traduce.
 
-export type ResultadoCorreccion = { error: string | null; aviso?: string };
+// `totales` = la cuenta ya corregida (QA S15, N45): la pantalla la pinta de inmediato.
+export type ResultadoCorreccion = { error: string | null; aviso?: string; totales?: TotalesCuenta };
 
 async function demo(): Promise<ResultadoCorreccion | null> {
   return (await cargarNegocioLanding()).plan === "demo" ? { error: MENSAJE_DEMO } : null;
@@ -42,10 +44,11 @@ export async function anularCobro(cobroId: string, motivo: string, reservaId?: s
   if (error) return { error: traducirError(error) };
   const d = data as RespuestaCobro | null;
   refrescar(reservaId ?? d?.reserva_id, d?.grupo_id);
-  return { error: null, aviso: `Cobro anulado: la cuenta volvió a quedar por cobrar y el cobro salió de los totales.${d?.turno_del_cobro_cerrado ? AVISO_CERRADO : ""}` };
+  const totales = await totalesDeCuenta(supabase, reservaId ?? d?.reserva_id);
+  return { error: null, totales, aviso: `Cobro anulado: la cuenta volvió a quedar por cobrar y el cobro salió de los totales.${d?.turno_del_cobro_cerrado ? AVISO_CERRADO : ""}` };
 }
 
-export async function anularCobroGrupo(grupoId: string, motivo: string): Promise<ResultadoCorreccion> {
+export async function anularCobroGrupo(grupoId: string, motivo: string, reservaId?: string | null): Promise<ResultadoCorreccion> {
   const negado = await demo();
   if (negado) return negado;
   if (motivo.trim().length < 5) return { error: "Escribe el motivo de la anulación (qué pasó)." };
@@ -55,7 +58,8 @@ export async function anularCobroGrupo(grupoId: string, motivo: string): Promise
   const cobros = ((data as { cobros?: RespuestaCobro[] } | null)?.cobros ?? []) as RespuestaCobro[];
   for (const c of cobros) refrescar(c.reserva_id, grupoId);
   refrescar(null, grupoId);
-  return { error: null, aviso: `Cobro junto anulado: ${cobros.length} cuentas volvieron a quedar por cobrar.${cobros.some((c) => c.turno_del_cobro_cerrado) ? AVISO_CERRADO : ""}` };
+  const totales = await totalesDeCuenta(supabase, reservaId);
+  return { error: null, totales, aviso: `Cobro junto anulado: ${cobros.length} cuentas volvieron a quedar por cobrar.${cobros.some((c) => c.turno_del_cobro_cerrado) ? AVISO_CERRADO : ""}` };
 }
 
 export async function editarMontoCobro(cobroId: string, metodo: string, montoNuevo: number, motivo: string, reservaId?: string | null): Promise<ResultadoCorreccion> {
@@ -68,7 +72,8 @@ export async function editarMontoCobro(cobroId: string, metodo: string, montoNue
   if (error) return { error: traducirError(error) };
   const d = data as RespuestaCobro | null;
   refrescar(reservaId ?? d?.reserva_id, d?.grupo_id);
-  return { error: null, aviso: `Monto corregido. Queda en el historial con el valor anterior y tu nombre.${d?.turno_del_cobro_cerrado ? AVISO_CERRADO : ""}` };
+  const totales = await totalesDeCuenta(supabase, reservaId ?? d?.reserva_id);
+  return { error: null, totales, aviso: `Monto corregido. Queda en el historial con el valor anterior y tu nombre.${d?.turno_del_cobro_cerrado ? AVISO_CERRADO : ""}` };
 }
 
 export async function corregirPrecioCuenta(reservaId: string, lineaTipo: string, lineaId: string, precioNuevo: number, motivo: string): Promise<ResultadoCorreccion> {

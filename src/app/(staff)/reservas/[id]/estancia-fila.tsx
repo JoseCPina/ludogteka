@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { Textarea } from "@/components/ui/textarea";
 import { formatearFechaCalendario } from "@/lib/formato";
 import { cancelarEstancia, marcarNoLlego } from "../reserva-actions";
 import { MoverFechas } from "../mover-fechas";
@@ -27,6 +28,8 @@ export type FilaEstancia = {
   horas: number | null;
   /** updated_at de la estancia al cargar la pantalla (QA N43). */
   version: string | null;
+  /** QA S15: «Cancelada por X el …» y el motivo, si se canceló. */
+  cancelacion?: { quien: string; cuando: string; motivo: string | null } | null;
 };
 
 const ETIQUETA_CATEGORIA: Record<string, string> = { guarderia: "Guardería", hotel: "Hotel" };
@@ -65,6 +68,7 @@ export function EstanciaFila({
   const [fechaEntrada, setFechaEntrada] = useState(fila.fechaEntrada);
   const [fechaSalida, setFechaSalida] = useState(fila.fechaSalida);
   const [confirmandoCancelar, setConfirmandoCancelar] = useState(false);
+  const [motivoCancelar, setMotivoCancelar] = useState("");
   const [confirmandoNoLlego, setConfirmandoNoLlego] = useState(false);
   const [moviendoFechas, setMoviendoFechas] = useState(false);
   const [version, setVersion] = useState(fila.version);
@@ -99,7 +103,7 @@ export function EstanciaFila({
 
   async function accionCancelar(forzar = false) {
     setError(null);
-    const res = await cargando.ejecutar(() => cancelarEstancia(fila.id, control(forzar)));
+    const res = await cargando.ejecutar(() => cancelarEstancia(fila.id, control(forzar), motivoCancelar));
     if (res.conflicto) return setConflicto({ c: res.conflicto, accion: "cancelar" });
     if (res.error) {
       setError(res.error);
@@ -169,6 +173,13 @@ export function EstanciaFila({
         </Alert>
       )}
 
+      {estado === "cancelada" && fila.cancelacion && (
+        <p className="text-sm text-n-700" data-cancelacion-estancia>
+          Cancelada por {fila.cancelacion.quien} el {fila.cancelacion.cuando}.
+          {fila.cancelacion.motivo ? <> Motivo: {fila.cancelacion.motivo}</> : " Sin motivo escrito."}
+        </p>
+      )}
+
       {avisoBono && (
         <Alert variante="advertencia" titulo="Pase de esta estancia">
           {avisoBono}
@@ -215,6 +226,15 @@ export function EstanciaFila({
               <p className="text-sm font-semibold text-coral-oscuro">
                 ¿Cancelar la estancia de {fila.perroNombre}?
               </p>
+              <Textarea
+                label="Motivo (opcional)"
+                name="motivo_cancelacion"
+                rows={2}
+                maxLength={500}
+                value={motivoCancelar}
+                onChange={(e) => setMotivoCancelar(e.target.value)}
+                ayuda="Queda en la bitácora con tu nombre y la hora."
+              />
               <div className="flex gap-2">
                 <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={() => accionCancelar()}>
                   {cargando.cargando ? "Cancelando…" : "Sí, cancelar"}

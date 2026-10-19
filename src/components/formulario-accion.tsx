@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useRef, useState, type ReactNode } from "react";
+import { createContext, Fragment, useContext, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,12 @@ import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import type { ResultadoAccion } from "@/lib/empleados/tipos";
 import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 import type { Conflicto, ControlVersion, VersionLeida } from "@/lib/concurrencia/tipos";
+
+/**
+ * QA S15: un formulario dentro de un desplegable con `cerrarAlGuardar` se cierra al guardar y deja el aviso junto al
+ * botón; al volver a abrirlo nace vacío (la vacuna del carnet seguía mostrando lo de antes).
+ */
+export const CierreDesplegable = createContext<((mensaje: string) => void) | null>(null);
 
 // La versión que la pantalla leyó (QA N43): se toma al montar y se pone al día cuando la página se recarga.
 function useVersiones(versiones: VersionLeida[] | undefined) {
@@ -53,6 +59,7 @@ export function FormularioAccion({
 }) {
   const router = useRouter();
   const envio = useEspera();
+  const cerrarDesplegable = useContext(CierreDesplegable);
   const form = useRef<HTMLFormElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
@@ -87,6 +94,7 @@ export function FormularioAccion({
       setVuelta((v) => v + 1);
     }
     router.refresh();
+    if (reiniciar && cerrarDesplegable) cerrarDesplegable(res.exito ?? textoExito);
   }
 
   return (
@@ -175,21 +183,42 @@ export function BotonAccion({
 }
 
 /** Un formulario plegado detrás de un botón (corregir, rechazar, revertir…). */
-export function Desplegable({ texto, children, variante = "secundario" }: { texto: string; children: ReactNode; variante?: "primario" | "secundario" | "peligro" }) {
+export function Desplegable({
+  texto,
+  children,
+  variante = "secundario",
+  cerrarAlGuardar = false,
+}: {
+  texto: string;
+  children: ReactNode;
+  variante?: "primario" | "secundario" | "peligro";
+  /** Al guardar el formulario de adentro (con `reiniciar`) se cierra y deja el aviso junto al botón. */
+  cerrarAlGuardar?: boolean;
+}) {
   const [abierto, setAbierto] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
   if (!abierto) {
     return (
-      <Button type="button" variante={variante} onClick={() => setAbierto(true)}>
-        {texto}
-      </Button>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="button" variante={variante} onClick={() => { setAviso(null); setAbierto(true); }}>
+          {texto}
+        </Button>
+        {aviso && <p role="status" data-desplegable-aviso className="text-sm font-semibold text-menta-oscuro">{aviso}</p>}
+      </div>
     );
   }
-  return (
+  const contenido = (
     <div className="flex w-full flex-col gap-2 rounded-md border border-n-200 bg-n-50 p-3">
       {children}
       <button type="button" className="w-fit text-sm font-semibold text-n-600 hover:underline" onClick={() => setAbierto(false)}>
         Cerrar
       </button>
     </div>
+  );
+  if (!cerrarAlGuardar) return contenido;
+  return (
+    <CierreDesplegable.Provider value={(m) => { setAviso(m); setAbierto(false); }}>
+      {contenido}
+    </CierreDesplegable.Provider>
   );
 }

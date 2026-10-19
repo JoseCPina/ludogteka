@@ -4,7 +4,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { SeccionFacturar } from "@/components/cfdi/seccion-facturar";
-import { CancelarCuenta } from "@/components/cuentas/cancelar-cuenta";
 import { etiquetaMotivoCuenta, type InfoCancelarCuenta } from "@/app/(staff)/caja/cancelar-cuenta-tipos";
 import { zonaActual, negocioActual } from "@/lib/negocio/actual";
 import { nombresDePersonal } from "@/lib/personal/nombres";
@@ -385,14 +384,6 @@ export async function PantallaCobro({
           </span>
         </Alert>
       )}
-      {!cancelada && !error && puedeCancelarCuenta && totales.saldo > 0.005 && (
-        <CancelarCuenta
-          reservaId={id}
-          descripcion={lineas.map((l) => l.descripcion).join(" · ") || "Cuenta"}
-          saldo={totales.saldo}
-          esAdmin={sesion?.rol === "admin"}
-        />
-      )}
 
       {cancelada ? null : error ? (
         <Alert variante="error" titulo="No pudimos cargar la cuenta">
@@ -417,6 +408,7 @@ export async function PantallaCobro({
           puedeAnular={tienePermiso(sesion, "anular_cobros")}
           puedeEditarMonto={tienePermiso(sesion, "editar_monto_cobros")}
           puedeTurnosCerrados={tienePermiso(sesion, "corregir_turnos_cerrados")}
+          cancelarCuenta={puedeCancelarCuenta ? { descripcion: lineas.map((l) => l.descripcion).join(" · ") || "Cuenta" } : null}
           mp={{ disponible: mpDisponible, ordenes: ordenesMp, clienteTelefono: (cliente?.telefono as string | null) ?? null, terminalManualBloqueada: Boolean(terminalManualBloqueada) }}
         />
       )}

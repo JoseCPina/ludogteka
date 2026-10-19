@@ -243,12 +243,15 @@ async function avisoDevolucionDeEstancia(
   });
 }
 
-export async function cancelarEstancia(estanciaId: string, control?: ControlVersion): Promise<EstadoAccionEstancia> {
+// QA S15: el motivo es opcional y queda en la estancia (quién y cuándo los pone la base) y en la bitácora.
+const motivoLimpio = (motivo?: string | null) => (motivo ?? "").trim().slice(0, 500) || null;
+
+export async function cancelarEstancia(estanciaId: string, control?: ControlVersion, motivo?: string | null): Promise<EstadoAccionEstancia> {
   const supabase = await createSupabaseServerClient();
   const desde = new Date(Date.now() - 5000).toISOString();
   const { error } = await conControl(supabase
     .from("estancias")
-    .update({ estado: "cancelada" })
+    .update({ estado: "cancelada", motivo_cancelacion: motivoLimpio(motivo) })
     .eq("id", estanciaId), control);
 
   if (error) {
@@ -318,7 +321,7 @@ export type ResultadoCancelarReserva = {
 // hizo check-in (en_curso) no se puede cancelar — el perro ya está
 // adentro, eso ya no es una cancelación — se deja tal cual, sin error,
 // solo se cuenta como "no cancelable" para que la pantalla lo explique.
-export async function cancelarReserva(reservaId: string, control?: ControlVersion): Promise<ResultadoCancelarReserva> {
+export async function cancelarReserva(reservaId: string, control?: ControlVersion, motivo?: string | null): Promise<ResultadoCancelarReserva> {
   const supabase = await createSupabaseServerClient();
   const { data: estancias, error: errorLectura } = await supabase
     .from("estancias")
@@ -337,7 +340,7 @@ export async function cancelarReserva(reservaId: string, control?: ControlVersio
   let canceladas = 0;
   const avisos: string[] = [];
   for (const e of cancelables) {
-    const { error } = await conControl(supabase.from("estancias").update({ estado: "cancelada" }).eq("id", e.id), control);
+    const { error } = await conControl(supabase.from("estancias").update({ estado: "cancelada", motivo_cancelacion: motivoLimpio(motivo) }).eq("id", e.id), control);
     if (error) {
       const conflicto = await conflictoDeEstancia(supabase, error, e.id);
       if (conflicto) {

@@ -45,7 +45,8 @@ export async function tramo(c) {
   if (e1.estado === "reservada") {
     await r.goto(`${BASE}/reservas/estancias/${c.e.estanciaId}/checkin`, { waitUntil: "networkidle" });
     await sinDesborde(r, "check-in");
-    await r.getByLabel("Quién entrega al perro").fill("Cliente Demo (PRUEBA)");
+    await r.locator("#checkin-entrega-quien").selectOption("otra");
+    await r.getByLabel("Nombre de la otra persona").fill("Cliente Demo (PRUEBA)");
     await r.getByRole("button", { name: "Confirmar check-in" }).click();
     await r.waitForTimeout(8000);
   }

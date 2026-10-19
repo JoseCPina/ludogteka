@@ -7,6 +7,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { comprimirImagen } from "@/lib/imagen";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
@@ -28,6 +29,7 @@ export function CheckinForm({
   clienteId,
   pertenenciasIniciales,
   declaradas,
+  conocidos = [],
 }: {
   estanciaId: string;
   perroId: string;
@@ -35,12 +37,17 @@ export function CheckinForm({
   pertenenciasIniciales: Pertenencia[];
   // Lo que la reserva ya traía declarado (texto libre de la estancia), si algo.
   declaradas: string | null;
+  // QA S15: las personas que pueden entregarlo (dueño, contacto de emergencia); cualquier otra es «Otra persona».
+  conocidos?: { etiqueta: string; nombre: string; telefono: string }[];
 }) {
   const router = useRouter();
   const inputFotoRef = useRef<HTMLInputElement>(null);
 
   const [entregadoNombre, setEntregadoNombre] = useState("");
   const [entregadoTelefono, setEntregadoTelefono] = useState("");
+  // Quién lo entrega: el índice de un conocido, «otra» (escribe el nombre) o "" (sin escoger).
+  const [quien, setQuien] = useState<string>("");
+  const esOtra = quien === "otra";
   const [estadoLlegada, setEstadoLlegada] = useState("");
   const [fotoPath, setFotoPath] = useState<string | null>(null);
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
@@ -64,6 +71,8 @@ export function CheckinForm({
     valor: { entregadoNombre, entregadoTelefono, estadoLlegada },
     esVacio: (v) => !v.entregadoNombre.trim() && !v.entregadoTelefono.trim() && !v.estadoLlegada.trim(),
     alRecuperar: (d) => {
+      const i = conocidos.findIndex((c) => c.nombre === (d.entregadoNombre ?? "").trim());
+      setQuien(i >= 0 ? String(i) : (d.entregadoNombre ?? "").trim() ? "otra" : "");
       setEntregadoNombre(d.entregadoNombre ?? "");
       setEntregadoTelefono(d.entregadoTelefono ?? "");
       setEstadoLlegada(d.estadoLlegada ?? "");
@@ -111,10 +120,10 @@ export function CheckinForm({
   }
 
   async function confirmar() {
-    if (!entregadoNombre.trim()) {
+    if (!quien || !entregadoNombre.trim()) {
       setFaltaEntrega(true);
-      setError("Escribe quién entrega al perro.");
-      document.getElementById("checkin-entrega-nombre")?.focus();
+      setError(esOtra ? "Escribe el nombre de la otra persona que entrega al perro." : "Escoge quién entrega al perro.");
+      document.getElementById(esOtra ? "checkin-entrega-nombre" : "checkin-entrega-quien")?.focus();
       return;
     }
     setFaltaEntrega(false);
@@ -149,25 +158,58 @@ export function CheckinForm({
       <AvisoBorrador estado={borrador} />
       <fieldset disabled={registrado} className="m-0 flex min-w-0 flex-col gap-6 border-0 p-0">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field
-          id="checkin-entrega-nombre"
+        <Select
+          id="checkin-entrega-quien"
           label="Quién entrega al perro (obligatorio)"
           required
-          error={faltaEntrega ? "Escribe quién entrega al perro." : undefined}
-          value={entregadoNombre}
+          error={faltaEntrega && !quien ? "Escoge quién entrega al perro." : undefined}
+          value={quien}
           onChange={(e) => {
-            setEntregadoNombre(e.target.value);
+            const v = e.target.value;
+            setQuien(v);
             setFaltaEntrega(false);
+            const c = conocidos[Number(v)];
+            if (v !== "otra" && v !== "" && c) {
+              setEntregadoNombre(c.nombre);
+              setEntregadoTelefono(c.telefono);
+            } else {
+              setEntregadoNombre("");
+              setEntregadoTelefono("");
+            }
           }}
-          placeholder="Nombre de quien lo deja"
           autoFocus
-        />
-        <Field
-          label="Teléfono (opcional)"
-          value={entregadoTelefono}
-          onChange={(e) => setEntregadoTelefono(e.target.value)}
-          placeholder="10 dígitos"
-        />
+        >
+          <option value="">— Escoge —</option>
+          {conocidos.map((c, i) => (
+            <option key={i} value={String(i)}>
+              {c.etiqueta}: {c.nombre}
+            </option>
+          ))}
+          <option value="otra">Otra persona (escribo su nombre)</option>
+        </Select>
+        {esOtra ? (
+          <>
+            <Field
+              id="checkin-entrega-nombre"
+              label="Nombre de la otra persona (obligatorio)"
+              required
+              error={faltaEntrega && !entregadoNombre.trim() ? "Escribe el nombre de quien lo entrega." : undefined}
+              value={entregadoNombre}
+              onChange={(e) => {
+                setEntregadoNombre(e.target.value);
+                setFaltaEntrega(false);
+              }}
+              placeholder="Nombre y apellido"
+              ayuda="No es el dueño ni su contacto de emergencia: queda registrado quién lo dejó."
+            />
+            <Field
+              label="Teléfono de esa persona (recomendado)"
+              value={entregadoTelefono}
+              onChange={(e) => setEntregadoTelefono(e.target.value)}
+              placeholder="10 dígitos"
+            />
+          </>
+        ) : null}
       </div>
 
       <Textarea

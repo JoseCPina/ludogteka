@@ -347,7 +347,7 @@ Más abajo está la lista de lo que viene. Filtra por **Módulo**, **Estado** y 
 
 - **Abrir**: va a la reserva, con su cuenta y sus cargos.
 - **Mover fechas**: escoge la nueva fecha (y la salida, si es hotel). Antes de guardar se ve en cuánto queda la cuenta («Total de la cuenta: $400 → $600 · Saldo…»); **Guardar fechas** solo se activa con esa vista previa. Si el total cambió mientras tanto, no se guarda y te lo vuelve a enseñar.
-- **Cancelar**: pide confirmar; libera el cupo y, si usó un pase, se lo devuelve.
+- **Cancelar**: pide confirmar; libera el cupo y, si usó un pase, se lo devuelve. Desde la reserva (**Cancelar toda la reserva** o **Cancelar** de un perro) también puedes escribir un **Motivo (opcional)**: queda en la bitácora con tu nombre y la hora, y la reserva lo enseña («Cancelada por … el …. Motivo: …»).
 
 Solo se pueden mover o cancelar las reservas **Reservada** o **Confirmada**. Si el perro ya hizo check-in, la salida se hace desde su estancia.
 
@@ -377,7 +377,7 @@ Al cancelar una cuenta en [Caja](/caja), marca la casilla para cancelar también
 1. Toca **Check-in** en el tablero o en Guardería u Hotel, y escoge al perro de la lista.
 2. Revisa los avisos de arriba: alertas de manejo, alergias graves, vacunas y contrato.
 3. Si viene con pase, lo verás. Si **Tiene pases sin aplicar**, toca **Usar el pase para hoy**.
-4. Escribe **Quién entrega al perro** y, si quieres, su teléfono.
+4. En **Quién entrega al perro** escoge al dueño o a su contacto de emergencia. Si lo trae alguien más, escoge **Otra persona (escribo su nombre)** y escribe su nombre en **Nombre de la otra persona** y, de preferencia, su teléfono: así queda claro que no fue el dueño.
 5. Anota el **Estado del perro a la llegada (opcional)** y toca **Tomar/subir foto**.
 6. En **Agregar pertenencia** escribe lo que trae (correa, cama, juguete) y toca **Agregar**. Las que se anotaron al reservar salen ahí como **Ya declaradas en la reserva**.
 7. Toca **Confirmar check-in**. El formulario se cierra, queda **Check-in registrado a las** (la hora), la confirmación lista las **Pertenencias recibidas** y la estancia pasa a **en curso**.
@@ -386,7 +386,7 @@ Al cancelar una cuenta en [Caja](/caja), marca la casilla para cancelar también
 
 ## Si algo no sale
 
-- El campo **Quién entrega al perro** se marca en rojo y dice «Escribe quién entrega al perro»: escribe el nombre de quien lo deja.
+- El campo **Quién entrega al perro** se marca en rojo y dice «Escoge quién entrega al perro»: escoge de la lista. Con **Otra persona**, si falta el nombre, dice «Escribe el nombre de la otra persona que entrega al perro».
 - Si no tiene reserva, usa **Walk-in (sin reserva)** en la lista de check-in.
 - Si el check-in se hizo por error y el perro venía con pase, quien tenga el permiso «Ajustar días de pases» toca **Deshacer este check-in** (ver [Cómo ajustar los días usados de un pase](/ayuda/ajustar-dias-usados-de-un-pase)).`,
   },

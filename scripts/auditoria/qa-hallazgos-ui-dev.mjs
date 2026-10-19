@@ -190,6 +190,10 @@ try {
     await campoEntrega.fill("Ana Prueba");
     comprobar((await campoEntrega.getAttribute("aria-invalid")) !== "true", "al escribir, la marca se quita");
     await p.getByRole("button", { name: "Confirmar inicio" }).click();
+    // La cita es de otro día: desde S14 pide confirmar antes de recibirla.
+    await esperarTexto(p, /Finalizar cita|recibirla de todos modos/);
+    const otroDia = p.getByRole("button", { name: /recibirla de todos modos/ });
+    if (await otroDia.count()) await otroDia.first().click();
     await esperarTexto(p, /Finalizar cita/);
     await p.getByRole("button", { name: "Finalizar cita" }).click();
     await p.getByRole("button", { name: "Confirmar cierre" }).click();
@@ -215,7 +219,7 @@ try {
     ({ c, p } = await abrir(datos.adminB, 390));
     await p.goto(`${BASE}/reservas/estancias/${eG.data.id}/checkin`, { waitUntil: "networkidle" });
     await p.getByRole("button", { name: /Confirmar (check-in|entrada)/ }).first().click();
-    comprobar(await esperarTexto(p, /Escribe quién entrega al perro/) && (await p.locator("#checkin-entrega-nombre").getAttribute("aria-invalid")) === "true", "check-in de guardería/hotel: marca «Quién entrega» y dice qué falta");
+    comprobar(await esperarTexto(p, /Escoge quién entrega al perro/) && (await p.locator("#checkin-entrega-quien").getAttribute("aria-invalid")) === "true", "check-in de guardería/hotel: marca «Quién entrega» y dice qué falta");
     await c.close();
   }
 

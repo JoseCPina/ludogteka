@@ -11,6 +11,7 @@
 // 5. Recetario especial: registrar un folio y surtir contra él.
 // 6. Libro de control: renglones con folio y saldo, Excel y reporte mensual.
 // 7. Portal del dueño: ve su receta.
+// 10 y 10b (QA S15, 19 de octubre): el formulario de vacuna (carnet y consulta) se cierra al guardar y vuelve vacío.
 // 8. Sugerencias de la QA (17 de octubre): la receta se prellena con el «Tratamiento» de la consulta firmada,
 //    la cantidad a surtir se calcula sola (y se puede cambiar) y, sin productos clínicos, el selector dice
 //    «No hay productos cargados» con enlace a Inventario.
@@ -360,14 +361,51 @@ try {
     const medico = form.locator('select[name="medico_id"]');
     if (!(await medico.inputValue())) await medico.selectOption({ index: 1 });
     await form.getByRole("button", { name: "Registrar vacuna" }).click();
-    await form.getByText("Vacuna registrada").first().waitFor({ timeout: 40000 }).catch(() => {});
-    comprobar(await form.getByText("Vacuna registrada").first().isVisible().catch(() => false), "se registra la vacuna");
-    comprobar((await form.locator('input[name="biologico"]').inputValue()) === "", "el nombre de la vacuna queda vacío");
-    comprobar((await form.locator('input[name="laboratorio"]').inputValue()) === "" && (await form.locator('input[name="dosis"]').inputValue()) === "", "laboratorio y cantidad quedan vacíos");
-    if (hayInventario) comprobar((await inv.inputValue()) === "", "la vacuna del inventario vuelve a «Lo escribo yo»");
+    // QA S15: al guardar, el formulario se cierra y deja el aviso junto al botón; al abrirlo de nuevo nace vacío.
+    const avisoV = mvz.p.locator("[data-desplegable-aviso]").first();
+    await avisoV.waitFor({ timeout: 40000 }).catch(() => {});
+    comprobar(/Vacuna registrada/.test(await avisoV.innerText().catch(() => "")), "se registra la vacuna y el aviso queda junto al botón");
+    comprobar((await mvz.p.locator('input[name="biologico"]').count()) === 0, "el formulario se cierra al guardar");
+    await mvz.p.getByRole("button", { name: "Registrar vacuna" }).first().click();
+    const form2 = mvz.p.locator("form", { has: mvz.p.locator('input[name="biologico"]') }).first();
+    await form2.waitFor({ timeout: 20000 });
+    comprobar((await form2.locator('input[name="biologico"]').inputValue()) === "", "al abrirlo de nuevo, el nombre de la vacuna está vacío");
+    comprobar((await form2.locator('input[name="laboratorio"]').inputValue()) === "" && (await form2.locator('input[name="dosis"]').inputValue()) === "", "laboratorio y cantidad vacíos");
+    if (hayInventario) comprobar((await form2.locator('select[name="insumo_id"]').inputValue()) === "", "la vacuna del inventario vuelve a «Lo escribo yo»");
+    comprobar((await mvz.p.locator("[data-desplegable-aviso]").count()) === 0, "y el aviso anterior ya no se ve");
     const { count } = await SB.from("carnet_vacunas").select("id", { count: "exact", head: true }).eq("perro_id", perroV).is("anulada_at", null);
     comprobar(count === 1, `queda UNA vacuna registrada (${count})`);
     await sinDesborde(mvz.p, "carnet después de registrar");
+  }
+
+  seccion("10b. QA S15: «Aplicar vacuna» dentro de la consulta se cierra al guardar y vuelve vacío");
+  {
+    const perroC = await E.nuevoPerro("Vacunaconsulta");
+    const cons = await rpc(P.recCon, "vet_consulta_iniciar", { p_perro: perroC, p_cita: null, p_tipo: "consulta", p_medico: E.medA });
+    const cidV = cons.cuerpo?.id ?? cons.cuerpo;
+    comprobar(Boolean(cidV), `se abre una consulta en borrador (${cons.mensaje ?? "ok"})`);
+    await mvz.p.goto(`${BASE}/veterinaria/consulta/${cidV}`, { waitUntil: "networkidle" });
+    const apartado = mvz.p.locator("[data-aplicar-vacuna]");
+    await apartado.getByRole("button", { name: "Aplicar vacuna", exact: true }).click();
+    const formC = apartado.locator("form").first();
+    await formC.waitFor({ timeout: 20000 });
+    await formC.locator('input[name="biologico"]').fill(`Moquillo prueba ${E.MARCA}`);
+    await formC.locator('input[name="laboratorio"]').fill("Lab consulta");
+    await formC.locator('input[name="dosis"]').fill("1 mL");
+    const medC = formC.locator('select[name="medico_id"]');
+    if (!(await medC.inputValue())) await medC.selectOption({ index: 1 });
+    await formC.getByRole("button", { name: "Registrar vacuna" }).click();
+    const avisoC = apartado.locator("[data-desplegable-aviso]");
+    await avisoC.waitFor({ timeout: 40000 }).catch(() => {});
+    comprobar(/Vacuna registrada/.test(await avisoC.innerText().catch(() => "")), "en la consulta, se registra y avisa");
+    comprobar((await apartado.locator('input[name="biologico"]').count()) === 0, "y el formulario se cierra");
+    await apartado.getByRole("button", { name: "Aplicar vacuna", exact: true }).click();
+    const formC2 = apartado.locator("form").first();
+    await formC2.waitFor({ timeout: 20000 });
+    comprobar((await formC2.locator('input[name="biologico"]').inputValue()) === "" && (await formC2.locator('input[name="laboratorio"]').inputValue()) === "" && (await formC2.locator('input[name="dosis"]').inputValue()) === "", "al abrir «Aplicar vacuna» otra vez, todo está vacío");
+    const { count: nC } = await SB.from("carnet_vacunas").select("id", { count: "exact", head: true }).eq("perro_id", perroC).is("anulada_at", null);
+    comprobar(nC === 1, `queda UNA vacuna en el carnet (${nC})`);
+    await rpc(P.recCon, "vet_consulta_anular", { p_id: cidV, p_motivo: "Prueba de auditoría" }).catch(() => {});
   }
 } finally {
   await nav.close().catch(() => {});

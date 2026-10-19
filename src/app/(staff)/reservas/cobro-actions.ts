@@ -6,6 +6,7 @@ import { traducirError } from "./traducir-error";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { negocioIdActual } from "@/lib/negocio/actual";
 import { avisoCobroReciente, type ControlCobro } from "@/lib/cobro/reciente";
+import { totalesDeCuenta, type TotalesCuenta } from "@/lib/cobro/totales";
 
 export type MetodoPago = "efectivo" | "terminal" | "transferencia" | "tarjeta_manual";
 
@@ -29,6 +30,8 @@ export type EstadoCobro = {
   cambio?: number;
   /** Algo cambió en la cuenta desde que se abrió la pantalla (otro cobro, otro saldo): NO se registró, pide confirmación. */
   confirmar?: string;
+  /** La cuenta ya con el cobro (QA S15, N45): la pantalla la pinta sin esperar al refresco. */
+  totales?: TotalesCuenta;
 };
 
 export async function registrarCobro(
@@ -43,7 +46,8 @@ export async function registrarCobro(
   }
 
   const supabase = await createSupabaseServerClient();
-  if (control && !control.confirmado) {
+  // N28: la revisión corre SIEMPRE en el servidor (también si la pantalla no mandó lo que veía).
+  if (!control?.confirmado) {
     const sesion = await obtenerSesionConRol();
     const aviso = await avisoCobroReciente(supabase, [reservaId], control, { esAdmin: sesion?.rol === "admin", negocioId: await negocioIdActual(), usuarioId: sesion?.user.id ?? null });
     if (aviso) return { error: null, confirmar: aviso };
@@ -63,7 +67,8 @@ export async function registrarCobro(
   revalidatePath(`/reservas/${reservaId}/cobrar`);
   const recibido = metodos.reduce((s, m) => s + m.monto, 0);
   const cambio = Math.round((recibido - saldoAntes) * 100) / 100;
-  return { error: null, cobroId: data as string, cambio: cambio > 0.005 ? cambio : undefined };
+  const totalesNuevos = await totalesDeCuenta(supabase, reservaId);
+  return { error: null, cobroId: data as string, cambio: cambio > 0.005 ? cambio : undefined, totales: totalesNuevos };
 }
 
 export type EstadoDevolucion = { error: string | null; devolucionId?: string };
