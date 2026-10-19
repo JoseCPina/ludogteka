@@ -50,6 +50,20 @@ export async function guardarConfiguracionNegocio(datos: {
   return { error: null };
 }
 
+// QA S16 (N61): la dirección del negocio es una sola (negocio_perfil.direccion): la de Configuración, Perfil, la
+// página web y la ubicación para recolección.
+export async function guardarDireccionNegocio(direccion: string): Promise<EstadoConfiguracion> {
+  if (!direccion.trim()) return { error: "Escribe la dirección del negocio: calle, número y colonia." };
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("guardar_direccion_negocio", { p_direccion: direccion });
+  if (error) return { error: traducirError(error) };
+  revalidatePath("/admin");
+  revalidatePath("/admin/perfil");
+  revalidatePath("/bienvenida");
+  revalidatePath("/");
+  return { error: null };
+}
+
 // Un día cerrado va con las dos horas vacías. 0 = domingo … 6 = sábado,
 // igual que horario_semana.
 export type DiaHorario = { dia_semana: number; hora_apertura: string | null; hora_cierre: string | null };

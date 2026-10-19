@@ -47,7 +47,7 @@ export function ClienteForm({
   const ultimo = useRef<FormData | null>(null);
 
   return (
-    <form
+    <form method="post"
       className="flex max-w-lg flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();

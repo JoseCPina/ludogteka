@@ -407,6 +407,30 @@ try {
     comprobar(nC === 1, `queda UNA vacuna en el carnet (${nC})`);
     await rpc(P.recCon, "vet_consulta_anular", { p_id: cidV, p_motivo: "Prueba de auditoría" }).catch(() => {});
   }
+  // QA S16: la cédula profesional son 7 u 8 números (pantalla y base), y la bienvenida ofrece «Yo soy el médico».
+  seccion("11. QA S16: cédula profesional válida al designar un médico");
+  {
+    const { c, p } = await nuevoCtx(datos.adminB);
+    await p.goto(`${BASE}/veterinaria/medicos`, { waitUntil: "networkidle" });
+    const persona = p.getByLabel("Persona del personal");
+    if (await persona.count()) {
+      await persona.selectOption({ index: 1 });
+      const form = p.locator("form", { has: persona });
+      await form.getByLabel("Cédula profesional").fill("ABC-12");
+      await form.getByRole("button", { name: "Designar médico" }).click();
+      await p.waitForTimeout(2500);
+      comprobar(/7 u 8 números/.test(await cuerpo(p)), "en Médicos, una cédula con letras se rechaza y dice que son 7 u 8 números");
+    } else comprobar(true, "(todo el personal ya es médico: sin candidatos que probar en Médicos)");
+    await p.goto(`${BASE}/bienvenida/medico`, { waitUntil: "networkidle" });
+    const yo = p.locator("[data-yo-soy-medico]");
+    if (await yo.count()) {
+      await yo.getByLabel("Cédula profesional *").fill("123");
+      comprobar(await yo.getByRole("button", { name: "Designarme médico" }).isDisabled() && /Son 7 u 8 números/.test(await yo.innerText()), "en la bienvenida, «Designarme médico» no se activa con una cédula corta y dice por qué");
+      await yo.getByLabel("Cédula profesional *").fill("1234567");
+      comprobar(await yo.getByRole("button", { name: "Designarme médico" }).isEnabled(), "con 7 números se activa (no se guarda en esta prueba)");
+    } else comprobar(true, "(el admin ya es médico: la bienvenida no ofrece «Yo soy el médico»)");
+    await c.close();
+  }
 } finally {
   await nav.close().catch(() => {});
   await limpiar(E);

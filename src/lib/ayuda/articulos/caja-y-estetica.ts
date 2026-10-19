@@ -496,11 +496,11 @@ Corregir el servicio de una cita ya cobrada no mueve ningún corte: el cobro adi
     modulo: null,
     roles: ["admin", "recepcion"],
     rutas: ["/caja/cargo"],
-    palabras: ["cargo", "cobro extra", "sin reserva", "comida especial", "monto libre"],
+    palabras: ["cargo", "cobro extra", "sin reserva", "comida especial", "monto libre", "consulta suelta", "vacuna", "producto"],
     cuerpo: `Para cobrar un cargo del catálogo cuando el perro no tiene una estancia abierta. La app arma la cuenta y te lleva directo a cobrarla.
 
 1. En [Caja](/caja) busca al cliente en **¿A quién le cobras?** y aprieta **Cargo suelto**.
-2. Escoge el **Cargo**.
+2. En **Qué se cobra** escoge el cargo. Con Veterinaria prendida, ahí mismo están **Consulta general**, **Consulta de urgencia**, **Revisión de seguimiento** y **Aplicación de vacuna** con su precio de catálogo, y los **Productos (descuentan inventario)** que vendes. Uno sin precio sale apagado: captúralo en [Servicios](/servicios).
 3. Si es de un perro en particular, escógelo en **Perro (opcional)**.
 4. Escribe la **Cantidad**. Si el cargo es de monto libre, escribe el **Importe** y llena **Qué se le dio (obligatorio)**.
 5. Aprieta **Aplicar y cobrar** y cobra como cualquier cuenta.
@@ -710,13 +710,13 @@ Es otra cosa: la raza es nueva y tu negocio no decidió su precio. Asigna el gru
 
 1. Aprieta **Agendar**.
 2. Busca al cliente por perro, dueño o teléfono. Si es nuevo, dalo de alta con **Nuevo cliente**.
-3. Escoge el **Perro**.
+3. Escoge el **Perro**. Si el cliente tiene un solo perro, ya viene escogido.
 4. Si el perro ya está en guardería u hotel, puedes ligar la cita a esa estancia.
 5. Escoge el **Servicio** y el **Empleado** que lo atiende. Son tres baños: el **completo** (baño, cepillado, deslanado o corte de pelo, uñas, orejas y dientes, corte higiénico, hidratación de nariz y huellitas), el **rapado** (igual, pero con corte de pelo rapado) y el **exprés** (baño con shampoo y secado).
 5b. Debajo sale el **Precio** de la cita. Si falta el tamaño o el pelaje del perro, el aviso te los pide ahí mismo; si la combinación no tiene precio, te da dos salidas ([Qué hacer cuando no hay precio](/ayuda/que-hacer-sin-precio-estetica)). **Agendar cita** se activa cuando ya hay precio.
 6. Si el perro llegó con el pelo maltratado, marca **Llegó con el pelo maltratado**: cobra el precio alternativo del mismo baño. Es una condición de la cita, no otro servicio.
 7. Si necesitas cobrar de más (mucho pelo, nudos, cuidado previo), escribe el **Recargo manual (opcional)** y su **Motivo del recargo**. Se suma al precio, y queda registrado con tu nombre y el motivo. Solo lo hace admin o quien tenga el permiso «Excepciones al reservar».
-8. Pon la **Fecha y hora** y aprieta **Agendar cita**. La hora ya viene propuesta: la siguiente hora en punto de hoy que todavía no pasa, o la primera hora de apertura de mañana si hoy ya no queda ninguna.
+8. Pon la **Fecha y hora** y aprieta **Agendar cita**. Mientras el botón esté apagado, junto a él dice qué falta («Elige el perro.», «Elige quién lo atiende.», «Falta resolver el precio…»). La hora ya viene propuesta: la siguiente hora en punto de hoy que todavía no pasa, o la primera hora de apertura de mañana si hoy ya no queda ninguna.
 
 Al agendar, junto al botón sale «Cita agendada: perro, servicio, fecha y hora» y el recuadro verde **Cita agendada** se lleva a la vista, con el enlace a la cita. Si ese mismo perro ya tiene una cita ese día (que no esté cancelada), antes de crear otra sale el aviso **Esta mascota ya tiene cita ese día** con el servicio y la hora; **Agendar otra de todos modos** la crea y **No agendar** la deja como estaba.
 
@@ -860,15 +860,15 @@ En **Historial de servicio**, al pie de la cita: el servicio y el precio de ante
 
 1. En [Estética](/estetica) abre la cita.
 2. Aprieta **Iniciar cita**.
-3. Si es una visita suelta, escribe **Quién entrega al perro** (obligatorio) y, si quieres, su teléfono.
-4. Aprieta **Confirmar inicio**. Si falta el nombre, el campo se marca en rojo y dice qué falta.
+3. Si es una visita suelta, escribe **Quién entrega al perro** (lleva * y «obligatorio») y, si quieres, su teléfono.
+4. Aprieta **Confirmar inicio**. Mientras falte el nombre, el botón está apagado y junto a él dice «Falta: quién entrega al perro.».
 
 Si la cita es de **otro día** (por ejemplo, la del lunes y hoy es domingo), te pregunta antes de recibirla: «Esta cita es del lunes 19 de octubre…». Aprieta **Sí, recibirla de todos modos** solo si de verdad llegó hoy.
 
 ## Cuando se lo llevan
 
 1. Aprieta **Finalizar cita**.
-2. Escribe **Quién recoge al perro** (obligatorio) y marca **Sí, es el dueño** o **No, persona autorizada**. Lo que falte se marca en la propia pantalla: el nombre en su campo, la pregunta del dueño en su recuadro., revisa el **Consumo de inventario** y ajusta si se usó más o menos.
+2. Escribe **Quién recoge al perro** y marca **Sí, es el dueño** o **No, persona autorizada** (los dos llevan * y «obligatorio»). Mientras falte algo, **Confirmar cierre** está apagado y junto a él dice qué falta. Revisa el **Consumo de inventario** y ajusta si se usó más o menos.
 4. Aprieta **Confirmar cierre**. El consumo se descuenta del inventario y la cuenta queda en [Caja](/caja) para cobrarla.
 
 Si la cita está ligada a una estancia, no se piden esos datos: el perro sigue adentro.
@@ -925,6 +925,7 @@ Para cuando el precio de **una línea de la cuenta** estaba mal. En la línea, *
 - **Cobros con la terminal o el link de Mercado Pago (o Clip):** no. Se devuelven con **Devolver con Mercado Pago** (mira [Cómo devolver un cobro](/ayuda/devolver-un-cobro)); así el dinero y la caja cuadran con lo que realmente pasó.
 - **Con el turno abierto:** quien tenga el permiso corrige directo.
 - **Con el turno ya cerrado:** hace falta **Corregir cobros de turnos cerrados**. El corte cerrado **no cambia**: la corrección entra al turno abierto de hoy y se ve como ajuste, en el turno actual y en el historial.
+- **Sin ningún turno abierto:** ahí mismo sale **No hay un turno de caja abierto.** con el **Fondo inicial ($)** y el botón **Abrir turno y anular** (o **Abrir turno y corregir**): abre el turno y deja el ajuste en ese turno nuevo.
 - **Cobro con devoluciones:** primero se resuelven las devoluciones.
 
 ## Cobros juntos (varias cuentas de una clienta)

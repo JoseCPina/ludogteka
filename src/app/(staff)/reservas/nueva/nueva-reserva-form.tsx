@@ -159,6 +159,9 @@ export function NuevaReservaForm({
     setResultados(null);
     setReservaId(null);
     setErrorGeneral(null);
+    // QA S16 (N68): un cliente con un solo perro lo trae ya escogido.
+    const suyos = perros.filter((p) => p.cliente_id === id);
+    if (suyos.length === 1) alternarPerro(suyos[0]);
   }
 
   function cambiarCliente() {
@@ -640,6 +643,7 @@ export function NuevaReservaForm({
       >
         {enviando.cargando ? "Guardando…" : "Crear reserva"}
       </Button>
+      {lineas.length === 0 && <p className="text-sm text-n-600" data-motivo-reserva>Escoge al menos un perro.</p>}
       {conChoque && (
         <p className="text-sm text-coral-oscuro">Hay mascotas que ya tienen otra reserva en esas fechas: cambia las fechas o quítalas para continuar.</p>
       )}

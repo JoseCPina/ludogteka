@@ -38,3 +38,22 @@ export async function crearCargoSuelto(datos: {
   revalidatePath("/caja");
   return { error: null, reservaId: salida?.reserva_id, precio: salida ? Number(salida.precio) : undefined };
 }
+
+// QA S16 (N66): con Veterinaria, el cargo suelto ofrece la consulta general, la urgencia, la revisión de seguimiento y
+// la aplicación de vacuna con su precio de catálogo (la base lo toma de la matriz; sin precio, dice dónde capturarlo).
+export async function crearCargoVeterinario(datos: { clienteId: string; clave: string; cantidad: number; perroId: string | null; notas: string }): Promise<ResultadoCargoSuelto> {
+  if (!datos.clienteId) return { error: "Elige al cliente." };
+  if (!Number.isInteger(datos.cantidad) || datos.cantidad < 1) return { error: "La cantidad debe ser al menos 1." };
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("vet_cargo_suelto", {
+    p_cliente_id: datos.clienteId,
+    p_perro_id: datos.perroId,
+    p_clave: datos.clave,
+    p_cantidad: datos.cantidad,
+    p_notas: datos.notas,
+  });
+  if (error) return { error: traducirError(error) };
+  const salida = data as { reserva_id: string; precio: number } | null;
+  revalidatePath("/caja");
+  return { error: null, reservaId: salida?.reserva_id, precio: salida ? Number(salida.precio) : undefined };
+}

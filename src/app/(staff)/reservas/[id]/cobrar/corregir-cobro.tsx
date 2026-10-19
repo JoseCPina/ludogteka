@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { anularCobro, anularCobroGrupo, editarMontoCobro } from "@/app/(staff)/caja/correcciones-actions";
+import { abrirTurno } from "@/app/(staff)/reservas/turno-actions";
 import { ETIQUETA_TARJETA_MANUAL } from "@/lib/cobro/tarjeta-manual";
 import { dinero } from "@/lib/dinero";
 import type { TotalesCuenta } from "@/lib/cobro/totales";
@@ -55,6 +56,10 @@ export function CorregirCobro({
   const [monto, setMonto] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  // QA S16 (N63): sin turno abierto la corrección no tiene dónde anotarse; se ofrece abrirlo ahí mismo.
+  const [sinTurno, setSinTurno] = useState(false);
+  const [fondo, setFondo] = useState("0");
+  const abriendo = useEspera();
 
   if (!puedeAnular && !puedeEditar) return null;
   if (editables.length === 0) return null;
@@ -74,6 +79,16 @@ export function CorregirCobro({
     setError(null);
   }
 
+  async function abrirTurnoYCorregir() {
+    setError(null);
+    const f = Number(fondo || 0);
+    if (!Number.isFinite(f) || f < 0) return setError("El fondo inicial es un número de cero para arriba.");
+    const t = await abriendo.ejecutar(() => abrirTurno(f, "Abierto para corregir un cobro de un turno cerrado"));
+    if (t.error && !/ya hay un turno/i.test(t.error)) return setError(t.error);
+    setSinTurno(false);
+    await confirmar();
+  }
+
   async function confirmar() {
     setError(null);
     if (motivo.trim().length < 5) return setError("Escribe el motivo: qué pasó con este cobro.");
@@ -83,7 +98,13 @@ export function CorregirCobro({
         : modo === "anular_grupo" && grupoId
           ? await envio.ejecutar(() => anularCobroGrupo(grupoId, motivo, reservaId))
           : await envio.ejecutar(() => editarMontoCobro(cobroId, metodo, Number(monto), motivo, reservaId));
-    if (r.error) return setError(r.error);
+    if (r.error) {
+      if (/no hay turno de caja abierto/i.test(r.error)) {
+        setSinTurno(true);
+        return;
+      }
+      return setError(r.error);
+    }
     setAviso(r.aviso ?? "Listo.");
     const anulado = modo === "anular" || modo === "anular_grupo";
     cerrar();
@@ -149,6 +170,20 @@ export function CorregirCobro({
         <p className="text-sm text-ambar-oscuro">Este cobro es de un turno ya cerrado: su corte no cambia y la corrección se anota como ajuste en el turno abierto.</p>
       )}
       <Textarea label="Motivo (obligatorio)" rows={2} maxLength={300} value={motivo} onChange={(e) => setMotivo(e.target.value)} ayuda="Qué pasó. Queda en el historial." />
+      {sinTurno && (
+        <div data-abrir-turno-y-anular className="flex flex-col gap-2 rounded-md border-[1.5px] border-morado bg-white p-3">
+          <p className="text-sm font-semibold text-n-900">No hay un turno de caja abierto.</p>
+          <p className="text-sm text-n-700">
+            La corrección se anota en el turno abierto: ábrelo aquí y {modo === "editar" ? "se guarda la corrección" : "se anula el cobro"} en ese turno nuevo. El corte del turno cerrado no cambia.
+          </p>
+          <div className="w-40">
+            <Field label="Fondo inicial ($)" type="number" min="0" step="0.01" value={fondo} onChange={(e) => setFondo(e.target.value)} />
+          </div>
+          <Button type="button" cargando={abriendo.cargando || envio.cargando} onClick={abrirTurnoYCorregir} className="self-start">
+            {modo === "editar" ? "Abrir turno y corregir" : "Abrir turno y anular"}
+          </Button>
+        </div>
+      )}
       <AccionesFormulario error={error}>
         <Button type="button" variante={modo === "editar" ? "primario" : "peligro"} cargando={envio.cargando} onClick={confirmar}>
           {modo === "editar" ? "Guardar corrección" : "Anular cobro"}

@@ -3,7 +3,17 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BuscadorClientes } from "@/components/buscador-clientes";
 import { cargarClientesBuscables } from "@/lib/clientes/buscables";
 import { formatearTelefono } from "@/lib/telefono";
-import { CargoSueltoForm, type CargoCatalogo } from "./cargo-suelto-form";
+import { CargoSueltoForm, type CargoCatalogo, type ConceptoVet, type ProductoCargo } from "./cargo-suelto-form";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { leerTodo } from "@/lib/supabase/paginar";
+
+// QA S16 (N66): los conceptos del catálogo de Veterinaria que se cobran sueltos.
+const CONCEPTOS_VET = [
+  { clave: "vet_consulta_general", nombre: "Consulta general" },
+  { clave: "vet_consulta_urgencia", nombre: "Consulta de urgencia" },
+  { clave: "vet_revision_seguimiento", nombre: "Revisión de seguimiento" },
+  { clave: "vet_aplicacion_vacuna", nombre: "Aplicación de vacuna" },
+];
 
 // Un cargo sin reserva de por medio: se elige al cliente, el cargo, y la
 // app crea la cuenta y manda directo a cobrarla.
@@ -33,6 +43,23 @@ export default async function CargoSueltoPage({ searchParams }: { searchParams: 
 
   const clienteElegido = clienteId ? clientes.find((c) => c.id === clienteId) ?? null : null;
 
+  // Con Veterinaria: sus conceptos con el precio de catálogo, y los productos que se venden (descuentan inventario).
+  const sesion = await obtenerSesionConRol();
+  const conVet = Boolean(sesion?.modulos.includes("veterinaria"));
+  let conceptosVet: ConceptoVet[] = [];
+  let productos: ProductoCargo[] = [];
+  if (conVet && clienteElegido) {
+    await supabase.rpc("vet_asegurar_servicios");
+    const [precios, { data: prods }] = await Promise.all([
+      Promise.all(CONCEPTOS_VET.map((c) => supabase.rpc("_vet_precio_servicio", { p_clave: c.clave }))),
+      leerTodo<{ id: string; nombre: string; precio_venta: number | null }>(() =>
+        supabase.from("insumos").select("id, nombre, precio_venta").eq("se_vende", true).is("deleted_at", null).order("nombre").order("id")
+      ),
+    ]);
+    conceptosVet = CONCEPTOS_VET.map((c, i) => ({ ...c, precio: precios[i].data == null ? null : Number(precios[i].data) }));
+    productos = (prods ?? []).filter((p) => p.precio_venta != null).map((p) => ({ id: p.id, nombre: p.nombre, precio: Number(p.precio_venta) }));
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -57,7 +84,7 @@ export default async function CargoSueltoPage({ searchParams }: { searchParams: 
               Cambiar cliente
             </Link>
           </div>
-          <CargoSueltoForm clienteId={clienteElegido.id} cargos={cargos} perros={clienteElegido.perros} />
+          <CargoSueltoForm clienteId={clienteElegido.id} cargos={cargos} perros={clienteElegido.perros} conceptosVet={conceptosVet} productos={productos} />
         </div>
       )}
     </div>

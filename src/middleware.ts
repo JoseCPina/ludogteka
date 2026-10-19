@@ -300,6 +300,12 @@ export async function middleware(request: NextRequest) {
     const activos = activosResp?.data;
     if (!moduloRequeridoActivo(moduloZona, ((activos as string[] | null) ?? []).map(String))) {
       const primero = Array.isArray(moduloZona) ? moduloZona[0] : moduloZona;
+      const listaActivos = ((activos as string[] | null) ?? []).map(String);
+      // QA S16 (N80): en una clínica sin Estética, «la agenda» (/agenda → /estetica) es la agenda clínica; el médico
+      // invitado con rol de estética también llega ahí.
+      if (primero === "estetica" && listaActivos.includes("veterinaria") && (rol !== "admin" || pathname === "/estetica")) {
+        return conCookiesDe(response, NextResponse.redirect(new URL("/veterinaria/agenda", request.url)));
+      }
       const destino = rol === "admin" ? `/admin/modulos?apagado=${primero}` : `/modulo-apagado?m=${primero}`;
       return conCookiesDe(response, NextResponse.redirect(new URL(destino, request.url)));
     }

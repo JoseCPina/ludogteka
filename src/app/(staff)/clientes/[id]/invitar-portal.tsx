@@ -10,6 +10,7 @@ import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { formatearFecha } from "@/lib/formato";
 import { useZonaNegocio } from "@/components/zona-negocio";
 import { invitarAlPortal, type EstadoInvitarPortal } from "./portal-actions";
+import { AvisosWhatsAppBotones } from "@/components/avisos-whatsapp-botones";
 
 /** El botón «Invitar al portal» de la ficha del cliente (solo si todavía no tiene cuenta). */
 export function InvitarPortal({ clienteId, clienteNombre, tieneCuenta }: { clienteId: string; clienteNombre: string; tieneCuenta: boolean }) {
@@ -54,10 +55,8 @@ export function InvitarPortal({ clienteId, clienteNombre, tieneCuenta }: { clien
         <div className="flex flex-col gap-2">
           <CampoCopiable etiqueta="Enlace de invitación" valor={resultado.url} />
           {resultado.expiraAt && <p className="text-sm text-n-600">Vence el {formatearFecha(resultado.expiraAt, zona)}. Se muestra solo ahora: si lo pierdes, genera otro.</p>}
-          {resultado.urlWhatsApp && (
-            <a href={resultado.urlWhatsApp} target="_blank" rel="noreferrer" className="self-start rounded-md border-[1.5px] border-morado px-4 py-3 font-semibold text-morado hover:bg-morado-suave">
-              Mandar por WhatsApp
-            </a>
+          {resultado.urlWhatsApp && resultado.mensaje && (
+            <AvisosWhatsAppBotones etiqueta="Mandar por WhatsApp" mensajes={[{ titulo: "Invitar al portal", texto: resultado.mensaje, url: resultado.urlWhatsApp }]} />
           )}
         </div>
       )}

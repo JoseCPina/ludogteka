@@ -69,7 +69,7 @@ try {
   await rpc(P.admin, "vet_asegurar_servicios");
   await quitarPrecio("vet_consulta_general");
   await quitar(P.admin, P.recConId, "tarifas");
-  const med = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: P.recConId, p_cedula: `QH${sufijo}`, p_cpa: null });
+  const med = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: P.recConId, p_cedula: String(Date.now()).slice(-7), p_cpa: null });
   medicosCreados.push(med.cuerpo);
   const nueva = async (nombre) => {
     const perro = await nuevoPerro(nombre);
@@ -183,12 +183,13 @@ try {
     ({ c, p } = await abrir(datos.adminB, 390));
     await p.goto(`${BASE}/estetica/${cita.data.id}`, { waitUntil: "networkidle" });
     await p.getByRole("button", { name: "Iniciar cita" }).click();
-    await p.getByRole("button", { name: "Confirmar inicio" }).click();
+    // QA S16 (N69): lo obligatorio se marca ANTES del clic (asterisco y texto) y el botón dice qué falta.
     const campoEntrega = p.locator("#cita-entrega-nombre");
-    comprobar(await esperarTexto(p, /Escribe quién entrega al perro/) && (await campoEntrega.getAttribute("aria-invalid")) === "true", "al iniciar sin «Quién entrega»: el campo se marca y dice qué falta");
-    comprobar(await campoEntrega.evaluate((el) => document.activeElement === el), "y el cursor queda en ese campo");
+    comprobar(/\*\s*\(obligatorio\)/.test(await p.locator('label[for="cita-entrega-nombre"]').innerText()), "«Quién entrega» lleva asterisco y «(obligatorio)» antes de apretar nada");
+    comprobar(await p.getByRole("button", { name: "Confirmar inicio" }).isDisabled(), "«Confirmar inicio» está deshabilitado mientras falta quién entrega");
+    comprobar(/Falta: quién entrega al perro/.test(await p.locator("[data-motivo-confirmar]").innerText()), "y dice por qué junto al botón");
     await campoEntrega.fill("Ana Prueba");
-    comprobar((await campoEntrega.getAttribute("aria-invalid")) !== "true", "al escribir, la marca se quita");
+    comprobar(await p.getByRole("button", { name: "Confirmar inicio" }).isEnabled() && (await p.locator("[data-motivo-confirmar]").count()) === 0, "al escribirlo, el botón se activa y el motivo se va");
     await p.getByRole("button", { name: "Confirmar inicio" }).click();
     // La cita es de otro día: desde S14 pide confirmar antes de recibirla.
     await esperarTexto(p, /Finalizar cita|recibirla de todos modos/);
@@ -196,13 +197,12 @@ try {
     if (await otroDia.count()) await otroDia.first().click();
     await esperarTexto(p, /Finalizar cita/);
     await p.getByRole("button", { name: "Finalizar cita" }).click();
-    await p.getByRole("button", { name: "Confirmar cierre" }).click();
     const campoRecoge = p.locator("#cita-recoge-nombre");
-    comprobar(await esperarTexto(p, /Escribe quién recoge al perro/) && (await campoRecoge.getAttribute("aria-invalid")) === "true", "al cerrar sin «Quién recoge»: el campo se marca y dice qué falta");
-    comprobar(!(await texto(p)).includes("No se pudo completar la acción"), "y ya no sale el aviso genérico «No se pudo completar la acción»");
+    comprobar(await p.getByRole("button", { name: "Confirmar cierre" }).isDisabled(), "«Confirmar cierre» está deshabilitado mientras falta quién recoge");
+    comprobar(/quién recoge al perro y si es el dueño registrado/.test(await p.locator("[data-motivo-confirmar]").innerText()), "y dice las dos cosas que faltan");
+    comprobar(!(await texto(p)).includes("No se pudo completar la acción"), "sin el aviso genérico «No se pudo completar la acción»");
     await campoRecoge.fill("Luis Prueba");
-    await p.getByRole("button", { name: "Confirmar cierre" }).click();
-    comprobar(await esperarTexto(p, /Indica si quien recoge es el dueño/) && (await p.locator("#cita-recoge-dueno").count()) === 1, "sin indicar si es el dueño: se marca esa pregunta");
+    comprobar(/si es el dueño registrado/.test(await p.locator("[data-motivo-confirmar]").innerText()) && (await p.getByRole("button", { name: "Confirmar cierre" }).isDisabled()), "con el nombre, sigue pidiendo si es el dueño");
     await p.getByRole("button", { name: "Sí, es el dueño" }).click();
     await p.getByRole("button", { name: "Confirmar cierre" }).click();
     await esperarTexto(p, /Recogió|Finalizada/);
@@ -218,8 +218,8 @@ try {
     limpieza.push(async () => { await SB.from("estancias").update({ deleted_at: new Date().toISOString() }).eq("id", eG.data.id); });
     ({ c, p } = await abrir(datos.adminB, 390));
     await p.goto(`${BASE}/reservas/estancias/${eG.data.id}/checkin`, { waitUntil: "networkidle" });
-    await p.getByRole("button", { name: /Confirmar (check-in|entrada)/ }).first().click();
-    comprobar(await esperarTexto(p, /Escoge quién entrega al perro/) && (await p.locator("#checkin-entrega-quien").getAttribute("aria-invalid")) === "true", "check-in de guardería/hotel: marca «Quién entrega» y dice qué falta");
+    comprobar(/\*\s*\(obligatorio\)/.test(await p.locator('label[for="checkin-entrega-quien"]').innerText()), "check-in: «Quién entrega» lleva asterisco y «(obligatorio)»");
+    comprobar(await p.locator("[data-confirmar-checkin]").isDisabled() && /Falta: escoge quién entrega/.test(await p.locator("[data-motivo-confirmar]").innerText()), "check-in de guardería/hotel: «Confirmar check-in» deshabilitado y dice qué falta");
     await c.close();
   }
 
@@ -402,6 +402,65 @@ try {
       await c.close();
     }
     void perroN;
+  }
+
+  // ── QA S16 ───────────────────────────────────────────────────────
+  seccion("S16. N58: sin JavaScript ningún formulario manda datos por GET");
+  {
+    const c = await nav.newContext({ viewport: { width: 1100, height: 900 }, javaScriptEnabled: false });
+    await c.addCookies(await cookiesDe(datos.adminB, "huellitas.localhost"));
+    const p = await c.newPage();
+    p.setDefaultTimeout(45000);
+    for (const ruta of ["/clientes/nuevo", `/clientes/${datos.clienteSoloB}/perros/nuevo`, "/servicios/nuevo", "/bienvenida/equipo"]) {
+      await p.goto(`${BASE}${ruta}`, { waitUntil: "domcontentloaded" });
+      const envios = p.locator('form button[type="submit"], form button:not([type])');
+      const n = await envios.count();
+      let todosDeshabilitados = n > 0;
+      for (let i = 0; i < n; i++) if (!(await envios.nth(i).isDisabled())) todosDeshabilitados = false;
+      const metodos = await p.locator("form").evaluateAll((fs) => fs.map((f) => (f.getAttribute("method") ?? "get").toLowerCase()));
+      comprobar(todosDeshabilitados, `${ruta}: antes de hidratar, los botones de envío están deshabilitados (${n})`);
+      comprobar(metodos.every((m) => m === "post"), `${ruta}: ningún formulario de alta es GET (${metodos.join(",")})`);
+    }
+    await c.close();
+  }
+
+  seccion("S16. N80: la raza vacía da un error claro junto al campo");
+  {
+    ({ c, p } = await abrir(datos.adminB, 390));
+    await p.goto(`${BASE}/clientes/${datos.clienteSoloB}/perros/nuevo`, { waitUntil: "networkidle" });
+    await p.getByLabel("Nombre del perro").fill(`Sin raza ${sufijo}`);
+    const antes = p.url();
+    await p.getByRole("button", { name: /Crear perro|Guardar/ }).first().click();
+    comprobar(await esperarTexto(p, /Escribe la raza del perro\. Si no sabes cuál es, escoge «Mestizo»/, 8000), "dice que falta la raza y qué hacer si no la sabe");
+    comprobar(p.url() === antes && !p.url().includes("?"), "no navega ni pone datos en la URL");
+    await c.close();
+  }
+
+  seccion("S16. N65: los botones de WhatsApp enseñan el mensaje antes de abrir wa.me");
+  {
+    const tel = (await SB.from("clientes").select("telefono").eq("id", datos.clienteSoloB).single()).data.telefono;
+    const { data: srvE } = await SB.from("servicios").select("id").eq("negocio_id", B).eq("clave", "estetica_estetico").is("deleted_at", null).single();
+    const { data: tallas } = await A.from("tamanos_categoria").select("id, clave");
+    const { data: pelajes } = await A.from("tipos_pelaje").select("id, clave");
+    const { data: razasC } = await A.from("razas").select("id, nombre");
+    const perroW = (await SB.from("perros").insert({ negocio_id: B, cliente_id: datos.clienteSoloB, nombre: `QH wa ${sufijo}`, raza: "Poodle", raza_id: razasC.find((r) => r.nombre === "Poodle").id, tamano_id: tallas.find((t) => t.clave === "chico").id, pelaje_id: pelajes.find((t) => t.clave === "medio").id }).select("id").single()).data;
+    limpieza.push(async () => { await SB.from("perros").update({ deleted_at: new Date().toISOString() }).eq("id", perroW.id); });
+    const rr = (await SB.from("reservas").insert({ cliente_id: datos.clienteSoloB }).select("id").single()).data;
+    const dia = new Date(Date.now() + 45 * 86400000).toISOString().slice(0, 10);
+    const cita = await SB.from("citas_estetica").insert({ reserva_id: rr.id, perro_id: perroW.id, servicio_id: srvE.id, empleado_id: datos.esteticaB, inicio: `${dia}T12:00:00-06:00` }).select("id").single();
+    if (cita.error) throw new Error(`cita: ${cita.error.message}`);
+    limpieza.push(async () => { await SB.from("citas_estetica").update({ deleted_at: new Date().toISOString() }).eq("id", cita.data.id); });
+    ({ c, p } = await abrir(datos.adminB, 390));
+    await p.goto(`${BASE}/estetica/${cita.data.id}`, { waitUntil: "networkidle" });
+    if (String(tel ?? "").replace(/\D/g, "").length >= 10) {
+      comprobar((await p.locator("[data-avisos-whatsapp] a").count()) === 0, "los avisos ya no son ligas directas a wa.me");
+      await p.locator("[data-avisos-whatsapp] button", { hasText: "Confirmación" }).click();
+      const vista = p.locator("[data-vista-mensaje]");
+      await vista.waitFor({ timeout: 10000 });
+      comprobar((await vista.innerText()).includes(`QH wa ${sufijo}`), "«Confirmación» enseña el mensaje real (con el nombre del perrito)");
+      comprobar(/PeluDesk no lo manda solo/.test(await vista.innerText()) && (await p.locator("[data-abrir-whatsapp]").getAttribute("href")).startsWith("https://wa.me/52"), "y explica que abre WhatsApp con ese mensaje y tú lo mandas");
+    } else comprobar(false, "el cliente de prueba no tiene teléfono de 10 dígitos");
+    await c.close();
   }
 } catch (e) {
   console.error(e);

@@ -127,7 +127,7 @@ export function InvitarStaff() {
   const cargando = resultado.estado === "cargando";
 
   return (
-    <form onSubmit={enviar} className="flex flex-col gap-4">
+    <form method="post" onSubmit={enviar} className="flex flex-col gap-4">
       {resultado.estado === "error" && (
         <Alert variante="error" titulo="No se pudo invitar">
           {resultado.mensaje}

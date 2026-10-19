@@ -163,7 +163,7 @@ try {
     const sGen = (await SB.from("servicios").select("id").eq("negocio_id", B).eq("clave", "vet_consulta_general").single()).data.id;
     await SB.from("tarifas").update({ deleted_at: new Date().toISOString() }).eq("servicio_id", sGen).is("deleted_at", null);
     await SB.from("tarifas").insert({ negocio_id: B, servicio_id: sGen, precio: 450, no_aplica: false, cantidad_desde: 1, cantidad_hasta: null, vigencia_desde: "2026-01-01" });
-    const med = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: P.recConId, p_cedula: `UQA${sufijo}`, p_cpa: null });
+    const med = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: P.recConId, p_cedula: String(Date.now()).slice(-7), p_cpa: null });
     medicosCreados.push(med.cuerpo);
     const perro = (await SB.from("perros").insert({ negocio_id: B, cliente_id: datos.clienteSoloB, nombre: `Cobrin UI ${sufijo}`, especie: "perro" }).select("id").single()).data.id;
     limpieza.push(async () => { await SB.from("perros").update({ deleted_at: new Date().toISOString() }).eq("id", perro); });

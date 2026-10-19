@@ -74,7 +74,7 @@ try {
   await SB.from("negocios").update({ dictado_minutos_mes: 200 }).eq("id", B);
   await admin.rpc("guardar_veterinaria_dictado", { p_conservar: false });
   await admin.rpc("guardar_veterinaria_teleconsulta", { p_cobro: false, p_precio: null });
-  const m1 = await admin.rpc("guardar_medico_veterinario", { p_profile_id: recConId, p_cedula: `UF5${sufijo}`, p_cpa: null });
+  const m1 = await admin.rpc("guardar_medico_veterinario", { p_profile_id: recConId, p_cedula: String(Date.now()).slice(-7), p_cpa: null });
   if (m1.error) throw new Error(`médico: ${m1.error.message}`);
   medicos.push(m1.data);
   const nombrePerro = `Fase5 ${sufijo}`;

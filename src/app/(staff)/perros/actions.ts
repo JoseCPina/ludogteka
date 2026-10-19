@@ -37,6 +37,8 @@ function leerCampos(formData: FormData) {
   const alimentacion_notas = String(formData.get("alimentacion_notas") ?? "").trim();
   const temperamento_notas = String(formData.get("temperamento_notas") ?? "").trim();
   const texto = (clave: string) => String(formData.get(clave) ?? "").trim() || null;
+  // Un campo que el formulario no pintó (el veterinario externo en una clínica) no se toca: undefined no viaja.
+  const textoSiVino = (clave: string) => (formData.has(clave) ? texto(clave) : undefined);
 
   return {
     nombre,
@@ -51,9 +53,9 @@ function leerCampos(formData: FormData) {
     temperamento_notas: temperamento_notas || null,
     contacto_emergencia_nombre: texto("contacto_emergencia_nombre"),
     contacto_emergencia_telefono: texto("contacto_emergencia_telefono"),
-    veterinario_nombre: texto("veterinario_nombre"),
-    veterinario_telefono: texto("veterinario_telefono"),
-    veterinario_clinica: texto("veterinario_clinica"),
+    veterinario_nombre: textoSiVino("veterinario_nombre"),
+    veterinario_telefono: textoSiVino("veterinario_telefono"),
+    veterinario_clinica: textoSiVino("veterinario_clinica"),
   };
 }
 

@@ -162,7 +162,7 @@ export function SelectorEstilista({
         Estilista: <span className="font-semibold text-n-800">{actualNombre ?? "Sin asignar"}</span>
       </p>
       {abierto ? (
-        <form
+        <form method="post"
           className="flex flex-col gap-3 rounded-md border border-n-200 bg-n-50 p-3"
           onSubmit={async (e) => {
             e.preventDefault();

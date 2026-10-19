@@ -80,7 +80,7 @@ function Flecha() {
   );
 }
 
-function BotonPrueba({ className = "", texto = "Pruébalo 15 días gratis", claro = false, brillo = false }: { className?: string; texto?: string; claro?: boolean; brillo?: boolean }) {
+function BotonPrueba({ className = "", texto = "Pruébalo gratis", claro = false, brillo = false }: { className?: string; texto?: string; claro?: boolean; brillo?: boolean }) {
   return (
     <EnlaceRegistro
       className={`pd-boton pd-boton-primario ${brillo ? "pd-borde-brillo" : ""} inline-flex min-h-12 items-center justify-center whitespace-nowrap rounded-full px-6 text-base font-semibold focus-visible:outline-none focus-visible:ring-[3px] ${
@@ -231,10 +231,10 @@ export default async function PeluDeskLanding() {
               </a>
             ))}
             <BotonDemo className="!min-h-10 !border-[1.5px] !px-4 text-sm lg:ml-2" texto="Ver demo" />
-            <BotonPrueba className="!min-h-10 !px-4 text-sm" texto="Probar 15 días" />
+            <BotonPrueba className="!min-h-10 !px-4 text-sm" />
           </nav>
           <div className="flex items-center gap-1 lg:hidden">
-            <BotonPrueba className="!min-h-10 !px-4 text-sm" texto="Probar 15 días" />
+            <BotonPrueba className="!min-h-10 !px-4 text-sm" />
             <MenuCelular>
               <nav aria-label="Principal" className="flex flex-col">
                 {ENLACES_MENU.map(([href, texto]) => (
@@ -244,7 +244,7 @@ export default async function PeluDeskLanding() {
                 ))}
               </nav>
               <div className="mt-5 grid gap-3">
-                <BotonPrueba texto="Probar 15 días" />
+                <BotonPrueba />
                 <BotonDemo texto="Ver demo" />
               </div>
               {whatsapp && (
@@ -282,7 +282,7 @@ export default async function PeluDeskLanding() {
               {plan && <PrecioPlan plan={plan} className="mt-6" />}
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <BotonDemo texto="Ver demo" />
-                <BotonPrueba brillo texto="Probar 15 días" />
+                <BotonPrueba brillo />
               </div>
               <p className="mt-4 text-sm text-n-600">15 días gratis, sin tarjeta.</p>
             </div>
@@ -388,7 +388,7 @@ export default async function PeluDeskLanding() {
               </ul>
             </Revelar>
             <Revelar className="mt-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-              <BotonPrueba texto="Probar 15 días" />
+              <BotonPrueba />
               <a href="#demo" className="group inline-flex min-h-12 items-center font-semibold text-morado underline decoration-morado/30 underline-offset-4 hover:decoration-morado">
                 o entra al demo sin registrarte
                 <Flecha />
@@ -431,7 +431,7 @@ export default async function PeluDeskLanding() {
               ))}
             </ul>
             <Revelar className="mt-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-              <BotonPrueba texto="Probar 15 días" />
+              <BotonPrueba />
               <a href="/veterinaria" className="group inline-flex min-h-12 items-center font-semibold text-morado underline decoration-morado/30 underline-offset-4 hover:decoration-morado">
                 Mira todo lo de Veterinaria
                 <Flecha />
@@ -548,7 +548,7 @@ export default async function PeluDeskLanding() {
                     </p>
                     <p className="mt-2 text-sm text-n-600">15 días gratis, sin tarjeta.</p>
                     <div className="mt-6 flex flex-col gap-3">
-                      <BotonPrueba texto="Probar 15 días" className="w-full" />
+                      <BotonPrueba className="w-full" />
                       <BotonDemo texto="Ver demo" className="w-full" />
                     </div>
                   </div>
@@ -667,7 +667,7 @@ export default async function PeluDeskLanding() {
                 15 días gratis, sin tarjeta{plan ? `. Después, ${pesos(plan.mensual)} + IVA al mes, sin costo inicial` : ""}.
               </p>
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <BotonPrueba claro texto="Probar 15 días" />
+                <BotonPrueba claro />
                 <BotonDemo claro texto="Ver demo" />
               </div>
             </div>
@@ -678,7 +678,7 @@ export default async function PeluDeskLanding() {
       <PieSitio whatsapp={whatsapp} />
 
       <BarraCelular>
-        <BotonPrueba className="w-full" texto="Probar 15 días" />
+        <BotonPrueba className="w-full" />
       </BarraCelular>
     </div>
   );

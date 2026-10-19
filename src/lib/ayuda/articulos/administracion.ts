@@ -354,6 +354,8 @@ Si una cuenta del personal entra sin nombre (por ejemplo, una invitada antes de 
 
 Si esa persona ya tiene cuenta en otro negocio de PeluDesk, no hay link: sale «Acceso dado» y entra con la contraseña que ya usa.
 
+También puedes hacerlo desde [Tu equipo](/bienvenida/equipo): ahí escoges **Invitar con cuenta** o **Solo en nómina** (para quien no usa la app; no puede atender citas) y dejas, si quieres, su horario y su forma de pago en el mismo formulario.
+
 Para que alguien de recepción te ayude a administrar, dale permisos extra en [Permisos](/admin/permisos).
 
 ## Si algo no sale
@@ -526,13 +528,14 @@ Más abajo, en **Tarjeta registrada a mano**, pon el **Tope de alerta por cobro 
 2. Marca los días que abres y pon la hora de apertura y de cierre.
 3. Aprieta **Guardar horario**.
 
-## Cupo y WhatsApp
+## WhatsApp, dirección y cupo
 
 1. En **Configuración del negocio** llena el **WhatsApp de recepción**: ahí llega el «olvidé mi contraseña» de tus clientes.
-2. Pon el **Cupo de día** (perros que caben en el área común) y el **Cupo de noche** (los que tienen dónde dormir).
-3. Aprieta **Guardar configuración**.
+2. Escribe la **Dirección del negocio**. Es una sola: la misma de [Perfil y página web](/admin/perfil) y de la ubicación para recolección; si la cambias aquí, cambia allá.
+3. Si das hotel o guardería, pon el **Cupo de día** (perros que caben en el área común) y el **Cupo de noche** (los que tienen dónde dormir).
+4. Aprieta **Guardar configuración**. El aviso **Falta el WhatsApp de recepción** se quita en cuanto lo guardas.
 
-> La descripción, la dirección, el logo y las fotos de tu página van en [Perfil y página web](/admin/perfil).
+> La descripción, el logo y las fotos de tu página van en [Perfil y página web](/admin/perfil).
 
 ## Si algo no sale
 
@@ -593,7 +596,7 @@ Si llegaste desde la vista previa que te mandó PeluDesk, tu página nace con tu
 
 ## Avisar a tu cliente por WhatsApp
 
-En la cita de estética, en la reserva de guardería u hotel y en la agenda clínica tienes **Avisar por WhatsApp**: **Confirmación**, **Recordatorio** y **Listo para recoger**. Cada botón abre WhatsApp con el mensaje ya escrito para el teléfono del cliente; tú decides si lo mandas.
+En la cita de estética, en la reserva de guardería u hotel y en la agenda clínica tienes **Avisar por WhatsApp**: **Confirmación**, **Recordatorio** y **Listo para recoger**. Cada botón te enseña el mensaje real y, con **Abrir WhatsApp con este mensaje**, abre WhatsApp con ese texto ya escrito para el teléfono del cliente; tú decides si lo mandas. PeluDesk no lo manda solo.
 
 ## Tu página web ya viene incluida
 

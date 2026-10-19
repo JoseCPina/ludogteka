@@ -287,7 +287,7 @@ export function PedirCita({ catalogo, horario, zona, negocio, modo, telefono, pr
       )}
 
       {paso === 2 && servicio && dia && (
-        <form id="form-pedir" onSubmit={enviar} className="flex flex-col gap-4" noValidate>
+        <form method="post" id="form-pedir" onSubmit={enviar} className="flex flex-col gap-4" noValidate>
           <p className="flex items-start gap-2 rounded-[var(--w-radio-chico)] bg-[var(--w-suave)] p-3 text-[15px]">
             <CalendarCheck size={20} className="mt-0.5 shrink-0 text-[var(--w-acento)]" aria-hidden />
             <span>

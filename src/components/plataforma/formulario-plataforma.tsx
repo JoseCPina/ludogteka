@@ -35,7 +35,7 @@ export function FormularioPlataforma({
   const [resultado, setResultado] = useState<ResultadoPlataforma | null>(null);
 
   return (
-    <form
+    <form method="post"
       ref={form}
       className={`flex flex-col gap-4 ${className}`}
       onSubmit={async (e) => {

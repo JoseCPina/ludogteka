@@ -84,7 +84,7 @@ try {
     if (r.data) await SB.from("negocio_modulos").update({ activo: true }).eq("id", r.data.id);
     else await SB.from("negocio_modulos").insert({ negocio_id: B, modulo: m, activo: true });
   }
-  const cedula = `UI${sufijo}`;
+  const cedula = String(Date.now()).slice(-7);
   const med = await admin.rpc("guardar_medico_veterinario", { p_profile_id: recId, p_cedula: cedula, p_cpa: "CPA-UI" });
   if (med.error) throw new Error(`médico: ${med.error.message}`);
   const { data: area } = await SB.from("areas_inventario").select("id").eq("negocio_id", B).eq("clave", "botiquin").single();
@@ -302,7 +302,7 @@ try {
   // el bucket de las mascotas (la política solo admite admin y recepción), así que el PDF firmado lo sube el servidor
   // tras comprobar el permiso. Antes la firma se perdía con «No pudimos guardar el PDF firmado».
   {
-    const dEst = await admin.rpc("guardar_medico_veterinario", { p_profile_id: datos.esteticaB, p_cedula: `EST${sufijo}`, p_cpa: null });
+    const dEst = await admin.rpc("guardar_medico_veterinario", { p_profile_id: datos.esteticaB, p_cedula: String(Date.now() + 3).slice(-7), p_cpa: null });
     comprobar(!dEst.error, `estética designada como médica (${dEst.error?.message ?? "ok"})`);
     const ctxE = await nav.newContext({ viewport: { width: 390, height: 844 } });
     await ctxE.addCookies(await cookiesDe(datos.esteticaB));

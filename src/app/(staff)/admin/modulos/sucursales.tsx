@@ -109,7 +109,7 @@ export function Sucursales({ grupo, precioMensual, dominio }: { grupo: GrupoSucu
 
       {grupo.soy_admin_principal && (
         pagada ? (
-          <form onSubmit={abrir} className="flex flex-col gap-3" data-abrir-sucursal>
+          <form method="post" onSubmit={abrir} className="flex flex-col gap-3" data-abrir-sucursal>
             <h3 className="font-semibold text-n-900">Abrir otra sucursal</h3>
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Nombre de la sucursal" name="nombre_sucursal" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. Patitas Juriquilla" />

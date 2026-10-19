@@ -89,7 +89,7 @@ function FormConfig({ config, conReporte, coloresMarca }: { config: ConfigReport
   );
 
   return (
-    <form onSubmit={guardar} className="flex flex-col gap-4 rounded-xl border border-n-200 bg-white p-4 sm:p-5">
+    <form method="post" onSubmit={guardar} className="flex flex-col gap-4 rounded-xl border border-n-200 bg-white p-4 sm:p-5">
       <h2 className="text-lg font-bold text-n-900">{conReporte ? "Encabezado, colores y retención" : "Retención"}</h2>
       {conReporte && (
         <>
@@ -198,7 +198,7 @@ function FormSeccion({ s, indice, total }: { s: SeccionPlantilla; indice: number
         </Button>
       </div>
       {abierta && (
-        <form onSubmit={guardar} className="flex flex-col gap-4 border-t border-n-200 p-3 sm:p-4">
+        <form method="post" onSubmit={guardar} className="flex flex-col gap-4 border-t border-n-200 p-3 sm:p-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className={etiqueta}>
               Nombre de la sección
@@ -357,7 +357,7 @@ function NuevaSeccion() {
     router.refresh();
   };
   return (
-    <form onSubmit={crear} className="flex flex-col gap-3 rounded-xl border-2 border-dashed border-n-300 bg-white p-4">
+    <form method="post" onSubmit={crear} className="flex flex-col gap-3 rounded-xl border-2 border-dashed border-n-300 bg-white p-4">
       <h3 className="text-base font-bold text-n-900">Sección nueva</h3>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className={etiqueta}>

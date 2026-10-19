@@ -324,6 +324,20 @@ try {
   const turno3Id = turno3.id;
   turno = turno3;
 
+  // ── 7b. QA S16 (N63): anular sin turno abierto ──
+  console.log("── 7b. N63: sin turno abierto, «Abrir turno y anular» ahí mismo");
+  const cuentaN63 = await nuevaCuenta(250);
+  const cobroN63 = await cobrar(cuentaN63, [{ metodo: "efectivo", monto: 250, propina: 0 }]);
+  await cerrarConLoEsperado(turno3Id);
+  const sinTurnoAbierto = await recA.rpc("anular_cobro", { p_cobro_id: cobroN63, p_motivo: "Cobro capturado de más" });
+  comprobar(/No hay turno de caja abierto/.test(sinTurnoAbierto.error?.message ?? ""), `sin turno abierto la base explica que hace falta abrirlo (${sinTurnoAbierto.error?.message ?? "sin error"})`);
+  const fuenteCorr = (await import("node:fs")).readFileSync("src/app/(staff)/reservas/[id]/cobrar/corregir-cobro.tsx", "utf8");
+  comprobar(/no hay turno de caja abierto/i.test(fuenteCorr) && /Abrir turno y anular/.test(fuenteCorr) && /abrirTurno\(/.test(fuenteCorr), "la pantalla reconoce ese caso y ofrece «Abrir turno y anular» ahí mismo");
+  const turnoN63 = await abrirTurno(0);
+  const anN63 = await recA.rpc("anular_cobro", { p_cobro_id: cobroN63, p_motivo: "Cobro capturado de más" });
+  comprobar(!anN63.error && anN63.data?.turno_efecto_id === turnoN63.id, "con el turno recién abierto, la anulación queda en ese turno nuevo (el corte cerrado no cambia)");
+  turno = turnoN63;
+
   // ── 8. Corregir el precio de una cuenta ──
   console.log("── 8. Corregir el precio de una cuenta (sin descuento)");
   const cuentaP = await nuevaCuenta(400, "Servicio con precio mal");

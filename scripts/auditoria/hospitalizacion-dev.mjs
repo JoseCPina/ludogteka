@@ -36,7 +36,7 @@ try {
     await quitar(P.admin, P.recSinId, permiso);
   }
   const hoyB = await hoy(P.admin);
-  const cedula = `CEDH${String(Date.now()).slice(-6)}`;
+  const cedula = String(Date.now()).slice(-7);
   const med = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: P.recConId, p_cedula: cedula, p_cpa: "CPA-2" });
   comprobar(med.ok, `admin designa a la recepcionista como médico (${med.mensaje})`);
   const medicoId = med.cuerpo;

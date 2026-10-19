@@ -105,7 +105,7 @@ export function CorregirServicio({
   }
 
   return (
-    <form
+    <form method="post"
       data-corregir-servicio-form
       className="flex flex-col gap-3 rounded-md border border-n-200 bg-n-50 p-3"
       onSubmit={async (e) => {

@@ -5,6 +5,7 @@ import { ListaCuentas, type Cuenta } from "./lista-cuentas";
 import { DescuentoConfig } from "./descuento-config";
 import { DiagnosticoGoogle } from "./diagnostico-google";
 import { UbicacionNegocio } from "./ubicacion-negocio";
+import { usaEstancias } from "@/lib/plan/modulos";
 import { ConfiguracionNegocio, type ConfiguracionVigente } from "./configuracion-negocio";
 import { HorarioNegocio } from "./horario-negocio";
 import type { DiaHorario } from "./configuracion-actions";
@@ -65,6 +66,12 @@ export default async function AdminPage() {
     supabase.rpc("horario_semana_vigente"),
     supabase.from("horario_semana").select("updated_at").order("updated_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
+  // QA S16 (N61): una sola dirección del negocio (la del perfil); si todavía no hay, la de la sucursal.
+  const [{ data: perfilDir }, { data: sucursalDir }] = await Promise.all([
+    supabase.from("negocio_perfil").select("direccion").is("deleted_at", null).maybeSingle(),
+    supabase.from("sucursales").select("direccion").is("deleted_at", null).order("activo", { ascending: false }).limit(1).maybeSingle(),
+  ]);
+  const direccionNegocio = ((perfilDir?.direccion as string | null) ?? (sucursalDir?.direccion as string | null) ?? "").trim();
   const negocioIdActual = (await negocioActual()).id;
   const { data: personal } = !esAdmin && puedePersonal ? await supabase.rpc("listar_personal") : { data: null };
 
@@ -127,7 +134,7 @@ export default async function AdminPage() {
       {puedeConfig && (
         <section id="configuracion" className="scroll-mt-20 rounded-lg border border-n-200 bg-white p-5">
           <h2 className="mb-4 text-lg font-bold text-n-900">Configuración del negocio</h2>
-          <ConfiguracionNegocio vigente={configVigente} />
+          <ConfiguracionNegocio vigente={configVigente} direccion={direccionNegocio} conCupo={usaEstancias(sesion?.modulos ?? [])} />
         </section>
       )}
 
@@ -135,7 +142,7 @@ export default async function AdminPage() {
         <section id="ubicacion" className="scroll-mt-20 rounded-lg border border-n-200 bg-white p-5">
           <h2 className="mb-4 text-lg font-bold text-n-900">Ubicación para recolección</h2>
           <UbicacionNegocio
-            direccion={(ubicacion[0].data?.direccion as string | null) ?? ""}
+            direccion={direccionNegocio || ((ubicacion[0].data?.direccion as string | null) ?? "")}
             base={cupoUbic?.base_direccion ?? ""}
             conCoordenadas={{ negocio: ubicacion[0].data?.lat != null, base: cupoUbic?.base_lat != null }}
             consumo={(ubicacion[2].data as { usadas: number; tope: number } | null) ?? null}

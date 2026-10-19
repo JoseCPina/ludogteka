@@ -60,7 +60,7 @@ export function LlamadaSobria({ titulo = "¿Quieres dejar la libreta?", texto = 
       <p className="mt-2 max-w-[52ch] text-n-700">{texto}</p>
       <div className="mt-5 flex flex-col gap-3 sm:flex-row">
         <EnlaceRegistro className="pd-boton pd-boton-primario inline-flex min-h-12 items-center justify-center whitespace-nowrap rounded-full bg-morado px-6 text-base font-semibold text-white hover:bg-morado-oscuro focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave">
-          Pruébalo 15 días gratis
+          Pruébalo gratis
         </EnlaceRegistro>
         <a
           href={`${urlDemo()}/demo`}

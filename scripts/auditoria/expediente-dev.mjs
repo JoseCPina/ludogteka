@@ -42,7 +42,7 @@ try {
   const hoyB = await hoy(P.admin);
 
   // Médicos: la recepcionista «con» y la persona de estética.
-  const cedA = `CEDX${String(Date.now()).slice(-6)}`;
+  const cedA = String(Date.now()).slice(-7);
   const m1 = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: P.recConId, p_cedula: cedA, p_cpa: "CPA-9" });
   const m2 = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: datos.esteticaB, p_cedula: `${cedA}9`, p_cpa: null });
   comprobar(m1.ok && m2.ok, `admin designa a dos médicos (uno con rol de recepción y otro de estética) (${m1.mensaje} ${m2.mensaje})`);

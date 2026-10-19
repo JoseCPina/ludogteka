@@ -98,7 +98,7 @@ export function FormularioAccion({
   }
 
   return (
-    <form
+    <form method="post"
       ref={form}
       className={`flex flex-col gap-4 ${className}`}
       onSubmit={async (e) => {

@@ -33,7 +33,7 @@ const ajustesAntes = (await SB.from("veterinaria_ajustes").select("id, dictado_c
 
 try {
   await fijarModulo("veterinaria", true);
-  const med = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: P.recConId, p_cedula: `CEDD${String(Date.now()).slice(-6)}`, p_cpa: null });
+  const med = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: P.recConId, p_cedula: String(Date.now()).slice(-7), p_cpa: null });
   comprobar(med.ok, `admin designa a la recepcionista como médico (${med.mensaje})`);
   medicosCreados.push(med.cuerpo);
   const nuevoPerro = async (nombre) => {

@@ -146,6 +146,12 @@ export function AgendarForm({
 
   const clienteElegido = clientes.find((c) => c.id === clienteId) ?? null;
   const perrosDelCliente = useMemo(() => [...perros, ...perrosExtra].filter((p) => p.cliente_id === clienteId), [perros, perrosExtra, clienteId]);
+  // QA S16 (N68): un cliente con un solo perro lo trae ya escogido (una vez por cliente: «agregar otro» lo limpia).
+  const [autoPara, setAutoPara] = useState<string | null>(null);
+  if (clienteId && autoPara !== clienteId && perrosDelCliente.length === 1 && !perroId) {
+    setAutoPara(clienteId);
+    setPerroId(perrosDelCliente[0].id);
+  }
   const estanciasDelPerro = estanciasEnCurso.filter((e) => e.perroId === perroId);
   const sinGrupo = perrosSinGrupo.find((p) => p.perroId === perroId) ?? null;
   const perroBase = [...perros, ...perrosExtra].find((p) => p.id === perroId) ?? null;
@@ -181,6 +187,18 @@ export function AgendarForm({
   // como la de otro perro o servicio.
   const claveCot = `${perroId}|${servicioActual?.id ?? ""}|${peloMaltratado}|${grupoDeExcepcion ?? ""}|${tarifaModo}|${version}`;
   const cot: CotizacionCita | null = cotizacion?.clave === claveCot ? cotizacion.valor : null;
+  // QA S16 (N68): el botón deshabilitado dice por qué.
+  const motivoNoAgendar = !perroId
+    ? "Elige el perro."
+    : !empleadoId
+      ? "Elige quién lo atiende."
+      : elegidoAusente
+        ? "Quien escogiste tiene una ausencia a esa hora: escoge a otra persona u otro horario."
+        : !cot
+          ? "Calculando el precio…"
+          : !(cot.error === null && cot.estado === "ok")
+            ? "Falta resolver el precio (ve el aviso de arriba)."
+            : null;
   useEffect(() => {
     if (!perroId || !servicioActual?.id) return;
     let vigente = true;
@@ -776,11 +794,16 @@ export function AgendarForm({
           <AccionesFormulario error={error} exito={exitoAgendar}>
             <Button
               type="button"
-              disabled={enviando.cargando || !perroId || !empleadoId || Boolean(elegidoAusente) || !(cot && cot.error === null && cot.estado === "ok")}
+              disabled={enviando.cargando || Boolean(motivoNoAgendar)}
               onClick={() => enviar()}
             >
               {enviando.cargando ? "Agendando…" : "Agendar cita"}
             </Button>
+            {motivoNoAgendar && !enviando.cargando && (
+              <span className="text-sm text-n-600" data-motivo-agendar>
+                {motivoNoAgendar}
+              </span>
+            )}
           </AccionesFormulario>
         </>
       )}

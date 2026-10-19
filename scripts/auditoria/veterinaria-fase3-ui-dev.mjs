@@ -74,9 +74,9 @@ try {
     if (r.data) await SB.from("negocio_modulos").update({ activo: true }).eq("id", r.data.id);
     else await SB.from("negocio_modulos").insert({ negocio_id: B, modulo: m, activo: true });
   }
-  const cedula = `UF3${sufijo}`;
+  const cedula = String(Date.now()).slice(-7);
   const m1 = await admin.rpc("guardar_medico_veterinario", { p_profile_id: recConId, p_cedula: cedula, p_cpa: "CPA-F3" });
-  const m2 = await admin.rpc("guardar_medico_veterinario", { p_profile_id: datos.esteticaB, p_cedula: `${cedula}E`, p_cpa: null });
+  const m2 = await admin.rpc("guardar_medico_veterinario", { p_profile_id: datos.esteticaB, p_cedula: `${cedula}1`, p_cpa: null });
   if (m1.error || m2.error) throw new Error(`médicos: ${m1.error?.message} ${m2.error?.message}`);
   medicos.push(m1.data, m2.data);
   const nombrePerro = `Fase3 ${sufijo}`;

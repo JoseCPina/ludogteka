@@ -44,7 +44,7 @@ export function UbicacionNegocio({
   const porcentaje = consumo && consumo.tope > 0 ? Math.min(100, Math.round((consumo.usadas / consumo.tope) * 100)) : 0;
 
   return (
-    <form onSubmit={guardar} className="flex flex-col gap-4">
+    <form method="post" onSubmit={guardar} className="flex flex-col gap-4">
       <p className="text-sm text-n-600">
         La ruta de cada recolección va de la base al domicilio del cliente y de ahí al negocio. Escribe las direcciones completas
         (calle, número, colonia); la ciudad de tu negocio se agrega sola.
@@ -53,7 +53,7 @@ export function UbicacionNegocio({
         label="Dirección del negocio"
         value={dir}
         onChange={(e) => setDir(e.target.value)}
-        ayuda={conCoordenadas.negocio ? "Ubicada en el mapa." : "Todavía sin ubicar."}
+        ayuda={`${conCoordenadas.negocio ? "Ubicada en el mapa." : "Todavía sin ubicar."} Es la misma dirección de Configuración y de tu perfil.`}
       />
       <Field
         label="Dirección de la base (donde se guarda la camioneta)"

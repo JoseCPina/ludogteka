@@ -10,7 +10,27 @@ export type ServicioConHuecos = { id: string; nombre: string; faltan: number };
  * Un servicio de un módulo apagado no se cobra ni se ofrece, así que sus precios
  * vacíos no son «precios sin capturar».
  */
-export function moduloDeServicio(s: { categoria: string; unidad?: string | null }): ClaveModulo | null {
+export function moduloDeServicio(s: { categoria: string; unidad?: string | null; clave?: string | null }): ClaveModulo | null {
+  return modulosDeServicio(s)?.[0] ?? null;
+}
+
+/**
+ * Todos los módulos con los que un servicio aplica (basta uno prendido). La comida especial es de hotel y guardería;
+ * los cargos internos de Veterinaria, de Veterinaria. `null` = de ninguno en particular.
+ */
+export function modulosDeServicio(s: { categoria: string; unidad?: string | null; clave?: string | null }): ClaveModulo[] | null {
+  if (s.categoria === "cargo") {
+    if (s.unidad === "km") return ["recoleccion"];
+    if (s.clave === "cargo_comida_especial") return ["guarderia", "hotel"];
+    if (s.clave?.startsWith("vet_")) return ["veterinaria"];
+    if (s.clave?.startsWith("extra_")) return ["guarderia", "hotel"];
+    return null;
+  }
+  const m = moduloBase(s);
+  return m ? [m] : null;
+}
+
+function moduloBase(s: { categoria: string; unidad?: string | null }): ClaveModulo | null {
   switch (s.categoria) {
     case "guarderia":
       return "guarderia";
@@ -29,17 +49,19 @@ export function moduloDeServicio(s: { categoria: string; unidad?: string | null 
   }
 }
 
-/** ¿El servicio es de un módulo que el negocio tiene prendido? */
-export function servicioActivo(s: { categoria: string; unidad?: string | null }, modulos: readonly string[]): boolean {
-  const m = moduloDeServicio(s);
-  return m === null || modulos.includes(m);
+/** ¿El servicio es de un módulo que el negocio tiene prendido? (QA S16, N64: lo de un giro apagado no se ofrece ni se muestra) */
+export function servicioActivo(s: { categoria: string; unidad?: string | null; clave?: string | null }, modulos: readonly string[]): boolean {
+  const ms = modulosDeServicio(s);
+  return ms === null || ms.some((m) => modulos.includes(m));
 }
 
 type FilaServicio = {
   id: string;
   nombre: string;
+  clave: string | null;
   categoria: string;
   unidad: string | null;
+  pelajes_excluidos: string[] | null;
   depende_grupo_raza: boolean;
   depende_tamano: boolean;
   depende_pelaje: boolean;
@@ -58,12 +80,12 @@ export async function cargarServiciosConHuecos(supabase: SupabaseClient, modulos
   const [{ data: servicios }, { data: grupos }, { data: tamanos }, { data: pelajes }, { data: vigentes }] = await Promise.all([
     supabase
       .from("servicios")
-      .select("id, nombre, categoria, unidad, depende_grupo_raza, depende_tamano, depende_pelaje, depende_cantidad, monto_libre")
+      .select("id, nombre, clave, categoria, unidad, depende_grupo_raza, depende_tamano, depende_pelaje, depende_cantidad, monto_libre, pelajes_excluidos")
       .is("deleted_at", null)
       // Un cargo de monto libre no tiene celda que capturar: el importe se pone al aplicarlo.
       .eq("monto_libre", false)
       .order("orden"),
-    supabase.from("grupos_raza").select("id, nombre, depende_tamano, depende_pelaje").is("deleted_at", null).order("orden"),
+    supabase.from("grupos_raza").select("id, nombre, depende_tamano, depende_pelaje, pelajes_permitidos").is("deleted_at", null).order("orden"),
     supabase.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
     supabase.from("tipos_pelaje").select("id, etiqueta, clave").is("deleted_at", null).order("orden"),
     leerTodo<CeldaVigente & { servicio_id: string }>(() =>

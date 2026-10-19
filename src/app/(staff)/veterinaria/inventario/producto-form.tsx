@@ -76,7 +76,7 @@ export function ProductoForm({
   const bloqueado = !puedeEditar || envio.cargando;
 
   return (
-    <form
+    <form method="post"
       className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5"
       onSubmit={async (e) => {
         e.preventDefault();

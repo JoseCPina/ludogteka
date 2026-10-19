@@ -35,7 +35,7 @@ export function TarifaGuarderiaForm({
   }
 
   return (
-    <form
+    <form method="post"
       data-tarifa-guarderia-form
       className="flex flex-col gap-5 rounded-lg border border-n-200 bg-white p-5"
       onSubmit={async (e) => {

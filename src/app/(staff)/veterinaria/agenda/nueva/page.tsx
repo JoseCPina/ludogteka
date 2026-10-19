@@ -75,7 +75,10 @@ export default async function NuevaCitaVet({ searchParams }: { searchParams: Pro
       {!mascota ? (
         <Alert variante="error" titulo="No encontramos a esa mascota">Búscala de nuevo.</Alert>
       ) : medicos.length === 0 ? (
-        <Alert variante="advertencia" titulo="Todavía no hay médicos veterinarios">Un admin designa al menos uno en <Link href="/veterinaria/medicos" className="font-semibold underline">Médicos</Link>.</Alert>
+        <Alert variante="advertencia" titulo="Todavía no hay médicos veterinarios">
+          Antes de agendar hace falta al menos un médico con cuenta y cédula profesional. Un admin lo designa (o se designa a sí mismo con «Yo soy el médico») en{" "}
+          <Link href="/bienvenida/medico" className="font-semibold underline">Médico veterinario</Link> o en <Link href="/veterinaria/medicos" className="font-semibold underline">Médicos</Link>.
+        </Alert>
       ) : (
         <FormularioAccion accion={agendarCita} textoBoton="Agendar cita" className="rounded-lg border border-n-200 bg-white p-5">
           <input type="hidden" name="perro_id" value={perro} />

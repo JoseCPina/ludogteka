@@ -18,7 +18,7 @@ export async function preparar(nombre) {
     await quitar(P.admin, P.recConId, p);
     await quitar(P.admin, P.recSinId, p);
   }
-  const ced = `CEDR${String(Date.now()).slice(-6)}`;
+  const ced = String(Date.now()).slice(-7);
   // La recepcionista «con» es médico (con CPA); la persona de estética, médico sin CPA.
   const m1 = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: P.recConId, p_cedula: ced, p_cpa: "CPA-F4" });
   const m2 = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: datos.esteticaB, p_cedula: `${ced}9`, p_cpa: null });

@@ -106,7 +106,7 @@ try {
   comprobar(!gato.ok, `apagado: una mascota no puede ser gato («${gato.mensaje.slice(0, 60)}»)`);
   const chip = await patch(P.admin, `perros?id=eq.${perro}`, { microchip: "985112345678901" });
   comprobar(!chip.ok, "apagado: no se captura microchip");
-  const medico = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: P.adminId, p_cedula: `CED-${MARCA}`, p_cpa: null });
+  const medico = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: P.adminId, p_cedula: String(Date.now()).slice(-7), p_cpa: null });
   comprobar(!medico.ok, `apagado: no se designan médicos («${medico.mensaje.slice(0, 60)}»)`);
   const permisoEst = await rpc(P.admin, "guardar_permiso_establecimiento", { p_id: null, p_tipo: "Licencia", p_numero: "1", p_autoridad: "x", p_nivel: "municipal", p_emision: null, p_vencimiento: null, p_aviso_dias: 60, p_notas: null });
   comprobar(!permisoEst.ok, "apagado: no se capturan permisos del establecimiento");

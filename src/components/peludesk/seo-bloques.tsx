@@ -68,7 +68,7 @@ export function BloquePrecio({ plan, titulo = "Cuánto cuesta" }: { plan: PlanUn
           Un solo plan, sin costo de alta, con Veterinaria, Hotel y guardería, Estética, inventario, empleados, gastos, reportes, portal y página web. El anual cuesta {pesos(plan.anual)} + IVA: diez mensualidades por doce meses.
         </p>
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-          <EnlaceRegistro className={BOTON}>Pruébalo 15 días gratis</EnlaceRegistro>
+          <EnlaceRegistro className={BOTON}>Pruébalo gratis</EnlaceRegistro>
           <Link href="/precios" className="inline-flex min-h-12 items-center justify-center rounded-full px-4 text-base font-semibold text-morado underline underline-offset-2">Ver todo lo que incluye</Link>
         </div>
       </div>

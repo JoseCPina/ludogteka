@@ -119,6 +119,9 @@ export function CheckinForm({
     setNuevaPertenencia("");
   }
 
+  // QA S16 (N69): lo obligatorio se marca antes del clic y el botón dice qué falta.
+  const motivoConfirmar = !quien ? "Falta: escoge quién entrega al perro." : !entregadoNombre.trim() ? "Falta: el nombre de quien entrega al perro." : null;
+
   async function confirmar() {
     if (!quien || !entregadoNombre.trim()) {
       setFaltaEntrega(true);
@@ -160,7 +163,7 @@ export function CheckinForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Select
           id="checkin-entrega-quien"
-          label="Quién entrega al perro (obligatorio)"
+          label="Quién entrega al perro * (obligatorio)"
           required
           error={faltaEntrega && !quien ? "Escoge quién entrega al perro." : undefined}
           value={quien}
@@ -191,7 +194,7 @@ export function CheckinForm({
           <>
             <Field
               id="checkin-entrega-nombre"
-              label="Nombre de la otra persona (obligatorio)"
+              label="Nombre de la otra persona * (obligatorio)"
               required
               error={faltaEntrega && !entregadoNombre.trim() ? "Escribe el nombre de quien lo entrega." : undefined}
               value={entregadoNombre}
@@ -297,9 +300,10 @@ export function CheckinForm({
 
       {!registrado && (
         <AccionesFormulario error={error}>
-          <Button type="button" cargando={enviando.cargando} onClick={confirmar}>
+          <Button type="button" cargando={enviando.cargando} disabled={Boolean(motivoConfirmar)} onClick={confirmar} data-confirmar-checkin>
             {enviando.cargando ? "Guardando…" : "Confirmar check-in"}
           </Button>
+          {motivoConfirmar && <span className="text-sm text-n-600" data-motivo-confirmar>{motivoConfirmar}</span>}
         </AccionesFormulario>
       )}
       </fieldset>
