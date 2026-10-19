@@ -47,6 +47,8 @@ export function RequisitosEstancia({
   soloLectura,
   esAdmin,
   aplica = true,
+  bloqueos: bloqueosDeLaBase,
+  evaluacionExigida = true,
 }: {
   perroId: string;
   clienteId: string | null;
@@ -57,6 +59,11 @@ export function RequisitosEstancia({
   // false = viene solo a estética: lo que falte no bloquea nada hoy, así
   // que se dice en neutro, no en rojo. Se puede capturar igual.
   aplica?: boolean;
+  // QA S16 (N57): lo que bloquea una reserva, calculado por la base con la misma regla que la reserva
+  // (pendientes_para_estancia). Si viene, manda; la lista local queda solo de respaldo.
+  bloqueos?: string[];
+  // El negocio puede no pedir la evaluación de comportamiento (Requisitos para hospedar).
+  evaluacionExigida?: boolean;
 }) {
   const marcarConIds = marcarEvaluacionComportamiento.bind(null, perroId, clienteId);
   const [estadoEval, accionEval, enviandoEval] = useActionState(useAccionConTope(marcarConIds), ESTADO_INICIAL);
@@ -80,11 +87,12 @@ export function RequisitosEstancia({
 
   const evaluada = Boolean(datos.evaluacion_comportamiento_fecha);
   const esHembra = datos.sexo === "hembra";
-  const bloqueos: string[] = [];
-  if (!evaluada) bloqueos.push("falta la evaluación previa de comportamiento (admin puede autorizar excepción)");
-  if (enCelo) bloqueos.push("está marcada en celo");
-  if (gestante) bloqueos.push("está marcada como gestante");
-  for (const a of datos.alertasBloqueantes) bloqueos.push(`tiene activa la alerta "${a}"`);
+  const locales: string[] = [];
+  if (!evaluada && evaluacionExigida) locales.push("falta la evaluación previa de comportamiento (admin puede autorizar excepción)");
+  if (enCelo) locales.push("está marcada en celo");
+  if (gestante) locales.push("está marcada como gestante");
+  for (const a of datos.alertasBloqueantes) locales.push(`tiene activa la alerta "${a}"`);
+  const bloqueos = bloqueosDeLaBase ?? locales;
 
   async function cambiarReproductivo(cambios: { en_celo?: boolean; gestante?: boolean }) {
     setError(null);
@@ -116,7 +124,7 @@ export function RequisitosEstancia({
         </p>
       ) : bloqueos.length === 0 ? (
         <p className="rounded-md border-[1.5px] border-menta bg-menta-suave px-3 py-2 text-sm font-semibold text-menta-oscuro">
-          Nada bloquea una reserva de guardería u hotel por estos requisitos.
+          Nada bloquea una reserva de guardería u hotel.
         </p>
       ) : (
         <div className="rounded-md border-[1.5px] border-coral bg-coral-suave px-3 py-2 text-sm text-coral-oscuro">
@@ -155,8 +163,9 @@ export function RequisitosEstancia({
         ) : (
           <>
             <p className="mt-1 text-sm text-n-600">
-              Se hace una vez por perro antes de su primera estancia. Sin ella, la reserva avisa y solo
-              un admin puede pasar por encima con motivo.
+              {evaluacionExigida
+                ? "Se hace una vez por perro antes de su primera estancia. Sin ella, la reserva avisa y solo un admin puede pasar por encima con motivo."
+                : "Este negocio no la pide para hospedar (Requisitos para hospedar). La puedes registrar igual."}
             </p>
             {!soloLectura && !capturando && (
               <Button type="button" className="mt-3" onClick={() => setCapturando(true)}>

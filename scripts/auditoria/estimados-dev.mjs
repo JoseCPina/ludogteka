@@ -44,7 +44,7 @@ try {
   await fijarModulo("inventario", true);
   await limpiar();
   const hoyB = await hoy(P.admin);
-  const med = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: P.recConId, p_cedula: `CEDE${String(Date.now()).slice(-6)}`, p_cpa: null });
+  const med = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: P.recConId, p_cedula: String(Date.now()).slice(-7), p_cpa: null });
   comprobar(med.ok, `admin designa a la recepcionista como médico (${med.mensaje})`);
   medicosCreados.push(med.cuerpo);
   const perro = await nuevoPerro("Presupin");

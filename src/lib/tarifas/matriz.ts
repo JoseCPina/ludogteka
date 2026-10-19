@@ -18,6 +18,8 @@ export type GrupoRaza = {
   id: string;
   nombre: string;
   depende_tamano: boolean;
+  // Pelajes que el grupo admite (null = todos). Una celda de otro pelaje no se puede cobrar: no es un hueco.
+  pelajes_permitidos?: string[] | null;
   // Cobra también por pelaje (talla × pelaje): el grupo «Mestizo / sin raza».
   depende_pelaje?: boolean;
 };
@@ -27,6 +29,8 @@ export type DimensionesServicio = {
   depende_tamano: boolean;
   depende_pelaje: boolean;
   depende_cantidad: boolean;
+  // Claves de pelaje que el servicio no ofrece (el rapado a pelo corto): esas celdas no son huecos.
+  pelajes_excluidos?: string[] | null;
 };
 
 export type Catalogos = {
@@ -186,18 +190,23 @@ export function contarSinTarifa(
       claveCelda(v.cantidad_desde, v.cantidad_hasta, v.grupo_raza_id, v.tamano_id, v.pelaje_id)
     )
   );
+  // QA S16 (N59): se cuentan las celdas vacías REALES: una combinación que el servicio o el grupo no admiten (el
+  // rapado a pelo corto, un pelaje que el grupo no cobra) no se puede capturar ni cobrar, así que no es un hueco.
+  const clavePelaje = new Map((catalogos.pelajes ?? []).map((p) => [p.id, p.clave ?? ""]));
+  const excluidos = new Set(servicio.pelajes_excluidos ?? []);
+  const permitidosDe = new Map(catalogos.grupos.map((g) => [g.id, g.pelajes_permitidos ?? null]));
   let faltan = 0;
   for (const tramo of tramosDeMatriz(servicio, vigentes)) {
     for (const fila of filasDeMatriz(servicio, catalogos)) {
       for (const col of columnasDeMatriz(servicio, catalogos.pelajes)) {
-        const clave = claveCelda(
-          tramo.desde,
-          tramo.hasta,
-          fila.grupo_raza_id,
-          fila.tamano_id,
-          fila.pelaje_id ?? (col.id || null)
-        );
-        if (!capturadas.has(clave)) faltan += 1;
+        const pelajeId = fila.pelaje_id ?? (col.id || null);
+        const clave = claveCelda(tramo.desde, tramo.hasta, fila.grupo_raza_id, fila.tamano_id, pelajeId);
+        if (capturadas.has(clave)) continue;
+        const cp = pelajeId ? clavePelaje.get(pelajeId) : null;
+        if (cp && excluidos.has(cp)) continue;
+        const permitidos = fila.grupo_raza_id ? permitidosDe.get(fila.grupo_raza_id) : null;
+        if (cp && permitidos && !permitidos.includes(cp)) continue;
+        faltan += 1;
       }
     }
   }

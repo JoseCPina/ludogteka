@@ -126,8 +126,10 @@ El admin, y recepción con el permiso **Administrar lotes e inventario clínico*
     palabras: ["médico", "cédula", "CPA", "SITPV", "folios", "receta", "firma", "MVRA"],
     cuerpo: `El médico veterinario es la persona de tu equipo que firmará expediente y recetas en las siguientes fases. Hoy dejas lista su identidad y sus folios.
 
-1. Invita antes a la persona en [Administración](/admin), si todavía no está en tu equipo.
-2. Entra a [Médicos](/veterinaria/medicos), elige a la persona, escribe su **cédula profesional** y su **CPA del SITPV** y aprieta **Designar médico**.
+1. Invita antes a la persona en [Administración](/admin) o en [Tu equipo](/bienvenida/equipo), si todavía no está en tu equipo (ahí mismo puedes marcar **Es médico veterinario** con su cédula).
+2. Entra a [Médicos](/veterinaria/medicos), elige a la persona, escribe su **cédula profesional** (7 u 8 números, como en el Registro Nacional de Profesionistas) y su **CPA del SITPV** y aprieta **Designar médico**.
+
+¿Tú eres el médico? En [Médico veterinario](/bienvenida/medico) escribe tu cédula y aprieta **Designarme médico**: tu cuenta queda designada y ya puedes agendar consultas a tu nombre. Mientras no haya un médico con cuenta y cédula, la agenda clínica no deja agendar.
 3. Para sus folios, aprieta **Asignar bloque** y escribe el primer y el último folio (y el prefijo, si lo tiene). Si ya llevaba folios usados, anota cuántos.
 
 Cada bloque muestra cuántos folios están **asignados**, **usados** y **disponibles**. El contador de usados lo lleva el sistema: cada vez que el médico use un folio se suma y no se puede deshacer ni repetir.

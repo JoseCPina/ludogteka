@@ -31,7 +31,7 @@ export async function tramo(c) {
   if (recetaId) {
     const t = await cuerpo(p);
     comprobar(/ORIGINAL/.test(t) && /COPIA 1/.test(t) && /COPIA 2/.test(t) && !/COPIA 3/.test(t), "sale el ORIGINAL y 2 copias");
-    comprobar(/PRUEBA-0000001/.test(t) && /Enrofloxacina/.test(t) && /14/.test(t), "con la cédula de PRUEBA, el medicamento y la cantidad calculada (14)");
+    comprobar(/0000001/.test(t) && /Enrofloxacina/.test(t) && /14/.test(t), "con la cédula de PRUEBA, el medicamento y la cantidad calculada (14)");
     await sinDesborde(p, "receta");
     try {
       const pdf = await p.pdf({ format: "Letter" });

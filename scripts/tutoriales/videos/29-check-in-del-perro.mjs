@@ -11,7 +11,7 @@ export default {
     {
       titulo: "Quién lo entrega",
       dice: "En «Quién entrega al perro», que es obligatorio, escoge al dueño o a su contacto de emergencia. Si lo trae alguien más, escoge Otra persona y escribe su nombre y su teléfono: queda registrado quién lo dejó.",
-      pasos: [["mover", "css:#checkin-entrega-quien"], ["js", ({ page }) => page.locator("#checkin-entrega-quien").selectOption("otra")], ["escribir", "Nombre de la otra persona (obligatorio)", "Emilio Navarro"], ["escribir", "Teléfono de esa persona (recomendado)", "4420000216"]],
+      pasos: [["mover", "css:#checkin-entrega-quien"], ["js", ({ page }) => page.locator("#checkin-entrega-quien").selectOption("otra")], ["escribir", "Nombre de la otra persona * (obligatorio)", "Emilio Navarro"], ["escribir", "Teléfono de esa persona (recomendado)", "4420000216"]],
     },
     {
       titulo: "Cómo llega y qué trae",

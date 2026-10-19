@@ -27,7 +27,7 @@ export function PedirNombre() {
   }
 
   return (
-    <form onSubmit={guardar} className="mx-auto mt-6 max-w-md space-y-4 rounded-xl border border-n-200 bg-white p-5" data-pedir-nombre>
+    <form method="post" onSubmit={guardar} className="mx-auto mt-6 max-w-md space-y-4 rounded-xl border border-n-200 bg-white p-5" data-pedir-nombre>
       <h1 className="text-lg font-semibold text-n-900">Antes de seguir, ¿cómo te llamas?</h1>
       <p className="text-sm text-n-600">
         Tu cuenta todavía no tiene nombre. Se usa en los cobros, la agenda y lo que registras, para que el equipo sepa quién lo hizo. Solo te lo pedimos una vez.

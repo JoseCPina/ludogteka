@@ -4,142 +4,118 @@ import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { formatearFecha } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
-import { usaEstancias } from "@/lib/plan/modulos";
-import { cargarServiciosConHuecos } from "@/lib/tarifas/huecos";
+import { cargarPasosBienvenida } from "@/lib/bienvenida/pasos";
 import { AvanceWeb } from "@/components/avance-web";
 import { cargarTutorialesVisibles } from "@/lib/tutoriales";
 import { VideosParaEmpezar } from "@/components/ayuda/videos-para-empezar";
 
-// Los primeros pasos de un negocio recién abierto desde peludesk.mx. Cada
-// paso manda a la pantalla donde se hace de verdad (no hay un asistente
-// aparte que duplique formularios) y se marca solo cuando la base ya
-// tiene el dato.
-type Paso = { titulo: string; que: string; href: string; accion: string; listo: boolean; video?: string };
+// Los primeros pasos de un negocio recién abierto desde peludesk.mx (QA S16). Cada paso se marca «Listo» solo
+// cuando el negocio ya puede operar con él (cargarPasosBienvenida decide, con la base) y manda a la pantalla donde se
+// hace. Arriba no hay «3 de 5»: o «Tu negocio ya puede operar», o la lista exacta de lo que falta.
+
+// Un video por paso (si ya está publicado y es de tus módulos).
+const VIDEO_DE_PASO: Record<string, string> = { datos: "07", precios: "20", horario: "07", equipo: "44", medico: "73", requisitos: "12", contrato: "16", cliente: "10" };
 
 export default async function BienvenidaPage() {
   const supabase = await createSupabaseServerClient();
   const negocio = await cargarNegocioLanding();
   const zona = await zonaActual();
-  // Los pasos se ajustan a lo que el negocio ofrece (sus módulos).
   const sesion = await obtenerSesionConRol();
   const mods = sesion?.modulos ?? [];
-  // La serie de videos: uno por paso (si ya está publicado y es de tus módulos).
-  const videos = await cargarTutorialesVisibles(supabase, { rol: sesion?.rol ?? "", permisos: sesion?.permisos ?? [], modulos: mods }).catch(() => []);
-  const videoDe = (numero: string) => videos.find((v) => v.numero === numero)?.slug;
-  const conEstancias = usaEstancias(mods);
-  const servicios = [mods.includes("guarderia") && "guardería", mods.includes("hotel") && "hotel", mods.includes("estetica") && "estética", mods.includes("veterinaria") && "veterinaria"].filter(Boolean).join(", ");
-  const cuenta = (tabla: string) => supabase.from(tabla).select("id", { count: "exact", head: true }).is("deleted_at", null);
-  if (mods.includes("veterinaria")) await supabase.rpc("vet_asegurar_servicios");
-  const [{ data: config }, { data: cupoPropio }, tarifas, empleados, clientes, conHuecos] = await Promise.all([
-    supabase.rpc("resolver_cupo_configuracion"),
-    // El cupo y el horario que trae un negocio nuevo son los de base (sin
-    // autor); en cuanto la administración guarda los suyos, hay uno con autor.
-    supabase.from("cupo_configuracion").select("id").not("created_by", "is", null).is("deleted_at", null).limit(1),
-    cuenta("tarifas"),
-    cuenta("empleados"),
-    cuenta("clientes"),
-    cargarServiciosConHuecos(supabase, mods),
+  const [videos, estado] = await Promise.all([
+    cargarTutorialesVisibles(supabase, { rol: sesion?.rol ?? "", permisos: sesion?.permisos ?? [], modulos: mods }).catch(() => []),
+    cargarPasosBienvenida(supabase, mods),
   ]);
-  const vigente = (Array.isArray(config) ? config[0] : config) as { telefono_recepcion?: string | null } | null;
-
-  const todos: (Paso & { aplica?: boolean })[] = [
-    {
-      titulo: "Datos del negocio",
-      que: "El teléfono de recepción (al que te escriben tus clientes por WhatsApp) y la dirección desde donde sale la camioneta.",
-      href: "/admin#configuracion",
-      accion: "Capturar datos",
-      video: videoDe("07"),
-      listo: Boolean(vigente?.telefono_recepcion),
-    },
-    {
-      titulo: "Servicios y precios",
-      que: `Ya tienes dados de alta los servicios de ${servicios || "tu negocio"}. Ponles tu precio${mods.includes("estetica") ? ": en estética, por grupo de raza o por talla" : ""}${conEstancias ? "; en hotel, por talla; en guardería, por día o por hora" : ""}${mods.includes("veterinaria") ? "; en veterinaria, la consulta, la urgencia, el seguimiento y la aplicación de vacuna" : ""}.`,
-      href: "/servicios",
-      accion: "Poner precios",
-      video: videoDe(mods.includes("estetica") ? "20" : "07"),
-      // Listo cuando hay precios Y no falta ninguno de los módulos prendidos.
-      listo: (tarifas.count ?? 0) > 0 && conHuecos.length === 0,
-    },
-    {
-      titulo: conEstancias ? "Horario y cupo" : "Horario",
-      que: conEstancias
-        ? "Qué días y a qué hora abres, y cuántos perros caben de día y de noche. Con eso se validan las reservas."
-        : "Qué días y a qué hora abres. Sale en tu página web.",
-      href: "/admin#horario",
-      accion: "Ajustar horario",
-      video: videoDe("07"),
-      listo: (cupoPropio?.length ?? 0) > 0,
-    },
-    {
-      titulo: "Tu primer empleado",
-      que: "Su horario y cómo se le paga. Si va a usar la app, invítalo con su correo desde Administración.",
-      href: "/empleados/nuevo",
-      accion: "Agregar empleado",
-      video: videoDe("44"),
-      listo: (empleados.count ?? 0) > 0,
-      aplica: mods.includes("empleados"),
-    },
-    {
-      titulo: "Tu primer cliente",
-      que: "Captúralo tú, o mándale un link por WhatsApp para que él llene sus datos y los de su perro.",
-      href: "/clientes/nuevo",
-      accion: "Agregar cliente",
-      video: videoDe("10"),
-      listo: (clientes.count ?? 0) > 0,
-    },
-  ];
-  const pasos: Paso[] = todos.filter((p) => p.aplica !== false);
-  const hechos = pasos.filter((p) => p.listo).length;
+  const videoDe = (clave: string) => {
+    const numero = clave === "precios" && !mods.includes("estetica") ? "07" : VIDEO_DE_PASO[clave];
+    return videos.find((v) => v.numero === numero)?.slug;
+  };
+  const { pasos, puedeOperar, faltan } = estado;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <header>
         <h1 className="text-2xl font-bold tracking-tight text-n-900">Te damos la bienvenida a {negocio.nombre}</h1>
-        <p className="mt-1 text-n-700">
-          {pasos.length} pasos para dejar tu negocio listo.{" "}
-          {negocio.plan === "prueba" && negocio.prueba_termina_at && (
-            <>Tu prueba gratis dura hasta el {formatearFecha(negocio.prueba_termina_at, zona)}.</>
-          )}
-        </p>
-        <div className="mt-4 flex items-center gap-3" aria-label={`${hechos} de ${pasos.length} pasos listos`}>
-          <div className="h-2 flex-1 overflow-hidden rounded-full bg-n-100">
-            <div className="h-full rounded-full bg-morado" style={{ width: `${(hechos / pasos.length) * 100}%` }} />
-          </div>
-          <span className="text-sm font-semibold text-n-700">
-            {hechos} de {pasos.length}
-          </span>
-        </div>
+        {negocio.plan === "prueba" && negocio.prueba_termina_at && (
+          <p className="mt-1 text-n-700">Tu prueba gratis dura hasta el {formatearFecha(negocio.prueba_termina_at, zona)}.</p>
+        )}
       </header>
-      <ol className="flex flex-col divide-y divide-n-200 rounded-xl border border-n-200 bg-white">
-        {pasos.map((p, i) => (
-          <li key={p.titulo} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:gap-5">
-            <span
-              aria-hidden
-              className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold ${p.listo ? "bg-menta text-morado" : "border-[1.5px] border-borde text-n-700"}`}
-            >
-              {p.listo ? "✓" : i + 1}
-            </span>
-            <div className="flex-1">
-              <h2 className="font-semibold text-n-900">
-                {p.titulo}
-                {p.listo && <span className="ml-2 text-sm font-medium text-menta-oscuro">Listo</span>}
-              </h2>
-              <p className="mt-0.5 text-sm text-n-700">{p.que}</p>
-              {p.video && (
-                <Link href={`/ayuda/videos/${p.video}`} data-video-paso className="mt-1 inline-block text-sm font-semibold text-morado hover:underline">
-                  ▶ Ver cómo se hace (video)
+
+      {puedeOperar ? (
+        <section data-bienvenida-opera className="rounded-xl border-[1.5px] border-menta bg-menta-suave p-5">
+          <h2 className="text-lg font-bold text-menta-oscuro">Tu negocio ya puede operar</h2>
+          <p className="mt-1 text-sm text-n-800">
+            Ya tienes lo necesario para atender: datos, precios, horario{mods.includes("estetica") ? ", quién atiende" : ""}
+            {mods.includes("veterinaria") ? ", médico con cédula" : ""}
+            {pasos.some((p) => p.clave === "requisitos") ? ", requisitos para hospedar" : ""}
+            {pasos.some((p) => p.clave === "contrato") ? " y contrato" : ""}. Lo de abajo lo puedes revisar cuando quieras.
+          </p>
+        </section>
+      ) : (
+        <section data-bienvenida-falta className="rounded-xl border-[1.5px] border-ambar bg-ambar-suave p-5">
+          <h2 className="text-lg font-bold text-ambar-oscuro">Para operar te falta:</h2>
+          <ul className="mt-2 flex flex-col gap-1.5">
+            {faltan.map((p) => (
+              <li key={p.clave} className="text-sm text-n-800">
+                <Link href={p.href} className="font-semibold text-morado hover:underline">
+                  {p.titulo}
                 </Link>
-              )}
-            </div>
-            <Link
-              href={p.href}
-              className={`inline-flex min-h-11 shrink-0 items-center justify-center rounded-md px-4 text-sm font-semibold ${p.listo ? "border-[1.5px] border-borde text-n-800 hover:bg-crema" : "bg-morado text-white hover:bg-morado-oscuro"}`}
-            >
-              {p.listo ? "Revisar" : p.accion}
-            </Link>
-          </li>
-        ))}
+                {p.falta ? ` — ${p.falta}` : ""}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <ol className="flex flex-col divide-y divide-n-200 rounded-xl border border-n-200 bg-white">
+        {pasos.map((p, i) => {
+          const video = videoDe(p.clave);
+          return (
+            <li key={p.clave} data-paso={p.clave} data-listo={p.listo ? "1" : "0"} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:gap-5">
+              <span
+                aria-hidden
+                className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold ${p.listo ? "bg-menta text-morado" : "border-[1.5px] border-borde text-n-700"}`}
+              >
+                {p.listo ? "✓" : i + 1}
+              </span>
+              <div className="flex-1">
+                <h2 className="font-semibold text-n-900">
+                  {p.titulo}
+                  {p.listo ? (
+                    <span className="ml-2 text-sm font-medium text-menta-oscuro">Listo</span>
+                  ) : !p.requerido ? (
+                    <span className="ml-2 text-sm font-medium text-n-500">Cuando quieras</span>
+                  ) : null}
+                </h2>
+                <p className="mt-0.5 text-sm text-n-700">{p.que}</p>
+                {!p.listo && p.falta && <p className="mt-1 text-sm font-semibold text-ambar-oscuro">{p.falta}</p>}
+                {video && (
+                  <Link href={`/ayuda/videos/${video}`} data-video-paso className="mt-1 inline-block text-sm font-semibold text-morado hover:underline">
+                    ▶ Ver cómo se hace (video)
+                  </Link>
+                )}
+              </div>
+              <Link
+                href={p.href}
+                className={`inline-flex min-h-11 shrink-0 items-center justify-center rounded-md px-4 text-sm font-semibold ${p.listo ? "border-[1.5px] border-borde text-n-800 hover:bg-crema" : "bg-morado text-white hover:bg-morado-oscuro"}`}
+              >
+                {p.listo ? "Revisar" : p.accion}
+              </Link>
+            </li>
+          );
+        })}
       </ol>
+
+      <section data-bienvenida-whatsapp className="rounded-xl border border-n-200 bg-white p-5">
+        <h2 className="font-semibold text-n-900">Cómo se avisa a tus clientes por WhatsApp</h2>
+        <p className="mt-1 text-sm text-n-700">
+          En la cita, la reserva y la ficha del cliente vas a ver botones como <strong>Confirmación</strong>, <strong>Recordatorio</strong>,{" "}
+          <strong>Listo para recoger</strong> e <strong>Invitar al portal</strong>. Cada uno te enseña el mensaje y, si te parece, abre
+          WhatsApp en tu celular o computadora con ese mensaje ya escrito al número del cliente: tú lo mandas. PeluDesk no manda esos
+          mensajes solo, así que salen desde el WhatsApp de tu negocio.
+        </p>
+      </section>
+
       <VideosParaEmpezar videos={videos} />
       <AvanceWeb />
       <p className="text-sm text-n-600">

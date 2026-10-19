@@ -63,7 +63,7 @@ export function InsumoForm({
   );
 
   return (
-    <form onSubmit={envioV.onSubmit} className="flex max-w-lg flex-col gap-4">
+    <form method="post" onSubmit={envioV.onSubmit} className="flex max-w-lg flex-col gap-4">
       {insumoId && <CampoVersion versiones={[{ t: "insumos", i: insumoId, v: version ?? null }]} />}
       {estado.conflicto && (
         <AvisoConflicto

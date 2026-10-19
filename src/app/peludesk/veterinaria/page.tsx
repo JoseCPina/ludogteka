@@ -62,7 +62,7 @@ export default async function PaginaVeterinaria() {
           </p>
           {plan && <PrecioPlan plan={plan} tamano="mediano" className="mt-6" />}
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <EnlaceRegistro className={botonPrimario}>Pruébalo 15 días gratis</EnlaceRegistro>
+            <EnlaceRegistro className={botonPrimario}>Pruébalo gratis</EnlaceRegistro>
             <a href={demo} data-pixel-evento="Lead" className={botonSecundario}>
               Ver demo
             </a>
@@ -173,7 +173,7 @@ export default async function PaginaVeterinaria() {
         </dl>
         <Relacionadas rutas={["/precios", "/guias/facturacion-cfdi-para-esteticas-y-veterinarias", "/guias/recordatorios-por-whatsapp-y-portal-para-duenos-de-mascotas", "/alternativas", "/ayuda/carnet-de-la-mascota"]} />
         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-          <EnlaceRegistro className={botonPrimario}>Pruébalo 15 días gratis</EnlaceRegistro>
+          <EnlaceRegistro className={botonPrimario}>Pruébalo gratis</EnlaceRegistro>
           <a href={demo} data-pixel-evento="Lead" className={botonSecundario}>
             Ver demo
           </a>

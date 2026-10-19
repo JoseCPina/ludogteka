@@ -137,6 +137,25 @@ try {
   const { data: cli2 } = await SB.from("clientes").select("id").eq("telefono", TEL2).is("deleted_at", null).maybeSingle();
   if (cli2) creados.clientes.push(cli2.id);
 
+  // ── 2b. N68: un cliente con un solo perro lo trae ya escogido ──
+  console.log("\n2b. N68: un solo perro → ya escogido al agendar");
+  {
+    const { data: talla1 } = await A.from("tamanos_categoria").select("id").eq("clave", "chico").single();
+    const { data: pelo1 } = await A.from("tipos_pelaje").select("id").eq("clave", "medio").single();
+    const { data: razaP1 } = await A.from("razas").select("id").eq("nombre", "Poodle").single();
+    const { data: cliUno } = await SB.from("clientes").insert({ nombre: `Uno solo ${sufijo}`, telefono: `44271${String(Date.now()).slice(-5)}` }).select("id").single();
+    creados.clientes.push(cliUno.id);
+    const { data: perroUno } = await SB.from("perros").insert({ cliente_id: cliUno.id, nombre: `Único ${sufijo}`, raza: "Poodle", raza_id: razaP1.id, tamano_id: talla1.id, pelaje_id: pelo1.id }).select("id").single();
+    await admin.goto(`${BASE}/estetica/nueva`, { waitUntil: "networkidle" });
+    await admin.locator("input:visible").first().fill(`Uno solo ${sufijo}`);
+    await admin.waitForTimeout(800);
+    await admin.getByText(`Uno solo ${sufijo}`).first().click();
+    await admin.waitForTimeout(800);
+    if ((await admin.getByLabel("Perro").inputValue()) !== perroUno.id) hallazgo("con un solo perro, no quedó escogido");
+    else bien("con un solo perro, ya viene escogido (sin pasos de más)");
+    await SB.from("perros").update({ deleted_at: new Date().toISOString() }).eq("id", perroUno.id);
+  }
+
   // ── 3. Cita ──
   console.log("\n3. Cita: baños, nota y recargo (celular)");
   const { data: talla } = await A.from("tamanos_categoria").select("id").eq("clave", "chico").single();
@@ -149,6 +168,9 @@ try {
   await admin.waitForTimeout(800);
   await admin.getByText(`ZZ cita ${sufijo}`).first().click();
   await admin.waitForTimeout(500);
+  // QA S16 (N68): con varios perros, el botón deshabilitado dice qué falta.
+  if (!/Elige el perro/.test(await admin.locator("[data-motivo-agendar]").innerText().catch(() => ""))) hallazgo("«Agendar cita» deshabilitado no dice que falta elegir el perro");
+  else bien("«Agendar cita» deshabilitado dice «Elige el perro.»");
   await admin.getByLabel("Perro").selectOption({ label: `ZZ cita ${sufijo}` });
   const opciones = await admin.getByLabel("Servicio").locator("option").allInnerTexts();
   const baños = opciones.filter((o) => /Baño/.test(o));
@@ -265,7 +287,11 @@ try {
   const url = await campo.inputValue();
   if (!/\/activar\/[A-Za-z0-9_-]{43}$/.test(url)) hallazgo(`el enlace no tiene la forma esperada: ${url}`);
   else bien("la ficha genera el enlace (token de 32 bytes) y lo muestra con «copiar»");
-  if (!(await admin.getByRole("link", { name: "Mandar por WhatsApp" }).getAttribute("href"))?.startsWith("https://wa.me/52")) hallazgo("el botón de WhatsApp no apunta a wa.me");
+  // QA S16 (N65): el botón enseña el mensaje antes de abrir WhatsApp.
+  await admin.getByRole("button", { name: "Invitar al portal" }).last().click();
+  await admin.locator("[data-vista-mensaje]").waitFor({ timeout: 10000 });
+  if (!(await admin.locator("[data-vista-mensaje]").innerText()).includes("/activar/")) hallazgo("la vista previa del mensaje no trae el link");
+  if (!(await admin.locator("[data-abrir-whatsapp]").getAttribute("href"))?.startsWith("https://wa.me/52")) hallazgo("el botón de WhatsApp no apunta a wa.me");
   await sinDesborde(admin, "ficha con la invitación");
   const tokenInv = url.split("/activar/")[1];
   const ctxInv = await nav.newContext({ viewport: { width: 390, height: 844 } });
@@ -583,7 +609,7 @@ try {
       // Check-in de una cita de OTRO día: pide confirmar.
       await admin.goto(`${BASE}/estetica/${citaO.id}`, { waitUntil: "networkidle" });
       await admin.getByRole("button", { name: "Iniciar cita" }).click();
-      const campoEntrega = admin.getByLabel("Quién entrega al perro (obligatorio)");
+      const campoEntrega = admin.locator("#cita-entrega-nombre");
       if (await campoEntrega.count()) await campoEntrega.fill("Prueba");
       await admin.locator("[data-confirmar-inicio]").click();
       await admin.locator("[data-checkin-otro-dia]").waitFor({ timeout: 30000 }).catch(() => {});

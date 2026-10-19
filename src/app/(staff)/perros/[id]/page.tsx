@@ -136,7 +136,12 @@ export default async function PerroPage({
   // tiene guardería u hotel; contratos, solo con su módulo.
   const conEstancias = usaEstancias(sesion.modulos);
   const conContratos = sesion.modulos.includes("contratos");
-  const pendientesEstancia = (await cargarPendientesEstancia(supabase, [id])).get(id) ?? [];
+  const [pendientesPorPerro, { data: evaluacionExigidaData }] = await Promise.all([
+    cargarPendientesEstancia(supabase, [id]),
+    supabase.rpc("evaluacion_exigida"),
+  ]);
+  const pendientesEstancia = pendientesPorPerro.get(id) ?? [];
+  const evaluacionExigida = evaluacionExigidaData !== false;
   const tiposContratoPendientes = new Set(
     pendientesEstancia.filter((p) => p.tipoContratoId).map((p) => p.tipoContratoId as string)
   );
@@ -543,6 +548,10 @@ export default async function PerroPage({
             evaluadoPorNombre: evaluadorNombre,
             alertasBloqueantes,
           }}
+          // QA S16 (N57): lo que dice «Nada bloquea» sale de la MISMA regla que bloquea la reserva
+          // (pendientes_para_estancia: talla, evaluación si el negocio la pide, vacunas, celo, alertas).
+          bloqueos={pendientesEstancia.filter((p) => p.bloquea && (p.grupo === "bloquea" || p.grupo === "condicion")).map((p) => p.etiqueta)}
+          evaluacionExigida={evaluacionExigida}
           soloLectura={soloLectura}
           esAdmin={sesion.rol === "admin"}
         />

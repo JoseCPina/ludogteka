@@ -25,7 +25,7 @@ const cobrosAntes = (await SB.from("cobros").select("id", { count: "exact", head
 try {
   await fijarModulo("veterinaria", true);
   await limpiar();
-  const med = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: P.recConId, p_cedula: `CEDT${String(Date.now()).slice(-6)}`, p_cpa: null });
+  const med = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: P.recConId, p_cedula: String(Date.now()).slice(-7), p_cpa: null });
   comprobar(med.ok, `admin designa a la recepcionista como médico (${med.mensaje})`);
   medicosCreados.push(med.cuerpo);
   const perro = (await SB.from("perros").insert({ negocio_id: B, cliente_id: datos.clienteSoloB, nombre: `Tele ${MARCA}` }).select("id").single()).data.id;

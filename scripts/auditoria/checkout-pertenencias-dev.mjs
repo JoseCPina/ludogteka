@@ -157,13 +157,11 @@ try {
     const opciones = await quien.locator("option").allInnerTexts();
     comprobar(opciones.some((o) => o.startsWith("Dueño:") && o.includes(duenoB.nombre)) && opciones.some((o) => /^Otra persona/.test(o)), `la lista trae al dueño y «Otra persona» (${opciones.join(" | ")})`);
     comprobar((await px.locator("#checkin-entrega-nombre").count()) === 0, "no hay un campo de texto libre mientras no se escoja «Otra persona»");
-    await px.getByRole("button", { name: /Confirmar check-in/ }).click();
-    comprobar(await esperarTexto(px, /Escoge quién entrega al perro/) && (await quien.getAttribute("aria-invalid")) === "true", "sin escoger: marca el campo y dice qué falta");
+    comprobar(await px.locator("[data-confirmar-checkin]").isDisabled() && /escoge quién entrega/.test(await px.locator("[data-motivo-confirmar]").innerText()), "sin escoger: el botón está deshabilitado y dice qué falta (N69)");
     // 2) «Otra persona» sin nombre: pide el nombre.
     await quien.selectOption("otra");
     comprobar((await px.locator("#checkin-entrega-nombre").count()) === 1, "«Otra persona» abre el campo «Nombre de la otra persona»");
-    await px.getByRole("button", { name: /Confirmar check-in/ }).click();
-    comprobar(await esperarTexto(px, /Escribe el nombre de la otra persona/), "con «Otra persona» y sin nombre, pide el nombre");
+    comprobar(await px.locator("[data-confirmar-checkin]").isDisabled() && /el nombre de quien entrega/.test(await px.locator("[data-motivo-confirmar]").innerText()), "con «Otra persona» y sin nombre, pide el nombre");
     comprobar((await SB.from("estancias").select("estado").eq("id", eI).single()).data.estado !== "en_curso", "y no registra el check-in");
     await px.locator("#checkin-entrega-nombre").fill("Tía Rosa Prueba");
     await px.getByRole("button", { name: /Confirmar check-in/ }).click();

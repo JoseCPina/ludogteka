@@ -1,4 +1,6 @@
-import { ButtonHTMLAttributes, forwardRef } from "react";
+"use client";
+
+import { ButtonHTMLAttributes, forwardRef, useSyncExternalStore } from "react";
 import { Spinner } from "./spinner";
 
 type Variante = "primario" | "secundario" | "peligro" | "exito";
@@ -23,11 +25,21 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   cargando?: boolean;
 };
 
+// QA S16 (N58): antes de que la página se hidrate, un botón que envía un formulario manejado por React mandaría el
+// formulario «a la antigua» (GET, con los datos en la URL). Un botón de envío se deshabilita hasta hidratar.
+const suscribirNada = () => () => {};
+const useHidratado = () => useSyncExternalStore(suscribirNada, () => true, () => false);
+
 export const Button = forwardRef<HTMLButtonElement, Props>(
-  ({ variante = "primario", className = "", cargando = false, disabled, children, ...props }, ref) => (
+  ({ variante = "primario", className = "", cargando = false, disabled, children, type, ...props }, ref) => {
+    const hidratado = useHidratado();
+    const envia = type !== "button" && type !== "reset";
+    return (
     <button
       ref={ref}
-      disabled={disabled || cargando}
+      type={type}
+      disabled={disabled || cargando || (envia && !hidratado)}
+      data-hidratado={hidratado ? undefined : "no"}
       aria-busy={cargando || undefined}
       className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-md px-5 text-base font-semibold transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-n-200 disabled:bg-n-100 disabled:text-n-500 disabled:hover:bg-n-100 ${clasesPorVariante[variante]} ${className}`}
       {...props}
@@ -35,6 +47,7 @@ export const Button = forwardRef<HTMLButtonElement, Props>(
       {cargando && <Spinner />}
       {children}
     </button>
-  )
+    );
+  }
 );
 Button.displayName = "Button";

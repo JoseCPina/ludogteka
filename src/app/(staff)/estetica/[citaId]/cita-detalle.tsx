@@ -236,6 +236,11 @@ export function CitaDetalle({
     setIniciando(false);
   }
 
+  // QA S16 (N69): lo obligatorio se marca antes del clic y el botón dice qué falta.
+  const motivoIniciar = esStandalone && !entregadoNombre.trim() ? "Falta: quién entrega al perro." : null;
+  const faltanCierre = esStandalone ? [!recogidoNombre.trim() && "quién recoge al perro", esDueno === null && "si es el dueño registrado"].filter(Boolean) : [];
+  const motivoFinalizar = faltanCierre.length ? `Falta: ${faltanCierre.join(" y ")}.` : null;
+
   async function accionFinalizar() {
     if (esStandalone && !recogidoNombre.trim()) {
       marcarFalta("recoge", "Escribe quién recoge al perro.", "cita-recoge-nombre");
@@ -431,7 +436,7 @@ export function CitaDetalle({
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Field
                     id="cita-entrega-nombre"
-                    label="Quién entrega al perro (obligatorio)"
+                    label="Quién entrega al perro * (obligatorio)"
                     value={entregadoNombre}
                     onChange={(e) => {
                       setEntregadoNombre(e.target.value);
@@ -454,13 +459,14 @@ export function CitaDetalle({
                   {otroDia}
                 </div>
               )}
-              <div className="flex gap-2">
-                <Button type="button" cargando={cargando.cargando} onClick={() => accionIniciar({ confirmarOtroDia: !!otroDia })} data-confirmar-inicio>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button type="button" cargando={cargando.cargando} disabled={Boolean(motivoIniciar)} onClick={() => accionIniciar({ confirmarOtroDia: !!otroDia })} data-confirmar-inicio>
                   {cargando.cargando ? "Guardando…" : otroDia ? "Sí, recibirla de todos modos" : "Confirmar inicio"}
                 </Button>
                 <Button type="button" variante="secundario" onClick={() => { setIniciando(false); setOtroDia(null); }}>
                   Cancelar
                 </Button>
+                {motivoIniciar && <span className="text-sm text-n-600" data-motivo-confirmar>{motivoIniciar}</span>}
               </div>
             </div>
           ) : (
@@ -516,7 +522,7 @@ export function CitaDetalle({
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Field
                       id="cita-recoge-nombre"
-                      label="Quién recoge al perro (obligatorio)"
+                      label="Quién recoge al perro * (obligatorio)"
                       value={recogidoNombre}
                       onChange={(e) => {
                         setRecogidoNombre(e.target.value);
@@ -536,7 +542,7 @@ export function CitaDetalle({
                     tabIndex={-1}
                     className={falta?.campo === "dueno" ? "rounded-md border-[1.5px] border-coral-oscuro bg-coral-suave p-2" : undefined}
                   >
-                    <p className="mb-1.5 text-sm font-semibold text-n-800">¿Es el dueño registrado? (obligatorio)</p>
+                    <p className="mb-1.5 text-sm font-semibold text-n-800">¿Es el dueño registrado? * (obligatorio)</p>
                     {falta?.campo === "dueno" && <p className="mb-1.5 text-sm font-semibold text-coral-oscuro">{falta.texto}</p>}
                     <div className="flex gap-3">
                       <Button
@@ -592,13 +598,14 @@ export function CitaDetalle({
                 </div>
               )}
 
-              <div className="flex gap-2">
-                <Button type="button" cargando={cargando.cargando} onClick={accionFinalizar}>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button type="button" cargando={cargando.cargando} disabled={Boolean(motivoFinalizar)} onClick={accionFinalizar} data-confirmar-cierre>
                   {cargando.cargando ? "Guardando…" : "Confirmar cierre"}
                 </Button>
                 <Button type="button" variante="secundario" onClick={() => setFinalizando(false)}>
                   Cancelar
                 </Button>
+                {motivoFinalizar && <span className="text-sm text-n-600" data-motivo-confirmar>{motivoFinalizar}</span>}
               </div>
             </div>
           ) : (

@@ -333,6 +333,8 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       }
     }
     const contratoPorPerro = new Map((contratos ?? []).map((c) => [c.perro_id as string, c]));
+    // El negocio puede no pedir la evaluación de comportamiento (Requisitos para hospedar, QA S16).
+    const { data: evaluacionExigida } = await supabase.rpc("evaluacion_exigida");
     const vistos = new Set<string>();
     for (const p of proximas ?? []) {
       const perroId = p.perro_id as string;
@@ -361,7 +363,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
             : esperaReserva),
         });
       }
-      if (perro && !perro.evaluacion_comportamiento_fecha) {
+      if (perro && !perro.evaluacion_comportamiento_fecha && evaluacionExigida !== false) {
         atencion.push({
           clave: `eval-${perroId}`,
           texto: `${nombre} llega el ${cuando} sin evaluación de comportamiento`,

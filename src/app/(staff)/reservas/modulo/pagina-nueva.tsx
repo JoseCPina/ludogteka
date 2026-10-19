@@ -52,7 +52,7 @@ export async function PaginaNuevaReserva({
       supabase.from("series_recurrentes").select("perro_id, dias_semana, servicios(nombre)").is("deleted_at", null).order("id")
     ),
   ]);
-  const paquetes = await cargarPaquetesDePerros(supabase);
+  const [paquetes, { data: evaluacionExigida }] = await Promise.all([cargarPaquetesDePerros(supabase), supabase.rpc("evaluacion_exigida")]);
 
   const error = errorClientes ?? errorPerros ?? errorServicios ?? errorSeries;
 
@@ -94,7 +94,7 @@ export async function PaginaNuevaReserva({
       ) : (
         <NuevaReservaForm
           clientes={armarClientesBuscables((clientes ?? []) as { id: string; nombre: string; telefono: string }[], (perros ?? []) as { id: string; cliente_id: string; nombre: string }[])}
-          perros={(perros ?? []).map((p) => ({ id: p.id, cliente_id: p.cliente_id, nombre: p.nombre, evaluado: Boolean(p.evaluacion_comportamiento_fecha) }))}
+          perros={(perros ?? []).map((p) => ({ id: p.id, cliente_id: p.cliente_id, nombre: p.nombre, evaluado: Boolean(p.evaluacion_comportamiento_fecha) || evaluacionExigida === false }))}
           servicios={servicios ?? []}
           seriesActivas={seriesActivasLista}
           paquetes={paquetes}

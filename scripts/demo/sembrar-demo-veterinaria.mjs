@@ -91,7 +91,7 @@ try {
 
   // ── Módulo, médica y ajustes ──
   exigir(await ADM.rpc("cambiar_modulo", { p_modulo: "veterinaria", p_activo: true, p_confirmado: true }), "prender Veterinaria");
-  const medicoId = exigir(await ADM.rpc("guardar_medico_veterinario", { p_profile_id: medicaId, p_cedula: "DEMO-0000000", p_cpa: "DEMO-CPA-0001" }), "designar a la médica");
+  const medicoId = exigir(await ADM.rpc("guardar_medico_veterinario", { p_profile_id: medicaId, p_cedula: "0000000", p_cpa: "DEMO-CPA-0001" }), "designar a la médica");
   exigir(await ADM.rpc("guardar_veterinaria_ajustes", { p_recordatorios_activos: false, p_dias_anticipacion: 7, p_certificado_vigencia_dias: 30, p_carnet_reemplaza_comprobante: true, p_precio_dia: 450 }), "ajustes");
   exigir(await ADM.rpc("guardar_veterinaria_portal", { p_expediente: true }), "portal del dueño");
   ok("Veterinaria prendida, médica designada (cédula de ejemplo)");

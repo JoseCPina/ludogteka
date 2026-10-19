@@ -97,7 +97,7 @@ try {
   comprobar(!rechazo.ok, "la otra recepcionista, sin permiso, sigue sin poder");
 
   seccion("2b. El médico designado con rol de estética (no se le pueden dar permisos por persona)");
-  const desig = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: datos.esteticaB, p_cedula: `CEDF${String(Date.now()).slice(-6)}`, p_cpa: null });
+  const desig = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: datos.esteticaB, p_cedula: String(Date.now()).slice(-7), p_cpa: null });
   comprobar(desig.ok, `admin designa a estética como médico (${desig.mensaje ?? ""})`);
   const pm = await nuevoPerro("DelMedico");
   const m1 = await patch(P.estetica, `perros?id=eq.${pm}`, { especie: "gato", microchip: chip(7) });

@@ -39,10 +39,10 @@ export default async function ServiciosPage() {
       supabase
         .from("servicios")
         .select(
-          "id, nombre, categoria, unidad, depende_grupo_raza, depende_tamano, depende_pelaje, depende_cantidad, monto_libre, deleted_at"
+          "id, nombre, clave, categoria, unidad, depende_grupo_raza, depende_tamano, depende_pelaje, depende_cantidad, monto_libre, pelajes_excluidos, deleted_at"
         )
         .order("orden"),
-      supabase.from("grupos_raza").select("id, nombre, depende_tamano, depende_pelaje").is("deleted_at", null).order("orden"),
+      supabase.from("grupos_raza").select("id, nombre, depende_tamano, depende_pelaje, pelajes_permitidos").is("deleted_at", null).order("orden"),
       supabase.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
       supabase.from("tipos_pelaje").select("id, etiqueta, clave").is("deleted_at", null).order("orden"),
       leerTodo<CeldaVigente & { servicio_id: string }>(() =>
@@ -85,6 +85,10 @@ export default async function ServiciosPage() {
     huecos.set(s.id, contarSinTarifa(s, catalogos, vigentesPorServicio.get(s.id) ?? []));
   }
   const serviciosConHuecos = Array.from(huecos.values()).filter((n) => n > 0).length;
+  const celdasVacias = Array.from(huecos.values()).reduce((t, n) => t + n, 0);
+  // QA S16 (N64): lo de un giro que el negocio no ofrece (módulo apagado) no se muestra; si lo prende, vuelve a salir.
+  const visibles = (servicios ?? []).filter((s) => servicioActivo(s, modulos));
+  const ocultos = (servicios ?? []).filter((s) => !s.deleted_at).length - visibles.filter((s) => !s.deleted_at).length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -107,11 +111,7 @@ export default async function ServiciosPage() {
       {serviciosConHuecos > 0 && (
         <Alert
           variante="advertencia"
-          titulo={
-            serviciosConHuecos === 1
-              ? "Hay un servicio con tarifas sin capturar"
-              : `Hay ${serviciosConHuecos} servicios con tarifas sin capturar`
-          }
+          titulo={`Faltan ${celdasVacias === 1 ? "1 precio" : `${celdasVacias} precios`} en ${serviciosConHuecos === 1 ? "1 servicio" : `${serviciosConHuecos} servicios`}`}
         >
           Están marcados abajo. Mientras falte el precio de una combinación, esa combinación no se
           puede reservar ni cobrar: la app la rechaza en el mostrador. Si es algo que el negocio no
@@ -148,7 +148,7 @@ export default async function ServiciosPage() {
               </tr>
             </thead>
             <tbody>
-              {servicios.map((s) => {
+              {visibles.map((s) => {
                 const faltan = huecos.get(s.id) ?? 0;
                 return (
                   <tr key={s.id} className={s.deleted_at ? "opacity-60" : ""}>
@@ -220,6 +220,12 @@ export default async function ServiciosPage() {
             </tbody>
           </table>
         </div>
+      )}
+      {ocultos > 0 && (
+        <p className="text-sm text-n-600" data-servicios-ocultos>
+          {ocultos === 1 ? "Hay 1 servicio" : `Hay ${ocultos} servicios`} de módulos que tienes apagados (no se ofrecen ni se cobran). Salen aquí si
+          prendes el módulo en <Link href="/admin/modulos" className="font-semibold text-morado hover:underline">Módulos y plan</Link>.
+        </p>
       )}
     </div>
   );

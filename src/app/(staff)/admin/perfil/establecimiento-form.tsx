@@ -107,7 +107,7 @@ function DatosEstablecimiento(p: {
   const [res, setRes] = useState<ResultadoEstablecimiento | null>(null);
   const elegido = p.medicos.find((m) => m.id === medico);
   return (
-    <form
+    <form method="post"
       className="flex flex-col gap-4"
       onSubmit={async (e) => {
         e.preventDefault();
@@ -241,7 +241,7 @@ function FormPermiso({ permiso, hoy, onTerminar }: { permiso?: PermisoEst; hoy: 
   const envio = useEspera();
   const [res, setRes] = useState<ResultadoEstablecimiento | null>(null);
   return (
-    <form
+    <form method="post"
       className="flex flex-col gap-4"
       onSubmit={async (e) => {
         e.preventDefault();

@@ -61,7 +61,7 @@ const { token } = await sesionDe(ids.admin);
 const adm = comoPersona(token, id);
 const m = await adm.rpc("cambiar_modulo", { p_modulo: "veterinaria", p_activo: true, p_confirmado: true });
 m.error ? falla(`módulo veterinaria: ${m.error.message}`) : ok("módulo Veterinaria prendido");
-const md = await adm.rpc("guardar_medico_veterinario", { p_profile_id: ids.mvz, p_cedula: "PRUEBA-0000001", p_cpa: "PRUEBA-CPA-001" });
+const md = await adm.rpc("guardar_medico_veterinario", { p_profile_id: ids.mvz, p_cedula: "0000001", p_cpa: "PRUEBA-CPA-001" });
 md.error ? falla(`MVZ: ${md.error.message}`) : ok("MVZ designado (cédula y CPA de PRUEBA)");
 guardarEstado({ medicoId: md.data });
 const { data: mods } = await adm.rpc("modulos_activos");

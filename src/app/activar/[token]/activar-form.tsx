@@ -27,7 +27,7 @@ export function ActivarForm({ token }: { token: string }) {
   }
 
   return (
-    <form onSubmit={enviar} className="space-y-4">
+    <form method="post" onSubmit={enviar} className="space-y-4">
       <Field label="Escoge tu contraseña" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} ayuda="Mínimo 8 caracteres." />
       <Field label="Repítela" type="password" autoComplete="new-password" value={confirmar} onChange={(e) => setConfirmar(e.target.value)} />
       <AccionesFormulario error={error}>

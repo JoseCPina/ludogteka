@@ -231,7 +231,7 @@ export function SelectorRaza({
   const exactaDelTexto = !elegida && texto ? razaExacta(razas, texto) : null;
 
   return (
-    <div>
+    <div data-selector-raza>
       <label htmlFor={`${idBase}-input`} className="mb-1.5 block text-sm font-semibold text-n-800">
         {label}
       </label>

@@ -262,7 +262,7 @@ export function PanelPagos({
               )}
             </>
           )}
-          <form
+          <form method="post"
             className="flex flex-col gap-3"
             onSubmit={async (e) => {
               e.preventDefault();

@@ -7,6 +7,9 @@ import { personas, B, SB, rpc, post, patch, get, dar, quitar, hoy, sumaDias, dat
 
 const P = await personas();
 const MARCA = String(Date.now()).slice(-6);
+// QA S16: los requisitos para hospedar de Huellitas, para dejarlos como estaban al terminar.
+const tiposAntes = (await SB.from("tipos_requisito_sanitario").select("id, obligatoria, vigencia_meses").eq("negocio_id", B).is("deleted_at", null)).data ?? [];
+const ajustesAntes = (await SB.from("negocio_ajustes_operacion").select("exige_evaluacion_comportamiento").eq("negocio_id", B).is("deleted_at", null).maybeSingle()).data;
 try {
   await fijarModulo("veterinaria", true);
   await quitar(P.admin, P.recConId, "registrar_vacunas");
@@ -113,7 +116,50 @@ try {
     const guardado = r.cuerpo?.[0]?.detalle ?? "";
     comprobar(/Veterinario y clínica: Dra\. Prueba/.test(guardado), "el detalle guarda quién la aplicó");
   } else comprobar(false, "Huellitas no tiene un tipo de desparasitación");
+
+  // QA S16 (N57): el expediente y la reserva usan la MISMA regla. Un perro con evaluación pero sin vacunas: la reserva
+  // lo rechaza por vacunas y pendientes_para_estancia (de donde sale «Nada bloquea…») lo lista como bloqueo.
+  seccion("9. N57: «Nada bloquea» sale de la misma regla que la reserva");
+  const perro2 = (await SB.from("perros").insert({ negocio_id: B, cliente_id: datos.clienteSoloB, nombre: `Reqsan2 ${MARCA}`, tamano_id: (await SB.from("tamanos_categoria").select("id").limit(1).single()).data.id }).select("id").single()).data.id;
+  const ev = await rpc(P.admin, "marcar_evaluacion_comportamiento", { p_perro_id: perro2, p_fecha: hoyB, p_notas: null });
+  comprobar(ev.ok, `se marca su evaluación (${ev.mensaje ?? "ok"})`);
+  const pend = await rpc(P.admin, "pendientes_para_estancia", { p_perro_ids: [perro2] });
+  const bloquean = (pend.cuerpo ?? []).filter((x) => x.bloquea && (x.grupo === "bloquea" || x.grupo === "condicion"));
+  const reserva2 = await post(P.admin, "reservas", { cliente_id: datos.clienteSoloB });
+  const srv2 = (await SB.from("servicios").select("id").eq("negocio_id", B).eq("categoria", "guarderia").neq("unidad", "hora").is("deleted_at", null).limit(1).single()).data;
+  const fecha2 = sumaDias(hoyB, 60 + Math.floor(Math.random() * 100));
+  const est2 = await post(P.admin, "estancias", { reserva_id: reserva2.cuerpo[0].id, perro_id: perro2, servicio_id: srv2.id, fecha_entrada: fecha2, fecha_salida: sumaDias(fecha2, 1), estado: "reservada" });
+  const bloqueaVacunas = !est2.ok && tipoDeBloqueo(est2.mensaje) === "sanitario";
+  comprobar(bloqueaVacunas && bloquean.some((x) => x.clave.startsWith("sanitario:")), "la reserva lo rechaza por vacunas Y el expediente lista esas vacunas como bloqueo (ya no dice «Nada bloquea»)");
+  const pagina = (await import("node:fs")).readFileSync("src/app/(staff)/perros/[id]/page.tsx", "utf8");
+  comprobar(/bloqueos=\{pendientesEstancia\.filter/.test(pagina), "el bloque «Requisitos para guardería y hotel» recibe los bloqueos de pendientes_para_estancia");
+
+  seccion("10. Requisitos para hospedar: quitar o relajar");
+  const obligatorios = tiposAntes.filter((t) => t.obligatoria).map((t) => t.id);
+  const sinPermisoReq = await rpc(P.recSin, "guardar_requisitos_estancia", { p_exige_evaluacion: false, p_obligatorias: [], p_vigencias: {} });
+  comprobar(!sinPermisoReq.ok, `recepción sin «Configuración del negocio» no cambia los requisitos (${sinPermisoReq.mensaje})`);
+  const anonReq = await rpc(null, "guardar_requisitos_estancia", { p_exige_evaluacion: false, p_obligatorias: [], p_vigencias: {} });
+  comprobar(!anonReq.ok, "la llave anónima tampoco");
+  const malaVig = await rpc(P.admin, "guardar_requisitos_estancia", { p_exige_evaluacion: true, p_obligatorias: obligatorios, p_vigencias: { [tiposAntes[0].id]: 0 } });
+  comprobar(!malaVig.ok && /1 a 60 meses/.test(malaVig.mensaje), `una vigencia de 0 meses se rechaza (${malaVig.mensaje})`);
+  const perro3 = (await SB.from("perros").insert({ negocio_id: B, cliente_id: datos.clienteSoloB, nombre: `Reqsan3 ${MARCA}`, tamano_id: (await SB.from("tamanos_categoria").select("id").limit(1).single()).data.id }).select("id").single()).data.id;
+  const apagar = await rpc(P.admin, "guardar_requisitos_estancia", { p_exige_evaluacion: false, p_obligatorias: [], p_vigencias: {} });
+  comprobar(apagar.ok, `el admin quita la evaluación y las vacunas obligatorias (${apagar.mensaje ?? "ok"})`);
+  const pend3 = await rpc(P.admin, "pendientes_para_estancia", { p_perro_ids: [perro3] });
+  comprobar(!(pend3.cuerpo ?? []).some((x) => x.clave === "evaluacion" || x.clave.startsWith("sanitario:")), "pendientes_para_estancia ya no pide evaluación ni vacunas");
+  const reserva3 = await post(P.admin, "reservas", { cliente_id: datos.clienteSoloB });
+  const fecha3 = sumaDias(hoyB, 200 + Math.floor(Math.random() * 100));
+  const est3 = await post(P.admin, "estancias", { reserva_id: reserva3.cuerpo[0].id, perro_id: perro3, servicio_id: srv2.id, fecha_entrada: fecha3, fecha_salida: sumaDias(fecha3, 1), estado: "reservada" });
+  comprobar(est3.ok, `y la reserva de un perro sin evaluación ni vacunas entra (${est3.mensaje ?? "ok"})`);
+  const ajuste = (await SB.from("negocio_ajustes_operacion").select("requisitos_revisados_at, requisitos_revisados_por").eq("negocio_id", B).single()).data;
+  comprobar(Boolean(ajuste.requisitos_revisados_at && ajuste.requisitos_revisados_por), "queda anotado cuándo y quién revisó los requisitos");
+  await SB.from("estancias").update({ estado: "cancelada" }).eq("reserva_id", reserva3.cuerpo[0].id);
+  await SB.from("reservas").delete().eq("id", reserva2.cuerpo[0].id);
 } finally {
   await quitar(P.admin, P.recConId, "registrar_vacunas");
+  // Huellitas vuelve a sus requisitos de antes (otras auditorías esperan la evaluación y las vacunas).
+  const vig = Object.fromEntries(tiposAntes.map((t) => [t.id, t.vigencia_meses]));
+  const r = await rpc(P.admin, "guardar_requisitos_estancia", { p_exige_evaluacion: ajustesAntes?.exige_evaluacion_comportamiento ?? true, p_obligatorias: tiposAntes.filter((t) => t.obligatoria).map((t) => t.id), p_vigencias: vig });
+  if (!r.ok) console.log(`  ✘ no se pudieron restaurar los requisitos de Huellitas: ${r.mensaje}`);
 }
 terminar();

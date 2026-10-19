@@ -114,8 +114,11 @@ export function PerroForm({
   const [pelajeId, setPelajeId] = useState(valoresIniciales?.pelaje_id ?? "");
   // El aviso del último intento de guardar se esconde en cuanto se cambia lo que decía que faltaba.
   const [errorDescartado, setErrorDescartado] = useState<string | null>(null);
+  // QA S16 (N80): la raza vacía se avisa junto al campo, antes de ir al servidor.
+  const [faltaRaza, setFaltaRaza] = useState(false);
   function alElegirRaza(v: { raza_id: string | null; raza: string; propuesta?: boolean }) {
     setErrorDescartado(estado.error ?? null);
+    if (v.raza_id || v.raza.trim()) setFaltaRaza(false);
     setRazaElegida(v);
     const r = razas.find((x) => x.id === v.raza_id);
     if (r?.tamano_tipico_id && !tamanoId) setTamanoId(r.tamano_tipico_id);
@@ -126,6 +129,11 @@ export function PerroForm({
   // La MISMA regla que valida al guardar (faltantesAltaPerro, gemela de perro_faltantes_alta): con Estética, tamaño y
   // pelaje cuando la raza no fija el precio sola; con solo guardería u hotel, únicamente la raza.
   const modulosActivos = ["estetica", "guarderia", "hotel"].filter((m) => modulos.tiene(m));
+  // QA S16 (N64): «recomendado» es para hotel y guardería; sin ellas, esos datos son opcionales y una clínica no
+  // pregunta por «su veterinario».
+  const conEstanciasForm = modulos.tiene("guarderia") || modulos.tiene("hotel");
+  const rec = conEstanciasForm ? "(recomendado)" : "(opcional)";
+  const pideVeterinarioExterno = conEstanciasForm || !modulos.tiene("veterinaria");
   const pideTallaYPelaje = faltantesAltaPerro(
     { raza: razaElegida.raza, raza_id: razaElegida.raza_id, raza_propuesta: conPropuesta },
     modulosActivos,
@@ -139,8 +147,14 @@ export function PerroForm({
     // Se envía con onSubmit (no con action=): React 19 vacía los campos sin estado después de una acción del
     // formulario, y un error de validación del servidor (falta la raza) borraba lo que ya se había escrito.
     <form
+      method="post"
       onSubmit={(e) => {
         e.preventDefault();
+        if (pideRaza && !razaElegida.raza_id && !razaElegida.raza.trim()) {
+          setFaltaRaza(true);
+          e.currentTarget.querySelector<HTMLElement>("[data-selector-raza] input")?.focus();
+          return;
+        }
         const datos = new FormData(e.currentTarget);
         ultimo.current = datos;
         setErrorDescartado(null);
@@ -202,6 +216,11 @@ export function PerroForm({
           proponer: perroId ? (datos) => proponerRazaDesdeFormulario({ ...datos, perroId }) : undefined,
         }}
       />
+      {faltaRaza && (
+        <p role="alert" data-falta-raza className="-mt-2 text-sm font-semibold text-coral-oscuro">
+          Escribe la raza del perro. Si no sabes cuál es, escoge «Mestizo».
+        </p>
+      )}
 
       {!corta && (
         <>
@@ -302,7 +321,7 @@ export function PerroForm({
       {!corta && (
         <>
       <Textarea
-        label="Notas de alimentación (recomendado)"
+        label={`Notas de alimentación ${rec}`}
         name="alimentacion_notas"
         disabled={deshabilitado}
         defaultValue={valoresIniciales?.alimentacion_notas ?? ""}
@@ -320,38 +339,42 @@ export function PerroForm({
           link del dueño: recepción no tenía dónde capturarlos. */}
       <div className="grid gap-4 sm:grid-cols-2">
         <Field
-          label="Contacto de emergencia (recomendado)"
+          label={`Contacto de emergencia ${rec}`}
           name="contacto_emergencia_nombre"
           disabled={deshabilitado}
           defaultValue={valoresIniciales?.contacto_emergencia_nombre ?? ""}
         />
         <Field
-          label="Teléfono de emergencia (recomendado)"
+          label={`Teléfono de emergencia ${rec}`}
           name="contacto_emergencia_telefono"
           inputMode="tel"
           disabled={deshabilitado}
           defaultValue={valoresIniciales?.contacto_emergencia_telefono ?? ""}
         />
+        {pideVeterinarioExterno && (<>
         <Field
-          label="Veterinario (recomendado)"
+          label={`Veterinario ${rec}`}
           name="veterinario_nombre"
           disabled={deshabilitado}
           defaultValue={valoresIniciales?.veterinario_nombre ?? ""}
         />
         <Field
-          label="Teléfono del veterinario (recomendado)"
+          label={`Teléfono del veterinario ${rec}`}
           name="veterinario_telefono"
           inputMode="tel"
           disabled={deshabilitado}
           defaultValue={valoresIniciales?.veterinario_telefono ?? ""}
         />
+        </>)}
       </div>
+      {pideVeterinarioExterno && (
       <Field
-        label="Clínica del veterinario (recomendado)"
+        label={`Clínica del veterinario ${rec}`}
         name="veterinario_clinica"
         disabled={deshabilitado}
         defaultValue={valoresIniciales?.veterinario_clinica ?? ""}
       />
+      )}
 
         </>
       )}

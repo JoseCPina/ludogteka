@@ -6,7 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { urlDelNegocioActual, negocioActual } from "@/lib/negocio/actual";
 import { traducirError } from "../../reservas/traducir-error";
 
-export type EstadoInvitarPortal = { error: string | null; url?: string; urlWhatsApp?: string; expiraAt?: string };
+export type EstadoInvitarPortal = { error: string | null; url?: string; urlWhatsApp?: string; mensaje?: string; expiraAt?: string };
 
 /**
  * «Invitar al portal»: genera el enlace de un solo uso para que el cliente
@@ -33,6 +33,7 @@ export async function invitarAlPortal(clienteId: string): Promise<EstadoInvitarP
     error: null,
     url,
     urlWhatsApp: telefono.length >= 10 ? `https://wa.me/52${telefono.slice(-10)}?text=${encodeURIComponent(mensaje)}` : undefined,
+    mensaje,
     expiraAt: data as string,
   };
 }

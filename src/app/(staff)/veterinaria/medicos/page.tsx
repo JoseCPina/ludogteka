@@ -116,7 +116,7 @@ export default async function MedicosPage() {
                   <Desplegable texto="Editar datos">
                     <FormularioAccion accion={guardarMedico} textoBoton="Guardar datos">
                       <input type="hidden" name="profile_id" value={m.profile_id as string} />
-                      <Field label="Cédula profesional" name="cedula" defaultValue={m.cedula_profesional as string} required />
+                      <Field label="Cédula profesional" name="cedula" defaultValue={m.cedula_profesional as string} required inputMode="numeric" ayuda="7 u 8 números (Registro Nacional de Profesionistas)." />
                       <Field label="CPA del SITPV (opcional)" name="cpa" defaultValue={(m.cpa_sitpv as string | null) ?? ""} />
                     </FormularioAccion>
                   </Desplegable>
@@ -146,7 +146,7 @@ export default async function MedicosPage() {
                 </option>
               ))}
             </Select>
-            <Field label="Cédula profesional" name="cedula" required />
+            <Field label="Cédula profesional" name="cedula" required inputMode="numeric" ayuda="7 u 8 números (Registro Nacional de Profesionistas)." />
             <Field label="CPA del SITPV (opcional)" name="cpa" />
           </FormularioAccion>
         )}

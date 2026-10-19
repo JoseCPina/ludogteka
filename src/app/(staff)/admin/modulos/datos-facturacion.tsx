@@ -49,7 +49,7 @@ export function DatosFacturacion({ inicial, regimenes, usos, aviso }: { inicial:
         </p>
         {inicial && <p className="mt-2 rounded-md bg-menta-suave px-3 py-2 text-sm text-n-800">Ya tenemos tus datos: la factura de cada pago se emite a nombre de {inicial.razon_social} ({inicial.rfc}).</p>}
       </div>
-      <form onSubmit={guardar} className="grid gap-3 sm:grid-cols-2">
+      <form method="post" onSubmit={guardar} className="grid gap-3 sm:grid-cols-2">
         <Field label="RFC" name="rfc" autoComplete="off" maxLength={13} {...campo("rfc")} />
         <Field label="Razón social o nombre" name="razon_social" {...campo("razon_social")} />
         <Select label="Régimen fiscal" name="regimen_fiscal" {...campo("regimen_fiscal")}>

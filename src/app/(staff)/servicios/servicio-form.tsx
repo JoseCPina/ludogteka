@@ -54,7 +54,7 @@ export function ServicioForm({
   const esCargo = categoria === "cargo";
 
   return (
-    <form onSubmit={envioV.onSubmit} className="flex max-w-lg flex-col gap-4">
+    <form method="post" onSubmit={envioV.onSubmit} className="flex max-w-lg flex-col gap-4">
       {servicioId && <CampoVersion versiones={[{ t: "servicios", i: servicioId, v: version ?? null }]} />}
       {estado.conflicto && (
         <AvisoConflicto

@@ -113,6 +113,7 @@ Si tienes guardería u hotel prendidos, el link de guardería y hotel trae el pa
 
 ## Si algo no sale
 
+- «Escribe la raza del perro. Si no sabes cuál es, escoge «Mestizo».»: sale junto a **Raza** cuando se queda vacía; escríbela o escoge **Mestizo**.
 - «Ya hay un cliente activo con ese teléfono.»: búscalo en la lista; si es la misma persona, edítalo en lugar de crear otro.
 - «El teléfono debe tener 10 dígitos.»: revisa el número.`,
   },
@@ -132,7 +133,7 @@ Si tienes guardería u hotel prendidos, el link de guardería y hotel trae el pa
 2. En **Requisitos sanitarios** escoge el **Tipo de requisito** y la **Fecha de aplicación**. Si tienes la foto del carnet, toca **Elegir foto**. Termina con **Registrar aplicación**. El registro aparece de inmediato en la tabla de abajo.
    - Si ya hay uno del mismo tipo y la misma fecha, la pantalla avisa y no lo duplica.
    - ¿Te equivocaste? En la tabla, **Corregir** cambia la fecha, el detalle o las notas (queda guardado lo que decía antes) y **Anular con motivo** lo marca como anulado sin borrarlo. Es de admin o de quien tenga «Registrar vacunas y desparasitaciones».
-3. En **Requisitos para guardería y hotel**, toca **Marcar evaluación hecha** cuando ya evaluaste su comportamiento. Si es hembra, marca **En celo** o **Gestante** cuando aplique.
+3. En **Requisitos para guardería y hotel**, toca **Marcar evaluación hecha** cuando ya evaluaste su comportamiento (si tu negocio no la pide, lo dice ahí; se decide en [Requisitos para hospedar](/bienvenida/requisitos)). Arriba dice **Nada bloquea una reserva de guardería u hotel.** solo cuando de verdad nada la bloquea: talla, evaluación, vacunas obligatorias, celo y alertas, con la misma regla que la reserva. Si es hembra, marca **En celo** o **Gestante** cuando aplique.
 4. En **Alertas de manejo** escoge la alerta en **Registrar alerta**, agrega notas y toca **Registrar alerta**.
 5. En **Alergias** y **Peso** se registra cada cosa con su botón.
 
@@ -222,7 +223,7 @@ El portal tiene su propia sesión, aparte de la del personal: si alguien del equ
 
 ## Invitar al portal a un cliente que ya existe
 
-Si lo diste de alta tú en el mostrador, todavía no tiene cuenta. En su ficha, baja a **Invitar al portal** y toca **Invitar al portal**: aparece un enlace de un solo uso (sirve 7 días). Toca **Mandar por WhatsApp** o cópialo. El dueño lo abre, escoge su contraseña y entra con su teléfono. Si lo pierdes, **Generar otro enlace** deja sin efecto el anterior. Si el dueño ya activó su cuenta (por ejemplo, en otra ventana) y tocas **Generar otro enlace**, la pantalla oculta el enlace usado y dice **Este cliente ya tiene cuenta activa**: ya no hace falta mandar nada.
+Si lo diste de alta tú en el mostrador, todavía no tiene cuenta. En su ficha, baja a **Invitar al portal** y toca **Invitar al portal**: aparece un enlace de un solo uso (sirve 7 días). Toca **Invitar al portal** (junto a **Mandar por WhatsApp**): te enseña el mensaje con el enlace y **Abrir WhatsApp con este mensaje** lo abre ya escrito para que tú lo mandes; o cópialo. El dueño lo abre, escoge su contraseña y entra con su teléfono. Si lo pierdes, **Generar otro enlace** deja sin efecto el anterior. Si el dueño ya activó su cuenta (por ejemplo, en otra ventana) y tocas **Generar otro enlace**, la pantalla oculta el enlace usado y dice **Este cliente ya tiene cuenta activa**: ya no hace falta mandar nada.
 
 ## Cuentas sin vincular
 
@@ -386,7 +387,7 @@ Al cancelar una cuenta en [Caja](/caja), marca la casilla para cancelar también
 
 ## Si algo no sale
 
-- El campo **Quién entrega al perro** se marca en rojo y dice «Escoge quién entrega al perro»: escoge de la lista. Con **Otra persona**, si falta el nombre, dice «Escribe el nombre de la otra persona que entrega al perro».
+- **Confirmar check-in** está apagado y junto a él dice «Falta: escoge quién entrega al perro.»: escoge de la lista (el campo lleva * y «obligatorio»). Con **Otra persona**, si falta el nombre, dice «Falta: el nombre de quien entrega al perro.».
 - Si no tiene reserva, usa **Walk-in (sin reserva)** en la lista de check-in.
 - Si el check-in se hizo por error y el perro venía con pase, quien tenga el permiso «Ajustar días de pases» toca **Deshacer este check-in** (ver [Cómo ajustar los días usados de un pase](/ayuda/ajustar-dias-usados-de-un-pase)).`,
   },

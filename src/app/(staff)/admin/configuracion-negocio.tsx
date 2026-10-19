@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { formatearTelefono } from "@/lib/telefono";
-import { guardarConfiguracionNegocio } from "./configuracion-actions";
+import { guardarConfiguracionNegocio, guardarDireccionNegocio } from "./configuracion-actions";
 
 export type ConfiguracionVigente = {
   cupo_diurno: number | null;
@@ -29,11 +29,15 @@ export type ConfiguracionVigente = {
  * Guardar inserta una versión nueva, no reescribe la anterior: mismo
  * patrón que tarifas. Lo que no se toca se arrastra del vigente.
  */
-export function ConfiguracionNegocio({ vigente }: { vigente: ConfiguracionVigente | null }) {
+export function ConfiguracionNegocio({ vigente, direccion: direccionInicial, conCupo = true }: { vigente: ConfiguracionVigente | null; direccion: string; conCupo?: boolean }) {
   const router = useRouter();
   const [cupoDiurno, setCupoDiurno] = useState(String(vigente?.cupo_diurno ?? ""));
   const [cupoNocturno, setCupoNocturno] = useState(String(vigente?.cupo_nocturno ?? ""));
   const [telefono, setTelefono] = useState(vigente?.telefono_recepcion ?? "");
+  // QA S16 (N61): la dirección del negocio es UNA (la de Perfil y la página web); aquí se captura la misma.
+  const [direccion, setDireccion] = useState(direccionInicial);
+  // QA S16 (N80): el aviso de «Falta el WhatsApp» se va en cuanto se guarda, sin esperar a recargar.
+  const [telefonoGuardado, setTelefonoGuardado] = useState(Boolean(vigente?.telefono_recepcion));
   const guardando = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
@@ -53,11 +57,19 @@ export function ConfiguracionNegocio({ vigente }: { vigente: ConfiguracionVigent
       setError(res.error);
       return;
     }
+    if (direccion.trim() !== direccionInicial.trim()) {
+      const d = await guardando.ejecutar(() => guardarDireccionNegocio(direccion));
+      if (d.error) {
+        setError(d.error);
+        return;
+      }
+    }
+    setTelefonoGuardado(Boolean(telefono.trim()));
     setOk(true);
     router.refresh();
   }
 
-  const sinTelefono = !vigente?.telefono_recepcion;
+  const sinTelefono = !telefonoGuardado;
 
   return (
     <div className="flex max-w-lg flex-col gap-4">
@@ -88,6 +100,16 @@ export function ConfiguracionNegocio({ vigente }: { vigente: ConfiguracionVigent
         }
       />
 
+      <Field
+        label="Dirección del negocio"
+        value={direccion}
+        onChange={(e) => setDireccion(e.target.value)}
+        maxLength={200}
+        placeholder="Calle, número y colonia"
+        ayuda="Es la misma de tu perfil y tu página web: si la cambias aquí, cambia allá."
+      />
+
+      {conCupo && (
       <div className="grid grid-cols-2 gap-4">
         <Field
           label="Cupo de día"
@@ -106,6 +128,7 @@ export function ConfiguracionNegocio({ vigente }: { vigente: ConfiguracionVigent
           ayuda="Los que tienen dónde dormir."
         />
       </div>
+      )}
 
       <AccionesFormulario error={error} exito={ok && "Configuración guardada"}>
         <Button type="button" cargando={guardando.cargando} onClick={guardar}>

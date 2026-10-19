@@ -10,7 +10,7 @@ export default {
     },
     {
       titulo: "Qué se agrega",
-      dice: "Escoges qué cargo aplicar. La comida especial es de monto libre: capturas el importe y qué se le dio, no se puede cambiar después, y si te equivocas se cancela con un motivo, nunca se borra.",
+      dice: "En «Qué se cobra» escoges el cargo; con Veterinaria también salen la consulta, la urgencia, el seguimiento, la aplicación de vacuna y los productos. La comida especial es de monto libre: capturas el importe y qué se le dio, y si te equivocas se cancela con un motivo, nunca se borra.",
       pasos: [["escribir", "Buscar por perro, dueño o teléfono", "Emilio"], ["esperar", 2500]],
     },
     {

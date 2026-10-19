@@ -152,6 +152,8 @@ export const ARTICULOS_SIN_VIDEO: Record<string, string> = {
   "cambiar-estilista-cita-estetica": "Pendiente de grabar: el guion del video 96 está listo; la grabación está en pausa.",
   "factura-global-publico-en-general": "Pendiente de grabar: el guion del video 98 está listo; la grabación está en pausa.",
   "iva-y-claves-sat-de-productos-y-servicios": "Pendiente de grabar: el guion del video 99 está listo; la grabación está en pausa.",
+  "primeros-pasos-para-operar": "Pendiente de grabar: la bienvenida por giro (QA S16) cambió; se graba con un negocio de prueba nuevo, no con el demo.",
+  "requisitos-para-hospedar": "Pendiente de grabar: pantalla nueva de la bienvenida (QA S16).",
   "ver-mis-facturas": "Pendiente de grabar: ningún video muestra las facturas en el portal del dueño. El folio 100 necesita que `tutoriales.numero` admita tres dígitos (migración).",
 };
 

@@ -124,7 +124,7 @@ export function RequisitoForm({
   }
 
   return (
-    <form ref={formRef} onSubmit={manejarEnvio} className="flex max-w-lg flex-col gap-4">
+    <form method="post" ref={formRef} onSubmit={manejarEnvio} className="flex max-w-lg flex-col gap-4">
       {error && (
         <Alert variante="error" titulo="No se pudo guardar">
           {error}

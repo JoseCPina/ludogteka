@@ -111,7 +111,7 @@ export function PerfilForm({
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
         <h2 className="text-lg font-bold text-n-900">Datos</h2>
-        <form
+        <form method="post"
           className="flex flex-col gap-4"
           onSubmit={async (e) => {
             e.preventDefault();
@@ -136,7 +136,7 @@ export function PerfilForm({
             maxLength={600}
             ayuda="Dos o tres líneas: qué ofreces y qué te hace distinto. Sale arriba en tu página."
           />
-          <Field label="Dirección" name="direccion" defaultValue={direccion} maxLength={200} ayuda="Calle, número y colonia. Sale en tu página con un link al mapa." />
+          <Field label="Dirección" name="direccion" defaultValue={direccion} maxLength={200} ayuda="Calle, número y colonia. Es la misma dirección de Configuración: sale en tu página con un link al mapa." />
           <Select label="Diseño de tu página" name="tema_web" defaultValue={temaWeb ?? ""} ayuda="Cambia la tipografía, los colores y cómo se acomoda tu página.">
             <option value="">Automático (según tus servicios)</option>
             <option value="veterinaria">Clínica veterinaria</option>

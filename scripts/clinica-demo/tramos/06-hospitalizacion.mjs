@@ -53,7 +53,7 @@ export async function tramo(c) {
     consId = p.url().split("/").pop();
   }
   let t = await cuerpo(p);
-  comprobar(!/\{\{/.test(t) && /Michi/.test(t) && /PRUEBA-0000001/.test(t), "el texto sale con los campos llenos y la cédula de PRUEBA");
+  comprobar(!/\{\{/.test(t) && /Michi/.test(t) && /0000001/.test(t), "el texto sale con los campos llenos y la cédula de PRUEBA");
   await sinDesborde(p, "consentimiento");
   await firmar(p);
   await p.waitForTimeout(2000);

@@ -36,7 +36,7 @@ try {
   const hoyB = await hoy(P.admin);
 
   // El médico de la prueba es la recepcionista «recCon».
-  const cedula = `CED${String(Date.now()).slice(-7)}`;
+  const cedula = String(Date.now()).slice(-7);
   const med = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: P.recConId, p_cedula: cedula, p_cpa: "CPA-1" });
   comprobar(med.ok, `admin designa a la recepcionista como médico veterinario (${med.mensaje})`);
   const medicoId = med.cuerpo;
