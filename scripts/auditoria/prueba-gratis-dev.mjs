@@ -309,6 +309,7 @@ try {
   const pv = await (await navegador.newContext({ viewport: { width: 1280, height: 900 }, locale: "es-MX" })).newPage();
   pv.setDefaultTimeout(90_000);
   const TELV = `442095${sufijo}`;
+  await A.from("registros_prueba").update({ created_at: new Date(Date.now() - 2 * 86_400_000).toISOString() }).like("telefono", "44209%");
   await registrar(pv, { negocio: `Clínica Prueba ${sufijo}`, tel: TELV, password: claveAleatoria(), servicios: ["Veterinaria"] });
   await pv.waitForURL(/\/bienvenida/, { timeout: 120_000 });
   const baseV = `http://${new URL(pv.url()).host}`;
@@ -356,6 +357,7 @@ try {
   const ph = await (await navegador.newContext({ viewport: { width: 1280, height: 900 }, locale: "es-MX" })).newPage();
   ph.setDefaultTimeout(90_000);
   const TELH = `442094${sufijo}`;
+  await A.from("registros_prueba").update({ created_at: new Date(Date.now() - 2 * 86_400_000).toISOString() }).like("telefono", "44209%");
   await registrar(ph, { negocio: `Hotel Prueba ${sufijo}`, tel: TELH, password: claveAleatoria(), servicios: ["Guardería", "Hotel"] });
   await ph.waitForURL(/\/bienvenida/, { timeout: 120_000 });
   const baseH = `http://${new URL(ph.url()).host}`;
