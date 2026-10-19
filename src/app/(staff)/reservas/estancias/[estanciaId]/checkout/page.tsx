@@ -22,7 +22,7 @@ export default async function CheckoutEstanciaPage({
   const { data: estancia, error } = await supabase
     .from("estancias")
     .select(
-      "id, perro_id, fecha_entrada, fecha_salida, estado, precio_unitario, horas, hora_entrada_real, hora_salida_real, recogido_por_nombre, recogido_por_es_dueno, pertenencias_sin_entrega_motivo, perros(nombre, clientes(distancia_base_km)), servicios(nombre, categoria, unidad)"
+      "id, perro_id, fecha_entrada, fecha_salida, estado, precio_unitario, horas, updated_at, hora_entrada_real, hora_salida_real, recogido_por_nombre, recogido_por_es_dueno, pertenencias_sin_entrega_motivo, perros(nombre, clientes(distancia_base_km)), servicios(nombre, categoria, unidad)"
     )
     .eq("id", estanciaId)
     .single();
@@ -72,7 +72,7 @@ export default async function CheckoutEstanciaPage({
       .order("orden"),
     supabase
       .from("cargos_aplicados")
-      .select("id, cantidad, precio, cancelado, motivo_cancelacion, descripcion, servicios(nombre)")
+      .select("id, cantidad, precio, cancelado, motivo_cancelacion, descripcion, updated_at, servicios(nombre)")
       .eq("estancia_id", estanciaId)
       .order("created_at"),
     supabase.rpc("fecha_negocio"),
@@ -120,6 +120,7 @@ export default async function CheckoutEstanciaPage({
       cancelado: c.cancelado as boolean,
       motivoCancelacion: c.motivo_cancelacion as string | null,
       descripcion: (c.descripcion as string | null) ?? null,
+      version: (c.updated_at as string | null) ?? null,
     };
   });
 
@@ -213,6 +214,7 @@ export default async function CheckoutEstanciaPage({
           esHotel={esHotel}
           fechaEntrada={estancia.fecha_entrada}
           fechaSalida={estancia.fecha_salida}
+          version={(estancia.updated_at as string | null) ?? null}
           pertenenciasIniciales={pertenencias ?? []}
         />
       )}

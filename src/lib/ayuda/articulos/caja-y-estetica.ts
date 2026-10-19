@@ -730,6 +730,7 @@ Si la hora o la duración del servicio se salen del horario del negocio de ese d
 
 - «Este perro no tiene talla registrada…»: captúrala en su expediente con el link del mensaje.
 - «No hay nadie que pueda quedar como responsable de la cita»: falta dar de alta al personal de estética.
+- «Ya tienes a … a las 17:00. Escoge otro horario.» (o «… ya tiene a …»): ese horario ya está ocupado en esa agenda, a veces porque alguien más lo acaba de llenar. Escoge otra hora. Si eres estilista, solo agendas en tu propia agenda: el aviso de permiso sale únicamente cuando intentas agendar en la de otra persona.
 - Una estilista sale como **ausente** en la lista de **Empleado** y no se puede escoger: tiene una ausencia aprobada (vacaciones, incapacidad…) a esa fecha y hora. Escoge a otra persona u otra hora. Mira [Cómo pedir, aprobar y llevar las ausencias](/ayuda/ausencias-y-vacaciones-de-empleados).
 - ¿Escogiste mal a la estilista? Mira [Cómo cambiar o corregir la estilista de una cita](/ayuda/cambiar-estilista-cita-estetica).
 - «Esta combinación no tiene precio»: agrega el precio en Servicios y precios, o registra una excepción con motivo ([Qué hacer cuando no hay precio](/ayuda/que-hacer-sin-precio-estetica)). Un mestizo se cobra por tamaño y pelaje ([Cómo se cobra a un mestizo](/ayuda/precio-de-estetica-mestizo)).
@@ -861,6 +862,8 @@ En **Historial de servicio**, al pie de la cita: el servicio y el precio de ante
 2. Aprieta **Iniciar cita**.
 3. Si es una visita suelta, escribe **Quién entrega al perro** (obligatorio) y, si quieres, su teléfono.
 4. Aprieta **Confirmar inicio**. Si falta el nombre, el campo se marca en rojo y dice qué falta.
+
+Si la cita es de **otro día** (por ejemplo, la del lunes y hoy es domingo), te pregunta antes de recibirla: «Esta cita es del lunes 19 de octubre…». Aprieta **Sí, recibirla de todos modos** solo si de verdad llegó hoy.
 
 ## Cuando se lo llevan
 

@@ -35,6 +35,7 @@ type FilaOcupacion = {
 type EstanciaCruda = {
   id: string;
   reserva_id: string;
+  updated_at: string | null;
   fecha_entrada: string;
   fecha_salida: string;
   estado: string;
@@ -46,7 +47,7 @@ type EstanciaCruda = {
 const uno = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
 
 const SELECT_ESTANCIA =
-  "id, reserva_id, fecha_entrada, fecha_salida, estado, perros(nombre), servicios!inner(nombre, categoria), reservas(clientes(nombre))";
+  "id, reserva_id, fecha_entrada, fecha_salida, estado, updated_at, perros(nombre), servicios!inner(nombre, categoria), reservas(clientes(nombre))";
 
 const ESTILO_NIVEL: Record<NivelOcupacion, string> = {
   sin_cupo: "border-n-200 bg-n-50",
@@ -96,6 +97,7 @@ export default async function CalendarioReservasPage({ searchParams }: { searchP
       fechaEntrada: e.fecha_entrada,
       fechaSalida: e.fecha_salida,
       estado: e.estado,
+      version: e.updated_at ?? null,
       cuenta: cuenta.texto,
       cuentaTono: cuenta.tono,
     };

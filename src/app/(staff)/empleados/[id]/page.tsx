@@ -330,14 +330,14 @@ export default async function EmpleadoPage({
           </Seccion>
 
           <Seccion titulo="Datos del empleado">
-            <FormularioAccion accion={actualizarEmpleado.bind(null, id)} textoBoton="Guardar datos" textoExito="Datos guardados">
+            <FormularioAccion accion={actualizarEmpleado.bind(null, id)} textoBoton="Guardar datos" textoExito="Datos guardados" versiones={[{ t: "empleados", i: id, v: e.updated_at }]} registro="este empleado">
               <CamposEmpleado cuentas={cuentas} empleadoId={id} valores={e} />
             </FormularioAccion>
             {dadoDeBaja ? (
               <BotonAccion accion={reactivarEmpleado.bind(null, id)} texto="Reactivar" variante="secundario" />
             ) : (
               <Desplegable texto="Dar de baja">
-                <FormularioAccion accion={darDeBajaEmpleado.bind(null, id)} textoBoton="Dar de baja" variante="peligro">
+                <FormularioAccion accion={darDeBajaEmpleado.bind(null, id)} textoBoton="Dar de baja" variante="peligro" versiones={[{ t: "empleados", i: id, v: e.updated_at }]} registro="este empleado">
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field label="Último día que trabajó" name="fecha_baja" type="date" defaultValue={hoy} required />
                     <Field label="Motivo" name="motivo_baja" required />

@@ -7,6 +7,8 @@ import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { aplicarCargo, cancelarCargo } from "./cargo-actions";
+import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
+import type { Conflicto } from "@/lib/concurrencia/tipos";
 
 export type Cargo = {
   id: string;
@@ -17,6 +19,8 @@ export type Cargo = {
   motivoCancelacion: string | null;
   // Qué se le dio, en cargos de monto libre (comida especial).
   descripcion?: string | null;
+  /** updated_at del cargo al cargar (QA N43). */
+  version?: string | null;
 };
 
 // montoLibre: sin celda en la matriz; recepción captura importe y
@@ -54,6 +58,7 @@ export function CargosSeccion({
   const [error, setError] = useState<string | null>(null);
 
   const [cancelandoId, setCancelandoId] = useState<string | null>(null);
+  const [conflicto, setConflicto] = useState<{ c: Conflicto; cargoId: string } | null>(null);
   const [motivoCancelar, setMotivoCancelar] = useState("");
   const cancelando = useEspera();
 
@@ -98,13 +103,16 @@ export function CargosSeccion({
     setDescripcion("");
   }
 
-  async function confirmarCancelar(cargoId: string) {
+  async function confirmarCancelar(cargoId: string, forzar = false) {
     if (!motivoCancelar.trim()) {
       setError("Escribe el motivo de la cancelación.");
       return;
     }
     setError(null);
-    const res = await cancelando.ejecutar(() => cancelarCargo(cargoId, motivoCancelar));
+    const version = cargos.find((c) => c.id === cargoId)?.version ?? null;
+    const res = await cancelando.ejecutar(() => cancelarCargo(cargoId, motivoCancelar, { versiones: version ? [{ t: "cargos_aplicados", i: cargoId, v: version }] : [], forzar }));
+    if (res.conflicto) return setConflicto({ c: res.conflicto, cargoId });
+    setConflicto(null);
     if (res.error) {
       setError(res.error);
       return;
@@ -155,6 +163,18 @@ export function CargosSeccion({
                 )}
                 {cancelandoId === c.id && (
                   <div className="mt-2 flex flex-col gap-2 border-t border-n-200 pt-2">
+                    {conflicto?.cargoId === c.id && (
+                      <AvisoConflicto
+                        conflicto={conflicto.c}
+                        registro="este cargo"
+                        cargando={cancelando.cargando}
+                        onRecargar={() => {
+                          setConflicto(null);
+                          setCancelandoId(null);
+                        }}
+                        onGuardarEncima={() => confirmarCancelar(c.id, true)}
+                      />
+                    )}
                     <Field
                       label="Motivo de la cancelación"
                       value={motivoCancelar}

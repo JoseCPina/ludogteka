@@ -142,6 +142,7 @@ export default async function AgendaVeterinaria({ searchParams }: { searchParams
                                 medicoId={c.medico_id}
                                 fecha={fechaLocalDeInstante(c.inicia_at, zona)}
                                 hora={horaLocalDeInstante(c.inicia_at, zona)}
+                                version={c.updated_at ?? null}
                               />
                             </article>
                           );

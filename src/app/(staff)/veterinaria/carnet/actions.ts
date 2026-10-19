@@ -1,5 +1,7 @@
 "use server";
 
+import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
+import { conflictoDeError } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { negocioActual, urlDelNegocio } from "@/lib/negocio/actual";
@@ -102,13 +104,18 @@ export async function guardarAjustesVeterinaria(fd: FormData): Promise<Resultado
   if (!Number.isInteger(vigencia) || vigencia < 1 || vigencia > 365) return { error: "La vigencia del certificado va de 1 a 365 días." };
   if (precio !== "" && !(Number(precio) >= 0)) return { error: "El precio del día no es válido." };
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("guardar_veterinaria_ajustes", {
-    p_recordatorios_activos: fd.get("recordatorios_activos") === "si",
-    p_dias_anticipacion: dias,
-    p_certificado_vigencia_dias: vigencia,
-    p_carnet_reemplaza_comprobante: fd.get("carnet_reemplaza_comprobante") === "si",
-    p_precio_dia: precio === "" ? null : Number(precio),
-  });
+  const { error } = await conControl(
+    supabase.rpc("guardar_veterinaria_ajustes", {
+      p_recordatorios_activos: fd.get("recordatorios_activos") === "si",
+      p_dias_anticipacion: dias,
+      p_certificado_vigencia_dias: vigencia,
+      p_carnet_reemplaza_comprobante: fd.get("carnet_reemplaza_comprobante") === "si",
+      p_precio_dia: precio === "" ? null : Number(precio),
+    }),
+    controlDeFormulario(fd)
+  );
+  const conflicto = conflictoDeError(error);
+  if (conflicto) return { error: null, conflicto };
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/ajustes");
   return { error: null, exito: "Ajustes de Veterinaria guardados." };

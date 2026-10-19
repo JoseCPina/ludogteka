@@ -148,6 +148,7 @@ export const VIDEOS_SIN_ARTICULO: Record<string, string> = {
  * tenga video en VIDEOS_DE_ARTICULO o aparezca aquí: un artículo nuevo sin video se decide a propósito.
  */
 export const ARTICULOS_SIN_VIDEO: Record<string, string> = {
+  "alguien-mas-cambio-lo-que-editabas": "Pendiente de grabar: el aviso solo sale con dos personas editando lo mismo a la vez; se graba con dos sesiones del demo.",
   "cambiar-estilista-cita-estetica": "Pendiente de grabar: el guion del video 96 está listo; la grabación está en pausa.",
   "factura-global-publico-en-general": "Pendiente de grabar: el guion del video 98 está listo; la grabación está en pausa.",
   "iva-y-claves-sat-de-productos-y-servicios": "Pendiente de grabar: el guion del video 99 está listo; la grabación está en pausa.",

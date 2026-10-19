@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { conControl } from "@/lib/concurrencia/servidor";
+import { conflictoDeError, type Conflicto, type ControlVersion } from "@/lib/concurrencia/tipos";
 
 export type FilaTarifaGuardar = {
   cantidad_desde: number;
@@ -17,7 +19,7 @@ export type FilaTarifaGuardar = {
   no_aplica: boolean;
 };
 
-export type EstadoGuardarTarifas = { error: string | null; ok?: boolean };
+export type EstadoGuardarTarifas = { error: string | null; ok?: boolean; conflicto?: Conflicto | null };
 
 function etiquetaTramo(f: { cantidad_desde: number; cantidad_hasta: number | null }): string {
   return f.cantidad_hasta ? `${f.cantidad_desde}-${f.cantidad_hasta}` : `${f.cantidad_desde}+`;
@@ -64,7 +66,8 @@ function validarTraslapes(filas: FilaTarifaGuardar[]): string | null {
 export async function guardarTarifas(
   servicioId: string,
   vigenciaDesde: string,
-  filas: FilaTarifaGuardar[]
+  filas: FilaTarifaGuardar[],
+  control?: ControlVersion
 ): Promise<EstadoGuardarTarifas> {
   if (!vigenciaDesde) return { error: "Elige la fecha de vigencia." };
   if (filas.length === 0) return { error: "No hay cambios que guardar." };
@@ -86,9 +89,11 @@ export async function guardarTarifas(
     no_aplica: f.no_aplica,
   }));
 
-  const { error } = await supabase.from("tarifas").insert(filasInsert);
+  const { error } = await conControl(supabase.from("tarifas").insert(filasInsert), control);
 
   if (error) {
+    const conflicto = conflictoDeError(error);
+    if (conflicto) return { error: null, conflicto };
     if (error.code === "23P01") {
       return {
         error:
@@ -110,20 +115,26 @@ export async function guardarPrecioPorDia(
   servicioId: string,
   diaSemana: number,
   precio: number,
-  vigenciaDesde: string
+  vigenciaDesde: string,
+  control?: ControlVersion
 ): Promise<EstadoGuardarTarifas> {
   if (!Number.isInteger(diaSemana) || diaSemana < 1 || diaSemana > 7) return { error: "Elige el día de la semana." };
   if (!Number.isFinite(precio) || precio < 0) return { error: "Escribe un precio de cero para arriba." };
   if (!vigenciaDesde) return { error: "Elige desde qué fecha aplica." };
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("tarifas_dia_semana").insert({
-    servicio_id: servicioId,
-    dia_semana: diaSemana,
-    precio,
-    vigencia_desde: vigenciaDesde,
-  });
+  const { error } = await conControl(
+    supabase.from("tarifas_dia_semana").insert({
+      servicio_id: servicioId,
+      dia_semana: diaSemana,
+      precio,
+      vigencia_desde: vigenciaDesde,
+    }),
+    control
+  );
   if (error) {
+    const conflicto = conflictoDeError(error);
+    if (conflicto) return { error: null, conflicto };
     if (error.code === "23505") {
       return { error: "Ya hay un precio para ese día con esa misma fecha de vigencia. Usa otra fecha o quítalo primero." };
     }

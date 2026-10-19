@@ -53,7 +53,7 @@ export default async function EditarClientePage({
   const { data: cliente } = await supabase
     .from("clientes")
     .select(
-      "id, nombre, telefono, email, direccion, distancia_base_km, distancia_calculada_at, distancia_ajustada_manualmente, alta_por_cliente, datos_revisados_at"
+      "id, nombre, telefono, email, direccion, distancia_base_km, distancia_calculada_at, distancia_ajustada_manualmente, alta_por_cliente, datos_revisados_at, updated_at"
     )
     .eq("id", id)
     .is("deleted_at", null)
@@ -236,6 +236,8 @@ export default async function EditarClientePage({
 
       <ClienteForm
         action={actualizarConId}
+        clienteId={cliente.id}
+        version={(cliente.updated_at as string | null) ?? null}
         valoresIniciales={{
           nombre: cliente.nombre,
           telefono: formatearTelefono(cliente.telefono),

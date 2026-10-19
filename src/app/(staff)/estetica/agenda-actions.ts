@@ -7,8 +7,10 @@ import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { zonaActual } from "@/lib/negocio/actual";
 import { fechaLocalDeInstante, horaLocalDeInstante, instanteDeHoraLocal, sumarDiasFecha } from "@/lib/formato";
 import { unirFrases } from "@/lib/texto/frases";
+import { conControl } from "@/lib/concurrencia/servidor";
+import { conflictoDeError, type Conflicto, type ControlVersion } from "@/lib/concurrencia/tipos";
 
-export type EstadoAccion = { error: string | null };
+export type EstadoAccion = { error: string | null; conflicto?: Conflicto | null };
 export type EstadoCrearCita = {
   error: string | null;
   /** N30: el mismo perro ya tiene cita ese día; NO se agendó y se pide confirmar. */
@@ -73,13 +75,22 @@ export async function crearCita(datos: {
     }
   }
 
-  const { data: reservaCreada, error: errorCrearReserva } = await supabase
-    .from("reservas")
-    .insert({ cliente_id: reserva.cliente_id })
-    .select("id")
-    .single();
+  // QA N44: el choque real (la estilista ya tiene a otra mascota a esa hora, o está ausente) se dice ANTES de crear
+  // nada, con el mismo texto de la base; nunca «No pudimos crear la reserva».
+  const choque = async () => {
+    const { data: serv } = await supabase.from("servicios").select("duracion_minutos").eq("id", datos.servicioId).maybeSingle();
+    const fin = new Date(new Date(datos.inicio).getTime() + (Number(serv?.duracion_minutos) || 60) * 60000).toISOString();
+    const { data: texto } = await supabase.rpc("cita_estetica_choques_texto", { p_empleado: datos.empleadoId, p_inicio: datos.inicio, p_fin: fin, p_excluir: null });
+    return typeof texto === "string" && texto ? texto : null;
+  };
+  const choqueAntes = await choque();
+  if (choqueAntes) return { error: choqueAntes };
+
+  // La cuenta de la cita la crea la base para cualquier persona del personal (la estilista no inserta en reservas).
+  const { data: reservaId, error: errorCrearReserva } = await supabase.rpc("crear_reserva_para_cita", { p_perro_id: datos.perroId });
+  const reservaCreada = typeof reservaId === "string" ? { id: reservaId } : null;
   if (errorCrearReserva || !reservaCreada) {
-    return { error: "No pudimos crear la reserva para esta cita." };
+    return { error: errorCrearReserva ? traducirError(errorCrearReserva) : "No pudimos abrir la cuenta de esta cita. Intenta de nuevo." };
   }
 
   const { data, error } = await supabase
@@ -103,15 +114,19 @@ export async function crearCita(datos: {
     .single();
 
   if (error) {
-    await supabase.from("reservas").delete().eq("id", reservaCreada.id);
-    // Un «empalme» de la base (23P01) no es del perro: es de la estilista. Normalmente el trigger ya lo dijo con
-    // nombre y hora; si llega crudo, se arma el mismo mensaje.
+    await supabase.rpc("borrar_reserva_vacia", { p_reserva_id: reservaCreada.id });
+    // Un «empalme» de la base (23P01) no es del perro: es de la estilista (otra persona la ocupó entre la revisión y
+    // el guardado). Se dice con el mismo texto.
     if (error.code === "23P01") {
-      const { data: serv } = await supabase.from("servicios").select("duracion_minutos").eq("id", datos.servicioId).maybeSingle();
-      const fin = new Date(new Date(datos.inicio).getTime() + (Number(serv?.duracion_minutos) || 60) * 60000).toISOString();
-      const { data: texto } = await supabase.rpc("cita_estetica_choques_texto", { p_empleado: datos.empleadoId, p_inicio: datos.inicio, p_fin: fin, p_excluir: null });
-      if (typeof texto === "string" && texto) return { error: texto };
+      const texto = await choque();
+      if (texto) return { error: texto };
       return { error: "Esa estilista ya tiene otra cita a esa hora. Escoge a otra persona u otro horario." };
+    }
+    // El aviso de permiso solo cuando de verdad es de permiso (la política de la cita: una estilista agenda en SU
+    // agenda). Cualquier otro rechazo dice lo que dijo la base.
+    if (error.code === "42501" && /row-level security|políti|permission/i.test(error.message ?? "")) {
+      const { data: yo } = await supabase.auth.getUser();
+      if (yo.user && yo.user.id !== datos.empleadoId) return { error: "Solo puedes agendar en tu propia agenda: escoge tu nombre en «Empleado»." };
     }
     return { error: traducirError(error) };
   }
@@ -121,14 +136,14 @@ export async function crearCita(datos: {
 }
 
 /** Pone, cambia o quita el recargo manual de una cita que todavía no se cierra. */
-export async function aplicarRecargoCita(citaId: string, recargo: number, motivo: string): Promise<EstadoAccion> {
+export async function aplicarRecargoCita(citaId: string, recargo: number, motivo: string, control?: ControlVersion): Promise<EstadoAccion> {
   if (!Number.isFinite(recargo) || recargo < 0 || recargo > 100000) return { error: "Escribe un recargo de cero para arriba." };
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
+  const { error } = await conControl(supabase
     .from("citas_estetica")
     .update({ recargo, recargo_motivo: recargo > 0 ? motivo.trim() || null : null })
-    .eq("id", citaId);
-  if (error) return { error: traducirError(error) };
+    .eq("id", citaId), control);
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
   revalidatePath(`/estetica/${citaId}`);
   revalidatePath("/estetica");
   return { error: null };
@@ -149,7 +164,7 @@ export async function estilistasAusentesEnTramo(inicio: string, fin: string): Pr
   }));
 }
 
-export type EstadoReasignar = { error: string | null; de?: string; a?: string; ajusteNomina?: boolean; sinCambio?: boolean };
+export type EstadoReasignar = { error: string | null; de?: string; a?: string; ajusteNomina?: boolean; sinCambio?: boolean; conflicto?: Conflicto | null };
 
 /**
  * Cambia (o quita) la estilista de una cita. Todo lo decide la base
@@ -159,15 +174,16 @@ export type EstadoReasignar = { error: string | null; de?: string; a?: string; a
 export async function reasignarEstilista(
   citaId: string,
   empleadoId: string | null,
-  motivo: string | null
+  motivo: string | null,
+  control?: ControlVersion
 ): Promise<EstadoReasignar> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.rpc("reasignar_estilista_cita", {
+  const { data, error } = await conControl(supabase.rpc("reasignar_estilista_cita", {
     p_cita_id: citaId,
     p_empleado_id: empleadoId,
     p_motivo: motivo,
-  });
-  if (error) return { error: traducirError(error) };
+  }), control);
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
   revalidatePath("/estetica");
   revalidatePath(`/estetica/${citaId}`);
   revalidatePath("/recepcion");
@@ -176,7 +192,7 @@ export async function reasignarEstilista(
   return { error: null, de: r.de, a: r.a, ajusteNomina: r.ajuste_nomina ?? false, sinCambio: r.sin_cambio ?? false };
 }
 
-export type ResultadoAgenda = { error: string | null; urlWhatsApp?: string; fueraDeHorario?: boolean; nuevoInicio?: string };
+export type ResultadoAgenda = { error: string | null; urlWhatsApp?: string; fueraDeHorario?: boolean; nuevoInicio?: string; conflicto?: Conflicto | null };
 
 type DatosCambio = { cliente_nombre?: string | null; cliente_telefono?: string | null; perro_nombre?: string | null; servicio_nombre?: string | null; inicio_despues?: string; inicio?: string; fuera_de_horario?: boolean };
 
@@ -193,10 +209,10 @@ async function linkWhatsApp(d: DatosCambio, plantilla: (c: { cliente: string; pe
 }
 
 /** Cambia la fecha y la hora de una cita (la base revisa empalmes, cobro y estado, y deja el historial). */
-export async function reprogramarCita(citaId: string, nuevoInicio: string, motivo: string): Promise<ResultadoAgenda> {
+export async function reprogramarCita(citaId: string, nuevoInicio: string, motivo: string, control?: ControlVersion): Promise<ResultadoAgenda> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.rpc("reprogramar_cita_estetica", { p_cita_id: citaId, p_inicio: nuevoInicio, p_motivo: motivo.trim() || null });
-  if (error) return { error: traducirError(error) };
+  const { data, error } = await conControl(supabase.rpc("reprogramar_cita_estetica", { p_cita_id: citaId, p_inicio: nuevoInicio, p_motivo: motivo.trim() || null }), control);
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
   const d = (data ?? {}) as DatosCambio;
   revalidatePath("/estetica");
   revalidatePath(`/estetica/${citaId}`);
@@ -214,10 +230,10 @@ export async function reprogramarCita(citaId: string, nuevoInicio: string, motiv
 }
 
 /** «Cancelada» (con motivo) o «no se presentó» (sin motivo obligatorio): dos estados distintos. */
-export async function cancelarCita(citaId: string, motivo: string, noLlego = false): Promise<ResultadoAgenda> {
+export async function cancelarCita(citaId: string, motivo: string, noLlego = false, control?: ControlVersion): Promise<ResultadoAgenda> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.rpc("cancelar_cita_estetica", { p_cita_id: citaId, p_motivo: motivo.trim() || null, p_no_llego: noLlego });
-  if (error) return { error: traducirError(error) };
+  const { data, error } = await conControl(supabase.rpc("cancelar_cita_estetica", { p_cita_id: citaId, p_motivo: motivo.trim() || null, p_no_llego: noLlego }), control);
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
   const d = (data ?? {}) as DatosCambio;
   revalidatePath("/estetica");
   revalidatePath(`/estetica/${citaId}`);
@@ -235,21 +251,21 @@ export async function cancelarCita(citaId: string, motivo: string, noLlego = fal
 }
 
 /** Quita una cita de la agenda (capturada por error o duplicada): no se borra, queda en el historial. Pide el permiso «Eliminar citas». */
-export async function eliminarCita(citaId: string, motivo: string): Promise<ResultadoAgenda> {
+export async function eliminarCita(citaId: string, motivo: string, control?: ControlVersion): Promise<ResultadoAgenda> {
   if (motivo.trim().length < 5) return { error: "Escribe el motivo por el que se elimina la cita." };
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("eliminar_cita_estetica", { p_cita_id: citaId, p_motivo: motivo.trim() });
-  if (error) return { error: traducirError(error) };
+  const { error } = await conControl(supabase.rpc("eliminar_cita_estetica", { p_cita_id: citaId, p_motivo: motivo.trim() }), control);
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
   revalidatePath("/estetica");
   revalidatePath("/recepcion");
   return { error: null };
 }
 
 /** Pone, quita o restablece la tarifa «cliente de guardería» de una cita (la base vuelve a cotizar y exige permiso y motivo). */
-export async function cambiarTarifaGuarderia(citaId: string, modo: "auto" | "si" | "no", motivo: string): Promise<EstadoAccion & { precio?: number }> {
+export async function cambiarTarifaGuarderia(citaId: string, modo: "auto" | "si" | "no", motivo: string, control?: ControlVersion): Promise<EstadoAccion & { precio?: number }> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.rpc("cambiar_tarifa_guarderia_cita", { p_cita_id: citaId, p_modo: modo, p_motivo: motivo.trim() || null });
-  if (error) return { error: traducirError(error) };
+  const { data, error } = await conControl(supabase.rpc("cambiar_tarifa_guarderia_cita", { p_cita_id: citaId, p_modo: modo, p_motivo: motivo.trim() || null }), control);
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
   revalidatePath("/estetica");
   revalidatePath(`/estetica/${citaId}`);
   return { error: null, precio: Number((data as { precio_despues?: number } | null)?.precio_despues ?? 0) };
@@ -258,19 +274,33 @@ export async function cambiarTarifaGuarderia(citaId: string, modo: "auto" | "si"
 export async function iniciarCita(
   citaId: string,
   entregadoPorNombre: string | null,
-  entregadoPorTelefono: string | null
-): Promise<EstadoAccion> {
+  entregadoPorTelefono: string | null,
+  opciones?: { confirmarOtroDia?: boolean; control?: ControlVersion }
+): Promise<EstadoAccion & { otroDia?: string }> {
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
+  // Una cita de otro día no se recibe sin preguntar (QA S14: se hizo el check-in el domingo de una cita del lunes).
+  if (!opciones?.confirmarOtroDia) {
+    const { data: cita } = await supabase.from("citas_estetica").select("inicio").eq("id", citaId).maybeSingle();
+    if (cita?.inicio) {
+      const zona = await zonaActual();
+      const dia = fechaLocalDeInstante(cita.inicio as string, zona);
+      const hoy = fechaLocalDeInstante(new Date().toISOString(), zona);
+      if (dia !== hoy) {
+        const cuando = new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", timeZone: zona }).format(new Date(cita.inicio as string));
+        return { error: null, otroDia: `Esta cita es del ${cuando}, ${dia < hoy ? "ya pasó" : "no es de hoy"}. ¿Recibir a la mascota de todos modos?` };
+      }
+    }
+  }
+  const { error } = await conControl(supabase
     .from("citas_estetica")
     .update({
       estado: "en_curso",
       entregado_por_nombre: entregadoPorNombre,
       entregado_por_telefono: entregadoPorTelefono,
     })
-    .eq("id", citaId);
+    .eq("id", citaId), opciones?.control);
 
-  if (error) return { error: traducirError(error) };
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
   revalidatePath("/estetica");
   return { error: null };
 }

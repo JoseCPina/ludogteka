@@ -45,7 +45,7 @@ export default async function CitaDetallePage({
   const { data: cita, error } = await supabase
     .from("citas_estetica")
     .select(
-      "id, perro_id, servicio_id, tamano_id, empleado_id, estancia_id, inicio, fin, estado, precio, recargo, recargo_motivo, fuera_de_horario, entregado_por_nombre, recogido_por_nombre, recogido_por_es_dueno, tarifa_guarderia, tarifa_guarderia_modo, tarifa_guarderia_servicio_id, perros(nombre), servicio_nombre, servicios!citas_estetica_servicio_id_fkey(nombre)"
+      "id, perro_id, servicio_id, tamano_id, empleado_id, estancia_id, inicio, fin, estado, precio, updated_at, recargo, recargo_motivo, fuera_de_horario, entregado_por_nombre, recogido_por_nombre, recogido_por_es_dueno, tarifa_guarderia, tarifa_guarderia_modo, tarifa_guarderia_servicio_id, perros(nombre), servicio_nombre, servicios!citas_estetica_servicio_id_fkey(nombre)"
     )
     .eq("id", citaId)
     .is("deleted_at", null)
@@ -240,6 +240,7 @@ export default async function CitaDetallePage({
         <p className="text-sm text-n-500">Esta cita es de otro empleado — solo se puede consultar.</p>
       ) : (
         <CitaDetalle
+          version={(cita.updated_at as string | null) ?? null}
           citaId={cita.id}
           perroNombre={perro.nombre}
           estado={cita.estado}
@@ -279,6 +280,7 @@ export default async function CitaDetallePage({
         <section data-corregir-servicio-seccion className="flex flex-col gap-2 border-t border-n-200 pt-4">
           <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Servicio de la cita</h2>
           <CorregirServicio
+            version={(cita.updated_at as string | null) ?? null}
             citaId={cita.id}
             estado={cita.estado}
             servicioActual={servicio?.nombre ?? (cita.servicio_nombre as string | null) ?? "Servicio"}

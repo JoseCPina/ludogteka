@@ -58,7 +58,7 @@ export default async function TarifasServicioPage({
       .order("created_at", { ascending: false }),
     supabase
       .from("tarifas_dia_semana")
-      .select("id, dia_semana, precio, vigencia_desde")
+      .select("id, dia_semana, precio, vigencia_desde, created_at")
       .eq("servicio_id", id)
       .is("deleted_at", null)
       .order("dia_semana"),
@@ -66,6 +66,14 @@ export default async function TarifasServicioPage({
   ]);
 
   if (!servicio) notFound();
+
+  // QA N43: la última captura de precios que esta pantalla vio; si otra persona captura después, no se guarda encima
+  // sin avisar. Sin precios todavía, cualquier captura ajena cuenta.
+  const versionPrecios =
+    [...(historialCrudo ?? []), ...((preciosDia ?? []) as { created_at?: string }[])]
+      .map((f) => f.created_at ?? "")
+      .sort()
+      .at(-1) || "-infinity";
 
   const grupoNombre = new Map((grupos ?? []).map((g) => [g.id, g.nombre]));
   const tamanoEtiqueta = new Map((tamanos ?? []).map((t) => [t.id, t.etiqueta]));
@@ -122,6 +130,7 @@ export default async function TarifasServicioPage({
         tamanos={tamanos ?? []}
         pelajes={pelajes ?? []}
         vigentes={vigentes ?? []}
+        versionPrecios={versionPrecios}
       />
 
       {!servicio.monto_libre && (
@@ -136,6 +145,7 @@ export default async function TarifasServicioPage({
           <PreciosPorDia
             servicioId={id}
             precios={(preciosDia ?? []) as PrecioDia[]}
+            versionPrecios={versionPrecios}
             hoy={(hoyData as string | null) ?? hoyNegocio(zona)}
           />
         </div>

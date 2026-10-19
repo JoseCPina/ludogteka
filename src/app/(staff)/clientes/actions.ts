@@ -8,8 +8,10 @@ import { normalizarTelefono } from "@/lib/telefono";
 import { geocodificarYCalcularDistancia } from "@/lib/google-maps/distancia-cliente";
 import { rutaDeVuelta } from "@/lib/clientes/volver";
 import { descartarBorradorGuardado } from "@/lib/borradores/servidor";
+import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
+import { conflictoDeError } from "@/lib/concurrencia/tipos";
 
-export type EstadoClienteForm = { error: string | null; ok?: boolean };
+export type EstadoClienteForm = { error: string | null; ok?: boolean; conflicto?: import("@/lib/concurrencia/tipos").Conflicto | null };
 
 function leerCampos(formData: FormData) {
   const nombre = String(formData.get("nombre") ?? "").trim();
@@ -110,12 +112,15 @@ export async function actualizarCliente(
   if (validado.error) return validado;
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
+  const control = controlDeFormulario(formData);
+  const { error } = await conControl(supabase
     .from("clientes")
     .update({ nombre, telefono: validado.telefono, email })
-    .eq("id", id);
+    .eq("id", id), control);
 
   if (error) {
+    const conflicto = conflictoDeError(error);
+    if (conflicto) return { error: null, conflicto };
     if (error.code === "23505") {
       // Desde que el teléfono es la identidad del cliente hay DOS índices
       // únicos, y decirle a recepción que el problema es el correo cuando
@@ -133,7 +138,7 @@ export async function actualizarCliente(
   }
 
   // Notas internas: tabla propia, solo personal (recepción y admin las editan).
-  const { error: errorNotas } = await supabase.rpc("cliente_notas_guardar", { p_cliente: id, p_notas: notas ?? "" });
+  const { error: errorNotas } = await conControl(supabase.rpc("cliente_notas_guardar", { p_cliente: id, p_notas: notas ?? "" }), control);
   if (errorNotas) {
     return { error: "Guardamos los datos, pero no las notas internas. Intenta de nuevo." };
   }

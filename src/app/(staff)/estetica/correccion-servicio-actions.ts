@@ -9,6 +9,8 @@ import { conexionDeCobro } from "@/lib/pagos/conexion";
 import { cancelarCobrosEnCurso } from "@/lib/pagos/cancelar-cobros-de-cuenta";
 import { traducirError } from "../reservas/traducir-error";
 import type { CotizacionCorreccion, ResultadoCorreccion } from "./correccion-servicio-tipos";
+import { conControl } from "@/lib/concurrencia/servidor";
+import { conflictoDeError, type Conflicto, type ControlVersion } from "@/lib/concurrencia/tipos";
 
 // Corregir el servicio de una cita. Todo lo decide la base
 // (cotizar_correccion_servicio / corregir_servicio_cita): quién puede, el
@@ -39,7 +41,8 @@ export async function corregirServicioCita(datos: {
   precioEsperado: number | null;
   grupoExcepcionId: string | null;
   motivoExcepcion: string | null;
-}): Promise<{ error: string | null; resultado?: ResultadoCorreccion }> {
+  control?: ControlVersion;
+}): Promise<{ error: string | null; resultado?: ResultadoCorreccion; conflicto?: Conflicto | null }> {
   const sesion = await obtenerSesionConRol();
   if (!sesion || !["admin", "recepcion"].includes(sesion.rol)) return { error: "Solo admin o recepción corrigen el servicio de una cita." };
   if (!datos.motivo.trim()) return { error: "Escribe el motivo de la corrección: queda en el historial de la cita." };
@@ -75,7 +78,7 @@ export async function corregirServicioCita(datos: {
   }
 
   // 3. La corrección (con el precio que se vio, para no cambiar otro).
-  const { data, error } = await supabase.rpc("corregir_servicio_cita", {
+  const { data, error } = await conControl(supabase.rpc("corregir_servicio_cita", {
     p_cita_id: datos.citaId,
     p_servicio_id: datos.servicioId,
     p_motivo: datos.motivo.trim(),
@@ -83,8 +86,8 @@ export async function corregirServicioCita(datos: {
     p_excepcion_motivo: datos.motivoExcepcion,
     p_precio_esperado: datos.precioEsperado,
     p_ordenes_canceladas: canceladas,
-  });
-  if (error) return { error: traducirError(error) };
+  }), datos.control);
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
   const resultado = data as ResultadoCorreccion;
   revalidatePath("/estetica");
   revalidatePath(`/estetica/${datos.citaId}`);

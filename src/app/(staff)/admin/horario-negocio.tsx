@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
+import { AvisoVersion, useControlVersion } from "@/components/concurrencia/use-control-version";
 import { Alert } from "@/components/ui/alert";
 import { guardarHorarioSemana, type DiaHorario } from "./configuracion-actions";
 
@@ -33,7 +34,17 @@ const hhmm = (t: string | null) => (t ? t.slice(0, 5) : "");
  * Guardar no reescribe el horario de días pasados: si la configuración
  * vigente es de antes de hoy, se crea una versión nueva con fecha de hoy.
  */
-export function HorarioNegocio({ vigente }: { vigente: DiaHorario[] }) {
+export function HorarioNegocio({
+  vigente,
+  negocioId = null,
+  version = null,
+}: {
+  vigente: DiaHorario[];
+  /** El negocio y la última vez que se guardó su horario (QA N43). */
+  negocioId?: string | null;
+  version?: string | null;
+}) {
+  const ctl = useControlVersion("horario_semana", negocioId, version);
   const router = useRouter();
   const inicial = Object.fromEntries(
     DIAS.map((d) => {
@@ -52,7 +63,7 @@ export function HorarioNegocio({ vigente }: { vigente: DiaHorario[] }) {
     setFilas((prev) => ({ ...prev, [num]: { ...prev[num], ...cambio } }));
   }
 
-  async function guardar() {
+  async function guardar(forzar = false) {
     setError(null);
     setExito(null);
     const dias: DiaHorario[] = DIAS.map((d) => {
@@ -63,7 +74,8 @@ export function HorarioNegocio({ vigente }: { vigente: DiaHorario[] }) {
         hora_cierre: f.abre ? f.cierre || null : null,
       };
     });
-    const res = await envio.ejecutar(() => guardarHorarioSemana(dias));
+    const res = await envio.ejecutar(() => guardarHorarioSemana(dias, ctl.control(forzar)));
+    if (ctl.huboConflicto(res, () => guardar(true))) return;
     if (res.error) {
       setError(res.error);
       return;
@@ -128,8 +140,9 @@ export function HorarioNegocio({ vigente }: { vigente: DiaHorario[] }) {
         </Alert>
       )}
 
+      <AvisoVersion ctl={ctl} registro="el horario del negocio" cargando={envio.cargando} onRecargar={() => window.location.reload()} />
       <AccionesFormulario error={error} exito={exito}>
-        <Button type="button" cargando={envio.cargando} onClick={guardar}>
+        <Button type="button" cargando={envio.cargando} onClick={() => guardar(false)}>
           Guardar horario
         </Button>
       </AccionesFormulario>

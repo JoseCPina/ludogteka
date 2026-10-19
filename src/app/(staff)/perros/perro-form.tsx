@@ -2,7 +2,10 @@
 
 import { useModulos } from "@/components/modulos-contexto";
 import { faltantesAltaPerro } from "@/lib/perros/alta-requisitos";
-import { startTransition, useActionState, useState } from "react";
+import { startTransition, useActionState, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { CampoVersion, conForzar } from "@/components/concurrencia/campo-version";
+import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
@@ -30,6 +33,7 @@ export function PerroForm({
   textoBoton,
   soloLectura = false,
   perroId = null,
+  version = null,
   grupos = [],
   puedeAsignarGrupo = false,
   propuestaInicial = null,
@@ -63,6 +67,8 @@ export function PerroForm({
   soloLectura?: boolean;
   // El perro que se edita: con él, «agregar esta raza» lo liga en el momento.
   perroId?: string | null;
+  /** updated_at del perro al cargar la pantalla (QA N43). */
+  version?: string | null;
   // Solo con «Precios y tarifas»: sin él no llegan ni los nombres de los grupos.
   grupos?: { id: string; nombre: string }[];
   puedeAsignarGrupo?: boolean;
@@ -87,6 +93,12 @@ export function PerroForm({
   const modulos = useModulos();
   const pideRaza = modulos.tiene("estetica") || modulos.tiene("guarderia") || modulos.tiene("hotel");
   const [estado, formAction, enviando] = useActionState(useAccionConTope(action), ESTADO_INICIAL);
+  const ultimo = useRef<FormData | null>(null);
+  // La cabecera del expediente y los bloques de arriba se ponen al día al guardar (QA S14).
+  const router = useRouter();
+  useEffect(() => {
+    if (estado.ok && perroId) router.refresh();
+  }, [estado, perroId, router]);
   const deshabilitado = enviando || soloLectura;
   const [especie, setEspecie] = useState<Especie>(clinicoIniciales?.especie ?? "perro");
 
@@ -130,11 +142,27 @@ export function PerroForm({
       onSubmit={(e) => {
         e.preventDefault();
         const datos = new FormData(e.currentTarget);
+        ultimo.current = datos;
         setErrorDescartado(null);
         startTransition(() => formAction(datos));
       }}
       className="flex max-w-lg flex-col gap-4"
     >
+      {perroId && <CampoVersion versiones={[{ t: "perros", i: perroId, v: version }]} />}
+      {estado.conflicto && (
+        <AvisoConflicto
+          conflicto={estado.conflicto}
+          registro="esta mascota"
+          cargando={enviando}
+          onRecargar={() => window.location.reload()}
+          onGuardarEncima={() => {
+            if (ultimo.current) {
+              const fd = conForzar(ultimo.current);
+              startTransition(() => formAction(fd));
+            }
+          }}
+        />
+      )}
       {borrador && !soloLectura && <BorradorFormulario formulario={borrador.formulario} clave={borrador.clave} />}
       {errorVisible && (
         <Alert variante="error" titulo="No se pudo guardar">

@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useEspera, useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
@@ -64,6 +65,18 @@ export function RequisitosEstancia({
   const cargando = useEspera();
   const [enCelo, setEnCelo] = useState(datos.en_celo);
   const [gestante, setGestante] = useState(datos.gestante);
+  // Al guardar se vuelve a pedir la página (cabecera del expediente incluida) y lo marcado se pone al día con
+  // lo que diga la base (QA S14: antes la cabecera y este bloque no cambiaban hasta recargar).
+  const router = useRouter();
+  const [vistos, setVistos] = useState({ c: datos.en_celo, g: datos.gestante });
+  if (vistos.c !== datos.en_celo || vistos.g !== datos.gestante) {
+    setVistos({ c: datos.en_celo, g: datos.gestante });
+    setEnCelo(datos.en_celo);
+    setGestante(datos.gestante);
+  }
+  useEffect(() => {
+    if (estadoEval.ok) router.refresh();
+  }, [estadoEval, router]);
 
   const evaluada = Boolean(datos.evaluacion_comportamiento_fecha);
   const esHembra = datos.sexo === "hembra";
@@ -82,12 +95,14 @@ export function RequisitosEstancia({
     }
     if (cambios.en_celo !== undefined) setEnCelo(cambios.en_celo);
     if (cambios.gestante !== undefined) setGestante(cambios.gestante);
+    router.refresh();
   }
 
   async function quitarEvaluacion() {
     setError(null);
     const res = await cargando.ejecutar(() => quitarEvaluacionComportamiento(perroId, clienteId));
     if (res.error) setError(res.error);
+    else router.refresh();
   }
 
   return (

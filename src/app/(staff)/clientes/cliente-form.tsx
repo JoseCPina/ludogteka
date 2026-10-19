@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useRef, useState } from "react";
 import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +10,8 @@ import { Alert } from "@/components/ui/alert";
 import { useModulos } from "@/components/modulos-contexto";
 import { BorradorFormulario } from "@/lib/borradores/borrador-formulario";
 import type { EstadoClienteForm } from "./actions";
+import { CampoVersion, conForzar } from "@/components/concurrencia/campo-version";
+import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 
 const ESTADO_INICIAL: EstadoClienteForm = { error: null };
 
@@ -19,6 +21,8 @@ export function ClienteForm({
   textoBoton,
   pedirDireccion = false,
   corta = false,
+  clienteId,
+  version,
 }: {
   action: (estadoPrevio: EstadoClienteForm, formData: FormData) => Promise<EstadoClienteForm>;
   valoresIniciales?: { nombre: string; telefono: string; email: string | null; notas?: string | null };
@@ -31,13 +35,42 @@ export function ClienteForm({
   // Alta corta (viene de agendar una cita de estética): solo nombre y
   // WhatsApp. La dirección solo se pide si el cliente quiere recolección.
   corta?: boolean;
+  /** En la edición: el cliente y su updated_at al cargar (QA N43). */
+  clienteId?: string;
+  version?: string | null;
 }) {
   const { tiene } = useModulos();
   const [quiereRecoleccion, setQuiereRecoleccion] = useState(false);
   const [estado, formAction, enviando] = useActionState(useAccionConTope(action), ESTADO_INICIAL);
+  // Se manda a mano (sin `action=`): así React no vacía los campos y, si otra persona cambió al cliente, lo
+  // escrito sigue ahí para «guardar los míos encima».
+  const ultimo = useRef<FormData | null>(null);
 
   return (
-    <form action={formAction} className="flex max-w-lg flex-col gap-4">
+    <form
+      className="flex max-w-lg flex-col gap-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const fd = new FormData(e.currentTarget);
+        ultimo.current = fd;
+        startTransition(() => formAction(fd));
+      }}
+    >
+      {clienteId && <CampoVersion versiones={[{ t: "clientes", i: clienteId, v: version ?? null }]} />}
+      {estado.conflicto && (
+        <AvisoConflicto
+          conflicto={estado.conflicto}
+          registro="este cliente"
+          cargando={enviando}
+          onRecargar={() => window.location.reload()}
+          onGuardarEncima={() => {
+            if (ultimo.current) {
+              const fd = conForzar(ultimo.current);
+              startTransition(() => formAction(fd));
+            }
+          }}
+        />
+      )}
       {/* Solo el alta: una edición ya trae sus datos. */}
       {!valoresIniciales && <BorradorFormulario formulario="cliente_nuevo" clave={corta ? "corta" : ""} />}
       {estado.error && (

@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
 import { Alert } from "@/components/ui/alert";
-import { AccionesFormulario } from "@/components/ui/acciones-formulario";
-import { formatearFechaCalendario, sumarDiasFecha } from "@/lib/formato";
-import { cancelarEstancia, moverFechas } from "../reserva-actions";
+import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
+import { formatearFechaCalendario } from "@/lib/formato";
+import type { Conflicto } from "@/lib/concurrencia/tipos";
+import { cancelarEstancia } from "../reserva-actions";
+import { MoverFechas } from "../mover-fechas";
 
 export type ReservaCalendario = {
   id: string;
@@ -21,6 +22,8 @@ export type ReservaCalendario = {
   fechaEntrada: string;
   fechaSalida: string;
   estado: string;
+  /** updated_at de la estancia al cargar la lista (QA N43). */
+  version: string | null;
   /** Texto corto de la cuenta: «Debe $350.00», «Pagada», «Cuenta cancelada»… */
   cuenta: string;
   cuentaTono: "debe" | "ok" | "cancelada" | "neutro";
@@ -59,8 +62,17 @@ export function FilaReserva({ r }: { r: ReservaCalendario }) {
   const [entrada, setEntrada] = useState(r.fechaEntrada);
   const [salida, setSalida] = useState(r.fechaSalida);
   const [moviendo, setMoviendo] = useState(false);
-  const [nuevaEntrada, setNuevaEntrada] = useState(r.fechaEntrada);
-  const [nuevaSalida, setNuevaSalida] = useState(r.fechaSalida);
+  const [version, setVersion] = useState(r.version);
+  // Al recargar (otra persona la cambió), la fila toma lo que dice la base.
+  const [versionVista, setVersionVista] = useState(r.version);
+  if (r.version !== versionVista) {
+    setVersionVista(r.version);
+    setVersion(r.version);
+    setEstado(r.estado);
+    setEntrada(r.fechaEntrada);
+    setSalida(r.fechaSalida);
+  }
+  const [conflicto, setConflicto] = useState<Conflicto | null>(null);
   const [cancelando, setCancelando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
@@ -68,26 +80,13 @@ export function FilaReserva({ r }: { r: ReservaCalendario }) {
   const esGuarderia = r.categoria === "guarderia";
   const editable = estado === "reservada" || estado === "confirmada";
 
-  async function mover() {
+  async function cancelar(forzar = false) {
     setError(null);
     setExito(null);
-    if (!nuevaEntrada) return setError("Escoge la nueva fecha.");
-    const salidaFinal = esGuarderia ? sumarDiasFecha(nuevaEntrada, 1) : nuevaSalida;
-    if (!esGuarderia && salidaFinal <= nuevaEntrada) return setError("La salida tiene que ser después de la entrada.");
-    const res = await envio.ejecutar(() => moverFechas(r.id, nuevaEntrada, salidaFinal));
+    const res = await envio.ejecutar(() => cancelarEstancia(r.id, { versiones: version ? [{ t: "estancias", i: r.id, v: version }] : [], forzar }));
+    if (res.conflicto) return setConflicto(res.conflicto);
     if (res.error) return setError(res.error);
-    setEntrada(nuevaEntrada);
-    setSalida(salidaFinal);
-    setMoviendo(false);
-    setExito("Fechas cambiadas.");
-    router.refresh();
-  }
-
-  async function cancelar() {
-    setError(null);
-    setExito(null);
-    const res = await envio.ejecutar(() => cancelarEstancia(r.id));
-    if (res.error) return setError(res.error);
+    setConflicto(null);
     setEstado("cancelada");
     setCancelando(false);
     setExito(res.aviso ? `Reserva cancelada y su cupo quedó libre. ${res.aviso}` : "Reserva cancelada y su cupo quedó libre.");
@@ -131,26 +130,40 @@ export function FilaReserva({ r }: { r: ReservaCalendario }) {
       )}
       {exito && <p className="text-sm font-semibold text-menta-oscuro">{exito}</p>}
 
+      {conflicto && (
+        <AvisoConflicto
+          conflicto={conflicto}
+          registro="esta reserva"
+          cargando={envio.cargando}
+          onRecargar={() => {
+            setConflicto(null);
+            setCancelando(false);
+          }}
+          onGuardarEncima={() => cancelar(true)}
+        />
+      )}
       {moviendo ? (
-        <div className="flex flex-col gap-3 rounded-md border border-n-200 bg-n-50 p-3">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label={esGuarderia ? "Nueva fecha" : "Nueva entrada"} type="date" value={nuevaEntrada} onChange={(e) => setNuevaEntrada(e.target.value)} />
-            {!esGuarderia && <Field label="Nueva salida" type="date" value={nuevaSalida} min={nuevaEntrada} onChange={(e) => setNuevaSalida(e.target.value)} />}
-          </div>
-          <AccionesFormulario error={null}>
-            <Button type="button" cargando={envio.cargando} onClick={mover}>
-              Guardar fechas
-            </Button>
-            <Button type="button" variante="secundario" onClick={() => setMoviendo(false)}>
-              Dejarlas
-            </Button>
-          </AccionesFormulario>
-        </div>
+        <MoverFechas
+          estanciaId={r.id}
+          esGuarderia={esGuarderia}
+          entrada={entrada}
+          salida={salida}
+          version={version}
+          onHecho={(x) => {
+            setEntrada(x.entrada);
+            setSalida(x.salida);
+            if (x.version) setVersion(x.version);
+            setMoviendo(false);
+            setExito("Fechas cambiadas.");
+            router.refresh();
+          }}
+          onCancelar={() => setMoviendo(false)}
+        />
       ) : cancelando ? (
         <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
           <p className="text-sm font-semibold text-coral-oscuro">¿Cancelar la reserva de {r.perroNombre}? Su cupo queda libre y, si usó un pase, se le devuelve.</p>
           <div className="flex gap-2">
-            <Button type="button" variante="peligro" cargando={envio.cargando} onClick={cancelar}>
+            <Button type="button" variante="peligro" cargando={envio.cargando} onClick={() => cancelar()}>
               Sí, cancelarla
             </Button>
             <Button type="button" variante="secundario" onClick={() => setCancelando(false)}>
@@ -168,7 +181,7 @@ export function FilaReserva({ r }: { r: ReservaCalendario }) {
           </Link>
           {editable && (
             <>
-              <Button type="button" variante="secundario" className="min-h-10 px-3 text-sm" onClick={() => { setMoviendo(true); setNuevaEntrada(entrada); setNuevaSalida(salida); setExito(null); }}>
+              <Button type="button" variante="secundario" className="min-h-10 px-3 text-sm" onClick={() => { setMoviendo(true); setExito(null); }}>
                 Mover fechas
               </Button>
               <Button type="button" variante="secundario" className="min-h-10 px-3 text-sm" onClick={() => { setCancelando(true); setExito(null); }}>

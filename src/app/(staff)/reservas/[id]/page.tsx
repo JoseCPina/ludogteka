@@ -35,7 +35,7 @@ export default async function DetalleReservaPage({
   const { data: estancias, error: errorEstancias } = await supabase
     .from("estancias")
     .select(
-      "id, perro_id, servicio_id, fecha_entrada, fecha_salida, estado, precio_unitario, horas, perros(nombre), servicios(nombre, categoria, unidad)"
+      "id, perro_id, servicio_id, fecha_entrada, fecha_salida, estado, precio_unitario, horas, updated_at, perros(nombre), servicios(nombre, categoria, unidad)"
     )
     .eq("reserva_id", id)
     .is("deleted_at", null)
@@ -55,6 +55,7 @@ export default async function DetalleReservaPage({
       precioUnitario: e.precio_unitario as number,
       unidad: (servicio?.unidad as string) ?? "dia",
       horas: (e.horas as number | null) ?? null,
+      version: (e.updated_at as string | null) ?? null,
     };
   });
 
@@ -81,7 +82,7 @@ export default async function DetalleReservaPage({
     estanciaIds.length > 0
       ? supabase
           .from("cargos_aplicados")
-          .select("id, estancia_id, cantidad, precio, cancelado, motivo_cancelacion, descripcion, servicios(nombre)")
+          .select("id, estancia_id, cantidad, precio, cancelado, motivo_cancelacion, descripcion, updated_at, servicios(nombre)")
           .in("estancia_id", estanciaIds)
           .order("created_at")
       : Promise.resolve({ data: [] as never[] }),
@@ -99,6 +100,7 @@ export default async function DetalleReservaPage({
       cancelado: c.cancelado as boolean,
       motivoCancelacion: c.motivo_cancelacion as string | null,
       descripcion: (c.descripcion as string | null) ?? null,
+      version: (c.updated_at as string | null) ?? null,
     });
     cargosPorEstancia.set(c.estancia_id as string, lista);
   }
@@ -122,6 +124,11 @@ export default async function DetalleReservaPage({
   const { data: totalesCrudo } = await supabase.rpc("cuenta_totales_reserva", { p_reserva_id: id });
   const totalesFila = Array.isArray(totalesCrudo) ? totalesCrudo[0] : totalesCrudo;
   const saldo = Number(totalesFila?.saldo ?? 0);
+  const totalCuenta = Number(totalesFila?.total_cuenta ?? 0);
+  // QA S14: una reserva cancelada (o en la que nadie llegó) sin saldo no tiene nada que cobrar; con saldo, se dice qué
+  // se debe (un cargo que sí se hizo) y con saldo a favor, que se devuelve.
+  const todaCancelada = filas.length > 0 && filas.every((f) => ["cancelada", "no_llego"].includes(f.estado));
+  const hayQueCobrar = saldo > 0.005;
 
   return (
     <div className="flex flex-col gap-6">
@@ -159,16 +166,29 @@ export default async function DetalleReservaPage({
             )}
           </div>
           <div className="flex flex-col items-end gap-2">
-            <p className={`text-sm font-bold ${saldo > 0 ? "text-coral-oscuro" : "text-menta-oscuro"}`}>
+            <p className={`text-sm font-bold ${saldo > 0 ? "text-coral-oscuro" : "text-menta-oscuro"}`} data-saldo-reserva={saldo.toFixed(2)}>
               Saldo: ${saldo.toFixed(2)}
               {saldo < 0 ? " (a favor)" : ""}
             </p>
+            {todaCancelada && (
+              <p className="max-w-xs text-right text-sm text-n-700" data-reserva-cancelada-cuenta>
+                {hayQueCobrar
+                  ? `Reserva cancelada, pero la cuenta todavía debe $${saldo.toFixed(2)} (de un total de $${totalCuenta.toFixed(2)}): es lo que sí se cobra.`
+                  : saldo < -0.005
+                    ? `Reserva cancelada: hay $${(-saldo).toFixed(2)} a favor del cliente que se devuelve desde la cuenta.`
+                    : "Reserva cancelada: no hay nada por cobrar."}
+              </p>
+            )}
             <div className="flex gap-2">
-              <Link href={`/reservas/${id}/cobrar`}>
-                <Button type="button">Cobrar</Button>
-              </Link>
+              {(!todaCancelada || hayQueCobrar || saldo < -0.005) && (
+                <Link href={`/reservas/${id}/cobrar`}>
+                  <Button type="button" data-cobrar-reserva>
+                    {todaCancelada ? (hayQueCobrar ? `Cobrar $${saldo.toFixed(2)}` : "Ver la cuenta") : "Cobrar"}
+                  </Button>
+                </Link>
+              )}
               {cancelables > 0 && (
-                <CancelarReservaBoton reservaId={reserva.id} cancelables={cancelables} />
+                <CancelarReservaBoton reservaId={reserva.id} cancelables={cancelables} versiones={filas.map((f) => ({ t: "estancias", i: f.id, v: f.version }))} />
               )}
             </div>
           </div>

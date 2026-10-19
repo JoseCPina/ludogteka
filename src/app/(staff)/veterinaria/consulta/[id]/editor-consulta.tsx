@@ -15,6 +15,8 @@ import { DictadoPanel } from "./dictado-panel";
 import { CargosConsulta } from "./cargos-consulta";
 import { dinero } from "@/lib/dinero";
 import type { CargosConsulta as DatosCargos } from "@/lib/veterinaria/cargos-consulta";
+import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
+import type { Conflicto } from "@/lib/concurrencia/tipos";
 import { agregarDiagnosticoNegocio, buscarDiagnosticos, descartarBorrador, firmarConsulta, guardarBorrador, type DatosBorrador } from "../../expediente/actions";
 
 type Valores = Record<string, string>;
@@ -55,6 +57,10 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
   const sucios = useRef<Set<string>>(new Set());
   const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null);
   const guardadoEnvio = useEspera();
+  // QA N43: la versión del borrador que esta pestaña tiene; si otra persona lo cambia, no se pisa.
+  const version = useRef<string | null>(consulta.updated_at ?? null);
+  const [conflicto, setConflicto] = useState<Conflicto | null>(null);
+  const forzarSiguiente = useRef(false);
   const firmaEnvio = useEspera();
   const descarteEnvio = useEspera();
 
@@ -76,6 +82,7 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
       temporizador.current = null;
     }
     if (sucios.current.size === 0) return true;
+    if (conflicto && !forzarSiguiente.current) return false;
     const claves = [...sucios.current];
     sucios.current.clear();
     const datos: Record<string, unknown> = {};
@@ -87,7 +94,20 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
       } else datos[k] = ultimo.current.v[k] ?? "";
     }
     setEstado("guardando");
-    const r = await guardadoEnvio.ejecutar(() => guardarBorrador(consulta.id, datos as DatosBorrador));
+    const forzar = forzarSiguiente.current;
+    forzarSiguiente.current = false;
+    const r = await guardadoEnvio.ejecutar(() =>
+      guardarBorrador(consulta.id, datos as DatosBorrador, { versiones: version.current ? [{ t: "vet_consultas", i: consulta.id, v: version.current }] : [], forzar })
+    );
+    if (r.conflicto) {
+      for (const k of claves) sucios.current.add(k);
+      setConflicto(r.conflicto);
+      setEstado("error");
+      setErrorGuardado(null);
+      return false;
+    }
+    setConflicto(null);
+    if (r.guardado_at) version.current = r.guardado_at;
     if (r.error) {
       for (const k of claves) sucios.current.add(k);
       setEstado("error");
@@ -161,6 +181,19 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
         {ETIQUETA_ESTADO[estado] || "Borrador: se guarda solo mientras escribes."}
         {errorGuardado && <span> · {errorGuardado}</span>}
       </div>
+      {conflicto && (
+        <AvisoConflicto
+          conflicto={conflicto}
+          registro="esta consulta"
+          cargando={guardadoEnvio.cargando}
+          onRecargar={() => window.location.reload()}
+          onGuardarEncima={() => {
+            forzarSiguiente.current = true;
+            setConflicto(null);
+            void guardarAhora();
+          }}
+        />
+      )}
 
       <DictadoPanel consultaId={consulta.id} valores={v} diagnosticos={dx} onAplicar={aplicarDictado} />
 

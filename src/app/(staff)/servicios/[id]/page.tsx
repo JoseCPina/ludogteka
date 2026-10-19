@@ -29,7 +29,7 @@ export default async function EditarServicioPage({
     supabase
       .from("servicios")
       .select(
-        "id, clave, nombre, categoria, unidad, depende_grupo_raza, depende_tamano, depende_pelaje, depende_cantidad, servicio_incluido_id, cantidad_incluida, vigencia_dias, ilimitado, monto_libre, orden, deleted_at"
+        "id, clave, nombre, categoria, unidad, depende_grupo_raza, depende_tamano, depende_pelaje, depende_cantidad, servicio_incluido_id, cantidad_incluida, vigencia_dias, ilimitado, monto_libre, orden, deleted_at, updated_at"
       )
       .eq("id", id)
       .single(),
@@ -84,6 +84,8 @@ export default async function EditarServicioPage({
 
       <ServicioForm
         action={actualizarConId}
+        servicioId={id}
+        version={servicio.updated_at}
         serviciosDisponibles={serviciosDisponibles ?? []}
         valoresIniciales={{
           clave: servicio.clave,

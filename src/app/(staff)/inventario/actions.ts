@@ -4,8 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../reservas/traducir-error";
+import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
+import { conflictoDeError, type Conflicto } from "@/lib/concurrencia/tipos";
 
-export type EstadoInsumoForm = { error: string | null; ok?: boolean };
+export type EstadoInsumoForm = { error: string | null; ok?: boolean; conflicto?: Conflicto | null };
 
 async function convertirABase(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
@@ -114,7 +116,7 @@ export async function actualizarInsumo(
     return { error: "No pudimos leer la unidad de consumo elegida." };
   }
 
-  const { error: dbError } = await supabase
+  const { error: dbError } = await conControl(supabase
     .from("insumos")
     .update({
       nombre: campos.nombre,
@@ -128,8 +130,10 @@ export async function actualizarInsumo(
       se_vende: campos.se_vende,
       precio_venta: campos.se_vende ? Math.round(Number(campos.precio_venta_crudo) * 100) / 100 : null,
     })
-    .eq("id", id);
+    .eq("id", id), controlDeFormulario(formData));
 
+  const conflicto = conflictoDeError(dbError);
+  if (conflicto) return { error: null, conflicto };
   if (dbError) return { error: traducirError(dbError) };
 
   revalidatePath("/inventario");

@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { SubirLogo } from "./subir-logo";
+import { CampoVersion, conForzar } from "@/components/concurrencia/campo-version";
+import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 import { guardarPerfil, quitarFoto, subirFoto, type ResultadoPerfil } from "./actions";
 
 export type FotoPerfil = { id: string; url: string };
@@ -76,7 +78,12 @@ export function PerfilForm({
   nombreNegocio,
   colorNegocio,
   fotos,
+  perfilId = null,
+  version = null,
 }: {
+  /** El perfil y su updated_at al cargar (QA N43). */
+  perfilId?: string | null;
+  version?: string | null;
   descripcion: string;
   direccion: string;
   temaWeb: string | null;
@@ -92,6 +99,13 @@ export function PerfilForm({
   const envio = useEspera();
   const quitando = useEspera();
   const [res, setRes] = useState<ResultadoPerfil | null>(null);
+  const ultimo = useRef<FormData | null>(null);
+  async function guardar(fd: FormData) {
+    ultimo.current = fd;
+    const r = await envio.ejecutar(() => guardarPerfil(fd));
+    setRes(r);
+    if (!r.error && !r.conflicto) router.refresh();
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -101,11 +115,19 @@ export function PerfilForm({
           className="flex flex-col gap-4"
           onSubmit={async (e) => {
             e.preventDefault();
-            const r = await envio.ejecutar(() => guardarPerfil(new FormData(e.currentTarget)));
-            setRes(r);
-            if (!r.error) router.refresh();
+            await guardar(new FormData(e.currentTarget));
           }}
         >
+          {perfilId && <CampoVersion versiones={[{ t: "negocio_perfil", i: perfilId, v: version }]} />}
+          {res?.conflicto && (
+            <AvisoConflicto
+              conflicto={res.conflicto}
+              registro="el perfil del negocio"
+              cargando={envio.cargando}
+              onRecargar={() => window.location.reload()}
+              onGuardarEncima={() => ultimo.current && guardar(conForzar(ultimo.current))}
+            />
+          )}
           <Textarea
             label="Descripción (opcional)"
             name="descripcion"
@@ -132,7 +154,7 @@ export function PerfilForm({
               Usar el color de mis fotos
             </label>
           </div>
-          <AccionesFormulario error={res?.error} exito={res && !res.error ? res.exito ?? true : null}>
+          <AccionesFormulario error={res?.error} exito={res && !res.error && !res.conflicto ? res.exito ?? true : null}>
             <Button type="submit" cargando={envio.cargando}>
               Guardar datos
             </Button>

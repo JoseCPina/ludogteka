@@ -343,6 +343,32 @@ try {
     await mvz.p.goto(urlB, { waitUntil: "networkidle" });
     comprobar((await mvz.p.getByTestId("aviso-borrador").count()) === 0, "y al volver a abrir ya no lo ofrece");
   }
+
+  seccion("10. QA S14: el formulario de vacuna se limpia después de registrar");
+  {
+    const perroV = await E.nuevoPerro("Vacunaform");
+    await mvz.p.goto(`${BASE}/veterinaria/carnet/${perroV}`, { waitUntil: "networkidle" });
+    await mvz.p.getByRole("button", { name: "Registrar vacuna" }).first().click();
+    const form = mvz.p.locator("form", { has: mvz.p.locator('input[name="biologico"]') }).first();
+    await form.waitFor({ timeout: 20000 });
+    const inv = form.locator('select[name="insumo_id"]');
+    const hayInventario = (await inv.count()) > 0 && (await inv.locator("option").count()) > 1;
+    if (hayInventario) await inv.selectOption({ index: 1 });
+    await form.locator('input[name="biologico"]').fill(`Rabia prueba ${E.MARCA}`);
+    await form.locator('input[name="laboratorio"]').fill("Lab prueba");
+    await form.locator('input[name="dosis"]').fill("1 mL");
+    const medico = form.locator('select[name="medico_id"]');
+    if (!(await medico.inputValue())) await medico.selectOption({ index: 1 });
+    await form.getByRole("button", { name: "Registrar vacuna" }).click();
+    await form.getByText("Vacuna registrada").first().waitFor({ timeout: 40000 }).catch(() => {});
+    comprobar(await form.getByText("Vacuna registrada").first().isVisible().catch(() => false), "se registra la vacuna");
+    comprobar((await form.locator('input[name="biologico"]').inputValue()) === "", "el nombre de la vacuna queda vacío");
+    comprobar((await form.locator('input[name="laboratorio"]').inputValue()) === "" && (await form.locator('input[name="dosis"]').inputValue()) === "", "laboratorio y cantidad quedan vacíos");
+    if (hayInventario) comprobar((await inv.inputValue()) === "", "la vacuna del inventario vuelve a «Lo escribo yo»");
+    const { count } = await SB.from("carnet_vacunas").select("id", { count: "exact", head: true }).eq("perro_id", perroV).is("anulada_at", null);
+    comprobar(count === 1, `queda UNA vacuna registrada (${count})`);
+    await sinDesborde(mvz.p, "carnet después de registrar");
+  }
 } finally {
   await nav.close().catch(() => {});
   await limpiar(E);
