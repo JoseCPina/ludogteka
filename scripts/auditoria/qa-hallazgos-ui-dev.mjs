@@ -380,6 +380,8 @@ try {
     for (const [quien, id] of [["admin", datos.adminB], ["recepción sin permiso", P.recSinId]]) {
       const { c, p } = await abrir(id);
       await p.goto(`${BASE}/hotel/nueva?cliente=${datos.clienteSoloB}`, { waitUntil: "domcontentloaded" });
+      // El buscador muestra pocas filas sin escribir (Huellitas tiene muchos clientes): se busca por el perro.
+      await p.locator("input:visible").first().fill(`Aviso hotel ${sufijo}`);
       await p.getByText(`Aviso hotel ${sufijo}`).first().click({ timeout: 30000 });
       const entrada = p.getByLabel("Entrada").first();
       await entrada.fill(lunes);
