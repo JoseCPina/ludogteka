@@ -232,6 +232,13 @@ export class DatosSupabase implements DatosSoporte {
    * página, o su teléfono): la base lo marca «respondió» con canal whatsapp_bot y devuelve quién es para el bot.
    * null = no es un prospecto. Nunca lanza.
    */
+  /** BAJA de alguien fuera del seguimiento: exclusión permanente del teléfono y fuera de las audiencias de Meta. */
+  async bajaWhatsapp(telefono: string): Promise<boolean> {
+    const { error } = await this.#sb.rpc("prospecto_baja_whatsapp", { p_telefono: telefono });
+    if (error) console.error("[whatsapp] prospecto_baja_whatsapp", error.message);
+    return !error;
+  }
+
   async registrarProspecto(telefono: string, texto: string): Promise<ProspectoContexto | null> {
     try {
       const ref = texto.match(/\bref\.?\s*([a-z0-9]{5})\b/i)?.[1] ?? null;

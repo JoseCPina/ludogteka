@@ -12,7 +12,7 @@ import { CANALES, ETAPAS, GIROS, textoCanal, textoEtapa, textoGiro } from "@/lib
 import { CampoCopiable } from "@/components/ui/campo-copiable";
 import { linkDe } from "@/lib/prospectos/lista";
 import { piezas } from "@/lib/prospectos/motor";
-import { actualizarDesdeGoogle, agregarNota, cambiarEtapa, cambiarEtapaA, guardarDatos, noLeInteresa, revertirClasificacion, separarSucursal } from "../acciones";
+import { actualizarDesdeGoogle, agregarNota, cambiarEtapa, cambiarEtapaA, guardarDatos, noLeInteresa, revertirClasificacion, separarSucursal, bajaPublicidad, quitarBajaPublicidad } from "../acciones";
 
 const ZONA = "America/Mexico_City";
 
@@ -107,6 +107,22 @@ export default async function FichaProspecto({ params }: { params: Promise<{ id:
           <div className="mt-3 flex flex-wrap gap-2">
             <FormularioPlataforma accion={cambiarEtapaA.bind(null, p.id, "respondio")} textoBoton="Respondió" variante="secundario" />
             {p.etapa !== "descartado" && <FormularioPlataforma accion={noLeInteresa.bind(null, p.id)} textoBoton="No le interesa" variante="secundario" />}
+          </div>
+          <div className="mt-4 border-t border-n-100 pt-3" data-publicidad>
+            <h3 className="font-bold text-n-900">Publicidad en Meta</h3>
+            {p.publicidad_baja_at ? (
+              <>
+                <p className="mt-1 text-n-700" data-publicidad-baja>
+                  Fuera de las audiencias de Meta desde el {formatearFecha(p.publicidad_baja_at, ZONA)}{p.publicidad_baja_motivo ? ` (${p.publicidad_baja_motivo})` : ""}.
+                </p>
+                <FormularioPlataforma accion={quitarBajaPublicidad.bind(null, p.id)} textoBoton="Volver a incluirlo en publicidad" variante="secundario" className="mt-2" />
+              </>
+            ) : (
+              <FormularioPlataforma accion={bajaPublicidad.bind(null, p.id)} textoBoton="Pidió baja de publicidad" variante="secundario" className="mt-2">
+                <Field label="Motivo (opcional)" name="motivo" placeholder="ej. Lo pidió por WhatsApp" />
+              </FormularioPlataforma>
+            )}
+            <p className="mt-1 text-xs text-n-500">Un descartado o una baja sale de todas las audiencias en la siguiente sincronización.</p>
           </div>
         </div>
         <div className="rounded-lg border border-n-200 bg-white p-5 text-sm" data-sucursales>

@@ -25,4 +25,6 @@ export function clasificarRespuesta(texto: string): TipoRespuesta {
 }
 
 export const TEXTO_AHORA_NO = "Va, sin problema. Aquí seguimos por si nos necesitas 🐾";
+/** Baja de alguien que no está en el seguimiento de pruebas (un prospecto): sale de mensajes y de la publicidad. */
+export const TEXTO_BAJA_PROSPECTO = "Listo, te damos de baja: no te volvemos a escribir y dejamos de mostrarte nuestra publicidad. Si más adelante nos necesitas, escríbenos aquí mismo.";
 export const TEXTO_BAJA = "Listo, no te escribimos más con estos mensajes. Si más adelante nos necesitas, escríbenos aquí mismo.";
