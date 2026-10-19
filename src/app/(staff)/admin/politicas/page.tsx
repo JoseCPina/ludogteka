@@ -14,7 +14,10 @@ export default async function PoliticasPage() {
   if (!tienePermiso(sesion, "configuracion_negocio")) redirect("/admin");
   const supabase = await createSupabaseServerClient();
   const negocio = await negocioActual();
-  const textos = await cargarTextosPoliticas(supabase, negocio.id);
+  const [textos, { data: filaPoliticas }] = await Promise.all([
+    cargarTextosPoliticas(supabase, negocio.id),
+    supabase.from("negocio_politicas").select("updated_at").eq("negocio_id", negocio.id).maybeSingle(),
+  ]);
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <header>
@@ -25,7 +28,7 @@ export default async function PoliticasPage() {
           vigencia salen del catálogo de requisitos, y el horario, de Administración.
         </p>
       </header>
-      <PoliticasForm textos={textos} modulos={sesion?.modulos ?? []} />
+      <PoliticasForm textos={textos} modulos={sesion?.modulos ?? []} negocioId={negocio.id} version={(filaPoliticas?.updated_at as string | undefined) ?? null} />
     </div>
   );
 }

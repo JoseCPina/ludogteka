@@ -28,7 +28,7 @@ export default async function EditarInsumoPage({ params }: { params: Promise<{ i
       supabase
         .from("insumos")
         .select(
-          "id, nombre, area_id, unidad_compra_id, unidad_consumo_id, stock_minimo, existencia_inicial, requiere_caducidad, dias_aviso_caducidad, se_vende, precio_venta, deleted_at, unidad_compra:unidades_medida!unidad_compra_id(etiqueta), unidad_consumo:unidades_medida!unidad_consumo_id(etiqueta, equivalencia_en_base)"
+          "id, nombre, area_id, unidad_compra_id, unidad_consumo_id, stock_minimo, existencia_inicial, requiere_caducidad, dias_aviso_caducidad, se_vende, precio_venta, deleted_at, updated_at, unidad_compra:unidades_medida!unidad_compra_id(etiqueta), unidad_consumo:unidades_medida!unidad_consumo_id(etiqueta, equivalencia_en_base)"
         )
         .eq("id", id)
         .single(),
@@ -164,6 +164,8 @@ export default async function EditarInsumoPage({ params }: { params: Promise<{ i
         <h2 className="text-lg font-bold text-n-900">Datos del consumible</h2>
         <InsumoForm
           action={actualizarConId}
+          insumoId={id}
+          version={(insumo as { updated_at?: string | null }).updated_at ?? null}
           areas={areas}
           soloLectura={!puedeEditar}
           unidades={unidades ?? []}

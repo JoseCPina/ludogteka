@@ -1,0 +1,402 @@
+// Control de concurrencia optimista (QA N43, 18 de octubre de 2026) — SOLO DESARROLLO, en Huellitas.
+//
+//   node scripts/auditoria/concurrencia-dev.mjs            (base + pantallas; necesita `next start` en el 3001)
+//   SOLO=base node scripts/auditoria/concurrencia-dev.mjs  (solo la base)
+//
+// Dos sesiones reales (JWT de dos personas del personal) editan el MISMO registro de cada tipo: reserva y estancia
+// (también por la función de mover fechas), cita de estética, cita y consulta veterinaria, cargo, cliente (y sus
+// notas por función), mascota, vacuna, servicio, producto, precios de un servicio (que solo se insertan), empleado,
+// permisos, perfil, políticas, horario y ajustes de Veterinaria. En cada uno:
+//   - la segunda persona guarda con la versión que leyó: entra;
+//   - la primera guarda con la versión VIEJA: la base no guarda (409 / PT409) y dice quién y qué cambió;
+//   - guardar encima (forzar) entra y la bitácora lo anota como sobrescritura;
+//   - la misma persona con una versión vieja de algo que solo ella cambió: entra (no es conflicto);
+//   - sin versión (otro camino que no la manda): entra igual que antes.
+// Además: mover fechas con un total distinto al que se vio se rechaza, y las pantallas (dos navegadores) muestran el
+// aviso con el nombre de quien cambió, «Recargar con sus cambios» y «Guardar los míos encima» con confirmación.
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { createClient } from "@supabase/supabase-js";
+import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+
+if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
+const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
+const B = datos.B;
+const BASE = "http://huellitas.localhost:3001";
+const REF = new globalThis.URL(URL).hostname.split(".")[0];
+const hallazgos = [];
+const hallazgo = (t) => { hallazgos.push(t); console.log(`  ✘ ${t}`); };
+const comprobar = (c, t) => (c ? console.log(`  ✔ ${t}`) : hallazgo(t));
+const SB = createClient(URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: false }, global: { headers: { "x-negocio-id": B } } });
+const sufijo = String(Date.now()).slice(-6);
+
+const comoPersona = async (id) =>
+  createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${await tokenDe(id)}`, "x-negocio-id": B } } });
+
+// Dos admins del negocio (pueden editar todo); y la recepción para lo que se edita en el mostrador.
+const { data: admins } = await A.from("membresias").select("profile_id").eq("negocio_id", B).eq("rol", "admin").is("deleted_at", null).order("created_at");
+const idUno = datos.adminB;
+const idDos = admins.map((a) => a.profile_id).find((x) => x !== idUno);
+if (!idDos) throw new Error("Huellitas necesita dos admins (corre negocio-prueba-dev.mjs).");
+const uno = await comoPersona(idUno);
+const dos = await comoPersona(idDos);
+// El aviso nombra a quien cambió: la segunda persona necesita nombre (una cuenta de prueba puede no traerlo).
+let { data: quienDos } = await SB.rpc("nombre_de_persona", { p_profile: idDos, p_vacio: null });
+if (!quienDos) {
+  await A.from("profiles").update({ nombre_completo: "Admin Dos Huellitas" }).eq("id", idDos);
+  ({ data: quienDos } = await SB.rpc("nombre_de_persona", { p_profile: idDos, p_vacio: null }));
+}
+if (!quienDos) throw new Error("La segunda persona sigue sin nombre.");
+
+const enc = (versiones, forzar = false) => ({ "x-peludesk-version": JSON.stringify(versiones), ...(forzar ? { "x-peludesk-forzar": "1" } : {}) });
+const conEnc = (b, h) => {
+  for (const [k, v] of Object.entries(h)) b.setHeader(k, v);
+  return b;
+};
+const ultimaEdicion = async (tabla, id) =>
+  (await SB.from("registro_ediciones").select("profile_id, sobrescribio, cambios").eq("negocio_id", B).eq("tabla", tabla).eq("registro_id", id).order("ultimo_at", { ascending: false }).limit(1).maybeSingle()).data;
+
+/**
+ * Un caso de UPDATE directo. `filtro` = columna por la que se elige la fila (id, o negocio_id en la configuración de
+ * una fila por negocio); `clave` = el id que va en la versión (el del registro o el del negocio).
+ */
+async function caso({ nombre, tabla, id, campo, valor1, valor2, filtro = "id", clave = id, escribir, sinComparar = false }) {
+  const w = escribir ?? ((cli, valor) => cli.from(tabla).update({ [campo]: valor }).eq(filtro, id).select("updated_at"));
+  const ok = (r) => !r.error && (escribir ? true : r.data?.length);
+  console.log(`\n· ${nombre}`);
+  const { data: fila, error: e0 } = await SB.from(tabla).select(`updated_at, ${campo}`).eq(filtro, id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
+  if (e0 || !fila) return hallazgo(`${nombre}: no se pudo leer (${e0?.message ?? "sin fila"})`);
+  const original = fila[campo];
+  const v0 = fila.updated_at;
+  const ver = [{ t: tabla, i: clave, v: v0 }];
+  try {
+    const r2 = await conEnc(w(dos, valor2), enc(ver));
+    comprobar(ok(r2), `${nombre}: la segunda persona guarda con lo que leyó${r2.error ? ` (${r2.error.message})` : ""}`);
+    const r1 = await conEnc(w(uno, valor1), enc(ver));
+    comprobar(r1.status === 409 && r1.error?.code === "PT409", `${nombre}: con la versión vieja NO se guarda (409 PT409; llegó ${r1.status} ${r1.error?.code ?? "sin error"})`);
+    let det = {};
+    try { det = JSON.parse(r1.error?.details ?? "{}"); } catch { det = {}; }
+    comprobar(!quienDos || det.quien === quienDos, `${nombre}: el aviso dice quién cambió (${det.quien ?? "—"})`);
+    comprobar(det.cambios && Object.keys(det.cambios).includes(campo), `${nombre}: el aviso dice qué cambió (${Object.keys(det.cambios ?? {}).join(", ") || "—"})`);
+    const { data: tras } = await SB.from(tabla).select(campo).eq(filtro, id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
+    const igual = (a, b) => (a && b && !Number.isNaN(Date.parse(a)) && /\d{4}-\d{2}-\d{2}T/.test(String(a)) ? Date.parse(a) === Date.parse(b) : JSON.stringify(a) === JSON.stringify(b) || String(a) === String(b));
+    if (!sinComparar) comprobar(igual(tras?.[campo], valor2), `${nombre}: lo de la segunda persona sigue ahí`);
+    const rf = await conEnc(w(uno, valor1), enc(ver, true));
+    comprobar(ok(rf), `${nombre}: «guardar encima» entra${rf.error ? ` (${rf.error.message})` : ""}`);
+    const ed = await ultimaEdicion(tabla, clave);
+    comprobar(ed?.sobrescribio === true && ed?.profile_id === idUno, `${nombre}: la bitácora anota la sobrescritura y quién`);
+    // La misma persona con una versión vieja de lo que SOLO ella cambió después (otra pestaña): no es conflicto.
+    const { data: f1 } = await SB.from(tabla).select("updated_at").eq(filtro, id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
+    await new Promise((r) => setTimeout(r, 30));
+    await w(uno, valor2);
+    const rm = await conEnc(w(uno, valor1), enc([{ t: tabla, i: clave, v: f1.updated_at }]));
+    comprobar(!rm.error, `${nombre}: la misma persona con una versión vieja de sus propios cambios entra${rm.error ? ` (${rm.error.code})` : ""}`);
+    const rs = await w(uno, valor2);
+    comprobar(!rs.error, `${nombre}: sin versión entra como siempre`);
+  } finally {
+    await SB.from(tabla).update({ [campo]: original }).eq(filtro, id);
+  }
+}
+
+let medicoTemporal = null;
+const creadas = [];
+/** Una reserva de hotel propia de la prueba, lejos en el futuro (se cancela al terminar). */
+async function crearHotel(desfase) {
+  const serv = (await SB.from("servicios").select("id").eq("negocio_id", B).eq("clave", "hotel_noche").is("deleted_at", null).maybeSingle()).data;
+  if (!serv) throw new Error("Huellitas no tiene el servicio hotel_noche");
+  const dia = (d) => new Date(Date.now() + d * 86400000).toISOString().slice(0, 10);
+  const { data: res, error: er } = await uno.from("reservas").insert({ cliente_id: datos.clienteSoloB, notas: `Prueba concurrencia ${sufijo}` }).select("id").single();
+  if (er) throw new Error(`reserva: ${er.message}`);
+  // Entrada lunes a miércoles: la salida (y la salida movida un par de días) cae en día que abre.
+  let base = 200 + desfase + (Number(sufijo) % 100) * 4;
+  while (![1, 2].includes(new Date(Date.now() + base * 86400000).getUTCDay())) base++;
+  const { data: e, error: ee } = await uno.from("estancias").insert({
+    reserva_id: res.id, perro_id: datos.perroSoloB, servicio_id: serv.id, fecha_entrada: dia(base), fecha_salida: dia(base + 2),
+    bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: "Prueba concurrencia", bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: "Prueba concurrencia",
+  }).select("id, reserva_id").single();
+  if (ee) throw new Error(`estancia: ${ee.message}`);
+  creadas.push(e.id);
+  return e;
+}
+const uno1 = async (tabla, sel, f = (q) => q) => (await f(SB.from(tabla).select(sel).eq("negocio_id", B)).limit(1).maybeSingle()).data;
+
+try {
+  console.log("1. Cada tipo de registro, con dos sesiones");
+  const estancia = await uno1("estancias", "id, reserva_id, fecha_entrada, fecha_salida, servicios(categoria)", (q) => q.eq("estado", "reservada").is("deleted_at", null).gte("fecha_entrada", new Date().toISOString().slice(0, 10)).order("fecha_entrada"));
+  if (estancia) {
+    await caso({ nombre: "Estancia", tabla: "estancias", id: estancia.id, campo: "notas", valor1: `Uno ${sufijo}`, valor2: `Dos ${sufijo}` });
+    await caso({ nombre: "Reserva", tabla: "reservas", id: estancia.reserva_id, campo: "notas", valor1: `Uno ${sufijo}`, valor2: `Dos ${sufijo}` });
+  } else hallazgo("No hay una estancia reservada en Huellitas para probar.");
+  const cita = await uno1("citas_estetica", "id", (q) => q.eq("estado", "reservada").is("deleted_at", null));
+  if (cita) await caso({ nombre: "Cita de estética", tabla: "citas_estetica", id: cita.id, campo: "notas", valor1: `Uno ${sufijo}`, valor2: `Dos ${sufijo}` });
+  let medicosVivos = ((await SB.from("medicos_veterinarios").select("id").eq("negocio_id", B).is("deleted_at", null)).data ?? []).map((m) => m.id);
+  if (!medicosVivos.length) {
+    // Otras auditorías dan de baja a sus médicos al terminar: esta designa uno temporal y lo da de baja al final.
+    const { data: m, error: em } = await SB.from("medicos_veterinarios").insert({ negocio_id: B, profile_id: idUno, cedula_profesional: `PRUEBA-${sufijo}` }).select("id").single();
+    if (em) hallazgo(`No se pudo designar un médico temporal (${em.message})`);
+    else {
+      medicoTemporal = m.id;
+      medicosVivos = [m.id];
+    }
+  }
+  const vcita = medicosVivos.length
+    ? await uno1("vet_citas", "id, inicia_at, medico_id", (q) => q.eq("estado", "programada").gt("inicia_at", new Date().toISOString()).order("inicia_at", { ascending: false }))
+    : null;
+  if (vcita && !medicosVivos.includes(vcita.medico_id)) vcita.medico_id = medicosVivos[0];
+  if (!vcita) hallazgo("No hay una cita veterinaria programada con médico vigente en Huellitas.");
+  if (vcita)
+    await caso({
+      nombre: "Cita veterinaria (por vet_reprogramar_cita)", tabla: "vet_citas", id: vcita.id, campo: "termina_at", valor1: 50, valor2: 40, sinComparar: true,
+      escribir: (cli, dur) => cli.rpc("vet_reprogramar_cita", { p_id: vcita.id, p_inicia: vcita.inicia_at, p_medico: vcita.medico_id, p_duracion_min: dur }),
+    });
+  const consulta = await uno1("vet_consultas", "id", (q) => q.eq("estado", "borrador").is("deleted_at", null));
+  if (consulta) {
+    // La consulta se escribe por su función: la versión viaja igual.
+    console.log("\n· Consulta veterinaria (borrador, por vet_consulta_guardar)");
+    const { data: c0 } = await SB.from("vet_consultas").select("updated_at, motivo").eq("id", consulta.id).single();
+    const ver = [{ t: "vet_consultas", i: consulta.id, v: c0.updated_at }];
+    const g2 = await conEnc(dos.rpc("vet_consulta_guardar", { p_id: consulta.id, p_datos: { motivo: `Dos ${sufijo}` } }), enc(ver));
+    comprobar(!g2.error, `Consulta: la segunda persona guarda${g2.error ? ` (${g2.error.message})` : ""}`);
+    const g1 = await conEnc(uno.rpc("vet_consulta_guardar", { p_id: consulta.id, p_datos: { motivo: `Uno ${sufijo}` } }), enc(ver));
+    comprobar(g1.error?.code === "PT409", `Consulta: con la versión vieja NO se guarda por la función (${g1.error?.code ?? "sin error"})`);
+    await SB.from("vet_consultas").update({ motivo: c0.motivo }).eq("id", consulta.id);
+  }
+  const cargo = await uno1("cargos_aplicados", "id", (q) => q.is("deleted_at", null).eq("cancelado", false));
+  if (cargo) await caso({ nombre: "Cargo", tabla: "cargos_aplicados", id: cargo.id, campo: "notas", valor1: `Uno ${sufijo}`, valor2: `Dos ${sufijo}` });
+  await caso({ nombre: "Cliente", tabla: "clientes", id: datos.clienteSoloB, campo: "email", valor1: `uno${sufijo}@ejemplo.mx`, valor2: `dos${sufijo}@ejemplo.mx` });
+  await caso({ nombre: "Mascota", tabla: "perros", id: datos.perroSoloB, campo: "alimentacion_notas", valor1: `Uno ${sufijo}`, valor2: `Dos ${sufijo}` });
+  {
+    // Una vacuna no se edita: solo se anula (por anular_registro_carnet). Dos personas anulando la misma con lo que leyeron.
+    console.log("\n· Vacuna (anular, por anular_registro_carnet)");
+    const base = await uno1("carnet_vacunas", "perro_id, medico_id", (q) => q.not("medico_id", "is", null));
+    if (base) {
+      const hoy = new Date().toISOString().slice(0, 10);
+      const { data: v, error: ev } = await SB.from("carnet_vacunas").insert({ negocio_id: B, perro_id: base.perro_id, medico_id: base.medico_id, biologico: `Prueba concurrencia ${sufijo}`, fecha_aplicacion: hoy, vigente_hasta: hoy }).select("id, updated_at").single();
+      if (ev) hallazgo(`Vacuna: no se pudo crear la de prueba (${ev.message})`);
+      else {
+        const ver = [{ t: "carnet_vacunas", i: v.id, v: v.updated_at }];
+        const r2 = await conEnc(dos.rpc("anular_registro_carnet", { p_tipo: "vacuna", p_id: v.id, p_motivo: `Dos ${sufijo}` }), enc(ver));
+        comprobar(!r2.error, `Vacuna: la segunda persona la anula${r2.error ? ` (${r2.error.message})` : ""}`);
+        const r1 = await conEnc(uno.rpc("anular_registro_carnet", { p_tipo: "vacuna", p_id: v.id, p_motivo: `Uno ${sufijo}` }), enc(ver));
+        comprobar(!!r1.error, `Vacuna: la primera, con la pantalla vieja, no la vuelve a anular (${r1.error?.code ?? "entró"}: ${r1.error?.message ?? ""})`);
+        const { data: va } = await SB.from("carnet_vacunas").select("anulada_motivo").eq("id", v.id).single();
+        comprobar(va.anulada_motivo === `Dos ${sufijo}`, "Vacuna: queda el motivo de quien la anuló primero");
+      }
+    }
+  }
+  const servicio = await uno1("servicios", "id", (q) => q.is("deleted_at", null).eq("categoria", "estetica"));
+  if (servicio) await caso({ nombre: "Servicio", tabla: "servicios", id: servicio.id, campo: "no_incluye", valor1: `Uno ${sufijo}`, valor2: `Dos ${sufijo}` });
+  const insumo = await uno1("insumos", "id", (q) => q.is("deleted_at", null).eq("controla_lotes", false));
+  if (insumo) await caso({ nombre: "Producto de inventario", tabla: "insumos", id: insumo.id, campo: "presentacion", valor1: `Uno ${sufijo}`, valor2: `Dos ${sufijo}` });
+  const empleado = await uno1("empleados", "id", (q) => q.is("deleted_at", null).is("fecha_baja", null));
+  if (empleado) await caso({ nombre: "Empleado", tabla: "empleados", id: empleado.id, campo: "notas", valor1: `Uno ${sufijo}`, valor2: `Dos ${sufijo}` });
+  const permiso = await uno1("permisos_staff", "id, revocado_at", (q) => q.not("revocado_at", "is", null));
+  if (permiso) await caso({ nombre: "Permiso", tabla: "permisos_staff", id: permiso.id, campo: "revocado_at", valor1: new Date(Date.now() - 60000).toISOString(), valor2: new Date(Date.now() - 120000).toISOString() });
+  {
+    const { data: pol } = await SB.from("negocio_politicas").select("textos").eq("negocio_id", B).maybeSingle();
+    const base = pol?.textos ?? {};
+    const clave0 = Object.keys(base)[0] ?? "cancelaciones";
+    await caso({
+      nombre: "Políticas del negocio (por guardar_politicas_negocio)", tabla: "negocio_politicas", id: B, filtro: "negocio_id", campo: "textos",
+      valor1: { ...base, [clave0]: `Uno ${sufijo}` }, valor2: { ...base, [clave0]: `Dos ${sufijo}` },
+      escribir: (cli, valor) => cli.rpc("guardar_politicas_negocio", { p_textos: valor }),
+    });
+  }
+  {
+    const { data: aj } = await uno.rpc("veterinaria_ajustes_actuales");
+    const params = (dias) => ({
+      p_recordatorios_activos: Boolean(aj?.recordatorios_activos), p_dias_anticipacion: dias, p_certificado_vigencia_dias: aj?.certificado_vigencia_dias ?? 30,
+      p_carnet_reemplaza_comprobante: Boolean(aj?.carnet_reemplaza_comprobante), p_precio_dia: aj?.hospitalizacion_precio_dia ?? null,
+    });
+    await caso({
+      nombre: "Ajustes de Veterinaria (por guardar_veterinaria_ajustes)", tabla: "veterinaria_ajustes", id: B, filtro: "negocio_id", campo: "dias_anticipacion",
+      valor1: 9, valor2: 8, escribir: (cli, valor) => cli.rpc("guardar_veterinaria_ajustes", params(valor)),
+    });
+  }
+  await caso({ nombre: "Cupo y teléfono de recepción", tabla: "cupo_configuracion", id: B, filtro: "negocio_id", campo: "base_direccion", valor1: `Uno ${sufijo}`, valor2: `Dos ${sufijo}` });
+
+  console.log("\n2. Por las funciones (RPC) que usan las pantallas");
+  const hotel = await crearHotel(0).catch((e) => (hallazgo(`No se pudo crear la reserva de hotel de prueba (${e.message})`), null));
+
+  if (hotel) {
+    const estancia = hotel;
+    const { data: e0 } = await SB.from("estancias").select("updated_at, fecha_entrada, fecha_salida").eq("id", estancia.id).single();
+    const ver = [{ t: "estancias", i: estancia.id, v: e0.updated_at }];
+    const masUno = (f) => new Date(new Date(`${f}T12:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10);
+    const esGuarderia = estancia.servicios?.categoria === "guarderia";
+    const nuevaSalida = esGuarderia ? e0.fecha_salida : masUno(e0.fecha_salida);
+    const { data: vista } = await uno.rpc("estancia_cotizar_fechas", { p_estancia_id: estancia.id, p_entrada: e0.fecha_entrada, p_salida: nuevaSalida });
+    comprobar(vista && !vista.error && vista.total_despues !== undefined, `Mover fechas: la vista previa da el total ANTES de guardar (${vista?.total_antes} → ${vista?.total_despues}${vista?.error ? `; ${vista.error}` : ""})`);
+    const { data: e1 } = await SB.from("estancias").select("fecha_entrada, fecha_salida").eq("id", estancia.id).single();
+    comprobar(e1.fecha_salida === e0.fecha_salida, "Mover fechas: la vista previa no cambia nada");
+    if (!esGuarderia && vista && !vista.error) {
+      const mal = await uno.rpc("estancia_mover_fechas", { p_estancia_id: estancia.id, p_entrada: e0.fecha_entrada, p_salida: nuevaSalida, p_total_visto: Number(vista.total_despues) + 50 });
+      comprobar(mal.error?.hint === "total_distinto", `Mover fechas: con un total distinto al que se vio no se guarda (${mal.error?.hint ?? mal.error?.message ?? "entró"})`);
+      await conEnc(dos.from("estancias").update({ notas: `Dos ${sufijo}` }).eq("id", estancia.id), enc(ver));
+      const viejo = await conEnc(uno.rpc("estancia_mover_fechas", { p_estancia_id: estancia.id, p_entrada: e0.fecha_entrada, p_salida: nuevaSalida, p_total_visto: Number(vista.total_despues) }), enc(ver));
+      comprobar(viejo.error?.code === "PT409", `Mover fechas: con la versión vieja la función tampoco guarda (${viejo.error?.code ?? "entró"})`);
+      const { data: e2 } = await SB.from("estancias").select("fecha_salida").eq("id", estancia.id).single();
+      comprobar(e2.fecha_salida === e0.fecha_salida, "Mover fechas: las fechas no se movieron");
+    }
+  }
+  {
+    let { data: n0 } = await SB.from("clientes_notas_internas").select("updated_at, notas").eq("cliente_id", datos.clienteSoloB).maybeSingle();
+    if (!n0) {
+      await uno.rpc("cliente_notas_guardar", { p_cliente: datos.clienteSoloB, p_notas: "Notas de prueba" });
+      ({ data: n0 } = await SB.from("clientes_notas_internas").select("updated_at, notas").eq("cliente_id", datos.clienteSoloB).maybeSingle());
+    }
+    if (n0) {
+      const ver = [{ t: "clientes_notas_internas", i: datos.clienteSoloB, v: n0.updated_at }];
+      await conEnc(dos.rpc("cliente_notas_guardar", { p_cliente: datos.clienteSoloB, p_notas: `Dos ${sufijo}` }), enc(ver));
+      const r = await conEnc(uno.rpc("cliente_notas_guardar", { p_cliente: datos.clienteSoloB, p_notas: `Uno ${sufijo}` }), enc(ver));
+      comprobar(r.error?.code === "PT409", `Notas internas del cliente por su función: versión vieja no guarda (${r.error?.code ?? "entró"})`);
+      await SB.from("clientes_notas_internas").update({ notas: n0.notas }).eq("cliente_id", datos.clienteSoloB);
+    } else console.log("  · (el cliente no tiene notas internas: se salta)");
+  }
+  {
+    const { data: hv } = await SB.from("horario_semana").select("updated_at").eq("negocio_id", B).order("updated_at", { ascending: false }).limit(1).maybeSingle();
+    const { data: dias } = await uno.rpc("horario_semana_vigente");
+    if (hv && dias?.length) {
+      const ver = [{ t: "horario_semana", i: B, v: hv.updated_at }];
+      const p = dias.map((d) => ({ dia_semana: d.dia_semana, hora_apertura: d.hora_apertura, hora_cierre: d.hora_cierre }));
+      const r2 = await conEnc(dos.rpc("guardar_horario_semana", { p_dias: p }), enc(ver));
+      const r1 = await conEnc(uno.rpc("guardar_horario_semana", { p_dias: p }), enc(ver));
+      comprobar(!r2.error && r1.error?.code === "PT409", `Horario del negocio: la segunda guarda y la vieja no (${r2.error?.message ?? "ok"} / ${r1.error?.code ?? "entró"})`);
+    }
+  }
+  {
+    // Precios de un servicio: solo se insertan; el «registro» es la lista de precios.
+    const serv = (await SB.from("servicios").select("id").eq("negocio_id", B).eq("categoria", "cargo").eq("monto_libre", false).is("deleted_at", null).limit(1).maybeSingle()).data;
+    if (serv) {
+      const ultima = (await SB.from("tarifas").select("created_at").eq("servicio_id", serv.id).order("created_at", { ascending: false }).limit(1).maybeSingle()).data?.created_at ?? "-infinity";
+      const ver = [{ t: "precios_servicio", i: serv.id, v: ultima }];
+      const fila = (precio) => ({ servicio_id: serv.id, cantidad_desde: 1, cantidad_hasta: null, vigencia_desde: "2099-01-01", precio, no_aplica: false });
+      const r2 = await conEnc(dos.from("tarifas").insert(fila(111)).select("id"), enc(ver));
+      const r1 = await conEnc(uno.from("tarifas").insert({ ...fila(222), vigencia_desde: "2099-01-02" }).select("id"), enc(ver));
+      comprobar(!r2.error && r1.error?.code === "PT409", `Precios de un servicio: la segunda captura entra y la de la versión vieja no (${r2.error?.message ?? "ok"} / ${r1.error?.code ?? "entró"})`);
+      let det = {};
+      try { det = JSON.parse(r1.error?.details ?? "{}"); } catch { det = {}; }
+      comprobar(!quienDos || det.quien === quienDos, `Precios: dice quién capturó (${det.quien ?? "—"})`);
+      const rf = await conEnc(uno.from("tarifas").insert({ ...fila(222), vigencia_desde: "2099-01-02" }).select("id"), enc(ver, true));
+      comprobar(!rf.error, "Precios: guardar encima entra");
+      await SB.from("tarifas").delete().eq("servicio_id", serv.id).gte("vigencia_desde", "2099-01-01");
+    }
+  }
+  {
+    console.log("\n3. La llave anónima no lee la bitácora");
+    const anon = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false }, global: { headers: { "x-negocio-id": B } } });
+    const { data } = await anon.from("registro_ediciones").select("id").limit(1);
+    comprobar(!data?.length, "Anónimo: registro_ediciones vacío");
+  }
+
+  if (process.env.SOLO !== "base") await pantallas().catch((e) => hallazgo(`las pantallas tronaron: ${e.message.split("\n")[0]}`));
+} finally {
+  for (const id of creadas) await SB.from("estancias").update({ estado: "cancelada" }).eq("id", id);
+  if (medicoTemporal) await SB.from("medicos_veterinarios").update({ deleted_at: new Date().toISOString() }).eq("id", medicoTemporal);
+  console.log(hallazgos.length ? `\n✘ ${hallazgos.length} hallazgo(s).` : "\n✔ Sin hallazgos.");
+  process.exitCode = hallazgos.length ? 1 : 0;
+}
+
+async function cookiesDe(profileId) {
+  const { data: u } = await A.auth.admin.getUserById(profileId);
+  const { data: link } = await A.auth.admin.generateLink({ type: "magiclink", email: u.user.email });
+  const cli = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+  const { data: s, error } = await cli.auth.verifyOtp({ type: "magiclink", token_hash: link.properties.hashed_token });
+  if (error) throw error;
+  const valor = "base64-" + Buffer.from(JSON.stringify(s.session)).toString("base64url");
+  const trozos = valor.match(/.{1,3180}/g);
+  const galletas = (nombre) => (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t]));
+  return [...galletas(`sb-${REF}-auth-token`), ...galletas(`sb-${REF}-portal-auth-token`)].map(([name, value]) => ({ name, value, domain: "huellitas.localhost", path: "/" }));
+}
+
+async function pantallas() {
+  console.log("\n4. Pantallas: dos navegadores sobre el mismo cliente");
+  const { abrirNavegador } = await import("../lib/navegador.mjs");
+  const nav = await abrirNavegador();
+  // Un cliente propio de la prueba (la ficha del cliente fijo de Huellitas carga lento con todo su residuo).
+  const tel = `55${String(Date.now()).slice(-8)}`;
+  const { data: cn, error: ecn } = await SB.from("clientes").insert({ nombre: `Concurrencia ${sufijo}`, telefono: tel }).select("id").single();
+  if (ecn) throw new Error(`cliente de prueba: ${ecn.message}`);
+  const clienteP = cn.id;
+  const c0 = { nombre: `Concurrencia ${sufijo}`, email: null };
+  const guardarCliente = (p) => p.locator('form:has(input[name="nombre"])').first().locator('button[type="submit"]').first().click();
+  try {
+    const ctxA = await nav.newContext({ viewport: { width: 390, height: 844 } });
+    await ctxA.addCookies(await cookiesDe(idUno));
+    const ctxB = await nav.newContext({ viewport: { width: 1280, height: 900 } });
+    await ctxB.addCookies(await cookiesDe(idDos));
+    const pa = await ctxA.newPage();
+    const pb = await ctxB.newPage();
+    await pa.goto(`${BASE}/clientes/${clienteP}`, { waitUntil: "networkidle" });
+    await pb.goto(`${BASE}/clientes/${clienteP}`, { waitUntil: "networkidle" });
+    // La segunda persona guarda primero.
+    await pb.locator('input[name="nombre"]').fill(`${c0.nombre} B`);
+    await guardarCliente(pb);
+    await pb.getByText("Cambios guardados").first().waitFor({ timeout: 30000 });
+    // La primera, con su pantalla vieja.
+    await pa.locator('input[name="nombre"]').fill(`${c0.nombre} A`);
+    await guardarCliente(pa);
+    const aviso = pa.locator("[data-conflicto-version]");
+    await aviso.waitFor({ timeout: 30000 }).catch(() => {});
+    comprobar(await aviso.isVisible(), "Cliente: la pantalla vieja NO guarda y enseña el aviso");
+    const texto = (await pa.locator("[data-conflicto-texto]").textContent().catch(() => "")) ?? "";
+    comprobar(!quienDos || texto.includes(quienDos), `Cliente: el aviso nombra a quien cambió («${texto.slice(0, 90)}»)`);
+    comprobar(/¿Recargar con sus cambios o guardar los tuyos encima\?/.test(texto), "Cliente: el aviso pregunta recargar o guardar encima");
+    comprobar((await pa.locator('input[name="nombre"]').inputValue()) === `${c0.nombre} A`, "Cliente: lo escrito sigue en el campo");
+    let { data: cb } = await SB.from("clientes").select("nombre").eq("id", clienteP).single();
+    comprobar(cb.nombre === `${c0.nombre} B`, "Cliente: en la base sigue lo de la otra persona");
+    // Guardar encima pide confirmación.
+    await pa.locator("[data-guardar-encima]").click();
+    await pa.locator("[data-guardar-encima-confirmar]").click();
+    await pa.waitForFunction(() => !document.querySelector("[data-conflicto-version]"), null, { timeout: 30000 }).catch(() => {});
+    ({ data: cb } = await SB.from("clientes").select("nombre").eq("id", clienteP).single());
+    comprobar(cb.nombre === `${c0.nombre} A`, "Cliente: «Sí, guardar los míos encima» guarda");
+    const ed = await ultimaEdicion("clientes", clienteP);
+    comprobar(ed?.sobrescribio === true, "Cliente: queda en la bitácora como sobrescritura");
+    // Recargar trae lo de la otra persona.
+    await pb.locator('input[name="nombre"]').fill(`${c0.nombre} B2`);
+    await guardarCliente(pb);
+    await pb.locator("[data-conflicto-version]").waitFor({ timeout: 30000 }).catch(() => {});
+    comprobar(await pb.locator("[data-conflicto-version]").isVisible(), "Cliente: el otro navegador también ve el aviso");
+    await Promise.all([pb.waitForLoadState("load"), pb.locator("[data-recargar-conflicto]").click()]);
+    await pb.waitForTimeout(500);
+    await pb.waitForLoadState("networkidle");
+    comprobar((await pb.locator('input[name="nombre"]').inputValue()) === `${c0.nombre} A`, "Cliente: «Recargar con sus cambios» enseña lo de la otra persona");
+
+    console.log("\n5. Pantallas: mover fechas con vista previa del total");
+    const est = await crearHotel(10).catch((e) => (hallazgo(`No se pudo crear la reserva de hotel de prueba (${e.message})`), null));
+    if (est) {
+      const { data: e0 } = await SB.from("estancias").select("fecha_entrada, fecha_salida").eq("id", est.id).single();
+      await pa.goto(`${BASE}/reservas/${est.reserva_id}`, { waitUntil: "networkidle" });
+      await pb.goto(`${BASE}/reservas/${est.reserva_id}`, { waitUntil: "networkidle" });
+      const abrir = async (p) => {
+        await p.locator(`[data-estancia="${est.id}"] >> text=Mover fechas`).first().click().catch(async () => p.getByRole("button", { name: "Mover fechas" }).first().click());
+        await p.locator("[data-mover-fechas]").waitFor();
+      };
+      await abrir(pa);
+      await abrir(pb);
+      const salidaNueva = (p) => p.locator("[data-mover-fechas] input[type=date]").last();
+      const mas = (f, d) => new Date(new Date(`${f}T12:00:00Z`).getTime() + d * 86400000).toISOString().slice(0, 10);
+      await salidaNueva(pb).fill(mas(e0.fecha_salida, 1));
+      await pb.locator("[data-total-despues]").waitFor({ timeout: 20000 });
+      comprobar(await pb.locator("[data-guardar-fechas]").isEnabled(), "Mover fechas: con la vista previa del total, «Guardar fechas» se activa");
+      await pb.locator("[data-guardar-fechas]").click();
+      await pb.waitForFunction(() => !document.querySelector("[data-mover-fechas]"), null, { timeout: 30000 }).catch(() => {});
+      await salidaNueva(pa).fill(mas(e0.fecha_salida, 2));
+      await pa.locator("[data-total-despues]").waitFor({ timeout: 20000 });
+      await pa.locator("[data-guardar-fechas]").click();
+      await pa.locator("[data-conflicto-version]").waitFor({ timeout: 30000 }).catch(() => {});
+      const t = (await pa.locator("[data-conflicto-texto]").textContent().catch(() => "")) ?? "";
+      comprobar(/salida/.test(t) && /total \$/.test(t), `Mover fechas: el aviso dice la salida y el total nuevos («${t.slice(0, 100)}»)`);
+      const { data: e1 } = await SB.from("estancias").select("fecha_salida").eq("id", est.id).single();
+      comprobar(e1.fecha_salida === mas(e0.fecha_salida, 1), "Mover fechas: se quedó lo de la otra persona");
+      await uno.rpc("estancia_mover_fechas", { p_estancia_id: est.id, p_entrada: e0.fecha_entrada, p_salida: e0.fecha_salida, p_total_visto: null }).then(async (r) => {
+        if (r.error) await SB.from("estancias").update({ fecha_salida: e0.fecha_salida }).eq("id", est.id);
+      });
+    } else hallazgo("No hay una estancia de hotel reservada en Huellitas para la pantalla de mover fechas.");
+  } finally {
+    await SB.from("clientes").update({ deleted_at: new Date().toISOString() }).eq("id", clienteP);
+    await nav.close();
+  }
+}

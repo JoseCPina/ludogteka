@@ -9,7 +9,7 @@ import { estadoCita, iniciarDesdeCita, reprogramarCita } from "../expediente/act
 
 /** Lo que se puede hacer con una cita de la agenda clínica, según su estado y quién mira. */
 export function AccionesCita({
-  id, estado, consultaId, puedeAtender, puedeLeer, medicos, medicoId, fecha, hora,
+  id, estado, consultaId, puedeAtender, puedeLeer, medicos, medicoId, fecha, hora, version = null,
 }: {
   id: string;
   estado: string;
@@ -20,7 +20,10 @@ export function AccionesCita({
   medicoId: string;
   fecha: string;
   hora: string;
+  /** updated_at de la cita al cargar la agenda (QA N43). */
+  version?: string | null;
 }) {
+  const versiones = version ? [{ t: "vet_citas", i: id, v: version }] : [];
   const abierta = estado === "programada" || estado === "confirmada";
   return (
     <div className="mt-2 flex flex-wrap items-start gap-2">
@@ -30,11 +33,11 @@ export function AccionesCita({
         </Link>
       )}
       {abierta && puedeAtender && <BotonAccion texto="Iniciar consulta" accion={() => iniciarDesdeCita(id)} />}
-      {estado === "programada" && <BotonAccion texto="Confirmar" variante="secundario" accion={() => estadoCita(id, "confirmada")} textoExito="Confirmada" />}
+      {estado === "programada" && <BotonAccion texto="Confirmar" variante="secundario" accion={(c) => estadoCita(id, "confirmada", c)} textoExito="Confirmada" versiones={versiones} registro="esta cita" />}
       {abierta && (
         <>
           <Desplegable texto="Reprogramar">
-            <FormularioAccion accion={(fd) => reprogramarCita(id, fd)} textoBoton="Mover la cita" textoExito="Cita movida">
+            <FormularioAccion accion={(fd) => reprogramarCita(id, fd)} textoBoton="Mover la cita" textoExito="Cita movida" versiones={versiones} registro="esta cita">
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Fecha" name="fecha" type="date" defaultValue={fecha} required />
                 <Field label="Hora" name="hora" type="time" defaultValue={hora} required />
@@ -49,10 +52,10 @@ export function AccionesCita({
             </FormularioAccion>
           </Desplegable>
           <Desplegable texto="No llegó" variante="secundario">
-            <BotonAccion texto="Marcar «no llegó»" variante="peligro" accion={() => estadoCita(id, "no_llego")} textoExito="Marcada" />
+            <BotonAccion texto="Marcar «no llegó»" variante="peligro" accion={(c) => estadoCita(id, "no_llego", c)} textoExito="Marcada" versiones={versiones} registro="esta cita" />
           </Desplegable>
           <Desplegable texto="Cancelar" variante="secundario">
-            <FormularioAccion accion={(fd) => estadoCita(id, "cancelada", fd)} textoBoton="Cancelar la cita" variante="peligro" textoExito="Cita cancelada">
+            <FormularioAccion accion={(fd) => estadoCita(id, "cancelada", fd)} textoBoton="Cancelar la cita" variante="peligro" textoExito="Cita cancelada" versiones={versiones} registro="esta cita">
               <Field label="¿Por qué se cancela?" name="motivo" required />
             </FormularioAccion>
           </Desplegable>

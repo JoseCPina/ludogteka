@@ -57,12 +57,15 @@ export default async function AdminPage() {
     { data: topeData },
     { data: configData },
     { data: horarioVigente },
+    { data: horarioUltimo },
   ] = await Promise.all([
     esAdmin ? leerTodo<Record<string, unknown>>(() => supabase.rpc("listar_cuentas").order("id")) : nada,
     esAdmin ? supabase.rpc("resolver_tope_descuento_recepcion") : nada,
     supabase.rpc("resolver_cupo_configuracion"),
     supabase.rpc("horario_semana_vigente"),
+    supabase.from("horario_semana").select("updated_at").order("updated_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
+  const negocioIdActual = (await negocioActual()).id;
   const { data: personal } = !esAdmin && puedePersonal ? await supabase.rpc("listar_personal") : { data: null };
 
   // Mismo cálculo que la matriz y la lista de Servicios (src/lib/tarifas/huecos.ts) y solo de los
@@ -143,7 +146,7 @@ export default async function AdminPage() {
       {puedeConfig && (
         <section id="horario" className="scroll-mt-20 rounded-lg border border-n-200 bg-white p-5">
           <h2 className="mb-4 text-lg font-bold text-n-900">Horario de atención</h2>
-          <HorarioNegocio vigente={(horarioVigente ?? []) as DiaHorario[]} />
+          <HorarioNegocio vigente={(horarioVigente ?? []) as DiaHorario[]} negocioId={negocioIdActual} version={(horarioUltimo?.updated_at as string | undefined) ?? null} />
         </section>
       )}
 

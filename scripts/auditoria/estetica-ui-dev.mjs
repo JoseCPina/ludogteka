@@ -508,6 +508,102 @@ try {
   const cuerpoSin = sinNombre.cuerpo;
   if (sinNombre.status !== 400 || !/nombre/i.test(String(cuerpoSin.error))) hallazgo(`el servidor aceptó invitar sin nombre (${sinNombre.status} ${JSON.stringify(cuerpoSin).slice(0, 80)})`);
   else bien("el servidor rechaza invitar sin nombre (400)");
+
+  // ── 11. QA S14: N44 (la estilista ve el choque real) y el check-in de una cita de otro día ──
+  console.log("\n11. N44: choque real para la estilista; check-in de otra fecha pide confirmar (celular)");
+  {
+    const S1e = datos.esteticaB;
+    const { data: zona } = await SB.rpc("zona_negocio");
+    const { data: tallaN } = await A.from("tamanos_categoria").select("id").eq("clave", "chico").single();
+    const { data: peloN } = await A.from("tipos_pelaje").select("id").eq("clave", "medio").single();
+    const { data: razaN } = await A.from("razas").select("id").eq("nombre", "Poodle").single();
+    const nuevoPerro = async (n) => {
+      const { data } = await SB.from("perros").insert({ cliente_id: datos.clienteSoloB, nombre: `ZZ ${n} ${sufijo}`, raza: "Poodle", raza_id: razaN.id, tamano_id: tallaN.id, pelaje_id: peloN.id }).select("id").single();
+      creados.perros.push(data.id);
+      return data.id;
+    };
+    const { data: servN } = await SB.from("servicios").select("id").eq("clave", "estetica_estetico").single();
+    const ocupado = await nuevoPerro("ocupado");
+    const intento = await nuevoPerro("intento");
+    // Una cita ya puesta en la agenda de la estilista (la «ocupó» el admin), lejos en el futuro.
+    const inicioUtc = new Date(Date.now() + (90 + Math.floor(Math.random() * 200)) * 86400000);
+    inicioUtc.setUTCMinutes(0, 0, 0);
+    inicioUtc.setUTCHours(20);
+    const { data: resO } = await SB.from("reservas").insert({ cliente_id: datos.clienteSoloB }).select("id").single();
+    creados.reservas.push(resO.id);
+    const { data: citaO, error: eO } = await SB.from("citas_estetica").insert({ reserva_id: resO.id, perro_id: ocupado, servicio_id: servN.id, empleado_id: S1e, inicio: inicioUtc.toISOString() }).select("id").single();
+    if (eO) hallazgo(`N44: no se pudo poner la cita que ocupa el horario (${eO.message})`);
+    else {
+      creados.citas.push(citaO.id);
+      const partes = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: zona, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(inicioUtc).map((x) => [x.type, x.value]));
+      const local = `${partes.year}-${partes.month}-${partes.day}T${partes.hour}:${partes.minute}`;
+      const ctxE = await nav.newContext({ viewport: { width: 390, height: 844 } });
+      await ctxE.addCookies(await cookiesDe(S1e));
+      const est = await ctxE.newPage();
+      await est.goto(`${BASE}/estetica/nueva`, { waitUntil: "networkidle" });
+      await est.locator("input:visible").first().fill(`ZZ intento ${sufijo}`);
+      await est.waitForTimeout(800);
+      await est.getByText(`ZZ intento ${sufijo}`).first().click();
+      await est.waitForTimeout(500);
+      await est.getByLabel("Perro").selectOption({ label: `ZZ intento ${sufijo}` });
+      const servOpc = await est.getByLabel("Servicio").locator("option").allInnerTexts();
+      await est.getByLabel("Servicio").selectOption({ label: servOpc.find((o) => /completo/i.test(o)) ?? servOpc[1] });
+      await est.getByLabel("Fecha y hora").fill(local);
+      await est.getByRole("button", { name: "Agendar cita" }).click();
+      // La ayuda fija del campo («Solo puedes agendar en tu propia agenda.») no cuenta: se espera la respuesta.
+      await est.waitForFunction(() => /Ya tienes a|No pudimos|Solo puedes agendar en tu propia agenda:/.test(document.body.innerText), null, { timeout: 45000 }).catch(() => {});
+      const texto = (await est.locator("body").innerText()).replace(/\s+/g, " ");
+      const hhmm = `${partes.hour}:${partes.minute}`;
+      if (!texto.includes(`Ya tienes a ZZ ocupado ${sufijo} a las ${hhmm}`)) hallazgo(`N44: la estilista no ve el choque real («${(texto.match(/(Ya tienes|No pudimos)[^.]*\./) ?? ["sin respuesta"])[0]}»)`);
+      else bien(`N44: la estilista ve «Ya tienes a ZZ ocupado ${sufijo} a las ${hhmm}…»`);
+      if (/No pudimos crear la reserva/.test(texto)) hallazgo("N44: sigue saliendo «No pudimos crear la reserva para esta cita»");
+      const erroresPermiso = await est.locator('[role="alert"]').filter({ hasText: "Solo puedes agendar en tu propia agenda" }).count();
+      if (erroresPermiso) hallazgo("N44: sale el aviso de permiso aunque el problema es el horario");
+      else bien("N44: el aviso de permiso no sale (solo la ayuda del campo)");
+      const { count: dobles } = await SB.from("citas_estetica").select("id", { count: "exact", head: true }).eq("perro_id", intento).is("deleted_at", null);
+      if (dobles) hallazgo("N44: se creó la cita encimada");
+      const { count: huerfanas } = await SB.from("reservas").select("id", { count: "exact", head: true }).eq("cliente_id", datos.clienteSoloB).gte("created_at", new Date(Date.now() - 120000).toISOString()).is("deleted_at", null);
+      bien(`N44: ninguna cita encimada; cuentas nuevas en 2 min: ${huerfanas} (la de la prueba)`);
+      // Libre: la estilista sí agenda en su propia agenda.
+      const otraHora = new Date(inicioUtc.getTime() + 3 * 3600000);
+      const p2 = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: zona, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(otraHora).map((x) => [x.type, x.value]));
+      await est.getByLabel("Fecha y hora").fill(`${p2.year}-${p2.month}-${p2.day}T${p2.hour}:${p2.minute}`);
+      await est.getByRole("button", { name: "Agendar cita" }).click();
+      let nueva = null;
+      for (let i = 0; i < 60 && !nueva; i++) {
+        nueva = (await SB.from("citas_estetica").select("id, reserva_id").eq("perro_id", intento).is("deleted_at", null).maybeSingle()).data;
+        if (!nueva) await est.waitForTimeout(500);
+      }
+      if (!nueva) hallazgo(`N44: la estilista no pudo agendar en un horario libre de su agenda («${(await est.locator("body").innerText()).replace(/\s+/g, " ").slice(0, 200)}»)`);
+      else {
+        creados.citas.push(nueva.id); creados.reservas.push(nueva.reserva_id);
+        bien("N44: en un horario libre, la estilista agenda en su propia agenda");
+      }
+
+      // Check-in de una cita de OTRO día: pide confirmar.
+      await admin.goto(`${BASE}/estetica/${citaO.id}`, { waitUntil: "networkidle" });
+      await admin.getByRole("button", { name: "Iniciar cita" }).click();
+      const campoEntrega = admin.getByLabel("Quién entrega al perro (obligatorio)");
+      if (await campoEntrega.count()) await campoEntrega.fill("Prueba");
+      await admin.locator("[data-confirmar-inicio]").click();
+      await admin.locator("[data-checkin-otro-dia]").waitFor({ timeout: 30000 }).catch(() => {});
+      const avisoDia = (await admin.locator("[data-checkin-otro-dia]").innerText().catch(() => "")).replace(/\s+/g, " ");
+      const { data: sigue } = await SB.from("citas_estetica").select("estado").eq("id", citaO.id).single();
+      if (!avisoDia || sigue.estado !== "reservada") hallazgo(`check-in de otro día: no pidió confirmar (estado ${sigue.estado}, aviso «${avisoDia}»)`);
+      else bien(`check-in de otro día: pide confirmar («${avisoDia.slice(0, 90)}») y no la recibe todavía`);
+      if (!/Sí, recibirla de todos modos/.test(await admin.locator("[data-confirmar-inicio]").innerText())) hallazgo("check-in de otro día: el botón no dice «Sí, recibirla de todos modos»");
+      await admin.locator("[data-confirmar-inicio]").click();
+      let recibida = false;
+      for (let i = 0; i < 50 && !recibida; i++) {
+        recibida = (await SB.from("citas_estetica").select("estado").eq("id", citaO.id).single()).data.estado === "en_curso";
+        if (!recibida) await admin.waitForTimeout(500);
+      }
+      if (!recibida) hallazgo("check-in de otro día: al confirmar no la recibió");
+      else bien("check-in de otro día: con la confirmación sí la recibe");
+      await sinDesborde(admin, "check-in de otro día");
+      await ctxE.close();
+    }
+  }
 } catch (e) {
   hallazgo(`la prueba tronó: ${e.message}`);
 } finally {

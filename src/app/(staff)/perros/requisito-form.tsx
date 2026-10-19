@@ -54,8 +54,8 @@ export function RequisitoForm({
   const [avisoFechaAntigua, setAvisoFechaAntigua] = useState(false);
 
   const tipoSeleccionado = tipos.find((t) => t.id === tipoId);
-  const etiquetaDetalle =
-    tipoSeleccionado?.categoria === "desparasitacion" ? "Producto usado" : "Veterinario y clínica";
+  // Desparasitación: además del producto, quién la aplicó (igual que una vacuna; QA S14).
+  const esDesparasitacion = tipoSeleccionado?.categoria === "desparasitacion";
 
   // Date.now() se calcula aquí, dentro del handler (nunca en el cuerpo del
   // componente ni en un useMemo), porque llamar una función impura durante
@@ -71,7 +71,12 @@ export function RequisitoForm({
     setExito(false);
 
     const formData = new FormData(evento.currentTarget);
-    const detalle = String(formData.get("detalle") ?? "").trim() || null;
+    const veterinario = String(formData.get("detalle") ?? "").trim();
+    const producto = String(formData.get("producto") ?? "").trim();
+    const detalle =
+      [producto && `Producto: ${producto}`, veterinario && (producto ? `Veterinario y clínica: ${veterinario}` : veterinario)]
+        .filter(Boolean)
+        .join(" · ") || null;
     const notas = String(formData.get("notas") ?? "").trim() || null;
 
     const r = await enviando.correr(async () => {
@@ -160,7 +165,8 @@ export function RequisitoForm({
         )}
       </div>
 
-      <Field label={etiquetaDetalle} name="detalle" disabled={enviando.cargando} ayuda="Opcional." />
+      {esDesparasitacion && <Field label="Producto usado" name="producto" disabled={enviando.cargando} ayuda="Opcional." />}
+      <Field label="Veterinario y clínica" name="detalle" disabled={enviando.cargando} ayuda="Opcional." />
       <Textarea label="Notas" name="notas" disabled={enviando.cargando} />
 
       <div>

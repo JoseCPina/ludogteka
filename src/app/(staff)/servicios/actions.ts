@@ -1,10 +1,12 @@
 "use server";
 
+import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
+import { conflictoDeError, type Conflicto } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export type EstadoServicioForm = { error: string | null; ok?: boolean };
+export type EstadoServicioForm = { error: string | null; ok?: boolean; conflicto?: Conflicto | null };
 
 const CATEGORIAS = ["guarderia", "hotel", "estetica", "veterinaria", "cargo", "bono"] as const;
 const UNIDADES = ["dia", "noche", "sesion", "evento", "km", "hora"] as const;
@@ -114,9 +116,11 @@ export async function actualizarServicio(
   if (error) return { error };
 
   const supabase = await createSupabaseServerClient();
-  const { error: dbError } = await supabase.from("servicios").update(campos).eq("id", id);
+  const { error: dbError } = await conControl(supabase.from("servicios").update(campos).eq("id", id), controlDeFormulario(formData));
 
   if (dbError) {
+    const conflicto = conflictoDeError(dbError);
+    if (conflicto) return { error: null, conflicto };
     if (dbError.code === "23505") return { error: "Ya existe un servicio con esa clave." };
     return { error: "No pudimos guardar los cambios. Intenta de nuevo." };
   }

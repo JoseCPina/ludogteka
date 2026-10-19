@@ -8,6 +8,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { corregirServicioCita, cotizarCorreccionServicio } from "../correccion-servicio-actions";
+import { AvisoVersion, useControlVersion } from "@/components/concurrencia/use-control-version";
 import type { CotizacionCorreccion, ResultadoCorreccion } from "../correccion-servicio-tipos";
 
 const dinero = (n: number) => `$${Math.abs(n).toFixed(2)}`;
@@ -28,6 +29,7 @@ export function CorregirServicio({
   servicios,
   gruposPrecio,
   puedeExcepcion,
+  version = null,
 }: {
   citaId: string;
   estado: string;
@@ -35,8 +37,11 @@ export function CorregirServicio({
   servicios: { id: string; nombre: string }[];
   gruposPrecio: { id: string; nombre: string }[];
   puedeExcepcion: boolean;
+  /** updated_at de la cita al cargar (QA N43). */
+  version?: string | null;
 }) {
   const router = useRouter();
+  const ctl = useControlVersion("citas_estetica", citaId, version);
   const calculo = useEspera();
   const envio = useEspera();
   const [abierto, setAbierto] = useState(false);
@@ -108,21 +113,27 @@ export function CorregirServicio({
         if (!listo || !cot) return setError("Escoge el servicio correcto y revisa el precio antes de confirmar.");
         if (!motivo.trim()) return setError("Escribe el motivo de la corrección.");
         setError(null);
-        const res = await envio.ejecutar(() =>
-          corregirServicioCita({
-            citaId,
-            servicioId,
-            motivo,
-            precioEsperado: cot.precio_nuevo,
-            grupoExcepcionId: grupoId || null,
-            motivoExcepcion: motivoGrupo.trim() || null,
-          })
-        );
-        if (res.error) return setError(res.error);
-        setResultado(res.resultado ?? null);
-        router.refresh();
+        const guardar = async (forzar: boolean): Promise<void> => {
+          const res = await envio.ejecutar(() =>
+            corregirServicioCita({
+              citaId,
+              servicioId,
+              motivo,
+              precioEsperado: cot.precio_nuevo,
+              grupoExcepcionId: grupoId || null,
+              motivoExcepcion: motivoGrupo.trim() || null,
+              control: ctl.control(forzar),
+            })
+          );
+          if (ctl.huboConflicto(res, () => guardar(true))) return;
+          if (res.error) return setError(res.error);
+          setResultado(res.resultado ?? null);
+          router.refresh();
+        };
+        await guardar(false);
       }}
     >
+      <AvisoVersion ctl={ctl} registro="esta cita" cargando={envio.cargando} />
       <p className="text-sm text-n-600">
         Servicio actual: <span className="font-semibold text-n-800">{servicioActual}</span>
       </p>

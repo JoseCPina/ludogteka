@@ -274,6 +274,56 @@ try {
   const t9 = await pL.locator("[data-saldo-cambio]").innerText().catch(() => "");
   comprobar(/antes era \$880\.00 y ahora es \$870\.00/.test(t9), `el aviso enseña el saldo anterior y el actual reales («${t9.slice(0, 90)}»)`);
   comprobar((await pL.getByLabel("Monto").first().inputValue()) === "870.00", "y el monto se puso al día ($870.00)");
+
+  console.log("9. QA S14: «Cobro registrado» se va al anular el cobro");
+  const diez = await nuevoCliente("Anulado");
+  const c10 = await cuenta(diez, 150, `Baño anulado ${sufijo}`);
+  const pAn = await ctxL.newPage();
+  lento = false;
+  await pAn.goto(`${BASE}/caja/cobrar/${c10}`, { waitUntil: "networkidle" });
+  await pAn.getByRole("button", { name: "Registrar cobro" }).first().click();
+  await pAn.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+  comprobar(await pAn.getByText("Cobro registrado.").first().isVisible(), "sale «Cobro registrado.»");
+  const { data: cob10 } = await SB.from("cobros").select("id").eq("reserva_id", c10).order("created_at", { ascending: false }).limit(1).single();
+  const an10 = await admB.rpc("anular_cobro", { p_cobro_id: cob10.id, p_motivo: "prueba QA S14" });
+  if (an10.error) hallazgo(`no se pudo anular el cobro de prueba (${an10.error.message})`);
+  await pAn.getByRole("button", { name: "Registrar cobro" }).first().waitFor({ timeout: 40000 }).catch(() => {});
+  comprobar((await pAn.getByText("Cobro registrado.").count()) === 0, "tras anular, «Cobro registrado.» ya no se ve");
+  comprobar(await pAn.getByRole("button", { name: "Registrar cobro" }).first().isVisible().catch(() => false), "y la cuenta vuelve a pedir el cobro");
+
+  console.log("10. QA S14: una reserva cancelada sin saldo no ofrece «Cobrar»");
+  const { data: hotelS } = await SB.from("servicios").select("id").eq("clave", "hotel_noche").is("deleted_at", null).maybeSingle();
+  if (!hotelS) hallazgo("Huellitas no tiene hotel_noche");
+  else {
+    const dia = (d) => new Date(Date.now() + d * 86400000).toISOString().slice(0, 10);
+    const base = 300 + (Number(sufijo) % 100) * 3;
+    const { data: resC, error: erc } = await admB.from("reservas").insert({ cliente_id: datos.clienteSoloB, notas: `Cancelada ${sufijo}` }).select("id").single();
+    if (erc) throw new Error(erc.message);
+    const { data: estC, error: eec } = await admB.from("estancias").insert({
+      reserva_id: resC.id, perro_id: datos.perroSoloB, servicio_id: hotelS.id, fecha_entrada: dia(base), fecha_salida: dia(base + 1),
+      bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: "Prueba", bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: "Prueba",
+    }).select("id").single();
+    if (eec) throw new Error(eec.message);
+    const can = await admB.from("estancias").update({ estado: "cancelada" }).eq("id", estC.id);
+    if (can.error) hallazgo(`no se pudo cancelar la estancia de prueba (${can.error.message})`);
+    const pC = await ctxL.newPage();
+    await pC.goto(`${BASE}/reservas/${resC.id}`, { waitUntil: "networkidle" });
+    const txt = await pC.locator("[data-reserva-cancelada-cuenta]").innerText().catch(() => "");
+    comprobar(/no hay nada por cobrar/.test(txt), `la reserva cancelada lo dice («${txt}»)`);
+    comprobar((await pC.locator("[data-cobrar-reserva]").count()) === 0, "y no ofrece «Cobrar»");
+    // Con un cargo que sí se hizo, se ve claro qué se debe.
+    const { data: cargoS } = await SB.from("servicios").select("id").eq("negocio_id", B).eq("categoria", "cargo").eq("monto_libre", true).is("deleted_at", null).limit(1).maybeSingle();
+    if (cargoS) {
+      const cr = await admB.from("cargos_aplicados").insert({ reserva_id: resC.id, servicio_id: cargoS.id, cantidad: 1, precio: 75, descripcion: "Comida que sí se dio" });
+      if (cr.error) console.log(`  · (no se pudo agregar el cargo de prueba: ${cr.error.message})`);
+      else {
+        await pC.reload({ waitUntil: "networkidle" });
+        const txt2 = await pC.locator("[data-reserva-cancelada-cuenta]").innerText().catch(() => "");
+        comprobar(/todavía debe \$75\.00/.test(txt2), `con saldo, dice qué se debe («${txt2.slice(0, 100)}»)`);
+        comprobar(/Cobrar \$75\.00/.test(await pC.locator("[data-cobrar-reserva]").innerText().catch(() => "")), "y el botón dice «Cobrar $75.00»");
+      }
+    }
+  }
 } finally {
   await nav.close();
 }

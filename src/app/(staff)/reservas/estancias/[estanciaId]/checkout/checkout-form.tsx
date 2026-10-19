@@ -9,9 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
-import { formatearFechaCalendario, sumarDiasFecha } from "@/lib/formato";
+import { formatearFechaCalendario } from "@/lib/formato";
 import { alternarPertenencia, confirmarCheckout } from "../../../checkin-actions";
-import { moverFechas } from "../../../reserva-actions";
+import { MoverFechas } from "../../../mover-fechas";
 
 type Pertenencia = { id: string; descripcion: string; devuelto: boolean };
 
@@ -20,12 +20,15 @@ export function CheckoutForm({
   esHotel,
   fechaEntrada,
   fechaSalida,
+  version = null,
   pertenenciasIniciales,
 }: {
   estanciaId: string;
   esHotel: boolean;
   fechaEntrada: string;
   fechaSalida: string;
+  /** updated_at de la estancia al cargar (QA N43). */
+  version?: string | null;
   pertenenciasIniciales: Pertenencia[];
 }) {
   const router = useRouter();
@@ -33,7 +36,14 @@ export function CheckoutForm({
   const [pertenencias, setPertenencias] = useState(() => pertenenciasIniciales.map((p) => ({ ...p, devuelto: false })));
   const [motivoSinEntrega, setMotivoSinEntrega] = useState("");
   const [salidaActual, setSalidaActual] = useState(fechaSalida);
-  const extendiendo = useEspera();
+  const [versionActual, setVersionActual] = useState(version);
+  const [versionVista, setVersionVista] = useState(version);
+  if (version !== versionVista) {
+    setVersionVista(version);
+    setVersionActual(version);
+    setSalidaActual(fechaSalida);
+  }
+  const [extendiendo, setExtendiendo] = useState(false);
 
   const [recogidoNombre, setRecogidoNombre] = useState("");
   const [recogidoTelefono, setRecogidoTelefono] = useState("");
@@ -52,17 +62,6 @@ export function CheckoutForm({
 
   function entregueTodo() {
     setPertenencias((prev) => prev.map((x) => ({ ...x, devuelto: true })));
-  }
-
-  async function extenderEstancia() {
-    setError(null);
-    const nuevaSalida = sumarDiasFecha(salidaActual, 1);
-    const res = await extendiendo.ejecutar(() => moverFechas(estanciaId, fechaEntrada, nuevaSalida));
-    if (res.error) {
-      setError(res.error);
-      return;
-    }
-    setSalidaActual(nuevaSalida);
   }
 
   async function enviarCheckout() {
@@ -109,14 +108,34 @@ export function CheckoutForm({
             <p className="text-sm text-n-600">Salida programada</p>
             <p className="font-bold text-n-900">{formatearFechaCalendario(salidaActual)}</p>
           </div>
-          <Button type="button" variante="secundario" cargando={extendiendo.cargando} onClick={extenderEstancia}>
-            {extendiendo.cargando ? "Extendiendo…" : "Extender 1 noche"}
-          </Button>
+          {!extendiendo && (
+            <Button type="button" variante="secundario" onClick={() => setExtendiendo(true)} data-extender>
+              Extender la salida
+            </Button>
+          )}
           <p className="text-sm text-n-600">
             El dueño no llega todavía y el cupo de esta noche ya se liberó — usa este botón antes
             de que alguien más lo tome.
           </p>
         </div>
+      )}
+      {esHotel && extendiendo && (
+        <MoverFechas
+          estanciaId={estanciaId}
+          esGuarderia={false}
+          entrada={fechaEntrada}
+          salida={salidaActual}
+          version={versionActual}
+          soloSalida
+          textoBoton="Extender la salida"
+          onHecho={(r) => {
+            setSalidaActual(r.salida);
+            if (r.version) setVersionActual(r.version);
+            setExtendiendo(false);
+            router.refresh();
+          }}
+          onCancelar={() => setExtendiendo(false)}
+        />
       )}
 
       <div className="flex flex-col gap-3">

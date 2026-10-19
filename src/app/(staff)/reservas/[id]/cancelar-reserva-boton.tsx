@@ -5,22 +5,34 @@ import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cancelarReserva } from "../reserva-actions";
+import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
+import type { Conflicto, VersionLeida } from "@/lib/concurrencia/tipos";
 
 export function CancelarReservaBoton({
   reservaId,
   cancelables,
+  versiones = [],
 }: {
   reservaId: string;
   cancelables: number;
+  /** Las versiones de las estancias tal como se leyeron (QA N43). */
+  versiones?: VersionLeida[];
 }) {
   const router = useRouter();
   const [confirmando, setConfirmando] = useState(false);
   const cargando = useEspera();
   const [mensaje, setMensaje] = useState<string | null>(null);
+  const [leidas, setLeidas] = useState(versiones);
+  const [conflicto, setConflicto] = useState<Conflicto | null>(null);
 
-  async function confirmar() {
-    const res = await cargando.ejecutar(() => cancelarReserva(reservaId));
+  async function confirmar(forzar = false) {
+    const res = await cargando.ejecutar(() => cancelarReserva(reservaId, { versiones: leidas, forzar }));
     setConfirmando(false);
+    if (res.conflicto) {
+      setConflicto(res.conflicto);
+      return;
+    }
+    setConflicto(null);
     if (res.error) {
       setMensaje(res.error);
       return;
@@ -33,13 +45,25 @@ export function CancelarReservaBoton({
     router.refresh();
   }
 
+  if (conflicto) {
+    return (
+      <AvisoConflicto
+        conflicto={conflicto}
+        registro="esta reserva"
+        cargando={cargando.cargando}
+        onRecargar={() => setConflicto(null)}
+        onGuardarEncima={() => confirmar(true)}
+      />
+    );
+  }
+
   if (mensaje) {
     return <p className="text-sm font-semibold text-n-700">{mensaje}</p>;
   }
 
   if (!confirmando) {
     return (
-      <Button type="button" variante="peligro" onClick={() => setConfirmando(true)}>
+      <Button type="button" variante="peligro" onClick={() => { setLeidas(versiones); setConfirmando(true); }}>
         Cancelar toda la reserva
       </Button>
     );
@@ -51,7 +75,7 @@ export function CancelarReservaBoton({
         ¿Cancelar los {cancelables} perro(s) que todavía se pueden cancelar de esta reserva?
       </p>
       <div className="flex gap-2">
-        <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={confirmar}>
+        <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={() => confirmar()}>
           {cargando.cargando ? "Cancelando…" : "Sí, cancelar todo"}
         </Button>
         <Button type="button" variante="secundario" onClick={() => setConfirmando(false)}>

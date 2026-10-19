@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
+import { AvisoVersion, useControlVersion } from "@/components/concurrencia/use-control-version";
 import { Alert } from "@/components/ui/alert";
 import { formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
 import {
@@ -48,7 +49,10 @@ export function MatrizTarifas({
   tamanos,
   pelajes,
   vigentes,
+  versionPrecios = null,
 }: {
+  /** La última captura de precios que vio esta pantalla (QA N43). */
+  versionPrecios?: string | null;
   servicioId: string;
   dependeGrupoRaza: boolean;
   dependeTamano: boolean;
@@ -95,6 +99,7 @@ export function MatrizTarifas({
   const [incremento, setIncremento] = useState({ valor: "", unidad: "porcentaje" as "porcentaje" | "monto" });
   const [previsualizando, setPrevisualizando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const ctlPrecios = useControlVersion("precios_servicio", servicioId, versionPrecios);
   const guardando = useEspera();
   const [exito, setExito] = useState(false);
 
@@ -318,9 +323,10 @@ export function MatrizTarifas({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tramos, filas, columnas, valores, baselineMap]);
 
-  async function confirmarGuardado() {
+  async function confirmarGuardado(forzar = false) {
     setError(null);
-    const resultado = await guardando.ejecutar(() => guardarTarifas(servicioId, vigenciaDesde, cambios));
+    const resultado = await guardando.ejecutar(() => guardarTarifas(servicioId, vigenciaDesde, cambios, ctlPrecios.control(forzar)));
+    if (ctlPrecios.huboConflicto(resultado, () => confirmarGuardado(true))) return;
     if (resultado.error) {
       setError(resultado.error);
       return;
@@ -401,8 +407,9 @@ export function MatrizTarifas({
             </tbody>
           </table>
         </div>
+        <AvisoVersion ctl={ctlPrecios} registro="los precios de este servicio" cargando={guardando.cargando} />
         <AccionesFormulario error={error} exito={exito && "Tarifas guardadas"}>
-          <Button type="button" cargando={guardando.cargando} onClick={confirmarGuardado}>
+          <Button type="button" cargando={guardando.cargando} onClick={() => confirmarGuardado(false)}>
             {guardando.cargando ? "Guardando…" : "Confirmar y guardar"}
           </Button>
           <Button type="button" variante="secundario" cargando={guardando.cargando} onClick={() => setPrevisualizando(false)}>

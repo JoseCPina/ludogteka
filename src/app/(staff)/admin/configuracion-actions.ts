@@ -1,5 +1,7 @@
 "use server";
 
+import { conControl } from "@/lib/concurrencia/servidor";
+import { conflictoDeError, type Conflicto, type ControlVersion } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { normalizarTelefono } from "@/lib/telefono";
@@ -52,9 +54,9 @@ export async function guardarConfiguracionNegocio(datos: {
 // igual que horario_semana.
 export type DiaHorario = { dia_semana: number; hora_apertura: string | null; hora_cierre: string | null };
 
-export type EstadoHorario = { error: string | null; reservasEnDiasCerrados?: number };
+export type EstadoHorario = { error: string | null; reservasEnDiasCerrados?: number; conflicto?: Conflicto | null };
 
-export async function guardarHorarioSemana(dias: DiaHorario[]): Promise<EstadoHorario> {
+export async function guardarHorarioSemana(dias: DiaHorario[], control?: ControlVersion): Promise<EstadoHorario> {
   for (const d of dias) {
     if (Boolean(d.hora_apertura) !== Boolean(d.hora_cierre)) {
       return { error: "Cada día abierto necesita hora de apertura y de cierre." };
@@ -62,7 +64,9 @@ export async function guardarHorarioSemana(dias: DiaHorario[]): Promise<EstadoHo
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.rpc("guardar_horario_semana", { p_dias: dias });
+  const { data, error } = await conControl(supabase.rpc("guardar_horario_semana", { p_dias: dias }), control);
+  const conflicto = conflictoDeError(error);
+  if (conflicto) return { error: null, conflicto };
   if (error) return { error: traducirError(error) };
 
   revalidatePath("/admin");

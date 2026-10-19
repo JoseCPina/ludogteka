@@ -64,6 +64,7 @@ type Cita = {
   servicio_nombre: string;
   fecha_local: string;
   empleado_id: string | null;
+  version: string | null;
 };
 
 // `dias` es cuánto lleva esperando (o vencido) lo que avisa; `antiguedad`,
@@ -187,7 +188,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     leerTodo<Record<string, unknown>>(() =>
       supabase
         .from("citas_estetica")
-        .select("id, inicio, estado, empleado_id, perros(nombre), servicio_nombre, servicios!citas_estetica_servicio_id_fkey(nombre)")
+        .select("id, inicio, estado, empleado_id, updated_at, perros(nombre), servicio_nombre, servicios!citas_estetica_servicio_id_fkey(nombre)")
         .is("deleted_at", null)
         .gte("inicio", sumarDiasFecha(hoy, -1))
         .lt("inicio", sumarDiasFecha(hoy, 2))
@@ -265,6 +266,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
         servicio_nombre: servicio?.nombre ?? (c.servicio_nombre as string | null) ?? "—",
         fecha_local: fechaLocalDeInstante(c.inicio as string, zona),
         empleado_id: (c.empleado_id as string | null) ?? null,
+        version: (c.updated_at as string | null) ?? null,
       };
     })
     .filter((c) => c.fecha_local === hoy && c.estado !== "cancelada");
@@ -1051,6 +1053,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
                       nombreActual={c.empleado_id ? (nombreDe.get(c.empleado_id) ?? null) : null}
                       estilistas={estilistas}
                       puedeCorregir={puedeCorregirEstilista}
+                      version={c.version}
                       compacto
                     />
                   )}

@@ -7,6 +7,8 @@ import { traducirError } from "./traducir-error";
 import { mensajeTraslapeDeEstancia } from "@/lib/reservas/traslape-detalle";
 import { mensajeTraslapeConDetalle, type EstanciaQueChoca } from "@/lib/reservas/traslape";
 import { describirDevolucion } from "@/lib/bonos/descripcion";
+import { conControl } from "@/lib/concurrencia/servidor";
+import { conflictoDeError, type Conflicto, type ControlVersion } from "@/lib/concurrencia/tipos";
 
 export type LineaReserva = {
   perroId: string;
@@ -146,7 +148,52 @@ export async function agregarEstanciaAReserva(
   return resultado;
 }
 
-export type EstadoAccionEstancia = { error: string | null; aviso?: string | null };
+export type EstadoAccionEstancia = { error: string | null; aviso?: string | null; conflicto?: Conflicto | null; version?: string | null };
+
+type Supa = Awaited<ReturnType<typeof createSupabaseServerClient>>;
+
+// QA N43: la estancia cambió desde que la pantalla la leyó. El aviso dice además en cuánto quedó la cuenta.
+async function conflictoDeEstancia(supabase: Supa, error: Parameters<typeof conflictoDeError>[0], estanciaId: string): Promise<Conflicto | null> {
+  const c = conflictoDeError(error);
+  if (!c) return null;
+  const { data: est } = await supabase.from("estancias").select("reserva_id").eq("id", estanciaId).maybeSingle();
+  if (est?.reserva_id) {
+    const { data: t } = await supabase.rpc("cuenta_totales_reserva", { p_reserva_id: est.reserva_id }).maybeSingle();
+    const total = (t as { total_cuenta?: number } | null)?.total_cuenta;
+    if (total !== undefined && total !== null) c.extra = [`total $${Number(total).toLocaleString("es-MX", { maximumFractionDigits: 2 })}`];
+  }
+  return c;
+}
+
+export type VistaPreviaFechas = {
+  error: string | null;
+  totalAntes?: number;
+  saldoAntes?: number;
+  totalDespues?: number;
+  saldoDespues?: number;
+};
+
+/** Cuánto queda la cuenta con otras fechas, sin guardar nada (la persona lo ve antes de «Guardar fechas»). */
+export async function cotizarFechas(estanciaId: string, fechaEntrada: string, fechaSalida: string): Promise<VistaPreviaFechas> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("estancia_cotizar_fechas", { p_estancia_id: estanciaId, p_entrada: fechaEntrada, p_salida: fechaSalida });
+  if (error) return { error: traducirError(error, { fecha: fechaEntrada }) };
+  const d = data as { error: string | null; total_antes: number; saldo_antes: number; total_despues: number | null; saldo_despues: number | null };
+  if (d.error) {
+    if (/traslap|exclu|23P01/i.test(d.error)) {
+      const { data: est } = await supabase.from("estancias").select("perro_id").eq("id", estanciaId).maybeSingle();
+      if (est?.perro_id) return { error: await mensajeTraslapeDeEstancia(supabase, { perroId: est.perro_id, entrada: fechaEntrada, salida: fechaSalida, excluir: estanciaId }) };
+    }
+    return { error: /^[A-Za-z ]+ (violates|value)/.test(d.error) ? "No se pueden poner esas fechas. Revisa la entrada y la salida." : d.error };
+  }
+  return {
+    error: null,
+    totalAntes: Number(d.total_antes ?? 0),
+    saldoAntes: Number(d.saldo_antes ?? 0),
+    totalDespues: Number(d.total_despues ?? 0),
+    saldoDespues: Number(d.saldo_despues ?? 0),
+  };
+}
 
 // Qué pasó con el pase de una estancia que se acaba de cancelar. El
 // trigger de la base ya devolvió lo devolvible; aquí solo se lee el
@@ -196,52 +243,66 @@ async function avisoDevolucionDeEstancia(
   });
 }
 
-export async function cancelarEstancia(estanciaId: string): Promise<EstadoAccionEstancia> {
+export async function cancelarEstancia(estanciaId: string, control?: ControlVersion): Promise<EstadoAccionEstancia> {
   const supabase = await createSupabaseServerClient();
   const desde = new Date(Date.now() - 5000).toISOString();
-  const { error } = await supabase
+  const { error } = await conControl(supabase
     .from("estancias")
     .update({ estado: "cancelada" })
-    .eq("id", estanciaId);
+    .eq("id", estanciaId), control);
 
-  if (error) return { error: traducirError(error) };
+  if (error) {
+    const conflicto = await conflictoDeEstancia(supabase, error, estanciaId);
+    if (conflicto) return { error: null, conflicto };
+    return { error: traducirError(error) };
+  }
   const aviso = await avisoDevolucionDeEstancia(supabase, estanciaId, desde);
   revalidarModulosEstancia();
   return { error: null, aviso };
 }
 
-export async function marcarNoLlego(estanciaId: string): Promise<EstadoAccionEstancia> {
+export async function marcarNoLlego(estanciaId: string, control?: ControlVersion): Promise<EstadoAccionEstancia> {
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
+  const { error } = await conControl(supabase
     .from("estancias")
     .update({ estado: "no_llego" })
-    .eq("id", estanciaId);
+    .eq("id", estanciaId), control);
 
-  if (error) return { error: traducirError(error) };
+  if (error) {
+    const conflicto = await conflictoDeEstancia(supabase, error, estanciaId);
+    if (conflicto) return { error: null, conflicto };
+    return { error: traducirError(error) };
+  }
   revalidarModulosEstancia();
   return { error: null };
 }
 
+// Mover fechas (y extender la salida en el check-out): el total que resulta lo calcula la base al guardar y tiene
+// que ser el que la persona vio en la vista previa (`totalVisto`); si no, no se guarda. Con la versión leída.
 export async function moverFechas(
   estanciaId: string,
   fechaEntrada: string,
-  fechaSalida: string
+  fechaSalida: string,
+  control: ControlVersion & { totalVisto: number }
 ): Promise<EstadoAccionEstancia> {
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
-    .from("estancias")
-    .update({ fecha_entrada: fechaEntrada, fecha_salida: fechaSalida })
-    .eq("id", estanciaId);
+  const { data, error } = await conControl(
+    supabase.rpc("estancia_mover_fechas", { p_estancia_id: estanciaId, p_entrada: fechaEntrada, p_salida: fechaSalida, p_total_visto: control.totalVisto }),
+    control
+  );
 
   if (error) {
+    const conflicto = await conflictoDeEstancia(supabase, error, estanciaId);
+    if (conflicto) return { error: null, conflicto };
     if (error.code === "23P01") {
       const { data: est } = await supabase.from("estancias").select("perro_id").eq("id", estanciaId).maybeSingle();
       if (est?.perro_id) return { error: await mensajeTraslapeDeEstancia(supabase, { perroId: est.perro_id, entrada: fechaEntrada, salida: fechaSalida, excluir: estanciaId }) };
     }
+    if (error.hint === "total_distinto") return { error: error.message };
     return { error: traducirError(error, { fecha: fechaEntrada }) };
   }
   revalidarModulosEstancia();
-  return { error: null };
+  return { error: null, version: (data as { version?: string } | null)?.version ?? null };
 }
 
 export type ResultadoCancelarReserva = {
@@ -250,13 +311,14 @@ export type ResultadoCancelarReserva = {
   noCancelables: number;
   // Qué pasó con los pases de las estancias canceladas, si había.
   avisos?: string[];
+  conflicto?: Conflicto | null;
 };
 
 // Cancela solo las estancias todavía en reservada/confirmada. Una que ya
 // hizo check-in (en_curso) no se puede cancelar — el perro ya está
 // adentro, eso ya no es una cancelación — se deja tal cual, sin error,
 // solo se cuenta como "no cancelable" para que la pantalla lo explique.
-export async function cancelarReserva(reservaId: string): Promise<ResultadoCancelarReserva> {
+export async function cancelarReserva(reservaId: string, control?: ControlVersion): Promise<ResultadoCancelarReserva> {
   const supabase = await createSupabaseServerClient();
   const { data: estancias, error: errorLectura } = await supabase
     .from("estancias")
@@ -275,7 +337,14 @@ export async function cancelarReserva(reservaId: string): Promise<ResultadoCance
   let canceladas = 0;
   const avisos: string[] = [];
   for (const e of cancelables) {
-    const { error } = await supabase.from("estancias").update({ estado: "cancelada" }).eq("id", e.id);
+    const { error } = await conControl(supabase.from("estancias").update({ estado: "cancelada" }).eq("id", e.id), control);
+    if (error) {
+      const conflicto = await conflictoDeEstancia(supabase, error, e.id);
+      if (conflicto) {
+        revalidarModulosEstancia();
+        return { error: null, canceladas, noCancelables, avisos, conflicto };
+      }
+    }
     if (!error) {
       canceladas++;
       const aviso = await avisoDevolucionDeEstancia(supabase, e.id, desde);

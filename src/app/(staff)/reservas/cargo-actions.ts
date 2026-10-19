@@ -3,8 +3,10 @@
 import { revalidarModulosEstancia } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
+import { conControl } from "@/lib/concurrencia/servidor";
+import { conflictoDeError, type Conflicto, type ControlVersion } from "@/lib/concurrencia/tipos";
 
-export type EstadoAccion = { error: string | null };
+export type EstadoAccion = { error: string | null; conflicto?: Conflicto | null };
 
 export type ResultadoAplicarCargo = { error: string | null; cargo: { id: string; precio: number } | null };
 
@@ -55,16 +57,16 @@ export async function aplicarCargo(
 // Nunca se borra: se marca cancelado con motivo — es dinero, y el hueco
 // clásico de caja es justo poder quitar un cargo sin dejar quién ni por
 // qué.
-export async function cancelarCargo(cargoId: string, motivo: string): Promise<EstadoAccion> {
+export async function cancelarCargo(cargoId: string, motivo: string, control?: ControlVersion): Promise<EstadoAccion> {
   if (!motivo.trim()) return { error: "Escribe el motivo de la cancelación." };
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
+  const { error } = await conControl(supabase
     .from("cargos_aplicados")
     .update({ cancelado: true, motivo_cancelacion: motivo.trim() })
-    .eq("id", cargoId);
+    .eq("id", cargoId), control);
 
-  if (error) return { error: traducirError(error) };
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
 
   revalidarModulosEstancia();
   return { error: null };

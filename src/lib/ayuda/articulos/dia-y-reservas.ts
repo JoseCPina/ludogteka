@@ -346,7 +346,7 @@ Al tocar un día, el panel enseña todas sus reservas, también las finalizadas 
 Más abajo está la lista de lo que viene. Filtra por **Módulo**, **Estado** y **Desde** y toca **Filtrar**. De cada reserva puedes:
 
 - **Abrir**: va a la reserva, con su cuenta y sus cargos.
-- **Mover fechas**: escoge la nueva fecha (y la salida, si es hotel) y toca **Guardar fechas**.
+- **Mover fechas**: escoge la nueva fecha (y la salida, si es hotel). Antes de guardar se ve en cuánto queda la cuenta («Total de la cuenta: $400 → $600 · Saldo…»); **Guardar fechas** solo se activa con esa vista previa. Si el total cambió mientras tanto, no se guarda y te lo vuelve a enseñar.
 - **Cancelar**: pide confirmar; libera el cupo y, si usó un pase, se lo devuelve.
 
 Solo se pueden mover o cancelar las reservas **Reservada** o **Confirmada**. Si el perro ya hizo check-in, la salida se hace desde su estancia.
@@ -358,7 +358,9 @@ Al cancelar una cuenta en [Caja](/caja), marca la casilla para cancelar también
 ## Si algo no sale
 
 - «No hay cupo disponible…»: ese día ya está lleno; mira el calendario y escoge otro.
-- «Este perro ya tiene una reserva en fechas que se traslapan» (o «… ya tiene una reserva de hotel … que se traslapa»): el aviso trae un enlace a **esa reserva** y otro al calendario en esa fecha.`,
+- «Este perro ya tiene una reserva en fechas que se traslapan» (o «… ya tiene una reserva de hotel … que se traslapa»): el aviso trae un enlace a **esa reserva** y otro al calendario en esa fecha.
+- «No se guardó: alguien más cambió esta reserva»: otra persona la movió o la canceló mientras la tenías abierta. Mira [Qué hacer cuando alguien más cambió lo que estabas editando](/ayuda/alguien-mas-cambio-lo-que-editabas).
+- Una reserva **cancelada** sin saldo no tiene botón de cobrar: dice «Reserva cancelada: no hay nada por cobrar». Si se usó algo que sí se cobra (un cargo), dice cuánto se debe y el botón dice **Cobrar** con el monto.`,
   },
   {
     slug: "registrar-check-in",
@@ -405,7 +407,7 @@ Al cancelar una cuenta en [Caja](/caja), marca la casilla para cancelar también
 4. Escribe **Quién recoge al perro** y marca **Sí, es el dueño** o **No, persona autorizada**.
 5. Toca **Confirmar salida**.
 
-En hotel, si se queda una noche más, toca **Extender 1 noche**. Si un perro de guardería sigue aquí después del cierre, puedes **Convertir en noche de hotel**.
+En hotel, si se queda más, toca **Extender la salida**, escoge la nueva salida y revisa en cuánto queda la cuenta antes de guardar. Si un perro de guardería sigue aquí después del cierre, puedes **Convertir en noche de hotel**.
 
 ## Cobrar
 
@@ -516,5 +518,35 @@ Toca **Ver historial de ajustes** en el pase: cada renglón dice antes y despué
 
 - «Falta la dirección de la base…» o «Falta la dirección del negocio…»: el admin la captura en Administración, en Ubicación para recolección. Mientras, pon la distancia a mano.
 - «Tu negocio ya usó las … consultas de Google Maps de este mes.»: captura los kilómetros a mano; el mes que entra vuelve a calcularse solo.`,
+  },
+  {
+    slug: "alguien-mas-cambio-lo-que-editabas",
+    titulo: "Qué hacer cuando alguien más cambió lo que estabas editando",
+    resumen: "Si otra persona guardó cambios en la misma reserva, cita, cliente o ajuste mientras lo tenías abierto, no se guarda nada encima sin avisarte.",
+    grupo: "inicio",
+    modulo: null,
+    roles: ["admin", "recepcion"],
+    rutas: [],
+    palabras: ["conflicto", "otra persona", "alguien más", "se guardó encima", "recargar", "guardar encima", "dos personas", "al mismo tiempo", "cambios perdidos"],
+    cuerpo: `Cuando dos personas tienen abierta la misma reserva, cita, consulta, ficha de cliente o mascota, precio, empleado o ajuste del negocio, PeluDesk no deja que una borre sin querer lo que guardó la otra.
+
+## Qué ves
+
+Si guardas y alguien más ya había cambiado ese registro, **no se guarda nada** y sale un aviso como:
+
+> Ana cambió esta reserva hace 2 min: salida 21 oct, total $900. ¿Recargar con sus cambios o guardar los tuyos encima?
+
+Lo que escribiste sigue en la pantalla.
+
+## Qué hacer
+
+- **Recargar con sus cambios**: la pantalla trae lo que guardó la otra persona. Revisa y, si hace falta, vuelve a hacer tu cambio.
+- **Guardar los míos encima**: pide que confirmes con **Sí, guardar los míos encima**, porque se pierden los cambios de la otra persona. Queda anotado quién lo hizo.
+
+Si los dos cambios fueron tuyos (por ejemplo, en otra pestaña), no sale el aviso.
+
+## Mover fechas
+
+Al mover las fechas de una reserva, antes de guardar ves en cuánto queda la cuenta. Si el total cambió entre que lo viste y que guardaste, no se guarda y te enseña el total nuevo.`,
   },
 ];

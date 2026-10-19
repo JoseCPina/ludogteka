@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/select";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { formatearFechaCalendario } from "@/lib/formato";
 import { guardarPrecioPorDia, quitarPrecioPorDia } from "./tarifas-actions";
+import { AvisoVersion, useControlVersion } from "@/components/concurrencia/use-control-version";
 
 const DIAS = ["", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
@@ -20,7 +21,8 @@ export type PrecioDia = { id: string; dia_semana: number; precio: number; vigenc
  * sábado, que es medio día). Lo aplica la base al reservar: la matriz de
  * arriba no cambia.
  */
-export function PreciosPorDia({ servicioId, precios, hoy }: { servicioId: string; precios: PrecioDia[]; hoy: string }) {
+export function PreciosPorDia({ servicioId, precios, hoy, versionPrecios = null }: { servicioId: string; precios: PrecioDia[]; hoy: string; versionPrecios?: string | null }) {
+  const ctl = useControlVersion("precios_servicio", servicioId, versionPrecios);
   const router = useRouter();
   const [dia, setDia] = useState("6");
   const [precio, setPrecio] = useState("");
@@ -30,10 +32,11 @@ export function PreciosPorDia({ servicioId, precios, hoy }: { servicioId: string
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
 
-  async function guardar() {
+  async function guardar(forzar = false) {
     setError(null);
     setExito(null);
-    const res = await envio.ejecutar(() => guardarPrecioPorDia(servicioId, Number(dia), Number(precio), vigencia));
+    const res = await envio.ejecutar(() => guardarPrecioPorDia(servicioId, Number(dia), Number(precio), vigencia, ctl.control(forzar)));
+    if (ctl.huboConflicto(res, () => guardar(true))) return;
     if (res.error) {
       setError(res.error);
       return;
@@ -98,8 +101,9 @@ export function PreciosPorDia({ servicioId, precios, hoy }: { servicioId: string
         <Field label="Precio" type="number" min="0" step="0.01" value={precio} onChange={(e) => setPrecio(e.target.value)} />
         <Field label="Aplica desde" type="date" value={vigencia} onChange={(e) => setVigencia(e.target.value)} />
       </div>
+      <AvisoVersion ctl={ctl} registro="los precios de este servicio" cargando={envio.cargando} />
       <AccionesFormulario error={error} exito={exito}>
-        <Button type="button" cargando={envio.cargando} onClick={guardar} disabled={!precio}>
+        <Button type="button" cargando={envio.cargando} onClick={() => guardar(false)} disabled={!precio}>
           Guardar precio del día
         </Button>
       </AccionesFormulario>

@@ -70,7 +70,7 @@ export default async function PerroPage({
     supabase
       .from("perros")
       .select(
-        "id, nombre, raza, raza_id, sexo, esterilizado, fecha_nacimiento, tamano_id, pelaje_id, alimentacion_notas, temperamento_notas, contacto_emergencia_nombre, contacto_emergencia_telefono, veterinario_nombre, veterinario_telefono, veterinario_clinica, fallecido, foto_path, cliente_id, en_celo, gestante, evaluacion_comportamiento_fecha, clientes(nombre)"
+        "id, nombre, raza, raza_id, sexo, esterilizado, fecha_nacimiento, tamano_id, pelaje_id, alimentacion_notas, temperamento_notas, contacto_emergencia_nombre, contacto_emergencia_telefono, veterinario_nombre, veterinario_telefono, veterinario_clinica, fallecido, foto_path, cliente_id, en_celo, gestante, evaluacion_comportamiento_fecha, updated_at, clientes(nombre)"
       )
       .eq("id", id)
       .is("deleted_at", null)
@@ -497,6 +497,7 @@ export default async function PerroPage({
       <PerroForm
         action={actualizarConId}
         perroId={perro.id}
+        version={(perro as { updated_at?: string | null }).updated_at ?? null}
         grupos={contextoRaza.grupos}
         puedeAsignarGrupo={contextoRaza.puedeAsignarGrupo}
         propuestaInicial={contextoRaza.propuesta}

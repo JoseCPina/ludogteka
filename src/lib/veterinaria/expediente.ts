@@ -39,6 +39,7 @@ export type CitaVet = {
   consulta_id: string | null;
   urgencia: boolean;
   cancelada_motivo: string | null;
+  updated_at?: string | null;
 };
 
 export type TipoCitaConfig = { id: string; clave: string; nombre: string; duracion_min: number; activo: boolean };
@@ -92,6 +93,7 @@ export type ConsultaVet = {
   tratamiento: string | null;
   notas_internas: string | null;
   borrador_guardado_at: string | null;
+  updated_at?: string | null;
   firmada_at: string | null;
   firma_nombre: string | null;
   firma_cedula: string | null;

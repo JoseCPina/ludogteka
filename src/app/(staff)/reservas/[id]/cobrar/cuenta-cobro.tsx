@@ -384,6 +384,13 @@ export function CuentaCobro({
     montoTocadoRef.current = montoTocado;
   });
   const [exitoCobro, setExitoCobro] = useState<string | null>(null);
+  // QA S14: «Cobro registrado» se va en cuanto la cuenta vuelve a deber más de lo que quedó al cobrar (se anuló o
+  // se corrigió el cobro).
+  const [saldoDelExito, setSaldoDelExito] = useState<number | null>(null);
+  if (exitoCobro && saldoDelExito !== null && !refrescando && totales.saldo > saldoDelExito + 0.005) {
+    setExitoCobro(null);
+    setSaldoDelExito(null);
+  }
   // N28: lo que el servidor encontró distinto al intentar cobrar (otro cobro reciente o el saldo movido).
   const [confirmacion, setConfirmacion] = useState<string | null>(null);
   // N29: otra sesión movió la cuenta (un cobro, un cargo, una anulación) mientras esta pantalla estaba abierta.
@@ -505,6 +512,7 @@ export function CuentaCobro({
       return;
     }
     const abonado = Math.max(0, Math.min(totalMetodos - (res.cambio ?? 0), totales.saldo));
+    setSaldoDelExito(Math.max(0, totales.saldo - abonado));
     setExitoCobro(res.cambio ? `Cobro registrado. Cambio: ${dinero(res.cambio)} (a la caja entró solo el saldo).` : "Cobro registrado.");
     setSaldoAntesDelCambio(null);
     setNotasCobro("");

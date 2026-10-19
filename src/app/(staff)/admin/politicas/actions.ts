@@ -2,17 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { conControl } from "@/lib/concurrencia/servidor";
+import { conflictoDeError, type Conflicto, type ControlVersion } from "@/lib/concurrencia/tipos";
 import { esErrorSoloLectura, mensajeSoloLectura } from "@/lib/solo-lectura";
 import { CATALOGO_POLITICAS, LARGO_MAXIMO_POLITICA, type TextosPoliticas } from "@/lib/politicas/catalogo";
 
-export type ResultadoPoliticas = { error: string | null; exito?: string };
+export type ResultadoPoliticas = { error: string | null; exito?: string; conflicto?: Conflicto | null };
 
 /**
  * Guardar las políticas y reglas del negocio. La base decide quién puede
  * (admin o «Configuración del negocio») y valida las claves; aquí solo se
  * recorta y se acota el largo antes de mandarlas.
  */
-export async function guardarPoliticas(textos: TextosPoliticas): Promise<ResultadoPoliticas> {
+export async function guardarPoliticas(textos: TextosPoliticas, control?: ControlVersion): Promise<ResultadoPoliticas> {
   const limpio: Record<string, string> = {};
   for (const p of CATALOGO_POLITICAS) {
     const v = textos[p.clave];
@@ -22,7 +24,9 @@ export async function guardarPoliticas(textos: TextosPoliticas): Promise<Resulta
     limpio[p.clave] = t;
   }
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("guardar_politicas_negocio", { p_textos: limpio });
+  const { error } = await conControl(supabase.rpc("guardar_politicas_negocio", { p_textos: limpio }), control);
+  const conflicto = conflictoDeError(error);
+  if (conflicto) return { error: null, conflicto };
   if (error) return { error: esErrorSoloLectura(error) ? mensajeSoloLectura(error) : error.message };
   revalidatePath("/admin/politicas");
   revalidatePath("/portal");

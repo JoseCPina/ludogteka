@@ -1,5 +1,7 @@
 "use server";
 
+import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
+import { conflictoDeError, type Conflicto } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -9,7 +11,7 @@ import { esErrorSoloLectura, MENSAJE_SOLO_LECTURA, mensajeSoloLectura } from "@/
 import sharp from "sharp";
 import { avisosDeLogo, extensionDeLogo, svgPeligroso } from "@/lib/logo";
 
-export type ResultadoPerfil = { error: string | null; exito?: string };
+export type ResultadoPerfil = { error: string | null; exito?: string; conflicto?: Conflicto | null };
 
 const TIPOS = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES = 6 * 1024 * 1024;
@@ -52,8 +54,10 @@ export async function guardarPerfil(fd: FormData): Promise<ResultadoPerfil> {
   };
   const id = await perfilId(supabase);
   const { error } = id
-    ? await supabase.from("negocio_perfil").update(campos).eq("id", id)
+    ? await conControl(supabase.from("negocio_perfil").update(campos).eq("id", id), controlDeFormulario(fd))
     : await supabase.from("negocio_perfil").insert(campos);
+  const conflicto = conflictoDeError(error);
+  if (conflicto) return { error: null, conflicto };
   if (error) return { error: mensaje(error) };
   await refrescar(supabase);
   return { error: null, exito: "Perfil guardado" };

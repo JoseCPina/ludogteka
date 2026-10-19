@@ -8,6 +8,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { reasignarEstilista } from "./agenda-actions";
+import { AvisoVersion, useControlVersion } from "@/components/concurrencia/use-control-version";
 
 export type Estilista = { id: string; nombre: string };
 
@@ -35,6 +36,7 @@ export function SelectorEstilista({
   estilistas,
   puedeCorregir,
   compacto = false,
+  version = null,
 }: {
   citaId: string;
   estado: string;
@@ -44,9 +46,12 @@ export function SelectorEstilista({
   estilistas: Estilista[];
   puedeCorregir: boolean;
   compacto?: boolean;
+  /** updated_at de la cita al cargar (QA N43). */
+  version?: string | null;
 }) {
   const router = useRouter();
   const envio = useEspera();
+  const ctl = useControlVersion("citas_estetica", citaId, version);
   const [actualId, setActualId] = useState<string | null>(empleadoId);
   const [actualNombre, setActualNombre] = useState<string | null>(nombreActual);
   const [abierto, setAbierto] = useState(false);
@@ -60,10 +65,14 @@ export function SelectorEstilista({
   const terminada = estado === "finalizada";
   const puedeCambiar = antesDeIniciar || enCurso || (terminada && puedeCorregir);
 
-  async function aplicar(nuevoId: string | null, motivoTexto: string | null) {
+  async function aplicar(nuevoId: string | null, motivoTexto: string | null, forzar = false): Promise<boolean> {
     setError(null);
     setAviso(null);
-    const res = await envio.ejecutar(() => reasignarEstilista(citaId, nuevoId, motivoTexto));
+    const res = await envio.ejecutar(() => reasignarEstilista(citaId, nuevoId, motivoTexto, ctl.control(forzar)));
+    if (ctl.huboConflicto(res, () => aplicar(nuevoId, motivoTexto, true))) {
+      setElegida(actualId ?? SIN_ASIGNAR);
+      return false;
+    }
     if (res.error) {
       setError(res.error);
       setElegida(actualId ?? SIN_ASIGNAR);
@@ -102,6 +111,7 @@ export function SelectorEstilista({
 
   const confirmacion = (
     <>
+      <AvisoVersion ctl={ctl} registro="esta cita" cargando={envio.cargando} />
       {error && (
         <p role="alert" className="rounded-md border-l-4 border-coral bg-coral-suave px-3 py-1.5 text-sm font-semibold text-coral-oscuro">
           {error}

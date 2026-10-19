@@ -19,6 +19,7 @@ import {
   type AjusteConsumo,
 } from "../agenda-actions";
 import { SelectorEstilista, type Estilista } from "../selector-estilista";
+import { AvisoVersion, useControlVersion } from "@/components/concurrencia/use-control-version";
 
 export type RecetaItem = {
   insumo_id: string;
@@ -45,6 +46,7 @@ export function CitaDetalle({
   puedeEliminar = false,
   tarifa = null,
   abrirReprogramar = false,
+  version = null,
 }: {
   citaId: string;
   perroNombre: string;
@@ -68,12 +70,17 @@ export function CitaDetalle({
   tarifa?: { aplicada: boolean; origen: "auto" | "manual" | null; servicioNombre: string | null; aplicable: boolean; puedeCambiar: boolean } | null;
   // Viene de «Reprogramar» en la agenda: abre el formulario de una vez.
   abrirReprogramar?: boolean;
+  /** updated_at de la cita al cargar la pantalla (QA N43). */
+  version?: string | null;
 }) {
   const zona = useZonaNegocio();
   const router = useRouter();
   const [estado, setEstado] = useState(estadoInicial);
   const [error, setError] = useState<string | null>(null);
   const cargando = useEspera();
+  const ctl = useControlVersion("citas_estetica", citaId, version);
+  // Check-in de una cita que no es de hoy: se pregunta antes (QA S14).
+  const [otroDia, setOtroDia] = useState<string | null>(null);
 
   const [reagendando, setReagendando] = useState(abrirReprogramar);
   const [motivoReprogramar, setMotivoReprogramar] = useState("");
@@ -93,12 +100,13 @@ export function CitaDetalle({
   const [recargoTexto, setRecargoTexto] = useState(recargo > 0 ? String(recargo) : "");
   const [recargoMotivoTexto, setRecargoMotivoTexto] = useState(recargoMotivo ?? "");
 
-  async function guardarRecargo() {
+  async function guardarRecargo(forzar = false) {
     setError(null);
     const monto = recargoTexto.trim() ? Number(recargoTexto.replace(",", ".")) : 0;
     if (!Number.isFinite(monto) || monto < 0) return setError("El recargo tiene que ser un número de cero para arriba.");
     if (monto > 0 && !recargoMotivoTexto.trim()) return setError("El recargo necesita un motivo.");
-    const res = await cargando.ejecutar(() => aplicarRecargoCita(citaId, monto, recargoMotivoTexto));
+    const res = await cargando.ejecutar(() => aplicarRecargoCita(citaId, monto, recargoMotivoTexto, ctl.control(forzar)));
+    if (ctl.huboConflicto(res, () => guardarRecargo(true))) return;
     if (res.error) return setError(res.error);
     setEditandoRecargo(false);
     router.refresh();
@@ -126,9 +134,10 @@ export function CitaDetalle({
     Object.fromEntries(recetaItems.map((r) => [r.insumo_id, String(r.cantidad_sugerida)]))
   );
 
-  async function accionReagendar() {
+  async function accionReagendar(forzar = false) {
     setError(null);
-    const res = await cargando.ejecutar(() => reprogramarCita(citaId, instanteDeHoraLocal(nuevoInicio, zona), motivoReprogramar));
+    const res = await cargando.ejecutar(() => reprogramarCita(citaId, instanteDeHoraLocal(nuevoInicio, zona), motivoReprogramar, ctl.control(forzar)));
+    if (ctl.huboConflicto(res, () => accionReagendar(true))) return;
     if (res.error) {
       setError(res.error);
       return;
@@ -142,13 +151,14 @@ export function CitaDetalle({
     router.refresh();
   }
 
-  async function accionCancelar() {
+  async function accionCancelar(forzar = false) {
     setError(null);
     if (motivoCancelar.trim().length < 3) {
       setError("Escribe el motivo de la cancelación.");
       return;
     }
-    const res = await cargando.ejecutar(() => cancelarCita(citaId, motivoCancelar, false));
+    const res = await cargando.ejecutar(() => cancelarCita(citaId, motivoCancelar, false, ctl.control(forzar)));
+    if (ctl.huboConflicto(res, () => accionCancelar(true))) return;
     if (res.error) {
       setError(res.error);
       return;
@@ -158,9 +168,10 @@ export function CitaDetalle({
     router.refresh();
   }
 
-  async function accionNoLlego() {
+  async function accionNoLlego(forzar = false) {
     setError(null);
-    const res = await cargando.ejecutar(() => cancelarCita(citaId, motivoNoLlego, true));
+    const res = await cargando.ejecutar(() => cancelarCita(citaId, motivoNoLlego, true, ctl.control(forzar)));
+    if (ctl.huboConflicto(res, () => accionNoLlego(true))) return;
     if (res.error) {
       setError(res.error);
       return;
@@ -169,9 +180,10 @@ export function CitaDetalle({
     router.refresh();
   }
 
-  async function accionEliminar() {
+  async function accionEliminar(forzar = false) {
     setError(null);
-    const res = await cargando.ejecutar(() => eliminarCita(citaId, motivoEliminar));
+    const res = await cargando.ejecutar(() => eliminarCita(citaId, motivoEliminar, ctl.control(forzar)));
+    if (ctl.huboConflicto(res, () => accionEliminar(true))) return;
     if (res.error) {
       setError(res.error);
       return;
@@ -179,13 +191,14 @@ export function CitaDetalle({
     router.push("/estetica");
   }
 
-  async function accionTarifa(modo: "auto" | "si" | "no") {
+  async function accionTarifa(modo: "auto" | "si" | "no", forzar = false) {
     setError(null);
     if (modo === "no" && motivoTarifa.trim().length < 3) {
       setError("Quitar la tarifa necesita un motivo.");
       return;
     }
-    const res = await cargando.ejecutar(() => cambiarTarifaGuarderia(citaId, modo, motivoTarifa));
+    const res = await cargando.ejecutar(() => cambiarTarifaGuarderia(citaId, modo, motivoTarifa, ctl.control(forzar)));
+    if (ctl.huboConflicto(res, () => accionTarifa(modo, true))) return;
     if (res.error) {
       setError(res.error);
       return;
@@ -196,7 +209,7 @@ export function CitaDetalle({
     router.refresh();
   }
 
-  async function accionIniciar() {
+  async function accionIniciar(opciones: { confirmarOtroDia?: boolean; forzar?: boolean } = {}) {
     if (esStandalone && !entregadoNombre.trim()) {
       marcarFalta("entrega", "Escribe quién entrega al perro.", "cita-entrega-nombre");
       return;
@@ -206,8 +219,15 @@ export function CitaDetalle({
     const res = await cargando.ejecutar(() => iniciarCita(
       citaId,
       esStandalone ? entregadoNombre : null,
-      esStandalone ? entregadoTelefono || null : null
+      esStandalone ? entregadoTelefono || null : null,
+      { confirmarOtroDia: opciones.confirmarOtroDia ?? !!otroDia, control: ctl.control(opciones.forzar) }
     ));
+    if (ctl.huboConflicto(res, () => accionIniciar({ confirmarOtroDia: true, forzar: true }))) return;
+    if (res.otroDia) {
+      setOtroDia(res.otroDia);
+      return;
+    }
+    setOtroDia(null);
     if (res.error) {
       setError(res.error);
       return;
@@ -304,7 +324,7 @@ export function CitaDetalle({
             <Field label="Recargo manual ($)" inputMode="decimal" value={recargoTexto} onChange={(e) => setRecargoTexto(e.target.value)} ayuda="Cero lo quita. Queda registrado con tu nombre." />
             <Field label="Motivo" value={recargoMotivoTexto} onChange={(e) => setRecargoMotivoTexto(e.target.value)} />
             <div className="flex gap-2">
-              <Button type="button" cargando={cargando.cargando} onClick={guardarRecargo}>Guardar recargo</Button>
+              <Button type="button" cargando={cargando.cargando} onClick={() => guardarRecargo()}>Guardar recargo</Button>
               <Button type="button" variante="secundario" onClick={() => setEditandoRecargo(false)}>Cancelar</Button>
             </div>
           </div>
@@ -317,6 +337,7 @@ export function CitaDetalle({
 
       {estilista && (
         <SelectorEstilista
+          version={version}
           citaId={citaId}
           estado={estado}
           perroNombre={perroNombre}
@@ -327,6 +348,7 @@ export function CitaDetalle({
         />
       )}
 
+      <AvisoVersion ctl={ctl} registro="esta cita" cargando={cargando.cargando} />
       {error && (
         <Alert variante="error" titulo="No se pudo completar la acción">
           {error}
@@ -367,7 +389,7 @@ export function CitaDetalle({
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button type="button" cargando={cargando.cargando} onClick={accionReagendar}>
+                <Button type="button" cargando={cargando.cargando} onClick={() => accionReagendar()}>
                   {cargando.cargando ? "Guardando…" : "Guardar la nueva hora"}
                 </Button>
                 <Button type="button" variante="secundario" onClick={() => setReagendando(false)}>
@@ -380,7 +402,7 @@ export function CitaDetalle({
               <p className="text-sm font-semibold text-coral-oscuro">¿Cancelar esta cita? Avisaste que no viene o ya no la quiere: el horario queda libre.</p>
               <Field label="Motivo de la cancelación" value={motivoCancelar} onChange={(e) => setMotivoCancelar(e.target.value)} placeholder="ej. La clienta se enfermó" />
               <div className="flex gap-2">
-                <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={accionCancelar}>
+                <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={() => accionCancelar()}>
                   {cargando.cargando ? "Cancelando…" : "Sí, cancelar la cita"}
                 </Button>
                 <Button type="button" variante="secundario" onClick={() => setConfirmandoCancelar(false)}>
@@ -395,7 +417,7 @@ export function CitaDetalle({
               </p>
               <Field label="Nota (opcional)" value={motivoNoLlego} onChange={(e) => setMotivoNoLlego(e.target.value)} />
               <div className="flex gap-2">
-                <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={accionNoLlego}>
+                <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={() => accionNoLlego()}>
                   {cargando.cargando ? "Guardando…" : "Sí, no se presentó"}
                 </Button>
                 <Button type="button" variante="secundario" onClick={() => setConfirmandoNoLlego(false)}>
@@ -427,11 +449,16 @@ export function CitaDetalle({
               ) : (
                 <p className="text-sm text-n-600">El perro ya está adentro (estancia ligada).</p>
               )}
+              {otroDia && (
+                <div role="alert" data-checkin-otro-dia className="rounded-md border-[1.5px] border-ambar bg-ambar-suave p-3 text-sm font-semibold text-n-900">
+                  {otroDia}
+                </div>
+              )}
               <div className="flex gap-2">
-                <Button type="button" cargando={cargando.cargando} onClick={accionIniciar}>
-                  {cargando.cargando ? "Guardando…" : "Confirmar inicio"}
+                <Button type="button" cargando={cargando.cargando} onClick={() => accionIniciar({ confirmarOtroDia: !!otroDia })} data-confirmar-inicio>
+                  {cargando.cargando ? "Guardando…" : otroDia ? "Sí, recibirla de todos modos" : "Confirmar inicio"}
                 </Button>
-                <Button type="button" variante="secundario" onClick={() => setIniciando(false)}>
+                <Button type="button" variante="secundario" onClick={() => { setIniciando(false); setOtroDia(null); }}>
                   Cancelar
                 </Button>
               </div>
@@ -464,7 +491,7 @@ export function CitaDetalle({
               </p>
               <Field label="Motivo (obligatorio)" value={motivoEliminar} onChange={(e) => setMotivoEliminar(e.target.value)} placeholder="ej. Se capturó dos veces" />
               <div className="flex gap-2">
-                <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={accionEliminar}>
+                <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={() => accionEliminar()}>
                   {cargando.cargando ? "Eliminando…" : "Sí, eliminar la cita"}
                 </Button>
                 <Button type="button" variante="secundario" onClick={() => setEliminando(false)}>

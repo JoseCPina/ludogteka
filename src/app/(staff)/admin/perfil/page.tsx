@@ -18,7 +18,7 @@ export default async function PerfilPage() {
   const supabase = await createSupabaseServerClient();
   const negocio = await cargarNegocioLanding();
   const [{ data: perfil }, { data: fotos }] = await Promise.all([
-    supabase.from("negocio_perfil").select("descripcion, direccion, logo_path, logo_ancho, logo_alto, tema_web, color_web").is("deleted_at", null).maybeSingle(),
+    supabase.from("negocio_perfil").select("id, updated_at, descripcion, direccion, logo_path, logo_ancho, logo_alto, tema_web, color_web").is("deleted_at", null).maybeSingle(),
     supabase.from("negocio_fotos").select("id, path").is("deleted_at", null).order("orden").order("created_at"),
   ]);
   return (
@@ -29,6 +29,8 @@ export default async function PerfilPage() {
       </header>
       <AvanceWeb />
       <PerfilForm
+        perfilId={(perfil?.id as string | undefined) ?? null}
+        version={(perfil?.updated_at as string | undefined) ?? null}
         descripcion={(perfil?.descripcion as string | null) ?? ""}
         direccion={(perfil?.direccion as string | null) ?? ""}
         temaWeb={(perfil?.tema_web as string | null) ?? null}

@@ -11,6 +11,8 @@ import { descartarBorradorGuardado } from "@/lib/borradores/servidor";
 import { nuevoToken } from "@/lib/reporte/enlaces";
 import { traducirError } from "../../reservas/traducir-error";
 import type { ResultadoAccion } from "@/lib/empleados/tipos";
+import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
+import { conflictoDeError, type Conflicto, type ControlVersion } from "@/lib/concurrencia/tipos";
 import type { Diagnostico, LineaEstimado } from "@/lib/veterinaria/expediente";
 
 // Agenda clínica, consulta (SOAP), resultados, adjuntos y estimados de Veterinaria. Todo pasa por
@@ -56,21 +58,23 @@ export async function reprogramarCita(id: string, fd: FormData): Promise<Resulta
   if (!fecha || !hora) return { error: "Elige la nueva fecha y hora." };
   const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("vet_reprogramar_cita", {
+  const { error } = await conControl(supabase.rpc("vet_reprogramar_cita", {
     p_id: id,
     p_inicia: instanteDeHoraLocal(`${fecha}T${hora}`, zona),
     p_medico: o(texto(fd, "medico_id")),
     p_duracion_min: null,
-  });
-  if (error) return { error: traducirError(error) };
+  }), controlDeFormulario(fd));
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
   revalidatePath("/veterinaria/agenda");
   return { error: null, exito: "Cita movida." };
 }
 
-export async function estadoCita(id: string, estado: string, fd?: FormData): Promise<ResultadoAccion> {
+export async function estadoCita(id: string, estado: string, fd?: FormData | ControlVersion): Promise<ResultadoAccion> {
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("vet_cita_estado", { p_id: id, p_estado: estado, p_motivo: fd ? o(texto(fd, "motivo")) : null });
-  if (error) return { error: traducirError(error) };
+  const esForm = fd instanceof FormData;
+  const control = esForm ? controlDeFormulario(fd) : fd;
+  const { error } = await conControl(supabase.rpc("vet_cita_estado", { p_id: id, p_estado: estado, p_motivo: esForm ? o(texto(fd, "motivo")) : null }), control);
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
   revalidatePath("/veterinaria/agenda");
   return { error: null, exito: "Listo." };
 }
@@ -106,10 +110,10 @@ export type DatosBorrador = Partial<{
   diagnosticos: Diagnostico[];
 }>;
 
-export async function guardarBorrador(id: string, datos: DatosBorrador): Promise<{ error: string | null; guardado_at?: string }> {
+export async function guardarBorrador(id: string, datos: DatosBorrador, control?: ControlVersion): Promise<{ error: string | null; guardado_at?: string; conflicto?: Conflicto | null }> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.rpc("vet_consulta_guardar", { p_id: id, p_datos: datos });
-  if (error) return { error: traducirError(error) };
+  const { data, error } = await conControl(supabase.rpc("vet_consulta_guardar", { p_id: id, p_datos: datos }), control);
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
   return { error: null, guardado_at: String(data) };
 }
 

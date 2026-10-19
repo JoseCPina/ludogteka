@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
 import { Alert } from "@/components/ui/alert";
-import { formatearFechaCalendario, sumarDiasFecha } from "@/lib/formato";
-import { cancelarEstancia, marcarNoLlego, moverFechas } from "../reserva-actions";
+import { formatearFechaCalendario } from "@/lib/formato";
+import { cancelarEstancia, marcarNoLlego } from "../reserva-actions";
+import { MoverFechas } from "../mover-fechas";
+import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
+import type { Conflicto } from "@/lib/concurrencia/tipos";
 import { CargosSeccion, type Cargo, type ServicioCargo } from "../cargos-seccion";
 
 export type FilaEstancia = {
@@ -22,6 +25,8 @@ export type FilaEstancia = {
   // cobra (estimado al reservar, real al check-out).
   unidad: string;
   horas: number | null;
+  /** updated_at de la estancia al cargar la pantalla (QA N43). */
+  version: string | null;
 };
 
 const ETIQUETA_CATEGORIA: Record<string, string> = { guarderia: "Guardería", hotel: "Hotel" };
@@ -55,14 +60,24 @@ export function EstanciaFila({
   serviciosCargo: ServicioCargo[];
   distanciaClienteKm?: number | null;
 }) {
+  const router = useRouter();
   const [estado, setEstado] = useState(fila.estado);
   const [fechaEntrada, setFechaEntrada] = useState(fila.fechaEntrada);
   const [fechaSalida, setFechaSalida] = useState(fila.fechaSalida);
   const [confirmandoCancelar, setConfirmandoCancelar] = useState(false);
   const [confirmandoNoLlego, setConfirmandoNoLlego] = useState(false);
   const [moviendoFechas, setMoviendoFechas] = useState(false);
-  const [nuevaEntrada, setNuevaEntrada] = useState(fila.fechaEntrada);
-  const [nuevaSalida, setNuevaSalida] = useState(fila.fechaSalida);
+  const [version, setVersion] = useState(fila.version);
+  // Al recargar (otra persona la cambió), la fila toma lo que dice la base.
+  const [versionVista, setVersionVista] = useState(fila.version);
+  if (fila.version !== versionVista) {
+    setVersionVista(fila.version);
+    setVersion(fila.version);
+    setEstado(fila.estado);
+    setFechaEntrada(fila.fechaEntrada);
+    setFechaSalida(fila.fechaSalida);
+  }
+  const [conflicto, setConflicto] = useState<{ c: Conflicto; accion: "cancelar" | "no_llego" } | null>(null);
   const cargando = useEspera();
   const [error, setError] = useState<string | null>(null);
   // Qué pasó con el pase al cancelar (se devolvió, o venció y no).
@@ -80,40 +95,33 @@ export function EstanciaFila({
   );
   const cantidad = porHora ? (fila.horas ?? 1) : noches;
 
-  async function accionCancelar() {
+  const control = (forzar: boolean) => ({ versiones: version ? [{ t: "estancias", i: fila.id, v: version }] : [], forzar });
+
+  async function accionCancelar(forzar = false) {
     setError(null);
-    const res = await cargando.ejecutar(() => cancelarEstancia(fila.id));
+    const res = await cargando.ejecutar(() => cancelarEstancia(fila.id, control(forzar)));
+    if (res.conflicto) return setConflicto({ c: res.conflicto, accion: "cancelar" });
     if (res.error) {
       setError(res.error);
       return;
     }
+    setConflicto(null);
     setEstado("cancelada");
     setAvisoBono(res.aviso ?? null);
     setConfirmandoCancelar(false);
   }
 
-  async function accionNoLlego() {
+  async function accionNoLlego(forzar = false) {
     setError(null);
-    const res = await cargando.ejecutar(() => marcarNoLlego(fila.id));
+    const res = await cargando.ejecutar(() => marcarNoLlego(fila.id, control(forzar)));
+    if (res.conflicto) return setConflicto({ c: res.conflicto, accion: "no_llego" });
     if (res.error) {
       setError(res.error);
       return;
     }
+    setConflicto(null);
     setEstado("no_llego");
     setConfirmandoNoLlego(false);
-  }
-
-  async function accionMoverFechas() {
-    setError(null);
-    const salidaFinal = esGuarderia ? sumarDiasFecha(nuevaEntrada, 1) : nuevaSalida;
-    const res = await cargando.ejecutar(() => moverFechas(fila.id, nuevaEntrada, salidaFinal));
-    if (res.error) {
-      setError(res.error);
-      return;
-    }
-    setFechaEntrada(nuevaEntrada);
-    setFechaSalida(salidaFinal);
-    setMoviendoFechas(false);
   }
 
   return (
@@ -173,45 +181,42 @@ export function EstanciaFila({
 
       {editable && (
         <div className="flex flex-col gap-3 border-t border-n-200 pt-3">
+          {conflicto && (
+            <AvisoConflicto
+              conflicto={conflicto.c}
+              registro="esta reserva"
+              cargando={cargando.cargando}
+              onRecargar={() => {
+                setConflicto(null);
+                setConfirmandoCancelar(false);
+                setConfirmandoNoLlego(false);
+              }}
+              onGuardarEncima={() => (conflicto.accion === "cancelar" ? accionCancelar(true) : accionNoLlego(true))}
+            />
+          )}
           {moviendoFechas ? (
-            <div className="flex flex-wrap items-end gap-3">
-              <Field
-                label={esGuarderia ? "Nueva fecha" : "Nueva entrada"}
-                type="date"
-                value={nuevaEntrada}
-                onChange={(e) => setNuevaEntrada(e.target.value)}
-              />
-              {!esGuarderia && (
-                <Field
-                  label="Nueva salida"
-                  type="date"
-                  value={nuevaSalida}
-                  min={nuevaEntrada}
-                  onChange={(e) => setNuevaSalida(e.target.value)}
-                />
-              )}
-              <Button type="button" cargando={cargando.cargando} onClick={accionMoverFechas}>
-                {cargando.cargando ? "Guardando…" : "Guardar fechas"}
-              </Button>
-              <Button
-                type="button"
-                variante="secundario"
-                onClick={() => {
-                  setMoviendoFechas(false);
-                  setNuevaEntrada(fechaEntrada);
-                  setNuevaSalida(fechaSalida);
-                }}
-              >
-                Cancelar
-              </Button>
-            </div>
+            <MoverFechas
+              estanciaId={fila.id}
+              esGuarderia={esGuarderia}
+              entrada={fechaEntrada}
+              salida={fechaSalida}
+              version={version}
+              onHecho={(r) => {
+                setFechaEntrada(r.entrada);
+                setFechaSalida(r.salida);
+                if (r.version) setVersion(r.version);
+                setMoviendoFechas(false);
+                router.refresh();
+              }}
+              onCancelar={() => setMoviendoFechas(false)}
+            />
           ) : confirmandoCancelar ? (
             <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
               <p className="text-sm font-semibold text-coral-oscuro">
                 ¿Cancelar la estancia de {fila.perroNombre}?
               </p>
               <div className="flex gap-2">
-                <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={accionCancelar}>
+                <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={() => accionCancelar()}>
                   {cargando.cargando ? "Cancelando…" : "Sí, cancelar"}
                 </Button>
                 <Button type="button" variante="secundario" onClick={() => setConfirmandoCancelar(false)}>
@@ -225,7 +230,7 @@ export function EstanciaFila({
                 ¿Marcar que {fila.perroNombre} no llegó?
               </p>
               <div className="flex gap-2">
-                <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={accionNoLlego}>
+                <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={() => accionNoLlego()}>
                   {cargando.cargando ? "Guardando…" : "Sí, no llegó"}
                 </Button>
                 <Button type="button" variante="secundario" onClick={() => setConfirmandoNoLlego(false)}>

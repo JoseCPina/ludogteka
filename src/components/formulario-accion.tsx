@@ -1,11 +1,25 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { Fragment, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import type { ResultadoAccion } from "@/lib/empleados/tipos";
+import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
+import type { Conflicto, ControlVersion, VersionLeida } from "@/lib/concurrencia/tipos";
+
+// La versión que la pantalla leyó (QA N43): se toma al montar y se pone al día cuando la página se recarga.
+function useVersiones(versiones: VersionLeida[] | undefined) {
+  const clave = JSON.stringify(versiones ?? []);
+  const [leidas, setLeidas] = useState(versiones ?? []);
+  const [vista, setVista] = useState(clave);
+  if (clave !== vista) {
+    setVista(clave);
+    setLeidas(versiones ?? []);
+  }
+  return leidas;
+}
 
 /**
  * Un formulario de Empleados: los campos llegan como children (se
@@ -21,8 +35,14 @@ export function FormularioAccion({
   children,
   className = "",
   otrosBotones,
+  versiones,
+  registro = "este registro",
 }: {
   accion: (datos: FormData) => Promise<ResultadoAccion>;
+  /** Versiones de lo que edita este formulario (se mandan en `__version`). */
+  versiones?: VersionLeida[];
+  /** «esta cita», «este empleado»… para el aviso de conflicto. */
+  registro?: string;
   textoBoton: string;
   textoExito?: string;
   variante?: "primario" | "secundario" | "peligro" | "exito";
@@ -36,6 +56,38 @@ export function FormularioAccion({
   const form = useRef<HTMLFormElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
+  const leidas = useVersiones(versiones);
+  const [conflicto, setConflicto] = useState<{ c: Conflicto; datos: FormData } | null>(null);
+  // Con `reiniciar`, los campos con estado propio (producto y lote de una vacuna) también vuelven a empezar.
+  const [vuelta, setVuelta] = useState(0);
+
+  async function enviar(datos: FormData, forzar: boolean) {
+    setError(null);
+    setExito(null);
+    if (leidas.length) datos.set("__version", JSON.stringify(leidas));
+    if (forzar) datos.set("__forzar", "1");
+    else datos.delete("__forzar");
+    const res = await envio.ejecutar(() => accion(datos));
+    if (res.conflicto) {
+      setConflicto({ c: res.conflicto, datos });
+      return;
+    }
+    setConflicto(null);
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    if (res.ir) {
+      router.push(res.ir);
+      return;
+    }
+    setExito(res.exito ?? textoExito);
+    if (reiniciar) {
+      form.current?.reset();
+      setVuelta((v) => v + 1);
+    }
+    router.refresh();
+  }
 
   return (
     <form
@@ -43,23 +95,19 @@ export function FormularioAccion({
       className={`flex flex-col gap-4 ${className}`}
       onSubmit={async (e) => {
         e.preventDefault();
-        setError(null);
-        setExito(null);
-        const res = await envio.ejecutar(() => accion(new FormData(e.currentTarget)));
-        if (res.error) {
-          setError(res.error);
-          return;
-        }
-        if (res.ir) {
-          router.push(res.ir);
-          return;
-        }
-        setExito(res.exito ?? textoExito);
-        if (reiniciar) form.current?.reset();
-        router.refresh();
+        await enviar(new FormData(e.currentTarget), false);
       }}
     >
-      {children}
+      <Fragment key={vuelta}>{children}</Fragment>
+      {conflicto && (
+        <AvisoConflicto
+          conflicto={conflicto.c}
+          registro={registro}
+          cargando={envio.cargando}
+          onRecargar={() => setConflicto(null)}
+          onGuardarEncima={() => enviar(conflicto.datos, true)}
+        />
+      )}
       <AccionesFormulario error={error} exito={exito}>
         <Button type="submit" variante={variante} cargando={envio.cargando}>
           {textoBoton}
@@ -76,41 +124,53 @@ export function BotonAccion({
   texto,
   variante = "primario",
   textoExito,
+  versiones,
+  registro = "este registro",
 }: {
-  accion: () => Promise<ResultadoAccion>;
+  accion: (control?: ControlVersion) => Promise<ResultadoAccion>;
   texto: string;
   variante?: "primario" | "secundario" | "peligro" | "exito";
   textoExito?: string;
+  versiones?: VersionLeida[];
+  registro?: string;
 }) {
   const router = useRouter();
   const envio = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
+  const leidas = useVersiones(versiones);
+  const [conflicto, setConflicto] = useState<Conflicto | null>(null);
+  async function correr(forzar: boolean) {
+    setError(null);
+    setExito(null);
+    const res = await envio.ejecutar(() => accion({ versiones: leidas, forzar }));
+    if (res.conflicto) {
+      setConflicto(res.conflicto);
+      return;
+    }
+    setConflicto(null);
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    if (res.ir) {
+      router.push(res.ir);
+      return;
+    }
+    setExito(res.exito ?? textoExito ?? "Listo");
+    router.refresh();
+  }
   return (
-    <AccionesFormulario error={error} exito={exito}>
-      <Button
-        type="button"
-        variante={variante}
-        cargando={envio.cargando}
-        onClick={async () => {
-          setError(null);
-          setExito(null);
-          const res = await envio.ejecutar(accion);
-          if (res.error) {
-            setError(res.error);
-            return;
-          }
-          if (res.ir) {
-            router.push(res.ir);
-            return;
-          }
-          setExito(res.exito ?? textoExito ?? "Listo");
-          router.refresh();
-        }}
-      >
-        {texto}
-      </Button>
-    </AccionesFormulario>
+    <>
+      {conflicto && (
+        <AvisoConflicto conflicto={conflicto} registro={registro} cargando={envio.cargando} onRecargar={() => setConflicto(null)} onGuardarEncima={() => correr(true)} />
+      )}
+      <AccionesFormulario error={error} exito={exito}>
+        <Button type="button" variante={variante} cargando={envio.cargando} onClick={() => correr(false)}>
+          {texto}
+        </Button>
+      </AccionesFormulario>
+    </>
   );
 }
 

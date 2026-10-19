@@ -1,5 +1,7 @@
 "use server";
 
+import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
+import { conflictoDeError } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { mensajeDeError } from "@/lib/empleados/errores";
@@ -46,7 +48,9 @@ export async function actualizarEmpleado(id: string, fd: FormData): Promise<Resu
   const invalido = validar(datos);
   if (invalido) return { error: invalido };
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.from("empleados").update(datos).eq("id", id).select("id");
+  const { data, error } = await conControl(supabase.from("empleados").update(datos).eq("id", id).select("id"), controlDeFormulario(fd));
+  const conflicto = conflictoDeError(error);
+  if (conflicto) return { error: null, conflicto };
   if (error) return { error: mensajeDeError(error) };
   if (!data?.length) return { error: "No tienes permiso para cambiar a este empleado." };
   revalidatePath(`/empleados/${id}`);
@@ -61,7 +65,12 @@ export async function darDeBajaEmpleado(id: string, fd: FormData): Promise<Resul
   if (!fecha) return { error: "Pon el último día que trabajó." };
   if (!motivo) return { error: "Escribe el motivo de la baja." };
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.from("empleados").update({ fecha_baja: fecha, motivo_baja: motivo }).eq("id", id).select("id");
+  const { data, error } = await conControl(
+    supabase.from("empleados").update({ fecha_baja: fecha, motivo_baja: motivo }).eq("id", id).select("id"),
+    controlDeFormulario(fd)
+  );
+  const conflicto = conflictoDeError(error);
+  if (conflicto) return { error: null, conflicto };
   if (error) return { error: mensajeDeError(error) };
   if (!data?.length) return { error: "No tienes permiso para dar de baja a este empleado." };
   revalidatePath("/empleados");

@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import type { EstadoInsumoForm } from "./actions";
+import { CampoVersion, useEnvioConVersion } from "@/components/concurrencia/campo-version";
+import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 
 const ESTADO_INICIAL: EstadoInsumoForm = { error: null };
 
@@ -21,7 +23,12 @@ export function InsumoForm({
   valoresIniciales,
   textoBoton,
   soloLectura = false,
+  insumoId,
+  version,
 }: {
+  /** En la edición: el registro y su updated_at al cargar (QA N43). */
+  insumoId?: string;
+  version?: string | null;
   action: (estadoPrevio: EstadoInsumoForm, formData: FormData) => Promise<EstadoInsumoForm>;
   areas: AreaOpcion[];
   unidades: UnidadOpcion[];
@@ -42,6 +49,7 @@ export function InsumoForm({
   soloLectura?: boolean;
 }) {
   const [estado, formAction, enviandoForm] = useActionState(useAccionConTope(action), ESTADO_INICIAL);
+  const envioV = useEnvioConVersion(formAction);
   const enviando = enviandoForm || soloLectura;
   const [unidadCompraId, setUnidadCompraId] = useState(valoresIniciales?.unidad_compra_id ?? "");
   const [requiereCaducidad, setRequiereCaducidad] = useState(valoresIniciales?.requiere_caducidad ?? false);
@@ -55,7 +63,17 @@ export function InsumoForm({
   );
 
   return (
-    <form action={formAction} className="flex max-w-lg flex-col gap-4">
+    <form onSubmit={envioV.onSubmit} className="flex max-w-lg flex-col gap-4">
+      {insumoId && <CampoVersion versiones={[{ t: "insumos", i: insumoId, v: version ?? null }]} />}
+      {estado.conflicto && (
+        <AvisoConflicto
+          conflicto={estado.conflicto}
+          registro="este producto"
+          cargando={enviandoForm}
+          onRecargar={() => window.location.reload()}
+          onGuardarEncima={envioV.forzar}
+        />
+      )}
       {estado.error && (
         <Alert variante="error" titulo="No se pudo guardar">
           {estado.error}

@@ -1,5 +1,7 @@
 "use server";
 
+import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
+import { conflictoDeError, type Conflicto } from "@/lib/concurrencia/tipos";
 import { negocioActual } from "@/lib/negocio/actual";
 import { cargarRazas } from "@/lib/razas";
 import { puedeEditarFichaClinica } from "@/lib/veterinaria/ficha-permiso";
@@ -16,7 +18,7 @@ import { usaVeterinaria } from "@/lib/plan/modulos";
 import { faltantesAltaPerro, mensajeFaltantesAlta } from "@/lib/perros/alta-requisitos";
 import { leerCamposClinicos, mensajeErrorClinico, type CamposClinicos } from "@/lib/perros/ficha-clinica";
 
-export type EstadoPerroForm = { error: string | null; ok?: boolean };
+export type EstadoPerroForm = { error: string | null; ok?: boolean; conflicto?: Conflicto | null };
 
 function leerCampos(formData: FormData) {
   const nombre = String(formData.get("nombre") ?? "").trim();
@@ -219,14 +221,20 @@ export async function actualizarPerro(
   if ("error" in clinicos) return { error: clinicos.error };
 
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("perros")
-    .update({ ...campos, ...(clinicos.campos ?? {}) })
-    .eq("id", perroId)
-    .select("cliente_id")
-    .single();
+  const control = controlDeFormulario(formData);
+  const { data, error } = await conControl(
+    supabase
+      .from("perros")
+      .update({ ...campos, ...(clinicos.campos ?? {}) })
+      .eq("id", perroId)
+      .select("cliente_id")
+      .single(),
+    control
+  );
 
   if (error) {
+    const conflicto = conflictoDeError(error);
+    if (conflicto) return { error: null, conflicto };
     return {
       error: clinicos.campos
         ? mensajeErrorClinico(error)

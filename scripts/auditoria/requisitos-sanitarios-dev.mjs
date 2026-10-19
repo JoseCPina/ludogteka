@@ -100,6 +100,19 @@ try {
   // Ningún texto de pantalla del flujo de reservas manda a "si tienes permiso".
   const fuente = (await import("node:fs")).readFileSync("src/app/(staff)/reservas/nueva/nueva-reserva-form.tsx", "utf8");
   comprobar(!/si tienes permiso/i.test(fuente), "el formulario de reservas ya no dice «si tienes permiso» en ningún aviso");
+
+  // QA S14: la desparasitación pide «Veterinario y clínica» igual que una vacuna (además del producto).
+  seccion("8. Desparasitación: veterinario y clínica");
+  const form = (await import("node:fs")).readFileSync("src/app/(staff)/perros/requisito-form.tsx", "utf8");
+  comprobar(/label="Veterinario y clínica"/.test(form) && !/esDesparasitacion \? "Producto usado" : "Veterinario y clínica"/.test(form), "el formulario pide «Veterinario y clínica» para cualquier tipo (también desparasitación)");
+  comprobar(/esDesparasitacion && <Field label="Producto usado"/.test(form), "y en la desparasitación pide además el producto");
+  const tipoDes = (await SB.from("tipos_requisito_sanitario").select("id").eq("negocio_id", B).eq("categoria", "desparasitacion").is("deleted_at", null).limit(1).maybeSingle()).data;
+  if (tipoDes) {
+    const r = await post(P.recSin, "requisitos_sanitarios_aplicados", { perro_id: perro, tipo_requisito_id: tipoDes.id, fecha_aplicacion: sumaDias(hoyB, -3), detalle: "Producto: Drontal · Veterinario y clínica: Dra. Prueba, Clínica Centro" });
+    comprobar(r.ok, `recepción registra una desparasitación con producto y veterinario (${r.mensaje ?? "ok"})`);
+    const guardado = r.cuerpo?.[0]?.detalle ?? "";
+    comprobar(/Veterinario y clínica: Dra\. Prueba/.test(guardado), "el detalle guarda quién la aplicó");
+  } else comprobar(false, "Huellitas no tiene un tipo de desparasitación");
 } finally {
   await quitar(P.admin, P.recConId, "registrar_vacunas");
 }

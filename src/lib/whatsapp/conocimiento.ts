@@ -237,4 +237,10 @@ Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado.
 - La sesión de cada negocio es aparte: entrar o salir en el subdominio de un negocio no cierra la sesión abierta en otro.
 - Una cuenta del personal que entra sin nombre tiene que escribir su nombre completo una vez antes de seguir; así aparece en historiales y permisos.
 - En una receta veterinaria sin emitir, salir por el menú también pide confirmar; lo escrito queda en el borrador.
+## Ajustes de la QA del 18 de octubre (18 h)
+- Dos personas editando lo mismo: si otra persona guardó cambios en la misma reserva, cita, consulta, cliente, mascota, precios, servicio, producto, empleado, perfil, horario, políticas o ajustes mientras la tenías abierta, no se guarda nada encima: sale «<Persona> cambió … hace 2 min: … ¿Recargar con sus cambios o guardar los tuyos encima?». «Guardar los míos encima» pide confirmar y queda anotado quién lo hizo. Si los dos cambios fueron de la misma persona, no avisa.
+- Mover fechas de una reserva (y «Extender la salida» en el check-out): antes de guardar se ve el total y el saldo que quedan; si el total cambió entre que se vio y que se guardó, no se guarda.
+- Estética: si una estilista intenta agendar en un horario que ya está ocupado, el aviso dice el choque real («Ya tienes a … a las 17:00. Escoge otro horario.»). Iniciar una cita que es de otro día pide confirmar («Sí, recibirla de todos modos»).
+- Una reserva cancelada sin saldo ya no ofrece «Cobrar»; si queda algo por cobrar, dice cuánto. «Cobro registrado» desaparece al anular el cobro.
+- Al registrar una desparasitación se pide el producto y también «Veterinario y clínica», igual que en una vacuna. El formulario de vacuna de Veterinaria queda en blanco después de registrar.
 `.trim();

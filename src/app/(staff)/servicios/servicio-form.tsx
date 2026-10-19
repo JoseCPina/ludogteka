@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import type { EstadoServicioForm } from "./actions";
+import { CampoVersion, useEnvioConVersion } from "@/components/concurrencia/campo-version";
+import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 
 const ESTADO_INICIAL: EstadoServicioForm = { error: null };
 
@@ -18,7 +20,12 @@ export function ServicioForm({
   serviciosDisponibles,
   valoresIniciales,
   textoBoton,
+  servicioId,
+  version,
 }: {
+  /** En la edición: el servicio y su updated_at al cargar (QA N43). */
+  servicioId?: string;
+  version?: string | null;
   action: (estadoPrevio: EstadoServicioForm, formData: FormData) => Promise<EstadoServicioForm>;
   serviciosDisponibles: ServicioOpcion[];
   valoresIniciales?: {
@@ -40,13 +47,24 @@ export function ServicioForm({
   textoBoton: string;
 }) {
   const [estado, formAction, enviando] = useActionState(useAccionConTope(action), ESTADO_INICIAL);
+  const envioV = useEnvioConVersion(formAction);
   const [categoria, setCategoria] = useState(valoresIniciales?.categoria ?? "guarderia");
   const [ilimitado, setIlimitado] = useState(valoresIniciales?.ilimitado ?? false);
   const esBono = categoria === "bono";
   const esCargo = categoria === "cargo";
 
   return (
-    <form action={formAction} className="flex max-w-lg flex-col gap-4">
+    <form onSubmit={envioV.onSubmit} className="flex max-w-lg flex-col gap-4">
+      {servicioId && <CampoVersion versiones={[{ t: "servicios", i: servicioId, v: version ?? null }]} />}
+      {estado.conflicto && (
+        <AvisoConflicto
+          conflicto={estado.conflicto}
+          registro="este servicio"
+          cargando={enviando}
+          onRecargar={() => window.location.reload()}
+          onGuardarEncima={envioV.forzar}
+        />
+      )}
       {estado.error && (
         <Alert variante="error" titulo="No se pudo guardar">
           {estado.error}

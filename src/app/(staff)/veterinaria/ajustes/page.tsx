@@ -16,7 +16,12 @@ export default async function AjustesVeterinaria() {
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
   const puede = tienePermiso(sesion, "configuracion_negocio");
-  const { data } = await supabase.rpc("veterinaria_ajustes_actuales");
+  const [{ data }, { data: filaAjustes }] = await Promise.all([
+    supabase.rpc("veterinaria_ajustes_actuales"),
+    supabase.from("veterinaria_ajustes").select("negocio_id, updated_at").maybeSingle(),
+  ]);
+  // QA N43: la versión que esta pantalla leyó de los ajustes (una fila por negocio).
+  const versionAjustes = filaAjustes ? [{ t: "veterinaria_ajustes", i: filaAjustes.negocio_id as string, v: filaAjustes.updated_at as string }] : [];
   const [{ data: tiposCrudo }, { data: plantillasCrudo }] = await Promise.all([supabase.rpc("vet_tipos_cita_lista"), supabase.rpc("vet_plantillas_consulta")]);
   const tipos = (tiposCrudo ?? []) as TipoCitaConfig[];
   const plantillas = (plantillasCrudo ?? {}) as Record<string, { version: number; texto: Record<string, string> }>;
@@ -30,7 +35,7 @@ export default async function AjustesVeterinaria() {
         <p className="mt-1 text-n-600">Recordatorios, certificados, carnet, hospitalización, agenda y expediente.</p>
       </div>
       {!puede && <Alert variante="advertencia" titulo="Solo consulta">Cambiar estos ajustes es de admin o de quien tenga «Configuración del negocio».</Alert>}
-      <FormularioAccion accion={guardarAjustesVeterinaria} textoBoton="Guardar ajustes" className="rounded-lg border border-n-200 bg-white p-5">
+      <FormularioAccion accion={guardarAjustesVeterinaria} textoBoton="Guardar ajustes" versiones={versionAjustes} registro="los ajustes de Veterinaria" className="rounded-lg border border-n-200 bg-white p-5">
         <fieldset disabled={!puede} className="flex flex-col gap-4">
           <h2 className="text-lg font-bold text-n-900">Recordatorios de próxima dosis</h2>
           <Select label="Envío automático por WhatsApp" name="recordatorios_activos" defaultValue={a.recordatorios_activos ? "si" : "no"} ayuda="Apagado: la lista de Recordatorios es para mandarlos tú a mano. Prendido: la plantilla aprobada de WhatsApp sale sola a los dueños con teléfono, una sola vez por dosis.">
