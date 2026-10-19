@@ -2,7 +2,7 @@ import { after, NextResponse, type NextRequest } from "next/server";
 import { TEXTO_SOLO_TEXTO } from "@/lib/whatsapp/agente";
 import { configWhatsApp, construirSoporte, firmaMetaValida, igualSeguro, telefonoCanonico } from "@/lib/whatsapp/infra";
 import { atender, type Tiempos } from "@/lib/whatsapp/soporte";
-import { TEXTO_AHORA_NO, TEXTO_BAJA } from "@/lib/seguimiento/respuestas";
+import { TEXTO_AHORA_NO, TEXTO_BAJA, TEXTO_BAJA_PROSPECTO, clasificarRespuesta } from "@/lib/seguimiento/respuestas";
 import { guardarEstado, esFalloDeCuenta, type EstadoMeta } from "@/lib/whatsapp/entregas";
 import { avisarFalloDeEntrega } from "@/lib/soporte/notificar";
 
@@ -141,6 +141,12 @@ export async function POST(request: NextRequest) {
           const aviso = seguimiento.tipo === "baja" ? TEXTO_BAJA : TEXTO_AHORA_NO;
           await wa.texto(m.telefono, aviso);
           await datos.apuntarMensaje(m.telefono, "agente", aviso);
+          continue;
+        }
+        // BAJA de quien no está en el seguimiento (un prospecto): fuera de mensajes y de la publicidad (aviso de privacidad).
+        if (!seguimiento && m.texto && clasificarRespuesta(m.texto) === "baja" && (await datos.bajaWhatsapp(m.telefono))) {
+          await wa.texto(m.telefono, TEXTO_BAJA_PROSPECTO);
+          await datos.apuntarMensaje(m.telefono, "agente", TEXTO_BAJA_PROSPECTO);
           continue;
         }
         if (!m.texto) {

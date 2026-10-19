@@ -248,4 +248,5 @@ Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado.
 - Check-in: «Quién entrega al perro» se escoge de una lista (el dueño o su contacto de emergencia); si lo trae alguien más, «Otra persona» pide su nombre.
 - Cancelar una reserva de guardería u hotel pide un motivo opcional; queda en la bitácora con quién y cuándo, y la reserva lo enseña.
 - En Veterinaria, al registrar una vacuna o desparasitación (en el carnet o con «Aplicar vacuna» en la consulta), el formulario se cierra con el aviso y al abrirlo otra vez está en blanco.
+- Publicidad de PeluDesk a negocios del giro: usamos datos públicos de negocios (Google Maps, su web y sus redes) para escribirles y mostrarles anuncios en Facebook e Instagram con su teléfono y correo cifrados (hash). Quien no quiera recibir mensajes ni publicidad escribe BAJA a este WhatsApp o a contacto@peludesk.mx y deja de estar en las listas al día siguiente. Lo explica el aviso de privacidad de peludesk.mx.
 `.trim();

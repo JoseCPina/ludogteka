@@ -5,7 +5,7 @@ import { esEtapa, esGiro } from "./textos";
 export type Filtros = { ciudad: string; giro: string; etapa: string; q: string; clientes: boolean };
 
 export const COLUMNAS =
-  "id, nombre, giro, ciudad, direccion, telefono, whatsapp, correo, instagram, facebook, web, calificacion, resenas, fuente, etapa, canal_ultimo_contacto, ultimo_contacto_at, notas, negocio_cliente_id, cliente_por, created_at, slug, estado, ciudad_busqueda, principal_id, descarte_tipo, descarte_motivo, clasificacion, visitas, ultima_visita_at, clic_prueba_at, clic_whatsapp_at, seguimientos, contacto_pausado_at";
+  "id, nombre, giro, ciudad, direccion, telefono, whatsapp, correo, instagram, facebook, web, calificacion, resenas, fuente, etapa, canal_ultimo_contacto, ultimo_contacto_at, notas, negocio_cliente_id, cliente_por, created_at, slug, estado, ciudad_busqueda, principal_id, descarte_tipo, descarte_motivo, clasificacion, visitas, ultima_visita_at, clic_prueba_at, clic_whatsapp_at, seguimientos, contacto_pausado_at, publicidad_baja_at, publicidad_baja_motivo";
 
 export type Prospecto = {
   id: string;
@@ -42,6 +42,8 @@ export type Prospecto = {
   clic_whatsapp_at: string | null;
   seguimientos: number;
   contacto_pausado_at: string | null;
+  publicidad_baja_at: string | null;
+  publicidad_baja_motivo: string | null;
 };
 
 export function leerFiltros(sp: Record<string, string | string[] | undefined>): Filtros {

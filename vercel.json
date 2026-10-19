@@ -48,6 +48,10 @@
     {
       "path": "/api/cron/prospectos",
       "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/meta-audiencias",
+      "schedule": "45 13 * * *"
     }
   ]
 }

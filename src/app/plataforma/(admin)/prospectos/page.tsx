@@ -8,7 +8,7 @@ import { FormularioPlataforma } from "@/components/plataforma/formulario-platafo
 import { formatearFecha, horaLocalDeInstante } from "@/lib/formato";
 import { consultaProspectos, leerFiltros, parametros, type Prospecto } from "@/lib/prospectos/consulta";
 import { ETAPAS, GIROS, textoEtapa, textoGiro } from "@/lib/prospectos/textos";
-import { agregarProspecto, buscarAhora, guardarAjustes } from "./acciones";
+import { agregarProspecto, buscarAhora, guardarAjustes, sincronizarMetaAhora } from "./acciones";
 
 export const maxDuration = 300;
 
@@ -18,6 +18,12 @@ const POR_PAGINA = 25;
 type Resumen = { total: number; clientes: number; descartados?: number; descartados_no_giro?: number; sucursales?: number; calientes?: number; con_telefono: number; con_correo: number; con_instagram: number; por_ciudad_giro: { ciudad: string; giro: string; n: number }[]; por_etapa: Record<string, number> };
 type Corrida = { id: string; origen: string; estado: string; busquedas: number; resultados: number; nuevos: number; duplicados: number; clientes: number; errores: number; webs_revisadas: number; detalle: { errores?: string[] }; error: string | null; inicio_at: string };
 type Ajustes = { ciudades: string[]; consultas: Record<string, string[]>; tope_busquedas_dia: number; paginas_por_consulta: number; pausado: boolean; lista_whatsapp: number; lista_instagram: number; dias_seguimiento: number; max_seguimientos: number; firma: string; whatsapp_ventas: string };
+
+type AudienciaMeta = { clave: string; nombre: string; audience_id: string | null; miembros: number; coincidencias_min: number | null; coincidencias_max: number | null; ultima_sync_at: string | null; ultimo_error: string | null };
+type CorridaMeta = { id: string; origen: string; estado: string; inicio_at: string; resumen: Record<string, { calculados?: number; altas?: number; bajas?: number; cambios?: number; recibidos?: number; invalidos?: number; error?: string }>; errores: string[] };
+const ESTADO_META: Record<string, string> = { corriendo: "Corriendo", ok: "Terminada", con_errores: "Con errores", fallida: "Falló", sin_credenciales: "Sin credenciales" };
+const coincidencias = (a: AudienciaMeta) =>
+  a.coincidencias_min == null && a.coincidencias_max == null ? "Meta aún no lo reporta" : a.coincidencias_min === a.coincidencias_max || a.coincidencias_max == null ? Number(a.coincidencias_min).toLocaleString("es-MX") : `${Number(a.coincidencias_min ?? 0).toLocaleString("es-MX")} a ${Number(a.coincidencias_max).toLocaleString("es-MX")}`;
 
 const ESTADO_CORRIDA: Record<string, string> = { corriendo: "Corriendo", terminada: "Terminada", fallida: "Falló", sin_llave: "Sin llave de Google", pausada: "En pausa" };
 
@@ -34,6 +40,13 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
     supabase.from("prospeccion_corridas").select("id, origen, estado, busquedas, resultados, nuevos, duplicados, clientes, errores, webs_revisadas, detalle, error, inicio_at").is("deleted_at", null).order("inicio_at", { ascending: false }).limit(8),
     consultaProspectos(supabase, f).range((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA - 1),
   ]);
+  const [{ data: audMeta }, { data: corMeta }] = await Promise.all([
+    // limite-filas-ok: son las 7 audiencias fijas que siembra la migración
+    supabase.from("meta_audiencias").select("clave, nombre, audience_id, miembros, coincidencias_min, coincidencias_max, ultima_sync_at, ultimo_error").is("deleted_at", null).order("created_at").order("clave"),
+    supabase.from("meta_audiencias_corridas").select("id, origen, estado, inicio_at, resumen, errores").is("deleted_at", null).order("inicio_at", { ascending: false }).limit(5),
+  ]);
+  const audiencias = (audMeta ?? []) as AudienciaMeta[];
+  const corridasMeta = (corMeta ?? []) as CorridaMeta[];
   const resumen = (res ?? { total: 0, clientes: 0, con_telefono: 0, con_correo: 0, con_instagram: 0, por_ciudad_giro: [], por_etapa: {} }) as Resumen;
   const ajustes = (aj ?? { ciudades: [], consultas: {}, tope_busquedas_dia: 30, paginas_por_consulta: 3, pausado: false, lista_whatsapp: 15, lista_instagram: 15, dias_seguimiento: 3, max_seguimientos: 2, firma: "José", whatsapp_ventas: "524443103236" }) as Ajustes;
   const filas = (lista.data ?? []) as unknown as Prospecto[];
@@ -75,6 +88,56 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
             <p className="text-2xl font-bold text-n-900">{Number(n).toLocaleString("es-MX")}</p>
           </div>
         ))}
+      </section>
+
+      <section className="rounded-lg border border-n-200 bg-white p-5" data-meta>
+        <h2 className="text-lg font-bold text-n-900">Meta</h2>
+        <p className="mt-1 text-sm text-n-600">
+          Audiencias de lista de clientes en la cuenta publicitaria, con teléfono y correo en SHA-256. Se sincronizan cada día a las 7:45, después de la
+          limpieza de las 7:00: altas, bajas y cambios de etapa. Nunca entran descartados, bajas de publicidad ni negocios que ya pagan en las de prospectos.
+        </p>
+        <table className="tabla-tarjetas mt-3 w-full text-sm">
+          <thead>
+            <tr className="text-left text-n-600">
+              <th className="py-1 pr-3">Audiencia</th>
+              <th className="py-1 pr-3 text-right">Enviados</th>
+              <th className="py-1 pr-3 text-right">Coincidencias en Meta</th>
+              <th className="py-1 pr-3">Última sincronización</th>
+            </tr>
+          </thead>
+          <tbody>
+            {audiencias.map((a) => (
+              <tr key={a.clave} className="border-t border-n-100" data-audiencia={a.clave}>
+                <td className="py-1 pr-3 font-semibold text-n-900">
+                  {a.nombre}
+                  {a.ultimo_error && <span className="block text-xs font-normal text-coral-oscuro" data-audiencia-error>{a.ultimo_error}</span>}
+                </td>
+                <td data-label="Enviados" className="py-1 pr-3 text-right" data-enviados>{a.miembros.toLocaleString("es-MX")}</td>
+                <td data-label="Coincidencias en Meta" className="py-1 pr-3 text-right">{a.audience_id ? coincidencias(a) : "Sin crear"}</td>
+                <td data-label="Última sincronización" className="py-1 pr-3">{a.ultima_sync_at ? `${formatearFecha(a.ultima_sync_at, ZONA)} ${horaLocalDeInstante(a.ultima_sync_at, ZONA)}` : "Nunca"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {corridasMeta.length > 0 && (
+          <div className="mt-4">
+            <h3 className="font-bold text-n-900">Últimas corridas</h3>
+            <ul className="mt-1 flex flex-col divide-y divide-n-100 text-sm" data-corridas-meta>
+              {corridasMeta.map((c) => {
+                const r = Object.values(c.resumen ?? {});
+                const suma = (k: "altas" | "bajas" | "cambios" | "recibidos" | "invalidos") => r.reduce((n, x) => n + (Number(x[k]) || 0), 0);
+                return (
+                  <li key={c.id} className="py-2">
+                    <span className="font-semibold">{formatearFecha(c.inicio_at, ZONA)} {horaLocalDeInstante(c.inicio_at, ZONA)}</span> · {ESTADO_META[c.estado] ?? c.estado} · {c.origen === "cron" ? "diaria" : "a mano"} ·{" "}
+                    {suma("altas")} altas, {suma("bajas")} bajas, {suma("cambios")} cambios, Meta recibió {suma("recibidos")} ({suma("invalidos")} inválidos)
+                    {(c.errores ?? []).length > 0 && <span className="block text-xs text-coral-oscuro">{c.errores.join(" · ")}</span>}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+        <FormularioPlataforma accion={sincronizarMetaAhora} textoBoton="Sincronizar ahora" variante="secundario" className="mt-3" />
       </section>
 
       {porCiudad.size > 0 && (

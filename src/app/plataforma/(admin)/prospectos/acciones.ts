@@ -8,6 +8,7 @@ import { detallesLugar, PLACES_URL } from "@/lib/prospectos/places";
 import { correrBusqueda, correrCalidad, correrLista } from "@/lib/prospectos/motor";
 import { revisarWeb } from "@/lib/prospectos/web";
 import { esCanal, esEtapa, esGiro } from "@/lib/prospectos/textos";
+import { correrSincronizacionMeta } from "@/lib/meta-ads/motor";
 
 // Todo con la sesión de la administración de PeluDesk: la RLS de las tablas vuelve a exigir
 // es_admin_plataforma. Lo que habla con Google usa la llave de servicio, siempre después de comprobarla.
@@ -262,4 +263,39 @@ export async function armarListaHoy(): Promise<ResultadoPlataforma> {
   } catch (e) {
     return { error: e instanceof Error ? e.message : "No se pudo armar la lista." };
   }
+}
+
+// ── Audiencias de Meta ────────────────────────────────────────────────────────────────────────────────────────────
+
+/** Pidió que no le llegue publicidad: sale de todas las audiencias de Meta en la siguiente sincronización. */
+export async function bajaPublicidad(id: string, fd: FormData): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const motivo = texto(fd, "motivo") ?? "Pidió baja";
+  const { error } = await s.supabase.from("prospectos").update({ publicidad_baja_at: new Date().toISOString(), publicidad_baja_motivo: motivo }).eq("id", id);
+  if (error) return { error: error.message };
+  await s.supabase.from("prospectos_eventos").insert({ prospecto_id: id, tipo: "nota", texto: `Baja de publicidad: ${motivo}` });
+  refrescar(id);
+  return { error: null, exito: "Listo: sale de las audiencias de Meta en la siguiente sincronización." };
+}
+
+export async function quitarBajaPublicidad(id: string): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const { error } = await s.supabase.from("prospectos").update({ publicidad_baja_at: null, publicidad_baja_motivo: null }).eq("id", id);
+  if (error) return { error: error.message };
+  await s.supabase.from("prospectos_eventos").insert({ prospecto_id: id, tipo: "nota", texto: "Vuelve a incluirse en publicidad" });
+  refrescar(id);
+  return { error: null, exito: "Vuelve a entrar a las audiencias en la siguiente sincronización." };
+}
+
+export async function sincronizarMetaAhora(): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const r = await correrSincronizacionMeta("manual");
+  refrescar();
+  if (r.estado === "ocupada") return { error: "Ya hay una sincronización corriendo. Espera a que termine." };
+  if (r.estado === "sin_credenciales") return { error: "Faltan META_ADS_TOKEN o META_AD_ACCOUNT_ID en el servidor." };
+  if (r.estado === "fallida") return { error: `No se pudo sincronizar: ${r.errores[0] ?? "error desconocido"}` };
+  return { error: null, exito: r.estado === "ok" ? "Audiencias sincronizadas." : `Sincronizado con errores: ${r.errores.join(" · ")}` };
 }

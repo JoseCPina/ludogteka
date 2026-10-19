@@ -30,6 +30,14 @@ Si eres cliente de un negocio que usa PeluDesk, **el responsable de tus datos es
 - Una cookie propia para recordar tu elección de cookies.
 - **Solo si lo aceptas:** estadísticas agregadas de visitas (categoría «Analítica») y el píxel de Meta (categoría «Marketing»), que recibe las páginas que ves y si abriste el demo, empezaste el registro o creaste tu negocio de prueba. Cuando creas tu negocio de prueba, nuestro servidor envía a Meta ese mismo evento (API de conversiones) con tu dirección IP, tu navegador y un identificador de tu teléfono cifrado con hash, sin tu nombre ni el de tu negocio. El detalle, cookie por cookie, está en la [política de cookies](/cookies).
 
+### Si tu negocio aparece en fuentes públicas (prospección)
+
+Para ofrecer PeluDesk a negocios del giro (veterinarias, estéticas, hoteles y guarderías de mascotas) usamos **datos públicos de negocios**: los que el propio negocio publica en Google Maps, en su sitio web y en sus redes sociales. Guardamos el nombre del negocio, su giro, ciudad y dirección, y su teléfono, WhatsApp, correo, sitio web, Instagram y Facebook cuando los publica, más el registro de si le escribimos y si visitó la página de muestra que le preparamos.
+
+Con esos datos te contactamos para presentarte PeluDesk y te mostramos publicidad en Facebook e Instagram: enviamos a Meta tu teléfono (con el 52 de México) y tu correo **cifrados con hash SHA-256**, nunca en claro, para crear audiencias personalizadas de la cuenta publicitaria de PeluDesk. Meta los compara con sus cuentas para mostrar los anuncios y no los usa para otra cosa. Un negocio descartado, que nos pidió no escribirle o que pidió la baja deja de estar en esas audiencias en la siguiente sincronización diaria.
+
+**Para pedir la baja** de los mensajes y de la publicidad, escribe BAJA al WhatsApp +52 56 4916 0742 o a [contacto@peludesk.mx](mailto:contacto@peludesk.mx) con el nombre o el teléfono de tu negocio.
+
 ### Si escribes al WhatsApp de PeluDesk
 
 - Tu número de teléfono (nos lo entrega WhatsApp), el contenido de tus mensajes y de las respuestas, y lo que nos cuentes por voluntad propia (por ejemplo, tu nombre o el de tu negocio).
@@ -78,6 +86,10 @@ PeluDesk es para personas mayores de edad con una actividad empresarial. No diri
 6. Conservar evidencia de que aceptaste los términos y este aviso.
 7. Cumplir obligaciones legales y atender requerimientos de autoridad competente.
 
+### Prospección y publicidad a negocios
+
+- Contactar a negocios del giro con sus datos públicos para presentarles PeluDesk, y mostrarles publicidad en Facebook e Instagram con audiencias personalizadas de Meta hechas con su teléfono y correo cifrados con hash. Con las mismas audiencias, a los negocios que ya están en prueba o pagan les mostramos anuncios distintos o no les mostramos los de captación. Puedes oponerte en cualquier momento (sección 6 o la baja de la sección 3) sin que eso afecte el servicio.
+
 ### Finalidades secundarias (solo con tu consentimiento)
 
 1. **Analítica agregada:** saber qué páginas de peludesk.mx se visitan. Solo si aceptas la categoría «Analítica».
@@ -94,7 +106,7 @@ Puedes negarte a las finalidades secundarias eligiendo «Rechazar» en el aviso 
 | **Supabase** | Base de datos, autenticación, archivos y bóveda de credenciales | Estados Unidos |
 | **Vercel** | Alojamiento de la aplicación y del sitio, registros de servidor; estadísticas de visitas si aceptas «Analítica» | Estados Unidos |
 | **Stripe** | Cobro de la suscripción. Es responsable de los datos de pago que recibe directamente de ti | Estados Unidos y donde Stripe opere |
-| **Meta (WhatsApp, Facebook, Instagram)** | WhatsApp Business para atender mensajes; píxel y API de conversiones para medir publicidad, **solo si aceptas «Marketing»** | Estados Unidos y donde Meta opere |
+| **Meta (WhatsApp, Facebook, Instagram)** | WhatsApp Business para atender mensajes; píxel y API de conversiones para medir publicidad, **solo si aceptas «Marketing»**; audiencias personalizadas de la cuenta publicitaria con el teléfono y el correo de negocios **cifrados con hash SHA-256** (prospección y negocios en prueba o que pagan) | Estados Unidos y donde Meta opere |
 | **Anthropic** | Inteligencia artificial que redacta las respuestas del bot de WhatsApp y del asistente de ayuda, y que ordena el texto dictado en un borrador de consulta que el médico revisa y firma; recibe el texto necesario para responder | Estados Unidos |
 | **ElevenLabs** | Solo si un negocio usa el dictado por voz del módulo Veterinaria: transcribe el audio que dicta el médico. El audio se borra al transcribirse, salvo que el negocio elija conservarlo 30 días y lo avise en pantalla | Estados Unidos y donde ElevenLabs opere |
 | **Daily** | Solo si un negocio hace teleconsultas: transmite el video y el audio de la llamada entre el médico y el dueño. **PeluDesk no graba las videollamadas** | Estados Unidos y donde Daily opere |
