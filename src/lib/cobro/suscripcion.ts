@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { deLookupKey, iso, modoStripe, stripe } from "./stripe";
 import type { Periodicidad } from "./iva";
+import { registrarFacturaPorEmitir } from "./facturacion";
 
 // Lo que se guarda del cobro, en un solo sitio. Tres caminos llegan aquí
 // (el regreso del Checkout, el webhook y las acciones del admin) y los tres
@@ -54,6 +55,7 @@ async function cambioProgramado(sub: Stripe.Subscription): Promise<Record<string
     const d = itemDePrecio(precio);
     if (!d) continue;
     if (d.tipo === "complemento") complementos.push(d.clave);
+    else if (d.tipo === "sucursal") continue;
     else {
       plan = d.clave;
       periodicidad = d.periodicidad;
@@ -76,7 +78,8 @@ export async function cargaDeSuscripcion(admin: Admin, sub: Stripe.Subscription)
     fin ??= it.current_period_end;
     if (!d) continue;
     if (d.tipo === "complemento") complementos.push(d.clave);
-    else plan = d;
+    // Las sucursales adicionales van en la misma suscripción, pero no son el plan.
+    else if (d.tipo !== "sucursal") plan = d;
   }
   let facturaPendiente: string | null = null;
   let falloAt: string | null = null;
@@ -174,4 +177,6 @@ export async function registrarFactura(negocioId: string, f: Stripe.Invoice, fal
     },
   });
   if (error) throw new Error(`cobro_registrar_pago: ${error.message}`);
+  // Un pago con datos de facturación capturados deja la factura por emitir en /plataforma.
+  if (estado === "pagado") await registrarFacturaPorEmitir(negocioId, f);
 }

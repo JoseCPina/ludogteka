@@ -10,6 +10,7 @@ import { IconoSeccion } from "@/components/iconos-nav";
 import { HechoConPeluDesk } from "@/components/marca/peludesk";
 import { BotonInstalar } from "@/components/pwa/instalar";
 import { articuloDeRuta } from "@/lib/ayuda/rutas";
+import { SelectorNegocio, type NegocioDelSelector } from "./selector-negocio";
 
 // El «?» de cada pantalla: el artículo de la ruta más específica (o el
 // índice de Ayuda si esa pantalla no tiene uno).
@@ -64,6 +65,7 @@ export function StaffShell({
   items,
   ayuda,
   videos,
+  negocios = [],
   children,
 }: {
   // La marca del negocio (LogoNegocio, la arma el layout del servidor):
@@ -79,6 +81,8 @@ export function StaffShell({
   ayuda?: { slug: string; rutas: string[] }[];
   // Los videos publicados que esta persona puede ver, con las pantallas que explican.
   videos?: { slug: string; rutas: string[] }[];
+  // Los negocios donde trabaja esta persona (sucursales del mismo dueño juntas): «Tus negocios» del menú.
+  negocios?: NegocioDelSelector[];
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -147,6 +151,7 @@ export function StaffShell({
         >
           <ListaNav items={items} pathname={pathname} />
           <div>
+            <SelectorNegocio negocios={negocios} className="mt-4" />
             <BotonInstalar className="mt-4" />
             <HechoConPeluDesk className="mt-6 px-3 pb-1" />
           </div>
@@ -166,6 +171,7 @@ export function StaffShell({
               className="absolute inset-y-0 left-0 w-72 max-w-[80%] overflow-y-auto bg-white p-3 shadow-lg"
             >
               <ListaNav items={items} pathname={pathname} onNavegar={() => setMenuAbierto(false)} />
+              <SelectorNegocio negocios={negocios} className="mt-4" />
               <BotonInstalar className="mt-4 border-t border-n-200 pt-3" />
               <HechoConPeluDesk className="mt-6 px-3 pb-1" />
             </nav>

@@ -88,6 +88,12 @@ export default async function NegociosPlataforma() {
       .not("negocio_id", "is", null)
       .order("negocio_id")
   );
+  // Tareas de facturación de la suscripción (pagos con datos de facturación que esperan su CFDI).
+  const { count: facturasPendientes } = await supabase
+    .from("facturas_peludesk_por_emitir")
+    .select("id", { count: "exact", head: true })
+    .eq("estado", "por_emitir")
+    .is("deleted_at", null);
   const origenDe = new Map((registros ?? []).map((r) => [r.negocio_id as string, r as Partial<Origen>]));
   const ahora = instanteActual();
   // «En prueba» = negocios reales en plan prueba y sin suspender. El demo y
@@ -111,6 +117,14 @@ export default async function NegociosPlataforma() {
         </Link>
       </div>
       {error && <Alert variante="error" titulo="No pudimos cargar los negocios">{error.message}</Alert>}
+      {(facturasPendientes ?? 0) > 0 && (
+        <Alert variante="advertencia" titulo="Facturas por emitir">
+          <span data-aviso-facturas-por-emitir>
+            {facturasPendientes} {facturasPendientes === 1 ? "pago de suscripción espera" : "pagos de suscripción esperan"} su factura.{" "}
+            <Link href="/plataforma/facturas" className="font-semibold underline">Emitirlas</Link>
+          </span>
+        </Alert>
+      )}
       {usoTarjetas.length > 0 && (
         <Alert variante="advertencia" titulo="Tarjetas registradas a mano de más">
           <span data-aviso-tarjetas-manuales>

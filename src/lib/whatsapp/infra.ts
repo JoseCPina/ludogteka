@@ -365,7 +365,7 @@ export async function planesPublicos(): Promise<PlanPublico[]> {
   return (planes ?? []).map((p) => ({
     nombre: p.nombre as string,
     descripcion: (p.descripcion as string | null) ?? null,
-    tipo: p.tipo as "plan" | "complemento",
+    tipo: p.tipo as "plan" | "complemento" | "sucursal",
     mensual: Number(p.precio_mensual),
     anual: Number(p.precio_anual),
     modulos: ((p.modulos as string[]) ?? []).map((m) => nombre[m] ?? m),

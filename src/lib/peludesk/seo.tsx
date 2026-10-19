@@ -57,7 +57,8 @@ export const ORGANIZACION = {
   email: "contacto@peludesk.mx",
   areaServed: "MX",
   knowsLanguage: "es-MX",
-  contactPoint: { "@type": "ContactPoint", contactType: "ventas y soporte", email: "contacto@peludesk.mx", areaServed: "MX", availableLanguage: "es" },
+  // Ventas y soporte: por WhatsApp (bot las 24 horas y una persona el mismo día en horario hábil). El correo es para privacidad y temas legales.
+  contactPoint: { "@type": "ContactPoint", contactType: "ventas y soporte", telephone: "+52-56-4916-0742", url: "https://wa.me/525649160742", areaServed: "MX", availableLanguage: "es" },
   sameAs: REDES_PELUDESK.map((r) => r.url),
 };
 

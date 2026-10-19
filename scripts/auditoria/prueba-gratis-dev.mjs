@@ -9,7 +9,8 @@
 //   5. el mismo teléfono ya no puede registrar otro negocio; un teléfono que
 //      ya tiene cuenta (cliente de algún negocio) abre su negocio con ESA
 //      cuenta solo con su contraseña;
-//   6. alguien que no es de la plataforma no puede cambiarle el plan; la
+//   6. la prueba gratis es solo para la primera sucursal: no se abre otra hasta pagar (pantalla y base);
+//   7. alguien que no es de la plataforma no puede cambiarle el plan; la
 //      plataforma se lo vence (plataforma_cambiar_plan) y el negocio queda
 //      en solo lectura: el aviso lo dice y guardar lo rechaza la base.
 // Sale con 1 al primer paso que falle. Deja el negocio de prueba (vencido) en desarrollo.
@@ -187,7 +188,7 @@ try {
   const publica = await ctx.newPage();
   await publica.goto(`${base}/`);
   const tPagina = (await publica.locator("body").innerText()).replace(/\s+/g, " ");
-  ok(tPagina.includes("Servicios y precios") && tPagina.includes("Baño exprés") && !tPagina.includes("Hotel (por noche)"), "su página pública muestra estética con precio y no hotel");
+  ok(/Baño exprés (desde )?\$\d/.test(tPagina) && !/Hotel \(por noche\)|Hotel canino/.test(tPagina), "su página pública muestra estética con precio y no hotel");
   await publica.screenshot({ path: path.join(SALIDA, "prueba-pagina-web.png"), fullPage: true });
   await publica.close();
 
@@ -244,6 +245,26 @@ try {
     if (negocioId) headers["x-negocio-id"] = negocioId;
     return createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false }, global: { headers } });
   };
+  console.log("── La prueba gratis es solo para la primera sucursal");
+  await page.goto(`${base}/admin/modulos`);
+  const suc = page.locator("[data-sucursales]");
+  await suc.waitFor();
+  ok(await suc.locator("[data-sucursal-sin-pago]").getByText(/La prueba gratis es solo para tu primera sucursal/).isVisible(), "en la prueba, «Sucursales» dice que la prueba es solo para la primera");
+  ok((await suc.getByRole("button", { name: "Abrir sucursal" }).count()) === 0, "y no ofrece abrir otra mientras no pague");
+  ok(await page.locator("[data-datos-facturacion]").isVisible(), "«Datos de facturación» ya se puede capturar en la prueba");
+  ok((await page.locator("[data-selector-negocio]").count()) === 0, "con un solo negocio no sale «Tus negocios»");
+  const { data: personas } = await A.auth.admin.listUsers({ page: 1, perPage: 1000 });
+  const duenaId = personas.users.find((x) => x.email === `t${TEL}@telefono.ludogteka.mx`).id;
+  const argsSuc = { p_persona_id: duenaId, p_desde_negocio: neg.id, p_nombre: `Sucursal ${sufijo}`, p_slug: `pg-suc-${sufijo}`, p_solo_revisar: false };
+  const sinPago = await A.rpc("crear_sucursal", argsSuc);
+  ok(/La prueba gratis es solo para tu primera sucursal/.test(sinPago.error?.message ?? ""), `la base no abre una sucursal en prueba (${sinPago.error?.message ?? "sin error"})`);
+  const conSesion = await (await token(`t${TEL}@telefono.ludogteka.mx`, neg.id)).rpc("crear_sucursal", argsSuc);
+  ok(Boolean(conSesion.error), "con la sesión del admin tampoco: crear_sucursal es solo del servidor");
+  const anonSuc = await createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } }).rpc("mis_sucursales");
+  ok(Boolean(anonSuc.error), "la llave anónima no lee sucursales");
+  const { count: sucursales } = await A.from("negocios").select("id", { count: "exact", head: true }).eq("principal_id", neg.id);
+  ok(sucursales === 0, "no se creó ninguna sucursal");
+
   const ayer = new Date(Date.now() - 86_400_000).toISOString();
   const duena = await token(`t${TEL}@telefono.ludogteka.mx`);
   const intento = await duena.rpc("plataforma_cambiar_plan", { p_negocio_id: neg.id, p_plan: "activo", p_prueba_termina_at: null, p_motivo: "me lo activo yo" });

@@ -48,6 +48,7 @@ function CamposPlan({ p, modulos }: { p?: Plan; modulos: Modulo[] }) {
         <Select label="Tipo" name="tipo" defaultValue={p?.tipo ?? "plan"}>
           <option value="plan">Plan</option>
           <option value="complemento">Complemento</option>
+          <option value="sucursal">Sucursal adicional (precio por sucursal)</option>
         </Select>
       </div>
       <fieldset>
@@ -108,7 +109,7 @@ export default async function PlanesPlataforma() {
         <section key={p.id} className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-lg font-bold text-n-900">
-              {p.nombre} {p.tipo === "complemento" && <span className="text-sm font-medium text-n-600">(complemento)</span>}
+              {p.nombre} {p.tipo !== "plan" && <span className="text-sm font-medium text-n-600">({p.tipo === "sucursal" ? "por sucursal adicional" : "complemento"})</span>}
             </h2>
             <span className="text-sm text-n-600">
               {porPlan.get(p.id) ?? 0} {porPlan.get(p.id) === 1 ? "negocio" : "negocios"}

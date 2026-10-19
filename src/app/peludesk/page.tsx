@@ -19,6 +19,7 @@ import { EventoPixelAlVer } from "@/components/peludesk/consentimiento/evento-pi
 import { PieSitio } from "@/components/peludesk/sitio";
 import { TarjetaArticulo } from "@/components/peludesk/blog";
 import { todosLosArticulos } from "@/lib/peludesk/blog";
+import { preguntasDeContratacion } from "@/lib/peludesk/preguntas-contratacion";
 import { JsonLd, ORGANIZACION_RAIZ, aplicacionPeluDesk, preguntasFrecuentes, sitioWeb } from "@/lib/peludesk/seo";
 import { Revelar } from "@/components/peludesk/revelar";
 import { ESCRITORIO, urlDemo, whatsappPeluDesk } from "@/lib/peludesk/landing";
@@ -191,14 +192,15 @@ async function nombresDeModulos() {
 export default async function PeluDeskLanding() {
   const demo = urlDemo();
   const whatsapp = await whatsappPeluDesk("Hola, quiero saber más de PeluDesk.");
-  const [plan, nombres] = await Promise.all([planUnico(), nombresDeModulos()]);
+  const [plan, nombres, contratacion] = await Promise.all([planUnico(), nombresDeModulos(), preguntasDeContratacion()]);
   const articulosRecientes = todosLosArticulos().slice(0, 3);
   const PREGUNTAS: readonly (readonly [string, string])[] = plan
     ? [
         ["¿Cuánto cuesta?", `Un solo plan: ${pesos(plan.mensual)} + IVA al mes (${pesos(plan.total)} con IVA). ${SIN_COSTO_INICIAL}: no hay cargo de alta ni de activación, y Veterinaria, Hotel y guardería, Estética y la página web van incluidos.`],
+        ...contratacion,
         ...PREGUNTAS_BASE,
       ]
-    : PREGUNTAS_BASE;
+    : [...contratacion, ...PREGUNTAS_BASE];
 
   // Datos estructurados: quién es PeluDesk (sameAs) y el producto con su oferta única.
   const datos = [

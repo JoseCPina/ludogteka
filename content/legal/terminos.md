@@ -28,6 +28,8 @@ PeluDesk es una herramienta de gestión. **No presta servicios veterinarios, leg
 
 - PeluDesk tiene un **plan único**, con todos los módulos incluidos y **sin costo inicial** (no hay cargo de alta ni de activación). Su precio vigente se muestra en [peludesk.mx](/#planes) y en la pantalla de contratación de la aplicación. **Los precios se muestran sin IVA** y al total se le suma el **IVA (16 %)**; el total con IVA aparece en el resumen y en el Checkout antes de que pagues.
 - Hay pago **mensual** y **anual**; el anual equivale a diez mensualidades.
+- **Sucursales**: cada sucursal es un negocio en PeluDesk. La primera paga el plan y cada sucursal adicional del mismo dueño paga el precio de «Sucursal adicional» que se muestra en la pantalla de contratación, en la misma suscripción y periodicidad. Abrir una sucursal a mitad del periodo cobra ese día la parte proporcional. La prueba gratis es solo para la primera sucursal.
+- **Factura**: Menteo emite la factura (CFDI) de tu suscripción si capturas tus datos de facturación en la aplicación; te llega por correo en los días siguientes a cada pago. El recibo de Stripe no es una factura.
 - El cobro lo procesa **Stripe** con tarjeta y es **recurrente y automático** al final de cada periodo hasta que canceles. Menteo no recibe ni guarda los datos de tu tarjeta.
 - **Pasar de mensual a anual** aplica de inmediato y se cobra la diferencia proporcional; si el banco rechaza el pago, no cambia nada. **Pasar de anual a mensual** aplica al final del periodo pagado.
 - Podemos cambiar los precios: el cambio no afecta lo que ya pagaste ni el periodo en curso, aplica desde tu siguiente cargo y la aplicación te avisa con anticipación el nuevo precio y la fecha en que empieza. Nunca se cobra dos veces el mismo periodo.

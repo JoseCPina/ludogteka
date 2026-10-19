@@ -13,6 +13,7 @@ import { BloquePrecio, CapturaSeo, Relacionadas } from "@/components/peludesk/se
 import { CasoLudogteka } from "@/components/peludesk/seo-bloques";
 import { CASO_POR_GIRO } from "@/lib/peludesk/ludogteka";
 import { planUnico } from "@/lib/peludesk/plan";
+import { preguntasDeContratacion } from "@/lib/peludesk/preguntas-contratacion";
 import { JsonLd, ORGANIZACION, SITIO, aplicacionPeluDesk, metaPagina, migas, preguntasFrecuentes } from "@/lib/peludesk/seo";
 
 const GIRO = {
@@ -35,14 +36,15 @@ export default async function Aterrizaje({ params }: Props) {
   const arts = a.articulos.map((s) => articuloPorSlug(s)).filter((x) => x !== null);
   const otras = todosLosAterrizajes().filter((x) => x.slug !== a.slug);
   const ruta = `/${a.slug}`;
-  const plan = await planUnico();
+  const [plan, contratacion] = await Promise.all([planUnico(), preguntasDeContratacion()]);
+  const preguntas: [string, string][] = [...a.preguntas, ...contratacion];
   const giro = GIRO[a.slug as keyof typeof GIRO];
   return (
     <MarcoSitio>
       <JsonLd
         datos={[
           migas([{ nombre: "Inicio", ruta: "/" }, { nombre: a.h1, ruta }]),
-          preguntasFrecuentes(a.preguntas),
+          preguntasFrecuentes(preguntas),
           {
             "@context": "https://schema.org",
             "@type": "WebPage",
@@ -131,7 +133,7 @@ export default async function Aterrizaje({ params }: Props) {
       <section aria-labelledby="preguntas" className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
         <h2 id="preguntas" className="text-2xl font-bold text-n-900">Preguntas frecuentes</h2>
         <dl className="mt-6 flex flex-col gap-3">
-          {a.preguntas.map(([q, r]) => (
+          {preguntas.map(([q, r]) => (
             <div key={q} className="rounded-2xl border border-n-200 bg-white p-5">
               <dt className="text-lg font-bold text-n-900">{q}</dt>
               <dd className="mt-2 text-n-700">{r}</dd>

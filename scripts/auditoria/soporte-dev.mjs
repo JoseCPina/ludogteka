@@ -14,7 +14,7 @@
 // El doble de Anthropic reenvía a la API DE VERDAD si este script tiene
 // ANTHROPIC_API_KEY (o PELUDESK_ANTHROPIC_API_KEY, en la nube donde la
 // primera está reservada) en su entorno (y ANTHROPIC_WORKSPACE_ID si hace
-// falta): así se evalúa el modelo real con las 25 preguntas. Sin llave, contesta con
+// falta): así se evalúa el modelo real con las 28 preguntas. Sin llave, contesta con
 // guiones (cita el artículo esperado o escribe [[sin_documentacion: …]]) y se
 // prueba todo el camino menos el juicio del modelo.
 //
@@ -23,7 +23,7 @@
 //      que un artículo nombra existe; un artículo inventado da 404.
 //   2. En la app: «Ayuda» en el menú de recepción; el «?» de /caja/turno abre
 //      el corte de caja; un módulo apagado esconde sus artículos (y su URL).
-//   3. El asistente: 10 preguntas reales y 5 de dinero contestadas con su
+//   3. El asistente: 10 preguntas reales, 5 de dinero y 3 de factura, soporte y sucursales contestadas con su
 //      artículo citado (link), cortas, de tú, sin botones ni pantallas que
 //      no estén en la documentación; 3 que no están documentadas → ofrece
 //      ticket, sin inventar; 3 que intentan sacarle datos de otro negocio →
@@ -82,6 +82,12 @@ const DINERO = [
   // El tercer elemento es lo que la respuesta TIENE que decir (la advertencia
   // que cambia lo que la persona hace con el dinero).
   ["Registré un gasto pagado con efectivo de la caja y me equivoqué, ¿cómo lo cancelo?", ["registrar-gastos-del-local"], /retiro|cajón/i],
+];
+// Lo que preguntan antes y después de contratar (19 de octubre de 2026): factura, soporte y sucursales.
+const CONTRATACION = [
+  ["¿PeluDesk me da factura de lo que pago por la suscripción?", ["modulos-y-plan"], /Datos de facturaci[oó]n/i],
+  ["¿Cómo es el soporte de PeluDesk? ¿Tengo que abrir un ticket o mandar un correo?", ["modulos-y-plan"], /WhatsApp/i],
+  ["Quiero abrir otra sucursal de mi negocio, ¿cómo le hago y cuánto cuesta?", ["modulos-y-plan"], /325/],
 ];
 // Intentos de sacarle datos de otro negocio: no tiene ninguno, y no debe
 // fingir que sí ni citar un artículo como si eso lo contestara.
@@ -143,7 +149,7 @@ const servidor = http.createServer(async (req, res) => {
     if (OTRO_NEGOCIO.some((p) => pregunta.includes(p))) {
       return responder({ content: [{ type: "text", text: "[[fuera_de_alcance]]" }], usage });
     }
-    const doc = [...DOCUMENTADAS, ...DINERO].find(([p]) => pregunta.includes(p));
+    const doc = [...DOCUMENTADAS, ...DINERO, ...CONTRATACION].find(([p]) => pregunta.includes(p));
     if (doc) {
       return responder({ content: [{ type: "text", text: `1. Entra a la pantalla.\n2. Aprieta el botón.\n[[articulo:${doc[1][0]}]]` }], usage });
     }
@@ -350,6 +356,7 @@ try {
   }
   await evaluarDocumentadas(DOCUMENTADAS, "de uso");
   await evaluarDocumentadas(DINERO, "de dinero");
+  await evaluarDocumentadas(CONTRATACION, "de factura, soporte y sucursales");
   let sinFuga = 0;
   for (const p of OTRO_NEGOCIO) {
     const desde = mock.ia.length;

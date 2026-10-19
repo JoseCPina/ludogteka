@@ -495,3 +495,28 @@ export async function topeTimbres(negocioId: string, fd: FormData): Promise<Resu
   revalidatePath("/plataforma/facturacion");
   return { error: null, exito: `Tope de ${tope} timbres al mes (aviso al ${aviso} %).` };
 }
+
+// Facturas de la suscripción por emitir: la administración las marca emitidas (con el folio fiscal, opcional) o
+// descartadas (con nota). Las registra solo el servidor, con cada pago de un negocio con datos de facturación.
+export async function marcarFacturaPeludesk(id: string, estado: "emitida" | "descartada" | "por_emitir", fd: FormData): Promise<ResultadoPlataforma> {
+  const s = await sesionPlataforma();
+  if (!s) return NO_AUTORIZADO;
+  const folio = texto(fd, "folio").slice(0, 60) || null;
+  const nota = texto(fd, "nota").slice(0, 500) || null;
+  if (estado === "descartada" && !nota) return { error: "Escribe por qué no se emite." };
+  const { data, error } = await s.supabase
+    .from("facturas_peludesk_por_emitir")
+    .update({
+      estado,
+      emitida_at: estado === "emitida" ? new Date().toISOString() : null,
+      emitida_por: estado === "emitida" ? s.user.id : null,
+      folio_fiscal: estado === "emitida" ? folio : null,
+      nota,
+    })
+    .eq("id", id)
+    .select("id");
+  if (error) return { error: error.message };
+  if (!data?.length) return { error: "No encontramos esa factura." };
+  revalidatePath("/plataforma/facturas");
+  return { error: null, exito: estado === "emitida" ? "Marcada como emitida." : estado === "descartada" ? "Marcada como descartada." : "Regresó a «por emitir»." };
+}
