@@ -156,6 +156,8 @@ export async function sincronizarAudiencias(o: { db: SupabaseClient; api: ApiMet
       resumen[clave] = r;
       if (bloqueo) {
         r.error = bloqueo;
+        // Que la pantalla lo diga en cada audiencia, no solo en la primera que lo topó.
+        await db.from("meta_audiencias").update({ ultimo_error: bloqueo.slice(0, 2000) }).eq("id", a.id);
         continue;
       }
       try {
