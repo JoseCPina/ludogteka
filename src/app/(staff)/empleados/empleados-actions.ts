@@ -99,7 +99,12 @@ export async function guardarHorario(empleadoId: string, fd: FormData): Promise<
     }
   }
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("guardar_horario_empleado", { p_empleado_id: empleadoId, p_dias: dias.filter((d) => d.hora_entrada) });
+  const { error } = await conControl(
+    supabase.rpc("guardar_horario_empleado", { p_empleado_id: empleadoId, p_dias: dias.filter((d) => d.hora_entrada) }),
+    controlDeFormulario(fd)
+  );
+  const conflicto = conflictoDeError(error);
+  if (conflicto) return { error: null, conflicto };
   if (error) return { error: mensajeDeError(error) };
   revalidatePath(`/empleados/${empleadoId}`);
   return { error: null, exito: "Horario guardado: vale desde hoy" };

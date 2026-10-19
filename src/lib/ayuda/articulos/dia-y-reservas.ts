@@ -528,7 +528,7 @@ Toca **Ver historial de ajustes** en el pase: cada renglón dice antes y despué
     roles: ["admin", "recepcion"],
     rutas: [],
     palabras: ["conflicto", "otra persona", "alguien más", "se guardó encima", "recargar", "guardar encima", "dos personas", "al mismo tiempo", "cambios perdidos"],
-    cuerpo: `Cuando dos personas tienen abierta la misma reserva, cita, consulta, ficha de cliente o mascota, precio, empleado o ajuste del negocio, PeluDesk no deja que una borre sin querer lo que guardó la otra.
+    cuerpo: `Cuando dos personas tienen abierta la misma reserva, cita, consulta, ficha de cliente o mascota, precio, empleado (también su horario y su esquema de pago) o ajuste del negocio, PeluDesk no deja que una borre sin querer lo que guardó la otra.
 
 ## Qué ves
 

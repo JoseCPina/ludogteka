@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { mensajeDeError } from "@/lib/empleados/errores";
 import type { ResultadoAccion } from "@/lib/empleados/tipos";
+import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
+import { conflictoDeError } from "@/lib/concurrencia/tipos";
 
 // Todo esto es dinero: admin o quien tenga «Nómina». La base lo aplica.
 
@@ -27,7 +29,7 @@ export async function guardarEsquema(empleadoId: string, fd: FormData): Promise<
   if (porDia !== null && !(porDia > 0)) return { error: "El pago por día tiene que ser mayor a cero." };
   if (comisionTipo && !(comisionValor && comisionValor > 0)) return { error: "Escribe cuánto es la comisión." };
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("esquemas_pago").insert({
+  const { error } = await conControl(supabase.from("esquemas_pago").insert({
     empleado_id: empleadoId,
     vigente_desde: vigente,
     sueldo_monto: sueldo,
@@ -38,7 +40,9 @@ export async function guardarEsquema(empleadoId: string, fd: FormData): Promise<
     comision_valor: conComision && comisionTipo ? comisionValor : null,
     recibe_propinas: fd.get("recibe_propinas") === "on",
     notas: String(fd.get("notas") ?? "").trim() || null,
-  });
+  }), controlDeFormulario(fd));
+  const conflicto = conflictoDeError(error);
+  if (conflicto) return { error: null, conflicto };
   if (error) return { error: mensajeDeError(error) };
   revalidatePath(`/empleados/${empleadoId}`);
   return { error: null, exito: "Esquema de pago guardado" };
