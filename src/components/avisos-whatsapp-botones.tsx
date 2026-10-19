@@ -33,7 +33,7 @@ export function AvisosWhatsAppBotones({ mensajes, etiqueta = "Avisar por WhatsAp
       {actual && (
         <div data-vista-mensaje className="flex flex-col gap-2 rounded-md border border-n-200 bg-n-50 p-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-n-500">Este es el mensaje que se va a abrir en WhatsApp</p>
-          <p className="whitespace-pre-line text-sm text-n-900">{actual.texto}</p>
+          <p className="whitespace-pre-line text-sm text-n-900 [overflow-wrap:anywhere]">{actual.texto}</p>
           <a
             href={actual.url}
             target="_blank"

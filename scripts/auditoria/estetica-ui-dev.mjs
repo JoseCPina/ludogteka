@@ -609,7 +609,7 @@ try {
       // Check-in de una cita de OTRO día: pide confirmar.
       await admin.goto(`${BASE}/estetica/${citaO.id}`, { waitUntil: "networkidle" });
       await admin.getByRole("button", { name: "Iniciar cita" }).click();
-      const campoEntrega = admin.getByLabel("Quién entrega al perro (obligatorio)");
+      const campoEntrega = admin.locator("#cita-entrega-nombre");
       if (await campoEntrega.count()) await campoEntrega.fill("Prueba");
       await admin.locator("[data-confirmar-inicio]").click();
       await admin.locator("[data-checkin-otro-dia]").waitFor({ timeout: 30000 }).catch(() => {});
