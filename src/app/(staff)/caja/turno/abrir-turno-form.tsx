@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
@@ -15,6 +15,8 @@ export function AbrirTurnoForm() {
   const [fondoInicial, setFondoInicial] = useState("");
   const [notas, setNotas] = useState("");
   const cargando = useEspera();
+  // QA S18 (N91): «Abriendo…» sigue hasta que la pantalla ya muestra el turno (antes quedaban 2–3 s sin aviso).
+  const [refrescando, refrescar] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   async function abrir() {
@@ -29,7 +31,7 @@ export function AbrirTurnoForm() {
       setError(res.error);
       return;
     }
-    router.refresh();
+    refrescar(() => router.refresh());
   }
 
   return (
@@ -54,8 +56,8 @@ export function AbrirTurnoForm() {
       <Textarea label="Notas (opcional)" value={notas} onChange={(e) => setNotas(e.target.value)} />
 
       <AccionesFormulario error={error}>
-        <Button type="button" cargando={cargando.cargando} onClick={abrir}>
-          {cargando.cargando ? "Abriendo…" : "Abrir turno"}
+        <Button type="button" cargando={cargando.cargando || refrescando} disabled={cargando.cargando || refrescando} onClick={abrir} data-abrir-turno>
+          {cargando.cargando || refrescando ? "Abriendo…" : "Abrir turno"}
         </Button>
       </AccionesFormulario>
     </div>

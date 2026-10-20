@@ -13,7 +13,8 @@ import { RefrescoCuenta } from "@/components/cuentas/refresco-cuenta";
 import { negocioActual, negocioIdActual, zonaActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { nombresDePersonal } from "@/lib/personal/nombres";
-import { formatearFecha, formatearHoraNegocio } from "@/lib/formato";
+import { describirEstancia, formatearFecha, formatearHoraNegocio } from "@/lib/formato";
+import { unirNombres } from "@/lib/texto/frases";
 import { diasEntre, hora12 } from "@/lib/web-negocio/horario";
 
 const fechaLarga = (iso: string) => new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${iso}T12:00:00Z`));
@@ -207,7 +208,7 @@ export default async function DetalleReservaPage({
                 </Link>
               )}
               {cancelables > 0 && (
-                <CancelarReservaBoton reservaId={reserva.id} cancelables={cancelables} nombres={filas.filter((f) => f.estado === "reservada" || f.estado === "confirmada").map((f) => f.perroNombre)} versiones={filas.map((f) => ({ t: "estancias", i: f.id, v: f.version }))} />
+                <CancelarReservaBoton reservaId={reserva.id} cancelables={cancelables} detalle={(() => { const v = filas.filter((f) => f.estado === "reservada" || f.estado === "confirmada"); return v.length === 0 ? null : v.length === 1 ? describirEstancia(v[0].servicioNombre, v[0].perroNombre, v[0].fechaEntrada, v[0].fechaSalida, v[0].categoria) : describirEstancia(unirNombres([...new Set(v.map((f) => f.servicioNombre))]), unirNombres(v.map((f) => f.perroNombre)), v[0].fechaEntrada, v[0].fechaSalida, v[0].categoria); })()} nombres={filas.filter((f) => f.estado === "reservada" || f.estado === "confirmada").map((f) => f.perroNombre)} versiones={filas.map((f) => ({ t: "estancias", i: f.id, v: f.version }))} />
               )}
             </div>
           </div>

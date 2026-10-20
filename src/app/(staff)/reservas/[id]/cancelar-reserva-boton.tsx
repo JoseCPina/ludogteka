@@ -17,6 +17,7 @@ export function CancelarReservaBoton({
   cancelables,
   nombres = [],
   versiones = [],
+  detalle = null,
 }: {
   reservaId: string;
   cancelables: number;
@@ -24,6 +25,8 @@ export function CancelarReservaBoton({
   nombres?: string[];
   /** Las versiones de las estancias tal como se leyeron (QA N43). */
   versiones?: VersionLeida[];
+  /** QA S18 (N52): servicio y fechas de lo que se cancela («Hotel por noche de Luna, 20 oct al 22 oct»). */
+  detalle?: string | null;
 }) {
   const router = useRouter();
   const zona = useZonaNegocio();
@@ -91,7 +94,9 @@ export function CancelarReservaBoton({
   return (
     <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
       <p className="text-sm font-semibold text-coral-oscuro">
-        {cancelables === 1
+        {detalle
+          ? `¿Cancelar ${detalle}?`
+          : cancelables === 1
           ? `¿Cancelar la reserva de ${quienes || "el perro que todavía se puede cancelar"}?`
           : `¿Cancelar la reserva de los ${cancelables} perros${quienes ? ` (${quienes})` : ""}?`}
       </p>

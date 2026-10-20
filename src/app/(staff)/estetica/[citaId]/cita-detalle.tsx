@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
-import { horaLocalParaInput, instanteDeHoraLocal } from "@/lib/formato";
+import { describirCita, horaLocalParaInput, instanteDeHoraLocal } from "@/lib/formato";
 import { useZonaNegocio } from "@/components/zona-negocio";
 import {
   reprogramarCita,
@@ -31,6 +31,7 @@ export type RecetaItem = {
 export function CitaDetalle({
   citaId,
   perroNombre,
+  servicioNombre = null,
   estado: estadoInicial,
   inicio,
   precio,
@@ -50,6 +51,7 @@ export function CitaDetalle({
 }: {
   citaId: string;
   perroNombre: string;
+  servicioNombre?: string | null;
   estado: string;
   inicio: string;
   precio: number;
@@ -404,7 +406,7 @@ export function CitaDetalle({
             </div>
           ) : confirmandoCancelar ? (
             <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
-              <p className="text-sm font-semibold text-coral-oscuro">¿Cancelar esta cita? Avisaste que no viene o ya no la quiere: el horario queda libre.</p>
+              <p className="text-sm font-semibold text-coral-oscuro">¿Cancelar {describirCita(servicioNombre, perroNombre, inicio, zona)}? Avisaste que no viene o ya no la quiere: el horario queda libre.</p>
               <Field label="Motivo de la cancelación" value={motivoCancelar} onChange={(e) => setMotivoCancelar(e.target.value)} placeholder="ej. La clienta se enfermó" />
               <div className="flex gap-2">
                 <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={() => accionCancelar()}>

@@ -16,7 +16,32 @@ function ir(ruta: string) {
   return new NextResponse(null, { status: 303, headers: { Location: ruta, "Cache-Control": "no-store" } });
 }
 
+// QA S18 (N73): quien llega desde la vista previa de un prospecto (?p=<slug>) o revisando desde el CRM (?interno=1)
+// lo lleva en una cookie del dominio de la demo: aunque la URL cambie, ningún clic de esa sesión cuenta y la franja
+// sabe a qué página de prospecto regresar. Además, ?interno=1 se conserva en el destino.
+const COOKIE_DEMO_INTERNO = "peludesk_interno";
+const COOKIE_DEMO_PROSPECTO = "peludesk_prospecto";
+function conMarcas(res: NextResponse, request: NextRequest): NextResponse {
+  const q = request.nextUrl.searchParams;
+  const opciones = { path: "/", maxAge: 86400, sameSite: "lax" as const, httpOnly: true, secure: request.nextUrl.protocol === "https:" };
+  const interno = q.get("interno") === "1" || request.cookies.get(COOKIE_DEMO_INTERNO)?.value === "1";
+  if (interno) {
+    res.cookies.set(COOKIE_DEMO_INTERNO, "1", opciones);
+    const destino = res.headers.get("Location");
+    if (destino && destino.startsWith("/") && !/[?&]interno=1/.test(destino)) {
+      res.headers.set("Location", `${destino}${destino.includes("?") ? "&" : "?"}interno=1`);
+    }
+  }
+  const prospecto = q.get("p");
+  if (prospecto && /^[a-z0-9-]{3,80}$/.test(prospecto)) res.cookies.set(COOKIE_DEMO_PROSPECTO, prospecto, opciones);
+  return res;
+}
+
 export async function GET(request: NextRequest, contexto: { params: Promise<{ rol: string }> }) {
+  return conMarcas(await entrar(request, contexto), request);
+}
+
+async function entrar(request: NextRequest, contexto: { params: Promise<{ rol: string }> }): Promise<NextResponse> {
   const { rol } = await contexto.params;
   if (!esRolDemo(rol)) return ir("/demo");
   const cuenta = CUENTAS_DEMO[rol];

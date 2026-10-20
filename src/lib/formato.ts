@@ -201,3 +201,26 @@ export function unidadSegunCantidad(cantidad: number | string, unidad: string | 
   }
   return UNIDADES_PLURAL[minus] && UNIDADES_PLURAL[minus] !== minus ? adaptar(UNIDADES_PLURAL[minus]) : u;
 }
+
+// QA S18 (N52): cómo se nombra una cita en un diálogo de confirmación: servicio, mascota, día y hora del negocio,
+// p. ej. «Baño exprés de Firulais, 20 oct 6:00 p.m.». Sin servicio: «la cita de Firulais, 20 oct 6:00 p.m.».
+export function describirCita(servicio: string | null | undefined, mascota: string, iso: string, zona: ZonaHoraria): string {
+  const dia = new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "short", timeZone: zona })
+    .format(new Date(iso))
+    .replace(/\.$/, "");
+  const hora = formatearHoraNegocio(iso, zona).replace(/^0(\d)/, "$1");
+  return `${servicio?.trim() ? servicio.trim() : "la cita"} de ${mascota}, ${dia} ${hora}`;
+}
+
+// QA S18 (N52): lo mismo para una estancia de guardería u hotel (fechas de calendario, sin hora):
+// «Hotel por noche de Luna, 20 oct al 22 oct»; un solo día: «Guardería de Luna, 20 oct».
+export function describirEstancia(servicio: string | null | undefined, mascota: string, entrada: string, salida?: string | null, categoria?: string | null): string {
+  const corto = (f: string) => {
+    const [a, m, d] = f.slice(0, 10).split("-").map(Number);
+    return new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "short" }).format(new Date(a, m - 1, d)).replace(/\.$/, "");
+  };
+  // Una visita de guardería guarda salida = entrada + 1 (convención de noches): es UN día.
+  const sal = salida?.slice(0, 10) ?? null;
+  const unDia = !sal || sal === entrada.slice(0, 10) || (categoria !== "hotel" && sal === sumarDiasFecha(entrada, 1));
+  return `${servicio?.trim() ? servicio.trim() : "la reserva"} de ${mascota}, ${unDia ? corto(entrada) : `${corto(entrada)} al ${corto(sal!)}`}`;
+}

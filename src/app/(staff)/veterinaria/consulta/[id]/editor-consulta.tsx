@@ -63,6 +63,9 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
   const forzarSiguiente = useRef(false);
   const firmaEnvio = useEspera();
   const descarteEnvio = useEspera();
+  // QA S18 (N94): confirmar en la pantalla, nunca con window.confirm (un navegador que bloquea diálogos lo contesta «no» en silencio).
+  const [confirmandoDescarte, setConfirmandoDescarte] = useState(false);
+  const [exitoDescarte, setExitoDescarte] = useState<string | null>(null);
 
   // Avisa si se intenta cerrar la pestaña con cambios sin guardar.
   useEffect(() => {
@@ -254,7 +257,7 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
             Esta consulta está a cargo de <strong>{nombreMedico}</strong>: quien la firma es él o ella, con su cédula. Puedes dejar el borrador listo.
           </Alert>
         )}
-        <AccionesFormulario error={errorFirma} exito={null}>
+        <AccionesFormulario error={errorFirma} exito={exitoDescarte}>
           {soyElMedico && (
             <Button type="button" cargando={firmaEnvio.cargando} onClick={firmar}>
               Firmar la consulta
@@ -263,20 +266,38 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
           <Button type="button" variante="secundario" onClick={() => void guardarAhora()}>
             Guardar ahora
           </Button>
-          <Button
-            type="button"
-            variante="peligro"
-            cargando={descarteEnvio.cargando}
-            onClick={async () => {
-              if (!window.confirm("¿Descartar este borrador? Se pierde lo que escribiste.")) return;
-              sucios.current.clear();
-              const r = await descarteEnvio.ejecutar(() => descartarBorrador(consulta.id, consulta.perro_id));
-              if (r.error) setErrorFirma(r.error);
-              else if (r.ir) router.push(r.ir);
-            }}
-          >
-            Descartar borrador
-          </Button>
+          {!confirmandoDescarte ? (
+            <Button type="button" variante="peligro" onClick={() => { setErrorFirma(null); setConfirmandoDescarte(true); }} data-descartar-borrador>
+              Descartar borrador
+            </Button>
+          ) : (
+            <div className="flex w-full flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3" data-confirmar-descarte>
+              <p className="text-sm font-semibold text-coral-oscuro">¿Descartar este borrador? Se pierde lo que escribiste y la cita vuelve a quedar sin consulta.</p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variante="peligro"
+                  cargando={descarteEnvio.cargando}
+                  onClick={async () => {
+                    sucios.current.clear();
+                    const r = await descarteEnvio.ejecutar(() => descartarBorrador(consulta.id, consulta.perro_id));
+                    if (r.error) {
+                      setConfirmandoDescarte(false);
+                      setErrorFirma(r.error);
+                      return;
+                    }
+                    setExitoDescarte("Borrador descartado.");
+                    if (r.ir) router.push(r.ir);
+                  }}
+                >
+                  {descarteEnvio.cargando ? "Descartando…" : "Sí, descartar"}
+                </Button>
+                <Button type="button" variante="secundario" disabled={descarteEnvio.cargando} onClick={() => setConfirmandoDescarte(false)}>
+                  No, seguir editando
+                </Button>
+              </div>
+            </div>
+          )}
         </AccionesFormulario>
       </section>
     </div>

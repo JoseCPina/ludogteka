@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { formatearTelefono } from "@/lib/telefono";
-import Link from "next/link";
 import { guardarConfiguracionNegocio } from "./configuracion-actions";
 
 export type ConfiguracionVigente = {
@@ -30,7 +29,7 @@ export type ConfiguracionVigente = {
  * Guardar inserta una versión nueva, no reescribe la anterior: mismo
  * patrón que tarifas. Lo que no se toca se arrastra del vigente.
  */
-export function ConfiguracionNegocio({ vigente, direccion, conCupo = true }: { vigente: ConfiguracionVigente | null; direccion: string; conCupo?: boolean }) {
+export function ConfiguracionNegocio({ vigente, conCupo = true }: { vigente: ConfiguracionVigente | null; conCupo?: boolean }) {
   const router = useRouter();
   const [cupoDiurno, setCupoDiurno] = useState(String(vigente?.cupo_diurno ?? ""));
   const [cupoNocturno, setCupoNocturno] = useState(String(vigente?.cupo_nocturno ?? ""));
@@ -92,13 +91,7 @@ export function ConfiguracionNegocio({ vigente, direccion, conCupo = true }: { v
         }
       />
 
-      {/* QA R23 (N61/N88): la dirección del negocio es una sola y se edita en Perfil; aquí solo se muestra. */}
-      <p className="text-sm text-n-700" data-direccion-en-perfil="">
-        Dirección del negocio: {direccion ? <strong>{direccion}</strong> : <span className="text-n-500">todavía no la escribes</span>}.{" "}
-        <Link href="/admin/perfil" className="font-semibold text-morado underline">
-          {direccion ? "Cambiar en Perfil" : "Escribirla en Perfil"}
-        </Link>
-      </p>
+      {/* QA S18 (N61/N88): la dirección del negocio vive en Perfil (y se ve en Ubicación para recolección); aquí no se repite. */}
 
       {conCupo && (
       <div className="grid grid-cols-2 gap-4">

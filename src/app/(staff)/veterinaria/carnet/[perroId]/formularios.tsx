@@ -108,12 +108,12 @@ function AvisoDuplicado({ mensaje, perroId, alCancelar }: { mensaje: string; per
 }
 
 export function FormularioVacuna({
-  perroId, hoy, productos, medicos, medicoPropio, requisitos,
-}: { perroId: string; hoy: string; productos: ProductoConLotes[]; medicos: MedicoOpcion[]; medicoPropio: string | null; requisitos: RequisitoOpcion[] }) {
+  perroId, hoy, productos, medicos, medicoPropio, requisitos, consultaId,
+}: { perroId: string; hoy: string; productos: ProductoConLotes[]; medicos: MedicoOpcion[]; medicoPropio: string | null; requisitos: RequisitoOpcion[]; consultaId?: string }) {
   const { duplicado, setDuplicado, envolver } = useDuplicadoCarnet();
   if (duplicado) return <AvisoDuplicado mensaje={duplicado} perroId={perroId} alCancelar={() => setDuplicado(null)} />;
   return (
-    <FormularioAccion accion={envolver((fd) => registrarVacuna(perroId, fd))} textoBoton="Registrar vacuna" textoExito="Vacuna registrada" reiniciar className="rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
+    <FormularioAccion accion={envolver((fd) => registrarVacuna(perroId, fd, consultaId))} textoBoton="Registrar vacuna" textoExito="Vacuna registrada" reiniciar className="rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
       <ProductoYLote productos={productos} etiquetaProducto="Vacuna" nombreTexto="biologico" />
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Laboratorio (opcional)" name="laboratorio" />
@@ -145,12 +145,12 @@ export function FormularioVacuna({
 }
 
 export function FormularioDesparasitacion({
-  perroId, hoy, productos, medicos, medicoPropio,
-}: { perroId: string; hoy: string; productos: ProductoConLotes[]; medicos: MedicoOpcion[]; medicoPropio: string | null }) {
+  perroId, hoy, productos, medicos, medicoPropio, consultaId,
+}: { perroId: string; hoy: string; productos: ProductoConLotes[]; medicos: MedicoOpcion[]; medicoPropio: string | null; consultaId?: string }) {
   const { duplicado, setDuplicado, envolver } = useDuplicadoCarnet();
   if (duplicado) return <AvisoDuplicado mensaje={duplicado} perroId={perroId} alCancelar={() => setDuplicado(null)} />;
   return (
-    <FormularioAccion accion={envolver((fd) => registrarDesparasitacion(perroId, fd))} textoBoton="Registrar desparasitación" textoExito="Desparasitación registrada" reiniciar className="rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
+    <FormularioAccion accion={envolver((fd) => registrarDesparasitacion(perroId, fd, consultaId))} textoBoton="Registrar desparasitación" textoExito="Desparasitación registrada" reiniciar className="rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
       <ProductoYLote productos={productos} etiquetaProducto="Producto" nombreTexto="producto" />
       <div className="grid gap-3 sm:grid-cols-2">
         <Select label="Tipo" name="tipo" defaultValue="interna">

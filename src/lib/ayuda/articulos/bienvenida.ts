@@ -16,7 +16,7 @@ export const ARTICULOS_BIENVENIDA: Articulo[] = [
 
 ## Lo que piden todos
 
-1. **Datos del negocio**: el **WhatsApp de recepción** y la **Dirección del negocio**, en [Administración](/admin#configuracion). La dirección es una sola: la misma de tu perfil y tu página web.
+1. **Datos del negocio**: el **WhatsApp de recepción**, en [Administración](/admin#configuracion), y la **Dirección del negocio**, en [Perfil y página web](/admin/perfil). La dirección es una sola: la misma de tu página web.
 2. **Servicios y precios**: todos los precios de lo que ofreces, en [Servicios](/servicios). Lo que no ofrezcas, márcalo **No aplica**. Lo de los servicios que no escogiste no sale ni se cuenta.
 3. **Horario** (y **cupo**, si das hotel o guardería): en [Administración](/admin#horario), aprieta **Guardar horario**.
 

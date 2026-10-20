@@ -5,6 +5,7 @@ import { formatearFecha } from "@/lib/formato";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { whatsappPeluDesk } from "@/lib/peludesk/landing";
 import { diasDePrueba } from "@/lib/cobro/prueba";
+import { cookies } from "next/headers";
 
 // El aviso del plan del negocio, arriba de todo en el staff y el portal:
 //   demo (cuenta de solo lectura) → qué es y cómo probar PeluDesk;
@@ -50,13 +51,21 @@ export async function AvisoPlan({ esPersonal }: { esPersonal: boolean }) {
   }
 
   if (negocio.plan === "demo" && escribible === false) {
+    // QA S18 (N73): quien llegó desde la vista previa de un prospecto regresa a SU página (el clic se registra ahí) y la
+    // revisión interna (?interno=1) se conserva: no cuenta como visita ni como registro.
+    const galletas = await cookies();
+    const prospecto = galletas.get("peludesk_prospecto")?.value;
+    const interno = galletas.get("peludesk_interno")?.value === "1";
+    const registro = prospecto && /^[a-z0-9-]{3,80}$/.test(prospecto)
+      ? `https://peludesk.mx/para/${prospecto}/ir/prueba${interno ? "?interno=1" : ""}`
+      : `${URL_REGISTRO}${interno ? "?interno=1" : ""}`;
     return (
       <div role="status" data-aviso-plan="demo" className="flex flex-wrap items-center justify-between gap-2 bg-morado px-4 py-2 text-sm text-white md:px-6">
         <p>
           <strong className="font-semibold">Negocio de ejemplo de PeluDesk. Así se vería el tuyo.</strong> No es un cliente real: los
           datos son de ejemplo y es de solo lectura, así que los cambios no se guardan.
         </p>
-        <a href={URL_REGISTRO} className="rounded-md bg-white px-3 py-1 font-semibold text-morado hover:bg-crema">
+        <a href={registro} data-demo-registro className="rounded-md bg-white px-3 py-1 font-semibold text-morado hover:bg-crema">
           Prueba PeluDesk gratis
         </a>
       </div>

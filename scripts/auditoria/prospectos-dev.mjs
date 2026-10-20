@@ -740,7 +740,7 @@ try {
           await ctx.close();
         }
         const dm = await pedir(`/para/${p.slug}/ir/demo`, { "user-agent": "Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile" });
-        ok(dm.status === 302 && new RegExp(`/demo/entrar/${g.rol}\\?ir=${g.ir}$`).test(dm.headers.location ?? ""), `${g.giro}: «Ver cómo lo manejarías tú» abre la demo como ${g.rol} (${g.ir})`, dm.headers.location);
+        ok(dm.status === 302 && new RegExp(`/demo/entrar/${g.rol}\\?ir=${g.ir}&p=${p.slug}$`).test(dm.headers.location ?? ""), `${g.giro}: «Ver cómo lo manejarías tú» abre la demo como ${g.rol} (${g.ir})`, dm.headers.location);
         const dmi = await pedir(`/para/${p.slug}/ir/demo?interno=1`, { "user-agent": "Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile" });
         const pri = await pedir(`/para/${p.slug}/ir/prueba?interno=1`, { "user-agent": "Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile" });
         ok(/&interno=1$/.test(dmi.headers.location ?? "") && /[?&]interno=1(&|$)/.test(pri.headers.location ?? ""), `${g.giro}: con ?interno=1, la demo y el registro lo conservan`, `${dmi.headers.location} · ${pri.headers.location}`);
@@ -759,9 +759,16 @@ try {
       {
         const ctxD = await nav.newContext({ viewport: { width: 393, height: 860 }, isMobile: true, hasTouch: true });
         const pd = await ctxD.newPage();
-        await pd.goto(`http://patitasyco.localhost:${PUERTO}/demo/entrar/recepcion?ir=calendario&interno=1`);
+        await pd.goto(`http://patitasyco.localhost:${PUERTO}/demo/entrar/recepcion?ir=calendario&p=${creados[0].slug}&interno=1`);
         const franja = await pd.locator('[data-aviso-plan="demo"]').innerText({ timeout: 20000 }).catch(() => "");
         ok(/Negocio de ejemplo de PeluDesk\. Así se vería el tuyo\./.test(franja), "la demo abre con la franja «Negocio de ejemplo de PeluDesk. Así se vería el tuyo.»", franja.slice(0, 160));
+        // QA S18 (N73): la marca interna viaja a la URL final y queda en una cookie del dominio de la demo; la franja regresa a SU página.
+        ok(/[?&]interno=1/.test(pd.url()), "S18 N73: el redirect final de la demo conserva ?interno=1", pd.url());
+        const galletasDemo = await ctxD.cookies();
+        ok(galletasDemo.some((c) => c.name === "peludesk_interno" && c.value === "1") && galletasDemo.some((c) => c.name === "peludesk_prospecto" && c.value === creados[0].slug), "S18 N73: la demo guarda la marca interna y el prospecto en su cookie", JSON.stringify(galletasDemo.map((c) => c.name)));
+        await pd.goto(`http://patitasyco.localhost:${PUERTO}/recepcion`);
+        const hrefFranja = await pd.locator("[data-demo-registro]").getAttribute("href").catch(() => "");
+        ok(hrefFranja === `https://peludesk.mx/para/${creados[0].slug}/ir/prueba?interno=1`, "S18 N73: aunque cambie la URL, la franja lleva a su página con ?interno=1", hrefFranja);
         await ctxD.close();
       }
       // El bot de WhatsApp liga al prospecto: por la referencia del mensaje prellenado y, si no trae, por su teléfono.

@@ -577,11 +577,11 @@ try {
       await est.getByLabel("Fecha y hora").fill(local);
       await est.getByRole("button", { name: "Agendar cita" }).click();
       // La ayuda fija del campo («Solo puedes agendar en tu propia agenda.») no cuenta: se espera la respuesta.
-      await est.waitForFunction(() => /Ya tienes a|No pudimos|Solo puedes agendar en tu propia agenda:/.test(document.body.innerText), null, { timeout: 45000 }).catch(() => {});
+      await est.waitForFunction(() => /ya tiene a|No pudimos|Solo puedes agendar en tu propia agenda:/.test(document.body.innerText), null, { timeout: 45000 }).catch(() => {});
       const texto = (await est.locator("body").innerText()).replace(/\s+/g, " ");
       const hhmm = `${partes.hour}:${partes.minute}`;
-      if (!texto.includes(`Ya tienes a ZZ ocupado ${sufijo} a las ${hhmm}`)) hallazgo(`N44: la estilista no ve el choque real («${(texto.match(/(Ya tienes|No pudimos)[^.]*\./) ?? ["sin respuesta"])[0]}»)`);
-      else bien(`N44: la estilista ve «Ya tienes a ZZ ocupado ${sufijo} a las ${hhmm}…»`);
+      if (!(/La estilista .+ ya tiene a ZZ ocupado/.test(texto) && texto.includes(`ya tiene a ZZ ocupado ${sufijo} a las ${hhmm}`))) hallazgo(`N44: la estilista no ve el choque real («${(texto.match(/(ya tiene|No pudimos)[^.]*\./) ?? ["sin respuesta"])[0]}»)`);
+      else bien(`N44: la estilista ve «La estilista … ya tiene a ZZ ocupado ${sufijo} a las ${hhmm}…»`);
       if (/No pudimos crear la reserva/.test(texto)) hallazgo("N44: sigue saliendo «No pudimos crear la reserva para esta cita»");
       const erroresPermiso = await est.locator('[role="alert"]').filter({ hasText: "Solo puedes agendar en tu propia agenda" }).count();
       if (erroresPermiso) hallazgo("N44: sale el aviso de permiso aunque el problema es el horario");

@@ -138,7 +138,7 @@ export function PerfilForm({
             maxLength={600}
             ayuda="Dos o tres líneas: qué ofreces y qué te hace distinto. Sale arriba en tu página."
           />
-          <Field label="Dirección" name="direccion" defaultValue={direccion} maxLength={200} ayuda={<>Calle, número y colonia. Es la única dirección del negocio: sale en tu página con un link al mapa, y <Link href="/admin/configuracion" className="font-semibold text-morado underline" data-enlace-configuracion="">Configuración</Link> y la ubicación para recolección la toman de aquí.</>} />
+          <Field label="Dirección" name="direccion" defaultValue={direccion} maxLength={200} ayuda={<>Calle, número y colonia. Es la única dirección del negocio: sale en tu página con un link al mapa y la ubicación para recolección la toma de aquí. El WhatsApp de recepción va en <Link href="/admin/configuracion" className="font-semibold text-morado underline" data-enlace-configuracion="">Configuración</Link>.</>} />
           <Select label="Diseño de tu página" name="tema_web" defaultValue={temaWeb ?? ""} ayuda="Cambia la tipografía, los colores y cómo se acomoda tu página.">
             <option value="">Automático (según tus servicios)</option>
             <option value="veterinaria">Clínica veterinaria</option>

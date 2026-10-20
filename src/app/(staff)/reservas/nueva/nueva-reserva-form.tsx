@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { conTope, mensajeDeFallo } from "@/lib/ui/espera";
 import Link from "next/link";
+import { EnlaceConEspera } from "@/components/ui/enlace-con-espera";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -310,12 +311,13 @@ export function NuevaReservaForm({
                   <p className="mt-1 text-sm text-menta-oscuro">{describirBonoAplicado(r.bono)}</p>
                 )}
                 {r.exito && r.estanciaId && (
-                  <Link
+                  <EnlaceConEspera
                     href={`/reservas/estancias/${r.estanciaId}/checkin`}
                     className="mt-1 inline-block text-sm font-semibold text-menta-oscuro hover:underline"
+                    textoCargando="Abriendo el check-in…"
                   >
                     Hacer check-in ahora →
-                  </Link>
+                  </EnlaceConEspera>
                 )}
                 {!r.exito && r.motivo && <p className="mt-1 text-sm text-coral-oscuro"><TextoConEnlaces texto={textoDelBloqueo(r.motivo, esAdmin)} /></p>}
                 {esBloqueoSanitario && esAdmin && linea && (

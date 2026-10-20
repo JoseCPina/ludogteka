@@ -100,7 +100,7 @@ export async function reactivarTipoContrato(tipoId: string): Promise<EstadoAccio
   return { error: null };
 }
 
-export type EstadoPublicarPlantilla = { error: string | null; plantillaId?: string };
+export type EstadoPublicarPlantilla = { error: string | null; plantillaId?: string; version?: number };
 
 export async function publicarPlantilla(
   tipoId: string,
@@ -128,7 +128,8 @@ export async function publicarPlantilla(
   if (error) return { error: traducirError(error) };
 
   revalidatePath("/contratos");
-  return { error: null, plantillaId: data as string };
+  const { data: v } = await supabase.from("plantillas_contrato").select("version").eq("id", data as string).maybeSingle();
+  return { error: null, plantillaId: data as string, version: (v?.version as number | undefined) ?? undefined };
 }
 
 export async function marcarRequiereRefirma(

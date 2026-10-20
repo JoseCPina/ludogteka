@@ -1,5 +1,7 @@
 "use client";
 
+import { describirEstancia } from "@/lib/formato";
+
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -161,7 +163,7 @@ export function FilaReserva({ r }: { r: ReservaCalendario }) {
         />
       ) : cancelando ? (
         <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
-          <p className="text-sm font-semibold text-coral-oscuro">¿Cancelar la reserva de {r.perroNombre}? Su cupo queda libre y, si usó un pase, se le devuelve.</p>
+          <p className="text-sm font-semibold text-coral-oscuro">¿Cancelar {describirEstancia(r.servicioNombre, r.perroNombre, r.fechaEntrada, r.fechaSalida, r.categoria)}? Su cupo queda libre y, si usó un pase, se le devuelve.</p>
           <div className="flex gap-2">
             <Button type="button" variante="peligro" cargando={envio.cargando} onClick={() => cancelar()}>
               Sí, cancelarla

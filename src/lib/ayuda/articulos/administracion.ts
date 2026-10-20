@@ -558,7 +558,7 @@ Más abajo, en **Tarjeta registrada a mano**, pon el **Tope de alerta por cobro 
 ## WhatsApp, dirección y cupo
 
 1. En [Configuración](/admin/configuracion) (la sección **Configuración del negocio** de Administración; también está en el menú) llena el **WhatsApp de recepción**: ahí llega el «olvidé mi contraseña» de tus clientes.
-2. La **dirección del negocio** se escribe en [Perfil y página web](/admin/perfil): es una sola, y Configuración y Ubicación para recolección la muestran desde ahí (con **Cambiar en Perfil**).
+2. La **dirección del negocio** se escribe en [Perfil y página web](/admin/perfil): es una sola. Configuración ya no la repite; **Ubicación para recolección** la muestra en solo lectura con **Cambiar en Perfil** y **Ubicar en el mapa**.
 3. Si das hotel o guardería, pon el **Cupo de día** (perros que caben en el área común) y el **Cupo de noche** (los que tienen dónde dormir).
 4. Aprieta **Guardar configuración**. El aviso **Falta el WhatsApp de recepción** se quita en cuanto lo guardas.
 

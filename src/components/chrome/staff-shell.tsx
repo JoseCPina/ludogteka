@@ -92,8 +92,8 @@ export function StaffShell({
   return (
     <div className="flex min-h-full flex-1 flex-col">
       {aviso}
-      <header className="flex h-16 flex-none items-center justify-between border-b border-n-200 bg-white px-4 md:px-6">
-        <div className="flex items-center gap-3">
+      <header className="flex h-16 flex-none items-center justify-between gap-2 overflow-hidden border-b border-n-200 bg-white px-4 md:px-6">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <button
             type="button"
             onClick={() => setMenuAbierto((valor) => !valor)}
@@ -117,16 +117,16 @@ export function StaffShell({
               <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
-          <Link href={items[0]?.href ?? "/"} className="rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado">
+          <Link href={items[0]?.href ?? "/"} className="block min-w-0 rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado">
             {marca}
           </Link>
-          <span className="hidden text-n-500 md:inline" aria-hidden="true">/</span>
-          <span className="hidden font-semibold text-n-800 md:inline">
+          <span className="hidden flex-none text-n-500 md:inline" aria-hidden="true">/</span>
+          <span className="hidden flex-none font-semibold text-n-800 md:inline">
             {activo?.etiqueta ?? "Inicio"}
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-none items-center gap-3">
           {videos && videos.length > 0 && <BotonVideo videos={videos} pathname={pathname} />}
           {ayuda && <BotonAyuda ayuda={ayuda} pathname={pathname} />}
           <div className="hidden text-right leading-tight sm:block">
