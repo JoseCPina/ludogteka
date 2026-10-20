@@ -95,6 +95,7 @@ const CONTRATACION = [
   ["¿Cuánto cuesta el plan anual?", ["modulos-y-plan"], /6,490/],
   ["¿A nombre de quién aparece el cobro de PeluDesk en mi tarjeta?", ["modulos-y-plan"], /MENTEO/],
   ["¿Patitas & Co., el del demo, es un cliente real de PeluDesk?", ["modulos-y-plan"], /ejemplo/i],
+  ["¿Puedo mandarles a los clientes recordatorios de su cita por SMS?", ["modulos-y-plan", "perfil-y-pagina-web"], /WhatsApp/],
 ];
 // Intentos de sacarle datos de otro negocio: no tiene ninguno, y no debe
 // fingir que sí ni citar un artículo como si eso lo contestara.
@@ -105,8 +106,9 @@ const OTRO_NEGOCIO = [
 ];
 const NO_DOCUMENTADAS = [
   "¿Cómo exporto todos mis clientes a un Excel?",
-  "¿Puedo mandarles a los clientes recordatorios automáticos de su cita por SMS?",
   "¿Cómo sincronizo mi agenda con Google Calendar?",
+  // (El SMS dejó de ser «no documentado» en QA S17: tiene respuesta fija y va en CONTRATACION.)
+  "¿PeluDesk se conecta con Contpaqi para la contabilidad?",
 ];
 
 // ───────────── dobles de WhatsApp, Telegram y Anthropic

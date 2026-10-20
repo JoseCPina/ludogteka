@@ -487,9 +487,9 @@ try {
     await caja14.locator("[data-motivo-correccion]").fill("QA S17 N47 primera");
     await caja14.locator("[data-guardar-precio]").click();
     await caja14.getByText(/Precio corregido/).waitFor({ timeout: 30000 });
-    await p14.waitForFunction(() => /\(hoy \$1,090\.00\)/.test(document.querySelector("[data-corregir-precio]")?.textContent ?? ""), null, { timeout: 30000 }).catch(() => {});
+    await p14.waitForFunction(() => /\(hoy \$1,?090\.00\)/.test(document.querySelector("[data-corregir-precio]")?.textContent ?? ""), null, { timeout: 30000 }).catch(() => {});
     const encabezado = await caja14.locator("p").first().innerText();
-    comprobar(/\(hoy \$1,090\.00\)/.test(encabezado), `N82: el encabezado dice el precio vigente («${encabezado}»)`);
+    comprobar(/\(hoy \$1,?090\.00\)/.test(encabezado), `N82: el encabezado dice el precio vigente («${encabezado}»)`);
     comprobar((await caja14.locator("[data-motivo-correccion]").inputValue()) === "", "N82: el motivo queda vacío después de guardar");
     comprobar(await caja14.locator("[data-guardar-precio]").isDisabled(), "sin cambios, «Guardar precio» está apagado");
     await caja14.locator("[data-precio-correccion]").fill("1095");
@@ -500,10 +500,12 @@ try {
     await p14.waitForFunction(() => document.querySelectorAll("[data-correccion-precio]").length === 1, null, { timeout: 30000 }).catch(() => {});
     comprobar((await p14.locator("[data-correccion-precio]").count()) === 1, "N48: dos correcciones dejan UNA línea de corrección en la cuenta");
     await p14.locator("[data-ver-historial-precio]").click();
-    comprobar((await p14.locator("[data-historial-precio] li").count()) === 2, "«Ver historial» enseña las dos correcciones");
-    await p14.locator("[data-anular-correccion]").click();
-    await p14.getByLabel("Motivo (obligatorio)").last().fill("QA S17 anular corrección");
-    await p14.locator("[data-confirmar-anular-correccion]").click();
+    await p14.waitForFunction(() => document.querySelectorAll("[data-historial-precio] li").length === 2, null, { timeout: 20000 }).catch(() => {});
+    comprobar((await p14.locator("[data-historial-precio] li").count()) === 2, `«Ver historial» enseña las dos correcciones (${await p14.locator("[data-historial-precio] li").count()})`);
+    const corr14 = p14.locator("[data-correccion-precio]");
+    await corr14.locator("[data-anular-correccion]").click();
+    await corr14.getByLabel("Motivo (obligatorio)").fill("QA S17 anular corrección");
+    await corr14.locator("[data-confirmar-anular-correccion]").click();
     await p14.waitForFunction(() => document.querySelectorAll("[data-correccion-precio]").length === 0, null, { timeout: 30000 }).catch(() => {});
     const tot14 = Number((await admB2.rpc("cuenta_totales_reserva", { p_reserva_id: cu14 })).data?.[0]?.total_cuenta);
     comprobar((await p14.locator("[data-correccion-precio]").count()) === 0 && tot14 === 1100, "«Anular corrección» devuelve la línea a su precio original ($1,100)");

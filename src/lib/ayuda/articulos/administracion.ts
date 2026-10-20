@@ -410,7 +410,7 @@ Un permiso de un módulo apagado no hace nada hasta que lo prendas.
     modulo: null,
     roles: ["admin"],
     rutas: ["/admin/modulos"],
-    palabras: ["plan", "suscripción", "pagar PeluDesk", "cancelar", "factura", "CFDI", "RFC", "datos de facturación", "tarjeta", "funciones", "sucursal", "sucursales", "otra sucursal", "soporte", "WhatsApp", "anual", "recordatorios", "costo por mensaje", "Excel", "migrar", "MENTEO", "demo", "Patitas"],
+    palabras: ["plan", "suscripción", "pagar PeluDesk", "cancelar", "factura", "CFDI", "RFC", "datos de facturación", "tarjeta", "funciones", "sucursal", "sucursales", "otra sucursal", "soporte", "WhatsApp", "anual", "recordatorios", "costo por mensaje", "Excel", "migrar", "MENTEO", "demo", "Patitas", "SMS", "plan anual", "precio anual"],
     captura: "modulos-y-plan.jpg",
     cuerpo: `Si no usas hotel o inventario, apágalos y dejan de estorbar en el menú. Aquí también contratas tu plan.
 
@@ -479,11 +479,11 @@ Todo por WhatsApp, al +52 56 4916 0742: un asistente contesta las 24 horas y lo 
 
 ## Plan anual
 
-El plan anual cuesta **$6,490 + IVA al año**: dos meses gratis contra pagar mes a mes. Lo escoges con **Anual · 2 meses gratis** al contratar. El cobro aparece como MENTEO.
+¿Cuánto cuesta el plan anual? **$6,490 + IVA al año** (diez mensualidades: dos meses gratis contra pagar mes a mes). Lo escoges con **Anual · 2 meses gratis** al contratar en [Módulos y plan](/admin/modulos). El cobro aparece como MENTEO.
 
 ## Recordatorios por WhatsApp
 
-Van incluidos en el plan: **no hay costo por mensaje**. Los avisos y recordatorios (confirmación, recordatorio, listo para recoger) se mandan por WhatsApp desde el teléfono de tu negocio: PeluDesk te deja el mensaje ya escrito y lo abres en WhatsApp con un toque.
+Van incluidos en el plan: **no hay costo por mensaje**. Los avisos y recordatorios (confirmación, recordatorio, listo para recoger) se mandan por WhatsApp desde el teléfono de tu negocio: PeluDesk te deja el mensaje ya escrito y lo abres en WhatsApp con un toque. **No mandamos SMS**: los avisos van por WhatsApp.
 
 ## Cancelar
 
