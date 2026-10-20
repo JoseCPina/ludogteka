@@ -35,6 +35,8 @@
 //      respuesta; recepción contesta; /resolver lo resuelve y, como no estaba
 //      documentado, deja la propuesta del artículo. /plataforma/soporte lo ve.
 //   5. El admin con cuenta de teléfono recibe la respuesta por WhatsApp.
+import { limpiarAlTerminar } from "../lib/limpieza-dev.mjs";
+limpiarAlTerminar({ bitacoras: ["wa_uso_ia"] }); // al terminar (también si falla) borra lo que esta corrida creó
 import fs from "node:fs";
 import http from "node:http";
 import { createHmac, randomUUID } from "node:crypto";

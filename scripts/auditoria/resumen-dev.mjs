@@ -20,6 +20,8 @@
 //   9. con el permiso de insights sí salen alcance y guardados, y con el
 //      scope de TikTok salen sus seguidores;
 //  10. ningún token en Telegram, en la respuesta de la tarea ni en los logs.
+import { limpiarAlTerminar } from "../lib/limpieza-dev.mjs";
+limpiarAlTerminar({ bitacoras: ["resumenes_diarios"] }); // al terminar (también si falla) borra lo que esta corrida creó
 import http from "node:http";
 import { spawn } from "node:child_process";
 import { A, URL, env } from "./sesiones-dev.mjs";

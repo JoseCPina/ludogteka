@@ -9,6 +9,8 @@
 //      (scripts): solo se avisan las dos primeras;  5. IndexNow responde 500: queda registrado como fallido, no
 //      se da por avisado y la siguiente corrida lo reintenta;  6. archivo de llave equivocado: no manda nada;
 //   7. una página que no abre no frena a las demás;  8. nadie sin ser de la plataforma lee las tablas.
+import { limpiarAlTerminar } from "../lib/limpieza-dev.mjs";
+limpiarAlTerminar({ bitacoras: ["indexnow_envios", "indexnow_urls"] }); // al terminar (también si falla) borra lo que esta corrida creó
 import http from "node:http";
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";

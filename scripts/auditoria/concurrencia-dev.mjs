@@ -14,6 +14,8 @@
 //   - sin versión (otro camino que no la manda): entra igual que antes.
 // Además: mover fechas con un total distinto al que se vio se rechaza, y las pantallas (dos navegadores) muestran el
 // aviso con el nombre de quien cambió, «Recargar con sus cambios» y «Guardar los míos encima» con confirmación.
+import { limpiarAlTerminar } from "../lib/limpieza-dev.mjs";
+limpiarAlTerminar({ bitacoras: ["registro_ediciones"] }); // al terminar (también si falla) borra lo que esta corrida creó
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";

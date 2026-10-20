@@ -19,6 +19,8 @@
 // 6. Registro: escoger Veterinaria prende solo ese módulo (plan Completo); no
 //    escogerla la deja apagada.
 // 7. Aislamiento: Ludogteka no ve nada de lo de Huellitas.
+import { limpiarAlTerminar } from "../lib/limpieza-dev.mjs";
+limpiarAlTerminar({ prefijos: ["registro-mod-"] }); // al terminar (también si falla) borra lo que esta corrida creó
 import {
   A, B, SB, URL, env, LUDOGTEKA, datos, rpc, get, post, patch, borrar, personas, dar, quitar, fijarModulo, productoClinico, hoy, sumaDias,
   comprobar, seccion, terminar,

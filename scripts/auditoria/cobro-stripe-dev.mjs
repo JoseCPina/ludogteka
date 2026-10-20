@@ -36,6 +36,10 @@
 //                 sucursales activas. Después de «recontratar» (con la sucursal abierta).
 //   plataforma    /plataforma/cobro: estado, historial de pagos e ingreso
 //                 mensual recurrente
+//   limpiar       AL TERMINAR la serie (o si se abandona a medias): borra el negocio, su sucursal,
+//                 las cuentas que quedan sin negocio y el reloj de prueba de Stripe (con su cliente
+//                 y su suscripción de modo prueba), y el estado guardado. Ninguna auditoría deja
+//                 negocios en desarrollo.
 //
 // Sale con 1 al primer paso que falle. El estado entre escenarios se guarda
 // en la carpeta temporal del sistema (nada de secretos).
@@ -753,6 +757,16 @@ const ESCENARIOS = {
     } finally {
       await n.close();
     }
+  },
+  async limpiar() {
+    const { limpiarCorrida } = await import("../lib/limpieza-dev.mjs");
+    const { data: n } = await A.from("negocios").select("created_at").eq("id", est.negocio).maybeSingle();
+    const sufijo = String(est.slug ?? "").replace(/^cobro-/, "");
+    await limpiarCorrida({ desde: new Date(n?.created_at ?? Date.now()), prefijos: [`cobro-${sufijo}`, `sucursal-norte-${sufijo}`] });
+    if (est.reloj) {
+      try { await stripe.testHelpers.testClocks.del(est.reloj); console.log("  · reloj de prueba de Stripe borrado (con su cliente y su suscripción)"); } catch (e) { console.log(`  · el reloj de Stripe no se pudo borrar: ${e.message}`); }
+    }
+    fs.rmSync(ESTADO, { force: true });
   },
 };
 

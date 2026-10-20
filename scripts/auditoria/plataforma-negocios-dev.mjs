@@ -14,6 +14,8 @@
 //      plataforma, y la bitácora queda;
 //    · nada de los demás negocios cambia (conteo de filas por tabla) y
 //      auditoria_frontera() sale vacía.
+import { limpiarAlTerminar } from "../lib/limpieza-dev.mjs";
+limpiarAlTerminar({ prefijos: ["aud-borrar-"] }); // al terminar (también si falla) borra lo que esta corrida creó
 import { spawnSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, sesion, tokenDe } from "./sesiones-dev.mjs";

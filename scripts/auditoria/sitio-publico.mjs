@@ -18,6 +18,8 @@
 //      blog ni legales; el demo (y sus robots.txt) es noindex.
 // Levanta SU PROPIO `next start` en el 3002 con un píxel y una API de
 // conversiones de mentiras (puerto 4458). Sale con 1 si algo falla.
+import { limpiarAlTerminar } from "../lib/limpieza-dev.mjs";
+limpiarAlTerminar({ prefijos: ["auditoria-"], bitacoras: ["aceptaciones_legales"] }); // al terminar (también si falla) borra lo que esta corrida creó
 import fs from "node:fs";
 import http from "node:http";
 import { spawn } from "node:child_process";
