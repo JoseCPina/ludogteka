@@ -268,7 +268,7 @@ function juzgar(caso, pregunta, r, pide, desdeTexto) {
     const ultimo = r.textos[r.textos.length - 1] ?? "";
     if (!/https?:\/\/\S+\/(registro|demo|ir\/(prueba|demo))\b/.test(ultimo.split("\n\n").pop() ?? "")) f.push("pidió ver o probar y no termina con el link (demo o prueba)");
   }
-  if (pide.venta && /¿\s*(ya )?(quieres|te animas)/i.test(todo)) f.push("cierra empujando con «¿Ya quieres…?»");
+  if (pide.venta && /¿\s*(ya (quieres|te animas)|te animas)/i.test(todo)) f.push("cierra empujando con «¿Ya quieres…?»");
   if (pide.venta && !pide.link && /https?:\/\/\S+\/(registro|ir\/prueba)\b/.test(todo)) f.push("mandó el link de registro sin que lo pidiera");
   if (/https?:\/\/\S+\/(demo|ir\/demo)\b/.test(todo) && !/negocio de ejemplo/i.test(todo)) f.push("mandó el demo sin decir que Patitas & Co. es un negocio de ejemplo");
   if (pide.sinEscalar && r.textos.some((t) => /en un rato te escribimos/.test(t))) f.push("escaló una pregunta que tiene respuesta fija");
@@ -600,7 +600,7 @@ if (IA_REAL) {
     ["venta: otra app", TEL_V3, "Ya uso otra app para mi estética", { venta: true, capturas: ["estetica", "caja", "vacunas"] }],
     ["desde su página", TEL_P, "¿Cuánto cuesta y hay prueba gratis?", { venta: true, precio: "plan", sinDesde: true, plan: "649", capturas: ["estetica", "caja"] }],
     ["desde su página", TEL_P, "¿Qué módulos trae? ¿También sirve para veterinaria?", { venta: true, capturas: ["estetica", "caja", "vacunas", "hotel"] }],
-    ["desde su página", TEL_P, "¿Y la página que me armaron se queda así si me registro?", { venta: true, capturas: [], contiene: /p[aá]gina/i }],
+    ["desde su página", TEL_P, "¿Y la página que me armaron se queda así si me registro?", { venta: true, capturas: [], contiene: /p[aá]gina|subdominio|publicad/i }],
     // Las ocho respuestas fijas (QA S16): sin escalar, con lo que dice respuestas-fijas.ts.
     ["fija: factura", TEL_V4, "¿Me dan factura de la suscripción?", { venta: true, sinEscalar: true, menteo: true, capturas: [], contiene: /Menteo/i }],
     ["fija: soporte", TEL_V4, "¿Cómo es el soporte si tengo un problema?", { venta: true, sinEscalar: true, capturas: [], contiene: /24 horas/ }],
