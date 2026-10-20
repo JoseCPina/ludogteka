@@ -38,6 +38,17 @@ export async function AvisoPlan({ esPersonal }: { esPersonal: boolean }) {
   const esAdmin = sesion?.rol === "admin";
   const zona = await zonaActual();
 
+  // QA S17: una sucursal dada de baja queda en solo lectura 90 días.
+  const { data: baja } = await supabase.from("negocios").select("sucursal_baja_at, sucursal_baja_hasta").eq("id", negocio.id).maybeSingle();
+  if (baja?.sucursal_baja_at) {
+    return (
+      <div role="alert" data-aviso-plan="sucursal_baja" className="border-b border-n-300 bg-n-100 px-4 py-2 text-sm text-n-800 md:px-6">
+        <strong className="font-semibold">Esta sucursal se dio de baja</strong> el {formatearFecha(baja.sucursal_baja_at as string, zona)} y queda en solo lectura
+        {baja.sucursal_baja_hasta ? ` hasta el ${formatearFecha(baja.sucursal_baja_hasta as string, zona)}` : ""}: puedes consultar todo, pero ya no se captura nada.
+      </div>
+    );
+  }
+
   if (negocio.plan === "demo" && escribible === false) {
     return (
       <div role="status" data-aviso-plan="demo" className="flex flex-wrap items-center justify-between gap-2 bg-morado px-4 py-2 text-sm text-white md:px-6">

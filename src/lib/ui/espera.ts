@@ -84,6 +84,14 @@ async function traducirSoloLectura<T extends ConError>(resultado: T): Promise<T>
   }
 }
 
+// QA S17 (N83): una acción que termina con `redirect()` (crear un cliente y abrir su ficha) avisa a Next con un error
+// especial (digest NEXT_REDIRECT / NEXT_NOT_FOUND / NEXT_HTTP_ERROR_FALLBACK). Si se atrapa aquí, la navegación no pasa y la
+// pantalla se queda en el formulario (y un segundo clic duplica). Esos se vuelven a lanzar para que Next navegue.
+export function esNavegacionDeNext(e: unknown): boolean {
+  const digest = typeof e === "object" && e !== null && "digest" in e ? String((e as { digest?: unknown }).digest ?? "") : "";
+  return /^(NEXT_REDIRECT|NEXT_NOT_FOUND|NEXT_HTTP_ERROR_FALLBACK)/.test(digest);
+}
+
 export async function esperarConTope<T extends ConError>(
   fn: () => Promise<T>,
   ms: number = TOPE_MS
@@ -91,6 +99,7 @@ export async function esperarConTope<T extends ConError>(
   try {
     return await traducirSoloLectura(await conTope(fn(), ms));
   } catch (e) {
+    if (esNavegacionDeNext(e)) throw e;
     return { error: mensajeDeFallo(e) } as T;
   }
 }

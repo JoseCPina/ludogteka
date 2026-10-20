@@ -608,6 +608,8 @@ if (IA_REAL) {
     ["fija: excel", TEL_V4, "Tengo a mis clientes en un Excel, ¿se pueden pasar?", { venta: true, sinEscalar: true, capturas: [], contiene: /import/i }],
     ["fija: anual", TEL_V4, "¿Hay plan anual?", { venta: true, sinEscalar: true, menteo: true, capturas: [], contiene: /\$6,490/ }],
     ["fija: cobro", TEL_V4, "¿A nombre de quién me sale el cargo en la tarjeta?", { venta: true, sinEscalar: true, menteo: true, capturas: [] }],
+    ["fija: sms", TEL_V4, "¿Mandan los recordatorios por SMS?", { venta: true, sinEscalar: true, capturas: [], contiene: /WhatsApp/ }],
+    ["fija: terminal", TEL_V4, "¿Puedo cobrar con terminal de tarjeta?", { venta: true, sinEscalar: true, capturas: ["caja"], contiene: /ayuda\/cobrar-con-terminal/ }],
     ["demo", TEL_V4, "¿Me mandas el demo para verlo por dentro?", { venta: true, link: true, capturas: ["estetica", "caja", "vacunas", "hotel"] }],
   ];
   const muestras = {};

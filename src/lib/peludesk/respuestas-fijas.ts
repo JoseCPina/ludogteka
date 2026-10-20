@@ -1,6 +1,6 @@
 // Las respuestas fijas de PeluDesk a lo que los prospectos y los admins preguntan antes y después de contratar
 // (QA S16, 19 de octubre de 2026): factura, soporte, sucursales, costo de los recordatorios, cancelación, migración
-// desde Excel, plan anual y a nombre de quién sale el cobro. UNA sola redacción: la usan el bot de WhatsApp (sin
+// desde Excel, plan anual, a nombre de quién sale el cobro, SMS y terminal. UNA sola redacción: la usan el bot de WhatsApp (sin
 // escalar), la landing, /precios y la ayuda. Los montos llegan de la base (planes), nunca escritos aquí.
 // Sin imports de valores: lo usa también el agente, que es puro.
 
@@ -45,7 +45,16 @@ export function respuestaAnual(p: PreciosFijos): string {
     : `Sí hay plan anual, con dos meses gratis contra pagar mes a mes. Se escoge al contratar en Módulos y plan. ${COBRO_A_NOMBRE_DE}`;
 }
 
-/** Las ocho preguntas con su respuesta fija (el bot las contesta sin escalar). */
+export const RESPUESTA_SMS =
+  "No mandamos SMS. Los avisos y recordatorios van por WhatsApp, que es donde tus clientes sí los leen.";
+
+/** La guía de la terminal, en la ayuda pública (el bot manda el link del artículo). */
+export const AYUDA_TERMINAL = "https://peludesk.mx/ayuda/cobrar-con-terminal";
+
+export const RESPUESTA_TERMINAL =
+  `Sí: cobras con la terminal Point Smart de Mercado Pago (o con Clip) conectada a tu cuenta, y el cobro entra solo a tu caja. Aquí está paso a paso: ${AYUDA_TERMINAL}`;
+
+/** Las preguntas con su respuesta fija (el bot las contesta sin escalar). */
 export function respuestasFijas(p: PreciosFijos): { clave: string; pregunta: string; respuesta: string }[] {
   return [
     { clave: "factura", pregunta: "¿Me dan factura (CFDI)?", respuesta: RESPUESTA_FACTURA },
@@ -56,6 +65,8 @@ export function respuestasFijas(p: PreciosFijos): { clave: string; pregunta: str
     { clave: "migracion", pregunta: "Tengo todo en Excel, ¿lo puedo pasar?", respuesta: RESPUESTA_MIGRACION },
     { clave: "anual", pregunta: "¿Hay plan anual?", respuesta: respuestaAnual(p) },
     { clave: "cobro", pregunta: "¿A nombre de quién sale el cobro?", respuesta: COBRO_A_NOMBRE_DE },
+    { clave: "sms", pregunta: "¿Mandan SMS?", respuesta: RESPUESTA_SMS },
+    { clave: "terminal", pregunta: "¿Puedo cobrar con terminal?", respuesta: RESPUESTA_TERMINAL },
   ];
 }
 

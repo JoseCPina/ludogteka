@@ -100,3 +100,26 @@ export async function ajustarSucursales(principalId: string, cantidad: number): 
   });
   await aplicarSuscripcion(principalId, sub.id);
 }
+
+/** La primera sucursal de un negocio (null si él mismo es la primera o no existe). Para ajustar el cobro después. */
+export async function principalDe(negocioId: string): Promise<string | null> {
+  const { data } = await createSupabaseAdminClient().from("negocios").select("principal_id").eq("id", negocioId).maybeSingle();
+  return (data?.principal_id as string | null) ?? null;
+}
+
+/**
+ * QA S17: cuando la plataforma suspende, reactiva o borra una sucursal, la cantidad de «Sucursal adicional» de la
+ * suscripción de su primera sucursal vuelve a ser la de la base. Devuelve un aviso si Stripe no respondió.
+ */
+export async function reajustarCobroDeSucursales(principalId: string | null): Promise<string | null> {
+  if (!principalId) return null;
+  try {
+    await ajustarSucursales(principalId, await sucursalesActivas(principalId));
+    return null;
+  } catch (e) {
+    const m = e instanceof Error ? e.message : String(e);
+    if (/no tiene una suscripción activa/.test(m)) return null;
+    console.error("[sucursal] reajustar cobro", m);
+    return `No pudimos ajustar el cobro de sucursales en Stripe (${m}). Revísalo en /plataforma/cobro.`;
+  }
+}

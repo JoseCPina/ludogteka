@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useContext, useState } from "react";
+import Link from "next/link";
 import QRCode from "qrcode";
 import { useEspera } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
@@ -9,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { CampoCopiable } from "@/components/ui/campo-copiable";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
-import { BotonAccion, FormularioAccion } from "@/components/formulario-accion";
+import { BotonAccion, CierreDesplegable, FormularioAccion } from "@/components/formulario-accion";
 import { formatearFechaCalendario } from "@/lib/formato";
 import {
   anularRegistroCarnet,
@@ -69,11 +70,50 @@ function ProductoYLote({ productos, etiquetaProducto, nombreTexto }: { productos
   );
 }
 
+/**
+ * QA S17 (N53): si la base rechaza un registro repetido (misma vacuna o desparasitación, misma fecha), el formulario se
+ * cierra y en su lugar sale el aviso con «Cancelar» y «Ver en el carnet».
+ */
+function useDuplicadoCarnet() {
+  const [duplicado, setDuplicado] = useState<string | null>(null);
+  const envolver =
+    (accion: (fd: FormData) => Promise<{ error: string | null; exito?: string }>) =>
+    async (fd: FormData) => {
+      const r = await accion(fd);
+      if (r.error && /^Ya hay una (vacuna|desparasitación)/.test(r.error)) {
+        // Se devuelve el error tal cual (el formulario no se reinicia ni cierra el desplegable); este componente
+        // lo cambia por el aviso con sus dos salidas.
+        setDuplicado(r.error);
+      }
+      return r;
+    };
+  return { duplicado, setDuplicado, envolver };
+}
+
+function AvisoDuplicado({ mensaje, perroId, alCancelar }: { mensaje: string; perroId: string; alCancelar: () => void }) {
+  const cerrar = useContext(CierreDesplegable);
+  return (
+    <div role="alert" data-aviso-duplicado className="flex flex-col gap-3 rounded-lg border-[1.5px] border-coral bg-coral-suave p-4">
+      <p className="text-sm font-semibold text-coral-oscuro">{mensaje}</p>
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" variante="secundario" onClick={() => { alCancelar(); cerrar?.("No se registró: ya estaba en el carnet."); }} data-cancelar-duplicado>
+          Cancelar
+        </Button>
+        <Link href={`/veterinaria/carnet/${perroId}`} className="inline-flex min-h-11 items-center rounded-md bg-morado px-4 text-sm font-semibold text-white" data-ver-carnet>
+          Ver en el carnet
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export function FormularioVacuna({
   perroId, hoy, productos, medicos, medicoPropio, requisitos,
 }: { perroId: string; hoy: string; productos: ProductoConLotes[]; medicos: MedicoOpcion[]; medicoPropio: string | null; requisitos: RequisitoOpcion[] }) {
+  const { duplicado, setDuplicado, envolver } = useDuplicadoCarnet();
+  if (duplicado) return <AvisoDuplicado mensaje={duplicado} perroId={perroId} alCancelar={() => setDuplicado(null)} />;
   return (
-    <FormularioAccion accion={(fd) => registrarVacuna(perroId, fd)} textoBoton="Registrar vacuna" textoExito="Vacuna registrada" reiniciar className="rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
+    <FormularioAccion accion={envolver((fd) => registrarVacuna(perroId, fd))} textoBoton="Registrar vacuna" textoExito="Vacuna registrada" reiniciar className="rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
       <ProductoYLote productos={productos} etiquetaProducto="Vacuna" nombreTexto="biologico" />
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Laboratorio (opcional)" name="laboratorio" />
@@ -107,8 +147,10 @@ export function FormularioVacuna({
 export function FormularioDesparasitacion({
   perroId, hoy, productos, medicos, medicoPropio,
 }: { perroId: string; hoy: string; productos: ProductoConLotes[]; medicos: MedicoOpcion[]; medicoPropio: string | null }) {
+  const { duplicado, setDuplicado, envolver } = useDuplicadoCarnet();
+  if (duplicado) return <AvisoDuplicado mensaje={duplicado} perroId={perroId} alCancelar={() => setDuplicado(null)} />;
   return (
-    <FormularioAccion accion={(fd) => registrarDesparasitacion(perroId, fd)} textoBoton="Registrar desparasitación" textoExito="Desparasitación registrada" reiniciar className="rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
+    <FormularioAccion accion={envolver((fd) => registrarDesparasitacion(perroId, fd))} textoBoton="Registrar desparasitación" textoExito="Desparasitación registrada" reiniciar className="rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
       <ProductoYLote productos={productos} etiquetaProducto="Producto" nombreTexto="producto" />
       <div className="grid gap-3 sm:grid-cols-2">
         <Select label="Tipo" name="tipo" defaultValue="interna">

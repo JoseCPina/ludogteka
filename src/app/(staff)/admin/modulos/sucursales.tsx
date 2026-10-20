@@ -8,14 +8,15 @@ import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { conIva, pesosDeCentavos } from "@/lib/cobro/iva";
 import { irANegocio } from "@/lib/negocio/ir-a-negocio";
-import { abrirSucursal } from "./cobro-actions";
+import { abrirSucursal, darBajaSucursal } from "./cobro-actions";
+import { Textarea } from "@/components/ui/textarea";
 
 export type GrupoSucursales = {
   principal_id: string;
   es_principal: boolean;
   soy_admin_principal: boolean;
   estado_stripe: string | null;
-  negocios: { id: string; nombre: string; slug: string; es_principal: boolean; activo: boolean; soy_miembro: boolean }[];
+  negocios: { id: string; nombre: string; slug: string; es_principal: boolean; activo: boolean; soy_miembro: boolean; baja_at?: string | null; baja_hasta?: string | null }[];
 };
 
 /** De un nombre, un subdominio sugerido (sin acentos ni ñ, en minúsculas y con guiones). */
@@ -42,6 +43,22 @@ export function Sucursales({ grupo, precioMensual, dominio }: { grupo: GrupoSucu
   const [nueva, setNueva] = useState<string | null>(null);
   const envio = useEspera({ tope: 60_000 });
   const entrar = useEspera();
+  // QA S17: dar de baja una sucursal adicional (solo el admin de la primera).
+  const bajaEnvio = useEspera({ tope: 60_000 });
+  const [dandoBaja, setDandoBaja] = useState<string | null>(null);
+  const [motivoBaja, setMotivoBaja] = useState("");
+  const [errorBaja, setErrorBaja] = useState<string | null>(null);
+
+  async function confirmarBaja(id: string) {
+    setErrorBaja(null);
+    setExito(null);
+    const res = await bajaEnvio.ejecutar(() => darBajaSucursal(id, motivoBaja));
+    if (res.error) return setErrorBaja(res.error);
+    setExito(res.exito ?? "Listo.");
+    setDandoBaja(null);
+    setMotivoBaja("");
+    router.refresh();
+  }
   const principal = grupo.negocios.find((n) => n.es_principal);
   const pagada = grupo.estado_stripe === "active";
   const precio = precioMensual != null ? conIva(precioMensual) : null;
@@ -98,10 +115,42 @@ export function Sucursales({ grupo, precioMensual, dominio }: { grupo: GrupoSucu
                 · {n.slug}.{dominio} · {n.es_principal ? "primera sucursal (paga el plan)" : "sucursal adicional"}
               </span>
             </span>
-            {n.soy_miembro && (
-              <Button type="button" variante="secundario" className="min-h-9 px-3 text-sm" cargando={entrar.cargando} onClick={() => irA(n.id)} data-entrar-sucursal={n.id}>
-                Entrar
-              </Button>
+            <span className="flex flex-wrap items-center gap-2">
+              {n.baja_at ? (
+                <span className="rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-700" data-sucursal-baja={n.id}>
+                  Dada de baja · solo lectura{n.baja_hasta ? ` hasta el ${new Date(n.baja_hasta).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}` : ""}
+                </span>
+              ) : (
+                <>
+                  {n.soy_miembro && (
+                    <Button type="button" variante="secundario" className="min-h-9 px-3 text-sm" cargando={entrar.cargando} onClick={() => irA(n.id)} data-entrar-sucursal={n.id}>
+                      Entrar
+                    </Button>
+                  )}
+                  {grupo.soy_admin_principal && !n.es_principal && dandoBaja !== n.id && (
+                    <Button type="button" variante="secundario" className="min-h-9 px-3 text-sm" onClick={() => { setDandoBaja(n.id); setMotivoBaja(""); }} data-dar-baja-sucursal={n.id}>
+                      Dar de baja
+                    </Button>
+                  )}
+                </>
+              )}
+            </span>
+            {dandoBaja === n.id && (
+              <div className="flex w-full flex-col gap-2 rounded-md border border-coral bg-coral-suave p-3" data-confirmar-baja-sucursal>
+                <p className="text-sm text-n-800">
+                  <strong>{n.nombre}</strong> queda en solo lectura 90 días (se puede consultar, no se captura nada), sale de «Tus negocios» y deja de cobrarse: la
+                  parte proporcional queda a favor en tu siguiente cobro.
+                </p>
+                <Textarea label="Motivo (obligatorio)" rows={2} maxLength={300} value={motivoBaja} onChange={(e) => setMotivoBaja(e.target.value)} />
+                <AccionesFormulario error={errorBaja}>
+                  <Button type="button" variante="peligro" cargando={bajaEnvio.cargando} disabled={motivoBaja.trim().length < 5} onClick={() => confirmarBaja(n.id)}>
+                    Dar de baja la sucursal
+                  </Button>
+                  <Button type="button" variante="secundario" onClick={() => setDandoBaja(null)}>
+                    Dejarla
+                  </Button>
+                </AccionesFormulario>
+              </div>
             )}
           </li>
         ))}
@@ -147,6 +196,7 @@ export function Sucursales({ grupo, precioMensual, dominio }: { grupo: GrupoSucu
         )
       )}
       {!(grupo.soy_admin_principal && pagada) && error && <p role="alert" className="text-sm text-coral-oscuro">{error}</p>}
+      {!(grupo.soy_admin_principal && pagada) && exito && <p role="status" className="text-sm font-semibold text-menta-oscuro">{exito}</p>}
     </section>
   );
 }

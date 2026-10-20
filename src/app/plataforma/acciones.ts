@@ -12,6 +12,7 @@ import type { ResultadoPlataforma } from "@/lib/plataforma/tipos";
 import { sincronizarPreciosPlan, type PlanParaStripe } from "@/lib/cobro/precios";
 import { mensajeDeErrorStripe, stripeConfigurado } from "@/lib/cobro/stripe";
 import { eliminarNegocioCompleto } from "@/lib/plataforma/eliminar-negocio";
+import { principalDe, reajustarCobroDeSucursales } from "@/lib/cobro/sucursales";
 import { leerTodo } from "@/lib/supabase/paginar";
 
 // La administración de PeluDesk. Toda escritura va con la sesión de quien
@@ -152,6 +153,7 @@ export async function actualizarNegocio(negocioId: string, fd: FormData): Promis
   if (imagenCompartir && !/^\/(?!\/)[\w\-./]+$/.test(imagenCompartir) && !/^https:\/\/[^\s"'<>]+$/.test(imagenCompartir))
     return { error: "La imagen al compartir va como una ruta del sitio (/marca/negocios/compartir.jpg) o una dirección https." };
   if (urlPublica && !/^https:\/\/[a-z0-9.-]+$/.test(urlPublica)) return { error: "La dirección pública va como https://www.ejemplo.mx, sin nada después." };
+  const principal = await principalDe(negocioId);
   const { error } = await s.supabase.rpc("plataforma_actualizar_negocio", {
     p_negocio_id: negocioId,
     p_nombre: texto(fd, "nombre"),
@@ -163,9 +165,11 @@ export async function actualizarNegocio(negocioId: string, fd: FormData): Promis
     p_marca: { color: color || null, favicon: favicon || null, logo: logo || null, imagen_compartir: imagenCompartir || null },
   });
   if (error) return { error: error.message };
+  // Suspender o reactivar una sucursal cambia cuántas se cobran en la suscripción de la primera.
+  const avisoCobro = await reajustarCobroDeSucursales(principal);
   revalidatePath(`/plataforma/negocios/${negocioId}`);
   revalidatePath("/plataforma");
-  return { error: null, exito: "Guardado. El dominio del negocio lo toma en menos de un minuto." };
+  return { error: null, exito: `Guardado. El dominio del negocio lo toma en menos de un minuto.${avisoCobro ? ` ${avisoCobro}` : ""}` };
 }
 
 // Soporte: restablecer la contraseña de una persona (en cualquier negocio,
@@ -475,10 +479,15 @@ export async function eliminarNegocio(negocioId: string, fd: FormData): Promise<
   if (!s) return NO_AUTORIZADO;
   const confirmacion = texto(fd, "confirmacion");
   if (!confirmacion) return { error: "Escribe el nombre del negocio para confirmar." };
+  // La primera sucursal no se borra con sucursales activas; borrar una sucursal baja su cobro.
+  const { count: activas } = await createSupabaseAdminClient().from("negocios").select("id", { count: "exact", head: true }).eq("principal_id", negocioId).eq("activo", true).is("sucursal_baja_at", null);
+  if ((activas ?? 0) > 0) return { error: "Este negocio es la primera sucursal y tiene sucursales activas: da de baja sus sucursales antes de borrarlo." };
+  const principal = await principalDe(negocioId);
   const r = await eliminarNegocioCompleto(s.supabase, negocioId, confirmacion);
   if (r.error) return { error: r.error };
+  const avisoCobro = await reajustarCobroDeSucursales(principal);
   revalidatePath("/plataforma");
-  return { error: null, exito: r.exito, ir: "/plataforma" };
+  return { error: null, exito: `${r.exito ?? "Borrado."}${avisoCobro ? ` ${avisoCobro}` : ""}`, ir: "/plataforma" };
 }
 
 // Facturación (CFDI): el tope mensual de timbres de un negocio y el porcentaje

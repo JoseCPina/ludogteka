@@ -7,6 +7,7 @@ import { SeccionFacturar } from "@/components/cfdi/seccion-facturar";
 import { etiquetaMotivoCuenta, type InfoCancelarCuenta } from "@/app/(staff)/caja/cancelar-cuenta-tipos";
 import { zonaActual, negocioActual } from "@/lib/negocio/actual";
 import { nombresDePersonal } from "@/lib/personal/nombres";
+import type { CorreccionPrecio } from "./correccion-precio-info";
 import { formatearFecha } from "@/lib/formato";
 import { dinero } from "@/lib/dinero";
 import { estadoCobroIntegrado } from "@/app/(staff)/caja/cobro-integrado-actions";
@@ -272,8 +273,17 @@ export async function PantallaCobro({
   const topeFila = Array.isArray(topeCrudo) ? topeCrudo[0] : topeCrudo;
   const topeRecepcion = topeFila?.estado === "configurado" ? Number(topeFila.tope_recepcion) : 0;
 
+  // QA S17 (N48): las correcciones de precio de la cuenta (vigentes y su historial).
+  const { data: ajustesPrecioCrudo } = await supabase
+    .from("cuenta_ajustes_precio")
+    .select("id, linea_tipo, linea_id, monto, precio_antes, precio_despues, precio_original, motivo, hecha_por, created_at, deleted_at, anulada_por, anulada_motivo")
+    .eq("reserva_id", id)
+    .order("created_at")
+    .order("id");
+
   const idsCreadores = Array.from(
     new Set([
+      ...(ajustesPrecioCrudo ?? []).flatMap((a) => [a.hecha_por as string | null, a.anulada_por as string | null]),
       ...(cobrosCrudo ?? []).map((c) => c.created_by as string | null),
       ...(correccionesCrudo ?? []).map((x) => x.hecha_por as string | null),
       ...(devolucionesCrudo ?? []).map((d) => d.autorizado_por as string | null),
@@ -283,6 +293,23 @@ export async function PantallaCobro({
 
   // Nombre de la ficha de empleado o de la cuenta (nombre_de_persona): recepción no lee `profiles` del personal.
   const nombrePorId = await nombresDePersonal(supabase, idsCreadores, { esAdmin: sesion?.rol === "admin", negocioId: (await negocioActual()).id });
+
+  const correccionesPrecio: CorreccionPrecio[] = (ajustesPrecioCrudo ?? []).map((a) => ({
+    id: a.id as string,
+    lineaTipo: a.linea_tipo as string,
+    lineaId: a.linea_id as string,
+    monto: Number(a.monto),
+    precioAntes: Number(a.precio_antes),
+    precioDespues: Number(a.precio_despues),
+    precioOriginal: Number(a.precio_original ?? a.precio_antes),
+    motivo: a.motivo as string,
+    porNombre: nombrePorId.get(a.hecha_por as string) ?? "—",
+    creadaEn: a.created_at as string,
+    vigente: !a.deleted_at,
+    bajaMotivo: (a.anulada_motivo as string | null) ?? null,
+    bajaPorNombre: a.anulada_por ? (nombrePorId.get(a.anulada_por as string) ?? "—") : null,
+    bajaEn: (a.deleted_at as string | null) ?? null,
+  }));
 
   // Lo cobrado por método es NETO de correcciones (los renglones compensatorios
   // restan); el monto original es lo que se capturó.
@@ -394,6 +421,7 @@ export async function PantallaCobro({
         <CuentaCobro
           reservaId={id}
           lineas={lineas}
+          correccionesPrecio={correccionesPrecio}
           totales={totales}
           turnoAbierto={Boolean(turnoAbierto)}
           cobros={cobros}

@@ -1,6 +1,7 @@
 "use client";
 
 import { anotarCobroDePantalla, leerCobrosDePantalla } from "@/lib/cobro/cobros-de-pantalla";
+import { idCliente } from "@/lib/id-cliente";
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -70,6 +71,8 @@ export function CobroJunto({
   mp: { disponible: ResumenCobro; ordenes: OrdenCobroFila[] };
 }) {
   const router = useRouter();
+  // N28: esta carga de la pantalla (un F5 o volver a entrar es otra carga).
+  const cargaPantalla = useRef(idCliente());
   const [montos, setMontos] = useState<string[]>(cuentas.map((c) => c.saldo.toFixed(2)));
   const [totalEscrito, setTotalEscrito] = useState<string | null>(null);
   const [metodos, setMetodos] = useState<FilaMetodo[]>([nuevaFila()]);
@@ -202,7 +205,7 @@ export function CobroJunto({
     setConfirmacion(null);
     // N28: si entró otro cobro a alguna de estas cuentas o su saldo cambió, el servidor pide confirmar.
     const ids = partes.map((p) => p.reservaId);
-    const control = { saldoVisto: Math.round(totalSaldo * 100) / 100, cobrosVistos, cobrosDeEstaPantalla: leerCobrosDePantalla(ids), confirmado };
+    const control = { saldoVisto: Math.round(totalSaldo * 100) / 100, cobrosVistos, cobrosDeEstaPantalla: leerCobrosDePantalla(cargaPantalla.current, ids), confirmado };
     const res = await cobrando.ejecutar(() => registrarCobroGrupo(partes, notas, payload, control));
     if (res.confirmar) {
       setConfirmacion(res.confirmar);
@@ -210,8 +213,8 @@ export function CobroJunto({
     }
     if (res.error) return setError(res.error);
     // El cobro junto lo hizo esta pestaña: no pregunta por él en estas cuentas (juntas o cada una).
-    anotarCobroDePantalla(ids, res.grupoId);
-    for (const id of ids) anotarCobroDePantalla([id], res.grupoId);
+    anotarCobroDePantalla(cargaPantalla.current, ids, res.grupoId);
+    for (const id of ids) anotarCobroDePantalla(cargaPantalla.current, [id], res.grupoId);
     setYaCobrado(true);
     iniciarIr(() => router.push(`/caja/recibo-junto/${res.grupoId}`));
   }

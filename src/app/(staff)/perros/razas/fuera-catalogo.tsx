@@ -200,7 +200,7 @@ export function FueraDeCatalogo({
               <li key={a.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-n-200 bg-white p-3">
                 <div>
                   <p className="font-semibold text-n-900">
-                    {a.textos.map(primeraMayuscula).join(" · ")} → {a.raza} <span className="font-normal text-n-600">· {a.perros} perro(s)</span>
+                    {a.textos.map(primeraMayuscula).join(" · ")} → {a.raza} <span className="font-normal text-n-600">· {a.perros} {a.perros === 1 ? "perro" : "perros"}</span>
                   </p>
                   <p className="text-sm text-n-600">
                     {a.hecha_por} · <Antiguedad dias={a.dias} texto={a.dias === 0 ? "hoy" : `hace ${a.dias} día(s)`} />

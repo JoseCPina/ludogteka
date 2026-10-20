@@ -62,6 +62,18 @@ export default async function TurnoCajaPage({ searchParams }: { searchParams: Pr
       ])
     : [{ data: [] as never[] }, { data: null }, { data: [] as never[] }];
 
+  // QA S17 (N81): las correcciones hechas DESPUÉS del corte de un turno cerrado quedan ligadas a ese turno: se enseñan
+  // en su historial con quién y cuándo (su corte guardado no cambia).
+  const idsCerrados = (turnosCerradosCrudo ?? []).map((t) => t.id as string);
+  const { data: ajustesCrudo } = idsCerrados.length
+    ? await supabase.from("cobro_metodos").select("metodo, monto, propina, fecha_efecto, turno_efecto_id, ajuste_id").in("turno_efecto_id", idsCerrados).not("ajuste_id", "is", null).limit(500)
+    : { data: [] as never[] };
+  const idsAjuste = Array.from(new Set((ajustesCrudo ?? []).map((a) => a.ajuste_id as string)));
+  const { data: correccionesCrudo } = idsAjuste.length
+    ? await supabase.from("cobro_correcciones").select("id, tipo, motivo, hecha_por, created_at").in("id", idsAjuste)
+    : { data: [] as never[] };
+  const correccionPorId = new Map((correccionesCrudo ?? []).map((c) => [c.id as string, c]));
+
   const pagina = (paginaCrudo ?? null) as { total: number; servicios: number; ventas_mostrador: number; movimientos: Record<string, unknown>[] } | null;
   const movimientosCrudo = pagina?.movimientos ?? [];
 
@@ -73,6 +85,7 @@ export default async function TurnoCajaPage({ searchParams }: { searchParams: Pr
       ...(retirosCrudo ?? []).flatMap((r) => [r.created_by, r.cancelado_por]),
       ...(movimientosCrudo as { hecho_por: string | null }[]).map((m) => m.hecho_por),
       ...(turnosCerradosCrudo ?? []).flatMap((t) => [t.abierto_por, t.cerrado_por]),
+      ...(correccionesCrudo ?? []).map((c) => c.hecha_por as string | null),
     ])
   ).filter((x): x is string => Boolean(x));
 
@@ -143,6 +156,19 @@ export default async function TurnoCajaPage({ searchParams }: { searchParams: Pr
       abiertoPorNombre: nombrePorId.get(t.abierto_por as string) ?? "—",
       cerradoPorNombre: nombrePorId.get(t.cerrado_por as string) ?? "—",
       explicacionDiferencias: (corte?.explicacion_diferencias as string | null) ?? null,
+      ajustes: (ajustesCrudo ?? [])
+        .filter((a) => a.turno_efecto_id === t.id && new Date(a.fecha_efecto as string).getTime() > new Date(t.cerrado_at as string).getTime())
+        .map((a) => {
+          const c = correccionPorId.get(a.ajuste_id as string);
+          return {
+            metodo: a.metodo as string,
+            monto: Number(a.monto) + Number(a.propina ?? 0),
+            fecha: a.fecha_efecto as string,
+            tipo: (c?.tipo as string) ?? "ajuste",
+            motivo: (c?.motivo as string | null) ?? null,
+            porNombre: nombrePorId.get(c?.hecha_por as string) ?? "—",
+          };
+        }),
       metodos: metodos.map((m) => ({
         metodo: m.metodo,
         conteo: Number(m.conteo),
