@@ -78,11 +78,12 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
     ]);
     // QA S17 (N51): también se desparasita desde la consulta, con el mismo formulario del carnet.
     aplicarDesparasitacion = (
-      <FormularioDesparasitacion perroId={c.perro_id} hoy={hoy} productos={desparasitantes} medicos={medicos} medicoPropio={medicoPropio ?? c.medico_id} />
+      <FormularioDesparasitacion perroId={c.perro_id} consultaId={id} hoy={hoy} productos={desparasitantes} medicos={medicos} medicoPropio={medicoPropio ?? c.medico_id} />
     );
     aplicarVacuna = (
       <FormularioVacuna
         perroId={c.perro_id}
+        consultaId={id}
         hoy={hoy}
         productos={productos}
         medicos={medicos}
@@ -91,12 +92,20 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
       />
     );
   }
-  // QA S17 (N51): lo aplicado en el carnet el día de esta consulta se ve en la consulta.
+  // QA S18 (N93): lo aplicado EN esta consulta (ligado por consulta_id, no por fecha) se ve en la consulta. Lo del
+  // carnet de ese día sin consulta lo adopta el borrador al sincronizar sus cargos; mientras no, se muestra igual.
   const fechaConsulta = fechaLocalDeInstante(c.atendida_at, zona);
-  const { data: carnetCrudo } = await supabase.rpc("carnet_de_mascota", { p_perro_id: c.perro_id });
+  const [{ data: carnetCrudo }, { data: ligadasV }, { data: ligadasD }] = await Promise.all([
+    supabase.rpc("carnet_de_mascota", { p_perro_id: c.perro_id }),
+    supabase.from("carnet_vacunas").select("id, consulta_id").eq("perro_id", c.perro_id).not("consulta_id", "is", null), // limite-filas-ok: las de una mascota
+    supabase.from("carnet_desparasitaciones").select("id, consulta_id").eq("perro_id", c.perro_id).not("consulta_id", "is", null), // limite-filas-ok: las de una mascota
+  ]);
   const carnet = (carnetCrudo ?? { vacunas: [], desparasitaciones: [] }) as CarnetCompleto;
-  const vacunasDelDia = (carnet.vacunas ?? []).filter((v) => v.estado !== "anulada" && v.fecha_aplicacion === fechaConsulta);
-  const desparasitacionesDelDia = (carnet.desparasitaciones ?? []).filter((v) => v.estado !== "anulada" && v.fecha_aplicacion === fechaConsulta);
+  const consultaDe = new Map<string, string>([...(ligadasV ?? []), ...(ligadasD ?? [])].map((r) => [r.id as string, r.consulta_id as string]));
+  const esDeEstaConsulta = (r: { id: string; fecha_aplicacion: string }) =>
+    consultaDe.has(r.id) ? consultaDe.get(r.id) === id : r.fecha_aplicacion === fechaConsulta;
+  const vacunasDelDia = (carnet.vacunas ?? []).filter((v) => v.estado !== "anulada" && esDeEstaConsulta(v));
+  const desparasitacionesDelDia = (carnet.desparasitaciones ?? []).filter((v) => v.estado !== "anulada" && esDeEstaConsulta(v));
   const puedeCatalogo = esAdminSesion(sesion);
   const esAdmin = sesion?.rol === "admin";
   const anulada = c.estado === "anulada";

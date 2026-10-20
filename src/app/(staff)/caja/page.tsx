@@ -86,6 +86,11 @@ export default async function CajaPage() {
           <Link href="/caja/turno">
             <Button type="button" variante="secundario">Turno y arqueo</Button>
           </Link>
+          {sesion?.rol === "admin" && (
+            <Link href="/caja/conciliacion">
+              <Button type="button" variante="secundario">Conciliación</Button>
+            </Link>
+          )}
         </div>
       </div>
 

@@ -41,7 +41,7 @@ Un cobro nunca pasa del saldo. Si el cliente paga **de más en efectivo**, la pa
 
 Las citas y estancias con fecha futura salen aparte, en **Próximas**, para que no se mezclen con lo que ya toca cobrar: todavía no se deben y no suman en «Pendiente de cobrar hoy». Si el cliente quiere pagar por adelantado, abre la cuenta (dice **Cobrar por adelantado (opcional)**) y cobra; si no, no hagas nada. Si una cuenta con saldo no se debe cobrar (el dueño no llegó, se canceló la cita, es una cortesía o se capturó mal), no la dejes ahí: cancélala.
 
-1. En [Caja](/caja), en la cuenta, aprieta **Cancelar cuenta** (también dentro de la cuenta). Si no ves el botón, pídele a un admin el permiso **Cancelar cuentas** en Administración → Permisos.
+1. En [Caja](/caja), en la cuenta, aprieta **Cancelar cuenta** (también dentro de la cuenta). Si no ves el botón, pídele a un admin el permiso **Cancelar cuentas** en Permisos (en el menú).
 2. Escoge el **Motivo**: **No se presentó**, **Cita cancelada**, **Cortesía**, **Error de captura** u **Otro** (con **Otro** escribe qué pasó).
 3. Si la cuenta viene de una cita de estética o de una reserva de guardería u hotel que todavía no empieza, sale la casilla para **cancelar también la reserva**. Con **No se presentó** queda como «No llegó»; con los demás motivos queda cancelada y su lugar en el cupo se libera (si usó un pase, se le devuelve). Si la dejas sin marcar, la reserva sigue abierta y ocupando cupo: la ves en el [Calendario de reservas](/ayuda/calendario-de-reservas) con la cuenta cancelada.
 4. Aprieta **Cancelar la cuenta**.
@@ -133,7 +133,7 @@ Se escribe **un solo folio** para todo el grupo, el del voucher. Ese folio no se
 ## Si algo no sale
 
 - «Ya hay un cobro en la terminal para esta cuenta. Espéralo o cancélalo antes de mandar otro.»
-- «No hay terminal escogida. El admin la escoge en Administración → Cobro con terminal; mientras, cobra a mano.»
+- «No hay terminal escogida. El admin la escoge en Cobro con terminal (en el menú); mientras, cobra a mano.»
 - Si la terminal no responde, ve [Qué hacer si la terminal no recibe el cobro](/ayuda/terminal-no-recibe-el-cobro).
 - Si sale **Por confirmar con Mercado Pago**, mira la sección de abajo.
 
@@ -155,7 +155,7 @@ Una orden **cancelada**, **vencida**, **fallida** o en cola nunca marca nada com
 
 - Al **desconectar**, las órdenes que estaban en cola se cancelan (una que la terminal ya procesó no se cancela: se verifica con Mercado Pago como cualquier pago) y la app **se acuerda de la terminal** que usabas.
 - Al **reconectar la misma cuenta**, la app busca esa terminal y la vuelve a dejar escogida y en modo integrado. Si no la encuentra, el admin la escoge en [Cobro con terminal](/admin/pagos).
-- Mientras no haya terminal escogida, **Cobrar con terminal** sale deshabilitado y dice qué falta. Escoge la terminal en Administración → Cobro con terminal y se habilita.`,
+- Mientras no haya terminal escogida, **Cobrar con terminal** sale deshabilitado y dice qué falta. Escoge la terminal en Cobro con terminal (en el menú) y se habilita.`,
   },
   {
     slug: "terminal-no-recibe-el-cobro",
@@ -742,7 +742,7 @@ Si la hora o la duración del servicio se salen del horario del negocio de ese d
 
 - «Este perro no tiene talla registrada…»: captúrala en su expediente con el link del mensaje.
 - «No hay nadie que pueda quedar como responsable de la cita»: falta dar de alta al personal de estética.
-- «Ya tienes a … a las 17:00. Escoge otro horario.» (o «… ya tiene a …»): ese horario ya está ocupado en esa agenda, a veces porque alguien más lo acaba de llenar. Escoge otra hora. Si eres estilista, solo agendas en tu propia agenda: el aviso de permiso sale únicamente cuando intentas agendar en la de otra persona.
+- «La estilista Ana López ya tiene a … a las 17:00. Escoge otro horario.»: ese horario ya está ocupado en la agenda de esa estilista (el aviso siempre dice de quién es, también si es la tuya), a veces porque alguien más lo acaba de llenar. Escoge otra hora. Si eres estilista, solo agendas en tu propia agenda: el aviso de permiso sale únicamente cuando intentas agendar en la de otra persona.
 - Una estilista sale como **ausente** en la lista de **Empleado** y no se puede escoger: tiene una ausencia aprobada (vacaciones, incapacidad…) a esa fecha y hora. Escoge a otra persona u otra hora. Mira [Cómo pedir, aprobar y llevar las ausencias](/ayuda/ausencias-y-vacaciones-de-empleados).
 - ¿Escogiste mal a la estilista? Mira [Cómo cambiar o corregir la estilista de una cita](/ayuda/cambiar-estilista-cita-estetica).
 - «Esta combinación no tiene precio»: agrega el precio en Servicios y precios, o registra una excepción con motivo ([Qué hacer cuando no hay precio](/ayuda/que-hacer-sin-precio-estetica)). Un mestizo se cobra por tamaño y pelaje ([Cómo se cobra a un mestizo](/ayuda/precio-de-estetica-mestizo)).
@@ -799,7 +799,7 @@ Cada cambio queda en **Historial de estilista**, al pie de la cita: de quién a 
 
 ## Si algo no sale
 
-- «Prueba ya tiene a Nina a las 11:00…»: la estilista está ocupada a esa hora; el aviso nombra a la mascota y la hora de su(s) cita(s), y si además tiene una ausencia aprobada lo dice también. Escoge a otra persona u otro horario. Es el mismo texto al agendar, mover o pasar una cita a otra estilista.
+- «La estilista Prueba ya tiene a Nina a las 11:00…»: la estilista está ocupada a esa hora; el aviso nombra a la mascota y la hora de su(s) cita(s), y si además tiene una ausencia aprobada lo dice también. Escoge a otra persona u otro horario. Es el mismo texto al agendar, mover o pasar una cita a otra estilista.
 - «Corregir la estilista de un servicio ya terminado es de admin…»: pídele al admin el permiso o que lo corrija él.
 - Una cita **Cancelada** o **No llegó** ya no se reasigna.
 - Solo aparecen estilistas activas del negocio; si falta alguien, revisa que esté dada de alta en el personal de estética (en [Administración](/admin)) y que no tenga baja.`,

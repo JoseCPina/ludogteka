@@ -9,7 +9,7 @@ import { estadoCita, iniciarDesdeCita, reprogramarCita } from "../expediente/act
 
 /** Lo que se puede hacer con una cita de la agenda clínica, según su estado y quién mira. */
 export function AccionesCita({
-  id, estado, consultaId, puedeAtender, puedeLeer, medicos, medicoId, fecha, hora, version = null,
+  id, estado, consultaId, puedeAtender, puedeLeer, medicos, medicoId, fecha, hora, version = null, descripcion = null,
 }: {
   id: string;
   estado: string;
@@ -22,6 +22,8 @@ export function AccionesCita({
   hora: string;
   /** updated_at de la cita al cargar la agenda (QA N43). */
   version?: string | null;
+  /** QA S18 (N52): «Consulta de Luna, 20 oct 6:00 p.m.», para el diálogo de cancelar. */
+  descripcion?: string | null;
 }) {
   const versiones = version ? [{ t: "vet_citas", i: id, v: version }] : [];
   const abierta = estado === "programada" || estado === "confirmada";
@@ -56,6 +58,7 @@ export function AccionesCita({
           </Desplegable>
           <Desplegable texto="Cancelar" variante="secundario">
             <FormularioAccion accion={(fd) => estadoCita(id, "cancelada", fd)} textoBoton="Cancelar la cita" variante="peligro" textoExito="Cita cancelada" versiones={versiones} registro="esta cita">
+              {descripcion && <p className="text-sm font-semibold text-coral-oscuro" data-confirmar-cancelar>¿Cancelar {descripcion}?</p>}
               <Field label="¿Por qué se cancela?" name="motivo" required />
             </FormularioAccion>
           </Desplegable>

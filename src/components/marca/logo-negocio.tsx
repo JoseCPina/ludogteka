@@ -108,9 +108,11 @@ export function LogoNegocio({
         </span>
       );
     }
-    // Sin imagen (o la imagen no cargó): su nombre como texto, con su inicial.
+    // Sin imagen (o la imagen no cargó): su nombre como texto, con su inicial. En la barra (QA S18, N92) el nombre va
+    // en UN renglón con «…» y completo en `title`: un nombre largo no hace crecer el encabezado en el celular.
+    const barra = variante === "barra";
     return (
-      <span className="inline-flex items-center gap-2.5">
+      <span className={`${barra ? "flex min-w-0 max-w-full" : "inline-flex"} items-center gap-2.5`} title={barra ? nombre : undefined}>
         <span
           aria-hidden
           className="grid flex-none place-items-center rounded-[10px] font-bold text-white"
@@ -118,7 +120,7 @@ export function LogoNegocio({
         >
           {(nombre.trim()[0] ?? "·").toUpperCase()}
         </span>
-        <span className="font-bold tracking-tight text-n-900" style={{ fontSize: PX_NOMBRE[variante] }}>
+        <span className={`font-bold tracking-tight text-n-900 ${barra ? "min-w-0 truncate" : ""}`} style={{ fontSize: PX_NOMBRE[variante] }} data-nombre-negocio>
           {nombre}
         </span>
       </span>
@@ -141,5 +143,5 @@ export function LogoNegocio({
   }
   // inline-block: dentro de un flex-col no se estira a lo ancho (el contenedor
   // sí, la imagen no) y `self-start` la deja alineada a la izquierda.
-  return <span className={`inline-block max-w-full self-start align-middle ${className}`}>{contenido}</span>;
+  return <span className={`${variante === "barra" ? "block min-w-0" : "inline-block"} max-w-full self-start align-middle ${className}`}>{contenido}</span>;
 }

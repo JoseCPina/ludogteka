@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { negocioActual, urlDelNegocio, zonaActual } from "@/lib/negocio/actual";
-import { instanteDeHoraLocal } from "@/lib/formato";
+import { fechaLocalDeInstante, instanteDeHoraLocal } from "@/lib/formato";
 import { descartarBorradorGuardado } from "@/lib/borradores/servidor";
 import { nuevoToken } from "@/lib/reporte/enlaces";
 import { traducirError } from "../../reservas/traducir-error";
@@ -135,10 +135,22 @@ export async function firmarConsulta(id: string): Promise<ResultadoAccion> {
 
 export async function descartarBorrador(id: string, perroId: string): Promise<ResultadoAccion> {
   const supabase = await createSupabaseServerClient();
+  // QA S18 (N94): de una cita se regresa a la agenda de ese día; si no, al expediente. Las dos dicen «Borrador descartado».
+  const { data: c } = await supabase.rpc("vet_consulta_detalle", { p_id: id });
+  const det = (c as { consulta?: { cita_id: string | null; atendida_at: string } } | null)?.consulta;
+  // Desde R23 una consulta de cita lleva la fecha y hora de su cita.
+  const citaInicio = det?.cita_id ? det.atendida_at : null;
   const { error } = await supabase.rpc("vet_consulta_descartar", { p_id: id });
   if (error) return { error: traducirError(error) };
   await descartarBorradorGuardado(supabase, "consulta", id);
-  return { error: null, ir: `/veterinaria/expediente/${perroId}` };
+  revalidatePath(`/veterinaria/expediente/${perroId}`);
+  revalidatePath("/veterinaria/agenda");
+  const zona = await zonaActual();
+  return {
+    error: null,
+    exito: "Borrador descartado.",
+    ir: citaInicio ? `/veterinaria/agenda?fecha=${fechaLocalDeInstante(citaInicio, zona)}&aviso=descartado` : `/veterinaria/expediente/${perroId}?aviso=descartado`,
+  };
 }
 
 export async function agregarAdenda(id: string, fd: FormData): Promise<ResultadoAccion> {

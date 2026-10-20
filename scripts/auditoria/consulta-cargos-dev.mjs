@@ -208,6 +208,41 @@ try {
   const otraV = await rpc(P.recSin, "vet_consulta_cargo_agregar", { p_consulta: cV, p_tipo: "medicamento", p_concepto: null, p_cantidad: 1, p_precio: null, p_servicio: null, p_insumo: prodVac });
   comprobar(!otraV.ok, "quien no puede registrar vacunas no la mete por esta puerta");
 
+  seccion("4c. QA S18 (N93): la vacuna queda ligada a SU consulta, no al día");
+  await dar(P.admin, P.recSinId, "registrar_vacunas");
+  const perroL = await nuevoPerro("Ligada");
+  const cL = (await rpc(P.recSin, "vet_consulta_iniciar", { p_perro: perroL, p_cita: null, p_tipo: "consulta", p_medico: medico })).cuerpo;
+  const ayer = sumaDiasV(hoyB, -1);
+  const vL = await rpc(P.recSin, "vet_consulta_registrar_vacuna", { p_consulta: cL, p_biologico: `Ligada ${MARCA}`, p_tipo_requisito_id: null, p_insumo_id: null, p_lote_id: null, p_lote_texto: "L-1", p_laboratorio: null, p_fecha: ayer, p_proxima: null, p_medico_id: medico, p_dosis: null, p_notas: null, p_descontar: false });
+  comprobar(vL.ok, `desde la consulta se registra una vacuna con fecha de ayer (${vL.mensaje})`);
+  const filaL = (await SB.from("carnet_vacunas").select("consulta_id").eq("id", vL.cuerpo?.id).single()).data;
+  comprobar(filaL?.consulta_id === cL, "nace ligada a esa consulta");
+  d = await lineas(P.recSin, cL);
+  comprobar(d.lineas.filter((l) => l.tipo === "vacuna").length === 1, "y su cargo sale aunque la fecha no sea la de la consulta");
+  // Lo que hizo R23: mover la fecha del borrador a la de su cita.
+  await SB.from("vet_consultas").update({ atendida_at: new Date(Date.now() + 3 * 86400000).toISOString() }).eq("id", cL);
+  d = await lineas(P.recSin, cL);
+  comprobar(d.lineas.filter((l) => l.tipo === "vacuna").length === 1, "mover la fecha de la consulta no desliga la vacuna ni su cargo");
+  const vOtra = await rpc(P.admin, "registrar_vacuna", { p_perro_id: perroL, p_biologico: `Del carnet ${MARCA}`, p_tipo_requisito_id: null, p_insumo_id: null, p_lote_id: null, p_lote_texto: null, p_laboratorio: null, p_fecha: hoyB, p_proxima: null, p_medico_id: medico, p_dosis: null, p_notas: null, p_descontar: false });
+  d = await lineas(P.recSin, cL);
+  comprobar(d.lineas.filter((l) => l.tipo === "vacuna").length === 1, "una vacuna del carnet de OTRO día no entra a esta consulta");
+  const anul = await rpc(P.admin, "anular_registro_carnet", { p_tipo: "vacuna", p_id: vL.cuerpo?.id, p_motivo: "Se capturó en otra mascota" });
+  comprobar(anul.ok, `se anula la vacuna en el carnet (${anul.mensaje})`);
+  d = await lineas(P.recSin, cL);
+  comprobar(!d.lineas.some((l) => l.tipo === "vacuna"), "y su cargo desaparece de la consulta");
+  const dL = await rpc(P.recSin, "vet_consulta_registrar_desparasitacion", { p_consulta: cL, p_tipo: "interna", p_producto: `Desp ${MARCA}`, p_insumo_id: null, p_lote_id: null, p_lote_texto: null, p_dosis: null, p_fecha: hoyB, p_proxima: null, p_medico_id: medico, p_notas: null, p_descontar: false });
+  comprobar(dL.ok, `desde la consulta se registra una desparasitación (${dL.mensaje})`);
+  const filaD = (await SB.from("carnet_desparasitaciones").select("consulta_id").eq("perro_id", perroL).is("anulada_at", null).single()).data;
+  comprobar(filaD?.consulta_id === cL, "y también nace ligada a la consulta");
+  // Lo registrado en el carnet sin consulta lo adopta el borrador de ese día.
+  const cHoy = (await rpc(P.recSin, "vet_consulta_iniciar", { p_perro: perroL, p_cita: null, p_tipo: "consulta", p_medico: medico })).cuerpo;
+  d = await lineas(P.recSin, cHoy);
+  const adoptada = (await SB.from("carnet_vacunas").select("consulta_id").eq("id", vOtra.cuerpo?.id).single()).data;
+  comprobar(adoptada?.consulta_id === cHoy && d.lineas.filter((l) => l.tipo === "vacuna").length === 1, "la vacuna del carnet de hoy la adopta el borrador de hoy (con su cargo)");
+  comprobar(!(await rpc(P.recSin, "vet_consulta_registrar_vacuna", { p_consulta: c1, p_biologico: "x", p_tipo_requisito_id: null, p_insumo_id: null, p_lote_id: null, p_lote_texto: null, p_laboratorio: null, p_fecha: hoyB, p_proxima: null, p_medico_id: medico, p_dosis: null, p_notas: null, p_descontar: false })).ok, "una consulta firmada no recibe vacunas por esta puerta");
+  comprobar(!(await rpc(null, "vet_consulta_registrar_vacuna", { p_consulta: cHoy, p_biologico: "x", p_tipo_requisito_id: null, p_insumo_id: null, p_lote_id: null, p_lote_texto: null, p_laboratorio: null, p_fecha: hoyB, p_proxima: null, p_medico_id: medico, p_dosis: null, p_notas: null, p_descontar: false })).ok, "la llave anónima no registra");
+  await quitar(P.admin, P.recSinId, "registrar_vacunas");
+
   seccion("5. Mascota hospitalizada");
   const perro3 = await nuevoPerro("Internado");
   await dar(P.admin, P.recSinId, "hospitalizar");

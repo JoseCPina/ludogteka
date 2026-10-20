@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ComoSeCobra } from "./como-se-cobra";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { MatrizTarifas } from "../../matriz-tarifas";
 import { HistorialTarifas, type FilaHistorial } from "../../historial-tarifas";
@@ -120,6 +121,10 @@ export default async function TarifasServicioPage({
           Este cargo es de <strong>monto libre</strong>: no tiene precio fijo. El importe y qué se le
           dio se capturan al aplicarlo en la estancia. Lo que captures aquí no se usa.
         </p>
+      )}
+
+      {!servicio.monto_libre && (
+        <ComoSeCobra unidad={servicio.unidad as string} dependeCantidad={servicio.depende_cantidad} vigentes={(vigentes ?? []) as Parameters<typeof ComoSeCobra>[0]["vigentes"]} />
       )}
 
       <MatrizTarifas

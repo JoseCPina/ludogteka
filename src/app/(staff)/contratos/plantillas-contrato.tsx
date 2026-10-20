@@ -272,7 +272,8 @@ function FormularioNuevaVersion({
   onListo,
 }: {
   tipo: TipoContratoVista;
-  onListo: () => void;
+  /** QA S18 (N90): al publicar avisa «Versión N publicada» (sin mensaje = se canceló). */
+  onListo: (mensaje?: string) => void;
 }) {
   const router = useRouter();
   const activa = tipo.versiones.find((v) => v.activa) ?? null;
@@ -303,7 +304,7 @@ function FormularioNuevaVersion({
       return;
     }
     borrador.descartar();
-    onListo();
+    onListo(`Versión ${res.version ?? Math.max(0, ...tipo.versiones.map((x) => x.version)) + 1} publicada.`);
     router.refresh();
   }
 
@@ -335,10 +336,10 @@ function FormularioNuevaVersion({
       <CasillaRefirma valor={requiereRefirma} onCambio={setRequiereRefirma} />
 
       <div className="flex gap-2">
-        <Button type="button" cargando={enviando.cargando} onClick={guardar}>
+        <Button type="button" cargando={enviando.cargando} disabled={enviando.cargando} onClick={guardar} data-publicar-version>
           {enviando.cargando ? "Publicando…" : "Publicar nueva versión"}
         </Button>
-        <Button type="button" variante="secundario" onClick={onListo}>
+        <Button type="button" variante="secundario" disabled={enviando.cargando} onClick={() => onListo()}>
           Cancelar
         </Button>
       </div>
@@ -432,6 +433,7 @@ function FormularioDatosTipo({
 function TarjetaTipo({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin: boolean }) {
   const router = useRouter();
   const [editandoTexto, setEditandoTexto] = useState(false);
+  const [publicada, setPublicada] = useState<string | null>(null);
   const [editandoDatos, setEditandoDatos] = useState(false);
   const [confirmandoArchivo, setConfirmandoArchivo] = useState(false);
   const ocupado = useEspera();
@@ -462,11 +464,16 @@ function TarjetaTipo({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin: bool
   }
 
   if (editandoTexto) {
-    return <FormularioNuevaVersion tipo={tipo} onListo={() => setEditandoTexto(false)} />;
+    return <FormularioNuevaVersion tipo={tipo} onListo={(m) => { setPublicada(m ?? null); setEditandoTexto(false); }} />;
   }
 
   return (
     <div className="rounded-lg border border-n-200 bg-white p-5">
+      {publicada && (
+        <div className="mb-3" data-version-publicada>
+          <Alert variante="exito" titulo={publicada}>Los contratos que se generen de aquí en adelante usan esta versión.</Alert>
+        </div>
+      )}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-lg font-bold text-n-900">{tipo.nombre}</p>

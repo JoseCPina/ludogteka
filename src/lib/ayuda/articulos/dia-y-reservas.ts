@@ -255,7 +255,7 @@ Si alguien tiene cuenta pero no quedó ligada a su expediente, aparece en [Vincu
 ## Si algo no sale
 
 - «Ya hay un … pendiente de firma para este perro.»: cancela el pendiente antes de generar otro.
-- «No hay una versión publicada de … todavía.»: un admin tiene que publicar la plantilla en [Contratos](/contratos).`,
+- «No hay una versión publicada de … todavía.»: un admin tiene que publicar la plantilla en [Contratos](/contratos). Para cambiar el texto, en el contrato aprieta **Publicar nueva versión**: mientras se publica el botón dice **Publicando…** y al terminar sale **Versión N publicada**; los contratos ya firmados conservan su versión.`,
   },
   {
     slug: "reservar-guarderia",
@@ -500,7 +500,7 @@ Toca **Ver historial de ajustes** en el pase: cada renglón dice antes y despué
     roles: ["admin", "recepcion"],
     rutas: [],
     palabras: ["recoger a domicilio", "kilómetros", "distancia", "transporte", "camioneta", "traslado"],
-    cuerpo: `La recolección se cobra por kilómetro. La distancia de cada cliente se calcula una vez desde su dirección y se reutiliza cada vez que lo recoges.
+    cuerpo: `La recolección se cobra por kilómetro. La distancia de cada cliente se calcula una vez desde su dirección y se reutiliza cada vez que lo recoges. El precio por kilómetro puede ir por tramos: el tramo lo decide la distancia **total** del viaje y luego se multiplica por los kilómetros (por ejemplo, de 0 a 5 km a $10 y desde 6 km a $8: un viaje de 7 km cuesta 7 × $8 = $56). En Servicios → el cargo → **Tarifas**, el recuadro **Cómo se cobra este servicio** lo calcula con tus precios. Un **traslado a domicilio** del catálogo de Servicios extra se cobra por **zona**: un precio por viaje, sin multiplicar por kilómetro.
 
 ## Calcular la distancia
 

@@ -63,6 +63,10 @@ La sección **Traslados** es la hoja del día: la hora, el perro, el dueño, la 
 
 Para ver otro día usa **Día anterior** y **Día siguiente**.
 
+## Lo que se cobra aparte
+
+Abajo, **Lo que se cobra aparte** junta todo lo que el negocio cobra fuera de la estancia: los servicios extra del catálogo (con su precio, y el traslado con sus zonas) y los **cargos adicionales** de Servicios (comida especial, recolección por kilómetro…), con cómo se cobra cada uno y **Ver cómo se cobra** para los que tienen tarifa. Si todavía no tienes **Traslado a domicilio**, ahí mismo te dice dónde crearlo. Un traslado se cobra por **zona** (un precio por viaje); la recolección por kilómetro, con el precio del tramo de la distancia total por los kilómetros.
+
 > Si te equivocaste, aprieta **Cancelar** (o **Cancelar cargo** si ya estaba hecho) y escribe el motivo.`,
   },
   {

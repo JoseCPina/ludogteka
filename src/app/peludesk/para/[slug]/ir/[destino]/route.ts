@@ -29,7 +29,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
   if (destino === "whatsapp") return NextResponse.redirect(whatsappVentas(p.nombre, p.slug), 302);
   if (destino === "demo") {
     const d = DEMO_POR_GIRO[giroPrincipal(serviciosDe(p), p.giro)];
-    return new NextResponse(null, { status: 302, headers: { Location: `${urlDemo()}/demo/entrar/${d.rol}?ir=${d.ir}${interno ? "&interno=1" : ""}`, "Cache-Control": "no-store" } });
+    return new NextResponse(null, { status: 302, headers: { Location: `${urlDemo()}/demo/entrar/${d.rol}?ir=${d.ir}&p=${encodeURIComponent(p.slug)}${interno ? "&interno=1" : ""}`, "Cache-Control": "no-store" } });
   }
   const q = new URLSearchParams({ prospecto: slug, utm_source: "prospecto", utm_medium: "pagina", utm_campaign: "para", ...(interno ? { interno: "1" } : {}) });
   return new NextResponse(null, { status: 302, headers: { Location: `/registro?${q}`, "Cache-Control": "no-store" } });

@@ -240,6 +240,7 @@ export default async function CitaDetallePage({
         <p className="text-sm text-n-500">Esta cita es de otro empleado — solo se puede consultar.</p>
       ) : (
         <CitaDetalle
+          servicioNombre={servicio?.nombre ?? (cita.servicio_nombre as string | null) ?? null}
           version={(cita.updated_at as string | null) ?? null}
           citaId={cita.id}
           perroNombre={perro.nombre}

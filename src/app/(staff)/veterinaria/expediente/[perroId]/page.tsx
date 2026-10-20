@@ -13,8 +13,9 @@ type Lectura = { recurso: string; persona: string; leido_at: string };
 
 const ETIQUETA_LECTURA: Record<string, string> = { expediente: "el expediente", consulta: "una consulta", linea_tiempo: "la línea de tiempo", adjunto: "un archivo", resultado: "un resultado", estimado: "un estimado" };
 
-export default async function ExpedienteMascota({ params }: { params: Promise<{ perroId: string }> }) {
+export default async function ExpedienteMascota({ params, searchParams }: { params: Promise<{ perroId: string }>; searchParams: Promise<{ aviso?: string }> }) {
   const { perroId } = await params;
+  const { aviso } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
   const zona = await zonaActual();
@@ -52,6 +53,7 @@ export default async function ExpedienteMascota({ params }: { params: Promise<{ 
 
   return (
     <div className="flex flex-col gap-6">
+      {aviso === "descartado" && <Alert variante="exito" titulo="Borrador descartado">La consulta en borrador se quitó del expediente.</Alert>}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Link href="/veterinaria/expediente" className="text-sm font-semibold text-morado hover:underline">← Expediente clínico</Link>

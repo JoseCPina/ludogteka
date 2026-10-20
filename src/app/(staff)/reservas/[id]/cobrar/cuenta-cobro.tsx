@@ -384,6 +384,7 @@ export function CuentaCobro({
   // Bloque D trae la pantalla completa de turno — aquí solo lo mínimo
   // para no bloquear el cobro si nadie lo abrió todavía hoy.
   const [abriendoTurno, setAbriendoTurno] = useState(false);
+  const [turnoPorVerse, setTurnoPorVerse] = useState(false);
   const [fondoInicial, setFondoInicial] = useState("");
   const [notasApertura, setNotasApertura] = useState("");
   const cargandoTurno = useEspera();
@@ -460,7 +461,8 @@ export function CuentaCobro({
       setError(res.error);
       return;
     }
-    setAbriendoTurno(false);
+    // QA S18 (N91): el formulario se queda con «Abriendo…» hasta que la pantalla ya muestra el turno abierto.
+    setTurnoPorVerse(true);
     refrescar();
   }
 
@@ -957,8 +959,8 @@ export function CuentaCobro({
                 value={notasApertura}
                 onChange={(e) => setNotasApertura(e.target.value)}
               />
-              <Button type="button" cargando={cargandoTurno.cargando} onClick={accionAbrirTurno}>
-                {cargandoTurno.cargando ? "Abriendo…" : "Confirmar apertura"}
+              <Button type="button" cargando={cargandoTurno.cargando || (turnoPorVerse && refrescando)} disabled={cargandoTurno.cargando || (turnoPorVerse && refrescando)} onClick={accionAbrirTurno} data-confirmar-apertura>
+                {cargandoTurno.cargando || (turnoPorVerse && refrescando) ? "Abriendo…" : "Confirmar apertura"}
               </Button>
               <Button type="button" variante="secundario" onClick={() => setAbriendoTurno(false)}>
                 Cancelar

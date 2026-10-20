@@ -42,26 +42,39 @@ export async function crearCita(datos: {
   }
 
   const supabase = await createSupabaseServerClient();
-  const { data: reserva, error: errorReserva } = await supabase
-    .from("perros")
-    .select("cliente_id")
-    .eq("id", datos.perroId)
-    .single();
+  const zona = await zonaActual();
+  const dia = fechaLocalDeInstante(datos.inicio, zona);
+
+  // QA N44: el choque real (la estilista ya tiene a otra mascota a esa hora, o está ausente) se dice ANTES de crear
+  // nada, con el mismo texto de la base; nunca «No pudimos crear la reserva».
+  const choque = async () => {
+    const { data: serv } = await supabase.from("servicios").select("duracion_minutos").eq("id", datos.servicioId).maybeSingle();
+    const fin = new Date(new Date(datos.inicio).getTime() + (Number(serv?.duracion_minutos) || 60) * 60000).toISOString();
+    const { data: texto } = await supabase.rpc("cita_estetica_choques_texto", { p_empleado: datos.empleadoId, p_inicio: datos.inicio, p_fin: fin, p_excluir: null });
+    return typeof texto === "string" && texto ? texto : null;
+  };
+
+  // QA S18 (N95): las revisiones previas (el perro, la otra cita del día y el choque) van en paralelo: antes eran
+  // cinco viajes a la base uno tras otro antes de intentar guardar.
+  const [{ data: reserva, error: errorReserva }, { data: delDia }, choqueAntes] = await Promise.all([
+    supabase.from("perros").select("cliente_id").eq("id", datos.perroId).single(),
+    datos.confirmarDuplicada
+      ? Promise.resolve({ data: null })
+      : supabase
+          .from("citas_estetica")
+          .select("id, inicio, estado, perros(nombre), servicios!citas_estetica_servicio_id_fkey(nombre)")
+          .eq("perro_id", datos.perroId)
+          .is("deleted_at", null)
+          .not("estado", "in", "(cancelada,no_llego)")
+          .gte("inicio", instanteDeHoraLocal(`${dia}T00:00`, zona))
+          .lt("inicio", instanteDeHoraLocal(`${sumarDiasFecha(dia, 1)}T00:00`, zona))
+          .order("inicio"),
+    choque(),
+  ]);
   if (errorReserva || !reserva) return { error: "No pudimos encontrar al perro." };
 
   // N30: la misma mascota con otra cita viva ese día (en la fecha del negocio): se avisa antes de crear una segunda.
   if (!datos.confirmarDuplicada) {
-    const zona = await zonaActual();
-    const dia = fechaLocalDeInstante(datos.inicio, zona);
-    const { data: delDia } = await supabase
-      .from("citas_estetica")
-      .select("id, inicio, estado, perros(nombre), servicios!citas_estetica_servicio_id_fkey(nombre)")
-      .eq("perro_id", datos.perroId)
-      .is("deleted_at", null)
-      .not("estado", "in", "(cancelada,no_llego)")
-      .gte("inicio", instanteDeHoraLocal(`${dia}T00:00`, zona))
-      .lt("inicio", instanteDeHoraLocal(`${sumarDiasFecha(dia, 1)}T00:00`, zona))
-      .order("inicio");
     if (delDia && delDia.length > 0) {
       const una = (c: (typeof delDia)[number]) => {
         const serv = Array.isArray(c.servicios) ? c.servicios[0] : c.servicios;
@@ -75,15 +88,6 @@ export async function crearCita(datos: {
     }
   }
 
-  // QA N44: el choque real (la estilista ya tiene a otra mascota a esa hora, o está ausente) se dice ANTES de crear
-  // nada, con el mismo texto de la base; nunca «No pudimos crear la reserva».
-  const choque = async () => {
-    const { data: serv } = await supabase.from("servicios").select("duracion_minutos").eq("id", datos.servicioId).maybeSingle();
-    const fin = new Date(new Date(datos.inicio).getTime() + (Number(serv?.duracion_minutos) || 60) * 60000).toISOString();
-    const { data: texto } = await supabase.rpc("cita_estetica_choques_texto", { p_empleado: datos.empleadoId, p_inicio: datos.inicio, p_fin: fin, p_excluir: null });
-    return typeof texto === "string" && texto ? texto : null;
-  };
-  const choqueAntes = await choque();
   if (choqueAntes) return { error: choqueAntes };
 
   // La cuenta de la cita la crea la base para cualquier persona del personal (la estilista no inserta en reservas).
@@ -128,7 +132,10 @@ export async function crearCita(datos: {
       const { data: yo } = await supabase.auth.getUser();
       if (yo.user && yo.user.id !== datos.empleadoId) return { error: "Solo puedes agendar en tu propia agenda: escoge tu nombre en «Empleado»." };
     }
-    return { error: traducirError(error) };
+    const texto = traducirError(error);
+    // Lo que la base no explicó se escribe en los logs con su código: así se encontró N95 (55000 de un record sin asignar).
+    if (/^No pudimos guardar/.test(texto)) console.error("[estetica] crearCita", error.code, error.message);
+    return { error: texto };
   }
 
   revalidatePath("/estetica");

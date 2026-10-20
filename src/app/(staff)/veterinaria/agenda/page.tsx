@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { formatearFechaCalendario, formatearDiaSemana, fechaLocalDeInstante, horaLocalDeInstante, hoyNegocio, sumarDiasFecha, inicioSemana, formatearDiaDeInstante, formatearHoraNegocio } from "@/lib/formato";
+import { describirCita, fechaLocalDeInstante, formatearDiaDeInstante, formatearDiaSemana, formatearFechaCalendario, formatearHoraNegocio, horaLocalDeInstante, hoyNegocio, inicioSemana, sumarDiasFecha } from "@/lib/formato";
 import { unirFrases } from "@/lib/texto/frases";
 import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { AvisosWhatsApp } from "@/components/avisos-whatsapp";
@@ -76,6 +76,7 @@ export default async function AgendaVeterinaria({ searchParams }: { searchParams
         </nav>
       )}
 
+      {aviso === "descartado" && <Alert variante="exito" titulo="Borrador descartado" data-aviso-descartado>La cita volvió a quedar sin consulta: puedes iniciarla de nuevo.</Alert>}
       {aviso === "urgencia" && <Alert variante="advertencia" titulo="Urgencia agendada">Se empalma con otra cita de ese médico: avísale.</Alert>}
       {error ? (
         <Alert variante="error" titulo="No pudimos cargar la agenda">Recarga la página. Si el problema sigue, avísale al equipo técnico.</Alert>
@@ -151,6 +152,7 @@ export default async function AgendaVeterinaria({ searchParams }: { searchParams
                                 fecha={fechaLocalDeInstante(c.inicia_at, zona)}
                                 hora={horaLocalDeInstante(c.inicia_at, zona)}
                                 version={c.updated_at ?? null}
+                                descripcion={describirCita(c.tipo, c.mascota, c.inicia_at, zona)}
                               />
                             </article>
                           );

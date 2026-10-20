@@ -131,7 +131,7 @@ export default async function AdminPage() {
       {puedeConfig && (
         <section id="configuracion" className="scroll-mt-20 rounded-lg border border-n-200 bg-white p-5">
           <h2 className="mb-4 text-lg font-bold text-n-900">Configuración del negocio</h2>
-          <ConfiguracionNegocio vigente={configVigente} direccion={direccionNegocio} conCupo={usaEstancias(sesion?.modulos ?? [])} />
+          <ConfiguracionNegocio vigente={configVigente} conCupo={usaEstancias(sesion?.modulos ?? [])} />
         </section>
       )}
 

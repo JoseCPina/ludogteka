@@ -37,7 +37,7 @@ export const RESPUESTA_CANCELACION =
   "Cancelas cuando quieras, sin plazo forzoso: en Módulos y plan, que te lleva al portal de pagos. No hay reembolso del mes en curso: lo sigues usando hasta que termina. Después tu información queda en solo lectura (la consultas, no capturas) mientras no pidas borrarla, y puedes pedir una copia completa en formato estructurado por correo a contacto@peludesk.mx: te la entregamos en máximo 20 días hábiles.";
 
 export const RESPUESTA_MIGRACION =
-  "Sí. Tus clientes y mascotas los subes desde un Excel o CSV con el importador (Administración → Importar), y si hace falta te ayudamos por WhatsApp a dejar tu archivo listo.";
+  "Sí. Tus clientes y mascotas los subes desde un Excel o CSV con el importador: «Importar» en el menú de la izquierda, o la tarjeta «Importar clientes y mascotas» en Inicio. Si hace falta te ayudamos por WhatsApp a dejar tu archivo listo.";
 
 export function respuestaAnual(p: PreciosFijos): string {
   return p.anual

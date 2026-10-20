@@ -161,7 +161,7 @@ try {
   await page.getByText("Perfil guardado").first().waitFor();
   ok(await pasoListo(page, base, "datos"), "con teléfono y dirección, «Datos del negocio» queda listo");
   await page.goto(`${base}/admin#configuracion`);
-  ok((await page.locator("[data-direccion-en-perfil]").innerText()).includes("Av. de Prueba 100, Centro"), "N61: Configuración muestra la MISMA dirección de Perfil (solo lectura)");
+  ok(!(await page.locator("#configuracion").innerText()).includes("Av. de Prueba 100") && (await page.locator("[data-direccion-en-perfil]").count()) === 0, "N61/N88: la dirección ya no se repite en Configuración (vive en Perfil y en Ubicación)");
 
   const { data: serv } = await A.from("servicios").select("id").eq("negocio_id", neg.id).eq("clave", "estetica_expres").single();
   await page.goto(`${base}/servicios/${serv.id}/tarifas`);
@@ -409,7 +409,7 @@ try {
   const { data: perfH } = await A.from("negocio_perfil").select("direccion").eq("negocio_id", negH.id).is("deleted_at", null).single();
   ok(perfH.direccion === "Calle Sucursal 9, Centro", "N61: si algo escribe la dirección de la sucursal, la del perfil queda igual (un solo campo)");
   await ph.goto(`${baseH}/admin#configuracion`);
-  ok((await ph.locator("[data-direccion-en-perfil]").innerText()).includes("Calle Sucursal 9, Centro"), "N61: Configuración lee la misma dirección");
+  ok(!(await ph.locator("#configuracion").innerText()).includes("Calle Sucursal 9") && ((await ph.locator("[data-direccion-negocio-lectura]").count()) === 0 || (await ph.locator("[data-direccion-negocio-lectura]").innerText()).includes("Calle Sucursal 9, Centro")), "N61: Configuración no la repite y Ubicación lee la misma");
   // QA R23 (N88): Ubicación para recolección la muestra en solo lectura con «Cambiar en Perfil» y solo ubica.
   // La sección vive con el módulo de Recolección prendido (nace apagado, N70).
   await SH.from("negocio_modulos").update({ activo: true }).eq("negocio_id", negH.id).eq("modulo", "recoleccion");

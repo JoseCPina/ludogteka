@@ -202,6 +202,13 @@ function Zonas({ extra }: { extra: CatalogoExtra }) {
   return (
     <div className="flex flex-col gap-2 border-t border-n-200 pt-3">
       <p className="text-sm font-bold uppercase tracking-wide text-n-600">Zonas y precio por zona</p>
+      {/* QA S18 (N70): cómo se cobra un traslado por zona, con un ejemplo de SUS zonas. */}
+      <p className="text-sm text-n-700" data-como-se-cobra-zona>
+        Cada viaje cobra el precio de UNA zona (no se multiplica por kilómetro): al agregarlo a la estancia se escoge la
+        zona del domicilio. Los km son solo de referencia para escoger bien.
+        {extra.zonas.filter((z) => z.activo).length > 0 &&
+          ` Ejemplo: un traslado a «${extra.zonas.filter((z) => z.activo)[0].nombre}» se cobra ${new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(extra.zonas.filter((z) => z.activo)[0].precio)} por viaje.`}
+      </p>
       {extra.zonas.length === 0 && <p className="text-sm text-n-500">Sin zonas: se cobra el precio base.</p>}
       {extra.zonas.map((z) => (
         <FilaZona key={z.id} extraId={extra.id} zona={z} />

@@ -1,5 +1,7 @@
 "use client";
 
+import { describirEstancia } from "@/lib/formato";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
@@ -225,7 +227,7 @@ export function EstanciaFila({
           ) : confirmandoCancelar ? (
             <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
               <p className="text-sm font-semibold text-coral-oscuro">
-                ¿Cancelar la estancia de {fila.perroNombre}?
+                ¿Cancelar {describirEstancia(fila.servicioNombre, fila.perroNombre, fila.fechaEntrada, fila.fechaSalida, fila.categoria)}?
               </p>
               <Textarea
                 label="Motivo (opcional)"

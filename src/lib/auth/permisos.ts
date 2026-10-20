@@ -237,7 +237,7 @@ export const PERMISOS = [
     clave: "importar_datos",
     etiqueta: "Importar clientes y mascotas",
     implica:
-      "Sube un Excel o CSV desde Administración → Importar para dar de alta muchos clientes y mascotas de una vez, revisa la vista previa, aplica la importación y la deshace desde el historial. Con el módulo Veterinaria prendido, los datos clínicos (especie, microchip, folio, peso, alergias) solo se importan si también tiene «Editar ficha clínica». Viene apagado.",
+      "Sube un Excel o CSV desde «Importar» (en el menú) para dar de alta muchos clientes y mascotas de una vez, revisa la vista previa, aplica la importación y la deshace desde el historial. Con el módulo Veterinaria prendido, los datos clínicos (especie, microchip, folio, peso, alergias) solo se importan si también tiene «Editar ficha clínica». Viene apagado.",
   },
   {
     clave: "agregar_servicios_extra",

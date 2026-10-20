@@ -74,7 +74,7 @@ Las **notas internas** son solo para el equipo: el dueño nunca las ve.
 - si necesitas corregir o completar algo, el médico agrega una **adenda** firmada;
 - si se capturó en la mascota equivocada, **Anular la consulta** con su motivo (queda a la vista, tachada).
 
-Una consulta de consulta, cirugía o urgencia pide al menos un diagnóstico para firmarse. Un borrador que no quieras se **descarta**.
+Una consulta de consulta, cirugía o urgencia pide al menos un diagnóstico para firmarse. Un borrador que no quieras se **descarta** con **Descartar borrador** → **Sí, descartar**: si venía de una cita regresas a la agenda de ese día (la cita vuelve a quedar sin consulta) y si no, al expediente; las dos dicen **Borrador descartado**.
 
 Antes del botón de firmar está el recuadro **Cargos de esta consulta**: lo que pasará a Caja. Mira [Cómo se cobra una consulta veterinaria](/ayuda/cobrar-una-consulta-veterinaria).
 
@@ -104,7 +104,7 @@ En la consulta, antes de **Firmar**, está el recuadro **Cargos de esta consulta
 - Los **medicamentos** que surtiste con esa consulta (los controlados salen solos con su receta) y los que agregues del inventario. Se cobran al precio de venta del inventario, por la unidad que usas.
 - Los **procedimientos** que agregues desde tu catálogo o escribiendo el concepto y el precio.
 - Si al agregar un medicamento o un servicio no hay nada cargado, el selector dice «No hay productos cargados» (o «No hay servicios cargados») con un enlace a [Inventario](/veterinaria/inventario) o a [Servicios](/servicios).
-- Una **vacuna** no se agrega como «otro procedimiento»: se aplica con el botón **Aplicar vacuna** (producto y lote del inventario, fecha y médico), queda en el carnet de la mascota y entra al cobro sola. Si escribes el nombre de una vacuna como procedimiento, la pantalla te manda a **Aplicar vacuna**. Junto a él está **Aplicar desparasitación** (producto, tipo, fecha). Lo aplicado ese día sale en la sección **Vacunas y desparasitación** de la consulta, con **Ver el carnet completo**.
+- Una **vacuna** no se agrega como «otro procedimiento»: se aplica con el botón **Aplicar vacuna** (producto y lote del inventario, fecha y médico), queda en el carnet de la mascota y entra al cobro sola. Si escribes el nombre de una vacuna como procedimiento, la pantalla te manda a **Aplicar vacuna**. Junto a él está **Aplicar desparasitación** (producto, tipo, fecha). Lo que aplicas desde la consulta queda **ligado a esa consulta** (aunque después cambie su fecha) y sale en su sección **Vacunas y desparasitación**, con **Ver el carnet completo**; lo que se registró ese día en el carnet sin consulta lo toma el borrador de ese día. Si anulas la vacuna en el carnet antes de firmar, su cargo se quita de la consulta: al firmar nunca se cobra una vacuna que no se aplicó en ella.
 
 ## Si falta un precio
 
