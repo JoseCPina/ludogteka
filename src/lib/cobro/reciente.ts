@@ -8,7 +8,7 @@ import { nombresDePersonal } from "@/lib/personal/nombres";
 // desde lo que la pantalla mostraba; si pasó, no registra: pide confirmación con lo que encontró.
 // QA S15 (19 de octubre de 2026): con F5 la pantalla nacía «sabiendo» el cobro de la otra ventana y la regla vieja
 // (los cobros que la pantalla ya listaba no contaban) lo dejaba pasar. Ahora no importa qué listaba la pantalla: solo
-// se exime lo que ESTA pantalla registró (`cobrosDeEstaPantalla`, que el navegador guarda por pestaña).
+// se exime lo que ESTA CARGA de la pantalla registró (`cobrosDeEstaPantalla`, en memoria: un F5 es otra carga).
 
 export const VENTANA_COBRO_RECIENTE_MS = 2 * 60 * 1000;
 

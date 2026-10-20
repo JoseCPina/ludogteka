@@ -386,3 +386,28 @@ export async function abrirSucursal(nombre: string, subdominio: string): Promise
   revalidatePath("/", "layout");
   return { error: null, exito: "Listo: tu sucursal quedó abierta y se sumó a tu suscripción.", negocioId: (creada.data as { negocio_id: string }).negocio_id };
 }
+
+/**
+ * QA S17: dar de baja una sucursal adicional. Queda en solo lectura 90 días, sale de «Tus negocios» y la cantidad de
+ * «Sucursal adicional» en Stripe baja en uno (la parte proporcional queda a favor). Si Stripe no responde, la baja
+ * se deshace: nunca queda una sucursal dada de baja que se sigue cobrando sin avisar.
+ */
+export async function darBajaSucursal(sucursalId: string, motivo: string): Promise<ResultadoCobro> {
+  const sesion = await obtenerSesionConRol();
+  if (sesion?.rol !== "admin") return { error: "Solo el admin da de baja una sucursal." };
+  if (motivo.trim().length < 5) return { error: "Escribe el motivo de la baja (al menos 5 letras)." };
+  const negocio = await negocioActual();
+  const servidor = createSupabaseAdminClient(negocio.id);
+  const baja = await servidor.rpc("dar_baja_sucursal", { p_sucursal: sucursalId, p_actor: sesion.user.id, p_motivo: motivo.trim() });
+  if (baja.error) return { error: baja.error.message };
+  const principal = (baja.data as { principal_id: string }).principal_id;
+  try {
+    await ajustarSucursales(principal, await sucursalesActivas(principal));
+  } catch (e) {
+    await servidor.rpc("revertir_baja_sucursal", { p_sucursal: sucursalId });
+    if (e instanceof Error && !(e as { type?: string }).type) return { error: `${e.message} No se dio de baja la sucursal.` };
+    return { error: `${mensajeDeErrorStripe(e)} No se dio de baja la sucursal.` };
+  }
+  revalidatePath("/", "layout");
+  return { error: null, exito: "Listo: la sucursal quedó dada de baja. Se puede consultar en solo lectura 90 días y ya no se cobra; la parte proporcional queda a favor en tu siguiente cobro." };
+}

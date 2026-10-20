@@ -20,7 +20,9 @@ const ETIQUETA: Record<string, string> = { efectivo: "Efectivo", transferencia: 
  * Anular un cobro o corregir su monto, SIN descuentos. El cobro no se borra:
  * queda con su historial (valor anterior, motivo, quién y cuándo) y la cuenta
  * vuelve a quedar por cobrar. Con el turno del cobro cerrado hace falta un
- * permiso más y el ajuste cae en el turno abierto.
+ * permiso más y el ajuste queda en ESE turno, posterior al corte (QA S17, N81): el
+ * turno abierto de hoy no cambia salvo que se devuelva efectivo del cajón, que se
+ * pregunta y entonces se registra como retiro.
  */
 export function CorregirCobro({
   reservaId,
@@ -60,6 +62,8 @@ export function CorregirCobro({
   const [sinTurno, setSinTurno] = useState(false);
   const [fondo, setFondo] = useState("0");
   const abriendo = useEspera();
+  // N81: con el turno del cobro cerrado y efectivo de por medio, ¿salió dinero del cajón hoy?
+  const [devolvioCajon, setDevolvioCajon] = useState<"" | "si" | "no">("");
 
   if (!puedeAnular && !puedeEditar) return null;
   if (editables.length === 0) return null;
@@ -77,7 +81,18 @@ export function CorregirCobro({
     setMotivo("");
     setMonto("");
     setError(null);
+    setDevolvioCajon("");
   }
+
+  // El efectivo que la corrección le quita al cobro (lo que se devolvería del cajón).
+  const efectivoCobrado = metodos.filter((m) => m.metodo === "efectivo").reduce((s2, m) => s2 + m.monto, 0);
+  const efectivoQueSale =
+    modo === "anular" || modo === "anular_grupo"
+      ? efectivoCobrado
+      : modo === "editar" && metodo === "efectivo" && Number(monto) >= 0 && Number(monto) < efectivoCobrado
+        ? Math.round((efectivoCobrado - Number(monto)) * 100) / 100
+        : 0;
+  const preguntaCajon = turnoCerrado && efectivoQueSale > 0;
 
   async function abrirTurnoYCorregir() {
     setError(null);
@@ -92,12 +107,14 @@ export function CorregirCobro({
   async function confirmar() {
     setError(null);
     if (motivo.trim().length < 5) return setError("Escribe el motivo: qué pasó con este cobro.");
+    if (preguntaCajon && !devolvioCajon) return setError("Contesta si se devolvió el dinero hoy del cajón.");
+    const cajon = preguntaCajon && devolvioCajon === "si" ? efectivoQueSale : 0;
     const r =
       modo === "anular"
-        ? await envio.ejecutar(() => anularCobro(cobroId, motivo, reservaId))
+        ? await envio.ejecutar(() => anularCobro(cobroId, motivo, reservaId, cajon))
         : modo === "anular_grupo" && grupoId
-          ? await envio.ejecutar(() => anularCobroGrupo(grupoId, motivo, reservaId))
-          : await envio.ejecutar(() => editarMontoCobro(cobroId, metodo, Number(monto), motivo, reservaId));
+          ? await envio.ejecutar(() => anularCobroGrupo(grupoId, motivo, reservaId, cajon))
+          : await envio.ejecutar(() => editarMontoCobro(cobroId, metodo, Number(monto), motivo, reservaId, cajon));
     if (r.error) {
       if (/no hay turno de caja abierto/i.test(r.error)) {
         setSinTurno(true);
@@ -167,14 +184,29 @@ export function CorregirCobro({
         </p>
       )}
       {turnoCerrado && (
-        <p className="text-sm text-ambar-oscuro">Este cobro es de un turno ya cerrado: su corte no cambia y la corrección se anota como ajuste en el turno abierto.</p>
+        <p className="text-sm text-ambar-oscuro" data-aviso-turno-cerrado>
+          Este cobro es de un turno ya cerrado: la corrección queda en ESE turno como ajuste posterior al corte (con tu nombre y la hora). Su corte no cambia y el turno abierto de hoy tampoco.
+        </p>
+      )}
+      {preguntaCajon && (
+        <fieldset className="flex flex-col gap-1.5 rounded-md border border-ambar bg-white p-3" data-pregunta-cajon>
+          <legend className="px-1 text-sm font-semibold text-n-900">¿Se devolvió el dinero hoy del cajón? *</legend>
+          <label className="flex items-center gap-2 text-sm text-n-800">
+            <input type="radio" name={`cajon-${cobroId}`} checked={devolvioCajon === "si"} onChange={() => setDevolvioCajon("si")} data-cajon="si" />
+            Sí: sale {dinero(efectivoQueSale)} del cajón hoy (se registra un retiro con este motivo en el turno abierto)
+          </label>
+          <label className="flex items-center gap-2 text-sm text-n-800">
+            <input type="radio" name={`cajon-${cobroId}`} checked={devolvioCajon === "no"} onChange={() => setDevolvioCajon("no")} data-cajon="no" />
+            No: solo se corrige el registro; el cajón de hoy no cambia
+          </label>
+        </fieldset>
       )}
       <Textarea label="Motivo (obligatorio)" rows={2} maxLength={300} value={motivo} onChange={(e) => setMotivo(e.target.value)} ayuda="Qué pasó. Queda en el historial." />
       {sinTurno && (
         <div data-abrir-turno-y-anular className="flex flex-col gap-2 rounded-md border-[1.5px] border-morado bg-white p-3">
           <p className="text-sm font-semibold text-n-900">No hay un turno de caja abierto.</p>
           <p className="text-sm text-n-700">
-            La corrección se anota en el turno abierto: ábrelo aquí y {modo === "editar" ? "se guarda la corrección" : "se anula el cobro"} en ese turno nuevo. El corte del turno cerrado no cambia.
+            Para sacar el efectivo del cajón hace falta un turno abierto: ábrelo aquí y {modo === "editar" ? "se guarda la corrección" : "se anula el cobro"} con el retiro en ese turno. El corte del turno cerrado no cambia.
           </p>
           <div className="w-40">
             <Field label="Fondo inicial ($)" type="number" min="0" step="0.01" value={fondo} onChange={(e) => setFondo(e.target.value)} />

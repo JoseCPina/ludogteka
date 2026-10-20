@@ -917,15 +917,17 @@ Para cuando el dinero que se recibió fue otro (se tecleó $300 y eran $400): **
 
 ## Corregir precio
 
-Para cuando el precio de **una línea de la cuenta** estaba mal. En la línea, **Corregir precio**: escribe el **Precio correcto de la línea** y el motivo. La cuenta muestra la corrección como un renglón aparte; no cuenta como descuento.
+Para cuando el precio de **una línea de la cuenta** estaba mal. En la línea, **Corregir precio**: escribe el **Precio correcto de la línea** y el motivo y aprieta **Guardar precio**. El cuadro se queda abierto con el precio vigente arriba («hoy $…»), el motivo vacío, y el botón se vuelve a activar en cuanto cambias el precio o el motivo.
+
+Una línea tiene **una sola corrección vigente**: si la corriges otra vez, la nueva reemplaza a la anterior (no se acumulan renglones), y si vuelves al precio original la corrección se quita. Debajo del renglón de la corrección ves el precio original y el vigente, **Ver historial** (todas las correcciones de esa línea, con quién y cuándo) y **Anular corrección** (con motivo: la línea vuelve a su precio original). No cuenta como descuento.
 
 ## Qué sí se puede anular o corregir
 
 - **Efectivo, transferencia y tarjeta (registro manual):** sí.
 - **Cobros con la terminal o el link de Mercado Pago (o Clip):** no. Se devuelven con **Devolver con Mercado Pago** (mira [Cómo devolver un cobro](/ayuda/devolver-un-cobro)); así el dinero y la caja cuadran con lo que realmente pasó.
 - **Con el turno abierto:** quien tenga el permiso corrige directo.
-- **Con el turno ya cerrado:** hace falta **Corregir cobros de turnos cerrados**. El corte cerrado **no cambia**: la corrección entra al turno abierto de hoy y se ve como ajuste, en el turno actual y en el historial.
-- **Sin ningún turno abierto:** ahí mismo sale **No hay un turno de caja abierto.** con el **Fondo inicial ($)** y el botón **Abrir turno y anular** (o **Abrir turno y corregir**): abre el turno y deja el ajuste en ese turno nuevo.
+- **Con el turno ya cerrado:** hace falta **Corregir cobros de turnos cerrados**. La corrección queda ligada a **ese turno**, como **ajuste posterior al corte**: su corte guardado no cambia y el **turno abierto de hoy tampoco** (su efectivo esperado sigue igual). En [Turno de caja](/caja/turno), el turno cerrado enseña **Ajustes posteriores al corte** con quién, cuándo y el motivo. No hace falta tener un turno abierto.
+- **¿Se devolvió el dinero hoy del cajón?** Si el cobro de un turno cerrado era en efectivo, el cuadro lo pregunta. **No**: solo se corrige el registro. **Sí**: además se registra un **retiro** con el motivo en el turno abierto, para que el cajón de hoy cuadre. Si contestas que sí y no hay turno abierto, ahí mismo sale **Abrir turno y anular** (o **Abrir turno y corregir**) con el **Fondo inicial ($)**.
 - **Cobro con devoluciones:** primero se resuelven las devoluciones.
 
 ## Cobros juntos (varias cuentas de una clienta)

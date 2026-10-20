@@ -87,7 +87,14 @@ try {
   console.log(`── Registro (${NEGOCIO}, tel. ${TEL})`);
   await page.goto(`${PLATAFORMA}/registro`);
   await page.getByLabel("Tu nombre").fill("Persona de Prueba");
+  // N79: la dirección se arma en vivo con lo que se escribe (sin acentos ni signos, como slug_libre).
+  const sub = () => page.locator("[data-subdominio]").innerText();
+  const vacio = await sub();
+  await page.getByLabel("Nombre de tu negocio").pressSequentially("Estética Ñandú & Co.", { delay: 15 });
+  const enVivo = await sub();
+  ok(vacio === "tunegocio.peludesk.mx" && enVivo === "estetica-nandu-co.peludesk.mx", "la dirección del negocio se arma en vivo mientras se escribe el nombre", `${vacio} → ${enVivo}`);
   await page.getByLabel("Nombre de tu negocio").fill(NEGOCIO);
+  ok((await sub()) === `prueba-gratis-${sufijo}.peludesk.mx`, "y cambia con cada letra", await sub());
   await page.getByLabel("Ciudad").fill("Querétaro");
   await page.getByLabel("Teléfono").fill(TEL);
   await page.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
@@ -95,7 +102,7 @@ try {
   await page.getByRole("button", { name: "Abrir mi negocio" }).click();
   await page.getByText("Escoge al menos un servicio").first().waitFor();
   ok(true, "sin escoger servicios no se registra");
-  ok((await page.getByLabel("Nombre de tu negocio").inputValue()) === NEGOCIO, "lo escrito se conserva tras el error");
+  ok((await page.getByLabel("Nombre de tu negocio").inputValue()) === NEGOCIO && (await sub()) === `prueba-gratis-${sufijo}.peludesk.mx`, "lo escrito (y su dirección) se conserva tras el error");
   await page.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
   await page.getByLabel("Estética").check();
   await page.getByLabel(/Leí y acepto/).check();

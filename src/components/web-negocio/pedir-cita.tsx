@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Alert } from "@/components/ui/alert";
 import { hoyNegocio } from "@/lib/formato";
-import { type HorarioSemana, diasAbiertos, diasEntre, hora12, horasDelDia, sumarDias, diaSemana } from "@/lib/web-negocio/horario";
+import { type HorarioSemana, diasAbiertos, diasEntre, es24Horas, hora12, horasDelDia, sumarDias, diaSemana } from "@/lib/web-negocio/horario";
 import { type ServicioWeb, type DatosPedido, mensajeSolicitud, mensajesAlCliente, pesosMx } from "@/lib/web-negocio/catalogo";
 import { ChatWhatsApp } from "./chat-whatsapp";
 import { EVENTO_PEDIR } from "./boton-pedir";
@@ -35,6 +35,9 @@ function ahoraEn(zona: string): { fecha: string; minutos: number } {
 }
 
 const PASOS = ["Servicio", "Cuándo", "Tus datos"];
+
+/** El único aviso de la demostración en el formulario (lo mismo arriba del formulario y en el resultado). */
+export const AVISO_DEMOSTRACION = "Modo demostración: puedes probar el formulario, no se envía nada ni se avisa al negocio.";
 
 export function PedirCita({ catalogo, horario, zona, negocio, modo, telefono, preciosDeEjemplo, notaDemo }: Props) {
   const [paso, setPaso] = useState(0);
@@ -108,8 +111,9 @@ export function PedirCita({ catalogo, horario, zona, negocio, modo, telefono, pr
       hora: hora ? hora12(hora) : null,
       salida: salida ? fechaLarga(salida) : null,
       noches,
-      abre: d ? hora12(d.abre) : null,
-      cierra: d ? hora12(d.cierra) : null,
+      // Un día abierto 24 horas no tiene «desde las…» ni «cerramos a las…».
+      abre: d && !es24Horas(d) ? hora12(d.abre) : null,
+      cierra: d && !es24Horas(d) ? hora12(d.cierra) : null,
     };
     if (modo === "real") {
       if (!telefono) return setError("Este negocio todavía no tiene WhatsApp en su página. Llámales para pedir tu cita.");
@@ -142,12 +146,13 @@ export function PedirCita({ catalogo, horario, zona, negocio, modo, telefono, pr
             <Check size={22} weight="bold" />
           </span>
           <div className="min-w-0">
-            <p className="text-lg font-bold leading-snug">{modo === "demo" ? "Solicitud lista" : "Te abrimos WhatsApp con tu solicitud"}</p>
+            <p className="text-lg font-bold leading-snug">{modo === "demo" ? "Así quedaría la solicitud" : "Te abrimos WhatsApp con tu solicitud"}</p>
             <p className="mt-1 text-[15px] text-black/70">
               {listo.servicio.nombre} para {listo.mascota} ·{" "}
               {listo.servicio.modo === "noches" ? `${listo.dia} al ${listo.salida} (${listo.noches} ${listo.noches === 1 ? "noche" : "noches"})` : `${listo.dia}${listo.hora ? `, ${listo.hora}` : ""}`}
             </p>
             {modo === "real" && <p className="mt-2 text-sm text-black/70">Mándala desde WhatsApp y {negocio} te confirma por ahí.</p>}
+            {modo === "demo" && <p className="mt-2 text-sm text-black/60" data-modo-demostracion>{AVISO_DEMOSTRACION}</p>}
           </div>
         </div>
         {modo === "demo" && (
@@ -172,6 +177,11 @@ export function PedirCita({ catalogo, horario, zona, negocio, modo, telefono, pr
 
   return (
     <div ref={caja} data-pedir-cita className="min-w-0 scroll-mt-24 rounded-[var(--w-radio-tarjeta)] bg-white p-4 shadow-[0_20px_50px_-30px_rgba(0,0,0,.35)] ring-1 ring-black/5 sm:p-6">
+      {modo === "demo" && (
+        <p role="note" data-modo-demostracion className="mb-4 rounded-[var(--w-radio-chico)] bg-[var(--w-suave)] px-3 py-2 text-sm font-medium text-[var(--w-tinta)]">
+          {AVISO_DEMOSTRACION}
+        </p>
+      )}
       <ol className="mb-5 flex items-center gap-2 text-xs font-semibold" aria-label="Pasos">
         {PASOS.map((p, i) => (
           <li key={p} className={`flex items-center gap-1.5 ${i <= paso ? "text-[var(--w-tinta)]" : "text-black/40"}`} aria-current={i === paso ? "step" : undefined}>
@@ -298,8 +308,26 @@ export function PedirCita({ catalogo, horario, zona, negocio, modo, telefono, pr
               </button>
             </span>
           </p>
-          <Field label="Nombre de tu mascota" name="mascota" value={mascota} onChange={(e) => setMascota(e.target.value)} autoComplete="off" required />
-          <Field label="Tu nombre" name="cliente" value={cliente} onChange={(e) => setCliente(e.target.value)} autoComplete="name" required />
+          <Field
+            label="Nombre de tu mascota"
+            name="mascota"
+            value={mascota}
+            onChange={(e) => setMascota(e.target.value)}
+            autoComplete="off"
+            required
+            ayuda={modo === "demo" && mascota === "Luna" ? "Dato de ejemplo: cámbialo si quieres." : undefined}
+            data-dato-ejemplo={modo === "demo" && mascota === "Luna" ? "" : undefined}
+          />
+          <Field
+            label="Tu nombre"
+            name="cliente"
+            value={cliente}
+            onChange={(e) => setCliente(e.target.value)}
+            autoComplete="name"
+            required
+            ayuda={modo === "demo" && cliente === "Ana López" ? "Dato de ejemplo: cámbialo si quieres." : undefined}
+            data-dato-ejemplo={modo === "demo" && cliente === "Ana López" ? "" : undefined}
+          />
         </form>
       )}
 
@@ -325,7 +353,6 @@ export function PedirCita({ catalogo, horario, zona, negocio, modo, telefono, pr
             {modo === "real" ? "Enviar por WhatsApp" : servicio?.modo === "cita" ? "Pedir cita" : "Pedir reserva"}
           </Button>
         )}
-        {modo === "demo" && <span className="ml-auto text-xs text-black/45" data-modo-demostracion>Modo demostración: no se guarda nada</span>}
       </div>
     </div>
   );

@@ -2,8 +2,14 @@
 // negocio en PeluDesk (horario_semana) o, en la vista previa de un prospecto, de su horario de Google
 // (regularOpeningHours.periods). Sin imports: lo usan también las pruebas con Node directo.
 
-/** Un renglón por día de la semana, 0 = domingo … 6 = sábado (como extract(dow) y como Google). null = cerrado. */
-export type HorarioSemana = ({ abre: string; cierra: string } | null)[];
+/** Un tramo de un día: de «abre» a «cierra» (HH:MM; «23:59» = hasta la medianoche). */
+export type TramoHorario = { abre: string; cierra: string };
+
+/**
+ * Un renglón por día de la semana, 0 = domingo … 6 = sábado (como extract(dow) y como Google). null = cerrado.
+ * `abre`/`cierra` son la primera apertura y el último cierre; `tramos`, si el día tiene varios (cierra a comer).
+ */
+export type HorarioSemana = ({ abre: string; cierra: string; tramos?: TramoHorario[] } | null)[];
 
 const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
@@ -18,23 +24,46 @@ const aMin = (t: string) => {
 
 type PeriodoGoogle = { open?: { day?: number; hour?: number; minute?: number }; close?: { day?: number; hour?: number; minute?: number } };
 
+/** Abierto todo el día (00:00 a la medianoche, sin cortes). */
+export function es24Horas(d: { abre: string; cierra: string; tramos?: TramoHorario[] } | null | undefined): boolean {
+  return Boolean(d && d.abre === "00:00" && d.cierra === "23:59" && (!d.tramos || d.tramos.length <= 1));
+}
+
+/** Los tramos de un día (uno solo si no tiene cortes). */
+export function tramosDe(d: { abre: string; cierra: string; tramos?: TramoHorario[] }): TramoHorario[] {
+  return d.tramos?.length ? d.tramos : [{ abre: d.abre, cierra: d.cierra }];
+}
+
 /**
- * Los periodos de Google a un horario por día: con varios periodos el mismo día (cierra a comer) se toma la
- * primera apertura y el último cierre. Un negocio abierto 24 horas (un solo periodo sin cierre) queda de 0 a 24.
+ * Los periodos de Google a un horario por día. Con varios periodos el mismo día (cierra a comer) se guardan como
+ * tramos: no se ofrecen horas en el corte. Un negocio abierto 24 horas (un solo periodo sin cierre, o periodos de
+ * 00:00 a 00:00 del día siguiente) queda de 00:00 a 23:59 y se muestra «Abierto 24 horas» en todos lados.
  */
 export function horarioDeGoogle(periodos: PeriodoGoogle[] | null | undefined): HorarioSemana | null {
   if (!periodos?.length) return null;
   const h: HorarioSemana = [null, null, null, null, null, null, null];
   if (periodos.length === 1 && periodos[0].open && !periodos[0].close) return h.map(() => ({ abre: "00:00", cierra: "23:59" }));
+  const tramos: TramoHorario[][] = [[], [], [], [], [], [], []];
   for (const p of periodos) {
     const d = p.open?.day;
     if (d == null || d < 0 || d > 6 || !p.open) continue;
     const abre = hhmm(p.open.hour ?? 0, p.open.minute ?? 0);
     const cierraDiaSiguiente = p.close?.day != null && p.close.day !== d;
     const cierra = !p.close || cierraDiaSiguiente ? "23:59" : hhmm(p.close.hour ?? 0, p.close.minute ?? 0);
-    const prev = h[d];
-    h[d] = prev ? { abre: aMin(abre) < aMin(prev.abre) ? abre : prev.abre, cierra: aMin(cierra) > aMin(prev.cierra) ? cierra : prev.cierra } : { abre, cierra };
+    tramos[d].push({ abre, cierra: cierra === "00:00" ? "23:59" : cierra });
   }
+  tramos.forEach((t, d) => {
+    if (!t.length) return;
+    t.sort((a, b) => aMin(a.abre) - aMin(b.abre));
+    // Tramos que se tocan o se enciman se juntan.
+    const juntos: TramoHorario[] = [];
+    for (const x of t) {
+      const u = juntos[juntos.length - 1];
+      if (u && aMin(x.abre) <= aMin(u.cierra)) u.cierra = aMin(x.cierra) > aMin(u.cierra) ? x.cierra : u.cierra;
+      else juntos.push({ ...x });
+    }
+    h[d] = { abre: juntos[0].abre, cierra: juntos[juntos.length - 1].cierra, ...(juntos.length > 1 ? { tramos: juntos } : {}) };
+  });
   return h.some(Boolean) ? h : null;
 }
 
@@ -64,8 +93,9 @@ export function diasEntre(desdeISO: string, hastaISO: string): number {
   return Math.round((b - a) / 86_400_000);
 }
 
-/** «9:00 a.m.», «7:30 p.m.». */
+/** «9:00 a.m.», «7:30 p.m.»; «23:59» (hasta la medianoche) es «12:00 a.m.». */
 export function hora12(t: string): string {
+  if (t === "23:59") return "12:00 a.m.";
   const [h, m] = t.split(":").map(Number);
   const sufijo = h < 12 ? "a.m." : "p.m.";
   const h12 = h % 12 === 0 ? 12 : h % 12;
@@ -89,11 +119,13 @@ export function diasAbiertos(h: HorarioSemana, desde: string, n: number): string
 export function horasDelDia(h: HorarioSemana, fecha: string, duracionMin: number, ahora?: { fecha: string; minutos: number }): string[] {
   const dia = h[diaSemana(fecha)];
   if (!dia) return [];
-  const inicio = Math.ceil(aMin(dia.abre) / 30) * 30;
-  const fin = aMin(dia.cierra) - duracionMin;
-  const desde = ahora && ahora.fecha === fecha ? Math.max(inicio, Math.ceil((ahora.minutos + 30) / 30) * 30) : inicio;
+  const minimo = ahora && ahora.fecha === fecha ? Math.ceil((ahora.minutos + 30) / 30) * 30 : 0;
   const res: string[] = [];
-  for (let m = desde; m <= fin; m += 30) res.push(hhmm(Math.floor(m / 60), m % 60));
+  // Solo dentro de cada tramo real: nunca en el corte de mediodía ni después del cierre.
+  for (const t of tramosDe(dia)) {
+    const fin = (t.cierra === "23:59" ? 1440 : aMin(t.cierra)) - duracionMin;
+    for (let m = Math.max(Math.ceil(aMin(t.abre) / 30) * 30, minimo); m <= fin && m < 1440; m += 30) res.push(hhmm(Math.floor(m / 60), m % 60));
+  }
   return res;
 }
 
@@ -101,15 +133,26 @@ export function horasDelDia(h: HorarioSemana, fecha: string, duracionMin: number
 export function renglonesHorario(h: HorarioSemana): { dia: string; texto: string; indice: number }[] {
   return [1, 2, 3, 4, 5, 6, 0].map((i) => {
     const d = h[i];
-    return { dia: DIAS[i], indice: i, texto: d ? (d.abre === "00:00" && d.cierra === "23:59" ? "Abierto 24 horas" : `${hora12(d.abre)} a ${hora12(d.cierra)}`) : "Cerrado" };
+    return { dia: DIAS[i], indice: i, texto: d ? (es24Horas(d) ? "Abierto 24 horas" : tramosDe(d).map((t) => `${hora12(t.abre)} a ${hora12(t.cierra)}`).join(" y ")) : "Cerrado" };
   });
 }
 
-/** «Abierto · cierra a las 7:00 p.m.» o «Cerrado · abre el lunes a las 9:00 a.m.». */
+/** «Abierto · cierra a las 7:00 p.m.», «Abierto 24 horas» o «Cerrado · abre el lunes a las 9:00 a.m.». */
 export function estadoAhora(h: HorarioSemana, fecha: string, minutos: number): { abierto: boolean; texto: string } {
+  if (h.every((d) => es24Horas(d))) return { abierto: true, texto: "Abierto 24 horas" };
   const dia = h[diaSemana(fecha)];
-  if (dia && minutos >= aMin(dia.abre) && minutos < aMin(dia.cierra)) return { abierto: true, texto: `Abierto · cierra a las ${hora12(dia.cierra)}` };
-  if (dia && minutos < aMin(dia.abre)) return { abierto: false, texto: `Cerrado · abre hoy a las ${hora12(dia.abre)}` };
+  if (dia) {
+    const fin = (t: TramoHorario) => (t.cierra === "23:59" ? 1440 : aMin(t.cierra));
+    const ahora = tramosDe(dia).find((t) => minutos >= aMin(t.abre) && minutos < fin(t));
+    if (ahora) {
+      // Abierto hasta la medianoche y mañana abre a las 00:00: no «cierra a las 12:00 a.m.».
+      const siguiente = h[diaSemana(sumarDias(fecha, 1))];
+      if (ahora.cierra === "23:59" && siguiente && siguiente.abre === "00:00") return { abierto: true, texto: es24Horas(dia) ? "Abierto 24 horas" : "Abierto" };
+      return { abierto: true, texto: `Abierto · cierra a las ${hora12(ahora.cierra)}` };
+    }
+    const proximo = tramosDe(dia).find((t) => minutos < aMin(t.abre));
+    if (proximo) return { abierto: false, texto: `Cerrado · abre hoy a las ${hora12(proximo.abre)}` };
+  }
   for (let i = 1; i <= 7; i++) {
     const f = sumarDias(fecha, i);
     const d = h[diaSemana(f)];

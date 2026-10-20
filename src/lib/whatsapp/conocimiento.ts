@@ -263,4 +263,24 @@ Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado.
 - Los botones de WhatsApp (Confirmación, Recordatorio, Listo para recoger, Invitar al portal) enseñan el mensaje antes de abrir WhatsApp con él ya escrito; quien atiende lo manda. PeluDesk no manda esos mensajes solo.
 - Anular un cobro sin ningún turno de caja abierto: ahí mismo sale «Abrir turno y anular»; el ajuste queda en el turno nuevo y el corte cerrado no cambia.
 - Al agendar, un cliente con un solo perro ya trae a su perro escogido; un botón apagado dice qué falta. En el check-in y al iniciar o cerrar una cita, lo obligatorio lleva * y el botón dice qué falta antes de apretarlo.
+## Respuestas fijas y el demo (QA S16, 19 de octubre)
+- Estas se contestan siempre, sin escalar (el texto exacto va en RESPUESTAS FIJAS del prompt, de src/lib/peludesk/respuestas-fijas.ts): factura CFDI, soporte, sucursales, costo de los recordatorios, cancelación, migración desde Excel, plan anual, a nombre de quién sale el cobro, SMS y terminal.
+- Recordatorios y avisos por WhatsApp: incluidos en el plan, sin costo por mensaje; salen desde el teléfono del negocio con el mensaje ya escrito (wa.me).
+- Cancelación: cuando quiera, sin plazo forzoso; sin reembolso del mes en curso (lo sigue usando hasta que termina); después sus datos quedan en solo lectura 90 días y, si los necesita, le ayudamos a exportarlos por WhatsApp.
+- Migración desde Excel: el importador (Administración → Importar) sube clientes y mascotas desde un Excel o CSV; si hace falta, le ayudamos por WhatsApp a dejar el archivo listo. Pasar datos de otra app no se promete.
+- Plan anual: el precio anual de la tabla de planes ($6,490 + IVA), dos meses gratis contra pagar mes a mes.
+- Pago o factura: el cobro aparece a nombre de MENTEO, la empresa que opera PeluDesk. Dilo cada vez que hables de pagar, de la tarjeta o de la factura.
+- SMS: no se mandan; los avisos y recordatorios van por WhatsApp.
+- Terminal: respuesta corta (Point Smart de Mercado Pago o Clip, el cobro entra solo a la caja) con el link del artículo https://peludesk.mx/ayuda/cobrar-con-terminal.
+- El demo (Patitas & Co.) es un negocio de ejemplo de PeluDesk, con datos inventados: nunca un cliente real. Cuando mandes el link del demo, dilo.
+- El link de la prueba o del demo va solo cuando la persona pregunta cómo empezar, pide ver el sistema o dice que quiere probar. No cierres cada respuesta con «¿Ya quieres…?» ni con el link de registro.
+- La página de muestra de un prospecto (peludesk.mx/para/…): en el celular tiene menú, su horario real (un negocio 24 horas sale «Abierto 24 horas» en todos lados), el formulario de cita en modo demostración (no se envía nada ni se avisa al negocio) y, si el negocio no la quiere, se pide quitarla por WhatsApp o a contacto@peludesk.mx.
+- Al registrarse, la dirección (nombre.peludesk.mx) se ve en vivo mientras se escribe el nombre del negocio; si ya está tomada, se le da una parecida.
+## Caja, sucursales y consulta (QA S17, 19 de octubre)
+- Anular o corregir un cobro de un turno YA CERRADO: queda ligado a ese turno como «ajuste posterior al corte» (con quién y cuándo); su corte no cambia y el turno abierto de hoy tampoco. Si el cobro era en efectivo, se pregunta «¿Se devolvió el dinero hoy del cajón?»: solo si sí, se registra un retiro con el motivo en el turno abierto. Ya no hace falta un turno abierto para corregir un cobro de un turno cerrado.
+- Corregir precio: una línea tiene una sola corrección vigente (la nueva reemplaza a la anterior, volver al precio original la quita); «Ver historial» y «Anular corrección» (con motivo) junto al renglón.
+- Un segundo cobro a la misma cuenta en menos de 2 minutos pide confirmar si no salió de esa misma carga de la pantalla (un F5 cuenta como otra carga). Se cobra exactamente el monto que dice el campo.
+- Crear un cliente, perro, servicio, producto o empleado abre su ficha.
+- Sucursales: el admin de la primera da de baja una sucursal en Módulos y plan → Sucursales → «Dar de baja» (con motivo): queda en solo lectura 90 días, sale de «Tus negocios» y deja de cobrarse (la parte proporcional queda a favor). La primera no se da de baja ni se suspende con sucursales activas.
+- Consulta veterinaria: «Aplicar desparasitación» junto a «Aplicar vacuna»; lo aplicado ese día sale en «Vacunas y desparasitación» de la consulta. Una vacuna repetida (misma fecha) no se registra: el formulario se cierra y ofrece «Cancelar» y «Ver en el carnet».
 `.trim();

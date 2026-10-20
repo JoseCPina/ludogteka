@@ -163,8 +163,13 @@ async function registrar(fd: FormData): Promise<EstadoRegistro> {
   if (errorOrigen) console.error("[registro] origen", errorOrigen.code, errorOrigen.message);
 
   // Llegó desde su vista previa (peludesk.mx/para/<slug>): el prospecto pasa a «en prueba» y queda ligado al negocio.
+  // Con ?interno=1 (una revisión de PeluDesk desde la ficha del CRM) el prospecto no se mueve de etapa ni se
+  // cuenta la conversión: solo se publica la página.
   const slugProspecto = String(fd.get("prospecto") ?? "");
-  if (/^[a-z0-9-]{3,60}$/.test(slugProspecto)) {
+  const interno = fd.get("interno") === "1";
+  if (interno && /^[a-z0-9-]{3,60}$/.test(slugProspecto)) {
+    await publicarPaginaDeProspecto(alta.negocio_id, slugProspecto);
+  } else if (/^[a-z0-9-]{3,60}$/.test(slugProspecto)) {
     const { data: pr } = await admin
       .from("prospectos")
       .update({ etapa: "en_prueba", negocio_cliente_id: alta.negocio_id, cliente_por: "telefono" })
@@ -181,7 +186,7 @@ async function registrar(fd: FormData): Promise<EstadoRegistro> {
 
   // API de conversiones de Meta, deduplicada con el píxel por el mismo event_id. Solo con marketing aceptado.
   const eventId = crypto.randomUUID();
-  if (consentimiento.marketing) {
+  if (consentimiento.marketing && !interno) {
     await enviarConversion({
       nombre: "CompleteRegistration",
       eventId,

@@ -227,3 +227,28 @@ export function juntarCortos(mensaje: string): string {
   }
   return p.join("\n\n");
 }
+
+/**
+ * Un mensaje que lleva el link del demo dice que Patitas & Co. es un negocio de ejemplo (QA S16, N78): si el
+ * modelo no lo escribió, se agrega en el párrafo de antes del link. Nunca dos veces.
+ */
+export function aclararDemo(texto: string, urlDemo: string, aclaracion: string): string {
+  if (!urlDemo || !texto.includes(urlDemo) || /ejemplo/i.test(texto)) return texto;
+  const parrafos = texto.split("\n\n");
+  const i = parrafos.findIndex((p) => p.includes(urlDemo));
+  parrafos.splice(i, 0, aclaracion);
+  return parrafos.join("\n\n");
+}
+
+/**
+ * QA S16: al hablar de pagar, del cobro o de la factura, se dice a nombre de quién sale el cargo (MENTEO). Si el
+ * modelo no lo escribió, se agrega en el párrafo de antes del link (o al final). Nunca dos veces.
+ */
+export function aclararCobro(texto: string, aclaracion: string): string {
+  if (!/\b(factur\w*|cobr\w*|pag[oa]\w*|tarjeta|cargo|suscripci[oó]n)\b/i.test(texto) || /MENTEO/.test(texto)) return texto;
+  const parrafos = texto.split("\n\n");
+  const i = parrafos.findIndex((p) => /^https?:\/\//.test(p.trim()));
+  if (i >= 0) parrafos.splice(i, 0, aclaracion);
+  else parrafos.push(aclaracion);
+  return parrafos.join("\n\n");
+}

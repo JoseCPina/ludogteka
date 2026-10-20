@@ -410,7 +410,7 @@ Un permiso de un módulo apagado no hace nada hasta que lo prendas.
     modulo: null,
     roles: ["admin"],
     rutas: ["/admin/modulos"],
-    palabras: ["plan", "suscripción", "pagar PeluDesk", "cancelar", "factura", "CFDI", "RFC", "datos de facturación", "tarjeta", "funciones", "sucursal", "sucursales", "otra sucursal", "soporte", "WhatsApp"],
+    palabras: ["plan", "suscripción", "pagar PeluDesk", "cancelar", "factura", "CFDI", "RFC", "datos de facturación", "tarjeta", "funciones", "sucursal", "sucursales", "otra sucursal", "soporte", "WhatsApp", "anual", "recordatorios", "costo por mensaje", "Excel", "migrar", "MENTEO", "demo", "Patitas", "SMS", "plan anual", "precio anual"],
     captura: "modulos-y-plan.jpg",
     cuerpo: `Si no usas hotel o inventario, apágalos y dejan de estorbar en el menú. Aquí también contratas tu plan.
 
@@ -466,9 +466,36 @@ Cada sucursal es un negocio en PeluDesk: su propia caja, agenda, personal, pági
 
 Solo se abre cuando tu plan ya está pagado: si contrataste durante la prueba, al terminar la prueba. Si trabajas en varias, cambias de una a otra en **Tus negocios**, abajo del menú: las sucursales del mismo dueño salen juntas.
 
+### Dar de baja una sucursal
+
+1. Desde tu primera sucursal, en [Módulos y plan](/admin/modulos) → **Sucursales**, junto a la sucursal aprieta **Dar de baja**.
+2. Escribe el **Motivo (obligatorio)** y aprieta **Dar de baja la sucursal**.
+
+La sucursal queda **en solo lectura 90 días** (se puede consultar todo, no se captura nada), sale de **Tus negocios** y deja de cobrarse: el concepto «Sucursal adicional» baja en uno y la **parte proporcional queda a favor** en tu siguiente cobro. La primera sucursal no se da de baja aquí (es la que paga el plan): para dejar PeluDesk se cancela la suscripción, y mientras tenga sucursales activas no se suspende.
+
 ## Soporte
 
-Todo por WhatsApp, al +52 56 4916 0742: un asistente contesta las 24 horas y lo que no resuelve lo atiende una persona de PeluDesk el mismo día, en horario hábil. No hay que abrir tickets ni escribir correos.`,
+Todo por WhatsApp, al +52 56 4916 0742: un asistente contesta las 24 horas y lo que no resuelve lo atiende una persona de PeluDesk el mismo día, en horario hábil. No hay que abrir tickets ni escribir correos.
+
+## Plan anual
+
+¿Cuánto cuesta el plan anual? **$6,490 + IVA al año** (diez mensualidades: dos meses gratis contra pagar mes a mes). Lo escoges con **Anual · 2 meses gratis** al contratar en [Módulos y plan](/admin/modulos). El cobro aparece como MENTEO.
+
+## Recordatorios por WhatsApp
+
+Van incluidos en el plan: **no hay costo por mensaje**. Los avisos y recordatorios (confirmación, recordatorio, listo para recoger) se mandan por WhatsApp desde el teléfono de tu negocio: PeluDesk te deja el mensaje ya escrito y lo abres en WhatsApp con un toque. **No mandamos SMS**: los avisos van por WhatsApp.
+
+## Cancelar
+
+Cancelas cuando quieras, sin plazo forzoso: en [Módulos y plan](/admin/modulos), en el portal de pagos. No hay reembolso del mes en curso; lo sigues usando hasta que termina. Después tus datos quedan en solo lectura 90 días, y si los necesitas te ayudamos a exportarlos por WhatsApp.
+
+## Pasar tus datos desde Excel
+
+Tus clientes y mascotas los subes desde un Excel o CSV con [Importar clientes y mascotas](/admin/importar). Si hace falta, te ayudamos por WhatsApp a dejar tu archivo listo.
+
+## El negocio de ejemplo
+
+**Patitas & Co.**, el que se abre con «Ver demo», es un negocio de ejemplo de PeluDesk con datos inventados: no es un cliente real.`,
   },
   {
     slug: "conectar-mercado-pago-o-clip",

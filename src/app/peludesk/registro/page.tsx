@@ -26,7 +26,7 @@ export default async function RegistroPage({ searchParams }: { searchParams: Pro
   // Desde la vista previa de un prospecto (/para/<slug>): su negocio, ciudad, servicios y teléfono ya escritos.
   const slug = Array.isArray(q.prospecto) ? q.prospecto[0] : q.prospecto;
   const pr = slug ? await prospectoPorSlug(slug) : null;
-  const inicial = pr ? { slug: pr.slug, negocio: pr.nombre, ciudad: pr.ciudad, servicios: serviciosDe(pr), telefono: pr.telefono_norm ?? "" } : undefined;
+  const inicial = pr ? { slug: pr.slug, negocio: pr.nombre.slice(0, 60).trim(), ciudad: pr.ciudad, servicios: serviciosDe(pr), telefono: pr.telefono_norm ?? "" } : undefined;
   return (
     <div className="bg-crema">
     <main id="contenido" className="min-h-[100dvh]">
@@ -68,7 +68,7 @@ export default async function RegistroPage({ searchParams }: { searchParams: Pro
           </p>
         </div>
         <section className="relative rounded-2xl border border-n-200 bg-white p-6 shadow-[0_1px_2px_rgb(75_63_114/0.06)] sm:p-8">
-          <RegistroForm origen={origen} inicial={inicial} />
+          <RegistroForm origen={origen} inicial={inicial} interno={q.interno === "1"} />
         </section>
       </div>
       <div className="mx-auto w-full max-w-5xl px-4 pb-12 sm:px-6">

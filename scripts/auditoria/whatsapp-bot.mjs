@@ -224,7 +224,9 @@ function juzgar(caso, pregunta, r, pide, desdeTexto) {
   if (!r.leido) f.push("no marcó leído con «escribiendo…»");
   const voseo = r.textos.join(" ").match(/\b(sos|querés|tenés|podés|sabés|registrás|completás|mirá|fijate|contratás)\b/i);
   if (voseo) f.push(`voseo («${voseo[0]}»)`);
-  if (r.textos.length > 2) f.push(`${r.textos.length} mensajes de texto seguidos (máximo 2)`);
+  // El aviso de privacidad a un número nuevo es un mensaje aparte que no cuenta.
+  const sinAviso = r.textos.filter((t) => !t.startsWith("Así cuidamos tus datos"));
+  if (sinAviso.length > 2) f.push(`${sinAviso.length} mensajes de texto seguidos (máximo 2)`);
   for (const [i, t] of r.textos.entries()) {
     const n = r.textos.length > 1 ? ` (mensaje ${i + 1})` : "";
     if (t.includes("**")) f.push(`negrita con ** doble${n}`);
@@ -261,10 +263,16 @@ function juzgar(caso, pregunta, r, pide, desdeTexto) {
   // Al escalar se manda el acuse y el borrador del modelo se descarta a propósito.
   const escalo = r.textos.some((t) => /en un rato te escribimos/.test(t));
   if (perdidas.length && !escalo) f.push(`se perdió texto del modelo al mandarlo: «${perdidas.slice(0, 8).join(" ")}»`);
-  if (pide.venta) {
+  // QA S16: el link va solo cuando la persona pide ver el sistema o probar; nunca «¿Ya quieres…?» en cada respuesta.
+  if (pide.link) {
     const ultimo = r.textos[r.textos.length - 1] ?? "";
-    if (!/https?:\/\/\S+\/(registro|demo|ir\/prueba)\b/.test(ultimo.split("\n\n").pop() ?? "")) f.push("no termina con el siguiente paso (link al demo o a la prueba)");
+    if (!/https?:\/\/\S+\/(registro|demo|ir\/(prueba|demo))\b/.test(ultimo.split("\n\n").pop() ?? "")) f.push("pidió ver o probar y no termina con el link (demo o prueba)");
   }
+  if (pide.venta && /¿\s*(ya (quieres|te animas)|te animas)/i.test(todo)) f.push("cierra empujando con «¿Ya quieres…?»");
+  if (pide.venta && !pide.link && /https?:\/\/\S+\/(registro|ir\/prueba)\b/.test(todo)) f.push("mandó el link de registro sin que lo pidiera");
+  if (/https?:\/\/\S+\/(demo|ir\/demo)\b/.test(todo) && !/negocio de ejemplo/i.test(todo)) f.push("mandó el demo sin decir que Patitas & Co. es un negocio de ejemplo");
+  if (pide.sinEscalar && r.textos.some((t) => /en un rato te escribimos/.test(t))) f.push("escaló una pregunta que tiene respuesta fija");
+  if (pide.menteo && !/MENTEO/.test(todo)) f.push("habló de pago o factura y no dijo que el cobro sale a nombre de MENTEO");
   if (pide.precio === "plan") {
     // Ya sabemos qué servicios tiene: el precio de SU plan, directo y en negritas, con los 15 días.
     if (!/\*[^*]*\$[\d,]+ al mes \+ IVA[^*]*\*/.test(todo)) f.push("no dio el precio de su plan directo y en negritas");
@@ -575,12 +583,12 @@ if (IA_REAL) {
   const { data: planesBase } = await A.from("planes").select("tipo, precio_mensual").eq("activo", true).is("deleted_at", null);
   const desde = Math.min(...(planesBase ?? []).filter((p) => p.tipo === "plan").map((p) => Number(p.precio_mensual)));
   const desdeTexto = `$${desde.toLocaleString("es-MX")}`;
-  const TEL_V1 = tel("57"), TEL_V2 = tel("58"), TEL_V3 = tel("59");
+  const TEL_V1 = tel("57"), TEL_V2 = tel("58"), TEL_V3 = tel("59"), TEL_V4 = tel("61");
   // [caso, teléfono, mensaje, qué se le exige]. venta: termina en demo o
   // registro; capturas: las que vienen al caso (ninguna = no manda imagen).
   const casos = [
     ["prospecto", TEL_Y, "Hola, tengo una estética canina en Querétaro. ¿Qué hace PeluDesk y cuánto cuesta?", { venta: true, precio: "plan", sinDesde: true, capturas: ["estetica"] }],
-    ["prospecto", TEL_Y, "¿Lo puedo ver antes de pagar?", { venta: true, capturas: ["estetica"] }],
+    ["prospecto", TEL_Y, "¿Lo puedo ver antes de pagar?", { venta: true, link: true, capturas: ["estetica"] }],
     ["cliente en prueba", TEL.A, "Hola, ¿cuántos días me quedan de prueba y qué pasa cuando se acabe?", { capturas: [], contiene: /\b1[45] d[ií]as\b|de octubre/ }],
     ["pago fallido", TEL.B, "Me llegó que no pasó el pago, ¿qué hago?", { capturas: [] }],
     ["duda de uso", TEL.A, "¿Cómo conecto mi terminal de Mercado Pago?", { capturas: ["caja"] }],
@@ -592,7 +600,19 @@ if (IA_REAL) {
     ["venta: otra app", TEL_V3, "Ya uso otra app para mi estética", { venta: true, capturas: ["estetica", "caja", "vacunas"] }],
     ["desde su página", TEL_P, "¿Cuánto cuesta y hay prueba gratis?", { venta: true, precio: "plan", sinDesde: true, plan: "649", capturas: ["estetica", "caja"] }],
     ["desde su página", TEL_P, "¿Qué módulos trae? ¿También sirve para veterinaria?", { venta: true, capturas: ["estetica", "caja", "vacunas", "hotel"] }],
-    ["desde su página", TEL_P, "¿Y la página que me armaron se queda así si me registro?", { venta: true, capturas: [], contiene: /p[aá]gina/i }],
+    ["desde su página", TEL_P, "¿Y la página que me armaron se queda así si me registro?", { venta: true, capturas: [], contiene: /p[aá]gina|subdominio|publicad/i }],
+    // Las ocho respuestas fijas (QA S16): sin escalar, con lo que dice respuestas-fijas.ts.
+    ["fija: factura", TEL_V4, "¿Me dan factura de la suscripción?", { venta: true, sinEscalar: true, menteo: true, capturas: [], contiene: /Menteo/i }],
+    ["fija: soporte", TEL_V4, "¿Cómo es el soporte si tengo un problema?", { venta: true, sinEscalar: true, capturas: [], contiene: /24 horas/ }],
+    ["fija: sucursales", TEL_V4, "Tengo dos sucursales, ¿cómo se cobra?", { venta: true, sinEscalar: true, capturas: [], contiene: /\$325/ }],
+    ["fija: recordatorios", TEL_V4, "¿Los recordatorios por WhatsApp tienen costo por mensaje?", { venta: true, sinEscalar: true, capturas: [], contiene: /incluid|sin costo|no (tienen|hay) costo/i }],
+    ["fija: cancelación", TEL_V4, "¿Y si quiero cancelar después?", { venta: true, sinEscalar: true, capturas: [], contiene: /90 d[ií]as/ }],
+    ["fija: excel", TEL_V4, "Tengo a mis clientes en un Excel, ¿se pueden pasar?", { venta: true, sinEscalar: true, capturas: [], contiene: /import/i }],
+    ["fija: anual", TEL_V4, "¿Hay plan anual?", { venta: true, sinEscalar: true, menteo: true, capturas: [], contiene: /\$6,490/ }],
+    ["fija: cobro", TEL_V4, "¿A nombre de quién me sale el cargo en la tarjeta?", { venta: true, sinEscalar: true, menteo: true, capturas: [] }],
+    ["fija: sms", TEL_V4, "¿Mandan los recordatorios por SMS?", { venta: true, sinEscalar: true, capturas: [], contiene: /WhatsApp/ }],
+    ["fija: terminal", TEL_V4, "¿Puedo cobrar con terminal de tarjeta?", { venta: true, sinEscalar: true, capturas: ["caja"], contiene: /ayuda\/cobrar-con-terminal/ }],
+    ["demo", TEL_V4, "¿Me mandas el demo para verlo por dentro?", { venta: true, link: true, capturas: ["estetica", "caja", "vacunas", "hotel"] }],
   ];
   const muestras = {};
   const tiemposIA = [];

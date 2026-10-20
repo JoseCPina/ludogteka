@@ -13,7 +13,7 @@ import { RefrescoCuenta } from "@/components/cuentas/refresco-cuenta";
 import { negocioActual, negocioIdActual, zonaActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { nombresDePersonal } from "@/lib/personal/nombres";
-import { formatearFecha } from "@/lib/formato";
+import { formatearFecha, formatearHoraNegocio } from "@/lib/formato";
 import { diasEntre, hora12 } from "@/lib/web-negocio/horario";
 
 const fechaLarga = (iso: string) => new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${iso}T12:00:00Z`));
@@ -70,7 +70,7 @@ export default async function DetalleReservaPage({
       cancelacion: e.estado === "cancelada" && e.cancelada_at
         ? {
             quien: (e.cancelada_por ? nombresCancel.get(e.cancelada_por as string) : null) ?? "alguien del equipo",
-            cuando: formatearFecha(e.cancelada_at as string, zonaReserva),
+            cuando: `${formatearFecha(e.cancelada_at as string, zonaReserva)} a las ${formatearHoraNegocio(e.cancelada_at as string, zonaReserva)}`,
             motivo: (e.motivo_cancelacion as string | null) ?? null,
           }
         : null,

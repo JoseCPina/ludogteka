@@ -30,6 +30,10 @@
 //   recontratar   un negocio cancelado vuelve a contratar y se reactiva
 //   subir-sin-pagar  con una tarjeta que el banco rechaza, subir de plan no
 //                 cambia nada (ni en Stripe ni en la base)
+//   baja-sucursal (QA S17) desde «Módulos y plan» → Sucursales da de baja la sucursal: queda en solo lectura
+//                 90 días, sale de «Tus negocios», «Sucursal adicional» baja en uno en Stripe (la parte
+//                 proporcional a favor), la primera no tiene «Dar de baja» y la base no la suspende con
+//                 sucursales activas. Después de «recontratar» (con la sucursal abierta).
 //   plataforma    /plataforma/cobro: estado, historial de pagos e ingreso
 //                 mensual recurrente
 //
@@ -678,6 +682,47 @@ const ESCENARIOS = {
     const buena = await stripe.paymentMethods.attach("pm_card_visa", { customer: est.cliente });
     await stripe.customers.update(est.cliente, { invoice_settings: { default_payment_method: buena.id } });
     await stripe.subscriptions.update(est.suscripcion, { default_payment_method: buena.id });
+  },
+
+  async "baja-sucursal"() {
+    if (!est.sucursal) throw new Error("Corre primero «sucursal».");
+    ok((await estadoCobro()) === "al_corriente", "viene al corriente");
+    // La primera no se suspende con sucursales activas.
+    const susp = await A.from("negocios").update({ activo: false }).eq("id", est.negocio);
+    ok(Boolean(susp.error) && /sucursales activas/.test(susp.error.message), "la primera no se suspende mientras tenga sucursales activas");
+    const subAntes = await stripe.subscriptions.retrieve(est.suscripcion, { expand: ["items.data.price"] });
+    const itemAntes = subAntes.items.data.find((i) => (i.price.lookup_key ?? "").startsWith("peludesk_sucursal_adicional_"));
+    ok(itemAntes?.quantity === 1, "Stripe trae «Sucursal adicional» × 1");
+    const { n, page } = await navegador();
+    try {
+      await entrarComoAdmin(page);
+      await page.goto(`${base()}/admin/modulos`);
+      const seccion = page.locator("[data-sucursales]");
+      await seccion.waitFor({ timeout: 30_000 });
+      ok((await seccion.locator(`[data-dar-baja-sucursal="${est.negocio}"]`).count()) === 0, "la primera no tiene «Dar de baja»");
+      await seccion.locator(`[data-dar-baja-sucursal="${est.sucursal.id}"]`).click();
+      const conf = seccion.locator("[data-confirmar-baja-sucursal]");
+      await conf.getByLabel("Motivo (obligatorio)").fill("Cerramos esa sucursal (prueba)");
+      await conf.getByRole("button", { name: "Dar de baja la sucursal" }).click();
+      await seccion.getByText(/quedó dada de baja/).waitFor({ timeout: 90_000 });
+      const marca = await seccion.locator(`[data-sucursal-baja="${est.sucursal.id}"]`).waitFor({ timeout: 30_000 }).then(() => true, () => false);
+      ok(marca, "la lista la enseña «Dada de baja · solo lectura hasta …»");
+      // «Tus negocios»: ya no sale.
+      await page.goto(`${base()}/admin`);
+      ok((await page.locator(`[data-ir-negocio="${est.sucursal.id}"]`).count()) === 0, "sale de «Tus negocios»");
+    } finally {
+      await n.close();
+    }
+    const fila = (await A.from("negocios").select("sucursal_baja_at, sucursal_baja_hasta, activo").eq("id", est.sucursal.id).single()).data;
+    const dias = Math.round((new Date(fila.sucursal_baja_hasta) - new Date(fila.sucursal_baja_at)) / 86_400_000);
+    ok(fila.sucursal_baja_at && dias === 90 && fila.activo, "queda dada de baja con 90 días de consulta (sigue existiendo)");
+    ok(!(await puedeEscribir(est.sucursal.id)), "en la sucursal ya no se puede guardar (solo lectura)");
+    ok(await puedeEscribir(est.negocio), "la primera sigue escribiendo");
+    const subDespues = await stripe.subscriptions.retrieve(est.suscripcion, { expand: ["items.data.price"] });
+    ok(!subDespues.items.data.some((i) => (i.price.lookup_key ?? "").startsWith("peludesk_sucursal_adicional_")), "Stripe: «Sucursal adicional» bajó a cero (el concepto sale de la suscripción)");
+    const pendientes = await stripe.invoiceItems.list({ customer: est.cliente, pending: true, limit: 20 });
+    ok(pendientes.data.some((i) => i.amount < 0 && /Sucursal adicional|Unused time/i.test(i.description ?? "")), "la parte proporcional queda a favor (crédito para el siguiente cobro)");
+    // Ya sin sucursales activas, la primera sí se podría suspender (no se hace: se deja como está).
   },
 
   async plataforma() {

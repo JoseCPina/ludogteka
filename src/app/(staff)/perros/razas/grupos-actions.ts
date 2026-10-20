@@ -22,7 +22,7 @@ export async function asignarTextoARaza(textoNorm: string, razaId: string): Prom
   const fila = (Array.isArray(data) ? data[0] : data) as { normalizacion_id: string; perros: number } | null;
   revalidatePath("/perros/razas");
   revalidatePath("/estetica");
-  return { error: null, exito: `${fila?.perros ?? 0} perro(s) asignado(s). Puedes deshacerlo abajo, en «Asignaciones recientes».`, normalizacionId: fila?.normalizacion_id };
+  return { error: null, exito: `${(fila?.perros ?? 0) === 1 ? "1 perro asignado" : `${fila?.perros ?? 0} perros asignados`}. Puedes deshacerlo abajo, en «Asignaciones recientes».`, normalizacionId: fila?.normalizacion_id };
 }
 
 export async function revertirNormalizacion(id: string): Promise<ResultadoRaza> {
@@ -30,7 +30,7 @@ export async function revertirNormalizacion(id: string): Promise<ResultadoRaza> 
   const { data, error } = await supabase.rpc("razas_revertir_normalizacion", { p_normalizacion_id: id });
   if (error) return { error: limpio(error) };
   revalidatePath("/perros/razas");
-  return { error: null, exito: `${data ?? 0} perro(s) regresaron a la raza que tenían escrita.` };
+  return { error: null, exito: (data ?? 0) === 1 ? "1 perro regresó a la raza que tenía escrita." : `${data ?? 0} perros regresaron a la raza que tenían escrita.` };
 }
 
 /** «Es una raza nueva»: propone la raza a la plataforma, ligada a los perros que la usan. */

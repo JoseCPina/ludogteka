@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { corregirPrecioCuenta } from "@/app/(staff)/caja/correcciones-actions";
 import { dinero } from "@/lib/dinero";
+import type { TotalesCuenta } from "@/lib/cobro/totales";
 
 
 /**
@@ -23,13 +24,17 @@ export function CorregirPrecioLinea({
   descripcion,
   total,
   onCerrar,
+  alGuardar,
 }: {
   reservaId: string;
   tipo: string;
   origenId: string;
   descripcion: string;
+  // El precio VIGENTE de la línea (su precio original más la corrección vigente).
   total: number;
   onCerrar: () => void;
+  // QA S17 (N47/N82): la pantalla pinta la cuenta corregida de inmediato.
+  alGuardar?: (totales?: TotalesCuenta) => void;
 }) {
   const router = useRouter();
   const envio = useEspera();
@@ -38,13 +43,19 @@ export function CorregirPrecioLinea({
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
+  // N47: el botón se activa en cuanto hay un precio distinto al vigente y un motivo; guardar limpia el motivo.
+  const precioNum = Number(precio);
+  const listo = Number.isFinite(precioNum) && precioNum > 0 && Math.round(precioNum * 100) !== Math.round(total * 100) && motivo.trim().length >= 5;
+
   async function confirmar() {
     setError(null);
     if (motivo.trim().length < 5) return setError("Escribe el motivo: qué estaba mal en el precio.");
-    const r = await envio.ejecutar(() => corregirPrecioCuenta(reservaId, tipo, origenId, Number(precio), motivo));
+    const r = await envio.ejecutar(() => corregirPrecioCuenta(reservaId, tipo, origenId, precioNum, motivo));
     if (r.error) return setError(r.error);
     setAviso(r.aviso ?? "Listo.");
-    router.refresh();
+    setMotivo("");
+    if (alGuardar) alGuardar(r.totales);
+    else router.refresh();
   }
 
   return (
@@ -55,11 +66,11 @@ export function CorregirPrecioLinea({
         propósito (cortesía, promoción), aplica un descuento.
       </p>
       <div className="w-48">
-        <Field label="Precio correcto de la línea" type="number" min="0" step="0.01" value={precio} onChange={(e) => setPrecio(e.target.value)} />
+        <Field label="Precio correcto de la línea" type="number" min="0" step="0.01" value={precio} onChange={(e) => { setPrecio(e.target.value); setAviso(null); }} data-precio-correccion />
       </div>
-      <Textarea label="Motivo (obligatorio)" rows={2} maxLength={300} value={motivo} onChange={(e) => setMotivo(e.target.value)} ayuda="Qué estaba mal. Queda en el historial con tu nombre." />
+      <Textarea label="Motivo (obligatorio)" rows={2} maxLength={300} value={motivo} onChange={(e) => { setMotivo(e.target.value); setAviso(null); }} ayuda="Qué estaba mal. Queda en el historial con tu nombre." data-motivo-correccion />
       <AccionesFormulario error={error} exito={aviso}>
-        <Button type="button" cargando={envio.cargando} onClick={confirmar} disabled={Boolean(aviso)}>
+        <Button type="button" cargando={envio.cargando} onClick={confirmar} disabled={!listo} data-guardar-precio>
           Guardar precio
         </Button>
         <Button type="button" variante="secundario" onClick={onCerrar}>

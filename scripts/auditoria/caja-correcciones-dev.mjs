@@ -75,6 +75,7 @@ const abrirTurno = async (fondo = 100) => {
 const resumen = async (turnoId) => (await adminJ.rpc("resumen_turno", { p_turno_id: turnoId })).data ?? [];
 const neto = (res, metodo) => res.filter((r) => r.metodo === metodo).reduce((a, r) => a + Number(r.cobrado) + Number(r.propinas) - Number(r.devuelto), 0);
 const saldo = async (reservaId) => Number((await adminJ.rpc("cuenta_totales_reserva", { p_reserva_id: reservaId })).data?.[0]?.saldo ?? NaN);
+const totalCuenta = async (reservaId) => Number((await adminJ.rpc("cuenta_totales_reserva", { p_reserva_id: reservaId })).data?.[0]?.total_cuenta ?? NaN);
 const descuentosDe = async (reservaId) => (await SB.from("descuentos_aplicados").select("id").eq("negocio_id", H).eq("reserva_id", reservaId)).data?.length ?? 0;
 const nuevaCuenta = async (precio, concepto = "Prueba corrección") => {
   const { data, error } = await recA.rpc("crear_venta_mostrador", { p_cliente_id: clienteId, p_lineas: [{ concepto, precio, cantidad: 1 }], p_notas: "prueba correcciones" });
@@ -302,40 +303,45 @@ try {
   const resNuevo0 = await resumen(turnoNuevo.id);
   const anC = await recA.rpc("anular_cobro", { p_cobro_id: cobroC, p_motivo: "cobro de un turno cerrado" });
   comprobar(!anC.error, `con el permiso extra, anula (${anC.error?.message ?? "ok"})`);
-  comprobar(anC.data?.turno_del_cobro_cerrado === true && anC.data?.turno_efecto_id === turnoNuevo.id, "el ajuste cae en el turno ABIERTO");
+  // QA S17 (N81): el ajuste queda ligado al turno ORIGINAL, posterior a su corte; el turno abierto no cambia.
+  comprobar(anC.data?.turno_del_cobro_cerrado === true && anC.data?.turno_efecto_id === turnoViejo, "N81: el ajuste queda en el turno ORIGINAL (posterior al corte), no en el abierto");
   const metsC = await metodosDe(cobroC);
-  comprobar(metsC.length === 2 && metsC[1].turno_efecto_id === turnoNuevo.id && metsC[1].fecha_efecto, "el renglón compensatorio apunta al turno abierto y a la fecha de hoy");
-  const resViejo1 = await resumen(turnoViejo);
-  comprobar(neto(resViejo1, "efectivo") === neto(resViejo0, "efectivo"), "el turno cerrado no cambia (su corte sigue igual)");
+  comprobar(metsC.length === 2 && metsC[1].turno_efecto_id === turnoViejo && metsC[1].fecha_efecto, "el renglón compensatorio apunta al turno original con la fecha de hoy");
   const corteViejo2 = (await SB.from("cortes_caja").select("id, corte_metodos(metodo, esperado, conteo)").eq("turno_id", turnoViejo).single()).data;
-  comprobar(JSON.stringify(corteViejo2) === JSON.stringify(corteViejo), "el corte guardado no se tocó");
-  comprobar(neto(await resumen(turnoNuevo.id), "efectivo") === neto(resNuevo0, "efectivo") - 400, "el turno abierto muestra el ajuste (−$400 en efectivo)");
-  const movsN = (await adminJ.rpc("movimientos_turno", { p_turno_id: turnoNuevo.id })).data ?? [];
-  comprobar(movsN.some((m) => m.ajuste_tipo === "anulacion" && Number(m.monto) === -400), "…y lo lista en Movimientos del turno como ajuste");
+  comprobar(JSON.stringify(corteViejo2) === JSON.stringify(corteViejo), "el corte guardado del turno cerrado no se tocó");
+  comprobar(neto(await resumen(turnoNuevo.id), "efectivo") === neto(resNuevo0, "efectivo"), "N81: el efectivo esperado del turno ABIERTO no cambia");
+  comprobar(neto(await resumen(turnoViejo), "efectivo") === neto(resViejo0, "efectivo") - 400, "el turno original muestra el ajuste posterior (−$400 en efectivo)");
+  const movsV = (await adminJ.rpc("movimientos_turno", { p_turno_id: turnoViejo })).data ?? [];
+  comprobar(movsV.some((m) => m.ajuste_tipo === "anulacion" && Number(m.monto) === -400), "…y lo lista en los movimientos de ESE turno como ajuste");
+  const corrC = (await SB.from("cobro_correcciones").select("hecha_por, created_at, turno_cobro_id, turno_efecto_id").eq("cobro_id", cobroC).single()).data;
+  comprobar(corrC?.hecha_por === idRecepA && corrC.created_at && corrC.turno_efecto_id === turnoViejo, "con quién y cuándo");
   comprobar(await saldo(cuentaC) === 400, "la cuenta vuelve a quedar por cobrar");
+  // Si de verdad se devuelve el efectivo del cajón: un retiro con motivo en el turno abierto (lo que hace la pantalla).
+  const retC = await recA.rpc("registrar_retiro", { p_monto: 400, p_motivo: "Devolución en efectivo del cajón por corrección de un cobro: cobro de un turno cerrado" });
+  comprobar(!retC.error && neto(await resumen(turnoNuevo.id), "efectivo") === neto(resNuevo0, "efectivo") && (await SB.from("movimientos_caja").select("id").eq("turno_id", turnoNuevo.id).eq("id", retC.data)).data?.length === 1,
+    "N81: si se devolvió del cajón, queda un retiro con motivo en el turno abierto (el cuadro lo pregunta antes)");
+  const fuenteCorr = (await import("node:fs")).readFileSync("src/app/(staff)/reservas/[id]/cobrar/corregir-cobro.tsx", "utf8");
+  comprobar(/¿Se devolvió el dinero hoy del cajón\?/.test(fuenteCorr) && /data-pregunta-cajon/.test(fuenteCorr), "la pantalla pregunta «¿Se devolvió el dinero hoy del cajón?»");
   // Editar en turno cerrado
   const cuentaC2 = await nuevaCuenta(300);
   const cobroC2 = await cobrar(cuentaC2, [{ metodo: "efectivo", monto: 200, propina: 0 }]);
   await cerrarConLoEsperado(turnoNuevo.id);
   const turno3 = await abrirTurno(100);
+  const res3a = neto(await resumen(turno3.id), "efectivo");
   const edC = await recA.rpc("editar_monto_cobro", { p_cobro_id: cobroC2, p_metodo: "efectivo", p_monto_nuevo: 300, p_motivo: "Eran $300 reales" });
-  comprobar(!edC.error && edC.data?.turno_efecto_id === turno3.id, "editar un monto de un turno cerrado cae en el turno abierto");
-  // Sin turno abierto
+  comprobar(!edC.error && edC.data?.turno_efecto_id === turnoNuevo.id && neto(await resumen(turno3.id), "efectivo") === res3a, "editar un monto de un turno cerrado queda en ESE turno y no mueve el turno abierto");
   const turno3Id = turno3.id;
   turno = turno3;
 
-  // ── 7b. QA S16 (N63): anular sin turno abierto ──
-  console.log("── 7b. N63: sin turno abierto, «Abrir turno y anular» ahí mismo");
+  // ── 7b. Sin turno abierto: la corrección de un turno cerrado ya no lo necesita ──
+  console.log("── 7b. Sin turno abierto: se anula igual (queda en el turno cerrado)");
   const cuentaN63 = await nuevaCuenta(250);
   const cobroN63 = await cobrar(cuentaN63, [{ metodo: "efectivo", monto: 250, propina: 0 }]);
   await cerrarConLoEsperado(turno3Id);
   const sinTurnoAbierto = await recA.rpc("anular_cobro", { p_cobro_id: cobroN63, p_motivo: "Cobro capturado de más" });
-  comprobar(/No hay turno de caja abierto/.test(sinTurnoAbierto.error?.message ?? ""), `sin turno abierto la base explica que hace falta abrirlo (${sinTurnoAbierto.error?.message ?? "sin error"})`);
-  const fuenteCorr = (await import("node:fs")).readFileSync("src/app/(staff)/reservas/[id]/cobrar/corregir-cobro.tsx", "utf8");
-  comprobar(/no hay turno de caja abierto/i.test(fuenteCorr) && /Abrir turno y anular/.test(fuenteCorr) && /abrirTurno\(/.test(fuenteCorr), "la pantalla reconoce ese caso y ofrece «Abrir turno y anular» ahí mismo");
+  comprobar(!sinTurnoAbierto.error && sinTurnoAbierto.data?.turno_efecto_id === turno3Id, `sin turno abierto, el cobro de un turno cerrado se anula y queda en ese turno (${sinTurnoAbierto.error?.message ?? "ok"})`);
+  comprobar(/no hay turno de caja abierto/i.test(fuenteCorr) && /Abrir turno y anular/.test(fuenteCorr), "si se devuelve efectivo del cajón sin turno abierto, la pantalla ofrece «Abrir turno y anular» ahí mismo");
   const turnoN63 = await abrirTurno(0);
-  const anN63 = await recA.rpc("anular_cobro", { p_cobro_id: cobroN63, p_motivo: "Cobro capturado de más" });
-  comprobar(!anN63.error && anN63.data?.turno_efecto_id === turnoN63.id, "con el turno recién abierto, la anulación queda en ese turno nuevo (el corte cerrado no cambia)");
   turno = turnoN63;
 
   // ── 8. Corregir el precio de una cuenta ──
@@ -363,6 +369,31 @@ try {
   comprobar(!abiertasP.some((c) => c.reserva_id === cuentaP), "la cuenta ya no sale por cobrar");
   const casi = await recA.rpc("corregir_precio_cuenta", { p_reserva_id: cuentaP, p_linea_tipo: "venta", p_linea_id: lineaP, p_precio_nuevo: 300.4, p_motivo: "deja menos de un peso" });
   comprobar(casi.error && /menos de un peso/.test(casi.error.message), "no deja la cuenta debiendo menos de un peso");
+
+  // ── 8b. QA S17 (N48): una sola corrección vigente por línea, anulable con motivo ──
+  console.log("── 8b. N48: corrección neta (una por línea) y anulable");
+  const cuentaN = await nuevaCuenta(1100, "Hotel corregido varias veces");
+  const lineaN = (await SB.from("ventas_mostrador").select("id").eq("negocio_id", H).eq("reserva_id", cuentaN).single()).data.id;
+  for (const [precio, motivo] of [[1090, "Primero eran 1090"], [1095, "Luego eran 1095"], [1080, "Al final 1080"]]) {
+    const r = await recA.rpc("corregir_precio_cuenta", { p_reserva_id: cuentaN, p_linea_tipo: "venta", p_linea_id: lineaN, p_precio_nuevo: precio, p_motivo: motivo });
+    comprobar(!r.error, `corrige a $${precio} (${r.error?.message ?? "ok"})`);
+  }
+  const vivasN = (await SB.from("cuenta_ajustes_precio").select("monto, precio_original, precio_despues").eq("reserva_id", cuentaN).is("deleted_at", null)).data ?? [];
+  comprobar(vivasN.length === 1 && Number(vivasN[0].monto) === -20 && Number(vivasN[0].precio_original) === 1100 && Number(vivasN[0].precio_despues) === 1080, "tres correcciones dejan UNA vigente con el ajuste neto (−$20 contra los $1,100 originales)", JSON.stringify(vivasN));
+  const todasN = (await SB.from("cuenta_ajustes_precio").select("id, deleted_at, reemplazada_por").eq("reserva_id", cuentaN)).data ?? [];
+  comprobar(todasN.length === 3 && todasN.filter((a) => a.deleted_at && a.reemplazada_por).length === 2, "las anteriores quedan en el historial como reemplazadas");
+  const lineasN = ((await adminJ.rpc("cuenta_lineas_reserva", { p_reserva_id: cuentaN })).data ?? []).filter((l) => l.tipo === "ajuste");
+  comprobar(lineasN.length === 1 && await totalCuenta(cuentaN) === 1080, "la cuenta muestra una sola línea de corrección y el total vigente ($1,080)");
+  const deVuelta = await recA.rpc("corregir_precio_cuenta", { p_reserva_id: cuentaN, p_linea_tipo: "venta", p_linea_id: lineaN, p_precio_nuevo: 1100, p_motivo: "Siempre fue 1100" });
+  comprobar(!deVuelta.error && (await SB.from("cuenta_ajustes_precio").select("id").eq("reserva_id", cuentaN).is("deleted_at", null)).data?.length === 0 && await totalCuenta(cuentaN) === 1100, "volver al precio original no agrega líneas: quita la corrección");
+  const otraN = await recA.rpc("corregir_precio_cuenta", { p_reserva_id: cuentaN, p_linea_tipo: "venta", p_linea_id: lineaN, p_precio_nuevo: 1050, p_motivo: "Tarifa de cliente frecuente" });
+  const sinMotivoAn = await recA.rpc("anular_correccion_precio", { p_ajuste_id: otraN.data?.ajuste_id, p_motivo: "x" });
+  comprobar(sinMotivoAn.error && /motivo/i.test(sinMotivoAn.error.message), "anular una corrección pide motivo");
+  const sinPermisoAn = await recB.rpc("anular_correccion_precio", { p_ajuste_id: otraN.data?.ajuste_id, p_motivo: "Se aplicó por error" });
+  comprobar(Boolean(sinPermisoAn.error), "sin «Editar monto de cobros» no se anula");
+  const anN = await recA.rpc("anular_correccion_precio", { p_ajuste_id: otraN.data?.ajuste_id, p_motivo: "Se aplicó por error" });
+  const filaAn = (await SB.from("cuenta_ajustes_precio").select("deleted_at, anulada_por, anulada_motivo").eq("id", otraN.data?.ajuste_id).single()).data;
+  comprobar(!anN.error && await totalCuenta(cuentaN) === 1100 && filaAn?.deleted_at && filaAn.anulada_por === idRecepA && filaAn.anulada_motivo === "Se aplicó por error", "anular la corrección devuelve el precio original y queda quién y por qué");
 
   // ── 9. Efectivo agregado ──
   console.log("── 9. Agregar efectivo al turno");

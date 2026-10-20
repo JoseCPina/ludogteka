@@ -76,7 +76,7 @@ export async function crearInsumo(
     return { error: "No pudimos leer la unidad de consumo elegida." };
   }
 
-  const { error: dbError } = await supabase.from("insumos").insert({
+  const { data: nuevo, error: dbError } = await supabase.from("insumos").insert({
     nombre: campos.nombre,
     area_id: campos.area_id,
     unidad_compra_id: campos.unidad_compra_id,
@@ -87,12 +87,13 @@ export async function crearInsumo(
     dias_aviso_caducidad: campos.dias_aviso_caducidad_crudo ? Number(campos.dias_aviso_caducidad_crudo) : null,
     se_vende: campos.se_vende,
     precio_venta: campos.se_vende ? Math.round(Number(campos.precio_venta_crudo) * 100) / 100 : null,
-  });
+  }).select("id").single();
 
   if (dbError) return { error: traducirError(dbError) };
 
   revalidatePath("/inventario");
-  redirect(`/inventario?creado=consumible`);
+  // QA S17 (N83): al crear, a la ficha del producto recién creado.
+  redirect(`/inventario/${nuevo.id}?creado=1`);
 }
 
 export async function actualizarInsumo(

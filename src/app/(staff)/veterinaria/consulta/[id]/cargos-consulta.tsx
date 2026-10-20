@@ -31,6 +31,7 @@ export function CargosConsulta({
   onResumen,
   puedeCatalogo = false,
   aplicarVacuna,
+  aplicarDesparasitacion,
 }: {
   consultaId: string;
   inicial: CargosConsulta;
@@ -40,6 +41,8 @@ export function CargosConsulta({
   puedeCatalogo?: boolean;
   // El formulario de «Aplicar vacuna» (carnet), aparte de «Otro procedimiento».
   aplicarVacuna?: ReactNode;
+  // QA S17 (N51): «Aplicar desparasitación», junto a «Aplicar vacuna».
+  aplicarDesparasitacion?: ReactNode;
 }) {
   const [d, setD] = useState<CargosConsulta>(inicial);
   // Lo que llega del servidor (p. ej. después de aplicar una vacuna) vuelve a reemplazar lo mostrado.
@@ -277,6 +280,12 @@ export function CargosConsulta({
         <Desplegable titulo="Aplicar vacuna" cerrarAlGuardar atributos={{ "data-aplicar-vacuna": "" }} className="rounded-md border border-dashed border-n-300 p-3">
           <p className="mb-3 text-xs text-n-600">Queda en el carnet de la mascota con su lote y su fecha, y se cobra con esta consulta. Una vacuna no se agrega como «otro procedimiento».</p>
           {aplicarVacuna}
+        </Desplegable>
+      )}
+      {borrador && puedeAgregar && aplicarDesparasitacion && (
+        <Desplegable titulo="Aplicar desparasitación" cerrarAlGuardar atributos={{ "data-aplicar-desparasitacion": "" }} className="rounded-md border border-dashed border-n-300 p-3">
+          <p className="mb-3 text-xs text-n-600">Queda en el carnet de la mascota con su producto y su fecha, y se ve en esta consulta.</p>
+          {aplicarDesparasitacion}
         </Desplegable>
       )}
 

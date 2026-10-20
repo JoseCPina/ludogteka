@@ -99,7 +99,7 @@ try {
   comprobar((await p.getByText("Raza (obligatoria)").count()) > 0, "la etiqueta dice «Raza (obligatoria)»");
   await p.getByLabel("Nombre del perro").fill(`ZZ Sin Datos ${sufijo}`);
   await p.getByRole("button", { name: "Guardar perro" }).click();
-  const rechazo = await p.getByText(/le falta: raza/).first().waitFor({ timeout: 30000 }).then(() => true).catch(() => false);
+  const rechazo = await p.getByText(/le falta: raza|Escribe la raza del perro/).first().waitFor({ timeout: 30000 }).then(() => true).catch(() => false);
   comprobar(rechazo, "sin raza: el servidor rechaza y dice qué falta");
   const guardado = await SB.from("perros").select("id").eq("cliente_id", cli.id).like("nombre", "ZZ Sin Datos%").is("deleted_at", null);
   comprobar((guardado.data ?? []).length === 0, "y no se guardó el perro");
@@ -119,6 +119,25 @@ try {
   const perroNuevoId = p.url().match(/\/perros\/([0-9a-f-]{36})/)?.[1];
   comprobar(Boolean(perroNuevoId), `completo: se guarda (${p.url()})`);
   if (perroNuevoId) creados.perros.push(perroNuevoId);
+
+  seccion("2b. N83: crear un cliente abre su ficha (no se queda en el formulario)");
+  {
+    // En otra pestaña: la sección 3 sigue en el expediente del perro recién creado.
+    const p2 = await p.context().newPage();
+    p2.setDefaultTimeout(60000);
+    await p2.goto(`${BASE}/clientes/nuevo`, { waitUntil: "networkidle", timeout: 120000 });
+    const telN83 = `449${sufijo}${String(Math.floor(Math.random() * 10))}`.slice(0, 10);
+    await p2.getByLabel("Nombre del dueño").fill(`ZZ Ficha N83 ${sufijo}`);
+    await p2.getByLabel(/^Teléfono|^WhatsApp/).fill(telN83);
+    await p2.getByRole("button", { name: "Crear cliente" }).click();
+    await p2.waitForURL(/\/clientes\/[0-9a-f-]{36}/, { timeout: 60000 }).catch(() => {});
+    const idN83 = p2.url().match(/\/clientes\/([0-9a-f-]{36})/)?.[1];
+    comprobar(Boolean(idN83), `después de guardar abre la ficha del cliente recién creado (${p2.url()})`);
+    const dobles = (await SB.from("clientes").select("id").eq("telefono", telN83).is("deleted_at", null)).data ?? [];
+    comprobar(dobles.length === 1, "y quedó un solo cliente");
+    if (idN83) creados.clientes?.push?.(idN83);
+    await p2.close();
+  }
 
   seccion("3. N14: lo que dice el expediente de un perro nuevo en un negocio con Estética y Hotel");
   if (perroNuevoId) {
@@ -232,10 +251,10 @@ try {
   await p.goto(`${BASE}/clientes/${cli.id}/perros/nuevo`, { waitUntil: "networkidle", timeout: 120000 });
   await p.getByLabel("Nombre del perro").fill(`ZZ Cambio2 ${sufijo}`);
   await p.getByRole("button", { name: "Guardar perro" }).click();
-  await p.getByText(/le falta: raza/).first().waitFor({ timeout: 30000 });
+  await p.getByText(/le falta: raza|Escribe la raza del perro/).first().waitFor({ timeout: 30000 });
   // …y se esconde en cuanto se escoge la raza.
   await elegirRaza(p, "Mestizo");
-  comprobar((await p.getByText(/le falta: raza/).count()) === 0, "el aviso «le falta: raza» desaparece al escoger la raza");
+  comprobar((await p.getByText(/le falta: raza|Escribe la raza del perro/).count()) === 0, "el aviso «le falta: raza» desaparece al escoger la raza");
   if (poodle?.[0]) {
     await elegirRaza(p, poodle[0].nombre);
     const piden = poodleFalta.includes("tamaño");

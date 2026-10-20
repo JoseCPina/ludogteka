@@ -4,7 +4,7 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { Desplegable } from "@/components/formulario-accion";
 import { etiquetaEspecie } from "@/lib/veterinaria/buscar";
-import { formatearFecha, hoyNegocio } from "@/lib/formato";
+import { fechaLocalDeInstante, formatearFecha, formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { SECCIONES_CONSULTA, TIPOS_CITA, etiquetaBandera, type DetalleConsulta } from "@/lib/veterinaria/expediente";
 import { AccionesFirmada, AnularItem } from "../../expediente/anular-item";
@@ -15,7 +15,8 @@ import { CargosConsulta } from "./cargos-consulta";
 import type { CargosConsulta as DatosCargos } from "@/lib/veterinaria/cargos-consulta";
 import { vetPuede } from "@/lib/veterinaria/permisos";
 import { cargarMedicos, cargarProductosConLotes, miMedico as cargarMiMedico } from "@/lib/veterinaria/lotes";
-import { FormularioVacuna } from "../../carnet/[perroId]/formularios";
+import { FormularioDesparasitacion, FormularioVacuna } from "../../carnet/[perroId]/formularios";
+import type { CarnetCompleto } from "@/lib/veterinaria/carnet";
 import { unirFrases } from "@/lib/texto/frases";
 
 // El dictado transcribe y arma el borrador dentro de una acción del servidor: puede tardar más de lo normal.
@@ -66,13 +67,19 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
   const soyElMedico = miMedico === c.medico_id;
   // «Aplicar vacuna» dentro de la consulta: el mismo formulario del carnet (producto y lote del inventario, fecha, médico).
   let aplicarVacuna: React.ReactNode = null;
+  let aplicarDesparasitacion: React.ReactNode = null;
   if (c.estado === "borrador" && puedeAtender === true && (await vetPuede(supabase, "registrar_vacunas"))) {
-    const [productos, medicos, medicoPropio, { data: requisitosCrudo }] = await Promise.all([
+    const [productos, medicos, medicoPropio, { data: requisitosCrudo }, desparasitantes] = await Promise.all([
       cargarProductosConLotes(supabase, "vacuna"),
       cargarMedicos(supabase),
       cargarMiMedico(supabase),
       supabase.from("tipos_requisito_sanitario").select("id, etiqueta").is("deleted_at", null).eq("obligatoria", true).order("orden"),
+      cargarProductosConLotes(supabase, "desparasitante"),
     ]);
+    // QA S17 (N51): también se desparasita desde la consulta, con el mismo formulario del carnet.
+    aplicarDesparasitacion = (
+      <FormularioDesparasitacion perroId={c.perro_id} hoy={hoy} productos={desparasitantes} medicos={medicos} medicoPropio={medicoPropio ?? c.medico_id} />
+    );
     aplicarVacuna = (
       <FormularioVacuna
         perroId={c.perro_id}
@@ -84,6 +91,12 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
       />
     );
   }
+  // QA S17 (N51): lo aplicado en el carnet el día de esta consulta se ve en la consulta.
+  const fechaConsulta = fechaLocalDeInstante(c.atendida_at, zona);
+  const { data: carnetCrudo } = await supabase.rpc("carnet_de_mascota", { p_perro_id: c.perro_id });
+  const carnet = (carnetCrudo ?? { vacunas: [], desparasitaciones: [] }) as CarnetCompleto;
+  const vacunasDelDia = (carnet.vacunas ?? []).filter((v) => v.estado !== "anulada" && v.fecha_aplicacion === fechaConsulta);
+  const desparasitacionesDelDia = (carnet.desparasitaciones ?? []).filter((v) => v.estado !== "anulada" && v.fecha_aplicacion === fechaConsulta);
   const puedeCatalogo = esAdminSesion(sesion);
   const esAdmin = sesion?.rol === "admin";
   const anulada = c.estado === "anulada";
@@ -117,8 +130,32 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
 
       <UsoDictado consultaId={id} />
 
+      <section className="rounded-lg border border-n-200 bg-white p-4" data-vacunas-consulta aria-labelledby="t-vacunas-consulta">
+        <h2 id="t-vacunas-consulta" className="font-semibold text-n-900">Vacunas y desparasitación</h2>
+        {vacunasDelDia.length + desparasitacionesDelDia.length === 0 ? (
+          <p className="mt-1 text-sm text-n-600">En esta consulta no se aplicó ninguna vacuna ni desparasitación.</p>
+        ) : (
+          <ul className="mt-2 flex flex-col gap-1.5 text-sm text-n-800">
+            {vacunasDelDia.map((v) => (
+              <li key={v.id} data-vacuna-consulta>
+                <b>Vacuna:</b> {v.biologico}
+                {v.lote ? ` · lote ${v.lote}` : ""}
+                {v.proxima_dosis ? ` · próxima ${formatearFechaCalendario(v.proxima_dosis)}` : ""}
+              </li>
+            ))}
+            {desparasitacionesDelDia.map((d2) => (
+              <li key={d2.id} data-desparasitacion-consulta>
+                <b>Desparasitación {d2.tipo === "ambas" ? "interna y externa" : d2.tipo}:</b> {d2.producto}
+                {d2.proxima_dosis ? ` · próxima ${formatearFechaCalendario(d2.proxima_dosis)}` : ""}
+              </li>
+            ))}
+          </ul>
+        )}
+        <Link href={`/veterinaria/carnet/${c.perro_id}`} className="mt-2 inline-block text-sm font-semibold text-morado hover:underline">Ver el carnet completo</Link>
+      </section>
+
       {c.estado === "borrador" && puedeAtender === true ? (
-        <EditorConsulta consulta={c} especie={d.mascota.especie} soyElMedico={soyElMedico} nombreMedico={d.medico.nombre} cargosIniciales={cargos} puedeCatalogo={puedeCatalogo} aplicarVacuna={aplicarVacuna} />
+        <EditorConsulta consulta={c} especie={d.mascota.especie} soyElMedico={soyElMedico} nombreMedico={d.medico.nombre} cargosIniciales={cargos} puedeCatalogo={puedeCatalogo} aplicarVacuna={aplicarVacuna} aplicarDesparasitacion={aplicarDesparasitacion} />
       ) : (
         <article className={`flex flex-col gap-5 rounded-lg border border-n-200 bg-white p-5 ${anulada ? "opacity-80" : ""}`}>
           {c.estado === "borrador" && <Alert variante="info" titulo="Borrador">Solo quien atiende consultas lo edita.</Alert>}

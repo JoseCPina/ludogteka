@@ -103,7 +103,7 @@ Si tienes guardería u hotel prendidos, el link de guardería y hotel trae el pa
 
 1. En [Clientes](/clientes) toca **Capturar a mano**. Desde un buscador (al reservar o cobrar) es **Nuevo cliente** → **Capturarlo yo**.
 2. Llena **Nombre del dueño** y **Teléfono**. El correo y la dirección son opcionales.
-3. Toca **Crear cliente**. Si venías de reservar o cobrar, el botón dice **Crear cliente y seguir con su perro**.
+3. Toca **Crear cliente**: se abre la ficha del cliente recién creado (ahí agregas a su perro). Si venías de reservar o cobrar, el botón dice **Crear cliente y seguir con su perro**.
 4. En la ficha del cliente, toca **Agregar perro**.
 5. Llena **Nombre del perro**, **Raza (obligatoria)** y lo que sepas, y toca **Guardar perro**. Con Estética, guardería u hotel la raza es obligatoria (si es mestizo, escoge **Mestizo**); con Estética, si la raza no fija sola el precio (mestizo, sin raza de catálogo o un grupo que cobra por tamaño y pelaje), también **Tamaño (obligatorio)** y **Pelaje (obligatorio)**. Si falta algo, el aviso dice qué y lo que ya escribiste se queda en el formulario.
 

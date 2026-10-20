@@ -1,4 +1,4 @@
-import { formatearFecha } from "@/lib/formato";
+import { formatearFecha, formatearHoraNegocio } from "@/lib/formato";
 import { dinero } from "@/lib/dinero";
 
 export type TurnoCerrado = {
@@ -9,6 +9,8 @@ export type TurnoCerrado = {
   abiertoPorNombre: string;
   cerradoPorNombre: string;
   explicacionDiferencias: string | null;
+  // QA S17 (N81): correcciones de cobros de este turno hechas después de su corte (el corte guardado no cambia).
+  ajustes: { metodo: string; monto: number; fecha: string; tipo: string; motivo: string | null; porNombre: string }[];
   metodos: { metodo: string; conteo: number; esperado: number; diferencia: number }[];
 };
 
@@ -98,6 +100,24 @@ export function HistorialTurnos({ turnos, zona }: { turnos: TurnoCerrado[]; zona
               <p className="mt-2 text-sm text-n-600">
                 <span className="font-semibold text-n-800">Explicación:</span> {t.explicacionDiferencias}
               </p>
+            )}
+
+            {t.ajustes.length > 0 && (
+              <div className="mt-3 rounded-md border border-ambar bg-ambar-suave/50 p-3" data-ajustes-posteriores>
+                <p className="text-sm font-semibold text-ambar-oscuro">Ajustes posteriores al corte</p>
+                <p className="text-xs text-n-600">Correcciones de cobros de este turno hechas después de cerrarlo. El corte de arriba no cambia; el turno de hoy tampoco.</p>
+                <ul className="mt-1.5 flex flex-col gap-1 text-sm">
+                  {t.ajustes.map((a, i) => (
+                    <li key={i} className="flex flex-wrap justify-between gap-2 text-n-800">
+                      <span>
+                        {a.tipo === "anulacion" ? "Anulación" : "Corrección de monto"} · {ETIQUETA_METODO[a.metodo] ?? a.metodo} · {a.porNombre}, {formatearFecha(a.fecha, zona)} a las {formatearHoraNegocio(a.fecha, zona)}
+                        {a.motivo ? <span className="text-n-600"> · {a.motivo}</span> : null}
+                      </span>
+                      <span className="tabular-nums font-semibold">{dinero(a.monto)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </li>
         );

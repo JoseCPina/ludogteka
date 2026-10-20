@@ -21,7 +21,9 @@ import { MarcarNoRecibido } from "./marcar-no-recibido";
 import { CorregirCobro } from "./corregir-cobro";
 import { CancelarCuenta } from "@/components/cuentas/cancelar-cuenta";
 import { anotarCobroDePantalla, leerCobrosDePantalla } from "@/lib/cobro/cobros-de-pantalla";
+import { idCliente } from "@/lib/id-cliente";
 import { CorregirPrecioLinea } from "./corregir-precio-linea";
+import { CorreccionPrecioInfo, type CorreccionPrecio } from "./correccion-precio-info";
 import { CamposTarjetaManual } from "@/components/cobro/campos-tarjeta-manual";
 import { RevisarTarjetaManual } from "@/components/cobro/revisar-tarjeta-manual";
 import {
@@ -160,6 +162,7 @@ function NuevaFilaMetodo(): FilaMetodo {
 export function CuentaCobro({
   reservaId,
   lineas,
+  correccionesPrecio = [],
   totales: totalesServidor,
   turnoAbierto,
   cobros: cobrosIniciales,
@@ -179,6 +182,8 @@ export function CuentaCobro({
 }: {
   reservaId: string;
   lineas: LineaCuenta[];
+  // QA S17 (N48): la corrección vigente de cada línea y su historial.
+  correccionesPrecio?: CorreccionPrecio[];
   totales: Totales;
   turnoAbierto: boolean;
   cobros: CobroHistorial[];
@@ -200,6 +205,8 @@ export function CuentaCobro({
   mp: { disponible: ResumenCobro; ordenes: OrdenCobroFila[]; clienteTelefono: string | null; terminalManualBloqueada: boolean };
 }) {
   const zona = useZonaNegocio();
+  // N28: esta carga de la pantalla (un F5 o volver a entrar es otra carga).
+  const cargaPantalla = useRef(idCliente());
   const router = useRouter();
   // router.refresh() devuelve el control antes de que la página nueva llegue: sin esto el botón se
   // reactivaba y la pantalla seguía 1–2 s con el saldo y el formulario de antes del cobro.
@@ -389,6 +396,9 @@ export function CuentaCobro({
     metodos.length === 1 && !montoTocado && i === 0 && totales.saldo > 0.005 ? (Math.round(totales.saldo * 100) / 100).toFixed(2) : m.monto;
   const metodosEfectivos = metodos.map((m, i) => ({ ...m, monto: montoDeMetodo(i, m) }));
   const totalMetodos = metodosEfectivos.reduce((sum, m) => sum + (Number(m.monto) || 0), 0);
+  // N46: lo que se manda es EXACTAMENTE lo que el campo muestra (un autollenado que cambia el valor sin avisar a React
+  // no hace que se cobre el saldo por defecto).
+  const montoInputs = useRef<(HTMLInputElement | null)[]>([]);
   const totalMetodosRef = useRef(totalMetodos);
   const montoTocadoRef = useRef(montoTocado);
   useEffect(() => {
@@ -481,9 +491,14 @@ export function CuentaCobro({
   }
 
   async function enviarCobroInterno(confirmado: boolean) {
-    const payload = metodosEfectivos.map((m) => ({
+    const textos = metodosEfectivos.map((m, i) => (montoInputs.current[i]?.value ?? m.monto).trim());
+    if (textos.some((t) => t === "" || !Number.isFinite(Number(t)))) {
+      setError("Escribe el monto de cada método con números (por ejemplo 10 o 10.50).");
+      return;
+    }
+    const payload = metodosEfectivos.map((m, i) => ({
       metodo: m.metodo,
-      monto: Number(m.monto) || 0,
+      monto: Math.round(Number(textos[i]) * 100) / 100,
       propina: Number(m.propina) || 0,
       ...(m.metodo === "tarjeta_manual" ? cargaTarjetaManual(m.tarjeta) : {}),
     }));
@@ -512,7 +527,7 @@ export function CuentaCobro({
     setConfirmacion(null);
     // N28: el servidor compara con lo que esta pantalla sabía; si entró otro cobro o cambió el saldo, pide confirmar.
     // QA S15: solo los cobros que registró esta misma pestaña quedan exentos; cualquier otro de los últimos 2 minutos pregunta.
-    const control = { saldoVisto: totalesServidor.saldo, cobrosVistos: cobrosIniciales.map((c) => c.id), cobrosDeEstaPantalla: leerCobrosDePantalla([reservaId]), confirmado };
+    const control = { saldoVisto: totalesServidor.saldo, cobrosVistos: cobrosIniciales.map((c) => c.id), cobrosDeEstaPantalla: leerCobrosDePantalla(cargaPantalla.current, [reservaId]), confirmado };
     const res = await cobrando.ejecutar(() => registrarCobro(reservaId, notasCobro, payload, control));
     if (res.confirmar) {
       setConfirmacion(res.confirmar);
@@ -531,12 +546,22 @@ export function CuentaCobro({
     setNotasCobro("");
     setMetodos([NuevaFilaMetodo()]);
     setMontoTocado(false);
-    anotarCobroDePantalla([reservaId], res.cobroId);
+    anotarCobroDePantalla(cargaPantalla.current, [reservaId], res.cobroId);
     if (res.totales) setProvisional({ base: totalesServidor, totales: res.totales });
     refrescar(abonado, { metodos: payload.map((m) => ({ metodo: m.metodo, monto: m.monto, propina: m.propina })) });
   }
 
   // Al anular o corregir un cobro: la cuenta nueva que devolvió la acción, el cobro marcado «Anulado» y el refresco.
+  // N48: la corrección vigente de una línea (a lo más una) y el precio vigente que da.
+  const correccionVigente = (tipo: string, id: string) => correccionesPrecio.find((c) => c.vigente && c.lineaTipo === tipo && c.lineaId === id) ?? null;
+  const historialDe = (tipo: string, id: string) => correccionesPrecio.filter((c) => c.lineaTipo === tipo && c.lineaId === id);
+  const precioVigente = (l: LineaCuenta) => l.total + (correccionVigente(l.tipo, l.origenId)?.monto ?? 0);
+  // N47/N82: al guardar o anular una corrección, el encabezado y el saldo se pintan de inmediato.
+  function alCambiarPrecio(t?: Totales) {
+    if (t) setProvisional({ base: totalesServidor, totales: t });
+    refrescar();
+  }
+
   function alCorregirCobro(r: { cobroId: string; anulado: boolean; motivo: string; totales?: Totales }) {
     if (r.totales) setProvisional({ base: totalesServidor, totales: r.totales });
     if (r.anulado) setAnuladosAqui((prev) => ({ ...prev, [r.cobroId]: r.motivo }));
@@ -617,6 +642,19 @@ export function CuentaCobro({
                         {ETIQUETA_TIPO[l.tipo] ?? l.tipo}
                       </span>
                       {l.descripcion}
+                      {(() => {
+                        // La línea de corrección enseña el precio vigente, su historial y «Anular corrección».
+                        const c = l.tipo === "ajuste" ? correccionesPrecio.find((x) => x.id === l.origenId) : null;
+                        return c ? (
+                          <CorreccionPrecioInfo
+                            correccion={c}
+                            historial={historialDe(c.lineaTipo, c.lineaId)}
+                            reservaId={reservaId}
+                            puedeAnular={puedeEditarMonto}
+                            alAnular={alCambiarPrecio}
+                          />
+                        ) : null;
+                      })()}
                     </td>
                     <td data-label="Cantidad" className="border-b border-n-200 px-4 py-2.5 text-right tabular-nums text-n-700">
                       {l.cantidad}
@@ -664,8 +702,9 @@ export function CuentaCobro({
           tipo={lineas[corrigiendoPrecioIdx].tipo}
           origenId={lineas[corrigiendoPrecioIdx].origenId}
           descripcion={lineas[corrigiendoPrecioIdx].descripcion}
-          total={lineas[corrigiendoPrecioIdx].total}
+          total={precioVigente(lineas[corrigiendoPrecioIdx])}
           onCerrar={() => setCorrigiendoPrecioIdx(null)}
+          alGuardar={alCambiarPrecio}
         />
       )}
 
@@ -948,6 +987,8 @@ export function CuentaCobro({
                   step="0.01"
                   value={montoDeMetodo(i, m)}
                   onChange={(e) => actualizarMetodo(i, { monto: e.target.value })}
+                  ref={(el) => { montoInputs.current[i] = el; }}
+                  data-monto-metodo={i}
                 />
               </div>
               <div className="w-32">

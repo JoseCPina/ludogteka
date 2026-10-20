@@ -12,6 +12,7 @@ import { MoverFechas } from "../mover-fechas";
 import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 import type { Conflicto } from "@/lib/concurrencia/tipos";
 import { CargosSeccion, type Cargo, type ServicioCargo } from "../cargos-seccion";
+import { cerrarFrase } from "@/lib/texto/frases";
 
 export type FilaEstancia = {
   id: string;
@@ -175,7 +176,7 @@ export function EstanciaFila({
 
       {estado === "cancelada" && fila.cancelacion && (
         <p className="text-sm text-n-700" data-cancelacion-estancia>
-          Cancelada por {fila.cancelacion.quien} el {fila.cancelacion.cuando}.
+          {cerrarFrase(`Cancelada por ${fila.cancelacion.quien} el ${fila.cancelacion.cuando}`)}
           {fila.cancelacion.motivo ? <> Motivo: {fila.cancelacion.motivo}</> : " Sin motivo escrito."}
         </p>
       )}

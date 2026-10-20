@@ -39,7 +39,7 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 };
 
 /** El borrador de una consulta: se guarda solo (a los 1.5 s de dejar de escribir) y se firma desde aquí. */
-export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, cargosIniciales, puedeCatalogo = false, aplicarVacuna }: { consulta: ConsultaVet; especie: string | null; soyElMedico: boolean; nombreMedico: string; cargosIniciales: DatosCargos | null; puedeCatalogo?: boolean; aplicarVacuna?: ReactNode }) {
+export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, cargosIniciales, puedeCatalogo = false, aplicarVacuna, aplicarDesparasitacion }: { consulta: ConsultaVet; especie: string | null; soyElMedico: boolean; nombreMedico: string; cargosIniciales: DatosCargos | null; puedeCatalogo?: boolean; aplicarVacuna?: ReactNode; aplicarDesparasitacion?: ReactNode }) {
   const router = useRouter();
   const [v, setV] = useState<Valores>(() => inicial(consulta));
   const [dx, setDx] = useState<Diagnostico[]>(consulta.diagnosticos ?? []);
@@ -243,7 +243,7 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
         </section>
       ))}
 
-      {cargos && <CargosConsulta consultaId={consulta.id} inicial={cargos} puedeAgregar onResumen={setCargos} puedeCatalogo={puedeCatalogo} aplicarVacuna={aplicarVacuna} />}
+      {cargos && <CargosConsulta consultaId={consulta.id} inicial={cargos} puedeAgregar onResumen={setCargos} puedeCatalogo={puedeCatalogo} aplicarVacuna={aplicarVacuna} aplicarDesparasitacion={aplicarDesparasitacion} />}
 
       <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
         <h2 className="text-lg font-bold text-n-900">Firmar</h2>

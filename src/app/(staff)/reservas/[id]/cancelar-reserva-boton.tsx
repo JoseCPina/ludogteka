@@ -74,7 +74,7 @@ export function CancelarReservaBoton({
   return (
     <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
       <p className="text-sm font-semibold text-coral-oscuro">
-        ¿Cancelar los {cancelables} perro(s) que todavía se pueden cancelar de esta reserva?
+        {cancelables === 1 ? "¿Cancelar el perro que todavía se puede cancelar de esta reserva?" : `¿Cancelar los ${cancelables} perros que todavía se pueden cancelar de esta reserva?`}
       </p>
       <Textarea
         label="Motivo (opcional)"
