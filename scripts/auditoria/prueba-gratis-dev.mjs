@@ -17,6 +17,8 @@
 //      plataforma se lo vence (plataforma_cambiar_plan) y el negocio queda
 //      en solo lectura: el aviso lo dice y guardar lo rechaza la base.
 // Sale con 1 al primer paso que falle. Deja el negocio de prueba (vencido) en desarrollo.
+import { limpiarAlTerminar } from "../lib/limpieza-dev.mjs";
+limpiarAlTerminar({ prefijos: ["prueba-gratis-", "cuenta-previa-", "clinica-prueba-", "hotel-prueba-", "pg-suc-"], bitacoras: ["aceptaciones_legales"] }); // al terminar (también si falla) borra lo que esta corrida creó
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";

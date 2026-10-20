@@ -14,6 +14,8 @@
 //      tarea sin secreto da 401 y con él sincroniza; /plataforma/prospectos enseña la sección «Meta» a 390 y 1280 px
 //      y la ficha da de baja de publicidad.
 // Al terminar deja las audiencias de desarrollo como estaban (sin ids de Meta ni miembros) y borra sus prospectos.
+import { limpiarAlTerminar } from "../lib/limpieza-dev.mjs";
+limpiarAlTerminar({ bitacoras: ["meta_audiencias_corridas", "meta_audiencias_miembros"] }); // al terminar (también si falla) borra lo que esta corrida creó
 import http from "node:http";
 import crypto from "node:crypto";
 import { spawn } from "node:child_process";

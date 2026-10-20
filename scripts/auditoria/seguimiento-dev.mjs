@@ -24,6 +24,8 @@
 //   8. fallos: definitivo no se reintenta; transitorio se reintenta UNA vez;
 //   9. pausa global; 10. RLS y aislamiento (anon, admin de negocio, otro
 //      negocio) y borrar un negocio limpia su seguimiento.
+import { limpiarAlTerminar } from "../lib/limpieza-dev.mjs";
+limpiarAlTerminar({ prefijos: ["aud-seg-"], bitacoras: ["wa_mensajes", "wa_entregas", "wa_uso_ia", "wa_hilos"] }); // al terminar (también si falla) borra lo que esta corrida creó
 import http from "node:http";
 import { spawn } from "node:child_process";
 import { createHmac, randomUUID } from "node:crypto";

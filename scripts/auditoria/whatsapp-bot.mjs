@@ -38,6 +38,8 @@
 //   5. Telegram: secreto malo → 401; chat ajeno ignorado; vincular con código;
 //      el escalamiento llega; contestar respondiendo sale por WhatsApp;
 //      /aprender guarda.
+import { limpiarAlTerminar } from "../lib/limpieza-dev.mjs";
+limpiarAlTerminar({ prefijos: ["bot-prueba-"], bitacoras: ["wa_mensajes", "wa_entregas", "wa_uso_ia", "wa_hilos", "prospectos_visitas", "prospectos_eventos", "prospectos_contactos", "prospectos"] }); // al terminar (también si falla) borra lo que esta corrida creó
 import fs from "node:fs";
 import http from "node:http";
 import { createHmac, randomUUID } from "node:crypto";

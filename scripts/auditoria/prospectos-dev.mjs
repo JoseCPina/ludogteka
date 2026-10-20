@@ -10,6 +10,8 @@
 // del admin y nombre), correo/Instagram/WhatsApp desde la web, tope de búsquedas, pausa, sin llave, segunda
 // corrida sin nuevos, historial de etapa, el acceso (anon, admin de un negocio, admin de la plataforma), las
 // funciones solo del servidor y auditoria_frontera() vacía. Al final borra todo lo que creó.
+import { limpiarAlTerminar } from "../lib/limpieza-dev.mjs";
+limpiarAlTerminar({ bitacoras: ["prospectos_visitas", "prospectos_eventos", "prospectos_contactos", "prospeccion_corridas", "meta_audiencias_corridas"] }); // al terminar (también si falla) borra lo que esta corrida creó
 import http from "node:http";
 import { claveAleatoria } from "../lib/clave.mjs";
 import { A, URL, env, sesion } from "./sesiones-dev.mjs";

@@ -8,6 +8,8 @@
 // 6. Volver a un subdominio propio anterior lo libera.
 // 7. HTTP: el host viejo responde 308 al nuevo con la misma ruta y parámetros; el nuevo no redirige; uno desconocido da 404.
 // 8. Borrar el negocio borra sus subdominios anteriores; auditoria_frontera() vacía.
+import { limpiarAlTerminar } from "../lib/limpieza-dev.mjs";
+limpiarAlTerminar({ prefijos: ["aud-sub-"] }); // al terminar (también si falla) borra lo que esta corrida creó
 import http from "node:http";
 import { spawnSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
