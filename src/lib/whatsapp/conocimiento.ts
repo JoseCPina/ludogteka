@@ -276,4 +276,11 @@ Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado.
 - El link de la prueba o del demo va solo cuando la persona pregunta cómo empezar, pide ver el sistema o dice que quiere probar. No cierres cada respuesta con «¿Ya quieres…?» ni con el link de registro.
 - La página de muestra de un prospecto (peludesk.mx/para/…): en el celular tiene menú, su horario real (un negocio 24 horas sale «Abierto 24 horas» en todos lados), el formulario de cita en modo demostración (no se envía nada ni se avisa al negocio) y, si el negocio no la quiere, se pide quitarla por WhatsApp o a contacto@peludesk.mx.
 - Al registrarse, la dirección (nombre.peludesk.mx) se ve en vivo mientras se escribe el nombre del negocio; si ya está tomada, se le da una parecida.
+## Caja, sucursales y consulta (QA S17, 19 de octubre)
+- Anular o corregir un cobro de un turno YA CERRADO: queda ligado a ese turno como «ajuste posterior al corte» (con quién y cuándo); su corte no cambia y el turno abierto de hoy tampoco. Si el cobro era en efectivo, se pregunta «¿Se devolvió el dinero hoy del cajón?»: solo si sí, se registra un retiro con el motivo en el turno abierto. Ya no hace falta un turno abierto para corregir un cobro de un turno cerrado.
+- Corregir precio: una línea tiene una sola corrección vigente (la nueva reemplaza a la anterior, volver al precio original la quita); «Ver historial» y «Anular corrección» (con motivo) junto al renglón.
+- Un segundo cobro a la misma cuenta en menos de 2 minutos pide confirmar si no salió de esa misma carga de la pantalla (un F5 cuenta como otra carga). Se cobra exactamente el monto que dice el campo.
+- Crear un cliente, perro, servicio, producto o empleado abre su ficha.
+- Sucursales: el admin de la primera da de baja una sucursal en Módulos y plan → Sucursales → «Dar de baja» (con motivo): queda en solo lectura 90 días, sale de «Tus negocios» y deja de cobrarse (la parte proporcional queda a favor). La primera no se da de baja ni se suspende con sucursales activas.
+- Consulta veterinaria: «Aplicar desparasitación» junto a «Aplicar vacuna»; lo aplicado ese día sale en «Vacunas y desparasitación» de la consulta. Una vacuna repetida (misma fecha) no se registra: el formulario se cierra y ofrece «Cancelar» y «Ver en el carnet».
 `.trim();

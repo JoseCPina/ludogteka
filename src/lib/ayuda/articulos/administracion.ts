@@ -466,6 +466,13 @@ Cada sucursal es un negocio en PeluDesk: su propia caja, agenda, personal, pági
 
 Solo se abre cuando tu plan ya está pagado: si contrataste durante la prueba, al terminar la prueba. Si trabajas en varias, cambias de una a otra en **Tus negocios**, abajo del menú: las sucursales del mismo dueño salen juntas.
 
+### Dar de baja una sucursal
+
+1. Desde tu primera sucursal, en [Módulos y plan](/admin/modulos) → **Sucursales**, junto a la sucursal aprieta **Dar de baja**.
+2. Escribe el **Motivo (obligatorio)** y aprieta **Dar de baja la sucursal**.
+
+La sucursal queda **en solo lectura 90 días** (se puede consultar todo, no se captura nada), sale de **Tus negocios** y deja de cobrarse: el concepto «Sucursal adicional» baja en uno y la **parte proporcional queda a favor** en tu siguiente cobro. La primera sucursal no se da de baja aquí (es la que paga el plan): para dejar PeluDesk se cancela la suscripción, y mientras tenga sucursales activas no se suspende.
+
 ## Soporte
 
 Todo por WhatsApp, al +52 56 4916 0742: un asistente contesta las 24 horas y lo que no resuelve lo atiende una persona de PeluDesk el mismo día, en horario hábil. No hay que abrir tickets ni escribir correos.

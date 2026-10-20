@@ -12,6 +12,7 @@
 // 6. Libro de control: renglones con folio y saldo, Excel y reporte mensual.
 // 7. Portal del dueño: ve su receta.
 // 10 y 10b (QA S15, 19 de octubre): el formulario de vacuna (carnet y consulta) se cierra al guardar y vuelve vacío.
+// 10b también (QA S17): vacuna repetida (N53) y «Vacunas y desparasitación» con «Aplicar desparasitación» en la consulta (N51).
 // 8. Sugerencias de la QA (17 de octubre): la receta se prellena con el «Tratamiento» de la consulta firmada,
 //    la cantidad a surtir se calcula sola (y se puede cambiar) y, sin productos clínicos, el selector dice
 //    «No hay productos cargados» con enlace a Inventario.
@@ -405,6 +406,31 @@ try {
     comprobar((await formC2.locator('input[name="biologico"]').inputValue()) === "" && (await formC2.locator('input[name="laboratorio"]').inputValue()) === "" && (await formC2.locator('input[name="dosis"]').inputValue()) === "", "al abrir «Aplicar vacuna» otra vez, todo está vacío");
     const { count: nC } = await SB.from("carnet_vacunas").select("id", { count: "exact", head: true }).eq("perro_id", perroC).is("anulada_at", null);
     comprobar(nC === 1, `queda UNA vacuna en el carnet (${nC})`);
+    // QA S17 (N53): repetir la misma vacuna con la misma fecha: se bloquea, el formulario se cierra y ofrece salidas.
+    await formC2.locator('input[name="biologico"]').fill(`Moquillo prueba ${E.MARCA}`);
+    const medC2 = formC2.locator('select[name="medico_id"]');
+    if (!(await medC2.inputValue())) await medC2.selectOption({ index: 1 });
+    await formC2.getByRole("button", { name: "Registrar vacuna" }).click();
+    const dup = apartado.locator("[data-aviso-duplicado]");
+    const hayDup = await dup.waitFor({ timeout: 30000 }).then(() => true, () => false);
+    comprobar(hayDup && /Ya hay una vacuna/.test(await dup.innerText()) && (await apartado.locator('input[name="biologico"]').count()) === 0
+      && (await dup.locator("[data-cancelar-duplicado]").count()) === 1 && (await dup.locator("[data-ver-carnet]").getAttribute("href")) === `/veterinaria/carnet/${perroC}`,
+      "N53: la vacuna repetida cierra el formulario y ofrece «Cancelar» y «Ver en el carnet»");
+    await dup.locator("[data-cancelar-duplicado]").click();
+    comprobar((await apartado.locator("[data-aviso-duplicado]").count()) === 0, "«Cancelar» cierra el aviso");
+    // QA S17 (N51): lo aplicado se ve en la sección «Vacunas y desparasitación» de la consulta, y se desparasita desde ahí.
+    await mvz.p.reload({ waitUntil: "networkidle" });
+    comprobar((await mvz.p.locator("[data-vacunas-consulta] [data-vacuna-consulta]").innerText().catch(() => "")).includes(`Moquillo prueba ${E.MARCA}`), "N51: la vacuna aplicada sale en «Vacunas y desparasitación» de la consulta");
+    const despa = mvz.p.locator("[data-aplicar-desparasitacion]");
+    comprobar((await despa.count()) === 1, "N51: junto a «Aplicar vacuna» está «Aplicar desparasitación»");
+    await despa.getByRole("button", { name: "Aplicar desparasitación", exact: true }).click();
+    const formD = despa.locator("form").first();
+    await formD.waitFor({ timeout: 20000 });
+    await formD.locator('input[name="producto"]').fill(`Desparasitante prueba ${E.MARCA}`);
+    await formD.getByRole("button", { name: "Registrar desparasitación" }).click();
+    await despa.locator("[data-desplegable-aviso]").waitFor({ timeout: 40000 }).catch(() => {});
+    await mvz.p.reload({ waitUntil: "networkidle" });
+    comprobar((await mvz.p.locator("[data-vacunas-consulta] [data-desparasitacion-consulta]").innerText().catch(() => "")).includes(`Desparasitante prueba ${E.MARCA}`), "N51: la desparasitación aplicada desde la consulta sale en su sección");
     await rpc(P.recCon, "vet_consulta_anular", { p_id: cidV, p_motivo: "Prueba de auditoría" }).catch(() => {});
   }
   // QA S16: la cédula profesional son 7 u 8 números (pantalla y base), y la bienvenida ofrece «Yo soy el médico».

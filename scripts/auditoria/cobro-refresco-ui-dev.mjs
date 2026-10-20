@@ -10,6 +10,9 @@
 // piden confirmación; y una cuenta movida desde otra sesión (anulación, cobro) se pone al día sola y avisa.
 // Secciones 7c, 7d, 11 y 12 (QA S15, 19 de octubre): tras F5 o desde otra ventana de la misma cuenta pide confirmar;
 // anular o registrar cambia el resumen al momento; el encabezado de la reserva y «Cancelar cuenta» se ponen al día.
+// Secciones 13 a 15 (QA S17, 19 de octubre): N28 con la misma persona tras F5 (el id de pantalla se renueva al
+// recargar), N47/N82 «Corregir precio» que se limpia, se reactiva y pone al día el encabezado, y N46 el monto que se
+// manda es exactamente el del campo (también con un autollenado que no avisa a React).
 // Secciones 7 y 8 (QA S13, 18 de octubre): pide confirmar aunque la pantalla ya enseñe el cobro de otra persona,
 // no pregunta el segundo cobro propio, y «Actualizando saldo…» deshabilitado y sin aviso viejo.
 import fs from "node:fs";
@@ -447,6 +450,98 @@ try {
     const tCancel = await pE2.locator("[data-cancelar-cuenta] p").first().innerText().catch(() => "");
     comprobar(/\$880\.00 por cobrar/.test(tCancel), `y en Cobrar, la tarjeta «Cancelar cuenta» dice lo mismo que el resumen («${tCancel}»)`);
     await ctxAd2.close();
+  }
+
+  // ── QA S17 (19 de octubre de 2026) ──
+  console.log("13. N28: la MISMA persona registra, recarga con F5 y registra otro: pide confirmar");
+  {
+    const ctx13 = await nav.newContext({ viewport: { width: 390, height: 844 } });
+    await ctx13.addCookies(await cookiesDe(recId));
+    const c13 = await nuevoCliente("F5 propio");
+    const cu13 = await cuenta(c13, 500, `Hotel F5 propio ${sufijo}`);
+    const p13 = await ctx13.newPage();
+    await p13.goto(`${BASE}/caja/cobrar/${cu13}`, { waitUntil: "networkidle" });
+    await p13.getByLabel("Monto").first().fill("10");
+    await p13.getByRole("button", { name: "Registrar cobro" }).first().click();
+    await p13.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+    await p13.reload({ waitUntil: "networkidle" });
+    await p13.getByLabel("Monto").first().fill("10");
+    await p13.getByRole("button", { name: "Registrar cobro" }).first().click();
+    const pidio13 = await p13.locator("[data-confirmar-cobro]").waitFor({ timeout: 20000 }).then(() => true, () => false);
+    comprobar(pidio13 && (await cobros(cu13)) === 1, "tras F5 el segundo cobro de la misma persona pide confirmar (el id de pantalla es otro) y no registra nada sin confirmar");
+    await ctx13.close();
+  }
+
+  console.log("14. N47/N82: «Corregir precio» se limpia, se reactiva y el encabezado dice el precio vigente");
+  {
+    const admB2 = await comoPersona(datos.adminB);
+    const ctx14 = await nav.newContext({ viewport: { width: 1280, height: 900 } });
+    await ctx14.addCookies(await cookiesDe(datos.adminB));
+    const c14 = await nuevoCliente("Corregir precio");
+    const cu14 = await cuenta(c14, 1100, `Hotel 1100 ${sufijo}`);
+    const p14 = await ctx14.newPage();
+    await p14.goto(`${BASE}/caja/cobrar/${cu14}`, { waitUntil: "networkidle" });
+    await p14.getByRole("button", { name: "Corregir precio" }).first().click();
+    const caja14 = p14.locator("[data-corregir-precio]");
+    await caja14.locator("[data-precio-correccion]").fill("1090");
+    await caja14.locator("[data-motivo-correccion]").fill("QA S17 N47 primera");
+    await caja14.locator("[data-guardar-precio]").click();
+    await caja14.getByText(/Precio corregido/).waitFor({ timeout: 30000 });
+    await p14.waitForFunction(() => /\(hoy \$1,090\.00\)/.test(document.querySelector("[data-corregir-precio]")?.textContent ?? ""), null, { timeout: 30000 }).catch(() => {});
+    const encabezado = await caja14.locator("p").first().innerText();
+    comprobar(/\(hoy \$1,090\.00\)/.test(encabezado), `N82: el encabezado dice el precio vigente («${encabezado}»)`);
+    comprobar((await caja14.locator("[data-motivo-correccion]").inputValue()) === "", "N82: el motivo queda vacío después de guardar");
+    comprobar(await caja14.locator("[data-guardar-precio]").isDisabled(), "sin cambios, «Guardar precio» está apagado");
+    await caja14.locator("[data-precio-correccion]").fill("1095");
+    await caja14.locator("[data-motivo-correccion]").fill("QA S17 N47 segunda");
+    comprobar(!(await caja14.locator("[data-guardar-precio]").isDisabled()), "N47: al cambiar precio y motivo, «Guardar precio» se reactiva sin recargar");
+    await caja14.locator("[data-guardar-precio]").click();
+    await caja14.getByText(/Precio corregido/).waitFor({ timeout: 30000 });
+    await p14.waitForFunction(() => document.querySelectorAll("[data-correccion-precio]").length === 1, null, { timeout: 30000 }).catch(() => {});
+    comprobar((await p14.locator("[data-correccion-precio]").count()) === 1, "N48: dos correcciones dejan UNA línea de corrección en la cuenta");
+    await p14.locator("[data-ver-historial-precio]").click();
+    comprobar((await p14.locator("[data-historial-precio] li").count()) === 2, "«Ver historial» enseña las dos correcciones");
+    await p14.locator("[data-anular-correccion]").click();
+    await p14.getByLabel("Motivo (obligatorio)").last().fill("QA S17 anular corrección");
+    await p14.locator("[data-confirmar-anular-correccion]").click();
+    await p14.waitForFunction(() => document.querySelectorAll("[data-correccion-precio]").length === 0, null, { timeout: 30000 }).catch(() => {});
+    const tot14 = Number((await admB2.rpc("cuenta_totales_reserva", { p_reserva_id: cu14 })).data?.[0]?.total_cuenta);
+    comprobar((await p14.locator("[data-correccion-precio]").count()) === 0 && tot14 === 1100, "«Anular corrección» devuelve la línea a su precio original ($1,100)");
+    await ctx14.close();
+  }
+
+  console.log("15. N46: se registra EXACTAMENTE el monto del campo (teclado y autollenado que no avisa a React)");
+  {
+    const ctx15 = await nav.newContext({ viewport: { width: 390, height: 844 } });
+    await ctx15.addCookies(await cookiesDe(recId));
+    const c15 = await nuevoCliente("Monto exacto");
+    const cu15 = await cuenta(c15, 240, `Estetica 240 ${sufijo}`);
+    const p15 = await ctx15.newPage();
+    await p15.goto(`${BASE}/caja/cobrar/${cu15}`, { waitUntil: "networkidle" });
+    // Autollenado: cambia el valor del campo sin disparar los eventos de React.
+    await p15.locator("[data-monto-metodo='0']").evaluate((el) => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(el, "10");
+    });
+    await p15.getByRole("button", { name: "Registrar cobro" }).first().click();
+    await p15.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 }).catch(() => {});
+    const m15 = (await SB.from("cobros").select("cobro_metodos(monto)").eq("reserva_id", cu15)).data ?? [];
+    const total15 = m15.flatMap((c) => c.cobro_metodos).reduce((x, m) => x + Number(m.monto), 0);
+    comprobar(total15 === 10, `con autollenado se registró $${total15} (el campo decía $10, nunca el saldo de $240)`);
+    // Por teclado.
+    await p15.getByLabel("Monto").first().fill("15");
+    await p15.getByRole("button", { name: "Registrar cobro" }).first().click();
+    const conf15 = p15.locator("[data-confirmar-cobro]");
+    await Promise.race([conf15.waitFor({ timeout: 30000 }), p15.getByText("Cobro registrado.").nth(0).waitFor({ timeout: 30000 })]).catch(() => {});
+    if (await conf15.count()) await p15.locator("[data-registrar-de-todos-modos]").click();
+    await p15.waitForTimeout(1500);
+    const m15b = (await SB.from("cobros").select("cobro_metodos(monto)").eq("reserva_id", cu15)).data ?? [];
+    comprobar(m15b.flatMap((c) => c.cobro_metodos).reduce((x, m) => x + Number(m.monto), 0) === 25, "por teclado se registran exactamente $15 más");
+    // Vacío o no numérico: error claro, no se registra.
+    await p15.getByLabel("Monto").first().fill("");
+    await p15.getByRole("button", { name: "Registrar cobro" }).first().click();
+    const err15 = await p15.getByText(/Escribe el monto de cada método con números/).first().waitFor({ timeout: 10000 }).then(() => true, () => false);
+    comprobar(err15, "con el monto vacío dice que escriba el monto, no cobra el saldo");
+    await ctx15.close();
   }
 } finally {
   await nav.close();

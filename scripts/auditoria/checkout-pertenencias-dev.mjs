@@ -200,6 +200,8 @@ try {
     px.setDefaultTimeout(45000);
     await px.goto(`${BASE}/reservas/${rH.id}`, { waitUntil: "networkidle" });
     await px.getByRole("button", { name: "Cancelar toda la reserva" }).click();
+    const dialogo = await px.locator("body").innerText();
+    comprobar(/¿Cancelar el perro que todavía se puede cancelar de esta reserva\?/.test(dialogo) && !/perro\(s\)/.test(dialogo), "N52: con un perro dice «el perro», sin «perro(s)»");
     const motivo = px.getByLabel("Motivo (opcional)");
     comprobar((await motivo.count()) === 1, "al cancelar, aparece «Motivo (opcional)»");
     await motivo.fill("El cliente cambió de fechas");
@@ -211,7 +213,7 @@ try {
     comprobar(JSON.stringify(bit?.[0]?.cambios ?? {}).includes("El cliente cambió de fechas"), "y la bitácora de ediciones anota el motivo junto con el cambio de estado");
     await px.reload({ waitUntil: "networkidle" });
     const tc = await px.locator("[data-cancelacion-estancia]").innerText().catch(() => "");
-    comprobar(/Cancelada por .+ el .+ Motivo: El cliente cambió de fechas/.test(tc) && !/@/.test(tc), `la reserva lo enseña con el nombre, la fecha y el motivo («${tc}»)`);
+    comprobar(/Cancelada por .+ el .+ a las \d{1,2}:\d{2} [ap]\.m\. Motivo: El cliente cambió de fechas/.test(tc) && !/@/.test(tc), `N52: la reserva lo enseña con el nombre, la fecha, la hora y el motivo («${tc}»)`);
     // Sin motivo también se puede.
     const rH2 = (await cliente.from("reservas").insert({ cliente_id: datos.clienteSoloB }).select("id").single()).data;
     const eH2 = await cliente.from("estancias").insert({ reserva_id: rH2.id, perro_id: perro.id, servicio_id: hotel?.id ?? gD.id, fecha_entrada: dH(base + 7), fecha_salida: dH(base + 8), bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: "Prueba", bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: "Prueba" }).select("id").single();

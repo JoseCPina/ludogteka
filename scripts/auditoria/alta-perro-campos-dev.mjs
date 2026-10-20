@@ -120,6 +120,21 @@ try {
   comprobar(Boolean(perroNuevoId), `completo: se guarda (${p.url()})`);
   if (perroNuevoId) creados.perros.push(perroNuevoId);
 
+  seccion("2b. N83: crear un cliente abre su ficha (no se queda en el formulario)");
+  {
+    await p.goto(`${BASE}/clientes/nuevo`, { waitUntil: "networkidle", timeout: 120000 });
+    const telN83 = `449${sufijo}${String(Math.floor(Math.random() * 10))}`.slice(0, 10);
+    await p.getByLabel("Nombre del dueño").fill(`ZZ Ficha N83 ${sufijo}`);
+    await p.getByLabel(/^Teléfono|^WhatsApp/).fill(telN83);
+    await p.getByRole("button", { name: "Crear cliente" }).click();
+    await p.waitForURL(/\/clientes\/[0-9a-f-]{36}/, { timeout: 60000 }).catch(() => {});
+    const idN83 = p.url().match(/\/clientes\/([0-9a-f-]{36})/)?.[1];
+    comprobar(Boolean(idN83), `después de guardar abre la ficha del cliente recién creado (${p.url()})`);
+    const dobles = (await SB.from("clientes").select("id").eq("telefono", telN83).is("deleted_at", null)).data ?? [];
+    comprobar(dobles.length === 1, "y quedó un solo cliente");
+    if (idN83) creados.clientes?.push?.(idN83);
+  }
+
   seccion("3. N14: lo que dice el expediente de un perro nuevo en un negocio con Estética y Hotel");
   if (perroNuevoId) {
     const t = (await p.locator("body").innerText()).replace(/\s+/g, " ");

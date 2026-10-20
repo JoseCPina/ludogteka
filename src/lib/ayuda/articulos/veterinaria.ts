@@ -178,7 +178,7 @@ Cada permiso dice si está vigente, por vencer o vencido. Los vencidos y los que
 1. En el carnet, aprieta **Registrar vacuna**.
 2. Elige la vacuna del inventario clínico (solo salen los productos que en su ficha tienen **Tipo de producto: Vacuna**; el desparasitante, igual con **Desparasitante**) y su **lote** (se descuenta una dosis del lote), o escríbela si no está en el inventario.
 3. Pon la **fecha de aplicación**, la **próxima dosis** (con ella se programan los recordatorios) y el **médico veterinario que aplica**.
-4. Aprieta **Registrar vacuna**. El formulario se cierra y junto al botón sale «Vacuna registrada…»; al volver a abrirlo, nace en blanco para la siguiente. Lo mismo con **Registrar desparasitación** y con **Aplicar vacuna** dentro de una consulta.
+4. Aprieta **Registrar vacuna**. El formulario se cierra y junto al botón sale «Vacuna registrada…»; al volver a abrirlo, nace en blanco para la siguiente. Lo mismo con **Registrar desparasitación** y con **Aplicar vacuna** dentro de una consulta. Si esa vacuna (o desparasitación) ya está en el carnet con la misma fecha, no se registra dos veces: el formulario se cierra y sale el aviso con **Cancelar** y **Ver en el carnet**.
 
 Una vacuna cuenta como **vigente** hasta su próxima dosis; si no la pones, 12 meses (o lo que dure su requisito sanitario). Pasados los 30 días antes de vencer sale **Por vencer**.
 
