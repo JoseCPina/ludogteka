@@ -224,7 +224,9 @@ function juzgar(caso, pregunta, r, pide, desdeTexto) {
   if (!r.leido) f.push("no marcó leído con «escribiendo…»");
   const voseo = r.textos.join(" ").match(/\b(sos|querés|tenés|podés|sabés|registrás|completás|mirá|fijate|contratás)\b/i);
   if (voseo) f.push(`voseo («${voseo[0]}»)`);
-  if (r.textos.length > 2) f.push(`${r.textos.length} mensajes de texto seguidos (máximo 2)`);
+  // El aviso de privacidad a un número nuevo es un mensaje aparte que no cuenta.
+  const sinAviso = r.textos.filter((t) => !t.startsWith("Así cuidamos tus datos"));
+  if (sinAviso.length > 2) f.push(`${sinAviso.length} mensajes de texto seguidos (máximo 2)`);
   for (const [i, t] of r.textos.entries()) {
     const n = r.textos.length > 1 ? ` (mensaje ${i + 1})` : "";
     if (t.includes("**")) f.push(`negrita con ** doble${n}`);

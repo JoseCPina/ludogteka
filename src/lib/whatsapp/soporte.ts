@@ -39,8 +39,8 @@ import {
   textoTelegram,
   type TipoInterlocutor,
 } from "./agente";
-import { aclararDemo, aFormatoWhatsApp, enDosSiEsLargo, formatoDelBot, hayQueReescribir, juntarCortos, unLinkAlFinal } from "./texto";
-import { ACLARACION_DEMO } from "@/lib/peludesk/respuestas-fijas";
+import { aclararCobro, aclararDemo, aFormatoWhatsApp, enDosSiEsLargo, formatoDelBot, hayQueReescribir, juntarCortos, unLinkAlFinal } from "./texto";
+import { ACLARACION_DEMO, COBRO_A_NOMBRE_DE } from "@/lib/peludesk/respuestas-fijas";
 
 // ───────────────────────────── puertos
 
@@ -357,9 +357,12 @@ async function conversar(
     // Ya no se le agrega el link del demo a toda respuesta (QA S16): el link va solo cuando la persona pide verlo
     // o probar. Lo que sí: el mensaje con el link del demo dice que Patitas & Co. es un negocio de ejemplo.
     for (const p of piezas) if (p.tipo === "texto") p.cuerpo = aclararDemo(p.cuerpo, enlaces.demo, ACLARACION_DEMO);
+    // Si preguntó por pagar, el cobro o la factura y la respuesta no dice a nombre de quién sale, se agrega (MENTEO).
+    const ultimaPieza = [...piezas].reverse().find((p) => p.tipo === "texto");
+    if (ultimaPieza?.tipo === "texto" && /\b(factur\w*|suscripci[oó]n|cargo|cobran|pago|pagar|tarjeta)\b/i.test(texto) && !/terminal/i.test(texto)) ultimaPieza.cuerpo = aclararCobro(ultimaPieza.cuerpo, COBRO_A_NOMBRE_DE);
     // A un número nuevo, en la primera respuesta, una línea corta con el aviso de privacidad.
     if (cuenta.tipo === "prospecto" && delBot.length === 0 && piezas.some((p) => p.tipo === "texto")) {
-      piezas.push({ tipo: "texto", cuerpo: `Así cuidamos tus datos: ${URL_AVISO_PRIVACIDAD}` });
+      piezas.push({ tipo: "texto", cuerpo: `Así cuidamos tus datos:\n\n${URL_AVISO_PRIVACIDAD}` });
     }
     if (!piezas.some((p) => p.tipo === "texto")) {
       await apuntar("escalo");
