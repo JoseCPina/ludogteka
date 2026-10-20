@@ -70,12 +70,11 @@ export async function geocodificarYCalcularDistancia(
     base_lng: number | null;
   } | null;
 
-  if (!cupo?.base_lat || !cupo?.base_lng) {
-    return { error: "Falta la dirección de la base (donde se guarda la camioneta): el admin la captura en Administración → Ubicación para recolección. Mientras, captura la distancia a mano." };
-  }
   if (!sucursal?.lat || !sucursal?.lng) {
-    return { error: "Falta la dirección del negocio: el admin la captura en Administración → Ubicación para recolección. Mientras, captura la distancia a mano." };
+    return { error: "Falta ubicar la dirección del negocio en el mapa: el admin la escribe en Perfil y la ubica en Administración → Ubicación para recolección. Mientras, captura la distancia a mano." };
   }
+  // QA R23: el punto de salida es opcional; sin él, la ruta sale de la dirección del negocio.
+  const salida = cupo?.base_lat && cupo?.base_lng ? { lat: Number(cupo.base_lat), lng: Number(cupo.base_lng) } : { lat: Number(sucursal.lat), lng: Number(sucursal.lng) };
 
   if (hayLlaveMaps()) {
     const cuota = await apartarConsulta(supabase, "geocodificar");
@@ -102,7 +101,7 @@ export async function geocodificarYCalcularDistancia(
   }
 
   const ruta = await calcularDistanciaRuta(
-    { id: "base", lat: cupo.base_lat, lng: cupo.base_lng },
+    { id: "base", lat: salida.lat, lng: salida.lng },
     { id: `cliente-${clienteId}`, lat: geocodificado.lat, lng: geocodificado.lng },
     { id: "negocio", lat: Number(sucursal.lat), lng: Number(sucursal.lng) }
   );

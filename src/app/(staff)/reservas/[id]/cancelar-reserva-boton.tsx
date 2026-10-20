@@ -8,18 +8,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { cancelarReserva } from "../reserva-actions";
 import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 import type { Conflicto, VersionLeida } from "@/lib/concurrencia/tipos";
+import { unirFrases, unirNombres } from "@/lib/texto/frases";
+import { formatearFecha, formatearHoraNegocio } from "@/lib/formato";
+import { useZonaNegocio } from "@/components/zona-negocio";
 
 export function CancelarReservaBoton({
   reservaId,
   cancelables,
+  nombres = [],
   versiones = [],
 }: {
   reservaId: string;
   cancelables: number;
+  /** QA R23 (N52): los perros que todavía se pueden cancelar, para nombrarlos con la concordancia correcta. */
+  nombres?: string[];
   /** Las versiones de las estancias tal como se leyeron (QA N43). */
   versiones?: VersionLeida[];
 }) {
   const router = useRouter();
+  const zona = useZonaNegocio();
+  const quienes = unirNombres(nombres);
   const [confirmando, setConfirmando] = useState(false);
   const cargando = useEspera();
   const [mensaje, setMensaje] = useState<string | null>(null);
@@ -39,11 +47,20 @@ export function CancelarReservaBoton({
       setMensaje(res.error);
       return;
     }
-    const base =
+    // «Se canceló la reserva de Luna y Max el 19 oct 2026 a las 6:05 p.m.» (un perro o varios).
+    const ahora = new Date().toISOString();
+    const cuando = `el ${formatearFecha(ahora, zona)} a las ${formatearHoraNegocio(ahora, zona)}`;
+    const deQuien = res.canceladas === cancelables && quienes ? ` de ${quienes}` : res.canceladas === 1 ? " de 1 perro" : ` de ${res.canceladas} perros`;
+    const base = unirFrases(
+      `Se canceló la reserva${deQuien} ${cuando}`,
       res.noCancelables > 0
-        ? `Se cancelaron ${res.canceladas}. ${res.noCancelables} ya no se podían cancelar (revisa su estado, p. ej. ya hicieron check-in) y no se tocaron.`
-        : `Se cancelaron ${res.canceladas}.`;
-    setMensaje([base, ...(res.avisos ?? [])].join(" "));
+        ? res.noCancelables === 1
+          ? "1 perro ya no se podía cancelar (revisa su estado, p. ej. ya hizo check-in) y no se tocó"
+          : `${res.noCancelables} perros ya no se podían cancelar (revisa su estado, p. ej. ya hicieron check-in) y no se tocaron`
+        : null,
+      motivo.trim() ? `Motivo: ${motivo.trim()}` : null
+    );
+    setMensaje(unirFrases(base, ...(res.avisos ?? [])));
     router.refresh();
   }
 
@@ -60,7 +77,7 @@ export function CancelarReservaBoton({
   }
 
   if (mensaje) {
-    return <p className="text-sm font-semibold text-n-700">{mensaje}</p>;
+    return <p className="text-sm font-semibold text-n-700" data-reserva-cancelada-aviso="">{mensaje}</p>;
   }
 
   if (!confirmando) {
@@ -74,7 +91,9 @@ export function CancelarReservaBoton({
   return (
     <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
       <p className="text-sm font-semibold text-coral-oscuro">
-        {cancelables === 1 ? "¿Cancelar el perro que todavía se puede cancelar de esta reserva?" : `¿Cancelar los ${cancelables} perros que todavía se pueden cancelar de esta reserva?`}
+        {cancelables === 1
+          ? `¿Cancelar la reserva de ${quienes || "el perro que todavía se puede cancelar"}?`
+          : `¿Cancelar la reserva de los ${cancelables} perros${quienes ? ` (${quienes})` : ""}?`}
       </p>
       <Textarea
         label="Motivo (opcional)"

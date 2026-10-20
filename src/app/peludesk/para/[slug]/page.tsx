@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { Rocket, WhatsappLogo, Sparkle, PlayCircle, ArrowRight, X, Check } from "@phosphor-icons/react/dist/ssr";
 import { LogoPeluDesk } from "@/components/marca/peludesk";
@@ -78,7 +78,8 @@ export default async function PaginaProspecto({ params, searchParams }: Params) 
   const p = await prospectoPorSlug(slug);
   if (!p) notFound();
   const h = await headers();
-  const esInterno = sp.interno === "1";
+  // QA R23 (N73): la revisión interna llega por ?interno=1 o por la cookie que pone el middleware.
+  const esInterno = sp.interno === "1" || (await cookies()).get("peludesk_interno")?.value === "1";
   const [, g, plan] = await Promise.all([
     registrarVisita({ slug, tipo: "visita", ip: h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null, navegador: h.get("user-agent"), interno: esInterno }),
     lugarDeGoogle(p.google_place_id, { fotos: 5, anchoFoto: 1000 }),

@@ -215,17 +215,26 @@ export function CuentaCobro({
   // `aplicado` = lo que un cobro acaba de abonar; cualquier otro refresco lo deja en 0 (no reusa el de un cobro anterior).
   // `cobroNuevo` = el cobro recién registrado: se lista de inmediato (provisional) mientras llega el del servidor.
   const [cobroNuevo, setCobroNuevo] = useState<{ metodos: { metodo: string; monto: number; propina: number }[]; creadoEn: string } | null>(null);
+  // QA R23 (N89): cuántos refrescos se han lanzado; un resumen pintado al instante vale hasta que TERMINA el refresco
+  // lanzado después de él (antes se soltaba con cualquier página nueva, también una vieja de la corrección anterior).
+  const seqRefresco = useRef(0);
   const refrescar = (aplicado = 0, cobro: { metodos: { metodo: string; monto: number; propina: number }[] } | null = null) => {
+    seqRefresco.current += 1;
     setAplicadoPendiente(aplicado);
     setCobroNuevo(cobro ? { ...cobro, creadoEn: new Date().toISOString() } : null);
     iniciarRefresco(() => router.refresh());
   };
   // QA S15 (N45): la acción (registrar, anular o corregir un cobro) ya devuelve la cuenta nueva; se pinta de
   // inmediato y vale mientras la página refrescada no llega (cuando llega, `totalesServidor` es otro objeto).
-  const [provisional, setProvisional] = useState<{ base: Totales; totales: Totales } | null>(null);
+  const [provisional, setProvisionalCrudo] = useState<{ seq: number; totales: Totales; precios?: Record<string, number> } | null>(null);
+  // Se llama justo antes de refrescar(): el refresco que la confirma es el siguiente.
+  const setProvisional = (p: { totales: Totales; precios?: Record<string, number> }) => setProvisionalCrudo({ ...p, seq: seqRefresco.current + 1 });
+  useEffect(() => {
+    if (!refrescando && provisional && seqRefresco.current >= provisional.seq) setProvisionalCrudo(null);
+  }, [refrescando, provisional]);
   // Cobros recién anulados desde esta pantalla: salen «Anulado» al momento, sin esperar al refresco.
   const [anuladosAqui, setAnuladosAqui] = useState<Record<string, string>>({});
-  const totales: Totales = provisional && provisional.base === totalesServidor
+  const totales: Totales = provisional
     ? provisional.totales
     : refrescando && aplicadoPendiente > 0
     ? {
@@ -547,7 +556,7 @@ export function CuentaCobro({
     setMetodos([NuevaFilaMetodo()]);
     setMontoTocado(false);
     anotarCobroDePantalla(cargaPantalla.current, [reservaId], res.cobroId);
-    if (res.totales) setProvisional({ base: totalesServidor, totales: res.totales });
+    if (res.totales) setProvisional({ totales: res.totales });
     refrescar(abonado, { metodos: payload.map((m) => ({ metodo: m.metodo, monto: m.monto, propina: m.propina })) });
   }
 
@@ -555,15 +564,17 @@ export function CuentaCobro({
   // N48: la corrección vigente de una línea (a lo más una) y el precio vigente que da.
   const correccionVigente = (tipo: string, id: string) => correccionesPrecio.find((c) => c.vigente && c.lineaTipo === tipo && c.lineaId === id) ?? null;
   const historialDe = (tipo: string, id: string) => correccionesPrecio.filter((c) => c.lineaTipo === tipo && c.lineaId === id);
-  const precioVigente = (l: LineaCuenta) => l.total + (correccionVigente(l.tipo, l.origenId)?.monto ?? 0);
-  // N47/N82: al guardar o anular una corrección, el encabezado y el saldo se pintan de inmediato.
-  function alCambiarPrecio(t?: Totales) {
-    if (t) setProvisional({ base: totalesServidor, totales: t });
+  const precioVigente = (l: LineaCuenta) =>
+    provisional?.precios?.[`${l.tipo}:${l.origenId}`] ?? l.total + (correccionVigente(l.tipo, l.origenId)?.monto ?? 0);
+  // N47/N82 y R23 (N89): al guardar o anular una corrección, el encabezado, el precio de la línea, el total y el
+  // saldo se pintan en cuanto contesta el servidor; la página refrescada llega después y los confirma.
+  function alCambiarPrecio(t?: Totales, linea?: { tipo: string; origenId: string; precio: number }) {
+    if (t) setProvisional({ totales: t, precios: linea ? { ...(provisional?.precios ?? {}), [`${linea.tipo}:${linea.origenId}`]: linea.precio } : provisional?.precios });
     refrescar();
   }
 
   function alCorregirCobro(r: { cobroId: string; anulado: boolean; motivo: string; totales?: Totales }) {
-    if (r.totales) setProvisional({ base: totalesServidor, totales: r.totales });
+    if (r.totales) setProvisional({ totales: r.totales });
     if (r.anulado) setAnuladosAqui((prev) => ({ ...prev, [r.cobroId]: r.motivo }));
     setSaldoAntesDelCambio(null);
     refrescar();
@@ -651,7 +662,10 @@ export function CuentaCobro({
                             historial={historialDe(c.lineaTipo, c.lineaId)}
                             reservaId={reservaId}
                             puedeAnular={puedeEditarMonto}
-                            alAnular={alCambiarPrecio}
+                            alAnular={(t?: Totales) => {
+                              const original = lineas.find((x) => x.tipo === c.lineaTipo && x.origenId === c.lineaId);
+                              alCambiarPrecio(t, original ? { tipo: c.lineaTipo, origenId: c.lineaId, precio: original.total } : undefined);
+                            }}
                           />
                         ) : null;
                       })()}
@@ -704,7 +718,10 @@ export function CuentaCobro({
           descripcion={lineas[corrigiendoPrecioIdx].descripcion}
           total={precioVigente(lineas[corrigiendoPrecioIdx])}
           onCerrar={() => setCorrigiendoPrecioIdx(null)}
-          alGuardar={alCambiarPrecio}
+          alGuardar={(t, precio) => {
+            const l = lineas[corrigiendoPrecioIdx];
+            alCambiarPrecio(t, precio != null ? { tipo: l.tipo, origenId: l.origenId, precio } : undefined);
+          }}
         />
       )}
 

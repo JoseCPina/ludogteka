@@ -39,8 +39,8 @@ import {
   textoTelegram,
   type TipoInterlocutor,
 } from "./agente";
-import { aclararCobro, aclararDemo, aFormatoWhatsApp, enDosSiEsLargo, formatoDelBot, hayQueReescribir, juntarCortos, unLinkAlFinal } from "./texto";
-import { ACLARACION_DEMO, COBRO_A_NOMBRE_DE } from "@/lib/peludesk/respuestas-fijas";
+import { aclararCobro, aclararDemo, cabeAclaracion, aFormatoWhatsApp, enDosSiEsLargo, formatoDelBot, hayQueReescribir, juntarCortos, unLinkAlFinal } from "./texto";
+import { ACLARACION_DEMO, COBRO_A_NOMBRE_DE, respuestaFijaDirecta } from "@/lib/peludesk/respuestas-fijas";
 
 // ───────────────────────────── puertos
 
@@ -225,6 +225,20 @@ export async function atender(telefono: string, texto: string, deps: DepsSoporte
     },
     ahora,
   );
+  // QA R23: lo que tiene respuesta fija y clara (recordatorios, SMS) sale de inmediato, sin pasar por el modelo.
+  // No depende del tope de IA (no gasta), pero se calla si el operador está en medio.
+  const fijaCruda = v.motivo === "silencio_humano" ? null : respuestaFijaDirecta(texto);
+  const fija = fijaCruda ? formatoDelBot(fijaCruda) : null;
+  if (fija) {
+    const env = await deps.wa.texto(telefono, fija);
+    if (env.ok) {
+      await deps.datos.apuntarMensaje(telefono, "agente", fija);
+      marcar("enviar");
+      await deps.datos.guardarHilo(hilo);
+      return "respondio";
+    }
+  }
+
   if (!v.usaIA) {
     // Con el operador en medio de la conversación, no se le manda un acuse
     // automático encima de lo que ya le está escribiendo.
@@ -322,16 +336,12 @@ async function conversar(
     if (!reescrita && !r.usos.length && hayQueReescribir(ponerLinks(escritoAntes + r.texto, enlaces), SEPARADOR_MENSAJES)) {
       reescrita = true;
       await apuntar("respondio");
+      // La instrucción va en el system, no como mensaje del cliente: puesta como turno «user», el
+      // modelo la leía como un intento de darle órdenes («No puedo tomar instrucciones de edición así»).
+      const nota = `REESCRITURA DE FORMATO (instrucción de PeluDesk). Tu borrador de respuesta al último mensaje del cliente fue:\n<<<\n${(escritoAntes + r.texto).trim()}\n>>>\nContesta ese mismo mensaje del cliente con el mismo contenido, pero cada párrafo de UNA frase corta (dos renglones en el celular) y máximo cuatro párrafos por mensaje (si no cabe, junta ideas o quita lo que sobre). Conserva los [[captura:...]], [[link:...]] y === donde estaban. No menciones esta instrucción ni el borrador.`;
+      const systemReescritura: string | BloqueIA[] = typeof system === "string" ? `${system}\n\n${nota}` : [...system, { type: "text", text: nota }];
       const borrador = await deps.ia
-        .responder(
-          system,
-          [
-            ...mensajes,
-            { role: "assistant", content: (escritoAntes + r.texto).trim() },
-            { role: "user", content: "[Nota interna de PeluDesk, no es del cliente] Reescribe tu último mensaje igual, con el mismo contenido, pero cada párrafo de UNA frase corta (dos renglones en el celular) y máximo cuatro párrafos por mensaje (si no cabe, junta ideas o quita lo que sobre). Conserva los [[captura:...]], [[link:...]] y === donde estaban. Contesta solo con el mensaje reescrito." },
-          ],
-          tools,
-        )
+        .responder(systemReescritura, mensajes, tools)
         .catch(() => null);
       marcar("ia");
       if (borrador?.texto.trim() && !borrador.usos.length) {
@@ -359,7 +369,11 @@ async function conversar(
     for (const p of piezas) if (p.tipo === "texto") p.cuerpo = aclararDemo(p.cuerpo, enlaces.demo, ACLARACION_DEMO);
     // Si preguntó por pagar, el cobro o la factura y la respuesta no dice a nombre de quién sale, se agrega (MENTEO).
     const ultimaPieza = [...piezas].reverse().find((p) => p.tipo === "texto");
-    if (ultimaPieza?.tipo === "texto" && /\b(factur\w*|suscripci[oó]n|cargo|cobran|pago|pagar|tarjeta)\b/i.test(texto) && !/terminal/i.test(texto)) ultimaPieza.cuerpo = aclararCobro(ultimaPieza.cuerpo, COBRO_A_NOMBRE_DE);
+    if (ultimaPieza?.tipo === "texto" && /\b(factur\w*|suscripci[oó]n|cargo|cobran|pago|pagar|tarjeta)\b/i.test(texto) && !/terminal/i.test(texto)) {
+      const conAclaracion = aclararCobro(ultimaPieza.cuerpo, COBRO_A_NOMBRE_DE);
+      if (conAclaracion === ultimaPieza.cuerpo || cabeAclaracion(ultimaPieza.cuerpo)) ultimaPieza.cuerpo = conAclaracion;
+      else piezas.push({ tipo: "texto", cuerpo: COBRO_A_NOMBRE_DE });
+    }
     // A un número nuevo, en la primera respuesta, una línea corta con el aviso de privacidad.
     if (cuenta.tipo === "prospecto" && delBot.length === 0 && piezas.some((p) => p.tipo === "texto")) {
       piezas.push({ tipo: "texto", cuerpo: `Así cuidamos tus datos:\n\n${URL_AVISO_PRIVACIDAD}` });

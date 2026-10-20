@@ -64,8 +64,9 @@ export async function cargarPasosBienvenida(supabase: SupabaseClient, mods: read
     {
       clave: "datos",
       titulo: "Datos del negocio",
-      que: "El WhatsApp de recepción (al que te escriben tus clientes) y la dirección del negocio. La dirección es una sola: la misma de tu página web y del perfil.",
-      href: "/admin#configuracion",
+      que: "El WhatsApp de recepción (al que te escriben tus clientes) y la dirección del negocio. La dirección es una sola y se escribe en Perfil: la misma de tu página web.",
+      // QA R23: la dirección se escribe en Perfil; el WhatsApp, en Configuración.
+      href: telefono && !direccion ? "/admin/perfil" : "/admin#configuracion",
       accion: "Capturar datos",
       listo: telefono && direccion,
       requerido: true,

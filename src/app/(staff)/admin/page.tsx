@@ -139,7 +139,7 @@ export default async function AdminPage() {
         <section id="ubicacion" className="scroll-mt-20 rounded-lg border border-n-200 bg-white p-5">
           <h2 className="mb-4 text-lg font-bold text-n-900">Ubicación para recolección</h2>
           <UbicacionNegocio
-            direccion={direccionNegocio || ((ubicacion[0].data?.direccion as string | null) ?? "")}
+            direccion={direccionNegocio}
             base={cupoUbic?.base_direccion ?? ""}
             conCoordenadas={{ negocio: ubicacion[0].data?.lat != null, base: cupoUbic?.base_lat != null }}
             consumo={(ubicacion[2].data as { usadas: number; tope: number } | null) ?? null}

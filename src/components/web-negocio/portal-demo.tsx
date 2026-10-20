@@ -97,7 +97,7 @@ export function PortalDemo({ negocio, datos }: { negocio: string; datos: PortalE
               </span>
             </div>
           ))}
-        <p className="mt-auto px-1 pt-2 text-center text-[11px] text-n-500">Datos de ejemplo · Modo demostración</p>
+        <p className="mt-auto px-1 pt-2 text-center text-[11px] text-n-500">Negocio de ejemplo</p>
       </div>
     </div>
   );

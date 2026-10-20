@@ -711,9 +711,11 @@ try {
             if (g.modo === "noches") ok(/noche/.test(await pg.locator("[data-noches]").innerText()), `${g.giro}: escoge llegada y salida y cuenta las noches`);
             await pg.locator("[data-siguiente]").click();
             // N77: un solo aviso de demostración, claro, y los datos de ejemplo marcados.
+            // R23 (N73): el único aviso de demostración es la franja de arriba; el formulario y el portal no repiten leyendas.
             const avisos = await pg.locator("[data-pedir-cita] [data-modo-demostracion]").allInnerTexts();
-            ok(avisos.length === 1 && avisos[0] === "Modo demostración: puedes probar el formulario, no se envía nada ni se avisa al negocio." && (await pg.locator("[data-dato-ejemplo]").count()) === 2 && (await pg.getByText("Dato de ejemplo: cámbialo si quieres.").count()) === 2,
-              `${g.giro}: el formulario tiene un solo aviso de demostración y «Luna» y «Ana López» marcados como ejemplo`, JSON.stringify(avisos));
+            const enPagina = (await pg.locator("body").innerText()).split("Modo demostración").length - 1;
+            ok(avisos.length === 0 && enPagina === 1 && (await pg.locator("[data-dato-ejemplo]").count()) === 2 && (await pg.getByText("Dato de ejemplo: cámbialo si quieres.").count()) === 2,
+              `${g.giro}: un solo aviso de demostración (la franja de arriba) y «Luna» y «Ana López» marcados como ejemplo`, JSON.stringify({ avisos, enPagina }));
             if (g.clave === "est") {
               // Abierto 24 horas: no ofrece una hora que no exista ni pasa de la medianoche.
               await pg.getByRole("button", { name: "Cambiar" }).click();
@@ -740,6 +742,12 @@ try {
         const dmi = await pedir(`/para/${p.slug}/ir/demo?interno=1`, { "user-agent": "Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile" });
         const pri = await pedir(`/para/${p.slug}/ir/prueba?interno=1`, { "user-agent": "Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile" });
         ok(/&interno=1$/.test(dmi.headers.location ?? "") && /[?&]interno=1(&|$)/.test(pri.headers.location ?? ""), `${g.giro}: con ?interno=1, la demo y el registro lo conservan`, `${dmi.headers.location} · ${pri.headers.location}`);
+        // R23 (N73): abrir la página con ?interno=1 deja una cookie de /para; un clic SIN el parámetro sigue siendo interno.
+        const ua = { "user-agent": "Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile" };
+        const conInterno = await pedir(`/para/${p.slug}?interno=1`, ua);
+        const galleta = (conInterno.headers["set-cookie"] ?? []).find((c) => c.startsWith("peludesk_interno=1")) ?? "";
+        const dmc = await pedir(`/para/${p.slug}/ir/demo`, { ...ua, cookie: galleta.split(";")[0] });
+        ok(Boolean(galleta) && /&interno=1$/.test(dmc.headers.location ?? ""), `${g.giro}: con la cookie de revisión interna, /ir/demo sin el parámetro conserva interno=1 y no cuenta`, `${galleta.slice(0, 60)} · ${dmc.headers.location}`);
       }
       ok(new Set(temas.map((t) => t.acento)).size === 3 && new Set(temas.map((t) => t.h1)).size === 3, "las tres se ven distintas: otro color y otra letra", JSON.stringify(temas));
       ok(JSON.stringify(antesDemo) === JSON.stringify(await contarTodo()), "nada se escribió en ningún negocio (citas, estancias, reservas, consultas, clientes, perros, cobros, negocios)");

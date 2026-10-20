@@ -207,7 +207,7 @@ export default async function DetalleReservaPage({
                 </Link>
               )}
               {cancelables > 0 && (
-                <CancelarReservaBoton reservaId={reserva.id} cancelables={cancelables} versiones={filas.map((f) => ({ t: "estancias", i: f.id, v: f.version }))} />
+                <CancelarReservaBoton reservaId={reserva.id} cancelables={cancelables} nombres={filas.filter((f) => f.estado === "reservada" || f.estado === "confirmada").map((f) => f.perroNombre)} versiones={filas.map((f) => ({ t: "estancias", i: f.id, v: f.version }))} />
               )}
             </div>
           </div>

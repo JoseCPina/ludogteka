@@ -517,7 +517,8 @@ Toca **Ver historial de ajustes** en el pase: cada renglón dice antes y despué
 
 ## Si algo no sale
 
-- «Falta la dirección de la base…» o «Falta la dirección del negocio…»: el admin la captura en Administración, en Ubicación para recolección. Mientras, pon la distancia a mano.
+- «Falta ubicar la dirección del negocio en el mapa…»: el admin escribe la dirección en [Perfil y página web](/admin/perfil) y aprieta **Ubicar en el mapa** en Administración → Ubicación para recolección. Mientras, pon la distancia a mano.
+- La ruta sale de la dirección del negocio. Si la camioneta sale de otro lado, el admin escribe ese **Punto de salida de recolección (solo si es distinto a la dirección del negocio)** en Ubicación para recolección.
 - «Tu negocio ya usó las … consultas de Google Maps de este mes.»: captura los kilómetros a mano; el mes que entra vuelve a calcularse solo.`,
   },
   {

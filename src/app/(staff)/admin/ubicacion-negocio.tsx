@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
@@ -9,9 +10,9 @@ import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { guardarUbicacion } from "./ubicacion-actions";
 
 /**
- * Las dos direcciones con las que se cotiza la recolección (la del negocio
- * y la de la base de la camioneta) y cuánto lleva el negocio de su tope
- * mensual de Google Maps.
+ * Con qué se cotiza la recolección: la dirección del negocio (la de Perfil, aquí solo se ubica en el mapa), el
+ * punto de salida de las rutas (opcional: vacío = sale del negocio) y cuánto lleva el negocio de su tope
+ * mensual de Google Maps. QA R23 (N61/N88): la dirección del negocio se edita SOLO en Perfil.
  */
 export function UbicacionNegocio({
   direccion,
@@ -25,41 +26,49 @@ export function UbicacionNegocio({
   consumo: { usadas: number; tope: number } | null;
 }) {
   const router = useRouter();
-  const [dir, setDir] = useState(direccion);
   const [bas, setBas] = useState(base);
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
   const envio = useEspera();
 
-  async function guardar(e: React.FormEvent) {
+  async function ubicar(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setExito(null);
-    const r = await envio.ejecutar(() => guardarUbicacion({ direccion: dir, base: bas }));
+    const r = await envio.ejecutar(() => guardarUbicacion({ base: bas }));
     if (r.error) return setError(r.error);
-    setExito(r.aviso ?? "Guardado.");
+    setExito(r.aviso ?? "Ubicado en el mapa.");
     router.refresh();
   }
 
   const porcentaje = consumo && consumo.tope > 0 ? Math.min(100, Math.round((consumo.usadas / consumo.tope) * 100)) : 0;
 
   return (
-    <form method="post" onSubmit={guardar} className="flex flex-col gap-4">
+    <form method="post" onSubmit={ubicar} className="flex flex-col gap-4">
       <p className="text-sm text-n-600">
-        La ruta de cada recolección va de la base al domicilio del cliente y de ahí al negocio. Escribe las direcciones completas
-        (calle, número, colonia); la ciudad de tu negocio se agrega sola.
+        La ruta de cada recolección sale del punto de salida (o del negocio), va al domicilio del cliente y regresa al negocio.
+        La ciudad de tu negocio se agrega sola.
       </p>
+      <div className="flex flex-col gap-1" data-direccion-negocio-lectura="">
+        <span className="text-sm font-semibold text-n-800">Dirección del negocio</span>
+        <p className="rounded-md border-[1.5px] border-n-200 bg-n-50 px-3 py-2.5 text-n-900">
+          {direccion || <span className="text-n-500">Todavía no la escribes.</span>}
+        </p>
+        <p className="text-xs text-n-600">
+          {direccion ? (conCoordenadas.negocio ? "Ubicada en el mapa. " : "Todavía sin ubicar en el mapa. ") : ""}
+          Es la misma de tu perfil y tu página web.{" "}
+          <Link href="/admin/perfil" className="font-semibold text-morado underline" data-cambiar-en-perfil="">
+            Cambiar en Perfil
+          </Link>
+        </p>
+      </div>
       <Field
-        label="Dirección del negocio"
-        value={dir}
-        onChange={(e) => setDir(e.target.value)}
-        ayuda={`${conCoordenadas.negocio ? "Ubicada en el mapa." : "Todavía sin ubicar."} Es la misma dirección de Configuración y de tu perfil.`}
-      />
-      <Field
-        label="Dirección de la base (donde se guarda la camioneta)"
+        label="Punto de salida de recolección (solo si es distinto a la dirección del negocio)"
+        name="base"
         value={bas}
         onChange={(e) => setBas(e.target.value)}
-        ayuda={conCoordenadas.base ? "Ubicada en el mapa." : "Todavía sin ubicar. Si es la misma que el negocio, escríbela igual."}
+        placeholder="Vacío: las rutas salen de la dirección del negocio"
+        ayuda={bas.trim() ? (conCoordenadas.base ? "Ubicado en el mapa." : "Todavía sin ubicar.") : "Por ejemplo, donde se guarda la camioneta. Déjalo vacío si sale del negocio."}
       />
       {consumo && (
         <div className="flex flex-col gap-1">
@@ -73,8 +82,8 @@ export function UbicacionNegocio({
         </div>
       )}
       <AccionesFormulario error={error} exito={exito}>
-        <Button type="submit" cargando={envio.cargando}>
-          Guardar y ubicar
+        <Button type="submit" cargando={envio.cargando} disabled={!direccion}>
+          Ubicar en el mapa
         </Button>
       </AccionesFormulario>
     </form>

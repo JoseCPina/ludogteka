@@ -487,7 +487,7 @@ Van incluidos en el plan: **no hay costo por mensaje**. Los avisos y recordatori
 
 ## Cancelar
 
-Cancelas cuando quieras, sin plazo forzoso: en [Módulos y plan](/admin/modulos), en el portal de pagos. No hay reembolso del mes en curso; lo sigues usando hasta que termina. Después tus datos quedan en solo lectura 90 días, y si los necesitas te ayudamos a exportarlos por WhatsApp.
+Cancelas cuando quieras, sin plazo forzoso: en [Módulos y plan](/admin/modulos), en el portal de pagos. No hay reembolso del mes en curso; lo sigues usando hasta que termina. Después tu información queda en solo lectura (la consultas, no capturas) mientras no pidas borrarla, y puedes pedir una copia completa en formato estructurado por correo a contacto@peludesk.mx: te la entregamos en máximo 20 días hábiles.
 
 ## Pasar tus datos desde Excel
 
@@ -558,7 +558,7 @@ Más abajo, en **Tarjeta registrada a mano**, pon el **Tope de alerta por cobro 
 ## WhatsApp, dirección y cupo
 
 1. En [Configuración](/admin/configuracion) (la sección **Configuración del negocio** de Administración; también está en el menú) llena el **WhatsApp de recepción**: ahí llega el «olvidé mi contraseña» de tus clientes.
-2. Escribe la **Dirección del negocio**. Es una sola: la misma de [Perfil y página web](/admin/perfil) y de la ubicación para recolección; si la cambias aquí, cambia allá.
+2. La **dirección del negocio** se escribe en [Perfil y página web](/admin/perfil): es una sola, y Configuración y Ubicación para recolección la muestran desde ahí (con **Cambiar en Perfil**).
 3. Si das hotel o guardería, pon el **Cupo de día** (perros que caben en el área común) y el **Cupo de noche** (los que tienen dónde dormir).
 4. Aprieta **Guardar configuración**. El aviso **Falta el WhatsApp de recepción** se quita en cuanto lo guardas.
 
