@@ -27,6 +27,7 @@ export default async function TarifasServicioPage({
     { data: historialCrudo },
     { data: preciosDia },
     { data: hoyData },
+    { data: otros },
   ] = await Promise.all([
     supabase
       .from("servicios")
@@ -63,6 +64,8 @@ export default async function TarifasServicioPage({
       .is("deleted_at", null)
       .order("dia_semana"),
     supabase.rpc("fecha_negocio"),
+    // QA R22 (N62): candidatos para «Copiar precios de otro servicio» (misma categoría, con precios vigentes).
+    supabase.from("servicios").select("id, nombre, categoria, monto_libre, depende_grupo_raza, depende_tamano, depende_pelaje").neq("id", id).is("deleted_at", null).order("orden").limit(200),
   ]);
 
   if (!servicio) notFound();
@@ -131,6 +134,17 @@ export default async function TarifasServicioPage({
         pelajes={pelajes ?? []}
         vigentes={vigentes ?? []}
         versionPrecios={versionPrecios}
+        otrosServicios={((otros ?? []) as { id: string; nombre: string; categoria: string; monto_libre: boolean; depende_grupo_raza: boolean; depende_tamano: boolean; depende_pelaje: boolean }[])
+          // Solo los que se pueden empatar: cada dimensión del otro servicio la tiene también este.
+          .filter(
+            (o) =>
+              o.categoria === servicio.categoria &&
+              !o.monto_libre &&
+              (!o.depende_grupo_raza || servicio.depende_grupo_raza) &&
+              (!o.depende_tamano || servicio.depende_tamano) &&
+              (!o.depende_pelaje || servicio.depende_pelaje)
+          )
+          .map((o) => ({ id: o.id, nombre: o.nombre }))}
       />
 
       {!servicio.monto_libre && (

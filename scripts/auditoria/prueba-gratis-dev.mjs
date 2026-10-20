@@ -375,6 +375,29 @@ try {
   ok(await pasoListo(ph, baseH, "equipo"), "en hotel y guardería, «Tu equipo» ya está listo con la cuenta del dueño");
   ok(!(await pasoListo(ph, baseH, "requisitos")) && !(await pasoListo(ph, baseH, "contrato")), "requisitos y contrato empiezan pendientes");
   await datosNegocio(ph, baseH, TELH);
+  // QA R22 (N87): «Configuración» existe en el menú y como ruta; Perfil manda ahí con un enlace.
+  await ph.goto(`${baseH}/admin`);
+  const enlaceMenu = ph.locator('a[href="/admin/configuracion"]').first();
+  ok((await enlaceMenu.count()) > 0, "N87: el menú tiene «Configuración»");
+  const respConfig = await ph.goto(`${baseH}/admin/configuracion`);
+  await ph.locator("#configuracion").waitFor({ timeout: 30000 }).catch(() => {});
+  const estadoConfig = { status: respConfig?.status(), ruta: new URL(ph.url()).pathname, seccion: await ph.locator("#configuracion").count() };
+  ok(estadoConfig.status !== 404 && estadoConfig.ruta === "/admin" && estadoConfig.seccion === 1, `N87: /admin/configuracion lleva a la sección Configuración del negocio, no 404 (${JSON.stringify(estadoConfig)})`);
+  await ph.goto(`${baseH}/admin/perfil`);
+  ok((await ph.locator("[data-enlace-configuracion]").getAttribute("href")) === "/admin/configuracion", "N87: el texto de Perfil enlaza a Configuración");
+  // QA R22 (N61): la dirección de Configuración es la de Perfil, la página web y el checklist.
+  ok((await ph.getByLabel("Dirección").first().inputValue()) === "Calle Giro 1, Centro", "N61: Perfil muestra la dirección que se escribió en Configuración");
+  ok((await ph.locator('[data-paso-web="direccion"]').getAttribute("data-listo")) === "si", "N61: «Escribir tu dirección» se marca con la dirección de Configuración");
+  // Un negocio que solo la tenía en la sucursal (antes de la unificación): un solo campo, sincronizado solo.
+  // Con el encabezado del negocio, como escribe la app (la función del disparador solo ve el negocio de la petición).
+  const SH = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: false }, global: { headers: { "x-negocio-id": negH.id } } });
+  await SH.from("sucursales").update({ direccion: "Calle Sucursal 9, Centro" }).eq("negocio_id", negH.id).is("deleted_at", null);
+  const { data: perfH } = await A.from("negocio_perfil").select("direccion").eq("negocio_id", negH.id).is("deleted_at", null).single();
+  ok(perfH.direccion === "Calle Sucursal 9, Centro", "N61: si algo escribe la dirección de la sucursal, la del perfil queda igual (un solo campo)");
+  await ph.goto(`${baseH}/admin#configuracion`);
+  ok((await ph.getByLabel("Dirección del negocio").first().inputValue()) === "Calle Sucursal 9, Centro", "N61: Configuración lee la misma dirección");
+  await ph.goto(`${baseH}/`);
+  ok((await ph.locator("body").innerText()).includes("Calle Sucursal 9"), "N61: la página web muestra la misma dirección");
   await llenarPrecios(ph, baseH, negH.id, ["guarderia", "hotel", "bono"]);
   ok(await pasoListo(ph, baseH, "precios"), "precios de hotel, guardería y paquetes: listo");
   await ph.goto(`${baseH}/bienvenida/requisitos`);

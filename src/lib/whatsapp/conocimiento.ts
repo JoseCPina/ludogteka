@@ -283,4 +283,9 @@ Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado.
 - Crear un cliente, perro, servicio, producto o empleado abre su ficha.
 - Sucursales: el admin de la primera da de baja una sucursal en Módulos y plan → Sucursales → «Dar de baja» (con motivo): queda en solo lectura 90 días, sale de «Tus negocios» y deja de cobrarse (la parte proporcional queda a favor). La primera no se da de baja ni se suspende con sucursales activas.
 - Consulta veterinaria: «Aplicar desparasitación» junto a «Aplicar vacuna»; lo aplicado ese día sale en «Vacunas y desparasitación» de la consulta. Una vacuna repetida (misma fecha) no se registra: el formulario se cierra y ofrece «Cancelar» y «Ver en el carnet».
+
+QA R22 (20 de octubre de 2026):
+- Crear un servicio de estética pide la duración de la cita en minutos (la agenda la usa); si algo no se guarda, el aviso dice el motivo.
+- La matriz de precios de un servicio tiene «Mismo precio para todas las celdas» (Llenar todas) y «Copiar precios de otro servicio» de la misma categoría, además de incrementar por porcentaje o monto. Nada se guarda hasta «Guardar».
+- «Configuración» está en el menú de Administración (WhatsApp de recepción, dirección, cupo y horario). La dirección del negocio es una sola: Configuración, Perfil y página web y el paso «Escribir tu dirección» leen la misma.
 `.trim();

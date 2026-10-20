@@ -29,7 +29,7 @@ export default async function EditarServicioPage({
     supabase
       .from("servicios")
       .select(
-        "id, clave, nombre, categoria, unidad, depende_grupo_raza, depende_tamano, depende_pelaje, depende_cantidad, servicio_incluido_id, cantidad_incluida, vigencia_dias, ilimitado, monto_libre, orden, deleted_at, updated_at"
+        "id, clave, nombre, categoria, unidad, depende_grupo_raza, depende_tamano, depende_pelaje, depende_cantidad, servicio_incluido_id, cantidad_incluida, vigencia_dias, ilimitado, monto_libre, duracion_minutos, orden, deleted_at, updated_at"
       )
       .eq("id", id)
       .single(),
@@ -101,6 +101,7 @@ export default async function EditarServicioPage({
           vigencia_dias: servicio.vigencia_dias,
           ilimitado: servicio.ilimitado,
           monto_libre: servicio.monto_libre,
+          duracion_minutos: servicio.duracion_minutos,
           orden: servicio.orden,
         }}
         textoBoton="Guardar cambios"

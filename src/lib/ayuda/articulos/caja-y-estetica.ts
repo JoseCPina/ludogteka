@@ -611,6 +611,18 @@ En el link de alta, el dueño también puede apretar **No la encuentro: agregar 
 
 Cambiar un precio solo vale para las citas nuevas. Las que ya están agendadas o cobradas conservan el que tenían.
 
+## Llenar la matriz rápido
+
+- **Mismo precio para todas las celdas**: escribe un monto y aprieta **Llenar todas**; todas las celdas toman ese precio (las marcadas **No aplica** se respetan). Después ajusta las que cambian.
+- **Copiar precios de otro servicio**: escoge otro servicio de la misma categoría y aprieta **Copiar precios**; las celdas que coinciden toman su precio y las que no tienen equivalente se quedan como estaban.
+- **Incrementar precios actuales en** un porcentaje o un monto, con **Aplicar a precios actuales**.
+
+Ninguna de las tres guarda sola: revisa la matriz y aprieta **Guardar**.
+
+## Crear un servicio de estética nuevo
+
+En [Servicios](/servicios) → **Nuevo servicio**, con categoría **Estética**, escribe también la **Duración de la cita (minutos)**: es lo que ocupa en la agenda y la app no guarda un servicio de estética sin ella. Si algo no se guarda, el aviso dice el motivo.
+
 ## Qué grupo le toca a cada perro
 
 Lo decide su raza. Las razas que todavía no tienen grupo en tu negocio salen en [Razas sin grupo de precio](/perros/razas/grupos): ahí las asignas. Mientras no tengan grupo, la cita pide asignar el grupo o registrar una excepción con motivo.

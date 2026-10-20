@@ -1,11 +1,11 @@
 "use client";
 
-import { InputHTMLAttributes, forwardRef, useId, useState } from "react";
+import { InputHTMLAttributes, forwardRef, useId, useState, type ReactNode } from "react";
 
 type Props = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
   error?: string;
-  ayuda?: string;
+  ayuda?: ReactNode;
 };
 
 function IconoOjo({ visible }: { visible: boolean }) {

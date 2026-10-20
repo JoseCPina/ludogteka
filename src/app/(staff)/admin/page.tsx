@@ -66,12 +66,9 @@ export default async function AdminPage() {
     supabase.rpc("horario_semana_vigente"),
     supabase.from("horario_semana").select("updated_at").order("updated_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
-  // QA S16 (N61): una sola dirección del negocio (la del perfil); si todavía no hay, la de la sucursal.
-  const [{ data: perfilDir }, { data: sucursalDir }] = await Promise.all([
-    supabase.from("negocio_perfil").select("direccion").is("deleted_at", null).maybeSingle(),
-    supabase.from("sucursales").select("direccion").is("deleted_at", null).order("activo", { ascending: false }).limit(1).maybeSingle(),
-  ]);
-  const direccionNegocio = ((perfilDir?.direccion as string | null) ?? (sucursalDir?.direccion as string | null) ?? "").trim();
+  // QA S16/R22 (N61): una sola dirección del negocio: negocio_perfil.direccion (la sucursal se sincroniza sola).
+  const { data: perfilDir } = await supabase.from("negocio_perfil").select("direccion").is("deleted_at", null).maybeSingle();
+  const direccionNegocio = ((perfilDir?.direccion as string | null) ?? "").trim();
   const negocioIdActual = (await negocioActual()).id;
   const { data: personal } = !esAdmin && puedePersonal ? await supabase.rpc("listar_personal") : { data: null };
 

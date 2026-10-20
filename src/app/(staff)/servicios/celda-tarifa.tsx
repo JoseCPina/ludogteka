@@ -37,6 +37,7 @@ export function CeldaTarifa({
   return (
     <div className={`flex flex-col gap-1 rounded-md border-[1.5px] p-2 ${estilo}`}>
       <input
+        data-celda-precio=""
         type="number"
         inputMode="decimal"
         step="0.01"
