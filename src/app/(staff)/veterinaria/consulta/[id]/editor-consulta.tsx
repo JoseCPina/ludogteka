@@ -39,7 +39,7 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 };
 
 /** El borrador de una consulta: se guarda solo (a los 1.5 s de dejar de escribir) y se firma desde aquí. */
-export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, cargosIniciales, puedeCatalogo = false, aplicarVacuna, aplicarDesparasitacion }: { consulta: ConsultaVet; especie: string | null; soyElMedico: boolean; nombreMedico: string; cargosIniciales: DatosCargos | null; puedeCatalogo?: boolean; aplicarVacuna?: ReactNode; aplicarDesparasitacion?: ReactNode }) {
+export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, cargosIniciales, puedeCatalogo = false, aplicarVacuna, aplicarDesparasitacion, seAnulanAlDescartar = [] }: { consulta: ConsultaVet; especie: string | null; soyElMedico: boolean; nombreMedico: string; cargosIniciales: DatosCargos | null; puedeCatalogo?: boolean; aplicarVacuna?: ReactNode; aplicarDesparasitacion?: ReactNode; seAnulanAlDescartar?: string[] }) {
   const router = useRouter();
   const [v, setV] = useState<Valores>(() => inicial(consulta));
   const [dx, setDx] = useState<Diagnostico[]>(consulta.diagnosticos ?? []);
@@ -65,6 +65,8 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
   const descarteEnvio = useEspera();
   // QA S18 (N94): confirmar en la pantalla, nunca con window.confirm (un navegador que bloquea diálogos lo contesta «no» en silencio).
   const [confirmandoDescarte, setConfirmandoDescarte] = useState(false);
+  // QA S19: la firma se confirma en la pantalla (nunca window.confirm: un navegador que bloquea diálogos lo contesta «no»).
+  const [confirmandoFirma, setConfirmandoFirma] = useState<string | null>(null);
   const [exitoDescarte, setExitoDescarte] = useState<string | null>(null);
 
   // Avisa si se intenta cerrar la pestaña con cambios sin guardar.
@@ -155,12 +157,18 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
       return;
     }
     const resumenCobro = cargos && cargos.total > 0 ? ` Pasarán a Caja ${dinero(cargos.total)} en cargos.` : "";
-    if (!window.confirm(`Al firmar, la consulta ya no se edita: solo admitirá una adenda firmada.${resumenCobro} ¿Firmar con tu cédula?`)) return;
+    setConfirmandoFirma(`Al firmar, la consulta ya no se edita: solo admitirá una adenda firmada.${resumenCobro} ¿Firmar con tu cédula?`);
+  }
+
+  async function firmarConfirmado() {
+    setErrorFirma(null);
     if (!(await guardarAhora())) {
+      setConfirmandoFirma(null);
       setErrorFirma("No se pudo guardar el borrador; revisa el aviso de arriba antes de firmar.");
       return;
     }
     const r = await firmaEnvio.ejecutar(() => firmarConsulta(consulta.id));
+    setConfirmandoFirma(null);
     if (r.error) {
       setErrorFirma(r.error);
       return;
@@ -258,10 +266,23 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
           </Alert>
         )}
         <AccionesFormulario error={errorFirma} exito={exitoDescarte}>
-          {soyElMedico && (
+          {soyElMedico && !confirmandoFirma && (
             <Button type="button" cargando={firmaEnvio.cargando} onClick={firmar}>
               Firmar la consulta
             </Button>
+          )}
+          {soyElMedico && confirmandoFirma && (
+            <div className="flex w-full flex-col gap-2 rounded-md border-[1.5px] border-morado bg-morado-suave p-3" data-confirmar-firma>
+              <p className="text-sm font-semibold text-n-900">{confirmandoFirma}</p>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" cargando={firmaEnvio.cargando} onClick={firmarConfirmado}>
+                  {firmaEnvio.cargando ? "Firmando…" : "Sí, firmar"}
+                </Button>
+                <Button type="button" variante="secundario" disabled={firmaEnvio.cargando} onClick={() => setConfirmandoFirma(null)}>
+                  No, seguir editando
+                </Button>
+              </div>
+            </div>
           )}
           <Button type="button" variante="secundario" onClick={() => void guardarAhora()}>
             Guardar ahora
@@ -272,7 +293,7 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
             </Button>
           ) : (
             <div className="flex w-full flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3" data-confirmar-descarte>
-              <p className="text-sm font-semibold text-coral-oscuro">¿Descartar este borrador? Se pierde lo que escribiste y la cita vuelve a quedar sin consulta.</p>
+              <p className="text-sm font-semibold text-coral-oscuro" data-texto-descarte>{textoDescarte(seAnulanAlDescartar)}</p>
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
@@ -287,7 +308,9 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
                       return;
                     }
                     setExitoDescarte("Borrador descartado.");
-                    if (r.ir) router.push(r.ir);
+                    // QA S19: navegación completa DESPUÉS de la respuesta: el autoguardado de esta pantalla ya no corre
+                    // y la agenda o el expediente se cargan de nuevo con «Borrador descartado».
+                    window.location.assign(r.ir ?? `/veterinaria/expediente/${consulta.perro_id}?aviso=descartado`);
                   }}
                 >
                   {descarteEnvio.cargando ? "Descartando…" : "Sí, descartar"}
@@ -420,4 +443,12 @@ function SelectorDiagnosticos({ valor, onCambio, especie }: { valor: Diagnostico
       {error && <p className="text-sm font-semibold text-coral-oscuro">{error}</p>}
     </div>
   );
+}
+
+/** QA S19: la confirmación dice todo lo que se pierde, también las vacunas y desparasitaciones que nacieron en el borrador. */
+function textoDescarte(seAnulan: string[]): string {
+  const cita = "La cita vuelve a la agenda como estaba, sin consulta.";
+  if (seAnulan.length === 0) return `¿Descartar este borrador? Se pierde lo que escribiste. ${cita}`;
+  const lista = seAnulan.length === 1 ? seAnulan[0] : `${seAnulan.slice(0, -1).join(", ")} y ${seAnulan[seAnulan.length - 1]}`;
+  return `¿Descartar este borrador? Se pierde lo que escribiste y se anula ${lista}. ${cita}`;
 }

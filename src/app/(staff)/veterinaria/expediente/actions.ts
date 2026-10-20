@@ -49,7 +49,8 @@ export async function agendarCita(fd: FormData): Promise<ResultadoAccion> {
     return { error: null, ir: `/veterinaria/teleconsulta/${resultado.id}${sala.error ? "?aviso=sala" : "?nueva=1"}` };
   }
   const aviso = resultado?.empalmada ? "Urgencia agendada; se empalma con otra cita de ese médico." : null;
-  return { error: null, ir: `/veterinaria/agenda?fecha=${fecha}${aviso ? "&aviso=urgencia" : ""}` };
+  // QA S19: al guardar se confirma, junto al botón y en la agenda del día.
+  return { error: null, exito: "Cita agendada.", ir: `/veterinaria/agenda?fecha=${fecha}&aviso=${aviso ? "urgencia" : "agendada"}&hora=${encodeURIComponent(hora)}` };
 }
 
 export async function reprogramarCita(id: string, fd: FormData): Promise<ResultadoAccion> {
@@ -97,8 +98,8 @@ export async function iniciarDesdeCita(citaId: string): Promise<ResultadoAccion>
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("vet_consulta_iniciar", { p_perro: null, p_cita: citaId, p_tipo: null, p_medico: null });
   if (error) return { error: traducirError(error) };
-  revalidatePath("/veterinaria/agenda");
-  return { error: null, ir: `/veterinaria/consulta/${data as string}` };
+  // QA S19: sin revalidatePath (repintaba la agenda antes de responder); la pantalla navega a la consulta después de la respuesta.
+  return { error: null, exito: "Consulta creada. Abriendo…", ir: `/veterinaria/consulta/${data as string}` };
 }
 
 /** Lo que el editor manda al autoguardar: solo las claves que cambiaron. */
@@ -129,28 +130,36 @@ export async function firmarConsulta(id: string): Promise<ResultadoAccion> {
       : "";
   // Firmada: la copia que el navegador guardaba del formulario ya no hace falta.
   await descartarBorradorGuardado(supabase, "consulta", id);
-  revalidatePath(`/veterinaria/consulta/${id}`);
+  // QA S19: sin revalidatePath (la pantalla se refresca sola; revalidar aquí la pintaba dos veces).
   return { error: null, exito: `Consulta firmada. Ya no se edita: solo admite una adenda.${notaCobro}` };
 }
 
 export async function descartarBorrador(id: string, perroId: string): Promise<ResultadoAccion> {
   const supabase = await createSupabaseServerClient();
   // QA S18 (N94): de una cita se regresa a la agenda de ese día; si no, al expediente. Las dos dicen «Borrador descartado».
-  const { data: c } = await supabase.rpc("vet_consulta_detalle", { p_id: id });
-  const det = (c as { consulta?: { cita_id: string | null; atendida_at: string } } | null)?.consulta;
+  // QA S19: la base descarta todo en un paso (anula lo que nació en el borrador, quita sus cargos, regresa la cita a
+  // como estaba) y dice de qué cita y fecha era; la pantalla navega DESPUÉS de esta respuesta, sin revalidar aquí.
+  const [{ data, error }, zona] = await Promise.all([supabase.rpc("vet_consulta_descartar", { p_id: id }), zonaActual()]);
+  if (error) return { error: traducirError(error) };
+  const det = data as { cita_id: string | null; atendida_at: string | null } | null;
   // Desde R23 una consulta de cita lleva la fecha y hora de su cita.
   const citaInicio = det?.cita_id ? det.atendida_at : null;
-  const { error } = await supabase.rpc("vet_consulta_descartar", { p_id: id });
-  if (error) return { error: traducirError(error) };
   await descartarBorradorGuardado(supabase, "consulta", id);
-  revalidatePath(`/veterinaria/expediente/${perroId}`);
-  revalidatePath("/veterinaria/agenda");
-  const zona = await zonaActual();
   return {
     error: null,
     exito: "Borrador descartado.",
     ir: citaInicio ? `/veterinaria/agenda?fecha=${fechaLocalDeInstante(citaInicio, zona)}&aviso=descartado` : `/veterinaria/expediente/${perroId}?aviso=descartado`,
   };
+}
+
+/** QA S19: quita de la consulta en borrador una vacuna o desparasitación aplicada en ella: la anula en el carnet y quita su cargo. */
+export async function quitarAplicacionConsulta(consultaId: string, tipo: "vacuna" | "desparasitacion", id: string, perroId: string): Promise<ResultadoAccion> {
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("vet_consulta_quitar_aplicacion", { p_consulta: consultaId, p_tipo: tipo, p_id: id });
+  if (error) return { error: traducirError(error) };
+  revalidatePath(`/veterinaria/consulta/${consultaId}`);
+  revalidatePath(`/veterinaria/carnet/${perroId}`);
+  return { error: null, exito: tipo === "vacuna" ? "Vacuna quitada de la consulta y anulada en el carnet." : "Desparasitación quitada de la consulta y anulada en el carnet." };
 }
 
 export async function agregarAdenda(id: string, fd: FormData): Promise<ResultadoAccion> {

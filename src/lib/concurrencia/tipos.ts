@@ -158,13 +158,55 @@ export function haceCuanto(iso: string | null, ahora = Date.now()): string {
  */
 export function textoConflicto(c: Conflicto, registro: string, zona?: string, ahora = Date.now()): string {
   const quien = c.quien?.trim() || "Alguien más";
-  const partes = Object.entries(c.cambios ?? {})
+  const cambios = { ...(c.cambios ?? {}) } as Record<string, unknown>;
+  const valor = (campo: string) => { const par = cambios[campo]; return Array.isArray(par) ? par[1] : par; };
+  // QA S19 (N99): si cambió la fecha o las horas, se dice el horario nuevo completo: «ahora es el 21 oct de 12:00 a 2:00 p. m.».
+  let horario: string | null = null;
+  for (const [ini, fin] of RANGOS) {
+    if (!(ini in cambios) && !(fin in cambios)) continue;
+    const a = valor(ini);
+    const b = valor(fin);
+    horario = typeof a === "string" ? rangoHorario(a, typeof b === "string" ? b : null, zona) : null;
+    if (horario) { delete cambios[ini]; delete cambios[fin]; }
+    break;
+  }
+  const partes = Object.entries(cambios)
     .map(([campo, par]) => describirCambio(campo, Array.isArray(par) ? par[1] : par, zona))
     .filter((x): x is string => !!x);
   const unicos = [...new Set(partes)].slice(0, 4);
-  const todo = [...unicos, ...(c.extra ?? [])];
+  const todo = [...(horario ? [horario] : []), ...unicos, ...(c.extra ?? [])];
   const que = todo.length ? `: ${todo.join(", ")}` : "";
-  return `${quien} cambió ${registro} ${haceCuanto(c.cuando ?? c.versionActual, ahora)}${que}. ¿Recargar con sus cambios o guardar los tuyos encima?`;
+  const frase = `${quien} cambió ${registro} ${haceCuanto(c.cuando ?? c.versionActual, ahora)}${que}`.replace(/\s+$/, "");
+  // Un solo cierre: si la frase ya termina en punto («p. m.»), no se agrega otro.
+  return `${/[.!?]$/.test(frase) ? frase : `${frase}.`} ¿Recargar con sus cambios o guardar los tuyos encima?`;
+}
+
+const RANGOS: [string, string][] = [["inicio", "fin"], ["inicia_at", "termina_at"], ["inicia", "termina"]];
+
+function partesHora(iso: string, zona?: string): { dia: string; hora: string; periodo: string } | null {
+  const f = new Date(iso);
+  if (Number.isNaN(f.getTime())) return null;
+  try {
+    const dia = new Intl.DateTimeFormat("es-MX", { timeZone: zona, day: "numeric", month: "short" }).format(f).replace(".", "");
+    const p = new Intl.DateTimeFormat("es-MX", { timeZone: zona, hour: "numeric", minute: "2-digit" }).formatToParts(f);
+    const hora = `${p.find((x) => x.type === "hour")?.value ?? ""}:${p.find((x) => x.type === "minute")?.value ?? ""}`;
+    const periodo = /p/i.test(p.find((x) => x.type === "dayPeriod")?.value ?? "") ? "p. m." : "a. m.";
+    return { dia, hora, periodo };
+  } catch {
+    return null;
+  }
+}
+
+/** «ahora es el 21 oct de 12:00 a 2:00 p. m.» (o «de 11:00 a. m. a 1:00 p. m.»; sin fin, «ahora es el 21 oct a las 12:00 p. m.»). */
+export function rangoHorario(inicio: string, fin: string | null, zona?: string): string | null {
+  const a = partesHora(inicio, zona);
+  if (!a) return null;
+  const b = fin ? partesHora(fin, zona) : null;
+  if (!b) return `ahora es el ${a.dia} a las ${a.hora} ${a.periodo}`;
+  if (b.dia !== a.dia) return `ahora es del ${a.dia} ${a.hora} ${a.periodo} al ${b.dia} ${b.hora} ${b.periodo}`;
+  return a.periodo === b.periodo
+    ? `ahora es el ${a.dia} de ${a.hora} a ${b.hora} ${b.periodo}`
+    : `ahora es el ${a.dia} de ${a.hora} ${a.periodo} a ${b.hora} ${b.periodo}`;
 }
 
 /** Del error de la base (PT409 / HTTP 409), el conflicto. null si no es un conflicto de versión. */

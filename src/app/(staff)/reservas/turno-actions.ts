@@ -1,7 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { revalidarModulosEstancia } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
 
@@ -31,8 +29,7 @@ export async function abrirTurno(fondoInicial: number, notas: string): Promise<E
     return { error: traducirError(error) };
   }
 
-  revalidarModulosEstancia();
-  revalidatePath("/caja");
-  revalidatePath("/caja/turno");
+  // QA S19: sin revalidar aquí (repintaba la pantalla antes de responder y después se volvía a pintar con el refresco
+  // que hace cada pantalla que abre turno).
   return { error: null, turnoId: data.id };
 }

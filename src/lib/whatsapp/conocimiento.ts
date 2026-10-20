@@ -303,4 +303,14 @@ QA S18 (20 de octubre de 2026):
 - Publicar una nueva versión de un contrato avisa «Versión N publicada».
 - Un cargo por kilómetro dice en sus Tarifas cómo se cobra: el tramo lo decide la distancia total y se multiplica por los kilómetros (con un ejemplo con sus precios). Un traslado del catálogo de Servicios extra se cobra por zona, un precio por viaje. «Servicios extra» lista abajo todo lo que se cobra aparte (catálogo, traslado y cargos adicionales).
 - El menú del personal es una lista: «Importar», «Módulos y plan», «Cobro con terminal», «Permisos», «Facturación» y «Perfil y página web» son entradas propias del menú (no hay un submenú «Administración → …»). Para importar: «Importar» en el menú, o la tarjeta «Importar clientes y mascotas» en Inicio.
+
+QA S19 (20 de octubre de 2026):
+- En una consulta veterinaria en borrador, cada vacuna o desparasitación aplicada en ella tiene «Quitar»: la anula en el carnet y quita su cargo en el mismo paso. El cargo de una vacuna no se quita suelto desde los cargos (avisa que se use «Quitar» en la consulta), salvo marcarlo «Sin cobro» con motivo.
+- «Descartar borrador» dice todo lo que se pierde (también las vacunas que se anulan), anula lo que se aplicó en ese borrador (lo registrado desde el carnet se queda), quita sus cargos y regresa la cita a como estaba antes de «Iniciar consulta» (Programada o Confirmada); lleva a la agenda de ese día o al expediente con «Borrador descartado».
+- «Firmar la consulta» se confirma en la pantalla con «Sí, firmar». Una consulta firmada tiene el botón «Emitir receta».
+- La receta desde una consulta no prellena nada si el Tratamiento solo trae el texto guía de la plantilla; las indicaciones se arman solo con dosis, frecuencia y días («1 tableta cada 24 horas por 5 días»).
+- Si otra persona cambió la fecha u hora de una cita mientras la tenías abierta, el aviso dice el horario nuevo completo («ahora es el 21 oct de 12:00 a 2:00 p. m.»).
+- Agendar en la agenda clínica confirma «Cita agendada»; «Iniciar consulta» abre la consulta en cuanto queda creada.
+- «Cancelar cuenta» pide el motivo una sola vez: se toca uno de los motivos o se escribe.
+- El encabezado de una pantalla interior dice la sección a la que pertenece (por ejemplo, «Caja» al cobrar una cuenta).
 `.trim();

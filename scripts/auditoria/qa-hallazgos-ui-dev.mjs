@@ -86,6 +86,7 @@ try {
   comprobar(await esperarTexto(p, /Precio de esta consulta: falta el de/), "el cargo sin precio muestra «Precio de esta consulta»");
   comprobar((await p.locator("[data-precio-faltante]").count()) === 1, "con su recuadro de precio");
   await p.getByRole("button", { name: "Firmar la consulta" }).click();
+  await p.locator("[data-confirmar-firma]").getByRole("button", { name: "Sí, firmar" }).click({ timeout: 3000 }).catch(() => {});
   comprobar(await esperarTexto(p, /Falta el precio de un cargo/), "firmar sin precio avisa y NO firma");
   comprobar((await SB.from("vet_consultas").select("estado").eq("id", c1.id).single()).data.estado === "borrador", "la consulta sigue en borrador");
   await p.getByRole("button", { name: "Poner el precio" }).click();
@@ -95,6 +96,7 @@ try {
   comprobar(await esperarTexto(p, /\$600/), "con el precio puesto la línea muestra $600");
   comprobar((await p.locator("[data-precio-faltante]").count()) === 0, "y el recuadro desaparece");
   await p.getByRole("button", { name: "Firmar la consulta" }).click();
+  await p.locator("[data-confirmar-firma]").getByRole("button", { name: "Sí, firmar" }).click({ timeout: 3000 }).catch(() => {});
   comprobar(await esperarTexto(p, /Cobro de esta consulta/), "ahora sí se firma y aparece «Cobro de esta consulta»");
   comprobar((await p.getByRole("link", { name: /Abrir la cuenta en Caja/ }).count()) > 0, "con el enlace a la cuenta en Caja");
   const reserva1 = (await SB.from("vet_consulta_cargos").select("cargo_id").eq("consulta_id", c1.id).eq("negocio_id", B).single()).data.cargo_id;
@@ -114,6 +116,7 @@ try {
   await p.getByRole("button", { name: "Marcar sin cobro" }).click();
   comprobar(await esperarTexto(p, /quitado: Sin cobro: Seguimiento incluido/), "queda a la vista con su motivo");
   await p.getByRole("button", { name: "Firmar la consulta" }).click();
+  await p.locator("[data-confirmar-firma]").getByRole("button", { name: "Sí, firmar" }).click({ timeout: 3000 }).catch(() => {});
   await esperarTexto(p, /Cobro de esta consulta/);
   comprobar((await SB.from("vet_consultas").select("estado").eq("id", c2.id).single()).data.estado === "firmada", "con «Sin cobro» la consulta se firma");
   comprobar((await p.getByRole("link", { name: /Abrir la cuenta en Caja/ }).count()) === 0, "y no se crea cuenta con importes vacíos");

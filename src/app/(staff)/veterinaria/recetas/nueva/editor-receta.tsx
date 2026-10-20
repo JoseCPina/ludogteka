@@ -103,7 +103,7 @@ export function EditorReceta({ perroId, consultaId, productos, tratamiento = nul
     return calcularCantidad(dosis, horas, num(f.duracion_dias));
   };
   // Lo que se ve en «Cantidad a surtir»: lo que escribió el médico o, mientras no escriba, la cuenta.
-  const generadas = (f: Fila) => indicacionesGeneradas({ base: f.base || f.producto, dosis: f.dosis, frecuencia: f.frecuencia, duracion_dias: f.duracion_dias });
+  const generadas = (f: Fila) => indicacionesGeneradas({ dosis: f.dosis, frecuencia: f.frecuencia, duracion_dias: f.duracion_dias });
   // Lo que se ve en «Indicaciones»: lo que escribió el médico o, mientras no escriba, lo que sale de los datos.
   const indicacionesDe = (f: Fila) => (f.indicaciones_manual ? f.indicaciones : generadas(f));
   const cantidadDe = (f: Fila) => (f.cantidad_manual ? f.cantidad_surtir : (calculada(f) ?? ""));

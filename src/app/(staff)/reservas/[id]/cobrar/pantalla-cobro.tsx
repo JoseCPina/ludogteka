@@ -35,38 +35,32 @@ export async function PantallaCobro({
   volverEtiqueta: string;
 }) {
   const supabase = await createSupabaseServerClient();
-  const sesion = await obtenerSesionConRol();
-
-  const { data: reserva, error: errorReserva } = await supabase
-    .from("reservas")
-    .select("id, notas, cliente_id, clientes(nombre, telefono, publico_general)")
-    .eq("id", id)
-    .single();
-
-  if (errorReserva || !reserva) {
-    return (
-      <Alert variante="error" titulo="No encontramos esta cuenta">
-        Puede que se haya dado de baja. Regresa y vuelve a buscarla.
-      </Alert>
-    );
-  }
-  const cliente = Array.isArray(reserva.clientes) ? reserva.clientes[0] : reserva.clientes;
-  // Si la cuenta se canceló (o se puede cancelar): la base lo dice.
-  const { data: infoCancelCruda } = await supabase.rpc("cuenta_para_cancelar", { p_reserva_id: id });
-  const infoCancelar = (infoCancelCruda as InfoCancelarCuenta | null) ?? null;
-  const cancelada = infoCancelar?.cancelada ?? null;
-  const zona = await zonaActual();
-
+  // QA S19 (rendimiento): la pantalla se arma en TRES tandas en paralelo (antes eran ~14 consultas una tras otra, y
+  // cada acción que la repinta las volvía a pagar). Primera tanda: todo lo que solo depende del id de la cuenta.
   const [
+    sesion,
+    { data: reserva, error: errorReserva },
+    { data: infoCancelCruda },
+    zona,
+    negocioPantalla,
     { data: lineasCrudo, error: errorLineas },
     { data: totalesCrudo, error: errorTotales },
     { data: turnoAbierto },
     { data: cobrosCrudo, error: errorCobros },
-    { data: bonosCrudo },
     { data: catalogoDescuentosCrudo },
     { data: descuentosCrudo, error: errorDescuentos },
     { data: topeCrudo },
+    { data: ordenesMpCrudo },
+    mpDisponible,
+    { data: terminalManualBloqueada },
+    { data: ajustesPrecioCrudo },
   ] = await Promise.all([
+    obtenerSesionConRol(),
+    supabase.from("reservas").select("id, notas, cliente_id, clientes(nombre, telefono, publico_general)").eq("id", id).single(),
+    // Si la cuenta se canceló (o se puede cancelar): la base lo dice.
+    supabase.rpc("cuenta_para_cancelar", { p_reserva_id: id }),
+    zonaActual(),
+    negocioActual(),
     supabase.rpc("cuenta_lineas_reserva", { p_reserva_id: id }),
     supabase.rpc("cuenta_totales_reserva", { p_reserva_id: id }),
     supabase.from("turnos_caja").select("id").eq("estado", "abierto").maybeSingle(),
@@ -75,11 +69,6 @@ export async function PantallaCobro({
       .select("id, notas, created_at, created_by, origen, grupo_id, turno_id, anulado_at, anulacion_motivo, cobro_metodos(metodo, monto, propina, ajuste_id)")
       .eq("reserva_id", id)
       .order("created_at"),
-    supabase
-      .from("bonos_clientes_estado")
-      .select("id, servicio_incluido_id, servicio_nombre, cantidad_disponible, estado, ilimitado, perro_id, perro_nombre")
-      .eq("cliente_id", reserva.cliente_id)
-      .eq("estado", "activo"),
     supabase.from("catalogo_descuentos").select("id, etiqueta").is("deleted_at", null).order("orden"),
     supabase
       .from("descuentos_aplicados")
@@ -89,9 +78,6 @@ export async function PantallaCobro({
       .eq("reserva_id", id)
       .order("created_at"),
     supabase.rpc("resolver_tope_descuento_recepcion"),
-  ]);
-
-  const [{ data: ordenesMpCrudo }, mpDisponible, { data: terminalManualBloqueada }] = await Promise.all([
     supabase
       .from("mp_ordenes_estado")
       .select("id, tipo, monto, descripcion, estado, url_pago, installments, simulado, pendiente_de_registrar, detalle_error, created_at, expira_at, cobro_id, proveedor, monto_reembolsado, grupo_cuentas")
@@ -102,7 +88,26 @@ export async function PantallaCobro({
     estadoCobroIntegrado(),
     // Con un proveedor de terminal elegido, «Terminal» no se captura a mano.
     supabase.rpc("terminal_manual_bloqueada"),
+    // QA S17 (N48): las correcciones de precio de la cuenta (vigentes y su historial).
+    supabase
+      .from("cuenta_ajustes_precio")
+      .select("id, linea_tipo, linea_id, monto, precio_antes, precio_despues, precio_original, motivo, hecha_por, created_at, deleted_at, anulada_por, anulada_motivo")
+      .eq("reserva_id", id)
+      .order("created_at")
+      .order("id"),
   ]);
+
+  if (errorReserva || !reserva) {
+    return (
+      <Alert variante="error" titulo="No encontramos esta cuenta">
+        Puede que se haya dado de baja. Regresa y vuelve a buscarla.
+      </Alert>
+    );
+  }
+  const cliente = Array.isArray(reserva.clientes) ? reserva.clientes[0] : reserva.clientes;
+  const infoCancelar = (infoCancelCruda as InfoCancelarCuenta | null) ?? null;
+  const cancelada = infoCancelar?.cancelada ?? null;
+
   const ordenesMp: OrdenCobroFila[] = (ordenesMpCrudo ?? []).map((o) => ({
     id: o.id as string,
     tipo: o.tipo as "point" | "link",
@@ -127,17 +132,88 @@ export async function PantallaCobro({
   // Un cobro junto: UN registro de tarjeta (un folio) para todas sus cuentas, y
   // el detalle del pago con las otras cuentas que se cobraron en el mismo movimiento.
   const grupoIds = Array.from(new Set((cobrosCrudo ?? []).map((c) => c.grupo_id as string | null).filter((g): g is string => Boolean(g))));
-  const { data: tarjetasCrudo } = cobroIds.length
-    ? await supabase
-        .from("tarjetas_manuales")
-        .select("id, cobro_id, grupo_id, folio, estado, monto, motivo, motivo_texto, ultimos4, banco, sobre_tope")
-        .or([`cobro_id.in.(${cobroIds.join(",")})`, ...(grupoIds.length ? [`grupo_id.in.(${grupoIds.join(",")})`] : [])].join(","))
-        .is("deleted_at", null)
-        .order("created_at")
-    : { data: [] as never[] };
+  const turnoIds = Array.from(new Set((cobrosCrudo ?? []).map((c) => c.turno_id as string))).filter(Boolean);
+  type LineaCruda = {
+    tipo: string;
+    origen_id: string;
+    servicio_id: string;
+    descripcion: string;
+    cantidad: number;
+    precio_unitario: number;
+    total: number;
+  };
+  const lineasCrudas = (lineasCrudo as LineaCruda[] | null) ?? [];
+  const idsLineasBono = lineasCrudas.filter((l) => l.tipo !== "bono").map((l) => l.origen_id);
+  // De qué perro es cada línea: el paquete es por perro y solo cubre las
+  // líneas de su perro (una reserva puede traer a dos perros del mismo
+  // dueño). Un cargo suelto sin estancia no tiene perro.
+  const idsPorTipo = (t: string) => lineasCrudas.filter((l) => l.tipo === t).map((l) => l.origen_id);
+  // Segunda tanda: lo que depende de los cobros, las líneas y el cliente.
+  const [
+    { data: bonosCrudo },
+    { data: tarjetasCrudo },
+    gruposDetalle,
+    // Historial de correcciones (anulaciones y montos corregidos) y si el turno de
+    // cada cobro ya se cerró (corregirlo pide un permiso más).
+    { data: correccionesCrudo },
+    { data: turnosEstado },
+    { data: devolucionesCrudo, error: errorDevoluciones },
+    { data: movimientosCrudo },
+    { data: perrosEstancias },
+    { data: perrosCitas },
+    { data: perrosCargos },
+  ] = await Promise.all([
+    supabase
+      .from("bonos_clientes_estado")
+      .select("id, servicio_incluido_id, servicio_nombre, cantidad_disponible, estado, ilimitado, perro_id, perro_nombre")
+      .eq("cliente_id", reserva.cliente_id)
+      .eq("estado", "activo"),
+    cobroIds.length
+      ? supabase
+          .from("tarjetas_manuales")
+          .select("id, cobro_id, grupo_id, folio, estado, monto, motivo, motivo_texto, ultimos4, banco, sobre_tope")
+          .or([`cobro_id.in.(${cobroIds.join(",")})`, ...(grupoIds.length ? [`grupo_id.in.(${grupoIds.join(",")})`] : [])].join(","))
+          .is("deleted_at", null)
+          .order("created_at")
+      : Promise.resolve({ data: [] as never[] }),
+    Promise.all(grupoIds.map(async (gid) => ({ gid, det: (await supabase.rpc("cobro_grupo_detalle", { p_grupo_id: gid })).data }))),
+    cobroIds.length
+      ? supabase
+          .from("cobro_correcciones")
+          .select("cobro_id, tipo, motivo, created_at, hecha_por, estado_anterior, evidencia")
+          .in("cobro_id", cobroIds)
+          .in("tipo", ["anulacion", "edicion_monto"])
+          .order("created_at")
+      : Promise.resolve({ data: [] as never[] }),
+    turnoIds.length
+      ? supabase.from("turnos_caja").select("id, estado").in("id", turnoIds)
+      : Promise.resolve({ data: [] as { id: string; estado: string }[] }),
+    cobroIds.length
+      ? supabase
+          .from("devoluciones")
+          .select("id, motivo, created_at, autorizado_por, cobro_id, origen, devolucion_metodos(metodo, monto)")
+          .in("cobro_id", cobroIds)
+          .order("created_at")
+      : Promise.resolve({ data: [] as never[], error: null }),
+    idsLineasBono.length
+      ? supabase
+          .from("movimientos_bono")
+          .select("item_id, cantidad, tipo")
+          .in("tipo", ["consumo", "devolucion"])
+          .in("item_id", idsLineasBono)
+      : Promise.resolve({ data: [] as { item_id: string; cantidad: number; tipo: string }[] }),
+    idsPorTipo("estancia").length
+      ? supabase.from("estancias").select("id, perro_id").in("id", idsPorTipo("estancia"))
+      : Promise.resolve({ data: [] as { id: string; perro_id: string }[] }),
+    idsPorTipo("estetica").length
+      ? supabase.from("citas_estetica").select("id, perro_id").in("id", idsPorTipo("estetica"))
+      : Promise.resolve({ data: [] as { id: string; perro_id: string }[] }),
+    idsPorTipo("cargo").length
+      ? supabase.from("cargos_aplicados").select("id, estancias(perro_id)").in("id", idsPorTipo("cargo"))
+      : Promise.resolve({ data: [] as { id: string; estancias: unknown }[] }),
+  ]);
   const detallesGrupo = new Map<string, GrupoHistorial>();
-  for (const gid of grupoIds) {
-    const { data: det } = await supabase.rpc("cobro_grupo_detalle", { p_grupo_id: gid });
+  for (const { gid, det } of gruposDetalle) {
     const d = (Array.isArray(det) ? det[0] : det) as {
       recibo: string;
       total: number;
@@ -154,65 +230,10 @@ export async function PantallaCobro({
       });
     }
   }
-  // Historial de correcciones (anulaciones y montos corregidos) y si el turno de
-  // cada cobro ya se cerró (corregirlo pide un permiso más).
-  const { data: correccionesCrudo } = cobroIds.length
-    ? await supabase
-        .from("cobro_correcciones")
-        .select("cobro_id, tipo, motivo, created_at, hecha_por, estado_anterior, evidencia")
-        .in("cobro_id", cobroIds)
-        .in("tipo", ["anulacion", "edicion_monto"])
-        .order("created_at")
-    : { data: [] as never[] };
-  const turnoIds = Array.from(new Set((cobrosCrudo ?? []).map((c) => c.turno_id as string))).filter(Boolean);
-  const { data: turnosEstado } = turnoIds.length
-    ? await supabase.from("turnos_caja").select("id, estado").in("id", turnoIds)
-    : { data: [] as { id: string; estado: string }[] };
   const turnoCerradoDe = new Map((turnosEstado ?? []).map((t) => [t.id as string, (t.estado as string) !== "abierto"]));
-  const { data: devolucionesCrudo, error: errorDevoluciones } = cobroIds.length
-    ? await supabase
-        .from("devoluciones")
-        .select("id, motivo, created_at, autorizado_por, cobro_id, origen, devolucion_metodos(metodo, monto)")
-        .in("cobro_id", cobroIds)
-        .order("created_at")
-    : { data: [] as never[], error: null };
 
   const error = errorLineas ?? errorTotales ?? errorCobros ?? errorDevoluciones ?? errorDescuentos;
 
-  type LineaCruda = {
-    tipo: string;
-    origen_id: string;
-    servicio_id: string;
-    descripcion: string;
-    cantidad: number;
-    precio_unitario: number;
-    total: number;
-  };
-  const lineasCrudas = (lineasCrudo as LineaCruda[] | null) ?? [];
-  const idsLineasBono = lineasCrudas.filter((l) => l.tipo !== "bono").map((l) => l.origen_id);
-  const { data: movimientosCrudo } = idsLineasBono.length
-    ? await supabase
-        .from("movimientos_bono")
-        .select("item_id, cantidad, tipo")
-        .in("tipo", ["consumo", "devolucion"])
-        .in("item_id", idsLineasBono)
-    : { data: [] as { item_id: string; cantidad: number; tipo: string }[] };
-
-  // De qué perro es cada línea: el paquete es por perro y solo cubre las
-  // líneas de su perro (una reserva puede traer a dos perros del mismo
-  // dueño). Un cargo suelto sin estancia no tiene perro.
-  const idsPorTipo = (t: string) => lineasCrudas.filter((l) => l.tipo === t).map((l) => l.origen_id);
-  const [{ data: perrosEstancias }, { data: perrosCitas }, { data: perrosCargos }] = await Promise.all([
-    idsPorTipo("estancia").length
-      ? supabase.from("estancias").select("id, perro_id").in("id", idsPorTipo("estancia"))
-      : Promise.resolve({ data: [] as { id: string; perro_id: string }[] }),
-    idsPorTipo("estetica").length
-      ? supabase.from("citas_estetica").select("id, perro_id").in("id", idsPorTipo("estetica"))
-      : Promise.resolve({ data: [] as { id: string; perro_id: string }[] }),
-    idsPorTipo("cargo").length
-      ? supabase.from("cargos_aplicados").select("id, estancias(perro_id)").in("id", idsPorTipo("cargo"))
-      : Promise.resolve({ data: [] as { id: string; estancias: unknown }[] }),
-  ]);
   const perroPorItem = new Map<string, string>();
   for (const e of perrosEstancias ?? []) perroPorItem.set(e.id as string, e.perro_id as string);
   for (const c of perrosCitas ?? []) perroPorItem.set(c.id as string, c.perro_id as string);
@@ -273,13 +294,6 @@ export async function PantallaCobro({
   const topeFila = Array.isArray(topeCrudo) ? topeCrudo[0] : topeCrudo;
   const topeRecepcion = topeFila?.estado === "configurado" ? Number(topeFila.tope_recepcion) : 0;
 
-  // QA S17 (N48): las correcciones de precio de la cuenta (vigentes y su historial).
-  const { data: ajustesPrecioCrudo } = await supabase
-    .from("cuenta_ajustes_precio")
-    .select("id, linea_tipo, linea_id, monto, precio_antes, precio_despues, precio_original, motivo, hecha_por, created_at, deleted_at, anulada_por, anulada_motivo")
-    .eq("reserva_id", id)
-    .order("created_at")
-    .order("id");
 
   const idsCreadores = Array.from(
     new Set([
@@ -292,7 +306,7 @@ export async function PantallaCobro({
   ).filter((x): x is string => Boolean(x));
 
   // Nombre de la ficha de empleado o de la cuenta (nombre_de_persona): recepción no lee `profiles` del personal.
-  const nombrePorId = await nombresDePersonal(supabase, idsCreadores, { esAdmin: sesion?.rol === "admin", negocioId: (await negocioActual()).id });
+  const nombrePorId = await nombresDePersonal(supabase, idsCreadores, { esAdmin: sesion?.rol === "admin", negocioId: negocioPantalla.id });
 
   const correccionesPrecio: CorreccionPrecio[] = (ajustesPrecioCrudo ?? []).map((a) => ({
     id: a.id as string,

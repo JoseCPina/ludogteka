@@ -165,6 +165,7 @@ try {
   }
   // Firmar.
   await mvz.p.getByRole("button", { name: "Firmar la consulta" }).click();
+  await mvz.p.locator("[data-confirmar-firma]").getByRole("button", { name: "Sí, firmar" }).click({ timeout: 3000 }).catch(() => {});
   await mvz.p.getByText(/Firmada por/).first().waitFor({ timeout: 20000 }).catch(() => {});
   const tFirmada = await cuerpo(mvz.p);
   comprobar(/Firmada por/.test(tFirmada) && tFirmada.includes(`cédula profesional ${cedula}`), "firmada: sale el médico con su cédula");

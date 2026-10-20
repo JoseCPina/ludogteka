@@ -85,6 +85,8 @@ export function FormularioAccion({
       return;
     }
     if (res.ir) {
+      // QA S19: lo que se guardó se dice junto al botón mientras se abre la pantalla siguiente.
+      if (res.exito) setExito(res.exito);
       router.push(res.ir);
       return;
     }
@@ -134,8 +136,11 @@ export function BotonAccion({
   textoExito,
   versiones,
   registro = "este registro",
+  navegacionCompleta = false,
 }: {
   accion: (control?: ControlVersion) => Promise<ResultadoAccion>;
+  /** QA S19: abre `ir` con una carga completa DESPUÉS de la respuesta (si la pantalla actual se refresca a la vez, no se queda en ella). */
+  navegacionCompleta?: boolean;
   texto: string;
   variante?: "primario" | "secundario" | "peligro" | "exito";
   textoExito?: string;
@@ -162,7 +167,10 @@ export function BotonAccion({
       return;
     }
     if (res.ir) {
-      router.push(res.ir);
+      if (navegacionCompleta) {
+        setExito(res.exito ?? "Listo. Abriendo…");
+        window.location.assign(res.ir);
+      } else router.push(res.ir);
       return;
     }
     setExito(res.exito ?? textoExito ?? "Listo");

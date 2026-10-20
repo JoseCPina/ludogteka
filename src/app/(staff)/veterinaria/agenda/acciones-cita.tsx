@@ -34,7 +34,7 @@ export function AccionesCita({
           {estado === "en_curso" ? "Abrir la consulta" : "Ver la consulta"}
         </Link>
       )}
-      {abierta && puedeAtender && <BotonAccion texto="Iniciar consulta" accion={() => iniciarDesdeCita(id)} />}
+      {abierta && puedeAtender && <BotonAccion texto="Iniciar consulta" accion={() => iniciarDesdeCita(id)} navegacionCompleta />}
       {estado === "programada" && <BotonAccion texto="Confirmar" variante="secundario" accion={(c) => estadoCita(id, "confirmada", c)} textoExito="Confirmada" versiones={versiones} registro="esta cita" />}
       {abierta && (
         <>

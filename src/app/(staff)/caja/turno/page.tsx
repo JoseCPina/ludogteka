@@ -22,12 +22,14 @@ const MOVIMIENTOS_TOPE = 2000;
 export default async function TurnoCajaPage({ searchParams }: { searchParams: Promise<{ mov?: string }> }) {
   const { mov } = await searchParams;
   const limiteMovimientos = Math.min(Math.max(Number.parseInt(mov ?? "", 10) || MOVIMIENTOS_INICIAL, MOVIMIENTOS_INICIAL), MOVIMIENTOS_TOPE);
-  const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
-  const sesion = await obtenerSesionConRol();
 
-  // El turno abierto y el historial no dependen uno del otro: un solo viaje.
-  const [{ data: turnoAbierto, error: errorTurno }, { data: turnosCerradosCrudo, error: errorHistorial }] = await Promise.all([
+  // El turno abierto y el historial no dependen uno del otro: un solo viaje (QA S19: junto con la sesión, la zona y el
+  // negocio, que antes se pedían antes, uno tras otro).
+  const [zona, sesion, negocioTurno, { data: turnoAbierto, error: errorTurno }, { data: turnosCerradosCrudo, error: errorHistorial }] = await Promise.all([
+    zonaActual(),
+    obtenerSesionConRol(),
+    negocioActual(),
     supabase
       .from("turnos_caja")
       .select("id, fondo_inicial, abierto_at, abierto_por, notas_apertura")
@@ -43,8 +45,21 @@ export default async function TurnoCajaPage({ searchParams }: { searchParams: Pr
       .limit(20),
   ]);
 
-  const [{ data: retirosCrudo }, { data: paginaCrudo }, { data: resumenCrudo }] = turnoAbierto
-    ? await Promise.all([
+  // QA S17 (N81): las correcciones hechas DESPUÉS del corte de un turno cerrado quedan ligadas a ese turno: se enseñan
+  // en su historial con quién y cuándo (su corte guardado no cambia). Se piden a la vez que los movimientos del turno.
+  const idsCerrados = (turnosCerradosCrudo ?? []).map((t) => t.id as string);
+  const ajustesYCorrecciones = (async () => {
+    const { data: ajustes } = idsCerrados.length
+      ? await supabase.from("cobro_metodos").select("metodo, monto, propina, fecha_efecto, turno_efecto_id, ajuste_id").in("turno_efecto_id", idsCerrados).not("ajuste_id", "is", null).limit(500)
+      : { data: [] as never[] };
+    const ids = Array.from(new Set((ajustes ?? []).map((a) => a.ajuste_id as string)));
+    const { data: correcciones } = ids.length
+      ? await supabase.from("cobro_correcciones").select("id, tipo, motivo, hecha_por, created_at").in("id", ids)
+      : { data: [] as never[] };
+    return { ajustesCrudo: ajustes, correccionesCrudo: correcciones };
+  })();
+  const [[{ data: retirosCrudo }, { data: paginaCrudo }, { data: resumenCrudo }], { ajustesCrudo, correccionesCrudo }] = await Promise.all([turnoAbierto
+    ? Promise.all([
         leerTodo<Record<string, unknown> & { created_by: string | null; cancelado_por: string | null; tipo: string }>(() =>
           supabase
             .from("movimientos_caja")
@@ -60,18 +75,7 @@ export default async function TurnoCajaPage({ searchParams }: { searchParams: Pr
         supabase.rpc("movimientos_turno_pagina", { p_turno_id: turnoAbierto.id, p_limite: limiteMovimientos, p_desplazamiento: 0 }),
         supabase.rpc("resumen_turno", { p_turno_id: turnoAbierto.id }),
       ])
-    : [{ data: [] as never[] }, { data: null }, { data: [] as never[] }];
-
-  // QA S17 (N81): las correcciones hechas DESPUÉS del corte de un turno cerrado quedan ligadas a ese turno: se enseñan
-  // en su historial con quién y cuándo (su corte guardado no cambia).
-  const idsCerrados = (turnosCerradosCrudo ?? []).map((t) => t.id as string);
-  const { data: ajustesCrudo } = idsCerrados.length
-    ? await supabase.from("cobro_metodos").select("metodo, monto, propina, fecha_efecto, turno_efecto_id, ajuste_id").in("turno_efecto_id", idsCerrados).not("ajuste_id", "is", null).limit(500)
-    : { data: [] as never[] };
-  const idsAjuste = Array.from(new Set((ajustesCrudo ?? []).map((a) => a.ajuste_id as string)));
-  const { data: correccionesCrudo } = idsAjuste.length
-    ? await supabase.from("cobro_correcciones").select("id, tipo, motivo, hecha_por, created_at").in("id", idsAjuste)
-    : { data: [] as never[] };
+    : Promise.resolve([{ data: [] as never[] }, { data: null }, { data: [] as never[] }] as const), ajustesYCorrecciones]);
   const correccionPorId = new Map((correccionesCrudo ?? []).map((c) => [c.id as string, c]));
 
   const pagina = (paginaCrudo ?? null) as { total: number; servicios: number; ventas_mostrador: number; movimientos: Record<string, unknown>[] } | null;
@@ -90,7 +94,7 @@ export default async function TurnoCajaPage({ searchParams }: { searchParams: Pr
   ).filter((x): x is string => Boolean(x));
 
   // Nombre de la ficha de empleado o de la cuenta (nombre_de_persona): recepción no lee `profiles` del personal.
-  const nombrePorId = await nombresDePersonal(supabase, idsNombres, { esAdmin: sesion?.rol === "admin", negocioId: (await negocioActual()).id });
+  const nombrePorId = await nombresDePersonal(supabase, idsNombres, { esAdmin: sesion?.rol === "admin", negocioId: negocioTurno.id });
 
   const retiros: Retiro[] = (retirosCrudo ?? []).filter((r) => r.tipo !== "ingreso").map((r) => ({
     id: r.id as string,

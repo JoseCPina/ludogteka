@@ -42,7 +42,7 @@ Un cobro nunca pasa del saldo. Si el cliente paga **de más en efectivo**, la pa
 Las citas y estancias con fecha futura salen aparte, en **Próximas**, para que no se mezclen con lo que ya toca cobrar: todavía no se deben y no suman en «Pendiente de cobrar hoy». Si el cliente quiere pagar por adelantado, abre la cuenta (dice **Cobrar por adelantado (opcional)**) y cobra; si no, no hagas nada. Si una cuenta con saldo no se debe cobrar (el dueño no llegó, se canceló la cita, es una cortesía o se capturó mal), no la dejes ahí: cancélala.
 
 1. En [Caja](/caja), en la cuenta, aprieta **Cancelar cuenta** (también dentro de la cuenta). Si no ves el botón, pídele a un admin el permiso **Cancelar cuentas** en Permisos (en el menú).
-2. Escoge el **Motivo**: **No se presentó**, **Cita cancelada**, **Cortesía**, **Error de captura** u **Otro** (con **Otro** escribe qué pasó).
+2. Di el **Motivo** en un solo paso: toca **No se presentó**, **Cita cancelada**, **Cortesía** o **Error de captura** (con una nota opcional), o si no es ninguno escríbelo en el mismo cuadro (al menos 5 letras).
 3. Si la cuenta viene de una cita de estética o de una reserva de guardería u hotel que todavía no empieza, sale la casilla para **cancelar también la reserva**. Con **No se presentó** queda como «No llegó»; con los demás motivos queda cancelada y su lugar en el cupo se libera (si usó un pase, se le devuelve). Si la dejas sin marcar, la reserva sigue abierta y ocupando cupo: la ves en el [Calendario de reservas](/ayuda/calendario-de-reservas) con la cuenta cancelada.
 4. Aprieta **Cancelar la cuenta**.
 

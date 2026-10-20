@@ -76,7 +76,7 @@ const p = await ctx.newPage();
 
 try {
   await (await comoPersona(datos.adminB)).rpc("elegir_proveedor_cobro", { p_proveedor: "manual" });
-  let { data: turno } = await SB.from("turnos_caja").select("id").eq("estado", "abierto").maybeSingle();
+  let { data: turno } = await SB.from("turnos_caja").select("id").eq("negocio_id", B).eq("estado", "abierto").maybeSingle();
   if (!turno) turno = (await rec.from("turnos_caja").insert({ fondo_inicial: 100, notas_apertura: "prueba refresco cobro" }).select("id").single()).data;
 
   console.log("1. Cobro de una cuenta con el refresco lento");

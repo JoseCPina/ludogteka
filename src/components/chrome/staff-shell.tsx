@@ -87,7 +87,10 @@ export function StaffShell({
 }) {
   const pathname = usePathname();
   const [menuAbierto, setMenuAbierto] = useState(false);
-  const activo = items.find((item) => !item.proximamente && pathname === item.href);
+  // QA S19: en una pantalla interior (/caja/cobrar/…) el encabezado dice la sección a la que pertenece (la ruta más específica).
+  const activo = items
+    .filter((item) => !item.proximamente && (pathname === item.href || (item.href !== "/" && pathname.startsWith(`${item.href}/`))))
+    .sort((a, b) => b.href.length - a.href.length)[0];
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
