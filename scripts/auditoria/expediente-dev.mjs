@@ -114,6 +114,9 @@ try {
   comprobar(!(await rpc(P.recSin, "vet_cita_estado", { p_id: c1id, p_estado: "cancelada", p_motivo: " " })).ok, "cancelar pide el motivo");
   comprobar((await rpc(P.recSin, "vet_cita_estado", { p_id: c1id, p_estado: "confirmada", p_motivo: null })).ok, "se confirma");
   comprobar((await rpc(P.recSin, "vet_cita_estado", { p_id: c1id, p_estado: "cancelada", p_motivo: "El dueño no puede" })).ok, "se cancela con motivo");
+  // QA R23 (N52): la agenda dice quién la canceló y cuándo (fecha y hora).
+  const canc = ((await rpc(P.recSin, "vet_agenda", { p_desde: d1, p_hasta: d1, p_medico: null })).cuerpo ?? []).find((c) => c.id === c1id);
+  comprobar(Boolean(canc?.cancelada_at) && typeof canc?.cancelada_por === "string" && canc.cancelada_por.length > 0, `N52: la cita cancelada trae quién y cuándo (${canc?.cancelada_por}, ${canc?.cancelada_at})`);
   comprobar(!(await rpc(P.recSin, "vet_reprogramar_cita", { p_id: c1id, p_inicia: a(d1, "15:00"), p_medico: null, p_duracion_min: null })).ok, "una cita cancelada ya no se mueve");
 
   seccion("2. Plantillas por tipo de consulta");
@@ -201,6 +204,12 @@ try {
   const citaC = (await rpc(P.recCon, "vet_agendar_cita", { p_perro: perroC, p_tipo: "seguimiento", p_medico: medA, p_inicia: a(dc, "09:00"), p_duracion_min: null, p_motivo: "Seguimiento" })).cuerpo.id;
   const ic = await rpc(P.recCon, "vet_consulta_iniciar", { p_perro: null, p_cita: citaC, p_tipo: null, p_medico: null });
   comprobar(ic.ok, `iniciar desde la cita (${ic.mensaje})`);
+  // QA R23 (N85): la consulta lleva la fecha y hora DE LA CITA (otro día), no la del momento en que se abre.
+  const [{ data: kc }, { data: cc }] = await Promise.all([
+    SB.from("vet_consultas").select("atendida_at").eq("id", ic.cuerpo).single(),
+    SB.from("vet_citas").select("inicia_at").eq("id", citaC).single(),
+  ]);
+  comprobar(new Date(kc.atendida_at).getTime() === new Date(cc.inicia_at).getTime(), `N85: la consulta queda con la fecha y hora de la cita (${kc.atendida_at} = ${cc.inicia_at})`);
   comprobar((await SB.from("vet_citas").select("estado, consulta_id").eq("id", citaC).single()).data.estado === "en_curso", "la cita pasa a «en curso»");
   comprobar(!(await rpc(P.recCon, "vet_consulta_iniciar", { p_perro: null, p_cita: citaC, p_tipo: null, p_medico: null })).ok, "una cita no abre dos consultas");
   await rpc(P.recCon, "vet_consulta_guardar", { p_id: ic.cuerpo, p_datos: { motivo: "Seguimiento de gastroenteritis", examen_fisico: "Bien" } });

@@ -52,7 +52,7 @@ try {
   const { data: gD } = await SB.from("servicios").select("id").eq("negocio_id", B).eq("categoria", "guarderia").eq("unidad", "dia").is("deleted_at", null).limit(1).single();
   const hoy = new Date().toISOString().slice(0, 10);
   const cliente = await comoAdmin();
-  const perro = (await SB.from("perros").insert({ negocio_id: B, cliente_id: datos.clienteSoloB, nombre: `Pertenencias ${sufijo}`, especie: "perro" }).select("id").single()).data;
+  const perro = (await SB.from("perros").insert({ negocio_id: B, cliente_id: datos.clienteSoloB, nombre: `Pertenencias ${sufijo}`, especie: "perro" }).select("id, nombre").single()).data;
   limpieza.push(async () => { await SB.from("perros").update({ deleted_at: new Date().toISOString() }).eq("id", perro.id); });
   const rG = (await cliente.from("reservas").insert({ cliente_id: datos.clienteSoloB }).select("id").single()).data;
   const dia = (() => { let d = new Date(Date.now() + 90 * 86400000); while (d.getUTCDay() === 0) d = new Date(d.getTime() + 86400000); return d.toISOString().slice(0, 10); })();
@@ -201,12 +201,12 @@ try {
     await px.goto(`${BASE}/reservas/${rH.id}`, { waitUntil: "networkidle" });
     await px.getByRole("button", { name: "Cancelar toda la reserva" }).click();
     const dialogo = await px.locator("body").innerText();
-    comprobar(/¿Cancelar el perro que todavía se puede cancelar de esta reserva\?/.test(dialogo) && !/perro\(s\)/.test(dialogo), "N52: con un perro dice «el perro», sin «perro(s)»");
+    comprobar(new RegExp(`¿Cancelar la reserva de ${perro.nombre}\\?`).test(dialogo) && !/perro\(s\)/.test(dialogo), `N52: con un perro lo nombra («¿Cancelar la reserva de ${perro.nombre}?»), sin «perro(s)»`);
     const motivo = px.getByLabel("Motivo (opcional)");
     comprobar((await motivo.count()) === 1, "al cancelar, aparece «Motivo (opcional)»");
     await motivo.fill("El cliente cambió de fechas");
     await px.getByRole("button", { name: "Sí, cancelar todo" }).click();
-    comprobar(await esperarTexto(px, /Se cancelaron 1/), "se cancela");
+    comprobar(await esperarTexto(px, new RegExp(`Se canceló la reserva de ${perro.nombre} el .+ a las \\d{1,2}:\\d{2} [ap]\\.m\\. Motivo: El cliente cambió de fechas`)), "R23 N52: el aviso dice a quién, la fecha, la hora y el motivo");
     const fH = (await SB.from("estancias").select("estado, motivo_cancelacion, cancelada_por, cancelada_at").eq("id", eH.data.id).single()).data;
     comprobar(fH.estado === "cancelada" && fH.motivo_cancelacion === "El cliente cambió de fechas" && fH.cancelada_por === datos.adminB && fH.cancelada_at, "la estancia guarda el motivo, quién y cuándo");
     const { data: bit } = await SB.from("registro_ediciones").select("cambios").eq("tabla", "estancias").eq("registro_id", eH.data.id).order("created_at", { ascending: false }).limit(1);
@@ -222,9 +222,26 @@ try {
     await px.goto(`${BASE}/reservas/${rH2.id}`, { waitUntil: "networkidle" });
     await px.getByRole("button", { name: "Cancelar toda la reserva" }).click();
     await px.getByRole("button", { name: "Sí, cancelar todo" }).click();
-    comprobar(await esperarTexto(px, /Se cancelaron 1/), "sin motivo también se cancela (es opcional)");
+    comprobar(await esperarTexto(px, /Se canceló la reserva de .+ a las/), "sin motivo también se cancela (es opcional)");
     const fH2 = (await SB.from("estancias").select("estado, motivo_cancelacion, cancelada_por").eq("id", eH2.data.id).single()).data;
     comprobar(fH2.estado === "cancelada" && fH2.motivo_cancelacion === null && fH2.cancelada_por === datos.adminB, "queda quién la canceló, sin motivo");
+    // R23 (N52): con dos perros, los nombra a los dos con la concordancia correcta.
+    const otro = (await SB.from("perros").insert({ negocio_id: B, cliente_id: datos.clienteSoloB, nombre: `Segundo ${sufijo}`, especie: "perro" }).select("id, nombre").single()).data;
+    if (!otro) throw new Error("no se pudo crear el segundo perro");
+    await SB.from("perros").update({ tamano_id: talla.id }).eq("id", otro.id);
+    limpieza.push(async () => { await SB.from("perros").update({ deleted_at: new Date().toISOString() }).eq("id", otro.id); });
+    const rH3 = (await cliente.from("reservas").insert({ cliente_id: datos.clienteSoloB }).select("id").single()).data;
+    for (const pid of [perro.id, otro.id]) {
+      const e = await cliente.from("estancias").insert({ reserva_id: rH3.id, perro_id: pid, servicio_id: hotel?.id ?? gD.id, fecha_entrada: dH(base + 14), fecha_salida: dH(base + 15), bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: "Prueba", bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: "Prueba" }).select("id").single();
+      if (e.error) throw new Error(`estancia hotel 3: ${e.error.message}`);
+      limpieza.push(async () => { await SB.from("estancias").update({ deleted_at: new Date().toISOString() }).eq("id", e.data.id); });
+    }
+    await px.goto(`${BASE}/reservas/${rH3.id}`, { waitUntil: "networkidle" });
+    await px.getByRole("button", { name: "Cancelar toda la reserva" }).click();
+    const dialogo3 = await px.locator("body").innerText();
+    comprobar(/¿Cancelar la reserva de los 2 perros \(.+ y .+\)\?/.test(dialogo3), "R23 N52: con dos perros pregunta por «los 2 perros (A y B)»");
+    await px.getByRole("button", { name: "Sí, cancelar todo" }).click();
+    comprobar(await esperarTexto(px, /Se canceló la reserva de .+ y .+ el .+ a las \d{1,2}:\d{2} [ap]\.m\./), "R23 N52: el aviso nombra a los dos perros con fecha y hora");
     await cx.close();
   }
 } catch (err) {

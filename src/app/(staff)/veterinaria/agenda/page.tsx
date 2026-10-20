@@ -2,7 +2,8 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { formatearFechaCalendario, formatearDiaSemana, fechaLocalDeInstante, horaLocalDeInstante, hoyNegocio, sumarDiasFecha, inicioSemana } from "@/lib/formato";
+import { formatearFechaCalendario, formatearDiaSemana, fechaLocalDeInstante, horaLocalDeInstante, hoyNegocio, sumarDiasFecha, inicioSemana, formatearDiaDeInstante, formatearHoraNegocio } from "@/lib/formato";
+import { unirFrases } from "@/lib/texto/frases";
 import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { AvisosWhatsApp } from "@/components/avisos-whatsapp";
 import { ESTADOS_CITA, type CitaVet, type MedicoVet } from "@/lib/veterinaria/expediente";
@@ -111,7 +112,14 @@ export default async function AgendaVeterinaria({ searchParams }: { searchParams
                                 {c.tipo}{c.tipo_clave === "teleconsulta" ? " · telemedicina" : ""}{c.urgencia ? " · urgencia" : ""} · {c.dueno}
                               </p>
                               {c.motivo && <p className="text-n-600">{c.motivo}</p>}
-                              {c.cancelada_motivo && <p className="text-coral-oscuro">Motivo: {c.cancelada_motivo}</p>}
+                              {c.estado === "cancelada" && (c.cancelada_at || c.cancelada_motivo) && (
+                                <p className="text-coral-oscuro" data-cita-cancelada="">
+                                  {unirFrases(
+                                    c.cancelada_at ? `Cancelada por ${c.cancelada_por ?? "alguien del equipo"} el ${formatearDiaDeInstante(c.cancelada_at, zona)} a las ${formatearHoraNegocio(c.cancelada_at, zona)}` : null,
+                                    c.cancelada_motivo ? `Motivo: ${c.cancelada_motivo}` : null
+                                  )}
+                                </p>
+                              )}
                               <div className="mt-1 flex flex-wrap gap-3 text-xs font-semibold">
                                 {c.tipo_clave === "teleconsulta" && <Link href={`/veterinaria/teleconsulta/${c.id}`} className="text-morado hover:underline">Teleconsulta (liga y sala)</Link>}
                                 {puedeLeer && <Link href={`/veterinaria/expediente/${c.perro_id}`} className="text-morado hover:underline">Expediente</Link>}

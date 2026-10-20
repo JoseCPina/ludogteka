@@ -252,7 +252,7 @@ function juzgar(caso, pregunta, r, pide, desdeTexto) {
   const enviadas = new Map();
   for (const w of palabras(r.respuestas.join(" "))) enviadas.set(w, (enviadas.get(w) ?? 0) + 1);
   // Si se pidió reescribir un párrafo largo, lo que cuenta es la reescritura.
-  const reescritura = r.ia.findLast((x) => JSON.stringify(x.mensajes.at(-1)?.content ?? "").includes("Nota interna de PeluDesk"));
+  const reescritura = r.ia.findLast((x) => JSON.stringify(x.system ?? "").includes("REESCRITURA DE FORMATO"));
   if (reescritura) console.log("    (se pidió reescribir un párrafo largo)");
   const escrito = reescritura ? [reescritura] : r.ia;
   const perdidas = palabras(escrito.map((x) => x.salida ?? "").join(" ")).filter((w) => {
@@ -285,6 +285,7 @@ function juzgar(caso, pregunta, r, pide, desdeTexto) {
   // Si ya dijo qué servicios tiene, nada de anclar en el «desde».
   if (pide.sinDesde && /\bdesde\b[^\n]*\$/i.test(todo)) f.push("ancló en el «desde» aunque ya sabía qué servicios tiene");
   if (pide.contiene && !pide.contiene.test(todo)) f.push(`no contestó lo que preguntó (esperaba ${pide.contiene})`);
+  if (pide.noContiene && pide.noContiene.test(todo)) f.push(`dijo algo que la app no hace (${pide.noContiene})`);
   if (r.capturas.length > 1) f.push(`mandó ${r.capturas.length} imágenes (máximo una)`);
   for (const c of r.capturas) if (!pide.capturas.includes(c)) f.push(`mandó la captura «${c}» y no venía al caso`);
   if (pide.exigeCaptura && r.capturas.length === 0) f.push("contó cómo trabaja y no le mandó la captura que corresponde");
@@ -606,7 +607,7 @@ if (IA_REAL) {
     ["fija: soporte", TEL_V4, "¿Cómo es el soporte si tengo un problema?", { venta: true, sinEscalar: true, capturas: [], contiene: /24 horas/ }],
     ["fija: sucursales", TEL_V4, "Tengo dos sucursales, ¿cómo se cobra?", { venta: true, sinEscalar: true, capturas: [], contiene: /\$325/ }],
     ["fija: recordatorios", TEL_V4, "¿Los recordatorios por WhatsApp tienen costo por mensaje?", { venta: true, sinEscalar: true, capturas: [], contiene: /incluid|sin costo|no (tienen|hay) costo/i }],
-    ["fija: cancelación", TEL_V4, "¿Y si quiero cancelar después?", { venta: true, sinEscalar: true, capturas: [], contiene: /90 d[ií]as/ }],
+    ["fija: cancelación", TEL_V4, "¿Y si quiero cancelar después?", { venta: true, sinEscalar: true, capturas: [], contiene: /solo lectura/i, noContiene: /90 d[ií]as|exportarlos por WhatsApp/i }],
     ["fija: excel", TEL_V4, "Tengo a mis clientes en un Excel, ¿se pueden pasar?", { venta: true, sinEscalar: true, capturas: [], contiene: /import/i }],
     ["fija: anual", TEL_V4, "¿Hay plan anual?", { venta: true, sinEscalar: true, menteo: true, capturas: [], contiene: /\$6,490/ }],
     ["fija: cobro", TEL_V4, "¿A nombre de quién me sale el cargo en la tarjeta?", { venta: true, sinEscalar: true, menteo: true, capturas: [] }],

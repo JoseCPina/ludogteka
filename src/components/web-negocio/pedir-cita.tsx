@@ -152,7 +152,6 @@ export function PedirCita({ catalogo, horario, zona, negocio, modo, telefono, pr
               {listo.servicio.modo === "noches" ? `${listo.dia} al ${listo.salida} (${listo.noches} ${listo.noches === 1 ? "noche" : "noches"})` : `${listo.dia}${listo.hora ? `, ${listo.hora}` : ""}`}
             </p>
             {modo === "real" && <p className="mt-2 text-sm text-black/70">Mándala desde WhatsApp y {negocio} te confirma por ahí.</p>}
-            {modo === "demo" && <p className="mt-2 text-sm text-black/60" data-modo-demostracion>{AVISO_DEMOSTRACION}</p>}
           </div>
         </div>
         {modo === "demo" && (
@@ -177,11 +176,7 @@ export function PedirCita({ catalogo, horario, zona, negocio, modo, telefono, pr
 
   return (
     <div ref={caja} data-pedir-cita className="min-w-0 scroll-mt-24 rounded-[var(--w-radio-tarjeta)] bg-white p-4 shadow-[0_20px_50px_-30px_rgba(0,0,0,.35)] ring-1 ring-black/5 sm:p-6">
-      {modo === "demo" && (
-        <p role="note" data-modo-demostracion className="mb-4 rounded-[var(--w-radio-chico)] bg-[var(--w-suave)] px-3 py-2 text-sm font-medium text-[var(--w-tinta)]">
-          {AVISO_DEMOSTRACION}
-        </p>
-      )}
+      {/* QA R23 (N73): el único aviso de demostración es la franja de arriba de la página. */}
       <ol className="mb-5 flex items-center gap-2 text-xs font-semibold" aria-label="Pasos">
         {PASOS.map((p, i) => (
           <li key={p} className={`flex items-center gap-1.5 ${i <= paso ? "text-[var(--w-tinta)]" : "text-black/40"}`} aria-current={i === paso ? "step" : undefined}>

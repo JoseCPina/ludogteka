@@ -18,7 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
   const p = await prospectoPorSlug(slug);
   if (!p || !(destino in TIPO)) return new NextResponse("No encontrado.", { status: 404 });
   // ?interno=1 (revisión desde el CRM) se conserva hasta el destino: ahí tampoco cuenta como visita ni registro.
-  const interno = req.nextUrl.searchParams.get("interno") === "1";
+  const interno = req.nextUrl.searchParams.get("interno") === "1" || req.cookies.get("peludesk_interno")?.value === "1";
   await registrarVisita({
     slug,
     tipo: TIPO[destino as keyof typeof TIPO],

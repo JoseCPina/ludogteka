@@ -244,11 +244,17 @@ export function aclararDemo(texto: string, urlDemo: string, aclaracion: string):
  * QA S16: al hablar de pagar, del cobro o de la factura, se dice a nombre de quién sale el cargo (MENTEO). Si el
  * modelo no lo escribió, se agrega en el párrafo de antes del link (o al final). Nunca dos veces.
  */
+/** Si a este mensaje todavía le cabe un párrafo de aclaración (máximo cuatro, sin contar el link). */
+export function cabeAclaracion(texto: string): boolean {
+  return texto.split("\n\n").filter((p) => p.trim() && !/^https?:\/\//.test(p.trim())).length < 4;
+}
+
 export function aclararCobro(texto: string, aclaracion: string): string {
-  if (!/\b(factur\w*|cobr\w*|pag[oa]\w*|tarjeta|cargo|suscripci[oó]n)\b/i.test(texto) || /MENTEO/.test(texto)) return texto;
+  if (!/\b(factur\w*|cobr\w*|pag[oa]\w*|tarjeta|cargo|suscripci[oó]n)\b/i.test(texto) || /menteo/i.test(texto)) return texto;
   const parrafos = texto.split("\n\n");
   const i = parrafos.findIndex((p) => /^https?:\/\//.test(p.trim()));
-  if (i >= 0) parrafos.splice(i, 0, aclaracion);
-  else parrafos.push(aclaracion);
+  const fin = i >= 0 ? i : parrafos.length;
+  // Máximo cuatro párrafos por mensaje: si ya no cabe, quien llama la manda como mensaje aparte (`cabeAclaracion`).
+  parrafos.splice(fin, 0, aclaracion);
   return parrafos.join("\n\n");
 }

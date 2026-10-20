@@ -512,6 +512,49 @@ try {
     await ctx14.close();
   }
 
+  console.log("16. R23 N89: «Corregir precio» refleja encabezado, total y saldo en cuanto contesta el servidor (dos seguidas y anular)");
+  {
+    const ctx16 = await nav.newContext({ viewport: { width: 1280, height: 900 } });
+    await ctx16.addCookies(await cookiesDe(datos.adminB));
+    const c16 = await nuevoCliente("Latencia precio");
+    const cu16 = await cuenta(c16, 380, `Estetica 380 ${sufijo}`);
+    const p16 = await ctx16.newPage();
+    await p16.goto(`${BASE}/caja/cobrar/${cu16}`, { waitUntil: "networkidle" });
+    const totalTexto = async () => (await p16.locator("text=/Total cuenta:/").first().innerText()).replace(/\s+/g, " ");
+    const corregir = async (precio, motivo) => {
+      const caja = p16.locator("[data-corregir-precio]");
+      if (!(await caja.count())) await p16.getByRole("button", { name: "Corregir precio" }).first().click();
+      await caja.locator("[data-precio-correccion]").fill(String(precio));
+      await caja.locator("[data-motivo-correccion]").fill(motivo);
+      const t0 = Date.now();
+      await caja.locator("[data-guardar-precio]").click();
+      const re = new RegExp(`\\(hoy \\$${precio}\\.00\\)`);
+      await p16.waitForFunction((src) => new RegExp(src).test(document.querySelector("[data-corregir-precio]")?.textContent ?? ""), re.source, { timeout: 20000 }).catch(() => {});
+      const tEnc = Date.now() - t0;
+      await p16.waitForFunction((pr) => new RegExp(`Total cuenta: \\$${pr}\\.00`).test(document.body.innerText.replace(/\s+/g, " ")), precio, { timeout: 20000 }).catch(() => {});
+      const tTot = Date.now() - t0;
+      const ok = re.test(await caja.locator("p").first().innerText()) && (await totalTexto()).includes(`$${precio}.00`);
+      return { tEnc, tTot, ok };
+    };
+    const r1 = await corregir(370, "QA R23 N89 primera");
+    const r2 = await corregir(360, "QA R23 N89 segunda");
+    console.log(`     tiempos: 1.ª corrección encabezado ${r1.tEnc} ms, total ${r1.tTot} ms · 2.ª encabezado ${r2.tEnc} ms, total ${r2.tTot} ms`);
+    comprobar(r1.ok && r2.ok, "N89: las dos correcciones seguidas se reflejan sin F5 (encabezado «hoy» y total)");
+    comprobar(r1.tTot < 2500 && r2.tTot < 2500, `N89: cada corrección se refleja en menos de 2.5 s (${r1.tTot} y ${r2.tTot} ms)`);
+    // Anular la corrección: vuelve a $380 de inmediato.
+    const corr16 = p16.locator("[data-correccion-precio]");
+    await p16.waitForFunction(() => document.querySelectorAll("[data-correccion-precio]").length === 1, null, { timeout: 20000 }).catch(() => {});
+    await corr16.locator("[data-anular-correccion]").click();
+    await corr16.getByLabel("Motivo (obligatorio)").fill("QA R23 anular corrección");
+    const t3 = Date.now();
+    await corr16.locator("[data-confirmar-anular-correccion]").click();
+    await p16.waitForFunction(() => /Total cuenta: \$380\.00/.test(document.body.innerText.replace(/\s+/g, " ")), null, { timeout: 20000 }).catch(() => {});
+    const tAn = Date.now() - t3;
+    console.log(`     tiempo: anular corrección → total ${tAn} ms`);
+    comprobar((await totalTexto()).includes("$380.00") && tAn < 2500, `N89: «Anular corrección» devuelve el total a $380 al momento (${tAn} ms)`);
+    await ctx16.close();
+  }
+
   console.log("15. N46: se registra EXACTAMENTE el monto del campo (teclado y autollenado que no avisa a React)");
   {
     const ctx15 = await nav.newContext({ viewport: { width: 390, height: 844 } });

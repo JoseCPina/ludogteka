@@ -150,13 +150,16 @@ try {
   await page.getByText("Configuración guardada").first().waitFor();
   ok((await page.getByText("Falta el WhatsApp de recepción").count()) === 0, "N80: el aviso «Falta el WhatsApp de recepción» se va al guardar, sin recargar");
   ok(!(await pasoListo(page, base, "datos")), "con el teléfono pero sin dirección, «Datos del negocio» sigue pendiente");
+  // QA R23 (N61/N88): la dirección se escribe SOLO en Perfil; Configuración la muestra con «Cambiar en Perfil».
   await page.goto(`${base}/admin#configuracion`);
-  await page.getByLabel("Dirección del negocio").first().fill("Av. de Prueba 100, Centro");
-  await page.getByRole("button", { name: "Guardar configuración" }).click();
-  await page.getByText("Configuración guardada").first().waitFor();
-  ok(await pasoListo(page, base, "datos"), "con teléfono y dirección, «Datos del negocio» queda listo");
+  ok((await page.locator("#configuracion").getByLabel("Dirección del negocio", { exact: true }).count()) === 0, "N88: Configuración ya no tiene su propio campo de dirección");
   await page.goto(`${base}/admin/perfil`);
-  ok((await page.getByLabel("Dirección").inputValue()) === "Av. de Prueba 100, Centro", "N61: Perfil (y la página web) muestran la MISMA dirección que Configuración");
+  await page.getByLabel("Dirección").fill("Av. de Prueba 100, Centro");
+  await page.getByRole("button", { name: "Guardar datos" }).click();
+  await page.getByText("Perfil guardado").first().waitFor();
+  ok(await pasoListo(page, base, "datos"), "con teléfono y dirección, «Datos del negocio» queda listo");
+  await page.goto(`${base}/admin#configuracion`);
+  ok((await page.locator("[data-direccion-en-perfil]").innerText()).includes("Av. de Prueba 100, Centro"), "N61: Configuración muestra la MISMA dirección de Perfil (solo lectura)");
 
   const { data: serv } = await A.from("servicios").select("id").eq("negocio_id", neg.id).eq("clave", "estetica_expres").single();
   await page.goto(`${base}/servicios/${serv.id}/tarifas`);
@@ -247,8 +250,14 @@ try {
     await page.getByText("Foto agregada").first().waitFor();
     await page.waitForTimeout(1500);
   }
-  const { data: web } = await A.from("negocios").select("web_gratis_at").eq("id", neg.id).single();
-  ok(Boolean(web.web_gratis_at), "perfil completo: la base lo registra (la web ya viene incluida en el plan)");
+  // La base lo anota al pintar el avance del perfil (evaluar_web_gratis): se espera a que llegue.
+  let web = null;
+  for (let i = 0; i < 15 && !web?.web_gratis_at; i++) {
+    if (i === 5) await page.goto(`${base}/admin/perfil`);
+    web = (await A.from("negocios").select("web_gratis_at").eq("id", neg.id).single()).data;
+    if (!web?.web_gratis_at) await page.waitForTimeout(1000);
+  }
+  ok(Boolean(web?.web_gratis_at), "perfil completo: la base lo registra (la web ya viene incluida en el plan)");
   await page.goto(`${base}/bienvenida`);
   ok((await texto()).includes("Tu página web está lista"), "con el perfil completo la bienvenida dice que la web está lista");
   const publica = await ctx.newPage();
@@ -304,9 +313,12 @@ try {
   async function datosNegocio(p, base, tel) {
     await p.goto(`${base}/admin#configuracion`);
     await p.getByLabel("WhatsApp de recepción").fill(tel);
-    await p.getByLabel("Dirección del negocio").first().fill("Calle Giro 1, Centro");
     await p.getByRole("button", { name: "Guardar configuración" }).click();
     await p.getByText("Configuración guardada").first().waitFor();
+    await p.goto(`${base}/admin/perfil`);
+    await p.getByLabel("Dirección").fill("Calle Giro 1, Centro");
+    await p.getByRole("button", { name: "Guardar datos" }).click();
+    await p.getByText("Perfil guardado").first().waitFor();
     await p.goto(`${base}/admin#horario`);
     await p.getByRole("button", { name: "Guardar horario" }).click();
     await p.waitForTimeout(3000);
@@ -395,7 +407,23 @@ try {
   const { data: perfH } = await A.from("negocio_perfil").select("direccion").eq("negocio_id", negH.id).is("deleted_at", null).single();
   ok(perfH.direccion === "Calle Sucursal 9, Centro", "N61: si algo escribe la dirección de la sucursal, la del perfil queda igual (un solo campo)");
   await ph.goto(`${baseH}/admin#configuracion`);
-  ok((await ph.getByLabel("Dirección del negocio").first().inputValue()) === "Calle Sucursal 9, Centro", "N61: Configuración lee la misma dirección");
+  ok((await ph.locator("[data-direccion-en-perfil]").innerText()).includes("Calle Sucursal 9, Centro"), "N61: Configuración lee la misma dirección");
+  // QA R23 (N88): Ubicación para recolección la muestra en solo lectura con «Cambiar en Perfil» y solo ubica.
+  // La sección vive con el módulo de Recolección prendido (nace apagado, N70).
+  await SH.from("negocio_modulos").update({ activo: true }).eq("negocio_id", negH.id).eq("modulo", "recoleccion");
+  await ph.goto(`${baseH}/admin#ubicacion`);
+  const ubic = ph.locator("#ubicacion");
+  if (await ubic.count()) {
+    ok((await ubic.locator("[data-direccion-negocio-lectura]").innerText()).includes("Calle Sucursal 9") && (await ubic.locator("[data-cambiar-en-perfil]").getAttribute("href")) === "/admin/perfil", "N88: Ubicación para recolección muestra la dirección de Perfil en solo lectura con «Cambiar en Perfil»");
+    ok((await ubic.getByLabel("Dirección del negocio", { exact: true }).count()) === 0 && (await ubic.locator('input[name="base"]').inputValue()) === "", "N88: sin campo propio de dirección; el punto de salida es opcional y viene vacío");
+    await ubic.getByRole("button", { name: "Ubicar en el mapa" }).click();
+    await ubic.getByText(/Ubicado en el mapa/).first().waitFor({ timeout: 30000 });
+    const { data: suc } = await SH.from("sucursales").select("lat, direccion").eq("negocio_id", negH.id).is("deleted_at", null).order("activo", { ascending: false }).limit(1).single();
+    ok(suc.lat != null && suc.direccion === "Calle Sucursal 9, Centro", "N88: «Ubicar en el mapa» ubica la dirección de Perfil");
+  } else {
+    ok(false, "N88: no apareció la sección Ubicación para recolección con el módulo prendido");
+  }
+  await SH.from("negocio_modulos").update({ activo: false }).eq("negocio_id", negH.id).eq("modulo", "recoleccion");
   await ph.goto(`${baseH}/`);
   ok((await ph.locator("body").innerText()).includes("Calle Sucursal 9"), "N61: la página web muestra la misma dirección");
   await llenarPrecios(ph, baseH, negH.id, ["guarderia", "hotel", "bono"]);

@@ -39,6 +39,9 @@ export type CitaVet = {
   consulta_id: string | null;
   urgencia: boolean;
   cancelada_motivo: string | null;
+  /** QA R23 (N52): quién canceló y cuándo (solo citas canceladas desde el 20 de octubre de 2026). */
+  cancelada_por?: string | null;
+  cancelada_at?: string | null;
   updated_at?: string | null;
 };
 

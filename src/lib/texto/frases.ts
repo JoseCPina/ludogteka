@@ -19,3 +19,10 @@ export function unirFrases(...partes: (string | null | undefined | false)[]): st
     .map((p, i, todas) => (i < todas.length - 1 || !/[?!]$/.test(p.trim()) ? cerrarFrase(p.trim()) : p.trim()))
     .join(" ");
 }
+
+/** QA R23 (N52): «Luna», «Luna y Max», «Luna, Max y Toby» (sin repetir nombres). */
+export function unirNombres(nombres: (string | null | undefined)[]): string {
+  const n = [...new Set(nombres.map((x) => (x ?? "").trim()).filter(Boolean))];
+  if (n.length <= 1) return n[0] ?? "";
+  return `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}`;
+}

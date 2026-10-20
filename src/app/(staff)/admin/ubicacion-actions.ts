@@ -8,16 +8,18 @@ import { apartarConsulta, hayLlaveMaps, mensajeTope } from "@/lib/google-maps/cu
 export type EstadoUbicacion = { error: string | null; aviso?: string };
 
 /**
- * La dirección del negocio y la de la base de la camioneta: de ahí sale la
- * ruta con la que se cotiza cada recolección. Se geocodifican con la llave
- * de PeluDesk (cada una cuenta contra el tope del mes), con la ciudad del
- * negocio. Si una dirección no cambió, no se vuelve a pedir a Google.
+ * QA R23: la dirección del negocio es UNA y se edita en Perfil; aquí solo se UBICA en el mapa (se lee de
+ * negocio_perfil, nunca de lo que mande la pantalla). El punto de salida de recolección es opcional: vacío, las
+ * rutas salen de la dirección del negocio. Se geocodifican con la llave de PeluDesk (cada una cuenta contra el
+ * tope del mes), con la ciudad del negocio; una dirección que no cambió no se vuelve a pedir a Google.
  */
-export async function guardarUbicacion(datos: { direccion: string; base: string }): Promise<EstadoUbicacion> {
+export async function guardarUbicacion(datos: { base: string }): Promise<EstadoUbicacion> {
   const supabase = await createSupabaseServerClient();
-  const direccion = datos.direccion.trim();
-  const base = datos.base.trim();
-  if (!direccion && !base) return { error: "Escribe al menos una de las dos direcciones." };
+  const { data: perfil } = await supabase.from("negocio_perfil").select("direccion").is("deleted_at", null).maybeSingle();
+  const direccion = ((perfil?.direccion as string | null) ?? "").trim();
+  if (!direccion) return { error: "Primero escribe la dirección de tu negocio en Perfil y página web (/admin/perfil)." };
+  let base = datos.base.trim();
+  if (base.toLowerCase() === direccion.toLowerCase()) base = "";
 
   const [{ data: sucursal }, { data: cupoData }, { data: neg }] = await Promise.all([
     supabase.from("sucursales").select("direccion, lat, lng").is("deleted_at", null).order("activo", { ascending: false }).limit(1).maybeSingle(),
@@ -44,10 +46,10 @@ export async function guardarUbicacion(datos: { direccion: string; base: string 
   if (n.error) return { error: `Dirección del negocio: ${n.error}` };
   const centro = n.lat != null && n.lng != null ? { lat: n.lat, lng: n.lng } : null;
   const b = await ubicar(base, cupo ? { direccion: cupo.base_direccion, lat: cupo.base_lat, lng: cupo.base_lng } : null, centro);
-  if (b.error) return { error: `Dirección de la base: ${b.error}` };
+  if (b.error) return { error: `Punto de salida de recolección: ${b.error}` };
 
   const { error } = await supabase.rpc("guardar_ubicacion_negocio", {
-    p_direccion: direccion || null,
+    p_direccion: direccion,
     p_lat: n.lat,
     p_lng: n.lng,
     p_base_direccion: base || null,
@@ -56,5 +58,6 @@ export async function guardarUbicacion(datos: { direccion: string; base: string 
   });
   if (error) return { error: error.message };
   revalidatePath("/admin");
-  return { error: null, aviso: n.simulado || b.simulado ? "Guardado (coordenadas simuladas: este ambiente no tiene llave de Google)." : "Guardado." };
+  const texto = base ? "Ubicado en el mapa: la dirección del negocio y el punto de salida." : "Ubicado en el mapa. Las recolecciones salen de la dirección del negocio.";
+  return { error: null, aviso: n.simulado || b.simulado ? `${texto} (Coordenadas simuladas: este ambiente no tiene llave de Google.)` : texto };
 }

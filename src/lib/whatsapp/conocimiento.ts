@@ -266,7 +266,7 @@ Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado.
 ## Respuestas fijas y el demo (QA S16, 19 de octubre)
 - Estas se contestan siempre, sin escalar (el texto exacto va en RESPUESTAS FIJAS del prompt, de src/lib/peludesk/respuestas-fijas.ts): factura CFDI, soporte, sucursales, costo de los recordatorios, cancelación, migración desde Excel, plan anual, a nombre de quién sale el cobro, SMS y terminal.
 - Recordatorios y avisos por WhatsApp: incluidos en el plan, sin costo por mensaje; salen desde el teléfono del negocio con el mensaje ya escrito (wa.me).
-- Cancelación: cuando quiera, sin plazo forzoso; sin reembolso del mes en curso (lo sigue usando hasta que termina); después sus datos quedan en solo lectura 90 días y, si los necesita, le ayudamos a exportarlos por WhatsApp.
+- Cancelación: cuando quiera, sin plazo forzoso, en Módulos y plan (portal de pagos); sin reembolso del mes en curso (lo sigue usando hasta que termina); después su información queda en solo lectura mientras no pida borrarla, y puede pedir una copia completa por correo a contacto@peludesk.mx (máximo 20 días hábiles). No hay un límite de 90 días ni un botón de exportar.
 - Migración desde Excel: el importador (Administración → Importar) sube clientes y mascotas desde un Excel o CSV; si hace falta, le ayudamos por WhatsApp a dejar el archivo listo. Pasar datos de otra app no se promete.
 - Plan anual: el precio anual de la tabla de planes ($6,490 + IVA), dos meses gratis contra pagar mes a mes.
 - Pago o factura: el cobro aparece a nombre de MENTEO, la empresa que opera PeluDesk. Dilo cada vez que hables de pagar, de la tarjeta o de la factura.
@@ -288,4 +288,9 @@ QA R22 (20 de octubre de 2026):
 - Crear un servicio de estética pide la duración de la cita en minutos (la agenda la usa); si algo no se guarda, el aviso dice el motivo.
 - La matriz de precios de un servicio tiene «Mismo precio para todas las celdas» (Llenar todas) y «Copiar precios de otro servicio» de la misma categoría, además de incrementar por porcentaje o monto. Nada se guarda hasta «Guardar».
 - «Configuración» está en el menú de Administración (WhatsApp de recepción, dirección, cupo y horario). La dirección del negocio es una sola: Configuración, Perfil y página web y el paso «Escribir tu dirección» leen la misma.
+
+QA R23 (20 de octubre de 2026):
+- La dirección del negocio es UNA y se escribe en Perfil y página web; Configuración y Ubicación para recolección la muestran (con «Cambiar en Perfil»). En Ubicación para recolección solo se ubica en el mapa y, si la camioneta sale de otro lado, se escribe el «Punto de salida de recolección»; vacío, las rutas salen del negocio.
+- Una consulta veterinaria iniciada desde una cita lleva la fecha y hora de la cita.
+- Una cita veterinaria cancelada dice quién la canceló, con fecha y hora; al cancelar una reserva, el aviso nombra a los perros y dice fecha y hora.
 `.trim();

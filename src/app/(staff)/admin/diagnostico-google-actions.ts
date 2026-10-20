@@ -39,13 +39,6 @@ export async function probarConexionGoogle(): Promise<EstadoDiagnostico> {
         `La sucursal no tiene coordenadas guardadas todavía. Captura la dirección de ${negocio.nombre} (Ubicación para recolección) antes de probar la conexión.`,
     };
   }
-  if (!cupo?.base_lat || !cupo?.base_lng) {
-    return {
-      error:
-        "La base de la camioneta no tiene coordenadas guardadas todavía. Captúrala en Ubicación para recolección antes de probar.",
-    };
-  }
-
   // Se geocodifica la dirección de la propia sucursal: es una dirección
   // real y conocida, así que si Google contesta "no la encuentro" el
   // problema es de la llave o de la API, no del texto.
@@ -61,7 +54,7 @@ export async function probarConexionGoogle(): Promise<EstadoDiagnostico> {
 
   const pruebas = await probarGoogleMaps(
     direccion,
-    { lat: Number(cupo.base_lat), lng: Number(cupo.base_lng) },
+    cupo?.base_lat && cupo?.base_lng ? { lat: Number(cupo.base_lat), lng: Number(cupo.base_lng) } : { lat: Number(sucursal.lat), lng: Number(sucursal.lng) },
     { lat: Number(sucursal.lat), lng: Number(sucursal.lng) }
   );
 

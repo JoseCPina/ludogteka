@@ -16,7 +16,7 @@ const pesos = (n: number) => `$${Number(n).toLocaleString("es-MX", { maximumFrac
 export type PreciosFijos = { mensual: number | null; anual: number | null; sucursal: number | null };
 
 export const RESPUESTA_FACTURA =
-  "Sí. Menteo, S.A.S., la empresa que opera PeluDesk, emite la factura (CFDI) de tu suscripción. Capturas tus datos fiscales en Módulos y plan → Datos de facturación (RFC, razón social, régimen, código postal, uso del CFDI y el correo donde la quieres) y la factura te llega por correo en los días siguientes a cada pago. " +
+  "Sí. Menteo, S.A.S., la empresa que opera PeluDesk, emite la factura (CFDI) de tu suscripción. Tus datos fiscales los capturas en Módulos y plan → Datos de facturación. Te llega por correo en los días siguientes a cada pago. " +
   COBRO_A_NOMBRE_DE;
 
 export const RESPUESTA_SOPORTE =
@@ -31,10 +31,10 @@ export function respuestaSucursales(p: PreciosFijos): string {
 }
 
 export const RESPUESTA_RECORDATORIOS =
-  "Van incluidos en el plan: no hay costo por mensaje. Los avisos y recordatorios se mandan por WhatsApp desde el teléfono de tu negocio: PeluDesk te deja el mensaje ya escrito y lo abres en WhatsApp con un toque (wa.me).";
+  "Van incluidos en el plan: no hay costo por mensaje.\n\nSe mandan por WhatsApp desde el teléfono de tu negocio: PeluDesk te deja el mensaje ya escrito y lo abres con un toque.";
 
 export const RESPUESTA_CANCELACION =
-  "Cancelas cuando quieras, desde Módulos y plan, sin plazo forzoso. No hay reembolso del mes en curso: lo sigues usando hasta que termina. Después tus datos quedan en solo lectura 90 días, y si los necesitas te ayudamos a exportarlos por WhatsApp.";
+  "Cancelas cuando quieras, sin plazo forzoso: en Módulos y plan, que te lleva al portal de pagos. No hay reembolso del mes en curso: lo sigues usando hasta que termina. Después tu información queda en solo lectura (la consultas, no capturas) mientras no pidas borrarla, y puedes pedir una copia completa en formato estructurado por correo a contacto@peludesk.mx: te la entregamos en máximo 20 días hábiles.";
 
 export const RESPUESTA_MIGRACION =
   "Sí. Tus clientes y mascotas los subes desde un Excel o CSV con el importador (Administración → Importar), y si hace falta te ayudamos por WhatsApp a dejar tu archivo listo.";
@@ -72,3 +72,17 @@ export function respuestasFijas(p: PreciosFijos): { clave: string; pregunta: str
 
 /** Lo que el bot dice cuando manda el demo: Patitas & Co. no es un cliente. */
 export const ACLARACION_DEMO = "Es Patitas & Co., un negocio de ejemplo de PeluDesk (no es un cliente real):";
+
+/**
+ * QA R23: preguntas que se contestan SIN el modelo (respuesta fija inmediata, ~1 s en vez de 27 a 35 s). Solo las
+ * claras y cortas; ante cualquier duda (más de una pregunta, texto largo) devuelve null y contesta el bot.
+ */
+export function respuestaFijaDirecta(texto: string): string | null {
+  const t = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+  if (!t || t.length > 180 || (t.match(/\?/g) ?? []).length > 1) return null;
+  if (/\bsms\b|mensajes? de texto/.test(t)) return RESPUESTA_SMS;
+  const deRecordatorios = /recordatori|avisos? (por|de|a) (whats|wa)|mensajes? (por|de) whats|notificaci/.test(t);
+  const deCosto = /cuest|costo|cobr|precio|pag|incluid|gratis|extra|aparte|cargo|limite|cuantos/.test(t);
+  if (deRecordatorios && deCosto) return RESPUESTA_RECORDATORIOS;
+  return null;
+}

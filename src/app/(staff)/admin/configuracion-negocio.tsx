@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { formatearTelefono } from "@/lib/telefono";
-import { guardarConfiguracionNegocio, guardarDireccionNegocio } from "./configuracion-actions";
+import Link from "next/link";
+import { guardarConfiguracionNegocio } from "./configuracion-actions";
 
 export type ConfiguracionVigente = {
   cupo_diurno: number | null;
@@ -29,13 +30,11 @@ export type ConfiguracionVigente = {
  * Guardar inserta una versión nueva, no reescribe la anterior: mismo
  * patrón que tarifas. Lo que no se toca se arrastra del vigente.
  */
-export function ConfiguracionNegocio({ vigente, direccion: direccionInicial, conCupo = true }: { vigente: ConfiguracionVigente | null; direccion: string; conCupo?: boolean }) {
+export function ConfiguracionNegocio({ vigente, direccion, conCupo = true }: { vigente: ConfiguracionVigente | null; direccion: string; conCupo?: boolean }) {
   const router = useRouter();
   const [cupoDiurno, setCupoDiurno] = useState(String(vigente?.cupo_diurno ?? ""));
   const [cupoNocturno, setCupoNocturno] = useState(String(vigente?.cupo_nocturno ?? ""));
   const [telefono, setTelefono] = useState(vigente?.telefono_recepcion ?? "");
-  // QA S16 (N61): la dirección del negocio es UNA (la de Perfil y la página web); aquí se captura la misma.
-  const [direccion, setDireccion] = useState(direccionInicial);
   // QA S16 (N80): el aviso de «Falta el WhatsApp» se va en cuanto se guarda, sin esperar a recargar.
   const [telefonoGuardado, setTelefonoGuardado] = useState(Boolean(vigente?.telefono_recepcion));
   const guardando = useEspera();
@@ -56,13 +55,6 @@ export function ConfiguracionNegocio({ vigente, direccion: direccionInicial, con
     if (res.error) {
       setError(res.error);
       return;
-    }
-    if (direccion.trim() !== direccionInicial.trim()) {
-      const d = await guardando.ejecutar(() => guardarDireccionNegocio(direccion));
-      if (d.error) {
-        setError(d.error);
-        return;
-      }
     }
     setTelefonoGuardado(Boolean(telefono.trim()));
     setOk(true);
@@ -100,14 +92,13 @@ export function ConfiguracionNegocio({ vigente, direccion: direccionInicial, con
         }
       />
 
-      <Field
-        label="Dirección del negocio"
-        value={direccion}
-        onChange={(e) => setDireccion(e.target.value)}
-        maxLength={200}
-        placeholder="Calle, número y colonia"
-        ayuda="Es la misma de tu perfil y tu página web: si la cambias aquí, cambia allá."
-      />
+      {/* QA R23 (N61/N88): la dirección del negocio es una sola y se edita en Perfil; aquí solo se muestra. */}
+      <p className="text-sm text-n-700" data-direccion-en-perfil="">
+        Dirección del negocio: {direccion ? <strong>{direccion}</strong> : <span className="text-n-500">todavía no la escribes</span>}.{" "}
+        <Link href="/admin/perfil" className="font-semibold text-morado underline">
+          {direccion ? "Cambiar en Perfil" : "Escribirla en Perfil"}
+        </Link>
+      </p>
 
       {conCupo && (
       <div className="grid grid-cols-2 gap-4">

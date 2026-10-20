@@ -34,7 +34,7 @@ export function CorregirPrecioLinea({
   total: number;
   onCerrar: () => void;
   // QA S17 (N47/N82): la pantalla pinta la cuenta corregida de inmediato.
-  alGuardar?: (totales?: TotalesCuenta) => void;
+  alGuardar?: (totales?: TotalesCuenta, precio?: number) => void;
 }) {
   const router = useRouter();
   const envio = useEspera();
@@ -54,7 +54,7 @@ export function CorregirPrecioLinea({
     if (r.error) return setError(r.error);
     setAviso(r.aviso ?? "Listo.");
     setMotivo("");
-    if (alGuardar) alGuardar(r.totales);
+    if (alGuardar) alGuardar(r.totales, precioNum);
     else router.refresh();
   }
 

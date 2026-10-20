@@ -18,6 +18,10 @@ async function demo(): Promise<ResultadoCorreccion | null> {
   return (await cargarNegocioLanding()).plan === "demo" ? { error: MENSAJE_DEMO } : null;
 }
 
+// QA R23 (N89): anular o corregir un cobro y corregir un precio NO llaman a esta función: un revalidatePath dentro
+// de una acción hace que Next vuelva a pintar la pantalla completa ANTES de contestar (3 a 4 s en Caja). Esas
+// acciones contestan con los totales nuevos, la pantalla los pinta al instante y se refresca sola; las demás
+// pantallas son dinámicas y se leen de nuevo al abrirlas.
 function refrescar(reservaId?: string | null, grupoId?: string | null) {
   revalidatePath("/caja");
   revalidatePath("/caja/turno");
@@ -63,7 +67,6 @@ export async function anularCobro(cobroId: string, motivo: string, reservaId?: s
   const { data, error } = await supabase.rpc("anular_cobro", { p_cobro_id: cobroId, p_motivo: motivo.trim() });
   if (error) return { error: traducirError(error) };
   const d = data as RespuestaCobro | null;
-  refrescar(reservaId ?? d?.reserva_id, d?.grupo_id);
   const totales = await totalesDeCuenta(supabase, reservaId ?? d?.reserva_id);
   const retiro = await retiroDelCajon(supabase, cajon, motivo);
   return { error: null, totales, aviso: `Cobro anulado: la cuenta volvió a quedar por cobrar y el cobro salió de los totales.${d?.turno_del_cobro_cerrado ? AVISO_CERRADO : ""}${retiro}` };
@@ -79,8 +82,6 @@ export async function anularCobroGrupo(grupoId: string, motivo: string, reservaI
   const { data, error } = await supabase.rpc("anular_cobro_grupo", { p_grupo_id: grupoId, p_motivo: motivo.trim() });
   if (error) return { error: traducirError(error) };
   const cobros = ((data as { cobros?: RespuestaCobro[] } | null)?.cobros ?? []) as RespuestaCobro[];
-  for (const c of cobros) refrescar(c.reserva_id, grupoId);
-  refrescar(null, grupoId);
   const totales = await totalesDeCuenta(supabase, reservaId);
   const retiro = await retiroDelCajon(supabase, cajon, motivo);
   return { error: null, totales, aviso: `Cobro junto anulado: ${cobros.length} cuentas volvieron a quedar por cobrar.${cobros.some((c) => c.turno_del_cobro_cerrado) ? AVISO_CERRADO : ""}${retiro}` };
@@ -97,7 +98,6 @@ export async function editarMontoCobro(cobroId: string, metodo: string, montoNue
   const { data, error } = await supabase.rpc("editar_monto_cobro", { p_cobro_id: cobroId, p_metodo: metodo, p_monto_nuevo: montoNuevo, p_motivo: motivo.trim() });
   if (error) return { error: traducirError(error) };
   const d = data as RespuestaCobro | null;
-  refrescar(reservaId ?? d?.reserva_id, d?.grupo_id);
   const totales = await totalesDeCuenta(supabase, reservaId ?? d?.reserva_id);
   const retiro = await retiroDelCajon(supabase, cajon, motivo);
   return { error: null, totales, aviso: `Monto corregido. Queda en el historial con el valor anterior y tu nombre.${d?.turno_del_cobro_cerrado ? AVISO_CERRADO : ""}${retiro}` };
@@ -112,7 +112,6 @@ export async function corregirPrecioCuenta(reservaId: string, lineaTipo: string,
   const { data, error } = await supabase.rpc("corregir_precio_cuenta", { p_reserva_id: reservaId, p_linea_tipo: lineaTipo, p_linea_id: lineaId, p_precio_nuevo: precioNuevo, p_motivo: motivo.trim() });
   if (error) return { error: traducirError(error) };
   const saldo = (data as RespuestaCobro | null)?.saldo ?? 0;
-  refrescar(reservaId);
   // QA S17 (N82): el encabezado y el saldo se pintan de inmediato con la cuenta ya corregida.
   const totales = await totalesDeCuenta(supabase, reservaId);
   return {
@@ -130,7 +129,6 @@ export async function anularCorreccionPrecio(ajusteId: string, motivo: string, r
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("anular_correccion_precio", { p_ajuste_id: ajusteId, p_motivo: motivo.trim() });
   if (error) return { error: traducirError(error) };
-  refrescar(reservaId);
   const totales = await totalesDeCuenta(supabase, reservaId);
   return { error: null, totales, aviso: "Corrección anulada: la línea volvió a su precio original. Queda en el historial." };
 }
