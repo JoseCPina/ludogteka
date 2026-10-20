@@ -139,7 +139,10 @@ try {
     for (const [quien, id, esperaExcepcion] of [["admin", datos.adminB, true], ["recepción sin permiso", P.recSinId, false]]) {
       const { c, p } = await abrir(id);
       await p.goto(`http://huellitas.localhost:3001/guarderia/nueva?cliente=${cli.data.id}`, { waitUntil: "domcontentloaded" });
-      await p.getByText(`Sineval ${sufijo}`).first().click({ timeout: 30000 });
+      // QA S16 (N68): un cliente con un solo perro ya lo trae escogido; volver a tocarlo lo quitaría.
+      await p.getByText(`Sineval ${sufijo}`).first().waitFor({ timeout: 30000 });
+      const casilla = p.locator("label", { hasText: `Sineval ${sufijo}` }).locator('input[type="checkbox"]').first();
+      if (!(await casilla.count()) || !(await casilla.isChecked())) await p.getByText(`Sineval ${sufijo}`).first().click({ timeout: 30000 });
       comprobar(await esperarTexto(p, /no tiene evaluación de comportamiento/, 15000), `${quien}: el aviso sale al elegir la mascota, antes de «Crear reserva»`);
       comprobar((await p.getByRole("link", { name: /Completar la evaluación/ }).count()) > 0, `${quien}: con enlace para completar la evaluación`);
       const hayExc = (await p.getByText(/Reservar sin evaluación/).count()) > 0;
@@ -175,6 +178,7 @@ try {
     const t1 = await texto(p);
     comprobar(/Consulta general/.test(t1) && /\$450/.test(t1), "con la consulta general y su precio ($450)");
     await p.getByRole("button", { name: "Firmar la consulta" }).click();
+    await p.locator("[data-confirmar-firma]").getByRole("button", { name: "Sí, firmar" }).click({ timeout: 3000 }).catch(() => {});
     comprobar(await esperarTexto(p, /Cobro de esta consulta/), "al firmar aparece «Cobro de esta consulta»");
     comprobar((await p.getByRole("link", { name: /Abrir la cuenta en Caja/ }).count()) > 0, "con el enlace a la cuenta en Caja");
     const cargo = (await SB.from("vet_consulta_cargos").select("cargo_id, estado").eq("consulta_id", ini.cuerpo).eq("negocio_id", B)).data;

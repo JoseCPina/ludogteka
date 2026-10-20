@@ -24,14 +24,14 @@ export const ARTICULOS_VETERINARIA_EXPEDIENTE: Articulo[] = [
 2. Busca a la mascota por su nombre, el de su dueño o su teléfono y elígela.
 3. Elige el **tipo de cita** (consulta, vacuna, cirugía, seguimiento o urgencia), el **médico**, la fecha y la hora (ya vienen propuestas: la siguiente hora en punto que no ha pasado). La duración sale del tipo; si hace falta, escríbela.
    Si la hora o la duración se salen del horario del negocio de ese día de la semana, sale un aviso naranja **Fuera de horario** («Termina a las 7:20 p.m., después del cierre de las 7:00 p.m.»). Se actualiza al cambiar el tipo, la fecha, la hora o la duración, y no te bloquea: puedes agendar igual.
-4. Aprieta **Agendar cita**.
+4. Aprieta **Agendar cita**. Junto al botón sale **Cita agendada.** y te lleva a la agenda de ese día, donde se confirma «Quedó en la agenda del … a las …».
 
 Un médico **no puede tener dos citas encimadas**: si lo intentas, te dice a qué hora tiene su otra cita. Una **urgencia** sí entra aunque se empalme, y te avisa.
 
 ## En la agenda
 
 - **Confirmar**: cuando el dueño avisó que sí viene.
-- **Iniciar consulta**: abre el expediente de esa cita (lo hace quien atiende consultas).
+- **Iniciar consulta**: crea la consulta de esa cita y la abre en cuanto queda creada (lo hace quien atiende consultas). Si algo falla, el aviso sale junto al botón.
 - **Reprogramar**: cambia el día, la hora o el médico.
 - **No llegó** y **Cancelar** (la cancelación pide el motivo).
 
@@ -67,14 +67,14 @@ Las **notas internas** son solo para el equipo: el dueño nunca las ve.
 
 ## Firmarla
 
-**Firmar la consulta** la firma el médico a cargo, con su cédula. Al firmar:
+**Firmar la consulta** la firma el médico a cargo, con su cédula: la pantalla pregunta ahí mismo y se confirma con **Sí, firmar**. Al firmar:
 
 - ya **no se edita ni se borra**;
 - queda el nombre del médico, su cédula, la fecha y una huella del contenido;
 - si necesitas corregir o completar algo, el médico agrega una **adenda** firmada;
 - si se capturó en la mascota equivocada, **Anular la consulta** con su motivo (queda a la vista, tachada).
 
-Una consulta de consulta, cirugía o urgencia pide al menos un diagnóstico para firmarse. Un borrador que no quieras se **descarta** con **Descartar borrador** → **Sí, descartar**: si venía de una cita regresas a la agenda de ese día (la cita vuelve a quedar sin consulta) y si no, al expediente; las dos dicen **Borrador descartado**.
+Una consulta de consulta, cirugía o urgencia pide al menos un diagnóstico para firmarse. Un borrador que no quieras se **descarta** con **Descartar borrador** → **Sí, descartar**. La confirmación dice todo lo que se pierde: lo que escribiste y, si aplicaste vacunas o desparasitaciones desde esa consulta, que se anulan en el carnet (por ejemplo «Se pierde lo que escribiste y se anula la vacuna Rabia»). Al descartar se anulan esas aplicaciones y se quitan sus cargos; lo que se registró desde el carnet se queda. Si venía de una cita regresas a la agenda de ese día y la cita vuelve a como estaba antes de **Iniciar consulta** (Programada o Confirmada, sin consulta); si no, al expediente. Las dos dicen **Borrador descartado**. Una consulta firmada tiene el botón **Emitir receta** arriba, que abre la receta de esa consulta.
 
 Antes del botón de firmar está el recuadro **Cargos de esta consulta**: lo que pasará a Caja. Mira [Cómo se cobra una consulta veterinaria](/ayuda/cobrar-una-consulta-veterinaria).
 
@@ -104,7 +104,7 @@ En la consulta, antes de **Firmar**, está el recuadro **Cargos de esta consulta
 - Los **medicamentos** que surtiste con esa consulta (los controlados salen solos con su receta) y los que agregues del inventario. Se cobran al precio de venta del inventario, por la unidad que usas.
 - Los **procedimientos** que agregues desde tu catálogo o escribiendo el concepto y el precio.
 - Si al agregar un medicamento o un servicio no hay nada cargado, el selector dice «No hay productos cargados» (o «No hay servicios cargados») con un enlace a [Inventario](/veterinaria/inventario) o a [Servicios](/servicios).
-- Una **vacuna** no se agrega como «otro procedimiento»: se aplica con el botón **Aplicar vacuna** (producto y lote del inventario, fecha y médico), queda en el carnet de la mascota y entra al cobro sola. Si escribes el nombre de una vacuna como procedimiento, la pantalla te manda a **Aplicar vacuna**. Junto a él está **Aplicar desparasitación** (producto, tipo, fecha). Lo que aplicas desde la consulta queda **ligado a esa consulta** (aunque después cambie su fecha) y sale en su sección **Vacunas y desparasitación**, con **Ver el carnet completo**; lo que se registró ese día en el carnet sin consulta lo toma el borrador de ese día. Si anulas la vacuna en el carnet antes de firmar, su cargo se quita de la consulta: al firmar nunca se cobra una vacuna que no se aplicó en ella.
+- Una **vacuna** no se agrega como «otro procedimiento»: se aplica con el botón **Aplicar vacuna** (producto y lote del inventario, fecha y médico), queda en el carnet de la mascota y entra al cobro sola. Si escribes el nombre de una vacuna como procedimiento, la pantalla te manda a **Aplicar vacuna**. Junto a él está **Aplicar desparasitación** (producto, tipo, fecha). Lo que aplicas desde la consulta queda **ligado a esa consulta** (aunque después cambie su fecha) y sale en su sección **Vacunas y desparasitación**, con **Ver el carnet completo**; lo que se registró ese día en el carnet sin consulta lo toma el borrador de ese día. Mientras la consulta es borrador, cada vacuna o desparasitación aplicada en ella trae **Quitar** en esa sección: la anula en el carnet y quita su cargo en el mismo paso. El cargo de una vacuna no se quita suelto desde **Cargos de esta consulta** (sale «Esta vacuna sigue registrada en el carnet; para quitarla usa «Quitar» en la consulta»): una vacuna nunca se queda sin su cargo, salvo que la marques **Sin cobro** con su motivo. Si anulas la vacuna en el carnet antes de firmar, su cargo también se quita: al firmar nunca se cobra una vacuna que no se aplicó en ella.
 
 ## Si falta un precio
 

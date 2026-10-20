@@ -102,11 +102,14 @@ try {
     await hoja.getByRole("button", { name: "Cancelar la cuenta" }).click();
     await pa.waitForTimeout(500);
     comprobar(/Escoge el motivo/.test(await sec(`[data-cancelar-cuenta="${hoyCuenta}"]`)), "sin motivo, frena con el aviso junto al botón");
-    await hoja.locator("[data-cancelar-cuenta-motivo]").selectOption("otro");
+    // QA S19: el motivo se pide UNA vez: se escoge o se escribe en el mismo cuadro.
+    comprobar((await hoja.locator("select").count()) === 0 && (await hoja.locator("[data-cancelar-cuenta-texto]").count()) === 1, "un solo paso: motivos para tocar y un cuadro para escribir");
+    await hoja.locator("[data-cancelar-cuenta-texto]").fill("abc");
     await hoja.getByRole("button", { name: "Cancelar la cuenta" }).click();
     await pa.waitForTimeout(500);
-    comprobar(/Otro/.test(await sec(`[data-cancelar-cuenta="${hoyCuenta}"]`)) && /escribe el motivo/i.test(await sec(`[data-cancelar-cuenta="${hoyCuenta}"]`)), "«Otro» sin texto también frena");
-    await hoja.locator("[data-cancelar-cuenta-motivo]").selectOption("no_se_presento");
+    comprobar(/escribe el motivo/i.test(await sec(`[data-cancelar-cuenta="${hoyCuenta}"]`)), "un motivo escrito muy corto también frena");
+    await hoja.locator("[data-cancelar-cuenta-texto]").fill("");
+    await hoja.locator('[data-motivo="no_se_presento"]').click();
     await hoja.getByRole("button", { name: "Cancelar la cuenta" }).click();
     await hoja.getByText("Cuenta cancelada").waitFor({ timeout: 90000 }).catch(() => {});
     comprobar(/Cuenta cancelada/.test(await sec(`[data-cancelar-cuenta="${hoyCuenta}"]`)), "confirma «Cuenta cancelada» junto al botón");
@@ -123,7 +126,7 @@ try {
     comprobar((await hoja2.locator("[data-cancelar-cuenta-cita]").count()) === 1, "una cuenta con cita que no empieza ofrece cancelarla también");
     const w2 = await pa.evaluate(() => document.documentElement.scrollWidth);
     comprobar(w2 <= ancho + 2, `la cuenta con la hoja abierta no se desborda (${w2}px)`);
-    await hoja2.locator("[data-cancelar-cuenta-motivo]").selectOption("no_se_presento");
+    await hoja2.locator('[data-motivo="no_se_presento"]').click();
     await hoja2.getByRole("button", { name: "Cancelar la cuenta" }).click();
     await hoja2.getByText("Cuenta cancelada").waitFor({ timeout: 90000 }).catch(() => {});
     await pa.reload({ waitUntil: "networkidle" });

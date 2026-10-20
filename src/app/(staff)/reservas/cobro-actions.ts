@@ -46,14 +46,18 @@ export async function registrarCobro(
   }
 
   const supabase = await createSupabaseServerClient();
+  // QA S19 (rendimiento): la sesión, el negocio y el saldo de antes se piden a la vez, no uno tras otro.
+  // El saldo antes de cobrar: la base cobra solo hasta el saldo y lo que sobra en efectivo es cambio.
+  const [sesion, negocioId, { data: totales }] = await Promise.all([
+    control?.confirmado ? Promise.resolve(null) : obtenerSesionConRol(),
+    control?.confirmado ? Promise.resolve(null) : negocioIdActual(),
+    supabase.rpc("cuenta_totales_reserva", { p_reserva_id: reservaId }),
+  ]);
   // N28: la revisión corre SIEMPRE en el servidor (también si la pantalla no mandó lo que veía).
   if (!control?.confirmado) {
-    const sesion = await obtenerSesionConRol();
-    const aviso = await avisoCobroReciente(supabase, [reservaId], control, { esAdmin: sesion?.rol === "admin", negocioId: await negocioIdActual(), usuarioId: sesion?.user.id ?? null });
+    const aviso = await avisoCobroReciente(supabase, [reservaId], control, { esAdmin: sesion?.rol === "admin", negocioId: negocioId ?? "", usuarioId: sesion?.user.id ?? null });
     if (aviso) return { error: null, confirmar: aviso };
   }
-  // El saldo antes de cobrar: la base cobra solo hasta el saldo y lo que sobra en efectivo es cambio.
-  const { data: totales } = await supabase.rpc("cuenta_totales_reserva", { p_reserva_id: reservaId });
   const saldoAntes = Number((Array.isArray(totales) ? totales[0] : totales)?.saldo ?? 0);
   const { data, error } = await supabase.rpc("registrar_cobro", {
     p_reserva_id: reservaId,
@@ -63,8 +67,8 @@ export async function registrarCobro(
 
   if (error) return { error: traducirError(error) };
 
-  revalidatePath(`/reservas/${reservaId}`);
-  revalidatePath(`/reservas/${reservaId}/cobrar`);
+  // QA S19: sin revalidatePath. Revalidar dentro de la acción repinta la página entera ANTES de responder; la pantalla
+  // pinta los totales que devolvemos y se refresca sola después.
   const recibido = metodos.reduce((s, m) => s + m.monto, 0);
   const cambio = Math.round((recibido - saldoAntes) * 100) / 100;
   const totalesNuevos = await totalesDeCuenta(supabase, reservaId);

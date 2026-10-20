@@ -9,9 +9,9 @@ import { AvisosWhatsApp } from "@/components/avisos-whatsapp";
 import { ESTADOS_CITA, type CitaVet, type MedicoVet } from "@/lib/veterinaria/expediente";
 import { AccionesCita } from "./acciones-cita";
 
-export default async function AgendaVeterinaria({ searchParams }: { searchParams: Promise<{ vista?: string; fecha?: string; medico?: string; aviso?: string }> }) {
+export default async function AgendaVeterinaria({ searchParams }: { searchParams: Promise<{ vista?: string; fecha?: string; medico?: string; aviso?: string; hora?: string }> }) {
   const zona = await zonaActual();
-  const { vista: vistaParam, fecha: fechaParam, medico, aviso } = await searchParams;
+  const { vista: vistaParam, fecha: fechaParam, medico, aviso, hora: horaAgendada } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
   const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
@@ -78,6 +78,11 @@ export default async function AgendaVeterinaria({ searchParams }: { searchParams
 
       {aviso === "descartado" && <Alert variante="exito" titulo="Borrador descartado" data-aviso-descartado>La cita volvió a quedar sin consulta: puedes iniciarla de nuevo.</Alert>}
       {aviso === "urgencia" && <Alert variante="advertencia" titulo="Urgencia agendada">Se empalma con otra cita de ese médico: avísale.</Alert>}
+      {aviso === "agendada" && (
+        <Alert variante="exito" titulo="Cita agendada" data-aviso-agendada>
+          {`Quedó en la agenda${fechaParam ? ` del ${formatearFechaCalendario(fechaParam)}` : ""}${horaAgendada && /^\d{2}:\d{2}$/.test(horaAgendada) ? ` a las ${horaAgendada}` : ""}.`}
+        </Alert>
+      )}
       {error ? (
         <Alert variante="error" titulo="No pudimos cargar la agenda">Recarga la página. Si el problema sigue, avísale al equipo técnico.</Alert>
       ) : medicos.length === 0 ? (

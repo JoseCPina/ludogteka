@@ -18,18 +18,23 @@ import { PedirNombre } from "@/components/personal/pedir-nombre";
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const sesion = await obtenerSesionConRol();
   if (!sesion) redirect("/login");
-  const negocio = await cargarNegocioLanding();
   const conAyuda = sesion.rol === "admin" || sesion.rol === "recepcion";
+  // QA S19 (rendimiento): el negocio, «Tus negocios» y los videos se piden a la vez (antes, uno tras otro en cada
+  // pantalla y en cada acción que la repinta).
   // Los videos de la serie que esta persona ve (publicados, de sus módulos).
   // Nunca rompe la pantalla: sin videos, simplemente no hay «¿Cómo se hace?».
   // «Tus negocios»: donde trabaja esta persona, con las sucursales del mismo dueño juntas.
-  const { data: suyos } = await (await createSupabaseServerClient()).rpc("mis_negocios");
+  const supabase = await createSupabaseServerClient();
+  const [negocio, { data: suyos }, videos] = await Promise.all([
+    cargarNegocioLanding(),
+    supabase.rpc("mis_negocios"),
+    conAyuda
+      ? cargarTutorialesVisibles(supabase, { rol: sesion.rol, permisos: sesion.permisos, modulos: sesion.modulos }).catch(() => [])
+      : Promise.resolve([]),
+  ]);
   const negocios = ((suyos ?? []) as { id: string; nombre: string; rol: string; grupo_id: string; grupo_nombre: string; es_principal: boolean }[])
     .filter((n) => ["admin", "recepcion", "estetica"].includes(n.rol))
     .map((n) => ({ id: n.id, nombre: n.nombre, grupoId: n.grupo_id, grupoNombre: n.grupo_nombre, esPrincipal: n.es_principal, actual: n.id === negocio.id }));
-  const videos = conAyuda
-    ? await cargarTutorialesVisibles(await createSupabaseServerClient(), { rol: sesion.rol, permisos: sesion.permisos, modulos: sesion.modulos }).catch(() => [])
-    : [];
 
   return (
     <StaffShell

@@ -12,6 +12,7 @@ import { CapturarResultado, SubirAdjunto } from "../../expediente/captura";
 import { EditorConsulta } from "./editor-consulta";
 import { UsoDictado } from "./uso-dictado";
 import { CargosConsulta } from "./cargos-consulta";
+import { QuitarAplicacion } from "./quitar-aplicacion";
 import type { CargosConsulta as DatosCargos } from "@/lib/veterinaria/cargos-consulta";
 import { vetPuede } from "@/lib/veterinaria/permisos";
 import { cargarMedicos, cargarProductosConLotes, miMedico as cargarMiMedico } from "@/lib/veterinaria/lotes";
@@ -40,10 +41,20 @@ function esAdminSesion(sesion: Awaited<ReturnType<typeof obtenerSesionConRol>>):
 export default async function ConsultaPagina({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
-  const sesion = await obtenerSesionConRol();
-  const zona = await zonaActual();
+  // QA S19 (rendimiento): todo lo que no depende de la consulta se pide A LA VEZ que la consulta (antes iban 5 tandas
+  // una tras otra). Los cargos solo los ven quien atiende o un médico (llevan precios); sin permiso, no salen.
+  const [sesion, zona, { data, error }, { data: cargosData }, { data: miMedico }, { data: puedeAtender }, { data: puedeEstimar }, { data: puedeRecetar }, puedeRegistrarVacunas] = await Promise.all([
+    obtenerSesionConRol(),
+    zonaActual(),
+    supabase.rpc("vet_consulta_detalle", { p_id: id }),
+    supabase.rpc("vet_consulta_cargos", { p_consulta: id }),
+    supabase.rpc("vet_mi_medico"),
+    supabase.rpc("vet_puede", { p_permiso: "atender_consultas" }),
+    supabase.rpc("vet_puede", { p_permiso: "crear_estimados" }),
+    supabase.rpc("vet_puede", { p_permiso: "emitir_recetas" }),
+    vetPuede(supabase, "registrar_vacunas"),
+  ]);
   const hoy = hoyNegocio(zona);
-  const { data, error } = await supabase.rpc("vet_consulta_detalle", { p_id: id });
   if (error || !data) {
     return (
       <div className="flex max-w-2xl flex-col gap-4">
@@ -56,26 +67,29 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
   }
   const d = data as DetalleConsulta;
   const c = d.consulta;
-  // Los cargos solo los ven quien atiende o un médico (llevan precios); si no hay permiso, simplemente no salen.
-  const { data: cargosData } = await supabase.rpc("vet_consulta_cargos", { p_consulta: id });
   const cargos = (cargosData ?? null) as DatosCargos | null;
-  const [{ data: miMedico }, { data: puedeAtender }, { data: puedeEstimar }] = await Promise.all([
-    supabase.rpc("vet_mi_medico"),
-    supabase.rpc("vet_puede", { p_permiso: "atender_consultas" }),
-    supabase.rpc("vet_puede", { p_permiso: "crear_estimados" }),
-  ]);
   const soyElMedico = miMedico === c.medico_id;
   // «Aplicar vacuna» dentro de la consulta: el mismo formulario del carnet (producto y lote del inventario, fecha, médico).
+  const conFormularios = c.estado === "borrador" && puedeAtender === true && puedeRegistrarVacunas;
+  // Segunda (y última) tanda: el carnet de la mascota y, en un borrador, lo que piden los formularios del carnet.
+  const [{ data: carnetCrudo }, { data: ligadasV }, { data: ligadasD }, formularios] = await Promise.all([
+    supabase.rpc("carnet_de_mascota", { p_perro_id: c.perro_id }),
+    supabase.from("carnet_vacunas").select("id, consulta_id, registrada_en_consulta").eq("perro_id", c.perro_id).not("consulta_id", "is", null), // limite-filas-ok: las de una mascota
+    supabase.from("carnet_desparasitaciones").select("id, consulta_id, registrada_en_consulta").eq("perro_id", c.perro_id).not("consulta_id", "is", null), // limite-filas-ok: las de una mascota
+    conFormularios
+      ? Promise.all([
+          cargarProductosConLotes(supabase, "vacuna"),
+          cargarMedicos(supabase),
+          cargarMiMedico(supabase),
+          supabase.from("tipos_requisito_sanitario").select("id, etiqueta").is("deleted_at", null).eq("obligatoria", true).order("orden"),
+          cargarProductosConLotes(supabase, "desparasitante"),
+        ])
+      : Promise.resolve(null),
+  ]);
   let aplicarVacuna: React.ReactNode = null;
   let aplicarDesparasitacion: React.ReactNode = null;
-  if (c.estado === "borrador" && puedeAtender === true && (await vetPuede(supabase, "registrar_vacunas"))) {
-    const [productos, medicos, medicoPropio, { data: requisitosCrudo }, desparasitantes] = await Promise.all([
-      cargarProductosConLotes(supabase, "vacuna"),
-      cargarMedicos(supabase),
-      cargarMiMedico(supabase),
-      supabase.from("tipos_requisito_sanitario").select("id, etiqueta").is("deleted_at", null).eq("obligatoria", true).order("orden"),
-      cargarProductosConLotes(supabase, "desparasitante"),
-    ]);
+  if (formularios) {
+    const [productos, medicos, medicoPropio, { data: requisitosCrudo }, desparasitantes] = formularios;
     // QA S17 (N51): también se desparasita desde la consulta, con el mismo formulario del carnet.
     aplicarDesparasitacion = (
       <FormularioDesparasitacion perroId={c.perro_id} consultaId={id} hoy={hoy} productos={desparasitantes} medicos={medicos} medicoPropio={medicoPropio ?? c.medico_id} />
@@ -95,17 +109,19 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
   // QA S18 (N93): lo aplicado EN esta consulta (ligado por consulta_id, no por fecha) se ve en la consulta. Lo del
   // carnet de ese día sin consulta lo adopta el borrador al sincronizar sus cargos; mientras no, se muestra igual.
   const fechaConsulta = fechaLocalDeInstante(c.atendida_at, zona);
-  const [{ data: carnetCrudo }, { data: ligadasV }, { data: ligadasD }] = await Promise.all([
-    supabase.rpc("carnet_de_mascota", { p_perro_id: c.perro_id }),
-    supabase.from("carnet_vacunas").select("id, consulta_id").eq("perro_id", c.perro_id).not("consulta_id", "is", null), // limite-filas-ok: las de una mascota
-    supabase.from("carnet_desparasitaciones").select("id, consulta_id").eq("perro_id", c.perro_id).not("consulta_id", "is", null), // limite-filas-ok: las de una mascota
-  ]);
   const carnet = (carnetCrudo ?? { vacunas: [], desparasitaciones: [] }) as CarnetCompleto;
   const consultaDe = new Map<string, string>([...(ligadasV ?? []), ...(ligadasD ?? [])].map((r) => [r.id as string, r.consulta_id as string]));
   const esDeEstaConsulta = (r: { id: string; fecha_aplicacion: string }) =>
     consultaDe.has(r.id) ? consultaDe.get(r.id) === id : r.fecha_aplicacion === fechaConsulta;
   const vacunasDelDia = (carnet.vacunas ?? []).filter((v) => v.estado !== "anulada" && esDeEstaConsulta(v));
   const desparasitacionesDelDia = (carnet.desparasitaciones ?? []).filter((v) => v.estado !== "anulada" && esDeEstaConsulta(v));
+  // QA S19: lo que nació en ESTE borrador se quita desde aquí y se anula al descartarlo; lo registrado desde el carnet, no.
+  const nacidas = new Set([...(ligadasV ?? []), ...(ligadasD ?? [])].filter((r) => r.consulta_id === id && r.registrada_en_consulta === true).map((r) => r.id as string));
+  const puedeQuitar = c.estado === "borrador" && puedeAtender === true;
+  const seAnulanAlDescartar = [
+    ...vacunasDelDia.filter((v) => nacidas.has(v.id)).map((v) => `la vacuna ${v.biologico}`),
+    ...desparasitacionesDelDia.filter((v) => nacidas.has(v.id)).map((v) => `la desparasitación ${v.producto}`),
+  ];
   const puedeCatalogo = esAdminSesion(sesion);
   const esAdmin = sesion?.rol === "admin";
   const anulada = c.estado === "anulada";
@@ -129,6 +145,11 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
           {etiquetaEspecie(d.mascota.especie)}{d.mascota.raza ? ` · ${d.mascota.raza}` : ""} · de {d.dueno.nombre}{d.dueno.telefono ? ` · ${d.dueno.telefono}` : ""} · {formatearFecha(c.atendida_at, zona)}
         </p>
         <p className="text-sm text-n-600">A cargo de {d.medico.nombre} · cédula {d.medico.cedula}{d.medico.cpa ? ` · CPA ${d.medico.cpa}` : ""}</p>
+        {c.estado === "firmada" && puedeRecetar === true && miMedico != null && (
+          <Link href={`/veterinaria/recetas/nueva?perro=${c.perro_id}&consulta=${id}`} className="mt-3 inline-flex min-h-12 items-center rounded-md bg-morado px-5 font-semibold text-white hover:bg-morado-oscuro" data-emitir-receta>
+            Emitir receta
+          </Link>
+        )}
       </div>
 
       {anulada && (
@@ -150,12 +171,14 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
                 <b>Vacuna:</b> {v.biologico}
                 {v.lote ? ` · lote ${v.lote}` : ""}
                 {v.proxima_dosis ? ` · próxima ${formatearFechaCalendario(v.proxima_dosis)}` : ""}
+                {puedeQuitar && nacidas.has(v.id) && <> <QuitarAplicacion consultaId={id} perroId={c.perro_id} tipo="vacuna" id={v.id} nombre={v.biologico} /></>}
               </li>
             ))}
             {desparasitacionesDelDia.map((d2) => (
               <li key={d2.id} data-desparasitacion-consulta>
                 <b>Desparasitación {d2.tipo === "ambas" ? "interna y externa" : d2.tipo}:</b> {d2.producto}
                 {d2.proxima_dosis ? ` · próxima ${formatearFechaCalendario(d2.proxima_dosis)}` : ""}
+                {puedeQuitar && nacidas.has(d2.id) && <> <QuitarAplicacion consultaId={id} perroId={c.perro_id} tipo="desparasitacion" id={d2.id} nombre={d2.producto} /></>}
               </li>
             ))}
           </ul>
@@ -164,7 +187,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
       </section>
 
       {c.estado === "borrador" && puedeAtender === true ? (
-        <EditorConsulta consulta={c} especie={d.mascota.especie} soyElMedico={soyElMedico} nombreMedico={d.medico.nombre} cargosIniciales={cargos} puedeCatalogo={puedeCatalogo} aplicarVacuna={aplicarVacuna} aplicarDesparasitacion={aplicarDesparasitacion} />
+        <EditorConsulta consulta={c} especie={d.mascota.especie} soyElMedico={soyElMedico} nombreMedico={d.medico.nombre} cargosIniciales={cargos} puedeCatalogo={puedeCatalogo} aplicarVacuna={aplicarVacuna} aplicarDesparasitacion={aplicarDesparasitacion} seAnulanAlDescartar={seAnulanAlDescartar} />
       ) : (
         <article className={`flex flex-col gap-5 rounded-lg border border-n-200 bg-white p-5 ${anulada ? "opacity-80" : ""}`}>
           {c.estado === "borrador" && <Alert variante="info" titulo="Borrador">Solo quien atiende consultas lo edita.</Alert>}

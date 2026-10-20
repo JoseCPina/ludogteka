@@ -108,7 +108,9 @@ try {
   comprobar(aj.ok, `con el permiso ajusta el precio ($400) (${aj.mensaje})`);
   comprobar(!(await rpc(P.recSin, "vet_consulta_cargo_ajustar", { p_id: base1.id, p_cantidad: 1, p_precio: -5, p_motivo: "x" })).ok, "un precio negativo se rechaza");
   await quitar(P.admin, P.recSinId, "ajustar_cargos_consulta");
-  await rpc(P.recCon, "vet_consulta_cargo_quitar", { p_id: v1.id, p_motivo: "La aplicó otra clínica" });
+  // QA S19: el cargo de una vacuna no se quita suelto (la vacuna seguiría en el carnet); solo como «Sin cobro».
+  comprobar(!(await rpc(P.recCon, "vet_consulta_cargo_quitar", { p_id: v1.id, p_motivo: "La aplicó otra clínica" })).ok, "el cargo de una vacuna no se quita suelto");
+  await rpc(P.recCon, "vet_consulta_cargo_quitar", { p_id: v1.id, p_motivo: "Sin cobro: la aplicó otra clínica" });
   d = await lineas(P.recSin, c1);
   comprobar(d.lineas.find((l) => l.id === v1.id).estado === "quitado", "el médico quita la vacuna (lo permite ser médico designado)");
   const restaura = await rpc(P.recCon, "vet_consulta_cargo_restaurar", { p_id: v1.id });
@@ -241,6 +243,66 @@ try {
   comprobar(adoptada?.consulta_id === cHoy && d.lineas.filter((l) => l.tipo === "vacuna").length === 1, "la vacuna del carnet de hoy la adopta el borrador de hoy (con su cargo)");
   comprobar(!(await rpc(P.recSin, "vet_consulta_registrar_vacuna", { p_consulta: c1, p_biologico: "x", p_tipo_requisito_id: null, p_insumo_id: null, p_lote_id: null, p_lote_texto: null, p_laboratorio: null, p_fecha: hoyB, p_proxima: null, p_medico_id: medico, p_dosis: null, p_notas: null, p_descontar: false })).ok, "una consulta firmada no recibe vacunas por esta puerta");
   comprobar(!(await rpc(null, "vet_consulta_registrar_vacuna", { p_consulta: cHoy, p_biologico: "x", p_tipo_requisito_id: null, p_insumo_id: null, p_lote_id: null, p_lote_texto: null, p_laboratorio: null, p_fecha: hoyB, p_proxima: null, p_medico_id: medico, p_dosis: null, p_notas: null, p_descontar: false })).ok, "la llave anónima no registra");
+
+  seccion("4d. QA S19: quitar desde la consulta y descartar el borrador");
+  const perroQ = await nuevoPerro("Quitar");
+  const cuandoQ = new Date(Date.now() + (40 + Math.floor(Math.random() * 200)) * 86400000);
+  cuandoQ.setUTCHours(17, 0, 0, 0);
+  const citaQ = await rpc(P.admin, "vet_agendar_cita", { p_perro: perroQ, p_tipo: "consulta", p_medico: medico, p_inicia: cuandoQ.toISOString(), p_duracion_min: 30, p_motivo: `S19 ${MARCA}` });
+  comprobar(citaQ.ok, `se agenda una cita (${citaQ.mensaje})`);
+  const citaId = citaQ.cuerpo?.id;
+  const conf = await rpc(P.admin, "vet_cita_estado", { p_id: citaId, p_estado: "confirmada", p_motivo: null });
+  comprobar(conf.ok, `y se confirma (${conf.mensaje})`);
+  const cQ = (await rpc(P.recSin, "vet_consulta_iniciar", { p_perro: perroQ, p_cita: citaId, p_tipo: "consulta", p_medico: medico })).cuerpo;
+  comprobar(!!cQ, "se inicia la consulta desde la cita");
+  const regV = (nombre, consulta) => rpc(P.recSin, "vet_consulta_registrar_vacuna", { p_consulta: consulta, p_biologico: `${nombre} ${MARCA}`, p_tipo_requisito_id: null, p_insumo_id: null, p_lote_id: null, p_lote_texto: "PRUEBA-L", p_laboratorio: null, p_fecha: hoyB, p_proxima: null, p_medico_id: medico, p_dosis: null, p_notas: null, p_descontar: false });
+  const vQ1 = await regV("Nacida 1", cQ);
+  const vQ2 = await regV("Nacida 2", cQ);
+  const dQ = await rpc(P.recSin, "vet_consulta_registrar_desparasitacion", { p_consulta: cQ, p_tipo: "interna", p_producto: `DespQ ${MARCA}`, p_insumo_id: null, p_lote_id: null, p_lote_texto: null, p_dosis: null, p_fecha: hoyB, p_proxima: null, p_medico_id: medico, p_notas: null, p_descontar: false });
+  comprobar(vQ1.ok && vQ2.ok && dQ.ok, "se aplican dos vacunas y una desparasitación desde la consulta");
+  const nacida = (await SB.from("carnet_vacunas").select("consulta_id, registrada_en_consulta").eq("id", vQ1.cuerpo?.id).single()).data;
+  comprobar(nacida?.consulta_id === cQ && nacida?.registrada_en_consulta === true, "lo aplicado en la consulta queda marcado como nacido en ella");
+  // Del carnet el mismo día de la consulta: el borrador la adopta, pero NO nació en él.
+  // Como en R23: el borrador lleva la fecha de su cita (futura); para la prueba lo traemos a hoy.
+  await SB.from("vet_consultas").update({ atendida_at: new Date().toISOString() }).eq("id", cQ);
+  const fechaQ = hoyB;
+  const vCarnet = await rpc(P.admin, "registrar_vacuna", { p_perro_id: perroQ, p_biologico: `Del carnet Q ${MARCA}`, p_tipo_requisito_id: null, p_insumo_id: null, p_lote_id: null, p_lote_texto: null, p_laboratorio: null, p_fecha: fechaQ, p_proxima: null, p_medico_id: medico, p_dosis: null, p_notas: null, p_descontar: false });
+  d = await lineas(P.recSin, cQ);
+  const adoptadaQ = (await SB.from("carnet_vacunas").select("consulta_id, registrada_en_consulta").eq("id", vCarnet.cuerpo?.id).single()).data;
+  comprobar(adoptadaQ?.registrada_en_consulta === false, "lo registrado desde el carnet no cuenta como nacido en la consulta");
+  const lineaV1 = d.lineas.find((l) => l.tipo === "vacuna" && String(l.concepto).includes("Nacida 1"));
+  comprobar(!!lineaV1, "la vacuna tiene su cargo en la consulta");
+  const quitarCargo = await rpc(P.admin, "vet_consulta_cargo_quitar", { p_id: lineaV1?.id, p_motivo: "ya no" });
+  comprobar(!quitarCargo.ok && /sigue registrada en el carnet/.test(quitarCargo.mensaje), `quitar el cargo de una vacuna avisa que se quita desde la consulta (${quitarCargo.mensaje})`);
+  const quitarAjena = await rpc(P.recSin, "vet_consulta_quitar_aplicacion", { p_consulta: cQ, p_tipo: "vacuna", p_id: vCarnet.cuerpo?.id });
+  comprobar(!quitarAjena.ok, "lo registrado desde el carnet no se quita desde la consulta");
+  const quitarV1 = await rpc(P.recSin, "vet_consulta_quitar_aplicacion", { p_consulta: cQ, p_tipo: "vacuna", p_id: vQ1.cuerpo?.id });
+  comprobar(quitarV1.ok, `«Quitar» la vacuna nacida en la consulta (${quitarV1.mensaje})`);
+  const v1Fila = (await SB.from("carnet_vacunas").select("anulada_at").eq("id", vQ1.cuerpo?.id).single()).data;
+  d = await lineas(P.recSin, cQ);
+  comprobar(!!v1Fila?.anulada_at && !d.lineas.some((l) => String(l.concepto).includes("Nacida 1")), "queda anulada en el carnet y su cargo desaparece en el mismo paso");
+  comprobar(!(await rpc(null, "vet_consulta_quitar_aplicacion", { p_consulta: cQ, p_tipo: "vacuna", p_id: vQ2.cuerpo?.id })).ok, "la llave anónima no quita");
+  const desc = await rpc(P.recSin, "vet_consulta_descartar", { p_id: cQ });
+  comprobar(desc.ok && desc.cuerpo?.vacunas_anuladas === 1 && desc.cuerpo?.desparasitaciones_anuladas === 1, `descartar anula lo nacido en el borrador (${JSON.stringify(desc.cuerpo ?? desc.mensaje)})`);
+  const v2Fila = (await SB.from("carnet_vacunas").select("anulada_at").eq("id", vQ2.cuerpo?.id).single()).data;
+  const carnetFila = (await SB.from("carnet_vacunas").select("anulada_at").eq("id", vCarnet.cuerpo?.id).single()).data;
+  const dFila = (await SB.from("carnet_desparasitaciones").select("anulada_at").eq("perro_id", perroQ).single()).data;
+  comprobar(!!v2Fila?.anulada_at && !!dFila?.anulada_at && !carnetFila?.anulada_at, "la vacuna y desparasitación nacidas se anulan; la del carnet se queda vigente");
+  const cargosVivos = (await SB.from("vet_consulta_cargos").select("id").eq("consulta_id", cQ).is("deleted_at", null)).data ?? [];
+  comprobar(cargosVivos.length === 0, "sus cargos se quitan");
+  const citaFila = (await SB.from("vet_citas").select("estado, consulta_id").eq("id", citaId).single()).data;
+  comprobar(citaFila?.estado === "confirmada" && citaFila?.consulta_id == null, `la cita vuelve a como estaba antes de iniciar (confirmada, sin consulta; quedó ${citaFila?.estado})`);
+  const consultaFila = (await SB.from("vet_consultas").select("deleted_at").eq("id", cQ).single()).data;
+  comprobar(!!consultaFila?.deleted_at, "y el borrador se borra");
+  // Una cita programada regresa a programada.
+  const perroQ2 = await nuevoPerro("Quitar2");
+  cuandoQ.setUTCHours(19, 0, 0, 0);
+  const citaQ2 = (await rpc(P.admin, "vet_agendar_cita", { p_perro: perroQ2, p_tipo: "consulta", p_medico: medico, p_inicia: cuandoQ.toISOString(), p_duracion_min: 30, p_motivo: null })).cuerpo?.id;
+  const cQ2 = (await rpc(P.recSin, "vet_consulta_iniciar", { p_perro: perroQ2, p_cita: citaQ2, p_tipo: "consulta", p_medico: medico })).cuerpo;
+  await rpc(P.recSin, "vet_consulta_descartar", { p_id: cQ2 });
+  const citaFila2 = (await SB.from("vet_citas").select("estado").eq("id", citaQ2).single()).data;
+  comprobar(citaFila2?.estado === "programada", `una cita programada vuelve a programada, nunca confirmada (quedó ${citaFila2?.estado})`);
+  for (const cc of [citaId, citaQ2]) await rpc(P.admin, "vet_cita_estado", { p_id: cc, p_estado: "cancelada", p_motivo: "Fin de la prueba" });
   await quitar(P.admin, P.recSinId, "registrar_vacunas");
 
   seccion("5. Mascota hospitalizada");

@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
@@ -63,9 +62,11 @@ export function CancelarCuenta({
 
   async function confirmar() {
     setError(null);
-    if (!motivo) return setError("Escoge el motivo.");
-    if (motivo === "otro" && texto.trim().length < 5) return setError("Con «Otro», escribe el motivo.");
-    const r = await envio.ejecutar(() => cancelarCuenta(reservaId, motivo, texto, pendientes > 0 && cancelarCita));
+    // QA S19: un solo paso. Se escoge un motivo o se escribe; lo escrito sin escoger es «Otro».
+    const clave = motivo || (texto.trim() ? "otro" : "");
+    if (!clave) return setError("Escoge el motivo o escríbelo.");
+    if (clave === "otro" && texto.trim().length < 5) return setError("Escribe el motivo (al menos 5 letras).");
+    const r = await envio.ejecutar(() => cancelarCuenta(reservaId, clave, texto, pendientes > 0 && cancelarCita));
     if (r.error) return setError(r.error);
     setAviso(r.aviso ?? "Cuenta cancelada.");
     router.refresh();
@@ -101,24 +102,36 @@ export function CancelarCuenta({
       ) : (
         info && (
           <>
-            <Select label="Motivo (obligatorio)" value={motivo} onChange={(e) => setMotivo(e.target.value)} data-cancelar-cuenta-motivo>
-              <option value="">Escoge uno…</option>
-              {MOTIVOS_CANCELAR_CUENTA.map((m) => (
-                <option key={m.clave} value={m.clave} disabled={m.clave === "cortesia" && cortesiaBloqueada}>
-                  {m.etiqueta}
-                  {m.clave === "cortesia" && cortesiaBloqueada ? " (solo admin: el servicio ya se realizó)" : ""}
-                </option>
-              ))}
-            </Select>
-            {(motivo === "otro" || motivo === "cortesia" || motivo === "error_captura") && (
+            <fieldset className="flex flex-col gap-2" data-cancelar-cuenta-motivo>
+              <legend className="text-sm font-semibold text-n-800">Motivo (obligatorio)</legend>
+              <div className="flex flex-wrap gap-2">
+                {MOTIVOS_CANCELAR_CUENTA.filter((m) => m.clave !== "otro").map((m) => {
+                  const bloqueado = m.clave === "cortesia" && cortesiaBloqueada;
+                  return (
+                    <button
+                      key={m.clave}
+                      type="button"
+                      disabled={bloqueado}
+                      aria-pressed={motivo === m.clave}
+                      data-motivo={m.clave}
+                      title={bloqueado ? "Solo admin: el servicio ya se realizó" : undefined}
+                      onClick={() => setMotivo(motivo === m.clave ? "" : m.clave)}
+                      className={`min-h-10 rounded-full border-[1.5px] px-3 text-sm font-semibold ${motivo === m.clave ? "border-morado bg-morado text-white" : "border-n-300 bg-white text-n-800"} disabled:cursor-not-allowed disabled:opacity-50`}
+                    >
+                      {m.etiqueta}
+                    </button>
+                  );
+                })}
+              </div>
               <Textarea
-                label={motivo === "otro" ? "Cuéntanos el motivo (obligatorio)" : "Nota (opcional)"}
+                label={motivo ? "Nota (opcional)" : "O escribe el motivo"}
                 rows={2}
                 maxLength={300}
                 value={texto}
                 onChange={(e) => setTexto(e.target.value)}
+                data-cancelar-cuenta-texto
               />
-            )}
+            </fieldset>
             {pendientes > 0 && (
               <label className="flex items-start gap-3 rounded-md border border-n-200 bg-white p-3 text-sm text-n-800">
                 <input

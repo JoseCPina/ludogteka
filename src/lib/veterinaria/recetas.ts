@@ -246,15 +246,27 @@ export function formatoFrecuencia(texto: string): string {
 }
 
 /** Las indicaciones que salen de los datos del renglón: «Meloxicam 1 mg, 1 tableta cada 24 horas por 3 días». */
-export function indicacionesGeneradas(d: { base: string; dosis: string; frecuencia: string; duracion_dias: string }): string {
+/** QA S19 (N97): las indicaciones se arman SOLO con lo capturado (dosis, frecuencia y duración): «1 tableta cada 24 horas por 5 días». */
+export function indicacionesGeneradas(d: { dosis: string; frecuencia: string; duracion_dias: string }): string {
   const frec = d.frecuencia.trim();
   const dias = Math.trunc(Number(String(d.duracion_dias).replace(",", ".")));
-  const cuerpo = [
+  return [
     d.dosis.trim(),
     frec ? frec.charAt(0).toLowerCase() + frec.slice(1) : "",
     Number.isFinite(dias) && dias > 0 ? `por ${dias} ${dias === 1 ? "día" : "días"}` : "",
   ].filter(Boolean).join(" ");
-  return [d.base.trim(), cuerpo].filter(Boolean).join(", ");
+}
+
+/**
+ * QA S19 (N97): quita del Tratamiento el texto guía de la plantilla («Medicamento · dosis · vía · frecuencia ·
+ * duración:»). Si el médico escribió después de los dos puntos, se queda lo suyo; un renglón que solo es la guía
+ * o un título vacío («Algo:») no es un medicamento.
+ */
+export function sinGuiaDePlantilla(renglon: string): string {
+  const r = renglon.trim();
+  const guia = r.match(/^[^:]{0,100}·[^:]*:\s*/);
+  const sinGuia = guia ? r.slice(guia[0].length).trim() : r;
+  return /^[^:]{0,60}:$/.test(sinGuia) ? "" : sinGuia;
 }
 
 export type MedicamentoDeTratamiento = {
@@ -278,6 +290,7 @@ export function medicamentosDeTratamiento(texto: string | null | undefined): Med
   if (!texto) return [];
   return texto
     .split(/\r?\n|;/)
+    .map(sinGuiaDePlantilla)
     .map((r) => r.replace(/^[\s\-•*\d.)]+(?=[A-Za-zÁÉÍÓÚáéíóúñÑ])/, "").trim())
     .filter((r) => r.length >= 3)
     .slice(0, 8)
@@ -300,7 +313,7 @@ export function medicamentosDeTratamiento(texto: string | null | undefined): Med
         frecuencia: frase ? formatoFrecuencia(frase[1]) : "",
         frecuencia_horas: horas ? String(horas) : "",
         duracion_dias: dur ? dur[1] : "",
-        indicaciones: indicacionesGeneradas({ base: antes || producto, dosis, frecuencia: frase ? formatoFrecuencia(frase[1]) : "", duracion_dias: dur ? dur[1] : "" }),
+        indicaciones: indicacionesGeneradas({ dosis, frecuencia: frase ? formatoFrecuencia(frase[1]) : "", duracion_dias: dur ? dur[1] : "" }),
       };
     });
 }
