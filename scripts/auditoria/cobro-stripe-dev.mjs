@@ -705,7 +705,8 @@ const ESCENARIOS = {
       await conf.getByLabel("Motivo (obligatorio)").fill("Cerramos esa sucursal (prueba)");
       await conf.getByRole("button", { name: "Dar de baja la sucursal" }).click();
       await seccion.getByText(/quedó dada de baja/).waitFor({ timeout: 90_000 });
-      ok(await seccion.locator(`[data-sucursal-baja="${est.sucursal.id}"]`).isVisible(), "la lista la enseña «Dada de baja · solo lectura hasta …»");
+      const marca = await seccion.locator(`[data-sucursal-baja="${est.sucursal.id}"]`).waitFor({ timeout: 30_000 }).then(() => true, () => false);
+      ok(marca, "la lista la enseña «Dada de baja · solo lectura hasta …»");
       // «Tus negocios»: ya no sale.
       await page.goto(`${base()}/admin`);
       ok((await page.locator(`[data-ir-negocio="${est.sucursal.id}"]`).count()) === 0, "sale de «Tus negocios»");
