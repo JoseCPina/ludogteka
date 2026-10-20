@@ -10,6 +10,7 @@
 // quedar como lento que inventar un precio.
 
 import { conIva } from "@/lib/cobro/iva";
+import { ACLARACION_DEMO, COBRO_A_NOMBRE_DE, respuestasFijas } from "@/lib/peludesk/respuestas-fijas";
 
 /** Modelo fijo (29 de septiembre de 2026, pedido del dueño: Haiku vendía como catálogo). */
 export const MODELO_IA = "claude-sonnet-5";
@@ -287,7 +288,10 @@ const REGLAS = [
   "- Solo puedes afirmar lo que está en la BASE, en PLANES Y PRECIOS o en DATOS DE SU CUENTA. Si no está, no lo sabes.",
   "- Nunca inventes funciones, precios, descuentos, fechas, plazos ni integraciones. No prometas nada a futuro ni hables de lo que «va a salir».",
   "- Si la BASE no responde la pregunta, o no estás seguro de que la app lo haga así, llama a la herramienta escalar. No adivines.",
-  "- Escala SIEMPRE si piden descuento, factura, reembolso, algo legal, un cobro que no reconocen, si reportan un error de la app, si amenazan o si se nota que están molestos.",
+  "- Las preguntas de RESPUESTAS FIJAS se contestan con esa respuesta, sin escalar.",
+  "- Escala SIEMPRE si piden descuento, un reembolso de un cobro ya hecho, una factura que no les llegó o viene mal, algo legal, un cobro que no reconocen, si reportan un error de la app, si amenazan o si se nota que están molestos.",
+  `- Cuando hables de pagar, del cobro, de la tarjeta o de la factura, di que ${COBRO_A_NOMBRE_DE.charAt(0).toLowerCase()}${COBRO_A_NOMBRE_DE.slice(1)}`,
+  "- Patitas & Co. (el demo) es un negocio de ejemplo de PeluDesk, con datos inventados: nunca lo presentes como un cliente real. Al mandar el demo, dilo.",
   "- Nunca ofrezcas «hablar con alguien» ni digas que vas a consultar con nadie. Para eso está la herramienta escalar.",
   "- No eres un asistente genérico: solo hablas de PeluDesk. Si preguntan otra cosa, dilo en una línea.",
   "- Nunca des datos de un negocio que no esté en DATOS DE SU CUENTA, ni de los clientes de ningún negocio: no los tienes y no los pides.",
@@ -303,6 +307,17 @@ function pesos(n: number): string {
 export function precioDesde(planes: PlanPublico[]): number | null {
   const mensuales = planes.filter((p) => p.tipo === "plan" && p.mensual > 0).map((p) => p.mensual);
   return mensuales.length ? Math.min(...mensuales) : null;
+}
+
+/** Las respuestas fijas (factura, soporte, sucursales…), con los montos de la base. */
+function bloqueRespuestasFijas(planes: PlanPublico[]): string {
+  const plan = planes.find((p) => p.tipo === "plan" && p.mensual > 0);
+  const sucursal = planes.find((p) => p.tipo === "sucursal" && p.mensual > 0);
+  const fijas = respuestasFijas({ mensual: plan?.mensual ?? null, anual: plan?.anual ?? null, sucursal: sucursal?.mensual ?? null });
+  return [
+    "RESPUESTAS FIJAS (contéstalas así, con tus palabras y en el formato de WhatsApp, sin escalar y sin quitarles nada; no agregues nada que no esté):",
+    ...fijas.map((f) => `- ${f.pregunta} → ${f.respuesta}`),
+  ].join("\n");
 }
 
 function bloquePlanes(planes: PlanPublico[]): string {
@@ -343,12 +358,14 @@ function comoVender(ctx: ContextoAgente): string {
           "- Nunca hables de cargo de alta ni de activación: no existe.",
         ].join("\n")
       : "- No hay precios publicados: si preguntan, escala.",
-    "- Precio anual solo si lo pregunta.",
+    "- Precio anual solo si lo pregunta (está en RESPUESTAS FIJAS).",
     "- Nunca listes módulos ni funciones, ni en una frase con comas («agenda, precios, inventario y caja» es un catálogo), ni digas «trae todo: esto, esto y lo demás». Escoge UNA cosa que le quite de encima, la que va con lo que te contó: la libreta, los recordatorios que manda a mano por WhatsApp, el corte de caja que no cuadra, las vacunas vencidas que se le pasan.",
     "- Pregúntale cómo lo lleva hoy (libreta, Excel, WhatsApp, otra app) y conecta su respuesta con lo que PeluDesk le resuelve, con la captura que corresponda.",
-    "- Si ya usa otra app, no la critiques: pregúntale qué le falta o qué le cuesta trabajo, y conecta con eso. Nunca prometas migrar sus datos.",
+    "- Si ya usa otra app, no la critiques: pregúntale qué le falta o qué le cuesta trabajo, y conecta con eso. Si lo tiene en Excel, la respuesta es la de migración de RESPUESTAS FIJAS; no prometas pasar datos de otra app.",
     "- La página web viene incluida en el plan, sin costo aparte: dilo como un extra sin costo, nunca como un cargo ni como un regalo condicionado.",
-    "- Cada respuesta termina empujando a UN siguiente paso concreto, con su link en el último renglón: ver el demo o empezar la prueba. Aunque le hagas una pregunta, el último renglón es ese link (demo si apenas está conociendo; prueba si ya se interesó o quiere meter sus datos).",
+    "- NO cierres cada respuesta con «¿Ya quieres…?», «¿Te animas…?» ni con el link de registro. Contesta lo que preguntó y, si viene al caso, hazle UNA pregunta sobre su negocio.",
+    "- El link de la prueba va SOLO cuando pregunte cómo empezar, cómo registrarse o diga que quiere probar. El del demo, cuando quiera ver cómo se ve por dentro. Si no pidió ni mostró eso, no pongas link.",
+    `- Al mandar el demo, en el renglón de antes del link: «${ACLARACION_DEMO}».`,
     "- Un solo link por mensaje: nunca el demo y la prueba juntos. Escoge el que va con lo que pidió.",
     `- Los dos links NO los escribes tú: pon en su propio renglón [[link:demo]] o [[link:prueba]] y el sistema pone la dirección (demo: ${ctx.enlaces.demo} · prueba: ${ctx.enlaces.registro}; así se ven en el historial y son los correctos).`,
     "- Si no sabes qué negocio tiene, pregúntale «¿Qué tienes: clínica veterinaria, guardería, hotel o estética?». Quien pregunta por PeluDesk casi siempre es dueño o encargado de un negocio, no dueño de un perro. Si tiene clínica veterinaria, abre con lo suyo: expediente con dictado, recetas, carnet con QR y recordatorios por WhatsApp.",
@@ -480,7 +497,7 @@ export function bloqueProspecto(p: ProspectoContexto): string {
     `- Le armamos a «${p.nombre}»${p.ciudad ? `, en ${p.ciudad},` : ""} una vista previa de su página web en PeluDesk: ${p.pagina}`,
     `- Su negocio da: ${servicios}. No le preguntes de qué negocio es ni qué servicios tiene; háblale de lo suyo.`,
     "- La vista previa es su página con sus fotos, reseñas y horario de Google; ahí sus clientes piden cita o reserva (le llega por WhatsApp para confirmarla), ven su portal, y hay una demo de cómo lo manejaría. Al registrarse con «Activar mi página gratis», esa página queda publicada en su subdominio.",
-    "- Siguiente paso: la prueba gratis desde su página (botón «Activar mi página gratis») o la demo. Si pregunta el precio, dale el del plan de la tabla.",
+    "- Si quiere probar: la prueba gratis desde su página (botón «Activar mi página gratis»). Si pregunta el precio, dale el del plan de la tabla. No le mandes un link si no lo pidió.",
   ].join("\n");
 }
 
@@ -504,7 +521,7 @@ export function systemPrompt(base: string, aprendido: ParAprendido[], ctx: Conte
   }
   if (ctx.seguimiento) partes.push("", bloqueSeguimiento(ctx.seguimiento));
   if (ctx.prospecto && ctx.tipo !== "admin") partes.push("", bloqueProspecto(ctx.prospecto));
-  partes.push("", bloquePlanes(ctx.planes), "", "=== BASE ===", base.trim());
+  partes.push("", bloquePlanes(ctx.planes), "", bloqueRespuestasFijas(ctx.planes), "", "=== BASE ===", base.trim());
   if (aprendido.length > 0) {
     partes.push("", "=== APRENDIDO (vale lo mismo que la BASE) ===", ...aprendido.map((p) => `P: ${p.pregunta}\nR: ${p.respuesta}`));
   }

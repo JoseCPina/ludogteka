@@ -410,7 +410,7 @@ Un permiso de un módulo apagado no hace nada hasta que lo prendas.
     modulo: null,
     roles: ["admin"],
     rutas: ["/admin/modulos"],
-    palabras: ["plan", "suscripción", "pagar PeluDesk", "cancelar", "factura", "CFDI", "RFC", "datos de facturación", "tarjeta", "funciones", "sucursal", "sucursales", "otra sucursal", "soporte", "WhatsApp"],
+    palabras: ["plan", "suscripción", "pagar PeluDesk", "cancelar", "factura", "CFDI", "RFC", "datos de facturación", "tarjeta", "funciones", "sucursal", "sucursales", "otra sucursal", "soporte", "WhatsApp", "anual", "recordatorios", "costo por mensaje", "Excel", "migrar", "MENTEO", "demo", "Patitas"],
     captura: "modulos-y-plan.jpg",
     cuerpo: `Si no usas hotel o inventario, apágalos y dejan de estorbar en el menú. Aquí también contratas tu plan.
 
@@ -468,7 +468,27 @@ Solo se abre cuando tu plan ya está pagado: si contrataste durante la prueba, a
 
 ## Soporte
 
-Todo por WhatsApp, al +52 56 4916 0742: un asistente contesta las 24 horas y lo que no resuelve lo atiende una persona de PeluDesk el mismo día, en horario hábil. No hay que abrir tickets ni escribir correos.`,
+Todo por WhatsApp, al +52 56 4916 0742: un asistente contesta las 24 horas y lo que no resuelve lo atiende una persona de PeluDesk el mismo día, en horario hábil. No hay que abrir tickets ni escribir correos.
+
+## Plan anual
+
+El plan anual cuesta **$6,490 + IVA al año**: dos meses gratis contra pagar mes a mes. Lo escoges con **Anual · 2 meses gratis** al contratar. El cobro aparece como MENTEO.
+
+## Recordatorios por WhatsApp
+
+Van incluidos en el plan: **no hay costo por mensaje**. Los avisos y recordatorios (confirmación, recordatorio, listo para recoger) se mandan por WhatsApp desde el teléfono de tu negocio: PeluDesk te deja el mensaje ya escrito y lo abres en WhatsApp con un toque.
+
+## Cancelar
+
+Cancelas cuando quieras, sin plazo forzoso: en [Módulos y plan](/admin/modulos), en el portal de pagos. No hay reembolso del mes en curso; lo sigues usando hasta que termina. Después tus datos quedan en solo lectura 90 días, y si los necesitas te ayudamos a exportarlos por WhatsApp.
+
+## Pasar tus datos desde Excel
+
+Tus clientes y mascotas los subes desde un Excel o CSV con [Importar clientes y mascotas](/admin/importar). Si hace falta, te ayudamos por WhatsApp a dejar tu archivo listo.
+
+## El negocio de ejemplo
+
+**Patitas & Co.**, el que se abre con «Ver demo», es un negocio de ejemplo de PeluDesk con datos inventados: no es un cliente real.`,
   },
   {
     slug: "conectar-mercado-pago-o-clip",

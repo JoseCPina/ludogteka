@@ -145,9 +145,9 @@ const INICIALIZAR = () => {
       if (/ludogteka/i.test(n.textContent) && n.parentElement && !["SCRIPT", "STYLE", "NOSCRIPT"].includes(n.parentElement.tagName) && !n.parentElement.dataset.pdOculto) { n.parentElement.dataset.pdOculto = "1"; n.parentElement.style.visibility = "hidden"; }
     }
   };
-  // El dueño del portal entra con la cuenta del visitante (solo lectura), que lleva el aviso de «Negocio de demostración»; la
+  // El dueño del portal entra con la cuenta del visitante (solo lectura), que lleva el aviso de «Negocio de ejemplo de PeluDesk»; la
   // grabación usa esa cuenta ya desbloqueada y no lo trae: se quita para que no recorra toda la pantalla hacia abajo.
-  const sinAviso = () => { for (const d of document.querySelectorAll("div, section, header")) if (!d.dataset.pdAviso && d.children.length < 6 && /^Negocio de demostración/.test((d.textContent ?? "").trim()) && (d.textContent ?? "").length < 220) { d.dataset.pdAviso = "1"; d.style.display = "none"; } };
+  const sinAviso = () => { for (const d of document.querySelectorAll("div, section, header")) if (!d.dataset.pdAviso && d.children.length < 6 && /^Negocio de (demostración|ejemplo de PeluDesk)/.test((d.textContent ?? "").trim()) && (d.textContent ?? "").length < 220) { d.dataset.pdAviso = "1"; d.style.display = "none"; } };
   new MutationObserver(() => { ocultar(); sinAviso(); }).observe(document, { childList: true, subtree: true, characterData: true });
   document.addEventListener("DOMContentLoaded", () => { ocultar(); sinAviso(); });
   setInterval(() => { ocultar(); sinAviso(); }, 400);

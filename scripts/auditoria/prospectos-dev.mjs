@@ -126,12 +126,14 @@ const places = http.createServer(async (req, res) => {
   const giroWeb = req.url.match(/^\/places\/aud\d+_web_(vet|est|hot)/)?.[1];
   if (req.method === "GET" && giroWeb) {
     const color = { vet: "1a8fb0", est: "d0457a", hot: "3f7a46" }[giroWeb];
-    const periodos = [1, 2, 3, 4, 5, 6].map((d) => ({ open: { day: d, hour: 9, minute: 0 }, close: { day: d, hour: d === 6 ? 14 : 19, minute: 0 } }));
+    // La estética abre las 24 horas (un periodo sin cierre, como lo manda Google): N72.
+    const periodos = giroWeb === "est" ? [{ open: { day: 0, hour: 0, minute: 0 } }] : [1, 2, 3, 4, 5, 6].map((d) => ({ open: { day: d, hour: 9, minute: 0 }, close: { day: d, hour: d === 6 ? 14 : 19, minute: 0 } }));
     return res.end(JSON.stringify({
       displayName: { text: "Lugar" }, formattedAddress: "Av. Prueba 10, Centro, 78000 San Luis Potosí, S.L.P., México", rating: 4.7, userRatingCount: 210,
       regularOpeningHours: { periods: periodos, weekdayDescriptions: [] }, googleMapsUri: "https://maps.google.com/?cid=2",
       reviews: [
         { rating: 5, text: { text: `Reseña destacada ${giroWeb}: nos atendieron con muchísimo cariño y muy puntuales.` }, relativePublishTimeDescription: "hace 2 semanas", authorAttribution: { displayName: "Clienta de Prueba", uri: "https://maps.google.com/contrib/2" } },
+        { rating: 5, text: { text: `Otra reseña ${giroWeb}: muy limpios, se nota que quieren a los animales.` }, relativePublishTimeDescription: "hace un mes", authorAttribution: { displayName: "Segunda Clienta" } },
         { rating: 1, text: { text: "Mala." }, authorAttribution: { displayName: "Otra" } },
       ],
       photos: [0, 1, 2].map((i) => ({ name: `places/x/photos/c${color}${i}`, authorAttributions: [{ displayName: "Fotógrafa de Prueba", uri: "https://maps.google.com/contrib/1" }] })),
@@ -626,7 +628,8 @@ try {
         { clave: "hot", giro: "hotel", servicios: ["hotel"], fuente: "dmserif", rol: "recepcion", ir: "calendario", modo: "noches", visita: "Hotel" },
       ];
       const { data: creados } = await A.from("prospectos")
-        .insert(giros.map((g, i) => ({ nombre: `Web ${g.giro} ${SUF}`, giro: g.giro, ciudad: CIUDAD, telefono: tel(300 + i), fuente: "manual", google_place_id: `aud${SUF}_web_${g.clave}`, clasificacion: { servicios: g.servicios } })))
+        // La veterinaria con un nombre largo: en el encabezado del celular va en dos renglones, sin cortarse (N71).
+        .insert(giros.map((g, i) => ({ nombre: g.clave === "vet" ? `Web ${g.giro} ${SUF} Clínica Veterinaria Integral del Centro Histórico de San Luis` : `Web ${g.giro} ${SUF}`, giro: g.giro, ciudad: CIUDAD, telefono: tel(300 + i), fuente: "manual", google_place_id: `aud${SUF}_web_${g.clave}`, clasificacion: { servicios: g.servicios } })))
         .select("id, slug, nombre");
       const TABLAS = ["citas_estetica", "estancias", "reservas", "vet_citas", "clientes", "perros", "cobros", "negocios"];
       const contarTodo = async () => Object.fromEntries(await Promise.all(TABLAS.map(async (t) => [t, (await A.from(t).select("id", { count: "exact", head: true })).count])));
@@ -634,21 +637,70 @@ try {
       const temas = [];
       for (const [i, g] of giros.entries()) {
         const p = creados[i];
-        for (const ancho of [390, 1280]) {
-          const ctx = await nav.newContext({ viewport: { width: ancho, height: 860 }, isMobile: ancho === 390, hasTouch: ancho === 390 });
+        for (const ancho of [393, 1280]) {
+          const ctx = await nav.newContext({ viewport: { width: ancho, height: 860 }, isMobile: ancho === 393, hasTouch: ancho === 393 });
           const pg = await ctx.newPage();
           const escrituras = [];
           pg.on("request", (r) => { if (!["GET", "HEAD"].includes(r.method()) && /localhost/.test(r.url())) escrituras.push(`${r.method()} ${r.url()}`); });
           await pg.goto(`http://plataforma.localhost:${PUERTO}/para/${p.slug}?interno=1`);
           const d = await pg.locator("[data-pagina-web]").evaluate((e) => ({ ...e.dataset }));
-          if (ancho === 390) temas.push({ giro: g.giro, acento: d.acento, h1: await pg.locator("h1").evaluate((e) => getComputedStyle(e).fontFamily) });
+          if (ancho === 393) temas.push({ giro: g.giro, acento: d.acento, h1: await pg.locator("h1").evaluate((e) => getComputedStyle(e).fontFamily) });
           ok(d.tema === g.giro && d.fuente === g.fuente && d.colorOrigen === "foto", `${g.giro} ${ancho} px: diseño ${d.tema}, letra ${d.fuente}, color ${d.acento} sacado de su foto`, JSON.stringify(d));
           ok(!(await pg.evaluate(() => document.documentElement.scrollWidth > window.visualViewport.width + 1)), `${g.giro} ${ancho} px: sin desplazamiento horizontal`);
-          if (ancho === 390) {
+          if (ancho === 393) {
             ok(
-              (await pg.locator("[data-aviso-vista-previa]").isVisible()) && (await pg.locator("[data-resena]").count()) === 1 && (await pg.locator("[data-horario]").count()) === 1 && (await pg.locator("[data-mapa]").count()) === 1,
-              `${g.giro}: franja de vista previa, una reseña destacada (la mala no), horario de Google y mapa`
+              (await pg.locator("[data-aviso-vista-previa]").isVisible()) && (await pg.locator("[data-resena]").count()) === 2 && (await pg.locator("[data-horario]").count()) === 1 && (await pg.locator("[data-mapa]").count()) === 1,
+              `${g.giro}: franja de vista previa, dos reseñas destacadas (la mala no), horario de Google y mapa`
             );
+            // N71: menú en el celular, y el nombre largo completo en el encabezado.
+            const nombreCabe = await pg.locator("[data-nombre-encabezado] span").last().evaluate((e) => e.scrollHeight <= e.clientHeight + 1 && e.scrollWidth <= e.clientWidth + 1);
+            ok(nombreCabe, `${g.giro} 393 px: el nombre del negocio se ve completo en el encabezado (sin «…»)`);
+            await pg.locator("[data-boton-menu]").click();
+            const enlacesMenu = await pg.locator("[data-enlace-menu]").evaluateAll((as) => as.map((a) => a.getAttribute("href")));
+            await pg.locator('[data-enlace-menu="#ubicacion"]').click();
+            await pg.waitForTimeout(700);
+            const ubic = await pg.locator("#ubicacion").evaluate((e) => e.getBoundingClientRect().top);
+            ok(["#servicios", "#resenas", "#ubicacion"].every((h) => enlacesMenu.includes(h)) && ubic < 300 && (await pg.locator("[data-enlace-menu]").count()) === 0,
+              `${g.giro} 393 px: el menú tiene Servicios, Reseñas y Ubicación, lleva a la sección y se cierra`, JSON.stringify({ enlacesMenu, ubic }));
+            // N72: el horario dice lo mismo arriba y abajo; un negocio 24 horas nunca «cierra a las 11:59».
+            const cuerpo = await pg.locator("body").innerText();
+            if (g.clave === "est") {
+              const renglones = await pg.locator("[data-horario] li").allInnerTexts();
+              ok(renglones.length === 7 && renglones.every((r) => /Abierto 24 horas/.test(r)) && !/11:59|cierra a las 12:00 a\.m\./.test(cuerpo), `${g.giro}: un negocio 24 horas sale «Abierto 24 horas» en todos los días y nunca «cierra a las 11:59 p.m.»`, renglones.join(" | "));
+            } else {
+              ok(!/11:59/.test(cuerpo), `${g.giro}: ningún «11:59» en la página`);
+            }
+            // N76: el carrusel de reseñas lleva puntos y flechas.
+            await pg.locator("#resenas").scrollIntoViewIfNeeded();
+            const puntos = await pg.locator("[data-punto-resena]").count();
+            await pg.locator("[data-resena-siguiente]").click();
+            await pg.waitForTimeout(700);
+            ok(puntos === 2 && (await pg.locator('[data-punto-resena="1"]').getAttribute("aria-selected")) === "true" && (await pg.locator("[data-resena-anterior]").isVisible()),
+              `${g.giro} 393 px: las reseñas tienen un punto por reseña y flechas, y «siguiente» mueve el punto`, `${puntos} puntos`);
+            // N75: «escríbenos y la quitamos» es un enlace a WhatsApp y al correo.
+            const quitar = await pg.locator("[data-quitar-pagina] a").evaluateAll((as) => as.map((a) => a.getAttribute("href")));
+            ok(quitar.some((h) => /^https:\/\/wa\.me\/\d+\?text=/.test(h ?? "")) && quitar.some((h) => (h ?? "").startsWith("mailto:contacto@peludesk.mx")), `${g.giro}: «escríbenos y la quitamos» lleva a WhatsApp y a contacto@peludesk.mx`, JSON.stringify(quitar));
+            // N73: los enlaces conservan ?interno=1.
+            const hrefs = await pg.locator("[data-boton-demo], [data-boton-prueba], [data-boton-whatsapp], [data-barra-activar] a").evaluateAll((as) => as.map((a) => a.getAttribute("href")));
+            ok(hrefs.length >= 5 && hrefs.every((h) => (h ?? "").endsWith("?interno=1")), `${g.giro}: demo, prueba y WhatsApp conservan ?interno=1`, JSON.stringify(hrefs));
+            // N74: la barra fija se esconde al bajar, vuelve al subir y no tapa el final de la página.
+            await pg.evaluate(() => window.scrollTo(0, 400));
+            await pg.waitForTimeout(150);
+            await pg.evaluate(() => window.scrollTo(0, 1600));
+            await pg.waitForTimeout(400);
+            const alBajar = await pg.locator("[data-barra-activar]").getAttribute("data-visible");
+            await pg.evaluate(() => window.scrollTo(0, 1200));
+            await pg.waitForTimeout(400);
+            const alSubir = await pg.locator("[data-barra-activar]").getAttribute("data-visible");
+            await pg.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+            await pg.waitForTimeout(500);
+            const tapado = await pg.evaluate(() => {
+              const barra = document.querySelector("[data-barra-activar]").getBoundingClientRect();
+              const ultimo = document.querySelector("[data-quitar-pagina]").getBoundingClientRect();
+              return ultimo.bottom > barra.top + 1;
+            });
+            ok(alBajar === "no" && alSubir === "si" && !tapado, `${g.giro} 393 px: la barra fija se esconde al bajar, vuelve al subir y no tapa el pie`, JSON.stringify({ alBajar, alSubir, tapado }));
+            await pg.evaluate(() => window.scrollTo(0, 0));
             await pg.locator("[data-boton-pedir]").first().click();
             await pg.locator("[data-pedir-cita] [data-servicio]").first().check();
             await pg.locator("[data-siguiente]").click();
@@ -658,6 +710,18 @@ try {
             else await pg.locator("[data-salida]").first().click();
             if (g.modo === "noches") ok(/noche/.test(await pg.locator("[data-noches]").innerText()), `${g.giro}: escoge llegada y salida y cuenta las noches`);
             await pg.locator("[data-siguiente]").click();
+            // N77: un solo aviso de demostración, claro, y los datos de ejemplo marcados.
+            const avisos = await pg.locator("[data-pedir-cita] [data-modo-demostracion]").allInnerTexts();
+            ok(avisos.length === 1 && avisos[0] === "Modo demostración: puedes probar el formulario, no se envía nada ni se avisa al negocio." && (await pg.locator("[data-dato-ejemplo]").count()) === 2 && (await pg.getByText("Dato de ejemplo: cámbialo si quieres.").count()) === 2,
+              `${g.giro}: el formulario tiene un solo aviso de demostración y «Luna» y «Ana López» marcados como ejemplo`, JSON.stringify(avisos));
+            if (g.clave === "est") {
+              // Abierto 24 horas: no ofrece una hora que no exista ni pasa de la medianoche.
+              await pg.getByRole("button", { name: "Cambiar" }).click();
+              const horasEst = await pg.locator("[data-hora]").evaluateAll((bs) => bs.map((b) => b.getAttribute("data-hora")));
+              ok(horasEst.length > 0 && horasEst.every((h) => /^([01]\d|2[0-3]):[03]0$/.test(h)), `${g.giro}: 24 horas, el asistente ofrece horas válidas del día`, horasEst.slice(-3).join(", "));
+              await pg.locator("[data-hora]").first().click();
+              await pg.locator("[data-siguiente]").click();
+            }
             await pg.locator("[data-confirmar-pedido]").click();
             await pg.locator("[data-pedido-listo]").waitFor();
             const chat = await pg.locator("[data-chat-whatsapp]").innerText();
@@ -673,11 +737,23 @@ try {
         }
         const dm = await pedir(`/para/${p.slug}/ir/demo`, { "user-agent": "Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile" });
         ok(dm.status === 302 && new RegExp(`/demo/entrar/${g.rol}\\?ir=${g.ir}$`).test(dm.headers.location ?? ""), `${g.giro}: «Ver cómo lo manejarías tú» abre la demo como ${g.rol} (${g.ir})`, dm.headers.location);
+        const dmi = await pedir(`/para/${p.slug}/ir/demo?interno=1`, { "user-agent": "Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile" });
+        const pri = await pedir(`/para/${p.slug}/ir/prueba?interno=1`, { "user-agent": "Mozilla/5.0 (Linux; Android 14) Chrome/130 Mobile" });
+        ok(/&interno=1$/.test(dmi.headers.location ?? "") && /[?&]interno=1(&|$)/.test(pri.headers.location ?? ""), `${g.giro}: con ?interno=1, la demo y el registro lo conservan`, `${dmi.headers.location} · ${pri.headers.location}`);
       }
       ok(new Set(temas.map((t) => t.acento)).size === 3 && new Set(temas.map((t) => t.h1)).size === 3, "las tres se ven distintas: otro color y otra letra", JSON.stringify(temas));
       ok(JSON.stringify(antesDemo) === JSON.stringify(await contarTodo()), "nada se escribió en ningún negocio (citas, estancias, reservas, consultas, clientes, perros, cobros, negocios)");
       const { data: vd } = await A.from("prospectos_visitas").select("tipo").in("prospecto_id", creados.map((c) => c.id));
-      ok((vd ?? []).filter((v) => v.tipo === "clic_demo").length === 3 && !(vd ?? []).some((v) => v.tipo === "visita"), "cada clic a la demo queda en el CRM y las visitas con ?interno=1 no cuentan", JSON.stringify(vd));
+      ok((vd ?? []).filter((v) => v.tipo === "clic_demo").length === 3 && !(vd ?? []).some((v) => v.tipo === "visita" || (v.tipo !== "clic_demo")), "cada clic a la demo queda en el CRM y nada con ?interno=1 cuenta (visitas, demo ni prueba)", JSON.stringify(vd));
+      // N73: la demo abre con la franja «Negocio de ejemplo de PeluDesk. Así se vería el tuyo.»
+      {
+        const ctxD = await nav.newContext({ viewport: { width: 393, height: 860 }, isMobile: true, hasTouch: true });
+        const pd = await ctxD.newPage();
+        await pd.goto(`http://patitasyco.localhost:${PUERTO}/demo/entrar/recepcion?ir=calendario&interno=1`);
+        const franja = await pd.locator('[data-aviso-plan="demo"]').innerText({ timeout: 20000 }).catch(() => "");
+        ok(/Negocio de ejemplo de PeluDesk\. Así se vería el tuyo\./.test(franja), "la demo abre con la franja «Negocio de ejemplo de PeluDesk. Así se vería el tuyo.»", franja.slice(0, 160));
+        await ctxD.close();
+      }
       // El bot de WhatsApp liga al prospecto: por la referencia del mensaje prellenado y, si no trae, por su teléfono.
       const [pe, ph] = [creados[1], creados[2]];
       await A.from("prospectos_contactos").insert({ prospecto_id: pe.id, fecha: new Date().toISOString().slice(0, 10), canal: "instagram", tipo: "primero", orden: -5, mensaje: `Prueba ${pe.slug}`, estado: "enviado" });
@@ -729,6 +805,8 @@ try {
           const { data: cc } = await A.from("cupo_configuracion").select("telefono_recepcion").eq("negocio_id", alta.negocio_id).is("deleted_at", null).limit(1).maybeSingle();
           ok(perfil?.tema_web === "veterinaria" && /^#[0-9a-f]{6}$/.test(perfil?.color_web ?? "") && perfil?.google_place_id === `aud${SUF}_web_vet` && String(sab?.hora_cierre ?? "").startsWith("14:00") && cc?.telefono_recepcion === tel(300).replace(/\D/g, ""),
             "al registrarse, su perfil queda con su diseño, su color, su lugar de Google, su horario y su WhatsApp", JSON.stringify({ perfil, sab, cc }));
+          const etapaPv = (await A.from("prospectos").select("etapa").eq("id", pv.id).single()).data?.etapa;
+          ok(etapaPv !== "en_prueba", "con ?interno=1 el registro publica la página pero no mueve al prospecto a «en prueba»", etapaPv);
           const pub = await new Promise((res) => http.get({ host: "127.0.0.1", port: PUERTO, path: "/", headers: { host: `${neg.slug}.localhost:${PUERTO}` } }, (r) => { let b = ""; r.on("data", (c) => (b += c)); r.on("end", () => res({ status: r.statusCode, b })); }));
           ok(pub.status === 200 && pub.b.includes('data-tema="veterinaria"') && pub.b.includes(neg.nombre) && pub.b.includes("Fotógrafa de Prueba") && !pub.b.includes("data-aviso-vista-previa") && !pub.b.includes("data-portal-demo"),
             "y su página ya está publicada en su subdominio, en modo real (sin franja de vista previa ni portal de ejemplo)", `status ${pub.status}`);

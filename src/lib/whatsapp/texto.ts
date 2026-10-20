@@ -227,3 +227,15 @@ export function juntarCortos(mensaje: string): string {
   }
   return p.join("\n\n");
 }
+
+/**
+ * Un mensaje que lleva el link del demo dice que Patitas & Co. es un negocio de ejemplo (QA S16, N78): si el
+ * modelo no lo escribió, se agrega en el párrafo de antes del link. Nunca dos veces.
+ */
+export function aclararDemo(texto: string, urlDemo: string, aclaracion: string): string {
+  if (!urlDemo || !texto.includes(urlDemo) || /ejemplo/i.test(texto)) return texto;
+  const parrafos = texto.split("\n\n");
+  const i = parrafos.findIndex((p) => p.includes(urlDemo));
+  parrafos.splice(i, 0, aclaracion);
+  return parrafos.join("\n\n");
+}

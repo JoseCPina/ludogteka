@@ -51,13 +51,21 @@ export const refDeSlug = (slug: string) => slug.slice(-5);
 /** Número de ventas en frío (WhatsApp Business a mano): el de «Hablar por WhatsApp» mientras el bot no lo reemplace. */
 export const WHATSAPP_VENTAS_FRIO = "524443103236";
 
+function numeroVentas(): string {
+  const tel = (process.env.PELUDESK_VENTAS_WHATSAPP?.trim() || WHATSAPP_VENTAS_FRIO).replace(/\D/g, "");
+  return tel.length === 10 ? `52${tel}` : tel;
+}
+
 /**
  * «Hablar por WhatsApp» de la página de un prospecto: PELUDESK_VENTAS_WHATSAPP (el número del bot, si está puesto)
  * o el de ventas en frío. El mensaje dice de qué negocio viene y lleva su referencia: el bot la lee
  * (prospecto_registrar_whatsapp) y el CRM lo marca «respondió».
  */
 export function whatsappVentas(nombreNegocio: string, slug: string): string {
-  const tel = (process.env.PELUDESK_VENTAS_WHATSAPP?.trim() || WHATSAPP_VENTAS_FRIO).replace(/\D/g, "");
-  const numero = tel.length === 10 ? `52${tel}` : tel;
-  return `https://wa.me/${numero}?text=${encodeURIComponent(`Hola, vi la página que armaron para ${nombreNegocio} (ref. ${refDeSlug(slug)})`)}`;
+  return `https://wa.me/${numeroVentas()}?text=${encodeURIComponent(`Hola, vi la página que armaron para ${nombreNegocio} (ref. ${refDeSlug(slug)})`)}`;
+}
+
+/** El «escríbenos y la quitamos» del pie de la vista previa: WhatsApp de PeluDesk con la petición ya escrita. */
+export function whatsappQuitarPagina(nombreNegocio: string, slug: string): string {
+  return `https://wa.me/${numeroVentas()}?text=${encodeURIComponent(`Hola, quiero que quiten la página de muestra de ${nombreNegocio} (ref. ${refDeSlug(slug)}).`)}`;
 }

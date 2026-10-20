@@ -17,18 +17,20 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
   const { slug, destino } = await params;
   const p = await prospectoPorSlug(slug);
   if (!p || !(destino in TIPO)) return new NextResponse("No encontrado.", { status: 404 });
+  // ?interno=1 (revisión desde el CRM) se conserva hasta el destino: ahí tampoco cuenta como visita ni registro.
+  const interno = req.nextUrl.searchParams.get("interno") === "1";
   await registrarVisita({
     slug,
     tipo: TIPO[destino as keyof typeof TIPO],
     ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
     navegador: req.headers.get("user-agent"),
-    interno: req.nextUrl.searchParams.get("interno") === "1",
+    interno,
   });
   if (destino === "whatsapp") return NextResponse.redirect(whatsappVentas(p.nombre, p.slug), 302);
   if (destino === "demo") {
     const d = DEMO_POR_GIRO[giroPrincipal(serviciosDe(p), p.giro)];
-    return new NextResponse(null, { status: 302, headers: { Location: `${urlDemo()}/demo/entrar/${d.rol}?ir=${d.ir}`, "Cache-Control": "no-store" } });
+    return new NextResponse(null, { status: 302, headers: { Location: `${urlDemo()}/demo/entrar/${d.rol}?ir=${d.ir}${interno ? "&interno=1" : ""}`, "Cache-Control": "no-store" } });
   }
-  const q = new URLSearchParams({ prospecto: slug, utm_source: "prospecto", utm_medium: "pagina", utm_campaign: "para" });
+  const q = new URLSearchParams({ prospecto: slug, utm_source: "prospecto", utm_medium: "pagina", utm_campaign: "para", ...(interno ? { interno: "1" } : {}) });
   return new NextResponse(null, { status: 302, headers: { Location: `/registro?${q}`, "Cache-Control": "no-store" } });
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAccionConTope } from "@/hooks/use-espera";
 import { registrarPrueba, type EstadoRegistro } from "./actions";
@@ -11,14 +11,23 @@ import { Alert } from "@/components/ui/alert";
 import { enviarEventoPixel, pixelCargado } from "@/lib/peludesk/pixel-cliente";
 import { DOCUMENTOS_LEGALES } from "@/lib/peludesk/legal";
 import type { ParametroOrigen } from "@/lib/peludesk/origen";
+import { subdominioSugerido } from "@/lib/web-negocio/demo";
 
 export type InicialRegistro = { slug: string; negocio: string; ciudad: string; servicios: string[]; telefono: string };
 
-export function RegistroForm({ origen, inicial }: { origen: Partial<Record<ParametroOrigen, string>>; inicial?: InicialRegistro }) {
+export function RegistroForm({ origen, inicial, interno }: { origen: Partial<Record<ParametroOrigen, string>>; inicial?: InicialRegistro; interno?: boolean }) {
   const [estado, accion, enviando] = useActionState(useAccionConTope(registrarPrueba), { error: null } as EstadoRegistro);
   // Lo que escribió (si el envío falló) o, la primera vez, lo que trae su vista previa.
   const v = estado.valores ?? (inicial ? { nombre: "", negocio: inicial.negocio, ciudad: inicial.ciudad, telefono: inicial.telefono, servicios: inicial.servicios } : undefined);
   const empezado = useRef(false);
+  // La dirección que le tocaría, armada en vivo con lo que escribe (como slug_libre: sin acentos ni signos).
+  const [nombreNegocio, setNombreNegocio] = useState(v?.negocio ?? "");
+  // Tras un envío fallido el formulario se vuelve a pintar con lo que escribió: la vista previa también.
+  const [valoresVistos, setValoresVistos] = useState(estado.valores);
+  if (estado.valores !== valoresVistos) {
+    setValoresVistos(estado.valores);
+    if (estado.valores) setNombreNegocio(estado.valores.negocio);
+  }
   const referente = useRef<HTMLInputElement>(null);
 
   // De qué sitio venía (solo el dominio, y solo si no es el propio).
@@ -35,11 +44,11 @@ export function RegistroForm({ origen, inicial }: { origen: Partial<Record<Param
   useEffect(() => {
     if (!estado.destino) return;
     const destino = estado.destino;
-    const conPixel = pixelCargado();
-    enviarEventoPixel("CompleteRegistration", { content_name: "negocio_de_prueba" }, estado.eventId);
+    const conPixel = !interno && pixelCargado();
+    if (!interno) enviarEventoPixel("CompleteRegistration", { content_name: "negocio_de_prueba" }, estado.eventId);
     const t = window.setTimeout(() => window.location.assign(destino), conPixel ? 500 : 0);
     return () => window.clearTimeout(t);
-  }, [estado.destino, estado.eventId]);
+  }, [estado.destino, estado.eventId, interno]);
 
   return (
     <form
@@ -47,7 +56,7 @@ export function RegistroForm({ origen, inicial }: { origen: Partial<Record<Param
       className="flex flex-col gap-5"
       // InitiateCheckout: la primera vez que la persona toca un campo, o sea, empieza a registrarse.
       onFocusCapture={() => {
-        if (empezado.current) return;
+        if (empezado.current || interno) return;
         empezado.current = true;
         enviarEventoPixel("InitiateCheckout", { content_name: "registro_prueba" });
       }}
@@ -62,8 +71,18 @@ export function RegistroForm({ origen, inicial }: { origen: Partial<Record<Param
       ))}
       <input ref={referente} type="hidden" name="referente" defaultValue="" />
       {inicial && <input type="hidden" name="prospecto" value={inicial.slug} />}
+      {interno && <input type="hidden" name="interno" value="1" />}
       <Field label="Tu nombre" name="nombre" autoComplete="name" required defaultValue={v?.nombre} />
-      <Field label="Nombre de tu negocio" name="negocio" autoComplete="organization" required defaultValue={v?.negocio} ayuda="Con él se arma tu dirección: nombre.peludesk.mx" />
+      <div className="flex flex-col gap-1.5">
+        <Field label="Nombre de tu negocio" name="negocio" autoComplete="organization" required defaultValue={v?.negocio} onInput={(e) => setNombreNegocio(e.currentTarget.value)} />
+        <p className="text-sm text-n-600" data-subdominio-vista aria-live="polite">
+          Tu dirección:{" "}
+          <b className="break-all text-n-900" data-subdominio>
+            {nombreNegocio.trim() ? subdominioSugerido(nombreNegocio) : "tunegocio"}.peludesk.mx
+          </b>
+          {nombreNegocio.trim() ? <span className="block text-xs">Si ya está tomada, te damos una parecida.</span> : null}
+        </p>
+      </div>
       <Field label="Ciudad" name="ciudad" autoComplete="address-level2" defaultValue={v?.ciudad} />
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1.5 text-sm font-medium text-n-800">¿Qué ofrece tu negocio?</legend>

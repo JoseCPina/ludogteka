@@ -9,6 +9,8 @@ import { type ServicioWeb, type PortalEjemplo, pesosMx } from "@/lib/web-negocio
 import { BotonPedir } from "./boton-pedir";
 import { PedirCita } from "./pedir-cita";
 import { PortalDemo } from "./portal-demo";
+import { MenuMovil } from "./menu-movil";
+import { CarruselResenas } from "./carrusel-resenas";
 
 // La página web de un negocio: la misma para la vista previa de un prospecto (peludesk.mx/para/<slug>, modo
 // «demo»: nada sale de la página y lo dice) y para la publicada en su subdominio (modo «real»: pedir cita abre
@@ -282,8 +284,8 @@ export function PaginaWeb({ datos, modo, portal, notas }: Props) {
   return (
     <div className={`${fuente.clase} flex min-h-[100dvh] flex-col`} style={vars} data-pagina-web data-tema={tema.giro} data-fuente={tema.fuente} data-acento={pal.acento} data-color-origen={pal.origen}>
       <header className={`sticky top-0 z-30 border-b backdrop-blur ${tema.composicion === "boutique" ? "border-white/10 bg-[var(--w-profundo)]/95 text-white" : "border-black/5 bg-white/90"}`}>
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-5 sm:px-8">
-          <a href="#inicio" className="flex min-w-0 items-center gap-2.5">
+        <div className="mx-auto flex min-h-16 max-w-5xl items-center justify-between gap-2 px-4 py-2 sm:gap-3 sm:px-8">
+          <a href="#inicio" className="flex min-w-0 flex-1 items-center gap-2.5" data-nombre-encabezado>
             {datos.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={datos.logoUrl} alt="" className="h-9 w-9 rounded-full object-cover" />
@@ -292,11 +294,12 @@ export function PaginaWeb({ datos, modo, portal, notas }: Props) {
                 {datos.nombre.trim().charAt(0).toUpperCase()}
               </span>
             )}
-            <span className="truncate text-[17px] font-bold" style={{ fontFamily: "var(--w-titulos)" }}>
+            {/* Un nombre largo pasa a más renglones (y más chico en el celular), nunca se corta con «…». */}
+            <span className="break-words text-[14px] font-bold leading-tight min-[420px]:text-[15px] sm:text-[17px]" style={{ fontFamily: "var(--w-titulos)" }}>
               {datos.nombre}
             </span>
           </a>
-          <nav className="flex items-center gap-1">
+          <nav className="flex shrink-0 items-center gap-1" aria-label="Secciones">
             {hayServicios && <a href="#servicios" className="hidden min-h-10 items-center rounded-md px-3 text-sm font-semibold opacity-80 hover:opacity-100 md:inline-flex">Servicios</a>}
             {datos.resenas.length > 0 && <a href="#resenas" className="hidden min-h-10 items-center rounded-md px-3 text-sm font-semibold opacity-80 hover:opacity-100 md:inline-flex">Reseñas</a>}
             <a href="#ubicacion" className="hidden min-h-10 items-center rounded-md px-3 text-sm font-semibold opacity-80 hover:opacity-100 md:inline-flex">Ubicación</a>
@@ -305,6 +308,16 @@ export function PaginaWeb({ datos, modo, portal, notas }: Props) {
                 {tema.giro === "hotel" || tema.giro === "guarderia" ? "Reservar" : "Agendar"}
               </BotonPedir>
             )}
+            <MenuMovil
+              oscuro={tema.composicion === "boutique"}
+              enlaces={[
+                ...(hayServicios ? [{ href: "#servicios", texto: "Servicios" }] : []),
+                ...(datos.resenas.length > 0 ? [{ href: "#resenas", texto: "Reseñas" }] : []),
+                ...(puedePedir ? [{ href: "#pedir", texto: tema.giro === "hotel" || tema.giro === "guarderia" ? "Reservar" : "Pedir cita" }] : []),
+                { href: "#portal", texto: "Portal del cliente" },
+                { href: "#ubicacion", texto: "Horario y ubicación" },
+              ]}
+            />
           </nav>
         </div>
       </header>
@@ -318,7 +331,7 @@ export function PaginaWeb({ datos, modo, portal, notas }: Props) {
               <Titulo id="t-resenas">{tema.textos.resenasTitulo}</Titulo>
               <Calificacion datos={datos} />
             </div>
-            <ul className="-mx-5 mt-6 flex snap-x gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0">
+            <CarruselResenas>
               {datos.resenas.map((r, i) => (
                 <li key={i} className={`${tarjeta} flex w-[82%] shrink-0 snap-start flex-col gap-3 p-5 sm:w-auto`} data-resena>
                   <Quotes size={26} weight="fill" className="text-[var(--w-acento)] opacity-80" aria-hidden />
@@ -334,7 +347,7 @@ export function PaginaWeb({ datos, modo, portal, notas }: Props) {
                   </div>
                 </li>
               ))}
-            </ul>
+            </CarruselResenas>
             {datos.deGoogle && <p className="mt-2 text-xs text-black/50">Reseñas de Google Maps.</p>}
           </section>
         )}

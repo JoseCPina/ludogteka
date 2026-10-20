@@ -39,7 +39,8 @@ import {
   textoTelegram,
   type TipoInterlocutor,
 } from "./agente";
-import { aFormatoWhatsApp, enDosSiEsLargo, formatoDelBot, hayQueReescribir, juntarCortos, unLinkAlFinal } from "./texto";
+import { aclararDemo, aFormatoWhatsApp, enDosSiEsLargo, formatoDelBot, hayQueReescribir, juntarCortos, unLinkAlFinal } from "./texto";
+import { ACLARACION_DEMO } from "@/lib/peludesk/respuestas-fijas";
 
 // ───────────────────────────── puertos
 
@@ -353,13 +354,9 @@ async function conversar(
       const [uno, dos] = enDosSiEsLargo((piezas[i] as { cuerpo: string }).cuerpo);
       if (dos) piezas.splice(i, 1, { tipo: "texto", cuerpo: uno }, { tipo: "texto", cuerpo: dos });
     }
-    // Con un posible cliente, toda respuesta deja un siguiente paso: si el
-    // modelo cerró con una pregunta y sin link, va el del demo.
-    const ultimoTexto = [...piezas].reverse().find((p) => p.tipo === "texto");
-    const textos = piezas.flatMap((p) => (p.tipo === "texto" ? [p.cuerpo] : []));
-    if (cuenta.tipo === "prospecto" && ultimoTexto?.tipo === "texto" && !/https?:\/\//.test(textos.join(" "))) {
-      ultimoTexto.cuerpo += `\n\nSi quieres ir viendo cómo se ve por dentro:\n\n${enlaces.demo}`;
-    }
+    // Ya no se le agrega el link del demo a toda respuesta (QA S16): el link va solo cuando la persona pide verlo
+    // o probar. Lo que sí: el mensaje con el link del demo dice que Patitas & Co. es un negocio de ejemplo.
+    for (const p of piezas) if (p.tipo === "texto") p.cuerpo = aclararDemo(p.cuerpo, enlaces.demo, ACLARACION_DEMO);
     // A un número nuevo, en la primera respuesta, una línea corta con el aviso de privacidad.
     if (cuenta.tipo === "prospecto" && delBot.length === 0 && piezas.some((p) => p.tipo === "texto")) {
       piezas.push({ tipo: "texto", cuerpo: `Así cuidamos tus datos: ${URL_AVISO_PRIVACIDAD}` });

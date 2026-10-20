@@ -42,8 +42,8 @@ export async function AvisoPlan({ esPersonal }: { esPersonal: boolean }) {
     return (
       <div role="status" data-aviso-plan="demo" className="flex flex-wrap items-center justify-between gap-2 bg-morado px-4 py-2 text-sm text-white md:px-6">
         <p>
-          <strong className="font-semibold">Negocio de demostración.</strong> Explora todo con datos de ejemplo; es de solo
-          lectura, así que los cambios no se guardan.
+          <strong className="font-semibold">Negocio de ejemplo de PeluDesk. Así se vería el tuyo.</strong> No es un cliente real: los
+          datos son de ejemplo y es de solo lectura, así que los cambios no se guardan.
         </p>
         <a href={URL_REGISTRO} className="rounded-md bg-white px-3 py-1 font-semibold text-morado hover:bg-crema">
           Prueba PeluDesk gratis

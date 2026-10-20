@@ -4,6 +4,9 @@ import { notFound } from "next/navigation";
 import { Rocket, WhatsappLogo, Sparkle, PlayCircle, ArrowRight, X, Check } from "@phosphor-icons/react/dist/ssr";
 import { LogoPeluDesk } from "@/components/marca/peludesk";
 import { PaginaWeb } from "@/components/web-negocio/pagina-web";
+import { BarraFija } from "@/components/web-negocio/barra-fija";
+import { EMPRESA } from "@/lib/peludesk/legal";
+import { whatsappQuitarPagina } from "@/lib/prospectos/pagina";
 import { metaPagina } from "@/lib/peludesk/seo";
 import { planUnico, pesos } from "@/lib/peludesk/plan";
 import { prospectoPorSlug, registrarVisita } from "@/lib/prospectos/pagina";
@@ -89,7 +92,7 @@ export default async function PaginaProspecto({ params, searchParams }: Params) 
   const esReserva = datos.giro === "hotel" || datos.giro === "guarderia";
 
   return (
-    <div className="pb-[84px]">
+    <div className="pb-[calc(104px+env(safe-area-inset-bottom))]">
       {g?.fotos[0] && <link rel="preconnect" href={new URL(g.fotos[0].uri).origin} />}
       <p role="note" data-aviso-vista-previa className="bg-[#16141c] px-4 py-1.5 text-center text-[12px] leading-snug text-white/75">
         Vista previa hecha por PeluDesk para {p.nombre}. No es su página oficial. · <span className="text-white/90">Modo demostración</span>
@@ -102,7 +105,7 @@ export default async function PaginaProspecto({ params, searchParams }: Params) 
         notas={{
           pedir: (
             <NotaPeluDesk>
-              <b>Con PeluDesk</b>, tu cliente {esReserva ? "reserva" : "pide su cita"} aquí a cualquier hora, según tu horario. Tú la ves en tu agenda y la confirmas con un toque. Pruébalo: este formulario funciona.
+              <b>Con PeluDesk</b>, tu cliente {esReserva ? "reserva" : "pide su cita"} aquí a cualquier hora, según tu horario. Tú la ves en tu agenda y la confirmas con un toque. Pruébalo aquí abajo.
             </NotaPeluDesk>
           ),
           resultado: (
@@ -183,12 +186,23 @@ export default async function PaginaProspecto({ params, searchParams }: Params) 
                 {" "}(<a href={g.mapsUri} target="_blank" rel="noopener noreferrer" className="underline">ver en Google Maps</a>)
               </>
             ) : null}
-            ; los precios y los datos del portal son de ejemplo. Si no quieres que exista, escríbenos y la quitamos.
+            ; los precios y los datos del portal son de ejemplo. Si no quieres que exista,{" "}
+            <span data-quitar-pagina>
+              escríbenos por{" "}
+              <a href={whatsappQuitarPagina(p.nombre, p.slug)} target="_blank" rel="noopener noreferrer" className="font-semibold text-white/80 underline">
+                WhatsApp
+              </a>{" "}
+              o a{" "}
+              <a href={`mailto:${EMPRESA.correo}?subject=${encodeURIComponent(`Quitar la página de ${p.nombre}`)}`} className="font-semibold text-white/80 underline">
+                {EMPRESA.correo}
+              </a>{" "}
+              y la quitamos.
+            </span>
           </p>
         </div>
       </section>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-black/10 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_-16px_rgba(0,0,0,.4)] backdrop-blur" data-barra-activar style={{ fontFamily: "var(--font-outfit), system-ui, sans-serif" }}>
+      <BarraFija className="fixed inset-x-0 bottom-0 z-40 border-t border-black/10 bg-white/95 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 shadow-[0_-8px_24px_-16px_rgba(0,0,0,.4)] backdrop-blur" style={{ fontFamily: "var(--font-outfit), system-ui, sans-serif" }}>
         <div className="mx-auto flex max-w-5xl items-center gap-3">
           <p className="hidden flex-1 text-sm text-n-700 sm:block">
             <b className="text-n-900">Así se vería tu página en PeluDesk.</b> Tus clientes {esReserva ? "reservan" : "agendan"} solos; tú ves la agenda llena.
@@ -200,7 +214,7 @@ export default async function PaginaProspecto({ params, searchParams }: Params) 
             <WhatsappLogo size={22} weight="fill" aria-hidden />
           </a>
         </div>
-      </div>
+      </BarraFija>
     </div>
   );
 }
