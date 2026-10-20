@@ -30,14 +30,13 @@ export async function cargarPasosBienvenida(supabase: SupabaseClient, mods: read
   const conContratos = conEstancias && mods.includes("contratos");
   const cuenta = (tabla: string) => supabase.from(tabla).select("id", { count: "exact", head: true }).is("deleted_at", null);
 
-  const [{ data: config }, { data: cupoPropio }, { data: perfil }, { data: sucursal }, tarifas, conHuecos, clientes, { data: ajustes }, estilistas, medicos, tipos] =
+  const [{ data: config }, { data: cupoPropio }, { data: perfil }, tarifas, conHuecos, clientes, { data: ajustes }, estilistas, medicos, tipos] =
     await Promise.all([
       supabase.rpc("resolver_cupo_configuracion"),
       // El cupo y el horario que trae un negocio nuevo son los de base (sin autor); en cuanto la administración guarda
       // los suyos, hay uno con autor.
       supabase.from("cupo_configuracion").select("id").not("created_by", "is", null).is("deleted_at", null).limit(1),
       supabase.from("negocio_perfil").select("direccion").is("deleted_at", null).maybeSingle(),
-      supabase.from("sucursales").select("direccion").is("deleted_at", null).order("activo", { ascending: false }).limit(1).maybeSingle(),
       cuenta("tarifas"),
       cargarServiciosConHuecos(supabase, mods),
       supabase.from("clientes").select("id", { count: "exact", head: true }).is("deleted_at", null).eq("publico_general", false),
@@ -51,7 +50,8 @@ export async function cargarPasosBienvenida(supabase: SupabaseClient, mods: read
 
   const vigente = (Array.isArray(config) ? config[0] : config) as { telefono_recepcion?: string | null } | null;
   const telefono = Boolean(vigente?.telefono_recepcion);
-  const direccion = Boolean((perfil?.direccion as string | null)?.trim() || (sucursal?.direccion as string | null)?.trim());
+  // QA R22 (N61): la misma dirección que Perfil, la página web y Configuración (negocio_perfil.direccion).
+  const direccion = Boolean((perfil?.direccion as string | null)?.trim());
   const huecos = conHuecos.reduce((s, h) => s + h.faltan, 0);
   const conEstilista = ((estilistas.data ?? []) as { rol: string }[]).some((e) => e.rol === "estetica") || Boolean(ajustes?.dueno_atiende_estetica);
   const nMedicos = (medicos as { count: number | null }).count ?? 0;

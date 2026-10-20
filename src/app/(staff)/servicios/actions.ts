@@ -31,6 +31,8 @@ function leerCampos(formData: FormData) {
   const cantidadCrudo = String(formData.get("cantidad_incluida") ?? "").trim();
   const vigenciaCrudo = String(formData.get("vigencia_dias") ?? "").trim();
   const ordenCrudo = String(formData.get("orden") ?? "").trim();
+  // La base exige duración en todo servicio de estética (y ninguna en los demás): la agenda la usa.
+  const duracionCrudo = String(formData.get("duracion_minutos") ?? "").trim();
 
   return {
     clave,
@@ -46,6 +48,7 @@ function leerCampos(formData: FormData) {
     monto_libre,
     cantidad_incluida: cantidadCrudo && !ilimitado ? Number(cantidadCrudo) : null,
     vigencia_dias: vigenciaCrudo ? Number(vigenciaCrudo) : null,
+    duracion_minutos: categoria === "estetica" ? (duracionCrudo ? Number(duracionCrudo) : null) : null,
     orden: ordenCrudo ? Number(ordenCrudo) : 0,
   };
 }
@@ -67,6 +70,9 @@ function validar(campos: ReturnType<typeof leerCampos>): string | null {
   if (campos.depende_grupo_raza && campos.depende_tamano) {
     return "Un servicio que cotiza por grupo de raza no lleva además la dimensión de tamaño: cada grupo ya decide si se cobra por talla.";
   }
+  if (campos.categoria === "estetica" && (!campos.duracion_minutos || !Number.isFinite(campos.duracion_minutos) || campos.duracion_minutos <= 0)) {
+    return "Escribe cuántos minutos dura la cita: un servicio de estética necesita duración para la agenda.";
+  }
   if (campos.categoria === "bono") {
     if (!campos.servicio_incluido_id) return "Un bono debe indicar a qué servicio da acceso.";
     if (campos.ilimitado) {
@@ -80,6 +86,25 @@ function validar(campos: ReturnType<typeof leerCampos>): string | null {
     return "Solo un bono puede tener servicio incluido o cantidad incluida.";
   }
   return null;
+}
+
+// Lo que la base rechaza, dicho con su motivo real (QA R22 N84: antes salía «No pudimos guardar» sin decir por qué).
+const MOTIVOS_RESTRICCION: Record<string, string> = {
+  servicios_duracion_solo_estetica: "Un servicio de estética necesita su duración en minutos (y los demás no llevan duración).",
+  servicios_bono_coherente: "Un bono necesita el servicio al que da acceso y su cantidad (o ser ilimitado con vigencia).",
+  servicios_monto_libre_solo_cargos: "Solo un cargo adicional puede ser de monto libre.",
+  servicios_categoria_check: "Elige una categoría válida.",
+  servicios_unidad_check: "Elige una unidad válida.",
+};
+
+function motivoDeError(dbError: { code?: string; message?: string; details?: string | null }, generico: string): string {
+  if (dbError.code === "23505") return "Ya existe un servicio con esa clave.";
+  const texto = `${dbError.message ?? ""} ${dbError.details ?? ""}`;
+  for (const [restriccion, motivo] of Object.entries(MOTIVOS_RESTRICCION)) if (texto.includes(restriccion)) return motivo;
+  if (dbError.code === "42501") return `${generico} No tienes permiso para guardar servicios.`;
+  // Un mensaje escrito por la base (un disparador o una validación) se muestra tal cual.
+  if (dbError.code === "P0001" && dbError.message) return dbError.message;
+  return `${generico} Motivo: ${dbError.message ?? "error desconocido"}.`;
 }
 
 export async function crearServicio(
@@ -98,8 +123,7 @@ export async function crearServicio(
     .single();
 
   if (dbError) {
-    if (dbError.code === "23505") return { error: "Ya existe un servicio con esa clave." };
-    return { error: "No pudimos guardar el servicio. Intenta de nuevo." };
+    return { error: motivoDeError(dbError, "No pudimos guardar el servicio.") };
   }
 
   revalidatePath("/servicios");
@@ -121,8 +145,7 @@ export async function actualizarServicio(
   if (dbError) {
     const conflicto = conflictoDeError(dbError);
     if (conflicto) return { error: null, conflicto };
-    if (dbError.code === "23505") return { error: "Ya existe un servicio con esa clave." };
-    return { error: "No pudimos guardar los cambios. Intenta de nuevo." };
+    return { error: motivoDeError(dbError, "No pudimos guardar los cambios.") };
   }
 
   revalidatePath("/servicios");

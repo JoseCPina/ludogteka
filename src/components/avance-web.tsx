@@ -49,7 +49,7 @@ export async function AvanceWeb({ compacto = false }: { compacto?: boolean }) {
       </div>
       <ul className={compacto ? "flex flex-wrap gap-2" : "flex flex-col gap-2"}>
         {(compacto ? faltan : a.pasos).map((p) => (
-          <li key={p.clave}>
+          <li key={p.clave} data-paso-web={p.clave} data-listo={p.listo ? "si" : "no"}>
             <Link
               href={p.href}
               className={`inline-flex items-center gap-2 text-sm ${p.listo ? "text-n-600" : "font-semibold text-morado hover:underline"}`}

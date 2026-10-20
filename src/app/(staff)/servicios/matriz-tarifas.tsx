@@ -23,7 +23,7 @@ import {
   type OpcionDimension,
 } from "@/lib/tarifas/matriz";
 import { CeldaTarifa, type ValorCelda } from "./celda-tarifa";
-import { confirmarTarifasCalculadas, guardarTarifas, type FilaTarifaGuardar } from "./tarifas-actions";
+import { confirmarTarifasCalculadas, guardarTarifas, preciosDeOtroServicio, type FilaTarifaGuardar, type PrecioDeOtroServicio } from "./tarifas-actions";
 import { useZonaNegocio } from "@/components/zona-negocio";
 
 type Tramo = { clientId: string; desde: number; hasta: number | null };
@@ -50,7 +50,10 @@ export function MatrizTarifas({
   pelajes,
   vigentes,
   versionPrecios = null,
+  otrosServicios = [],
 }: {
+  /** Servicios de la misma categoría con precios, para «Copiar precios de otro servicio» (QA R22 N62). */
+  otrosServicios?: { id: string; nombre: string }[];
   /** La última captura de precios que vio esta pantalla (QA N43). */
   versionPrecios?: string | null;
   servicioId: string;
@@ -98,6 +101,10 @@ export function MatrizTarifas({
   const [rellenos, setRellenos] = useState<Map<string, string>>(new Map());
   const [incremento, setIncremento] = useState({ valor: "", unidad: "porcentaje" as "porcentaje" | "monto" });
   const [previsualizando, setPrevisualizando] = useState(false);
+  const [mismoPrecio, setMismoPrecio] = useState("");
+  const [origenCopia, setOrigenCopia] = useState("");
+  const [avisoMasivo, setAvisoMasivo] = useState<string | null>(null);
+  const copiando = useEspera();
   const [error, setError] = useState<string | null>(null);
   const ctlPrecios = useControlVersion("precios_servicio", servicioId, versionPrecios);
   const guardando = useEspera();
@@ -242,6 +249,83 @@ export function MatrizTarifas({
       }
     }
     setValores(nuevasValores);
+  }
+
+  // QA R22 (N62): un monto para TODAS las celdas (las marcadas «No aplica» se respetan); después se ajusta por celda.
+  function aplicarMismoPrecio() {
+    const monto = Number(mismoPrecio);
+    if (mismoPrecio === "" || !Number.isFinite(monto) || monto < 0) {
+      setAvisoMasivo("Escribe un precio válido para llenar todas las celdas.");
+      return;
+    }
+    const nuevas = new Map(valores);
+    let llenas = 0;
+    for (const tramo of tramos) {
+      for (const fila of filas) {
+        for (const col of columnas) {
+          const actual = obtenerValor(tramo, fila, col.id);
+          if (actual.no_aplica) continue;
+          nuevas.set(claveValor(tramo.clientId, fila.key, col.id), { ...actual, precio: String(monto), no_aplica: false });
+          llenas += 1;
+        }
+      }
+    }
+    setValores(nuevas);
+    setAvisoMasivo(`Listo: ${llenas} ${llenas === 1 ? "celda" : "celdas"} con $${monto.toFixed(2)}. Ajusta las que cambian y luego guarda.`);
+  }
+
+  // QA R22 (N62): copia los precios vigentes de otro servicio a las celdas que coinciden (grupo, talla y pelaje;
+  // si el otro servicio no depende de alguna, ese precio vale para todas). No guarda: se revisa y se guarda.
+  async function copiarDeOtroServicio() {
+    if (!origenCopia) {
+      setAvisoMasivo("Escoge de qué servicio copiar los precios.");
+      return;
+    }
+    const res = await copiando.ejecutar(() => preciosDeOtroServicio(origenCopia));
+    if (res.error || !res.precios) {
+      setAvisoMasivo(res.error ?? "No pudimos leer esos precios.");
+      return;
+    }
+    const indice = new Map<string, PrecioDeOtroServicio[]>();
+    for (const p of res.precios) {
+      const k = `${p.grupo_raza_id ?? ""}|${p.tamano_id ?? ""}|${p.pelaje_id ?? ""}`;
+      indice.set(k, [...(indice.get(k) ?? []), p]);
+    }
+    const buscar = (tramo: Tramo, g: string | null, t: string | null, pe: string | null) => {
+      for (const [gg, tt, pp] of [[g, t, pe], [g, t, null], [g, null, pe], [g, null, null], [null, t, pe], [null, t, null], [null, null, pe], [null, null, null]]) {
+        const lista = indice.get(`${gg ?? ""}|${tt ?? ""}|${pp ?? ""}`);
+        if (!lista?.length) continue;
+        return lista.find((p) => p.cantidad_desde <= tramo.desde && (p.cantidad_hasta === null || p.cantidad_hasta >= tramo.desde)) ?? lista[0];
+      }
+      return null;
+    };
+    const nuevas = new Map(valores);
+    let copiadas = 0;
+    let sinPar = 0;
+    for (const tramo of tramos) {
+      for (const fila of filas) {
+        for (const col of columnas) {
+          const fuente = buscar(tramo, fila.grupo_raza_id, fila.tamano_id, fila.pelaje_id ?? (col.id || null));
+          if (!fuente) {
+            sinPar += 1;
+            continue;
+          }
+          nuevas.set(claveValor(tramo.clientId, fila.key, col.id), {
+            precio: fuente.no_aplica || fuente.precio === null ? "" : String(fuente.precio),
+            no_aplica: fuente.no_aplica,
+            precioMaltratado: fuente.precio_pelo_maltratado === null ? "" : String(fuente.precio_pelo_maltratado),
+          });
+          copiadas += 1;
+        }
+      }
+    }
+    setValores(nuevas);
+    const nombre = otrosServicios.find((o) => o.id === origenCopia)?.nombre ?? "el otro servicio";
+    setAvisoMasivo(
+      `Copiados ${copiadas} ${copiadas === 1 ? "precio" : "precios"} de ${nombre}.` +
+        (sinPar ? ` ${sinPar} ${sinPar === 1 ? "celda no tiene" : "celdas no tienen"} equivalente: quedaron como estaban.` : "") +
+        " Revísalos y guarda."
+    );
   }
 
   const cambios = useMemo(() => {
@@ -485,6 +569,48 @@ export function MatrizTarifas({
             Aplicar a precios actuales
           </Button>
         </div>
+        <div className="flex items-end gap-2" data-mismo-precio="">
+          <Field
+            label="Mismo precio para todas las celdas"
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="ej. 250"
+            value={mismoPrecio}
+            onChange={(e) => setMismoPrecio(e.target.value)}
+            className="max-w-[160px]"
+          />
+          <Button type="button" variante="secundario" onClick={aplicarMismoPrecio}>
+            Llenar todas
+          </Button>
+        </div>
+        {otrosServicios.length > 0 && (
+          <div className="flex flex-wrap items-end gap-2" data-copiar-precios="">
+            <label className="flex flex-col gap-1 text-sm font-semibold text-n-800">
+              Copiar precios de otro servicio
+              <select
+                value={origenCopia}
+                onChange={(e) => setOrigenCopia(e.target.value)}
+                className="min-h-12 max-w-[260px] rounded-md border-[1.5px] border-n-400 bg-white px-3 font-normal text-n-900"
+              >
+                <option value="">Escoge un servicio</option>
+                {otrosServicios.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button type="button" variante="secundario" cargando={copiando.cargando} onClick={copiarDeOtroServicio}>
+              Copiar precios
+            </Button>
+          </div>
+        )}
+        {avisoMasivo && (
+          <p className="w-full text-sm text-n-700" data-aviso-masivo="" role="status">
+            {avisoMasivo}
+          </p>
+        )}
       </div>
 
       {vigenciaEsFutura && (

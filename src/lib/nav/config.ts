@@ -52,6 +52,8 @@ export const SECCIONES_STAFF: ItemNav[] = [
   // con permisos de personal o de configuración.
   { etiqueta: "Administración", href: "/admin", roles: ["admin"], permisos: ["personal", "configuracion_negocio", "tarifas"] },
   { etiqueta: "Permisos", href: "/admin/permisos", roles: ["admin"] },
+  // QA R22 (N87): la configuración vive en /admin#configuracion; /admin/configuracion lleva ahí.
+  { etiqueta: "Configuración", href: "/admin/configuracion", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { etiqueta: "Perfil y página web", href: "/admin/perfil", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { etiqueta: "Políticas y reglas", href: "/admin/politicas", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { etiqueta: "Reporte y fotos", href: "/admin/reporte-guarderia", roles: ["admin"], modulo: ["guarderia", "hotel"] },

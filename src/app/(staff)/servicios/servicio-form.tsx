@@ -42,6 +42,7 @@ export function ServicioForm({
     vigencia_dias: number | null;
     ilimitado?: boolean;
     monto_libre?: boolean;
+    duracion_minutos?: number | null;
     orden: number;
   };
   textoBoton: string;
@@ -252,6 +253,21 @@ export function ServicioForm({
             />
           </div>
         </div>
+      )}
+
+      {categoria === "estetica" && (
+        <Field
+          label="Duración de la cita (minutos) (obligatorio)"
+          name="duracion_minutos"
+          type="number"
+          min="5"
+          step="5"
+          required
+          disabled={enviando}
+          defaultValue={valoresIniciales?.duracion_minutos ?? 60}
+          ayuda="Lo que dura la cita en la agenda de estética."
+          data-duracion-servicio=""
+        />
       )}
 
       <Field

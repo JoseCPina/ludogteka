@@ -630,11 +630,82 @@ try {
       await ctxE.close();
     }
   }
+
+  // ── 12. QA R22: crear un servicio de estética (N84) y llenar su matriz (N62) ──
+  console.log("\n12. Servicio de estética nuevo y su matriz de precios (N84, N62)");
+  {
+    const clave = `qa_r22_estetica_${sufijo}`;
+    await admin.goto(`${BASE}/servicios/nuevo`, { waitUntil: "networkidle" });
+    await admin.locator('input[name="clave"]').fill(clave);
+    await admin.locator('input[name="nombre"]').fill(`QA R22 estética ${sufijo}`);
+    await admin.locator('select[name="categoria"]').selectOption("estetica");
+    await admin.locator('select[name="unidad"]').selectOption("sesion");
+    // Como los baños de Huellitas: precio por grupo de raza (así hay de dónde copiar).
+    await admin.locator('input[name="depende_grupo_raza"]').check();
+    const dur = admin.locator('input[name="duracion_minutos"]');
+    if (!(await dur.count())) hallazgo("N84: el formulario no pide la duración de un servicio de estética");
+    else {
+      // Sin duración (quitando el «required» del navegador): la base lo rechazaría; la pantalla dice por qué.
+      await dur.evaluate((el) => { el.removeAttribute("required"); el.value = ""; });
+      await admin.locator("form").getByRole("button", { name: /Crear|Guardar/ }).last().click();
+      await admin.locator("text=/minutos dura la cita/").first().waitFor({ timeout: 30000 }).catch(() => {});
+      const aviso = (await admin.locator("body").innerText()).replace(/\s+/g, " ");
+      if (!/minutos dura la cita/.test(aviso)) hallazgo(`N84: sin duración no dice el motivo («${aviso.slice(0, 160)}»)`);
+      else bien("N84: sin duración, el aviso dice el motivo real (minutos de la cita)");
+      await dur.fill("45");
+      await admin.locator("form").getByRole("button", { name: /Crear|Guardar/ }).last().click();
+    }
+    let svc = null;
+    for (let i = 0; i < 60 && !svc; i++) {
+      svc = (await SB.from("servicios").select("id, categoria, unidad, duracion_minutos").eq("clave", clave).maybeSingle()).data;
+      if (!svc) await admin.waitForTimeout(500);
+    }
+    if (!svc) hallazgo(`N84: no se creó el servicio de estética («${(await admin.locator("body").innerText()).replace(/\s+/g, " ").slice(0, 200)}»)`);
+    else {
+      creados.servicios = [svc.id];
+      if (svc.categoria !== "estetica" || svc.unidad !== "sesion" || svc.duracion_minutos !== 45) hallazgo(`N84: se guardó distinto (${JSON.stringify(svc)})`);
+      else bien("N84: el servicio de estética (unidad Sesión, 45 min) se crea");
+      await admin.waitForURL(/\/servicios\/[0-9a-f-]+/, { timeout: 30000 }).catch(() => {});
+      await admin.goto(`${BASE}/servicios/${svc.id}/tarifas`, { waitUntil: "networkidle" });
+      const celdas = admin.locator("[data-celda-precio]");
+      const n = await celdas.count();
+      await admin.locator("[data-mismo-precio] input").fill("275");
+      await admin.getByRole("button", { name: "Llenar todas" }).click();
+      const valores = await celdas.evaluateAll((els) => els.map((e) => e.value));
+      if (!n || valores.some((v) => v !== "275")) hallazgo(`N62: «Mismo precio para todas las celdas» no llenó las ${n} celdas (${valores.join(",")})`);
+      else bien(`N62: «Mismo precio para todas las celdas» llena las ${n} celdas con $275`);
+      await celdas.first().fill("300");
+      if ((await celdas.first().inputValue()) !== "300") hallazgo("N62: después de llenar no deja ajustar una celda");
+      else bien("N62: después se ajusta celda por celda");
+      const copiar = admin.locator("[data-copiar-precios] select");
+      if (!(await copiar.count())) hallazgo("N62: no está «Copiar precios de otro servicio»");
+      else {
+        const opciones = await copiar.locator("option").evaluateAll((os) => os.map((o) => ({ v: o.value, t: o.textContent })).filter((o) => o.v));
+        const { data: conPrecio } = await SB.from("tarifas_vigentes").select("servicio_id").in("servicio_id", opciones.map((o) => o.v)).eq("no_aplica", false).not("precio", "is", null).limit(1);
+        const origen = conPrecio?.[0]?.servicio_id;
+        if (!origen) hallazgo("N62: no hay otro servicio de estética con precios para copiar en Huellitas");
+        else {
+          await copiar.selectOption(origen);
+          await admin.getByRole("button", { name: "Copiar precios" }).click();
+          await admin.locator("[data-aviso-masivo]").filter({ hasText: /Copiados/ }).waitFor({ timeout: 30000 }).catch(() => {});
+          const aviso = (await admin.locator("[data-aviso-masivo]").innerText().catch(() => "")).replace(/\s+/g, " ");
+          const despues = await celdas.evaluateAll((els) => els.map((e) => e.value));
+          if (!/Copiados [1-9]/.test(aviso) || despues.every((v) => v === "275" || v === "300")) hallazgo(`N62: copiar de otro servicio no cambió las celdas («${aviso}»)`);
+          else bien(`N62: «Copiar precios de otro servicio» llena la matriz («${aviso.slice(0, 110)}»)`);
+        }
+      }
+      const { count: guardadas } = await SB.from("tarifas").select("id", { count: "exact", head: true }).eq("servicio_id", svc.id);
+      if (guardadas) hallazgo("N62: llenar o copiar guardó precios sin «Guardar»");
+      else bien("N62: llenar y copiar no guardan nada hasta «Guardar»");
+      await sinDesborde(admin, "matriz de precios");
+    }
+  }
 } catch (e) {
   hallazgo(`la prueba tronó: ${e.message}`);
 } finally {
   await nav.close();
   for (const id of creados.citas) await SB.from("citas_estetica").delete().eq("id", id);
+  for (const id of creados.servicios ?? []) { await SB.from("tarifas").delete().eq("servicio_id", id); await SB.from("servicios").delete().eq("id", id); }
   for (const id of creados.ausenciasUi ?? []) await SB.from("ausencias").delete().eq("id", id);
   if (creados.empleadosUi?.length) await SB.from("empleados").update({ deleted_at: new Date().toISOString() }).in("id", creados.empleadosUi);
   for (const id of creados.reservas) await SB.from("reservas").delete().eq("id", id);

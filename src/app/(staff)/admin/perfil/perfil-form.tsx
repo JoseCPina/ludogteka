@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
@@ -136,7 +138,7 @@ export function PerfilForm({
             maxLength={600}
             ayuda="Dos o tres líneas: qué ofreces y qué te hace distinto. Sale arriba en tu página."
           />
-          <Field label="Dirección" name="direccion" defaultValue={direccion} maxLength={200} ayuda="Calle, número y colonia. Es la misma dirección de Configuración: sale en tu página con un link al mapa." />
+          <Field label="Dirección" name="direccion" defaultValue={direccion} maxLength={200} ayuda={<>Calle, número y colonia. Es la misma dirección de <Link href="/admin/configuracion" className="font-semibold text-morado underline" data-enlace-configuracion="">Configuración</Link>: sale en tu página con un link al mapa.</>} />
           <Select label="Diseño de tu página" name="tema_web" defaultValue={temaWeb ?? ""} ayuda="Cambia la tipografía, los colores y cómo se acomoda tu página.">
             <option value="">Automático (según tus servicios)</option>
             <option value="veterinaria">Clínica veterinaria</option>

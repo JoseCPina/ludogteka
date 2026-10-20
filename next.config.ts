@@ -66,6 +66,9 @@ const nextConfig: NextConfig = {
       // cambio. `permanent: false` a propósito — si mañana se decide otra
       // estructura, un 308 ya cacheado en el navegador sería difícil de
       // desandar.
+      // QA R22 (N87): «Configuración» vive en la sección de Administración; la ruta que nombran el menú y Perfil
+      // lleva ahí antes de pintar nada (un redirect() de página bajo /admin, con loading.tsx, llegaba tarde).
+      { source: "/admin/configuracion", destination: "/admin#configuracion", permanent: false },
       { source: "/agenda", destination: "/estetica", permanent: false },
       { source: "/agenda/:ruta*", destination: "/estetica/:ruta*", permanent: false },
 

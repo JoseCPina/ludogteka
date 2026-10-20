@@ -171,3 +171,28 @@ export async function confirmarTarifasCalculadas(grupoId: string, servicioId: st
   revalidatePath(`/servicios/${servicioId}/tarifas`);
   return { error: null, ok: true, confirmadas: Number(data ?? 0) };
 }
+
+export type PrecioDeOtroServicio = {
+  grupo_raza_id: string | null;
+  tamano_id: string | null;
+  pelaje_id: string | null;
+  cantidad_desde: number;
+  cantidad_hasta: number | null;
+  precio: number | null;
+  precio_pelo_maltratado: number | null;
+  no_aplica: boolean;
+};
+
+// QA R22 (N62): «Copiar precios de otro servicio» trae los precios vigentes de otro servicio del negocio para
+// llenar esta matriz en pantalla; nada se guarda hasta «Guardar» (y se revisa como cualquier captura).
+export async function preciosDeOtroServicio(servicioOrigenId: string): Promise<{ error: string | null; precios?: PrecioDeOtroServicio[] }> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("tarifas_vigentes")
+    .select("grupo_raza_id, tamano_id, pelaje_id, cantidad_desde, cantidad_hasta, precio, precio_pelo_maltratado, no_aplica")
+    .eq("servicio_id", servicioOrigenId)
+    .limit(1000);
+  if (error) return { error: `No pudimos leer los precios de ese servicio. Motivo: ${error.message}.` };
+  if (!data?.length) return { error: "Ese servicio todavía no tiene precios capturados." };
+  return { error: null, precios: data as PrecioDeOtroServicio[] };
+}
