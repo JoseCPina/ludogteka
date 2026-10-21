@@ -257,6 +257,39 @@ export function indicacionesGeneradas(d: { dosis: string; frecuencia: string; du
   ].filter(Boolean).join(" ");
 }
 
+type CamposRenglon = { producto: string; dosis: string; via: string; frecuencia: string; duracion_dias: number | string; indicaciones?: string | null };
+
+const comparable = (t: string) =>
+  t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\bvia\b|\bpor\b|\bcada\b/g, " ").replace(/[^a-z0-9/]+/g, " ").replace(/\s+/g, " ").trim();
+
+/** QA S22 (N112): el renglón de un medicamento, armado UNA vez con sus campos: «Amoxicilina, 1 tableta, vía oral, cada 12 horas, por 7 días». */
+export function renglonMedicamento(l: CamposRenglon): string {
+  const dias = Math.trunc(Number(String(l.duracion_dias).replace(",", ".")));
+  const frec = l.frecuencia.trim();
+  return [
+    l.producto.trim(),
+    l.dosis.trim(),
+    l.via.trim() ? `vía ${l.via.trim().toLowerCase()}` : "",
+    frec ? frec.charAt(0).toLowerCase() + frec.slice(1) : "",
+    Number.isFinite(dias) && dias > 0 ? `por ${dias} ${dias === 1 ? "día" : "días"}` : "",
+  ].filter(Boolean).join(", ");
+}
+
+/**
+ * QA S22 (N112): las indicaciones escritas solo se agregan si dicen algo distinto de lo que ya dicen los campos
+ * (las generadas con dosis, frecuencia y días, o un texto contenido en el renglón). Si no, `null`.
+ */
+export function indicacionesAdicionales(l: CamposRenglon): string | null {
+  const ind = (l.indicaciones ?? "").trim();
+  if (!ind) return null;
+  const c = comparable(ind);
+  if (!c) return null;
+  const generadas = comparable(indicacionesGeneradas({ dosis: l.dosis, frecuencia: l.frecuencia, duracion_dias: String(l.duracion_dias) }));
+  const renglon = comparable(renglonMedicamento(l));
+  if (c === generadas || renglon.includes(c)) return null;
+  return ind;
+}
+
 /**
  * QA S19 (N97): quita del Tratamiento el texto guía de la plantilla («Medicamento · dosis · vía · frecuencia ·
  * duración:»). Si el médico escribió después de los dos puntos, se queda lo suyo; un renglón que solo es la guía

@@ -221,7 +221,7 @@ Un estimado aceptado no se cambia; si hay algo más que cobrar, haz otro. Los en
 
 ## Portal del dueño
 
-**Mostrar las consultas en el portal**: viene prendido; lo puedes apagar. Con él prendido, el dueño ve en su portal, por cada consulta **firmada**, un resumen: la fecha, el **motivo**, el **diagnóstico** y las **indicaciones** (plan y tratamiento). Nunca ve las notas internas, el examen, los signos vitales, el nombre del médico ni los datos de la firma, ni las consultas anuladas o en borrador. Las etiquetas de la plantilla nunca se le muestran (ni «Estudios solicitados:» ni «Medicamento · dosis · vía · frecuencia · duración:»): solo lo que escribiste, y una sección sin nada escrito no aparece.
+**Mostrar las consultas en el portal**: viene prendido; lo puedes apagar. Con él prendido, el dueño ve en su portal, por cada consulta **firmada**, un resumen: la fecha, el **motivo**, el **diagnóstico** y las **indicaciones** (plan y tratamiento). Nunca ve las notas internas, el examen, los signos vitales, el nombre del médico ni los datos de la firma, ni las consultas anuladas o en borrador. Las etiquetas de la plantilla nunca se le muestran (ni «Estudios solicitados:» ni «Medicamento · dosis · vía · frecuencia · duración:»): solo lo que escribiste, y una sección sin nada escrito no aparece. Al **firmar**, la consulta guarda solo lo que capturaste: una etiqueta de la plantilla que quedó vacía («Tiempo de evolución:», «Mucosas:») no se guarda ni se ve en la consulta firmada ni en el expediente; una con texto («Mucosas: rosadas») se queda.
 
 ## Tipos de cita y duración
 

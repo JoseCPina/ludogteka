@@ -124,9 +124,10 @@ export default async function TarifasServicioPage({
       )}
 
       {!servicio.monto_libre && (
-        <ComoSeCobra unidad={servicio.unidad as string} dependeCantidad={servicio.depende_cantidad} vigentes={(vigentes ?? []) as Parameters<typeof ComoSeCobra>[0]["vigentes"]} />
+        <ComoSeCobra unidad={servicio.unidad as string} dependeCantidad={servicio.depende_cantidad} vigentes={(vigentes ?? []) as Parameters<typeof ComoSeCobra>[0]["vigentes"]} enlaceCapturar="#capturar-tramos" />
       )}
 
+      <div id="capturar-tramos" className="scroll-mt-20" />
       <MatrizTarifas
         servicioId={id}
         dependeGrupoRaza={servicio.depende_grupo_raza}

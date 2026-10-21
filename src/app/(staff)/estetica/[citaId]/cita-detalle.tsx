@@ -546,10 +546,11 @@ export function CitaDetalle({
                   >
                     <p className="mb-1.5 text-sm font-semibold text-n-800">¿Es el dueño registrado? * (obligatorio)</p>
                     {falta?.campo === "dueno" && <p className="mb-1.5 text-sm font-semibold text-coral-oscuro">{falta.texto}</p>}
-                    <div className="flex gap-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:gap-3" data-quien-recoge>
                       <Button
                         type="button"
                         variante={esDueno === true ? "exito" : "secundario"}
+            className="w-full sm:w-auto"
                         onClick={() => {
                           setEsDueno(true);
                           setFalta(null);
@@ -560,6 +561,7 @@ export function CitaDetalle({
                       <Button
                         type="button"
                         variante={esDueno === false ? "peligro" : "secundario"}
+            className="w-full sm:w-auto"
                         onClick={() => {
                           setEsDueno(false);
                           setFalta(null);

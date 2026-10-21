@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { useAccionConTope } from "@/hooks/use-espera";
 import { iniciarSesion, type EstadoLogin } from "./actions";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
+import { WHATSAPP_SOPORTE_LINK } from "@/lib/peludesk/respuestas-fijas";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 
 /**
@@ -19,8 +21,11 @@ export function LoginForm({
   errorInicial = null,
   telefonoRecepcion,
   nombreNegocio,
+  unSoloAdmin = false,
 }: {
   nombreNegocio: string;
+  // QA S22: el negocio tiene un solo admin (el dueño): no hay «otro admin» a quien pedírsela.
+  unSoloAdmin?: boolean;
   errorInicial?: string | null;
   // Null cuando el negocio todavía no lo captura: en ese caso no se
   // ofrece un botón de WhatsApp que llevaría a ningún lado, se dice qué
@@ -104,9 +109,23 @@ export function LoginForm({
               contraseña temporal para entrar con tu teléfono.
             </p>
           )}
-          <p className="text-sm text-n-600">
-            Si eres del personal, pídele a un admin que te mande una invitación nueva.
-          </p>
+          {unSoloAdmin ? (
+            <div className="flex flex-col gap-1 text-sm text-n-600" data-recuperar-un-admin>
+              <p>
+                Si eres el dueño del negocio: la contraseña de un cliente la restableces tú desde su ficha, en{" "}
+                <Link href="/clientes" className="font-semibold text-morado hover:underline">Clientes</Link> → el cliente → «Contraseña del portal».
+              </p>
+              <p>
+                Si la que olvidaste es la tuya,{" "}
+                <a href={WHATSAPP_SOPORTE_LINK} target="_blank" rel="noreferrer" className="font-semibold text-morado hover:underline">escríbenos por WhatsApp a PeluDesk</a>{" "}
+                y te ayudamos a recuperarla.
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-n-600">
+              Si eres del personal, pídele a un admin que te mande una invitación nueva.
+            </p>
+          )}
         </div>
       )}
     </div>

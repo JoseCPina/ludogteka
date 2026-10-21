@@ -331,4 +331,11 @@ QA S21 (21 de octubre de 2026):
 - Al editar un servicio por kilómetro u hora sale «Cómo se cobra este servicio» con sus tramos, un ejemplo y el enlace a sus tarifas.
 - En el login, si la contraseña está mal el aviso sale una vez junto al botón y el teléfono o correo se queda escrito.
 - El portal tiene una sola barra fija arriba: el nombre del negocio y «Salir»; el saludo va en el cuerpo.
+
+QA S22 (21 de octubre de 2026):
+- Un servicio por kilómetro u hora muestra en «Cómo se cobra este servicio» sus tramos y cuánto se cobra a 7 km con ellos; sin tramos, un ejemplo con cifras de ejemplo y el botón «Capturar tramos». Los tramos empiezan en 1.
+- Al firmar una consulta veterinaria se guarda solo lo capturado: las etiquetas de la plantilla que quedaron vacías no se guardan ni se muestran.
+- En la receta y en el portal, cada medicamento sale en un solo renglón; las indicaciones solo se agregan si dicen algo más.
+- En el check-out en el celular, «Notas» ocupa toda la fila con «Aplicar» debajo, y «Sí, es el dueño» / «No, persona autorizada» van uno debajo del otro.
+- Si el negocio tiene un solo admin, el «¿Olvidaste tu contraseña?» del login dice que el dueño la restablece desde la ficha del cliente.
 `.trim();

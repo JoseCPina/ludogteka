@@ -13,6 +13,10 @@ export async function iniciarSesion(
   _estadoPrevio: EstadoLogin,
   formData: FormData
 ): Promise<EstadoLogin> {
+  // QA S22: cada paso del login con su tiempo; si tarda más de 2 s queda en los logs de Vercel con el paso lento.
+  const t0 = Date.now();
+  const tiempos: Record<string, number> = {};
+  const marca = (paso: string) => (tiempos[paso] = Date.now() - t0);
   const identificador = String(formData.get("identificador") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
@@ -44,11 +48,13 @@ export async function iniciarSesion(
     // ese teléfono. Si no existe, o no es de este negocio, falla igual que
     // una contraseña equivocada (abajo), sin decir cuál de las dos fue.
     email = (data as string | null) ?? correoSinteticoDeTelefono(quien.telefono);
+    marca("buscar_cuenta");
   }
 
   // Se canjea sin cookies: la sesión se guarda después, en la del área que le toca por su rol (portal o personal).
   const supabase = clienteSinSesion();
   const { data: ingreso, error } = await supabase.auth.signInWithPassword({ email, password });
+  marca("contrasena");
 
   if (error || !ingreso.session) {
     if (error?.code === "email_not_confirmed") {
@@ -68,11 +74,14 @@ export async function iniciarSesion(
   // El rol es el de su membresía EN ESTE negocio. Una cuenta que existe
   // (por ejemplo, de otro negocio) pero no es de este, no entra aquí.
   const rol = await rolDeSesion(ingreso.session);
+  marca("rol");
   if (!rol || rol === "anonimo") {
     await supabase.auth.signOut({ scope: "local" });
     const negocio = await negocioActual();
     return { error: `Tu cuenta no tiene acceso a ${negocio.nombre}. Si eres cliente, pídele a recepción tu link de registro.` };
   }
-  await guardarSesionEnSuArea(ingreso.session);
+  await guardarSesionEnSuArea(ingreso.session, rol);
+  marca("guardar_sesion");
+  if (Date.now() - t0 > 2000) console.warn("[login] lento", JSON.stringify({ total_ms: Date.now() - t0, ...tiempos, rol }));
   redirect(rutaPorRol(rol as string));
 }

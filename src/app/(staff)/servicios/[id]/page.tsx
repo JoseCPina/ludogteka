@@ -94,6 +94,7 @@ export default async function EditarServicioPage({
           dependeCantidad={servicio.depende_cantidad}
           vigentes={(vigentes ?? []) as Parameters<typeof ComoSeCobra>[0]["vigentes"]}
           enlaceTarifas={`/servicios/${id}/tarifas`}
+          enlaceCapturar={`/servicios/${id}/tarifas#capturar-tramos`}
         />
       )}
 

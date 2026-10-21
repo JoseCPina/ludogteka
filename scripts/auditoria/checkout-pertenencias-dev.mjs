@@ -201,7 +201,8 @@ try {
     await px.goto(`${BASE}/reservas/${rH.id}`, { waitUntil: "networkidle" });
     await px.getByRole("button", { name: "Cancelar toda la reserva" }).click();
     const dialogo = await px.locator("body").innerText();
-    comprobar(new RegExp(`¿Cancelar la reserva de ${perro.nombre}\\?`).test(dialogo) && !/perro\(s\)/.test(dialogo), `N52: con un perro lo nombra («¿Cancelar la reserva de ${perro.nombre}?»), sin «perro(s)»`);
+    // Desde S18 la confirmación dice qué se cancela (servicio, mascota y fechas: describirEstancia).
+    comprobar(new RegExp(`¿Cancelar [^?]*${perro.nombre}[^?]*\\?`).test(dialogo) && !/perro\(s\)/.test(dialogo), `N52: con un perro lo nombra («¿Cancelar … ${perro.nombre} …?»), sin «perro(s)»`);
     const motivo = px.getByLabel("Motivo (opcional)");
     comprobar((await motivo.count()) === 1, "al cancelar, aparece «Motivo (opcional)»");
     await motivo.fill("El cliente cambió de fechas");
@@ -239,7 +240,7 @@ try {
     await px.goto(`${BASE}/reservas/${rH3.id}`, { waitUntil: "networkidle" });
     await px.getByRole("button", { name: "Cancelar toda la reserva" }).click();
     const dialogo3 = await px.locator("body").innerText();
-    comprobar(/¿Cancelar la reserva de los 2 perros \(.+ y .+\)\?/.test(dialogo3), "R23 N52: con dos perros pregunta por «los 2 perros (A y B)»");
+    comprobar(/¿Cancelar [^?]*\?/.test(dialogo3) && dialogo3.includes(perro.nombre) && dialogo3.includes(otro.nombre) && !/perro\(s\)/.test(dialogo3), "R23 N52: con dos perros nombra a los dos");
     await px.getByRole("button", { name: "Sí, cancelar todo" }).click();
     comprobar(await esperarTexto(px, /Se canceló la reserva de .+ y .+ el .+ a las \d{1,2}:\d{2} [ap]\.m\./), "R23 N52: el aviso nombra a los dos perros con fecha y hora");
     await cx.close();

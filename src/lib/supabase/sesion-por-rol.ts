@@ -28,9 +28,10 @@ export async function rolDeSesion(sesion: Sesion): Promise<string> {
   return (data as string | null) ?? "anonimo";
 }
 
-/** Guarda la sesión en la cookie de su área según el rol y devuelve ese rol. */
-export async function guardarSesionEnSuArea(sesion: Sesion): Promise<string> {
-  const rol = await rolDeSesion(sesion);
+/** Guarda la sesión en la cookie de su área según el rol y devuelve ese rol. Si quien llama ya lo sabe, lo pasa
+ *  (el login lo pregunta antes para rechazar una cuenta de otro negocio: preguntarlo dos veces era un viaje de más). */
+export async function guardarSesionEnSuArea(sesion: Sesion, rolSabido?: string): Promise<string> {
+  const rol = rolSabido ?? (await rolDeSesion(sesion));
   const servidor = await createSupabaseServerClient(rol === "cliente" ? "portal" : "personal");
   await servidor.auth.setSession({ access_token: sesion.access_token, refresh_token: sesion.refresh_token });
   return rol;

@@ -5,7 +5,7 @@ import { formatearFechaCalendario, unidadSegunCantidad } from "@/lib/formato";
 import { hashDeToken, tokenPlausible } from "@/lib/reporte/enlaces";
 import { LigaNoDisponible, MarcoLiga } from "@/components/publico/marco-liga";
 import { BotonImprimirPagina } from "@/components/boton-imprimir";
-import type { RecetaSnapshot } from "@/lib/veterinaria/recetas";
+import { indicacionesAdicionales, type RecetaSnapshot } from "@/lib/veterinaria/recetas";
 
 // Receta del dueño (/rx/<token>): sin sesión. Muestra la receta emitida por el médico, tal cual, y si
 // fue anulada lo dice. Nada del expediente, de los lotes ni de otros clientes.
@@ -66,7 +66,7 @@ export default async function RecetaPublica({ params }: { params: Promise<{ toke
               {l.principio_activo && <p className="text-n-600">Principio activo: {l.principio_activo}</p>}
               <p className="mt-1 text-n-800"><strong>Dosis:</strong> {l.dosis} · <strong>Vía:</strong> {l.via} · <strong>Frecuencia:</strong> {l.frecuencia} · <strong>Duración:</strong> {l.duracion_dias} {l.duracion_dias === 1 ? "día" : "días"}</p>
               <p className="text-n-800"><strong>Cantidad:</strong> {l.cantidad_surtir}{l.cantidad_unidad ? ` ${unidadSegunCantidad(l.cantidad_surtir, l.cantidad_unidad)}` : ""}{l.tiempo_retiro ? <> · <strong>Tiempo de retiro:</strong> {l.tiempo_retiro}</> : null}</p>
-              {l.indicaciones && <p className="text-n-700">{l.indicaciones}</p>}
+              {indicacionesAdicionales(l) && <p className="text-n-700" data-indicaciones-extra>{indicacionesAdicionales(l)}</p>}
             </div>
           ))}
         </section>
