@@ -95,7 +95,7 @@ export const PIEZA_TITULO: Record<Pieza, string> = {
 
 export const archivoImagen = (giro: GiroAnuncio, pieza: Pieza, formato: Formato) => `${giro}-${pieza}-${formato}.jpg`;
 
-export type ResultadoCampanas = { creados: string[]; errores: string[]; activados: string[]; insights: number; manuales: string[]; editados: string[] };
+export type ResultadoCampanas = { creados: string[]; errores: string[]; activados: string[]; insights: number; manuales: string[]; editados: string[]; adoptados: string[] };
 
 /**
  * Lo que la tarea pone en un conjunto que ya existe: nombre, presupuesto y segmentación. Meta rechaza crear conjuntos
@@ -105,6 +105,54 @@ export type ResultadoCampanas = { creados: string[]; errores: string[]; activado
 export function edicionConjunto(giro: GiroAnuncio, incluir: string[], excluir: string[]) {
   const e = especConjunto(giro, "", incluir, excluir);
   return { name: e.name, daily_budget: e.daily_budget, targeting: e.targeting };
+}
+
+/** Nombre comparable: sin acentos, sin distinguir mayúsculas, «·», guiones o puntos, y sin espacios dobles. */
+export const nombreNormalizado = (n: string) =>
+  (n ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[·•\-–—._|]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+export type ConjuntoEnMeta = { id: string; name: string; effective_status?: string; destination_type?: string; created_time?: string };
+
+const VIVO = (c: ConjuntoEnMeta) => !["DELETED", "ARCHIVED"].includes(String(c.effective_status ?? ""));
+
+/**
+ * Qué conjunto de la campaña es de cada giro: (1) el guardado, si sigue en la campaña; (2) uno con su nombre oficial
+ * normalizado; (3) si aún falta, cualquier conjunto de WhatsApp de la campaña que no sea de otro giro (una «Copia de…»,
+ * un «Nuevo conjunto de anuncios»), el más viejo primero: la tarea lo renombra y le pone lo demás. Uno en revisión cuenta.
+ */
+export function asignarConjuntos(guardados: Partial<Record<GiroAnuncio, string | null>>, enCampana: ConjuntoEnMeta[]) {
+  const vivos = enCampana.filter(VIVO);
+  const porId = new Map(vivos.map((c) => [c.id, c]));
+  const asignados = new Map<GiroAnuncio, { id: string; como: "guardado" | "nombre" | "adoptado"; nombreAnterior: string }>();
+  const usados = new Set<string>();
+  for (const g of GIROS) {
+    const id = guardados[g];
+    if (id && porId.has(id)) { asignados.set(g, { id, como: "guardado", nombreAnterior: porId.get(id)!.name }); usados.add(id); }
+  }
+  for (const g of GIROS) {
+    if (asignados.has(g)) continue;
+    const oficial = nombreNormalizado(CONJUNTOS[g].nombre);
+    const c = vivos.find((x) => !usados.has(x.id) && nombreNormalizado(x.name) === oficial);
+    if (c) { asignados.set(g, { id: c.id, como: "nombre", nombreAnterior: c.name }); usados.add(c.id); }
+  }
+  // Un conjunto con el nombre oficial de OTRO giro nunca se adopta para este.
+  const oficiales = new Set(GIROS.map((g) => nombreNormalizado(CONJUNTOS[g].nombre)));
+  const libres = vivos
+    .filter((x) => !usados.has(x.id) && x.destination_type === "WHATSAPP" && !oficiales.has(nombreNormalizado(x.name)))
+    .sort((a, b) => String(a.created_time ?? "").localeCompare(String(b.created_time ?? "")));
+  for (const g of GIROS) {
+    if (asignados.has(g) || !libres.length) continue;
+    const c = libres.shift()!;
+    asignados.set(g, { id: c.id, como: "adoptado", nombreAnterior: c.name });
+    usados.add(c.id);
+  }
+  return asignados;
 }
 
 export const textoConjuntoManual = (giro: GiroAnuncio) =>
@@ -208,7 +256,7 @@ export async function asegurarCampanas(o: {
 }): Promise<ResultadoCampanas> {
   const { db, api } = o;
   const f = o.fetch ?? fetch;
-  const res: ResultadoCampanas = { creados: [], errores: [], activados: [], insights: 0, manuales: [], editados: [] };
+  const res: ResultadoCampanas = { creados: [], errores: [], activados: [], insights: 0, manuales: [], editados: [], adoptados: [] };
   const texto = (e: unknown) => (e instanceof Error ? e.message : String(e)).slice(0, 2000);
 
   // limite-filas-ok: la estructura de una campaña son unas 60 filas
@@ -274,24 +322,51 @@ export async function asegurarCampanas(o: {
    * existe queda «pendiente» con la instrucción para crearlo a mano. Si existe, se le pone lo de la tarea, solo cuando
    * cambió (la firma va en datos) para no tocar un conjunto que ya entrega.
    */
-  async function conjuntoExistente(giro: GiroAnuncio, edicion: Record<string, string>): Promise<string | null> {
+  // Los conjuntos de la campaña, una vez por corrida (también los que están en revisión).
+  let asignacion: ReturnType<typeof asignarConjuntos> | null = null;
+  async function conjuntosDeCampana(campanaId: string) {
+    if (asignacion) return asignacion;
+    const todos: ConjuntoEnMeta[] = [];
+    let despues: string | null = null;
+    for (let i = 0; i < 10; i++) {
+      const d = await api.graph("GET", `${campanaId}/adsets`, { fields: "id,name,effective_status,destination_type,created_time", limit: "200", ...(despues ? { after: despues } : {}) });
+      todos.push(...((d.data as ConjuntoEnMeta[]) ?? []));
+      const p = d.paging as { cursors?: { after?: string }; next?: string } | undefined;
+      despues = (p?.next && p.cursors?.after) || null;
+      if (!despues) break;
+    }
+    const guardados = Object.fromEntries(GIROS.map((g) => [g, filas.get(`conjunto:${g}`)?.meta_id ?? null]));
+    asignacion = asignarConjuntos(guardados, todos);
+    return asignacion;
+  }
+
+  async function conjuntoExistente(giro: GiroAnuncio, edicion: Record<string, string>, campanaId: string): Promise<string | null> {
     const c = CONJUNTOS[giro];
     const clave = `conjunto:${giro}`;
     const base = { tipo: "conjunto", giro, nombre: c.nombre };
-    let id = filas.get(clave)?.meta_id ?? null;
+    let id: string | null = null;
     try {
-      if (!id) id = (await enCuenta("adsets")).find((x) => x.name === c.nombre)?.id ?? null;
+      const a = (await conjuntosDeCampana(campanaId)).get(giro);
+      id = a?.id ?? null;
+      if (a && a.como === "adoptado") res.adoptados.push(`${c.nombre} ← «${a.nombreAnterior}» (${a.id})`);
     } catch (e) {
       res.errores.push(`${c.nombre}: ${texto(e)}`);
-      return null;
+      return filas.get(clave)?.meta_id ?? null;
     }
     if (!id) {
       res.manuales.push(c.nombre);
       await guardar(clave, { estado: "pendiente", ultimo_error: null, datos: { manual: textoConjuntoManual(giro) } }, base);
       return null;
     }
-    const firma = JSON.stringify(edicion);
     const fila = filas.get(clave);
+    if (fila?.meta_id && fila.meta_id !== id) {
+      // El conjunto guardado ya no está en la campaña: sus anuncios eran de él y se crean de nuevo en el que quedó.
+      for (const pieza of PIEZAS) {
+        const ad = filas.get(`anuncio:${giro}:${pieza}`);
+        if (ad?.meta_id) await guardar(`anuncio:${giro}:${pieza}`, { meta_id: null, estado: "pendiente" }, { tipo: "anuncio", giro, nombre: `PeluDesk · ${c.etiqueta} · ${pieza}` });
+      }
+    }
+    const firma = JSON.stringify(edicion);
     if (fila?.meta_id !== id || fila?.datos?.firma !== firma) {
       try {
         await api.graph("POST", id, edicion);
@@ -389,7 +464,7 @@ export async function asegurarCampanas(o: {
         conjunto = filas.get(`conjunto:${giro}`)?.meta_id ?? null;
       } else {
         const incluir = c.audiencias.map((k) => audiencias.get(k)!.audience_id!) as string[];
-        conjunto = await conjuntoExistente(giro, edicionConjunto(giro, incluir, excluir));
+        conjunto = await conjuntoExistente(giro, edicionConjunto(giro, incluir, excluir), campanaId);
       }
       if (!conjunto) continue;
       for (const pieza of PIEZAS) {

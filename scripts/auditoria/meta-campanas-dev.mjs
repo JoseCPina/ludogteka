@@ -54,6 +54,10 @@ const doble = http.createServer(async (req, res) => {
   const ruta = u.pathname.replace(/^\/v[0-9.]+\//, "");
   llamadas.push({ metodo: req.method, ruta, params: Object.fromEntries([...p].filter(([k]) => k !== "bytes")) });
   if (p.get("access_token") !== TOKEN) return json(400, { error: { message: "Invalid OAuth access token.", code: 190 } });
+  const deCampana = ruta.match(/^([0-9]+)\/adsets$/);
+  if (deCampana && req.method === "GET") {
+    return json(200, { data: [...objetos].filter(([, o]) => o.tipo === "conjunto" && o.campaign_id === deCampana[1]).map(([id, o]) => ({ id, name: o.name, effective_status: o.effective_status, destination_type: o.destination_type, created_time: o.created_time })) });
+  }
   const borde = ruta.match(/^act_[0-9]+\/(customaudiences|campaigns|adsets|adcreatives|ads|adimages)$/)?.[1];
   if (borde && req.method === "GET") {
     const tipo = { customaudiences: "audiencia", campaigns: "campana", adsets: "conjunto", adcreatives: "creativo", ads: "anuncio" }[borde];
@@ -128,22 +132,37 @@ try {
   ok(simVet.audience_id === yaExiste && simVet.coincidencias_min === 1000, "el similar que ya existía queda ligado con su tamaño");
 
   seccion("2. Conjuntos creados a mano en Ads Manager: la tarea los termina y crea sus anuncios");
-  // Como los deja Ads Manager: su nombre, 230 MXN, 18–65, sin públicos y ventana de 7 días.
+  // Como los deja Ads Manager: 230 MXN, 18–65, sin públicos y ventana de 7 días. Veterinarias y Estéticas con el nombre
+  // exacto, Hotel y guardería con otro formato del mismo nombre, y Visitaron su página SIN conjunto: lo toma un
+  // «Nuevo conjunto de anuncios» de WhatsApp que nadie renombró (el más viejo de los libres).
   const NOMBRES = ["PeluDesk · WhatsApp · Veterinarias", "PeluDesk · WhatsApp · Estéticas", "PeluDesk · WhatsApp · Hotel y guardería", "PeluDesk · WhatsApp · Visitaron su página"];
-  for (const name of NOMBRES) objetos.set(nuevoId(), { tipo: "conjunto", name, daily_budget: "23000", targeting: JSON.stringify({ geo_locations: { countries: ["MX"] }, age_min: 18, age_max: 65 }), attribution_spec: JSON.stringify([{ event_type: "CLICK_THROUGH", window_days: 7 }]), effective_status: "PAUSED" });
-  // Uno con otro nombre (una «Copia» sin renombrar) no se adopta.
-  objetos.set(nuevoId(), { tipo: "conjunto", name: "Nuevo conjunto de anuncios de Interacción - Copia", effective_status: "PAUSED" });
+  const campId = de("campana")[0][0];
+  const deAds = (name, extra = {}) => ({ tipo: "conjunto", name, campaign_id: campId, destination_type: "WHATSAPP", daily_budget: "23000", targeting: JSON.stringify({ geo_locations: { countries: ["MX"] }, age_min: 18, age_max: 65 }), attribution_spec: JSON.stringify([{ event_type: "CLICK_THROUGH", window_days: 7 }]), effective_status: "PAUSED", created_time: "2026-10-21T05:00:00+0000", ...extra });
+  objetos.set(nuevoId(), deAds(NOMBRES[0]));
+  objetos.set(nuevoId(), deAds(NOMBRES[1], { effective_status: "IN_PROCESS" })); // en revisión: cuenta como existente
+  const idHotel = nuevoId();
+  objetos.set(idHotel, deAds("Peludesk - Whatsapp -  Hotel y Guarderia"));
+  const idNuevo = nuevoId();
+  objetos.set(idNuevo, deAds("Nuevo conjunto de anuncios de Interacción", { created_time: "2026-10-21T04:00:00+0000" }));
+  const idNuevo2 = nuevoId();
+  objetos.set(idNuevo2, deAds("Nuevo conjunto de anuncios de Interacción - Copia", { created_time: "2026-10-21T06:00:00+0000" }));
+  const idTrafico = nuevoId();
+  objetos.set(idTrafico, deAds("Tráfico a la página", { destination_type: "WEBSITE", created_time: "2026-10-01T00:00:00+0000" }));
+  const idOtraCamp = nuevoId();
+  objetos.set(idOtraCamp, deAds("PeluDesk · WhatsApp · Visitaron su página", { campaign_id: "999", created_time: "2026-09-01T00:00:00+0000" }));
   const r1 = await correr();
   ok(r1.errores.length === 0 && r1.manuales.length === 0, `sin errores ni pendientes (${r1.errores.join(" · ")})`);
+  ok(objetos.get(idHotel).name === "PeluDesk · WhatsApp · Hotel y guardería" && !r1.adoptados.some((x) => x.includes(idHotel)), "«Peludesk - Whatsapp -  Hotel y Guarderia» se reconoce por su nombre normalizado y queda con el oficial");
+  ok(r1.adoptados.length === 1 && r1.adoptados[0].includes(idNuevo) && objetos.get(idNuevo).name === "PeluDesk · WhatsApp · Visitaron su página", `sin conjunto con su nombre, Visitaron su página adopta el «Nuevo conjunto…» de WhatsApp más viejo y lo renombra (${r1.adoptados.join(" · ")})`);
+  ok(objetos.get(idNuevo2).daily_budget === "23000" && objetos.get(idTrafico).daily_budget === "23000" && objetos.get(idOtraCamp).daily_budget === "23000", "no toca la otra copia, el de tráfico (no es de WhatsApp) ni el de otra campaña aunque tenga el nombre oficial");
   ok(postsA("adsets").length === 0, "sigue sin crear conjuntos por la API");
   const ediciones = llamadas.filter((l) => l.metodo === "POST" && /^[0-9]+$/.test(l.ruta) && objetos.get(l.ruta)?.tipo === "conjunto");
   ok(ediciones.length === 4 && r1.editados.length === 4, `edita los 4 conjuntos (${ediciones.length})`);
   ok(ediciones.every((l) => !l.params.attribution_spec && !l.params.promoted_object && !l.params.campaign_id), "sin tocar la ventana de atribución (Meta no la deja cambiar) ni el objeto promovido");
   const camp = postsA("campaigns");
   ok(camp.length === 1 && camp[0].params.objective === "OUTCOME_ENGAGEMENT" && camp[0].params.status === "PAUSED" && camp[0].params.name === "PeluDesk · WhatsApp · Prospección", "una campaña de Interacción, en PAUSADO, con su nombre");
-  const conjCreados = de("conjunto").map(([, o]) => o).filter((o) => NOMBRES.includes(o.name));
-  ok(conjCreados.length === 4 && conjCreados.every((c) => c.effective_status === "PAUSED" && c.daily_budget === "10000"), "4 conjuntos en PAUSADO a 100 MXN al día");
-  ok(de("conjunto").find(([, o]) => o.name.includes("Copia"))?.[1].daily_budget === undefined, "la «Copia» sin renombrar no se toca");
+  const conjCreados = de("conjunto").map(([, o]) => o).filter((o) => NOMBRES.includes(o.name) && o.campaign_id === campId);
+  ok(conjCreados.length === 4 && conjCreados.every((c) => ["PAUSED", "IN_PROCESS"].includes(c.effective_status) && c.daily_budget === "10000"), "4 conjuntos en pausa (o en revisión) a 100 MXN al día");
   const tg = (n) => JSON.parse(conjCreados.find((c) => c.name === n)?.targeting ?? "{}");
   const ids = (l) => (l ?? []).map((x) => x.id).sort();
   const excl = [idLista.pagando, idLista.en_prueba, idLista.bajas].sort();
@@ -170,7 +189,7 @@ try {
   ok(JSON.parse(JSON.parse(ce.asset_feed_spec).additional_data.page_welcome_message).text_format.message.autofill_message.content.endsWith("para mi estética"), "y el de estéticas dice «para mi estética»");
   const anuncios = de("anuncio").map(([, o]) => o);
   ok(anuncios.length === 12 && anuncios.every((a) => a.status === "PAUSED"), `12 anuncios en PAUSADO (${anuncios.length})`);
-  const idsConj = new Set(de("conjunto").filter(([, o]) => NOMBRES.includes(o.name)).map(([id]) => id));
+  const idsConj = new Set(de("conjunto").filter(([, o]) => NOMBRES.includes(o.name) && o.campaign_id === campId).map(([id]) => id));
   ok(anuncios.every((a) => idsConj.has(a.adset_id)), "cada anuncio en su conjunto creado a mano");
 
   seccion("3. Segunda corrida: no duplica y lee los últimos 7 días");
@@ -194,7 +213,7 @@ try {
   ok(r3.activados.length === 1 && objetos.get(retId).effective_status === "ACTIVE", "con 120 se activa el conjunto");
   const anunciosRet = de("anuncio").filter(([, o]) => o.adset_id === retId);
   ok(anunciosRet.length === 3 && anunciosRet.every(([, o]) => o.effective_status === "ACTIVE"), "y sus 3 anuncios");
-  ok(de("conjunto").filter(([id]) => id !== retId).every(([, o]) => o.effective_status === "PAUSED"), "los demás conjuntos siguen en pausa");
+  ok(de("conjunto").filter(([id]) => id !== retId).every(([, o]) => o.effective_status !== "ACTIVE"), "los demás conjuntos siguen sin activar");
   objetos.get(retId).effective_status = "PAUSED"; // alguien lo pausó en Ads Manager
   const r4 = await correr();
   ok(r4.activados.length === 0 && objetos.get(retId).effective_status === "PAUSED", "se activa UNA sola vez: si lo pausan en Ads Manager, la tarea no lo vuelve a prender");
