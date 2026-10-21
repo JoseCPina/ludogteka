@@ -65,7 +65,8 @@ export const CONJUNTOS: Record<GiroAnuncio, {
     etiqueta: "Hotel y guardería",
     audiencias: ["hotel_guarderia", "similar_prospectos"],
     intereses: [
-      { id: "6003133233128", name: "Dog daycare" },
+      // «Dog daycare» (6003133233128) lo retiró Meta el 21 de octubre de 2026; su alternativa es «Dogs».
+      { id: "6003332344237", name: "Dogs" },
       { id: "6003512623565", name: "Hotel para perros" },
       { id: "6003545396227", name: "Entrenamiento de perros (mascotas)" },
     ],
