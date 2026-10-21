@@ -297,5 +297,7 @@ export async function sincronizarMetaAhora(): Promise<ResultadoPlataforma> {
   if (r.estado === "ocupada") return { error: "Ya hay una sincronización corriendo. Espera a que termine." };
   if (r.estado === "sin_credenciales") return { error: "Faltan META_ADS_TOKEN o META_AD_ACCOUNT_ID en el servidor." };
   if (r.estado === "fallida") return { error: `No se pudo sincronizar: ${r.errores[0] ?? "error desconocido"}` };
-  return { error: null, exito: r.estado === "ok" ? "Audiencias sincronizadas." : `Sincronizado con errores: ${r.errores.join(" · ")}` };
+  const camp = r.campanas;
+  const extra = camp ? ` Campaña: ${camp.creados.length} creados${camp.activados.length ? `, activado ${camp.activados.join(", ")}` : ""}${camp.errores.length ? `; ${camp.errores.length} con error (se ven abajo)` : ""}.` : "";
+  return { error: null, exito: (r.estado === "ok" ? "Audiencias sincronizadas." : `Sincronizado con errores: ${r.errores.join(" · ")}`) + extra };
 }

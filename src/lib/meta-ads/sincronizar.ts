@@ -35,7 +35,7 @@ export function hashesDe(telefono: string | null | undefined, correo: string | n
 // compara con lo que ya se mandó (meta_audiencias_miembros) y le manda a Meta solo las altas, las bajas y los cambios.
 // Sin imports de valores de «@/»: el cliente de la base (llave de servicio) y la API llegan inyectados.
 
-export type Clave = "prospectos" | "veterinarias" | "esteticas" | "hotel_guarderia" | "visitaron" | "en_prueba" | "pagando";
+export type Clave = "prospectos" | "veterinarias" | "esteticas" | "hotel_guarderia" | "visitaron" | "en_prueba" | "pagando" | "bajas";
 type Deseado = { miembro: string; hash_telefono: string | null; hash_correo: string | null };
 type Prospecto = {
   id: string; giro: string; etapa: string; telefono: string | null; whatsapp: string | null; whatsapp_bot: string | null; correo: string | null;
@@ -64,7 +64,12 @@ export function armarDeseados(o: {
   negocios: { negocio_id: string; tipo: string; telefonos: string[] | null; correos: string[] | null }[];
   telefonosExcluidos: Set<string>;
 }): Record<Clave, Deseado[]> {
-  const deseados: Record<Clave, Deseado[]> = { prospectos: [], veterinarias: [], esteticas: [], hotel_guarderia: [], visitaron: [], en_prueba: [], pagando: [] };
+  const deseados: Record<Clave, Deseado[]> = { prospectos: [], veterinarias: [], esteticas: [], hotel_guarderia: [], visitaron: [], en_prueba: [], pagando: [], bajas: [] };
+  // Bajas: solo para EXCLUIR en los conjuntos de anuncios (un público similar no sale de nuestras listas).
+  for (const t of o.telefonosExcluidos) {
+    const h = hashesDe(t, null);
+    if (h.telefono) deseados.bajas.push({ miembro: `baja:${h.telefono}`, hash_telefono: h.telefono, hash_correo: null });
+  }
   const negociosPagan = new Set(o.negocios.filter((n) => n.tipo === "pagando").map((n) => n.negocio_id));
   const negociosPrueba = new Set(o.negocios.filter((n) => n.tipo === "prueba").map((n) => n.negocio_id));
 
@@ -79,8 +84,16 @@ export function armarDeseados(o: {
   }
   const hashesPagando = new Set(deseados.pagando.flatMap((d) => [d.hash_telefono, d.hash_correo]).filter(Boolean) as string[]);
 
+  const bajaPorTelefono = new Set(deseados.bajas.map((d) => d.hash_telefono));
   for (const p of o.prospectos) {
-    if (p.etapa === "descartado" || p.publicidad_baja_at) continue;
+    if (p.publicidad_baja_at) {
+      const h = hashesDe([p.whatsapp, p.telefono, p.whatsapp_bot].map(diez).find(Boolean) ?? null, p.correo);
+      if ((h.telefono || h.correo) && !(h.telefono && bajaPorTelefono.has(h.telefono))) {
+        deseados.bajas.push({ miembro: `prospecto:${p.id}`, hash_telefono: h.telefono, hash_correo: h.correo });
+      }
+      continue;
+    }
+    if (p.etapa === "descartado") continue;
     const tel = [p.whatsapp, p.telefono, p.whatsapp_bot].map(diez).find(Boolean) ?? null;
     if ([p.whatsapp, p.telefono, p.whatsapp_bot].some((t) => o.telefonosExcluidos.has(diez(t) ?? ""))) continue;
     const h = hashesDe(tel, p.correo);
@@ -131,8 +144,8 @@ export async function sincronizarAudiencias(o: { db: SupabaseClient; api: ApiMet
       leerTodo<Prospecto>((a, b) => db.from("prospectos").select("id, giro, etapa, telefono, whatsapp, whatsapp_bot, correo, visitas, negocio_cliente_id, publicidad_baja_at").is("deleted_at", null).order("id").range(a, b)),
       leerTodo<{ telefono: string }>((a, b) => db.from("seguimiento_pruebas_exclusiones").select("telefono").is("deleted_at", null).order("id").range(a, b)),
       leerTodo<{ negocio_id: string; tipo: string; telefonos: string[]; correos: string[] }>((a, b) => db.rpc("meta_audiencias_negocios").order("negocio_id").range(a, b)),
-      // limite-filas-ok: son las 7 audiencias fijas que siembra la migración
-      db.from("meta_audiencias").select("id, clave, nombre, descripcion, audience_id").is("deleted_at", null).order("clave"),
+      // limite-filas-ok: son las 8 listas fijas que siembran las migraciones
+      db.from("meta_audiencias").select("id, clave, nombre, descripcion, audience_id").eq("tipo", "lista").is("deleted_at", null).order("clave"),
     ]);
     if (audiencias.error) throw new Error(audiencias.error.message);
     const deseados = armarDeseados({

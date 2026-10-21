@@ -158,10 +158,10 @@ function pedir(ruta, { method = "GET", body, headers = {} } = {}) {
   });
 }
 
-function cuerpoWhatsApp(telefono, texto, { id = `wamid.${randomUUID()}`, phoneId = PHONE_ID } = {}) {
+function cuerpoWhatsApp(telefono, texto, { id = `wamid.${randomUUID()}`, phoneId = PHONE_ID, referral = null, perfil = null } = {}) {
   return JSON.stringify({
     object: "whatsapp_business_account",
-    entry: [{ id: "WABA", changes: [{ field: "messages", value: { messaging_product: "whatsapp", metadata: { phone_number_id: phoneId, display_phone_number: "525649160742" }, contacts: [{ wa_id: telefono }], messages: [{ from: telefono, id, timestamp: `${Math.floor(Date.now() / 1000)}`, type: "text", text: { body: texto } }] } }] }],
+    entry: [{ id: "WABA", changes: [{ field: "messages", value: { messaging_product: "whatsapp", metadata: { phone_number_id: phoneId, display_phone_number: "525649160742" }, contacts: [{ wa_id: telefono, ...(perfil ? { profile: { name: perfil } } : {}) }], messages: [{ from: telefono, id, timestamp: `${Math.floor(Date.now() / 1000)}`, type: "text", text: { body: texto }, ...(referral ? { referral } : {}) }] } }] }],
   });
 }
 const firmar = (cuerpo, secreto = APP_SECRET) => `sha256=${createHmac("sha256", secreto).update(cuerpo).digest("hex")}`;
@@ -178,13 +178,13 @@ async function mandar(telefono10, texto, opciones = {}) {
 const claveDeMedia = (id) => mock.medias[id] ?? String(id ?? "").match(/^media_([a-z]+)_/)?.[1] ?? "?";
 const vista = (m) => (m.type === "image" ? `[captura:${claveDeMedia(m.image?.id)}] ${m.image?.caption ?? ""}` : (m.text?.body ?? `[plantilla ${m.template?.name}]`));
 
-async function conversar(telefono10, texto) {
+async function conversar(telefono10, texto, opciones = {}) {
   const inicio = Date.now();
   const antesLeidos = mock.leidos.length;
   const antesWa = mock.wa.length;
   const antesIa = mock.ia.length;
   const antesTg = mock.tg.length;
-  const r = await mandar(telefono10, texto);
+  const r = await mandar(telefono10, texto, opciones);
   if (r.status !== 200) throw new Error(`webhook ${r.status}: ${r.cuerpo}`);
   for (let i = 0; i < 120; i++) {
     const nuevas = mock.wa.slice(antesWa).filter((m) => m.to === `52${telefono10}` && m.type === "text");
@@ -412,6 +412,39 @@ const { data: prosP } = await A.from("prospectos").insert({ nombre: `Estética B
   const rx = await conversar(TEL.X, "Hola, vi la página que armaron para Otro Negocio (ref. zzzzz)");
   const px = rx.ia.map((x) => (typeof x.system === "string" ? x.system : (x.system ?? []).map((b) => b.text).join("\n"))).join("\n");
   !px.includes("VIENE DE SU VISTA PREVIA") ? bien("una referencia que no existe no liga a nadie") : hallazgo("una referencia inventada ligó a un prospecto");
+}
+
+console.log("\n3c. Quien escribe desde un anuncio de clic a WhatsApp (referral con ctwa_clid y el id del anuncio)");
+{
+  const TEL_AD = tel("61");
+  const AD_ID = `9${sufijo}01`;
+  // El anuncio es del conjunto de veterinarias: su giro sale de meta_campanas, no de lo que diga la persona.
+  const { data: anuncioFila } = await A.from("meta_campanas").insert({ clave: `anuncio:prueba-bot-${sufijo}`, tipo: "anuncio", giro: "veterinarias", nombre: `Anuncio prueba bot ${sufijo}`, meta_id: AD_ID, estado: "creado" }).select("id").single();
+  try {
+    const referral = { source_type: "ad", source_id: AD_ID, source_url: "https://fb.me/x", headline: "Tu agenda, en orden", body: "…", ctwa_clid: `clid-${sufijo}` };
+    const r = await conversar(TEL_AD, "Hola, vi su anuncio y quiero probar PeluDesk para mi negocio", { referral, perfil: `Dra. Prueba ${sufijo}` });
+    const prompt = r.ia.map((x) => (typeof x.system === "string" ? x.system : (x.system ?? []).map((b) => b.text).join("\n"))).join("\n");
+    prompt.includes("VIENE DE UN ANUNCIO") && /una veterinaria/.test(prompt) ? bien("el bot sabe que viene de un anuncio y su giro (veterinaria, por el conjunto del anuncio)") : hallazgo("el bot no recibió que viene de un anuncio con su giro");
+    prompt.includes("No le preguntes de qué es su negocio") ? bien("y no le pregunta de qué es su negocio") : hallazgo("el prompt no le dice que no pregunte el giro");
+    /\/registro\?prospecto=[a-z0-9-]+&utm_source=meta&utm_medium=ctwa/.test(prompt) && prompt.includes(`utm_content=${AD_ID}`) ? bien("el link de prueba lleva su prospecto y el origen del anuncio (utm)") : hallazgo("el link de prueba del anuncio no lleva prospecto y utm");
+    const { data: pa } = await A.from("prospectos").select("id, nombre, giro, fuente, etapa, anuncio_id, anuncio_ctwa_clid, whatsapp_bot").eq("whatsapp_bot", TEL_AD).maybeSingle();
+    pa && pa.fuente === "anuncio_meta" && pa.giro === "veterinaria" && pa.anuncio_id === AD_ID && pa.anuncio_ctwa_clid === `clid-${sufijo}` && pa.etapa === "respondio"
+      ? bien(`queda como prospecto «${pa.nombre}» (fuente anuncio de Meta, veterinaria, id del anuncio)`)
+      : hallazgo(`el prospecto del anuncio no quedó bien: ${JSON.stringify(pa)}`);
+    const r2 = await conversar(TEL_AD, "#guion:nada");
+    const p2 = r2.ia.map((x) => (typeof x.system === "string" ? x.system : (x.system ?? []).map((b) => b.text).join("\n"))).join("\n");
+    p2.includes("VIENE DE UN ANUNCIO") ? bien("en el siguiente mensaje (sin referral) lo sigue reconociendo como del anuncio") : hallazgo("el segundo mensaje perdió que viene del anuncio");
+    const { count } = await A.from("prospectos").select("id", { count: "exact", head: true }).eq("whatsapp_bot", TEL_AD).is("deleted_at", null);
+    count === 1 ? bien("un solo prospecto por teléfono") : hallazgo(`se duplicó el prospecto del anuncio (${count})`);
+    const anon = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+    (await anon.rpc("prospecto_registrar_anuncio", { p_telefono: "4440000000", p_nombre: "x", p_ad_id: "1", p_ctwa_clid: "x", p_texto: "x" })).error ? bien("la llave anónima no registra prospectos de anuncio") : hallazgo("anon pudo llamar prospecto_registrar_anuncio");
+    if (pa) {
+      await A.from("prospectos_eventos").delete().eq("prospecto_id", pa.id);
+      await A.from("prospectos").delete().eq("id", pa.id);
+    }
+  } finally {
+    if (anuncioFila) await A.from("meta_campanas").delete().eq("id", anuncioFila.id);
+  }
 }
 
 console.log("\n4. El link del portal solo es del negocio de quien escribe");

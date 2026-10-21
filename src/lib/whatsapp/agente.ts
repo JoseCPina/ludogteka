@@ -116,7 +116,14 @@ export interface ProspectoContexto {
   ciudad: string | null;
   servicios: string[];
   pagina: string;
-  por: "referencia" | "telefono";
+  slug?: string;
+  por: "referencia" | "telefono" | "anuncio";
+  /** Id del anuncio de este mensaje (solo el primero lo trae). */
+  anuncioId?: string | null;
+  /** Llegó por un anuncio de clic a WhatsApp (en este mensaje o en uno anterior). */
+  anuncio?: boolean;
+  /** «anuncio_meta» = solo sabemos su giro por el anuncio; no tiene vista previa con sus datos de Google. */
+  fuente?: string | null;
 }
 
 export interface ContextoAgente {
@@ -489,6 +496,19 @@ export function bloqueSeguimiento(s: SeguimientoContexto): string {
 
 const NOMBRE_GIRO: Record<string, string> = { veterinaria: "veterinaria", estetica: "estética", guarderia: "guardería", hotel: "hotel", mixto: "varios servicios" };
 
+/** Lo que el bot sabe de alguien que le escribió desde un anuncio de clic a WhatsApp. */
+export function bloqueAnuncio(p: ProspectoContexto): string {
+  const giro = NOMBRE_GIRO[p.giro] ?? p.giro;
+  const conPagina = p.fuente !== "anuncio_meta";
+  return [
+    "VIENE DE UN ANUNCIO DE PELUDESK EN FACEBOOK O INSTAGRAM (lo reconoció la base por el anuncio, no por lo que dice):",
+    p.giro === "mixto" ? "- El anuncio era para hoteles y guarderías caninas." : `- El anuncio era para ${giro === "varios servicios" ? "negocios caninos" : `una ${giro}`}: su negocio es de ese giro. No le preguntes de qué es su negocio ni qué servicios da.`,
+    conPagina ? `- Ya teníamos su negocio en la base: «${p.nombre}»${p.ciudad ? `, en ${p.ciudad}` : ""}. Le armamos una vista previa: ${p.pagina}` : "- No sabemos el nombre de su negocio ni su ciudad; no se los pidas para darle la prueba (los escribe al registrarse).",
+    "- Lo que quiere es probar PeluDesk: llévalo a la prueba gratis de 15 días (sin tarjeta) con el link de prueba. Si pregunta el precio, el del plan de la tabla. Si quiere verlo antes, el demo.",
+    "- En tu primera respuesta: saluda corto, dile en una línea qué le resuelve PeluDesk a su giro y, en su propio renglón al final, [[link:prueba]].",
+  ].join("\n");
+}
+
 /** Lo que el bot sabe de un prospecto que llega desde la página que le armamos. */
 export function bloqueProspecto(p: ProspectoContexto): string {
   const servicios = p.servicios.length ? p.servicios.map((s) => NOMBRE_GIRO[s] ?? s).join(", ") : NOMBRE_GIRO[p.giro] ?? p.giro;
@@ -520,7 +540,7 @@ export function systemPrompt(base: string, aprendido: ParAprendido[], ctx: Conte
     partes.push("", "DATOS DE SU CUENTA (solo de los negocios donde es admin):", ...ctx.negocios.map(describirNegocio));
   }
   if (ctx.seguimiento) partes.push("", bloqueSeguimiento(ctx.seguimiento));
-  if (ctx.prospecto && ctx.tipo !== "admin") partes.push("", bloqueProspecto(ctx.prospecto));
+  if (ctx.prospecto && ctx.tipo !== "admin") partes.push("", ctx.prospecto.anuncio ? bloqueAnuncio(ctx.prospecto) : bloqueProspecto(ctx.prospecto));
   partes.push("", bloquePlanes(ctx.planes), "", bloqueRespuestasFijas(ctx.planes), "", "=== BASE ===", base.trim());
   if (aprendido.length > 0) {
     partes.push("", "=== APRENDIDO (vale lo mismo que la BASE) ===", ...aprendido.map((p) => `P: ${p.pregunta}\nR: ${p.respuesta}`));

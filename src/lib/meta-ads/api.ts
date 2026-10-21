@@ -53,6 +53,20 @@ export function crearApiMeta(cfg: ConfigMeta) {
   }
 
   return {
+    /** Llamada directa (campañas, conjuntos, imágenes, creativos, anuncios e insights: ver campanas.ts). */
+    graph: llamar,
+    cuenta: cuentaAct(cfg.cuenta),
+    /** Público similar (lookalike) de una lista, en un país. */
+    async crearSimilar(nombre: string, descripcion: string, origen: string, ratio: number, pais: string): Promise<string> {
+      const d = await llamar("POST", `${cuentaAct(cfg.cuenta)}/customaudiences`, {
+        name: nombre,
+        description: descripcion,
+        subtype: "LOOKALIKE",
+        origin_audience_id: origen,
+        lookalike_spec: JSON.stringify({ type: "similarity", ratio, country: pais }),
+      });
+      return String(d.id);
+    },
     /** Las audiencias de la cuenta, por nombre (para no duplicar una que ya existe). */
     async listar(): Promise<{ id: string; name: string }[]> {
       const todas: { id: string; name: string }[] = [];

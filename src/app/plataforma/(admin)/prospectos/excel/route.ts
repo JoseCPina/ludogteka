@@ -33,7 +33,7 @@ export async function GET(req: Request) {
   for (const p of filas) {
     hoja.addRow([
       p.nombre, textoGiro(p.giro), p.ciudad, p.direccion ?? "", p.telefono ?? "", p.whatsapp ?? "", p.correo ?? "", p.instagram ?? "", p.facebook ?? "", p.web ?? "",
-      p.calificacion ?? "", p.resenas ?? "", p.fuente === "google_places" ? "Google Maps" : "A mano", p.created_at.slice(0, 10), textoEtapa(p.etapa),
+      p.calificacion ?? "", p.resenas ?? "", p.fuente === "google_places" ? "Google Maps" : p.fuente === "anuncio_meta" ? "Anuncio de Meta" : "A mano", p.created_at.slice(0, 10), textoEtapa(p.etapa),
       textoCanal(p.canal_ultimo_contacto), p.ultimo_contacto_at?.slice(0, 10) ?? "", p.negocio_cliente_id ? "Sí" : "No", p.notas ?? "",
     ]);
   }

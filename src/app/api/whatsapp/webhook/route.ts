@@ -50,9 +50,27 @@ type MensajeMeta = {
   image?: { caption?: string };
   video?: { caption?: string };
   document?: { caption?: string };
+  /** Mensaje que llega desde un anuncio de clic a WhatsApp. */
+  referral?: { source_id?: string; source_type?: string; source_url?: string; ctwa_clid?: string; headline?: string; body?: string };
 };
 
-type Entrada = { telefono: string; id: string; texto: string | null; enviadoMs: number | null };
+type Entrada = {
+  telefono: string;
+  id: string;
+  texto: string | null;
+  enviadoMs: number | null;
+  /** Nombre del perfil de WhatsApp (contacts[].profile.name). */
+  perfil: string | null;
+  anuncio: { adId: string | null; clid: string | null } | null;
+};
+
+/** El id del anuncio (source_id, cuando source_type es «ad») y el ctwa_clid del referral, o null si no viene de un anuncio. */
+function anuncioDe(m: MensajeMeta): Entrada["anuncio"] {
+  const r = m.referral;
+  if (!r || (!r.ctwa_clid && r.source_type !== "ad")) return null;
+  const adId = r.source_type === "ad" && /^[0-9]{1,40}$/.test(r.source_id ?? "") ? r.source_id! : null;
+  return { adId, clid: r.ctwa_clid ? r.ctwa_clid.slice(0, 300) : null };
+}
 
 function textoDe(m: MensajeMeta): string | null {
   const t =
@@ -75,7 +93,7 @@ export async function POST(request: NextRequest) {
     console.warn("[whatsapp] firma inválida");
     return new NextResponse("Firma inválida", { status: 401 });
   }
-  let payload: { entry?: { changes?: { value?: { metadata?: { phone_number_id?: string }; messages?: MensajeMeta[]; statuses?: EstadoMeta[] } }[] }[] };
+  let payload: { entry?: { changes?: { value?: { metadata?: { phone_number_id?: string }; contacts?: { wa_id?: string; profile?: { name?: string } }[]; messages?: MensajeMeta[]; statuses?: EstadoMeta[] } }[] }[] };
   try {
     payload = JSON.parse(crudo);
   } catch {
@@ -96,7 +114,15 @@ export async function POST(request: NextRequest) {
       for (const m of v.messages) {
         if (!m.from || !m.id) continue;
         const ts = Number(m.timestamp);
-        entradas.push({ telefono: telefonoCanonico(m.from), id: m.id, texto: textoDe(m), enviadoMs: Number.isFinite(ts) && ts > 0 ? ts * 1000 : null });
+        const perfil = (v.contacts ?? []).find((c) => c.wa_id === m.from)?.profile?.name ?? v.contacts?.[0]?.profile?.name ?? null;
+        entradas.push({
+          telefono: telefonoCanonico(m.from),
+          id: m.id,
+          texto: textoDe(m),
+          enviadoMs: Number.isFinite(ts) && ts > 0 ? ts * 1000 : null,
+          perfil: perfil ? perfil.slice(0, 120) : null,
+          anuncio: anuncioDe(m),
+        });
       }
     }
   }
@@ -155,8 +181,11 @@ export async function POST(request: NextRequest) {
           continue;
         }
         const tiempos: Tiempos = {};
-        // Un prospecto que llega desde su página (/para/<slug>): queda «respondió» en el CRM y el bot sabe quién es.
-        const prospecto = seguimiento ? null : await datos.registrarProspecto(m.telefono, m.texto);
+        // Un prospecto que llega desde su página (/para/<slug>) o desde un anuncio de clic a WhatsApp: queda «respondió»
+        // en el CRM y el bot sabe quién es (y de qué giro, si vino del anuncio).
+        const prospecto = seguimiento
+          ? null
+          : (m.anuncio ? await datos.registrarAnuncio(m.telefono, m.perfil, m.anuncio, m.texto) : null) ?? (await datos.registrarProspecto(m.telefono, m.texto));
         const r = await atender(m.telefono, m.texto, deps, tiempos, seguimiento, prospecto);
         console.info("[whatsapp] tiempos", {
           desenlace: r,

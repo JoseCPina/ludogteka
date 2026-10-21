@@ -47,6 +47,20 @@ const TIMEOUT_IA_MS = 25_000;
 const TIMEOUT_RED_MS = 10_000;
 
 /**
+ * El link de prueba del bot: un prospecto de su vista previa se registra desde ahí (su negocio ya escrito y su
+ * página); quien llegó por un anuncio, al registro con su giro y el origen del anuncio.
+ */
+function registroDeProspecto(p: ProspectoContexto | null | undefined): string {
+  if (!p) return `${urlPlataforma()}/registro`;
+  if (p.anuncio && p.fuente === "anuncio_meta") {
+    const q = new URLSearchParams({ prospecto: p.slug ?? "", utm_source: "meta", utm_medium: "ctwa", utm_campaign: "whatsapp_prospeccion" });
+    if (p.anuncioId) q.set("utm_content", p.anuncioId);
+    return `${urlPlataforma()}/registro?${q}`;
+  }
+  return `${p.pagina}/ir/prueba`;
+}
+
+/**
  * El verify_token de Meta y el secret_token de Telegram se DERIVAN del
  * secreto que ya existe (HMAC), igual que en scripts/whatsapp/*.mjs: así no
  * hay dos variables más que capturar y el script que suscribe el webhook
@@ -239,6 +253,38 @@ export class DatosSupabase implements DatosSoporte {
     return !error;
   }
 
+  /**
+   * Quien escribe desde un anuncio de clic a WhatsApp (el mensaje trae `referral` con el id del anuncio y el
+   * ctwa_clid): queda como prospecto con fuente «anuncio_meta», el giro del conjunto del anuncio y el id del anuncio.
+   * Nunca lanza: si falla, sigue como cualquier mensaje.
+   */
+  async registrarAnuncio(telefono: string, perfil: string | null, anuncio: { adId: string | null; clid: string | null }, texto: string): Promise<ProspectoContexto | null> {
+    try {
+      const { data, error } = await this.#sb.rpc("prospecto_registrar_anuncio", { p_telefono: telefono, p_nombre: perfil, p_ad_id: anuncio.adId, p_ctwa_clid: anuncio.clid, p_texto: texto });
+      if (error) {
+        console.error("[whatsapp] prospecto_registrar_anuncio", error.message);
+        return null;
+      }
+      const r = data as Record<string, unknown> | null;
+      if (!r) return null;
+      return {
+        nombre: String(r.nombre ?? ""),
+        giro: String(r.giro ?? ""),
+        ciudad: (r.ciudad as string | null) ?? null,
+        servicios: Array.isArray(r.servicios) ? (r.servicios as string[]) : [],
+        pagina: `${urlPlataforma()}/para/${r.slug}`,
+        slug: String(r.slug ?? ""),
+        por: "anuncio",
+        anuncio: true,
+        anuncioId: anuncio.adId,
+        fuente: (r.fuente as string | null) ?? null,
+      };
+    } catch (e) {
+      console.error("[whatsapp] anuncio", e instanceof Error ? e.message : e);
+      return null;
+    }
+  }
+
   async registrarProspecto(telefono: string, texto: string): Promise<ProspectoContexto | null> {
     try {
       const ref = texto.match(/\bref\.?\s*([a-z0-9]{5})\b/i)?.[1] ?? null;
@@ -255,7 +301,10 @@ export class DatosSupabase implements DatosSoporte {
         ciudad: (r.ciudad as string | null) ?? null,
         servicios: Array.isArray(r.servicios) ? (r.servicios as string[]) : [],
         pagina: `${urlPlataforma()}/para/${r.slug}`,
+        slug: String(r.slug ?? ""),
         por: r.por === "telefono" ? "telefono" : "referencia",
+        anuncio: r.anuncio === true,
+        fuente: (r.fuente as string | null) ?? null,
       };
     } catch (e) {
       console.error("[whatsapp] prospecto", e instanceof Error ? e.message : e);
@@ -710,7 +759,7 @@ export function construirSoporte(): { deps: DepsSoporte; datos: DatosSupabase; w
       negocios: cuenta.negocios,
       planes: await planesPublicos(),
       // Un prospecto que llega de su vista previa se registra desde ahí: queda con su negocio ya escrito y su página.
-      enlaces: { registro: prospecto ? `${prospecto.pagina}/ir/prueba` : `${urlPlataforma()}/registro`, demo: `${urlDemo()}/demo` },
+      enlaces: { registro: registroDeProspecto(prospecto), demo: `${urlDemo()}/demo` },
       documentacion: cuenta.tipo === "admin" || cuenta.tipo === "personal" ? documentacionParaWhatsApp(urlPlataforma(), await videosPublicados()) : undefined,
     }),
     ligaPortal: ligaPortalDe,

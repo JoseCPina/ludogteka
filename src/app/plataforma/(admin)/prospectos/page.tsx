@@ -19,7 +19,10 @@ type Resumen = { total: number; clientes: number; descartados?: number; descarta
 type Corrida = { id: string; origen: string; estado: string; busquedas: number; resultados: number; nuevos: number; duplicados: number; clientes: number; errores: number; webs_revisadas: number; detalle: { errores?: string[] }; error: string | null; inicio_at: string };
 type Ajustes = { ciudades: string[]; consultas: Record<string, string[]>; tope_busquedas_dia: number; paginas_por_consulta: number; pausado: boolean; lista_whatsapp: number; lista_instagram: number; dias_seguimiento: number; max_seguimientos: number; firma: string; whatsapp_ventas: string };
 
-type AudienciaMeta = { clave: string; nombre: string; audience_id: string | null; miembros: number; coincidencias_min: number | null; coincidencias_max: number | null; ultima_sync_at: string | null; ultimo_error: string | null };
+type AudienciaMeta = { clave: string; tipo: string; nombre: string; audience_id: string | null; miembros: number; coincidencias_min: number | null; coincidencias_max: number | null; ultima_sync_at: string | null; ultimo_error: string | null };
+type CampanaMeta = { clave: string; tipo: string; nombre: string; meta_id: string | null; estado: string; ultimo_error: string | null; estado_meta: string | null; presupuesto_diario: number | null; gasto_7d: number | null; conversaciones_7d: number | null; costo_conversacion: number | null; activado_auto_at: string | null };
+const ESTADO_ANUNCIO: Record<string, string> = { ACTIVE: "Activo", PAUSED: "Pausado", CAMPAIGN_PAUSED: "Pausado (campaña)", ADSET_PAUSED: "Pausado (conjunto)", IN_PROCESS: "En revisión", WITH_ISSUES: "Con problemas", DISAPPROVED: "Rechazado", PENDING_REVIEW: "En revisión" };
+const pesos = (n: number | null) => (n == null ? "—" : `$${Number(n).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 type CorridaMeta = { id: string; origen: string; estado: string; inicio_at: string; resumen: Record<string, { calculados?: number; altas?: number; bajas?: number; cambios?: number; recibidos?: number; invalidos?: number; error?: string }>; errores: string[] };
 const ESTADO_META: Record<string, string> = { corriendo: "Corriendo", ok: "Terminada", con_errores: "Con errores", fallida: "Falló", sin_credenciales: "Sin credenciales" };
 const coincidencias = (a: AudienciaMeta) =>
@@ -40,13 +43,18 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
     supabase.from("prospeccion_corridas").select("id, origen, estado, busquedas, resultados, nuevos, duplicados, clientes, errores, webs_revisadas, detalle, error, inicio_at").is("deleted_at", null).order("inicio_at", { ascending: false }).limit(8),
     consultaProspectos(supabase, f).range((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA - 1),
   ]);
-  const [{ data: audMeta }, { data: corMeta }] = await Promise.all([
+  const [{ data: audMeta }, { data: corMeta }, { data: campMeta }] = await Promise.all([
     // limite-filas-ok: son las 7 audiencias fijas que siembra la migración
-    supabase.from("meta_audiencias").select("clave, nombre, audience_id, miembros, coincidencias_min, coincidencias_max, ultima_sync_at, ultimo_error").is("deleted_at", null).order("created_at").order("clave"),
+    supabase.from("meta_audiencias").select("clave, tipo, nombre, audience_id, miembros, coincidencias_min, coincidencias_max, ultima_sync_at, ultimo_error").is("deleted_at", null).order("created_at").order("clave"),
     supabase.from("meta_audiencias_corridas").select("id, origen, estado, inicio_at, resumen, errores").is("deleted_at", null).order("inicio_at", { ascending: false }).limit(5),
+    // limite-filas-ok: la campaña y sus conjuntos (5 filas)
+    supabase.from("meta_campanas").select("clave, tipo, nombre, meta_id, estado, ultimo_error, estado_meta, presupuesto_diario, gasto_7d, conversaciones_7d, costo_conversacion, activado_auto_at").in("tipo", ["campana", "conjunto"]).is("deleted_at", null).order("tipo").order("clave"),
   ]);
   const audiencias = (audMeta ?? []) as AudienciaMeta[];
   const corridasMeta = (corMeta ?? []) as CorridaMeta[];
+  const campanas = (campMeta ?? []) as CampanaMeta[];
+  // Errores de creativos, imágenes y anuncios: una línea por pieza que no se pudo crear.
+  const { data: piezasError } = await supabase.from("meta_campanas").select("nombre, ultimo_error").in("tipo", ["imagen", "creativo", "anuncio"]).eq("estado", "error").is("deleted_at", null).limit(20);
   const resumen = (res ?? { total: 0, clientes: 0, con_telefono: 0, con_correo: 0, con_instagram: 0, por_ciudad_giro: [], por_etapa: {} }) as Resumen;
   const ajustes = (aj ?? { ciudades: [], consultas: {}, tope_busquedas_dia: 30, paginas_por_consulta: 3, pausado: false, lista_whatsapp: 15, lista_instagram: 15, dias_seguimiento: 3, max_seguimientos: 2, firma: "José", whatsapp_ventas: "524443103236" }) as Ajustes;
   const filas = (lista.data ?? []) as unknown as Prospecto[];
@@ -112,13 +120,58 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
                   {a.nombre}
                   {a.ultimo_error && <span className="block text-xs font-normal text-coral-oscuro" data-audiencia-error>{a.ultimo_error}</span>}
                 </td>
-                <td data-label="Enviados" className="py-1 pr-3 text-right" data-enviados>{a.miembros.toLocaleString("es-MX")}</td>
+                <td data-label="Enviados" className="py-1 pr-3 text-right" data-enviados>{a.tipo === "similar" ? "Similar (México)" : a.miembros.toLocaleString("es-MX")}</td>
                 <td data-label="Coincidencias en Meta" className="py-1 pr-3 text-right">{a.audience_id ? coincidencias(a) : "Sin crear"}</td>
                 <td data-label="Última sincronización" className="py-1 pr-3">{a.ultima_sync_at ? `${formatearFecha(a.ultima_sync_at, ZONA)} ${horaLocalDeInstante(a.ultima_sync_at, ZONA)}` : "Nunca"}</td>
               </tr>
             ))}
           </tbody>
         </table>
+        <div className="mt-4" data-campanas-meta>
+          <h3 className="font-bold text-n-900">Campaña de clic a WhatsApp</h3>
+          <p className="mt-1 text-sm text-n-600">
+            La crea la misma sincronización, todo en pausa: se activa en Ads Manager. El conjunto «Visitaron su página» se activa solo cuando su público llega a 100.
+            Gasto y conversaciones son de los últimos 7 días.
+          </p>
+          {campanas.length === 0 ? (
+            <p className="mt-2 text-sm text-n-600">Todavía no se crea. Sale en la siguiente sincronización.</p>
+          ) : (
+            <table className="tabla-tarjetas mt-2 w-full text-sm">
+              <thead>
+                <tr className="text-left text-n-600">
+                  <th className="py-1 pr-3">Campaña o conjunto</th>
+                  <th className="py-1 pr-3">Estado</th>
+                  <th className="py-1 pr-3 text-right">Gasto 7 días</th>
+                  <th className="py-1 pr-3 text-right">Conversaciones</th>
+                  <th className="py-1 pr-3 text-right">Costo por conversación</th>
+                </tr>
+              </thead>
+              <tbody>
+                {campanas.map((c) => (
+                  <tr key={c.clave} className="border-t border-n-100" data-campana={c.clave}>
+                    <td className={`py-1 pr-3 ${c.tipo === "campana" ? "font-bold" : "font-semibold"} text-n-900`}>
+                      {c.nombre}
+                      {c.meta_id && <span className="block text-xs font-normal text-n-500">Id {c.meta_id}</span>}
+                      {c.ultimo_error && <span className="block text-xs font-normal text-coral-oscuro" data-campana-error>{c.ultimo_error}</span>}
+                    </td>
+                    <td data-label="Estado" className="py-1 pr-3" data-campana-estado>
+                      {!c.meta_id ? "Sin crear" : c.estado_meta ? (ESTADO_ANUNCIO[c.estado_meta] ?? c.estado_meta) : "Creado"}
+                      {c.activado_auto_at && <span className="block text-xs text-n-500">Activado solo al llegar a 100</span>}
+                    </td>
+                    <td data-label="Gasto 7 días" className="py-1 pr-3 text-right">{pesos(c.gasto_7d)}</td>
+                    <td data-label="Conversaciones" className="py-1 pr-3 text-right">{c.conversaciones_7d ?? "—"}</td>
+                    <td data-label="Costo por conversación" className="py-1 pr-3 text-right">{pesos(c.costo_conversacion)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {(piezasError ?? []).length > 0 && (
+            <ul className="mt-2 text-xs text-coral-oscuro" data-piezas-error>
+              {(piezasError ?? []).map((p, i) => <li key={i}>{p.nombre}: {p.ultimo_error}</li>)}
+            </ul>
+          )}
+        </div>
         {corridasMeta.length > 0 && (
           <div className="mt-4">
             <h3 className="font-bold text-n-900">Últimas corridas</h3>

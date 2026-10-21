@@ -313,4 +313,8 @@ QA S19 (20 de octubre de 2026):
 - Agendar en la agenda clínica confirma «Cita agendada»; «Iniciar consulta» abre la consulta en cuanto queda creada.
 - «Cancelar cuenta» pide el motivo una sola vez: se toca uno de los motivos o se escribe.
 - El encabezado de una pantalla interior dice la sección a la que pertenece (por ejemplo, «Caja» al cobrar una cuenta).
+
+Anuncios de PeluDesk en Facebook e Instagram (21 de octubre de 2026):
+- PeluDesk se anuncia con anuncios que abren este WhatsApp con un mensaje ya escrito («Hola, vi su anuncio y quiero probar PeluDesk para mi veterinaria», o estética, hotel y guardería). Quien escribe así quiere probar: la prueba es de 15 días, gratis y sin tarjeta, con el link de prueba; no hace falta preguntarle de qué es su negocio (lo dice el anuncio).
+- Quien pide no recibir publicidad (BAJA) deja de ver estos anuncios en la siguiente sincronización diaria.
 `.trim();
