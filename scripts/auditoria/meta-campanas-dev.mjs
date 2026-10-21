@@ -5,13 +5,15 @@
 // (src/lib/meta-ads/campanas.ts) contra la base de desarrollo con la llave de servicio:
 //   1. similares: se crean de su lista (1 %, 1 % y 2 %, México) y un similar que ya existe con el mismo nombre se
 //      adopta (no se duplica);
-//   2. campaña de Interacción (OUTCOME_ENGAGEMENT) y 4 conjuntos a 100 MXN al día, optimizados a conversaciones de
-//      WhatsApp, México, 25–60, con sus audiencias (lista + similar; hotel con intereses) y las exclusiones (pagando,
-//      en prueba y bajas) en TODOS; 12 anuncios (agenda, cobro, portal); TODO en PAUSADO;
+//   2. campaña de Interacción (OUTCOME_ENGAGEMENT). Los conjuntos NUNCA se crean por la API (Meta lo rechaza con
+//      2446886): sin conjunto en Meta queda «Crear a mano en Ads Manager»; con uno creado a mano con su nombre, la
+//      tarea le pone nombre, 100 MXN al día, México, 25–60, sus audiencias (lista + similar; hotel con intereses) y
+//      las exclusiones (pagando, en prueba y bajas) en TODOS, sin tocar la ventana de atribución, y crea sus 3
+//      anuncios (agenda, cobro, portal) en PAUSADO;
 //   3. cada creativo: imagen cuadrada y vertical por ubicación, el texto del giro con «Prueba gratis, sin tarjeta.»,
 //      botón de WhatsApp y el mensaje prellenado del giro;
 //   4. segunda corrida: no crea nada nuevo; lee estado e insights (gasto, conversaciones y costo por conversación);
-//   5. un error (página sin WhatsApp) queda en la fila y la siguiente corrida lo reintenta;
+//   5. un conjunto que solo cambió de nombre en Ads Manager no se adopta (se busca por nombre);
 //   6. retargeting: no se activa con menos de 100; con 100 o más se activa UNA vez (conjunto y anuncios);
 //   7. acceso: anon y el admin de un negocio no leen meta_campanas.
 // Al terminar deja meta_campanas vacía y las audiencias de desarrollo sin ids de Meta.
@@ -35,7 +37,6 @@ const IMAGENES = path.resolve("public/peludesk/anuncios");
 // ── Doble de la Graph API ───────────────────────────────────────────────────────────────────────────────────────
 const objetos = new Map(); // id → { tipo, ...params }
 const llamadas = [];
-const modo = { sinWhatsApp: false };
 let siguiente = 1;
 const nuevoId = () => `7700${siguiente++}`;
 const doble = http.createServer(async (req, res) => {
@@ -64,9 +65,6 @@ const doble = http.createServer(async (req, res) => {
       const hash = `hash${siguiente++}`;
       return json(200, { images: { bytes: { hash, url: `https://x/${hash}.jpg` } } });
     }
-    if (borde === "adsets" && modo.sinWhatsApp) {
-      return json(400, { error: { message: "Invalid parameter", code: 100, error_subcode: 2446886, error_user_title: "Número de WhatsApp no conectado", error_user_msg: "Conecta un número de WhatsApp a tu página." } });
-    }
     const id = nuevoId();
     const tipo = { customaudiences: "audiencia", campaigns: "campana", adsets: "conjunto", adcreatives: "creativo", ads: "anuncio" }[borde];
     objetos.set(id, { tipo, ...Object.fromEntries(p), effective_status: p.get("status") ?? "ACTIVE" });
@@ -78,6 +76,8 @@ const doble = http.createServer(async (req, res) => {
   if (g && objetos.has(g[1])) {
     const o = objetos.get(g[1]);
     if (req.method === "POST") {
+      if (o.tipo === "conjunto" && p.get("attribution_spec")) return json(400, { error: { message: "An unknown error occurred", code: 1, error_subcode: 1504040 } });
+      for (const [k, v] of p) if (k !== "access_token" && k !== "status") o[k] = v;
       if (p.get("status")) o.effective_status = p.get("status");
       return json(200, { success: true });
     }
@@ -111,13 +111,13 @@ try {
   const yaExiste = nuevoId();
   objetos.set(yaExiste, { tipo: "audiencia", name: "PeluDesk · Similar 1 % Veterinarias" });
 
-  seccion("1. Similares, campaña, conjuntos y anuncios (página sin WhatsApp primero)");
-  modo.sinWhatsApp = true;
+  seccion("1. Similares, campaña y conjuntos que faltan (no se crean por la API)");
   const r0 = await correr();
-  ok(r0.errores.some((e) => e.includes("Conecta un número de WhatsApp")), "sin el número de WhatsApp en la página, el conjunto queda con el texto de Meta");
-  const { data: errConj } = await A.from("meta_campanas").select("estado, ultimo_error").eq("clave", "conjunto:veterinarias").single();
-  ok(errConj.estado === "error" && errConj.ultimo_error.includes("WhatsApp"), "y la fila del conjunto guarda el error (se ve en la pantalla)");
-  modo.sinWhatsApp = false;
+  ok(postsA("adsets").length === 0, "ningún intento de crear un conjunto por la API");
+  ok(r0.manuales.length === 4 && r0.errores.length === 0, `los 4 conjuntos se reportan para crear a mano, sin errores (${r0.manuales.length}; ${r0.errores.join(" · ")})`);
+  const { data: manual } = await A.from("meta_campanas").select("estado, meta_id, ultimo_error, datos").eq("clave", "conjunto:veterinarias").single();
+  ok(manual.estado === "pendiente" && !manual.meta_id && !manual.ultimo_error && String(manual.datos?.manual ?? "").startsWith("Crear a mano en Ads Manager") && manual.datos.manual.includes("«PeluDesk · WhatsApp · Veterinarias»") && manual.datos.manual.includes("1 día"), "la fila dice «Crear a mano en Ads Manager» con el nombre que lleva y la ventana de 1 día");
+  ok(de("anuncio").length === 0, "sin conjunto no se crean anuncios");
 
   const similares = postsA("customaudiences").map((l) => l.params);
   ok(similares.length === 2 && similares.every((s) => s.subtype === "LOOKALIKE"), `se crean 2 similares (el de Veterinarias ya existía y se adopta) (${similares.length})`);
@@ -127,15 +127,23 @@ try {
   const { data: simVet } = await A.from("meta_audiencias").select("audience_id, coincidencias_min").eq("clave", "similar_veterinarias").single();
   ok(simVet.audience_id === yaExiste && simVet.coincidencias_min === 1000, "el similar que ya existía queda ligado con su tamaño");
 
-  seccion("2. Reintento: la siguiente corrida crea los conjuntos");
+  seccion("2. Conjuntos creados a mano en Ads Manager: la tarea los termina y crea sus anuncios");
+  // Como los deja Ads Manager: su nombre, 230 MXN, 18–65, sin públicos y ventana de 7 días.
+  const NOMBRES = ["PeluDesk · WhatsApp · Veterinarias", "PeluDesk · WhatsApp · Estéticas", "PeluDesk · WhatsApp · Hotel y guardería", "PeluDesk · WhatsApp · Visitaron su página"];
+  for (const name of NOMBRES) objetos.set(nuevoId(), { tipo: "conjunto", name, daily_budget: "23000", targeting: JSON.stringify({ geo_locations: { countries: ["MX"] }, age_min: 18, age_max: 65 }), attribution_spec: JSON.stringify([{ event_type: "CLICK_THROUGH", window_days: 7 }]), effective_status: "PAUSED" });
+  // Uno con otro nombre (una «Copia» sin renombrar) no se adopta.
+  objetos.set(nuevoId(), { tipo: "conjunto", name: "Nuevo conjunto de anuncios de Interacción - Copia", effective_status: "PAUSED" });
   const r1 = await correr();
-  ok(r1.errores.length === 0, `sin errores (${r1.errores.join(" · ")})`);
+  ok(r1.errores.length === 0 && r1.manuales.length === 0, `sin errores ni pendientes (${r1.errores.join(" · ")})`);
+  ok(postsA("adsets").length === 0, "sigue sin crear conjuntos por la API");
+  const ediciones = llamadas.filter((l) => l.metodo === "POST" && /^[0-9]+$/.test(l.ruta) && objetos.get(l.ruta)?.tipo === "conjunto");
+  ok(ediciones.length === 4 && r1.editados.length === 4, `edita los 4 conjuntos (${ediciones.length})`);
+  ok(ediciones.every((l) => !l.params.attribution_spec && !l.params.promoted_object && !l.params.campaign_id), "sin tocar la ventana de atribución (Meta no la deja cambiar) ni el objeto promovido");
   const camp = postsA("campaigns");
   ok(camp.length === 1 && camp[0].params.objective === "OUTCOME_ENGAGEMENT" && camp[0].params.status === "PAUSED" && camp[0].params.name === "PeluDesk · WhatsApp · Prospección", "una campaña de Interacción, en PAUSADO, con su nombre");
-  const conj = postsA("adsets").map((l) => l.params);
-  ok(conj.length === 8, `4 intentos fallidos sin WhatsApp y 4 conjuntos creados al reintentar (${conj.length})`);
-  const conjCreados = de("conjunto").map(([, o]) => o);
-  ok(conjCreados.length === 4 && conjCreados.every((c) => c.status === "PAUSED" && c.daily_budget === "10000" && c.optimization_goal === "CONVERSATIONS" && c.destination_type === "WHATSAPP"), "4 conjuntos en PAUSADO, 100 MXN al día, conversaciones de WhatsApp");
+  const conjCreados = de("conjunto").map(([, o]) => o).filter((o) => NOMBRES.includes(o.name));
+  ok(conjCreados.length === 4 && conjCreados.every((c) => c.effective_status === "PAUSED" && c.daily_budget === "10000"), "4 conjuntos en PAUSADO a 100 MXN al día");
+  ok(de("conjunto").find(([, o]) => o.name.includes("Copia"))?.[1].daily_budget === undefined, "la «Copia» sin renombrar no se toca");
   const tg = (n) => JSON.parse(conjCreados.find((c) => c.name === n)?.targeting ?? "{}");
   const ids = (l) => (l ?? []).map((x) => x.id).sort();
   const excl = [idLista.pagando, idLista.en_prueba, idLista.bajas].sort();
@@ -148,8 +156,6 @@ try {
   const th = tg("PeluDesk · WhatsApp · Hotel y guardería");
   ok(JSON.stringify(ids(th.custom_audiences)) === JSON.stringify([idLista.hotel_guarderia, simPro.audience_id].sort()) && th.flexible_spec?.[0]?.interests?.length === 3, "Hotel y guardería: lista + similar 2 % Prospectos, con 3 intereses");
   ok(JSON.stringify(ids(tg("PeluDesk · WhatsApp · Visitaron su página").custom_audiences)) === JSON.stringify([idLista.visitaron]), "Retargeting: «Visitaron su página»");
-  const promo = JSON.parse(conjCreados[0].promoted_object);
-  ok(promo.page_id && promo.whats_app_business_phone_number_id && promo.whatsapp_phone_number === "5215649160742", "promovido: la página y el número del bot (+52 56 4916 0742)");
   ok(postsA("adimages").length === 24, `24 imágenes subidas (${postsA("adimages").length})`);
   const creativos = de("creativo").map(([, o]) => o);
   ok(creativos.length === 12, `12 creativos (${creativos.length})`);
@@ -164,12 +170,15 @@ try {
   ok(JSON.parse(JSON.parse(ce.asset_feed_spec).additional_data.page_welcome_message).text_format.message.autofill_message.content.endsWith("para mi estética"), "y el de estéticas dice «para mi estética»");
   const anuncios = de("anuncio").map(([, o]) => o);
   ok(anuncios.length === 12 && anuncios.every((a) => a.status === "PAUSED"), `12 anuncios en PAUSADO (${anuncios.length})`);
+  const idsConj = new Set(de("conjunto").filter(([, o]) => NOMBRES.includes(o.name)).map(([id]) => id));
+  ok(anuncios.every((a) => idsConj.has(a.adset_id)), "cada anuncio en su conjunto creado a mano");
 
   seccion("3. Segunda corrida: no duplica y lee los últimos 7 días");
   const antes = objetos.size;
   const subidas = postsA("adimages").length;
   const r2 = await correr();
   ok(objetos.size === antes && postsA("adimages").length === subidas && r2.creados.length === 0, "no crea nada nuevo");
+  ok(r2.editados.length === 0, "y no vuelve a editar un conjunto que ya tiene lo de la tarea");
   const { data: filaCamp } = await A.from("meta_campanas").select("estado_meta, gasto_7d, conversaciones_7d, costo_conversacion, insights_at").eq("clave", "campana:prospeccion").single();
   ok(filaCamp.estado_meta === "PAUSED" && Number(filaCamp.gasto_7d) === 123.45 && filaCamp.conversaciones_7d === 5 && Number(filaCamp.costo_conversacion) === 24.69 && filaCamp.insights_at, "la campaña guarda estado, gasto, conversaciones y costo por conversación");
   const { data: filaConj } = await A.from("meta_campanas").select("presupuesto_diario").eq("clave", "conjunto:veterinarias").single();

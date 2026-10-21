@@ -20,7 +20,7 @@ export async function correrSincronizacionMeta(origen: "cron" | "manual") {
     try {
       campanas = await asegurarCampanas({ db, api, urlImagenes: enPrueba("META_ANUNCIOS_URL") ?? "https://peludesk.mx/peludesk/anuncios" });
     } catch (e) {
-      campanas = { creados: [], errores: [e instanceof Error ? e.message : String(e)], activados: [], insights: 0 };
+      campanas = { creados: [], errores: [e instanceof Error ? e.message : String(e)], activados: [], insights: 0, manuales: [], editados: [] };
     }
     if (r.corridaId) await db.from("meta_audiencias_corridas").update({ resumen: { ...r.resumen, campanas } }).eq("id", r.corridaId);
   }
