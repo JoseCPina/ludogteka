@@ -21,6 +21,8 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/peludesk/redes/:ruta*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
+      // Las imágenes de los anuncios de Meta (scripts/anuncios/creativos.mjs): la tarea las sube a la cuenta publicitaria.
+      { source: "/peludesk/anuncios/:ruta*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
       // La vista previa de un prospecto (peludesk.mx/para/<slug>): solo por el link, nada que indexar ni guardar.
       {
         source: "/para/:ruta*",

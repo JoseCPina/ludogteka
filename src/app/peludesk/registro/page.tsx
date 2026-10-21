@@ -26,7 +26,12 @@ export default async function RegistroPage({ searchParams }: { searchParams: Pro
   // Desde la vista previa de un prospecto (/para/<slug>): su negocio, ciudad, servicios y teléfono ya escritos.
   const slug = Array.isArray(q.prospecto) ? q.prospecto[0] : q.prospecto;
   const pr = slug ? await prospectoPorSlug(slug) : null;
-  const inicial = pr ? { slug: pr.slug, negocio: pr.nombre.slice(0, 60).trim(), ciudad: pr.ciudad, servicios: serviciosDe(pr), telefono: pr.telefono_norm ?? "" } : undefined;
+  // Quien llegó por un anuncio de Meta: el nombre guardado es el de su perfil de WhatsApp y la ciudad «Por confirmar»,
+  // así que esos dos se dejan en blanco para que los escriba.
+  const deAnuncio = pr?.fuente === "anuncio_meta";
+  const inicial = pr
+    ? { slug: pr.slug, negocio: deAnuncio ? "" : pr.nombre.slice(0, 60).trim(), ciudad: deAnuncio ? "" : pr.ciudad, servicios: serviciosDe(pr), telefono: pr.telefono_norm ?? "" }
+    : undefined;
   return (
     <div className="bg-crema">
     <main id="contenido" className="min-h-[100dvh]">

@@ -99,6 +99,7 @@ const corridasCreadas = [];
 async function limpiar() {
   const { data: ids } = await A.from("meta_audiencias").select("id");
   for (const a of ids ?? []) await A.from("meta_audiencias_miembros").delete().eq("audiencia_id", a.id);
+  await A.from("meta_campanas").delete().neq("clave", "");
   await A.from("meta_audiencias").update({ audience_id: null, miembros: 0, coincidencias_min: null, coincidencias_max: null, estado_meta: null, ultima_sync_at: null, ultimo_error: null }).neq("clave", "");
   for (const c of corridasCreadas) await A.from("meta_audiencias_corridas").delete().eq("id", c);
   for (const id of creados) {
@@ -143,10 +144,10 @@ try {
   seccion("2. Primera corrida: quién entra en cada audiencia");
   const r1 = await correr();
   ok(r1.estado === "ok", `la corrida termina bien (${r1.estado}${r1.errores.length ? ": " + r1.errores.join(" · ") : ""})`);
-  ok(aud.size === 7, `se crean las 7 audiencias (${aud.size})`);
+  ok(aud.size === 8, `se crean las 8 listas (${aud.size})`);
   ok([...aud.values()].every((a) => a.source === "BOTH_USER_AND_PARTNER_PROVIDED" && a.subtype === "CUSTOM"), "lista de clientes con origen «de socios/propios» (BOTH_USER_AND_PARTNER_PROVIDED)");
   const crea = llamadas.filter((l) => /customaudiences$/.test(l.ruta) && l.metodo === "POST").map((l) => l.params.name).sort();
-  ok(JSON.stringify(crea) === JSON.stringify(["PeluDesk · En prueba", "PeluDesk · Estéticas", "PeluDesk · Hotel y guardería", "PeluDesk · Pagando", "PeluDesk · Prospectos", "PeluDesk · Veterinarias", "PeluDesk · Visitaron su página"].sort()), `con los nombres pedidos (${crea.join(", ")})`);
+  ok(JSON.stringify(crea) === JSON.stringify(["PeluDesk · Bajas de publicidad (exclusión)", "PeluDesk · En prueba", "PeluDesk · Estéticas", "PeluDesk · Hotel y guardería", "PeluDesk · Pagando", "PeluDesk · Prospectos", "PeluDesk · Veterinarias", "PeluDesk · Visitaron su página"].sort()), `con los nombres pedidos (${crea.join(", ")})`);
   const envios = llamadas.filter((l) => /\/users$/.test(l.ruta));
   const todo = envios.map((l) => l.params.payload).join(" ");
   ok(!todo.includes(tel(1)) && !todo.includes(`vet.${sufijo}`), "a Meta no llega ningún teléfono ni correo en claro");
@@ -162,6 +163,8 @@ try {
   ok(!enProspectos(tel(8)), "un teléfono que escribió BAJA (exclusión) no entra");
   ok(!enProspectos(tel(6)) && tiene("PeluDesk · Pagando", fila(tel(6), null)), "el que paga no va en Prospectos y sí en «Pagando»");
   ok(tiene("PeluDesk · En prueba", fila(tel(9), null)), "el prospecto en prueba va en «En prueba»");
+  ok(tiene("PeluDesk · Bajas de publicidad (exclusión)", fila(tel(7), null)) && tiene("PeluDesk · Bajas de publicidad (exclusión)", fila(tel(8), null)), "la baja de publicidad y el teléfono que escribió BAJA van en la lista de exclusión (solo para excluir en los anuncios)");
+  ok(!tiene("PeluDesk · Bajas de publicidad (exclusión)", fVet), "y nadie más");
   const { data: filaAud } = await A.from("meta_audiencias").select("clave, miembros, coincidencias_min, ultima_sync_at, audience_id").eq("clave", "prospectos").single();
   ok(filaAud.audience_id && filaAud.ultima_sync_at && filaAud.miembros === audPorNombre("PeluDesk · Prospectos").filas.size, `la audiencia guarda id, última sincronización y enviados (${filaAud.miembros})`);
   ok(filaAud.coincidencias_min === filaAud.miembros, "y las coincidencias que reporta Meta");
@@ -202,7 +205,9 @@ try {
   modo.falla500 = true;
   const r5 = await correr();
   ok(r5.estado !== "ok" && r5.errores.length > 0, `un 500 de Meta queda como error de la corrida (${r5.estado})`);
-  const { count: sinRegistrar } = await A.from("meta_audiencias_miembros").select("id", { count: "exact", head: true }).eq("miembro", `prospecto:${P.gua}`).is("deleted_at", null);
+  // (Fuera de la lista de exclusión: ahí sigue mientras Meta no acepte quitarlo.)
+  const { data: audBajas } = await A.from("meta_audiencias").select("id").eq("clave", "bajas").single();
+  const { count: sinRegistrar } = await A.from("meta_audiencias_miembros").select("id", { count: "exact", head: true }).eq("miembro", `prospecto:${P.gua}`).neq("audiencia_id", audBajas.id).is("deleted_at", null);
   ok(sinRegistrar === 0, "lo que Meta no aceptó no se da por enviado");
   modo.falla500 = false;
   const r6 = await correr();
@@ -273,10 +278,11 @@ try {
           const pg = await ctx.newPage();
           await pg.goto(`http://plataforma.localhost:${PUERTO}/plataforma/prospectos`);
           await pg.waitForSelector("[data-meta]");
-          ok((await pg.locator("[data-meta] [data-audiencia]").count()) === 7, `${ancho} px: la sección «Meta» enseña las 7 audiencias`);
+          ok((await pg.locator("[data-meta] [data-audiencia]").count()) === 11, `${ancho} px: la sección «Meta» enseña las 8 listas y los 3 similares`);
           const env1 = await pg.locator('[data-audiencia="prospectos"] [data-enviados]').innerText();
           ok(Number(env1.replace(/\D/g, "")) > 0, `${ancho} px: con su tamaño enviado (${env1})`);
           ok((await pg.locator("[data-corridas-meta] li").count()) > 0, `${ancho} px: y las últimas corridas`);
+          ok(await pg.locator("[data-campanas-meta]").isVisible(), `${ancho} px: y la tabla de la campaña de clic a WhatsApp`);
           ok(!(await pg.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)), `${ancho} px: sin desbordar a lo ancho`);
           if (ancho === 1280) {
             await pg.getByRole("button", { name: "Sincronizar ahora" }).click();

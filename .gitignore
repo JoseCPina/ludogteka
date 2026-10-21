@@ -56,3 +56,6 @@ next-env.d.ts
 scripts/tutoriales/salida/
 scripts/tutoriales/audio/
 scripts/tutoriales/diferencias/
+
+# capturas crudas de la demo para los anuncios de Meta (scripts/anuncios/creativos.mjs)
+scripts/anuncios/capturas/

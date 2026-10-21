@@ -14,13 +14,14 @@ export type ProspectoPagina = {
   telefono_norm: string | null;
   google_place_id: string | null;
   clasificacion: { servicios?: string[] } | null;
+  fuente?: string | null;
 };
 
 export async function prospectoPorSlug(slug: string): Promise<ProspectoPagina | null> {
   if (!/^[a-z0-9-]{3,60}$/.test(slug)) return null;
   const { data } = await createSupabaseAdminClient()
     .from("prospectos")
-    .select("id, slug, nombre, giro, ciudad, direccion, telefono_norm, google_place_id, clasificacion")
+    .select("id, slug, nombre, giro, ciudad, direccion, telefono_norm, google_place_id, clasificacion, fuente")
     .eq("slug", slug)
     .is("deleted_at", null)
     .maybeSingle();

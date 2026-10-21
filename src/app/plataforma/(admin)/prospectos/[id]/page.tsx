@@ -34,7 +34,7 @@ export default async function FichaProspecto({ params }: { params: Promise<{ id:
   const [{ data }, { data: ev }, { data: extra }] = await Promise.all([
     supabase.from("prospectos").select(COLUMNAS).eq("id", id).is("deleted_at", null).maybeSingle(),
     supabase.from("prospectos_eventos").select("id, tipo, etapa_anterior, etapa_nueva, canal, texto, created_at").eq("prospecto_id", id).is("deleted_at", null).order("created_at", { ascending: false }).limit(200),
-    supabase.from("prospectos").select("google_place_id, web_revisada_at, web_error, giro_busqueda, clasificacion_revertida_at").eq("id", id).maybeSingle(),
+    supabase.from("prospectos").select("google_place_id, web_revisada_at, web_error, giro_busqueda, clasificacion_revertida_at, anuncio_id, anuncio_at").eq("id", id).maybeSingle(),
   ]);
   if (!data) notFound();
   const p = data as unknown as Prospecto;
@@ -153,7 +153,9 @@ export default async function FichaProspecto({ params }: { params: Promise<{ id:
             <dt className="text-n-600">Facebook</dt><dd>{enlace(p.facebook)}</dd>
             <dt className="text-n-600">Web</dt><dd className="break-all">{enlace(p.web)}</dd>
             <dt className="text-n-600">Dirección</dt><dd>{p.direccion ?? "—"}</dd>
-            <dt className="text-n-600">Fuente</dt><dd>{p.fuente === "google_places" ? "Google Maps" : "A mano"} · alta {formatearFecha(p.created_at, ZONA)}</dd>
+            <dt className="text-n-600">Fuente</dt><dd>{p.fuente === "google_places" ? "Google Maps" : p.fuente === "anuncio_meta" ? "Anuncio de Meta" : "A mano"} · alta {formatearFecha(p.created_at, ZONA)}
+              {extra?.anuncio_at && <span className="block text-n-600" data-prospecto-anuncio>Escribió desde un anuncio de Meta el {formatearFecha(extra.anuncio_at, ZONA)}{extra.anuncio_id ? ` (anuncio ${extra.anuncio_id})` : ""}</span>}
+            </dd>
             {p.canal_ultimo_contacto && (<><dt className="text-n-600">Último contacto</dt><dd>{textoCanal(p.canal_ultimo_contacto)}{p.ultimo_contacto_at ? ` · ${formatearFecha(p.ultimo_contacto_at, ZONA)}` : ""}</dd></>)}
           </dl>
           {extra?.web_error && <p className="mt-2 text-ambar-oscuro">No se pudo leer su web: {extra.web_error}</p>}
