@@ -20,7 +20,7 @@ type Corrida = { id: string; origen: string; estado: string; busquedas: number; 
 type Ajustes = { ciudades: string[]; consultas: Record<string, string[]>; tope_busquedas_dia: number; paginas_por_consulta: number; pausado: boolean; lista_whatsapp: number; lista_instagram: number; dias_seguimiento: number; max_seguimientos: number; firma: string; whatsapp_ventas: string };
 
 type AudienciaMeta = { clave: string; tipo: string; nombre: string; audience_id: string | null; miembros: number; coincidencias_min: number | null; coincidencias_max: number | null; ultima_sync_at: string | null; ultimo_error: string | null };
-type CampanaMeta = { clave: string; tipo: string; nombre: string; meta_id: string | null; estado: string; ultimo_error: string | null; estado_meta: string | null; presupuesto_diario: number | null; gasto_7d: number | null; conversaciones_7d: number | null; costo_conversacion: number | null; activado_auto_at: string | null };
+type CampanaMeta = { clave: string; tipo: string; nombre: string; meta_id: string | null; estado: string; ultimo_error: string | null; estado_meta: string | null; presupuesto_diario: number | null; gasto_7d: number | null; conversaciones_7d: number | null; costo_conversacion: number | null; activado_auto_at: string | null; datos: Record<string, unknown> | null };
 const ESTADO_ANUNCIO: Record<string, string> = { ACTIVE: "Activo", PAUSED: "Pausado", CAMPAIGN_PAUSED: "Pausado (campaña)", ADSET_PAUSED: "Pausado (conjunto)", IN_PROCESS: "En revisión", WITH_ISSUES: "Con problemas", DISAPPROVED: "Rechazado", PENDING_REVIEW: "En revisión" };
 const pesos = (n: number | null) => (n == null ? "—" : `$${Number(n).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 type CorridaMeta = { id: string; origen: string; estado: string; inicio_at: string; resumen: Record<string, { calculados?: number; altas?: number; bajas?: number; cambios?: number; recibidos?: number; invalidos?: number; error?: string }>; errores: string[] };
@@ -48,7 +48,7 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
     supabase.from("meta_audiencias").select("clave, tipo, nombre, audience_id, miembros, coincidencias_min, coincidencias_max, ultima_sync_at, ultimo_error").is("deleted_at", null).order("created_at").order("clave"),
     supabase.from("meta_audiencias_corridas").select("id, origen, estado, inicio_at, resumen, errores").is("deleted_at", null).order("inicio_at", { ascending: false }).limit(5),
     // limite-filas-ok: la campaña y sus conjuntos (5 filas)
-    supabase.from("meta_campanas").select("clave, tipo, nombre, meta_id, estado, ultimo_error, estado_meta, presupuesto_diario, gasto_7d, conversaciones_7d, costo_conversacion, activado_auto_at").in("tipo", ["campana", "conjunto"]).is("deleted_at", null).order("tipo").order("clave"),
+    supabase.from("meta_campanas").select("clave, tipo, nombre, meta_id, estado, ultimo_error, estado_meta, presupuesto_diario, gasto_7d, conversaciones_7d, costo_conversacion, activado_auto_at, datos").in("tipo", ["campana", "conjunto"]).is("deleted_at", null).order("tipo").order("clave"),
   ]);
   const audiencias = (audMeta ?? []) as AudienciaMeta[];
   const corridasMeta = (corMeta ?? []) as CorridaMeta[];
@@ -130,7 +130,7 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
         <div className="mt-4" data-campanas-meta>
           <h3 className="font-bold text-n-900">Campaña de clic a WhatsApp</h3>
           <p className="mt-1 text-sm text-n-600">
-            La crea la misma sincronización, todo en pausa: se activa en Ads Manager. El conjunto «Visitaron su página» se activa solo cuando su público llega a 100.
+            La misma sincronización crea los anuncios y edita los conjuntos (nombre, presupuesto, públicos y exclusiones), todo en pausa: se activa en Ads Manager. Meta no deja crear conjuntos de WhatsApp por la API: cada conjunto se crea a mano en Ads Manager con su nombre. El conjunto «Visitaron su página» se activa solo cuando su público llega a 100.
             Gasto y conversaciones son de los últimos 7 días.
           </p>
           {campanas.length === 0 ? (
@@ -153,9 +153,10 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
                       {c.nombre}
                       {c.meta_id && <span className="block text-xs font-normal text-n-500">Id {c.meta_id}</span>}
                       {c.ultimo_error && <span className="block text-xs font-normal text-coral-oscuro" data-campana-error>{c.ultimo_error}</span>}
+                      {!c.meta_id && typeof c.datos?.manual === "string" && <span className="block text-xs font-normal text-n-600" data-campana-manual>{c.datos.manual}</span>}
                     </td>
                     <td data-label="Estado" className="py-1 pr-3" data-campana-estado>
-                      {!c.meta_id ? "Sin crear" : c.estado_meta ? (ESTADO_ANUNCIO[c.estado_meta] ?? c.estado_meta) : "Creado"}
+                      {!c.meta_id ? (c.tipo === "conjunto" && c.estado === "pendiente" ? <span className="font-semibold text-coral-oscuro">Crear a mano en Ads Manager</span> : "Sin crear") : c.estado_meta ? (ESTADO_ANUNCIO[c.estado_meta] ?? c.estado_meta) : "Creado"}
                       {c.activado_auto_at && <span className="block text-xs text-n-500">Activado solo al llegar a 100</span>}
                     </td>
                     <td data-label="Gasto 7 días" className="py-1 pr-3 text-right">{pesos(c.gasto_7d)}</td>

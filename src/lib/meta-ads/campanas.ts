@@ -4,7 +4,8 @@ import type { ApiMeta } from "./api";
 // La campaña de clic a WhatsApp de PeluDesk, creada y revisada por la tarea diaria (después de la sincronización de
 // audiencias). Idempotente: cada pieza (similar, campaña, imagen, creativo, conjunto, anuncio) tiene su fila en
 // meta_campanas (o meta_audiencias) con su id de Meta; lo que ya existe no se vuelve a crear, lo que existe en Meta
-// con el mismo nombre se adopta, y lo que falla queda con su error y se reintenta al día siguiente. TODO nace en
+// con el mismo nombre se adopta, y lo que falla queda con su error y se reintenta al día siguiente. Los CONJUNTOS no
+// se crean: se hacen a mano en Ads Manager con su nombre y aquí se editan (ver edicionConjunto). TODO nace en
 // PAUSADO: una persona lo activa en Ads Manager; la única excepción es el conjunto de retargeting, que la tarea activa
 // UNA vez cuando su público llega a MINIMO_RETARGETING. Sin imports de valores de «@/»: base y API llegan inyectadas.
 
@@ -94,7 +95,20 @@ export const PIEZA_TITULO: Record<Pieza, string> = {
 
 export const archivoImagen = (giro: GiroAnuncio, pieza: Pieza, formato: Formato) => `${giro}-${pieza}-${formato}.jpg`;
 
-export type ResultadoCampanas = { creados: string[]; errores: string[]; activados: string[]; insights: number };
+export type ResultadoCampanas = { creados: string[]; errores: string[]; activados: string[]; insights: number; manuales: string[]; editados: string[] };
+
+/**
+ * Lo que la tarea pone en un conjunto que ya existe: nombre, presupuesto y segmentación. Meta rechaza crear conjuntos
+ * de WhatsApp por la API (2446886, aunque la página tenga el número) y no deja cambiar la ventana de atribución de un
+ * conjunto ya creado (1504040): el conjunto se crea a mano en Ads Manager (con la ventana de 1 día) y aquí solo se edita.
+ */
+export function edicionConjunto(giro: GiroAnuncio, incluir: string[], excluir: string[]) {
+  const e = especConjunto(giro, "", incluir, excluir);
+  return { name: e.name, daily_budget: e.daily_budget, targeting: e.targeting };
+}
+
+export const textoConjuntoManual = (giro: GiroAnuncio) =>
+  `Crear a mano en Ads Manager: un conjunto de WhatsApp en la campaña «${CAMPANA_NOMBRE}», con la página PeluDesk, el número +52 56 4916 0742 y la ventana de atribución de 1 día después del clic, en pausa y con el nombre «${CONJUNTOS[giro].nombre}». La siguiente sincronización le pone presupuesto, públicos, exclusiones y sus 3 anuncios.`;
 
 export const textoAnuncio = (giro: GiroAnuncio) => `${CONJUNTOS[giro].texto}\n\n${CIERRE}`;
 
@@ -194,7 +208,7 @@ export async function asegurarCampanas(o: {
 }): Promise<ResultadoCampanas> {
   const { db, api } = o;
   const f = o.fetch ?? fetch;
-  const res: ResultadoCampanas = { creados: [], errores: [], activados: [], insights: 0 };
+  const res: ResultadoCampanas = { creados: [], errores: [], activados: [], insights: 0, manuales: [], editados: [] };
   const texto = (e: unknown) => (e instanceof Error ? e.message : String(e)).slice(0, 2000);
 
   // limite-filas-ok: la estructura de una campaña son unas 60 filas
@@ -253,6 +267,43 @@ export async function asegurarCampanas(o: {
       await guardar(clave, { estado: "error", ultimo_error: t }, base);
       return null;
     }
+  }
+
+  /**
+   * El conjunto de ese giro: el guardado o el de la campaña con su nombre. NUNCA se crea (ver edicionConjunto): si no
+   * existe queda «pendiente» con la instrucción para crearlo a mano. Si existe, se le pone lo de la tarea, solo cuando
+   * cambió (la firma va en datos) para no tocar un conjunto que ya entrega.
+   */
+  async function conjuntoExistente(giro: GiroAnuncio, edicion: Record<string, string>): Promise<string | null> {
+    const c = CONJUNTOS[giro];
+    const clave = `conjunto:${giro}`;
+    const base = { tipo: "conjunto", giro, nombre: c.nombre };
+    let id = filas.get(clave)?.meta_id ?? null;
+    try {
+      if (!id) id = (await enCuenta("adsets")).find((x) => x.name === c.nombre)?.id ?? null;
+    } catch (e) {
+      res.errores.push(`${c.nombre}: ${texto(e)}`);
+      return null;
+    }
+    if (!id) {
+      res.manuales.push(c.nombre);
+      await guardar(clave, { estado: "pendiente", ultimo_error: null, datos: { manual: textoConjuntoManual(giro) } }, base);
+      return null;
+    }
+    const firma = JSON.stringify(edicion);
+    const fila = filas.get(clave);
+    if (fila?.meta_id !== id || fila?.datos?.firma !== firma) {
+      try {
+        await api.graph("POST", id, edicion);
+        await guardar(clave, { meta_id: id, estado: "creado", ultimo_error: null, datos: { presupuesto: PRESUPUESTO_DIARIO_CENTAVOS / 100, firma } }, base);
+        res.editados.push(`${c.nombre} (${id})`);
+      } catch (e) {
+        const t = texto(e);
+        res.errores.push(`${c.nombre} (editar): ${t}`);
+        await guardar(clave, { meta_id: id, estado: "error", ultimo_error: t }, base);
+      }
+    }
+    return id;
   }
 
   // 1. Públicos similares.
@@ -338,9 +389,7 @@ export async function asegurarCampanas(o: {
         conjunto = filas.get(`conjunto:${giro}`)?.meta_id ?? null;
       } else {
         const incluir = c.audiencias.map((k) => audiencias.get(k)!.audience_id!) as string[];
-        conjunto = await asegurar(`conjunto:${giro}`, { tipo: "conjunto", giro, nombre: c.nombre }, "adsets", async () =>
-          String((await api.graph("POST", `${api.cuenta}/adsets`, especConjunto(giro, campanaId, incluir, excluir))).id),
-        { presupuesto: PRESUPUESTO_DIARIO_CENTAVOS / 100 });
+        conjunto = await conjuntoExistente(giro, edicionConjunto(giro, incluir, excluir));
       }
       if (!conjunto) continue;
       for (const pieza of PIEZAS) {
