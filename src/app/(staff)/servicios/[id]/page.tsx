@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ServicioForm } from "../servicio-form";
 import { BajaServicioBoton } from "../baja-servicio-boton";
 import { actualizarServicio, darDeBajaServicio } from "../actions";
+import { ComoSeCobra } from "./tarifas/como-se-cobra";
 
 export default async function EditarServicioPage({
   params,
@@ -25,7 +26,7 @@ export default async function EditarServicioPage({
   const { creado } = await searchParams;
 
   const supabase = await createSupabaseServerClient();
-  const [{ data: servicio }, { data: serviciosDisponibles }] = await Promise.all([
+  const [{ data: servicio }, { data: serviciosDisponibles }, { data: vigentes }] = await Promise.all([
     supabase
       .from("servicios")
       .select(
@@ -40,6 +41,11 @@ export default async function EditarServicioPage({
       .neq("id", id)
       .is("deleted_at", null)
       .order("orden"),
+    // QA S21 (N70): los tramos vigentes, para la guía «Cómo se cobra este servicio» de un servicio por km u hora.
+    supabase
+      .from("tarifas_vigentes")
+      .select("grupo_raza_id, tamano_id, pelaje_id, cantidad_desde, cantidad_hasta, precio, no_aplica")
+      .eq("servicio_id", id),
   ]);
 
   if (!servicio) notFound();
@@ -80,6 +86,15 @@ export default async function EditarServicioPage({
         <Alert variante="advertencia" titulo="Este servicio está inactivo">
           No aparece para cobrarse. Se puede seguir editando y su histórico de precios se conserva.
         </Alert>
+      )}
+
+      {!servicio.monto_libre && (
+        <ComoSeCobra
+          unidad={servicio.unidad as string}
+          dependeCantidad={servicio.depende_cantidad}
+          vigentes={(vigentes ?? []) as Parameters<typeof ComoSeCobra>[0]["vigentes"]}
+          enlaceTarifas={`/servicios/${id}/tarifas`}
+        />
       )}
 
       <ServicioForm

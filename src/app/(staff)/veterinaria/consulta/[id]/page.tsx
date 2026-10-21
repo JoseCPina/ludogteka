@@ -118,6 +118,8 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
   // QA S19: lo que nació en ESTE borrador se quita desde aquí y se anula al descartarlo; lo registrado desde el carnet, no.
   const nacidas = new Set([...(ligadasV ?? []), ...(ligadasD ?? [])].filter((r) => r.consulta_id === id && r.registrada_en_consulta === true).map((r) => r.id as string));
   const puedeQuitar = c.estado === "borrador" && puedeAtender === true;
+  // QA S21 (N105): «Quitar» también para lo registrado en el carnet que esta consulta adoptó (la base pide «Registrar vacunas»).
+  const deEsta = new Set([...(ligadasV ?? []), ...(ligadasD ?? [])].filter((r) => r.consulta_id === id).map((r) => r.id as string));
   const seAnulanAlDescartar = [
     ...vacunasDelDia.filter((v) => nacidas.has(v.id)).map((v) => `la vacuna ${v.biologico}`),
     ...desparasitacionesDelDia.filter((v) => nacidas.has(v.id)).map((v) => `la desparasitación ${v.producto}`),
@@ -171,14 +173,14 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
                 <b>Vacuna:</b> {v.biologico}
                 {v.lote ? ` · lote ${v.lote}` : ""}
                 {v.proxima_dosis ? ` · próxima ${formatearFechaCalendario(v.proxima_dosis)}` : ""}
-                {puedeQuitar && nacidas.has(v.id) && <> <QuitarAplicacion consultaId={id} perroId={c.perro_id} tipo="vacuna" id={v.id} nombre={v.biologico} /></>}
+                {puedeQuitar && deEsta.has(v.id) && <> <QuitarAplicacion consultaId={id} perroId={c.perro_id} tipo="vacuna" id={v.id} nombre={v.biologico} delCarnet={!nacidas.has(v.id)} /></>}
               </li>
             ))}
             {desparasitacionesDelDia.map((d2) => (
               <li key={d2.id} data-desparasitacion-consulta>
                 <b>Desparasitación {d2.tipo === "ambas" ? "interna y externa" : d2.tipo}:</b> {d2.producto}
                 {d2.proxima_dosis ? ` · próxima ${formatearFechaCalendario(d2.proxima_dosis)}` : ""}
-                {puedeQuitar && nacidas.has(d2.id) && <> <QuitarAplicacion consultaId={id} perroId={c.perro_id} tipo="desparasitacion" id={d2.id} nombre={d2.producto} /></>}
+                {puedeQuitar && deEsta.has(d2.id) && <> <QuitarAplicacion consultaId={id} perroId={c.perro_id} tipo="desparasitacion" id={d2.id} nombre={d2.producto} delCarnet={!nacidas.has(d2.id)} /></>}
               </li>
             ))}
           </ul>

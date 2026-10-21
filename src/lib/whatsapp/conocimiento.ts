@@ -322,4 +322,13 @@ Cómo contesta este WhatsApp (21 de octubre de 2026):
 - Después de 24 horas sin mensajes empieza una conversación nueva: un saludo («Hola», «Buenas tardes») se contesta con un saludo y un menú (1. Probar gratis 15 días, 2. Precio, 3. Tengo una duda).
 - El precio, el plan anual, las sucursales, la prueba gratis y la factura se contestan siempre con el mismo texto: un solo plan con todo incluido, por negocio, al mes o al año (dos meses gratis), sucursal adicional aparte, 15 días gratis sin tarjeta y factura (CFDI) de Menteo, S.A.S. Las cifras salen de los planes vigentes; un precio de una conversación anterior ya no vale.
 - Quien es cliente (dueño de mascota) de un negocio que usa PeluDesk y escribe preguntando por PeluDesk se atiende como prospecto.
+
+QA S21 (21 de octubre de 2026):
+- En «Cargos de esta consulta» el cargo de una vacuna no tiene «Quitar»: dice «Se quita desde la consulta» y lleva a «Vacunas y desparasitación», donde «Quitar» la anula en el carnet y quita su cargo en un paso (también si se registró desde el carnet ese día; eso pide «Registrar vacunas»).
+- La receta desde una consulta pone la concentración del Tratamiento («250 mg», «0.1 mg/kg») en Presentación, «N días» (o semanas) en Duración y la vía si se escribió (VO, IM, SC…); lo que no se entiende queda vacío.
+- En el portal, las consultas nunca muestran las etiquetas de la plantilla, solo lo escrito; una sección vacía no aparece.
+- En la ficha de un cliente sin cuenta no sale «Contraseña del portal», solo «Invitar al portal». Con cuenta, «Contraseña del portal» le da una contraseña temporal para mandársela por WhatsApp.
+- Al editar un servicio por kilómetro u hora sale «Cómo se cobra este servicio» con sus tramos, un ejemplo y el enlace a sus tarifas.
+- En el login, si la contraseña está mal el aviso sale una vez junto al botón y el teléfono o correo se queda escrito.
+- El portal tiene una sola barra fija arriba: el nombre del negocio y «Salir»; el saludo va en el cuerpo.
 `.trim();

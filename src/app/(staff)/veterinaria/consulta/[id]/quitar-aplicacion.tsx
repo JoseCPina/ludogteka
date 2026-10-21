@@ -7,7 +7,7 @@ import { useEspera } from "@/hooks/use-espera";
 import { quitarAplicacionConsulta } from "../../expediente/actions";
 
 /** QA S19: «Quitar» una vacuna o desparasitación aplicada en esta consulta mientras es borrador (la anula en el carnet y quita su cargo). */
-export function QuitarAplicacion({ consultaId, perroId, tipo, id, nombre }: { consultaId: string; perroId: string; tipo: "vacuna" | "desparasitacion"; id: string; nombre: string }) {
+export function QuitarAplicacion({ consultaId, perroId, tipo, id, nombre, delCarnet = false }: { consultaId: string; perroId: string; tipo: "vacuna" | "desparasitacion"; id: string; nombre: string; delCarnet?: boolean }) {
   const router = useRouter();
   const envio = useEspera();
   const [confirmando, setConfirmando] = useState(false);
@@ -21,7 +21,7 @@ export function QuitarAplicacion({ consultaId, perroId, tipo, id, nombre }: { co
         </Button>
       ) : (
         <span className="flex flex-wrap items-center gap-2 rounded-md bg-coral-suave p-2 text-xs text-coral-oscuro" data-quitar-confirmar>
-          <span>¿Quitar {que} {nombre}? Se anula en el carnet y se quita su cargo.</span>
+          <span>¿Quitar {que} {nombre}? Se anula en el carnet{delCarnet ? " (se registró desde el carnet)" : ""} y se quita su cargo.</span>
           <Button
             type="button"
             variante="peligro"

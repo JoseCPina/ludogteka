@@ -19,3 +19,27 @@ export function sinTitulosVacios(texto: string): string {
   }
   return conservadas.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
+
+const normalizar = (t: string) => t.normalize("NFC").replace(/\s+/g, " ").trim().toLowerCase();
+
+/**
+ * QA S21 (N110): al dueño nunca se le enseñan las etiquetas de la plantilla de consulta, solo lo capturado. Quita
+ * del inicio de cada renglón las etiquetas conocidas (`etiquetas`, las que entrega `mi_expediente` de las
+ * plantillas del negocio) y las guías con «·» («Medicamento · dosis · vía · frecuencia · duración:»); un renglón
+ * que se queda vacío se quita. Lo que sobra pasa por `sinTitulosVacios`. Si no queda nada, la sección no se muestra.
+ */
+export function sinEtiquetasDePlantilla(texto: string, etiquetas: string[] = []): string {
+  const conocidas = new Set(etiquetas.map(normalizar).filter(Boolean));
+  const renglones = texto.split("\n").map((linea) => {
+    let r = linea.trim();
+    for (;;) {
+      const m = r.match(/^([^:\n]{1,100}):\s*/);
+      if (!m) break;
+      const etiqueta = normalizar(m[1]);
+      if (!conocidas.has(etiqueta) && !m[1].includes("·")) break;
+      r = r.slice(m[0].length);
+    }
+    return r;
+  });
+  return sinTitulosVacios(renglones.filter((r, i, todos) => r !== "" || (i > 0 && todos[i - 1] !== "")).join("\n"));
+}
