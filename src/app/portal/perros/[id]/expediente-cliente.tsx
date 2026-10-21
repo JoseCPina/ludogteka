@@ -1,9 +1,11 @@
 import { formatearFechaCalendario } from "@/lib/formato";
-import { sinTitulosVacios } from "@/lib/veterinaria/portal-texto";
+import { sinEtiquetasDePlantilla } from "@/lib/veterinaria/portal-texto";
 import { TIPOS_CITA } from "@/lib/veterinaria/expediente";
 
 export type ExpedienteDelDueno = {
   habilitado: boolean;
+  // Las etiquetas de las plantillas de consulta del negocio: nunca se le enseñan al dueño (N110).
+  etiquetas?: string[];
   consultas: { fecha: string; tipo: string; motivo: string; diagnostico: string; indicaciones: string }[];
 };
 
@@ -18,7 +20,8 @@ export function ExpedienteCliente({ expediente }: { expediente: ExpedienteDelDue
       ) : (
         <ul className="flex flex-col gap-3">
           {expediente.consultas.map((consulta, i) => {
-            const c = { ...consulta, motivo: sinTitulosVacios(consulta.motivo), diagnostico: sinTitulosVacios(consulta.diagnostico), indicaciones: sinTitulosVacios(consulta.indicaciones) };
+            const limpio = (t: string) => sinEtiquetasDePlantilla(t, expediente.etiquetas ?? []);
+            const c = { ...consulta, motivo: limpio(consulta.motivo), diagnostico: limpio(consulta.diagnostico), indicaciones: limpio(consulta.indicaciones) };
             return (
             <li key={i} className="flex flex-col gap-1 rounded-lg border border-n-200 bg-white p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">

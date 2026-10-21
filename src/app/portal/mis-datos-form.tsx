@@ -50,12 +50,14 @@ export function MisDatosForm({
           required
           disabled={enviando}
           defaultValue={formatearTelefono(telefono)}
+          placeholder="444 123 4567"
           ayuda="10 dígitos. Puedes escribirlo con espacios o guiones."
         />
         <Field
           label="Correo"
           name="email"
           type="email"
+          placeholder="nombre@correo.com"
           disabled={enviando}
           defaultValue={email ?? ""}
         />

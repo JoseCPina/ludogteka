@@ -354,11 +354,8 @@ export default async function EditarClientePage({
 
       {mods.includes("portal") && (
         <>
-          <RestablecerPassword
-            clienteId={id}
-            clienteNombre={cliente.nombre}
-            tieneCuenta={Boolean(cuentaCliente)}
-          />
+          {/* Sin cuenta no hay contraseña que restablecer: lo dice «Invitar al portal». */}
+          {cuentaCliente ? <RestablecerPassword clienteId={id} clienteNombre={cliente.nombre} /> : null}
 
           <InvitarPortal clienteId={id} clienteNombre={cliente.nombre} tieneCuenta={Boolean(cuentaCliente)} />
 

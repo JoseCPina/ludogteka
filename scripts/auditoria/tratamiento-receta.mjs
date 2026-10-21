@@ -31,5 +31,16 @@ igual(medicamentosDeTratamiento("Medicamento · dosis · vía · frecuencia · d
 igual(medicamentosDeTratamiento("Medicamento · dosis · vía · frecuencia · duración:\n").length, 0, "N97: la guía con renglón vacío tampoco");
 igual(medicamentosDeTratamiento("Medicamento · dosis · vía · frecuencia · duración: Amoxicilina 250 mg, 1 tableta cada 12 horas por 7 días")[0]?.base, "Amoxicilina 250 mg", "N97: lo escrito después de la guía sí se toma");
 igual(medicamentosDeTratamiento("Medicamento · dosis · vía · frecuencia · duración:\nMeloxicam 1 mg, 1 tableta cada 24 h por 5 días")[0]?.indicaciones, "1 tableta cada 24 horas por 5 días", "N97: indicaciones solo con lo capturado");
+// N109: concentración a Presentación, «N días» a Duración y la vía; lo que no se entiende queda vacío.
+const amo = medicamentosDeTratamiento("Amoxicilina 250 mg, 1 tableta VO cada 12 horas, 7 días")[0];
+igual([amo.presentacion, amo.dosis, amo.via, amo.frecuencia_horas, amo.duracion_dias], ["250 mg", "1 tableta", "Oral", "12", "7"], "N109: Amoxicilina 250 mg … 7 días");
+const amo2 = medicamentosDeTratamiento("Amoxicilina 250 mg … 7 días")[0];
+igual([amo2.producto, amo2.presentacion, amo2.duracion_dias, amo2.dosis, amo2.via], ["Amoxicilina", "250 mg", "7", "", ""], "N109: sin dosis ni vía escritas, vacías");
+igual(medicamentosDeTratamiento("Meloxicam 0.1 mg/kg SC cada 24 h x 3 días")[0].presentacion, "0.1 mg/kg", "N109: mg/kg va a Presentación");
+igual(medicamentosDeTratamiento("Meloxicam 0.1 mg/kg SC cada 24 h x 3 días")[0].via, "Subcutánea", "N109: SC → Subcutánea");
+igual(medicamentosDeTratamiento("Gotas óticas 2 gotas cada 12 h por 1 semana")[0].duracion_dias, "7", "N109: 1 semana = 7 días");
+igual(medicamentosDeTratamiento("Meloxicam 1 ml cada 24 h durante 3 días")[0].presentacion, "", "N109: «1 ml» es la toma, no la presentación");
+igual(medicamentosDeTratamiento("Desparasitante cada 15 días")[0].duracion_dias, "", "N109: «cada 15 días» no es duración");
+igual(medicamentosDeTratamiento("Suspensión 5 mg/ml, 2 ml VO cada 8 h 5 días")[0].presentacion, "5 mg/ml", "N109: 5 mg/ml");
 console.log(mal ? `\n${mal} HALLAZGO(S)` : "\nSin hallazgos.");
 process.exit(mal ? 1 : 0);

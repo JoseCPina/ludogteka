@@ -44,12 +44,15 @@ export function MiPerroForm({
         <Field
           label="Contacto de emergencia"
           name="contacto_emergencia_nombre"
+          placeholder="Nombre de quien te cubre"
           disabled={enviando}
           defaultValue={valoresIniciales.contacto_emergencia_nombre ?? ""}
         />
         <Field
           label="Teléfono de emergencia"
           name="contacto_emergencia_telefono"
+          placeholder="10 dígitos"
+          inputMode="tel"
           disabled={enviando}
           defaultValue={
             valoresIniciales.contacto_emergencia_telefono
@@ -63,12 +66,14 @@ export function MiPerroForm({
         <Field
           label="Veterinario de cabecera"
           name="veterinario_nombre"
+          placeholder="Nombre del médico"
           disabled={enviando}
           defaultValue={valoresIniciales.veterinario_nombre ?? ""}
         />
         <Field
           label="Clínica"
           name="veterinario_clinica"
+          placeholder="Nombre de la clínica"
           disabled={enviando}
           defaultValue={valoresIniciales.veterinario_clinica ?? ""}
         />
@@ -76,6 +81,8 @@ export function MiPerroForm({
       <Field
         label="Teléfono del veterinario"
         name="veterinario_telefono"
+        placeholder="10 dígitos"
+        inputMode="tel"
         disabled={enviando}
         defaultValue={valoresIniciales.veterinario_telefono ?? ""}
       />
@@ -83,6 +90,7 @@ export function MiPerroForm({
       <Textarea
         label="Autorización médica"
         name="autorizacion_medica_notas"
+        placeholder="Por ejemplo: llévenlo con su veterinario; si no contesta, a la clínica más cercana."
         disabled={enviando}
         defaultValue={valoresIniciales.autorizacion_medica_notas ?? ""}
         ayuda="Instrucciones para el personal si tu perro necesita atención médica y no te localizamos."
@@ -90,6 +98,7 @@ export function MiPerroForm({
       <Field
         label="Tope de gasto autorizado (opcional)"
         name="tope_gasto_autorizado"
+        placeholder="Por ejemplo: 1500"
         type="number"
         inputMode="decimal"
         step="0.01"

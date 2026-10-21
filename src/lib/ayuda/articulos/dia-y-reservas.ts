@@ -179,7 +179,7 @@ Abajo, en **Últimos revisados**, ves lo que ya se resolvió.
     roles: ["admin", "recepcion"],
     rutas: [],
     palabras: ["olvidé mi contraseña", "no puede entrar", "contraseña temporal", "portal", "acceso"],
-    cuerpo: `La cuenta del dueño va con su teléfono y no hay correo de recuperación. Si te escribe diciendo que olvidó su contraseña, la restableces tú.
+    cuerpo: `El dueño entra con su teléfono y su contraseña. Si te escribe diciendo que olvidó su contraseña, se la restableces tú: le das una contraseña temporal para que entre y la cambie en su portal.
 
 1. Abre la ficha del cliente desde [Clientes](/clientes).
 2. Baja a **Contraseña del portal** y toca **Restablecer contraseña**.
@@ -191,7 +191,7 @@ Abajo, en **Últimos revisados**, ves lo que ya se resolvió.
 
 ## Si algo no sale
 
-- Si la ficha dice que todavía no tiene cuenta, no hay nada que restablecer: mándale un link de alta y la crea él con su teléfono.
+- Si no ves **Contraseña del portal**, el cliente todavía no tiene cuenta: no hay nada que restablecer. Usa **Invitar al portal** (o un link de alta) y la crea él con su teléfono.
 - «No pudimos cambiar la contraseña. Intenta de nuevo.»: vuelve a intentarlo en un momento.`,
   },
   {
@@ -208,7 +208,10 @@ Abajo, en **Últimos revisados**, ves lo que ya se resolvió.
 ## Cómo entra
 
 1. Abre la [página de entrada](/login) de tu negocio, escribe su **Teléfono o correo** y su **Contraseña**, y toca **Entrar**.
-2. Si la olvidó, la restableces tú desde su ficha.
+2. Si se equivoca de contraseña, el aviso sale una vez junto al botón y su teléfono se queda escrito: solo vuelve a escribir la contraseña.
+3. Si la olvidó, la restableces tú desde su ficha.
+
+Arriba del portal hay una sola barra fija con el nombre de tu negocio y **Salir**.
 
 ## Qué ve
 
@@ -500,7 +503,7 @@ Toca **Ver historial de ajustes** en el pase: cada renglón dice antes y despué
     roles: ["admin", "recepcion"],
     rutas: [],
     palabras: ["recoger a domicilio", "kilómetros", "distancia", "transporte", "camioneta", "traslado"],
-    cuerpo: `La recolección se cobra por kilómetro. La distancia de cada cliente se calcula una vez desde su dirección y se reutiliza cada vez que lo recoges. El precio por kilómetro puede ir por tramos: el tramo lo decide la distancia **total** del viaje y luego se multiplica por los kilómetros (por ejemplo, de 0 a 5 km a $10 y desde 6 km a $8: un viaje de 7 km cuesta 7 × $8 = $56). En Servicios → el cargo → **Tarifas**, el recuadro **Cómo se cobra este servicio** lo calcula con tus precios. Un **traslado a domicilio** del catálogo de Servicios extra se cobra por **zona**: un precio por viaje, sin multiplicar por kilómetro.
+    cuerpo: `La recolección se cobra por kilómetro. La distancia de cada cliente se calcula una vez desde su dirección y se reutiliza cada vez que lo recoges. El precio por kilómetro puede ir por tramos: el tramo lo decide la distancia **total** del viaje y luego se multiplica por los kilómetros (por ejemplo, de 0 a 5 km a $10 y desde 6 km a $8: un viaje de 7 km cuesta 7 × $8 = $56). Al editar el servicio (Servicios → el cargo) y en sus **Tarifas**, el recuadro **Cómo se cobra este servicio** lo calcula con tus precios y lleva a sus tramos. Un **traslado a domicilio** del catálogo de Servicios extra se cobra por **zona**: un precio por viaje, sin multiplicar por kilómetro.
 
 ## Calcular la distancia
 

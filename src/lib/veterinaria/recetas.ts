@@ -273,6 +273,10 @@ export type MedicamentoDeTratamiento = {
   /** Lo que va antes de la dosis en el renglón («Meloxicam 1 mg»): la base de las indicaciones generadas. */
   base: string;
   producto: string;
+  /** La concentración escrita junto al nombre («250 mg», «10 mg/kg», «5 mg/ml»); vacía si no hay. */
+  presentacion: string;
+  /** La vía si se escribió («VO», «IM», «subcutánea»…), ya en palabras; vacía si no se escribió. */
+  via: string;
   dosis: string;
   dosis_cantidad: string;
   frecuencia: string;
@@ -286,6 +290,56 @@ export type MedicamentoDeTratamiento = {
  * por «;»): «Amoxicilina 250 mg, 1 tableta cada 12 horas por 7 días». Es solo un punto de partida: el médico lo
  * revisa y lo corrige. Lo que no se entiende queda en indicaciones, tal cual.
  */
+/**
+ * QA S21 (N109): «N días» (o «N semanas») es la duración, con o sin «por/durante/x» antes; «cada N días» es una
+ * frecuencia y no cuenta. Sin duración escrita, vacío.
+ */
+export function duracionDeRenglon(renglon: string): string {
+  for (const m of renglon.matchAll(/(\d+)\s*(d[ií]as?|d\b|semanas?)/gi)) {
+    const antes = renglon.slice(0, m.index).toLowerCase();
+    if (/(cada|c\/)\s*$/.test(antes)) continue;
+    const n = Number(m[1]);
+    if (!n) continue;
+    return String(/^s/i.test(m[2]) ? n * 7 : n);
+  }
+  return "";
+}
+
+/**
+ * QA S21 (N109): la concentración (mg, mcg, g, UI, ml con «/kg» o «/ml») va a Presentación. La toma («1 tableta»,
+ * «1 ml») no cuenta: es la dosis. Sin concentración, vacío.
+ */
+export function concentracionDeRenglon(renglon: string, toma: [number, number] | null): string {
+  const re = /(\d+(?:[.,]\d+)?\s*(?:mg|mcg|µg|g|ui|ml)(?:\s*\/\s*(?:kg|ml|tableta|tab))?)(?![a-záéíóúñ])/gi;
+  for (const m of renglon.matchAll(re)) {
+    const ini = m.index ?? 0;
+    if (toma && ini >= toma[0] && ini < toma[1]) continue;
+    const t = m[1].replace(/\s+/g, " ").trim();
+    // «1 ml» suelto es una toma; como concentración solo con «/kg» o «/ml».
+    if (/ml$/i.test(t) && !/\//.test(t)) continue;
+    return t.replace(/\s*\/\s*/g, "/").replace(/\bui\b/i, "UI");
+  }
+  return "";
+}
+
+// Con letras acentuadas \b no sirve: se delimita a mano.
+const palabra = (t: string) => new RegExp(`(?<![a-záéíóúñ])(?:${t})(?![a-záéíóúñ])`, "i");
+const VIAS: [RegExp, string][] = [
+  [palabra("vo|v\\.o\\.|oral|por boca"), "Oral"],
+  [palabra("im|i\\.m\\.|intramuscular"), "Intramuscular"],
+  [palabra("iv|i\\.v\\.|intravenosa"), "Intravenosa"],
+  [palabra("sc|s\\.c\\.|subcut[aá]nea"), "Subcutánea"],
+  [palabra("t[oó]pica|t[oó]pico|cut[aá]nea"), "Tópica"],
+  [palabra("oft[aá]lmica|oft[aá]lmico"), "Oftálmica"],
+  [palabra("[oó]tica|[oó]tico"), "Ótica"],
+];
+
+/** QA S21 (N109): la vía escrita en el renglón, en palabras; si no se escribió, vacía (nunca se supone). */
+export function viaDeRenglon(renglon: string): string {
+  for (const [re, via] of VIAS) if (re.test(renglon)) return via;
+  return "";
+}
+
 export function medicamentosDeTratamiento(texto: string | null | undefined): MedicamentoDeTratamiento[] {
   if (!texto) return [];
   return texto
@@ -296,7 +350,7 @@ export function medicamentosDeTratamiento(texto: string | null | undefined): Med
     .slice(0, 8)
     .map((renglon) => {
       const frase = renglon.match(/(cada\s*\d+(?:[.,]\d+)?\s*(?:h|hr|hrs|horas?)|c\/\s*\d+\s*(?:h|hr|hrs|horas?)|\d+\s*(?:veces|vez)\s*(?:al|por|cada)?\s*d[ií]a|(?:una|un|dos|tres|cuatro)\s*(?:veces|vez)\s*(?:al|por|cada)?\s*d[ií]a)/i);
-      const dur = renglon.match(/(?:por|durante|x)\s*(\d+)\s*d[ií]as?/i);
+      const dur = duracionDeRenglon(renglon);
       const horas = frase ? horasDeFrecuencia(frase[1]) : null;
       // El nombre es lo que va antes de la primera cantidad, frecuencia o duración.
       const corte = renglon.search(/[,:(]|\s\d|\s(?:cada|c\/|por|durante|x)\s/i);
@@ -312,8 +366,10 @@ export function medicamentosDeTratamiento(texto: string | null | undefined): Med
         dosis_cantidad: cantidad ? String(cantidad) : "",
         frecuencia: frase ? formatoFrecuencia(frase[1]) : "",
         frecuencia_horas: horas ? String(horas) : "",
-        duracion_dias: dur ? dur[1] : "",
-        indicaciones: indicacionesGeneradas({ dosis, frecuencia: frase ? formatoFrecuencia(frase[1]) : "", duracion_dias: dur ? dur[1] : "" }),
+        presentacion: concentracionDeRenglon(renglon, toma && toma.index !== undefined ? [toma.index, toma.index + toma[0].length] : null),
+        via: viaDeRenglon(renglon),
+        duracion_dias: dur,
+        indicaciones: indicacionesGeneradas({ dosis, frecuencia: frase ? formatoFrecuencia(frase[1]) : "", duracion_dias: dur }),
       };
     });
 }

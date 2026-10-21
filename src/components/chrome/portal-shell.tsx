@@ -28,16 +28,21 @@ export function PortalShell({
   return (
     <div className="flex min-h-full flex-1 flex-col">
       {aviso}
-      <header className="flex flex-none flex-col gap-3 border-b border-n-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between md:px-8">
-        <div className="flex flex-col gap-1">
-          <Link href="/portal" className="self-start rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado">
-            {marca}
-          </Link>
-          {nombreCompleto && <p className="text-sm text-n-600" data-saludo-portal>Hola, {nombreCompleto}</p>}
-        </div>
-        <form action={cerrarSesion}>
-          <Button type="submit" variante="secundario" className="min-h-11 px-4">
-            Cerrar sesión
+      {/* N102: una sola fila de 56 px, fija arriba, también en el celular: negocio a la izquierda, «Salir» a la
+          derecha. El saludo va en el cuerpo. */}
+      <header
+        className="sticky top-0 z-30 flex h-14 flex-none items-center justify-between gap-3 border-b border-n-200 bg-white px-4 md:px-8"
+        data-encabezado-portal
+      >
+        <Link
+          href="/portal"
+          className="min-w-0 flex-1 rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado"
+        >
+          {marca}
+        </Link>
+        <form action={cerrarSesion} className="flex-none">
+          <Button type="submit" variante="secundario" className="min-h-10 px-4">
+            Salir
           </Button>
         </form>
       </header>
@@ -65,7 +70,15 @@ export function PortalShell({
         </nav>
       )}
 
-      <main className="flex-1 bg-n-50 p-4 md:p-8">{children}</main>
+      <main className="flex-1 bg-n-50 p-4 md:p-8">
+        {/* La portada ya saluda en su título; las demás pantallas, aquí arriba del contenido. */}
+        {nombreCompleto && pathname !== "/portal" && (
+          <p className="mb-3 text-sm text-n-600" data-saludo-portal>
+            Hola, {nombreCompleto}
+          </p>
+        )}
+        {children}
+      </main>
       {/* «Instalar la app» siempre a la mano, al final del portal (nunca flotando encima de nada). */}
       <footer className="bg-n-50 px-4 pb-6 md:px-8">
         <BotonInstalar className="max-w-xs" />

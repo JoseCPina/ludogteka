@@ -101,6 +101,7 @@ export function ProponerComprobante({
         label={categoria === "desparasitacion" ? "Producto usado (opcional)" : "Veterinario o clínica (opcional)"}
         value={detalle}
         onChange={(e) => setDetalle(e.target.value)}
+        placeholder={categoria === "desparasitacion" ? "Por ejemplo: Drontal Plus" : "Por ejemplo: Clínica San Ángel"}
         disabled={enviando.cargando}
       />
 

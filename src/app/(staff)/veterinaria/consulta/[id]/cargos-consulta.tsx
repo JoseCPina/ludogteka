@@ -17,6 +17,9 @@ import { agregarCargoConsulta, ajustarCargoConsulta, pasarCargosACaja, ponerPrec
 // pone precio: quien puede editar precios la guarda como precio de catálogo (viene marcada, se puede desmarcar).
 const sePuedeGuardarEnCatalogo = (l: LineaCargo) => l.tipo === "consulta" || l.tipo === "vacuna" || (l.tipo === "procedimiento" && l.origen === "catalogo");
 
+// Una vacuna aplicada vive en el carnet: su cargo no se quita suelto, se quita la vacuna (y con ella el cargo).
+const esDelCarnet = (l: LineaCargo) => l.tipo === "vacuna";
+
 const num = (t: string) => Number(t.replace(",", ".").trim());
 
 /**
@@ -191,7 +194,12 @@ export function CargosConsulta({
                       {d.puede_ajustar && (
                         <button type="button" className="text-sm font-semibold text-morado hover:underline" onClick={() => abrir(l, "ajustar")}>Ajustar</button>
                       )}
-                      {(d.puede_ajustar || l.origen === "manual") && (
+                      {esDelCarnet(l) ? (
+                        // QA S21 (N105): una vacuna vive en el carnet; su cargo se va con ella desde «Vacunas y desparasitación».
+                        <a href="#t-vacunas-consulta" className="text-sm font-semibold text-morado hover:underline" data-se-quita-desde-consulta>
+                          Se quita desde la consulta
+                        </a>
+                      ) : (d.puede_ajustar || l.origen === "manual") && (
                         <button type="button" className="text-sm font-semibold text-coral-oscuro hover:underline" onClick={() => abrir(l, "quitar")}>Quitar</button>
                       )}
                     </>

@@ -10,11 +10,9 @@ import { restablecerPasswordCliente, type EstadoRestablecer } from "./password-a
 export function RestablecerPassword({
   clienteId,
   clienteNombre,
-  tieneCuenta,
 }: {
   clienteId: string;
   clienteNombre: string;
-  tieneCuenta: boolean;
 }) {
   const [confirmando, setConfirmando] = useState(false);
   const ocupado = useEspera();
@@ -37,16 +35,10 @@ export function RestablecerPassword({
     <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
       <h2 className="text-lg font-bold text-n-900">Contraseña del portal</h2>
 
-      {!tieneCuenta ? (
-        <p className="text-n-600">
-          {clienteNombre} todavía no tiene cuenta. Mándale un link de alta y la crea él mismo con su
-          teléfono.
-        </p>
-      ) : (
-        <>
-          <p className="text-n-600">
-            Si te escribe por WhatsApp diciendo que la olvidó, restablécela aquí. No hay correo de
-            recuperación: su cuenta va con su teléfono.
+      <>
+          <p className="text-n-600" data-texto-recuperacion>
+            Si {clienteNombre} olvidó su contraseña, restablécela aquí: te damos una contraseña
+            temporal para mandársela por WhatsApp. Entra con su teléfono y la cambia desde su portal.
           </p>
 
           {error && (
@@ -94,8 +86,7 @@ export function RestablecerPassword({
               Restablecer contraseña
             </Button>
           )}
-        </>
-      )}
+      </>
     </div>
   );
 }

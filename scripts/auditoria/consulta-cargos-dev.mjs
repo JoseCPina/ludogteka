@@ -274,8 +274,11 @@ try {
   comprobar(!!lineaV1, "la vacuna tiene su cargo en la consulta");
   const quitarCargo = await rpc(P.admin, "vet_consulta_cargo_quitar", { p_id: lineaV1?.id, p_motivo: "ya no" });
   comprobar(!quitarCargo.ok && /sigue registrada en el carnet/.test(quitarCargo.mensaje), `quitar el cargo de una vacuna avisa que se quita desde la consulta (${quitarCargo.mensaje})`);
+  // QA S21 (N105): lo registrado desde el carnet y adoptado SÍ se quita desde la consulta, pero pide «Registrar vacunas».
+  await quitar(P.admin, P.recSinId, "registrar_vacunas");
   const quitarAjena = await rpc(P.recSin, "vet_consulta_quitar_aplicacion", { p_consulta: cQ, p_tipo: "vacuna", p_id: vCarnet.cuerpo?.id });
-  comprobar(!quitarAjena.ok, "lo registrado desde el carnet no se quita desde la consulta");
+  comprobar(!quitarAjena.ok && /Registrar vacunas/.test(quitarAjena.mensaje ?? ""), `lo adoptado del carnet no se quita sin «Registrar vacunas» (${quitarAjena.mensaje})`);
+  await dar(P.admin, P.recSinId, "registrar_vacunas");
   const quitarV1 = await rpc(P.recSin, "vet_consulta_quitar_aplicacion", { p_consulta: cQ, p_tipo: "vacuna", p_id: vQ1.cuerpo?.id });
   comprobar(quitarV1.ok, `«Quitar» la vacuna nacida en la consulta (${quitarV1.mensaje})`);
   const v1Fila = (await SB.from("carnet_vacunas").select("anulada_at").eq("id", vQ1.cuerpo?.id).single()).data;

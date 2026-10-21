@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { dinero } from "@/lib/dinero";
 
 // QA S18 (N70): un servicio que se cobra por kilómetro (u hora) con precio por volumen dice, con SUS precios, cómo se
@@ -10,7 +11,8 @@ const UNIDAD: Record<string, { una: string; varias: string; abrev: string }> = {
   hora: { una: "hora", varias: "horas", abrev: "h" },
 };
 
-export function ComoSeCobra({ unidad, dependeCantidad, vigentes }: { unidad: string; dependeCantidad: boolean; vigentes: Fila[] }) {
+// QA S21 (N70): también va en la pantalla de edición del servicio, con `enlaceTarifas` para ir a capturar los tramos.
+export function ComoSeCobra({ unidad, dependeCantidad, vigentes, enlaceTarifas }: { unidad: string; dependeCantidad: boolean; vigentes: Fila[]; enlaceTarifas?: string }) {
   const u = UNIDAD[unidad];
   if (!u) return null;
   const tramos = vigentes
@@ -44,7 +46,14 @@ export function ComoSeCobra({ unidad, dependeCantidad, vigentes }: { unidad: str
         </>
       ) : (
         <p className="mt-2 text-n-600">
-          Todavía no tiene precios. {dependeCantidad ? "Agrega tramos abajo (por ejemplo, de 0 a 5 y desde 6) y el precio por " + u.una + " de cada uno." : "Captura abajo el precio por " + u.una + "."}
+          Todavía no tiene precios. {dependeCantidad ? `Agrega tramos ${enlaceTarifas ? "en sus tarifas" : "abajo"} (por ejemplo, de 0 a 5 y desde 6) y el precio por ${u.una} de cada uno.` : `Captura ${enlaceTarifas ? "en sus tarifas" : "abajo"} el precio por ${u.una}.`}
+        </p>
+      )}
+      {enlaceTarifas && (
+        <p className="mt-2">
+          <Link href={enlaceTarifas} className="font-semibold text-morado hover:underline" data-enlace-tarifas>
+            Ver y editar los tramos y precios →
+          </Link>
         </p>
       )}
     </section>
