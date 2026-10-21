@@ -8,6 +8,7 @@ import { urlDemo } from "@/lib/peludesk/landing";
 import { urlPlataforma } from "@/lib/pagos/urls";
 import { stripe } from "@/lib/cobro/stripe";
 import { configuracionPortal } from "@/lib/cobro/portal";
+import type { PreciosBot } from "./conversacion";
 import { type ClaveCaptura, MAX_TOKENS_IA, MODELO_IA, type NegocioDeAdmin, OPCIONES_IA, type PlanPublico, type ProspectoContexto, type SeguimientoContexto, type TipoInterlocutor, TOPE_MENSUAL_MXN } from "./agente";
 import { clasificarRespuesta } from "@/lib/seguimiento/respuestas";
 import { CONOCIMIENTO } from "./conocimiento";
@@ -200,12 +201,12 @@ export class DatosSupabase implements DatosSoporte {
   async ultimosMensajes(telefono: string, limite: number) {
     const { data } = await this.#sb
       .from("wa_mensajes")
-      .select("quien, texto")
+      .select("quien, texto, at:created_at")
       .eq("telefono", telefono)
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(limite);
-    return ((data ?? []) as { quien: "usuario" | "agente" | "humano"; texto: string }[]).reverse();
+    return ((data ?? []) as { quien: "usuario" | "agente" | "humano"; texto: string; at: string }[]).reverse();
   }
 
   async aprendido(limite: number) {
@@ -401,6 +402,14 @@ export async function videosPublicados(): Promise<{ numero: string; slug: string
   } catch {
     return [];
   }
+}
+
+/** Las cifras de las respuestas fijas de precio, de la base (sin IVA). Sin plan publicado: null (no se inventa). */
+export function preciosDelBot(planes: PlanPublico[]): PreciosBot | null {
+  const plan = planes.find((p) => p.tipo === "plan" && p.mensual > 0);
+  const sucursal = planes.find((p) => p.tipo === "sucursal" && p.mensual > 0);
+  if (!plan || !sucursal) return null;
+  return { mensual: plan.mensual, anual: plan.anual, sucursal: sucursal.mensual };
 }
 
 /** Los planes publicados (tabla compartida `planes`, la edita la plataforma). */
@@ -754,6 +763,7 @@ export function construirSoporte(): { deps: DepsSoporte; datos: DatosSupabase; w
     cuenta: cuentaPorTelefono,
     contexto: async (cuenta, seguimiento, prospecto) => ({
       prospecto: prospecto ?? null,
+      tambienCliente: cuenta.tambienCliente === true,
       seguimiento: seguimiento && Date.now() - Date.parse(seguimiento.enviadoAt) < 7 * 86_400_000 ? seguimiento : null,
       tipo: cuenta.tipo,
       negocios: cuenta.negocios,
@@ -762,6 +772,7 @@ export function construirSoporte(): { deps: DepsSoporte; datos: DatosSupabase; w
       enlaces: { registro: registroDeProspecto(prospecto), demo: `${urlDemo()}/demo` },
       documentacion: cuenta.tipo === "admin" || cuenta.tipo === "personal" ? documentacionParaWhatsApp(urlPlataforma(), await videosPublicados()) : undefined,
     }),
+    fijos: async (prospecto) => ({ precios: preciosDelBot(await planesPublicos()), registro: registroDeProspecto(prospecto) }),
     ligaPortal: ligaPortalDe,
     alerta: (detalle, e) => console.error(`[whatsapp] ${detalle}`, e instanceof Error ? e.message : (e ?? "")),
   };

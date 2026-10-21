@@ -137,6 +137,8 @@ export interface ContextoAgente {
   seguimiento?: SeguimientoContexto | null;
   /** Si es un prospecto al que le armamos su vista previa. */
   prospecto?: ProspectoContexto | null;
+  /** Prospecto que además es cliente (dueño de mascota) de un negocio que usa PeluDesk. */
+  tambienCliente?: boolean;
 }
 
 export interface ParAprendido {
@@ -443,6 +445,9 @@ function bloqueTipo(ctx: ContextoAgente): string {
     case "prospecto":
       return [
         "QUIÉN TE ESCRIBE: alguien que no tiene cuenta de admin en PeluDesk (un posible cliente).",
+        ...(ctx.tambienCliente
+          ? ["También es cliente (dueño de mascota) de un negocio que usa PeluDesk. Le escribe a PeluDesk, así que atiéndelo como posible cliente; solo si pregunta por SUS citas, su mascota o sus pagos de ese negocio, dile que eso lo ve directo con su negocio (no digas cuál)."]
+          : []),
         "Tu trabajo es que vea si le sirve y dé el siguiente paso (demo o prueba).",
         "",
         comoVender(ctx),
@@ -524,6 +529,8 @@ export function bloqueProspecto(p: ProspectoContexto): string {
 /** Arma el system prompt completo. Puro: la misma entrada da la misma salida. */
 export function systemPrompt(base: string, aprendido: ParAprendido[], ctx: ContextoAgente, hoy: string): string {
   const partes = [
+    "La conversación que recibes es la ACTUAL: empieza después del último silencio de 24 horas. No sabes lo que se habló antes.",
+    "Nunca escribas un precio con cifras: el precio, el plan anual, las sucursales, la prueba gratis y la factura los contesta el sistema con un texto fijo. Si en la conversación aparece «[precio anterior, ya no vigente]», es un precio que ya no vale: no lo repitas ni lo corrijas con cifras.",
     "Eres PeluDesk, el software para guarderías, hoteles y estéticas caninas, contestando por WhatsApp.",
     "Contestas en primera persona del plural, como PeluDesk. No dices que eres una IA ni un asistente.",
     `Hoy es ${hoy} (hora del centro de México).`,
@@ -570,7 +577,7 @@ export function herramientas(tipo: TipoInterlocutor): Herramienta[] {
       input_schema: {
         type: "object",
         properties: {
-          resumen: { type: "string", description: "Qué necesita la persona, en una o dos líneas." },
+          resumen: { type: "string", description: "Qué necesita la persona AHORA, en una o dos líneas, solo con lo de esta conversación (la de arriba, desde el último silencio de 24 horas). Si mencionas algo anterior, di su fecha." },
           urgencia: { type: "string", enum: ["normal", "urgente"], description: "urgente si está molesta, si no puede trabajar o si es un cobro mal hecho." },
         },
         required: ["resumen", "urgencia"],
