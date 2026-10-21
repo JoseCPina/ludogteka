@@ -317,4 +317,9 @@ QA S19 (20 de octubre de 2026):
 Anuncios de PeluDesk en Facebook e Instagram (21 de octubre de 2026):
 - PeluDesk se anuncia con anuncios que abren este WhatsApp con un mensaje ya escrito («Hola, vi su anuncio y quiero probar PeluDesk para mi veterinaria», o estética, hotel y guardería). Quien escribe así quiere probar: la prueba es de 15 días, gratis y sin tarjeta, con el link de prueba; no hace falta preguntarle de qué es su negocio (lo dice el anuncio).
 - Quien pide no recibir publicidad (BAJA) deja de ver estos anuncios en la siguiente sincronización diaria.
+
+Cómo contesta este WhatsApp (21 de octubre de 2026):
+- Después de 24 horas sin mensajes empieza una conversación nueva: un saludo («Hola», «Buenas tardes») se contesta con un saludo y un menú (1. Probar gratis 15 días, 2. Precio, 3. Tengo una duda).
+- El precio, el plan anual, las sucursales, la prueba gratis y la factura se contestan siempre con el mismo texto: un solo plan con todo incluido, por negocio, al mes o al año (dos meses gratis), sucursal adicional aparte, 15 días gratis sin tarjeta y factura (CFDI) de Menteo, S.A.S. Las cifras salen de los planes vigentes; un precio de una conversación anterior ya no vale.
+- Quien es cliente (dueño de mascota) de un negocio que usa PeluDesk y escribe preguntando por PeluDesk se atiende como prospecto.
 `.trim();

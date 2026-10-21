@@ -41,6 +41,19 @@ import {
 } from "./agente";
 import { aclararCobro, aclararDemo, cabeAclaracion, aFormatoWhatsApp, enDosSiEsLargo, formatoDelBot, hayQueReescribir, juntarCortos, unLinkAlFinal } from "./texto";
 import { ACLARACION_DEMO, COBRO_A_NOMBRE_DE, respuestaFijaDirecta } from "@/lib/peludesk/respuestas-fijas";
+import {
+  cifrasNoFijas,
+  conversacionActual,
+  esSaludo,
+  MENU_SALUDO,
+  opcionDelMenu,
+  type PreciosBot,
+  respuestaPrecioFija,
+  sinPreciosViejos,
+  temaDePrecio,
+  TEXTO_DUDA,
+  ultimoFueMenu,
+} from "./conversacion";
 
 // ───────────────────────────── puertos
 
@@ -61,6 +74,8 @@ export type QuienHabla = "usuario" | "agente" | "humano";
 export interface MensajeHilo {
   quien: QuienHabla;
   texto: string;
+  /** Cuándo se guardó (para cortar la conversación tras 24 h de silencio). */
+  at?: string | null;
 }
 
 export interface UsoIA {
@@ -125,6 +140,17 @@ export interface SalidaWA {
 export interface Cuenta {
   tipo: TipoInterlocutor;
   negocios: NegocioDeAdmin[];
+  /** Además de lo que es, es cliente (dueño de mascota) de algún negocio que usa PeluDesk. */
+  tambienCliente?: boolean;
+}
+
+/**
+ * Quien le escribe al número de PeluDesk pregunta por PeluDesk: un cliente de un negocio (dueño de mascota) que nos
+ * escribe se atiende como prospecto, sabiendo que también es cliente (21 de octubre de 2026: el 524441301539 recibe
+ * recordatorios de la clínica demo y por eso se le contestaba como «cliente de un negocio»). Admin y personal no cambian.
+ */
+export function cuentaParaElBot(c: Cuenta): Cuenta {
+  return c.tipo === "cliente_de_negocio" ? { ...c, tipo: "prospecto", tambienCliente: true } : c;
 }
 
 export interface DepsSoporte {
@@ -144,6 +170,8 @@ export interface DepsSoporte {
    * Responder a su aviso contesta el ticket (sin esto, solo hilos de WhatsApp).
    */
   tickets?: TicketsBandeja;
+  /** Precios de la base (sin IVA) y el link de prueba de quien escribe, para las respuestas fijas de precio. */
+  fijos(prospecto?: ProspectoContexto | null): Promise<{ precios: PreciosBot | null; registro: string }>;
   /** Link al portal de pagos de un negocio DE ESTA cuenta (nunca de otro). */
   ligaPortal(negocio: NegocioDeAdmin): Promise<string>;
   alerta(detalle: string, e?: unknown): void;
@@ -197,12 +225,13 @@ export async function atender(telefono: string, texto: string, deps: DepsSoporte
   const aprendidoP = deps.datos.aprendido(LIMITE_APRENDIDO);
   historialP.catch(() => {});
   aprendidoP.catch(() => {});
-  const [cuenta, previo, respuestasHoy, gastoDelMes] = await Promise.all([
+  const [cuentaBase, previo, respuestasHoy, gastoDelMes] = await Promise.all([
     deps.cuenta(telefono),
     deps.datos.hiloPorTelefono(telefono),
     deps.datos.respuestasIADesde(telefono, inicioDelDia(ahora)),
     deps.datos.gastoIADesde(inicioDelMes(ahora)),
   ]);
+  const cuenta = cuentaParaElBot(cuentaBase);
   const neg = negocioDelHilo(cuenta);
   const hilo: Hilo = {
     telefono,
@@ -225,17 +254,45 @@ export async function atender(telefono: string, texto: string, deps: DepsSoporte
     },
     ahora,
   );
-  // QA R23: lo que tiene respuesta fija y clara (recordatorios, SMS) sale de inmediato, sin pasar por el modelo.
-  // No depende del tope de IA (no gasta), pero se calla si el operador está en medio.
-  const fijaCruda = v.motivo === "silencio_humano" ? null : respuestaFijaDirecta(texto);
-  const fija = fijaCruda ? formatoDelBot(fijaCruda) : null;
-  if (fija) {
-    const env = await deps.wa.texto(telefono, fija);
-    if (env.ok) {
-      await deps.datos.apuntarMensaje(telefono, "agente", fija);
-      marcar("enviar");
-      await deps.datos.guardarHilo(hilo);
-      return "respondio";
+  // Solo la conversación ACTUAL (desde el último silencio de 24 h) cuenta: lo viejo no entra al modelo ni al resumen
+  // que llega a la bandeja. El mensaje que acaba de llegar ya está guardado, así que es el último de la lista.
+  const todos = await historialP.catch(() => [] as MensajeHilo[]);
+  const actual = conversacionActual(todos, ahora);
+  const nueva = !actual.some((m) => m.quien !== "usuario");
+  // A un número que nunca recibió respuesta, una línea con el aviso de privacidad (con lo fijo o con el modelo).
+  const primeraVez = cuenta.tipo === "prospecto" && !todos.some((m) => m.quien !== "usuario");
+
+  // Respuestas fijas, sin modelo (no gastan IA; se callan si el operador está en medio):
+  //   menú (1, 2, 3) → prueba, precio o «cuéntame»; precio/planes/anual/sucursales/prueba/factura → texto fijo con las
+  //   cifras de la base; saludo al empezar conversación → saludo y menú; recordatorios y SMS (QA R23).
+  if (v.motivo !== "silencio_humano") {
+    const opcion = ultimoFueMenu(actual) ? opcionDelMenu(texto) : null;
+    let fija: string | null = null;
+    if (opcion === 3) fija = TEXTO_DUDA;
+    else {
+      const tema = opcion === 1 ? "prueba" : opcion === 2 ? "precio" : temaDePrecio(texto);
+      if (tema) {
+        const f = await deps.fijos(prospecto).catch(() => null);
+        if (f?.precios) fija = respuestaPrecioFija(tema, f.precios, f.registro);
+      }
+    }
+    if (!fija && nueva && esSaludo(texto)) fija = MENU_SALUDO;
+    if (!fija) {
+      const directa = respuestaFijaDirecta(texto);
+      fija = directa ? formatoDelBot(directa) : null;
+    }
+    if (fija) {
+      const env = await deps.wa.texto(telefono, fija);
+      if (env.ok) {
+        await deps.datos.apuntarMensaje(telefono, "agente", fija);
+        if (primeraVez) {
+          const aviso = `Así cuidamos tus datos:\n\n${URL_AVISO_PRIVACIDAD}`;
+          if ((await deps.wa.texto(telefono, aviso)).ok) await deps.datos.apuntarMensaje(telefono, "agente", aviso);
+        }
+        marcar("enviar");
+        await deps.datos.guardarHilo(hilo);
+        return "respondio";
+      }
     }
   }
 
@@ -248,7 +305,9 @@ export async function atender(telefono: string, texto: string, deps: DepsSoporte
   }
 
   try {
-    const [historial, aprendido, ctx] = await Promise.all([historialP, aprendidoP, deps.contexto(cuenta, seguimiento, prospecto)]);
+    const [aprendido, ctx, fijos] = await Promise.all([aprendidoP, deps.contexto(cuenta, seguimiento, prospecto), deps.fijos(prospecto).catch(() => null)]);
+    // Un precio que el bot dio antes y ya no vale se tacha, para que el modelo no lo repita.
+    const historial = fijos?.precios ? actual.map((m) => ({ ...m, texto: sinPreciosViejos(m.texto, fijos.precios!) })) : actual;
     marcar("preparar");
     const texto_ = systemPrompt(deps.base, aprendido, ctx, deps.hoyTexto());
     // La documentación de uso (admin y personal) va primero y en caché: es
@@ -270,7 +329,7 @@ export async function atender(telefono: string, texto: string, deps: DepsSoporte
     }
     if (mensajes.length === 0 || mensajes[mensajes.length - 1].role !== "user") mensajes.push({ role: "user", content: texto });
     if (mensajes[0].role !== "user") mensajes.shift();
-    return await conversar(telefono, texto, hilo, cuenta, system, mensajes, tools, historial, ctx.enlaces, deps, marcar);
+    return await conversar(telefono, texto, hilo, cuenta, system, mensajes, tools, historial, ctx.enlaces, deps, marcar, fijos, primeraVez);
   } catch (e) {
     deps.alerta(`La IA falló para ${telefono}`, e);
     await deps.datos.registrarUsoIA({ telefono, tokensIn: 0, tokensOut: 0, costoMxn: 0, resultado: "error" });
@@ -291,6 +350,8 @@ async function conversar(
   enlaces: ContextoAgente["enlaces"],
   deps: DepsSoporte,
   marcar: (etapa: string) => void,
+  fijos: { precios: PreciosBot | null; registro: string } | null = null,
+  primeraVez = false,
 ): Promise<Desenlace> {
   // Lo que el modelo escribió ANTES de pedir una herramienta también es
   // respuesta: sin esto se perdía (le contestaba los días de prueba, pedía el
@@ -350,6 +411,14 @@ async function conversar(
       }
     }
 
+    // Una cifra con signo de pesos que no es de las fijas (un precio viejo o inventado): la respuesta entera se
+    // sustituye por la fija de precio. El precio nunca lo escribe el modelo.
+    if (fijos?.precios && cifrasNoFijas(escritoAntes + r.texto, fijos.precios).length) {
+      deps.alerta(`La IA escribió un precio que no es de los fijos para ${telefono}; se sustituyó por la respuesta fija`);
+      r = { ...r, texto: respuestaPrecioFija("precio", fijos.precios, fijos.registro) };
+      escritoAntes = "";
+    }
+
     // Capturas ya mandadas en el hilo y si lo último del bot fue una imagen:
     // una por tema y nunca dos seguidas.
     const delBot = historial.filter((m) => m.quien !== "usuario");
@@ -375,7 +444,7 @@ async function conversar(
       else piezas.push({ tipo: "texto", cuerpo: COBRO_A_NOMBRE_DE });
     }
     // A un número nuevo, en la primera respuesta, una línea corta con el aviso de privacidad.
-    if (cuenta.tipo === "prospecto" && delBot.length === 0 && piezas.some((p) => p.tipo === "texto")) {
+    if (primeraVez && piezas.some((p) => p.tipo === "texto")) {
       piezas.push({ tipo: "texto", cuerpo: `Así cuidamos tus datos:\n\n${URL_AVISO_PRIVACIDAD}` });
     }
     if (!piezas.some((p) => p.tipo === "texto")) {

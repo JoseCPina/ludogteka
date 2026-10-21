@@ -138,6 +138,9 @@ function respuestaGuion(guion, registro) {
     if (registro.toolResult) return { content: [{ type: "text", text: `Resultado: ${registro.toolResult}` }], usage };
     return { content: [{ type: "tool_use", id: "tu_1", name: "liga_portal_pagos", input: { negocio: guion.slice("#guion:portal:".length) } }], usage };
   }
+  if (guion.startsWith("#guion:precioviejo")) {
+    return { content: [{ type: "text", text: "Claro: el Plan Completo cuesta $1,199 al mes y la página web $149." }], usage };
+  }
   if (guion.startsWith("#guion:escalar")) {
     return { content: [{ type: "tool_use", id: "tu_2", name: "escalar", input: { resumen: "Pregunta sin respuesta en la base (guion).", urgencia: "normal" } }], usage };
   }
@@ -380,7 +383,7 @@ const ve = (clave, nombre) => vistos[clave].includes(nombre);
 // Quién es quién lo decide la base: cada teléfono tiene que caer en SU tipo.
 // (Hasta el 29 de septiembre de 2026 todo número desconocido salía como
 // «cliente de un negocio»: el bot le hablaba a un prospecto como a un dueño de perro.)
-const QUIEN = { A: "QUIÉN TE ESCRIBE: el admin", B: "QUIÉN TE ESCRIBE: el admin", R: "QUIÉN TE ESCRIBE: alguien del personal", C: "QUIÉN TE ESCRIBE: el dueño de un perro", X: "QUIÉN TE ESCRIBE: alguien que no tiene cuenta" };
+const QUIEN = { A: "QUIÉN TE ESCRIBE: el admin", B: "QUIÉN TE ESCRIBE: el admin", R: "QUIÉN TE ESCRIBE: alguien del personal", C: "QUIÉN TE ESCRIBE: alguien que no tiene cuenta", X: "QUIÉN TE ESCRIBE: alguien que no tiene cuenta" };
 for (const [c, esperado] of Object.entries(QUIEN)) {
   vistos[c].includes(esperado) ? bien(`${c}: la base lo reconoce como «${esperado.slice(18)}…»`) : hallazgo(`${c}: la base no lo clasificó como «${esperado.slice(18)}…»`);
 }
@@ -391,6 +394,7 @@ for (const c of ["R", "C", "X"]) {
     ? bien(`${{ R: "recepción de A", C: "cliente de A", X: "prospecto que dice ser dueño de B" }[c]}: ningún negocio`)
     : hallazgo(`${c} recibió datos de un negocio`);
 }
+vistos.C.includes("También es cliente (dueño de mascota)") ? bien("C (cliente de un negocio) que le escribe a PeluDesk se atiende como prospecto que también es cliente") : hallazgo("C no se atendió como prospecto que también es cliente");
 vistos.B.includes("FALLÓ") ? bien("B: el modelo sabe que su cobro falló y hasta cuándo funciona") : hallazgo("B: el estado de pago fallido no llegó al modelo");
 vistos.A.includes("prueba gratis") ? bien("A: el modelo sabe que está en prueba y sus días") : hallazgo("A: el estado de prueba no llegó al modelo");
 /\$\d/.test(vistos.X) ? bien("prospecto: los planes con precio salen de la base") : hallazgo("prospecto: sin precios de la base en el prompt");
@@ -423,17 +427,19 @@ console.log("\n3c. Quien escribe desde un anuncio de clic a WhatsApp (referral c
   try {
     const referral = { source_type: "ad", source_id: AD_ID, source_url: "https://fb.me/x", headline: "Tu agenda, en orden", body: "…", ctwa_clid: `clid-${sufijo}` };
     const r = await conversar(TEL_AD, "Hola, vi su anuncio y quiero probar PeluDesk para mi negocio", { referral, perfil: `Dra. Prueba ${sufijo}` });
-    const prompt = r.ia.map((x) => (typeof x.system === "string" ? x.system : (x.system ?? []).map((b) => b.text).join("\n"))).join("\n");
-    prompt.includes("VIENE DE UN ANUNCIO") && /una veterinaria/.test(prompt) ? bien("el bot sabe que viene de un anuncio y su giro (veterinaria, por el conjunto del anuncio)") : hallazgo("el bot no recibió que viene de un anuncio con su giro");
-    prompt.includes("No le preguntes de qué es su negocio") ? bien("y no le pregunta de qué es su negocio") : hallazgo("el prompt no le dice que no pregunte el giro");
-    /\/registro\?prospecto=[a-z0-9-]+&utm_source=meta&utm_medium=ctwa/.test(prompt) && prompt.includes(`utm_content=${AD_ID}`) ? bien("el link de prueba lleva su prospecto y el origen del anuncio (utm)") : hallazgo("el link de prueba del anuncio no lleva prospecto y utm");
+    // El mensaje prellenado pide la prueba: se contesta con la respuesta FIJA de prueba, con su link de origen.
+    const fija1 = r.textos.join("\n");
+    r.ia.length === 0 && /15 días gratis/.test(fija1) && /\/registro\?prospecto=[a-z0-9-]+&utm_source=meta&utm_medium=ctwa/.test(fija1) && fija1.includes(`utm_content=${AD_ID}`)
+      ? bien("«quiero probar» desde el anuncio: respuesta fija de la prueba, con el link de su prospecto y el origen del anuncio (utm)")
+      : hallazgo(`la respuesta al mensaje del anuncio no fue la fija de prueba con utm: «${fija1.slice(0, 200)}»`);
     const { data: pa } = await A.from("prospectos").select("id, nombre, giro, fuente, etapa, anuncio_id, anuncio_ctwa_clid, whatsapp_bot").eq("whatsapp_bot", TEL_AD).maybeSingle();
     pa && pa.fuente === "anuncio_meta" && pa.giro === "veterinaria" && pa.anuncio_id === AD_ID && pa.anuncio_ctwa_clid === `clid-${sufijo}` && pa.etapa === "respondio"
       ? bien(`queda como prospecto «${pa.nombre}» (fuente anuncio de Meta, veterinaria, id del anuncio)`)
       : hallazgo(`el prospecto del anuncio no quedó bien: ${JSON.stringify(pa)}`);
     const r2 = await conversar(TEL_AD, "#guion:nada");
     const p2 = r2.ia.map((x) => (typeof x.system === "string" ? x.system : (x.system ?? []).map((b) => b.text).join("\n"))).join("\n");
-    p2.includes("VIENE DE UN ANUNCIO") ? bien("en el siguiente mensaje (sin referral) lo sigue reconociendo como del anuncio") : hallazgo("el segundo mensaje perdió que viene del anuncio");
+    p2.includes("VIENE DE UN ANUNCIO") && /una veterinaria/.test(p2) ? bien("en el siguiente mensaje (sin referral) el modelo sabe que viene de un anuncio y su giro (veterinaria, por el conjunto)") : hallazgo("el segundo mensaje perdió que viene del anuncio o su giro");
+    p2.includes("No le preguntes de qué es su negocio") ? bien("y no le pregunta de qué es su negocio") : hallazgo("el prompt no le dice que no pregunte el giro");
     const { count } = await A.from("prospectos").select("id", { count: "exact", head: true }).eq("whatsapp_bot", TEL_AD).is("deleted_at", null);
     count === 1 ? bien("un solo prospecto por teléfono") : hallazgo(`se duplicó el prospecto del anuncio (${count})`);
     const anon = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
@@ -445,6 +451,77 @@ console.log("\n3c. Quien escribe desde un anuncio de clic a WhatsApp (referral c
   } finally {
     if (anuncioFila) await A.from("meta_campanas").delete().eq("id", anuncioFila.id);
   }
+}
+
+console.log("\n3d. Conversación de 24 horas, saludo con menú y precios FIJOS (incidente del 524441301539)");
+{
+  const { data: planes } = await A.from("planes").select("tipo, precio_mensual, precio_anual").eq("activo", true).is("deleted_at", null);
+  const plan = planes.find((p) => p.tipo === "plan");
+  const suc = planes.find((p) => p.tipo === "sucursal");
+  const P = { mensual: Number(plan.precio_mensual), anual: Number(plan.precio_anual), sucursal: Number(suc.precio_mensual) };
+  const ok = new Set([0]);
+  for (const n of [P.mensual, P.anual, P.sucursal, P.sucursal * 10]) { ok.add(Math.round(n * 100)); ok.add(Math.round(Math.round(n * 100) * 1.16)); }
+  const cifras = (t) => [...t.matchAll(/\$\s?(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?/g)].map((m) => Number(m[1].replace(/,/g, "")) * 100 + Number((m[2] ?? "0").padEnd(2, "0")));
+  const ajenas = (t) => cifras(t).filter((c) => !ok.has(c));
+  const pesos = (n) => `$${n.toLocaleString("es-MX")}`;
+  // Historial VIEJO (29 de septiembre) con el precio de entonces, y uno RECIENTE (dentro de 24 h) también con un precio viejo.
+  const sembrar = async (t10, horasAtras) => {
+    const at = new Date(Date.now() - horasAtras * 3600_000);
+    await A.from("wa_mensajes").insert([
+      { telefono: `52${t10}`, quien: "usuario", texto: "¿Cuánto cuesta?", created_at: new Date(at.getTime() - 60_000).toISOString() },
+      { telefono: `52${t10}`, quien: "agente", texto: "El Plan Completo cuesta *$1,199 al mes + IVA* y la página web *$149*.", created_at: at.toISOString() },
+    ]);
+  };
+  const TEL_V = tel("62");
+  await sembrar(TEL_V, 22 * 24);
+  const antesTg = mock.tg.length;
+  const rh = await conversar(TEL_V, "Hola");
+  const tH = rh.textos.join("\n");
+  rh.ia.length === 0 && tH.includes("1. Probar gratis 15 días") && tH.includes("2. Precio") && tH.includes("3. Tengo una duda") && mock.tg.length === antesTg
+    ? bien("«Hola» después de 22 días de silencio: saludo y menú, sin modelo y sin escalar a Telegram")
+    : hallazgo(`«Hola» tras el silencio no dio el menú (IA ${rh.ia.length}, Telegram ${mock.tg.length - antesTg}): «${tH.slice(0, 160)}»`);
+  const r2 = await conversar(TEL_V, "2");
+  r2.ia.length === 0 && r2.textos.join("\n").includes(pesos(P.mensual)) && !ajenas(r2.textos.join("\n")).length ? bien("«2» en el menú: el precio fijo") : hallazgo(`«2» no dio el precio fijo: «${r2.textos.join(" ").slice(0, 160)}»`);
+  // Lo que ve el modelo: solo la conversación actual, sin el precio viejo.
+  const rn = await conversar(TEL_V, "#guion:nada");
+  const mensajesIA = JSON.stringify(rn.ia.map((x) => x.mensajes));
+  !mensajesIA.includes("1,199") && !mensajesIA.includes("$149") ? bien("al modelo no le llega la conversación de hace 22 días (ni su precio viejo)") : hallazgo("al modelo le llegó la conversación vieja con $1,199/$149");
+
+  const PREGUNTAS = [
+    "¿Cuánto cuesta?",
+    "precio",
+    "Hola, ¿qué precio tiene PeluDesk?",
+    "¿cuánto sale al mes?",
+    "¿Qué planes tienen?",
+    "¿Tienen plan anual?",
+    "¿Cuánto cuesta cada sucursal?",
+    "¿La prueba es gratis?",
+    "¿Dan factura?",
+    "Oye y al final cuánto cobran, ¿sigue en 1,199?",
+  ];
+  let malas = 0;
+  for (let i = 0; i < PREGUNTAS.length; i++) {
+    const t10 = tel(String(70 + i));
+    // La mitad con un precio viejo dentro de la conversación actual (hace 2 h), la otra mitad con historial de hace semanas.
+    await sembrar(t10, i % 2 ? 2 : 24 * 20);
+    const r = await conversar(t10, PREGUNTAS[i]);
+    const todo = r.textos.join("\n");
+    const fuera = ajenas(todo);
+    const fija = r.ia.length === 0;
+    if (!fija || fuera.length || todo.includes("1,199") || todo.includes("$149")) {
+      malas++;
+      hallazgo(`«${PREGUNTAS[i]}» (${i % 2 ? "precio viejo hace 2 h" : "historial viejo"}): ${fija ? "fija" : "GENERADA"}, cifras fuera de las fijas: ${fuera.map((c) => c / 100).join(", ") || "ninguna"} · «${todo.slice(0, 140)}»`);
+    }
+  }
+  malas === 0 ? bien(`10 de 10 preguntas de precio con respuesta fija y solo las cifras fijas (${pesos(P.mensual)}, ${pesos(P.anual)}, ${pesos(P.sucursal)})`) : null;
+  // El modelo escribe un precio viejo: su respuesta se sustituye por la fija.
+  const TEL_W = tel("63");
+  const rw = await conversar(TEL_W, "#guion:precioviejo");
+  const tw = rw.textos.join("\n");
+  !tw.includes("1,199") && !tw.includes("$149") && tw.includes(pesos(P.mensual)) && !ajenas(tw).length ? bien("una respuesta generada con $1,199/$149 se sustituye por la fija") : hallazgo(`la respuesta generada con precio viejo salió: «${tw.slice(0, 160)}»`);
+  // C (dueño de mascota de un negocio) preguntando por PeluDesk: precio fijo, como prospecto.
+  const rc = await conversar(TEL.C, "¿Cuánto cuesta PeluDesk para mi estética?");
+  rc.ia.length === 0 && rc.textos.join("\n").includes(pesos(P.mensual)) ? bien("el cliente de un negocio que pregunta por PeluDesk recibe el precio fijo") : hallazgo("el cliente de un negocio no recibió el precio fijo");
 }
 
 console.log("\n4. El link del portal solo es del negocio de quien escribe");
