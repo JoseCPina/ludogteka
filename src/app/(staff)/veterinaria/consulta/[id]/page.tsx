@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { sinTitulosVacios } from "@/lib/veterinaria/portal-texto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
@@ -326,8 +327,10 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
   );
 }
 
-function Bloque({ etiqueta, texto }: { etiqueta: string; texto: string | null }) {
-  if (!texto || !texto.trim()) return null;
+function Bloque({ etiqueta, texto: crudo }: { etiqueta: string; texto: string | null }) {
+  // QA S22 (N111): las etiquetas de la plantilla sin contenido no se muestran; una sección vacía no sale.
+  const texto = crudo ? sinTitulosVacios(crudo) : "";
+  if (!texto) return null;
   return (
     <div>
       <h3 className="text-sm font-bold uppercase tracking-wide text-n-600">{etiqueta}</h3>

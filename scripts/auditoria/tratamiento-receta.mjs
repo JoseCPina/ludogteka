@@ -1,6 +1,6 @@
 // Pura (sin base): de «Tratamiento» a un borrador de receta, y la cuenta de la cantidad a surtir.
 //   node --experimental-strip-types scripts/auditoria/tratamiento-receta.mjs
-import { medicamentosDeTratamiento, horasDeFrecuencia, numeroInicial, calcularCantidad, formatoFrecuencia, indicacionesGeneradas } from "../../src/lib/veterinaria/recetas.ts";
+import { renglonMedicamento, indicacionesAdicionales, medicamentosDeTratamiento, horasDeFrecuencia, numeroInicial, calcularCantidad, formatoFrecuencia, indicacionesGeneradas } from "../../src/lib/veterinaria/recetas.ts";
 let mal = 0;
 const igual = (a, b, t) => { if (JSON.stringify(a) === JSON.stringify(b)) console.log(`  ✔ ${t}`); else { mal++; console.log(`  ✘ ${t}: salió ${JSON.stringify(a)} y debía ${JSON.stringify(b)}`); } };
 const m = medicamentosDeTratamiento("Amoxicilina 250 mg, 1 tableta cada 12 horas por 7 días\nMeloxicam 1 ml cada 24 h durante 3 días");
@@ -42,5 +42,11 @@ igual(medicamentosDeTratamiento("Gotas óticas 2 gotas cada 12 h por 1 semana")[
 igual(medicamentosDeTratamiento("Meloxicam 1 ml cada 24 h durante 3 días")[0].presentacion, "", "N109: «1 ml» es la toma, no la presentación");
 igual(medicamentosDeTratamiento("Desparasitante cada 15 días")[0].duracion_dias, "", "N109: «cada 15 días» no es duración");
 igual(medicamentosDeTratamiento("Suspensión 5 mg/ml, 2 ml VO cada 8 h 5 días")[0].presentacion, "5 mg/ml", "N109: 5 mg/ml");
+// N112: el renglón se arma una vez; las indicaciones solo si dicen algo más.
+const amoL = { producto: "Amoxicilina", dosis: "1 tableta", via: "Oral", frecuencia: "Cada 12 horas", duracion_dias: 7, indicaciones: "1 tableta cada 12 horas por 7 días" };
+igual(renglonMedicamento(amoL), "Amoxicilina, 1 tableta, vía oral, cada 12 horas, por 7 días", "N112: renglón armado con los campos");
+igual(indicacionesAdicionales(amoL), null, "N112: indicaciones iguales a los campos no se repiten");
+igual(indicacionesAdicionales({ ...amoL, indicaciones: "Dar con alimento." }), "Dar con alimento.", "N112: indicaciones distintas sí se agregan");
+igual(indicacionesAdicionales({ ...amoL, indicaciones: "cada 12 horas" }), null, "N112: un pedazo de lo mismo tampoco");
 console.log(mal ? `\n${mal} HALLAZGO(S)` : "\nSin hallazgos.");
 process.exit(mal ? 1 : 0);

@@ -29,9 +29,12 @@ export default async function LoginPage({
   // el número. La función que se llama devuelve SOLO ese dato, nada más
   // de la configuración del negocio.
   const negocio = await negocioActual();
-  const { data: telefonoRecepcion } = await createSupabaseAdminClient(negocio.id).rpc(
-    "telefono_recepcion_publico"
-  );
+  const admin = createSupabaseAdminClient(negocio.id);
+  const [{ data: telefonoRecepcion }, { count: admins }] = await Promise.all([
+    admin.rpc("telefono_recepcion_publico"),
+    // QA S22: con un solo admin, «pídele a un admin» no sirve (es el mismo dueño).
+    admin.from("membresias").select("id", { count: "exact", head: true }).eq("negocio_id", negocio.id).eq("rol", "admin").is("deleted_at", null),
+  ]);
 
   const { error } = await searchParams;
   const errorInicial =
@@ -55,6 +58,7 @@ export default async function LoginPage({
           errorInicial={errorInicial}
           telefonoRecepcion={(telefonoRecepcion as string | null) ?? null}
           nombreNegocio={negocio.nombre}
+          unSoloAdmin={(admins ?? 0) <= 1}
         />
       </div>
     </main>

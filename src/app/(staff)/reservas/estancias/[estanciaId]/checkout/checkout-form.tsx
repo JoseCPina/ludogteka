@@ -206,10 +206,11 @@ export function CheckoutForm({
         {falta === "dueno" && (
           <p className="mb-1.5 text-sm font-semibold text-coral-oscuro">Indica si quien recoge es el dueño registrado o una persona autorizada.</p>
         )}
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:gap-3" data-quien-recoge>
           <Button
             type="button"
             variante={esDueno === true ? "exito" : "secundario"}
+            className="w-full sm:w-auto"
             onClick={() => {
               setEsDueno(true);
               setFalta(null);
@@ -220,6 +221,7 @@ export function CheckoutForm({
           <Button
             type="button"
             variante={esDueno === false ? "peligro" : "secundario"}
+            className="w-full sm:w-auto"
             onClick={() => {
               setEsDueno(false);
               setFalta(null);

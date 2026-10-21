@@ -11,17 +11,32 @@ const UNIDAD: Record<string, { una: string; varias: string; abrev: string }> = {
   hora: { una: "hora", varias: "horas", abrev: "h" },
 };
 
-// QA S21 (N70): también va en la pantalla de edición del servicio, con `enlaceTarifas` para ir a capturar los tramos.
-export function ComoSeCobra({ unidad, dependeCantidad, vigentes, enlaceTarifas }: { unidad: string; dependeCantidad: boolean; vigentes: Fila[]; enlaceTarifas?: string }) {
+// QA S21/S22 (N70): también va en la edición del servicio. Con tramos, el ejemplo se calcula con SUS precios a una
+// cantidad típica (7 km, 3 h); sin tramos, un ejemplo ilustrativo con cifras marcadas como ejemplo y «Capturar tramos».
+const EJEMPLO: Record<string, { cantidad: number; tramos: { desde: number; hasta: number | null; precio: number }[] }> = {
+  km: { cantidad: 7, tramos: [{ desde: 1, hasta: 5, precio: 10 }, { desde: 6, hasta: null, precio: 8 }] },
+  hora: { cantidad: 3, tramos: [{ desde: 1, hasta: 2, precio: 40 }, { desde: 3, hasta: null, precio: 35 }] },
+};
+
+export function tramoDe<T extends { cantidad_desde: number; cantidad_hasta: number | null }>(tramos: T[], cantidad: number): T | null {
+  return tramos.find((t) => cantidad >= t.cantidad_desde && (t.cantidad_hasta == null || cantidad <= t.cantidad_hasta)) ?? null;
+}
+
+export function ComoSeCobra({ unidad, dependeCantidad, vigentes, enlaceTarifas, enlaceCapturar }: { unidad: string; dependeCantidad: boolean; vigentes: Fila[]; enlaceTarifas?: string; enlaceCapturar: string }) {
   const u = UNIDAD[unidad];
   if (!u) return null;
   const tramos = vigentes
     .filter((f) => !f.grupo_raza_id && !f.tamano_id && !f.pelaje_id && !f.no_aplica && f.precio != null)
     .sort((a, b) => a.cantidad_desde - b.cantidad_desde);
-  const texto = (t: Fila) => (t.cantidad_hasta == null ? `Desde ${t.cantidad_desde} ${u.abrev}` : `De ${t.cantidad_desde} a ${t.cantidad_hasta} ${u.abrev}`);
-  // El ejemplo cae en el segundo tramo si hay (así se ve que el tramo cambia el precio), si no en el primero.
-  const t = tramos[1] ?? tramos[0];
-  const cantidad = t ? (t.cantidad_hasta == null ? t.cantidad_desde + 2 : Math.max(t.cantidad_desde, Math.min(t.cantidad_hasta, t.cantidad_desde + 2))) : null;
+  const rango = (desde: number, hasta: number | null) => (hasta == null ? `Desde ${desde} ${u.abrev}` : `De ${desde} a ${hasta} ${u.abrev}`);
+  const ej = EJEMPLO[unidad];
+  // Con tramos: la cantidad típica si cae en uno; si no, una que caiga en el segundo tramo (o el primero).
+  const tipica = ej && tramoDe(tramos, ej.cantidad) ? ej.cantidad : null;
+  const tAlt = tramos[1] ?? tramos[0];
+  const cantidad = tipica ?? (tAlt ? (tAlt.cantidad_hasta == null ? tAlt.cantidad_desde + 2 : Math.max(tAlt.cantidad_desde, Math.min(tAlt.cantidad_hasta, tAlt.cantidad_desde + 2))) : null);
+  const t = cantidad != null ? tramoDe(tramos, cantidad) : null;
+  const unidadDe = (n: number) => (n === 1 ? u.una : u.varias);
+  const ejPrecio = ej ? (tramoDe(ej.tramos.map((x) => ({ ...x, cantidad_desde: x.desde, cantidad_hasta: x.hasta })), ej.cantidad)?.precio ?? 0) : 0;
   return (
     <section className="rounded-lg border border-morado-suave bg-morado-suave/40 p-4 text-sm text-n-800" data-como-se-cobra>
       <h2 className="font-semibold text-n-900">Cómo se cobra este servicio</h2>
@@ -30,26 +45,40 @@ export function ComoSeCobra({ unidad, dependeCantidad, vigentes, enlaceTarifas }
       </p>
       {tramos.length > 0 ? (
         <>
-          <ul className="mt-2 flex flex-col gap-0.5">
+          <ul className="mt-2 flex flex-col gap-0.5" data-tramos-reales>
             {tramos.map((f, i) => (
               <li key={i}>
-                {texto(f)}: <strong>{dinero(Number(f.precio))}</strong> por {u.una}
+                {rango(f.cantidad_desde, f.cantidad_hasta)}: <strong>{dinero(Number(f.precio))}</strong> por {u.una}
               </li>
             ))}
           </ul>
           {t && cantidad != null && (
             <p className="mt-2 rounded-md bg-white px-3 py-2" data-ejemplo-cobro>
-              Ejemplo: {cantidad} {cantidad === 1 ? u.una : u.varias} caen en «{texto(t).toLowerCase()}» y se cobran {cantidad} × {dinero(Number(t.precio))} ={" "}
-              <strong>{dinero(cantidad * Number(t.precio))}</strong>.
+              A {cantidad} {unidadDe(cantidad)} se cobra <strong>{dinero(cantidad * Number(t.precio))}</strong> ({cantidad} × {dinero(Number(t.precio))}, el precio de «{rango(t.cantidad_desde, t.cantidad_hasta).toLowerCase()}»).
             </p>
           )}
         </>
       ) : (
-        <p className="mt-2 text-n-600">
-          Todavía no tiene precios. {dependeCantidad ? `Agrega tramos ${enlaceTarifas ? "en sus tarifas" : "abajo"} (por ejemplo, de 0 a 5 y desde 6) y el precio por ${u.una} de cada uno.` : `Captura ${enlaceTarifas ? "en sus tarifas" : "abajo"} el precio por ${u.una}.`}
-        </p>
+        <div className="mt-2 flex flex-col gap-2" data-sin-tramos>
+          <p className="text-n-700">Este servicio todavía no tiene precios capturados.</p>
+          {ej && (
+            <p className="rounded-md border border-dashed border-n-300 bg-white px-3 py-2" data-ejemplo-ilustrativo>
+              <span className="font-semibold">Por ejemplo</span> (cifras de ejemplo, no son tus precios):{" "}
+              {ej.tramos.map((x, i) => (
+                <span key={i}>
+                  {i > 0 ? "; " : ""}
+                  {rango(x.desde, x.hasta).toLowerCase()} a {dinero(x.precio)} por {u.una}
+                </span>
+              ))}
+              . A {ej.cantidad} {unidadDe(ej.cantidad)} se cobraría {ej.cantidad} × {dinero(ejPrecio)} = <strong>{dinero(ej.cantidad * ejPrecio)}</strong>.
+            </p>
+          )}
+          <Link href={enlaceCapturar} className="self-start" data-capturar-tramos>
+            <span className="inline-flex min-h-11 items-center rounded-md bg-morado px-4 font-semibold text-white hover:bg-morado-oscuro">Capturar tramos</span>
+          </Link>
+        </div>
       )}
-      {enlaceTarifas && (
+      {enlaceTarifas && tramos.length > 0 && (
         <p className="mt-2">
           <Link href={enlaceTarifas} className="font-semibold text-morado hover:underline" data-enlace-tarifas>
             Ver y editar los tramos y precios →

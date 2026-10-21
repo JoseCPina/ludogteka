@@ -285,7 +285,8 @@ export function CargosSeccion({
               Usar distancia guardada ({distanciaClienteKm} km)
             </button>
           )}
-          <div className="min-w-[200px] flex-1">
+          {/* N113: en el celular, Notas ocupa toda la fila y «Aplicar» va debajo. */}
+          <div className="w-full sm:w-auto sm:min-w-[200px] sm:flex-1">
             <Field
               label="Notas (opcional)"
               value={notas}
@@ -293,7 +294,7 @@ export function CargosSeccion({
               placeholder="ej. Se dejó comida especial 3 días"
             />
           </div>
-          <Button type="button" cargando={aplicando.cargando} onClick={enviarAplicar}>
+          <Button type="button" className="w-full sm:w-auto" cargando={aplicando.cargando} onClick={enviarAplicar} data-aplicar-cargo>
             {aplicando.cargando ? "Aplicando…" : "Aplicar"}
           </Button>
         </div>

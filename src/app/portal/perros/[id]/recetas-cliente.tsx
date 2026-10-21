@@ -1,4 +1,5 @@
 import { formatearFechaCalendario } from "@/lib/formato";
+import { renglonMedicamento, indicacionesAdicionales } from "@/lib/veterinaria/recetas";
 
 export type RecetaDelDueno = {
   numero: number;
@@ -23,8 +24,11 @@ export function RecetasCliente({ recetas }: { recetas: RecetaDelDueno[] }) {
             </div>
             {r.lineas.map((l, i) => (
               <p key={i} className={`text-n-800 ${r.estado === "anulada" ? "line-through opacity-60" : ""}`}>
-                <span className="font-semibold">{l.producto}</span> — {l.dosis}, vía {l.via.toLowerCase()}, {l.frecuencia.toLowerCase()}, por {l.duracion_dias} {l.duracion_dias === 1 ? "día" : "días"}
-                {l.tiempo_retiro ? `. Tiempo de retiro: ${l.tiempo_retiro}` : ""}{l.indicaciones ? `. ${l.indicaciones}` : ""}
+                {/* N112: el renglón sale una vez de sus campos; las indicaciones solo si dicen algo más. */}
+                <span className="font-semibold">{l.producto}</span>
+                {renglonMedicamento(l).slice(l.producto.trim().length)}
+                {l.tiempo_retiro ? `. Tiempo de retiro: ${l.tiempo_retiro}` : ""}
+                {indicacionesAdicionales(l) ? `. ${indicacionesAdicionales(l)!.replace(/[.\s]+$/, "")}` : ""}.
               </p>
             ))}
           </li>

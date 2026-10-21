@@ -6,7 +6,7 @@ import { cargarProductosConLotes } from "@/lib/veterinaria/lotes";
 import { EncabezadoNegocio } from "@/components/marca/encabezado-negocio";
 import { Alert } from "@/components/ui/alert";
 import { formatearFechaCalendario, unidadSegunCantidad } from "@/lib/formato";
-import { DOCUMENTOS, type RecetaDetalle } from "@/lib/veterinaria/recetas";
+import { DOCUMENTOS, type RecetaDetalle, indicacionesAdicionales } from "@/lib/veterinaria/recetas";
 import { AccionesReceta } from "./acciones-receta";
 import { SurtirDocumento } from "../surtir";
 import { unirFrases } from "@/lib/texto/frases";
@@ -48,7 +48,7 @@ function Cuerpo({ d, etiqueta, pie }: { d: RecetaDetalle; etiqueta: string; pie:
               <strong>Dosis:</strong> {l.dosis} · <strong>Vía:</strong> {l.via} · <strong>Frecuencia:</strong> {l.frecuencia} · <strong>Duración:</strong> {l.duracion_dias} {l.duracion_dias === 1 ? "día" : "días"}
             </p>
             <p className="text-n-800"><strong>Cantidad a surtir:</strong> {l.cantidad_surtir}{l.cantidad_unidad ? ` ${unidadSegunCantidad(l.cantidad_surtir, l.cantidad_unidad)}` : ""}{l.tiempo_retiro ? <> · <strong>Tiempo de retiro:</strong> {l.tiempo_retiro}</> : null}</p>
-            {l.indicaciones && <p className="text-n-700">{l.indicaciones}</p>}
+            {indicacionesAdicionales(l) && <p className="text-n-700" data-indicaciones-extra>{indicacionesAdicionales(l)}</p>}
             {l.documento === "receta_cedula" && <p className="mt-1 text-xs font-semibold text-ambar-oscuro">{l.clasificacion}: {l.surtidos_max === 1 ? "se surte una sola vez y se retiene" : `hasta ${l.surtidos_max ?? "—"} surtidos${l.ventana_meses ? ` en ${l.ventana_meses} meses` : ""}`}.</p>}
           </div>
         ))}

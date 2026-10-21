@@ -209,7 +209,7 @@ Abajo, en **Últimos revisados**, ves lo que ya se resolvió.
 
 1. Abre la [página de entrada](/login) de tu negocio, escribe su **Teléfono o correo** y su **Contraseña**, y toca **Entrar**.
 2. Si se equivoca de contraseña, el aviso sale una vez junto al botón y su teléfono se queda escrito: solo vuelve a escribir la contraseña.
-3. Si la olvidó, la restableces tú desde su ficha.
+3. Si la olvidó, la restableces tú desde su ficha. Si en tu negocio solo hay un admin (tú), el aviso de «¿Olvidaste tu contraseña?» del login ya no dice «pídele a un admin»: dice que el dueño del negocio la restablece desde la ficha del cliente, con el enlace a Clientes, y que si la que olvidó es la del dueño, escriba al WhatsApp de PeluDesk.
 
 Arriba del portal hay una sola barra fija con el nombre de tu negocio y **Salir**.
 
@@ -503,7 +503,7 @@ Toca **Ver historial de ajustes** en el pase: cada renglón dice antes y despué
     roles: ["admin", "recepcion"],
     rutas: [],
     palabras: ["recoger a domicilio", "kilómetros", "distancia", "transporte", "camioneta", "traslado"],
-    cuerpo: `La recolección se cobra por kilómetro. La distancia de cada cliente se calcula una vez desde su dirección y se reutiliza cada vez que lo recoges. El precio por kilómetro puede ir por tramos: el tramo lo decide la distancia **total** del viaje y luego se multiplica por los kilómetros (por ejemplo, de 0 a 5 km a $10 y desde 6 km a $8: un viaje de 7 km cuesta 7 × $8 = $56). Al editar el servicio (Servicios → el cargo) y en sus **Tarifas**, el recuadro **Cómo se cobra este servicio** lo calcula con tus precios y lleva a sus tramos. Un **traslado a domicilio** del catálogo de Servicios extra se cobra por **zona**: un precio por viaje, sin multiplicar por kilómetro.
+    cuerpo: `La recolección se cobra por kilómetro. La distancia de cada cliente se calcula una vez desde su dirección y se reutiliza cada vez que lo recoges. El precio por kilómetro puede ir por tramos: el tramo lo decide la distancia **total** del viaje y luego se multiplica por los kilómetros (por ejemplo, de 1 a 5 km a $10 y desde 6 km a $8: un viaje de 7 km cuesta 7 × $8 = $56). Al editar el servicio (Servicios → el cargo) y en sus **Tarifas**, el recuadro **Cómo se cobra este servicio** enseña tus tramos y cuánto se cobra a 7 km con ellos; si todavía no tiene tramos, muestra un ejemplo con cifras de ejemplo y el botón **Capturar tramos**, que lleva directo a la matriz. Un **traslado a domicilio** del catálogo de Servicios extra se cobra por **zona**: un precio por viaje, sin multiplicar por kilómetro.
 
 ## Calcular la distancia
 

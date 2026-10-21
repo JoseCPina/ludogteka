@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { sinTitulosVacios } from "@/lib/veterinaria/portal-texto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
@@ -133,7 +134,7 @@ export default async function ExpedienteMascota({ params, searchParams }: { para
                   <p className={`mt-1 font-semibold text-n-900 ${anulada ? "line-through" : ""}`}>
                     {enlace ? <Link href={enlace} className="text-morado hover:underline" {...(e.tipo === "adjunto" ? { target: "_blank", rel: "noopener" } : {})}>{e.tipo === "consulta" ? `${TIPOS_CITA[e.titulo.toLowerCase()] ?? e.titulo}` : e.titulo}</Link> : e.titulo}
                   </p>
-                  {e.detalle && <p className="text-sm text-n-700">{e.detalle}</p>}
+                  {e.detalle && sinTitulosVacios(e.detalle) && <p className="text-sm text-n-700">{sinTitulosVacios(e.detalle)}</p>}
                   {e.tipo === "consulta" && e.extra && <p className="text-sm text-n-700">Diagnóstico: {e.extra}</p>}
                   {e.tipo === "laboratorio" && Number(e.extra) > 0 && <p className="text-sm font-semibold text-ambar-oscuro">{e.extra} valor(es) fuera de rango</p>}
                   {e.medico && <p className="text-xs text-n-500">{e.medico}</p>}
