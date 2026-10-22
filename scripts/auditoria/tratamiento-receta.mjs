@@ -48,5 +48,12 @@ igual(renglonMedicamento(amoL), "Amoxicilina, 1 tableta, vía oral, cada 12 hora
 igual(indicacionesAdicionales(amoL), null, "N112: indicaciones iguales a los campos no se repiten");
 igual(indicacionesAdicionales({ ...amoL, indicaciones: "Dar con alimento." }), "Dar con alimento.", "N112: indicaciones distintas sí se agregan");
 igual(indicacionesAdicionales({ ...amoL, indicaciones: "cada 12 horas" }), null, "N112: un pedazo de lo mismo tampoco");
+// R34: el texto de antes de N97 llevaba el nombre (y la concentración) delante de la dosis.
+const r25 = { producto: "PRUEBA QA R25 Medicamento ficticio", dosis: "1 tableta", via: "Oral", frecuencia: "cada 12 horas", duracion_dias: 5, indicaciones: "PRUEBA QA R25 Medicamento ficticio, 1 tableta cada 12 horas por 5 días" };
+igual(indicacionesAdicionales(r25), null, "R34: «Nombre, dosis cada N horas por N días» repite los campos");
+igual(indicacionesAdicionales({ ...r25, producto: "Meloxicam", indicaciones: "Meloxicam 1 mg, 1 tableta cada 12 horas por 5 días" }), null, "R34: con la concentración del Tratamiento también");
+igual(indicacionesAdicionales({ ...r25, producto: "Meloxicam", presentacion: "1.5 mg/ml", indicaciones: "Meloxicam 1.5 mg/ml 1 tableta cada 12 horas por 5 días" }), null, "R34: con la presentación de la línea");
+igual(indicacionesAdicionales({ ...r25, indicaciones: "PRUEBA QA R25 Medicamento ficticio, 1 tableta cada 12 horas por 5 días. Dar con comida" }), "PRUEBA QA R25 Medicamento ficticio, 1 tableta cada 12 horas por 5 días. Dar con comida", "R34: si dice algo más, se muestra completo");
+igual(indicacionesAdicionales({ ...r25, indicaciones: "PRUEBA QA R25 Medicamento ficticio, 1 tableta cada 8 horas por 5 días" }) !== null, true, "R34: una frecuencia distinta sí se muestra");
 console.log(mal ? `\n${mal} HALLAZGO(S)` : "\nSin hallazgos.");
 process.exit(mal ? 1 : 0);
