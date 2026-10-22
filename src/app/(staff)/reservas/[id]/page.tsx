@@ -148,6 +148,11 @@ export default async function DetalleReservaPage({
   // se debe (un cargo que sí se hizo) y con saldo a favor, que se devuelve.
   const todaCancelada = filas.length > 0 && filas.every((f) => ["cancelada", "no_llego"].includes(f.estado));
   const hayQueCobrar = saldo > 0.005;
+  // R35: con todo cancelado el total de la cuenta es $0 (las líneas canceladas no suman); si se cobró algo, se ve
+  // cuánto se cobró y cuánto se devolvió, para que el saldo a favor (o el cero) se entienda.
+  const totalCobrado = Number(totalesFila?.total_cobrado ?? 0);
+  const totalDevuelto = Number(totalesFila?.total_devuelto ?? 0);
+  const dinero = (n: number) => `$${n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
     <div className="flex flex-col gap-6">
@@ -186,8 +191,26 @@ export default async function DetalleReservaPage({
           </div>
           <div className="flex flex-col items-end gap-2">
             <RefrescoCuenta reservaId={id} saldo={saldo} total={totalCuenta} />
+            <dl className="flex flex-col items-end text-sm text-n-700" data-totales-reserva>
+              <div className="flex gap-1">
+                <dt>Total{todaCancelada ? " (cancelada)" : ""}:</dt>
+                <dd className="font-semibold text-n-900" data-total-cuenta>{dinero(totalCuenta)}</dd>
+              </div>
+              {totalCobrado > 0 && (
+                <div className="flex gap-1">
+                  <dt>Cobrado:</dt>
+                  <dd className="font-semibold text-n-900" data-total-cobrado>{dinero(totalCobrado)}</dd>
+                </div>
+              )}
+              {totalDevuelto > 0 && (
+                <div className="flex gap-1">
+                  <dt>Devuelto:</dt>
+                  <dd className="font-semibold text-n-900" data-total-devuelto>{dinero(totalDevuelto)}</dd>
+                </div>
+              )}
+            </dl>
             <p className={`text-sm font-bold ${saldo > 0 ? "text-coral-oscuro" : "text-menta-oscuro"}`} data-saldo-reserva={saldo.toFixed(2)}>
-              Saldo: ${saldo.toFixed(2)}
+              Saldo: ${Math.abs(saldo).toFixed(2)}
               {saldo < 0 ? " (a favor)" : ""}
             </p>
             {todaCancelada && (
