@@ -279,15 +279,28 @@ export function renglonMedicamento(l: CamposRenglon): string {
  * QA S22 (N112): las indicaciones escritas solo se agregan si dicen algo distinto de lo que ya dicen los campos
  * (las generadas con dosis, frecuencia y días, o un texto contenido en el renglón). Si no, `null`.
  */
-export function indicacionesAdicionales(l: CamposRenglon): string | null {
+export function indicacionesAdicionales(l: CamposRenglon & { presentacion?: string | null }): string | null {
   const ind = (l.indicaciones ?? "").trim();
   if (!ind) return null;
-  const c = comparable(ind);
-  if (!c) return null;
+  return indicacionRepetida(l, ind) ? null : ind;
+}
+
+const CONCENTRACION = /^\d+( \d+)? ?(mg|mcg|g|ui)(\/(kg|ml))? /;
+
+/**
+ * QA R34: ¿el texto libre solo repite lo que dicen los campos? También reconoce el texto de antes de N97
+ * («Meloxicam 1 mg, 1 tableta cada 12 horas por 5 días»): el nombre y la concentración delante de la dosis.
+ * Gemela de `public.vet_indicacion_repetida` (migración 20261128000000): si cambia una, cambia la otra.
+ */
+export function indicacionRepetida(l: CamposRenglon & { presentacion?: string | null }, texto: string): boolean {
+  const c = comparable(texto);
+  if (!c) return true;
   const generadas = comparable(indicacionesGeneradas({ dosis: l.dosis, frecuencia: l.frecuencia, duracion_dias: String(l.duracion_dias) }));
   const renglon = comparable(renglonMedicamento(l));
-  if (c === generadas || renglon.includes(c)) return null;
-  return ind;
+  const quitar = (t: string, pre: string) => (pre && (t === pre || t.startsWith(`${pre} `)) ? t.slice(pre.length).trim() : t);
+  const sinNombre = quitar(c, comparable(l.producto));
+  const sinConcentracion = quitar(sinNombre, comparable(l.presentacion ?? "")).replace(CONCENTRACION, "").trim();
+  return [c, sinNombre, sinConcentracion].some((t) => t === generadas || (t !== "" && renglon.includes(t)) || (t === "" && t !== c));
 }
 
 /**
