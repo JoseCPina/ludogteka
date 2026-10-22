@@ -382,6 +382,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
         {esPropio ? (
           <MiPerroForm
             perroId={id}
+            datosDeCuidado={(sesion?.modulos ?? []).some((m) => m === "guarderia" || m === "hotel" || m === "veterinaria")}
             valoresIniciales={{
               contacto_emergencia_nombre: perro.contacto_emergencia_nombre,
               contacto_emergencia_telefono: perro.contacto_emergencia_telefono,

@@ -15,8 +15,13 @@ const ESTADO_INICIAL: EstadoMiPerroForm = { error: null };
 export function MiPerroForm({
   perroId,
   valoresIniciales,
+  datosDeCuidado,
 }: {
   perroId: string;
+  // Veterinario de cabecera, autorización médica, tope de gasto y alimentación solo tienen sentido si el negocio
+  // cuida al perro (hotel o guardería) o lo atiende (Veterinaria). Sin esos módulos no se muestran (y la acción
+  // conserva lo que ya estaba guardado).
+  datosDeCuidado: boolean;
   valoresIniciales: {
     contacto_emergencia_nombre: string | null;
     contacto_emergencia_telefono: string | null;
@@ -32,7 +37,7 @@ export function MiPerroForm({
   const [estado, formAction, enviando] = useActionState(useAccionConTope(actualizarConId), ESTADO_INICIAL);
 
   return (
-    <form action={formAction} className="flex max-w-lg flex-col gap-4">
+    <form action={formAction} className="flex w-full max-w-lg flex-col gap-4">
       {estado.error && (
         <Alert variante="error" titulo="No se pudo guardar">
           {estado.error}
@@ -40,7 +45,7 @@ export function MiPerroForm({
       )}
       {estado.ok && <Alert variante="exito" titulo="Cambios guardados" />}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field
           label="Contacto de emergencia"
           name="contacto_emergencia_nombre"
@@ -62,57 +67,61 @@ export function MiPerroForm({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Field
-          label="Veterinario de cabecera"
-          name="veterinario_nombre"
-          placeholder="Nombre del médico"
-          disabled={enviando}
-          defaultValue={valoresIniciales.veterinario_nombre ?? ""}
-        />
-        <Field
-          label="Clínica"
-          name="veterinario_clinica"
-          placeholder="Nombre de la clínica"
-          disabled={enviando}
-          defaultValue={valoresIniciales.veterinario_clinica ?? ""}
-        />
-      </div>
-      <Field
-        label="Teléfono del veterinario"
-        name="veterinario_telefono"
-        placeholder="10 dígitos"
-        inputMode="tel"
-        disabled={enviando}
-        defaultValue={valoresIniciales.veterinario_telefono ?? ""}
-      />
-
-      <Textarea
-        label="Autorización médica"
-        name="autorizacion_medica_notas"
-        placeholder="Por ejemplo: llévenlo con su veterinario; si no contesta, a la clínica más cercana."
-        disabled={enviando}
-        defaultValue={valoresIniciales.autorizacion_medica_notas ?? ""}
-        ayuda="Instrucciones para el personal si tu perro necesita atención médica y no te localizamos."
-      />
-      <Field
-        label="Tope de gasto autorizado (opcional)"
-        name="tope_gasto_autorizado"
-        placeholder="Por ejemplo: 1500"
-        type="number"
-        inputMode="decimal"
-        step="0.01"
-        min="0"
-        disabled={enviando}
-        defaultValue={valoresIniciales.tope_gasto_autorizado ?? ""}
-        ayuda="Lo máximo que autorizas gastar en una emergencia sin localizarte antes."
-      />
-      <Textarea
-        label="Notas de alimentación"
-        name="alimentacion_notas"
-        disabled={enviando}
-        defaultValue={valoresIniciales.alimentacion_notas ?? ""}
-      />
+      {datosDeCuidado && (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field
+              label="Veterinario de cabecera"
+              name="veterinario_nombre"
+              placeholder="Nombre del médico"
+              disabled={enviando}
+              defaultValue={valoresIniciales.veterinario_nombre ?? ""}
+            />
+            <Field
+              label="Clínica"
+              name="veterinario_clinica"
+              placeholder="Nombre de la clínica"
+              disabled={enviando}
+              defaultValue={valoresIniciales.veterinario_clinica ?? ""}
+            />
+          </div>
+          <Field
+            label="Teléfono del veterinario"
+            name="veterinario_telefono"
+            placeholder="10 dígitos"
+            inputMode="tel"
+            disabled={enviando}
+            defaultValue={valoresIniciales.veterinario_telefono ?? ""}
+          />
+    
+          <Textarea
+            label="Autorización médica"
+            name="autorizacion_medica_notas"
+            placeholder="Por ejemplo: llévenlo con su veterinario; si no contesta, a la clínica más cercana."
+            disabled={enviando}
+            defaultValue={valoresIniciales.autorizacion_medica_notas ?? ""}
+            ayuda="Instrucciones para el personal si tu perro necesita atención médica y no te localizamos."
+          />
+          <Field
+            label="Tope de gasto autorizado (opcional)"
+            name="tope_gasto_autorizado"
+            placeholder="Por ejemplo: 1500"
+            type="number"
+            inputMode="decimal"
+            step="0.01"
+            min="0"
+            disabled={enviando}
+            defaultValue={valoresIniciales.tope_gasto_autorizado ?? ""}
+            ayuda="Lo máximo que autorizas gastar en una emergencia sin localizarte antes."
+          />
+          <Textarea
+            label="Notas de alimentación"
+            name="alimentacion_notas"
+            disabled={enviando}
+            defaultValue={valoresIniciales.alimentacion_notas ?? ""}
+          />
+        </>
+      )}
 
       <AccionesFormulario error={estado.error} exito={estado.ok && "Cambios guardados"}>
         <Button type="submit" cargando={enviando}>

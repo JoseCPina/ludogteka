@@ -43,6 +43,7 @@ App interna + portal de clientes para negocios caninos y veterinarios (guarderí
 
 ## Reglas de código y UI
 - **Dos personas editando lo mismo**: toda pantalla que edite un registro de las tablas con control de concurrencia manda el `updated_at` que leyó (`useControlVersion`, `CampoVersion`, `conControl`); una tabla nueva que dos personas puedan tener abierta lleva los disparadores `concurrencia_antes`/`concurrencia_despues`. Detalle: docs/lecciones-tecnicas.md.
+- **Lo que se manda al confirmar se lee del campo, no del estado** (QA S25): un motivo o texto que viaja al tocar el botón o Enter usa `valorDelCampo(ref, estado)` y `esEnterParaConfirmar(e)` (`src/lib/ui/campo-vivo.ts`); el estado de React puede ir una palabra atrás en el teclado del celular. Detalle: docs/qa-historial.md.
 - **Todo `signOut` es `{ scope: "local" }`**: el global de Supabase cierra la sesión de la persona en todos sus negocios.
 - **Las auditorías no dejan nada en desarrollo**: la que cree un negocio o escriba una bitácora llama `limpiarAlTerminar(...)` (`scripts/lib/limpieza-dev.mjs`) antes de crear nada. Detalle: docs/lecciones-tecnicas.md.
 - **Frases con un solo cierre**: todo mensaje que pega un motivo, nota o hora seguido de punto pasa por `cerrarFrase`/`unirFrases` (`src/lib/texto/frases.ts`).

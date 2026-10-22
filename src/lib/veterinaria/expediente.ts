@@ -122,7 +122,7 @@ export type DetalleConsulta = {
 };
 
 export type EventoLinea = {
-  tipo: "consulta" | "vacuna" | "desparasitacion" | "hospitalizacion" | "certificado" | "adjunto" | "laboratorio" | "peso";
+  tipo: "consulta" | "vacuna" | "desparasitacion" | "hospitalizacion" | "certificado" | "adjunto" | "laboratorio" | "peso" | "receta";
   cuando: string;
   ref_id: string;
   estado: string;
@@ -142,6 +142,7 @@ export const TIPOS_EVENTO: Record<string, { etiqueta: string; estilo: string }> 
   adjunto: { etiqueta: "Archivo", estilo: "bg-ambar-suave text-ambar-oscuro" },
   laboratorio: { etiqueta: "Laboratorio", estilo: "bg-ambar-suave text-ambar-oscuro" },
   peso: { etiqueta: "Peso", estilo: "bg-n-100 text-n-700" },
+  receta: { etiqueta: "Receta", estilo: "bg-morado-suave text-morado" },
 };
 
 export type LineaEstimado = {

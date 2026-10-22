@@ -147,7 +147,7 @@ Si **anulas** la consulta y su cuenta todavía no tiene cobros, los cargos se ca
 
 ## La línea de tiempo
 
-Junta, del más nuevo al más viejo: consultas, vacunas, desparasitaciones, hospitalizaciones, certificados, estudios, archivos y pesos. Toca una consulta, un archivo o una hospitalización para abrirlos.
+Junta, del más nuevo al más viejo: consultas, recetas, vacunas, desparasitaciones, hospitalizaciones, certificados, estudios, archivos y pesos. Cada receta sale con su número, el médico y sus medicamentos (una anulada sale tachada). Toca una consulta, una receta, un archivo o una hospitalización para abrirlos.
 
 ## Capturar un resultado de laboratorio
 

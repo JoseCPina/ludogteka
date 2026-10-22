@@ -26,7 +26,7 @@ export function PortalShell({
   const pathname = usePathname();
 
   return (
-    <div className="flex min-h-full flex-1 flex-col">
+    <div className="flex min-h-full flex-1 flex-col" data-portal-shell>
       {aviso}
       {/* N102: una sola fila de 56 px, fija arriba, también en el celular: negocio a la izquierda, «Salir» a la
           derecha. El saludo va en el cuerpo. */}

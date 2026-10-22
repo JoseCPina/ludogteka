@@ -341,4 +341,9 @@ QA S22 (21 de octubre de 2026):
 ## Ajustes de la QA del 22 de octubre (R35)
 - Contraseña temporal del portal: cuando recepción restablece la contraseña de un dueño, la contraseña que le da es temporal; al entrar con ella, el portal le pide escoger una nueva antes de ver cualquier otra cosa, y la temporal deja de servir. El dueño también puede cambiarla cuando quiera con «Cambiar mi contraseña» en su portal.
 - Reserva cancelada: una estancia de hotel o guardería cancelada (o que no llegó) ya no suma a la cuenta: la reserva enseña su total en $0.00, lo que se cobró y lo que se devolvió. Si se cobró un anticipo, queda como saldo a favor y se devuelve en Cobrar con «Registrar devolución».
+## Ajustes de la QA S25 (22 de octubre)
+- Veterinaria: la línea de tiempo del expediente trae también las recetas, con su número, el médico y los medicamentos, y abre la receta al tocarla.
+- Hotel y guardería: en una reserva cancelada, el desglose de la estancia dice «Base: $0.00 (no se cobra; era …)» y el total sin esa base, con lo cobrado y lo devuelto de la cuenta.
+- Portal: en la ficha de cada perro, el veterinario de cabecera, la autorización médica, el tope de gasto y las notas de alimentación solo salen si el negocio tiene hotel, guardería o Veterinaria.
+- En Caja, «Cancelar cuenta» es un enlace de texto junto a la cuenta.
 `.trim();
