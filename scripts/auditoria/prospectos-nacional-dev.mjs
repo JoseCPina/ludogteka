@@ -16,7 +16,7 @@ const ok = (c, si, no) => { if (c) console.log(`  ✔ ${si}`); else { hallazgos.
 
 console.log("1. Lista");
 const todas = ciudadesNacionales();
-ok(todas.length === new Set(todas).size && todas.length >= 100, `${todas.length} ciudades, sin repetidos`, "la lista repite ciudades o es corta");
+ok(todas.length === new Set(todas).size && todas.length >= 190 && CIUDADES_NACIONALES.every((x) => x.poblacion > 0 && /^\d{5}$/.test(x.clave)), `${todas.length} ciudades, sin repetidos`, "la lista repite ciudades o es corta");
 ok(new Set(CIUDADES_NACIONALES.map((x) => x.estado)).size >= 30, "cubre al menos 30 estados", "faltan estados");
 const gdl = ciudadesNacionales({ zonas: ["guadalajara"] });
 ok(gdl.includes("Zapopan, Jalisco") && gdl.length === 6, "Guadalajara se parte en sus 6 municipios", `Guadalajara: ${gdl}`);
@@ -35,7 +35,7 @@ await new Promise((r) => google.listen(4461, "127.0.0.1", r));
 const { data: ajAntes } = await A.from("prospeccion_ajustes").select("pausado").eq("id", 1).single();
 const inicio = new Date().toISOString();
 const logs = [];
-const app = spawn("npx", ["next", "start", "-p", "3001"], { env: { ...process.env, NODE_USE_ENV_PROXY: "", VERCEL_ENV: "", CRON_SECRET: CRON, GOOGLE_PLACES_API_KEY: "llave-de-prueba", PLACES_API_URL: "http://127.0.0.1:4461" }, stdio: ["ignore", "pipe", "pipe"], detached: true });
+const app = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "-p", "3001"], { env: { ...process.env, NODE_USE_ENV_PROXY: "", VERCEL_ENV: "", CRON_SECRET: CRON, GOOGLE_PLACES_API_KEY: "llave-de-prueba", PLACES_API_URL: "http://127.0.0.1:4461" }, stdio: ["ignore", "pipe", "pipe"], detached: true });
 app.stdout.on("data", (d) => logs.push(String(d)));
 app.stderr.on("data", (d) => logs.push(String(d)));
 for (let i = 0; i < 60; i++) { if (logs.join("").includes("Ready")) break; await new Promise((r) => setTimeout(r, 1000)); }
@@ -47,7 +47,7 @@ try {
   ok((await ir("tope=900")).status === 400, "tope de 900, 400", "aceptó un tope enorme");
   ok(llamadasGoogle === 0, "nada de eso llamó a Google", "llamó a Google sin permiso");
   const est = await ir("estimar=1&zonas=Guadalajara&giros=hotel,estetica");
-  ok(est.status === 200 && est.json.ciudades === 6 && est.json.llamadasMaximas === 6 * 4 * 3 && est.json.lista === "por cotejar con INEGI", `estimar: ${JSON.stringify(est.json)}`, `estimar ${JSON.stringify(est.json)}`);
+  ok(est.status === 200 && est.json.ciudades === 6 && est.json.llamadasMaximas === 6 * 4 * 3 && /INEGI/.test(est.json.lista), `estimar: ${JSON.stringify(est.json)}`, `estimar ${JSON.stringify(est.json)}`);
   ok(llamadasGoogle === 0, "estimar no llama a Google", "estimar llamó a Google");
   const t1 = await ir("tope=3&zonas=Guadalajara&giros=hotel");
   ok(t1.status === 200 && t1.json.busquedas === 3 && llamadasGoogle === 3, `tanda de 3 búsquedas (${t1.json?.busquedas}, Google ${llamadasGoogle})`, `tanda ${JSON.stringify(t1.json)}`);

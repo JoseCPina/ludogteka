@@ -82,7 +82,16 @@ export async function clasificarLote(lista: ParaClasificar[], llamar: LlamarIA, 
     negocios?: { id?: string; servicios?: string[]; es_del_giro?: boolean; motivo?: string }[];
   };
   const ids = new Set(lista.map((p) => p.id));
-  return (r.negocios ?? [])
+  // A veces el modelo manda la lista como texto JSON en vez de arreglo: se lee igual; si no se entiende, lote vacío.
+  let negocios: unknown = r.negocios ?? [];
+  if (typeof negocios === "string") {
+    try {
+      negocios = JSON.parse(negocios);
+    } catch {
+      negocios = [];
+    }
+  }
+  return (Array.isArray(negocios) ? (negocios as NonNullable<typeof r.negocios>) : [])
     .filter((n) => n.id && ids.has(n.id) && typeof n.es_del_giro === "boolean")
     .map((n) => ({
       id: n.id!,
