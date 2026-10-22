@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { ENCABEZADO_RUTA, RUTA_CAMBIO_PORTAL, debeCambiarPassword } from "@/lib/auth/cambio-obligatorio";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { LogoNegocio } from "@/components/marca/logo-negocio";
 import { AvisoPlan } from "@/components/aviso-plan";
@@ -11,6 +13,9 @@ import { AvisoInstalar } from "@/components/pwa/instalar";
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const sesion = await obtenerSesionConRol();
   if (!sesion) redirect("/login");
+  // R35: la segunda red de la contraseña temporal (la primera es el middleware): cubre las pantallas que Next pinta
+  // dentro de la respuesta de una acción, que no pasan por el middleware.
+  if (debeCambiarPassword(sesion.user) && (await headers()).get(ENCABEZADO_RUTA) !== RUTA_CAMBIO_PORTAL) redirect(RUTA_CAMBIO_PORTAL);
   const negocio = await cargarNegocioLanding();
 
   // N9: el saludo usa el NOMBRE del expediente de ESTE negocio (el mismo que el cuerpo de la portada). Si no hay

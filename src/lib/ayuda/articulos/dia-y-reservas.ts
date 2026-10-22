@@ -185,7 +185,7 @@ Abajo, en **Últimos revisados**, ves lo que ya se resolvió.
 2. Baja a **Contraseña del portal** y toca **Restablecer contraseña**.
 3. Lee el aviso: su contraseña actual deja de servir en ese momento. Toca **Sí, restablecer**.
 4. Aparece la **Contraseña temporal**. Toca **Mandársela por WhatsApp** o cópiala.
-5. Dile que la cambie desde su portal en cuanto entre.
+5. Cuando el dueño entra con la temporal, su portal le pide escoger una contraseña nueva antes de dejarlo ver cualquier otra cosa. Al guardarla, la temporal deja de servir.
 
 > La contraseña temporal se muestra una sola vez. Si cierras la pantalla sin mandarla, tendrás que generar otra.
 
@@ -210,6 +210,8 @@ Abajo, en **Últimos revisados**, ves lo que ya se resolvió.
 1. Abre la [página de entrada](/login) de tu negocio, escribe su **Teléfono o correo** y su **Contraseña**, y toca **Entrar**.
 2. Si se equivoca de contraseña, el aviso sale una vez junto al botón y su teléfono se queda escrito: solo vuelve a escribir la contraseña.
 3. Si la olvidó, la restableces tú desde su ficha. Si en tu negocio solo hay un admin (tú), el aviso de «¿Olvidaste tu contraseña?» del login ya no dice «pídele a un admin»: dice que el dueño del negocio la restablece desde la ficha del cliente, con el enlace a Clientes, y que si la que olvidó es la del dueño, escriba al WhatsApp de PeluDesk.
+4. Con esa contraseña temporal, al entrar el portal le pide escoger una nueva (**Guardar contraseña**) antes de seguir.
+5. Para cambiarla cuando quiera, en su portal toca **Cambiar mi contraseña**, debajo de **Tus datos**.
 
 Arriba del portal hay una sola barra fija con el nombre de tu negocio y **Salir**.
 
@@ -341,7 +343,7 @@ Si el perro ya está en la puerta sin reserva, usa **Walk-in (sin reserva)** des
 
 ## Ver las reservas de un día
 
-Toca el día. Abajo salen sus reservas con la mascota, el dueño, el estado y la cuenta (por ejemplo, «Debe $350.00», «Pagada» o «Cuenta cancelada»).
+Toca el día. Abajo salen sus reservas con la mascota, el dueño, el estado y la cuenta (por ejemplo, «Debe $350.00», «Pagada» o «Cuenta cancelada»). Una reserva cancelada dice «Total $0.00» y, si se cobró algo, cuánto se cobró y cuánto se devolvió («cobrado $100.00 · devuelto $100.00»).
 
 ## Próximas reservas
 
@@ -351,7 +353,7 @@ Más abajo está la lista de lo que viene. Filtra por **Módulo**, **Estado** y 
 
 - **Abrir**: va a la reserva, con su cuenta y sus cargos.
 - **Mover fechas**: escoge la nueva fecha (y la salida, si es hotel). Antes de guardar se ve en cuánto queda la cuenta («Total de la cuenta: $400 → $600 · Saldo…»); **Guardar fechas** solo se activa con esa vista previa. Si el total cambió mientras tanto, no se guarda y te lo vuelve a enseñar.
-- **Cancelar**: pide confirmar; libera el cupo y, si usó un pase, se lo devuelve. Desde la reserva (**Cancelar toda la reserva** o **Cancelar** de un perro) también puedes escribir un **Motivo (opcional)**: queda en la bitácora con tu nombre y la hora, y la reserva lo enseña («Cancelada por … el …. Motivo: …»).
+- **Cancelar**: pide confirmar; libera el cupo y, si usó un pase, se lo devuelve. Desde la reserva (**Cancelar toda la reserva** o **Cancelar** de un perro) también puedes escribir un **Motivo (opcional)**: queda en la bitácora con tu nombre y la hora, y la reserva lo enseña («Cancelada por … el …. Motivo: …»). La estancia cancelada ya no suma: en la reserva su total queda en **$0.00** y arriba ves el **Total**, lo **Cobrado** y lo **Devuelto**. Si se había cobrado un anticipo, queda como saldo a favor del cliente y se devuelve en **Cobrar** con **Registrar devolución**.
 
 Solo se pueden mover o cancelar las reservas **Reservada** o **Confirmada**. Si el perro ya hizo check-in, la salida se hace desde su estancia.
 

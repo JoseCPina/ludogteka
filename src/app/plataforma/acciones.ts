@@ -8,6 +8,7 @@ import { sesionPlataforma } from "@/lib/plataforma/sesion";
 import { urlDelNegocio } from "@/lib/negocio/actual";
 import { SLUGS_RESERVADOS } from "@/lib/negocio/host";
 import { generarPasswordTemporal } from "@/lib/auth/identidad";
+import { MARCA_CAMBIO_PASSWORD } from "@/lib/auth/cambio-obligatorio";
 import type { ResultadoPlataforma } from "@/lib/plataforma/tipos";
 import { sincronizarPreciosPlan, type PlanParaStripe } from "@/lib/cobro/precios";
 import { mensajeDeErrorStripe, stripeConfigurado } from "@/lib/cobro/stripe";
@@ -189,12 +190,16 @@ export async function restablecerPasswordPersona(personaId: string, motivo: stri
   });
   if (errEvento) return { error: errEvento.message };
   const password = generarPasswordTemporal();
-  const { error } = await createSupabaseAdminClient().auth.admin.updateUserById(personaId, { password });
+  const { error } = await createSupabaseAdminClient().auth.admin.updateUserById(personaId, {
+    password,
+    // R35: temporal de verdad; al entrar se le pide escoger otra (portal o personal).
+    app_metadata: { [MARCA_CAMBIO_PASSWORD]: true },
+  });
   if (error) return { error: "No pudimos cambiar la contraseña. Intenta de nuevo." };
   const telefono = (persona.telefonos ?? [])[0];
   const mensaje =
     `Hola, te restablecimos tu contraseña de PeluDesk (la misma cuenta con la que entras a tus negocios).\n\n` +
-    `Entra con tu teléfono y esta contraseña: ${password}\n\nCámbiala en cuanto entres.`;
+    `Entra con tu teléfono y esta contraseña: ${password}\n\nAl entrar te va a pedir que escojas una nueva.`;
   return {
     error: null,
     password,

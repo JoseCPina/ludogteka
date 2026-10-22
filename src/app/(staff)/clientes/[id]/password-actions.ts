@@ -5,6 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { generarPasswordTemporal } from "@/lib/auth/identidad";
 import { traducirError } from "../../reservas/traducir-error";
 import { negocioActual } from "@/lib/negocio/actual";
+import { MARCA_CAMBIO_PASSWORD } from "@/lib/auth/cambio-obligatorio";
 
 export type EstadoRestablecer = {
   error: string | null;
@@ -52,8 +53,10 @@ export async function restablecerPasswordCliente(
   // comprobó cuenta_de_cliente_para_restablecer.)
   const negocio = await negocioActual();
   const admin = createSupabaseAdminClient(negocio.id);
+  // Temporal de verdad (R35): la cuenta queda marcada y al entrar al portal se le pide escoger otra.
   const { error: errorAuth } = await admin.auth.admin.updateUserById(userId as string, {
     password,
+    app_metadata: { [MARCA_CAMBIO_PASSWORD]: true },
   });
   if (errorAuth) {
     return { error: "No pudimos cambiar la contraseña. Intenta de nuevo." };
@@ -64,7 +67,7 @@ export async function restablecerPasswordCliente(
   const mensaje =
     `Hola ${nombre}, te restablecimos tu contraseña de ${negocio.nombre}.\n\n` +
     `Entra con tu teléfono (${telefono}) y esta contraseña: ${password}\n\n` +
-    `Cámbiala desde tu portal en cuanto entres.`;
+    `Al entrar te va a pedir que escojas una contraseña nueva.`;
 
   return {
     error: null,

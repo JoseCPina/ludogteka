@@ -93,6 +93,7 @@ export function EstanciaFila({
   const esGuarderia = fila.categoria === "guarderia";
   const porHora = fila.unidad === "hora";
   const editable = estado === "reservada" || estado === "confirmada";
+  const cancelada = estado === "cancelada" || estado === "no_llego";
   // precioUnitario es tarifa POR NOCHE/DÍA/HORA, no el total de la
   // estancia (ver tarifas: "el total es N × precio del tramo"). Para
   // guardería por día noches siempre da 1; por hora, la cantidad son las
@@ -156,18 +157,31 @@ export function EstanciaFila({
             <span className="font-semibold text-n-900">{formatearFechaCalendario(fechaSalida)}</span>
           </span>
         )}
-        <span>
-          {porHora
-            ? `Precio por hora × ${cantidad}`
-            : esGuarderia
-              ? "Precio"
-              : `Precio por noche × ${noches}`}
-          :{" "}
-          <span className="font-semibold text-n-900">
-            ${fila.precioUnitario.toFixed(2)}
-            {(porHora || !esGuarderia) && ` = $${(fila.precioUnitario * cantidad).toFixed(2)}`}
+        {cancelada ? (
+          // R35: una estancia cancelada (o que no llegó) no suma a la cuenta —cuenta_lineas_reserva la excluye—,
+          // así que su total es $0. El precio que tenía queda tachado como referencia; lo cobrado y lo devuelto
+          // de la cuenta salen arriba, junto al saldo.
+          <span data-total-estancia-cancelada>
+            Total:{" "}
+            <span className="font-semibold text-n-900">$0.00</span>{" "}
+            <span className="text-n-500">
+              (no se cobra; era <s>${(fila.precioUnitario * (porHora || !esGuarderia ? cantidad : 1)).toFixed(2)}</s>)
+            </span>
           </span>
-        </span>
+        ) : (
+          <span>
+            {porHora
+              ? `Precio por hora × ${cantidad}`
+              : esGuarderia
+                ? "Precio"
+                : `Precio por noche × ${noches}`}
+            :{" "}
+            <span className="font-semibold text-n-900">
+              ${fila.precioUnitario.toFixed(2)}
+              {(porHora || !esGuarderia) && ` = ${(fila.precioUnitario * cantidad).toFixed(2)}`}
+            </span>
+          </span>
+        )}
       </div>
 
       {error && (

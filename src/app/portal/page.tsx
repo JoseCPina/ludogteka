@@ -10,7 +10,8 @@ import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { cargarTextosPoliticas } from "@/lib/politicas/cargar";
 import { omisionPolitica, politicasVisibles, textoPolitica } from "@/lib/politicas/catalogo";
 
-export default async function PortalPage() {
+export default async function PortalPage({ searchParams }: { searchParams: Promise<{ contrasena?: string }> }) {
+  const { contrasena } = await searchParams;
   const zona = await zonaActual();
   const sesion = await obtenerSesionConRol();
   if (!sesion) return null;
@@ -132,7 +133,11 @@ export default async function PortalPage() {
         </section>
       )}
 
+      {contrasena === "cambiada" && <Alert variante="exito" titulo="Contraseña cambiada">Desde ahora entras con tu contraseña nueva.</Alert>}
       <MisDatosForm nombre={cliente.nombre} telefono={cliente.telefono} email={cliente.email} />
+      <Link href="/portal/cambiar-contrasena" className="-mt-2 text-sm font-semibold text-morado hover:underline" data-enlace-cambiar-contrasena>
+        Cambiar mi contraseña
+      </Link>
 
       <div>
         <h2 className="mb-4 text-lg font-bold text-n-900">Tus perros</h2>

@@ -338,4 +338,7 @@ QA S22 (21 de octubre de 2026):
 - En la receta y en el portal, cada medicamento sale en un solo renglón; las indicaciones solo se agregan si dicen algo más.
 - En el check-out en el celular, «Notas» ocupa toda la fila con «Aplicar» debajo, y «Sí, es el dueño» / «No, persona autorizada» van uno debajo del otro.
 - Si el negocio tiene un solo admin, el «¿Olvidaste tu contraseña?» del login dice que el dueño la restablece desde la ficha del cliente.
+## Ajustes de la QA del 22 de octubre (R35)
+- Contraseña temporal del portal: cuando recepción restablece la contraseña de un dueño, la contraseña que le da es temporal; al entrar con ella, el portal le pide escoger una nueva antes de ver cualquier otra cosa, y la temporal deja de servir. El dueño también puede cambiarla cuando quiera con «Cambiar mi contraseña» en su portal.
+- Reserva cancelada: una estancia de hotel o guardería cancelada (o que no llegó) ya no suma a la cuenta: la reserva enseña su total en $0.00, lo que se cobró y lo que se devolvió. Si se cobró un anticipo, queda como saldo a favor y se devuelve en Cobrar con «Registrar devolución».
 `.trim();

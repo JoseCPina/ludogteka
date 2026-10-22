@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { clienteSinSesion, guardarSesionEnSuArea, rolDeSesion } from "@/lib/supabase/sesion-por-rol";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { rutaPorRol } from "@/lib/auth/rutas";
+import { RUTA_CAMBIO_PERSONAL, RUTA_CAMBIO_PORTAL, debeCambiarPassword } from "@/lib/auth/cambio-obligatorio";
 import { clasificarIdentificador, correoSinteticoDeTelefono } from "@/lib/auth/identidad";
 import { negocioActual } from "@/lib/negocio/actual";
 
@@ -83,5 +84,8 @@ export async function iniciarSesion(
   await guardarSesionEnSuArea(ingreso.session, rol);
   marca("guardar_sesion");
   if (Date.now() - t0 > 2000) console.warn("[login] lento", JSON.stringify({ total_ms: Date.now() - t0, ...tiempos, rol }));
+  // R35: con una contraseña temporal, directo a cambiarla. El destino de un redirect() de acción se pinta en la
+  // misma respuesta, sin pasar por el middleware, así que aquí se decide también (y el layout del portal lo repite).
+  if (debeCambiarPassword(ingreso.session.user)) redirect(rol === "cliente" ? RUTA_CAMBIO_PORTAL : RUTA_CAMBIO_PERSONAL);
   redirect(rutaPorRol(rol as string));
 }

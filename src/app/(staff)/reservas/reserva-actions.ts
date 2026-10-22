@@ -261,6 +261,8 @@ export async function cancelarEstancia(estanciaId: string, control?: ControlVers
   }
   const aviso = await avisoDevolucionDeEstancia(supabase, estanciaId, desde);
   revalidarModulosEstancia();
+  // El total, lo cobrado y lo devuelto del encabezado de la reserva se recalculan (R35).
+  revalidatePath("/reservas/[id]", "page");
   return { error: null, aviso };
 }
 
@@ -277,6 +279,7 @@ export async function marcarNoLlego(estanciaId: string, control?: ControlVersion
     return { error: traducirError(error) };
   }
   revalidarModulosEstancia();
+  revalidatePath("/reservas/[id]", "page");
   return { error: null };
 }
 

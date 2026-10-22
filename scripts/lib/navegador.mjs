@@ -37,10 +37,60 @@ function conTopes(contexto) {
   return contexto;
 }
 
+// Una auditoría con navegador a la vez, y con un solo proceso de render (22 de octubre de 2026): desde que todo el
+// ciclo corre en la computadora del dueño, dos auditorías con Chromium + `next start` al mismo tiempo se quedan
+// sin memoria. El candado es un archivo en la carpeta temporal con el pid de quien lo tiene; la segunda auditoría
+// espera a que la primera termine (o a que su proceso ya no exista). Un mismo proceso puede abrir varios
+// navegadores (la teleconsulta abre dos). AUDITORIA_PARALELO=1 lo apaga.
+const CANDADO = path.join(os.tmpdir(), "peludesk-auditoria-navegador.lock");
+let tengoCandado = false;
+function vivo(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return e.code === "EPERM";
+  }
+}
+async function tomarCandado() {
+  if (tengoCandado || process.env.AUDITORIA_PARALELO === "1") return;
+  let avisado = false;
+  for (;;) {
+    try {
+      fs.writeFileSync(CANDADO, String(process.pid), { flag: "wx" });
+      tengoCandado = true;
+      const soltar = () => {
+        try {
+          if (fs.readFileSync(CANDADO, "utf8").trim() === String(process.pid)) fs.unlinkSync(CANDADO);
+        } catch {}
+      };
+      // Al salir se suelta; si el proceso muere sin pasar por aquí, el siguiente ve que el pid ya no existe.
+      process.on("exit", soltar);
+      return;
+    } catch (e) {
+      if (e.code !== "EEXIST") throw e;
+      const pid = Number(fs.readFileSync(CANDADO, "utf8").trim() || 0);
+      if (!pid || !vivo(pid)) {
+        try { fs.unlinkSync(CANDADO); } catch {}
+        continue;
+      }
+      if (!avisado) {
+        console.log(`[navegador] otra auditoría con navegador corre (pid ${pid}); espero a que termine…`);
+        avisado = true;
+      }
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+  }
+}
+
 export async function abrirNavegador(argsExtra = []) {
+  const auditoria = esAuditoria();
+  if (auditoria) await tomarCandado();
   const executablePath = process.platform === "win32" ? headlessShellDeWindows() : undefined;
-  const navegador = await chromium.launch({ executablePath, args: ["--disable-gpu", "--lang=es-MX", ...argsExtra] });
-  if (!esAuditoria()) return navegador;
+  // En auditorías, un solo proceso de render para todas las pestañas (cada contexto sigue con su propia sesión).
+  const unSoloRender = auditoria && process.env.AUDITORIA_PARALELO !== "1" ? ["--renderer-process-limit=1"] : [];
+  const navegador = await chromium.launch({ executablePath, args: ["--disable-gpu", "--lang=es-MX", ...unSoloRender, ...argsExtra] });
+  if (!auditoria) return navegador;
   const nuevoContexto = navegador.newContext.bind(navegador);
   navegador.newContext = async (opciones) => conTopes(await nuevoContexto(opciones));
   const nuevaPagina = navegador.newPage.bind(navegador);

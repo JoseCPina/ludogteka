@@ -58,8 +58,26 @@ const PROY_DEV = "sgfolltpvktbsiisfuzq";
 const RAMA = "main";
 const REINTENTOS_MIGRACION = 3;
 const EN_NUBE = process.env.CLAUDE_CODE_REMOTE === "true";
-const VERCEL_TOKEN = process.env.VERCEL_TOKEN || "";
-const GH_TOKEN = process.env.GH_TOKEN || process.env.GITHUB_TOKEN || "";
+// Fuera de la nube (la computadora del dueño, desde el 22 de octubre de 2026 la única
+// instancia): si no vienen en el entorno, se toman de las sesiones de los CLI ya
+// autenticados (`gh auth token` y el auth.json del CLI de Vercel). Nunca se imprimen.
+function tokenDeGh() {
+  if (EN_NUBE) return "";
+  const r = spawnSync("gh", ["auth", "token"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 15000 });
+  return r.status === 0 ? (r.stdout || "").trim() : "";
+}
+function tokenDeVercel() {
+  if (EN_NUBE || !process.env.APPDATA) return "";
+  for (const p of [["com.vercel.cli", "Data", "auth.json"], ["xdg.data", "com.vercel.cli", "auth.json"]]) {
+    try {
+      const t = JSON.parse(readFileSync(path.join(process.env.APPDATA, ...p), "utf8")).token;
+      if (t) return t;
+    } catch {}
+  }
+  return "";
+}
+const VERCEL_TOKEN = process.env.VERCEL_TOKEN || tokenDeVercel();
+const GH_TOKEN = process.env.GH_TOKEN || process.env.GITHUB_TOKEN || tokenDeGh();
 const HORAS_MAX_RESPALDO = 26;
 
 // En la nube, la salida a internet va por el proxy de la sesión, y la
@@ -269,10 +287,13 @@ async function consulta(sql) {
 titulo("Estado del repositorio");
 
 const rama = git("rev-parse", "--abbrev-ref", "HEAD");
-console.log(`   rama:   ${rama}${EN_NUBE ? " (sesión en la nube: se despliega por PR a main)" : ""}`);
-if (rama !== RAMA && !EN_NUBE) {
-  abortar(`estás en '${rama}', no en '${RAMA}'`, "Producción se despliega desde main.");
-}
+console.log(`   rama:   ${rama}${rama !== RAMA || EN_NUBE ? " (se despliega por PR a main)" : ""}`);
+// Desde una rama que no es main (en la nube siempre; en la computadora, el camino normal
+// desde el 22 de octubre de 2026) se despliega igual que en la nube: la rama se empuja, se
+// abre o se reusa su PR a main, se comprueba que se puede fusionar ANTES de migrar y se
+// fusiona por la API fijado al commit revisado. Desde main en la computadora queda el
+// `git push origin main` de siempre.
+const POR_PR = EN_NUBE || rama !== RAMA;
 if (rama === "HEAD") abortar("no estás en ninguna rama (HEAD suelto)");
 if (rama === RAMA && EN_NUBE) {
   abortar("en la nube no se despliega desde main", "Git solo empuja la rama de la sesión: trabaja en una rama propia y el script abre su PR.");
@@ -356,8 +377,8 @@ async function github(ruta, { method = "GET", body } = {}) {
 // el PR, que se pueda fusionar) se prueba ANTES de migrar: si falla después,
 // queda esquema nuevo con código viejo, que es justo lo que este script evita.
 let prNube = null;
-if (EN_NUBE && pendientes) {
-  if (!GH_TOKEN) abortar("en la nube falta GH_TOKEN para publicar el código por la API de GitHub");
+if (POR_PR && pendientes) {
+  if (!GH_TOKEN) abortar("falta GH_TOKEN (o una sesión de `gh`) para publicar el código por la API de GitHub");
   if (!GH_DUENO) abortar("no se reconoce el repositorio de GitHub del remoto origin");
   try {
     const repo = await github("");
@@ -376,7 +397,7 @@ if (EN_NUBE && pendientes) {
             head: rama,
             base: RAMA,
             body:
-              "Despliegue a producción desde una sesión en la nube (`npm run desplegar -- --aplicar`): " +
+              "Despliegue a producción (`npm run desplegar -- --aplicar`): " +
               "las migraciones se aplican y se verifican ANTES de fusionar; al fusionar, Vercel construye main.\n\n" +
               "🤖 Generated with [Claude Code](https://claude.com/claude-code)",
           },
@@ -395,7 +416,7 @@ if (EN_NUBE && pendientes) {
       console.log(`   PR #${prNube.number} listo para fusionar: ${prNube.html_url}`);
     }
   } catch (e) {
-    abortar("en la nube no se pudo preparar la publicación del código", sinSecreto(e.salida || e.message));
+    abortar("no se pudo preparar la publicación del código por PR", sinSecreto(e.salida || e.message));
   }
 }
 
@@ -487,10 +508,14 @@ if (EN_NUBE) {
 }
 
 // ---------------------------------------------------------------- respaldo
-if (EN_NUBE && migracionesUnicas.length) {
+if (migracionesUnicas.length) {
   titulo("Respaldo antes de migrar");
   try {
-    const b = await cliProd.api(`/projects/${PROY_PROD}/database/backups`);
+    // En la computadora, la misma lectura por el CLI de Supabase (su sesión vive en el
+    // Administrador de credenciales de Windows); la copia JSON va por la conexión directa.
+    const b = cliProd
+      ? await cliProd.api(`/projects/${PROY_PROD}/database/backups`)
+      : JSON.parse(supabase("backups", "list", "--project-ref", PROY_PROD, "-o", "json").replace(/^[^{]*/, ""));
     const completos = (b.backups ?? []).filter((x) => x.status === "COMPLETED").sort((a, c) => c.inserted_at.localeCompare(a.inserted_at));
     const ultimo = completos[0];
     const horas = ultimo ? (Date.now() - Date.parse(ultimo.inserted_at)) / 3600000 : Infinity;
@@ -510,7 +535,7 @@ if (EN_NUBE && migracionesUnicas.length) {
       }
       writeFileSync(path.join(carpeta, "_conteos.json"), JSON.stringify(conteosAntes, null, 2));
       console.log(`   copia JSON de ${Object.keys(conteosAntes).length} tablas (${total} filas) en ${carpeta}`);
-      console.log("   (vive en el contenedor de esta sesión; el respaldo restaurable es el físico de arriba)");
+      console.log("   (copia de consulta en la carpeta temporal; el respaldo restaurable es el físico de arriba)");
     }
   } catch (e) {
     abortar("no se pudo comprobar o hacer el respaldo previo", sinSecreto(e.message));
@@ -665,7 +690,7 @@ try {
 }
 
 try {
-  if (EN_NUBE) {
+  if (POR_PR) {
     // Fijado al commit que se revisó: si alguien empujó algo más a la rama, GitHub la rechaza.
     const r = await github(`/pulls/${prNube.number}/merge`, { method: "PUT", body: { merge_method: "merge", sha: local } });
     if (!r?.merged) throw new Error(`GitHub no fusionó el PR #${prNube.number}: ${r?.message ?? "sin detalle"}`);
@@ -684,7 +709,7 @@ try {
 
 // La rama de la sesión queda al día con main (la fusión es un commit más
 // adelante); si no, el siguiente despliegue la vería "detrás de origin/main".
-if (EN_NUBE) {
+if (POR_PR) {
   try {
     git("pull", "--ff-only", "origin", RAMA);
     git("push", "origin", `HEAD:refs/heads/${rama}`);

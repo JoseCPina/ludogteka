@@ -342,11 +342,18 @@ async function cuentasDe(supabase: Cliente, reservaIds: string[]): Promise<Map<s
   const dinero = (n: number) => `$${Math.abs(n).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   await Promise.all(
     ids.map(async (id) => {
-      if (canceladas.has(id)) return void mapa.set(id, { texto: "Cuenta cancelada", tono: "cancelada" });
       const { data } = await supabase.rpc("cuenta_totales_reserva", { p_reserva_id: id });
-      const t = (Array.isArray(data) ? data[0] : data) as { total_cuenta?: number; saldo?: number } | null;
+      const t = (Array.isArray(data) ? data[0] : data) as { total_cuenta?: number; total_cobrado?: number; total_devuelto?: number; saldo?: number } | null;
+      // R35: lo que se cobró y se devolvió de una reserva cancelada (o sin cargos vivos) se dice junto al estado.
+      const cobrado = Number(t?.total_cobrado ?? 0);
+      const devuelto = Number(t?.total_devuelto ?? 0);
+      const movimientos = cobrado > 0.005 ? ` · cobrado ${dinero(cobrado)}${devuelto > 0.005 ? ` · devuelto ${dinero(devuelto)}` : ""}` : "";
+      if (canceladas.has(id)) return void mapa.set(id, { texto: `Cuenta cancelada · total $0.00${movimientos}`, tono: "cancelada" });
       if (!t) return void mapa.set(id, { texto: "—", tono: "neutro" });
       const saldo = Number(t.saldo ?? 0);
+      if (Number(t.total_cuenta ?? 0) <= 0.005 && movimientos) {
+        return void mapa.set(id, { texto: `Total $0.00${movimientos}${saldo < -0.005 ? ` · a favor ${dinero(saldo)}` : ""}`, tono: saldo < -0.005 ? "debe" : "neutro" });
+      }
       if (saldo > 0.005) mapa.set(id, { texto: `Debe ${dinero(saldo)}`, tono: "debe" });
       else if (saldo < -0.005) mapa.set(id, { texto: `A favor ${dinero(saldo)}`, tono: "ok" });
       else mapa.set(id, { texto: Number(t.total_cuenta ?? 0) > 0 ? "Pagada" : "Sin cargos", tono: Number(t.total_cuenta ?? 0) > 0 ? "ok" : "neutro" });

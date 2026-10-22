@@ -1,4 +1,5 @@
 import { getUserConReintento } from "@/lib/supabase/get-user";
+import { ENCABEZADO_RUTA, RUTA_CAMBIO_PERSONAL, RUTA_CAMBIO_PORTAL, debeCambiarPassword } from "@/lib/auth/cambio-obligatorio";
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { ENCABEZADO_AREA, areaDeRuta, opcionesCookieSesion } from "@/lib/supabase/area";
@@ -199,6 +200,8 @@ export async function middleware(request: NextRequest) {
   // Qué sesión corresponde a esta ruta (personal o portal): siempre la pone el middleware, nunca el navegador.
   const areaSesion = areaDeRuta(pathname);
   cabeceras.set(ENCABEZADO_AREA, areaSesion);
+  // La ruta de la petición, para que el layout del portal sepa si ya está en la pantalla de cambiar contraseña (R35).
+  cabeceras.set(ENCABEZADO_RUTA, pathname);
   const siguiente = () => NextResponse.next({ request: { headers: cabeceras } });
 
   if (RUTAS_PUBLICAS_EXACTAS.has(pathname)) return siguiente();
@@ -248,6 +251,16 @@ export async function middleware(request: NextRequest) {
       );
     }
     return conCookiesDe(response, NextResponse.redirect(new URL("/login", request.url)));
+  }
+
+  // R35: con una contraseña temporal no se abre nada más que la pantalla para cambiarla (y lo que esa pantalla
+  // necesita: su propia acción de servidor llega por POST a la misma ruta).
+  if (debeCambiarPassword(user) && pathname !== RUTA_CAMBIO_PORTAL) {
+    if (zonaApi) {
+      return conCookiesDe(response, NextResponse.json({ error: "Primero cambia tu contraseña temporal." }, { status: 403 }));
+    }
+    const destino = areaSesion === "portal" ? RUTA_CAMBIO_PORTAL : RUTA_CAMBIO_PERSONAL;
+    return conCookiesDe(response, NextResponse.redirect(new URL(destino, request.url)));
   }
 
   // El rol es el de la MEMBRESÍA en este negocio, leído de la base en cada

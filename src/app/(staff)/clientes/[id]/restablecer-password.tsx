@@ -53,7 +53,8 @@ export function RestablecerPassword({
               <CampoCopiable valor={resultado.password} monoespaciado textoCopiado="Copiada" />
               <p className="text-sm text-menta-oscuro">
                 Esto se muestra una sola vez: si cierras la pantalla ya no la puedes volver a ver,
-                tendrías que generar otra. Dile que la cambie desde su portal en cuanto entre.
+                tendrías que generar otra. Al entrar, su portal le pide escoger una nueva antes de
+                seguir.
               </p>
               <div className="flex flex-wrap gap-2">
                 {resultado.urlWhatsApp && (
