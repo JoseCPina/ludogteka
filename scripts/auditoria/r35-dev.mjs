@@ -59,7 +59,7 @@ try {
   await ir(pa, `/clientes/${datos.clienteSoloB}`);
   await pa.getByRole("button", { name: "Restablecer contraseña" }).click();
   await pa.getByRole("button", { name: "Sí, restablecer" }).click();
-  const campo = pa.locator("input[readonly]").first();
+  const campo = pa.locator('input[readonly]:not([type="hidden"])').first();
   await campo.waitFor();
   const temporal = await campo.inputValue();
   comprobar(temporal.length >= 8, "recepción ve la contraseña temporal");
