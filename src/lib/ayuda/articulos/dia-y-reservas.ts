@@ -218,7 +218,7 @@ Arriba del portal hay una sola barra fija con el nombre de tu negocio y **Salir*
 ## Qué ve
 
 - **Citas y reservas**: las próximas y su historial, de guardería, hotel y estética.
-- **Tus perros**: la ficha de cada uno, su estado de salud, la bitácora con fotos y notas, medicamentos y alergias.
+- **Tus perros**: la ficha de cada uno, su estado de salud, la bitácora con fotos y notas, medicamentos y alergias. En **Tus datos** de cada perro corrige su contacto de emergencia; el veterinario de cabecera, la autorización médica, el tope de gasto y las notas de alimentación solo salen si tu negocio tiene hotel, guardería o Veterinaria.
 - Sus contratos por firmar, con un aviso en la portada.
 - **Tus datos**, que puede corregir él.
 
@@ -353,7 +353,7 @@ Más abajo está la lista de lo que viene. Filtra por **Módulo**, **Estado** y 
 
 - **Abrir**: va a la reserva, con su cuenta y sus cargos.
 - **Mover fechas**: escoge la nueva fecha (y la salida, si es hotel). Antes de guardar se ve en cuánto queda la cuenta («Total de la cuenta: $400 → $600 · Saldo…»); **Guardar fechas** solo se activa con esa vista previa. Si el total cambió mientras tanto, no se guarda y te lo vuelve a enseñar.
-- **Cancelar**: pide confirmar; libera el cupo y, si usó un pase, se lo devuelve. Desde la reserva (**Cancelar toda la reserva** o **Cancelar** de un perro) también puedes escribir un **Motivo (opcional)**: queda en la bitácora con tu nombre y la hora, y la reserva lo enseña («Cancelada por … el …. Motivo: …»). La estancia cancelada ya no suma: en la reserva su total queda en **$0.00** y arriba ves el **Total**, lo **Cobrado** y lo **Devuelto**. Si se había cobrado un anticipo, queda como saldo a favor del cliente y se devuelve en **Cobrar** con **Registrar devolución**.
+- **Cancelar**: pide confirmar; libera el cupo y, si usó un pase, se lo devuelve. Desde la reserva (**Cancelar toda la reserva** o **Cancelar** de un perro) también puedes escribir un **Motivo (opcional)**: queda en la bitácora con tu nombre y la hora, y la reserva lo enseña («Cancelada por … el …. Motivo: …»). La estancia cancelada ya no suma: en la reserva su total queda en **$0.00** (en el desglose de la estancia, «Base: $0.00 (no se cobra; era $…)», y el total sin esa base) y arriba ves el **Total**, lo **Cobrado** y lo **Devuelto**. Si se había cobrado un anticipo, queda como saldo a favor del cliente y se devuelve en **Cobrar** con **Registrar devolución**.
 
 Solo se pueden mover o cancelar las reservas **Reservada** o **Confirmada**. Si el perro ya hizo check-in, la salida se hace desde su estancia.
 

@@ -253,6 +253,8 @@ export default async function DetalleReservaPage({
               cargosIniciales={cargosPorEstancia.get(f.id) ?? []}
               serviciosCargo={serviciosCargoLista}
               distanciaClienteKm={cliente?.distancia_base_km ?? null}
+              cuentaCobrado={totalCobrado}
+              cuentaDevuelto={totalDevuelto}
             />
           ))}
         </div>

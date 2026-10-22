@@ -2,9 +2,10 @@
 
 import { describirEstancia } from "@/lib/formato";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
+import { esEnterParaConfirmar, valorDelCampo } from "@/lib/ui/campo-vivo";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
@@ -60,11 +61,15 @@ export function EstanciaFila({
   cargosIniciales,
   serviciosCargo,
   distanciaClienteKm,
+  cuentaCobrado = 0,
+  cuentaDevuelto = 0,
 }: {
   fila: FilaEstancia;
   cargosIniciales: Cargo[];
   serviciosCargo: ServicioCargo[];
   distanciaClienteKm?: number | null;
+  cuentaCobrado?: number;
+  cuentaDevuelto?: number;
 }) {
   const router = useRouter();
   const [estado, setEstado] = useState(fila.estado);
@@ -72,6 +77,7 @@ export function EstanciaFila({
   const [fechaSalida, setFechaSalida] = useState(fila.fechaSalida);
   const [confirmandoCancelar, setConfirmandoCancelar] = useState(false);
   const [motivoCancelar, setMotivoCancelar] = useState("");
+  const campoMotivo = useRef<HTMLTextAreaElement>(null);
   const [confirmandoNoLlego, setConfirmandoNoLlego] = useState(false);
   const [moviendoFechas, setMoviendoFechas] = useState(false);
   const [version, setVersion] = useState(fila.version);
@@ -107,7 +113,9 @@ export function EstanciaFila({
 
   async function accionCancelar(forzar = false) {
     setError(null);
-    const res = await cargando.ejecutar(() => cancelarEstancia(fila.id, control(forzar), motivoCancelar));
+    const motivoFinal = valorDelCampo(campoMotivo, motivoCancelar);
+    setMotivoCancelar(motivoFinal);
+    const res = await cargando.ejecutar(() => cancelarEstancia(fila.id, control(forzar), motivoFinal));
     if (res.conflicto) return setConflicto({ c: res.conflicto, accion: "cancelar" });
     if (res.error) {
       setError(res.error);
@@ -248,8 +256,10 @@ export function EstanciaFila({
                 name="motivo_cancelacion"
                 rows={2}
                 maxLength={500}
+                ref={campoMotivo}
                 value={motivoCancelar}
                 onChange={(e) => setMotivoCancelar(e.target.value)}
+                onKeyDown={(e) => { if (esEnterParaConfirmar(e)) { e.preventDefault(); void accionCancelar(); } }}
                 ayuda="Queda en la bitácora con tu nombre y la hora."
               />
               <div className="flex gap-2">
@@ -298,6 +308,9 @@ export function EstanciaFila({
           serviciosCargo={estado === "cancelada" || estado === "no_llego" ? [] : serviciosCargo}
           precioBase={fila.precioUnitario * cantidad}
           distanciaClienteKm={distanciaClienteKm}
+          cancelada={cancelada}
+          cuentaCobrado={cuentaCobrado}
+          cuentaDevuelto={cuentaDevuelto}
         />
       </div>
     </div>

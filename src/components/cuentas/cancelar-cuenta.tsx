@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
+import { esEnterParaConfirmar, valorDelCampo } from "@/lib/ui/campo-vivo";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
@@ -37,6 +38,7 @@ export function CancelarCuenta({
   const [info, setInfo] = useState<InfoCancelarCuenta | null>(null);
   const [motivo, setMotivo] = useState("");
   const [texto, setTexto] = useState("");
+  const campoTexto = useRef<HTMLTextAreaElement>(null);
   const [cancelarCita, setCancelarCita] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -63,10 +65,12 @@ export function CancelarCuenta({
   async function confirmar() {
     setError(null);
     // QA S19: un solo paso. Se escoge un motivo o se escribe; lo escrito sin escoger es «Otro».
-    const clave = motivo || (texto.trim() ? "otro" : "");
+    const textoFinal = valorDelCampo(campoTexto, texto);
+    setTexto(textoFinal);
+    const clave = motivo || (textoFinal.trim() ? "otro" : "");
     if (!clave) return setError("Escoge el motivo o escríbelo.");
-    if (clave === "otro" && texto.trim().length < 5) return setError("Escribe el motivo (al menos 5 letras).");
-    const r = await envio.ejecutar(() => cancelarCuenta(reservaId, clave, texto, pendientes > 0 && cancelarCita));
+    if (clave === "otro" && textoFinal.trim().length < 5) return setError("Escribe el motivo (al menos 5 letras).");
+    const r = await envio.ejecutar(() => cancelarCuenta(reservaId, clave, textoFinal, pendientes > 0 && cancelarCita));
     if (r.error) return setError(r.error);
     setAviso(r.aviso ?? "Cuenta cancelada.");
     router.refresh();
@@ -74,15 +78,15 @@ export function CancelarCuenta({
 
   if (!abierto) {
     return (
-      <Button
+      // Acción secundaria y poco frecuente (QA S25): texto, no un botón grande junto a «Cobrar».
+      <button
         type="button"
-        variante="secundario"
         data-cancelar-cuenta-abrir={reservaId}
-        className={compacto ? "min-h-10 self-start px-3 text-sm" : "self-start"}
+        className={`inline-flex min-h-10 items-center self-start rounded-md px-1 font-semibold text-coral-oscuro underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado ${compacto ? "text-sm" : "text-base"}`}
         onClick={abrir}
       >
         Cancelar cuenta
-      </Button>
+      </button>
     );
   }
 
@@ -127,8 +131,10 @@ export function CancelarCuenta({
                 label={motivo ? "Nota (opcional)" : "O escribe el motivo"}
                 rows={2}
                 maxLength={300}
+                ref={campoTexto}
                 value={texto}
                 onChange={(e) => setTexto(e.target.value)}
+                onKeyDown={(e) => { if (esEnterParaConfirmar(e)) { e.preventDefault(); void confirmar(); } }}
                 data-cancelar-cuenta-texto
               />
             </fieldset>

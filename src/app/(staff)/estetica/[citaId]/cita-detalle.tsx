@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useEspera } from "@/hooks/use-espera";
+import { esEnterParaConfirmar, valorDelCampo } from "@/lib/ui/campo-vivo";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
@@ -92,6 +93,9 @@ export function CitaDetalle({
   const [motivoNoLlego, setMotivoNoLlego] = useState("");
   const [eliminando, setEliminando] = useState(false);
   const [motivoEliminar, setMotivoEliminar] = useState("");
+  const campoCancelar = useRef<HTMLInputElement>(null);
+  const campoNoLlego = useRef<HTMLInputElement>(null);
+  const campoEliminar = useRef<HTMLInputElement>(null);
   const [quitandoTarifa, setQuitandoTarifa] = useState(false);
   const [motivoTarifa, setMotivoTarifa] = useState("");
   // El datetime-local no trae huso horario: lo que se precarga y lo que se
@@ -155,11 +159,13 @@ export function CitaDetalle({
 
   async function accionCancelar(forzar = false) {
     setError(null);
-    if (motivoCancelar.trim().length < 3) {
+    const motivoFinal = valorDelCampo(campoCancelar, motivoCancelar);
+    setMotivoCancelar(motivoFinal);
+    if (motivoFinal.trim().length < 3) {
       setError("Escribe el motivo de la cancelación.");
       return;
     }
-    const res = await cargando.ejecutar(() => cancelarCita(citaId, motivoCancelar, false, ctl.control(forzar)));
+    const res = await cargando.ejecutar(() => cancelarCita(citaId, motivoFinal, false, ctl.control(forzar)));
     if (ctl.huboConflicto(res, () => accionCancelar(true))) return;
     if (res.error) {
       setError(res.error);
@@ -172,7 +178,9 @@ export function CitaDetalle({
 
   async function accionNoLlego(forzar = false) {
     setError(null);
-    const res = await cargando.ejecutar(() => cancelarCita(citaId, motivoNoLlego, true, ctl.control(forzar)));
+    const notaFinal = valorDelCampo(campoNoLlego, motivoNoLlego);
+    setMotivoNoLlego(notaFinal);
+    const res = await cargando.ejecutar(() => cancelarCita(citaId, notaFinal, true, ctl.control(forzar)));
     if (ctl.huboConflicto(res, () => accionNoLlego(true))) return;
     if (res.error) {
       setError(res.error);
@@ -184,7 +192,9 @@ export function CitaDetalle({
 
   async function accionEliminar(forzar = false) {
     setError(null);
-    const res = await cargando.ejecutar(() => eliminarCita(citaId, motivoEliminar, ctl.control(forzar)));
+    const motivoFinal = valorDelCampo(campoEliminar, motivoEliminar);
+    setMotivoEliminar(motivoFinal);
+    const res = await cargando.ejecutar(() => eliminarCita(citaId, motivoFinal, ctl.control(forzar)));
     if (ctl.huboConflicto(res, () => accionEliminar(true))) return;
     if (res.error) {
       setError(res.error);
@@ -407,7 +417,7 @@ export function CitaDetalle({
           ) : confirmandoCancelar ? (
             <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
               <p className="text-sm font-semibold text-coral-oscuro">¿Cancelar {describirCita(servicioNombre, perroNombre, inicio, zona)}? Avisaste que no viene o ya no la quiere: el horario queda libre.</p>
-              <Field label="Motivo de la cancelación" value={motivoCancelar} onChange={(e) => setMotivoCancelar(e.target.value)} placeholder="ej. La clienta se enfermó" />
+              <Field ref={campoCancelar} onKeyDown={(e) => { if (esEnterParaConfirmar(e)) { e.preventDefault(); void accionCancelar(); } }} label="Motivo de la cancelación" value={motivoCancelar} onChange={(e) => setMotivoCancelar(e.target.value)} placeholder="ej. La clienta se enfermó" />
               <div className="flex gap-2">
                 <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={() => accionCancelar()}>
                   {cargando.cargando ? "Cancelando…" : "Sí, cancelar la cita"}
@@ -422,7 +432,7 @@ export function CitaDetalle({
               <p className="text-sm font-semibold text-coral-oscuro">
                 ¿Marcar que {perroNombre} no se presentó? (Es distinto de cancelar: la persona no avisó o no llegó.)
               </p>
-              <Field label="Nota (opcional)" value={motivoNoLlego} onChange={(e) => setMotivoNoLlego(e.target.value)} />
+              <Field ref={campoNoLlego} onKeyDown={(e) => { if (esEnterParaConfirmar(e)) { e.preventDefault(); void accionNoLlego(); } }} label="Nota (opcional)" value={motivoNoLlego} onChange={(e) => setMotivoNoLlego(e.target.value)} />
               <div className="flex gap-2">
                 <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={() => accionNoLlego()}>
                   {cargando.cargando ? "Guardando…" : "Sí, no se presentó"}
@@ -497,7 +507,7 @@ export function CitaDetalle({
               <p className="text-sm font-semibold text-coral-oscuro">
                 ¿Eliminar esta cita? Úsalo para una cita capturada por error o duplicada. Sale de la agenda y libera el horario; no se borra: queda en el historial con su motivo. Para una cita que ya no va, usa «Cancelar cita».
               </p>
-              <Field label="Motivo (obligatorio)" value={motivoEliminar} onChange={(e) => setMotivoEliminar(e.target.value)} placeholder="ej. Se capturó dos veces" />
+              <Field ref={campoEliminar} onKeyDown={(e) => { if (esEnterParaConfirmar(e)) { e.preventDefault(); void accionEliminar(); } }} label="Motivo (obligatorio)" value={motivoEliminar} onChange={(e) => setMotivoEliminar(e.target.value)} placeholder="ej. Se capturó dos veces" />
               <div className="flex gap-2">
                 <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={() => accionEliminar()}>
                   {cargando.cargando ? "Eliminando…" : "Sí, eliminar la cita"}

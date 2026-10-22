@@ -40,12 +40,20 @@ export function CargosSeccion({
   serviciosCargo,
   precioBase,
   distanciaClienteKm,
+  cancelada = false,
+  cuentaCobrado = 0,
+  cuentaDevuelto = 0,
 }: {
   estanciaId: string;
   cargosIniciales: Cargo[];
   serviciosCargo: ServicioCargo[];
   precioBase?: number;
   distanciaClienteKm?: number | null;
+  // N115: estancia cancelada o «no llegó»: su base ya no suma a la cuenta (cuenta_lineas_reserva la excluye);
+  // los cargos vivos sí. Lo cobrado y lo devuelto son de la cuenta de la reserva.
+  cancelada?: boolean;
+  cuentaCobrado?: number;
+  cuentaDevuelto?: number;
 }) {
   const [cargos, setCargos] = useState(cargosIniciales);
 
@@ -208,10 +216,11 @@ export function CargosSeccion({
           </ul>
         )}
 
-        <div className="flex justify-end gap-6 border-t border-n-200 pt-2 text-sm">
+        <div className="flex flex-wrap justify-end gap-x-6 gap-y-1 border-t border-n-200 pt-2 text-sm" data-desglose-estancia={cancelada ? "cancelada" : "vigente"}>
           {precioBase !== undefined && (
             <span className="text-n-600">
-              Base: <span className="font-semibold text-n-900">{formatoDinero(precioBase)}</span>
+              Base: <span className="font-semibold text-n-900">{formatoDinero(cancelada ? 0 : precioBase)}</span>
+              {cancelada && <span className="text-n-500"> (no se cobra; era {formatoDinero(precioBase)})</span>}
             </span>
           )}
           <span className="text-n-600">
@@ -219,7 +228,17 @@ export function CargosSeccion({
           </span>
           {precioBase !== undefined && (
             <span className="font-bold text-n-900">
-              Total: {formatoDinero(precioBase + acumuladoCargos)}
+              Total: {formatoDinero((cancelada ? 0 : precioBase) + acumuladoCargos)}
+            </span>
+          )}
+          {cancelada && cuentaCobrado > 0 && (
+            <span className="text-n-600" data-desglose-cobrado>
+              Cobrado en la cuenta: <span className="font-semibold text-n-900">{formatoDinero(cuentaCobrado)}</span>
+            </span>
+          )}
+          {cancelada && cuentaDevuelto > 0 && (
+            <span className="text-n-600" data-desglose-devuelto>
+              Devuelto: <span className="font-semibold text-n-900">{formatoDinero(cuentaDevuelto)}</span>
             </span>
           )}
         </div>

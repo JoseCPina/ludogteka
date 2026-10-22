@@ -121,3 +121,9 @@ body {
     content: none;
   }
 }
+
+/* Portal en celular (QA S25): la barra de arriba es fija; al enfocar un campo el navegador lo deja debajo de ella
+   en vez de taparlo y "brincar" otra vez. */
+html:has([data-portal-shell]) {
+  scroll-padding-top: 4.5rem;
+}

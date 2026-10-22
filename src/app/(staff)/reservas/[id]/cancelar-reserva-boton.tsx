@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useEspera } from "@/hooks/use-espera";
+import { esEnterParaConfirmar, valorDelCampo } from "@/lib/ui/campo-vivo";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,11 +36,14 @@ export function CancelarReservaBoton({
   const cargando = useEspera();
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [motivo, setMotivo] = useState("");
+  const campoMotivo = useRef<HTMLTextAreaElement>(null);
   const [leidas, setLeidas] = useState(versiones);
   const [conflicto, setConflicto] = useState<Conflicto | null>(null);
 
   async function confirmar(forzar = false) {
-    const res = await cargando.ejecutar(() => cancelarReserva(reservaId, { versiones: leidas, forzar }, motivo));
+    const motivoFinal = valorDelCampo(campoMotivo, motivo);
+    setMotivo(motivoFinal);
+    const res = await cargando.ejecutar(() => cancelarReserva(reservaId, { versiones: leidas, forzar }, motivoFinal));
     setConfirmando(false);
     if (res.conflicto) {
       setConflicto(res.conflicto);
@@ -61,7 +65,7 @@ export function CancelarReservaBoton({
           ? "1 perro ya no se podía cancelar (revisa su estado, p. ej. ya hizo check-in) y no se tocó"
           : `${res.noCancelables} perros ya no se podían cancelar (revisa su estado, p. ej. ya hicieron check-in) y no se tocaron`
         : null,
-      motivo.trim() ? `Motivo: ${motivo.trim()}` : null
+      motivoFinal.trim() ? `Motivo: ${motivoFinal.trim()}` : null
     );
     setMensaje(unirFrases(base, ...(res.avisos ?? [])));
     router.refresh();
@@ -105,8 +109,10 @@ export function CancelarReservaBoton({
         name="motivo_cancelacion"
         rows={2}
         maxLength={500}
+        ref={campoMotivo}
         value={motivo}
         onChange={(e) => setMotivo(e.target.value)}
+        onKeyDown={(e) => { if (esEnterParaConfirmar(e)) { e.preventDefault(); void confirmar(); } }}
         placeholder="ej. El cliente cambió de fechas"
         ayuda="Queda en la bitácora de la reserva con tu nombre y la hora."
       />

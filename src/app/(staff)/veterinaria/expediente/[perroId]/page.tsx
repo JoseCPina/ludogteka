@@ -113,7 +113,7 @@ export default async function ExpedienteMascota({ params, searchParams }: { para
             {linea.map((e) => {
               const t = TIPOS_EVENTO[e.tipo] ?? { etiqueta: e.tipo, estilo: "bg-n-100" };
               const anulada = e.estado === "anulada";
-              const fecha = e.tipo === "vacuna" || e.tipo === "desparasitacion" || e.tipo === "peso" || e.tipo === "certificado" || e.tipo === "laboratorio"
+              const fecha = e.tipo === "vacuna" || e.tipo === "desparasitacion" || e.tipo === "peso" || e.tipo === "certificado" || e.tipo === "laboratorio" || e.tipo === "receta"
                 ? formatearFechaCalendario(String(e.cuando).slice(0, 10))
                 : formatearFecha(e.cuando, zona);
               const enlace =
@@ -121,6 +121,7 @@ export default async function ExpedienteMascota({ params, searchParams }: { para
                 : e.tipo === "adjunto" ? `/api/veterinaria/adjunto/${e.ref_id}`
                 : e.tipo === "hospitalizacion" ? `/veterinaria/hospitalizacion/${e.ref_id}`
                 : e.tipo === "certificado" ? `/veterinaria/certificados/${e.ref_id}`
+                : e.tipo === "receta" ? `/veterinaria/recetas/${e.ref_id}`
                 : e.tipo === "vacuna" || e.tipo === "desparasitacion" ? `/veterinaria/carnet/${perroId}`
                 : e.tipo === "laboratorio" && e.consulta_id ? `/veterinaria/consulta/${e.consulta_id}` : null;
               return (
@@ -134,7 +135,7 @@ export default async function ExpedienteMascota({ params, searchParams }: { para
                   <p className={`mt-1 font-semibold text-n-900 ${anulada ? "line-through" : ""}`}>
                     {enlace ? <Link href={enlace} className="text-morado hover:underline" {...(e.tipo === "adjunto" ? { target: "_blank", rel: "noopener" } : {})}>{e.tipo === "consulta" ? `${TIPOS_CITA[e.titulo.toLowerCase()] ?? e.titulo}` : e.titulo}</Link> : e.titulo}
                   </p>
-                  {e.detalle && sinTitulosVacios(e.detalle) && <p className="text-sm text-n-700">{sinTitulosVacios(e.detalle)}</p>}
+                  {e.detalle && sinTitulosVacios(e.detalle) && <p className="text-sm text-n-700">{e.tipo === "receta" ? `Medicamentos: ${e.detalle}` : sinTitulosVacios(e.detalle)}</p>}
                   {e.tipo === "consulta" && e.extra && <p className="text-sm text-n-700">Diagnóstico: {e.extra}</p>}
                   {e.tipo === "laboratorio" && Number(e.extra) > 0 && <p className="text-sm font-semibold text-ambar-oscuro">{e.extra} valor(es) fuera de rango</p>}
                   {e.medico && <p className="text-xs text-n-500">{e.medico}</p>}
