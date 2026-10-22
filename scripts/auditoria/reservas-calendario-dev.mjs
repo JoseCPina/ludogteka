@@ -90,7 +90,9 @@ try {
   });
   comprobar(choque.error?.code === "23P01", "la base rechaza la reserva que se traslapa (23P01)");
   const { mensajeTraslape } = await import("../../src/lib/reservas/traslape.ts");
-  comprobar(mensajeTraslape(D).endsWith(`/reservas/calendario?dia=${D}`) && mensajeTraslape().endsWith("/reservas/calendario") && mensajeTraslape("x; drop").endsWith("/reservas/calendario"), "el mensaje termina con el enlace al calendario en esa fecha (y solo con fechas válidas)");
+  // El texto cierra con punto (frase completa); el enlace es la ruta justo antes del punto final, que TextoConEnlaces deja fuera.
+  const terminaEn = (texto, ruta) => texto.endsWith(` ${ruta}.`);
+  comprobar(terminaEn(mensajeTraslape(D), `/reservas/calendario?dia=${D}`) && terminaEn(mensajeTraslape(), "/reservas/calendario") && terminaEn(mensajeTraslape("x; drop"), "/reservas/calendario"), "el mensaje termina con el enlace al calendario en esa fecha (y solo con fechas válidas)");
   // La pantalla: el enlace del mensaje abre el calendario en ese día.
   {
     const ctxT = await nav.newContext({ viewport: { width: 390, height: 844 } });
