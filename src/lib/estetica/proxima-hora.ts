@@ -1,6 +1,10 @@
-// La hora que "Agendar" propone al abrir: la siguiente hora en punto de hoy que todavía no pasa y cae
-// dentro del horario del negocio; si hoy ya no queda ninguna, la primera hora de la siguiente fecha
-// que abre. Nunca una hora que ya pasó (QA externa B19: a las 13:00 proponía las 10:00).
+// La hora que "Agendar" propone al abrir: la siguiente media hora de hoy que todavía no pasa y cae
+// dentro del horario del negocio; si hoy ya pasó el cierre, la apertura de la siguiente fecha que abre.
+// Nunca una hora que ya pasó (QA externa B19: a las 13:00 proponía las 10:00). Por media hora y no por
+// hora en punto (N116): a las 18:00 con cierre a las 19:00 la siguiente en punto ya era el cierre y
+// proponía «mañana 09:00» cuando todavía cabía una cita a las 18:30.
+
+const PASO_MIN = 30;
 
 export type HorarioDia = { abre: boolean; apertura: string | null; cierre: string | null };
 
@@ -48,11 +52,11 @@ export function proximaHoraDisponible(ahoraISO: string, zona: string, horarioDe:
     if (!h.abre) continue;
     const apertura = minutos(h.apertura ?? "09:00");
     const cierre = minutos(h.cierre ?? "19:00");
-    // Primera hora en punto estrictamente posterior a este momento (en hoy) o a la apertura (otro día).
-    let inicio = Math.ceil(apertura / 60) * 60;
-    if (fecha === hoy) inicio = Math.max(inicio, (Math.floor(ahora / 60) + 1) * 60);
+    // Primera media hora estrictamente posterior a este momento (en hoy) o a la apertura (otro día).
+    let inicio = Math.ceil(apertura / PASO_MIN) * PASO_MIN;
+    if (fecha === hoy) inicio = Math.max(inicio, (Math.floor(ahora / PASO_MIN) + 1) * PASO_MIN);
     if (inicio < cierre) return `${fecha}T${aTexto(inicio)}`;
-    primeraAbierta ??= `${fecha}T${aTexto(Math.ceil(apertura / 60) * 60)}`;
+    primeraAbierta ??= `${fecha}T${aTexto(Math.ceil(apertura / PASO_MIN) * PASO_MIN)}`;
   }
   return primeraAbierta ?? `${masDias(inicioBusqueda, 1)}T09:00`;
 }

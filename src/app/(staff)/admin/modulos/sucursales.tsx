@@ -10,6 +10,8 @@ import { conIva, pesosDeCentavos } from "@/lib/cobro/iva";
 import { irANegocio } from "@/lib/negocio/ir-a-negocio";
 import { abrirSucursal, darBajaSucursal } from "./cobro-actions";
 import { Textarea } from "@/components/ui/textarea";
+import { useZonaNegocio } from "@/components/zona-negocio";
+import { formatearFecha } from "@/lib/formato";
 
 export type GrupoSucursales = {
   principal_id: string;
@@ -35,6 +37,7 @@ export function subdominioSugerido(nombre: string): string {
 // ligado a la cuenta del dueño. La primera paga el plan; cada sucursal adicional se suma a la misma suscripción.
 export function Sucursales({ grupo, precioMensual, dominio }: { grupo: GrupoSucursales; precioMensual: number | null; dominio: string }) {
   const router = useRouter();
+  const zona = useZonaNegocio();
   const [nombre, setNombre] = useState("");
   const [sub, setSub] = useState("");
   const [subEditado, setSubEditado] = useState(false);
@@ -118,7 +121,7 @@ export function Sucursales({ grupo, precioMensual, dominio }: { grupo: GrupoSucu
             <span className="flex flex-wrap items-center gap-2">
               {n.baja_at ? (
                 <span className="rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-700" data-sucursal-baja={n.id}>
-                  Dada de baja · solo lectura{n.baja_hasta ? ` hasta el ${new Date(n.baja_hasta).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" })}` : ""}
+                  Dada de baja · solo lectura{n.baja_hasta ? ` hasta el ${formatearFecha(n.baja_hasta, zona)}` : ""}
                 </span>
               ) : (
                 <>

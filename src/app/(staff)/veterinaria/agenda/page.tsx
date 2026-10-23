@@ -128,7 +128,7 @@ export default async function AgendaVeterinaria({ searchParams }: { searchParams
                               )}
                               <div className="mt-1 flex flex-wrap gap-3 text-xs font-semibold">
                                 {c.tipo_clave === "teleconsulta" && <Link href={`/veterinaria/teleconsulta/${c.id}`} className="text-morado hover:underline">Teleconsulta (liga y sala)</Link>}
-                                {puedeLeer && <Link href={`/veterinaria/expediente/${c.perro_id}`} className="text-morado hover:underline">Expediente</Link>}
+                                {puedeLeer && <Link href={`/veterinaria/expediente/${c.perro_id}?fecha=${ancla}`} className="text-morado hover:underline">Expediente</Link>}
                                 <Link href={`/veterinaria/carnet/${c.perro_id}`} className="text-morado hover:underline">Carnet</Link>
                               </div>
                               {!gris && duenoDe.get(c.perro_id) && (

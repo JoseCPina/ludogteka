@@ -3,6 +3,9 @@ import ExcelJS from "exceljs";
 import { sesionPlataforma } from "@/lib/plataforma/sesion";
 import { consultaProspectos, leerFiltros, type Prospecto } from "@/lib/prospectos/consulta";
 import { textoCanal, textoEtapa, textoGiro } from "@/lib/prospectos/textos";
+import { fechaLocalDeInstante } from "@/lib/formato";
+
+const ZONA = "America/Mexico_City"; // la plataforma no es de un negocio
 
 // Los prospectos de /plataforma/prospectos en Excel, con los mismos filtros de la pantalla y TODAS las filas
 // (de 1,000 en 1,000: la API corta ahí). Solo la administración de PeluDesk (la RLS lo vuelve a exigir).
@@ -33,8 +36,8 @@ export async function GET(req: Request) {
   for (const p of filas) {
     hoja.addRow([
       p.nombre, textoGiro(p.giro), p.ciudad, p.direccion ?? "", p.telefono ?? "", p.whatsapp ?? "", p.correo ?? "", p.instagram ?? "", p.facebook ?? "", p.web ?? "",
-      p.calificacion ?? "", p.resenas ?? "", p.fuente === "google_places" ? "Google Maps" : p.fuente === "anuncio_meta" ? "Anuncio de Meta" : "A mano", p.created_at.slice(0, 10), textoEtapa(p.etapa),
-      textoCanal(p.canal_ultimo_contacto), p.ultimo_contacto_at?.slice(0, 10) ?? "", p.negocio_cliente_id ? "Sí" : "No", p.notas ?? "",
+      p.calificacion ?? "", p.resenas ?? "", p.fuente === "google_places" ? "Google Maps" : p.fuente === "anuncio_meta" ? "Anuncio de Meta" : "A mano", fechaLocalDeInstante(p.created_at, ZONA), textoEtapa(p.etapa),
+      textoCanal(p.canal_ultimo_contacto), p.ultimo_contacto_at ? fechaLocalDeInstante(p.ultimo_contacto_at, ZONA) : "", p.negocio_cliente_id ? "Sí" : "No", p.notas ?? "",
     ]);
   }
   hoja.columns.forEach((c, i) => { c.width = [34, 12, 18, 40, 16, 14, 28, 32, 32, 32, 12, 10, 12, 12, 12, 12, 14, 10, 40][i] ?? 14; });

@@ -9,8 +9,10 @@
 // Un falso positivo real lleva `// utc-ok: motivo` en su línea o la anterior.
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const RAIZ = new URL("../../../src", import.meta.url).pathname;
+// fileURLToPath y no .pathname: en Windows .pathname da "/C:/…" y readdirSync busca en "C:\C:\…".
+const RAIZ = fileURLToPath(new URL("../../../src", import.meta.url));
 const INSTANTE = /(_at|\.at|At|\.inicio|\.fin|_antes|_despues)\b/;
 
 const REGLAS = [
@@ -48,7 +50,7 @@ export function escanear() {
   return hallazgos;
 }
 
-if (process.argv[1] === new URL(import.meta.url).pathname) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const h = escanear();
   for (const x of h) console.log(`${x.archivo}:${x.linea} [${x.regla}] ${x.texto}`);
   console.log(`\n${h.length} hallazgo(s)`);
