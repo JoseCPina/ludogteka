@@ -4,7 +4,7 @@ import { proximaHoraDisponible, type HorarioDia } from "./proxima-hora";
 
 /**
  * LA función de «siguiente hora disponible» de todo formulario que abre con una hora prellenada
- * (agendar en Estética, agendar en la agenda clínica…): la siguiente hora en punto, dentro del horario del
+ * (agendar en Estética, agendar en la agenda clínica…): la siguiente media hora, dentro del horario del
  * negocio, que todavía no pasa; o la primera del siguiente día que abre. Con `desdeFecha` (un día futuro
  * que ya se había escogido) busca desde ese día. Devuelve "AAAA-MM-DDTHH:MM" en la hora del negocio.
  * Un formulario nuevo con hora prellenada usa ESTA función, nunca una hora fija.
@@ -21,4 +21,15 @@ export async function proponerHora(supabase: SupabaseClient, zona: string, desde
     horarios.set(f, fila && fila.estado === "configurado" ? { abre: fila.hora_apertura != null, apertura: fila.hora_apertura ?? null, cierre: fila.hora_cierre ?? null } : null);
   });
   return proximaHoraDisponible(new Date().toISOString(), zona, (f) => horarios.get(f) ?? null, 14, desdeFecha);
+}
+
+/**
+ * Fecha y hora con las que abre un formulario de cita que recibe `?fecha=AAAA-MM-DD` (la agenda clínica): la
+ * fecha pedida MANDA sobre la propuesta si es válida y no es un día pasado (N116: llegaba por la agenda o por el
+ * expediente y se ignoraba); sin fecha pedida, la de `proponerHora`.
+ */
+export async function proponerFechaHora(supabase: SupabaseClient, zona: string, fechaPedida?: string | null): Promise<{ fecha: string; hora: string }> {
+  const pedida = fechaPedida && /^\d{4}-\d{2}-\d{2}$/.test(fechaPedida) && fechaPedida >= hoyNegocio(zona) ? fechaPedida : undefined;
+  const propuesta = await proponerHora(supabase, zona, pedida);
+  return { fecha: pedida ?? propuesta.slice(0, 10), hora: propuesta.slice(11, 16) };
 }

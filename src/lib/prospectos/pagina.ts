@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { hoyNegocio } from "@/lib/formato";
 
 // La página personalizada de un prospecto (peludesk.mx/para/<slug>). Lo NUESTRO (nombre, giro, ciudad, slug) sale
 // del CRM; lo de Google (fotos, horario, calificación) se pide al mostrarla y no se guarda.
@@ -40,7 +41,8 @@ const NO_PERSONA = /bot|crawl|spider|slurp|preview|facebookexternalhit|facebot|w
 
 export async function registrarVisita(o: { slug: string; tipo: "visita" | "clic_prueba" | "clic_whatsapp" | "clic_demo"; ip: string | null; navegador: string | null; interno?: boolean }) {
   if (o.interno || !o.navegador || NO_PERSONA.test(o.navegador)) return;
-  const dia = new Date().toISOString().slice(0, 10);
+  // El día de la plataforma (centro de México), no el de UTC: a partir de las 18:00 UTC ya era «mañana» (N116).
+  const dia = hoyNegocio("America/Mexico_City");
   const ipHash = o.ip ? createHash("sha256").update(`${o.ip}|${dia}`).digest("hex").slice(0, 32) : null;
   const { error } = await createSupabaseAdminClient().rpc("prospecto_registrar_visita", { p_slug: o.slug, p_tipo: o.tipo, p_ip_hash: ipHash, p_navegador: o.navegador });
   if (error) console.error("[prospectos] visita", error.message);

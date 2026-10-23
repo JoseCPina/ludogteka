@@ -6,7 +6,7 @@ import { Select } from "@/components/ui/select";
 import { ZONAS_MEXICO } from "@/lib/plataforma/tipos";
 import { urlDelNegocio } from "@/lib/negocio/actual";
 import { actualizarNegocio, agregarAdmin, asignarPlan, cambiarPlan, cambiarSubdominio, eliminarNegocio, marcarInterno } from "../../../acciones";
-import { formatearFecha } from "@/lib/formato";
+import { fechaLocalDeInstante, formatearFecha } from "@/lib/formato";
 import { pesosDeCentavos } from "@/lib/cobro/iva";
 import { estadoCobro } from "@/lib/cobro/estados";
 import { leerTodo } from "@/lib/supabase/paginar";
@@ -175,7 +175,7 @@ export default async function NegocioPlataforma({ params }: { params: Promise<{ 
             <option value="prueba">Prueba gratis</option>
             <option value="demo">Demo (negocio de muestra)</option>
           </Select>
-          <Field label="Prueba hasta (solo si es prueba)" name="prueba_hasta" type="date" defaultValue={n.prueba_termina_at ? new Date(n.prueba_termina_at).toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }) : ""} />
+          <Field label="Prueba hasta (solo si es prueba)" name="prueba_hasta" type="date" defaultValue={n.prueba_termina_at ? fechaLocalDeInstante(n.prueba_termina_at, n.zona_horaria) : ""} />
           <Field label="Motivo" name="motivo" required placeholder="Pagó octubre por transferencia" />
         </FormularioPlataforma>
       </section>

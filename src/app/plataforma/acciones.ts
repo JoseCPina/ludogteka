@@ -15,6 +15,8 @@ import { mensajeDeErrorStripe, stripeConfigurado } from "@/lib/cobro/stripe";
 import { eliminarNegocioCompleto } from "@/lib/plataforma/eliminar-negocio";
 import { principalDe, reajustarCobroDeSucursales } from "@/lib/cobro/sucursales";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { finDePrueba } from "@/lib/cobro/prueba";
+import { instanteDeHoraLocal } from "@/lib/formato";
 
 // La administración de PeluDesk. Toda escritura va con la sesión de quien
 // administra (su JWT): la base comprueba es_admin_plataforma() en cada
@@ -284,17 +286,20 @@ export async function guardarEtiqueta(tabla: string, fd: FormData): Promise<Resu
 }
 
 // El plan del negocio: activarlo cuando paga, extender su prueba o pasarlo
-// a prueba/demo. La fecha llega como día (fin del día en la hora del centro de México).
+// a prueba/demo. La fecha llega como día: la prueba dura hasta el final de ese día EN LA ZONA DEL NEGOCIO
+// (la misma cuenta que finDePrueba; antes era el fin del día del centro de México para todos, N116).
 export async function cambiarPlan(negocioId: string, fd: FormData): Promise<ResultadoPlataforma> {
   const s = await sesionPlataforma();
   if (!s) return NO_AUTORIZADO;
   const plan = texto(fd, "plan");
   const fin = texto(fd, "prueba_hasta");
   if (plan === "prueba" && !/^\d{4}-\d{2}-\d{2}$/.test(fin)) return { error: "Pon hasta qué día dura la prueba." };
+  const { data: neg } = await s.supabase.from("negocios").select("zona_horaria").eq("id", negocioId).maybeSingle();
+  const zona = (neg?.zona_horaria as string | undefined) ?? "America/Mexico_City";
   const { error } = await s.supabase.rpc("plataforma_cambiar_plan", {
     p_negocio_id: negocioId,
     p_plan: plan,
-    p_prueba_termina_at: plan === "prueba" ? `${fin}T23:59:59-06:00` : null,
+    p_prueba_termina_at: plan === "prueba" ? finDePrueba(instanteDeHoraLocal(`${fin}T12:00`, zona), zona).toISOString() : null,
     p_motivo: texto(fd, "motivo"),
   });
   if (error) return { error: error.message };

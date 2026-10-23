@@ -241,7 +241,7 @@ try {
     const g = (t) => ahoraLocal.find((x) => x.type === t).value;
     const ahora = `${g("year")}-${g("month")}-${g("day")}T${g("hour")}:${g("minute")}`;
     comprobar(valor > ahora, `la hora propuesta (${valor}) es posterior a ahora (${ahora}, ${zona})`);
-    comprobar(/T\d{2}:00$/.test(valor), "y es una hora en punto");
+    comprobar(/T\d{2}:(00|30)$/.test(valor), "y cae en media hora (N116)");
     await c.close();
     // La agenda clínica (Veterinaria) usa la MISMA función: ya no abre con las 09:00 fijas.
     const perroV = await nuevoPerro("HoraVet");
@@ -250,6 +250,17 @@ try {
     const fV = await p.locator('input[name="fecha"]').inputValue();
     const hV = await p.locator('input[name="hora"]').inputValue();
     comprobar(`${fV}T${hV}` === valor, `la agenda clínica propone la misma hora (${fV} ${hV})`);
+    await c.close();
+    // N116: ?fecha= manda, también cuando se llega por el expediente abierto desde un día de la agenda.
+    const futura = new Date(Date.now() + 5 * 86_400_000).toLocaleDateString("en-CA", { timeZone: zona });
+    ({ c, p } = await abrir(datos.adminB, 390));
+    await p.goto(`${BASE}/veterinaria/agenda/nueva?perro=${perroV}&fecha=${futura}`, { waitUntil: "networkidle" });
+    comprobar((await p.locator('input[name="fecha"]').inputValue()) === futura, `con ?fecha=${futura} abre en ese día`);
+    await p.goto(`${BASE}/veterinaria/expediente/${perroV}?fecha=${futura}`, { waitUntil: "networkidle" });
+    await p.locator("a", { hasText: "Agendar cita" }).first().click();
+    await p.waitForURL(/agenda\/nueva/);
+    await p.waitForLoadState("networkidle");
+    comprobar((await p.locator('input[name="fecha"]').inputValue()) === futura, "desde el expediente (abierto desde ese día) también");
     await c.close();
   }
 

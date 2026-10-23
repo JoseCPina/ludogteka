@@ -8,7 +8,7 @@ import { FormularioAccion } from "@/components/formulario-accion";
 import { buscarMascotas, etiquetaEspecie } from "@/lib/veterinaria/buscar";
 import { hoyNegocio } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
-import { proponerHora } from "@/lib/estetica/proponer-hora";
+import { proponerFechaHora } from "@/lib/estetica/proponer-hora";
 import { cargarHorarioSemana } from "@/lib/estetica/horario-semana";
 import { CamposCitaVet } from "./campos-cita";
 import type { MedicoVet, TipoCitaConfig } from "@/lib/veterinaria/expediente";
@@ -60,9 +60,9 @@ export default async function NuevaCitaVet({ searchParams }: { searchParams: Pro
   ]);
   const tipos = ((tiposCrudo ?? []) as TipoCitaConfig[]).filter((t) => t.activo);
   const medicos = (medicosCrudo ?? []) as MedicoVet[];
-  // Fecha y hora propuestas: la siguiente hora en punto que no ha pasado (o, con un día ya escogido, la primera de ese día).
+  // Fecha y hora propuestas: la siguiente media hora que no ha pasado; la fecha de ?fecha= manda si viene.
   const horarioSemana = await cargarHorarioSemana(supabase, zona);
-  const propuesta = await proponerHora(supabase, zona, fecha && fecha > hoy ? fecha : undefined);
+  const propuesta = await proponerFechaHora(supabase, zona, fecha);
   const dueno = mascota ? ((Array.isArray(mascota.clientes) ? mascota.clientes[0] : mascota.clientes) as { nombre: string } | null) : null;
 
   return (
@@ -87,8 +87,8 @@ export default async function NuevaCitaVet({ searchParams }: { searchParams: Pro
             medicos={medicos}
             medicoInicial={(miMedico as string | null) ?? medicos[0]?.id}
             hoy={hoy}
-            fechaInicial={propuesta.slice(0, 10)}
-            horaInicial={propuesta.slice(11)}
+            fechaInicial={propuesta.fecha}
+            horaInicial={propuesta.hora}
             horario={horarioSemana}
           />
           <Textarea label="Motivo (opcional)" name="motivo" rows={2} />

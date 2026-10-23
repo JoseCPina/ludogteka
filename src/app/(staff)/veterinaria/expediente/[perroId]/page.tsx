@@ -14,9 +14,9 @@ type Lectura = { recurso: string; persona: string; leido_at: string };
 
 const ETIQUETA_LECTURA: Record<string, string> = { expediente: "el expediente", consulta: "una consulta", linea_tiempo: "la línea de tiempo", adjunto: "un archivo", resultado: "un resultado", estimado: "un estimado" };
 
-export default async function ExpedienteMascota({ params, searchParams }: { params: Promise<{ perroId: string }>; searchParams: Promise<{ aviso?: string }> }) {
+export default async function ExpedienteMascota({ params, searchParams }: { params: Promise<{ perroId: string }>; searchParams: Promise<{ aviso?: string; fecha?: string }> }) {
   const { perroId } = await params;
-  const { aviso } = await searchParams;
+  const { aviso, fecha } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
   const zona = await zonaActual();
@@ -67,7 +67,8 @@ export default async function ExpedienteMascota({ params, searchParams }: { para
         </div>
         <div className="flex flex-wrap gap-2 text-sm font-semibold">
           <Link href={`/veterinaria/carnet/${perroId}`} className="inline-flex min-h-10 items-center rounded-md border border-n-200 bg-white px-3 text-morado hover:bg-morado-suave">Carnet</Link>
-          <Link href={`/veterinaria/agenda/nueva?perro=${perroId}`} className="inline-flex min-h-10 items-center rounded-md border border-n-200 bg-white px-3 text-morado hover:bg-morado-suave">Agendar cita</Link>
+          {/* Si se llegó desde un día de la agenda, «Agendar cita» abre en ese día (N116). */}
+          <Link href={`/veterinaria/agenda/nueva?perro=${perroId}${fecha && /^\d{4}-\d{2}-\d{2}$/.test(fecha) ? `&fecha=${fecha}` : ""}`} className="inline-flex min-h-10 items-center rounded-md border border-n-200 bg-white px-3 text-morado hover:bg-morado-suave">Agendar cita</Link>
           {puedeEstimar === true && <Link href={`/veterinaria/estimados/nuevo?perro=${perroId}`} className="inline-flex min-h-10 items-center rounded-md border border-n-200 bg-white px-3 text-morado hover:bg-morado-suave">Nuevo estimado</Link>}
         </div>
       </div>

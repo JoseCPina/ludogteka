@@ -82,6 +82,7 @@ export function diaSemana(fechaISO: string): number {
 
 export function sumarDias(fechaISO: string, n: number): string {
   const [y, m, d] = fechaISO.split("-").map(Number);
+  // utc-ok: aritmética de calendario sobre una fecha AAAA-MM-DD, sin instante
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
 }
 
