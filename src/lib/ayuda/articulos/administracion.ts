@@ -432,7 +432,7 @@ Hay un solo plan, **PeluDesk**: $649 al mes + IVA ($752.84 con IVA), **sin costo
 
 1. Escoge **Mensual** o **Anual · 2 meses gratis**.
 2. Revisa el **Resumen** con el IVA.
-3. Aprieta **Pagar con tarjeta**. El pago lo procesa Stripe.
+3. Aprieta **Pagar con tarjeta**. El pago lo procesa Stripe: la página de pago sale en español, con **México** como país, y solo pide tu tarjeta (no ofrece guardar tus datos con Link).
 
 **El cobro aparece como MENTEO, la empresa que opera PeluDesk.** Así lo verás en el Checkout de Stripe, en tu estado de cuenta, en los recibos y en las facturas.
 
@@ -659,7 +659,7 @@ Arriba de la pantalla ves cuántos llevas.
 
 1. En el menú, entra a **Ayuda**.
 2. Busca lo que necesitas o pregúntale al asistente con tus palabras.
-3. Si prefieres verlo, en **Videos** está la serie completa: cada tarea paso a paso, con subtítulos y a la velocidad que quieras. En cada pantalla, el botón **¿Cómo se hace?** (junto al **?**) te lleva directo al video de esa pantalla. Y los artículos que tienen video lo traen arriba del texto, con su título y su duración: puedes verlo ahí mismo o leer los pasos debajo.
+3. Si prefieres verlo, en **Videos** está la serie completa: cada tarea paso a paso, con subtítulos y a la velocidad que quieras. En cada pantalla, el botón **¿Cómo se hace?** (junto al **?**) te lleva directo al video de esa pantalla; en el celular el encabezado deja ese espacio al nombre de tu negocio, y el video está en el artículo que abre el **?**. Y los artículos que tienen video lo traen arriba del texto, con su título y su duración: puedes verlo ahí mismo o leer los pasos debajo.
 4. Si no se resolvió, aprieta **Crear ticket**.
 5. Escribe un asunto y cuéntanos qué pasó. Si puedes, agrega una captura de pantalla.
 

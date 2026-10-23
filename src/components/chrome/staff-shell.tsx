@@ -24,7 +24,7 @@ function BotonAyuda({ ayuda, pathname }: { ayuda: { slug: string; rutas: string[
       aria-label="Ayuda de esta pantalla"
       title="Ayuda de esta pantalla"
       data-boton-ayuda={a?.slug ?? ""}
-      className="grid h-11 w-11 place-items-center rounded-full border-[1.5px] border-n-300 text-lg font-bold text-n-700 hover:border-morado hover:text-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado"
+      className="grid h-11 w-11 flex-none place-items-center rounded-full border-[1.5px] border-n-300 text-lg font-bold text-n-700 hover:border-morado hover:text-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado"
     >
       ?
     </Link>
@@ -32,7 +32,8 @@ function BotonAyuda({ ayuda, pathname }: { ayuda: { slug: string; rutas: string[
 }
 
 // «¿Cómo se hace?»: el video de la pantalla (el de la ruta más específica).
-// Solo sale si hay uno publicado que esta persona puede ver.
+// Solo sale si hay uno publicado que esta persona puede ver. En el celular no sale en el encabezado (QA S27: le quitaba
+// al nombre del negocio el ancho que le toca); el artículo de ayuda de la pantalla enlaza su video.
 function BotonVideo({ videos, pathname }: { videos: { slug: string; rutas: string[] }[]; pathname: string }) {
   if (pathname.startsWith("/ayuda")) return null;
   const v = articuloDeRuta(pathname, videos);
@@ -43,7 +44,7 @@ function BotonVideo({ videos, pathname }: { videos: { slug: string; rutas: strin
       data-boton-video={v.slug}
       aria-label="¿Cómo se hace? Ver el video de esta pantalla"
       title="¿Cómo se hace? Ver el video de esta pantalla"
-      className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border-[1.5px] border-n-300 px-3 text-sm font-semibold text-n-700 hover:border-morado hover:text-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado"
+      className="hidden min-h-11 min-w-11 flex-none items-center justify-center gap-1.5 rounded-full border-[1.5px] border-n-300 px-3 text-sm sm:inline-flex font-semibold text-n-700 hover:border-morado hover:text-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado"
     >
       <span aria-hidden="true">▶</span>
       <span className="hidden sm:inline">¿Cómo se hace?</span>
@@ -95,14 +96,16 @@ export function StaffShell({
   return (
     <div className="flex min-h-full flex-1 flex-col">
       {aviso}
-      <header className="flex h-16 flex-none items-center justify-between gap-2 overflow-hidden border-b border-n-200 bg-white px-4 md:px-6">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
+      {/* QA S27: a 390 px el nombre del negocio quedaba en «PRU…». Menú, logo, ayuda y Salir son fijos; el nombre toma
+          todo el ancho que sobra (menos aire entre botones en el celular) y solo entonces se trunca. */}
+      <header className="flex h-16 flex-none items-center justify-between gap-1.5 overflow-hidden border-b border-n-200 bg-white px-3 sm:gap-2 sm:px-4 md:px-6">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
           <button
             type="button"
             onClick={() => setMenuAbierto((valor) => !valor)}
             aria-expanded={menuAbierto}
             aria-controls="menu-lateral-staff"
-            className="grid h-11 w-11 flex-none place-items-center rounded-md text-n-700 hover:bg-n-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado md:hidden"
+            className="-ml-1 grid h-11 w-10 flex-none place-items-center rounded-md text-n-700 hover:bg-n-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado sm:ml-0 sm:w-11 md:hidden"
           >
             <span className="sr-only">{menuAbierto ? "Cerrar menú" : "Abrir menú"}</span>
             <svg
@@ -120,7 +123,7 @@ export function StaffShell({
               <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
-          <Link href={items[0]?.href ?? "/"} className="block min-w-0 rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado">
+          <Link href={items[0]?.href ?? "/"} className="block min-w-0 flex-1 rounded-md md:flex-none focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado">
             {marca}
           </Link>
           <span className="hidden flex-none text-n-500 md:inline" aria-hidden="true">/</span>
@@ -129,7 +132,7 @@ export function StaffShell({
           </span>
         </div>
 
-        <div className="flex flex-none items-center gap-3">
+        <div className="flex flex-none items-center gap-1.5 sm:gap-3">
           {videos && videos.length > 0 && <BotonVideo videos={videos} pathname={pathname} />}
           {ayuda && <BotonAyuda ayuda={ayuda} pathname={pathname} />}
           <div className="hidden text-right leading-tight sm:block">
@@ -140,7 +143,7 @@ export function StaffShell({
             </p>
           </div>
           <form action={cerrarSesion}>
-            <Button type="submit" variante="secundario" className="min-h-11 px-4">
+            <Button type="submit" variante="secundario" className="min-h-11 px-3 sm:px-4">
               Salir
             </Button>
           </form>

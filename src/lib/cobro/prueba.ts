@@ -35,8 +35,11 @@ export function textoCheckout(trialEnd: Date | null, zona: string): string {
  * un negocio y otro es la fecha del primer cobro y si hay prueba (sin prueba Stripe dice «Suscribirse»).
  */
 export const CHECKOUT_FIJO = {
-  locale: "es",
+  // Español de Latinoamérica (QA S27): con «es» Checkout salía en español de España y con el país en «Estados Unidos».
+  locale: "es-419",
   payment_method_types: ["card"],
+  // QA S27: aun con solo tarjeta, Checkout ofrecía «Guardar mis datos con Link» ya marcada.
+  wallet_options: { link: { display: "never" } },
   payment_method_collection: "always",
   billing_address_collection: "auto",
   // Siempre en pesos: la cuenta (de Menteo) tiene la conversión de moneda automática.

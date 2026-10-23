@@ -22,7 +22,7 @@ export default async function CheckoutEstanciaPage({
   const { data: estancia, error } = await supabase
     .from("estancias")
     .select(
-      "id, perro_id, fecha_entrada, fecha_salida, estado, precio_unitario, horas, updated_at, hora_entrada_real, hora_salida_real, recogido_por_nombre, recogido_por_es_dueno, pertenencias_sin_entrega_motivo, perros(nombre, clientes(distancia_base_km)), servicios(nombre, categoria, unidad)"
+      "id, reserva_id, perro_id, fecha_entrada, fecha_salida, estado, precio_unitario, horas, updated_at, hora_entrada_real, hora_salida_real, recogido_por_nombre, recogido_por_es_dueno, pertenencias_sin_entrega_motivo, perros(nombre, clientes(distancia_base_km)), servicios(nombre, categoria, unidad)"
     )
     .eq("id", estanciaId)
     .single();
@@ -186,6 +186,10 @@ export default async function CheckoutEstanciaPage({
                 Recogió: {estancia.recogido_por_nombre ?? "—"}
                 {estancia.recogido_por_es_dueno === false ? " (persona autorizada, no el dueño)" : ""}
               </p>
+              {/* QA S27: al terminar el check-out, el siguiente paso es cobrar la cuenta. */}
+              <Link href={`/caja/cobrar/${estancia.reserva_id}`} data-cobrar-cuenta className="mt-3 inline-flex min-h-11 items-center rounded-md bg-morado px-4 text-sm font-semibold text-white hover:bg-morado-oscuro">
+                Cobrar la cuenta
+              </Link>
               {(pertenencias ?? []).length > 0 && (
                 <div className="mt-3" data-pertenencias-salida>
                   <p className="text-sm font-semibold text-n-800">Pertenencias</p>
@@ -216,6 +220,7 @@ export default async function CheckoutEstanciaPage({
           fechaSalida={estancia.fecha_salida}
           version={(estancia.updated_at as string | null) ?? null}
           pertenenciasIniciales={pertenencias ?? []}
+          cobroHref={`/caja/cobrar/${estancia.reserva_id}`}
         />
       )}
 

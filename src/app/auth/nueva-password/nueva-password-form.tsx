@@ -7,6 +7,7 @@ import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
+import { TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
 
 const estadoInicial: EstadoNuevaPassword = { error: null };
 
@@ -27,7 +28,7 @@ export function NuevaPasswordForm() {
         autoComplete="new-password"
         autoFocus
         required
-        ayuda="Mínimo 6 caracteres."
+        ayuda={TEXTO_CONTRASENA_CORTA}
       />
       <Field
         label="Confirmar contraseña"

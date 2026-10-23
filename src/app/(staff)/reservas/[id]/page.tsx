@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
@@ -33,7 +33,12 @@ export default async function DetalleReservaPage({
     .eq("id", id)
     .single();
 
-  if (errorReserva || !reserva) notFound();
+  if (errorReserva || !reserva) {
+    // QA S27: un enlace con el id de una ESTANCIA (no de la reserva) lleva a su reserva en vez de dar 404.
+    const { data: estancia } = await supabase.from("estancias").select("reserva_id").eq("id", id).maybeSingle();
+    if (estancia?.reserva_id) redirect(`/reservas/${estancia.reserva_id}`);
+    notFound();
+  }
 
   const cliente = Array.isArray(reserva.clientes) ? reserva.clientes[0] : reserva.clientes;
 

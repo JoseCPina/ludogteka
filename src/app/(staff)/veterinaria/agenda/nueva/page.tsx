@@ -8,15 +8,22 @@ import { FormularioAccion } from "@/components/formulario-accion";
 import { buscarMascotas, etiquetaEspecie } from "@/lib/veterinaria/buscar";
 import { hoyNegocio } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
-import { proponerFechaHora } from "@/lib/estetica/proponer-hora";
+import { fechaPedidaValida, proponerFechaHoraPorPersona } from "@/lib/estetica/proponer-hora";
+import { sumarDiasFecha } from "@/lib/formato";
 import { cargarHorarioSemana } from "@/lib/estetica/horario-semana";
 import { CamposCitaVet } from "./campos-cita";
-import type { MedicoVet, TipoCitaConfig } from "@/lib/veterinaria/expediente";
+import type { CitaVet, MedicoVet, TipoCitaConfig } from "@/lib/veterinaria/expediente";
 import { agendarCita } from "../../expediente/actions";
 
-export default async function NuevaCitaVet({ searchParams }: { searchParams: Promise<{ q?: string; perro?: string; fecha?: string }> }) {
-  const { q: qCrudo, perro, fecha } = await searchParams;
+export default async function NuevaCitaVet({ searchParams }: { searchParams: Promise<{ q?: string; perro?: string; fecha?: string; cliente?: string }> }) {
+  const { q: qParam, perro, fecha, cliente } = await searchParams;
   const supabase = await createSupabaseServerClient();
+  // De vuelta del alta de un cliente sin mascota todavía: la búsqueda abre con su nombre.
+  let qCrudo = qParam;
+  if (!qCrudo && !perro && cliente && /^[0-9a-f-]{36}$/.test(cliente)) {
+    const { data: c } = await supabase.from("clientes").select("nombre").eq("id", cliente).maybeSingle();
+    qCrudo = (c?.nombre as string | undefined) ?? undefined;
+  }
   const zona = await zonaActual();
   const hoy = hoyNegocio(zona);
 
@@ -34,8 +41,12 @@ export default async function NuevaCitaVet({ searchParams }: { searchParams: Pro
           <div className="flex-1"><Field label="Buscar mascota o dueño" name="q" defaultValue={qCrudo ?? ""} placeholder="Motita, Ana, 444…" /></div>
           <Button type="submit">Buscar</Button>
         </form>
+        {/* QA S27: el alta del dueño sigue a la de su mascota y regresa aquí con ella elegida (?perro=). */}
+        <Link href={`/clientes/nuevo?volver=${encodeURIComponent("/veterinaria/agenda/nueva")}`} className="self-start text-sm font-semibold text-morado hover:underline" data-nuevo-cliente-vet>
+          + Nuevo cliente y su mascota
+        </Link>
         {filas.length === 0 ? (
-          <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">No encontramos a nadie con eso. Da de alta al dueño y a su mascota en <Link href="/clientes" className="font-semibold text-morado underline">Clientes</Link>.</p>
+          <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">No encontramos a nadie con eso. Da de alta al dueño y a su mascota con <Link href={`/clientes/nuevo?volver=${encodeURIComponent("/veterinaria/agenda/nueva")}`} className="font-semibold text-morado underline">Nuevo cliente</Link>.</p>
         ) : (
           <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
             {filas.map((f) => (
@@ -60,9 +71,20 @@ export default async function NuevaCitaVet({ searchParams }: { searchParams: Pro
   ]);
   const tipos = ((tiposCrudo ?? []) as TipoCitaConfig[]).filter((t) => t.activo);
   const medicos = (medicosCrudo ?? []) as MedicoVet[];
-  // Fecha y hora propuestas: la siguiente media hora que no ha pasado; la fecha de ?fecha= manda si viene.
-  const horarioSemana = await cargarHorarioSemana(supabase, zona);
-  const propuesta = await proponerFechaHora(supabase, zona, fecha);
+  // Fecha y hora propuestas: la siguiente media hora que no ha pasado y que el médico tiene libre (QA S27);
+  // la fecha de ?fecha= manda si viene.
+  const desde = fechaPedidaValida(fecha, zona) ?? hoy;
+  const [horarioSemana, { data: citasCrudo }] = await Promise.all([
+    cargarHorarioSemana(supabase, zona),
+    supabase.rpc("vet_agenda", { p_desde: desde, p_hasta: sumarDiasFecha(desde, 14), p_medico: null }),
+  ]);
+  const ocupados: Record<string, { inicio: string; fin: string }[]> = Object.fromEntries(medicos.map((m) => [m.id, []]));
+  for (const c of (citasCrudo ?? []) as CitaVet[]) {
+    if (!["cancelada", "no_llego"].includes(c.estado)) (ocupados[c.medico_id] ??= []).push({ inicio: c.inicia_at, fin: c.termina_at });
+  }
+  const propuestas = await proponerFechaHoraPorPersona(supabase, zona, fecha, ocupados, tipos.find((t) => t.clave === "consulta")?.duracion_min ?? 30);
+  const medicoInicial = (miMedico as string | null) ?? medicos[0]?.id;
+  const propuesta = propuestas[medicoInicial ?? ""] ?? propuestas.__todos;
   const dueno = mascota ? ((Array.isArray(mascota.clientes) ? mascota.clientes[0] : mascota.clientes) as { nombre: string } | null) : null;
 
   return (
@@ -85,10 +107,11 @@ export default async function NuevaCitaVet({ searchParams }: { searchParams: Pro
           <CamposCitaVet
             tipos={tipos}
             medicos={medicos}
-            medicoInicial={(miMedico as string | null) ?? medicos[0]?.id}
+            medicoInicial={medicoInicial}
             hoy={hoy}
             fechaInicial={propuesta.fecha}
             horaInicial={propuesta.hora}
+            propuestaPorMedico={propuestas}
             horario={horarioSemana}
           />
           <Textarea label="Motivo (opcional)" name="motivo" rows={2} />

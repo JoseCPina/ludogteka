@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { propuestaVacia, type DatosRazaPropuesta } from "@/lib/razas-propuesta";
+import { useModulos } from "@/components/modulos-contexto";
 
 export type OpcionCatalogo = { id: string; etiqueta: string };
 
@@ -45,6 +46,7 @@ export function HojaRazaNueva({
   onGuardar: (datos: DatosRazaPropuesta) => void;
   onCancelar: () => void;
 }) {
+  const modulos = useModulos();
   const [datos, setDatos] = useState<DatosRazaPropuesta>(inicial ?? propuestaVacia(nombreInicial));
   const [falta, setFalta] = useState<string | null>(null);
 
@@ -117,7 +119,7 @@ export function HojaRazaNueva({
           onChange={(e) => cambiar({ notas: e.target.value })}
           ayuda={esDueno ? undefined : "Por ejemplo, de qué raza se parece o cómo se maneja."}
         />
-        {!esDueno && grupos.length > 0 && (
+        {!esDueno && grupos.length > 0 && modulos.tiene("estetica") && (
           <Select
             label="Grupo de precio de estética en este negocio (opcional)"
             value={datos.grupoId}

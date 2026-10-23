@@ -1,11 +1,14 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { buscarMascotas, etiquetaEspecie } from "@/lib/veterinaria/buscar";
 
-export default async function BuscarExpediente({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  const { q: qCrudo } = await searchParams;
+export default async function BuscarExpediente({ searchParams }: { searchParams: Promise<{ q?: string; perro?: string }> }) {
+  const { q: qCrudo, perro } = await searchParams;
+  // QA S27: de vuelta del alta de cliente y mascota, directo al expediente de la mascota nueva.
+  if (perro && /^[0-9a-f-]{36}$/.test(perro)) redirect(`/veterinaria/expediente/${perro}`);
   const supabase = await createSupabaseServerClient();
   const filas = await buscarMascotas(supabase, qCrudo ?? "");
   const q = (qCrudo ?? "").trim();
@@ -23,6 +26,10 @@ export default async function BuscarExpediente({ searchParams }: { searchParams:
         </div>
         <Button type="submit">Buscar</Button>
       </form>
+      {/* QA S27: el alta del dueño sigue a la de su mascota y regresa a su expediente. */}
+      <Link href={`/clientes/nuevo?volver=${encodeURIComponent("/veterinaria/expediente")}`} className="self-start text-sm font-semibold text-morado hover:underline" data-nuevo-cliente-vet>
+        + Nuevo cliente y su mascota
+      </Link>
       {filas.length === 0 ? (
         <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">{q ? "No encontramos a nadie con eso." : "Todavía no hay mascotas registradas."}</p>
       ) : (

@@ -66,6 +66,7 @@ export function AgendarForm({
   puedeExcepcion,
   razas = [],
   horaInicial,
+  horaPorEmpleado,
   horarioSemana,
 }: {
   clientes: ClienteBuscable[];
@@ -100,6 +101,8 @@ export function AgendarForm({
   razas?: RazaOpcion[];
   // La siguiente hora disponible (nunca una que ya pasó); la calcula el servidor con el horario del negocio.
   horaInicial?: string;
+  /** La siguiente media hora libre de cada estilista (QA S27); al cambiar de estilista se toma la suya. */
+  horaPorEmpleado?: Record<string, string>;
   // Horario del negocio por día de la semana, para avisar (sin bloquear) de una cita fuera de horario.
   horarioSemana?: HorarioSemana | null;
   rolActual: string;
@@ -123,7 +126,9 @@ export function AgendarForm({
   const [perroId, setPerroId] = useState("");
   const [servicioId, setServicioId] = useState(servicios[0]?.id ?? "");
   const [empleadoId, setEmpleadoId] = useState(rolActual === "estetica" ? userIdActual : empleados[0]?.id ?? "");
-  const [fechaHora, setFechaHora] = useState(horaInicial ?? `${hoyNegocio(zona)}T10:00`);
+  const [fechaHora, setFechaHora] = useState(horaPorEmpleado?.[empleadoId] ?? horaInicial ?? `${hoyNegocio(zona)}T10:00`);
+  // Mientras nadie teclee otra hora, la propuesta sigue a quien atiende.
+  const [horaTocada, setHoraTocada] = useState(false);
   const [estanciaId, setEstanciaId] = useState("");
   // Quien tiene una ausencia aprobada que cubre la hora elegida no se ofrece (la base también lo rechaza).
   const [ausentes, setAusentes] = useState<Record<string, string>>({});
@@ -677,7 +682,11 @@ export function AgendarForm({
             <Select
               label="Empleado"
               value={empleadoId}
-              onChange={(e) => setEmpleadoId(e.target.value)}
+              onChange={(e) => {
+                setEmpleadoId(e.target.value);
+                const suya = horaPorEmpleado?.[e.target.value];
+                if (!horaTocada && suya) setFechaHora(suya);
+              }}
               disabled={rolActual === "estetica"}
               ayuda={rolActual === "estetica" ? "Solo puedes agendar en tu propia agenda." : undefined}
             >
@@ -767,7 +776,10 @@ export function AgendarForm({
             label="Fecha y hora"
             type="datetime-local"
             value={fechaHora}
-            onChange={(e) => setFechaHora(e.target.value)}
+            onChange={(e) => {
+              setFechaHora(e.target.value);
+              setHoraTocada(true);
+            }}
           />
           <AvisoFueraDeHorario
             fecha={fechaHora.slice(0, 10)}

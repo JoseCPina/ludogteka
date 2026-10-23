@@ -12,6 +12,7 @@ import { DOCUMENTOS_LEGALES } from "@/lib/peludesk/legal";
 import { COOKIE_CONSENTIMIENTO, leerConsentimiento } from "@/lib/peludesk/cookies";
 import { origenDe } from "@/lib/peludesk/origen";
 import { enviarConversion } from "@/lib/peludesk/capi";
+import { MIN_CONTRASENA, TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
 
 // Lo que la persona escribió regresa con el error: React limpia el
 // formulario al terminar la acción y sin esto tendría que capturar todo de
@@ -66,7 +67,7 @@ async function registrar(fd: FormData): Promise<EstadoRegistro> {
   if (nombre.length < 3) return { error: "Escribe tu nombre." };
   if (negocio.length < 3 || negocio.length > 60) return { error: "Escribe el nombre de tu negocio (de 3 a 60 letras)." };
   if (!telefono) return { error: "Escribe tu teléfono a diez dígitos." };
-  if (password.length < 8) return { error: "La contraseña necesita al menos 8 caracteres." };
+  if (password.length < MIN_CONTRASENA) return { error: TEXTO_CONTRASENA_CORTA };
   const servicios = fd.getAll("servicios").map(String).filter((s) => SERVICIOS.includes(s));
   if (servicios.length === 0) return { error: "Escoge al menos un servicio que ofrece tu negocio." };
 

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { hoyNegocio, sumarDiasFecha } from "@/lib/formato";
-import { proximaHoraDisponible, type HorarioDia } from "./proxima-hora";
+import { proximaHoraDisponible, type HorarioDia, type Ocupado } from "./proxima-hora";
 
 /**
  * LA función de «siguiente hora disponible» de todo formulario que abre con una hora prellenada
@@ -10,6 +10,20 @@ import { proximaHoraDisponible, type HorarioDia } from "./proxima-hora";
  * Un formulario nuevo con hora prellenada usa ESTA función, nunca una hora fija.
  */
 export async function proponerHora(supabase: SupabaseClient, zona: string, desdeFecha?: string): Promise<string> {
+  return (await proponerHoraPorPersona(supabase, zona, {}, desdeFecha)).__todos;
+}
+
+/**
+ * La misma propuesta, una por persona (estilista o médico): la siguiente media hora que además no se le encima con
+ * ninguna de sus citas (QA S27). `__todos` es la de quien no tiene citas. Un solo viaje por el horario.
+ */
+export async function proponerHoraPorPersona(
+  supabase: SupabaseClient,
+  zona: string,
+  ocupadosPorPersona: Record<string, Ocupado[]>,
+  desdeFecha?: string,
+  duracionMin?: number
+): Promise<Record<string, string>> {
   const hoy = hoyNegocio(zona);
   const base = desdeFecha && desdeFecha > hoy ? desdeFecha : hoy;
   const fechas = Array.from({ length: 15 }, (_, i) => sumarDiasFecha(base, i));
@@ -20,7 +34,11 @@ export async function proponerHora(supabase: SupabaseClient, zona: string, desde
     // Sin configurar (o sin respuesta) se usa el horario de siempre, 09:00 a 19:00.
     horarios.set(f, fila && fila.estado === "configurado" ? { abre: fila.hora_apertura != null, apertura: fila.hora_apertura ?? null, cierre: fila.hora_cierre ?? null } : null);
   });
-  return proximaHoraDisponible(new Date().toISOString(), zona, (f) => horarios.get(f) ?? null, 14, desdeFecha);
+  const ahora = new Date().toISOString();
+  const proponer = (ocupados: Ocupado[]) => proximaHoraDisponible(ahora, zona, (f) => horarios.get(f) ?? null, 14, desdeFecha, ocupados, duracionMin);
+  const salida: Record<string, string> = { __todos: proponer([]) };
+  for (const [id, ocupados] of Object.entries(ocupadosPorPersona)) salida[id] = proponer(ocupados);
+  return salida;
 }
 
 /**
@@ -29,7 +47,23 @@ export async function proponerHora(supabase: SupabaseClient, zona: string, desde
  * expediente y se ignoraba); sin fecha pedida, la de `proponerHora`.
  */
 export async function proponerFechaHora(supabase: SupabaseClient, zona: string, fechaPedida?: string | null): Promise<{ fecha: string; hora: string }> {
-  const pedida = fechaPedida && /^\d{4}-\d{2}-\d{2}$/.test(fechaPedida) && fechaPedida >= hoyNegocio(zona) ? fechaPedida : undefined;
-  const propuesta = await proponerHora(supabase, zona, pedida);
-  return { fecha: pedida ?? propuesta.slice(0, 10), hora: propuesta.slice(11, 16) };
+  return (await proponerFechaHoraPorPersona(supabase, zona, fechaPedida, {})).__todos;
+}
+
+/** `fechaPedidaValida`: la ?fecha= que manda (AAAA-MM-DD, no pasada) o undefined. */
+export function fechaPedidaValida(fechaPedida: string | null | undefined, zona: string): string | undefined {
+  return fechaPedida && /^\d{4}-\d{2}-\d{2}$/.test(fechaPedida) && fechaPedida >= hoyNegocio(zona) ? fechaPedida : undefined;
+}
+
+/** `proponerFechaHora` por persona: con la fecha pedida, la primera media hora libre de cada quien. */
+export async function proponerFechaHoraPorPersona(
+  supabase: SupabaseClient,
+  zona: string,
+  fechaPedida: string | null | undefined,
+  ocupadosPorPersona: Record<string, Ocupado[]>,
+  duracionMin?: number
+): Promise<Record<string, { fecha: string; hora: string }>> {
+  const pedida = fechaPedidaValida(fechaPedida, zona);
+  const propuestas = await proponerHoraPorPersona(supabase, zona, ocupadosPorPersona, pedida, duracionMin);
+  return Object.fromEntries(Object.entries(propuestas).map(([id, p]) => [id, { fecha: pedida ?? p.slice(0, 10), hora: p.slice(11, 16) }]));
 }

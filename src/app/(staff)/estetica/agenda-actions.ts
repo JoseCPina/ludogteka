@@ -138,7 +138,8 @@ export async function crearCita(datos: {
     return { error: texto };
   }
 
-  revalidatePath("/estetica");
+  // Sin revalidatePath (QA S27): repintaba «Agendar cita» entera (todos los clientes y perros) antes de responder;
+  // la agenda se lee fresca al abrirla.
   return { error: null, citaId: data.id, reservaId: reservaCreada.id, fin: data.fin as string, precio: Number(data.precio), tarifaGuarderia: Boolean(data.tarifa_guarderia) };
 }
 
@@ -320,7 +321,7 @@ export async function finalizarCita(
   recogidoPorTelefono: string | null,
   recogidoPorEsDueno: boolean | null,
   ajustesConsumo: AjusteConsumo[] = []
-): Promise<EstadoAccion> {
+): Promise<EstadoAccion & { recogido?: { nombre: string | null; esDueno: boolean | null } }> {
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("finalizar_cita_con_consumo", {
     p_cita_id: citaId,
@@ -331,8 +332,10 @@ export async function finalizarCita(
   });
 
   if (error) return { error: traducirError(error) };
-  revalidatePath("/estetica");
-  return { error: null };
+  // QA S27: la pantalla pinta «Recogió» con lo que quedó guardado, sin revalidatePath (repintaba la página
+  // antes de responder y «Recogió: —» se quedaba unos segundos). La agenda se lee fresca al volver a ella.
+  const { data } = await supabase.from("citas_estetica").select("recogido_por_nombre, recogido_por_es_dueno").eq("id", citaId).maybeSingle();
+  return { error: null, recogido: { nombre: (data?.recogido_por_nombre as string | null) ?? recogidoPorNombre, esDueno: (data?.recogido_por_es_dueno as boolean | null) ?? recogidoPorEsDueno } };
 }
 
 // ── Agendar: cotizar y completar los datos del perro ahí mismo ───────

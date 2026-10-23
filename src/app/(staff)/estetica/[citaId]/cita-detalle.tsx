@@ -79,6 +79,8 @@ export function CitaDetalle({
   const zona = useZonaNegocio();
   const router = useRouter();
   const [estado, setEstado] = useState(estadoInicial);
+  // Quién recogió: lo que devuelve el servidor al cerrar la cita, al momento (QA S27).
+  const [recogido, setRecogido] = useState({ nombre: recogidoPorNombre, esDueno: recogidoPorEsDueno });
   const [error, setError] = useState<string | null>(null);
   const cargando = useEspera();
   const ctl = useControlVersion("citas_estetica", citaId, version);
@@ -279,6 +281,7 @@ export function CitaDetalle({
       setError(res.error);
       return;
     }
+    if (res.recogido) setRecogido(res.recogido);
     setEstado("finalizada");
     setFinalizando(false);
   }
@@ -379,7 +382,7 @@ export function CitaDetalle({
       {estado === "finalizada" && (
         <p className="text-sm text-n-600">
           {esStandalone
-            ? `Recogió: ${recogidoPorNombre ?? "—"}${recogidoPorEsDueno === false ? " (persona autorizada, no el dueño)" : ""}`
+            ? `Recogió: ${recogido.nombre ?? "—"}${recogido.esDueno === false ? " (persona autorizada, no el dueño)" : ""}`
             : "Cerrada junto con la estancia ligada."}
         </p>
       )}

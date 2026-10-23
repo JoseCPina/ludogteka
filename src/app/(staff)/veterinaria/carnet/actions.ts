@@ -8,14 +8,34 @@ import { negocioActual, urlDelNegocio } from "@/lib/negocio/actual";
 import { nuevoToken } from "@/lib/reporte/enlaces";
 import { traducirError } from "../../reservas/traducir-error";
 import type { ResultadoAccion } from "@/lib/empleados/tipos";
-import type { ResultadoEnlace } from "@/lib/veterinaria/carnet";
+import type { CarnetCompleto, ResultadoEnlace } from "@/lib/veterinaria/carnet";
+import type { AplicacionConsulta } from "@/lib/veterinaria/aplicacion-consulta";
+import type { CargosConsulta } from "@/lib/veterinaria/cargos-consulta";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 const texto = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const o = (v: string) => (v === "" ? null : v);
 
 // QA S18 (N93): desde una consulta, la vacuna nace ligada a ESA consulta (su cargo y su sección la siguen
 // aunque la fecha de la consulta cambie).
-export async function registrarVacuna(perroId: string, fd: FormData, consultaId?: string): Promise<ResultadoAccion> {
+/**
+ * QA S27: desde una consulta, lo que se acaba de aplicar y los cargos de la consulta ya sincronizados viajan en la
+ * respuesta y la pantalla los pinta al momento (sin revalidatePath, que repintaba la consulta entera antes de responder).
+ */
+async function aplicadoEnConsulta(supabase: SupabaseClient, perroId: string, consultaId: string, tipo: "vacuna" | "desparasitacion", id: string | undefined): Promise<AplicacionConsulta> {
+  const [{ data: carnet }, { data: cargos }] = await Promise.all([
+    supabase.rpc("carnet_de_mascota", { p_perro_id: perroId }),
+    supabase.rpc("vet_consulta_cargos", { p_consulta: consultaId }),
+  ]);
+  const c = (carnet ?? null) as CarnetCompleto | null;
+  return {
+    consultaId,
+    ...(tipo === "vacuna" ? { vacuna: c?.vacunas?.find((v) => v.id === id) } : { desparasitacion: c?.desparasitaciones?.find((v) => v.id === id) }),
+    cargos: (cargos ?? null) as CargosConsulta | null,
+  };
+}
+
+export async function registrarVacuna(perroId: string, fd: FormData, consultaId?: string): Promise<ResultadoAccion & { aplicada?: AplicacionConsulta }> {
   if (!texto(fd, "biologico") && !texto(fd, "insumo_id")) return { error: "Escribe qué vacuna se aplicó." };
   if (!texto(fd, "fecha")) return { error: "Escribe la fecha de aplicación." };
   const supabase = await createSupabaseServerClient();
@@ -35,17 +55,18 @@ export async function registrarVacuna(perroId: string, fd: FormData, consultaId?
     p_descontar: fd.get("descontar") !== "no",
   });
   if (error) return { error: traducirError(error) };
-  revalidatePath(`/veterinaria/carnet/${perroId}`);
-  if (consultaId) revalidatePath(`/veterinaria/consulta/${consultaId}`);
   const aviso = (data as { aviso?: string } | null)?.aviso;
-  return { error: null, exito: aviso ? `Vacuna registrada. ${aviso}` : "Vacuna registrada en el carnet." };
+  const exito = aviso ? `Vacuna registrada. ${aviso}` : "Vacuna registrada en el carnet.";
+  if (consultaId) return { error: null, exito, aplicada: await aplicadoEnConsulta(supabase, perroId, consultaId, "vacuna", (data as { id?: string } | null)?.id) };
+  revalidatePath(`/veterinaria/carnet/${perroId}`);
+  return { error: null, exito };
 }
 
-export async function registrarDesparasitacion(perroId: string, fd: FormData, consultaId?: string): Promise<ResultadoAccion> {
+export async function registrarDesparasitacion(perroId: string, fd: FormData, consultaId?: string): Promise<ResultadoAccion & { aplicada?: AplicacionConsulta }> {
   if (!texto(fd, "producto") && !texto(fd, "insumo_id")) return { error: "Escribe qué producto se aplicó." };
   if (!texto(fd, "fecha")) return { error: "Escribe la fecha de aplicación." };
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc(consultaId ? "vet_consulta_registrar_desparasitacion" : "registrar_desparasitacion", {
+  const { data, error } = await supabase.rpc(consultaId ? "vet_consulta_registrar_desparasitacion" : "registrar_desparasitacion", {
     ...(consultaId ? { p_consulta: consultaId } : { p_perro_id: perroId }),
     p_tipo: texto(fd, "tipo") || "interna",
     p_producto: texto(fd, "producto") || null,
@@ -60,9 +81,10 @@ export async function registrarDesparasitacion(perroId: string, fd: FormData, co
     p_descontar: fd.get("descontar") !== "no",
   });
   if (error) return { error: traducirError(error) };
+  const exito = "Desparasitación registrada en el carnet.";
+  if (consultaId) return { error: null, exito, aplicada: await aplicadoEnConsulta(supabase, perroId, consultaId, "desparasitacion", (data as { id?: string } | null)?.id) };
   revalidatePath(`/veterinaria/carnet/${perroId}`);
-  if (consultaId) revalidatePath(`/veterinaria/consulta/${consultaId}`);
-  return { error: null, exito: "Desparasitación registrada en el carnet." };
+  return { error: null, exito };
 }
 
 export async function anularRegistroCarnet(perroId: string, tipo: "vacuna" | "desparasitacion", id: string, fd: FormData): Promise<ResultadoAccion> {

@@ -18,7 +18,7 @@ import { usaVeterinaria } from "@/lib/plan/modulos";
 import { faltantesAltaPerro, mensajeFaltantesAlta } from "@/lib/perros/alta-requisitos";
 import { leerCamposClinicos, mensajeErrorClinico, type CamposClinicos } from "@/lib/perros/ficha-clinica";
 
-export type EstadoPerroForm = { error: string | null; ok?: boolean; conflicto?: Conflicto | null };
+export type EstadoPerroForm = { error: string | null; ok?: boolean; conflicto?: Conflicto | null; /** updated_at que quedó al guardar (nueva versión del formulario). */ version?: string | null };
 
 function leerCampos(formData: FormData) {
   const nombre = String(formData.get("nombre") ?? "").trim();
@@ -65,7 +65,7 @@ async function faltantesDelFormulario(campos: ReturnType<typeof leerCampos>, for
   const sesion = await obtenerSesionConRol();
   const modulos = sesion?.modulos ?? [];
   const supabase = await createSupabaseServerClient();
-  const razas = modulos.includes("estetica") && campos.raza_id ? await cargarRazas(supabase, (await negocioActual()).id, { conGrupo: true }) : [];
+  const razas = modulos.includes("estetica") && campos.raza_id ? await cargarRazas(supabase, (await negocioActual()).id, { conGrupo: true, soloId: campos.raza_id }) : [];
   const faltan = faltantesAltaPerro(
     { ...campos, raza_propuesta: leerPropuestaJson(String(formData.get("raza_propuesta") ?? "")) },
     modulos,
@@ -205,8 +205,8 @@ async function altaPerro(clienteId: string, formData: FormData, volver: string |
 
   await descartarBorradorGuardado(supabase, "mascota_nueva", clienteId);
 
-  revalidatePath(`/clientes/${clienteId}`);
-  if (volver) redirect(hrefDeVuelta(volver, clienteId));
+  // Sin revalidatePath (QA S27): el redirect ya pinta la pantalla de destino con datos frescos (son dinámicas).
+  if (volver) redirect(hrefDeVuelta(volver, clienteId, data.id as string));
   redirect(`/perros/${data.id}?creado=1`);
 }
 
@@ -224,12 +224,12 @@ export async function actualizarPerro(
 
   const supabase = await createSupabaseServerClient();
   const control = controlDeFormulario(formData);
-  const { data, error } = await conControl(
+  const { data: guardado, error } = await conControl(
     supabase
       .from("perros")
       .update({ ...campos, ...(clinicos.campos ?? {}) })
       .eq("id", perroId)
-      .select("cliente_id")
+      .select("updated_at")
       .single(),
     control
   );
@@ -249,7 +249,7 @@ export async function actualizarPerro(
     if (errorNotas) return { error: mensajeErrorClinico(errorNotas) };
   }
 
-  revalidatePath(`/perros/${perroId}`);
-  if (data?.cliente_id) revalidatePath(`/clientes/${data.cliente_id}`);
-  return { error: null, ok: true };
+  // Sin revalidatePath (QA S27: repintaba la ficha entera antes de responder y «Guardando…» duraba 4 s): el
+  // formulario confirma al momento y pide router.refresh() para la cabecera; la ficha del cliente se lee fresca.
+  return { error: null, ok: true, version: (guardado?.updated_at as string | undefined) ?? null };
 }

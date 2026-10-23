@@ -18,6 +18,7 @@ import type { CargosConsulta as DatosCargos } from "@/lib/veterinaria/cargos-con
 import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 import type { Conflicto } from "@/lib/concurrencia/tipos";
 import { agregarDiagnosticoNegocio, buscarDiagnosticos, descartarBorrador, firmarConsulta, guardarBorrador, type DatosBorrador } from "../../expediente/actions";
+import { EVENTO_APLICACION_CONSULTA, type AplicacionConsulta } from "@/lib/veterinaria/aplicacion-consulta";
 
 type Valores = Record<string, string>;
 const NUMERICOS = ["peso_kg", "temperatura_c", "frecuencia_cardiaca", "frecuencia_respiratoria", "condicion_corporal", "tllc_seg"] as const;
@@ -48,6 +49,15 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
   const [errorFirma, setErrorFirma] = useState<string | null>(null);
   const [cargos, setCargos] = useState<DatosCargos | null>(cargosIniciales);
   // Lo que el servidor recalcula (p. ej. al aplicar una vacuna) reemplaza lo mostrado.
+  // QA S27: una vacuna o desparasitación registrada aquí trae sus cargos ya sincronizados en la respuesta.
+  useEffect(() => {
+    function alAplicar(e: Event) {
+      const d = (e as CustomEvent<AplicacionConsulta>).detail;
+      if (d.consultaId === consulta.id && d.cargos) setCargos(d.cargos);
+    }
+    window.addEventListener(EVENTO_APLICACION_CONSULTA, alAplicar);
+    return () => window.removeEventListener(EVENTO_APLICACION_CONSULTA, alAplicar);
+  }, [consulta.id]);
   const [cargosPrevios, setCargosPrevios] = useState(cargosIniciales);
   if (cargosIniciales !== cargosPrevios) {
     setCargosPrevios(cargosIniciales);

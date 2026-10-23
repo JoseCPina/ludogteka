@@ -26,6 +26,7 @@ import { ComprobantesPerro, type Comprobantes } from "./comprobantes-perro";
 import { ResumenRequisitos, type ResumenPerro } from "./resumen-requisitos";
 import { subirComprobantesAlta } from "./subir-comprobantes";
 import { cubierto, type RequisitoDePerro, type TipoRequisitoAlta } from "@/lib/alta/requisitos";
+import { MIN_CONTRASENA, TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
 
 export type PerroExistente = {
   id: string;
@@ -124,7 +125,7 @@ export function CompletarForm({
 
   async function entrar() {
     setError(null);
-    if (password.length < 6) return setError("La contraseña debe tener al menos 6 caracteres.");
+    if (password.length < MIN_CONTRASENA) return setError(TEXTO_CONTRASENA_CORTA);
 
     if (tieneCuenta) {
       // El teléfono ya lo sabemos: es el del expediente que abrió este
@@ -343,7 +344,7 @@ export function CompletarForm({
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                ayuda="Al menos 6 caracteres. Si se te olvida, recepción te la restablece por WhatsApp."
+                ayuda={`${TEXTO_CONTRASENA_CORTA} Si se te olvida, recepción te la restablece por WhatsApp.`}
               />
               <Field
                 label="Repite tu contraseña"

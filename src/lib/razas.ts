@@ -21,21 +21,22 @@ export async function cargarRazas(
   // de precio de cada raza es de cada negocio (razas_grupo). Se filtra a
   // mano porque el alta pública llega aquí con la secret key.
   negocioId: string,
-  opciones: { conGrupo?: boolean } = {}
+  // `soloId`: solo esa raza (validar un guardado no necesita el catálogo entero; QA S27, guardar un perro tardaba).
+  opciones: { conGrupo?: boolean; soloId?: string } = {}
 ): Promise<RazaOpcion[]> {
+  const razas = supabase
+    .from("razas")
+    .select("id, nombre, alias, es_desconocida, tamano_tipico_id, pelaje_tipico_id")
+    .is("deleted_at", null)
+    .order("nombre");
+  const grupos = supabase
+    .from("razas_grupo")
+    .select("raza_id, grupos_raza(nombre, depende_tamano, depende_pelaje)")
+    .eq("negocio_id", negocioId)
+    .is("deleted_at", null);
   const [{ data }, { data: gruposCrudo }] = await Promise.all([
-    supabase
-      .from("razas")
-      .select("id, nombre, alias, es_desconocida, tamano_tipico_id, pelaje_tipico_id")
-      .is("deleted_at", null)
-      .order("nombre"),
-    opciones.conGrupo
-      ? supabase
-          .from("razas_grupo")
-          .select("raza_id, grupos_raza(nombre, depende_tamano, depende_pelaje)")
-          .eq("negocio_id", negocioId)
-          .is("deleted_at", null)
-      : Promise.resolve({ data: null }),
+    opciones.soloId ? razas.eq("id", opciones.soloId) : razas,
+    opciones.conGrupo ? (opciones.soloId ? grupos.eq("raza_id", opciones.soloId) : grupos) : Promise.resolve({ data: null }),
   ]);
 
   const grupoDe = new Map(

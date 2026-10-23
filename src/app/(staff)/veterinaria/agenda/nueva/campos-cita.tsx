@@ -21,6 +21,7 @@ export function CamposCitaVet({
   hoy,
   fechaInicial,
   horaInicial,
+  propuestaPorMedico,
   horario,
 }: {
   tipos: Tipo[];
@@ -29,11 +30,14 @@ export function CamposCitaVet({
   hoy: string;
   fechaInicial: string;
   horaInicial: string;
+  /** La siguiente media hora libre de cada médico (QA S27): mientras no se teclee otra, la fecha y hora siguen al médico. */
+  propuestaPorMedico?: Record<string, { fecha: string; hora: string }>;
   horario: HorarioSemana | null;
 }) {
   const [tipo, setTipo] = useState("consulta");
   const [fecha, setFecha] = useState(fechaInicial);
   const [hora, setHora] = useState(horaInicial);
+  const [tocada, setTocada] = useState(false);
   const [duracion, setDuracion] = useState("");
   const duracionDelTipo = tipos.find((t) => t.clave === tipo)?.duracion_min ?? 30;
   const duracionMin = Number(duracion) > 0 ? Number(duracion) : duracionDelTipo;
@@ -48,15 +52,26 @@ export function CamposCitaVet({
             </option>
           ))}
         </Select>
-        <Select label="Médico" name="medico_id" defaultValue={medicoInicial} required>
+        <Select
+          label="Médico"
+          name="medico_id"
+          defaultValue={medicoInicial}
+          required
+          onChange={(e) => {
+            const suya = propuestaPorMedico?.[e.target.value];
+            if (tocada || !suya) return;
+            setFecha(suya.fecha);
+            setHora(suya.hora);
+          }}
+        >
           {medicos.map((m) => (
             <option key={m.id} value={m.id}>
               {m.nombre}
             </option>
           ))}
         </Select>
-        <Field label="Fecha" name="fecha" type="date" min={hoy} value={fecha} onChange={(e) => setFecha(e.target.value)} required />
-        <Field label="Hora" name="hora" type="time" value={hora} onChange={(e) => setHora(e.target.value)} required />
+        <Field label="Fecha" name="fecha" type="date" min={hoy} value={fecha} onChange={(e) => { setFecha(e.target.value); setTocada(true); }} required />
+        <Field label="Hora" name="hora" type="time" value={hora} onChange={(e) => { setHora(e.target.value); setTocada(true); }} required />
         <Field label="Duración en minutos (opcional)" name="duracion" type="number" min={5} max={480} value={duracion} onChange={(e) => setDuracion(e.target.value)} ayuda="Vacío: la del tipo de cita." />
       </div>
       <AvisoFueraDeHorario fecha={fecha} hora={hora} duracionMin={duracionMin} horario={horario} />

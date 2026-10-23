@@ -87,6 +87,9 @@ async function preciosDeSeleccion(ctx: Contexto, sel: Seleccion): Promise<{ plan
   return { plan, web, oferta };
 }
 
+// PeluDesk cobra a negocios en México: el cliente de Stripe nace con ese país (lo cambia «Datos de facturación»).
+const PAIS_CLIENTE = "MX";
+
 async function clienteStripe(ctx: Contexto): Promise<string> {
   // Se reutiliza el cliente guardado solo si es de este modo (una llave de
   // prueba no ve los clientes de producción, ni al revés) y sigue existiendo.
@@ -96,7 +99,11 @@ async function clienteStripe(ctx: Contexto): Promise<string> {
       if ((e as { code?: string }).code === "resource_missing") return null;
       throw e;
     });
-    if (c && !c.deleted) return guardado;
+    if (c && !c.deleted) {
+      // El país del Checkout sale de la dirección del cliente: sin ella Stripe proponía «Estados Unidos» (QA S27).
+      if (!c.address?.country) await stripe().customers.update(guardado, { address: { country: PAIS_CLIENTE } });
+      return guardado;
+    }
   }
   const { data: persona } = await ctx.supabase.auth.getUser();
   const c = await stripe().customers.create(
@@ -105,6 +112,8 @@ async function clienteStripe(ctx: Contexto): Promise<string> {
       // El correo interno de una cuenta por teléfono no recibe nada: Stripe pide uno en el Checkout.
       email: persona.user?.email && !esCorreoSintetico(persona.user.email) ? persona.user.email : undefined,
       metadata: { [METADATA_NEGOCIO]: ctx.negocio.id, peludesk_slug: ctx.negocio.slug },
+      // El país del Checkout sale de aquí: sin dirección Stripe proponía «Estados Unidos» (QA S27).
+      address: { country: PAIS_CLIENTE },
     },
     { idempotencyKey: `peludesk-cliente:${ctx.negocio.id}:${modoStripe()}:${guardado ?? "primero"}` }
   );

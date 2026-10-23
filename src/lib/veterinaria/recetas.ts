@@ -386,6 +386,11 @@ export function viaDeRenglon(renglon: string): string {
   return "";
 }
 
+/** Quita lo que queda colgando al final de un nombre cortado: «·», punto, coma, dos puntos, guion, viñeta. */
+export function sinSeparadorFinal(texto: string): string {
+  return texto.replace(/[\s·•.,;:|/\-–—]+$/u, "").trim();
+}
+
 export function medicamentosDeTratamiento(texto: string | null | undefined): MedicamentoDeTratamiento[] {
   if (!texto) return [];
   return texto
@@ -398,13 +403,15 @@ export function medicamentosDeTratamiento(texto: string | null | undefined): Med
       const frase = renglon.match(/(cada\s*\d+(?:[.,]\d+)?\s*(?:h|hr|hrs|horas?)|c\/\s*\d+\s*(?:h|hr|hrs|horas?)|\d+\s*(?:veces|vez)\s*(?:al|por|cada)?\s*d[ií]a|(?:una|un|dos|tres|cuatro)\s*(?:veces|vez)\s*(?:al|por|cada)?\s*d[ií]a)/i);
       const dur = duracionDeRenglon(renglon);
       const horas = frase ? horasDeFrecuencia(frase[1]) : null;
-      // El nombre es lo que va antes de la primera cantidad, frecuencia o duración.
-      const corte = renglon.search(/[,:(]|\s\d|\s(?:cada|c\/|por|durante|x)\s/i);
-      const producto = (corte > 0 ? renglon.slice(0, corte) : renglon).trim().slice(0, 80);
+      // El nombre es TODO lo que va antes de la primera cantidad, frecuencia o duración; nunca se corta en un
+      // separador («·», coma, dos puntos) y lo que quede colgando al final se limpia (QA S27, N119: quedaba
+      // «Medicamento ficticio ·»).
+      const corte = renglon.search(/\s\d|\s(?:cada|c\/|por|durante|x)\s|\s(?:una?|medi[oa]|dos|tres|cuatro)\s+(?:tabletas?|tabs?|comprimidos?|c[aá]psulas?|gotas?|ml|sobres?|piezas?)/i);
+      const producto = sinSeparadorFinal(corte > 0 ? renglon.slice(0, corte) : renglon).slice(0, 80);
       const toma = renglon.match(/(\d+(?:[.,]\d+)?\s*\/?\s*\d*\s*(?:tabletas?|tabs?|comprimidos?|c[aá]psulas?|gotas?|ml|sobres?|piezas?))/i);
       const dosis = toma ? toma[1].replace(/\s+/g, " ").trim() : "";
       const cantidad = dosis ? numeroInicial(dosis) : null;
-      const antes = toma && toma.index !== undefined ? renglon.slice(0, toma.index).replace(/[,\s]+$/, "").trim() : "";
+      const antes = toma && toma.index !== undefined ? sinSeparadorFinal(renglon.slice(0, toma.index)) : "";
       return {
         base: antes || producto,
         producto,

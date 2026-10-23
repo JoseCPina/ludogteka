@@ -5,7 +5,7 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { Desplegable } from "@/components/formulario-accion";
 import { etiquetaEspecie } from "@/lib/veterinaria/buscar";
-import { fechaLocalDeInstante, formatearFecha, formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
+import { fechaLocalDeInstante, formatearFecha, hoyNegocio } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { SECCIONES_CONSULTA, TIPOS_CITA, etiquetaBandera, type DetalleConsulta } from "@/lib/veterinaria/expediente";
 import { AccionesFirmada, AnularItem } from "../../expediente/anular-item";
@@ -13,7 +13,7 @@ import { CapturarResultado, SubirAdjunto } from "../../expediente/captura";
 import { EditorConsulta } from "./editor-consulta";
 import { UsoDictado } from "./uso-dictado";
 import { CargosConsulta } from "./cargos-consulta";
-import { QuitarAplicacion } from "./quitar-aplicacion";
+import { AplicacionesConsulta } from "./aplicaciones-consulta";
 import type { CargosConsulta as DatosCargos } from "@/lib/veterinaria/cargos-consulta";
 import { vetPuede } from "@/lib/veterinaria/permisos";
 import { cargarMedicos, cargarProductosConLotes, miMedico as cargarMiMedico } from "@/lib/veterinaria/lotes";
@@ -165,28 +165,15 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
 
       <section className="rounded-lg border border-n-200 bg-white p-4" data-vacunas-consulta aria-labelledby="t-vacunas-consulta">
         <h2 id="t-vacunas-consulta" className="font-semibold text-n-900">Vacunas y desparasitación</h2>
-        {vacunasDelDia.length + desparasitacionesDelDia.length === 0 ? (
-          <p className="mt-1 text-sm text-n-600">En esta consulta no se aplicó ninguna vacuna ni desparasitación.</p>
-        ) : (
-          <ul className="mt-2 flex flex-col gap-1.5 text-sm text-n-800">
-            {vacunasDelDia.map((v) => (
-              <li key={v.id} data-vacuna-consulta>
-                <b>Vacuna:</b> {v.biologico}
-                {v.lote ? ` · lote ${v.lote}` : ""}
-                {v.proxima_dosis ? ` · próxima ${formatearFechaCalendario(v.proxima_dosis)}` : ""}
-                {puedeQuitar && deEsta.has(v.id) && <> <QuitarAplicacion consultaId={id} perroId={c.perro_id} tipo="vacuna" id={v.id} nombre={v.biologico} delCarnet={!nacidas.has(v.id)} /></>}
-              </li>
-            ))}
-            {desparasitacionesDelDia.map((d2) => (
-              <li key={d2.id} data-desparasitacion-consulta>
-                <b>Desparasitación {d2.tipo === "ambas" ? "interna y externa" : d2.tipo}:</b> {d2.producto}
-                {d2.proxima_dosis ? ` · próxima ${formatearFechaCalendario(d2.proxima_dosis)}` : ""}
-                {puedeQuitar && deEsta.has(d2.id) && <> <QuitarAplicacion consultaId={id} perroId={c.perro_id} tipo="desparasitacion" id={d2.id} nombre={d2.producto} delCarnet={!nacidas.has(d2.id)} /></>}
-              </li>
-            ))}
-          </ul>
-        )}
-        <Link href={`/veterinaria/carnet/${c.perro_id}`} className="mt-2 inline-block text-sm font-semibold text-morado hover:underline">Ver el carnet completo</Link>
+        <AplicacionesConsulta
+          consultaId={id}
+          perroId={c.perro_id}
+          vacunas={vacunasDelDia}
+          desparasitaciones={desparasitacionesDelDia}
+          puedeQuitar={puedeQuitar}
+          deEsta={[...deEsta]}
+          nacidas={[...nacidas]}
+        />
       </section>
 
       {c.estado === "borrador" && puedeAtender === true ? (

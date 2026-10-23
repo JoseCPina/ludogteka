@@ -52,6 +52,77 @@ export default async function PerroPage({
   if (!sesion) return null;
 
   const supabase = await createSupabaseServerClient();
+  // QA S27 (rendimiento): esta ficha es a donde llega «Guardar perro» y hacía ~13 consultas una tras otra (4 a 7 s con
+  // la base lejos). Todo lo que solo depende del id sale A LA VEZ aquí; cada resultado se espera donde se usa.
+  // `Promise.resolve` arranca la consulta (un query builder de Supabase no sale hasta que alguien lo espera).
+  const conEstancias = usaEstancias(sesion.modulos);
+  const conContratos = sesion.modulos.includes("contratos");
+  const conVeterinaria = usaVeterinaria(sesion.modulos);
+  const soloLectura = sesion.rol === "estetica";
+  const pCitas = perrosConCitasEstetica(supabase, [id]);
+  const pPendientes = Promise.all([cargarPendientesEstancia(supabase, [id]), Promise.resolve(supabase.rpc("evaluacion_exigida"))]);
+  const pSeries = Promise.resolve(supabase.from("series_recurrentes").select("id, dias_semana, servicios(nombre)").eq("perro_id", id).is("deleted_at", null));
+  // El nombre y la versión vienen de la plantilla con la que se firmó,
+  // no del tipo "de ahora": si el contrato se renombró después, el
+  // historial sigue diciendo con cuál se firmó en su momento.
+  const pContratos = Promise.resolve(
+    supabase
+      .from("contratos")
+      .select(
+        "id, estado, storage_path, fecha_firma, created_at, contratos_internos(motivo_cancelacion, regenerar_motivo), plantillas_contrato(version, tipo_contrato_id, tipos_contrato(nombre)), bonos_clientes(servicios(nombre))"
+      )
+      .eq("perro_id", id)
+      .order("created_at", { ascending: false })
+  );
+  // Tipos que se le pueden generar (los que tienen versión publicada y no
+  // están archivados) y en qué estado va este perro con cada uno.
+  const pTiposContrato = Promise.all([
+    Promise.resolve(
+      supabase
+        .from("tipos_contrato")
+        .select("id, nombre, categorias_servicio, plantillas_contrato!inner(id)")
+        .is("deleted_at", null)
+        .eq("plantillas_contrato.activa", true)
+        .order("orden")
+        .order("nombre")
+    ),
+    Promise.resolve(supabase.from("perros_contrato_estado").select("tipo_contrato_id, estado").eq("perro_id", id)),
+  ]);
+  const pBitacora = Promise.resolve(
+    supabase.from("bitacora_entradas").select("id, tipo, nota, foto_path, created_at, notificado_whatsapp_at").eq("perro_id", id).order("created_at", { ascending: false })
+  );
+  const pMedicamentos = Promise.resolve(
+    supabase
+      .from("perro_medicamentos")
+      .select("id, medicamento, dosis, horario, fecha_inicio, fecha_fin, activo, notas")
+      .eq("perro_id", id)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+  );
+  // Ficha clínica: solo se consulta (y se muestra) con Veterinaria activa.
+  const pClinico = conVeterinaria
+    ? Promise.resolve(supabase.from("perros").select("especie, especie_detalle, microchip, folio_registro").eq("id", id).maybeSingle())
+    : Promise.resolve({ data: null });
+  // Notas clínicas: tabla propia, solo personal con permiso (si no puede, vienen vacías).
+  const pNotasClinicas = conVeterinaria
+    ? Promise.resolve(supabase.from("perros_notas_clinicas").select("notas").eq("perro_id", id).maybeSingle())
+    : Promise.resolve({ data: null });
+  const pContextoRaza = contextoRazaFormulario(supabase, id);
+  // Los paquetes de ESTE perro (el paquete es por perro: solo él lo usa).
+  // Estética no ve saldos ni vende: es información de caja.
+  const pPaquetes = soloLectura
+    ? Promise.resolve({ data: [] as never[] })
+    : Promise.resolve(
+        supabase
+          .from("bonos_clientes_estado")
+          .select("id, servicio_nombre, cantidad_total, cantidad_disponible, fecha_compra, fecha_vencimiento, estado, ilimitado")
+          .eq("perro_id", id)
+          .in("estado", ["activo", "agotado", "vencido"])
+          .order("fecha_compra", { ascending: false })
+          .limit(10)
+      );
+  // Notas y autor de la evaluación: tabla propia que solo lee el personal.
+  const pEvaluacion = Promise.resolve(supabase.from("perros_evaluaciones").select("notas, por").eq("perro_id", id).maybeSingle());
   const [
     { data: perro },
     razas,
@@ -128,70 +199,24 @@ export default async function PerroPage({
       .order("created_at"),
     supabase.from("perros_con_guarderia_hotel").select("perro_id").eq("perro_id", id).maybeSingle(),
   ]);
-  const citasDelPerro = await perrosConCitasEstetica(supabase, [id]);
+  const citasDelPerro = await pCitas;
   const aplicanRequisitos = aplicanRequisitosDe({ modulos: sesion.modulos, usaGuarderiaHotel: Boolean(usaGuarderiaHotel), tieneCitasEstetica: citasDelPerro.has(id) });
   // Qué le falta para guardería y hotel, aunque hoy solo use estética: es
   // justo el perro que llega a pedir guardería por primera vez.
   // Requisitos sanitarios, evaluación y celo/gestante solo si el negocio
   // tiene guardería u hotel; contratos, solo con su módulo.
-  const conEstancias = usaEstancias(sesion.modulos);
-  const conContratos = sesion.modulos.includes("contratos");
-  const [pendientesPorPerro, { data: evaluacionExigidaData }] = await Promise.all([
-    cargarPendientesEstancia(supabase, [id]),
-    supabase.rpc("evaluacion_exigida"),
-  ]);
+  const [pendientesPorPerro, { data: evaluacionExigidaData }] = await pPendientes;
   const pendientesEstancia = pendientesPorPerro.get(id) ?? [];
   const evaluacionExigida = evaluacionExigidaData !== false;
   const tiposContratoPendientes = new Set(
     pendientesEstancia.filter((p) => p.tipoContratoId).map((p) => p.tipoContratoId as string)
   );
 
-  const { data: seriesActivas } = await supabase
-    .from("series_recurrentes")
-    .select("id, dias_semana, servicios(nombre)")
-    .eq("perro_id", id)
-    .is("deleted_at", null);
+  const [{ data: seriesActivas }, { data: contratosCrudo }, [{ data: tiposCrudo }, { data: estadoPorTipo }], { data: bitacoraCrudo }, { data: medicamentosCrudo }] =
+    await Promise.all([pSeries, pContratos, pTiposContrato, pBitacora, pMedicamentos]);
 
-  // El nombre y la versión vienen de la plantilla con la que se firmó,
-  // no del tipo "de ahora": si el contrato se renombró después, el
-  // historial sigue diciendo con cuál se firmó en su momento.
-  const { data: contratosCrudo } = await supabase
-    .from("contratos")
-    .select(
-      "id, estado, storage_path, fecha_firma, created_at, contratos_internos(motivo_cancelacion, regenerar_motivo), plantillas_contrato(version, tipo_contrato_id, tipos_contrato(nombre)), bonos_clientes(servicios(nombre))"
-    )
-    .eq("perro_id", id)
-    .order("created_at", { ascending: false });
-
-  // Tipos que se le pueden generar (los que tienen versión publicada y no
-  // están archivados) y en qué estado va este perro con cada uno.
-  const [{ data: tiposCrudo }, { data: estadoPorTipo }] = await Promise.all([
-    supabase
-      .from("tipos_contrato")
-      .select("id, nombre, categorias_servicio, plantillas_contrato!inner(id)")
-      .is("deleted_at", null)
-      .eq("plantillas_contrato.activa", true)
-      .order("orden")
-      .order("nombre"),
-    supabase
-      .from("perros_contrato_estado")
-      .select("tipo_contrato_id, estado")
-      .eq("perro_id", id),
-  ]);
-
-  const { data: bitacoraCrudo } = await supabase
-    .from("bitacora_entradas")
-    .select("id, tipo, nota, foto_path, created_at, notificado_whatsapp_at")
-    .eq("perro_id", id)
-    .order("created_at", { ascending: false });
-
-  const { data: medicamentosCrudo } = await supabase
-    .from("perro_medicamentos")
-    .select("id, medicamento, dosis, horario, fecha_inicio, fecha_fin, activo, notas")
-    .eq("perro_id", id)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
-
+  // La foto se firma mientras llegan las dosis.
+  const pFoto = perro?.foto_path ? supabase.storage.from("perros-archivos").createSignedUrl(perro.foto_path, 60 * 60) : Promise.resolve(null);
   const idsMedicamentos = (medicamentosCrudo ?? []).map((m) => m.id);
   const { data: dosisCrudo } = idsMedicamentos.length
     ? await supabase
@@ -202,28 +227,9 @@ export default async function PerroPage({
     : { data: [] as { id: string; perro_medicamento_id: string; administrado_at: string; omitida: boolean; notas: string | null }[] };
 
   if (!perro) notFound();
-  // Ficha clínica: solo se consulta (y se muestra) con Veterinaria activa.
-  const conVeterinaria = usaVeterinaria(sesion.modulos);
-  const { data: clinicoCrudo } = conVeterinaria
-    ? await supabase
-        .from("perros")
-        .select("especie, especie_detalle, microchip, folio_registro")
-        .eq("id", id)
-        .maybeSingle()
-    : { data: null };
-  // Notas clínicas: tabla propia, solo personal con permiso (si no puede, vienen vacías).
-  const { data: notasClinicasFila } = conVeterinaria
-    ? await supabase.from("perros_notas_clinicas").select("notas").eq("perro_id", id).maybeSingle()
-    : { data: null };
-  const contextoRaza = await contextoRazaFormulario(supabase, perro.id);
+  const [{ data: clinicoCrudo }, { data: notasClinicasFila }, contextoRaza] = await Promise.all([pClinico, pNotasClinicas, pContextoRaza]);
 
-  let urlFoto: string | null = null;
-  if (perro.foto_path) {
-    const { data } = await supabase.storage
-      .from("perros-archivos")
-      .createSignedUrl(perro.foto_path, 60 * 60);
-    urlFoto = data?.signedUrl ?? null;
-  }
+  const urlFoto: string | null = (await pFoto)?.data?.signedUrl ?? null;
 
   const historial: RequisitoAplicadoFila[] = await Promise.all(
     (historialCrudo ?? []).map(async (fila) => {
@@ -264,21 +270,7 @@ export default async function PerroPage({
 
   const cliente = perro.clientes as unknown as { nombre: string } | null;
   const actualizarConId = actualizarPerro.bind(null, id);
-  const soloLectura = sesion.rol === "estetica";
-
-  // Los paquetes de ESTE perro (el paquete es por perro: solo él lo usa).
-  // Estética no ve saldos ni vende: es información de caja.
-  const { data: paquetesCrudo } = soloLectura
-    ? { data: [] as never[] }
-    : await supabase
-        .from("bonos_clientes_estado")
-        .select(
-          "id, servicio_nombre, cantidad_total, cantidad_disponible, fecha_compra, fecha_vencimiento, estado, ilimitado"
-        )
-        .eq("perro_id", id)
-        .in("estado", ["activo", "agotado", "vencido"])
-        .order("fecha_compra", { ascending: false })
-        .limit(10);
+  const { data: paquetesCrudo } = await pPaquetes;
   const paquetes = (paquetesCrudo ?? []) as {
     id: string;
     servicio_nombre: string;
@@ -293,12 +285,7 @@ export default async function PerroPage({
   // Requisitos de estancia: quién registró la evaluación (nombre, no
   // uuid) y qué alertas activas bloquean guardería/hotel según el
   // catálogo — la misma regla que aplica el trigger de estancias.
-  // Notas y autor de la evaluación: tabla propia que solo lee el personal.
-  const { data: evaluacionInterna } = await supabase
-    .from("perros_evaluaciones")
-    .select("notas, por")
-    .eq("perro_id", id)
-    .maybeSingle();
+  const { data: evaluacionInterna } = await pEvaluacion;
   const evaluadoPorId = (evaluacionInterna?.por as string | null | undefined) ?? null;
   const evaluadorNombre = evaluadoPorId
     ? (await nombresDePersonal(supabase, [evaluadoPorId], { esAdmin: sesion.rol === "admin", negocioId: await negocioIdActual() })).get(evaluadoPorId) ?? null

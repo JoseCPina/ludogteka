@@ -20,6 +20,7 @@ import { ComprobantesPerro, type Comprobantes } from "./comprobantes-perro";
 import { ResumenRequisitos, type ResumenPerro } from "./resumen-requisitos";
 import { subirComprobantesAlta } from "./subir-comprobantes";
 import type { TipoRequisitoAlta } from "@/lib/alta/requisitos";
+import { MIN_CONTRASENA, TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
 
 function Progreso({ pasos, paso }: { pasos: string[]; paso: number }) {
   return (
@@ -169,7 +170,7 @@ export function AltaForm({
   async function enviar() {
     setError(null);
     if (crearCuenta) {
-      if (password.length < 6) return setError("La contraseña debe tener al menos 6 caracteres.");
+      if (password.length < MIN_CONTRASENA) return setError(TEXTO_CONTRASENA_CORTA);
       if (password !== confirmacion) return setError("Las dos contraseñas no coinciden.");
     }
 
@@ -503,7 +504,7 @@ export function AltaForm({
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                ayuda="Al menos 6 caracteres. Si se te olvida, recepción te la restablece por WhatsApp."
+                ayuda={`${TEXTO_CONTRASENA_CORTA} Si se te olvida, recepción te la restablece por WhatsApp.`}
               />
               <Field
                 label="Repite tu contraseña"
