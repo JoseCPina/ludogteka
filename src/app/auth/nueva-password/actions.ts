@@ -6,6 +6,7 @@ import { rutaPorRol } from "@/lib/auth/rutas";
 import { esPlataforma, negocioActual } from "@/lib/negocio/actual";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { MARCA_CAMBIO_PASSWORD, debeCambiarPassword } from "@/lib/auth/cambio-obligatorio";
+import { MIN_CONTRASENA, TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
 
 export type EstadoNuevaPassword = { error: string | null };
 
@@ -16,8 +17,8 @@ export async function definirPassword(
   const password = String(formData.get("password") ?? "");
   const confirmacion = String(formData.get("confirmacion") ?? "");
 
-  if (password.length < 6) {
-    return { error: "La contraseña debe tener al menos 6 caracteres." };
+  if (password.length < MIN_CONTRASENA) {
+    return { error: TEXTO_CONTRASENA_CORTA };
   }
   if (password !== confirmacion) {
     return { error: "Las contraseñas no coinciden." };

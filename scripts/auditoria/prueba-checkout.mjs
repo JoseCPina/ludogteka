@@ -6,11 +6,11 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 // prueba.ts importa "@/lib/formato" (alias de Next): para Node se apunta al archivo real.
-const formato = pathToFileURL(new URL("../../src/lib/formato.ts", import.meta.url).pathname).href;
+const formato = new URL("../../src/lib/formato.ts", import.meta.url).href;
 const dir = mkdtempSync(join(tmpdir(), "prueba-"));
 const archivo = join(dir, "prueba.ts");
 writeFileSync(archivo, readFileSync(new URL("../../src/lib/cobro/prueba.ts", import.meta.url), "utf8").replace("@/lib/formato", formato));
-const { finDePrueba, diasDePrueba, textoCheckout, AVISO_COBRO_MENTEO } = await import(pathToFileURL(archivo).href);
+const { finDePrueba, diasDePrueba, textoCheckout, AVISO_COBRO_MENTEO, CHECKOUT_FIJO } = await import(pathToFileURL(archivo).href);
 
 let mal = 0;
 const igual = (a, b, t) => { if (JSON.stringify(a) === JSON.stringify(b)) console.log(`  ✔ ${t}`); else { mal++; console.log(`  ✘ ${t}: salió ${JSON.stringify(a)} y debía ${JSON.stringify(b)}`); } };
@@ -48,5 +48,9 @@ ok(AVISO_COBRO_MENTEO === "El cobro aparece como MENTEO, la empresa que opera Pe
 ok(!/No se te cobra hoy/.test(textoCheckout(null, MEXICO)) && /Se cobra hoy/.test(textoCheckout(null, MEXICO)), "sin prueba dice que se cobra hoy");
 ok(t.length < 1200, "cabe en los 1,200 caracteres de Stripe");
 
+// QA S27: el Checkout sale en español de Latinoamérica, solo con tarjeta y sin ofrecer Link.
+igual(CHECKOUT_FIJO.locale, "es-419", "Checkout en es-419");
+igual(CHECKOUT_FIJO.payment_method_types, ["card"], "solo tarjeta");
+igual(CHECKOUT_FIJO.wallet_options, { link: { display: "never" } }, "Link apagado en la sesión");
 console.log(mal ? `\n${mal} HALLAZGO(S)` : "\nSin hallazgos.");
 process.exit(mal ? 1 : 0);

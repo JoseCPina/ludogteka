@@ -4,6 +4,7 @@ import { esperarConTope } from "@/lib/ui/espera";
 import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ export function CheckoutForm({
   fechaSalida,
   version = null,
   pertenenciasIniciales,
+  cobroHref,
 }: {
   estanciaId: string;
   esHotel: boolean;
@@ -30,12 +32,16 @@ export function CheckoutForm({
   /** updated_at de la estancia al cargar (QA N43). */
   version?: string | null;
   pertenenciasIniciales: Pertenencia[];
+  /** QA S27: a dónde se cobra la cuenta al terminar el check-out. */
+  cobroHref?: string;
 }) {
   const router = useRouter();
   // Cada pertenencia se confirma a mano (o todas de un toque con «Entregué todo»). Se guardan al confirmar la salida.
   const [pertenencias, setPertenencias] = useState(() => pertenenciasIniciales.map((p) => ({ ...p, devuelto: false })));
   const [motivoSinEntrega, setMotivoSinEntrega] = useState("");
   const [salidaActual, setSalidaActual] = useState(fechaSalida);
+  // QA S27: al terminar, el siguiente paso (cobrar la cuenta) se ofrece al momento, sin esperar a que se repinte la página.
+  const [terminado, setTerminado] = useState(false);
   const [versionActual, setVersionActual] = useState(version);
   const [versionVista, setVersionVista] = useState(version);
   if (version !== versionVista) {
@@ -97,7 +103,19 @@ export function CheckoutForm({
       setError(res.error);
       return;
     }
+    setTerminado(true);
     router.refresh();
+  }
+  if (terminado) {
+    return (
+      <Alert variante="exito" titulo="Salida registrada">
+        {cobroHref ? (
+          <Link href={cobroHref} data-cobrar-cuenta className="mt-2 inline-flex min-h-11 items-center rounded-md bg-morado px-4 text-sm font-semibold text-white hover:bg-morado-oscuro">
+            Cobrar la cuenta
+          </Link>
+        ) : null}
+      </Alert>
+    );
   }
 
   return (

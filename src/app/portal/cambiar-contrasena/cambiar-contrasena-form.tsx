@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { cambiarMiContrasena, type EstadoCambioContrasena } from "./actions";
+import { MIN_CONTRASENA, TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
 
 const ESTADO_INICIAL: EstadoCambioContrasena = { error: null };
 
@@ -27,9 +28,9 @@ export function CambiarContrasenaForm({ obligatorio }: { obligatorio: boolean })
           type="password"
           autoComplete="new-password"
           required
-          minLength={6}
+          minLength={MIN_CONTRASENA}
           disabled={enviando}
-          ayuda="Al menos 6 caracteres."
+          ayuda={TEXTO_CONTRASENA_CORTA}
         />
         <Field
           label="Repite la contraseña nueva"
@@ -37,7 +38,7 @@ export function CambiarContrasenaForm({ obligatorio }: { obligatorio: boolean })
           type="password"
           autoComplete="new-password"
           required
-          minLength={6}
+          minLength={MIN_CONTRASENA}
           disabled={enviando}
         />
         <AccionesFormulario error={estado.error}>

@@ -12,6 +12,7 @@ import { enviarEventoPixel, pixelCargado } from "@/lib/peludesk/pixel-cliente";
 import { DOCUMENTOS_LEGALES } from "@/lib/peludesk/legal";
 import type { ParametroOrigen } from "@/lib/peludesk/origen";
 import { subdominioSugerido } from "@/lib/web-negocio/demo";
+import { MIN_CONTRASENA, TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
 
 export type InicialRegistro = { slug: string; negocio: string; ciudad: string; servicios: string[]; telefono: string };
 
@@ -100,7 +101,7 @@ export function RegistroForm({ origen, inicial, interno }: { origen: Partial<Rec
         <p className="text-sm text-n-600">Dejamos prendido solo eso; lo demás lo prendes cuando quieras.</p>
       </fieldset>
       <Field label="Teléfono" name="telefono" type="tel" inputMode="tel" autoComplete="tel" required defaultValue={v?.telefono} ayuda="A diez dígitos. Con él entras a PeluDesk. También te escribimos por WhatsApp para saber si necesitas ayuda con tu prueba; escribe BAJA y dejamos de hacerlo." />
-      <Field label="Contraseña" name="password" type="password" autoComplete="new-password" required minLength={8} ayuda="Al menos 8 caracteres." />
+      <Field label="Contraseña" name="password" type="password" autoComplete="new-password" required minLength={MIN_CONTRASENA} ayuda={TEXTO_CONTRASENA_CORTA} />
       {/* Campo trampa antibots: una persona no lo ve ni lo llena. Fuera del árbol de accesibilidad (aria-hidden
           en el contenedor y en el campo, inert, sin foco por teclado) y sin autocompletado del navegador ni de los
           gestores de contraseñas. */}

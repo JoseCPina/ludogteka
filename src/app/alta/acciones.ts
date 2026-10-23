@@ -11,6 +11,7 @@ import { negocioActual } from "@/lib/negocio/actual";
 import { cargarRequisitosAlta } from "@/lib/alta/requisitos";
 import { esEspecie, normalizarMicrochip } from "@/lib/perros/ficha-clinica";
 import type { DatosRazaPropuesta } from "@/lib/razas-propuesta";
+import { MIN_CONTRASENA, TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
 import type {
   ContratoPendiente,
   DatosAlta,
@@ -175,8 +176,8 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
   // El correo dejó de ser obligatorio: es un dato de contacto más. Si lo
   // escriben, tiene que ser uno de verdad; si no, no se pide.
   if (email && !email.includes("@")) return { error: "Ese correo no se ve bien. Revísalo o déjalo vacío." };
-  if (datos.crearCuenta && datos.password.length < 6) {
-    return { error: "La contraseña debe tener al menos 6 caracteres." };
+  if (datos.crearCuenta && datos.password.length < MIN_CONTRASENA) {
+    return { error: TEXTO_CONTRASENA_CORTA };
   }
   if (datos.perros.length === 0) return { error: "Agrega al menos un perro." };
   if (datos.perros.some((p) => !p.nombre.trim())) {
@@ -391,8 +392,8 @@ export async function completarExpediente(
     }
     userId = null; // ya está ligada: la función no tiene que ligar nada
   } else {
-    if (datos.password.length < 6) {
-      return { error: "La contraseña debe tener al menos 6 caracteres." };
+    if (datos.password.length < MIN_CONTRASENA) {
+      return { error: TEXTO_CONTRASENA_CORTA };
     }
 
     // El teléfono sale del expediente, no de lo que mande la pantalla: es

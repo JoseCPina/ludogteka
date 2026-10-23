@@ -6,6 +6,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getUserConReintento } from "@/lib/supabase/get-user";
 import { negocioActual } from "@/lib/negocio/actual";
 import { MARCA_CAMBIO_PASSWORD } from "@/lib/auth/cambio-obligatorio";
+import { MIN_CONTRASENA, TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
 
 export type EstadoCambioContrasena = { error: string | null };
 
@@ -15,7 +16,7 @@ export async function cambiarMiContrasena(
 ): Promise<EstadoCambioContrasena> {
   const password = String(formData.get("password") ?? "");
   const confirmacion = String(formData.get("confirmacion") ?? "");
-  if (password.length < 6) return { error: "La contraseña debe tener al menos 6 caracteres." };
+  if (password.length < MIN_CONTRASENA) return { error: TEXTO_CONTRASENA_CORTA };
   if (password !== confirmacion) return { error: "Las contraseñas no coinciden." };
 
   const supabase = await createSupabaseServerClient();

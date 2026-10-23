@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { negocioActual } from "@/lib/negocio/actual";
 import { normalizarTelefono } from "@/lib/telefono";
 import { correoSinteticoDeTelefono } from "@/lib/auth/identidad";
+import { MIN_CONTRASENA, TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
 
 export type ResultadoActivar = { error: string | null };
 
@@ -43,7 +44,7 @@ export async function leerInvitacionPortal(token: string) {
  * activan dos veces) y se libera si la cuenta no se pudo crear.
  */
 export async function activarCuentaPortal(token: string, password: string): Promise<ResultadoActivar> {
-  if (typeof password !== "string" || password.length < 8) return { error: "La contraseña debe tener al menos 8 caracteres." };
+  if (typeof password !== "string" || password.length < MIN_CONTRASENA) return { error: TEXTO_CONTRASENA_CORTA };
   if (password.length > 72) return { error: "La contraseña es demasiado larga." };
   const negocio = await negocioActual();
   const admin = createSupabaseAdminClient(negocio.id);

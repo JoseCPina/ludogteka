@@ -211,7 +211,7 @@ Abajo, en **Últimos revisados**, ves lo que ya se resolvió.
 2. Si se equivoca de contraseña, el aviso sale una vez junto al botón y su teléfono se queda escrito: solo vuelve a escribir la contraseña.
 3. Si la olvidó, la restableces tú desde su ficha. Si en tu negocio solo hay un admin (tú), el aviso de «¿Olvidaste tu contraseña?» del login ya no dice «pídele a un admin»: dice que el dueño del negocio la restablece desde la ficha del cliente, con el enlace a Clientes, y que si la que olvidó es la del dueño, escriba al WhatsApp de PeluDesk.
 4. Con esa contraseña temporal, al entrar el portal le pide escoger una nueva (**Guardar contraseña**) antes de seguir.
-5. Para cambiarla cuando quiera, en su portal toca **Cambiar mi contraseña**, debajo de **Tus datos**.
+5. Para cambiarla cuando quiera, en su portal toca **Cambiar mi contraseña**, debajo de **Tus datos**. Toda contraseña que escoge el dueño (al activar su cuenta, en el alta por link o al cambiarla) pide lo mismo: «Usa al menos 8 caracteres».
 
 Arriba del portal hay una sola barra fija con el nombre de tu negocio y **Salir**.
 
@@ -411,13 +411,13 @@ Al cancelar una cuenta en [Caja](/caja), marca la casilla para cancelar también
 2. Si hace falta, agrega cargos en **Aplicar cargo** y toca **Aplicar**.
 3. Las pertenencias salen sin palomear: confirma cada una con su casilla, o toca **Entregué todo** para marcarlas de un toque. Si confirmas la salida con alguna **sin entregar**, escribe el **Motivo de lo que no se entrega**: es obligatorio y queda registrado. Al terminar, la pantalla de salida lista lo que se devolvió y lo que no, con ese motivo.
 4. Escribe **Quién recoge al perro** y marca **Sí, es el dueño** o **No, persona autorizada**.
-5. Toca **Confirmar salida**.
+5. Toca **Confirmar salida**. Sale **Salida registrada** con el botón **Cobrar la cuenta**, que abre el cobro de esa reserva (también aparece en la pantalla de salida de un perro que ya salió).
 
 En hotel, si se queda más, toca **Extender la salida**, escoge la nueva salida y revisa en cuánto queda la cuenta antes de guardar. Si un perro de guardería sigue aquí después del cierre, puedes **Convertir en noche de hotel**.
 
 ## Cobrar
 
-1. Ve a [Caja](/caja) y toca su cuenta en **Cuentas abiertas de hoy**.
+1. Toca **Cobrar la cuenta** al terminar el check-out, o ve a [Caja](/caja) y toca su cuenta en **Cuentas abiertas de hoy**.
 2. Escoge el **Método**, el **Monto** y la **Propina** si hay. Para pagar con dos métodos, toca **+ Repartir en otro método**.
 3. Toca **Registrar cobro**.
 

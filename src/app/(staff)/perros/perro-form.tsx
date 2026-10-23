@@ -162,7 +162,7 @@ export function PerroForm({
       }}
       className="flex max-w-lg flex-col gap-4"
     >
-      {perroId && <CampoVersion versiones={[{ t: "perros", i: perroId, v: version }]} />}
+      {perroId && <CampoVersion versiones={[{ t: "perros", i: perroId, v: estado.version ?? version }]} />}
       {estado.conflicto && (
         <AvisoConflicto
           conflicto={estado.conflicto}
@@ -201,11 +201,12 @@ export function PerroForm({
         razas={razas}
         label={pideRaza ? "Raza (obligatoria)" : "Raza"}
         disabled={deshabilitado}
-        mostrarGrupo
+        mostrarGrupo={modulos.tiene("estetica")}
         valorId={valoresIniciales?.raza_id ?? null}
         valorTexto={valoresIniciales?.raza ?? ""}
         onElegida={alElegirRaza}
-        ayuda="De aquí sale el precio de estética. Si no está en la lista, usa «No la encuentro: agregar esta raza»."
+        // QA S27: el precio de estética solo se menciona si el negocio tiene Estética (un hotel no la tiene).
+        ayuda={`${modulos.tiene("estetica") ? "De aquí sale el precio de estética. " : ""}Si no está en la lista, usa «No la encuentro: agregar esta raza».`}
         propuestas={{
           modo: "personal",
           tamanos,

@@ -22,6 +22,7 @@ import {
 } from "../actions";
 
 import type { MedicoOpcion, ProductoConLotes } from "@/lib/veterinaria/lotes";
+import { avisarAplicacionConsulta, type AplicacionConsulta } from "@/lib/veterinaria/aplicacion-consulta";
 
 export type RequisitoOpcion = { id: string; etiqueta: string };
 
@@ -77,9 +78,11 @@ function ProductoYLote({ productos, etiquetaProducto, nombreTexto }: { productos
 function useDuplicadoCarnet() {
   const [duplicado, setDuplicado] = useState<string | null>(null);
   const envolver =
-    (accion: (fd: FormData) => Promise<{ error: string | null; exito?: string }>) =>
+    (accion: (fd: FormData) => Promise<{ error: string | null; exito?: string; aplicada?: AplicacionConsulta }>) =>
     async (fd: FormData) => {
       const r = await accion(fd);
+      // QA S27: dentro de una consulta, la sección y los cargos se pintan con la respuesta, sin esperar al repintado.
+      if (!r.error && r.aplicada) avisarAplicacionConsulta(r.aplicada);
       if (r.error && /^Ya hay una (vacuna|desparasitación)/.test(r.error)) {
         // Se devuelve el error tal cual (el formulario no se reinicia ni cierra el desplegable); este componente
         // lo cambia por el aviso con sus dos salidas.

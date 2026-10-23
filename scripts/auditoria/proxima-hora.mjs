@@ -33,5 +33,12 @@ ok(proximaHoraDisponible(ahora("13:05"), ZONA, abre("09:00", "19:00"), 14, "2026
 // Cambio de día en UTC: 18:30 y 21:30 locales ya son el día siguiente en UTC.
 ok(proximaHoraDisponible(ahora("18:30"), ZONA, abre("09:00", "22:00")) === "2026-10-14T19:00", "18:30 con cierre a las 22:00: hoy a las 19:00 (día del negocio, no el de UTC)");
 ok(proximaHoraDisponible(ahora("21:30"), ZONA, abre("09:00", "23:00")) === "2026-10-14T22:00", "21:30 con cierre a las 23:00: hoy a las 22:00");
+console.log("── Salta las horas ya ocupadas de quien atiende (QA S27)");
+const cita = (de, a, dia = 14) => ({ inicio: new Date(Date.UTC(2026, 9, dia, Number(de.slice(0, 2)) + 6, Number(de.slice(3)))).toISOString(), fin: new Date(Date.UTC(2026, 9, dia, Number(a.slice(0, 2)) + 6, Number(a.slice(3)))).toISOString() });
+ok(proximaHoraDisponible(ahora("13:05"), ZONA, abre("09:00", "19:00"), 14, undefined, [cita("13:30", "14:30")]) === "2026-10-14T14:30", "13:30 ocupada hasta las 14:30: propone las 14:30");
+ok(proximaHoraDisponible(ahora("13:05"), ZONA, abre("09:00", "19:00"), 14, undefined, [cita("14:00", "15:00")], 60) === "2026-10-14T15:00", "servicio de 60 min no cabe a las 13:30 antes de una cita a las 14:00");
+ok(proximaHoraDisponible(ahora("13:05"), ZONA, abre("09:00", "19:00"), 14, undefined, [cita("14:00", "15:00")], 30) === "2026-10-14T13:30", "de 30 min sí cabe a las 13:30");
+ok(proximaHoraDisponible(ahora("13:05"), ZONA, abre("09:00", "19:00"), 14, undefined, [cita("13:30", "19:00")]) === "2026-10-15T09:00", "tarde llena: mañana a la apertura");
+ok(proximaHoraDisponible(ahora("13:05"), ZONA, abre("09:00", "19:00"), 14, "2026-10-26", [cita("09:00", "10:00", 26)]) === "2026-10-26T10:00", "día pedido con la primera hora ocupada: la siguiente libre");
 console.log(fallos ? `\nHALLAZGOS: ${fallos}` : "\n✔ Sin hallazgos.");
 process.exit(fallos ? 1 : 0);

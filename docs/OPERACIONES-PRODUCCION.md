@@ -281,6 +281,14 @@ Los videos (`scripts/tutoriales/`, mapa en `docs/TUTORIALES.md`) se graban SOLO 
 
 **Cómo se opera:** admin da el permiso en `/admin/permisos`; «Ajustar días usados» en el pase (ficha del cliente, Guardería → Pases, Caja → Pases, expediente del perro y check-in), «Este paquete ya lleva días usados» al vender, «Deshacer este check-in» en el check-in de un perro adentro con pase. Nunca SQL manual para esto.
 
+## 23 de octubre de 2026 — Nombre de medicamento con «·» colgando en una receta emitida (migración `20261130000000`)
+
+**Qué pasó:** en la QA S27, «Emitir receta» desde una consulta firmada de «PRUEBA QA S27 Mascota Vet» (negocio de pruebas «PRUEBA QA Onboarding Vet S16», `c101bf5c-…`) prellenó el medicamento como «PRUEBA QA S27 Medicamento ficticio ·» y así se emitió la receta N.º 10 (`4eeca2c6-…`). La N.º 9 (`91280d38-…`) ya decía «PRUEBA QA S27 Medicamento ficticio». Ningún negocio real tenía líneas con un separador colgando (revisado por la API REST: 16 líneas vivas en producción, una sola con «·» al final).
+
+**Qué hace la migración:** agrega la acción `limpiar_nombre_receta` a `plataforma_eventos` y, con los disparadores de inmutabilidad de `vet_recetas` y `vet_receta_lineas` apagados SOLO dentro de su bloque, quita del final de `vet_receta_lineas.producto` el «·», punto, coma, dos puntos, viñeta o guion colgando, recalcula la huella (`_vet_receta_hash_migracion`, la misma fórmula de `vet_receta_hash`) y deja un evento por receta con el nombre de antes, el de después y las dos huellas. Nada más de la receta cambia. En desarrollo no encontró ninguna.
+
+**Conteos esperados:** idénticos antes y después salvo `plataforma_eventos` (+1 por la receta reparada). **Reversa:** el evento trae `producto_antes` y `hash_antes` de cada línea.
+
 ## 12 de octubre de 2026 — La conciliación solo considera pagos que PeluDesk originó (migración `20261012000000`)
 
 **Por qué:** la conciliación con Mercado Pago trataba TODO pago aprobado de la cuenta como propio de PeluDesk. Una cuenta de Mercado Pago recibe también pagos de otros orígenes (otras tiendas, transferencias, otras terminales, cobros personales) y esos salían en Caja → Conciliación y en «Necesita atención» como «Pago aprobado en Mercado Pago, sin cobro en la caja» (en Ludogteka: pago 182066052075 por $27,355.58 y pago 182084767547 por $1,089.00).

@@ -177,7 +177,8 @@ export default async function AgendaPage({
           </div>
           <div className="flex flex-wrap gap-2 [&>*]:flex-1 sm:[&>*]:flex-none">
             <BotonNuevoCliente tipo="estetica" />
-            <Link href="/estetica/nueva">
+            {/* N116: el día que se está viendo viaja al formulario (el formulario ignora un día pasado). */}
+            <Link href={vista === "dia" ? `/estetica/nueva?fecha=${fechaAncla}` : "/estetica/nueva"}>
               <Button type="button" className="w-full whitespace-nowrap" tabIndex={-1}>
                 Agendar
               </Button>

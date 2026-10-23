@@ -7,6 +7,8 @@
 const PASO_MIN = 30;
 
 export type HorarioDia = { abre: boolean; apertura: string | null; cierre: string | null };
+/** Una cita viva de la persona elegida (instantes ISO): la hora propuesta no se le encima. */
+export type Ocupado = { inicio: string; fin: string };
 
 function fechaLocal(iso: string, zona: string): string {
   const p = new Intl.DateTimeFormat("en-CA", { timeZone: zona, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(iso));
@@ -40,8 +42,24 @@ function minutosLocales(iso: string, zona: string): number {
  * @param horarioDe horario de una fecha (AAAA-MM-DD); sin configurar, 09:00 a 19:00.
  * @returns "AAAA-MM-DDTHH:MM" (hora del negocio), listo para un datetime-local.
  */
-export function proximaHoraDisponible(ahoraISO: string, zona: string, horarioDe: (fecha: string) => HorarioDia | null, dias = 14, desdeFecha?: string): string {
+export function proximaHoraDisponible(
+  ahoraISO: string,
+  zona: string,
+  horarioDe: (fecha: string) => HorarioDia | null,
+  dias = 14,
+  desdeFecha?: string,
+  ocupados: Ocupado[] = [],
+  duracionMin = PASO_MIN
+): string {
   const hoy = fechaLocal(ahoraISO, zona);
+  // Las citas de la persona, por fecha local y en minutos: [inicio, fin) (una que pasa la medianoche cubre hasta el fin del día).
+  const porFecha = new Map<string, [number, number][]>();
+  for (const o of ocupados) {
+    const f = fechaLocal(o.inicio, zona);
+    const fin = fechaLocal(o.fin, zona) === f ? minutosLocales(o.fin, zona) : 24 * 60;
+    porFecha.set(f, [...(porFecha.get(f) ?? []), [minutosLocales(o.inicio, zona), fin]]);
+  }
+  const libre = (fecha: string, ini: number) => !(porFecha.get(fecha) ?? []).some(([a, b]) => ini < b && ini + duracionMin > a);
   // Si piden un día futuro, se busca desde ese día (a la apertura); un día pasado cuenta como hoy.
   const inicioBusqueda = desdeFecha && desdeFecha > hoy ? desdeFecha : hoy;
   const ahora = minutosLocales(ahoraISO, zona);
@@ -55,6 +73,8 @@ export function proximaHoraDisponible(ahoraISO: string, zona: string, horarioDe:
     // Primera media hora estrictamente posterior a este momento (en hoy) o a la apertura (otro día).
     let inicio = Math.ceil(apertura / PASO_MIN) * PASO_MIN;
     if (fecha === hoy) inicio = Math.max(inicio, (Math.floor(ahora / PASO_MIN) + 1) * PASO_MIN);
+    // QA S27: la siguiente media hora LIBRE de quien atiende, no solo dentro del horario.
+    while (inicio < cierre && !libre(fecha, inicio)) inicio += PASO_MIN;
     if (inicio < cierre) return `${fecha}T${aTexto(inicio)}`;
     primeraAbierta ??= `${fecha}T${aTexto(Math.ceil(apertura / PASO_MIN) * PASO_MIN)}`;
   }

@@ -31,6 +31,13 @@ igual(medicamentosDeTratamiento("Medicamento · dosis · vía · frecuencia · d
 igual(medicamentosDeTratamiento("Medicamento · dosis · vía · frecuencia · duración:\n").length, 0, "N97: la guía con renglón vacío tampoco");
 igual(medicamentosDeTratamiento("Medicamento · dosis · vía · frecuencia · duración: Amoxicilina 250 mg, 1 tableta cada 12 horas por 7 días")[0]?.base, "Amoxicilina 250 mg", "N97: lo escrito después de la guía sí se toma");
 igual(medicamentosDeTratamiento("Medicamento · dosis · vía · frecuencia · duración:\nMeloxicam 1 mg, 1 tableta cada 24 h por 5 días")[0]?.indicaciones, "1 tableta cada 24 horas por 5 días", "N97: indicaciones solo con lo capturado");
+// QA S27 (N119): el nombre es todo hasta la primera cantidad; nunca se corta en «·» ni queda colgando.
+const s27 = medicamentosDeTratamiento("PRUEBA QA S27 Medicamento ficticio · 1 tableta · oral · cada 12 h · 5 días")[0];
+igual([s27.producto, s27.base, s27.dosis, s27.via, s27.frecuencia_horas, s27.duracion_dias], ["PRUEBA QA S27 Medicamento ficticio", "PRUEBA QA S27 Medicamento ficticio", "1 tableta", "Oral", "12", "5"], "N119: «Medicamento ficticio · 1 tableta · …» sin «·» colgando");
+igual(medicamentosDeTratamiento("Meloxicam (Metacam) 1 mg cada 24 h")[0].producto, "Meloxicam (Metacam)", "N119: el paréntesis no corta el nombre");
+igual(medicamentosDeTratamiento("Amoxicilina con ácido clavulánico, 1 tableta cada 12 h")[0].producto, "Amoxicilina con ácido clavulánico", "N119: la coma no corta; se limpia al final");
+igual(medicamentosDeTratamiento("Meloxicam, una tableta al día")[0].producto, "Meloxicam", "N119: «una tableta» escrita también es cantidad");
+igual(medicamentosDeTratamiento("Gotas óticas.")[0].producto, "Gotas óticas", "N119: punto colgando se limpia");
 // N109: concentración a Presentación, «N días» a Duración y la vía; lo que no se entiende queda vacío.
 const amo = medicamentosDeTratamiento("Amoxicilina 250 mg, 1 tableta VO cada 12 horas, 7 días")[0];
 igual([amo.presentacion, amo.dosis, amo.via, amo.frecuencia_horas, amo.duracion_dias], ["250 mg", "1 tableta", "Oral", "12", "7"], "N109: Amoxicilina 250 mg … 7 días");

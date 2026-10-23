@@ -1,6 +1,7 @@
 "use client";
 
-import { startTransition, useActionState, useRef, useState } from "react";
+import { startTransition, useActionState, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
@@ -45,6 +46,11 @@ export function ClienteForm({
   // Se manda a mano (sin `action=`): así React no vacía los campos y, si otra persona cambió al cliente, lo
   // escrito sigue ahí para «guardar los míos encima».
   const ultimo = useRef<FormData | null>(null);
+  // QA S27: la acción ya no repinta la ficha antes de responder; la cabecera se pone al día después, sin bloquear.
+  const router = useRouter();
+  useEffect(() => {
+    if (estado.ok && clienteId) router.refresh();
+  }, [estado, clienteId, router]);
 
   return (
     <form method="post"
@@ -56,7 +62,7 @@ export function ClienteForm({
         startTransition(() => formAction(fd));
       }}
     >
-      {clienteId && <CampoVersion versiones={[{ t: "clientes", i: clienteId, v: version ?? null }]} />}
+      {clienteId && <CampoVersion versiones={[{ t: "clientes", i: clienteId, v: estado.version ?? version ?? null }]} />}
       {estado.conflicto && (
         <AvisoConflicto
           conflicto={estado.conflicto}

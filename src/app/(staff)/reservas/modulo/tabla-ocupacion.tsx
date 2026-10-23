@@ -60,7 +60,7 @@ export function TablaOcupacion({
   modulo: ModuloEstancia;
 }) {
   return (
-    <section className="flex flex-col gap-3">
+    <section className="flex min-w-0 flex-col gap-3">
       <div>
         <h2 className="text-lg font-bold text-n-900">Ocupación de la casa</h2>
         <p className="text-sm text-n-600">
@@ -69,7 +69,34 @@ export function TablaOcupacion({
           hotel — un día puede tener lugar de día y estar lleno de noche.
         </p>
       </div>
-      <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
+      {/* QA S27: en el celular la tabla se recortaba. Ahí va un renglón por día con las dos columnas apiladas;
+          la tabla, desde sm, y con su propio scroll horizontal si no cabe. */}
+      <ul className="flex flex-col divide-y divide-n-200 rounded-lg border border-n-200 bg-white sm:hidden" data-ocupacion-movil>
+        {filas.map((d) => {
+          const { hotel, guarderia } = desglose(d);
+          return (
+            <li key={d.fecha} className="flex flex-col gap-1.5 px-4 py-3">
+              <p className="text-n-900">
+                {formatearFechaCalendario(d.fecha)} <span className="text-n-500">({formatearDiaSemana(d.fecha)})</span>
+              </p>
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                <span className="text-xs font-bold uppercase tracking-wide text-n-600">Diurno (toda la casa)</span>
+                <CeldaDisponibilidad ocupado={d.ocupado_diurno} cupo={d.cupo_diurno} disponible={d.disponible_diurno} />
+              </div>
+              <p className="-mt-1 text-xs text-n-500">
+                <span className={modulo.categoria === "guarderia" ? "font-bold text-n-700" : ""}>{guarderia} guardería</span>
+                {" · "}
+                <span className={modulo.categoria === "hotel" ? "font-bold text-n-700" : ""}>{hotel} hotel</span>
+              </p>
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                <span className="text-xs font-bold uppercase tracking-wide text-n-600">Nocturno (hotel)</span>
+                <CeldaDisponibilidad ocupado={d.ocupado_nocturno} cupo={d.cupo_nocturno} disponible={d.disponible_nocturno} />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="hidden max-w-full overflow-x-auto rounded-lg border border-n-200 bg-white sm:block">
         <table className="w-full min-w-[560px] border-collapse">
           <thead>
             <tr>

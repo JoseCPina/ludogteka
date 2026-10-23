@@ -5,12 +5,14 @@ import { armarClientesBuscables } from "@/lib/clientes/buscables";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { cargarRazas } from "@/lib/razas";
 import { negocioIdActual, zonaActual } from "@/lib/negocio/actual";
-import { proponerHora } from "@/lib/estetica/proponer-hora";
+import { fechaPedidaValida, proponerHoraPorPersona } from "@/lib/estetica/proponer-hora";
+import { hoyNegocio, sumarDiasFecha, instanteDeHoraLocal } from "@/lib/formato";
 import { cargarHorarioSemana } from "@/lib/estetica/horario-semana";
 import { AgendarForm } from "./agendar-form";
 import { leerTodo } from "@/lib/supabase/paginar";
 
-export default async function AgendarPage() {
+export default async function AgendarPage({ searchParams }: { searchParams: Promise<{ fecha?: string }> }) {
+  const { fecha: fechaParam } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
 
@@ -57,9 +59,26 @@ export default async function AgendarPage() {
       supabase.from("perro_requisitos_sanitarios_estado").select("perro_id, tipo_requisito_id").in("estado", ["vencida", "sin_registro"]).order("perro_id").order("tipo_requisito_id")
     ),
   ]);
-  // La hora que se propone al abrir: la siguiente en punto de hoy que no ha pasado (o la primera de mañana).
+  // La hora que se propone al abrir: la siguiente media hora que no ha pasado y que quien atiende tiene libre
+  // (QA S27), del día de ?fecha= si viene de la agenda (N116) o de hoy.
   const zona = await zonaActual();
-  const horaInicial = await proponerHora(supabase, zona);
+  const fechaPedida = fechaPedidaValida(fechaParam, zona);
+  const desde = fechaPedida ?? hoyNegocio(zona);
+  const { data: citasVivas } = await leerTodo<{ empleado_id: string | null; inicio: string; fin: string }>(() =>
+    supabase
+      .from("citas_estetica")
+      .select("empleado_id, inicio, fin")
+      .is("deleted_at", null)
+      .not("estado", "in", "(cancelada,no_llego)")
+      .not("empleado_id", "is", null)
+      .gte("inicio", instanteDeHoraLocal(`${desde}T00:00`, zona))
+      .lt("inicio", instanteDeHoraLocal(`${sumarDiasFecha(desde, 15)}T00:00`, zona))
+      .order("inicio")
+      .order("id")
+  );
+  const ocupados: Record<string, { inicio: string; fin: string }[]> = {};
+  for (const e of (empleados ?? []) as { id: string }[]) ocupados[e.id] = [];
+  for (const c of citasVivas ?? []) if (c.empleado_id) (ocupados[c.empleado_id] ??= []).push({ inicio: c.inicio, fin: c.fin });
   const horarioSemana = await cargarHorarioSemana(supabase, zona);
   const [{ data: tamanosCrudo }, { data: pelajesCrudo }] = await Promise.all([
     supabase.from("tamanos_categoria").select("id, etiqueta, clave").is("deleted_at", null).order("orden"),
@@ -124,6 +143,10 @@ export default async function AgendarPage() {
     duracion_minutos: (detalle.get(s.id as string)?.duracion_minutos as number | null) ?? 60,
   }));
 
+  const propuestas = await proponerHoraPorPersona(supabase, zona, ocupados, fechaPedida, serviciosConMarca[0]?.duracion_minutos ?? 60);
+  // Busca desde el día pedido; si ese día ya no le queda lugar a alguien, su propuesta pasa al siguiente día con lugar.
+  const horaInicial = propuestas.__todos;
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -155,6 +178,7 @@ export default async function AgendarPage() {
           pelajes={((pelajesCrudo ?? []) as { id: string; etiqueta: string; clave: string }[]).filter((p) => ["corto", "medio", "largo"].includes(p.clave))}
           razas={razas}
           horaInicial={horaInicial}
+          horaPorEmpleado={propuestas}
           horarioSemana={horarioSemana}
           puedeAsignarGrupo={tienePermiso(sesion, "tarifas")}
           puedeExcepcion={tienePermiso(sesion, "excepciones_reserva")}

@@ -11,7 +11,13 @@ import { descartarBorradorGuardado } from "@/lib/borradores/servidor";
 import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
 import { conflictoDeError } from "@/lib/concurrencia/tipos";
 
-export type EstadoClienteForm = { error: string | null; ok?: boolean; conflicto?: import("@/lib/concurrencia/tipos").Conflicto | null };
+export type EstadoClienteForm = {
+  error: string | null;
+  ok?: boolean;
+  conflicto?: import("@/lib/concurrencia/tipos").Conflicto | null;
+  /** El updated_at que quedó al guardar: el formulario lo usa como su nueva versión sin esperar a repintarse. */
+  version?: string | null;
+};
 
 function leerCampos(formData: FormData) {
   const nombre = String(formData.get("nombre") ?? "").trim();
@@ -94,10 +100,9 @@ async function altaCliente(formData: FormData, volver: string | null): Promise<E
   }
 
   // El alta quedó guardada: el borrador (si había) ya no hace falta.
-  await descartarBorradorGuardado(supabase, "cliente_nuevo", "");
-  await descartarBorradorGuardado(supabase, "cliente_nuevo", "corta");
+  await Promise.all([descartarBorradorGuardado(supabase, "cliente_nuevo", ""), descartarBorradorGuardado(supabase, "cliente_nuevo", "corta")]);
 
-  revalidatePath("/clientes");
+  // Sin revalidatePath (QA S27): el redirect ya pinta la pantalla de destino con datos frescos (son dinámicas).
   if (volver) redirect(`/clientes/${data.id}/perros/nuevo?volver=${encodeURIComponent(volver)}`);
   redirect(`/clientes/${data.id}?creado=1`);
 }
@@ -113,10 +118,12 @@ export async function actualizarCliente(
 
   const supabase = await createSupabaseServerClient();
   const control = controlDeFormulario(formData);
-  const { error } = await conControl(supabase
+  const { data: guardado, error } = await conControl(supabase
     .from("clientes")
     .update({ nombre, telefono: validado.telefono, email })
-    .eq("id", id), control);
+    .eq("id", id)
+    .select("updated_at")
+    .single(), control);
 
   if (error) {
     const conflicto = conflictoDeError(error);
@@ -143,9 +150,9 @@ export async function actualizarCliente(
     return { error: "Guardamos los datos, pero no las notas internas. Intenta de nuevo." };
   }
 
-  revalidatePath("/clientes");
-  revalidatePath(`/clientes/${id}`);
-  return { error: null, ok: true };
+  // Sin revalidatePath (QA S27: repintaba la ficha entera antes de responder y «Guardando…» duraba 2 a 4 s): el
+  // formulario confirma al momento y pide router.refresh() para la cabecera.
+  return { error: null, ok: true, version: (guardado?.updated_at as string | undefined) ?? null };
 }
 
 export async function darDeBajaCliente(id: string) {
