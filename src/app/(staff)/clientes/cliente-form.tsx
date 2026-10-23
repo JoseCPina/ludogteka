@@ -12,6 +12,7 @@ import { useModulos } from "@/components/modulos-contexto";
 import { BorradorFormulario } from "@/lib/borradores/borrador-formulario";
 import type { EstadoClienteForm } from "./actions";
 import { CampoVersion, conForzar } from "@/components/concurrencia/campo-version";
+import { versionMasReciente } from "@/lib/concurrencia/tipos";
 import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 
 const ESTADO_INICIAL: EstadoClienteForm = { error: null };
@@ -62,7 +63,7 @@ export function ClienteForm({
         startTransition(() => formAction(fd));
       }}
     >
-      {clienteId && <CampoVersion versiones={[{ t: "clientes", i: clienteId, v: estado.version ?? version ?? null }]} />}
+      {clienteId && <CampoVersion versiones={[{ t: "clientes", i: clienteId, v: versionMasReciente(estado.version, version) }]} />}
       {estado.conflicto && (
         <AvisoConflicto
           conflicto={estado.conflicto}

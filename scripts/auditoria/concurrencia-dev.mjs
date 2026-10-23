@@ -10,7 +10,9 @@
 //   - la segunda persona guarda con la versión que leyó: entra;
 //   - la primera guarda con la versión VIEJA: la base no guarda (409 / PT409) y dice quién y qué cambió;
 //   - guardar encima (forzar) entra y la bitácora lo anota como sobrescritura;
-//   - la misma persona con una versión vieja de algo que solo ella cambió: entra (no es conflicto);
+//   - la misma persona con una versión vieja de algo que solo ella cambió DESDE LA MISMA PESTAÑA: entra;
+//   - N120: la misma persona desde OTRA pestaña (encabezado x-peludesk-pestana distinto): NO entra (PT409) y el
+//     detalle dice `misma_persona` (el aviso: «Cambiaste … desde otra pestaña hace N s»);
 //   - sin versión (otro camino que no la manda): entra igual que antes.
 // Además: mover fechas con un total distinto al que se vio se rechaza, y las pantallas (dos navegadores) muestran el
 // aviso con el nombre de quien cambió, «Recargar con sus cambios» y «Guardar los míos encima» con confirmación.
@@ -96,6 +98,21 @@ async function caso({ nombre, tabla, id, campo, valor1, valor2, filtro = "id", c
     comprobar(!rm.error, `${nombre}: la misma persona con una versión vieja de sus propios cambios entra${rm.error ? ` (${rm.error.code})` : ""}`);
     const rs = await w(uno, valor2);
     comprobar(!rs.error, `${nombre}: sin versión entra como siempre`);
+    // N120: el control es por versión, no por persona. La misma persona en la pestaña A guarda; la pestaña B, con la
+    // versión de antes, NO guarda y el detalle dice que fue ella misma; la pestaña A, con esa misma versión, sí.
+    const pestanaA = crypto.randomUUID();
+    const pestanaB = crypto.randomUUID();
+    const { data: f2 } = await SB.from(tabla).select("updated_at").eq(filtro, id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
+    const verVieja = [{ t: tabla, i: clave, v: f2.updated_at }];
+    await new Promise((r) => setTimeout(r, 30));
+    await conEnc(w(uno, valor1), { "x-peludesk-pestana": pestanaA });
+    const rB = await conEnc(w(uno, valor2), { ...enc(verVieja), "x-peludesk-pestana": pestanaB });
+    comprobar(rB.error?.code === "PT409", `${nombre}: la misma persona desde OTRA pestaña con la versión vieja NO guarda (${rB.error?.code ?? "entró"})`);
+    let detB = {};
+    try { detB = JSON.parse(rB.error?.details ?? "{}"); } catch { detB = {}; }
+    comprobar(detB.misma_persona === true, `${nombre}: el detalle dice que la cambió la misma persona (misma_persona ${detB.misma_persona})`);
+    const rA = await conEnc(w(uno, valor2), { ...enc(verVieja), "x-peludesk-pestana": pestanaA });
+    comprobar(!rA.error, `${nombre}: desde la MISMA pestaña con esa versión entra${rA.error ? ` (${rA.error.code})` : ""}`);
   } finally {
     await SB.from(tabla).update({ [campo]: original }).eq(filtro, id);
   }
@@ -420,6 +437,46 @@ async function pantallas() {
     await pb.waitForTimeout(500);
     await pb.waitForLoadState("networkidle");
     comprobar((await pb.locator('input[name="nombre"]').inputValue()) === `${c0.nombre} A`, "Cliente: «Recargar con sus cambios» enseña lo de la otra persona");
+
+    console.log("\n4a. N120: el mismo admin en dos pestañas del mismo navegador sobre el mismo cliente");
+    {
+      const p1 = await ctxA.newPage();
+      const p2 = await ctxA.newPage();
+      await p1.goto(`${BASE}/clientes/${clienteP}`, { waitUntil: "networkidle" });
+      await p2.goto(`${BASE}/clientes/${clienteP}`, { waitUntil: "networkidle" });
+      await p2.locator('input[name="nombre"]').fill(`${c0.nombre} Pestaña 2`);
+      await guardarCliente(p2);
+      await p2.getByText("Cambios guardados").first().waitFor({ timeout: 30000 });
+      // La misma pestaña guarda otra vez con lo que ya devolvió el guardado: no es conflicto.
+      await p2.locator('input[name="nombre"]').fill(`${c0.nombre} Pestaña 2b`);
+      await guardarCliente(p2);
+      // Se espera a que ese segundo guardado llegue a la base (o al aviso, si lo hubiera).
+      let guardado2b = false;
+      for (let i = 0; i < 40 && !guardado2b; i++) {
+        guardado2b = (await SB.from("clientes").select("nombre").eq("id", clienteP).single()).data?.nombre === `${c0.nombre} Pestaña 2b`;
+        if (!guardado2b && (await p2.locator("[data-conflicto-version]").isVisible().catch(() => false))) break;
+        if (!guardado2b) await p2.waitForTimeout(500);
+      }
+      comprobar(guardado2b && !(await p2.locator("[data-conflicto-version]").isVisible().catch(() => false)), "Dos pestañas: la misma pestaña vuelve a guardar sin aviso");
+      // La pestaña vieja.
+      await p1.locator('input[name="nombre"]').fill(`${c0.nombre} Pestaña 1`);
+      await guardarCliente(p1);
+      const aviso1 = p1.locator("[data-conflicto-version]");
+      await aviso1.waitFor({ timeout: 30000 }).catch(() => {});
+      comprobar(await aviso1.isVisible(), "Dos pestañas: la pestaña vieja del MISMO admin NO guarda y enseña el aviso");
+      const t1 = (await p1.locator("[data-conflicto-texto]").textContent().catch(() => "")) ?? "";
+      comprobar(/^Cambiaste .+ desde otra pestaña hace/.test(t1), `Dos pestañas: el aviso dice «Cambiaste … desde otra pestaña hace …» («${t1.slice(0, 90)}»)`);
+      comprobar(await p1.locator("[data-recargar-conflicto]").isVisible() && (await p1.locator("[data-guardar-encima]").isVisible()), "Dos pestañas: ofrece «Recargar con sus cambios» y «Guardar los míos encima»");
+      const { data: cp } = await SB.from("clientes").select("nombre").eq("id", clienteP).single();
+      comprobar(cp.nombre === `${c0.nombre} Pestaña 2b`, "Dos pestañas: en la base sigue lo de la otra pestaña");
+      await p1.locator("[data-guardar-encima]").click();
+      await p1.locator("[data-guardar-encima-confirmar]").click();
+      await p1.waitForFunction(() => !document.querySelector("[data-conflicto-version]"), null, { timeout: 30000 }).catch(() => {});
+      const { data: cp2 } = await SB.from("clientes").select("nombre").eq("id", clienteP).single();
+      comprobar(cp2.nombre === `${c0.nombre} Pestaña 1`, "Dos pestañas: «Sí, guardar los míos encima» guarda");
+      await p1.close();
+      await p2.close();
+    }
 
     console.log("\n4b. Pantallas: dos navegadores sobre el horario del mismo empleado");
     {

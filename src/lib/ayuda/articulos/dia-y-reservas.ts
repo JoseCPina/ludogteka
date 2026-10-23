@@ -550,7 +550,7 @@ Lo que escribiste sigue en la pantalla.
 - **Recargar con sus cambios**: la pantalla trae lo que guardó la otra persona. Revisa y, si hace falta, vuelve a hacer tu cambio.
 - **Guardar los míos encima**: pide que confirmes con **Sí, guardar los míos encima**, porque se pierden los cambios de la otra persona. Queda anotado quién lo hizo.
 
-Si los dos cambios fueron tuyos (por ejemplo, en otra pestaña), no sale el aviso.
+También te avisa si el cambio lo hiciste tú mismo en **otra pestaña**: el aviso dice «Cambiaste esta cita desde otra pestaña hace 40 s: …» con los mismos dos botones. Lo que se cuida es la versión que tiene tu pantalla, no quién la cambió. Lo único que no avisa es lo que hiciste en esta misma pestaña (por ejemplo, aplicar una vacuna y luego guardar la consulta).
 
 ## Mover fechas
 

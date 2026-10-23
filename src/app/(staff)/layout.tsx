@@ -14,6 +14,7 @@ import { cargarTutorialesVisibles } from "@/lib/tutoriales";
 import { PwaNegocio } from "@/components/pwa/pwa-negocio";
 import { AvisoInstalar } from "@/components/pwa/instalar";
 import { PedirNombre } from "@/components/personal/pedir-nombre";
+import { PestanaConcurrencia } from "@/components/concurrencia/pestana";
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const sesion = await obtenerSesionConRol();
@@ -59,6 +60,8 @@ export default async function StaffLayout({ children }: { children: React.ReactN
       ayuda={conAyuda ? articulosDelNegocio(sesion.modulos).map((a) => ({ slug: a.slug, rutas: a.rutas })) : undefined}
     >
       <PwaNegocio usuarioId={sesion.user.id} />
+      {/* N120: el id de esta pestaña viaja en cada petición (control de concurrencia por pestaña). */}
+      <PestanaConcurrencia />
       {/* N24: una cuenta del personal sin nombre lo escribe una vez antes de seguir. */}
       {!sesion.nombreCompleto && ["admin", "recepcion", "estetica"].includes(sesion.rol) ? (
         <PedirNombre />
