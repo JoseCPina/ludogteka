@@ -5,6 +5,7 @@ import { faltantesAltaPerro } from "@/lib/perros/alta-requisitos";
 import { startTransition, useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CampoVersion, conForzar } from "@/components/concurrencia/campo-version";
+import { versionMasReciente } from "@/lib/concurrencia/tipos";
 import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 import { useAccionConTope } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
@@ -162,7 +163,7 @@ export function PerroForm({
       }}
       className="flex max-w-lg flex-col gap-4"
     >
-      {perroId && <CampoVersion versiones={[{ t: "perros", i: perroId, v: estado.version ?? version }]} />}
+      {perroId && <CampoVersion versiones={[{ t: "perros", i: perroId, v: versionMasReciente(estado.version, version) }]} />}
       {estado.conflicto && (
         <AvisoConflicto
           conflicto={estado.conflicto}

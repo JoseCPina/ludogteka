@@ -152,7 +152,10 @@ export async function actualizarCliente(
 
   // Sin revalidatePath (QA S27: repintaba la ficha entera antes de responder y «Guardando…» duraba 2 a 4 s): el
   // formulario confirma al momento y pide router.refresh() para la cabecera.
-  return { error: null, ok: true, version: (guardado?.updated_at as string | undefined) ?? null };
+  // La versión que se devuelve es la FINAL: `cliente_notas_guardar` vuelve a tocar el cliente (su updated_at cambia
+  // después del UPDATE de arriba); con la de arriba, el siguiente guardado de esta misma pestaña chocaba (N120).
+  const { data: final } = await supabase.from("clientes").select("updated_at").eq("id", id).maybeSingle();
+  return { error: null, ok: true, version: ((final?.updated_at ?? guardado?.updated_at) as string | undefined) ?? null };
 }
 
 export async function darDeBajaCliente(id: string) {

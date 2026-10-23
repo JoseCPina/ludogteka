@@ -251,5 +251,7 @@ export async function actualizarPerro(
 
   // Sin revalidatePath (QA S27: repintaba la ficha entera antes de responder y «Guardando…» duraba 4 s): el
   // formulario confirma al momento y pide router.refresh() para la cabecera; la ficha del cliente se lee fresca.
-  return { error: null, ok: true, version: (guardado?.updated_at as string | undefined) ?? null };
+  // La versión FINAL: `perro_notas_clinicas_guardar` vuelve a tocar el perro después del UPDATE (N120).
+  const { data: final } = clinicos.campos ? await supabase.from("perros").select("updated_at").eq("id", perroId).maybeSingle() : { data: null };
+  return { error: null, ok: true, version: ((final?.updated_at ?? guardado?.updated_at) as string | undefined) ?? null };
 }

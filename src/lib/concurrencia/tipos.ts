@@ -7,6 +7,16 @@
 
 export const ENCABEZADO_VERSION = "x-peludesk-version";
 export const ENCABEZADO_FORZAR = "x-peludesk-forzar";
+/**
+ * N120: el id de la pestaña del navegador que hace la petición (lo pone `PestanaConcurrencia` en cada fetch y el
+ * cliente de Supabase del servidor lo pasa a la base). La base solo perdona lo que hizo la misma persona DESDE LA
+ * MISMA PESTAÑA: el mismo admin en otra pestaña sí recibe el aviso.
+ */
+export const ENCABEZADO_PESTANA = "x-peludesk-pestana";
+
+export function esPestanaValida(v: string | null | undefined): v is string {
+  return typeof v === "string" && /^[0-9a-f-]{36}$/.test(v);
+}
 
 export type VersionLeida = { t: string; i: string; v: string | null | undefined };
 
@@ -21,6 +31,8 @@ export type Conflicto = {
   versionActual: string | null;
   /** Lo que la acción agrega (p. ej. «total $900» de la cuenta). */
   extra?: string[];
+  /** N120: lo cambió la misma persona que intenta guardar, desde otra pestaña. */
+  mismaPersona?: boolean;
 };
 
 /** Lo que cada edición que puede chocar devuelve. */
@@ -28,6 +40,13 @@ export type ConConflicto = { conflicto?: Conflicto | null };
 
 export function version(t: string, i: string | null | undefined, v: string | null | undefined): VersionLeida[] {
   return i && v ? [{ t, i, v }] : [];
+}
+
+/** La más reciente de dos versiones (la que devolvió el guardado y la que trajo el repintado de la página). */
+export function versionMasReciente(a: string | null | undefined, b: string | null | undefined): string | null {
+  if (!a) return b ?? null;
+  if (!b) return a;
+  return Date.parse(a) >= Date.parse(b) ? a : b;
 }
 
 export function valorEncabezado(control?: ControlVersion | null): string | null {
@@ -158,6 +177,8 @@ export function haceCuanto(iso: string | null, ahora = Date.now()): string {
  */
 export function textoConflicto(c: Conflicto, registro: string, zona?: string, ahora = Date.now()): string {
   const quien = c.quien?.trim() || "Alguien más";
+  // N120: «Cambiaste esta cita desde otra pestaña hace 40 s: …».
+  const sujeto = c.mismaPersona ? `Cambiaste ${registro} desde otra pestaña` : `${quien} cambió ${registro}`;
   const cambios = { ...(c.cambios ?? {}) } as Record<string, unknown>;
   const valor = (campo: string) => { const par = cambios[campo]; return Array.isArray(par) ? par[1] : par; };
   // QA S19 (N99): si cambió la fecha o las horas, se dice el horario nuevo completo: «ahora es el 21 oct de 12:00 a 2:00 p. m.».
@@ -176,7 +197,7 @@ export function textoConflicto(c: Conflicto, registro: string, zona?: string, ah
   const unicos = [...new Set(partes)].slice(0, 4);
   const todo = [...(horario ? [horario] : []), ...unicos, ...(c.extra ?? [])];
   const que = todo.length ? `: ${todo.join(", ")}` : "";
-  const frase = `${quien} cambió ${registro} ${haceCuanto(c.cuando ?? c.versionActual, ahora)}${que}`.replace(/\s+$/, "");
+  const frase = `${sujeto} ${haceCuanto(c.cuando ?? c.versionActual, ahora)}${que}`.replace(/\s+$/, "");
   // Un solo cierre: si la frase ya termina en punto («p. m.»), no se agrega otro.
   return `${/[.!?]$/.test(frase) ? frase : `${frase}.`} ¿Recargar con sus cambios o guardar los tuyos encima?`;
 }
@@ -225,5 +246,6 @@ export function conflictoDeError(error: { code?: string; details?: string | null
     cuando: (d.cuando as string | null) ?? (d.version_actual as string | null) ?? null,
     cambios: (d.cambios as Conflicto["cambios"]) ?? {},
     versionActual: (d.version_actual as string | null) ?? null,
+    mismaPersona: d.misma_persona === true,
   };
 }

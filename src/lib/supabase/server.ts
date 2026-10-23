@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies, headers } from "next/headers";
 import { ENCABEZADOS_NEGOCIO } from "@/lib/negocio/resolver";
 import { ENCABEZADO_AREA, areaDeEncabezado, opcionesCookieSesion, type AreaSesion } from "@/lib/supabase/area";
+import { ENCABEZADO_PESTANA, esPestanaValida } from "@/lib/concurrencia/tipos";
 
 // Toda petición a la base lleva el negocio que resolvió el middleware por
 // el dominio (x-negocio-id): la base decide qué se ve según la membresía
@@ -13,12 +14,19 @@ export async function createSupabaseServerClient(area?: AreaSesion) {
   const encabezados = await headers();
   const negocioId = encabezados.get(ENCABEZADOS_NEGOCIO.id);
   const areaDeSesion = area ?? areaDeEncabezado(encabezados.get(ENCABEZADO_AREA));
+  // N120: la pestaña del navegador que hizo la petición viaja a la base (control de concurrencia por pestaña).
+  const pestana = encabezados.get(ENCABEZADO_PESTANA);
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      global: { headers: negocioId ? { [ENCABEZADOS_NEGOCIO.id]: negocioId } : {} },
+      global: {
+        headers: {
+          ...(negocioId ? { [ENCABEZADOS_NEGOCIO.id]: negocioId } : {}),
+          ...(esPestanaValida(pestana) ? { [ENCABEZADO_PESTANA]: pestana } : {}),
+        },
+      },
       cookieOptions: opcionesCookieSesion(areaDeSesion),
       cookies: {
         getAll() {
