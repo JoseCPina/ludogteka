@@ -361,7 +361,7 @@ try {
     // QA R41: «Guardar los míos encima» dice exactamente qué pasa. La base calcula en el conflicto qué campos de la otra
     // persona pisaría este guardado (sustituye) y cuáles deja (conserva); la pantalla lo dice con esos datos.
     console.log("\n3b. QA R41: qué sustituye y qué conserva «guardar encima»");
-    const { textoGuardarEncima, conflictoDeError } = await import("../../src/lib/concurrencia/tipos.ts");
+    const { textoGuardarEncima, textoSiGuardasEncima, conflictoDeError } = await import("../../src/lib/concurrencia/tipos.ts");
     const tel = `56${String(Date.now()).slice(-8)}`;
     const { data: cg, error: ecg } = await SB.from("clientes").insert({ nombre: `Encima ${sufijo}`, telefono: tel, email: `encima-${sufijo}@ejemplo.mx` }).select("id, updated_at").single();
     if (ecg) hallazgo(`cliente de prueba: ${ecg.message}`);
@@ -393,6 +393,13 @@ try {
         // Un conjunto (horario del empleado, precios) se reemplaza completo y lo dice.
         const t4 = textoGuardarEncima({ tabla: "horario_empleado", id: "x", quien: quienDos, cuando: null, cambios: {}, versionActual: null });
         comprobar(/Se guarda lo de esta pantalla completo y se sustituye lo que capturó/.test(t4), `conjunto: «${t4}»`);
+        // QA S31: el primer aviso ya dice lo mismo, en condicional y con el mismo cálculo.
+        const s1 = textoSiGuardasEncima(c1);
+        comprobar(s1 === `Si guardas los tuyos encima: se guardaría tu cambio de nombre. Lo que puso ${quienDos} en correo se conservaría.`, `primer aviso, solo lo suyo: «${s1}»`);
+        const s2 = c2 ? textoSiGuardasEncima(c2) : "";
+        comprobar(new RegExp(`Lo que puso ${quienDos} en correo se sustituiría por lo de esta pantalla\.`).test(s2), `primer aviso, formulario completo: «${s2}»`);
+        const s4 = textoSiGuardasEncima({ tabla: "horario_empleado", id: "x", quien: quienDos, cuando: null, cambios: {}, versionActual: null });
+        comprobar(/^Si guardas los tuyos encima: se guardaría lo de esta pantalla completo y se sustituiría lo que capturó/.test(s4), `primer aviso, conjunto: «${s4}»`);
       } finally {
         await SB.from("clientes").update({ deleted_at: new Date().toISOString() }).eq("id", cg.id);
       }
@@ -407,7 +414,9 @@ try {
 
   if (process.env.SOLO !== "base") await pantallas().catch((e) => hallazgo(`las pantallas tronaron: ${e.message.split("\n")[0]}`));
 } finally {
-  for (const id of creadas) await SB.from("estancias").update({ estado: "cancelada" }).eq("id", id);
+  // Baja lógica (cancelar exige un rol y con la llave de servicio fallaba callado: se acumulaban reservas vivas del
+  // mismo perro y la fecha al azar terminaba chocando con estancias_perro_sin_traslape).
+  if (creadas.length) await SB.from("estancias").update({ deleted_at: new Date().toISOString() }).in("id", creadas).is("deleted_at", null);
   if (medicoTemporal) await SB.from("medicos_veterinarios").update({ deleted_at: new Date().toISOString() }).eq("id", medicoTemporal);
   console.log(hallazgos.length ? `\n✘ ${hallazgos.length} hallazgo(s).` : "\n✔ Sin hallazgos.");
   process.exitCode = hallazgos.length ? 1 : 0;
@@ -461,8 +470,14 @@ async function pantallas() {
     comprobar((await pa.locator('input[name="nombre"]').inputValue()) === `${c0.nombre} A`, "Cliente: lo escrito sigue en el campo");
     let { data: cb } = await SB.from("clientes").select("nombre").eq("id", clienteP).single();
     comprobar(cb.nombre === `${c0.nombre} B`, "Cliente: en la base sigue lo de la otra persona");
-    // Guardar encima pide confirmación.
+    // QA S31: el primer aviso ya dice qué se conservaría y qué se sustituiría, y coincide con la confirmación.
+    const siEncima = ((await pa.locator("[data-si-guardas-encima]").textContent().catch(() => "")) ?? "").replace(/\s+/g, " ").trim();
+    comprobar(/^Si guardas los tuyos encima: se guardaría/.test(siEncima) && /(se sustituiría|se conservaría|no se tocaría)/.test(siEncima), `Cliente: el primer aviso dice qué pasaría («${siEncima}»)`);
     await pa.locator("[data-guardar-encima]").click();
+    const yaEncima = ((await pa.locator("[data-guardar-encima-texto]").textContent().catch(() => "")) ?? "").replace(/\s+/g, " ").trim();
+    const aCondicional = (s) => s.replace(/ Queda anotado quién lo hizo\.$/, "").replace(/\bse guarda(n?)\b/gi, (m, n) => `se guardaría${n}`).replace(/se sustituye/g, "se sustituiría").replace(/se conserva/g, "se conservaría").replace(/no se toca/g, "no se tocaría");
+    comprobar(siEncima === `Si guardas los tuyos encima: ${aCondicional(yaEncima.charAt(0).toLowerCase() + yaEncima.slice(1))}`, `Cliente: el primer aviso y la confirmación dicen lo mismo («${yaEncima}» → «${siEncima}»)`);
+    // Guardar encima pide confirmación.
     await pa.locator("[data-guardar-encima-confirmar]").click();
     await pa.waitForFunction(() => !document.querySelector("[data-conflicto-version]"), null, { timeout: 30000 }).catch(() => {});
     ({ data: cb } = await SB.from("clientes").select("nombre").eq("id", clienteP).single());

@@ -45,7 +45,7 @@ export default async function DetalleReservaPage({
   const { data: estancias, error: errorEstancias } = await supabase
     .from("estancias")
     .select(
-      "id, perro_id, servicio_id, fecha_entrada, fecha_salida, estado, precio_unitario, horas, updated_at, motivo_cancelacion, cancelada_por, cancelada_at, perros(nombre), servicios(nombre, categoria, unidad)"
+      "id, perro_id, servicio_id, fecha_entrada, fecha_salida, estado, precio_unitario, horas, updated_at, motivo_cancelacion, cancelada_por, cancelada_at, checkin_sobrecupo, perros(nombre), servicios(nombre, categoria, unidad)"
     )
     .eq("reserva_id", id)
     .is("deleted_at", null)
@@ -73,6 +73,7 @@ export default async function DetalleReservaPage({
       unidad: (servicio?.unidad as string) ?? "dia",
       horas: (e.horas as number | null) ?? null,
       version: (e.updated_at as string | null) ?? null,
+      sobrecupo: (e.checkin_sobrecupo as string | null) ?? null,
       cancelacion: e.estado === "cancelada" && e.cancelada_at
         ? {
             quien: (e.cancelada_por ? nombresCancel.get(e.cancelada_por as string) : null) ?? "alguien del equipo",

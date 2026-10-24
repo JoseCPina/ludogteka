@@ -40,8 +40,8 @@ export default async function NuevoPerroPage({
   if (!cliente) notFound();
   const contextoRaza = await contextoRazaFormulario(supabase, null);
   const sesion = await obtenerSesionConRol();
-  const conFichaClinica =
-    Boolean(sesion) && usaVeterinaria(sesion!.modulos) && (await puedeEditarFichaClinica(sesion));
+  const conVet = Boolean(sesion) && usaVeterinaria(sesion!.modulos);
+  const conFichaClinica = conVet && (await puedeEditarFichaClinica(sesion));
 
   // Viene de agendar una cita de estética: alta corta del perro.
   const corta = Boolean(volver?.startsWith("/estetica"));
@@ -68,9 +68,9 @@ export default async function NuevoPerroPage({
 
       {recienCreado && (
         <Alert variante="exito" titulo={`${cliente.nombre} quedó registrado`}>
-          Registra a su mascota y quedas en su ficha.{" "}
-          <Link href={`/clientes/${id}`} className="font-semibold underline">
-            Seguir sin registrar mascota
+          Registra a su {conVet ? "mascota" : "perro"} y quedas en su ficha.{" "}
+          <Link href={`/clientes/${id}`} className="font-semibold underline" data-seguir-sin-perro>
+            Seguir sin registrar {conVet ? "mascota" : "perro"}
           </Link>
         </Alert>
       )}

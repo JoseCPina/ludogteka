@@ -17,7 +17,8 @@
 //    y no-show nunca. Con 8 adentro, 5 por llegar y cupo 10, no deja reservar hoy; si las 5 se marcan no-show o se
 //    cancelan, sí. Una reserva con la entrada vencida sin check-in (llegada atrasada) no cuenta ningún día: sale en
 //    «Llegadas atrasadas» del tablero, donde se marca «No llegó»; con el check-in tardío vuelve a contar desde ese
-//    momento. N121: «+ Reserva … este día» lleva ?fecha.
+//    momento; si con él la casa rebasa el cupo, la pantalla dice «La casa está llena (10/10); al registrar la entrada
+//    quedas en 11/10.», pide confirmar y queda anotado (estancia y bitácora). N121: «+ Reserva … este día» lleva ?fecha.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -260,6 +261,32 @@ try {
         const cabe = await admin.from("estancias").insert(fila).select("id").single();
         if (cabe.data) creados.estancias.push(cabe.data.id);
         comprobar(!cabe.error, `y entonces sí deja reservar hoy (${cabe.error?.message ?? "ok"})`);
+
+        // QA S31: check-in tardío con la casa llena. No bloquea: avisa en cuánto queda, pide confirmar y lo anota.
+        const tarde = await mkEstancia(await mkPerro("tarde casa llena"), hNoche.id, await abiertoDesde(suma(hoy, -1), -1), salidaHoy);
+        await fijarCupo(0);
+        const lleno0 = await leerHoy();
+        const c = lleno0.cupo_diurno;
+        const ctxC = await nav.newContext({ viewport: { width: 390, height: 844 } });
+        await ctxC.addCookies(await cookiesDe(datos.adminB));
+        const pc = await ctxC.newPage();
+        pc.setDefaultTimeout(60000);
+        await pc.goto(`${BASE}/reservas/estancias/${tarde.id}/checkin`, { waitUntil: "networkidle", timeout: 120000 });
+        await pc.locator("#checkin-entrega-quien").selectOption({ index: 1 });
+        await pc.locator("[data-confirmar-checkin]").click();
+        const aviso = await pc.locator("[data-aviso-sobrecupo]").innerText({ timeout: 30000 }).catch(() => "");
+        comprobar(aviso === `La casa está llena (${c}/${c}); al registrar la entrada quedas en ${c + 1}/${c}.`, `check-in tardío con la casa llena: «${aviso}»`);
+        comprobar((await estado(tarde.id)).estado === "reservada", "sin confirmar no se registra la entrada");
+        comprobar((await pc.evaluate(() => document.documentElement.scrollWidth)) <= 390, "el aviso cabe a 390 px");
+        await pc.locator("[data-confirmar-sobrecupo]").click();
+        const hecho = await pc.locator("[data-checkin-sobrecupo]").innerText({ timeout: 30000 }).catch(() => "");
+        const { data: filaTarde } = await SB.from("estancias").select("estado, checkin_sobrecupo").eq("id", tarde.id).single();
+        comprobar(filaTarde.estado === "en_curso" && filaTarde.checkin_sobrecupo === `${c + 1}/${c} de día`, `confirmado, entra y queda anotado en la estancia (${filaTarde.estado}, «${filaTarde.checkin_sobrecupo}»; pantalla: «${hecho.replace(/\s+/g, " ")}»)`);
+        const { data: bit } = await SB.from("registro_ediciones").select("profile_id, cambios").eq("tabla", "estancias").eq("registro_id", tarde.id);
+        comprobar((bit ?? []).some((b) => b.profile_id === datos.adminB && b.cambios && "checkin_sobrecupo" in b.cambios), "y en la bitácora (registro_ediciones), con quién lo hizo");
+        await pc.goto(`${BASE}/reservas/${tarde.reserva}`, { waitUntil: "networkidle", timeout: 120000 });
+        comprobar(/Entró con la casa llena: quedó en/.test(await pc.locator(`[data-sobrecupo-estancia]`).innerText().catch(() => "")), "la reserva lo enseña: «Entró con la casa llena: quedó en …»");
+        await ctxC.close();
       } finally {
         // El cupo vuelve a la configuración de antes (las versiones de prueba se dan de baja con su horario).
         for (const id of configs) {
