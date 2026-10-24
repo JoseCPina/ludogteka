@@ -9,9 +9,12 @@ import { BotonNuevoCliente } from "@/components/boton-nuevo-cliente";
 import { tipoLinkDeModulo } from "@/lib/alta/tipos-link";
 import { TablaOcupacion, type FilaCalendario } from "./tabla-ocupacion";
 import { PasesTablero } from "./pases-tablero";
+import { LlegadasAtrasadas, type LlegadaAtrasada } from "./llegadas-atrasadas";
 import { zonaActual } from "@/lib/negocio/actual";
 
 const DIAS_CALENDARIO = 14;
+const TOPE_ATRASADAS = 30;
+const uno = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null));
 
 type FilaPerro = {
   estancia_id: string;
@@ -80,8 +83,28 @@ export async function TableroModulo({ modulo }: { modulo: ModuloEstancia }) {
       .order("perro_nombre"),
     supabase.rpc("calendario_ocupacion", { p_desde: hoy, p_hasta: hasta }),
   ]);
+  // Llegadas atrasadas: la entrada ya pasó y no hicieron check-in. Siguen vivas pero ya no cuentan en la ocupación.
+  const { data: atrasadasCrudas, error: errorAtrasadas } = await supabase
+    .from("estancias")
+    .select("id, reserva_id, fecha_entrada, updated_at, perros(nombre), servicios!inner(nombre, categoria)")
+    .is("deleted_at", null)
+    .is("hora_entrada_real", null)
+    .in("estado", ["reservada", "confirmada"])
+    .lt("fecha_entrada", hoy)
+    .eq("servicios.categoria", modulo.categoria)
+    .order("fecha_entrada")
+    .order("id")
+    .limit(TOPE_ATRASADAS + 1);
+  const atrasadas: LlegadaAtrasada[] = (atrasadasCrudas ?? []).slice(0, TOPE_ATRASADAS).map((e) => ({
+    id: e.id,
+    reservaId: e.reserva_id,
+    perro: uno(e.perros)?.nombre ?? "",
+    servicio: uno(e.servicios)?.nombre ?? "",
+    fechaEntrada: e.fecha_entrada,
+    version: e.updated_at,
+  }));
 
-  const error = errorLlegadas ?? errorSalidas ?? errorAdentro ?? errorCalendario;
+  const error = errorLlegadas ?? errorSalidas ?? errorAdentro ?? errorCalendario ?? errorAtrasadas;
 
   return (
     <div className="flex flex-col gap-8">
@@ -126,6 +149,8 @@ export async function TableroModulo({ modulo }: { modulo: ModuloEstancia }) {
         </Alert>
       ) : (
         <>
+          <LlegadasAtrasadas filas={atrasadas} hayMas={(atrasadasCrudas ?? []).length > TOPE_ATRASADAS} />
+
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
               <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Llegan hoy</h2>
