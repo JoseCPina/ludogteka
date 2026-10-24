@@ -101,9 +101,9 @@ Si tienes guardería u hotel prendidos, el link de guardería y hotel trae el pa
     palabras: ["alta manual", "nuevo cliente", "registrar perro", "capturar a mano", "agregar perro"],
     cuerpo: `Cuando el dueño está parado en el mostrador con el perro en brazos, no le vas a pedir que llene un formulario en su celular. Lo capturas tú.
 
-1. En [Clientes](/clientes) toca **Capturar a mano**. Desde un buscador (al reservar o cobrar) es **Nuevo cliente** → **Capturarlo yo**.
+1. En [Clientes](/clientes) toca **Capturar a mano**. Desde un buscador (al reservar o cobrar), y desde Guardería, Hotel, Estética o el inicio, es **Nuevo cliente** → **Capturarlo yo**.
 2. Llena **Nombre del dueño** y **Teléfono**. El correo y la dirección son opcionales.
-3. Toca **Crear cliente**: se abre la ficha del cliente recién creado (ahí agregas a su perro). Si venías de reservar o cobrar, el botón dice **Crear cliente y seguir con su perro**. Si tu negocio tiene Veterinaria, dice **Crear cliente y seguir con su mascota** y abre el alta de su mascota (con **Seguir sin registrar mascota** para quedarte en su ficha).
+3. Toca **Crear cliente**: se abre la ficha del cliente recién creado (ahí agregas a su perro). Si venías de reservar o cobrar, el botón dice **Crear cliente y seguir con su perro**. Si llegaste desde **Nuevo cliente** → **Capturarlo yo** de Guardería, Hotel, Estética o el inicio, también dice **Crear cliente y seguir con su perro** y abre el alta de su perro, con **Seguir sin registrar perro** si todavía no lo vas a capturar. Si tu negocio tiene Veterinaria, dice **Crear cliente y seguir con su mascota** y abre el alta de su mascota (con **Seguir sin registrar mascota** para quedarte en su ficha).
 4. En la ficha del cliente, toca **Agregar perro**.
 5. Llena **Nombre del perro**, **Raza (obligatoria)** y lo que sepas, y toca **Guardar perro**. Con Estética, guardería u hotel la raza es obligatoria (si es mestizo, escoge **Mestizo**); con Estética, si la raza no fija sola el precio (mestizo, sin raza de catálogo o un grupo que cobra por tamaño y pelaje), también **Tamaño (obligatorio)** y **Pelaje (obligatorio)**. Si falta algo, el aviso dice qué y lo que ya escribiste se queda en el formulario.
 
@@ -346,7 +346,7 @@ Cómo se cuenta cada día (igual aquí, en el tablero de Guardería y de Hotel, 
 - **Días pasados**: los que estuvieron adentro ese día.
 - **Días que vienen**: las reservas vivas que cubren ese día y los perros que siguen adentro si su salida prevista llega hasta ese día.
 - Las canceladas y las de «No llegó» nunca cuentan.
-- **Llegadas atrasadas**: una reserva cuya fecha de entrada ya pasó sin check-in deja de contar desde el día siguiente a su entrada, pero sigue viva. El tablero de Guardería y el de Hotel la enseñan arriba, en **Llegadas atrasadas**, con tres botones: **No llegó** (te pide confirmar), **Check-in tardío** (desde ese momento vuelve a contar como adentro) y **Reprogramar** (abre la reserva para mover sus fechas; con la entrada nueva, vuelve a contar).
+- **Llegadas atrasadas**: una reserva cuya fecha de entrada ya pasó sin check-in deja de contar desde el día siguiente a su entrada, pero sigue viva. El tablero de Guardería y el de Hotel la enseñan arriba, en **Llegadas atrasadas**, con tres botones: **No llegó** (te pide confirmar), **Check-in tardío** (desde ese momento vuelve a contar como adentro; si con él la casa rebasa el cupo, te lo dice y pide confirmar) y **Reprogramar** (abre la reserva para mover sus fechas; con la entrada nueva, vuelve a contar).
 
 ## Ver las reservas de un día
 
@@ -394,6 +394,8 @@ Al cancelar una cuenta en [Caja](/caja), marca la casilla para cancelar también
 5. Anota el **Estado del perro a la llegada (opcional)** y toca **Tomar/subir foto**.
 6. En **Agregar pertenencia** escribe lo que trae (correa, cama, juguete) y toca **Agregar**. Las que se anotaron al reservar salen ahí como **Ya declaradas en la reserva**.
 7. Toca **Confirmar check-in**. El formulario se cierra, queda **Check-in registrado a las** (la hora), la confirmación lista las **Pertenencias recibidas** y la estancia pasa a **en curso**.
+
+> **Con la casa llena** (por ejemplo, el check-in tardío de una llegada atrasada): no se bloquea, pero antes de registrar te dice «La casa está llena (10/10); al registrar la entrada quedas en 11/10.» Toca **Registrar la entrada de todos modos** para confirmar o **Todavía no**. Lo confirmado queda anotado en la bitácora con tu nombre y la hora, y la reserva lo enseña: «Entró con la casa llena: quedó en 11/10 de día.»
 
 > Las vacunas vencidas, la falta de evaluación, el celo, la gestación y las alertas que bloquean se revisan al reservar: si el perro tiene reserva, ya pasó por ahí. Aun así, fíjate en los avisos antes de recibirlo.
 
@@ -555,6 +557,7 @@ Lo que escribiste sigue en la pantalla.
 ## Qué hacer
 
 - **Recargar con sus cambios**: la pantalla trae lo que guardó la otra persona. Revisa y, si hace falta, vuelve a hacer tu cambio.
+- Desde el primer aviso ya ves qué pasaría si guardas lo tuyo: «Si guardas los tuyos encima: se guardaría tu cambio de servicio. Lo que puso Ana en fecha y hora se conservaría.» Es el mismo cálculo que la confirmación.
 - **Guardar los míos encima**: antes de **Sí, guardar los míos encima** te dice exactamente qué pasa con lo de la otra persona, campo por campo. Hay pantallas que solo guardan lo que tocaste (reprogramar una cita, corregir su servicio, mover fechas, cada sección de la consulta): «Se guarda tu cambio de servicio. Lo que puso Ana en fecha y hora se conserva.» Otras mandan el formulario completo (la ficha del cliente o de la mascota): «Se guarda tu cambio de nombre. Lo que puso Ana en teléfono se sustituye por lo de esta pantalla.» En el horario o el esquema de pago de un empleado y en los precios se guarda lo de tu pantalla completo. Queda anotado quién lo hizo.
 
 También te avisa si el cambio lo hiciste tú mismo en **otra pestaña**: el aviso dice «Cambiaste esta cita desde otra pestaña hace 40 s: …» con los mismos dos botones. Lo que se cuida es la versión que tiene tu pantalla, no quién la cambió. Lo único que no avisa es lo que hiciste en esta misma pestaña (por ejemplo, aplicar una vacuna y luego guardar la consulta).

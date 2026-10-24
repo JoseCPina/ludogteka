@@ -90,6 +90,25 @@ try {
   const aviso = (await p.locator('[role="status"], [role="alert"], .rounded-lg').filter({ hasText: "quedó registrado" }).first().innerText().catch(() => "")).replace(/\s+/g, " ");
   comprobar(aviso.includes(`ZZ S30 cliente ${sufijo} quedó registrado`) && aviso.includes("Seguir sin registrar mascota"), `y dice que el cliente quedó registrado, con «Seguir sin registrar mascota» («${aviso.slice(0, 120)}»)`);
 
+  console.log("── 2b. QA S31: «Nuevo cliente → Capturarlo yo» desde Hotel, Guardería y Estética sigue con el perro");
+  for (const ruta of ["/hotel", "/guarderia", "/estetica"]) {
+    await ir(p, ruta);
+    await p.getByRole("button", { name: "Nuevo cliente" }).first().click();
+    const href = await p.getByRole("link", { name: "Capturarlo yo" }).first().getAttribute("href").catch(() => null);
+    comprobar(href === "/clientes/nuevo?seguir=perro", `${ruta}: «Capturarlo yo» lleva al alta que sigue con su perro (${href})`);
+  }
+  await ir(p, "/clientes/nuevo?seguir=perro");
+  const botonModulo = p.getByRole("button", { name: /Crear cliente y seguir con su (perro|mascota)/ });
+  comprobar((await botonModulo.count()) === 1, "el alta desde un módulo dice «Crear cliente y seguir con su …»");
+  await p.locator('input[name="nombre"]').fill(`ZZ S31 cliente ${sufijo}`);
+  await p.locator('input[name="telefono"]').fill(`58${String(Date.now()).slice(-8)}`);
+  await botonModulo.click();
+  await p.waitForURL(/\/clientes\/[0-9a-f-]{36}\/perros\/nuevo\?alta=1/, { timeout: 120000 }).catch(() => {});
+  const m2 = p.url().match(/clientes\/([0-9a-f-]{36})/);
+  if (m2) creados.clientes.push(m2[1]);
+  await p.locator("[data-seguir-sin-perro]").waitFor({ timeout: 60000 }).catch(() => {});
+  comprobar(/\/perros\/nuevo\?alta=1/.test(p.url()) && (await p.locator("[data-seguir-sin-perro]").count()) === 1, `después de crearlo abre el alta de su perro, con «Seguir sin registrar …» (${p.url().replace(BASE, "")})`);
+
   console.log("── 3. 390 px: el nombre largo del negocio en el encabezado de Hotel");
   // El nombre del negocio llega en caché por dominio: se pone el de la QA en el mismo elemento y se mide cómo lo acomoda.
   const LARGO = "PRUEBA QA Onboarding Hotel S16";

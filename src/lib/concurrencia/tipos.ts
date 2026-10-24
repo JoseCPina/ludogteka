@@ -279,27 +279,45 @@ function listaEtiquetas(campos: string[]): string | null {
   return unicas.length === 1 ? unicas[0] : `${unicas.slice(0, -1).join(", ")} y ${unicas[unicas.length - 1]}`;
 }
 
-/**
- * La segunda confirmación de «Guardar los míos encima» (QA R41): dice exactamente qué pasa con lo de la otra persona
- * (o la otra pestaña), campo por campo, con lo que la base calculó en el conflicto.
- *   «Se guarda tu cambio de servicio. Lo que puso QA Recepción en fecha y hora se conserva.»
- *   «Se guarda tu cambio de nombre. Lo que puso QA Recepción en teléfono se sustituye por lo de esta pantalla.»
- */
-export function textoGuardarEncima(c: Conflicto): string {
+// Qué pasa con lo de la otra persona (o la otra pestaña) si se guarda encima, campo por campo, con lo que la base
+// calculó en el conflicto. «ya»: lo que pasa al confirmar; «si»: lo que pasaría (el primer aviso).
+function frasesGuardarEncima(c: Conflicto, modo: "ya" | "si"): string[] {
+  const v = modo === "ya"
+    ? { guarda: "Se guarda", guardan: "Se guardan", sustituye: "se sustituye", conserva: "se conserva", toca: "no se toca" }
+    : { guarda: "Se guardaría", guardan: "Se guardarían", sustituye: "se sustituiría", conserva: "se conservaría", toca: "no se tocaría" };
   const deQuien = c.mismaPersona ? "Lo que pusiste en la otra pestaña" : `Lo que puso ${c.quien?.trim() || "la otra persona"}`;
   if (!c.sustituye && !c.conserva) {
     const loSuyo = c.mismaPersona ? "lo que capturaste en la otra pestaña" : `lo que capturó ${c.quien?.trim() || "la otra persona"}`;
-    return `Se guarda lo de esta pantalla completo y se sustituye ${loSuyo}. Queda anotado quién lo hizo.`;
+    return [`${v.guarda} lo de esta pantalla completo y ${v.sustituye} ${loSuyo}.`];
   }
   const mios = listaEtiquetas(Object.keys(c.mios ?? {}));
   const pisa = listaEtiquetas(Object.keys(c.sustituye ?? {}));
   const deja = listaEtiquetas(c.conserva ?? []);
   const frases: string[] = [];
   const nMios = new Set(Object.keys(c.mios ?? {}).map(etiquetaCampo).filter(Boolean)).size;
-  if (mios) frases.push(`Se guarda${nMios > 1 ? "n tus cambios" : " tu cambio"} de ${mios}.`);
-  else if (pisa) frases.push("Se guarda lo de esta pantalla.");
-  if (pisa) frases.push(`${deQuien} en ${pisa} se sustituye por lo de esta pantalla.`);
-  if (deja) frases.push(`${deQuien} en ${deja} se conserva.`);
-  if (!pisa && !deja) frases.push(`${deQuien} no se toca.`);
-  return `${frases.join(" ")} Queda anotado quién lo hizo.`;
+  if (mios) frases.push(nMios > 1 ? `${v.guardan} tus cambios de ${mios}.` : `${v.guarda} tu cambio de ${mios}.`);
+  else if (pisa) frases.push(`${v.guarda} lo de esta pantalla.`);
+  if (pisa) frases.push(`${deQuien} en ${pisa} ${v.sustituye} por lo de esta pantalla.`);
+  if (deja) frases.push(`${deQuien} en ${deja} ${v.conserva}.`);
+  if (!pisa && !deja) frases.push(`${deQuien} ${v.toca}.`);
+  return frases;
+}
+
+/**
+ * La segunda confirmación de «Guardar los míos encima» (QA R41): dice exactamente qué pasa con lo de la otra persona.
+ *   «Se guarda tu cambio de servicio. Lo que puso QA Recepción en fecha y hora se conserva.»
+ *   «Se guarda tu cambio de nombre. Lo que puso QA Recepción en teléfono se sustituye por lo de esta pantalla.»
+ */
+export function textoGuardarEncima(c: Conflicto): string {
+  return `${frasesGuardarEncima(c, "ya").join(" ")} Queda anotado quién lo hizo.`;
+}
+
+/**
+ * QA S31: el primer aviso ya dice lo que pasaría, con el mismo cálculo que la confirmación.
+ *   «Si guardas los tuyos encima: se guardaría tu cambio de servicio. Lo que puso QA Recepción en fecha y hora se conservaría.»
+ */
+export function textoSiGuardasEncima(c: Conflicto): string {
+  const frases = frasesGuardarEncima(c, "si");
+  const [primera, ...resto] = frases;
+  return `Si guardas los tuyos encima: ${primera.charAt(0).toLowerCase()}${primera.slice(1)}${resto.length ? ` ${resto.join(" ")}` : ""}`;
 }

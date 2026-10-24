@@ -34,6 +34,8 @@ export type FilaEstancia = {
   version: string | null;
   /** QA S15: «Cancelada por X el …» y el motivo, si se canceló. */
   cancelacion?: { quien: string; cuando: string; motivo: string | null } | null;
+  // Entró con la casa llena (check-in tardío confirmado): en cuánto quedó, por ejemplo «11/10 de día».
+  sobrecupo?: string | null;
 };
 
 const ETIQUETA_CATEGORIA: Record<string, string> = { guarderia: "Guardería", hotel: "Hotel" };
@@ -198,6 +200,11 @@ export function EstanciaFila({
         </Alert>
       )}
 
+      {fila.sobrecupo && (
+        <p className="text-sm text-ambar-oscuro" data-sobrecupo-estancia>
+          Entró con la casa llena: quedó en {fila.sobrecupo}.
+        </p>
+      )}
       {estado === "cancelada" && fila.cancelacion && (
         <p className="text-sm text-n-700" data-cancelacion-estancia>
           {cerrarFrase(`Cancelada por ${fila.cancelacion.quien} el ${fila.cancelacion.cuando}`)}

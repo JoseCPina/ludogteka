@@ -42,7 +42,8 @@ export function BotonNuevoCliente({
   const disponibles = modulos.includes("portal") ? tiposDisponibles(modulos) : [];
   const definicion = tipo && disponibles.includes(tipo) ? TIPOS_LINK_ALTA[tipo] : null;
   const tipos = disponibles.map((clave) => ({ clave, ...TIPOS_LINK_ALTA[clave] }));
-  const hrefCaptura = volver ? `/clientes/nuevo?volver=${encodeURIComponent(volver)}` : "/clientes/nuevo";
+  // QA S31: «Capturarlo yo» desde un módulo sigue con el alta del perro (como Veterinaria), no se queda en la ficha.
+  const hrefCaptura = volver ? `/clientes/nuevo?volver=${encodeURIComponent(volver)}` : "/clientes/nuevo?seguir=perro";
 
   if (!abierto) {
     return (

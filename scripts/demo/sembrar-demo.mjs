@@ -816,6 +816,11 @@ if (!fotosPrevias) {
   }
 }
 
+// ── Lo que ya pasó, resuelto (QA S31) ──
+// Ninguna reserva de un día pasado se queda sin check-in ni adentro con la salida vencida: el demo nunca enseña
+// «Llegadas atrasadas» ni una ocupación desfasada. El cron /api/cron/demo lo repite cada hora con los días que pasan.
+console.log("al día:", JSON.stringify(exigir(await S.rpc("estancias_poner_al_dia", { p_negocio: NEG, p_modo: "atender" }), "poner al día")));
+
 // ── Cuentas de solo lectura ──
 const cuentasSembradas = [...D.PERSONAL.filter((p) => P[p.clave].id).map((p) => P[p.clave].id), ...CLIENTES.filter((c) => c.cuenta).map((c) => c.cuenta)];
 exigir(await S.from("membresias").update({ solo_lectura: true }).eq("negocio_id", NEG).in("profile_id", cuentasSembradas), "solo lectura");

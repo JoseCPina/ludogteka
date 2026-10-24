@@ -122,7 +122,11 @@ export function CheckinForm({
   // QA S16 (N69): lo obligatorio se marca antes del clic y el botón dice qué falta.
   const motivoConfirmar = !quien ? "Falta: escoge quién entrega al perro." : !entregadoNombre.trim() ? "Falta: el nombre de quien entrega al perro." : null;
 
-  async function confirmar() {
+  // La casa llena al registrar la entrada (check-in tardío): el texto de la base y, ya registrado, en cuánto quedó.
+  const [sobrecupo, setSobrecupo] = useState<string | null>(null);
+  const [quedo, setQuedo] = useState<string | null>(null);
+
+  async function confirmar(conSobrecupo = false) {
     if (!quien || !entregadoNombre.trim()) {
       setFaltaEntrega(true);
       setError(esOtra ? "Escribe el nombre de la otra persona que entrega al perro." : "Escoge quién entrega al perro.");
@@ -137,11 +141,17 @@ export function CheckinForm({
       entregadoPorTelefono: entregadoTelefono,
       estadoLlegada,
       fotoLlegadaPath: fotoPath,
-    }));
+    }, conSobrecupo));
+    if (res.sobrecupo) {
+      setSobrecupo(res.sobrecupo);
+      return;
+    }
     if (res.error) {
       setError(res.error);
       return;
     }
+    setSobrecupo(null);
+    setQuedo(res.quedo ?? null);
     borrador.descartar();
     setRegistrado(true);
     router.refresh();
@@ -152,6 +162,11 @@ export function CheckinForm({
       {registrado && (
         <Alert variante="exito" titulo="Check-in registrado">
           La estancia ya está en curso. Cuando el perro salga, haz el check-out desde su estancia.
+          {quedo && (
+            <span className="mt-2 block" data-checkin-sobrecupo>
+              Entró con la casa llena: quedó en {quedo}. Quedó anotado en la bitácora.
+            </span>
+          )}
           <span className="mt-2 block font-semibold" data-pertenencias-recibidas>
             Pertenencias recibidas:{" "}
             {pertenencias.length > 0 || declaradas ? [...(declaradas ? [declaradas] : []), ...pertenencias.map((p) => p.descripcion)].join(", ") : "ninguna"}.
@@ -298,11 +313,28 @@ export function CheckinForm({
         </Alert>
       )}
 
+      {!registrado && sobrecupo && (
+        <Alert variante="advertencia" titulo="Confirma la entrada">
+          <span data-aviso-sobrecupo>{sobrecupo}</span> Si de todos modos registras la entrada, queda anotado en la bitácora.
+        </Alert>
+      )}
+
       {!registrado && (
         <AccionesFormulario error={error}>
-          <Button type="button" cargando={enviando.cargando} disabled={Boolean(motivoConfirmar)} onClick={confirmar} data-confirmar-checkin>
+          {sobrecupo ? (
+            <>
+              <Button type="button" cargando={enviando.cargando} onClick={() => confirmar(true)} data-confirmar-sobrecupo>
+                {enviando.cargando ? "Guardando…" : "Registrar la entrada de todos modos"}
+              </Button>
+              <Button type="button" variante="secundario" disabled={enviando.cargando} onClick={() => setSobrecupo(null)}>
+                Todavía no
+              </Button>
+            </>
+          ) : (
+          <Button type="button" cargando={enviando.cargando} disabled={Boolean(motivoConfirmar)} onClick={() => confirmar()} data-confirmar-checkin>
             {enviando.cargando ? "Guardando…" : "Confirmar check-in"}
           </Button>
+          )}
           {motivoConfirmar && <span className="text-sm text-n-600" data-motivo-confirmar>{motivoConfirmar}</span>}
         </AccionesFormulario>
       )}

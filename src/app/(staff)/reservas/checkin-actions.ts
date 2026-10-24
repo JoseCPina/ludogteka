@@ -41,16 +41,20 @@ export type CamposCheckin = {
 // Las pertenencias se guardan aparte, una por una, en cuanto se
 // capturan (agregarPertenencia) — no se acumulan en el formulario para
 // mandarse juntas aquí. Esta acción solo hace la transición a en_curso.
+// QA S31: si con esta entrada la casa rebasa el cupo (un check-in tardío), la base no la guarda y devuelve el texto
+// («La casa está llena (10/10); al registrar la entrada quedas en 11/10.»); con `confirmarSobrecupo` se guarda y
+// queda anotado en la estancia y en la bitácora.
 export async function confirmarCheckin(
   estanciaId: string,
-  campos: CamposCheckin
-): Promise<EstadoAccion> {
+  campos: CamposCheckin,
+  confirmarSobrecupo = false
+): Promise<EstadoAccion & { sobrecupo?: string; quedo?: string | null }> {
   if (!campos.entregadoPorNombre.trim()) {
     return { error: "Registra quién entrega al perro." };
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("estancias")
     .update({
       estado: "en_curso",
@@ -58,14 +62,18 @@ export async function confirmarCheckin(
       entregado_por_telefono: campos.entregadoPorTelefono.trim() || null,
       estado_llegada: campos.estadoLlegada.trim() || null,
       foto_llegada_path: campos.fotoLlegadaPath,
+      ...(confirmarSobrecupo ? { checkin_sobrecupo: "confirmado" } : {}),
     })
-    .eq("id", estanciaId);
+    .eq("id", estanciaId)
+    .select("checkin_sobrecupo")
+    .maybeSingle();
 
+  if (error?.hint === "sobrecupo") return { error: null, sobrecupo: error.message };
   if (error) return { error: traducirError(error) };
 
   revalidarModulosEstancia();
   revalidatePath(`/reservas/estancias/${estanciaId}/checkin`);
-  return { error: null };
+  return { error: null, quedo: (data?.checkin_sobrecupo as string | null | undefined) ?? null };
 }
 
 export async function agregarPertenencia(
