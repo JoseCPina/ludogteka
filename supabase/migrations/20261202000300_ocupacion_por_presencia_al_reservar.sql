@@ -101,16 +101,17 @@ begin
   if position('public.ocupacion_del_dia(' in v_def) > 0 then
     return;
   end if;
-  v_def := replace(v_def,
+  -- Los textos que se buscan van sin retorno de carro (el archivo puede llegar con CRLF; la función está en LF).
+  v_def := replace(v_def, replace(
 '      select count(*) into v_ocupado_diurno
       from public.estancias e
       where e.deleted_at is null
         and e.estado not in (''cancelada'', ''no_llego'')
         and e.id is distinct from new.id
-        and daterange(e.fecha_entrada, e.fecha_salida) @> v_fecha;',
+        and daterange(e.fecha_entrada, e.fecha_salida) @> v_fecha;', chr(13), ''), replace(
 '      -- N122: los que ocupan ese día según la misma regla que la pantalla (adentro hoy; reservas vivas después).
-      v_ocupado_diurno := public.ocupacion_del_dia(v_fecha, false, new.id);');
-  v_def := replace(v_def,
+      v_ocupado_diurno := public.ocupacion_del_dia(v_fecha, false, new.id);', chr(13), ''));
+  v_def := replace(v_def, replace(
 '        select count(*) into v_ocupado_nocturno
         from public.estancias e
         join public.servicios s on s.id = e.servicio_id
@@ -118,7 +119,7 @@ begin
           and e.estado not in (''cancelada'', ''no_llego'')
           and e.id is distinct from new.id
           and s.categoria = ''hotel''
-          and daterange(e.fecha_entrada, e.fecha_salida) @> v_fecha;',
+          and daterange(e.fecha_entrada, e.fecha_salida) @> v_fecha;', chr(13), ''),
 '        v_ocupado_nocturno := public.ocupacion_del_dia(v_fecha, true, new.id);');
   if (length(v_def) - length(replace(v_def, 'public.ocupacion_del_dia(', ''))) / length('public.ocupacion_del_dia(') <> 2 then
     raise exception 'validar_estancia cambió: no se pudieron cambiar los dos conteos del cupo.';
