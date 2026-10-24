@@ -13,7 +13,9 @@
 // 5. El mensaje de traslape lleva el enlace al calendario en la fecha que choca.
 // 6. N122: la ocupación de hoy y de los días pasados cuenta a quien está adentro (también con la salida vencida; el
 //    check-out libera el cupo al momento); la de los días futuros, las reservas vivas y a quien sigue adentro y su
-//    salida prevista alcanza ese día. Canceladas y no-show nunca. N121: «+ Reserva … este día» lleva ?fecha.
+//    salida prevista alcanza ese día. Hoy también las llegadas pendientes (reservas vivas sin check-in). Canceladas
+//    y no-show nunca. Con 8 adentro, 5 por llegar y cupo 10, no deja reservar hoy; si las 5 se marcan no-show o se
+//    cancelan, sí. N121: «+ Reserva … este día» lleva ?fecha.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -126,7 +128,7 @@ try {
     // d) Reserva viva que todavía no llega.
     const entradaD = await abiertoDesde(suma(hoy, 1), 1);
     await caso("futura", hNoche.id, entradaD, await abiertoDesde(suma(entradaD, 2), 1), []);
-    // e) Guardería de hoy sin check-in (si hoy abre): hoy no cuenta todavía.
+    // e) Guardería de hoy sin check-in (si hoy abre): llegada pendiente, cuenta hoy.
     if (await abre(hoy)) await caso("sin llegar", gDia.id, hoy, suma(hoy, 1), []);
     // f) Cancelada y no-show: nunca.
     await caso("cancelada", hNoche.id, entradaD, await abiertoDesde(suma(entradaD, 2), 1), [{ cambios: { estado: "cancelada" } }]);
@@ -137,7 +139,7 @@ try {
     const cuenta = (c, D, noche) => {
       if (["cancelada", "no_llego"].includes(c.estado) || (noche && !c.hotel) || c.entrada > D) return false;
       const adentroAhora = Boolean(c.dentro) && !c.fuera;
-      if (D === hoy) return adentroAhora;
+      if (D === hoy) return adentroAhora || (!c.dentro && ["reservada", "confirmada"].includes(c.estado) && c.salida > D);
       if (D < hoy) return Boolean(c.dentro) && c.dentro <= D && (!c.fuera || c.fuera > D || (!noche && c.fuera === D));
       return c.salida > D && (["reservada", "confirmada"].includes(c.estado) || adentroAhora);
     };
@@ -173,6 +175,63 @@ try {
     const hrefDia = await pn.locator('[data-nueva-reserva-dia="hotel"]').getAttribute("href").catch(() => null);
     comprobar(hrefDia === `/hotel/nueva?fecha=${futuroDia}`, `«+ Reserva de hotel este día» lleva ?fecha (${hrefDia})`);
     await ctxN.close();
+
+    // Cupo de hoy con llegadas pendientes: 8 adentro + 5 por llegar con cupo 10 (sobre lo que ya había) no deja reservar.
+    if (await abre(hoy)) {
+      const salidaHoy = await abiertoDesde(suma(hoy, 1), 1);
+      const leerHoy = async () => (await admin.rpc("calendario_ocupacion", { p_desde: hoy, p_hasta: hoy })).data?.[0];
+      const { data: vigente } = await SB.from("cupo_configuracion").select("telefono_recepcion").eq("negocio_id", B).is("deleted_at", null)
+        .lte("vigencia_desde", hoy).order("vigencia_desde", { ascending: false }).order("created_at", { ascending: false }).limit(1).single();
+      const configs = [];
+      const fijarCupo = async (extra) => {
+        const base = await leerHoy();
+        const { data, error } = await admin.rpc("guardar_configuracion_negocio", {
+          p_cupo_diurno: base.ocupado_diurno + extra, p_cupo_nocturno: base.ocupado_nocturno + extra, p_telefono_recepcion: vigente?.telefono_recepcion ?? null,
+        });
+        if (error) throw new Error(`cupo: ${error.message}`);
+        configs.push(data);
+      };
+      try {
+        const base0 = await leerHoy();
+        await fijarCupo(20);
+        const adentro = [], porLlegar = [];
+        for (let i = 0; i < 8; i++) {
+          const e = await mkEstancia(await mkPerro(`cupo adentro ${i}`), hNoche.id, hoy, salidaHoy);
+          await marcar(e, checkin(hoy));
+          adentro.push(e);
+        }
+        for (let i = 0; i < 5; i++) porLlegar.push(await mkEstancia(await mkPerro(`cupo llega ${i}`), hNoche.id, hoy, salidaHoy));
+        // Cupo = lo que había + 10: con 8 adentro y 5 por llegar ya hay 13 sobre lo de antes.
+        const { error: eCupo } = await admin.rpc("guardar_configuracion_negocio", {
+          p_cupo_diurno: base0.ocupado_diurno + 10, p_cupo_nocturno: base0.ocupado_nocturno + 10, p_telefono_recepcion: vigente?.telefono_recepcion ?? null,
+        }).then(async (r) => { if (!r.error) configs.push(r.data); return r; });
+        if (eCupo) throw new Error(`cupo: ${eCupo.message}`);
+        const ahora = await leerHoy();
+        comprobar(ahora.ocupado_nocturno - base0.ocupado_nocturno === 13 && ahora.disponible_nocturno < 0,
+          `hoy cuentan los 8 adentro y las 5 llegadas pendientes (+${ahora.ocupado_nocturno - base0.ocupado_nocturno}, disponibles ${ahora.disponible_nocturno})`);
+        const otro = await mkPerro("cupo uno mas");
+        const rr = await admin.from("reservas").insert({ cliente_id: datos.clienteSoloB }).select("id").single();
+        creados.reservas.push(rr.data.id);
+        const fila = { reserva_id: rr.data.id, perro_id: otro.id, servicio_id: hNoche.id, fecha_entrada: hoy, fecha_salida: salidaHoy, estado: "reservada",
+          bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: "Prueba calendario", bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: "Prueba calendario" };
+        const lleno = await admin.from("estancias").insert(fila).select("id").single();
+        if (lleno.data) creados.estancias.push(lleno.data.id);
+        comprobar(Boolean(lleno.error) && /No hay cupo disponible/.test(lleno.error.message), `8 adentro + 5 por llegar con cupo 10: no deja reservar hoy (${lleno.error?.message ?? "la dejó pasar"})`);
+        // Las 5 llegadas pendientes: 3 no-show y 2 canceladas. Dejan de contar y ya hay lugar.
+        for (const [i, e] of porLlegar.entries()) await marcar(e, { estado: i < 3 ? "no_llego" : "cancelada" });
+        const despues = await leerHoy();
+        comprobar(despues.ocupado_nocturno - base0.ocupado_nocturno === 8, `marcadas no-show o canceladas, las llegadas pendientes ya no cuentan (+${despues.ocupado_nocturno - base0.ocupado_nocturno})`);
+        const cabe = await admin.from("estancias").insert(fila).select("id").single();
+        if (cabe.data) creados.estancias.push(cabe.data.id);
+        comprobar(!cabe.error, `y entonces sí deja reservar hoy (${cabe.error?.message ?? "ok"})`);
+      } finally {
+        // El cupo vuelve a la configuración de antes (las versiones de prueba se dan de baja con su horario).
+        for (const id of configs) {
+          await SB.from("horario_semana").update({ deleted_at: new Date().toISOString() }).eq("cupo_configuracion_id", id);
+          await SB.from("cupo_configuracion").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+        }
+      }
+    } else bien("hoy el negocio no abre: el caso del cupo con llegadas pendientes se salta");
   }
 
   console.log("── 5. Traslape: el mensaje lleva el enlace al calendario");
