@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
@@ -117,6 +117,10 @@ export function TurnoAbierto({
     diferenciaTransferencia: number;
   } | null>(null);
   const guardandoCierre = useEspera();
+  // QA S30: candado en el mismo clic (el `cargando` llega un render después) y el cierre se pinta con la respuesta.
+  const cerrandoAhora = useRef(false);
+  const [cerrado, setCerrado] = useState<{ diferencia: boolean } | null>(null);
+  const [refrescandoCierre, refrescarCierre] = useTransition();
   const [cancelando, setCancelando] = useState<string | null>(null);
   const [motivoCancelacion, setMotivoCancelacion] = useState("");
   const cancelandoRetiro = useEspera();
@@ -224,16 +228,20 @@ export function TurnoAbierto({
       setError("Captura el conteo de los tres métodos (puede ser 0).");
       return;
     }
+    if (cerrandoAhora.current) return;
+    cerrandoAhora.current = true;
     setError(null);
     const res = await guardandoCierre.ejecutar(() =>
       cerrarTurno(turnoId, efectivo, terminal, transferencia, "", notasCierre)
     );
+    cerrandoAhora.current = false;
     if (res.error) {
       setError(res.error);
       return;
     }
     if (res.cerrado) {
-      router.refresh();
+      setCerrado({ diferencia: false });
+      refrescarCierre(() => router.refresh());
       return;
     }
     // Hay diferencia: recién ahora se revela lo que el sistema esperaba.
@@ -252,6 +260,8 @@ export function TurnoAbierto({
       setError("Escribe la explicación de la diferencia.");
       return;
     }
+    if (cerrandoAhora.current) return;
+    cerrandoAhora.current = true;
     setError(null);
     const res = await guardandoCierre.ejecutar(() =>
       cerrarTurno(
@@ -263,11 +273,24 @@ export function TurnoAbierto({
         notasCierre
       )
     );
+    cerrandoAhora.current = false;
     if (res.error) {
       setError(res.error);
       return;
     }
-    router.refresh();
+    setCerrado({ diferencia: true });
+    refrescarCierre(() => router.refresh());
+  }
+
+  if (cerrado) {
+    return (
+      <div className="flex max-w-xl flex-col gap-3" data-turno-cerrado>
+        <Alert variante="exito" titulo="Turno cerrado">
+          {cerrado.diferencia ? "El corte quedó guardado con la explicación de la diferencia." : "El conteo cuadró y el corte quedó guardado."}
+          {refrescandoCierre ? " Cargando el historial…" : ""}
+        </Alert>
+      </div>
+    );
   }
 
   return (

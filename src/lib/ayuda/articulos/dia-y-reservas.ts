@@ -103,7 +103,7 @@ Si tienes guardería u hotel prendidos, el link de guardería y hotel trae el pa
 
 1. En [Clientes](/clientes) toca **Capturar a mano**. Desde un buscador (al reservar o cobrar) es **Nuevo cliente** → **Capturarlo yo**.
 2. Llena **Nombre del dueño** y **Teléfono**. El correo y la dirección son opcionales.
-3. Toca **Crear cliente**: se abre la ficha del cliente recién creado (ahí agregas a su perro). Si venías de reservar o cobrar, el botón dice **Crear cliente y seguir con su perro**.
+3. Toca **Crear cliente**: se abre la ficha del cliente recién creado (ahí agregas a su perro). Si venías de reservar o cobrar, el botón dice **Crear cliente y seguir con su perro**. Si tu negocio tiene Veterinaria, dice **Crear cliente y seguir con su mascota** y abre el alta de su mascota (con **Seguir sin registrar mascota** para quedarte en su ficha).
 4. En la ficha del cliente, toca **Agregar perro**.
 5. Llena **Nombre del perro**, **Raza (obligatoria)** y lo que sepas, y toca **Guardar perro**. Con Estética, guardería u hotel la raza es obligatoria (si es mestizo, escoge **Mestizo**); con Estética, si la raza no fija sola el precio (mestizo, sin raza de catálogo o un grupo que cobra por tamaño y pelaje), también **Tamaño (obligatorio)** y **Pelaje (obligatorio)**. Si falta algo, el aviso dice qué y lo que ya escribiste se queda en el formulario.
 
@@ -341,13 +341,19 @@ Si el perro ya está en la puerta sin reserva, usa **Walk-in (sin reserva)** des
 2. Cada día dice cuántos perros hay contra el cupo (por ejemplo, 12/35) y, en pantallas grandes, cuántos son de guardería y cuántos de hotel (contra el cupo de noche). Verde: hay reservas; ámbar: casi lleno (80 % o más); rojo: lleno.
 3. El cupo es el de toda la casa: guardería y hotel comparten el mismo espacio.
 
+Cómo se cuenta cada día (igual aquí, en el tablero de Guardería y de Hotel, en el inicio y al reservar):
+- **Hoy**: los perros que están adentro (con check-in y sin check-out), aunque su salida ya haya vencido. Al hacer el check-out, el lugar se libera en ese momento. Una reserva de hoy cuenta cuando hace check-in.
+- **Días pasados**: los que estuvieron adentro ese día.
+- **Días que vienen**: las reservas vivas que cubren ese día y los perros que siguen adentro si su salida prevista llega hasta ese día.
+- Las canceladas y las de «No llegó» nunca cuentan.
+
 ## Ver las reservas de un día
 
 Toca el día. Abajo salen sus reservas con la mascota, el dueño, el estado y la cuenta (por ejemplo, «Debe $350.00», «Pagada» o «Cuenta cancelada»). Una reserva cancelada dice «Total $0.00» y, si se cobró algo, cuánto se cobró y cuánto se devolvió («cobrado $100.00 · devuelto $100.00»).
 
 ## Próximas reservas
 
-Al tocar un día, el panel enseña todas sus reservas, también las finalizadas y las canceladas, cada una con su estado.
+Al tocar un día, el panel enseña todas sus reservas, también las finalizadas y las canceladas, cada una con su estado, y el perro que sigue adentro con la salida vencida. Desde un día de hoy en adelante, **+ Reserva de hotel este día** y **+ Reserva de guardería este día** abren la reserva nueva con esa fecha de entrada.
 
 Más abajo está la lista de lo que viene. Filtra por **Módulo**, **Estado** y **Desde** y toca **Filtrar**. De cada reserva puedes:
 
@@ -548,7 +554,7 @@ Lo que escribiste sigue en la pantalla.
 ## Qué hacer
 
 - **Recargar con sus cambios**: la pantalla trae lo que guardó la otra persona. Revisa y, si hace falta, vuelve a hacer tu cambio.
-- **Guardar los míos encima**: pide que confirmes con **Sí, guardar los míos encima**, porque se pierden los cambios de la otra persona. Queda anotado quién lo hizo.
+- **Guardar los míos encima**: antes de **Sí, guardar los míos encima** te dice exactamente qué pasa con lo de la otra persona, campo por campo. Hay pantallas que solo guardan lo que tocaste (reprogramar una cita, corregir su servicio, mover fechas, cada sección de la consulta): «Se guarda tu cambio de servicio. Lo que puso Ana en fecha y hora se conserva.» Otras mandan el formulario completo (la ficha del cliente o de la mascota): «Se guarda tu cambio de nombre. Lo que puso Ana en teléfono se sustituye por lo de esta pantalla.» En el horario o el esquema de pago de un empleado y en los precios se guarda lo de tu pantalla completo. Queda anotado quién lo hizo.
 
 También te avisa si el cambio lo hiciste tú mismo en **otra pestaña**: el aviso dice «Cambiaste esta cita desde otra pestaña hace 40 s: …» con los mismos dos botones. Lo que se cuida es la versión que tiene tu pantalla, no quién la cambió. Lo único que no avisa es lo que hiciste en esta misma pestaña (por ejemplo, aplicar una vacuna y luego guardar la consulta).
 

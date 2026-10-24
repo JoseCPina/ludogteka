@@ -358,6 +358,47 @@ try {
     }
   }
   {
+    // QA R41: «Guardar los míos encima» dice exactamente qué pasa. La base calcula en el conflicto qué campos de la otra
+    // persona pisaría este guardado (sustituye) y cuáles deja (conserva); la pantalla lo dice con esos datos.
+    console.log("\n3b. QA R41: qué sustituye y qué conserva «guardar encima»");
+    const { textoGuardarEncima, conflictoDeError } = await import("../../src/lib/concurrencia/tipos.ts");
+    const tel = `56${String(Date.now()).slice(-8)}`;
+    const { data: cg, error: ecg } = await SB.from("clientes").insert({ nombre: `Encima ${sufijo}`, telefono: tel, email: `encima-${sufijo}@ejemplo.mx` }).select("id, updated_at").single();
+    if (ecg) hallazgo(`cliente de prueba: ${ecg.message}`);
+    else {
+      try {
+        const ver = [{ t: "clientes", i: cg.id, v: cg.updated_at }];
+        // La otra persona cambia el correo (como la recepción que reprograma la cita).
+        await conEnc(dos.from("clientes").update({ email: `otro-${sufijo}@ejemplo.mx` }).eq("id", cg.id), enc(ver));
+        // a) Una acción que solo escribe lo suyo (como «Corregir servicio»): cambia el nombre y no toca el correo.
+        const r1 = await conEnc(uno.from("clientes").update({ nombre: `Encima ${sufijo} nuevo` }).eq("id", cg.id), enc(ver));
+        const c1 = conflictoDeError(r1.error);
+        comprobar(c1 && Object.keys(c1.mios ?? {}).includes("nombre") && (c1.conserva ?? []).includes("email") && !Object.keys(c1.sustituye ?? {}).length,
+          `solo lo suyo: mios = nombre, conserva = correo (${JSON.stringify({ mios: Object.keys(c1?.mios ?? {}), conserva: c1?.conserva, sustituye: Object.keys(c1?.sustituye ?? {}) })})`);
+        const t1 = c1 ? textoGuardarEncima(c1) : "";
+        comprobar(/Se guarda tu cambio de nombre\./.test(t1) && new RegExp(`Lo que puso ${quienDos} en correo se conserva\\.`).test(t1) && !/se pierden|sustituye/.test(t1), `texto: «${t1}»`);
+        // b) El formulario completo (como la ficha del cliente): manda también el correo que leyó, y ese sí se pisa.
+        const r2 = await conEnc(uno.from("clientes").update({ nombre: `Encima ${sufijo} nuevo`, email: `encima-${sufijo}@ejemplo.mx` }).eq("id", cg.id), enc(ver));
+        const c2 = conflictoDeError(r2.error);
+        comprobar(c2 && Object.keys(c2.sustituye ?? {}).includes("email") && Object.keys(c2.mios ?? {}).includes("nombre"), `formulario completo: sustituye = correo (${JSON.stringify(Object.keys(c2?.sustituye ?? {}))})`);
+        const t2 = c2 ? textoGuardarEncima(c2) : "";
+        comprobar(new RegExp(`Lo que puso ${quienDos} en correo se sustituye por lo de esta pantalla\\.`).test(t2), `texto: «${t2}»`);
+        // Y lo que dijo es lo que pasa: con «guardar encima», a) conserva el correo de la otra persona.
+        const rf = await conEnc(uno.from("clientes").update({ nombre: `Encima ${sufijo} nuevo` }).eq("id", cg.id), enc(ver, true));
+        const { data: tras } = await SB.from("clientes").select("nombre, email").eq("id", cg.id).single();
+        comprobar(!rf.error && tras.nombre === `Encima ${sufijo} nuevo` && tras.email === `otro-${sufijo}@ejemplo.mx`, `«guardar encima» de a) deja los dos cambios (${tras.nombre} · ${tras.email})`);
+        // Misma persona en otra pestaña: «Lo que pusiste en la otra pestaña…».
+        const t3 = textoGuardarEncima({ ...c1, mismaPersona: true });
+        comprobar(/Lo que pusiste en la otra pestaña en correo se conserva\./.test(t3), `misma persona: «${t3}»`);
+        // Un conjunto (horario del empleado, precios) se reemplaza completo y lo dice.
+        const t4 = textoGuardarEncima({ tabla: "horario_empleado", id: "x", quien: quienDos, cuando: null, cambios: {}, versionActual: null });
+        comprobar(/Se guarda lo de esta pantalla completo y se sustituye lo que capturó/.test(t4), `conjunto: «${t4}»`);
+      } finally {
+        await SB.from("clientes").update({ deleted_at: new Date().toISOString() }).eq("id", cg.id);
+      }
+    }
+  }
+  {
     console.log("\n3. La llave anónima no lee la bitácora");
     const anon = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false }, global: { headers: { "x-negocio-id": B } } });
     const { data } = await anon.from("registro_ediciones").select("id").limit(1);

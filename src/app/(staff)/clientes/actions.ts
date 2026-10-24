@@ -46,6 +46,15 @@ export async function crearCliente(
   return altaCliente(formData, null);
 }
 
+// Veterinaria (QA S30): sin mascota no hay consulta, así que el alta del dueño sigue directo a la de su mascota y de ahí a
+// su ficha. Lo usa /clientes/nuevo cuando el negocio tiene Veterinaria.
+export async function crearClienteYSuMascota(
+  _estadoPrevio: EstadoClienteForm,
+  formData: FormData
+): Promise<EstadoClienteForm> {
+  return altaCliente(formData, null, true);
+}
+
 // "Nuevo cliente → Capturarlo yo" desde un buscador (agendar, reservar,
 // cobrar): del dueño se sigue directo a registrar su perro, y de ahí de
 // vuelta a la pantalla de origen con el cliente elegido.
@@ -57,7 +66,7 @@ export async function crearClienteYVolver(
   return altaCliente(formData, rutaDeVuelta(volver));
 }
 
-async function altaCliente(formData: FormData, volver: string | null): Promise<EstadoClienteForm> {
+async function altaCliente(formData: FormData, volver: string | null, seguirConMascota = false): Promise<EstadoClienteForm> {
   const { nombre, telefonoCrudo, email, direccion, notas } = leerCampos(formData);
   const validado = validar(nombre, telefonoCrudo);
   if (validado.error) return validado;
@@ -104,6 +113,7 @@ async function altaCliente(formData: FormData, volver: string | null): Promise<E
 
   // Sin revalidatePath (QA S27): el redirect ya pinta la pantalla de destino con datos frescos (son dinámicas).
   if (volver) redirect(`/clientes/${data.id}/perros/nuevo?volver=${encodeURIComponent(volver)}`);
+  if (seguirConMascota) redirect(`/clientes/${data.id}/perros/nuevo?alta=1`);
   redirect(`/clientes/${data.id}?creado=1`);
 }
 

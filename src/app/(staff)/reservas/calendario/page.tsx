@@ -77,7 +77,7 @@ export default async function CalendarioReservasPage({ searchParams }: { searchP
   const dias = diasDeLaVista(f.vista, f.fecha);
   const [{ data: ocupacionCruda, error: errorOcupacion }, dia] = await Promise.all([
     supabase.rpc("calendario_ocupacion", { p_desde: dias[0], p_hasta: dias[dias.length - 1] }),
-    f.dia ? cargarEstancias(supabase, f, { dia: f.dia }) : Promise.resolve(null),
+    f.dia ? cargarEstancias(supabase, f, { dia: f.dia, hoy }) : Promise.resolve(null),
   ]);
   const ocupacion = new Map<string, FilaOcupacion>(((ocupacionCruda ?? []) as FilaOcupacion[]).map((o) => [o.fecha, o]));
   const proximas = await cargarEstancias(supabase, f, { proximas: true });
@@ -202,9 +202,22 @@ export default async function CalendarioReservasPage({ searchParams }: { searchP
           <>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-lg font-bold capitalize text-n-900">Reservas del {NOMBRE_DIA_LARGO.format(aFecha(f.dia))}</h2>
-              <Link href={enlace({ dia: undefined })} className="text-sm font-semibold text-morado hover:underline">
-                Cerrar el día
-              </Link>
+              <div className="flex flex-wrap items-center gap-3 text-sm font-semibold">
+                {/* N121: la reserva nueva arranca en el día elegido (si ya pasó, en hoy). */}
+                {f.dia >= hoy && conHotel && (
+                  <Link href={`/hotel/nueva?fecha=${f.dia}`} className="text-morado hover:underline" data-nueva-reserva-dia="hotel">
+                    + Reserva de hotel este día
+                  </Link>
+                )}
+                {f.dia >= hoy && conGuarderia && (
+                  <Link href={`/guarderia/nueva?fecha=${f.dia}`} className="text-morado hover:underline" data-nueva-reserva-dia="guarderia">
+                    + Reserva de guardería este día
+                  </Link>
+                )}
+                <Link href={enlace({ dia: undefined })} className="text-morado hover:underline">
+                  Cerrar el día
+                </Link>
+              </div>
             </div>
             {dia?.error ? (
               <Alert variante="error" titulo="No pudimos cargar las reservas del día">
@@ -302,12 +315,15 @@ type Cliente = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 async function cargarEstancias(
   supabase: Cliente,
   f: FiltrosCalendario,
-  que: { dia: string } | { proximas: true }
+  que: { dia: string; hoy: string } | { proximas: true }
 ): Promise<{ filas: EstanciaCruda[]; hayMas: boolean; error: boolean }> {
   let q = supabase.from("estancias").select(SELECT_ESTANCIA).is("deleted_at", null); // limite-filas-ok: se acota abajo con .limit (el día) o .range (25 por página)
   if ("dia" in que) {
-    // Cubre ese día: entra antes o ese día y sale después (la salida es exclusiva).
-    q = q.lte("fecha_entrada", que.dia).gt("fecha_salida", que.dia);
+    // Cubre ese día: entra antes o ese día y sale después (la salida es exclusiva). Hoy y antes, también el perro que
+    // sigue adentro con la salida vencida (N122: cuenta en la ocupación de esos días, así que sale en su lista).
+    q = que.dia <= que.hoy
+      ? q.lte("fecha_entrada", que.dia).or(`fecha_salida.gt.${que.dia},and(estado.eq.en_curso,hora_salida_real.is.null)`)
+      : q.lte("fecha_entrada", que.dia).gt("fecha_salida", que.dia);
   } else {
     q = q.gte("fecha_entrada", f.desde);
   }

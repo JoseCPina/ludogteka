@@ -87,6 +87,7 @@ export function NuevaReservaForm({
   paquetes,
   esAdmin,
   hoy,
+  fechaInicial,
   diasSinAtencion = [],
   base,
 }: {
@@ -99,6 +100,8 @@ export function NuevaReservaForm({
   paquetes: PaqueteDePerro[];
   esAdmin: boolean;
   hoy: string;
+  // N121: el día desde el que se abrió (calendario de reservas); uno pasado o sin fecha arranca en hoy.
+  fechaInicial?: string | null;
   // Días de la semana (1 = lunes … 7 = domingo) en que el negocio no atiende,
   // según horario_semana: el hotel no recibe ni entrega ese día.
   diasSinAtencion?: number[];
@@ -107,6 +110,7 @@ export function NuevaReservaForm({
   // no a un modulo que el usuario no eligio.
   base: string;
 }) {
+  const entradaInicial = fechaInicial && /^\d{4}-\d{2}-\d{2}$/.test(fechaInicial) && fechaInicial > hoy ? fechaInicial : hoy;
   const [clienteId, setClienteId] = useState<string | null>(null);
   const [notas, setNotas] = useState("");
   const [lineas, setLineas] = useState<Linea[]>([]);
@@ -178,7 +182,7 @@ export function NuevaReservaForm({
       revisarSanitarios(perro.id);
       const primero = primerCotizable(servicios);
       revisarChoque({
-        perroId: perro.id, perroNombre: perro.nombre, servicioId: primero?.id ?? "", fechaEntrada: hoy, fechaSalida: sumarDiasFecha(hoy, 1), horas: "1",
+        perroId: perro.id, perroNombre: perro.nombre, servicioId: primero?.id ?? "", fechaEntrada: entradaInicial, fechaSalida: sumarDiasFecha(entradaInicial, 1), horas: "1",
         bloqueoSanitarioSuperado: false, motivoExcepcionSanitaria: "", bloqueoComportamientoSuperado: false, motivoExcepcionComportamiento: "", usarPase: true,
       });
     }
@@ -194,8 +198,8 @@ export function NuevaReservaForm({
           perroId: perro.id,
           perroNombre: perro.nombre,
           servicioId: primerServicio?.id ?? "",
-          fechaEntrada: hoy,
-          fechaSalida: sumarDiasFecha(hoy, 1),
+          fechaEntrada: entradaInicial,
+          fechaSalida: sumarDiasFecha(entradaInicial, 1),
           horas: "1",
           bloqueoSanitarioSuperado: false,
           motivoExcepcionSanitaria: "",

@@ -67,3 +67,12 @@ export async function proponerFechaHoraPorPersona(
   const propuestas = await proponerHoraPorPersona(supabase, zona, ocupadosPorPersona, pedida, duracionMin);
   return Object.fromEntries(Object.entries(propuestas).map(([id, p]) => [id, { fecha: pedida ?? p.slice(0, 10), hora: p.slice(11, 16) }]));
 }
+
+/**
+ * El día que viaja como `?fecha=` en «Agendar» (N121): en la vista de día, el día que se ve; en Semana, el primer día de
+ * la semana que se ve, o hoy si esa semana ya empezó (o ya pasó). El formulario además ignora un día pasado.
+ */
+export function fechaParaAgendar(vista: "dia" | "semana", ancla: string, desde: string, hoy: string): string {
+  if (vista === "dia") return ancla;
+  return desde > hoy ? desde : hoy;
+}

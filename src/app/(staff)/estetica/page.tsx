@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { fechaParaAgendar } from "@/lib/estetica/proponer-hora";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
@@ -146,7 +147,7 @@ export default async function AgendaPage({
             flecha con su nombre para lectores de pantalla (QA del 18 de octubre de 2026). */}
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:gap-3" data-barra-agenda>
           <div className="flex flex-wrap gap-1.5 sm:gap-2">
-            <Link href={`/estetica?vista=dia&fecha=${sumarDiasFecha(fechaAncla, vista === "semana" ? -7 : -1)}`} aria-label="Anterior">
+            <Link href={`/estetica?vista=${vista}&fecha=${sumarDiasFecha(fechaAncla, vista === "semana" ? -7 : -1)}`} aria-label="Anterior">
               <Button type="button" variante="secundario" className="whitespace-nowrap px-3 sm:px-4" tabIndex={-1}>
                 <span aria-hidden>←</span>
                 <span className="hidden sm:inline">Anterior</span>
@@ -177,8 +178,8 @@ export default async function AgendaPage({
           </div>
           <div className="flex flex-wrap gap-2 [&>*]:flex-1 sm:[&>*]:flex-none">
             <BotonNuevoCliente tipo="estetica" />
-            {/* N116: el día que se está viendo viaja al formulario (el formulario ignora un día pasado). */}
-            <Link href={vista === "dia" ? `/estetica/nueva?fecha=${fechaAncla}` : "/estetica/nueva"}>
+            {/* N116/N121: el día que se está viendo (en Semana, el primero de la semana o hoy) viaja al formulario. */}
+            <Link href={`/estetica/nueva?fecha=${fechaParaAgendar(vista, fechaAncla, desde, hoy)}`} data-agendar-fecha={fechaParaAgendar(vista, fechaAncla, desde, hoy)}>
               <Button type="button" className="w-full whitespace-nowrap" tabIndex={-1}>
                 Agendar
               </Button>

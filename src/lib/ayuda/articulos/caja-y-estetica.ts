@@ -456,7 +456,7 @@ Con **Ver la cuenta** abres la cuenta del cliente. Abajo, en **Últimos reembols
 ## Abrir el turno
 
 1. En [Caja](/caja) aprieta **Turno y arqueo**.
-2. Escribe el **Fondo inicial** con el que arrancas y aprieta **Abrir turno**.
+2. Escribe el **Fondo inicial** con el que arrancas y aprieta **Abrir turno**. Al momento sale **Turno abierto** con la hora y el fondo; aunque se apriete dos veces, se abre un solo turno.
 
 ## Sacar dinero durante el día
 
@@ -469,7 +469,7 @@ Aprieta **Registrar retiro**, escribe **Monto** y **Motivo** y aprieta **Confirm
 1. Aprieta **Cerrar turno**.
 2. Cuenta el efectivo y saca el reporte del lote de la terminal antes de seguir: la app no te enseña lo esperado hasta que mandas tu conteo.
 3. Captura **Efectivo contado**, **Terminal (reporte del lote)** y **Transferencia** (0 si no hubo).
-4. Aprieta **Enviar conteo**. Si cuadra, el turno se cierra.
+4. Aprieta **Enviar conteo**. Si cuadra, el turno se cierra y sale **Turno cerrado** al momento.
 5. Si no cuadra, ves lo contado, lo esperado y la diferencia. Escribe la **Explicación de la diferencia** y aprieta **Confirmar cierre**.
 
 > Una diferencia nunca se ajusta en silencio: queda escrita con su explicación.
@@ -728,7 +728,7 @@ Es otra cosa: la raza es nueva y tu negocio no decidió su precio. Asigna el gru
 5b. Debajo sale el **Precio** de la cita. Si falta el tamaño o el pelaje del perro, el aviso te los pide ahí mismo; si la combinación no tiene precio, te da dos salidas ([Qué hacer cuando no hay precio](/ayuda/que-hacer-sin-precio-estetica)). **Agendar cita** se activa cuando ya hay precio.
 6. Si el perro llegó con el pelo maltratado, marca **Llegó con el pelo maltratado**: cobra el precio alternativo del mismo baño. Es una condición de la cita, no otro servicio.
 7. Si necesitas cobrar de más (mucho pelo, nudos, cuidado previo), escribe el **Recargo manual (opcional)** y su **Motivo del recargo**. Se suma al precio, y queda registrado con tu nombre y el motivo. Solo lo hace admin o quien tenga el permiso «Excepciones al reservar».
-8. Pon la **Fecha y hora** y aprieta **Agendar cita**. Mientras el botón esté apagado, junto a él dice qué falta («Elige el perro.», «Elige quién lo atiende.», «Falta resolver el precio…»). La fecha y la hora ya vienen propuestas: hoy (en el horario de tu negocio) a la siguiente media hora que todavía no pasa **y que la estilista elegida tiene libre** (se salta las horas en que ya tiene otra cita), o el siguiente día con lugar a la hora de apertura. Si cambias de estilista, la hora cambia a la suya mientras no hayas escrito otra. Si apretaste **Agendar** desde la vista de **Día** de la agenda, la fecha es la de ese día.
+8. Pon la **Fecha y hora** y aprieta **Agendar cita**. Mientras el botón esté apagado, junto a él dice qué falta («Elige el perro.», «Elige quién lo atiende.», «Falta resolver el precio…»). La fecha y la hora ya vienen propuestas: hoy (en el horario de tu negocio) a la siguiente media hora que todavía no pasa **y que la estilista elegida tiene libre** (se salta las horas en que ya tiene otra cita), o el siguiente día con lugar a la hora de apertura. Si cambias de estilista, la hora cambia a la suya mientras no hayas escrito otra. Si apretaste **Agendar** desde la vista de **Día** de la agenda, la fecha es la de ese día; desde la vista de **Semana**, el primer día de la semana que estabas viendo (o hoy, si esa semana ya empezó).
 
 Al agendar, junto al botón sale «Cita agendada: perro, servicio, fecha y hora» y el recuadro verde **Cita agendada** se lleva a la vista, con el enlace a la cita. Si ese mismo perro ya tiene una cita ese día (que no esté cancelada), antes de crear otra sale el aviso **Esta mascota ya tiene cita ese día** con el servicio y la hora; **Agendar otra de todos modos** la crea y **No agendar** la deja como estaba.
 

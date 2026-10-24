@@ -65,8 +65,8 @@ try {
     anotar("cliente nuevo", ms(t0));
     const clienteId = p.url().match(/clientes\/([0-9a-f-]{36})/)[1];
     creados.clientes.push(clienteId);
-    await p.waitForLoadState("networkidle");
-    await hidratada(p);
+    // Huellitas tiene Veterinaria: el alta sigue a la de su mascota (QA S30); la edición es en su ficha.
+    await ir(p, `/clientes/${clienteId}`);
 
     // Editar cliente (en su ficha).
     const nombre = p.locator('form input[name="nombre"]').first();

@@ -25,9 +25,11 @@ import { leerTodo } from "@/lib/supabase/paginar";
 export async function PaginaNuevaReserva({
   modulo,
   esWalkin = false,
+  fecha = null,
 }: {
   modulo: ModuloEstancia;
   esWalkin?: boolean;
+  fecha?: string | null;
 }) {
   const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
@@ -100,6 +102,7 @@ export async function PaginaNuevaReserva({
           paquetes={paquetes}
           esAdmin={tienePermiso(sesion, "excepciones_reserva")}
           hoy={hoy}
+          fechaInicial={esWalkin ? null : fecha}
           diasSinAtencion={diasSinAtencion}
           base={modulo.base}
         />

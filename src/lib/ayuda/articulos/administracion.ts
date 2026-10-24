@@ -436,7 +436,7 @@ Hay un solo plan, **PeluDesk**: $649 al mes + IVA ($752.84 con IVA), **sin costo
 
 **El cobro aparece como MENTEO, la empresa que opera PeluDesk.** Así lo verás en el Checkout de Stripe, en tu estado de cuenta, en los recibos y en las facturas.
 
-Si contratas durante la prueba, no pierdes días: el primer cobro es el último día de tu prueba. «Módulos y plan», el aviso de arriba y Stripe dicen la misma fecha y los mismos días. El Checkout dice «Contratas PeluDesk. No se te cobra hoy; el primer cobro es el…» con esa fecha.
+Si contratas durante la prueba, no pierdes días: la prueba dura hasta el final de su último día y el primer cobro es **el día siguiente** (prueba hasta el 3 nov → primer cobro el 4 nov). «Módulos y plan», el aviso de arriba y Stripe dicen la misma fecha: la app la toma del fin de prueba que tiene tu suscripción en Stripe. El Checkout dice «Contratas PeluDesk. No se te cobra hoy; el primer cobro es el…» con esa fecha.
 
 ## Después
 

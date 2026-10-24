@@ -1,6 +1,8 @@
 import { PaginaNuevaReserva } from "@/app/(staff)/reservas/modulo/pagina-nueva";
 import { MODULOS } from "@/lib/modulos";
 
-export default function HotelNuevaPage() {
-  return <PaginaNuevaReserva modulo={MODULOS.hotel} />;
+// N121: `?fecha=` (desde el calendario de reservas) deja la entrada en ese día.
+export default async function HotelNuevaPage({ searchParams }: { searchParams: Promise<{ fecha?: string }> }) {
+  const { fecha } = await searchParams;
+  return <PaginaNuevaReserva modulo={MODULOS.hotel} fecha={fecha ?? null} />;
 }

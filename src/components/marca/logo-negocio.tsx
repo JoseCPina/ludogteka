@@ -120,7 +120,14 @@ export function LogoNegocio({
         >
           {(nombre.trim()[0] ?? "·").toUpperCase()}
         </span>
-        <span className={`font-bold tracking-tight text-n-900 ${barra ? "min-w-0 truncate" : ""}`} style={{ fontSize: PX_NOMBRE[variante] }} data-nombre-negocio>
+        {/* QA S30: a 390 px un nombre de 30 letras («PRUEBA QA Onboarding Hotel S16») no cabe en un renglón aunque tenga
+            todo el ancho sobrante: en el celular va en hasta DOS renglones más chicos (cabe en los 64 px del encabezado);
+            desde sm, un renglón con «…». */}
+        <span
+          className={`font-bold tracking-tight text-n-900 ${barra ? "min-w-0 break-words text-[15px] leading-tight line-clamp-2 sm:block sm:truncate sm:text-[18px]" : ""}`}
+          style={barra ? undefined : { fontSize: PX_NOMBRE[variante] }}
+          data-nombre-negocio
+        >
           {nombre}
         </span>
       </span>
