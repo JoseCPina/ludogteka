@@ -10,7 +10,7 @@ const formato = new URL("../../src/lib/formato.ts", import.meta.url).href;
 const dir = mkdtempSync(join(tmpdir(), "prueba-"));
 const archivo = join(dir, "prueba.ts");
 writeFileSync(archivo, readFileSync(new URL("../../src/lib/cobro/prueba.ts", import.meta.url), "utf8").replace("@/lib/formato", formato));
-const { finDePrueba, diasDePrueba, textoCheckout, AVISO_COBRO_MENTEO, CHECKOUT_FIJO } = await import(pathToFileURL(archivo).href);
+const { finDePrueba, diasDePrueba, textoCheckout, AVISO_COBRO_MENTEO, CHECKOUT_FIJO, primerCobro, trialEndAlContratar } = await import(pathToFileURL(archivo).href);
 
 let mal = 0;
 const igual = (a, b, t) => { if (JSON.stringify(a) === JSON.stringify(b)) console.log(`  ✔ ${t}`); else { mal++; console.log(`  ✘ ${t}: salió ${JSON.stringify(a)} y debía ${JSON.stringify(b)}`); } };
@@ -40,9 +40,20 @@ for (const [hora, zona, ahoraIso] of [["00:05", MEXICO, "2026-10-16T06:05:00Z"],
   igual(stripeDias, diasDePrueba(fin, zona, "2026-10-16"), `a las ${hora} (${zona}) Stripe y el banner dicen ${stripeDias} días`);
 }
 
+// N123: la prueba termina al final del 29 (23:59:59 en la zona del negocio): Stripe cobra en ese instante, que ya es
+// el 30 («a partir del 30 de octubre»). La app dice el 30 en el Checkout, el banner y «Módulos y plan».
+const { formatearFecha } = await import(formato);
+igual(formatearFecha(primerCobro(f), MEXICO), formatearFecha("2026-10-30T18:00:00Z", MEXICO), "prueba hasta el 29 → primer cobro el 30 (México)");
+igual(formatearFecha(primerCobro(finDePrueba(fin, TIJUANA)), TIJUANA), formatearFecha("2026-10-30T20:00:00Z", TIJUANA), "y el 30 también en Tijuana");
+igual(formatearFecha(primerCobro("2026-11-04T05:59:59Z"), MEXICO), formatearFecha("2026-11-04T18:00:00Z", MEXICO), "el caso de la QA: trial_end 3 nov 23:59:59 → primer cobro el 4 nov");
+// El trial_end que se manda al contratar: el final del último día, o 49 h desde ahora si queda menos.
+igual(trialEndAlContratar(fin, MEXICO, Date.parse("2026-10-16T18:00:00Z"))?.toISOString(), f.toISOString(), "con días de sobra, trial_end = final del último día");
+igual(trialEndAlContratar(fin, MEXICO, Date.parse("2026-10-29T18:00:00Z"))?.toISOString(), "2026-10-31T19:00:00.000Z", "con menos de 49 h, ahora + 49 h");
+igual(trialEndAlContratar(fin, MEXICO, Date.parse("2026-10-31T00:00:00Z")), null, "prueba ya terminada: sin trial_end");
+
 // El texto del Checkout lleva la fecha real y a nombre de quién sale el cobro.
 const t = textoCheckout(f, MEXICO);
-ok(/Contratas PeluDesk\. No se te cobra hoy; el primer cobro es el 29 oct/i.test(t), `texto con la fecha real: «${t}»`);
+ok(/Contratas PeluDesk\. No se te cobra hoy; el primer cobro es el 30 oct/i.test(t), `texto con la fecha del cobro: «${t}»`);
 ok(t.includes("MENTEO, la empresa que opera PeluDesk"), "y dice que el cobro aparece como MENTEO");
 ok(AVISO_COBRO_MENTEO === "El cobro aparece como MENTEO, la empresa que opera PeluDesk.", "el aviso es el acordado");
 ok(!/No se te cobra hoy/.test(textoCheckout(null, MEXICO)) && /Se cobra hoy/.test(textoCheckout(null, MEXICO)), "sin prueba dice que se cobra hoy");

@@ -9,7 +9,7 @@ import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { formatearFecha } from "@/lib/formato";
 import { conIva, netoDe, pesosDeCentavos, sumar, type Periodicidad } from "@/lib/cobro/iva";
 import { tipoDeCambio } from "@/lib/cobro/cambio";
-import { AVISO_COBRO_MENTEO, diasDePrueba } from "@/lib/cobro/prueba";
+import { AVISO_COBRO_MENTEO, diasDePrueba, primerCobro, trialEndAlContratar } from "@/lib/cobro/prueba";
 import type { MiCobro, ModuloQueSeApaga, PlanOferta, Seleccion } from "@/lib/cobro/tipos";
 import { abrirPortalPagos, cambiarPlanSuscripcion, cancelarCambioProgramado, contratar, impactoDeCambio } from "./cobro-actions";
 
@@ -45,6 +45,11 @@ export function Suscripcion({
   const router = useRouter();
   const zona = useZonaNegocio();
   const fecha = (iso: string | null) => (iso ? formatearFecha(iso, zona) : "");
+  // N123: antes de contratar, el día del primer cobro es el siguiente al último de la prueba (lo que recibirá Stripe).
+  const fechaPrimerCobro = (iso: string | null) => {
+    const fin = trialEndAlContratar(iso, zona);
+    return fin ? fecha(primerCobro(fin)) : fecha(iso);
+  };
   const diasQueQuedan = (iso: string | null) => {
     if (!iso) return "";
     const d = diasDePrueba(iso, zona);
@@ -138,10 +143,10 @@ export function Suscripcion({
   const enPruebaSinContratar = cobro.plan === "prueba" && !tieneSub && cobro.estado === "prueba";
   const cuando = !tieneSub
     ? enPruebaSinContratar
-      ? `No se te cobra hoy. El primer cobro es el ${fecha(cobro.prueba_termina_at)}, al terminar tu prueba (${diasQueQuedan(cobro.prueba_termina_at)}); después, ${pesosDeCentavos(total.total)} ${POR[sel.periodicidad]}.`
+      ? `No se te cobra hoy. El primer cobro es el ${fechaPrimerCobro(cobro.prueba_termina_at)}, al terminar tu prueba (${diasQueQuedan(cobro.prueba_termina_at)}); después, ${pesosDeCentavos(total.total)} ${POR[sel.periodicidad]}.`
       : `Se cobra hoy y después ${pesosDeCentavos(total.total)} ${POR[sel.periodicidad]}.`
     : cobro.estado_stripe === "trialing"
-      ? `Cambia lo que se cobrará al terminar tu prueba (${fecha(cobro.prueba_hasta)}): ${pesosDeCentavos(total.total)} ${POR[sel.periodicidad]}.`
+      ? `Cambia lo que se cobrará al terminar tu prueba (primer cobro el ${fecha(cobro.prueba_hasta ? primerCobro(cobro.prueba_hasta) : null)}): ${pesosDeCentavos(total.total)} ${POR[sel.periodicidad]}.`
       : tipo === "bajar"
         ? `Se aplica el ${fecha(cobro.periodo_fin)}, al terminar lo que ya pagaste. Hasta entonces sigues con tu plan actual.`
         : `Se aplica hoy: se cobra la diferencia proporcional a lo que queda de tu periodo, y después ${pesosDeCentavos(total.total)} ${POR[sel.periodicidad]}.`;
@@ -314,8 +319,9 @@ function EstadoActual({
     case "prueba":
       texto = cobro.tiene_suscripcion ? (
         <>
-          Contrataste el plan <strong>{contratado?.nombre}</strong> ({cobro.periodicidad}). Tu prueba sigue hasta el {fecha(cobro.prueba_hasta)} y ese
-          día se hace el primer cobro: {monto}.
+          {/* N123: la fecha del cobro sale del trial_end real de Stripe (prueba hasta el 3 nov → primer cobro el 4 nov). */}
+          Contrataste el plan <strong>{contratado?.nombre}</strong> ({cobro.periodicidad}). Tu prueba sigue hasta el {fecha(cobro.prueba_hasta)}; el primer
+          cobro es el <strong data-primer-cobro>{fecha(cobro.prueba_hasta ? primerCobro(cobro.prueba_hasta) : null)}</strong>: {monto}.
         </>
       ) : (
         <>

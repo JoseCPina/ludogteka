@@ -18,10 +18,12 @@ export default async function NuevoPerroPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ volver?: string }>;
+  searchParams: Promise<{ volver?: string; alta?: string }>;
 }) {
   const { id } = await params;
-  const volver = rutaDeVuelta((await searchParams).volver);
+  const sp = await searchParams;
+  const volver = rutaDeVuelta(sp.volver);
+  const recienCreado = !volver && sp.alta === "1";
 
   const supabase = await createSupabaseServerClient();
   const [{ data: cliente }, razas, { data: tamanos }, { data: pelajes }] = await Promise.all([
@@ -60,6 +62,15 @@ export default async function NuevoPerroPage({
           Registra a su perro y regresas a donde estabas con el cliente ya elegido.{" "}
           <Link href={hrefDeVuelta(volver, id)} className="font-semibold underline">
             Seguir sin registrar perro
+          </Link>
+        </Alert>
+      )}
+
+      {recienCreado && (
+        <Alert variante="exito" titulo={`${cliente.nombre} quedó registrado`}>
+          Registra a su mascota y quedas en su ficha.{" "}
+          <Link href={`/clientes/${id}`} className="font-semibold underline">
+            Seguir sin registrar mascota
           </Link>
         </Alert>
       )}

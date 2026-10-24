@@ -11,7 +11,7 @@ import { precioParaCobrar, sincronizarPreciosPlan } from "@/lib/cobro/precios";
 import { configuracionPortal } from "@/lib/cobro/portal";
 import { METADATA_NEGOCIO, aplicarSuscripcion, guardarCliente } from "@/lib/cobro/suscripcion";
 import { tipoDeCambio } from "@/lib/cobro/cambio";
-import { AVISO_COBRO_MENTEO, CHECKOUT_FIJO, finDePrueba, textoCheckout } from "@/lib/cobro/prueba";
+import { AVISO_COBRO_MENTEO, CHECKOUT_FIJO, textoCheckout, trialEndAlContratar } from "@/lib/cobro/prueba";
 import { esCorreoSintetico } from "@/lib/auth/identidad";
 import { ajustarSucursales, esItemSucursal, precioSucursal, sucursalesActivas } from "@/lib/cobro/sucursales";
 import { guardarEnCliente, validarDatosFacturacion, type DatosFacturacion } from "@/lib/cobro/facturacion";
@@ -24,7 +24,6 @@ import type { MiCobro, ModuloQueSeApaga, PlanOferta, ResultadoCobro, Seleccion }
 // suscripción de Stripe (aplicarSuscripcion), igual que el webhook.
 
 const VIVAS = new Set(["trialing", "active", "past_due", "unpaid"]);
-const HORAS_MIN_PRUEBA = 49; // Stripe pide que el fin de la prueba esté a 48 h o más.
 
 async function contexto() {
   const sesion = await obtenerSesionConRol();
@@ -139,11 +138,8 @@ export async function contratar(sel: Seleccion): Promise<ResultadoCobro> {
     // Durante la prueba no pierde días: el primer cobro es al terminar. La fecha es la misma que ve en el banner
     // y en «Módulos y plan» (el último día de la prueba en la zona del negocio), y Stripe recibe el instante exacto.
     const zona = await zonaActual();
-    let trialEnd: number | undefined;
-    const fin = ctx.cobro.plan === "prueba" && ctx.cobro.prueba_termina_at ? finDePrueba(ctx.cobro.prueba_termina_at, zona) : null;
-    if (fin && fin.getTime() > Date.now()) {
-      trialEnd = Math.ceil(Math.max(fin.getTime(), Date.now() + HORAS_MIN_PRUEBA * 3600_000) / 1000);
-    }
+    const finPrueba = ctx.cobro.plan === "prueba" ? trialEndAlContratar(ctx.cobro.prueba_termina_at, zona) : null;
+    const trialEnd = finPrueba ? finPrueba.getTime() / 1000 : undefined;
     // Para que el cobro de Stripe no sorprenda: sus facturas y recibos dicen a nombre de quién sale.
     await stripe().customers.update(customer, { invoice_settings: { footer: AVISO_COBRO_MENTEO } });
     const base = urlDelNegocio(ctx.negocio);

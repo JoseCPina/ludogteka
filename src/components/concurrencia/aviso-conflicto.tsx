@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useZonaNegocio } from "@/components/zona-negocio";
-import { textoConflicto, type Conflicto } from "@/lib/concurrencia/tipos";
+import { textoConflicto, textoGuardarEncima, type Conflicto } from "@/lib/concurrencia/tipos";
 
 /**
  * Otra persona cambió el registro mientras esta pantalla lo tenía abierto (QA N43). Nada se guardó: la persona
@@ -34,8 +34,9 @@ export function AvisoConflicto({
       <p data-conflicto-texto>{textoConflicto(conflicto, registro, zona)}</p>
       {seguro ? (
         <div className="flex flex-col gap-2">
-          <p className="font-semibold text-coral-oscuro">
-            Si guardas los tuyos encima, se pierden los cambios {conflicto.mismaPersona ? "que hiciste en la otra pestaña" : `de ${conflicto.quien?.trim() || "la otra persona"}`}. Queda anotado quién lo hizo.
+          {/* QA R41: lo que de verdad pasa, campo por campo (lo calcula la base en el conflicto). */}
+          <p className="font-semibold text-coral-oscuro" data-guardar-encima-texto>
+            {textoGuardarEncima(conflicto)}
           </p>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variante="peligro" cargando={cargando} onClick={onGuardarEncima} data-guardar-encima-confirmar>

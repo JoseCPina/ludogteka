@@ -17,13 +17,38 @@ export function diasDePrueba(finIso: string, zona: string, hoy: string = hoyNego
   return Math.max(0, Math.round((Date.UTC(a2, m2 - 1, d2) - Date.UTC(a1, m1 - 1, d1)) / 86_400_000));
 }
 
+/** Stripe pide que el fin de la prueba esté a 48 h o más de que se crea la suscripción. */
+export const HORAS_MIN_PRUEBA = 49;
+
+/**
+ * El `trial_end` que recibe Stripe al contratar durante la prueba: el final del último día de la prueba (o, si quedan
+ * menos de 49 h, ahora + 49 h). null si la prueba ya terminó. Lo usan `contratar` y el texto previo de «Módulos y plan».
+ */
+export function trialEndAlContratar(pruebaTerminaIso: string | null, zona: string, ahora = Date.now()): Date | null {
+  if (!pruebaTerminaIso) return null;
+  const fin = finDePrueba(pruebaTerminaIso, zona);
+  if (fin.getTime() <= ahora) return null;
+  return new Date(Math.ceil(Math.max(fin.getTime(), ahora + HORAS_MIN_PRUEBA * 3600_000) / 1000) * 1000);
+}
+
+/**
+ * N123: el instante del primer cobro. Stripe cobra cuando termina la prueba (`trial_end` de la suscripción). La prueba
+ * termina en el último segundo de su último día en la zona del negocio (23:59:59, `finDePrueba`), así que el cobro cae
+ * en el día SIGUIENTE: prueba hasta el 3 nov, primer cobro el 4 nov (lo mismo que dice Stripe, «a partir del 4 de
+ * noviembre»). Con un `trial_end` a media tarde (prueba que se acaba en horas) es ese mismo día.
+ * Se muestra con formatearFecha(…, zona) en el banner, «Módulos y plan» y el texto del Checkout.
+ */
+export function primerCobro(trialEnd: string | Date): string {
+  return new Date(new Date(trialEnd).getTime() + 1000).toISOString();
+}
+
 /** Lo que se le dice a quien paga: a nombre de quién sale el cobro. */
 export const AVISO_COBRO_MENTEO = "El cobro aparece como MENTEO, la empresa que opera PeluDesk.";
 
 /** El texto junto al botón final de Stripe Checkout. */
 export function textoCheckout(trialEnd: Date | null, zona: string): string {
   const base = trialEnd
-    ? `Contratas PeluDesk. No se te cobra hoy; el primer cobro es el ${formatearFecha(trialEnd.toISOString(), zona)}.`
+    ? `Contratas PeluDesk. No se te cobra hoy; el primer cobro es el ${formatearFecha(primerCobro(trialEnd), zona)}.`
     : "Contratas PeluDesk. Se cobra hoy.";
   return `${base} Precios con IVA incluido. ${AVISO_COBRO_MENTEO}`;
 }

@@ -77,10 +77,8 @@ export async function cerrarTurno(
   const fila = Array.isArray(data) ? data[0] : data;
   if (!fila) return { error: "No pudimos leer el resultado del cierre.", ...RESULTADO_VACIO };
 
-  if (fila.cerrado) {
-    revalidatePath("/caja");
-    revalidatePath("/caja/turno");
-  }
+  // Sin revalidatePath (QA S30: «Enviar conteo» tardaba varios segundos porque repintaba /caja y /caja/turno antes de
+  // responder): la pantalla pinta el cierre con esta respuesta y se refresca después.
 
   return {
     error: null,

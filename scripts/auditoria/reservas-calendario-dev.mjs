@@ -11,6 +11,9 @@
 // 4. Una cuenta cancelada sin cancelar la reserva se ve (Cuenta cancelada + reserva abierta) y, cancelándola
 //    junto con la cuenta, la reserva sale de la ocupación.
 // 5. El mensaje de traslape lleva el enlace al calendario en la fecha que choca.
+// 6. N122: la ocupación de hoy y de los días pasados cuenta a quien está adentro (también con la salida vencida; el
+//    check-out libera el cupo al momento); la de los días futuros, las reservas vivas y a quien sigue adentro y su
+//    salida prevista alcanza ese día. Canceladas y no-show nunca. N121: «+ Reserva … este día» lleva ?fecha.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -82,6 +85,95 @@ try {
   const pH = await mkPerro("hotel");
   const eG = await mkEstancia(pG, gDia.id, D, suma(D, 1));
   const eH = await mkEstancia(pH, hNoche.id, D, suma(D, 3));
+
+  console.log("── 6. N122: la ocupación cuenta quién está adentro (hoy y antes) y lo reservado (después)");
+  {
+    // Días en que el negocio abre (el hotel no recibe ni entrega en día cerrado).
+    const abre = async (d) => (await admin.rpc("negocio_abre", { p_fecha: d })).data === true;
+    const abiertoDesde = async (d, paso) => { let x = d; for (let i = 0; i < 14 && !(await abre(x)); i++) x = suma(x, paso); return x; };
+    const instante = (dia, hora) => new Date(`${dia}T${hora}:00-07:00`).toISOString();
+    const marcar = async (e, cambios) => {
+      const { error } = await admin.from("estancias").update(cambios).eq("id", e.id);
+      if (error) throw new Error(`estancia ${e.id}: ${error.message}`);
+    };
+    const checkin = (dia) => ({ estado: "en_curso", entregado_por_nombre: "Prueba", hora_entrada_real: dia === hoy ? new Date(Date.now() - 3 * 3600_000).toISOString() : instante(dia, "10:00") });
+    const checkout = { estado: "finalizada", recogido_por_nombre: "Prueba", recogido_por_es_dueno: true, hora_salida_real: new Date(Date.now() - 3600_000).toISOString() };
+    // Cada caso con lo que debe contar, para comparar contra la base: entrada, salida, estado, día de check-in y de check-out.
+    const casos = [];
+    const caso = async (nombre, servicio, entrada, salida, pasos) => {
+      const e = await mkEstancia(await mkPerro(nombre), servicio, entrada, salida);
+      const c = { nombre, id: e.id, hotel: servicio === hNoche.id, entrada, salida, estado: "reservada", dentro: null, fuera: null };
+      for (const paso of pasos) {
+        await marcar(e, paso.cambios);
+        c.estado = paso.cambios.estado;
+        if (paso.dentro) c.dentro = paso.dentro;
+        if (paso.fuera) c.fuera = paso.fuera;
+      }
+      casos.push(c);
+      return c;
+    };
+    // a) Adentro con la salida vencida (QA R24: la salida prevista ya pasó y no hay check-out).
+    const salidaA = await abiertoDesde(suma(hoy, -2), -1);
+    const entradaA = await abiertoDesde(suma(salidaA, -1), -1);
+    const vencida = await caso("vencida", hNoche.id, entradaA, salidaA, [{ cambios: checkin(entradaA), dentro: entradaA }]);
+    // b) Check-out hecho hoy con la salida prevista después (QA S30: seguía ocupando hoy y mañana).
+    const entradaB = await abiertoDesde(hoy, -1);
+    await caso("salio hoy", hNoche.id, entradaB, await abiertoDesde(suma(hoy, 2), 1), [{ cambios: checkin(entradaB), dentro: entradaB }, { cambios: checkout, fuera: hoy }]);
+    // c) Adentro desde antes y con la salida prevista después de mañana: cuenta hoy y hasta su salida.
+    const entradaC = await abiertoDesde(suma(hoy, -1), -1);
+    const salidaC = await abiertoDesde(suma(hoy, 2), 1);
+    await caso("adentro", hNoche.id, entradaC, salidaC, [{ cambios: checkin(entradaC), dentro: entradaC }]);
+    // d) Reserva viva que todavía no llega.
+    const entradaD = await abiertoDesde(suma(hoy, 1), 1);
+    await caso("futura", hNoche.id, entradaD, await abiertoDesde(suma(entradaD, 2), 1), []);
+    // e) Guardería de hoy sin check-in (si hoy abre): hoy no cuenta todavía.
+    if (await abre(hoy)) await caso("sin llegar", gDia.id, hoy, suma(hoy, 1), []);
+    // f) Cancelada y no-show: nunca.
+    await caso("cancelada", hNoche.id, entradaD, await abiertoDesde(suma(entradaD, 2), 1), [{ cambios: { estado: "cancelada" } }]);
+    const entradaF = await abiertoDesde(suma(hoy, -3), -1);
+    await caso("no llego", hNoche.id, entradaF, await abiertoDesde(suma(entradaF, 1), 1), [{ cambios: { estado: "no_llego" } }]);
+
+    // La regla, escrita aparte para comparar (de noche solo hotel y el check-out de ese día ya no duerme ahí).
+    const cuenta = (c, D, noche) => {
+      if (["cancelada", "no_llego"].includes(c.estado) || (noche && !c.hotel) || c.entrada > D) return false;
+      const adentroAhora = Boolean(c.dentro) && !c.fuera;
+      if (D === hoy) return adentroAhora;
+      if (D < hoy) return Boolean(c.dentro) && c.dentro <= D && (!c.fuera || c.fuera > D || (!noche && c.fuera === D));
+      return c.salida > D && (["reservada", "confirmada"].includes(c.estado) || adentroAhora);
+    };
+    const dias = [...new Set([entradaA, entradaF, suma(hoy, -1), hoy, suma(hoy, 1), suma(hoy, 2), salidaC])].sort();
+    const leer = async () => {
+      const { data } = await admin.rpc("calendario_ocupacion", { p_desde: dias[0], p_hasta: dias[dias.length - 1] });
+      return Object.fromEntries((data ?? []).map((f) => [f.fecha, { d: f.ocupado_diurno, n: f.ocupado_nocturno }]));
+    };
+    // Lo que ya había (otras auditorías) sale de quitar los casos: se compara la base con y sin ellos.
+    const con = await leer();
+    for (const c of casos) await SB.from("estancias").update({ deleted_at: new Date().toISOString() }).eq("id", c.id);
+    const sin = await leer();
+    for (const c of casos) await SB.from("estancias").update({ deleted_at: null }).eq("id", c.id);
+    for (const D of dias) {
+      const esperadoD = casos.filter((c) => cuenta(c, D, false)).length;
+      const esperadoN = casos.filter((c) => cuenta(c, D, true)).length;
+      const dD = con[D].d - sin[D].d;
+      const dN = con[D].n - sin[D].n;
+      const quienes = casos.filter((c) => cuenta(c, D, false)).map((c) => c.nombre).join(", ") || "nadie";
+      comprobar(dD === esperadoD && dN === esperadoN, `${D}${D === hoy ? " (hoy)" : ""}: +${dD} de día / +${dN} de noche, esperado +${esperadoD}/+${esperadoN} (${quienes})`);
+    }
+    comprobar(cuenta(vencida, hoy, true) && !cuenta(casos.find((c) => c.nombre === "salio hoy"), suma(hoy, 1), true), "los dos casos de la QA: la salida vencida cuenta hoy y el check-out de hoy ya no ocupa mañana");
+    // El panel del día de hoy enseña al de la salida vencida (cuenta en la ocupación de hoy).
+    const ctxN = await nav.newContext({ viewport: { width: 1280, height: 900 } });
+    await ctxN.addCookies(await cookiesDe(datos.adminB));
+    const pn = await ctxN.newPage();
+    pn.setDefaultTimeout(60000);
+    await pn.goto(`${BASE}/reservas/calendario?dia=${hoy}`, { waitUntil: "networkidle", timeout: 120000 });
+    comprobar((await pn.locator(`[data-lista=dia] [data-reserva="${vencida.id}"]`).count()) === 1, "el panel de hoy incluye al perro que sigue adentro con la salida vencida");
+    // N121: desde el día elegido, «+ Reserva de hotel este día» lleva la fecha.
+    const futuroDia = suma(hoy, 2);
+    await pn.goto(`${BASE}/reservas/calendario?dia=${futuroDia}`, { waitUntil: "networkidle", timeout: 120000 });
+    const hrefDia = await pn.locator('[data-nueva-reserva-dia="hotel"]').getAttribute("href").catch(() => null);
+    comprobar(hrefDia === `/hotel/nueva?fecha=${futuroDia}`, `«+ Reserva de hotel este día» lleva ?fecha (${hrefDia})`);
+    await ctxN.close();
+  }
 
   console.log("── 5. Traslape: el mensaje lleva el enlace al calendario");
   const choque = await admin.from("estancias").insert({

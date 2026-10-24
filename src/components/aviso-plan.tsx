@@ -4,7 +4,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 import { formatearFecha } from "@/lib/formato";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { whatsappPeluDesk } from "@/lib/peludesk/landing";
-import { diasDePrueba } from "@/lib/cobro/prueba";
+import { diasDePrueba, primerCobro } from "@/lib/cobro/prueba";
 import { cookies } from "next/headers";
 
 // El aviso del plan del negocio, arriba de todo en el staff y el portal:
@@ -158,6 +158,24 @@ export async function AvisoPlan({ esPersonal }: { esPersonal: boolean }) {
         )}
       </div>
     );
+  }
+
+  // N123: ya contrató durante la prueba. Al admin se le dice cuándo es el primer cobro, con el trial_end real de Stripe
+  // (el mismo día que ve en «Módulos y plan» y que dice Stripe: prueba hasta el 3 nov → primer cobro el 4 nov).
+  if (negocio.plan === "prueba" && fin && prueba && !prueba.vencida && esAdmin && cobro?.contratado) {
+    const { data: mio } = await supabase.rpc("mi_cobro");
+    const hasta = (mio as { prueba_hasta?: string | null } | null)?.prueba_hasta ?? null;
+    if (hasta) {
+      return (
+        <div role="status" data-aviso-plan="contratado_en_prueba" className="bg-morado-suave px-4 py-1.5 text-center text-sm text-morado md:px-6">
+          Contrataste PeluDesk: tu prueba sigue hasta el {formatearFecha(hasta, zona)} y el primer cobro es el{" "}
+          <strong data-primer-cobro>{formatearFecha(primerCobro(hasta), zona)}</strong>.{" "}
+          <a href="/admin/modulos" className="font-semibold underline underline-offset-2">
+            Ver mi plan
+          </a>
+        </div>
+      );
+    }
   }
 
   if (escribible === false) {

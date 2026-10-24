@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { fechaParaAgendar } from "@/lib/estetica/proponer-hora";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,7 @@ export default async function AgendaVeterinaria({ searchParams }: { searchParams
           <Link href={enlace(vista, sumarDiasFecha(ancla, vista === "semana" ? 7 : 1))}><Button type="button" variante="secundario">Siguiente →</Button></Link>
           <Link href={enlace("dia", ancla)}><Button type="button" variante={vista === "dia" ? "primario" : "secundario"}>Día</Button></Link>
           <Link href={enlace("semana", ancla)}><Button type="button" variante={vista === "semana" ? "primario" : "secundario"}>Semana</Button></Link>
-          <Link href={`/veterinaria/agenda/nueva?fecha=${ancla}`}><Button type="button">Agendar</Button></Link>
+          <Link href={`/veterinaria/agenda/nueva?fecha=${fechaParaAgendar(vista, ancla, desde, hoy)}`} data-agendar-fecha={fechaParaAgendar(vista, ancla, desde, hoy)}><Button type="button">Agendar</Button></Link>
         </div>
       </div>
 

@@ -33,6 +33,16 @@ export type Conflicto = {
   extra?: string[];
   /** N120: lo cambió la misma persona que intenta guardar, desde otra pestaña. */
   mismaPersona?: boolean;
+  /**
+   * QA R41: qué haría «Guardar los míos encima», según la base (OLD contra NEW en el momento del conflicto). Sin estos
+   * datos (conjuntos como el horario de un empleado o los precios, que se reemplazan completos) se dice que se sustituye
+   * lo de la otra persona.
+   *   sustituye: campos que la otra persona cambió y este guardado pisa; conserva: los que deja como están;
+   *   mios: lo que este guardado cambia y ella no tocó.
+   */
+  sustituye?: Record<string, [unknown, unknown]>;
+  conserva?: string[];
+  mios?: Record<string, unknown>;
 };
 
 /** Lo que cada edición que puede chocar devuelve. */
@@ -73,6 +83,7 @@ const ETIQUETA_CAMPO: Record<string, string> = {
   nombre_completo: "nombre",
   telefono: "teléfono",
   correo: "correo",
+  email: "correo",
   direccion: "dirección",
   notas: "notas",
   raza: "raza",
@@ -247,5 +258,48 @@ export function conflictoDeError(error: { code?: string; details?: string | null
     cambios: (d.cambios as Conflicto["cambios"]) ?? {},
     versionActual: (d.version_actual as string | null) ?? null,
     mismaPersona: d.misma_persona === true,
+    sustituye: d.sustituye && typeof d.sustituye === "object" ? (d.sustituye as Conflicto["sustituye"]) : undefined,
+    conserva: Array.isArray(d.conserva) ? (d.conserva as string[]) : undefined,
+    mios: d.mios && typeof d.mios === "object" ? (d.mios as Record<string, unknown>) : undefined,
   };
+}
+
+// Las columnas con sufijo de instante que no están en ETIQUETA_CAMPO.
+const ETIQUETA_CONFIRMACION: Record<string, string> = { inicia_at: "fecha y hora", termina_at: "hora de término" };
+
+/** «servicio», «fecha y hora»… null para lo interno (quién autorizó, de qué negocio). */
+export function etiquetaCampo(campo: string): string | null {
+  if (/_por(_id)?$/.test(campo) || ["created_by", "negocio_id", "id", "updated_at", "created_at", "rango"].includes(campo)) return null;
+  return ETIQUETA_CONFIRMACION[campo] ?? ETIQUETA_CAMPO[campo] ?? campo.replace(/_id$/, "").replace(/_(at|en)$/, "").replace(/_/g, " ");
+}
+
+function listaEtiquetas(campos: string[]): string | null {
+  const unicas = [...new Set(campos.map(etiquetaCampo).filter((x): x is string => !!x))];
+  if (!unicas.length) return null;
+  return unicas.length === 1 ? unicas[0] : `${unicas.slice(0, -1).join(", ")} y ${unicas[unicas.length - 1]}`;
+}
+
+/**
+ * La segunda confirmación de «Guardar los míos encima» (QA R41): dice exactamente qué pasa con lo de la otra persona
+ * (o la otra pestaña), campo por campo, con lo que la base calculó en el conflicto.
+ *   «Se guarda tu cambio de servicio. Lo que puso QA Recepción en fecha y hora se conserva.»
+ *   «Se guarda tu cambio de nombre. Lo que puso QA Recepción en teléfono se sustituye por lo de esta pantalla.»
+ */
+export function textoGuardarEncima(c: Conflicto): string {
+  const deQuien = c.mismaPersona ? "Lo que pusiste en la otra pestaña" : `Lo que puso ${c.quien?.trim() || "la otra persona"}`;
+  if (!c.sustituye && !c.conserva) {
+    const loSuyo = c.mismaPersona ? "lo que capturaste en la otra pestaña" : `lo que capturó ${c.quien?.trim() || "la otra persona"}`;
+    return `Se guarda lo de esta pantalla completo y se sustituye ${loSuyo}. Queda anotado quién lo hizo.`;
+  }
+  const mios = listaEtiquetas(Object.keys(c.mios ?? {}));
+  const pisa = listaEtiquetas(Object.keys(c.sustituye ?? {}));
+  const deja = listaEtiquetas(c.conserva ?? []);
+  const frases: string[] = [];
+  const nMios = new Set(Object.keys(c.mios ?? {}).map(etiquetaCampo).filter(Boolean)).size;
+  if (mios) frases.push(`Se guarda${nMios > 1 ? "n tus cambios" : " tu cambio"} de ${mios}.`);
+  else if (pisa) frases.push("Se guarda lo de esta pantalla.");
+  if (pisa) frases.push(`${deQuien} en ${pisa} se sustituye por lo de esta pantalla.`);
+  if (deja) frases.push(`${deQuien} en ${deja} se conserva.`);
+  if (!pisa && !deja) frases.push(`${deQuien} no se toca.`);
+  return `${frases.join(" ")} Queda anotado quién lo hizo.`;
 }
