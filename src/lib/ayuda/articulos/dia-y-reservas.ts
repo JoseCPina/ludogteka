@@ -342,10 +342,11 @@ Si el perro ya está en la puerta sin reserva, usa **Walk-in (sin reserva)** des
 3. El cupo es el de toda la casa: guardería y hotel comparten el mismo espacio.
 
 Cómo se cuenta cada día (igual aquí, en el tablero de Guardería y de Hotel, en el inicio y al reservar):
-- **Hoy**: los perros que están adentro (con check-in y sin check-out), aunque su salida ya haya vencido, y las reservas de hoy que todavía no hacen check-in (llegadas pendientes). Al hacer el check-out, el lugar se libera en ese momento. Una llegada pendiente que marcas «No llegó» o cancelas deja de contar y libera su lugar. Con 8 adentro, 5 por llegar y cupo de 10, la app ya no deja reservar hoy.
+- **Hoy**: los perros que están adentro (con check-in y sin check-out), aunque su salida ya haya vencido, y las reservas que entran hoy y todavía no hacen check-in (llegadas pendientes). Al hacer el check-out, el lugar se libera en ese momento. Una llegada pendiente que marcas «No llegó» o cancelas deja de contar y libera su lugar. Con 8 adentro, 5 por llegar y cupo de 10, la app ya no deja reservar hoy.
 - **Días pasados**: los que estuvieron adentro ese día.
 - **Días que vienen**: las reservas vivas que cubren ese día y los perros que siguen adentro si su salida prevista llega hasta ese día.
 - Las canceladas y las de «No llegó» nunca cuentan.
+- **Llegadas atrasadas**: una reserva cuya fecha de entrada ya pasó sin check-in deja de contar desde el día siguiente a su entrada, pero sigue viva. El tablero de Guardería y el de Hotel la enseñan arriba, en **Llegadas atrasadas**, con tres botones: **No llegó** (te pide confirmar), **Check-in tardío** (desde ese momento vuelve a contar como adentro) y **Reprogramar** (abre la reserva para mover sus fechas; con la entrada nueva, vuelve a contar).
 
 ## Ver las reservas de un día
 

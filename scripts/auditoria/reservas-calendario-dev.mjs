@@ -15,7 +15,9 @@
 //    check-out libera el cupo al momento); la de los días futuros, las reservas vivas y a quien sigue adentro y su
 //    salida prevista alcanza ese día. Hoy también las llegadas pendientes (reservas vivas sin check-in). Canceladas
 //    y no-show nunca. Con 8 adentro, 5 por llegar y cupo 10, no deja reservar hoy; si las 5 se marcan no-show o se
-//    cancelan, sí. N121: «+ Reserva … este día» lleva ?fecha.
+//    cancelan, sí. Una reserva con la entrada vencida sin check-in (llegada atrasada) no cuenta ningún día: sale en
+//    «Llegadas atrasadas» del tablero, donde se marca «No llegó»; con el check-in tardío vuelve a contar desde ese
+//    momento. N121: «+ Reserva … este día» lleva ?fecha.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -130,6 +132,9 @@ try {
     await caso("futura", hNoche.id, entradaD, await abiertoDesde(suma(entradaD, 2), 1), []);
     // e) Guardería de hoy sin check-in (si hoy abre): llegada pendiente, cuenta hoy.
     if (await abre(hoy)) await caso("sin llegar", gDia.id, hoy, suma(hoy, 1), []);
+    // g) Llegada atrasada: la entrada ya pasó sin check-in. Sigue viva pero no cuenta ningún día.
+    const entradaG = await abiertoDesde(suma(hoy, -2), -1);
+    const atrasada = await caso("atrasada", hNoche.id, entradaG, await abiertoDesde(suma(hoy, 2), 1), []);
     // f) Cancelada y no-show: nunca.
     await caso("cancelada", hNoche.id, entradaD, await abiertoDesde(suma(entradaD, 2), 1), [{ cambios: { estado: "cancelada" } }]);
     const entradaF = await abiertoDesde(suma(hoy, -3), -1);
@@ -139,11 +144,12 @@ try {
     const cuenta = (c, D, noche) => {
       if (["cancelada", "no_llego"].includes(c.estado) || (noche && !c.hotel) || c.entrada > D) return false;
       const adentroAhora = Boolean(c.dentro) && !c.fuera;
-      if (D === hoy) return adentroAhora || (!c.dentro && ["reservada", "confirmada"].includes(c.estado) && c.salida > D);
+      const viva = ["reservada", "confirmada"].includes(c.estado);
+      if (D === hoy) return adentroAhora || (!c.dentro && viva && c.entrada === D && c.salida > D);
       if (D < hoy) return Boolean(c.dentro) && c.dentro <= D && (!c.fuera || c.fuera > D || (!noche && c.fuera === D));
-      return c.salida > D && (["reservada", "confirmada"].includes(c.estado) || adentroAhora);
+      return c.salida > D && ((viva && c.entrada >= hoy) || adentroAhora);
     };
-    const dias = [...new Set([entradaA, entradaF, suma(hoy, -1), hoy, suma(hoy, 1), suma(hoy, 2), salidaC])].sort();
+    const dias = [...new Set([entradaA, entradaF, entradaG, suma(hoy, -1), hoy, suma(hoy, 1), suma(hoy, 2), salidaC])].sort();
     const leer = async () => {
       const { data } = await admin.rpc("calendario_ocupacion", { p_desde: dias[0], p_hasta: dias[dias.length - 1] });
       return Object.fromEntries((data ?? []).map((f) => [f.fecha, { d: f.ocupado_diurno, n: f.ocupado_nocturno }]));
@@ -162,6 +168,7 @@ try {
       comprobar(dD === esperadoD && dN === esperadoN, `${D}${D === hoy ? " (hoy)" : ""}: +${dD} de día / +${dN} de noche, esperado +${esperadoD}/+${esperadoN} (${quienes})`);
     }
     comprobar(cuenta(vencida, hoy, true) && !cuenta(casos.find((c) => c.nombre === "salio hoy"), suma(hoy, 1), true), "los dos casos de la QA: la salida vencida cuenta hoy y el check-out de hoy ya no ocupa mañana");
+    comprobar(dias.every((D) => !cuenta(atrasada, D, false)), "la llegada atrasada no cuenta ningún día (ni su entrada, ni hoy, ni después)");
     // El panel del día de hoy enseña al de la salida vencida (cuenta en la ocupación de hoy).
     const ctxN = await nav.newContext({ viewport: { width: 1280, height: 900 } });
     await ctxN.addCookies(await cookiesDe(datos.adminB));
@@ -169,6 +176,35 @@ try {
     pn.setDefaultTimeout(60000);
     await pn.goto(`${BASE}/reservas/calendario?dia=${hoy}`, { waitUntil: "networkidle", timeout: 120000 });
     comprobar((await pn.locator(`[data-lista=dia] [data-reserva="${vencida.id}"]`).count()) === 1, "el panel de hoy incluye al perro que sigue adentro con la salida vencida");
+    // Llegadas atrasadas en el tablero de Hotel; «No llegó» desde ahí, y el check-in tardío vuelve a contar.
+    {
+      const entradaH = await abiertoDesde(suma(hoy, -1), -1);
+      const salidaH = await abiertoDesde(suma(hoy, 2), 1);
+      const tardia = await mkEstancia(await mkPerro("tardia"), hNoche.id, entradaH, salidaH);
+      const noVino = await mkEstancia(await mkPerro("no vino"), hNoche.id, entradaH, salidaH);
+      const manana = suma(hoy, 1);
+      const leerDos = async () => {
+        const { data } = await admin.rpc("calendario_ocupacion", { p_desde: entradaH, p_hasta: manana });
+        return Object.fromEntries((data ?? []).map((f) => [f.fecha, f.ocupado_nocturno]));
+      };
+      await pn.goto(`${BASE}/hotel`, { waitUntil: "networkidle", timeout: 120000 });
+      const lista = pn.locator("[data-lista=llegadas-atrasadas]");
+      comprobar((await lista.locator(`[data-llegada-atrasada="${tardia.id}"]`).count()) === 1 && (await lista.locator(`[data-llegada-atrasada="${noVino.id}"]`).count()) === 1, "el tablero de Hotel enseña las dos en «Llegadas atrasadas»");
+      const fila = lista.locator(`[data-llegada-atrasada="${tardia.id}"]`);
+      comprobar((await fila.getByRole("link", { name: "Check-in tardío" }).getAttribute("href")) === `/reservas/estancias/${tardia.id}/checkin` && (await fila.getByRole("link", { name: "Reprogramar" }).getAttribute("href")) === `/reservas/${tardia.reserva}`, "cada una trae «Check-in tardío» y «Reprogramar»");
+      const filaNo = lista.locator(`[data-llegada-atrasada="${noVino.id}"]`);
+      await filaNo.locator("[data-no-llego]").click();
+      await filaNo.locator("[data-confirmar-no-llego]").click();
+      await filaNo.locator("[data-marcada-no-llego]").waitFor({ timeout: 30000 }).catch(() => {});
+      comprobar((await estado(noVino.id)).estado === "no_llego", `«No llegó» desde el tablero la marca (${(await estado(noVino.id)).estado})`);
+      const antesTarde = await leerDos();
+      await marcar(tardia, checkin(hoy));
+      const despuesTarde = await leerDos();
+      comprobar(despuesTarde[hoy] - antesTarde[hoy] === 1 && despuesTarde[manana] - antesTarde[manana] === 1 && despuesTarde[entradaH] === antesTarde[entradaH],
+        `con el check-in tardío cuenta desde ese momento: hoy +${despuesTarde[hoy] - antesTarde[hoy]}, mañana +${despuesTarde[manana] - antesTarde[manana]}, su día de entrada +${despuesTarde[entradaH] - antesTarde[entradaH]}`);
+      await pn.goto(`${BASE}/hotel`, { waitUntil: "networkidle", timeout: 120000 });
+      comprobar((await pn.locator(`[data-llegada-atrasada="${tardia.id}"], [data-llegada-atrasada="${noVino.id}"]`).count()) === 0, "las dos salen de «Llegadas atrasadas» al resolverse");
+    }
     // N121: desde el día elegido, «+ Reserva de hotel este día» lleva la fecha.
     const futuroDia = suma(hoy, 2);
     await pn.goto(`${BASE}/reservas/calendario?dia=${futuroDia}`, { waitUntil: "networkidle", timeout: 120000 });
