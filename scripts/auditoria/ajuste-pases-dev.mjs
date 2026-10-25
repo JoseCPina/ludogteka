@@ -26,6 +26,7 @@ import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
 import { todas, contar } from "../lib/paginar.mjs";
+import { CONFIRMA_FUERA_HORARIO } from "../lib/fuera-horario.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
@@ -299,7 +300,7 @@ try {
   comprobar((await pase(bonoCheck)).cantidad_disponible === 8, "el pase llevaba 1 usado y ahora 2 (queda 8)");
   const noAdentro = await rpc(tRec, "deshacer_checkin_estancia", { p_estancia_id: est.id, p_motivo: "checkin_por_error" });
   comprobar(!noAdentro.ok && /adentro/.test(noAdentro.mensaje), "no se deshace el check-in de un perro que todavía no entró");
-  const checkin = await llamar(`${URL}/rest/v1/estancias?id=eq.${est.id}`, { method: "PATCH", headers: cab(tRec), body: JSON.stringify({ estado: "en_curso", entregado_por_nombre: "Dueño (prueba)", entregado_por_telefono: "4421234567", estado_llegada: "Nervioso" }) });
+  const checkin = await llamar(`${URL}/rest/v1/estancias?id=eq.${est.id}`, { method: "PATCH", headers: cab(tRec), body: JSON.stringify({ estado: "en_curso", entregado_por_nombre: "Dueño (prueba)", entregado_por_telefono: "4421234567", estado_llegada: "Nervioso", ...CONFIRMA_FUERA_HORARIO }) });
   comprobar(checkin.ok && checkin.cuerpo?.[0]?.estado === "en_curso", `recepción hace el check-in (${checkin.mensaje || "ok"})`);
   const antes5 = await foto();
   const recSinDeshace = await rpc(tRecSin, "deshacer_checkin_estancia", { p_estancia_id: est.id, p_motivo: "checkin_por_error" });
@@ -330,7 +331,7 @@ try {
   const pSin = (await nuevoPerro());
   let esin = { cuerpo: null, mensaje: "" };
   try {
-    const sp = await crearEstancia(pSin, { estado: "en_curso", entregado_por_nombre: "x" });
+    const sp = await crearEstancia(pSin, { estado: "en_curso", entregado_por_nombre: "x", ...CONFIRMA_FUERA_HORARIO });
     esin = { cuerpo: [{ id: sp.id }], mensaje: "" };
   } catch (e) { esin = { cuerpo: null, mensaje: e.message }; }
   if (esin.cuerpo?.[0]?.id) {

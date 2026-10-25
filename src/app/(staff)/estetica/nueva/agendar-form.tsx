@@ -14,6 +14,7 @@ import { BuscadorClientes } from "@/components/buscador-clientes";
 import type { ClienteBuscable } from "@/lib/clientes/buscables";
 import { hoyNegocio, horaLocalParaInput, instanteDeHoraLocal, formatearFecha, horaLocalDeInstante } from "@/lib/formato";
 import { SelectorRaza, type RazaOpcion } from "@/components/selector-raza";
+import { tallaYPelajeAlElegirRaza } from "@/lib/perros/talla-sugerida";
 import { crearPerritoEstetica } from "../perritos-actions";
 import { completarTallaPelajeDelPerro, cotizarCitaEstetica, crearCita, estilistasAusentesEnTramo, type CotizacionCita } from "../agenda-actions";
 import { conTope, mensajeDeFallo } from "@/lib/ui/espera";
@@ -604,7 +605,13 @@ export function AgendarForm({
           </p>
           <p className="text-sm text-n-600">Solo lo que hace falta para el baño: nombre, raza, tamaño y pelaje. Nada de guardería u hotel.</p>
           <Field label="Nombre del perrito" value={npNombre} onChange={(e) => setNpNombre(e.target.value)} />
-          <SelectorRaza razas={razas} label="Raza" mostrarGrupo valorId={npRaza.raza_id} valorTexto={npRaza.raza} onCambio={(v) => setNpRaza({ raza_id: v.raza_id, raza: v.raza })} />
+          <SelectorRaza razas={razas} label="Raza" mostrarGrupo valorId={npRaza.raza_id} valorTexto={npRaza.raza} onCambio={(v) => {
+            setNpRaza({ raza_id: v.raza_id, raza: v.raza });
+            // Los típicos de la raza solo llenan lo vacío (N126).
+            const sugerido = tallaYPelajeAlElegirRaza(razas.find((r) => r.id === v.raza_id), { tamanoId: npTamano, pelajeId: npPelaje });
+            setNpTamano(sugerido.tamanoId);
+            setNpPelaje(sugerido.pelajeId);
+          }} />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Select label="Tamaño" value={npTamano} onChange={(e) => setNpTamano(e.target.value)}>
               <option value="">Elige el tamaño</option>

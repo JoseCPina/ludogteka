@@ -272,12 +272,12 @@ Si alguien tiene cuenta pero no quedó ligada a su expediente, aparece en [Vincu
     rutas: ["/guarderia/nueva", "/guarderia/series", "/guarderia/walkin", "/guarderia"],
     palabras: ["reserva", "apartar día", "serie", "recurrente", "walk-in", "day care"],
     captura: "reservar-guarderia.jpg",
-    cuerpo: `Si la mascota ya tiene otra reserva en esas fechas, de guardería o de hotel, el aviso sale al elegirla, dice con cuál choca y lleva al calendario de ese día; «Crear reserva» no se activa hasta cambiar las fechas o quitarla. Si faltan datos que se recomiendan para hotel y guardería (fecha de nacimiento, alimentación, contacto de emergencia, veterinario) sale un aviso que no impide reservar, con enlace a la ficha. Los días que el negocio no atiende no se pueden escoger: el campo lo marca y dice la regla («El hotel no recibe perros los domingos») solo cuando la fecha que escogiste cae en ese día. Si faltan vacunas o la evaluación de comportamiento, el aviso de abajo ofrece autorizar la excepción solo a quien tiene el permiso «Excepciones al reservar»; a los demás les dice qué falta y a quién pedírsela.
+    cuerpo: `Si la mascota ya tiene otra reserva en esas fechas, de guardería o de hotel, el aviso sale al elegirla, dice con cuál choca y lleva al calendario de ese día; «Crear reserva» no se activa hasta cambiar las fechas o quitarla. Si faltan datos que se recomiendan para hotel y guardería (fecha de nacimiento, alimentación, contacto de emergencia, veterinario) sale un aviso que no impide reservar, con enlace a la ficha. Si la fecha que escogiste cae en un día que el negocio no atiende, el campo lo marca con la regla («El hotel no recibe perros los domingos») y **Crear reserva** se queda apagado hasta que cambies la fecha o marques **El negocio está cerrado ese día; registrar de todos modos**: con la casilla se guarda y la reserva lo enseña («Reservada con el negocio cerrado: entrada el domingo 1/11/2026»). Si faltan vacunas o la evaluación de comportamiento, el aviso de abajo ofrece autorizar la excepción solo a quien tiene el permiso «Excepciones al reservar»; a los demás les dice qué falta y a quién pedírsela.
 
 Una reserva aparta el lugar del perro y revisa, antes de guardar, que tenga todo en regla y que haya cupo.
 
 1. En [Guardería](/guarderia) toca **Nueva reserva**.
-2. Busca al dueño por perro, nombre o teléfono. Si es nuevo, usa **Nuevo cliente**.
+2. Busca al dueño por perro, nombre o teléfono. Con varias palabras, cada una tiene que estar en el dueño, en alguno de sus perros o, si es un número, en el teléfono («Motita Pérez» trae a Motita de Pérez). Si es nuevo, usa **Nuevo cliente**.
 3. Marca a cada perro que viene y escoge el **Servicio** y la **Fecha**. Si es por hora, pon las **Horas (estimado)**.
 4. Si el perro tiene day pass o mensualidad, aparece **Tiene pases disponibles**: escoge si usa un pase o paga el día suelto.
 5. Toca **Crear reserva**. Desde el resultado puedes **Hacer check-in ahora →**.
@@ -291,7 +291,7 @@ En **Series recurrentes** toca **Nueva serie**, escoge el perro, el servicio y l
 - «Falta … vigente de …» (vacunas vencidas o sin registro): el aviso sale en cuanto marcas a la mascota, con su enlace al expediente, y **Crear reserva** se queda apagado mientras falte algo. Registra la vacuna en su expediente. Un admin, o quien tenga el permiso «Excepciones al reservar», ve ahí mismo, bajo el aviso, la casilla **Autorizar excepción**; la marca, escribe el motivo y toca **Reintentar con excepción**. Quien no tiene ese permiso no ve la casilla: el aviso solo dice qué falta y que no se puede reservar, y que le pida la excepción a un admin o a quien tenga el permiso.
 - «Este perro no tiene evaluación previa de comportamiento.»: el aviso sale en cuanto eliges a la mascota, con un enlace para completar la evaluación en su expediente. Un admin (o quien tenga el permiso de excepciones) puede reservar sin ella marcando la excepción ahí mismo y escribiendo el motivo; quien no lo tiene ve que no se puede reservar y a quién pedírsela.
 - «No hay cupo disponible (diurno) para el …»: ese día ya está lleno.
-- «Guardería no abre en …»: escoge un día con horario.
+- «Guardería no abre en …»: escoge un día con horario, o marca **El negocio está cerrado ese día; registrar de todos modos** si de verdad lo vas a recibir.
 - «Nina ya tiene una reserva de guardería el … (reservada) que se traslapa con estas fechas»: el aviso dice con qué reserva choca (mascota, módulo, fechas y estado). Toca **el calendario** al final para ver ese día ([Calendario de reservas](/ayuda/calendario-de-reservas)). Una visita ya **Finalizada** no impide reservar otra el mismo día.`,
   },
   {
@@ -303,12 +303,12 @@ En **Series recurrentes** toca **Nueva serie**, escoge el perro, el servicio y l
     roles: ["admin", "recepcion"],
     rutas: ["/hotel/nueva", "/hotel/series", "/hotel/walkin", "/hotel"],
     palabras: ["hospedaje", "noches", "pensión", "reserva de hotel", "dormir", "vacaciones"],
-    cuerpo: `Si la mascota ya tiene otra reserva en esas fechas, de guardería o de hotel, el aviso sale al elegirla, dice con cuál choca y lleva al calendario de ese día; «Crear reserva» no se activa hasta cambiar las fechas o quitarla. Si faltan datos que se recomiendan para hotel y guardería (fecha de nacimiento, alimentación, contacto de emergencia, veterinario) sale un aviso que no impide reservar, con enlace a la ficha. Los días que el negocio no atiende no se pueden escoger: el campo lo marca y dice la regla («El hotel no recibe perros los domingos») solo cuando la fecha que escogiste cae en ese día. Si faltan vacunas o la evaluación de comportamiento, el aviso de abajo ofrece autorizar la excepción solo a quien tiene el permiso «Excepciones al reservar»; a los demás les dice qué falta y a quién pedírsela.
+    cuerpo: `Si la mascota ya tiene otra reserva en esas fechas, de guardería o de hotel, el aviso sale al elegirla, dice con cuál choca y lleva al calendario de ese día; «Crear reserva» no se activa hasta cambiar las fechas o quitarla. Si faltan datos que se recomiendan para hotel y guardería (fecha de nacimiento, alimentación, contacto de emergencia, veterinario) sale un aviso que no impide reservar, con enlace a la ficha. Si la fecha que escogiste cae en un día que el negocio no atiende, el campo lo marca con la regla («El hotel no recibe perros los domingos») y **Crear reserva** se queda apagado hasta que cambies la fecha o marques **El negocio está cerrado ese día; registrar de todos modos**: con la casilla se guarda y la reserva lo enseña («Reservada con el negocio cerrado: entrada el domingo 1/11/2026»). Si faltan vacunas o la evaluación de comportamiento, el aviso de abajo ofrece autorizar la excepción solo a quien tiene el permiso «Excepciones al reservar»; a los demás les dice qué falta y a quién pedírsela.
 
 El hotel se reserva igual que la guardería, pero con entrada y salida: se cobran las noches que hay entre las dos fechas.
 
 1. En [Hotel](/hotel) toca **Nueva reserva**.
-2. Busca al dueño por perro, nombre o teléfono. Si es nuevo, usa **Nuevo cliente**.
+2. Busca al dueño por perro, nombre o teléfono. Con varias palabras, cada una tiene que estar en el dueño, en alguno de sus perros o, si es un número, en el teléfono («Motita Pérez» trae a Motita de Pérez). Si es nuevo, usa **Nuevo cliente**.
 3. Marca a cada perro que se queda, escoge el **Servicio** y pon la **Entrada** y la **Salida**.
 4. Agrega **Notas (opcional)** si hay algo que el equipo deba saber.
 5. Toca **Crear reserva** y luego **Ver reserva** para revisar la cuenta.
@@ -320,7 +320,7 @@ Si el perro ya está en la puerta sin reserva, usa **Walk-in (sin reserva)** des
 ## Si algo no sale
 
 - «No hay cupo disponible (nocturno) para el …»: esa noche ya está llena.
-- «El hotel no recibe perros en …» o «El hotel no entrega perros en …»: cambia la llegada o la salida a un día con horario.
+- «El hotel no recibe perros en …» o «El hotel no entrega perros en …»: cambia la llegada o la salida a un día con horario, o marca **El negocio está cerrado ese día; registrar de todos modos**.
 - «Este perro no tiene talla registrada y el precio depende de ella.»: captura su tamaño en el expediente.
 - «Esta perra está marcada en celo…»: no se puede quedar mientras dure.`,
   },
@@ -397,6 +397,8 @@ Al cancelar una cuenta en [Caja](/caja), marca la casilla para cancelar también
 
 > **Con la casa llena** (por ejemplo, el check-in tardío de una llegada atrasada): no se bloquea, pero antes de registrar te dice «La casa está llena (10/10); al registrar la entrada quedas en 11/10.» Toca **Registrar la entrada de todos modos** para confirmar o **Todavía no**. Lo confirmado queda anotado en la bitácora con tu nombre y la hora, y la reserva lo enseña: «Entró con la casa llena: quedó en 11/10 de día.»
 
+> **Fuera del horario** (un día que el negocio no abre, o antes de abrir o después de cerrar): tampoco se bloquea. Al tocar **Confirmar check-in** te pregunta «El negocio está cerrado hoy; ¿registrar de todos modos?» (o «El negocio está cerrado a esta hora (hoy abre de 09:00 a 19:00); …»). Toca **Registrar la entrada de todos modos** o **Todavía no**. Lo confirmado queda en la bitácora y la reserva lo enseña: «Entró fuera del horario: domingo 25/10/2026, el negocio no abre ese día.»
+
 > Las vacunas vencidas, la falta de evaluación, el celo, la gestación y las alertas que bloquean se revisan al reservar: si el perro tiene reserva, ya pasó por ahí. Aun así, fíjate en los avisos antes de recibirlo.
 
 ## Si algo no sale
@@ -420,7 +422,7 @@ Al cancelar una cuenta en [Caja](/caja), marca la casilla para cancelar también
 2. Si hace falta, agrega cargos en **Aplicar cargo** y toca **Aplicar**.
 3. Las pertenencias salen sin palomear: confirma cada una con su casilla, o toca **Entregué todo** para marcarlas de un toque. Si confirmas la salida con alguna **sin entregar**, escribe el **Motivo de lo que no se entrega**: es obligatorio y queda registrado. Al terminar, la pantalla de salida lista lo que se devolvió y lo que no, con ese motivo.
 4. Escribe **Quién recoge al perro** y marca **Sí, es el dueño** o **No, persona autorizada**.
-5. Toca **Confirmar salida**. Sale **Salida registrada** con el botón **Cobrar la cuenta**, que abre el cobro de esa reserva (también aparece en la pantalla de salida de un perro que ya salió).
+5. Toca **Confirmar salida**. Si es un día que el negocio no abre, o fuera de su horario, te pregunta «El negocio está cerrado hoy; ¿registrar de todos modos?»: toca **Registrar la salida de todos modos** (queda en la bitácora y en la reserva: «Salió fuera del horario: …») o **Todavía no**. Sale **Salida registrada** con el botón **Cobrar la cuenta**, que abre el cobro de esa reserva (también aparece en la pantalla de salida de un perro que ya salió).
 
 En hotel, si se queda más, toca **Extender la salida**, escoge la nueva salida y revisa en cuánto queda la cuenta antes de guardar. Si un perro de guardería sigue aquí después del cierre, puedes **Convertir en noche de hotel**.
 
@@ -448,7 +450,7 @@ En hotel, si se queda más, toca **Extender la salida**, escoge la nueva salida 
     cuerpo: `Un day pass o una mensualidad es de un solo perro: solo él lo usa. Si el dueño tiene dos perros, compra dos paquetes. Cuando reservas guardería de día completo, la reserva toma el pase sola.
 
 1. Entra a [Day pass y mensualidad](/guarderia/pases) desde Guardería, o a **Vender pase o mensualidad** desde [Caja](/caja).
-2. Busca al dueño por perro, nombre o teléfono.
+2. Busca al dueño por perro, nombre o teléfono (con varias palabras, todas tienen que coincidir).
 3. Toca **Vender paquete**.
 4. Escoge el **Perro** y el **Paquete**.
 5. Escoge el **Método** y el **Monto**. Para pagar con dos métodos, usa **+ Repartir en otro método**.

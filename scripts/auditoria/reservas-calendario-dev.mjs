@@ -25,6 +25,7 @@ import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
 import { abrirNavegador } from "../lib/navegador.mjs";
+import { CONFIRMA_FUERA_HORARIO, confirmarSiFueraDeHorario } from "../lib/fuera-horario.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
@@ -101,8 +102,8 @@ try {
       const { error } = await admin.from("estancias").update(cambios).eq("id", e.id);
       if (error) throw new Error(`estancia ${e.id}: ${error.message}`);
     };
-    const checkin = (dia) => ({ estado: "en_curso", entregado_por_nombre: "Prueba", hora_entrada_real: dia === hoy ? new Date(Date.now() - 3 * 3600_000).toISOString() : instante(dia, "10:00") });
-    const checkout = { estado: "finalizada", recogido_por_nombre: "Prueba", recogido_por_es_dueno: true, hora_salida_real: new Date(Date.now() - 3600_000).toISOString() };
+    const checkin = (dia) => ({ estado: "en_curso", entregado_por_nombre: "Prueba", hora_entrada_real: dia === hoy ? new Date(Date.now() - 3 * 3600_000).toISOString() : instante(dia, "10:00"), ...CONFIRMA_FUERA_HORARIO });
+    const checkout = { estado: "finalizada", recogido_por_nombre: "Prueba", recogido_por_es_dueno: true, hora_salida_real: new Date(Date.now() - 3600_000).toISOString(), ...CONFIRMA_FUERA_HORARIO };
     // Cada caso con lo que debe contar, para comparar contra la base: entrada, salida, estado, día de check-in y de check-out.
     const casos = [];
     const caso = async (nombre, servicio, entrada, salida, pasos) => {
@@ -274,6 +275,9 @@ try {
         await pc.goto(`${BASE}/reservas/estancias/${tarde.id}/checkin`, { waitUntil: "networkidle", timeout: 120000 });
         await pc.locator("#checkin-entrega-quien").selectOption({ index: 1 });
         await pc.locator("[data-confirmar-checkin]").click();
+        // N125: si la prueba corre fuera del horario de Huellitas, primero pregunta eso (fuera-horario-dev lo cubre).
+        await pc.locator("[data-aviso-sobrecupo], [data-aviso-fuera-horario]").first().waitFor({ timeout: 30000 }).catch(() => {});
+        await confirmarSiFueraDeHorario(pc, 500);
         const aviso = await pc.locator("[data-aviso-sobrecupo]").innerText({ timeout: 30000 }).catch(() => "");
         comprobar(aviso === `La casa está llena (${c}/${c}); al registrar la entrada quedas en ${c + 1}/${c}.`, `check-in tardío con la casa llena: «${aviso}»`);
         comprobar((await estado(tarde.id)).estado === "reservada", "sin confirmar no se registra la entrada");

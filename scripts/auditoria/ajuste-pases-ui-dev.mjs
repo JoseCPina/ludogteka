@@ -20,6 +20,7 @@ import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
 import { abrirNavegador } from "../lib/navegador.mjs";
+import { CONFIRMA_FUERA_HORARIO } from "../lib/fuera-horario.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
@@ -173,7 +174,7 @@ try {
   }).select("id").single()).data;
   const rpcRec = await comoPersona(recId);
   await rpcRec.rpc("aplicar_bono_a_estancia", { p_estancia_id: est.id });
-  await rpcRec.from("estancias").update({ estado: "en_curso", entregado_por_nombre: "Dueña (prueba UI)", estado_llegada: "Tranquilo" }).eq("id", est.id);
+  await rpcRec.from("estancias").update({ estado: "en_curso", entregado_por_nombre: "Dueña (prueba UI)", estado_llegada: "Tranquilo", ...CONFIRMA_FUERA_HORARIO }).eq("id", est.id);
   const antes = (await SB.from("bonos_clientes").select("cantidad_disponible").eq("id", bono.id).single()).data.cantidad_disponible;
   await pr.goto(`${BASE}/reservas/estancias/${est.id}/checkin`, { waitUntil: "networkidle" });
   comprobar(await pr.getByText("Viene con pase").isVisible(), "el check-in dice «Viene con pase»");
