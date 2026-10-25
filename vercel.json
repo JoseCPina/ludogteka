@@ -55,7 +55,7 @@
     },
     {
       "path": "/api/cron/demo",
-      "schedule": "7 * * * *"
+      "schedule": "*/15 * * * *"
     }
   ]
 }

@@ -3,10 +3,11 @@ import { timingSafeEqual } from "node:crypto";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 /**
- * El demo al día (vercel.json → crons, cada hora; QA S31). Nadie opera el demo (es de solo lectura), así que lo
- * sembrado para los días siguientes se vuelve pasado sin check-in. `estancias_poner_al_dia` le hace el check-in y el
- * check-out a su hora (o lo deja «No llegó») y saca a quien se quedó con la salida vencida: el demo nunca enseña
- * «Llegadas atrasadas» ni una ocupación desfasada. Vercel manda `Authorization: Bearer <CRON_SECRET>`.
+ * El demo al día (vercel.json → crons, cada 15 minutos; QA S31). Nadie opera el demo (es de solo lectura), así que
+ * `estancias_poner_al_dia` vive su día por él: check-in y check-out a su hora (o «No llegó»), cada cuenta terminada
+ * cobrada en el turno de su día, y el turno de caja abierto de la apertura al cierre de su horario (cerrado con
+ * diferencia $0). El demo nunca enseña «Llegadas atrasadas» ni una ocupación desfasada, y en horario Caja tiene su
+ * turno abierto con los cobros del día. Vercel manda `Authorization: Bearer <CRON_SECRET>`.
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
