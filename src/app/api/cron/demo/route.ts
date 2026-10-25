@@ -33,6 +33,9 @@ export async function GET(request: NextRequest) {
       const { data, error: e } = await createSupabaseAdminClient(n.id).rpc("estancias_poner_al_dia", { p_negocio: n.id, p_modo: "atender" });
       if (e) throw e;
       resultado[n.slug] = data;
+      // Lo que no se pudo atender (una regla de la base lo rechazó) queda en los logs de Vercel con su motivo.
+      const errores = (data as { citas?: { errores?: string[] } } | null)?.citas?.errores ?? [];
+      if (errores.length) console.error(`[cron] demo ${n.slug}: ${errores.length} cita(s) sin atender`, errores);
     }
     return NextResponse.json({ ok: true, demos: resultado });
   } catch (e) {
