@@ -7,6 +7,8 @@
 //   1. Ninguna reserva de un día pasado sin check-in, y nadie adentro con la salida vencida.
 //   2. Ninguna cuenta de estancias ya terminada (salida antes de hoy) con saldo: cada una está cobrada.
 //   3. Ningún turno de caja de un día anterior abierto, y los turnos con cobros del demo cerrados con diferencia $0.
+//      El de hoy sigue el horario: en horario, abierto desde la apertura; fuera de horario, ninguno abierto, y el de
+//      hoy cerrado a la hora de cierre.
 //   4. Los cobros que hizo demo_cobrar_cuentas: en efectivo y ~1 de cada 10 con terminal, fechados a su salida.
 //   5. Las cuentas del demo siguen en solo lectura.
 //   6. Los negocios «PRUEBA …» de QA no tienen ningún cobro de esas cuentas (no cobran nada).
@@ -50,10 +52,24 @@ for (const n of demos) {
   const hoy = new Intl.DateTimeFormat("en-CA", { timeZone: n.zona_horaria || "America/Mexico_City" }).format(new Date());
   const diaLocal = (iso) => new Intl.DateTimeFormat("en-CA", { timeZone: n.zona_horaria || "America/Mexico_City" }).format(new Date(iso));
   console.log(`\n── ${n.slug} (hoy ${hoy})`);
+  // Su horario (la configuración vigente hoy) y la hora del negocio: el cron corre cada 15 minutos, así que todo lo que
+  // «ya tocó» se juzga con 20 minutos de margen.
+  const zona = n.zona_horaria || "America/Mexico_City";
+  const [conf] = exigir(await N.from("cupo_configuracion").select("id").eq("negocio_id", n.id).lte("vigencia_desde", hoy).is("deleted_at", null).order("vigencia_desde", { ascending: false }).limit(1), "configuración");
+  const horario = conf ? exigir(await N.from("horario_semana").select("dia_semana, hora_apertura, hora_cierre").eq("cupo_configuracion_id", conf.id).is("deleted_at", null).order("dia_semana"), "horario") : [];
+  const desfase = (fecha) => { const d = new Date(`${fecha}T12:00:00Z`); const local = new Date(d.toLocaleString("en-US", { timeZone: zona })); const utc = new Date(d.toLocaleString("en-US", { timeZone: "UTC" })); return utc - local; };
+  const instante = (fecha, hora) => new Date(new Date(`${fecha}T${hora}Z`).getTime() + desfase(fecha));
+  const horarioDe = (fecha) => { const h = horario.find((x) => x.dia_semana === new Date(`${fecha}T12:00:00Z`).getUTCDay()); return h?.hora_apertura ? { abre: instante(fecha, h.hora_apertura), cierra: instante(fecha, h.hora_cierre) } : null; };
+  const ahora = new Date();
+  const MARGEN = 20 * 60_000;
+  const hHoy = horarioDe(hoy);
   const estancias = await todas(() => N.from("estancias").select("id, reserva_id, estado, fecha_entrada, fecha_salida, hora_entrada_real, hora_salida_real, servicios(categoria)").eq("negocio_id", n.id).is("deleted_at", null).order("id"));
   const cat = (e) => (Array.isArray(e.servicios) ? e.servicios[0] : e.servicios)?.categoria;
   const atrasadas = estancias.filter((e) => ["reservada", "confirmada"].includes(e.estado) && !e.hora_entrada_real && e.fecha_entrada < hoy);
-  const vencidas = estancias.filter((e) => e.estado === "en_curso" && (cat(e) === "hotel" ? e.fecha_salida < hoy : e.fecha_entrada < hoy));
+  // Hoy también: la salida de hotel de hoy ya pasó las 12:00, o la guardería de hoy ya pasó el cierre.
+  const vencidas = estancias.filter((e) => e.estado === "en_curso" && (cat(e) === "hotel"
+    ? e.fecha_salida < hoy || (e.fecha_salida === hoy && ahora - instante(hoy, "12:00:00") > MARGEN)
+    : e.fecha_entrada < hoy || (e.fecha_entrada === hoy && hHoy && ahora - hHoy.cierra > MARGEN)));
   comprobar(atrasadas.length === 0 && vencidas.length === 0, `sin llegadas atrasadas (${atrasadas.length}) ni adentro con la salida vencida (${vencidas.length})`);
 
   // Cuentas de estancias ya terminadas.
@@ -61,7 +77,7 @@ for (const n of demos) {
   for (const e of estancias) porReserva.set(e.reserva_id, [...(porReserva.get(e.reserva_id) ?? []), e]);
   const terminadas = [...porReserva.entries()].filter(([, es]) =>
     es.every((e) => ["finalizada", "no_llego", "cancelada"].includes(e.estado)) && es.some((e) => e.estado === "finalizada")
-    && diaLocal(es.filter((e) => e.hora_salida_real).map((e) => e.hora_salida_real).sort().at(-1)) < hoy);
+    && ahora - new Date(es.filter((e) => e.hora_salida_real).map((e) => e.hora_salida_real).sort().at(-1)) > 5 * 60_000 + MARGEN);
   let conSaldo = 0;
   const saldos = new Map();
   const ejemplos = [];
@@ -76,6 +92,22 @@ for (const n of demos) {
   const turnos = await todas(() => N.from("turnos_caja").select("id, estado, abierto_at, cerrado_at").eq("negocio_id", n.id).order("id"));
   const viejosAbiertos = turnos.filter((t) => t.estado === "abierto" && diaLocal(t.abierto_at) < hoy);
   comprobar(viejosAbiertos.length === 0, `ningún turno de un día anterior abierto (${viejosAbiertos.length})`);
+  // El turno de hoy sigue el horario: abierto desde la apertura mientras dura el día, cerrado a la hora de cierre.
+  const abiertos = turnos.filter((t) => t.estado === "abierto");
+  const deHoy = turnos.filter((t) => diaLocal(t.abierto_at) === hoy);
+  const hora = (d) => new Intl.DateTimeFormat("es-MX", { timeZone: zona, hour: "2-digit", minute: "2-digit" }).format(new Date(d));
+  if (hHoy && ahora - hHoy.abre > MARGEN && hHoy.cierra - ahora > 0) {
+    comprobar(abiertos.length === 1 && deHoy.length === 1 && new Date(abiertos[0].abierto_at).getTime() === hHoy.abre.getTime(),
+      `en horario (${hora(hHoy.abre)}–${hora(hHoy.cierra)}): el turno de hoy abierto desde la apertura (${abiertos.map((t) => hora(t.abierto_at)).join(", ") || "ninguno abierto"})`);
+  } else if (!hHoy || ahora < hHoy.abre || ahora - hHoy.cierra > MARGEN) {
+    comprobar(abiertos.length === 0, `fuera de horario${hHoy ? ` (${hora(hHoy.abre)}–${hora(hHoy.cierra)})` : " (hoy no abre)"}: ningún turno abierto (${abiertos.length})`);
+    if (hHoy && ahora > hHoy.cierra) {
+      const malCerrados = deHoy.filter((t) => t.estado !== "cerrado" || new Date(t.cerrado_at).getTime() !== hHoy.cierra.getTime());
+      comprobar(malCerrados.length === 0, `el turno de hoy (${deHoy.length}) cerrado a la hora de cierre`);
+    }
+  } else {
+    console.log("  · a minutos de abrir o cerrar: el turno de hoy no se juzga");
+  }
 
   // Los cobros de esas cuentas: método, fecha y su turno cerrado con diferencia $0.
   const reservasTerminadas = terminadas.map(([r]) => r);
@@ -89,7 +121,8 @@ for (const n of demos) {
   const horaLocal = (iso) => new Intl.DateTimeFormat("en-GB", { timeZone: n.zona_horaria || "America/Mexico_City", hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date(iso));
   const automatica = (e) => e.estado === "finalizada" && e.hora_salida_real && (cat(e) === "hotel"
     ? horaLocal(e.hora_salida_real) === "12:00:00"
-    : [4, 8].some((h) => new Date(e.hora_salida_real) - new Date(e.hora_entrada_real) === h * 3600_000));
+    : [4, 8].some((h) => new Date(e.hora_salida_real) - new Date(e.hora_entrada_real) === h * 3600_000)
+      || new Date(e.hora_salida_real).getTime() === (horarioDe(e.fecha_entrada)?.cierra.getTime() ?? 0) - 15 * 60_000);
   const reservasAuto = new Set(terminadas.filter(([, es]) => es.some(automatica)).map(([r]) => r));
   // Y su cobro: el de demo_cobrar_cuentas, a los 5 minutos de la salida.
   const automaticos = cobros.filter((c) => reservasAuto.has(c.reserva_id) && Math.abs(new Date(c.created_at) - new Date(salida.get(c.reserva_id)) - 5 * 60_000) < 1000);
