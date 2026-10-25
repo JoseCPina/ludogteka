@@ -147,6 +147,95 @@ for (const n of demos) {
     comprobar(fueraDeDia.length === 0, `cada cobro está en el turno de su día (${fueraDeDia.length} fuera)`);
   }
 
+  // ── Estética y Veterinaria (20261202001000): cada cita atendida a su hora, cobrada, y la agenda de los próximos días.
+  // Una cuenta terminada sin cobro solo puede esperar si ahora no hay turno abierto (se cobra en el siguiente).
+  const hayTurnoAbierto = abiertos.length > 0;
+  const desde30 = new Date(ahora - 30 * 86400_000).toISOString();
+  const hasta7 = new Date(ahora.getTime() + 8 * 86400_000).toISOString();
+  const cobrosDe = async (reservas) => {
+    const pagadas = new Set();
+    for (let i = 0; i < reservas.length; i += 100) {
+      for (const c of exigir(await N.from("cobros").select("reserva_id").eq("negocio_id", n.id).in("reserva_id", reservas.slice(i, i + 100)).order("id"), "cobros")) pagadas.add(c.reserva_id);
+    }
+    return pagadas;
+  };
+  const sinCobrar = async (reservas) => {
+    const pagadas = await cobrosDe(reservas);
+    const deben = [];
+    for (const r of reservas.filter((x) => !pagadas.has(x))) {
+      const [t] = exigir(await N.rpc("cuenta_totales_reserva", { p_reserva_id: r }), "totales") ?? [];
+      if (Number(t?.saldo ?? 0) > 0) deben.push(r);
+    }
+    return deben;
+  };
+  // Los días con horario de los próximos 6 (hoy, si todavía no cierra).
+  const proximosDias = [];
+  for (let k = 0; k <= 6; k++) {
+    const f = new Intl.DateTimeFormat("en-CA", { timeZone: zona }).format(new Date(ahora.getTime() + k * 86400_000));
+    const hd = horarioDe(f);
+    if (hd && !(k === 0 && ahora >= hd.cierra)) proximosDias.push(f);
+  }
+
+  console.log("  · estética");
+  const citas = await todas(() => N.from("citas_estetica").select("id, reserva_id, estado, inicio, fin, recogido_por_nombre").eq("negocio_id", n.id).is("deleted_at", null).gte("inicio", desde30).lt("inicio", hasta7).order("id"));
+  const sinAtender = citas.filter((c) => ["reservada", "confirmada"].includes(c.estado) && ahora - new Date(c.inicio) > 15 * 60_000 + MARGEN);
+  const sinTerminar = citas.filter((c) => c.estado === "en_curso" && ahora - new Date(c.fin) > MARGEN);
+  comprobar(sinAtender.length === 0 && sinTerminar.length === 0, `citas atendidas a su hora: ninguna pasada sin iniciar (${sinAtender.length}) ni en curso después de su fin (${sinTerminar.length})`);
+  const recientes = citas.filter((c) => c.inicio >= "2026-10-25" && new Date(c.inicio) < ahora - MARGEN);
+  const noVino = recientes.filter((c) => c.estado === "no_llego").length;
+  if (recientes.length >= 10) comprobar(noVino <= Math.ceil(recientes.length * 0.3), `«No se presentó» ~1 de cada 10 (${noVino} de ${recientes.length})`);
+  const terminadasEst = citas.filter((c) => c.estado === "finalizada" && ahora - new Date(c.fin) > 5 * 60_000 + MARGEN);
+  comprobar(terminadasEst.every((c) => c.recogido_por_nombre), `cada cita finalizada dice quién recogió (${terminadasEst.filter((c) => !c.recogido_por_nombre).length} sin)`);
+  const debenEst = await sinCobrar([...new Set(terminadasEst.map((c) => c.reserva_id))]);
+  comprobar(debenEst.length === 0 || !hayTurnoAbierto, `${terminadasEst.length} citas finalizadas cobradas (${debenEst.length} sin cobrar${debenEst.length && !hayTurnoAbierto ? ", esperan al siguiente turno" : ""})`);
+  const diasSinEst = proximosDias.filter((f) => !citas.some((c) => new Intl.DateTimeFormat("en-CA", { timeZone: zona }).format(new Date(c.inicio)) === f));
+  comprobar(diasSinEst.length === 0, `agenda de estética en los próximos ${proximosDias.length} días con horario (sin citas: ${diasSinEst.join(", ") || "ninguno"})`);
+
+  console.log("  · veterinaria");
+  const vcitas = await todas(() => N.from("vet_citas").select("id, perro_id, estado, inicia_at, termina_at, consulta_id, motivo").eq("negocio_id", n.id).is("deleted_at", null).gte("inicia_at", desde30).lt("inicia_at", hasta7).order("id"));
+  const vSinAtender = vcitas.filter((c) => ["programada", "confirmada"].includes(c.estado) && ahora - new Date(c.inicia_at) > MARGEN);
+  const vSinFirmar = vcitas.filter((c) => c.estado === "en_curso" && ahora - new Date(c.termina_at) > MARGEN);
+  comprobar(vSinAtender.length === 0 && vSinFirmar.length === 0, `citas clínicas atendidas a su hora: ninguna pasada sin abrir (${vSinAtender.length}) ni en curso después de su fin (${vSinFirmar.length})`);
+  const consultas = await todas(() => N.from("vet_consultas").select("id, perro_id, cita_id, estado, atendida_at, firmada_at, motivo, diagnosticos, plan, tratamiento").eq("negocio_id", n.id).is("deleted_at", null).order("id"));
+  const porId = new Map(consultas.map((c) => [c.id, c]));
+  const atendidas = vcitas.filter((c) => c.estado === "finalizada" && c.inicia_at >= "2026-10-25");
+  const malas = atendidas.filter((c) => {
+    const co = porId.get(c.consulta_id);
+    return !co || co.estado !== "firmada" || !co.motivo || !(co.diagnosticos?.length > 0) || !co.plan || !co.tratamiento
+      || new Date(co.atendida_at).getTime() !== new Date(c.inicia_at).getTime()
+      || new Date(co.firmada_at) < new Date(c.termina_at) || diaLocal(co.firmada_at) !== diaLocal(c.inicia_at);
+  });
+  comprobar(malas.length === 0, `${atendidas.length} citas clínicas atendidas por el demo: cada una con su consulta firmada ese día (motivo, diagnóstico, plan y tratamiento; atendida a la hora de la cita) (${malas.length} mal)`);
+  const idsGen = new Set(atendidas.map((c) => c.consulta_id));
+  const recetas = await todas(() => N.from("vet_recetas").select("id, consulta_id, perro_id, fecha_emision").eq("negocio_id", n.id).is("deleted_at", null).order("id"));
+  const vacunas = await todas(() => N.from("carnet_vacunas").select("id, consulta_id, perro_id, fecha_aplicacion").eq("negocio_id", n.id).is("deleted_at", null).is("anulada_at", null).order("id"));
+  const recGen = recetas.filter((r) => idsGen.has(r.consulta_id));
+  const vacGen = vacunas.filter((v) => idsGen.has(v.consulta_id));
+  const incoherentes = [...recGen.map((r) => [r.fecha_emision, r.perro_id, porId.get(r.consulta_id)]), ...vacGen.map((v) => [v.fecha_aplicacion, v.perro_id, porId.get(v.consulta_id)])]
+    .filter(([f, perro, co]) => f !== diaLocal(co.atendida_at) || perro !== co.perro_id);
+  comprobar(incoherentes.length === 0, `recetas (${recGen.length}) y vacunas (${vacGen.length}) del día y de la mascota de su consulta (${incoherentes.length} no)`);
+  if (atendidas.length >= 9) {
+    comprobar(vacGen.length <= Math.ceil(atendidas.length * 0.5), `vacuna en ~1 de cada 4 consultas (${vacGen.length} de ${atendidas.length})`);
+    comprobar(recGen.length >= 1 && recGen.length <= Math.ceil(atendidas.length * 0.6), `receta en ~1 de cada 3 consultas (${recGen.length} de ${atendidas.length})`);
+  }
+  // Historial coherente: nada firmado antes de atenderse ni en el futuro, y las consultas del demo separadas 21 días por mascota.
+  const alReves = consultas.filter((c) => c.estado === "firmada" && (new Date(c.firmada_at) < new Date(c.atendida_at) || new Date(c.atendida_at) > ahora));
+  const porMascota = new Map();
+  for (const c of consultas.filter((x) => idsGen.has(x.id))) porMascota.set(c.perro_id, [...(porMascota.get(c.perro_id) ?? []), new Date(c.atendida_at)]);
+  const pegadas = [...porMascota.values()].filter((fs) => fs.sort((a, b) => a - b).some((f, i) => i > 0 && f - fs[i - 1] < 21 * 86400_000)).length;
+  comprobar(alReves.length === 0 && pegadas === 0, `expedientes coherentes: ninguna firmada antes de atenderse o en el futuro (${alReves.length}), ninguna mascota con dos consultas del demo a menos de 21 días (${pegadas})`);
+  const reservasVet = [];
+  for (let i = 0; i < atendidas.length; i += 100) {
+    const ids = atendidas.slice(i, i + 100).map((c) => c.consulta_id);
+    const cargos = exigir(await N.from("vet_consulta_cargos").select("consulta_id, cargo_id, cargos_aplicados(reserva_id)").in("consulta_id", ids).not("cargo_id", "is", null).is("deleted_at", null).order("id"), "cargos");
+    for (const x of cargos) { const ca = Array.isArray(x.cargos_aplicados) ? x.cargos_aplicados[0] : x.cargos_aplicados; if (ca?.reserva_id) reservasVet.push({ reserva: ca.reserva_id, fin: vcitas.find((c) => c.consulta_id === x.consulta_id)?.termina_at }); }
+  }
+  const listas = [...new Set(reservasVet.filter((x) => ahora - new Date(x.fin) > 5 * 60_000 + MARGEN).map((x) => x.reserva))];
+  const debenVet = await sinCobrar(listas);
+  comprobar(debenVet.length === 0 || !hayTurnoAbierto, `${listas.length} cuentas de consultas cobradas (${debenVet.length} sin cobrar${debenVet.length && !hayTurnoAbierto ? ", esperan al siguiente turno" : ""})`);
+  const diasSinVet = proximosDias.filter((f) => !vcitas.some((c) => diaLocal(c.inicia_at) === f));
+  comprobar(diasSinVet.length === 0, `agenda clínica en los próximos ${proximosDias.length} días con horario (sin citas: ${diasSinVet.join(", ") || "ninguno"})`);
+
   // Solo lectura: las cuentas sembradas (las gemelas del corredor de tutoriales y de la clínica demo escriben a propósito).
   const mem = exigir(await N.from("membresias").select("profile_id, solo_lectura").eq("negocio_id", n.id).is("deleted_at", null).order("id"), "membresías");
   let abiertas = 0;
