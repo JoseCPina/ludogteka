@@ -4,8 +4,9 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 /**
  * El demo al día (vercel.json → crons, cada 15 minutos; QA S31). Nadie opera el demo (es de solo lectura), así que
- * `estancias_poner_al_dia` vive su día por él: check-in y check-out a su hora (o «No llegó»), cada cuenta terminada
- * cobrada en el turno de su día, y el turno de caja abierto de la apertura al cierre de su horario (cerrado con
+ * `estancias_poner_al_dia` vive su día por él: check-in y check-out a su hora (o «No llegó»), la agenda de Estética
+ * y Veterinaria de los próximos días, cada cita atendida a su hora (la consulta clínica redactada y firmada por su
+ * médica), cada cuenta terminada cobrada en el turno de su día, y el turno de caja abierto de la apertura al cierre de su horario (cerrado con
  * diferencia $0). El demo nunca enseña «Llegadas atrasadas» ni una ocupación desfasada, y en horario Caja tiene su
  * turno abierto con los cobros del día. Vercel manda `Authorization: Bearer <CRON_SECRET>`.
  */
