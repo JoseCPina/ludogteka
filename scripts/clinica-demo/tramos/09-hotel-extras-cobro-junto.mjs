@@ -1,5 +1,6 @@
 // Tramo 9 · Estancia de hotel de Firulais con un servicio extra y COBRO JUNTO de la estancia + la cuenta de la hospitalización de Michi.
 import { BASE, comprobar, seccion, cuerpo, sinDesborde, hoyMx, hoyISO } from "../comun.mjs";
+import { confirmarSiFueraDeHorario } from "../../lib/fuera-horario.mjs";
 
 export async function tramo(c) {
   const S = c.S, NEG = c.e.negocioId;
@@ -48,6 +49,7 @@ export async function tramo(c) {
     await r.locator("#checkin-entrega-quien").selectOption("otra");
     await r.getByLabel("Nombre de la otra persona").fill("Cliente Demo (PRUEBA)");
     await r.getByRole("button", { name: "Confirmar check-in" }).click();
+    await confirmarSiFueraDeHorario(r);
     await r.waitForTimeout(8000);
   }
   const { data: e2 } = await S.from("estancias").select("estado").eq("id", c.e.estanciaId).single();

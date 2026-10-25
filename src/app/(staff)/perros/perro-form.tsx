@@ -2,6 +2,7 @@
 
 import { useModulos } from "@/components/modulos-contexto";
 import { faltantesAltaPerro } from "@/lib/perros/alta-requisitos";
+import { tallaYPelajeAlElegirRaza } from "@/lib/perros/talla-sugerida";
 import { startTransition, useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CampoVersion, conForzar } from "@/components/concurrencia/campo-version";
@@ -110,7 +111,7 @@ export function PerroForm({
     raza: valoresIniciales?.raza ?? "",
   });
   const razaCatalogo = razas.find((r) => r.id === razaElegida.raza_id) ?? null;
-  // Tamaño y pelaje: la raza del catálogo los sugiere (Labrador: grande, corto) cuando aún están vacíos.
+  // Tamaño y pelaje: la raza del catálogo los sugiere (Labrador: grande, corto) cuando aún están vacíos; nunca borra lo capturado (N126).
   const [tamanoId, setTamanoId] = useState(valoresIniciales?.tamano_id ?? "");
   const [pelajeId, setPelajeId] = useState(valoresIniciales?.pelaje_id ?? "");
   // El aviso del último intento de guardar se esconde en cuanto se cambia lo que decía que faltaba.
@@ -121,9 +122,9 @@ export function PerroForm({
     setErrorDescartado(estado.error ?? null);
     if (v.raza_id || v.raza.trim()) setFaltaRaza(false);
     setRazaElegida(v);
-    const r = razas.find((x) => x.id === v.raza_id);
-    if (r?.tamano_tipico_id && !tamanoId) setTamanoId(r.tamano_tipico_id);
-    if (r?.pelaje_tipico_id && !pelajeId) setPelajeId(r.pelaje_tipico_id);
+    const sugerido = tallaYPelajeAlElegirRaza(razas.find((x) => x.id === v.raza_id), { tamanoId, pelajeId });
+    setTamanoId(sugerido.tamanoId);
+    setPelajeId(sugerido.pelajeId);
   }
   // Una raza nueva en revisión no es un mestizo: su precio sale del grupo que se le dé.
   const conPropuesta = Boolean(razaElegida.propuesta) || (Boolean(propuestaInicial) && razaElegida.raza_id === null);

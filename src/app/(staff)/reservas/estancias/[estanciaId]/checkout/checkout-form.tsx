@@ -70,7 +70,11 @@ export function CheckoutForm({
     setPertenencias((prev) => prev.map((x) => ({ ...x, devuelto: true })));
   }
 
-  async function enviarCheckout() {
+  // QA N125: fuera del horario del negocio la base pregunta; confirmado, queda anotado en la bitácora.
+  const [fueraHorario, setFueraHorario] = useState<string | null>(null);
+  const [quedoFueraHorario, setQuedoFueraHorario] = useState<string | null>(null);
+
+  async function enviarCheckout(confirmarFueraHorario = false) {
     if (!recogidoNombre.trim()) {
       setFalta("nombre");
       setError("Escribe quién recoge al perro.");
@@ -98,17 +102,28 @@ export function CheckoutForm({
       recogidoPorEsDueno: esDueno,
       pertenenciasEntregadas: pertenencias.filter((p) => p.devuelto).map((p) => p.id),
       motivoSinEntrega: pendientes.length > 0 ? motivoSinEntrega : "",
-    }));
+    }, confirmarFueraHorario));
+    if (res.fueraHorario) {
+      setFueraHorario(res.fueraHorario);
+      return;
+    }
     if (res.error) {
       setError(res.error);
       return;
     }
+    setFueraHorario(null);
+    setQuedoFueraHorario(res.quedoFueraHorario ?? null);
     setTerminado(true);
     router.refresh();
   }
   if (terminado) {
     return (
       <Alert variante="exito" titulo="Salida registrada">
+        {quedoFueraHorario && (
+          <span className="block" data-checkout-fuera-horario>
+            Salió fuera del horario ({quedoFueraHorario}). Quedó anotado en la bitácora.
+          </span>
+        )}
         {cobroHref ? (
           <Link href={cobroHref} data-cobrar-cuenta className="mt-2 inline-flex min-h-11 items-center rounded-md bg-morado px-4 text-sm font-semibold text-white hover:bg-morado-oscuro">
             Cobrar la cuenta
@@ -283,10 +298,26 @@ export function CheckoutForm({
         </Alert>
       )}
 
+      {fueraHorario && (
+        <Alert variante="advertencia" titulo="Confirma la salida">
+          <span data-aviso-fuera-horario>{fueraHorario}</span> Si la registras, queda anotado en la bitácora.
+        </Alert>
+      )}
       <AccionesFormulario error={error}>
-        <Button type="button" cargando={enviando.cargando} onClick={enviarCheckout}>
-          {enviando.cargando ? "Guardando…" : "Confirmar salida"}
-        </Button>
+        {fueraHorario ? (
+          <>
+            <Button type="button" cargando={enviando.cargando} onClick={() => enviarCheckout(true)} data-confirmar-fuera-horario>
+              {enviando.cargando ? "Guardando…" : "Registrar la salida de todos modos"}
+            </Button>
+            <Button type="button" variante="secundario" disabled={enviando.cargando} onClick={() => setFueraHorario(null)}>
+              Todavía no
+            </Button>
+          </>
+        ) : (
+          <Button type="button" cargando={enviando.cargando} onClick={() => enviarCheckout()} data-confirmar-checkout>
+            {enviando.cargando ? "Guardando…" : "Confirmar salida"}
+          </Button>
+        )}
       </AccionesFormulario>
     </div>
   );

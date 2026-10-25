@@ -15,7 +15,7 @@ export const ARTICULOS_CAJA_Y_ESTETICA: Articulo[] = [
     captura: "cobrar-una-cuenta.jpg",
     cuerpo: `Todo lo que se le debe a un cliente (estancias, citas de estética, cargos y ventas) aparece en Caja con su saldo. Desde ahí lo cobras en uno o varios métodos.
 
-1. Entra a [Caja](/caja) y busca la cuenta en **Por cobrar** (**Cuentas abiertas de hoy**, o los **Días anteriores** si se quedó pendiente), o escribe el perro, el dueño o el teléfono en **¿A quién le cobras?**.
+1. Entra a [Caja](/caja) y busca la cuenta en **Por cobrar** (**Cuentas abiertas de hoy**, o los **Días anteriores** si se quedó pendiente), o escribe el perro, el dueño o el teléfono en **¿A quién le cobras?**. Con varias palabras, todas tienen que coincidir, cada una con el dueño, alguno de sus perros o, si es un número, el teléfono: «S32 Est» trae a «Qa S32 Est» y no a otro cliente que solo tenga un 32 en su teléfono.
 2. Abre la cuenta y revisa los conceptos y el **Saldo**.
 3. Si no hay turno, aprieta **Abrir turno**, escribe el **Fondo inicial** y **Confirmar apertura**.
 4. En **Registrar cobro** escoge el **Método** (Efectivo, Transferencia o **Tarjeta (registro manual)**; **Terminal** solo si tu negocio no tiene Mercado Pago ni Clip), escribe el **Monto** y, si dejó, la **Propina**.
@@ -652,7 +652,7 @@ La celda vacía no se cobra por adivinación. Al agendar sale **un solo aviso**:
 2. Salen marcados **Tamaño (obligatorio)** y **Pelaje (obligatorio)**, con un aviso: sin los dos no se puede agendar.
 3. Elige el tamaño y el pelaje (corto, medio o largo) y guarda.
 
-Una raza con nombre propio que tu lista de precios no nombra (por ejemplo **Labrador retriever**) cae en este mismo grupo: no es un mestizo, solo se cobra por tamaño y pelaje. Al escogerla, el formulario ya **sugiere el tamaño y el pelaje típicos de la raza** (Labrador: grande, pelo corto); confírmalos o cámbialos según el perro.
+Una raza con nombre propio que tu lista de precios no nombra (por ejemplo **Labrador retriever**) cae en este mismo grupo: no es un mestizo, solo se cobra por tamaño y pelaje. Al escogerla, el formulario ya **sugiere el tamaño y el pelaje típicos de la raza** (Labrador: grande, pelo corto) en los que estén vacíos; confírmalos o cámbialos según el perro. Lo que ya capturaste nunca se borra ni se cambia al escoger la raza, tampoco con «Mestizo».
 
 Si se te pasó, no pasa nada: al agendar la pantalla te los pide ahí mismo ([Cómo agendar una cita de estética](/ayuda/agendar-cita-estetica)).
 
@@ -721,7 +721,7 @@ Es otra cosa: la raza es nueva y tu negocio no decidió su precio. Asigna el gru
     cuerpo: `En [Estética](/estetica) ves la agenda de cada estilista, por **Día** o por **Semana**. Con **← Anterior**, **Hoy** y **Siguiente →** te mueves de fecha.
 
 1. Aprieta **Agendar**.
-2. Busca al cliente por perro, dueño o teléfono. Si es nuevo, dalo de alta con **Nuevo cliente**.
+2. Busca al cliente por perro, dueño o teléfono (con varias palabras, todas tienen que coincidir). Si es nuevo, dalo de alta con **Nuevo cliente**.
 3. Escoge el **Perro**. Si el cliente tiene un solo perro, ya viene escogido.
 4. Si el perro ya está en guardería u hotel, puedes ligar la cita a esa estancia.
 5. Escoge el **Servicio** y el **Empleado** que lo atiende. Son tres baños: el **completo** (baño, cepillado, deslanado o corte de pelo, uñas, orejas y dientes, corte higiénico, hidratación de nariz y huellitas), el **rapado** (igual, pero con corte de pelo rapado) y el **exprés** (baño con shampoo y secado).

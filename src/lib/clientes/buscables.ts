@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { coincidenciaDeCliente, terminosDeBusqueda } from "@/lib/clientes/filtro";
 
 /**
  * Lo que necesita cualquier buscador de clientes de la app: el dueño, su
@@ -70,31 +71,18 @@ export type CoincidenciaCliente = {
   perrosCoincidentes: PerroBuscable[];
 };
 
-function normalizar(texto: string): string {
-  return texto
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .trim();
-}
-
-// Un solo filtro para todos los buscadores: nombre del dueño, teléfono
-// (solo dígitos, con o sin espacios y guiones) y nombre de cualquiera de
-// sus perros. Sin acentos y sin mayúsculas: "Motita" encuentra "motita",
-// "Jose" encuentra "José".
+// Un solo filtro para todos los buscadores (src/lib/clientes/filtro.ts): cada
+// término de la búsqueda tiene que estar en el nombre del dueño, en el de
+// alguno de sus perros o, si es numérico, en el teléfono. Sin acentos y sin
+// mayúsculas: "Motita" encuentra "motita", "Jose" encuentra "José".
 export function filtrarClientesBuscables(clientes: ClienteBuscable[], busqueda: string): CoincidenciaCliente[] {
-  const q = normalizar(busqueda);
-  if (!q) return clientes.map((cliente) => ({ cliente, perrosCoincidentes: [] }));
-  const qDigitos = q.replace(/\D/g, "");
+  const terminos = terminosDeBusqueda(busqueda);
+  if (terminos.length === 0) return clientes.map((cliente) => ({ cliente, perrosCoincidentes: [] }));
 
   const resultado: CoincidenciaCliente[] = [];
   for (const cliente of clientes) {
-    const perrosCoincidentes = cliente.perros.filter((p) => normalizar(p.nombre).includes(q));
-    const porDueno = normalizar(cliente.nombre).includes(q);
-    const porTelefono = qDigitos.length > 0 && cliente.telefono.includes(qDigitos);
-    if (porDueno || porTelefono || perrosCoincidentes.length > 0) {
-      resultado.push({ cliente, perrosCoincidentes });
-    }
+    const perrosCoincidentes = coincidenciaDeCliente(cliente, terminos);
+    if (perrosCoincidentes) resultado.push({ cliente, perrosCoincidentes });
   }
   return resultado;
 }

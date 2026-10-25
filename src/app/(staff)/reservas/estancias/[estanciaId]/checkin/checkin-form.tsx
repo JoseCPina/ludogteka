@@ -14,6 +14,7 @@ import { Alert } from "@/components/ui/alert";
 import { AvisoBorrador, useAutoguardado } from "@/lib/borradores/use-autoguardado";
 import {
   confirmarCheckin,
+  type ConfirmacionesEntradaSalida,
   agregarPertenencia,
   prepararRutaFotoLlegada,
   obtenerUrlFotoLlegada,
@@ -125,8 +126,14 @@ export function CheckinForm({
   // La casa llena al registrar la entrada (check-in tardío): el texto de la base y, ya registrado, en cuánto quedó.
   const [sobrecupo, setSobrecupo] = useState<string | null>(null);
   const [quedo, setQuedo] = useState<string | null>(null);
+  // QA N125: fuera del horario del negocio (día cerrado u hora fuera de rango), la misma pregunta. Lo ya confirmado
+  // se acumula: si también está llena la casa, se pregunta una cosa y luego la otra.
+  const [fueraHorario, setFueraHorario] = useState<string | null>(null);
+  const [quedoFueraHorario, setQuedoFueraHorario] = useState<string | null>(null);
+  const [confirmado, setConfirmado] = useState<ConfirmacionesEntradaSalida>({});
+  const pregunta = fueraHorario ?? sobrecupo;
 
-  async function confirmar(conSobrecupo = false) {
+  async function confirmar(confirmaAhora: ConfirmacionesEntradaSalida = {}) {
     if (!quien || !entregadoNombre.trim()) {
       setFaltaEntrega(true);
       setError(esOtra ? "Escribe el nombre de la otra persona que entrega al perro." : "Escoge quién entrega al perro.");
@@ -136,13 +143,21 @@ export function CheckinForm({
     setFaltaEntrega(false);
     setError(null);
     borrador.pausar();
+    const confirma = { ...confirmado, ...confirmaAhora };
+    setConfirmado(confirma);
     const res = await enviando.ejecutar(() => confirmarCheckin(estanciaId, {
       entregadoPorNombre: entregadoNombre,
       entregadoPorTelefono: entregadoTelefono,
       estadoLlegada,
       fotoLlegadaPath: fotoPath,
-    }, conSobrecupo));
+    }, confirma));
+    if (res.fueraHorario) {
+      setSobrecupo(null);
+      setFueraHorario(res.fueraHorario);
+      return;
+    }
     if (res.sobrecupo) {
+      setFueraHorario(null);
       setSobrecupo(res.sobrecupo);
       return;
     }
@@ -151,7 +166,9 @@ export function CheckinForm({
       return;
     }
     setSobrecupo(null);
+    setFueraHorario(null);
     setQuedo(res.quedo ?? null);
+    setQuedoFueraHorario(res.quedoFueraHorario ?? null);
     borrador.descartar();
     setRegistrado(true);
     router.refresh();
@@ -165,6 +182,11 @@ export function CheckinForm({
           {quedo && (
             <span className="mt-2 block" data-checkin-sobrecupo>
               Entró con la casa llena: quedó en {quedo}. Quedó anotado en la bitácora.
+            </span>
+          )}
+          {quedoFueraHorario && (
+            <span className="mt-2 block" data-checkin-fuera-horario>
+              Entró fuera del horario ({quedoFueraHorario}). Quedó anotado en la bitácora.
             </span>
           )}
           <span className="mt-2 block font-semibold" data-pertenencias-recibidas>
@@ -313,20 +335,25 @@ export function CheckinForm({
         </Alert>
       )}
 
-      {!registrado && sobrecupo && (
+      {!registrado && pregunta && (
         <Alert variante="advertencia" titulo="Confirma la entrada">
-          <span data-aviso-sobrecupo>{sobrecupo}</span> Si de todos modos registras la entrada, queda anotado en la bitácora.
+          {fueraHorario ? <span data-aviso-fuera-horario>{fueraHorario}</span> : <span data-aviso-sobrecupo>{sobrecupo}</span>} Si de todos modos registras la entrada, queda anotado en la bitácora.
         </Alert>
       )}
 
       {!registrado && (
         <AccionesFormulario error={error}>
-          {sobrecupo ? (
+          {pregunta ? (
             <>
-              <Button type="button" cargando={enviando.cargando} onClick={() => confirmar(true)} data-confirmar-sobrecupo>
+              <Button
+                type="button"
+                cargando={enviando.cargando}
+                onClick={() => confirmar(fueraHorario ? { fueraHorario: true } : { sobrecupo: true })}
+                {...(fueraHorario ? { "data-confirmar-fuera-horario": true } : { "data-confirmar-sobrecupo": true })}
+              >
                 {enviando.cargando ? "Guardando…" : "Registrar la entrada de todos modos"}
               </Button>
-              <Button type="button" variante="secundario" disabled={enviando.cargando} onClick={() => setSobrecupo(null)}>
+              <Button type="button" variante="secundario" disabled={enviando.cargando} onClick={() => { setSobrecupo(null); setFueraHorario(null); setConfirmado({}); }}>
                 Todavía no
               </Button>
             </>

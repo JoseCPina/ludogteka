@@ -36,6 +36,8 @@ export type FilaEstancia = {
   cancelacion?: { quien: string; cuando: string; motivo: string | null } | null;
   // Entró con la casa llena (check-in tardío confirmado): en cuánto quedó, por ejemplo «11/10 de día».
   sobrecupo?: string | null;
+  // QA N125: lo que se confirmó fuera del horario del negocio (reserva en día cerrado, check-in, check-out).
+  fueraHorario?: { reserva: string | null; entrada: string | null; salida: string | null };
 };
 
 const ETIQUETA_CATEGORIA: Record<string, string> = { guarderia: "Guardería", hotel: "Hotel" };
@@ -203,6 +205,21 @@ export function EstanciaFila({
       {fila.sobrecupo && (
         <p className="text-sm text-ambar-oscuro" data-sobrecupo-estancia>
           Entró con la casa llena: quedó en {fila.sobrecupo}.
+        </p>
+      )}
+      {fila.fueraHorario?.reserva && (
+        <p className="text-sm text-ambar-oscuro" data-dia-cerrado-estancia>
+          {cerrarFrase(`Reservada ${fila.fueraHorario.reserva.charAt(0).toLowerCase()}${fila.fueraHorario.reserva.slice(1)}`)}
+        </p>
+      )}
+      {fila.fueraHorario?.entrada && (
+        <p className="text-sm text-ambar-oscuro" data-checkin-fuera-horario-estancia>
+          {cerrarFrase(`Entró fuera del horario: ${fila.fueraHorario.entrada}`)}
+        </p>
+      )}
+      {fila.fueraHorario?.salida && (
+        <p className="text-sm text-ambar-oscuro" data-checkout-fuera-horario-estancia>
+          {cerrarFrase(`Salió fuera del horario: ${fila.fueraHorario.salida}`)}
         </p>
       )}
       {estado === "cancelada" && fila.cancelacion && (

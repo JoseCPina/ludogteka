@@ -44,11 +44,15 @@ export type CamposCheckin = {
 // QA S31: si con esta entrada la casa rebasa el cupo (un check-in tardío), la base no la guarda y devuelve el texto
 // («La casa está llena (10/10); al registrar la entrada quedas en 11/10.»); con `confirmarSobrecupo` se guarda y
 // queda anotado en la estancia y en la bitácora.
+// QA N125: fuera del horario del negocio (día cerrado u hora fuera de rango) pasa lo mismo: la base devuelve
+// «El negocio está cerrado hoy; ¿registrar de todos modos?» y con `fueraHorario` se guarda y queda anotado.
+export type ConfirmacionesEntradaSalida = { sobrecupo?: boolean; fueraHorario?: boolean };
+
 export async function confirmarCheckin(
   estanciaId: string,
   campos: CamposCheckin,
-  confirmarSobrecupo = false
-): Promise<EstadoAccion & { sobrecupo?: string; quedo?: string | null }> {
+  confirma: ConfirmacionesEntradaSalida = {}
+): Promise<EstadoAccion & { sobrecupo?: string; fueraHorario?: string; quedo?: string | null; quedoFueraHorario?: string | null }> {
   if (!campos.entregadoPorNombre.trim()) {
     return { error: "Registra quién entrega al perro." };
   }
@@ -62,18 +66,24 @@ export async function confirmarCheckin(
       entregado_por_telefono: campos.entregadoPorTelefono.trim() || null,
       estado_llegada: campos.estadoLlegada.trim() || null,
       foto_llegada_path: campos.fotoLlegadaPath,
-      ...(confirmarSobrecupo ? { checkin_sobrecupo: "confirmado" } : {}),
+      ...(confirma.sobrecupo ? { checkin_sobrecupo: "confirmado" } : {}),
+      ...(confirma.fueraHorario ? { checkin_fuera_horario: "confirmado" } : {}),
     })
     .eq("id", estanciaId)
-    .select("checkin_sobrecupo")
+    .select("checkin_sobrecupo, checkin_fuera_horario")
     .maybeSingle();
 
+  if (error?.hint === "fuera_horario") return { error: null, fueraHorario: error.message };
   if (error?.hint === "sobrecupo") return { error: null, sobrecupo: error.message };
   if (error) return { error: traducirError(error) };
 
   revalidarModulosEstancia();
   revalidatePath(`/reservas/estancias/${estanciaId}/checkin`);
-  return { error: null, quedo: (data?.checkin_sobrecupo as string | null | undefined) ?? null };
+  return {
+    error: null,
+    quedo: (data?.checkin_sobrecupo as string | null | undefined) ?? null,
+    quedoFueraHorario: (data?.checkin_fuera_horario as string | null | undefined) ?? null,
+  };
 }
 
 export async function agregarPertenencia(
@@ -120,8 +130,9 @@ export type CamposCheckout = {
 
 export async function confirmarCheckout(
   estanciaId: string,
-  campos: CamposCheckout
-): Promise<EstadoAccion> {
+  campos: CamposCheckout,
+  confirmarFueraHorario = false
+): Promise<EstadoAccion & { fueraHorario?: string; quedoFueraHorario?: string | null }> {
   if (!campos.recogidoPorNombre.trim()) {
     return { error: "Registra quién recoge al perro." };
   }
@@ -142,7 +153,7 @@ export async function confirmarCheckout(
   }
   const { data: quien } = await supabase.auth.getUser();
 
-  const { error } = await supabase
+  const { data: salida, error } = await supabase
     .from("estancias")
     .update({
       estado: "finalizada",
@@ -151,9 +162,13 @@ export async function confirmarCheckout(
       recogido_por_es_dueno: campos.recogidoPorEsDueno,
       pertenencias_sin_entrega_motivo: sinEntregar > 0 ? motivoSinEntrega : null,
       pertenencias_sin_entrega_por: sinEntregar > 0 ? (quien.user?.id ?? null) : null,
+      ...(confirmarFueraHorario ? { checkout_fuera_horario: "confirmado" } : {}),
     })
-    .eq("id", estanciaId);
+    .eq("id", estanciaId)
+    .select("checkout_fuera_horario")
+    .maybeSingle();
 
+  if (error?.hint === "fuera_horario") return { error: null, fueraHorario: error.message };
   if (error) return { error: traducirError(error) };
 
   // Lo entregado queda registrado: quién y cuándo.
@@ -168,7 +183,7 @@ export async function confirmarCheckout(
 
   revalidarModulosEstancia();
   revalidatePath(`/reservas/estancias/${estanciaId}/checkout`);
-  return { error: null };
+  return { error: null, quedoFueraHorario: (salida?.checkout_fuera_horario as string | null | undefined) ?? null };
 }
 
 // Guardería que no recogen antes del cierre → noche de hotel. La RPC

@@ -15,6 +15,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { B, SB, A, URL, env, datos, personas, comprobar, seccion, terminar } from "./veterinaria-comun-dev.mjs";
 import { abrirNavegador } from "../lib/navegador.mjs";
+import { confirmarSiFueraDeHorario } from "../lib/fuera-horario.mjs";
 
 const REF = new globalThis.URL(URL).hostname.split(".")[0];
 const sufijo = String(Date.now()).slice(-6);
@@ -90,6 +91,7 @@ try {
   // La base (acción) también lo exige: llamada directa sin motivo.
   await p.locator("#checkout-motivo-sin-entrega").fill("Se las lleva en la próxima visita");
   await p.getByRole("button", { name: "Confirmar salida" }).click();
+  await confirmarSiFueraDeHorario(p);
   comprobar(await esperarTexto(p, /Este perro ya salió/), "con motivo escrito: la salida se cierra");
   const fin = (await SB.from("estancias").select("estado, pertenencias_sin_entrega_motivo, pertenencias_sin_entrega_por").eq("id", e.data.id).single()).data;
   comprobar(fin.estado === "finalizada" && fin.pertenencias_sin_entrega_motivo === "Se las lleva en la próxima visita" && fin.pertenencias_sin_entrega_por, "queda registrado el motivo y quién cerró la salida");
@@ -99,7 +101,7 @@ try {
   await c.close();
 
   // «Entregué todo»: sin motivo y sin pendientes.
-  const e2 = await cliente.from("estancias").insert({ reserva_id: rG.id, perro_id: perro.id, servicio_id: gD.id, fecha_entrada: sig, fecha_salida: new Date(new Date(`${sig}T12:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10), bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: "Prueba", bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: "Prueba" }).select("id").single();
+  const e2 = await cliente.from("estancias").insert({ reserva_id: rG.id, perro_id: perro.id, servicio_id: gD.id, fecha_entrada: sig, fecha_salida: new Date(new Date(`${sig}T12:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10), dia_cerrado_confirmado: "confirmado", bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: "Prueba", bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: "Prueba" }).select("id").single();
   if (e2.error) throw new Error(`estancia 2: ${e2.error.message}`);
   limpieza.push(async () => { await SB.from("estancias").update({ deleted_at: new Date().toISOString() }).eq("id", e2.data.id); });
   await SB.from("estancias").update({ estado: "en_curso", entregado_por_nombre: "Prueba" }).eq("id", e2.data.id);
@@ -116,6 +118,7 @@ try {
   await p.locator("#checkout-recoge-nombre").fill("Luis Prueba");
   await p.getByRole("button", { name: "Sí, es el dueño" }).click();
   await p.getByRole("button", { name: "Confirmar salida" }).click();
+  await confirmarSiFueraDeHorario(p);
   comprobar(await esperarTexto(p, /Este perro ya salió/), "la salida se cierra sin motivo");
   const fin2 = (await SB.from("estancias").select("pertenencias_sin_entrega_motivo").eq("id", e2.data.id).single()).data;
   const ent = (await SB.from("estancia_pertenencias").select("devuelto").eq("estancia_id", e2.data.id)).data;
@@ -165,6 +168,7 @@ try {
     comprobar((await SB.from("estancias").select("estado").eq("id", eI).single()).data.estado !== "en_curso", "y no registra el check-in");
     await px.locator("#checkin-entrega-nombre").fill("Tía Rosa Prueba");
     await px.getByRole("button", { name: /Confirmar check-in/ }).click();
+    await confirmarSiFueraDeHorario(px);
     comprobar(await esperarTexto(px, /Check-in registrado/), "con el nombre de la otra persona, el check-in se registra");
     const regI = (await SB.from("estancias").select("estado, entregado_por_nombre").eq("id", eI).single()).data;
     comprobar(regI.estado === "en_curso" && regI.entregado_por_nombre === "Tía Rosa Prueba", `queda quién lo entregó (${regI.entregado_por_nombre})`);
@@ -175,6 +179,7 @@ try {
     ({ cx, px } = await abrirCheckin(eI2));
     await px.locator("#checkin-entrega-quien").selectOption({ index: 1 });
     await px.getByRole("button", { name: /Confirmar check-in/ }).click();
+    await confirmarSiFueraDeHorario(px);
     comprobar(await esperarTexto(px, /Check-in registrado/), "escogiendo al dueño, el check-in se registra");
     comprobar((await SB.from("estancias").select("entregado_por_nombre").eq("id", eI2).single()).data.entregado_por_nombre === duenoB.nombre, "y queda el nombre del dueño");
     await cx.close();

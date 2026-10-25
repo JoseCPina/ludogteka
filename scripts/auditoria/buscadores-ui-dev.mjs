@@ -8,6 +8,8 @@
 // tiene que elegir al cliente apretado, nunca al que quedó debajo del puntero. Se prueba con el buscador que elige
 // en la misma pantalla (Nueva reserva de Hotel y Guardería, Agendar de Estética) y con el que navega (Pases, Cargo
 // suelto de Caja), con ratón y con teclado.
+// 6. N124: en Caja («¿A quién le cobras?») todos los términos deben coincidir: «S32 Est» trae a «Qa S32 Est» y no a
+// «QA R23c Cliente Est» aunque su teléfono tenga 32. La regla pura: scripts/auditoria/busqueda-clientes.mjs.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -38,14 +40,17 @@ async function cookiesDe(profileId) {
   return [...galletas(`sb-${REF}-auth-token`), ...galletas(`sb-${REF}-portal-auth-token`)].map(([name, value]) => ({ name, value, domain: "huellitas.localhost", path: "/" }));
 }
 
-const nuevoCliente = async (nombre, i) => {
-  const tel = `66${String(Date.now()).slice(-7)}${i}`.slice(0, 10);
+const nuevoCliente = async (nombre, i, telefono) => {
+  const tel = telefono ?? `66${String(Date.now()).slice(-7)}${i}`.slice(0, 10);
   const r = await SB.from("clientes").insert({ nombre, telefono: tel }).select("id").single();
   if (r.error) throw new Error(r.error.message);
   return r.data.id;
 };
 const R8 = await nuevoCliente(`Qa R8 Buscador ${sufijo}`, 1);
 const S9 = await nuevoCliente(`Qa S9 Buscador ${sufijo}`, 2);
+// N124: el teléfono de R23c lleva el 32 de «S32».
+const S32 = await nuevoCliente(`Qa S32 Est ${sufijo}`, 3);
+const R23 = await nuevoCliente(`QA R23c Cliente Est ${sufijo}`, 4, `6632${sufijo}`.slice(0, 10));
 
 const nav = await abrirNavegador();
 const ctx = await nav.newContext({ viewport: { width: 1280, height: 900 } });
@@ -113,8 +118,22 @@ try {
   await p.keyboard.press("Enter");
   await p.waitForURL(/cliente=/, { timeout: 15000 });
   comprobar(p.url().includes(`cliente=${S9}`), "con teclado (Enter) elige la fila enfocada");
+
+  console.log("6. Caja, «¿A quién le cobras?»: todos los términos deben coincidir (N124)");
+  await p.goto(`${BASE}/caja`, { waitUntil: "networkidle" });
+  const campoCaja = p.locator('input[type="search"]').first();
+  await campoCaja.fill("S32 Est");
+  await p.locator(`[data-cliente-id="${S32}"]`).waitFor({ timeout: 15000 }).catch(() => {});
+  comprobar(await p.locator(`[data-cliente-id="${S32}"]`).count() === 1, "«S32 Est» trae a «Qa S32 Est»");
+  comprobar(await p.locator(`[data-cliente-id="${R23}"]`).count() === 0, "y NO a «QA R23c Cliente Est» (su teléfono tiene 32)");
+  await campoCaja.fill(`Est ${sufijo}`);
+  await p.locator(`[data-cliente-id="${R23}"]`).waitFor({ timeout: 15000 }).catch(() => {});
+  comprobar(await p.locator(`[data-cliente-id="${R23}"]`).count() === 1 && await p.locator(`[data-cliente-id="${S32}"]`).count() === 1, "«Est» solo trae a los dos");
+  await campoCaja.fill(`6632${sufijo}`.slice(0, 10));
+  await p.locator(`[data-cliente-id="${R23}"]`).waitFor({ timeout: 15000 }).catch(() => {});
+  comprobar(await p.locator(`[data-cliente-id="${R23}"]`).count() === 1 && await p.locator(`[data-cliente-id="${S32}"]`).count() === 0, "un número busca en el teléfono");
 } finally {
-  await SB.from("clientes").update({ deleted_at: new Date().toISOString() }).in("id", [R8, S9]);
+  await SB.from("clientes").update({ deleted_at: new Date().toISOString() }).in("id", [R8, S9, S32, R23]);
   await nav.close();
 }
 if (hallazgos.length) { console.log(`\n${hallazgos.length} hallazgo(s)`); process.exit(1); }

@@ -48,6 +48,8 @@ type Linea = {
   // Guardería de día completo con pases: usar uno (lo normal) o pagar el
   // día suelto. En lo demás no tiene efecto.
   usarPase: boolean;
+  // QA N125: el negocio no abre el día de entrada (o de salida, en hotel) y se registra de todos modos.
+  diaCerradoConfirmado: boolean;
 };
 
 function lineaAPayload(linea: Linea, servicios: Servicio[]): LineaReserva {
@@ -65,6 +67,7 @@ function lineaAPayload(linea: Linea, servicios: Servicio[]): LineaReserva {
     bloqueoComportamientoSuperado: linea.bloqueoComportamientoSuperado,
     motivoExcepcionComportamiento: linea.motivoExcepcionComportamiento,
     usarPase: linea.usarPase,
+    diaCerradoConfirmado: linea.diaCerradoConfirmado,
   };
 }
 
@@ -183,7 +186,7 @@ export function NuevaReservaForm({
       const primero = primerCotizable(servicios);
       revisarChoque({
         perroId: perro.id, perroNombre: perro.nombre, servicioId: primero?.id ?? "", fechaEntrada: entradaInicial, fechaSalida: sumarDiasFecha(entradaInicial, 1), horas: "1",
-        bloqueoSanitarioSuperado: false, motivoExcepcionSanitaria: "", bloqueoComportamientoSuperado: false, motivoExcepcionComportamiento: "", usarPase: true,
+        bloqueoSanitarioSuperado: false, motivoExcepcionSanitaria: "", bloqueoComportamientoSuperado: false, motivoExcepcionComportamiento: "", usarPase: true, diaCerradoConfirmado: false,
       });
     }
     setLineas((prev) => {
@@ -206,6 +209,7 @@ export function NuevaReservaForm({
           bloqueoComportamientoSuperado: false,
           motivoExcepcionComportamiento: "",
           usarPase: true,
+          diaCerradoConfirmado: false,
         },
       ];
     });
@@ -231,15 +235,19 @@ export function NuevaReservaForm({
     diasSinAtencion.length > 0
       ? `El negocio no atiende los ${diasSinAtencion.map((d) => enPlural(NOMBRES_DIA[d % 7])).join(" ni los ")}: ese día no hay entradas ni entregas.`
       : undefined;
-  const conDiaCerrado = lineas.some((l) => {
+  const lineaEnDiaCerrado = (l: Linea) => {
     const sv = servicios.find((x) => x.id === l.servicioId);
     return sinAtencion(l.fechaEntrada) || (sv?.categoria === "hotel" && sinAtencion(l.fechaSalida));
-  });
+  };
+  // QA N125: un día cerrado no se reserva sin la confirmación explícita (queda anotada en la estancia).
+  const conDiaCerrado = lineas.some((l) => lineaEnDiaCerrado(l) && !l.diaCerradoConfirmado);
 
   function actualizarLinea(perroId: string, cambios: Partial<Linea>) {
     const actual = lineas.find((l) => l.perroId === perroId);
     if (actual && ("fechaEntrada" in cambios || "fechaSalida" in cambios || "servicioId" in cambios)) revisarChoque({ ...actual, ...cambios });
-    setLineas((prev) => prev.map((l) => (l.perroId === perroId ? { ...l, ...cambios } : l)));
+    // Otra fecha u otro servicio: el día cerrado se vuelve a confirmar.
+    const reconfirmar = "fechaEntrada" in cambios || "fechaSalida" in cambios || "servicioId" in cambios ? { diaCerradoConfirmado: false } : {};
+    setLineas((prev) => prev.map((l) => (l.perroId === perroId ? { ...l, ...reconfirmar, ...cambios } : l)));
   }
 
   async function enviar() {
@@ -572,7 +580,7 @@ export function NuevaReservaForm({
                       label={esGuarderia ? "Fecha" : "Entrada"}
                       type="date"
                       value={linea.fechaEntrada}
-                      error={sinAtencion(linea.fechaEntrada) ? (esGuarderia ? "Guardería" : "El hotel") + ` no ${esGuarderia ? "abre" : "recibe perros"} los ${enPlural(NOMBRES_DIA[diaDeFecha(linea.fechaEntrada)])}. Elige otro día.` : undefined}
+                      error={sinAtencion(linea.fechaEntrada) && !linea.diaCerradoConfirmado ? (esGuarderia ? "Guardería" : "El hotel") + ` no ${esGuarderia ? "abre" : "recibe perros"} los ${enPlural(NOMBRES_DIA[diaDeFecha(linea.fechaEntrada)])}. Elige otro día o confírmalo abajo.` : undefined}
                       ayuda={sinAtencion(linea.fechaEntrada) ? reglaDias : undefined}
                       onChange={(e) => {
                         // El hotel se cobra por noche: si la entrada alcanza a la
@@ -605,12 +613,23 @@ export function NuevaReservaForm({
                         type="date"
                         value={linea.fechaSalida}
                         min={linea.fechaEntrada ? sumarDiasFecha(linea.fechaEntrada, 1) : undefined}
-                        error={sinAtencion(linea.fechaSalida) ? `El hotel no entrega perros los ${enPlural(NOMBRES_DIA[diaDeFecha(linea.fechaSalida)])}. Elige otro día de salida.` : undefined}
+                        error={sinAtencion(linea.fechaSalida) && !linea.diaCerradoConfirmado ? `El hotel no entrega perros los ${enPlural(NOMBRES_DIA[diaDeFecha(linea.fechaSalida)])}. Elige otro día de salida o confírmalo abajo.` : undefined}
                         ayuda={sinAtencion(linea.fechaSalida) ? reglaDias : undefined}
                         onChange={(e) => actualizarLinea(perro.id, { fechaSalida: e.target.value })}
                       />
                     )}
                   </div>
+                )}
+                {linea && lineaEnDiaCerrado(linea) && (
+                  <label className="mt-3 flex items-start gap-2 rounded-md border-[1.5px] border-ambar bg-ambar-suave px-3 py-2 text-sm text-ambar-oscuro" data-confirmar-dia-cerrado>
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-5 w-5"
+                      checked={linea.diaCerradoConfirmado}
+                      onChange={(e) => actualizarLinea(perro.id, { diaCerradoConfirmado: e.target.checked })}
+                    />
+                    <span>El negocio está cerrado ese día; registrar de todos modos. Queda anotado en la bitácora de la estancia.</span>
+                  </label>
                 )}
                 {linea && (
                   <div className="mt-3">

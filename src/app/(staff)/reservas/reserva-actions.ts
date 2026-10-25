@@ -25,6 +25,8 @@ export type LineaReserva = {
   motivoExcepcionComportamiento?: string;
   // false = recepción escogió pagar el día suelto aunque tenga pases.
   usarPase?: boolean;
+  // QA N125: entrada (o salida de hotel) en un día que el negocio no abre, confirmada a propósito.
+  diaCerradoConfirmado?: boolean;
 };
 
 // Qué pasó con el bono al reservar guardería: si se usó uno (cuál y qué le
@@ -69,6 +71,7 @@ async function insertarEstancia(reservaId: string, linea: LineaReserva): Promise
       motivo_excepcion_sanitaria: linea.motivoExcepcionSanitaria || null,
       bloqueo_comportamiento_superado: linea.bloqueoComportamientoSuperado ?? false,
       motivo_excepcion_comportamiento: linea.motivoExcepcionComportamiento || null,
+      ...(linea.diaCerradoConfirmado ? { dia_cerrado_confirmado: "confirmado" } : {}),
     })
     .select("id")
     .single();
