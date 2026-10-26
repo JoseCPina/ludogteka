@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { TIPOS_LINK_ALTA, tiposDisponibles, type TipoLinkAlta } from "@/lib/alta/tipos-link";
 import { useModulos } from "@/components/modulos-contexto";
+import { usePuedeAbrir } from "@/components/acceso-contexto";
 
 /**
  * Dar de alta a alguien desde el módulo en el que está parada recepción.
@@ -39,11 +40,16 @@ export function BotonNuevoCliente({
   const { modulos } = useModulos();
   // El link de alta crea la cuenta del portal: sin portal no hay links, y
   // solo se ofrecen los de los servicios que el negocio tiene.
-  const disponibles = modulos.includes("portal") ? tiposDisponibles(modulos) : [];
+  // QA N127: solo lo que esta persona puede abrir (estética no da de alta clientes: sin nada que ofrecer, no hay botón).
+  const puede = usePuedeAbrir();
+  const disponibles = modulos.includes("portal") && puede("/clientes/invitaciones") ? tiposDisponibles(modulos) : [];
   const definicion = tipo && disponibles.includes(tipo) ? TIPOS_LINK_ALTA[tipo] : null;
   const tipos = disponibles.map((clave) => ({ clave, ...TIPOS_LINK_ALTA[clave] }));
   // QA S31: «Capturarlo yo» desde un módulo sigue con el alta del perro (como Veterinaria), no se queda en la ficha.
   const hrefCaptura = volver ? `/clientes/nuevo?volver=${encodeURIComponent(volver)}` : "/clientes/nuevo?seguir=perro";
+
+  const puedeCapturar = puede("/clientes/nuevo");
+  if (!puedeCapturar && disponibles.length === 0) return null;
 
   if (!abierto) {
     return (
@@ -75,11 +81,13 @@ export function BotonNuevoCliente({
             </Link>
           ))
         )}
-        <Link href={hrefCaptura}>
-          <Button type="button" variante="secundario">
-            Capturarlo yo
-          </Button>
-        </Link>
+        {puedeCapturar && (
+          <Link href={hrefCaptura}>
+            <Button type="button" variante="secundario">
+              Capturarlo yo
+            </Button>
+          </Link>
+        )}
         <Button type="button" variante="secundario" onClick={() => setAbierto(false)}>
           Cerrar
         </Button>

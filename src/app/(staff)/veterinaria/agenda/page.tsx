@@ -9,6 +9,7 @@ import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { AvisosWhatsApp } from "@/components/avisos-whatsapp";
 import { ESTADOS_CITA, type CitaVet, type MedicoVet } from "@/lib/veterinaria/expediente";
 import { AccionesCita } from "./acciones-cita";
+import { EnlaceOTexto } from "@/components/acceso-contexto";
 
 export default async function AgendaVeterinaria({ searchParams }: { searchParams: Promise<{ vista?: string; fecha?: string; medico?: string; aviso?: string; hora?: string }> }) {
   const zona = await zonaActual();
@@ -87,7 +88,7 @@ export default async function AgendaVeterinaria({ searchParams }: { searchParams
       {error ? (
         <Alert variante="error" titulo="No pudimos cargar la agenda">Recarga la página. Si el problema sigue, avísale al equipo técnico.</Alert>
       ) : medicos.length === 0 ? (
-        <Alert variante="advertencia" titulo="Todavía no hay médicos veterinarios">Para agendar citas, un admin designa al menos un médico en <Link href="/veterinaria/medicos" className="font-semibold underline">Médicos</Link>.</Alert>
+        <Alert variante="advertencia" titulo="Todavía no hay médicos veterinarios">Para agendar citas, un admin designa al menos un médico en <EnlaceOTexto href="/veterinaria/medicos" className="font-semibold underline">Médicos</EnlaceOTexto>.</Alert>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {columnas.map((m) => {

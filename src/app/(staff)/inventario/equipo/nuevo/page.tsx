@@ -1,15 +1,16 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
-import { cargarAreas, puedeDarDeAlta } from "../../comun";
+import { cargarAreas } from "../../comun";
 import { EquipoForm } from "../equipo-form";
 import { crearEquipo } from "../equipo-actions";
 
 // Alta rápida de equipo: admin y recepción, sin costo.
 export default async function NuevoEquipoPage() {
   const sesion = await obtenerSesionConRol();
-  if (!puedeDarDeAlta(sesion?.rol)) redirect("/inventario?ver=equipo");
+  if (!puedeAbrir(accesoDeSesion(sesion), "/inventario/equipo/nuevo")) redirect("/inventario?ver=equipo");
   const supabase = await createSupabaseServerClient();
   const areas = await cargarAreas(supabase);
 

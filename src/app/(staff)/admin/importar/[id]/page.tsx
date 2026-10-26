@@ -1,8 +1,8 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
-import { tienePermiso } from "@/lib/auth/permisos";
 import { formatearFecha } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { Chip } from "@/components/ui/chip";
@@ -30,7 +30,7 @@ export default async function ImportacionPage({
   searchParams: Promise<{ ver?: string }>;
 }) {
   const sesion = await obtenerSesionConRol();
-  if (!tienePermiso(sesion, "importar_datos")) redirect("/admin");
+  if (!puedeAbrir(accesoDeSesion(sesion), "/admin/importar")) redirect("/admin");
   const { id } = await params;
   const { ver } = await searchParams;
   const zona = await zonaActual();

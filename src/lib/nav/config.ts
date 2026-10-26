@@ -1,4 +1,5 @@
 import { rutaPorRol } from "@/lib/auth/rutas";
+import { puedeAbrir } from "@/lib/auth/acceso";
 
 export type ItemNav = {
   etiqueta: string;
@@ -91,6 +92,8 @@ export function navStaffPara(rol: string, permisos: string[] = [], modulos: stri
           (rol === "recepcion" && (seccion.permisos ?? []).some((p) => permisos.includes(p)))) &&
         (!seccion.modulo || (Array.isArray(seccion.modulo) ? seccion.modulo : [seccion.modulo]).some((m) => modulos.includes(m))) &&
         (!seccion.ademas || seccion.ademas.some((m) => modulos.includes(m))) &&
+        // QA N127: la misma regla con la que el middleware abre la página.
+        puedeAbrir({ rol, permisos, modulos, accesoVeterinaria }, seccion.href) &&
         seccion.href !== inicio
     ),
   ];

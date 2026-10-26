@@ -7,6 +7,7 @@ import { formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
 import { cargarCatalogoExtras, cargarExtras } from "@/lib/extras/servidor";
 import { dinero } from "@/lib/dinero";
 import { ListaExtras } from "@/components/extras/lista-extras";
+import { SiPuedeAbrir } from "@/components/acceso-contexto";
 
 // Los servicios extra del día: las tareas (paseo, baño de salida, medicamento…) y la
 // hoja de traslados (dirección, hora y estado). Se puede ver otro día con ?fecha=.
@@ -114,9 +115,11 @@ export default async function ExtrasPage({ searchParams }: { searchParams: Promi
                     : `cargo adicional ${c.unidad === "dia" ? "por día" : c.unidad === "noche" ? "por noche" : c.unidad === "hora" ? "por hora" : "por vez"}`}
               </span>{" "}
               {!c.monto_libre && (
-                <Link href={`/servicios/${c.id}/tarifas`} className="font-semibold text-morado hover:underline">
-                  Ver cómo se cobra
-                </Link>
+                <SiPuedeAbrir href={`/servicios/${c.id}/tarifas`}>
+                  <Link href={`/servicios/${c.id}/tarifas`} className="font-semibold text-morado hover:underline">
+                    Ver cómo se cobra
+                  </Link>
+                </SiPuedeAbrir>
               )}
             </li>
           ))}

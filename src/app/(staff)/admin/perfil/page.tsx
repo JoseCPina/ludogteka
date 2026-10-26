@@ -1,7 +1,7 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
-import { tienePermiso } from "@/lib/auth/permisos";
 import { urlPublicaArchivo } from "@/lib/negocio/publico";
 import { AvanceWeb } from "@/components/avance-web";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
@@ -14,7 +14,7 @@ import { Establecimiento } from "./establecimiento";
 // horario, de Administración; el WhatsApp, del teléfono de recepción.
 export default async function PerfilPage() {
   const sesion = await obtenerSesionConRol();
-  if (!tienePermiso(sesion, "configuracion_negocio")) redirect("/admin");
+  if (!puedeAbrir(accesoDeSesion(sesion), "/admin/perfil")) redirect("/admin");
   const supabase = await createSupabaseServerClient();
   const negocio = await cargarNegocioLanding();
   const [{ data: perfil }, { data: fotos }] = await Promise.all([

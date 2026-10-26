@@ -8,6 +8,7 @@ import { ENCABEZADOS_NEGOCIO, ENCABEZADO_PLATAFORMA, hostPorMudanza, resolverNeg
 import { ENCABEZADO_FIRMA, firmaValida, firmarNegocio, firmarPlataforma, plataformaFirmada } from "@/lib/negocio/firma";
 import { DOMINIO_PLATAFORMA, esHostPlataforma } from "@/lib/negocio/host";
 import { moduloDeRuta, moduloRequeridoActivo } from "@/lib/plan/modulos";
+import { ZONAS_API, accesoAbreZona, zonaDeRuta, zonaPidePermisos, zonaPideVeterinaria, type Acceso } from "@/lib/auth/acceso";
 
 // Los encabezados de negocio que puso este mismo middleware (firmados).
 // Solo los trae la petición interna con la que Next pinta el destino de
@@ -28,79 +29,9 @@ async function negocioFirmado(h: Headers): Promise<NegocioBasico | null> {
   return (await firmaValida(n, h.get(ENCABEZADO_FIRMA))) ? n : null;
 }
 
-// Zonas de página: si el rol no está permitido, se redirige a la zona que
-// sí le toca (nunca a /login con sesión activa — eso se lee como un bug).
-//
-// `permisos`: una persona de recepción con CUALQUIERA de esos permisos
-// extra (permisos_staff, 24 de septiembre de 2026) también entra. El orden
-// importa: gana el primer prefijo que coincide, así que lo más específico
-// va primero (/admin/permisos antes de /admin).
-type Zona = { prefijo: string; rolesPermitidos: string[]; permisos?: string[]; accesoVeterinaria?: boolean };
-const ZONAS_PROTEGIDAS: Zona[] = [
-  // Dar y quitar permisos nunca se delega.
-  { prefijo: "/admin/permisos", rolesPermitidos: ["admin"] },
-  // Servicios extra (Hotel y guardería): el catálogo es de admin o de quien tenga el permiso.
-  { prefijo: "/extras/catalogo", rolesPermitidos: ["admin"], permisos: ["editar_catalogo_extras"] },
-  { prefijo: "/extras", rolesPermitidos: ["admin", "recepcion"] },
-  // Con qué cobra el negocio y sus credenciales: solo admin, nunca se delega.
-  { prefijo: "/admin/pagos", rolesPermitidos: ["admin"] },
-  // La plantilla del reporte de guardería y los días de retención: solo admin.
-  { prefijo: "/admin/reporte-guarderia", rolesPermitidos: ["admin"] },
-  // Prender y apagar módulos: admin, o recepción con «Administrar módulos».
-  { prefijo: "/admin/modulos", rolesPermitidos: ["admin"], permisos: ["administrar_modulos"] },
-  // Facturación: datos fiscales, llave del PAC e IVA (solo admin o con permiso).
-  { prefijo: "/admin/facturacion", rolesPermitidos: ["admin"], permisos: ["editar_datos_fiscales", "facturar"] },
-  // Importar clientes y mascotas desde Excel o CSV (admin o con «Importar clientes y mascotas»).
-  { prefijo: "/admin/importar", rolesPermitidos: ["admin"], permisos: ["importar_datos"] },
-  { prefijo: "/admin", rolesPermitidos: ["admin"], permisos: ["personal", "configuracion_negocio", "tarifas"] },
-  { prefijo: "/recepcion", rolesPermitidos: ["recepcion", "admin"] },
-  // Los primeros pasos de un negocio recién abierto en peludesk.mx.
-  { prefijo: "/bienvenida", rolesPermitidos: ["admin"] },
-  // /estetica es a la vez el aterrizaje del rol de estética y el módulo de
-  // la agenda (antes /agenda), así que recepción también entra.
-  { prefijo: "/estetica", rolesPermitidos: ["admin", "recepcion", "estetica"] },
-  { prefijo: "/portal", rolesPermitidos: ["cliente"] },
-  { prefijo: "/clientes", rolesPermitidos: ["admin", "recepcion"] },
-  { prefijo: "/vinculacion", rolesPermitidos: ["admin", "recepcion"] },
-  // Estética entra también: escribe peso/alergias/alertas del perro, aunque
-  // no pueda tocar los datos base (eso lo filtra RLS, no esta zona).
-  { prefijo: "/perros", rolesPermitidos: ["admin", "recepcion", "estetica"] },
-  // Con el permiso de tarifas solo le sirven las matrices de precios: la
-  // página de cada servicio la manda ahí (crear y editar servicios es de admin).
-  { prefijo: "/servicios", rolesPermitidos: ["admin"], permisos: ["tarifas"] },
-  { prefijo: "/reservas", rolesPermitidos: ["admin", "recepcion"] },
-  { prefijo: "/guarderia", rolesPermitidos: ["admin", "recepcion"] },
-  // Quién está adentro ahora (hotel y guardería), con fotos, videos y reporte.
-  { prefijo: "/adentro", rolesPermitidos: ["admin", "recepcion"] },
-  { prefijo: "/hotel", rolesPermitidos: ["admin", "recepcion"] },
-  { prefijo: "/caja", rolesPermitidos: ["admin", "recepcion"] },
-  // Veterinaria (Fase 0): inicio, inventario clínico y médicos.
-  // Entra cualquier rol del personal que sea médico veterinario designado o tenga algún permiso
-  // del módulo (`acceso_veterinaria()`); cada pantalla vuelve a validar el suyo.
-  { prefijo: "/veterinaria", rolesPermitidos: ["admin", "recepcion"], accesoVeterinaria: true },
-  { prefijo: "/contratos", rolesPermitidos: ["admin", "recepcion"] },
-  { prefijo: "/inventario", rolesPermitidos: ["admin", "recepcion", "estetica"] },
-  { prefijo: "/reportes", rolesPermitidos: ["admin"], permisos: ["reportes_financieros"] },
-  // Empleados: el dinero (nómina, comisiones) y el alta, solo con «Nómina»;
-  // lo específico antes que /empleados.
-  // Gastos del local: con «Gastos»; las categorías, solo admin.
-  { prefijo: "/gastos/categorias", rolesPermitidos: ["admin"] },
-  { prefijo: "/gastos", rolesPermitidos: ["admin"], permisos: ["gastos"] },
-  { prefijo: "/empleados/nomina", rolesPermitidos: ["admin"], permisos: ["nomina"] },
-  { prefijo: "/empleados/comisiones", rolesPermitidos: ["admin"], permisos: ["nomina"] },
-  { prefijo: "/empleados/nuevo", rolesPermitidos: ["admin"], permisos: ["nomina"] },
-  { prefijo: "/empleados", rolesPermitidos: ["admin", "recepcion"] },
-  // Ayuda: artículos, asistente y tickets (admin y recepción, sin permiso especial).
-  { prefijo: "/ayuda", rolesPermitidos: ["admin", "recepcion"] },
-  // Lo de cada quien: su asistencia, ausencias y pagos.
-  { prefijo: "/mi-trabajo", rolesPermitidos: ["admin", "recepcion", "estetica"] },
-];
-
-// Zonas de API: nunca redirige (un fetch no sabe qué hacer con un 302 a
-// HTML) — responde 401/403 directo.
-const ZONAS_API_PROTEGIDAS: Zona[] = [
-  { prefijo: "/api/staff", rolesPermitidos: ["admin"], permisos: ["personal"] },
-];
+// Zonas de página y de API: quién abre qué vive en src/lib/auth/acceso.ts (QA N127), la misma regla con la que
+// la pantalla esconde los botones. Si el rol no entra, se redirige a la zona que sí le toca (nunca a /login con
+// sesión activa — eso se lee como un bug); la API responde 401/403.
 
 function conCookiesDe(origen: NextResponse, destino: NextResponse) {
   origen.cookies.getAll().forEach((cookie) => destino.cookies.set(cookie));
@@ -237,8 +168,8 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await getUserConReintento(supabase);
 
-  const zonaPagina = ZONAS_PROTEGIDAS.find((z) => pathname.startsWith(z.prefijo));
-  const zonaApi = ZONAS_API_PROTEGIDAS.find((z) => pathname.startsWith(z.prefijo));
+  const zonaPagina = zonaDeRuta(pathname);
+  const zonaApi = zonaPagina ? null : zonaDeRuta(pathname, ZONAS_API);
   const zona = zonaPagina ?? zonaApi;
 
   if (!zona) return response;
@@ -282,21 +213,21 @@ export async function middleware(request: NextRequest) {
     return conCookiesDe(response, NextResponse.redirect(new URL("/sin-acceso", request.url)));
   }
 
-  // Recepción con un permiso extra que abre esta zona. La base vuelve a
-  // revisar el permiso en cada operación: esto solo decide si se ve la página.
-  let entraPorPermiso = false;
-  if (!zona.rolesPermitidos.includes(rol) && rol === "recepcion" && zona.permisos?.length) {
-    const { data: mios } = await supabase.rpc("mis_permisos");
-    const propios = new Set(((mios as string[] | null) ?? []).map(String));
-    entraPorPermiso = zona.permisos.some((p) => propios.has(p));
-  }
+  // Los permisos por persona y Veterinaria se preguntan solo si esta zona los necesita para este rol. La base
+  // vuelve a revisar el permiso en cada operación: esto solo decide si se ve la página.
+  const [permisosResp, vetResp, medicoResp] = await Promise.all([
+    zonaPidePermisos(zona, rol) ? supabase.rpc("mis_permisos") : Promise.resolve(null),
+    zonaPideVeterinaria(zona, rol) ? supabase.rpc("acceso_veterinaria") : Promise.resolve(null),
+    zonaPideVeterinaria(zona, rol) ? supabase.rpc("es_medico_veterinario") : Promise.resolve(null),
+  ]);
+  const acceso: Acceso = {
+    rol,
+    permisos: ((permisosResp?.data as string[] | null) ?? []).map(String),
+    accesoVeterinaria: vetResp?.data === true,
+    esMedico: medicoResp?.data === true,
+  };
 
-  if (!zona.rolesPermitidos.includes(rol) && !entraPorPermiso && zona.accesoVeterinaria && rol !== "cliente") {
-    const { data: acceso } = await supabase.rpc("acceso_veterinaria");
-    entraPorPermiso = acceso === true;
-  }
-
-  if (!zona.rolesPermitidos.includes(rol) && !entraPorPermiso) {
+  if (!accesoAbreZona(acceso, zona)) {
     if (zonaApi) {
       return conCookiesDe(
         response,

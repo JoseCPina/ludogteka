@@ -20,6 +20,7 @@ import { actualizarEmpleado, darDeBajaEmpleado, guardarHorario, reactivarEmplead
 import { ajustarVacaciones } from "../ausencias-actions";
 import { cancelarAdelanto, guardarEsquema, registrarAdelanto } from "../nomina-actions";
 import { zonaActual } from "@/lib/negocio/actual";
+import { SiPuedeAbrir } from "@/components/acceso-contexto";
 
 type Esquema = {
   id: string;
@@ -329,9 +330,11 @@ export default async function EmpleadoPage({
           </Seccion>
 
           <Seccion titulo="Pagos" sub="Para pagar un periodo, ve a la pestaña Nómina.">
-            <Link href={`/empleados/nomina/${id}`} className="w-fit">
-              <Button type="button" variante="secundario">Calcular y pagar un periodo</Button>
-            </Link>
+            <SiPuedeAbrir href={`/empleados/nomina/${id}`}>
+              <Link href={`/empleados/nomina/${id}`} className="w-fit">
+                <Button type="button" variante="secundario">Calcular y pagar un periodo</Button>
+              </Link>
+            </SiPuedeAbrir>
             <ListaPagos zona={zona} pagos={pagos} puedeRevertir={puedeNomina} />
           </Seccion>
 

@@ -1,3 +1,4 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import { redirect } from "next/navigation";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -7,7 +8,7 @@ import { crearServicio } from "../actions";
 export default async function NuevoServicioPage() {
   // Crear servicios es de admin.
   const sesionServicio = await obtenerSesionConRol();
-  if (sesionServicio?.rol !== "admin") redirect("/servicios");
+  if (!puedeAbrir(accesoDeSesion(sesionServicio), "/servicios/nuevo")) redirect("/servicios");
 
   const supabase = await createSupabaseServerClient();
   const { data: servicios } = await supabase

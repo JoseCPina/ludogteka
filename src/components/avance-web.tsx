@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EnlaceOTexto } from "@/components/acceso-contexto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type Paso = { clave: string; titulo: string; listo: boolean; href: string };
@@ -50,15 +51,16 @@ export async function AvanceWeb({ compacto = false }: { compacto?: boolean }) {
       <ul className={compacto ? "flex flex-wrap gap-2" : "flex flex-col gap-2"}>
         {(compacto ? faltan : a.pasos).map((p) => (
           <li key={p.clave} data-paso-web={p.clave} data-listo={p.listo ? "si" : "no"}>
-            <Link
+            {/* QA N127: un paso que lleva a una pantalla que esta persona no abre se lee, sin enlace. */}
+            <EnlaceOTexto
               href={p.href}
               className={`inline-flex items-center gap-2 text-sm ${p.listo ? "text-n-600" : "font-semibold text-morado hover:underline"}`}
             >
-              <span aria-hidden className={`grid h-5 w-5 place-items-center rounded-full text-xs ${p.listo ? "bg-menta text-morado" : "border-[1.5px] border-borde"}`}>
+              <span aria-hidden className={`inline-grid h-5 w-5 place-items-center rounded-full text-xs ${p.listo ? "bg-menta text-morado" : "border-[1.5px] border-borde"}`}>
                 {p.listo ? "✓" : ""}
               </span>
               {p.titulo}
-            </Link>
+            </EnlaceOTexto>
           </li>
         ))}
       </ul>

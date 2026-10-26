@@ -1,8 +1,8 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
-import { tienePermiso } from "@/lib/auth/permisos";
 import { CostoReferencia } from "../costo-referencia";
 import { leerTodo } from "@/lib/supabase/paginar";
 
@@ -11,7 +11,7 @@ import { leerTodo } from "@/lib/supabase/paginar";
 // se olvide de completarlos.
 export default async function SinCostoPage() {
   const sesion = await obtenerSesionConRol();
-  if (!tienePermiso(sesion, "inventario_costos")) redirect("/inventario");
+  if (!puedeAbrir(accesoDeSesion(sesion), "/inventario/sin-costo")) redirect("/inventario");
   const supabase = await createSupabaseServerClient();
   const { data } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("insumos_sin_costo").order("id"));
   const filas = (data ?? []) as { id: string; nombre: string; area_nombre: string; unidad_compra: string }[];

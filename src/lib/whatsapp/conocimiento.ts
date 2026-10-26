@@ -47,7 +47,7 @@ Cada negocio tiene su propia dirección: <su-nombre>.peludesk.mx.
 - Gastos del local, con gastos recurrentes y comprobantes.
 - Reportes: ingresos, costos, margen por servicio y utilidad (lo cobrado menos insumos, nómina y gastos del local), comparado con el periodo anterior.
 - Página web del negocio con sus servicios, precios, fotos, horario y WhatsApp.
-- Permisos: el admin le puede dar a una persona de recepción permisos extra (costos e inventario, tarifas, reportes, personal, configuración, gastos, nómina, entre otros) en Permisos (en el menú).
+- Permisos: el admin le puede dar a una persona de recepción permisos extra (costos e inventario, tarifas, reportes, personal, configuración, gastos, nómina, entre otros) en Permisos (en el menú). Cada persona ve solo los botones y enlaces de las pantallas que puede abrir: sin el permiso, el botón no aparece (estética, por ejemplo, no ve «Nuevo cliente» ni Caja).
 - Roles: admin (dueño), recepción, estética y cliente (dueño del perro).
 - Módulos: el admin prende y apaga los módulos de su plan en Módulos y plan (en el menú). Apagar un módulo nunca borra nada.
 

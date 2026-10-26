@@ -1,4 +1,5 @@
-import Link from "next/link";
+// QA N127: un link a una pantalla que quien lee no puede abrir queda como texto.
+import { EnlaceOTexto } from "@/components/acceso-contexto";
 import type { ReactNode } from "react";
 
 /**
@@ -24,7 +25,7 @@ function enLinea(texto: string, clave: string, linkDe: (href: string) => string)
         ) : href.startsWith("http") ? (
           <a key={`${clave}-${i++}`} href={href} className="font-semibold text-morado underline">{m[2]}</a>
         ) : (
-          <Link key={`${clave}-${i++}`} href={href} className="font-semibold text-morado underline">{m[2]}</Link>
+          <EnlaceOTexto key={`${clave}-${i++}`} href={href} className="font-semibold text-morado underline">{m[2]}</EnlaceOTexto>
         )
       );
     }

@@ -14,6 +14,7 @@ import { cargarHorarioSemana } from "@/lib/estetica/horario-semana";
 import { CamposCitaVet } from "./campos-cita";
 import type { CitaVet, MedicoVet, TipoCitaConfig } from "@/lib/veterinaria/expediente";
 import { agendarCita } from "../../expediente/actions";
+import { EnlaceOTexto, SiPuedeAbrir } from "@/components/acceso-contexto";
 
 export default async function NuevaCitaVet({ searchParams }: { searchParams: Promise<{ q?: string; perro?: string; fecha?: string; cliente?: string }> }) {
   const { q: qParam, perro, fecha, cliente } = await searchParams;
@@ -42,11 +43,13 @@ export default async function NuevaCitaVet({ searchParams }: { searchParams: Pro
           <Button type="submit">Buscar</Button>
         </form>
         {/* QA S27: el alta del dueño sigue a la de su mascota y regresa aquí con ella elegida (?perro=). */}
-        <Link href={`/clientes/nuevo?volver=${encodeURIComponent("/veterinaria/agenda/nueva")}`} className="self-start text-sm font-semibold text-morado hover:underline" data-nuevo-cliente-vet>
-          + Nuevo cliente y su mascota
-        </Link>
+        <SiPuedeAbrir href="/clientes/nuevo">
+          <Link href={`/clientes/nuevo?volver=${encodeURIComponent("/veterinaria/agenda/nueva")}`} className="self-start text-sm font-semibold text-morado hover:underline" data-nuevo-cliente-vet>
+            + Nuevo cliente y su mascota
+          </Link>
+        </SiPuedeAbrir>
         {filas.length === 0 ? (
-          <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">No encontramos a nadie con eso. Da de alta al dueño y a su mascota con <Link href={`/clientes/nuevo?volver=${encodeURIComponent("/veterinaria/agenda/nueva")}`} className="font-semibold text-morado underline">Nuevo cliente</Link>.</p>
+          <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">No encontramos a nadie con eso.<SiPuedeAbrir href="/clientes/nuevo"> Da de alta al dueño y a su mascota con <Link href={`/clientes/nuevo?volver=${encodeURIComponent("/veterinaria/agenda/nueva")}`} className="font-semibold text-morado underline">Nuevo cliente</Link>.</SiPuedeAbrir></p>
         ) : (
           <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
             {filas.map((f) => (
@@ -99,7 +102,7 @@ export default async function NuevaCitaVet({ searchParams }: { searchParams: Pro
       ) : medicos.length === 0 ? (
         <Alert variante="advertencia" titulo="Todavía no hay médicos veterinarios">
           Antes de agendar hace falta al menos un médico con cuenta y cédula profesional. Un admin lo designa (o se designa a sí mismo con «Yo soy el médico») en{" "}
-          <Link href="/bienvenida/medico" className="font-semibold underline">Médico veterinario</Link> o en <Link href="/veterinaria/medicos" className="font-semibold underline">Médicos</Link>.
+          <EnlaceOTexto href="/bienvenida/medico" className="font-semibold underline">Médico veterinario</EnlaceOTexto> o en <EnlaceOTexto href="/veterinaria/medicos" className="font-semibold underline">Médicos</EnlaceOTexto>.
         </Alert>
       ) : (
         <FormularioAccion accion={agendarCita} textoBoton="Agendar cita" className="rounded-lg border border-n-200 bg-white p-5">

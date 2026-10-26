@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { SiPuedeAbrir } from "@/components/acceso-contexto";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
@@ -120,9 +121,11 @@ export function ServiciosExtraEstancia({
       {puedeAgregar && catalogo.length === 0 && (
         <p className="text-sm text-n-600">
           El negocio todavía no tiene servicios extra en su catálogo.{" "}
-          <Link href="/extras/catalogo" className="font-semibold text-morado hover:underline">
-            Crear el catálogo
-          </Link>
+          <SiPuedeAbrir href="/extras/catalogo" sino="Lo crea un admin o quien tenga «Editar catálogo de servicios extra».">
+            <Link href="/extras/catalogo" className="font-semibold text-morado hover:underline">
+              Crear el catálogo
+            </Link>
+          </SiPuedeAbrir>
         </p>
       )}
 

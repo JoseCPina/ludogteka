@@ -36,6 +36,8 @@ import { MedicamentosSeccion, type MedicamentoFila } from "../medicamentos-secci
 import { RequisitosEstancia } from "../requisitos-estancia";
 import { NotaSoloEstetica } from "../nota-solo-estetica";
 import { hoyNegocio, formatearFechaCalendario } from "@/lib/formato";
+import { SiPuedeAbrir } from "@/components/acceso-contexto";
+import { puedeAbrirEnServidor } from "@/lib/auth/acceso-servidor";
 
 export default async function PerroPage({
   params,
@@ -49,6 +51,7 @@ export default async function PerroPage({
   const { creado } = await searchParams;
 
   const sesion = await obtenerSesionConRol();
+  const puede = await puedeAbrirEnServidor();
   if (!sesion) return null;
 
   const supabase = await createSupabaseServerClient();
@@ -388,12 +391,14 @@ export default async function PerroPage({
     <div className="flex flex-col gap-6">
       <div>
         {perro.cliente_id && cliente && (
-          <Link
-            href={`/clientes/${perro.cliente_id}`}
-            className="text-sm font-semibold text-morado hover:underline"
-          >
-            ← {cliente.nombre}
-          </Link>
+          <SiPuedeAbrir href={`/clientes/${perro.cliente_id}`} sino={<p className="text-sm font-semibold text-n-600">De {cliente.nombre}</p>}>
+            <Link
+              href={`/clientes/${perro.cliente_id}`}
+              className="text-sm font-semibold text-morado hover:underline"
+            >
+              ← {cliente.nombre}
+            </Link>
+          </SiPuedeAbrir>
         )}
         <h1 className="mt-1 text-2xl font-bold text-n-900">{perro.nombre}</h1>
         <p className="mt-1 text-n-600">{conVeterinaria ? "Expediente de la mascota." : "Expediente del perro."}</p>
@@ -405,14 +410,20 @@ export default async function PerroPage({
         <div className="flex flex-col gap-2">
           {seriesActivas.map((s) => {
             const servicio = Array.isArray(s.servicios) ? s.servicios[0] : s.servicios;
+            const texto = `Serie recurrente activa: ${servicio?.nombre ?? "—"} — ${formatearDiasSemana(s.dias_semana as number[])}`;
             return (
-              <Link
+              <SiPuedeAbrir
                 key={s.id}
                 href={`/reservas/series/${s.id}`}
-                className="flex items-center gap-2 rounded-md border-l-4 border-morado bg-morado-suave px-4 py-2.5 text-sm font-semibold text-morado hover:underline"
+                sino={<p className="rounded-md border-l-4 border-morado bg-morado-suave px-4 py-2.5 text-sm font-semibold text-morado">{texto}</p>}
               >
-                Serie recurrente activa: {servicio?.nombre ?? "—"} — {formatearDiasSemana(s.dias_semana as number[])}
-              </Link>
+                <Link
+                  href={`/reservas/series/${s.id}`}
+                  className="flex items-center gap-2 rounded-md border-l-4 border-morado bg-morado-suave px-4 py-2.5 text-sm font-semibold text-morado hover:underline"
+                >
+                  {texto}
+                </Link>
+              </SiPuedeAbrir>
             );
           })}
         </div>
@@ -559,9 +570,11 @@ export default async function PerroPage({
                 </span>
               );
             })}
-            <Link href="/recepcion/comprobantes" className="mt-1 block font-semibold text-morado hover:underline">
-              Revisarlos en la bandeja de comprobantes →
-            </Link>
+            <SiPuedeAbrir href="/recepcion/comprobantes">
+              <Link href="/recepcion/comprobantes" className="mt-1 block font-semibold text-morado hover:underline">
+                Revisarlos en la bandeja de comprobantes →
+              </Link>
+            </SiPuedeAbrir>
           </Alert>
         )}
 
@@ -614,7 +627,7 @@ export default async function PerroPage({
         <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-bold text-n-900">Day pass y mensualidad</h2>
-            {!perro.fallecido && (
+            {!perro.fallecido && puede(`/guarderia/pases`) && (
               <Link
                 href={`/guarderia/pases?cliente=${perro.cliente_id}&perro=${id}`}
                 className="text-sm font-semibold text-morado hover:underline"

@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { convertirEnNocheHotel } from "../../../checkin-actions";
+import { EnlaceOTexto } from "@/components/acceso-contexto";
 
 export type SugerenciaHotel = {
   minutos: number;
@@ -66,9 +66,9 @@ export function ConvertirHotel({
           ) : (
             <span className="text-sm font-semibold text-ambar-oscuro">
               Ningún servicio de hotel tiene precio capturado. Captúralo en{" "}
-              <Link href="/servicios" className="underline">
+              <EnlaceOTexto href="/servicios" className="underline">
                 Servicios
-              </Link>{" "}
+              </EnlaceOTexto>{" "}
               para poder convertir.
             </span>
           )}

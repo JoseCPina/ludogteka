@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SiPuedeAbrir } from "@/components/acceso-contexto";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Field } from "@/components/ui/field";
@@ -27,9 +28,11 @@ export default async function BuscarExpediente({ searchParams }: { searchParams:
         <Button type="submit">Buscar</Button>
       </form>
       {/* QA S27: el alta del dueño sigue a la de su mascota y regresa a su expediente. */}
-      <Link href={`/clientes/nuevo?volver=${encodeURIComponent("/veterinaria/expediente")}`} className="self-start text-sm font-semibold text-morado hover:underline" data-nuevo-cliente-vet>
-        + Nuevo cliente y su mascota
-      </Link>
+      <SiPuedeAbrir href="/clientes/nuevo">
+        <Link href={`/clientes/nuevo?volver=${encodeURIComponent("/veterinaria/expediente")}`} className="self-start text-sm font-semibold text-morado hover:underline" data-nuevo-cliente-vet>
+          + Nuevo cliente y su mascota
+        </Link>
+      </SiPuedeAbrir>
       {filas.length === 0 ? (
         <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">{q ? "No encontramos a nadie con eso." : "Todavía no hay mascotas registradas."}</p>
       ) : (

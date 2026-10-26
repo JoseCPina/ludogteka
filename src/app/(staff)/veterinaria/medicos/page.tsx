@@ -1,3 +1,4 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -26,7 +27,7 @@ const nombreDe = (p: unknown) => (p as { nombre_completo: string | null } | null
 
 export default async function MedicosPage() {
   const sesion = await obtenerSesionConRol();
-  if (sesion?.rol !== "admin") redirect("/veterinaria");
+  if (!puedeAbrir(accesoDeSesion(sesion), "/veterinaria/medicos")) redirect("/veterinaria");
   const supabase = await createSupabaseServerClient();
 
   const [{ data: medicos, error }, { data: bloquesCrudo }, { data: personal }] = await Promise.all([

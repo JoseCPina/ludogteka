@@ -1,16 +1,17 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { InsumoForm } from "../insumo-form";
 import { crearInsumo } from "../actions";
-import { cargarAreas, puedeDarDeAlta } from "../comun";
+import { cargarAreas } from "../comun";
 
 // Alta rápida de un consumible: admin y recepción, sin proveedor y sin
 // costo (el costo lo completa después quien tenga el permiso de costos).
 export default async function NuevoConsumiblePage() {
   const sesion = await obtenerSesionConRol();
-  if (!puedeDarDeAlta(sesion?.rol)) redirect("/inventario");
+  if (!puedeAbrir(accesoDeSesion(sesion), "/inventario/nuevo")) redirect("/inventario");
   const supabase = await createSupabaseServerClient();
   const [areas, { data: unidades }] = await Promise.all([
     cargarAreas(supabase),

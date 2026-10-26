@@ -1,15 +1,15 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
-import { tienePermiso } from "@/lib/auth/permisos";
 import { cargarAreas } from "../../../inventario/comun";
 import { ProductoForm } from "../producto-form";
 import type { PrincipioActivo } from "../../comun";
 
 export default async function NuevoProductoClinico() {
   const sesion = await obtenerSesionConRol();
-  if (!tienePermiso(sesion, "lotes_clinicos")) redirect("/veterinaria/inventario");
+  if (!puedeAbrir(accesoDeSesion(sesion), "/veterinaria/inventario/nuevo")) redirect("/veterinaria/inventario");
   const supabase = await createSupabaseServerClient();
   const [areas, { data: unidades }, { data: principios }] = await Promise.all([
     cargarAreas(supabase),

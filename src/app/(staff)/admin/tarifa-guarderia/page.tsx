@@ -1,7 +1,7 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
-import { tienePermiso } from "@/lib/auth/permisos";
 import { Alert } from "@/components/ui/alert";
 import { TarifaGuarderiaForm } from "./tarifa-guarderia-form";
 
@@ -10,7 +10,7 @@ import { TarifaGuarderiaForm } from "./tarifa-guarderia-form";
 // negocio decide si la ofrece y a qué servicios se les aplica.
 export default async function TarifaGuarderiaPage() {
   const sesion = await obtenerSesionConRol();
-  if (!tienePermiso(sesion, "tarifas")) redirect("/admin");
+  if (!puedeAbrir(accesoDeSesion(sesion), "/admin/tarifa-guarderia")) redirect("/admin");
   const supabase = await createSupabaseServerClient();
   const [{ data: config }, { data: servicios }] = await Promise.all([
     supabase.from("tarifa_guarderia_config").select("activa, servicio_tarifa_id, servicios_incluidos, dias_actividad").is("deleted_at", null).maybeSingle(),
