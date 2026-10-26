@@ -219,6 +219,8 @@ try {
   comprobar(Boolean(msj) && enviado?.text?.preview_url === false, "el mensaje con la liga sale sin vista previa");
   comprobar(Boolean(msj) && msj.includes(`${neg?.slug}.localhost`) && /una sola vez y dura 24 horas/.test(msj) && /1\. .*\n2\. .*\n3\. /.test(msj), "con el subdominio, la vigencia y los tres primeros pasos");
   comprobar(mock.tg.some((t) => String(t.text ?? "").includes(negocioNombre)), "la bandeja de Telegram recibe el aviso de la cuenta nueva");
+  const { data: guardados } = await A.from("wa_mensajes").select("texto").eq("telefono", T1).eq("quien", "agente").like("texto", "%/entrar/%");
+  comprobar((guardados ?? []).length > 0 && guardados.every((g) => g.texto.includes("/entrar/[liga de un solo uso]")), "el historial del bot guarda la liga enmascarada (la completa solo viaja en el chat)");
 
   // ── 4. nfm_reply
   console.log("\n4. Aviso del webhook (nfm_reply)");
