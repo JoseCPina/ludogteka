@@ -77,3 +77,6 @@
 - Corrida larga desde la computadora, con el mismo motor que la tarea y sin el tope de 5 minutos de Vercel: `node scripts/prospectos/nacional.mjs --estimar [--prod]` y `--tope N [--prod] [--hasta-usd X] [--estados …]` (`--hasta-usd` se detiene antes de pasar ese gasto estimado en el mes, contando lo gratis; no revisa webs: eso lo hace después `scripts/prospectos/calidad.mjs`).
 - La clasificación con IA (`clasificarLote`) lee la lista aunque el modelo la mande como texto JSON en vez de arreglo; si no se entiende, el lote sale vacío (no truena).
 - Prueba: `npm run build && node --experimental-strip-types scripts/auditoria/prospectos-nacional-dev.mjs`.
+
+## Prueba gratis por WhatsApp (25 de octubre de 2026)
+- El bot ofrece el formulario «Probar gratis» (WhatsApp Flow) a quien llega de su página (`ref.`) o de un anuncio, en su primera respuesta; al completarlo el prospecto pasa a `en_prueba` ligado al negocio y su página queda publicada (igual que desde `/para/<slug>/ir/prueba`). Embudo por fuente en `/plataforma/prospectos` → «Prueba gratis por WhatsApp». Detalle: docs/whatsapp-y-soporte.md.

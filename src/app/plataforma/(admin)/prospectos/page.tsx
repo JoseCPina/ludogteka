@@ -9,6 +9,7 @@ import { formatearFecha, horaLocalDeInstante } from "@/lib/formato";
 import { consultaProspectos, leerFiltros, parametros, type Prospecto } from "@/lib/prospectos/consulta";
 import { ETAPAS, GIROS, textoEtapa, textoGiro } from "@/lib/prospectos/textos";
 import { agregarProspecto, buscarAhora, guardarAjustes, sincronizarMetaAhora } from "./acciones";
+import { type FilaFlow, PanelFormularioWhatsApp } from "./formulario-whatsapp";
 
 export const maxDuration = 300;
 
@@ -43,12 +44,14 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
     supabase.from("prospeccion_corridas").select("id, origen, estado, busquedas, resultados, nuevos, duplicados, clientes, errores, webs_revisadas, detalle, error, inicio_at").is("deleted_at", null).order("inicio_at", { ascending: false }).limit(8),
     consultaProspectos(supabase, f).range((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA - 1),
   ]);
-  const [{ data: audMeta }, { data: corMeta }, { data: campMeta }] = await Promise.all([
+  const [{ data: audMeta }, { data: corMeta }, { data: campMeta }, flowWa] = await Promise.all([
     // limite-filas-ok: son las 7 audiencias fijas que siembra la migración
     supabase.from("meta_audiencias").select("clave, tipo, nombre, audience_id, miembros, coincidencias_min, coincidencias_max, ultima_sync_at, ultimo_error").is("deleted_at", null).order("created_at").order("clave"),
     supabase.from("meta_audiencias_corridas").select("id, origen, estado, inicio_at, resumen, errores").is("deleted_at", null).order("inicio_at", { ascending: false }).limit(5),
     // limite-filas-ok: la campaña y sus conjuntos (5 filas)
     supabase.from("meta_campanas").select("clave, tipo, nombre, meta_id, estado, ultimo_error, estado_meta, presupuesto_diario, gasto_7d, conversaciones_7d, costo_conversacion, activado_auto_at, datos").in("tipo", ["campana", "conjunto"]).is("deleted_at", null).order("tipo").order("clave"),
+    // limite-filas-ok: agregado en la base (fuente × dónde se ofreció: menos de 30 filas)
+    supabase.rpc("wa_flow_resumen", { p_desde: null }),
   ]);
   const audiencias = (audMeta ?? []) as AudienciaMeta[];
   const corridasMeta = (corMeta ?? []) as CorridaMeta[];
@@ -97,6 +100,8 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
           </div>
         ))}
       </section>
+
+      <PanelFormularioWhatsApp filas={(flowWa.data ?? []) as FilaFlow[]} error={flowWa.error?.message ?? null} />
 
       <section className="rounded-lg border border-n-200 bg-white p-5" data-meta>
         <h2 className="text-lg font-bold text-n-900">Meta</h2>

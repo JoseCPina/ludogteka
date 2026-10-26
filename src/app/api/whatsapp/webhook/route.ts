@@ -5,6 +5,9 @@ import { atender, type Tiempos } from "@/lib/whatsapp/soporte";
 import { TEXTO_AHORA_NO, TEXTO_BAJA, TEXTO_BAJA_PROSPECTO, clasificarRespuesta } from "@/lib/seguimiento/respuestas";
 import { guardarEstado, esFalloDeCuenta, type EstadoMeta } from "@/lib/whatsapp/entregas";
 import { avisarFalloDeEntrega } from "@/lib/soporte/notificar";
+import { procesarSesion } from "@/lib/whatsapp/flow/servidor";
+
+const TEXTO_FORMULARIO_ENVIADO = "[Envió el formulario «Prueba gratis»]";
 
 /**
  * Webhook de WhatsApp (Cloud API) del número de PeluDesk. Vive en el dominio
@@ -46,7 +49,7 @@ type MensajeMeta = {
   type?: string;
   text?: { body?: string };
   button?: { text?: string };
-  interactive?: { button_reply?: { title?: string }; list_reply?: { title?: string } };
+  interactive?: { type?: string; button_reply?: { title?: string }; list_reply?: { title?: string }; nfm_reply?: { response_json?: string; name?: string } };
   image?: { caption?: string };
   video?: { caption?: string };
   document?: { caption?: string };
@@ -62,7 +65,20 @@ type Entrada = {
   /** Nombre del perfil de WhatsApp (contacts[].profile.name). */
   perfil: string | null;
   anuncio: { adId: string | null; clid: string | null } | null;
+  /** El flow_token de un formulario de WhatsApp que la persona acaba de enviar (nfm_reply). */
+  flowToken: string | null;
 };
+
+/** El flow_token de la respuesta de un WhatsApp Flow (el formulario de prueba gratis), o null. */
+function flowTokenDe(m: MensajeMeta): string | null {
+  if (m.type !== "interactive" || m.interactive?.type !== "nfm_reply") return null;
+  try {
+    const t = (JSON.parse(m.interactive.nfm_reply?.response_json ?? "{}") as { flow_token?: unknown }).flow_token;
+    return typeof t === "string" && /^[A-Za-z0-9_-]{20,80}$/.test(t) ? t : null;
+  } catch {
+    return null;
+  }
+}
 
 /** El id del anuncio (source_id, cuando source_type es «ad») y el ctwa_clid del referral, o null si no viene de un anuncio. */
 function anuncioDe(m: MensajeMeta): Entrada["anuncio"] {
@@ -115,10 +131,12 @@ export async function POST(request: NextRequest) {
         if (!m.from || !m.id) continue;
         const ts = Number(m.timestamp);
         const perfil = (v.contacts ?? []).find((c) => c.wa_id === m.from)?.profile?.name ?? v.contacts?.[0]?.profile?.name ?? null;
+        const flowToken = flowTokenDe(m);
         entradas.push({
           telefono: telefonoCanonico(m.from),
           id: m.id,
-          texto: textoDe(m),
+          texto: flowToken ? TEXTO_FORMULARIO_ENVIADO : textoDe(m),
+          flowToken,
           enviadoMs: Number.isFinite(ts) && ts > 0 ? ts * 1000 : null,
           perfil: perfil ? perfil.slice(0, 120) : null,
           anuncio: anuncioDe(m),
@@ -159,6 +177,12 @@ export async function POST(request: NextRequest) {
     for (const m of nuevas) {
       const inicio = Date.now();
       try {
+        // El formulario de prueba gratis enviado: el negocio se abre (si el endpoint no lo abrió ya) y el mensaje con
+        // el acceso sale de ahí; el bot no contesta nada más.
+        if (m.flowToken) {
+          console.info("[whatsapp] formulario de prueba gratis enviado", { estado: await procesarSesion(m.flowToken) });
+          continue;
+        }
         // Si es la respuesta a un mensaje de seguimiento de su prueba, se registra
         // (detiene el seguimiento) y el bot sabe de qué se trata; «Ahora no» y las
         // bajas se contestan con una línea fija, sin IA.

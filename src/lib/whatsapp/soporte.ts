@@ -54,6 +54,7 @@ import {
   TEXTO_DUDA,
   ultimoFueMenu,
 } from "./conversacion";
+import type { PuntoFlow } from "./flow/servidor";
 
 // ───────────────────────────── puertos
 
@@ -174,6 +175,12 @@ export interface DepsSoporte {
   fijos(prospecto?: ProspectoContexto | null): Promise<{ precios: PreciosBot | null; registro: string }>;
   /** Link al portal de pagos de un negocio DE ESTA cuenta (nunca de otro). */
   ligaPortal(negocio: NegocioDeAdmin): Promise<string>;
+  /**
+   * Manda el formulario de prueba gratis (WhatsApp Flow) con `cuerpo` como texto y el botón «Probar gratis». false =
+   * no salió (sin Flow configurado, número de fuera de México, Meta lo rechazó): se manda el texto de siempre.
+   * Sin esta función (las pruebas sin Flow), todo va por texto.
+   */
+  ofrecerFlow?(telefono: string, punto: PuntoFlow, cuerpo: string, prospecto?: ProspectoContexto | null): Promise<boolean>;
   alerta(detalle: string, e?: unknown): void;
 }
 
@@ -268,23 +275,33 @@ export async function atender(telefono: string, texto: string, deps: DepsSoporte
   if (v.motivo !== "silencio_humano") {
     const opcion = ultimoFueMenu(actual) ? opcionDelMenu(texto) : null;
     let fija: string | null = null;
+    // Dónde se ofrece el formulario de prueba gratis (WhatsApp Flow) junto con la respuesta fija: el saludo, la opción 1
+    // del menú y cuando pide precio o la prueba. Sucursales, factura y lo demás van solo por texto.
+    let punto: PuntoFlow | null = null;
     if (opcion === 3) fija = TEXTO_DUDA;
     else {
       const tema = opcion === 1 ? "prueba" : opcion === 2 ? "precio" : temaDePrecio(texto);
       if (tema) {
         const f = await deps.fijos(prospecto).catch(() => null);
         if (f?.precios) fija = respuestaPrecioFija(tema, f.precios, f.registro);
+        if (fija) punto = opcion === 1 ? "menu" : tema === "prueba" ? "prueba" : tema === "precio" || tema === "anual" ? "precio" : null;
       }
     }
-    if (!fija && nueva && esSaludo(texto)) fija = MENU_SALUDO;
+    if (!fija && nueva && esSaludo(texto)) {
+      fija = MENU_SALUDO;
+      punto = "saludo";
+    }
     if (!fija) {
       const directa = respuestaFijaDirecta(texto);
       fija = directa ? formatoDelBot(directa) : null;
     }
     if (fija) {
-      const env = await deps.wa.texto(telefono, fija);
+      // A quien no tiene negocio, la misma respuesta va con el botón «Probar gratis»; si el formulario no sale, por texto.
+      const porFlow = punto && cuenta.tipo === "prospecto" && deps.ofrecerFlow ? await deps.ofrecerFlow(telefono, punto, fija, prospecto).catch(() => false) : false;
+      const env = porFlow ? { ok: true } : await deps.wa.texto(telefono, fija);
       if (env.ok) {
         await deps.datos.apuntarMensaje(telefono, "agente", fija);
+        if (!porFlow && nueva) await ofrecerAProspecto(telefono, prospecto, deps);
         if (primeraVez) {
           const aviso = `Así cuidamos tus datos:\n\n${URL_AVISO_PRIVACIDAD}`;
           if ((await deps.wa.texto(telefono, aviso)).ok) await deps.datos.apuntarMensaje(telefono, "agente", aviso);
@@ -329,13 +346,27 @@ export async function atender(telefono: string, texto: string, deps: DepsSoporte
     }
     if (mensajes.length === 0 || mensajes[mensajes.length - 1].role !== "user") mensajes.push({ role: "user", content: texto });
     if (mensajes[0].role !== "user") mensajes.shift();
-    return await conversar(telefono, texto, hilo, cuenta, system, mensajes, tools, historial, ctx.enlaces, deps, marcar, fijos, primeraVez);
+    const desenlace = await conversar(telefono, texto, hilo, cuenta, system, mensajes, tools, historial, ctx.enlaces, deps, marcar, fijos, primeraVez);
+    if (desenlace === "respondio" && nueva) await ofrecerAProspecto(telefono, prospecto, deps);
+    return desenlace;
   } catch (e) {
     deps.alerta(`La IA falló para ${telefono}`, e);
     await deps.datos.registrarUsoIA({ telefono, tokensIn: 0, tokensOut: 0, costoMxn: 0, resultado: "error" });
     await escalar(hilo, texto, "La IA no contestó. Revisa tú.", "normal", deps);
     return "error";
   }
+}
+
+export const TEXTO_OFERTA_PROSPECTO = "Si quieres, abre tu cuenta de prueba aquí mismo, sin salir de WhatsApp. Son 15 días gratis, sin tarjeta.";
+
+/**
+ * A quien llega desde su página de prospección (la «ref.» del mensaje) o desde un anuncio de clic a WhatsApp, la
+ * primera respuesta de la conversación va seguida del formulario de prueba gratis. Nunca lanza.
+ */
+async function ofrecerAProspecto(telefono: string, prospecto: ProspectoContexto | null | undefined, deps: DepsSoporte): Promise<void> {
+  if (!deps.ofrecerFlow || !prospecto || !(prospecto.anuncio || prospecto.por === "referencia")) return;
+  const salio = await deps.ofrecerFlow(telefono, prospecto.anuncio ? "anuncio" : "prospeccion", TEXTO_OFERTA_PROSPECTO, prospecto).catch(() => false);
+  if (salio) await deps.datos.apuntarMensaje(telefono, "agente", TEXTO_OFERTA_PROSPECTO).catch(() => {});
 }
 
 async function conversar(
