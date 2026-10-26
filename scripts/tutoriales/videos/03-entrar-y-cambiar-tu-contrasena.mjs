@@ -7,8 +7,8 @@ export default {
   escenas: [
     {
       titulo: "La pantalla de entrada",
-      dice: "Esta es la pantalla de entrada de tu negocio, con su nombre arriba. Hay un solo campo para el «Teléfono o correo»: los dueños de perros entran con su teléfono a diez dígitos y el equipo con su correo.",
-      pasos: [["resaltar", "Teléfono o correo", 2800]],
+      dice: "Esta es la pantalla de entrada de tu negocio, con su nombre arriba. Arriba escoges quién eres: «Soy cliente», con tu teléfono a diez dígitos, o «Soy del equipo», con tu correo o tu teléfono.",
+      pasos: [["resaltar", "Soy cliente", 2000], ["clic", "Soy del equipo"], ["resaltar", "Teléfono o correo", 2200]],
     },
     {
       titulo: "Escribe tus datos",
@@ -17,9 +17,9 @@ export default {
     },
     {
       titulo: "Si olvidaste tu contraseña",
-      dice: "Si la olvidaste, aprieta «¿Olvidaste tu contraseña?». Si eres cliente, recepción te la restablece en el momento y te da una temporal. Si eres del personal, un admin te manda una invitación nueva.",
+      dice: "Si la olvidaste, aprieta «¿Olvidaste tu contraseña?». Si eres cliente, recepción te la restablece en el momento y te da una temporal. Si eres del equipo, un admin de tu negocio te la restablece desde Empleados.",
       pasos: [["clic", "¿Olvidaste tu contraseña?"], ["esperar", 3200]],
     },
   ],
-  resumen: ["Entras con tu teléfono o tu correo y tu contraseña.", "Puedes mostrar la contraseña para revisar lo que escribiste.", "Si la olvidas, «¿Olvidaste tu contraseña?» te dice cómo recuperarla."],
+  resumen: ["Escoges «Soy cliente» o «Soy del equipo» y entras con tu teléfono o tu correo y tu contraseña.", "Puedes mostrar la contraseña para revisar lo que escribiste.", "Si la olvidas, «¿Olvidaste tu contraseña?» te dice cómo recuperarla."],
 };

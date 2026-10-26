@@ -77,7 +77,9 @@ try {
   const dueno = await ctxDueno.newPage();
   await dueno.goto(`${BASE}/alta/${token}`, { waitUntil: "networkidle" });
   const t1 = (await dueno.locator("body").innerText()).toLowerCase();
-  for (const prohibido of ["dirección", "correo", "contraseña", "vacuna", "contrato"]) if (t1.includes(prohibido) && !(prohibido === "dirección" && t1.includes("pasen por mi perro"))) hallazgo(`el link de estética menciona «${prohibido}» en el primer paso: …${t1.slice(Math.max(0, t1.indexOf(prohibido) - 80), t1.indexOf(prohibido) + 80).replace(/\n/g, " ")}…`);
+  // La casilla de consentimiento de recordatorios (menciona «vacunas») no es un campo que se pida.
+  const t1Campos = t1.replace(/acepto recibir recordatorios por whatsapp[^.]*\./g, "");
+  for (const prohibido of ["dirección", "correo", "contraseña", "vacuna", "contrato"]) if (t1Campos.includes(prohibido) && !(prohibido === "dirección" && t1.includes("pasen por mi perro"))) hallazgo(`el link de estética menciona «${prohibido}» en el primer paso: …${t1.slice(Math.max(0, t1.indexOf(prohibido) - 80), t1.indexOf(prohibido) + 80).replace(/\n/g, " ")}…`);
   await dueno.getByLabel("Tu nombre completo").fill(`Dueña ${sufijo}`);
   await dueno.getByLabel("Tu teléfono").fill(TEL);
   await sinDesborde(dueno, "alta por link, paso 1");
@@ -125,7 +127,7 @@ try {
   const tm = (await admin.locator("body").innerText()).toLowerCase();
   for (const prohibido of ["correo", "dirección", "contraseña"]) if (tm.includes(prohibido)) hallazgo(`el alta de mostrador (estética) pide «${prohibido}»`);
   await admin.getByLabel("Nombre del dueño").fill(`Mostrador ${sufijo}`);
-  await admin.getByLabel("WhatsApp").fill(TEL2);
+  await admin.getByLabel("WhatsApp", { exact: true }).fill(TEL2);
   await sinDesborde(admin, "alta de mostrador");
   await admin.getByRole("button", { name: /Crear cliente/ }).click();
   await admin.waitForURL(/perros\/nuevo/, { timeout: 30_000 });

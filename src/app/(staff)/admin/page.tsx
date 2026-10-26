@@ -218,7 +218,7 @@ export default async function AdminPage() {
             Recarga la página. Si el problema sigue, avísale al equipo técnico.
           </Alert>
         ) : (
-          <ListaCuentas cuentas={(data as Cuenta[]) ?? []} />
+          <ListaCuentas cuentas={(data as Cuenta[]) ?? []} miId={sesion?.user.id ?? null} />
         )}
       </section>
       )}

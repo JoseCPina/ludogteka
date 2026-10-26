@@ -258,6 +258,21 @@ export async function cancelarCita(citaId: string, motivo: string, noLlego = fal
   };
 }
 
+/**
+ * QA S36: una cita iniciada por error («En curso») regresa a reservada o se cancela con motivo. Solo sin cobros ni
+ * consumo de inventario (lo revisa la base, `deshacer_inicio_cita`); queda en el historial de la cita.
+ */
+export async function deshacerInicioCita(citaId: string, destino: "reservada" | "cancelada", motivo: string): Promise<ResultadoAgenda> {
+  if (destino === "cancelada" && motivo.trim().length < 3) return { error: "Escribe el motivo de la cancelación." };
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.rpc("deshacer_inicio_cita", { p_cita_id: citaId, p_destino: destino, p_motivo: motivo.trim() || null });
+  if (error) return { error: traducirError(error) };
+  revalidatePath("/estetica");
+  revalidatePath(`/estetica/${citaId}`);
+  revalidatePath("/recepcion");
+  return { error: null };
+}
+
 /** Quita una cita de la agenda (capturada por error o duplicada): no se borra, queda en el historial. Pide el permiso «Eliminar citas». */
 export async function eliminarCita(citaId: string, motivo: string, control?: ControlVersion): Promise<ResultadoAgenda> {
   if (motivo.trim().length < 5) return { error: "Escribe el motivo por el que se elimina la cita." };

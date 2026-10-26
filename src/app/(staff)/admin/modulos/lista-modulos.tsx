@@ -55,6 +55,11 @@ function Modulo({ m, todos }: { m: FilaModulo; todos: FilaModulo[] }) {
               {m.planes.length ? `Lo incluye el plan ${m.planes.join(" o ")}.` : "Es un complemento que se contrata aparte."}
             </p>
           )}
+          {m.disponible && (
+            <p className="mt-1 text-xs font-medium text-n-600" data-modulo-incluido>
+              Incluido en tu plan · {m.activo ? "prendido en tu negocio" : "apagado en tu negocio"}
+            </p>
+          )}
           {m.disponible && m.encendido && falta.length > 0 && (
             <p className="mt-1 text-sm font-medium text-ambar-oscuro">Necesita {falta.map((f) => f.nombre).join(" y ")} prendido.</p>
           )}
@@ -62,6 +67,7 @@ function Modulo({ m, todos }: { m: FilaModulo; todos: FilaModulo[] }) {
         {m.disponible ? (
           <span className={`shrink-0 rounded-full px-2.5 py-1 text-sm font-semibold ${m.activo ? "bg-menta-suave text-menta-oscuro" : "bg-n-100 text-n-700"}`}>
             {m.activo ? "Prendido" : "Apagado"}
+            <span className="sr-only"> en tu negocio</span>
           </span>
         ) : (
           <span className="shrink-0 rounded-full bg-n-100 px-2.5 py-1 text-sm font-semibold text-n-600">Fuera de tu plan</span>

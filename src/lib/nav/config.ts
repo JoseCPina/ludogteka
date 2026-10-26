@@ -61,6 +61,8 @@ export const SECCIONES_STAFF: ItemNav[] = [
   { etiqueta: "Políticas y reglas", href: "/admin/politicas", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { etiqueta: "Recordatorios por WhatsApp", href: "/admin/recordatorios", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { etiqueta: "Reporte y fotos", href: "/admin/reporte-guarderia", roles: ["admin"], modulo: ["guarderia", "hotel"] },
+  // N132: la política de salida anticipada (Configuración → Hotel).
+  { etiqueta: "Configuración de hotel", href: "/admin/hotel", roles: ["admin"], permisos: ["configuracion_negocio"], modulo: ["guarderia", "hotel"] },
   { etiqueta: "Tarifa de guardería", href: "/admin/tarifa-guarderia", roles: ["admin"], permisos: ["tarifas"], modulo: "estetica", ademas: ["guarderia"] },
   { etiqueta: "Módulos y plan", href: "/admin/modulos", roles: ["admin"], permisos: ["administrar_modulos"] },
   { etiqueta: "Cobro con terminal", href: "/admin/pagos", roles: ["admin"] },

@@ -388,7 +388,7 @@ El total del pie es el de la tarjeta, al centavo. Si buscas algo, ves también e
     modulo: null,
     roles: ["admin", "recepcion"],
     rutas: [],
-    palabras: ["personal", "usuarios", "cuenta", "recepcionista", "estilista", "dar acceso", "agregar persona"],
+    palabras: ["personal", "usuarios", "cuenta", "recepcionista", "estilista", "dar acceso", "agregar persona", "olvidó su contraseña", "restablecer contraseña", "contraseña del equipo", "Soy del equipo"],
     cuerpo: `Cada persona de tu equipo entra con su propia cuenta: así cada quien ve lo que le toca y todo queda con su nombre. Estética ve su agenda, agenda sus propias citas a clientes que ya existen, la ficha de los perros, el inventario y su asistencia; no da de alta clientes ni ve Caja, así que esos botones no le aparecen. Invita admin o quien tenga el permiso «Personal».
 
 1. Entra a [Administración](/admin) y baja a **Invitar personal**.
@@ -405,6 +405,17 @@ Si esa persona ya tiene cuenta en otro negocio de PeluDesk, no hay link: sale «
 También puedes hacerlo desde [Tu equipo](/bienvenida/equipo): ahí escoges **Invitar con cuenta** o **Solo en nómina** (para quien no usa la app; no puede atender citas) y dejas, si quieres, su horario y su forma de pago en el mismo formulario.
 
 Para que alguien de recepción te ayude a administrar, dale permisos extra en [Permisos](/admin/permisos).
+
+## Si alguien del equipo olvidó su contraseña
+
+El personal entra en la [página de entrada](/login) por la pestaña **Soy del equipo**, con su **Teléfono o correo**. Si olvidó su contraseña, se la restablece un admin:
+
+1. En [Empleados](/empleados) abre su ficha y, en **Contraseña de la app**, aprieta **Restablecer contraseña** (sale cuando la persona tiene cuenta en la app). También está en [Administración](/admin) → **Cuentas**, en la columna **Contraseña** de cada persona del equipo.
+2. Lee el aviso: su contraseña actual deja de servir en ese momento. Aprieta **Sí, restablecer**.
+3. Sale la **Contraseña temporal** con su botón de copiar y **Mandársela por WhatsApp**. Se muestra una sola vez: si cierras la pantalla, tendrás que generar otra.
+4. Al entrar con la temporal, la app le pide escoger una nueva antes de seguir.
+
+No se usa para tu propia cuenta (la tuya la cambias tú, o te la restablece otro admin), ni para clientes (eso va en la ficha del cliente: [Cómo restablecer la contraseña de un cliente](/ayuda/restablecer-contrasena-de-cliente)), ni para alguien que usa la misma cuenta en otro negocio de PeluDesk: a esa persona se la restablece soporte de PeluDesk. Si eres el único admin y olvidaste la tuya, escríbele al WhatsApp de PeluDesk.
 
 ## Si algo no sale
 
@@ -474,7 +485,7 @@ Los servicios son tres: **Hotel y guardería**, **Estética** y **Veterinaria**.
 
 Si eres de recepción y el admin te dio el permiso **Administrar módulos**, también puedes prender y apagar; el cobro del plan sigue siendo del admin.
 
-Apagar no borra nada: si lo vuelves a prender, todo sigue ahí. Caja y clientes siempre están. Todos los módulos vienen incluidos en tu plan: prenderlos no cuesta más.
+Apagar no borra nada: si lo vuelves a prender, todo sigue ahí. Caja y clientes siempre están. Todos los módulos vienen **incluidos en tu plan**: prenderlos no cuesta más. Durante la prueba, arriba dice cuántos tienes prendidos (por ejemplo, «5 de 7 están prendidos en tu negocio») y el precio del plan; cada módulo dice «Incluido en tu plan · prendido en tu negocio» (o «apagado en tu negocio») y los apagados, que no salen en el menú, tienen **Prender**.
 
 ## Contratar
 
@@ -482,11 +493,11 @@ Hay un solo plan, **PeluDesk**: $649 al mes + IVA ($752.84 con IVA), **sin costo
 
 1. Escoge **Mensual** o **Anual · 2 meses gratis**.
 2. Revisa el **Resumen** con el IVA.
-3. Aprieta **Pagar con tarjeta**. El pago lo procesa Stripe: la página de pago sale en español, con **México** como país, y solo pide tu tarjeta (no ofrece guardar tus datos con Link).
+3. Aprieta **Pagar con tarjeta**. El botón dice **Abriendo pago…** y no se puede volver a apretar mientras se abre la página de pago. El pago lo procesa Stripe: la página de pago sale en español, con **México** como país, y solo pide tu tarjeta (no ofrece guardar tus datos con Link).
 
 **El cobro aparece como MENTEO, la empresa que opera PeluDesk.** Así lo verás en el Checkout de Stripe, en tu estado de cuenta, en los recibos y en las facturas.
 
-Si contratas durante la prueba, no pierdes días: la prueba dura hasta el final de su último día y el primer cobro es **el día siguiente** (prueba hasta el 3 nov → primer cobro el 4 nov). «Módulos y plan», el aviso de arriba y Stripe dicen la misma fecha: la app la toma del fin de prueba que tiene tu suscripción en Stripe. El Checkout dice «Contratas PeluDesk. No se te cobra hoy; el primer cobro es el…» con esa fecha.
+Si contratas durante la prueba, no pierdes días: la prueba dura hasta el final de su último día y el primer cobro es **el día siguiente** (prueba hasta el 3 nov → primer cobro el 4 nov). «Módulos y plan», el aviso de arriba y Stripe dicen la misma fecha: la app la toma del fin de prueba que tiene tu suscripción en Stripe. El Checkout dice «Contratas PeluDesk. No se te cobra hoy; el primer cobro es el…» con esa fecha. Su botón dice **Comenzar prueba** (es el texto de Stripe y no se puede cambiar): lo que pagas y cuándo es lo que dice ese texto de junto.
 
 ## Después
 

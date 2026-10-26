@@ -23,6 +23,10 @@ export const ARTICULOS_CAJA_Y_ESTETICA: Articulo[] = [
 6. Aprieta **Registrar cobro**. El botón cambia a **Cobrando…** y luego a **Actualizando…** mientras se confirma, y no acepta otro clic (un doble clic no cobra dos veces). El saldo baja y el cobro aparece al momento en **Cobros de esta reserva**. Es la acción principal; **Cobrar con terminal** queda debajo, como opción secundaria (si dice «Simulación: no mueve dinero», no se cobra de verdad).
 7. Cuando el saldo llega a cero, el formulario se cambia por **Cuenta pagada**: ya no hay nada más que cobrar. Si el cliente entrega de más en efectivo, la pantalla te dice el cambio.
 
+## Cuenta pagada
+
+Con saldo $0 (o a favor del cliente), la cuenta dice **Cuenta pagada**, aunque no haya turno abierto, y ya no ofrece nada para cobrar ni para cambiar el precio: no salen **Registrar cobro**, **Cobrar con terminal**, **Mandar link de pago**, **Pagar con bono**, **Aplicar descuento**, quitar un descuento, **Corregir precio** ni **Corregir monto**. Quedan los cobros a la vista y, para quien tiene el permiso, **Anular cobro** y **Registrar devolución**: esos son los caminos para cambiar una cuenta pagada ([Cómo anular o corregir un cobro](/ayuda/anular-o-corregir-un-cobro), [Cómo devolver un cobro](/ayuda/devolver-un-cobro)). Si anulas o devuelves un cobro y el saldo vuelve a ser mayor que $0, las acciones de cobro regresan. En la reserva, el botón dice **Ver cobros** en lugar de **Cobrar** cuando ya no hay nada que cobrar.
+
 > El cobro con tarjeta se hace con **Cobrar con terminal** ([Cómo cobrar con la terminal](/ayuda/cobrar-con-terminal)): así se confirma solo con Mercado Pago. El método **Terminal** no se captura a mano en un negocio con Mercado Pago o Clip. Si la terminal no se puede usar, usa **Tarjeta (registro manual)** con el folio del voucher ([Cuándo usar Tarjeta (registro manual)](/ayuda/tarjeta-registro-manual)). A mano también: efectivo y transferencia.
 
 ¿La misma persona tiene varias cuentas abiertas (baño y guardería, por ejemplo)? Cóbralas juntas, con un solo pago y un solo recibo: [Cobrar varios servicios juntos](/ayuda/cobrar-varios-servicios-juntos).
@@ -537,7 +541,7 @@ Para quitarlo, aprieta **Cancelar** en el descuento, escribe el **Motivo de la c
 
 - «Este descuento ($…) pasa el tope de recepción ($…). Solo un admin, o quien tenga el permiso «Descuentos sin tope», puede aplicarlo.»
 - «Ese descuento deja la cuenta en negativo»: baja el valor.
-- Si no ves **Aplicar descuento**, la cuenta ya está descontada completa o no hay motivos de descuento dados de alta.`,
+- Si no ves **Aplicar descuento**, la cuenta ya está pagada (**Cuenta pagada**), ya está descontada completa o no hay motivos de descuento dados de alta.`,
   },
   {
     slug: "agregar-una-raza-que-no-aparece",
@@ -734,7 +738,9 @@ Al agendar, junto al botón sale «Cita agendada: perro, servicio, fecha y hora�
 
 El precio sale del grupo de raza del perro, de su pelaje y del servicio; al dueño le aclaramos que **el costo puede aumentar según el tipo de pelo y el cuidado previo**. El rapado solo se ofrece a perros de pelo medio o largo. Cambiar las tarifas después no mueve el precio de las citas que ya están agendadas o cobradas. Para cambiar el recargo de una cita, ábrela y aprieta **Cambiar el recargo**.
 
-Si la hora o la duración del servicio se salen del horario del negocio de ese día de la semana, debajo de **Fecha y hora** aparece un aviso naranja **Fuera de horario**: «Termina a las 8:30 p.m., después del cierre de las 7:00 p.m.», «Empieza a las 8:00 a.m., antes de la apertura de las 9:00 a.m.» o «Ese día el negocio no abre». Se actualiza solo al cambiar la fecha, la hora o el servicio, y **no te bloquea**: puedes agendar la cita igual. Ya agendada, una cita que se sale del horario sale resaltada en naranja en la agenda y con la etiqueta **Fuera de horario**.
+Si la hora o la duración del servicio se salen del horario del negocio de ese día de la semana, debajo de **Fecha y hora** aparece un aviso naranja **Fuera de horario**: «Termina a las 8:30 p.m., después del cierre de las 7:00 p.m.» o «Empieza a las 8:00 a.m., antes de la apertura de las 9:00 a.m.». Se actualiza solo al cambiar la fecha, la hora o el servicio, y **no te bloquea**: puedes agendar la cita igual.
+
+Si el día que escogiste (o el que abriste desde la agenda) está cerrado por el horario del negocio, o es hoy y ya pasó la hora de cierre, el formulario se queda en ese día (nunca te cambia la fecha solo) y el aviso naranja dice **Fuera de horario: el negocio está cerrado ese día.** (si es hoy, también «Ya pasó la hora de cierre de hoy.»). Debajo te propone el siguiente horario abierto, por ejemplo «Te propongo el lunes 26 a las 09:30.», con el botón **Usar esa hora**, que pone esa fecha y esa hora. Puedes agendarla igual en el día cerrado. Si el día sí abre pero la estilista escogida ya no tiene lugar ese día, el aviso dice **Ese día ya no queda lugar en la agenda.** con la misma propuesta. Ya agendada, una cita que se sale del horario sale resaltada en naranja en la agenda y con la etiqueta **Fuera de horario**.
 
 > Las vacunas no detienen una cita de estética. Si el perro también usa guardería u hotel y las trae vencidas, la app te avisa para ponerlo al día.
 
@@ -864,7 +870,7 @@ En **Historial de servicio**, al pie de la cita: el servicio y el precio de ante
     modulo: "estetica",
     roles: ["admin", "recepcion"],
     rutas: ["/estetica/[citaId]"],
-    palabras: ["iniciar cita", "finalizar", "entregar perro", "recoger", "no llegó", "reagendar", "consumo"],
+    palabras: ["iniciar cita", "finalizar", "entregar perro", "recoger", "no llegó", "reagendar", "consumo", "regresar a reservada", "inicié por error", "cancelar cita en curso"],
     captura: "atender-cita-estetica.jpg",
     cuerpo: `Cada cita pasa por Reservada, En curso y Finalizada. También puede quedar Cancelada o No llegó.
 
@@ -884,6 +890,10 @@ Si la cita es de **otro día** (por ejemplo, la del lunes y hoy es domingo), te 
 4. Aprieta **Confirmar cierre**. El consumo se descuenta del inventario y la cuenta queda en [Caja](/caja) para cobrarla.
 
 Si la cita está ligada a una estancia, no se piden esos datos: el perro sigue adentro.
+
+## Si se inició por error
+
+Una cita **En curso** tiene, junto a **Finalizar cita**, **Regresar a reservada** (vuelve a «Reservada», como si no se hubiera iniciado; el motivo es opcional) y **Cancelar** (la cita se cancela y su horario queda libre; el motivo es obligatorio). Lo hace admin, recepción o la estilista de la cita, y queda en el historial de la cita: «Regresó a reservada (se había iniciado por error)» o «Cancelada». Solo se puede si la cita no tiene cobros ni insumos descontados: con un cobro, el aviso dice que primero lo anules (Caja → la cuenta → **Anular cobro**), y si ya descontó insumos del inventario, no se puede regresar ni cancelar.
 
 ## Antes de iniciarla
 
@@ -930,6 +940,8 @@ Para cuando el dinero que se recibió fue otro (se tecleó $300 y eran $400): **
 ## Corregir precio
 
 Para cuando el precio de **una línea de la cuenta** estaba mal. En la línea, **Corregir precio**: escribe el **Precio correcto de la línea** y el motivo y aprieta **Guardar precio**. El cuadro se queda abierto con el precio vigente arriba («hoy $…»), el motivo vacío, y el botón se vuelve a activar en cuanto cambias el precio o el motivo.
+
+**Corregir monto** y **Corregir precio** (igual que los descuentos) solo salen mientras la cuenta tiene saldo por cobrar. En una **Cuenta pagada** (saldo $0 o a favor) quedan **Anular cobro** y **Registrar devolución**: anula o devuelve primero y, con el saldo otra vez arriba de $0, vuelven a salir.
 
 Una línea tiene **una sola corrección vigente**: si la corriges otra vez, la nueva reemplaza a la anterior (no se acumulan renglones), y si vuelves al precio original la corrección se quita. Debajo del renglón de la corrección ves el precio original y el vigente, **Ver historial** (todas las correcciones de esa línea, con quién y cuándo) y **Anular corrección** (con motivo: la línea vuelve a su precio original). No cuenta como descuento.
 

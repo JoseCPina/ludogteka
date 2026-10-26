@@ -5,7 +5,7 @@ import { armarClientesBuscables } from "@/lib/clientes/buscables";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { cargarRazas } from "@/lib/razas";
 import { negocioIdActual, zonaActual } from "@/lib/negocio/actual";
-import { fechaPedidaValida, proponerHoraPorPersona } from "@/lib/estetica/proponer-hora";
+import { aperturaPorPersona, fechaPedidaValida } from "@/lib/estetica/proponer-hora";
 import { hoyNegocio, sumarDiasFecha, instanteDeHoraLocal } from "@/lib/formato";
 import { cargarHorarioSemana } from "@/lib/estetica/horario-semana";
 import { AgendarForm } from "./agendar-form";
@@ -143,8 +143,11 @@ export default async function AgendarPage({ searchParams }: { searchParams: Prom
     duracion_minutos: (detalle.get(s.id as string)?.duracion_minutos as number | null) ?? 60,
   }));
 
-  const propuestas = await proponerHoraPorPersona(supabase, zona, ocupados, fechaPedida, serviciosConMarca[0]?.duracion_minutos ?? 60);
-  // Busca desde el día pedido; si ese día ya no le queda lugar a alguien, su propuesta pasa al siguiente día con lugar.
+  // N128: abre en el día pedido (o hoy) aunque esté cerrado o ya no quede lugar; la siguiente hora libre de cada quien
+  // va como propuesta visible en el aviso, nunca como un cambio de fecha en silencio.
+  const aperturas = await aperturaPorPersona(supabase, zona, fechaPedida, ocupados, serviciosConMarca[0]?.duracion_minutos ?? 60);
+  const propuestas = Object.fromEntries(Object.entries(aperturas).map(([id, a]) => [id, `${a.fecha}T${a.hora}`]));
+  const propuestaPorEmpleado = Object.fromEntries(Object.entries(aperturas).map(([id, a]) => [id, a.propuesta]));
   const horaInicial = propuestas.__todos;
 
   return (
@@ -179,6 +182,7 @@ export default async function AgendarPage({ searchParams }: { searchParams: Prom
           razas={razas}
           horaInicial={horaInicial}
           horaPorEmpleado={propuestas}
+          propuestaPorEmpleado={propuestaPorEmpleado}
           horarioSemana={horarioSemana}
           puedeAsignarGrupo={tienePermiso(sesion, "tarifas")}
           puedeExcepcion={tienePermiso(sesion, "excepciones_reserva")}

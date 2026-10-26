@@ -134,6 +134,8 @@ async function navegador() {
 }
 async function entrarComoAdmin(page) {
   await page.goto(`${base()}/login`);
+  // QA S36: el login separa «Soy cliente» y «Soy del equipo».
+  await page.locator('[data-entrar-como="equipo"]').click();
   await page.getByLabel("Teléfono o correo").fill(est.email);
   await page.getByLabel("Contraseña", { exact: true }).fill(est.password);
   await page.getByRole("button", { name: "Entrar" }).click();

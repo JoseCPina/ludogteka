@@ -12,6 +12,7 @@ import { NuevaReservaForm } from "../nueva/nueva-reserva-form";
 import { cargarPaquetesDePerros } from "@/lib/bonos/cargar-paquetes";
 import { zonaActual } from "@/lib/negocio/actual";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { cargarHorarioSemana } from "@/lib/estetica/horario-semana";
 
 // Sirve a los dos puntos de entrada del mismo formulario: la reserva
 // normal y el walk-in (el perro ya está en la puerta). La única
@@ -54,7 +55,7 @@ export async function PaginaNuevaReserva({
       supabase.from("series_recurrentes").select("perro_id, dias_semana, servicios(nombre)").is("deleted_at", null).order("id")
     ),
   ]);
-  const [paquetes, { data: evaluacionExigida }] = await Promise.all([cargarPaquetesDePerros(supabase), supabase.rpc("evaluacion_exigida")]);
+  const [paquetes, { data: evaluacionExigida }, horario] = await Promise.all([cargarPaquetesDePerros(supabase), supabase.rpc("evaluacion_exigida"), cargarHorarioSemana(supabase, zona)]);
 
   const error = errorClientes ?? errorPerros ?? errorServicios ?? errorSeries;
 
@@ -104,6 +105,8 @@ export async function PaginaNuevaReserva({
           hoy={hoy}
           fechaInicial={esWalkin ? null : fecha}
           diasSinAtencion={diasSinAtencion}
+          horario={horario}
+          avisarDia={!esWalkin}
           base={modulo.base}
         />
       )}

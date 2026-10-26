@@ -1,5 +1,6 @@
 "use client";
 
+import { cuentaPorCobrar } from "@/lib/caja/cuenta-por-cobrar";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
@@ -227,6 +228,10 @@ export function CobroIntegrado({
     router.refresh();
   }
 
+  // N129: sin saldo por cobrar no se ofrece mandar a la terminal ni un link; queda solo el historial de órdenes.
+  const porCobrar = cuentaPorCobrar(saldo);
+  if (!porCobrar && !ordenActiva && ordenes.length === 0) return null;
+
   // Sin cobro integrado conectado no se ofrece (el manual está arriba).
   if (!disponible.activo) {
     return disponible.proveedor === "manual" || !disponible.motivo ? null : (
@@ -283,7 +288,7 @@ export function CobroIntegrado({
             </p>
           )}
         </div>
-      ) : modo === "ninguno" ? (
+      ) : !porCobrar ? null : modo === "ninguno" ? (
         <div className="flex flex-wrap gap-2">
           <Button type="button" variante="secundario" disabled={!turnoAbierto || !disponible.terminal} onClick={() => setModo("terminal")}>
             Cobrar con terminal

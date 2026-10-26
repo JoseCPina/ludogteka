@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { AvisoFueraDeHorario } from "@/components/aviso-fuera-de-horario";
-import type { HorarioSemana } from "@/lib/estetica/aviso-horario";
+import type { HorarioSemana, PropuestaHorario } from "@/lib/estetica/aviso-horario";
 
 type Tipo = { clave: string; nombre: string; duracion_min: number };
 type Medico = { id: string; nombre: string };
@@ -21,6 +21,7 @@ export function CamposCitaVet({
   hoy,
   fechaInicial,
   horaInicial,
+  propuestaInicial,
   propuestaPorMedico,
   horario,
 }: {
@@ -30,14 +31,17 @@ export function CamposCitaVet({
   hoy: string;
   fechaInicial: string;
   horaInicial: string;
+  /** N128: la siguiente hora libre si el día con el que abre está cerrado o ya no hay lugar (se enseña en el aviso). */
+  propuestaInicial?: PropuestaHorario | null;
   /** La siguiente media hora libre de cada médico (QA S27): mientras no se teclee otra, la fecha y hora siguen al médico. */
-  propuestaPorMedico?: Record<string, { fecha: string; hora: string }>;
+  propuestaPorMedico?: Record<string, { fecha: string; hora: string; propuesta?: PropuestaHorario | null }>;
   horario: HorarioSemana | null;
 }) {
   const [tipo, setTipo] = useState("consulta");
   const [fecha, setFecha] = useState(fechaInicial);
   const [hora, setHora] = useState(horaInicial);
   const [tocada, setTocada] = useState(false);
+  const [propuesta, setPropuesta] = useState<PropuestaHorario | null>(propuestaInicial ?? null);
   const [duracion, setDuracion] = useState("");
   const duracionDelTipo = tipos.find((t) => t.clave === tipo)?.duracion_min ?? 30;
   const duracionMin = Number(duracion) > 0 ? Number(duracion) : duracionDelTipo;
@@ -62,6 +66,7 @@ export function CamposCitaVet({
             if (tocada || !suya) return;
             setFecha(suya.fecha);
             setHora(suya.hora);
+            setPropuesta(suya.propuesta ?? null);
           }}
         >
           {medicos.map((m) => (
@@ -74,7 +79,18 @@ export function CamposCitaVet({
         <Field label="Hora" name="hora" type="time" value={hora} onChange={(e) => { setHora(e.target.value); setTocada(true); }} required />
         <Field label="Duración en minutos (opcional)" name="duracion" type="number" min={5} max={480} value={duracion} onChange={(e) => setDuracion(e.target.value)} ayuda="Vacío: la del tipo de cita." />
       </div>
-      <AvisoFueraDeHorario fecha={fecha} hora={hora} duracionMin={duracionMin} horario={horario} />
+      <AvisoFueraDeHorario
+        fecha={fecha}
+        hora={hora}
+        duracionMin={duracionMin}
+        horario={horario}
+        propuesta={propuesta}
+        onUsarPropuesta={(p) => {
+          setFecha(p.fecha);
+          if (p.hora) setHora(p.hora);
+          setTocada(true);
+        }}
+      />
     </>
   );
 }

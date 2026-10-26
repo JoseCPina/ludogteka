@@ -21,7 +21,7 @@ import { conTope, mensajeDeFallo } from "@/lib/ui/espera";
 import { asignarGrupoDePropuesta, asignarGrupoDeRaza } from "../../perros/razas/grupos-actions";
 import { useZonaNegocio } from "@/components/zona-negocio";
 import { AvisoFueraDeHorario } from "@/components/aviso-fuera-de-horario";
-import type { HorarioSemana } from "@/lib/estetica/aviso-horario";
+import type { HorarioSemana, PropuestaHorario } from "@/lib/estetica/aviso-horario";
 import { cerrarFrase } from "@/lib/texto/frases";
 import { usePuedeAbrir } from "@/components/acceso-contexto";
 
@@ -69,6 +69,7 @@ export function AgendarForm({
   razas = [],
   horaInicial,
   horaPorEmpleado,
+  propuestaPorEmpleado,
   horarioSemana,
 }: {
   clientes: ClienteBuscable[];
@@ -105,6 +106,8 @@ export function AgendarForm({
   horaInicial?: string;
   /** La siguiente media hora libre de cada estilista (QA S27); al cambiar de estilista se toma la suya. */
   horaPorEmpleado?: Record<string, string>;
+  /** N128: la siguiente hora libre de cada quien cuando el día con el que abre no sirve (se enseña en el aviso). */
+  propuestaPorEmpleado?: Record<string, PropuestaHorario | null>;
   // Horario del negocio por día de la semana, para avisar (sin bloquear) de una cita fuera de horario.
   horarioSemana?: HorarioSemana | null;
   rolActual: string;
@@ -799,6 +802,11 @@ export function AgendarForm({
             hora={fechaHora.slice(11, 16)}
             duracionMin={servicioActual?.duracion_minutos ?? 60}
             horario={horarioSemana ?? null}
+            propuesta={propuestaPorEmpleado && empleadoId in propuestaPorEmpleado ? propuestaPorEmpleado[empleadoId] : propuestaPorEmpleado?.__todos}
+            onUsarPropuesta={(p) => {
+              setFechaHora(`${p.fecha}T${p.hora ?? fechaHora.slice(11, 16)}`);
+              setHoraTocada(true);
+            }}
           />
 
           {duplicada && (

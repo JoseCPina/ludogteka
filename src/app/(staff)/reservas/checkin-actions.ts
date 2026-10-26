@@ -1,5 +1,6 @@
 "use server";
 
+import { textoSalidaAnticipada, type CotizacionSalida } from "@/lib/reservas/salida-anticipada";
 import { revalidatePath } from "next/cache";
 import { revalidarModulosEstancia } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -132,7 +133,7 @@ export async function confirmarCheckout(
   estanciaId: string,
   campos: CamposCheckout,
   confirmarFueraHorario = false
-): Promise<EstadoAccion & { fueraHorario?: string; quedoFueraHorario?: string | null }> {
+): Promise<EstadoAccion & { fueraHorario?: string; quedoFueraHorario?: string | null; saldo?: number | null; ajusteSalida?: string | null }> {
   if (!campos.recogidoPorNombre.trim()) {
     return { error: "Registra quién recoge al perro." };
   }
@@ -181,9 +182,21 @@ export async function confirmarCheckout(
       .in("id", entregadas);
   }
 
+  // N132: si salió antes de su salida prevista, la cuenta se ajusta a lo que usó (o no, por la política del negocio).
+  // La salida ya quedó registrada: si el ajuste falla se dice, sin deshacerla.
+  const { data: ajuste, error: errorAjuste } = await supabase.rpc("salida_anticipada_aplicar", { p_estancia_id: estanciaId });
+  const a = (ajuste ?? null) as (CotizacionSalida & { aplicada?: boolean; saldo?: number }) | null;
+
   revalidarModulosEstancia();
   revalidatePath(`/reservas/estancias/${estanciaId}/checkout`);
-  return { error: null, quedoFueraHorario: (salida?.checkout_fuera_horario as string | null | undefined) ?? null };
+  return {
+    error: null,
+    quedoFueraHorario: (salida?.checkout_fuera_horario as string | null | undefined) ?? null,
+    saldo: a?.saldo ?? null,
+    ajusteSalida: errorAjuste
+      ? `No se pudo ajustar la cuenta a lo que usó: ${traducirError(errorAjuste)}. Revísala antes de cobrar`
+      : a?.aplicada || a?.politica === "completa" ? textoSalidaAnticipada(a) : null,
+  };
 }
 
 // Guardería que no recogen antes del cierre → noche de hotel. La RPC

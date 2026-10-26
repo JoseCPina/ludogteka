@@ -1,3 +1,4 @@
+import { cuentaPorCobrar } from "@/lib/caja/cuenta-por-cobrar";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -159,7 +160,7 @@ export default async function DetalleReservaPage({
   // QA S14: una reserva cancelada (o en la que nadie llegó) sin saldo no tiene nada que cobrar; con saldo, se dice qué
   // se debe (un cargo que sí se hizo) y con saldo a favor, que se devuelve.
   const todaCancelada = filas.length > 0 && filas.every((f) => ["cancelada", "no_llego"].includes(f.estado));
-  const hayQueCobrar = saldo > 0.005;
+  const hayQueCobrar = cuentaPorCobrar(saldo);
   // R35: con todo cancelado el total de la cuenta es $0 (las líneas canceladas no suman); si se cobró algo, se ve
   // cuánto se cobró y cuánto se devolvió, para que el saldo a favor (o el cero) se entienda.
   const totalCobrado = Number(totalesFila?.total_cobrado ?? 0);
@@ -239,7 +240,8 @@ export default async function DetalleReservaPage({
               {(!todaCancelada || hayQueCobrar || saldo < -0.005) && (
                 <Link href={`/reservas/${id}/cobrar`}>
                   <Button type="button" data-cobrar-reserva>
-                    {todaCancelada ? (hayQueCobrar ? `Cobrar $${saldo.toFixed(2)}` : "Ver la cuenta") : "Cobrar"}
+                    {/* N129: sin saldo por cobrar no se ofrece «Cobrar»: la cuenta pagada se abre para ver sus cobros. */}
+                    {todaCancelada ? (hayQueCobrar ? `Cobrar $${saldo.toFixed(2)}` : "Ver la cuenta") : hayQueCobrar ? "Cobrar" : "Ver cobros"}
                   </Button>
                 </Link>
               )}

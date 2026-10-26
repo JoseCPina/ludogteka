@@ -216,6 +216,8 @@ try {
   try {
     const page = await (await nav.newContext({ locale: "es-MX" })).newPage();
     await page.goto("http://cobro-auditoria-b.localhost:3001/login");
+    // QA S36: el login separa «Soy cliente» y «Soy del equipo».
+    await page.locator('[data-entrar-como="equipo"]').click();
     await page.getByLabel("Teléfono o correo").fill(uB.user.email);
     await page.getByLabel("Contraseña", { exact: true }).fill(pw);
     await page.getByRole("button", { name: "Entrar" }).click();

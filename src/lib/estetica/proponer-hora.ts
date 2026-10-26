@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { hoyNegocio, sumarDiasFecha } from "@/lib/formato";
 import { proximaHoraDisponible, type HorarioDia, type Ocupado } from "./proxima-hora";
+import type { PropuestaHorario } from "./aviso-horario";
 
 /**
  * LA función de «siguiente hora disponible» de todo formulario que abre con una hora prellenada
@@ -46,7 +47,7 @@ export async function proponerHoraPorPersona(
  * fecha pedida MANDA sobre la propuesta si es válida y no es un día pasado (N116: llegaba por la agenda o por el
  * expediente y se ignoraba); sin fecha pedida, la de `proponerHora`.
  */
-export async function proponerFechaHora(supabase: SupabaseClient, zona: string, fechaPedida?: string | null): Promise<{ fecha: string; hora: string }> {
+export async function proponerFechaHora(supabase: SupabaseClient, zona: string, fechaPedida?: string | null): Promise<AperturaCita> {
   return (await proponerFechaHoraPorPersona(supabase, zona, fechaPedida, {})).__todos;
 }
 
@@ -55,17 +56,18 @@ export function fechaPedidaValida(fechaPedida: string | null | undefined, zona: 
   return fechaPedida && /^\d{4}-\d{2}-\d{2}$/.test(fechaPedida) && fechaPedida >= hoyNegocio(zona) ? fechaPedida : undefined;
 }
 
-/** `proponerFechaHora` por persona: con la fecha pedida, la primera media hora libre de cada quien. */
+/**
+ * `proponerFechaHora` por persona. N128: la fecha es SIEMPRE el día pedido (o hoy), aunque esté cerrado o ya no haya
+ * lugar; la siguiente hora libre va en `propuesta` (ver `aperturaPorPersona`).
+ */
 export async function proponerFechaHoraPorPersona(
   supabase: SupabaseClient,
   zona: string,
   fechaPedida: string | null | undefined,
   ocupadosPorPersona: Record<string, Ocupado[]>,
   duracionMin?: number
-): Promise<Record<string, { fecha: string; hora: string }>> {
-  const pedida = fechaPedidaValida(fechaPedida, zona);
-  const propuestas = await proponerHoraPorPersona(supabase, zona, ocupadosPorPersona, pedida, duracionMin);
-  return Object.fromEntries(Object.entries(propuestas).map(([id, p]) => [id, { fecha: pedida ?? p.slice(0, 10), hora: p.slice(11, 16) }]));
+): Promise<Record<string, AperturaCita>> {
+  return aperturaPorPersona(supabase, zona, fechaPedida, ocupadosPorPersona, duracionMin);
 }
 
 /**
@@ -75,4 +77,32 @@ export async function proponerFechaHoraPorPersona(
 export function fechaParaAgendar(vista: "dia" | "semana", ancla: string, desde: string, hoy: string): string {
   if (vista === "dia") return ancla;
   return desde > hoy ? desde : hoy;
+}
+
+/** Con qué día y hora abre un formulario de cita, y la propuesta si ese día no sirve (N128). */
+export type AperturaCita = { fecha: string; hora: string; propuesta: PropuestaHorario | null };
+
+/**
+ * N128 (QA S36): el formulario abre SIEMPRE en el día elegido (`?fecha=` válido, o hoy), aunque esté cerrado, ya haya
+ * pasado su cierre o quien atiende ya no tenga lugar; en esos casos va con la propuesta del siguiente horario libre
+ * (la de `proponerHoraPorPersona`) para que `<AvisoFueraDeHorario>` la enseñe: nunca se cambia la fecha en silencio.
+ * Una por persona (estilista o médico) y `__todos`.
+ */
+export async function aperturaPorPersona(
+  supabase: SupabaseClient,
+  zona: string,
+  fechaPedida: string | null | undefined,
+  ocupadosPorPersona: Record<string, Ocupado[]>,
+  duracionMin?: number
+): Promise<Record<string, AperturaCita>> {
+  const pedida = fechaPedidaValida(fechaPedida, zona);
+  const dia = pedida ?? hoyNegocio(zona);
+  const propuestas = await proponerHoraPorPersona(supabase, zona, ocupadosPorPersona, pedida, duracionMin);
+  return Object.fromEntries(
+    Object.entries(propuestas).map(([id, p]) => {
+      const fecha = p.slice(0, 10);
+      const hora = p.slice(11, 16);
+      return [id, { fecha: dia, hora, propuesta: fecha === dia ? null : { para: dia, fecha, hora } }];
+    })
+  );
 }

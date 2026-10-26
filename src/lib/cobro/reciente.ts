@@ -50,7 +50,8 @@ export async function avisoCobroReciente(
   supabase: SupabaseClient,
   reservaIds: string[],
   control: ControlCobro | undefined,
-  ctx: { esAdmin: boolean; negocioId: string; usuarioId?: string | null }
+  // Puede llegar como promesa: las consultas de aquí arrancan sin esperar a la sesión (QA S36, un viaje menos).
+  ctxOPromesa: { esAdmin: boolean; negocioId: string; usuarioId?: string | null } | Promise<{ esAdmin: boolean; negocioId: string; usuarioId?: string | null }>
 ): Promise<string | null> {
   if (control?.confirmado) return null;
   const desde = new Date(Date.now() - VENTANA_COBRO_RECIENTE_MS).toISOString();
@@ -76,6 +77,7 @@ export async function avisoCobroReciente(
   // ya lo enseñaba (se actualizó sola, F5 o se volvió a entrar) ni quién lo hizo.
   const propios = new Set(control?.cobrosDeEstaPantalla ?? []);
   const nuevos = (cobros ?? []).filter((c) => !propios.has(c.id as string) && !(c.grupo_id && propios.has(c.grupo_id as string)));
+  const ctx = await ctxOPromesa;
   let reciente: CobroReciente | null = null;
   let nombreAutor: string | null = null;
   if (nuevos.length > 0) {

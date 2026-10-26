@@ -273,6 +273,8 @@ try {
   await page.getByRole("button", { name: "Salir" }).click();
   await page.waitForURL(/\/login|\/$/);
   await page.goto(`${base}/login`);
+  // QA S36: el login separa «Soy cliente» y «Soy del equipo».
+  await page.locator('[data-entrar-como="equipo"]').click();
   await page.getByLabel("Teléfono o correo").fill(TEL);
   await page.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Entrar" }).click();

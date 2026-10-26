@@ -67,7 +67,8 @@ try {
   const pd = await ctxDueno.newPage();
   pd.setDefaultTimeout(60000);
   await pd.goto(`${BASE}/login`, { waitUntil: "networkidle", timeout: 120000 });
-  await pd.getByLabel("Teléfono o correo").fill(usuario);
+  // QA S36: el login separa «Soy cliente» (el de por omisión, con su teléfono) y «Soy del equipo».
+  await pd.getByLabel("Teléfono", { exact: true }).fill(usuario);
   await pd.locator('input[name="password"]').fill(clave);
   await pd.getByRole("button", { name: "Entrar" }).click();
   await pd.waitForURL(/\/portal/, { timeout: 60000 }).catch(() => {});
@@ -131,6 +132,8 @@ try {
       const pg = await ctx6.newPage();
       pg.setDefaultTimeout(60000);
       await pg.goto(`${base}/login`, { waitUntil: "networkidle", timeout: 120000 });
+      // QA S36: el login separa «Soy cliente» y «Soy del equipo».
+      await pg.locator('[data-entrar-como="equipo"]').click();
       await pg.getByLabel("Teléfono o correo").fill(correo);
       await pg.locator('input[name="password"]').fill(claveN42);
       await pg.getByRole("button", { name: "Entrar" }).click();

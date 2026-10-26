@@ -70,6 +70,9 @@ export function Suscripcion({
   const [exito, setExito] = useState<string | null>(null);
   const [impactoDe, setImpactoDe] = useState<{ clave: string; modulos: ModuloQueSeApaga[] } | null>(null);
   const envio = useEspera({ tope: 45_000 });
+  // QA S36: de la respuesta a que el navegador abre el pago de Stripe pasan segundos; el botón sigue deshabilitado y
+  // diciendo «Abriendo pago…» hasta que la página se va (si el navegador se queda, a los 15 s vuelve a estar listo).
+  const [abriendoPago, setAbriendoPago] = useState(false);
   const portal = useEspera();
   const deshacer = useEspera();
 
@@ -112,7 +115,9 @@ export function Suscripcion({
     const res = await envio.ejecutar(() => (tieneSub ? cambiarPlanSuscripcion(sel) : contratar(sel)));
     if (res.error) return setError(res.error);
     if (res.url) {
+      setAbriendoPago(true);
       window.location.href = res.url;
+      setTimeout(() => setAbriendoPago(false), 15_000);
       return;
     }
     setExito(res.exito ?? "Listo.");
@@ -270,8 +275,10 @@ export function Suscripcion({
       )}
 
       <AccionesFormulario error={error} exito={exito}>
-        <Button type="button" cargando={envio.cargando} disabled={!oferta || Boolean(igualQueHoy)} onClick={pagar}>
-          {tieneSub ? (igualQueHoy ? "Es tu plan actual" : "Cambiar a este plan") : "Pagar con tarjeta"}
+        <Button type="button" cargando={envio.cargando || abriendoPago} disabled={!oferta || Boolean(igualQueHoy) || abriendoPago} onClick={pagar} data-pagar-plan>
+          {envio.cargando || abriendoPago
+            ? tieneSub ? "Guardando…" : "Abriendo pago…"
+            : tieneSub ? (igualQueHoy ? "Es tu plan actual" : "Cambiar a este plan") : "Pagar con tarjeta"}
         </Button>
         {cobro.tiene_cliente && (
           <Button type="button" variante="secundario" cargando={portal.cargando} onClick={irAlPortal}>

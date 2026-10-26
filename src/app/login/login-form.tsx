@@ -10,12 +10,10 @@ import { WHATSAPP_SOPORTE_LINK } from "@/lib/peludesk/respuestas-fijas";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 
 /**
- * Un solo campo para teléfono o correo, no dos pestañas.
- *
- * El cliente sabe su teléfono; el personal, su correo. Ninguno de los dos
- * debería tener que averiguar primero cuál de dos formularios le toca —
- * la app puede distinguir diez dígitos de una dirección con arroba sin
- * preguntarle a nadie.
+ * QA S36: dos entradas, «Soy cliente» y «Soy del equipo». El cliente entra con su teléfono; el equipo, con su correo o
+ * su teléfono. Las dos van al mismo inicio de sesión (la app distingue diez dígitos de una dirección con arroba) y lo
+ * que cambia es lo que se le dice a cada quien, sobre todo si olvidó su contraseña: al cliente se la restablece
+ * recepción; a alguien del equipo, un admin de su negocio desde Empleados.
  */
 export function LoginForm({
   errorInicial = null,
@@ -36,6 +34,8 @@ export function LoginForm({
   const [estado, formAction, enviando] = useActionState(useAccionConTope(iniciarSesion), estadoInicial);
   const [ayuda, setAyuda] = useState(false);
   const [identificador, setIdentificador] = useState("");
+  const [quien, setQuien] = useState<"cliente" | "equipo">("cliente");
+  const esEquipo = quien === "equipo";
 
   const mensaje =
     `Hola, soy cliente de ${nombreNegocio} y olvidé mi contraseña del portal. ¿Me la pueden restablecer? Mi teléfono es el de este WhatsApp.`;
@@ -45,27 +45,44 @@ export function LoginForm({
 
   return (
     <div className="flex flex-col gap-4">
+      <div role="tablist" aria-label="¿Quién entra?" className="grid grid-cols-2 gap-1 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-1">
+        {(["cliente", "equipo"] as const).map((q) => (
+          <button
+            key={q}
+            type="button"
+            role="tab"
+            aria-selected={quien === q}
+            onClick={() => {
+              setQuien(q);
+              setAyuda(false);
+            }}
+            className={`min-h-11 rounded-md text-sm font-semibold focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave ${quien === q ? "bg-white text-morado shadow-sm" : "text-n-700 hover:text-n-900"}`}
+            data-entrar-como={q}
+          >
+            {q === "cliente" ? "Soy cliente" : "Soy del equipo"}
+          </button>
+        ))}
+      </div>
       <form action={formAction} noValidate className="flex flex-col gap-5">
+        <input type="hidden" name="quien" value={quien} />
         <Field
-          label="Teléfono o correo"
+          key={quien}
+          label={esEquipo ? "Teléfono o correo" : "Teléfono"}
           name="identificador"
-          // Texto normal a propósito: con inputMode="tel" el celular
-          // abría el teclado numérico y no había forma de escribir un
-          // correo. Es un solo campo para las dos cosas, así que el
-          // teclado tiene que ser el completo.
+          // El equipo puede entrar con correo: teclado completo. El cliente, con su teléfono: teclado numérico.
           type="text"
-          inputMode="text"
+          inputMode={esEquipo ? "text" : "tel"}
           autoComplete="username"
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
           autoFocus
           required
-          placeholder="10 dígitos o correo"
+          placeholder={esEquipo ? "Tu correo o tu teléfono a 10 dígitos" : "10 dígitos"}
           // Controlado: tras un intento fallido React limpia el formulario y solo la contraseña debe vaciarse.
           value={identificador}
           onChange={(e) => setIdentificador(e.target.value)}
-          ayuda="Si eres cliente, tu teléfono a diez dígitos."
+          ayuda={esEquipo ? "El correo o el teléfono con el que te dieron de alta en el equipo." : "El teléfono a diez dígitos con el que te registraste."}
         />
         <Field
           label="Contraseña"
@@ -89,8 +106,8 @@ export function LoginForm({
         ¿Olvidaste tu contraseña?
       </button>
 
-      {ayuda && (
-        <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
+      {ayuda && !esEquipo && (
+        <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4" data-recuperar="cliente">
           {urlWhatsApp ? (
             <>
               <p className="text-sm text-n-700">
@@ -109,22 +126,23 @@ export function LoginForm({
               contraseña temporal para entrar con tu teléfono.
             </p>
           )}
+        </div>
+      )}
+      {ayuda && esEquipo && (
+        <div className="flex flex-col gap-2 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4 text-sm text-n-700" data-recuperar="equipo">
+          <p>
+            Tu contraseña la restablece un admin de tu negocio desde <strong>Empleados</strong> → tu ficha → «Restablecer contraseña» (o desde
+            Administración → Cuentas): te da una contraseña temporal y, al entrar, escoges una nueva.
+          </p>
           {unSoloAdmin ? (
-            <div className="flex flex-col gap-1 text-sm text-n-600" data-recuperar-un-admin>
-              <p>
-                Si eres el dueño del negocio: la contraseña de un cliente la restableces tú desde su ficha, en{" "}
-                <Link href="/clientes" className="font-semibold text-morado hover:underline">Clientes</Link> → el cliente → «Contraseña del portal».
-              </p>
-              <p>
-                Si la que olvidaste es la tuya,{" "}
-                <a href={WHATSAPP_SOPORTE_LINK} target="_blank" rel="noreferrer" className="font-semibold text-morado hover:underline">escríbenos por WhatsApp a PeluDesk</a>{" "}
-                y te ayudamos a recuperarla.
-              </p>
-            </div>
-          ) : (
-            <p className="text-sm text-n-600">
-              Si eres del personal, pídele a un admin que te mande una invitación nueva.
+            <p data-recuperar-un-admin>
+              Si eres el dueño y el único admin,{" "}
+              <a href={WHATSAPP_SOPORTE_LINK} target="_blank" rel="noreferrer" className="font-semibold text-morado hover:underline">escríbenos por WhatsApp a PeluDesk</a>{" "}
+              y te ayudamos a recuperarla. La contraseña de un cliente la restableces tú desde su ficha, en{" "}
+              <Link href="/clientes" className="font-semibold text-morado hover:underline">Clientes</Link> → el cliente → «Contraseña del portal».
             </p>
+          ) : (
+            <p>Si la que olvidaste es la de un admin, pídesela a otro admin del negocio.</p>
           )}
         </div>
       )}

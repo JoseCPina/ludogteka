@@ -3,7 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { zonaActual } from "@/lib/negocio/actual";
 import { Alert } from "@/components/ui/alert";
-import { formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
+import { formatearFechaCalendario, hoyNegocio, instanteDeHoraLocal, sumarDiasFecha } from "@/lib/formato";
 import { enBloques } from "@/lib/supabase/paginar";
 import {
   diasDeLaVista,
@@ -77,7 +77,7 @@ export default async function CalendarioReservasPage({ searchParams }: { searchP
   const dias = diasDeLaVista(f.vista, f.fecha);
   const [{ data: ocupacionCruda, error: errorOcupacion }, dia] = await Promise.all([
     supabase.rpc("calendario_ocupacion", { p_desde: dias[0], p_hasta: dias[dias.length - 1] }),
-    f.dia ? cargarEstancias(supabase, f, { dia: f.dia, hoy }) : Promise.resolve(null),
+    f.dia ? cargarEstancias(supabase, f, { dia: f.dia, hoy, zona }) : Promise.resolve(null),
   ]);
   const ocupacion = new Map<string, FilaOcupacion>(((ocupacionCruda ?? []) as FilaOcupacion[]).map((o) => [o.fecha, o]));
   const proximas = await cargarEstancias(supabase, f, { proximas: true });
@@ -315,14 +315,15 @@ type Cliente = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 async function cargarEstancias(
   supabase: Cliente,
   f: FiltrosCalendario,
-  que: { dia: string; hoy: string } | { proximas: true }
+  que: { dia: string; hoy: string; zona: string } | { proximas: true }
 ): Promise<{ filas: EstanciaCruda[]; hayMas: boolean; error: boolean }> {
   let q = supabase.from("estancias").select(SELECT_ESTANCIA).is("deleted_at", null); // limite-filas-ok: se acota abajo con .limit (el día) o .range (25 por página)
   if ("dia" in que) {
     // Cubre ese día: entra antes o ese día y sale después (la salida es exclusiva). Hoy y antes, también el perro que
     // sigue adentro con la salida vencida (N122: cuenta en la ocupación de esos días, así que sale en su lista).
+    // N131: también el que entró antes de su fecha de entrada (check-in anticipado), igual que ocupacion_del_dia.
     q = que.dia <= que.hoy
-      ? q.lte("fecha_entrada", que.dia).or(`fecha_salida.gt.${que.dia},and(estado.eq.en_curso,hora_salida_real.is.null)`)
+      ? q.or(`fecha_entrada.lte.${que.dia},hora_entrada_real.lt.${instanteDeHoraLocal(`${sumarDiasFecha(que.dia, 1)}T00:00`, que.zona)}`).or(`fecha_salida.gt.${que.dia},and(estado.eq.en_curso,hora_salida_real.is.null)`)
       : q.lte("fecha_entrada", que.dia).gt("fecha_salida", que.dia);
   } else {
     q = q.gte("fecha_entrada", f.desde);
