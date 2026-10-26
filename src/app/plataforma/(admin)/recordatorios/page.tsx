@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { exigirPlataforma } from "@/lib/plataforma/sesion";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { RevisarTarifa } from "./revisar-tarifa";
 
 type Fila = {
@@ -30,7 +31,8 @@ export default async function RecordatoriosPlataforma({ searchParams }: { search
   const siguiente = new Date(Date.UTC(anio, m, 1)).toISOString().slice(0, 7);
   const [{ data, error }, { data: precios }] = await Promise.all([
     leerTodo<Record<string, unknown>>(() => supabase.rpc("plataforma_recordatorios_uso", { p_mes: `${mes}-01` }).order("negocio_id")),
-    supabase.from("wa_precios").select("vigente_desde, moneda_meta, costo_meta, tipo_cambio, costo_mxn, precio_mxn, gratis_mes, fuente").is("deleted_at", null).order("vigente_desde", { ascending: false }).limit(12),
+    // El costo de Meta no se publica (solo precio y gratis): la plataforma lo lee con la llave de servicio, ya comprobada su sesión.
+    createSupabaseAdminClient().from("wa_precios").select("vigente_desde, moneda_meta, costo_meta, tipo_cambio, costo_mxn, precio_mxn, gratis_mes, fuente").is("deleted_at", null).order("vigente_desde", { ascending: false }).limit(12),
   ]);
   const filas = (data ?? []) as unknown as Fila[];
   const total = filas.reduce(

@@ -207,9 +207,10 @@ alter table public.wa_precios enable row level security;
 create policy wa_precios_select on public.wa_precios for select to anon, authenticated using (deleted_at is null);
 create policy wa_precios_plataforma on public.wa_precios for all to authenticated
   using ((select public.es_admin_plataforma())) with check ((select public.es_admin_plataforma()));
+-- Lo publicado es el precio al negocio y los gratis; lo que nos cobra Meta (costo, tipo de cambio) solo lo leen el
+-- servidor y la plataforma (con la llave de servicio, después de comprobar la sesión de la plataforma).
 revoke all on public.wa_precios from anon, authenticated;
-grant select on public.wa_precios to anon, authenticated;
-grant insert, update on public.wa_precios to authenticated;
+grant select (id, vigente_desde, mercado, categoria, precio_mxn, gratis_mes, created_at, updated_at, deleted_at) on public.wa_precios to anon, authenticated;
 
 -- Hoja de tarifas de Meta en MXN (la moneda de nuestra WABA), México, utilidad, vigente desde el 1 de octubre de 2026:
 -- $0.1565 por mensaje entregado (USD 0.0085 en la hoja en dólares). Precio al negocio: 2 × 0.1565 = 0.313 → $0.31.

@@ -15,6 +15,8 @@ const NO_ES_DINERO = new Set([
   // Los precios de los planes de PeluDesk: públicos a propósito (la landing
   // de peludesk.mx los muestra). No son dinero de ningún negocio.
   "planes.precio_mensual", "planes.precio_anual",
+  // El precio por recordatorio de WhatsApp al negocio: publicado igual (landing, /precios). El costo de Meta no se lee.
+  "wa_precios.precio_mxn",
 ]);
 
 // Del negocio, no del cliente: ningún cliente debe recibir UNA sola fila,
