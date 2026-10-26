@@ -53,6 +53,7 @@ Cada negocio tiene su propia dirección: <su-nombre>.peludesk.mx.
 
 # Prueba gratis
 - 15 días gratis, sin tarjeta. Se registra en https://peludesk.mx/registro con su teléfono, una contraseña, el nombre del negocio, su ciudad y los servicios que ofrece (veterinaria, guardería, hotel, estética).
+- También se abre sin salir de este WhatsApp: el botón «Probar gratis» abre un formulario (tipo de negocio; nombre del negocio, ciudad, su nombre y, si quiere, su correo; confirmación con los términos y el aviso de privacidad). Al tocar «Crear mi cuenta» el negocio queda abierto con 15 días gratis y su número de WhatsApp como cuenta, y por este chat le llega una liga para entrar (sirve una sola vez y dura 24 horas), la dirección de su negocio (<nombre>.peludesk.mx) y los tres primeros pasos. Al entrar escoge su contraseña. Si ese número ya tiene un negocio, no se abre otro: le llega su liga de entrada. Si la liga ya se usó o venció, vuelve a tocar «Probar gratis» y le llega otra.
 - Hay un solo plan: PeluDesk, con todos los módulos (Veterinaria, Hotel y guardería, Estética, inventario, empleados, gastos, reportes, portal y página web) y sin costo inicial. Durante la prueba están todos disponibles. Los servicios que NO escogió al registrarse arrancan apagados; los prende cuando quiera en Módulos y plan (en el menú).
 - Al entrar hay cinco primeros pasos para dejarlo listo.
 - La página web viene incluida en el plan, sin costo aparte. Se arma sola con el perfil del negocio: primeros pasos, logo (PNG, JPG, WebP o SVG de hasta 2 MB; antes de guardar ve cómo se verá en su registro, recibos y portal, y la app avisa si es muy ancho o trae fondo blanco), 3 fotos, al menos un precio, horario y dirección. No hay fecha límite para completarlo.
@@ -325,7 +326,7 @@ Anuncios de PeluDesk en Facebook e Instagram (21 de octubre de 2026):
 - Quien pide no recibir publicidad (BAJA) deja de ver estos anuncios en la siguiente sincronización diaria.
 
 Cómo contesta este WhatsApp (21 de octubre de 2026):
-- Después de 24 horas sin mensajes empieza una conversación nueva: un saludo («Hola», «Buenas tardes») se contesta con un saludo y un menú (1. Probar gratis 15 días, 2. Precio, 3. Tengo una duda).
+- Después de 24 horas sin mensajes empieza una conversación nueva: un saludo («Hola», «Buenas tardes») se contesta con un saludo y un menú (1. Probar gratis 15 días, 2. Precio, 3. Tengo una duda) con el botón «Probar gratis», que abre el formulario de la prueba dentro de WhatsApp. El mismo botón llega al escoger la 1, al preguntar el precio o por la prueba, y en la primera respuesta a quien llega desde su página o desde un anuncio. Si el formulario no se abre, el link de registro también sirve.
 - El precio, el plan anual, las sucursales, la prueba gratis y la factura se contestan siempre con el mismo texto: un solo plan con todo incluido, por negocio, al mes o al año (dos meses gratis), sucursal adicional aparte, 15 días gratis sin tarjeta y factura (CFDI) de Menteo, S.A.S. Las cifras salen de los planes vigentes; un precio de una conversación anterior ya no vale.
 - Quien es cliente (dueño de mascota) de un negocio que usa PeluDesk y escribe preguntando por PeluDesk se atiende como prospecto.
 

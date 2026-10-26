@@ -377,6 +377,12 @@ try {
   await SB.from("empleados").update({ deleted_at: new Date().toISOString() }).like("nombre", "Prueba corregir%").is("deleted_at", null);
   await SB.from("perros").update({ deleted_at: new Date().toISOString() }).in("id", creados.perros);
   if (creados.citas.length) await SB.from("citas_estetica").update({ deleted_at: new Date().toISOString() }).in("id", creados.citas);
+  // Sus cuentas también: una cuenta viva con cobros y la cita borrada quedaba en Caja → Ajustes con un enlace a una
+  // cita que ya no existe (25 de octubre de 2026, /estetica/08853dea… en Huellitas).
+  if (creados.reservas.length) {
+    await SB.from("cobros").update({ deleted_at: new Date().toISOString() }).in("reserva_id", creados.reservas).is("deleted_at", null);
+    await SB.from("reservas").update({ deleted_at: new Date().toISOString() }).in("id", creados.reservas).is("deleted_at", null);
+  }
 }
 
 console.log(hallazgos.length ? `\n${hallazgos.length} HALLAZGO(S)` : "\nSin hallazgos.");

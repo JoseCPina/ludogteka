@@ -6,8 +6,11 @@
 //   WHATSAPP_GRAPH_URL=http://127.0.0.1:4456 TELEGRAM_API_URL=http://127.0.0.1:4456 \
 //   ANTHROPIC_API_URL=http://127.0.0.1:4456 WHATSAPP_TOKEN=wa-prueba \
 //   WHATSAPP_PHONE_NUMBER_ID=PHONE_PRUEBA WHATSAPP_APP_SECRET=secreto-app-prueba \
-//   TELEGRAM_BOT_TOKEN=tg-prueba ANTHROPIC_API_KEY=ia-prueba \
+//   TELEGRAM_BOT_TOKEN=tg-prueba ANTHROPIC_API_KEY=ia-prueba WHATSAPP_FLOW_ID= \
 //   npm run dev        (o npm run build + npm run start -- -p 3001)
+//
+//   WHATSAPP_FLOW_ID vacío: aquí se prueba el camino por texto (el formulario de prueba gratis
+//   lo prueba whatsapp-flow-dev.mjs).
 //
 //   node scripts/auditoria/whatsapp-bot.mjs
 //

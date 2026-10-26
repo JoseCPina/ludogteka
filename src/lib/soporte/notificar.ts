@@ -167,3 +167,15 @@ export async function avisarFalloDeEntrega(a: { origen?: string; etiqueta?: stri
     console.error("[whatsapp] no salió el aviso de fallo de entrega", e instanceof Error ? e.message : e);
   }
 }
+
+/** Un aviso suelto a la bandeja de Telegram de PeluDesk (título en negritas y renglones). Nunca lanza. */
+export async function avisarOperador(titulo: string, renglones: (string | null)[]): Promise<void> {
+  try {
+    const chat = await chatOperador();
+    if (!chat) return console.warn("[whatsapp] aviso sin bandeja de Telegram vinculada:", titulo);
+    const html = [`<b>${escaparHtml(titulo)}</b>`, ...renglones.filter((r): r is string => Boolean(r)).map(escaparHtml)].join("\n\n");
+    await new TelegramHttp(configWhatsApp().telegramToken).enviar(chat, html);
+  } catch (e) {
+    console.error("[whatsapp] no salió el aviso al operador", e instanceof Error ? e.message : e);
+  }
+}

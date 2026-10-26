@@ -286,7 +286,7 @@ const PUBLICAS_PLATAFORMA: Record<string, string> = {
 // Con parámetro: artículos del centro de ayuda y del blog, páginas del índice
 // del blog y sus categorías. Una lista cerrada de formas, nunca por prefijo.
 const COOKIE_INTERNO = "peludesk_interno";
-const PUBLICAS_PLATAFORMA_PATRON = /^\/(ayuda\/[a-z0-9-]+|guias\/[a-z0-9-]+|alternativas\/[a-z0-9-]+|ayuda\/videos\/[a-z0-9-]+|blog\/[a-z0-9-]+|blog\/pagina\/\d{1,3}|blog\/categoria\/[a-z0-9-]+|para\/[a-z0-9-]{3,60}|para\/[a-z0-9-]{3,60}\/ir\/(?:prueba|whatsapp|demo))$/;
+const PUBLICAS_PLATAFORMA_PATRON = /^\/(ayuda\/[a-z0-9-]+|guias\/[a-z0-9-]+|alternativas\/[a-z0-9-]+|ayuda\/videos\/[a-z0-9-]+|blog\/[a-z0-9-]+|blog\/pagina\/\d{1,3}|blog\/categoria\/[a-z0-9-]+|para\/[a-z0-9-]{3,60}|para\/[a-z0-9-]{3,60}\/ir\/(?:prueba|whatsapp|demo)|entrar\/[A-Za-z0-9_-]{30,60})$/;
 
 async function plataforma(request: NextRequest, cabeceras: Headers) {
   const { pathname } = request.nextUrl;
@@ -297,7 +297,8 @@ async function plataforma(request: NextRequest, cabeceras: Headers) {
   if (pathname === "/api/stripe/webhook") return NextResponse.next({ request: { headers: cabeceras } });
   // El bot de WhatsApp de PeluDesk y su bandeja de Telegram: sin sesión ni
   // negocio; cada ruta comprueba su firma o su secret_token.
-  if (pathname === "/api/whatsapp/webhook" || pathname === "/api/telegram/webhook") {
+  // El endpoint del WhatsApp Flow de prueba gratis, además, va cifrado.
+  if (pathname === "/api/whatsapp/webhook" || pathname === "/api/whatsapp/flow" || pathname === "/api/telegram/webhook") {
     return NextResponse.next({ request: { headers: cabeceras } });
   }
   // Integraciones por negocio: el webhook único de Mercado Pago, el regreso

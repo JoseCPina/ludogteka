@@ -111,6 +111,8 @@ export interface SeguimientoContexto {
  * prellenado de su página peludesk.mx/para/<slug>, o su teléfono), nunca por lo que diga.
  */
 export interface ProspectoContexto {
+  /** El prospecto del CRM (para ligar el Flow de prueba gratis). */
+  id?: string;
   nombre: string;
   giro: string;
   ciudad: string | null;

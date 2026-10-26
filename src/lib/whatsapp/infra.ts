@@ -32,6 +32,8 @@ import type { BloqueIA, Cuenta, DatosSoporte, DepsSoporte, Hilo, IA, RespuestaIA
  *                             workspace: Anthropic la rechaza sin el encabezado
  *                             anthropic-workspace-id («not scoped to a workspace»)
  *   WHATSAPP_IA_TOPE_MENSUAL_MXN (opcional)
+ *   WHATSAPP_FLOW_ID          el Flow «PeluDesk · Prueba gratis» (sin él, el bot ofrece la prueba por texto)
+ *   WHATSAPP_FLOW_PRIVATE_KEY llave privada RSA del endpoint cifrado del Flow (PEM; sensitive)
  */
 export const VERSION_GRAPH = "v23.0";
 // Fuera de producción, WHATSAPP_GRAPH_URL / TELEGRAM_API_URL / ANTHROPIC_API_URL
@@ -51,7 +53,7 @@ const TIMEOUT_RED_MS = 10_000;
  * El link de prueba del bot: un prospecto de su vista previa se registra desde ahí (su negocio ya escrito y su
  * página); quien llegó por un anuncio, al registro con su giro y el origen del anuncio.
  */
-function registroDeProspecto(p: ProspectoContexto | null | undefined): string {
+export function registroDeProspecto(p: ProspectoContexto | null | undefined): string {
   if (!p) return `${urlPlataforma()}/registro`;
   if (p.anuncio && p.fuente === "anuncio_meta") {
     const q = new URLSearchParams({ prospecto: p.slug ?? "", utm_source: "meta", utm_medium: "ctwa", utm_campaign: "whatsapp_prospeccion" });
@@ -269,6 +271,7 @@ export class DatosSupabase implements DatosSoporte {
       const r = data as Record<string, unknown> | null;
       if (!r) return null;
       return {
+        id: r.id ? String(r.id) : undefined,
         nombre: String(r.nombre ?? ""),
         giro: String(r.giro ?? ""),
         ciudad: (r.ciudad as string | null) ?? null,
@@ -297,6 +300,7 @@ export class DatosSupabase implements DatosSoporte {
       const r = data as Record<string, unknown> | null;
       if (!r) return null;
       return {
+        id: r.id ? String(r.id) : undefined,
         nombre: String(r.nombre ?? ""),
         giro: String(r.giro ?? ""),
         ciudad: (r.ciudad as string | null) ?? null,
@@ -488,12 +492,42 @@ export class ClienteWA implements SalidaWA {
     return Boolean(this.token && this.phoneNumberId);
   }
 
-  texto(a: string, cuerpo: string) {
-    return this.enviar({ messaging_product: "whatsapp", recipient_type: "individual", to: a, type: "text", text: { preview_url: true, body: cuerpo } });
+  /** sinVista: sin vista previa del link (la liga de entrada es de un solo uso: que nadie la abra para armar la vista). */
+  texto(a: string, cuerpo: string, opciones: { sinVista?: boolean } = {}) {
+    return this.enviar({ messaging_product: "whatsapp", recipient_type: "individual", to: a, type: "text", text: { preview_url: !opciones.sinVista, body: cuerpo } });
   }
 
   plantilla(a: string, nombre: string, contexto?: ContextoEnvio) {
     return this.enviar({ messaging_product: "whatsapp", recipient_type: "individual", to: a, type: "template", template: { name: nombre, language: { code: "es_MX" } } }, { contexto });
+  }
+
+  /**
+   * Un WhatsApp Flow con su botón (el de prueba gratis): `flowToken` es el de su fila en wa_flow_sesiones y
+   * `flow_action: data_exchange` hace que al abrirlo Meta pregunte al endpoint (así se sabe que lo abrió y se
+   * prellenan sus datos). Un intento de red de más no abre nada dos veces: cada envío lleva su propio token.
+   */
+  flow(a: string, f: { cuerpo: string; flowId: string; flowToken: string; cta: string; borrador?: boolean }) {
+    return this.enviar({
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: a,
+      type: "interactive",
+      interactive: {
+        type: "flow",
+        body: { text: f.cuerpo.slice(0, 1024) },
+        action: {
+          name: "flow",
+          parameters: {
+            flow_message_version: "3",
+            flow_token: f.flowToken,
+            flow_id: f.flowId,
+            flow_cta: f.cta,
+            flow_action: "data_exchange",
+            ...(f.borrador ? { mode: "draft" } : {}),
+          },
+        },
+      },
+    });
   }
 
   /**
@@ -774,6 +808,8 @@ export function construirSoporte(): { deps: DepsSoporte; datos: DatosSupabase; w
     }),
     fijos: async (prospecto) => ({ precios: preciosDelBot(await planesPublicos()), registro: registroDeProspecto(prospecto) }),
     ligaPortal: ligaPortalDe,
+    // Import diferido: el módulo del Flow usa este (ClienteWA, la configuración).
+    ofrecerFlow: async (telefono, punto, cuerpo, prospecto) => (await import("./flow/servidor")).ofrecerFlow(telefono, punto, cuerpo, prospecto, wa),
     alerta: (detalle, e) => console.error(`[whatsapp] ${detalle}`, e instanceof Error ? e.message : (e ?? "")),
   };
   return { deps, datos, wa };

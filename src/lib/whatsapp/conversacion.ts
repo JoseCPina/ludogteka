@@ -46,9 +46,12 @@ export const MENU_SALUDO = [
   "1. Probar gratis 15 días\n2. Precio\n3. Tengo una duda",
 ].join("\n\n");
 
-/** ¿El último mensaje del bot fue el menú? (para entender «1», «2», «3»). */
+/**
+ * ¿El último mensaje del bot fue el menú? (para entender «1», «2», «3»). La línea del aviso de privacidad que va
+ * detrás del primer saludo a un número nuevo no cuenta: sin esto, «1» no se entendía en la primera conversación.
+ */
 export function ultimoFueMenu(mensajes: MensajeConFecha[]): boolean {
-  const delBot = mensajes.filter((m) => m.quien !== "usuario");
+  const delBot = mensajes.filter((m) => m.quien !== "usuario" && !m.texto.startsWith("Así cuidamos tus datos"));
   return delBot.length > 0 && delBot[delBot.length - 1].texto.startsWith(MENU_SALUDO.slice(0, 30));
 }
 

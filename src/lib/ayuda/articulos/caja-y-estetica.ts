@@ -1009,7 +1009,9 @@ En los dos casos la cita no se borra y queda el historial. Si ya tenía cobro, s
 
 ## Eliminar
 
-**Eliminar cita** es solo para una cita capturada por error o duplicada. Sale de la agenda y libera el horario, con motivo, y no se borra físicamente. Es de admin o de quien tenga el permiso **Eliminar citas** (apagado por omisión; se da en [Permisos](/admin/permisos)).`,
+**Eliminar cita** es solo para una cita capturada por error o duplicada. Sale de la agenda y libera el horario, con motivo, y no se borra físicamente. Es de admin o de quien tenga el permiso **Eliminar citas** (apagado por omisión; se da en [Permisos](/admin/permisos)).
+
+Si alguien abre después un enlace a una cita eliminada (un aviso, el historial del navegador), la ficha dice **Esta cita se eliminó**, con la fecha, quién la eliminó y el motivo, y enlaza a su cuenta si la tenía. Una cita eliminada ya no sale en [Ajustes por corrección de servicio](/caja/ajustes-servicio): si su cuenta conserva un saldo, se ve y se resuelve en la cuenta.`,
   },
   {
     slug: "agregar-otro-perrito-en-estetica",

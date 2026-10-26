@@ -13,6 +13,7 @@ import type { Estilista } from "../selector-estilista";
 import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { AvisosWhatsApp } from "@/components/avisos-whatsapp";
 import { usaEstancias } from "@/lib/plan/modulos";
+import { puedeAbrirEnServidor } from "@/lib/auth/acceso-servidor";
 
 const ESTADO_HISTORIAL: Record<string, string> = {
   reservada: "antes de empezar",
@@ -51,7 +52,18 @@ export default async function CitaDetallePage({
     .is("deleted_at", null)
     .single();
 
-  if (error || !cita) notFound();
+  // Un enlace viejo (un aviso, el historial del navegador, un mensaje) a una cita que se eliminó dice eso, cuándo y
+  // por qué, en lugar de un 404. Si la cita no es de este negocio o no existe, 404 de verdad (la RLS no la deja ver).
+  if (error || !cita) {
+    const { data: borrada } = await supabase
+      .from("citas_estetica")
+      .select("id, inicio, reserva_id, deleted_at, servicio_nombre, perros(nombre)")
+      .eq("id", citaId)
+      .not("deleted_at", "is", null)
+      .maybeSingle();
+    if (!borrada) notFound();
+    return <CitaEliminada cita={borrada} zona={zona} citaId={citaId} />;
+  }
 
   const perro = Array.isArray(cita.perros) ? cita.perros[0] : cita.perros;
   const servicio = Array.isArray(cita.servicios) ? cita.servicios[0] : cita.servicios;
@@ -361,6 +373,38 @@ export default async function CitaDetallePage({
             ))}
           </ul>
         </section>
+      )}
+    </div>
+  );
+}
+
+/** La ficha de una cita que se eliminó: qué era, cuándo se eliminó, quién y por qué (del historial de la cita). */
+async function CitaEliminada({ cita, zona, citaId }: { cita: { inicio: string; reserva_id: string | null; deleted_at: string; servicio_nombre: string | null; perros: { nombre: string } | { nombre: string }[] | null }; zona: Awaited<ReturnType<typeof zonaActual>>; citaId: string }) {
+  const supabase = await createSupabaseServerClient();
+  const puede = await puedeAbrirEnServidor();
+  const { data: historial } = await supabase.rpc("historial_cambios_cita", { p_cita_id: citaId });
+  const eliminacion = ((historial ?? []) as { tipo: string; motivo: string | null; por_nombre: string; cuando: string }[]).find((h) => h.tipo === "eliminacion");
+  const perro = Array.isArray(cita.perros) ? cita.perros[0] : cita.perros;
+  const cuenta = cita.reserva_id ? `/caja/cobrar/${cita.reserva_id}` : null;
+  return (
+    <div className="flex flex-col gap-4" data-cita-eliminada>
+      <Link href="/estetica" className="text-sm font-semibold text-morado hover:underline">
+        ← Estética
+      </Link>
+      <h1 className="text-2xl font-bold text-n-900">Esta cita se eliminó</h1>
+      <p className="text-n-700">
+        {cita.servicio_nombre ?? "Servicio"}{perro?.nombre ? ` — ${perro.nombre}` : ""} · {formatearDiaDeInstante(cita.inicio, zona)} · {horaLocalDeInstante(cita.inicio, zona)}
+      </p>
+      <p className="text-n-700">
+        Se eliminó el {formatearFecha(eliminacion?.cuando ?? cita.deleted_at, zona)}
+        {eliminacion ? ` (${eliminacion.por_nombre})` : ""}
+        {eliminacion?.motivo ? `. Motivo: ${eliminacion.motivo}` : ""}
+      </p>
+      <p className="text-sm text-n-600">Ya no está en la agenda. Si la cuenta tenía cobros, siguen en la cuenta.</p>
+      {cuenta && puede(cuenta) && (
+        <Link href={cuenta} className="font-semibold text-morado hover:underline">
+          Abrir la cuenta →
+        </Link>
       )}
     </div>
   );
