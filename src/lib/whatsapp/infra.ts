@@ -506,7 +506,7 @@ export class ClienteWA implements SalidaWA {
    * `flow_action: data_exchange` hace que al abrirlo Meta pregunte al endpoint (así se sabe que lo abrió y se
    * prellenan sus datos). Un intento de red de más no abre nada dos veces: cada envío lleva su propio token.
    */
-  flow(a: string, f: { cuerpo: string; flowId: string; flowToken: string; cta: string; borrador?: boolean }) {
+  flow(a: string, f: { cuerpo: string; flowId: string; flowToken: string; cta: string; borrador?: boolean; pie?: string }) {
     return this.enviar({
       messaging_product: "whatsapp",
       recipient_type: "individual",
@@ -515,6 +515,7 @@ export class ClienteWA implements SalidaWA {
       interactive: {
         type: "flow",
         body: { text: f.cuerpo.slice(0, 1024) },
+        ...(f.pie ? { footer: { text: f.pie.slice(0, 60) } } : {}),
         action: {
           name: "flow",
           parameters: {
@@ -526,6 +527,22 @@ export class ClienteWA implements SalidaWA {
             ...(f.borrador ? { mode: "draft" } : {}),
           },
         },
+      },
+    });
+  }
+
+  /** Un mensaje con hasta 3 botones de respuesta (el giro del guion de ventas). El título de cada botón, hasta 20 letras. */
+  botones(a: string, cuerpo: string, botones: { id: string; titulo: string }[], pie?: string) {
+    return this.enviar({
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: a,
+      type: "interactive",
+      interactive: {
+        type: "button",
+        body: { text: cuerpo.slice(0, 1024) },
+        ...(pie ? { footer: { text: pie.slice(0, 60) } } : {}),
+        action: { buttons: botones.slice(0, 3).map((b) => ({ type: "reply", reply: { id: b.id.slice(0, 256), title: b.titulo.slice(0, 20) } })) },
       },
     });
   }
@@ -719,7 +736,7 @@ export class Anthropic implements IA {
    * documentación con cache_control (se cobra a 10 % mientras no cambie) y
    * después lo de cada persona.
    */
-  async responder(system: string | BloqueIA[], mensajes: BloqueIA[], tools: BloqueIA[], maxTokens = MAX_TOKENS_IA): Promise<RespuestaIA> {
+  async responder(system: string | BloqueIA[], mensajes: BloqueIA[], tools: BloqueIA[], maxTokens = MAX_TOKENS_IA, extra: Record<string, unknown> = {}): Promise<RespuestaIA> {
     if (!this.llave) throw new Error("falta ANTHROPIC_API_KEY");
     const r = await fetch(`${ANTHROPIC()}/v1/messages`, {
       method: "POST",
@@ -730,7 +747,7 @@ export class Anthropic implements IA {
         "anthropic-version": "2023-06-01",
         ...(this.workspace ? { "anthropic-workspace-id": this.workspace } : {}),
       },
-      body: JSON.stringify({ model: MODELO_IA, max_tokens: maxTokens, ...OPCIONES_IA, system, tools, messages: mensajes }),
+      body: JSON.stringify({ model: MODELO_IA, max_tokens: maxTokens, ...OPCIONES_IA, system, tools, messages: mensajes, ...extra }),
     });
     const cuerpo = (await r.json().catch(() => ({}))) as {
       content?: { type: string; text?: string; id?: string; name?: string; input?: Record<string, unknown> }[];
@@ -810,6 +827,9 @@ export function construirSoporte(): { deps: DepsSoporte; datos: DatosSupabase; w
     ligaPortal: ligaPortalDe,
     // Import diferido: el módulo del Flow usa este (ClienteWA, la configuración).
     ofrecerFlow: async (telefono, punto, cuerpo, prospecto) => (await import("./flow/servidor")).ofrecerFlow(telefono, punto, cuerpo, prospecto, wa),
+    // WHATSAPP_GUION_VENTAS=0 lo apaga (la auditoría whatsapp-bot.mjs prueba el asistente de antes con prospectos).
+    ventas: process.env.WHATSAPP_GUION_VENTAS === "0" ? undefined : async (e) =>
+      (await import("./ventas/servidor")).atenderVentas({ ...e, ia: deps.ia, wa, apuntar: (texto) => datos.apuntarMensaje(e.telefono, "agente", texto) }),
     alerta: (detalle, e) => console.error(`[whatsapp] ${detalle}`, e instanceof Error ? e.message : (e ?? "")),
   };
   return { deps, datos, wa };

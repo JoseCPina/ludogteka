@@ -10,6 +10,7 @@ import { consultaProspectos, leerFiltros, parametros, type Prospecto } from "@/l
 import { ETAPAS, GIROS, textoEtapa, textoGiro } from "@/lib/prospectos/textos";
 import { agregarProspecto, buscarAhora, guardarAjustes, sincronizarMetaAhora } from "./acciones";
 import { type FilaFlow, PanelFormularioWhatsApp } from "./formulario-whatsapp";
+import { EmbudoVentas, type FilaEmbudo } from "./embudo-ventas";
 
 export const maxDuration = 300;
 
@@ -44,7 +45,7 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
     supabase.from("prospeccion_corridas").select("id, origen, estado, busquedas, resultados, nuevos, duplicados, clientes, errores, webs_revisadas, detalle, error, inicio_at").is("deleted_at", null).order("inicio_at", { ascending: false }).limit(8),
     consultaProspectos(supabase, f).range((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA - 1),
   ]);
-  const [{ data: audMeta }, { data: corMeta }, { data: campMeta }, flowWa] = await Promise.all([
+  const [{ data: audMeta }, { data: corMeta }, { data: campMeta }, flowWa, embudo] = await Promise.all([
     // limite-filas-ok: son las 7 audiencias fijas que siembra la migración
     supabase.from("meta_audiencias").select("clave, tipo, nombre, audience_id, miembros, coincidencias_min, coincidencias_max, ultima_sync_at, ultimo_error").is("deleted_at", null).order("created_at").order("clave"),
     supabase.from("meta_audiencias_corridas").select("id, origen, estado, inicio_at, resumen, errores").is("deleted_at", null).order("inicio_at", { ascending: false }).limit(5),
@@ -52,6 +53,8 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
     supabase.from("meta_campanas").select("clave, tipo, nombre, meta_id, estado, ultimo_error, estado_meta, presupuesto_diario, gasto_7d, conversaciones_7d, costo_conversacion, activado_auto_at, datos").in("tipo", ["campana", "conjunto"]).is("deleted_at", null).order("tipo").order("clave"),
     // limite-filas-ok: agregado en la base (fuente × dónde se ofreció: menos de 30 filas)
     supabase.rpc("wa_flow_resumen", { p_desde: null }),
+    // limite-filas-ok: agregado en la base (giro × fuente: menos de 25 filas)
+    supabase.rpc("wa_ventas_embudo", { p_desde: null }),
   ]);
   const audiencias = (audMeta ?? []) as AudienciaMeta[];
   const corridasMeta = (corMeta ?? []) as CorridaMeta[];
@@ -100,6 +103,8 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
           </div>
         ))}
       </section>
+
+      <EmbudoVentas filas={(embudo.data ?? []) as FilaEmbudo[]} error={embudo.error?.message ?? null} />
 
       <PanelFormularioWhatsApp filas={(flowWa.data ?? []) as FilaFlow[]} error={flowWa.error?.message ?? null} />
 

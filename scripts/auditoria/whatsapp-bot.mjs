@@ -6,11 +6,12 @@
 //   WHATSAPP_GRAPH_URL=http://127.0.0.1:4456 TELEGRAM_API_URL=http://127.0.0.1:4456 \
 //   ANTHROPIC_API_URL=http://127.0.0.1:4456 WHATSAPP_TOKEN=wa-prueba \
 //   WHATSAPP_PHONE_NUMBER_ID=PHONE_PRUEBA WHATSAPP_APP_SECRET=secreto-app-prueba \
-//   TELEGRAM_BOT_TOKEN=tg-prueba ANTHROPIC_API_KEY=ia-prueba WHATSAPP_FLOW_ID= \
+//   TELEGRAM_BOT_TOKEN=tg-prueba ANTHROPIC_API_KEY=ia-prueba WHATSAPP_FLOW_ID= WHATSAPP_GUION_VENTAS=0 \
 //   npm run dev        (o npm run build + npm run start -- -p 3001)
 //
 //   WHATSAPP_FLOW_ID vacío: aquí se prueba el camino por texto (el formulario de prueba gratis
-//   lo prueba whatsapp-flow-dev.mjs).
+//   lo prueba whatsapp-flow-dev.mjs). WHATSAPP_GUION_VENTAS=0: los prospectos pasan por el asistente
+//   de siempre (el guion de ventas lo prueba whatsapp-ventas-dev.mjs).
 //
 //   node scripts/auditoria/whatsapp-bot.mjs
 //

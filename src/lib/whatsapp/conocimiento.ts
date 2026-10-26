@@ -90,7 +90,7 @@ Hay un negocio de ejemplo, Patitas & Co., con dos meses de movimiento inventado.
 - Hoy incluye: ficha clínica de la mascota (especie perro, gato u otro; esterilización; peso con historial por fecha; alergias; microchip; folio de registro como el RUAC; notas clínicas), inventario clínico con lotes y caducidades, médicos veterinarios con cédula, CPA del SITPV y folios, y los datos del establecimiento (aviso de funcionamiento ante SENASICA, MVRA y permisos con fecha de vencimiento y recordatorio).
 - Cada producto clínico tiene dos clasificaciones independientes y editables: grupo SENASICA (I, II, III o ninguno) y Ley General de Salud (estupefaciente art. 234, psicotrópico fracción II, III o IV del art. 245, o ninguna), más la marca antimicrobiano. Hay un catálogo de principios activos precargado que PeluDesk mantiene; lo marcado «por confirmar» hay que confirmarlo con el médico responsable.
 - Los productos del Grupo I o de la Ley General de Salud llevan un campo de folio de receta: por ahora solo avisa si falta; más adelante será obligatorio.
-- NO existe todavía: las recetas (el carnet, los certificados, la hospitalización, la agenda clínica, el expediente por consulta y los estimados sí existen: ver más abajo). Si alguien lo pide, se dice que viene en las siguientes fases y se escala; no se promete fecha.
+- El carnet, los certificados, la hospitalización, la agenda clínica, el expediente por consulta, los estimados y las recetas existen (ver más abajo).
 - Nuevos permisos que el admin le da a recepción: Administrar módulos, Editar ficha clínica y Administrar lotes e inventario clínico.
 
 # Veterinaria, Fase 1: carnet, certificados, hospitalización y consentimientos
@@ -329,6 +329,7 @@ Cómo contesta este WhatsApp (21 de octubre de 2026):
 - Después de 24 horas sin mensajes empieza una conversación nueva: un saludo («Hola», «Buenas tardes») se contesta con un saludo y un menú (1. Probar gratis 15 días, 2. Precio, 3. Tengo una duda) con el botón «Probar gratis», que abre el formulario de la prueba dentro de WhatsApp. El mismo botón llega al escoger la 1, al preguntar el precio o por la prueba, y en la primera respuesta a quien llega desde su página o desde un anuncio. Si el formulario no se abre, el link de registro también sirve.
 - El precio, el plan anual, las sucursales, la prueba gratis y la factura se contestan siempre con el mismo texto: un solo plan con todo incluido, por negocio, al mes o al año (dos meses gratis), sucursal adicional aparte, 15 días gratis sin tarjeta y factura (CFDI) de Menteo, S.A.S. Las cifras salen de los planes vigentes; un precio de una conversación anterior ya no vale.
 - Quien es cliente (dueño de mascota) de un negocio que usa PeluDesk y escribe preguntando por PeluDesk se atiende como prospecto.
+- A quien todavía no tiene negocio en PeluDesk lo atiende un guion fijo de ventas: qué es PeluDesk y de qué es su negocio (Estética, Hotel o guardería, Veterinaria); según su giro, qué resuelve y una pregunta (cuántas citas a la semana, cuántos perros en temporada alta, o si lleva el expediente en papel o en un sistema); un dato para su tamaño y el botón «Probar gratis». Las dudas de precio, de otro sistema o Excel, de tiempo y «lo pienso» tienen respuesta fija y terminan en el botón; «lo pienso» lleva la demo de su giro y un recordatorio a los dos días. Si pide hablar con una persona, tiene varias sucursales o pregunta dos veces seguidas algo que no está aquí, lo atiende alguien del equipo.
 
 QA S21 (21 de octubre de 2026):
 - En «Cargos de esta consulta» el cargo de una vacuna no tiene «Quitar»: dice «Se quita desde la consulta» y lleva a «Vacunas y desparasitación», donde «Quitar» la anula en el carnet y quita su cargo en un paso (también si se registró desde el carnet ese día; eso pide «Registrar vacunas»).
@@ -354,3 +355,26 @@ QA S22 (21 de octubre de 2026):
 - Portal: en la ficha de cada perro, el veterinario de cabecera, la autorización médica, el tope de gasto y las notas de alimentación solo salen si el negocio tiene hotel, guardería o Veterinaria.
 - En Caja, «Cancelar cuenta» es un enlace de texto junto a la cuenta.
 `.trim();
+
+/**
+ * Respuestas FIJAS a preguntas de funciones para el guion de ventas del bot (src/lib/whatsapp/ventas/): cada una dice
+ * lo mismo que CONOCIMIENTO, en corto. El bot las manda tal cual; la IA solo escoge la clave. Factura, soporte,
+ * cancelación, migración, plan anual, cobro, SMS y terminal salen de src/lib/peludesk/respuestas-fijas.ts.
+ * Si una función cambia, se cambia aquí y en CONOCIMIENTO.
+ */
+export const RESPUESTAS_FUNCIONES: Record<string, string> = {
+  agenda: "La agenda de estética tiene una columna por estilista y no deja encimar citas. La confirmación, el recordatorio y el «listo para recoger» salen por WhatsApp con un toque, con el mensaje ya escrito.",
+  recordatorios: "Van incluidos, sin costo por mensaje. La confirmación y el recordatorio de cita salen desde el WhatsApp de tu negocio con un toque, con el mensaje ya escrito; el de la próxima vacuna (Veterinaria) puede salir solo.",
+  contratos: "Contratos con tus propias plantillas: el dueño firma con el dedo desde su celular, y también puedes subir contratos en papel. Son para guardería y hotel.",
+  reporte: "Reporte del día de guardería: llenas un formulario con botones por cada perro y la app arma una tarjeta con la marca de tu negocio, que le mandas al dueño por WhatsApp como liga.",
+  fotos: "En guardería y hotel tomas fotos y videos de los perros desde «Adentro ahora» y se los mandas al dueño por WhatsApp como liga a una galería.",
+  portal: "Tus clientes entran a su portal desde el navegador del celular: ven sus citas, vacunas, fotos del día, pases y contratos, y firman. Nunca ven tus precios internos ni a otros clientes.",
+  pagina: "Tu página web viene incluida, sin costo aparte: servicios, precios, fotos, horario y WhatsApp, y se arma sola con el perfil de tu negocio.",
+  inventario: "Inventario de insumos y productos: al terminar una cita de estética se descuenta lo que se usó, y lo que vendes en Caja también.",
+  empleados: "Empleados: asistencia, retardos, ausencias y vacaciones, comisiones de estética, propinas, adelantos y nómina.",
+  caja: "En Caja van noches, guardería, baño y extras en una sola cuenta. Cobras en efectivo, transferencia o tarjeta, das cambio y en la noche cuadras la caja: turno, retiros y arqueo.",
+  expediente: "Cada mascota tiene su expediente: foto, vacunas, alertas de manejo, medicamentos y bitácora del día con fotos. Con Veterinaria, además, la ficha clínica: peso, alergias, microchip y notas.",
+  carnet: "Carnet de vacunas y desparasitaciones con lote y próxima dosis. El dueño lo ve en su portal y el recordatorio de la próxima dosis puede salir solo.",
+  recetas: "Las recetas las emite el médico veterinario con su cédula, desde Veterinaria, y el dueño las ve en su portal. Las del Grupo I se emiten en el SITPV y aquí se registra su folio.",
+  app: "Se usa desde el navegador: en la computadora del mostrador, en una tableta o en el celular. No hay que instalar nada.",
+};

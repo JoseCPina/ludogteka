@@ -91,6 +91,8 @@ const servidor = spawn(process.execPath, ["node_modules/next/dist/bin/next", "st
     TELEGRAM_BOT_TOKEN: TG_TOKEN,
     ANTHROPIC_API_KEY: "ia-prueba",
     WHATSAPP_FLOW_ID: FLOW_ID,
+    // El menú y las respuestas fijas de antes (el guion de ventas lo prueba whatsapp-ventas-dev.mjs).
+    WHATSAPP_GUION_VENTAS: "0",
     WHATSAPP_FLOW_PRIVATE_KEY: PRIVADA,
     CRON_SECRET: CRON,
     PELUDESK_URL_DESARROLLO: `http://{slug}.localhost:${PUERTO}`,
