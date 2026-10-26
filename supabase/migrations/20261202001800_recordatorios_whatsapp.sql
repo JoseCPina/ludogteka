@@ -261,11 +261,8 @@ revoke all on public.wa_recordatorios_cobro from anon, authenticated;
 grant select on public.wa_recordatorios_cobro to authenticated;
 
 -- ── Ajustes: leer y guardar ────────────────────────────────────────────────────────────────────────────────────────
--- El vacuna arranca como estaba el envío automático de Veterinaria (que este sistema reemplaza).
-insert into public.recordatorios_ajustes (negocio_id, vacuna)
-select a.negocio_id, true from public.veterinaria_ajustes a
-where a.deleted_at is null and a.recordatorios_activos
-on conflict do nothing;
+-- Todo arranca apagado: cada negocio prende lo suyo (también quien tenía el envío automático de dosis de
+-- Veterinaria, que este sistema reemplaza).
 
 create or replace function public.guardar_recordatorios_ajustes(
   p_estetica boolean, p_veterinaria boolean, p_llegada boolean, p_listo boolean, p_vacuna boolean, p_hora time)
