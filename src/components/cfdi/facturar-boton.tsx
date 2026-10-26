@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { SiPuedeAbrir } from "@/components/acceso-contexto";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
@@ -38,10 +39,13 @@ export function FacturarBoton({
   if (yaFacturado) {
     return (
       <span className="text-sm text-n-700">
-        Ya está en la {yaFacturado.etiqueta} ·{" "}
-        <Link href="/caja/facturas" className="font-semibold text-morado hover:underline">
-          Ver facturas
-        </Link>
+        Ya está en la {yaFacturado.etiqueta}
+        <SiPuedeAbrir href="/caja/facturas">
+          {" · "}
+          <Link href="/caja/facturas" className="font-semibold text-morado hover:underline">
+            Ver facturas
+          </Link>
+        </SiPuedeAbrir>
       </span>
     );
   }
@@ -62,9 +66,11 @@ export function FacturarBoton({
   if (exito) {
     return (
       <AccionesFormulario exito={exito}>
-        <Link href="/caja/facturas" className="text-sm font-semibold text-morado hover:underline">
-          Ver facturas
-        </Link>
+        <SiPuedeAbrir href="/caja/facturas">
+          <Link href="/caja/facturas" className="text-sm font-semibold text-morado hover:underline">
+            Ver facturas
+          </Link>
+        </SiPuedeAbrir>
       </AccionesFormulario>
     );
   }

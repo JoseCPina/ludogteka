@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import type { ServicioOfrecible } from "@/lib/servicios/ofrecibles";
+import { EnlaceOTexto } from "@/components/acceso-contexto";
 
 // Las <option> de un selector de servicios: el que no se puede cobrar se
 // ve, pero no se puede elegir, y dice por qué. Va junto con
@@ -30,9 +30,9 @@ export function AvisoServiciosSinPrecio({ servicios }: { servicios: ServicioOfre
       {sinPrecio.map((s, i) => (
         <span key={s.id}>
           {i > 0 && ", "}
-          <Link href={`/servicios/${s.id}/tarifas`} className="font-semibold underline">
+          <EnlaceOTexto href={`/servicios/${s.id}/tarifas`} className="font-semibold underline">
             {s.nombre}
-          </Link>
+          </EnlaceOTexto>
         </span>
       ))}
       .

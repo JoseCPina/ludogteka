@@ -18,6 +18,7 @@ import {
   obtenerUrlContratoStaff,
 } from "../contratos/contrato-actions";
 import { useZonaNegocio } from "@/components/zona-negocio";
+import { SiPuedeAbrir } from "@/components/acceso-contexto";
 
 const BUCKET = "perros-archivos";
 
@@ -385,9 +386,11 @@ export function ContratoSeccion({
                   {c.regenerarMotivo && (
                     <p className="mt-1 text-xs font-semibold text-coral-oscuro">
                       {c.regenerarMotivo}{" "}
-                      <a href="/recepcion/contratos" className="underline">
-                        Volver a generarlo
-                      </a>
+                      <SiPuedeAbrir href="/recepcion/contratos">
+                        <a href="/recepcion/contratos" className="underline">
+                          Volver a generarlo
+                        </a>
+                      </SiPuedeAbrir>
                     </p>
                   )}
                 </div>

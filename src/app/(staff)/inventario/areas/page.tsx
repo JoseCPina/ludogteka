@@ -1,3 +1,4 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -9,7 +10,7 @@ import { leerTodo } from "@/lib/supabase/paginar";
 // Áreas del inventario: solo admin las edita (la base también lo aplica).
 export default async function AreasPage() {
   const sesion = await obtenerSesionConRol();
-  if (sesion?.rol !== "admin") redirect("/inventario");
+  if (!puedeAbrir(accesoDeSesion(sesion), "/inventario/areas")) redirect("/inventario");
   const supabase = await createSupabaseServerClient();
   const [areas, { data: insumos }, { data: equipos }] = await Promise.all([
     cargarAreas(supabase),

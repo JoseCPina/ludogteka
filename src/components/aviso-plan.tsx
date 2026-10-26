@@ -145,9 +145,11 @@ export async function AvisoPlan({ esPersonal }: { esPersonal: boolean }) {
       <div role="status" className="bg-morado-suave px-4 py-1.5 text-center text-sm text-morado md:px-6">
         Prueba gratis de PeluDesk: {dias === 0 ? "termina hoy" : `te quedan ${dias} ${dias === 1 ? "día" : "días"}`} (hasta el{" "}
         {formatearFecha(fin.toISOString(), zona)}).{" "}
-        <a href="/bienvenida" className="font-semibold underline underline-offset-2">
-          Primeros pasos
-        </a>
+        {esAdmin && (
+          <a href="/bienvenida" className="font-semibold underline underline-offset-2">
+            Primeros pasos
+          </a>
+        )}
         {esAdmin && (
           <>
             {" · "}

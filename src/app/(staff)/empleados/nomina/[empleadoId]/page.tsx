@@ -1,8 +1,8 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
-import { tienePermiso } from "@/lib/auth/permisos";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -27,7 +27,7 @@ export default async function NominaEmpleadoPage({
 }) {
   const zona = await zonaActual();
   const sesion = await obtenerSesionConRol();
-  if (!tienePermiso(sesion, "nomina")) redirect("/empleados");
+  if (!puedeAbrir(accesoDeSesion(sesion), "/empleados/nomina")) redirect("/empleados");
   const { empleadoId } = await params;
   const sp = await searchParams;
   const supabase = await createSupabaseServerClient();

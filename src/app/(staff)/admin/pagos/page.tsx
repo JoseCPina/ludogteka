@@ -1,3 +1,4 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -18,7 +19,7 @@ import { OtrosPagos } from "./otros-pagos";
 // cuenta, por OAuth), Clip (sus credenciales) o solo manual. Solo admin.
 export default async function PagosPage({ searchParams }: { searchParams: Promise<{ mp?: string; mp_error?: string }> }) {
   const sesion = await obtenerSesionConRol();
-  if (sesion?.rol !== "admin") redirect("/admin");
+  if (!puedeAbrir(accesoDeSesion(sesion), "/admin/pagos")) redirect("/admin");
   const { mp, mp_error } = await searchParams;
   const negocio = await negocioActual();
   const zona = await zonaActual();

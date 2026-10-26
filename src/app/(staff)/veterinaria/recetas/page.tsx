@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SiPuedeAbrir } from "@/components/acceso-contexto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
 import { Alert } from "@/components/ui/alert";
@@ -28,7 +29,9 @@ export default async function Recetas({ searchParams }: { searchParams: Promise<
           <p className="mt-1 max-w-3xl text-n-600">Recetas simples con original y copias, a nombre del médico veterinario que las firma con su cédula. No se editan: si algo está mal, se anulan con motivo y se emite otra.</p>
         </div>
         {puede && (
-          <Link href="/veterinaria/recetas/nueva"><Button type="button">Nueva receta</Button></Link>
+          <SiPuedeAbrir href="/veterinaria/recetas/nueva">
+            <Link href="/veterinaria/recetas/nueva"><Button type="button">Nueva receta</Button></Link>
+          </SiPuedeAbrir>
         )}
       </div>
       <NavRecetas activa="recetas" />

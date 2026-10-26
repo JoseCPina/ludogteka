@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { usePuedeAbrir } from "@/components/acceso-contexto";
 import { usePathname, useRouter } from "next/navigation";
 import { BotonNuevoCliente } from "@/components/boton-nuevo-cliente";
 import type { TipoLinkAlta } from "@/lib/alta/tipos-link";
@@ -69,6 +70,7 @@ export function BuscadorClientes({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const puede = usePuedeAbrir();
   const hrefDe = hrefDeProp ?? (rutaAlElegir ? (c: ClienteBuscable) => `${rutaAlElegir}?cliente=${c.id}` : undefined);
   const [busqueda, setBusqueda] = useState("");
 
@@ -126,7 +128,7 @@ export function BuscadorClientes({
           {visibles.length === 0 ? (
             <p className="p-6 text-center text-n-600">
               {vacio}
-              {nuevoCliente && hayBusqueda && " Si es nuevo, dalo de alta con «Nuevo cliente»."}
+              {nuevoCliente && hayBusqueda && puede("/clientes/nuevo") && " Si es nuevo, dalo de alta con «Nuevo cliente»."}
             </p>
           ) : (
             <ul

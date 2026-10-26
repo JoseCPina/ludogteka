@@ -12,6 +12,7 @@ import { SelectorRaza, type RazaOpcion } from "@/components/selector-raza";
 import { camposPorCapturar, type PendienteEstancia } from "@/lib/perros/pendientes-estancia";
 import { completarParaEstancia, type EstadoPerroForm } from "./actions";
 import type { CategoriaOpcion } from "./perro-form";
+import { usePuedeAbrir } from "@/components/acceso-contexto";
 
 export type CatalogosPerro = { razas: RazaOpcion[]; tamanos: CategoriaOpcion[]; pelajes: CategoriaOpcion[] };
 
@@ -51,6 +52,7 @@ export function PendientesEstancia({
   puedeEscribir: boolean;
 }) {
   const [capturando, setCapturando] = useState(false);
+  const puede = usePuedeAbrir();
   const base = enSuExpediente ? "" : `/perros/${perroId}`;
 
   if (pendientes.length === 0) {
@@ -148,7 +150,7 @@ export function PendientesEstancia({
               Capturar ahora
             </Button>
           )}
-          {clienteId && (
+          {clienteId && puede(`/clientes/${clienteId}`) && (
             <Link href={`/clientes/${clienteId}#link-complemento`}>
               <Button type="button" variante="secundario">
                 Mandarle un link

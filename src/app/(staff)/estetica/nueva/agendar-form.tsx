@@ -23,6 +23,7 @@ import { useZonaNegocio } from "@/components/zona-negocio";
 import { AvisoFueraDeHorario } from "@/components/aviso-fuera-de-horario";
 import type { HorarioSemana } from "@/lib/estetica/aviso-horario";
 import { cerrarFrase } from "@/lib/texto/frases";
+import { usePuedeAbrir } from "@/components/acceso-contexto";
 
 type Perro = {
   id: string;
@@ -111,6 +112,7 @@ export function AgendarForm({
 }) {
   const zona = useZonaNegocio();
   const router = useRouter();
+  const puede = usePuedeAbrir();
   const [clienteId, setClienteId] = useState<string | null>(null);
   // Varios perritos del mismo dueño en una visita: cada uno con su cita y su cuenta.
   const [agendadas, setAgendadas] = useState<{ citaId: string; reservaId: string; perroNombre: string; servicio: string; precio: number; tarifa: boolean }[]>([]);
@@ -581,7 +583,7 @@ export function AgendarForm({
             <Button type="button" variante="secundario" data-agregar-otro-perrito onClick={() => { setPerroId(""); setNuevoPerro(false); }}>
               Agregar otro perrito de {clienteElegido.nombre}
             </Button>
-            {agendadas.length > 1 && (
+            {agendadas.length > 1 && puede("/caja/cobrar-junto") && (
               <Link
                 href={`/caja/cobrar-junto?cuentas=${agendadas.map((a) => a.reservaId).join(",")}`}
                 data-cobrar-juntas
@@ -740,9 +742,13 @@ export function AgendarForm({
             <Alert variante="advertencia" titulo="No hay nadie que pueda quedar como responsable de la cita">
               No hay ninguna cuenta con rol de estética (ni de admin) dada de alta. La cita necesita un responsable, así
               que no se puede agendar todavía.{" "}
-              <Link href="/admin" className="font-semibold underline">
-                Invita al personal de estética desde el panel de admin →
-              </Link>
+              {puede("/admin") ? (
+                <Link href="/admin" className="font-semibold underline">
+                  Invita al personal de estética desde el panel de admin →
+                </Link>
+              ) : (
+                "Pídele a un admin que invite al personal de estética."
+              )}
             </Alert>
           )}
 

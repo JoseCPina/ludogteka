@@ -1,8 +1,8 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
-import { tienePermiso } from "@/lib/auth/permisos";
 import { hoyNegocio } from "@/lib/formato";
 import { FormularioAccion } from "@/components/formulario-accion";
 import { CamposEmpleado, type CuentaLigable } from "../campos-empleado";
@@ -12,7 +12,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 export default async function NuevoEmpleadoPage() {
   const zona = await zonaActual();
   const sesion = await obtenerSesionConRol();
-  if (!tienePermiso(sesion, "nomina")) redirect("/empleados");
+  if (!puedeAbrir(accesoDeSesion(sesion), "/empleados/nuevo")) redirect("/empleados");
   const supabase = await createSupabaseServerClient();
   const { data: cuentas } = await supabase.rpc("cuentas_para_empleado");
 

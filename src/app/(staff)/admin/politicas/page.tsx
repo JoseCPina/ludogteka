@@ -1,7 +1,7 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
-import { tienePermiso } from "@/lib/auth/permisos";
 import { negocioActual } from "@/lib/negocio/actual";
 import { cargarTextosPoliticas } from "@/lib/politicas/cargar";
 import { PoliticasForm } from "./politicas-form";
@@ -11,7 +11,7 @@ import { PoliticasForm } from "./politicas-form";
 // requisitos y el horario, de Administración: aquí va lo que se redacta.
 export default async function PoliticasPage() {
   const sesion = await obtenerSesionConRol();
-  if (!tienePermiso(sesion, "configuracion_negocio")) redirect("/admin");
+  if (!puedeAbrir(accesoDeSesion(sesion), "/admin/politicas")) redirect("/admin");
   const supabase = await createSupabaseServerClient();
   const negocio = await negocioActual();
   const [textos, { data: filaPoliticas }] = await Promise.all([

@@ -9,6 +9,7 @@ import { desdeCuando, diasDesde, esMuyViejo, haceCuanto } from "@/lib/antiguedad
 import { cargarSaldosDeSalidas } from "@/lib/tablero/saldos-de-salidas";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import { usaEstancias } from "@/lib/plan/modulos";
 import { SelectorEstilista } from "./estetica/selector-estilista";
 import { textoDeCitaEnAusencia, type CitaEnAusencia } from "@/lib/estetica/ausencias";
@@ -929,14 +930,17 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     </div>
   );
 
+  // QA N127: lo que lleva a una pantalla que esta persona no abre no se lista (no podría resolverlo desde ahí).
+  const acceso = accesoDeSesion(sesion);
+  const atencionVisible = atencion.filter((a) => puedeAbrir(acceso, a.href));
   const listaAtencion = (
     <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
       <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Necesita atención</h2>
-      {atencion.length === 0 ? (
+      {atencionVisible.length === 0 ? (
         <p className="text-sm text-menta-oscuro">Nada pendiente por ahora.</p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {atencion.map((a) => {
+          {atencionVisible.map((a) => {
             const viejo = a.dias !== undefined && esMuyViejo(a.dias);
             return (
               <li key={a.clave}>

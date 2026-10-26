@@ -1,7 +1,7 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
-import { tienePermiso } from "@/lib/auth/permisos";
 import { formatearFecha } from "@/lib/formato";
 import { Alert } from "@/components/ui/alert";
 import { ListaModulos, type FilaModulo } from "./lista-modulos";
@@ -18,7 +18,7 @@ import { Sucursales, type GrupoSucursales } from "./sucursales";
 export default async function ModulosPage({ searchParams }: { searchParams: Promise<{ apagado?: string; pago?: string }> }) {
   const sesion = await obtenerSesionConRol();
   // Admin, o recepción con «Administrar módulos» (que no ve el cobro del plan).
-  if (!tienePermiso(sesion, "administrar_modulos")) redirect("/admin");
+  if (!puedeAbrir(accesoDeSesion(sesion), "/admin/modulos")) redirect("/admin");
   const esAdmin = sesion?.rol === "admin";
   const { apagado, pago } = await searchParams;
   const supabase = await createSupabaseServerClient();

@@ -1,3 +1,4 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -11,7 +12,7 @@ import { EditorPlantilla } from "./editor-plantilla";
 // que viven las fotos, los videos y las ligas. Solo admin.
 export default async function ReporteGuarderiaAdminPage() {
   const sesion = await obtenerSesionConRol();
-  if (sesion?.rol !== "admin") redirect("/admin");
+  if (!sesion || !puedeAbrir(accesoDeSesion(sesion), "/admin/reporte-guarderia")) redirect("/admin");
   const supabase = await createSupabaseServerClient();
   const conReporte = sesion.modulos.includes("guarderia");
   const [plantilla, negocio] = await Promise.all([

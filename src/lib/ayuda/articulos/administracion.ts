@@ -341,7 +341,7 @@ El total del pie es el de la tarjeta, al centavo. Si buscas algo, ves también e
     roles: ["admin", "recepcion"],
     rutas: [],
     palabras: ["personal", "usuarios", "cuenta", "recepcionista", "estilista", "dar acceso", "agregar persona"],
-    cuerpo: `Cada persona de tu equipo entra con su propia cuenta: así cada quien ve lo que le toca y todo queda con su nombre. Invita admin o quien tenga el permiso «Personal».
+    cuerpo: `Cada persona de tu equipo entra con su propia cuenta: así cada quien ve lo que le toca y todo queda con su nombre. Estética ve su agenda, agenda sus propias citas a clientes que ya existen, la ficha de los perros, el inventario y su asistencia; no da de alta clientes ni ve Caja, así que esos botones no le aparecen. Invita admin o quien tenga el permiso «Personal».
 
 1. Entra a [Administración](/admin) y baja a **Invitar personal**.
 2. Escribe su **Nombre completo** (es obligatorio: así sale en la agenda, en los selectores y en los historiales, en vez de su correo), su **Correo** y escoge el **Rol**: Recepción o Estética.
@@ -393,6 +393,8 @@ Cada casilla dice qué incluye. Por ejemplo:
 - **Registrar tarjeta manual**: cobrar con **Tarjeta (registro manual)** cuando la terminal no se puede usar. Viene prendido para toda la recepción; quítaselo a quien no deba. Esos cobros los revisas tú en [Conciliación](/caja/conciliacion).
 
 Todo cambio queda en la **Bitácora** de abajo.
+
+Cada persona ve solo los botones, enlaces y tarjetas de lo que puede abrir: si no tiene el permiso de una pantalla, el botón que lleva ahí no aparece (por ejemplo, «Calcular y pagar un periodo» sin **Nómina**). Al darle el permiso, el botón aparece la próxima vez que abra la pantalla.
 
 > Dar o quitar permisos, crear admins, el tope de descuentos y las devoluciones siguen siendo solo tuyos.
 

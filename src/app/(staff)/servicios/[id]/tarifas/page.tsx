@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { SiPuedeAbrir } from "@/components/acceso-contexto";
 import { ComoSeCobra } from "./como-se-cobra";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { MatrizTarifas } from "../../matriz-tarifas";
@@ -107,9 +108,11 @@ export default async function TarifasServicioPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href={`/servicios/${id}`} className="text-sm font-semibold text-morado hover:underline">
-          ← {servicio.nombre}
-        </Link>
+        <SiPuedeAbrir href={`/servicios/${id}`} sino={<Link href="/servicios" className="text-sm font-semibold text-morado hover:underline">← Servicios</Link>}>
+          <Link href={`/servicios/${id}`} className="text-sm font-semibold text-morado hover:underline">
+            ← {servicio.nombre}
+          </Link>
+        </SiPuedeAbrir>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Tarifas — {servicio.nombre}</h1>
         <p className="mt-1 text-n-600">
           Solo se guardan las celdas que cambien. Nunca se sobreescribe un precio anterior.

@@ -1,3 +1,4 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -10,7 +11,7 @@ import { crearCategoria, editarCategoria, quitarCategoria } from "../gastos-acti
 // no toca los gastos que ya la usan.
 export default async function CategoriasGastoPage() {
   const sesion = await obtenerSesionConRol();
-  if (sesion?.rol !== "admin") redirect("/gastos");
+  if (!puedeAbrir(accesoDeSesion(sesion), "/gastos/categorias")) redirect("/gastos");
   const supabase = await createSupabaseServerClient();
   const { data: categorias } = await supabase.from("categorias_gasto").select("id, clave, nombre, descripcion").is("deleted_at", null).order("orden");
 

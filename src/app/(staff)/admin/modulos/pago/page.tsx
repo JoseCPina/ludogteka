@@ -1,3 +1,4 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -12,7 +13,7 @@ import { Alert } from "@/components/ui/alert";
 // esto solo evita esperarlo).
 export default async function RegresoDelPago({ searchParams }: { searchParams: Promise<{ sesion?: string }> }) {
   const sesion = await obtenerSesionConRol();
-  if (sesion?.rol !== "admin") redirect("/admin");
+  if (!puedeAbrir(accesoDeSesion(sesion), "/admin/modulos/pago")) redirect("/admin");
   const { sesion: idSesion } = await searchParams;
   const negocio = await negocioActual();
   let problema: string | null = null;

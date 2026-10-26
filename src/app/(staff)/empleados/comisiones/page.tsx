@@ -1,7 +1,7 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
-import { tienePermiso } from "@/lib/auth/permisos";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { moneda } from "@/lib/empleados/textos";
@@ -14,7 +14,7 @@ import { guardarComision, quitarComision } from "../nomina-actions";
 // si no la de todos, y si no la comisión por omisión de su esquema.
 export default async function ComisionesPage() {
   const sesion = await obtenerSesionConRol();
-  if (!tienePermiso(sesion, "nomina")) redirect("/empleados");
+  if (!puedeAbrir(accesoDeSesion(sesion), "/empleados/comisiones")) redirect("/empleados");
   const supabase = await createSupabaseServerClient();
   const [{ data: servicios }, { data: reglas }, { data: empleados }, { count: porAprobar }] = await Promise.all([
     supabase.from("servicios_cotizables").select("id, nombre").eq("categoria", "estetica").order("orden"),

@@ -12,6 +12,7 @@ import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { dinero as formatearMoneda } from "@/lib/dinero";
 import { ETIQUETA_TIPO_CARGO, pareceVacuna, type CargosConsulta, type LineaCargo } from "@/lib/veterinaria/cargos-consulta";
 import { agregarCargoConsulta, ajustarCargoConsulta, pasarCargosACaja, ponerPrecioCargo, quitarCargoConsulta, restaurarCargoConsulta, sinCobroCargo, type ResultadoCargos } from "./cargos-actions";
+import { EnlaceOTexto } from "@/components/acceso-contexto";
 
 // Una línea sin precio de un servicio del catálogo es, por definición, un servicio al que el catálogo no le
 // pone precio: quien puede editar precios la guarda como precio de catálogo (viene marcada, se puede desmarcar).
@@ -184,7 +185,7 @@ export function CargosConsulta({
                     borrador ? (
                       <span className="text-sm font-semibold text-coral-oscuro">Sin precio</span>
                     ) : (
-                      <Link href="/servicios" className="text-sm font-semibold text-coral-oscuro hover:underline">Sin precio: captúralo</Link>
+                      <EnlaceOTexto href="/servicios" className="text-sm font-semibold text-coral-oscuro hover:underline">Sin precio: captúralo</EnlaceOTexto>
                     )
                   ) : l.importe != null ? (
                     <span className={`font-semibold ${l.estado === "quitado" || l.estado === "cubierto" ? "text-n-400 line-through" : "text-n-900"}`}>{formatearMoneda(l.importe)}</span>
@@ -270,7 +271,7 @@ export function CargosConsulta({
 
       {pendientesSinPrecio > 0 && borrador && (
         <Alert variante="advertencia" titulo={`${pendientesSinPrecio} ${pendientesSinPrecio === 1 ? "cargo sin precio" : "cargos sin precio"}: no se puede firmar todavía`}>
-          Pon el precio aquí mismo con «Poner el precio» (puedes dejarlo como precio de catálogo si tienes «Precios y tarifas») o márcalo «Sin cobro» con su motivo si es cortesía o un seguimiento incluido. También lo puedes capturar en <Link href="/servicios" className="font-semibold text-morado hover:underline">Servicios y precios</Link>.
+          Pon el precio aquí mismo con «Poner el precio» (puedes dejarlo como precio de catálogo si tienes «Precios y tarifas») o márcalo «Sin cobro» con su motivo si es cortesía o un seguimiento incluido. También lo puedes capturar en <EnlaceOTexto href="/servicios" className="font-semibold text-morado hover:underline">Servicios y precios</EnlaceOTexto>.
         </Alert>
       )}
       {!borrador && pendientesSinPrecio > 0 && (
@@ -308,7 +309,7 @@ export function CargosConsulta({
             </Select>
             {nuevoTipo === "catalogo" && d.catalogo.length === 0 && (
               <p data-sin-catalogo className="rounded-md border-l-4 border-ambar bg-ambar-suave px-3 py-2 text-sm text-n-800">
-                No hay servicios cargados. Dalos de alta en <Link href="/servicios" className="font-semibold text-morado hover:underline">Servicios</Link> o escribe el procedimiento en «Otro procedimiento».
+                No hay servicios cargados. Dalos de alta en <EnlaceOTexto href="/servicios" className="font-semibold text-morado hover:underline">Servicios</EnlaceOTexto> o escribe el procedimiento en «Otro procedimiento».
               </p>
             )}
             {nuevoTipo === "catalogo" && d.catalogo.length > 0 && (

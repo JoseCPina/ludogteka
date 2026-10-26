@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SiPuedeAbrir } from "@/components/acceso-contexto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
@@ -15,10 +16,13 @@ function Tarjeta({ href, titulo, children }: { href?: string; titulo: string; ch
     </>
   );
   const base = "rounded-lg border border-n-200 bg-white p-5";
+  // Una tarjeta que lleva a una pantalla que esta persona no abre no se muestra (QA N127).
   return href ? (
-    <Link href={href} className={`${base} hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave`}>
-      {cuerpo}
-    </Link>
+    <SiPuedeAbrir href={href}>
+      <Link href={href} className={`${base} hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave`}>
+        {cuerpo}
+      </Link>
+    </SiPuedeAbrir>
   ) : (
     <div className={`${base} border-dashed bg-n-50`}>{cuerpo}</div>
   );

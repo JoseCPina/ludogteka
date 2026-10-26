@@ -1,3 +1,4 @@
+import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -23,7 +24,7 @@ const ESTADO: Record<string, { texto: string; tono: TonoChip }> = {
 // «Importar clientes y mascotas» (admin lo tiene siempre).
 export default async function ImportarPage() {
   const sesion = await obtenerSesionConRol();
-  if (!tienePermiso(sesion, "importar_datos")) redirect("/admin");
+  if (!puedeAbrir(accesoDeSesion(sesion), "/admin/importar")) redirect("/admin");
   const conClinicos = usaVeterinaria(sesion?.modulos ?? []) && tienePermiso(sesion, "editar_ficha_clinica");
   const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();

@@ -7,6 +7,8 @@ import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { LogoNegocio } from "@/components/marca/logo-negocio";
 import { AvisoPlan } from "@/components/aviso-plan";
 import { ProveedorModulos } from "@/components/modulos-contexto";
+import { ProveedorAcceso } from "@/components/acceso-contexto";
+import { accesoDeSesion } from "@/lib/auth/acceso";
 import { articulosDelNegocio } from "@/lib/ayuda";
 import { AvisoTickets } from "@/components/ayuda/aviso-tickets";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -66,7 +68,9 @@ export default async function StaffLayout({ children }: { children: React.ReactN
       {!sesion.nombreCompleto && ["admin", "recepcion", "estetica"].includes(sesion.rol) ? (
         <PedirNombre />
       ) : (
-        <ProveedorModulos modulos={sesion.modulos}>{children}</ProveedorModulos>
+        <ProveedorModulos modulos={sesion.modulos}>
+          <ProveedorAcceso acceso={accesoDeSesion(sesion)!}>{children}</ProveedorAcceso>
+        </ProveedorModulos>
       )}
     </StaffShell>
   );
