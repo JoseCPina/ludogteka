@@ -50,7 +50,7 @@ if (paso === "preparar") {
   if (citaId) {
     const { data: cita } = await C.from("vet_citas").select("estado").eq("id", citaId).single();
     if (cita && ["programada", "confirmada"].includes(cita.estado)) {
-      const r = await P.rpc("vet_cita_estado", { p_id: citaId, p_estado: "cancelada", p_motivo: "Prueba de recordatorio terminada" }).catch((e) => ({ error: e }));
+      const r = await Promise.resolve(P.rpc("vet_cita_estado", { p_id: citaId, p_estado: "cancelada", p_motivo: "Prueba de recordatorio terminada" })).catch((e) => ({ error: e }));
       if (r.error) await C.from("vet_citas").update({ estado: "cancelada", cancelada_motivo: "Prueba de recordatorio terminada" }).eq("id", citaId);
     }
     await C.from("vet_citas").update({ deleted_at: new Date().toISOString() }).eq("id", citaId);
