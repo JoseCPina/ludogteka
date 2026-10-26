@@ -119,7 +119,7 @@ for (const neg of [EST, HOT]) {
     ver(`${neg.base}/reservas/${id}/cobrar → saldo $0.00, «Cuenta pagada» ${(await p.locator("[data-cuenta-pagada]").count()) ? "sí" : "NO"}, «Abrir turno» ${(await p.getByRole("button", { name: "Abrir turno" }).count()) ? "SÍ" : "no"}; acciones visibles: ${visibles.join(", ") || "ninguna"}`);
     if (visibles.length) mal(`${neg.negocio.slug}: la cuenta pagada muestra ${visibles.join(", ")}`);
     else bien(`${neg.negocio.slug}: la cuenta pagada no muestra acciones de cobro ni de precio`);
-    const verCobros = await p.getByText(/Ver cobros|Cobros registrados/).filter({ visible: true }).count();
+    const verCobros = await p.getByText(/Ver cobros|Cobros de esta reserva/i).filter({ visible: true }).count();
     ver(`«Ver cobros»/historial visible: ${verCobros ? "sí" : "no"}`);
     await foto(p, `n129-${neg.negocio.slug}`);
     break;
@@ -191,7 +191,7 @@ console.log("\nN132 · salida anticipada y cobro");
   await foto(p, "n132-politica");
 
   // Con --escribir (solo después de desplegar): el flujo real en este negocio PRUEBA. Una estancia de 2 noches desde hoy,
-  // check-in ahora y check-out hoy en la pantalla: antes de confirmar debe decir «Sale 2 noches antes…».
+  // check-in ahora y check-out hoy en la pantalla: antes de confirmar debe decir «Sale 1 noche antes…» (la noche de hoy se cobra).
   if (process.argv.includes("--escribir") && conPolitica) {
     const { data: modelo } = await HOT.N.from("perros").select("cliente_id, tamano_id").eq("negocio_id", HOT.negocio.id).ilike("nombre", "PRUEBA QA S33%").is("deleted_at", null).limit(1).single();
     const { data: hotelSrv } = await HOT.N.from("servicios").select("id").eq("negocio_id", HOT.negocio.id).eq("categoria", "hotel").eq("unidad", "noche").is("deleted_at", null).limit(1).single();
@@ -224,7 +224,7 @@ console.log("\nN132 · salida anticipada y cobro");
         ver(`después de confirmar: «${tras}»`);
         await foto(p, "n132-checkout-despues");
         const politicaCompleta = /política del negocio/.test(aviso);
-        if (politicaCompleta ? despues === antes : /Sale 2 noches antes: la cuenta baja de/.test(aviso) && despues < antes && aj?.[0]?.motivo === "Salida anticipada")
+        if (politicaCompleta ? despues === antes : /Sale d+ noches? antes: la cuenta baja de/.test(aviso) && despues < antes && aj?.[0]?.motivo === "Salida anticipada")
           bien(`N132: «${aviso.replace(/^.*?(Sale|Se cobra)/, "$1")}»; cuenta $${antes} → $${despues}${aj?.length ? `, «${aj[0].concepto}» con motivo «${aj[0].motivo}»` : ""}`);
         else mal(`N132: aviso «${aviso}», cuenta $${antes} → $${despues}, ajuste ${JSON.stringify(aj)}`);
       }
