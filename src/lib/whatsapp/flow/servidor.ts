@@ -264,7 +264,8 @@ async function apuntar(telefono: string, texto: string) {
 
 async function enviarYApuntar(telefono: string, texto: string, sinVista = false) {
   const r = await clienteWA().texto(telefono, texto, { sinVista });
-  if (r.ok) await apuntar(telefono, texto);
+  // El historial del bot (lo lee la administración y el modelo) nunca guarda una liga de entrada que todavía sirve.
+  if (r.ok) await apuntar(telefono, texto.replace(/\/entrar\/[A-Za-z0-9_-]+/g, "/entrar/[liga de un solo uso]"));
   else console.error("[whatsapp-flow] no salió el mensaje", r.error);
   return r.ok;
 }
