@@ -370,7 +370,11 @@ async function huellaCompartida() {
 }
 const compartidoAntes = await huellaCompartida();
 const unaFila = {};
-for (const t of Object.keys(COMPARTIDAS)) { const k = COMPARTIDAS[t].llave ?? "id"; unaFila[t] = (await A.from(t).select(k).limit(1).single()).data[k]; }
+// Una tabla compartida vacía en desarrollo (eventos_stripe, por ejemplo) solo se prueba al agregar: no hay fila que
+// cambiar ni borrar. Antes la auditoría tronaba aquí con «Cannot read properties of null».
+for (const t of Object.keys(COMPARTIDAS)) { const k = COMPARTIDAS[t].llave ?? "id"; unaFila[t] = (await A.from(t).select(k).limit(1).maybeSingle()).data?.[k] ?? null; }
+const vacias = Object.keys(unaFila).filter((t) => unaFila[t] === null);
+if (vacias.length) console.log(`  (sin filas en desarrollo, solo se prueba agregar: ${vacias.join(", ")})`);
 
 // Todos los de Ludogteka, y además el admin de Huellitas (el de otro negocio).
 const escritores = { ...tokens, admin_de_huellitas: await tokenDe(datos.adminB) };
@@ -381,6 +385,10 @@ for (const [rol, token] of Object.entries(escritores)) {
     for (const [t, { cambio, alta }] of Object.entries(COMPARTIDAS)) {
       const ins = await fetch(`${URL}/rest/v1/${t}`, { method: "POST", headers: { ...cabeceras(token, negocio), Prefer: "return=representation" }, body: JSON.stringify(alta) });
       if (ins.ok) hallazgo(`${rol} [${donde}] pudo AGREGAR a ${t} (compartida)`);
+      if (unaFila[t] === null) {
+        intentos += 1;
+        continue;
+      }
       const up = await fetch(`${URL}/rest/v1/${t}?${COMPARTIDAS[t].llave ?? "id"}=eq.${unaFila[t]}`, { method: "PATCH", headers: { ...cabeceras(token, negocio), Prefer: "return=representation" }, body: JSON.stringify(cambio) });
       const upFilas = await up.json().catch(() => null);
       if (up.ok && Array.isArray(upFilas) && upFilas.length) hallazgo(`${rol} [${donde}] pudo CAMBIAR ${t} (compartida)`);
