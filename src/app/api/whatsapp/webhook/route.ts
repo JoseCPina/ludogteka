@@ -1,11 +1,12 @@
 import { after, NextResponse, type NextRequest } from "next/server";
 import { SIN_TEXTO } from "@/lib/whatsapp/ventas/guion";
-import { configWhatsApp, construirSoporte, firmaMetaValida, igualSeguro, telefonoCanonico } from "@/lib/whatsapp/infra";
+import { configWhatsApp, construirSoporte, cuentaPorTelefono, firmaMetaValida, igualSeguro, telefonoCanonico } from "@/lib/whatsapp/infra";
 import { atender, type Tiempos } from "@/lib/whatsapp/soporte";
 import { TEXTO_AHORA_NO, TEXTO_BAJA, TEXTO_BAJA_PROSPECTO, clasificarRespuesta } from "@/lib/seguimiento/respuestas";
 import { guardarEstado, esFalloDeCuenta, type EstadoMeta } from "@/lib/whatsapp/entregas";
 import { avisarFalloDeEntrega } from "@/lib/soporte/notificar";
 import { procesarSesion } from "@/lib/whatsapp/flow/servidor";
+import { atenderBoton, atenderTexto, guardarEntregaRecordatorio, reportarSiHayExcedente, type Atencion } from "@/lib/recordatorios/respuestas";
 
 const TEXTO_FORMULARIO_ENVIADO = "[Envió el formulario «Prueba gratis»]";
 
@@ -48,7 +49,8 @@ type MensajeMeta = {
   timestamp?: string;
   type?: string;
   text?: { body?: string };
-  button?: { text?: string };
+  /** Botón de respuesta rápida de una plantilla: su payload es el que se mandó (rec:<id>:<acción> en los recordatorios). */
+  button?: { text?: string; payload?: string };
   interactive?: { type?: string; button_reply?: { title?: string }; list_reply?: { title?: string }; nfm_reply?: { response_json?: string; name?: string } };
   image?: { caption?: string };
   video?: { caption?: string };
@@ -67,6 +69,8 @@ type Entrada = {
   anuncio: { adId: string | null; clid: string | null } | null;
   /** El flow_token de un formulario de WhatsApp que la persona acaba de enviar (nfm_reply). */
   flowToken: string | null;
+  /** El payload del botón de una plantilla (los recordatorios automáticos). */
+  payload: string | null;
 };
 
 /** El flow_token de la respuesta de un WhatsApp Flow (el formulario de prueba gratis), o null. */
@@ -137,6 +141,7 @@ export async function POST(request: NextRequest) {
           id: m.id,
           texto: flowToken ? TEXTO_FORMULARIO_ENVIADO : textoDe(m),
           flowToken,
+          payload: m.type === "button" && m.button?.payload ? m.button.payload.slice(0, 200) : null,
           enviadoMs: Number.isFinite(ts) && ts > 0 ? ts * 1000 : null,
           perfil: perfil ? perfil.slice(0, 120) : null,
           anuncio: anuncioDe(m),
@@ -147,10 +152,14 @@ export async function POST(request: NextRequest) {
 
   // Estados de entrega (sent, delivered, read, failed): se guardan SIEMPRE. Si no se pudo, 500 para que Meta reintente.
   const avisos: { origen?: string; etiqueta?: string | null; codigo?: number | null; motivo?: string; cuenta: boolean }[] = [];
+  let huboExcedente = false;
   try {
     for (const st of estados) {
       const r = await guardarEstado(st);
       if (r?.avisar) avisos.push({ origen: r.origen, etiqueta: r.etiqueta, codigo: r.codigo, motivo: r.motivo, cuenta: esFalloDeCuenta(r.codigo) });
+      // Si es un recordatorio automático: su estado, si Meta lo cobra (pricing.billable) y, al entregarse, su cuenta del mes.
+      const rec = await guardarEntregaRecordatorio({ ...st, motivo: r?.motivo ?? null });
+      if (rec?.excedente) huboExcedente = true;
       if (st.status === "failed") console.warn("[whatsapp] mensaje fallido", { codigo: st.errors?.[0]?.code, titulo: st.errors?.[0]?.title });
     }
   } catch (e) {
@@ -158,6 +167,7 @@ export async function POST(request: NextRequest) {
     return new NextResponse("No se guardó", { status: 500 });
   }
   if (avisos.length) after(async () => { for (const a of avisos) await avisarFalloDeEntrega(a); });
+  if (huboExcedente) after(() => reportarSiHayExcedente(true));
   if (entradas.length === 0) return NextResponse.json({ ok: true, estados: estados.length });
 
   const { deps, datos, wa } = construirSoporte();
@@ -181,6 +191,21 @@ export async function POST(request: NextRequest) {
         // el acceso sale de ahí; el bot no contesta nada más.
         if (m.flowToken) {
           console.info("[whatsapp] formulario de prueba gratis enviado", { estado: await procesarSesion(m.flowToken) });
+          continue;
+        }
+        // Respuesta a un recordatorio automático de un negocio (botón, texto libre o BAJA): la atiende el negocio, no
+        // el bot. El texto libre solo se le pasa al negocio si quien escribe no es admin ni personal de un negocio
+        // (ellos le escriben a PeluDesk como siempre).
+        let rec: Atencion = await atenderBoton(m.payload, m.telefono);
+        if (!rec.manejado && m.texto && !m.payload) {
+          const tipo = (await cuentaPorTelefono(m.telefono).catch(() => null))?.tipo ?? "prospecto";
+          if (tipo !== "admin" && tipo !== "personal") rec = await atenderTexto(m.texto, m.telefono, clasificarRespuesta(m.texto) === "baja");
+        }
+        if (rec.manejado) {
+          if (rec.respuesta) {
+            await wa.texto(m.telefono, rec.respuesta);
+            await datos.apuntarMensaje(m.telefono, "agente", rec.respuesta);
+          }
           continue;
         }
         // Si es la respuesta a un mensaje de seguimiento de su prueba, se registra

@@ -41,7 +41,7 @@ import {
   type TipoInterlocutor,
 } from "./agente";
 import { aclararCobro, aclararDemo, cabeAclaracion, aFormatoWhatsApp, enDosSiEsLargo, formatoDelBot, hayQueReescribir, juntarCortos, unLinkAlFinal } from "./texto";
-import { ACLARACION_DEMO, COBRO_A_NOMBRE_DE, respuestaFijaDirecta } from "@/lib/peludesk/respuestas-fijas";
+import { ACLARACION_DEMO, COBRO_A_NOMBRE_DE, respuestaFijaDirecta, type PrecioRecordatorioFijo } from "@/lib/peludesk/respuestas-fijas";
 import {
   cifrasNoFijas,
   conversacionActual,
@@ -175,7 +175,7 @@ export interface DepsSoporte {
    */
   tickets?: TicketsBandeja;
   /** Precios de la base (sin IVA) y el link de prueba de quien escribe, para las respuestas fijas de precio. */
-  fijos(prospecto?: ProspectoContexto | null): Promise<{ precios: PreciosBot | null; registro: string }>;
+  fijos(prospecto?: ProspectoContexto | null): Promise<{ precios: PreciosBot | null; recordatorio?: PrecioRecordatorioFijo | null; registro: string }>;
   /** Link al portal de pagos de un negocio DE ESTA cuenta (nunca de otro). */
   ligaPortal(negocio: NegocioDeAdmin): Promise<string>;
   /**
@@ -332,7 +332,9 @@ export async function atender(telefono: string, texto: string, deps: DepsSoporte
       punto = "saludo";
     }
     if (!fija) {
-      const directa = respuestaFijaDirecta(texto);
+      // Con las cifras de la base (el precio por mensaje de los recordatorios); si no se pudieron leer, sin cifras.
+      const f = await deps.fijos(prospecto).catch(() => null);
+      const directa = respuestaFijaDirecta(texto, f?.precios ? { mensual: f.precios.mensual, anual: f.precios.anual, sucursal: f.precios.sucursal, recordatorio: f.recordatorio ?? null } : null);
       fija = directa ? formatoDelBot(directa) : null;
     }
     if (fija) {

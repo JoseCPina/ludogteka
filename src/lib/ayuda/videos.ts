@@ -148,6 +148,7 @@ export const VIDEOS_SIN_ARTICULO: Record<string, string> = {
  * tenga video en VIDEOS_DE_ARTICULO o aparezca aquí: un artículo nuevo sin video se decide a propósito.
  */
 export const ARTICULOS_SIN_VIDEO: Record<string, string> = {
+  "recordatorios-automaticos-por-whatsapp": "Pendiente de grabar: función nueva (recordatorios automáticos por WhatsApp, 25 de octubre de 2026); se graba con un negocio de prueba porque el demo no manda mensajes.",
   "alguien-mas-cambio-lo-que-editabas": "Pendiente de grabar: el aviso solo sale con dos personas editando lo mismo a la vez; se graba con dos sesiones del demo.",
   "cambiar-estilista-cita-estetica": "Pendiente de grabar: el guion del video 96 está listo; la grabación está en pausa.",
   "factura-global-publico-en-general": "Pendiente de grabar: el guion del video 98 está listo; la grabación está en pausa.",

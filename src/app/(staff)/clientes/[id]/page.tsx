@@ -53,7 +53,7 @@ export default async function EditarClientePage({
   const { data: cliente } = await supabase
     .from("clientes")
     .select(
-      "id, nombre, telefono, email, direccion, distancia_base_km, distancia_calculada_at, distancia_ajustada_manualmente, alta_por_cliente, datos_revisados_at, updated_at"
+      "id, nombre, telefono, email, direccion, distancia_base_km, distancia_calculada_at, distancia_ajustada_manualmente, alta_por_cliente, datos_revisados_at, updated_at, recordatorios_whatsapp"
     )
     .eq("id", id)
     .is("deleted_at", null)
@@ -243,6 +243,7 @@ export default async function EditarClientePage({
           telefono: formatearTelefono(cliente.telefono),
           email: cliente.email,
           notas: (notasInternas?.notas as string | undefined) ?? null,
+          recordatorios: cliente.recordatorios_whatsapp !== false,
         }}
         textoBoton="Guardar cambios"
       />

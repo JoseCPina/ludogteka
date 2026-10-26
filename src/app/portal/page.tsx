@@ -30,7 +30,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
   const supabase = await createSupabaseServerClient();
   const { data: cliente, error } = await supabase
     .from("clientes")
-    .select("nombre, telefono, email")
+    .select("nombre, telefono, email, recordatorios_whatsapp")
     .eq("id", sesion.clienteId)
     .single();
 
@@ -134,7 +134,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
       )}
 
       {contrasena === "cambiada" && <Alert variante="exito" titulo="Contraseña cambiada">Desde ahora entras con tu contraseña nueva.</Alert>}
-      <MisDatosForm nombre={cliente.nombre} telefono={cliente.telefono} email={cliente.email} />
+      <MisDatosForm nombre={cliente.nombre} telefono={cliente.telefono} email={cliente.email} recordatorios={cliente.recordatorios_whatsapp !== false} />
       <Link href="/portal/cambiar-contrasena" className="-mt-2 text-sm font-semibold text-morado hover:underline" data-enlace-cambiar-contrasena>
         Cambiar mi contraseña
       </Link>

@@ -57,7 +57,10 @@ const tel = () => `5299${String(Math.floor(Math.random() * 1e8)).padStart(8, "0"
 const { data: planes } = await A.from("planes").select("tipo, precio_mensual, precio_anual").eq("activo", true).is("deleted_at", null);
 const plan = (planes ?? []).find((p) => p.tipo === "plan" && Number(p.precio_mensual) > 0);
 const suc = (planes ?? []).find((p) => p.tipo === "sucursal" && Number(p.precio_mensual) > 0);
-const PRECIOS = { mensual: Number(plan?.precio_mensual), anual: Number(plan?.precio_anual), sucursal: Number(suc?.precio_mensual) };
+// El precio por recordatorio automático entregado (wa_precios) también es cifra fija: lo dice la respuesta de recordatorios.
+const hoyMx = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Mexico_City" }).format(new Date());
+const { data: precioRec } = await A.from("wa_precios").select("precio_mxn").is("deleted_at", null).lte("vigente_desde", hoyMx).order("vigente_desde", { ascending: false }).order("created_at", { ascending: false }).limit(1).maybeSingle();
+const PRECIOS = { mensual: Number(plan?.precio_mensual), anual: Number(plan?.precio_anual), sucursal: Number(suc?.precio_mensual), recordatorio: precioRec ? Number(precioRec.precio_mxn) : null };
 
 // ───────────── dobles
 const mock = { wa: [], tg: [], ia: [], rechazarFlow: false };
@@ -191,12 +194,14 @@ try {
 
   const giroBotones = (r) => comprobar(tipoDe(r.nuevas.at(-1) ?? {}) === "button" && r.nuevas.at(-1).interactive.action.buttons.map((b) => b.reply.title).join("|") === "Estética|Hotel o guardería|Veterinaria", "   pregunta el giro con los tres botones");
   const contiene = (re, que) => (r) => comprobar(r.nuevas.some((m) => re.test(cuerpoDe(m))), `   ${que}`);
+  // Una respuesta larga sale partida en varios mensajes (formato del bot): se lee completa.
+  const contieneJunto = (re, que) => (r) => { const t = r.nuevas.map(cuerpoDe).join(" "); if (!re.test(t)) console.log(`      (se mandó: ${t.slice(0, 1500)})`); comprobar(re.test(t), `   ${que}`); };
 
   // 1. info → estética → 40 citas
   const T1 = tel();
   await conversacion("1. «info», estética, 40 citas", T1, [
     ["info", "entrada", (r) => { giroBotones(r); contiene(/PeluDesk es el sistema para estéticas, hoteles y veterinarias/, "dice qué es PeluDesk")(r); }],
-    [boton("Estética"), "giro", contiene(/¿Cuántas citas atiendes a la semana\?/, "pregunta cuántas citas a la semana")],
+    [boton("Estética"), "giro", contiene(/sale solo, automático, el día anterior[\s\S]*¿Cuántas citas atiendes a la semana\?/, "recordatorio automático y pregunta cuántas citas a la semana")],
     ["unas 40", "calificacion", contiene(/Con 40 citas a la semana.*unos 4 plantones al mes[\s\S]*Pruébalo gratis 15 días, sin tarjeta; en 2 minutos ya tienes tu agenda/, "da el dato para 40 citas y el cierre")],
   ]);
   const v1 = await ventas(T1);
@@ -271,6 +276,7 @@ try {
     ["hola", "entrada"],
     [boton("Estética"), "giro"],
     ["¿tienen factura?", "funcion", contiene(/CFDI[\s\S]*Pruébalo gratis 15 días/, "respuesta fija de factura y el cierre")],
+    ["¿cómo funcionan los recordatorios?", "funcion", contieneJunto(/«Confirmo»[\s\S]*«Necesito cambiarla»[\s\S]*por mensaje entregado[\s\S]*Pruébalo gratis 15 días/, "respuesta fija de recordatorios automáticos y el cierre")],
   ]);
 
   // 11. cambios de tema

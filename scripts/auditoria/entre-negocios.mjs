@@ -356,6 +356,8 @@ const COMPARTIDAS = {
   vet_reglas: { llave: "clave", cambio: { valor: 99 }, alta: { clave: "intrusa", valor: 1, titulo: "intrusa" } },
   vet_reglas_clasificacion: { llave: "clave", cambio: { documento: "libre" }, alta: { clave: "intrusa", etiqueta: "intrusa", documento: "libre" } },
   eventos_stripe: { cambio: { procesado_at: null, error: "intruso" }, alta: { stripe_event_id: `evt_intruso_${MARCA}`, tipo: "invoice.paid", modo: "test", payload: {} } },
+  // El precio de los recordatorios por WhatsApp (25 de octubre de 2026): lo lee cualquiera, lo escribe solo la plataforma.
+  wa_precios: { cambio: { precio_mxn: 0 }, alta: { vigente_desde: "2026-01-01", moneda_meta: "MXN", costo_meta: 0, tipo_cambio: 1, costo_mxn: 0, precio_mxn: 0, fuente: "intruso" } },
 };
 async function huellaCompartida() {
   const h = {};

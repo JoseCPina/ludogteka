@@ -25,7 +25,7 @@ export const MODULOS_TRES = [
 export const FUNCIONES_VET: readonly { titulo: string; texto: string }[] = [
   { titulo: "Expediente por consulta, con dictado", texto: "La médica dicta, PeluDesk arma el borrador de la consulta y ella lo revisa y lo firma. Una consulta firmada ya no se edita: se le agrega una adenda." },
   { titulo: "Carnet de vacunas con QR", texto: "Vacunas y desparasitaciones con su lote y su próxima dosis. El dueño enseña un carnet que se verifica con un código QR, sin ver nada clínico." },
-  { titulo: "Recordatorios por WhatsApp", texto: "Avisa al dueño que ya toca la dosis con un mensaje automático. Si el mensaje no llega, te lo marca en «Necesita atención» para que lo mandes tú." },
+  { titulo: "Recordatorios automáticos por WhatsApp", texto: "Un día antes de la consulta, el dueño recibe su cita con el nombre del médico y la confirma con un botón. 7 días antes de la próxima vacuna le pregunta «¿Te agendamos?». Si un mensaje no llega, te lo marca en «Necesita atención»." },
   { titulo: "Hospitalización con hoja de medicación", texto: "Ingreso, dosis programadas que se marcan al aplicarlas, monitoreo de signos y una cuenta abierta que se cobra al dar el alta." },
   { titulo: "Recetas y registro espejo del SITPV", texto: "Receta simple con los campos de la NOM-064 y registro espejo de las recetas del SITPV de SENASICA, con su libro de control. Un controlado no sale del inventario sin su receta." },
   { titulo: "Inventario con lotes y caducidades", texto: "Cada medicamento por lote, con aviso de caducidad. Se surte primero lo que caduca antes y cada salida queda ligada a la mascota." },

@@ -9,6 +9,7 @@ import { EstanciaFila } from "./estancia-fila";
 import { CancelarReservaBoton } from "./cancelar-reserva-boton";
 import type { Cargo, ServicioCargo } from "../cargos-seccion";
 import { AvisosWhatsApp } from "@/components/avisos-whatsapp";
+import { RecordatorioDeLaCita } from "@/components/recordatorio-de-la-cita";
 import { RefrescoCuenta } from "@/components/cuentas/refresco-cuenta";
 import { negocioActual, negocioIdActual, zonaActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -181,6 +182,7 @@ export default async function DetalleReservaPage({
               {cliente?.telefono ? formatearTelefono(cliente.telefono) : ""}
             </p>
             {reserva.notas && <p className="mt-2 text-n-700">{reserva.notas}</p>}
+            <RecordatorioDeLaCita refId={id} zona={zonaReserva} />
             {viva && negocio && (
               <div className="mt-3">
                 <AvisosWhatsApp

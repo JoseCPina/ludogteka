@@ -34,8 +34,8 @@
       "schedule": "23 * * * *"
     },
     {
-      "path": "/api/cron/carnet",
-      "schedule": "17 * * * *"
+      "path": "/api/cron/recordatorios",
+      "schedule": "*/15 * * * *"
     },
     {
       "path": "/api/cron/dictados",

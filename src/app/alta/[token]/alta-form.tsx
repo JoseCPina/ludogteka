@@ -99,6 +99,7 @@ export function AltaForm({
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [email, setEmail] = useState("");
+  const [recordatorios, setRecordatorios] = useState(true);
   const [quiereRecoleccion, setQuiereRecoleccion] = useState(false);
   const [direccion, setDireccion] = useState("");
   const [crearCuenta, setCrearCuenta] = useState(!corta);
@@ -184,6 +185,7 @@ export function AltaForm({
       crearCuenta,
       password,
       perros,
+      recordatorios,
     }));
 
     if (res.error) {
@@ -349,6 +351,16 @@ export function AltaForm({
               ayuda="Opcional. No lo necesitas para registrarte."
             />
           )}
+
+          <label className="flex items-start gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3 text-n-900" data-consentimiento-recordatorios>
+            <input type="checkbox" checked={recordatorios} onChange={(e) => setRecordatorios(e.target.checked)} className="mt-1 h-4 w-4" />
+            <span>
+              Acepto recibir recordatorios por WhatsApp
+              <span className="block text-sm text-n-600">
+                De tus citas, llegadas y vacunas, desde el número de PeluDesk con el nombre del negocio. Puedes darte de baja cuando quieras respondiendo BAJA.
+              </span>
+            </span>
+          </label>
 
           {/* La dirección solo le sirve a quien quiere que pasemos por su
               perro. Preguntársela a todos es un campo largo, en un celular,

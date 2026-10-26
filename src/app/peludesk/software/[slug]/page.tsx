@@ -14,6 +14,9 @@ import { CasoLudogteka } from "@/components/peludesk/seo-bloques";
 import { CASO_POR_GIRO } from "@/lib/peludesk/ludogteka";
 import { planUnico } from "@/lib/peludesk/plan";
 import { preguntasDeContratacion } from "@/lib/peludesk/preguntas-contratacion";
+import { SeccionRecordatorios } from "@/components/peludesk/seccion-recordatorios";
+import type { DatosMaqueta } from "@/components/peludesk/maqueta-recordatorio";
+import { recordatoriosVigentes } from "@/lib/peludesk/recordatorios";
 import { JsonLd, ORGANIZACION, SITIO, aplicacionPeluDesk, metaPagina, migas, preguntasFrecuentes } from "@/lib/peludesk/seo";
 
 const GIRO = {
@@ -21,6 +24,13 @@ const GIRO = {
   "software-para-hoteles-caninos": { caso: "hotel", captura: "hotel", alt: "Pantalla de hotel de PeluDesk con cupo por noche y reservas", rel: ["/guias/contratos-y-vacunas-obligatorias-en-guarderias-y-hoteles-caninos", "/guias/control-de-pagos-y-caja-en-una-guarderia-canina", "/blog/como-controlar-el-cupo-de-un-hotel-canino-sin-sobrevender"] },
   "software-para-esteticas-caninas": { caso: "estetica", captura: "estetica", alt: "Agenda de estética de PeluDesk con una columna por estilista", rel: ["/guias/facturacion-cfdi-para-esteticas-y-veterinarias", "/guias/recordatorios-por-whatsapp-y-portal-para-duenos-de-mascotas", "/blog/como-fijar-el-precio-de-una-guarderia-o-estetica-canina"] },
 } as const;
+
+// El ejemplo de la maqueta de recordatorios de cada giro (datos inventados).
+const EJEMPLO: Record<keyof typeof GIRO, DatosMaqueta> = {
+  "software-para-guarderias-caninas": { negocio: "Guardería Patitas", cliente: "Ana", mascota: "Rocky", servicio: "Guardería", dia: "jueves 29 de octubre", hora: "08:30", tipo: "guarderia" },
+  "software-para-hoteles-caninos": { negocio: "Hotel Patitas", cliente: "Ana", mascota: "Rocky", servicio: "Hotel", dia: "jueves 29 de octubre", hora: "11:00", tipo: "hotel" },
+  "software-para-esteticas-caninas": { negocio: "Estética Patitas", cliente: "Ana", mascota: "Rocky", servicio: "Baño y corte", dia: "jueves 29 de octubre", hora: "11:00", tipo: "estetica" },
+};
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -36,7 +46,7 @@ export default async function Aterrizaje({ params }: Props) {
   const arts = a.articulos.map((s) => articuloPorSlug(s)).filter((x) => x !== null);
   const otras = todosLosAterrizajes().filter((x) => x.slug !== a.slug);
   const ruta = `/${a.slug}`;
-  const [plan, contratacion] = await Promise.all([planUnico(), preguntasDeContratacion()]);
+  const [plan, contratacion, recordatorios] = await Promise.all([planUnico(), preguntasDeContratacion(), recordatoriosVigentes()]);
   const preguntas: [string, string][] = [...a.preguntas, ...contratacion];
   const giro = GIRO[a.slug as keyof typeof GIRO];
   return (
@@ -82,6 +92,8 @@ export default async function Aterrizaje({ params }: Props) {
           <Ilustracion nombre={a.ilustracion} prioridad className="h-auto w-full max-w-[26rem]" sizes="(min-width: 768px) 420px, 90vw" />
         </div>
       </section>
+
+      <SeccionRecordatorios textos={recordatorios} ejemplo={EJEMPLO[a.slug as keyof typeof GIRO]} className="border-t border-n-200" />
 
       <section aria-labelledby="alivios" className="border-y border-n-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">

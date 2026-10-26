@@ -1,7 +1,9 @@
 // El guion de ventas del bot de WhatsApp de PeluDesk (25 de octubre de 2026): una conversación de enganche hasta el
 // registro. Todo lo que el bot DICE está aquí, fijo; la IA solo entiende lo que escribe la persona y elige la rama
 // (ventas/servidor.ts), nunca redacta. Las cifras: el precio sale de la base (planes) y los datos por tamaño se
-// calculan con la cifra que dio la persona; ninguna la escribe el modelo.
+// calculan con la cifra que dio la persona; ninguna la escribe el modelo. Los recordatorios (estética, veterinaria,
+// hotel y guardería) salen solos, automáticos, el día anterior (Configuración → Recordatorios); su precio por mensaje
+// lo dice la respuesta fija de recordatorios (respuestas-fijas.ts), con la cifra de la base.
 //
 //   1. Entrada (info, hola, precio, qué es, me interesa, audio, sticker, emoji): qué es PeluDesk y el giro con
 //      botones. Si ya se sabe el giro (prospecto por ref, anuncio o teléfono), salta al 2.
@@ -101,21 +103,22 @@ export const CIERRE = "Pruébalo gratis 15 días, sin tarjeta; en 2 minutos ya t
 export const PASO2: Record<Giro, { mensaje: string; pregunta: string }> = {
   estetica: {
     mensaje:
-      "Tus clientes te piden cita por WhatsApp y en PeluDesk la agendas en segundos; la confirmación y el recordatorio del día anterior salen con un toque, con el mensaje ya escrito, y hay menos plantones. Cobras y haces tu corte de caja sin libreta.",
+      "Tus clientes te piden cita por WhatsApp y en PeluDesk la agendas en segundos; el recordatorio sale solo, automático, el día anterior, y tu cliente confirma con un botón: hay menos plantones. Cobras y haces tu corte de caja sin libreta.",
     pregunta: "¿Cuántas citas atiendes a la semana?",
   },
   hotel_guarderia: {
     mensaje:
-      "En PeluDesk cada reserva tiene su check-in con foto de llegada, el dueño firma el contrato desde su celular y le mandas el reporte del día de su perro por WhatsApp.",
+      "En PeluDesk el recordatorio de la llegada sale solo, automático, el día anterior, y el dueño confirma con un botón. Cada reserva tiene su check-in con foto de llegada, el dueño firma el contrato desde su celular y le mandas el reporte del día de su perro por WhatsApp.",
     pregunta: "¿Cuántos perros tienes en temporada alta?",
   },
   veterinaria: {
-    mensaje: "En PeluDesk tienes el expediente, el carnet de vacunas con recordatorio al dueño, las recetas y la caja en un solo lugar.",
+    mensaje:
+      "En PeluDesk tienes el expediente, el carnet de vacunas, las recetas y la caja en un solo lugar. El recordatorio de la cita sale solo, automático, el día anterior (y el de la próxima vacuna, 7 días antes), y el dueño confirma con un botón.",
     pregunta: "¿Llevan el expediente en papel o en algún sistema?",
   },
   varios: {
     mensaje:
-      "En PeluDesk llevas en un solo lugar la agenda de estética y las reservas de hotel o guardería: check-in con foto, contrato firmado desde el celular del dueño, cobros y corte de caja.",
+      "En PeluDesk llevas en un solo lugar la agenda de estética y las reservas de hotel o guardería: recordatorio automático el día anterior, check-in con foto, contrato firmado desde el celular del dueño, cobros y corte de caja.",
     pregunta: "¿Cuántos perros atiendes a la semana entre todo?",
   },
 };
@@ -134,9 +137,9 @@ export function datoPorTamano(giro: Giro, numero: number | null, sistema: Sistem
   const n = numero && numero > 0 && numero <= 5000 ? Math.round(numero) : null;
   switch (giro) {
     case "estetica": {
-      if (!n) return "Mandar el recordatorio del día anterior a cada cita es lo que más baja los plantones, y en PeluDesk sale con un toque.";
+      if (!n) return "El recordatorio del día anterior a cada cita es lo que más baja los plantones, y en PeluDesk sale solo, automático.";
       const p = plantonesEvitados(n);
-      return `Con ${n} citas a la semana, recordar cada cita el día anterior te ahorra unos ${p === 1 ? "un plantón" : `${p} plantones`} al mes.`;
+      return `Con ${n} citas a la semana, el recordatorio automático del día anterior te ahorra unos ${p === 1 ? "un plantón" : `${p} plantones`} al mes.`;
     }
     case "hotel_guarderia":
     case "varios":
@@ -144,10 +147,10 @@ export function datoPorTamano(giro: Giro, numero: number | null, sistema: Sistem
         ? `Con ${n} perros, son ${n} reportes del día que mandas desde la app en vez de escribirlos uno por uno, y ${n} contratos firmados sin papel.`
         : "Cada perro trae su reporte del día y su contrato firmado desde el celular del dueño, sin papel.";
     case "veterinaria":
-      if (sistema === "papel") return "Pasar del papel al expediente es lo que más se nota: cada vacuna queda en el carnet y el recordatorio de la próxima dosis puede salir solo.";
-      if (sistema === "excel") return "Tus pacientes los subes desde tu Excel con el importador y, desde ahí, cada vacuna queda en el carnet con su recordatorio.";
+      if (sistema === "papel") return "Pasar del papel al expediente es lo que más se nota: cada vacuna queda en el carnet y el recordatorio de la próxima sale solo, 7 días antes.";
+      if (sistema === "excel") return "Tus pacientes los subes desde tu Excel con el importador y, desde ahí, cada vacuna queda en el carnet con su recordatorio automático.";
       if (sistema === "otro_sistema") return "Si exportas tus clientes de tu sistema a Excel, los subes con el importador y arrancas con todo tu historial de clientes.";
-      return "Desde la primera consulta, cada vacuna queda en el carnet y el recordatorio de la próxima dosis puede salir solo.";
+      return "Desde la primera consulta, cada vacuna queda en el carnet y el recordatorio de la próxima sale solo, 7 días antes.";
   }
 }
 

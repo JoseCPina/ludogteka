@@ -7,6 +7,7 @@ import { pesos, planUnico } from "@/lib/peludesk/plan";
 import { SITIO } from "@/lib/peludesk/seo";
 import { FUNCIONES_VET, MODULOS_TRES, PREGUNTAS_VET } from "@/lib/peludesk/veterinaria";
 import { EMPRESA } from "@/lib/peludesk/legal";
+import { FUNCION_RECORDATORIOS, QUE_MANDA_RECORDATORIOS, recordatoriosVigentes } from "@/lib/peludesk/recordatorios";
 
 /**
  * llms.txt (índice para asistentes de IA) y llms-full.txt (el contenido
@@ -22,7 +23,13 @@ async function precio(): Promise<string> {
 }
 
 const RESUMEN =
-  "PeluDesk es un software en español, hecho en México, para clínicas veterinarias, guarderías, hoteles y estéticas caninas. Reúne en una sola aplicación web (se instala desde el navegador) la agenda y las reservas con cupo, el expediente clínico, la caja con corte de turno, los contratos firmados desde el celular, el portal para dueños de mascotas, los recordatorios por WhatsApp y la facturación CFDI 4.0.";
+  "PeluDesk es un software en español, hecho en México, para clínicas veterinarias, guarderías, hoteles y estéticas caninas. Reúne en una sola aplicación web (se instala desde el navegador) la agenda y las reservas con cupo, el expediente clínico, la caja con corte de turno, los contratos firmados desde el celular, el portal para dueños de mascotas, los recordatorios automáticos por WhatsApp (el cliente confirma con un botón) y la facturación CFDI 4.0.";
+
+/** La función estrella: qué manda y cuánto cuesta (los mensajes gratis y el precio salen de la base). */
+async function recordatorios(): Promise<string[]> {
+  const r = await recordatoriosVigentes();
+  return [`## ${FUNCION_RECORDATORIOS}`, "", ...QUE_MANDA_RECORDATORIOS.map((x) => `- ${x}`), `- Precio: ${r.cobro}`, `- Cómo se ve: ${url("/#recordatorios")}`, ""];
+}
 
 async function cabecera(): Promise<string[]> {
   return [
@@ -41,6 +48,7 @@ async function cabecera(): Promise<string[]> {
     "",
     await precio(),
     "",
+    ...(await recordatorios()),
   ];
 }
 
@@ -100,7 +108,7 @@ export async function llmsFull(): Promise<string> {
   }
   l.push(`## Alternativas (revisado el ${REVISADO_ALTERNATIVAS})`, "");
   for (const a of todasLasAlternativas()) {
-    l.push(`### ${a.nombre}`, "", `URL: ${url(`/alternativas/${a.slug}`)} · Sitio: ${a.sitio}`, "", a.resumen, "", `- Giro: ${a.giro}`, `- Precio: ${a.precio}`, `- Idioma: ${a.idioma}`, `- CFDI: ${a.cfdi}`, `- Pagos: ${a.pagos}`, `- Qué trae: ${a.modulos}`, `- Mejor que PeluDesk en: ${a.mejorEn.join(" ")}`, `- Conviene si: ${a.conviene.join(" ")}`, `- Fuentes: ${[...new Set(Object.values(a.fuentes).flat().map((f) => f.url))].join(" · ")}`, "");
+    l.push(`### ${a.nombre}`, "", `URL: ${url(`/alternativas/${a.slug}`)} · Sitio: ${a.sitio}`, "", a.resumen, "", `- Giro: ${a.giro}`, `- Precio: ${a.precio}`, `- Recordatorios por WhatsApp: ${a.recordatorios === "—" ? "no verificado" : a.recordatorios}`, `- Idioma: ${a.idioma}`, `- CFDI: ${a.cfdi}`, `- Pagos: ${a.pagos}`, `- Qué trae: ${a.modulos}`, `- Mejor que PeluDesk en: ${a.mejorEn.join(" ")}`, `- Conviene si: ${a.conviene.join(" ")}`, `- Fuentes: ${[...new Set(Object.values(a.fuentes).flat().map((f) => f.url))].join(" · ")}`, "");
   }
   l.push("## Centro de ayuda (texto completo)", "");
   for (const a of ARTICULOS) {

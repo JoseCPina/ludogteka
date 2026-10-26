@@ -10,6 +10,9 @@ import { AvisosWhatsApp } from "@/components/avisos-whatsapp";
 import { ESTADOS_CITA, type CitaVet, type MedicoVet } from "@/lib/veterinaria/expediente";
 import { AccionesCita } from "./acciones-cita";
 import { EnlaceOTexto } from "@/components/acceso-contexto";
+import { Chip } from "@/components/ui/chip";
+import { recordatoriosDeCitas } from "@/lib/recordatorios/de-citas";
+import { estadoDeRecordatorio } from "@/lib/recordatorios/estado";
 
 export default async function AgendaVeterinaria({ searchParams }: { searchParams: Promise<{ vista?: string; fecha?: string; medico?: string; aviso?: string; hora?: string }> }) {
   const zona = await zonaActual();
@@ -30,6 +33,8 @@ export default async function AgendaVeterinaria({ searchParams }: { searchParams
     supabase.rpc("vet_puede_leer"),
   ]);
   const citas = (citasCrudo ?? []) as CitaVet[];
+  // El recordatorio automático por WhatsApp de cada cita (confirmó, pide cambio, enviado…).
+  const recordatorios = await recordatoriosDeCitas(supabase, citas.map((c) => c.id));
   // «Avisar por WhatsApp» de cada cita viva: el teléfono del dueño de cada mascota de la agenda.
   const perroIds = [...new Set(citas.filter((c) => !["cancelada", "no_llego"].includes(c.estado)).map((c) => c.perro_id))];
   const [{ data: duenosCrudo }, negocio] = await Promise.all([
@@ -116,6 +121,11 @@ export default async function AgendaVeterinaria({ searchParams }: { searchParams
                                 </span>
                                 <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${e.estilo}`}>{e.etiqueta}</span>
                               </div>
+                              {recordatorios.has(c.id) && (() => {
+                                const r = recordatorios.get(c.id)!;
+                                const er = estadoDeRecordatorio(r.estado, r.respuesta);
+                                return <span className="mt-1 inline-block" data-recordatorio-cita={r.respuesta ?? r.estado}><Chip tono={er.tono}>{er.texto}</Chip></span>;
+                              })()}
                               <p className="text-n-700">
                                 {c.tipo}{c.tipo_clave === "teleconsulta" ? " · telemedicina" : ""}{c.urgencia ? " · urgencia" : ""} · {c.dueno}
                               </p>

@@ -26,11 +26,13 @@ export const EDAD_MAX = 60;
 export const MINIMO_RETARGETING = 100;
 
 export type GiroAnuncio = "veterinarias" | "esteticas" | "hotel_guarderia" | "retargeting";
-export type Pieza = "agenda" | "cobro" | "portal";
+export type Pieza = "agenda" | "cobro" | "portal" | "recordatorio";
 export type Formato = "cuadrada" | "vertical";
 
 export const GIROS: GiroAnuncio[] = ["veterinarias", "esteticas", "hotel_guarderia", "retargeting"];
-export const PIEZAS: Pieza[] = ["agenda", "cobro", "portal"];
+// «recordatorio» (recordatorios automáticos por WhatsApp, oct 2026): sus anuncios los crea scripts/ads/recordatorios.mjs
+// en el estado de su conjunto; si la tarea llega antes, los crea en PAUSADO con el mismo nombre y el script los adopta.
+export const PIEZAS: Pieza[] = ["agenda", "cobro", "portal", "recordatorio"];
 export const FORMATOS: Record<Formato, { ancho: number; alto: number }> = { cuadrada: { ancho: 1080, alto: 1080 }, vertical: { ancho: 1080, alto: 1920 } };
 
 export const CIERRE = "Prueba gratis, sin tarjeta.";
@@ -51,14 +53,14 @@ export const CONJUNTOS: Record<GiroAnuncio, {
     nombre: "PeluDesk · WhatsApp · Veterinarias",
     etiqueta: "Veterinarias",
     audiencias: ["veterinarias", "similar_veterinarias"],
-    texto: "Tus clientes agendan y reciben recordatorios por WhatsApp. Expediente, vacunas y caja en un solo lugar.",
+    texto: "Recordatorio automático de citas y vacunas por WhatsApp. El dueño confirma con un toque; tú lo ves en la agenda.",
     prellenado: "Hola, vi su anuncio y quiero probar PeluDesk para mi veterinaria",
   },
   esteticas: {
     nombre: "PeluDesk · WhatsApp · Estéticas",
     etiqueta: "Estéticas caninas",
     audiencias: ["esteticas", "similar_esteticas"],
-    texto: "Agenda llena sin contestar mensajes todo el día. Tus clientes reservan solos y tú cobras en un clic.",
+    texto: "Tus clientes reciben el recordatorio de su cita por WhatsApp y confirman con un botón. Menos plantones, cero mensajes a mano.",
     prellenado: "Hola, vi su anuncio y quiero probar PeluDesk para mi estética",
   },
   hotel_guarderia: {
@@ -71,14 +73,14 @@ export const CONJUNTOS: Record<GiroAnuncio, {
       { id: "6003512623565", name: "Hotel para perros" },
       { id: "6003545396227", name: "Entrenamiento de perros (mascotas)" },
     ],
-    texto: "Reservas, check-in con fotos y contrato firmado desde el celular del dueño.",
+    texto: "Recordatorio automático de llegada por WhatsApp, check-in con fotos y contrato firmado desde el celular.",
     prellenado: "Hola, vi su anuncio y quiero probar PeluDesk para mi hotel y guardería",
   },
   retargeting: {
     nombre: "PeluDesk · WhatsApp · Visitaron su página",
     etiqueta: "Tu negocio en PeluDesk",
     audiencias: ["visitaron"],
-    texto: "Ya viste cómo se vería tu negocio en PeluDesk. Pruébalo gratis.",
+    texto: "Ya viste tu negocio en PeluDesk. Ahora tus clientes reciben sus recordatorios solos.",
     prellenado: "Hola, vi su anuncio y quiero probar PeluDesk para mi negocio",
     autoActivar: true,
   },
@@ -91,6 +93,7 @@ export const PIEZA_TITULO: Record<Pieza, string> = {
   agenda: "Tu agenda, en orden",
   cobro: "Cobra en un clic",
   portal: "Tus clientes lo ven todo",
+  recordatorio: "Confirman su cita solos",
 };
 
 export const archivoImagen = (giro: GiroAnuncio, pieza: Pieza, formato: Formato) => `${giro}-${pieza}-${formato}.jpg`;
@@ -156,7 +159,7 @@ export function asignarConjuntos(guardados: Partial<Record<GiroAnuncio, string |
 }
 
 export const textoConjuntoManual = (giro: GiroAnuncio) =>
-  `Crear a mano en Ads Manager: un conjunto de WhatsApp en la campaña «${CAMPANA_NOMBRE}», con la página PeluDesk, el número +52 56 4916 0742 y la ventana de atribución de 1 día después del clic, en pausa y con el nombre «${CONJUNTOS[giro].nombre}». La siguiente sincronización le pone presupuesto, públicos, exclusiones y sus 3 anuncios.`;
+  `Crear a mano en Ads Manager: un conjunto de WhatsApp en la campaña «${CAMPANA_NOMBRE}», con la página PeluDesk, el número +52 56 4916 0742 y la ventana de atribución de 1 día después del clic, en pausa y con el nombre «${CONJUNTOS[giro].nombre}». La siguiente sincronización le pone presupuesto, públicos, exclusiones y sus ${PIEZAS.length} anuncios.`;
 
 export const textoAnuncio = (giro: GiroAnuncio) => `${CONJUNTOS[giro].texto}\n\n${CIERRE}`;
 

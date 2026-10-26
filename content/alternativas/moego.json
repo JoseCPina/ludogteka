@@ -10,6 +10,7 @@
   "cfdi": "Envía facturas en línea (invoices), pero su sitio no menciona CFDI ni facturación mexicana.",
   "pagos": "Procesador de tarjetas propio integrado (MoeGo Pay). Para negocios fuera de Estados Unidos anuncia «MoeGo Pay International» en despliegue, sin lista de países. No menciona Mercado Pago ni Clip.",
   "modulos": "Agenda inteligente, reservas en línea, rutas optimizadas para unidades móviles, lista de espera, recordatorios, reporte de grooming para el dueño, solicitud de reseñas, marketing automatizado, CRM y tablero de indicadores.",
+  "recordatorios": "Menciona recordatorios entre sus funciones; no verificamos si salen por WhatsApp.",
   "mejorEn": [
     "Rutas optimizadas y agenda por unidad para estéticas móviles: PeluDesk no tiene rutas ni cuadrillas.",
     "Marketing automatizado, recuperación de reservas abandonadas y solicitud de reseñas.",
@@ -31,6 +32,7 @@
     "idioma": [{ "nombre": "moego.pet", "url": "https://www.moego.pet" }, { "nombre": "Precios de MoeGo", "url": "https://www.moego.pet/pricing" }],
     "cfdi": [{ "nombre": "Precios de MoeGo", "url": "https://www.moego.pet/pricing" }],
     "pagos": [{ "nombre": "Precios de MoeGo", "url": "https://www.moego.pet/pricing" }, { "nombre": "Ayuda de MoeGo: MoeGo Pay fuera de EE. UU.", "url": "https://help.moego.pet/en/articles/13245992-smooth-transition-to-moego-pay-non-us" }],
-    "modulos": [{ "nombre": "moego.pet", "url": "https://www.moego.pet" }]
+    "modulos": [{ "nombre": "moego.pet", "url": "https://www.moego.pet" }],
+    "recordatorios": [{ "nombre": "moego.pet", "url": "https://www.moego.pet" }]
   }
 }

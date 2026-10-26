@@ -1,0 +1,27 @@
+/* Maqueta del recordatorio por WhatsApp (components/peludesk/maqueta-recordatorio.tsx). Vive aparte de
+   animaciones.css porque también la usa /para/<slug>, que no carga los estilos de la landing. Solo opacity y
+   transform; con «reducir movimiento» no se anima nada y la maqueta enseña su estado final. */
+
+@keyframes pd-mr-salto {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+  30% { transform: translateY(-3px); opacity: 1; }
+}
+.pd-mr-punto { animation: pd-mr-salto 900ms ease-in-out infinite; }
+
+@keyframes pd-mr-onda {
+  from { opacity: 0.55; transform: scale(0.2); }
+  to { opacity: 0; transform: scale(1.9); }
+}
+.pd-mr-onda { animation: pd-mr-onda 650ms ease-out both; }
+
+@keyframes pd-mr-pulso {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+.pd-mr-pulso { animation: pd-mr-pulso 520ms ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pd-mr-punto, .pd-mr-onda, .pd-mr-pulso { animation: none !important; }
+  .pd-mr-onda { display: none; }
+}

@@ -8,8 +8,8 @@
 //   2. campaña de Interacción (OUTCOME_ENGAGEMENT). Los conjuntos NUNCA se crean por la API (Meta lo rechaza con
 //      2446886): sin conjunto en Meta queda «Crear a mano en Ads Manager»; con uno creado a mano con su nombre, la
 //      tarea le pone nombre, 100 MXN al día, México, 25–60, sus audiencias (lista + similar; hotel con intereses) y
-//      las exclusiones (pagando, en prueba y bajas) en TODOS, sin tocar la ventana de atribución, y crea sus 3
-//      anuncios (agenda, cobro, portal) en PAUSADO;
+//      las exclusiones (pagando, en prueba y bajas) en TODOS, sin tocar la ventana de atribución, y crea sus 4
+//      anuncios (agenda, cobro, portal, recordatorio) en PAUSADO;
 //   3. cada creativo: imagen cuadrada y vertical por ubicación, el texto del giro con «Prueba gratis, sin tarjeta.»,
 //      botón de WhatsApp y el mensaje prellenado del giro;
 //   4. segunda corrida: no crea nada nuevo; lee estado e insights (gasto, conversaciones y costo por conversación);
@@ -175,20 +175,20 @@ try {
   const th = tg("PeluDesk · WhatsApp · Hotel y guardería");
   ok(JSON.stringify(ids(th.custom_audiences)) === JSON.stringify([idLista.hotel_guarderia, simPro.audience_id].sort()) && th.flexible_spec?.[0]?.interests?.length === 3, "Hotel y guardería: lista + similar 2 % Prospectos, con 3 intereses");
   ok(JSON.stringify(ids(tg("PeluDesk · WhatsApp · Visitaron su página").custom_audiences)) === JSON.stringify([idLista.visitaron]), "Retargeting: «Visitaron su página»");
-  ok(postsA("adimages").length === 24, `24 imágenes subidas (${postsA("adimages").length})`);
+  ok(postsA("adimages").length === 32, `32 imágenes subidas (${postsA("adimages").length})`);
   const creativos = de("creativo").map(([, o]) => o);
-  ok(creativos.length === 12, `12 creativos (${creativos.length})`);
+  ok(creativos.length === 16, `16 creativos (${creativos.length})`);
   const cv = creativos.find((c) => c.name.includes("Veterinarias") && c.name.includes("agenda"));
   const feed = JSON.parse(cv.asset_feed_spec);
   ok(feed.images.length === 2 && feed.images.map((i) => i.adlabels[0].name).sort().join() === "cuadrada,vertical" && feed.asset_customization_rules.length === 2, "cada creativo: imagen cuadrada (feed) y vertical (historias y reels)");
-  ok(feed.bodies[0].text.startsWith("Tus clientes agendan y reciben recordatorios por WhatsApp.") && feed.bodies[0].text.endsWith("Prueba gratis, sin tarjeta."), "el texto del giro y «Prueba gratis, sin tarjeta.»");
+  ok(feed.bodies[0].text.startsWith("Recordatorio automático de citas y vacunas por WhatsApp.") && feed.bodies[0].text.endsWith("Prueba gratis, sin tarjeta."), "el texto del giro y «Prueba gratis, sin tarjeta.»");
   ok(feed.call_to_action_types[0] === "WHATSAPP_MESSAGE", "botón «Enviar mensaje» de WhatsApp");
   const bienvenida = JSON.parse(feed.additional_data.page_welcome_message);
   ok(bienvenida.text_format.message.autofill_message.content === "Hola, vi su anuncio y quiero probar PeluDesk para mi veterinaria", "mensaje prellenado del giro (veterinaria)");
   const ce = creativos.find((c) => c.name.includes("Estéticas") && c.name.includes("cobro"));
   ok(JSON.parse(JSON.parse(ce.asset_feed_spec).additional_data.page_welcome_message).text_format.message.autofill_message.content.endsWith("para mi estética"), "y el de estéticas dice «para mi estética»");
   const anuncios = de("anuncio").map(([, o]) => o);
-  ok(anuncios.length === 12 && anuncios.every((a) => a.status === "PAUSED"), `12 anuncios en PAUSADO (${anuncios.length})`);
+  ok(anuncios.length === 16 && anuncios.every((a) => a.status === "PAUSED"), `16 anuncios en PAUSADO (${anuncios.length})`);
   const idsConj = new Set(de("conjunto").filter(([, o]) => NOMBRES.includes(o.name) && o.campaign_id === campId).map(([id]) => id));
   ok(anuncios.every((a) => idsConj.has(a.adset_id)), "cada anuncio en su conjunto creado a mano");
 
@@ -212,7 +212,7 @@ try {
   const r3 = await correr();
   ok(r3.activados.length === 1 && objetos.get(retId).effective_status === "ACTIVE", "con 120 se activa el conjunto");
   const anunciosRet = de("anuncio").filter(([, o]) => o.adset_id === retId);
-  ok(anunciosRet.length === 3 && anunciosRet.every(([, o]) => o.effective_status === "ACTIVE"), "y sus 3 anuncios");
+  ok(anunciosRet.length === 4 && anunciosRet.every(([, o]) => o.effective_status === "ACTIVE"), "y sus 4 anuncios");
   ok(de("conjunto").filter(([id]) => id !== retId).every(([, o]) => o.effective_status !== "ACTIVE"), "los demás conjuntos siguen sin activar");
   objetos.get(retId).effective_status = "PAUSED"; // alguien lo pausó en Ads Manager
   const r4 = await correr();

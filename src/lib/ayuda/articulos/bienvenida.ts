@@ -41,7 +41,7 @@ En **Horario y forma de pago (opcional)** puedes dejar capturados sus días y ho
 
 ## Avisos por WhatsApp
 
-En la cita, la reserva y la ficha del cliente hay botones como **Confirmación**, **Recordatorio**, **Listo para recoger** e **Invitar al portal**. Cada uno te enseña el mensaje y, con **Abrir WhatsApp con este mensaje**, abre WhatsApp con el texto ya escrito al número del cliente: tú lo mandas. PeluDesk no manda esos mensajes solo.
+Los recordatorios de citas, llegadas y vacunas pueden salir solos, el día anterior: préndelos en [Configuración → Recordatorios](/admin/recordatorios). Además, en la cita, la reserva y la ficha del cliente hay botones como **Confirmación**, **Recordatorio**, **Listo para recoger** e **Invitar al portal**. Cada uno te enseña el mensaje y, con **Abrir WhatsApp con este mensaje**, abre WhatsApp con el texto ya escrito al número del cliente: esos los mandas tú.
 
 ## Si algo no sale
 

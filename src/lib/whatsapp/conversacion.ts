@@ -63,7 +63,8 @@ export function opcionDelMenu(texto: string): 1 | 2 | 3 | null {
 
 export const TEXTO_DUDA = "Claro, cuéntame tu duda y te ayudo.";
 
-export type PreciosBot = { mensual: number; anual: number; sucursal: number };
+/** `recordatorio`: pesos por recordatorio automático entregado, sin IVA (wa_precios, vía precioRecordatorioVigente()). */
+export type PreciosBot = { mensual: number; anual: number; sucursal: number; recordatorio?: number | null };
 
 const pesos = (n: number) => `$${Number(n).toLocaleString("es-MX", { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })}`;
 
@@ -88,7 +89,8 @@ export function temaDePrecio(texto: string): TemaPrecio | null {
   return null;
 }
 
-const UNICO = "Es un solo plan con todo incluido: sin módulos ni extras de pago.";
+// Lo único que se cobra aparte son los recordatorios de WhatsApp arriba de los gratis del mes (cifras: respuesta fija de recordatorios).
+const UNICO = "Es un solo plan con todo incluido, sin módulos de pago aparte. Lo único que se cobra aparte son los recordatorios automáticos de WhatsApp arriba de los gratis de cada mes.";
 
 /** La respuesta fija de cada tema (cifras de la base, nunca del modelo). */
 export function respuestaPrecioFija(tema: TemaPrecio, p: PreciosBot, registro: string): string {
@@ -116,7 +118,8 @@ export function respuestaPrecioFija(tema: TemaPrecio, p: PreciosBot, registro: s
 /** Las cifras que el bot puede decir: las fijas, sin y con IVA. */
 export function cifrasPermitidas(p: PreciosBot): Set<number> {
   const s = new Set<number>([0]);
-  for (const n of [p.mensual, p.anual, p.sucursal, p.sucursal * 10]) {
+  // El precio por recordatorio entregado también es fijo (respuesta de recordatorios), con y sin IVA.
+  for (const n of [p.mensual, p.anual, p.sucursal, p.sucursal * 10, ...(p.recordatorio ? [p.recordatorio] : [])]) {
     s.add(Math.round(n * 100));
     s.add(Math.round(Math.round(n * 100) * 1.16));
   }

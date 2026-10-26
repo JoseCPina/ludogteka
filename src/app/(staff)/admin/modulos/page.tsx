@@ -11,6 +11,7 @@ import { negocioActual, urlDelNegocio } from "@/lib/negocio/actual";
 import { AVISO_FACTURA, datosFacturacionDeNegocio } from "@/lib/cobro/facturacion";
 import { DatosFacturacion } from "./datos-facturacion";
 import { Sucursales, type GrupoSucursales } from "./sucursales";
+import { UsoRecordatoriosPanel, type UsoRecordatorios } from "./uso-recordatorios";
 
 // Los módulos del negocio: los de su plan se prenden y se apagan aquí; los
 // de otros planes se ven bloqueados con el plan que los incluye. Apagar
@@ -39,6 +40,9 @@ export default async function ModulosPage({ searchParams }: { searchParams: Prom
       ? supabase.from("cfdi_catalogos").select("tipo, clave, descripcion").in("tipo", ["regimen_fiscal", "uso_cfdi"]).is("deleted_at", null).order("clave")
       : Promise.resolve({ data: null }),
   ]);
+  // Recordatorios por WhatsApp del mes (admin o «Administrar módulos»; el tope lo cambia solo el admin).
+  const { data: usoCrudo } = await supabase.rpc("recordatorios_uso_mes");
+  const usoRecordatorios = usoCrudo ? ({ ...(usoCrudo as UsoRecordatorios), precio: (usoCrudo as UsoRecordatorios).precio === null ? null : Number((usoCrudo as UsoRecordatorios).precio), excedente_mxn: Number((usoCrudo as UsoRecordatorios).excedente_mxn), tope: (usoCrudo as UsoRecordatorios).tope === null ? null : Number((usoCrudo as UsoRecordatorios).tope) } as UsoRecordatorios) : null;
   const miCobro = cobro as MiCobro | null;
   const planes = ((ofertas ?? []) as PlanOferta[]).map((p) => ({ ...p, precio_mensual: Number(p.precio_mensual) }));
   const planSucursal = planes.find((p) => p.tipo === "sucursal") ?? null;
@@ -105,6 +109,7 @@ export default async function ModulosPage({ searchParams }: { searchParams: Prom
       {grupoSucursales && miCobro && !miCobro.exento && (
         <Sucursales grupo={grupoSucursales} precioMensual={planSucursal?.precio_mensual ?? null} dominio={dominio} />
       )}
+      {usoRecordatorios && <UsoRecordatoriosPanel uso={usoRecordatorios} puedeCambiarTope={esAdmin} />}
       {nombreApagado && (
         <Alert variante="info" titulo={`${nombreApagado} no está activo`}>
           Por eso no se abrió esa sección. Si tu plan lo incluye, préndelo aquí.

@@ -10,6 +10,7 @@
   "cfdi": "Dice facturar conforme a los requisitos legales de México, entre otros países; no detalla versión del CFDI ni proveedor de timbrado.",
   "pagos": "Su sitio no nombra procesador ni terminal integrada.",
   "modulos": "Agenda múltiple, historia clínica, recetas, hospitalización, inventario y almacén, caja de clínica y tienda, peluquería, residencia canina, varias sucursales y empresas, campañas por WhatsApp y la app para dueños LaClinica (más de 500,000 descargas según su sitio).",
+  "recordatorios": "Menciona campañas por WhatsApp; no verificamos recordatorios de cita automáticos.",
   "mejorEn": [
     "Experiencia con hospitales y grupos veterinarios grandes, con varias empresas y sucursales.",
     "App para dueños con mucho uso (más de 500,000 descargas, según su sitio).",
@@ -30,6 +31,7 @@
     "idioma": [{ "nombre": "qvet.net", "url": "https://qvet.net/" }],
     "cfdi": [{ "nombre": "qvet.net", "url": "https://qvet.net/" }, { "nombre": "Características de QVET", "url": "https://qvet.net/caracteristicas/" }],
     "pagos": [{ "nombre": "Características de QVET", "url": "https://qvet.net/caracteristicas/" }],
-    "modulos": [{ "nombre": "Características de QVET", "url": "https://qvet.net/caracteristicas/" }]
+    "modulos": [{ "nombre": "Características de QVET", "url": "https://qvet.net/caracteristicas/" }],
+    "recordatorios": [{ "nombre": "Características de QVET", "url": "https://qvet.net/caracteristicas/" }]
   }
 }

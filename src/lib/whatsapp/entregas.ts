@@ -5,7 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
  * envío y avisa después, por el webhook, si quedó enviado, entregado, leído o fallido (con un código). Aquí vive
  * el contexto de cada envío y el motivo en palabras claras de cada código.
  */
-export type OrigenEnvio = "carnet_recordatorio" | "teleconsulta" | "seguimiento" | "soporte" | "bot" | "desconocido";
+export type OrigenEnvio = "recordatorio" | "carnet_recordatorio" | "teleconsulta" | "seguimiento" | "soporte" | "bot" | "desconocido";
 
 export type ContextoEnvio = {
   origen: OrigenEnvio;
@@ -17,7 +17,13 @@ export type ContextoEnvio = {
   href?: string;
 };
 
-export type EstadoMeta = { id?: string; status?: string; timestamp?: string; errors?: { code?: number; title?: string; message?: string; error_data?: { details?: string } }[] };
+export type EstadoMeta = {
+  id?: string;
+  status?: string;
+  timestamp?: string;
+  /** Si Meta lo cobra (pricing.billable): un mensaje dentro de una ventana gratis llega con false. */
+  pricing?: { billable?: boolean; category?: string; type?: string };
+  errors?: { code?: number; title?: string; message?: string; error_data?: { details?: string } }[] };
 
 /** El motivo, sin jerga, de los códigos de error de Meta que ya vimos o que esperamos. */
 export function motivoDeError(codigo: number | null | undefined, titulo?: string | null): string {

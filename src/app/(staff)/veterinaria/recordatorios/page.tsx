@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EnlaceOTexto } from "@/components/acceso-contexto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { negocioActual } from "@/lib/negocio/actual";
 import { enlaceWhatsApp } from "@/lib/reporte/enlaces";
@@ -24,11 +25,12 @@ const ESTADO: Record<string, { texto: string; estilo: string }> = {
 export default async function Recordatorios() {
   const supabase = await createSupabaseServerClient();
   const negocio = await negocioActual();
-  const [{ data, error }, { data: ajustes }] = await Promise.all([leerTodo<Record<string, unknown>>(() => supabase.rpc("carnet_recordatorios_lista").order("id")), supabase.rpc("veterinaria_ajustes_actuales")]);
+  const [{ data, error }, { data: ajustes }] = await Promise.all([leerTodo<Record<string, unknown>>(() => supabase.rpc("carnet_recordatorios_lista").order("id")), supabase.from("recordatorios_ajustes").select("vacuna").eq("negocio_id", negocio.id).is("deleted_at", null).maybeSingle(), ]);
+  const { data: vetAjustes } = await supabase.rpc("veterinaria_ajustes_actuales");
   const filas = (data ?? []) as Fila[];
   const pendientes = filas.filter((f) => f.estado === "pendiente" || f.estado === "fallido");
   const resueltos = filas.filter((f) => !(f.estado === "pendiente" || f.estado === "fallido"));
-  const a = (ajustes ?? {}) as { recordatorios_activos?: boolean; dias_anticipacion?: number };
+  const a = { recordatorios_activos: Boolean((ajustes as { vacuna?: boolean } | null)?.vacuna), dias_anticipacion: (vetAjustes as { dias_anticipacion?: number } | null)?.dias_anticipacion };
 
   return (
     <div className="flex flex-col gap-5">
@@ -36,12 +38,12 @@ export default async function Recordatorios() {
         <Link href="/veterinaria" className="text-sm font-semibold text-morado hover:underline">← Veterinaria</Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Recordatorios de próxima dosis</h1>
         <p className="mt-1 max-w-3xl text-n-600">
-          Las vacunas y desparasitaciones cuya próxima dosis cae en los próximos {a.dias_anticipacion ?? 7} días (o venció hace poco). Mándalos tú con un toque, o deja que se manden solos si prendes el envío automático en{" "}
-          <Link href="/veterinaria/ajustes" className="font-semibold text-morado hover:underline">Ajustes</Link>.
+          Las vacunas y desparasitaciones cuya próxima dosis cae en los próximos {a.dias_anticipacion ?? 7} días (o venció hace poco). Salen solos por WhatsApp 7 días antes si prendes «Próxima vacuna o desparasitación» en{" "}
+          <EnlaceOTexto href="/admin/recordatorios" className="font-semibold text-morado hover:underline">Configuración → Recordatorios</EnlaceOTexto>; lo que no salió solo lo mandas tú desde aquí.
         </p>
       </div>
       {!a.recordatorios_activos && (
-        <Alert variante="info" titulo="El envío automático está apagado">
+        <Alert variante="info" titulo="El recordatorio automático de vacunas está apagado">
           Nada sale solo. La lista de abajo es para mandarlos a mano por WhatsApp.
         </Alert>
       )}

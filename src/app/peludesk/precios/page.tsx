@@ -9,6 +9,7 @@ import { Relacionadas } from "@/components/peludesk/seo-bloques";
 import { MODULOS_TRES } from "@/lib/peludesk/veterinaria";
 import { pesos, planUnico } from "@/lib/peludesk/plan";
 import { preguntasDeContratacion } from "@/lib/peludesk/preguntas-contratacion";
+import { recordatoriosVigentes } from "@/lib/peludesk/recordatorios";
 import { JsonLd, SITIO, aplicacionPeluDesk, metaPagina, migas, preguntasFrecuentes } from "@/lib/peludesk/seo";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -37,7 +38,8 @@ const INCLUYE = [
 ];
 
 export default async function Precios() {
-  const [plan, contratacion] = await Promise.all([planUnico(), preguntasDeContratacion()]);
+  const [plan, contratacion, recordatorios] = await Promise.all([planUnico(), preguntasDeContratacion(), recordatoriosVigentes()]);
+  const incluye = [`Recordatorios automáticos por WhatsApp de citas, consultas, hotel y guardería: ${recordatorios.lineaPrecio.charAt(0).toLowerCase()}${recordatorios.lineaPrecio.slice(1)}`, ...INCLUYE];
   const preguntas: [string, string][] = [
     ["¿Cuánto cuesta PeluDesk?", plan ? `Un solo plan: ${pesos(plan.mensual)} + IVA al mes (${pesos(plan.total)} con IVA). No hay costo inicial ni cargo de activación.` : "Un solo plan, sin costo inicial. Consulta el monto vigente en esta página."],
     ["¿Hay que pagar por cada módulo?", "No. El plan incluye Veterinaria, Hotel y guardería, Estética y la página web. Prendes solo lo que haces."],
@@ -47,7 +49,7 @@ export default async function Precios() {
     ["¿Cobran comisión por mis ventas?", "PeluDesk no cobra comisión por tus cobros. Mercado Pago cobra la suya por cada pago con tarjeta; PeluDesk la registra como gasto."],
     ["¿Puedo cancelar?", "Sí. Cancelas desde el portal de pagos y el plan sigue hasta el fin del periodo ya pagado."],
     ...contratacion,
-    ["¿Qué se paga aparte?", "El timbrado de facturas lo cobra tu proveedor autorizado, y Mercado Pago cobra según sus propias tarifas."],
+    ["¿Qué se paga aparte?", `Los recordatorios por WhatsApp que pasen de los gratis del mes: ${recordatorios.adicional ? recordatorios.adicional.charAt(0).toLowerCase() + recordatorios.adicional.slice(1) : "centavos por mensaje entregado, más IVA."} El timbrado de facturas lo cobra tu proveedor autorizado, y Mercado Pago cobra según sus propias tarifas.`],
   ];
   return (
     <MarcoSitio>
@@ -68,9 +70,18 @@ export default async function Precios() {
             </div>
           </div>
         )}
+        <div className="mt-8 rounded-3xl bg-menta-suave p-6 sm:p-8">
+          <h2 className="text-2xl font-bold text-n-900">Recordatorios automáticos por WhatsApp</h2>
+          <p className="mt-2 text-lg font-semibold text-n-900">{recordatorios.lineaPrecio}</p>
+          {recordatorios.adicional && <p className="mt-1 tabular-nums text-n-700">{recordatorios.adicional}</p>}
+          <p className="mt-3 max-w-[62ch] text-n-700">{recordatorios.cobro}</p>
+          <p className="mt-3">
+            <Link href="/#recordatorios" className="font-semibold text-morado underline underline-offset-2">Mira cómo le llega a tu cliente</Link>
+          </p>
+        </div>
         <h2 className="mt-12 text-2xl font-bold text-n-900">Qué incluye</h2>
         <ul className="mt-4 list-disc space-y-2 pl-5 text-n-700">
-          {INCLUYE.map((x) => <li key={x}>{x}</li>)}
+          {incluye.map((x) => <li key={x}>{x}</li>)}
         </ul>
         <h2 className="mt-12 text-2xl font-bold text-n-900">Los tres servicios</h2>
         <ul className="mt-4 grid gap-4 md:grid-cols-3">

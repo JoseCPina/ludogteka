@@ -5,6 +5,54 @@ import type { Articulo } from "../tipos";
 // campo y ruta que se nombra existe tal cual en la pantalla: si cambia la
 // pantalla, cambia aquí en el mismo cambio.
 export const ARTICULOS_ADMINISTRACION: Articulo[] = [
+  {
+    slug: "recordatorios-automaticos-por-whatsapp",
+    titulo: "Recordatorios automáticos por WhatsApp",
+    resumen: "Tus clientes reciben solos el recordatorio de su cita, su llegada o su vacuna, y confirman con un botón.",
+    grupo: "admin",
+    modulo: null,
+    roles: ["admin", "recepcion"],
+    rutas: ["/admin/recordatorios", "/recordatorios"],
+    palabras: ["recordatorio", "recordar cita", "confirmar cita", "plantones", "no llegó", "WhatsApp automático", "Confirmo", "Necesito cambiarla", "BAJA", "consentimiento", "listo para recoger", "vacuna", "tope", "costo por mensaje", "pausa"],
+    cuerpo: `PeluDesk le manda a tu cliente el recordatorio por WhatsApp, solo, desde el número de PeluDesk y con el nombre de tu negocio en el mensaje. Tu cliente contesta con un botón y tú lo ves en tu agenda.
+
+## Prenderlos
+
+1. Entra a [Configuración → Recordatorios](/admin/recordatorios).
+2. Marca los que quieres que salgan solos:
+   - **Cita de estética**: el día anterior, con día, hora y servicio.
+   - **Listo para recoger**: cuando la cita de estética se termina.
+   - **Cita veterinaria**: el día anterior, con día, hora y médico.
+   - **Próxima vacuna o desparasitación**: 7 días antes de la fecha del carnet.
+   - **Llegada a hotel o guardería**: el día anterior a la llegada, con la hora a partir de la que lo recibes.
+3. En **Hora de envío del día anterior** escoge la hora (de 7:00 a 20:00, en la hora de tu negocio; por omisión 10:00).
+4. Aprieta **Guardar recordatorios**.
+
+Solo sale para citas y reservas vivas: si cancelas, no sale; si la cambias de día u hora antes del envío, sale con la hora nueva. Nunca sale dos veces el mismo. Fuera de las 8:00 a las 21:00 de tu negocio no se manda nada. Puede prenderlo el admin o quien tenga **Configuración del negocio**.
+
+## Lo que contesta tu cliente
+
+- **Confirmo**: la cita (o la llegada) queda **Confirmada** y en la agenda sale **Confirmó por WhatsApp** en verde.
+- **Necesito cambiarla**: te llega a [Recordatorios](/recordatorios) en **Por atender** y en **Necesita atención** del tablero. Al cliente le contestamos que le escribes para reagendar. Aprieta **Escribirle por WhatsApp**, reagenda, y aprieta **Ya lo atendí**.
+- **Agendar** (vacuna): te deja una solicitud en **Por atender**; **Agendar** abre la cita de esa mascota.
+- Si escribe cualquier otra cosa en los 7 días siguientes, te llega en **Por atender** como mensaje («Te escribió») y a él le decimos que le contestas desde tu número.
+
+En la ficha de la cita y de la reserva ves cada recordatorio: **Recordatorio enviado**, **entregado**, **leído** o **El recordatorio no llegó** (con el motivo), lo que se le dijo y cuándo contestó.
+
+## Consentimiento y baja
+
+- Al dar de alta a un cliente en mostrador, por link o en su portal sale la casilla **El cliente acepta recordatorios por WhatsApp** (en el portal y el link: **Acepto recibir recordatorios por WhatsApp**), marcada por omisión. La puedes cambiar en su ficha; él la cambia en su portal.
+- Tus clientes que ya existían quedan aceptados si tienen teléfono de 10 dígitos. Cada mensaje dice cómo darse de baja.
+- Si tu cliente responde **BAJA**, deja de recibir los recordatorios de tu negocio, lo programado se cancela y te aparece en **Por atender**.
+
+## Cuánto cuesta
+
+**30 recordatorios entregados gratis al mes** por negocio, también en la prueba. Después, cada mensaje entregado cuesta el precio que ves en [Módulos y plan](/admin/modulos) → **Recordatorios por WhatsApp**, más IVA, en la misma factura mensual de tu plan. Los que no se entregan no cuentan. Ahí mismo pones el **Tope mensual de adicionales** (por omisión $200 + IVA) o **Sin tope**. Al llegar al tope, o a los 30 gratis si todavía no contratas tu plan, los recordatorios se pausan hasta el mes que entra y te avisamos en **Necesita atención**.
+
+## Si prefieres mandarlos tú
+
+Déjalos apagados: en la cita y en la reserva sigue **Avisar por WhatsApp**, que abre WhatsApp con el mensaje ya escrito para que lo mandes desde el teléfono de tu negocio.`,
+  },
   // ─── Inventario ───────────────────────────────────────────────────────
   {
     slug: "consumibles-compras-y-consumo",
@@ -485,7 +533,11 @@ Todo por WhatsApp, al +52 56 4916 0742: un asistente contesta las 24 horas y lo 
 
 ## Recordatorios por WhatsApp
 
-Van incluidos en el plan: **no hay costo por mensaje**. Los avisos y recordatorios (confirmación, recordatorio, listo para recoger) se mandan por WhatsApp desde el teléfono de tu negocio: PeluDesk te deja el mensaje ya escrito y lo abres en WhatsApp con un toque. **No mandamos SMS**: los avisos van por WhatsApp.
+Los **recordatorios automáticos** (cita, llegada, listo para recoger y vacuna) traen **30 entregados gratis al mes** por negocio, también en la prueba. Después, cada mensaje entregado cuesta el precio que ves en [Módulos y plan](/admin/modulos) → **Recordatorios por WhatsApp**, más IVA, y se cobra en la misma factura mensual de tu plan como «Recordatorios de WhatsApp adicionales». Los que no se entregan no cuentan.
+
+En esa misma sección ves los **entregados del mes**, los **gratis que quedan**, los **adicionales** y su **costo estimado**, y pones el **Tope mensual de adicionales** (por omisión $200 + IVA; puedes subirlo o marcar **Sin tope**). Al llegar al tope, los recordatorios se pausan hasta el mes siguiente y te avisamos en **Necesita atención**. Sin tu plan contratado, al llegar a los 30 gratis se pausan hasta el mes siguiente.
+
+Los botones **Avisar por WhatsApp** (el mensaje ya escrito que mandas tú desde el teléfono de tu negocio) no cuestan. **No mandamos SMS**: los avisos van por WhatsApp. Cómo funcionan: [[articulo:recordatorios-automaticos-por-whatsapp]].
 
 ## Cancelar
 
@@ -625,7 +677,7 @@ Si llegaste desde la vista previa que te mandó PeluDesk, tu página nace con tu
 
 ## Avisar a tu cliente por WhatsApp
 
-En la cita de estética, en la reserva de guardería u hotel y en la agenda clínica tienes **Avisar por WhatsApp**: **Confirmación**, **Recordatorio** y **Listo para recoger**. Cada botón te enseña el mensaje real y, con **Abrir WhatsApp con este mensaje**, abre WhatsApp con ese texto ya escrito para el teléfono del cliente; tú decides si lo mandas. PeluDesk no lo manda solo.
+PeluDesk puede mandarle a tu cliente el recordatorio de su cita, de su llegada o de su vacuna solo, y avisarle que su perro ya está listo: se prende en [Configuración → Recordatorios](/admin/recordatorios) (ver [[articulo:recordatorios-automaticos-por-whatsapp]]). Además, en la cita de estética, en la reserva de guardería u hotel y en la agenda clínica tienes **Avisar por WhatsApp**: **Confirmación**, **Recordatorio** y **Listo para recoger**. Cada botón te enseña el mensaje real y, con **Abrir WhatsApp con este mensaje**, abre WhatsApp con ese texto ya escrito para el teléfono del cliente; tú decides si lo mandas.
 
 ## Tu página web ya viene incluida
 

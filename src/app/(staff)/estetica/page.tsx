@@ -19,6 +19,9 @@ import {
 import { zonaActual } from "@/lib/negocio/actual";
 import { leerTodo } from "@/lib/supabase/paginar";
 import { textoDeCitaEnAusencia, type CitaEnAusencia } from "@/lib/estetica/ausencias";
+import { Chip } from "@/components/ui/chip";
+import { recordatoriosDeCitas } from "@/lib/recordatorios/de-citas";
+import { estadoDeRecordatorio } from "@/lib/recordatorios/estado";
 
 const ETIQUETA_ESTADO: Record<string, string> = {
   reservada: "Reservada",
@@ -120,6 +123,9 @@ export default async function AgendaPage({
       };
     })
     .filter((c) => c.fecha_local >= desde && c.fecha_local <= hasta);
+
+  // El recordatorio automático por WhatsApp de cada cita: «Confirmó por WhatsApp» en verde, «Pide cambio», enviado…
+  const recordatorios = await recordatoriosDeCitas(supabase, citas.map((c) => c.id));
 
   const diasVista =
     vista === "semana" ? Array.from({ length: 7 }, (_, i) => sumarDiasFecha(desde, i)) : [desde];
@@ -243,6 +249,11 @@ export default async function AgendaPage({
                                 >
                                   {ETIQUETA_ESTADO[c.estado] ?? c.estado}
                                 </span>
+                                {recordatorios.has(c.id) && (() => {
+                                  const r = recordatorios.get(c.id)!;
+                                  const e = estadoDeRecordatorio(r.estado, r.respuesta);
+                                  return <span data-recordatorio-cita={r.respuesta ?? r.estado}><Chip tono={e.tono}>{e.texto}</Chip></span>;
+                                })()}
                                 {enAusencia.has(c.id) && (
                                   <span className="basis-full text-xs font-semibold text-coral-oscuro">
                                     Estilista ausente ({enAusencia.get(c.id)}): reasigna esta cita

@@ -16,8 +16,6 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import http from "node:http";
-import { spawn } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
 import { abrirNavegador } from "../lib/navegador.mjs";
@@ -357,7 +355,7 @@ try {
   await esperarAviso(pa, "Guardado: es la versión");
   comprobar((await SB.from("consentimientos_plantillas").select("titulo").eq("negocio_id", B).eq("tipo", "hospitalizacion").eq("activa", true).single()).data.titulo === `Hospitalización UI ${sufijo}`, "editar una plantilla crea la versión nueva");
   await pa.goto(`${BASE}/veterinaria/ajustes`, { waitUntil: "networkidle" });
-  comprobar(/Envío automático por WhatsApp/.test(await cuerpo(pa)), "Ajustes de Veterinaria existe");
+  comprobar(/Recordatorios de próxima dosis/.test(await cuerpo(pa)) && /Configuración → Recordatorios/.test(await cuerpo(pa)), "Ajustes de Veterinaria existe y manda los recordatorios automáticos a Configuración → Recordatorios");
   await sinDesborde(pa, "ajustes");
 
   // ── 5. Portal del dueño ──
@@ -374,108 +372,8 @@ try {
   comprobar(!/Carnets/.test(await cuerpo(pc)) || (bloqueado && bloqueado.url().includes("/portal")), "el dueño no entra a las pantallas del personal");
   await ctxCli.close();
 
-  // ── 6. El envío automático, contra un WhatsApp de mentiras ──
-  console.log("6. Envío automático de recordatorios");
-  const PUERTO_DOBLE = 4460;
-  const PUERTO_APP = 3006;
-  const enviados = [];
-  const estadoPlantilla = { valor: "APPROVED" };
-  doble = http.createServer((req, res) => {
-    let d = "";
-    req.on("data", (c) => (d += c));
-    req.on("end", () => {
-      const j = d ? JSON.parse(d) : {};
-      res.setHeader("content-type", "application/json");
-      if (req.method === "GET" && req.url.includes("/message_templates")) {
-        return res.end(JSON.stringify({ data: [{ name: "peludesk_recordatorio_dosis_v2", status: estadoPlantilla.valor, language: "es_MX", category: "UTILITY" }] }));
-      }
-      if (req.url.includes("/messages")) {
-        enviados.push(j);
-        return res.end(JSON.stringify({ messages: [{ id: `wamid.${enviados.length}` }] }));
-      }
-      res.statusCode = 404;
-      res.end("{}");
-    });
-  });
-  await new Promise((r) => doble.listen(PUERTO_DOBLE, "127.0.0.1", r));
-  servidor2 = spawn("npx", ["next", "start", "-p", String(PUERTO_APP)], {
-    env: { ...process.env, NODE_USE_ENV_PROXY: "", VERCEL_ENV: "", WHATSAPP_GRAPH_URL: `http://127.0.0.1:${PUERTO_DOBLE}`, WHATSAPP_TOKEN: "wa-prueba", WHATSAPP_PHONE_NUMBER_ID: "111222", PELUDESK_WABA_ID: "waba-prueba", CRON_SECRET: "cron-prueba" },
-    stdio: "ignore",
-    detached: true,
-  });
-  const pedir = (ruta, secreto = "cron-prueba") =>
-    new Promise((resolve, reject) => {
-      const r = http.request({ host: "127.0.0.1", port: PUERTO_APP, path: ruta, headers: { host: `plataforma.localhost:${PUERTO_APP}`, ...(secreto ? { authorization: `Bearer ${secreto}` } : {}) }, timeout: 60000 }, (res) => {
-        let t = "";
-        res.on("data", (c) => (t += c));
-        res.on("end", () => resolve({ status: res.statusCode, texto: t }));
-      });
-      r.on("error", reject);
-      r.end();
-    });
-  for (let i = 0; i < 60; i++) {
-    if (await pedir("/api/cron/carnet", null).then((r) => r.status === 401).catch(() => false)) break;
-    await espera(1000);
-  }
-  comprobar((await pedir("/api/cron/carnet", "mal")).status === 401, "el cron sin el secreto correcto responde 401");
-
-  // Una mascota con próxima dosis mañana; teléfono público del negocio; envío automático prendido.
-  const { data: perroR } = await SB.from("perros").insert({ negocio_id: B, cliente_id: datos.clienteSoloB, nombre: `Aviso ${sufijo}`, especie: "gato" }).select("id").single();
-  // Se reintenta si la llamada falla un instante (red/Auth): antes el error se ignoraba y la prueba
-  // seguía sin vacuna, y el envío automático «no tenía nada que mandar».
-  let vac;
-  for (let intento = 1; intento <= 3; intento++) {
-    vac = await admin.rpc("registrar_vacuna", { p_perro_id: perroR.id, p_biologico: `Triple felina ${sufijo}`, p_tipo_requisito_id: null, p_insumo_id: null, p_lote_id: null, p_lote_texto: null, p_laboratorio: null, p_fecha: sumaDias(hoyB, -300), p_proxima: sumaDias(hoyB, 1), p_medico_id: med.data, p_dosis: null, p_notas: null, p_descontar: true });
-    if (!vac.error) break;
-    console.log(`   (registrar_vacuna falló, intento ${intento}: ${vac.error.message})`);
-    await espera(1500);
-  }
-  if (vac.error) throw new Error(`no se pudo registrar la vacuna de la mascota del aviso: ${vac.error.message}`);
-  const { data: cupo } = await SB.from("cupo_configuracion").select("id, telefono_recepcion").eq("negocio_id", B).is("deleted_at", null).order("vigencia_desde", { ascending: false }).limit(1).maybeSingle();
-  if (cupo) {
-    salvaTelefono.guardado = true; salvaTelefono.id = cupo.id; salvaTelefono.valor = cupo.telefono_recepcion;
-    await SB.from("cupo_configuracion").update({ telefono_recepcion: "4445551234" }).eq("id", cupo.id);
-  }
-  const { data: cliente } = await SB.from("clientes").select("telefono").eq("id", datos.clienteSoloB).single();
-  const ajustes = (nuevo) => admin.rpc("guardar_veterinaria_ajustes", { p_recordatorios_activos: nuevo, p_dias_anticipacion: 7, p_certificado_vigencia_dias: 30, p_carnet_reemplaza_comprobante: false, p_precio_dia: null });
-  await ajustes(false);
-  const hoyISO = hoyB;
-  const ahora = `${hoyISO}T18:00:00Z`; // 11:00 en Tijuana (horario de verano) o 10:00: dentro de 9 a 20
-  const q = `/api/cron/carnet?solo=${B}&ahora=${encodeURIComponent(ahora)}`;
-  let r = await pedir(q);
-  comprobar(r.status === 200 && JSON.parse(r.texto).negocios === 0 && enviados.length === 0, "con el envío automático apagado no sale nada");
-  await ajustes(true);
-  estadoPlantilla.valor = "PENDING";
-  r = await pedir(q);
-  comprobar(r.status === 200 && JSON.parse(r.texto).plantilla === "sin aprobar" && enviados.length === 0, "con la plantilla sin aprobar no sale nada");
-  estadoPlantilla.valor = "APPROVED";
-  r = await pedir(`/api/cron/carnet?solo=${B}&ahora=${encodeURIComponent(`${hoyISO}T05:00:00Z`)}`);
-  comprobar(r.status === 200 && JSON.parse(r.texto).fuera_de_horario === 1 && enviados.length === 0, "de madrugada (hora del negocio) tampoco");
-  r = await pedir(q);
-  const res1 = JSON.parse(r.texto);
-  comprobar(res1.enviados >= 1 && enviados.length >= 1, `con todo en orden sale el recordatorio (${r.texto})`);
-  const msg = enviados.find((m) => JSON.stringify(m).includes(`Aviso ${sufijo}`));
-  const ps = msg?.template?.components?.[0]?.parameters?.map((p) => p.text) ?? [];
-  comprobar(msg?.template?.name === "peludesk_recordatorio_dosis_v2" && msg.to === `52${cliente.telefono.replace(/\D/g, "")}` && ps[1] === `Aviso ${sufijo}` && /Triple felina/.test(ps[3]) && ps[4] === "mañana" && ps[5] === "444 555 1234", `la plantilla lleva dueño, mascota, vacuna, «mañana» y el teléfono del negocio (${ps.join(" | ")})`);
-  const antes = enviados.length;
-  await pedir(q);
-  await pedir(q);
-  comprobar(enviados.length === antes, "otras corridas no lo repiten: una sola vez por dosis");
-  const fila = (await SB.from("carnet_recordatorios").select("estado, wa_message_id, intentos").eq("perro_id", perroR.id).single()).data;
-  comprobar(fila.estado === "enviado" && /^wamid\./.test(fila.wa_message_id) && fila.intentos === 1, "queda anotado como enviado con el id de WhatsApp");
-  // Sin teléfono público del negocio: no sale (se manda a mano)
-  if (cupo) {
-    const { data: perroS } = await SB.from("perros").insert({ negocio_id: B, cliente_id: datos.clienteSoloB, nombre: `SinTel ${sufijo}`, especie: "perro" }).select("id").single();
-    await admin.rpc("registrar_vacuna", { p_perro_id: perroS.id, p_biologico: `Rabia ${sufijo}`, p_tipo_requisito_id: null, p_insumo_id: null, p_lote_id: null, p_lote_texto: null, p_laboratorio: null, p_fecha: sumaDias(hoyB, -300), p_proxima: sumaDias(hoyB, 2), p_medico_id: med.data, p_dosis: null, p_notas: null, p_descontar: true });
-    await SB.from("cupo_configuracion").update({ telefono_recepcion: null }).eq("id", cupo.id);
-    const n = enviados.length;
-    const sinTel = JSON.parse((await pedir(q)).texto);
-    comprobar(sinTel.sin_telefono_negocio === 1 && enviados.length === n, "si el negocio no tiene teléfono público, no se manda solo (queda para mandarlo a mano)");
-    await SB.from("cupo_configuracion").update({ telefono_recepcion: "4445551234" }).eq("id", cupo.id);
-    const una = JSON.parse((await pedir(q)).texto);
-    comprobar(una.enviados >= 1 && enviados.length === n + 1, "con teléfono, la siguiente corrida lo manda");
-  }
-  await ajustes(false);
+  // ── 6. (Retirado el 25 de octubre de 2026.) El envío automático de dosis lo reemplazan los recordatorios automáticos
+  // por WhatsApp (tipo «vacuna», 7 días antes, con botones): se prueba en scripts/auditoria/recordatorios-dev.mjs.
 } catch (e) {
   hallazgo(`el recorrido tronó: ${e.message}`);
 } finally {

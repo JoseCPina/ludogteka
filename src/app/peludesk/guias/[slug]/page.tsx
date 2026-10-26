@@ -8,6 +8,8 @@ import { EnlaceRegistro } from "@/components/peludesk/enlace-registro";
 import { guia, todasLasGuias } from "@/lib/peludesk/guias";
 import { planUnico } from "@/lib/peludesk/plan";
 import { urlDemo } from "@/lib/peludesk/landing";
+import { SeccionRecordatorios } from "@/components/peludesk/seccion-recordatorios";
+import { recordatoriosVigentes } from "@/lib/peludesk/recordatorios";
 import { JsonLd, ORGANIZACION, SITIO, metaPagina, migas, preguntasFrecuentes } from "@/lib/peludesk/seo";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -25,7 +27,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Guia({ params }: Props) {
   const g = guia((await params).slug);
   if (!g) notFound();
-  const plan = await planUnico();
+  // La guía de recordatorios lleva la maqueta animada y el precio de la base.
+  const deRecordatorios = g.slug === "recordatorios-por-whatsapp-y-portal-para-duenos-de-mascotas";
+  const [plan, recordatorios] = await Promise.all([planUnico(), deRecordatorios ? recordatoriosVigentes() : null]);
   const ruta = `/guias/${g.slug}`;
   return (
     <MarcoSitio>
@@ -56,6 +60,8 @@ export default async function Guia({ params }: Props) {
           <p className="mt-2 text-xs text-n-600">Captura del negocio de ejemplo: los datos son inventados.</p>
         </div>
       </section>
+
+      {recordatorios && <SeccionRecordatorios textos={recordatorios} className="border-y border-n-200 bg-white" />}
 
       <article className="mx-auto max-w-3xl px-4 pb-6 sm:px-6">
         {g.secciones.map((s) => (
