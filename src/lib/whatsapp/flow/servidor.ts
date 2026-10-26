@@ -17,7 +17,10 @@ import { ClienteWA, configWhatsApp, marcarNumeroContesta, registroDeProspecto } 
 import { CTA_FLOW, type DatosFlow, esGiro, giroDeProspecto, serviciosDeGiro } from "./definicion";
 import type { DepsIntercambio, EstadoSesion, SesionFlow } from "./intercambio";
 
-export type PuntoFlow = "saludo" | "menu" | "precio" | "prueba" | "prospeccion" | "anuncio" | "manual";
+export type PuntoFlow =
+  | "saludo" | "menu" | "precio" | "prueba" | "prospeccion" | "anuncio" | "manual"
+  // Los del guion de ventas (src/lib/whatsapp/ventas/).
+  | "cierre" | "objecion" | "funcion" | "ya_cuenta" | "cliente" | "seguimiento";
 
 const MODELO = process.env.PELUDESK_NEGOCIO_MODELO_ID ?? NEGOCIO_ORIGINAL_ID;
 const DIAS_PRUEBA = 15;
@@ -38,7 +41,7 @@ export function configFlow() {
 const tel10 = (telefono: string) => (/^52[0-9]{10}$/.test(telefono) ? telefono.slice(2) : null);
 const sha256 = (t: string) => createHash("sha256").update(t).digest("hex");
 
-function clienteWA() {
+export function clienteWA() {
   const cfg = configWhatsApp();
   return new ClienteWA(cfg.token, cfg.phoneNumberId, marcarNumeroContesta);
 }
@@ -71,7 +74,7 @@ function fuenteDe(p: ProspectoContexto | null | undefined): string {
  * Manda el Flow con el botón «Probar gratis». false = no salió (sin Flow configurado, número de fuera de México o
  * Meta lo rechazó): quien llama manda el texto de siempre.
  */
-export async function ofrecerFlow(telefono: string, punto: PuntoFlow, cuerpo: string, prospecto?: ProspectoContexto | null, wa: ClienteWA = clienteWA()): Promise<boolean> {
+export async function ofrecerFlow(telefono: string, punto: PuntoFlow, cuerpo: string, prospecto?: ProspectoContexto | null, wa: ClienteWA = clienteWA(), pie?: string): Promise<boolean> {
   const cfg = configFlow();
   if (!cfg.flowId || !tel10(telefono)) return false;
   const sb = createSupabaseAdminClient();
@@ -94,7 +97,7 @@ export async function ofrecerFlow(telefono: string, punto: PuntoFlow, cuerpo: st
     console.error("[whatsapp-flow] no se guardó la sesión", error?.message);
     return false;
   }
-  const r = await wa.flow(telefono, { cuerpo, flowId: cfg.flowId, flowToken, cta: CTA_FLOW, borrador: cfg.borrador });
+  const r = await wa.flow(telefono, { cuerpo, flowId: cfg.flowId, flowToken, cta: CTA_FLOW, borrador: cfg.borrador, pie });
   if (!r.ok) {
     await sb.from("wa_flow_sesiones").update({ respaldo_at: new Date().toISOString(), error: `No salió: ${(r.error ?? "sin detalle").slice(0, 400)}` }).eq("id", fila.id);
     return false;
@@ -463,6 +466,9 @@ export async function correrRespaldos(): Promise<{ respaldos: number; altas: num
     const { count: escribio } = await sb.from("wa_mensajes").select("id", { count: "exact", head: true }).eq("telefono", s.telefono).eq("quien", "usuario").gt("created_at", s.enviado_at).is("deleted_at", null);
     const { count: otroDespues } = await sb.from("wa_flow_sesiones").select("id", { count: "exact", head: true }).eq("telefono", s.telefono).gt("enviado_at", s.enviado_at).is("deleted_at", null);
     if ((escribio ?? 0) > 0 || (otroDespues ?? 0) > 0) continue;
+    // El guion de ventas ofrece el botón en casi cada respuesta: el respaldo por texto sale una vez al día por teléfono.
+    const { count: yaHubo } = await sb.from("wa_mensajes").select("id", { count: "exact", head: true }).eq("telefono", s.telefono).eq("quien", "agente").like("texto", "¿No se abrió el formulario?%").gt("created_at", new Date(ahora - 24 * 3600_000).toISOString());
+    if ((yaHubo ?? 0) > 0) continue;
     if (await enviarYApuntar(s.telefono, await textoRespaldo(s))) respaldos++;
   }
   const { data: pendientes } = await sb

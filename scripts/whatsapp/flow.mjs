@@ -11,6 +11,10 @@
 //                   (Production, sensitive) como WHATSAPP_FLOW_PRIVATE_KEY. La privada nunca se imprime ni toca disco.
 //   publicar        publica el Flow (Meta revisa antes el endpoint: tiene que estar desplegado y con la llave)
 //   id-en-vercel    guarda el id del Flow en Vercel (Production) como WHATSAPP_FLOW_ID y en .env.local
+//   plantilla-ventas [enviar]
+//                   la plantilla MARKETING de los seguimientos del guion de ventas fuera de la ventana de 24 h
+//                   (textos de src/lib/whatsapp/ventas/guion.ts): sin «enviar» dice su estado; con «enviar» la manda
+//                   a revisión si Meta no la tiene. El bot no la usa hasta que esté APPROVED.
 //
 // Variables (nunca se imprimen): WHATSAPP_TOKEN (o un archivo KEY=VALOR fuera del repo en WHATSAPP_TOKEN_ARCHIVO, con
 // WHATSAPP_TOKEN o WA_TOKEN), PELUDESK_WABA_ID y WHATSAPP_PHONE_NUMBER_ID (por omisión, los de PeluDesk).
@@ -18,6 +22,7 @@ import fs from "node:fs";
 import { spawnSync } from "node:child_process";
 import { generateKeyPairSync } from "node:crypto";
 import { flowJson, NOMBRE_FLOW } from "../../src/lib/whatsapp/flow/definicion.ts";
+import { PLANTILLA_VENTAS, PLANTILLA_VENTAS_BOTON, PLANTILLA_VENTAS_CUERPO, PLANTILLA_VENTAS_PIE } from "../../src/lib/whatsapp/ventas/guion.ts";
 
 const GRAPH = "https://graph.facebook.com/v23.0";
 const WABA = process.env.PELUDESK_WABA_ID?.trim() || "1445370394155532";
@@ -119,6 +124,26 @@ const pasos = {
     await graph(`/${f.id}/publish`, { method: "POST" });
     const g = await graph(`/${f.id}?fields=id,status,validation_errors,health_status`);
     console.log(`Flow ${g.id}: ${g.status}${g.health_status ? `\n  salud: ${JSON.stringify(g.health_status)}` : ""}`);
+  },
+  async "plantilla-ventas"() {
+    const { data } = await graph(`/${WABA}/message_templates?name=${PLANTILLA_VENTAS}&fields=name,status,category,rejected_reason`);
+    const ya = (data ?? []).find((t) => t.name === PLANTILLA_VENTAS);
+    if (ya) return console.log(`${PLANTILLA_VENTAS}: ${ya.status} (${ya.category})${ya.rejected_reason && ya.rejected_reason !== "NONE" ? ` · ${ya.rejected_reason}` : ""}`);
+    if (process.argv[3] !== "enviar") return console.log(`${PLANTILLA_VENTAS}: no existe en Meta. Con «enviar» se manda a revisión.`);
+    const r = await graph(`/${WABA}/message_templates`, {
+      method: "POST",
+      body: {
+        name: PLANTILLA_VENTAS,
+        language: "es_MX",
+        category: "MARKETING",
+        components: [
+          { type: "BODY", text: PLANTILLA_VENTAS_CUERPO },
+          { type: "FOOTER", text: PLANTILLA_VENTAS_PIE },
+          { type: "BUTTONS", buttons: [{ type: "QUICK_REPLY", text: PLANTILLA_VENTAS_BOTON }] },
+        ],
+      },
+    });
+    console.log(`${PLANTILLA_VENTAS} enviada a revisión: ${r.id} · ${r.status}`);
   },
   async "id-en-vercel"() {
     const f = await flowExistente();

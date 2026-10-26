@@ -35,6 +35,7 @@ import {
   type ProspectoContexto,
   systemPrompt,
   TEXTO_ESCALAMIENTO,
+  TEXTO_SOLO_TEXTO,
   textoCaptura,
   textoTelegram,
   type TipoInterlocutor,
@@ -55,6 +56,7 @@ import {
   ultimoFueMenu,
 } from "./conversacion";
 import type { PuntoFlow } from "./flow/servidor";
+import { SIN_TEXTO } from "./ventas/guion";
 
 // ───────────────────────────── puertos
 
@@ -127,7 +129,8 @@ export interface RespuestaIA {
 }
 
 export interface IA {
-  responder(system: string | BloqueIA[], mensajes: BloqueIA[], tools: BloqueIA[]): Promise<RespuestaIA>;
+  /** `extra`: campos de más para la API (el guion de ventas fuerza su herramienta con tool_choice). */
+  responder(system: string | BloqueIA[], mensajes: BloqueIA[], tools: BloqueIA[], maxTokens?: number, extra?: Record<string, unknown>): Promise<RespuestaIA>;
 }
 
 export interface SalidaWA {
@@ -181,6 +184,16 @@ export interface DepsSoporte {
    * Sin esta función (las pruebas sin Flow), todo va por texto.
    */
   ofrecerFlow?(telefono: string, punto: PuntoFlow, cuerpo: string, prospecto?: ProspectoContexto | null): Promise<boolean>;
+  /** El guion de ventas para un prospecto (sin esta función, las pruebas que no lo usan van por el camino de antes). */
+  ventas?(e: {
+    telefono: string;
+    texto: string;
+    prospecto: ProspectoContexto | null;
+    tambienCliente: boolean;
+    primeraVez: boolean;
+    usaIA: boolean;
+    ultimoDelBot: string | null;
+  }): Promise<{ rama: string; escalar?: { acuse: string; resumen: string } }>;
   alerta(detalle: string, e?: unknown): void;
 }
 
@@ -268,6 +281,33 @@ export async function atender(telefono: string, texto: string, deps: DepsSoporte
   const nueva = !actual.some((m) => m.quien !== "usuario");
   // A un número que nunca recibió respuesta, una línea con el aviso de privacidad (con lo fijo o con el modelo).
   const primeraVez = cuenta.tipo === "prospecto" && !todos.some((m) => m.quien !== "usuario");
+
+  // Un prospecto (también el dueño de una mascota que nos escribe): el guion de ventas, con respuestas fijas y la IA
+  // solo para elegir la rama (src/lib/whatsapp/ventas/). Con el operador en medio, se calla como siempre; si el guion
+  // falla, sigue el camino de antes.
+  if (deps.ventas && cuenta.tipo === "prospecto" && !seguimiento && v.motivo !== "silencio_humano") {
+    const delBot = actual.filter((m) => m.quien !== "usuario");
+    const r = await deps
+      .ventas({ telefono, texto, prospecto: prospecto ?? null, tambienCliente: cuenta.tambienCliente === true, primeraVez, usaIA: v.usaIA, ultimoDelBot: delBot.at(-1)?.texto ?? null })
+      .catch((e) => {
+        deps.alerta(`El guion de ventas falló para ${telefono}`, e);
+        return null;
+      });
+    if (r) {
+      marcar("ventas");
+      if (r.escalar) {
+        await escalar(hilo, texto, r.escalar.resumen, "normal", deps, { acuse: r.escalar.acuse });
+        return "escalo";
+      }
+      await deps.datos.guardarHilo(hilo);
+      return "respondio";
+    }
+  }
+  if (texto === SIN_TEXTO) {
+    await deps.wa.texto(telefono, TEXTO_SOLO_TEXTO);
+    await deps.datos.apuntarMensaje(telefono, "agente", TEXTO_SOLO_TEXTO);
+    return "respondio";
+  }
 
   // Respuestas fijas, sin modelo (no gastan IA; se callan si el operador está en medio):
   //   menú (1, 2, 3) → prueba, precio o «cuéntame»; precio/planes/anual/sucursales/prueba/factura → texto fijo con las
@@ -544,11 +584,12 @@ export async function escalar(
   resumen: string,
   urgencia: "normal" | "urgente",
   deps: DepsSoporte,
-  opciones: { avisar?: boolean } = {},
+  opciones: { avisar?: boolean; acuse?: string } = {},
 ): Promise<void> {
   if (opciones.avisar ?? true) {
-    await deps.wa.texto(hilo.telefono, TEXTO_ESCALAMIENTO);
-    await deps.datos.apuntarMensaje(hilo.telefono, "agente", TEXTO_ESCALAMIENTO);
+    const acuse = opciones.acuse ?? TEXTO_ESCALAMIENTO;
+    await deps.wa.texto(hilo.telefono, acuse);
+    await deps.datos.apuntarMensaje(hilo.telefono, "agente", acuse);
   }
   const e: Escalamiento = { tipo: hilo.tipo, telefono: hilo.telefono, negocio: hilo.negocioNombre, resumen, urgencia, mensajeOriginal };
   const chat = Number(await deps.datos.config(CLAVE_CHAT_OPERADOR));

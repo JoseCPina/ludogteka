@@ -1,5 +1,5 @@
 import { after, NextResponse, type NextRequest } from "next/server";
-import { TEXTO_SOLO_TEXTO } from "@/lib/whatsapp/agente";
+import { SIN_TEXTO } from "@/lib/whatsapp/ventas/guion";
 import { configWhatsApp, construirSoporte, firmaMetaValida, igualSeguro, telefonoCanonico } from "@/lib/whatsapp/infra";
 import { atender, type Tiempos } from "@/lib/whatsapp/soporte";
 import { TEXTO_AHORA_NO, TEXTO_BAJA, TEXTO_BAJA_PROSPECTO, clasificarRespuesta } from "@/lib/seguimiento/respuestas";
@@ -199,18 +199,16 @@ export async function POST(request: NextRequest) {
           await datos.apuntarMensaje(m.telefono, "agente", TEXTO_BAJA_PROSPECTO);
           continue;
         }
-        if (!m.texto) {
-          await wa.texto(m.telefono, TEXTO_SOLO_TEXTO);
-          await datos.apuntarMensaje(m.telefono, "agente", TEXTO_SOLO_TEXTO);
-          continue;
-        }
+        // Audio, foto o sticker sin texto: a un prospecto lo recibe el guion de ventas como una entrada; a los demás,
+        // atender() les pide que lo escriban (TEXTO_SOLO_TEXTO).
+        const texto = m.texto ?? SIN_TEXTO;
         const tiempos: Tiempos = {};
         // Un prospecto que llega desde su página (/para/<slug>) o desde un anuncio de clic a WhatsApp: queda «respondió»
         // en el CRM y el bot sabe quién es (y de qué giro, si vino del anuncio).
         const prospecto = seguimiento
           ? null
-          : (m.anuncio ? await datos.registrarAnuncio(m.telefono, m.perfil, m.anuncio, m.texto) : null) ?? (await datos.registrarProspecto(m.telefono, m.texto));
-        const r = await atender(m.telefono, m.texto, deps, tiempos, seguimiento, prospecto);
+          : (m.anuncio ? await datos.registrarAnuncio(m.telefono, m.perfil, m.anuncio, texto) : null) ?? (await datos.registrarProspecto(m.telefono, texto));
+        const r = await atender(m.telefono, texto, deps, tiempos, seguimiento, prospecto);
         console.info("[whatsapp] tiempos", {
           desenlace: r,
           // Del envío en el celular a que Meta nos lo entregó (su reloj contra el nuestro).

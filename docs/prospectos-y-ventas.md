@@ -80,3 +80,6 @@
 
 ## Prueba gratis por WhatsApp (25 de octubre de 2026)
 - El bot ofrece el formulario «Probar gratis» (WhatsApp Flow) a quien llega de su página (`ref.`) o de un anuncio, en su primera respuesta; al completarlo el prospecto pasa a `en_prueba` ligado al negocio y su página queda publicada (igual que desde `/para/<slug>/ir/prueba`). Embudo por fuente en `/plataforma/prospectos` → «Prueba gratis por WhatsApp». Detalle: docs/whatsapp-y-soporte.md.
+
+## Guion de ventas del bot (25 de octubre de 2026)
+- El bot califica a cada prospecto que le escribe (giro, tamaño o sistema actual) y lo guarda en `prospectos.tamano_negocio`, `sistema_actual` y `calificacion_texto`; quien dice «no me interesa» queda con baja de publicidad. Embudo por giro y fuente en `/plataforma/prospectos` → «Embudo del bot de ventas». Detalle: docs/whatsapp-y-soporte.md.
