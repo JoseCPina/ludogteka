@@ -12,6 +12,7 @@ import { useZonaNegocio } from "@/components/zona-negocio";
 import {
   reprogramarCita,
   cancelarCita,
+  deshacerInicioCita,
   eliminarCita,
   cambiarTarifaGuarderia,
   iniciarCita,
@@ -98,6 +99,10 @@ export function CitaDetalle({
   const campoCancelar = useRef<HTMLInputElement>(null);
   const campoNoLlego = useRef<HTMLInputElement>(null);
   const campoEliminar = useRef<HTMLInputElement>(null);
+  // QA S36: una cita iniciada por error (sin cobros ni consumo) regresa a reservada o se cancela con motivo.
+  const [deshaciendo, setDeshaciendo] = useState<"reservada" | "cancelada" | null>(null);
+  const [motivoDeshacer, setMotivoDeshacer] = useState("");
+  const campoDeshacer = useRef<HTMLInputElement>(null);
   const [quitandoTarifa, setQuitandoTarifa] = useState(false);
   const [motivoTarifa, setMotivoTarifa] = useState("");
   // El datetime-local no trae huso horario: lo que se precarga y lo que se
@@ -175,6 +180,25 @@ export function CitaDetalle({
     }
     setEstado("cancelada");
     setAviso({ texto: "Cita cancelada. El horario quedó libre y el motivo en el historial.", url: res.urlWhatsApp });
+    router.refresh();
+  }
+
+  async function accionDeshacer(destino: "reservada" | "cancelada") {
+    setError(null);
+    const motivoFinal = valorDelCampo(campoDeshacer, motivoDeshacer);
+    setMotivoDeshacer(motivoFinal);
+    if (destino === "cancelada" && motivoFinal.trim().length < 3) {
+      setError("Escribe el motivo de la cancelación.");
+      return;
+    }
+    const res = await cargando.ejecutar(() => deshacerInicioCita(citaId, destino, motivoFinal));
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    setDeshaciendo(null);
+    setEstado(destino);
+    setAviso({ texto: destino === "reservada" ? "La cita regresó a reservada. Quedó en el historial." : "Cita cancelada. El horario quedó libre y el motivo en el historial." });
     router.refresh();
   }
 
@@ -625,10 +649,44 @@ export function CitaDetalle({
                 {motivoFinalizar && <span className="text-sm text-n-600" data-motivo-confirmar>{motivoFinalizar}</span>}
               </div>
             </div>
+          ) : deshaciendo ? (
+            <div className="flex flex-col gap-3 rounded-md border border-n-200 bg-n-50 p-3" data-deshacer-inicio={deshaciendo}>
+              <p className="text-sm text-n-700">
+                {deshaciendo === "reservada"
+                  ? "La cita vuelve a «Reservada», como si no se hubiera iniciado. Solo si no tiene cobros ni insumos descontados."
+                  : "La cita se cancela y su horario queda libre. Solo si no tiene cobros ni insumos descontados."}
+              </p>
+              <Field
+                ref={campoDeshacer}
+                label={deshaciendo === "reservada" ? "Motivo (opcional)" : "Motivo de la cancelación (obligatorio)"}
+                value={motivoDeshacer}
+                onChange={(e) => setMotivoDeshacer(e.target.value)}
+                onKeyDown={(e) => {
+                  if (esEnterParaConfirmar(e)) void accionDeshacer(deshaciendo);
+                }}
+                placeholder={deshaciendo === "reservada" ? "ej. Se inició por error" : "ej. El dueño se la llevó sin el servicio"}
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variante={deshaciendo === "cancelada" ? "peligro" : "primario"} cargando={cargando.cargando} onClick={() => accionDeshacer(deshaciendo)}>
+                  {deshaciendo === "reservada" ? "Regresar a reservada" : "Cancelar la cita"}
+                </Button>
+                <Button type="button" variante="secundario" onClick={() => setDeshaciendo(null)}>
+                  No
+                </Button>
+              </div>
+            </div>
           ) : (
-            <Button type="button" onClick={() => setFinalizando(true)}>
-              Finalizar cita
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" onClick={() => setFinalizando(true)}>
+                Finalizar cita
+              </Button>
+              <Button type="button" variante="secundario" onClick={() => setDeshaciendo("reservada")} data-regresar-a-reservada>
+                Regresar a reservada
+              </Button>
+              <Button type="button" variante="secundario" onClick={() => setDeshaciendo("cancelada")} data-cancelar-en-curso>
+                Cancelar
+              </Button>
+            </div>
           )}
         </div>
       )}

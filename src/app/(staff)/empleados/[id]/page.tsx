@@ -1,3 +1,4 @@
+import { RestablecerPasswordPersonal } from "./restablecer-password";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -358,6 +359,7 @@ export default async function EmpleadoPage({
           </Seccion>
         </>
       )}
+      {esAdmin && e.profile_id && <RestablecerPasswordPersonal empleadoId={id} nombre={e.nombre as string} />}
     </div>
   );
 }

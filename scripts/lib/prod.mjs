@@ -73,3 +73,23 @@ export function comoPersona(token, negocioId) {
   if (negocioId === LUDOGTEKA_ID) throw new Error("Este script nunca toca Ludogteka.");
   return createClient(URL_PROD, llavesProd().anon, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${token}`, "x-negocio-id": negocioId } } });
 }
+
+/**
+ * Un negocio PRUEBA de QA en producción (slug «prueba-…», los que da de alta la plataforma para las tandas de QA) y SOLO
+ * esos: { negocio, base, N (servicio acotado), sesion(rol) con las cookies de su dominio }. Para reproducir lo que
+ * reporta QA en el mismo negocio y la misma pantalla.
+ */
+export async function negocioPrueba(slug) {
+  if (!/^prueba-[a-z0-9-]+$/.test(slug)) throw new Error(`Solo negocios PRUEBA de QA: «${slug}» no lo es.`);
+  const S = servicioSinNegocio();
+  const { data: negocio } = await S.from("negocios").select("id, slug, nombre, zona_horaria").eq("slug", slug).single();
+  if (negocio?.slug !== slug || negocio.id === LUDOGTEKA_ID) throw new Error(`No encontré el negocio ${slug}.`);
+  const N = servicioEn(negocio.id);
+  const dominio = `${slug}.peludesk.mx`;
+  const sesion = async (rol) => {
+    const { data: m } = await N.from("membresias").select("profile_id").eq("negocio_id", negocio.id).eq("rol", rol).is("deleted_at", null).limit(1);
+    if (!m?.length) throw new Error(`${slug} no tiene a nadie con el rol ${rol}.`);
+    return sesionDe(m[0].profile_id, dominio);
+  };
+  return { negocio, base: `https://${dominio}`, N, sesion };
+}

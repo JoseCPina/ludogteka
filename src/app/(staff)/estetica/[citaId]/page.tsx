@@ -29,6 +29,7 @@ const ETIQUETA_CAMBIO: Record<string, string> = {
   no_llego: "No se presentó",
   eliminacion: "Eliminada",
   tarifa_guarderia: "Tarifa de guardería",
+  regreso_a_reservada: "Regresó a reservada (se había iniciado por error)",
 };
 
 export default async function CitaDetallePage({

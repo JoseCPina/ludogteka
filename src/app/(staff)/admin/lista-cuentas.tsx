@@ -6,6 +6,7 @@ import { Field } from "@/components/ui/field";
 import { ChipRol } from "@/components/ui/chip-rol";
 import { formatearFecha } from "@/lib/formato";
 import { useZonaNegocio } from "@/components/zona-negocio";
+import { RestablecerPasswordPersonal } from "../empleados/[id]/restablecer-password";
 
 export type Cuenta = {
   id: string;
@@ -15,7 +16,7 @@ export type Cuenta = {
   creado_en: string;
 };
 
-export function ListaCuentas({ cuentas }: { cuentas: Cuenta[] }) {
+export function ListaCuentas({ cuentas, miId = null }: { cuentas: Cuenta[]; miId?: string | null }) {
   const zona = useZonaNegocio();
   const [busqueda, setBusqueda] = useState("");
 
@@ -64,6 +65,9 @@ export function ListaCuentas({ cuentas }: { cuentas: Cuenta[] }) {
               <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
                 Alta
               </th>
+              <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+                Contraseña
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -86,6 +90,14 @@ export function ListaCuentas({ cuentas }: { cuentas: Cuenta[] }) {
                 </td>
                 <td className="border-b border-n-200 px-4 py-3 tabular-nums text-n-600">
                   {formatearFecha(cuenta.creado_en, zona)}
+                </td>
+                <td className="border-b border-n-200 px-4 py-3">
+                  {/* QA S36: la de alguien del equipo la restablece un admin (la de un cliente, desde su ficha). */}
+                  {cuenta.rol !== "cliente" && cuenta.id !== miId ? (
+                    <RestablecerPasswordPersonal profileId={cuenta.id} nombre={etiquetaDeCuenta(cuenta.email)} compacto />
+                  ) : (
+                    <span className="text-n-400">—</span>
+                  )}
                 </td>
               </tr>
             ))}

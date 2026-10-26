@@ -71,7 +71,8 @@ try {
   const ctxD = await nav.newContext({ viewport: { width: 390, height: 844 } });
   const pd = await ctxD.newPage();
   await ir(pd, "/login");
-  await pd.getByLabel("Teléfono o correo").fill(usuario);
+  // QA S36: el login separa «Soy cliente» (el de por omisión, con su teléfono) y «Soy del equipo».
+  await pd.getByLabel("Teléfono", { exact: true }).fill(usuario);
   await pd.locator('input[name="password"]').fill(temporal);
   await pd.getByRole("button", { name: "Entrar" }).click();
   await pd.waitForURL(/cambiar-contrasena/, { timeout: 60000 }).catch(() => {});
@@ -107,7 +108,8 @@ try {
   const ctxD2 = await nav.newContext({ viewport: { width: 390, height: 844 } });
   const pd2 = await ctxD2.newPage();
   await ir(pd2, "/login");
-  await pd2.getByLabel("Teléfono o correo").fill(usuario);
+  // QA S36: el login separa «Soy cliente» (el de por omisión, con su teléfono) y «Soy del equipo».
+  await pd2.getByLabel("Teléfono", { exact: true }).fill(usuario);
   await pd2.locator('input[name="password"]').fill(nueva);
   await pd2.getByRole("button", { name: "Entrar" }).click();
   await pd2.waitForURL(/\/portal/, { timeout: 60000 }).catch(() => {});

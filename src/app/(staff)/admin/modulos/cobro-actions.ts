@@ -157,6 +157,8 @@ export async function contratar(sel: Seleccion): Promise<ResultadoCobro> {
       payment_method_types: [...CHECKOUT_FIJO.payment_method_types],
       metadata,
       client_reference_id: ctx.negocio.id,
+      // Con `trial_end` Stripe pone «Comenzar prueba» en el botón y no deja cambiarlo (submit_type no aplica con prueba;
+      // comprobado en modo prueba en QA S36): el texto de junto dice que no se cobra hoy y cuándo es el primer cobro.
       custom_text: { submit: { message: textoCheckout(trialEnd ? new Date(trialEnd * 1000) : null, zona) } },
       success_url: `${base}/admin/modulos/pago?sesion={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/admin/modulos?pago=cancelado`,

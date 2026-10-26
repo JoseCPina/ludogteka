@@ -73,8 +73,9 @@ try {
   const r1 = await nuevaCuenta(400, `UI anular ${sufijo}`);
   await admin.rpc("registrar_cobro", { p_reserva_id: r1, p_notas: "prueba ui", p_metodos: [{ metodo: "efectivo", monto: 400, propina: 0 }] });
   await pa.goto(`${BASE}/caja/cobrar/${r1}`, { waitUntil: "networkidle" });
-  comprobar((await pa.getByRole("button", { name: "Corregir monto" }).count()) === 1 && (await pa.getByRole("button", { name: "Anular cobro" }).count()) === 1, "el cobro trae «Corregir monto» y «Anular cobro»");
-  comprobar((await pa.getByRole("button", { name: "Corregir precio" }).count()) >= 1, "la línea trae «Corregir precio»");
+  // QA S36 (N129): pagada, solo «Anular cobro» (y devolver); «Corregir monto» y «Corregir precio» son de una cuenta con saldo.
+  comprobar((await pa.getByRole("button", { name: "Corregir monto" }).count()) === 0 && (await pa.getByRole("button", { name: "Anular cobro" }).count()) === 1, "la cuenta pagada trae «Anular cobro» y no «Corregir monto»");
+  comprobar((await pa.getByRole("button", { name: "Corregir precio" }).count()) === 0, "la cuenta pagada no trae «Corregir precio»");
   await sinDesborde(pa, "cuenta cobrada");
   await pa.getByRole("button", { name: "Anular cobro" }).first().click();
   await pa.getByLabel("Motivo (obligatorio)").fill("x");

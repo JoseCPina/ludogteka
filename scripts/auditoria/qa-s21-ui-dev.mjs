@@ -167,7 +167,9 @@ try {
     const km = (await SB.from("servicios").select("id").eq("negocio_id", B).eq("unidad", "km").is("deleted_at", null).limit(1).maybeSingle()).data;
     if (km) {
       await p.goto(`${BASE}/servicios/${km.id}`, { waitUntil: "networkidle" });
-      comprobar((await p.locator("[data-como-se-cobra]").count()) === 1 && (await p.locator("[data-enlace-tarifas]").getAttribute("href")) === `/servicios/${km.id}/tarifas`, "la edición trae «Cómo se cobra este servicio» con enlace a las tarifas");
+      // QA S22: con tramos, «Ver y editar los tramos y precios»; sin tramos todavía, «Capturar tramos».
+      const enlace = (await p.locator("[data-enlace-tarifas]").count()) ? await p.locator("[data-enlace-tarifas]").getAttribute("href") : await p.locator("[data-capturar-tramos]").getAttribute("href").catch(() => null);
+      comprobar((await p.locator("[data-como-se-cobra]").count()) === 1 && Boolean(enlace?.startsWith(`/servicios/${km.id}/tarifas`)), `la edición trae «Cómo se cobra este servicio» con enlace a las tarifas (${enlace})`);
     } else comprobar(false, "Huellitas no tiene un servicio por kilómetro");
     await c.close();
   }
@@ -179,8 +181,9 @@ try {
     for (const ancho of [393, 1280]) {
       const { c, p } = await abrir(null, ancho);
       await p.goto(`${BASE}/login`, { waitUntil: "networkidle" });
-      const id = p.getByLabel("Teléfono o correo");
-      comprobar((await id.getAttribute("placeholder")) === "10 dígitos o correo", `placeholder «10 dígitos o correo» (${ancho} px)`);
+      // QA S36: el cliente entra por «Soy cliente» (el de por omisión) con su teléfono.
+      const id = p.getByLabel("Teléfono", { exact: true });
+      comprobar((await id.getAttribute("placeholder")) === "10 dígitos", `placeholder «10 dígitos» (${ancho} px)`);
       await id.fill(tel);
       await p.locator('input[name="password"]').fill(claveAleatoria());
       await p.getByRole("button", { name: "Entrar" }).click();

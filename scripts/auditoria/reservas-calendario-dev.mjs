@@ -19,6 +19,8 @@
 //    «Llegadas atrasadas» del tablero, donde se marca «No llegó»; con el check-in tardío vuelve a contar desde ese
 //    momento; si con él la casa rebasa el cupo, la pantalla dice «La casa está llena (10/10); al registrar la entrada
 //    quedas en 11/10.», pide confirmar y queda anotado (estancia y bitácora). N121: «+ Reserva … este día» lleva ?fecha.
+//    QA S36 (N131): la entrada anticipada cuenta desde el día de su entrada real (y sale en el panel de ese día); la
+//    salida anticipada no cuenta ningún día posterior a su salida real; la salida tardía cuenta hoy (sigue adentro).
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -141,17 +143,30 @@ try {
     await caso("cancelada", hNoche.id, entradaD, await abiertoDesde(suma(entradaD, 2), 1), [{ cambios: { estado: "cancelada" } }]);
     const entradaF = await abiertoDesde(suma(hoy, -3), -1);
     await caso("no llego", hNoche.id, entradaF, await abiertoDesde(suma(entradaF, 1), 1), [{ cambios: { estado: "no_llego" } }]);
+    // h) QA S36 (N131), entrada anticipada: la reserva entra mañana y el perro llegó hoy (S33 entró el 25 con una
+    //    reserva del 26). Cuenta desde hoy, el día de su entrada real, y hasta su salida prevista.
+    const entradaH = await abiertoDesde(suma(hoy, 1), 1);
+    const anticipada = await caso("entro antes", hNoche.id, entradaH, await abiertoDesde(suma(entradaH, 2), 1), [{ cambios: checkin(hoy), dentro: hoy }]);
+    // i) N131, salida anticipada de un día anterior: salió ayer con la salida prevista después de mañana. No cuenta hoy
+    //    ni ningún día después de su salida real.
+    const entradaI = await abiertoDesde(suma(hoy, -3), -1);
+    const ayer = suma(hoy, -1);
+    const salioAntes = await caso("salio antes", hNoche.id, entradaI, await abiertoDesde(suma(hoy, 2), 1), [
+      { cambios: checkin(entradaI), dentro: entradaI },
+      { cambios: { ...checkout, hora_salida_real: instante(ayer, "12:00") }, fuera: ayer },
+    ]);
 
     // La regla, escrita aparte para comparar (de noche solo hotel y el check-out de ese día ya no duerme ahí).
     const cuenta = (c, D, noche) => {
-      if (["cancelada", "no_llego"].includes(c.estado) || (noche && !c.hotel) || c.entrada > D) return false;
+      // Desde su entrada prevista o, si entró antes (N131), desde el día de su entrada real.
+      if (["cancelada", "no_llego"].includes(c.estado) || (noche && !c.hotel) || (c.entrada > D && !(c.dentro && c.dentro <= D))) return false;
       const adentroAhora = Boolean(c.dentro) && !c.fuera;
       const viva = ["reservada", "confirmada"].includes(c.estado);
       if (D === hoy) return adentroAhora || (!c.dentro && viva && c.entrada === D && c.salida > D);
       if (D < hoy) return Boolean(c.dentro) && c.dentro <= D && (!c.fuera || c.fuera > D || (!noche && c.fuera === D));
       return c.salida > D && ((viva && c.entrada >= hoy) || adentroAhora);
     };
-    const dias = [...new Set([entradaA, entradaF, entradaG, suma(hoy, -1), hoy, suma(hoy, 1), suma(hoy, 2), salidaC])].sort();
+    const dias = [...new Set([entradaA, entradaF, entradaG, entradaI, suma(hoy, -1), hoy, suma(hoy, 1), suma(hoy, 2), salidaC])].sort();
     const leer = async () => {
       const { data } = await admin.rpc("calendario_ocupacion", { p_desde: dias[0], p_hasta: dias[dias.length - 1] });
       return Object.fromEntries((data ?? []).map((f) => [f.fecha, { d: f.ocupado_diurno, n: f.ocupado_nocturno }]));
@@ -171,6 +186,7 @@ try {
     }
     comprobar(cuenta(vencida, hoy, true) && !cuenta(casos.find((c) => c.nombre === "salio hoy"), suma(hoy, 1), true), "los dos casos de la QA: la salida vencida cuenta hoy y el check-out de hoy ya no ocupa mañana");
     comprobar(dias.every((D) => !cuenta(atrasada, D, false)), "la llegada atrasada no cuenta ningún día (ni su entrada, ni hoy, ni después)");
+    comprobar(cuenta(anticipada, hoy, true) && dias.filter((D) => D > ayer).every((D) => !cuenta(salioAntes, D, false)), "N131: la entrada anticipada cuenta desde hoy y la salida anticipada no cuenta ningún día después de su salida real");
     // El panel del día de hoy enseña al de la salida vencida (cuenta en la ocupación de hoy).
     const ctxN = await nav.newContext({ viewport: { width: 1280, height: 900 } });
     await ctxN.addCookies(await cookiesDe(datos.adminB));
@@ -178,6 +194,7 @@ try {
     pn.setDefaultTimeout(60000);
     await pn.goto(`${BASE}/reservas/calendario?dia=${hoy}`, { waitUntil: "networkidle", timeout: 120000 });
     comprobar((await pn.locator(`[data-lista=dia] [data-reserva="${vencida.id}"]`).count()) === 1, "el panel de hoy incluye al perro que sigue adentro con la salida vencida");
+    comprobar((await pn.locator(`[data-lista=dia] [data-reserva="${anticipada.id}"]`).count()) === 1, "N131: el panel de hoy incluye al perro que entró antes de su fecha");
     // Llegadas atrasadas en el tablero de Hotel; «No llegó» desde ahí, y el check-in tardío vuelve a contar.
     {
       const entradaH = await abiertoDesde(suma(hoy, -1), -1);

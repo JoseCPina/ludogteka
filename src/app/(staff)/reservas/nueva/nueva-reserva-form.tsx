@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { TextoConEnlaces } from "@/components/ui/texto-con-enlaces";
 import { sumarDiasFecha } from "@/lib/formato";
+import { AvisoFueraDeHorario } from "@/components/aviso-fuera-de-horario";
+import type { HorarioSemana } from "@/lib/estetica/aviso-horario";
 import { describirBonoAplicado } from "@/lib/bonos/descripcion";
 import { paseParaFecha, type PaqueteDePerro } from "@/lib/bonos/pase-para-fecha";
 import { ElegirPase } from "@/components/bonos/elegir-pase";
@@ -92,6 +94,8 @@ export function NuevaReservaForm({
   hoy,
   fechaInicial,
   diasSinAtencion = [],
+  horario = null,
+  avisarDia = false,
   base,
 }: {
   clientes: ClienteBuscable[];
@@ -108,12 +112,16 @@ export function NuevaReservaForm({
   // Días de la semana (1 = lunes … 7 = domingo) en que el negocio no atiende,
   // según horario_semana: el hotel no recibe ni entrega ese día.
   diasSinAtencion?: number[];
+  // N128: horario por día de la semana, para avisar al abrir que el día elegido está cerrado (o ya cerró) y proponer
+  // el siguiente abierto. Sin aviso en el walk-in: el perro ya está en la puerta.
+  horario?: HorarioSemana | null;
+  avisarDia?: boolean;
   // Modulo desde el que se abrio el formulario ("/guarderia" u "/hotel"):
   // los enlaces de despues de guardar tienen que regresar al mismo lado,
   // no a un modulo que el usuario no eligio.
   base: string;
 }) {
-  const entradaInicial = fechaInicial && /^\d{4}-\d{2}-\d{2}$/.test(fechaInicial) && fechaInicial > hoy ? fechaInicial : hoy;
+  const [entradaInicial, setEntradaInicial] = useState(fechaInicial && /^\d{4}-\d{2}-\d{2}$/.test(fechaInicial) && fechaInicial > hoy ? fechaInicial : hoy);
   const [clienteId, setClienteId] = useState<string | null>(null);
   const [notas, setNotas] = useState("");
   const [lineas, setLineas] = useState<Linea[]>([]);
@@ -287,10 +295,19 @@ export function NuevaReservaForm({
     setResultados((prev) => (prev ? prev.map((r) => (r.perroId === perroId ? resultado : r)) : [resultado]));
   }
 
+  // N128: el formulario se queda en el día elegido aunque esté cerrado; el aviso lo dice y propone el siguiente abierto.
+  // «Usar ese día» mueve la entrada de lo que ya está marcado (y de lo que se marque después).
+  function usarDia(fecha: string) {
+    setEntradaInicial(fecha);
+    setLineas((prev) => prev.map((l) => ({ ...l, fechaEntrada: fecha, fechaSalida: l.fechaSalida > fecha ? l.fechaSalida : sumarDiasFecha(fecha, 1), diaCerradoConfirmado: false })));
+  }
+  const avisoDia = avisarDia ? <AvisoFueraDeHorario fecha={entradaInicial} horario={horario} onUsarPropuesta={(p) => usarDia(p.fecha)} /> : null;
+
   // Paso 1: elegir cliente.
   if (!clienteElegido) {
     return (
       <div className="flex flex-col gap-4">
+        {avisoDia}
         <BuscadorClientes clientes={clientes} onElegir={(c) => elegirCliente(c.id)} nuevoCliente="guarderia_hotel" autoFocus />
       </div>
     );
@@ -448,6 +465,7 @@ export function NuevaReservaForm({
         </Button>
       </div>
 
+      {avisoDia}
       <AvisoServiciosSinPrecio servicios={servicios} />
 
       {perrosDelCliente.length === 0 ? (

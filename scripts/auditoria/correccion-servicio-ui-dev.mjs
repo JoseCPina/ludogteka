@@ -188,7 +188,9 @@ try {
     const t5 = await pa.locator("body").innerText();
     comprobar(/Baño exprés/.test(t5) && !/no existe/i.test(t5), "la cita abre mostrando el servicio con el que se registró, sin «no existe»");
     // Cancelar (dos toques: botón y confirmación) no truena con el servicio retirado.
-    await pa.getByRole("button", { name: "Cancelar", exact: true }).first().click();
+    // «Cancelar cita» abre el motivo (obligatorio) y su botón confirma.
+    await pa.getByRole("button", { name: /^Cancelar( cita)?$/ }).first().click();
+    await pa.getByLabel("Motivo de la cancelación").fill("Prueba: servicio dado de baja");
     await pa.waitForTimeout(500);
     const confirma = pa.getByRole("button", { name: /^(Sí, cancelar|Confirmar cancelación|Cancelar cita)/ });
     if (await confirma.count()) await confirma.first().click();

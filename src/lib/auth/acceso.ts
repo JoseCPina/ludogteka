@@ -65,6 +65,8 @@ export const ZONAS: Zona[] = [
   // Qué recordatorios por WhatsApp salen solos y a qué hora (el tope de gasto, en Módulos y plan).
   { prefijo: "/admin/recordatorios", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { prefijo: "/admin/configuracion", roles: ["admin"], permisos: ["configuracion_negocio"] },
+  // Hotel y guardería: la política de salida anticipada.
+  { prefijo: "/admin/hotel", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { prefijo: "/admin/tarifa-guarderia", roles: ["admin"], permisos: ["tarifas"] },
   { prefijo: "/admin", roles: ["admin"], permisos: ["personal", "configuracion_negocio", "tarifas"] },
   { prefijo: "/recepcion", roles: ["recepcion", "admin"] },

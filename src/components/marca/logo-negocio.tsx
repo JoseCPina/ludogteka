@@ -80,15 +80,26 @@ export function LogoNegocio({
   const marcoBanner = variante === "banner";
   const contenido = (() => {
     if (imagen && !fallo) {
-      return (
+      const img = (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           ref={ref}
           src={imagen}
-          alt={nombre}
+          alt={variante === "barra" ? "" : nombre}
           onError={() => setFallo(true)}
-          className={`block h-auto w-auto object-contain ${ALTURAS[variante]} ${ANCHOS[variante]} ${marcoBanner ? "rounded-lg bg-white p-1.5" : ""}`}
+          className={`block h-auto w-auto object-contain ${ALTURAS[variante]} ${variante === "barra" ? "max-w-[6rem] flex-none" : ANCHOS[variante]} ${marcoBanner ? "rounded-lg bg-white p-1.5" : ""}`}
         />
+      );
+      // QA S36: en la barra del personal y del portal el nombre del negocio va SIEMPRE junto al logo: un logo que a 40 px
+      // no se lee (un cuadro de color con letras diminutas) dejaba el encabezado «vacío» para todos los roles.
+      if (variante !== "barra") return img;
+      return (
+        <span className="flex min-w-0 max-w-full items-center gap-2.5" title={nombre}>
+          {img}
+          <span className="min-w-0 break-words text-[15px] font-bold leading-tight tracking-tight text-n-900 line-clamp-2 sm:block sm:truncate sm:text-[18px]" data-nombre-negocio>
+            {nombre}
+          </span>
+        </span>
       );
     }
     if (!imagen && marca?.logo_texto?.length) {

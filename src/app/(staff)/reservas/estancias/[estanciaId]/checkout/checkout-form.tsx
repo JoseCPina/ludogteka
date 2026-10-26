@@ -13,6 +13,7 @@ import { Alert } from "@/components/ui/alert";
 import { formatearFechaCalendario } from "@/lib/formato";
 import { alternarPertenencia, confirmarCheckout } from "../../../checkin-actions";
 import { MoverFechas } from "../../../mover-fechas";
+import { textoSalidaAnticipada, type CotizacionSalida } from "@/lib/reservas/salida-anticipada";
 
 type Pertenencia = { id: string; descripcion: string; devuelto: boolean };
 
@@ -24,6 +25,7 @@ export function CheckoutForm({
   version = null,
   pertenenciasIniciales,
   cobroHref,
+  salidaAnticipada = null,
 }: {
   estanciaId: string;
   esHotel: boolean;
@@ -34,6 +36,8 @@ export function CheckoutForm({
   pertenenciasIniciales: Pertenencia[];
   /** QA S27: a dónde se cobra la cuenta al terminar el check-out. */
   cobroHref?: string;
+  /** N132: qué pasa con la cuenta si sale hoy, antes de su salida prevista (se dice ANTES de confirmar). */
+  salidaAnticipada?: CotizacionSalida | null;
 }) {
   const router = useRouter();
   // Cada pertenencia se confirma a mano (o todas de un toque con «Entregué todo»). Se guardan al confirmar la salida.
@@ -42,6 +46,9 @@ export function CheckoutForm({
   const [salidaActual, setSalidaActual] = useState(fechaSalida);
   // QA S27: al terminar, el siguiente paso (cobrar la cuenta) se ofrece al momento, sin esperar a que se repinte la página.
   const [terminado, setTerminado] = useState(false);
+  // N129: con la cuenta pagada al salir, el siguiente paso es ver sus cobros, no cobrar.
+  const [saldoAlSalir, setSaldoAlSalir] = useState<number | null>(null);
+  const [ajusteAplicado, setAjusteAplicado] = useState<string | null>(null);
   const [versionActual, setVersionActual] = useState(version);
   const [versionVista, setVersionVista] = useState(version);
   if (version !== versionVista) {
@@ -113,6 +120,8 @@ export function CheckoutForm({
     }
     setFueraHorario(null);
     setQuedoFueraHorario(res.quedoFueraHorario ?? null);
+    setSaldoAlSalir(res.saldo ?? null);
+    setAjusteAplicado(res.ajusteSalida ?? null);
     setTerminado(true);
     router.refresh();
   }
@@ -124,9 +133,14 @@ export function CheckoutForm({
             Salió fuera del horario ({quedoFueraHorario}). Quedó anotado en la bitácora.
           </span>
         )}
+        {ajusteAplicado && (
+          <span className="block" data-salida-anticipada-aplicada>
+            {ajusteAplicado}.
+          </span>
+        )}
         {cobroHref ? (
           <Link href={cobroHref} data-cobrar-cuenta className="mt-2 inline-flex min-h-11 items-center rounded-md bg-morado px-4 text-sm font-semibold text-white hover:bg-morado-oscuro">
-            Cobrar la cuenta
+            {saldoAlSalir !== null && saldoAlSalir <= 0.005 ? "Ver cobros" : "Cobrar la cuenta"}
           </Link>
         ) : null}
       </Alert>
@@ -302,6 +316,14 @@ export function CheckoutForm({
         <Alert variante="advertencia" titulo="Confirma la salida">
           <span data-aviso-fuera-horario>{fueraHorario}</span> Si la registras, queda anotado en la bitácora.
         </Alert>
+      )}
+      {textoSalidaAnticipada(salidaAnticipada) && (
+        <div data-salida-anticipada={salidaAnticipada?.politica ?? ""}>
+          <Alert variante="advertencia" titulo={salidaAnticipada?.politica === "completa" ? "Sale antes de lo reservado" : "Salida anticipada"}>
+            {textoSalidaAnticipada(salidaAnticipada)}.
+            {salidaAnticipada?.aplica ? " Lo no usado se quita de la cuenta con el motivo «Salida anticipada» al confirmar." : ""}
+          </Alert>
+        </div>
       )}
       <AccionesFormulario error={error}>
         {fueraHorario ? (

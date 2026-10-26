@@ -1,3 +1,5 @@
+import { textoSalidaAnticipada, type CotizacionSalida } from "@/lib/reservas/salida-anticipada";
+import { cuentaPorCobrar } from "@/lib/caja/cuenta-por-cobrar";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -43,6 +45,8 @@ export default async function CheckoutEstanciaPage({
     { data: serviciosCargo },
     { data: cargosCrudo },
     { data: hoyData },
+    { data: salidaAnticipada },
+    { data: totalesCuenta },
   ] = await Promise.all([
     supabase
       .from("perro_alertas")
@@ -76,7 +80,12 @@ export default async function CheckoutEstanciaPage({
       .eq("estancia_id", estanciaId)
       .order("created_at"),
     supabase.rpc("fecha_negocio"),
+    // N132: si sale hoy antes de su salida prevista, qué pasa con la cuenta (se dice antes de confirmar).
+    supabase.rpc("salida_anticipada_cotizar", { p_estancia_id: estanciaId }),
+    supabase.rpc("cuenta_totales_reserva", { p_reserva_id: estancia.reserva_id }),
   ]);
+  const saldoCuenta = Number((Array.isArray(totalesCuenta) ? totalesCuenta[0] : totalesCuenta)?.saldo ?? 0);
+  const avisoSalida = textoSalidaAnticipada((salidaAnticipada ?? null) as CotizacionSalida | null, { salio: estancia.estado === "finalizada" });
 
   const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
 
@@ -186,9 +195,15 @@ export default async function CheckoutEstanciaPage({
                 Recogió: {estancia.recogido_por_nombre ?? "—"}
                 {estancia.recogido_por_es_dueno === false ? " (persona autorizada, no el dueño)" : ""}
               </p>
-              {/* QA S27: al terminar el check-out, el siguiente paso es cobrar la cuenta. */}
+              {/* N132: si salió antes de lo reservado, qué pasó con la cuenta. */}
+              {avisoSalida && (
+                <p className="mt-1 text-sm font-semibold text-n-800" data-salida-anticipada-aplicada>
+                  {avisoSalida}.
+                </p>
+              )}
+              {/* QA S27: al terminar el check-out, el siguiente paso es cobrar la cuenta (N129: si ya está pagada, ver sus cobros). */}
               <Link href={`/caja/cobrar/${estancia.reserva_id}`} data-cobrar-cuenta className="mt-3 inline-flex min-h-11 items-center rounded-md bg-morado px-4 text-sm font-semibold text-white hover:bg-morado-oscuro">
-                Cobrar la cuenta
+                {cuentaPorCobrar(saldoCuenta) ? "Cobrar la cuenta" : "Ver cobros"}
               </Link>
               {(pertenencias ?? []).length > 0 && (
                 <div className="mt-3" data-pertenencias-salida>
@@ -221,6 +236,7 @@ export default async function CheckoutEstanciaPage({
           version={(estancia.updated_at as string | null) ?? null}
           pertenenciasIniciales={pertenencias ?? []}
           cobroHref={`/caja/cobrar/${estancia.reserva_id}`}
+          salidaAnticipada={(salidaAnticipada ?? null) as CotizacionSalida | null}
         />
       )}
 

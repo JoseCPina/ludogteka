@@ -6,7 +6,7 @@ import { traducirError } from "./traducir-error";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { negocioIdActual } from "@/lib/negocio/actual";
 import { avisoCobroReciente, type ControlCobro } from "@/lib/cobro/reciente";
-import { totalesDeCuenta, type TotalesCuenta } from "@/lib/cobro/totales";
+import { totalesDeFila, type TotalesCuenta } from "@/lib/cobro/totales";
 
 export type MetodoPago = "efectivo" | "terminal" | "transferencia" | "tarjeta_manual";
 
@@ -46,20 +46,20 @@ export async function registrarCobro(
   }
 
   const supabase = await createSupabaseServerClient();
-  // QA S19 (rendimiento): la sesión, el negocio y el saldo de antes se piden a la vez, no uno tras otro.
+  // QA S19 y S36 (rendimiento): la sesión, el negocio, el saldo de antes y la revisión de cobros recientes van a la
+  // vez; el cobro y la cuenta nueva, en un solo viaje (`registrar_cobro_con_totales`). Dos viajes en serie, no cuatro.
   // El saldo antes de cobrar: la base cobra solo hasta el saldo y lo que sobra en efectivo es cambio.
-  const [sesion, negocioId, { data: totales }] = await Promise.all([
-    control?.confirmado ? Promise.resolve(null) : obtenerSesionConRol(),
-    control?.confirmado ? Promise.resolve(null) : negocioIdActual(),
-    supabase.rpc("cuenta_totales_reserva", { p_reserva_id: reservaId }),
-  ]);
+  const contexto = control?.confirmado
+    ? null
+    : Promise.all([obtenerSesionConRol(), negocioIdActual()]).then(([sesion, negocioId]) => ({ esAdmin: sesion?.rol === "admin", negocioId: negocioId ?? "", usuarioId: sesion?.user.id ?? null }));
   // N28: la revisión corre SIEMPRE en el servidor (también si la pantalla no mandó lo que veía).
-  if (!control?.confirmado) {
-    const aviso = await avisoCobroReciente(supabase, [reservaId], control, { esAdmin: sesion?.rol === "admin", negocioId: negocioId ?? "", usuarioId: sesion?.user.id ?? null });
-    if (aviso) return { error: null, confirmar: aviso };
-  }
+  const [{ data: totales }, aviso] = await Promise.all([
+    supabase.rpc("cuenta_totales_reserva", { p_reserva_id: reservaId }),
+    contexto ? avisoCobroReciente(supabase, [reservaId], control, contexto) : Promise.resolve(null),
+  ]);
+  if (aviso) return { error: null, confirmar: aviso };
   const saldoAntes = Number((Array.isArray(totales) ? totales[0] : totales)?.saldo ?? 0);
-  const { data, error } = await supabase.rpc("registrar_cobro", {
+  const { data, error } = await supabase.rpc("registrar_cobro_con_totales", {
     p_reserva_id: reservaId,
     p_notas: notas,
     p_metodos: metodos,
@@ -71,8 +71,8 @@ export async function registrarCobro(
   // pinta los totales que devolvemos y se refresca sola después.
   const recibido = metodos.reduce((s, m) => s + m.monto, 0);
   const cambio = Math.round((recibido - saldoAntes) * 100) / 100;
-  const totalesNuevos = await totalesDeCuenta(supabase, reservaId);
-  return { error: null, cobroId: data as string, cambio: cambio > 0.005 ? cambio : undefined, totales: totalesNuevos };
+  const r = (data ?? {}) as { cobro_id?: string; totales?: unknown };
+  return { error: null, cobroId: r.cobro_id as string, cambio: cambio > 0.005 ? cambio : undefined, totales: r.totales ? totalesDeFila(r.totales) : undefined };
 }
 
 export type EstadoDevolucion = { error: string | null; devolucionId?: string };

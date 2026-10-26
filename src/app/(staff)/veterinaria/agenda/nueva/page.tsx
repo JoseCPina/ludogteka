@@ -113,6 +113,7 @@ export default async function NuevaCitaVet({ searchParams }: { searchParams: Pro
             medicoInicial={medicoInicial}
             hoy={hoy}
             fechaInicial={propuesta.fecha}
+            propuestaInicial={propuesta.propuesta}
             horaInicial={propuesta.hora}
             propuestaPorMedico={propuestas}
             horario={horarioSemana}

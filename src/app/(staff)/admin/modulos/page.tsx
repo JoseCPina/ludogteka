@@ -12,6 +12,7 @@ import { AVISO_FACTURA, datosFacturacionDeNegocio } from "@/lib/cobro/facturacio
 import { DatosFacturacion } from "./datos-facturacion";
 import { Sucursales, type GrupoSucursales } from "./sucursales";
 import { UsoRecordatoriosPanel, type UsoRecordatorios } from "./uso-recordatorios";
+import { pesos, planUnico } from "@/lib/peludesk/plan";
 
 // Los módulos del negocio: los de su plan se prenden y se apagan aquí; los
 // de otros planes se ven bloqueados con el plan que los incluye. Apagar
@@ -56,6 +57,9 @@ export default async function ModulosPage({ searchParams }: { searchParams: Prom
   const modulos = (filas ?? []) as FilaModulo[];
   const plan = (Array.isArray(negocio?.planes) ? negocio?.planes[0] : negocio?.planes) as { nombre: string } | null | undefined;
   const enPrueba = negocio?.plan === "prueba";
+  const precioPlan = enPrueba ? await planUnico() : null;
+  const prendidos = modulos.filter((m) => m.disponible && m.activo).length;
+  const incluidos = modulos.filter((m) => m.disponible).length;
   const nombreApagado = modulos.find((m) => m.clave === apagado)?.nombre;
 
   return (
@@ -66,9 +70,11 @@ export default async function ModulosPage({ searchParams }: { searchParams: Prom
           {enPrueba ? (
             <>
               Estás en la prueba gratis
-              {negocio?.prueba_termina_at ? ` (hasta el ${formatearFecha(negocio.prueba_termina_at as string, zona)})` : ""}: tienes todos
-              los módulos para que los conozcas. Después es un solo plan,{" "}
-              <strong>{plan?.nombre ?? "PeluDesk"}</strong>: $649 al mes + IVA, sin costo inicial.
+              {negocio?.prueba_termina_at ? ` (hasta el ${formatearFecha(negocio.prueba_termina_at as string, zona)})` : ""}. Todos los
+              módulos están <strong>incluidos en tu plan</strong>; <span data-modulos-prendidos>{prendidos} de {incluidos} están prendidos en tu negocio</span>. Los
+              apagados no salen en el menú: préndelos abajo con «Prender» cuando los quieras usar. Después es un solo plan,{" "}
+              <strong>{plan?.nombre ?? "PeluDesk"}</strong>
+              {precioPlan ? `: ${pesos(precioPlan.mensual)} al mes + IVA, sin costo inicial` : ", sin costo inicial"}.
             </>
           ) : (
             <>

@@ -55,3 +55,8 @@
 
 ## Recordatorios de WhatsApp adicionales en la suscripción (25 de octubre de 2026)
 - 30 recordatorios entregados gratis al mes por negocio; los adicionales se cobran como uso medido de Stripe sobre la misma suscripción (concepto «Recordatorios de WhatsApp adicionales», precio de `wa_precios`), con un tope mensual que pone el admin en «Módulos y plan». Al agregar el concepto la suscripción pasa a `billing_mode: flexible`. Detalle en docs/whatsapp-y-soporte.md («Recordatorios automáticos por WhatsApp»).
+
+## QA S36 (26 de octubre de 2026): «incluidos en tu plan» y botón de Stripe
+- **Módulos y plan en la prueba**: el texto separa «incluidos en tu plan» (todos) de «N de M están prendidos en tu negocio»; cada módulo dice «Incluido en tu plan · prendido/apagado en tu negocio» y los apagados tienen «Prender». El precio sale de `planUnico()` (tabla `planes`), ya no escrito.
+- **«Pagar con tarjeta»** queda deshabilitado con «Abriendo pago…» desde la respuesta hasta que el navegador abre Stripe (a los 15 s vuelve a estar listo si no se fue).
+- **Checkout con la prueba corriendo**: Stripe pone «Comenzar prueba» en el botón y no deja cambiarlo. `submit_type: "subscribe"` NO aplica con `trial_end` (comprobado en el sandbox en QA S36: el botón sigue igual); el texto de junto ya dice «No se te cobra hoy; el primer cobro es el …». Que diga «Suscribirse» exigiría contratar sin `trial_end` (cobro anclado al fin de la prueba con `billing_cycle_anchor`), lo que cambia el estado «trialing» del que dependen la prueba, los webhooks y el cambio de plan: pendiente de decisión.

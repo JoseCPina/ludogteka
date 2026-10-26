@@ -15,6 +15,7 @@ import { abrirTurno } from "../../turno-actions";
 import { useCuentaViva, textoSaldoCambio } from "@/hooks/use-cuenta-viva";
 import { registrarCobro, registrarDevolucion, type MetodoPago } from "../../cobro-actions";
 import { CobroIntegrado, type OrdenCobroFila } from "./cobro-integrado";
+import { cuentaPorCobrar } from "@/lib/caja/cuenta-por-cobrar";
 import { DevolucionIntegrada } from "./devolucion-integrada";
 import { CancelarRenglonVenta } from "./cancelar-renglon-venta";
 import { MarcarNoRecibido } from "./marcar-no-recibido";
@@ -312,6 +313,8 @@ export function CuentaCobro({
     .filter((d) => !d.cancelado)
     .reduce((sum, d) => sum + d.montoAplicado, 0);
   const saldoDisponibleParaDescuento = totales.totalCuenta - totalDescontadoActivo;
+  // N129: sin saldo por cobrar no hay acciones de cobro ni de ajuste de precio (solo ver, anular o devolver cobros).
+  const porCobrar = cuentaPorCobrar(totales.saldo);
   const valorNumDescuento = Number(valorDescuento) || 0;
   // Igual que la base (aplicar_descuento): un descuento por porcentaje deja lo que
   // queda por pagar en pesos enteros, para no generar saldos de centavos.
@@ -663,7 +666,7 @@ export function CuentaCobro({
                             correccion={c}
                             historial={historialDe(c.lineaTipo, c.lineaId)}
                             reservaId={reservaId}
-                            puedeAnular={puedeEditarMonto}
+                            puedeAnular={porCobrar && puedeEditarMonto}
                             alAnular={(t?: Totales) => {
                               const original = lineas.find((x) => x.tipo === c.lineaTipo && x.origenId === c.lineaId);
                               alCambiarPrecio(t, original ? { tipo: c.lineaTipo, origenId: c.lineaId, precio: original.total } : undefined);
@@ -688,7 +691,7 @@ export function CuentaCobro({
                           {l.cantidadCubiertaPorBono}/{l.cantidad} con bono
                         </span>
                       )}
-                      {opcionesBono.length > 0 && (
+                      {porCobrar && opcionesBono.length > 0 && (
                         <Button type="button" variante="secundario" onClick={() => abrirAplicarBono(i)}>
                           Pagar con bono
                         </Button>
@@ -696,7 +699,7 @@ export function CuentaCobro({
                       {l.tipo === "venta" && cobrosIniciales.length === 0 && (
                         <CancelarRenglonVenta ventaId={l.origenId} reservaId={reservaId} onError={setError} />
                       )}
-                      {puedeEditarMonto && l.tipo !== "ajuste" && l.cantidadCubiertaPorBono === 0 && (
+                      {porCobrar && puedeEditarMonto && l.tipo !== "ajuste" && l.cantidadCubiertaPorBono === 0 && (
                         <Button type="button" variante="secundario" onClick={() => setCorrigiendoPrecioIdx(i)}>
                           Corregir precio
                         </Button>
@@ -793,7 +796,7 @@ export function CuentaCobro({
       <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="font-semibold text-n-900">Descuentos</p>
-          {!aplicandoDescuento && saldoDisponibleParaDescuento > 0 && catalogoDescuentos.length > 0 && (
+          {porCobrar && !aplicandoDescuento && saldoDisponibleParaDescuento > 0 && catalogoDescuentos.length > 0 && (
             <Button type="button" variante="secundario" onClick={() => setAplicandoDescuento(true)}>
               Aplicar descuento
             </Button>
@@ -882,7 +885,7 @@ export function CuentaCobro({
                     <span className={`tabular-nums font-semibold ${d.cancelado ? "text-n-500 line-through" : "text-n-900"}`}>
                       {dinero(d.montoAplicado)}
                     </span>
-                    {!d.cancelado && cancelandoDescuentoId !== d.id && (
+                    {porCobrar && !d.cancelado && cancelandoDescuentoId !== d.id && (
                       <Button type="button" variante="peligro" onClick={() => setCancelandoDescuentoId(d.id)}>
                         Cancelar
                       </Button>
@@ -933,7 +936,15 @@ export function CuentaCobro({
         )}
       </div>
 
-      {!turnoAbierto ? (
+      {!porCobrar ? (
+        <div className="flex flex-col gap-1 rounded-lg border border-menta-oscuro/30 bg-menta-suave p-4" data-cuenta-pagada>
+          <p className="font-semibold text-menta-oscuro">Cuenta pagada</p>
+          <p className="text-sm text-n-700">
+            {exitoCobro ?? "No hay saldo por cobrar."}
+            {totales.saldo < -0.005 ? ` Hay ${dinero(-totales.saldo)} a favor del cliente: se devuelve con «Registrar devolución».` : ""}
+          </p>
+        </div>
+      ) : !turnoAbierto ? (
         <div className="rounded-lg border-[1.5px] border-ambar bg-ambar-suave p-4">
           <p className="font-bold text-ambar-oscuro">No hay turno de caja abierto</p>
           <p className="mt-1 text-sm text-ambar-oscuro">
@@ -967,14 +978,6 @@ export function CuentaCobro({
               </Button>
             </div>
           )}
-        </div>
-      ) : totales.saldo <= 0.005 ? (
-        <div className="flex flex-col gap-1 rounded-lg border border-menta-oscuro/30 bg-menta-suave p-4" data-cuenta-pagada>
-          <p className="font-semibold text-menta-oscuro">Cuenta pagada</p>
-          <p className="text-sm text-n-700">
-            {exitoCobro ?? "No hay saldo por cobrar."}
-            {totales.saldo < -0.005 ? ` Hay ${dinero(-totales.saldo)} a favor del cliente: se devuelve con «Registrar devolución».` : ""}
-          </p>
         </div>
       ) : (
         <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
@@ -1207,7 +1210,7 @@ export function CuentaCobro({
                         grupoId={c.grupo?.id ?? null}
                         cuentasDelGrupo={c.grupo?.cuentas.filter((x) => !x.anulado).length ?? 1}
                         puedeAnular={puedeAnular && totalDevuelto === 0}
-                        puedeEditar={puedeEditarMonto}
+                        puedeEditar={porCobrar && puedeEditarMonto}
                         puedeTurnosCerrados={puedeTurnosCerrados}
                         turnoCerrado={c.turnoCerrado}
                         alCorregir={alCorregirCobro}
