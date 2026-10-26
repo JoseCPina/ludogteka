@@ -10,6 +10,7 @@
   "cfdi": "Su sitio no menciona CFDI ni facturación mexicana.",
   "pagos": "Gingr Payments funciona sobre Stripe; la terminal integrada solo está disponible en Estados Unidos, Canadá, Australia, Nueva Zelanda y Reino Unido, y México no aparece en su lista de países. Los mensajes SMS de ida y vuelta son solo para Estados Unidos y Canadá.",
   "modulos": "Reservas con asignación de cuarto, corral o estilista, depósitos en línea, app del dueño para reservar y pagar, reportes con fotos al recoger, revisión previa de vacunas, permisos y pertenencias, cámaras web, horario del personal y analítica de varias sucursales.",
+  "recordatorios": "Sus mensajes SMS de ida y vuelta son solo para Estados Unidos y Canadá; no verificamos recordatorios por WhatsApp.",
   "mejorEn": [
     "App para que el dueño reserve, pague y actualice el expediente por su cuenta; en PeluDesk el portal es de consulta y se agenda por WhatsApp.",
     "Cámaras web para que el dueño vea a su perro, y soporte para entrenamiento, parques y bares de perros.",
@@ -31,6 +32,7 @@
     "idioma": [{ "nombre": "gingrapp.com", "url": "https://www.gingrapp.com" }],
     "cfdi": [{ "nombre": "gingrapp.com", "url": "https://www.gingrapp.com" }],
     "pagos": [{ "nombre": "Ayuda de Gingr: alta en Gingr Payments", "url": "https://support.gingrapp.com/hc/en-us/articles/25979777022989" }, { "nombre": "Ayuda de Gingr: terminales de Stripe", "url": "https://support.gingrapp.com/hc/en-us/articles/26626038348173" }, { "nombre": "Precios de Gingr", "url": "https://www.gingrapp.com/pricing" }],
-    "modulos": [{ "nombre": "gingrapp.com", "url": "https://www.gingrapp.com" }]
+    "modulos": [{ "nombre": "gingrapp.com", "url": "https://www.gingrapp.com" }],
+    "recordatorios": [{ "nombre": "Ayuda de Gingr: alta en Gingr Payments", "url": "https://support.gingrapp.com/hc/en-us/articles/25979777022989" }, { "nombre": "Ayuda de Gingr: terminales de Stripe", "url": "https://support.gingrapp.com/hc/en-us/articles/26626038348173" }, { "nombre": "Precios de Gingr", "url": "https://www.gingrapp.com/pricing" }]
   }
 }

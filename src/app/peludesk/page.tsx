@@ -24,6 +24,8 @@ import { JsonLd, ORGANIZACION_RAIZ, aplicacionPeluDesk, preguntasFrecuentes, sit
 import { Revelar } from "@/components/peludesk/revelar";
 import { ESCRITORIO, urlDemo, whatsappPeluDesk } from "@/lib/peludesk/landing";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { SeccionRecordatorios } from "@/components/peludesk/seccion-recordatorios";
+import { FUNCION_RECORDATORIOS, recordatoriosVigentes } from "@/lib/peludesk/recordatorios";
 import "./peludesk.css";
 import "./animaciones.css";
 
@@ -118,6 +120,7 @@ function Etiqueta({ children, className = "" }: { children: ReactNode; className
 
 const ENLACES_MENU = [
   ["/veterinaria", "Veterinaria"],
+  ["#recordatorios", "Recordatorios"],
   ["#tambien", "Módulos"],
   ["#demo", "Demo"],
   ["#planes", "Precio"],
@@ -192,7 +195,7 @@ async function nombresDeModulos() {
 export default async function PeluDeskLanding() {
   const demo = urlDemo();
   const whatsapp = await whatsappPeluDesk("Hola, quiero saber más de PeluDesk.");
-  const [plan, nombres, contratacion] = await Promise.all([planUnico(), nombresDeModulos(), preguntasDeContratacion()]);
+  const [plan, nombres, contratacion, recordatorios] = await Promise.all([planUnico(), nombresDeModulos(), preguntasDeContratacion(), recordatoriosVigentes()]);
   const articulosRecientes = todosLosArticulos().slice(0, 3);
   const PREGUNTAS: readonly (readonly [string, string])[] = plan
     ? [
@@ -209,7 +212,7 @@ export default async function PeluDeskLanding() {
     {
       ...aplicacionPeluDesk(plan),
       applicationSubCategory: "Software para clínicas veterinarias y negocios caninos",
-      featureList: [...FUNCIONES_VET.map((f) => f.titulo), "Hotel y guardería", "Estética", "Página web del negocio"],
+      featureList: [FUNCION_RECORDATORIOS, ...FUNCIONES_VET.map((f) => f.titulo).filter((t) => t !== FUNCION_RECORDATORIOS), "Hotel y guardería", "Estética", "Página web del negocio"],
     },
   ];
 
@@ -279,6 +282,15 @@ export default async function PeluDeskLanding() {
               <p className="mt-5 max-w-[46ch] text-base leading-relaxed text-n-700 sm:text-lg">
                 Clínica veterinaria, guardería, hotel y estética en un solo lugar: citas, expediente con dictado por IA, recetas, cobros y facturación CFDI.
               </p>
+              <a
+                href="#recordatorios"
+                className="mt-4 inline-flex max-w-full items-start gap-2 rounded-2xl bg-menta-suave px-4 py-2.5 text-[15px] font-semibold leading-snug text-n-900 hover:bg-[#d3ece3] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
+              >
+                <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" className="mt-0.5 shrink-0 text-menta-oscuro" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4.5 10.5l3.5 3.5 7.5-8" />
+                </svg>
+                <span>Tus clientes reciben el recordatorio de su cita por WhatsApp, solos, y confirman con un toque.</span>
+              </a>
               {plan && <PrecioPlan plan={plan} className="mt-6" />}
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <BotonDemo texto="Ver demo" />
@@ -311,6 +323,9 @@ export default async function PeluDeskLanding() {
             </ul>
           </div>
         </section>
+
+        {/* ── Función estrella: recordatorios automáticos por WhatsApp ── */}
+        <SeccionRecordatorios textos={recordatorios} grande />
 
         {/* ── Lo que te quita de encima ── */}
         <section aria-labelledby="t-alivio" className="relative border-y border-n-200 bg-white">

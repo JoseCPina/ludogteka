@@ -1,0 +1,38 @@
+{
+  "_nota": "Fuente única de las plantillas de los recordatorios automáticos (UTILITY, es_MX): lo que se manda a Meta (node scripts/whatsapp/meta.mjs plantillas-recordatorios enviar), lo que sale al cliente y lo que se guarda en recordatorios_wa.texto. Cambiar un texto es una plantilla nueva (_v2): Meta no deja editar una aprobada sin volver a revisión.",
+  "idioma": "es_MX",
+  "pie": "Para no recibir recordatorios, responde BAJA.",
+  "plantillas": {
+    "estetica": {
+      "nombre": "peludesk_rec_estetica_v1",
+      "cuerpo": "Hola {{1}}, te recordamos la cita de {{2}} en {{3}} mañana {{4}} a las {{5}} ({{6}}). Confírmanos con un botón.",
+      "ejemplo": ["Ana", "Rocky", "Estética Patitas", "jueves 30 de octubre", "11:00", "Baño y corte"],
+      "botones": [{ "texto": "Confirmo", "accion": "confirmo" }, { "texto": "Necesito cambiarla", "accion": "pide_cambio" }]
+    },
+    "veterinaria": {
+      "nombre": "peludesk_rec_veterinaria_v1",
+      "cuerpo": "Hola {{1}}, te recordamos la cita de {{2}} en {{3}} mañana {{4}} a las {{5}} con {{6}}. Confírmanos con un botón.",
+      "ejemplo": ["Ana", "Rocky", "Clínica Huellitas", "jueves 30 de octubre", "11:00", "Dra. Laura Méndez"],
+      "botones": [{ "texto": "Confirmo", "accion": "confirmo" }, { "texto": "Necesito cambiarla", "accion": "pide_cambio" }]
+    },
+    "llegada": {
+      "nombre": "peludesk_rec_llegada_v1",
+      "cuerpo": "Hola {{1}}, en {{2}} te esperamos con {{3}} mañana {{4}} a partir de las {{5}}. Confírmanos con un botón.",
+      "ejemplo": ["Ana", "Hotel Patitas", "Rocky", "jueves 30 de octubre", "9:00"],
+      "botones": [{ "texto": "Confirmo", "accion": "confirmo" }, { "texto": "Necesito cambiarla", "accion": "pide_cambio" }]
+    },
+    "listo": {
+      "nombre": "peludesk_rec_listo_v1",
+      "cuerpo": "Hola {{1}}, {{2}} ya está listo en {{3}}. Te esperamos para la entrega.",
+      "ejemplo": ["Ana", "Rocky", "Estética Patitas"],
+      "botones": []
+    },
+    "vacuna": {
+      "nombre": "peludesk_rec_vacuna_v2",
+      "_v1": "peludesk_rec_vacuna_v1 («¿Te agendamos?») Meta la pasó a MARKETING: no se usa.",
+      "cuerpo": "Hola {{1}}. Según el carnet de {{2}} en {{3}}, la próxima dosis de {{4}} corresponde el {{5}}. Si quieres que te agenden, toca Agendar; si no, toca Después.",
+      "ejemplo": ["Ana", "Rocky", "Clínica Huellitas", "vacuna antirrábica", "jueves 5 de noviembre"],
+      "botones": [{ "texto": "Agendar", "accion": "agendar" }, { "texto": "Después", "accion": "despues" }]
+    }
+  }
+}

@@ -48,6 +48,8 @@ export type DatosAlta = {
   crearCuenta: boolean;
   password: string;
   perros: PerroAlta[];
+  // Acepta los recordatorios automáticos por WhatsApp (casilla marcada por omisión).
+  recordatorios?: boolean;
 };
 
 export type PerroCreado = { id: string; nombre: string };

@@ -45,6 +45,12 @@ export async function actualizarMisDatos(
     return { error: "No pudimos guardar los cambios. Intenta de nuevo." };
   }
 
+  // Recordatorios por WhatsApp: la casilla solo cuenta si el formulario la trae.
+  if (formData.get("recordatorios_whatsapp_presente")) {
+    const { error: errorRec } = await supabase.rpc("mis_recordatorios_whatsapp", { p_acepta: formData.get("recordatorios_whatsapp") === "si" });
+    if (errorRec) return { error: "Guardamos tus datos, pero no tu preferencia de recordatorios. Intenta de nuevo." };
+  }
+
   revalidatePath("/portal");
   return { error: null, ok: true };
 }

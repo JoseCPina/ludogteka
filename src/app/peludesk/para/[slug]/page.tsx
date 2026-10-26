@@ -16,6 +16,8 @@ import { datosDeProspecto } from "@/lib/web-negocio/desde-prospecto";
 import { portalEjemplo } from "@/lib/web-negocio/catalogo";
 import { subdominioSugerido, DEMO_POR_GIRO } from "@/lib/web-negocio/demo";
 import type { GiroWeb } from "@/lib/web-negocio/tema";
+import { MaquetaRecordatorio, type DatosMaqueta } from "@/components/peludesk/maqueta-recordatorio";
+import { BENEFICIOS_RECORDATORIOS, recordatoriosVigentes } from "@/lib/peludesk/recordatorios";
 
 // La página web de un prospecto, armada con sus datos de Google y lista para usarse en modo demostración: sus
 // clientes piden cita o reserva, ven el portal y los avisos de WhatsApp, y nada se guarda en ningún negocio.
@@ -39,14 +41,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 const ANTES_DESPUES: Record<GiroWeb, [string, string][]> = {
   veterinaria: [
     ["Te escriben a todas horas para preguntar horario, precio y si hay lugar.", "Tu página contesta sola: horario, servicios y pedir consulta en línea."],
-    ["Vacunas que se pasan y pacientes que no regresan.", "El recordatorio de la próxima dosis puede salir solo por WhatsApp."],
+    ["Vacunas que se pasan y pacientes que no regresan.", "Un día antes de la consulta sale solo el recordatorio por WhatsApp, y el de la próxima vacuna, 7 días antes."],
     ["Expedientes en papel y recetas a mano.", "Consulta, carnet y receta en el mismo lugar, y el dueño ve su carnet en su celular."],
     ["Cobros en libreta y un corte que no cuadra.", "Cada cobro queda en caja: efectivo, transferencia, terminal o link de pago."],
   ],
   estetica: [
     ["Te escriben a todas horas para preguntar horario, precio y si hay lugar.", "Tu página contesta sola: menú de servicios y pedir cita en línea."],
-    ["Citas que se olvidan y huecos en la agenda.", "Mandas el recordatorio por WhatsApp con un toque, con el mensaje ya escrito."],
-    ["«¿Ya está listo mi perro?» por teléfono.", "El aviso de que ya puede pasar sale con un toque desde su cita, con el mensaje ya escrito."],
+    ["Citas que se olvidan y huecos en la agenda.", "Un día antes sale solo el recordatorio por WhatsApp y tu cliente confirma con un toque."],
+    ["«¿Ya está listo mi perro?» por teléfono.", "Al terminar, PeluDesk le avisa solo por WhatsApp que ya puede pasar por él."],
     ["Cobros en libreta y un corte que no cuadra.", "Cada cobro queda en caja: efectivo, transferencia, terminal o link de pago."],
   ],
   guarderia: [
@@ -61,6 +63,14 @@ const ANTES_DESPUES: Record<GiroWeb, [string, string][]> = {
     ["Llega un perro sin vacunas y te enteras en la puerta.", "PeluDesk no deja reservar a un perro con vacunas vencidas, salvo que tú lo autorices."],
     ["Cobros en libreta y un corte que no cuadra.", "Cada cobro queda en caja: efectivo, transferencia, terminal o link de pago."],
   ],
+};
+
+// El ejemplo de la maqueta de recordatorios, con el nombre real del negocio (los demás datos son de ejemplo).
+const EJEMPLO_RECORDATORIO: Record<GiroWeb, Omit<DatosMaqueta, "negocio">> = {
+  veterinaria: { cliente: "Ana", mascota: "Michi", servicio: "Consulta", dia: "jueves 29 de octubre", hora: "11:00", tipo: "veterinaria", medico: "la Dra. Montes" },
+  estetica: { cliente: "Ana", mascota: "Rocky", servicio: "Baño y corte", dia: "jueves 29 de octubre", hora: "11:00", tipo: "estetica" },
+  guarderia: { cliente: "Ana", mascota: "Rocky", servicio: "Guardería", dia: "jueves 29 de octubre", hora: "08:30", tipo: "guarderia" },
+  hotel: { cliente: "Ana", mascota: "Rocky", servicio: "Hotel", dia: "jueves 29 de octubre", hora: "11:00", tipo: "hotel" },
 };
 
 function NotaPeluDesk({ children }: { children: React.ReactNode }) {
@@ -80,10 +90,11 @@ export default async function PaginaProspecto({ params, searchParams }: Params) 
   const h = await headers();
   // QA R23 (N73): la revisión interna llega por ?interno=1 o por la cookie que pone el middleware.
   const esInterno = sp.interno === "1" || (await cookies()).get("peludesk_interno")?.value === "1";
-  const [, g, plan] = await Promise.all([
+  const [, g, plan, recordatorios] = await Promise.all([
     registrarVisita({ slug, tipo: "visita", ip: h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null, navegador: h.get("user-agent"), interno: esInterno }),
     lugarDeGoogle(p.google_place_id, { fotos: 5, anchoFoto: 1000 }),
     planUnico(),
+    recordatoriosVigentes(),
   ]);
   const color = await colorDeFoto(fotoChica(g?.fotos[0]?.uri));
   const datos = datosDeProspecto(p, g, color);
@@ -111,8 +122,8 @@ export default async function PaginaProspecto({ params, searchParams }: Params) 
           ),
           resultado: (
             <NotaPeluDesk>
-              Estos avisos los mandas desde PeluDesk con un toque, con el mensaje ya escrito.
-              {datos.servicios.includes("veterinaria") ? " El recordatorio de la próxima vacuna puede salir solo." : ""} Nadie tiene que preguntar «¿a qué hora paso?».
+              <b>Con PeluDesk</b>, el recordatorio de la cita sale solo por WhatsApp un día antes y tu cliente confirma con un toque.
+              {datos.servicios.includes("veterinaria") ? " El de la próxima vacuna sale 7 días antes." : ""} Nadie tiene que preguntar «¿a qué hora paso?».
             </NotaPeluDesk>
           ),
           portal: (
@@ -151,6 +162,26 @@ export default async function PaginaProspecto({ params, searchParams }: Params) 
                 </li>
               ))}
             </ul>
+          </div>
+
+          <div className="rounded-[22px] bg-crema p-5 text-n-900 sm:p-7" data-recordatorios>
+            <p className="text-sm font-semibold text-morado">Recordatorios automáticos</p>
+            <h3 className="mt-1 max-w-[30ch] text-2xl font-bold tracking-tight">Los clientes de {p.nombre} reciben su recordatorio por WhatsApp, solos</h3>
+            <p className="mt-2 max-w-[60ch] text-n-700">Un día antes, PeluDesk les escribe con el nombre de tu negocio. Contestan con un botón y tu agenda se entera sola.</p>
+            <MaquetaRecordatorio {...EJEMPLO_RECORDATORIO[datos.giro]} negocio={p.nombre} className="mt-6" />
+            <ul className="mt-6 grid gap-3 md:grid-cols-3">
+              {BENEFICIOS_RECORDATORIOS.map((b) => (
+                <li key={b.titulo} className="rounded-[14px] border border-n-200 bg-white p-4">
+                  <p className="flex items-center gap-2 font-bold">
+                    <Check size={18} weight="bold" className="shrink-0 text-menta-oscuro" aria-hidden />
+                    {b.titulo}
+                  </p>
+                  <p className="mt-1 text-[15px] leading-snug text-n-700">{b.texto}</p>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 font-semibold">{recordatorios.lineaPrecio}</p>
+            {recordatorios.adicional && <p className="mt-0.5 text-sm tabular-nums text-n-700">{recordatorios.adicional}</p>}
           </div>
 
           <div className="grid items-center gap-5 rounded-[22px] bg-white p-5 text-n-900 sm:p-7 md:grid-cols-[1fr_auto]" data-ver-demo>

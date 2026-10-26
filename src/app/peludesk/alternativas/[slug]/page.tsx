@@ -7,6 +7,7 @@ import { Relacionadas } from "@/components/peludesk/seo-bloques";
 import { Fuentes } from "@/components/peludesk/fuentes";
 import { CAMPOS_ALTERNATIVA, FILA_PELUDESK, REVISADO_ALTERNATIVAS, REVISADO_ALTERNATIVAS_TEXTO, alternativa, todasLasAlternativas } from "@/lib/peludesk/guias";
 import { pesos, planUnico } from "@/lib/peludesk/plan";
+import { recordatoriosVigentes } from "@/lib/peludesk/recordatorios";
 import { JsonLd, SITIO, metaPagina, migas, preguntasFrecuentes } from "@/lib/peludesk/seo";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PaginaAlternativa({ params }: Props) {
   const a = alternativa((await params).slug);
   if (!a) notFound();
-  const plan = await planUnico();
+  const [plan, recordatorios] = await Promise.all([planUnico(), recordatoriosVigentes()]);
   const ruta = `/alternativas/${a.slug}`;
   const precioPeluDesk = plan ? `Un plan: ${pesos(plan.mensual)} + IVA al mes, todo incluido, sin costo inicial.` : "Un plan con todo incluido.";
   const preguntas: [string, string][] = [
@@ -36,6 +37,7 @@ export default async function PaginaAlternativa({ params }: Props) {
     [`¿${a.nombre} está en español?`, a.idioma],
     [`¿Cuándo conviene ${a.nombre} y cuándo PeluDesk?`, `${a.nombre} conviene si: ${a.conviene.join(" ")} PeluDesk conviene si estás en México y necesitas pesos, español, CFDI y todo en un plan.`],
     [`¿En qué es mejor ${a.nombre} que PeluDesk?`, a.mejorEn.join(" ")],
+    [`¿${a.nombre} manda recordatorios automáticos por WhatsApp?`, `${a.recordatorios === "—" ? "No lo verificamos en su sitio." : a.recordatorios} PeluDesk los manda solo un día antes de cada cita, consulta o llegada, y el cliente confirma con un botón. ${recordatorios.lineaPrecio}`],
   ];
   return (
     <MarcoSitio>
@@ -58,14 +60,15 @@ export default async function PaginaAlternativa({ params }: Props) {
             </thead>
             <tbody>
               {CAMPOS_ALTERNATIVA.map(([campo, etiqueta]) => (
-                <tr key={campo} className="border-b border-n-200 align-top">
+                <tr key={campo} className={`border-b border-n-200 align-top ${campo === "recordatorios" ? "bg-menta-suave" : ""}`}>
                   <th scope="row" className="p-3 font-semibold text-n-900">{etiqueta}</th>
                   <td className="p-3 text-n-700">{a[campo]}<Fuentes fuentes={a.fuentes[campo]} /></td>
-                  <td className="p-3 text-n-700">{campo === "precio" ? precioPeluDesk : FILA_PELUDESK[campo]}</td>
+                  <td className={`p-3 ${campo === "recordatorios" ? "font-semibold text-n-900" : "text-n-700"}`}>{campo === "precio" ? precioPeluDesk : campo === "recordatorios" ? recordatorios.filaComparativa : FILA_PELUDESK[campo]}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <p className="mt-2 text-xs text-n-600">«—»: no lo verificamos en su sitio.</p>
         </div>
         <section aria-labelledby="mejor" className="mt-10">
           <h2 id="mejor" className="text-xl font-bold text-n-900">En qué {a.nombre} es mejor que PeluDesk</h2>

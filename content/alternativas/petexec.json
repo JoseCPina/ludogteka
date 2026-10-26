@@ -10,6 +10,7 @@
   "cfdi": "Su sitio no menciona CFDI ni facturación mexicana.",
   "pagos": "Su sitio enlaza una sección de procesamiento de pagos que ya no carga; no nombra procesador ni países. No encontramos Mercado Pago ni Clip.",
   "modulos": "Reservas, expediente de la mascota, app móvil, mensajes ilimitados, acompañamiento para el negocio (coaching) y migración de datos.",
+  "recordatorios": "Anuncia mensajes ilimitados; no verificamos recordatorios por WhatsApp.",
   "mejorEn": [
     "Años en el mercado estadounidense de pensiones y guarderías, con soporte que, según su sitio, contesta el teléfono.",
     "Respaldo de Togetherwork y de la familia de Gingr si ya eres su cliente."
@@ -28,6 +29,7 @@
     "idioma": [{ "nombre": "petexec.net", "url": "https://www.petexec.net" }],
     "cfdi": [{ "nombre": "petexec.net", "url": "https://www.petexec.net" }],
     "pagos": [{ "nombre": "petexec.net", "url": "https://www.petexec.net" }],
-    "modulos": [{ "nombre": "petexec.net", "url": "https://www.petexec.net" }, { "nombre": "Togetherwork compra PetExec", "url": "https://petexec.net/resources/business-operations/togetherwork-acquires-petexec" }]
+    "modulos": [{ "nombre": "petexec.net", "url": "https://www.petexec.net" }, { "nombre": "Togetherwork compra PetExec", "url": "https://petexec.net/resources/business-operations/togetherwork-acquires-petexec" }],
+    "recordatorios": [{ "nombre": "petexec.net", "url": "https://www.petexec.net" }, { "nombre": "Togetherwork compra PetExec", "url": "https://petexec.net/resources/business-operations/togetherwork-acquires-petexec" }]
   }
 }

@@ -196,7 +196,8 @@ export async function cambiarPlanSuscripcion(sel: Seleccion): Promise<ResultadoC
       sub = await s.subscriptions.retrieve(sub.id, { expand: ["items.data.price"] });
     }
     const itemSucursal = sub.items.data.find(esItemSucursal);
-    const itemPlan = sub.items.data.find((i) => !esItemSucursal(i) && i.price.metadata?.peludesk_tipo !== "complemento");
+    // El concepto medido de recordatorios de WhatsApp tampoco es el plan.
+  const itemPlan = sub.items.data.find((i) => !esItemSucursal(i) && i.price.metadata?.peludesk_tipo !== "complemento" && i.price.metadata?.peludesk_tipo !== "recordatorios");
     const itemWeb = sub.items.data.find((i) => i.price.metadata?.peludesk_tipo === "complemento");
     if (!itemPlan) throw new Error("No encontramos el plan en tu suscripción. Escríbenos.");
     const periodicidadActual = itemPlan.price.recurring?.interval === "year" ? "anual" : "mensual";

@@ -62,7 +62,10 @@
   "datos_revisados_at",
   "datos_revisados_por",
   "negocio_id",
-  "publico_general"
+  "publico_general",
+  "recordatorios_whatsapp",
+  "recordatorios_whatsapp_origen",
+  "recordatorios_whatsapp_cambio_at"
  ],
  "contratos": [
   "id",

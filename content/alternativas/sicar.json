@@ -10,6 +10,7 @@
   "cfdi": "Sí, CFDI 4.0. En SICAR X los timbres se compran en paquete aparte (sin precio publicado); la licencia de escritorio trae 100.",
   "pagos": "Sus páginas no nombran un procesador ni una terminal integrada; venden equipo de mostrador (impresoras, lectores de código y básculas).",
   "modulos": "Venta en mostrador, inventario con lotes y caducidades de vacunas y desparasitantes, informe de venta de antibióticos y controlados para Cofepris con los datos de la receta y del médico, venta a granel con báscula, clientes y descuentos, cobro de estética, consultas y cirugías, y sincronización de sucursales en la nube.",
+  "recordatorios": "—",
   "mejorEn": [
     "Punto de venta e inventario de tienda muy maduros, con báscula, lector de código y venta a granel.",
     "Opción de licencia de pago único en lugar de mensualidad.",
@@ -30,6 +31,7 @@
     "idioma": [{ "nombre": "SICAR X para veterinarias", "url": "https://www.sicarx.com/sistema-para-veterinarias-punto-de-venta" }],
     "cfdi": [{ "nombre": "Facturación de SICAR X", "url": "https://www.sicarx.com/facturacion-cfdi" }, { "nombre": "SICAR para veterinarias", "url": "https://www.sicar.mx/sistema-para-veterinarias-punto-de-venta" }],
     "pagos": [{ "nombre": "SICAR para veterinarias", "url": "https://www.sicar.mx/sistema-para-veterinarias-punto-de-venta" }],
-    "modulos": [{ "nombre": "SICAR X para veterinarias", "url": "https://www.sicarx.com/sistema-para-veterinarias-punto-de-venta" }, { "nombre": "SICAR para veterinarias", "url": "https://www.sicar.mx/sistema-para-veterinarias-punto-de-venta" }]
+    "modulos": [{ "nombre": "SICAR X para veterinarias", "url": "https://www.sicarx.com/sistema-para-veterinarias-punto-de-venta" }, { "nombre": "SICAR para veterinarias", "url": "https://www.sicar.mx/sistema-para-veterinarias-punto-de-venta" }],
+    "recordatorios": []
   }
 }

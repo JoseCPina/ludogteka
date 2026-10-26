@@ -74,7 +74,8 @@ export async function ajustarSucursales(principalId: string, cantidad: number): 
   const sub = await s.subscriptions.retrieve(subId, { expand: ["items.data.price"] });
   if (sub.metadata?.[METADATA_NEGOCIO] !== principalId) throw new Error("Esa suscripción no es de este negocio.");
   if (sub.schedule) throw new Error("Tienes un cambio de plan programado. Espera a que se aplique, o quédate con tu plan actual, para cambiar tus sucursales.");
-  const itemPlan = sub.items.data.find((i) => !esItemSucursal(i) && i.price.metadata?.peludesk_tipo !== "complemento");
+  // El concepto medido de recordatorios de WhatsApp tampoco es el plan.
+  const itemPlan = sub.items.data.find((i) => !esItemSucursal(i) && i.price.metadata?.peludesk_tipo !== "complemento" && i.price.metadata?.peludesk_tipo !== "recordatorios");
   if (!itemPlan) throw new Error("No encontramos el plan en tu suscripción. Escríbenos por WhatsApp.");
   const periodicidad: Periodicidad = itemPlan.price.recurring?.interval === "year" ? "anual" : "mensual";
   const item = sub.items.data.find(esItemSucursal);

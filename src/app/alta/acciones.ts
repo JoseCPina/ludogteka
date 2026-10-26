@@ -316,6 +316,14 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
     contratos: ContratoPendiente[];
   } | null;
   await aplicarClinicosAlta(admin, negocio.id, salida?.cliente_id, datos.perros, salida?.perros ?? []);
+  // El consentimiento de los recordatorios por WhatsApp que dio al registrarse (con su origen).
+  if (salida?.cliente_id) {
+    await admin
+      .from("clientes")
+      .update({ recordatorios_whatsapp: datos.recordatorios !== false, recordatorios_whatsapp_origen: "alta_link", recordatorios_whatsapp_cambio_at: new Date().toISOString() })
+      .eq("id", salida.cliente_id)
+      .eq("negocio_id", negocio.id);
+  }
   return {
     error: null,
     clienteId: salida?.cliente_id,

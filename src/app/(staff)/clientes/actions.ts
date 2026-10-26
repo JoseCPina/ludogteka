@@ -25,7 +25,9 @@ function leerCampos(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const direccion = String(formData.get("direccion") ?? "").trim();
   const notas = String(formData.get("notas") ?? "").trim().slice(0, 2000);
-  return { nombre, telefonoCrudo, email: email || null, direccion, notas: notas || null };
+  // La casilla de recordatorios por WhatsApp: solo cuenta si el formulario la trae (un checkbox apagado no se envía).
+  const recordatorios = formData.get("recordatorios_whatsapp_presente") ? formData.get("recordatorios_whatsapp") === "si" : null;
+  return { nombre, telefonoCrudo, email: email || null, direccion, notas: notas || null, recordatorios };
 }
 
 function validar(nombre: string, telefonoCrudo: string): EstadoClienteForm & { telefono?: string } {
@@ -67,14 +69,14 @@ export async function crearClienteYVolver(
 }
 
 async function altaCliente(formData: FormData, volver: string | null, seguirConMascota = false): Promise<EstadoClienteForm> {
-  const { nombre, telefonoCrudo, email, direccion, notas } = leerCampos(formData);
+  const { nombre, telefonoCrudo, email, direccion, notas, recordatorios } = leerCampos(formData);
   const validado = validar(nombre, telefonoCrudo);
   if (validado.error) return validado;
 
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("clientes")
-    .insert({ nombre, telefono: validado.telefono, email })
+    .insert({ nombre, telefono: validado.telefono, email, recordatorios_whatsapp: recordatorios ?? true, recordatorios_whatsapp_origen: "mostrador", recordatorios_whatsapp_cambio_at: new Date().toISOString() })
     .select("id")
     .single();
 
@@ -122,15 +124,23 @@ export async function actualizarCliente(
   _estadoPrevio: EstadoClienteForm,
   formData: FormData
 ): Promise<EstadoClienteForm> {
-  const { nombre, telefonoCrudo, email, notas } = leerCampos(formData);
+  const { nombre, telefonoCrudo, email, notas, recordatorios } = leerCampos(formData);
   const validado = validar(nombre, telefonoCrudo);
   if (validado.error) return validado;
 
   const supabase = await createSupabaseServerClient();
   const control = controlDeFormulario(formData);
+  // El consentimiento solo se toca si cambió (así no se pierde de dónde vino, p. ej. una baja por WhatsApp).
+  const { data: previo } = recordatorios === null ? { data: null } : await supabase.from("clientes").select("recordatorios_whatsapp").eq("id", id).maybeSingle();
+  const cambiaConsentimiento = recordatorios !== null && previo !== null && previo.recordatorios_whatsapp !== recordatorios;
   const { data: guardado, error } = await conControl(supabase
     .from("clientes")
-    .update({ nombre, telefono: validado.telefono, email })
+    .update({
+      nombre,
+      telefono: validado.telefono,
+      email,
+      ...(!cambiaConsentimiento ? {} : { recordatorios_whatsapp: recordatorios, recordatorios_whatsapp_origen: "mostrador", recordatorios_whatsapp_cambio_at: new Date().toISOString() }),
+    })
     .eq("id", id)
     .select("updated_at")
     .single(), control);

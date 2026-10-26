@@ -1,6 +1,19 @@
 import type { Metadata } from "next";
 import { REDES_PELUDESK } from "@/lib/peludesk/landing";
 import { EMPRESA } from "@/lib/peludesk/legal";
+import { FUNCION_RECORDATORIOS } from "@/lib/peludesk/recordatorios";
+
+/** Lo principal que hace PeluDesk (featureList del SoftwareApplication); la landing y /veterinaria ponen la suya. */
+const FUNCIONES_PELUDESK = [
+  FUNCION_RECORDATORIOS,
+  "Agenda de estética y citas veterinarias",
+  "Reservas de hotel y guardería con cupo",
+  "Expediente clínico, carnet de vacunas y recetas",
+  "Caja con corte de turno",
+  "Contratos firmados desde el celular",
+  "Portal para dueños de mascotas",
+  "Facturación CFDI 4.0",
+];
 
 /**
  * SEO de peludesk.mx: el host canónico es UNO (https://peludesk.mx; www
@@ -100,7 +113,8 @@ export function aplicacionPeluDesk(plan: { nombre: string; mensual: number } | n
     inLanguage: "es-MX",
     description:
       extra.descripcion ??
-      "Software en español para clínicas veterinarias, guarderías, hoteles y estéticas caninas en México: reservas, caja, contratos, portal para dueños, recordatorios y facturación CFDI.",
+      "Software en español para clínicas veterinarias, guarderías, hoteles y estéticas caninas en México: recordatorios automáticos por WhatsApp, reservas, caja, contratos, portal para dueños y facturación CFDI.",
+    featureList: FUNCIONES_PELUDESK,
     publisher: { "@id": `${SITIO}/#organizacion` },
     ...(plan
       ? {

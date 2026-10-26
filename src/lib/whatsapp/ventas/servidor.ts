@@ -4,6 +4,7 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { urlDemo } from "@/lib/peludesk/landing";
 import { respuestasFijas } from "@/lib/peludesk/respuestas-fijas";
+import { precioRecordatorioVigente } from "@/lib/recordatorios/precio";
 import { DEMO_POR_GIRO } from "@/lib/web-negocio/demo";
 import { costoMxn, MODELO_IA, type ProspectoContexto } from "../agente";
 import { RESPUESTAS_FUNCIONES } from "../conocimiento";
@@ -57,8 +58,10 @@ export function demoDeGiro(giro: Giro | null): string {
 }
 
 async function contextoGuion(): Promise<ContextoGuion> {
-  const precios = preciosDelBot(await planesPublicos().catch(() => []));
-  const fijas = respuestasFijas({ mensual: precios?.mensual ?? null, anual: precios?.anual ?? null, sucursal: precios?.sucursal ?? null });
+  // El precio de los recordatorios automáticos, de la base (wa_precios): la respuesta fija de «recordatorios» lo dice.
+  const [planes, recordatorio] = await Promise.all([planesPublicos().catch(() => []), precioRecordatorioVigente().catch(() => null)]);
+  const precios = preciosDelBot(planes);
+  const fijas = respuestasFijas({ mensual: precios?.mensual ?? null, anual: precios?.anual ?? null, sucursal: precios?.sucursal ?? null, recordatorio });
   return {
     mensual: precios?.mensual ?? null,
     demo: demoDeGiro,

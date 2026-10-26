@@ -1,8 +1,8 @@
 {
   "titulo": "Recordatorios por WhatsApp y portal para dueños de mascotas | PeluDesk",
   "h1": "Recordatorios por WhatsApp y un portal para que el dueño vea lo suyo",
-  "descripcion": "El dueño entra con su teléfono, ve sus citas y reservas, sube el carnet y firma contratos. Los recordatorios de vacuna salen por WhatsApp y los demás avisos, con un toque.",
-  "gancho": "Menos mensajes de «¿a qué hora era?» y menos fotos de cartilla perdidas en el chat.",
+  "descripcion": "PeluDesk manda solo por WhatsApp el recordatorio de cada cita y llegada, y el cliente confirma con un botón. En su portal ve sus citas, sube el carnet y firma.",
+  "gancho": "Un día antes, tu cliente recibe su recordatorio por WhatsApp y confirma con un toque. Menos «¿a qué hora era?» y menos fotos de cartilla perdidas en el chat.",
   "captura": {
     "nombre": "portal",
     "alt": "Portal del dueño de una mascota en el celular, con sus citas y reservas",
@@ -19,17 +19,19 @@
       ]
     },
     {
-      "h2": "Qué se manda automático y qué con un toque",
+      "h2": "Qué se manda automático",
       "lista": [
-        "Recordatorio de la próxima dosis de vacuna o desparasitación (módulo de Veterinaria): sale solo, de 9:00 a 20:00 hora del negocio, con una plantilla aprobada por WhatsApp, y una sola vez por dosis.",
-        "Liga de teleconsulta: sale por WhatsApp.",
-        "Los demás avisos (recordatorio de cita, reporte del día, fotos del perro) los arma PeluDesk y los mandas con un toque desde el WhatsApp del negocio: el mensaje ya viene escrito."
+        "El día anterior, a la hora que escojas (10:00 si no escoges otra): el recordatorio de cada cita de estética, cada cita veterinaria (con el nombre del médico) y cada llegada a hotel o guardería.",
+        "Al terminar la estética: el aviso de que la mascota ya está lista para recoger. Y 7 días antes de la próxima vacuna: «¿Te agendamos?», con los botones Agendar y Después.",
+        "Tu cliente contesta con un botón: «Confirmo» pone la cita en verde en tu agenda; «Necesito cambiarla» te avisa en tu panel para que le escribas. Si escribe BAJA, deja de recibirlos.",
+        "Cada tipo de recordatorio se prende o se apaga en Configuración → Recordatorios.",
+        "El link de teleconsulta también sale por WhatsApp. El reporte del día y las fotos del perro los arma PeluDesk y los mandas con un toque desde el WhatsApp del negocio."
       ]
     },
     {
       "h2": "Si WhatsApp no entrega",
       "parrafos": [
-        "Aceptar un mensaje no es entregarlo. PeluDesk registra el estado de cada recordatorio y, si falla, lo marca en «Necesita atención» con el motivo para que lo mandes tú o lo reintentes."
+        "Aceptar un mensaje no es entregarlo. PeluDesk registra el estado de cada recordatorio y, si falla, lo marca en «Necesita atención» con el motivo para que lo mandes tú o lo reintentes. Los mensajes que no se entregan no se cobran."
       ]
     },
     {
@@ -42,19 +44,19 @@
   "preguntas": [
     [
       "¿Con qué número salen los recordatorios automáticos?",
-      "Con el número de WhatsApp de PeluDesk, no con el del negocio. El mensaje indica a qué teléfono del negocio llamar."
+      "Con el número de WhatsApp de PeluDesk, no con el del negocio. El nombre de tu negocio va en el texto del mensaje."
     ],
     [
       "¿Pueden responder los dueños?",
-      "El número de PeluDesk no recibe respuestas de ellos hacia el negocio; para conversar usan el teléfono del negocio."
+      "Contestan con un botón: «Confirmo» pone la cita como confirmada en tu agenda y «Necesito cambiarla» te avisa en tu panel para que le escribas y la cambien."
     ],
     [
       "¿Hay que activar algo?",
-      "El envío automático es una opción que prendes en Veterinaria. Viene apagada."
+      "Cada tipo de recordatorio (estética, veterinaria, hotel y guardería, listo para recoger y vacunas) se prende o se apaga en Configuración → Recordatorios."
     ],
     [
-      "¿Cuesta extra?",
-      "No hay cargo por los recordatorios en el plan único."
+      "¿Cuánto cuestan?",
+      "Cada negocio tiene recordatorios gratis cada mes, también en la prueba gratis; después se cobra por mensaje entregado, más IVA, en la misma factura mensual del plan. Tú pones un tope de gasto al mes y los mensajes que no se entregan no se cobran. El precio vigente está en /precios."
     ]
   ],
   "relacionadas": [

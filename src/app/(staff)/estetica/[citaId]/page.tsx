@@ -12,6 +12,7 @@ import { CorregirServicio } from "./corregir-servicio";
 import type { Estilista } from "../selector-estilista";
 import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { AvisosWhatsApp } from "@/components/avisos-whatsapp";
+import { RecordatorioDeLaCita } from "@/components/recordatorio-de-la-cita";
 import { usaEstancias } from "@/lib/plan/modulos";
 import { puedeAbrirEnServidor } from "@/lib/auth/acceso-servidor";
 
@@ -219,6 +220,7 @@ export default async function CitaDetallePage({
             />
           </div>
         )}
+        <RecordatorioDeLaCita refId={citaId} zona={zona} />
         {cita.fuera_de_horario && (
           <p className="mt-1 inline-block rounded-full bg-ambar-suave px-2.5 py-1 text-xs font-bold text-ambar-oscuro">
             Fuera de horario

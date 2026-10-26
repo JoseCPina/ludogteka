@@ -15,10 +15,13 @@ export function MisDatosForm({
   nombre,
   telefono,
   email,
+  recordatorios = true,
 }: {
   nombre: string;
   telefono: string;
   email: string | null;
+  /** Acepta los recordatorios automáticos por WhatsApp. */
+  recordatorios?: boolean;
 }) {
   const [estado, formAction, enviando] = useActionState(useAccionConTope(actualizarMisDatos), ESTADO_INICIAL);
 
@@ -61,6 +64,15 @@ export function MisDatosForm({
           disabled={enviando}
           defaultValue={email ?? ""}
         />
+
+        <input type="hidden" name="recordatorios_whatsapp_presente" value="1" />
+        <label className="flex items-start gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3 text-n-900" data-consentimiento-recordatorios>
+          <input type="checkbox" name="recordatorios_whatsapp" value="si" defaultChecked={recordatorios} disabled={enviando} className="mt-1 h-4 w-4" />
+          <span>
+            Quiero recibir recordatorios por WhatsApp
+            <span className="block text-sm text-n-600">De mis citas, llegadas y vacunas, desde el número de PeluDesk con el nombre del negocio. También puedo darme de baja respondiendo BAJA.</span>
+          </span>
+        </label>
 
         <AccionesFormulario error={estado.error} exito={estado.ok && "Cambios guardados"}>
           <Button type="submit" cargando={enviando}>

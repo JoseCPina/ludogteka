@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EnlaceOTexto } from "@/components/acceso-contexto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
@@ -38,10 +39,12 @@ export default async function AjustesVeterinaria() {
       <FormularioAccion accion={guardarAjustesVeterinaria} textoBoton="Guardar ajustes" versiones={versionAjustes} registro="los ajustes de Veterinaria" className="rounded-lg border border-n-200 bg-white p-5">
         <fieldset disabled={!puede} className="flex flex-col gap-4">
           <h2 className="text-lg font-bold text-n-900">Recordatorios de próxima dosis</h2>
-          <Select label="Envío automático por WhatsApp" name="recordatorios_activos" defaultValue={a.recordatorios_activos ? "si" : "no"} ayuda="Apagado: la lista de Recordatorios es para mandarlos tú a mano. Prendido: la plantilla aprobada de WhatsApp sale sola a los dueños con teléfono, una sola vez por dosis.">
-            <option value="no">Apagado</option>
-            <option value="si">Prendido</option>
-          </Select>
+          {/* El envío automático vive en Configuración → Recordatorios (recordatorios_ajustes.vacuna); este valor ya no decide nada. */}
+          <input type="hidden" name="recordatorios_activos" value={a.recordatorios_activos ? "si" : "no"} />
+          <p className="text-sm text-n-700" data-recordatorio-vacuna-config>
+            El recordatorio por WhatsApp de la próxima vacuna o desparasitación sale solo, 7 días antes, si lo prendes en{" "}
+            <EnlaceOTexto href="/admin/recordatorios" className="font-semibold text-morado underline">Configuración → Recordatorios</EnlaceOTexto>. El dueño contesta «Agendar» o «Después».
+          </p>
           <Field label="Días de anticipación" name="dias_anticipacion" type="number" min={0} max={60} defaultValue={a.dias_anticipacion ?? 7} ayuda="Cuántos días antes de la próxima dosis se avisa." />
           <h2 className="mt-2 text-lg font-bold text-n-900">Certificados de salud</h2>
           <Field label="Vigencia en días" name="certificado_vigencia_dias" type="number" min={1} max={365} defaultValue={a.certificado_vigencia_dias ?? 30} />

@@ -62,6 +62,8 @@ export const ZONAS: Zona[] = [
   { prefijo: "/admin/importar", roles: ["admin"], permisos: ["importar_datos"] },
   { prefijo: "/admin/perfil", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { prefijo: "/admin/politicas", roles: ["admin"], permisos: ["configuracion_negocio"] },
+  // Qué recordatorios por WhatsApp salen solos y a qué hora (el tope de gasto, en Módulos y plan).
+  { prefijo: "/admin/recordatorios", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { prefijo: "/admin/configuracion", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { prefijo: "/admin/tarifa-guarderia", roles: ["admin"], permisos: ["tarifas"] },
   { prefijo: "/admin", roles: ["admin"], permisos: ["personal", "configuracion_negocio", "tarifas"] },
@@ -73,6 +75,8 @@ export const ZONAS: Zona[] = [
   { prefijo: "/estetica", roles: ["admin", "recepcion", "estetica"] },
   { prefijo: "/portal", roles: ["cliente"] },
   { prefijo: "/clientes", roles: ["admin", "recepcion"] },
+  // Lo que contestan los clientes a los recordatorios por WhatsApp (cambios, solicitudes, mensajes) y los enviados.
+  { prefijo: "/recordatorios", roles: ["admin", "recepcion"] },
   { prefijo: "/vinculacion", roles: ["admin", "recepcion"] },
   // Estética entra a la ficha del perro: escribe peso/alergias/alertas, aunque no pueda tocar los datos base
   // (eso lo filtra RLS, no esta zona).

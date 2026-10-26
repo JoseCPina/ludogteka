@@ -675,6 +675,41 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     }
   }
 
+  // Recordatorios por WhatsApp: lo que contestaron los clientes (cambiar la cita, agendar, un mensaje) y los que
+  // quedaron en pausa por los gratis del mes o el tope.
+  if (sesion && ["admin", "recepcion"].includes(sesion.rol)) {
+    const [{ data: porAtender }, { count: pausadosRec }] = await Promise.all([
+      supabase.from("recordatorios_mensajes").select("tipo, created_at").is("deleted_at", null).is("atendido_at", null).neq("tipo", "baja").order("created_at").limit(200),
+      supabase.from("recordatorios_wa").select("id", { count: "exact", head: true }).eq("estado", "pausado").is("deleted_at", null),
+    ]);
+    const msgs = (porAtender ?? []) as { tipo: string; created_at: string }[];
+    if (msgs.length > 0) {
+      const cambios = msgs.filter((m) => m.tipo === "pide_cambio").length;
+      atencion.push({
+        clave: "recordatorios-respuestas",
+        texto:
+          msgs.length === 1
+            ? cambios === 1
+              ? "Un cliente pidió cambiar su cita por WhatsApp"
+              : msgs[0].tipo === "solicitud_cita"
+                ? "Un cliente quiere agendar desde su recordatorio"
+                : "Un cliente contestó a su recordatorio por WhatsApp"
+            : `${msgs.length} respuestas de clientes a sus recordatorios por atender${cambios ? ` (${cambios} piden cambiar su cita)` : ""}`,
+        href: "/recordatorios",
+        ...masViejo(msgs.map((m) => fechaLocalDeInstante(m.created_at, zona)), hoy, zona, "a"),
+      });
+    }
+    if (Number(pausadosRec ?? 0) > 0) {
+      atencion.push({
+        clave: "recordatorios-pausados",
+        texto: pausadosRec === 1 ? "Un recordatorio por WhatsApp está en pausa" : `${pausadosRec} recordatorios por WhatsApp están en pausa`,
+        detalle: "Ya se usaron los gratis del mes o se llegó al tope: revísalo en Módulos y plan",
+        href: "/recordatorios",
+        dias: 0,
+      });
+    }
+  }
+
   // Reembolsos de Mercado Pago que alguien tiene que ver: hechos desde el
   // panel del proveedor (ya en caja, pero nadie en el mostrador los pidió),
   // hechos sin turno abierto, o pedidos cuya respuesta no ha llegado.

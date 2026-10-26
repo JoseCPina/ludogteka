@@ -41,6 +41,8 @@ export const SECCIONES_STAFF: ItemNav[] = [
   { etiqueta: "Estética", href: "/estetica", roles: ["admin", "recepcion", "estetica"], modulo: "estetica" },
   { etiqueta: "Servicios", href: "/servicios", roles: ["admin"], permisos: ["tarifas"] },
   { etiqueta: "Clientes", href: "/clientes", roles: ["admin", "recepcion"] },
+  // Respuestas de los clientes a los recordatorios automáticos por WhatsApp y su estado.
+  { etiqueta: "Recordatorios", href: "/recordatorios", roles: ["admin", "recepcion"] },
   { etiqueta: "Vinculación", href: "/vinculacion", roles: ["admin", "recepcion"], modulo: "portal" },
   { etiqueta: "Caja", href: "/caja", roles: ["admin", "recepcion"] },
   { etiqueta: "Contratos", href: "/contratos", roles: ["admin", "recepcion"], modulo: "contratos", ademas: ["guarderia", "hotel"] },
@@ -57,6 +59,7 @@ export const SECCIONES_STAFF: ItemNav[] = [
   { etiqueta: "Configuración", href: "/admin/configuracion", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { etiqueta: "Perfil y página web", href: "/admin/perfil", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { etiqueta: "Políticas y reglas", href: "/admin/politicas", roles: ["admin"], permisos: ["configuracion_negocio"] },
+  { etiqueta: "Recordatorios por WhatsApp", href: "/admin/recordatorios", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { etiqueta: "Reporte y fotos", href: "/admin/reporte-guarderia", roles: ["admin"], modulo: ["guarderia", "hotel"] },
   { etiqueta: "Tarifa de guardería", href: "/admin/tarifa-guarderia", roles: ["admin"], permisos: ["tarifas"], modulo: "estetica", ademas: ["guarderia"] },
   { etiqueta: "Módulos y plan", href: "/admin/modulos", roles: ["admin"], permisos: ["administrar_modulos"] },

@@ -25,10 +25,10 @@ export const todasLasGuias = (): Guia[] => SLUGS_GUIA.map((s) => guia(s)).filter
 
 /** Un dato de la comparativa y de dónde salió (sitio oficial del proveedor). */
 export type Fuente = { nombre: string; url: string };
-export type CampoAlternativa = "giro" | "precio" | "idioma" | "cfdi" | "pagos" | "modulos";
+export type CampoAlternativa = "giro" | "precio" | "recordatorios" | "idioma" | "cfdi" | "pagos" | "modulos";
 export type Alternativa = {
   slug: string; nombre: string; sitio: string; region: "internacional" | "latam";
-  giro: string; resumen: string; precio: string; idioma: string; cfdi: string; pagos: string; modulos: string;
+  giro: string; resumen: string; precio: string; recordatorios: string; idioma: string; cfdi: string; pagos: string; modulos: string;
   /** En qué es mejor que PeluDesk: la comparativa tiene que decirlo. */
   mejorEn: string[];
   conviene: string[]; noConviene: string[]; peludesk: string;
@@ -49,6 +49,8 @@ export const REVISADO_ALTERNATIVAS_TEXTO = "17 de octubre de 2026";
 export const FILA_PELUDESK: Record<CampoAlternativa, string> = {
   giro: "Clínica veterinaria, hotel y guardería, y estética, en un solo sistema.",
   precio: "",
+  /** Sale de la base (wa_precios) en cada página: textosRecordatorios(). */
+  recordatorios: "",
   idioma: "Español de México: app, ayuda, portal del dueño y bot de WhatsApp.",
   cfdi: "Sí, CFDI 4.0 desde el cobro, con Facturapi (etapa inicial).",
   pagos: "Mercado Pago (terminal Point Smart y link), efectivo, transferencia y tarjeta manual.",
@@ -57,6 +59,7 @@ export const FILA_PELUDESK: Record<CampoAlternativa, string> = {
 export const CAMPOS_ALTERNATIVA: [CampoAlternativa, string][] = [
   ["giro", "Para qué giro"],
   ["precio", "Precio"],
+  ["recordatorios", "Recordatorios automáticos por WhatsApp"],
   ["idioma", "Idioma"],
   ["cfdi", "Factura CFDI 4.0"],
   ["pagos", "Pagos en México"],

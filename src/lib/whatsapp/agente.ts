@@ -10,7 +10,7 @@
 // quedar como lento que inventar un precio.
 
 import { conIva } from "@/lib/cobro/iva";
-import { ACLARACION_DEMO, COBRO_A_NOMBRE_DE, respuestasFijas } from "@/lib/peludesk/respuestas-fijas";
+import { ACLARACION_DEMO, COBRO_A_NOMBRE_DE, respuestasFijas, type PrecioRecordatorioFijo } from "@/lib/peludesk/respuestas-fijas";
 
 /** Modelo fijo (29 de septiembre de 2026, pedido del dueño: Haiku vendía como catálogo). */
 export const MODELO_IA = "claude-sonnet-5";
@@ -132,6 +132,8 @@ export interface ContextoAgente {
   tipo: TipoInterlocutor;
   negocios: NegocioDeAdmin[];
   planes: PlanPublico[];
+  /** El precio de los recordatorios por WhatsApp (de wa_precios); null si no se pudo leer. */
+  recordatorio?: PrecioRecordatorioFijo | null;
   enlaces: { registro: string; demo: string };
   /** Admin y personal: la documentación del centro de ayuda (bloque aparte, en caché). */
   documentacion?: string;
@@ -321,10 +323,10 @@ export function precioDesde(planes: PlanPublico[]): number | null {
 }
 
 /** Las respuestas fijas (factura, soporte, sucursales…), con los montos de la base. */
-function bloqueRespuestasFijas(planes: PlanPublico[]): string {
+function bloqueRespuestasFijas(planes: PlanPublico[], recordatorio?: PrecioRecordatorioFijo | null): string {
   const plan = planes.find((p) => p.tipo === "plan" && p.mensual > 0);
   const sucursal = planes.find((p) => p.tipo === "sucursal" && p.mensual > 0);
-  const fijas = respuestasFijas({ mensual: plan?.mensual ?? null, anual: plan?.anual ?? null, sucursal: sucursal?.mensual ?? null });
+  const fijas = respuestasFijas({ mensual: plan?.mensual ?? null, anual: plan?.anual ?? null, sucursal: sucursal?.mensual ?? null, recordatorio: recordatorio ?? null });
   return [
     "RESPUESTAS FIJAS (contéstalas así, con tus palabras y en el formato de WhatsApp, sin escalar y sin quitarles nada; no agregues nada que no esté):",
     ...fijas.map((f) => `- ${f.pregunta} → ${f.respuesta}`),
@@ -550,7 +552,7 @@ export function systemPrompt(base: string, aprendido: ParAprendido[], ctx: Conte
   }
   if (ctx.seguimiento) partes.push("", bloqueSeguimiento(ctx.seguimiento));
   if (ctx.prospecto && ctx.tipo !== "admin") partes.push("", ctx.prospecto.anuncio ? bloqueAnuncio(ctx.prospecto) : bloqueProspecto(ctx.prospecto));
-  partes.push("", bloquePlanes(ctx.planes), "", bloqueRespuestasFijas(ctx.planes), "", "=== BASE ===", base.trim());
+  partes.push("", bloquePlanes(ctx.planes), "", bloqueRespuestasFijas(ctx.planes, ctx.recordatorio), "", "=== BASE ===", base.trim());
   if (aprendido.length > 0) {
     partes.push("", "=== APRENDIDO (vale lo mismo que la BASE) ===", ...aprendido.map((p) => `P: ${p.pregunta}\nR: ${p.respuesta}`));
   }

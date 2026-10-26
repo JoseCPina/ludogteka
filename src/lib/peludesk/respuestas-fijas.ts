@@ -1,7 +1,8 @@
 // Las respuestas fijas de PeluDesk a lo que los prospectos y los admins preguntan antes y después de contratar
-// (QA S16, 19 de octubre de 2026): factura, soporte, sucursales, costo de los recordatorios, cancelación, migración
-// desde Excel, plan anual, a nombre de quién sale el cobro, SMS y terminal. UNA sola redacción: la usan el bot de WhatsApp (sin
-// escalar), la landing, /precios y la ayuda. Los montos llegan de la base (planes), nunca escritos aquí.
+// (QA S16, 19 de octubre de 2026): factura, soporte, sucursales, recordatorios automáticos (cómo funcionan y su costo),
+// cancelación, migración desde Excel, plan anual, a nombre de quién sale el cobro, SMS y terminal. UNA sola redacción:
+// la usan el bot de WhatsApp (sin escalar), la landing, /precios y la ayuda. Los montos llegan de la base (planes y
+// wa_precios), nunca escritos aquí.
 // Sin imports de valores: lo usa también el agente, que es puro.
 
 /** El número de WhatsApp de PeluDesk (bot las 24 horas y, detrás, una persona). */
@@ -13,7 +14,13 @@ export const COBRO_A_NOMBRE_DE = "El cobro aparece en tu tarjeta a nombre de MEN
 
 const pesos = (n: number) => `$${Number(n).toLocaleString("es-MX", { maximumFractionDigits: 2 })}`;
 
-export type PreciosFijos = { mensual: number | null; anual: number | null; sucursal: number | null };
+/** El precio de los recordatorios automáticos, de la base (`precioRecordatorioVigente()`, src/lib/recordatorios/precio.ts). */
+export type PrecioRecordatorioFijo = { precio: number; precioConIva: number; gratisMes: number };
+
+export type PreciosFijos = { mensual: number | null; anual: number | null; sucursal: number | null; recordatorio?: PrecioRecordatorioFijo | null };
+
+/** «$0.31»: un precio por mensaje, siempre con dos decimales (igual que pesosRecordatorio de precio.ts). */
+const pesosCentavos = (n: number) => `$${Number(n).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export const RESPUESTA_FACTURA =
   "Sí. Menteo, S.A.S., la empresa que opera PeluDesk, emite la factura (CFDI) de tu suscripción. Tus datos fiscales los capturas en Módulos y plan → Datos de facturación. Te llega por correo en los días siguientes a cada pago. " +
@@ -30,8 +37,22 @@ export function respuestaSucursales(p: PreciosFijos): string {
   return `Cada sucursal es un negocio en PeluDesk, con su propia caja, agenda, personal y página. ${precios} La prueba gratis de 15 días es para la primera; las demás se abren desde Módulos y plan cuando el plan ya está pagado, y quien trabaja en varias pasa de una a otra desde el menú.`;
 }
 
-export const RESPUESTA_RECORDATORIOS =
-  "Van incluidos en el plan: no hay costo por mensaje.\n\nSe mandan por WhatsApp desde el teléfono de tu negocio: PeluDesk te deja el mensaje ya escrito y lo abres con un toque.";
+/**
+ * Cómo funcionan y cuánto cuestan los recordatorios automáticos por WhatsApp. Las cifras (gratis al mes y precio por
+ * mensaje) llegan de la base; sin ellas, la misma respuesta sin cifras.
+ */
+export function respuestaRecordatorios(r?: PrecioRecordatorioFijo | null): string {
+  // Corta a propósito: el guion la manda con el cierre en un mensaje con botón (tope de WhatsApp: 1,024 caracteres).
+  const como =
+    "Salen solos, automático: el día anterior, a la hora que escojas, el recordatorio de la cita de estética, la consulta veterinaria y la llegada a hotel o guardería; también «ya está listo» al terminar la estética y la próxima vacuna 7 días antes. Van del WhatsApp de PeluDesk con el nombre de tu negocio. Tu cliente contesta «Confirmo» (queda confirmada en tu agenda) o «Necesito cambiarla» (te avisa en tu panel); con BAJA deja de recibirlos. Se prenden en Configuración → Recordatorios.";
+  const cobro = r
+    ? `${r.gratisMes} recordatorios entregados gratis al mes, también en la prueba. Después, ${pesosCentavos(r.precio)} + IVA por mensaje entregado, en la factura del plan, con un tope al mes que tú pones. Sin plan pagado, al llegar a ${r.gratisMes} se pausan hasta el mes siguiente.`
+    : "Recordatorios entregados gratis cada mes, también en la prueba. Después, un precio por mensaje entregado más IVA, en la factura del plan, con un tope al mes que tú pones. Sin plan pagado, al acabarse los gratis se pausan hasta el mes siguiente.";
+  return `${como}\n\n${cobro}`;
+}
+
+/** La misma respuesta sin cifras (para quien no tiene a la mano el precio de la base). */
+export const RESPUESTA_RECORDATORIOS = respuestaRecordatorios(null);
 
 export const RESPUESTA_CANCELACION =
   "Cancelas cuando quieras, sin plazo forzoso: en Módulos y plan, que te lleva al portal de pagos. No hay reembolso del mes en curso: lo sigues usando hasta que termina. Después tu información queda en solo lectura (la consultas, no capturas) mientras no pidas borrarla, y puedes pedir una copia completa en formato estructurado por correo a contacto@peludesk.mx: te la entregamos en máximo 20 días hábiles.";
@@ -60,7 +81,7 @@ export function respuestasFijas(p: PreciosFijos): { clave: string; pregunta: str
     { clave: "factura", pregunta: "¿Me dan factura (CFDI)?", respuesta: RESPUESTA_FACTURA },
     { clave: "soporte", pregunta: "¿Cómo es el soporte?", respuesta: RESPUESTA_SOPORTE },
     { clave: "sucursales", pregunta: "¿Y si tengo varias sucursales?", respuesta: respuestaSucursales(p) },
-    { clave: "recordatorios", pregunta: "¿Cuánto cuestan los recordatorios por WhatsApp?", respuesta: RESPUESTA_RECORDATORIOS },
+    { clave: "recordatorios", pregunta: "¿Cómo funcionan y cuánto cuestan los recordatorios por WhatsApp?", respuesta: respuestaRecordatorios(p.recordatorio) },
     { clave: "cancelacion", pregunta: "¿Puedo cancelar cuando quiera?", respuesta: RESPUESTA_CANCELACION },
     { clave: "migracion", pregunta: "Tengo todo en Excel, ¿lo puedo pasar?", respuesta: RESPUESTA_MIGRACION },
     { clave: "anual", pregunta: "¿Hay plan anual?", respuesta: respuestaAnual(p) },
@@ -77,12 +98,12 @@ export const ACLARACION_DEMO = "Es Patitas & Co., un negocio de ejemplo de PeluD
  * QA R23: preguntas que se contestan SIN el modelo (respuesta fija inmediata, ~1 s en vez de 27 a 35 s). Solo las
  * claras y cortas; ante cualquier duda (más de una pregunta, texto largo) devuelve null y contesta el bot.
  */
-export function respuestaFijaDirecta(texto: string): string | null {
+export function respuestaFijaDirecta(texto: string, p?: PreciosFijos | null): string | null {
   const t = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
   if (!t || t.length > 180 || (t.match(/\?/g) ?? []).length > 1) return null;
   if (/\bsms\b|mensajes? de texto/.test(t)) return RESPUESTA_SMS;
   const deRecordatorios = /recordatori|avisos? (por|de|a) (whats|wa)|mensajes? (por|de) whats|notificaci/.test(t);
   const deCosto = /cuest|costo|cobr|precio|pag|incluid|gratis|extra|aparte|cargo|limite|cuantos/.test(t);
-  if (deRecordatorios && deCosto) return RESPUESTA_RECORDATORIOS;
+  if (deRecordatorios && deCosto) return respuestaRecordatorios(p?.recordatorio);
   return null;
 }

@@ -78,6 +78,7 @@ App interna + portal de clientes para negocios caninos y veterinarios (guarderí
 - **Dos sesiones, dos cookies**: personal y portal usan cookies distintas según la ruta (`src/lib/supabase/area.ts`); un cuarto punto que cree un cliente de Supabase con cookies pasa `cookieOptions`.
 - **Un dato interno nunca es columna de una tabla que el dueño pueda leer** (la RLS no filtra columnas): va en tabla aparte solo para personal; toda columna nueva en tabla legible por el dueño se clasifica en `scripts/auditoria/lib/columnas-dueno.json` (docs/columnas-internas.md).
 - **Una cifra nueva de Reportes** lleva su rama en `reporte_desglose` con el mismo criterio que la calcula (docs/caja-y-cuentas.md).
+- **Recordatorios automáticos por WhatsApp** (25 de octubre de 2026, migración `20261202001800`): salen del número de PeluDesk con plantillas UTILITY cuyo texto vive SOLO en `src/lib/recordatorios/plantillas.json`; un tipo sin plantilla `APPROVED`+`UTILITY` no se toma; un solo intento por recordatorio (nunca dos iguales); el precio por mensaje y los gratis salen SOLO de `wa_precios` (`precioRecordatorioVigente()`), nunca escritos; cuenta lo entregado con `pricing.billable`; quien recibió un recordatorio en los últimos 7 días le habla al NEGOCIO (nunca al bot de ventas). El concepto medido de Stripe lleva `peludesk_tipo = recordatorios` y ningún buscador del plan lo toma. Detalle y pruebas: docs/whatsapp-y-soporte.md.
 - **Plan único**: el precio sale SIEMPRE de `planes` (`planUnico()`, `<PrecioPlan>`), nunca escrito en el código (docs/planes-y-suscripcion.md).
 
 ## El límite de 1,000 filas de la API de Supabase
@@ -127,7 +128,7 @@ Fases 0 a 18 del roadmap, PeluDesk multi-negocio, integraciones de cobro, bot de
 - docs/planes-y-suscripcion.md — Al tocar planes, módulos, la prueba gratis, el demo, el cobro con Stripe o `estado_cobro_en`.
 - docs/integraciones-pagos.md — Al tocar cobros integrados, webhooks de pago, Vault de credenciales, Google Maps, conciliación, devoluciones, tarjeta manual o cobro junto.
 - docs/caja-y-cuentas.md — Al tocar caja/turno, retiros, anular o corregir cobros, pases de guardería, venta rápida o Reportes.
-- docs/whatsapp-y-soporte.md — Al tocar el bot, plantillas de Meta, el webhook de WhatsApp/Telegram, el asistente de Ayuda o los tickets.
+- docs/whatsapp-y-soporte.md — Al tocar el bot, plantillas de Meta, el webhook de WhatsApp/Telegram, los recordatorios automáticos (envío, respuestas, cobro por mensaje), el asistente de Ayuda o los tickets.
 - docs/redes-y-sitio-publico.md — Al tocar la landing, /veterinaria, legales, cookies, píxel, blog, DNS/correo, redes, videos de producto o el resumen diario.
 - docs/plataforma.md — Al tocar /plataforma, conteos de negocios o el borrado de un negocio.
 - docs/ayuda-y-tutoriales.md — Al cambiar una pantalla (ayuda y videos por actualizar), grabar tutoriales o resembrar el demo.

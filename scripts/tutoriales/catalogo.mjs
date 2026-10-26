@@ -171,6 +171,7 @@ export const VIDEOS_PENDIENTES = [
   v("96", "cambiar-estilista-cita-estetica", "estetica", "Cambiar o corregir la estilista de una cita", "Pasas una cita a otra estilista o la dejas sin asignar, corriges quién atendió un servicio terminado y ves el historial.", { rol: "admin", duracion: 100, modulos: ["estetica"], permisos: ["corregir_estilista"], rutas: ["/estetica/[citaId]"], etiquetas: ["estilista", "reasignar", "comisión", "sin asignar"] }),
   v("97", "corregir-un-cobro-con-terminal-mal-marcado", "caja", "Cobro con terminal mal marcado y la conciliación con Mercado Pago", "Lees una diferencia de la conciliación, la das por revisada o marcas el cobro como no recibido, con motivo.", { rol: "admin", duracion: 100, rutas: ["/caja/conciliacion"], avisos: ["conciliacion"], etiquetas: ["conciliación", "no recibido", "terminal", "mercado pago"] }),
   v("98", "factura-global-publico-en-general", "caja", "La factura global al público en general", "Ves los periodos con cobros sin factura, emites la global a tiempo y ajustas su periodicidad.", { rol: "admin", duracion: 95, permisos: ["facturar"], rutas: ["/caja/facturas", "/admin/facturacion"], etiquetas: ["factura global", "público en general", "cfdi", "24 horas"] }),
+  v("100", "recordatorios-automaticos-por-whatsapp", "negocio", "Recordatorios automáticos por WhatsApp", "Prendes los recordatorios, ves cómo confirma tu cliente con un botón y atiendes a quien pide cambiar su cita.", { rol: "admin", duracion: 120, rutas: ["/admin/recordatorios", "/recordatorios", "/admin/modulos"], avisos: ["recordatorios-respuestas", "recordatorios-pausados"], etiquetas: ["recordatorios", "whatsapp", "confirmar cita", "plantones"] }),
   v("99", "iva-y-claves-sat-de-productos-y-servicios", "negocio", "IVA y claves del SAT de lo que vendes", "Revisas el IVA de cada tipo de concepto, cambias las claves del SAT y clasificas productos y servicios.", { rol: "admin", duracion: 95, permisos: ["editar_datos_fiscales"], rutas: ["/admin/facturacion"], etiquetas: ["iva", "clave sat", "de patente", "cfdi"] }),
 ];
 
@@ -181,7 +182,12 @@ export const EXCLUIDOS = {
     "/negocio-no-encontrado": "Pantalla de error técnica (dominio sin negocio); no es una tarea del usuario.",
     "/pagina-no-encontrada": "Pantalla de error técnica (404); no es una tarea del usuario.",
     "/fac/[token]": "Enlace público de una factura para el cliente; se enseña solo como resultado en el video 65.",
+    "/admin/recordatorios": "Pendiente de grabar (folio 100, recordatorios automáticos por WhatsApp): se graba con un negocio de prueba, el demo no manda mensajes.",
+    "/recordatorios": "Pendiente de grabar (folio 100, recordatorios automáticos por WhatsApp): se graba con un negocio de prueba, el demo no manda mensajes.",
       },
-  avisos: {},
+  avisos: {
+    "recordatorios-respuestas": "Pendiente de grabar (folio 100): necesita la respuesta de un cliente real a un recordatorio.",
+    "recordatorios-pausados": "Pendiente de grabar (folio 100): necesita un negocio que haya llegado a sus recordatorios gratis del mes.",
+  },
   permisos: {},
 };

@@ -722,7 +722,7 @@ if (IA_REAL) {
     ["fija: factura", TEL_V4, "¿Me dan factura de la suscripción?", { venta: true, sinEscalar: true, menteo: true, capturas: [], contiene: /Menteo/i }],
     ["fija: soporte", TEL_V4, "¿Cómo es el soporte si tengo un problema?", { venta: true, sinEscalar: true, capturas: [], contiene: /24 horas/ }],
     ["fija: sucursales", TEL_V4, "Tengo dos sucursales, ¿cómo se cobra?", { venta: true, sinEscalar: true, capturas: [], contiene: /\$325/ }],
-    ["fija: recordatorios", TEL_V4, "¿Los recordatorios por WhatsApp tienen costo por mensaje?", { venta: true, sinEscalar: true, capturas: [], contiene: /incluid|sin costo|no (tienen|hay) costo/i }],
+    ["fija: recordatorios", TEL_V4, "¿Los recordatorios por WhatsApp tienen costo por mensaje?", { venta: true, sinEscalar: true, capturas: [], contiene: /gratis[\s\S]*por mensaje entregado/i, noContiene: /no hay costo por mensaje|sin costo por mensaje/i }],
     ["fija: cancelación", TEL_V4, "¿Y si quiero cancelar después?", { venta: true, sinEscalar: true, capturas: [], contiene: /solo lectura/i, noContiene: /90 d[ií]as|exportarlos por WhatsApp/i }],
     ["fija: excel", TEL_V4, "Tengo a mis clientes en un Excel, ¿se pueden pasar?", { venta: true, sinEscalar: true, capturas: [], contiene: /import/i }],
     ["fija: anual", TEL_V4, "¿Hay plan anual?", { venta: true, sinEscalar: true, menteo: true, capturas: [], contiene: /\$6,490/ }],

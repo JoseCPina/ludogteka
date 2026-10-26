@@ -15,6 +15,7 @@ const SECCIONES = [
   { href: "/plataforma/almacenamiento", texto: "Fotos y videos" },
   { href: "/plataforma/whatsapp", texto: "WhatsApp" },
   { href: "/plataforma/seguimiento", texto: "Seguimiento de pruebas" },
+  { href: "/plataforma/recordatorios", texto: "Recordatorios de WhatsApp" },
   { href: "/plataforma/redes", texto: "Redes" },
   { href: "/plataforma/resumen", texto: "Resumen" },
   { href: "/plataforma/tutoriales", texto: "Videos tutoriales" },

@@ -10,6 +10,7 @@
   "cfdi": "Su facturación electrónica es con la DIAN de Colombia; no menciona CFDI ni facturación mexicana.",
   "pagos": "Su sitio no nombra procesador ni terminal integrada.",
   "modulos": "Historia clínica, agenda, recordatorios por correo, firma digital de documentos y app OkPet para el dueño; en Pro, hospitalización (kardex), ventas e inventario, reportes, marketing y facturación con la DIAN.",
+  "recordatorios": "Menciona recordatorios por correo; no verificamos si los manda por WhatsApp.",
   "mejorEn": [
     "Tiene un plan gratis para empezar (con límites).",
     "Firma digital de documentos y app para el dueño incluidas desde el plan gratis."
@@ -29,6 +30,7 @@
     "idioma": [{ "nombre": "okvet.co", "url": "https://okvet.co/" }],
     "cfdi": [{ "nombre": "okvet.co", "url": "https://okvet.co/" }, { "nombre": "Planes de OkVet", "url": "https://okvet.co/okvet-planes/" }],
     "pagos": [{ "nombre": "okvet.co", "url": "https://okvet.co/" }],
-    "modulos": [{ "nombre": "Planes de OkVet", "url": "https://okvet.co/okvet-planes/" }]
+    "modulos": [{ "nombre": "Planes de OkVet", "url": "https://okvet.co/okvet-planes/" }],
+    "recordatorios": [{ "nombre": "Planes de OkVet", "url": "https://okvet.co/okvet-planes/" }]
   }
 }

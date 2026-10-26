@@ -1,4 +1,5 @@
 import { registrarEnvio, type ContextoEnvio } from "./entregas";
+import { precioRecordatorioVigente } from "@/lib/recordatorios/precio";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -409,11 +410,11 @@ export async function videosPublicados(): Promise<{ numero: string; slug: string
 }
 
 /** Las cifras de las respuestas fijas de precio, de la base (sin IVA). Sin plan publicado: null (no se inventa). */
-export function preciosDelBot(planes: PlanPublico[]): PreciosBot | null {
+export function preciosDelBot(planes: PlanPublico[], recordatorio?: { precio: number } | null): PreciosBot | null {
   const plan = planes.find((p) => p.tipo === "plan" && p.mensual > 0);
   const sucursal = planes.find((p) => p.tipo === "sucursal" && p.mensual > 0);
   if (!plan || !sucursal) return null;
-  return { mensual: plan.mensual, anual: plan.anual, sucursal: sucursal.mensual };
+  return { mensual: plan.mensual, anual: plan.anual, sucursal: sucursal.mensual, recordatorio: recordatorio?.precio ?? null };
 }
 
 /** Los planes publicados (tabla compartida `planes`, la edita la plataforma). */
@@ -819,11 +820,15 @@ export function construirSoporte(): { deps: DepsSoporte; datos: DatosSupabase; w
       tipo: cuenta.tipo,
       negocios: cuenta.negocios,
       planes: await planesPublicos(),
+      recordatorio: await precioRecordatorioVigente(),
       // Un prospecto que llega de su vista previa se registra desde ahí: queda con su negocio ya escrito y su página.
       enlaces: { registro: registroDeProspecto(prospecto), demo: `${urlDemo()}/demo` },
       documentacion: cuenta.tipo === "admin" || cuenta.tipo === "personal" ? documentacionParaWhatsApp(urlPlataforma(), await videosPublicados()) : undefined,
     }),
-    fijos: async (prospecto) => ({ precios: preciosDelBot(await planesPublicos()), registro: registroDeProspecto(prospecto) }),
+    fijos: async (prospecto) => {
+      const [planes, recordatorio] = await Promise.all([planesPublicos(), precioRecordatorioVigente()]);
+      return { precios: preciosDelBot(planes, recordatorio), recordatorio, registro: registroDeProspecto(prospecto) };
+    },
     ligaPortal: ligaPortalDe,
     // Import diferido: el módulo del Flow usa este (ClienteWA, la configuración).
     ofrecerFlow: async (telefono, punto, cuerpo, prospecto) => (await import("./flow/servidor")).ofrecerFlow(telefono, punto, cuerpo, prospecto, wa),

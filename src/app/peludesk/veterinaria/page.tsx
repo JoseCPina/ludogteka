@@ -11,6 +11,8 @@ import { CASO_POR_GIRO } from "@/lib/peludesk/ludogteka";
 import { PrecioPlan } from "@/components/peludesk/precio-plan";
 import { planUnico, pesos } from "@/lib/peludesk/plan";
 import { preguntasDeContratacion } from "@/lib/peludesk/preguntas-contratacion";
+import { SeccionRecordatorios } from "@/components/peludesk/seccion-recordatorios";
+import { recordatoriosVigentes } from "@/lib/peludesk/recordatorios";
 import { JsonLd, SITIO, aplicacionPeluDesk, metaPagina, migas, preguntasFrecuentes } from "@/lib/peludesk/seo";
 
 const RUTA = "/veterinaria";
@@ -29,7 +31,7 @@ const botonSecundario =
   "pd-boton inline-flex min-h-12 items-center justify-center whitespace-nowrap rounded-full border-2 border-morado/25 bg-white px-6 text-base font-semibold text-morado hover:border-morado/50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave";
 
 export default async function PaginaVeterinaria() {
-  const [plan, contratacion] = await Promise.all([planUnico(), preguntasDeContratacion()]);
+  const [plan, contratacion, recordatorios] = await Promise.all([planUnico(), preguntasDeContratacion(), recordatoriosVigentes()]);
   const preguntas = [...PREGUNTAS_VET, ...contratacion];
   const demo = `${urlDemo()}/demo/entrar/veterinaria`;
   return (
@@ -60,6 +62,9 @@ export default async function PaginaVeterinaria() {
             Lo clínico y lo del mostrador en el mismo lugar: la consulta se firma, la vacuna se recuerda, la receta queda ligada al lote y todo lo que se hace
             llega a la cuenta para cobrarlo.
           </p>
+          <p className="mt-3 max-w-[52ch] text-lg font-semibold text-n-900">
+            Un día antes de cada consulta, el dueño recibe su recordatorio por WhatsApp, solo, y confirma con un toque.
+          </p>
           {plan && <PrecioPlan plan={plan} tamano="mediano" className="mt-6" />}
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <EnlaceRegistro className={botonPrimario}>Pruébalo gratis</EnlaceRegistro>
@@ -73,6 +78,12 @@ export default async function PaginaVeterinaria() {
           <Ilustracion nombre="escena-vacunas" prioridad className="h-auto w-full max-w-[26rem]" sizes="(min-width: 768px) 420px, 90vw" />
         </div>
       </section>
+
+      <SeccionRecordatorios
+        textos={recordatorios}
+        titulo="Los dueños de tus pacientes reciben su recordatorio por WhatsApp, solos"
+        ejemplo={{ negocio: "Clínica Veterinaria Patitas", cliente: "Ana", mascota: "Michi", servicio: "Consulta", dia: "jueves 29 de octubre", hora: "11:00", tipo: "veterinaria", medico: "la Dra. Montes" }}
+      />
 
       {/* ── Lo que hace ── */}
       <section aria-labelledby="funciones" className="border-y border-n-200 bg-white">

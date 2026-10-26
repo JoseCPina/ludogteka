@@ -15,6 +15,7 @@
 //                        (public/marca/peludesk/perfil-640.jpg: el isotipo a cuadro completo)
 //   plantillas           crea la plantilla de seguimiento (reabre la ventana de 24 h)
 //   plantilla-carnet-retirar [borrar]   quita la v1 de Meta cuando la v2 ya es UTILITY aprobada
+//   plantillas-recordatorios [enviar]   las 5 de los recordatorios automáticos (src/lib/recordatorios/plantillas.json)
 //   plantilla-carnet [enviar]
 //   plantilla-teleconsulta [enviar]
 //                        la plantilla del recordatorio de próxima dosis del carnet (Veterinaria)
@@ -233,6 +234,36 @@ const pasos = {
 
   // Veterinaria, Fase 1: la plantilla del recordatorio de próxima dosis del carnet
   // (texto en src/lib/carnet/plantilla-recordatorio.json). Sin «enviar» solo dice su estado.
+  // Las 5 plantillas de los recordatorios automáticos (src/lib/recordatorios/plantillas.json): UTILITY, es_MX, con
+  // el pie de baja y sus botones de respuesta rápida. Sin «enviar» solo dice el estado de cada una.
+  async "plantillas-recordatorios"(modo) {
+    const waba = requerir("PELUDESK_WABA_ID");
+    const def = JSON.parse(readFileSync(new URL("../../src/lib/recordatorios/plantillas.json", import.meta.url), "utf8"));
+    const ya = await graph(`/${waba}/message_templates?fields=name,status,category,language,rejected_reason&limit=200`);
+    for (const [tipo, p] of Object.entries(def.plantillas)) {
+      const en = (ya.data ?? []).find((x) => x.name === p.nombre && x.language === def.idioma);
+      if (en) {
+        console.log(`${tipo} ${p.nombre}: ${en.status} (${en.category})${en.rejected_reason && en.rejected_reason !== "NONE" ? ` · motivo: ${en.rejected_reason}` : ""}`);
+        continue;
+      }
+      if (modo !== "enviar") {
+        console.log(`${tipo} ${p.nombre}: no existe en Meta (usa «enviar»)`);
+        continue;
+      }
+      const components = [
+        { type: "BODY", text: p.cuerpo, example: { body_text: [p.ejemplo] } },
+        { type: "FOOTER", text: def.pie },
+        ...(p.botones.length ? [{ type: "BUTTONS", buttons: p.botones.map((b) => ({ type: "QUICK_REPLY", text: b.texto })) }] : []),
+      ];
+      try {
+        const r = await graph(`/${waba}/message_templates`, { method: "POST", body: { name: p.nombre, language: def.idioma, category: "UTILITY", components } });
+        console.log(`${tipo} ${p.nombre}: enviada a revisión → ${r.status ?? "?"} (${r.category ?? "?"})`);
+      } catch (e) {
+        console.log(`${tipo} ${p.nombre}: ✘ ${e.message}`);
+      }
+    }
+  },
+
   async "plantilla-carnet"(modo) {
     const waba = requerir("PELUDESK_WABA_ID");
     const p = JSON.parse(readFileSync(new URL("../../src/lib/carnet/plantilla-recordatorio.json", import.meta.url), "utf8"));
