@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../reservas/traducir-error";
 import { revalidarModulosEstancia } from "../reservas/revalidar";
+import { motivoSinCargosNuevos } from "@/lib/caja/cargos-nuevos-servidor";
 
 export type ResultadoExtra = { error: string | null };
 export type ResultadoAgregar = { error: string | null; cubierto?: boolean; creados?: number };
@@ -41,6 +42,8 @@ export async function agregarExtra(a: {
 }): Promise<ResultadoAgregar> {
   if (!a.extraId) return { error: "Elige qué servicio extra agregar." };
   if (!a.fecha) return { error: "Elige la fecha." };
+  const cerrada = await motivoSinCargosNuevos(await createSupabaseServerClient(), a.estanciaId);
+  if (cerrada) return { error: cerrada };
   const r = await llamar("extra_agregar", {
     p_estancia: a.estanciaId,
     p_extra: a.extraId,
@@ -71,6 +74,8 @@ export async function programarExtra(a: {
   notas: string;
 }): Promise<ResultadoAgregar> {
   if (!a.extraId) return { error: "Elige qué servicio extra programar." };
+  const cerrada = await motivoSinCargosNuevos(await createSupabaseServerClient(), a.estanciaId);
+  if (cerrada) return { error: cerrada };
   const r = await llamar("extra_programar", {
     p_estancia: a.estanciaId,
     p_extra: a.extraId,

@@ -3,6 +3,7 @@
 import { revalidarModulosEstancia } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
+import { motivoSinCargosNuevos } from "@/lib/caja/cargos-nuevos-servidor";
 import { conControl } from "@/lib/concurrencia/servidor";
 import { conflictoDeError, type Conflicto, type ControlVersion } from "@/lib/concurrencia/tipos";
 
@@ -34,6 +35,9 @@ export async function aplicarCargo(
   }
 
   const supabase = await createSupabaseServerClient();
+  // Una estancia finalizada con la cuenta pagada ya no admite cargos (la pantalla tampoco los ofrece).
+  const cerrada = await motivoSinCargosNuevos(supabase, estanciaId);
+  if (cerrada) return { error: cerrada, cargo: null };
   const { data, error } = await supabase
     .from("cargos_aplicados")
     .insert({

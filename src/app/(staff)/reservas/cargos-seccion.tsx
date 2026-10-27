@@ -47,6 +47,7 @@ export function CargosSeccion({
   cancelada = false,
   cuentaCobrado = 0,
   cuentaDevuelto = 0,
+  sinCargosNuevos = null,
 }: {
   estanciaId: string;
   cargosIniciales: Cargo[];
@@ -62,6 +63,8 @@ export function CargosSeccion({
   cancelada?: boolean;
   cuentaCobrado?: number;
   cuentaDevuelto?: number;
+  // Estancia finalizada con la cuenta pagada (admiteCargosNuevos): no se ofrece «Aplicar cargo» y se dice por qué.
+  sinCargosNuevos?: string | null;
 }) {
   const [cargos, setCargos] = useState(cargosIniciales);
   // Después de aplicar o cancelar un cargo, el total vuelve a leerse de la base.
@@ -252,6 +255,12 @@ export function CargosSeccion({
         <Alert variante="error" titulo="No se pudo completar">
           {error}
         </Alert>
+      )}
+
+      {sinCargosNuevos && (
+        <p className="text-sm text-n-600" data-cargos-cerrados>
+          {sinCargosNuevos}
+        </p>
       )}
 
       {serviciosCargo.length > 0 && (
