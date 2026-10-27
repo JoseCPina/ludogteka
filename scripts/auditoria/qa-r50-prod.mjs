@@ -86,6 +86,7 @@ console.log("\nN133 · reservar un perro sin talla");
       await p.locator("[data-falta-dato-precio]").getByRole("button").first().click();
       await p.locator("[data-falta-dato-precio]").waitFor({ state: "detached", timeout: 30000 }).catch(() => {});
       await p.waitForLoadState("networkidle").catch(() => {});
+      await p.locator("[data-precio-linea]:not([data-precio-linea=calculando])").first().waitFor({ timeout: 30000 }).catch(() => {});
       const precio = await texto(p.locator("[data-precio-linea]").first());
       const sigue = await p.locator("[data-falta-dato-precio]").count();
       const habilitado = !(await crear.isDisabled());
