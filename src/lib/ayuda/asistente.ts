@@ -1,5 +1,6 @@
 import type { Articulo } from "./tipos";
 import { NOMBRE_GRUPO } from "./tipos";
+import { conPrecios, type PreciosAyuda } from "./precios";
 
 /**
  * El asistente de Ayuda dentro de la app: el mismo motor que el bot de
@@ -49,12 +50,12 @@ export type ContextoAsistente = {
   videos?: { numero: string; titulo: string; articulos: string[] }[];
 };
 
-function bloqueArticulo(a: Articulo): string {
+function bloqueArticulo(a: Articulo, precios: PreciosAyuda | null): string {
   const quien = a.roles.map((r) => (r === "admin" ? "admin" : "recepción")).join(" y ");
   return [
     `<articulo slug="${a.slug}" titulo="${a.titulo}" tema="${NOMBRE_GRUPO[a.grupo] ?? a.grupo}" lo_hace="${quien}" pantallas="${a.rutas.join(", ")}">`,
     a.resumen,
-    a.cuerpo.trim(),
+    conPrecios(a.cuerpo.trim(), precios),
     "</articulo>",
   ].join("\n");
 }
@@ -63,7 +64,7 @@ function bloqueArticulo(a: Articulo): string {
  * La parte fija del system prompt (va en caché): instrucciones y la
  * documentación. Solo cambia si cambian los módulos del negocio.
  */
-export function promptFijo(articulos: Articulo[]): string {
+export function promptFijo(articulos: Articulo[], precios: PreciosAyuda | null = null): string {
   return [
     "Eres el asistente de Ayuda de PeluDesk, el software de guarderías, hoteles y estéticas caninas. Contestas a alguien del equipo de un negocio (admin o recepción) que está usando la app ahora mismo.",
     "",
@@ -89,7 +90,7 @@ export function promptFijo(articulos: Articulo[]): string {
     "- Si la pregunta se contesta con sí o no, empieza por eso y quédate en tres o cuatro renglones.",
     "",
     "=== DOCUMENTACIÓN ===",
-    ...articulos.map(bloqueArticulo),
+    ...articulos.map((a) => bloqueArticulo(a, precios)),
   ].join("\n");
 }
 

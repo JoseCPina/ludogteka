@@ -11,6 +11,8 @@ import { EncabezadoAyuda } from "../encabezado";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { COLUMNAS_TUTORIAL, tieneVideo } from "@/lib/tutoriales";
 import { videosDeArticulo } from "@/lib/ayuda/videos";
+import { articuloConPrecios } from "@/lib/ayuda/precios";
+import { preciosAyuda } from "@/lib/ayuda/precios-servidor";
 import { videosParaArticulo } from "@/components/ayuda/videos-del-articulo";
 
 export const dynamic = "force-dynamic";
@@ -39,9 +41,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 const linkPublico = (href: string) => (href.startsWith("/ayuda/") || href.startsWith("http") ? href : "");
 
 export default async function ArticuloPublico({ params }: { params: Promise<{ slug: string }> }) {
-  const a = articuloPorSlug((await params).slug);
-  if (!a) notFound();
-  const videos = await videosPublicos(a.slug);
+  const base = articuloPorSlug((await params).slug);
+  if (!base) notFound();
+  // Con los precios de la base ya puestos: los leen el artículo y su JSON-LD.
+  const [videos, precios] = await Promise.all([videosPublicos(base.slug), preciosAyuda()]);
+  const a = articuloConPrecios(base, precios);
   return (
     <div className="min-h-full bg-n-50">
       <JsonLd datos={[ORGANIZACION_RAIZ, ldArticuloAyuda(a, videos), migas([{ nombre: "Inicio", ruta: "/" }, { nombre: "Ayuda", ruta: "/ayuda" }, { nombre: a.titulo, ruta: `/ayuda/${a.slug}` }])]} />

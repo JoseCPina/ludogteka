@@ -184,7 +184,8 @@ export const EXCLUIDOS = {
     "/fac/[token]": "Enlace público de una factura para el cliente; se enseña solo como resultado en el video 65.",
     "/admin/recordatorios": "Pendiente de grabar (folio 100, recordatorios automáticos por WhatsApp): se graba con un negocio de prueba, el demo no manda mensajes.",
     "/recordatorios": "Pendiente de grabar (folio 100, recordatorios automáticos por WhatsApp): se graba con un negocio de prueba, el demo no manda mensajes.",
-      },
+    "/reservas/estancias/[estanciaId]": "No es una pantalla: solo redirige al detalle de su reserva (/reservas/[id]), que se enseña en el video 25. Existe para que un enlace de estancia sin «/checkout» no dé 404 (QA S27).",
+  },
   avisos: {
     "recordatorios-respuestas": "Pendiente de grabar (folio 100): necesita la respuesta de un cliente real a un recordatorio.",
     "recordatorios-pausados": "Pendiente de grabar (folio 100): necesita un negocio que haya llegado a sus recordatorios gratis del mes.",

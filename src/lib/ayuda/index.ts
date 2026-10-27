@@ -1,5 +1,6 @@
 import type { Articulo } from "./tipos";
 import { NOMBRE_GRUPO } from "./tipos";
+import { conPrecios } from "./precios";
 import { ARTICULOS_DIA_Y_RESERVAS } from "./articulos/dia-y-reservas";
 import { ARTICULOS_CAJA_Y_ESTETICA } from "./articulos/caja-y-estetica";
 import { ARTICULOS_ADMINISTRACION } from "./articulos/administracion";
@@ -51,9 +52,9 @@ export function normalizar(t: string): string {
     .toLowerCase();
 }
 
-/** Texto plano del artículo (sin marcas de Markdown). */
+/** Texto plano del artículo (sin marcas de Markdown; un precio sin llenar queda como su frase sin cifra). */
 export function textoPlano(a: Articulo): string {
-  return a.cuerpo
+  return conPrecios(a.cuerpo, null)
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     .replace(/[*#>]/g, "")
     .replace(/^\s*(\d+\.|-)\s+/gm, "");

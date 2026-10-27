@@ -8,6 +8,7 @@ import { negocioActual } from "@/lib/negocio/actual";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { articulosDelNegocio } from "@/lib/ayuda";
 import { articulosDeVideo } from "@/lib/ayuda/videos";
+import { preciosAyuda } from "@/lib/ayuda/precios-servidor";
 import { cargarTutorialesVisibles } from "@/lib/tutoriales";
 import {
   LIMITE_HISTORIAL,
@@ -71,7 +72,10 @@ export async function preguntarAsistente(datos: { conversacionId: string | null;
   const articulos = articulosDelNegocio(sesion.modulos);
   const permitidos = new Set(articulos.map((a) => a.slug));
   // Los videos publicados que esta persona puede ver: el asistente puede recomendar UNO.
-  const videos = await cargarTutorialesVisibles(supabase, { rol: sesion.rol, permisos: sesion.permisos, modulos: sesion.modulos }).catch(() => []);
+  const [videos, precios] = await Promise.all([
+    cargarTutorialesVisibles(supabase, { rol: sesion.rol, permisos: sesion.permisos, modulos: sesion.modulos }).catch(() => []),
+    preciosAyuda(),
+  ]);
   const videosPermitidos = new Map(videos.map((v) => [v.numero, { slug: v.slug, titulo: v.titulo }] as const));
 
   // La conversación anterior (solo la de esta persona: la RLS lo asegura).
@@ -98,7 +102,7 @@ export async function preguntarAsistente(datos: { conversacionId: string | null;
   let tokens = { in: 0, out: 0 };
   try {
     const system = [
-      { type: "text" as const, text: promptFijo(articulos), cache_control: { type: "ephemeral" as const } },
+      { type: "text" as const, text: promptFijo(articulos, precios), cache_control: { type: "ephemeral" as const } },
       {
         type: "text" as const,
         text: promptVariable({ negocio: negocio.nombre, rol: sesion.rol as "admin" | "recepcion", modulos: sesion.modulos, pantalla: datos.pantalla, hoy: hoyTexto, videos: videos.map((v) => ({ numero: v.numero, titulo: v.titulo, articulos: articulosDeVideo(v.numero) })) }),

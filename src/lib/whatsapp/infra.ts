@@ -14,6 +14,7 @@ import { type ClaveCaptura, MAX_TOKENS_IA, MODELO_IA, type NegocioDeAdmin, OPCIO
 import { clasificarRespuesta } from "@/lib/seguimiento/respuestas";
 import { CONOCIMIENTO } from "./conocimiento";
 import { documentacionParaWhatsApp } from "@/lib/ayuda/whatsapp";
+import type { PreciosAyuda } from "@/lib/ayuda/precios";
 import type { BloqueIA, Cuenta, DatosSoporte, DepsSoporte, Hilo, IA, RespuestaIA, SalidaWA, Telegram } from "./soporte";
 
 /**
@@ -417,6 +418,13 @@ export function preciosDelBot(planes: PlanPublico[], recordatorio?: { precio: nu
   return { mensual: plan.mensual, anual: plan.anual, sucursal: sucursal.mensual, recordatorio: recordatorio?.precio ?? null };
 }
 
+/** Los precios con que se llenan los artículos de ayuda que lee el bot (los mismos de la landing y del centro de ayuda). */
+export function preciosAyudaDelBot(planes: PlanPublico[], recordatorio?: { gratisMes: number } | null): PreciosAyuda {
+  const plan = planes.find((p) => p.tipo === "plan" && p.mensual > 0);
+  const sucursal = planes.find((p) => p.tipo === "sucursal" && p.mensual > 0);
+  return { mensual: plan?.mensual ?? null, anual: plan?.anual ?? null, sucursal: sucursal?.mensual ?? null, recordatoriosGratis: recordatorio?.gratisMes ?? null };
+}
+
 /** Los planes publicados (tabla compartida `planes`, la edita la plataforma). */
 export async function planesPublicos(): Promise<PlanPublico[]> {
   const sb = createSupabaseAdminClient();
@@ -813,18 +821,24 @@ export function construirSoporte(): { deps: DepsSoporte; datos: DatosSupabase; w
     ahora: () => new Date(),
     hoyTexto: () => new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: ZONA }).format(new Date()),
     cuenta: cuentaPorTelefono,
-    contexto: async (cuenta, seguimiento, prospecto) => ({
-      prospecto: prospecto ?? null,
-      tambienCliente: cuenta.tambienCliente === true,
-      seguimiento: seguimiento && Date.now() - Date.parse(seguimiento.enviadoAt) < 7 * 86_400_000 ? seguimiento : null,
-      tipo: cuenta.tipo,
-      negocios: cuenta.negocios,
-      planes: await planesPublicos(),
-      recordatorio: await precioRecordatorioVigente(),
-      // Un prospecto que llega de su vista previa se registra desde ahí: queda con su negocio ya escrito y su página.
-      enlaces: { registro: registroDeProspecto(prospecto), demo: `${urlDemo()}/demo` },
-      documentacion: cuenta.tipo === "admin" || cuenta.tipo === "personal" ? documentacionParaWhatsApp(urlPlataforma(), await videosPublicados()) : undefined,
-    }),
+    contexto: async (cuenta, seguimiento, prospecto) => {
+      const [planes, recordatorio] = await Promise.all([planesPublicos(), precioRecordatorioVigente()]);
+      return {
+        prospecto: prospecto ?? null,
+        tambienCliente: cuenta.tambienCliente === true,
+        seguimiento: seguimiento && Date.now() - Date.parse(seguimiento.enviadoAt) < 7 * 86_400_000 ? seguimiento : null,
+        tipo: cuenta.tipo,
+        negocios: cuenta.negocios,
+        planes,
+        recordatorio,
+        // Un prospecto que llega de su vista previa se registra desde ahí: queda con su negocio ya escrito y su página.
+        enlaces: { registro: registroDeProspecto(prospecto), demo: `${urlDemo()}/demo` },
+        documentacion:
+          cuenta.tipo === "admin" || cuenta.tipo === "personal"
+            ? documentacionParaWhatsApp(urlPlataforma(), await videosPublicados(), preciosAyudaDelBot(planes, recordatorio))
+            : undefined,
+      };
+    },
     fijos: async (prospecto) => {
       const [planes, recordatorio] = await Promise.all([planesPublicos(), precioRecordatorioVigente()]);
       return { precios: preciosDelBot(planes, recordatorio), recordatorio, registro: registroDeProspecto(prospecto) };

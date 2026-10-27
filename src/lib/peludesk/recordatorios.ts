@@ -28,7 +28,7 @@ export const QUE_MANDA_RECORDATORIOS: readonly string[] = [
 ];
 
 export type TextosRecordatorios = {
-  /** «30 recordatorios gratis al mes; después, centavos por mensaje.» */
+  /** «N recordatorios gratis al mes; después, centavos por mensaje.» (N de wa_precios) */
   lineaPrecio: string;
   /** «$0.31 + IVA por mensaje adicional.» o null si no hay precio en la base. */
   adicional: string | null;
