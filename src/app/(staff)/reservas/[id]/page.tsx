@@ -276,6 +276,7 @@ export default async function DetalleReservaPage({
               distanciaClienteKm={cliente?.distancia_base_km ?? null}
               cuentaCobrado={totalCobrado}
               cuentaDevuelto={totalDevuelto}
+              cuentaSaldo={saldo}
             />
           ))}
         </div>

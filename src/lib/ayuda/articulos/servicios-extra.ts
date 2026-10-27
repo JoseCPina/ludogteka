@@ -21,7 +21,7 @@ Se agrega desde el **check-in** o el **check-out** de la estancia (también para
 1. En **Servicio extra** escoge el servicio.
 2. En **¿Qué pasó?** deja **Ya se hizo (entra a la cuenta)**.
 3. Pon la fecha, la **Cantidad** y, si quieres, una nota.
-4. Aprieta **Registrar y cobrar en la cuenta**. El cargo ya está en la cuenta de la estancia y se cobra en Caja como cualquier otro.
+4. Aprieta **Registrar y cobrar en la cuenta**. El cargo ya está en la cuenta de la estancia y se cobra en Caja como cualquier otro. En una estancia que ya salió y cuya cuenta está pagada, el formulario no sale: dice que la cuenta ya está pagada (anula el cobro o registra una devolución para cambiarla).
 
 ## Si lo vas a hacer después
 

@@ -17,6 +17,7 @@ import type { Conflicto } from "@/lib/concurrencia/tipos";
 import { CargosSeccion, type Cargo, type ServicioCargo } from "../cargos-seccion";
 import { cerrarFrase } from "@/lib/texto/frases";
 import { textoPrecioEstancia, type CuentaEstancia } from "@/lib/cuentas/cuenta-estancia";
+import { admiteCargosNuevos, TEXTO_CUENTA_PAGADA_SIN_CARGOS } from "@/lib/caja/cuenta-por-cobrar";
 
 export type FilaEstancia = {
   id: string;
@@ -68,6 +69,7 @@ export function EstanciaFila({
   distanciaClienteKm,
   cuentaCobrado = 0,
   cuentaDevuelto = 0,
+  cuentaSaldo = 0,
   cuenta,
 }: {
   fila: FilaEstancia;
@@ -78,6 +80,8 @@ export function EstanciaFila({
   distanciaClienteKm?: number | null;
   cuentaCobrado?: number;
   cuentaDevuelto?: number;
+  // Saldo de la cuenta de la reserva: con la estancia finalizada y la cuenta pagada ya no se le aplican cargos (N129).
+  cuentaSaldo?: number;
 }) {
   const router = useRouter();
   const [estado, setEstado] = useState(fila.estado);
@@ -108,6 +112,7 @@ export function EstanciaFila({
   const porHora = fila.unidad === "hora";
   const editable = estado === "reservada" || estado === "confirmada";
   const cancelada = estado === "cancelada" || estado === "no_llego";
+  const admiteCargos = admiteCargosNuevos(estado, { saldo: cuentaSaldo, cobrado: cuentaCobrado });
   // precioUnitario es tarifa POR NOCHE/DÍA/HORA, no el total de la
   // estancia (ver tarifas: "el total es N × precio del tramo"). Para
   // guardería por día noches siempre da 1; por hora, la cantidad son las
@@ -324,7 +329,8 @@ export function EstanciaFila({
         <CargosSeccion
           estanciaId={fila.id}
           cargosIniciales={cargosIniciales}
-          serviciosCargo={estado === "cancelada" || estado === "no_llego" ? [] : serviciosCargo}
+          serviciosCargo={estado === "cancelada" || estado === "no_llego" || !admiteCargos ? [] : serviciosCargo}
+          sinCargosNuevos={admiteCargos ? null : TEXTO_CUENTA_PAGADA_SIN_CARGOS}
           cuenta={cuenta}
           eraSiCancelada={cancelada ? fila.precioUnitario * (porHora || !esGuarderia ? cantidad : 1) : undefined}
           distanciaClienteKm={distanciaClienteKm}

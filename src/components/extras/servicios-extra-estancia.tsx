@@ -32,6 +32,7 @@ export function ServiciosExtraEstancia({
   negocio,
   puedeAgregar,
   direccionCliente,
+  sinCargosNuevos = null,
 }: {
   estanciaId: string;
   clienteId: string;
@@ -43,6 +44,8 @@ export function ServiciosExtraEstancia({
   negocio: string;
   puedeAgregar: boolean;
   direccionCliente: string | null;
+  // Estancia finalizada con la cuenta pagada (admiteCargosNuevos): sin formulario para agregar y se dice por qué.
+  sinCargosNuevos?: string | null;
 }) {
   const router = useRouter();
   const envio = useEspera();
@@ -118,7 +121,13 @@ export function ServiciosExtraEstancia({
         />
       </div>
 
-      {puedeAgregar && catalogo.length === 0 && (
+      {puedeAgregar && sinCargosNuevos && (
+        <p className="text-sm text-n-600" data-extras-cerrados>
+          {sinCargosNuevos}
+        </p>
+      )}
+
+      {puedeAgregar && !sinCargosNuevos && catalogo.length === 0 && (
         <p className="text-sm text-n-600">
           El negocio todavía no tiene servicios extra en su catálogo.{" "}
           <SiPuedeAbrir href="/extras/catalogo" sino="Lo crea un admin o quien tenga «Editar catálogo de servicios extra».">
@@ -129,7 +138,7 @@ export function ServiciosExtraEstancia({
         </p>
       )}
 
-      {puedeAgregar && catalogo.length > 0 && (
+      {puedeAgregar && !sinCargosNuevos && catalogo.length > 0 && (
         <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <Select label="Servicio extra" value={extraId} onChange={(e) => { setExtraId(e.target.value); setZonaId(""); }}>

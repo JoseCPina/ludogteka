@@ -422,7 +422,7 @@ Al cancelar una cuenta en [Caja](/caja), marca la casilla para cancelar también
     cuerpo: `El check-out cierra la estancia: el perro sale con sus cosas y queda anotado quién se lo llevó. Después se cobra en Caja.
 
 1. Toca **Check-out** en el tablero o en Guardería u Hotel, y escoge al perro.
-2. Si hace falta, agrega cargos en **Aplicar cargo** y toca **Aplicar**.
+2. Si hace falta, agrega cargos en **Aplicar cargo** y toca **Aplicar**. Después de la salida, **Aplicar cargo** sigue en el bloque de la estancia de la reserva solo mientras la cuenta tenga saldo o no se haya cobrado; con la cuenta pagada ya no sale (para cambiarla, anula el cobro o registra una devolución).
 3. Las pertenencias salen sin palomear: confirma cada una con su casilla, o toca **Entregué todo** para marcarlas de un toque. Si confirmas la salida con alguna **sin entregar**, escribe el **Motivo de lo que no se entrega**: es obligatorio y queda registrado. Al terminar, la pantalla de salida lista lo que se devolvió y lo que no, con ese motivo.
 4. Escribe **Quién recoge al perro** y marca **Sí, es el dueño** o **No, persona autorizada**.
 5. Toca **Confirmar salida**. Si es un día que el negocio no abre, o fuera de su horario, te pregunta «El negocio está cerrado hoy; ¿registrar de todos modos?»: toca **Registrar la salida de todos modos** (queda en la bitácora y en la reserva: «Salió fuera del horario: …») o **Todavía no**. Sale **Salida registrada** con el botón **Cobrar la cuenta**, que abre el cobro de esa reserva (también aparece en la pantalla de salida de un perro que ya salió). Si la cuenta ya no tiene saldo por cobrar, el botón dice **Ver cobros**.
