@@ -9,6 +9,11 @@ import { paginaDeError } from "@/lib/http/pagina-de-error";
 // portal/contrato-actions.ts). RLS del propio select ya decide quién
 // puede verla: staff cualquiera, el cliente solo la suya.
 //
+// La abren el personal (ficha del perro, «Ver borrador») y el dueño (portal y alta por link, «Leer contrato»), y
+// desde N12 cada uno tiene su propia cookie de sesión: /api cae en el área «personal», así que con solo esa el
+// dueño llegaba sin sesión y la RLS no le devolvía su contrato (27 de octubre de 2026, un cliente de Ludogteka no
+// pudo leer los suyos). Se lee con la sesión del personal y, si esa no lo ve, con la del portal.
+//
 // Se abre en una pestaña del navegador (del dueño o del staff): si falla,
 // responde una página en español, nunca JSON crudo, y el error real va a
 // los logs de Vercel.
@@ -33,19 +38,28 @@ const NO_SE_PUDO = {
   status: 500,
 };
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  try {
-    const supabase = await createSupabaseServerClient();
-
+async function leerConAlgunaSesion(id: string) {
+  let ultimo: { code?: string; message?: string } | null = null;
+  for (const area of ["personal", "portal"] as const) {
+    const supabase = await createSupabaseServerClient(area);
     const { data: contrato, error } = await supabase
       .from("contratos")
       .select("id, plantillas_contrato(titulo, cuerpo)")
       .eq("id", id)
-      .single();
+      .maybeSingle();
+    if (contrato) return { supabase, contrato, area };
+    ultimo = error ?? { code: "sin_fila", message: `ninguna fila con la sesión ${area}` };
+  }
+  return { supabase: null, contrato: null, error: ultimo };
+}
 
-    if (error || !contrato) {
-      console.error("[contrato preview] no se pudo leer el contrato", id, error?.code, error?.message);
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  try {
+    const { supabase, contrato, error } = await leerConAlgunaSesion(id);
+
+    if (!supabase || !contrato) {
+      console.error("[contrato preview] no se pudo leer el contrato con ninguna sesión", id, error?.code, error?.message);
       return paginaDeError(NO_ENCONTRADO);
     }
 
