@@ -1,5 +1,6 @@
 "use server";
 
+import { registrosFinales } from "@/lib/concurrencia/registro-final";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { mensajeDeError } from "@/lib/empleados/errores";
@@ -45,7 +46,7 @@ export async function guardarEsquema(empleadoId: string, fd: FormData): Promise<
   if (conflicto) return { error: null, conflicto };
   if (error) return { error: mensajeDeError(error) };
   revalidatePath(`/empleados/${empleadoId}`);
-  return { error: null, exito: "Esquema de pago guardado" };
+  return { error: null, registros: await registrosFinales(supabase, controlDeFormulario(fd)), exito: "Esquema de pago guardado" };
 }
 
 export async function registrarAdelanto(empleadoId: string, fd: FormData): Promise<ResultadoAccion> {

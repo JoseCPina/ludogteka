@@ -1,5 +1,6 @@
 "use server";
 
+import { registrosFinales } from "@/lib/concurrencia/registro-final";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -15,6 +16,7 @@ export type EstadoClienteForm = {
   error: string | null;
   ok?: boolean;
   conflicto?: import("@/lib/concurrencia/tipos").Conflicto | null;
+  registros?: import("@/lib/concurrencia/tipos").RegistroFinal[];
   /** El updated_at que quedó al guardar: el formulario lo usa como su nueva versión sin esperar a repintarse. */
   version?: string | null;
 };
@@ -175,7 +177,7 @@ export async function actualizarCliente(
   // La versión que se devuelve es la FINAL: `cliente_notas_guardar` vuelve a tocar el cliente (su updated_at cambia
   // después del UPDATE de arriba); con la de arriba, el siguiente guardado de esta misma pestaña chocaba (N120).
   const { data: final } = await supabase.from("clientes").select("updated_at").eq("id", id).maybeSingle();
-  return { error: null, ok: true, version: ((final?.updated_at ?? guardado?.updated_at) as string | undefined) ?? null };
+  return { error: null, registros: await registrosFinales(supabase, controlDeFormulario(formData)), ok: true, version: ((final?.updated_at ?? guardado?.updated_at) as string | undefined) ?? null };
 }
 
 export async function darDeBajaCliente(id: string) {

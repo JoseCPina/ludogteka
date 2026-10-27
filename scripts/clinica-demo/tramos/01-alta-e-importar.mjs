@@ -29,17 +29,18 @@ export async function tramo(c) {
   await p.getByLabel("Tu nombre completo").fill("Cliente Liga PRUEBA");
   await p.getByLabel("Tu teléfono").fill(TEL_LIGA);
   await p.getByRole("button", { name: "Siguiente" }).click();
-  // Primer animal: perro con campos clínicos.
+  // Primer animal: perro con campos clínicos. Con Veterinaria se pregunta primero qué es (QA S39, N137).
+  await p.getByLabel("¿Qué es?").first().selectOption("perro");
   await p.getByLabel("¿Cómo se llama?").first().fill("Rocco Liga");
   await p.getByLabel("Tamaño").first().selectOption({ index: 2 });
   const clinico = p.getByText("Datos de salud (opcional)").first();
-  comprobar(await clinico.count() > 0, "el alta ofrece «Datos de salud» (especie, esterilizado, microchip) porque Veterinaria está prendida");
+  comprobar(await clinico.count() > 0, "el alta ofrece «Datos de salud» (esterilizado, microchip) porque Veterinaria está prendida");
   await p.getByLabel("¿Está esterilizado?").first().selectOption("si");
   await p.getByLabel("Número de microchip").first().fill("985000000PRUEBA1");
-  await p.getByRole("button", { name: "Agregar otro perro" }).click();
+  await p.getByRole("button", { name: "Agregar otra mascota" }).click();
+  // Un gato: sin tamaño ni pelaje.
+  await p.getByLabel("¿Qué es?").nth(1).selectOption("gato");
   await p.getByLabel("¿Cómo se llama?").nth(1).fill("Michi Liga");
-  await p.getByLabel("Tamaño").nth(1).selectOption({ index: 1 });
-  await p.getByLabel("Especie").nth(1).selectOption("gato");
   await p.getByRole("button", { name: "Siguiente" }).click();
   // Vacunas: sube un PDF al primer requisito del perro.
   await p.locator("[data-comprobantes-perro]").first().waitFor({ timeout: 20000 }).catch(() => {});

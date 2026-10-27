@@ -26,7 +26,8 @@ import { ComprobantesPerro, type Comprobantes } from "./comprobantes-perro";
 import { ResumenRequisitos, type ResumenPerro } from "./resumen-requisitos";
 import { subirComprobantesAlta } from "./subir-comprobantes";
 import { cubierto, type RequisitoDePerro, type TipoRequisitoAlta } from "@/lib/alta/requisitos";
-import { MIN_CONTRASENA, TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
+import { MIN_CONTRASENA, TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
 
 export type PerroExistente = {
   id: string;
@@ -316,7 +317,7 @@ export function CompletarForm({
           {tieneCuenta ? (
             <>
               <p className="text-n-600">
-                Entra con tu cuenta para continuar: la misma con la que ves la ficha de tus perros.
+                Entra con tu cuenta para continuar: la misma con la que ves la ficha de {vocabularioMascota({ conVet: conVeterinaria }).tus}.
               </p>
               <p className="text-sm text-n-600">
                 Entras con tu teléfono <strong>{telefono}</strong>.
@@ -423,7 +424,7 @@ export function CompletarForm({
             <TarjetaPerro
               key={`nuevo-${i}`}
               perro={perro}
-              titulo={perro.nombre.trim() || "Perro nuevo"}
+              titulo={perro.nombre.trim() || vocabularioMascota({ conVet: conVeterinaria, especie: perro.especie || null }).nuevo}
               campos={camposNuevo}
               razas={razas}
               tamanos={tamanos}
@@ -448,7 +449,7 @@ export function CompletarForm({
             nuevos.map((perro, i) => (
               <ComprobantesPerro
                 key={`req-nuevo-${i}`}
-                titulo={`Vacunas de ${perro.nombre.trim() || "tu perro nuevo"}`}
+                titulo={`Vacunas de ${perro.nombre.trim() || `${vocabularioMascota({ conVet: conVeterinaria }).tu} nuev${vocabularioMascota({ conVet: conVeterinaria }).o}`}`}
                 requisitos={requisitos.map((r) => ({ ...r, estado: "sin_registro" as const, en_revision: false }))}
                 valores={comprobantesNuevos[i] ?? {}}
                 onCambio={(tipoId, valor) =>
@@ -464,7 +465,7 @@ export function CompletarForm({
             variante="secundario"
             className="self-start"
             onClick={() => {
-              setNuevos((prev) => [...prev, perroVacio()]);
+              setNuevos((prev) => [...prev, perroVacio(conVeterinaria)]);
               setFotosNuevos((prev) => [...prev, null]);
               setComprobantesNuevos((prev) => [...prev, {}]);
             }}

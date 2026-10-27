@@ -6,7 +6,7 @@ export default {
     {
       titulo: "Abre su expediente",
       dice: "Busca al cliente, abre su ficha y toca al perro. Ese es su expediente. Arriba están sus datos, y puedes corregirlos con «Guardar cambios».",
-      pasos: [["escribir", "Buscar por perro, dueño o teléfono", "Nube"], ["esperar", 1500], ["clic", "Ana Sofía Treviño", { nav: true }], ["clic", "Nube", { nav: true }]],
+      pasos: [["escribir", "Buscar por mascota, dueño o teléfono", "Nube"], ["esperar", 1500], ["clic", "Ana Sofía Treviño", { nav: true }], ["clic", "Nube", { nav: true }]],
     },
     {
       titulo: "Lo que impide reservar",

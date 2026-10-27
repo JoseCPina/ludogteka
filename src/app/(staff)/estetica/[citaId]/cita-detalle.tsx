@@ -84,14 +84,16 @@ export function CitaDetalle({
   const [recogido, setRecogido] = useState({ nombre: recogidoPorNombre, esDueno: recogidoPorEsDueno });
   const [error, setError] = useState<string | null>(null);
   const cargando = useEspera();
-  const ctl = useControlVersion("citas_estetica", citaId, version);
+  // QA S39 (N138): el aviso de lo que se hizo vive en el control de versión: un conflicto lo borra y un guardado cierra el conflicto.
+  const ctl = useControlVersion<{ texto: string; url?: string }>("citas_estetica", citaId, version);
   // Check-in de una cita que no es de hoy: se pregunta antes (QA S14).
   const [otroDia, setOtroDia] = useState<string | null>(null);
 
   const [reagendando, setReagendando] = useState(abrirReprogramar);
   const [motivoReprogramar, setMotivoReprogramar] = useState("");
-  // Después de un cambio: el aviso al cliente (la app deja listo el WhatsApp, no lo manda sola).
-  const [aviso, setAviso] = useState<{ texto: string; url?: string } | null>(null);
+  // Después de un cambio, el aviso al cliente (la app deja listo el WhatsApp, no lo manda sola): `ctl.exito`.
+  const aviso = ctl.exito;
+  const setAviso = ctl.guardado;
   const [motivoCancelar, setMotivoCancelar] = useState("");
   const [motivoNoLlego, setMotivoNoLlego] = useState("");
   const [eliminando, setEliminando] = useState(false);

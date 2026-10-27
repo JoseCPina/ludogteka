@@ -7,7 +7,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { BotonNuevoCliente } from "@/components/boton-nuevo-cliente";
 import type { TipoLinkAlta } from "@/lib/alta/tipos-link";
 import { Field } from "@/components/ui/field";
-import { formatearTelefono } from "@/lib/telefono";
+import { formatearTelefono } from "@/lib/telefono";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
+import { useModulos } from "@/components/modulos-contexto";
 import {
   filtrarClientesBuscables,
   type ClienteBuscable,
@@ -15,6 +17,10 @@ import {
 } from "@/lib/clientes/buscables";
 
 export const ETIQUETA_BUSCAR_CLIENTES = "Buscar por perro, dueño o teléfono";
+/** QA S39 (N137): con Veterinaria se busca por mascota (perros, gatos y otras especies). */
+export function etiquetaBuscarClientes(conVet: boolean): string {
+  return conVet ? "Buscar por mascota, dueño o teléfono" : ETIQUETA_BUSCAR_CLIENTES;
+}
 
 /**
  * El buscador de clientes de toda la app.
@@ -44,7 +50,7 @@ export function BuscadorClientes({
   onElegir,
   hrefDe: hrefDeProp,
   rutaAlElegir,
-  etiqueta = ETIQUETA_BUSCAR_CLIENTES,
+  etiqueta: etiquetaPropia,
   placeholder = "ej. Motita, Ana o 444 123",
   autoFocus = false,
   // Sin texto: ¿se muestra la lista completa (reserva nueva, pases) o
@@ -68,6 +74,8 @@ export function BuscadorClientes({
   pie?: ReactNode;
   nuevoCliente?: TipoLinkAlta | "cualquiera";
 }) {
+  const conVetBuscador = useModulos().tiene("veterinaria");
+  const etiqueta = etiquetaPropia ?? etiquetaBuscarClientes(conVetBuscador);
   const pathname = usePathname();
   const router = useRouter();
   const puede = usePuedeAbrir();
@@ -183,6 +191,7 @@ export function BuscadorClientes({
 // El dueño con sus perros: los que coincidieron con la búsqueda van
 // primero y resaltados; los demás, en gris, para reconocer a la familia.
 export function FilaCliente({ coincidencia }: { coincidencia: CoincidenciaCliente }) {
+  const modulos = useModulos();
   const { cliente, perrosCoincidentes } = coincidencia;
   const idsCoinciden = new Set(perrosCoincidentes.map((p) => p.id));
   const ordenados = [...perrosCoincidentes, ...cliente.perros.filter((p) => !idsCoinciden.has(p.id))];
@@ -193,7 +202,7 @@ export function FilaCliente({ coincidencia }: { coincidencia: CoincidenciaClient
         <span className="font-semibold text-n-900">{cliente.nombre}</span>
         <span className="text-sm text-n-600">
           {ordenados.length === 0
-            ? "Sin perros registrados"
+            ? `Sin ${vocabularioMascota({ conVet: modulos.tiene("veterinaria") }).plural} registrad${vocabularioMascota({ conVet: modulos.tiene("veterinaria") }).o}s`
             : ordenados.map((p, i) => (
                 <span key={p.id}>
                   {i > 0 && ", "}

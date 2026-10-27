@@ -11,7 +11,9 @@ import { Alert } from "@/components/ui/alert";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { crearCargoSuelto, crearCargoVeterinario } from "../mostrador-actions";
 import { crearVentaRapida } from "../venta/venta-actions";
-import { dinero } from "@/lib/dinero";
+import { dinero } from "@/lib/dinero";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
+import { useModulos } from "@/components/modulos-contexto";
 
 export type CargoCatalogo = { id: string; nombre: string; montoLibre: boolean; dependeTamano: boolean };
 // QA S16 (N66): conceptos de Veterinaria (con su precio de catálogo) y productos que se venden.
@@ -31,6 +33,8 @@ export function CargoSueltoForm({
   conceptosVet?: ConceptoVet[];
   productos?: ProductoCargo[];
 }) {
+  // QA S39 (N137): con Veterinaria, «mascota».
+  const vm = vocabularioMascota({ conVet: useModulos().tiene("veterinaria") });
   const router = useRouter();
   // Lo elegido: «c:<servicio>» (cargo), «v:<clave>» (Veterinaria) o «p:<insumo>» (producto).
   const primerVet = conceptosVet.find((c) => c.precio != null);
@@ -120,8 +124,8 @@ export function CargoSueltoForm({
         )}
       </Select>
       {perros.length > 0 && tipo !== "p" && (
-        <Select label="Perro (opcional)" value={perroId} onChange={(e) => setPerroId(e.target.value)}>
-          <option value="">Sin perro en particular</option>
+        <Select label={`${vm.Nombre} (opcional)`} value={perroId} onChange={(e) => setPerroId(e.target.value)}>
+          <option value="">Sin {vm.nombre} en particular</option>
           {perros.map((p) => (
             <option key={p.id} value={p.id}>
               {p.nombre}

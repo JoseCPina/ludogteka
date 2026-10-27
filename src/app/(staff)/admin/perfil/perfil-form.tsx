@@ -120,7 +120,7 @@ export function PerfilForm({
             await guardar(new FormData(e.currentTarget));
           }}
         >
-          {perfilId && <CampoVersion versiones={[{ t: "negocio_perfil", i: perfilId, v: version }]} />}
+          {perfilId && <CampoVersion versiones={[{ t: "negocio_perfil", i: perfilId, v: version }]} registros={res?.registros} />}
           {res?.conflicto && (
             <AvisoConflicto
               conflicto={res.conflicto}

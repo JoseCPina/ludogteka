@@ -151,6 +151,8 @@ async function mensajeDePerrosIncompletos(
   const modulos = (modulosNegocio as string[] | null) ?? [];
   const razas = modulos.includes("estetica") ? await cargarRazas(admin, negocioId, { conGrupo: true }) : [];
   for (const p of perros) {
+    // QA S39 (N137): con Veterinaria el alta pregunta la especie de cada mascota.
+    if (modulos.includes("veterinaria") && !esEspecie(p.especie)) return `Escoge qué es ${p.nombre.trim() || "cada mascota"}: perro, gato u otro.`;
     const faltan = faltantesAltaPerro(p, modulos, razas);
     if (faltan.length > 0) return mensajeFaltantesAlta(p.nombre, faltan);
   }

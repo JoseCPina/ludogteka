@@ -23,7 +23,8 @@ import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
 import { abrirNavegador } from "../lib/navegador.mjs";
-import { claveAleatoria } from "../lib/clave.mjs";
+import { claveAleatoria } from "../lib/clave.mjs";
+import { campoNombreDelPerro } from "../lib/alta-mascota.mjs";
 const CLAVE_PRUEBA = claveAleatoria(); // la clave de las cuentas que esta prueba da de alta por pantalla: se genera al correr, no vive en el código
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
@@ -79,11 +80,14 @@ try {
   const t1 = (await dueno.locator("body").innerText()).toLowerCase();
   // La casilla de consentimiento de recordatorios (menciona «vacunas») no es un campo que se pida.
   const t1Campos = t1.replace(/acepto recibir recordatorios por whatsapp[^.]*\./g, "");
-  for (const prohibido of ["dirección", "correo", "contraseña", "vacuna", "contrato"]) if (t1Campos.includes(prohibido) && !(prohibido === "dirección" && t1.includes("pasen por mi perro"))) hallazgo(`el link de estética menciona «${prohibido}» en el primer paso: …${t1.slice(Math.max(0, t1.indexOf(prohibido) - 80), t1.indexOf(prohibido) + 80).replace(/\n/g, " ")}…`);
+  for (const prohibido of ["dirección", "correo", "contraseña", "vacuna", "contrato"]) if (t1Campos.includes(prohibido) && !(prohibido === "dirección" && /pasen por mi (perro|mascota)/.test(t1))) hallazgo(`el link de estética menciona «${prohibido}» en el primer paso: …${t1.slice(Math.max(0, t1.indexOf(prohibido) - 80), t1.indexOf(prohibido) + 80).replace(/\n/g, " ")}…`);
   await dueno.getByLabel("Tu nombre completo").fill(`Dueña ${sufijo}`);
   await dueno.getByLabel("Tu teléfono").fill(TEL);
   await sinDesborde(dueno, "alta por link, paso 1");
   await dueno.getByRole("button", { name: "Siguiente" }).click();
+  // QA S39 (N137): con Veterinaria prendida (Huellitas) el alta pregunta primero qué es la mascota.
+  await dueno.getByLabel("¿Cómo se llama?").waitFor();
+  if (await dueno.getByLabel("¿Qué es?").count()) await dueno.getByLabel("¿Qué es?").selectOption("perro");
   await dueno.getByLabel("¿Cómo se llama?").fill(`Poodle ${sufijo}`);
   await dueno.getByLabel("¿De qué raza es?").fill("Poodle");
   await dueno.waitForTimeout(500);
@@ -133,7 +137,7 @@ try {
   await admin.waitForURL(/perros\/nuevo/, { timeout: 30_000 });
   const tp = (await admin.locator("body").innerText()).toLowerCase();
   for (const prohibido of ["veterinario", "alimentación", "emergencia", "vacuna"]) if (tp.includes(prohibido)) hallazgo(`el perro de mostrador (estética) pide «${prohibido}»`);
-  await admin.getByLabel("Nombre del perro").fill(`Mostrador perro ${sufijo}`);
+  await (await campoNombreDelPerro(admin)).fill(`Mostrador perro ${sufijo}`);
   await sinDesborde(admin, "perro de mostrador");
   bien("el alta de mostrador de estética es corta (dueño: nombre y WhatsApp; perro: nombre, raza, tamaño y pelaje)");
   const { data: cli2 } = await SB.from("clientes").select("id").eq("telefono", TEL2).is("deleted_at", null).maybeSingle();

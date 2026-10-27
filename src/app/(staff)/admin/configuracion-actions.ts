@@ -1,5 +1,7 @@
 "use server";
 
+import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { conControl } from "@/lib/concurrencia/servidor";
 import { conflictoDeError, type Conflicto, type ControlVersion } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
@@ -55,7 +57,7 @@ export async function guardarConfiguracionNegocio(datos: {
 // igual que horario_semana.
 export type DiaHorario = { dia_semana: number; hora_apertura: string | null; hora_cierre: string | null };
 
-export type EstadoHorario = { error: string | null; reservasEnDiasCerrados?: number; conflicto?: Conflicto | null };
+export type EstadoHorario = { error: string | null; reservasEnDiasCerrados?: number; conflicto?: Conflicto | null; registros?: RegistroFinal[] };
 
 export async function guardarHorarioSemana(dias: DiaHorario[], control?: ControlVersion): Promise<EstadoHorario> {
   for (const d of dias) {
@@ -72,5 +74,5 @@ export async function guardarHorarioSemana(dias: DiaHorario[], control?: Control
 
   revalidatePath("/admin");
   const salida = data as { reservas_en_dias_cerrados?: number } | null;
-  return { error: null, reservasEnDiasCerrados: salida?.reservas_en_dias_cerrados ?? 0 };
+  return { error: null, registros: await registrosFinales(supabase, control), reservasEnDiasCerrados: salida?.reservas_en_dias_cerrados ?? 0 };
 }

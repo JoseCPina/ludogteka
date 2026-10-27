@@ -25,7 +25,7 @@ export async function tramo(c) {
   const r = rec.p;
   if (!c.e.estanciaId) {
   await r.goto(`${BASE}/hotel/nueva`, { waitUntil: "networkidle" });
-  await r.getByLabel("Buscar por perro, dueño o teléfono").fill("Firulais");
+  await r.getByLabel(/^Buscar por (perro|mascota), dueño o teléfono$/).fill("Firulais");
   await r.getByRole("button", { name: /Firulais/ }).first().click();
   await r.getByLabel("Firulais").first().check();
   await r.getByLabel("Entrada").first().fill(hoyMx());

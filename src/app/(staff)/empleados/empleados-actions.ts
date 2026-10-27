@@ -1,5 +1,6 @@
 "use server";
 
+import { registrosFinales } from "@/lib/concurrencia/registro-final";
 import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
 import { conflictoDeError } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
@@ -54,7 +55,7 @@ export async function actualizarEmpleado(id: string, fd: FormData): Promise<Resu
   if (error) return { error: mensajeDeError(error) };
   if (!data?.length) return { error: "No tienes permiso para cambiar a este empleado." };
   revalidatePath(`/empleados/${id}`);
-  return { error: null, exito: "Datos guardados" };
+  return { error: null, registros: await registrosFinales(supabase, controlDeFormulario(fd)), exito: "Datos guardados" };
 }
 
 // Baja: deja de trabajar ahí. No se borra nada (su asistencia y sus pagos
@@ -74,7 +75,7 @@ export async function darDeBajaEmpleado(id: string, fd: FormData): Promise<Resul
   if (error) return { error: mensajeDeError(error) };
   if (!data?.length) return { error: "No tienes permiso para dar de baja a este empleado." };
   revalidatePath("/empleados");
-  return { error: null, exito: "Baja registrada" };
+  return { error: null, registros: await registrosFinales(supabase, controlDeFormulario(fd)), exito: "Baja registrada" };
 }
 
 export async function reactivarEmpleado(id: string): Promise<ResultadoAccion> {
@@ -107,5 +108,5 @@ export async function guardarHorario(empleadoId: string, fd: FormData): Promise<
   if (conflicto) return { error: null, conflicto };
   if (error) return { error: mensajeDeError(error) };
   revalidatePath(`/empleados/${empleadoId}`);
-  return { error: null, exito: "Horario guardado: vale desde hoy" };
+  return { error: null, registros: await registrosFinales(supabase, controlDeFormulario(fd)), exito: "Horario guardado: vale desde hoy" };
 }

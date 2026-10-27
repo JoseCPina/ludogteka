@@ -22,12 +22,13 @@ import {
 } from "../actions";
 
 import type { MedicoOpcion, ProductoConLotes } from "@/lib/veterinaria/lotes";
-import { avisarAplicacionConsulta, type AplicacionConsulta } from "@/lib/veterinaria/aplicacion-consulta";
+import { avisarAplicacionConsulta, type AplicacionConsulta } from "@/lib/veterinaria/aplicacion-consulta";
+import { vacunasSugeridas } from "@/lib/perros/vocabulario";
 
 export type RequisitoOpcion = { id: string; etiqueta: string };
 
 /** Producto y lote del inventario con lotes; si no hay, texto libre. */
-function ProductoYLote({ productos, etiquetaProducto, nombreTexto }: { productos: ProductoConLotes[]; etiquetaProducto: string; nombreTexto: "biologico" | "producto" }) {
+function ProductoYLote({ productos, etiquetaProducto, nombreTexto, sugeridas = [] }: { productos: ProductoConLotes[]; etiquetaProducto: string; nombreTexto: "biologico" | "producto"; sugeridas?: string[] }) {
   const [productoId, setProductoId] = useState("");
   const producto = productos.find((p) => p.id === productoId);
   const [loteId, setLoteId] = useState("");
@@ -64,7 +65,22 @@ function ProductoYLote({ productos, etiquetaProducto, nombreTexto }: { productos
         </div>
       )}
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label={producto ? `${etiquetaProducto} (si quieres cambiar el nombre)` : etiquetaProducto} name={nombreTexto} required={!producto} placeholder={producto?.nombre} />
+        <Field
+          label={producto ? `${etiquetaProducto} (si quieres cambiar el nombre)` : etiquetaProducto}
+          name={nombreTexto}
+          required={!producto}
+          placeholder={producto?.nombre}
+          list={sugeridas.length ? `${nombreTexto}-sugeridas` : undefined}
+          ayuda={sugeridas.length ? `Sugeridas: ${sugeridas.join(", ")}.` : undefined}
+          data-vacunas-sugeridas={sugeridas.join("|") || undefined}
+        />
+        {sugeridas.length > 0 && (
+          <datalist id={`${nombreTexto}-sugeridas`}>
+            {sugeridas.map((v) => (
+              <option key={v} value={v} />
+            ))}
+          </datalist>
+        )}
         {!loteId && <Field label="Lote (texto, si no es del inventario)" name="lote_texto" />}
       </div>
     </div>
@@ -110,14 +126,15 @@ function AvisoDuplicado({ mensaje, perroId, alCancelar }: { mensaje: string; per
   );
 }
 
+// QA S39 (N137): `especie` sugiere las vacunas de su especie (gato: triple felina, rabia, leucemia felina).
 export function FormularioVacuna({
-  perroId, hoy, productos, medicos, medicoPropio, requisitos, consultaId,
-}: { perroId: string; hoy: string; productos: ProductoConLotes[]; medicos: MedicoOpcion[]; medicoPropio: string | null; requisitos: RequisitoOpcion[]; consultaId?: string }) {
+  perroId, hoy, productos, medicos, medicoPropio, requisitos, consultaId, especie = null,
+}: { perroId: string; hoy: string; productos: ProductoConLotes[]; medicos: MedicoOpcion[]; medicoPropio: string | null; requisitos: RequisitoOpcion[]; consultaId?: string; especie?: string | null }) {
   const { duplicado, setDuplicado, envolver } = useDuplicadoCarnet();
   if (duplicado) return <AvisoDuplicado mensaje={duplicado} perroId={perroId} alCancelar={() => setDuplicado(null)} />;
   return (
     <FormularioAccion accion={envolver((fd) => registrarVacuna(perroId, fd, consultaId))} textoBoton="Registrar vacuna" textoExito="Vacuna registrada" reiniciar className="rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
-      <ProductoYLote productos={productos} etiquetaProducto="Vacuna" nombreTexto="biologico" />
+      <ProductoYLote productos={productos} etiquetaProducto="Vacuna" nombreTexto="biologico" sugeridas={vacunasSugeridas(especie)} />
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Laboratorio (opcional)" name="laboratorio" />
         <Field label="Cantidad aplicada (opcional)" name="dosis" placeholder="1 mL" />

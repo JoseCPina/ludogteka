@@ -6,12 +6,12 @@ export default {
     {
       titulo: "Cargo suelto",
       dice: "En «Cargo suelto» buscas al cliente por el nombre del perro, del dueño o por su teléfono. Escoges la cuenta a la que se va a sumar.",
-      pasos: [["resaltar", "Cargo suelto", 2400], ["resaltar", "Buscar por perro, dueño o teléfono", 2600]],
+      pasos: [["resaltar", "Cargo suelto", 2400], ["resaltar", "Buscar por mascota, dueño o teléfono", 2600]],
     },
     {
       titulo: "Qué se agrega",
       dice: "En «Qué se cobra» escoges el cargo; con Veterinaria también salen la consulta, la urgencia, el seguimiento, la aplicación de vacuna y los productos. La comida especial es de monto libre: capturas el importe y qué se le dio, y si te equivocas se cancela con un motivo, nunca se borra.",
-      pasos: [["escribir", "Buscar por perro, dueño o teléfono", "Emilio"], ["esperar", 2500]],
+      pasos: [["escribir", "Buscar por mascota, dueño o teléfono", "Emilio"], ["esperar", 2500]],
     },
     {
       titulo: "A la cuenta",

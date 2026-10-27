@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import type { ResultadoAccion } from "@/lib/empleados/tipos";
 import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
-import type { Conflicto, ControlVersion, VersionLeida } from "@/lib/concurrencia/tipos";
+import { publicarRegistros } from "@/components/concurrencia/registro-vivo";
+import { versionesConRegistros, type Conflicto, type ControlVersion, type RegistroFinal, type VersionLeida } from "@/lib/concurrencia/tipos";
 
 /**
  * QA S15: un formulario dentro de un desplegable con `cerrarAlGuardar` se cierra al guardar y deja el aviso junto al
@@ -15,7 +16,8 @@ import type { Conflicto, ControlVersion, VersionLeida } from "@/lib/concurrencia
  */
 export const CierreDesplegable = createContext<((mensaje: string) => void) | null>(null);
 
-// La versión que la pantalla leyó (QA N43): se toma al montar y se pone al día cuando la página se recarga.
+// La versión que la pantalla leyó (QA N43): se toma al montar y se pone al día cuando la página se recarga o cuando el
+// guardado devuelve cómo quedó el registro (QA S39, N138: también al guardar encima).
 function useVersiones(versiones: VersionLeida[] | undefined) {
   const clave = JSON.stringify(versiones ?? []);
   const [leidas, setLeidas] = useState(versiones ?? []);
@@ -24,7 +26,11 @@ function useVersiones(versiones: VersionLeida[] | undefined) {
     setVista(clave);
     setLeidas(versiones ?? []);
   }
-  return leidas;
+  const alGuardar = (registros: RegistroFinal[] | undefined) => {
+    setLeidas((l) => versionesConRegistros(l, registros));
+    publicarRegistros(registros);
+  };
+  return [leidas, alGuardar] as const;
 }
 
 /**
@@ -63,7 +69,7 @@ export function FormularioAccion({
   const form = useRef<HTMLFormElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
-  const leidas = useVersiones(versiones);
+  const [leidas, alGuardar] = useVersiones(versiones);
   const [conflicto, setConflicto] = useState<{ c: Conflicto; datos: FormData } | null>(null);
   // Con `reiniciar`, los campos con estado propio (producto y lote de una vacuna) también vuelven a empezar.
   const [vuelta, setVuelta] = useState(0);
@@ -84,6 +90,7 @@ export function FormularioAccion({
       setError(res.error);
       return;
     }
+    alGuardar(res.registros);
     if (res.ir) {
       // QA S19: lo que se guardó se dice junto al botón mientras se abre la pantalla siguiente.
       if (res.exito) setExito(res.exito);
@@ -151,7 +158,7 @@ export function BotonAccion({
   const envio = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
-  const leidas = useVersiones(versiones);
+  const [leidas, alGuardar] = useVersiones(versiones);
   const [conflicto, setConflicto] = useState<Conflicto | null>(null);
   async function correr(forzar: boolean) {
     setError(null);
@@ -166,6 +173,7 @@ export function BotonAccion({
       setError(res.error);
       return;
     }
+    alGuardar(res.registros);
     if (res.ir) {
       if (navegacionCompleta) {
         setExito(res.exito ?? "Listo. Abriendo…");

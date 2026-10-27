@@ -6,7 +6,7 @@ export default {
     {
       titulo: "El contrato del perro",
       dice: "Entra al expediente del perro y baja a la sección «Contrato». Si el perro aún no tiene, aprietas «Generar contrato» y se arma con los datos de su dueño.",
-      pasos: [["escribir", "Buscar por perro, dueño o teléfono", "Nube"], ["esperar", 1500], ["clic", "Ana Sofía Treviño", { nav: true }], ["clic", "Nube", { nav: true }], ["desplazar", "Contrato"], ["resaltar", "Generar contrato", 3000]],
+      pasos: [["escribir", "Buscar por mascota, dueño o teléfono", "Nube"], ["esperar", 1500], ["clic", "Ana Sofía Treviño", { nav: true }], ["clic", "Nube", { nav: true }], ["desplazar", "Contrato"], ["resaltar", "Generar contrato", 3000]],
     },
     {
       titulo: "Ver el borrador e imprimirlo",

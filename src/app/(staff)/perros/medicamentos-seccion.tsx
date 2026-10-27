@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha, formatearFechaCalendario } from "@/lib/formato";
 import { crearMedicamento, toggleActivoMedicamento, registrarDosis } from "./medicamento-actions";
-import { useZonaNegocio } from "@/components/zona-negocio";
+import { useZonaNegocio } from "@/components/zona-negocio";
+import { vocabularioMascota, type Vocabulario } from "@/lib/perros/vocabulario";
 
 export type DosisFila = { id: string; administrado_at: string; omitida: boolean; notas: string | null };
 
@@ -27,10 +28,13 @@ export type MedicamentoFila = {
 };
 
 export function MedicamentosSeccion({
+  mascota = vocabularioMascota({ conVet: false }),
   perroId,
   medicamentos,
   puedeEscribir,
 }: {
+  /** QA S39 (N137): las palabras de la especie (sin Veterinaria, perro). */
+  mascota?: Vocabulario;
   perroId: string;
   medicamentos: MedicamentoFila[];
   puedeEscribir: boolean;
@@ -99,7 +103,7 @@ export function MedicamentosSeccion({
       )}
 
       {ordenados.length === 0 ? (
-        <p className="text-n-600">Este perro no tiene medicamentos registrados.</p>
+        <p className="text-n-600">{mascota.este.charAt(0).toUpperCase() + mascota.este.slice(1)} no tiene medicamentos registrados.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {ordenados.map((m) => (

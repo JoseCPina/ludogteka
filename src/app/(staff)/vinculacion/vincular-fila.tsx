@@ -12,7 +12,9 @@ import { Antiguedad } from "@/components/ui/antiguedad";
 import { vincularCuenta } from "./actions";
 import type { CuentaPendiente } from "./tipos";
 import type { ClienteBuscable } from "@/lib/clientes/buscables";
-import { useZonaNegocio } from "@/components/zona-negocio";
+import { useZonaNegocio } from "@/components/zona-negocio";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
+import { useModulos } from "@/components/modulos-contexto";
 
 export function VincularFila({
   cuenta,
@@ -23,6 +25,7 @@ export function VincularFila({
   clientes: ClienteBuscable[];
   diasEsperando: number;
 }) {
+  const conVetFila = useModulos().tiene("veterinaria");
   const zona = useZonaNegocio();
   const router = useRouter();
   const [buscando, setBuscando] = useState(false);
@@ -79,7 +82,7 @@ export function VincularFila({
       <div className="flex flex-col gap-3 border-b border-n-200 bg-n-50 p-4">
         <BuscadorClientes
           clientes={clientes}
-          etiqueta={`Buscar por perro, dueño o teléfono para vincular con ${cuenta.email}`}
+          etiqueta={`Buscar por ${vocabularioMascota({ conVet: conVetFila }).nombre}, dueño o teléfono para vincular con ${cuenta.email}`}
           onElegir={(c) => setSeleccionado(c)}
           listarSinBusqueda={false}
           maximo={8}

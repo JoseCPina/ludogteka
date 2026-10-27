@@ -63,7 +63,7 @@ export function ClienteForm({
         startTransition(() => formAction(fd));
       }}
     >
-      {clienteId && <CampoVersion versiones={[{ t: "clientes", i: clienteId, v: versionMasReciente(estado.version, version) }]} />}
+      {clienteId && <CampoVersion versiones={[{ t: "clientes", i: clienteId, v: versionMasReciente(estado.version, version) }]} registros={estado.registros} />}
       {estado.conflicto && (
         <AvisoConflicto
           conflicto={estado.conflicto}

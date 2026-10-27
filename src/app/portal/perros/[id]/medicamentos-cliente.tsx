@@ -1,4 +1,5 @@
-import { formatearFecha, formatearFechaCalendario } from "@/lib/formato";
+import { formatearFecha, formatearFechaCalendario } from "@/lib/formato";
+import { vocabularioMascota, type Vocabulario } from "@/lib/perros/vocabulario";
 
 export type DosisFilaCliente = { id: string; administrado_at: string; omitida: boolean; notas: string | null };
 
@@ -13,9 +14,9 @@ export type MedicamentoFilaCliente = {
   dosisRegistradas: DosisFilaCliente[];
 };
 
-export function MedicamentosCliente({ medicamentos, zona }: { medicamentos: MedicamentoFilaCliente[]; zona: string }) {
+export function MedicamentosCliente({ medicamentos, zona, mascota = vocabularioMascota({ conVet: false }) }: { mascota?: Vocabulario; medicamentos: MedicamentoFilaCliente[]; zona: string }) {
   if (medicamentos.length === 0) {
-    return <p className="text-n-600">Tu perro no tiene medicamentos registrados.</p>;
+    return <p className="text-n-600">{mascota.tu.charAt(0).toUpperCase() + mascota.tu.slice(1)} no tiene medicamentos registrados.</p>;
   }
 
   const ordenados = [...medicamentos].sort((a, b) => Number(b.activo) - Number(a.activo));

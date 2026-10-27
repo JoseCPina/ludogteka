@@ -16,7 +16,8 @@ import {
   marcarBitacoraNotificada,
   construirEnlaceWhatsApp,
 } from "./bitacora-actions";
-import { useZonaNegocio } from "@/components/zona-negocio";
+import { useZonaNegocio } from "@/components/zona-negocio";
+import { vocabularioMascota, type Vocabulario } from "@/lib/perros/vocabulario";
 
 const BUCKET = "perros-archivos";
 
@@ -29,7 +30,7 @@ export type EntradaBitacora = {
   notificado_whatsapp_at: string | null;
 };
 
-export function BitacoraSeccion({ perroId, entradas }: { perroId: string; entradas: EntradaBitacora[] }) {
+export function BitacoraSeccion({ perroId, entradas, mascota = vocabularioMascota({ conVet: false }) }: { perroId: string; entradas: EntradaBitacora[]; mascota?: Vocabulario }) {
   const zona = useZonaNegocio();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -46,7 +47,7 @@ export function BitacoraSeccion({ perroId, entradas }: { perroId: string; entrad
     setError(null);
     const r = await enviando.correr(async () => {
       const prep = await prepararEntradaBitacora(perroId);
-      if (!prep) return { error: "No encontramos el perro. Recarga la página." };
+      if (!prep) return { error: "No encontramos el registro. Recarga la página." };
 
       let fotoPath: string | null = null;
       if (archivo) {
@@ -131,7 +132,7 @@ export function BitacoraSeccion({ perroId, entradas }: { perroId: string; entrad
       </div>
 
       {entradas.length === 0 ? (
-        <p className="text-n-600">Todavía no hay entradas en la bitácora de este perro.</p>
+        <p className="text-n-600">Todavía no hay entradas en la bitácora de {mascota.este}.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {entradas.map((e) => (

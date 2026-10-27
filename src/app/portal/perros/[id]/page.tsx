@@ -23,7 +23,8 @@ import { RecetasCliente, type RecetaDelDueno } from "./recetas-cliente";
 import { zonaActual } from "@/lib/negocio/actual";
 import { usaVeterinaria } from "@/lib/plan/modulos";
 import { ETIQUETA_ESPECIE, esEspecie } from "@/lib/perros/ficha-clinica";
-import { leerTodo } from "@/lib/supabase/paginar";
+import { leerTodo } from "@/lib/supabase/paginar";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
 
 const ESTILO_GRAVEDAD: Record<string, string> = {
   grave: "border-coral bg-coral-suave text-coral-oscuro",
@@ -199,6 +200,10 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
     urlFoto = data?.signedUrl ?? null;
   }
 
+  // QA S39 (N137): las palabras de su especie (con Veterinaria); tamaño y pelaje son datos de perro.
+  const conVetPortal = usaVeterinaria(sesion.modulos ?? []);
+  const especie = conVetPortal && clinico && esEspecie(clinico.especie) ? clinico.especie : "perro";
+  const v = vocabularioMascota({ conVet: conVetPortal, especie });
   const tamano = perro.tamanos_categoria as unknown as { etiqueta: string } | null;
   const pelaje = perro.tipos_pelaje as unknown as { etiqueta: string } | null;
 
@@ -206,7 +211,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
     <div className="flex flex-col gap-6">
       <div>
         <Link href="/portal" className="text-sm font-semibold text-morado hover:underline">
-          ← Tus perros
+          ← {vocabularioMascota({ conVet: conVetPortal }).tus.replace(/^t/, "T")}
         </Link>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-bold text-n-900">{perro.nombre}</h1>
@@ -223,7 +228,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
         </div>
         {!esPropio && (
           <p className="mt-1 text-sm text-n-600">
-            Tienes acceso de solo lectura a este perro — la edición la maneja su dueño principal.
+            Tienes acceso de solo lectura a {v.este} — la edición la maneja su dueño principal.
           </p>
         )}
       </div>
@@ -264,14 +269,18 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
             {perro.fecha_nacimiento ? formatearFechaCalendario(perro.fecha_nacimiento) : "—"}
           </p>
         </div>
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wide text-n-600">Tamaño</p>
-          <p className="text-n-900">{tamano?.etiqueta ?? "—"}</p>
-        </div>
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wide text-n-600">Pelaje</p>
-          <p className="text-n-900">{pelaje?.etiqueta ?? "—"}</p>
-        </div>
+        {especie === "perro" && (
+          <>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-n-600">Tamaño</p>
+              <p className="text-n-900">{tamano?.etiqueta ?? "—"}</p>
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-n-600">Pelaje</p>
+              <p className="text-n-900">{pelaje?.etiqueta ?? "—"}</p>
+            </div>
+          </>
+        )}
         {clinico && (
           <>
             <div>
@@ -341,13 +350,13 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
 
       <div className="flex flex-col gap-3">
         <h2 className="text-lg font-bold text-n-900">Bitácora</h2>
-        <BitacoraCliente zona={zona} entradas={entradasBitacora} />
+        <BitacoraCliente zona={zona} entradas={entradasBitacora} mascota={v} />
       </div>
 
       {medicamentos.length > 0 && (
         <div className="flex flex-col gap-3">
           <h2 className="text-lg font-bold text-n-900">Medicamentos</h2>
-          <MedicamentosCliente zona={zona} medicamentos={medicamentos} />
+          <MedicamentosCliente zona={zona} medicamentos={medicamentos} mascota={v} />
         </div>
       )}
 
@@ -382,6 +391,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
         {esPropio ? (
           <MiPerroForm
             perroId={id}
+            mascota={v.nombre}
             datosDeCuidado={(sesion?.modulos ?? []).some((m) => m === "guarderia" || m === "hotel" || m === "veterinaria")}
             valoresIniciales={{
               contacto_emergencia_nombre: perro.contacto_emergencia_nombre,
@@ -396,7 +406,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
           />
         ) : (
           <Alert variante="advertencia" titulo="Solo lectura">
-            Este perro no es tuyo directamente — solo su dueño principal puede editar estos datos.
+            {v.este.charAt(0).toUpperCase() + v.este.slice(1)} no es tuy{v.o} directamente — solo su dueño principal puede editar estos datos.
           </Alert>
         )}
       </div>

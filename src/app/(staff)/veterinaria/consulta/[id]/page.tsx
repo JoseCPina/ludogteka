@@ -98,6 +98,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
     aplicarVacuna = (
       <FormularioVacuna
         perroId={c.perro_id}
+        especie={d.mascota.especie}
         consultaId={id}
         hoy={hoy}
         productos={productos}

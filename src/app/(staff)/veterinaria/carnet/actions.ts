@@ -1,5 +1,6 @@
 "use server";
 
+import { registrosFinales } from "@/lib/concurrencia/registro-final";
 import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
 import { conflictoDeError } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
@@ -144,7 +145,7 @@ export async function guardarAjustesVeterinaria(fd: FormData): Promise<Resultado
   if (conflicto) return { error: null, conflicto };
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/ajustes");
-  return { error: null, exito: "Ajustes de Veterinaria guardados." };
+  return { error: null, registros: await registrosFinales(supabase, controlDeFormulario(fd)), exito: "Ajustes de Veterinaria guardados." };
 }
 
 export async function emitirCertificado(perroId: string, fd: FormData): Promise<ResultadoAccion> {

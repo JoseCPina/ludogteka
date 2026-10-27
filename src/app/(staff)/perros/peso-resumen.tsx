@@ -1,4 +1,5 @@
-import { formatearFechaCalendario } from "@/lib/formato";
+import { formatearFechaCalendario } from "@/lib/formato";
+import { vocabularioMascota, type Vocabulario } from "@/lib/perros/vocabulario";
 
 export type PesoFila = {
   id: string;
@@ -33,9 +34,10 @@ function formatearDuracion(dias: number): string {
   return meses <= 1 ? "1 mes" : `${meses} meses`;
 }
 
-export function PesoResumen({ historial }: { historial: PesoFila[] }) {
+// QA S39 (N137): `mascota`, las palabras de la especie (sin Veterinaria, perro).
+export function PesoResumen({ historial, mascota = vocabularioMascota({ conVet: false }) }: { historial: PesoFila[]; mascota?: Vocabulario }) {
   if (historial.length === 0) {
-    return <p className="text-n-600">Todavía no hay lecturas de peso para este perro.</p>;
+    return <p className="text-n-600">Todavía no hay lecturas de peso para {mascota.este}.</p>;
   }
 
   const actual = Number(historial[0].peso_kg);

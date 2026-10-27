@@ -21,6 +21,7 @@ import type { EstadoPerroForm } from "./actions";
 import { proponerRazaDesdeFormulario } from "./raza-propuesta-actions";
 import type { PropuestaRazaVista } from "@/lib/razas-propuesta";
 import { ESPECIES, ETIQUETA_ESPECIE, type Especie } from "@/lib/perros/ficha-clinica";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
 
 const ESTADO_INICIAL: EstadoPerroForm = { error: null };
 
@@ -43,6 +44,8 @@ export function PerroForm({
   clinico = false,
   clinicoIniciales,
   borrador,
+  alta,
+  especieInicial,
 }: {
   action: (estadoPrevio: EstadoPerroForm, formData: FormData) => Promise<EstadoPerroForm>;
   razas: RazaOpcion[];
@@ -90,10 +93,17 @@ export function PerroForm({
   };
   // Autoguardado del alta: el formulario y el registro (el dueño al que se le agrega la mascota).
   borrador?: { formulario: string; clave?: string };
+  /**
+   * QA S39 (N137): es un alta (con el nombre del dueño): el formulario pinta su título. Con Veterinaria pregunta primero
+   * la especie y todo se adapta a ella (título, razas, campos de perro). `textoBoton` puede llevar «{mascota}».
+   */
+  alta?: { clienteNombre: string };
+  /** La especie de la mascota que se edita (la cambia la ficha clínica): las palabras y los campos que aplican. */
+  especieInicial?: Especie;
 }) {
   // Con Estética, guardería u hotel la raza es obligatoria (si es mestizo, se escoge «Mestizo»): lo exige también el servidor.
   const modulos = useModulos();
-  const pideRaza = modulos.tiene("estetica") || modulos.tiene("guarderia") || modulos.tiene("hotel");
+  const pideRazaNegocio = modulos.tiene("estetica") || modulos.tiene("guarderia") || modulos.tiene("hotel");
   const [estado, formAction, enviando] = useActionState(useAccionConTope(action), ESTADO_INICIAL);
   const ultimo = useRef<FormData | null>(null);
   // La cabecera del expediente y los bloques de arriba se ponen al día al guardar (QA S14).
@@ -102,7 +112,14 @@ export function PerroForm({
     if (estado.ok && perroId) router.refresh();
   }, [estado, perroId, router]);
   const deshabilitado = enviando || soloLectura;
-  const [especie, setEspecie] = useState<Especie>(clinicoIniciales?.especie ?? "perro");
+  // QA S39 (N137): con Veterinaria, el alta pregunta primero la especie (sin escoger, nada más se pide eso) y las
+  // palabras, las razas y los campos se adaptan a ella. Sin Veterinaria todo es de perro.
+  const conVet = modulos.tiene("veterinaria");
+  const preguntaEspecie = conVet && Boolean(alta);
+  const [especie, setEspecie] = useState<Especie | "">(clinicoIniciales?.especie ?? especieInicial ?? (preguntaEspecie ? "" : "perro"));
+  const v = vocabularioMascota({ conVet, especie: especie || null });
+  const esPerro = !conVet || especie === "perro";
+  const listo = !preguntaEspecie || especie !== "";
 
   // Un mestizo (o una raza que este negocio no mete en ningún grupo de precio)
   // se cobra por talla Y pelaje: sin los dos, no hay precio de estética.
@@ -136,7 +153,9 @@ export function PerroForm({
   const conEstanciasForm = modulos.tiene("guarderia") || modulos.tiene("hotel");
   const rec = conEstanciasForm ? "(recomendado)" : "(opcional)";
   const pideVeterinarioExterno = conEstanciasForm || !modulos.tiene("veterinaria");
-  const pideTallaYPelaje = faltantesAltaPerro(
+  // Raza, tamaño y pelaje obligatorios son para el precio de estética y las estancias de un perro.
+  const pideRaza = pideRazaNegocio && esPerro;
+  const pideTallaYPelaje = esPerro && faltantesAltaPerro(
     { raza: razaElegida.raza, raza_id: razaElegida.raza_id, raza_propuesta: conPropuesta },
     modulosActivos,
     razas
@@ -164,7 +183,16 @@ export function PerroForm({
       }}
       className="flex max-w-lg flex-col gap-4"
     >
-      {perroId && <CampoVersion versiones={[{ t: "perros", i: perroId, v: versionMasReciente(estado.version, version) }]} />}
+      {alta && (
+        <div>
+          <h1 className="text-2xl font-bold text-n-900" data-titulo-alta>{v.nuevo}</h1>
+          <p className="mt-1 text-n-600">
+            Se va a registrar como {v.nombre} de {alta.clienteNombre}.
+          </p>
+        </div>
+      )}
+      {!alta && conVet && especie && <input type="hidden" name="especie_vigente" value={especie} />}
+      {perroId && <CampoVersion versiones={[{ t: "perros", i: perroId, v: versionMasReciente(estado.version, version) }]} registros={estado.registros} />}
       {estado.conflicto && (
         <AvisoConflicto
           conflicto={estado.conflicto}
@@ -188,28 +216,61 @@ export function PerroForm({
       {estado.ok && <Alert variante="exito" titulo="Cambios guardados" />}
       {soloLectura && (
         <Alert variante="advertencia" titulo="Solo lectura">
-          Solo admin o recepción pueden editar los datos base del perro.
+          Solo admin o recepción pueden editar los datos base {v.del}.
         </Alert>
       )}
 
+      {preguntaEspecie && (
+        <div className="grid gap-4 sm:grid-cols-2" data-pregunta-especie>
+          <Select
+            label="Especie"
+            name="especie"
+            required
+            disabled={deshabilitado}
+            value={especie}
+            onChange={(e) => {
+              setEspecie(e.target.value as Especie | "");
+              setRazaElegida({ raza_id: null, raza: "" });
+              setTamanoId("");
+              setPelajeId("");
+            }}
+          >
+            <option value="">Elige la especie</option>
+            {ESPECIES.map((e) => (
+              <option key={e} value={e}>
+                {ETIQUETA_ESPECIE[e]}
+              </option>
+            ))}
+          </Select>
+          {especie === "otro" && (
+            <Field label="¿Cuál?" name="especie_detalle" required disabled={deshabilitado} placeholder="ej. Conejo, hurón" />
+          )}
+        </div>
+      )}
+
+      {listo && (<>
       <Field
-        label="Nombre del perro"
+        label={`Nombre ${v.del}`}
         name="nombre"
         required
         disabled={deshabilitado}
         defaultValue={valoresIniciales?.nombre}
       />
+      {especie !== "otro" && (
       <SelectorRaza
+        key={especie}
         razas={razas}
+        especie={especie === "gato" ? "gato" : "perro"}
         label={pideRaza ? "Raza (obligatoria)" : "Raza"}
         disabled={deshabilitado}
-        mostrarGrupo={modulos.tiene("estetica")}
+        mostrarGrupo={modulos.tiene("estetica") && esPerro}
         valorId={valoresIniciales?.raza_id ?? null}
         valorTexto={valoresIniciales?.raza ?? ""}
         onElegida={alElegirRaza}
         // QA S27: el precio de estética solo se menciona si el negocio tiene Estética (un hotel no la tiene).
-        ayuda={`${modulos.tiene("estetica") ? "De aquí sale el precio de estética. " : ""}Si no está en la lista, usa «No la encuentro: agregar esta raza».`}
-        propuestas={{
+        ayuda={esPerro ? `${modulos.tiene("estetica") ? "De aquí sale el precio de estética. " : ""}Si no está en la lista, usa «No la encuentro: agregar esta raza».` : "Si no sabes cuál es, escoge «Mestizo» o «Doméstico de pelo corto»."}
+        // Agregar una raza nueva al catálogo (con su grupo de precio) es del catálogo de perros.
+        propuestas={esPerro ? {
           modo: "personal",
           tamanos,
           pelajes,
@@ -217,11 +278,12 @@ export function PerroForm({
           puedeAsignarGrupo,
           propuestaInicial,
           proponer: perroId ? (datos) => proponerRazaDesdeFormulario({ ...datos, perroId }) : undefined,
-        }}
+        } : undefined}
       />
+      )}
       {faltaRaza && (
         <p role="alert" data-falta-raza className="-mt-2 text-sm font-semibold text-coral-oscuro">
-          Escribe la raza del perro. Si no sabes cuál es, escoge «Mestizo».
+          Escribe la raza {v.del}. Si no sabes cuál es, escoge «Mestizo».
         </p>
       )}
 
@@ -282,7 +344,8 @@ export function PerroForm({
           )}
         </p>
       )}
-      <div className="grid grid-cols-2 gap-4">
+      {esPerro && (
+      <div className="grid grid-cols-2 gap-4" data-talla-pelaje>
         <Select
           label={pideTallaYPelaje ? "Tamaño (obligatorio)" : "Tamaño"}
           name="tamano_id"
@@ -320,6 +383,7 @@ export function PerroForm({
           ))}
         </Select>
       </div>
+      )}
 
       {!corta && (
         <>
@@ -386,6 +450,8 @@ export function PerroForm({
         <>
           <input type="hidden" name="clinico" value="1" />
           <div className="grid gap-4 sm:grid-cols-2">
+            {/* En el alta la especie ya se preguntó arriba. */}
+            {!preguntaEspecie && (
             <Select
               label="Especie"
               name="especie"
@@ -399,7 +465,8 @@ export function PerroForm({
                 </option>
               ))}
             </Select>
-            {especie === "otro" && (
+            )}
+            {!preguntaEspecie && especie === "otro" && (
               <Field
                 label="¿Cuál?"
                 name="especie_detalle"
@@ -433,10 +500,12 @@ export function PerroForm({
         </>
       )}
 
+      </>)}
+
       {!soloLectura && (
         <AccionesFormulario error={errorVisible} exito={estado.ok && "Cambios guardados"}>
-          <Button type="submit" cargando={enviando}>
-            {enviando ? "Guardando…" : textoBoton}
+          <Button type="submit" cargando={enviando} disabled={!listo}>
+            {enviando ? "Guardando…" : textoBoton.replace("{mascota}", v.nombre)}
           </Button>
         </AccionesFormulario>
       )}

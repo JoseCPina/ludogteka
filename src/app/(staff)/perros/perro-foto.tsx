@@ -100,7 +100,7 @@ export function PerroFoto({
       }
 
       const path = await prepararRutaFotoPerro(perroId);
-      if (!path) return { error: "No encontramos el perro. Recarga la página.", nuevaUrl: null };
+      if (!path) return { error: "No encontramos el registro. Recarga la página.", nuevaUrl: null };
 
       const supabase = createSupabaseBrowserClient();
       const { error: subidaError } = await supabase.storage

@@ -20,7 +20,8 @@ import { ComprobantesPerro, type Comprobantes } from "./comprobantes-perro";
 import { ResumenRequisitos, type ResumenPerro } from "./resumen-requisitos";
 import { subirComprobantesAlta } from "./subir-comprobantes";
 import type { TipoRequisitoAlta } from "@/lib/alta/requisitos";
-import { MIN_CONTRASENA, TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
+import { MIN_CONTRASENA, TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
 
 function Progreso({ pasos, paso }: { pasos: string[]; paso: number }) {
   return (
@@ -82,7 +83,9 @@ export function AltaForm({
   // sin cuenta ni contraseña (la cuenta del portal se ofrece después, desde
   // el mostrador), sin vacunas ni contrato.
   const corta = !definicion.expedienteCompleto;
-  const pasos = corta ? ["Tus datos", "Tu perro"] : ["Tus datos", "Tus perros", ...(requisitos ? ["Vacunas"] : []), "Tu cuenta", "Tu contrato"];
+  // QA S39 (N137): con Veterinaria, «mascota» (o la especie de cada una); sin ella, «perro».
+  const vm = vocabularioMascota({ conVet: conVeterinaria });
+  const pasos = corta ? ["Tus datos", `Tu ${vm.nombre}`] : ["Tus datos", `Tus ${vm.plural}`, ...(requisitos ? ["Vacunas"] : []), "Tu cuenta", "Tu contrato"];
 
   // La cuenta es obligatoria para quien va a dejar a su perro —el portal es
   // donde ve sus fotos, su salud y sus contratos— y opcional para quien solo
@@ -105,7 +108,7 @@ export function AltaForm({
   const [crearCuenta, setCrearCuenta] = useState(!corta);
   const [password, setPassword] = useState("");
   const [confirmacion, setConfirmacion] = useState("");
-  const [perros, setPerros] = useState<PerroAlta[]>([perroVacio()]);
+  const [perros, setPerros] = useState<PerroAlta[]>([perroVacio(conVeterinaria)]);
   const [fotos, setFotos] = useState<(File | null)[]>([null]);
   // Comprobantes por perro (mismo índice que `perros`) y por tipo.
   const [comprobantes, setComprobantes] = useState<Comprobantes[]>([{}]);
@@ -123,7 +126,7 @@ export function AltaForm({
   }
 
   function agregarPerro() {
-    setPerros((prev) => [...prev, perroVacio()]);
+    setPerros((prev) => [...prev, perroVacio(conVeterinaria)]);
     setFotos((prev) => [...prev, null]);
     setComprobantes((prev) => [...prev, {}]);
   }
@@ -146,8 +149,9 @@ export function AltaForm({
       }
     }
     if (paso === PASO_PERROS) {
+      if (conVeterinaria && perros.some((p) => !p.especie)) return setError("Escoge qué es cada mascota: perro, gato u otro.");
       if (perros.some((p) => !p.nombre.trim())) {
-        return setError("Cada perro necesita al menos un nombre.");
+        return setError(`Cada ${vm.nombre} necesita al menos un nombre.`);
       }
       const validacion = await enviando.ejecutar(() => validarPerrosAlta(perros));
       if (validacion.error) return setError(validacion.error);
@@ -162,7 +166,8 @@ export function AltaForm({
 
   async function terminarCorta() {
     setError(null);
-    if (perros.some((p) => !p.nombre.trim())) return setError("Cada perro necesita al menos un nombre.");
+    if (conVeterinaria && perros.some((p) => !p.especie)) return setError("Escoge qué es cada mascota: perro, gato u otro.");
+    if (perros.some((p) => !p.nombre.trim())) return setError(`Cada ${vm.nombre} necesita al menos un nombre.`);
     const validacion = await enviando.ejecutar(() => validarPerrosAlta(perros));
     if (validacion.error) return setError(validacion.error);
     await enviar();
@@ -286,7 +291,7 @@ export function AltaForm({
       <div className="flex flex-col gap-4">
         <Alert variante="exito" titulo="Listo, ya estás registrado">
           Ya tenemos los datos de{" "}
-          {perros.map((p) => p.nombre.trim()).filter(Boolean).join(", ") || "tu perro"}. Puedes
+          {perros.map((p) => p.nombre.trim()).filter(Boolean).join(", ") || vm.tu}. Puedes
           agendar por WhatsApp o pasando al mostrador.
         </Alert>
         <ResumenRequisitos resumen={resumenRequisitos} dondeSubir="Tráenos el carnet cuando vengas." />
@@ -374,7 +379,7 @@ export function AltaForm({
               className="mt-1 h-4 w-4"
             />
             <span>
-              Quiero que pasen por mi perro a mi casa
+              Quiero que pasen por mi {vm.nombre} a mi casa
               <span className="block text-sm text-n-600">
                 Con tu dirección calculamos cuánto cuesta el traslado. También la puedes dar
                 después.
@@ -410,7 +415,7 @@ export function AltaForm({
             <TarjetaPerro
               key={i}
               perro={perro}
-              titulo={perro.nombre.trim() || `Perro ${i + 1}`}
+              titulo={perro.nombre.trim() || `${vocabularioMascota({ conVet: conVeterinaria, especie: perro.especie || null }).Nombre} ${i + 1}`}
               campos={campos}
               razas={razas}
               tamanos={tamanos}
@@ -425,7 +430,7 @@ export function AltaForm({
           ))}
 
           <Button type="button" variante="secundario" onClick={agregarPerro} className="self-start">
-            Agregar otro perro
+            Agregar {vm.otro}
           </Button>
 
           {corta && aviso && <Alert variante="advertencia" titulo={aviso} />}
@@ -457,7 +462,7 @@ export function AltaForm({
           {perros.map((perro, i) => (
             <ComprobantesPerro
               key={i}
-              titulo={perro.nombre.trim() || `Perro ${i + 1}`}
+              titulo={perro.nombre.trim() || `${vocabularioMascota({ conVet: conVeterinaria, especie: perro.especie || null }).Nombre} ${i + 1}`}
               requisitos={requisitos.map((r) => ({ ...r, estado: "sin_registro" as const, en_revision: false }))}
               valores={comprobantes[i] ?? {}}
               onCambio={(tipoId, valor) =>
@@ -483,7 +488,7 @@ export function AltaForm({
           {cuentaOpcional ? (
             <div className="flex flex-col gap-3 rounded-md border-[1.5px] border-n-200 bg-white p-4 text-n-900">
               <div>
-                <p className="font-bold">¿Quieres una cuenta para ver las citas de tu perro?</p>
+                <p className="font-bold">¿Quieres una cuenta para ver las citas de {vm.tu}?</p>
                 <p className="mt-1 text-sm text-n-600">
                   Desde tu celular ves {definicion.cuentaMuestra}. {comoSeAgenda} Si no la
                   quieres ahora, tu registro queda completo igual y la puedes pedir en recepción cuando

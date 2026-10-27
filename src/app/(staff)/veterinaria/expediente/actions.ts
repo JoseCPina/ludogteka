@@ -1,5 +1,7 @@
 "use server";
 
+import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { prepararSalaTeleconsulta } from "../agenda/telemedicina-actions";
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
@@ -67,7 +69,7 @@ export async function reprogramarCita(id: string, fd: FormData): Promise<Resulta
   }), controlDeFormulario(fd));
   if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
   revalidatePath("/veterinaria/agenda");
-  return { error: null, exito: "Cita movida." };
+  return { error: null, registros: await registrosFinales(supabase, controlDeFormulario(fd)), exito: "Cita movida." };
 }
 
 export async function estadoCita(id: string, estado: string, fd?: FormData | ControlVersion): Promise<ResultadoAccion> {
@@ -77,7 +79,7 @@ export async function estadoCita(id: string, estado: string, fd?: FormData | Con
   const { error } = await conControl(supabase.rpc("vet_cita_estado", { p_id: id, p_estado: estado, p_motivo: esForm ? o(texto(fd, "motivo")) : null }), control);
   if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
   revalidatePath("/veterinaria/agenda");
-  return { error: null, exito: "Listo." };
+  return { error: null, registros: await registrosFinales(supabase, control), exito: "Listo." };
 }
 
 // ── Consulta ─────────────────────────────────────────────────────────
@@ -111,11 +113,11 @@ export type DatosBorrador = Partial<{
   diagnosticos: Diagnostico[];
 }>;
 
-export async function guardarBorrador(id: string, datos: DatosBorrador, control?: ControlVersion): Promise<{ error: string | null; guardado_at?: string; conflicto?: Conflicto | null }> {
+export async function guardarBorrador(id: string, datos: DatosBorrador, control?: ControlVersion): Promise<{ error: string | null; guardado_at?: string; conflicto?: Conflicto | null; registros?: RegistroFinal[] }> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await conControl(supabase.rpc("vet_consulta_guardar", { p_id: id, p_datos: datos }), control);
   if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
-  return { error: null, guardado_at: String(data) };
+  return { error: null, registros: await registrosFinales(supabase, control), guardado_at: String(data) };
 }
 
 export async function firmarConsulta(id: string): Promise<ResultadoAccion> {

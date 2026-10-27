@@ -12,6 +12,7 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { usaVeterinaria } from "@/lib/plan/modulos";
 import { hrefDeVuelta, rutaDeVuelta } from "@/lib/clientes/volver";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
 
 export default async function NuevoPerroPage({
   params,
@@ -28,7 +29,8 @@ export default async function NuevoPerroPage({
   const supabase = await createSupabaseServerClient();
   const [{ data: cliente }, razas, { data: tamanos }, { data: pelajes }] = await Promise.all([
     supabase.from("clientes").select("id, nombre").eq("id", id).is("deleted_at", null).single(),
-    cargarRazas(supabase, await negocioIdActual(), { conGrupo: true }),
+    // Con Veterinaria el alta escoge la especie: llegan las razas de todas y el selector filtra.
+    cargarRazas(supabase, await negocioIdActual(), { conGrupo: true, especie: "todas" }),
     supabase
       .from("tamanos_categoria")
       .select("id, etiqueta")
@@ -42,6 +44,8 @@ export default async function NuevoPerroPage({
   const sesion = await obtenerSesionConRol();
   const conVet = Boolean(sesion) && usaVeterinaria(sesion!.modulos);
   const conFichaClinica = conVet && (await puedeEditarFichaClinica(sesion));
+  // QA S39 (N137): sin especie escogida todavía, «mascota» (con Veterinaria) o «perro».
+  const v = vocabularioMascota({ conVet });
 
   // Viene de agendar una cita de estética: alta corta del perro.
   const corta = Boolean(volver?.startsWith("/estetica"));
@@ -53,24 +57,22 @@ export default async function NuevoPerroPage({
         <Link href={`/clientes/${id}`} className="text-sm font-semibold text-morado hover:underline">
           ← {cliente.nombre}
         </Link>
-        <h1 className="mt-1 text-2xl font-bold text-n-900">Nuevo perro</h1>
-        <p className="mt-1 text-n-600">Se va a registrar como perro de {cliente.nombre}.</p>
       </div>
 
       {volver && (
         <Alert variante="exito" titulo={`${cliente.nombre} quedó registrado`}>
-          Registra a su perro y regresas a donde estabas con el cliente ya elegido.{" "}
+          Registra a {v.su} y regresas a donde estabas con el cliente ya elegido.{" "}
           <Link href={hrefDeVuelta(volver, id)} className="font-semibold underline">
-            Seguir sin registrar perro
+            Seguir sin registrar {v.nombre}
           </Link>
         </Alert>
       )}
 
       {recienCreado && (
         <Alert variante="exito" titulo={`${cliente.nombre} quedó registrado`}>
-          Registra a su {conVet ? "mascota" : "perro"} y quedas en su ficha.{" "}
+          Registra a {v.su} y quedas en su ficha.{" "}
           <Link href={`/clientes/${id}`} className="font-semibold underline" data-seguir-sin-perro>
-            Seguir sin registrar {conVet ? "mascota" : "perro"}
+            Seguir sin registrar {v.nombre}
           </Link>
         </Alert>
       )}
@@ -85,7 +87,8 @@ export default async function NuevoPerroPage({
         clinico={conFichaClinica}
         grupos={contextoRaza.grupos}
         puedeAsignarGrupo={contextoRaza.puedeAsignarGrupo}
-        textoBoton={volver ? "Guardar perro y seguir" : "Guardar perro"}
+        alta={{ clienteNombre: cliente.nombre }}
+        textoBoton={volver ? "Guardar {mascota} y seguir" : "Guardar {mascota}"}
       />
     </div>
   );

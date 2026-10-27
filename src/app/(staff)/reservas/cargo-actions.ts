@@ -1,5 +1,7 @@
 "use server";
 
+import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { revalidarModulosEstancia } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
@@ -7,7 +9,7 @@ import { motivoSinCargosNuevos } from "@/lib/caja/cargos-nuevos-servidor";
 import { conControl } from "@/lib/concurrencia/servidor";
 import { conflictoDeError, type Conflicto, type ControlVersion } from "@/lib/concurrencia/tipos";
 
-export type EstadoAccion = { error: string | null; conflicto?: Conflicto | null };
+export type EstadoAccion = { error: string | null; conflicto?: Conflicto | null; registros?: RegistroFinal[] };
 
 export type ResultadoAplicarCargo = { error: string | null; cargo: { id: string; precio: number } | null };
 
@@ -73,5 +75,5 @@ export async function cancelarCargo(cargoId: string, motivo: string, control?: C
   if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
 
   revalidarModulosEstancia();
-  return { error: null };
+  return { error: null, registros: await registrosFinales(supabase, control) };
 }

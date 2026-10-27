@@ -22,13 +22,16 @@ export async function cargarRazas(
   // mano porque el alta pública llega aquí con la secret key.
   negocioId: string,
   // `soloId`: solo esa raza (validar un guardado no necesita el catálogo entero; QA S27, guardar un perro tardaba).
-  opciones: { conGrupo?: boolean; soloId?: string } = {}
+  // `especie` (QA S39, N137): el catálogo es por especie; por omisión, las de perro (estética, estancias, grupos de
+  // precio). El alta de mascota con Veterinaria pide «todas» y el selector filtra por la especie escogida.
+  opciones: { conGrupo?: boolean; soloId?: string; especie?: "perro" | "gato" | "otro" | "todas" } = {}
 ): Promise<RazaOpcion[]> {
-  const razas = supabase
+  const especie = opciones.soloId ? "todas" : (opciones.especie ?? "perro");
+  const todas = supabase
     .from("razas")
-    .select("id, nombre, alias, es_desconocida, tamano_tipico_id, pelaje_tipico_id")
-    .is("deleted_at", null)
-    .order("nombre");
+    .select("id, nombre, alias, es_desconocida, tamano_tipico_id, pelaje_tipico_id, especie")
+    .is("deleted_at", null);
+  const razas = (especie === "todas" ? todas : todas.eq("especie", especie)).order("nombre");
   const grupos = supabase
     .from("razas_grupo")
     .select("raza_id, grupos_raza(nombre, depende_tamano, depende_pelaje)")
@@ -53,9 +56,11 @@ export async function cargarRazas(
     es_desconocida: boolean | null;
     tamano_tipico_id: string | null;
     pelaje_tipico_id: string | null;
+    especie: string | null;
   }[]).map((r) => ({
     id: r.id,
     nombre: r.nombre,
+    especie: r.especie ?? "perro",
     alias: r.alias ?? [],
     es_desconocida: Boolean(r.es_desconocida),
     // El grupo solo viaja cuando quien mira es del negocio. En la

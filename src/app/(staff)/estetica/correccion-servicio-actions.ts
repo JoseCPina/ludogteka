@@ -1,5 +1,7 @@
 "use server";
 
+import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -42,7 +44,7 @@ export async function corregirServicioCita(datos: {
   grupoExcepcionId: string | null;
   motivoExcepcion: string | null;
   control?: ControlVersion;
-}): Promise<{ error: string | null; resultado?: ResultadoCorreccion; conflicto?: Conflicto | null }> {
+}): Promise<{ error: string | null; resultado?: ResultadoCorreccion; conflicto?: Conflicto | null; registros?: RegistroFinal[] }> {
   const sesion = await obtenerSesionConRol();
   if (!sesion || !["admin", "recepcion"].includes(sesion.rol)) return { error: "Solo admin o recepción corrigen el servicio de una cita." };
   if (!datos.motivo.trim()) return { error: "Escribe el motivo de la corrección: queda en el historial de la cita." };
@@ -100,5 +102,5 @@ export async function corregirServicioCita(datos: {
     revalidatePath(`/caja/cobrar/${resultado.reserva_id}`);
     revalidatePath(`/reservas/${resultado.reserva_id}/cobrar`);
   }
-  return { error: null, resultado: { ...resultado, ordenes_canceladas: canceladas.length } };
+  return { error: null, registros: await registrosFinales(supabase, datos.control), resultado: { ...resultado, ordenes_canceladas: canceladas.length } };
 }

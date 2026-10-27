@@ -1,5 +1,7 @@
 "use server";
 
+import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../reservas/traducir-error";
@@ -10,7 +12,7 @@ import { unirFrases } from "@/lib/texto/frases";
 import { conControl } from "@/lib/concurrencia/servidor";
 import { conflictoDeError, type Conflicto, type ControlVersion } from "@/lib/concurrencia/tipos";
 
-export type EstadoAccion = { error: string | null; conflicto?: Conflicto | null };
+export type EstadoAccion = { error: string | null; conflicto?: Conflicto | null; registros?: RegistroFinal[] };
 export type EstadoCrearCita = {
   error: string | null;
   /** N30: el mismo perro ya tiene cita ese día; NO se agendó y se pide confirmar. */
@@ -154,7 +156,7 @@ export async function aplicarRecargoCita(citaId: string, recargo: number, motivo
   if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
   revalidatePath(`/estetica/${citaId}`);
   revalidatePath("/estetica");
-  return { error: null };
+  return { error: null, registros: await registrosFinales(supabase, control) };
 }
 
 export type AusenteEnTramo = { profileId: string; texto: string };
@@ -172,7 +174,7 @@ export async function estilistasAusentesEnTramo(inicio: string, fin: string): Pr
   }));
 }
 
-export type EstadoReasignar = { error: string | null; de?: string; a?: string; ajusteNomina?: boolean; sinCambio?: boolean; conflicto?: Conflicto | null };
+export type EstadoReasignar = { error: string | null; de?: string; a?: string; ajusteNomina?: boolean; sinCambio?: boolean; conflicto?: Conflicto | null; registros?: RegistroFinal[] };
 
 /**
  * Cambia (o quita) la estilista de una cita. Todo lo decide la base
@@ -197,10 +199,10 @@ export async function reasignarEstilista(
   revalidatePath("/recepcion");
   revalidatePath("/admin");
   const r = (data ?? {}) as { de?: string; a?: string; ajuste_nomina?: boolean; sin_cambio?: boolean };
-  return { error: null, de: r.de, a: r.a, ajusteNomina: r.ajuste_nomina ?? false, sinCambio: r.sin_cambio ?? false };
+  return { error: null, registros: await registrosFinales(supabase, control), de: r.de, a: r.a, ajusteNomina: r.ajuste_nomina ?? false, sinCambio: r.sin_cambio ?? false };
 }
 
-export type ResultadoAgenda = { error: string | null; urlWhatsApp?: string; fueraDeHorario?: boolean; nuevoInicio?: string; conflicto?: Conflicto | null };
+export type ResultadoAgenda = { error: string | null; urlWhatsApp?: string; fueraDeHorario?: boolean; nuevoInicio?: string; conflicto?: Conflicto | null; registros?: RegistroFinal[] };
 
 type DatosCambio = { cliente_nombre?: string | null; cliente_telefono?: string | null; perro_nombre?: string | null; servicio_nombre?: string | null; inicio_despues?: string; inicio?: string; fuera_de_horario?: boolean };
 
@@ -227,6 +229,7 @@ export async function reprogramarCita(citaId: string, nuevoInicio: string, motiv
   revalidatePath("/recepcion");
   return {
     error: null,
+    registros: await registrosFinales(supabase, control),
     fueraDeHorario: Boolean(d.fuera_de_horario),
     nuevoInicio: d.inicio_despues,
     urlWhatsApp: await linkWhatsApp(
@@ -248,6 +251,7 @@ export async function cancelarCita(citaId: string, motivo: string, noLlego = fal
   revalidatePath("/recepcion");
   return {
     error: null,
+    registros: await registrosFinales(supabase, control),
     urlWhatsApp: noLlego
       ? undefined
       : await linkWhatsApp(
@@ -281,7 +285,7 @@ export async function eliminarCita(citaId: string, motivo: string, control?: Con
   if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
   revalidatePath("/estetica");
   revalidatePath("/recepcion");
-  return { error: null };
+  return { error: null, registros: await registrosFinales(supabase, control) };
 }
 
 /** Pone, quita o restablece la tarifa «cliente de guardería» de una cita (la base vuelve a cotizar y exige permiso y motivo). */
@@ -291,7 +295,7 @@ export async function cambiarTarifaGuarderia(citaId: string, modo: "auto" | "si"
   if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
   revalidatePath("/estetica");
   revalidatePath(`/estetica/${citaId}`);
-  return { error: null, precio: Number((data as { precio_despues?: number } | null)?.precio_despues ?? 0) };
+  return { error: null, registros: await registrosFinales(supabase, control), precio: Number((data as { precio_despues?: number } | null)?.precio_despues ?? 0) };
 }
 
 export async function iniciarCita(
@@ -325,7 +329,7 @@ export async function iniciarCita(
 
   if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
   revalidatePath("/estetica");
-  return { error: null };
+  return { error: null, registros: await registrosFinales(supabase, opciones?.control) };
 }
 
 export type AjusteConsumo = { insumo_id: string; cantidad: number };

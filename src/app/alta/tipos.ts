@@ -96,7 +96,8 @@ export type ResultadoComplemento = {
   contratos?: ContratoPendiente[];
 };
 
-export function perroVacio(): PerroAlta {
+// QA S39 (N137): con Veterinaria la especie se escoge (empieza vacía); sin ella, perro.
+export function perroVacio(conVeterinaria = false): PerroAlta {
   return {
     nombre: "",
     raza: "",
@@ -112,7 +113,7 @@ export function perroVacio(): PerroAlta {
     veterinario_nombre: "",
     veterinario_telefono: "",
     veterinario_clinica: "",
-    especie: "perro",
+    especie: conVeterinaria ? "" : "perro",
     especie_detalle: "",
     microchip: "",
     esterilizado: "",

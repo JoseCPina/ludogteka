@@ -166,6 +166,9 @@ try {
   await dueno.getByLabel("Tu nombre completo").fill(`Dueño ${MARCA}`);
   await dueno.getByLabel("Tu teléfono").fill(TEL);
   await dueno.getByRole("button", { name: "Siguiente" }).click();
+  // QA S39 (N137): con Veterinaria prendida (Huellitas) el alta pregunta primero qué es la mascota.
+  await dueno.getByLabel("¿Cómo se llama?").waitFor();
+  if (await dueno.getByLabel("¿Qué es?").count()) await dueno.getByLabel("¿Qué es?").selectOption("perro");
   await dueno.getByLabel("¿Cómo se llama?").fill(`Perro ${MARCA}`);
   // N16: el alta pide raza (o «Mestizo»), tamaño y pelaje; sin ellos el servidor no deja avanzar.
   await dueno.getByRole("button", { name: "Siguiente" }).click();
@@ -227,12 +230,22 @@ try {
   const r4 = await reservaRechazada(clienteId, perroId, anon, "llave anónima");
   if (r1 && r2 && r3 && r4) bien("por la API: recepción, recepción con «excepción», admin sin excepción y anon, todos rechazados");
   await recep.goto(`${BASE}/guarderia/nueva`, { waitUntil: "networkidle" });
-  await recep.getByLabel("Buscar por perro, dueño o teléfono").fill(MARCA.slice(0, 8));
+  await recep.getByLabel(/^Buscar por (perro|mascota), dueño o teléfono$/).fill(MARCA.slice(0, 8));
   await recep.getByRole("button", { name: new RegExp(MARCA) }).first().click();
   await recep.getByLabel(`Perro ${MARCA}`).check();
-  await recep.getByRole("button", { name: "Crear reserva" }).click();
-  await recep.getByText("No se pudo reservar").waitFor({ timeout: 30_000 }).catch(() => hallazgo("la pantalla de reserva no rechazó al perro sin vacunas"));
-  if (!(await recep.getByText(/requisito sanitario|vigentes? de /).count())) hallazgo("la pantalla de reserva no dice que es por lo sanitario");
+  // Desde QA R50 la pantalla no deja apretar «Crear reserva» mientras algo bloquea (lo dice junto al perro); si el
+  // botón sigue activo, al apretarlo la base lo rechaza. Las dos son un bloqueo.
+  const crear = recep.getByRole("button", { name: "Crear reserva" });
+  await recep.waitForLoadState("networkidle").catch(() => {});
+  // Primero termina de calcular el precio y de revisar lo que le falta al perro.
+  await recep.locator("[data-precio-linea]:not([data-precio-linea=calculando])").first().waitFor({ timeout: 30_000 }).catch(() => {});
+  await recep.getByText(/requisito sanitario|vigentes? de |vacuna/i).first().waitFor({ timeout: 15_000 }).catch(() => {});
+  if (await crear.isDisabled()) bien("por pantalla: «Crear reserva» deshabilitado");
+  else {
+    await crear.click();
+    await recep.getByText("No se pudo reservar").waitFor({ timeout: 30_000 }).catch(() => hallazgo("la pantalla de reserva no rechazó al perro sin vacunas"));
+  }
+  if (!(await recep.getByText(/requisito sanitario|vigentes? de |vacuna/i).count())) hallazgo(`la pantalla de reserva no dice que es por lo sanitario («${(await recep.locator("main").innerText()).replace(/\s+/g, " ").slice(0, 900)}»)`);
   else bien("por pantalla: «No se pudo reservar» por requisito sanitario");
 
   console.log("\n4. Recepción confirma el comprobante");
