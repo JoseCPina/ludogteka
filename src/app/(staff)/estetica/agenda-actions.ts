@@ -431,17 +431,3 @@ export async function cotizarCitaEstetica(
     tarifaAviso: d.tarifa_guarderia_aviso ?? null,
   };
 }
-
-/** Guarda en el expediente del perro la talla y/o el pelaje que faltaban para cotizar. */
-export async function completarTallaPelajeDelPerro(perroId: string, tamanoId: string | null, pelajeId: string | null): Promise<EstadoAccion> {
-  if (!tamanoId && !pelajeId) return { error: "Elige lo que falta." };
-  const supabase = await createSupabaseServerClient();
-  const cambios: { tamano_id?: string; pelaje_id?: string } = {};
-  if (tamanoId) cambios.tamano_id = tamanoId;
-  if (pelajeId) cambios.pelaje_id = pelajeId;
-  const { data, error } = await supabase.from("perros").update(cambios).eq("id", perroId).select("id");
-  if (error) return { error: traducirError(error) };
-  if (!data || data.length === 0) return { error: "No pudimos guardar: solo admin o recepción editan los datos del perro." };
-  revalidatePath(`/perros/${perroId}`);
-  return { error: null };
-}

@@ -22,6 +22,9 @@ import { BuscadorClientes } from "@/components/buscador-clientes";
 import type { ClienteBuscable } from "@/lib/clientes/buscables";
 import { primerCotizable, type ServicioOfrecible } from "@/lib/servicios/ofrecibles";
 import { OpcionesServicio, AvisoServiciosSinPrecio } from "@/components/servicios/opciones-servicio";
+import { PrecioDeLinea } from "@/components/servicios/falta-dato-precio";
+import { lineaConPrecio, useCotizacionLineas, type PedidoCotizacion } from "@/hooks/use-cotizacion-lineas";
+import { textoFaltaDato } from "@/lib/servicios/cotizacion-linea";
 import { formatearDiasSemana } from "../series/dias-semana";
 import {
   crearReserva,
@@ -163,6 +166,14 @@ export function NuevaReservaForm({
       .catch(() => setChoques((prev) => Object.fromEntries(Object.entries(prev).filter(([x]) => x !== k))));
   }
 
+  // QA R50 (N133): el precio de cada mascota marcada, o lo único que falta para saberlo (talla, pelaje), con la regla con
+  // la que la base cobra. Sin precio no se puede crear la reserva: se dice al marcarla, con la salida ahí mismo.
+  const pedidoDe = (l: Linea): PedidoCotizacion => {
+    const p = lineaAPayload(l, servicios);
+    return { perroId: l.perroId, servicioId: l.servicioId, entrada: p.fechaEntrada, salida: p.fechaSalida, horas: p.horas ?? null };
+  };
+  const cotizaciones = useCotizacionLineas(lineas.map(pedidoDe));
+
   const clienteElegido = clientes.find((c) => c.id === clienteId) ?? null;
   const perrosDelCliente = useMemo(
     () => perros.filter((p) => p.cliente_id === clienteId),
@@ -232,6 +243,17 @@ export function NuevaReservaForm({
   const sinVacunasPendiente = lineas.some(
     (l) => (sanitarios[l.perroId]?.length ?? 0) > 0 && !(l.bloqueoSanitarioSuperado && l.motivoExcepcionSanitaria.trim())
   );
+
+  // Mascotas sin precio todavía (falta un dato, no hay tarifa o se está calculando).
+  const sinPrecio = lineas.filter((l) => !lineaConPrecio(cotizaciones.de(pedidoDe(l))));
+  const motivoSinPrecio = sinPrecio
+    .map((l) => {
+      const r = cotizaciones.de(pedidoDe(l));
+      if (!r) return "Calculando el precio…";
+      if ("error" in r) return `No pudimos calcular el precio de ${l.perroNombre}.`;
+      return r.cotizacion.estado === "faltan_datos" ? `${textoFaltaDato(l.perroNombre, r.cotizacion.faltan)}.` : `${l.perroNombre} no tiene precio para ese servicio: ve el aviso de arriba.`;
+    })
+    .filter((x, i, xs) => xs.indexOf(x) === i);
 
   // Mascotas cuyas fechas chocan con otra reserva suya: no se puede crear hasta cambiar fechas o quitarla.
   const conChoque = lineas.some((l) => Boolean(choques[claveChoque(l)]));
@@ -493,6 +515,10 @@ export function NuevaReservaForm({
                   {perro.nombre}
                 </label>
 
+                {linea && (
+                  <PrecioDeLinea parte="aviso" perroId={perro.id} perroNombre={perro.nombre} resultado={cotizaciones.de(pedidoDe(linea))} onGuardado={() => cotizaciones.recalcular(perro.id)} />
+                )}
+
                 {linea && !perro.evaluado && (
                   <div className="mt-3 rounded-md border border-ambar bg-ambar-suave p-3 text-sm text-ambar-oscuro" role="alert">
                     <p className="font-semibold">{perro.nombre} no tiene evaluación de comportamiento.</p>
@@ -638,6 +664,9 @@ export function NuevaReservaForm({
                     )}
                   </div>
                 )}
+                {linea && (
+                  <PrecioDeLinea parte="precio" perroId={perro.id} perroNombre={perro.nombre} resultado={cotizaciones.de(pedidoDe(linea))} onGuardado={() => cotizaciones.recalcular(perro.id)} />
+                )}
                 {linea && lineaEnDiaCerrado(linea) && (
                   <label className="mt-3 flex items-start gap-2 rounded-md border-[1.5px] border-ambar bg-ambar-suave px-3 py-2 text-sm text-ambar-oscuro" data-confirmar-dia-cerrado>
                     <input
@@ -680,13 +709,16 @@ export function NuevaReservaForm({
 
       <Button
         type="button"
-        disabled={lineas.length === 0 || enviando.cargando || sinEvaluacionPendiente || sinVacunasPendiente || conChoque || conDiaCerrado}
+        disabled={lineas.length === 0 || enviando.cargando || sinPrecio.length > 0 || sinEvaluacionPendiente || sinVacunasPendiente || conChoque || conDiaCerrado}
         onClick={enviar}
         className="self-start"
       >
         {enviando.cargando ? "Guardando…" : "Crear reserva"}
       </Button>
       {lineas.length === 0 && <p className="text-sm text-n-600" data-motivo-reserva>Escoge al menos un perro.</p>}
+      {motivoSinPrecio.map((m) => (
+        <p key={m} className="text-sm text-coral-oscuro" data-motivo-sin-precio>{m}</p>
+      ))}
       {conChoque && (
         <p className="text-sm text-coral-oscuro">Hay mascotas que ya tienen otra reserva en esas fechas: cambia las fechas o quítalas para continuar.</p>
       )}

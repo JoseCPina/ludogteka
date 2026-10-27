@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { DesgloseEstancia } from "@/components/cuentas/desglose-estancia";
+import type { CuentaEstancia } from "@/lib/cuentas/cuenta-estancia";
 import { useEspera } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
@@ -38,7 +41,8 @@ export function CargosSeccion({
   estanciaId,
   cargosIniciales,
   serviciosCargo,
-  precioBase,
+  cuenta,
+  eraSiCancelada,
   distanciaClienteKm,
   cancelada = false,
   cuentaCobrado = 0,
@@ -47,7 +51,11 @@ export function CargosSeccion({
   estanciaId: string;
   cargosIniciales: Cargo[];
   serviciosCargo: ServicioCargo[];
-  precioBase?: number;
+  // QA R50 (N136): la cuenta de la estancia leída de la base (cuenta_lineas_estancia); su total es el mismo que suman el
+  // encabezado de la reserva y Caja. Sin ella no se enseña total (nunca se calcula aquí).
+  cuenta?: CuentaEstancia | null;
+  // Cancelada: lo que costaba, solo como referencia («no se cobra; era …»).
+  eraSiCancelada?: number;
   distanciaClienteKm?: number | null;
   // N115: estancia cancelada o «no llegó»: su base ya no suma a la cuenta (cuenta_lineas_reserva la excluye);
   // los cargos vivos sí. Lo cobrado y lo devuelto son de la cuenta de la reserva.
@@ -56,6 +64,10 @@ export function CargosSeccion({
   cuentaDevuelto?: number;
 }) {
   const [cargos, setCargos] = useState(cargosIniciales);
+  // Después de aplicar o cancelar un cargo, el total vuelve a leerse de la base.
+  const router = useRouter();
+  const [actualizando, iniciarActualizacion] = useTransition();
+  const releerCuenta = () => iniciarActualizacion(() => router.refresh());
 
   const [servicioId, setServicioId] = useState(serviciosCargo[0]?.id ?? "");
   const [cantidad, setCantidad] = useState("1");
@@ -74,9 +86,6 @@ export function CargosSeccion({
   const esRecoleccion = servicioSeleccionado?.clave === "recoleccion";
   const esMontoLibre = Boolean(servicioSeleccionado?.montoLibre);
 
-  const acumuladoCargos = cargos
-    .filter((c) => !c.cancelado)
-    .reduce((sum, c) => sum + c.precio * c.cantidad, 0);
 
   async function enviarAplicar() {
     const cant = esMontoLibre ? 1 : Number(cantidad);
@@ -105,6 +114,7 @@ export function CargosSeccion({
         descripcion: esMontoLibre ? descripcion.trim() : null,
       },
     ]);
+    releerCuenta();
     setNotas("");
     setCantidad("1");
     setImporte("");
@@ -131,6 +141,7 @@ export function CargosSeccion({
     );
     setCancelandoId(null);
     setMotivoCancelar("");
+    releerCuenta();
   }
 
   return (
@@ -216,21 +227,14 @@ export function CargosSeccion({
           </ul>
         )}
 
-        <div className="flex flex-wrap justify-end gap-x-6 gap-y-1 border-t border-n-200 pt-2 text-sm" data-desglose-estancia={cancelada ? "cancelada" : "vigente"}>
-          {precioBase !== undefined && (
+        <div className="flex flex-col gap-2 border-t border-n-200 pt-2 text-sm" data-desglose-estancia={cancelada ? "cancelada" : "vigente"}>
+          {cancelada && eraSiCancelada !== undefined && (
             <span className="text-n-600">
-              Base: <span className="font-semibold text-n-900">{formatoDinero(cancelada ? 0 : precioBase)}</span>
-              {cancelada && <span className="text-n-500"> (no se cobra; era {formatoDinero(precioBase)})</span>}
+              Base: <span className="font-semibold text-n-900">{formatoDinero(0)}</span>
+              <span className="text-n-500"> (no se cobra; era {formatoDinero(eraSiCancelada)})</span>
             </span>
           )}
-          <span className="text-n-600">
-            Cargos: <span className="font-semibold text-n-900">{formatoDinero(acumuladoCargos)}</span>
-          </span>
-          {precioBase !== undefined && (
-            <span className="font-bold text-n-900">
-              Total: {formatoDinero((cancelada ? 0 : precioBase) + acumuladoCargos)}
-            </span>
-          )}
+          {cuenta !== undefined && <DesgloseEstancia cuenta={cuenta} actualizando={actualizando} />}
           {cancelada && cuentaCobrado > 0 && (
             <span className="text-n-600" data-desglose-cobrado>
               Cobrado en la cuenta: <span className="font-semibold text-n-900">{formatoDinero(cuentaCobrado)}</span>

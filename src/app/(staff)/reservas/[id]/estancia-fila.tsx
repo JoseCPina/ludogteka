@@ -16,6 +16,7 @@ import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 import type { Conflicto } from "@/lib/concurrencia/tipos";
 import { CargosSeccion, type Cargo, type ServicioCargo } from "../cargos-seccion";
 import { cerrarFrase } from "@/lib/texto/frases";
+import { textoPrecioEstancia, type CuentaEstancia } from "@/lib/cuentas/cuenta-estancia";
 
 export type FilaEstancia = {
   id: string;
@@ -67,8 +68,11 @@ export function EstanciaFila({
   distanciaClienteKm,
   cuentaCobrado = 0,
   cuentaDevuelto = 0,
+  cuenta,
 }: {
   fila: FilaEstancia;
+  // QA R50 (N136): lo que cuesta esta estancia según la base (cuenta_lineas_estancia), con sus cargos y correcciones.
+  cuenta: CuentaEstancia | null;
   cargosIniciales: Cargo[];
   serviciosCargo: ServicioCargo[];
   distanciaClienteKm?: number | null;
@@ -181,17 +185,8 @@ export function EstanciaFila({
             </span>
           </span>
         ) : (
-          <span>
-            {porHora
-              ? `Precio por hora × ${cantidad}`
-              : esGuarderia
-                ? "Precio"
-                : `Precio por noche × ${noches}`}
-            :{" "}
-            <span className="font-semibold text-n-900">
-              ${fila.precioUnitario.toFixed(2)}
-              {(porHora || !esGuarderia) && ` = ${(fila.precioUnitario * cantidad).toFixed(2)}`}
-            </span>
+          <span data-precio-estancia>
+            Precio: <span className="font-semibold text-n-900">{(cuenta && textoPrecioEstancia(cuenta)) ?? "—"}</span>
           </span>
         )}
       </div>
@@ -330,7 +325,8 @@ export function EstanciaFila({
           estanciaId={fila.id}
           cargosIniciales={cargosIniciales}
           serviciosCargo={estado === "cancelada" || estado === "no_llego" ? [] : serviciosCargo}
-          precioBase={fila.precioUnitario * cantidad}
+          cuenta={cuenta}
+          eraSiCancelada={cancelada ? fila.precioUnitario * (porHora || !esGuarderia ? cantidad : 1) : undefined}
           distanciaClienteKm={distanciaClienteKm}
           cancelada={cancelada}
           cuentaCobrado={cuentaCobrado}
