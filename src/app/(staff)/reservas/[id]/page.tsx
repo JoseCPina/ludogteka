@@ -18,6 +18,7 @@ import { nombresDePersonal } from "@/lib/personal/nombres";
 import { describirEstancia, formatearFecha, formatearHoraNegocio } from "@/lib/formato";
 import { unirNombres } from "@/lib/texto/frases";
 import { diasEntre, hora12 } from "@/lib/web-negocio/horario";
+import { cuentasPorEstancia } from "@/lib/cuentas/cuenta-estancia";
 
 const fechaLarga = (iso: string) => new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${iso}T12:00:00Z`));
 
@@ -153,7 +154,11 @@ export default async function DetalleReservaPage({
   const cupoDia = (Array.isArray(cupoCrudo) ? cupoCrudo[0] : cupoCrudo) as { hora_apertura?: string | null; hora_cierre?: string | null } | null;
   const mascotasVivas = [...new Set(filas.filter((f) => viva && f.categoria === viva.categoria && !["cancelada", "no_llego"].includes(f.estado)).map((f) => f.perroNombre))];
 
-  const { data: totalesCrudo } = await supabase.rpc("cuenta_totales_reserva", { p_reserva_id: id });
+  // QA R50 (N136): el total de la cuenta (encabezado) y el de cada estancia (su bloque) salen de las mismas líneas de la base.
+  const [{ data: totalesCrudo }, { cuentas: cuentaDeEstancia }] = await Promise.all([
+    supabase.rpc("cuenta_totales_reserva", { p_reserva_id: id }),
+    cuentasPorEstancia(supabase, id),
+  ]);
   const totalesFila = Array.isArray(totalesCrudo) ? totalesCrudo[0] : totalesCrudo;
   const saldo = Number(totalesFila?.saldo ?? 0);
   const totalCuenta = Number(totalesFila?.total_cuenta ?? 0);
@@ -265,6 +270,7 @@ export default async function DetalleReservaPage({
             <EstanciaFila
               key={f.id}
               fila={f}
+              cuenta={cuentaDeEstancia.get(f.id) ?? null}
               cargosIniciales={cargosPorEstancia.get(f.id) ?? []}
               serviciosCargo={serviciosCargoLista}
               distanciaClienteKm={cliente?.distancia_base_km ?? null}

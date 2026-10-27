@@ -697,7 +697,7 @@ Cambiar la matriz solo vale para las citas nuevas.
 
 ## Falta el tamaño o el pelaje
 
-El aviso dice «Para calcular el precio falta el pelaje de …». Escógelo ahí mismo (**Tamaño** o **Pelaje**) y aprieta **Guardar en su expediente y calcular**: se guarda en el perro y el precio sale al instante.
+El aviso dice «Falta la talla de …: sin ella no se puede calcular el precio.» (o «Falta el pelaje de …», o los dos). Escógelo ahí mismo (**Talla** o **Pelaje**) y aprieta **Guardar en su expediente y calcular**: se guarda en el perro y el precio sale al instante.
 
 ## «Esta combinación no tiene precio»
 

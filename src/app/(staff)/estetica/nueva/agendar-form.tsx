@@ -16,7 +16,8 @@ import { hoyNegocio, horaLocalParaInput, instanteDeHoraLocal, formatearFecha, ho
 import { SelectorRaza, type RazaOpcion } from "@/components/selector-raza";
 import { tallaYPelajeAlElegirRaza } from "@/lib/perros/talla-sugerida";
 import { crearPerritoEstetica } from "../perritos-actions";
-import { completarTallaPelajeDelPerro, cotizarCitaEstetica, crearCita, estilistasAusentesEnTramo, type CotizacionCita } from "../agenda-actions";
+import { cotizarCitaEstetica, crearCita, estilistasAusentesEnTramo, type CotizacionCita } from "../agenda-actions";
+import { FaltaDatoDePrecio } from "@/components/servicios/falta-dato-precio";
 import { conTope, mensajeDeFallo } from "@/lib/ui/espera";
 import { asignarGrupoDePropuesta, asignarGrupoDeRaza } from "../../perros/razas/grupos-actions";
 import { useZonaNegocio } from "@/components/zona-negocio";
@@ -145,12 +146,9 @@ export function AgendarForm({
   const [recargo, setRecargo] = useState("");
   const [motivoRecargo, setMotivoRecargo] = useState("");
   const asignando = useEspera();
-  const completando = useEspera();
   const enviando = useEspera();
   const [cotizacion, setCotizacion] = useState<{ clave: string; valor: CotizacionCita } | null>(null);
   const [version, setVersion] = useState(0);
-  const [tamanoFalta, setTamanoFalta] = useState("");
-  const [pelajeFalta, setPelajeFalta] = useState("");
   // Lo que se acaba de guardar en el expediente (hasta que la página se refresca).
   const [pelajeLocal, setPelajeLocal] = useState<Record<string, { clave: string; etiqueta: string }>>({});
   const [error, setError] = useState<string | null>(null);
@@ -238,29 +236,15 @@ export function AgendarForm({
     router.refresh();
   }
 
-  async function completarDatos() {
-    if (!perroId || !cot || cot.error !== null || cot.estado !== "faltan_datos") return;
-    const quiereTamano = cot.faltan?.includes("tamano");
-    const quierePelaje = cot.faltan?.includes("pelaje");
-    if ((quiereTamano && !tamanoFalta) || (quierePelaje && !pelajeFalta)) {
-      setError(`Elige ${quiereTamano && quierePelaje ? "el tamaño y el pelaje" : quiereTamano ? "el tamaño" : "el pelaje"} de ${perroElegido?.nombre ?? "el perro"}.`);
-      return;
-    }
-    setError(null);
-    const res = await completando.ejecutar(() => completarTallaPelajeDelPerro(perroId, quiereTamano ? tamanoFalta : null, quierePelaje ? pelajeFalta : null));
-    if (res.error) {
-      setError(res.error);
-      return;
-    }
-    if (quierePelaje) {
-      const pel = pelajes.find((x) => x.id === pelajeFalta);
-      if (pel) setPelajeLocal((prev) => ({ ...prev, [perroId]: { clave: pel.clave, etiqueta: pel.etiqueta } }));
-    }
-    setTamanoFalta("");
-    setPelajeFalta("");
+  // QA R50 (N133): lo que faltaba para el precio ya se guardó en el expediente (FaltaDatoDePrecio): se vuelve a cotizar.
+  function datosCompletados(g: { tamanoId: string | null; pelajeId: string | null }) {
+    if (!perroId) return;
+    const pel = g.pelajeId ? pelajes.find((x) => x.id === g.pelajeId) : null;
+    if (pel) setPelajeLocal((prev) => ({ ...prev, [perroId]: { clave: pel.clave, etiqueta: pel.etiqueta } }));
     setVersion((v) => v + 1);
     router.refresh();
   }
+
 
   // N30: un mismo perro con otra cita ese día pide confirmar; y la confirmación de una cita agendada se lleva a la vista.
   const [duplicada, setDuplicada] = useState<string | null>(null);
@@ -378,8 +362,6 @@ export function AgendarForm({
   // UN solo aviso, el que corresponde: cuánto va a costar, o lo único que falta
   // para saberlo, con la salida ahí mismo (nunca un callejón sin salida).
   const nombrePerro = perroElegido?.nombre ?? "el perro";
-  const faltanTamano = cot && cot.error === null && cot.estado === "faltan_datos" && cot.faltan?.includes("tamano");
-  const faltanPelaje = cot && cot.error === null && cot.estado === "faltan_datos" && cot.faltan?.includes("pelaje");
   let avisoPrecio: React.ReactNode = null;
   if (perroId && servicioActual) {
     if (!cot) {
@@ -426,35 +408,16 @@ export function AgendarForm({
       );
     } else if (cot.estado === "faltan_datos") {
       avisoPrecio = (
-        <div data-aviso-precio="faltan-datos" className="flex flex-col gap-3 rounded-lg border-l-4 border-ambar bg-ambar-suave p-4">
-          <p className="font-bold text-n-900">
-            Para calcular el precio falta {faltanTamano && faltanPelaje ? "el tamaño y el pelaje" : faltanTamano ? "el tamaño" : "el pelaje"} de {nombrePerro}
-          </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {faltanTamano && (
-              <Select label="Tamaño" value={tamanoFalta} onChange={(e) => setTamanoFalta(e.target.value)}>
-                <option value="">Elige el tamaño</option>
-                {tamanos.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.etiqueta}
-                  </option>
-                ))}
-              </Select>
-            )}
-            {faltanPelaje && (
-              <Select label="Pelaje" value={pelajeFalta} onChange={(e) => setPelajeFalta(e.target.value)}>
-                <option value="">Elige el pelaje</option>
-                {pelajes.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.etiqueta}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </div>
-          <Button type="button" className="self-start" cargando={completando.cargando} onClick={completarDatos}>
-            Guardar en su expediente y calcular
-          </Button>
+        <div data-aviso-precio="faltan-datos">
+          <FaltaDatoDePrecio
+            key={perroId}
+            perroId={perroId}
+            perroNombre={nombrePerro}
+            faltan={(cot.faltan ?? []).filter((x): x is "tamano" | "pelaje" => x === "tamano" || x === "pelaje")}
+            tamanos={tamanos}
+            pelajes={pelajes}
+            onGuardado={datosCompletados}
+          />
         </div>
       );
     } else if (cot.estado === "pelaje_no_ofrecido") {
@@ -644,7 +607,7 @@ export function AgendarForm({
         </div>
       ) : (
         <>
-          <Select label="Perro" value={perroId} onChange={(e) => { setPerroId(e.target.value); setEstanciaId(""); setGrupoElegido(""); setExcepcion(false); setMotivoExcepcion(""); setTamanoFalta(""); setPelajeFalta(""); setTarifaModo("auto"); setMotivoTarifa(""); }}>
+          <Select label="Perro" value={perroId} onChange={(e) => { setPerroId(e.target.value); setEstanciaId(""); setGrupoElegido(""); setExcepcion(false); setMotivoExcepcion(""); setTarifaModo("auto"); setMotivoTarifa(""); }}>
             <option value="">Elige un perro</option>
             {perrosDelCliente.map((p) => (
               <option key={p.id} value={p.id}>

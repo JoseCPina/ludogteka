@@ -11,6 +11,7 @@ import { ConvertirHotel, type SugerenciaHotel } from "./convertir-hotel";
 import { SeccionServiciosExtra } from "@/components/extras/seccion-servicios-extra";
 import { CargosSeccion, type Cargo, type ServicioCargo } from "../../../cargos-seccion";
 import { zonaActual } from "@/lib/negocio/actual";
+import { cuentasPorEstancia } from "@/lib/cuentas/cuenta-estancia";
 
 export default async function CheckoutEstanciaPage({
   params,
@@ -47,6 +48,7 @@ export default async function CheckoutEstanciaPage({
     { data: hoyData },
     { data: salidaAnticipada },
     { data: totalesCuenta },
+    { cuentas },
   ] = await Promise.all([
     supabase
       .from("perro_alertas")
@@ -83,7 +85,10 @@ export default async function CheckoutEstanciaPage({
     // N132: si sale hoy antes de su salida prevista, qué pasa con la cuenta (se dice antes de confirmar).
     supabase.rpc("salida_anticipada_cotizar", { p_estancia_id: estanciaId }),
     supabase.rpc("cuenta_totales_reserva", { p_reserva_id: estancia.reserva_id }),
+    // QA R50 (N136): lo que cuesta esta estancia, de la base (con sus cargos, extras y correcciones).
+    cuentasPorEstancia(supabase, estancia.reserva_id),
   ]);
+  const cuentaEstancia = cuentas.get(estanciaId) ?? null;
   const saldoCuenta = Number((Array.isArray(totalesCuenta) ? totalesCuenta[0] : totalesCuenta)?.saldo ?? 0);
   const avisoSalida = textoSalidaAnticipada((salidaAnticipada ?? null) as CotizacionSalida | null, { salio: estancia.estado === "finalizada" });
 
@@ -245,7 +250,7 @@ export default async function CheckoutEstanciaPage({
           estanciaId={estanciaId}
           cargosIniciales={cargos}
           serviciosCargo={puedeCheckout ? serviciosCargoLista : []}
-          precioBase={estancia.precio_unitario * cantidad}
+          cuenta={cuentaEstancia}
           distanciaClienteKm={distanciaClienteKm}
         />
       </div>

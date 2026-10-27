@@ -19,6 +19,9 @@ import { SelectorDias } from "../selector-dias";
 import { crearSerie, type ResultadoFecha } from "../../series-actions";
 import { paseParaFecha, type PaqueteDePerro } from "@/lib/bonos/pase-para-fecha";
 import { ElegirPase } from "@/components/bonos/elegir-pase";
+import { PrecioDeLinea } from "@/components/servicios/falta-dato-precio";
+import { lineaConPrecio, useCotizacionLineas } from "@/hooks/use-cotizacion-lineas";
+import { sumarDiasFecha } from "@/lib/formato";
 
 type Perro = { id: string; cliente_id: string; nombre: string };
 type Servicio = ServicioOfrecible;
@@ -62,6 +65,11 @@ export function NuevaSerieForm({
   const perrosDelCliente = useMemo(() => perros.filter((p) => p.cliente_id === clienteId), [perros, clienteId]);
   const seriesDelPerro = seriesActivas.filter((s) => s.perroId === perroId);
   const servicioElegido = servicios.find((s) => s.id === servicioId) ?? null;
+  // QA R50 (N133): cada día de la serie es una estancia de un día; su precio (o la talla que falta) se sabe antes de crearla.
+  const pedido = { perroId, servicioId, entrada: fechaInicio, salida: fechaInicio ? sumarDiasFecha(fechaInicio, 1) : null, horas: null };
+  const cotizaciones = useCotizacionLineas(perroId && servicioId ? [pedido] : []);
+  const cotizacion = cotizaciones.de(pedido);
+  const perroNombre = perros.find((p) => p.id === perroId)?.nombre ?? "el perro";
 
   function alternarDia(dia: number) {
     setDiasSemana((prev) => (prev.includes(dia) ? prev.filter((d) => d !== dia) : [...prev, dia].sort()));
@@ -189,6 +197,7 @@ export function NuevaSerieForm({
               <Select label="Servicio" value={servicioId} onChange={(e) => setServicioId(e.target.value)}>
                 <OpcionesServicio servicios={servicios} />
               </Select>
+              {servicioId && <PrecioDeLinea perroId={perroId} perroNombre={perroNombre} resultado={cotizacion} onGuardado={() => cotizaciones.recalcular(perroId)} />}
 
               <SelectorDias
                 dias={diasSemana}
@@ -237,7 +246,7 @@ export function NuevaSerieForm({
 
               <Button
                 type="button"
-                disabled={diasSemana.length === 0 || !servicioId || enviando.cargando}
+                disabled={diasSemana.length === 0 || !servicioId || !lineaConPrecio(cotizacion) || enviando.cargando}
                 onClick={enviar}
                 className="self-start"
               >

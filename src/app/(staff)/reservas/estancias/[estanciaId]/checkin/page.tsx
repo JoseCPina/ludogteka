@@ -17,6 +17,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { SeccionServiciosExtra } from "@/components/extras/seccion-servicios-extra";
+import { cuentasPorEstancia } from "@/lib/cuentas/cuenta-estancia";
 
 export default async function CheckinEstanciaPage({
   params,
@@ -31,7 +32,7 @@ export default async function CheckinEstanciaPage({
   const { data: estancia, error } = await supabase
     .from("estancias")
     .select(
-      "id, perro_id, servicio_id, fecha_entrada, fecha_salida, estado, precio_unitario, entregado_por_nombre, entregado_por_telefono, estado_llegada, foto_llegada_path, hora_entrada_real, pertenencias, perros(nombre, cliente_id, contacto_emergencia_nombre, contacto_emergencia_telefono, clientes(nombre, telefono)), servicios(nombre, categoria, unidad)"
+      "id, reserva_id, perro_id, servicio_id, fecha_entrada, fecha_salida, estado, precio_unitario, entregado_por_nombre, entregado_por_telefono, estado_llegada, foto_llegada_path, hora_entrada_real, pertenencias, perros(nombre, cliente_id, contacto_emergencia_nombre, contacto_emergencia_telefono, clientes(nombre, telefono)), servicios(nombre, categoria, unidad)"
     )
     .eq("id", estanciaId)
     .single();
@@ -123,6 +124,8 @@ export default async function CheckinEstanciaPage({
         bono: bono ?? undefined,
       };
     } else {
+      // QA R50 (N136): lo que paga el día suelto es la línea de esta estancia en la cuenta de la base.
+      const precioDia = (await cuentasPorEstancia(supabase, estancia.reserva_id as string)).cuentas.get(estanciaId)?.base?.total ?? 0;
       const { data: disponibles } = await supabase
         .from("bonos_clientes_estado")
         .select(columnasBono)
@@ -140,10 +143,10 @@ export default async function CheckinEstanciaPage({
         ? {
             tipo: "disponible",
             descripcion: `${bono.servicio_nombre}: ${describirBono(bono)}`,
-            precioDia: Number(estancia.precio_unitario) * dias,
+            precioDia,
             bono,
           }
-        : { tipo: "paga", precioDia: Number(estancia.precio_unitario) * dias };
+        : { tipo: "paga", precioDia };
     }
   }
   // Esta pantalla es de una estancia concreta y se llega a ella desde

@@ -80,7 +80,7 @@ try {
   comprobar(/(Sale|Salió) \d+ noches? antes/.test(d1) && /Cobrar la cuenta|Ver cobros/.test(d1), "al confirmar lo repite junto a «Cobrar la cuenta»");
   const otra = (await api.rpc("salida_anticipada_aplicar", { p_estancia_id: e1.id })).data;
   const { count } = await SB.from("cuenta_ajustes_precio").select("id", { count: "exact", head: true }).eq("linea_id", e1.id).is("deleted_at", null);
-  comprobar(otra?.aplicada === false && count === 1, "aplicarlo otra vez no duplica el ajuste");
+  comprobar(otra?.aplicada === false && count === 1, `aplicarlo otra vez no duplica el ajuste (${JSON.stringify(otra)}, ${count})`);
 
   seccion("2. Con la política «Cobrar la estancia completa aunque salga antes»");
   comprobar(await politica(true), "Configuración → Hotel guarda «Cobrar la estancia completa»");

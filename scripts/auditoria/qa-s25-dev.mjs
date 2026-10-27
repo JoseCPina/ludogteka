@@ -116,9 +116,9 @@ try {
   const texto = (await des.innerText()).replace(/\s+/g, " ");
   const era = `$${base.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`;
   comprobar(/Base: \$0\.00/.test(texto) && texto.includes(`no se cobra; era ${era}`), `Base $0.00 (no se cobra; era ${era}) — «${texto}»`);
-  comprobar(/Total: \$0\.00/.test(texto), "Total $0.00");
+  comprobar(/Total de la estancia: \$0\.00/.test(texto), "Total de la estancia $0.00");
   comprobar(/Cobrado en la cuenta: \$100\.00/.test(texto) && /Devuelto: \$100\.00/.test(texto), "con lo cobrado y lo devuelto");
-  comprobar(!/Total: \$\d[\d,]*\.\d\d/.test(texto.replace("Total: $0.00", "")), "ya no dice el total con la base");
+  comprobar(!/Total[^:$]*: \$\d[\d,]*\.\d\d/.test(texto.replace("Total de la estancia: $0.00", "")), "ya no dice el total con la base");
 
   // ─────────────────────────────────────────────────────────────── 5 (reserva)
   console.log("── 5. El motivo se guarda completo (sin evento de input, con Enter y con el botón)");
