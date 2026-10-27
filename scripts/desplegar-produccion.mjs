@@ -31,7 +31,10 @@
 //            (QA S39, 27 de octubre de 2026) el despliegue se cortó por memoria en ese paso con el código ya fusionado
 //            y los videos sin marcar. Sin la bandera (`node scripts/desplegar-produccion.mjs --aplicar`) corre adentro,
 //            como antes.
-// --no-lanzar-videos  con --sin-videos, deja la lista y el comando pero no lanza el proceso (memoria corta).
+// --no-lanzar-videos  con --sin-videos, no compila ni abre navegador: sincroniza el catálogo y MARCA directo
+//            «por actualizar» la lista que calculó (marcar.mjs), sin comparar lo que se ve. Lo pone `npm run desplegar`
+//            mientras la grabación de videos siga en pausa (27 de octubre de 2026, pedido del dueño): la computadora
+//            no tiene memoria para compilar y comparar. Para volver a comparar, quitarlo de package.json.
 //
 // La cadena de conexión NUNCA va en el repo ni en .env.local (ver
 // CLAUDE.md, sección Entornos): se lee de C:/proyectos/.ludogteka-prod-db,
@@ -898,9 +901,19 @@ if (SIN_VIDEOS) {
 /** Lanza el paso de videos desacoplado (sobrevive a este proceso) y no lo espera. */
 function lanzarVideosAparte() {
   if (!videosAparte) return;
-  // --no-lanzar-videos: la computadora anda corta de memoria; queda la lista y el comando para correrlo después.
+  // --no-lanzar-videos: sin compilar ni abrir navegador, se marca directo la lista que se calculó antes de fusionar.
   if (args.has("--no-lanzar-videos")) {
-    console.log(`\n   Videos: NO se lanzaron (--no-lanzar-videos). Córrelo cuando haya memoria: npm run videos:verificar -- --archivo ${videosAparte.archivo} --prod`);
+    const s = spawnSync(process.execPath, ["scripts/tutoriales/sincronizar.mjs", "--prod"], { encoding: "utf8" });
+    if (s.status !== 0) console.log("\n   Videos: no se pudo sincronizar el catálogo. Córrelo: node scripts/tutoriales/sincronizar.mjs --prod");
+    const lista = JSON.parse(readFileSync(videosAparte.archivo, "utf8"));
+    if (!lista.length) {
+      console.log("\n   Videos: ninguno que marcar.");
+    } else {
+      const m = spawnSync(process.execPath, ["scripts/tutoriales/marcar.mjs", "--archivo", videosAparte.archivo, "--prod"], { encoding: "utf8" });
+      console.log(`\n   Videos «por actualizar» (marcados directo, sin comparar): ${lista.map((v) => v.numero).join(", ")}`);
+      console.log(sinSecreto((m.stdout || "") + (m.stderr || "")).split("\n").filter((l) => /video|error/i.test(l)).map((l) => `   ${l}`).join("\n"));
+      if (m.status !== 0 || /error:/.test(m.stdout || "")) console.log(`   PENDIENTE: node scripts/tutoriales/marcar.mjs --archivo ${videosAparte.archivo} --prod`);
+    }
     videosAparte = null;
     return;
   }
