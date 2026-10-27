@@ -11,6 +11,8 @@ export type CampoImportador = {
   grupo: GrupoCampo;
   /** Solo se pide con Veterinaria prendida (y el permiso de ficha clínica). */
   clinico?: boolean;
+  /** Solo se pide con Veterinaria prendida (la especie: la escoge quien da de alta, sin el permiso de ficha clínica). */
+  conVeterinaria?: boolean;
   obligatorio?: boolean;
   /** Encabezados que lo identifican (se comparan sin acentos ni signos). */
   sinonimos: string[];
@@ -50,9 +52,9 @@ export const CAMPOS_IMPORTADOR: CampoImportador[] = [
     ayuda: "Si una fila no lo trae, solo se importa el dueño.", ejemplo: "Rocky",
   },
   {
-    clave: "m_especie", etiqueta: "Especie", grupo: "mascota", clinico: true,
+    clave: "m_especie", etiqueta: "Especie", grupo: "mascota", conVeterinaria: true,
     sinonimos: ["especie", "tipo animal", "tipo de animal"],
-    ayuda: "Perro, gato u otra. Vacío = perro.", ejemplo: "Perro",
+    ayuda: "Perro, gato u otra. Vacío = perro. Un gato u otra especie no pide raza de perro, tamaño ni pelaje.", ejemplo: "Perro",
   },
   {
     clave: "m_raza", etiqueta: "Raza", grupo: "mascota",
@@ -108,8 +110,8 @@ export const CAMPOS_IMPORTADOR: CampoImportador[] = [
 
 export type ClaveCampo = (typeof CAMPOS_IMPORTADOR)[number]["clave"];
 
-export function camposDisponibles(conClinicos: boolean): CampoImportador[] {
-  return CAMPOS_IMPORTADOR.filter((c) => conClinicos || !c.clinico);
+export function camposDisponibles(conClinicos: boolean, conVet: boolean = conClinicos): CampoImportador[] {
+  return CAMPOS_IMPORTADOR.filter((c) => (conClinicos || !c.clinico) && (conVet || !c.conVeterinaria));
 }
 
 export function campoPorClave(clave: string): CampoImportador | undefined {
@@ -137,8 +139,8 @@ function palabras(texto: string): string[] {
  * COMPLETO dentro de su encabezado (el más largo gana; igual al encabezado, mejor).
  * Un campo no se asigna a dos columnas: gana la que lo pide con más fuerza.
  */
-export function sugerirMapeo(encabezados: string[], conClinicos: boolean): (string | null)[] {
-  const campos = camposDisponibles(conClinicos);
+export function sugerirMapeo(encabezados: string[], conClinicos: boolean, conVet: boolean = conClinicos): (string | null)[] {
+  const campos = camposDisponibles(conClinicos, conVet);
   const pares: { col: number; clave: string; puntos: number }[] = [];
   encabezados.forEach((enc, col) => {
     const h = palabras(enc);

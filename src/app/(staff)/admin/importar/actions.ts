@@ -37,13 +37,14 @@ export type Progreso = {
 
 type Fallo = { error: string };
 
-async function contexto(): Promise<{ ok: false; error: string } | { ok: true; conClinicos: boolean }> {
+async function contexto(): Promise<{ ok: false; error: string } | { ok: true; conClinicos: boolean; conVet: boolean }> {
   const sesion = await obtenerSesionConRol();
   if (!sesion || !tienePermiso(sesion, "importar_datos")) {
     return { ok: false, error: "Necesitas el permiso «Importar clientes y mascotas»." };
   }
-  const conClinicos = usaVeterinaria(sesion.modulos) && tienePermiso(sesion, "editar_ficha_clinica");
-  return { ok: true, conClinicos };
+  const conVet = usaVeterinaria(sesion.modulos);
+  const conClinicos = conVet && tienePermiso(sesion, "editar_ficha_clinica");
+  return { ok: true, conClinicos, conVet };
 }
 
 function mensaje(e: { message?: string; code?: string } | null): string {
@@ -78,7 +79,7 @@ export async function revisarFilas(
   if (!ctx.ok) return { error: ctx.error };
   if (filas.length === 0 || filas.length > 1000) return { error: "La vista previa llega en bloques de hasta 1,000 filas." };
 
-  const validadas = filas.map((f) => ({ n: f.n, ...validarFila(f.valores, ctx.conClinicos) }));
+  const validadas = filas.map((f) => ({ n: f.n, ...validarFila(f.valores, ctx.conClinicos, ctx.conVet) }));
   const paraCruzar = validadas
     .filter((v) => v.datos)
     .map((v) => ({
@@ -157,7 +158,7 @@ export async function agregarFilas(
   if (!ctx.ok) return { error: ctx.error };
   if (filas.length === 0 || filas.length > 1000) return { error: "Las filas llegan en bloques de hasta 1,000." };
   const paquete = filas.map((f) => {
-    const v = validarFila(f.valores, ctx.conClinicos);
+    const v = validarFila(f.valores, ctx.conClinicos, ctx.conVet);
     return {
       n: f.n,
       datos: v.datos ?? f.valores,

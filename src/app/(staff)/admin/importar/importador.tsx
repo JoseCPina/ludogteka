@@ -36,8 +36,8 @@ const PASOS: { clave: Paso; texto: string }[] = [
   { clave: "importando", texto: "4 · Importar" },
 ];
 
-export function Importador({ conClinicos }: { conClinicos: boolean }) {
-  const campos = useMemo(() => camposDisponibles(conClinicos), [conClinicos]);
+export function Importador({ conClinicos, conVet }: { conClinicos: boolean; conVet: boolean }) {
+  const campos = useMemo(() => camposDisponibles(conClinicos, conVet), [conClinicos, conVet]);
   const [paso, setPaso] = useState<Paso>("archivo");
   const [modo, setModo] = useState<Modo>("omitir");
   const [tabla, setTabla] = useState<TablaArchivo | null>(null);
@@ -58,7 +58,7 @@ export function Importador({ conClinicos }: { conClinicos: boolean }) {
   const importando = useEspera({ tope: 60 * 60_000 });
 
   function descargarPlantilla() {
-    const blob = new Blob([plantillaCsv(conClinicos)], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob([plantillaCsv(conClinicos, conVet)], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -79,7 +79,7 @@ export function Importador({ conClinicos }: { conClinicos: boolean }) {
     }
     setTabla(r.valor);
     setNombreArchivo(archivo.name);
-    setMapeo(sugerirMapeo(r.valor.encabezados, conClinicos));
+    setMapeo(sugerirMapeo(r.valor.encabezados, conClinicos, conVet));
     setPaso("columnas");
   }
 
@@ -316,7 +316,9 @@ export function Importador({ conClinicos }: { conClinicos: boolean }) {
           </div>
           <p className="text-sm text-n-700">
             La plantilla trae los encabezados que el sistema reconoce solo y dos filas de ejemplo.
-            {!conClinicos && " Los datos clínicos (especie, peso, alergias, microchip y folio) se piden cuando el módulo Veterinaria está prendido."}
+            {!conVet && " La especie y los datos clínicos (peso, alergias, microchip y folio) se piden cuando el módulo Veterinaria está prendido."}
+            {conVet && !conClinicos && " Los datos clínicos (peso, alergias, microchip y folio) se piden con el permiso «Editar ficha clínica»."}
+            {conVet && " Un gato u otra especie no pide raza de perro, tamaño ni pelaje."}
           </p>
         </section>
       )}
@@ -417,7 +419,7 @@ export function Importador({ conClinicos }: { conClinicos: boolean }) {
               )}
               {resumen.razas.length > 0 && (
                 <Alert variante="info" titulo="Razas que no están en el catálogo">
-                  Quedarán como texto y podrás corregirlas después en Perros → Razas:{" "}
+                  Quedarán como texto y podrás corregirlas después en Razas sin catalogar:{" "}
                   {resumen.razas.slice(0, 12).map((r) => `${r.texto} (${r.cuenta})`).join(", ")}
                   {resumen.razas.length > 12 ? ` y ${resumen.razas.length - 12} más` : ""}.
                 </Alert>
@@ -549,7 +551,7 @@ export function Importador({ conClinicos }: { conClinicos: boolean }) {
                 <Alert variante="info" titulo="Razas que quedaron como texto">
                   {progreso.razas_sin_catalogo.slice(0, 15).map((r) => `${r.texto} (${r.cuenta})`).join(", ")}
                   {progreso.razas_sin_catalogo.length > 15 ? ` y ${progreso.razas_sin_catalogo.length - 15} más` : ""}. Corrígelas en{" "}
-                  <Link className="font-semibold underline" href="/perros/razas">Perros → Razas</Link>.
+                  <Link className="font-semibold underline" href="/perros/razas">Razas sin catalogar</Link>.
                 </Alert>
               )}
               {progreso.errores > 0 && (

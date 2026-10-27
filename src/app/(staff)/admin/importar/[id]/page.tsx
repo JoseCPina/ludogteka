@@ -100,7 +100,7 @@ export default async function ImportacionPage({
           <p className="mt-1 text-n-800">
             {p.razas_sin_catalogo.map((r) => `${r.texto} (${r.cuenta})`).join(", ")}. Asígnalas al catálogo en{" "}
             <Link className="font-semibold underline" href="/perros/razas">
-              Perros → Razas
+              Razas sin catalogar
             </Link>
             .
           </p>

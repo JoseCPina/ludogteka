@@ -24,6 +24,13 @@
 // --revisar  no escribe nada: estado real de producción + qué
 //            migraciones se aplicarían. Es el paso obligatorio previo.
 // --aplicar  hace lo mismo y luego migra, verifica y despliega.
+// --sin-videos  (lo pone `npm run desplegar`) el paso de videos tutoriales (compilar la app, levantarla y abrir
+//            Chromium para comparar contra los masters) NO corre dentro de este proceso: al terminar se lanza aparte,
+//            desacoplado, `npm run videos:verificar` (scripts/tutoriales/videos-despues-de-desplegar.mjs) con la
+//            lista de afectados calculada antes de fusionar, y su bitácora queda en la carpeta temporal. Dos veces
+//            (QA S39, 27 de octubre de 2026) el despliegue se cortó por memoria en ese paso con el código ya fusionado
+//            y los videos sin marcar. Sin la bandera (`node scripts/desplegar-produccion.mjs --aplicar`) corre adentro,
+//            como antes.
 //
 // La cadena de conexión NUNCA va en el repo ni en .env.local (ver
 // CLAUDE.md, sección Entornos): se lee de C:/proyectos/.ludogteka-prod-db,
@@ -46,8 +53,8 @@
 //     el PR y su "se puede fusionar" comprobados ANTES de migrar y la fusión
 //     fijada al commit que se revisó.
 
-import { spawnSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { mkdirSync, openSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import pg from "pg";
@@ -91,6 +98,7 @@ if (EN_NUBE && process.env.HTTPS_PROXY && process.env.NODE_USE_ENV_PROXY !== "1"
 const args = new Set(process.argv.slice(2));
 const APLICAR = args.has("--aplicar");
 const REVISAR = args.has("--revisar") || !APLICAR;
+const SIN_VIDEOS = args.has("--sin-videos");
 // Como el --include-all del CLI: aplica también pendientes más viejas que la última aplicada
 // (una migración de otro carril que entró a main después de otra más nueva).
 const INCLUIR_TODAS = args.has("--incluir-todas");
@@ -872,7 +880,38 @@ if (falloBuild) {
 // queda impreso como PENDIENTE con el comando exacto.
 titulo("Videos tutoriales en producción");
 const PENDIENTES = [];
-{
+// Con --sin-videos todo este paso corre en un proceso aparte que se lanza al final (lanzarVideosAparte).
+let videosAparte = null;
+if (SIN_VIDEOS) {
+  const sha = git("rev-parse", "--short", "HEAD");
+  const archivo = path.join(os.tmpdir(), `videos-despliegue-${sha}.json`);
+  const bitacoraVideos = path.join(os.tmpdir(), `videos-despliegue-${sha}.log`);
+  writeFileSync(archivo, JSON.stringify(VIDEOS_POR_ACTUALIZAR));
+  videosAparte = { archivo, bitacora: bitacoraVideos };
+  console.log(`   Van en un proceso aparte al terminar este despliegue: ${VIDEOS_POR_ACTUALIZAR.map((v) => v.numero).join(", ") || "solo el catálogo"}.`);
+  console.log(`   Lista: ${archivo}`);
+  console.log(`   Bitácora: ${bitacoraVideos}`);
+  console.log(`   A mano: npm run videos:verificar -- --archivo ${archivo} --prod`);
+  VIDEOS_POR_ACTUALIZAR = [];
+}
+/** Lanza el paso de videos desacoplado (sobrevive a este proceso) y no lo espera. */
+function lanzarVideosAparte() {
+  if (!videosAparte) return;
+  try {
+    const salida = openSync(videosAparte.bitacora, "a");
+    const hijo = spawn(process.execPath, ["scripts/tutoriales/videos-despues-de-desplegar.mjs", "--archivo", videosAparte.archivo, "--prod"], {
+      detached: true,
+      stdio: ["ignore", salida, salida],
+      windowsHide: true,
+    });
+    hijo.unref();
+    console.log(`\n   Videos: lanzado aparte (pid ${hijo.pid}); bitácora en ${videosAparte.bitacora}.`);
+  } catch (e) {
+    console.log(`\n   Videos: no se pudo lanzar aparte (${sinSecreto(e.message)}). Córrelo: npm run videos:verificar -- --archivo ${videosAparte.archivo} --prod`);
+  }
+  videosAparte = null;
+}
+if (!SIN_VIDEOS) {
   const s = spawnSync(process.execPath, ["scripts/tutoriales/sincronizar.mjs", "--prod"], { encoding: "utf8" });
   console.log(sinSecreto((s.stdout || "") + (s.stderr || "")).trimEnd().split("\n").map((l) => `   ${l}`).join("\n"));
   if (s.status !== 0) PENDIENTES.push("node scripts/tutoriales/sincronizar.mjs --prod");
@@ -917,6 +956,8 @@ if (PENDIENTES.length) {
   console.log(`\n   PENDIENTE (corre en este orden):`);
   for (const c of PENDIENTES) console.log(`     ${c}`);
 }
+// Lo último que hace este proceso, salga como salga: ya no hay build que esperar.
+lanzarVideosAparte();
 
 if (falloBuild && !listo) {
   console.log(`\n${"!".repeat(72)}`);

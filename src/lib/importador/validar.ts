@@ -130,10 +130,11 @@ export function dividirAlergias(v: string): string[] {
 
 /**
  * Valida y normaliza una fila. `conClinicos` = el negocio tiene Veterinaria
- * prendida y quien importa puede editar la ficha clínica: sin eso, especie,
- * peso, alergias, microchip y folio se ignoran aunque el archivo los traiga.
+ * prendida y quien importa puede editar la ficha clínica: sin eso, peso,
+ * alergias, microchip y folio se ignoran aunque el archivo los traiga.
+ * `conVet` = el negocio tiene Veterinaria: sin eso, la especie también.
  */
-export function validarFila(cruda: FilaCruda, conClinicos: boolean): ResultadoValidacion {
+export function validarFila(cruda: FilaCruda, conClinicos: boolean, conVet: boolean = conClinicos): ResultadoValidacion {
   const avisos: string[] = [];
   const nombre = limpio(cruda.c_nombre);
   if (!nombre) return { datos: null, error: "Falta el nombre del dueño.", avisos };
@@ -167,7 +168,8 @@ export function validarFila(cruda: FilaCruda, conClinicos: boolean): ResultadoVa
   }
   datos.m_nombre = mascota.slice(0, 80);
 
-  if (conClinicos) {
+  // La especie va con Veterinaria aunque no se tenga el permiso de ficha clínica (QA S39, N137: como en el alta).
+  if (conVet) {
     const esp = parsearEspecie(limpio(cruda.m_especie));
     datos.m_especie = esp.especie;
     if (esp.detalle) datos.m_especie_detalle = esp.detalle;
