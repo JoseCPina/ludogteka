@@ -31,6 +31,7 @@
 //            (QA S39, 27 de octubre de 2026) el despliegue se cortó por memoria en ese paso con el código ya fusionado
 //            y los videos sin marcar. Sin la bandera (`node scripts/desplegar-produccion.mjs --aplicar`) corre adentro,
 //            como antes.
+// --no-lanzar-videos  con --sin-videos, deja la lista y el comando pero no lanza el proceso (memoria corta).
 //
 // La cadena de conexión NUNCA va en el repo ni en .env.local (ver
 // CLAUDE.md, sección Entornos): se lee de C:/proyectos/.ludogteka-prod-db,
@@ -897,6 +898,12 @@ if (SIN_VIDEOS) {
 /** Lanza el paso de videos desacoplado (sobrevive a este proceso) y no lo espera. */
 function lanzarVideosAparte() {
   if (!videosAparte) return;
+  // --no-lanzar-videos: la computadora anda corta de memoria; queda la lista y el comando para correrlo después.
+  if (args.has("--no-lanzar-videos")) {
+    console.log(`\n   Videos: NO se lanzaron (--no-lanzar-videos). Córrelo cuando haya memoria: npm run videos:verificar -- --archivo ${videosAparte.archivo} --prod`);
+    videosAparte = null;
+    return;
+  }
   try {
     const salida = openSync(videosAparte.bitacora, "a");
     const hijo = spawn(process.execPath, ["scripts/tutoriales/videos-despues-de-desplegar.mjs", "--archivo", videosAparte.archivo, "--prod"], {
