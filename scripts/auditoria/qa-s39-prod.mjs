@@ -96,6 +96,9 @@ if (!SOLO || SOLO === "n137") {
   // Las vacunas sugeridas de su carnet.
   await p.goto(`${VET.base}/veterinaria/carnet/${gato.id}`);
   await p.waitForLoadState("networkidle").catch(() => {});
+  const abrirVacuna = p.getByRole("button", { name: /Registrar vacuna/ }).first();
+  if (await abrirVacuna.count()) await abrirVacuna.click().catch(() => {});
+  await p.locator("[data-vacunas-sugeridas]").first().waitFor({ timeout: 15000 }).catch(() => {});
   const sugeridas = (await p.locator("[data-vacunas-sugeridas]").first().getAttribute("data-vacunas-sugeridas").catch(() => null)) ?? "";
   ver(`${VET.base}/veterinaria/carnet/${gato.id} → vacunas sugeridas: ${sugeridas || "(ninguna)"}`);
   if (/Triple felina/.test(sugeridas) && /Rabia/.test(sugeridas) && /Leucemia felina/.test(sugeridas)) bien("el carnet sugiere triple felina, rabia y leucemia felina");
