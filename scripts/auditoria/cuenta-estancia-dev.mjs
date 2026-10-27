@@ -77,14 +77,15 @@ try {
   const totalBloque = await p.locator("[data-total-estancia]").first().getAttribute("data-total-estancia").catch(() => null);
   const lineaAjuste = limpio(await p.locator("[data-linea-estancia=ajuste]").first().innerText().catch(() => ""));
   const lineaCargo = cargoLibre ? limpio(await p.locator("[data-linea-estancia=cargo]").first().innerText().catch(() => "")) : "";
-  const bloque = limpio(await p.locator("[data-desglose-cuenta-estancia]").first().innerText().catch(() => ""));
+  // La tarjeta entera de la estancia (con o sin el desglose nuevo): ningún «Base/Total» con las noches reservadas.
+  const bloque = limpio(await p.locator("div.rounded-lg.border").filter({ hasText: nombre }).filter({ hasText: /Entrada:/ }).last().innerText().catch(() => ""));
   const porNoche = Math.round(((Number(base.total) + Number(ajuste.total)) / usadas) * 100) / 100;
   const nochesTxt = (n) => `${n} ${n === 1 ? "noche" : "noches"}`;
   comprobar(precio.startsWith(`Precio: ${nochesTxt(usadas)} × ${pesos(porNoche)}`), `el bloque dice las noches reales: «${precio}»`);
   comprobar(lineaAjuste.startsWith(`Ajuste por salida anticipada: ${pesos(ajuste.total)}`) && /Motivo: salida anticipada \(\d+ noches? no usadas?\)/.test(lineaAjuste), `la línea del ajuste con su motivo: «${lineaAjuste}»`);
   if (cargoLibre) comprobar(/\$85\.00/.test(lineaCargo), `el cargo de la estancia también es línea de la base: «${lineaCargo}»`);
   comprobar(totalBloque === totalBase.toFixed(2) && encabezado === pesos(totalBase), `total del bloque ${totalBloque} = encabezado ${encabezado} = base ${pesos(totalBase)}`);
-  comprobar(!/Base: \$/.test(bloque) && !bloque.includes(`Total: ${pesos(Number(base.total) + (cargoLibre ? 85 : 0))}`), "ningún «Base / Total» calculado en la pantalla con las noches reservadas");
+  comprobar(bloque.length > 0 && !/Base: \$/.test(bloque) && !/= \d+\.\d\d/.test(bloque.replace(/reservadas × \$[\d,.]+ = \$[\d,.]+/, "")), `ningún «Base / Total» calculado en la pantalla con las noches reservadas («${bloque.slice(0, 220)}»)`);
 
   seccion("3. La misma cifra en el check-out ya hecho, el calendario y Reportes");
   await p.goto(`${BASE}/reservas/estancias/${id}/checkout`, { waitUntil: "networkidle", timeout: 120000 });
