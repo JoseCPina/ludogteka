@@ -1,4 +1,6 @@
 import { ARTICULOS, NOMBRE_GRUPO, agrupar, textoPlano } from "@/lib/ayuda";
+import { articuloConPrecios } from "@/lib/ayuda/precios";
+import { preciosAyuda } from "@/lib/ayuda/precios-servidor";
 import { todosLosArticulos } from "@/lib/peludesk/blog";
 import { todosLosAterrizajes } from "@/lib/peludesk/aterrizajes";
 import { REVISADO_ALTERNATIVAS, todasLasAlternativas, todasLasGuias } from "@/lib/peludesk/guias";
@@ -80,7 +82,7 @@ export async function llmsTxt(): Promise<string> {
 }
 
 export async function llmsFull(): Promise<string> {
-  const l = await cabecera();
+  const [l, precios] = await Promise.all([cabecera(), preciosAyuda()]);
   l.push("## Veterinaria", "");
   for (const f of FUNCIONES_VET) l.push(`- ${f.titulo}: ${f.texto}`);
   l.push("", "### Preguntas frecuentes de Veterinaria", "");
@@ -112,7 +114,7 @@ export async function llmsFull(): Promise<string> {
   }
   l.push("## Centro de ayuda (texto completo)", "");
   for (const a of ARTICULOS) {
-    l.push(`### ${a.titulo}`, "", `URL: ${url(`/ayuda/${a.slug}`)} · Sección: ${NOMBRE_GRUPO[a.grupo]}`, "", a.resumen, "", textoPlano(a), "");
+    l.push(`### ${a.titulo}`, "", `URL: ${url(`/ayuda/${a.slug}`)} · Sección: ${NOMBRE_GRUPO[a.grupo]}`, "", a.resumen, "", textoPlano(articuloConPrecios(a, precios)), "");
   }
   return l.join("\n");
 }

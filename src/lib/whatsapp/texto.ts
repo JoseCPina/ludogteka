@@ -79,7 +79,7 @@ function sinAsteriscosSueltos(texto: string): string {
 const URL_EN_LINEA = /(https?:\/\/\S+)/;
 const ES_URL = /^https?:\/\/\S+$/;
 /**
- * Dos renglones de WhatsApp en el celular son ~80 caracteres («*$649 al
+ * Dos renglones de WhatsApp en el celular son ~80 caracteres («*$NNN al
  * mes + IVA*, y los primeros *15 días son gratis*, sin tarjeta.» son 76). Un
  * párrafo más largo se parte entre frases.
  */

@@ -1,6 +1,7 @@
 import { ARTICULOS } from "./index";
 import { NOMBRE_GRUPO } from "./tipos";
 import { videosDeArticulo } from "./videos";
+import { conPrecios, type PreciosAyuda } from "./precios";
 
 /**
  * La misma documentación del centro de ayuda, para el bot de WhatsApp
@@ -8,7 +9,7 @@ import { videosDeArticulo } from "./videos";
  * con esto y manda el link del artículo público (peludesk.mx/ayuda/…).
  * Va en un bloque aparte del system prompt, en caché.
  */
-export function documentacionParaWhatsApp(urlPlataforma: string, videos: { numero: string; slug: string }[] = []): string {
+export function documentacionParaWhatsApp(urlPlataforma: string, videos: { numero: string; slug: string }[] = [], precios: PreciosAyuda | null = null): string {
   // Los videos del artículo (src/lib/ayuda/videos.ts) que ya están publicados, el principal primero.
   const videoDe = (slug: string) => {
     const publicados = videosDeArticulo(slug)
@@ -23,7 +24,7 @@ export function documentacionParaWhatsApp(urlPlataforma: string, videos: { numer
       [
         `<articulo titulo="${a.titulo}" tema="${NOMBRE_GRUPO[a.grupo] ?? a.grupo}" link="${urlPlataforma}/ayuda/${a.slug}"${videoDe(a.slug)}>`,
         a.resumen,
-        a.cuerpo.trim(),
+        conPrecios(a.cuerpo.trim(), precios),
         "</articulo>",
       ].join("\n")
     ),

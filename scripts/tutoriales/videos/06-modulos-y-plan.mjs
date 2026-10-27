@@ -20,9 +20,9 @@ export default {
     },
     {
       titulo: "Tu plan",
-      dice: "PeluDesk tiene un solo plan: seiscientos cuarenta y nueve pesos al mes más IVA, sin costo inicial y con todos los módulos. Pruébalo quince días gratis, y prende o apaga lo que quieras sin pagar de más.",
+      dice: "PeluDesk tiene un solo plan, sin costo inicial y con todos los módulos: su precio al mes, más IVA, lo ves aquí mismo. Pruébalo quince días gratis, y prende o apaga lo que quieras sin pagar de más.",
       pasos: [["esperar", 3000]],
     },
   ],
-  resumen: ["Prende solo los módulos que usas; todos vienen en tu plan.", "Antes de apagar uno, la app te avisa qué quedaría pendiente.", "Apagar no borra datos.", "Un solo plan: $649 al mes más IVA, sin costo inicial."],
+  resumen: ["Prende solo los módulos que usas; todos vienen en tu plan.", "Antes de apagar uno, la app te avisa qué quedaría pendiente.", "Apagar no borra datos.", "Un solo plan, sin costo inicial: su precio está en Módulos y plan."],
 };

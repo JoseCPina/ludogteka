@@ -39,7 +39,8 @@ export function alternativa(slug: string): Alternativa | null {
   return { ...LEER("alternativas", slug), slug };
 }
 export const todasLasAlternativas = (): Alternativa[] => SLUGS_ALTERNATIVA.map((s) => alternativa(s)).filter((a): a is Alternativa => a !== null);
-export const FICHA_PELUDESK: { precio: string; idioma: string; cfdi: string; pagos: string } = LEER("alternativas", "_peludesk");
+// Sin precio: el de PeluDesk sale siempre de `planes` (planUnico()).
+export const FICHA_PELUDESK: { idioma: string; cfdi: string; pagos: string } = LEER("alternativas", "_peludesk");
 
 /** Fecha de la última revisión de las comparativas contra el sitio oficial de cada proveedor. */
 export const REVISADO_ALTERNATIVAS = "2026-10-17";

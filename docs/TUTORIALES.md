@@ -10,7 +10,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | --- | --- | --- | --- | --- | --- | --- |
 | 00 | Empieza aquí | PeluDesk: lo que vas a aprender en esta serie de videos | admin | 0.8 min | — | — |
 | 01 | Empieza aquí | Recorre PeluDesk por primera vez: menú, inicio y ayuda | admin | 2.5 min | — | — |
-| 02 | Empieza aquí | Tus primeros cinco pasos en PeluDesk | admin | 2.5 min | — | — |
+| 02 | Empieza aquí | Tus primeros pasos para operar en PeluDesk | admin | 2.5 min | — | — |
 | 03 | Empieza aquí | Cómo entrar a PeluDesk y cambiar tu contraseña | recepcion | 2.5 min | — | — |
 | 04 | Empieza aquí | El tablero del día: qué llega, qué sale y quién está adentro | recepcion | 2.5 min | — | — |
 | 05 | Empieza aquí | Qué hacer con «Necesita atención» | recepcion | 2.5 min | — | — |
@@ -113,7 +113,9 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/activar/[token]` | 15 |  |
 | `/adentro` | 31 |  |
 | `/admin` | 01, 07, 08 |  |
+| `/admin/configuracion` | 07 |  |
 | `/admin/facturacion` | 65 |  |
+| `/admin/hotel` | 30 |  |
 | `/admin/importar` | 66 |  |
 | `/admin/importar/[id]` | 67 |  |
 | `/admin/modulos` | 06 |  |
@@ -122,6 +124,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/admin/perfil` | 52 |  |
 | `/admin/permisos` | 09 |  |
 | `/admin/politicas` | 51 |  |
+| `/admin/recordatorios` | — | Pendiente de grabar (folio 100, recordatorios automáticos por WhatsApp): se graba con un negocio de prueba, el demo no manda mensajes. |
 | `/admin/reporte-guarderia` | 31 |  |
 | `/admin/tarifa-guarderia` | 64 |  |
 | `/alta/[token]` | 11 |  |
@@ -133,6 +136,10 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/ayuda/videos` | 53 |  |
 | `/ayuda/videos/[slug]` | 53 |  |
 | `/bienvenida` | 02 |  |
+| `/bienvenida/contrato` | 02 |  |
+| `/bienvenida/equipo` | 02 |  |
+| `/bienvenida/medico` | 02 |  |
+| `/bienvenida/requisitos` | 02 |  |
 | `/c/[token]` | 75 |  |
 | `/caja` | 33 |  |
 | `/caja/ajustes-servicio` | 55 |  |
@@ -206,6 +213,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/perros/razas` | 14 |  |
 | `/perros/razas/grupos` | 14 |  |
 | `/portal` | 15, 18 |  |
+| `/portal/cambiar-contrasena` | 03 |  |
 | `/portal/facturas` | 65 |  |
 | `/portal/perros/[id]` | 15 |  |
 | `/r/[token]` | 31 |  |
@@ -213,12 +221,14 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/recepcion/comprobantes` | 13 |  |
 | `/recepcion/contratos` | 17, 19 |  |
 | `/recepcion/saldos` | 05 |  |
+| `/recordatorios` | — | Pendiente de grabar (folio 100, recordatorios automáticos por WhatsApp): se graba con un negocio de prueba, el demo no manda mensajes. |
 | `/reportes` | 49 |  |
 | `/reportes/desglose` | 49 |  |
 | `/reservas` | 25 |  |
 | `/reservas/[id]` | 25 |  |
 | `/reservas/[id]/cobrar` | 30 |  |
 | `/reservas/calendario` | 94 |  |
+| `/reservas/estancias/[estanciaId]` | — | No es una pantalla: solo redirige al detalle de su reserva (/reservas/[id]), que se enseña en el video 25. Existe para que un enlace de estancia sin «/checkout» no dé 404 (QA S27). |
 | `/reservas/estancias/[estanciaId]/checkin` | 29 |  |
 | `/reservas/estancias/[estanciaId]/checkout` | 30 |  |
 | `/reservas/series/[id]` | 27 |  |
@@ -279,6 +289,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Estética | `/estetica` | 01, 21, 22, 23, 55 |
 | Servicios | `/servicios` | 20, 24 |
 | Clientes | `/clientes` | 10, 11 |
+| Recordatorios | `/recordatorios` | pendiente de grabar: folio 100 |
 | Vinculación | `/vinculacion` | 15 |
 | Caja | `/caja` | 32, 33, 34, 35, 36, 37, 38, 39, 43, 55, 57, 65 |
 | Contratos | `/contratos` | 16, 19 |
@@ -287,11 +298,14 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Empleados | `/empleados` | 44, 45, 46 |
 | Gastos | `/gastos` | 47, 48 |
 | Mi asistencia | `/mi-trabajo` | 44 |
-| Administración | `/admin` | 01, 06, 07, 08, 09, 31, 50, 51, 52, 64, 65, 66, 67 |
+| Administración | `/admin` | 01, 06, 07, 08, 09, 30, 31, 50, 51, 52, 64, 65, 66, 67 |
 | Permisos | `/admin/permisos` | 09 |
+| Configuración | `/admin/configuracion` | 07 |
 | Perfil y página web | `/admin/perfil` | 52 |
 | Políticas y reglas | `/admin/politicas` | 51 |
+| Recordatorios por WhatsApp | `/admin/recordatorios` | pendiente de grabar: folio 100 |
 | Reporte y fotos | `/admin/reporte-guarderia` | 31 |
+| Configuración de hotel | `/admin/hotel` | 30 |
 | Tarifa de guardería | `/admin/tarifa-guarderia` | 64 |
 | Módulos y plan | `/admin/modulos` | 06 |
 | Cobro con terminal | `/admin/pagos` | 50 |
@@ -370,6 +384,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 
 | Artículo | Videos |
 | --- | --- |
+| recordatorios-automaticos-por-whatsapp | — |
 | consumibles-compras-y-consumo | 40, 42 |
 | vender-producto-en-mostrador | 43 |
 | equipo-y-mantenimiento | 41 |
@@ -388,6 +403,8 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | perfil-y-pagina-web | 02, 52 |
 | pedir-ayuda | 01, 53 |
 | ausencias-y-vacaciones-de-empleados | 45 |
+| primeros-pasos-para-operar | — |
+| requisitos-para-hospedar | — |
 | cobrar-una-cuenta | 33, 94 |
 | cobrar-varios-servicios-juntos | 57 |
 | cobrar-con-terminal | 34, 59 |
@@ -432,6 +449,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | vender-day-pass-o-mensualidad | 39 |
 | ajustar-dias-usados-de-un-pase | 60 |
 | cotizar-y-cobrar-recoleccion | 54 |
+| alguien-mas-cambio-lo-que-editabas | — |
 | configurar-la-facturacion | 65 |
 | datos-fiscales-de-un-cliente | 65 |
 | facturar-un-cobro | 65 |
@@ -505,6 +523,8 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | hotel | 05, 29 |
 | por-confirmar | 05, 59 |
 | razas-sin-grupo | 05, 14 |
+| recordatorios-pausados | — |
+| recordatorios-respuestas | — |
 | reembolsos | 05, 38 |
 | saldos | 05 |
 | san | 05, 29 |
@@ -527,5 +547,10 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 - Pantalla `/negocio-no-encontrado`: Pantalla de error técnica (dominio sin negocio); no es una tarea del usuario.
 - Pantalla `/pagina-no-encontrada`: Pantalla de error técnica (404); no es una tarea del usuario.
 - Pantalla `/fac/[token]`: Enlace público de una factura para el cliente; se enseña solo como resultado en el video 65.
+- Pantalla `/admin/recordatorios`: Pendiente de grabar (folio 100, recordatorios automáticos por WhatsApp): se graba con un negocio de prueba, el demo no manda mensajes.
+- Pantalla `/recordatorios`: Pendiente de grabar (folio 100, recordatorios automáticos por WhatsApp): se graba con un negocio de prueba, el demo no manda mensajes.
+- Pantalla `/reservas/estancias/[estanciaId]`: No es una pantalla: solo redirige al detalle de su reserva (/reservas/[id]), que se enseña en el video 25. Existe para que un enlace de estancia sin «/checkout» no dé 404 (QA S27).
+- Aviso recordatorios-respuestas: Pendiente de grabar (folio 100): necesita la respuesta de un cliente real a un recordatorio.
+- Aviso recordatorios-pausados: Pendiente de grabar (folio 100): necesita un negocio que haya llegado a sus recordatorios gratis del mes.
 
 Fuera de la serie por diseño (no son del personal del negocio): la administración de la plataforma (`/plataforma`), el sitio público de peludesk.mx y el negocio de demostración.

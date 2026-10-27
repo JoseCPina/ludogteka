@@ -47,7 +47,7 @@ En la ficha de la cita y de la reserva ves cada recordatorio: **Recordatorio env
 
 ## Cuánto cuesta
 
-**30 recordatorios entregados gratis al mes** por negocio, también en la prueba. Después, cada mensaje entregado cuesta el precio que ves en [Módulos y plan](/admin/modulos) → **Recordatorios por WhatsApp**, más IVA, en la misma factura mensual de tu plan. Los que no se entregan no cuentan. Ahí mismo pones el **Tope mensual de adicionales** (por omisión $200 + IVA) o **Sin tope**. Al llegar al tope, o a los 30 gratis si todavía no contratas tu plan, los recordatorios se pausan hasta el mes que entra y te avisamos en **Necesita atención**.
+Cada negocio tiene **{{recordatorios_gratis}}**, también en la prueba. Después, cada mensaje entregado cuesta el precio que ves en [Módulos y plan](/admin/modulos) → **Recordatorios por WhatsApp**, más IVA, en la misma factura mensual de tu plan. Los que no se entregan no cuentan. Ahí mismo pones el **Tope mensual de adicionales** (por omisión $200 + IVA) o **Sin tope**. Al llegar al tope, o al acabarse los gratis si todavía no contratas tu plan, los recordatorios se pausan hasta el mes que entra y te avisamos en **Necesita atención**.
 
 ## Si prefieres mandarlos tú
 
@@ -489,7 +489,7 @@ Apagar no borra nada: si lo vuelves a prender, todo sigue ahí. Caja y clientes 
 
 ## Contratar
 
-Hay un solo plan, **PeluDesk**: $649 al mes + IVA ($752.84 con IVA), **sin costo inicial** y con **todos los módulos** (Veterinaria, Hotel y guardería, Estética y tu página web).
+Hay un solo plan, **PeluDesk**: {{plan}}, **sin costo inicial** y con **todos los módulos** (Veterinaria, Hotel y guardería, Estética y tu página web).
 
 1. Escoge **Mensual** o **Anual · 2 meses gratis**.
 2. Revisa el **Resumen** con el IVA.
@@ -518,7 +518,7 @@ Con cada pago, la factura te llega por correo en los días siguientes. El recibo
 
 ## Sucursales
 
-Cada sucursal es un negocio en PeluDesk: su propia caja, agenda, personal, página y subdominio. La primera paga el plan; **cada sucursal adicional cuesta $325 al mes + IVA** y se suma a la misma suscripción como «Sucursal adicional». La prueba gratis es solo para la primera.
+Cada sucursal es un negocio en PeluDesk: su propia caja, agenda, personal, página y subdominio. La primera paga el plan; **cada sucursal adicional cuesta {{sucursal}}** y se suma a la misma suscripción como «Sucursal adicional». La prueba gratis es solo para la primera.
 
 1. Desde tu primera sucursal, entra a [Módulos y plan](/admin/modulos) y baja a **Sucursales**.
 2. Escribe el **Nombre de la sucursal** y revisa el **Subdominio** (su dirección en internet).
@@ -540,13 +540,13 @@ Todo por WhatsApp, al +52 56 4916 0742: un asistente contesta las 24 horas y lo 
 
 ## Plan anual
 
-¿Cuánto cuesta el plan anual? **$6,490 + IVA al año** (diez mensualidades: dos meses gratis contra pagar mes a mes). Lo escoges con **Anual · 2 meses gratis** al contratar en [Módulos y plan](/admin/modulos). El cobro aparece como MENTEO.
+¿Cuánto cuesta el plan anual? **{{plan_anual}}** (diez mensualidades: dos meses gratis contra pagar mes a mes). Lo escoges con **Anual · 2 meses gratis** al contratar en [Módulos y plan](/admin/modulos). El cobro aparece como MENTEO.
 
 ## Recordatorios por WhatsApp
 
-Los **recordatorios automáticos** (cita, llegada, listo para recoger y vacuna) traen **30 entregados gratis al mes** por negocio, también en la prueba. Después, cada mensaje entregado cuesta el precio que ves en [Módulos y plan](/admin/modulos) → **Recordatorios por WhatsApp**, más IVA, y se cobra en la misma factura mensual de tu plan como «Recordatorios de WhatsApp adicionales». Los que no se entregan no cuentan.
+Los **recordatorios automáticos** (cita, llegada, listo para recoger y vacuna) traen **{{recordatorios_gratis}}** por negocio, también en la prueba. Después, cada mensaje entregado cuesta el precio que ves en [Módulos y plan](/admin/modulos) → **Recordatorios por WhatsApp**, más IVA, y se cobra en la misma factura mensual de tu plan como «Recordatorios de WhatsApp adicionales». Los que no se entregan no cuentan.
 
-En esa misma sección ves los **entregados del mes**, los **gratis que quedan**, los **adicionales** y su **costo estimado**, y pones el **Tope mensual de adicionales** (por omisión $200 + IVA; puedes subirlo o marcar **Sin tope**). Al llegar al tope, los recordatorios se pausan hasta el mes siguiente y te avisamos en **Necesita atención**. Sin tu plan contratado, al llegar a los 30 gratis se pausan hasta el mes siguiente.
+En esa misma sección ves los **entregados del mes**, los **gratis que quedan**, los **adicionales** y su **costo estimado**, y pones el **Tope mensual de adicionales** (por omisión $200 + IVA; puedes subirlo o marcar **Sin tope**). Al llegar al tope, los recordatorios se pausan hasta el mes siguiente y te avisamos en **Necesita atención**. Sin tu plan contratado, al acabarse los gratis se pausan hasta el mes siguiente.
 
 Los botones **Avisar por WhatsApp** (el mensaje ya escrito que mandas tú desde el teléfono de tu negocio) no cuestan. **No mandamos SMS**: los avisos van por WhatsApp. Cómo funcionan: [[articulo:recordatorios-automaticos-por-whatsapp]].
 

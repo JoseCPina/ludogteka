@@ -1,7 +1,7 @@
 import { pesos, SIN_COSTO_INICIAL, type PlanUnico } from "@/lib/peludesk/plan";
 
 /**
- * El precio del plan único: «$649» grande, «+ IVA» chico al lado y, debajo,
+ * El precio del plan único: el monto al mes grande, «+ IVA» chico al lado y, debajo,
  * «Sin costo inicial · Todos los módulos». Nunca una cifra escrita aquí: viene de planUnico().
  */
 export function PrecioPlan({

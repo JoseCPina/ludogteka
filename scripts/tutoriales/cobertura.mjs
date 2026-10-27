@@ -7,7 +7,7 @@
 // del menú, cada módulo, cada permiso, cada artículo de ayuda y cada aviso de
 // «Necesita atención» tiene que estar en algún video, o excluido con motivo.
 import fs from "node:fs";
-import { AREAS, VIDEOS, EXCLUIDOS } from "./catalogo.mjs";
+import { AREAS, VIDEOS, VIDEOS_PENDIENTES, EXCLUIDOS } from "./catalogo.mjs";
 import { VIDEOS_DE_ARTICULO, VIDEOS_SIN_ARTICULO, ARTICULOS_SIN_VIDEO } from "../../src/lib/ayuda/videos.ts";
 import { rutasDePantalla, menuDelPersonal, permisosCatalogo, modulosCatalogo, articulosDeAyuda, avisosNecesitaAtencion } from "./lib/fuentes.mjs";
 
@@ -21,14 +21,18 @@ const filaRutas = rutasDePantalla().map((r) => {
   if (!ids.length && !excl) huecos.push(`pantalla ${r}: sin video ni exclusión`);
   return { r, ids, excl };
 });
-// Rutas del catálogo que no existen (error de dedo).
-for (const v of VIDEOS) for (const r of v.rutas) if (!filaRutas.some((x) => x.r === r)) huecos.push(`video ${v.id}: la ruta ${r} no existe en la app`);
+// Rutas del catálogo que no existen (error de dedo), también las de los videos con guion sin grabar.
+for (const v of [...VIDEOS, ...VIDEOS_PENDIENTES]) for (const r of v.rutas) if (!filaRutas.some((x) => x.r === r)) huecos.push(`video ${v.id}: la ruta ${r} no existe en la app`);
 
-// 2. Menú
+// 2. Menú. Una entrada sin video grabado está cubierta si un video con guion listo (VIDEOS_PENDIENTES) la enseña y
+// su pantalla está en EXCLUIDOS.rutas con ese folio; en el mapa sale «pendiente de grabar: folio N».
+const ensena = (lista, href) => lista.filter((v) => v.rutas.some((r) => r === href || r.startsWith(href + "/"))).map((v) => v.id);
 const filaMenu = menuDelPersonal().map((m) => {
-  const ids = VIDEOS.filter((v) => v.rutas.some((r) => r === m.href || r.startsWith(m.href + "/")) || v.rutas.includes(m.href)).map((v) => v.id);
-  if (!ids.length) huecos.push(`menú «${m.etiqueta}» (${m.href}): sin video`);
-  return { ...m, ids };
+  const ids = ensena(VIDEOS, m.href);
+  const pendientes = ids.length ? [] : ensena(VIDEOS_PENDIENTES, m.href);
+  if (!ids.length && !pendientes.length) huecos.push(`menú «${m.etiqueta}» (${m.href}): sin video`);
+  if (pendientes.length && !EXCLUIDOS.rutas[m.href]) huecos.push(`menú «${m.etiqueta}» (${m.href}): solo en el folio pendiente ${pendientes.join(", ")}; pon su pantalla en EXCLUIDOS.rutas con el motivo`);
+  return { ...m, ids, pendientes };
 });
 
 // 3. Módulos
@@ -95,7 +99,7 @@ if (process.argv.includes("--escribir")) {
   md.push("", "## Pantallas → videos", "", "| Pantalla | Videos | Exclusión |", "| --- | --- | --- |");
   for (const f of filaRutas) md.push(`| \`${f.r}\` | ${ids(f.ids)} | ${f.excl ?? ""} |`);
   md.push("", "## Menú del personal → videos", "", "| Entrada | Ruta | Videos |", "| --- | --- | --- |");
-  for (const f of filaMenu) md.push(`| ${f.etiqueta} | \`${f.href}\` | ${ids(f.ids)} |`);
+  for (const f of filaMenu) md.push(`| ${f.etiqueta} | \`${f.href}\` | ${f.pendientes.length ? `pendiente de grabar: folio ${f.pendientes.join(", ")}` : ids(f.ids)} |`);
   md.push("", "## Módulos → videos", "", "| Módulo | Videos |", "| --- | --- |");
   for (const f of filaModulos) md.push(`| ${f.m} | ${ids(f.ids)} |`);
   md.push("", "## Permisos delegables → videos", "", "| Permiso | Videos |", "| --- | --- |");
