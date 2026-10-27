@@ -25,7 +25,8 @@ import os from "node:os";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
-import { abrirNavegador } from "../lib/navegador.mjs";
+import { abrirNavegador } from "../lib/navegador.mjs";
+import { campoNombreDelPerro } from "../lib/alta-mascota.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const BASE = "http://huellitas.localhost:3001";
@@ -174,7 +175,7 @@ try {
   const enlacesDe = async (propuestaId) => (await SB.from("razas_propuestas_perros").select("perro_id").eq("propuesta_id", propuestaId).is("deleted_at", null)).data ?? [];
   const abrirNuevo = async (p, nombrePerro) => {
     await p.goto(`${BASE}/clientes/${datos.clienteSoloB}/perros/nuevo`, { waitUntil: "networkidle" });
-    await p.getByLabel("Nombre del perro").fill(nombrePerro);
+    await (await campoNombreDelPerro(p)).fill(nombrePerro);
   };
   const sinDesborde = async (p, etiqueta) => {
     const ancho = await p.evaluate(() => document.documentElement.scrollWidth);
@@ -374,6 +375,9 @@ try {
   await dueno.getByLabel("Tu nombre completo").fill(`Dueño UI ${sufijo}`);
   await dueno.getByLabel("Tu teléfono").fill(TELR);
   await dueno.getByRole("button", { name: "Siguiente" }).click();
+  // QA S39 (N137): con Veterinaria prendida el alta pregunta primero qué es la mascota.
+  await dueno.getByLabel("¿Cómo se llama?").waitFor();
+  if (await dueno.getByLabel("¿Qué es?").count()) await dueno.getByLabel("¿Qué es?").selectOption("perro");
   await dueno.getByLabel("¿Cómo se llama?").fill(`ZZ dueno ${sufijo}`);
   await dueno.locator('input[role="combobox"]').fill(RAZA4);
   await dueno.waitForTimeout(300);

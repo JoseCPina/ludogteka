@@ -8,7 +8,10 @@ import {
 } from "@/lib/formato";
 import { whatsAppDelNegocio } from "@/lib/landing/negocio";
 import { zonaActual } from "@/lib/negocio/actual";
-import { leerTodo } from "@/lib/supabase/paginar";
+import { leerTodo } from "@/lib/supabase/paginar";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
+import { usaVeterinaria } from "@/lib/plan/modulos";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
 
 // Las citas de estética y las estancias de guardería y hotel, tal como las
 // da mis_visitas() en la base: sin precios (el dueño nunca ve información
@@ -117,7 +120,9 @@ export async function MisVisitas({ supabase, hoy, comoSeAgenda }: { supabase: Su
   const zona = await zonaActual();
   // El historial completo: un cliente de años pasa de 1,000 visitas y las más viejas se perdían sin avisar.
   const { data, error } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("mis_visitas").order("tipo").order("id"));
-  const whatsapp = await whatsAppDelNegocio("portal_citas", (n) => `Hola, ${n}. Quiero agendar o cambiar una cita de mi perro.`);
+  // QA S39 (N137): con Veterinaria, «mi mascota».
+  const mi = vocabularioMascota({ conVet: usaVeterinaria((await obtenerSesionConRol())?.modulos ?? []) }).nombre;
+  const whatsapp = await whatsAppDelNegocio("portal_citas", (n) => `Hola, ${n}. Quiero agendar o cambiar una cita de mi ${mi}.`);
   const visitas = (data ?? []) as Visita[];
 
   const proximas = visitas.filter((v) => esProxima(v, hoy, zona)).sort((a, b) => fechaDe(a, zona).localeCompare(fechaDe(b, zona)) || (a.inicio ?? "").localeCompare(b.inicio ?? ""));

@@ -37,7 +37,8 @@ import { RequisitosEstancia } from "../requisitos-estancia";
 import { NotaSoloEstetica } from "../nota-solo-estetica";
 import { hoyNegocio, formatearFechaCalendario } from "@/lib/formato";
 import { SiPuedeAbrir } from "@/components/acceso-contexto";
-import { puedeAbrirEnServidor } from "@/lib/auth/acceso-servidor";
+import { puedeAbrirEnServidor } from "@/lib/auth/acceso-servidor";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
 
 export default async function PerroPage({
   params,
@@ -231,6 +232,11 @@ export default async function PerroPage({
 
   if (!perro) notFound();
   const [{ data: clinicoCrudo }, { data: notasClinicasFila }, contextoRaza] = await Promise.all([pClinico, pNotasClinicas, pContextoRaza]);
+  // QA S39 (N137): las palabras son las de su especie (con Veterinaria) y lo que es de perro (requisitos y evaluación
+  // de guardería y hotel, paquetes) no aplica a un gato ni a otra especie.
+  const especie = conVeterinaria && clinicoCrudo && esEspecie(clinicoCrudo.especie) ? clinicoCrudo.especie : "perro";
+  const v = vocabularioMascota({ conVet: conVeterinaria, especie });
+  const estanciasAplican = conEstancias && especie === "perro";
 
   const urlFoto: string | null = (await pFoto)?.data?.signedUrl ?? null;
 
@@ -401,7 +407,7 @@ export default async function PerroPage({
           </SiPuedeAbrir>
         )}
         <h1 className="mt-1 text-2xl font-bold text-n-900">{perro.nombre}</h1>
-        <p className="mt-1 text-n-600">{conVeterinaria ? "Expediente de la mascota." : "Expediente del perro."}</p>
+        <p className="mt-1 text-n-600">Expediente {v.del}.</p>
       </div>
 
       <AlertaCriticaBanner alertas={alertasActivas} alergiasGraves={alergiasGraves} tamano="grande" />
@@ -429,13 +435,13 @@ export default async function PerroPage({
         </div>
       )}
 
-      {conEstancias && (aplicanRequisitos ? (
+      {estanciasAplican && (aplicanRequisitos ? (
         <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
       ) : (
         <NotaSoloEstetica />
       ))}
 
-      {!perro.fallecido && conEstancias && (() => {
+      {!perro.fallecido && estanciasAplican && (() => {
         const panel = (
           <PendientesEstancia
             perroId={id}
@@ -462,12 +468,12 @@ export default async function PerroPage({
       })()}
 
       {perro.fallecido && (
-        <Alert variante="advertencia" titulo="Este perro falleció">
+        <Alert variante="advertencia" titulo={`${v.este.charAt(0).toUpperCase()}${v.este.slice(1)} falleció`}>
           El expediente se conserva como parte del historial del cliente.
         </Alert>
       )}
 
-      {creado === "1" && <Alert variante="exito" titulo="Perro creado correctamente" />}
+      {creado === "1" && <Alert variante="exito" titulo={`${v.Nombre} registrad${v.o} correctamente`} />}
 
       <PerroFoto
         perroId={id}
@@ -526,9 +532,10 @@ export default async function PerroPage({
         }}
         textoBoton="Guardar cambios"
         soloLectura={soloLectura}
+        especieInicial={especie}
       />
 
-      {conEstancias && (
+      {estanciasAplican && (
       <>
       <div id="requisitos-estancia" className="flex scroll-mt-6 flex-col gap-4 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Requisitos para guardería y hotel</h2>
@@ -594,7 +601,7 @@ export default async function PerroPage({
       <div id="peso" className="flex scroll-mt-6 flex-col gap-4 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Peso</h2>
         <PesoForm perroId={id} />
-        <PesoResumen historial={(pesos as PesoFila[]) ?? []} />
+        <PesoResumen historial={(pesos as PesoFila[]) ?? []} mascota={v} />
       </div>
 
       <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
@@ -603,12 +610,13 @@ export default async function PerroPage({
           perroId={id}
           catalogo={(catalogoAlertas as CatalogoAlertaOpcion[]) ?? []}
           activas={alertasActivas}
+          mascota={v}
         />
       </div>
 
       <div id="alergias" className="flex scroll-mt-6 flex-col gap-4 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Alergias</h2>
-        <AlergiasSeccion perroId={id} alergias={alergiasFilas} />
+        <AlergiasSeccion perroId={id} alergias={alergiasFilas} mascota={v} />
       </div>
 
       {!soloLectura && perro.cliente_id && conContratos && (
@@ -623,7 +631,8 @@ export default async function PerroPage({
         </div>
       )}
 
-      {!soloLectura && perro.cliente_id && (
+      {/* Los pases son de guardería (con bonos): no aplican a una clínica ni a un gato. */}
+      {!soloLectura && perro.cliente_id && estanciasAplican && (
         <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-bold text-n-900">Day pass y mensualidad</h2>
@@ -674,7 +683,7 @@ export default async function PerroPage({
         <p className="-mt-2 text-sm text-n-600">
           Fotos y notas del día a día — el dueño las ve en su portal.
         </p>
-        <BitacoraSeccion perroId={id} entradas={entradasBitacora} />
+        <BitacoraSeccion perroId={id} entradas={entradasBitacora} mascota={v} />
       </div>
 
       <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
@@ -682,7 +691,7 @@ export default async function PerroPage({
         <p className="-mt-2 text-sm text-n-600">
           Régimen prescrito y cada dosis administrada — el dueño también lo ve.
         </p>
-        <MedicamentosSeccion perroId={id} medicamentos={medicamentos} puedeEscribir={!soloLectura} />
+        <MedicamentosSeccion perroId={id} medicamentos={medicamentos} puedeEscribir={!soloLectura} mascota={v} />
       </div>
     </div>
   );

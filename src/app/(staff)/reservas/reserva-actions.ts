@@ -1,5 +1,7 @@
 "use server";
 
+import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
 import { revalidarModulosEstancia } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -151,7 +153,7 @@ export async function agregarEstanciaAReserva(
   return resultado;
 }
 
-export type EstadoAccionEstancia = { error: string | null; aviso?: string | null; conflicto?: Conflicto | null; version?: string | null };
+export type EstadoAccionEstancia = { error: string | null; aviso?: string | null; conflicto?: Conflicto | null; registros?: RegistroFinal[]; version?: string | null };
 
 type Supa = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -266,7 +268,7 @@ export async function cancelarEstancia(estanciaId: string, control?: ControlVers
   revalidarModulosEstancia();
   // El total, lo cobrado y lo devuelto del encabezado de la reserva se recalculan (R35).
   revalidatePath("/reservas/[id]", "page");
-  return { error: null, aviso };
+  return { error: null, registros: await registrosFinales(supabase, control), aviso };
 }
 
 export async function marcarNoLlego(estanciaId: string, control?: ControlVersion): Promise<EstadoAccionEstancia> {
@@ -283,7 +285,7 @@ export async function marcarNoLlego(estanciaId: string, control?: ControlVersion
   }
   revalidarModulosEstancia();
   revalidatePath("/reservas/[id]", "page");
-  return { error: null };
+  return { error: null, registros: await registrosFinales(supabase, control) };
 }
 
 // Mover fechas (y extender la salida en el check-out): el total que resulta lo calcula la base al guardar y tiene
@@ -311,7 +313,7 @@ export async function moverFechas(
     return { error: traducirError(error, { fecha: fechaEntrada }) };
   }
   revalidarModulosEstancia();
-  return { error: null, version: (data as { version?: string } | null)?.version ?? null };
+  return { error: null, registros: await registrosFinales(supabase, control), version: (data as { version?: string } | null)?.version ?? null };
 }
 
 export type ResultadoCancelarReserva = {
@@ -321,6 +323,7 @@ export type ResultadoCancelarReserva = {
   // Qué pasó con los pases de las estancias canceladas, si había.
   avisos?: string[];
   conflicto?: Conflicto | null;
+  registros?: RegistroFinal[];
 };
 
 // Cancela solo las estancias todavía en reservada/confirmada. Una que ya
@@ -363,7 +366,7 @@ export async function cancelarReserva(reservaId: string, control?: ControlVersio
 
   revalidarModulosEstancia();
   revalidatePath(`/reservas/${reservaId}`);
-  return { error: null, canceladas, noCancelables, avisos };
+  return { error: null, registros: await registrosFinales(supabase, control), canceladas, noCancelables, avisos };
 }
 
 // Lo que le falta a una mascota para reservar guardería u hotel y la base rechazaría (vacunas vencidas o sin

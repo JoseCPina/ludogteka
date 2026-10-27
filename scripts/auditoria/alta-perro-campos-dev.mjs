@@ -18,7 +18,8 @@ import { abrirNavegador } from "../lib/navegador.mjs";
 import { claveAleatoria } from "../lib/clave.mjs";
 import { faltantesAltaPerro } from "../../src/lib/perros/alta-requisitos.ts";
 import { aplicanRequisitosDe } from "../../src/lib/perros/alta-requisitos.ts";
-import { sinTitulosVacios } from "../../src/lib/veterinaria/portal-texto.ts";
+import { sinTitulosVacios } from "../../src/lib/veterinaria/portal-texto.ts";
+import { campoNombreDelPerro } from "../lib/alta-mascota.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
@@ -96,8 +97,9 @@ try {
   const p = await ctx.newPage();
   p.setDefaultTimeout(60000);
   await p.goto(`${BASE}/clientes/${cli.id}/perros/nuevo`, { waitUntil: "networkidle", timeout: 120000 });
+  await campoNombreDelPerro(p); // con Veterinaria, primero la especie (QA S39)
   comprobar((await p.getByText("Raza (obligatoria)").count()) > 0, "la etiqueta dice «Raza (obligatoria)»");
-  await p.getByLabel("Nombre del perro").fill(`ZZ Sin Datos ${sufijo}`);
+  await (await campoNombreDelPerro(p)).fill(`ZZ Sin Datos ${sufijo}`);
   await p.getByRole("button", { name: "Guardar perro" }).click();
   const rechazo = await p.getByText(/le falta: raza|Escribe la raza del perro/).first().waitFor({ timeout: 30000 }).then(() => true).catch(() => false);
   comprobar(rechazo, "sin raza: el servidor rechaza y dice qué falta");
@@ -181,7 +183,7 @@ try {
   }
   await fijar("estetica", false);
   await p.goto(`${BASE}/clientes/${cli.id}/perros/nuevo`, { waitUntil: "networkidle", timeout: 120000 });
-  await p.getByLabel("Nombre del perro").fill(`ZZ Vet ${sufijo}`);
+  await (await campoNombreDelPerro(p)).fill(`ZZ Vet ${sufijo}`);
   await p.getByRole("button", { name: "Guardar perro" }).click();
   await p.waitForURL(/\/perros\/[0-9a-f-]{36}/, { timeout: 60000 }).catch(() => {});
   const vetId = p.url().match(/\/perros\/([0-9a-f-]{36})/)?.[1];
@@ -241,7 +243,7 @@ try {
   const { data: poodle } = await A.from("razas").select("id,nombre").ilike("nombre", "poodle%").is("deleted_at", null).limit(1);
   const poodleFalta = poodle?.[0] ? ((await admin.rpc("perro_faltantes_alta", { p_raza: poodle[0].nombre, p_raza_id: poodle[0].id, p_tamano_id: null, p_pelaje_id: null })).data ?? []) : null;
   await p.goto(`${BASE}/clientes/${cli.id}/perros/nuevo`, { waitUntil: "networkidle", timeout: 120000 });
-  await p.getByLabel("Nombre del perro").fill(`ZZ Cambio ${sufijo}`);
+  await (await campoNombreDelPerro(p)).fill(`ZZ Cambio ${sufijo}`);
   await elegirRaza(p, "Mestizo");
   comprobar((await p.getByLabel("Tamaño (obligatorio)").count()) === 1, "Estética + Hotel, Mestizo: tamaño obligatorio");
   await p.getByLabel(/^Tamaño/).selectOption({ index: 1 });
@@ -249,7 +251,7 @@ try {
   await p.getByRole("button", { name: "Guardar perro" }).click();
   // Un error del servidor (quitamos la raza a propósito con otro intento sin raza) queda en pantalla…
   await p.goto(`${BASE}/clientes/${cli.id}/perros/nuevo`, { waitUntil: "networkidle", timeout: 120000 });
-  await p.getByLabel("Nombre del perro").fill(`ZZ Cambio2 ${sufijo}`);
+  await (await campoNombreDelPerro(p)).fill(`ZZ Cambio2 ${sufijo}`);
   await p.getByRole("button", { name: "Guardar perro" }).click();
   await p.getByText(/le falta: raza|Escribe la raza del perro/).first().waitFor({ timeout: 30000 });
   // …y se esconde en cuanto se escoge la raza.
@@ -270,7 +272,7 @@ try {
   // Solo Hotel: la raza es lo único que se exige, y las etiquetas lo dicen.
   await fijar("estetica", false); await fijar("guarderia", false);
   await p.goto(`${BASE}/clientes/${cli.id}/perros/nuevo`, { waitUntil: "networkidle", timeout: 120000 });
-  await p.getByLabel("Nombre del perro").fill(`ZZ Hotel ${sufijo}`);
+  await (await campoNombreDelPerro(p)).fill(`ZZ Hotel ${sufijo}`);
   await elegirRaza(p, "Mestizo");
   comprobar((await p.getByLabel("Tamaño (obligatorio)").count()) === 0 && (await p.getByLabel("Pelaje (obligatorio)").count()) === 0, "solo Hotel, Mestizo: tamaño y pelaje NO se marcan «(obligatorio)»");
   await p.getByRole("button", { name: "Guardar perro" }).click();

@@ -6,6 +6,9 @@
 //     raza sin grupo de precio, o un grupo que cobra por tamaño × pelaje);
 //   · solo Veterinaria: nada de esto es obligatorio.
 export type CamposPerroAlta = {
+  // QA S39 (N137): raza, tamaño y pelaje obligatorios son de un perro (precio de estética, estancias); un gato o
+  // «otro» no los pide. Sin especie, perro.
+  especie?: string | null;
   raza?: string | null;
   raza_id?: string | null;
   raza_propuesta?: unknown;
@@ -28,6 +31,7 @@ export function faltantesAltaPerro(
   const estetica = modulos.includes("estetica");
   const estancias = modulos.includes("guarderia") || modulos.includes("hotel");
   if (!estetica && !estancias) return [];
+  if (p.especie && p.especie !== "perro") return [];
   const faltan: string[] = [];
   const tieneRaza = Boolean(p.raza_id) || Boolean((p.raza ?? "").trim()) || Boolean(p.raza_propuesta);
   if (!tieneRaza) faltan.push("raza (si es mestizo, escoge «Mestizo»)");

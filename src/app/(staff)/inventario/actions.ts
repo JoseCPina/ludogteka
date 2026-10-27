@@ -1,5 +1,7 @@
 "use server";
 
+import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -7,7 +9,7 @@ import { traducirError } from "../reservas/traducir-error";
 import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
 import { conflictoDeError, type Conflicto } from "@/lib/concurrencia/tipos";
 
-export type EstadoInsumoForm = { error: string | null; ok?: boolean; conflicto?: Conflicto | null };
+export type EstadoInsumoForm = { error: string | null; ok?: boolean; conflicto?: Conflicto | null; registros?: RegistroFinal[] };
 
 async function convertirABase(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
@@ -139,7 +141,7 @@ export async function actualizarInsumo(
 
   revalidatePath("/inventario");
   revalidatePath(`/inventario/${id}`);
-  return { error: null, ok: true };
+  return { error: null, registros: await registrosFinales(supabase, controlDeFormulario(formData)), ok: true };
 }
 
 export async function darDeBajaInsumo(id: string) {

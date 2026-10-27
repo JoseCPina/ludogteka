@@ -6,12 +6,12 @@ export default {
     {
       titulo: "Vender un paquete",
       dice: "En «Vender pase o mensualidad» buscas al cliente y escoges a su perro: los pases son de un solo perro. Si el dueño tiene dos perros, compra dos paquetes.",
-      pasos: [["resaltar", "Vender pase o mensualidad", 2600], ["resaltar", "Buscar por perro, dueño o teléfono", 2600]],
+      pasos: [["resaltar", "Vender pase o mensualidad", 2600], ["resaltar", "Buscar por mascota, dueño o teléfono", 2600]],
     },
     {
       titulo: "El paquete",
       dice: "Escoges el paquete —de 10 o 20 pases— o la mensualidad ilimitada, con su vigencia. Al venderlo se genera su contrato de guardería, que el dueño firma desde su portal.",
-      pasos: [["escribir", "Buscar por perro, dueño o teléfono", "Jorge"], ["esperar", 2500]],
+      pasos: [["escribir", "Buscar por mascota, dueño o teléfono", "Jorge"], ["esperar", 2500]],
     },
     {
       titulo: "Se aplican solos",

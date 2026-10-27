@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { negocioActual } from "@/lib/negocio/actual";
-import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
+import { usaVeterinaria } from "@/lib/plan/modulos";
 
 const BUCKET = "perros-archivos";
 const PESO_MAXIMO = 4 * 1024 * 1024;
@@ -40,10 +42,12 @@ export async function subirFotoMiPerro(perroId: string, formData: FormData): Pro
     .is("deleted_at", null)
     .maybeSingle();
 
+  // QA S39 (N137): con Veterinaria, «mascota»; sin ella, «perro».
+  const v = vocabularioMascota({ conVet: usaVeterinaria(sesion.modulos ?? []) });
   if (!perro || perro.cliente_id !== sesion.clienteId) {
-    return { error: "Este perro no es tuyo directamente: solo su dueño principal puede cambiar la foto." };
+    return { error: `${v.este.charAt(0).toUpperCase()}${v.este.slice(1)} no es tuy${v.o} directamente: solo su dueño principal puede cambiar la foto.` };
   }
-  if (perro.fallecido) return { error: "La foto de un perro que falleció se queda como está." };
+  if (perro.fallecido) return { error: `La foto de ${v.un} que falleció se queda como está.` };
 
   // Misma regla que recepción (prepararRutaFotoPerro): si ya hay foto se
   // reutiliza su ruta; si no, la fija por primera vez.

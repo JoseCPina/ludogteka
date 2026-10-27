@@ -8,6 +8,7 @@ import { ResumenSanitario, type EstadoRequisitoItem } from "@/app/(staff)/perros
 import { NotaSoloEstetica } from "@/app/(staff)/perros/nota-solo-estetica";
 import { formatearDiaDeInstante, formatearFecha, formatearFechaCalendario, horaLocalDeInstante } from "@/lib/formato";
 import { CitaDetalle, type RecetaItem } from "./cita-detalle";
+import { HoraCitaViva } from "./hora-cita-viva";
 import { CorregirServicio } from "./corregir-servicio";
 import type { Estilista } from "../selector-estilista";
 import { negocioActual, zonaActual } from "@/lib/negocio/actual";
@@ -203,8 +204,7 @@ export default async function CitaDetallePage({
           {servicio?.nombre ?? (cita.servicio_nombre as string | null) ?? "Servicio"} — {perro.nombre}
         </h1>
         <p className="mt-1 text-n-600">
-          {formatearDiaDeInstante(cita.inicio, zona)} · {horaLocalDeInstante(cita.inicio, zona)}
-          {cita.fin ? ` – ${horaLocalDeInstante(cita.fin, zona)}` : ""} · {cita.empleado_id ? (empleado?.nombre_completo ?? "—") : "Sin asignar"}
+          <HoraCitaViva citaId={cita.id} inicio={cita.inicio} fin={(cita.fin as string | null) ?? null} version={(cita.updated_at as string | null) ?? null} /> · {cita.empleado_id ? (empleado?.nombre_completo ?? "—") : "Sin asignar"}
         </p>
         {avisa && negocio && dueno && (
           <div className="mt-3">

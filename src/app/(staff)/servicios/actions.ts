@@ -1,12 +1,14 @@
 "use server";
 
+import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
 import { conflictoDeError, type Conflicto } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export type EstadoServicioForm = { error: string | null; ok?: boolean; conflicto?: Conflicto | null };
+export type EstadoServicioForm = { error: string | null; ok?: boolean; conflicto?: Conflicto | null; registros?: RegistroFinal[] };
 
 const CATEGORIAS = ["guarderia", "hotel", "estetica", "veterinaria", "cargo", "bono"] as const;
 const UNIDADES = ["dia", "noche", "sesion", "evento", "km", "hora"] as const;
@@ -150,7 +152,7 @@ export async function actualizarServicio(
 
   revalidatePath("/servicios");
   revalidatePath(`/servicios/${id}`);
-  return { error: null, ok: true };
+  return { error: null, registros: await registrosFinales(supabase, controlDeFormulario(formData)), ok: true };
 }
 
 export async function darDeBajaServicio(id: string) {

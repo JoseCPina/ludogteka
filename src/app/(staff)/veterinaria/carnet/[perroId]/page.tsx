@@ -153,7 +153,7 @@ export default async function CarnetDeMascota({ params }: { params: Promise<{ pe
         )}
         {permisos.vacunas ? (
           <Desplegable texto="Registrar vacuna" variante="primario" cerrarAlGuardar>
-            <FormularioVacuna perroId={perroId} hoy={hoy} productos={vacunasInv} medicos={medicos} medicoPropio={medicoPropio} requisitos={requisitos} />
+            <FormularioVacuna perroId={perroId} especie={perro.especie as string | null} hoy={hoy} productos={vacunasInv} medicos={medicos} medicoPropio={medicoPropio} requisitos={requisitos} />
           </Desplegable>
         ) : (
           <p className="text-sm text-n-600">Registrar vacunas es de un médico veterinario o de quien tenga el permiso «Registrar vacunas y desparasitaciones».</p>

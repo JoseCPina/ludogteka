@@ -103,7 +103,7 @@ async function armarVenta({ cliente, productos = [], conceptos = [] }) {
   await recep.goto(`${BASE}/caja/venta`, { waitUntil: "networkidle" });
   if (cliente) {
     await recep.getByRole("button", { name: "Escoger cliente" }).click();
-    await recep.getByLabel("Buscar por perro, dueño o teléfono").fill(cliente.nombre.slice(0, 6));
+    await recep.getByLabel(/^Buscar por (perro|mascota), dueño o teléfono$/).fill(cliente.nombre.slice(0, 6));
     await recep.getByText(cliente.nombre).first().click();
   }
   for (const [id, cantidad] of productos) {

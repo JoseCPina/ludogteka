@@ -8,7 +8,8 @@ import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env } from "./sesiones-dev.mjs";
 import { abrirNavegador } from "../lib/navegador.mjs";
-import { tallaYPelajeAlElegirRaza } from "../../src/lib/perros/talla-sugerida.ts";
+import { tallaYPelajeAlElegirRaza } from "../../src/lib/perros/talla-sugerida.ts";
+import { campoNombreDelPerro } from "../lib/alta-mascota.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
@@ -68,7 +69,7 @@ try {
   const abrir = async () => {
     await SB.from("formulario_borradores").delete().eq("negocio_id", B).eq("formulario", "mascota_nueva");
     await p.goto(`${BASE}/clientes/${cli.id}/perros/nuevo`, { waitUntil: "networkidle", timeout: 120000 });
-    await p.getByLabel("Nombre del perro").fill(`ZZ Talla ${sufijo}`);
+    await (await campoNombreDelPerro(p)).fill(`ZZ Talla ${sufijo}`);
   };
   const opciones = await (async () => { await abrir(); return p.locator('select[name="tamano_id"] option').evaluateAll((os) => os.map((o) => o.value).filter(Boolean)); })();
   const pelajes = await p.locator('select[name="pelaje_id"] option').evaluateAll((os) => os.map((o) => o.value).filter(Boolean));

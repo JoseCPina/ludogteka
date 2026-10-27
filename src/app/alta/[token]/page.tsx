@@ -129,7 +129,8 @@ export default async function AltaPage({ params }: { params: Promise<{ token: st
   // grupo aunque no se pinte sería dejarlo servido en el HTML.
   const [razas, { data: tamanos }, { data: pelajes }, { data: requisitosCrudo }, { data: horarioCrudo }, requisitosAlta, textosPoliticas, { data: modulosCrudo }] =
     await Promise.all([
-      cargarRazas(admin, negocio.id),
+      // Todas las especies: con Veterinaria el dueño escoge la especie y el selector muestra las razas de esa.
+      cargarRazas(admin, negocio.id, { especie: "todas" }),
       admin.from("tamanos_categoria").select("id, etiqueta").is("deleted_at", null).order("orden"),
       admin.from("tipos_pelaje").select("id, etiqueta").is("deleted_at", null).order("orden"),
       // Lo que se le va a pedir al perro en guardería/hotel, dicho desde

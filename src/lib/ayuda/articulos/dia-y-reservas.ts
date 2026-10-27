@@ -573,6 +573,8 @@ Lo que escribiste sigue en la pantalla.
 - Desde el primer aviso ya ves qué pasaría si guardas lo tuyo: «Si guardas los tuyos encima: se guardaría tu cambio de servicio. Lo que puso Ana en fecha y hora se conservaría.» Es el mismo cálculo que la confirmación.
 - **Guardar los míos encima**: antes de **Sí, guardar los míos encima** te dice exactamente qué pasa con lo de la otra persona, campo por campo. Hay pantallas que solo guardan lo que tocaste (reprogramar una cita, corregir su servicio, mover fechas, cada sección de la consulta): «Se guarda tu cambio de servicio. Lo que puso Ana en fecha y hora se conserva.» Otras mandan el formulario completo (la ficha del cliente o de la mascota): «Se guarda tu cambio de nombre. Lo que puso Ana en teléfono se sustituye por lo de esta pantalla.» En el horario o el esquema de pago de un empleado y en los precios se guarda lo de tu pantalla completo. Queda anotado quién lo hizo.
 
+Al confirmar **Sí, guardar los míos encima**, la pantalla enseña en ese momento cómo quedó el registro (por ejemplo, la hora nueva de la cita en su encabezado), el aviso de conflicto se cierra y queda solo la confirmación de lo que guardaste. Nunca ves a la vez la confirmación de un guardado anterior y el aviso de conflicto: si vuelves a guardar y alguien más ya lo había cambiado, la confirmación de antes se quita y queda solo el aviso.
+
 También te avisa si el cambio lo hiciste tú mismo en **otra pestaña**: el aviso dice «Cambiaste esta cita desde otra pestaña hace 40 s: …» con los mismos dos botones. Lo que se cuida es la versión que tiene tu pantalla, no quién la cambió. Lo único que no avisa es lo que hiciste en esta misma pestaña (por ejemplo, aplicar una vacuna y luego guardar la consulta).
 
 ## Mover fechas

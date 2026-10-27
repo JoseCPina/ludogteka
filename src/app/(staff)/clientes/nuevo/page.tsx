@@ -26,7 +26,7 @@ export default async function NuevoClientePage({
         <h1 className="text-2xl font-bold text-n-900">Nuevo cliente</h1>
         <p className="mt-1 text-n-600">
           {corta
-            ? "Solo su nombre y su WhatsApp. Luego registras a su perro y agendas."
+            ? `Solo su nombre y su WhatsApp. Luego registras a su ${mascota} y agendas.`
             : "Datos básicos del dueño. El expediente completo (perros, vacunas, etc.) se agrega en otra fase."}
         </p>
       </div>
@@ -34,7 +34,7 @@ export default async function NuevoClientePage({
         pedirDireccion
         corta={corta}
         action={volver ? crearClienteYVolver.bind(null, volver) : conMascota ? crearClienteYSuMascota : crearCliente}
-        textoBoton={volver ? "Crear cliente y seguir con su perro" : conMascota ? `Crear cliente y seguir con su ${mascota}` : "Crear cliente"}
+        textoBoton={volver ? `Crear cliente y seguir con su ${mascota}` : conMascota ? `Crear cliente y seguir con su ${mascota}` : "Crear cliente"}
       />
     </div>
   );

@@ -56,7 +56,7 @@ export function ServicioForm({
 
   return (
     <form method="post" onSubmit={envioV.onSubmit} className="flex max-w-lg flex-col gap-4">
-      {servicioId && <CampoVersion versiones={[{ t: "servicios", i: servicioId, v: version ?? null }]} />}
+      {servicioId && <CampoVersion versiones={[{ t: "servicios", i: servicioId, v: version ?? null }]} registros={estado.registros} />}
       {estado.conflicto && (
         <AvisoConflicto
           conflicto={estado.conflicto}

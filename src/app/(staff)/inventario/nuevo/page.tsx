@@ -5,7 +5,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { InsumoForm } from "../insumo-form";
 import { crearInsumo } from "../actions";
-import { cargarAreas } from "../comun";
+import { cargarAreas } from "../comun";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
+import { usaVeterinaria } from "@/lib/plan/modulos";
 
 // Alta rápida de un consumible: admin y recepción, sin proveedor y sin
 // costo (el costo lo completa después quien tenga el permiso de costos).
@@ -27,7 +29,7 @@ export default async function NuevoConsumiblePage() {
         <h1 className="mt-1 text-2xl font-bold text-n-900">Nuevo consumible</h1>
         <p className="mt-1 max-w-2xl text-n-600">
           Algo que se gasta y se repone. No hace falta proveedor ni costo: el costo lo completa admin
-          después. El alimento que el dueño trae para su perro no va aquí: es suyo, no del negocio.
+          después. El alimento que el dueño trae para {vocabularioMascota({ conVet: usaVeterinaria(sesion?.modulos ?? []) }).su} no va aquí: es suyo, no del negocio.
         </p>
       </div>
 

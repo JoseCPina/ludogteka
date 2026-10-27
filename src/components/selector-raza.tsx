@@ -21,6 +21,8 @@ export type RazaOpcion = {
   grupo_depende_pelaje?: boolean;
   tamano_tipico_id?: string | null;
   pelaje_tipico_id?: string | null;
+  // QA S39 (N137): perro, gato u otro. Sin ella, perro.
+  especie?: string;
 };
 
 /**
@@ -59,7 +61,7 @@ export type OpcionesPropuestaRaza = {
  * formularios de staff, que van por FormData a una server action).
  */
 export function SelectorRaza({
-  razas,
+  razas: todasLasRazas,
   nombreCampoId = "raza_id",
   nombreCampoTexto = "raza",
   valorId,
@@ -71,8 +73,11 @@ export function SelectorRaza({
   disabled = false,
   mostrarGrupo = false,
   propuestas,
+  especie = "perro",
 }: {
   razas: RazaOpcion[];
+  /** QA S39 (N137): de qué especie se buscan razas (el catálogo es por especie). */
+  especie?: string;
   nombreCampoId?: string;
   nombreCampoTexto?: string;
   valorId?: string | null;
@@ -87,6 +92,8 @@ export function SelectorRaza({
   mostrarGrupo?: boolean;
   propuestas?: OpcionesPropuestaRaza;
 }) {
+  // Solo las razas de la especie de la mascota (un gato no ve Labrador ni un perro Siamés).
+  const razas = useMemo(() => todasLasRazas.filter((r) => (r.especie ?? "perro") === especie), [todasLasRazas, especie]);
   const controlado = typeof onCambio === "function";
   const [internoId, setInternoId] = useState<string | null>(valorId ?? null);
   const [internoTexto, setInternoTexto] = useState(valorTexto ?? "");
@@ -273,7 +280,7 @@ export function SelectorRaza({
             aria-autocomplete="list"
             autoComplete="off"
             disabled={disabled}
-            placeholder="Escribe la raza: labrador, shih tzu, mestizo…"
+            placeholder={especie === "gato" ? "Escribe la raza: doméstico de pelo corto, siamés, mestizo…" : "Escribe la raza: labrador, shih tzu, mestizo…"}
             value={consulta}
             onChange={(e) => {
               setConsulta(e.target.value);

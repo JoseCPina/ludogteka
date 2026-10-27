@@ -5,7 +5,10 @@ import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../reservas/traducir-error";
-import { cerrarFrase } from "@/lib/texto/frases";
+import { cerrarFrase } from "@/lib/texto/frases";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
+import { usaVeterinaria } from "@/lib/plan/modulos";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
 
 const BUCKET = "perros-archivos";
 
@@ -117,7 +120,7 @@ export async function construirEnlaceWhatsApp(
 
   const saludo = entrada.tipo === "incidencia" ? "Te avisamos sobre" : "Te compartimos una actualización de";
   const mensaje =
-    `Hola ${cliente.nombre}, ${saludo} ${perro?.nombre ?? "tu perro"} en ${negocio.nombre}` +
+    `Hola ${cliente.nombre}, ${saludo} ${perro?.nombre ?? vocabularioMascota({ conVet: usaVeterinaria((await obtenerSesionConRol())?.modulos ?? []) }).tu} en ${negocio.nombre}` +
     (entrada.nota ? `: ${cerrarFrase(entrada.nota)}` : ".") +
     (urlPortal ? ` Puedes ver las fotos en tu portal: ${urlPortal}` : "");
 

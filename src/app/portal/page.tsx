@@ -8,7 +8,9 @@ import { MisVisitas } from "./mis-visitas";
 import { hoyNegocio } from "@/lib/formato";
 import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { cargarTextosPoliticas } from "@/lib/politicas/cargar";
-import { omisionPolitica, politicasVisibles, textoPolitica } from "@/lib/politicas/catalogo";
+import { omisionPolitica, politicasVisibles, textoPolitica } from "@/lib/politicas/catalogo";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
+import { usaVeterinaria } from "@/lib/plan/modulos";
 
 export default async function PortalPage({ searchParams }: { searchParams: Promise<{ contrasena?: string }> }) {
   const { contrasena } = await searchParams;
@@ -140,11 +142,11 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
       </Link>
 
       <div>
-        <h2 className="mb-4 text-lg font-bold text-n-900">Tus perros</h2>
+        <h2 className="mb-4 text-lg font-bold text-n-900">{vocabularioMascota({ conVet: usaVeterinaria(sesion.modulos ?? []) }).tus.replace(/^t/, "T")}</h2>
 
         {!perros || perros.length === 0 ? (
           <div className="rounded-lg border-[1.5px] border-dashed border-n-300 bg-white p-8 text-center">
-            <p className="text-n-600">Todavía no tienes perros registrados con nosotros.</p>
+            <p className="text-n-600">Todavía no tienes {vocabularioMascota({ conVet: usaVeterinaria(sesion.modulos ?? []) }).plural} registrad{vocabularioMascota({ conVet: usaVeterinaria(sesion.modulos ?? []) }).o}s con nosotros.</p>
           </div>
         ) : (
           <ul className="flex flex-col gap-2">

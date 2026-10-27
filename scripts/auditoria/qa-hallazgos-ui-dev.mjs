@@ -11,7 +11,8 @@
 //     el monto del cobro abre con el saldo.
 import { createClient } from "@supabase/supabase-js";
 import { B, SB, A, URL, env, datos, rpc, personas, dar, quitar, fijarModulo, comprobar, seccion, terminar } from "./veterinaria-comun-dev.mjs";
-import { abrirNavegador } from "../lib/navegador.mjs";
+import { abrirNavegador } from "../lib/navegador.mjs";
+import { campoNombreDelPerro } from "../lib/alta-mascota.mjs";
 
 const REF = new globalThis.URL(URL).hostname.split(".")[0];
 const sufijo = String(Date.now()).slice(-6);
@@ -444,7 +445,7 @@ try {
   {
     ({ c, p } = await abrir(datos.adminB, 390));
     await p.goto(`${BASE}/clientes/${datos.clienteSoloB}/perros/nuevo`, { waitUntil: "networkidle" });
-    await p.getByLabel("Nombre del perro").fill(`Sin raza ${sufijo}`);
+    await (await campoNombreDelPerro(p)).fill(`Sin raza ${sufijo}`);
     const antes = p.url();
     await p.getByRole("button", { name: /Crear perro|Guardar/ }).first().click();
     comprobar(await esperarTexto(p, /Escribe la raza del perro\. Si no sabes cuál es, escoge «Mestizo»/, 8000), "dice que falta la raza y qué hacer si no la sabe");

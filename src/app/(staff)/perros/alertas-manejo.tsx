@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
-import { activarAlerta, desactivarAlerta, type EstadoAlertaForm } from "./alertas-actions";
+import { activarAlerta, desactivarAlerta, type EstadoAlertaForm } from "./alertas-actions";
+import { vocabularioMascota, type Vocabulario } from "@/lib/perros/vocabulario";
 
 const ESTADO_INICIAL: EstadoAlertaForm = { error: null };
 
@@ -16,10 +17,13 @@ export type CatalogoAlertaOpcion = { id: string; etiqueta: string };
 export type AlertaActivaFila = { id: string; alerta_id: string; etiqueta: string; notas: string | null };
 
 export function AlertasManejo({
+  mascota = vocabularioMascota({ conVet: false }),
   perroId,
   catalogo,
   activas,
 }: {
+  /** QA S39 (N137): las palabras de la especie (sin Veterinaria, perro). */
+  mascota?: Vocabulario;
   perroId: string;
   catalogo: CatalogoAlertaOpcion[];
   activas: AlertaActivaFila[];
@@ -35,11 +39,11 @@ export function AlertasManejo({
       {activas.length > 0 ? (
         <ul className="flex flex-col gap-2">
           {activas.map((alerta) => (
-            <AlertaFila key={alerta.id} perroId={perroId} alerta={alerta} />
+            <AlertaFila mascota={mascota} key={alerta.id} perroId={perroId} alerta={alerta} />
           ))}
         </ul>
       ) : (
-        <p className="text-n-600">Este perro no tiene alertas de manejo activas.</p>
+        <p className="text-n-600">{mascota.este.charAt(0).toUpperCase() + mascota.este.slice(1)} no tiene alertas de manejo activas.</p>
       )}
 
       {disponibles.length > 0 && (
@@ -76,9 +80,11 @@ export function AlertasManejo({
 function AlertaFila({
   perroId,
   alerta,
+  mascota,
 }: {
   perroId: string;
   alerta: AlertaActivaFila;
+  mascota: Vocabulario;
 }) {
   const [confirmando, setConfirmando] = useState(false);
   const [motivo, setMotivo] = useState("");
@@ -125,7 +131,7 @@ function AlertaFila({
             onChange={(e) => setMotivo(e.target.value)}
             disabled={pendiente}
             rows={2}
-            ayuda="Obligatorio — queda registrado en el historial del perro."
+            ayuda={`Obligatorio — queda registrado en el historial ${mascota.del}.`}
           />
           <div className="flex gap-2">
             <Button type="button" variante="peligro" disabled={pendiente} onClick={desactivar}>

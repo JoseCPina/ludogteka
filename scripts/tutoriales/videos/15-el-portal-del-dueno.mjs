@@ -15,7 +15,7 @@ export default {
     {
       titulo: "Invitar al portal",
       dice: "Si capturaste al cliente tú mismo, aún no tiene cuenta. En su ficha, en «Invitar al portal», generas un enlace de un solo uso para que escoja su contraseña, y se lo mandas por WhatsApp.",
-      pasos: [["ir", "/clientes"], ["escribir", "Buscar por perro, dueño o teléfono", "Lucía Mendoza"], ["esperar", 1500], ["clic", "Lucía Mendoza Ibarra", { nav: true }], ["desplazar", "Invitar al portal"], ["resaltar", "Invitar al portal", 3000]],
+      pasos: [["ir", "/clientes"], ["escribir", "Buscar por mascota, dueño o teléfono", "Lucía Mendoza"], ["esperar", 1500], ["clic", "Lucía Mendoza Ibarra", { nav: true }], ["desplazar", "Invitar al portal"], ["resaltar", "Invitar al portal", 3000]],
     },
     {
       titulo: "Si olvidó su contraseña",

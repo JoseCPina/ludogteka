@@ -16,8 +16,11 @@ export function MiPerroForm({
   perroId,
   valoresIniciales,
   datosDeCuidado,
+  mascota = "perro",
 }: {
   perroId: string;
+  /** QA S39 (N137): «perro», «gato» o «mascota» (con Veterinaria, según su especie). */
+  mascota?: string;
   // Veterinario de cabecera, autorización médica, tope de gasto y alimentación solo tienen sentido si el negocio
   // cuida al perro (hotel o guardería) o lo atiende (Veterinaria). Sin esos módulos no se muestran (y la acción
   // conserva lo que ya estaba guardado).
@@ -100,7 +103,7 @@ export function MiPerroForm({
             placeholder="Por ejemplo: llévenlo con su veterinario; si no contesta, a la clínica más cercana."
             disabled={enviando}
             defaultValue={valoresIniciales.autorizacion_medica_notas ?? ""}
-            ayuda="Instrucciones para el personal si tu perro necesita atención médica y no te localizamos."
+            ayuda={`Instrucciones para el personal si tu ${mascota} necesita atención médica y no te localizamos.`}
           />
           <Field
             label="Tope de gasto autorizado (opcional)"

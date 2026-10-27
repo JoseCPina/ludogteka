@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
-import { registrarAlergia, type EstadoAlertaForm } from "./alertas-actions";
+import { registrarAlergia, type EstadoAlertaForm } from "./alertas-actions";
+import { vocabularioMascota, type Vocabulario } from "@/lib/perros/vocabulario";
 
 const ESTADO_INICIAL: EstadoAlertaForm = { error: null };
 
@@ -26,9 +27,12 @@ const ESTILO_GRAVEDAD: Record<string, string> = {
 };
 
 export function AlergiasSeccion({
+  mascota = vocabularioMascota({ conVet: false }),
   perroId,
   alergias,
 }: {
+  /** QA S39 (N137): las palabras de la especie (sin Veterinaria, perro). */
+  mascota?: Vocabulario;
   perroId: string;
   alergias: AlergiaFila[];
 }) {
@@ -59,7 +63,7 @@ export function AlergiasSeccion({
           ))}
         </ul>
       ) : (
-        <p className="text-n-600">Este perro no tiene alergias registradas.</p>
+        <p className="text-n-600">{mascota.este.charAt(0).toUpperCase() + mascota.este.slice(1)} no tiene alergias registradas.</p>
       )}
 
       <form action={formAction} className="flex max-w-md flex-col gap-3 border-t border-n-200 pt-4">

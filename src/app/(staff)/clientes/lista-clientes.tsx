@@ -5,7 +5,9 @@ import Link from "next/link";
 import { Field } from "@/components/ui/field";
 import { formatearFecha } from "@/lib/formato";
 import { formatearTelefono } from "@/lib/telefono";
-import { ETIQUETA_BUSCAR_CLIENTES } from "@/components/buscador-clientes";
+import { etiquetaBuscarClientes } from "@/components/buscador-clientes";
+import { useModulos } from "@/components/modulos-contexto";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import { filtrarClientesBuscables, type ClienteBuscable } from "@/lib/clientes/buscables";
 import { useZonaNegocio } from "@/components/zona-negocio";
 
@@ -17,6 +19,7 @@ export type ClienteFila = ClienteBuscable & {
 };
 
 export function ListaClientes({ clientes }: { clientes: ClienteFila[] }) {
+  const conVet = useModulos().tiene("veterinaria");
   const zona = useZonaNegocio();
   const [busqueda, setBusqueda] = useState("");
 
@@ -39,7 +42,7 @@ export function ListaClientes({ clientes }: { clientes: ClienteFila[] }) {
     <div className="flex flex-col gap-4">
       <div className="max-w-xs">
         <Field
-          label={ETIQUETA_BUSCAR_CLIENTES}
+          label={etiquetaBuscarClientes(conVet)}
           type="search"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
@@ -55,7 +58,7 @@ export function ListaClientes({ clientes }: { clientes: ClienteFila[] }) {
                 Nombre
               </th>
               <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
-                Perros
+                {vocabularioMascota({ conVet }).Plural}
               </th>
               <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
                 Teléfono

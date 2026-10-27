@@ -45,11 +45,27 @@ export type Conflicto = {
   mios?: Record<string, unknown>;
 };
 
-/** Lo que cada edición que puede chocar devuelve. */
-export type ConConflicto = { conflicto?: Conflicto | null };
+/**
+ * QA S39 (N138): cómo quedó un registro DESPUÉS de guardar (también al guardar encima), leído de la base en la misma
+ * respuesta de la acción. La pantalla lo pinta al momento (sin esperar a recargar) y toma su versión como la leída.
+ * `datos` es la fila completa (null en los conjuntos que solo tienen versión: horario, precios, esquemas).
+ */
+export type RegistroFinal = { t: string; i: string; version: string | null; datos: Record<string, unknown> | null };
+
+/** Lo que cada edición que puede chocar devuelve: el conflicto o, si se guardó, el registro final. */
+export type ConConflicto = { conflicto?: Conflicto | null; registros?: RegistroFinal[] };
 
 export function version(t: string, i: string | null | undefined, v: string | null | undefined): VersionLeida[] {
   return i && v ? [{ t, i, v }] : [];
+}
+
+/** QA S39 (N138): las versiones leídas, al día con lo que devolvió el guardado (la base ya tiene esas). */
+export function versionesConRegistros(leidas: VersionLeida[], registros: RegistroFinal[] | null | undefined): VersionLeida[] {
+  if (!registros?.length) return leidas;
+  return leidas.map((l) => {
+    const r = registros.find((x) => x.t === l.t && x.i === l.i);
+    return r?.version ? { ...l, v: r.version } : l;
+  });
 }
 
 /** La más reciente de dos versiones (la que devolvió el guardado y la que trajo el repintado de la página). */

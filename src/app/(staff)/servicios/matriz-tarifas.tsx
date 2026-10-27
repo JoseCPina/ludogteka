@@ -108,7 +108,7 @@ export function MatrizTarifas({
   const [error, setError] = useState<string | null>(null);
   const ctlPrecios = useControlVersion("precios_servicio", servicioId, versionPrecios);
   const guardando = useEspera();
-  const [exito, setExito] = useState(false);
+  // QA S39 (N138): «Tarifas guardadas» vive en el control de versión: un conflicto lo borra y guardar encima cierra el conflicto.
 
   const baselineMap = useMemo(() => {
     const m = new Map<
@@ -415,7 +415,7 @@ export function MatrizTarifas({
       setError(resultado.error);
       return;
     }
-    setExito(true);
+    ctlPrecios.guardado("Tarifas guardadas");
     setPrevisualizando(false);
     setValores(new Map());
     router.refresh();
@@ -492,7 +492,7 @@ export function MatrizTarifas({
           </table>
         </div>
         <AvisoVersion ctl={ctlPrecios} registro="los precios de este servicio" cargando={guardando.cargando} />
-        <AccionesFormulario error={error} exito={exito && "Tarifas guardadas"}>
+        <AccionesFormulario error={error} exito={ctlPrecios.exito}>
           <Button type="button" cargando={guardando.cargando} onClick={() => confirmarGuardado(false)}>
             {guardando.cargando ? "Guardando…" : "Confirmar y guardar"}
           </Button>
@@ -506,7 +506,7 @@ export function MatrizTarifas({
 
   return (
     <div className="flex flex-col gap-6">
-      {exito && <Alert variante="exito" titulo="Tarifas guardadas" />}
+      {ctlPrecios.exito && <Alert variante="exito" titulo={ctlPrecios.exito} />}
 
       {gruposConCalculadas.map((g) => (
         <div key={g.id} data-precios-calculados className="flex flex-col gap-3 rounded-lg border-l-4 border-ambar bg-ambar-suave p-4">

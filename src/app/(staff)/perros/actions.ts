@@ -1,5 +1,7 @@
 "use server";
 
+import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
 import { conflictoDeError, type Conflicto } from "@/lib/concurrencia/tipos";
 import { negocioActual } from "@/lib/negocio/actual";
@@ -16,9 +18,10 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { usaVeterinaria } from "@/lib/plan/modulos";
 import { faltantesAltaPerro, mensajeFaltantesAlta } from "@/lib/perros/alta-requisitos";
-import { leerCamposClinicos, mensajeErrorClinico, type CamposClinicos } from "@/lib/perros/ficha-clinica";
+import { esEspecie, leerCamposClinicos, mensajeErrorClinico, type CamposClinicos, type Especie } from "@/lib/perros/ficha-clinica";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
 
-export type EstadoPerroForm = { error: string | null; ok?: boolean; conflicto?: Conflicto | null; /** updated_at que quedó al guardar (nueva versión del formulario). */ version?: string | null };
+export type EstadoPerroForm = { error: string | null; ok?: boolean; conflicto?: Conflicto | null; registros?: RegistroFinal[]; /** updated_at que quedó al guardar (nueva versión del formulario). */ version?: string | null };
 
 function leerCampos(formData: FormData) {
   const nombre = String(formData.get("nombre") ?? "").trim();
@@ -66,12 +69,35 @@ async function faltantesDelFormulario(campos: ReturnType<typeof leerCampos>, for
   const modulos = sesion?.modulos ?? [];
   const supabase = await createSupabaseServerClient();
   const razas = modulos.includes("estetica") && campos.raza_id ? await cargarRazas(supabase, (await negocioActual()).id, { conGrupo: true, soloId: campos.raza_id }) : [];
+  const especie = String(formData.get("especie") ?? formData.get("especie_vigente") ?? "") || null;
   const faltan = faltantesAltaPerro(
-    { ...campos, raza_propuesta: leerPropuestaJson(String(formData.get("raza_propuesta") ?? "")) },
+    { ...campos, especie, raza_propuesta: leerPropuestaJson(String(formData.get("raza_propuesta") ?? "")) },
     modulos,
     razas
   );
   return faltan.length > 0 ? mensajeFaltantesAlta(campos.nombre, faltan) : null;
+}
+
+// QA S39 (N137): con Veterinaria, el alta pregunta la especie y la escoge quien da de alta (admin o recepción, sin el
+// permiso de ficha clínica: la base lo permite al insertar). Sin Veterinaria no se manda y la mascota es perro.
+async function especieDelAlta(
+  formData: FormData
+): Promise<{ error: string } | { campos: { especie: Especie; especie_detalle: string | null } | null }> {
+  if (!formData.has("especie")) return { campos: null };
+  const sesion = await obtenerSesionConRol();
+  if (!sesion || !usaVeterinaria(sesion.modulos)) return { campos: null };
+  const especie = String(formData.get("especie") ?? "").trim();
+  if (!esEspecie(especie)) return { error: "Escoge la especie: perro, gato u otro." };
+  const detalle = String(formData.get("especie_detalle") ?? "").trim();
+  if (especie === "otro" && !detalle) return { error: "Escribe qué especie es (por ejemplo: conejo, hurón)." };
+  return { campos: { especie, especie_detalle: especie === "otro" ? detalle : null } };
+}
+
+// Las palabras de los mensajes de esta acción: la especie del formulario (alta) o la que ya tenía (edición).
+async function vocabularioDelFormulario(formData: FormData) {
+  const sesion = await obtenerSesionConRol();
+  const especie = String(formData.get("especie") ?? formData.get("especie_vigente") ?? "") || null;
+  return vocabularioMascota({ conVet: usaVeterinaria(sesion?.modulos ?? []), especie });
 }
 
 // Campos clínicos del formulario de mostrador: solo si el formulario los
@@ -166,8 +192,11 @@ export async function crearPerroYVolver(
 }
 
 async function altaPerro(clienteId: string, formData: FormData, volver: string | null): Promise<EstadoPerroForm> {
+  const v = await vocabularioDelFormulario(formData);
   const campos = leerCampos(formData);
-  if (!campos.nombre) return { error: "Escribe el nombre del perro." };
+  if (!campos.nombre) return { error: `Escribe el nombre ${v.del}.` };
+  const especieAlta = await especieDelAlta(formData);
+  if ("error" in especieAlta) return { error: especieAlta.error };
   const faltantes = await faltantesDelFormulario(campos, formData);
   if (faltantes) return { error: faltantes };
   const clinicos = await clinicosDelFormulario(formData);
@@ -176,15 +205,15 @@ async function altaPerro(clienteId: string, formData: FormData, volver: string |
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("perros")
-    .insert({ cliente_id: clienteId, ...campos, ...(clinicos.campos ?? {}) })
+    .insert({ cliente_id: clienteId, ...campos, ...(especieAlta.campos ?? {}), ...(clinicos.campos ?? {}) })
     .select("id")
     .single();
 
   if (error) {
     return {
-      error: clinicos.campos
+      error: clinicos.campos || especieAlta.campos
         ? mensajeErrorClinico(error)
-        : "No pudimos guardar al perro. Intenta de nuevo.",
+        : `No pudimos guardar ${v.al}. Intenta de nuevo.`,
     };
   }
 
@@ -216,7 +245,7 @@ export async function actualizarPerro(
   formData: FormData
 ): Promise<EstadoPerroForm> {
   const campos = leerCampos(formData);
-  if (!campos.nombre) return { error: "Escribe el nombre del perro." };
+  if (!campos.nombre) return { error: `Escribe el nombre ${(await vocabularioDelFormulario(formData)).del}.` };
   const faltantes = await faltantesDelFormulario(campos, formData);
   if (faltantes) return { error: faltantes };
   const clinicos = await clinicosDelFormulario(formData);
@@ -253,5 +282,5 @@ export async function actualizarPerro(
   // formulario confirma al momento y pide router.refresh() para la cabecera; la ficha del cliente se lee fresca.
   // La versión FINAL: `perro_notas_clinicas_guardar` vuelve a tocar el perro después del UPDATE (N120).
   const { data: final } = clinicos.campos ? await supabase.from("perros").select("updated_at").eq("id", perroId).maybeSingle() : { data: null };
-  return { error: null, ok: true, version: ((final?.updated_at ?? guardado?.updated_at) as string | undefined) ?? null };
+  return { error: null, registros: await registrosFinales(supabase, controlDeFormulario(formData)), ok: true, version: ((final?.updated_at ?? guardado?.updated_at) as string | undefined) ?? null };
 }

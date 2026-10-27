@@ -1,5 +1,7 @@
 "use server";
 
+import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { conControl } from "@/lib/concurrencia/servidor";
@@ -19,7 +21,7 @@ export type FilaTarifaGuardar = {
   no_aplica: boolean;
 };
 
-export type EstadoGuardarTarifas = { error: string | null; ok?: boolean; conflicto?: Conflicto | null };
+export type EstadoGuardarTarifas = { error: string | null; ok?: boolean; conflicto?: Conflicto | null; registros?: RegistroFinal[] };
 
 function etiquetaTramo(f: { cantidad_desde: number; cantidad_hasta: number | null }): string {
   return f.cantidad_hasta ? `${f.cantidad_desde}-${f.cantidad_hasta}` : `${f.cantidad_desde}+`;
@@ -104,7 +106,7 @@ export async function guardarTarifas(
   }
 
   revalidatePath(`/servicios/${servicioId}/tarifas`);
-  return { error: null, ok: true };
+  return { error: null, registros: await registrosFinales(supabase, control), ok: true };
 }
 
 // Precio distinto para un día de la semana (guardería día completo en
@@ -142,7 +144,7 @@ export async function guardarPrecioPorDia(
   }
 
   revalidatePath(`/servicios/${servicioId}/tarifas`);
-  return { error: null, ok: true };
+  return { error: null, registros: await registrosFinales(supabase, control), ok: true };
 }
 
 // Quitar = baja lógica: el precio deja de aplicar desde ya y la fila queda

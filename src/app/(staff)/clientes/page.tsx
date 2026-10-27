@@ -3,9 +3,14 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { ListaClientes, type ClienteFila } from "./lista-clientes";
-import { leerTodo } from "@/lib/supabase/paginar";
+import { leerTodo } from "@/lib/supabase/paginar";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
+import { usaVeterinaria } from "@/lib/plan/modulos";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
 
 export default async function ClientesPage() {
+  // QA S39 (N137): con Veterinaria, «mascotas».
+  const v = vocabularioMascota({ conVet: usaVeterinaria((await obtenerSesionConRol())?.modulos ?? []) });
   const supabase = await createSupabaseServerClient();
   const [{ data, error }, { data: perros }] = await Promise.all([
     // Todos, página por página: la API corta en 1,000 filas y un negocio con más clientes quedaba con la lista a medias.
@@ -39,7 +44,7 @@ export default async function ClientesPage() {
           <h1 className="text-2xl font-bold text-n-900">Clientes</h1>
           <p className="mt-1 text-n-600">
             Dueños registrados en el negocio. Con el link de alta, el dueño captura sus datos y los
-            de sus perros, y el expediente llega aquí ya ligado a su cuenta.
+            de sus {v.plural}, y el expediente llega aquí ya ligado a su cuenta.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">

@@ -1,7 +1,7 @@
 // Tipos de lo que devuelven las funciones de la base de Empleados.
 
 // `conflicto`: otra persona cambió el registro desde que la pantalla lo leyó (QA N43); nada se guardó.
-export type ResultadoAccion = { error: string | null; ir?: string; exito?: string; conflicto?: import("@/lib/concurrencia/tipos").Conflicto | null };
+export type ResultadoAccion = { error: string | null; ir?: string; exito?: string; conflicto?: import("@/lib/concurrencia/tipos").Conflicto | null; registros?: import("@/lib/concurrencia/tipos").RegistroFinal[] };
 
 export type DiaAsistencia = {
   empleado_id: string;

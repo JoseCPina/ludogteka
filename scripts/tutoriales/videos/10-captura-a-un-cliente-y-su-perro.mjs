@@ -6,7 +6,7 @@ export default {
     {
       titulo: "Capturar a mano",
       dice: "En «Clientes» aprieta «Capturar a mano». Esta lista también te sirve para buscar a cualquier cliente por el nombre del perro, del dueño o por su teléfono.",
-      pasos: [["resaltar", "Buscar por perro, dueño o teléfono", 2400], ["clic", "Capturar a mano", { nav: true }]],
+      pasos: [["resaltar", "Buscar por mascota, dueño o teléfono", 2400], ["clic", "Capturar a mano", { nav: true }]],
     },
     {
       titulo: "Los datos del dueño",
@@ -20,8 +20,8 @@ export default {
     },
     {
       titulo: "Agregar a su perro",
-      dice: "En la ficha aprieta «Agregar perro». Escribe el «Nombre del perro», y en «Raza» empieza a escribir: la app te sugiere las razas del catálogo y tú escoges una.",
-      pasos: [["clic", "Agregar perro", { nav: true }], ["escribir", "Nombre del perro", "Canela"], ["escribir", "Raza", "Labrador"], ["clic", "css:[role=option] button"]],
+      dice: "En la ficha aprieta «Agregar mascota» y en «Especie» escoge «Perro». Escribe el «Nombre del perro», y en «Raza» empieza a escribir: la app te sugiere las razas del catálogo y tú escoges una.",
+      pasos: [["clic", "Agregar mascota", { nav: true }], ["elegir", "Especie", "Perro"], ["escribir", "Nombre del perro", "Canela"], ["escribir", "Raza", "Labrador"], ["clic", "css:[role=option] button"]],
     },
     {
       titulo: "Tamaño y pelaje",
@@ -34,5 +34,5 @@ export default {
       pasos: [["clic", "Guardar perro", { nav: true }], ["esperar", 2500]],
     },
   ],
-  resumen: ["En «Clientes» → «Capturar a mano» das de alta al dueño.", "Con «Agregar perro» registras a su perro: nombre, raza, tamaño y pelaje.", "El teléfono no se repite, así que nunca hay clientes duplicados."],
+  resumen: ["En «Clientes» → «Capturar a mano» das de alta al dueño.", "Con «Agregar mascota» registras a su perro: especie, nombre, raza, tamaño y pelaje.", "El teléfono no se repite, así que nunca hay clientes duplicados."],
 };

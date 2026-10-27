@@ -62,6 +62,33 @@ export function TarjetaPerro({
         )}
       </div>
 
+      {/* QA S39 (N137): con Veterinaria, primero la especie; lo demás se adapta a ella. */}
+      {clinico && (
+        <div className="grid grid-cols-2 gap-3" data-pregunta-especie>
+          <Select
+            label="¿Qué es?"
+            value={perro.especie}
+            required
+            onChange={(e) => onCambio({ especie: e.target.value, raza: "", raza_id: null, raza_propuesta: null, tamano_id: "", pelaje_id: "" })}
+          >
+            <option value="">Elige: perro, gato u otro</option>
+            {ESPECIES.map((e) => (
+              <option key={e} value={e}>
+                {ETIQUETA_ESPECIE[e]}
+              </option>
+            ))}
+          </Select>
+          {perro.especie === "otro" && (
+            <Field
+              label="¿Qué animal es?"
+              value={perro.especie_detalle}
+              onChange={(e) => onCambio({ especie_detalle: e.target.value })}
+              ayuda="Por ejemplo: conejo, hurón."
+            />
+          )}
+        </div>
+      )}
+
       {pedirNombre && (
         <Field
           label="¿Cómo se llama?"
@@ -71,14 +98,16 @@ export function TarjetaPerro({
         />
       )}
 
-      {pide("raza") && (
+      {pide("raza") && (!clinico || perro.especie === "perro" || perro.especie === "gato") && (
         <SelectorRaza
+          key={perro.especie}
           razas={razas}
+          especie={perro.especie === "gato" ? "gato" : "perro"}
           label="¿De qué raza es?"
           valorId={perro.raza_id}
           valorTexto={perro.raza}
           onCambio={(v) => onCambio({ raza: v.raza, raza_id: v.raza_id, raza_propuesta: v.propuesta ?? null })}
-          propuestas={{ modo: "dueno", valorPropuesta: perro.raza_propuesta }}
+          propuestas={!clinico || perro.especie === "perro" ? { modo: "dueno", valorPropuesta: perro.raza_propuesta } : undefined}
           ayuda="Si no sabes o es mestizo, escribe «mestizo» y escógelo de la lista."
         />
       )}
@@ -104,7 +133,7 @@ export function TarjetaPerro({
         </div>
       )}
 
-      {(pide("tamano_id") || pide("pelaje_id")) && (
+      {(pide("tamano_id") || pide("pelaje_id")) && (!clinico || perro.especie === "perro") && (
         <div className="grid grid-cols-2 gap-3">
           {pide("tamano_id") && (
             <Select
@@ -142,17 +171,6 @@ export function TarjetaPerro({
           <legend className="px-1 text-sm font-bold text-n-700">Datos de salud (opcional)</legend>
           <div className="grid grid-cols-2 gap-3">
             <Select
-              label="Especie"
-              value={perro.especie}
-              onChange={(e) => onCambio({ especie: e.target.value })}
-            >
-              {ESPECIES.map((e) => (
-                <option key={e} value={e}>
-                  {ETIQUETA_ESPECIE[e]}
-                </option>
-              ))}
-            </Select>
-            <Select
               label="¿Está esterilizado?"
               value={perro.esterilizado}
               onChange={(e) => onCambio({ esterilizado: e.target.value })}
@@ -162,14 +180,6 @@ export function TarjetaPerro({
               <option value="no">No</option>
             </Select>
           </div>
-          {perro.especie === "otro" && (
-            <Field
-              label="¿Qué animal es?"
-              value={perro.especie_detalle}
-              onChange={(e) => onCambio({ especie_detalle: e.target.value })}
-              ayuda="Por ejemplo: conejo, hurón."
-            />
-          )}
           <Field
             label="Número de microchip"
             value={perro.microchip}

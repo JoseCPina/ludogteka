@@ -39,13 +39,26 @@ Al prenderlo aparece **Veterinaria** en el menú. Al apagarlo desaparece del men
   {
     slug: "ficha-clinica-de-la-mascota",
     titulo: "Cómo llenar la ficha clínica de una mascota",
-    resumen: "Especie, microchip, folio de registro y notas clínicas, junto al peso y las alergias de siempre.",
+    resumen: "Especie (se pregunta primero al dar de alta), microchip, folio de registro y notas clínicas, junto al peso y las alergias de siempre.",
     grupo: "veterinaria",
     modulo: "veterinaria",
     roles: ["admin", "recepcion"],
     rutas: [],
-    palabras: ["microchip", "RUAC", "especie", "gato", "esterilizado", "peso", "alergias", "notas clínicas", "folio de registro"],
-    cuerpo: `La ficha clínica va en el expediente de la mascota, en la sección **Ficha clínica**.
+    palabras: ["microchip", "RUAC", "especie", "gato", "esterilizado", "peso", "alergias", "notas clínicas", "folio de registro", "nueva mascota", "nuevo gato", "registrar un gato", "raza de gato", "doméstico de pelo corto"],
+    cuerpo: `## Al dar de alta una mascota
+
+Con Veterinaria prendida, **Agregar mascota** (en la ficha del cliente) y **+ Nuevo cliente y su mascota** preguntan primero la **especie**: Perro, Gato u Otro (con «¿Cuál?» para otra especie). Hasta escogerla no se pide nada más, y después todo se adapta a ella:
+
+- El título pasa de **Nueva mascota** a **Nuevo gato** (o **Nuevo perro**), y la pantalla habla de «gato», «perro» o «mascota», nunca de «perro» a secas.
+- Las razas son las de su especie: para un gato, **Doméstico de pelo corto**, **Doméstico de pelo largo**, **Mestizo**, Siamés, Persa, Maine Coon y otras; un gato no ve Labrador ni un perro ve Siamés. En «Otro» no se pide raza.
+- Un gato o una mascota de otra especie no lleva **tamaño** ni **pelaje** (son para el precio de estética de un perro), y su expediente no muestra los requisitos ni la evaluación de comportamiento de guardería y hotel.
+- La especie la escoge quien da de alta (admin o recepción). Cambiarla después es de la ficha clínica, con su permiso.
+
+En un negocio sin Veterinaria el alta es de perro, como siempre.
+
+## La ficha clínica
+
+La ficha clínica va en el expediente de la mascota, en la sección **Ficha clínica**.
 
 1. Abre la mascota desde [Clientes](/clientes).
 2. En **Ficha clínica** elige la **especie**: perro, gato u otro (si es otro, escribe cuál).
@@ -61,7 +74,7 @@ El admin, un médico veterinario designado (aunque su rol sea estética) y recep
 
 ## Para tu cliente
 
-En el alta por link, si tienes Veterinaria prendida, el dueño puede decir la especie, si está esterilizada y su microchip; es opcional. En su portal ve la especie, el microchip y el folio de su mascota. Las notas clínicas son tuyas y no las ve.
+En el alta por link, si tienes Veterinaria prendida, lo primero que se le pregunta al dueño de cada mascota es **¿Qué es?** (perro, gato u otro) y lo demás se adapta igual; si está esterilizada y su microchip son opcionales. En su portal ve la especie, el microchip y el folio de su mascota. Las notas clínicas son tuyas y no las ve.
 
 ## Si algo no sale
 
@@ -176,7 +189,7 @@ Cada permiso dice si está vigente, por vencer o vencido. Los vencidos y los que
 ## Registrar una vacuna
 
 1. En el carnet, aprieta **Registrar vacuna**.
-2. Elige la vacuna del inventario clínico (solo salen los productos que en su ficha tienen **Tipo de producto: Vacuna**; el desparasitante, igual con **Desparasitante**) y su **lote** (se descuenta una dosis del lote), o escríbela si no está en el inventario.
+2. Elige la vacuna del inventario clínico (solo salen los productos que en su ficha tienen **Tipo de producto: Vacuna**; el desparasitante, igual con **Desparasitante**) y su **lote** (se descuenta una dosis del lote), o escríbela si no está en el inventario. Al escribirla te sugiere las de su especie: en un gato, **Triple felina**, **Rabia** y **Leucemia felina**; en un perro, rabia, múltiple (séxtuple), parvovirus, bordetella y leptospirosis. Puedes escribir otra.
 3. Pon la **fecha de aplicación**, la **próxima dosis** (con ella se programan los recordatorios) y el **médico veterinario que aplica**.
 4. Aprieta **Registrar vacuna**. El formulario se cierra y junto al botón sale «Vacuna registrada…»; al volver a abrirlo, nace en blanco para la siguiente. Lo mismo con **Registrar desparasitación** y con **Aplicar vacuna** dentro de una consulta. Si esa vacuna (o desparasitación) ya está en el carnet con la misma fecha, no se registra dos veces: el formulario se cierra y sale el aviso con **Cancelar** y **Ver en el carnet**.
 

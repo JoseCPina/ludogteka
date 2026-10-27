@@ -18,7 +18,8 @@ import os from "node:os";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env } from "./sesiones-dev.mjs";
-import { abrirNavegador } from "../lib/navegador.mjs";
+import { abrirNavegador } from "../lib/navegador.mjs";
+import { campoNombreDelPerro } from "../lib/alta-mascota.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
@@ -138,7 +139,7 @@ try {
   await abrirAgendar(sinPelo);
   await pa.locator("[data-aviso-precio=faltan-datos]").waitFor({ timeout: 15000 });
   const t2 = await pa.locator("[data-aviso-precio]").innerText();
-  comprobar((await pa.locator("[data-aviso-precio]").count()) === 1 && /falta el pelaje/.test(t2), `un solo aviso que dice qué falta («${t2.split("\n")[0]}»)`);
+  comprobar((await pa.locator("[data-aviso-precio]").count()) === 1 && /falta el pelaje/i.test(t2), `un solo aviso que dice qué falta («${t2.split("\n")[0]}»)`);
   comprobar((await pa.getByLabel("Pelaje").locator("option").allInnerTexts()).join("|") === "Elige el pelaje|Corto|Medio|Largo", "el selector ofrece corto, medio y largo");
   await sinDesborde(pa, "aviso de pelaje faltante");
   const botonDesactivado = await pa.getByRole("button", { name: "Agendar cita" }).isDisabled();
@@ -200,7 +201,7 @@ try {
   // ── 5. Formulario del perro ──
   console.log("5. Formulario del perro");
   await pa.goto(`${BASE}/clientes/${cliente.id}/perros/nuevo`, { waitUntil: "networkidle" });
-  await pa.getByLabel("Nombre del perro").fill(`ZZUI Form ${sufijo}`);
+  await (await campoNombreDelPerro(pa)).fill(`ZZUI Form ${sufijo}`);
   await pa.getByLabel("Raza").first().fill("Mestizo");
   await pa.waitForTimeout(600);
   await pa.getByText("Mestizo", { exact: true }).first().click().catch(() => {});

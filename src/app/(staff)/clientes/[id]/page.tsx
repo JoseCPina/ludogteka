@@ -33,7 +33,8 @@ import { cargarPendientesEstancia } from "@/lib/perros/pendientes-estancia";
 import { PendientesEstancia, type CatalogosPerro } from "../../perros/pendientes-estancia";
 import { cargarRazas } from "@/lib/razas";
 import { negocioIdActual } from "@/lib/negocio/actual";
-import { DatosFiscalesCliente } from "@/components/cfdi/datos-fiscales-cliente";
+import { DatosFiscalesCliente } from "@/components/cfdi/datos-fiscales-cliente";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
 
 export default async function EditarClientePage({
   params,
@@ -49,6 +50,8 @@ export default async function EditarClientePage({
   // Solo lo de los módulos que el negocio tiene prendidos.
   const sesionActual = await obtenerSesionConRol();
   const mods = sesionActual?.modulos ?? [];
+  // QA S39 (N137): con Veterinaria, «mascotas» (perros, gatos y otras especies).
+  const v = vocabularioMascota({ conVet: mods.includes("veterinaria") });
   const conEstancias = usaEstancias(mods);
   const { data: cliente } = await supabase
     .from("clientes")
@@ -250,16 +253,16 @@ export default async function EditarClientePage({
 
       <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-bold text-n-900">Perros</h2>
+          <h2 className="text-lg font-bold text-n-900">{v.Plural}</h2>
           <Link href={`/clientes/${id}/perros/nuevo`}>
             <Button type="button" variante="secundario">
-              Agregar perro
+              Agregar {v.nombre}
             </Button>
           </Link>
         </div>
 
         {!perros || perros.length === 0 ? (
-          <p className="text-n-600">Este dueño todavía no tiene perros registrados.</p>
+          <p className="text-n-600">Este dueño todavía no tiene {v.plural} registrad{v.o}s.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {perros.map((perro) => {

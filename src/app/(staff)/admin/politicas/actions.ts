@@ -1,5 +1,7 @@
 "use server";
 
+import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { conControl } from "@/lib/concurrencia/servidor";
@@ -7,7 +9,7 @@ import { conflictoDeError, type Conflicto, type ControlVersion } from "@/lib/con
 import { esErrorSoloLectura, mensajeSoloLectura } from "@/lib/solo-lectura";
 import { CATALOGO_POLITICAS, LARGO_MAXIMO_POLITICA, type TextosPoliticas } from "@/lib/politicas/catalogo";
 
-export type ResultadoPoliticas = { error: string | null; exito?: string; conflicto?: Conflicto | null };
+export type ResultadoPoliticas = { error: string | null; exito?: string; conflicto?: Conflicto | null; registros?: RegistroFinal[] };
 
 /**
  * Guardar las políticas y reglas del negocio. La base decide quién puede
@@ -30,5 +32,5 @@ export async function guardarPoliticas(textos: TextosPoliticas, control?: Contro
   if (error) return { error: esErrorSoloLectura(error) ? mensajeSoloLectura(error) : error.message };
   revalidatePath("/admin/politicas");
   revalidatePath("/portal");
-  return { error: null, exito: "Políticas guardadas" };
+  return { error: null, registros: await registrosFinales(supabase, control), exito: "Políticas guardadas" };
 }

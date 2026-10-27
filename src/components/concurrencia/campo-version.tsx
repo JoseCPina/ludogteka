@@ -1,15 +1,18 @@
 "use client";
 
-import { startTransition, useRef, useState } from "react";
-import type { VersionLeida } from "@/lib/concurrencia/tipos";
+import { startTransition, useEffect, useRef, useState } from "react";
+import { publicarRegistros } from "./registro-vivo";
+import { versionesConRegistros, type RegistroFinal, type VersionLeida } from "@/lib/concurrencia/tipos";
 
 /**
  * Campo oculto `__version` para formularios con FormData (QA N43): la versión que la pantalla leyó de lo que
  * edita. Se toma al montar y se pone al día cuando la página se recarga con otra versión. La acción del servidor
- * lo lee con `controlDeFormulario(formData)`.
+ * lo lee con `controlDeFormulario(formData)`. QA S39 (N138): con `registros` (lo que devolvió el guardado, también al
+ * guardar encima) la versión leída pasa a ser la del registro final y se publica para pintarlo al momento.
  */
-export function CampoVersion({ versiones }: { versiones: VersionLeida[] }) {
-  const clave = JSON.stringify(versiones.filter((v) => v.v));
+export function CampoVersion({ versiones, registros }: { versiones: VersionLeida[]; registros?: RegistroFinal[] | null }) {
+  useEffect(() => publicarRegistros(registros), [registros]);
+  const clave = JSON.stringify(versionesConRegistros(versiones, registros).filter((v) => v.v));
   const [leidas, setLeidas] = useState(clave);
   const [vista, setVista] = useState(clave);
   if (clave !== vista) {

@@ -1,4 +1,5 @@
-import { formatearFecha } from "@/lib/formato";
+import { formatearFecha } from "@/lib/formato";
+import { vocabularioMascota, type Vocabulario } from "@/lib/perros/vocabulario";
 
 export type EntradaBitacoraCliente = {
   id: string;
@@ -8,9 +9,9 @@ export type EntradaBitacoraCliente = {
   created_at: string;
 };
 
-export function BitacoraCliente({ entradas, zona }: { entradas: EntradaBitacoraCliente[]; zona: string }) {
+export function BitacoraCliente({ entradas, zona, mascota = vocabularioMascota({ conVet: false }) }: { mascota?: Vocabulario; entradas: EntradaBitacoraCliente[]; zona: string }) {
   if (entradas.length === 0) {
-    return <p className="text-n-600">Todavía no hay entradas en la bitácora de tu perro.</p>;
+    return <p className="text-n-600">Todavía no hay entradas en la bitácora de {mascota.tu}.</p>;
   }
 
   return (

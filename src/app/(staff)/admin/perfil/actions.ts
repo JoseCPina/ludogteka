@@ -1,5 +1,7 @@
 "use server";
 
+import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
 import { conflictoDeError, type Conflicto } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
@@ -11,7 +13,7 @@ import { esErrorSoloLectura, MENSAJE_SOLO_LECTURA, mensajeSoloLectura } from "@/
 import sharp from "sharp";
 import { avisosDeLogo, extensionDeLogo, svgPeligroso } from "@/lib/logo";
 
-export type ResultadoPerfil = { error: string | null; exito?: string; conflicto?: Conflicto | null };
+export type ResultadoPerfil = { error: string | null; exito?: string; conflicto?: Conflicto | null; registros?: RegistroFinal[] };
 
 const TIPOS = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES = 6 * 1024 * 1024;
@@ -60,7 +62,7 @@ export async function guardarPerfil(fd: FormData): Promise<ResultadoPerfil> {
   if (conflicto) return { error: null, conflicto };
   if (error) return { error: mensaje(error) };
   await refrescar(supabase);
-  return { error: null, exito: "Perfil guardado" };
+  return { error: null, registros: await registrosFinales(supabase, controlDeFormulario(fd)), exito: "Perfil guardado" };
 }
 
 async function subirImagen(

@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { negocioActual } from "@/lib/negocio/actual";
-import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
+import { usaVeterinaria } from "@/lib/plan/modulos";
 
 const BUCKET = "perros-archivos";
 const PESO_MAXIMO = 8 * 1024 * 1024;
@@ -52,7 +54,9 @@ export async function proponerComprobante(perroId: string, formData: FormData): 
     .is("deleted_at", null)
     .maybeSingle();
   if (!perro || perro.cliente_id !== sesion.clienteId) {
-    return { error: "Este perro no es tuyo directamente: solo su dueño principal puede mandar comprobantes." };
+    // QA S39 (N137): con Veterinaria, «mascota»; sin ella, «perro».
+    const v = vocabularioMascota({ conVet: usaVeterinaria(sesion.modulos ?? []) });
+    return { error: `${v.este.charAt(0).toUpperCase()}${v.este.slice(1)} no es tuy${v.o} directamente: solo su dueño principal puede mandar comprobantes.` };
   }
 
   const { data: hoy } = await supabase.rpc("fecha_negocio");
