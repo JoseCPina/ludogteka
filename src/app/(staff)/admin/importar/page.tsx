@@ -25,7 +25,8 @@ const ESTADO: Record<string, { texto: string; tono: TonoChip }> = {
 export default async function ImportarPage() {
   const sesion = await obtenerSesionConRol();
   if (!puedeAbrir(accesoDeSesion(sesion), "/admin/importar")) redirect("/admin");
-  const conClinicos = usaVeterinaria(sesion?.modulos ?? []) && tienePermiso(sesion, "editar_ficha_clinica");
+  const conVet = usaVeterinaria(sesion?.modulos ?? []);
+  const conClinicos = conVet && tienePermiso(sesion, "editar_ficha_clinica");
   const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase
@@ -51,7 +52,7 @@ export default async function ImportarPage() {
           Pasa tu lista de un Excel o CSV al sistema sin capturar uno por uno. Antes de importar ves qué va a pasar con cada fila.
         </p>
       </header>
-      <Importador conClinicos={conClinicos} />
+      <Importador conClinicos={conClinicos} conVet={conVet} />
       <section className="flex flex-col gap-3" aria-labelledby="historial">
         <h2 id="historial" className="text-lg font-bold text-n-900">
           Historial de importaciones

@@ -12,7 +12,7 @@
 //   4. Modo «actualizar»: completa sin pisar con vacíos.
 //   5. Deshacer: bloqueos (algo se modificó / algo cuelga) y el caso limpio (baja lógica y
 //      restauración de lo actualizado).
-//   6. Clínicos: sin Veterinaria o sin «Editar ficha clínica» se ignoran.
+//   6. Clínicos: sin Veterinaria o sin «Editar ficha clínica» se ignoran (la especie, solo sin Veterinaria).
 //   7. Aislamiento: otro negocio, estética, cliente y llave anónima.
 //   8. Borradores de formularios: por usuario y por formulario.
 // Parte B (servidor real `next start` en el 3005 + navegador, necesita `npm run build`):
@@ -312,12 +312,13 @@ try {
   await quitar(P.admin, P.recConId, "editar_ficha_clinica");
   const sinFicha = await crear(P.recCon, { clin: true, total: 1, nombre: `${MARCA}-sinficha.csv` });
   comprobar(sinFicha.ok && sinFicha.cuerpo.con_clinicos === false, "con Veterinaria pero sin «Editar ficha clínica», recepción importa sin clínicos");
-  // y si alguien fuerza un dato clínico en la fila, la ficha clínica sigue protegida por su trigger.
+  // y si alguien fuerza un dato clínico en la fila, la ficha clínica sigue protegida por su trigger. La especie sí
+  // se toma con Veterinaria (QA S39, N137: la escoge quien da de alta, sin el permiso de ficha clínica).
   await agregar(P.recCon, sinFicha.cuerpo.id, [fila(2, { c_nombre: `${MARCA} Forzada`, c_telefono: tel(), m_nombre: `${MARCA} Forzado`, m_especie: "gato", m_microchip: chip() })]);
   await correr(P.recCon, sinFicha.cuerpo.id);
   const forz = (await filasDe(sinFicha.cuerpo.id))[0];
   const pForz = forz.perro_id ? (await SB.from("perros").select("especie, microchip").eq("id", forz.perro_id).single()).data : null;
-  comprobar(pForz && pForz.especie === "perro" && pForz.microchip === null, "…aunque la fila traiga especie y microchip, no se escriben");
+  comprobar(pForz && pForz.especie === "gato" && pForz.microchip === null, `…la especie sí se toma (gato) y el microchip no se escribe (${JSON.stringify(pForz)})`);
   await dar(P.admin, P.recConId, "editar_ficha_clinica");
 
   // ═══ A7. Aislamiento ═══
@@ -439,6 +440,46 @@ try {
   comprobar(ph[1]?.length === 1 && /raza/.test(ph[1][0]), `vista previa, solo Hotel, sin raza: falta la raza (${JSON.stringify(ph[1])})`);
   comprobar(ph[2]?.length === 0, `vista previa, solo Hotel, Mestizo: no pide tamaño ni pelaje (${JSON.stringify(ph[2])})`);
   await fijarModulo("hotel", false);
+  await fijarModulo("estetica", false);
+
+  // ═══ A11. La especie decide qué se pide y en qué catálogo cae la raza (QA S39, N137) ═══
+  seccion("A11. Un gato con Estética no pide raza de perro, tamaño ni pelaje");
+  await fijarModulo("estetica", true);
+  await fijarModulo("veterinaria", true);
+  const razaGato = async (nombre) => (await SB.from("razas").select("id").eq("especie", "gato").eq("nombre", nombre).is("deleted_at", null).single()).data?.id;
+  const mestizoGato = await razaGato("Mestizo");
+  const siames = await razaGato("Siamés");
+  const vistaGato = await rpc(P.admin, "importacion_revisar", { p_filas: [
+    { n: 1, telefono: tel(), mascota: `${MARCA} G1`, especie: "gato", raza: "", tamano: "", pelaje: "" },
+    { n: 2, telefono: tel(), mascota: `${MARCA} G2`, especie: "gato", raza: "Mestizo", tamano: "", pelaje: "" },
+    { n: 3, telefono: tel(), mascota: `${MARCA} G3`, especie: "gato", raza: "siames", tamano: "", pelaje: "" },
+    { n: 4, telefono: tel(), mascota: `${MARCA} P4`, especie: "perro", raza: "Mestizo", tamano: "", pelaje: "" },
+  ] });
+  const vg = Object.fromEntries((vistaGato.cuerpo ?? []).map((r) => [r.n, r]));
+  comprobar(vistaGato.ok && (vg[1]?.faltantes ?? ["?"]).length === 0, `vista previa: un gato sin raza ni tamaño no marca faltantes (${JSON.stringify(vg[1]?.faltantes)})`);
+  comprobar(vg[2]?.raza_id === mestizoGato && (vg[2]?.faltantes ?? ["?"]).length === 0, `vista previa: «Mestizo» de un gato cae en el Mestizo de gato y no pide tamaño (${vg[2]?.raza_id} vs ${mestizoGato})`);
+  comprobar(vg[3]?.raza_id === siames && vg[3]?.raza_estado === "catalogo", `vista previa: «siames» de un gato cae en Siamés (${vg[3]?.raza_estado} ${vg[3]?.raza_nombre})`);
+  comprobar((vg[4]?.faltantes ?? []).includes("tamaño") && vg[4]?.raza_id !== mestizoGato, `vista previa: un perro Mestizo sigue pidiendo tamaño y pelaje (${JSON.stringify(vg[4]?.faltantes)})`);
+  // Quien importa sin «Editar ficha clínica» (con_clinicos falso): con Veterinaria, la especie se toma igual.
+  const tG = [tel(), tel(), tel(), tel()];
+  const imp11 = await crear(P.admin, { total: 4, nombre: `${MARCA}-gatos.csv` });
+  await agregar(P.admin, imp11.cuerpo.id, [
+    fila(2, { c_nombre: `${MARCA} Gata Sin Raza`, c_telefono: tG[0], m_nombre: `${MARCA} Michi`, m_especie: "gato", m_tamano: "chico", m_pelaje: "corto" }),
+    fila(3, { c_nombre: `${MARCA} Gato Mestizo`, c_telefono: tG[1], m_nombre: `${MARCA} Tom`, m_especie: "gato", m_raza: "Mestizo" }),
+    fila(4, { c_nombre: `${MARCA} Gato Siames`, c_telefono: tG[2], m_nombre: `${MARCA} Kiki`, m_especie: "gato", m_raza: "Siamés" }),
+    fila(5, { c_nombre: `${MARCA} Perro Sin Talla`, c_telefono: tG[3], m_nombre: `${MARCA} Firulais`, m_especie: "perro", m_raza: "Mestizo" }),
+  ]);
+  await correr(P.admin, imp11.cuerpo.id);
+  const f11 = await filasDe(imp11.cuerpo.id);
+  const mascota11 = async (f) => (f?.perro_id ? (await SB.from("perros").select("especie, raza_id, tamano_id, pelaje_id").eq("id", f.perro_id).single()).data : null);
+  const m1 = await mascota11(f11[0]);
+  comprobar(f11[0]?.estado === "creada" && m1?.especie === "gato", `un gato sin raza se crea como gato (${f11[0]?.estado}: ${f11[0]?.mensaje ?? ""} ${m1?.especie})`);
+  comprobar(m1 && m1.tamano_id === null && m1.pelaje_id === null, "…sin tamaño ni pelaje aunque el archivo los traiga");
+  const m2 = await mascota11(f11[1]);
+  comprobar(f11[1]?.estado === "creada" && m2?.raza_id === mestizoGato, `un gato «Mestizo» queda con el Mestizo de gato (${f11[1]?.estado}: ${f11[1]?.mensaje ?? ""})`);
+  const m3 = await mascota11(f11[2]);
+  comprobar(f11[2]?.estado === "creada" && m3?.raza_id === siames, `un gato «Siamés» queda con Siamés (${f11[2]?.estado}: ${f11[2]?.mensaje ?? ""})`);
+  comprobar(f11[3]?.estado === "error" && /tamaño/.test(f11[3]?.mensaje ?? ""), `un perro Mestizo sin tamaño se sigue rechazando (${f11[3]?.estado}: ${f11[3]?.mensaje ?? ""})`);
   await fijarModulo("estetica", false);
 } catch (e) {
   console.log(`  ✘ la prueba se detuvo: ${e.stack ?? e}`);

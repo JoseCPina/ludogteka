@@ -281,6 +281,11 @@ Los videos (`scripts/tutoriales/`, mapa en `docs/TUTORIALES.md`) se graban SOLO 
 
 **Cómo se opera:** admin da el permiso en `/admin/permisos`; «Ajustar días usados» en el pase (ficha del cliente, Guardería → Pases, Caja → Pases, expediente del perro y check-in), «Este paquete ya lleva días usados» al vender, «Deshacer este check-in» en el check-in de un perro adentro con pase. Nunca SQL manual para esto.
 
+## 27 de octubre de 2026 — Gatos con raza de perro (migración `20261202002800`)
+- **Qué**: antes de `razas.especie` (QA S39, N137) el alta solo ofrecía razas de perro, así que un gato podía quedar con una raza de perro. La migración pasa cada mascota con especie gato y raza de perro al «Mestizo» de gato si su raza era mestizo, criollo o desconocida, y a «Doméstico de pelo corto» si era una raza de perro definida. Solo cambia `raza_id`.
+- **Cuántas**: en producción, 1 («PRUEBA QA S39 Gato Vet», del negocio de prueba Vet s16, raza «Mestizo» de perro → «Mestizo» de gato). En desarrollo, 0 (se probó con dos gatos creados para la prueba y borrados después).
+- **Comprobar**: `node scripts/auditoria/gatos-con-raza-de-perro.mjs --prod` (solo lee; sale con 1 si queda alguna).
+
 ## 23 de octubre de 2026 — Nombre de medicamento con «·» colgando en una receta emitida (migración `20261130000000`)
 
 **Qué pasó:** en la QA S27, «Emitir receta» desde una consulta firmada de «PRUEBA QA S27 Mascota Vet» (negocio de pruebas «PRUEBA QA Onboarding Vet S16», `c101bf5c-…`) prellenó el medicamento como «PRUEBA QA S27 Medicamento ficticio ·» y así se emitió la receta N.º 10 (`4eeca2c6-…`). La N.º 9 (`91280d38-…`) ya decía «PRUEBA QA S27 Medicamento ficticio». Ningún negocio real tenía líneas con un separador colgando (revisado por la API REST: 16 líneas vivas en producción, una sola con «·» al final).

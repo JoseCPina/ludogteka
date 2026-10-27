@@ -23,8 +23,8 @@ const EJEMPLOS: Record<string, [string, string]> = {
 const celda = (v: string) => (/[",;\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
 
 /** CSV de ejemplo con los encabezados que el importador reconoce solo. */
-export function plantillaCsv(conClinicos: boolean): string {
-  const campos = camposDisponibles(conClinicos);
+export function plantillaCsv(conClinicos: boolean, conVet: boolean = conClinicos): string {
+  const campos = camposDisponibles(conClinicos, conVet);
   const filas = [
     campos.map((c) => c.etiqueta),
     campos.map((c) => EJEMPLOS[c.clave]?.[0] ?? ""),

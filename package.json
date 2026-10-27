@@ -9,7 +9,8 @@
     "lint": "eslint",
     "prepare": "git config core.hooksPath .githooks || true",
     "secretos": "node scripts/seguridad/escanear-secretos.mjs --todo",
-    "desplegar": "node scripts/desplegar-produccion.mjs",
+    "desplegar": "node scripts/desplegar-produccion.mjs --sin-videos",
+    "videos:verificar": "node scripts/tutoriales/videos-despues-de-desplegar.mjs",
     "tutoriales": "node scripts/tutoriales/tutoriales.mjs"
   },
   "dependencies": {
