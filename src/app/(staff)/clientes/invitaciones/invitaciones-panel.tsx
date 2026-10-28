@@ -10,7 +10,9 @@ import { Button } from "@/components/ui/button";
 import { CampoCopiable } from "@/components/ui/campo-copiable";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
-import { formatearTelefono } from "@/lib/telefono";
+import { formatearTelefono, normalizarTelefono } from "@/lib/telefono";
+import { useAbrirEnlace } from "@/hooks/use-abrir-enlace";
+import { AbrirWhatsApp } from "@/components/ui/abrir-whatsapp";
 import { TIPOS_LINK_ALTA, TIPOS_LINK_ALTA_LISTA, type TipoLinkAlta } from "@/lib/alta/tipos-link";
 import {
   crearInvitacion,
@@ -55,7 +57,7 @@ const ETIQUETA_ESTADO: Record<string, string> = {
   cancelada: "Cancelada",
 };
 
-function EnlaceGenerado({ resultado }: { resultado: EstadoInvitacion }) {
+function EnlaceGenerado({ resultado, bloqueado }: { resultado: EstadoInvitacion; bloqueado?: boolean }) {
   const zona = useZonaNegocio();
   return (
     <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-menta bg-menta-suave p-4">
@@ -66,11 +68,7 @@ function EnlaceGenerado({ resultado }: { resultado: EstadoInvitacion }) {
         cliente hasta que termine todo (datos y firma): si lo deja a medias, lo vuelve a abrir y
         continúa. En cuanto no le falte nada, deja de servir.
       </p>
-      <div className="flex flex-wrap gap-2">
-        <a href={resultado.urlWhatsApp} target="_blank" rel="noreferrer">
-          <Button type="button">Abrir WhatsApp</Button>
-        </a>
-      </div>
+      {resultado.urlWhatsApp && <AbrirWhatsApp href={resultado.urlWhatsApp} bloqueado={bloqueado} />}
     </div>
   );
 }
@@ -82,16 +80,17 @@ function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
   const [error, setError] = useState<string | null>(null);
   const [reenvio, setReenvio] = useState<{ url: string; urlWhatsApp: string } | null>(null);
   const [confirmando, setConfirmando] = useState(false);
+  const wa = useAbrirEnlace();
 
   async function reenviar() {
     setError(null);
-    const res = await ocupado.ejecutar(() => enlaceParaReenviar(invitacion.id));
+    // La pestaña de WhatsApp se abre al tocar y recibe el link al llegar: después de la espera, el celular la bloquea.
+    const res = await wa.abrirTras(() => ocupado.ejecutar(() => enlaceParaReenviar(invitacion.id)), (r) => (r.error ? null : r.urlWhatsApp));
     if (res.error || !res.url || !res.urlWhatsApp) {
       setError(res.error ?? "No pudimos rearmar el link.");
       return;
     }
     setReenvio({ url: res.url, urlWhatsApp: res.urlWhatsApp });
-    window.open(res.urlWhatsApp, "_blank");
   }
 
   async function cancelar() {
@@ -188,7 +187,7 @@ function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
       {reenvio && (
         <div className="flex flex-col gap-1 rounded-md bg-n-50 p-3">
           <p className="text-xs text-n-600">Es el mismo link de siempre, no uno nuevo:</p>
-          <CampoCopiable valor={reenvio.url} textoBoton="Copiar link" />
+          <AbrirWhatsApp href={reenvio.urlWhatsApp} enlace={reenvio.url} bloqueado={wa.enlace?.bloqueado} variante="secundario" />
         </div>
       )}
 
@@ -216,9 +215,15 @@ export function InvitacionesPanel({
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<EstadoInvitacion | null>(null);
 
+  const wa = useAbrirEnlace();
+
   async function generar() {
     setError(null);
-    const res = await enviando.ejecutar(() => crearInvitacion(nombre, telefono, Number(dias), tipo));
+    setResultado(null);
+    const accion = () => enviando.ejecutar(() => crearInvitacion(nombre, telefono, Number(dias), tipo));
+    // Con nombre y teléfono válidos, WhatsApp se abre con el mensaje en cuanto llega el link (la pestaña se abre al
+    // tocar, ver useAbrirEnlace); si falta algo, solo se dice qué.
+    const res = nombre.trim() && normalizarTelefono(telefono) ? await wa.abrirTras(accion, (r) => (r.error ? null : r.urlWhatsApp)) : await accion();
     if (res.error) {
       setError(res.error);
       return;
@@ -295,7 +300,7 @@ export function InvitacionesPanel({
           {enviando.cargando ? "Generando…" : "Generar link"}
         </Button>
 
-        {resultado && <EnlaceGenerado resultado={resultado} />}
+        {resultado && <EnlaceGenerado resultado={resultado} bloqueado={wa.enlace?.bloqueado} />}
       </section>
 
       <section className="flex flex-col gap-3">

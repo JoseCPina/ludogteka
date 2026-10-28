@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/select";
 import { Alert } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
 import { CampoCopiable } from "@/components/ui/campo-copiable";
+import { AbrirWhatsApp } from "@/components/ui/abrir-whatsapp";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { formatearFecha } from "@/lib/formato";
 import {
@@ -375,11 +376,7 @@ export function CobroIntegrado({
         <div className="flex flex-col gap-2 rounded-md border border-menta bg-menta-suave p-4">
           <p className="font-semibold text-menta-oscuro">Link listo{link.simulado ? " (simulado: abrirlo equivale a pagarlo)" : ""}</p>
           <CampoCopiable valor={link.url} textoBoton="Copiar link" />
-          {link.urlWhatsApp && (
-            <a href={link.urlWhatsApp} target="_blank" rel="noreferrer" className="self-start">
-              <Button type="button">Mandar por WhatsApp</Button>
-            </a>
-          )}
+          {link.urlWhatsApp && <AbrirWhatsApp href={link.urlWhatsApp} texto="Mandar por WhatsApp" />}
           <p className="text-sm text-menta-oscuro">Cuando el cliente pague, el cobro se registra solo (método transferencia) y el saldo baja.</p>
         </div>
       )}

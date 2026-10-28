@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { Chip } from "@/components/ui/chip";
 import { useEspera } from "@/hooks/use-espera";
+import { useAbrirEnlace } from "@/hooks/use-abrir-enlace";
+import { AbrirWhatsApp } from "@/components/ui/abrir-whatsapp";
 import { conTope, mensajeDeFallo } from "@/lib/ui/espera";
 import { ArchivoRechazado, prepararArchivo, type ArchivoPreparado } from "@/lib/media/preparar";
 import { subirConProgreso } from "@/lib/media/subir";
@@ -83,6 +85,7 @@ export function PerroAdentro({ dato, permiso, retencion }: { dato: PerroAdentroD
   const [error, setError] = useState<string | null>(null);
   const [quitando, setQuitando] = useState<string | null>(null);
   const envio = useEspera();
+  const wa = useAbrirEnlace();
   const quitar = useEspera();
   const fila = useRef<Promise<void>>(Promise.resolve());
   const preparados = useRef(new Map<string, { prep: ArchivoPreparado; perroId: string }>());
@@ -183,16 +186,13 @@ export function PerroAdentro({ dato, permiso, retencion }: { dato: PerroAdentroD
 
   async function enviar() {
     setError(null);
-    // Se abre la pestaña ya, dentro del toque: iPhone bloquea las que se abren después de una espera.
-    const ventana = window.open("", "_blank");
-    const res = await envio.ejecutar(() => enviarGaleria(dato.perroId, Array.from(seleccion)));
+    // La pestaña se abre ya, dentro del toque (iPhone bloquea las que se abren después de una espera); si el navegador
+    // no la deja abrir, queda el botón «Abrir WhatsApp» en vez de sacar a la persona de la app.
+    const res = await wa.abrirTras(() => envio.ejecutar(() => enviarGaleria(dato.perroId, Array.from(seleccion))), (r) => (r.error ? null : r.whatsapp));
     if (res.error || !res.whatsapp) {
-      ventana?.close();
       setError(res.error ?? "No pudimos preparar el mensaje.");
       return;
     }
-    if (ventana) ventana.location.href = res.whatsapp;
-    else window.location.href = res.whatsapp;
   }
 
   const nSel = seleccion.size;
@@ -362,6 +362,7 @@ export function PerroAdentro({ dato, permiso, retencion }: { dato: PerroAdentroD
                     {nSel === 0 ? "Escoge algo para enviar" : `Enviar por WhatsApp (${nSel})`}
                   </Button>
                 )}
+                {wa.enlace && <AbrirWhatsApp href={wa.enlace.url} bloqueado={wa.enlace.bloqueado} variante="secundario" />}
                 {dato.sinTelefono && <p className="text-sm text-n-600">Captura su teléfono en la ficha del cliente para poder mandárselo por WhatsApp.</p>}
               </div>
             </div>

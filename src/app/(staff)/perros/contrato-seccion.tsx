@@ -3,6 +3,7 @@
 import { sha256Archivo } from "@/lib/hash-archivo";
 import { useRef, useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
+import { useAbrirEnlace } from "@/hooks/use-abrir-enlace";
 import { conTope, esperarConTope, mensajeDeFallo } from "@/lib/ui/espera";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -181,6 +182,7 @@ export function ContratoSeccion({
 }) {
   const zona = useZonaNegocio();
   const router = useRouter();
+  const pdf = useAbrirEnlace();
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [generandoTipoId, setGenerandoTipoId] = useState<string | null>(null);
@@ -270,9 +272,9 @@ export function ContratoSeccion({
   async function verFirmado(storagePath: string) {
     setError(null);
     try {
-      const url = await conTope(obtenerUrlContratoStaff(storagePath));
-      if (url) window.open(url, "_blank");
-      else setError("No pudimos abrir el contrato firmado. Intenta de nuevo.");
+      // La pestaña se abre al tocar y recibe el PDF al llegar: después de la espera, el celular la bloquea.
+      const url = await pdf.abrirTras(() => conTope(obtenerUrlContratoStaff(storagePath)), (u) => u);
+      if (!url) setError("No pudimos abrir el contrato firmado. Intenta de nuevo.");
     } catch (e) {
       setError(mensajeDeFallo(e));
     }
@@ -398,6 +400,11 @@ export function ContratoSeccion({
                   <Button type="button" variante="secundario" onClick={() => verFirmado(c.storagePath!)}>
                     Ver PDF
                   </Button>
+                )}
+                {c.storagePath && pdf.enlace?.bloqueado && (
+                  <a href={pdf.enlace.url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-morado underline">
+                    El navegador no lo abrió solo: toca aquí para ver el PDF
+                  </a>
                 )}
               </li>
             ))}

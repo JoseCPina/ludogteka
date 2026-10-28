@@ -9,7 +9,9 @@ import { CampoCopiable } from "@/components/ui/campo-copiable";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
 import { TIPOS_LINK_ALTA, TIPOS_LINK_ALTA_LISTA, type TipoLinkAlta } from "@/lib/alta/tipos-link";
-import { crearInvitacion, type EstadoInvitacion } from "../invitaciones/invitacion-actions";
+import { linkComplemento, linkParaCompletar, type EstadoInvitacion } from "../invitaciones/invitacion-actions";
+import { useAbrirEnlace } from "@/hooks/use-abrir-enlace";
+import { AbrirWhatsApp } from "@/components/ui/abrir-whatsapp";
 import { useZonaNegocio } from "@/components/zona-negocio";
 
 export type LinkPendiente = { id: string; tipo: string; expira_at: string; estado: string };
@@ -29,7 +31,6 @@ export type LinkPendiente = { id: string; tipo: string; expira_at: string; estad
 export function LinkComplemento({
   clienteId,
   clienteNombre,
-  clienteTelefono,
   pendientes,
   tieneCuenta = false,
   tipos = ["guarderia_hotel", "estetica", "veterinaria"],
@@ -49,11 +50,24 @@ export function LinkComplemento({
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<EstadoInvitacion | null>(null);
   const [cuentaActiva, setCuentaActiva] = useState(tieneCuenta);
+  const wa = useAbrirEnlace();
+  const [portal, setPortal] = useState<string | null>(null);
+
+  // Con cuenta en el portal no hay link de alta: se le manda el de su portal (ahí completa y firma).
+  async function mandarPortal() {
+    setError(null);
+    setPortal(null);
+    const res = await wa.abrirTras(() => enviando.ejecutar(() => linkParaCompletar(clienteId)), (r) => (r.error ? null : r.urlWhatsApp));
+    if (res.error) return setError(res.error);
+    setPortal(res.url ?? null);
+  }
 
   async function generar() {
     setError(null);
     setResultado(null);
-    const res = await enviando.ejecutar(() => crearInvitacion(clienteNombre, clienteTelefono, 7, tipo, clienteId));
+    // WhatsApp se abre con el mensaje en cuanto llega el link (la pestaña se abre al tocar: ver useAbrirEnlace). Si ya
+    // tiene uno esperando de ese servicio, se le vuelve a mandar ese.
+    const res = await wa.abrirTras(() => enviando.ejecutar(() => linkComplemento(clienteId, tipo)), (r) => (r.error ? null : r.urlWhatsApp));
     if (res.error) {
       // El cliente activó su cuenta mientras esta pantalla seguía abierta: se acomoda la pantalla.
       if (/ya tiene cuenta activa/i.test(res.error)) {
@@ -73,8 +87,18 @@ export function LinkComplemento({
       <div id="link-complemento" data-link-cuenta-activa className="flex scroll-mt-6 flex-col gap-3 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Mandarle un link para completar</h2>
         <Alert variante="exito" titulo="Este cliente ya tiene cuenta activa">
-          No hace falta mandarle un link: {clienteNombre} entra a su portal con su teléfono y su contraseña.
+          {clienteNombre} entra a su portal con su teléfono y su contraseña: ahí sube el comprobante de las vacunas, firma
+          el contrato y llena sus datos. Mándale el link de su portal.
         </Alert>
+        {error && (
+          <Alert variante="error" titulo="No se pudo armar el link">
+            {error}
+          </Alert>
+        )}
+        <Button type="button" variante="secundario" className="self-start" cargando={enviando.cargando} onClick={mandarPortal} data-mandar-link-portal>
+          Mandarle el link de su portal
+        </Button>
+        {portal && wa.enlace && <AbrirWhatsApp href={wa.enlace.url} enlace={portal} bloqueado={wa.enlace.bloqueado} />}
       </div>
     );
   }
@@ -102,7 +126,7 @@ export function LinkComplemento({
               {p.estado === "en_curso"
                 ? " · ya guardó sus datos, le falta firmar: el mismo link le sirve para volver"
                 : ` · vence el ${formatearFecha(p.expira_at, zona)}`}
-              . Reenvíalo o cancélalo desde{" "}
+              . «Generar link» le vuelve a mandar ese mismo; para cancelarlo, ve a{" "}
               <Link href="/clientes/invitaciones" className="font-semibold text-morado hover:underline">
                 Altas por link
               </Link>
@@ -149,11 +173,7 @@ export function LinkComplemento({
             su contraseña para entrar: el link solo dice de qué expediente hablamos, no abre el de
             nadie por sí solo.
           </p>
-          <div>
-            <a href={resultado.urlWhatsApp} target="_blank" rel="noreferrer">
-              <Button type="button">Abrir WhatsApp</Button>
-            </a>
-          </div>
+          {resultado.urlWhatsApp && <AbrirWhatsApp href={resultado.urlWhatsApp} bloqueado={wa.enlace?.bloqueado} />}
         </div>
       )}
     </div>

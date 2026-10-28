@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
 import { CampoCopiable } from "@/components/ui/campo-copiable";
+import { AbrirWhatsApp } from "@/components/ui/abrir-whatsapp";
 import { Alert } from "@/components/ui/alert";
 import { restablecerPasswordCuenta, restablecerPasswordPersonal, type EstadoRestablecerPersonal } from "./password-actions";
 
@@ -53,13 +54,7 @@ export function RestablecerPasswordPersonal({ empleadoId, profileId, nombre, com
                 Esto se muestra una sola vez: si cierras la pantalla ya no la puedes volver a ver,
                 tendrías que generar otra. Al entrar, la app le pide escoger una nueva antes de seguir.
               </p>
-              <div className="flex flex-wrap gap-2">
-                {resultado.urlWhatsApp && (
-                  <a href={resultado.urlWhatsApp} target="_blank" rel="noreferrer">
-                    <Button type="button">Mandársela por WhatsApp</Button>
-                  </a>
-                )}
-              </div>
+              {resultado.urlWhatsApp && <AbrirWhatsApp href={resultado.urlWhatsApp} texto="Mandársela por WhatsApp" />}
             </div>
           ) : confirmando ? (
             <div className="flex flex-wrap items-center gap-2 rounded-lg border-[1.5px] border-ambar bg-ambar-suave p-4">

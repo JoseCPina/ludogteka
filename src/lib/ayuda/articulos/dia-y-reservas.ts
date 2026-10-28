@@ -73,12 +73,14 @@ Si la ocupación dice «Cupo sin configurar», falta capturar el cupo de ese dí
 1. En [Clientes](/clientes) toca **Mandar link de alta**. También puedes usar **Nuevo cliente** → **Mandarle un link** desde Guardería, Hotel o Estética.
 2. Escribe **¿Para quién es?** (algo como «Ana, la del labrador») y su **Teléfono (WhatsApp)**.
 3. Escoge **¿Para qué viene?**. Solo salen los servicios que tu negocio tiene prendidos, y si tiene uno solo no te lo pregunta: usa ese. Guardería y hotel pide el expediente completo, las vacunas y el contrato; veterinaria es corta (datos del dueño y de su mascota, sin contrato de guardería); estética es corta: solo pide el nombre y la raza de su perro, su tamaño, su pelaje, y el nombre y WhatsApp del dueño (sin dirección, sin vacunas, sin correo ni contraseña, sin contrato), y le enseña el precio del baño según su raza.
-4. Escoge la **Vigencia del link** y toca **Generar link**.
-5. Toca **Abrir WhatsApp** para mandárselo, o **Copiar link**.
+4. Escoge la **Vigencia del link** y toca **Generar link**: se abre WhatsApp con el mensaje y el link ya escritos para su teléfono, y tú lo mandas.
+5. Abajo quedan **Copiar link** y **Abrir WhatsApp**, por si lo quieres volver a abrir. Si el navegador del celular no deja abrir WhatsApp solo, la pantalla lo dice: toca **Abrir WhatsApp** o copia el link y pégalo en el chat.
 
-El link le sirve hasta que termine todo, datos y firma. Si lo deja a medias, lo vuelve a abrir y sigue. En **Links pendientes** puedes **Reenviar** o **Cancelar** (también uno que ya guardó sus datos y le falta firmar; al cancelarlo, su ficha deja de decir que hay un link esperando).
+El link le sirve hasta que termine todo, datos y firma. Si lo deja a medias, lo vuelve a abrir y sigue. En **Links pendientes** puedes **Reenviar** (abre WhatsApp con el mismo link) o **Cancelar** (también uno que ya guardó sus datos y le falta firmar; al cancelarlo, su ficha deja de decir que hay un link esperando).
 
-Si el cliente ya tiene cuenta activa en el portal, no se genera link: la ficha dice **Este cliente ya tiene cuenta activa** y el link de alta con su teléfono se rechaza con el mismo aviso. No hace falta mandarle nada.
+Si el cliente ya tiene cuenta activa en el portal, no se genera link de alta: el link de alta con su teléfono se rechaza con el aviso **Este cliente ya tiene cuenta activa**. Para que complete lo que le falta, en su ficha toca **Mandarle el link de su portal**: abre WhatsApp con el link de su portal, donde entra con su teléfono y su contraseña, sube el comprobante de las vacunas, firma el contrato y llena sus datos.
+
+En la ficha del cliente, **Mandarle un link para completar** → **Generar link** también abre WhatsApp con el mensaje. Si ya tiene un link de ese servicio esperando, le vuelve a mandar ese mismo.
 
 ## Las vacunas en el alta
 
@@ -139,7 +141,7 @@ Si tienes guardería u hotel prendidos, el link de guardería y hotel trae el pa
 
 > En un negocio con guardería u hotel, un perro nuevo muestra lo que le falta para guardería y hotel. El aviso **Solo estética · vacunas no requeridas** sale solo cuando el negocio da estética y el perro ya viene a estética sin haber usado guardería ni hotel; con Veterinaria sola, sin guardería ni hotel, no sale ningún aviso de requisitos.
 
-> Si le falta algo para guardería u hotel, arriba aparece la lista. Con **Capturar ahora** llenas solo lo vacío; con **Mandarle un link** el dueño lo completa desde su casa.
+> Si le falta algo para guardería u hotel, arriba aparece la lista. Con **Capturar ahora** llenas solo lo vacío; con **Mandarle un link** se abre WhatsApp con el mensaje para el dueño y él lo completa desde su casa. Si no tiene cuenta, el link le pide solo lo que falta y el contrato que no ha firmado (si ya tenía uno esperando, se le manda ese). Si ya tiene cuenta en el portal, el link lleva a la ficha de su perro en el portal: ahí sube el comprobante de las vacunas, firma el contrato y llena sus datos. La evaluación de comportamiento no va por link: se hace en persona.
 
 ## Si algo no sale
 

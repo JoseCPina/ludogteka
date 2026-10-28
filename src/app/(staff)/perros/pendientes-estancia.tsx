@@ -2,7 +2,10 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { useAccionConTope } from "@/hooks/use-espera";
+import { useAccionConTope, useEspera } from "@/hooks/use-espera";
+import { useAbrirEnlace } from "@/hooks/use-abrir-enlace";
+import { AbrirWhatsApp } from "@/components/ui/abrir-whatsapp";
+import { linkParaCompletar } from "../clientes/invitaciones/invitacion-actions";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,6 +56,10 @@ export function PendientesEstancia({
 }) {
   const [capturando, setCapturando] = useState(false);
   const puede = usePuedeAbrir();
+  const envio = useEspera();
+  const wa = useAbrirEnlace();
+  const [errorLink, setErrorLink] = useState<string | null>(null);
+  const [linkListo, setLinkListo] = useState<{ url: string; aPortal: boolean } | null>(null);
   const base = enSuExpediente ? "" : `/perros/${perroId}`;
 
   if (pendientes.length === 0) {
@@ -68,6 +75,17 @@ export function PendientesEstancia({
   const expediente = pendientes.filter((p) => p.grupo === "expediente");
   const contratos = pendientes.filter((p) => p.grupo === "contrato");
   const porCapturar = camposPorCapturar(pendientes);
+
+  // Un solo toque deja WhatsApp abierto con el mensaje. Antes llevaba a la ficha del cliente y, si el dueño ya tenía
+  // cuenta en el portal, ahí no había link que mandar.
+  async function mandarLink() {
+    if (!clienteId) return;
+    setErrorLink(null);
+    setLinkListo(null);
+    const res = await wa.abrirTras(() => envio.ejecutar(() => linkParaCompletar(clienteId, perroId)), (r) => (r.error ? null : r.urlWhatsApp));
+    if (res.error) return setErrorLink(res.error);
+    if (res.url) setLinkListo({ url: res.url, aPortal: Boolean(res.aPortal) });
+  }
 
   function accionDe(p: PendienteEstancia) {
     if (p.clave === "evaluacion") return { href: `${base}#requisitos-estancia`, texto: "Registrar evaluación" };
@@ -151,12 +169,25 @@ export function PendientesEstancia({
             </Button>
           )}
           {clienteId && puede(`/clientes/${clienteId}`) && (
-            <Link href={`/clientes/${clienteId}#link-complemento`}>
-              <Button type="button" variante="secundario">
-                Mandarle un link
-              </Button>
-            </Link>
+            <Button type="button" variante="secundario" cargando={envio.cargando} onClick={mandarLink} data-mandar-link-pendientes>
+              Mandarle un link
+            </Button>
           )}
+        </div>
+      )}
+      {errorLink && (
+        <p role="alert" className="text-sm font-semibold text-coral-oscuro">
+          {errorLink}
+        </p>
+      )}
+      {linkListo && wa.enlace && (
+        <div className="flex flex-col gap-2 rounded-md border border-menta bg-menta-suave p-3" data-link-pendientes-listo>
+          <p className="text-sm font-semibold text-menta-oscuro">
+            {linkListo.aPortal
+              ? "Ya tiene cuenta: el link lleva a su portal, donde sube el comprobante de las vacunas, firma el contrato y llena sus datos."
+              : "Link listo: le pide solo lo que falta y el contrato que no ha firmado."}
+          </p>
+          <AbrirWhatsApp href={wa.enlace.url} enlace={linkListo.url} bloqueado={wa.enlace.bloqueado} />
         </div>
       )}
       {puedeEscribir && (

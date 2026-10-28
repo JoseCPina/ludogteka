@@ -25,7 +25,7 @@ export const ARTICULOS_REPORTE_Y_FOTOS: Articulo[] = [
 3. Se guarda solo como **Borrador** mientras escribes. Puedes dejarlo y volver.
 4. Si fue un día normal, toca **Buen día**: llena las opciones habituales y tú cambias lo que sea distinto. Si el perro ya tuvo reporte, **Repetir el de ayer** copia el último como borrador. Ninguno de los dos manda nada: tú lo revisas.
 5. Cuando esté, toca **Dejar listo**. Se dibuja la tarjeta con el logo y los colores de tu negocio.
-6. Toca **Enviar por WhatsApp**: se abre la conversación con el dueño con un mensaje corto y la liga a la tarjeta. Tú das el último toque en WhatsApp.
+6. Toca **Enviar por WhatsApp**: se abre la conversación con el dueño con un mensaje corto y la liga a la tarjeta. Tú das el último toque en WhatsApp. Si el navegador del celular no deja abrir WhatsApp solo, la pantalla lo dice y queda **Abrir WhatsApp** para abrirlo con otro toque.
 
 ## Después de enviarlo
 

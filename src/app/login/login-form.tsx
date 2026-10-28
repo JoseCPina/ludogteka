@@ -114,10 +114,14 @@ export function LoginForm({
                 Escríbele a recepción por WhatsApp: te la restablecen en el momento y te mandan una
                 contraseña temporal para entrar con tu teléfono.
               </p>
-              <a href={urlWhatsApp} target="_blank" rel="noreferrer">
-                <Button type="button" className="w-full">
-                  Escribirle a recepción
-                </Button>
+              <a
+                href={urlWhatsApp}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-abrir-whatsapp
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-md bg-morado px-5 text-base font-semibold text-white hover:bg-morado-oscuro"
+              >
+                Escribirle a recepción
               </a>
             </>
           ) : (
