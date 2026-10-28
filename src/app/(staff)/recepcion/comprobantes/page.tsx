@@ -102,11 +102,7 @@ export default async function ComprobantesPage() {
           ← Tablero del día
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Comprobantes por revisar</h1>
-        <p className="mt-1 text-n-600">
-          Fotos de carnet o comprobante que los dueños mandaron desde su portal. No cuentan hasta que
-          las confirmes contra el documento; al confirmar, la aplicación se registra con la vigencia
-          del catálogo. Si algo no cuadra, recházalo diciendo qué: el dueño lo lee y manda otro.
-        </p>
+        <p className="mt-1 text-n-600">Revisa y confirma.</p>
       </div>
 
       {error ? (
