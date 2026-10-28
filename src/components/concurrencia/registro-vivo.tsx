@@ -16,7 +16,14 @@ const clave = (t: string, i: string) => `${t}:${i}`;
 
 export function publicarRegistros(lista: RegistroFinal[] | null | undefined) {
   if (!lista?.length) return;
-  for (const r of lista) registros.set(clave(r.t, r.i), r);
+  for (const r of lista) {
+    const k = clave(r.t, r.i);
+    const previo = registros.get(k);
+    // QA S41 (N140): una respuesta que llega después con una versión más vieja no pisa la más nueva; y una sin datos
+    // (lo clínico solo trae su versión: el autoguardado del borrador) conserva los que ya se sabían (el «firmada»).
+    if (previo?.version && r.version && Date.parse(previo.version) > Date.parse(r.version)) continue;
+    registros.set(k, r.datos || !previo?.datos ? r : { ...r, datos: previo.datos });
+  }
   oyentes.forEach((o) => o());
 }
 

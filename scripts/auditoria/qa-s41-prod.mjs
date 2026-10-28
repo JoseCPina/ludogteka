@@ -102,20 +102,22 @@ try {
     const insignia = () => texto(p.locator("main span.rounded-full", { hasText: /^(Borrador|Firmada|Anulada)$/ }).first());
     const antes = await insignia();
     // Como QA: escribe en la consulta y firma enseguida (el autoguardado todavía no sale).
-    await p.getByLabel("Motivo de la consulta").fill("PRUEBA QA S41 firmar sin recargar, escrito justo antes de firmar");
+    if (!process.env.SIN_ESCRIBIR) await p.getByLabel("Motivo de la consulta").fill("PRUEBA QA S41 firmar sin recargar, escrito justo antes de firmar");
     await p.getByRole("button", { name: "Firmar la consulta" }).click();
-    const si = p.getByRole("button", { name: /Sí, firmar|Firmando…/ });
-    const { libre, ms } = await apretarYMedir(p, si);
-    // Lo que se ve JUSTO al recibir la respuesta (el botón ya se liberó), sin esperar otra carga.
-    await espera(300);
+    // Primero se guarda lo escrito y después se firma: se espera al aviso «Consulta firmada», que llega con la respuesta
+    // de la firma, y en ese mismo instante se lee la insignia (sin esperar otra carga de la página).
+    const t0 = Date.now();
+    await p.getByRole("button", { name: /Sí, firmar|Firmando…/ }).click();
+    const libre = await p.locator("[data-consulta-firmada]").waitFor({ timeout: 30000 }).then(() => true).catch(() => false);
+    const ms = Date.now() - t0;
     const despues = await insignia();
     const t1 = Date.now();
     while (Date.now() - t1 < 30000 && (await insignia()) !== "Firmada") await espera(250);
-    ver(`«Firmada» apareció ${Date.now() - t1 + 300} ms después de que el botón se liberó`);
+    ver(`«Firmada» en la insignia ${Date.now() - t1} ms después del aviso «Consulta firmada»`);
     const errorFirma = await texto(p.locator("[role=alert]").first());
     const exito = await texto(p.locator("[role=status]", { hasText: /firmada/i }).first());
     const enBase = (await VET.N.from("vet_consultas").select("estado").eq("id", id).single()).data?.estado;
-    ver(`antes «${antes}»; botón libre ${libre ? "sí" : "NO"} en ${ms} ms; al liberarse la pantalla dice «${despues}»; en la base: ${enBase}; aviso: «${exito || errorFirma || "—"}»`);
+    ver(`antes «${antes}»; aviso «Consulta firmada» ${libre ? "sí" : "NO"} en ${ms} ms; en ese instante la insignia dice «${despues}»; en la base: ${enBase}; aviso: «${exito || errorFirma || "—"}»`);
     await foto(p, "n140-consulta-firmada");
     if (enBase === "firmada" && despues === "Firmada" && libre) bien(`al firmar, la pantalla dice «Firmada» sin recargar (${ms} ms)`);
     else mal(`firmar: la base dice ${enBase} y la pantalla «${despues}» sin recargar`);
