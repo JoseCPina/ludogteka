@@ -138,6 +138,12 @@ try {
     await p.getByLabel(/^(Perro|Mascota|Gato)$/).selectOption(ult.perro_id);
     await p.getByLabel("Servicio", { exact: true }).selectOption(ult.servicio_id).catch(() => {});
     await p.locator("[data-aviso-precio=ok]").waitFor({ timeout: 20000 });
+    // El mismo día con el que abre el formulario (su aviso es del día) a una hora distinta en cada corrida, para no
+    // chocar con la cita «PRUEBA QA S41» de una corrida anterior.
+    const campoHora = p.getByLabel("Fecha y hora");
+    const diaForm = (await campoHora.inputValue()).slice(0, 10);
+    const minutos = Math.floor(Date.now() / 60000);
+    await campoHora.fill(`${diaForm}T0${6 + (minutos % 3)}:${String((minutos % 6) * 10).padStart(2, "0")}`);
     const avisoAntes = await texto(p.locator("[data-aviso-horario]").first());
     ver(`antes de agendar, aviso de horario: «${avisoAntes || "ninguno"}»`);
     const agendar = p.getByRole("button", { name: /Agendar cita|Agendando…/ });
