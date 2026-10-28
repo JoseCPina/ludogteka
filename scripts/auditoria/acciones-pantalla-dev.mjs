@@ -29,10 +29,19 @@ const limpieza = [];
 async function pantalla(profileId) {
   const { c, p } = await abrirComo(nav, profileId, B);
   // El refresco de la página tarda 3 s: lo que se ve antes es lo que trajo la respuesta de la acción.
+  // Solo el refresco de la página que se ve, no las precargas de los enlaces del menú (`next-router-prefetch`): con
+  // esas también retrasadas, las ~35 del menú llenan las conexiones del navegador y la acción espera detrás.
   await c.route((u) => u.searchParams.has("_rsc"), async (ruta) => {
-    await espera(3000);
+    if (!ruta.request().headers()["next-router-prefetch"]) await espera(3000);
     await ruta.continue().catch(() => {});
   });
+  // AUDITORIA_DEBUG=1: cada petición de la pantalla (sin los archivos estáticos), con su hora.
+  if (process.env.AUDITORIA_DEBUG) {
+    const t0 = Date.now();
+    p.on("request", (r) => !/_next\/static|\.(png|svg|ico|woff2?)/.test(r.url()) && console.log(`      [${Date.now() - t0}ms] → ${r.method()} ${r.url().replace(BASE, "").slice(0, 80)}${r.headers()["next-action"] ? " (acción)" : ""}`));
+    p.on("requestfinished", (r) => !/_next\/static|\.(png|svg|ico|woff2?)/.test(r.url()) && console.log(`      [${Date.now() - t0}ms] ✓ ${r.method()} ${r.url().replace(BASE, "").slice(0, 80)}`));
+    p.on("requestfailed", (r) => console.log(`      [${Date.now() - t0}ms] ✗ ${r.method()} ${r.url().replace(BASE, "").slice(0, 80)} ${r.failure()?.errorText}`));
+  }
   return { c, p };
 }
 async function abrir(p, ruta) {
@@ -227,13 +236,21 @@ try {
 
   seccion("Veterinaria · firmar: la consulta dice «Firmada» con la respuesta (N140)");
   await abrir(pv, `/veterinaria/consulta/${consultaId}`);
+  // Como QA en producción: se escribe en la consulta y se firma enseguida (el autoguardado del borrador también responde).
+  await pv.getByLabel("Motivo de la consulta").fill(`${MARCA} escrito justo antes de firmar`);
   await pv.getByRole("button", { name: "Firmar la consulta" }).click();
-  ms = await apretar(pv, pv.getByRole("button", { name: /^(Sí, firmar|Firmando…)$/ }), /Firmando…/);
-  await espera(INMEDIATO_MS);
+  // Primero se guarda lo escrito y después se firma: se espera al aviso «Consulta firmada», que llega con la respuesta,
+  // y en ese mismo instante se lee la insignia (la recarga de la página tarda 3 s más).
+  const t0Firma = Date.now();
+  await pv.getByRole("button", { name: /^(Sí, firmar|Firmando…)$/ }).click();
+  await pv.locator("[data-consulta-firmada]").waitFor({ timeout: 30000 }).catch(() => {});
+  ms = Date.now() - t0Firma;
   const insignia = limpio(await pv.locator("main span.rounded-full", { hasText: /^(Borrador|Firmada|Anulada)$/ }).first().innerText().catch(() => ""));
   const enBase = (await SB.from("vet_consultas").select("estado").eq("id", consultaId).single()).data?.estado;
   comprobar(enBase === "firmada" && insignia === "Firmada", `en ${ms} ms la base dice ${enBase} y la pantalla «${insignia}» (sin recargar)`);
-  comprobar((await pv.getByRole("button", { name: /Firmando…|Guardando…/ }).count()) === 0 && !(await errores(pv)), "ningún botón sigue ocupado y no hay error");
+  const errFirma = await errores(pv);
+  comprobar((await pv.getByRole("button", { name: /Firmando…|Guardando…/ }).count()) === 0 && !errFirma, `ningún botón sigue ocupado y no hay error${errFirma ? ` («${errFirma.slice(0, 200)}»)` : ""}`);
+  if (errFirma) await pv.screenshot({ path: `${process.env.TEMP ?? "/tmp"}/acciones-pantalla-firma.png`, fullPage: true });
   await pv.context().close();
 
   // ═══ Caja ═══
