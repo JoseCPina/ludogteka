@@ -136,3 +136,63 @@ export async function marcarDatosRevisados(clienteId: string): Promise<{ error: 
   revalidatePath(`/clientes/${clienteId}`);
   return { error: null, registros: await registrosDe(supabase, [{ t: "clientes", i: clienteId }]) };
 }
+
+export type LinkParaCompletar = { error: string | null; registros?: RegistroFinal[]; url?: string; urlWhatsApp?: string; aPortal?: boolean };
+
+/**
+ * «Mandarle un link» de lo que le falta a un perro para guardería y hotel (y la ficha del cliente con cuenta): un solo
+ * toque que deja WhatsApp abierto con el mensaje.
+ *  - Sin cuenta en el portal: el link de complemento de guardería y hotel (`crearInvitacion`, el mismo de la ficha).
+ *  - Con cuenta (la base ya no le hace link de alta: «ya tiene cuenta activa»): el link de su portal, a la ficha de
+ *    ese perro, donde sube el comprobante de las vacunas, firma el contrato pendiente y llena sus datos.
+ */
+// registro-final: con cuenta solo arma el link de su portal (sin cuenta devuelve la invitación que crea)
+export async function linkParaCompletar(clienteId: string, perroId: string | null = null): Promise<LinkParaCompletar> {
+  const supabase = await createSupabaseServerClient();
+  const { data: cliente } = await supabase.from("clientes").select("nombre, telefono").eq("id", clienteId).is("deleted_at", null).maybeSingle();
+  if (!cliente) return { error: "No encontramos a ese cliente." };
+  const { data: cuenta } = await supabase.from("membresias").select("profile_id").eq("cliente_id", clienteId).is("deleted_at", null).limit(1).maybeSingle();
+  if (!cuenta) {
+    const res = await linkComplemento(clienteId, "guarderia_hotel");
+    return { ...res, aPortal: false };
+  }
+
+  const telefono = normalizarTelefono(cliente.telefono as string);
+  if (!telefono) return { error: "El teléfono de este cliente no tiene 10 dígitos: corrígelo en su ficha para mandarle el link." };
+  const { data: perro } = perroId ? await supabase.from("perros").select("nombre").eq("id", perroId).eq("cliente_id", clienteId).maybeSingle() : { data: null };
+  const url = `${await urlBase()}/portal${perro ? `/perros/${perroId}` : ""}`;
+  const negocio = (await negocioActual()).nombre;
+  const nombre = String(cliente.nombre).trim().split(/\s+/)[0];
+  const mensaje = perro
+    ? `Hola ${nombre}, para que ${perro.nombre} pueda venir a guardería u hotel en ${negocio} nos faltan unos datos. Entra a tu cuenta con tu teléfono y tu contraseña y complétalos aquí: ${url}`
+    : `Hola ${nombre}, nos faltan unos datos de tu expediente en ${negocio}. Entra a tu cuenta con tu teléfono y tu contraseña y complétalos aquí: ${url}`;
+  return { error: null, url, urlWhatsApp: enlaceWhatsApp(telefono, mensaje), aPortal: true };
+}
+
+/**
+ * El link de complemento de un cliente que ya existe, desde su ficha o desde lo que le falta a su perro: si ya tiene uno
+ * vivo de ese tipo se le vuelve a mandar ESE (la base no deja dos: «Ya hay un link de este tipo esperando»); si no, se
+ * genera.
+ */
+export async function linkComplemento(clienteId: string, tipo: TipoLinkAlta): Promise<EstadoInvitacion> {
+  const supabase = await createSupabaseServerClient();
+  const { data: vivo } = await supabase
+    .from("invitaciones_cliente")
+    .select("id")
+    .eq("cliente_id", clienteId)
+    .eq("tipo", tipo)
+    .is("usada_at", null)
+    .is("cancelada_at", null)
+    .is("deleted_at", null)
+    .gt("expira_at", new Date().toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (vivo) {
+    const res = await enlaceParaReenviar(vivo.id as string);
+    return { ...res, tipo, registros: await registrosDe(supabase, [{ t: "invitaciones_cliente", i: vivo.id as string }]) };
+  }
+  const { data: cliente } = await supabase.from("clientes").select("nombre, telefono").eq("id", clienteId).is("deleted_at", null).maybeSingle();
+  if (!cliente) return { error: "No encontramos a ese cliente." };
+  return crearInvitacion(cliente.nombre as string, cliente.telefono as string, 7, tipo, clienteId);
+}

@@ -1,5 +1,7 @@
 "use client";
 
+import { useAbrirEnlace } from "@/hooks/use-abrir-enlace";
+import { AbrirWhatsApp } from "@/components/ui/abrir-whatsapp";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -182,6 +184,7 @@ export function FormularioReporte({
   const [errorAccion, setErrorAccion] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
   const [enlaceWa, setEnlaceWa] = useState<string | null>(null);
+  const wa = useAbrirEnlace();
 
   const auto = useEspera();
   const listo = useEspera();
@@ -317,15 +320,15 @@ export function FormularioReporte({
     if (!meta.id) return;
     setErrorAccion(null);
     setExito(null);
-    const r = await envio.ejecutar(() => enviarReporte(meta.id as string, perroId));
+    // La pestaña de WhatsApp se abre al tocar y recibe el link al llegar: después de la espera, el celular la bloquea.
+    const r = await wa.abrirTras(() => envio.ejecutar(() => enviarReporte(meta.id as string, perroId)), (x) => (x.error ? null : x.url));
     if (r.error || !r.url) {
       setErrorAccion(r.error ?? "No pudimos preparar el mensaje.");
       return;
     }
     if (r.meta) setMeta(r.meta);
     setEnlaceWa(r.url);
-    setExito("Se abrió WhatsApp con el mensaje. Si no se abrió, usa el botón verde.");
-    window.open(r.url, "_blank", "noopener");
+    setExito("Se abrió WhatsApp con el mensaje. Si no se abrió, toca «Abrir WhatsApp».");
   };
 
   const estadoMostrado = meta.estado ?? "sin_reporte";
@@ -439,11 +442,7 @@ export function FormularioReporte({
                   </a>
                 )}
               </AccionesFormulario>
-              {enlaceWa && (
-                <a href={enlaceWa} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-12 items-center justify-center rounded-md bg-menta px-5 font-semibold text-morado hover:bg-menta-hover">
-                  Abrir WhatsApp
-                </a>
-              )}
+              {enlaceWa && <AbrirWhatsApp href={enlaceWa} bloqueado={wa.enlace?.bloqueado} />}
             </div>
           </div>
         ) : meta.tarjetaVencida && meta.id ? (

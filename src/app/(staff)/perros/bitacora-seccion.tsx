@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
+import { useAbrirEnlace } from "@/hooks/use-abrir-enlace";
+import { AbrirWhatsApp } from "@/components/ui/abrir-whatsapp";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { comprimirImagen } from "@/lib/imagen";
@@ -40,6 +42,8 @@ export function BitacoraSeccion({ perroId, entradas, mascota = vocabularioMascot
   // Puede llevar foto: tope más largo que el de un botón.
   const enviando = useEspera({ tope: 60_000 });
   const notificando = useEspera();
+  const wa = useAbrirEnlace();
+  const [avisoDe, setAvisoDe] = useState<string | null>(null);
   const [notificandoId, setNotificandoId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,13 +84,14 @@ export function BitacoraSeccion({ perroId, entradas, mascota = vocabularioMascot
   async function notificar(entradaId: string) {
     setNotificandoId(entradaId);
     setError(null);
-    const res = await notificando.ejecutar(() => construirEnlaceWhatsApp(entradaId));
+    // La pestaña de WhatsApp se abre al tocar y recibe el link al llegar: después de la espera, el celular la bloquea.
+    const res = await wa.abrirTras(() => notificando.ejecutar(() => construirEnlaceWhatsApp(entradaId)), (r) => (r.error ? null : r.url));
     if (res.error || !res.url) {
       setError(res.error ?? "No pudimos generar el enlace de WhatsApp.");
       setNotificandoId(null);
       return;
     }
-    window.open(res.url, "_blank", "noopener,noreferrer");
+    setAvisoDe(entradaId);
     await notificando.ejecutar(() => marcarBitacoraNotificada(entradaId, perroId));
     setNotificandoId(null);
     router.refresh();
@@ -170,6 +175,11 @@ export function BitacoraSeccion({ perroId, entradas, mascota = vocabularioMascot
                   <span className="text-xs text-n-500">Avisado el {formatearFecha(e.notificado_whatsapp_at, zona)}</span>
                 )}
               </div>
+              {avisoDe === e.id && wa.enlace && (
+                <div className="mt-2">
+                  <AbrirWhatsApp href={wa.enlace.url} bloqueado={wa.enlace.bloqueado} variante="secundario" />
+                </div>
+              )}
             </li>
           ))}
         </ul>

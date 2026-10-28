@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
+import { useAbrirEnlace } from "@/hooks/use-abrir-enlace";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Alert } from "@/components/ui/alert";
@@ -126,6 +127,7 @@ export function FirmaConsentimiento({ id, firmanteInicial }: { id: string; firma
 export function VerFirmado({ ruta }: { ruta: string }) {
   const [error, setError] = useState<string | null>(null);
   const envio = useEspera();
+  const pdf = useAbrirEnlace();
   return (
     <div className="flex flex-col gap-1">
       <Button
@@ -134,13 +136,18 @@ export function VerFirmado({ ruta }: { ruta: string }) {
         cargando={envio.cargando}
         onClick={async () => {
           setError(null);
-          const r = await envio.correr(() => urlConsentimientoFirmado(ruta));
+          // La pestaña se abre al tocar y recibe el PDF al llegar: después de la espera, el celular la bloquea.
+          const r = await pdf.abrirTras(() => envio.correr(() => urlConsentimientoFirmado(ruta)), (x) => (x.ok ? x.valor : null));
           if (!r.ok || !r.valor) return setError("No pudimos abrir el PDF. Intenta de nuevo.");
-          window.open(r.valor, "_blank", "noopener");
         }}
       >
         Ver el PDF firmado
       </Button>
+      {pdf.enlace?.bloqueado && (
+        <a href={pdf.enlace.url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-morado underline">
+          El navegador no lo abrió solo: toca aquí para ver el PDF
+        </a>
+      )}
       {error && <p className="text-sm font-semibold text-coral-oscuro">{error}</p>}
     </div>
   );
