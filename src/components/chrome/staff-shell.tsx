@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cerrarSesion } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
-import type { ItemNav } from "@/lib/nav/config";
+import { pantallasPrincipales, type ItemNav } from "@/lib/nav/config";
+import { EnlacePrecarga } from "@/components/ui/enlace-precarga";
 import { IconoSeccion } from "@/components/iconos-nav";
 import { HechoConPeluDesk } from "@/components/marca/peludesk";
 import { BotonInstalar } from "@/components/pwa/instalar";
@@ -19,7 +20,7 @@ function BotonAyuda({ ayuda, pathname }: { ayuda: { slug: string; rutas: string[
   const desde = `desde=${encodeURIComponent(pathname)}`;
   const href = pathname.startsWith("/ayuda") ? "/ayuda" : a ? `/ayuda/${a.slug}?${desde}` : `/ayuda?${desde}`;
   return (
-    <Link
+    <EnlacePrecarga
       href={href}
       aria-label="Ayuda de esta pantalla"
       title="Ayuda de esta pantalla"
@@ -27,7 +28,7 @@ function BotonAyuda({ ayuda, pathname }: { ayuda: { slug: string; rutas: string[
       className="grid h-11 w-11 flex-none place-items-center rounded-full border-[1.5px] border-n-300 text-lg font-bold text-n-700 hover:border-morado hover:text-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado"
     >
       ?
-    </Link>
+    </EnlacePrecarga>
   );
 }
 
@@ -39,7 +40,7 @@ function BotonVideo({ videos, pathname }: { videos: { slug: string; rutas: strin
   const v = articuloDeRuta(pathname, videos);
   if (!v) return null;
   return (
-    <Link
+    <EnlacePrecarga
       href={`/ayuda/videos/${v.slug}`}
       data-boton-video={v.slug}
       aria-label="¿Cómo se hace? Ver el video de esta pantalla"
@@ -48,7 +49,7 @@ function BotonVideo({ videos, pathname }: { videos: { slug: string; rutas: strin
     >
       <span aria-hidden="true">▶</span>
       <span className="hidden sm:inline">¿Cómo se hace?</span>
-    </Link>
+    </EnlacePrecarga>
   );
 }
 
@@ -155,7 +156,7 @@ export function StaffShell({
           aria-label="Secciones"
           className="hidden w-64 flex-none flex-col justify-between border-r border-n-200 bg-white p-3 md:flex"
         >
-          <ListaNav items={items} pathname={pathname} />
+          <ListaNav items={items} rol={rol} pathname={pathname} />
           <div>
             <SelectorNegocio negocios={negocios} className="mt-4" />
             <BotonInstalar className="mt-4" />
@@ -176,7 +177,7 @@ export function StaffShell({
               aria-label="Secciones"
               className="absolute inset-y-0 left-0 w-72 max-w-[80%] overflow-y-auto bg-white p-3 shadow-lg"
             >
-              <ListaNav items={items} pathname={pathname} onNavegar={() => setMenuAbierto(false)} />
+              <ListaNav items={items} rol={rol} pathname={pathname} onNavegar={() => setMenuAbierto(false)} />
               <SelectorNegocio negocios={negocios} className="mt-4" />
               <BotonInstalar className="mt-4 border-t border-n-200 pt-3" />
               <HechoConPeluDesk className="mt-6 px-3 pb-1" />
@@ -195,13 +196,17 @@ export function StaffShell({
 
 function ListaNav({
   items,
+  rol,
   pathname,
   onNavegar,
 }: {
   items: ItemNav[];
+  rol: string;
   pathname: string;
   onNavegar?: () => void;
 }) {
+  // QA S41 (N141): solo las pantallas principales del rol se precargan solas; las demás, al pasar el puntero o tocar.
+  const principales = pantallasPrincipales(rol, items);
   return (
     <ul className="flex flex-col gap-1">
       {items.map((item) => {
@@ -226,8 +231,9 @@ function ListaNav({
 
         return (
           <li key={item.href}>
-            <Link
+            <EnlacePrecarga
               href={item.href}
+              automatica={principales.includes(item.href)}
               onClick={onNavegar}
               aria-current={esActivo ? "page" : undefined}
               className={`flex min-h-11 items-center gap-3 rounded-md px-3 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado ${
@@ -236,7 +242,7 @@ function ListaNav({
             >
               <IconoSeccion href={item.href} inicio={esInicio} />
               {item.etiqueta}
-            </Link>
+            </EnlacePrecarga>
           </li>
         );
       })}

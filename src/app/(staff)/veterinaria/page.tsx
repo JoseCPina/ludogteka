@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { EnlacePrecarga } from "@/components/ui/enlace-precarga";
 import { SiPuedeAbrir } from "@/components/acceso-contexto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -19,9 +19,9 @@ function Tarjeta({ href, titulo, children }: { href?: string; titulo: string; ch
   // Una tarjeta que lleva a una pantalla que esta persona no abre no se muestra (QA N127).
   return href ? (
     <SiPuedeAbrir href={href}>
-      <Link href={href} className={`${base} hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave`}>
+      <EnlacePrecarga href={href} className={`${base} hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave`}>
         {cuerpo}
-      </Link>
+      </EnlacePrecarga>
     </SiPuedeAbrir>
   ) : (
     <div className={`${base} border-dashed bg-n-50`}>{cuerpo}</div>

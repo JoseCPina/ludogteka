@@ -16,7 +16,7 @@ import { ExtrasTablero } from "@/components/extras/extras-tablero";
 import { RecordatorioPago } from "./recordatorio-pago";
 import { AvanceWeb } from "@/components/avance-web";
 import { VideosInicio } from "@/components/ayuda/videos-inicio";
-import Link from "next/link";
+import { EnlacePrecarga } from "@/components/ui/enlace-precarga";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { ListaPersonal, type PersonaStaff } from "./lista-personal";
@@ -108,9 +108,9 @@ export default async function AdminPage() {
               Dale a una persona de recepción permisos extra para que te ayude a administrar.
             </p>
           </div>
-          <Link href="/admin/permisos" className="font-semibold text-morado hover:underline">
+          <EnlacePrecarga href="/admin/permisos" className="font-semibold text-morado hover:underline">
             Administrar permisos →
-          </Link>
+          </EnlacePrecarga>
         </section>
       )}
 
@@ -122,9 +122,9 @@ export default async function AdminPage() {
               Pasa tu lista de un Excel o CSV al sistema, con vista previa y con opción de deshacer.
             </p>
           </div>
-          <Link href="/admin/importar" className="font-semibold text-morado hover:underline">
+          <EnlacePrecarga href="/admin/importar" className="font-semibold text-morado hover:underline">
             Importar →
-          </Link>
+          </EnlacePrecarga>
         </section>
       )}
 
@@ -197,9 +197,9 @@ export default async function AdminPage() {
                   : cobroIntegrado.motivo}
             </p>
           </div>
-          <Link href="/admin/pagos" className="font-semibold text-morado underline underline-offset-4">
+          <EnlacePrecarga href="/admin/pagos" className="font-semibold text-morado underline underline-offset-4">
             Configurar
-          </Link>
+          </EnlacePrecarga>
         </section>
       )}
 

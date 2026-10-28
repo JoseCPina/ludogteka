@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { EnlacePrecarga } from "@/components/ui/enlace-precarga";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { negocioActual } from "@/lib/negocio/actual";
 import { Alert } from "@/components/ui/alert";
@@ -111,7 +111,7 @@ function ListaPerros({
     <ul className="flex flex-col gap-2">
       {filas.map((f) => (
         <li key={f.estancia_id}>
-          <Link
+          <EnlacePrecarga
             href={destino(f)}
             className="flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-3 py-2 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
           >
@@ -119,7 +119,7 @@ function ListaPerros({
             <span className="text-xs text-n-500">
               {ETIQUETA_CATEGORIA[f.categoria] ?? f.categoria} · {f.servicio_nombre}
             </span>
-          </Link>
+          </EnlacePrecarga>
         </li>
       ))}
     </ul>
@@ -129,14 +129,14 @@ function ListaPerros({
 function Cifra({ etiqueta, valor, sub, href }: { etiqueta: string; valor: string; sub?: string; href?: string }) {
   if (href) {
     return (
-      <Link
+      <EnlacePrecarga
         href={href}
         className="rounded-lg border border-n-200 bg-white p-4 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
       >
         <p className="text-xs font-bold uppercase tracking-wide text-n-500">{etiqueta}</p>
         <p className="mt-1 text-2xl font-bold text-n-900">{valor}</p>
         <p className="text-xs font-semibold text-morado">{sub ?? "Fotos, videos y reporte →"}</p>
-      </Link>
+      </EnlacePrecarga>
     );
   }
   return (
@@ -979,7 +979,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
             const viejo = a.dias !== undefined && esMuyViejo(a.dias);
             return (
               <li key={a.clave}>
-                <Link
+                <EnlacePrecarga
                   href={a.href}
                   className={`flex flex-col gap-1 rounded-md border-l-4 px-3 py-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave ${
                     viejo ? "border-coral bg-coral-suave/40 hover:bg-coral-suave/60" : "border-ambar bg-white hover:bg-n-50"
@@ -988,7 +988,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
                   <span className="font-semibold text-n-900">{a.texto}</span>
                   {a.detalle && <span className="text-xs text-n-600">{a.detalle}</span>}
                   {a.dias !== undefined && a.antiguedad && <Antiguedad dias={a.dias} texto={a.antiguedad} />}
-                </Link>
+                </EnlacePrecarga>
               </li>
             );
           })}
@@ -1002,9 +1002,9 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       <div className="flex flex-col gap-4">
         {cifras}
         {listaAtencion}
-        <Link href="/recepcion" className="text-sm font-semibold text-morado hover:underline">
+        <EnlacePrecarga href="/recepcion" className="text-sm font-semibold text-morado hover:underline">
           Ver el tablero del día completo →
-        </Link>
+        </EnlacePrecarga>
       </div>
     );
   }
@@ -1020,29 +1020,29 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
           <BotonNuevoCliente tipo={conEstancias ? "guarderia_hotel" : "estetica"} />
           {conEstancias && (
             <>
-              <Link href={mods.includes("guarderia") ? "/guarderia/checkin" : "/hotel/checkin"}>
+              <EnlacePrecarga href={mods.includes("guarderia") ? "/guarderia/checkin" : "/hotel/checkin"}>
                 <Button type="button" variante="secundario">
                   Check-in
                 </Button>
-              </Link>
-              <Link href={mods.includes("guarderia") ? "/guarderia/checkout" : "/hotel/checkout"}>
+              </EnlacePrecarga>
+              <EnlacePrecarga href={mods.includes("guarderia") ? "/guarderia/checkout" : "/hotel/checkout"}>
                 <Button type="button" variante="secundario">
                   Check-out
                 </Button>
-              </Link>
+              </EnlacePrecarga>
             </>
           )}
           {conEstetica && (
-            <Link href="/estetica/nueva">
+            <EnlacePrecarga href="/estetica/nueva">
               <Button type="button" variante={conEstancias ? "secundario" : "primario"}>
                 Nueva cita de estética
               </Button>
-            </Link>
+            </EnlacePrecarga>
           )}
           {conEstancias && (
-            <Link href={mods.includes("guarderia") ? "/guarderia/nueva" : "/hotel/nueva"}>
+            <EnlacePrecarga href={mods.includes("guarderia") ? "/guarderia/nueva" : "/hotel/nueva"}>
               <Button type="button">Nueva reserva</Button>
-            </Link>
+            </EnlacePrecarga>
           )}
         </div>
       </div>
@@ -1056,9 +1056,9 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
         <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Citas de estética hoy</h2>
-            <Link href="/estetica" className="text-xs font-semibold text-morado hover:underline">
+            <EnlacePrecarga href="/estetica" className="text-xs font-semibold text-morado hover:underline">
               Ver agenda →
-            </Link>
+            </EnlacePrecarga>
           </div>
           {citas.length === 0 ? (
             <p className="text-sm text-n-500">No hay citas hoy.</p>
@@ -1066,7 +1066,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
             <ul className="flex flex-col gap-2">
               {citas.map((c) => (
                 <li key={c.id} className="flex flex-col gap-2 rounded-md border border-n-200 bg-white p-2">
-                  <Link
+                  <EnlacePrecarga
                     href={`/estetica/${c.id}`}
                     className="flex items-center justify-between gap-3 rounded-md px-1 py-1 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
                   >
@@ -1084,7 +1084,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
                       )}
                     </span>
                     <span className="text-xs text-n-500">{ETIQUETA_ESTADO_CITA[c.estado] ?? c.estado}</span>
-                  </Link>
+                  </EnlacePrecarga>
                   {puedeReasignar && (c.estado === "reservada" || c.estado === "confirmada") && (
                     <SelectorEstilista
                       citaId={c.id}
