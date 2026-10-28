@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { revalidarModulosEstancia } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 const BUCKET = "perros-archivos";
 const EXPIRACION_SEGUNDOS = 60 * 60;
@@ -30,7 +32,7 @@ export async function obtenerUrlFotoLlegada(path: string | null): Promise<string
   return error ? null : data.signedUrl;
 }
 
-export type EstadoAccion = { error: string | null };
+export type EstadoAccion = { error: string | null; registros?: RegistroFinal[] };
 
 export type CamposCheckin = {
   entregadoPorNombre: string;
@@ -74,8 +76,8 @@ export async function confirmarCheckin(
     .select("checkin_sobrecupo, checkin_fuera_horario")
     .maybeSingle();
 
-  if (error?.hint === "fuera_horario") return { error: null, fueraHorario: error.message };
-  if (error?.hint === "sobrecupo") return { error: null, sobrecupo: error.message };
+  if (error?.hint === "fuera_horario") return { error: null, fueraHorario: error.message, registros: await registrosDe(supabase, [{ t: "estancias", i: estanciaId }]) };
+  if (error?.hint === "sobrecupo") return { error: null, sobrecupo: error.message, registros: await registrosDe(supabase, [{ t: "estancias", i: estanciaId }]) };
   if (error) return { error: traducirError(error) };
 
   revalidarModulosEstancia();
@@ -84,13 +86,14 @@ export async function confirmarCheckin(
     error: null,
     quedo: (data?.checkin_sobrecupo as string | null | undefined) ?? null,
     quedoFueraHorario: (data?.checkin_fuera_horario as string | null | undefined) ?? null,
+    registros: await registrosDe(supabase, [{ t: "estancias", i: estanciaId }]),
   };
 }
 
 export async function agregarPertenencia(
   estanciaId: string,
   descripcion: string
-): Promise<{ error: string | null; id: string | null }> {
+): Promise<{ error: string | null; id: string | null; registros?: RegistroFinal[] }> {
   if (!descripcion.trim()) return { error: "Escribe una descripción.", id: null };
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
@@ -102,7 +105,11 @@ export async function agregarPertenencia(
   if (error) return { error: "No pudimos guardar la pertenencia.", id: null };
   revalidatePath(`/reservas/estancias/${estanciaId}/checkin`);
   revalidatePath(`/reservas/estancias/${estanciaId}/checkout`);
-  return { error: null, id: data.id };
+  return {
+    error: null,
+    id: data.id,
+    registros: await registrosDe(supabase, [{ t: "estancia_pertenencias", i: data.id as string }, { t: "estancias", i: estanciaId }]),
+  };
 }
 
 export async function alternarPertenencia(
@@ -116,7 +123,7 @@ export async function alternarPertenencia(
     .eq("id", pertenenciaId);
 
   if (error) return { error: "No pudimos actualizar esa pertenencia." };
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "estancia_pertenencias", i: pertenenciaId }]) };
 }
 
 export type CamposCheckout = {
@@ -169,7 +176,7 @@ export async function confirmarCheckout(
     .select("checkout_fuera_horario")
     .maybeSingle();
 
-  if (error?.hint === "fuera_horario") return { error: null, fueraHorario: error.message };
+  if (error?.hint === "fuera_horario") return { error: null, fueraHorario: error.message, registros: await registrosDe(supabase, [{ t: "estancias", i: estanciaId }]) };
   if (error) return { error: traducirError(error) };
 
   // Lo entregado queda registrado: quién y cuándo.
@@ -196,6 +203,7 @@ export async function confirmarCheckout(
     ajusteSalida: errorAjuste
       ? `No se pudo ajustar la cuenta a lo que usó: ${traducirError(errorAjuste)}. Revísala antes de cobrar`
       : a?.aplicada || a?.politica === "completa" ? textoSalidaAnticipada(a) : null,
+    registros: await registrosDe(supabase, [{ t: "estancias", i: estanciaId }, ...entregadas.map((i) => ({ t: "estancia_pertenencias", i }))]),
   };
 }
 
@@ -211,5 +219,5 @@ export async function convertirEnNocheHotel(estanciaId: string): Promise<EstadoA
 
   revalidarModulosEstancia();
   revalidatePath(`/reservas/estancias/${estanciaId}/checkout`);
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "estancias", i: estanciaId }]) };
 }

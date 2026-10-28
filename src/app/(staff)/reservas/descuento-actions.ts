@@ -3,10 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 export type TipoDescuento = "porcentaje" | "monto_fijo";
 
-export type EstadoAplicarDescuento = { error: string | null; descuentoId?: string };
+export type EstadoAplicarDescuento = { error: string | null; descuentoId?: string; registros?: RegistroFinal[] };
 
 export async function aplicarDescuento(
   reservaId: string,
@@ -31,10 +33,14 @@ export async function aplicarDescuento(
 
   revalidatePath(`/reservas/${reservaId}`);
   revalidatePath(`/reservas/${reservaId}/cobrar`);
-  return { error: null, descuentoId: data as string };
+  return {
+    error: null,
+    descuentoId: data as string,
+    registros: await registrosDe(supabase, [{ t: "descuentos_aplicados", i: data as string }, { t: "reservas", i: reservaId }]),
+  };
 }
 
-export type EstadoAccionSimple = { error: string | null };
+export type EstadoAccionSimple = { error: string | null; registros?: RegistroFinal[] };
 
 export async function cancelarDescuento(
   reservaId: string,
@@ -53,5 +59,5 @@ export async function cancelarDescuento(
 
   revalidatePath(`/reservas/${reservaId}`);
   revalidatePath(`/reservas/${reservaId}/cobrar`);
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "descuentos_aplicados", i: descuentoId }, { t: "reservas", i: reservaId }]) };
 }

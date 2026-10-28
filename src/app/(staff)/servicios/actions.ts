@@ -146,7 +146,7 @@ export async function actualizarServicio(
 
   if (dbError) {
     const conflicto = conflictoDeError(dbError);
-    if (conflicto) return { error: null, conflicto };
+    if (conflicto) return { error: null, conflicto, registros: [] };
     return { error: motivoDeError(dbError, "No pudimos guardar los cambios.") };
   }
 

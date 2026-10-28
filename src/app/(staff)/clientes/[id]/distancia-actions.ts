@@ -7,6 +7,8 @@ import {
   geocodificarYCalcularDistancia,
   type ResultadoDistancia,
 } from "@/lib/google-maps/distancia-cliente";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { ConRegistros } from "@/lib/concurrencia/tipos";
 
 export type EstadoDistancia = ResultadoDistancia;
 
@@ -29,7 +31,7 @@ export async function actualizarDireccionYCalcular(
 // escape hatch: recepción pone el número que sabe correcto, y queda
 // marcado como ajuste manual para que nadie confíe en que vino de
 // Google.
-export async function ajustarDistanciaManual(clienteId: string, km: number): Promise<EstadoDistancia> {
+export async function ajustarDistanciaManual(clienteId: string, km: number): Promise<EstadoDistancia & ConRegistros> {
   if (!Number.isFinite(km) || km < 0) {
     return { error: "La distancia debe ser un número mayor o igual a cero." };
   }
@@ -47,5 +49,5 @@ export async function ajustarDistanciaManual(clienteId: string, km: number): Pro
   if (error) return { error: "No pudimos guardar el ajuste. Intenta de nuevo." };
 
   revalidatePath(`/clientes/${clienteId}`);
-  return { error: null, distanciaKm: Math.round(km * 10) / 10 };
+  return { error: null, distanciaKm: Math.round(km * 10) / 10, registros: await registrosDe(supabase, [{ t: "clientes", i: clienteId }]) };
 }

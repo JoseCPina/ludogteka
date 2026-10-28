@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useZonaNegocio } from "@/components/zona-negocio";
 import { Button } from "@/components/ui/button";
 import { hoyNegocio, horaLocalDeInstante } from "@/lib/formato";
@@ -89,4 +90,14 @@ function PropuestaVisible({ p, conHora, onUsar }: { p: PropuestaHorario; conHora
       )}
     </div>
   );
+}
+
+/**
+ * QA S41 (N142): un formulario que se queda abierto después de guardar (agendar varias citas seguidas) no deja el aviso
+ * de horario de antes junto al «Cita agendada»: el éxito lo borra y vuelve a salir en cuanto cambian la fecha, la hora
+ * o quien atiende (`clave`). `ocultar(clave)` recibe la clave con la que queda el formulario después de guardar.
+ */
+export function useAvisoTrasExito(clave: string) {
+  const [oculto, setOculto] = useState<string | null>(null);
+  return { visible: oculto !== clave, ocultar: (c: string = clave) => setOculto(c) };
 }

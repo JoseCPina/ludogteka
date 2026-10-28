@@ -4,8 +4,11 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { geocodificarDireccion } from "@/lib/google-maps/geocodificar";
 import { apartarConsulta, hayLlaveMaps, mensajeTope } from "@/lib/google-maps/cuota";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
+import { negocioIdActual } from "@/lib/negocio/actual";
 
-export type EstadoUbicacion = { error: string | null; aviso?: string };
+export type EstadoUbicacion = { error: string | null; aviso?: string; registros?: RegistroFinal[] };
 
 /**
  * QA R23: la dirección del negocio es UNA y se edita en Perfil; aquí solo se UBICA en el mapa (se lee de
@@ -59,5 +62,10 @@ export async function guardarUbicacion(datos: { base: string }): Promise<EstadoU
   if (error) return { error: error.message };
   revalidatePath("/admin");
   const texto = base ? "Ubicado en el mapa: la dirección del negocio y el punto de salida." : "Ubicado en el mapa. Las recolecciones salen de la dirección del negocio.";
-  return { error: null, aviso: n.simulado || b.simulado ? `${texto} (Coordenadas simuladas: este ambiente no tiene llave de Google.)` : texto };
+  const { data: ubicada } = await supabase.from("sucursales").select("id").is("deleted_at", null).order("activo", { ascending: false }).limit(1).maybeSingle();
+  const registros = await registrosDe(supabase, [
+    { t: "sucursales", i: ubicada?.id },
+    { t: "cupo_configuracion", i: await negocioIdActual() },
+  ]);
+  return { error: null, registros, aviso: n.simulado || b.simulado ? `${texto} (Coordenadas simuladas: este ambiente no tiene llave de Google.)` : texto };
 }

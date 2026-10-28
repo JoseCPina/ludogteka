@@ -65,10 +65,64 @@ async function leer(supabase: SupabaseClient, t: string, i: string): Promise<Reg
   return { t, i, version: fechas.sort().at(-1) || "-infinity", datos: null };
 }
 
-/** Cómo quedó cada registro que la pantalla mandó en `control.versiones` (vacío sin control). */
-export async function registrosFinales(supabase: SupabaseClient, control?: ControlVersion | null): Promise<RegistroFinal[]> {
-  const vistos = new Set<string>();
-  const pedidos = (control?.versiones ?? []).filter((v) => v?.t && v?.i && !vistos.has(`${v.t}:${v.i}`) && vistos.add(`${v.t}:${v.i}`));
-  const leidos = await Promise.all(pedidos.map((v) => leer(supabase, v.t, v.i).catch(() => null)));
+/** Cómo quedó cada registro que la pantalla mandó en `control.versiones` (vacío sin control), más los de `otros`. */
+export async function registrosFinales(supabase: SupabaseClient, control?: ControlVersion | null, otros: RegistroPedido[] = []): Promise<RegistroFinal[]> {
+  const desdeControl = (control?.versiones ?? []).filter((v) => v?.t && v?.i).map((v) => ({ t: v.t, i: v.i }));
+  return registrosDe(supabase, [...desdeControl, ...otros]);
+}
+
+/**
+ * QA S41: lo que una acción cambió y que la pantalla tiene que pintar al recibir la respuesta. Toda acción del servidor
+ * que cambia estado lo devuelve: `return { error: null, registros: await registrosDe(supabase, [{ t: "estancias", i: id }]) }`
+ * (lo exige `scripts/auditoria/acciones-registro-final.mjs`). Un tipo de `LECTURAS` se lee como allí; cualquier otra
+ * tabla se lee por `id` con la sesión de quien guarda (la RLS decide qué ve). Lo clínico no se lee directo: la acción
+ * pasa en `datos` lo que ya sabe (`{ estado: "firmada" }`) y aquí solo se toma su versión. Un id vacío no se pide.
+ */
+export type RegistroPedido = { t: string; i: string | null | undefined; datos?: Record<string, unknown> };
+
+export async function registrosDe(supabase: SupabaseClient, pedidos: RegistroPedido[]): Promise<RegistroFinal[]> {
+  const vistos = new Map<string, RegistroPedido>();
+  for (const p of pedidos) {
+    if (!p?.t || !p.i) continue;
+    const k = `${p.t}:${p.i}`;
+    const previo = vistos.get(k);
+    vistos.set(k, previo ? { ...previo, datos: { ...(previo.datos ?? {}), ...(p.datos ?? {}) } } : p);
+  }
+  // Los que se leen por id (una tabla cualquiera, o de LECTURAS por id) van juntos: una consulta por tabla y bloque.
+  const porTabla = new Map<string, string[]>();
+  for (const p of vistos.values()) {
+    const l = LECTURAS[p.t];
+    if (l && !("fila" in l && l.por === "id")) continue;
+    const tabla = l && "fila" in l ? l.fila : p.t;
+    porTabla.set(tabla, [...(porTabla.get(tabla) ?? []), p.i as string]);
+  }
+  const leidosPorId = new Map<string, Record<string, unknown>>();
+  await Promise.all(
+    [...porTabla.entries()].flatMap(([tabla, ids]) =>
+      Array.from({ length: Math.ceil(ids.length / BLOQUE) }, (_, k) => ids.slice(k * BLOQUE, (k + 1) * BLOQUE)).map(async (bloque) => {
+        const { data } = await supabase.from(tabla).select("*").in("id", bloque);
+        for (const fila of (data ?? []) as Record<string, unknown>[]) leidosPorId.set(`${tabla}:${fila.id}`, fila);
+      })
+    )
+  ).catch(() => null);
+
+  const leidos = await Promise.all(
+    [...vistos.values()].map(async (p) => {
+      const l = LECTURAS[p.t];
+      let r: RegistroFinal | null = null;
+      if (l && !("fila" in l && l.por === "id")) {
+        r = await leer(supabase, p.t, p.i as string).catch(() => null);
+      } else {
+        const fila = leidosPorId.get(`${l && "fila" in l ? l.fila : p.t}:${p.i}`);
+        r = fila ? { t: p.t, i: p.i as string, version: (fila.updated_at as string | null) ?? (fila.created_at as string | null) ?? null, datos: fila } : null;
+      }
+      if (!p.datos) return r;
+      // Lo que la acción ya sabe gana sobre lo leído (y basta si no se pudo leer: la versión es la de ahora).
+      return { t: p.t, i: p.i as string, version: r?.version ?? new Date().toISOString(), datos: { ...(r?.datos ?? {}), ...p.datos } };
+    })
+  );
   return leidos.filter((r): r is RegistroFinal => r !== null);
 }
+
+// Cuántos ids por consulta (la URL tiene tope de largo; ver leerTodoPorIds).
+const BLOQUE = 100;

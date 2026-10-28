@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
-export type ResultadoPerritoEstetica = { error: string | null; perroId?: string };
+export type ResultadoPerritoEstetica = { error: string | null; perroId?: string; registros?: RegistroFinal[] };
 
 /**
  * Alta CORTA de otro perrito de un cliente, desde agendar una cita de estética:
@@ -35,5 +37,5 @@ export async function crearPerritoEstetica(
     .single();
   if (error || !data) return { error: "No pudimos guardar al perrito. Solo admin o recepción dan de alta perros; intenta de nuevo." };
   revalidatePath(`/clientes/${clienteId}`);
-  return { error: null, perroId: data.id as string };
+  return { error: null, perroId: data.id as string, registros: await registrosDe(supabase, [{ t: "perros", i: data.id as string }]) };
 }

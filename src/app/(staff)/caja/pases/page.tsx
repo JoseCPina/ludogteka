@@ -69,7 +69,7 @@ export default async function PasesCajaPage({ searchParams }: { searchParams: Pr
           ← Caja
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Vender pase o mensualidad</h1>
-        <p className="mt-1 text-n-600">Cada paquete es de un perro: solo ese perro lo usa (un dueño con dos perros compra dos), y la reserva lo toma sola.</p>
+        <p className="mt-1 text-n-600">Cada paquete es de un perro: solo ese perro lo usa (un dueño con dos perros compra dos), y la reserva lo toma sola.</p>{/* perro-ok: pases de guardería */}
       </div>
 
       {!hayTurno && (

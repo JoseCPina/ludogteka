@@ -2,6 +2,8 @@
 
 import { useState, useRef } from "react";
 import { useEspera } from "@/hooks/use-espera";
+import { useModulos } from "@/components/modulos-contexto";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import { esEnterParaConfirmar, valorDelCampo } from "@/lib/ui/campo-vivo";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
@@ -77,6 +79,8 @@ export function CitaDetalle({
   /** updated_at de la cita al cargar la pantalla (QA N43). */
   version?: string | null;
 }) {
+  // QA S41 (N143): con Veterinaria, «mascota» (o su especie), nunca «perro» fijo.
+  const vm = vocabularioMascota({ conVet: useModulos().tiene("veterinaria") });
   const zona = useZonaNegocio();
   const router = useRouter();
   const [estado, setEstado] = useState(estadoInicial);
@@ -251,7 +255,7 @@ export function CitaDetalle({
 
   async function accionIniciar(opciones: { confirmarOtroDia?: boolean; forzar?: boolean } = {}) {
     if (esStandalone && !entregadoNombre.trim()) {
-      marcarFalta("entrega", "Escribe quién entrega al perro.", "cita-entrega-nombre");
+      marcarFalta("entrega", `Escribe quién entrega ${vm.al}.`, "cita-entrega-nombre");
       return;
     }
     setFalta(null);
@@ -277,13 +281,13 @@ export function CitaDetalle({
   }
 
   // QA S16 (N69): lo obligatorio se marca antes del clic y el botón dice qué falta.
-  const motivoIniciar = esStandalone && !entregadoNombre.trim() ? "Falta: quién entrega al perro." : null;
-  const faltanCierre = esStandalone ? [!recogidoNombre.trim() && "quién recoge al perro", esDueno === null && "si es el dueño registrado"].filter(Boolean) : [];
+  const motivoIniciar = esStandalone && !entregadoNombre.trim() ? `Falta: quién entrega ${vm.al}.` : null;
+  const faltanCierre = esStandalone ? [!recogidoNombre.trim() && `quién recoge ${vm.al}`, esDueno === null && "si es el dueño registrado"].filter(Boolean) : [];
   const motivoFinalizar = faltanCierre.length ? `Falta: ${faltanCierre.join(" y ")}.` : null;
 
   async function accionFinalizar() {
     if (esStandalone && !recogidoNombre.trim()) {
-      marcarFalta("recoge", "Escribe quién recoge al perro.", "cita-recoge-nombre");
+      marcarFalta("recoge", `Escribe quién recoge ${vm.al}.`, "cita-recoge-nombre");
       return;
     }
     if (esStandalone && esDueno === null) {
@@ -334,7 +338,7 @@ export function CitaDetalle({
               {tarifa.origen === "manual" ? " · puesta a mano" : " · automática"}. No es un descuento: es el precio de esta cita.
             </p>
           ) : (
-            <p className="text-sm text-n-700">Este perro no es cliente de guardería, pero la tarifa se puede poner a mano para esta cita.</p>
+            <p className="text-sm text-n-700">{vm.este.charAt(0).toUpperCase() + vm.este.slice(1)} no es cliente de guardería, pero la tarifa se puede poner a mano para esta cita.</p>
           )}
           {tarifa.puedeCambiar && (
             quitandoTarifa ? (
@@ -477,7 +481,7 @@ export function CitaDetalle({
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Field
                     id="cita-entrega-nombre"
-                    label="Quién entrega al perro * (obligatorio)"
+                    label={`Quién entrega ${vm.al} * (obligatorio)`}
                     value={entregadoNombre}
                     onChange={(e) => {
                       setEntregadoNombre(e.target.value);
@@ -493,7 +497,7 @@ export function CitaDetalle({
                   />
                 </div>
               ) : (
-                <p className="text-sm text-n-600">El perro ya está adentro (estancia ligada).</p>
+                <p className="text-sm text-n-600">{vm.el.charAt(0).toUpperCase() + vm.el.slice(1)} ya está adentro (estancia ligada).</p>
               )}
               {otroDia && (
                 <div role="alert" data-checkin-otro-dia className="rounded-md border-[1.5px] border-ambar bg-ambar-suave p-3 text-sm font-semibold text-n-900">
@@ -563,7 +567,7 @@ export function CitaDetalle({
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Field
                       id="cita-recoge-nombre"
-                      label="Quién recoge al perro * (obligatorio)"
+                      label={`Quién recoge ${vm.al} * (obligatorio)`}
                       value={recogidoNombre}
                       onChange={(e) => {
                         setRecogidoNombre(e.target.value);
@@ -612,7 +616,7 @@ export function CitaDetalle({
                   </div>
                 </>
               ) : (
-                <p className="text-sm text-n-600">El perro sigue adentro (estancia ligada) — el cierre no requiere estos datos.</p>
+                <p className="text-sm text-n-600">{vm.el.charAt(0).toUpperCase() + vm.el.slice(1)} sigue adentro (estancia ligada) — el cierre no requiere estos datos.</p>
               )}
 
               {recetaItems.length > 0 && (

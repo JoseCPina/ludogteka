@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { esErrorSoloLectura, mensajeSoloLectura } from "@/lib/solo-lectura";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
-export type ResultadoEstablecimiento = { error: string | null; exito?: string };
+export type ResultadoEstablecimiento = { error: string | null; exito?: string; registros?: RegistroFinal[] };
 
 const MENSAJE_PERMISO = "Solo un admin, o quien tenga el permiso «Configuración del negocio», edita los datos del establecimiento.";
 
@@ -30,7 +32,7 @@ export async function guardarEstablecimiento(fd: FormData): Promise<ResultadoEst
   const medico = String(fd.get("mvra_medico_id") ?? "");
   const medicoId = UUID.test(medico) ? medico : null;
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("guardar_establecimiento", {
+  const { data: establecimientoId, error } = await supabase.rpc("guardar_establecimiento", {
     p_aviso: texto(fd, "aviso", 120),
     p_aviso_fecha: fecha(fd, "aviso_fecha"),
     p_mvra_medico_id: medicoId,
@@ -41,7 +43,11 @@ export async function guardarEstablecimiento(fd: FormData): Promise<ResultadoEst
   });
   if (error) return { error: mensaje(error) };
   revalidatePath("/admin/perfil");
-  return { error: null, exito: "Datos del establecimiento guardados" };
+  return {
+    error: null,
+    exito: "Datos del establecimiento guardados",
+    registros: await registrosDe(supabase, [{ t: "negocio_establecimiento", i: establecimientoId as string | null }]),
+  };
 }
 
 export async function guardarPermisoEstablecimiento(fd: FormData): Promise<ResultadoEstablecimiento> {
@@ -56,7 +62,7 @@ export async function guardarPermisoEstablecimiento(fd: FormData): Promise<Resul
   const avisoDias = Number(fd.get("aviso_dias") ?? 60);
   if (!Number.isInteger(avisoDias) || avisoDias < 0 || avisoDias > 730) return { error: "Los días de aviso van de 0 a 730." };
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("guardar_permiso_establecimiento", {
+  const { data: permisoId, error } = await supabase.rpc("guardar_permiso_establecimiento", {
     p_id: UUID.test(id) ? id : null,
     p_tipo: tipo,
     p_numero: texto(fd, "numero", 120),
@@ -70,7 +76,11 @@ export async function guardarPermisoEstablecimiento(fd: FormData): Promise<Resul
   if (error) return { error: mensaje(error) };
   revalidatePath("/admin/perfil");
   revalidatePath("/recepcion");
-  return { error: null, exito: id ? "Permiso actualizado" : "Permiso agregado" };
+  return {
+    error: null,
+    exito: id ? "Permiso actualizado" : "Permiso agregado",
+    registros: await registrosDe(supabase, [{ t: "establecimiento_permisos", i: permisoId as string | null }]),
+  };
 }
 
 export async function quitarPermisoEstablecimiento(id: string): Promise<ResultadoEstablecimiento> {
@@ -80,5 +90,5 @@ export async function quitarPermisoEstablecimiento(id: string): Promise<Resultad
   if (error) return { error: mensaje(error) };
   revalidatePath("/admin/perfil");
   revalidatePath("/recepcion");
-  return { error: null, exito: "Permiso quitado" };
+  return { error: null, exito: "Permiso quitado", registros: await registrosDe(supabase, [{ t: "establecimiento_permisos", i: id }]) };
 }

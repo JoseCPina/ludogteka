@@ -11,12 +11,15 @@ import { fechaLocalDeInstante, horaLocalDeInstante } from "@/lib/formato";
 import { llenarConsentimiento } from "@/lib/veterinaria/carnet";
 import { ErrorVideo, proveedorDeSala } from "@/lib/telemedicina/proveedor";
 import type { TeleconsultaPublica } from "@/lib/telemedicina/tipos";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 // La liga de la teleconsulta (/t/<token>): sin sesión. El servidor resuelve el token (solo existe su sha256)
 // con la llave de servidor acotada al negocio del dominio; la base vuelve a comprobar ventana,
 // consentimiento y pago antes de dar la sala.
 
-type Resultado = { error: string | null };
+type Resultado = { error: string | null; registros?: RegistroFinal[] };
 const BUCKET = "perros-archivos";
 const mensajeDeBase = (e: { code?: string; message: string }, general: string) => (e.code === "P0001" ? e.message : general);
 
@@ -34,7 +37,10 @@ export async function firmarConsentimientoTeleconsulta(token: string, nombre: st
   const { data: pub } = await admin.rpc("teleconsulta_publica", { p_token_hash: hash });
   const d = pub as TeleconsultaPublica | null;
   if (!d) return { error: "Esta liga ya no es válida." };
-  if (d.consentimiento.estado === "firmado") return { error: null };
+  // El consentimiento es clínico: se devuelve solo su id y su estado (la sesión del navegador, sin cuenta, no lee nada).
+  const firmado = async (firmadoAt: string | null) =>
+    registrosDe(await createSupabaseServerClient(), [{ t: "consentimientos", i: d.consentimiento.id, datos: { estado: "firmado", firmado_at: firmadoAt } }]);
+  if (d.consentimiento.estado === "firmado") return { error: null, registros: await firmado(d.consentimiento.firmado_at) };
   if (d.ventana === "cancelada" || d.ventana === "cerrada") return { error: "Esta teleconsulta ya no está disponible." };
 
   const { data: fila } = await admin
@@ -65,10 +71,11 @@ export async function firmarConsentimientoTeleconsulta(token: string, nombre: st
   const { error } = await admin.rpc("teleconsulta_firmar_consentimiento", { p_token_hash: hash, p_nombre: nombre.trim(), p_ip: ip, p_hash: huella, p_path: ruta });
   if (error) return { error: mensajeDeBase(error, "No pudimos registrar tu firma. Intenta de nuevo.") };
   revalidatePath(`/t/${token}`);
-  return { error: null };
+  return { error: null, registros: await firmado(ahora) };
 }
 
 /** Entrar a la sala: solo en la ventana, con el consentimiento firmado y (si aplica) la cuenta en cero. */
+// registro-final: solo anota la hora en que entró el dueño y devuelve la liga de la sala; la pantalla no pinta ningún registro
 export async function entrarSalaDueno(token: string): Promise<{ error: string | null; url?: string; simulada?: boolean }> {
   if (!tokenPlausible(token)) return { error: "Esta liga ya no es válida." };
   const negocio = await negocioActual();

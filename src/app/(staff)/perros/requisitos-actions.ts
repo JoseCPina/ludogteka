@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 const BUCKET = "perros-archivos";
 
-export type EstadoRequisitoForm = { error: string | null; id?: string };
+export type EstadoRequisitoForm = { error: string | null; id?: string; registros?: RegistroFinal[] };
 
 export async function crearRequisitoAplicado(
   perroId: string,
@@ -42,14 +44,14 @@ export async function crearRequisitoAplicado(
   if (error) return { error: error.code === "23505" ? error.message : "No pudimos guardar el registro. Intenta de nuevo." };
 
   revalidatePath(`/perros/${perroId}`);
-  return { error: null, id: data.id };
+  return { error: null, id: data.id, registros: await registrosDe(supabase, [{ t: "requisitos_sanitarios_aplicados", i: data.id }]) };
 }
 
 export async function guardarComprobanteRequisito(
   requisitoAplicadoId: string,
   perroId: string,
   path: string
-): Promise<{ error: string | null }> {
+): Promise<{ error: string | null; registros?: RegistroFinal[] }> {
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from("requisitos_sanitarios_aplicados")
@@ -59,7 +61,7 @@ export async function guardarComprobanteRequisito(
   if (error) return { error: "Guardamos el registro, pero no pudimos guardar el comprobante." };
 
   revalidatePath(`/perros/${perroId}`);
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "requisitos_sanitarios_aplicados", i: requisitoAplicadoId }]) };
 }
 
 export async function obtenerUrlComprobante(requisitoAplicadoId: string): Promise<string | null> {
@@ -83,7 +85,7 @@ export async function corregirRequisitoAplicado(
   perroId: string,
   id: string,
   datos: { fechaAplicacion: string; detalle: string; notas: string; motivo: string }
-): Promise<{ error: string | null }> {
+): Promise<{ error: string | null; registros?: RegistroFinal[] }> {
   if (!datos.fechaAplicacion) return { error: "Escribe la fecha de aplicación." };
   if (datos.motivo.trim().length < 5) return { error: "Escribe el motivo de la corrección." };
   const supabase = await createSupabaseServerClient();
@@ -96,18 +98,18 @@ export async function corregirRequisitoAplicado(
   });
   if (error) return { error: error.message };
   revalidatePath(`/perros/${perroId}`);
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "requisitos_sanitarios_aplicados", i: id }]) };
 }
 
 export async function anularRequisitoAplicado(
   perroId: string,
   id: string,
   motivo: string
-): Promise<{ error: string | null }> {
+): Promise<{ error: string | null; registros?: RegistroFinal[] }> {
   if (motivo.trim().length < 5) return { error: "Escribe el motivo de la anulación." };
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("anular_requisito_aplicado", { p_id: id, p_motivo: motivo });
   if (error) return { error: error.message };
   revalidatePath(`/perros/${perroId}`);
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "requisitos_sanitarios_aplicados", i: id }]) };
 }

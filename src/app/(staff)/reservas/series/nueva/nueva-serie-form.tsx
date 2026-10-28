@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
+import { useModulos } from "@/components/modulos-contexto";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import Link from "next/link";
 import { Field } from "@/components/ui/field";
 import { TextoConEnlaces } from "@/components/ui/texto-con-enlaces";
@@ -48,6 +50,8 @@ export function NuevaSerieForm({
   // Días de la semana (1 = lunes … 7 = domingo) en que guardería no abre.
   diasSinGuarderia: number[];
 }) {
+  // QA S41 (N143): con Veterinaria, «mascota» (o su especie), nunca «perro» fijo.
+  const vm = vocabularioMascota({ conVet: useModulos().tiene("veterinaria") });
   const [clienteId, setClienteId] = useState<string | null>(null);
   const [perroId, setPerroId] = useState("");
   const [servicioId, setServicioId] = useState(primerCotizable(servicios)?.id ?? "");
@@ -168,13 +172,13 @@ export function NuevaSerieForm({
       </div>
 
       {perrosDelCliente.length === 0 ? (
-        <Alert variante="advertencia" titulo="Este cliente no tiene perros registrados">
+        <Alert variante="advertencia" titulo={`Este cliente no tiene ${vm.plural} registrad${vm.o}s`}>
           Da de alta al perro antes de poder armarle una serie.
         </Alert>
       ) : (
         <>
-          <Select label="Perro" value={perroId} onChange={(e) => setPerroId(e.target.value)}>
-            <option value="">Elige un perro</option>
+          <Select label={vm.Nombre} value={perroId} onChange={(e) => setPerroId(e.target.value)}>
+            <option value="">Elige {vm.un}</option>
             {perrosDelCliente.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.nombre}
@@ -183,7 +187,7 @@ export function NuevaSerieForm({
           </Select>
 
           {seriesDelPerro.length > 0 && (
-            <Alert variante="advertencia" titulo="Este perro ya tiene serie recurrente">
+            <Alert variante="advertencia" titulo={`${vm.este.charAt(0).toUpperCase() + vm.este.slice(1)} ya tiene serie recurrente`}>
               {seriesDelPerro
                 .map((s) => `${s.servicioNombre} — ${formatearDiasSemana(s.diasSemana)}`)
                 .join("; ")}

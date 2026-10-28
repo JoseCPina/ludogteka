@@ -4,6 +4,8 @@ import { negocioActual, urlDelNegocio } from "@/lib/negocio/actual";
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { traducirError } from "../reservas/traducir-error";
 import { cerrarFrase } from "@/lib/texto/frases";
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
@@ -12,7 +14,7 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 
 const BUCKET = "perros-archivos";
 
-export type EstadoBitacora = { error: string | null };
+export type EstadoBitacora = { error: string | null; registros?: RegistroFinal[] };
 
 // Igual que prepararRutaContratoPapel: la ruta se calcula ANTES de subir
 // nada, con un id ya fijo — bitacora_entradas no tiene política de
@@ -71,7 +73,7 @@ export async function crearEntradaBitacora(datos: {
   if (error) return { error: traducirError(error) };
 
   revalidatePath(`/perros/${datos.perroId}`);
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "bitacora_entradas", i: datos.entradaId }]) };
 }
 
 function nullSiVacio(texto: string): string | null {
@@ -85,7 +87,7 @@ export async function marcarBitacoraNotificada(entradaId: string, perroId: strin
   if (error) return { error: traducirError(error) };
 
   revalidatePath(`/perros/${perroId}`);
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "bitacora_entradas", i: entradaId }]) };
 }
 
 // Galón asumido... no, aquí: 52 + 10 dígitos es el formato que wa.me

@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
-export type EstadoRequisitoEstancia = { error: string | null; ok?: boolean };
+export type EstadoRequisitoEstancia = { error: string | null; ok?: boolean; registros?: RegistroFinal[] };
 
 function mensajeDeError(error: { code?: string; message: string }): string {
   // Los RAISE del trigger y de las RPC ya vienen en español.
@@ -40,7 +42,7 @@ export async function marcarEvaluacionComportamiento(
   if (error) return { error: mensajeDeError(error) };
 
   revalidar(perroId, clienteId);
-  return { error: null, ok: true };
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "perros", i: perroId }]) };
 }
 
 export async function quitarEvaluacionComportamiento(
@@ -52,7 +54,7 @@ export async function quitarEvaluacionComportamiento(
   if (error) return { error: mensajeDeError(error) };
 
   revalidar(perroId, clienteId);
-  return { error: null, ok: true };
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "perros", i: perroId }]) };
 }
 
 // Celo y gestación son marcas que recepción prende y apaga. Van directo
@@ -68,5 +70,5 @@ export async function marcarEstadoReproductivo(
   if (error) return { error: mensajeDeError(error) };
 
   revalidar(perroId, clienteId);
-  return { error: null, ok: true };
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "perros", i: perroId }]) };
 }

@@ -24,6 +24,8 @@ export type Cargo = {
   descripcion?: string | null;
   /** updated_at del cargo al cargar (QA N43). */
   version?: string | null;
+  /** QA S41: una línea de la cuenta que no es un cargo de cargos_aplicados (una cita de estética) no se cancela aquí. */
+  cancelable?: boolean;
 };
 
 // montoLibre: sin celda en la matriz; recepción captura importe y
@@ -67,6 +69,19 @@ export function CargosSeccion({
   sinCargosNuevos?: string | null;
 }) {
   const [cargos, setCargos] = useState(cargosIniciales);
+  // QA S41 (N144): la cuenta que se enseña es la de la base; aplicar o cancelar un cargo devuelve la nueva y se pinta con
+  // la respuesta. Cuando la página se recarga, manda la de la página.
+  const [cuentaViva, setCuentaViva] = useState(cuenta);
+  const [cuentaDePagina, setCuentaDePagina] = useState(cuenta);
+  if (cuenta !== cuentaDePagina) {
+    setCuentaDePagina(cuenta);
+    setCuentaViva(cuenta);
+  }
+  const [cargosDePagina, setCargosDePagina] = useState(cargosIniciales);
+  if (cargosIniciales !== cargosDePagina) {
+    setCargosDePagina(cargosIniciales);
+    setCargos(cargosIniciales);
+  }
   // Después de aplicar o cancelar un cargo, el total vuelve a leerse de la base.
   const router = useRouter();
   const [actualizando, iniciarActualizacion] = useTransition();
@@ -84,6 +99,33 @@ export function CargosSeccion({
   const [conflicto, setConflicto] = useState<{ c: Conflicto; cargoId: string } | null>(null);
   const [motivoCancelar, setMotivoCancelar] = useState("");
   const cancelando = useEspera();
+
+  // QA S41 (N144): los cargos que se listan son los de la cuenta de la estancia (cuenta_lineas_estancia, la misma fuente
+  // del detalle de la estancia y de Caja): todo lo que no es la base ni una corrección, más los cancelados (que ya no
+  // suman). Sin cuenta (quien no la pasa), los de cargos_aplicados como antes.
+  const filasCargos: Cargo[] =
+    cuentaViva === undefined
+      ? cargos
+      : [
+          ...(cuentaViva?.lineas ?? [])
+            .filter((l) => l.tipo !== "estancia" && l.tipo !== "ajuste")
+            .map((l) => {
+              const propio = cargos.find((c) => c.id === l.origenId);
+              return {
+                id: l.origenId,
+                servicioNombre: propio?.servicioNombre ?? l.descripcion,
+                cantidad: 1,
+                precio: l.total,
+                cancelado: false,
+                motivoCancelacion: null,
+                descripcion: propio?.descripcion ?? null,
+                version: propio?.version ?? null,
+                // Solo un cargo de cargos_aplicados se cancela desde aquí (una cita de estética se cancela en su cita).
+                cancelable: Boolean(propio && !propio.cancelado),
+              };
+            }),
+          ...cargos.filter((c) => c.cancelado),
+        ];
 
   const servicioSeleccionado = serviciosCargo.find((s) => s.id === servicioId);
   const esRecoleccion = servicioSeleccionado?.clave === "recoleccion";
@@ -105,6 +147,7 @@ export function CargosSeccion({
       setError(res.error);
       return;
     }
+    if (res.cuenta !== undefined) setCuentaViva(res.cuenta);
     setCargos((prev) => [
       ...prev,
       {
@@ -138,6 +181,7 @@ export function CargosSeccion({
       setError(res.error);
       return;
     }
+    if (res.cuenta !== undefined) setCuentaViva(res.cuenta);
     const motivo = motivoCancelar.trim();
     setCargos((prev) =>
       prev.map((c) => (c.id === cargoId ? { ...c, cancelado: true, motivoCancelacion: motivo } : c))
@@ -151,11 +195,11 @@ export function CargosSeccion({
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <p className="text-sm font-bold uppercase tracking-wide text-n-600">Cargos aplicados</p>
-        {cargos.length === 0 ? (
-          <p className="text-sm text-n-500">Ninguno todavía.</p>
+        {filasCargos.length === 0 ? (
+          <p className="text-sm text-n-500" data-sin-cargos>Ninguno todavía.</p>
         ) : (
-          <ul className="flex flex-col gap-2">
-            {cargos.map((c) => (
+          <ul className="flex flex-col gap-2" data-cargos-aplicados={filasCargos.length}>
+            {filasCargos.map((c) => (
               <li
                 key={c.id}
                 className={`rounded-md border px-3 py-2 ${
@@ -170,7 +214,7 @@ export function CargosSeccion({
                     <span className={`tabular-nums font-semibold ${c.cancelado ? "text-n-500 line-through" : "text-n-900"}`}>
                       {formatoDinero(c.precio * c.cantidad)}
                     </span>
-                    {!c.cancelado && cancelandoId !== c.id && (
+                    {!c.cancelado && c.cancelable !== false && cancelandoId !== c.id && (
                       <Button type="button" variante="peligro" onClick={() => setCancelandoId(c.id)}>
                         Cancelar
                       </Button>
@@ -237,7 +281,7 @@ export function CargosSeccion({
               <span className="text-n-500"> (no se cobra; era {formatoDinero(eraSiCancelada)})</span>
             </span>
           )}
-          {cuenta !== undefined && <DesgloseEstancia cuenta={cuenta} actualizando={actualizando} />}
+          {cuenta !== undefined && <DesgloseEstancia cuenta={cuentaViva ?? null} actualizando={actualizando} />}
           {cancelada && cuentaCobrado > 0 && (
             <span className="text-n-600" data-desglose-cobrado>
               Cobrado en la cuenta: <span className="font-semibold text-n-900">{formatoDinero(cuentaCobrado)}</span>

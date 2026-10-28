@@ -7,6 +7,8 @@ import { negocioActual, urlDelNegocio } from "@/lib/negocio/actual";
 import { nuevoToken } from "@/lib/reporte/enlaces";
 import { traducirError } from "../../reservas/traducir-error";
 import type { ResultadoAccion } from "@/lib/empleados/tipos";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { AYUDA_CANTIDAD, leerCantidad } from "@/lib/veterinaria/cantidad";
 
 // Recetas simples, espejo del SITPV, recetario especial y reporte mensual. Todo pasa por funciones
@@ -45,7 +47,11 @@ export async function anularReceta(id: string, fd: FormData): Promise<ResultadoA
   const { error } = await supabase.rpc("vet_receta_anular", { p_id: id, p_motivo: texto(fd, "motivo") });
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/recetas/${id}`);
-  return { error: null, exito: "Receta anulada." };
+  return {
+    error: null,
+    exito: "Receta anulada.",
+    registros: await registrosDe(supabase, [{ t: "vet_recetas", i: id, datos: { estado: "anulada", anulada_motivo: texto(fd, "motivo") } }]),
+  };
 }
 
 export async function archivarReceta(id: string): Promise<ResultadoAccion> {
@@ -57,14 +63,18 @@ export async function archivarReceta(id: string): Promise<ResultadoAccion> {
 }
 
 /** Genera la liga del dueño (solo se guarda el sha256 del token) y el texto para mandarla por WhatsApp. */
-export async function enviarReceta(id: string): Promise<{ error: string | null; url?: string }> {
+export async function enviarReceta(id: string): Promise<{ error: string | null; url?: string; registros?: RegistroFinal[] }> {
   const supabase = await createSupabaseServerClient();
   const negocio = await negocioActual();
   const { token, hash } = nuevoToken();
   const { error } = await supabase.rpc("vet_receta_enlace", { p_id: id, p_token_hash: hash });
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/recetas/${id}`);
-  return { error: null, url: `${urlDelNegocio(negocio)}/rx/${token}` };
+  return {
+    error: null,
+    url: `${urlDelNegocio(negocio)}/rx/${token}`,
+    registros: await registrosDe(supabase, [{ t: "vet_recetas", i: id, datos: { enviada_at: new Date().toISOString() } }]),
+  };
 }
 
 // ── Surtir contra un documento ───────────────────────────────────────
@@ -86,7 +96,15 @@ export async function surtirControlado(tipo: "receta" | "espejo" | "recetario", 
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/recetas", "layout");
   revalidatePath("/veterinaria/inventario", "layout");
-  return { error: null, exito: "Salida registrada en el lote y en el libro de control." };
+  const tablaDoc = tipo === "receta" ? "vet_recetas" : tipo === "espejo" ? "vet_sitpv_recetas" : "vet_recetario_especial";
+  return {
+    error: null,
+    exito: "Salida registrada en el lote y en el libro de control.",
+    registros: await registrosDe(supabase, [
+      { t: tablaDoc, i: docId, datos: { ultima_salida: { lote_id: lote, cantidad } } },
+      { t: "insumo_lotes", i: lote },
+    ]),
+  };
 }
 
 // ── Espejo del SITPV ─────────────────────────────────────────────────
@@ -122,7 +140,11 @@ export async function cancelarEspejo(id: string, fd: FormData): Promise<Resultad
   const { error } = await supabase.rpc("vet_sitpv_cancelar", { p_id: id, p_motivo: texto(fd, "motivo") });
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/recetas/sitpv", "layout");
-  return { error: null, exito: "Folio cancelado: saldrá en ceros en el reporte del mes." };
+  return {
+    error: null,
+    exito: "Folio cancelado: saldrá en ceros en el reporte del mes.",
+    registros: await registrosDe(supabase, [{ t: "vet_sitpv_recetas", i: id, datos: { estado: "cancelada", cancelada_motivo: texto(fd, "motivo") } }]),
+  };
 }
 
 export async function archivarEspejo(id: string): Promise<ResultadoAccion> {
@@ -159,7 +181,11 @@ export async function cancelarRecetario(id: string, fd: FormData): Promise<Resul
   const { error } = await supabase.rpc("vet_recetario_cancelar", { p_id: id, p_motivo: texto(fd, "motivo") });
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/recetas/especial");
-  return { error: null, exito: "Recetario cancelado." };
+  return {
+    error: null,
+    exito: "Recetario cancelado.",
+    registros: await registrosDe(supabase, [{ t: "vet_recetario_especial", i: id, datos: { estado: "cancelada", cancelada_motivo: texto(fd, "motivo") } }]),
+  };
 }
 
 export async function archivarRecetario(id: string): Promise<ResultadoAccion> {
@@ -167,7 +193,7 @@ export async function archivarRecetario(id: string): Promise<ResultadoAccion> {
   const { error } = await supabase.rpc("vet_recetario_archivar", { p_id: id });
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/recetas/especial");
-  return { error: null, exito: "Archivado." };
+  return { error: null, exito: "Archivado.", registros: await registrosDe(supabase, [{ t: "vet_recetario_especial", i: id, datos: { archivada_at: new Date().toISOString() } }]) };
 }
 
 // ── Reporte mensual ──────────────────────────────────────────────────
@@ -178,7 +204,11 @@ export async function marcarReporte(medicoId: string, periodo: string, fd: FormD
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/recetas/sitpv", "layout");
   revalidatePath("/veterinaria");
-  return { error: null, exito: "Marcado como reportado en el SITPV." };
+  return {
+    error: null,
+    exito: "Marcado como reportado en el SITPV.",
+    registros: await registrosDe(supabase, [{ t: "medicos_veterinarios", i: medicoId, datos: { reporte_sitpv: { periodo, reportado: true } } }]),
+  };
 }
 
 // ── Producto y ajustes ───────────────────────────────────────────────
@@ -193,7 +223,7 @@ export async function guardarRegulatorioProducto(insumoId: string, fd: FormData)
   });
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/inventario/${insumoId}`);
-  return { error: null, exito: "Datos del producto guardados." };
+  return { error: null, exito: "Datos del producto guardados.", registros: await registrosDe(supabase, [{ t: "insumos", i: insumoId }]) };
 }
 
 export async function guardarEspejoAntimicrobianos(fd: FormData): Promise<ResultadoAccion> {
@@ -201,5 +231,5 @@ export async function guardarEspejoAntimicrobianos(fd: FormData): Promise<Result
   const { error } = await supabase.rpc("guardar_veterinaria_espejo_antimicrobianos", { p_activo: texto(fd, "espejo") === "si" });
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/ajustes");
-  return { error: null, exito: "Guardado." };
+  return { error: null, exito: "Guardado.", registros: await registrosDe(supabase, [{ t: "veterinaria_ajustes", i: (await negocioActual()).id }]) };
 }

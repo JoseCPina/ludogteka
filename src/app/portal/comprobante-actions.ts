@@ -4,14 +4,17 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { negocioActual } from "@/lib/negocio/actual";
-import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import { usaVeterinaria } from "@/lib/plan/modulos";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 const BUCKET = "perros-archivos";
 const PESO_MAXIMO = 8 * 1024 * 1024;
 
-export type ResultadoProponer = { error: string | null; id?: string };
+export type ResultadoProponer = { error: string | null; id?: string; registros?: RegistroFinal[] };
 
 /**
  * El dueño manda la foto de su carnet o comprobante desde el portal.
@@ -112,5 +115,5 @@ export async function proponerComprobante(perroId: string, formData: FormData): 
 
   revalidatePath(`/portal/perros/${perroId}`);
   revalidatePath("/recepcion");
-  return { error: null, id };
+  return { error: null, id, registros: await registrosDe(supabase, [{ t: "requisitos_sanitarios_propuestos", i: id }]) };
 }

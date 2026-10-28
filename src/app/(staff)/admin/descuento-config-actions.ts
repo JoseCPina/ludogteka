@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { traducirError } from "../reservas/traducir-error";
 
-export type EstadoConfigDescuento = { error: string | null };
+export type EstadoConfigDescuento = { error: string | null; registros?: RegistroFinal[] };
 
 // Insert-only, mismo criterio que tarifas/cupo_configuracion: cambiar el
 // tope es una fila nueva con vigencia_desde = hoy, nunca un UPDATE al
@@ -17,12 +19,14 @@ export async function actualizarTopeDescuento(topeRecepcion: number): Promise<Es
   const supabase = await createSupabaseServerClient();
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
 
-  const { error } = await supabase
+  const { data: fila, error } = await supabase
     .from("configuracion_descuentos")
-    .insert({ vigencia_desde: hoyData, tope_recepcion: topeRecepcion });
+    .insert({ vigencia_desde: hoyData, tope_recepcion: topeRecepcion })
+    .select("id")
+    .single();
 
   if (error) return { error: traducirError(error) };
 
   revalidatePath("/admin");
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "configuracion_descuentos", i: fila?.id }]) };
 }

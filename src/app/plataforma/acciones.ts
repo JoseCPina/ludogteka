@@ -10,6 +10,8 @@ import { SLUGS_RESERVADOS } from "@/lib/negocio/host";
 import { generarPasswordTemporal } from "@/lib/auth/identidad";
 import { MARCA_CAMBIO_PASSWORD } from "@/lib/auth/cambio-obligatorio";
 import type { ResultadoPlataforma } from "@/lib/plataforma/tipos";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { ConRegistros } from "@/lib/concurrencia/tipos";
 import { sincronizarPreciosPlan, type PlanParaStripe } from "@/lib/cobro/precios";
 import { mensajeDeErrorStripe, stripeConfigurado } from "@/lib/cobro/stripe";
 import { eliminarNegocioCompleto } from "@/lib/plataforma/eliminar-negocio";
@@ -85,9 +87,9 @@ async function negocioParaLink(s: NonNullable<Awaited<ReturnType<typeof sesionPl
   return n ?? null;
 }
 
-export async function crearNegocio(fd: FormData): Promise<ResultadoPlataforma> {
+export async function crearNegocio(fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const nombre = texto(fd, "nombre");
   const slug = texto(fd, "slug").toLowerCase();
   const zona = texto(fd, "zona");
@@ -126,7 +128,7 @@ export async function crearNegocio(fd: FormData): Promise<ResultadoPlataforma> {
   const r = await darAdmin(s, { id: id as string, slug, dominio: dominio || null, url_publica: null, nombre }, adminEmail, adminNombre);
   revalidatePath("/plataforma");
   if (r.error) return { error: `El negocio quedó dado de alta, pero no su admin: ${r.error} Agrégalo desde la ficha del negocio.`, ir: `/plataforma/negocios/${id}` };
-  return { ...r, ir: undefined, exito: `${nombre} quedó dado de alta. ${r.exito}` };
+  return { ...r, ir: undefined, exito: `${nombre} quedó dado de alta. ${r.exito}`, registros: await registrosDe(s.supabase, [{ t: "negocios", i: id as string }]) };
 }
 
 export async function agregarAdmin(negocioId: string, fd: FormData): Promise<ResultadoPlataforma> {
@@ -139,9 +141,9 @@ export async function agregarAdmin(negocioId: string, fd: FormData): Promise<Res
   return r;
 }
 
-export async function actualizarNegocio(negocioId: string, fd: FormData): Promise<ResultadoPlataforma> {
+export async function actualizarNegocio(negocioId: string, fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const color = texto(fd, "color");
   const favicon = texto(fd, "favicon");
   const logo = texto(fd, "logo");
@@ -172,11 +174,16 @@ export async function actualizarNegocio(negocioId: string, fd: FormData): Promis
   const avisoCobro = await reajustarCobroDeSucursales(principal);
   revalidatePath(`/plataforma/negocios/${negocioId}`);
   revalidatePath("/plataforma");
-  return { error: null, exito: `Guardado. El dominio del negocio lo toma en menos de un minuto.${avisoCobro ? ` ${avisoCobro}` : ""}` };
+  return {
+    error: null,
+    exito: `Guardado. El dominio del negocio lo toma en menos de un minuto.${avisoCobro ? ` ${avisoCobro}` : ""}`,
+    registros: await registrosDe(s.supabase, [{ t: "negocios", i: negocioId }]),
+  };
 }
 
 // Soporte: restablecer la contraseña de una persona (en cualquier negocio,
 // o en varios). Con motivo, y queda en la bitácora de la plataforma.
+// registro-final: solo cambia la contraseña en Auth y deja la bitácora; la pantalla muestra la contraseña que devuelve
 export async function restablecerPasswordPersona(personaId: string, motivo: string): Promise<ResultadoPlataforma> {
   const s = await sesionPlataforma();
   if (!s) return NO_AUTORIZADO;
@@ -211,9 +218,9 @@ export async function restablecerPasswordPersona(personaId: string, motivo: stri
 }
 
 // ── Catálogos compartidos entre todos los negocios ──
-export async function guardarRaza(fd: FormData): Promise<ResultadoPlataforma> {
+export async function guardarRaza(fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const id = texto(fd, "id");
   const nombre = texto(fd, "nombre");
   const alias = texto(fd, "alias").split(",").map((a) => a.trim()).filter(Boolean);
@@ -240,13 +247,17 @@ export async function guardarRaza(fd: FormData): Promise<ResultadoPlataforma> {
     p_accion: "editar_catalogo", p_negocio_id: null, p_persona_id: null, p_motivo: null, p_detalle: { tabla: "razas", id: r.data[0].id, ...datos },
   });
   revalidatePath("/plataforma/catalogos");
-  return { error: null, exito: id ? "Raza guardada." : "Raza agregada. Cada negocio le asigna su grupo de precio." };
+  return {
+    error: null,
+    exito: id ? "Raza guardada." : "Raza agregada. Cada negocio le asigna su grupo de precio.",
+    registros: await registrosDe(s.supabase, [{ t: "razas", i: r.data[0].id as string }]),
+  };
 }
 
 /** Una propuesta de raza de un negocio: aprobarla, rechazarla con motivo o aprobarla como variante de otra. */
-export async function resolverPropuestaRaza(fd: FormData): Promise<ResultadoPlataforma> {
+export async function resolverPropuestaRaza(fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const id = texto(fd, "id");
   const accion = texto(fd, "accion");
   const motivo = texto(fd, "motivo");
@@ -263,14 +274,18 @@ export async function resolverPropuestaRaza(fd: FormData): Promise<ResultadoPlat
     p_accion: "resolver_propuesta_raza", p_negocio_id: null, p_persona_id: null, p_motivo: motivo || null, p_detalle: { propuesta: id, accion, raza: data },
   });
   revalidatePath("/plataforma/catalogos");
-  return { error: null, exito: accion === "rechazar" ? "Propuesta rechazada." : "Listo: la raza ya está en el catálogo y los perros que la propusieron quedaron ligados." };
+  return {
+    error: null,
+    exito: accion === "rechazar" ? "Propuesta rechazada." : "Listo: la raza ya está en el catálogo y los perros que la propusieron quedaron ligados.",
+    registros: await registrosDe(s.supabase, [{ t: "razas_propuestas", i: id }, { t: "razas", i: data as string | null }]),
+  };
 }
 
 const CATALOGOS_ETIQUETA = new Set(["tamanos_categoria", "tipos_pelaje", "unidades_medida"]);
 
-export async function guardarEtiqueta(tabla: string, fd: FormData): Promise<ResultadoPlataforma> {
+export async function guardarEtiqueta(tabla: string, fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   if (!CATALOGOS_ETIQUETA.has(tabla)) return { error: "Catálogo desconocido." };
   const id = texto(fd, "id");
   const etiqueta = texto(fd, "etiqueta");
@@ -282,15 +297,15 @@ export async function guardarEtiqueta(tabla: string, fd: FormData): Promise<Resu
     p_accion: "editar_catalogo", p_negocio_id: null, p_persona_id: null, p_motivo: null, p_detalle: { tabla, id, etiqueta },
   });
   revalidatePath("/plataforma/catalogos");
-  return { error: null, exito: "Guardado." };
+  return { error: null, exito: "Guardado.", registros: await registrosDe(s.supabase, [{ t: tabla, i: id }]) };
 }
 
 // El plan del negocio: activarlo cuando paga, extender su prueba o pasarlo
 // a prueba/demo. La fecha llega como día: la prueba dura hasta el final de ese día EN LA ZONA DEL NEGOCIO
 // (la misma cuenta que finDePrueba; antes era el fin del día del centro de México para todos, N116).
-export async function cambiarPlan(negocioId: string, fd: FormData): Promise<ResultadoPlataforma> {
+export async function cambiarPlan(negocioId: string, fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const plan = texto(fd, "plan");
   const fin = texto(fd, "prueba_hasta");
   if (plan === "prueba" && !/^\d{4}-\d{2}-\d{2}$/.test(fin)) return { error: "Pon hasta qué día dura la prueba." };
@@ -305,33 +320,33 @@ export async function cambiarPlan(negocioId: string, fd: FormData): Promise<Resu
   if (error) return { error: error.message };
   revalidatePath(`/plataforma/negocios/${negocioId}`);
   revalidatePath("/plataforma");
-  return { error: null, exito: "Plan guardado." };
+  return { error: null, exito: "Plan guardado.", registros: await registrosDe(s.supabase, [{ t: "negocios", i: negocioId }]) };
 }
 
 // Negocio interno: de PeluDesk, para pruebas y demos de venta con módulos reales. Fuera de los totales y del cobro.
-export async function marcarInterno(negocioId: string, fd: FormData): Promise<ResultadoPlataforma> {
+export async function marcarInterno(negocioId: string, fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const interno = texto(fd, "interno") === "si";
   const { error } = await s.supabase.rpc("plataforma_marcar_interno", { p_negocio_id: negocioId, p_interno: interno, p_motivo: texto(fd, "motivo") });
   if (error) return { error: error.message };
   revalidatePath(`/plataforma/negocios/${negocioId}`);
   revalidatePath("/plataforma");
-  return { error: null, exito: interno ? "Marcado como interno." : "Ya no es interno." };
+  return { error: null, exito: interno ? "Marcado como interno." : "Ya no es interno.", registros: await registrosDe(s.supabase, [{ t: "negocios", i: negocioId }]) };
 }
 
 // Cambia el subdominio (dirección corta) de un negocio existente. El anterior queda como redirección
 // permanente: los links, QR y la página pública ya enviados siguen sirviendo.
-export async function cambiarSubdominio(negocioId: string, fd: FormData): Promise<ResultadoPlataforma> {
+export async function cambiarSubdominio(negocioId: string, fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const nuevo = texto(fd, "subdominio").toLowerCase().replace(/^https?:\/\//, "").replace(/\.peludesk\.mx.*$/, "").trim();
   if (!nuevo) return { error: "Escribe el subdominio nuevo." };
   const { data, error } = await s.supabase.rpc("plataforma_cambiar_subdominio", { p_negocio_id: negocioId, p_slug_nuevo: nuevo });
   if (error) return { error: error.message };
   revalidatePath(`/plataforma/negocios/${negocioId}`);
   revalidatePath("/plataforma");
-  return { error: null, exito: `Listo: ahora es ${data}.peludesk.mx. La dirección anterior redirige a la nueva.` };
+  return { error: null, exito: `Listo: ahora es ${data}.peludesk.mx. La dirección anterior redirige a la nueva.`, registros: await registrosDe(s.supabase, [{ t: "negocios", i: negocioId }]) };
 }
 
 // Los planes (nombre, precios y módulos): viven en la base, nunca en el código.
@@ -339,9 +354,9 @@ export async function cambiarSubdominio(negocioId: string, fd: FormData): Promis
 // sincronizan sus precios con Stripe: si el importe cambió se CREA un precio
 // nuevo (el anterior no se toca: quien ya está suscrito sigue pagando lo que
 // aceptó).
-export async function guardarPlan(planId: string | null, fd: FormData): Promise<ResultadoPlataforma> {
+export async function guardarPlan(planId: string | null, fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const mensual = Number(texto(fd, "precio_mensual"));
   if (!(mensual >= 0)) return { error: "El precio mensual tiene que ser un número de cero para arriba." };
   const { data: id, error } = await s.supabase.rpc("plataforma_guardar_plan", {
@@ -361,7 +376,11 @@ export async function guardarPlan(planId: string | null, fd: FormData): Promise<
   revalidatePath("/plataforma");
   const sync = await sincronizarUno(s, String(id));
   if (sync.error) return { error: `El plan se guardó, pero sus precios no se sincronizaron con Stripe: ${sync.error} Vuelve a guardar o usa «Sincronizar con Stripe».` };
-  return { error: null, exito: `Plan guardado. Los negocios en este plan lo ven al instante.${sync.nota ? ` ${sync.nota}` : ""}` };
+  return {
+    error: null,
+    exito: `Plan guardado. Los negocios en este plan lo ven al instante.${sync.nota ? ` ${sync.nota}` : ""}`,
+    registros: await registrosDe(s.supabase, [{ t: "planes", i: String(id) }]),
+  };
 }
 
 type SesionPlataforma = NonNullable<Awaited<ReturnType<typeof sesionPlataforma>>>;
@@ -426,9 +445,9 @@ export async function sincronizarPreciosStripe(): Promise<ResultadoPlataforma> {
 // El plan contratado de un negocio, sus complementos (la página web) y los
 // módulos que se le dan de cortesía. Subir de plan desbloquea al instante;
 // bajar no borra nada (lo que queda fuera se esconde y se bloquea).
-export async function asignarPlan(negocioId: string, fd: FormData): Promise<ResultadoPlataforma> {
+export async function asignarPlan(negocioId: string, fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const { error } = await s.supabase.rpc("plataforma_asignar_plan", {
     p_negocio_id: negocioId,
     p_plan_id: texto(fd, "plan_id"),
@@ -439,46 +458,46 @@ export async function asignarPlan(negocioId: string, fd: FormData): Promise<Resu
   if (error) return { error: error.message };
   revalidatePath(`/plataforma/negocios/${negocioId}`);
   revalidatePath("/plataforma");
-  return { error: null, exito: "Plan asignado." };
+  return { error: null, exito: "Plan asignado.", registros: await registrosDe(s.supabase, [{ t: "negocios", i: negocioId }]) };
 }
 
 // Google Maps: la llave es de PeluDesk; el tope de consultas al mes es por
 // plan, y la plataforma puede ponerle a un negocio uno propio (vacío = el
 // de su plan).
-export async function topeMapsNegocio(negocioId: string, fd: FormData): Promise<ResultadoPlataforma> {
+export async function topeMapsNegocio(negocioId: string, fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const crudo = texto(fd, "tope");
   const tope = crudo === "" ? null : Number(crudo);
   if (tope !== null && (!Number.isInteger(tope) || tope < 0)) return { error: "El tope es un número entero de cero para arriba (vacío = el de su plan)." };
   const { error } = await s.supabase.rpc("plataforma_maps_tope_negocio", { p_negocio_id: negocioId, p_tope: tope, p_motivo: texto(fd, "motivo") });
   if (error) return { error: error.message };
   revalidatePath("/plataforma/maps");
-  return { error: null, exito: tope === null ? "Ahora usa el tope de su plan." : `Tope de ${tope} consultas al mes.` };
+  return { error: null, exito: tope === null ? "Ahora usa el tope de su plan." : `Tope de ${tope} consultas al mes.`, registros: await registrosDe(s.supabase, [{ t: "negocios", i: negocioId }]) };
 }
 
 // Dictado por voz: minutos al mes por negocio (vacío = el de su plan).
-export async function topeDictadoNegocio(negocioId: string, fd: FormData): Promise<ResultadoPlataforma> {
+export async function topeDictadoNegocio(negocioId: string, fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const crudo = texto(fd, "tope");
   const tope = crudo === "" ? null : Number(crudo);
   if (tope !== null && (!Number.isInteger(tope) || tope < 0)) return { error: "El tope es un número entero de minutos de cero para arriba (vacío = el de su plan)." };
   const { error } = await s.supabase.rpc("plataforma_dictado_tope_negocio", { p_negocio_id: negocioId, p_tope: tope, p_motivo: texto(fd, "motivo") });
   if (error) return { error: error.message };
   revalidatePath("/plataforma/dictado");
-  return { error: null, exito: tope === null ? "Ahora usa el tope de su plan." : `Tope de ${tope} minutos al mes.` };
+  return { error: null, exito: tope === null ? "Ahora usa el tope de su plan." : `Tope de ${tope} minutos al mes.`, registros: await registrosDe(s.supabase, [{ t: "negocios", i: negocioId }]) };
 }
 
-export async function topeMapsPlan(planId: string, fd: FormData): Promise<ResultadoPlataforma> {
+export async function topeMapsPlan(planId: string, fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const tope = Number(texto(fd, "tope"));
   if (!Number.isInteger(tope) || tope < 0) return { error: "El tope es un número entero de cero para arriba." };
   const { error } = await s.supabase.rpc("plataforma_maps_tope_plan", { p_plan_id: planId, p_tope: tope });
   if (error) return { error: error.message };
   revalidatePath("/plataforma/maps");
-  return { error: null, exito: "Tope del plan guardado." };
+  return { error: null, exito: "Tope del plan guardado.", registros: await registrosDe(s.supabase, [{ t: "planes", i: planId }]) };
 }
 
 // Borrar un negocio de prueba o suspendido (sin cobros reales), con el nombre
@@ -502,9 +521,9 @@ export async function eliminarNegocio(negocioId: string, fd: FormData): Promise<
 
 // Facturación (CFDI): el tope mensual de timbres de un negocio y el porcentaje
 // al que se le avisa. Solo la plataforma lo cambia (plataforma_cfdi_tope).
-export async function topeTimbres(negocioId: string, fd: FormData): Promise<ResultadoPlataforma> {
+export async function topeTimbres(negocioId: string, fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const tope = Number(texto(fd, "tope"));
   const aviso = Number(texto(fd, "aviso") || "80");
   if (!Number.isInteger(tope) || tope < 0) return { error: "El tope es un número entero de cero para arriba." };
@@ -512,14 +531,21 @@ export async function topeTimbres(negocioId: string, fd: FormData): Promise<Resu
   const { error } = await s.supabase.rpc("plataforma_cfdi_tope", { p_negocio_id: negocioId, p_tope: tope, p_aviso_pct: aviso, p_motivo: texto(fd, "motivo") });
   if (error) return { error: error.message };
   revalidatePath("/plataforma/facturacion");
-  return { error: null, exito: `Tope de ${tope} timbres al mes (aviso al ${aviso} %).` };
+  return {
+    error: null,
+    exito: `Tope de ${tope} timbres al mes (aviso al ${aviso} %).`,
+    // La configuración de facturación es del negocio (una por negocio): va lo que quedó.
+    registros: await registrosDe(s.supabase, [
+      { t: "cfdi_config_negocio", i: negocioId, datos: { negocio_id: negocioId, tope_timbres_mes: tope, aviso_timbres_pct: aviso } },
+    ]),
+  };
 }
 
 // Facturas de la suscripción por emitir: la administración las marca emitidas (con el folio fiscal, opcional) o
 // descartadas (con nota). Las registra solo el servidor, con cada pago de un negocio con datos de facturación.
-export async function marcarFacturaPeludesk(id: string, estado: "emitida" | "descartada" | "por_emitir", fd: FormData): Promise<ResultadoPlataforma> {
+export async function marcarFacturaPeludesk(id: string, estado: "emitida" | "descartada" | "por_emitir", fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const folio = texto(fd, "folio").slice(0, 60) || null;
   const nota = texto(fd, "nota").slice(0, 500) || null;
   if (estado === "descartada" && !nota) return { error: "Escribe por qué no se emite." };
@@ -537,5 +563,9 @@ export async function marcarFacturaPeludesk(id: string, estado: "emitida" | "des
   if (error) return { error: error.message };
   if (!data?.length) return { error: "No encontramos esa factura." };
   revalidatePath("/plataforma/facturas");
-  return { error: null, exito: estado === "emitida" ? "Marcada como emitida." : estado === "descartada" ? "Marcada como descartada." : "Regresó a «por emitir»." };
+  return {
+    error: null,
+    exito: estado === "emitida" ? "Marcada como emitida." : estado === "descartada" ? "Marcada como descartada." : "Regresó a «por emitir».",
+    registros: await registrosDe(s.supabase, [{ t: "facturas_peludesk_por_emitir", i: id }]),
+  };
 }

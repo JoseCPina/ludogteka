@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { sesionPlataforma } from "@/lib/plataforma/sesion";
 import { esErrorSoloLectura, mensajeSoloLectura } from "@/lib/solo-lectura";
 import type { ResultadoPlataforma } from "@/lib/plataforma/tipos";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { ConRegistros } from "@/lib/concurrencia/tipos";
 
 // Catálogo compartido de principios activos. Solo la administración de
 // PeluDesk lo escribe, por funciones de la base que comprueban
@@ -19,13 +21,13 @@ function traducir(error: { code?: string; message: string }): string {
   return "No pudimos guardar esto. Intenta de nuevo.";
 }
 
-export async function guardarPrincipioActivo(fd: FormData): Promise<ResultadoPlataforma> {
+export async function guardarPrincipioActivo(fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const nombre = texto(fd, "nombre");
   if (!nombre) return { error: "Escribe el nombre del principio activo." };
   const id = texto(fd, "id");
-  const { error } = await s.supabase.rpc("plataforma_guardar_principio_activo", {
+  const { data, error } = await s.supabase.rpc("plataforma_guardar_principio_activo", {
     p_id: id || null,
     p_nombre: nombre,
     p_grupo_senasica: texto(fd, "grupo_senasica") || null,
@@ -36,16 +38,24 @@ export async function guardarPrincipioActivo(fd: FormData): Promise<ResultadoPla
   });
   if (error) return { error: traducir(error) };
   revalidatePath("/plataforma/principios-activos");
-  return { error: null, exito: id ? "Principio activo guardado." : "Principio activo agregado. Los negocios lo ven al momento." };
+  return {
+    error: null,
+    exito: id ? "Principio activo guardado." : "Principio activo agregado. Los negocios lo ven al momento.",
+    registros: await registrosDe(s.supabase, [{ t: "principios_activos", i: (data as string | null) ?? id }]),
+  };
 }
 
-export async function bajaPrincipioActivo(fd: FormData): Promise<ResultadoPlataforma> {
+export async function bajaPrincipioActivo(fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const id = texto(fd, "id");
   if (!id) return { error: "Falta el principio activo." };
   const { error } = await s.supabase.rpc("plataforma_baja_principio_activo", { p_id: id });
   if (error) return { error: traducir(error) };
   revalidatePath("/plataforma/principios-activos");
-  return { error: null, exito: "Principio activo dado de baja. Los productos que ya lo usan conservan sus clasificaciones." };
+  return {
+    error: null,
+    exito: "Principio activo dado de baja. Los productos que ya lo usan conservan sus clasificaciones.",
+    registros: await registrosDe(s.supabase, [{ t: "principios_activos", i: id, datos: { id, deleted_at: new Date().toISOString() } }]),
+  };
 }

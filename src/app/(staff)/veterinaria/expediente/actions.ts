@@ -1,6 +1,6 @@
 "use server";
 
-import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import { registrosDe, registrosFinales } from "@/lib/concurrencia/registro-final";
 import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { prepararSalaTeleconsulta } from "../agenda/telemedicina-actions";
 import { randomUUID } from "node:crypto";
@@ -67,7 +67,7 @@ export async function reprogramarCita(id: string, fd: FormData): Promise<Resulta
     p_medico: o(texto(fd, "medico_id")),
     p_duracion_min: null,
   }), controlDeFormulario(fd));
-  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error), registros: await registrosFinales(supabase, controlDeFormulario(fd)) } : { error: traducirError(error) };
   revalidatePath("/veterinaria/agenda");
   return { error: null, registros: await registrosFinales(supabase, controlDeFormulario(fd)), exito: "Cita movida." };
 }
@@ -77,7 +77,7 @@ export async function estadoCita(id: string, estado: string, fd?: FormData | Con
   const esForm = fd instanceof FormData;
   const control = esForm ? controlDeFormulario(fd) : fd;
   const { error } = await conControl(supabase.rpc("vet_cita_estado", { p_id: id, p_estado: estado, p_motivo: esForm ? o(texto(fd, "motivo")) : null }), control);
-  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error), registros: await registrosFinales(supabase, control) } : { error: traducirError(error) };
   revalidatePath("/veterinaria/agenda");
   return { error: null, registros: await registrosFinales(supabase, control), exito: "Listo." };
 }
@@ -116,7 +116,7 @@ export type DatosBorrador = Partial<{
 export async function guardarBorrador(id: string, datos: DatosBorrador, control?: ControlVersion): Promise<{ error: string | null; guardado_at?: string; conflicto?: Conflicto | null; registros?: RegistroFinal[] }> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await conControl(supabase.rpc("vet_consulta_guardar", { p_id: id, p_datos: datos }), control);
-  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error), registros: await registrosFinales(supabase, control) } : { error: traducirError(error) };
   return { error: null, registros: await registrosFinales(supabase, control), guardado_at: String(data) };
 }
 
@@ -132,8 +132,9 @@ export async function firmarConsulta(id: string): Promise<ResultadoAccion> {
       : "";
   // Firmada: la copia que el navegador guardaba del formulario ya no hace falta.
   await descartarBorradorGuardado(supabase, "consulta", id);
-  // QA S19: sin revalidatePath (la pantalla se refresca sola; revalidar aquí la pintaba dos veces).
-  return { error: null, exito: `Consulta firmada. Ya no se edita: solo admite una adenda.${notaCobro}` };
+  // QA S19: sin revalidatePath (la pantalla se refresca sola; revalidar aquí la pintaba dos veces). QA S41 (N140): la
+  // consulta firmada va en la respuesta y la pantalla la pinta al recibirla.
+  return { error: null, exito: `Consulta firmada. Ya no se edita: solo admite una adenda.${notaCobro}`, registros: await registrosDe(supabase, [{ t: "vet_consultas", i: id, datos: { estado: "firmada" } }]) };
 }
 
 export async function descartarBorrador(id: string, perroId: string): Promise<ResultadoAccion> {
@@ -161,15 +162,26 @@ export async function quitarAplicacionConsulta(consultaId: string, tipo: "vacuna
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/consulta/${consultaId}`);
   revalidatePath(`/veterinaria/carnet/${perroId}`);
-  return { error: null, exito: tipo === "vacuna" ? "Vacuna quitada de la consulta y anulada en el carnet." : "Desparasitación quitada de la consulta y anulada en el carnet." };
+  return {
+    error: null,
+    exito: tipo === "vacuna" ? "Vacuna quitada de la consulta y anulada en el carnet." : "Desparasitación quitada de la consulta y anulada en el carnet.",
+    registros: await registrosDe(supabase, [{ t: tipo === "vacuna" ? "carnet_vacunas" : "carnet_desparasitaciones", i: id }, { t: "vet_consultas", i: consultaId }]),
+  };
 }
 
 export async function agregarAdenda(id: string, fd: FormData): Promise<ResultadoAccion> {
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("vet_consulta_adenda", { p_id: id, p_texto: texto(fd, "texto") });
+  const { data: adendaId, error } = await supabase.rpc("vet_consulta_adenda", { p_id: id, p_texto: texto(fd, "texto") });
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/consulta/${id}`);
-  return { error: null, exito: "Adenda firmada y agregada." };
+  return {
+    error: null,
+    exito: "Adenda firmada y agregada.",
+    registros: await registrosDe(supabase, [
+      { t: "vet_consultas", i: id },
+      { t: "vet_consulta_adendas", i: adendaId as string | null, datos: { consulta_id: id, texto: texto(fd, "texto") } },
+    ]),
+  };
 }
 
 export async function anularConsulta(id: string, fd: FormData): Promise<ResultadoAccion> {
@@ -177,7 +189,11 @@ export async function anularConsulta(id: string, fd: FormData): Promise<Resultad
   const { error } = await supabase.rpc("vet_consulta_anular", { p_id: id, p_motivo: texto(fd, "motivo") });
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/consulta/${id}`);
-  return { error: null, exito: "Consulta anulada. Queda en el historial con su motivo." };
+  return {
+    error: null,
+    exito: "Consulta anulada. Queda en el historial con su motivo.",
+    registros: await registrosDe(supabase, [{ t: "vet_consultas", i: id, datos: { estado: "anulada", anulada_motivo: texto(fd, "motivo") } }]),
+  };
 }
 
 // ── Resultados de laboratorio ────────────────────────────────────────
@@ -192,7 +208,7 @@ export async function capturarResultado(perroId: string, consultaId: string | nu
   if (!texto(fd, "estudio")) return { error: "Escribe el nombre del estudio." };
   if (!texto(fd, "fecha")) return { error: "Escribe la fecha del estudio." };
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("vet_capturar_resultado", {
+  const { data: resultadoId, error } = await supabase.rpc("vet_capturar_resultado", {
     p_perro: perroId,
     p_consulta: consultaId,
     p_estudio: texto(fd, "estudio"),
@@ -204,7 +220,13 @@ export async function capturarResultado(perroId: string, consultaId: string | nu
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/expediente/${perroId}`);
   if (consultaId) revalidatePath(`/veterinaria/consulta/${consultaId}`);
-  return { error: null, exito: "Resultado guardado." };
+  return {
+    error: null,
+    exito: "Resultado guardado.",
+    registros: await registrosDe(supabase, [
+      { t: "vet_resultados_lab", i: resultadoId as string | null, datos: { perro_id: perroId, consulta_id: consultaId, estudio: texto(fd, "estudio"), fecha_estudio: texto(fd, "fecha") } },
+    ]),
+  };
 }
 
 export async function anularResultado(id: string, rutas: string[], fd: FormData): Promise<ResultadoAccion> {
@@ -212,7 +234,7 @@ export async function anularResultado(id: string, rutas: string[], fd: FormData)
   const { error } = await supabase.rpc("vet_anular_resultado", { p_id: id, p_motivo: texto(fd, "motivo") });
   if (error) return { error: traducirError(error) };
   for (const r of rutas) revalidatePath(r);
-  return { error: null, exito: "Resultado anulado." };
+  return { error: null, exito: "Resultado anulado.", registros: await registrosDe(supabase, [{ t: "vet_resultados_lab", i: id, datos: { anulada_motivo: texto(fd, "motivo") } }]) };
 }
 
 // ── Adjuntos (subida directa a Storage con URL firmada) ──────────────
@@ -252,7 +274,7 @@ export async function confirmarAdjunto(perroId: string, consultaId: string | nul
   const bytes = Number((objeto?.metadata as { size?: number } | null)?.size ?? 0);
   if (!objeto || bytes <= 0) return { error: "El archivo no llegó completo. Vuelve a intentarlo." };
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("vet_registrar_adjunto", {
+  const { data: adjuntoId, error } = await supabase.rpc("vet_registrar_adjunto", {
     p_perro: perroId, p_consulta: consultaId, p_ruta: ruta, p_nombre: nombre, p_mime: mime, p_bytes: bytes, p_descripcion: o(descripcion.trim()),
   });
   if (error) {
@@ -261,7 +283,11 @@ export async function confirmarAdjunto(perroId: string, consultaId: string | nul
   }
   revalidatePath(`/veterinaria/expediente/${perroId}`);
   if (consultaId) revalidatePath(`/veterinaria/consulta/${consultaId}`);
-  return { error: null, exito: "Archivo adjuntado." };
+  return {
+    error: null,
+    exito: "Archivo adjuntado.",
+    registros: await registrosDe(supabase, [{ t: "vet_adjuntos", i: adjuntoId as string | null, datos: { perro_id: perroId, consulta_id: consultaId, nombre, mime, bytes, ruta } }]),
+  };
 }
 
 export async function anularAdjunto(id: string, rutas: string[], fd: FormData): Promise<ResultadoAccion> {
@@ -269,12 +295,12 @@ export async function anularAdjunto(id: string, rutas: string[], fd: FormData): 
   const { error } = await supabase.rpc("vet_anular_adjunto", { p_id: id, p_motivo: texto(fd, "motivo") });
   if (error) return { error: traducirError(error) };
   for (const r of rutas) revalidatePath(r);
-  return { error: null, exito: "Archivo anulado." };
+  return { error: null, exito: "Archivo anulado.", registros: await registrosDe(supabase, [{ t: "vet_adjuntos", i: id, datos: { anulada_motivo: texto(fd, "motivo") } }]) };
 }
 
 // ── Diagnósticos ─────────────────────────────────────────────────────
 
-export async function agregarDiagnosticoNegocio(nombre: string, categoria: string, especie: string | null): Promise<{ error: string | null; id?: string }> {
+export async function agregarDiagnosticoNegocio(nombre: string, categoria: string, especie: string | null): Promise<{ error: string | null; id?: string; registros?: RegistroFinal[] }> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("vet_agregar_diagnostico_negocio", {
     p_nombre: nombre,
@@ -283,7 +309,7 @@ export async function agregarDiagnosticoNegocio(nombre: string, categoria: strin
     p_sinonimos: [],
   });
   if (error) return { error: traducirError(error) };
-  return { error: null, id: String(data) };
+  return { error: null, id: String(data), registros: await registrosDe(supabase, [{ t: "vet_diagnosticos_negocio", i: String(data) }]) };
 }
 
 export async function buscarDiagnosticos(q: string, especie: string | null) {
@@ -326,17 +352,22 @@ export async function guardarEstimado(d: DatosEstimado): Promise<ResultadoAccion
   if (error) return { error: traducirError(error) };
   const id = String(data);
   revalidatePath(`/veterinaria/estimados/${id}`);
-  return { error: null, id, exito: "Estimado guardado." };
+  return {
+    error: null,
+    id,
+    exito: "Estimado guardado.",
+    registros: await registrosDe(supabase, [{ t: "vet_estimados", i: id, datos: { perro_id: d.perro_id, consulta_id: d.consulta_id, tipo: d.tipo, titulo: d.titulo, vigente_hasta: d.vigente_hasta } }]),
+  };
 }
 
-export async function enviarEstimado(id: string): Promise<{ error: string | null; url?: string }> {
+export async function enviarEstimado(id: string): Promise<{ error: string | null; url?: string; registros?: RegistroFinal[] }> {
   const supabase = await createSupabaseServerClient();
   const negocio = await negocioActual();
   const { token, hash } = nuevoToken();
   const { error } = await supabase.rpc("vet_estimado_enviar", { p_id: id, p_token_hash: hash });
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/estimados/${id}`);
-  return { error: null, url: `${urlDelNegocio(negocio)}/e/${token}` };
+  return { error: null, url: `${urlDelNegocio(negocio)}/e/${token}`, registros: await registrosDe(supabase, [{ t: "vet_estimados", i: id, datos: { estado: "enviado" } }]) };
 }
 
 export async function versionNuevaEstimado(id: string): Promise<ResultadoAccion> {
@@ -351,7 +382,11 @@ export async function cancelarEstimado(id: string, fd: FormData): Promise<Result
   const { error } = await supabase.rpc("vet_estimado_cancelar", { p_id: id, p_motivo: texto(fd, "motivo") });
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/estimados/${id}`);
-  return { error: null, exito: "Estimado cancelado." };
+  return {
+    error: null,
+    exito: "Estimado cancelado.",
+    registros: await registrosDe(supabase, [{ t: "vet_estimados", i: id, datos: { estado: "cancelado", cancelado_motivo: texto(fd, "motivo") } }]),
+  };
 }
 
 export async function aceptarEnMostrador(id: string, firma: string | null, fd: FormData): Promise<ResultadoAccion> {
@@ -360,7 +395,11 @@ export async function aceptarEnMostrador(id: string, firma: string | null, fd: F
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/estimados/${id}`);
   const reserva = (data as { reserva_id?: string } | null)?.reserva_id;
-  return { error: null, exito: reserva ? "Aceptado. Los cargos ya están en la cuenta de la mascota: se cobran en Caja." : "Aceptado." };
+  return {
+    error: null,
+    exito: reserva ? "Aceptado. Los cargos ya están en la cuenta de la mascota: se cobran en Caja." : "Aceptado.",
+    registros: await registrosDe(supabase, [{ t: "vet_estimados", i: id, datos: { estado: "aceptado", aceptado_via: "mostrador", aceptado_nombre: texto(fd, "nombre") } }]),
+  };
 }
 
 export async function opcionesDeEstimado(): Promise<{ id: string; nombre: string; unidad: string | null; precio: number | null }[]> {
@@ -384,7 +423,7 @@ export async function guardarPortalExpediente(fd: FormData): Promise<ResultadoAc
   const { error } = await supabase.rpc("guardar_veterinaria_portal", { p_expediente: fd.get("portal_expediente") === "si" });
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/ajustes");
-  return { error: null, exito: "Guardado." };
+  return { error: null, exito: "Guardado.", registros: await registrosDe(supabase, [{ t: "veterinaria_ajustes", i: (await negocioActual()).id }]) };
 }
 
 export async function guardarTipoCita(fd: FormData): Promise<ResultadoAccion> {
@@ -396,7 +435,8 @@ export async function guardarTipoCita(fd: FormData): Promise<ResultadoAccion> {
   });
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/ajustes");
-  return { error: null, exito: "Tipo de cita guardado." };
+  const { data: tipoCita } = await supabase.from("vet_tipos_cita").select("id").eq("clave", texto(fd, "clave")).is("deleted_at", null).maybeSingle();
+  return { error: null, exito: "Tipo de cita guardado.", registros: await registrosDe(supabase, [{ t: "vet_tipos_cita", i: tipoCita?.id as string | undefined }]) };
 }
 
 export async function guardarPlantillaConsulta(fd: FormData): Promise<ResultadoAccion> {
@@ -410,5 +450,16 @@ export async function guardarPlantillaConsulta(fd: FormData): Promise<ResultadoA
   });
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/ajustes");
-  return { error: null, exito: "Plantilla guardada. Las consultas nuevas de este tipo arrancan con ella." };
+  // La versión nueva queda como la activa de su tipo (la función devuelve el número de versión, no el id).
+  const { data: plantilla } = await supabase
+    .from("vet_consulta_plantillas")
+    .select("id")
+    .eq("tipo_clave", texto(fd, "tipo"))
+    .eq("activa", true)
+    .is("deleted_at", null)
+    .maybeSingle();
+  return {
+    registros: await registrosDe(supabase, [{ t: "vet_consulta_plantillas", i: plantilla?.id as string | undefined }]),
+    error: null,
+    exito: "Plantilla guardada. Las consultas nuevas de este tipo arrancan con ella." };
 }

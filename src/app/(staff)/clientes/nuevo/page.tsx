@@ -27,7 +27,7 @@ export default async function NuevoClientePage({
         <p className="mt-1 text-n-600">
           {corta
             ? `Solo su nombre y su WhatsApp. Luego registras a su ${mascota} y agendas.`
-            : "Datos básicos del dueño. El expediente completo (perros, vacunas, etc.) se agrega en otra fase."}
+            : `Datos básicos del dueño. Su ${mascota}, sus vacunas y lo demás se agregan después, en su ficha.`}
         </p>
       </div>
       <ClienteForm

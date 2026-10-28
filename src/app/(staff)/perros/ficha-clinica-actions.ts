@@ -3,12 +3,14 @@
 import { puedeEditarFichaClinica } from "@/lib/veterinaria/ficha-permiso";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { usaVeterinaria } from "@/lib/plan/modulos";
 import { leerCamposClinicos, mensajeErrorClinico } from "@/lib/perros/ficha-clinica";
 
-export type EstadoFichaClinica = { error: string | null; ok?: boolean };
+export type EstadoFichaClinica = { error: string | null; ok?: boolean; registros?: RegistroFinal[] };
 
 /**
  * Guarda la ficha clínica de una mascota. Solo toca las columnas clínicas
@@ -50,5 +52,5 @@ export async function guardarFichaClinica(
 
   revalidatePath(`/perros/${perroId}`);
   if (data?.cliente_id) revalidatePath(`/clientes/${data.cliente_id}`);
-  return { error: null, ok: true };
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "perros", i: perroId }]) };
 }

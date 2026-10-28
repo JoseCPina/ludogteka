@@ -6,6 +6,8 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { usaVeterinaria } from "@/lib/plan/modulos";
 import { validarFila, type DatosFila, type FilaCruda } from "@/lib/importador/validar";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 // Cada acción vuelve a comprobar el permiso (la base también): la pantalla solo
 // esconde el botón. Nada de aquí crea una llave de servidor: todo corre con la
@@ -132,7 +134,7 @@ export async function crearImportacion(args: {
   modo: Modo;
   mapeo: Record<string, string>;
   total: number;
-}): Promise<Fallo | { error: null; id: string; reusada: boolean; estado: string; fecha: string | null; conClinicos: boolean }> {
+}): Promise<Fallo | { error: null; id: string; reusada: boolean; estado: string; fecha: string | null; conClinicos: boolean; registros?: RegistroFinal[] }> {
   const ctx = await contexto();
   if (!ctx.ok) return { error: ctx.error };
   const supabase = await createSupabaseServerClient();
@@ -146,14 +148,22 @@ export async function crearImportacion(args: {
   });
   if (error) return { error: mensaje(error) };
   const r = data as { id: string; estado: string; reusada: boolean; fecha?: string; con_clinicos?: boolean };
-  return { error: null, id: r.id, reusada: r.reusada, estado: r.estado, fecha: r.fecha ?? null, conClinicos: ctx.conClinicos };
+  return {
+    error: null,
+    id: r.id,
+    reusada: r.reusada,
+    estado: r.estado,
+    fecha: r.fecha ?? null,
+    conClinicos: ctx.conClinicos,
+    registros: await registrosDe(supabase, [{ t: "importaciones", i: r.id }]),
+  };
 }
 
 /** Sube un bloque de filas (reenviarlo no duplica: la base ignora el número ya subido). */
 export async function agregarFilas(
   id: string,
   filas: { n: number; valores: FilaCruda }[]
-): Promise<Fallo | { error: null; agregadas: number }> {
+): Promise<Fallo | { error: null; agregadas: number; registros?: RegistroFinal[] }> {
   const ctx = await contexto();
   if (!ctx.ok) return { error: ctx.error };
   if (filas.length === 0 || filas.length > 1000) return { error: "Las filas llegan en bloques de hasta 1,000." };
@@ -168,16 +178,16 @@ export async function agregarFilas(
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("importacion_agregar_filas", { p_id: id, p_filas: paquete });
   if (error) return { error: mensaje(error) };
-  return { error: null, agregadas: Number(data ?? 0) };
+  return { error: null, agregadas: Number(data ?? 0), registros: await registrosDe(supabase, [{ t: "importaciones", i: id }]) };
 }
 
-export async function procesarLote(id: string): Promise<Fallo | { error: null; progreso: Progreso }> {
+export async function procesarLote(id: string): Promise<Fallo | { error: null; progreso: Progreso; registros?: RegistroFinal[] }> {
   const ctx = await contexto();
   if (!ctx.ok) return { error: ctx.error };
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("importacion_procesar_lote", { p_id: id, p_max: 40 });
   if (error) return { error: mensaje(error) };
-  return { error: null, progreso: data as Progreso };
+  return { error: null, progreso: data as Progreso, registros: await registrosDe(supabase, [{ t: "importaciones", i: id }]) };
 }
 
 export async function obtenerProgreso(id: string): Promise<Fallo | { error: null; progreso: Progreso }> {
@@ -189,14 +199,14 @@ export async function obtenerProgreso(id: string): Promise<Fallo | { error: null
   return { error: null, progreso: data as Progreso };
 }
 
-export async function cancelarImportacion(id: string): Promise<Fallo | { error: null; progreso: Progreso }> {
+export async function cancelarImportacion(id: string): Promise<Fallo | { error: null; progreso: Progreso; registros?: RegistroFinal[] }> {
   const ctx = await contexto();
   if (!ctx.ok) return { error: ctx.error };
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("importacion_cancelar", { p_id: id });
   if (error) return { error: mensaje(error) };
   revalidatePath("/admin/importar");
-  return { error: null, progreso: data as Progreso };
+  return { error: null, progreso: data as Progreso, registros: await registrosDe(supabase, [{ t: "importaciones", i: id }]) };
 }
 
 export async function revisarDeshacer(
@@ -211,7 +221,7 @@ export async function revisarDeshacer(
   return { error: null, puede: r.puede, bloqueos: r.bloqueos ?? [] };
 }
 
-export async function deshacerImportacion(id: string): Promise<Fallo | { error: null; progreso: Progreso }> {
+export async function deshacerImportacion(id: string): Promise<Fallo | { error: null; progreso: Progreso; registros?: RegistroFinal[] }> {
   const ctx = await contexto();
   if (!ctx.ok) return { error: ctx.error };
   const supabase = await createSupabaseServerClient();
@@ -219,5 +229,5 @@ export async function deshacerImportacion(id: string): Promise<Fallo | { error: 
   if (error) return { error: mensaje(error) };
   revalidatePath("/admin/importar");
   revalidatePath("/clientes");
-  return { error: null, progreso: data as Progreso };
+  return { error: null, progreso: data as Progreso, registros: await registrosDe(supabase, [{ t: "importaciones", i: id }]) };
 }

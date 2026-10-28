@@ -128,7 +128,7 @@ export async function actualizarCliente(
 ): Promise<EstadoClienteForm> {
   const { nombre, telefonoCrudo, email, notas, recordatorios } = leerCampos(formData);
   const validado = validar(nombre, telefonoCrudo);
-  if (validado.error) return validado;
+  if (validado.error) return { error: validado.error };
 
   const supabase = await createSupabaseServerClient();
   const control = controlDeFormulario(formData);
@@ -149,7 +149,7 @@ export async function actualizarCliente(
 
   if (error) {
     const conflicto = conflictoDeError(error);
-    if (conflicto) return { error: null, conflicto };
+    if (conflicto) return { error: null, conflicto, registros: await registrosFinales(supabase, control) };
     if (error.code === "23505") {
       // Desde que el teléfono es la identidad del cliente hay DOS índices
       // únicos, y decirle a recepción que el problema es el correo cuando

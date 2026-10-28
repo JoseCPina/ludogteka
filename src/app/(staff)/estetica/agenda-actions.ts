@@ -1,6 +1,6 @@
 "use server";
 
-import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import { registrosDe, registrosFinales } from "@/lib/concurrencia/registro-final";
 import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -18,6 +18,7 @@ export type EstadoCrearCita = {
   /** N30: el mismo perro ya tiene cita ese día; NO se agendó y se pide confirmar. */
   duplicada?: string;
   citaId?: string; reservaId?: string; fin?: string; precio?: number; tarifaGuarderia?: boolean;
+  registros?: RegistroFinal[];
 };
 
 export async function crearCita(datos: {
@@ -85,6 +86,8 @@ export async function crearCita(datos: {
       const perro = Array.isArray(delDia[0].perros) ? delDia[0].perros[0] : delDia[0].perros;
       return {
         error: null,
+        // No se guardó nada: se pide confirmar.
+        registros: [],
         duplicada: unirFrases(`${(perro as { nombre?: string } | null)?.nombre ?? "Esta mascota"} ya tiene ${delDia.length === 1 ? "una cita" : "citas"} ese día: ${delDia.map(una).join(" y ")}`, "¿Agendar otra de todos modos?"),
       };
     }
@@ -142,7 +145,11 @@ export async function crearCita(datos: {
 
   // Sin revalidatePath (QA S27): repintaba «Agendar cita» entera (todos los clientes y perros) antes de responder;
   // la agenda se lee fresca al abrirla.
-  return { error: null, citaId: data.id, reservaId: reservaCreada.id, fin: data.fin as string, precio: Number(data.precio), tarifaGuarderia: Boolean(data.tarifa_guarderia) };
+  return {
+    error: null,
+    registros: await registrosDe(supabase, [{ t: "citas_estetica", i: data.id }, { t: "reservas", i: reservaCreada.id }]),
+    citaId: data.id, reservaId: reservaCreada.id, fin: data.fin as string, precio: Number(data.precio), tarifaGuarderia: Boolean(data.tarifa_guarderia),
+  };
 }
 
 /** Pone, cambia o quita el recargo manual de una cita que todavía no se cierra. */
@@ -153,7 +160,7 @@ export async function aplicarRecargoCita(citaId: string, recargo: number, motivo
     .from("citas_estetica")
     .update({ recargo, recargo_motivo: recargo > 0 ? motivo.trim() || null : null })
     .eq("id", citaId), control);
-  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error), registros: await registrosFinales(supabase, control) } : { error: traducirError(error) };
   revalidatePath(`/estetica/${citaId}`);
   revalidatePath("/estetica");
   return { error: null, registros: await registrosFinales(supabase, control) };
@@ -193,7 +200,7 @@ export async function reasignarEstilista(
     p_empleado_id: empleadoId,
     p_motivo: motivo,
   }), control);
-  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error), registros: await registrosFinales(supabase, control) } : { error: traducirError(error) };
   revalidatePath("/estetica");
   revalidatePath(`/estetica/${citaId}`);
   revalidatePath("/recepcion");
@@ -222,7 +229,7 @@ async function linkWhatsApp(d: DatosCambio, plantilla: (c: { cliente: string; pe
 export async function reprogramarCita(citaId: string, nuevoInicio: string, motivo: string, control?: ControlVersion): Promise<ResultadoAgenda> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await conControl(supabase.rpc("reprogramar_cita_estetica", { p_cita_id: citaId, p_inicio: nuevoInicio, p_motivo: motivo.trim() || null }), control);
-  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error), registros: await registrosFinales(supabase, control) } : { error: traducirError(error) };
   const d = (data ?? {}) as DatosCambio;
   revalidatePath("/estetica");
   revalidatePath(`/estetica/${citaId}`);
@@ -244,7 +251,7 @@ export async function reprogramarCita(citaId: string, nuevoInicio: string, motiv
 export async function cancelarCita(citaId: string, motivo: string, noLlego = false, control?: ControlVersion): Promise<ResultadoAgenda> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await conControl(supabase.rpc("cancelar_cita_estetica", { p_cita_id: citaId, p_motivo: motivo.trim() || null, p_no_llego: noLlego }), control);
-  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error), registros: await registrosFinales(supabase, control) } : { error: traducirError(error) };
   const d = (data ?? {}) as DatosCambio;
   revalidatePath("/estetica");
   revalidatePath(`/estetica/${citaId}`);
@@ -274,7 +281,7 @@ export async function deshacerInicioCita(citaId: string, destino: "reservada" | 
   revalidatePath("/estetica");
   revalidatePath(`/estetica/${citaId}`);
   revalidatePath("/recepcion");
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "citas_estetica", i: citaId }]) };
 }
 
 /** Quita una cita de la agenda (capturada por error o duplicada): no se borra, queda en el historial. Pide el permiso «Eliminar citas». */
@@ -282,7 +289,7 @@ export async function eliminarCita(citaId: string, motivo: string, control?: Con
   if (motivo.trim().length < 5) return { error: "Escribe el motivo por el que se elimina la cita." };
   const supabase = await createSupabaseServerClient();
   const { error } = await conControl(supabase.rpc("eliminar_cita_estetica", { p_cita_id: citaId, p_motivo: motivo.trim() }), control);
-  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error), registros: await registrosFinales(supabase, control) } : { error: traducirError(error) };
   revalidatePath("/estetica");
   revalidatePath("/recepcion");
   return { error: null, registros: await registrosFinales(supabase, control) };
@@ -292,7 +299,7 @@ export async function eliminarCita(citaId: string, motivo: string, control?: Con
 export async function cambiarTarifaGuarderia(citaId: string, modo: "auto" | "si" | "no", motivo: string, control?: ControlVersion): Promise<EstadoAccion & { precio?: number }> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await conControl(supabase.rpc("cambiar_tarifa_guarderia_cita", { p_cita_id: citaId, p_modo: modo, p_motivo: motivo.trim() || null }), control);
-  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error), registros: await registrosFinales(supabase, control) } : { error: traducirError(error) };
   revalidatePath("/estetica");
   revalidatePath(`/estetica/${citaId}`);
   return { error: null, registros: await registrosFinales(supabase, control), precio: Number((data as { precio_despues?: number } | null)?.precio_despues ?? 0) };
@@ -328,8 +335,9 @@ export async function iniciarCita(
     .eq("id", citaId), opciones?.control);
 
   if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
-  revalidatePath("/estetica");
-  return { error: null, registros: await registrosFinales(supabase, opciones?.control) };
+  // QA S41 (N141): sin revalidatePath (la respuesta esperaba a que se volviera a pintar la página y el botón seguía en
+  // «Guardando…»); la cita como quedó va en la respuesta y la pantalla la pinta. La agenda se lee fresca al abrirla.
+  return { error: null, registros: await registrosFinales(supabase, opciones?.control, [{ t: "citas_estetica", i: citaId }]) };
 }
 
 export type AjusteConsumo = { insumo_id: string; cantidad: number };
@@ -354,7 +362,11 @@ export async function finalizarCita(
   // QA S27: la pantalla pinta «Recogió» con lo que quedó guardado, sin revalidatePath (repintaba la página
   // antes de responder y «Recogió: —» se quedaba unos segundos). La agenda se lee fresca al volver a ella.
   const { data } = await supabase.from("citas_estetica").select("recogido_por_nombre, recogido_por_es_dueno").eq("id", citaId).maybeSingle();
-  return { error: null, recogido: { nombre: (data?.recogido_por_nombre as string | null) ?? recogidoPorNombre, esDueno: (data?.recogido_por_es_dueno as boolean | null) ?? recogidoPorEsDueno } };
+  return {
+    error: null,
+    registros: await registrosDe(supabase, [{ t: "citas_estetica", i: citaId }]),
+    recogido: { nombre: (data?.recogido_por_nombre as string | null) ?? recogidoPorNombre, esDueno: (data?.recogido_por_es_dueno as boolean | null) ?? recogidoPorEsDueno },
+  };
 }
 
 // ── Agendar: cotizar y completar los datos del perro ahí mismo ───────

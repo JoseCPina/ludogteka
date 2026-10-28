@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../../reservas/traducir-error";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
-export type ResultadoTarifaGuarderia = { error: string | null; exito?: string };
+export type ResultadoTarifaGuarderia = { error: string | null; exito?: string; registros?: RegistroFinal[] };
 
 export async function guardarTarifaGuarderia(activa: boolean, servicioTarifaId: string, incluidos: string[], dias: number): Promise<ResultadoTarifaGuarderia> {
   if (!Number.isFinite(dias) || dias < 1 || dias > 365) return { error: "Los días de actividad van de 1 a 365." };
@@ -18,5 +20,6 @@ export async function guardarTarifaGuarderia(activa: boolean, servicioTarifaId: 
   if (error) return { error: traducirError(error) };
   revalidatePath("/admin/tarifa-guarderia");
   revalidatePath("/estetica/nueva");
-  return { error: null, exito: activa ? "Tarifa activada. Las citas nuevas de perros de guardería la proponen." : "Tarifa apagada. Las citas ya agendadas conservan su precio." };
+  const { data: config } = await supabase.from("tarifa_guarderia_config").select("id").is("deleted_at", null).limit(1).maybeSingle();
+  return { error: null, registros: await registrosDe(supabase, [{ t: "tarifa_guarderia_config", i: config?.id }]), exito: activa ? "Tarifa activada. Las citas nuevas de perros de guardería la proponen." : "Tarifa apagada. Las citas ya agendadas conservan su precio." };
 }

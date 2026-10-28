@@ -6,12 +6,14 @@ import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { MENSAJE_DEMO } from "@/lib/solo-lectura";
 import { traducirError } from "../reservas/traducir-error";
 import type { InfoCancelarCuenta } from "./cancelar-cuenta-tipos";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 // Cancelar una cuenta que no se va a cobrar (migración 20261024500000). El permiso,
 // el motivo, los cobros y la cita ligada los comprueba la base con la sesión de
 // quien llama: aquí solo se traduce.
 
-export type ResultadoCancelarCuenta = { error: string | null; aviso?: string };
+export type ResultadoCancelarCuenta = { error: string | null; aviso?: string; registros?: RegistroFinal[] };
 
 export async function infoCancelarCuenta(reservaId: string): Promise<{ error: string | null; info: InfoCancelarCuenta | null }> {
   const supabase = await createSupabaseServerClient();
@@ -56,5 +58,10 @@ export async function cancelarCuenta(
       (citas ? ` También se ${citas === 1 ? "canceló la cita" : "cancelaron las citas"}.` : "") +
       (estancias ? ` También se ${estancias === 1 ? "canceló la reserva" : "cancelaron las reservas"} y quedó libre su cupo.` : "") +
       (sin ? " Una cita o estancia ya empezada no se cancela desde aquí." : ""),
+    registros: await registrosDe(supabase, [
+      { t: "reservas", i: reservaId },
+      ...(d?.citas_canceladas ?? []).map((i) => ({ t: "citas_estetica", i })),
+      ...(d?.estancias_canceladas ?? []).map((i) => ({ t: "estancias", i })),
+    ]),
   };
 }

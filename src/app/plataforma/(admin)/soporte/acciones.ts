@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { sesionPlataforma } from "@/lib/plataforma/sesion";
 import { avisarWhatsAppRespuesta, proponerArticulo } from "@/lib/soporte/notificar";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 // PeluDesk contesta tickets. Con la sesión de la administración: la base
 // comprueba es_admin_plataforma() (plataforma_*).
@@ -10,9 +12,12 @@ const NO = { error: "Tu sesión de administración de PeluDesk terminó. Vuelve 
 
 type Datos = { negocio_id: string; profile_id: string; rol: string; numero: number; asunto: string; sin_documentar?: boolean };
 
-export async function responderComoPeluDesk(ticketId: string, texto: string): Promise<{ error: string | null; aviso?: string }> {
+export async function responderComoPeluDesk(
+  ticketId: string,
+  texto: string
+): Promise<{ error: string | null; aviso?: string; registros?: RegistroFinal[] }> {
   const s = await sesionPlataforma();
-  if (!s) return NO;
+  if (!s) return { error: NO.error };
   if (!texto.trim()) return { error: "Escribe la respuesta." };
   const { data, error } = await s.supabase.rpc("plataforma_responder_ticket", { p_ticket_id: ticketId, p_texto: texto.trim(), p_origen: "plataforma" });
   if (error) return { error: error.message };
@@ -20,7 +25,14 @@ export async function responderComoPeluDesk(ticketId: string, texto: string): Pr
   const wa = await avisarWhatsAppRespuesta({ ticketId, negocioId: d.negocio_id, profileId: d.profile_id, rol: d.rol, numero: d.numero, asunto: d.asunto, texto: texto.trim() });
   revalidatePath(`/plataforma/soporte/${ticketId}`);
   revalidatePath("/plataforma/soporte");
-  return { error: null, aviso: AVISO_WA[wa] };
+  // El ticket es del negocio: la sesión de la plataforma no lo lee; va lo que la respuesta le cambió.
+  return {
+    error: null,
+    aviso: AVISO_WA[wa],
+    registros: await registrosDe(s.supabase, [
+      { t: "soporte_tickets", i: ticketId, datos: { id: ticketId, ultimo_de: "plataforma", ultimo_mensaje_at: new Date().toISOString() } },
+    ]),
+  };
 }
 
 const AVISO_WA: Record<string, string> = {
@@ -30,9 +42,12 @@ const AVISO_WA: Record<string, string> = {
   fallo: "Lo ve en la app; el WhatsApp no salió (revisa los logs).",
 };
 
-export async function cambiarEstadoTicket(ticketId: string, estado: "abierto" | "en_proceso" | "resuelto"): Promise<{ error: string | null; aviso?: string }> {
+export async function cambiarEstadoTicket(
+  ticketId: string,
+  estado: "abierto" | "en_proceso" | "resuelto"
+): Promise<{ error: string | null; aviso?: string; registros?: RegistroFinal[] }> {
   const s = await sesionPlataforma();
-  if (!s) return NO;
+  if (!s) return { error: NO.error };
   const { data, error } = await s.supabase.rpc("plataforma_estado_ticket", { p_ticket_id: ticketId, p_estado: estado });
   if (error) return { error: error.message };
   const d = data as Datos;
@@ -54,7 +69,7 @@ export async function cambiarEstadoTicket(ticketId: string, estado: "abierto" | 
   }
   revalidatePath(`/plataforma/soporte/${ticketId}`);
   revalidatePath("/plataforma/soporte");
-  return { error: null, aviso };
+  return { error: null, aviso, registros: await registrosDe(s.supabase, [{ t: "soporte_tickets", i: ticketId, datos: { id: ticketId, estado } }]) };
 }
 
 async function generarPropuesta(ticketId: string) {

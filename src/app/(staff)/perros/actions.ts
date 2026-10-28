@@ -1,6 +1,6 @@
 "use server";
 
-import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import { registrosDe, registrosFinales } from "@/lib/concurrencia/registro-final";
 import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
 import { conflictoDeError, type Conflicto } from "@/lib/concurrencia/tipos";
@@ -168,7 +168,7 @@ export async function completarParaEstancia(
 
   revalidatePath(`/perros/${perroId}`);
   if (data?.cliente_id) revalidatePath(`/clientes/${data.cliente_id}`);
-  return { error: null, ok: true };
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "perros", i: perroId }]) };
 }
 
 export async function crearPerro(
@@ -265,7 +265,9 @@ export async function actualizarPerro(
 
   if (error) {
     const conflicto = conflictoDeError(error);
-    if (conflicto) return { error: null, conflicto };
+    // En conflicto no se manda la versión de la otra persona: el formulario (CampoVersion) la tomaría como leída y el
+    // siguiente «Guardar» escribiría encima sin avisar.
+    if (conflicto) return { error: null, conflicto, registros: [] };
     return {
       error: clinicos.campos
         ? mensajeErrorClinico(error)

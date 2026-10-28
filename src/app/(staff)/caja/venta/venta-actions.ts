@@ -3,9 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../../reservas/traducir-error";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 export type LineaVenta = { insumoId: string | null; concepto: string; precio: number | null; cantidad: number };
-export type ResultadoVenta = { error: string | null; reservaId?: string };
+export type ResultadoVenta = { error: string | null; reservaId?: string; registros?: RegistroFinal[] };
 
 // La venta de mostrador: la base arma la cuenta (de la persona o de
 // «Público en general»), descuenta el inventario y devuelve la cuenta para
@@ -28,10 +30,10 @@ export async function crearVentaRapida(clienteId: string | null, lineas: LineaVe
   if (error) return { error: traducirError(error) };
   revalidatePath("/caja");
   revalidatePath("/inventario");
-  return { error: null, reservaId: data as string };
+  return { error: null, reservaId: data as string, registros: await registrosDe(supabase, [{ t: "reservas", i: data as string }]) };
 }
 
-export async function cancelarRenglonVenta(ventaId: string, reservaId: string, motivo: string): Promise<{ error: string | null }> {
+export async function cancelarRenglonVenta(ventaId: string, reservaId: string, motivo: string): Promise<{ error: string | null; registros?: RegistroFinal[] }> {
   if (!motivo.trim()) return { error: "Escribe por qué se cancela." };
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("cancelar_venta_mostrador", { p_venta_id: ventaId, p_motivo: motivo.trim() });
@@ -40,5 +42,5 @@ export async function cancelarRenglonVenta(ventaId: string, reservaId: string, m
   revalidatePath(`/reservas/${reservaId}/cobrar`);
   revalidatePath("/caja");
   revalidatePath("/inventario");
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "ventas_mostrador", i: ventaId }, { t: "reservas", i: reservaId }]) };
 }

@@ -48,6 +48,7 @@ export default async function ExpedienteMascota({ params, searchParams }: { para
     sesion?.rol === "admin" ? supabase.rpc("vet_lecturas_lista", { p_perro: perroId, p_limite: 40 }) : Promise.resolve({ data: null }),
   ]);
   const linea = (lineaCrudo ?? []) as EventoLinea[];
+  const sinFirmar = linea.filter((e) => e.tipo === "consulta" && e.estado === "borrador").length;
   const estimados = (estimadosCrudo ?? []) as EstimadoResumen[];
   const medicos = (medicosCrudo ?? []) as MedicoVet[];
   const lecturasLista = (lecturas.data ?? []) as Lectura[];
@@ -59,6 +60,10 @@ export default async function ExpedienteMascota({ params, searchParams }: { para
         <div>
           <Link href="/veterinaria/expediente" className="text-sm font-semibold text-morado hover:underline">← Expediente clínico</Link>
           <h1 className="mt-1 text-2xl font-bold text-n-900">{mascota.nombre}</h1>
+          {/* QA S41 (N139): las consultas en borrador de esta mascota, contadas de la misma línea de tiempo que se lista abajo. */}
+          <span data-sin-firmar={sinFirmar} className={`mt-1 inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${sinFirmar > 0 ? "bg-ambar-suave text-ambar-oscuro" : "bg-n-100 text-n-600"}`}>
+            {sinFirmar} {sinFirmar === 1 ? "consulta sin firmar" : "consultas sin firmar"}
+          </span>
           <p className="text-n-700">
             {etiquetaEspecie(mascota.especie as string | null)}{mascota.raza ? ` · ${mascota.raza}` : ""}
             {mascota.fecha_nacimiento ? ` · nació el ${formatearFechaCalendario(mascota.fecha_nacimiento as string)}` : ""}

@@ -22,7 +22,8 @@ export function DesgloseEstancia({ cuenta, actualizando = false }: { cuenta: Cue
           return (
             <li key={`${l.tipo}-${l.origenId}`} className="text-n-700" data-linea-estancia={l.tipo}>
               <span>
-                {l.tipo === "estancia" ? `${t.etiqueta} = ${t.monto}` : `${t.etiqueta}: ${t.monto}`}
+                {/* QA S41 (N144): la línea de la estancia misma se rotula como su base (no es un cargo). */}
+                {l.tipo === "estancia" ? `Base de la estancia · ${t.etiqueta} = ${t.monto}` : `${t.etiqueta}: ${t.monto}`}
               </span>
               {t.detalle && <span className="block text-xs text-n-600">{t.detalle}</span>}
             </li>

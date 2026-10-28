@@ -2,6 +2,8 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarClientesBuscables } from "@/lib/clientes/buscables";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { usaVeterinaria } from "@/lib/plan/modulos";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import { VentaRapida, type ProductoVenta } from "./venta-rapida";
 import { leerTodo } from "@/lib/supabase/paginar";
 
@@ -53,7 +55,7 @@ export default async function VentaRapidaPage({ searchParams }: { searchParams: 
         </Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Venta rápida</h1>
         <p className="mt-1 text-n-600">
-          Un producto o cualquier otra cosa que se cobre en mostrador, sin reserva ni perro. Se arma la cuenta y pasas a cobrarla como siempre.
+          Un producto o cualquier otra cosa que se cobre en mostrador, sin reserva ni {vocabularioMascota({ conVet: usaVeterinaria(sesion?.modulos ?? []) }).nombre}. Se arma la cuenta y pasas a cobrarla como siempre.
         </p>
       </div>
       <VentaRapida

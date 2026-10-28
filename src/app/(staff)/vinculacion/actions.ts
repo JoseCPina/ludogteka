@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
-export type EstadoVinculacion = { error: string | null; ok?: boolean };
+export type EstadoVinculacion = { error: string | null; ok?: boolean; registros?: RegistroFinal[] };
 
 export async function vincularCuenta(
   profileId: string,
@@ -49,7 +51,14 @@ export async function vincularCuenta(
   });
 
   revalidatePath("/vinculacion");
-  return { error: null, ok: true };
+  return {
+    error: null,
+    ok: true,
+    registros: await registrosDe(supabase, [
+      { t: "membresias", i: data.id as string },
+      { t: "clientes", i: clienteId },
+    ]),
+  };
 }
 
 export async function desvincularCuenta(
@@ -88,5 +97,12 @@ export async function desvincularCuenta(
   });
 
   revalidatePath("/vinculacion");
-  return { error: null, ok: true };
+  return {
+    error: null,
+    ok: true,
+    registros: await registrosDe(supabase, [
+      { t: "membresias", i: data.id as string },
+      { t: "clientes", i: clienteId },
+    ]),
+  };
 }

@@ -14,12 +14,13 @@ import { esProduccion } from "@/lib/mercadopago/config";
 import { probarCredencialesClip } from "@/lib/clip/terminal";
 import { conexionDeCobro } from "@/lib/pagos/conexion";
 import { mensajeDeError, type ConexionCobro, type CredencialesClip, type ProveedorElegible } from "@/lib/pagos/tipos";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 // Con qué cobra el negocio y sus conexiones. Solo el admin (no se delega):
 // son las credenciales que mueven el dinero del negocio. Las credenciales
 // van cifradas a Vault por el servidor; ninguna regresa al navegador.
 
-type Resultado = { error: string | null; aviso?: string };
+type Resultado = { error: string | null; aviso?: string; registros?: RegistroFinal[] };
 
 async function exigirAdmin(): Promise<{ error: string } | { negocioId: string; usuarioId: string }> {
   const sesion = await obtenerSesionConRol();
@@ -30,6 +31,22 @@ async function exigirAdmin(): Promise<{ error: string } | { negocioId: string; u
   return { negocioId: (await negocioActual()).id, usuarioId: sesion.user.id };
 }
 
+// Cómo quedaron las conexiones de cobro del negocio. Solo se leen las columnas que la API deja ver (ni el id del
+// secreto ni el hash del webhook), así que la fila se arma aquí con su versión (updated_at).
+const COLUMNAS_INTEGRACION =
+  "id, negocio_id, proveedor, elegida, estado, modo, cuenta_nombre, live_mode, terminal_id, terminal_nombre, terminal_compatible, token_expira_at, conectada_at, desconectada_at, ultimo_error, created_at, updated_at";
+
+async function registrosIntegraciones(): Promise<RegistroFinal[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.from("integraciones_cobro").select(COLUMNAS_INTEGRACION).is("deleted_at", null).order("id");
+  return ((data ?? []) as Record<string, unknown>[]).map((f) => ({
+    t: "integraciones_cobro",
+    i: f.id as string,
+    version: (f.updated_at as string | null) ?? null,
+    datos: f,
+  }));
+}
+
 function listo() {
   revalidatePath("/admin/pagos");
   revalidatePath("/caja");
@@ -38,11 +55,11 @@ function listo() {
 
 export async function elegirProveedor(proveedor: ProveedorElegible): Promise<Resultado> {
   const a = await exigirAdmin();
-  if ("error" in a) return a;
+  if ("error" in a) return { error: a.error };
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("elegir_proveedor_cobro", { p_proveedor: proveedor });
   if (error) return { error: error.message };
-  return listo();
+  return { ...listo(), registros: await registrosIntegraciones() };
 }
 
 /** Paso 1 de OAuth: la URL de Mercado Pago a la que se manda al admin. */
@@ -93,9 +110,9 @@ export async function terminalesMercadoPago(): Promise<{ error: string | null; t
 
 export async function escogerTerminal(terminalId: string): Promise<Resultado> {
   const a = await exigirAdmin();
-  if ("error" in a) return a;
+  if ("error" in a) return { error: a.error };
   const cx = await conexionMp();
-  if ("error" in cx) return cx;
+  if ("error" in cx) return { error: cx.error };
   if (cx.origen === "llave_entorno") return { error: "Con la conexión anterior la terminal está fija. Conecta tu cuenta con «Conectar Mercado Pago» para escogerla aquí." };
   let lista;
   try {
@@ -116,7 +133,7 @@ export async function escogerTerminal(terminalId: string): Promise<Resultado> {
     .eq("proveedor", "mercadopago")
     .is("deleted_at", null);
   if (error) return { error: "No se pudo guardar la terminal." };
-  return { ...listo(), aviso: t.operating_mode === "PDV" ? undefined : "La terminal no está en modo integrado (PDV): apriétale «Poner en modo integrado» o no recibirá los cobros." };
+  return { ...listo(), registros: await registrosIntegraciones(), aviso: t.operating_mode === "PDV" ? undefined : "La terminal no está en modo integrado (PDV): apriétale «Poner en modo integrado» o no recibirá los cobros." };
 }
 
 export async function ponerEnModoIntegrado(terminalId: string): Promise<Resultado> {
@@ -150,7 +167,7 @@ export async function probarMercadoPago(): Promise<Resultado> {
 
 export async function guardarClip(datos: { apiKey: string; secretKey: string; serie: string; usuario: string }): Promise<Resultado> {
   const a = await exigirAdmin();
-  if ("error" in a) return a;
+  if ("error" in a) return { error: a.error };
   const creds: CredencialesClip = {
     apiKey: datos.apiKey.trim(),
     secretKey: datos.secretKey.trim(),
@@ -210,12 +227,12 @@ export async function guardarClip(datos: { apiKey: string; secretKey: string; se
     .eq("proveedor", "clip")
     .is("deleted_at", null);
   if (error) return { error: "No se pudo guardar la conexión." };
-  return { ...listo(), aviso: "Clip quedó conectado. Copia la URL de notificaciones de abajo al portal de Clip." };
+  return { ...listo(), registros: await registrosIntegraciones(), aviso: "Clip quedó conectado. Copia la URL de notificaciones de abajo al portal de Clip." };
 }
 
 export async function desconectarClip(): Promise<Resultado> {
   const a = await exigirAdmin();
-  if ("error" in a) return a;
+  if ("error" in a) return { error: a.error };
   const admin = createSupabaseAdminClient(a.negocioId);
   const { error } = await admin.rpc("integracion_borrar_secreto", { p_proveedor: "clip" });
   if (error) return { error: error.message };
@@ -225,5 +242,5 @@ export async function desconectarClip(): Promise<Resultado> {
     .eq("negocio_id", a.negocioId)
     .eq("proveedor", "clip")
     .is("deleted_at", null);
-  return listo();
+  return { ...listo(), registros: await registrosIntegraciones() };
 }

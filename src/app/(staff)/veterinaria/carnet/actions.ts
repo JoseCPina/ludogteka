@@ -1,8 +1,8 @@
 "use server";
 
-import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import { registrosDe, registrosFinales } from "@/lib/concurrencia/registro-final";
 import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
-import { conflictoDeError } from "@/lib/concurrencia/tipos";
+import { conflictoDeError, type ConRegistros } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { negocioActual, urlDelNegocio } from "@/lib/negocio/actual";
@@ -93,7 +93,11 @@ export async function anularRegistroCarnet(perroId: string, tipo: "vacuna" | "de
   const { error } = await supabase.rpc("anular_registro_carnet", { p_tipo: tipo, p_id: id, p_motivo: texto(fd, "motivo") });
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/carnet/${perroId}`);
-  return { error: null, exito: "Registro anulado. Queda en el historial con su motivo." };
+  return {
+    error: null,
+    exito: "Registro anulado. Queda en el historial con su motivo.",
+    registros: await registrosDe(supabase, [{ t: tipo === "vacuna" ? "carnet_vacunas" : "carnet_desparasitaciones", i: id }]),
+  };
 }
 
 export async function recordatoriosDeMascota(perroId: string, apagados: boolean): Promise<ResultadoAccion> {
@@ -101,18 +105,22 @@ export async function recordatoriosDeMascota(perroId: string, apagados: boolean)
   const { error } = await supabase.rpc("carnet_recordatorios_mascota", { p_perro_id: perroId, p_apagados: apagados });
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/carnet/${perroId}`);
-  return { error: null, exito: apagados ? "Esta mascota ya no recibirá recordatorios." : "Esta mascota volvió a recibir recordatorios." };
+  return {
+    error: null,
+    exito: apagados ? "Esta mascota ya no recibirá recordatorios." : "Esta mascota volvió a recibir recordatorios.",
+    registros: await registrosDe(supabase, [{ t: "perros", i: perroId, datos: { recordatorios_apagados: apagados } }]),
+  };
 }
 
 /** El enlace verificable del carnet. El token en claro se muestra UNA vez: en la base solo queda su sha256. */
-export async function generarEnlaceCarnet(perroId: string): Promise<ResultadoEnlace> {
+export async function generarEnlaceCarnet(perroId: string): Promise<ResultadoEnlace & ConRegistros> {
   const supabase = await createSupabaseServerClient();
   const negocio = await negocioActual();
   const { token, hash } = nuevoToken();
-  const { error } = await supabase.rpc("carnet_registrar_enlace", { p_perro_id: perroId, p_token_hash: hash });
+  const { data: enlaceId, error } = await supabase.rpc("carnet_registrar_enlace", { p_perro_id: perroId, p_token_hash: hash });
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/carnet/${perroId}`);
-  return { error: null, url: `${urlDelNegocio(negocio)}/c/${token}` };
+  return { error: null, url: `${urlDelNegocio(negocio)}/c/${token}`, registros: await registrosDe(supabase, [{ t: "carnet_enlaces", i: enlaceId as string | null }]) };
 }
 
 export async function revocarEnlaceCarnet(perroId: string): Promise<ResultadoAccion> {
@@ -120,7 +128,11 @@ export async function revocarEnlaceCarnet(perroId: string): Promise<ResultadoAcc
   const { error } = await supabase.rpc("carnet_revocar_enlace", { p_perro_id: perroId });
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/carnet/${perroId}`);
-  return { error: null, exito: "El enlace dejó de funcionar. Quien lo tenga ya no puede ver el carnet." };
+  return {
+    error: null,
+    exito: "El enlace dejó de funcionar. Quien lo tenga ya no puede ver el carnet.",
+    registros: await registrosDe(supabase, [{ t: "perros", i: perroId, datos: { carnet_enlace_activo: false } }]),
+  };
 }
 
 export async function guardarAjustesVeterinaria(fd: FormData): Promise<ResultadoAccion> {
@@ -142,7 +154,7 @@ export async function guardarAjustesVeterinaria(fd: FormData): Promise<Resultado
     controlDeFormulario(fd)
   );
   const conflicto = conflictoDeError(error);
-  if (conflicto) return { error: null, conflicto };
+  if (conflicto) return { error: null, conflicto, registros: await registrosFinales(supabase, controlDeFormulario(fd)) };
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/ajustes");
   return { error: null, registros: await registrosFinales(supabase, controlDeFormulario(fd)), exito: "Ajustes de Veterinaria guardados." };
@@ -172,7 +184,7 @@ export async function anularCertificado(id: string, fd: FormData): Promise<Resul
   const { error } = await supabase.rpc("anular_certificado", { p_id: id, p_motivo: texto(fd, "motivo") });
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/certificados/${id}`);
-  return { error: null, exito: "Certificado anulado." };
+  return { error: null, exito: "Certificado anulado.", registros: await registrosDe(supabase, [{ t: "certificados_salud", i: id }]) };
 }
 
 export async function marcarRecordatorio(id: string, estado: "manual" | "omitido", fd?: FormData): Promise<ResultadoAccion> {
@@ -180,7 +192,11 @@ export async function marcarRecordatorio(id: string, estado: "manual" | "omitido
   const { error } = await supabase.rpc("carnet_recordatorio_marcar", { p_id: id, p_estado: estado, p_nota: fd ? o(texto(fd, "nota")) : null });
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/recordatorios");
-  return { error: null, exito: estado === "manual" ? "Anotado como enviado." : "Recordatorio omitido." };
+  return {
+    error: null,
+    exito: estado === "manual" ? "Anotado como enviado." : "Recordatorio omitido.",
+    registros: await registrosDe(supabase, [{ t: "carnet_recordatorios", i: id }]),
+  };
 }
 
 /** «Reintentar envío»: el recordatorio vuelve a pendiente y la tarea lo manda otra vez en su siguiente corrida. */
@@ -190,7 +206,11 @@ export async function reintentarRecordatorio(id: string): Promise<ResultadoAccio
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/recordatorios");
   revalidatePath("/recepcion");
-  return { error: null, exito: "Listo: se vuelve a mandar en la siguiente corrida (cada hora, de 9:00 a 20:00)." };
+  return {
+    error: null,
+    exito: "Listo: se vuelve a mandar en la siguiente corrida (cada hora, de 9:00 a 20:00).",
+    registros: await registrosDe(supabase, [{ t: "carnet_recordatorios", i: id }]),
+  };
 }
 
 export async function guardarDictadoAjustes(fd: FormData): Promise<ResultadoAccion> {
@@ -198,7 +218,11 @@ export async function guardarDictadoAjustes(fd: FormData): Promise<ResultadoAcci
   const { error } = await supabase.rpc("guardar_veterinaria_dictado", { p_conservar: fd.get("conservar") === "si" });
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/ajustes");
-  return { error: null, exito: "Opción del dictado guardada." };
+  return {
+    error: null,
+    exito: "Opción del dictado guardada.",
+    registros: await registrosDe(supabase, [{ t: "veterinaria_ajustes", i: (await negocioActual()).id }]),
+  };
 }
 
 export async function guardarTeleconsultaAjustes(fd: FormData): Promise<ResultadoAccion> {
@@ -210,5 +234,9 @@ export async function guardarTeleconsultaAjustes(fd: FormData): Promise<Resultad
   const { error } = await supabase.rpc("guardar_veterinaria_teleconsulta", { p_cobro: cobro, p_precio: precio === "" ? null : Number(precio) });
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/ajustes");
-  return { error: null, exito: "Opciones de la teleconsulta guardadas." };
+  return {
+    error: null,
+    exito: "Opciones de la teleconsulta guardadas.",
+    registros: await registrosDe(supabase, [{ t: "veterinaria_ajustes", i: (await negocioActual()).id }]),
+  };
 }

@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import type { RenglonHistorialPase } from "@/lib/bonos/ajuste";
 
 export type ResultadoAjustePase = {
@@ -11,6 +13,7 @@ export type ResultadoAjustePase = {
   usadosDespues?: number;
   reabre?: boolean;
   sigueVencido?: boolean;
+  registros?: RegistroFinal[];
 };
 
 function refrescar(perroId?: string | null) {
@@ -44,14 +47,21 @@ export async function ajustarDiasPase(
   if (error) return { error: traducirError(error) };
   refrescar();
   const r = data as { usados_antes: number; usados_despues: number; reabre: boolean; sigue_vencido: boolean };
-  return { error: null, usadosAntes: r.usados_antes, usadosDespues: r.usados_despues, reabre: r.reabre, sigueVencido: r.sigue_vencido };
+  return {
+    error: null,
+    usadosAntes: r.usados_antes,
+    usadosDespues: r.usados_despues,
+    reabre: r.reabre,
+    sigueVencido: r.sigue_vencido,
+    registros: await registrosDe(supabase, [{ t: "bonos_clientes", i: bonoId }]),
+  };
 }
 
 export async function deshacerCheckin(
   estanciaId: string,
   motivo: string,
   motivoTexto: string
-): Promise<{ error: string | null; devueltos?: number }> {
+): Promise<{ error: string | null; devueltos?: number; registros?: RegistroFinal[] }> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("deshacer_checkin_estancia", {
     p_estancia_id: estanciaId,
@@ -63,7 +73,11 @@ export async function deshacerCheckin(
   revalidatePath(`/reservas/estancias/${estanciaId}/checkin`);
   revalidatePath("/guarderia/checkin");
   revalidatePath("/hotel/checkin");
-  return { error: null, devueltos: (data as { devueltos: number }).devueltos };
+  return {
+    error: null,
+    devueltos: (data as { devueltos: number }).devueltos,
+    registros: await registrosDe(supabase, [{ t: "estancias", i: estanciaId }]),
+  };
 }
 
 export async function cargarHistorialPase(

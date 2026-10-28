@@ -6,6 +6,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 import { instanteDeHoraLocal } from "@/lib/formato";
 import { traducirError } from "../../reservas/traducir-error";
 import type { ResultadoAccion } from "@/lib/empleados/tipos";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
 
 const texto = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const o = (v: string) => (v === "" ? null : v);
@@ -56,7 +57,11 @@ export async function indicarMedicacion(hospId: string, fd: FormData): Promise<R
   });
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/hospitalizacion/${hospId}`);
-  return { error: null, exito: "Medicación indicada. Las dosis quedaron en la hoja." };
+  return {
+    error: null,
+    exito: "Medicación indicada. Las dosis quedaron en la hoja.",
+    registros: await registrosDe(supabase, [{ t: "hospitalizaciones", i: hospId, datos: { medicacion_indicada: true } }]),
+  };
 }
 
 export async function suspenderMedicacion(hospId: string, medicacionId: string, fd: FormData): Promise<ResultadoAccion> {
@@ -64,7 +69,11 @@ export async function suspenderMedicacion(hospId: string, medicacionId: string, 
   const { error } = await supabase.rpc("hospitalizar_suspender_medicacion", { p_medicacion_id: medicacionId, p_motivo: texto(fd, "motivo") });
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/hospitalizacion/${hospId}`);
-  return { error: null, exito: "Medicación suspendida." };
+  return {
+    error: null,
+    exito: "Medicación suspendida.",
+    registros: await registrosDe(supabase, [{ t: "hospitalizacion_medicacion", i: medicacionId, datos: { suspendida_motivo: texto(fd, "motivo") } }]),
+  };
 }
 
 export async function aplicarDosis(hospId: string, dosisId: string, fd: FormData): Promise<ResultadoAccion> {
@@ -82,7 +91,11 @@ export async function aplicarDosis(hospId: string, dosisId: string, fd: FormData
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/hospitalizacion/${hospId}`);
   const cargo = (data as { cargo_id: string | null } | null)?.cargo_id;
-  return { error: null, exito: cargo ? "Dosis aplicada y cargada a la cuenta." : "Dosis aplicada." };
+  return {
+    error: null,
+    exito: cargo ? "Dosis aplicada y cargada a la cuenta." : "Dosis aplicada.",
+    registros: await registrosDe(supabase, [{ t: "hospitalizacion_dosis", i: dosisId, datos: { estado: "aplicada" } }]),
+  };
 }
 
 export async function omitirDosis(hospId: string, dosisId: string, fd: FormData): Promise<ResultadoAccion> {
@@ -90,7 +103,11 @@ export async function omitirDosis(hospId: string, dosisId: string, fd: FormData)
   const { error } = await supabase.rpc("hospitalizar_omitir_dosis", { p_dosis_id: dosisId, p_motivo: texto(fd, "motivo") });
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/hospitalizacion/${hospId}`);
-  return { error: null, exito: "Dosis marcada como no aplicada." };
+  return {
+    error: null,
+    exito: "Dosis marcada como no aplicada.",
+    registros: await registrosDe(supabase, [{ t: "hospitalizacion_dosis", i: dosisId, datos: { estado: "omitida", motivo_omision: texto(fd, "motivo") } }]),
+  };
 }
 
 export async function registrarMonitoreo(hospId: string, fd: FormData): Promise<ResultadoAccion> {
@@ -103,7 +120,11 @@ export async function registrarMonitoreo(hospId: string, fd: FormData): Promise<
   const { error } = await supabase.rpc("hospitalizar_monitorear", { p_hosp: hospId, p_temperatura: t, p_peso: p, p_fc: fc, p_fr: fr, p_notas: o(texto(fd, "notas")) });
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/hospitalizacion/${hospId}`);
-  return { error: null, exito: "Monitoreo registrado." };
+  return {
+    error: null,
+    exito: "Monitoreo registrado.",
+    registros: await registrosDe(supabase, [{ t: "hospitalizaciones", i: hospId, datos: { ultimo_monitoreo: { temperatura: t, peso: p, fc, fr, notas: o(texto(fd, "notas")) } } }]),
+  };
 }
 
 export async function agregarCargoHospitalizacion(hospId: string, fd: FormData): Promise<ResultadoAccion> {
@@ -113,7 +134,11 @@ export async function agregarCargoHospitalizacion(hospId: string, fd: FormData):
   const { error } = await supabase.rpc("hospitalizar_agregar_cargo", { p_hosp: hospId, p_tipo: texto(fd, "tipo") || "procedimiento", p_descripcion: texto(fd, "descripcion"), p_importe: importe });
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/hospitalizacion/${hospId}`);
-  return { error: null, exito: "Cargo agregado a la cuenta." };
+  return {
+    error: null,
+    exito: "Cargo agregado a la cuenta.",
+    registros: await registrosDe(supabase, [{ t: "hospitalizaciones", i: hospId, datos: { cargo_agregado: { descripcion: texto(fd, "descripcion"), importe } } }]),
+  };
 }
 
 export async function darAlta(hospId: string, fd: FormData): Promise<ResultadoAccion> {
@@ -123,7 +148,11 @@ export async function darAlta(hospId: string, fd: FormData): Promise<ResultadoAc
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/hospitalizacion");
   revalidatePath(`/veterinaria/hospitalizacion/${hospId}`);
-  return { error: null, exito: "Alta registrada. La cuenta está lista para cobrarse en Caja." };
+  return {
+    error: null,
+    exito: "Alta registrada. La cuenta está lista para cobrarse en Caja.",
+    registros: await registrosDe(supabase, [{ t: "hospitalizaciones", i: hospId, datos: { estado: "alta" } }]),
+  };
 }
 
 export async function nuevoConsentimiento(perroId: string, hospId: string | null, fd: FormData): Promise<ResultadoAccion> {

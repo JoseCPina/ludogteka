@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../reservas/traducir-error";
 import type { ResultadoAccion } from "@/lib/empleados/tipos";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
 
 // Inventario clínico. Todo va con la sesión de quien lo hace: la base
 // comprueba «Administrar lotes e inventario clínico» en cada función.
@@ -81,7 +82,7 @@ export async function registrarEntradaLote(insumoId: string, fd: FormData): Prom
   if (!codigo) return { error: "Escribe el código de lote que viene en la caja." };
   if (!Number.isFinite(cantidad) || cantidad <= 0) return { error: "La cantidad debe ser mayor a cero." };
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("registrar_lote_entrada", {
+  const { data: loteId, error } = await supabase.rpc("registrar_lote_entrada", {
     p_insumo_id: insumoId,
     p_codigo: codigo,
     p_caducidad: texto(fd, "caducidad") || null,
@@ -91,7 +92,11 @@ export async function registrarEntradaLote(insumoId: string, fd: FormData): Prom
   });
   if (error) return { error: traducirError(error) };
   refrescar(insumoId);
-  return { error: null, exito: "Entrada registrada." };
+  return {
+    error: null,
+    exito: "Entrada registrada.",
+    registros: await registrosDe(supabase, [{ t: "insumos", i: insumoId }, { t: "insumo_lotes", i: loteId as string | null }]),
+  };
 }
 
 export async function registrarSalidaLote(insumoId: string, loteId: string, tipo: "surtido" | "merma" | "caducado", fd: FormData): Promise<ResultadoAccion> {
@@ -111,7 +116,11 @@ export async function registrarSalidaLote(insumoId: string, loteId: string, tipo
   refrescar(insumoId);
   const aviso = (data as { aviso?: string | null } | null)?.aviso;
   const base = tipo === "surtido" ? "Surtido registrado." : tipo === "merma" ? "Merma registrada." : "Salida por caducidad registrada.";
-  return { error: null, exito: aviso ? `${base} ${aviso}` : base };
+  return {
+    error: null,
+    exito: aviso ? `${base} ${aviso}` : base,
+    registros: await registrosDe(supabase, [{ t: "insumos", i: insumoId }, { t: "insumo_lotes", i: loteId }]),
+  };
 }
 
 export async function registrarAjusteLote(insumoId: string, loteId: string, fd: FormData): Promise<ResultadoAccion> {
@@ -129,5 +138,9 @@ export async function registrarAjusteLote(insumoId: string, loteId: string, fd: 
   });
   if (error) return { error: traducirError(error) };
   refrescar(insumoId);
-  return { error: null, exito: "Ajuste registrado." };
+  return {
+    error: null,
+    exito: "Ajuste registrado.",
+    registros: await registrosDe(supabase, [{ t: "insumos", i: insumoId }, { t: "insumo_lotes", i: loteId }]),
+  };
 }

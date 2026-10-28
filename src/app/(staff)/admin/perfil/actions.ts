@@ -1,6 +1,6 @@
 "use server";
 
-import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import { registrosDe, registrosFinales } from "@/lib/concurrencia/registro-final";
 import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
 import { conflictoDeError, type Conflicto } from "@/lib/concurrencia/tipos";
@@ -59,7 +59,7 @@ export async function guardarPerfil(fd: FormData): Promise<ResultadoPerfil> {
     ? await conControl(supabase.from("negocio_perfil").update(campos).eq("id", id), controlDeFormulario(fd))
     : await supabase.from("negocio_perfil").insert(campos);
   const conflicto = conflictoDeError(error);
-  if (conflicto) return { error: null, conflicto };
+  if (conflicto) return { error: null, conflicto, registros: [] };
   if (error) return { error: mensaje(error) };
   await refrescar(supabase);
   return { error: null, registros: await registrosFinales(supabase, controlDeFormulario(fd)), exito: "Perfil guardado" };
@@ -123,17 +123,17 @@ export async function subirLogo(fd: FormData): Promise<ResultadoPerfil> {
   if (error) return { error: mensaje(error) };
   await refrescar(r.supabase);
   revalidatePath("/", "layout");
-  return { error: null, exito: "Logo guardado" };
+  return { error: null, exito: "Logo guardado", registros: await registrosDe(r.supabase, [{ t: "negocio_perfil", i: id ?? (await perfilId(r.supabase)) }]) };
 }
 
 export async function subirFoto(fd: FormData): Promise<ResultadoPerfil> {
   const r = await subirImagen(fd, "fotos");
   if (r.error || !r.path || !r.supabase) return { error: r.error };
   const { count } = await r.supabase.from("negocio_fotos").select("id", { count: "exact", head: true }).is("deleted_at", null);
-  const { error } = await r.supabase.from("negocio_fotos").insert({ path: r.path, orden: (count ?? 0) + 1 });
+  const { data: foto, error } = await r.supabase.from("negocio_fotos").insert({ path: r.path, orden: (count ?? 0) + 1 }).select("id").single();
   if (error) return { error: mensaje(error) };
   await refrescar(r.supabase);
-  return { error: null, exito: "Foto agregada" };
+  return { error: null, exito: "Foto agregada", registros: await registrosDe(r.supabase, [{ t: "negocio_fotos", i: foto?.id }]) };
 }
 
 // Quitar una foto: baja lógica (el archivo se queda en Storage).
@@ -143,5 +143,5 @@ export async function quitarFoto(id: string): Promise<ResultadoPerfil> {
   const { error } = await supabase.from("negocio_fotos").update({ deleted_at: new Date().toISOString() }).eq("id", id);
   if (error) return { error: mensaje(error) };
   await refrescar(supabase);
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "negocio_fotos", i: id }]) };
 }

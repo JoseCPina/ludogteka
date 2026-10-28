@@ -7,6 +7,7 @@ import { Field } from "@/components/ui/field";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 import { sumarDiasFecha } from "@/lib/formato";
+import { conTope } from "@/lib/ui/espera";
 import { dinero } from "@/lib/dinero";
 import type { Conflicto } from "@/lib/concurrencia/tipos";
 import { cotizarFechas, moverFechas, type VistaPreviaFechas } from "./reserva-actions";
@@ -55,7 +56,8 @@ export function MoverFechas({
     if (pedida.current === clave) return;
     pedida.current = clave;
     const t = setTimeout(async () => {
-      const r = await cotizarFechas(estanciaId, nuevaEntrada, salidaFinal).catch(() => ({ error: "No pudimos calcular el total. Intenta de nuevo." }) as VistaPreviaFechas);
+      // QA S41: con tope, para que el total no se quede calculando si el servidor no contesta.
+      const r = await conTope(cotizarFechas(estanciaId, nuevaEntrada, salidaFinal)).catch(() => ({ error: "No pudimos calcular el total. Intenta de nuevo." }) as VistaPreviaFechas);
       if (pedida.current === clave) setVista({ ...r, clave });
     }, 350);
     return () => clearTimeout(t);

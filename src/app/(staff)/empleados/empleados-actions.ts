@@ -1,6 +1,6 @@
 "use server";
 
-import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import { registrosDe, registrosFinales } from "@/lib/concurrencia/registro-final";
 import { conControl, controlDeFormulario } from "@/lib/concurrencia/servidor";
 import { conflictoDeError } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
@@ -51,7 +51,7 @@ export async function actualizarEmpleado(id: string, fd: FormData): Promise<Resu
   const supabase = await createSupabaseServerClient();
   const { data, error } = await conControl(supabase.from("empleados").update(datos).eq("id", id).select("id"), controlDeFormulario(fd));
   const conflicto = conflictoDeError(error);
-  if (conflicto) return { error: null, conflicto };
+  if (conflicto) return { error: null, conflicto, registros: await registrosFinales(supabase, controlDeFormulario(fd)) };
   if (error) return { error: mensajeDeError(error) };
   if (!data?.length) return { error: "No tienes permiso para cambiar a este empleado." };
   revalidatePath(`/empleados/${id}`);
@@ -71,7 +71,7 @@ export async function darDeBajaEmpleado(id: string, fd: FormData): Promise<Resul
     controlDeFormulario(fd)
   );
   const conflicto = conflictoDeError(error);
-  if (conflicto) return { error: null, conflicto };
+  if (conflicto) return { error: null, conflicto, registros: await registrosFinales(supabase, controlDeFormulario(fd)) };
   if (error) return { error: mensajeDeError(error) };
   if (!data?.length) return { error: "No tienes permiso para dar de baja a este empleado." };
   revalidatePath("/empleados");
@@ -84,7 +84,7 @@ export async function reactivarEmpleado(id: string): Promise<ResultadoAccion> {
   if (error) return { error: mensajeDeError(error) };
   if (!data?.length) return { error: "No tienes permiso para esto." };
   revalidatePath("/empleados");
-  return { error: null, exito: "Reactivado" };
+  return { error: null, exito: "Reactivado", registros: await registrosDe(supabase, [{ t: "empleados", i: id }]) };
 }
 
 // Horario: un renglón por día (entrada y salida vacías = descansa).
@@ -105,7 +105,7 @@ export async function guardarHorario(empleadoId: string, fd: FormData): Promise<
     controlDeFormulario(fd)
   );
   const conflicto = conflictoDeError(error);
-  if (conflicto) return { error: null, conflicto };
+  if (conflicto) return { error: null, conflicto, registros: await registrosFinales(supabase, controlDeFormulario(fd)) };
   if (error) return { error: mensajeDeError(error) };
   revalidatePath(`/empleados/${empleadoId}`);
   return { error: null, registros: await registrosFinales(supabase, controlDeFormulario(fd)), exito: "Horario guardado: vale desde hoy" };

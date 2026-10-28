@@ -4,14 +4,17 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { negocioActual } from "@/lib/negocio/actual";
-import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import { usaVeterinaria } from "@/lib/plan/modulos";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 const BUCKET = "perros-archivos";
 const PESO_MAXIMO = 4 * 1024 * 1024;
 
-export type ResultadoFotoMiPerro = { error: string | null; url?: string | null };
+export type ResultadoFotoMiPerro = { error: string | null; url?: string | null; registros?: RegistroFinal[] };
 
 /**
  * El dueño sube o reemplaza la foto de identificación de su perro desde el
@@ -70,5 +73,5 @@ export async function subirFotoMiPerro(perroId: string, formData: FormData): Pro
 
   revalidatePath("/portal");
   revalidatePath(`/portal/perros/${perroId}`);
-  return { error: null, url: firmada?.signedUrl ?? null };
+  return { error: null, url: firmada?.signedUrl ?? null, registros: await registrosDe(supabase, [{ t: "perros", i: perroId }]) };
 }

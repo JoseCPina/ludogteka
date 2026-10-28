@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
-export type EstadoAlertaForm = { error: string | null; ok?: boolean };
+export type EstadoAlertaForm = { error: string | null; ok?: boolean; registros?: RegistroFinal[] };
 
 export async function activarAlerta(
   perroId: string,
@@ -15,14 +17,16 @@ export async function activarAlerta(
   if (!alertaId) return { error: "Elige qué alerta quieres registrar." };
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("perro_alertas")
-    .insert({ perro_id: perroId, alerta_id: alertaId, notas });
+    .insert({ perro_id: perroId, alerta_id: alertaId, notas })
+    .select("id")
+    .single();
 
   if (error) return { error: "No pudimos guardar la alerta. Intenta de nuevo." };
 
   revalidatePath(`/perros/${perroId}`);
-  return { error: null, ok: true };
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "perro_alertas", i: data?.id as string | undefined }]) };
 }
 
 // Nunca se borra: se marca activa=false y el motivo queda escrito en las
@@ -32,7 +36,7 @@ export async function desactivarAlerta(
   perroAlertaId: string,
   perroId: string,
   motivo: string
-): Promise<{ error: string | null }> {
+): Promise<{ error: string | null; registros?: RegistroFinal[] }> {
   if (!motivo.trim()) return { error: "Escribe el motivo de la baja." };
 
   const supabase = await createSupabaseServerClient();
@@ -54,7 +58,7 @@ export async function desactivarAlerta(
   if (error) return { error: "No pudimos desactivar la alerta. Intenta de nuevo." };
 
   revalidatePath(`/perros/${perroId}`);
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "perro_alertas", i: perroAlertaId }]) };
 }
 
 export async function registrarAlergia(
@@ -69,12 +73,14 @@ export async function registrarAlergia(
   if (!alergeno) return { error: "Escribe a qué es alérgico." };
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("perro_alergias")
-    .insert({ perro_id: perroId, alergeno, gravedad, notas });
+    .insert({ perro_id: perroId, alergeno, gravedad, notas })
+    .select("id")
+    .single();
 
   if (error) return { error: "No pudimos guardar la alergia. Intenta de nuevo." };
 
   revalidatePath(`/perros/${perroId}`);
-  return { error: null, ok: true };
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "perro_alergias", i: data?.id as string | undefined }]) };
 }

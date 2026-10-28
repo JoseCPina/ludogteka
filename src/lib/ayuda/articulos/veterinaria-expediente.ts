@@ -70,6 +70,7 @@ Las **notas internas** son solo para el equipo: el dueño nunca las ve.
 
 **Firmar la consulta** la firma el médico a cargo, con su cédula: la pantalla pregunta ahí mismo y se confirma con **Sí, firmar**. Al firmar:
 
+- la pantalla dice **Consulta firmada** y la insignia de arriba cambia a **Firmada** en cuanto se guarda, sin recargar;
 - ya **no se edita ni se borra**;
 - queda el nombre del médico, su cédula, la fecha y una huella del contenido;
 - si necesitas corregir o completar algo, el médico agrega una **adenda** firmada;
@@ -79,7 +80,7 @@ Una consulta de consulta, cirugía o urgencia pide al menos un diagnóstico para
 
 Antes del botón de firmar está el recuadro **Cargos de esta consulta**: lo que pasará a Caja. Mira [Cómo se cobra una consulta veterinaria](/ayuda/cobrar-una-consulta-veterinaria).
 
-> Una consulta firmada sin diagnóstico definitivo aún se puede completar con una adenda. Lo que lleva más de un día en borrador sale en **Necesita atención**.`,
+> Una consulta firmada sin diagnóstico definitivo aún se puede completar con una adenda. Lo que lleva más de un día en borrador sale en **Necesita atención**. El mosaico **Expediente clínico** de Veterinaria dice cuántas consultas hay en borrador («2 sin firmar»), de cualquier día, y el expediente de cada mascota dice junto a su nombre cuántas tiene ella sin firmar.`,
   },
   {
     slug: "cobrar-una-consulta-veterinaria",

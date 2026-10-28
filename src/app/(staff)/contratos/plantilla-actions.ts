@@ -4,12 +4,14 @@ import { variablesDesconocidas } from "@/lib/contratos/plantilla";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../reservas/traducir-error";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
-export type EstadoAccion = { error: string | null };
+export type EstadoAccion = { error: string | null; registros?: RegistroFinal[] };
 
 export type CategoriaServicioContrato = "guarderia" | "hotel" | "estetica";
 
-export type EstadoCrearTipo = { error: string | null; tipoId?: string };
+export type EstadoCrearTipo = { error: string | null; tipoId?: string; registros?: RegistroFinal[] };
 
 // Crear el tipo y publicar su primera versión es una sola llamada
 // (crear_tipo_contrato lo hace en una transacción): un tipo sin texto
@@ -42,7 +44,7 @@ export async function crearTipoContrato(
   if (error) return { error: traducirError(error) };
 
   revalidatePath("/contratos");
-  return { error: null, tipoId: data as string };
+  return { error: null, tipoId: data as string, registros: await registrosDe(supabase, [{ t: "tipos_contrato", i: data as string }]) };
 }
 
 export async function actualizarTipoContrato(
@@ -62,7 +64,7 @@ export async function actualizarTipoContrato(
   if (error) return { error: traducirError(error) };
 
   revalidatePath("/contratos");
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "tipos_contrato", i: tipoId }]) };
 }
 
 // Cuándo se genera el contrato: en el alta por link, o al vender un
@@ -77,7 +79,7 @@ export async function definirMomentoContrato(tipoId: string, momento: MomentoCon
   });
   if (error) return { error: traducirError(error) };
   revalidatePath("/contratos");
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "tipos_contrato", i: tipoId }]) };
 }
 
 export async function archivarTipoContrato(tipoId: string): Promise<EstadoAccion> {
@@ -87,7 +89,7 @@ export async function archivarTipoContrato(tipoId: string): Promise<EstadoAccion
   if (error) return { error: traducirError(error) };
 
   revalidatePath("/contratos");
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "tipos_contrato", i: tipoId }]) };
 }
 
 export async function reactivarTipoContrato(tipoId: string): Promise<EstadoAccion> {
@@ -97,10 +99,10 @@ export async function reactivarTipoContrato(tipoId: string): Promise<EstadoAccio
   if (error) return { error: traducirError(error) };
 
   revalidatePath("/contratos");
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "tipos_contrato", i: tipoId }]) };
 }
 
-export type EstadoPublicarPlantilla = { error: string | null; plantillaId?: string; version?: number };
+export type EstadoPublicarPlantilla = { error: string | null; plantillaId?: string; version?: number; registros?: RegistroFinal[] };
 
 export async function publicarPlantilla(
   tipoId: string,
@@ -129,7 +131,7 @@ export async function publicarPlantilla(
 
   revalidatePath("/contratos");
   const { data: v } = await supabase.from("plantillas_contrato").select("version").eq("id", data as string).maybeSingle();
-  return { error: null, plantillaId: data as string, version: (v?.version as number | undefined) ?? undefined };
+  return { error: null, plantillaId: data as string, version: (v?.version as number | undefined) ?? undefined, registros: await registrosDe(supabase, [{ t: "plantillas_contrato", i: data as string }, { t: "tipos_contrato", i: tipoId }]) };
 }
 
 export async function marcarRequiereRefirma(
@@ -145,5 +147,5 @@ export async function marcarRequiereRefirma(
   if (error) return { error: traducirError(error) };
 
   revalidatePath("/contratos");
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "plantillas_contrato", i: plantillaId }]) };
 }

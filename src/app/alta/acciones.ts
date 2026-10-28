@@ -12,6 +12,8 @@ import { cargarRequisitosAlta } from "@/lib/alta/requisitos";
 import { esEspecie, normalizarMicrochip } from "@/lib/perros/ficha-clinica";
 import type { DatosRazaPropuesta } from "@/lib/razas-propuesta";
 import { MIN_CONTRASENA, TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { ConRegistros, RegistroFinal } from "@/lib/concurrencia/tipos";
 import type {
   ContratoPendiente,
   DatosAlta,
@@ -166,7 +168,7 @@ export async function validarPerrosAlta(perros: DatosAlta["perros"]): Promise<{ 
   return { error };
 }
 
-export async function completarAlta(token: string, datos: DatosAlta): Promise<ResultadoAlta> {
+export async function completarAlta(token: string, datos: DatosAlta): Promise<ResultadoAlta & ConRegistros> {
   const nombre = datos.nombre.trim();
   const email = datos.email.trim().toLowerCase();
   const telefono = normalizarTelefono(datos.telefono);
@@ -331,6 +333,11 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
     clienteId: salida?.cliente_id,
     perros: salida?.perros ?? [],
     contratos: salida?.contratos ?? [],
+    // El expediente es del negocio del link (se filtró arriba): se lee con la misma llave.
+    registros: await registrosDe(admin, [
+      { t: "clientes", i: salida?.cliente_id },
+      ...(salida?.perros ?? []).map((p) => ({ t: "perros", i: p.id })),
+    ]),
   };
 }
 
@@ -347,7 +354,7 @@ export async function completarAlta(token: string, datos: DatosAlta): Promise<Re
 export async function completarExpediente(
   token: string,
   datos: DatosComplemento
-): Promise<ResultadoComplemento> {
+): Promise<ResultadoComplemento & ConRegistros> {
   const negocio = await negocioActual();
   const admin = createSupabaseAdminClient(negocio.id);
 
@@ -504,6 +511,11 @@ export async function completarExpediente(
     clienteId: salida?.cliente_id,
     perros: salida?.perros ?? [],
     contratos: salida?.contratos ?? [],
+    // El expediente es del negocio del link (se filtró arriba): se lee con la misma llave.
+    registros: await registrosDe(admin, [
+      { t: "clientes", i: salida?.cliente_id },
+      ...(salida?.perros ?? []).map((p) => ({ t: "perros", i: p.id })),
+    ]),
   };
 }
 
@@ -515,11 +527,25 @@ export async function completarExpediente(
  * en ese momento, no hasta que el dueño vuelva a abrirlo. La base es la
  * que decide si de verdad no queda nada; aquí solo se le pregunta.
  */
-export async function cerrarLinkSiCompleto(token: string): Promise<{ error: string | null; completo?: boolean }> {
-  const admin = createSupabaseAdminClient((await negocioActual()).id);
+export async function cerrarLinkSiCompleto(
+  token: string
+): Promise<{ error: string | null; completo?: boolean; registros?: RegistroFinal[] }> {
+  const negocio = await negocioActual();
+  const admin = createSupabaseAdminClient(negocio.id);
   const { data, error } = await admin.rpc("cerrar_invitacion_si_completa", { p_token: token });
   if (error) return { error: error.message };
-  return { error: null, completo: Boolean((data as { completa?: boolean } | null)?.completa) };
+  // La invitación del link, acotada al negocio del dominio.
+  const { data: inv } = await admin
+    .from("invitaciones_cliente")
+    .select("id")
+    .eq("token", token)
+    .eq("negocio_id", negocio.id)
+    .maybeSingle();
+  return {
+    error: null,
+    completo: Boolean((data as { completa?: boolean } | null)?.completa),
+    registros: await registrosDe(admin, [{ t: "invitaciones_cliente", i: inv?.id as string | undefined }]),
+  };
 }
 
 // La distancia se calcula justo después del alta, no dentro: geocodificar
@@ -570,7 +596,7 @@ export async function subirFotoAlta(
   token: string,
   perroId: string,
   formData: FormData
-): Promise<{ error: string | null }> {
+): Promise<{ error: string | null; registros?: RegistroFinal[] }> {
   const archivo = formData.get("foto");
   if (!(archivo instanceof File) || archivo.size === 0) {
     return { error: "No recibimos la foto." };
@@ -623,7 +649,7 @@ export async function subirFotoAlta(
 
   if (errorPerro) return { error: "No pudimos guardar la foto." };
 
-  return { error: null };
+  return { error: null, registros: await registrosDe(admin, [{ t: "perros", i: perroId }]) };
 }
 
 // La raza que el dueño no encontró y describió en el formulario. Se propone
@@ -684,7 +710,7 @@ export async function proponerComprobanteAlta(
   token: string,
   perroId: string,
   formData: FormData
-): Promise<{ error: string | null; id?: string }> {
+): Promise<{ error: string | null; id?: string; registros?: RegistroFinal[] }> {
   const tipoId = String(formData.get("tipo_requisito_id") ?? "").trim();
   const fecha = String(formData.get("fecha_aplicacion") ?? "").trim();
   const archivo = formData.get("archivo");
@@ -732,7 +758,9 @@ export async function proponerComprobanteAlta(
     .eq("estado", "pendiente")
     .is("deleted_at", null)
     .maybeSingle();
-  if (pendiente) return { error: null, id: pendiente.id };
+  if (pendiente) {
+    return { error: null, id: pendiente.id, registros: await registrosDe(admin, [{ t: "requisitos_sanitarios_propuestos", i: pendiente.id }]) };
+  }
 
   const id = crypto.randomUUID();
   const path = `${perro.cliente_id}/${perroId}/requisitos-propuestos/${id}/comprobante.${esPdf ? "pdf" : "jpg"}`;
@@ -757,7 +785,7 @@ export async function proponerComprobanteAlta(
     await admin.storage.from(BUCKET).remove([path]);
     return { error: "No pudimos registrar el comprobante. Intenta de nuevo." };
   }
-  return { error: null, id };
+  return { error: null, id, registros: await registrosDe(admin, [{ t: "requisitos_sanitarios_propuestos", i: id }]) };
 }
 
 /**

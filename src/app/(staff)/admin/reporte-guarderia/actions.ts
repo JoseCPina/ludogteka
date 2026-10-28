@@ -9,6 +9,8 @@ import { cargarPlantilla } from "@/lib/reporte/carga";
 import { contenidoDeEjemplo } from "@/lib/reporte/ejemplo";
 import { datosDeTarjeta, renderizarTarjetaJpeg } from "@/lib/reporte/tarjeta-servidor";
 import type { ConfigEditable, ResultadoEditor, SeccionEditable, SeccionNueva } from "./tipos";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { ConRegistros } from "@/lib/concurrencia/tipos";
 
 // La plantilla la edita SOLO admin: la base lo exige (políticas con is_admin()).
 
@@ -35,7 +37,7 @@ function limpiar(v: string | null | undefined, max: number): string | null {
   return t ? t.slice(0, max) : null;
 }
 
-export async function guardarConfig(c: ConfigEditable): Promise<ResultadoEditor> {
+export async function guardarConfig(c: ConfigEditable): Promise<ResultadoEditor & ConRegistros> {
   const noAdmin = await exigirAdmin();
   if (noAdmin) return { error: noAdmin };
   if (!c.titulo.trim()) return { error: "Escribe el título de la tarjeta." };
@@ -53,15 +55,15 @@ export async function guardarConfig(c: ConfigEditable): Promise<ResultadoEditor>
     retencion_dias: c.retencion_dias,
   };
   const { data: existente } = await supabase.from("reporte_config").select("id").is("deleted_at", null).maybeSingle();
-  const { error } = existente
-    ? await supabase.from("reporte_config").update(fila).eq("id", existente.id)
-    : await supabase.from("reporte_config").insert(fila);
+  const { data: guardada, error } = existente
+    ? await supabase.from("reporte_config").update(fila).eq("id", existente.id).select("id").maybeSingle()
+    : await supabase.from("reporte_config").insert(fila).select("id").maybeSingle();
   if (error) return { error: traducirError(error) };
   revalidatePath("/admin/reporte-guarderia");
-  return { error: null, ok: true };
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "reporte_config", i: guardada?.id ?? existente?.id }]) };
 }
 
-export async function guardarSeccion(s: SeccionEditable): Promise<ResultadoEditor> {
+export async function guardarSeccion(s: SeccionEditable): Promise<ResultadoEditor & ConRegistros> {
   const noAdmin = await exigirAdmin();
   if (noAdmin) return { error: noAdmin };
   if (!s.titulo.trim()) return { error: "La sección necesita un nombre." };
@@ -92,17 +94,17 @@ export async function guardarSeccion(s: SeccionEditable): Promise<ResultadoEdito
     if (r.error) return { error: traducirError(r.error) };
   }
   revalidatePath("/admin/reporte-guarderia");
-  return { error: null, ok: true };
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "reporte_secciones", i: s.id }]) };
 }
 
-export async function crearSeccion(n: SeccionNueva): Promise<ResultadoEditor> {
+export async function crearSeccion(n: SeccionNueva): Promise<ResultadoEditor & ConRegistros> {
   const noAdmin = await exigirAdmin();
   if (noAdmin) return { error: noAdmin };
   if (!n.titulo.trim()) return { error: "Ponle nombre a la sección." };
   const supabase = await createSupabaseServerClient();
   const { data: ultima } = await supabase.from("reporte_secciones").select("orden").is("deleted_at", null).order("orden", { ascending: false }).limit(1).maybeSingle();
   const texto = n.presentacion === "texto";
-  const { error } = await supabase.from("reporte_secciones").insert({
+  const { data: nueva, error } = await supabase.from("reporte_secciones").insert({
     clave: clave(n.titulo),
     titulo: n.titulo.trim().slice(0, 60),
     presentacion: n.presentacion,
@@ -112,14 +114,14 @@ export async function crearSeccion(n: SeccionNueva): Promise<ResultadoEditor> {
     columna: n.columna,
     color: n.color,
     orden: ((ultima?.orden as number | undefined) ?? 0) + 1,
-  });
+  }).select("id").single();
   if (error) return { error: traducirError(error) };
   revalidatePath("/admin/reporte-guarderia");
-  return { error: null, ok: true };
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "reporte_secciones", i: nueva?.id }]) };
 }
 
 /** Sube o baja una sección: cambia su lugar con la vecina. */
-export async function moverSeccion(id: string, direccion: "arriba" | "abajo"): Promise<ResultadoEditor> {
+export async function moverSeccion(id: string, direccion: "arriba" | "abajo"): Promise<ResultadoEditor & ConRegistros> {
   const noAdmin = await exigirAdmin();
   if (noAdmin) return { error: noAdmin };
   const supabase = await createSupabaseServerClient();
@@ -127,7 +129,7 @@ export async function moverSeccion(id: string, direccion: "arriba" | "abajo"): P
   const lista = data ?? [];
   const i = lista.findIndex((s) => s.id === id);
   const j = direccion === "arriba" ? i - 1 : i + 1;
-  if (i < 0 || j < 0 || j >= lista.length) return { error: null, ok: true };
+  if (i < 0 || j < 0 || j >= lista.length) return { error: null, ok: true, registros: [] };
   // Se renumera toda la lista para no depender de huecos o empates.
   const nueva = lista.map((s) => s.id as string);
   [nueva[i], nueva[j]] = [nueva[j], nueva[i]];
@@ -136,7 +138,7 @@ export async function moverSeccion(id: string, direccion: "arriba" | "abajo"): P
     if (error) return { error: traducirError(error) };
   }
   revalidatePath("/admin/reporte-guarderia");
-  return { error: null, ok: true };
+  return { error: null, ok: true, registros: await registrosDe(supabase, nueva.map((sid) => ({ t: "reporte_secciones", i: sid }))) };
 }
 
 /** La tarjeta con datos de ejemplo, con la plantilla y los colores que ya están guardados. */
