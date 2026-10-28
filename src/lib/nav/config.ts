@@ -103,3 +103,20 @@ export function navStaffPara(rol: string, permisos: string[] = [], modulos: stri
     ),
   ];
 }
+
+// QA S41 (N141): las pantallas que se precargan solas (las del día a día del rol); el resto del menú y los mosaicos del
+// tablero se precargan al pasar el puntero o tocar (EnlacePrecarga). En orden de preferencia; se toman las que el
+// menú de esta persona tiene.
+const PRINCIPALES_POR_ROL: Record<string, string[]> = {
+  admin: ["/caja", "/estetica", "/guarderia", "/hotel", "/veterinaria", "/clientes"],
+  recepcion: ["/caja", "/estetica", "/guarderia", "/hotel", "/veterinaria", "/clientes"],
+  estetica: ["/estetica", "/mi-trabajo", "/inventario"],
+};
+
+/** El inicio y hasta 3 pantallas más del rol (4 en total) que sí se precargan solas. */
+export function pantallasPrincipales(rol: string, items: ItemNav[]): string[] {
+  const enMenu = new Set(items.filter((i) => !i.proximamente).map((i) => i.href));
+  const inicio = items[0]?.href;
+  const resto = (PRINCIPALES_POR_ROL[rol] ?? []).filter((h) => enMenu.has(h) && h !== inicio).slice(0, 3);
+  return [...(inicio ? [inicio] : []), ...resto];
+}
