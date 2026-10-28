@@ -5,8 +5,10 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { urlDelNegocioActual, negocioActual } from "@/lib/negocio/actual";
 import { traducirError } from "../../reservas/traducir-error";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
-export type EstadoInvitarPortal = { error: string | null; url?: string; urlWhatsApp?: string; mensaje?: string; expiraAt?: string };
+export type EstadoInvitarPortal = { error: string | null; url?: string; urlWhatsApp?: string; mensaje?: string; expiraAt?: string; registros?: RegistroFinal[] };
 
 /**
  * «Invitar al portal»: genera el enlace de un solo uso para que el cliente
@@ -35,5 +37,7 @@ export async function invitarAlPortal(clienteId: string): Promise<EstadoInvitarP
     urlWhatsApp: telefono.length >= 10 ? `https://wa.me/52${telefono.slice(-10)}?text=${encodeURIComponent(mensaje)}` : undefined,
     mensaje,
     expiraAt: data as string,
+    // La invitación no tiene id que devolver (la RPC da su vencimiento): cambia la ficha del cliente.
+    registros: await registrosDe(supabase, [{ t: "clientes", i: clienteId }]),
   };
 }

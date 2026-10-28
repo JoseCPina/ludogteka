@@ -7,6 +7,7 @@ import { negocioIdActual } from "@/lib/negocio/actual";
 import { mensajeDeError } from "@/lib/empleados/errores";
 import type { ResultadoAccion } from "@/lib/empleados/tipos";
 import { rangoMes } from "@/lib/gastos/textos";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
 
 const BUCKET = "gastos-comprobantes";
 const PESO_MAXIMO = 4 * 1024 * 1024;
@@ -66,7 +67,7 @@ export async function registrarGasto(fd: FormData): Promise<ResultadoAccion> {
   const foto = await subirComprobante(fd);
   if (foto.error) return { error: foto.error };
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("registrar_gasto", {
+  const { data: gastoId, error } = await supabase.rpc("registrar_gasto", {
     p_concepto: texto(fd, "concepto"),
     p_categoria_id: texto(fd, "categoria_id"),
     p_monto: monto(fd, "monto"),
@@ -86,6 +87,7 @@ export async function registrarGasto(fd: FormData): Promise<ResultadoAccion> {
   return {
     error: null,
     exito: texto(fd, "metodo") === "efectivo_caja" ? "Gasto registrado, con su retiro en el turno de caja" : "Gasto registrado",
+    registros: await registrosDe(supabase, [{ t: "gastos", i: gastoId as string | null }]),
   };
 }
 
@@ -111,7 +113,7 @@ export async function pagarGastoEsperado(id: string, fd: FormData): Promise<Resu
     return { error: mensajeDeError(error) };
   }
   refrescar();
-  return { error: null, exito: "Marcado como pagado" };
+  return { error: null, exito: "Marcado como pagado", registros: await registrosDe(supabase, [{ t: "gastos", i: id }]) };
 }
 
 export async function cancelarGasto(id: string, fd: FormData): Promise<ResultadoAccion> {
@@ -127,10 +129,10 @@ export async function cancelarGasto(id: string, fd: FormData): Promise<Resultado
 
 export async function corregirGasto(id: string, fd: FormData): Promise<ResultadoAccion> {
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("corregir_gasto", { p_gasto_id: id, p_monto_correcto: monto(fd, "monto"), p_motivo: texto(fd, "motivo") });
+  const { data: ajusteId, error } = await supabase.rpc("corregir_gasto", { p_gasto_id: id, p_monto_correcto: monto(fd, "monto"), p_motivo: texto(fd, "motivo") });
   if (error) return { error: mensajeDeError(error) };
   refrescar();
-  return { error: null, exito: "Corregido con un ajuste" };
+  return { error: null, exito: "Corregido con un ajuste", registros: await registrosDe(supabase, [{ t: "gastos", i: id }, { t: "gastos", i: ajusteId as string | null }]) };
 }
 
 export async function adjuntarComprobante(id: string, fd: FormData): Promise<ResultadoAccion> {
@@ -144,7 +146,7 @@ export async function adjuntarComprobante(id: string, fd: FormData): Promise<Res
     return { error: mensajeDeError(error) };
   }
   refrescar();
-  return { error: null, exito: "Comprobante guardado" };
+  return { error: null, exito: "Comprobante guardado", registros: await registrosDe(supabase, [{ t: "gastos", i: id }]) };
 }
 
 // ── Recurrentes ──
@@ -157,7 +159,7 @@ export async function crearRecurrente(fd: FormData): Promise<ResultadoAccion> {
   const estimado = monto(fd, "monto_estimado");
   if (estimado !== null && !(estimado > 0)) return { error: "El monto estimado tiene que ser mayor a cero." };
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("gastos_recurrentes").insert({
+  const { data: recurrente, error } = await supabase.from("gastos_recurrentes").insert({
     concepto: texto(fd, "concepto"),
     categoria_id: texto(fd, "categoria_id"),
     proveedor_id: texto(fd, "proveedor_id") || null,
@@ -167,10 +169,10 @@ export async function crearRecurrente(fd: FormData): Promise<ResultadoAccion> {
     cubre: texto(fd, "cubre") || "mes_del_pago",
     proxima_fecha: primer,
     notas: texto(fd, "notas") || null,
-  });
+  }).select("id").single();
   if (error) return { error: mensajeDeError(error) };
   refrescar();
-  return { error: null, exito: "Gasto recurrente guardado: aparecerá por pagar 15 días antes de cada vencimiento" };
+  return { error: null, exito: "Gasto recurrente guardado: aparecerá por pagar 15 días antes de cada vencimiento", registros: await registrosDe(supabase, [{ t: "gastos_recurrentes", i: recurrente?.id as string | undefined }]) };
 }
 
 export async function cambiarRecurrente(id: string, fd: FormData): Promise<ResultadoAccion> {
@@ -184,7 +186,7 @@ export async function cambiarRecurrente(id: string, fd: FormData): Promise<Resul
   if (error) return { error: mensajeDeError(error) };
   if (!data?.length) return { error: "No tienes permiso para esto." };
   refrescar();
-  return { error: null, exito: "Guardado" };
+  return { error: null, exito: "Guardado", registros: await registrosDe(supabase, [{ t: "gastos_recurrentes", i: id }]) };
 }
 
 // ── Categorías (solo admin; la base lo aplica) ──
@@ -194,10 +196,10 @@ export async function crearCategoria(fd: FormData): Promise<ResultadoAccion> {
   if (!nombre) return { error: "Escribe el nombre." };
   const supabase = await createSupabaseServerClient();
   const { data: max } = await supabase.from("categorias_gasto").select("orden").order("orden", { ascending: false }).limit(1).maybeSingle();
-  const { error } = await supabase.from("categorias_gasto").insert({ nombre, descripcion: texto(fd, "descripcion") || null, orden: (max?.orden ?? 0) + 1 });
+  const { data: categoria, error } = await supabase.from("categorias_gasto").insert({ nombre, descripcion: texto(fd, "descripcion") || null, orden: (max?.orden ?? 0) + 1 }).select("id").single();
   if (error) return { error: mensajeDeError(error) };
   refrescar();
-  return { error: null, exito: "Categoría agregada" };
+  return { error: null, exito: "Categoría agregada", registros: await registrosDe(supabase, [{ t: "categorias_gasto", i: categoria?.id as string | undefined }]) };
 }
 
 export async function editarCategoria(id: string, fd: FormData): Promise<ResultadoAccion> {
@@ -212,7 +214,7 @@ export async function editarCategoria(id: string, fd: FormData): Promise<Resulta
   if (error) return { error: mensajeDeError(error) };
   if (!data?.length) return { error: "Solo un admin edita las categorías." };
   refrescar();
-  return { error: null, exito: "Guardada" };
+  return { error: null, exito: "Guardada", registros: await registrosDe(supabase, [{ t: "categorias_gasto", i: id }]) };
 }
 
 // Quitarla no toca los gastos que ya la usan (siguen saliendo en el reporte).
@@ -220,9 +222,10 @@ export async function quitarCategoria(id: string): Promise<ResultadoAccion> {
   const supabase = await createSupabaseServerClient();
   const { data: cat } = await supabase.from("categorias_gasto").select("clave").eq("id", id).single();
   if (cat?.clave === "comisiones") return { error: "Esta la usa la app para las comisiones de Mercado Pago: puedes renombrarla, no quitarla." };
-  const { data, error } = await supabase.from("categorias_gasto").update({ deleted_at: new Date().toISOString() }).eq("id", id).select("id");
+  const quitadaAt = new Date().toISOString();
+  const { data, error } = await supabase.from("categorias_gasto").update({ deleted_at: quitadaAt }).eq("id", id).select("id");
   if (error) return { error: mensajeDeError(error) };
   if (!data?.length) return { error: "Solo un admin edita las categorías." };
   refrescar();
-  return { error: null, exito: "Quitada" };
+  return { error: null, exito: "Quitada", registros: await registrosDe(supabase, [{ t: "categorias_gasto", i: id, datos: { deleted_at: quitadaAt } }]) };
 }

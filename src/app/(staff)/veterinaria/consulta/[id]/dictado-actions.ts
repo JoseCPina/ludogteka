@@ -7,6 +7,8 @@ import { armarBorrador, ErrorBorrador, type NombreDiagnostico } from "@/lib/dict
 import { dictadoConfigurado, ErrorTranscripcion, transcribir } from "@/lib/dictado/scribe";
 import { MAX_SEGUNDOS_DICTADO, MIMES_AUDIO, mimeBase, type EstadoDictado, type ResultadoDictado } from "@/lib/dictado/tipos";
 import { traducirError } from "../../../reservas/traducir-error";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { ConRegistros, RegistroFinal } from "@/lib/concurrencia/tipos";
 
 const BUCKET = "dictados-audio";
 const MAX_BYTES = 25 * 1024 * 1024;
@@ -29,7 +31,7 @@ export async function prepararDictado(
   segundos: number,
   mime: string,
   avisoConfirmado: boolean
-): Promise<{ error: string | null; dictadoId?: string; ruta?: string; urlFirmada?: string }> {
+): Promise<{ error: string | null; dictadoId?: string; ruta?: string; urlFirmada?: string; registros?: RegistroFinal[] }> {
   const tipo = mimeBase(mime);
   const extension = MIMES_AUDIO[tipo];
   if (!extension) return { error: "Tu navegador grabó un formato de audio que no podemos leer. Prueba con Chrome o Safari actualizados." };
@@ -47,14 +49,20 @@ export async function prepararDictado(
     await supabase.rpc("vet_dictado_error", { p_id: id, p_error: "No se pudo preparar la subida del audio." });
     return { error: "No pudimos preparar la subida del audio. Intenta de nuevo." };
   }
-  return { error: null, dictadoId: id as string, ruta, urlFirmada: data.signedUrl };
+  return {
+    error: null,
+    dictadoId: id as string,
+    ruta,
+    urlFirmada: data.signedUrl,
+    registros: await registrosDe(supabase, [{ t: "vet_dictados", i: id as string, datos: { consulta_id: consultaId, segundos_declarados: seg } }]),
+  };
 }
 
 /**
  * Paso 2: transcribe, arma el borrador SOAP y borra el audio (salvo que el negocio lo conserve 30 días).
  * La transcripción y el borrador se devuelven al navegador y NO se guardan en ninguna tabla.
  */
-export async function transcribirDictado(dictadoId: string, consultaId: string, ruta: string): Promise<ResultadoDictado> {
+export async function transcribirDictado(dictadoId: string, consultaId: string, ruta: string): Promise<ResultadoDictado & ConRegistros> {
   const negocio = await negocioActual();
   if (!ruta.startsWith(`${negocio.id}/${consultaId}/${dictadoId}.`)) return { error: "Ese audio no es de este dictado." };
   const supabase = await createSupabaseServerClient();
@@ -66,15 +74,16 @@ export async function transcribirDictado(dictadoId: string, consultaId: string, 
     await borrarAudio();
     return { error: mensajeDe(errorMarca) };
   }
-  const fallar = async (mensaje: string): Promise<ResultadoDictado> => {
+  // Marca el dictado con error, borra el audio y devuelve el mensaje para la pantalla.
+  const fallar = async (mensaje: string): Promise<string> => {
     await supabase.rpc("vet_dictado_error", { p_id: dictadoId, p_error: mensaje });
     await borrarAudio();
-    return { error: mensaje };
+    return mensaje;
   };
 
   const { data: archivo, error: errorDescarga } = await admin.storage.from(BUCKET).download(ruta);
-  if (errorDescarga || !archivo) return fallar("El audio no llegó completo. Graba de nuevo.");
-  if (archivo.size > MAX_BYTES || archivo.size < 200) return fallar("El audio está vacío o es demasiado grande. Graba de nuevo.");
+  if (errorDescarga || !archivo) return { error: await fallar("El audio no llegó completo. Graba de nuevo.") };
+  if (archivo.size > MAX_BYTES || archivo.size < 200) return { error: await fallar("El audio está vacío o es demasiado grande. Graba de nuevo.") };
   const bytes = new Uint8Array(await archivo.arrayBuffer());
   const mime = mimeBase(archivo.type || "audio/webm");
 
@@ -82,9 +91,9 @@ export async function transcribirDictado(dictadoId: string, consultaId: string, 
   try {
     transcripcion = await transcribir(bytes, ruta.slice(ruta.lastIndexOf("/") + 1), mime);
   } catch (e) {
-    return fallar(e instanceof ErrorTranscripcion ? e.message : "No pudimos transcribir el audio. Intenta de nuevo.");
+    return { error: await fallar(e instanceof ErrorTranscripcion ? e.message : "No pudimos transcribir el audio. Intenta de nuevo.") };
   }
-  if (!transcripcion.texto) return fallar("No se escuchó nada en el audio. Revisa el micrófono y graba de nuevo.");
+  if (!transcripcion.texto) return { error: await fallar("No se escuchó nada en el audio. Revisa el micrófono y graba de nuevo.") };
 
   // Mascota y catálogo para el borrador.
   const { data: detalle } = await supabase.rpc("vet_consulta_detalle", { p_id: consultaId });
@@ -121,7 +130,15 @@ export async function transcribirDictado(dictadoId: string, consultaId: string, 
 
   const { data: estadoDespues } = await supabase.rpc("vet_dictado_estado");
   const e = (estadoDespues as EstadoDictado | null) ?? { permitido: true };
-  return { error: errorBorrador, transcripcion: transcripcion.texto, borrador, minutos: minutos as number, usados: e.usados, tope: e.tope };
+  return {
+    error: errorBorrador,
+    transcripcion: transcripcion.texto,
+    borrador,
+    minutos: minutos as number,
+    usados: e.usados,
+    tope: e.tope,
+    registros: await registrosDe(supabase, [{ t: "vet_dictados", i: dictadoId, datos: { estado: "listo", minutos_cobrados: minutos as number } }]),
+  };
 }
 
 /** Escuchar un dictado que el negocio decidió conservar (30 días). */

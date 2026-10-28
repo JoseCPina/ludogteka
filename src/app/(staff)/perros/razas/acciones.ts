@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 export type AsignacionRaza = {
   perro_id: string;
@@ -21,6 +23,7 @@ export type ResultadoNormalizacion = {
   error: string | null;
   guardados?: number;
   fallidos?: number;
+  registros?: RegistroFinal[];
 };
 
 /**
@@ -74,5 +77,5 @@ export async function asignarRazasEnLote(
   if (guardados === 0) {
     return { error: "No pudimos guardar ninguna. Revisa tus permisos e intenta de nuevo." };
   }
-  return { error: null, guardados, fallidos };
+  return { error: null, guardados, fallidos, registros: await registrosDe(supabase, asignaciones.filter((_, k) => resultados[k]).map((a) => ({ t: "perros", i: a.perro_id }))) };
 }

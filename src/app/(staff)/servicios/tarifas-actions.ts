@@ -1,6 +1,6 @@
 "use server";
 
-import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import { registrosDe, registrosFinales } from "@/lib/concurrencia/registro-final";
 import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -95,7 +95,7 @@ export async function guardarTarifas(
 
   if (error) {
     const conflicto = conflictoDeError(error);
-    if (conflicto) return { error: null, conflicto };
+    if (conflicto) return { error: null, conflicto, registros: [] };
     if (error.code === "23P01") {
       return {
         error:
@@ -136,7 +136,7 @@ export async function guardarPrecioPorDia(
   );
   if (error) {
     const conflicto = conflictoDeError(error);
-    if (conflicto) return { error: null, conflicto };
+    if (conflicto) return { error: null, conflicto, registros: [] };
     if (error.code === "23505") {
       return { error: "Ya hay un precio para ese día con esa misma fecha de vigencia. Usa otra fecha o quítalo primero." };
     }
@@ -158,7 +158,14 @@ export async function quitarPrecioPorDia(id: string, servicioId: string): Promis
   if (error) return { error: "No pudimos quitar el precio. Intenta de nuevo." };
 
   revalidatePath(`/servicios/${servicioId}/tarifas`);
-  return { error: null, ok: true };
+  return {
+    error: null,
+    ok: true,
+    registros: await registrosDe(supabase, [
+      { t: "tarifas_dia_semana", i: id },
+      { t: "precios_servicio", i: servicioId },
+    ]),
+  };
 }
 
 // El admin da por buenos los precios que el sistema calculó por proporción en
@@ -171,7 +178,7 @@ export async function confirmarTarifasCalculadas(grupoId: string, servicioId: st
     return { error: "No pudimos confirmar los precios. Intenta de nuevo." };
   }
   revalidatePath(`/servicios/${servicioId}/tarifas`);
-  return { error: null, ok: true, confirmadas: Number(data ?? 0) };
+  return { error: null, ok: true, confirmadas: Number(data ?? 0), registros: await registrosDe(supabase, [{ t: "precios_servicio", i: servicioId }]) };
 }
 
 export type PrecioDeOtroServicio = {

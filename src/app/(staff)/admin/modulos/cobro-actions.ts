@@ -16,6 +16,8 @@ import { esCorreoSintetico } from "@/lib/auth/identidad";
 import { ajustarSucursales, esItemSucursal, precioSucursal, sucursalesActivas } from "@/lib/cobro/sucursales";
 import { guardarEnCliente, validarDatosFacturacion, type DatosFacturacion } from "@/lib/cobro/facturacion";
 import type { MiCobro, ModuloQueSeApaga, PlanOferta, ResultadoCobro, Seleccion } from "@/lib/cobro/tipos";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { ConRegistros, RegistroFinal } from "@/lib/concurrencia/tipos";
 
 // La suscripción del negocio a PeluDesk, desde «Módulos y plan». Solo el
 // admin (la sesión y mi_cobro() lo comprueban). Ninguna de estas acciones
@@ -44,6 +46,12 @@ async function contexto() {
 type Contexto = NonNullable<Awaited<ReturnType<typeof contexto>>>;
 
 const SIN_PERMISO: ResultadoCobro = { error: "Solo el admin del negocio contrata o cambia el plan." };
+
+// Cómo quedó la suscripción del negocio (y el negocio: plan, estado) después de un cambio.
+async function registrosSuscripcion(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, negocioId: string): Promise<RegistroFinal[]> {
+  const { data } = await supabase.from("suscripciones").select("id").eq("negocio_id", negocioId).is("deleted_at", null).maybeSingle();
+  return registrosDe(supabase, [{ t: "suscripciones", i: (data as { id: string } | null)?.id }, { t: "negocios", i: negocioId }]);
+}
 
 async function catalogo(ctx: Contexto): Promise<PlanOferta[]> {
   const { data } = await ctx.supabase
@@ -121,6 +129,7 @@ async function clienteStripe(ctx: Contexto): Promise<string> {
 }
 
 /** Stripe Checkout para contratar. Devuelve la URL a la que se manda al admin. */
+// registro-final: solo abre Stripe Checkout (la pantalla navega a la URL); el plan lo aplica el webhook
 export async function contratar(sel: Seleccion): Promise<ResultadoCobro> {
   const ctx = await contexto();
   if (!ctx) return SIN_PERMISO;
@@ -184,9 +193,9 @@ function totalDe(conceptos: { price: Stripe.Price | null; quantity?: number | nu
 }
 
 /** Cambiar de plan, de periodicidad o la página web. Subir: hoy; bajar: al siguiente periodo. */
-export async function cambiarPlanSuscripcion(sel: Seleccion): Promise<ResultadoCobro> {
+export async function cambiarPlanSuscripcion(sel: Seleccion): Promise<ResultadoCobro & ConRegistros> {
   const ctx = await contexto();
-  if (!ctx) return SIN_PERMISO;
+  if (!ctx) return { error: SIN_PERMISO.error };
   try {
     let sub = await suscripcionViva(ctx);
     const { plan, web } = await preciosDeSeleccion(ctx, sel);
@@ -221,7 +230,7 @@ export async function cambiarPlanSuscripcion(sel: Seleccion): Promise<ResultadoC
       await s.subscriptions.update(sub.id, { items, proration_behavior: "none" });
       await aplicarSuscripcion(ctx.negocio.id, sub.id);
       revalidatePath("/", "layout");
-      return { error: null, exito: "Listo: al terminar tu prueba se cobra el plan que escogiste." };
+      return { error: null, exito: "Listo: al terminar tu prueba se cobra el plan que escogiste.", registros: await registrosSuscripcion(ctx.supabase, ctx.negocio.id) };
     }
 
     if (tipo !== "bajar") {
@@ -234,7 +243,11 @@ export async function cambiarPlanSuscripcion(sel: Seleccion): Promise<ResultadoC
       });
       await aplicarSuscripcion(ctx.negocio.id, sub.id);
       revalidatePath("/", "layout");
-      return { error: null, exito: "Listo: tu plan cambió hoy. Se cobró la diferencia proporcional a lo que queda del periodo." };
+      return {
+        error: null,
+        exito: "Listo: tu plan cambió hoy. Se cobró la diferencia proporcional a lo que queda del periodo.",
+        registros: await registrosSuscripcion(ctx.supabase, ctx.negocio.id),
+      };
     }
 
     // Bajar: al terminar el periodo pagado, con un subscription schedule.
@@ -265,7 +278,11 @@ export async function cambiarPlanSuscripcion(sel: Seleccion): Promise<ResultadoC
     });
     await aplicarSuscripcion(ctx.negocio.id, sub.id);
     revalidatePath("/", "layout");
-    return { error: null, exito: "Listo: el cambio se aplica al terminar tu periodo pagado. Hasta entonces sigues con tu plan actual." };
+    return {
+      error: null,
+      exito: "Listo: el cambio se aplica al terminar tu periodo pagado. Hasta entonces sigues con tu plan actual.",
+      registros: await registrosSuscripcion(ctx.supabase, ctx.negocio.id),
+    };
   } catch (e) {
     if (e instanceof Error && !(e as { type?: string }).type) return { error: e.message };
     return { error: mensajeDeErrorStripe(e) };
@@ -334,12 +351,12 @@ export async function impactoDeCambio(sel: Seleccion): Promise<{ error: string |
 }
 
 /** El admin cerró el recordatorio de pago fallido (vuelve en tres días). */
-export async function marcarRecordatorioVisto(): Promise<ResultadoCobro> {
+export async function marcarRecordatorioVisto(): Promise<ResultadoCobro & ConRegistros> {
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("cobro_recordatorio_visto");
   if (error) return { error: error.message };
   revalidatePath("/admin");
-  return { error: null };
+  return { error: null, registros: await registrosSuscripcion(supabase, (await negocioActual()).id) };
 }
 
 /** Los datos de facturación (CFDI de la suscripción): se guardan en el cliente de Stripe del negocio. */
@@ -366,7 +383,7 @@ export async function guardarDatosFacturacion(d: Partial<DatosFacturacion>): Pro
  * página. Primero se revisa nombre y subdominio, luego se cobra en Stripe la parte proporcional de la sucursal
  * adicional (si el banco rechaza, no se abre nada) y al final se crea. Si crear falla, se regresa el cobro.
  */
-export async function abrirSucursal(nombre: string, subdominio: string): Promise<ResultadoCobro & { negocioId?: string }> {
+export async function abrirSucursal(nombre: string, subdominio: string): Promise<ResultadoCobro & ConRegistros & { negocioId?: string }> {
   const sesion = await obtenerSesionConRol();
   if (sesion?.rol !== "admin") return { error: "Solo el admin abre sucursales." };
   const negocio = await negocioActual();
@@ -392,7 +409,15 @@ export async function abrirSucursal(nombre: string, subdominio: string): Promise
   // Por si otra sucursal se abrió al mismo tiempo: la cantidad en Stripe = las que hay en la base.
   await ajustarSucursales(principal, await sucursalesActivas(principal)).catch((e) => console.error("[sucursal] reconciliar", e));
   revalidatePath("/", "layout");
-  return { error: null, exito: "Listo: tu sucursal quedó abierta y se sumó a tu suscripción.", negocioId: (creada.data as { negocio_id: string }).negocio_id };
+  const nuevaId = (creada.data as { negocio_id: string }).negocio_id;
+  // La sucursal nueva es otro negocio (la sesión de aquí no la lee): va lo que ya se sabe de ella.
+  const supabase = await createSupabaseServerClient();
+  return {
+    error: null,
+    exito: "Listo: tu sucursal quedó abierta y se sumó a tu suscripción.",
+    negocioId: nuevaId,
+    registros: await registrosDe(supabase, [{ t: "negocios", i: nuevaId, datos: { nombre, slug: subdominio } }]),
+  };
 }
 
 /**
@@ -400,7 +425,7 @@ export async function abrirSucursal(nombre: string, subdominio: string): Promise
  * «Sucursal adicional» en Stripe baja en uno (la parte proporcional queda a favor). Si Stripe no responde, la baja
  * se deshace: nunca queda una sucursal dada de baja que se sigue cobrando sin avisar.
  */
-export async function darBajaSucursal(sucursalId: string, motivo: string): Promise<ResultadoCobro> {
+export async function darBajaSucursal(sucursalId: string, motivo: string): Promise<ResultadoCobro & ConRegistros> {
   const sesion = await obtenerSesionConRol();
   if (sesion?.rol !== "admin") return { error: "Solo el admin da de baja una sucursal." };
   if (motivo.trim().length < 5) return { error: "Escribe el motivo de la baja (al menos 5 letras)." };
@@ -417,5 +442,8 @@ export async function darBajaSucursal(sucursalId: string, motivo: string): Promi
     return { error: `${mensajeDeErrorStripe(e)} No se dio de baja la sucursal.` };
   }
   revalidatePath("/", "layout");
-  return { error: null, exito: "Listo: la sucursal quedó dada de baja. Se puede consultar en solo lectura 90 días y ya no se cobra; la parte proporcional queda a favor en tu siguiente cobro." };
+  const supabase = await createSupabaseServerClient();
+  const bajaHasta = (baja.data as { hasta?: string }).hasta ?? null;
+  const registros = await registrosDe(supabase, [{ t: "negocios", i: sucursalId, datos: { sucursal_baja_hasta: bajaHasta, sucursal_baja_motivo: motivo.trim() } }]);
+  return { registros, error: null, exito: "Listo: la sucursal quedó dada de baja. Se puede consultar en solo lectura 90 días y ya no se cobra; la parte proporcional queda a favor en tu siguiente cobro." };
 }

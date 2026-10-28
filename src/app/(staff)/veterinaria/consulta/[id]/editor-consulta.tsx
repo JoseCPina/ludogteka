@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { BorradorFormulario } from "@/lib/borradores/borrador-formulario";
+import { useRegistroVivo } from "@/components/concurrencia/registro-vivo";
 import { SECCIONES_CONSULTA, type ConsultaVet, type Diagnostico, type DiagnosticoBuscado } from "@/lib/veterinaria/expediente";
 import { DictadoPanel } from "./dictado-panel";
 import { CargosConsulta } from "./cargos-consulta";
@@ -47,6 +48,9 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
   const [estado, setEstado] = useState<"limpio" | "pendiente" | "guardando" | "guardado" | "error">("limpio");
   const [errorGuardado, setErrorGuardado] = useState<string | null>(null);
   const [errorFirma, setErrorFirma] = useState<string | null>(null);
+  // QA S41 (N140): firmada, la pantalla lo dice con la respuesta (registros publicados por useEspera), sin esperar a recargar.
+  const [avisoFirmada, setAvisoFirmada] = useState<string | null>(null);
+  const vivo = useRegistroVivo("vet_consultas", consulta.id, { estado: consulta.estado as string }, consulta.updated_at);
   const [cargos, setCargos] = useState<DatosCargos | null>(cargosIniciales);
   // Lo que el servidor recalcula (p. ej. al aplicar una vacuna) reemplaza lo mostrado.
   // QA S27: una vacuna o desparasitación registrada aquí trae sus cargos ya sincronizados en la respuesta.
@@ -183,6 +187,7 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
       setErrorFirma(r.error);
       return;
     }
+    setAvisoFirmada(r.exito ?? "Consulta firmada. Ya no se edita: solo admite una adenda.");
     router.refresh();
   }
 
@@ -193,6 +198,14 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
   }
 
   const grupos = Array.from(new Set(SECCIONES_CONSULTA.map((s) => s.grupo)));
+
+  if (avisoFirmada || vivo.estado !== "borrador") {
+    return (
+      <Alert variante="exito" titulo="Consulta firmada">
+        <span data-consulta-firmada>{avisoFirmada ?? "Ya no se edita: solo admite una adenda."}</span>
+      </Alert>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">

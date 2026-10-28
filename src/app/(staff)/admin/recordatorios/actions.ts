@@ -1,6 +1,14 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
+
+// Cómo quedaron los ajustes de recordatorios del negocio (una fila por negocio).
+async function registrosAjustes(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>): Promise<RegistroFinal[]> {
+  const { data } = await supabase.from("recordatorios_ajustes").select("id").is("deleted_at", null).limit(1).maybeSingle();
+  return registrosDe(supabase, [{ t: "recordatorios_ajustes", i: (data as { id: string } | null)?.id }]);
+}
 
 export type AjustesRecordatorios = {
   estetica: boolean;
@@ -13,7 +21,7 @@ export type AjustesRecordatorios = {
 };
 
 /** Qué recordatorios salen solos y a qué hora (admin o «Configuración del negocio»; la base lo decide). */
-export async function guardarAjustesRecordatorios(a: AjustesRecordatorios): Promise<{ error: string | null; exito?: string }> {
+export async function guardarAjustesRecordatorios(a: AjustesRecordatorios): Promise<{ error: string | null; exito?: string; registros?: RegistroFinal[] }> {
   if (!/^\d{2}:\d{2}$/.test(a.hora)) return { error: "Escribe la hora de envío (por ejemplo 10:00)." };
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("guardar_recordatorios_ajustes", {
@@ -26,22 +34,22 @@ export async function guardarAjustesRecordatorios(a: AjustesRecordatorios): Prom
   });
   if (error) return { error: error.message };
   const algo = a.estetica || a.veterinaria || a.llegada || a.listo || a.vacuna;
-  return { error: null, exito: algo ? "Guardado. Los recordatorios salen solos a partir de ahora." : "Guardado. Los recordatorios automáticos quedaron apagados." };
+  return { error: null, registros: await registrosAjustes(supabase), exito: algo ? "Guardado. Los recordatorios salen solos a partir de ahora." : "Guardado. Los recordatorios automáticos quedaron apagados." };
 }
 
 /** El tope mensual de recordatorios adicionales (solo el admin). `null` = sin tope. */
-export async function guardarTopeRecordatorios(tope: number | null): Promise<{ error: string | null; exito?: string }> {
+export async function guardarTopeRecordatorios(tope: number | null): Promise<{ error: string | null; exito?: string; registros?: RegistroFinal[] }> {
   if (tope !== null && (!Number.isFinite(tope) || tope < 0 || tope > 100000)) return { error: "El tope va de $0 a $100,000." };
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("guardar_tope_recordatorios", { p_tope: tope });
   if (error) return { error: error.message };
-  return { error: null, exito: tope === null ? "Listo: sin tope. Los recordatorios no se pausan por gasto." : `Listo: el tope quedó en $${tope.toLocaleString("es-MX")} + IVA al mes.` };
+  return { error: null, registros: await registrosAjustes(supabase), exito: tope === null ? "Listo: sin tope. Los recordatorios no se pausan por gasto." : `Listo: el tope quedó en $${tope.toLocaleString("es-MX")} + IVA al mes.` };
 }
 
 /** Marcar como atendido un mensaje de un cliente (cambio de cita, solicitud, texto, baja). */
-export async function marcarMensajeAtendido(id: string): Promise<{ error: string | null }> {
+export async function marcarMensajeAtendido(id: string): Promise<{ error: string | null; registros?: RegistroFinal[] }> {
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("recordatorio_mensaje_atendido", { p_id: id });
   if (error) return { error: error.message };
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "recordatorios_mensajes", i: id }]) };
 }

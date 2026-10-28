@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
-export type EstadoMiPerroForm = { error: string | null; ok?: boolean };
+export type EstadoMiPerroForm = { error: string | null; ok?: boolean; registros?: RegistroFinal[] };
 
 export async function actualizarMiPerro(
   perroId: string,
@@ -47,5 +49,5 @@ export async function actualizarMiPerro(
 
   revalidatePath("/portal");
   revalidatePath(`/portal/perros/${perroId}`);
-  return { error: null, ok: true };
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "perros", i: perroId }]) };
 }

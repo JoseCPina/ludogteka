@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
+import { useModulos } from "@/components/modulos-contexto";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
@@ -113,6 +115,8 @@ export function BonosCliente({
   puedeAjustar?: boolean;
   esAdmin?: boolean;
 }) {
+  // QA S41 (N143): con Veterinaria, «mascota» (o su especie), nunca «perro» fijo.
+  const vm = vocabularioMascota({ conVet: useModulos().tiene("veterinaria") });
   const router = useRouter();
   const hoy = hoyNegocio(useZonaNegocio());
   const [usoPrevio, setUsoPrevio] = useState(false);
@@ -152,7 +156,7 @@ export function BonosCliente({
       ...(m.metodo === "tarjeta_manual" ? cargaTarjetaManual(m.tarjeta) : {}),
     }));
     if (!perroId) {
-      setError("Escoge el perro para el que es el paquete.");
+      setError(`Escoge ${vm.el} para ${vm.o === "a" ? "la" : "el"} que es el paquete.`);
       return;
     }
     if (payload.some((m) => m.monto <= 0)) {
@@ -209,7 +213,7 @@ export function BonosCliente({
         <p className="text-n-600">
           {perros.length === 1
             ? `${perros[0].nombre} no tiene paquetes todavía.`
-            : "Ningún perro de este cliente tiene paquetes todavía."}
+            : `${vm.o === "a" ? "Ninguna" : "Ningún"} ${vm.nombre} de este cliente tiene paquetes todavía.`}
         </p>
       ) : (
         agruparPorPerro(bonos).map(([nombrePerro, lista]) => (
@@ -259,8 +263,8 @@ export function BonosCliente({
         </AccionesFormulario>
       ) : (
         <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
-          <Select label="Perro" value={perroId} onChange={(e) => setPerroId(e.target.value)}>
-            {perros.length > 1 && <option value="">Escoge el perro…</option>}
+          <Select label={vm.Nombre} value={perroId} onChange={(e) => setPerroId(e.target.value)}>
+            {perros.length > 1 && <option value="">Escoge {vm.el}…</option>}
             {perros.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.nombre}

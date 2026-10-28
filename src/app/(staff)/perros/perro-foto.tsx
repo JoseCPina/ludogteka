@@ -73,7 +73,7 @@ export function PerroFoto({
   // falla al cargar no es necesariamente que ya no exista: se pide una
   // firma nueva antes de rendirse y mostrar el placeholder.
   async function manejarErrorImagen() {
-    const nueva = await obtenerUrlFotoPerro(perroId).catch(() => null);
+    const nueva = await obtenerUrlFotoPerro(perroId).catch(() => null); // tope-ok: no es un botón; sin respuesta queda el placeholder
     if (nueva) {
       setUrl(nueva);
     } else {

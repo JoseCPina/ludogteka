@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../../reservas/traducir-error";
 import type { ResultadoAccion } from "@/lib/empleados/tipos";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
 
 // Solo admin: la base lo exige en cada función.
 const texto = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
@@ -17,14 +18,14 @@ export async function guardarMedico(fd: FormData): Promise<ResultadoAccion> {
   if (!profileId) return { error: "Elige a la persona del personal que será médico veterinario." };
   if (!texto(fd, "cedula")) return { error: "Escribe la cédula profesional del médico." };
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("guardar_medico_veterinario", {
+  const { data: medicoId, error } = await supabase.rpc("guardar_medico_veterinario", {
     p_profile_id: profileId,
     p_cedula: texto(fd, "cedula"),
     p_cpa: texto(fd, "cpa") || null,
   });
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/medicos");
-  return { error: null, exito: "Médico guardado." };
+  return { error: null, exito: "Médico guardado.", registros: await registrosDe(supabase, [{ t: "medicos_veterinarios", i: medicoId as string | null }]) };
 }
 
 export async function quitarMedico(medicoId: string): Promise<ResultadoAccion> {
@@ -32,7 +33,11 @@ export async function quitarMedico(medicoId: string): Promise<ResultadoAccion> {
   const { error } = await supabase.rpc("quitar_medico_veterinario", { p_medico_id: medicoId });
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/medicos");
-  return { error: null, exito: "Ya no es médico veterinario. Sus folios y los que ya usó se conservan." };
+  return {
+    error: null,
+    exito: "Ya no es médico veterinario. Sus folios y los que ya usó se conservan.",
+    registros: await registrosDe(supabase, [{ t: "medicos_veterinarios", i: medicoId, datos: { deleted_at: new Date().toISOString() } }]),
+  };
 }
 
 export async function asignarFolios(medicoId: string, fd: FormData): Promise<ResultadoAccion> {
@@ -43,7 +48,7 @@ export async function asignarFolios(medicoId: string, fd: FormData): Promise<Res
   if (hasta < desde) return { error: "El último folio tiene que ser mayor o igual al primero." };
   if (!Number.isInteger(usados) || usados < 0 || usados > hasta - desde + 1) return { error: "Los folios ya usados no pueden ser más que los del bloque." };
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("asignar_folios_medico", {
+  const { data: bloqueId, error } = await supabase.rpc("asignar_folios_medico", {
     p_medico_id: medicoId,
     p_prefijo: texto(fd, "prefijo"),
     p_desde: desde,
@@ -53,5 +58,9 @@ export async function asignarFolios(medicoId: string, fd: FormData): Promise<Res
   });
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/medicos");
-  return { error: null, exito: "Bloque de folios asignado." };
+  return {
+    error: null,
+    exito: "Bloque de folios asignado.",
+    registros: await registrosDe(supabase, [{ t: "medico_folios", i: bloqueId as string | null }, { t: "medicos_veterinarios", i: medicoId }]),
+  };
 }

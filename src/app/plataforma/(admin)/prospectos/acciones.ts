@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { sesionPlataforma } from "@/lib/plataforma/sesion";
 import type { ResultadoPlataforma } from "@/lib/plataforma/tipos";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { ConRegistros } from "@/lib/concurrencia/tipos";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { detallesLugar, PLACES_URL } from "@/lib/prospectos/places";
 import { correrBusqueda, correrCalidad, correrLista } from "@/lib/prospectos/motor";
@@ -35,9 +37,9 @@ const duplicado = (m: string) =>
         ? "Ya hay un prospecto con ese nombre en esa ciudad."
         : m;
 
-export async function guardarAjustes(fd: FormData): Promise<ResultadoPlataforma> {
+export async function guardarAjustes(fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const ciudades = [...new Set(String(fd.get("ciudades") ?? "").split(/\n|,/).map((c) => c.trim()).filter(Boolean))];
   if (ciudades.length === 0 || ciudades.length > 40 || ciudades.some((c) => c.length > 80)) return { error: "Escribe de 1 a 40 ciudades, una por renglón." };
   const consultas: Record<string, string[]> = {};
@@ -66,7 +68,7 @@ export async function guardarAjustes(fd: FormData): Promise<ResultadoPlataforma>
     .eq("id", 1);
   if (error) return { error: error.message };
   refrescar();
-  return { error: null, exito: "Guardado." };
+  return { error: null, exito: "Guardado.", registros: await registrosDe(s.supabase, [{ t: "prospeccion_ajustes", i: "1" }]) };
 }
 
 export async function buscarAhora(fd: FormData): Promise<ResultadoPlataforma> {
@@ -91,9 +93,9 @@ export async function buscarAhora(fd: FormData): Promise<ResultadoPlataforma> {
   return { error: null, exito: `Listo: ${r.busquedas} búsquedas, ${r.nuevos} nuevos, ${r.duplicados} duplicados, ${r.clientes} ya son de PeluDesk, ${r.errores} errores.` };
 }
 
-export async function agregarProspecto(fd: FormData): Promise<ResultadoPlataforma> {
+export async function agregarProspecto(fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const nombre = texto(fd, "nombre", 200);
   const ciudad = texto(fd, "ciudad", 80);
   const giro = String(fd.get("giro") ?? "");
@@ -107,12 +109,12 @@ export async function agregarProspecto(fd: FormData): Promise<ResultadoPlataform
   // ¿Ya es negocio de PeluDesk? Lo decide la base con la llave de servicio.
   await createSupabaseAdminClient().rpc("prospectos_revisar_clientes");
   refrescar();
-  return { error: null, exito: "Agregado.", ir: `/plataforma/prospectos/${data.id}` };
+  return { error: null, exito: "Agregado.", ir: `/plataforma/prospectos/${data.id}`, registros: await registrosDe(s.supabase, [{ t: "prospectos", i: data.id }]) };
 }
 
-export async function cambiarEtapa(id: string, fd: FormData): Promise<ResultadoPlataforma> {
+export async function cambiarEtapa(id: string, fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const etapa = String(fd.get("etapa") ?? "");
   const canal = String(fd.get("canal") ?? "");
   if (!esEtapa(etapa)) return { error: "Escoge una etapa." };
@@ -127,7 +129,7 @@ export async function cambiarEtapa(id: string, fd: FormData): Promise<ResultadoP
   const nota = texto(fd, "nota", 4000);
   if (nota) await s.supabase.from("prospectos_eventos").insert({ prospecto_id: id, tipo: "nota", texto: nota, canal: canal || null });
   refrescar(id);
-  return { error: null, exito: "Etapa guardada." };
+  return { error: null, exito: "Etapa guardada.", registros: await registrosDe(s.supabase, [{ t: "prospectos", i: id }]) };
 }
 
 export async function cambiarEtapaA(id: string, etapa: string): Promise<ResultadoPlataforma> {
@@ -136,20 +138,20 @@ export async function cambiarEtapaA(id: string, etapa: string): Promise<Resultad
   return cambiarEtapa(id, fd);
 }
 
-export async function agregarNota(id: string, fd: FormData): Promise<ResultadoPlataforma> {
+export async function agregarNota(id: string, fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const nota = texto(fd, "nota", 4000);
   if (!nota) return { error: "Escribe la nota." };
   const { error } = await s.supabase.from("prospectos_eventos").insert({ prospecto_id: id, tipo: "nota", texto: nota });
   if (error) return { error: error.message };
   refrescar(id);
-  return { error: null, exito: "Nota agregada." };
+  return { error: null, exito: "Nota agregada.", registros: await registrosDe(s.supabase, [{ t: "prospectos", i: id }]) };
 }
 
-export async function guardarDatos(id: string, fd: FormData): Promise<ResultadoPlataforma> {
+export async function guardarDatos(id: string, fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const nombre = texto(fd, "nombre", 200);
   const ciudad = texto(fd, "ciudad", 80);
   const giro = String(fd.get("giro") ?? "");
@@ -173,12 +175,12 @@ export async function guardarDatos(id: string, fd: FormData): Promise<ResultadoP
   if (error) return { error: duplicado(error.message) };
   await createSupabaseAdminClient().rpc("prospectos_revisar_clientes");
   refrescar(id);
-  return { error: null, exito: "Datos guardados." };
+  return { error: null, exito: "Datos guardados.", registros: await registrosDe(s.supabase, [{ t: "prospectos", i: id }]) };
 }
 
-export async function actualizarDesdeGoogle(id: string): Promise<ResultadoPlataforma> {
+export async function actualizarDesdeGoogle(id: string): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const apiKey = llave();
   if (!apiKey) return { error: "Falta la llave GOOGLE_PLACES_API_KEY en el servidor." };
   const { data: p } = await s.supabase.from("prospectos").select("id, google_place_id, telefono, web").eq("id", id).maybeSingle();
@@ -195,7 +197,11 @@ export async function actualizarDesdeGoogle(id: string): Promise<ResultadoPlataf
     const web = p.web ?? l.web;
     if (web) await db.rpc("prospecto_completar_web", { p_id: id, p: await revisarWeb(web) });
     refrescar(id);
-    return { error: null, exito: l.cerrado ? "Actualizado. Google lo marca como cerrado definitivamente." : "Actualizado desde Google." };
+    return {
+      error: null,
+      exito: l.cerrado ? "Actualizado. Google lo marca como cerrado definitivamente." : "Actualizado desde Google.",
+      registros: await registrosDe(s.supabase, [{ t: "prospectos", i: id }]),
+    };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "No se pudo consultar a Google." };
   }
@@ -203,9 +209,9 @@ export async function actualizarDesdeGoogle(id: string): Promise<ResultadoPlataf
 
 // ── Etapa 2: calidad, sucursales y «Contactar hoy» ────────────────────────────────────────────────────────────────
 
-export async function revertirClasificacion(id: string): Promise<ResultadoPlataforma> {
+export async function revertirClasificacion(id: string): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const { data: p } = await s.supabase.from("prospectos").select("id, etapa, etapa_antes_descarte, giro_busqueda, descarte_tipo").eq("id", id).maybeSingle();
   if (!p) return { error: "Ese prospecto ya no existe." };
   const cambio: Record<string, unknown> = { clasificacion_revertida_at: new Date().toISOString() };
@@ -215,41 +221,49 @@ export async function revertirClasificacion(id: string): Promise<ResultadoPlataf
   if (error) return { error: error.message };
   await s.supabase.from("prospectos_eventos").insert({ prospecto_id: id, tipo: "clasificacion", texto: p.etapa === "descartado" ? "Se revirtió el descarte automático" : "Se revirtió el giro que puso la clasificación" });
   refrescar(id);
-  return { error: null, exito: "Revertido. La clasificación automática ya no lo vuelve a tocar." };
+  return { error: null, exito: "Revertido. La clasificación automática ya no lo vuelve a tocar.", registros: await registrosDe(s.supabase, [{ t: "prospectos", i: id }]) };
 }
 
-export async function separarSucursal(id: string): Promise<ResultadoPlataforma> {
+export async function separarSucursal(id: string): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const { data: p } = await s.supabase.from("prospectos").select("principal_id").eq("id", id).maybeSingle();
   const { error } = await s.supabase.from("prospectos").update({ principal_id: null, no_agrupar: true }).eq("id", id);
   if (error) return { error: error.message };
   await s.supabase.from("prospectos_eventos").insert({ prospecto_id: id, tipo: "sucursal", texto: "Separado: es otro negocio, no una sucursal" });
   refrescar(id);
   if (p?.principal_id) revalidatePath(`/plataforma/prospectos/${p.principal_id}`);
-  return { error: null, exito: "Separado. Ya no se agrupa como sucursal." };
+  return {
+    error: null,
+    exito: "Separado. Ya no se agrupa como sucursal.",
+    registros: await registrosDe(s.supabase, [{ t: "prospectos", i: id }, { t: "prospectos", i: p?.principal_id as string | null | undefined }]),
+  };
 }
 
-export async function noLeInteresa(id: string): Promise<ResultadoPlataforma> {
+export async function noLeInteresa(id: string): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const { data: p } = await s.supabase.from("prospectos").select("etapa").eq("id", id).maybeSingle();
   if (!p) return { error: "Ese prospecto ya no existe." };
-  if (p.etapa === "descartado") return { error: null, exito: "Ya estaba descartado." };
+  if (p.etapa === "descartado") return { error: null, exito: "Ya estaba descartado.", registros: await registrosDe(s.supabase, [{ t: "prospectos", i: id }]) };
   const { error } = await s.supabase.from("prospectos").update({ etapa_antes_descarte: p.etapa, etapa: "descartado", descarte_tipo: "no_le_interesa", descarte_motivo: "No le interesa" }).eq("id", id);
   if (error) return { error: error.message };
   refrescar(id);
-  return { error: null, exito: "Descartado: no le interesa." };
+  return { error: null, exito: "Descartado: no le interesa.", registros: await registrosDe(s.supabase, [{ t: "prospectos", i: id }]) };
 }
 
 /** Un renglón de «Contactar hoy»: se mandó, respondió o no le interesa. La base pasa al prospecto de etapa. */
-export async function marcarContacto(contactoId: string, accion: "enviado" | "respondio" | "no_interesa"): Promise<ResultadoPlataforma> {
+export async function marcarContacto(contactoId: string, accion: "enviado" | "respondio" | "no_interesa"): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const { error } = await s.supabase.rpc("plataforma_prospecto_contacto", { p_contacto: contactoId, p_accion: accion });
   if (error) return { error: error.message };
   revalidatePath("/plataforma/prospectos/hoy");
-  return { error: null, exito: accion === "enviado" ? "Marcado como contactado." : accion === "respondio" ? "Respondió." : "No le interesa." };
+  return {
+    error: null,
+    exito: accion === "enviado" ? "Marcado como contactado." : accion === "respondio" ? "Respondió." : "No le interesa.",
+    registros: await registrosDe(s.supabase, [{ t: "prospectos_contactos", i: contactoId }]),
+  };
 }
 
 export async function armarListaHoy(): Promise<ResultadoPlataforma> {
@@ -268,25 +282,25 @@ export async function armarListaHoy(): Promise<ResultadoPlataforma> {
 // ── Audiencias de Meta ────────────────────────────────────────────────────────────────────────────────────────────
 
 /** Pidió que no le llegue publicidad: sale de todas las audiencias de Meta en la siguiente sincronización. */
-export async function bajaPublicidad(id: string, fd: FormData): Promise<ResultadoPlataforma> {
+export async function bajaPublicidad(id: string, fd: FormData): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const motivo = texto(fd, "motivo") ?? "Pidió baja";
   const { error } = await s.supabase.from("prospectos").update({ publicidad_baja_at: new Date().toISOString(), publicidad_baja_motivo: motivo }).eq("id", id);
   if (error) return { error: error.message };
   await s.supabase.from("prospectos_eventos").insert({ prospecto_id: id, tipo: "nota", texto: `Baja de publicidad: ${motivo}` });
   refrescar(id);
-  return { error: null, exito: "Listo: sale de las audiencias de Meta en la siguiente sincronización." };
+  return { error: null, exito: "Listo: sale de las audiencias de Meta en la siguiente sincronización.", registros: await registrosDe(s.supabase, [{ t: "prospectos", i: id }]) };
 }
 
-export async function quitarBajaPublicidad(id: string): Promise<ResultadoPlataforma> {
+export async function quitarBajaPublicidad(id: string): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const { error } = await s.supabase.from("prospectos").update({ publicidad_baja_at: null, publicidad_baja_motivo: null }).eq("id", id);
   if (error) return { error: error.message };
   await s.supabase.from("prospectos_eventos").insert({ prospecto_id: id, tipo: "nota", texto: "Vuelve a incluirse en publicidad" });
   refrescar(id);
-  return { error: null, exito: "Vuelve a entrar a las audiencias en la siguiente sincronización." };
+  return { error: null, exito: "Vuelve a entrar a las audiencias en la siguiente sincronización.", registros: await registrosDe(s.supabase, [{ t: "prospectos", i: id }]) };
 }
 
 export async function sincronizarMetaAhora(): Promise<ResultadoPlataforma> {

@@ -6,9 +6,12 @@ import { traducirError } from "../../reservas/traducir-error";
 import { normalizarTelefono } from "@/lib/telefono";
 import { negocioActual, urlDelNegocioActual } from "@/lib/negocio/actual";
 import { TIPOS_LINK_ALTA, esTipoLinkAlta, type TipoLinkAlta } from "@/lib/alta/tipos-link";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 export type EstadoInvitacion = {
   error: string | null;
+  registros?: RegistroFinal[];
   url?: string;
   urlWhatsApp?: string;
   expiraAt?: string;
@@ -75,6 +78,7 @@ export async function crearInvitacion(
     urlWhatsApp: enlaceWhatsApp(telefono, mensaje),
     expiraAt: fila.expira_at as string,
     tipo,
+    registros: await registrosDe(supabase, [{ t: "invitaciones_cliente", i: fila.id as string | undefined }]),
   };
 }
 
@@ -110,7 +114,7 @@ export async function enlaceParaReenviar(
   return { error: null, url, urlWhatsApp: enlaceWhatsApp(data.telefono as string, mensaje) };
 }
 
-export async function cancelarInvitacion(invitacionId: string): Promise<{ error: string | null }> {
+export async function cancelarInvitacion(invitacionId: string): Promise<{ error: string | null; registros?: RegistroFinal[] }> {
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("cancelar_invitacion_cliente", { p_id: invitacionId });
 
@@ -119,10 +123,10 @@ export async function cancelarInvitacion(invitacionId: string): Promise<{ error:
   revalidatePath("/clientes/invitaciones");
   // La ficha del cliente también lista sus links vivos («Ya tiene un link esperando»).
   revalidatePath("/clientes/[id]", "page");
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "invitaciones_cliente", i: invitacionId }]) };
 }
 
-export async function marcarDatosRevisados(clienteId: string): Promise<{ error: string | null }> {
+export async function marcarDatosRevisados(clienteId: string): Promise<{ error: string | null; registros?: RegistroFinal[] }> {
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("marcar_datos_revisados", { p_cliente_id: clienteId });
 
@@ -130,5 +134,5 @@ export async function marcarDatosRevisados(clienteId: string): Promise<{ error: 
 
   revalidatePath("/clientes");
   revalidatePath(`/clientes/${clienteId}`);
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "clientes", i: clienteId }]) };
 }

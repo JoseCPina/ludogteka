@@ -4,6 +4,8 @@ import Link from "next/link";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
+import { useModulos } from "@/components/modulos-contexto";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
@@ -21,7 +23,7 @@ import { FaltaDatoDePrecio } from "@/components/servicios/falta-dato-precio";
 import { conTope, mensajeDeFallo } from "@/lib/ui/espera";
 import { asignarGrupoDePropuesta, asignarGrupoDeRaza } from "../../perros/razas/grupos-actions";
 import { useZonaNegocio } from "@/components/zona-negocio";
-import { AvisoFueraDeHorario } from "@/components/aviso-fuera-de-horario";
+import { AvisoFueraDeHorario, useAvisoTrasExito } from "@/components/aviso-fuera-de-horario";
 import type { HorarioSemana, PropuestaHorario } from "@/lib/estetica/aviso-horario";
 import { cerrarFrase } from "@/lib/texto/frases";
 import { usePuedeAbrir } from "@/components/acceso-contexto";
@@ -114,6 +116,8 @@ export function AgendarForm({
   rolActual: string;
   userIdActual: string;
 }) {
+  // QA S41 (N143): con Veterinaria, «mascota» (o su especie), nunca «perro» fijo.
+  const vm = vocabularioMascota({ conVet: useModulos().tiene("veterinaria") });
   const zona = useZonaNegocio();
   const router = useRouter();
   const puede = usePuedeAbrir();
@@ -198,7 +202,7 @@ export function AgendarForm({
   const cot: CotizacionCita | null = cotizacion?.clave === claveCot ? cotizacion.valor : null;
   // QA S16 (N68): el botón deshabilitado dice por qué.
   const motivoNoAgendar = !perroId
-    ? "Elige el perro."
+    ? `Elige ${vm.el}.`
     : !empleadoId
       ? "Elige quién lo atiende."
       : elegidoAusente
@@ -249,6 +253,8 @@ export function AgendarForm({
   // N30: un mismo perro con otra cita ese día pide confirmar; y la confirmación de una cita agendada se lleva a la vista.
   const [duplicada, setDuplicada] = useState<string | null>(null);
   const [exitoAgendar, setExitoAgendar] = useState<string | null>(null);
+  // QA S41 (N142): el «Cita agendada» borra el aviso de horario de antes; vuelve si cambian fecha, hora o quien atiende.
+  const avisoHorario = useAvisoTrasExito(`${fechaHora}|${empleadoId}`);
   const cajaAgendadas = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (agendadas.length > 0) cajaAgendadas.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -256,7 +262,7 @@ export function AgendarForm({
 
   async function enviar(confirmarDuplicada = false) {
     if (!perroId) {
-      setError("Elige un perro.");
+      setError(`Elige ${vm.un}.`);
       return;
     }
     if (!cot || cot.error !== null || cot.estado !== "ok") {
@@ -313,7 +319,9 @@ export function AgendarForm({
       ...prev,
       { citaId: res.citaId as string, reservaId: res.reservaId as string, perroNombre: perroElegido?.nombre ?? "—", servicio: servicioActual?.nombre ?? "", precio: res.precio ?? 0, tarifa: Boolean(res.tarifaGuarderia) },
     ]);
-    if (res.fin) setFechaHora(horaLocalParaInput(res.fin, zona));
+    const horaSiguiente = res.fin ? horaLocalParaInput(res.fin, zona) : fechaHora;
+    if (res.fin) setFechaHora(horaSiguiente);
+    avisoHorario.ocultar(`${horaSiguiente}|${empleadoId}`);
     setPerroId("");
     setTarifaModo("auto");
     setMotivoTarifa("");
@@ -562,7 +570,7 @@ export function AgendarForm({
               Listo, ir a la agenda
             </Link>
           </div>
-          <p className="text-sm text-n-700">Cada perrito tiene su cita y su cuenta. Al cobrar puedes juntarlas en un solo pago (Caja → Cobrar todo junto).</p>
+          <p className="text-sm text-n-700">Cada {vm.nombre} tiene su cita y su cuenta. Al cobrar puedes juntarlas en un solo pago (Caja → Cobrar todo junto).</p>
         </div>
       )}
 
@@ -607,8 +615,8 @@ export function AgendarForm({
         </div>
       ) : (
         <>
-          <Select label="Perro" value={perroId} onChange={(e) => { setPerroId(e.target.value); setEstanciaId(""); setGrupoElegido(""); setExcepcion(false); setMotivoExcepcion(""); setTarifaModo("auto"); setMotivoTarifa(""); }}>
-            <option value="">Elige un perro</option>
+          <Select label={vm.Nombre} value={perroId} onChange={(e) => { setPerroId(e.target.value); setEstanciaId(""); setGrupoElegido(""); setExcepcion(false); setMotivoExcepcion(""); setTarifaModo("auto"); setMotivoTarifa(""); }}>
+            <option value="">Elige {vm.un}</option>
             {perrosDelCliente.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.nombre}
@@ -635,7 +643,7 @@ export function AgendarForm({
               label="¿Ligar a una estancia en curso? (opcional)"
               value={estanciaId}
               onChange={(e) => setEstanciaId(e.target.value)}
-              ayuda="El perro ya está adentro — esta cita no genera una entrada/salida aparte."
+              ayuda={`${vm.el.charAt(0).toUpperCase() + vm.el.slice(1)} ya está adentro — esta cita no genera una entrada/salida aparte.`}
             >
               <option value="">No, es una visita suelta</option>
               {estanciasDelPerro.map((e) => (
@@ -760,7 +768,7 @@ export function AgendarForm({
               setHoraTocada(true);
             }}
           />
-          <AvisoFueraDeHorario
+          {avisoHorario.visible && <AvisoFueraDeHorario
             fecha={fechaHora.slice(0, 10)}
             hora={fechaHora.slice(11, 16)}
             duracionMin={servicioActual?.duracion_minutos ?? 60}
@@ -770,7 +778,7 @@ export function AgendarForm({
               setFechaHora(`${p.fecha}T${p.hora ?? fechaHora.slice(11, 16)}`);
               setHoraTocada(true);
             }}
-          />
+          />}
 
           {duplicada && (
             <div data-cita-duplicada>

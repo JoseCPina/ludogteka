@@ -19,6 +19,8 @@ import {
 } from "@/lib/telemedicina/whatsapp";
 import type { DetalleTeleconsulta } from "@/lib/telemedicina/tipos";
 import { traducirError } from "../../reservas/traducir-error";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { crearLinkPago } from "../../caja/cobro-integrado-actions";
 
 const mensajeDe = (error: { code?: string; message: string } | null, base = "No pudimos hacerlo. Intenta de nuevo.") => (error ? traducirError(error) : base);
@@ -31,10 +33,10 @@ const VIGENCIA_SALA_DIAS = 180;
  * adelantado, la cuenta. El primer enlace se descarta a propósito (el token en claro nunca se guarda):
  * el enlace del dueño se genera después, desde la pantalla de la teleconsulta.
  */
-export async function prepararSalaTeleconsulta(citaId: string): Promise<{ error: string | null }> {
+export async function prepararSalaTeleconsulta(citaId: string): Promise<{ error: string | null; registros?: RegistroFinal[] }> {
   const supabase = await createSupabaseServerClient();
   const { data: ya } = await supabase.rpc("vet_telemedicina_detalle", { p_cita: citaId });
-  if (ya) return { error: null };
+  if (ya) return { error: null, registros: await registrosDe(supabase, [{ t: "vet_citas", i: citaId, datos: { teleconsulta_lista: true } }]) };
   const demo = (await cargarNegocioLanding()).plan === "demo";
   // En el demo la sala es simulada, salvo la que crea una cuenta del corredor de tutoriales (nunca el visitante).
   const corredor = demo && esCuentaDelCorredor((await supabase.auth.getUser()).data.user?.email);
@@ -59,11 +61,11 @@ export async function prepararSalaTeleconsulta(citaId: string): Promise<{ error:
   }
   revalidatePath("/veterinaria/agenda");
   revalidatePath(`/veterinaria/teleconsulta/${citaId}`);
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "vet_citas", i: citaId, datos: { teleconsulta_lista: true } }]) };
 }
 
 /** El enlace que se le manda al dueño. Uno nuevo deja sin efecto el anterior. */
-export async function generarLigaTeleconsulta(citaId: string): Promise<{ error: string | null; liga?: string; urlWhatsApp?: string; mensaje?: string }> {
+export async function generarLigaTeleconsulta(citaId: string): Promise<{ error: string | null; liga?: string; urlWhatsApp?: string; mensaje?: string; registros?: RegistroFinal[] }> {
   const supabase = await createSupabaseServerClient();
   const t = nuevoToken();
   const { error } = await supabase.rpc("vet_telemedicina_liga_nueva", { p_cita: citaId, p_token_hash: t.hash });
@@ -72,10 +74,11 @@ export async function generarLigaTeleconsulta(citaId: string): Promise<{ error: 
   const liga = `${urlDelNegocio(negocio)}/t/${t.token}`;
   const datos = await datosParaLiga(citaId, liga);
   revalidatePath(`/veterinaria/teleconsulta/${citaId}`);
-  if (!datos) return { error: null, liga };
+  const registros = await registrosDe(supabase, [{ t: "vet_citas", i: citaId, datos: { liga_teleconsulta: liga } }]);
+  if (!datos) return { error: null, liga, registros };
   const mensaje = mensajeManual(datos.datos);
   const digitos = datos.telefono.replace(/\D/g, "").slice(-10);
-  return { error: null, liga, mensaje, urlWhatsApp: digitos.length === 10 ? `https://wa.me/52${digitos}?text=${encodeURIComponent(mensaje)}` : undefined };
+  return { error: null, liga, mensaje, urlWhatsApp: digitos.length === 10 ? `https://wa.me/52${digitos}?text=${encodeURIComponent(mensaje)}` : undefined, registros };
 }
 
 async function datosParaLiga(citaId: string, liga: string): Promise<{ datos: DatosLiga; telefono: string } | null> {
@@ -161,7 +164,7 @@ export async function crearLigaDePagoTeleconsulta(citaId: string): Promise<{ err
 }
 
 /** El médico entra a la sala: la base comprueba el permiso y la ventana; el proveedor firma su token (moderador). */
-export async function entrarComoMedico(citaId: string, nombre: string): Promise<{ error: string | null; url?: string; simulada?: boolean; hasta?: string }> {
+export async function entrarComoMedico(citaId: string, nombre: string): Promise<{ error: string | null; url?: string; simulada?: boolean; hasta?: string; registros?: RegistroFinal[] }> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("vet_telemedicina_sala_medico", { p_cita: citaId });
   if (error || !data) return { error: mensajeDe(error, "No pudimos abrir la sala.") };
@@ -177,7 +180,13 @@ export async function entrarComoMedico(citaId: string, nombre: string): Promise<
       hasta: new Date(sala.hasta),
     });
     revalidatePath(`/veterinaria/teleconsulta/${citaId}`);
-    return { error: null, url, simulada: sala.proveedor === "simulado", hasta: sala.hasta };
+    return {
+      error: null,
+      url,
+      simulada: sala.proveedor === "simulado",
+      hasta: sala.hasta,
+      registros: await registrosDe(supabase, [{ t: "vet_citas", i: citaId, datos: { entro_medico: true } }]),
+    };
   } catch (e) {
     return { error: e instanceof ErrorVideo ? e.message : "No pudimos abrir la sala." };
   }

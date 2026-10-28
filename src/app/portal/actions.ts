@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { normalizarTelefono } from "@/lib/telefono";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
-export type EstadoMisDatos = { error: string | null; ok?: boolean };
+export type EstadoMisDatos = { error: string | null; ok?: boolean; registros?: RegistroFinal[] };
 
 export async function actualizarMisDatos(
   _estadoPrevio: EstadoMisDatos,
@@ -52,5 +54,7 @@ export async function actualizarMisDatos(
   }
 
   revalidatePath("/portal");
-  return { error: null, ok: true };
+  // El expediente del dueño (su membresía en este negocio dice cuál es).
+  const { data: miCliente } = await supabase.rpc("mi_cliente_id");
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "clientes", i: miCliente as string | null }]) };
 }

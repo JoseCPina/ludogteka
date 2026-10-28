@@ -1,6 +1,7 @@
 "use server";
 
-import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import { registrosDe, registrosFinales } from "@/lib/concurrencia/registro-final";
+import { negocioIdActual } from "@/lib/negocio/actual";
 import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { conControl } from "@/lib/concurrencia/servidor";
 import { conflictoDeError, type Conflicto, type ControlVersion } from "@/lib/concurrencia/tipos";
@@ -9,7 +10,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { normalizarTelefono } from "@/lib/telefono";
 import { traducirError } from "../reservas/traducir-error";
 
-export type EstadoConfiguracion = { error: string | null };
+export type EstadoConfiguracion = { error: string | null; registros?: RegistroFinal[] };
 
 export async function guardarConfiguracionNegocio(datos: {
   cupoDiurno: number;
@@ -49,7 +50,7 @@ export async function guardarConfiguracionNegocio(datos: {
 
   revalidatePath("/admin");
   revalidatePath("/login");
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "cupo_configuracion", i: await negocioIdActual() }]) };
 }
 
 
@@ -69,7 +70,7 @@ export async function guardarHorarioSemana(dias: DiaHorario[], control?: Control
   const supabase = await createSupabaseServerClient();
   const { data, error } = await conControl(supabase.rpc("guardar_horario_semana", { p_dias: dias }), control);
   const conflicto = conflictoDeError(error);
-  if (conflicto) return { error: null, conflicto };
+  if (conflicto) return { error: null, conflicto, registros: [] };
   if (error) return { error: traducirError(error) };
 
   revalidatePath("/admin");

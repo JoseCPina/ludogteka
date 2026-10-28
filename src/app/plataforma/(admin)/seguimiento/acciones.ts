@@ -3,18 +3,25 @@
 import { revalidatePath } from "next/cache";
 import { sesionPlataforma } from "@/lib/plataforma/sesion";
 import type { ResultadoPlataforma } from "@/lib/plataforma/tipos";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { ConRegistros } from "@/lib/concurrencia/tipos";
 import { metaConfigurada, sincronizarPlantillas } from "@/lib/seguimiento/meta";
 
 const NO_AUTORIZADO: ResultadoPlataforma = { error: "Solo la administración de PeluDesk." };
 
 /** Pausa o reanuda TODO el envío del seguimiento de pruebas (con su sesión: la base lo comprueba y lo deja en la bitácora). */
-export async function pausarSeguimiento(pausa: boolean): Promise<ResultadoPlataforma> {
+export async function pausarSeguimiento(pausa: boolean): Promise<ResultadoPlataforma & ConRegistros> {
   const s = await sesionPlataforma();
-  if (!s) return NO_AUTORIZADO;
+  if (!s) return { error: NO_AUTORIZADO.error };
   const { error } = await s.supabase.rpc("plataforma_seguimiento_pausar", { p_pausa: pausa });
   if (error) return { error: error.message };
   revalidatePath("/plataforma/seguimiento");
-  return { error: null, exito: pausa ? "Seguimiento en pausa: no sale ningún mensaje." : "Seguimiento reanudado." };
+  return {
+    error: null,
+    exito: pausa ? "Seguimiento en pausa: no sale ningún mensaje." : "Seguimiento reanudado.",
+    // El ajuste se identifica por su clave: va lo que quedó.
+    registros: await registrosDe(s.supabase, [{ t: "seguimiento_pruebas_ajustes", i: "pausa", datos: { clave: "pausa", valor: pausa ? "si" : "no" } }]),
+  };
 }
 
 /** Consulta a Meta el estado de las 4 plantillas y lo guarda; con `enviar`, manda a revisión las que Meta todavía no tiene. */

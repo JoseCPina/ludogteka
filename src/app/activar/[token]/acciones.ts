@@ -7,10 +7,13 @@ import { negocioActual } from "@/lib/negocio/actual";
 import { normalizarTelefono } from "@/lib/telefono";
 import { correoSinteticoDeTelefono } from "@/lib/auth/identidad";
 import { MIN_CONTRASENA, TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
-export type ResultadoActivar = { error: string | null };
+export type ResultadoActivar = { error: string | null; registros?: RegistroFinal[] };
 
 /** Qué dice un enlace de activación, sin crear nada. Siempre con el negocio del dominio. */
+// registro-final: solo lee la invitación (el `.update` es del hash del token, no de la base)
 export async function leerInvitacionPortal(token: string) {
   const negocio = await negocioActual();
   const admin = createSupabaseAdminClient(negocio.id);
@@ -101,5 +104,5 @@ export async function activarCuentaPortal(token: string, password: string): Prom
     const { error } = await supabase.auth.signInWithPassword({ email: correoSinteticoDeTelefono(telefono), password });
     if (error) return { error: "Tu cuenta quedó lista. Entra con tu teléfono y tu contraseña." };
   }
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "portal_invitaciones", i: inv.id, datos: { cliente_id: inv.clienteId, usada_at: new Date().toISOString() } }]) };
 }

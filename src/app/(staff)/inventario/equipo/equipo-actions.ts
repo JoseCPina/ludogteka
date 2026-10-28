@@ -4,8 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../../reservas/traducir-error";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
-export type EstadoEquipo = { error: string | null; ok?: boolean };
+export type EstadoEquipo = { error: string | null; ok?: boolean; registros?: RegistroFinal[] };
 
 function leerCampos(formData: FormData) {
   const frecuencia = String(formData.get("frecuencia_mantenimiento_dias") ?? "").trim();
@@ -58,7 +60,7 @@ export async function actualizarEquipo(id: string, _prev: EstadoEquipo, formData
 
   revalidatePath("/inventario");
   revalidatePath(`/inventario/equipo/${id}`);
-  return { error: null, ok: true };
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "equipos", i: id }]) };
 }
 
 // Estado, mantenimiento o cantidad: todo el personal (queda en la bitácora).
@@ -68,7 +70,7 @@ export async function registrarEventoEquipo(
   datos: { estado?: string; cantidad?: number; fecha?: string | null; nota?: string | null }
 ): Promise<EstadoEquipo> {
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("registrar_evento_equipo", {
+  const { data: eventoId, error } = await supabase.rpc("registrar_evento_equipo", {
     p_equipo_id: id,
     p_tipo: tipo,
     p_estado: datos.estado ?? null,
@@ -79,7 +81,7 @@ export async function registrarEventoEquipo(
   if (error) return { error: traducirError(error) };
   revalidatePath("/inventario");
   revalidatePath(`/inventario/equipo/${id}`);
-  return { error: null, ok: true };
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "equipos", i: id }, { t: "equipo_eventos", i: eventoId as string | null }]) };
 }
 
 export async function darDeBajaEquipo(id: string) {

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { conTope, conTopeAccion, esperarConTope, mensajeDeFallo, TOPE_MS, type ConError } from "@/lib/ui/espera";
+import { publicarRegistros } from "@/components/concurrencia/registro-vivo";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 /**
  * La espera de un botón: `cargando` mientras corre, tope de tiempo, y
@@ -16,6 +18,10 @@ import { conTope, conTopeAccion, esperarConTope, mensajeDeFallo, TOPE_MS, type C
  *   <Button cargando={envio.cargando} onClick={generar}>Generar</Button>
  *
  * Un componente con dos botones independientes usa dos hooks.
+ *
+ * QA S41: la respuesta trae cómo quedó lo que cambió (`registros`, ver `registrosDe`) y aquí se publica en cuanto llega,
+ * antes de devolverla: lo que la pantalla muestra de ese registro (`useRegistroVivo`) se pinta con la respuesta, sin
+ * esperar a que la página se recargue.
  */
 export function useEspera(opciones: { tope?: number } = {}) {
   const tope = opciones.tope ?? TOPE_MS;
@@ -33,7 +39,9 @@ export function useEspera(opciones: { tope?: number } = {}) {
     async <T extends ConError>(fn: () => Promise<T>): Promise<T> => {
       setCargando(true);
       try {
-        return await esperarConTope(fn, tope);
+        const res = await esperarConTope(fn, tope);
+        if (!res?.error && !(res as { conflicto?: unknown }).conflicto) publicarRegistros((res as { registros?: RegistroFinal[] }).registros);
+        return res;
       } finally {
         if (montado.current) setCargando(false);
       }
@@ -70,5 +78,13 @@ export function useAccionConTope<S extends ConError, P extends unknown[]>(
   accion: (...args: P) => Promise<S>,
   tope: number = TOPE_MS
 ): (...args: P) => Promise<S> {
-  return useMemo(() => conTopeAccion(accion, tope), [accion, tope]);
+  return useMemo(() => {
+    const conTopeYa = conTopeAccion(accion, tope);
+    // QA S41: también aquí lo que devuelve la acción se pinta con la respuesta.
+    return async (...args: P) => {
+      const res = await conTopeYa(...args);
+      if (!res?.error && !(res as { conflicto?: unknown }).conflicto) publicarRegistros((res as { registros?: RegistroFinal[] }).registros);
+      return res;
+    };
+  }, [accion, tope]);
 }

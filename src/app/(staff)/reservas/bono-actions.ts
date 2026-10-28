@@ -3,9 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import type { LineaMetodo } from "./cobro-actions";
 
-export type EstadoComprarBono = { error: string | null; bonoId?: string; reservaId?: string };
+export type EstadoComprarBono = { error: string | null; bonoId?: string; reservaId?: string; registros?: RegistroFinal[] };
 
 // El paquete se vende para UN perro (solo él lo consume); el dueño que lo
 // paga lo deduce la base del perro.
@@ -40,12 +42,12 @@ export async function comprarBono(
   revalidatePath("/clientes", "layout");
   revalidatePath("/guarderia/pases");
   revalidatePath("/caja/pases");
-  return { error: null, bonoId: data as string };
+  return { error: null, bonoId: data as string, registros: await registrosDe(supabase, [{ t: "bonos_clientes", i: data as string }]) };
 }
 
 export type ItemTipoBono = "estancia" | "cargo" | "estetica";
 
-export type EstadoConsumirBono = { error: string | null; movimientoId?: string };
+export type EstadoConsumirBono = { error: string | null; movimientoId?: string; registros?: RegistroFinal[] };
 
 export async function consumirBono(
   reservaId: string,
@@ -66,7 +68,15 @@ export async function consumirBono(
 
   revalidatePath(`/reservas/${reservaId}`);
   revalidatePath(`/reservas/${reservaId}/cobrar`);
-  return { error: null, movimientoId: data as string };
+  return {
+    error: null,
+    movimientoId: data as string,
+    registros: await registrosDe(supabase, [
+      { t: "movimientos_bono", i: data as string },
+      { t: "bonos_clientes", i: bonoClienteId },
+      { t: "reservas", i: reservaId },
+    ]),
+  };
 }
 
 // Aplica un paquete del perro a una estancia de guardería que quedó pagando
@@ -81,6 +91,7 @@ export type ResultadoAplicarBonoEstancia = {
   restantes?: number;
   total?: number;
   vence?: string | null;
+  registros?: RegistroFinal[];
 };
 
 export async function aplicarBonoAEstancia(estanciaId: string): Promise<ResultadoAplicarBonoEstancia> {
@@ -89,7 +100,7 @@ export async function aplicarBonoAEstancia(estanciaId: string): Promise<Resultad
   if (error) return { error: traducirError(error) };
 
   revalidatePath(`/reservas/estancias/${estanciaId}/checkin`);
-  return { error: null, ...(data as Omit<ResultadoAplicarBonoEstancia, "error">) };
+  return { error: null, ...(data as Omit<ResultadoAplicarBonoEstancia, "error">), registros: await registrosDe(supabase, [{ t: "estancias", i: estanciaId }]) };
 }
 
 // NUNCA re-exportar tipos desde un archivo "use server" (`export type {

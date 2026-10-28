@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { useModulos } from "@/components/modulos-contexto";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import { BorradorFormulario } from "@/lib/borradores/borrador-formulario";
 import type { EstadoClienteForm } from "./actions";
 import { CampoVersion, conForzar } from "@/components/concurrencia/campo-version";
@@ -138,7 +139,7 @@ export function ClienteForm({
       {pedirDireccion && corta && tiene("recoleccion") && (
         <label className="flex items-start gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3 text-n-900">
           <input type="checkbox" checked={quiereRecoleccion} onChange={(e) => setQuiereRecoleccion(e.target.checked)} className="mt-1 h-4 w-4" />
-          <span>Quiere que pasemos por su perro a su casa</span>
+          <span>Quiere que pasemos por {vocabularioMascota({ conVet: tiene("veterinaria") }).su} a su casa</span>
         </label>
       )}
 

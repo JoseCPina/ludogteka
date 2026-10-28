@@ -128,7 +128,7 @@ export function CobroIntegrado({
     const paso = async () => {
       ticks += 1;
       setSegundos(ticks * 3);
-      const r = await consultarCobroTerminal(ordenActiva);
+      const r = await consultarCobroTerminal(ordenActiva); // tope-ok: sondeo con su propio tope (ticks), no un botón
       if (!vivo) return;
       if (r.error) {
         setError(r.error);

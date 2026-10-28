@@ -52,6 +52,9 @@ export type Conflicto = {
  */
 export type RegistroFinal = { t: string; i: string; version: string | null; datos: Record<string, unknown> | null };
 
+/** QA S41: lo que toda acción del servidor que cambia estado agrega a su respuesta (`registrosDe`, `registrosFinales`). */
+export type ConRegistros = { registros?: RegistroFinal[] };
+
 /** Lo que cada edición que puede chocar devuelve: el conflicto o, si se guardó, el registro final. */
 export type ConConflicto = { conflicto?: Conflicto | null; registros?: RegistroFinal[] };
 

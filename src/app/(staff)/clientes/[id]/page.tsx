@@ -387,7 +387,7 @@ export default async function EditarClientePage({
       {mods.includes("bonos") && (
       <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
         <h2 className="text-lg font-bold text-n-900">Paquetes (day pass y mensualidad)</h2>
-        <p className="-mt-1 text-sm text-n-600">Cada paquete es de un perro: solo ese perro lo usa.</p>
+        <p className="-mt-1 text-sm text-n-600">Cada paquete es de un perro: solo ese perro lo usa.</p>{/* perro-ok: pases de guardería */}
         <BonosCliente
           catalogo={(catalogoBonos as BonoCatalogo[]) ?? []}
           bonos={(bonosCliente as BonoFila[]) ?? []}

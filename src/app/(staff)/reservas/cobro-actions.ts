@@ -7,6 +7,8 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { negocioIdActual } from "@/lib/negocio/actual";
 import { avisoCobroReciente, type ControlCobro } from "@/lib/cobro/reciente";
 import { totalesDeFila, type TotalesCuenta } from "@/lib/cobro/totales";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 export type MetodoPago = "efectivo" | "terminal" | "transferencia" | "tarjeta_manual";
 
@@ -32,6 +34,7 @@ export type EstadoCobro = {
   confirmar?: string;
   /** La cuenta ya con el cobro (QA S15, N45): la pantalla la pinta sin esperar al refresco. */
   totales?: TotalesCuenta;
+  registros?: RegistroFinal[];
 };
 
 export async function registrarCobro(
@@ -57,7 +60,7 @@ export async function registrarCobro(
     supabase.rpc("cuenta_totales_reserva", { p_reserva_id: reservaId }),
     contexto ? avisoCobroReciente(supabase, [reservaId], control, contexto) : Promise.resolve(null),
   ]);
-  if (aviso) return { error: null, confirmar: aviso };
+  if (aviso) return { error: null, confirmar: aviso, registros: await registrosDe(supabase, [{ t: "reservas", i: reservaId }]) };
   const saldoAntes = Number((Array.isArray(totales) ? totales[0] : totales)?.saldo ?? 0);
   const { data, error } = await supabase.rpc("registrar_cobro_con_totales", {
     p_reserva_id: reservaId,
@@ -72,10 +75,16 @@ export async function registrarCobro(
   const recibido = metodos.reduce((s, m) => s + m.monto, 0);
   const cambio = Math.round((recibido - saldoAntes) * 100) / 100;
   const r = (data ?? {}) as { cobro_id?: string; totales?: unknown };
-  return { error: null, cobroId: r.cobro_id as string, cambio: cambio > 0.005 ? cambio : undefined, totales: r.totales ? totalesDeFila(r.totales) : undefined };
+  return {
+    error: null,
+    cobroId: r.cobro_id as string,
+    cambio: cambio > 0.005 ? cambio : undefined,
+    totales: r.totales ? totalesDeFila(r.totales) : undefined,
+    registros: await registrosDe(supabase, [{ t: "cobros", i: r.cobro_id }, { t: "reservas", i: reservaId }]),
+  };
 }
 
-export type EstadoDevolucion = { error: string | null; devolucionId?: string };
+export type EstadoDevolucion = { error: string | null; devolucionId?: string; registros?: RegistroFinal[] };
 
 export async function registrarDevolucion(
   reservaId: string,
@@ -100,5 +109,9 @@ export async function registrarDevolucion(
 
   revalidatePath(`/reservas/${reservaId}`);
   revalidatePath(`/reservas/${reservaId}/cobrar`);
-  return { error: null, devolucionId: data as string };
+  return {
+    error: null,
+    devolucionId: data as string,
+    registros: await registrosDe(supabase, [{ t: "devoluciones", i: data as string }, { t: "cobros", i: cobroId }, { t: "reservas", i: reservaId }]),
+  };
 }

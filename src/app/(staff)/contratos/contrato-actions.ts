@@ -3,10 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../reservas/traducir-error";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 const BUCKET = "perros-archivos";
 
-export type EstadoGenerarContrato = { error: string | null; contratoId?: string };
+export type EstadoGenerarContrato = { error: string | null; contratoId?: string; registros?: RegistroFinal[] };
 
 // El negocio maneja varios contratos a la vez (guardería, hotel, …), así
 // que generar uno exige decir cuál — nunca "el" contrato.
@@ -23,7 +25,7 @@ export async function generarContrato(
   if (error) return { error: traducirError(error) };
 
   revalidatePath(`/perros/${perroId}`);
-  return { error: null, contratoId: data as string };
+  return { error: null, contratoId: data as string, registros: await registrosDe(supabase, [{ t: "contratos", i: data as string }]) };
 }
 
 // Igual patrón que la foto del perro (foto-actions.ts): el archivo lo
@@ -39,7 +41,7 @@ export async function prepararRutaContratoPapel(
   return `${clienteId}/${perroId}/contrato/${contratoId}.pdf`;
 }
 
-export type EstadoAccionSimple = { error: string | null };
+export type EstadoAccionSimple = { error: string | null; registros?: RegistroFinal[] };
 
 export async function registrarContratoPapel(
   contratoId: string,
@@ -56,7 +58,7 @@ export async function registrarContratoPapel(
   if (error) return { error: traducirError(error) };
 
   revalidatePath("/contratos");
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "contratos", i: contratoId }]) };
 }
 
 export async function cancelarContrato(contratoId: string, motivo: string): Promise<EstadoAccionSimple> {
@@ -69,7 +71,7 @@ export async function cancelarContrato(contratoId: string, motivo: string): Prom
   if (error) return { error: traducirError(error) };
 
   revalidatePath("/contratos");
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "contratos", i: contratoId }]) };
 }
 
 export async function obtenerUrlContratoStaff(storagePath: string): Promise<string | null> {

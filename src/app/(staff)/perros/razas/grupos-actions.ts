@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { esErrorSoloLectura, mensajeSoloLectura } from "@/lib/solo-lectura";
 
-export type ResultadoRaza = { error: string | null; exito?: string };
+export type ResultadoRaza = { error: string | null; exito?: string; registros?: RegistroFinal[] };
 
 // Los RAISE de la base ya vienen en español (P0001 y los de permiso, 42501).
 function limpio(e: { code?: string; message: string } | null) {
@@ -59,7 +61,9 @@ export async function asignarGrupoDeRaza(razaId: string, grupoId: string): Promi
   revalidatePath("/perros/razas/grupos");
   revalidatePath("/estetica");
   revalidatePath("/recepcion");
-  return { error: null, exito: "Grupo de precio guardado." };
+  // La asignación vigente de la raza en este negocio (la RLS acota al negocio).
+  const { data: vigente } = await supabase.from("razas_grupo").select("id").eq("raza_id", razaId).is("deleted_at", null).limit(1).maybeSingle();
+  return { error: null, exito: "Grupo de precio guardado.", registros: await registrosDe(supabase, [{ t: "razas_grupo", i: vigente?.id as string | undefined }]) };
 }
 
 /** El grupo de precio de una raza propuesta que sigue en revisión (admin o permiso de tarifas). */
@@ -70,5 +74,9 @@ export async function asignarGrupoDePropuesta(propuestaId: string, grupoId: stri
   if (error) return { error: limpio(error) };
   revalidatePath("/perros/razas/grupos");
   revalidatePath("/estetica");
-  return { error: null, exito: "Grupo de precio guardado. Cuando PeluDesk apruebe la raza, queda como su grupo en este negocio." };
+  return {
+    error: null,
+    exito: "Grupo de precio guardado. Cuando PeluDesk apruebe la raza, queda como su grupo en este negocio.",
+    registros: await registrosDe(supabase, [{ t: "razas_propuestas", i: propuestaId }]),
+  };
 }

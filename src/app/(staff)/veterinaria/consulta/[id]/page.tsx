@@ -11,6 +11,7 @@ import { SECCIONES_CONSULTA, TIPOS_CITA, etiquetaBandera, type DetalleConsulta }
 import { AccionesFirmada, AnularItem } from "../../expediente/anular-item";
 import { CapturarResultado, SubirAdjunto } from "../../expediente/captura";
 import { EditorConsulta } from "./editor-consulta";
+import { EstadoVivo } from "@/components/concurrencia/estado-vivo";
 import { UsoDictado } from "./uso-dictado";
 import { CargosConsulta } from "./cargos-consulta";
 import { AplicacionesConsulta } from "./aplicaciones-consulta";
@@ -140,9 +141,16 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
         <Link href={`/veterinaria/expediente/${c.perro_id}`} className="text-sm font-semibold text-morado hover:underline">← Expediente de {d.mascota.nombre}</Link>
         <div className="mt-1 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-bold text-n-900">{TIPOS_CITA[c.tipo_clave] ?? c.tipo_clave} · {d.mascota.nombre}</h1>
-          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${c.estado === "firmada" ? "bg-menta-suave text-menta-oscuro" : c.estado === "anulada" ? "bg-coral-suave text-coral-oscuro" : "bg-ambar-suave text-ambar-oscuro"}`}>
-            {c.estado === "firmada" ? "Firmada" : c.estado === "anulada" ? "Anulada" : "Borrador"}
-          </span>
+          {/* QA S41 (N140): al firmar, la insignia cambia con la respuesta (registros), sin esperar a recargar la página. */}
+          <EstadoVivo
+            t="vet_consultas"
+            i={id}
+            version={c.updated_at}
+            estado={c.estado}
+            etiquetas={{ firmada: "Firmada", anulada: "Anulada", borrador: "Borrador" }}
+            clases={{ firmada: "bg-menta-suave text-menta-oscuro", anulada: "bg-coral-suave text-coral-oscuro", _: "bg-ambar-suave text-ambar-oscuro" }}
+            claseBase="rounded-full px-2.5 py-1 text-xs font-semibold"
+          />
           {c.modalidad === "telemedicina" && <span className="rounded-full bg-morado-suave px-2.5 py-1 text-xs font-semibold text-morado">Telemedicina</span>}
         </div>
         <p className="mt-1 text-n-700">

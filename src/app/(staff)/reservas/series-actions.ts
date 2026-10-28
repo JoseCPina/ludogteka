@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { revalidarModulosEstancia, revalidarSeriesModulos } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 import type { BonoAplicadoResumen } from "@/lib/bonos/descripcion";
 
@@ -67,7 +69,7 @@ export async function crearSerie(
   };
 }
 
-export type EstadoRenovar = { error: string | null; resultados: ResultadoFecha[] };
+export type EstadoRenovar = { error: string | null; resultados: ResultadoFecha[]; registros?: RegistroFinal[] };
 
 export async function renovarHorizonte(serieId: string, semanas = 8): Promise<EstadoRenovar> {
   const supabase = await createSupabaseServerClient();
@@ -77,7 +79,7 @@ export async function renovarHorizonte(serieId: string, semanas = 8): Promise<Es
   });
   if (error) return { error: traducirError(error), resultados: [] };
   revalidatePath(`/reservas/series/${serieId}`);
-  return { error: null, resultados: (data as ResultadoFecha[] | null) ?? [] };
+  return { error: null, resultados: (data as ResultadoFecha[] | null) ?? [], registros: await registrosDe(supabase, [{ t: "series_recurrentes", i: serieId }]) };
 }
 
 export type EstadoEditarSerie = { error: string | null; canceladas: number; resultados: ResultadoFecha[] };
@@ -142,7 +144,7 @@ export async function editarSerie(
   };
 }
 
-export type EstadoPausarSerie = { error: string | null; canceladas: number };
+export type EstadoPausarSerie = { error: string | null; canceladas: number; registros?: RegistroFinal[] };
 
 export async function pausarSerie(
   serieId: string,
@@ -175,10 +177,14 @@ export async function pausarSerie(
   }
 
   revalidatePath(`/reservas/series/${serieId}`);
-  return { error: null, canceladas };
+  return {
+    error: null,
+    canceladas,
+    registros: await registrosDe(supabase, [{ t: "series_recurrentes", i: serieId }, ...(afectadas ?? []).map((e) => ({ t: "estancias", i: e.id as string }))]),
+  };
 }
 
-export type EstadoAccionSimple = { error: string | null };
+export type EstadoAccionSimple = { error: string | null; registros?: RegistroFinal[] };
 
 export async function quitarPausa(serieId: string, pausaId: string): Promise<EstadoAccionSimple> {
   const supabase = await createSupabaseServerClient();
@@ -188,10 +194,10 @@ export async function quitarPausa(serieId: string, pausaId: string): Promise<Est
     .eq("id", pausaId);
   if (error) return { error: traducirError(error) };
   revalidatePath(`/reservas/series/${serieId}`);
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "series_pausas", i: pausaId }, { t: "series_recurrentes", i: serieId }]) };
 }
 
-export type EstadoCancelarSerie = { error: string | null; canceladas: number };
+export type EstadoCancelarSerie = { error: string | null; canceladas: number; registros?: RegistroFinal[] };
 
 export async function cancelarSerie(serieId: string): Promise<EstadoCancelarSerie> {
   const supabase = await createSupabaseServerClient();
@@ -220,5 +226,9 @@ export async function cancelarSerie(serieId: string): Promise<EstadoCancelarSeri
   revalidarSeriesModulos();
   revalidarModulosEstancia();
   revalidatePath(`/reservas/series/${serieId}`);
-  return { error: null, canceladas };
+  return {
+    error: null,
+    canceladas,
+    registros: await registrosDe(supabase, [{ t: "series_recurrentes", i: serieId }, ...(pendientes ?? []).map((e) => ({ t: "estancias", i: e.id as string }))]),
+  };
 }

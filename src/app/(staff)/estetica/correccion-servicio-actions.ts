@@ -89,7 +89,7 @@ export async function corregirServicioCita(datos: {
     p_precio_esperado: datos.precioEsperado,
     p_ordenes_canceladas: canceladas,
   }), datos.control);
-  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error), registros: await registrosFinales(supabase, datos.control) } : { error: traducirError(error) };
   const resultado = data as ResultadoCorreccion;
   revalidatePath("/estetica");
   revalidatePath(`/estetica/${datos.citaId}`);

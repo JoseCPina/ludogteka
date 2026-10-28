@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
-export type EstadoPesoForm = { error: string | null; ok?: boolean };
+export type EstadoPesoForm = { error: string | null; ok?: boolean; registros?: RegistroFinal[] };
 
 export async function registrarPeso(
   perroId: string,
@@ -29,12 +31,14 @@ export async function registrarPeso(
     return { error: "La fecha no puede ser futura." };
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("pesos_registrados")
-    .insert({ perro_id: perroId, peso_kg: peso, fecha, notas });
+    .insert({ perro_id: perroId, peso_kg: peso, fecha, notas })
+    .select("id")
+    .single();
 
   if (error) return { error: "No pudimos guardar el peso. Intenta de nuevo." };
 
   revalidatePath(`/perros/${perroId}`);
-  return { error: null, ok: true };
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "pesos_registrados", i: data?.id as string | undefined }, { t: "perros", i: perroId }]) };
 }

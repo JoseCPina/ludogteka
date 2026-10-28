@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { mensajeDeError } from "@/lib/empleados/errores";
 import type { ResultadoAccion } from "@/lib/empleados/tipos";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
 
 function refrescar() {
   revalidatePath("/empleados", "layout");
@@ -25,7 +26,7 @@ export async function solicitarAusencia(empleadoId: string | null, fd: FormData)
   const horaHasta = String(fd.get("hora_hasta") ?? "");
   if (Boolean(horaDesde) !== Boolean(horaHasta)) return { error: "Para una ausencia de medio día escribe la hora de inicio y la de fin." };
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("solicitar_ausencia", {
+  const { data, error } = await supabase.rpc("solicitar_ausencia", {
     p_empleado_id: empleadoId,
     p_tipo: tipo,
     p_desde: desde,
@@ -35,7 +36,7 @@ export async function solicitarAusencia(empleadoId: string | null, fd: FormData)
   });
   if (error) return { error: mensajeDeError(error) };
   refrescar();
-  return { error: null, exito: "Solicitud enviada: queda por aprobar" };
+  return { error: null, exito: "Solicitud enviada: queda por aprobar", registros: await registrosDe(supabase, [{ t: "ausencias", i: data as string | null }]) };
 }
 
 export async function aprobarAusencia(id: string): Promise<ResultadoAccion> {
@@ -65,7 +66,7 @@ export async function cancelarAusencia(id: string, fd: FormData): Promise<Result
   const { error } = await supabase.rpc("cancelar_ausencia", { p_ausencia_id: id, p_motivo: String(fd.get("motivo") ?? "") });
   if (error) return { error: mensajeDeError(error) };
   refrescar();
-  return { error: null, exito: "Cancelada" };
+  return { error: null, exito: "Cancelada", registros: await registrosDe(supabase, [{ t: "ausencias", i: id }]) };
 }
 
 export async function ajustarVacaciones(empleadoId: string, fd: FormData): Promise<ResultadoAccion> {
@@ -79,5 +80,5 @@ export async function ajustarVacaciones(empleadoId: string, fd: FormData): Promi
   });
   if (error) return { error: mensajeDeError(error) };
   refrescar();
-  return { error: null, exito: "Saldo actualizado" };
+  return { error: null, exito: "Saldo actualizado", registros: await registrosDe(supabase, [{ t: "empleados", i: empleadoId }]) };
 }

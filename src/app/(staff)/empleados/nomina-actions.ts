@@ -1,6 +1,6 @@
 "use server";
 
-import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import { registrosDe, registrosFinales } from "@/lib/concurrencia/registro-final";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { mensajeDeError } from "@/lib/empleados/errores";
@@ -43,7 +43,7 @@ export async function guardarEsquema(empleadoId: string, fd: FormData): Promise<
     notas: String(fd.get("notas") ?? "").trim() || null,
   }), controlDeFormulario(fd));
   const conflicto = conflictoDeError(error);
-  if (conflicto) return { error: null, conflicto };
+  if (conflicto) return { error: null, conflicto, registros: await registrosFinales(supabase, controlDeFormulario(fd)) };
   if (error) return { error: mensajeDeError(error) };
   revalidatePath(`/empleados/${empleadoId}`);
   return { error: null, registros: await registrosFinales(supabase, controlDeFormulario(fd)), exito: "Esquema de pago guardado" };
@@ -51,7 +51,7 @@ export async function guardarEsquema(empleadoId: string, fd: FormData): Promise<
 
 export async function registrarAdelanto(empleadoId: string, fd: FormData): Promise<ResultadoAccion> {
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("registrar_adelanto", {
+  const { data, error } = await supabase.rpc("registrar_adelanto", {
     p_empleado_id: empleadoId,
     p_monto: monto(fd, "monto"),
     p_fecha: String(fd.get("fecha") ?? "") || null,
@@ -60,7 +60,7 @@ export async function registrarAdelanto(empleadoId: string, fd: FormData): Promi
   });
   if (error) return { error: mensajeDeError(error) };
   revalidatePath(`/empleados/${empleadoId}`);
-  return { error: null, exito: "Adelanto registrado: se descuenta del siguiente pago" };
+  return { error: null, exito: "Adelanto registrado: se descuenta del siguiente pago", registros: await registrosDe(supabase, [{ t: "adelantos", i: data as string | null }]) };
 }
 
 export async function cancelarAdelanto(id: string, empleadoId: string, fd: FormData): Promise<ResultadoAccion> {
@@ -68,14 +68,14 @@ export async function cancelarAdelanto(id: string, empleadoId: string, fd: FormD
   const { error } = await supabase.rpc("cancelar_adelanto", { p_adelanto_id: id, p_motivo: String(fd.get("motivo") ?? "") });
   if (error) return { error: mensajeDeError(error) };
   revalidatePath(`/empleados/${empleadoId}`);
-  return { error: null, exito: "Adelanto cancelado" };
+  return { error: null, exito: "Adelanto cancelado", registros: await registrosDe(supabase, [{ t: "adelantos", i: id }]) };
 }
 
 // La base vuelve a calcular el periodo al registrar: lo que se guarda es su
 // cálculo, no lo que haya en pantalla.
 export async function registrarPago(empleadoId: string, desde: string, hasta: string, fd: FormData): Promise<ResultadoAccion> {
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("registrar_pago_nomina", {
+  const { data, error } = await supabase.rpc("registrar_pago_nomina", {
     p_empleado_id: empleadoId,
     p_desde: desde,
     p_hasta: hasta,
@@ -85,15 +85,19 @@ export async function registrarPago(empleadoId: string, desde: string, hasta: st
   });
   if (error) return { error: mensajeDeError(error) };
   revalidatePath("/empleados/nomina", "layout");
-  return { error: null, exito: "Pago registrado" };
+  return { error: null, exito: "Pago registrado", registros: await registrosDe(supabase, [{ t: "nomina_pagos", i: data as string | null }]) };
 }
 
 export async function revertirPago(pagoId: string, fd: FormData): Promise<ResultadoAccion> {
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("revertir_pago_nomina", { p_pago_id: pagoId, p_motivo: String(fd.get("motivo") ?? "") });
+  const { data, error } = await supabase.rpc("revertir_pago_nomina", { p_pago_id: pagoId, p_motivo: String(fd.get("motivo") ?? "") });
   if (error) return { error: mensajeDeError(error) };
   revalidatePath("/empleados/nomina", "layout");
-  return { error: null, exito: "Pago revertido: el periodo se puede volver a pagar" };
+  return {
+    error: null,
+    exito: "Pago revertido: el periodo se puede volver a pagar",
+    registros: await registrosDe(supabase, [{ t: "nomina_pagos", i: pagoId }, { t: "nomina_pagos", i: data as string | null }]),
+  };
 }
 
 // Regla de comisión de un servicio de estética (de todos o de un estilista).
@@ -113,10 +117,10 @@ export async function guardarComision(fd: FormData): Promise<ResultadoAccion> {
   viejas = empleado ? viejas.eq("empleado_id", empleado) : viejas.is("empleado_id", null);
   const { error: e1 } = await viejas;
   if (e1) return { error: mensajeDeError(e1) };
-  const { error } = await supabase.from("comisiones_servicio").insert({ servicio_id: servicio, empleado_id: empleado, tipo, valor });
+  const { data, error } = await supabase.from("comisiones_servicio").insert({ servicio_id: servicio, empleado_id: empleado, tipo, valor }).select("id").single();
   if (error) return { error: mensajeDeError(error) };
   revalidatePath("/empleados/comisiones");
-  return { error: null, exito: "Regla guardada" };
+  return { error: null, exito: "Regla guardada", registros: await registrosDe(supabase, [{ t: "comisiones_servicio", i: data.id }]) };
 }
 
 export async function quitarComision(id: string): Promise<ResultadoAccion> {
@@ -125,5 +129,5 @@ export async function quitarComision(id: string): Promise<ResultadoAccion> {
   if (error) return { error: mensajeDeError(error) };
   if (!data?.length) return { error: "No tienes permiso para esto." };
   revalidatePath("/empleados/comisiones");
-  return { error: null, exito: "Regla quitada" };
+  return { error: null, exito: "Regla quitada", registros: await registrosDe(supabase, [{ t: "comisiones_servicio", i: id }]) };
 }

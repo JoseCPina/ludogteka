@@ -2,6 +2,8 @@
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 export type EstadoAbrirTurno = {
   error: string | null;
@@ -10,6 +12,7 @@ export type EstadoAbrirTurno = {
   turno?: { id: string; fondoInicial: number; abiertoAt: string };
   /** Ya había un turno abierto con otra clave (lo abrió alguien más o desde otro lado): se sigue en ese. */
   yaHabiaUno?: boolean;
+  registros?: RegistroFinal[];
 };
 
 // Bloque D construye la pantalla completa de apertura/retiros/cierre con
@@ -43,7 +46,7 @@ export async function abrirTurno(fondoInicial: number, notas: string, clave?: st
       if (abierto) {
         const turno = { id: abierto.id as string, fondoInicial: Number(abierto.fondo_inicial), abiertoAt: abierto.abierto_at as string };
         const mismo = claveApertura !== null && abierto.clave_apertura === claveApertura;
-        return { error: null, turnoId: turno.id, turno, yaHabiaUno: !mismo };
+        return { error: null, turnoId: turno.id, turno, yaHabiaUno: !mismo, registros: await registrosDe(supabase, [{ t: "turnos_caja", i: turno.id }]) };
       }
       return { error: "Ya hay un turno de caja abierto." };
     }
@@ -52,5 +55,10 @@ export async function abrirTurno(fondoInicial: number, notas: string, clave?: st
 
   // QA S19: sin revalidar aquí (repintaba la pantalla antes de responder y después se volvía a pintar con el refresco
   // que hace cada pantalla que abre turno).
-  return { error: null, turnoId: data.id, turno: { id: data.id as string, fondoInicial: Number(data.fondo_inicial), abiertoAt: data.abierto_at as string } };
+  return {
+    error: null,
+    turnoId: data.id,
+    turno: { id: data.id as string, fondoInicial: Number(data.fondo_inicial), abiertoAt: data.abierto_at as string },
+    registros: await registrosDe(supabase, [{ t: "turnos_caja", i: data.id as string }]),
+  };
 }

@@ -136,7 +136,7 @@ export async function actualizarInsumo(
     .eq("id", id), controlDeFormulario(formData));
 
   const conflicto = conflictoDeError(dbError);
-  if (conflicto) return { error: null, conflicto };
+  if (conflicto) return { error: null, conflicto, registros: await registrosFinales(supabase, controlDeFormulario(formData), [{ t: "insumos", i: id }]) };
   if (dbError) return { error: traducirError(dbError) };
 
   revalidatePath("/inventario");

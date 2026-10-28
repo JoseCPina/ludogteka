@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../reservas/traducir-error";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
-export type EstadoMovimiento = { error: string | null; ok?: boolean };
+export type EstadoMovimiento = { error: string | null; ok?: boolean; registros?: RegistroFinal[] };
 
 export async function registrarEntradaCompra(
   insumoId: string,
@@ -14,7 +16,7 @@ export async function registrarEntradaCompra(
   fechaCaducidad: string | null
 ): Promise<EstadoMovimiento> {
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("registrar_entrada_compra", {
+  const { data: movimientoId, error } = await supabase.rpc("registrar_entrada_compra", {
     p_insumo_id: insumoId,
     p_proveedor_id: proveedorId,
     p_cantidad_compra: cantidadCompra,
@@ -26,7 +28,7 @@ export async function registrarEntradaCompra(
 
   revalidatePath(`/inventario/${insumoId}`);
   revalidatePath("/inventario");
-  return { error: null, ok: true };
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "insumos", i: insumoId }, { t: "movimientos_inventario", i: movimientoId as string | null }]) };
 }
 
 export async function registrarSalida(
@@ -36,7 +38,7 @@ export async function registrarSalida(
   motivo: string | null
 ): Promise<EstadoMovimiento> {
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("registrar_salida", {
+  const { data: movimientoId, error } = await supabase.rpc("registrar_salida", {
     p_insumo_id: insumoId,
     p_cantidad_consumo: cantidad,
     p_tipo: tipo,
@@ -47,7 +49,7 @@ export async function registrarSalida(
 
   revalidatePath(`/inventario/${insumoId}`);
   revalidatePath("/inventario");
-  return { error: null, ok: true };
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "insumos", i: insumoId }, { t: "movimientos_inventario", i: movimientoId as string | null }]) };
 }
 
 export async function registrarAjuste(
@@ -57,7 +59,7 @@ export async function registrarAjuste(
   motivo: string
 ): Promise<EstadoMovimiento> {
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("registrar_ajuste", {
+  const { data: movimientoId, error } = await supabase.rpc("registrar_ajuste", {
     p_insumo_id: insumoId,
     p_cantidad_consumo: cantidad,
     p_sentido: sentido,
@@ -68,5 +70,5 @@ export async function registrarAjuste(
 
   revalidatePath(`/inventario/${insumoId}`);
   revalidatePath("/inventario");
-  return { error: null, ok: true };
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "insumos", i: insumoId }, { t: "movimientos_inventario", i: movimientoId as string | null }]) };
 }

@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "@/app/(staff)/reservas/traducir-error";
 import { leerCotizacion, type CotizacionLinea } from "./cotizacion-linea";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 // QA R50 (N133): la cotización de una línea con la regla con la que la base cobra (cotizar_linea_servicio).
 export async function cotizarLineaServicio(
@@ -37,7 +39,11 @@ export async function catalogoTallaPelaje(): Promise<{ tamanos: { id: string; et
 }
 
 // Guarda en el expediente lo que falta para el precio (solo lo que se escogió) y nada más.
-export async function guardarTallaPelaje(perroId: string, tamanoId: string | null, pelajeId: string | null): Promise<{ error: string | null }> {
+export async function guardarTallaPelaje(
+  perroId: string,
+  tamanoId: string | null,
+  pelajeId: string | null
+): Promise<{ error: string | null; registros?: RegistroFinal[] }> {
   if (!tamanoId && !pelajeId) return { error: "Elige lo que falta." };
   const supabase = await createSupabaseServerClient();
   const cambios: { tamano_id?: string; pelaje_id?: string } = {};
@@ -47,5 +53,5 @@ export async function guardarTallaPelaje(perroId: string, tamanoId: string | nul
   if (error) return { error: traducirError(error) };
   if (!data || data.length === 0) return { error: "No pudimos guardar: solo admin o recepción editan los datos del perro." };
   revalidatePath(`/perros/${perroId}`);
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "perros", i: perroId }]) };
 }

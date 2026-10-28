@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../reservas/traducir-error";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
-export type ResultadoCargoSuelto = { error: string | null; reservaId?: string; precio?: number };
+export type ResultadoCargoSuelto = { error: string | null; reservaId?: string; precio?: number; registros?: RegistroFinal[] };
 
 // Un cargo sin reserva de por medio: la base crea la cuenta y el cargo
 // en una transacción (crear_cargo_suelto) y devuelve la cuenta para ir
@@ -36,7 +38,12 @@ export async function crearCargoSuelto(datos: {
 
   const salida = data as { reserva_id: string; precio: number } | null;
   revalidatePath("/caja");
-  return { error: null, reservaId: salida?.reserva_id, precio: salida ? Number(salida.precio) : undefined };
+  return {
+    error: null,
+    reservaId: salida?.reserva_id,
+    precio: salida ? Number(salida.precio) : undefined,
+    registros: await registrosDe(supabase, [{ t: "reservas", i: salida?.reserva_id }]),
+  };
 }
 
 // QA S16 (N66): con Veterinaria, el cargo suelto ofrece la consulta general, la urgencia, la revisión de seguimiento y
@@ -55,5 +62,10 @@ export async function crearCargoVeterinario(datos: { clienteId: string; clave: s
   if (error) return { error: traducirError(error) };
   const salida = data as { reserva_id: string; precio: number } | null;
   revalidatePath("/caja");
-  return { error: null, reservaId: salida?.reserva_id, precio: salida ? Number(salida.precio) : undefined };
+  return {
+    error: null,
+    reservaId: salida?.reserva_id,
+    precio: salida ? Number(salida.precio) : undefined,
+    registros: await registrosDe(supabase, [{ t: "reservas", i: salida?.reserva_id }]),
+  };
 }

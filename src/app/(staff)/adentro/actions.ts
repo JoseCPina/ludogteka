@@ -7,6 +7,8 @@ import { traducirError } from "../reservas/traducir-error";
 import { BUCKET_REPORTES, MAX_FOTO_BYTES, MAX_VIDEO_BYTES } from "@/lib/reporte/constantes";
 import { contactoDelPerro, enlaceWhatsApp, firmarRutas, mensajeGaleria, nuevoToken, urlGaleria } from "@/lib/reporte/enlaces";
 import { formatearFecha } from "@/lib/formato";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 export type MediaVigente = {
   id: string;
@@ -29,7 +31,7 @@ export async function prepararSubida(
   perroId: string,
   tipo: "foto" | "video",
   mime: string
-): Promise<{ error: string | null; id?: string; urlFirmada?: string }> {
+): Promise<{ error: string | null; id?: string; urlFirmada?: string; registros?: RegistroFinal[] }> {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("media_preparar", { p_perro_id: perroId, p_tipo: tipo, p_mime: mime });
   if (error) return { error: traducirError(error) };
@@ -41,10 +43,10 @@ export async function prepararSubida(
     await supabase.rpc("media_quitar", { p_id: fila.id });
     return { error: "No pudimos preparar la subida. Intenta de nuevo." };
   }
-  return { error: null, id: fila.id, urlFirmada: firma.signedUrl };
+  return { error: null, id: fila.id, urlFirmada: firma.signedUrl, registros: await registrosDe(supabase, [{ t: "media_perro", i: fila.id }]) };
 }
 
-export async function confirmarSubida(id: string, duracion: number | null): Promise<{ error: string | null }> {
+export async function confirmarSubida(id: string, duracion: number | null): Promise<{ error: string | null; registros?: RegistroFinal[] }> {
   const supabase = await createSupabaseServerClient();
   const negocio = await negocioActual();
   const { data: fila } = await supabase
@@ -73,7 +75,7 @@ export async function confirmarSubida(id: string, duracion: number | null): Prom
     await supabase.rpc("media_quitar", { p_id: id });
     return { error: traducirError(error) };
   }
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "media_perro", i: id }]) };
 }
 
 export async function quitarMedia(id: string): Promise<{ error: string | null }> {
@@ -118,15 +120,16 @@ export async function listarMediaPerro(perroId: string): Promise<{ error: string
 export async function enviarGaleria(
   perroId: string,
   mediaIds: string[]
-): Promise<{ error: string | null; whatsapp?: string }> {
+): Promise<{ error: string | null; whatsapp?: string; registros?: RegistroFinal[] }> {
   if (mediaIds.length === 0) return { error: "Escoge al menos una foto o un video." };
   const supabase = await createSupabaseServerClient();
   const contacto = await contactoDelPerro(supabase, perroId);
   if (contacto.error || !contacto.telefono) return { error: contacto.error ?? "Falta el teléfono del dueño." };
   const negocio = await negocioActual();
   const { token, hash } = nuevoToken();
-  const { error } = await supabase.rpc("galeria_crear", { p_perro_id: perroId, p_media_ids: mediaIds, p_hash: hash });
+  const { data: galeria, error } = await supabase.rpc("galeria_crear", { p_perro_id: perroId, p_media_ids: mediaIds, p_hash: hash });
   if (error) return { error: traducirError(error) };
   const mensaje = mensajeGaleria({ dueno: contacto.dueno, perro: contacto.perro, negocio: negocio.nombre, url: urlGaleria(negocio, token) });
-  return { error: null, whatsapp: enlaceWhatsApp(contacto.telefono, mensaje) };
+  const galeriaId = (galeria as { galeria_id?: string } | null)?.galeria_id;
+  return { error: null, whatsapp: enlaceWhatsApp(contacto.telefono, mensaje), registros: await registrosDe(supabase, [{ t: "galerias_perro", i: galeriaId }]) };
 }

@@ -1,6 +1,6 @@
 "use server";
 
-import { registrosFinales } from "@/lib/concurrencia/registro-final";
+import { registrosDe, registrosFinales } from "@/lib/concurrencia/registro-final";
 import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
 import { revalidarModulosEstancia } from "./revalidar";
@@ -56,6 +56,7 @@ export type EstadoCrearReserva = {
   error: string | null;
   reservaId?: string;
   resultados?: ResultadoLinea[];
+  registros?: RegistroFinal[];
 };
 
 async function insertarEstancia(reservaId: string, linea: LineaReserva): Promise<ResultadoLinea> {
@@ -134,11 +135,16 @@ export async function crearReserva(
     // Encabezado vacío, sin ninguna estancia adentro — no vale la pena
     // dejarlo, sería una reserva fantasma en el listado.
     await supabase.from("reservas").delete().eq("id", reserva.id);
-    return { error: null, resultados };
+    return { error: null, resultados, registros: [] };
   }
 
   revalidarModulosEstancia();
-  return { error: null, reservaId: reserva.id, resultados };
+  return {
+    error: null,
+    reservaId: reserva.id,
+    resultados,
+    registros: await registrosDe(supabase, [{ t: "reservas", i: reserva.id }, ...resultados.map((r) => ({ t: "estancias", i: r.estanciaId }))]),
+  };
 }
 
 // Mismo primitivo que crearReserva usa por línea, expuesto aparte para
@@ -261,7 +267,7 @@ export async function cancelarEstancia(estanciaId: string, control?: ControlVers
 
   if (error) {
     const conflicto = await conflictoDeEstancia(supabase, error, estanciaId);
-    if (conflicto) return { error: null, conflicto };
+    if (conflicto) return { error: null, conflicto, registros: await registrosFinales(supabase, control, [{ t: "estancias", i: estanciaId }]) };
     return { error: traducirError(error) };
   }
   const aviso = await avisoDevolucionDeEstancia(supabase, estanciaId, desde);
@@ -280,7 +286,7 @@ export async function marcarNoLlego(estanciaId: string, control?: ControlVersion
 
   if (error) {
     const conflicto = await conflictoDeEstancia(supabase, error, estanciaId);
-    if (conflicto) return { error: null, conflicto };
+    if (conflicto) return { error: null, conflicto, registros: await registrosFinales(supabase, control, [{ t: "estancias", i: estanciaId }]) };
     return { error: traducirError(error) };
   }
   revalidarModulosEstancia();
@@ -304,7 +310,7 @@ export async function moverFechas(
 
   if (error) {
     const conflicto = await conflictoDeEstancia(supabase, error, estanciaId);
-    if (conflicto) return { error: null, conflicto };
+    if (conflicto) return { error: null, conflicto, registros: await registrosFinales(supabase, control, [{ t: "estancias", i: estanciaId }]) };
     if (error.code === "23P01") {
       const { data: est } = await supabase.from("estancias").select("perro_id").eq("id", estanciaId).maybeSingle();
       if (est?.perro_id) return { error: await mensajeTraslapeDeEstancia(supabase, { perroId: est.perro_id, entrada: fechaEntrada, salida: fechaSalida, excluir: estanciaId }) };
@@ -354,7 +360,7 @@ export async function cancelarReserva(reservaId: string, control?: ControlVersio
       const conflicto = await conflictoDeEstancia(supabase, error, e.id);
       if (conflicto) {
         revalidarModulosEstancia();
-        return { error: null, canceladas, noCancelables, avisos, conflicto };
+        return { error: null, canceladas, noCancelables, avisos, conflicto, registros: await registrosFinales(supabase, control, [{ t: "reservas", i: reservaId }]) };
       }
     }
     if (!error) {

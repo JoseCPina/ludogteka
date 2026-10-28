@@ -4,8 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../../reservas/traducir-error";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
-export type EstadoProveedorForm = { error: string | null; ok?: boolean };
+export type EstadoProveedorForm = { error: string | null; ok?: boolean; registros?: RegistroFinal[] };
 
 function leerCampos(formData: FormData) {
   return {
@@ -54,7 +56,7 @@ export async function actualizarProveedor(
 
   revalidatePath("/inventario/proveedores");
   revalidatePath(`/inventario/proveedores/${id}`);
-  return { error: null, ok: true };
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "proveedores", i: id }]) };
 }
 
 export async function darDeBajaProveedor(id: string) {

@@ -10,11 +10,19 @@ import { hoyNegocio } from "@/lib/formato";
 import { mensajeDeError } from "@/lib/empleados/errores";
 import { variablesDesconocidas } from "@/lib/contratos/plantilla";
 import { traducirError } from "../reservas/traducir-error";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 // Las acciones de los pasos de la bienvenida (QA S16). Cada una deja el negocio más cerca de poder operar y vuelve a
 // pintar /bienvenida, que decide con la base qué ya está listo.
 
-export type ResultadoBienvenida = { error: string | null; exito?: string; inviteLink?: string | null };
+export type ResultadoBienvenida = { error: string | null; exito?: string; inviteLink?: string | null; registros?: RegistroFinal[] };
+
+// Los ajustes de operación del negocio (una fila por negocio): quién atiende, requisitos para hospedar.
+async function registrosAjustes(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>): Promise<RegistroFinal[]> {
+  const { data } = await supabase.from("negocio_ajustes_operacion").select("id").is("deleted_at", null).limit(1).maybeSingle();
+  return registrosDe(supabase, [{ t: "negocio_ajustes_operacion", i: (data as { id: string } | null)?.id }]);
+}
 
 function refrescar() {
   revalidatePath("/bienvenida");
@@ -102,15 +110,22 @@ export async function altaEquipo(d: AltaEquipo): Promise<ResultadoBienvenida> {
     }
   }
 
+  let medicoId: string | null = null;
   if (d.esMedico && userId) {
-    const { error } = await supabase.rpc("guardar_medico_veterinario", { p_profile_id: userId, p_cedula: d.cedula, p_cpa: null });
+    const { data: medico, error } = await supabase.rpc("guardar_medico_veterinario", { p_profile_id: userId, p_cedula: d.cedula, p_cpa: null });
+    medicoId = (medico as string | null) ?? null;
     if (error) return { error: `Quedó invitado, pero no se pudo designar como médico: ${traducirError(error)}`, inviteLink };
   }
 
   refrescar();
   revalidatePath("/empleados");
   const sinCuenta = d.modo === "nomina" ? " Quedó solo en nómina: no puede atender citas hasta que tenga cuenta." : "";
-  return { error: null, exito: `${nombre} quedó en tu equipo.${avisoCuenta}${sinCuenta}`, inviteLink };
+  const registros = await registrosDe(supabase, [
+    { t: "empleados", i: empleadoId },
+    { t: "profiles", i: userId },
+    { t: "medicos_veterinarios", i: medicoId },
+  ]);
+  return { error: null, exito: `${nombre} quedó en tu equipo.${avisoCuenta}${sinCuenta}`, inviteLink, registros };
 }
 
 /** «Yo atiendo la estética»: el dueño cuenta como la persona que atiende las citas. */
@@ -119,7 +134,7 @@ export async function marcarYoAtiendo(atiende: boolean): Promise<ResultadoBienve
   const { error } = await supabase.rpc("marcar_dueno_atiende", { p_atiende: atiende });
   if (error) return { error: traducirError(error) };
   refrescar();
-  return { error: null, exito: atiende ? "Listo: tú atiendes las citas de estética." : "Quitado." };
+  return { error: null, exito: atiende ? "Listo: tú atiendes las citas de estética." : "Quitado.", registros: await registrosAjustes(supabase) };
 }
 
 /** «Yo soy el médico»: el admin se designa médico veterinario con su cédula. */
@@ -128,11 +143,15 @@ export async function designarmeMedico(cedula: string, cpa: string): Promise<Res
   const supabase = await createSupabaseServerClient();
   const { data } = await getUserConReintento(supabase);
   if (!data.user) return { error: "Tu sesión se cerró. Vuelve a entrar." };
-  const { error } = await supabase.rpc("guardar_medico_veterinario", { p_profile_id: data.user.id, p_cedula: cedula, p_cpa: cpa.trim() || null });
+  const { data: medico, error } = await supabase.rpc("guardar_medico_veterinario", { p_profile_id: data.user.id, p_cedula: cedula, p_cpa: cpa.trim() || null });
   if (error) return { error: traducirError(error) };
   refrescar();
   revalidatePath("/veterinaria/medicos");
-  return { error: null, exito: "Quedaste designado como médico veterinario. Ya puedes agendar consultas a tu nombre." };
+  return {
+    error: null,
+    exito: "Quedaste designado como médico veterinario. Ya puedes agendar consultas a tu nombre.",
+    registros: await registrosDe(supabase, [{ t: "medicos_veterinarios", i: medico as string | null }]),
+  };
 }
 
 /** Designar a otra persona del personal (con cuenta) como médico. */
@@ -140,11 +159,11 @@ export async function designarMedico(profileId: string, cedula: string): Promise
   if (!profileId) return { error: "Escoge a la persona del personal que será médico." };
   if (!cedulaValida(cedula)) return { error: MENSAJE_CEDULA };
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("guardar_medico_veterinario", { p_profile_id: profileId, p_cedula: cedula, p_cpa: null });
+  const { data: medico, error } = await supabase.rpc("guardar_medico_veterinario", { p_profile_id: profileId, p_cedula: cedula, p_cpa: null });
   if (error) return { error: traducirError(error) };
   refrescar();
   revalidatePath("/veterinaria/medicos");
-  return { error: null, exito: "Médico designado." };
+  return { error: null, exito: "Médico designado.", registros: await registrosDe(supabase, [{ t: "medicos_veterinarios", i: medico as string | null }]) };
 }
 
 /** Requisitos para hospedar: evaluación sí/no y qué vacunas son obligatorias (con su vigencia). */
@@ -156,7 +175,7 @@ export async function guardarRequisitosHospedar(exigeEvaluacion: boolean, obliga
   const { error } = await supabase.rpc("guardar_requisitos_estancia", { p_exige_evaluacion: exigeEvaluacion, p_obligatorias: obligatorias, p_vigencias: vigencias });
   if (error) return { error: traducirError(error) };
   refrescar();
-  return { error: null, exito: "Requisitos guardados. Se aplican desde la siguiente reserva." };
+  return { error: null, exito: "Requisitos guardados. Se aplican desde la siguiente reserva.", registros: await registrosAjustes(supabase) };
 }
 
 /** Publica el contrato general (el de la plantilla de PeluDesk, ya editado) con un clic. */
@@ -169,11 +188,16 @@ export async function publicarContratoGeneral(titulo: string, cuerpo: string): P
   // El contrato general: el de alta que aplica a toda la casa (sin categorías). Un negocio nuevo ya lo trae, sin texto.
   const { data: tipos } = await supabase.from("tipos_contrato").select("id, categorias_servicio, se_genera_al, orden").is("deleted_at", null).eq("se_genera_al", "alta").order("orden");
   const general = (tipos ?? []).find((t) => ((t.categorias_servicio as string[] | null) ?? []).length === 0);
-  const { error } = general
+  const { data: publicado, error } = general
     ? await supabase.rpc("publicar_plantilla", { p_tipo_contrato_id: general.id, p_titulo: titulo, p_cuerpo: cuerpo, p_requiere_refirma: false })
     : await supabase.rpc("crear_tipo_contrato", { p_nombre: "Contrato general", p_categorias_servicio: [], p_titulo: titulo, p_cuerpo: cuerpo });
   if (error) return { error: traducirError(error) };
   refrescar();
   revalidatePath("/contratos");
-  return { error: null, exito: "Contrato publicado. Lo firma el dueño al dar de alta a su perro; lo cambias cuando quieras en Contratos." };
+  return {
+    error: null,
+    exito: "Contrato publicado. Lo firma el dueño al dar de alta a su perro; lo cambias cuando quieras en Contratos.",
+    // publicar_plantilla devuelve la plantilla nueva; crear_tipo_contrato, el tipo de contrato nuevo.
+    registros: await registrosDe(supabase, [{ t: general ? "plantillas_contrato" : "tipos_contrato", i: publicado as string | null }]),
+  };
 }

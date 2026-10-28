@@ -16,12 +16,14 @@ import {
   traducir,
   type Resultado,
 } from "@/lib/cfdi/servicio";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 // Facturar un cobro, un cobro junto o la global; cancelar, sustituir, descargar
 // y mandar. Los permisos y las reglas las comprueba la base con la sesión de
 // quien llama; aquí solo se junta el trabajo con el PAC (src/lib/cfdi).
 
-export type ResultadoFactura = Resultado & { facturaId?: string; enlaceWhatsapp?: string; mensaje?: string };
+export type ResultadoFactura = Resultado & { facturaId?: string; enlaceWhatsapp?: string; mensaje?: string; registros?: RegistroFinal[] };
 
 export type ReceptorManual = { rfc: string; nombre_fiscal: string; cp: string; regimen_fiscal: string; uso_cfdi: string; email?: string };
 
@@ -43,7 +45,7 @@ async function contexto() {
 /** Prepara y timbra la factura de uno o varios cobros de la MISMA persona. */
 export async function facturarCobros(cobroIds: string[], receptor?: ReceptorManual | null): Promise<ResultadoFactura> {
   const negado = await enDemo();
-  if (negado) return negado;
+  if (negado) return { error: negado.error };
   if (!cobroIds.length) return { error: "Escoge al menos un cobro." };
   const { negocio, sb, admin } = await contexto();
   const p = await sb.rpc("cfdi_preparar_cobros", { p_cobro_ids: cobroIds, p_receptor: receptor ?? null, p_sustituye: null });
@@ -51,7 +53,7 @@ export async function facturarCobros(cobroIds: string[], receptor?: ReceptorManu
   const facturaId = p.data as string;
   const r = await timbrarFactura(sb, admin, negocio.id, facturaId);
   refrescar();
-  return { ...r, facturaId };
+  return { ...r, facturaId, registros: await registrosDe(sb, [{ t: "cfdi_facturas", i: facturaId }, ...cobroIds.map((i) => ({ t: "cobros", i }))]) };
 }
 
 /** El cobro junto (varias cuentas de la misma clienta) sale en UNA factura. */
@@ -83,12 +85,12 @@ export async function revisarPorRevisar(facturaId: string): Promise<ResultadoFac
 
 export async function descartarBorrador(facturaId: string): Promise<ResultadoFactura> {
   const negado = await enDemo();
-  if (negado) return negado;
+  if (negado) return { error: negado.error };
   const { sb } = await contexto();
   const { error } = await sb.rpc("cfdi_descartar", { p_factura_id: facturaId });
   if (error) return { error: traducir(error) };
   refrescar();
-  return { error: null, aviso: "Borrador descartado: los cobros quedaron libres para facturarse." };
+  return { error: null, aviso: "Borrador descartado: los cobros quedaron libres para facturarse.", registros: await registrosDe(sb, [{ t: "cfdi_facturas", i: facturaId }]) };
 }
 
 export async function cancelarUnaFactura(facturaId: string, motivo: string, sustitutaUuid: string | null): Promise<ResultadoFactura> {
@@ -107,7 +109,7 @@ export async function cancelarUnaFactura(facturaId: string, motivo: string, sust
  */
 export async function sustituirFactura(facturaId: string, receptor?: ReceptorManual | null): Promise<ResultadoFactura> {
   const negado = await enDemo();
-  if (negado) return negado;
+  if (negado) return { error: negado.error };
   const { negocio, sb, admin } = await contexto();
   const { data: vieja } = await sb.from("cfdi_factura_cobros").select("cobro_id").eq("factura_id", facturaId).eq("vigente", true);
   const ids = (vieja ?? []).map((c) => c.cobro_id as string);
@@ -124,7 +126,12 @@ export async function sustituirFactura(facturaId: string, receptor?: ReceptorMan
   const c = await cancelarFactura(sb, admin, facturaId, "01", nueva?.uuid_fiscal ?? null);
   refrescar();
   if (c.error) return { error: `La factura nueva ya salió, pero la anterior no se pudo cancelar: ${c.error}`, facturaId: nuevaId };
-  return { error: null, aviso: `Factura sustituida. ${c.aviso ?? ""}`.trim(), facturaId: nuevaId };
+  return {
+    error: null,
+    aviso: `Factura sustituida. ${c.aviso ?? ""}`.trim(),
+    facturaId: nuevaId,
+    registros: await registrosDe(sb, [{ t: "cfdi_facturas", i: nuevaId }, { t: "cfdi_facturas", i: facturaId }]),
+  };
 }
 
 export async function actualizarCancelaciones(): Promise<ResultadoFactura> {
@@ -140,20 +147,20 @@ export async function actualizarCancelaciones(): Promise<ResultadoFactura> {
 /** Emite la factura global de un periodo CERRADO. */
 export async function emitirGlobal(desde: string, hasta: string): Promise<ResultadoFactura> {
   const negado = await enDemo();
-  if (negado) return negado;
+  if (negado) return { error: negado.error };
   const { negocio, sb, admin } = await contexto();
   const p = await sb.rpc("cfdi_preparar_global", { p_desde: desde, p_hasta: hasta });
   if (p.error) return { error: traducir(p.error) };
   const facturaId = p.data as string;
   const r = await timbrarFactura(sb, admin, negocio.id, facturaId);
   refrescar();
-  return { ...r, facturaId };
+  return { ...r, facturaId, registros: await registrosDe(sb, [{ t: "cfdi_facturas", i: facturaId }]) };
 }
 
 /** Link de un solo uso para que el cliente baje PDF y XML + el wa.me con el mensaje. */
 export async function enlaceDeFactura(facturaId: string): Promise<ResultadoFactura> {
   const negado = await enDemo();
-  if (negado) return negado;
+  if (negado) return { error: negado.error };
   const { negocio, sb } = await contexto();
   const { data: f } = await sb
     .from("cfdi_facturas")
@@ -175,21 +182,28 @@ export async function enlaceDeFactura(facturaId: string): Promise<ResultadoFactu
   const mensaje = `Hola, aquí está tu factura ${f.serie ?? ""}${f.folio ?? ""} de ${negocio.nombre}. Puedes bajar el PDF y el XML aquí (el link dura 30 días): ${url}`;
   await sb.rpc("cfdi_registrar_envio", { p_factura_id: facturaId, p_canal: "whatsapp" });
   refrescar();
-  return { error: null, enlaceWhatsapp: tel ? `https://wa.me/52${tel}?text=${encodeURIComponent(mensaje)}` : undefined, aviso: tel ? undefined : "El cliente no tiene teléfono: copia el mensaje y mándalo por donde lo contactes.", facturaId, mensaje };
+  return {
+    error: null,
+    enlaceWhatsapp: tel ? `https://wa.me/52${tel}?text=${encodeURIComponent(mensaje)}` : undefined,
+    aviso: tel ? undefined : "El cliente no tiene teléfono: copia el mensaje y mándalo por donde lo contactes.",
+    facturaId,
+    mensaje,
+    registros: await registrosDe(sb, [{ t: "cfdi_facturas", i: facturaId }]),
+  };
 }
 
 export async function correoDeFactura(facturaId: string, correo: string): Promise<ResultadoFactura> {
   const negado = await enDemo();
-  if (negado) return negado;
+  if (negado) return { error: negado.error };
   const c = correo.trim();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c)) return { error: "Escribe un correo válido." };
   const { negocio, sb, admin } = await contexto();
   const { data: f } = await sb.from("cfdi_facturas").select("id, estado, pac_factura_id").eq("id", facturaId).eq("negocio_id", negocio.id).maybeSingle();
   if (!f || !f.pac_factura_id || !["vigente", "cancelacion_pendiente"].includes(f.estado)) return { error: "Solo se manda una factura vigente." };
   const r = await enviarPorCorreo(admin, facturaId, f.pac_factura_id, c);
-  if (r.error) return r;
+  if (r.error) return { error: r.error };
   const { error } = await sb.rpc("cfdi_registrar_envio", { p_factura_id: facturaId, p_canal: "correo" });
   if (error) return { error: traducir(error) };
   refrescar();
-  return { error: null, aviso: `Factura enviada a ${c}.` };
+  return { error: null, aviso: `Factura enviada a ${c}.`, registros: await registrosDe(sb, [{ t: "cfdi_facturas", i: facturaId }]) };
 }

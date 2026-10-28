@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { traducirError } from "../reservas/traducir-error";
 
-export type EstadoMedicamento = { error: string | null };
+export type EstadoMedicamento = { error: string | null; registros?: RegistroFinal[] };
 
 export async function crearMedicamento(
   perroId: string,
@@ -22,7 +24,7 @@ export async function crearMedicamento(
   if (!datos.fechaInicio) return { error: "Elige la fecha de inicio." };
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("perro_medicamentos").insert({
+  const { data, error } = await supabase.from("perro_medicamentos").insert({
     perro_id: perroId,
     medicamento: datos.medicamento.trim(),
     dosis: datos.dosis.trim(),
@@ -30,12 +32,12 @@ export async function crearMedicamento(
     fecha_inicio: datos.fechaInicio,
     fecha_fin: datos.fechaFin || null,
     notas: datos.notas.trim() || null,
-  });
+  }).select("id").single();
 
   if (error) return { error: traducirError(error) };
 
   revalidatePath(`/perros/${perroId}`);
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "perro_medicamentos", i: data?.id as string | undefined }]) };
 }
 
 export async function toggleActivoMedicamento(
@@ -49,7 +51,7 @@ export async function toggleActivoMedicamento(
   if (error) return { error: traducirError(error) };
 
   revalidatePath(`/perros/${perroId}`);
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "perro_medicamentos", i: medicamentoId }]) };
 }
 
 export async function registrarDosis(
@@ -63,14 +65,17 @@ export async function registrarDosis(
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.from("medicamentos_administrados").insert({
+  const { data, error } = await supabase.from("medicamentos_administrados").insert({
     perro_medicamento_id: perroMedicamentoId,
     omitida,
     notas: notas.trim() || null,
-  });
+  }).select("id").single();
 
   if (error) return { error: traducirError(error) };
 
   revalidatePath(`/perros/${perroId}`);
-  return { error: null };
+  return {
+    error: null,
+    registros: await registrosDe(supabase, [{ t: "medicamentos_administrados", i: data?.id as string | undefined }, { t: "perro_medicamentos", i: perroMedicamentoId }]),
+  };
 }

@@ -54,7 +54,7 @@ export default async function VeterinariaInicio() {
   const puedeExpediente = leerCrudo === true;
   const puedeEstimados = estimadosCrudo === true;
   const puedeRecetas = recetasCrudo === true;
-  const atencion = (atencionCrudo ?? {}) as { recordatorios_pendientes?: number; dosis_atrasadas?: number; consentimientos_pendientes?: number; consultas_sin_firmar?: number; estimados_sin_respuesta?: number; sitpv_reportes_pendientes?: number; sitpv_folios_bajos?: number };
+  const atencion = (atencionCrudo ?? {}) as { recordatorios_pendientes?: number; dosis_atrasadas?: number; consentimientos_pendientes?: number; consultas_sin_firmar?: number; consultas_borrador?: number; estimados_sin_respuesta?: number; sitpv_reportes_pendientes?: number; sitpv_folios_bajos?: number };
   const internados = Array.isArray(censoCrudo) ? censoCrudo.length : 0;
   const alertas = ((alertasCrudo ?? {}) as Alertas) ?? {};
   const permisos = (permisosCrudo ?? []) as Permiso[];
@@ -77,7 +77,8 @@ export default async function VeterinariaInicio() {
 <Tarjeta href="/veterinaria/expediente" titulo="Expediente clínico">
           <p>Consultas firmadas por el médico, estudios, archivos y la línea de tiempo de cada mascota.</p>
           <span className="flex flex-wrap gap-2">
-            <Contador n={Number(atencion.consultas_sin_firmar ?? 0)} texto="sin firmar" estilo="bg-ambar-suave text-ambar-oscuro" />
+            {/* QA S41 (N139): todas las consultas en borrador (consultas_sin_firmar es el aviso del tablero: solo las de más de un día). */}
+            <Contador n={Number(atencion.consultas_borrador ?? 0)} texto="sin firmar" estilo="bg-ambar-suave text-ambar-oscuro" />
           </span>
         </Tarjeta>
         )}

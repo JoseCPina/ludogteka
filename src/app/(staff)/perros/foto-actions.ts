@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 const BUCKET = "perros-archivos";
 // Bastante larga para que no expire en medio de un turno normal, pero el
@@ -48,7 +50,7 @@ export async function prepararRutaFotoPerro(perroId: string): Promise<string | n
 export async function guardarFotoPerro(
   perroId: string,
   path: string
-): Promise<{ error: string | null }> {
+): Promise<{ error: string | null; registros?: RegistroFinal[] }> {
   const supabase = await createSupabaseServerClient();
   const { data: perro, error } = await supabase
     .from("perros")
@@ -61,5 +63,5 @@ export async function guardarFotoPerro(
 
   revalidatePath(`/perros/${perroId}`);
   if (perro?.cliente_id) revalidatePath(`/clientes/${perro.cliente_id}`);
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "perros", i: perroId }]) };
 }

@@ -12,6 +12,7 @@ import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { llenarConsentimiento, variablesDesconocidas } from "@/lib/veterinaria/carnet";
 import { traducirError } from "../../reservas/traducir-error";
 import type { ResultadoAccion } from "@/lib/empleados/tipos";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
 
 const BUCKET = "perros-archivos";
 const texto = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
@@ -74,7 +75,11 @@ export async function firmarConsentimiento(consentimientoId: string, firmanteNom
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/consentimientos/${consentimientoId}`);
   revalidatePath("/veterinaria/consentimientos");
-  return { error: null, exito: "Consentimiento firmado y guardado." };
+  return {
+    error: null,
+    exito: "Consentimiento firmado y guardado.",
+    registros: await registrosDe(supabase, [{ t: "consentimientos", i: consentimientoId, datos: { estado: "firmado", firmante_nombre: nombre, pdf_path: ruta } }]),
+  };
 }
 
 export async function urlConsentimientoFirmado(ruta: string): Promise<string | null> {
@@ -88,7 +93,7 @@ export async function cancelarConsentimiento(id: string, fd: FormData): Promise<
   const { error } = await supabase.rpc("cancelar_consentimiento", { p_id: id, p_motivo: texto(fd, "motivo") });
   if (error) return { error: traducirError(error) };
   revalidatePath(`/veterinaria/consentimientos/${id}`);
-  return { error: null, exito: "Consentimiento cancelado." };
+  return { error: null, exito: "Consentimiento cancelado.", registros: await registrosDe(supabase, [{ t: "consentimientos", i: id, datos: { estado: "cancelado" } }]) };
 }
 
 export async function guardarPlantillaConsentimiento(tipo: string, fd: FormData): Promise<ResultadoAccion> {
@@ -101,5 +106,10 @@ export async function guardarPlantillaConsentimiento(tipo: string, fd: FormData)
   const { data, error } = await supabase.rpc("guardar_plantilla_consentimiento", { p_tipo: tipo, p_titulo: titulo, p_cuerpo: cuerpo });
   if (error) return { error: traducirError(error) };
   revalidatePath("/veterinaria/consentimientos");
-  return { error: null, exito: `Guardado: es la versión ${data as number}. Los consentimientos que ya se crearon conservan su texto.` };
+  // La versión nueva queda como la activa de su tipo (la función no devuelve su id).
+  const { data: nueva } = await supabase.from("consentimientos_plantillas").select("id").eq("tipo", tipo).eq("activa", true).is("deleted_at", null).maybeSingle();
+  return {
+    registros: await registrosDe(supabase, [{ t: "consentimientos_plantillas", i: nueva?.id as string | undefined, datos: { tipo, version: data as number, titulo, cuerpo, activa: true } }]),
+    error: null,
+    exito: `Guardado: es la versión ${data as number}. Los consentimientos que ya se crearon conservan su texto.` };
 }

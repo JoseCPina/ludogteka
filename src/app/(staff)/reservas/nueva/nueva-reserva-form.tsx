@@ -3,6 +3,8 @@
 import { avisoGeneralPendiente, textoDelBloqueo, tipoDeBloqueo } from "@/lib/reservas/bloqueos";
 import { useMemo, useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
+import { useModulos } from "@/components/modulos-contexto";
+import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import { conTope, mensajeDeFallo } from "@/lib/ui/espera";
 import Link from "next/link";
 import { EnlaceConEspera } from "@/components/ui/enlace-con-espera";
@@ -124,6 +126,8 @@ export function NuevaReservaForm({
   // no a un modulo que el usuario no eligio.
   base: string;
 }) {
+  // QA S41 (N143): con Veterinaria, «mascota» (o su especie), nunca «perro» fijo.
+  const vm = vocabularioMascota({ conVet: useModulos().tiene("veterinaria") });
   const [entradaInicial, setEntradaInicial] = useState(fechaInicial && /^\d{4}-\d{2}-\d{2}$/.test(fechaInicial) && fechaInicial > hoy ? fechaInicial : hoy);
   const [clienteId, setClienteId] = useState<string | null>(null);
   const [notas, setNotas] = useState("");
@@ -356,7 +360,7 @@ export function NuevaReservaForm({
                 }`}
               >
                 <p className={`font-bold ${r.exito ? "text-menta-oscuro" : "text-coral-oscuro"}`}>
-                  {linea?.perroNombre ?? "Perro"} — {r.exito ? "Reservado" : "No se pudo reservar"}
+                  {linea?.perroNombre ?? vm.Nombre} — {r.exito ? "Reservado" : "No se pudo reservar"}
                 </p>
                 {r.exito && describirBonoAplicado(r.bono) && (
                   <p className="mt-1 text-sm text-menta-oscuro">{describirBonoAplicado(r.bono)}</p>
@@ -491,12 +495,12 @@ export function NuevaReservaForm({
       <AvisoServiciosSinPrecio servicios={servicios} />
 
       {perrosDelCliente.length === 0 ? (
-        <Alert variante="advertencia" titulo="Este cliente no tiene perros registrados">
+        <Alert variante="advertencia" titulo={`Este cliente no tiene ${vm.plural} registrad${vm.o}s`}>
           Da de alta al perro antes de poder reservarle algo.
         </Alert>
       ) : (
         <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Perros</h2>
+          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">{vm.Plural}</h2>
           {perrosDelCliente.map((perro) => {
             const linea = lineas.find((l) => l.perroId === perro.id);
             const marcado = Boolean(linea);
@@ -715,7 +719,7 @@ export function NuevaReservaForm({
       >
         {enviando.cargando ? "Guardando…" : "Crear reserva"}
       </Button>
-      {lineas.length === 0 && <p className="text-sm text-n-600" data-motivo-reserva>Escoge al menos un perro.</p>}
+      {lineas.length === 0 && <p className="text-sm text-n-600" data-motivo-reserva>Escoge al menos {vm.un}.</p>}
       {motivoSinPrecio.map((m) => (
         <p key={m} className="text-sm text-coral-oscuro" data-motivo-sin-precio>{m}</p>
       ))}

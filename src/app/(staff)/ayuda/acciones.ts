@@ -21,6 +21,8 @@ import {
 import { costoMxn, TOPE_MENSUAL_MXN } from "@/lib/whatsapp/agente";
 import { Anthropic, configWhatsApp, DatosSupabase } from "@/lib/whatsapp/infra";
 import { avisarTelegramTicket } from "@/lib/soporte/notificar";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 // Ayuda dentro de la app: el asistente y los tickets. Solo admin y
 // recepción (la base lo vuelve a comprobar en cada función).
@@ -40,6 +42,7 @@ export type RespuestaAsistente = {
   video?: { slug: string; titulo: string } | null;
   sinRespuesta?: boolean;
   motivo?: string | null;
+  registros?: RegistroFinal[];
 };
 
 /**
@@ -143,10 +146,11 @@ export async function preguntarAsistente(datos: { conversacionId: string | null;
     video: resultado.video,
     sinRespuesta: resultado.sinRespuesta,
     motivo: resultado.motivo,
+    registros: await registrosDe(supabase, [{ t: "soporte_conversaciones", i: conv as string }]),
   };
 }
 
-export type ResultadoTicket = { error: string | null; ticketId?: string; numero?: number };
+export type ResultadoTicket = { error: string | null; ticketId?: string; numero?: number; registros?: RegistroFinal[] };
 
 /**
  * Crear un ticket. Se adjuntan solos la pantalla, el navegador y la
@@ -206,10 +210,10 @@ export async function crearTicket(formData: FormData): Promise<ResultadoTicket> 
     sinDocumentar,
   });
   revalidatePath("/ayuda");
-  return { error: null, ticketId: t.id, numero: t.numero };
+  return { error: null, ticketId: t.id, numero: t.numero, registros: await registrosDe(supabase, [{ t: "soporte_tickets", i: t.id }]) };
 }
 
-export async function responderTicket(ticketId: string, texto: string): Promise<{ error: string | null }> {
+export async function responderTicket(ticketId: string, texto: string): Promise<{ error: string | null; registros?: RegistroFinal[] }> {
   if (!texto.trim()) return { error: "Escribe tu mensaje." };
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("responder_ticket", { p_ticket_id: ticketId, p_texto: texto.trim() });
@@ -232,7 +236,7 @@ export async function responderTicket(ticketId: string, texto: string): Promise<
   }
   revalidatePath(`/ayuda/tickets/${ticketId}`);
   revalidatePath("/ayuda");
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "soporte_tickets", i: ticketId }]) };
 }
 
 export async function marcarTicketVisto(ticketId: string): Promise<void> {

@@ -16,6 +16,8 @@ import { pedirReembolso, sincronizarReembolsos } from "@/lib/pagos/reembolsos";
 import { mensajeDeError, type ConexionCobro, type ResultadoSincronizacion, type ResumenCobro } from "@/lib/pagos/tipos";
 import { revisarCobroConProveedor } from "@/lib/pagos/no-recibido";
 import { dinero } from "@/lib/dinero";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 // El cobro integrado desde la cuenta: terminal y link de pago, con el
 // proveedor que el negocio haya conectado (src/lib/pagos). Nada de aquí sabe
@@ -51,7 +53,7 @@ export async function estadoCobroIntegrado(): Promise<ResumenCobro> {
   return resumenDeCobro(await negocioActual());
 }
 
-export type ResultadoIniciarTerminal = { error: string | null; ordenId?: string; simulado?: boolean };
+export type ResultadoIniciarTerminal = { error: string | null; ordenId?: string; simulado?: boolean; registros?: RegistroFinal[] };
 
 /**
  * Mandar el monto a la terminal. Se crea primero la orden nuestra (para
@@ -128,7 +130,12 @@ export async function iniciarCobroTerminal(
   }
 
   revalidarCuenta(reservaId);
-  return { error: null, ordenId: orden.id as string, simulado: cx.simulado };
+  return {
+    error: null,
+    ordenId: orden.id as string,
+    simulado: cx.simulado,
+    registros: await registrosDe(supabase, [{ t: "mp_ordenes", i: orden.id as string }, { t: "reservas", i: reservaId }]),
+  };
 }
 
 export type ResultadoConsulta = { error: string | null } & Partial<ResultadoSincronizacion>;
@@ -158,7 +165,7 @@ export async function consultarCobroTerminal(ordenId: string): Promise<Resultado
 // terminal ya la tiene en pantalla, el proveedor pide cancelarla ahí; de
 // todos modos la orden nuestra queda cancelada para que la cuenta no se
 // quede con un cobro "en curso" colgado.
-export async function cancelarCobroTerminal(ordenId: string, motivo: string): Promise<{ error: string | null; aviso?: string }> {
+export async function cancelarCobroTerminal(ordenId: string, motivo: string): Promise<{ error: string | null; aviso?: string; registros?: RegistroFinal[] }> {
   const acceso = await exigirCaja();
   if ("error" in acceso) return { error: acceso.error };
   const { negocio, admin } = await adminDelNegocio();
@@ -197,10 +204,15 @@ export async function cancelarCobroTerminal(ordenId: string, motivo: string): Pr
     .eq("negocio_id", negocio.id);
   const { data } = await admin.from("mp_ordenes").select("reserva_id").eq("id", ordenId).eq("negocio_id", negocio.id).single();
   if (data) revalidarCuenta(data.reserva_id as string);
-  return { error: null, aviso };
+  const supabase = await createSupabaseServerClient();
+  return {
+    error: null,
+    aviso,
+    registros: await registrosDe(supabase, [{ t: "mp_ordenes", i: ordenId }, { t: "reservas", i: (data?.reserva_id as string | undefined) ?? null }]),
+  };
 }
 
-export type ResultadoLink = { error: string | null; ordenId?: string; url?: string; urlWhatsApp?: string; simulado?: boolean };
+export type ResultadoLink = { error: string | null; ordenId?: string; url?: string; urlWhatsApp?: string; simulado?: boolean; registros?: RegistroFinal[] };
 
 // Link de pago por WhatsApp, a nombre del negocio: para anticipos de hotel
 // o saldos sin que el cliente venga. Cuando pague, el webhook registra el
@@ -270,7 +282,14 @@ export async function crearLinkPago(reservaId: string, monto: number, concepto: 
     const urlWhatsApp = telefono ? `https://wa.me/52${telefono}?text=${encodeURIComponent(mensaje)}` : undefined;
 
     revalidarCuenta(reservaId);
-    return { error: null, ordenId: orden.id as string, url: link.url, urlWhatsApp, simulado: cx.simulado };
+    return {
+      error: null,
+      ordenId: orden.id as string,
+      url: link.url,
+      urlWhatsApp,
+      simulado: cx.simulado,
+      registros: await registrosDe(supabase, [{ t: "mp_ordenes", i: orden.id as string }, { t: "reservas", i: reservaId }]),
+    };
   } catch (e) {
     await admin.from("mp_ordenes").update({ estado: "fallida", detalle_error: mensajeDeError(e) }).eq("id", orden.id).eq("negocio_id", negocio.id);
     return { error: mensajeDeError(e) };
@@ -280,7 +299,7 @@ export async function crearLinkPago(reservaId: string, monto: number, concepto: 
 // Pagos confirmados que se quedaron sin turno (un link pagado de noche):
 // se registran en el turno abierto. También los registra solo el trigger
 // al abrir turno; esto es para el botón de la caja.
-export async function registrarPagosMpPendientes(): Promise<{ error: string | null; registrados: number }> {
+export async function registrarPagosMpPendientes(): Promise<{ error: string | null; registrados: number; registros?: RegistroFinal[] }> {
   const sesion = await obtenerSesionConRol();
   if (!sesion || !["admin", "recepcion"].includes(sesion.rol)) return { error: "Solo admin o recepción pueden cobrar.", registrados: 0 };
   if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_DEMO, registrados: 0 };
@@ -306,10 +325,11 @@ export async function registrarPagosMpPendientes(): Promise<{ error: string | nu
   }
   revalidatePath("/caja");
   revalidatePath("/caja/turno");
-  return { error: null, registrados };
+  const supabase = await createSupabaseServerClient();
+  return { error: null, registrados, registros: await registrosDe(supabase, (pendientes ?? []).map((p) => ({ t: "mp_ordenes", i: p.id as string }))) };
 }
 
-export type ResultadoDevolucionIntegrada = { error: string | null; aviso?: string };
+export type ResultadoDevolucionIntegrada = { error: string | null; aviso?: string; registros?: RegistroFinal[] };
 
 /**
  * Devolver un cobro que entró por Mercado Pago: el reembolso se hace en
@@ -343,12 +363,24 @@ export async function devolverConProveedor(reservaId: string, cobroId: string, m
     const r = await pedirReembolso(admin, cx, orden, { reembolsoId: p.reembolso_id, monto, total: p.total });
     revalidarCuenta(reservaId);
     if (!r.ok) return { error: `${r.error} No se registró nada en caja.` };
-    if (r.pendiente) return { error: null, aviso: "Mercado Pago lo está procesando. En cuanto lo confirme se registra solo en caja; lo ves en Caja → Reembolsos." };
+    const registrosReembolso = () =>
+      registrosDe(supabase, [
+        { t: "reembolsos_cobro", i: p.reembolso_id },
+        { t: "cobros", i: cobroId },
+        { t: "reservas", i: reservaId },
+      ]);
+    if (r.pendiente) {
+      return {
+        error: null,
+        aviso: "Mercado Pago lo está procesando. En cuanto lo confirme se registra solo en caja; lo ves en Caja → Reembolsos.",
+        registros: await registrosReembolso(),
+      };
+    }
     const avisos = [
       r.sinTurno ? "Se reembolsó en Mercado Pago; como no hay turno abierto, entra a caja al abrir el siguiente." : null,
       r.comisionDevuelta > 0 ? `Mercado Pago regresó $${r.comisionDevuelta.toFixed(2)} de comisión: se quitó de los gastos.` : null,
     ].filter(Boolean);
-    return { error: null, aviso: avisos.join(" ") || undefined };
+    return { error: null, aviso: avisos.join(" ") || undefined, registros: await registrosReembolso() };
   } catch (e) {
     // Mercado Pago ya lo hizo pero no se pudo registrar: queda en el aire y
     // lo termina «Consultar» en Caja → Reembolsos (o el webhook).
@@ -383,13 +415,13 @@ export async function consultarReembolsosDeOrden(ordenId: string): Promise<{ err
   }
 }
 
-export async function marcarReembolsoRevisado(reembolsoId: string): Promise<{ error: string | null }> {
+export async function marcarReembolsoRevisado(reembolsoId: string): Promise<{ error: string | null; registros?: RegistroFinal[] }> {
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("marcar_reembolso_revisado", { p_reembolso_id: reembolsoId });
   if (error) return { error: traducirErrorCaja(error.message) };
   revalidatePath("/caja/reembolsos");
   revalidatePath("/recepcion");
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "reembolsos_cobro", i: reembolsoId }]) };
 }
 
 export type ResultadoNoRecibido = { error: string | null; aviso?: string };
@@ -523,7 +555,12 @@ export async function iniciarCobroTerminalGrupo(partes: ParteGrupo[], plazos: nu
     return { error: mensajeDeError(e), ordenId: orden.id as string };
   }
   revalidarGrupo(g.partes.map((p) => p.reserva_id));
-  return { error: null, ordenId: orden.id as string, simulado: cx.simulado };
+  return {
+    error: null,
+    ordenId: orden.id as string,
+    simulado: cx.simulado,
+    registros: await registrosDe(supabase, [{ t: "mp_ordenes", i: orden.id as string }, ...g.partes.map((p) => ({ t: "reservas", i: p.reserva_id }))]),
+  };
 }
 
 /** «Mandar link de pago» de varias cuentas: UN link por el total del grupo. */
@@ -582,7 +619,15 @@ export async function crearLinkPagoGrupo(partes: ParteGrupo[], concepto: string)
     const telefono = g.cliente.telefono?.replace(/\D/g, "") ?? "";
     const urlWhatsApp = telefono ? `https://wa.me/52${telefono}?text=${encodeURIComponent(mensaje)}` : undefined;
     revalidarGrupo(g.partes.map((p) => p.reserva_id));
-    return { error: null, ordenId: orden.id as string, url: link.url, urlWhatsApp, simulado: cx.simulado };
+    const supabase = await createSupabaseServerClient();
+    return {
+      error: null,
+      ordenId: orden.id as string,
+      url: link.url,
+      urlWhatsApp,
+      simulado: cx.simulado,
+      registros: await registrosDe(supabase, [{ t: "mp_ordenes", i: orden.id as string }, ...g.partes.map((p) => ({ t: "reservas", i: p.reserva_id }))]),
+    };
   } catch (e) {
     await admin.from("mp_ordenes").update({ estado: "fallida", detalle_error: mensajeDeError(e) }).eq("id", orden.id).eq("negocio_id", negocio.id);
     return { error: mensajeDeError(e) };

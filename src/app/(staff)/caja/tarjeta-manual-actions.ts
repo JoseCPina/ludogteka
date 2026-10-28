@@ -6,13 +6,15 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { MENSAJE_DEMO } from "@/lib/solo-lectura";
 import { traducirError } from "../reservas/traducir-error";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 // Revisión de las tarjetas manuales (migración 20261008000000). Todo es del
 // admin y la base lo vuelve a comprobar con su sesión: aquí solo se traduce.
 // «No recibida» no pregunta a ningún proveedor: la tarjeta manual no pasó por
 // uno; el admin la contrasta con el voucher y el banco.
 
-export type ResultadoTarjeta = { error: string | null; aviso?: string };
+export type ResultadoTarjeta = { error: string | null; aviso?: string; registros?: RegistroFinal[] };
 
 async function exigirAdmin(): Promise<ResultadoTarjeta | null> {
   const sesion = await obtenerSesionConRol();
@@ -34,17 +36,21 @@ function refrescar(reservaId?: string | null) {
 
 export async function revisarTarjetaManual(tarjetaId: string, nota: string, reservaId?: string | null): Promise<ResultadoTarjeta> {
   const negado = await exigirAdmin();
-  if (negado) return negado;
+  if (negado) return { error: negado.error };
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("tarjeta_manual_revisar", { p_tarjeta_id: tarjetaId, p_nota: nota.trim() });
   if (error) return { error: traducirError(error) };
   refrescar(reservaId);
-  return { error: null, aviso: "Listo: queda como revisada con el voucher." };
+  return {
+    error: null,
+    aviso: "Listo: queda como revisada con el voucher.",
+    registros: await registrosDe(supabase, [{ t: "tarjetas_manuales", i: tarjetaId }, { t: "reservas", i: reservaId }]),
+  };
 }
 
 export async function marcarTarjetaManualNoRecibida(tarjetaId: string, motivo: string, reservaId?: string | null): Promise<ResultadoTarjeta> {
   const negado = await exigirAdmin();
-  if (negado) return negado;
+  if (negado) return { error: negado.error };
   if (motivo.trim().length < 5) return { error: "Escribe el motivo: qué pasó con este cobro." };
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("tarjeta_manual_no_recibida", { p_tarjeta_id: tarjetaId, p_motivo: motivo.trim() });
@@ -56,16 +62,18 @@ export async function marcarTarjetaManualNoRecibida(tarjetaId: string, motivo: s
     aviso: d?.turno_del_cobro_cerrado
       ? "Listo. El cobro era de un turno ya cerrado: el ajuste quedó en el turno abierto y ese corte no cambia. La cuenta volvió a tener saldo."
       : "Listo: la cuenta volvió a tener saldo y el movimiento quedó en el turno abierto.",
+    registros: await registrosDe(supabase, [{ t: "tarjetas_manuales", i: tarjetaId }, { t: "reservas", i: reservaId }]),
   };
 }
 
 export async function guardarTopeTarjetaManual(tope: number): Promise<ResultadoTarjeta> {
   const negado = await exigirAdmin();
-  if (negado) return negado;
+  if (negado) return { error: negado.error };
   if (!Number.isFinite(tope) || tope <= 0) return { error: "El tope tiene que ser un monto mayor a cero." };
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("guardar_tope_tarjeta_manual", { p_tope: tope });
   if (error) return { error: traducirError(error) };
   revalidatePath("/admin/pagos");
-  return { error: null, aviso: "Tope guardado." };
+  const { data: ajuste } = await supabase.from("tarjeta_manual_ajustes").select("id").is("deleted_at", null).limit(1).maybeSingle();
+  return { error: null, aviso: "Tope guardado.", registros: await registrosDe(supabase, [{ t: "tarjeta_manual_ajustes", i: (ajuste?.id as string | undefined) ?? null, datos: { tope_alerta: tope } }]) };
 }

@@ -9,10 +9,12 @@ import { generarPdfContrato } from "@/lib/contratos/generar-pdf";
 import { resolverPlantilla } from "@/lib/contratos/plantilla";
 import { fechaLocalDeInstante, horaLocalDeInstante } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 const BUCKET = "perros-archivos";
 
-export type EstadoFirmarContrato = { error: string | null };
+export type EstadoFirmarContrato = { error: string | null; registros?: RegistroFinal[] };
 
 // Todo el ensamblado del PDF pasa por el servidor a propósito, no por el
 // navegador: la fecha/hora y la IP del bloque de auditoría deben venir de
@@ -105,7 +107,7 @@ export async function firmarContratoDigital(
   if (errorFinal) return { error: "No pudimos registrar la firma. Intenta de nuevo." };
 
   revalidatePath(`/portal/perros/${contrato.perro_id}`);
-  return { error: null };
+  return { error: null, registros: await registrosDe(supabase, [{ t: "contratos", i: contratoId }]) };
 }
 
 export async function obtenerUrlContrato(storagePath: string): Promise<string | null> {

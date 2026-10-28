@@ -28,7 +28,7 @@ export async function guardarPoliticas(textos: TextosPoliticas, control?: Contro
   const supabase = await createSupabaseServerClient();
   const { error } = await conControl(supabase.rpc("guardar_politicas_negocio", { p_textos: limpio }), control);
   const conflicto = conflictoDeError(error);
-  if (conflicto) return { error: null, conflicto };
+  if (conflicto) return { error: null, conflicto, registros: [] };
   if (error) return { error: esErrorSoloLectura(error) ? mensajeSoloLectura(error) : error.message };
   revalidatePath("/admin/politicas");
   revalidatePath("/portal");

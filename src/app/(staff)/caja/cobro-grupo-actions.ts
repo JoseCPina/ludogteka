@@ -7,8 +7,10 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { negocioIdActual } from "@/lib/negocio/actual";
 import { avisoCobroReciente, type ControlCobro } from "@/lib/cobro/reciente";
 import type { LineaMetodo } from "@/app/(staff)/reservas/cobro-actions";
+import { registrosDe } from "@/lib/concurrencia/registro-final";
+import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
-export type EstadoCobroGrupo = { error: string | null; grupoId?: string; confirmar?: string };
+export type EstadoCobroGrupo = { error: string | null; grupoId?: string; confirmar?: string; registros?: RegistroFinal[] };
 
 /**
  * Cobrar juntas varias cuentas de la MISMA persona: un solo pago, un solo
@@ -32,7 +34,7 @@ export async function registrarCobroGrupo(
   if (!control?.confirmado) {
     const sesion = await obtenerSesionConRol();
     const aviso = await avisoCobroReciente(supabase, partes.map((p) => p.reservaId), control, { esAdmin: sesion?.rol === "admin", negocioId: await negocioIdActual(), usuarioId: sesion?.user.id ?? null });
-    if (aviso) return { error: null, confirmar: aviso };
+    if (aviso) return { error: null, confirmar: aviso, registros: await registrosDe(supabase, partes.map((p) => ({ t: "reservas", i: p.reservaId }))) };
   }
   const { data, error } = await supabase.rpc("registrar_cobro_grupo", {
     p_partes: partes.map((p) => ({ reserva_id: p.reservaId, monto: p.monto })),
@@ -48,5 +50,10 @@ export async function registrarCobroGrupo(
   }
   revalidatePath("/caja");
   revalidatePath("/caja/turno");
-  return { error: null, grupoId: (data as { grupo_id: string }).grupo_id };
+  const grupoId = (data as { grupo_id: string }).grupo_id;
+  return {
+    error: null,
+    grupoId,
+    registros: await registrosDe(supabase, [{ t: "cobros_grupo", i: grupoId }, ...partes.map((p) => ({ t: "reservas", i: p.reservaId }))]),
+  };
 }
