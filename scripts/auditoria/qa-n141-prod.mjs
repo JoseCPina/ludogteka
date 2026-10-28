@@ -44,10 +44,11 @@ try {
       await cdp.send("Network.emulateNetworkConditions", { offline: false, latency: 400, downloadThroughput: 50 * 1024, uploadThroughput: 25 * 1024 });
     }
     let total = 0, precargas = 0;
+    const rutas = [];
     p.on("request", (r) => {
       if (/_next\/static|\.(png|svg|ico|woff2?|jpg|webp|avif)(\?|$)/.test(r.url())) return;
       total += 1;
-      if (r.headers()["next-router-prefetch"]) precargas += 1;
+      if (r.headers()["next-router-prefetch"]) { precargas += 1; rutas.push(new URL(r.url()).pathname); }
     });
     await p.goto(`${E.base}${ruta}`, { timeout: 120000 });
     // Hasta que la página termine de cargar su código y de precargar: 10 s seguidos sin peticiones nuevas (tope 3 min).
@@ -58,6 +59,8 @@ try {
       if (total !== ultimo) { ultimo = total; quieto = Date.now(); }
     }
     filas.push(`${nombre} (${new URL(p.url()).pathname}): ${total} peticiones al cargar (sin archivos estáticos), ${precargas} precargas de otras pantallas`);
+    // --detalle: qué pantallas se precargaron.
+    if (process.argv.includes("--detalle")) filas.push(`    ${rutas.map((x) => x.replace(/[0-9a-f-]{36}/g, "<id>")).join(" ")}`);
     await c.close();
   }
 
