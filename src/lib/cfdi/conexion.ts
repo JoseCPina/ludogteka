@@ -4,7 +4,7 @@ import type { AdaptadorPac, ConexionPac } from "./tipos";
 
 /**
  * La llave del PAC de un negocio: la suya (Vault, la guarda el admin en
- * Administración → Facturación) y, SOLO fuera de producción, la de pruebas del
+ * Facturación) y, SOLO fuera de producción, la de pruebas del
  * entorno (FACTURAPI_TEST_KEY, para desarrollo y vistas previas de Vercel).
  * En producción no hay respaldo: sin llave del negocio no se timbra.
  * `admin` es el cliente con la secret key atado al negocio.
@@ -26,4 +26,4 @@ export function crearAdaptador(c: ConexionPac): AdaptadorPac {
 }
 
 export const SIN_LLAVE =
-  "Todavía no hay una llave del PAC. Un admin la guarda en Administración → Facturación (en pruebas: la llave sk_test de Facturapi).";
+  "Todavía no hay una llave del PAC. Un admin la guarda en Facturación (en pruebas: la llave sk_test de Facturapi).";

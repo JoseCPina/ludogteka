@@ -167,7 +167,7 @@ export async function resumenDeCobro(negocio: NegocioParaCobro): Promise<Resumen
       simulado: simuladaCuenta,
       terminal: terminal || simuladaCuenta,
       link: soportaLink,
-      motivo: terminal || simuladaCuenta ? null : "Falta escoger la terminal Point Smart en Administración → Cobro con terminal.",
+      motivo: terminal || simuladaCuenta ? null : "Falta escoger la terminal Point Smart en Cobro con terminal.",
     };
   }
   if (e.elegido === "mercadopago" && e.legado) {
@@ -179,7 +179,7 @@ export async function resumenDeCobro(negocio: NegocioParaCobro): Promise<Resumen
     motivo:
       fila?.estado === "error"
         ? `La conexión con ${nombre} tiene un problema: ${fila.ultimo_error ?? "vuelve a conectarla"}.`
-        : `${nombre} no está conectado. El admin lo conecta en Administración → Cobro con terminal.`,
+        : `${nombre} no está conectado. El admin lo conecta en Cobro con terminal.`,
   };
 }
 

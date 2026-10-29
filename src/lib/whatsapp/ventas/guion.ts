@@ -2,7 +2,7 @@
 // registro. Todo lo que el bot DICE está aquí, fijo; la IA solo entiende lo que escribe la persona y elige la rama
 // (ventas/servidor.ts), nunca redacta. Las cifras: el precio sale de la base (planes) y los datos por tamaño se
 // calculan con la cifra que dio la persona; ninguna la escribe el modelo. Los recordatorios (estética, veterinaria,
-// hotel y guardería) salen solos, automáticos, el día anterior (Configuración → Recordatorios); su precio por mensaje
+// hotel y guardería) salen solos, automáticos, el día anterior (Recordatorios por WhatsApp); su precio por mensaje
 // lo dice la respuesta fija de recordatorios (respuestas-fijas.ts), con la cifra de la base.
 //
 //   1. Entrada (info, hola, precio, qué es, me interesa, audio, sticker, emoji): qué es PeluDesk y el giro con

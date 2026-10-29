@@ -79,7 +79,7 @@ export default async function FacturasPage() {
         <Alert variante="info" titulo="Facturación sin activar">
           Un admin captura los datos fiscales del negocio y guarda la llave del timbrado en{" "}
           <Link href="/admin/facturacion" className="font-semibold underline">
-            Administración → Facturación
+            Facturación
           </Link>
           .
         </Alert>

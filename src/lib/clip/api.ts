@@ -33,7 +33,7 @@ function traducir(status: number, cuerpo: unknown): { mensaje: string; sugerenci
   if (status === 401 || status === 403) {
     return {
       mensaje: "Clip rechazó las credenciales.",
-      sugerencia: "Revisa la API key y la clave secreta en Administración → Cobro con terminal (se generan en el portal de desarrolladores de Clip).",
+      sugerencia: "Revisa la API key y la clave secreta en Cobro con terminal (se generan en el portal de desarrolladores de Clip).",
     };
   }
   if (status === 404) return { mensaje: "Clip no encontró el cobro o la terminal.", sugerencia: "Revisa el número de serie de la terminal." };

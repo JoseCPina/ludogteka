@@ -134,7 +134,7 @@ export default async function MedicosPage() {
 
       <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
         <h2 className="text-lg font-bold text-n-900">Designar a un médico</h2>
-        <p className="text-sm text-n-600">Solo se designa a personal que ya tiene cuenta en este negocio. Si falta alguien, invítalo primero en Administración → Personal.</p>
+        <p className="text-sm text-n-600">Solo se designa a personal que ya tiene cuenta en este negocio. Si falta alguien, invítalo primero en Inicio, en la sección «Invitar personal» del panel de admin.</p>
         {candidatos.length === 0 ? (
           <p className="text-sm text-n-700">Todo el personal ya está designado.</p>
         ) : (

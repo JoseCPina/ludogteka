@@ -15,7 +15,7 @@ export class ErrorPac extends Error {
 export function mensajeDeErrorPac(estado: number, cuerpo: unknown): string {
   const c = (cuerpo && typeof cuerpo === "object" ? cuerpo : {}) as { message?: string; error?: string; code?: string };
   const crudo = (c.message ?? c.error ?? (typeof cuerpo === "string" ? cuerpo : "")).toString().trim();
-  if (estado === 401 || estado === 403) return "El PAC rechazó la llave. Revisa la llave en Administración → Facturación.";
+  if (estado === 401 || estado === 403) return "El PAC rechazó la llave. Revisa la llave en Facturación.";
   if (estado === 429) return "El PAC pide esperar un momento. Intenta de nuevo en un minuto.";
   if (estado >= 500) return "El PAC no pudo responder. Intenta de nuevo en un momento.";
   return crudo ? `El PAC dice: ${crudo}` : `El PAC rechazó la petición (${estado}).`;

@@ -7,7 +7,7 @@ import { negocioActual } from "@/lib/negocio/actual";
 import { precioRecordatorioVigente, pesosRecordatorio } from "@/lib/recordatorios/precio";
 import { RecordatoriosForm } from "./recordatorios-form";
 
-// Configuración → Recordatorios: qué recordatorios por WhatsApp salen solos y a qué hora. El tope de gasto vive en
+// Recordatorios por WhatsApp: qué recordatorios por WhatsApp salen solos y a qué hora. El tope de gasto vive en
 // Módulos y plan (es dinero: solo el admin).
 export default async function RecordatoriosAjustesPage() {
   const sesion = await obtenerSesionConRol();

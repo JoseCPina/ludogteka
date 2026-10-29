@@ -280,7 +280,7 @@ const ESTILO = [
   "",
   "FORMATO (esto es WhatsApp y se lee en el celular):",
   "- Un renglón en blanco entre cada idea. Cada párrafo es UNA frase corta, de dos renglones en el celular como mucho (unas 15 palabras). Mal: «PeluDesk te ordena la agenda de estética: una columna por estilista, sin encimar citas, y los precios salen solos». Bien: «Tu agenda queda con una columna por estilista.» (renglón en blanco) «Y ya no se te enciman las citas.»",
-  "- Vale igual para las dudas de uso: «Se conecta en Administración → Cobro con terminal.» (renglón en blanco) «Ahí ligas tu cuenta de Mercado Pago.» Una frase con comas que pase de 15 palabras son dos frases.",
+  "- Vale igual para las dudas de uso: «Se conecta en Cobro con terminal.» (renglón en blanco) «Ahí ligas tu cuenta de Mercado Pago.» Una frase con comas que pase de 15 palabras son dos frases.",
   "- Cada mensaje, máximo cuatro párrafos cortos. Si hay que decir más, pártelo en DOS mensajes seguidos: escribe una línea que diga solo === entre los dos. O mejor, pregunta y espera la respuesta.",
   "- Negritas con UN asterisco (*así*), solo para el dato clave (un precio, «15 días gratis»). Nunca ** doble. Nada de Markdown: ni #, ni listas, ni viñetas.",
   "- Los links van completos y solos en su propio renglón, al final del mensaje. Un solo link por mensaje. Si ofreces un link, mándalo ahí mismo; nunca «te mando el link».",
@@ -428,7 +428,7 @@ function describirNegocio(n: NegocioDeAdmin): string {
       partes.push(`  Cobro: el cobro de su ${plan} falló el ${n.primerFallo ?? "(sin fecha)"} y ya pasaron los 7 días de gracia: está en solo lectura. No se borró nada; en cuanto pague con otra tarjeta en el portal de pagos, se reactiva solo.`);
       break;
     case "cancelado":
-      partes.push("  Cobro: su suscripción está cancelada; está en solo lectura. Puede volver a contratar en Administración → Módulos y plan.");
+      partes.push("  Cobro: su suscripción está cancelada; está en solo lectura. Puede volver a contratar en Módulos y plan.");
       break;
     case "sin_cobro":
       partes.push("  Cobro: PeluDesk lo tiene activo sin cobro.");
@@ -439,7 +439,7 @@ function describirNegocio(n: NegocioDeAdmin): string {
   partes.push(
     n.tieneCuentaStripe
       ? "  Para cambiar tarjeta, ver facturas o cancelar: usa la herramienta liga_portal_pagos."
-      : "  Todavía no tiene cuenta de pago: contrata en Administración → Módulos y plan (la herramienta liga_portal_pagos te da el link).",
+      : "  Todavía no tiene cuenta de pago: contrata en Módulos y plan (la herramienta liga_portal_pagos te da el link).",
   );
   return partes.join("\n");
 }
@@ -466,7 +466,7 @@ function bloqueTipo(ctx: ContextoAgente): string {
     case "personal":
       return [
         "QUIÉN TE ESCRIBE: alguien del personal (recepción o estética) de un negocio que usa PeluDesk. No es admin.",
-        "Puedes contestar dudas de uso de la app con la DOCUMENTACIÓN DE USO, citando el link del artículo; si no está ahí, escala. Del plan, el pago o la cuenta del negocio no tienes datos: eso lo ve y lo cambia solo el admin de su negocio, en Administración → Módulos y plan.",
+        "Puedes contestar dudas de uso de la app con la DOCUMENTACIÓN DE USO, citando el link del artículo; si no está ahí, escala. Del plan, el pago o la cuenta del negocio no tienes datos: eso lo ve y lo cambia solo el admin de su negocio, en Módulos y plan.",
       ].join("\n");
     case "cliente_de_negocio":
       return [
@@ -486,12 +486,12 @@ export function bloqueSeguimiento(s: SeguimientoContexto): string {
   const oferta =
     s.perfilCompleto
       ? "Ya completó su perfil: su página web está lista para compartirla."
-      : "Todavía NO completa su perfil: la página web viene incluida en el plan, y se arma sola cuando lo completa desde su panel (Administración → Perfil del negocio). No hay fecha límite ni premio: no se lo presentes como oferta.";
+      : "Todavía NO completa su perfil: la página web viene incluida en el plan, y se arma sola cuando lo completa desde su panel (Perfil y página web, en el menú). No hay fecha límite ni premio: no se lo presentes como oferta.";
   const accion =
     s.tipo === "boton_ayuda"
       ? "Pulsó «Necesito ayuda»: pregúntale en qué le ayudas, con una sola pregunta corta. Si pide hablar con una persona, escala."
       : s.tipo === "boton_plan"
-        ? "Pulsó «Elegir un plan»: guíalo a contratar. Hay un solo plan: dale el precio de la tabla de planes (sin costo inicial, todos los módulos) y los pasos para contratarlo (Administración → Módulos y plan); si quiere pagar ya, usa la herramienta del portal de pagos."
+        ? "Pulsó «Elegir un plan»: guíalo a contratar. Hay un solo plan: dale el precio de la tabla de planes (sin costo inicial, todos los módulos) y los pasos para contratarlo (Módulos y plan); si quiere pagar ya, usa la herramienta del portal de pagos."
         : "Contestó el mensaje: atiende lo que escribió como a cualquier admin, sin repetirle el mensaje.";
   return [
     "SEGUIMIENTO DE SU PRUEBA (un mensaje automático que le mandamos nosotros; NO es un número desconocido ni un prospecto):",
@@ -593,7 +593,7 @@ export function herramientas(tipo: TipoInterlocutor): Herramienta[] {
       name: "liga_portal_pagos",
       description:
         "Da el link para que el admin cambie su tarjeta, vea sus facturas o cancele (portal de pagos de Stripe, vale unos minutos), " +
-        "o, si todavía no tiene cuenta de pago, el link a Administración → Módulos y plan para contratar. Úsala solo cuando lo pida o haga falta para pagar.",
+        "o, si todavía no tiene cuenta de pago, el link a Módulos y plan para contratar. Úsala solo cuando lo pida o haga falta para pagar.",
       input_schema: {
         type: "object",
         properties: { negocio: { type: "string", description: "Nombre del negocio, si administra más de uno." } },

@@ -9,6 +9,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { SiPuedeAbrir } from "@/components/acceso-contexto";
 
 // Caja es el mostrador de cobro: cuentas abiertas, buscador, pases,
 // cargos sueltos y el cobro mismo (que sigue siendo el de la reserva,
@@ -91,6 +92,12 @@ export default async function CajaPage() {
               <Button type="button" variante="secundario">Conciliación</Button>
             </Link>
           )}
+          {/* QA R54 (N145): la ayuda y los avisos dicen «Caja → Reembolsos»; antes solo se llegaba desde el aviso del tablero. */}
+          <SiPuedeAbrir href="/caja/reembolsos">
+            <Link href="/caja/reembolsos">
+              <Button type="button" variante="secundario">Reembolsos</Button>
+            </Link>
+          </SiPuedeAbrir>
         </div>
       </div>
 

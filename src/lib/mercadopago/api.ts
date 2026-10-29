@@ -11,7 +11,7 @@ export async function mpFetch<T>(
   ruta: string,
   init: { method?: string; body?: unknown; idempotencia?: string; form?: Record<string, string> } = {}
 ): Promise<T> {
-  if (!token) throw new ErrorMercadoPago("Mercado Pago no está conectado.", 0, "Conecta la cuenta en Administración → Cobro con terminal.", null);
+  if (!token) throw new ErrorMercadoPago("Mercado Pago no está conectado.", 0, "Conecta la cuenta en Cobro con terminal.", null);
 
   const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
   let body: string | undefined;

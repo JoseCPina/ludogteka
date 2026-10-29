@@ -18,7 +18,7 @@ export const ARTICULOS_ADMINISTRACION: Articulo[] = [
 
 ## Prenderlos
 
-1. Entra a [Configuración → Recordatorios](/admin/recordatorios).
+1. Entra a [Recordatorios por WhatsApp](/admin/recordatorios).
 2. Marca los que quieres que salgan solos:
    - **Cita de estética**: el día anterior, con día, hora y servicio.
    - **Listo para recoger**: cuando la cita de estética se termina.
@@ -688,7 +688,7 @@ Si llegaste desde la vista previa que te mandó PeluDesk, tu página nace con tu
 
 ## Avisar a tu cliente por WhatsApp
 
-PeluDesk puede mandarle a tu cliente el recordatorio de su cita, de su llegada o de su vacuna solo, y avisarle que su perro ya está listo: se prende en [Configuración → Recordatorios](/admin/recordatorios) (ver [[articulo:recordatorios-automaticos-por-whatsapp]]). Además, en la cita de estética, en la reserva de guardería u hotel y en la agenda clínica tienes **Avisar por WhatsApp**: **Confirmación**, **Recordatorio** y **Listo para recoger**. Cada botón te enseña el mensaje real y, con **Abrir WhatsApp con este mensaje**, abre WhatsApp con ese texto ya escrito para el teléfono del cliente; tú decides si lo mandas.
+PeluDesk puede mandarle a tu cliente el recordatorio de su cita, de su llegada o de su vacuna solo, y avisarle que su perro ya está listo: se prende en [Recordatorios por WhatsApp](/admin/recordatorios) (ver [[articulo:recordatorios-automaticos-por-whatsapp]]). Además, en la cita de estética, en la reserva de guardería u hotel y en la agenda clínica tienes **Avisar por WhatsApp**: **Confirmación**, **Recordatorio** y **Listo para recoger**. Cada botón te enseña el mensaje real y, con **Abrir WhatsApp con este mensaje**, abre WhatsApp con ese texto ya escrito para el teléfono del cliente; tú decides si lo mandas.
 
 ## Tu página web ya viene incluida
 

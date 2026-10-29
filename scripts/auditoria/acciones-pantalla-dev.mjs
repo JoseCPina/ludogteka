@@ -210,6 +210,17 @@ try {
     await espera(INMEDIATO_MS);
     const salioBase = (await SB.from("estancias").select("estado").eq("id", estancia.id).single()).data?.estado;
     comprobar(salioBase === "finalizada" && (await ph.getByText(/Salida registrada/).count()) > 0 && !(await errores(ph)), `«Confirmar salida» → «Salida registrada» con la respuesta (base: ${salioBase}) y sin error`);
+
+    // QA R54 (N144): el detalle de la estancia ya finalizada lista sus cargos de la cuenta, con la base primero y cada
+    // cargo una sola vez (antes: «Cargos aplicados: Ninguno todavía» encima de la base, o el cargo dos veces).
+    seccion("Hotel/Guardería · detalle de la estancia finalizada: base, cargos de la cuenta y total (N144)");
+    await abrir(ph, `/reservas/${estancia.reserva_id}`);
+    const bloqueDetalle = limpio(await ph.locator("div").filter({ has: ph.locator("[data-base-estancia]") }).filter({ hasText: /cargos aplicados/i }).last().innerText().catch(() => ""));
+    const tD = bloqueDetalle.toLowerCase();
+    const montoCargo = `$${(Number(cargo.precio) * Number(cargo.cantidad)).toFixed(2)}`;
+    const vecesCargo = bloqueDetalle.split(montoCargo).length - 1;
+    comprobar(tD.indexOf("base de la estancia") >= 0 && tD.indexOf("cargos aplicados") > tD.indexOf("base de la estancia"), `«Base de la estancia» va antes que «Cargos aplicados» («${bloqueDetalle.slice(0, 140)}»)`);
+    comprobar(!/ninguno todavía/i.test(bloqueDetalle) && vecesCargo === 1, `el cargo de ${montoCargo} sale una vez (${vecesCargo}) y no dice «Ninguno todavía»`);
     await ph.context().close();
   }
 

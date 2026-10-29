@@ -51,7 +51,7 @@ export default async function NuevoCertificado({ searchParams }: { searchParams:
           </div>
           <Textarea label="Exploración física" name="exploracion" rows={4} required ayuda="Lo que encontraste: estado general, mucosas, hidratación, temperatura, signos de enfermedad…" />
           <Textarea label="Observaciones (opcional)" name="observaciones" rows={2} />
-          <Field label="Vigencia en días" name="dias" type="number" min={1} max={365} defaultValue={dias} ayuda="Por omisión la del negocio (Veterinaria → Ajustes)." />
+          <Field label="Vigencia en días" name="dias" type="number" min={1} max={365} defaultValue={dias} ayuda="Por omisión la del negocio (Veterinaria → Ajustes de Veterinaria)." />
         </FormularioAccion>
       )}
     </div>

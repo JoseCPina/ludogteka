@@ -56,7 +56,7 @@ export function CargosSeccion({
   serviciosCargo: ServicioCargo[];
   // QA R50 (N136): la cuenta de la estancia leída de la base (cuenta_lineas_estancia); su total es el mismo que suman el
   // encabezado de la reserva y Caja. Sin ella no se enseña total (nunca se calcula aquí).
-  cuenta?: CuentaEstancia | null;
+  cuenta: CuentaEstancia | null;
   // Cancelada: lo que costaba, solo como referencia («no se cobra; era …»).
   eraSiCancelada?: number;
   distanciaClienteKm?: number | null;
@@ -102,11 +102,8 @@ export function CargosSeccion({
 
   // QA S41 (N144): los cargos que se listan son los de la cuenta de la estancia (cuenta_lineas_estancia, la misma fuente
   // del detalle de la estancia y de Caja): todo lo que no es la base ni una corrección, más los cancelados (que ya no
-  // suman). Sin cuenta (quien no la pasa), los de cargos_aplicados como antes.
-  const filasCargos: Cargo[] =
-    cuentaViva === undefined
-      ? cargos
-      : [
+  // suman). De cargos_aplicados solo se toma lo que la cuenta no trae: el nombre, la versión y los cancelados.
+  const filasCargos: Cargo[] = [
           ...(cuentaViva?.lineas ?? [])
             .filter((l) => l.tipo !== "estancia" && l.tipo !== "ajuste")
             .map((l) => {
@@ -124,8 +121,8 @@ export function CargosSeccion({
                 cancelable: Boolean(propio && !propio.cancelado),
               };
             }),
-          ...cargos.filter((c) => c.cancelado),
-        ];
+    ...cargos.filter((c) => c.cancelado),
+  ];
 
   const servicioSeleccionado = serviciosCargo.find((s) => s.id === servicioId);
   const esRecoleccion = servicioSeleccionado?.clave === "recoleccion";
@@ -194,6 +191,20 @@ export function CargosSeccion({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
+        {/* QA R54 (N144): primero la base de la estancia (y sus correcciones), después los cargos aparte de la base y al
+            final el total, todo de la cuenta (cuenta_lineas_estancia): ninguna línea sale dos veces y «Ninguno todavía»
+            solo dice que no hay cargos además de la base. */}
+        {!cancelada && (
+          <div data-base-estancia>
+            <DesgloseEstancia cuenta={cuentaViva} partes="base" />
+          </div>
+        )}
+        {cancelada && eraSiCancelada !== undefined && (
+          <span className="text-sm text-n-600" data-base-estancia>
+            Base de la estancia: <span className="font-semibold text-n-900">{formatoDinero(0)}</span>
+            <span className="text-n-500"> (no se cobra; era {formatoDinero(eraSiCancelada)})</span>
+          </span>
+        )}
         <p className="text-sm font-bold uppercase tracking-wide text-n-600">Cargos aplicados</p>
         {filasCargos.length === 0 ? (
           <p className="text-sm text-n-500" data-sin-cargos>Ninguno todavía.</p>
@@ -275,13 +286,7 @@ export function CargosSeccion({
         )}
 
         <div className="flex flex-col gap-2 border-t border-n-200 pt-2 text-sm" data-desglose-estancia={cancelada ? "cancelada" : "vigente"}>
-          {cancelada && eraSiCancelada !== undefined && (
-            <span className="text-n-600">
-              Base: <span className="font-semibold text-n-900">{formatoDinero(0)}</span>
-              <span className="text-n-500"> (no se cobra; era {formatoDinero(eraSiCancelada)})</span>
-            </span>
-          )}
-          {cuenta !== undefined && <DesgloseEstancia cuenta={cuentaViva ?? null} actualizando={actualizando} />}
+          <DesgloseEstancia cuenta={cuentaViva} actualizando={actualizando} partes="total" />
           {cancelada && cuentaCobrado > 0 && (
             <span className="text-n-600" data-desglose-cobrado>
               Cobrado en la cuenta: <span className="font-semibold text-n-900">{formatoDinero(cuentaCobrado)}</span>

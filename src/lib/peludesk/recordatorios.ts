@@ -24,7 +24,7 @@ export const QUE_MANDA_RECORDATORIOS: readonly string[] = [
   "7 días antes de la próxima vacuna: «¿Te agendamos?», con los botones Agendar y Después.",
   "Sale del número de WhatsApp de PeluDesk, con el nombre del negocio en el texto.",
   "El cliente contesta con un botón: «Confirmo» pone la cita como confirmada (en verde) en la agenda; «Necesito cambiarla» le avisa al negocio en su panel para que le escriba y la cambie.",
-  "Si el cliente escribe BAJA, deja de recibirlos. Cada tipo de recordatorio se prende o se apaga en Configuración → Recordatorios.",
+  "Si el cliente escribe BAJA, deja de recibirlos. Cada tipo de recordatorio se prende o se apaga en Recordatorios por WhatsApp.",
 ];
 
 export type TextosRecordatorios = {
@@ -58,7 +58,7 @@ export function textosRecordatorios(p: PrecioRecordatorio | null): TextosRecorda
       "PeluDesk los manda solo, el día anterior y a la hora que escojas (10:00 si no escoges otra), para cada cita de estética, cita veterinaria y llegada a hotel o guardería. " +
         "También avisa cuando la mascota ya está lista para recoger y, 7 días antes, de su próxima vacuna. Salen del número de WhatsApp de PeluDesk con el nombre de tu negocio. " +
         "Tu cliente contesta con un botón: «Confirmo» pone la cita en verde en tu agenda y «Necesito cambiarla» te avisa en tu panel para que le escribas. Si escribe BAJA, deja de recibirlos. " +
-        `Cada tipo se prende o se apaga en Configuración → Recordatorios. ${cobro}`,
+        `Cada tipo se prende o se apaga en Recordatorios por WhatsApp. ${cobro}`,
     ],
   };
 }

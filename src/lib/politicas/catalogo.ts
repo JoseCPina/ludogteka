@@ -5,7 +5,7 @@ import type { ClaveModulo } from "@/lib/plan/modulos";
  * link, en el complemento y en su portal.
  *
  * Nada de esto vive en el código para un negocio en particular: cada
- * negocio escribe lo suyo en Administración → Políticas y reglas
+ * negocio escribe lo suyo en Políticas y reglas
  * (`negocio_politicas.textos`, una clave por regla) y lo que no escribe
  * sale con el texto por omisión de aquí, que es NEUTRO: solo afirma lo que
  * la app hace igual para todos (la evaluación de comportamiento y el

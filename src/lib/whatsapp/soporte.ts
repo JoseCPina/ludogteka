@@ -570,7 +570,7 @@ async function resultadoPortal(cuenta: Cuenta, entrada: Record<string, unknown>,
   try {
     const url = await deps.ligaPortal(n);
     return n.tieneCuentaStripe
-      ? { negocio: n.nombre, portal_de_pagos: url, nota: "El link vale unos minutos; si vence, que lo vuelva a pedir o entre por Administración → Módulos y plan." }
+      ? { negocio: n.nombre, portal_de_pagos: url, nota: "El link vale unos minutos; si vence, que lo vuelva a pedir o entre por Módulos y plan." }
       : { negocio: n.nombre, contratar_en: url, nota: "Aún no tiene cuenta de pago: contrata ahí, con tarjeta." };
   } catch (e) {
     deps.alerta(`No salió el link del portal de ${n.nombre}`, e);

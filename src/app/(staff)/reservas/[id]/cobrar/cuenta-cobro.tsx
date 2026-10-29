@@ -147,7 +147,8 @@ const ETIQUETA_METODO: Record<string, string> = {
 
 const ETIQUETA_TIPO: Record<string, string> = {
   venta: "Venta",
-  estancia: "Estancia",
+  // QA R54 (N144): la línea de la estancia es su base, igual que en el detalle y el check-out.
+  estancia: "Base de la estancia",
   cargo: "Cargo",
   estetica: "Estética",
   bono: "Pase",
