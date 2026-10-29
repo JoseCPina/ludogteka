@@ -15,7 +15,8 @@ const FRASES = [
   "Tenemos mejor control.",
   "La agenda ya no se nos empalma.",
   "Con la caja sabemos cómo cerró el día.",
-  "Mandar el recordatorio por WhatsApp es un solo toque.",
+  // 28 de octubre de 2026: la dio el dueño (los recordatorios automáticos ya están prendidos en Ludogteka).
+  "Nuestros clientes reciben su recordatorio solos y confirman con un botón; ya casi no tenemos plantones.",
 ];
 
 // Fotos reales del negocio (public/ludogteka, WebP a 480 y 960 px; las nuevas salen del Instagram del negocio), con su alto/ancho para no saltar.
