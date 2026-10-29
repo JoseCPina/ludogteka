@@ -178,6 +178,122 @@ try {
     await A.auth.admin.deleteUser(idN42).catch(() => {});
     await A.auth.admin.deleteUser(sinAcceso.data.user.id).catch(() => {});
   }
+
+  // ── Pendiente de «Leer contrato» (27 de octubre de 2026): todo lo que el dueño abre con su sesión lee la del PORTAL ──
+  // El dueño entra con SOLO la cookie del portal (sin la del personal) y abre cada cosa que su portal le da: páginas,
+  // vista previa del contrato (/api), PDF y XML de su factura, recetas, carnet, la foto de su perro y la de la bitácora
+  // (URLs firmadas de Storage que arma el servidor con su sesión) y las acciones del servidor de sus formularios. Si
+  // algo leyera la cookie del personal, el dueño saldría sin sesión: /login, «No encontramos…» o una imagen rota.
+  console.log("── 7. El dueño con SOLO la cookie del portal: vistas previas, PDF, recetas, carnet, fotos, bitácora, descargas y acciones");
+  const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+  const sufijo7 = String(Date.now()).slice(-6);
+  const deshacer = [];
+  // Las tablas del negocio se leen y escriben con la llave de servicio ACOTADA a Huellitas (sin el encabezado, un update no toca nada).
+  const { SB: SBn } = await import("./veterinaria-comun-dev.mjs");
+  try {
+    // Un perro del dueño con foto y una entrada de bitácora con foto (se quitan al terminar).
+    const perroF = (await SBn.from("perros").insert({ negocio_id: datos.B, cliente_id: datos.clienteSoloB, nombre: `AUD sesion ${sufijo7}` }).select("id").single()).data;
+    deshacer.push(() => SBn.from("perros").update({ deleted_at: new Date().toISOString() }).eq("id", perroF.id));
+    const rutaFoto = `${datos.clienteSoloB}/${perroF.id}/auditoria-foto-${sufijo7}.png`;
+    const rutaBitacora = `${datos.clienteSoloB}/${perroF.id}/auditoria-bitacora-${sufijo7}.png`;
+    for (const r of [rutaFoto, rutaBitacora]) {
+      const sub = await A.storage.from("perros-archivos").upload(r, PNG, { contentType: "image/png" });
+      if (sub.error) throw sub.error;
+      deshacer.push(() => A.storage.from("perros-archivos").remove([r]));
+    }
+    await SBn.from("perros").update({ foto_path: rutaFoto }).eq("id", perroF.id);
+    const entrada = (await SBn.from("bitacora_entradas").insert({ negocio_id: datos.B, perro_id: perroF.id, tipo: "actualizacion", nota: `AUD sesion ${sufijo7}`, foto_path: rutaBitacora }).select("id").single()).data;
+    deshacer.push(() => SBn.from("bitacora_entradas").delete().eq("id", entrada.id));
+    // Lo que ya tiene el dueño de prueba: una receta emitida, un carnet con vacuna y un contrato pendiente.
+    const perrosDueno = ((await SBn.from("perros").select("id").eq("cliente_id", datos.clienteSoloB).is("deleted_at", null).limit(3000)).data ?? []).map((x) => x.id);
+    const unoDe = async (tabla, extra = (q) => q) => {
+      for (let i = 0; i < perrosDueno.length; i += 150) {
+        const { data } = await extra(SBn.from(tabla).select("id, perro_id").in("perro_id", perrosDueno.slice(i, i + 150))).limit(1);
+        if (data?.length) return data[0];
+      }
+      return null;
+    };
+    const receta = await unoDe("vet_recetas", (q) => q.eq("estado", "emitida"));
+    const vacuna = await unoDe("carnet_vacunas", (q) => q.is("deleted_at", null));
+    const contrato = await unoDe("contratos", (q) => q.eq("estado", "pendiente_firma"));
+    // Una factura con PDF, prestada al dueño mientras corre esta sección (se le regresa a su cliente al terminar).
+    const { data: factura } = await SBn.from("cfdi_facturas").select("id, cliente_id").eq("negocio_id", datos.B).not("pdf_path", "is", null).limit(1).maybeSingle();
+    if (factura && factura.cliente_id !== datos.clienteSoloB) {
+      const prestada = await SBn.from("cfdi_facturas").update({ cliente_id: datos.clienteSoloB }).eq("id", factura.id);
+      if (!prestada.error) deshacer.push(() => SBn.from("cfdi_facturas").update({ cliente_id: factura.cliente_id }).eq("id", factura.id));
+      else console.log(`    · no se pudo prestar la factura al dueño (${prestada.error.message}); se revisa con la que tenga`);
+    }
+
+    // Sin «cambia tu contraseña» pendiente (otra auditoría pudo dejarle una temporal): si no, todo lleva a esa pantalla.
+    const { data: u7 } = await A.auth.admin.getUserById(datos.cuentaSoloB);
+    if (u7.user.app_metadata?.debe_cambiar_password) await A.auth.admin.updateUserById(datos.cuentaSoloB, { app_metadata: { ...u7.user.app_metadata, debe_cambiar_password: false } });
+    const ctx7 = await nav.newContext({ viewport: { width: 390, height: 844 } });
+    await ctx7.addCookies(await cookieDe(datos.cuentaSoloB, PORTAL));
+    comprobar(!(await nombres(ctx7)).includes(PERSONAL), "el dueño solo trae la cookie del portal");
+    const p7 = await ctx7.newPage();
+    p7.setDefaultTimeout(60000);
+    const enPortal = (pg) => !/\/login/.test(pg.url());
+    // La imagen: su URL firmada está en la página y responde 200 (se pide desde la página: el navegador resuelve *.localhost).
+    const imagenCargo = async (re) => p7.evaluate(async (fuente) => {
+      const im = [...document.images].find((x) => new RegExp(fuente).test(x.getAttribute("src") ?? ""));
+      if (!im) return false;
+      const r = await fetch(im.src).catch(() => null);
+      return Boolean(r?.ok);
+    }, re.source);
+    const pedir = (ruta) => p7.evaluate(async (u) => {
+      const r = await fetch(u, { redirect: "manual" });
+      return { status: r.status, tipo: r.headers.get("content-disposition") ?? "", texto: r.headers.get("content-type")?.includes("html") ? await r.text() : "" };
+    }, `${BASE}${ruta}`);
+
+    // Páginas del portal.
+    for (const ruta of ["/portal", "/portal/facturas", "/portal/cambiar-contrasena"]) {
+      const r = await p7.goto(`${BASE}${ruta}`, { waitUntil: "networkidle", timeout: 120000 });
+      comprobar(r?.status() === 200 && enPortal(p7), `${ruta}: ${r?.status()} con su sesión (${new globalThis.URL(p7.url()).pathname})`);
+    }
+    // La ficha de su perro: la foto y la de la bitácora (URLs firmadas que arma el servidor con la sesión del dueño).
+    await p7.goto(`${BASE}/portal/perros/${perroF.id}`, { waitUntil: "networkidle", timeout: 120000 });
+    const textoFicha = (await p7.locator("body").textContent()).replace(/\s+/g, " ");
+    comprobar(enPortal(p7) && textoFicha.includes(`AUD sesion ${sufijo7}`), `/portal/perros/<id>: la ficha de su perro (${new globalThis.URL(p7.url()).pathname}: «${textoFicha.slice(0, 120)}»)`);
+    comprobar(await imagenCargo(/auditoria-foto-/), "la foto de su perro carga (URL firmada con su sesión)");
+    comprobar(await imagenCargo(/auditoria-bitacora-/), "la foto de la bitácora carga");
+    // Acción del servidor de la ficha («Guardar cambios» de los datos de su perro).
+    const guardarPerro = p7.getByRole("button", { name: "Guardar cambios" }).last();
+    if (await guardarPerro.count()) {
+      await guardarPerro.click();
+      await p7.getByText("Cambios guardados").first().waitFor({ timeout: 30000 }).catch(() => {});
+      comprobar((await p7.getByText("Cambios guardados").count()) > 0 && enPortal(p7), "acción del servidor de su perro («Guardar cambios») con su sesión");
+    } else comprobar(false, "la ficha de su perro tiene «Guardar cambios»");
+    // Recetas y carnet.
+    if (receta) {
+      await p7.goto(`${BASE}/portal/perros/${receta.perro_id}`, { waitUntil: "networkidle", timeout: 120000 });
+      comprobar(enPortal(p7) && (await p7.locator("[data-recetas-cliente]").count()) > 0, "recetas: las ve en la ficha de su mascota");
+    } else console.log("    · el dueño de prueba no tiene recetas emitidas (corre recetas-dev.mjs)");
+    if (vacuna) {
+      await p7.goto(`${BASE}/portal/perros/${vacuna.perro_id}`, { waitUntil: "networkidle", timeout: 120000 });
+      comprobar(enPortal(p7) && (await p7.locator("[data-carnet-cliente]").count()) > 0, "carnet: lo ve en la ficha de su mascota");
+    } else console.log("    · el dueño de prueba no tiene carnet (corre carnet-dev.mjs)");
+    // Vista previa del contrato: la ruta de /api que se abre en una pestaña («Leer contrato»).
+    if (contrato) {
+      const r = await pedir(`/api/contratos/${contrato.id}/preview`);
+      comprobar(r.status === 200 && !/No encontramos este contrato/.test(r.texto), `vista previa del contrato (/api): ${r.status}${/No encontramos/.test(r.texto) ? " «No encontramos este contrato»" : ""}`);
+    } else console.log("    · el dueño de prueba no tiene contrato pendiente");
+    // Descarga del PDF y del XML de su factura.
+    const { data: suya } = await SBn.from("cfdi_facturas").select("id, xml_path").eq("negocio_id", datos.B).eq("cliente_id", datos.clienteSoloB).not("pdf_path", "is", null).limit(1).maybeSingle();
+    if (suya) {
+      for (const formato of ["pdf", "xml"]) {
+        const r = await pedir(`/portal/facturas/${suya.id}/${formato}`);
+        comprobar(r.status === 200 && /attachment/.test(r.tipo), `descarga de su factura (${formato}): ${r.status}`);
+      }
+    } else console.log("    · no hay una factura con PDF para el dueño de prueba");
+    // Acción del servidor del inicio del portal («Guardar cambios» de sus datos).
+    await p7.goto(`${BASE}/portal`, { waitUntil: "networkidle", timeout: 120000 });
+    await p7.getByRole("button", { name: "Guardar cambios" }).first().click();
+    await p7.getByText("Cambios guardados").first().waitFor({ timeout: 30000 }).catch(() => {});
+    comprobar((await p7.getByText("Cambios guardados").count()) > 0 && enPortal(p7), "acción del servidor de sus datos («Guardar cambios») con su sesión");
+    await ctx7.close();
+  } finally {
+    for (const f of deshacer.reverse()) await Promise.resolve().then(f).catch(() => {});
+  }
 } finally {
   await nav.close();
   await A.auth.admin.updateUserById(datos.cuentaSoloB, { password: claveAleatoria() });

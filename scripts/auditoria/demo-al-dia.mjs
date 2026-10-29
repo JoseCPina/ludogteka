@@ -233,6 +233,12 @@ for (const n of demos) {
   const listas = [...new Set(reservasVet.filter((x) => ahora - new Date(x.fin) > 5 * 60_000 + MARGEN).map((x) => x.reserva))];
   const debenVet = await sinCobrar(listas);
   comprobar(debenVet.length === 0 || !hayTurnoAbierto, `${listas.length} cuentas de consultas cobradas (${debenVet.length} sin cobrar${debenVet.length && !hayTurnoAbierto ? ", esperan al siguiente turno" : ""})`);
+  // Y cada cobro de una consulta, en el turno del día de la consulta (el que se abrió ese día), no en uno de otro día.
+  const cobrosVet = [];
+  for (let i = 0; i < listas.length; i += 100) cobrosVet.push(...exigir(await N.from("cobros").select("id, reserva_id, turno_id, created_at, anulado_at").eq("negocio_id", n.id).in("reserva_id", listas.slice(i, i + 100)).is("anulado_at", null).order("id"), "cobros vet"));
+  const finDe = new Map(reservasVet.map((x) => [x.reserva, x.fin]));
+  const vetFuera = cobrosVet.filter((c) => { const t = turnos.find((x) => x.id === c.turno_id); return !t || diaLocal(t.abierto_at) !== diaLocal(finDe.get(c.reserva_id) ?? c.created_at); });
+  comprobar(vetFuera.length === 0, `${cobrosVet.length} cobros de consultas, cada uno en el turno del día de su consulta (${vetFuera.length} fuera)`);
   const diasSinVet = proximosDias.filter((f) => !vcitas.some((c) => diaLocal(c.inicia_at) === f));
   comprobar(diasSinVet.length === 0, `agenda clínica en los próximos ${proximosDias.length} días con horario (sin citas: ${diasSinVet.join(", ") || "ninguno"})`);
 
@@ -251,8 +257,9 @@ if (pruebasQA.length) {
   for (const n of pruebasQA) {
     const N = cliente(n.id);
     const desde = new Date(Date.now() - 3 * 86400_000).toISOString();
-    const recientes = exigir(await N.from("cobros").select("id, created_at, created_by").eq("negocio_id", n.id).gte("updated_at", desde).order("id"), "cobros");
-    const automaticos = recientes.filter((c) => new Date(c.created_at) < new Date(desde));
+    const recientes = exigir(await N.from("cobros").select("id, created_at, created_by, anulado_at").eq("negocio_id", n.id).gte("updated_at", desde).order("id"), "cobros");
+    // Un cobro viejo que se anuló estos días también cambia su updated_at: anularlo no es cobrar hacia atrás.
+    const automaticos = recientes.filter((c) => new Date(c.created_at) < new Date(desde) && !(c.anulado_at && new Date(c.anulado_at) >= new Date(desde)));
     comprobar(automaticos.length === 0, `${n.slug}: ningún cobro fechado hacia atrás (${automaticos.length})`);
   }
 }

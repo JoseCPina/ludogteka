@@ -15,7 +15,7 @@
 import { abrirNavegador } from "../lib/navegador.mjs";
 import { cookiesDe, BASE } from "./lib/huellitas-navegador.mjs";
 
-const { B, SB, datos, comprobar, seccion, terminar } = await import("./veterinaria-comun-dev.mjs");
+const { A, B, SB, datos, comprobar, seccion, terminar } = await import("./veterinaria-comun-dev.mjs");
 
 const MARCA = "AUDITORIA WA";
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -152,6 +152,10 @@ try {
   }
 } finally {
   await nav.close();
+  // «Mandársela por WhatsApp» le dejó una contraseña temporal y el cambio obligatorio al dueño de prueba: se le quita
+  // (si no, las otras auditorías que entran a su portal caen en «Cambia tu contraseña»).
+  const { data: u } = await A.auth.admin.getUserById(datos.cuentaSoloB).catch(() => ({ data: null }));
+  if (u?.user?.app_metadata?.debe_cambiar_password) await A.auth.admin.updateUserById(datos.cuentaSoloB, { app_metadata: { ...u.user.app_metadata, debe_cambiar_password: false } });
   for (const f of limpieza.reverse()) await Promise.resolve().then(f).catch(() => {});
 }
 terminar();
