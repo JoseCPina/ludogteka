@@ -135,7 +135,7 @@ export function LoginForm({
       {ayuda && esEquipo && (
         <div className="flex flex-col gap-2 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4 text-sm text-n-700" data-recuperar="equipo">
           <p>
-            Tu contraseña la restablece un admin de tu negocio desde <strong>Empleados</strong> → tu ficha → «Restablecer contraseña» (o, si tu negocio no usa Empleados, desde
+            Tu contraseña la restablece un admin de tu negocio desde <strong>Empleados</strong> → tu ficha → «Restablecer contraseña» (o, si tu negocio no usa Empleados, desde{" "}
             <strong>Inicio</strong>: en el panel de admin, la lista «Cuentas»): te da una contraseña temporal y, al entrar, escoges una nueva.
           </p>
           {unSoloAdmin ? (
