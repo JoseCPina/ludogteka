@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { bloqueoDeEscritura } from "@/lib/solo-lectura-servidor";
 import { negocioIdActual } from "@/lib/negocio/actual";
 import { mensajeDeError } from "@/lib/empleados/errores";
 import type { ResultadoAccion } from "@/lib/empleados/tipos";
@@ -38,6 +39,10 @@ async function subirComprobante(fd: FormData): Promise<{ path: string | null; er
   const supabase = await createSupabaseServerClient();
   const { data: puede } = await supabase.rpc("tiene_permiso", { p_permiso: "gastos" });
   if (!puede) return { path: null, error: "No tienes permiso para registrar gastos." };
+  // Antes de subir con la secret key: en la demo la foto llegaba a Storage y se borraba cuando la base
+  // rechazaba el gasto.
+  const bloqueo = await bloqueoDeEscritura(supabase);
+  if (bloqueo) return { path: null, error: bloqueo.mensaje };
   const { data: hoy } = await supabase.rpc("fecha_negocio");
   // PeluDesk: la ruta empieza con el negocio; la base rechaza cualquier
   // comprobante fuera de `{negocio}/gastos/`.

@@ -10,6 +10,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { MENSAJE_DEMO, esRechazoDeDemo } from "@/lib/solo-lectura";
 import { formatearFecha } from "@/lib/formato";
 import {
   generarContrato,
@@ -237,6 +238,7 @@ export function ContratoSeccion({
       const { error: errorSubida } = await supabase.storage
         .from(BUCKET)
         .upload(path, archivo, { upsert: false, contentType: archivo.type || "application/pdf" });
+      if (esRechazoDeDemo(errorSubida)) return { error: MENSAJE_DEMO };
       if (errorSubida) return { error: "No pudimos subir el archivo. Intenta de nuevo." };
 
       return registrarContratoPapel(contratoId, path, hash);

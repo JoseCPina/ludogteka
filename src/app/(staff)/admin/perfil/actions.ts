@@ -9,11 +9,13 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { negocioActual } from "@/lib/negocio/actual";
 import { BUCKET_PUBLICO } from "@/lib/negocio/publico";
-import { esErrorSoloLectura, MENSAJE_SOLO_LECTURA, mensajeSoloLectura } from "@/lib/solo-lectura";
+import { esErrorSoloLectura, mensajeSoloLectura } from "@/lib/solo-lectura";
+import { bloqueoDeEscritura } from "@/lib/solo-lectura-servidor";
 import sharp from "sharp";
 import { avisosDeLogo, extensionDeLogo, svgPeligroso } from "@/lib/logo";
 
-export type ResultadoPerfil = { error: string | null; exito?: string; conflicto?: Conflicto | null; registros?: RegistroFinal[] };
+// demo: la cuenta de la demo no guarda la foto; la pantalla enseña la que eligió con AVISO_FOTO_DEMO.
+export type ResultadoPerfil = { error: string | null; exito?: string; demo?: boolean; conflicto?: Conflicto | null; registros?: RegistroFinal[] };
 
 const TIPOS = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES = 6 * 1024 * 1024;
@@ -69,15 +71,16 @@ async function subirImagen(
   fd: FormData,
   carpeta: string,
   opciones: { tipos?: string[]; maxBytes?: number } = {},
-): Promise<{ error: string | null; path?: string; archivo?: File; supabase?: Awaited<ReturnType<typeof createSupabaseServerClient>> }> {
+): Promise<{ error: string | null; demo?: boolean; path?: string; archivo?: File; supabase?: Awaited<ReturnType<typeof createSupabaseServerClient>> }> {
   const { supabase, puede } = await puedeEditar();
   if (!puede) return { error: "Solo un admin, o quien tenga el permiso «Configuración del negocio», edita el perfil." };
-  const { data: escribible } = await supabase.rpc("negocio_escribible");
-  if (escribible === false) return { error: MENSAJE_SOLO_LECTURA };
   const archivo = fd.get("foto");
   if (!(archivo instanceof File) || archivo.size === 0) return { error: "Escoge una foto." };
   if (!(opciones.tipos ?? TIPOS).includes(archivo.type)) return { error: opciones.tipos ? "El logo tiene que ser PNG, JPG, WebP o SVG." : "La foto tiene que ser JPG, PNG o WebP." };
   if (archivo.size > (opciones.maxBytes ?? MAX_BYTES)) return { error: `La foto pesa demasiado (máximo ${Math.round((opciones.maxBytes ?? MAX_BYTES) / 1024 / 1024)} MB).` };
+  // Antes de subir con la secret key (salta la RLS de Storage). En la demo, la foto se ve y no se guarda.
+  const bloqueo = await bloqueoDeEscritura(supabase);
+  if (bloqueo) return bloqueo.demo ? { error: null, demo: true } : { error: bloqueo.mensaje };
   const negocio = await negocioActual();
   const extension = extensionDeLogo(archivo.type) ?? "jpg";
   const path = `${negocio.id}/${carpeta}/${crypto.randomUUID()}.${extension}`;
@@ -112,6 +115,7 @@ export async function subirLogo(fd: FormData): Promise<ResultadoPerfil> {
     fd.set("alto", String(alto ?? ""));
   }
   const r = await subirImagen(fd, "logo", { tipos: ["image/png", "image/jpeg", "image/webp", "image/svg+xml"], maxBytes: 2 * 1024 * 1024 });
+  if (r.demo) return { error: null, demo: true };
   if (r.error || !r.path || !r.supabase) return { error: r.error };
   const ancho = Number(fd.get("ancho")) || null;
   const alto = Number(fd.get("alto")) || null;
@@ -128,6 +132,7 @@ export async function subirLogo(fd: FormData): Promise<ResultadoPerfil> {
 
 export async function subirFoto(fd: FormData): Promise<ResultadoPerfil> {
   const r = await subirImagen(fd, "fotos");
+  if (r.demo) return { error: null, demo: true };
   if (r.error || !r.path || !r.supabase) return { error: r.error };
   const { count } = await r.supabase.from("negocio_fotos").select("id", { count: "exact", head: true }).is("deleted_at", null);
   const { data: foto, error } = await r.supabase.from("negocio_fotos").insert({ path: r.path, orden: (count ?? 0) + 1 }).select("id").single();

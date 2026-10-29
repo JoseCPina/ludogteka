@@ -11,6 +11,8 @@ import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
+import { AvisoDemo } from "@/components/ui/aviso-demo";
+import { AVISO_FOTO_DEMO } from "@/lib/solo-lectura";
 import { SubirLogo } from "./subir-logo";
 import { CampoVersion, conForzar } from "@/components/concurrencia/campo-version";
 import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
@@ -32,6 +34,8 @@ function Subir({ etiqueta, esLogo, accion }: { etiqueta: string; esLogo: boolean
   const envio = useEspera();
   const campo = useRef<HTMLInputElement>(null);
   const [res, setRes] = useState<ResultadoPerfil | null>(null);
+  // En la demo la foto elegida se enseña desde el navegador y no se guarda.
+  const [fotoDemo, setFotoDemo] = useState<string | null>(null);
   return (
     <div className="flex flex-col gap-2">
       <input
@@ -41,7 +45,14 @@ function Subir({ etiqueta, esLogo, accion }: { etiqueta: string; esLogo: boolean
         aria-label={`Foto para: ${etiqueta.toLowerCase()}`}
         className="text-sm text-n-700 file:mr-3 file:min-h-10 file:rounded-md file:border file:border-n-400 file:bg-white file:px-4 file:font-semibold file:text-n-900"
       />
-      <AccionesFormulario error={res?.error} exito={res && !res.error ? res.exito ?? true : null}>
+      {fotoDemo && (
+        <div className="flex flex-col gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={fotoDemo} alt="" className="h-24 w-32 rounded-md border border-n-200 object-cover" />
+          <AvisoDemo texto={AVISO_FOTO_DEMO} />
+        </div>
+      )}
+      <AccionesFormulario error={res?.error} exito={res && !res.error && !res.demo ? res.exito ?? true : null}>
         <Button
           type="button"
           variante="secundario"
@@ -56,7 +67,8 @@ function Subir({ etiqueta, esLogo, accion }: { etiqueta: string; esLogo: boolean
             });
             const r: ResultadoPerfil = intento.ok ? intento.valor : { error: intento.error };
             setRes(r);
-            if (!r.error) {
+            setFotoDemo(r.demo ? URL.createObjectURL(archivo) : null);
+            if (!r.error && !r.demo) {
               if (campo.current) campo.current.value = "";
               router.refresh();
             }

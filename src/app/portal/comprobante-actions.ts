@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { negocioActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { bloqueoDeEscritura } from "@/lib/solo-lectura-servidor";
 
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import { usaVeterinaria } from "@/lib/plan/modulos";
@@ -86,6 +87,10 @@ export async function proponerComprobante(perroId: string, formData: FormData): 
   if (pendiente) {
     return { error: "Ya nos mandaste un comprobante de esto y lo estamos revisando. Si quieres cambiarlo, espera a que recepción lo revise." };
   }
+
+  // Antes de subir con la secret key: en la demo el archivo quedaba en Storage aunque el registro no.
+  const bloqueo = await bloqueoDeEscritura(supabase);
+  if (bloqueo) return { error: bloqueo.mensaje };
 
   const id = crypto.randomUUID();
   const path = `${perro.cliente_id}/${perroId}/requisitos-propuestos/${id}/comprobante.${esPdf ? "pdf" : "jpg"}`;

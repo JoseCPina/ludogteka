@@ -5,7 +5,8 @@ import { useSecuencia, useVisible } from "./animacion/usar";
 import "./maqueta-recordatorio.css";
 
 // Maqueta animada del recordatorio automático por WhatsApp: llega el mensaje del día anterior con sus dos botones,
-// el cliente toca «Confirmo» y la cita se pone en verde en la agenda del negocio. HTML y CSS, sin video ni imágenes.
+// el cliente toca «Confirmo» y la cita queda «Confirmada» en la agenda del negocio, con los colores de la agenda real.
+// HTML y CSS, sin video ni imágenes.
 // Datos de ejemplo escritos aquí (el negocio puede ser el real, en /para/<slug>); nunca consulta la base.
 // Todos los elementos están en el HTML desde el servidor (sin saltos de diseño): los pasos solo cambian su opacidad.
 // Con «reducir movimiento» enseña directo el estado final.
@@ -66,10 +67,12 @@ function IconoResponder() {
   );
 }
 
+// Los colores de la agenda real (estetica/page.tsx, ESTILO_ESTADO): «Confirmada» es morada; lo verde es el chip
+// aparte «Confirmó por WhatsApp» (src/lib/recordatorios/estado.ts), que aquí es la línea de abajo.
 function Chip({ confirmada }: { confirmada: boolean }) {
   return confirmada ? (
-    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-menta-suave px-2.5 py-1 text-xs font-semibold text-menta-oscuro">
-      <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-menta-oscuro" />
+    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-morado-suave px-2.5 py-1 text-xs font-semibold text-morado">
+      <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-morado" />
       Confirmada
     </span>
   ) : (
@@ -99,7 +102,7 @@ export function MaquetaRecordatorio(props: DatosMaqueta & { className?: string }
     <div
       ref={ref}
       role="img"
-      aria-label={`Ejemplo animado: ${cliente} recibe por WhatsApp el recordatorio «${texto}» con los botones Confirmo y Necesito cambiarla, toca Confirmo y la cita de ${mascota} queda confirmada, en verde, en la agenda de ${negocio}.`}
+      aria-label={`Ejemplo animado: ${cliente} recibe por WhatsApp el recordatorio «${texto}» con los botones Confirmo y Necesito cambiarla, toca Confirmo y la cita de ${mascota} queda confirmada en la agenda de ${negocio}.`}
       className={`grid grid-cols-[minmax(0,1fr)] items-center gap-5 transition-opacity duration-500 motion-reduce:transition-none md:grid-cols-[minmax(0,320px)_minmax(0,1fr)] md:gap-8 ${saliendo ? "opacity-0" : "opacity-100"} ${className}`}
     >
       {/* ── El celular del cliente ── */}
@@ -176,12 +179,12 @@ export function MaquetaRecordatorio(props: DatosMaqueta & { className?: string }
           <p className="mt-0.5 text-lg font-bold text-n-900 first-letter:uppercase">{dia}</p>
           <ul className="mt-3 flex flex-col gap-2">
             {filas.map((f) => {
-              const verde = f.principal ? confirmada : f.hora === filas[0].hora;
+              const conChipConfirmada = f.principal ? confirmada : f.hora === filas[0].hora;
               return (
                 <li
                   key={`${f.hora}-${f.mascota}`}
                   className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors duration-500 motion-reduce:transition-none ${
-                    f.principal ? (confirmada ? "pd-mr-pulso border-menta-oscuro/40 bg-menta-suave" : "border-n-300 bg-crema") : "border-n-200 bg-white"
+                    f.principal ? (confirmada ? "pd-mr-pulso border-morado/30 bg-crema" : "border-n-300 bg-crema") : "border-n-200 bg-white"
                   }`}
                 >
                   <span className="w-11 shrink-0 text-sm font-bold tabular-nums text-n-900">{f.hora}</span>
@@ -189,7 +192,7 @@ export function MaquetaRecordatorio(props: DatosMaqueta & { className?: string }
                     <span className="block truncate text-sm font-semibold text-n-900">{f.mascota}</span>
                     <span className="block truncate text-xs text-n-600">{f.principal && tipo === "veterinaria" && props.medico ? `${f.servicio} · ${props.medico}` : f.servicio}</span>
                   </span>
-                  <Chip confirmada={verde} />
+                  <Chip confirmada={conChipConfirmada} />
                 </li>
               );
             })}

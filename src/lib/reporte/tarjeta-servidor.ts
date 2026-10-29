@@ -6,6 +6,7 @@ import { ImageResponse } from "next/og";
 import sharp from "sharp";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { bloqueoDeEscritura } from "@/lib/solo-lectura-servidor";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { negocioActual } from "@/lib/negocio/actual";
 import { BUCKET_REPORTES } from "./constantes";
@@ -97,6 +98,9 @@ export async function generarTarjeta(reporteId: string): Promise<{ ok: true; pat
     .is("deleted_at", null)
     .maybeSingle();
   if (!r) return { ok: false, error: "No encontramos ese reporte." };
+  // Antes de subir con la secret key: quien no puede escribir (la demo) no deja ni un archivo de paso.
+  const bloqueo = await bloqueoDeEscritura(supabase);
+  if (bloqueo) return { ok: false, error: bloqueo.mensaje };
   const perro = (Array.isArray(r.perros) ? r.perros[0] : r.perros) as { nombre: string } | null;
   const negocio = await negocioActual();
   const jpeg = await renderizarTarjetaJpeg(await datosDeTarjeta(r.contenido as ContenidoReporte, perro?.nombre ?? "", r.fecha as string));

@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { MENSAJE_DEMO, esRechazoDeDemo } from "@/lib/solo-lectura";
 import { formatearFecha } from "@/lib/formato";
 import {
   prepararEntradaBitacora,
@@ -18,7 +19,8 @@ import {
   marcarBitacoraNotificada,
   construirEnlaceWhatsApp,
 } from "./bitacora-actions";
-import { useZonaNegocio } from "@/components/zona-negocio";
+import { useZonaNegocio } from "@/components/zona-negocio";
+
 import { vocabularioMascota, type Vocabulario } from "@/lib/perros/vocabulario";
 
 const BUCKET = "perros-archivos";
@@ -60,6 +62,7 @@ export function BitacoraSeccion({ perroId, entradas, mascota = vocabularioMascot
         const { error: subidaError } = await supabase.storage
           .from(BUCKET)
           .upload(prep.path, blob, { contentType: "image/jpeg" });
+        if (esRechazoDeDemo(subidaError)) return { error: MENSAJE_DEMO };
         if (subidaError) return { error: "No pudimos subir la foto. Intenta de nuevo." };
         fotoPath = prep.path;
       }

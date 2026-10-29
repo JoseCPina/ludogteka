@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { negocioActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { bloqueoDeEscritura } from "@/lib/solo-lectura-servidor";
 
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import { usaVeterinaria } from "@/lib/plan/modulos";
@@ -14,7 +15,8 @@ import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 const BUCKET = "perros-archivos";
 const PESO_MAXIMO = 4 * 1024 * 1024;
 
-export type ResultadoFotoMiPerro = { error: string | null; url?: string | null; registros?: RegistroFinal[] };
+// demo: la cuenta de la demo no guarda la foto; la pantalla enseña la que eligió con AVISO_FOTO_DEMO.
+export type ResultadoFotoMiPerro = { error: string | null; url?: string | null; demo?: boolean; registros?: RegistroFinal[] };
 
 /**
  * El dueño sube o reemplaza la foto de identificación de su perro desde el
@@ -55,6 +57,11 @@ export async function subirFotoMiPerro(perroId: string, formData: FormData): Pro
   // Misma regla que recepción (prepararRutaFotoPerro): si ya hay foto se
   // reutiliza su ruta; si no, la fija por primera vez.
   const path = (perro.foto_path as string | null) ?? `${perro.cliente_id}/${perroId}/perfil/foto.jpg`;
+
+  // La secret key salta la RLS de Storage: sin esto, en la demo el upsert reemplazaba la foto del perro
+  // para todos los visitantes aunque la base rechazara después la RPC.
+  const bloqueo = await bloqueoDeEscritura(supabase);
+  if (bloqueo) return bloqueo.demo ? { error: null, demo: true } : { error: bloqueo.mensaje };
 
   const negocio = await negocioActual();
   const admin = createSupabaseAdminClient(negocio.id);

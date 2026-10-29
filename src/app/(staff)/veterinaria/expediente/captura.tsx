@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
+import { AvisoDemo } from "@/components/ui/aviso-demo";
+import { AVISO_ARCHIVO_DEMO, AVISO_FOTO_DEMO } from "@/lib/solo-lectura";
 import { FormularioAccion } from "@/components/formulario-accion";
 import { comprimirImagen } from "@/lib/imagen";
 import { subirConProgreso } from "@/lib/media/subir";
@@ -85,10 +87,13 @@ export function SubirAdjunto({ perroId, consultaId }: { perroId: string; consult
   const [progreso, setProgreso] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
+  // En la demo no se sube nada: se enseña lo elegido (la foto, o el nombre del PDF) con el aviso de la demo.
+  const [demo, setDemo] = useState<{ vista: string | null; nombre: string } | null>(null);
 
   async function subir() {
     setError(null);
     setExito(null);
+    setDemo(null);
     const archivo = entrada.current?.files?.[0];
     if (!archivo) {
       setError("Elige una foto o un PDF.");
@@ -109,14 +114,20 @@ export function SubirAdjunto({ perroId, consultaId }: { perroId: string; consult
       }
       if (mime === "image/heif") mime = "image/heic";
       const p = await prepararAdjunto(perroId, nombre, mime, blob.size);
+      if (p.demo) return { demo: { vista: mime.startsWith("image/") && mime !== "image/heic" ? URL.createObjectURL(blob) : null, nombre } };
       if (p.error || !p.urlFirmada || !p.ruta) throw new Error(p.error ?? "No pudimos preparar la subida.");
       await subirConProgreso({ url: p.urlFirmada, blob, onProgreso: setProgreso });
       const c = await confirmarAdjunto(perroId, consultaId, p.ruta, nombre, mime, descripcion);
       if (c.error) throw new Error(c.error);
+      return { demo: null };
     });
     setProgreso(null);
     if (!r.ok) {
       setError(r.error);
+      return;
+    }
+    if (r.valor.demo) {
+      setDemo(r.valor.demo);
       return;
     }
     setExito("Archivo adjuntado.");
@@ -137,6 +148,17 @@ export function SubirAdjunto({ perroId, consultaId }: { perroId: string; consult
       {progreso !== null && (
         <div className="h-2 overflow-hidden rounded-full bg-n-200" role="progressbar" aria-valuenow={Math.round(progreso * 100)} aria-valuemin={0} aria-valuemax={100}>
           <div className="h-full bg-morado" style={{ width: `${Math.round(progreso * 100)}%` }} />
+        </div>
+      )}
+      {demo && (
+        <div className="flex flex-col gap-2">
+          {demo.vista ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={demo.vista} alt="" className="h-28 w-28 rounded-md border border-n-200 object-cover" />
+          ) : (
+            <p className="text-sm font-semibold text-n-900">{demo.nombre}</p>
+          )}
+          <AvisoDemo texto={demo.vista ? AVISO_FOTO_DEMO : AVISO_ARCHIVO_DEMO} />
         </div>
       )}
       <AccionesFormulario error={error} exito={exito}>

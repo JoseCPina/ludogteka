@@ -6,6 +6,8 @@ import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
+import { AvisoDemo } from "@/components/ui/aviso-demo";
+import { AVISO_FOTO_DEMO } from "@/lib/solo-lectura";
 import { LogoNegocio } from "@/components/marca/logo-negocio";
 import { avisosDeLogo, TIPOS_LOGO, type AvisoLogo } from "@/lib/logo";
 import { subirLogo, type ResultadoPerfil } from "./actions";
@@ -140,7 +142,8 @@ export function SubirLogo({ nombre, color, logoUrl, ancho, alto }: { nombre: str
         <p className="text-sm text-n-600">Todavía no subes tu logo: mientras tanto se muestra el nombre de tu negocio.</p>
       )}
 
-      <AccionesFormulario error={res?.error} exito={res && !res.error ? res.exito ?? true : null}>
+      {res?.demo && <AvisoDemo texto={AVISO_FOTO_DEMO} />}
+      <AccionesFormulario error={res?.error} exito={res && !res.error && !res.demo ? res.exito ?? true : null}>
         <Button
           type="button"
           variante="secundario"
@@ -155,7 +158,8 @@ export function SubirLogo({ nombre, color, logoUrl, ancho, alto }: { nombre: str
             });
             const r: ResultadoPerfil = intento.ok ? intento.valor : { error: intento.error };
             setRes(r);
-            if (!r.error) {
+            // En la demo el logo no se guarda: se queda la vista previa de arriba con el aviso.
+            if (!r.error && !r.demo) {
               if (campo.current) campo.current.value = "";
               setArchivo(null);
               setNuevo(null);

@@ -7,6 +7,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { bloqueoDeEscritura } from "@/lib/solo-lectura-servidor";
 import { negocioActual, urlDelNegocio, zonaActual } from "@/lib/negocio/actual";
 import { fechaLocalDeInstante, instanteDeHoraLocal } from "@/lib/formato";
 import { descartarBorradorGuardado } from "@/lib/borradores/servidor";
@@ -250,7 +251,7 @@ function limpiarNombre(n: string) {
   return base || "archivo";
 }
 
-export async function prepararAdjunto(perroId: string, nombre: string, mime: string, bytes: number): Promise<{ error: string | null; ruta?: string; urlFirmada?: string }> {
+export async function prepararAdjunto(perroId: string, nombre: string, mime: string, bytes: number): Promise<{ error: string | null; demo?: boolean; ruta?: string; urlFirmada?: string }> {
   if (!MIMES.includes(mime)) return { error: "Solo fotos (JPG, PNG, WebP, HEIC) y PDF." };
   if (!(bytes > 0) || bytes > 15 * 1024 * 1024) return { error: "El archivo pasa de 15 MB." };
   const supabase = await createSupabaseServerClient();
@@ -258,6 +259,10 @@ export async function prepararAdjunto(perroId: string, nombre: string, mime: str
   if (puede !== true) return { error: "Adjuntar archivos es de un médico veterinario, de admin o de quien tenga «Atender consultas»." };
   const { data: existe } = await supabase.from("perros").select("id").eq("id", perroId).maybeSingle();
   if (!existe) return { error: "No encontramos a esa mascota." };
+  // La URL firmada salta la RLS de Storage: en la demo el archivo llegaba a Storage y se quedaba si el
+  // navegador se cerraba antes de que la base rechazara el registro. En la demo no se sube nada.
+  const bloqueo = await bloqueoDeEscritura(supabase);
+  if (bloqueo) return bloqueo.demo ? { error: null, demo: true } : { error: bloqueo.mensaje };
   const negocio = await negocioActual();
   const ruta = `${negocio.id}/${perroId}/${randomUUID()}-${limpiarNombre(nombre)}`;
   const admin = createSupabaseAdminClient(negocio.id);
