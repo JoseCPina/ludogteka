@@ -2,7 +2,7 @@ import { getUserConReintento } from "@/lib/supabase/get-user";
 import { ENCABEZADO_RUTA, RUTA_CAMBIO_PERSONAL, RUTA_CAMBIO_PORTAL, debeCambiarPassword } from "@/lib/auth/cambio-obligatorio";
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { ENCABEZADO_AREA, areaDeRuta, opcionesCookieSesion } from "@/lib/supabase/area";
+import { ENCABEZADO_AREA, areaDeRuta, nombreCookieSesion, opcionesCookieSesion } from "@/lib/supabase/area";
 import { rutaPorRol } from "@/lib/auth/rutas";
 import { ENCABEZADOS_NEGOCIO, ENCABEZADO_PLATAFORMA, hostPorMudanza, resolverNegocio, type NegocioBasico } from "@/lib/negocio/resolver";
 import { ENCABEZADO_FIRMA, firmaValida, firmarNegocio, firmarPlataforma, plataformaFirmada } from "@/lib/negocio/firma";
@@ -161,16 +161,24 @@ export async function middleware(request: NextRequest) {
     }
   );
 
+  const zonaPagina = zonaDeRuta(pathname);
+  const zonaApi = zonaPagina ? null : zonaDeRuta(pathname, ZONAS_API);
+  const zona = zonaPagina ?? zonaApi;
+
+  // Rol, módulos, permisos y Veterinaria de quien llama, en UN viaje a la base (acceso_de_sesion), lanzado a la vez
+  // que getUser(): antes eran tres viajes seguidos (Auth, luego rol y módulos, luego permisos) en cada pantalla y cada
+  // acción. Solo si la ruta es de una zona y trae la cookie de sesión de su área (sin sesión no hay nada que preguntar).
+  // Si el token venció, las dos llamadas esperan la MISMA renovación (supabase-js la hace una sola vez). Se usa solo
+  // después de comprobar que hay usuario, igual que antes.
+  const cookieSesion = nombreCookieSesion(areaSesion) ?? `sb-${new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split(".")[0]}-auth-token`;
+  const accesoEnCamino = zona && request.cookies.getAll().some((c) => c.name.startsWith(cookieSesion)) ? supabase.rpc("acceso_de_sesion") : null;
+
   // getUser() (no getSession()) revalida el token contra el servidor de
   // Auth en vez de confiar en lo que ya traiga la cookie.
   // (con un reintento si Auth o la red fallaron un instante: ver get-user.ts)
   const {
     data: { user },
   } = await getUserConReintento(supabase);
-
-  const zonaPagina = zonaDeRuta(pathname);
-  const zonaApi = zonaPagina ? null : zonaDeRuta(pathname, ZONAS_API);
-  const zona = zonaPagina ?? zonaApi;
 
   if (!zona) return response;
 
@@ -198,14 +206,14 @@ export async function middleware(request: NextRequest) {
   // request — nunca de un claim ni de estado guardado en el navegador.
   // Sin membresía aquí ("anonimo"), la cuenta existe pero no es de este
   // negocio.
-  // El módulo de la ruta se pregunta en paralelo con el rol (dos viajes a la base
-  // en vez de uno tras otro: cada pantalla del personal paga este camino).
+  let respuestaAcceso = accesoEnCamino ? await accesoEnCamino : null;
+  // Un reintento si falló (salió a la par de la renovación de la sesión o la red falló un instante), o si no se lanzó.
+  if (!respuestaAcceso || respuestaAcceso.error) respuestaAcceso = await supabase.rpc("acceso_de_sesion");
+  const datosAcceso = (respuestaAcceso.data ?? null) as {
+    rol?: string | null; modulos?: string[] | null; permisos?: string[] | null; acceso_veterinaria?: boolean; es_medico?: boolean;
+  } | null;
   const moduloZona = zonaPagina ? moduloDeRuta(pathname) : null;
-  const [{ data: rolData }, activosResp] = await Promise.all([
-    supabase.rpc("current_rol"),
-    moduloZona ? supabase.rpc("modulos_activos") : Promise.resolve(null),
-  ]);
-  const rol = (rolData as string | null) ?? "anonimo";
+  const rol = datosAcceso?.rol ?? "anonimo";
   if (rol === "anonimo") {
     if (zonaApi) {
       return conCookiesDe(response, NextResponse.json({ error: "Tu cuenta no es de este negocio." }, { status: 403 }));
@@ -213,18 +221,14 @@ export async function middleware(request: NextRequest) {
     return conCookiesDe(response, NextResponse.redirect(new URL("/sin-acceso", request.url)));
   }
 
-  // Los permisos por persona y Veterinaria se preguntan solo si esta zona los necesita para este rol. La base
-  // vuelve a revisar el permiso en cada operación: esto solo decide si se ve la página.
-  const [permisosResp, vetResp, medicoResp] = await Promise.all([
-    zonaPidePermisos(zona, rol) ? supabase.rpc("mis_permisos") : Promise.resolve(null),
-    zonaPideVeterinaria(zona, rol) ? supabase.rpc("acceso_veterinaria") : Promise.resolve(null),
-    zonaPideVeterinaria(zona, rol) ? supabase.rpc("es_medico_veterinario") : Promise.resolve(null),
-  ]);
+  // Los permisos por persona y Veterinaria cuentan solo si esta zona los necesita para este rol (la misma regla de
+  // siempre: ya vienen en la respuesta, pero fuera de esos casos se toman vacíos como cuando no se preguntaban). La
+  // base vuelve a revisar el permiso en cada operación: esto solo decide si se ve la página.
   const acceso: Acceso = {
     rol,
-    permisos: ((permisosResp?.data as string[] | null) ?? []).map(String),
-    accesoVeterinaria: vetResp?.data === true,
-    esMedico: medicoResp?.data === true,
+    permisos: zonaPidePermisos(zona, rol) ? (datosAcceso?.permisos ?? []).map(String) : [],
+    accesoVeterinaria: zonaPideVeterinaria(zona, rol) && datosAcceso?.acceso_veterinaria === true,
+    esMedico: zonaPideVeterinaria(zona, rol) && datosAcceso?.es_medico === true,
   };
 
   if (!accesoAbreZona(acceso, zona)) {
@@ -241,7 +245,7 @@ export async function middleware(request: NextRequest) {
   // se abre: el admin va a la pantalla de módulos, los demás a una página
   // que lo explica. La base lo bloquea de todos modos.
   if (moduloZona) {
-    const activos = activosResp?.data;
+    const activos = datosAcceso?.modulos ?? null;
     if (!moduloRequeridoActivo(moduloZona, ((activos as string[] | null) ?? []).map(String))) {
       const primero = Array.isArray(moduloZona) ? moduloZona[0] : moduloZona;
       const listaActivos = ((activos as string[] | null) ?? []).map(String);

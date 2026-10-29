@@ -1,8 +1,6 @@
 "use server";
 
 import { textoSalidaAnticipada, type CotizacionSalida } from "@/lib/reservas/salida-anticipada";
-import { revalidatePath } from "next/cache";
-import { revalidarModulosEstancia } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
 import { registrosDe } from "@/lib/concurrencia/registro-final";
@@ -104,8 +102,7 @@ export async function agregarPertenencia(
     .single();
 
   if (error) return { error: "No pudimos guardar la pertenencia.", id: null };
-  revalidatePath(`/reservas/estancias/${estanciaId}/checkin`);
-  revalidatePath(`/reservas/estancias/${estanciaId}/checkout`);
+  // Sin revalidatePath (como el check-in): la pantalla agrega la pertenencia a su lista con esta respuesta.
   return {
     error: null,
     id: data.id,
@@ -216,7 +213,7 @@ export async function convertirEnNocheHotel(estanciaId: string): Promise<EstadoA
 
   if (error) return { error: traducirError(error) };
 
-  revalidarModulosEstancia();
-  revalidatePath(`/reservas/estancias/${estanciaId}/checkout`);
+  // Sin revalidatePath (como el check-in): la pantalla dice «Convertida en noche de hotel» con la estancia de esta
+  // respuesta y refresca después.
   return { error: null, registros: await registrosDe(supabase, [{ t: "estancias", i: estanciaId }]) };
 }

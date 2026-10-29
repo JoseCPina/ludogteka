@@ -12,7 +12,7 @@ import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { dinero as formatearMoneda } from "@/lib/dinero";
 import { ETIQUETA_TIPO_CARGO, pareceVacuna, type CargosConsulta, type LineaCargo } from "@/lib/veterinaria/cargos-consulta";
 import { agregarCargoConsulta, ajustarCargoConsulta, pasarCargosACaja, ponerPrecioCargo, quitarCargoConsulta, restaurarCargoConsulta, sinCobroCargo, type ResultadoCargos } from "./cargos-actions";
-import { EnlaceOTexto } from "@/components/acceso-contexto";
+import { EnlaceOTexto, SiPuedeAbrir } from "@/components/acceso-contexto";
 
 // Una línea sin precio de un servicio del catálogo es, por definición, un servicio al que el catálogo no le
 // pone precio: quien puede editar precios la guarda como precio de catálogo (viene marcada, se puede desmarcar).
@@ -358,7 +358,9 @@ export function CargosConsulta({
           <Button type="button" cargando={envio.cargando} onClick={() => correr(() => pasarCargosACaja(consultaId))}>Pasar a Caja lo que falta</Button>
         )}
         {d.reserva_id && (
-          <Link href={`/caja/cobrar/${d.reserva_id}`} className="text-sm font-semibold text-morado hover:underline">Abrir la cuenta en Caja →</Link>
+          <SiPuedeAbrir href={`/caja/cobrar/${d.reserva_id}`}>
+            <Link href={`/caja/cobrar/${d.reserva_id}`} className="text-sm font-semibold text-morado hover:underline">Abrir la cuenta en Caja →</Link>
+          </SiPuedeAbrir>
         )}
       </AccionesFormulario>
     </section>

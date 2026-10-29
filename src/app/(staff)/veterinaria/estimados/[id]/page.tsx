@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EnlaceOTexto } from "@/components/acceso-contexto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
@@ -79,7 +80,7 @@ export default async function DetalleEstimadoPagina({ params }: { params: Promis
       {!d.integro && <Alert variante="error" titulo="El contenido no coincide con lo que se envió">Haz una versión nueva antes de mandarlo otra vez.</Alert>}
       {e.estado === "aceptado" && (
         <Alert variante="exito" titulo={`Aceptado por ${e.aceptado_nombre}`}>
-          {e.aceptado_via === "liga" ? "Por la liga" : "En el mostrador"}, el {e.aceptado_at ? formatearFecha(e.aceptado_at, zona) : ""}. El mínimo de cada línea ya está en la cuenta de la mascota: se cobra en <Link href="/caja" className="font-semibold underline">Caja</Link>.
+          {e.aceptado_via === "liga" ? "Por la liga" : "En el mostrador"}, el {e.aceptado_at ? formatearFecha(e.aceptado_at, zona) : ""}. El mínimo de cada línea ya está en la cuenta de la mascota: se cobra en <EnlaceOTexto href="/caja" className="font-semibold underline">Caja</EnlaceOTexto>.
         </Alert>
       )}
       {e.estado === "rechazado" && <Alert variante="advertencia" titulo="El dueño lo rechazó">{e.rechazo_motivo ? `Motivo: ${e.rechazo_motivo}` : "No dejó motivo."} Puedes hacer una versión nueva.</Alert>}

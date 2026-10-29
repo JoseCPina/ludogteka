@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SiPuedeAbrir } from "@/components/acceso-contexto";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
@@ -87,9 +88,12 @@ export default async function Hospitalizacion({ params }: { params: Promise<{ id
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href={`/caja/cobrar/${d.reserva_id}`} className="inline-flex min-h-10 items-center rounded-md bg-menta px-4 text-sm font-semibold text-morado hover:bg-menta-hover">
-              Ver cuenta / cobrar
-            </Link>
+            {/* La cuenta se abre en Caja: solo para quien puede abrirla (un médico de estética no). */}
+            <SiPuedeAbrir href={`/caja/cobrar/${d.reserva_id}`}>
+              <Link href={`/caja/cobrar/${d.reserva_id}`} className="inline-flex min-h-10 items-center rounded-md bg-menta px-4 text-sm font-semibold text-morado hover:bg-menta-hover">
+                Ver cuenta / cobrar
+              </Link>
+            </SiPuedeAbrir>
             <Link href={`/veterinaria/carnet/${d.perro_id}`} className="inline-flex min-h-10 items-center rounded-md border-[1.5px] border-borde bg-white px-4 text-sm font-semibold text-n-900 hover:bg-n-100">
               Carnet
             </Link>
