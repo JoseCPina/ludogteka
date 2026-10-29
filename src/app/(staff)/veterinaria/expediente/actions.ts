@@ -130,11 +130,15 @@ export async function firmarConsulta(id: string): Promise<ResultadoAccion> {
     : cobro && Number(cobro.cargos) > 0
       ? ` ${cobro.cargos} ${Number(cobro.cargos) === 1 ? "cargo pasó" : "cargos pasaron"} a Caja.${cobro.avisos?.length ? ` ${cobro.avisos.join(" ")}` : ""}`
       : "";
-  // Firmada: la copia que el navegador guardaba del formulario ya no hace falta.
-  await descartarBorradorGuardado(supabase, "consulta", id);
+  // Firmada: la copia que el navegador guardaba del formulario ya no hace falta. Se descarta a la vez que se lee la
+  // versión final (dos viajes a la base en paralelo, no uno tras otro).
   // QA S19: sin revalidatePath (la pantalla se refresca sola; revalidar aquí la pintaba dos veces). QA S41 (N140): la
   // consulta firmada va en la respuesta y la pantalla la pinta al recibirla.
-  return { error: null, exito: `Consulta firmada. Ya no se edita: solo admite una adenda.${notaCobro}`, registros: await registrosDe(supabase, [{ t: "vet_consultas", i: id, datos: { estado: "firmada" } }]) };
+  const [, registros] = await Promise.all([
+    descartarBorradorGuardado(supabase, "consulta", id),
+    registrosDe(supabase, [{ t: "vet_consultas", i: id, datos: { estado: "firmada" } }]),
+  ]);
+  return { error: null, exito: `Consulta firmada. Ya no se edita: solo admite una adenda.${notaCobro}`, registros };
 }
 
 export async function descartarBorrador(id: string, perroId: string): Promise<ResultadoAccion> {

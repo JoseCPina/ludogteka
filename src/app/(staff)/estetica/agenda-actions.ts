@@ -361,10 +361,12 @@ export async function finalizarCita(
   if (error) return { error: traducirError(error) };
   // QA S27: la pantalla pinta «Recogió» con lo que quedó guardado, sin revalidatePath (repintaba la página
   // antes de responder y «Recogió: —» se quedaba unos segundos). La agenda se lee fresca al volver a ella.
-  const { data } = await supabase.from("citas_estetica").select("recogido_por_nombre, recogido_por_es_dueno").eq("id", citaId).maybeSingle();
+  // «Recogió» sale de la misma lectura de la cita que va en `registros` (una sola consulta más después de la RPC).
+  const registros = await registrosDe(supabase, [{ t: "citas_estetica", i: citaId }]);
+  const data = registros[0]?.datos;
   return {
     error: null,
-    registros: await registrosDe(supabase, [{ t: "citas_estetica", i: citaId }]),
+    registros,
     recogido: { nombre: (data?.recogido_por_nombre as string | null) ?? recogidoPorNombre, esDueno: (data?.recogido_por_es_dueno as boolean | null) ?? recogidoPorEsDueno },
   };
 }

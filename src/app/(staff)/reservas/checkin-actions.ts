@@ -80,8 +80,9 @@ export async function confirmarCheckin(
   if (error?.hint === "sobrecupo") return { error: null, sobrecupo: error.message, registros: await registrosDe(supabase, [{ t: "estancias", i: estanciaId }]) };
   if (error) return { error: traducirError(error) };
 
-  revalidarModulosEstancia();
-  revalidatePath(`/reservas/estancias/${estanciaId}/checkin`);
+  // Sin revalidatePath: con él la respuesta esperaba a que el navegador volviera a pedir la página antes de soltar el
+  // botón (1.2 s en celular; 31 s en acciones-pantalla-dev con la recarga retrasada). La pantalla pinta «Check-in
+  // registrado» con esta respuesta y refresca después; las listas de Hotel y Guardería se leen frescas al abrirlas.
   return {
     error: null,
     quedo: (data?.checkin_sobrecupo as string | null | undefined) ?? null,
@@ -148,18 +149,17 @@ export async function confirmarCheckout(
   const supabase = await createSupabaseServerClient();
   const entregadas = (campos.pertenenciasEntregadas ?? []).filter((id) => /^[0-9a-f-]{36}$/.test(id));
 
-  // Lo que no se entrega se confirma con un motivo, que queda registrado con quién cerró la salida.
-  const { data: registradas } = await supabase
-    .from("estancia_pertenencias")
-    .select("id")
-    .eq("estancia_id", estanciaId)
-    .is("deleted_at", null);
+  // Lo que no se entrega se confirma con un motivo, que queda registrado con quién cerró la salida. Las pertenencias y
+  // quién cierra se leen a la vez (cada viaje a la base se nota en el celular).
+  const [{ data: registradas }, { data: quien }] = await Promise.all([
+    supabase.from("estancia_pertenencias").select("id").eq("estancia_id", estanciaId).is("deleted_at", null),
+    supabase.auth.getUser(),
+  ]);
   const sinEntregar = (registradas ?? []).filter((p) => !entregadas.includes(p.id as string)).length;
   const motivoSinEntrega = (campos.motivoSinEntrega ?? "").trim();
   if (sinEntregar > 0 && motivoSinEntrega.length < 3) {
     return { error: "Hay pertenencias sin entregar: escribe el motivo para cerrar la salida." };
   }
-  const { data: quien } = await supabase.auth.getUser();
 
   const { data: salida, error } = await supabase
     .from("estancias")
@@ -179,23 +179,22 @@ export async function confirmarCheckout(
   if (error?.hint === "fuera_horario") return { error: null, fueraHorario: error.message, registros: await registrosDe(supabase, [{ t: "estancias", i: estanciaId }]) };
   if (error) return { error: traducirError(error) };
 
-  // Lo entregado queda registrado: quién y cuándo.
-  if (entregadas.length > 0) {
-    const u = quien;
-    await supabase
-      .from("estancia_pertenencias")
-      .update({ devuelto: true, devuelto_at: new Date().toISOString(), devuelto_por: u.user?.id ?? null })
-      .eq("estancia_id", estanciaId)
-      .in("id", entregadas);
-  }
-
-  // N132: si salió antes de su salida prevista, la cuenta se ajusta a lo que usó (o no, por la política del negocio).
-  // La salida ya quedó registrada: si el ajuste falla se dice, sin deshacerla.
-  const { data: ajuste, error: errorAjuste } = await supabase.rpc("salida_anticipada_aplicar", { p_estancia_id: estanciaId });
+  // Lo entregado queda registrado: quién y cuándo. Y, a la vez, N132: si salió antes de su salida prevista, la cuenta
+  // se ajusta a lo que usó (o no, por la política del negocio). La salida ya quedó registrada: si el ajuste falla se
+  // dice, sin deshacerla.
+  const [, { data: ajuste, error: errorAjuste }] = await Promise.all([
+    entregadas.length > 0
+      ? supabase
+          .from("estancia_pertenencias")
+          .update({ devuelto: true, devuelto_at: new Date().toISOString(), devuelto_por: quien.user?.id ?? null })
+          .eq("estancia_id", estanciaId)
+          .in("id", entregadas)
+      : null,
+    supabase.rpc("salida_anticipada_aplicar", { p_estancia_id: estanciaId }),
+  ]);
   const a = (ajuste ?? null) as (CotizacionSalida & { aplicada?: boolean; saldo?: number }) | null;
 
-  revalidarModulosEstancia();
-  revalidatePath(`/reservas/estancias/${estanciaId}/checkout`);
+  // Sin revalidatePath (como el check-in): la pantalla pinta «Salida registrada» con esta respuesta.
   return {
     error: null,
     quedoFueraHorario: (salida?.checkout_fuera_horario as string | null | undefined) ?? null,
