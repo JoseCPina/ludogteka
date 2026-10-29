@@ -86,8 +86,8 @@ try {
       const hoy = (await api.rpc("fecha_negocio")).data;
       // De madrugada, a una hora al azar: si choca con otra cita de QA se prueba otra.
       let cita = null, e2 = null;
-      for (let intento = 0; intento < 8 && !cita; intento++) {
-        const hora = `0${3 + Math.floor(Math.random() * 3)}:${String(Math.floor(Math.random() * 60)).padStart(2, "0")}`;
+      for (let intento = 0; intento < 30 && !cita; intento++) {
+        const hora = `0${Math.floor(Math.random() * 6)}:${String(Math.floor(Math.random() * 60)).padStart(2, "0")}`;
         const inicio = new Date(`${hoy}T${hora}:00-06:00`).toISOString();
         ({ data: cita, error: e2 } = await api.from("citas_estetica").insert({ reserva_id: reservaId, perro_id: perro.id, servicio_id: ultima.servicio_id, empleado_id: ultima.empleado_id, inicio }).select("id").single());
       }
@@ -143,16 +143,17 @@ try {
         await p.locator("#checkin-entrega-quien").selectOption({ index: 1 });
         acciones.length = 0;
         const registrado = async () => (await p.getByText("Check-in registrado").count()) > 0;
-        let ms = await medir(p.locator("[data-confirmar-checkin]"), async () => (await registrado()) || (await p.locator("[data-aviso-fuera-horario], [data-confirmar-sobrecupo]").count()) > 0);
-        // Fuera de horario o sobrecupo: se confirma y se mide la segunda vuelta también.
+        const ms = await medir(p.locator("[data-confirmar-checkin]"), async () => (await registrado()) || (await p.locator("[data-aviso-fuera-horario], [data-confirmar-sobrecupo]").count()) > 0);
+        // Fuera de horario o sobrecupo: la pantalla pregunta (primer paso) y se mide aparte la confirmación (segundo).
+        let ms2 = null;
         if (!(await registrado()) && ms != null) {
           const t1 = Date.now();
           if (!(await confirmarSiFueraDeHorario(p, 500)) && (await p.locator("[data-confirmar-sobrecupo]").count())) await p.locator("[data-confirmar-sobrecupo]").click();
           while (!(await registrado()) && Date.now() - t1 < 60000) await espera(100);
-          ms = (await registrado()) ? ms + (Date.now() - t1) : null;
+          ms2 = Date.now() - t1;
         }
         const enBase = (await HOT.N.from("estancias").select("estado").eq("id", est.id).single()).data?.estado;
-        describir("Hotel · «Confirmar check-in»", k, ms, acciones, `; base: ${enBase}`);
+        describir("Hotel · «Confirmar check-in»", k, ms, acciones, `${ms2 == null ? "" : `; fuera de horario: la pregunta en ${ms} ms y «Registrar de todos modos» en ${ms2} ms`}; base: ${enBase}`);
       } else {
         const { error } = await api.from("estancias").update({ estado: "en_curso", entregado_por_nombre: MARCA, checkin_fuera_horario: "confirmado" }).eq("id", est.id);
         if (error) throw new Error(`check-in: ${error.message}`);
@@ -165,15 +166,16 @@ try {
         if (await p.locator("[data-entregue-todo]").count()) await p.locator("[data-entregue-todo]").click();
         acciones.length = 0;
         const salida = async () => (await p.getByText(/Salida registrada/).count()) > 0;
-        let ms = await medir(p.getByRole("button", { name: "Confirmar salida" }), async () => (await salida()) || (await p.locator("[data-aviso-fuera-horario]").count()) > 0);
+        const ms = await medir(p.getByRole("button", { name: "Confirmar salida" }), async () => (await salida()) || (await p.locator("[data-aviso-fuera-horario]").count()) > 0);
+        let ms2 = null;
         if (!(await salida()) && ms != null) {
           const t1 = Date.now();
           await confirmarSiFueraDeHorario(p, 500);
           while (!(await salida()) && Date.now() - t1 < 60000) await espera(100);
-          ms = (await salida()) ? ms + (Date.now() - t1) : null;
+          ms2 = Date.now() - t1;
         }
         const enBase = (await HOT.N.from("estancias").select("estado").eq("id", est.id).single()).data?.estado;
-        describir("Hotel · «Confirmar salida» (finaliza la estancia)", k, ms, acciones, `; base: ${enBase}`);
+        describir("Hotel · «Confirmar salida» (finaliza la estancia)", k, ms, acciones, `${ms2 == null ? "" : `; fuera de horario: la pregunta en ${ms} ms y «Registrar de todos modos» en ${ms2} ms`}; base: ${enBase}`);
       }
       await c.close();
     }
