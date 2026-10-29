@@ -98,7 +98,7 @@ export function promptFijo(articulos: Articulo[], precios: PreciosAyuda | null =
 export function promptVariable(ctx: ContextoAsistente): string {
   return [
     `Negocio: ${ctx.negocio}. Quien pregunta: ${ctx.rol === "admin" ? "admin (dueño o encargado)" : "recepción"}.`,
-    `Módulos que tiene prendidos: ${ctx.modulos.join(", ") || "ninguno además de caja y clientes"}. Si pregunta por algo de un módulo que no tiene, dile que ese módulo no está prendido (lo prende el admin en Administración → Módulos y plan).`,
+    `Módulos que tiene prendidos: ${ctx.modulos.join(", ") || "ninguno además de caja y clientes"}. Si pregunta por algo de un módulo que no tiene, dile que ese módulo no está prendido (lo prende el admin en Módulos y plan).`,
     ctx.pantalla ? `Está en la pantalla ${ctx.pantalla}.` : "",
     `Hoy es ${ctx.hoy}.`,
     ctx.videos && ctx.videos.length

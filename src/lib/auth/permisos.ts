@@ -135,7 +135,7 @@ export const PERMISOS = [
     clave: "administrar_modulos",
     etiqueta: "Administrar módulos",
     implica:
-      "Prende y apaga los módulos del plan (Hotel y guardería, Estética, Veterinaria…) desde Administración → Módulos. Apagar nunca borra nada, y si hay pendientes (estancias, citas, pacientes hospitalizados) avisa y pide confirmar. Contratar o cambiar el plan y el cobro siguen siendo de admin. Viene apagado.",
+      "Prende y apaga los módulos del plan (Hotel y guardería, Estética, Veterinaria…) desde Módulos y plan. Apagar nunca borra nada, y si hay pendientes (estancias, citas, pacientes hospitalizados) avisa y pide confirmar. Contratar o cambiar el plan y el cobro siguen siendo de admin. Viene apagado.",
   },
   {
     clave: "editar_ficha_clinica",

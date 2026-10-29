@@ -71,7 +71,7 @@ export async function geocodificarYCalcularDistancia(
   } | null;
 
   if (!sucursal?.lat || !sucursal?.lng) {
-    return { error: "Falta ubicar la dirección del negocio en el mapa: el admin la escribe en Perfil y la ubica en Administración → Ubicación para recolección. Mientras, captura la distancia a mano." };
+    return { error: "Falta ubicar la dirección del negocio en el mapa: el admin la escribe en Perfil y la ubica en Configuración, en la sección «Ubicación para recolección». Mientras, captura la distancia a mano." };
   }
   // QA R23: el punto de salida es opcional; sin él, la ruta sale de la dirección del negocio.
   const salida = cupo?.base_lat && cupo?.base_lng ? { lat: Number(cupo.base_lat), lng: Number(cupo.base_lng) } : { lat: Number(sucursal.lat), lng: Number(sucursal.lng) };

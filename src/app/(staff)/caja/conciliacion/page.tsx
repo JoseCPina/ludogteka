@@ -219,7 +219,7 @@ export default async function ConciliacionPage() {
           <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Otros pagos de tu cuenta (informativo)</h2>
           <p className="text-sm text-n-600">
             Pagos aprobados en tu cuenta de Mercado Pago que no se cobraron desde PeluDesk (otra tienda, una transferencia, otra terminal…). No son alertas ni
-            cuentan en «Necesita atención». Apaga esta lista en Administración → Cobro con terminal.
+            cuentan en «Necesita atención». Apaga esta lista en Cobro con terminal.
           </p>
           {ajenos.length === 0 ? (
             <p className="text-sm text-n-600">No hay otros pagos por ver.</p>

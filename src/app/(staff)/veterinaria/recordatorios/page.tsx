@@ -39,7 +39,7 @@ export default async function Recordatorios() {
         <h1 className="mt-1 text-2xl font-bold text-n-900">Recordatorios de próxima dosis</h1>
         <p className="mt-1 max-w-3xl text-n-600">
           Las vacunas y desparasitaciones cuya próxima dosis cae en los próximos {a.dias_anticipacion ?? 7} días (o venció hace poco). Salen solos por WhatsApp 7 días antes si prendes «Próxima vacuna o desparasitación» en{" "}
-          <EnlaceOTexto href="/admin/recordatorios" className="font-semibold text-morado hover:underline">Configuración → Recordatorios</EnlaceOTexto>; lo que no salió solo lo mandas tú desde aquí.
+          <EnlaceOTexto href="/admin/recordatorios" className="font-semibold text-morado hover:underline">Recordatorios por WhatsApp</EnlaceOTexto>; lo que no salió solo lo mandas tú desde aquí.
         </p>
       </div>
       {!a.recordatorios_activos && (

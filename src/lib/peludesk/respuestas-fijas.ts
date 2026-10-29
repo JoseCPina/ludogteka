@@ -23,7 +23,7 @@ export type PreciosFijos = { mensual: number | null; anual: number | null; sucur
 const pesosCentavos = (n: number) => `$${Number(n).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export const RESPUESTA_FACTURA =
-  "Sí. Menteo, S.A.S., la empresa que opera PeluDesk, emite la factura (CFDI) de tu suscripción. Tus datos fiscales los capturas en Módulos y plan → Datos de facturación. Te llega por correo en los días siguientes a cada pago. " +
+  "Sí. Menteo, S.A.S., la empresa que opera PeluDesk, emite la factura (CFDI) de tu suscripción. Tus datos fiscales los capturas en Módulos y plan, en la sección «Datos de facturación». Te llega por correo en los días siguientes a cada pago. " +
   COBRO_A_NOMBRE_DE;
 
 export const RESPUESTA_SOPORTE =
@@ -44,7 +44,7 @@ export function respuestaSucursales(p: PreciosFijos): string {
 export function respuestaRecordatorios(r?: PrecioRecordatorioFijo | null): string {
   // Corta a propósito: el guion la manda con el cierre en un mensaje con botón (tope de WhatsApp: 1,024 caracteres).
   const como =
-    "Salen solos, automático: el día anterior, a la hora que escojas, el recordatorio de la cita de estética, la consulta veterinaria y la llegada a hotel o guardería; también «ya está listo» al terminar la estética y la próxima vacuna 7 días antes. Van del WhatsApp de PeluDesk con el nombre de tu negocio. Tu cliente contesta «Confirmo» (queda confirmada en tu agenda) o «Necesito cambiarla» (te avisa en tu panel); con BAJA deja de recibirlos. Se prenden en Configuración → Recordatorios.";
+    "Salen solos, automático: el día anterior, a la hora que escojas, el recordatorio de la cita de estética, la consulta veterinaria y la llegada a hotel o guardería; también «ya está listo» al terminar la estética y la próxima vacuna 7 días antes. Van del WhatsApp de PeluDesk con el nombre de tu negocio. Tu cliente contesta «Confirmo» (queda confirmada en tu agenda) o «Necesito cambiarla» (te avisa en tu panel); con BAJA deja de recibirlos. Se prenden en Recordatorios por WhatsApp.";
   const cobro = r
     ? `${r.gratisMes} recordatorios entregados gratis al mes, también en la prueba. Después, ${pesosCentavos(r.precio)} + IVA por mensaje entregado, en la factura del plan, con un tope al mes que tú pones. Sin plan pagado, al llegar a ${r.gratisMes} se pausan hasta el mes siguiente.`
     : "Recordatorios entregados gratis cada mes, también en la prueba. Después, un precio por mensaje entregado más IVA, en la factura del plan, con un tope al mes que tú pones. Sin plan pagado, al acabarse los gratis se pausan hasta el mes siguiente.";

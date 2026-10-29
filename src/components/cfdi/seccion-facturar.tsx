@@ -29,7 +29,7 @@ export async function SeccionFacturar({
       <Alert variante="info" titulo="Facturación sin activar">
         Para facturar estos cobros, un admin captura los datos fiscales del negocio en{" "}
         <Link href="/admin/facturacion" className="font-semibold underline">
-          Administración → Facturación
+          Facturación
         </Link>
         .
       </Alert>

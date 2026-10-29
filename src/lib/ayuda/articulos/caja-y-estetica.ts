@@ -430,7 +430,7 @@ Si se corrigió el servicio de una cita ya cobrada y ahora cuesta menos, la cuen
     roles: ["admin", "recepcion"],
     rutas: ["/caja/reembolsos"],
     palabras: ["reembolso", "panel de Mercado Pago", "enterado", "devolución pendiente", "consultar"],
-    cuerpo: `Aquí caen los reembolsos de Mercado Pago que alguien tiene que ver, del más viejo al más nuevo. Llegas desde el aviso de **Necesita atención** en el tablero o directo en [Reembolsos](/caja/reembolsos).
+    cuerpo: `Aquí caen los reembolsos de Mercado Pago que alguien tiene que ver, del más viejo al más nuevo. Llegas con el botón **Reembolsos** de [Caja](/caja) (arriba, junto a **Turno y arqueo**) o desde el aviso de **Necesita atención** en el tablero.
 
 Cada uno dice qué pasó:
 

@@ -10,7 +10,7 @@ export function AvisoErrorClinico({ error, titulo }: { error: { message?: string
   if (error?.code === "42501" || /No tienes (el )?permiso|Solo un admin|Solo un m[eé]dico|es de un m[eé]dico/i.test(mensaje)) {
     return (
       <Alert variante="advertencia" titulo="No tienes acceso">
-        {mensaje || "Esta pantalla pide un permiso que tu cuenta no tiene."} Pídeselo a un admin (Administración → Permisos).
+        {mensaje || "Esta pantalla pide un permiso que tu cuenta no tiene."} Pídeselo a un admin (Permisos).
       </Alert>
     );
   }

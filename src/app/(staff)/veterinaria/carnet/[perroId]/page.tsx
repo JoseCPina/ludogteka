@@ -66,7 +66,7 @@ export default async function CarnetDeMascota({ params }: { params: Promise<{ pe
       supabase.from("tipos_requisito_sanitario").select("id, etiqueta").is("deleted_at", null).eq("obligatoria", true).order("orden"),
       supabase.from("carnet_enlaces").select("id").eq("perro_id", perroId).is("revocado_at", null).is("deleted_at", null).maybeSingle(),
       supabase.rpc("veterinaria_ajustes_actuales").then(async (r) => {
-        // El recordatorio automático de vacunas vive en Configuración → Recordatorios.
+        // El recordatorio automático de vacunas vive en Recordatorios por WhatsApp.
         const { data: rec } = await supabase.from("recordatorios_ajustes").select("vacuna").is("deleted_at", null).maybeSingle();
         return { ...r, data: { ...((r.data ?? {}) as Record<string, unknown>), recordatorios_activos: Boolean(rec?.vacuna) } };
       }),
@@ -193,7 +193,7 @@ export default async function CarnetDeMascota({ params }: { params: Promise<{ pe
       </Seccion>
 
       {permisos.vacunas && (
-        <Seccion titulo="Recordatorios de próxima dosis" nota={ajustesActuales.recordatorios_activos ? "Salen solos por WhatsApp 7 días antes." : "El negocio los tiene apagados (se prenden en Configuración → Recordatorios); aun así puedes verlos en la lista de recordatorios."}>
+        <Seccion titulo="Recordatorios de próxima dosis" nota={ajustesActuales.recordatorios_activos ? "Salen solos por WhatsApp 7 días antes." : "El negocio los tiene apagados (se prenden en Recordatorios por WhatsApp); aun así puedes verlos en la lista de recordatorios."}>
           <RecordatoriosMascota perroId={perroId} apagados={carnet.recordatorios_apagados} />
         </Seccion>
       )}

@@ -103,7 +103,7 @@ export function respuestaPrecioFija(tema: TemaPrecio, p: PreciosBot, registro: s
     case "prueba":
       return `La prueba es de *15 días gratis*, sin tarjeta y con todo incluido. Después, *${pesos(p.mensual)} + IVA al mes* por negocio.\n\nEmpieza aquí:\n${registro}`;
     case "factura":
-      return "Sí: la factura (CFDI) de tu suscripción la emite Menteo, S.A.S., la empresa que opera PeluDesk. Tus datos fiscales los capturas en Módulos y plan → Datos de facturación y te llega por correo después de cada pago.";
+      return "Sí: la factura (CFDI) de tu suscripción la emite Menteo, S.A.S., la empresa que opera PeluDesk. Tus datos fiscales los capturas en Módulos y plan, en la sección «Datos de facturación» y te llega por correo después de cada pago.";
     default:
       return [
         `PeluDesk cuesta *${pesos(p.mensual)} + IVA al mes* por negocio, o *${pesos(p.anual)} + IVA al año* (dos meses gratis).`,

@@ -30,7 +30,7 @@ async function exigirCaja(): Promise<{ error: string } | { cx: ConexionCobro }> 
   if (!sesion || !["admin", "recepcion"].includes(sesion.rol)) return { error: "Solo admin o recepción pueden cobrar." };
   if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_DEMO };
   const cx = await conexionDeCobro(await negocioActual());
-  if (!cx) return { error: "Este negocio no tiene terminal ni links de pago conectados. Cobra a mano, o pide al admin que conecte su cuenta en Administración → Cobro con terminal." };
+  if (!cx) return { error: "Este negocio no tiene terminal ni links de pago conectados. Cobra a mano, o pide al admin que conecte su cuenta en Cobro con terminal." };
   return { cx };
 }
 
@@ -72,7 +72,7 @@ export async function iniciarCobroTerminal(
   if (!Number.isFinite(monto) || monto <= 0) return { error: "El monto a cobrar debe ser mayor a cero." };
   if (plazos !== null && ![1, 3, 6, 9, 12].includes(plazos)) return { error: "Plazo no válido." };
   if (plazos && plazos > 1 && cx.proveedor !== "mercadopago") return { error: "Los meses sin intereses desde la app solo están con Mercado Pago." };
-  if (!cx.terminalId) return { error: "No hay terminal escogida. El admin la escoge en Administración → Cobro con terminal; mientras, cobra a mano." };
+  if (!cx.terminalId) return { error: "No hay terminal escogida. El admin la escoge en Cobro con terminal; mientras, cobra a mano." };
 
   const supabase = await createSupabaseServerClient();
   {
@@ -357,7 +357,7 @@ export async function devolverConProveedor(reservaId: string, cobroId: string, m
   const cx = await conexionDeCobro(negocio);
   if (!cx) {
     await admin.rpc("rechazar_reembolso", { p_reembolso_id: p.reembolso_id, p_detalle: "Sin cuenta de Mercado Pago conectada.", p_evento: null });
-    return { error: "Mercado Pago no está conectado: no se pudo pedir el reembolso y no se registró nada en caja. Reconecta la cuenta en Administración → Cobro con terminal, o hazlo en el panel de Mercado Pago (se registra solo)." };
+    return { error: "Mercado Pago no está conectado: no se pudo pedir el reembolso y no se registró nada en caja. Reconecta la cuenta en Cobro con terminal, o hazlo en el panel de Mercado Pago (se registra solo)." };
   }
   try {
     const r = await pedirReembolso(admin, cx, orden, { reembolsoId: p.reembolso_id, monto, total: p.total });
@@ -507,7 +507,7 @@ export async function iniciarCobroTerminalGrupo(partes: ParteGrupo[], plazos: nu
   const { cx } = acceso;
   if (plazos !== null && ![1, 3, 6, 9, 12].includes(plazos)) return { error: "Plazo no válido." };
   if (plazos && plazos > 1 && cx.proveedor !== "mercadopago") return { error: "Los meses sin intereses desde la app solo están con Mercado Pago." };
-  if (!cx.terminalId) return { error: "No hay terminal escogida. El admin la escoge en Administración → Cobro con terminal; mientras, cobra a mano." };
+  if (!cx.terminalId) return { error: "No hay terminal escogida. El admin la escoge en Cobro con terminal; mientras, cobra a mano." };
 
   const supabase = await createSupabaseServerClient();
   const { data: turno } = await supabase.from("turnos_caja").select("id").eq("estado", "abierto").maybeSingle();

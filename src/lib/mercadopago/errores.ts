@@ -27,7 +27,7 @@ export function traducirRespuestaMp(status: number, cuerpo: unknown): { mensaje:
     return {
       mensaje: "Mercado Pago rechazó la credencial.",
       sugerencia:
-        "La conexión con tu cuenta ya no es válida (se revocó o venció). En Administración → Cobro con terminal, desconecta y vuelve a conectar Mercado Pago.",
+        "La conexión con tu cuenta ya no es válida (se revocó o venció). En Cobro con terminal, desconecta y vuelve a conectar Mercado Pago.",
     };
   }
   // Visto en la API real: mandar una orden a una terminal que no es de la
@@ -35,7 +35,7 @@ export function traducirRespuestaMp(status: number, cuerpo: unknown): { mensaje:
   if (status === 403 && codigo === "forbidden_checking_device_owner") {
     return {
       mensaje: "Esa terminal no es de la cuenta de Mercado Pago conectada.",
-      sugerencia: "Escoge otra vez la terminal en Administración → Cobro con terminal (solo salen las de tu cuenta).",
+      sugerencia: "Escoge otra vez la terminal en Cobro con terminal (solo salen las de tu cuenta).",
     };
   }
   if (status === 403) {
@@ -50,7 +50,7 @@ export function traducirRespuestaMp(status: number, cuerpo: unknown): { mensaje:
       mensaje: "Mercado Pago no encontró el recurso.",
       sugerencia:
         /terminal/i.test(detalle)
-          ? "La terminal elegida ya no está en tu cuenta. Escoge otra en Administración → Cobro con terminal."
+          ? "La terminal elegida ya no está en tu cuenta. Escoge otra en Cobro con terminal."
           : "El id de la orden o del pago no existe (o tiene más de 3 meses). Si venía de una notificación, ignórala.",
     };
   }
@@ -63,7 +63,7 @@ export function traducirRespuestaMp(status: number, cuerpo: unknown): { mensaje:
   if (status === 400 && /operating_mode|PDV|standalone/i.test(detalle)) {
     return {
       mensaje: "La terminal no está en modo PDV (integrado).",
-      sugerencia: "Cámbiala a PDV en Administración → Cobro con terminal («Poner en modo integrado»); en STANDALONE la terminal ignora las órdenes de la app.",
+      sugerencia: "Cámbiala a PDV en Cobro con terminal («Poner en modo integrado»); en STANDALONE la terminal ignora las órdenes de la app.",
     };
   }
   if (status === 400) {

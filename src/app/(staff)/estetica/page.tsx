@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { EnlacePrecarga } from "@/components/ui/enlace-precarga";
 import { fechaParaAgendar } from "@/lib/estetica/proponer-hora";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -153,43 +153,43 @@ export default async function AgendaPage({
             flecha con su nombre para lectores de pantalla (QA del 18 de octubre de 2026). */}
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:gap-3" data-barra-agenda>
           <div className="flex flex-wrap gap-1.5 sm:gap-2">
-            <Link href={`/estetica?vista=${vista}&fecha=${sumarDiasFecha(fechaAncla, vista === "semana" ? -7 : -1)}`} aria-label="Anterior">
+            <EnlacePrecarga href={`/estetica?vista=${vista}&fecha=${sumarDiasFecha(fechaAncla, vista === "semana" ? -7 : -1)}`} aria-label="Anterior">
               <Button type="button" variante="secundario" className="whitespace-nowrap px-3 sm:px-4" tabIndex={-1}>
                 <span aria-hidden>←</span>
                 <span className="hidden sm:inline">Anterior</span>
               </Button>
-            </Link>
-            <Link href={`/estetica?vista=dia&fecha=${hoy}`}>
+            </EnlacePrecarga>
+            <EnlacePrecarga href={`/estetica?vista=dia&fecha=${hoy}`}>
               <Button type="button" variante="secundario" className="whitespace-nowrap px-3 sm:px-4" tabIndex={-1}>
                 Hoy
               </Button>
-            </Link>
-            <Link href={`/estetica?vista=${vista}&fecha=${sumarDiasFecha(fechaAncla, vista === "semana" ? 7 : 1)}`} aria-label="Siguiente">
+            </EnlacePrecarga>
+            <EnlacePrecarga href={`/estetica?vista=${vista}&fecha=${sumarDiasFecha(fechaAncla, vista === "semana" ? 7 : 1)}`} aria-label="Siguiente">
               <Button type="button" variante="secundario" className="whitespace-nowrap px-3 sm:px-4" tabIndex={-1}>
                 <span className="hidden sm:inline">Siguiente</span>
                 <span aria-hidden>→</span>
               </Button>
-            </Link>
+            </EnlacePrecarga>
             <span className="ml-auto sm:ml-0 sm:mx-1 sm:block sm:w-px sm:bg-n-200" aria-hidden />
-            <Link href={`/estetica?vista=dia&fecha=${fechaAncla}`}>
+            <EnlacePrecarga href={`/estetica?vista=dia&fecha=${fechaAncla}`}>
               <Button type="button" variante={vista === "dia" ? "primario" : "secundario"} className="whitespace-nowrap px-3 sm:px-4" tabIndex={-1}>
                 Día
               </Button>
-            </Link>
-            <Link href={`/estetica?vista=semana&fecha=${fechaAncla}`}>
+            </EnlacePrecarga>
+            <EnlacePrecarga href={`/estetica?vista=semana&fecha=${fechaAncla}`}>
               <Button type="button" variante={vista === "semana" ? "primario" : "secundario"} className="whitespace-nowrap px-3 sm:px-4" tabIndex={-1}>
                 Semana
               </Button>
-            </Link>
+            </EnlacePrecarga>
           </div>
           <div className="flex flex-wrap gap-2 [&>*]:flex-1 sm:[&>*]:flex-none">
             <BotonNuevoCliente tipo="estetica" />
             {/* N116/N121: el día que se está viendo (en Semana, el primero de la semana o hoy) viaja al formulario. */}
-            <Link href={`/estetica/nueva?fecha=${fechaParaAgendar(vista, fechaAncla, desde, hoy)}`} data-agendar-fecha={fechaParaAgendar(vista, fechaAncla, desde, hoy)}>
+            <EnlacePrecarga href={`/estetica/nueva?fecha=${fechaParaAgendar(vista, fechaAncla, desde, hoy)}`} data-agendar-fecha={fechaParaAgendar(vista, fechaAncla, desde, hoy)}>
               <Button type="button" className="w-full whitespace-nowrap" tabIndex={-1}>
                 Agendar
               </Button>
-            </Link>
+            </EnlacePrecarga>
           </div>
         </div>
       </div>
@@ -228,7 +228,7 @@ export default async function AgendaPage({
                           )}
                           {citasDelDia.map((c) => (
                             <div key={c.id} className="flex flex-col gap-1.5 sm:flex-row sm:items-stretch">
-                              <Link
+                              <EnlacePrecarga
                                 href={
                                   puedeEditarTodos || esPropia ? `/estetica/${c.id}` : "#"
                                 }
@@ -259,16 +259,16 @@ export default async function AgendaPage({
                                     Estilista ausente ({enAusencia.get(c.id)}): reasigna esta cita
                                   </span>
                                 )}
-                              </Link>
+                              </EnlacePrecarga>
                               {(puedeEditarTodos || esPropia) && (c.estado === "reservada" || c.estado === "confirmada") && (
-                                <Link
+                                <EnlacePrecarga
                                   href={`/estetica/${c.id}?reprogramar=1`}
                                   data-reprogramar-agenda
                                   className="inline-flex min-h-9 items-center justify-center whitespace-nowrap rounded-md border border-n-200 bg-white px-3 text-xs font-semibold text-morado hover:bg-morado-suave"
                                   title="Cambiar la fecha o la hora de esta cita"
                                 >
                                   Reprogramar
-                                </Link>
+                                </EnlacePrecarga>
                               )}
                             </div>
                           ))}

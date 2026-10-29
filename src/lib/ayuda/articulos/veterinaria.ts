@@ -238,7 +238,7 @@ Cada recordatorio tiene tres botones:
 
 ### Envío automático
 
-En [Configuración → Recordatorios](/admin/recordatorios) prende **Próxima vacuna o desparasitación**: el recordatorio sale solo por WhatsApp **7 días antes**, una vez por dosis, a la hora de envío de tu negocio. Sale del número de PeluDesk con el nombre de tu negocio y trae dos botones: **Agendar** te deja una solicitud de cita en [Recordatorios](/recordatorios) (con **Agendar** para abrir la cita de esa mascota) y **Después** solo se anota. Si el dueño escribe algo, también te llega ahí. Si algo falla, el recordatorio queda en **Por mandar** para que lo mandes tú. Todo lo de los recordatorios automáticos: [[articulo:recordatorios-automaticos-por-whatsapp]].
+En [Recordatorios por WhatsApp](/admin/recordatorios) prende **Próxima vacuna o desparasitación**: el recordatorio sale solo por WhatsApp **7 días antes**, una vez por dosis, a la hora de envío de tu negocio. Sale del número de PeluDesk con el nombre de tu negocio y trae dos botones: **Agendar** te deja una solicitud de cita en [Recordatorios](/recordatorios) (con **Agendar** para abrir la cita de esa mascota) y **Después** solo se anota. Si el dueño escribe algo, también te llega ahí. Si algo falla, el recordatorio queda en **Por mandar** para que lo mandes tú. Todo lo de los recordatorios automáticos: [[articulo:recordatorios-automaticos-por-whatsapp]].
 
 ### Cuando WhatsApp no lo entrega
 

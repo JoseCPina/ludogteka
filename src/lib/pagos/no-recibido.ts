@@ -68,7 +68,7 @@ export async function revisarCobroConProveedor(negocio: NegocioParaCobro, cobroI
   if (!cx || cx.proveedor !== "mercadopago" || cx.simulado || !cx.mp?.accessToken) {
     return {
       ok: false,
-      error: "Para marcarlo como no recibido hay que comprobarlo con Mercado Pago, y la cuenta no está conectada. Reconéctala en Administración → Cobro con terminal y vuelve a intentarlo.",
+      error: "Para marcarlo como no recibido hay que comprobarlo con Mercado Pago, y la cuenta no está conectada. Reconéctala en Cobro con terminal y vuelve a intentarlo.",
     };
   }
 

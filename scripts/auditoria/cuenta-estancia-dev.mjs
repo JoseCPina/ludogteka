@@ -9,6 +9,11 @@
 // cargo aplicado. Revisa contra la base: el bloque de la estancia (noches reales, la línea del ajuste con su motivo, el
 // cargo y el total), el encabezado de la reserva, la pantalla de check-out ya hecha, el calendario y Reportes («Noches
 // de hotel» cuenta las que usó).
+//
+// QA R54 (N144): el detalle (/reservas/<id>) y el check-out de una estancia finalizada listan sus cargos de la cuenta:
+// primero «Base de la estancia», después «Cargos aplicados» y el total; cada cargo sale una vez, y «Ninguno todavía» solo
+// sale (debajo de la base) en una estancia sin cargos aparte de la base. Antes decía «Cargos aplicados: Ninguno todavía»
+// ENCIMA de la línea de la estancia, y un cargo salía dos veces (en la lista y otra vez en el desglose).
 const { B, SB, datos, comprobar, seccion, terminar } = await import("./veterinaria-comun-dev.mjs");
 const { abrirNavegador } = await import("../lib/navegador.mjs");
 const { BASE, abrirComo, esperarTexto } = await import("./lib/huellitas-navegador.mjs");
@@ -97,6 +102,52 @@ try {
   const { data: desg } = await api.rpc("reporte_desglose", { p_tarjeta: "op_hotel", p_desde: entrada, p_hasta: entrada, p_buscar: nombre, p_orden: "fecha", p_dir: "desc", p_limite: 5, p_desplazamiento: 0 });
   const fila = (desg?.filas ?? [])[0];
   comprobar(Number(fila?.monto) === usadas && new RegExp(`${usadas} noches?`).test(fila?.detalle ?? ""), `Reportes › Noches de hotel cuenta ${fila?.monto} (${fila?.detalle}); usó ${usadas} de ${reservadas}`);
+
+  seccion("4. N144: la lista de cargos de una estancia finalizada, en el detalle y en el check-out");
+  // El bloque de la estancia: «Base de la estancia» antes que «Cargos aplicados»; «Ninguno todavía» solo sin cargos.
+  async function listaDeCargos(ruta, nombrePerro) {
+    await p.goto(`${BASE}${ruta}`, { waitUntil: "networkidle", timeout: 120000 });
+    const cont = p.locator("div").filter({ has: p.locator("[data-base-estancia]") }).filter({ hasText: /cargos aplicados/i }).last();
+    const texto = limpio(await cont.innerText().catch(async () => await p.locator("main").innerText()));
+    const t = texto.toLowerCase();
+    return { texto, base: t.indexOf("base de la estancia"), titulo: t.indexOf("cargos aplicados"), ninguno: t.indexOf("ninguno todavía"), nombrePerro };
+  }
+  const revisar = (r, donde, conCargo) => {
+    comprobar(r.base >= 0 && r.titulo > r.base, `${donde}: «Base de la estancia» va antes que «Cargos aplicados» («${r.texto.slice(0, 160)}»)`);
+    if (conCargo) {
+      comprobar(r.ninguno < 0, `${donde}: con un cargo no dice «Ninguno todavía»`);
+      const veces = (r.texto.match(/\$85\.00/g) ?? []).length;
+      comprobar(veces === 1, `${donde}: el cargo de $85.00 sale una sola vez (sale ${veces})`);
+    } else {
+      comprobar(r.ninguno > r.titulo && r.titulo > r.base, `${donde}: sin cargos aparte de la base, «Ninguno todavía» va debajo de «Cargos aplicados» y de la base`);
+    }
+  };
+  if (cargoLibre) {
+    revisar(await listaDeCargos(`/reservas/${reserva.id}`), "detalle con cargo", true);
+    revisar(await listaDeCargos(`/reservas/estancias/${id}/checkout`), "check-out con cargo", true);
+  }
+  // Una segunda estancia, finalizada y sin ningún cargo (como S41 y S42 de QA: solo la base).
+  const perro2 = (await SB.from("perros").insert({ negocio_id: B, cliente_id: datos.clienteSoloB, nombre: `${nombre} sin cargos`, tamano_id: tallaChico.id }).select("id").single()).data;
+  creados.perros.push(perro2.id);
+  const reserva2 = (await api.from("reservas").insert({ cliente_id: datos.clienteSoloB }).select("id").single()).data;
+  const salida2 = await abiertoDesde(sumar(entrada, 1), 1);
+  const est2 = await api.from("estancias").insert({
+    reserva_id: reserva2.id, perro_id: perro2.id, servicio_id: hotel.id, fecha_entrada: entrada, fecha_salida: salida2, dia_cerrado_confirmado: "confirmado",
+    bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: "Prueba N144", bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: "Prueba N144",
+  }).select("id").single();
+  if (est2.error) throw new Error(`estancia 2: ${est2.error.message}`);
+  creados.estancias.push(est2.data.id);
+  await api.from("estancias").update({ estado: "en_curso", entregado_por_nombre: "Prueba", hora_entrada_real: new Date(`${entrada}T17:00:00Z`).toISOString(), ...CONFIRMA_FUERA_HORARIO }).eq("id", est2.data.id);
+  await p.goto(`${BASE}/reservas/estancias/${est2.data.id}/checkout`, { waitUntil: "networkidle", timeout: 120000 });
+  await p.locator("#checkout-recoge-nombre").fill("Luis Prueba");
+  await p.getByRole("button", { name: "Sí, es el dueño" }).click();
+  if (await p.locator("[data-entregue-todo]").count()) await p.locator("[data-entregue-todo]").click();
+  await p.getByRole("button", { name: "Confirmar salida" }).click();
+  await confirmarSiFueraDeHorario(p);
+  await esperarTexto(p, /Salida registrada|Este perro ya salió/);
+  comprobar((await SB.from("estancias").select("estado").eq("id", est2.data.id).single()).data?.estado === "finalizada", "la estancia sin cargos quedó finalizada");
+  revisar(await listaDeCargos(`/reservas/${reserva2.id}`), "detalle sin cargos (finalizada)", false);
+  revisar(await listaDeCargos(`/reservas/estancias/${est2.data.id}/checkout`), "check-out sin cargos (finalizada)", false);
   await p.context().close();
 } finally {
   const ahora = new Date().toISOString();

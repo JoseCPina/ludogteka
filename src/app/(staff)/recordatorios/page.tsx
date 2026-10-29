@@ -87,7 +87,7 @@ export default async function RecordatoriosPage() {
             <>
               Qué sale solo y a qué hora:{" "}
               <EnlaceOTexto className="underline" href="/admin/recordatorios">
-                Configuración → Recordatorios
+                Recordatorios por WhatsApp
               </EnlaceOTexto>
               .
             </>
@@ -95,7 +95,7 @@ export default async function RecordatoriosPage() {
             <>
               Todavía no hay recordatorios automáticos prendidos: se prenden en{" "}
               <EnlaceOTexto className="underline" href="/admin/recordatorios">
-                Configuración → Recordatorios
+                Recordatorios por WhatsApp
               </EnlaceOTexto>
               .
             </>
