@@ -2,8 +2,11 @@
 // kbps): desde que se aprieta el botón hasta que la pantalla enseña el resultado, y cuánto de eso fue la petición de la
 // acción del servidor (y cuántos KB devolvió: una acción que vuelve a pintar páginas responde con todo su contenido).
 //
-//   node scripts/auditoria/qa-cierres-prod.mjs [--rapida] [--veces 2] [--solo cierre,checkin,checkout,firmar]
+//   node scripts/auditoria/qa-cierres-prod.mjs [--rapida] [--veces 2] [--solo pantallas,cierre,checkin,checkout,firmar]
 //
+// · pantallas · cinco pantallas del personal (Recepción, Hotel y Caja de hotel-s16, la agenda de estética-s16 y el
+//              inicio de Veterinaria de vet-s16), cada una abierta --veces veces: cuánto tarda el servidor en responder
+//              la página (cada petición pasa por el middleware) y cuánto hasta que el documento termina de cargar.
 // · cierre   · prueba-qa-onboarding-estetica-s16: «Confirmar cierre» de una cita «PRUEBA QA cierres» en curso.
 // · checkin  · prueba-qa-onboarding-hotel-s16: «Confirmar check-in» de una estancia de hotel de «PRUEBA QA S38 Perro Hotel».
 // · checkout · la misma estancia: «Confirmar salida» (finaliza la estancia).
@@ -72,6 +75,33 @@ const describir = (nombre, k, ms, acciones, extra = "") => {
 };
 
 try {
+  if (toca("pantallas")) {
+    const PANTALLAS = [
+      ["prueba-qa-onboarding-hotel-s16", "/recepcion", "Recepción"],
+      ["prueba-qa-onboarding-hotel-s16", "/hotel", "Hotel"],
+      ["prueba-qa-onboarding-hotel-s16", "/caja", "Caja"],
+      ["prueba-qa-onboarding-estetica-s16", "/estetica", "Agenda de estética"],
+      ["prueba-qa-onboarding-vet-s16", "/veterinaria", "Veterinaria"],
+    ];
+    const negocios = new Map();
+    for (const [slug, ruta, nombre] of PANTALLAS) {
+      if (!negocios.has(slug)) negocios.set(slug, await negocioPrueba(slug));
+      const NEG = negocios.get(slug);
+      const medidas = [];
+      for (let k = 0; k < VECES; k++) {
+        const { c, p } = await pantalla(NEG, "admin");
+        const t0 = Date.now();
+        const resp = await p.goto(`${NEG.base}${ruta}`, { waitUntil: "domcontentloaded" });
+        const documento = Date.now() - t0;
+        const t = resp?.request().timing();
+        medidas.push({ servidor: t ? Math.round(t.responseStart - t.requestStart) : null, documento, final: new URL(p.url()).pathname });
+        await c.close();
+      }
+      const mediana = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
+      filas.push(`Pantalla ${nombre} (${ruta}): el servidor responde en ${medidas.map((m) => m.servidor).join(" / ")} ms (mediana ${mediana(medidas.map((m) => m.servidor))}); documento cargado en ${medidas.map((m) => m.documento).join(" / ")} ms (mediana ${mediana(medidas.map((m) => m.documento))})${medidas.some((m) => m.final !== ruta) ? `; terminó en ${medidas.map((m) => m.final).join(", ")}` : ""}`);
+    }
+  }
+
   if (toca("cierre")) {
     const EST = await negocioPrueba("prueba-qa-onboarding-estetica-s16");
     const s = await EST.sesion("admin");

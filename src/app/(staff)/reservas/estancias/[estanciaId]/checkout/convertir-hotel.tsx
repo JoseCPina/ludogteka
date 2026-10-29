@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { convertirEnNocheHotel } from "../../../checkin-actions";
 import { EnlaceOTexto } from "@/components/acceso-contexto";
+import { formatearFechaCalendario } from "@/lib/formato";
 
 export type SugerenciaHotel = {
   minutos: number;
@@ -31,8 +32,20 @@ export function ConvertirHotel({
   const [omitida, setOmitida] = useState(false);
   const convirtiendo = useEspera();
   const [error, setError] = useState<string | null>(null);
+  // Ya convertida: lo dice con la respuesta (la estancia como quedó), sin esperar a que la página se recargue.
+  const [convertida, setConvertida] = useState<{ salida: string | null } | null>(null);
 
   if (omitida) return null;
+  if (convertida) {
+    return (
+      <Alert variante="exito" titulo="Convertida en noche de hotel">
+        <span data-convertida-hotel>
+          La estancia ya es de hotel y se cobra a su tarifa
+          {convertida.salida ? `; la salida queda para el ${formatearFechaCalendario(convertida.salida)}` : ""}.
+        </span>
+      </Alert>
+    );
+  }
 
   async function convertir() {
     setError(null);
@@ -41,6 +54,9 @@ export function ConvertirHotel({
       setError(res.error);
       return;
     }
+    const estancia = res.registros?.find((r) => r.t === "estancias")?.datos;
+    setConvertida({ salida: (estancia?.fecha_salida as string | null | undefined) ?? null });
+    // El resto de la página (servicio, salida, cuenta) se refresca después, sin detener el botón.
     router.refresh();
   }
 

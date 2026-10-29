@@ -429,7 +429,7 @@ Al cancelar una cuenta en [Caja](/caja), marca la casilla para cancelar también
 4. Escribe **Quién recoge al perro** y marca **Sí, es el dueño** o **No, persona autorizada**.
 5. Toca **Confirmar salida**. Si es un día que el negocio no abre, o fuera de su horario, te pregunta «El negocio está cerrado hoy; ¿registrar de todos modos?»: toca **Registrar la salida de todos modos** (queda en la bitácora y en la reserva: «Salió fuera del horario: …») o **Todavía no**. Sale **Salida registrada** con el botón **Cobrar la cuenta**, que abre el cobro de esa reserva (también aparece en la pantalla de salida de un perro que ya salió). Si la cuenta ya no tiene saldo por cobrar, el botón dice **Ver cobros**.
 
-En hotel, si se queda más, toca **Extender la salida**, escoge la nueva salida y revisa en cuánto queda la cuenta antes de guardar. Si un perro de guardería sigue aquí después del cierre, puedes **Convertir en noche de hotel**.
+En hotel, si se queda más, toca **Extender la salida**, escoge la nueva salida y revisa en cuánto queda la cuenta antes de guardar. Si un perro de guardería sigue aquí después del cierre, puedes **Convertir en noche de hotel**: en cuanto se guarda, el aviso cambia a «Convertida en noche de hotel» con la nueva fecha de salida.
 
 ## Si sale antes de lo reservado
 

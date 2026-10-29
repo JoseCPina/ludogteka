@@ -228,7 +228,7 @@ try {
   seccion("Veterinaria · el mosaico «Expediente clínico» cuenta los borradores que hay (N139)");
   const med = await rpc(P.admin, "guardar_medico_veterinario", { p_profile_id: datos.adminB, p_cedula: String(Date.now()).slice(-8), p_cpa: null });
   comprobar(med.ok, `el admin queda como médico de prueba${med.ok ? "" : ` (${med.mensaje})`}`);
-  limpieza.push(async () => rpc(P.admin, "quitar_medico_veterinario", { p_profile_id: datos.adminB }));
+  limpieza.push(async () => rpc(P.admin, "quitar_medico_veterinario", { p_medico_id: med.cuerpo }));
   const nueva = await rpc(P.admin, "vet_consulta_iniciar", { p_perro: datos.perroSoloB, p_cita: null, p_tipo: "consulta", p_medico: null });
   comprobar(nueva.ok, `consulta en borrador creada${nueva.ok ? "" : ` (${nueva.mensaje})`}`);
   const consultaId = nueva.cuerpo;

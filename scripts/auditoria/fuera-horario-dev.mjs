@@ -55,13 +55,19 @@ for (let i = 1; i <= 14 && !cerrado; i++) {
 const { data: servicios } = await SB.from("servicios").select("id, categoria, unidad").eq("negocio_id", B).in("categoria", ["hotel", "guarderia"]).is("deleted_at", null);
 const HOTEL = servicios.find((s) => s.categoria === "hotel")?.id;
 const GUARDE = servicios.find((s) => s.categoria === "guarderia" && s.unidad === "dia")?.id;
-const { data: mestizo } = await A.from("razas").select("id").eq("nombre", "Mestizo").single();
+// Su propio perro, con talla y pelaje (lo que piden la guardería y el hotel para cotizar), dado de baja al terminar.
+// El catálogo de razas es por especie (QA S39): «Mestizo» existe de perro y de gato, se toma el de perro.
+const { data: mestizo } = await A.from("razas").select("id").eq("nombre", "Mestizo").eq("especie", "perro").maybeSingle();
 const { data: tam } = await A.from("tamanos_categoria").select("id").is("deleted_at", null).order("orden").limit(1).single();
 const { data: pel } = await A.from("tipos_pelaje").select("id").is("deleted_at", null).order("orden").limit(1).single();
+if (!tam || !pel) throw new Error("No encontré una talla y un pelaje en el catálogo.");
 
 const creadas = { reservas: [], estancias: [], perros: [] };
-const { data: perro, error: ePerro } = await SB.from("perros").insert({ cliente_id: datos.clienteSoloB, nombre: `ZZ Horario ${sufijo}`, raza: "Mestizo", raza_id: mestizo.id, tamano_id: tam.id, pelaje_id: pel.id }).select("id").single();
-if (ePerro) throw new Error(ePerro.message);
+const { data: perro, error: ePerro } = await SB.from("perros").insert({
+  negocio_id: B, cliente_id: datos.clienteSoloB, nombre: `ZZ Horario ${sufijo}`, especie: "perro",
+  raza: "Mestizo", raza_id: mestizo?.id ?? null, tamano_id: tam.id, pelaje_id: pel.id,
+}).select("id").single();
+if (ePerro) throw new Error(`perro de prueba: ${ePerro.message}`);
 creadas.perros.push(perro.id);
 
 async function estancia(servicio, entrada, salida, extra = {}) {
