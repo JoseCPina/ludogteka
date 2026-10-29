@@ -6,6 +6,8 @@ import { useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { Chip } from "@/components/ui/chip";
+import { AvisoDemo } from "@/components/ui/aviso-demo";
+import { AVISO_FOTO_DEMO, AVISO_VIDEO_DEMO } from "@/lib/solo-lectura";
 import { useEspera } from "@/hooks/use-espera";
 import { useAbrirEnlace } from "@/hooks/use-abrir-enlace";
 import { AbrirWhatsApp } from "@/components/ui/abrir-whatsapp";
@@ -29,7 +31,9 @@ type Subida = {
   key: string;
   nombre: string;
   tipo: "foto" | "video";
-  estado: "preparando" | "subiendo" | "error";
+  // demo: no se subió (la demo no guarda); se enseña lo elegido desde el navegador.
+  estado: "preparando" | "subiendo" | "error" | "demo";
+  vista?: string;
   texto: string;
   progreso: number;
   error?: string;
@@ -114,6 +118,11 @@ export function PerroAdentro({ dato, permiso, retencion }: { dato: PerroAdentroD
     actualizar(key, { estado: "subiendo", texto: "Subiendo…", progreso: 0, error: undefined });
     try {
       const pre = await conTope(prepararSubida(dato.perroId, prep.tipo, prep.mime), TOPE_SERVIDOR_MS);
+      if (pre.demo) {
+        preparados.current.delete(key);
+        actualizar(key, { estado: "demo", vista: URL.createObjectURL(prep.blob), texto: "", progreso: 0 });
+        return;
+      }
       if (pre.error || !pre.id || !pre.urlFirmada) throw new Error(pre.error ?? "No pudimos preparar la subida.");
       await subirConProgreso({
         url: pre.urlFirmada,
@@ -196,7 +205,7 @@ export function PerroAdentro({ dato, permiso, retencion }: { dato: PerroAdentroD
   }
 
   const nSel = seleccion.size;
-  const ocupado = subidas.some((s) => s.estado !== "error");
+  const ocupado = subidas.some((s) => s.estado !== "error" && s.estado !== "demo");
   const reporte = dato.reporte ?? null;
 
   return (
@@ -265,9 +274,22 @@ export function PerroAdentro({ dato, permiso, retencion }: { dato: PerroAdentroD
                     <li key={s.key} className="rounded-lg border border-n-200 bg-n-50 p-3">
                       <div className="flex items-center justify-between gap-2 text-sm">
                         <span className="truncate font-semibold text-n-900">{s.tipo === "video" ? "Video" : "Foto"} · {s.nombre}</span>
-                        {s.estado !== "error" && <span className="shrink-0 text-n-600">{Math.round(s.progreso * 100)} %</span>}
+                        {s.estado !== "error" && s.estado !== "demo" && <span className="shrink-0 text-n-600">{Math.round(s.progreso * 100)} %</span>}
                       </div>
-                      {s.estado === "error" ? (
+                      {s.estado === "demo" ? (
+                        <div className="mt-2 flex flex-col gap-2">
+                          {s.vista && (s.tipo === "video" ? (
+                            <video src={s.vista} muted playsInline controls className="max-h-48 w-full max-w-xs rounded-md border border-n-200 bg-black" />
+                          ) : (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={s.vista} alt="" className="h-28 w-28 rounded-md border border-n-200 object-cover" />
+                          ))}
+                          <AvisoDemo texto={s.tipo === "video" ? AVISO_VIDEO_DEMO : AVISO_FOTO_DEMO} />
+                          <button type="button" className="min-h-11 self-start px-2 text-sm font-semibold text-n-600 hover:underline" onClick={() => setSubidas((x) => x.filter((y) => y.key !== s.key))}>
+                            Quitar
+                          </button>
+                        </div>
+                      ) : s.estado === "error" ? (
                         <div className="mt-1 flex flex-wrap items-center gap-2">
                           <p className="text-sm text-coral-oscuro">{s.error}</p>
                           {s.reintentable && (

@@ -8,6 +8,7 @@ import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { generarPdfContrato } from "@/lib/contratos/generar-pdf";
 import { fechaLocalDeInstante, horaLocalDeInstante } from "@/lib/formato";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { bloqueoDeEscritura } from "@/lib/solo-lectura-servidor";
 import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { llenarConsentimiento, variablesDesconocidas } from "@/lib/veterinaria/carnet";
 import { traducirError } from "../../reservas/traducir-error";
@@ -67,6 +68,9 @@ export async function firmarConsentimiento(consentimientoId: string, firmanteNom
   // registrar la firma) y la ruta sale del consentimiento que la RLS dejó leer, nunca del navegador.
   const { data: puede } = await supabase.rpc("vet_puede", { p_permiso: "hospitalizar" });
   if (puede !== true) return { error: "Firmar un consentimiento en el mostrador es de un médico veterinario, de admin o de quien tenga «Hospitalizar y medicar»." };
+  // Antes de subir con la secret key: en la demo el PDF se quedaba en Storage aunque la firma no se registrara.
+  const bloqueo = await bloqueoDeEscritura(supabase);
+  if (bloqueo) return { error: bloqueo.mensaje };
   const negocio = await negocioActual();
   const { error: errorSubida } = await createSupabaseAdminClient(negocio.id).storage.from(BUCKET).upload(ruta, pdfBytes, { contentType: "application/pdf", upsert: false });
   if (errorSubida) return { error: "No pudimos guardar el PDF firmado. Intenta de nuevo." };

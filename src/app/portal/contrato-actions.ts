@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { bloqueoDeEscritura } from "@/lib/solo-lectura-servidor";
 import { generarPdfContrato } from "@/lib/contratos/generar-pdf";
 import { resolverPlantilla } from "@/lib/contratos/plantilla";
 import { fechaLocalDeInstante, horaLocalDeInstante } from "@/lib/formato";
@@ -38,6 +39,9 @@ export async function firmarContratoDigital(
   if (contrato.estado !== "pendiente_firma") {
     return { error: "Este contrato ya no está pendiente de firma." };
   }
+  // En la demo, el mensaje de la demo y no «No pudimos guardar el PDF firmado» (Storage lo rechaza).
+  const bloqueo = await bloqueoDeEscritura(supabase);
+  if (bloqueo) return { error: bloqueo.mensaje };
 
   const plantilla = Array.isArray(contrato.plantillas_contrato)
     ? contrato.plantillas_contrato[0]

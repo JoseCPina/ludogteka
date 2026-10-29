@@ -11,6 +11,8 @@ import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
+import { AvisoDemo } from "@/components/ui/aviso-demo";
+import { AVISO_FOTO_DEMO, esRechazoDeDemo } from "@/lib/solo-lectura";
 import { AvisoBorrador, useAutoguardado } from "@/lib/borradores/use-autoguardado";
 import {
   confirmarCheckin,
@@ -52,6 +54,8 @@ export function CheckinForm({
   const [estadoLlegada, setEstadoLlegada] = useState("");
   const [fotoPath, setFotoPath] = useState<string | null>(null);
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+  // En la demo la foto se enseña desde el navegador y no se guarda (fotoPath se queda vacío).
+  const [fotoSoloEnPantalla, setFotoSoloEnPantalla] = useState(false);
   // Una foto de celular puede tardar: tope más largo que el de un botón.
   const subiendoFoto = useEspera({ tope: 60_000 });
 
@@ -93,8 +97,9 @@ export function CheckinForm({
       const { error: subidaError } = await supabase.storage
         .from(BUCKET)
         .upload(path, blob, { upsert: true, contentType: "image/jpeg" });
-      if (subidaError) return { error: "No pudimos subir la foto. Intenta de nuevo.", path, url: null };
-      return { error: null, path, url: await obtenerUrlFotoLlegada(path) };
+      if (esRechazoDeDemo(subidaError)) return { error: null, path: null, url: URL.createObjectURL(blob), demo: true };
+      if (subidaError) return { error: "No pudimos subir la foto. Intenta de nuevo.", path, url: null, demo: false };
+      return { error: null, path, url: await obtenerUrlFotoLlegada(path), demo: false };
     });
 
     if (!r.ok) {
@@ -107,6 +112,7 @@ export function CheckinForm({
     }
     setFotoPath(r.valor.path);
     setFotoUrl(r.valor.url);
+    setFotoSoloEnPantalla(r.valor.demo);
   }
 
   async function agregarItem() {
@@ -283,6 +289,7 @@ export function CheckinForm({
             {subiendoFoto.cargando ? "Subiendo…" : fotoUrl ? "Reemplazar foto" : "Tomar/subir foto"}
           </Button>
         </div>
+        {fotoSoloEnPantalla && <AvisoDemo texto={AVISO_FOTO_DEMO} className="mt-2" />}
       </div>
 
       <div className="flex flex-col gap-3">

@@ -14,7 +14,7 @@ export const TITULO_RECORDATORIOS = "Tus clientes reciben su recordatorio por Wh
 export const BENEFICIOS_RECORDATORIOS: readonly { titulo: string; texto: string }[] = [
   { titulo: "Menos plantones", texto: "Un día antes, a la hora que tú escojas, tu cliente recibe su cita en WhatsApp." },
   { titulo: "Cero mensajes a mano", texto: "Salen solos para estética, consultas, hotel y guardería. Tú no escribes nada." },
-  { titulo: "Confirma con un toque", texto: "«Confirmo» y la cita se pone en verde en tu agenda. Si necesita cambiarla, te avisa en tu panel." },
+  { titulo: "Confirma con un toque", texto: "«Confirmo» y la cita queda confirmada en tu agenda. Si necesita cambiarla, te avisa en tu panel." },
 ];
 
 /** Qué manda, en una lista corta (páginas, llms-full.txt). */
@@ -23,7 +23,7 @@ export const QUE_MANDA_RECORDATORIOS: readonly string[] = [
   "Al terminar la estética: el aviso de que la mascota ya está lista para recoger.",
   "7 días antes de la próxima vacuna: «¿Te agendamos?», con los botones Agendar y Después.",
   "Sale del número de WhatsApp de PeluDesk, con el nombre del negocio en el texto.",
-  "El cliente contesta con un botón: «Confirmo» pone la cita como confirmada (en verde) en la agenda; «Necesito cambiarla» le avisa al negocio en su panel para que le escriba y la cambie.",
+  "El cliente contesta con un botón: «Confirmo» pone la cita como confirmada en la agenda, con la marca «Confirmó por WhatsApp»; «Necesito cambiarla» le avisa al negocio en su panel para que le escriba y la cambie.",
   "Si el cliente escribe BAJA, deja de recibirlos. Cada tipo de recordatorio se prende o se apaga en Recordatorios por WhatsApp.",
 ];
 
@@ -57,7 +57,7 @@ export function textosRecordatorios(p: PrecioRecordatorio | null): TextosRecorda
       "¿Cómo funcionan los recordatorios por WhatsApp y cuánto cuestan?",
       "PeluDesk los manda solo, el día anterior y a la hora que escojas (10:00 si no escoges otra), para cada cita de estética, cita veterinaria y llegada a hotel o guardería. " +
         "También avisa cuando la mascota ya está lista para recoger y, 7 días antes, de su próxima vacuna. Salen del número de WhatsApp de PeluDesk con el nombre de tu negocio. " +
-        "Tu cliente contesta con un botón: «Confirmo» pone la cita en verde en tu agenda y «Necesito cambiarla» te avisa en tu panel para que le escribas. Si escribe BAJA, deja de recibirlos. " +
+        "Tu cliente contesta con un botón: «Confirmo» pone la cita como confirmada en tu agenda y «Necesito cambiarla» te avisa en tu panel para que le escribas. Si escribe BAJA, deja de recibirlos. " +
         `Cada tipo se prende o se apaga en Recordatorios por WhatsApp. ${cobro}`,
     ],
   };

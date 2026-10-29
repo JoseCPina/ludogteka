@@ -6,6 +6,8 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { comprimirImagen } from "@/lib/imagen";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { AvisoDemo } from "@/components/ui/aviso-demo";
+import { AVISO_FOTO_DEMO, esRechazoDeDemo } from "@/lib/solo-lectura";
 import { obtenerUrlFotoPerro, prepararRutaFotoPerro, guardarFotoPerro } from "./foto-actions";
 
 const BUCKET = "perros-archivos";
@@ -40,7 +42,7 @@ function IconoPerro({ className = "" }: { className?: string }) {
 export type SubirFotoConAccion = (
   perroId: string,
   formData: FormData
-) => Promise<{ error: string | null; url?: string | null }>;
+) => Promise<{ error: string | null; url?: string | null; demo?: boolean }>;
 
 export function PerroFoto({
   perroId,
@@ -67,6 +69,8 @@ export function PerroFoto({
   // Una foto de celular puede tardar: tope más largo que el de un botón.
   const subiendo = useEspera({ tope: 60_000 });
   const [error, setError] = useState<string | null>(null);
+  // En la demo la foto elegida se enseña desde el navegador y no se guarda.
+  const [soloEnPantalla, setSoloEnPantalla] = useState(false);
 
   // Las URLs firmadas caducan (una hora, ver foto-actions.ts). Una pestaña
   // de recepción se queda abierta todo el turno, así que si la imagen
@@ -95,23 +99,25 @@ export function PerroFoto({
         const datos = new FormData();
         datos.append("foto", new File([blob], "foto.jpg", { type: "image/jpeg" }));
         const res = await subirConAccion(perroId, datos);
-        if (res.error) return { error: res.error, nuevaUrl: null };
-        return { error: null, nuevaUrl: res.url ?? null };
+        if (res.error) return { error: res.error, nuevaUrl: null, demo: false };
+        if (res.demo) return { error: null, nuevaUrl: URL.createObjectURL(blob), demo: true };
+        return { error: null, nuevaUrl: res.url ?? null, demo: false };
       }
 
       const path = await prepararRutaFotoPerro(perroId);
-      if (!path) return { error: "No encontramos el registro. Recarga la página.", nuevaUrl: null };
+      if (!path) return { error: "No encontramos el registro. Recarga la página.", nuevaUrl: null, demo: false };
 
       const supabase = createSupabaseBrowserClient();
       const { error: subidaError } = await supabase.storage
         .from(BUCKET)
         .upload(path, blob, { upsert: true, contentType: "image/jpeg" });
-      if (subidaError) return { error: "No pudimos subir la foto. Intenta de nuevo.", nuevaUrl: null };
+      if (esRechazoDeDemo(subidaError)) return { error: null, nuevaUrl: URL.createObjectURL(blob), demo: true };
+      if (subidaError) return { error: "No pudimos subir la foto. Intenta de nuevo.", nuevaUrl: null, demo: false };
 
       const { error: guardarError } = await guardarFotoPerro(perroId, path);
-      if (guardarError) return { error: guardarError, nuevaUrl: null };
+      if (guardarError) return { error: guardarError, nuevaUrl: null, demo: false };
 
-      return { error: null, nuevaUrl: await obtenerUrlFotoPerro(perroId) };
+      return { error: null, nuevaUrl: await obtenerUrlFotoPerro(perroId), demo: false };
     });
 
     if (!r.ok) {
@@ -124,6 +130,7 @@ export function PerroFoto({
     }
     setHayFoto(true);
     setUrl(r.valor.nuevaUrl);
+    setSoloEnPantalla(r.valor.demo);
   }
 
   const esGrande = tamano === "grande";
@@ -174,6 +181,7 @@ export function PerroFoto({
           >
             {subiendo.cargando ? "Subiendo…" : hayFoto ? "Reemplazar foto" : "Subir foto"}
           </Button>
+          {soloEnPantalla && <AvisoDemo texto={AVISO_FOTO_DEMO} />}
         </div>
       )}
     </div>

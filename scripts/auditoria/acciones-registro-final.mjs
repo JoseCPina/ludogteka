@@ -87,6 +87,9 @@ function analizar(fn, sf, texto) {
     if (conflicto && ts.isPropertyAssignment(conflicto) && conflicto.initializer.kind !== ts.SyntaxKind.NullKeyword) return false;
     // Tampoco una salida que solo pide confirmar antes de guardar (cita de otro día, duplicada, cobro reciente…).
     if (obj.properties.some((p) => p.name && /^(otroDia|duplicada|confirmar|pedirConfirmacion|requiereConfirmacion)$/.test(p.name.getText(sf)))) return false;
+    // Ni la de la demo (`error: null, demo: true`): no subió ni guardó nada, la pantalla enseña lo elegido con su aviso.
+    const demo = obj.properties.find((p) => p.name && p.name.getText(sf) === "demo");
+    if (demo && ts.isPropertyAssignment(demo) && demo.initializer.kind === ts.SyntaxKind.TrueKeyword) return false;
     const err = obj.properties.find((p) => p.name && p.name.getText(sf) === "error");
     if (!err) return true;
     if (ts.isPropertyAssignment(err)) return err.initializer.kind === ts.SyntaxKind.NullKeyword;

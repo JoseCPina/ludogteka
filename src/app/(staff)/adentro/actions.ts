@@ -2,6 +2,7 @@
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { bloqueoDeEscritura } from "@/lib/solo-lectura-servidor";
 import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { traducirError } from "../reservas/traducir-error";
 import { BUCKET_REPORTES, MAX_FOTO_BYTES, MAX_VIDEO_BYTES } from "@/lib/reporte/constantes";
@@ -31,8 +32,11 @@ export async function prepararSubida(
   perroId: string,
   tipo: "foto" | "video",
   mime: string
-): Promise<{ error: string | null; id?: string; urlFirmada?: string; registros?: RegistroFinal[] }> {
+): Promise<{ error: string | null; demo?: boolean; id?: string; urlFirmada?: string; registros?: RegistroFinal[] }> {
   const supabase = await createSupabaseServerClient();
+  // En la demo no se sube nada: la pantalla enseña la foto o el video elegido con el aviso de la demo.
+  const bloqueo = await bloqueoDeEscritura(supabase);
+  if (bloqueo) return bloqueo.demo ? { error: null, demo: true } : { error: bloqueo.mensaje };
   const { data, error } = await supabase.rpc("media_preparar", { p_perro_id: perroId, p_tipo: tipo, p_mime: mime });
   if (error) return { error: traducirError(error) };
   const fila = data as { id: string; path: string };
