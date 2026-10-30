@@ -171,13 +171,17 @@ try {
   await pa.goto(`${BASE}/estetica/nueva`, { waitUntil: "networkidle" });
   await pa.getByPlaceholder(/ej\. Motita/).fill(clienteRow.nombre.slice(0, 6));
   await pa.getByText(clienteRow.nombre).first().click();
-  await pa.getByLabel("Perro", { exact: true }).selectOption(existente.id);
+  await pa.getByLabel(/^(Perro|Mascota|Gato)$/).selectOption(existente.id);
   await pa.getByLabel("Fecha y hora").fill(`${diaLejano}T10:00`);
   await pa.locator("[data-aviso-precio='ok']").waitFor({ timeout: 12000 });
   await sinDesborde(pa, "agendar con el primer perrito");
   await pa.getByRole("button", { name: "Agendar cita", exact: true }).click();
   await pa.locator("[data-citas-agendadas]").waitFor({ timeout: 15000 });
   comprobar(/Cita agendada/.test(await texto(pa, "[data-citas-agendadas]")), "la primera cita se agenda y se queda en la pantalla");
+  // QA S49: «Listo, ir a la agenda» se ve como botón (fondo de color), no como texto suelto.
+  const irAgenda = await pa.locator("[data-ir-agenda]").evaluate((el) => { const s = getComputedStyle(el); return { fondo: s.backgroundColor, alto: el.getBoundingClientRect().height }; }).catch(() => null);
+  comprobar(Boolean(irAgenda) && !/rgba\(0, 0, 0, 0\)|transparent/.test(irAgenda.fondo) && irAgenda.alto >= 44, `«Listo, ir a la agenda» es un botón (${JSON.stringify(irAgenda)})`);
+  await pa.screenshot({ path: path.join(os.tmpdir(), "qa-s49-listo-ir-agenda-390.png") }).catch(() => {});
   await pa.locator("[data-agregar-otro-perrito]").click();
   await pa.locator("[data-agregar-perrito]").click();
   comprobar(!/veterinario|emergencia|contrato|vacuna/i.test(await texto(pa, "[data-nuevo-perrito]")), "el alta del otro perrito NO pide nada de hotel ni guardería (veterinario, emergencia, contrato, vacunas)");

@@ -9,6 +9,7 @@ import { ESTADOS_ESTIMADO, TIPOS_LINEA, dinero, totalLinea, type DetalleEstimado
 import { opcionesDeEstimado } from "../../expediente/actions";
 import { EditorEstimado } from "../editor-estimado";
 import { AceptarEnMostrador, CancelarEstimado, EnviarEstimado, VersionNueva } from "../acciones-estimado";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 export default async function DetalleEstimadoPagina({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -88,7 +89,7 @@ export default async function DetalleEstimadoPagina({ params }: { params: Promis
       {e.estado === "reemplazado" && <Alert variante="info" titulo="Reemplazado por una versión más nueva">Su liga ya no sirve.</Alert>}
 
       <section className="rounded-lg border border-n-200 bg-white p-5">
-        <table className="w-full text-sm">
+        <TablaResponsiva className="w-full text-sm">
           <thead>
             <tr className="text-left text-n-500"><th className="py-1">Concepto</th><th>Cant.</th><th className="text-right">Mínimo</th><th className="text-right">Máximo</th></tr>
           </thead>
@@ -108,7 +109,7 @@ export default async function DetalleEstimadoPagina({ params }: { params: Promis
           <tfoot>
             <tr className="border-t-2 border-n-300 font-bold text-n-900"><td className="py-2" colSpan={2}>Total estimado</td><td className="text-right">{dinero(e.total_min)}</td><td className="text-right">{dinero(e.total_max)}</td></tr>
           </tfoot>
-        </table>
+        </TablaResponsiva>
         {e.notas && <p className="mt-3 whitespace-pre-wrap text-n-700">{e.notas}</p>}
         <p className="mt-3 text-sm text-n-600">Vigente hasta {formatearFechaCalendario(e.vigente_hasta)}{d.medico ? ` · ${d.medico.nombre}, cédula ${d.medico.cedula}` : ""}</p>
         {d.tiene_firma && d.firma_png && (

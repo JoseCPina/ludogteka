@@ -9,6 +9,7 @@ import { formatearDiaDeInstante, formatearFechaCalendario, hoyNegocio, unidadSeg
 import { zonaActual } from "@/lib/negocio/actual";
 import { nombreMes, type ReporteSitpv } from "@/lib/veterinaria/recetas";
 import { marcarReporte } from "../../actions";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 // El reporte mensual de un médico, en el orden que pide el SITPV: folios usados, cancelados (en ceros),
 // parcialidades y pacientes. Se captura en el SITPV y aquí se marca como reportado.
@@ -48,42 +49,42 @@ export default async function ReporteMensual({ searchParams }: { searchParams: P
           <section>
             <h2 className="mb-2 text-lg font-bold text-n-900">Folios usados ({r.usados.length})</h2>
             {r.usados.length === 0 ? <p className="text-n-600">Ninguno este mes.</p> : (
-              <table className="w-full text-sm">
+              <TablaResponsiva className="w-full text-sm">
                 <thead><tr className="text-left text-n-500"><th>Folio</th><th>Fecha</th><th>Producto</th><th>Registro SENASICA</th><th>Paciente</th><th className="text-right">Cantidad</th></tr></thead>
                 <tbody>
                   {r.usados.map((u) => (
                     <tr key={u.id} className="border-t border-n-200"><td className="font-semibold">{u.folio}</td><td>{formatearFechaCalendario(u.fecha)}</td><td>{u.producto}</td><td>{u.registro_senasica}</td><td>{u.paciente}</td><td className="text-right">{u.cantidad_total}{u.unidad ? ` ${unidadSegunCantidad(u.cantidad_total, u.unidad)}` : ""}{u.parcialidades ? " (parc.)" : ""}</td></tr>
                   ))}
                 </tbody>
-              </table>
+              </TablaResponsiva>
             )}
           </section>
 
           <section>
             <h2 className="mb-2 text-lg font-bold text-n-900">Folios cancelados, en ceros ({r.cancelados.length})</h2>
             {r.cancelados.length === 0 ? <p className="text-n-600">Ninguno este mes.</p> : (
-              <table className="w-full text-sm">
+              <TablaResponsiva className="w-full text-sm">
                 <thead><tr className="text-left text-n-500"><th>Folio</th><th>Fecha</th><th className="text-right">Cantidad</th><th>Observación</th></tr></thead>
                 <tbody>
                   {r.cancelados.map((c) => (
                     <tr key={c.id} className="border-t border-n-200"><td className="font-semibold">{c.folio}</td><td>{formatearFechaCalendario(c.fecha)}</td><td className="text-right">0</td><td>{c.observacion}</td></tr>
                   ))}
                 </tbody>
-              </table>
+              </TablaResponsiva>
             )}
           </section>
 
           <section>
             <h2 className="mb-2 text-lg font-bold text-n-900">Parcialidades ({r.parcialidades.length})</h2>
             {r.parcialidades.length === 0 ? <p className="text-n-600">Ninguna este mes.</p> : (
-              <table className="w-full text-sm">
+              <TablaResponsiva className="w-full text-sm">
                 <thead><tr className="text-left text-n-500"><th>Folio</th><th>Fecha</th><th>Producto</th><th>Paciente</th><th className="text-right">Cantidad</th></tr></thead>
                 <tbody>
                   {r.parcialidades.map((p, i) => (
                     <tr key={i} className="border-t border-n-200"><td className="font-semibold">{p.folio}</td><td>{formatearFechaCalendario(p.fecha)}</td><td>{p.producto}</td><td>{p.paciente}</td><td className="text-right">{p.cantidad}</td></tr>
                   ))}
                 </tbody>
-              </table>
+              </TablaResponsiva>
             )}
           </section>
 

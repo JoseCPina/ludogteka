@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatearFecha, formatearHoraNegocio } from "@/lib/formato";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 export type MovimientoTurno = {
   id: string;
@@ -84,7 +85,7 @@ export function MovimientosTurno({
         <p className="text-sm text-n-500">Todavía no hay movimientos en este turno.</p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-          <table className="w-full border-collapse text-sm max-sm:block">
+          <TablaResponsiva className="w-full border-collapse text-sm max-sm:block">
             <thead className="max-sm:hidden">
               <tr>
                 {["Hora", "Movimiento", "Cliente / motivo", "Método"].map((h) => (
@@ -129,7 +130,7 @@ export function MovimientosTurno({
                 </tr>
               ))}
             </tbody>
-          </table>
+          </TablaResponsiva>
         </div>
       )}
       {verMasHref && (

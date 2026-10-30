@@ -81,13 +81,18 @@ Cada persona tiene sus propios borradores: nadie más ve lo que tú dejaste a me
     modulo: null,
     roles: ["admin", "recepcion"],
     rutas: [],
-    palabras: ["instalar", "app", "pantalla de inicio", "pwa", "sin conexión", "sin internet", "offline", "icono", "celular"],
+    palabras: ["instalar", "app", "pantalla de inicio", "pwa", "sin conexión", "sin internet", "offline", "icono", "celular", "menú", "tabla", "tarjetas"],
     cuerpo: `Puedes instalar el sistema como una app en tu celular o computadora: abre en pantalla completa y con el nombre y el logo de tu negocio.
 
 ## Instalarla
 
 - **Android o computadora (Chrome):** arriba de la pantalla sale un aviso con **Instalar**; apriétalo. Si lo cerraste con la **×**, ya no vuelve a salir, pero siempre está **Instalar la app** al final del menú (en el celular, en el menú de las tres rayas). Si el navegador no abre su aviso, abre su menú y escoge «Instalar aplicación».
 - **iPhone (Safari):** aprieta el botón de compartir y escoge **Agregar a pantalla de inicio**.
+
+## Cómo se ve en el celular
+
+- El menú se abre con las tres rayas de arriba a la izquierda y se cierra con su botón **Cerrar** (o tocando fuera de él).
+- Las listas en forma de tabla (clientes, Caja, inventario, Reportes, empleados, servicios, turnos, recordatorios) se ven como **tarjetas**: una por renglón, con lo principal arriba y cada dato debajo con su nombre. Nada se esconde a los lados: desde una tableta se ven como tabla y, si una no cabe, abajo dice **Desliza la tabla para ver más columnas**.
 
 ## Qué pasa sin conexión
 

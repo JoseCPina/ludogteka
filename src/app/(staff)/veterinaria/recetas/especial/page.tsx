@@ -43,7 +43,7 @@ export default async function RecetarioEspecial({ searchParams }: { searchParams
       formulario = (
         <section className="flex max-w-3xl flex-col gap-3">
           <h2 className="text-lg font-bold text-n-900">Registrar un folio del recetario: elige a la mascota</h2>
-          <form className="flex items-end gap-3">
+          <form method="get" className="flex items-end gap-3">
             <input type="hidden" name="nuevo" value="1" />
             <div className="flex-1"><Field label="Buscar mascota o dueño" name="q" defaultValue={q ?? ""} /></div>
             <Button type="submit">Buscar</Button>

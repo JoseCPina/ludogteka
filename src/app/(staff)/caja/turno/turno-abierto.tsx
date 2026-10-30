@@ -13,6 +13,7 @@ import { agregarEfectivo, cancelarEfectivoAgregado } from "../correcciones-actio
 import { Select } from "@/components/ui/select";
 import { useZonaNegocio } from "@/components/zona-negocio";
 import { dinero } from "@/lib/dinero";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 export type Retiro = {
   id: string;
@@ -561,7 +562,7 @@ export function TurnoAbierto({
                 se ajusta en silencio.
               </p>
               <div className="overflow-x-auto">
-                <table className="tabla-tarjetas w-full min-w-[420px] border-collapse text-sm">
+                <TablaResponsiva className="tabla-tarjetas w-full min-w-[420px] border-collapse text-sm">
                   <thead>
                     <tr>
                       <th className="border-b border-coral py-1 text-left text-xs font-bold uppercase text-coral-oscuro">
@@ -606,7 +607,7 @@ export function TurnoAbierto({
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </TablaResponsiva>
               </div>
               <Field
                 label="Explicación de la diferencia"

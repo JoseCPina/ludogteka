@@ -26,7 +26,7 @@ export default async function NuevoEstimado({ searchParams }: { searchParams: Pr
           <h1 className="mt-1 text-2xl font-bold text-n-900">Nuevo estimado</h1>
           <p className="mt-1 text-n-600">Elige a la mascota.</p>
         </div>
-        <form className="flex max-w-xl items-end gap-3">
+        <form method="get" className="flex max-w-xl items-end gap-3">
           <div className="flex-1"><Field label="Buscar mascota o dueño" name="q" defaultValue={qCrudo ?? ""} /></div>
           <Button type="submit">Buscar</Button>
         </form>

@@ -24,7 +24,7 @@ export function SiPuedeEscribir({ children, sino = null }: { children: ReactNode
   return <>{useBloqueoEscritura() ? sino : children}</>;
 }
 
-const SELECTOR = "a[href], button, [role=button], input, select, textarea";
+const SELECTOR = "a[href], button, [role=button], [role=switch], [role=checkbox], [role=radio], input, select, textarea";
 // Teclas que solo mueven el foco o la página.
 const TECLAS_LIBRES = new Set(["Tab", "Escape", "Shift", "Alt", "Control", "Meta", "ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"]);
 
@@ -134,7 +134,7 @@ export function ProveedorEscritura({ bloqueo, children }: { bloqueo: BloqueoEscr
       e.stopPropagation();
       avisar();
     };
-        // (Sin touchstart: cancelarlo se come el clic y en el celular no saldría el aviso.)
+    // (Sin touchstart: cancelarlo se come el clic y en el celular no saldría el aviso.)
     const tipos = ["click", "mousedown", "beforeinput", "paste", "drop", "change"] as const;
     for (const t of tipos) el.addEventListener(t, alTocar, true);
     el.addEventListener("keydown", alTeclear, true);

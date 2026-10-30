@@ -511,8 +511,9 @@ Si contratas durante la prueba, no pierdes días: la prueba dura hasta el final 
 Al terminar la prueba sin contratar, o si el cobro no entra después de los 7 días, el negocio queda en **solo lectura**: tus datos están a salvo y todo se puede consultar, buscar, imprimir y exportar, pero no se captura nada nuevo.
 
 - Arriba de todas las pantallas sale una franja fija. A ti te dice **«Tu prueba terminó: tus datos están a salvo. Contrata para seguir capturando.»** con el botón **Contratar** (o **Pagar ahora** si fue un cobro que no entró). A recepción, estética y los médicos les dice **«La prueba del negocio terminó. Pídele al dueño que contrate para seguir capturando.»**
-- Todo lo que guarda algo (**Nuevo cliente**, **Nueva cita**, **Agendar**, **Cobrar**, check-in y check-out, firmar, subir fotos o archivos, editar) se ve gris y desactivado. Si lo tocas, abajo sale un aviso con el mismo texto de la franja; nada se deja llenar para fallar al final.
-- **Módulos y plan** (para contratar o pagar) y la **Ayuda** (artículos, asistente y tickets de soporte) siguen funcionando.
+- Todo lo que guarda algo (**Nuevo cliente**, **Nueva cita**, **Agendar**, **Cobrar**, check-in y check-out, firmar, subir fotos o archivos, editar) se ve gris y desactivado desde que abres la pantalla. También los botones que abren un formulario (**Reprogramar**, **No se presentó**, **Iniciar cita**, **Cancelar cita**, **Aplicar un recargo**, **Eliminar cita**), las listas, casillas e interruptores que guardan al cambiar (como el **Estilista** de una cita, en la cita y en el inicio). Si lo tocas, abajo sale un aviso con el mismo texto de la franja; nada se deja llenar para fallar al final.
+- Los avisos por WhatsApp de una cita o reserva (**Confirmación**, **Recordatorio** y **Listo para recoger**) siguen abiertos: solo te enseñan el mensaje y abren WhatsApp para que tú lo mandes; no guardan nada en PeluDesk.
+- Buscar y los filtros (fechas de Reportes, Nómina o Gastos, el buscador de clientes) siguen funcionando. **Módulos y plan** (para contratar o pagar) y la **Ayuda** (artículos, asistente y tickets de soporte) siguen funcionando.
 - Al contratar o pagar, todo se habilita solo: al regresar de la página de pago ya puedes capturar, y en otra pestaña abierta basta con tocar cualquier botón para que se habilite.
 
 ## Datos de facturación

@@ -34,7 +34,7 @@ export default async function NuevaReceta({ searchParams }: { searchParams: Prom
           <h1 className="mt-1 text-2xl font-bold text-n-900">Nueva receta</h1>
           <p className="mt-1 text-n-600">Primero elige a la mascota: busca por su nombre, el de su dueño o su teléfono.</p>
         </div>
-        <form className="flex max-w-xl items-end gap-3">
+        <form method="get" className="flex max-w-xl items-end gap-3">
           <div className="flex-1"><Field label="Buscar mascota o dueño" name="q" defaultValue={q ?? ""} placeholder="Motita, Ana, 444…" /></div>
           <Button type="submit">Buscar</Button>
         </form>
@@ -64,9 +64,9 @@ export default async function NuevaReceta({ searchParams }: { searchParams: Prom
   ]);
   const dueno = mascota ? ((Array.isArray(mascota.clientes) ? mascota.clientes[0] : mascota.clientes) as { nombre: string } | null) : null;
   const productos = (productosCrudo ?? []) as ProductoReceta[];
-  const consultas = ((consultasCrudo ?? []) as { id: string; estado: string; tipo_clave: string; atendida_at: string; motivo: string | null }[]).filter((c) => c.estado === "firmada");
+  const consultas = ((consultasCrudo ?? []) as { id: string; estado: string; tipo_clave: string; atendida_at: string; motivo: string | null }[]).filter((c) => c.estado === "firmada" || c.estado === "borrador");
   const consultaElegida = consultas.find((c) => c.id === consulta) ?? null;
-  // El «Tratamiento» de la consulta firmada, para prellenar el medicamento (se lee con la misma regla de permisos del expediente).
+  // El «Tratamiento» de la consulta (firmada, o abierta tal como va: QA S49), para prellenar el medicamento (se lee con la misma regla de permisos del expediente).
   let tratamiento: string | null = null;
   if (consultaElegida) {
     const { data: detalle } = await supabase.rpc("vet_consulta_detalle", { p_id: consultaElegida.id });
@@ -86,12 +86,12 @@ export default async function NuevaReceta({ searchParams }: { searchParams: Prom
         <>
           {consultas.length > 0 && (
             <div className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-4 text-sm">
-              <p className="font-semibold text-n-900">¿Desde una consulta firmada?</p>
+              <p className="font-semibold text-n-900">¿Desde una consulta?</p>
               <div className="flex flex-wrap gap-2">
                 <Link href={`/veterinaria/recetas/nueva?perro=${perro}`} className={`rounded-full border px-3 py-1 font-semibold ${!consultaElegida ? "border-morado bg-morado-suave text-morado" : "border-n-200 text-n-700"}`}>Desde la ficha</Link>
                 {consultas.slice(0, 6).map((c) => (
                   <Link key={c.id} href={`/veterinaria/recetas/nueva?perro=${perro}&consulta=${c.id}`} className={`rounded-full border px-3 py-1 font-semibold ${consultaElegida?.id === c.id ? "border-morado bg-morado-suave text-morado" : "border-n-200 text-n-700"}`}>
-                    {formatearFechaCalendario(fechaLocalDeInstante(c.atendida_at, zona))}{c.motivo ? ` · ${c.motivo.slice(0, 24)}` : ""}
+                    {formatearFechaCalendario(fechaLocalDeInstante(c.atendida_at, zona))}{c.motivo ? ` · ${c.motivo.slice(0, 24)}` : ""}{c.estado === "borrador" ? " · abierta" : ""}
                   </Link>
                 ))}
               </div>

@@ -5,6 +5,7 @@ import { BotonImprimirPagina } from "@/components/boton-imprimir";
 import { EncabezadoNegocio } from "@/components/marca/encabezado-negocio";
 import { formatearFechaCalendario } from "@/lib/formato";
 import { ESTADOS_CARNET, TIPOS_DESPARASITACION, type CarnetCompleto } from "@/lib/veterinaria/carnet";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 // El carnet impreso: solo lo que sigue siendo válido (sin lo anulado), una hoja.
 export default async function ImprimirCarnet({ params }: { params: Promise<{ perroId: string }> }) {
@@ -49,7 +50,7 @@ export default async function ImprimirCarnet({ params }: { params: Promise<{ per
           {vacunas.length === 0 ? (
             <p className="text-n-600">Sin vacunas registradas.</p>
           ) : (
-            <table className="w-full text-left text-sm">
+            <TablaResponsiva className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-n-300 text-n-600">
                   <th className="py-1.5 pr-2">Vacuna</th>
@@ -79,7 +80,7 @@ export default async function ImprimirCarnet({ params }: { params: Promise<{ per
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </TablaResponsiva>
           )}
         </section>
 
@@ -88,7 +89,7 @@ export default async function ImprimirCarnet({ params }: { params: Promise<{ per
           {desparasitaciones.length === 0 ? (
             <p className="text-n-600">Sin desparasitaciones registradas.</p>
           ) : (
-            <table className="w-full text-left text-sm">
+            <TablaResponsiva className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-n-300 text-n-600">
                   <th className="py-1.5 pr-2">Producto</th>
@@ -109,7 +110,7 @@ export default async function ImprimirCarnet({ params }: { params: Promise<{ per
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </TablaResponsiva>
           )}
         </section>
         <p className="text-xs text-n-500">Este carnet lo emite el establecimiento con los registros de sus médicos veterinarios. Una vacuna anulada no aparece aquí.</p>

@@ -132,10 +132,10 @@ export function FormularioEquipo({ conEmpleados, conEstetica, conVet }: { conEmp
             <div className="flex flex-col gap-2">
               <p className="text-sm text-n-600">Deja vacíos los días que descansa.</p>
               {DIAS.map((d, i) => (
-                <div key={d} className="grid grid-cols-[6rem_1fr_1fr] items-center gap-2">
+                <div key={d} className="grid grid-cols-[5.5rem_minmax(0,1fr)_minmax(0,1fr)] items-center gap-2">
                   <span className="text-sm text-n-800">{d}</span>
-                  <input aria-label={`${d}: entrada`} type="time" value={horario[i].hora_entrada} onChange={(e) => dia(i, "hora_entrada", e.target.value)} className="min-h-10 rounded-md border-[1.5px] border-borde px-2" />
-                  <input aria-label={`${d}: salida`} type="time" value={horario[i].hora_salida} onChange={(e) => dia(i, "hora_salida", e.target.value)} className="min-h-10 rounded-md border-[1.5px] border-borde px-2" />
+                  <input aria-label={`${d}: entrada`} type="time" value={horario[i].hora_entrada} onChange={(e) => dia(i, "hora_entrada", e.target.value)} className="min-h-10 w-full min-w-0 rounded-md border-[1.5px] border-borde px-2" />
+                  <input aria-label={`${d}: salida`} type="time" value={horario[i].hora_salida} onChange={(e) => dia(i, "hora_salida", e.target.value)} className="min-h-10 w-full min-w-0 rounded-md border-[1.5px] border-borde px-2" />
                 </div>
               ))}
             </div>

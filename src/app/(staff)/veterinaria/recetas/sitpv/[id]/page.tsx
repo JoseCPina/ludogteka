@@ -14,6 +14,7 @@ import type { EspejoDetalle } from "@/lib/veterinaria/recetas";
 import { archivarEspejo, cancelarEspejo } from "../../actions";
 import { SurtirDocumento } from "../../surtir";
 import { unirFrases } from "@/lib/texto/frases";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 export default async function EspejoSitpv({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -92,14 +93,14 @@ export default async function EspejoSitpv({ params }: { params: Promise<{ id: st
         {d.aplicaciones.length > 0 && (
           <section>
             <h2 className="mb-1 text-sm font-bold text-n-900">Aplicaciones (parcialidades)</h2>
-            <table className="w-full text-sm">
+            <TablaResponsiva className="w-full text-sm">
               <thead><tr className="text-left text-n-500"><th>Fecha</th><th>Paciente</th><th>Lote</th><th className="text-right">Cantidad</th></tr></thead>
               <tbody>
                 {d.aplicaciones.map((a, i) => (
                   <tr key={i} className="border-t border-n-200"><td>{formatearFechaCalendario(a.fecha)}</td><td>{a.hospitalario && !a.paciente ? "USO HOSPITALARIO" : (a.paciente ?? "—")}{a.hospitalario && a.paciente ? " (uso hospitalario)" : ""}</td><td>{a.lote ?? "—"}</td><td className="text-right">{a.cantidad}</td></tr>
                 ))}
               </tbody>
-            </table>
+            </TablaResponsiva>
             <p className="mt-1 text-sm text-n-700">Surtido {d.surtido} de {d.cantidad_total}{d.unidad ? ` ${unidadSegunCantidad(d.cantidad_total, d.unidad)}` : ""}.</p>
           </section>
         )}

@@ -42,6 +42,7 @@ import { aplicarDescuento, cancelarDescuento, type TipoDescuento } from "../../d
 import { useZonaNegocio } from "@/components/zona-negocio";
 import { dinero } from "@/lib/dinero";
 import { unirFrases } from "@/lib/texto/frases";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 export type LineaCuenta = {
   tipo: string;
@@ -622,7 +623,7 @@ export function CuentaCobro({
 
       <div className="overflow-hidden rounded-lg border border-n-200 bg-white">
         {/* En celular, cada concepto es una tarjeta (tabla-tarjetas, QA N27): con 560 px fijos el TOTAL salía cortado. */}
-        <table className="tabla-tarjetas w-full border-collapse text-sm sm:min-w-[560px]">
+        <TablaResponsiva className="tabla-tarjetas w-full border-collapse text-sm sm:min-w-[560px]">
           <thead>
             <tr>
               <th className="border-b border-n-200 bg-n-100 px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-n-600">
@@ -712,7 +713,7 @@ export function CuentaCobro({
               })
             )}
           </tbody>
-        </table>
+        </TablaResponsiva>
       </div>
 
       {corrigiendoPrecioIdx !== null && lineas[corrigiendoPrecioIdx] && (

@@ -1,4 +1,5 @@
 import { formatearFechaCalendario, formatearFecha } from "@/lib/formato";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 export type FilaHistorial = {
   id: string;
@@ -24,7 +25,7 @@ export function HistorialTarifas({ filas, zona }: { filas: FilaHistorial[]; zona
 
   return (
     <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-      <table className="w-full min-w-[720px] border-collapse">
+      <TablaResponsiva className="w-full min-w-[720px] border-collapse">
         <thead>
           <tr>
             <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
@@ -70,7 +71,7 @@ export function HistorialTarifas({ filas, zona }: { filas: FilaHistorial[]; zona
             </tr>
           ))}
         </tbody>
-      </table>
+      </TablaResponsiva>
     </div>
   );
 }

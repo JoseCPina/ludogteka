@@ -8,6 +8,7 @@ import { modoStripe, stripeConfigurado } from "@/lib/cobro/stripe";
 import { cuentaEnTotales, esDemo, esInterno } from "@/lib/plataforma/metricas";
 import { conInterno } from "@/lib/plataforma/internos";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 type Fila = {
   negocio_id: string; slug: string; nombre: string; estado: string; plan: string; plan_nombre: string | null;
@@ -72,7 +73,7 @@ export default async function CobroPlataforma() {
         ))}
       </section>
       <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-        <table className="w-full min-w-[720px] text-left text-sm">
+        <TablaResponsiva className="w-full min-w-[720px] text-left text-sm">
           <thead className="bg-n-50 text-n-700">
             <tr>
               <th className="px-3 py-2">Negocio</th>
@@ -110,7 +111,7 @@ export default async function CobroPlataforma() {
               );
             })}
           </tbody>
-        </table>
+        </TablaResponsiva>
       </div>
     </div>
   );

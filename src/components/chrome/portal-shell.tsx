@@ -50,7 +50,7 @@ export function PortalShell({
       {SECCIONES_PORTAL.length > 0 && (
         <nav
           aria-label="Secciones"
-          className="flex flex-none gap-1 overflow-x-auto border-b border-n-200 bg-white px-4 md:px-8"
+          className="flex flex-none flex-wrap gap-1 border-b border-n-200 bg-white px-4 md:px-8"
         >
           {SECCIONES_PORTAL.map((item) => {
             const esActivo = pathname === item.href;

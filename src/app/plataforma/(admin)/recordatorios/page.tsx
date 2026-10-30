@@ -3,6 +3,7 @@ import { exigirPlataforma } from "@/lib/plataforma/sesion";
 import { leerTodo } from "@/lib/supabase/paginar";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { RevisarTarifa } from "./revisar-tarifa";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 type Fila = {
   negocio_id: string;
@@ -57,7 +58,7 @@ export default async function RecordatoriosPlataforma({ searchParams }: { search
       </nav>
       {error && <p className="text-coral-oscuro">No se pudo leer el uso: {error.message}</p>}
       <div className="overflow-x-auto rounded-xl border border-n-200 bg-white">
-        <table className="w-full min-w-[640px] text-sm">
+        <TablaResponsiva className="w-full min-w-[640px] text-sm">
           <thead className="bg-n-50 text-left text-n-600">
             <tr>
               <th className="p-2">Negocio</th>
@@ -101,7 +102,7 @@ export default async function RecordatoriosPlataforma({ searchParams }: { search
               </tr>
             )}
           </tbody>
-        </table>
+        </TablaResponsiva>
       </div>
       <section className="flex flex-col gap-3 rounded-xl border border-n-200 bg-white p-4">
         <h2 className="text-lg font-semibold text-n-900">Precio por mensaje</h2>

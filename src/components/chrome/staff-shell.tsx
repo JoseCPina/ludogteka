@@ -177,6 +177,22 @@ export function StaffShell({
               aria-label="Secciones"
               className="absolute inset-y-0 left-0 w-72 max-w-[80%] overflow-y-auto bg-white p-3 shadow-lg"
             >
+              {/* QA S49: un botón visible para cerrar (tocar fuera también cierra, pero no se adivina). */}
+              <div className="mb-2 flex items-center justify-between border-b border-n-200 pb-2">
+                <span className="px-2 text-sm font-semibold uppercase tracking-wide text-n-500">Menú</span>
+                <button
+                  type="button"
+                  onClick={() => setMenuAbierto(false)}
+                  data-cerrar-menu
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-md border-[1.5px] border-borde px-3 text-sm font-semibold text-n-800 hover:bg-n-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                  </svg>
+                  Cerrar
+                </button>
+              </div>
               <ListaNav items={items} rol={rol} pathname={pathname} onNavegar={() => setMenuAbierto(false)} />
               <SelectorNegocio negocios={negocios} className="mt-4" />
               <BotonInstalar className="mt-4 border-t border-n-200 pt-3" />

@@ -59,7 +59,7 @@ export function esRutaDeCaptura(ruta: string | null | undefined): boolean {
 
 // Lo que dice un botón que escribe o que abre dónde escribir. «Cancelar», «Cerrar», «Ver», «Anterior»… no.
 const VERBO_DE_ESCRITURA =
-  /^\s*\+?\s*(nuev[oa]s?|agregar|añadir|crear|registrar|agendar|reservar|cobrar|check-?\s?in|check-?\s?out|hacer check|firmar|subir|tomar foto|editar|guardar|capturar|vender|aplicar|confirmar|eliminar|borrar|quitar|anular|dar de (alta|baja)|abrir turno|cerrar turno|enviar|mandar|avisar|marcar|iniciar|finalizar|terminar|empezar|devolver|reembolsar|importar|invitar|asignar|corregir|cambiar (?!de negocio)|ajustar|recibir|entregar|mover|descartar|reagendar|pausar|reanudar|reactivar|deshacer|generar|timbrar|emitir|designar|vincular|desvincular|reasignar|prender|apagar|conectar|desconectar|cancelar (la |esta )?(cita|reserva|estancia|serie|venta|cobro|factura))/i;
+  /^\s*\+?\s*(nuev[oa]s?|agregar|añadir|crear|registrar|agendar|reservar|cobrar|check-?\s?in|check-?\s?out|hacer check|firmar|subir|tomar foto|editar|guardar|capturar|vender|aplicar|confirmar|eliminar|borrar|quitar|anular|dar de (alta|baja)|abrir turno|cerrar turno|enviar|mandar|avisar|marcar|iniciar|finalizar|terminar|empezar|devolver|reembolsar|importar|invitar|asignar|corregir|cambiar (?!de negocio)|ajustar|ajuste|recibir|entregar|mover|descartar|reagendar|pausar|reanudar|reactivar|deshacer|generar|timbrar|emitir|designar|vincular|desvincular|reasignar|prender|apagar|conectar|desconectar|cancelar\s+(?!y\b)\S|repartir|pedir|solicitar|configurar|rechazar|aprobar|autorizar|revisad[oa]|es (una|esta) raza|reprogramar|no (se presentó|llegó|vino)|poner|pasar a|recargo|cerrar (la |esta )?(cuenta|consulta|estancia|cita))/i;
 const SALIR_DE_FORMULARIO = /^\s*(cancelar|cerrar|volver|regresar|ocultar|ver|mostrar|atrás|anterior|siguiente)\b/i;
 
 const textoDe = (el: Element) =>
@@ -98,13 +98,23 @@ export function esControlDeEscritura(el: Element, ruta: string, alcances: readon
   const esBoton = tag === "BUTTON" || el.getAttribute("role") === "button" || (tag === "INPUT" && /^(submit|button)$/.test((el as HTMLInputElement).type));
   const texto = esBoton ? textoDe(el) : "";
   if (esBoton && VERBO_DE_ESCRITURA.test(texto)) return true;
-  // Salir de un formulario o moverse por él siempre se puede.
-  if (esBoton && (el as HTMLButtonElement).type === "button" && SALIR_DE_FORMULARIO.test(texto)) return false;
-  const esCampo = tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA";
+  // Salir de un formulario o moverse por él siempre se puede. «Cancelar» a secas solo es salir dentro de un
+  // formulario; suelto, junto a un registro (un servicio extra, una cuenta), cancela ESE registro (QA N152).
+  if (esBoton && (el as HTMLButtonElement).type === "button" && SALIR_DE_FORMULARIO.test(texto)) {
+    if (!/^\s*cancelar\b/i.test(texto) || el.closest("form, [data-acciones-formulario]") || alcances.some((a) => a.contains(el))) return false;
+    return true;
+  }
+  // QA N152: un select, una casilla o un interruptor guardan al cambiar (el estilista de la cita, un permiso, un
+  // recordatorio prendido): cuentan siempre, salvo en un filtro (formulario GET o `role=search`) o marcados
+  // `data-sin-bloqueo`.
+  const esSelector = tag === "SELECT" || (tag === "INPUT" && /^(checkbox|radio)$/.test((el as HTMLInputElement).type)) || /^(switch|checkbox|radio)$/.test(el.getAttribute("role") ?? "");
+  const esCampo = tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || esSelector;
   if (!esBoton && !esCampo) return false;
   if (esCampo && tag === "INPUT" && (el as HTMLInputElement).type === "search") return false;
   const form = el.closest("form");
-  if (form) return (form.getAttribute("method") ?? "").toLowerCase() !== "get" && !form.matches("[role=search]");
+  const filtro = Boolean(el.closest("[role=search]")) || (form !== null && (form.getAttribute("method") ?? "").toLowerCase() === "get");
+  if (esSelector) return !filtro;
+  if (form) return !filtro;
   if (esRutaDeCaptura(ruta)) return true;
   return esCampo && alcances.some((a) => a.contains(el));
 }

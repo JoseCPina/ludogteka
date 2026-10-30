@@ -10,7 +10,7 @@
 /** Se evalúa en el navegador: `await pagina.evaluate(controlesDeEscritura)`. */
 export function controlesDeEscritura() {
   const CAPTURA = /\/(nuevo|nueva|checkin|checkout|walkin|cobrar|cobrar-junto|cargo|venta|ajustes-servicio)$|^\/caja\/pases$|^\/admin\/importar(\/|$)/;
-  const VERBO = /^\s*\+?\s*(nuev[oa]s?|agregar|añadir|crear|registrar|agendar|reservar|cobrar|check-?\s?in|check-?\s?out|hacer check|firmar|subir|editar|guardar|capturar|vender|aplicar|confirmar|eliminar|borrar|anular|dar de (alta|baja)|abrir turno|cerrar turno|enviar|mandar|marcar|iniciar|finalizar|terminar|devolver|importar|invitar|asignar|corregir)\b/i;
+  const VERBO = /^\s*\+?\s*(nuev[oa]s?|agregar|añadir|crear|registrar|agendar|reservar|cobrar|check-?\s?in|check-?\s?out|hacer check|firmar|subir|editar|guardar|capturar|vender|aplicar|confirmar|eliminar|borrar|anular|dar de (alta|baja)|abrir turno|cerrar turno|enviar|mandar|marcar|iniciar|finalizar|terminar|devolver|importar|invitar|asignar|corregir|reprogramar|no se presentó|no llegó|cancelar (la )?cita|cancelar toda|cambiar (el |la )?(estilista|servicio|recargo)|aplicar (un )?recargo|ajuste|repartir|pedir|configurar|rechazar|aprobar|revisad[oa])(?![a-záéíóúñ0-9_])/i;
   const visible = (el) => {
     const r = el.getBoundingClientRect();
     const s = getComputedStyle(el);
@@ -22,7 +22,7 @@ export function controlesDeEscritura() {
   const fuera = (el) => el.closest("[data-nav-staff], nav, header, [data-aviso-plan], [data-aviso-solo-lectura]");
   // La ayuda (artículos, asistente y tickets de soporte) se queda abierta a propósito: la base deja escribir un ticket
   // con el negocio en solo lectura y es por donde se pide ayuda justamente entonces.
-  if (/^\/ayuda(\/|$)/.test(location.pathname)) return { activos: [], exentos: 0 };
+  if (/^\/ayuda(\/|$)/.test(location.pathname)) return { activos: [], exentos: 0, lecturasBloqueadas: [] };
   const main = document.querySelector("main") ?? document.body;
   const activos = [];
   let exentos = 0;
@@ -51,7 +51,33 @@ export function controlesDeEscritura() {
     for (const c of form.querySelectorAll("button:not([type=button]), input[type=submit]")) uno(c, "enviar formulario");
     for (const c of form.querySelectorAll("input:not([type=hidden]):not([type=search]), select, textarea")) uno(c, "campo de formulario");
   }
-  return { activos, exentos };
+  // QA N152: un select, una casilla o un interruptor guarda al cambiar, esté o no dentro de un <form>. Solo un filtro
+  // (formulario GET o `role=search`) lee.
+  const esFiltro = (el) => Boolean(el.closest("[role=search]")) || (el.closest("form")?.getAttribute("method") || "").toLowerCase() === "get";
+  for (const c of main.querySelectorAll("select, input[type=checkbox], input[type=radio], [role=switch], [role=checkbox], [role=radio]")) {
+    if (esFiltro(c)) continue;
+    // Una casilla suele ir escondida detrás de su etiqueta: cuenta si se ve la etiqueta.
+    const cara = c.labels?.[0] ?? c;
+    if (!vistos.has(c)) { vistos.add(c); if (visible(cara) && !fuera(cara)) { if (c.closest("[data-sin-bloqueo]")) exentos++; else if (activo(c)) activos.push({ tipo: "selector que guarda al cambiar", texto: texto(cara) || c.tagName.toLowerCase() }); } }
+  }
+  // Lo que LEE (un buscador, un filtro) tiene que seguir funcionando.
+  const lecturasBloqueadas = [];
+  for (const c of main.querySelectorAll("input[type=search], form[method=get] input:not([type=hidden]), form[method=get] select, form[method=get] button, [role=search] input, [role=search] select")) {
+    if (visible(c) && !fuera(c) && !activo(c)) lecturasBloqueadas.push({ tipo: "lectura bloqueada", texto: texto(c) || c.tagName.toLowerCase() });
+  }
+  return { activos, exentos, lecturasBloqueadas };
+}
+
+/** Campos que se pueden llenar y que guardan (no filtros ni buscadores): para ver si un botón abrió un formulario. */
+export function camposDeEscrituraVisibles() {
+  const main = document.querySelector("main") ?? document.body;
+  let n = 0;
+  for (const c of main.querySelectorAll("input:not([type=hidden]):not([type=search]):not([type=file]), select, textarea")) {
+    const r = c.getBoundingClientRect();
+    if (!(r.width > 0 && r.height > 0) || c.closest("[data-sin-bloqueo], [role=search], form[method=get], nav, header, [data-aviso-plan]")) continue;
+    n++;
+  }
+  return n;
 }
 
 /** ¿El texto de la franja es el que le toca a ese rol? */

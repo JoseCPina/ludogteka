@@ -92,7 +92,7 @@ export default async function CensoHospitalizacion({ searchParams }: { searchPar
       {puede && !perroId && (
         <section className="flex max-w-2xl flex-col gap-3">
           <h2 className="text-lg font-bold text-n-900">Ingresar una mascota</h2>
-          <form className="flex items-end gap-3">
+          <form method="get" className="flex items-end gap-3">
             <div className="flex-1">
               <Field label="Buscar mascota o dueño" name="q" defaultValue={q ?? ""} />
             </div>

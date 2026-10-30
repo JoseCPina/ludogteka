@@ -17,7 +17,9 @@
 // Perfil «prueba vencida» (QA N151, `--perfil prueba-vencida`): pone a Huellitas con la prueba vencida mientras corre
 // (y la deja como estaba) y, además de lo anterior, en cada pantalla falla si encuentra un botón, enlace o campo de
 // ESCRITURA activo (definición propia: scripts/auditoria/lib/escritura-pantalla.mjs), si la franja de arriba no dice
-// lo que le toca al rol, o si apretar un botón que no está marcado `data-sin-bloqueo` intenta escribir.
+// lo que le toca al rol, o si apretar un botón que no está marcado `data-sin-bloqueo` intenta escribir. QA N152: también
+// falla si un select, casilla o interruptor que guarda al cambiar queda activo, si apretar un botón activo ABRE un
+// formulario (aparecen campos para llenar), o si un buscador o filtro (lo que lee) quedó bloqueado.
 //
 // Prende un momento todos los módulos de Huellitas para recorrer Empleados, Reportes, Gastos y Contratos, y los deja
 // como estaban al terminar. Sale con 1 si encuentra algo. Con `--json <archivo>` deja el detalle.
@@ -28,7 +30,7 @@ import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env } from "./sesiones-dev.mjs";
 import { abrirNavegador } from "../lib/navegador.mjs";
-import { controlesDeEscritura, franjaEsperada } from "./lib/escritura-pantalla.mjs";
+import { camposDeEscrituraVisibles, controlesDeEscritura, franjaEsperada } from "./lib/escritura-pantalla.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : d; };
@@ -321,9 +323,10 @@ async function recorrer(rol) {
       if (!f.texto.test(franja)) reportarEscritura(ruta, `la franja no dice lo que le toca («${franja.slice(0, 120)}»)`);
       else if (f.boton && !(await pagina.locator("[data-aviso-plan] a", { hasText: f.boton }).count())) reportarEscritura(ruta, "la franja no trae «Contratar»");
     }
-    const { activos, exentos } = await pagina.evaluate(controlesDeEscritura);
+    const { activos, exentos, lecturasBloqueadas } = await pagina.evaluate(controlesDeEscritura);
     exentosEscritura += exentos;
     for (const a of activos) reportarEscritura(ruta, `${a.tipo} activo: «${a.texto}»`);
+    for (const l of lecturasBloqueadas) reportarEscritura(ruta, `buscador o filtro bloqueado (leer tiene que seguir): «${l.texto}»`);
   }
 
   async function apretarBotones(ruta) {
@@ -342,6 +345,7 @@ async function recorrer(rol) {
       const antesEscrituras = bloqueadas;
       const sinBloqueo = PRUEBA_VENCIDA && (await boton.evaluate((b) => Boolean(b.closest("[data-sin-bloqueo]"))).catch(() => false));
       const antesEnlaces = new Set((await enlacesVisibles()).map((e) => e.href));
+      const antesCampos = PRUEBA_VENCIDA && !sinBloqueo ? await pagina.evaluate(camposDeEscrituraVisibles).catch(() => 0) : 0;
       try {
         await boton.click({ timeout: 4000, noWaitAfter: true });
       } catch {
@@ -351,6 +355,11 @@ async function recorrer(rol) {
       await pagina.waitForLoadState("networkidle", { timeout: 2000 }).catch(() => {});
       // La Ayuda (tickets de soporte) queda abierta a propósito: la base deja escribir un ticket en solo lectura.
       if (PRUEBA_VENCIDA && !sinBloqueo && !ruta.startsWith("/ayuda") && bloqueadas > antesEscrituras) reportarEscritura(ruta, `botón activo que intentó escribir: «${etiqueta}»`);
+      // QA N152: un botón activo que, sin cambiar de página, deja a la vista campos para llenar abrió un formulario.
+      if (PRUEBA_VENCIDA && !sinBloqueo && !ruta.startsWith("/ayuda") && pagina.url() === antesUrl) {
+        const despues = await pagina.evaluate(camposDeEscrituraVisibles).catch(() => 0);
+        if (despues > antesCampos) reportarEscritura(ruta, `botón activo que abre un formulario: «${etiqueta}»`);
+      }
       if (pagina.url() !== antesUrl) await pagina.waitForLoadState("load", { timeout: 20000 }).catch(() => {});
       const ahora = new globalThis.URL(pagina.url());
       if (pagina.url() !== antesUrl) {

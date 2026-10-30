@@ -9,6 +9,7 @@ import { formatearFechaCalendario, hoyNegocio, sumarDiasFecha, unidadSegunCantid
 import { zonaActual } from "@/lib/negocio/actual";
 import { NOMBRE_TIPO_MOVIMIENTO, type Libro } from "@/lib/veterinaria/recetas";
 import { NavRecetas } from "../recetas/nav";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 // El libro de control se deriva de los movimientos de lote de los productos que la plataforma marca
 // (Grupo I y, por omisión, estupefacientes y psicotrópicos de la fracción II). No hay nada que editar:
@@ -74,7 +75,7 @@ export default async function LibroControl({ searchParams }: { searchParams: Pro
                 <section key={producto} className="flex flex-col gap-2 print:break-inside-avoid-page">
                   <h2 className="text-lg font-bold text-n-900">{producto}{filas[0].laboratorio ? <span className="font-normal text-n-500"> · {filas[0].laboratorio}</span> : null}</h2>
                   <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-                    <table className="w-full min-w-[56rem] text-sm">
+                    <TablaResponsiva className="w-full min-w-[56rem] text-sm">
                       <thead>
                         <tr className="text-left text-n-500">
                           <th className="px-3 py-2">Fecha</th><th>Movimiento</th><th>Folio</th><th>Lote</th><th className="text-right">Entrada</th><th className="text-right">Salida</th><th className="text-right">Saldo</th><th className="px-3">Paciente</th><th>Médico</th>
@@ -98,7 +99,7 @@ export default async function LibroControl({ searchParams }: { searchParams: Pro
                           </tr>
                         ))}
                       </tbody>
-                    </table>
+                    </TablaResponsiva>
                   </div>
                 </section>
               );

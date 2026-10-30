@@ -7,6 +7,7 @@ import { ChipRol } from "@/components/ui/chip-rol";
 import { formatearFecha } from "@/lib/formato";
 import { useZonaNegocio } from "@/components/zona-negocio";
 import { RestablecerPasswordPersonal } from "../empleados/[id]/restablecer-password";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 export type Cuenta = {
   id: string;
@@ -50,7 +51,7 @@ export function ListaCuentas({ cuentas, miId = null }: { cuentas: Cuenta[]; miId
       </div>
 
       <div className="w-full max-w-full overflow-x-auto rounded-lg border border-n-200 bg-white">
-        <table className="w-full min-w-[560px] border-collapse">
+        <TablaResponsiva className="w-full min-w-[560px] border-collapse">
           <thead>
             <tr>
               <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
@@ -102,7 +103,7 @@ export function ListaCuentas({ cuentas, miId = null }: { cuentas: Cuenta[]; miId
               </tr>
             ))}
           </tbody>
-        </table>
+        </TablaResponsiva>
 
         {filtradas.length === 0 && (
           <p className="p-6 text-center text-n-600">

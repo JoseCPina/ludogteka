@@ -11,6 +11,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 import { ETIQUETA_CONSENTIMIENTO, TURNOS_MONITOREO } from "@/lib/veterinaria/carnet";
 import type { EspejoAbierto } from "./paneles";
 import { AccionesDosis, FormularioAlta, FormularioCargo, FormularioMedicacion, FormularioMonitoreo, NuevoConsentimiento, SuspenderMedicacion } from "./paneles";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 type Dosis = { id: string; programada_at: string; estado: string; aplicada_at: string | null; aplicada_por: string | null; lote: string | null; motivo_omision: string | null; nota: string | null; atrasada: boolean };
 type Medicacion = { id: string; producto: string; insumo_id: string | null; dosis: string; via: string | null; frecuencia_horas: number | null; precio_dosis: number | null; indicaciones: string | null; suspendida: boolean; suspendida_motivo: string | null; indico: string; dosis_lista: Dosis[] };
@@ -206,7 +207,7 @@ export default async function Hospitalizacion({ params }: { params: Promise<{ id
           <p className="text-n-700">Todavía no hay registros.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[34rem] text-left text-sm">
+            <TablaResponsiva className="w-full min-w-[34rem] text-left text-sm">
               <thead>
                 <tr className="border-b border-n-300 text-n-600">
                   <th className="py-1.5 pr-2">Cuándo</th>
@@ -229,7 +230,7 @@ export default async function Hospitalizacion({ params }: { params: Promise<{ id
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </TablaResponsiva>
           </div>
         )}
         {puede && internada && (

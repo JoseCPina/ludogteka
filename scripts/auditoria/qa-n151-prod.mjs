@@ -2,7 +2,11 @@
 // nada: ningún POST, PATCH ni DELETE sale del navegador. Se corre ANTES de desplegar (debe fallar: reproduce lo que vio
 // QA) y DESPUÉS (debe pasar en los mismos negocios y las mismas pantallas). Sale con 1 si algo sigue mal.
 //
-//   node scripts/auditoria/qa-n151-prod.mjs [--max 40] [--solo prueba-est-tica] [--ver] [--fotos]
+//   node scripts/auditoria/qa-n151-prod.mjs [--max 40] [--solo prueba-est-tica] [--rutas /estetica/<id>,/x] [--ver] [--fotos]
+//
+// `--rutas`: pantallas que se revisan primero en cada rol (QA N152: la cita de estética donde QA vio activos
+// «Reprogramar», «No se presentó» y el selector de estilista). Desde N152 cuentan también los select, casillas e
+// interruptores que guardan al cambiar, y falla si un buscador o filtro (lo que lee) quedó bloqueado.
 //
 // Con cada rol del personal de cada negocio, recorre la app desde su inicio siguiendo los enlaces que ve y en cada
 // pantalla cuenta los botones, enlaces y campos de escritura que siguen activos (scripts/auditoria/lib/escritura-pantalla.mjs).
@@ -22,6 +26,7 @@ const MAX = Number(arg("--max", "40"));
 const SOLO = arg("--solo", null);
 const VER = process.argv.includes("--ver");
 const FOTOS = process.argv.includes("--fotos");
+const RUTAS = (arg("--rutas", "") || "").split(",").filter(Boolean);
 const NEGOCIOS = [
   { slug: "prueba-est-tica", roles: ["recepcion", "admin", "estetica"] },
   { slug: "prueba-hotel-guarderia", roles: ["recepcion", "admin"] },
@@ -62,10 +67,15 @@ try {
         return r.abort();
       });
       ctx.on("page", async (p) => { if (await p.opener().catch(() => null)) await p.close().catch(() => {}); });
-      const p = await ctx.newPage();
-      p.on("dialog", (d) => d.dismiss().catch(() => {}));
+      // Una pestaña nueva por pantalla: una que navega sola al rato no se cruza con la siguiente.
+      let p = null;
+      const pestana = async () => {
+        if (p) await p.close().catch(() => {});
+        p = await ctx.newPage();
+        p.on("dialog", (d) => d.dismiss().catch(() => {}));
+      };
       console.log(`\n── ${rol} ──`);
-      const cola = [INICIO[rol]];
+      const cola = [INICIO[rol], ...RUTAS];
       const vistos = new Set(cola.map(patronDe));
       let pantallas = 0;
       let activosRol = 0;
@@ -74,6 +84,7 @@ try {
       while (cola.length && pantallas < MAX) {
         const ruta = cola.shift();
         try {
+          await pestana();
           await p.goto(base + ruta, { waitUntil: "load" });
           await p.waitForLoadState("networkidle", { timeout: 6000 }).catch(() => {});
           await p.waitForTimeout(400);
@@ -89,8 +100,9 @@ try {
           if (f.boton && !(await p.locator("[data-aviso-plan] a", { hasText: f.boton }).count())) mal(`${slug} · ${rol}: la franja no trae el botón «Contratar»`);
           if (FOTOS) await p.screenshot({ path: path.join(os.tmpdir(), `qa-n151-${slug}-${rol}.png`) });
         }
-        const { activos, exentos } = await p.evaluate(controlesDeEscritura);
+        const { activos, exentos, lecturasBloqueadas } = await p.evaluate(controlesDeEscritura).catch(() => ({ activos: [], exentos: 0, lecturasBloqueadas: [] }));
         exentosRol += exentos;
+        for (const l of lecturasBloqueadas) mal(`${slug} · ${rol} · ${final}: buscador o filtro bloqueado «${l.texto}»`);
         if (activos.length) {
           activosRol += activos.length;
           const lista = [...new Set(activos.map((a) => `${a.tipo}: «${a.texto}»`))];
@@ -108,6 +120,7 @@ try {
       }
       // Tocar «Nuevo cliente» (recepción): aviso con el texto de la franja, sin abrir el alta.
       if (rol === "recepcion") {
+        await pestana();
         await p.goto(`${base}/recepcion`, { waitUntil: "load" });
         await p.waitForLoadState("networkidle", { timeout: 6000 }).catch(() => {});
         const boton = p.locator("main a, main button").filter({ hasText: /^\s*\+?\s*Nuevo cliente/ }).first();

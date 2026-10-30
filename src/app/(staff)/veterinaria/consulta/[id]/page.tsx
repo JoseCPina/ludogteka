@@ -21,6 +21,7 @@ import { cargarMedicos, cargarProductosConLotes, miMedico as cargarMiMedico } fr
 import { FormularioDesparasitacion, FormularioVacuna } from "../../carnet/[perroId]/formularios";
 import type { CarnetCompleto } from "@/lib/veterinaria/carnet";
 import { unirFrases } from "@/lib/texto/frases";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 // El dictado transcribe y arma el borrador dentro de una acción del servidor: puede tardar más de lo normal.
 export const maxDuration = 120;
@@ -186,7 +187,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
       </section>
 
       {c.estado === "borrador" && puedeAtender === true ? (
-        <EditorConsulta consulta={c} especie={d.mascota.especie} soyElMedico={soyElMedico} nombreMedico={d.medico.nombre} cargosIniciales={cargos} puedeCatalogo={puedeCatalogo} aplicarVacuna={aplicarVacuna} aplicarDesparasitacion={aplicarDesparasitacion} seAnulanAlDescartar={seAnulanAlDescartar} />
+        <EditorConsulta consulta={c} especie={d.mascota.especie} soyElMedico={soyElMedico} nombreMedico={d.medico.nombre} cargosIniciales={cargos} puedeCatalogo={puedeCatalogo} aplicarVacuna={aplicarVacuna} aplicarDesparasitacion={aplicarDesparasitacion} seAnulanAlDescartar={seAnulanAlDescartar} puedeEmitirReceta={puedeRecetar === true && miMedico != null} />
       ) : (
         <article className={`flex flex-col gap-5 rounded-lg border border-n-200 bg-white p-5 ${anulada ? "opacity-80" : ""}`}>
           {c.estado === "borrador" && <Alert variante="info" titulo="Borrador">Solo quien atiende consultas lo edita.</Alert>}
@@ -269,7 +270,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
                 {!r.anulada_at && puedeAtender === true && <AnularItem tipo="resultado" id={r.id} rutas={rutas} />}
               </div>
               {r.anulada_at && <p className="text-sm text-coral-oscuro">Anulado: {r.anulada_motivo}</p>}
-              <table className="mt-2 w-full text-sm">
+              <TablaResponsiva className="mt-2 w-full text-sm">
                 <thead><tr className="text-left text-n-500"><th className="py-1">Parámetro</th><th>Valor</th><th>Rango</th><th /></tr></thead>
                 <tbody>
                   {r.parametros.map((p, i) => (
@@ -281,7 +282,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </TablaResponsiva>
               {r.notas && <p className="mt-1 text-sm text-n-700">{r.notas}</p>}
             </article>
           ))

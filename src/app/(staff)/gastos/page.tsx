@@ -19,6 +19,7 @@ import { CamposPago, type Opcion } from "./campos-gasto";
 import { CampoComprobante } from "./campo-comprobante";
 import { adjuntarComprobante, cancelarGasto, corregirGasto, pagarGastoEsperado, registrarGasto } from "./gastos-actions";
 import { leerTodo, leerTodoPorIds } from "@/lib/supabase/paginar";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 type PorAtender = { id: string; concepto: string; categoria: string; monto_estimado: number | null; vencimiento: string; dias: number; vencido: boolean };
 
@@ -195,13 +196,13 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
       <section className="flex flex-col gap-3 border-t border-n-200 pt-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <h2 className="text-lg font-bold capitalize text-n-900">{nombreMes(mes)}</h2>
-          <form className="flex items-end gap-2">
+          <form method="get" className="flex items-end gap-2">
             <Field label="Mes" name="mes" type="month" defaultValue={mes} />
             <Button type="submit" variante="secundario">Ver</Button>
           </form>
         </div>
         <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-          <table className="w-full min-w-[480px] border-collapse text-sm">
+          <TablaResponsiva className="w-full min-w-[480px] border-collapse text-sm">
             <thead>
               <tr className="bg-n-100 text-left text-xs font-bold uppercase tracking-wide text-n-600">
                 <th className="px-3 py-2">Categoría</th>
@@ -237,7 +238,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                 </td>
               </tr>
             </tbody>
-          </table>
+          </TablaResponsiva>
         </div>
         <p className="text-xs text-n-500">Cada gasto cuenta en los meses que cubre, repartido por días: la luz bimestral pagada este mes carga la mitad aquí.</p>
 

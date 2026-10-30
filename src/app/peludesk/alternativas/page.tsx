@@ -8,6 +8,7 @@ import { CAMPOS_ALTERNATIVA, FILA_PELUDESK, REVISADO_ALTERNATIVAS, REVISADO_ALTE
 import { pesos, planUnico } from "@/lib/peludesk/plan";
 import { recordatoriosVigentes } from "@/lib/peludesk/recordatorios";
 import { JsonLd, SITIO, metaPagina, migas, preguntasFrecuentes } from "@/lib/peludesk/seo";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 export const metadata: Metadata = metaPagina({
   titulo: "Alternativas a PeluDesk: MoeGo, Gingr, SICAR, AgendaPro, QVET y más",
@@ -26,7 +27,7 @@ const PREGUNTAS_PROVEEDOR = [
 function Tabla({ alts, precioPeluDesk, recordatoriosPeluDesk }: { alts: Alternativa[]; precioPeluDesk: string; recordatoriosPeluDesk: string }) {
   return (
     <div className="mt-6 overflow-x-auto">
-      <table className="w-full min-w-[720px] border-collapse text-left text-sm">
+      <TablaResponsiva className="w-full min-w-[720px] border-collapse text-left text-sm">
         <thead>
           <tr className="border-b border-n-200">
             <th scope="col" className="p-3"><span className="sr-only">Criterio</span></th>
@@ -43,7 +44,7 @@ function Tabla({ alts, precioPeluDesk, recordatoriosPeluDesk }: { alts: Alternat
             </tr>
           ))}
         </tbody>
-      </table>
+      </TablaResponsiva>
       <p className="mt-2 text-xs text-n-600">«—»: no lo verificamos en su sitio.</p>
     </div>
   );

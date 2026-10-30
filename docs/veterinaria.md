@@ -75,3 +75,7 @@
 - **No verificable desde la nube**: `api.daily.co` y `*.daily.co` están fuera de los dominios permitidos del entorno, así que abrir la sala en el navegador, la expulsión al vencer en vivo y dictar durante la llamada no se pudieron probar aquí (se comprueba el token, no la llamada).
 - Regresión nueva en `veterinaria-fase1-ui-dev.mjs`: un MVZ con rol de estética firma un consentimiento y el PDF queda guardado.
 - Pendiente: `FACTURAPI_TEST_KEY` (el tramo de factura sandbox no se corrió).
+
+## Receta desde la consulta abierta (QA S49, 30 de octubre de 2026, migración `20261202003100`)
+- «Emitir receta» sale también DENTRO de la consulta en borrador (`EditorConsulta`, `puedeEmitirReceta`: con «Emitir recetas» y médico designado): guarda lo escrito (`guardarAhora`) y abre `/veterinaria/recetas/nueva?perro=&consulta=` prellenada con el Tratamiento de ese momento. `/veterinaria/recetas/nueva` ofrece las consultas firmadas y las abiertas («· abierta»).
+- `vet_receta_emitir` liga la receta a una consulta firmada o en borrador (una anulada se rechaza) y `vet_consulta_descartar` ya no descarta un borrador con una receta emitida («fírmala, o anula la receta antes»). Las dos se parcharon en dinámico sobre la definición vigente.

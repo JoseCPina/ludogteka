@@ -6,6 +6,7 @@ import { hashDeToken, tokenPlausible } from "@/lib/reporte/enlaces";
 import { LigaNoDisponible, MarcoLiga } from "@/components/publico/marco-liga";
 import { TIPOS_LINEA, dinero, totalLinea, type LineaEstimado } from "@/lib/veterinaria/expediente";
 import { ResponderEstimado } from "./responder";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 // Estimado (/e/<token>): sin sesión. El dueño lo revisa y lo acepta con nombre y firma. Nada de
 // datos clínicos del expediente: solo el título, las líneas con sus precios y la vigencia.
@@ -62,7 +63,7 @@ export default async function EstimadoPublico({ params }: { params: Promise<{ to
           <h1 className="mt-1 text-2xl font-bold text-n-900">{d.titulo}</h1>
           <p className="text-n-700">Para {d.mascota}, de {d.dueno}</p>
         </header>
-        <table className="w-full text-sm">
+        <TablaResponsiva className="w-full text-sm">
           <thead>
             <tr className="text-left text-n-500"><th className="py-1">Concepto</th><th className="text-right">Desde</th><th className="text-right">Hasta</th></tr>
           </thead>
@@ -85,7 +86,7 @@ export default async function EstimadoPublico({ params }: { params: Promise<{ to
           <tfoot>
             <tr className="border-t-2 border-n-300 font-bold text-n-900"><td className="py-2">Total estimado</td><td className="text-right">{dinero(d.total_min)}</td><td className="text-right">{dinero(d.total_max)}</td></tr>
           </tfoot>
-        </table>
+        </TablaResponsiva>
         {d.notas && <p className="whitespace-pre-wrap text-n-800">{d.notas}</p>}
         <p className="text-sm text-n-600">Versión {d.version} · vigente hasta el {formatearFechaCalendario(d.vigente_hasta)}{d.medico ? ` · ${d.medico.nombre}, cédula profesional ${d.medico.cedula}` : ""}. Es un cálculo: el costo final depende de lo que ocurra en la atención y no pasa del máximo sin avisarte.</p>
       </article>
