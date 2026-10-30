@@ -25,6 +25,7 @@ import {
 import { CeldaTarifa, type ValorCelda } from "./celda-tarifa";
 import { confirmarTarifasCalculadas, guardarTarifas, preciosDeOtroServicio, type FilaTarifaGuardar, type PrecioDeOtroServicio } from "./tarifas-actions";
 import { useZonaNegocio } from "@/components/zona-negocio";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 type Tramo = { clientId: string; desde: number; hasta: number | null };
 
@@ -453,7 +454,7 @@ export function MatrizTarifas({
           Va a quedar vigente desde el <strong>{formatearFechaCalendario(vigenciaDesde)}</strong>.
         </p>
         <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-          <table className="w-full min-w-[560px] border-collapse">
+          <TablaResponsiva className="w-full min-w-[560px] border-collapse">
             <thead>
               <tr>
                 <th className="border-b border-n-200 bg-n-100 px-4 py-2 text-left text-xs font-bold uppercase text-n-600">
@@ -489,7 +490,7 @@ export function MatrizTarifas({
                 </tr>
               ))}
             </tbody>
-          </table>
+          </TablaResponsiva>
         </div>
         <AvisoVersion ctl={ctlPrecios} registro="los precios de este servicio" cargando={guardando.cargando} />
         <AccionesFormulario error={error} exito={ctlPrecios.exito}>
@@ -691,7 +692,7 @@ export function MatrizTarifas({
             <h3 className="font-bold text-n-900">Tramo: {etiquetaTramo(tramo)}</h3>
           )}
           <div className="overflow-x-auto">
-            <table className="border-collapse">
+            <TablaResponsiva className="border-collapse">
               <thead>
                 {/* Sin pelaje hay una sola columna sin nombre: un "—"
                     suelto encima de los precios se lee como si faltara
@@ -795,7 +796,7 @@ export function MatrizTarifas({
                   );
                 })}
               </tbody>
-            </table>
+            </TablaResponsiva>
           </div>
         </div>
       ))}

@@ -8,6 +8,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 import { Chip } from "@/components/ui/chip";
 import type { Progreso } from "../actions";
 import { AccionesImportacion } from "./acciones";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 export const dynamic = "force-dynamic";
 
@@ -125,7 +126,7 @@ export default async function ImportacionPage({
           ))}
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[36rem] text-left text-sm">
+          <TablaResponsiva className="w-full min-w-[36rem] text-left text-sm">
             <thead>
               <tr className="border-b border-borde text-n-700">
                 <th className="py-2 pr-2 font-semibold">Fila</th>
@@ -147,7 +148,7 @@ export default async function ImportacionPage({
                 </tr>
               ))}
             </tbody>
-          </table>
+          </TablaResponsiva>
         </div>
         {lista.length === FILAS_POR_VISTA && <p className="text-sm text-n-700">Se muestran las primeras {FILAS_POR_VISTA} filas.</p>}
       </section>

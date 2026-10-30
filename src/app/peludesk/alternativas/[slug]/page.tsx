@@ -9,6 +9,7 @@ import { CAMPOS_ALTERNATIVA, FILA_PELUDESK, REVISADO_ALTERNATIVAS, REVISADO_ALTE
 import { pesos, planUnico } from "@/lib/peludesk/plan";
 import { recordatoriosVigentes } from "@/lib/peludesk/recordatorios";
 import { JsonLd, SITIO, metaPagina, migas, preguntasFrecuentes } from "@/lib/peludesk/seo";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -50,7 +51,7 @@ export default async function PaginaAlternativa({ params }: Props) {
           Revisado el {REVISADO_ALTERNATIVAS_TEXTO} contra el sitio oficial de {a.nombre}; cada dato dice de qué página salió. Somos parte interesada: confirma lo que te importe en el <a href={a.sitio} target="_blank" rel="noopener nofollow" className="font-semibold text-morado underline underline-offset-2">sitio de {a.nombre}</a>.
         </p>
         <div className="mt-8 overflow-x-auto">
-          <table className="w-full min-w-[560px] border-collapse text-left text-sm">
+          <TablaResponsiva className="w-full min-w-[560px] border-collapse text-left text-sm">
             <thead>
               <tr className="border-b border-n-200">
                 <th scope="col" className="p-3"><span className="sr-only">Criterio</span></th>
@@ -67,7 +68,7 @@ export default async function PaginaAlternativa({ params }: Props) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </TablaResponsiva>
           <p className="mt-2 text-xs text-n-600">«—»: no lo verificamos en su sitio.</p>
         </div>
         <section aria-labelledby="mejor" className="mt-10">

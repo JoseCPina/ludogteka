@@ -10,6 +10,7 @@ import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { anularRequisitoAplicado, corregirRequisitoAplicado } from "./requisitos-actions";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 export type RequisitoAplicadoFila = {
   id: string;
@@ -96,7 +97,7 @@ export function RequisitosHistorial({ filas, perroId, puedeGestionar = false }: 
 
   return (
     <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-      <table className="w-full min-w-[640px] border-collapse">
+      <TablaResponsiva className="w-full min-w-[640px] border-collapse">
         <thead>
           <tr>
             <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
@@ -165,7 +166,7 @@ export function RequisitosHistorial({ filas, perroId, puedeGestionar = false }: 
             </tr>
           ))}
         </tbody>
-      </table>
+      </TablaResponsiva>
     </div>
   );
 }

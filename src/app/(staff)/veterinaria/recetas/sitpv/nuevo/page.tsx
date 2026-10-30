@@ -42,7 +42,7 @@ export default async function NuevoEspejo({ searchParams }: { searchParams: Prom
         {cabecera}
         <p className="max-w-3xl text-n-600">Primero emite la receta cuantificada en el SITPV. Después regístrala aquí: elige a la mascota, o usa «Uso hospitalario» si el producto se va a ocupar en la clínica en varias aplicaciones.</p>
         <Link href="/veterinaria/recetas/sitpv/nuevo?uso=hospitalario" className="w-fit"><Button type="button" variante="secundario">Es de uso hospitalario (sin paciente)</Button></Link>
-        <form className="flex max-w-xl items-end gap-3">
+        <form method="get" className="flex max-w-xl items-end gap-3">
           <div className="flex-1"><Field label="Buscar mascota o dueño" name="q" defaultValue={q ?? ""} placeholder="Motita, Ana, 444…" /></div>
           <Button type="submit">Buscar</Button>
         </form>

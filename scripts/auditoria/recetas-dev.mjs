@@ -5,7 +5,7 @@
 //
 // 1. Reglas regulatorias: sembradas, legibles por el personal y editables SOLO por la plataforma.
 // 2. Requisito por producto según su clasificación (gana el más estricto).
-// 3. Receta simple: solo un médico designado, desde una consulta firmada o la ficha; campos completos,
+// 3. Receta simple: solo un médico designado, desde una consulta (firmada o abierta, QA S49) o la ficha; campos completos,
 //    cantidad calculada, foto de datos, hash, no se edita, se anula con motivo.
 // 4. Fracciones III y IV: se surten con límite (una vez / tres en seis meses), según la regla.
 // 5. Conservación y archivado, liga del dueño, portal, aislamiento y llave anónima.
@@ -125,17 +125,36 @@ try {
   const noReact = await SB.from("vet_recetas").update({ estado: "emitida" }).eq("id", rx);
   comprobar(Boolean(noReact.error), "una anulada no se reactiva");
 
-  seccion("6. Desde una consulta firmada");
+  seccion("6. Desde una consulta abierta o firmada (QA S49)");
+  // Para firmar, cada cargo de la consulta lleva precio (sin tocar el catálogo).
+  const conPrecios = async (id) => {
+    const c = await rpc(P.recCon, "vet_consulta_cargos", { p_consulta: id });
+    for (const l of c.cuerpo?.lineas ?? c.cuerpo?.cargos ?? []) if (l.precio == null || l.sin_precio) await rpc(P.recCon, "vet_consulta_cargo_precio", { p_id: l.id, p_precio: 1, p_guardar_catalogo: false });
+  };
   const cons = await rpc(P.recCon, "vet_consulta_iniciar", { p_perro: perro, p_cita: null, p_tipo: "consulta", p_medico: E.medA });
   comprobar(cons.ok, `abre una consulta (${cons.mensaje})`);
   const cid = cons.cuerpo?.id ?? cons.cuerpo;
   const conBorrador = await emitir(P.recCon, L1, { p_consulta: cid });
-  comprobar(!conBorrador.ok && /firmada/i.test(conBorrador.mensaje), `con la consulta en borrador se rechaza (${conBorrador.mensaje})`);
+  comprobar(conBorrador.ok, `con la consulta todavía abierta (borrador) ya se receta (${conBorrador.mensaje})`);
+  const descartar = await rpc(P.recCon, "vet_consulta_descartar", { p_id: cid });
+  comprobar(!descartar.ok && /receta emitida/i.test(descartar.mensaje), `un borrador con receta emitida no se descarta (${descartar.mensaje})`);
   await rpc(P.recCon, "vet_consulta_guardar", { p_id: cid, p_datos: { motivo: "Prurito", anamnesis: "x", examen_fisico: "x", diagnosticos: [{ origen: "libre", nombre: "Dermatitis", tipo: "definitivo" }], plan: "Tratar" } });
+  await conPrecios(cid);
   const firma = await rpc(P.recCon, "vet_consulta_firmar", { p_id: cid });
   comprobar(firma.ok, `la consulta se firma (${firma.mensaje})`);
   const conFirmada = await emitir(P.recCon, L1, { p_consulta: cid });
   comprobar(conFirmada.ok, `firmada, ya se puede recetar desde ella (${conFirmada.mensaje})`);
+  // Una consulta anulada no recibe recetas.
+  const cons2 = await rpc(P.recCon, "vet_consulta_iniciar", { p_perro: perro, p_cita: null, p_tipo: "consulta", p_medico: E.medA });
+  const cid2 = cons2.cuerpo?.id ?? cons2.cuerpo;
+  await rpc(P.recCon, "vet_consulta_guardar", { p_id: cid2, p_datos: { motivo: "Revisión", anamnesis: "x", examen_fisico: "x", diagnosticos: [{ origen: "libre", nombre: "Sano", tipo: "definitivo" }], plan: "Nada" } });
+  await conPrecios(cid2);
+  await rpc(P.recCon, "vet_consulta_firmar", { p_id: cid2 });
+  const anulo = await rpc(P.recCon, "vet_consulta_anular", { p_id: cid2, p_motivo: "Se capturó en otra mascota" });
+  if (anulo.ok) {
+    const conAnulada = await emitir(P.recCon, L1, { p_consulta: cid2 });
+    comprobar(!conAnulada.ok && /anulada/i.test(conAnulada.mensaje), `con una consulta anulada se rechaza (${conAnulada.mensaje})`);
+  } else console.log(`  · no se pudo anular la consulta de prueba (${anulo.mensaje}); se salta ese caso`);
   const otraMascota = await E.nuevoPerro("Otrin");
   comprobar(!(await rpc(P.recCon, "vet_receta_emitir", { p_perro: otraMascota, p_consulta: cid, p_lineas: L1, p_diagnostico: null, p_observaciones: null })).ok, "una consulta de otra mascota se rechaza");
 

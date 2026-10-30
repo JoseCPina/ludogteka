@@ -23,6 +23,7 @@ import {
   type Modo,
   type Progreso,
 } from "./actions";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 type Paso = "archivo" | "columnas" | "revision" | "importando" | "listo";
 type Filtro = "todas" | "errores" | "avisos" | "duplicados";
@@ -340,7 +341,7 @@ export function Importador({ conClinicos, conVet }: { conClinicos: boolean; conV
             </Alert>
           )}
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[34rem] text-left text-sm">
+            <TablaResponsiva className="w-full min-w-[34rem] text-left text-sm">
               <thead>
                 <tr className="border-b border-borde text-n-700">
                   <th className="py-2 pr-3 font-semibold">Columna del archivo</th>
@@ -380,7 +381,7 @@ export function Importador({ conClinicos, conVet }: { conClinicos: boolean; conV
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </TablaResponsiva>
           </div>
           <AccionesFormulario error={null}>
             <Button type="button" variante="secundario" onClick={() => setPaso("archivo")}>
@@ -438,7 +439,7 @@ export function Importador({ conClinicos, conVet }: { conClinicos: boolean; conV
                 ))}
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[40rem] text-left text-sm" data-testid="tabla-revision">
+                <TablaResponsiva className="w-full min-w-[40rem] text-left text-sm" data-testid="tabla-revision">
                   <thead>
                     <tr className="border-b border-borde text-n-700">
                       <th className="py-2 pr-2 font-semibold">Fila</th>
@@ -480,7 +481,7 @@ export function Importador({ conClinicos, conVet }: { conClinicos: boolean; conV
                       <tr><td colSpan={4} className="py-4 text-center text-n-700">No hay filas con ese filtro.</td></tr>
                     )}
                   </tbody>
-                </table>
+                </TablaResponsiva>
               </div>
               {visibles.length > verHasta && (
                 <Button type="button" variante="secundario" onClick={() => setVerHasta((v) => v + 200)}>

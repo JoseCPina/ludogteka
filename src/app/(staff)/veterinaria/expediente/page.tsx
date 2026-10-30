@@ -21,7 +21,7 @@ export default async function BuscarExpediente({ searchParams }: { searchParams:
         <h1 className="mt-1 text-2xl font-bold text-n-900">Expediente clínico</h1>
         <p className="mt-1 max-w-3xl text-n-600">Consultas, vacunas, hospitalizaciones, estudios y archivos de cada mascota en una sola línea de tiempo. Busca por su nombre, el de su dueño o su teléfono.</p>
       </div>
-      <form className="flex max-w-xl items-end gap-3">
+      <form method="get" className="flex max-w-xl items-end gap-3">
         <div className="flex-1">
           <Field label="Buscar mascota o dueño" name="q" defaultValue={qCrudo ?? ""} placeholder="Motita, Ana, 444…" />
         </div>

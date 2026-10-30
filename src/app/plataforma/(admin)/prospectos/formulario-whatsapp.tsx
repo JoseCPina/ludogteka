@@ -1,4 +1,5 @@
 import { Alert } from "@/components/ui/alert";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 // «Prueba gratis por WhatsApp» en /plataforma/prospectos: el embudo del formulario (WhatsApp Flow) que ofrece el
 // bot, por fuente y por dónde se ofreció. Los conteos los hace la base (wa_flow_resumen).
@@ -56,7 +57,7 @@ const pct = (n: number, de: number) => (de > 0 ? ` (${Math.round((n / de) * 100)
 
 function Tabla({ titulo, filas, nombres }: { titulo: string; filas: [string, Totales][]; nombres: Record<string, string> }) {
   return (
-    <table className="tabla-tarjetas mt-3 w-full text-sm">
+    <TablaResponsiva className="tabla-tarjetas mt-3 w-full text-sm">
       <thead>
         <tr className="text-left text-n-600">
           <th className="py-1 pr-3">{titulo}</th>
@@ -76,7 +77,7 @@ function Tabla({ titulo, filas, nombres }: { titulo: string; filas: [string, Tot
           </tr>
         ))}
       </tbody>
-    </table>
+    </TablaResponsiva>
   );
 }
 

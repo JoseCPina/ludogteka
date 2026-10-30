@@ -8,6 +8,7 @@ import { contarPerrosSinRazaCatalogo } from "@/lib/razas";
 import { AvisoRazasSinCatalogar } from "@/components/aviso-razas-sin-catalogar";
 import { leerTodo } from "@/lib/supabase/paginar";
 import { servicioActivo } from "@/lib/tarifas/huecos";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 const ETIQUETA_CATEGORIA: Record<string, string> = {
   guarderia: "Guardería",
@@ -130,7 +131,7 @@ export default async function ServiciosPage() {
         </div>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-          <table className="w-full min-w-[720px] border-collapse">
+          <TablaResponsiva className="w-full min-w-[720px] border-collapse">
             <thead>
               <tr>
                 <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
@@ -218,7 +219,7 @@ export default async function ServiciosPage() {
                 );
               })}
             </tbody>
-          </table>
+          </TablaResponsiva>
         </div>
       )}
       {ocultos > 0 && (

@@ -1,5 +1,6 @@
 import { formatearDiaSemana, formatearFechaCalendario } from "@/lib/formato";
 import type { ModuloEstancia } from "@/lib/modulos";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 export type FilaCalendario = {
   fecha: string;
@@ -97,7 +98,7 @@ export function TablaOcupacion({
         })}
       </ul>
       <div className="hidden max-w-full overflow-x-auto rounded-lg border border-n-200 bg-white sm:block">
-        <table className="w-full min-w-[560px] border-collapse">
+        <TablaResponsiva className="w-full min-w-[560px] border-collapse">
           <thead>
             <tr>
               <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
@@ -147,7 +148,7 @@ export function TablaOcupacion({
               );
             })}
           </tbody>
-        </table>
+        </TablaResponsiva>
       </div>
     </section>
   );

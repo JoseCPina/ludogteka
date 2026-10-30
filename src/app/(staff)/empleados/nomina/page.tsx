@@ -11,6 +11,7 @@ import type { Desglose } from "@/lib/empleados/tipos";
 import { SubnavEmpleados } from "../subnav";
 import { zonaActual } from "@/lib/negocio/actual";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 // La nómina del periodo: cuánto le toca a cada quien y si ya se le pagó.
 // El detalle y el "marcar pagado" están en la página de cada empleado.
@@ -57,7 +58,7 @@ export default async function NominaPage({ searchParams }: { searchParams: Promi
       </div>
       <SubnavEmpleados activa="nomina" puedeNomina ausenciasPorAprobar={porAprobar ?? 0} />
 
-      <form className="flex flex-wrap items-end gap-3 rounded-lg border border-n-200 bg-white p-4">
+      <form method="get" className="flex flex-wrap items-end gap-3 rounded-lg border border-n-200 bg-white p-4">
         <Field label="Desde" name="desde" type="date" defaultValue={desde} />
         <Field label="Hasta" name="hasta" type="date" defaultValue={hasta} />
         <Button type="submit" variante="secundario">Calcular</Button>
@@ -76,7 +77,7 @@ export default async function NominaPage({ searchParams }: { searchParams: Promi
         <p className="rounded-lg border-[1.5px] border-dashed border-n-300 bg-white p-8 text-center text-n-600">Nadie trabajó en este periodo.</p>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-          <table className="w-full min-w-[640px] border-collapse text-sm">
+          <TablaResponsiva className="w-full min-w-[640px] border-collapse text-sm">
             <thead>
               <tr className="bg-n-100 text-left text-xs font-bold uppercase tracking-wide text-n-600">
                 <th className="px-3 py-2">Empleado</th>
@@ -137,7 +138,7 @@ export default async function NominaPage({ searchParams }: { searchParams: Promi
                 <td />
               </tr>
             </tbody>
-          </table>
+          </TablaResponsiva>
         </div>
       )}
     </div>

@@ -13,7 +13,8 @@ export function AvisosWhatsAppBotones({ mensajes, etiqueta = "Avisar por WhatsAp
   const [abierto, setAbierto] = useState<string | null>(null);
   const actual = mensajes.find((m) => m.titulo === abierto) ?? null;
   return (
-    <div data-avisos-whatsapp className="flex flex-col gap-2">
+    // QA N153: quedan abiertos con el negocio en solo lectura: solo enseñan el mensaje y abren WhatsApp, no guardan nada.
+    <div data-avisos-whatsapp data-sin-bloqueo className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-semibold text-n-700">{etiqueta}:</span>
         {mensajes.map((m) => (

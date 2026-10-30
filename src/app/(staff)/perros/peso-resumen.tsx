@@ -1,6 +1,7 @@
 import { formatearFechaCalendario } from "@/lib/formato";
 import { vocabularioMascota, type Vocabulario } from "@/lib/perros/vocabulario";
 
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 export type PesoFila = {
   id: string;
   peso_kg: number;
@@ -101,7 +102,7 @@ export function PesoResumen({ historial, mascota = vocabularioMascota({ conVet: 
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-        <table className="w-full min-w-[420px] border-collapse">
+        <TablaResponsiva className="w-full min-w-[420px] border-collapse">
           <thead>
             <tr>
               <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
@@ -128,7 +129,7 @@ export function PesoResumen({ historial, mascota = vocabularioMascota({ conVet: 
               </tr>
             ))}
           </tbody>
-        </table>
+        </TablaResponsiva>
       </div>
     </div>
   );

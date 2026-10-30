@@ -41,13 +41,14 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 };
 
 /** El borrador de una consulta: se guarda solo (a los 1.5 s de dejar de escribir) y se firma desde aquí. */
-export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, cargosIniciales, puedeCatalogo = false, aplicarVacuna, aplicarDesparasitacion, seAnulanAlDescartar = [] }: { consulta: ConsultaVet; especie: string | null; soyElMedico: boolean; nombreMedico: string; cargosIniciales: DatosCargos | null; puedeCatalogo?: boolean; aplicarVacuna?: ReactNode; aplicarDesparasitacion?: ReactNode; seAnulanAlDescartar?: string[] }) {
+export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, cargosIniciales, puedeCatalogo = false, aplicarVacuna, aplicarDesparasitacion, seAnulanAlDescartar = [], puedeEmitirReceta = false }: { consulta: ConsultaVet; especie: string | null; soyElMedico: boolean; nombreMedico: string; cargosIniciales: DatosCargos | null; puedeCatalogo?: boolean; aplicarVacuna?: ReactNode; aplicarDesparasitacion?: ReactNode; seAnulanAlDescartar?: string[]; puedeEmitirReceta?: boolean }) {
   const router = useRouter();
   const [v, setV] = useState<Valores>(() => inicial(consulta));
   const [dx, setDx] = useState<Diagnostico[]>(consulta.diagnosticos ?? []);
   const [estado, setEstado] = useState<"limpio" | "pendiente" | "guardando" | "guardado" | "error">("limpio");
   const [errorGuardado, setErrorGuardado] = useState<string | null>(null);
   const [errorFirma, setErrorFirma] = useState<string | null>(null);
+  const recetaEnvio = useEspera();
   // QA S41 (N140): firmada, la pantalla lo dice con la respuesta (registros publicados por useEspera), sin esperar a recargar.
   const [avisoFirmada, setAvisoFirmada] = useState<string | null>(null);
   const vivo = useRegistroVivo("vet_consultas", consulta.id, { estado: consulta.estado as string }, consulta.updated_at);
@@ -215,6 +216,23 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
         {ETIQUETA_ESTADO[estado] || "Borrador: se guarda solo mientras escribes."}
         {errorGuardado && <span> · {errorGuardado}</span>}
       </div>
+      {/* QA S49: la receta también sale de la consulta abierta. Guarda lo escrito y abre la receta prellenada con el
+          «Tratamiento» de este momento (la base deja ligarla a un borrador o a una firmada, nunca a una anulada). */}
+      {puedeEmitirReceta && (
+        <Button
+          type="button"
+          className="self-start"
+          cargando={recetaEnvio.cargando}
+          data-emitir-receta
+          onClick={async () => {
+            const r = await recetaEnvio.correr(() => guardarAhora());
+            // Si no se pudo guardar, el aviso de arriba ya dice por qué.
+            if (r.ok && r.valor) window.location.assign(`/veterinaria/recetas/nueva?perro=${consulta.perro_id}&consulta=${consulta.id}`);
+          }}
+        >
+          Emitir receta
+        </Button>
+      )}
       {conflicto && (
         <AvisoConflicto
           conflicto={conflicto}

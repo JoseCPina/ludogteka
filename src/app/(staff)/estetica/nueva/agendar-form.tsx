@@ -566,7 +566,7 @@ export function AgendarForm({
                 Cobrar las {agendadas.length} cuentas juntas
               </Link>
             )}
-            <Link href="/estetica" className="inline-flex min-h-12 items-center justify-center rounded-md px-5 text-base font-semibold text-n-700 hover:bg-n-100">
+            <Link href="/estetica" data-ir-agenda className="inline-flex min-h-12 items-center justify-center rounded-md bg-morado px-5 text-base font-semibold text-white hover:bg-morado-oscuro">
               Listo, ir a la agenda
             </Link>
           </div>

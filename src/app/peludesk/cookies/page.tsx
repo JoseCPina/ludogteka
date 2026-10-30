@@ -4,6 +4,7 @@ import { BotonPreferenciasCookies } from "@/components/peludesk/consentimiento/p
 import { PaginaLegal } from "@/components/peludesk/pagina-legal";
 import { COOKIES_DECLARADAS, COOKIE_CONSENTIMIENTO, MESES_VIGENCIA } from "@/lib/peludesk/cookies";
 import { metaPagina } from "@/lib/peludesk/seo";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 export const metadata: Metadata = metaPagina({
   titulo: "Política de cookies | PeluDesk",
@@ -29,7 +30,7 @@ export default function Cookies() {
 
           <h2 id="tabla">Lo que usa peludesk.mx</h2>
           <div className="pd-tabla" tabIndex={0} role="region" aria-label="Tabla de cookies de peludesk.mx">
-            <table style={{ minWidth: "52rem" }}>
+            <TablaResponsiva style={{ minWidth: "52rem" }}>
               <thead>
                 <tr>
                   <th scope="col">Nombre</th>
@@ -52,7 +53,7 @@ export default function Cookies() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </TablaResponsiva>
           </div>
           <p>
             Nada de analítica ni de marketing se carga antes de que aceptes: sin tu permiso ni siquiera se pide el script de

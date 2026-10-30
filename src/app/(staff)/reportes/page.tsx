@@ -7,6 +7,7 @@ import { mesAnterior, periodoAnterior, rangoMes } from "@/lib/gastos/textos";
 import { zonaActual } from "@/lib/negocio/actual";
 import { urlDesglose } from "@/lib/reportes/desglose";
 import { TEXTO_CORTE_CIEGO, turnoAbiertoEnPeriodo } from "@/lib/caja/corte-ciego";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 function formatearMoneda(n: number): string {
   return n.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
@@ -196,7 +197,7 @@ export default async function ReportesPage({
         <p className="mt-1 text-n-600">Financiero y operativo. Solo para admin y para quien tenga el permiso «Reportes financieros».</p>
       </div>
 
-      <form className="flex flex-wrap items-end gap-3 rounded-lg border border-n-200 bg-white p-4">
+      <form method="get" className="flex flex-wrap items-end gap-3 rounded-lg border border-n-200 bg-white p-4">
         <div>
           <label htmlFor="desde" className="mb-1.5 block text-sm font-semibold text-n-800">
             Desde
@@ -266,7 +267,7 @@ export default async function ReportesPage({
             </p>
           </div>
           <div className="overflow-x-auto">
-            <table className="tabla-tarjetas w-full min-w-[480px] border-collapse text-sm">
+            <TablaResponsiva className="tabla-tarjetas w-full min-w-[480px] border-collapse text-sm">
               <thead>
                 <tr className="text-left text-xs font-bold uppercase tracking-wide text-n-500">
                   <th className="py-1.5 pr-3" />
@@ -297,14 +298,14 @@ export default async function ReportesPage({
                   <td data-label="Periodo anterior" className="py-1.5 pr-3 text-right tabular-nums text-n-600">{utilidadAnterior ? formatearMoneda(Number(utilidadAnterior.utilidad)) : "—"}</td>
                 </tr>
               </tbody>
-            </table>
+            </TablaResponsiva>
           </div>
 
           {categoriasGasto.length > 0 && (
             <div className="flex flex-col gap-2">
               <p className="text-sm font-bold text-n-900">Gastos del local, por categoría</p>
               <div className="overflow-x-auto">
-                <table className="tabla-tarjetas w-full min-w-[480px] border-collapse text-sm">
+                <TablaResponsiva className="tabla-tarjetas w-full min-w-[480px] border-collapse text-sm">
                   <thead>
                     <tr className="text-left text-xs font-bold uppercase tracking-wide text-n-500">
                       <th className="py-1.5 pr-3">Categoría</th>
@@ -329,7 +330,7 @@ export default async function ReportesPage({
                       );
                     })}
                   </tbody>
-                </table>
+                </TablaResponsiva>
               </div>
             </div>
           )}
@@ -388,7 +389,7 @@ export default async function ReportesPage({
           ) : (
             <>
           <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-            <table className="tabla-tarjetas w-full min-w-[720px] border-collapse">
+            <TablaResponsiva className="tabla-tarjetas w-full min-w-[720px] border-collapse">
               <thead>
                 <tr>
                   <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
@@ -464,7 +465,7 @@ export default async function ReportesPage({
                   <td data-label="Tarjeta manual (sin verificar)" className="px-4 py-2.5 text-right text-n-400">—</td>
                 </tr>
               </tbody>
-            </table>
+            </TablaResponsiva>
           </div>
           {Number(reporte.efectivo_agregado ?? 0) > 0 && (
             <p className="text-sm text-n-700" data-efectivo-agregado-reporte>
@@ -599,7 +600,7 @@ export default async function ReportesPage({
 
             {margenServicios.length > 0 && (
               <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-                <table className="tabla-tarjetas w-full min-w-[760px] border-collapse">
+                <TablaResponsiva className="tabla-tarjetas w-full min-w-[760px] border-collapse">
                   <thead>
                     <tr>
                       <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
@@ -652,7 +653,7 @@ export default async function ReportesPage({
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </TablaResponsiva>
               </div>
             )}
           </>
@@ -741,7 +742,7 @@ export default async function ReportesPage({
             if (filas.length === 0) return null;
             return (
               <div key={grupo} className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-                <table className="tabla-tarjetas w-full text-left text-sm">
+                <TablaResponsiva className="tabla-tarjetas w-full text-left text-sm">
                   <thead className="bg-n-50 text-xs font-bold uppercase tracking-wide text-n-600">
                     <tr>
                       <th className="px-3 py-2">{grupo === "servicio" ? "Servicio" : "Empleado"}</th>
@@ -762,7 +763,7 @@ export default async function ReportesPage({
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </TablaResponsiva>
               </div>
             );
           })}

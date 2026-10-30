@@ -1,4 +1,5 @@
 import { Alert } from "@/components/ui/alert";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 // «Embudo del bot de ventas» en /plataforma/prospectos: por giro y por fuente, cuántos le escribieron al bot,
 // dijeron su giro, contestaron la pregunta de calificación, abrieron el formulario «Probar gratis» y abrieron su
@@ -32,7 +33,7 @@ const tasa = (n: number, anterior: number) => (anterior > 0 ? `${Math.round((n /
 
 function Tabla({ titulo, filas, nombres }: { titulo: string; filas: [string, Totales][]; nombres: Record<string, string> }) {
   return (
-    <table className="tabla-tarjetas mt-3 w-full text-sm">
+    <TablaResponsiva className="tabla-tarjetas mt-3 w-full text-sm">
       <thead>
         <tr className="text-left text-n-600">
           <th className="py-1 pr-3">{titulo}</th>
@@ -52,7 +53,7 @@ function Tabla({ titulo, filas, nombres }: { titulo: string; filas: [string, Tot
           </tr>
         ))}
       </tbody>
-    </table>
+    </TablaResponsiva>
   );
 }
 

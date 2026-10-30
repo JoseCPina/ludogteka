@@ -46,7 +46,7 @@ export default async function AdminPlataformaLayout({ children }: { children: Re
           </div>
         </div>
         <nav aria-label="Secciones" className="mx-auto max-w-5xl px-4 sm:px-6">
-          <ul className="flex gap-1 overflow-x-auto">
+          <ul className="flex flex-wrap gap-1">
             {SECCIONES.map((s) => (
               <li key={s.href}>
                 <Link href={s.href} className="inline-block rounded-t-md px-3 py-2 text-sm font-semibold text-n-700 hover:bg-n-100">

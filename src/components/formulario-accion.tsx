@@ -216,7 +216,8 @@ export function Desplegable({
   if (!abierto) {
     return (
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" variante={variante} onClick={() => { setAviso(null); setAbierto(true); }}>
+        {/* QA N152: abre un formulario que guarda; con el negocio en solo lectura queda bloqueado desde el inicio. */}
+        <Button type="button" variante={variante} data-escritura="" onClick={() => { setAviso(null); setAbierto(true); }}>
           {texto}
         </Button>
         {aviso && <p role="status" data-desplegable-aviso className="text-sm font-semibold text-menta-oscuro">{aviso}</p>}

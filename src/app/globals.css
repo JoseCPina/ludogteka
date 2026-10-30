@@ -72,53 +72,77 @@ body {
   color: var(--color-foreground);
 }
 
-/* Tablas que en celular (menos de 640 px) se vuelven tarjetas: cada fila es una tarjeta, la primera celda es su título y
-   cada cifra lleva su nombre (data-label). Así no hay desborde horizontal ni columnas recortadas. Se usa con
-   <table className="tabla-tarjetas"> y data-label en cada <td> de <tbody>. */
-@media (max-width: 639px) {
+/* Tablas que en celular (menos de 640 px) se vuelven tarjetas (QA N154: TODAS, con <TablaResponsiva>,
+   src/components/ui/tabla-responsiva.tsx): cada fila es una tarjeta, la primera celda es su título y cada dato lleva
+   el nombre de su columna (data-label, que el componente toma del encabezado). Sin desborde horizontal ni columnas
+   recortadas. Solo en pantalla: al imprimir sigue siendo tabla. */
+@media screen and (max-width: 639px) {
   table.tabla-tarjetas,
-  table.tabla-tarjetas tbody {
+  table.tabla-tarjetas tbody,
+  table.tabla-tarjetas tfoot {
     display: block;
     min-width: 0 !important;
-    width: 100%;
+    width: 100% !important;
   }
   table.tabla-tarjetas thead {
     display: none;
   }
   table.tabla-tarjetas tr {
     display: block;
-    padding: 0.5rem 0.75rem;
+    padding: 0.6rem 0.75rem;
     border-bottom: 1px solid var(--color-n-200);
   }
-  table.tabla-tarjetas tr:last-child {
+  table.tabla-tarjetas tbody tr:last-child {
     border-bottom: 0;
   }
-  table.tabla-tarjetas td {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 0.75rem;
+  table.tabla-tarjetas tfoot tr {
+    border-top: 2px solid var(--color-n-200);
+    border-bottom: 0;
+  }
+  table.tabla-tarjetas td,
+  table.tabla-tarjetas tbody th,
+  table.tabla-tarjetas tfoot th {
+    display: block;
     border: 0 !important;
     padding: 0.15rem 0 !important;
-    text-align: right;
+    text-align: right !important;
+    white-space: normal !important;
+    min-width: 0 !important;
+    width: auto !important;
+    overflow-wrap: anywhere;
   }
-  table.tabla-tarjetas td::before {
+  table.tabla-tarjetas td::after {
+    content: "";
+    display: table;
+    clear: both;
+  }
+  table.tabla-tarjetas td[data-label]::before {
     content: attr(data-label);
+    float: left;
+    max-width: 50%;
+    margin-right: 0.75rem;
     text-align: left;
     font-size: 0.75rem;
     font-weight: 700;
+    line-height: 1.6;
     text-transform: uppercase;
     letter-spacing: 0.03em;
     color: var(--color-n-500);
   }
-  table.tabla-tarjetas td:first-child {
-    display: block;
-    text-align: left;
+  /* Sin nombre de columna (acciones, una nota que ocupa toda la fila): a lo ancho, a la izquierda. */
+  table.tabla-tarjetas td:not([data-label]) {
+    text-align: left !important;
+  }
+  table.tabla-tarjetas tr > :first-child {
+    text-align: left !important;
     font-weight: 700;
     padding-bottom: 0.25rem !important;
   }
-  table.tabla-tarjetas td:first-child::before {
-    content: none;
+  table.tabla-tarjetas tr > :first-child::before {
+    content: none !important;
+  }
+  table.tabla-tarjetas td:empty {
+    display: none;
   }
 }
 

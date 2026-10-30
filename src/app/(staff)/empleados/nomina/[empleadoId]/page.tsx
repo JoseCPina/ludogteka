@@ -61,7 +61,7 @@ export default async function NominaEmpleadoPage({
         </p>
       </div>
 
-      <form className="flex flex-wrap items-end gap-3 rounded-lg border border-n-200 bg-white p-4">
+      <form method="get" className="flex flex-wrap items-end gap-3 rounded-lg border border-n-200 bg-white p-4">
         <Field label="Desde" name="desde" type="date" defaultValue={desde} />
         <Field label="Hasta" name="hasta" type="date" defaultValue={hasta} />
         <Button type="submit" variante="secundario">Calcular</Button>

@@ -146,7 +146,7 @@ export default async function EmpleadoPage({
       )}
 
       <Seccion titulo="Asistencia" sub="Retardos y faltas contra su horario, con la hora del negocio.">
-        <form className="flex flex-wrap items-end gap-3">
+        <form method="get" className="flex flex-wrap items-end gap-3">
           <Field label="Desde" name="desde" type="date" defaultValue={desde} />
           <Field label="Hasta" name="hasta" type="date" defaultValue={hasta} />
           <Button type="submit" variante="secundario">Ver</Button>
@@ -167,7 +167,7 @@ export default async function EmpleadoPage({
           <FormularioAccion accion={guardarHorario.bind(null, id)} textoBoton="Guardar horario" versiones={[{ t: "horario_empleado", i: id, v: versionHorario }]} registro="el horario de este empleado">
             <div className="grid gap-2">
               {DIAS_SEMANA.map((nombre, d) => (
-                <div key={d} className="grid grid-cols-[7rem_1fr_1fr] items-end gap-3">
+                <div key={d} className="grid grid-cols-[5rem_minmax(0,1fr)_minmax(0,1fr)] items-end gap-2 sm:grid-cols-[7rem_minmax(0,1fr)_minmax(0,1fr)] sm:gap-3">
                   <span className="pb-3 font-semibold text-n-800">{nombre}</span>
                   <Field label="Entrada" name={`entrada_${d}`} type="time" defaultValue={horaCampo(horarioDe.get(d)?.hora_entrada as string | undefined)} />
                   <Field label="Salida" name={`salida_${d}`} type="time" defaultValue={horaCampo(horarioDe.get(d)?.hora_salida as string | undefined)} />

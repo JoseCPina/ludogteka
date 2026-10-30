@@ -13,6 +13,7 @@ import {
   type ColumnaDesglose,
   type Desglose,
 } from "@/lib/reportes/desglose";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 function dinero(n: number): string {
   return n.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
@@ -152,7 +153,7 @@ export default async function DesglosePage({
       ) : (
         <>
           <div className="hidden overflow-x-auto rounded-lg border border-n-200 bg-white sm:block">
-            <table className="w-full min-w-[900px] border-collapse text-sm">
+            <TablaResponsiva className="w-full min-w-[900px] border-collapse text-sm">
               <thead>
                 <tr>
                   {columnas.map((c) => (
@@ -190,7 +191,7 @@ export default async function DesglosePage({
                   <td colSpan={2} />
                 </tr>
               </tfoot>
-            </table>
+            </TablaResponsiva>
           </div>
 
           <ul className="flex flex-col gap-3 sm:hidden">

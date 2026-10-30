@@ -10,6 +10,7 @@ import { useModulos } from "@/components/modulos-contexto";
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import { filtrarClientesBuscables, type ClienteBuscable } from "@/lib/clientes/buscables";
 import { useZonaNegocio } from "@/components/zona-negocio";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 export type ClienteFila = ClienteBuscable & {
   email: string | null;
@@ -51,7 +52,7 @@ export function ListaClientes({ clientes }: { clientes: ClienteFila[] }) {
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-        <table className="w-full min-w-[720px] border-collapse">
+        <TablaResponsiva className="w-full min-w-[720px] border-collapse">
           <thead>
             <tr>
               <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
@@ -116,7 +117,7 @@ export function ListaClientes({ clientes }: { clientes: ClienteFila[] }) {
               </tr>
             ))}
           </tbody>
-        </table>
+        </TablaResponsiva>
 
         {filtrados.length === 0 && (
           <p className="p-6 text-center text-n-600">

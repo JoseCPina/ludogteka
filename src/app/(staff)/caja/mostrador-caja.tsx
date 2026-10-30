@@ -131,7 +131,7 @@ export function MostradorCaja({
               {c.clienteNombre}
               {c.perros ? <span className="font-normal text-n-600"> · {c.perros}</span> : null}
             </span>
-            <span className="truncate text-sm text-n-600">{c.descripcion}</span>
+            <span className="text-sm text-n-600 [overflow-wrap:anywhere]" data-cuenta-descripcion>{c.descripcion}</span>
             <span className="text-xs text-n-500">
               {formatearFechaCalendario(c.fechaActividad)} · {formatearTelefono(c.clienteTelefono)}
             </span>

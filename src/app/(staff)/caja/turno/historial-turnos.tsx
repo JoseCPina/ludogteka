@@ -1,5 +1,6 @@
 import { formatearFecha, formatearHoraNegocio } from "@/lib/formato";
 import { dinero } from "@/lib/dinero";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 export type TurnoCerrado = {
   id: string;
@@ -51,7 +52,7 @@ export function HistorialTurnos({ turnos, zona }: { turnos: TurnoCerrado[]; zona
             </p>
 
             <div className="mt-2 overflow-x-auto">
-              <table className="tabla-tarjetas w-full min-w-[420px] border-collapse text-sm">
+              <TablaResponsiva className="tabla-tarjetas w-full min-w-[420px] border-collapse text-sm">
                 <thead>
                   <tr>
                     <th className="border-b border-n-200 py-1 text-left text-xs font-bold uppercase tracking-wide text-n-500">
@@ -93,7 +94,7 @@ export function HistorialTurnos({ turnos, zona }: { turnos: TurnoCerrado[]; zona
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </TablaResponsiva>
             </div>
 
             {t.explicacionDiferencias && (

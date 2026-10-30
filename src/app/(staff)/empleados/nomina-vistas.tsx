@@ -4,6 +4,7 @@ import { METODOS_PAGO, PERIODICIDADES, moneda, plural } from "@/lib/empleados/te
 import type { Desglose, PagoNomina } from "@/lib/empleados/tipos";
 import { Desplegable, FormularioAccion } from "@/components/formulario-accion";
 import { revertirPago } from "./nomina-actions";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 function Renglon({ etiqueta, detalle, valor, signo = "+" }: { etiqueta: string; detalle?: string; valor: number; signo?: "+" | "−" }) {
   if (!valor && signo === "−") return null;
@@ -41,7 +42,7 @@ export function VistaDesglose({ d }: { d: Desglose }) {
         {dias.otras_ausencias ? ` · ${plural(dias.otras_ausencias, "día")} de otras ausencias` : ""}
       </p>
       <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
-        <table className="w-full min-w-[420px] border-collapse text-sm">
+        <TablaResponsiva className="w-full min-w-[420px] border-collapse text-sm">
           <tbody>
             {e?.sueldo_monto ? (
               <Renglon
@@ -68,7 +69,7 @@ export function VistaDesglose({ d }: { d: Desglose }) {
               <td className="px-3 py-3 text-right text-base font-bold tabular-nums text-n-900">{moneda(d.total)}</td>
             </tr>
           </tbody>
-        </table>
+        </TablaResponsiva>
       </div>
       {d.comisiones_detalle.length > 0 && (
         <details className="rounded-md border border-n-200 bg-white p-3 text-sm">

@@ -21,7 +21,7 @@ export function SubnavEmpleados({
       : []),
   ];
   return (
-    <nav className="flex gap-1 overflow-x-auto border-b border-n-200" aria-label="Secciones de empleados">
+    <nav className="flex flex-wrap gap-1 border-b border-n-200" aria-label="Secciones de empleados">
       {pestanas.map((p) => (
         <Link
           key={p.clave}

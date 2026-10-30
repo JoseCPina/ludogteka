@@ -11,6 +11,7 @@ import { ETAPAS, GIROS, textoEtapa, textoGiro } from "@/lib/prospectos/textos";
 import { agregarProspecto, buscarAhora, guardarAjustes, sincronizarMetaAhora } from "./acciones";
 import { type FilaFlow, PanelFormularioWhatsApp } from "./formulario-whatsapp";
 import { EmbudoVentas, type FilaEmbudo } from "./embudo-ventas";
+import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 export const maxDuration = 300;
 
@@ -114,7 +115,7 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
           Audiencias de lista de clientes en la cuenta publicitaria, con teléfono y correo en SHA-256. Se sincronizan cada día a las 7:45, después de la
           limpieza de las 7:00: altas, bajas y cambios de etapa. Nunca entran descartados, bajas de publicidad ni negocios que ya pagan en las de prospectos.
         </p>
-        <table className="tabla-tarjetas mt-3 w-full text-sm">
+        <TablaResponsiva className="tabla-tarjetas mt-3 w-full text-sm">
           <thead>
             <tr className="text-left text-n-600">
               <th className="py-1 pr-3">Audiencia</th>
@@ -136,7 +137,7 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
               </tr>
             ))}
           </tbody>
-        </table>
+        </TablaResponsiva>
         <div className="mt-4" data-campanas-meta>
           <h3 className="font-bold text-n-900">Campaña de clic a WhatsApp</h3>
           <p className="mt-1 text-sm text-n-600">
@@ -146,7 +147,7 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
           {campanas.length === 0 ? (
             <p className="mt-2 text-sm text-n-600">Todavía no se crea. Sale en la siguiente sincronización.</p>
           ) : (
-            <table className="tabla-tarjetas mt-2 w-full text-sm">
+            <TablaResponsiva className="tabla-tarjetas mt-2 w-full text-sm">
               <thead>
                 <tr className="text-left text-n-600">
                   <th className="py-1 pr-3">Campaña o conjunto</th>
@@ -175,7 +176,7 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </TablaResponsiva>
           )}
           {(piezasError ?? []).length > 0 && (
             <ul className="mt-2 text-xs text-coral-oscuro" data-piezas-error>
@@ -207,7 +208,7 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
       {porCiudad.size > 0 && (
         <section className="rounded-lg border border-n-200 bg-white p-5">
           <h2 className="text-lg font-bold text-n-900">Por ciudad y giro</h2>
-          <table className="tabla-tarjetas mt-3 w-full text-sm">
+          <TablaResponsiva className="tabla-tarjetas mt-3 w-full text-sm">
             <thead>
               <tr className="text-left text-n-600">
                 <th className="py-1 pr-3">Ciudad</th>
@@ -222,7 +223,7 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
                 </tr>
               ))}
             </tbody>
-          </table>
+          </TablaResponsiva>
         </section>
       )}
 
@@ -257,7 +258,7 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
         {filas.length === 0 ? (
           <p className="mt-4 text-sm text-n-600">No hay prospectos con estos filtros.</p>
         ) : (
-          <table className="tabla-tarjetas mt-3 w-full text-sm" data-lista-prospectos>
+          <TablaResponsiva className="tabla-tarjetas mt-3 w-full text-sm" data-lista-prospectos>
             <thead>
               <tr className="text-left text-n-600">
                 <th className="py-2 pr-3">Negocio</th>
@@ -288,7 +289,7 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
                 </tr>
               ))}
             </tbody>
-          </table>
+          </TablaResponsiva>
         )}
         {paginas > 1 && (
           <nav className="mt-4 flex items-center justify-between text-sm" aria-label="Páginas">

@@ -136,7 +136,7 @@ function Fila({ f, catalogos, puedeFacturar, puedeCancelar }: { f: FilaFactura; 
             {f.tipo === "global" ? "Factura global" : "Factura"} {folio}
             {f.tipo === "global" && f.periodo_desde && f.periodo_hasta ? ` · ${f.periodo_desde} al ${f.periodo_hasta}` : ""}
           </p>
-          <p className="truncate text-sm text-n-700">
+          <p className="text-sm text-n-700 [overflow-wrap:anywhere]">
             {f.receptor.nombre} · {f.receptor.rfc}
           </p>
         </div>
