@@ -17,6 +17,8 @@ import { PwaNegocio } from "@/components/pwa/pwa-negocio";
 import { AvisoInstalar } from "@/components/pwa/instalar";
 import { PedirNombre } from "@/components/personal/pedir-nombre";
 import { PestanaConcurrencia } from "@/components/concurrencia/pestana";
+import { ProveedorEscritura } from "@/components/escritura-contexto";
+import { bloqueoDeEscritura } from "@/lib/cobro/bloqueo-escritura-servidor";
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const sesion = await obtenerSesionConRol();
@@ -28,12 +30,14 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   // Nunca rompe la pantalla: sin videos, simplemente no hay «¿Cómo se hace?».
   // «Tus negocios»: donde trabaja esta persona, con las sucursales del mismo dueño juntas.
   const supabase = await createSupabaseServerClient();
-  const [negocio, { data: suyos }, videos] = await Promise.all([
+  const [negocio, { data: suyos }, videos, bloqueo] = await Promise.all([
     cargarNegocioLanding(),
     supabase.rpc("mis_negocios"),
     conAyuda
       ? cargarTutorialesVisibles(supabase, { rol: sesion.rol, permisos: sesion.permisos, modulos: sesion.modulos }).catch(() => [])
       : Promise.resolve([]),
+    // QA N151: prueba vencida o falta de pago → todo lo que escribe se ve deshabilitado (el mismo indicador que la franja).
+    bloqueoDeEscritura(),
   ]);
   const negocios = ((suyos ?? []) as { id: string; nombre: string; rol: string; grupo_id: string; grupo_nombre: string; es_principal: boolean }[])
     .filter((n) => ["admin", "recepcion", "estetica"].includes(n.rol))
@@ -69,7 +73,9 @@ export default async function StaffLayout({ children }: { children: React.ReactN
         <PedirNombre />
       ) : (
         <ProveedorModulos modulos={sesion.modulos}>
-          <ProveedorAcceso acceso={accesoDeSesion(sesion)!}>{children}</ProveedorAcceso>
+          <ProveedorAcceso acceso={accesoDeSesion(sesion)!}>
+            <ProveedorEscritura bloqueo={bloqueo}>{children}</ProveedorEscritura>
+          </ProveedorAcceso>
         </ProveedorModulos>
       )}
     </StaffShell>

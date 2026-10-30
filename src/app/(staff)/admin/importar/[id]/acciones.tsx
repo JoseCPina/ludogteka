@@ -110,7 +110,7 @@ export function AccionesImportacion({ id, estado, pendientes }: { id: string; es
       )}
       <AccionesFormulario error={error}>
         {!confirmando ? (
-          <Button type="button" variante="secundario" cargando={revisar.cargando} onClick={alRevisar}>
+          <Button sinBloqueo type="button" variante="secundario" cargando={revisar.cargando} onClick={alRevisar}>
             Revisar si se puede deshacer
           </Button>
         ) : (

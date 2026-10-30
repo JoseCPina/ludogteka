@@ -3,19 +3,19 @@ import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { zonaActual } from "@/lib/negocio/actual";
 import { formatearFecha } from "@/lib/formato";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
-import { whatsappPeluDesk } from "@/lib/peludesk/landing";
 import { diasDePrueba, primerCobro } from "@/lib/cobro/prueba";
 import { cookies } from "next/headers";
+import { bloqueoDeEscritura } from "@/lib/cobro/bloqueo-escritura-servidor";
 
 // El aviso del plan del negocio, arriba de todo en el staff y el portal:
 //   demo (cuenta de solo lectura) → qué es y cómo probar PeluDesk;
 //   prueba vigente sin contratar → cuándo termina (solo el personal) y, al
 //                                  admin, que puede contratar sin perder días;
-//   prueba vencida               → que la información está a salvo; al
-//                                  admin, que contrate;
+//   prueba vencida, solo lectura por cobro o suscripción cancelada →
+//                                  la franja fija de bloqueoDeEscritura() (QA N151):
+//                                  al admin «…Contrata para seguir capturando» con
+//                                  «Contratar»; a los demás, que le pidan al dueño;
 //   cobro fallido (gracia)       → al admin: hasta cuándo funciona todo;
-//   solo lectura por cobro o suscripción cancelada → que está a salvo y
-//                                  qué hacer (el admin paga; los demás le avisan).
 // El estado sale de estado_cobro() (Stripe manda). La base ya impide
 // escribir (negocio_escribible()); esto solo lo explica.
 const URL_REGISTRO = "https://peludesk.mx/registro";
@@ -93,48 +93,35 @@ export async function AvisoPlan({ esPersonal }: { esPersonal: boolean }) {
     );
   }
 
-  if (cobro?.estado === "solo_lectura" || cobro?.estado === "cancelado") {
+  // QA N151: prueba vencida o falta de pago. Al personal, la franja fija con el MISMO texto que el aviso al tocar un
+  // botón bloqueado (bloqueoDeEscritura(), src/lib/cobro/bloqueo-escritura.ts); al admin, con el botón para contratar.
+  const bloqueo = esPersonal ? await bloqueoDeEscritura() : null;
+  if (bloqueo) {
     return (
-      <div role="alert" data-aviso-plan={cobro.estado} className="flex flex-wrap items-center justify-between gap-2 border-b border-coral bg-coral-suave px-4 py-2 text-sm text-n-800 md:px-6">
+      <div
+        role="alert"
+        data-aviso-plan={bloqueo.motivo}
+        className="sticky top-0 z-40 flex flex-wrap items-center justify-between gap-2 border-b border-ambar bg-ambar-suave px-4 py-2 text-sm text-n-800 md:px-6"
+      >
         <p>
-          <strong className="font-semibold text-coral-oscuro">
-            {!esPersonal
-              ? "Por ahora no se pueden hacer cambios en línea."
-              : cobro.estado === "cancelado"
-                ? "La suscripción de PeluDesk terminó: el negocio está en solo lectura."
-                : "El negocio está en solo lectura: no se pudo cobrar la suscripción de PeluDesk."}
-          </strong>{" "}
-          {!esPersonal
-            ? `Si necesitas algo, comunícate con ${negocio.nombre}.`
-            : esAdmin
-              ? "Tu información está a salvo. En cuanto se pague, todo vuelve a funcionar solo."
-              : "Tu información está a salvo. Avísale al administrador del negocio."}
+          <strong className="font-semibold text-ambar-oscuro">{bloqueo.mensaje}</strong>
         </p>
-        {botonAdmin(cobro.estado === "cancelado" ? "Contratar de nuevo" : "Pagar ahora")}
+        {bloqueo.boton && (
+          <a href={bloqueo.boton.href} className="rounded-md bg-morado px-3 py-1 font-semibold text-white hover:bg-morado-oscuro">
+            {bloqueo.boton.texto}
+          </a>
+        )}
       </div>
     );
   }
 
-  if (cobro?.estado === "prueba_vencida" && fin) {
-    const wa = await whatsappPeluDesk(`Hola, soy de ${negocio.nombre} (${negocio.slug}.peludesk.mx). Terminó mi prueba de PeluDesk y quiero seguir usándolo.`);
+  // El portal (el dueño de la mascota): sin cambios en línea; que le hable al negocio.
+  if (!esPersonal && (cobro?.estado === "solo_lectura" || cobro?.estado === "cancelado" || cobro?.estado === "prueba_vencida")) {
     return (
-      <div role="alert" className="flex flex-wrap items-center justify-between gap-2 border-b border-ambar bg-ambar-suave px-4 py-2 text-sm text-n-800 md:px-6">
+      <div role="alert" data-aviso-plan={cobro.estado} className="flex flex-wrap items-center justify-between gap-2 border-b border-coral bg-coral-suave px-4 py-2 text-sm text-n-800 md:px-6">
         <p>
-          <strong className="font-semibold text-ambar-oscuro">
-            {esPersonal ? `Tu prueba de PeluDesk terminó el ${formatearFecha(fin.toISOString(), zona)}.` : "Por ahora no se pueden hacer cambios en línea."}
-          </strong>{" "}
-          {!esPersonal
-            ? `Si necesitas algo, comunícate con ${negocio.nombre}.`
-            : esAdmin
-              ? "Tu información está a salvo y puedes consultarla. Contrata un plan y todo vuelve a funcionar al instante."
-              : "Tu información está a salvo y puedes consultarla, pero ya no se pueden guardar cambios. Avísale al administrador del negocio."}
+          <strong className="font-semibold text-coral-oscuro">Por ahora no se pueden hacer cambios en línea.</strong> Si necesitas algo, comunícate con {negocio.nombre}.
         </p>
-        {botonAdmin("Contratar")}
-        {esPersonal && !esAdmin && wa && (
-          <a href={wa} target="_blank" rel="noopener noreferrer" className="rounded-md bg-menta-oscuro px-3 py-1 font-semibold text-white hover:bg-morado">
-            Escríbenos por WhatsApp
-          </a>
-        )}
       </div>
     );
   }
