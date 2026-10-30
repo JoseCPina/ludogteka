@@ -107,19 +107,22 @@ try {
   // El bloque de la estancia: «Base de la estancia» antes que «Cargos aplicados»; «Ninguno todavía» solo sin cargos.
   async function listaDeCargos(ruta, nombrePerro) {
     await p.goto(`${BASE}${ruta}`, { waitUntil: "networkidle", timeout: 120000 });
-    const cont = p.locator("div").filter({ has: p.locator("[data-base-estancia]") }).filter({ hasText: /cargos aplicados/i }).last();
+    // El bloque que lleva la base (en una finalizada sin cargos ya no trae «Cargos aplicados»: QA R59, N144).
+    const cont = p.locator("div").filter({ has: p.locator("[data-base-estancia]") }).filter({ has: p.locator("[data-total-estancia]") }).last();
     const texto = limpio(await cont.innerText().catch(async () => await p.locator("main").innerText()));
     const t = texto.toLowerCase();
     return { texto, base: t.indexOf("base de la estancia"), titulo: t.indexOf("cargos aplicados"), ninguno: t.indexOf("ninguno todavía"), nombrePerro };
   }
   const revisar = (r, donde, conCargo) => {
-    comprobar(r.base >= 0 && r.titulo > r.base, `${donde}: «Base de la estancia» va antes que «Cargos aplicados» («${r.texto.slice(0, 160)}»)`);
     if (conCargo) {
+      comprobar(r.base >= 0 && r.titulo > r.base, `${donde}: «Base de la estancia» va antes que «Cargos aplicados» («${r.texto.slice(0, 160)}»)`);
       comprobar(r.ninguno < 0, `${donde}: con un cargo no dice «Ninguno todavía»`);
       const veces = (r.texto.match(/\$85\.00/g) ?? []).length;
       comprobar(veces === 1, `${donde}: el cargo de $85.00 sale una sola vez (sale ${veces})`);
     } else {
-      comprobar(r.ninguno > r.titulo && r.titulo > r.base, `${donde}: sin cargos aparte de la base, «Ninguno todavía» va debajo de «Cargos aplicados» y de la base`);
+      // QA R59 (N144): «Ninguno todavía» solo en una estancia que no ha terminado; finalizada y sin cargos, el bloque
+      // «Cargos aplicados» no se muestra (la base y el total sí).
+      comprobar(r.base >= 0 && r.titulo < 0 && r.ninguno < 0, `${donde}: finalizada sin cargos: la base sin el bloque «Cargos aplicados» ni «Ninguno todavía» («${r.texto.slice(0, 160)}»)`);
     }
   };
   if (cargoLibre) {

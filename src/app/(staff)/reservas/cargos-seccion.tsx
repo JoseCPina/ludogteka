@@ -9,6 +9,7 @@ import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { textoListaVacia } from "@/lib/reservas/lista-vacia";
 import { aplicarCargo, cancelarCargo } from "./cargo-actions";
 import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 import type { Conflicto } from "@/lib/concurrencia/tipos";
@@ -41,6 +42,7 @@ function formatoDinero(valor: number): string {
 // hotel (ver convertir-hotel.tsx en el check-out).
 export function CargosSeccion({
   estanciaId,
+  estado,
   cargosIniciales,
   serviciosCargo,
   cuenta,
@@ -52,6 +54,9 @@ export function CargosSeccion({
   sinCargosNuevos = null,
 }: {
   estanciaId: string;
+  // QA R59 (N144): sin cargos, «Ninguno todavía» solo mientras la estancia no termina; finalizada, cancelada o «no
+  // llegó», el bloque «Cargos aplicados» no se muestra (textoListaVacia).
+  estado: string;
   cargosIniciales: Cargo[];
   serviciosCargo: ServicioCargo[];
   // QA R50 (N136): la cuenta de la estancia leída de la base (cuenta_lineas_estancia); su total es el mismo que suman el
@@ -103,6 +108,7 @@ export function CargosSeccion({
   // QA S41 (N144): los cargos que se listan son los de la cuenta de la estancia (cuenta_lineas_estancia, la misma fuente
   // del detalle de la estancia y de Caja): todo lo que no es la base ni una corrección, más los cancelados (que ya no
   // suman). De cargos_aplicados solo se toma lo que la cuenta no trae: el nombre, la versión y los cancelados.
+  const vacioCargos = textoListaVacia(estado);
   const filasCargos: Cargo[] = [
           ...(cuentaViva?.lineas ?? [])
             .filter((l) => l.tipo !== "estancia" && l.tipo !== "ajuste")
@@ -205,9 +211,11 @@ export function CargosSeccion({
             <span className="text-n-500"> (no se cobra; era {formatoDinero(eraSiCancelada)})</span>
           </span>
         )}
-        <p className="text-sm font-bold uppercase tracking-wide text-n-600">Cargos aplicados</p>
+        {(filasCargos.length > 0 || vacioCargos) && (
+          <p className="text-sm font-bold uppercase tracking-wide text-n-600" data-titulo-cargos>Cargos aplicados</p>
+        )}
         {filasCargos.length === 0 ? (
-          <p className="text-sm text-n-500" data-sin-cargos>Ninguno todavía.</p>
+          vacioCargos && <p className="text-sm text-n-500" data-sin-cargos>{vacioCargos}</p>
         ) : (
           <ul className="flex flex-col gap-2" data-cargos-aplicados={filasCargos.length}>
             {filasCargos.map((c) => (

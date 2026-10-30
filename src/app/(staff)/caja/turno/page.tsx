@@ -6,14 +6,15 @@ import { TurnoAbierto, type Retiro, type EfectivoAgregado } from "./turno-abiert
 import { tienePermiso } from "@/lib/auth/permisos";
 import { AbrirTurnoForm } from "./abrir-turno-form";
 import { HistorialTurnos, type TurnoCerrado } from "./historial-turnos";
-import { MovimientosTurno, type MovimientoTurno, type ResumenMetodo } from "./movimientos-turno";
+import { MovimientosTurno, type MovimientoTurno } from "./movimientos-turno";
 import { zonaActual, negocioActual } from "@/lib/negocio/actual";
 import { nombresDePersonal } from "@/lib/personal/nombres";
 import { leerTodo } from "@/lib/supabase/paginar";
 
-// El turno de caja: apertura, movimientos en curso con el acumulado por
-// método (y por origen: por la app o a mano), retiros, arqueo ciego e
-// historial. El cobro en sí vive en /caja (mostrador).
+// El turno de caja: apertura, movimientos en curso, retiros, arqueo ciego e historial. El cobro en sí vive en /caja
+// (mostrador). Corte ciego (Fase 5; QA R59, N148): con el turno abierto, ni el acumulado por método, ni los totales,
+// ni el monto de un movimiento salen de este servidor —el HTML y los datos de la página no los traen—; lo esperado se
+// revela al «Enviar conteo» y queda en el corte de «Turnos cerrados».
 // Cuántos movimientos se pintan de entrada y de cuánto en cuánto se amplía: con más de mil cobros en el turno,
 // una fila por cobro tardaba segundos en llegar y en dibujarse. Los totales por método salen de la base, no de la lista.
 const MOVIMIENTOS_INICIAL = 50;
@@ -58,7 +59,7 @@ export default async function TurnoCajaPage({ searchParams }: { searchParams: Pr
       : { data: [] as never[] };
     return { ajustesCrudo: ajustes, correccionesCrudo: correcciones };
   })();
-  const [[{ data: retirosCrudo }, { data: paginaCrudo }, { data: resumenCrudo }], { ajustesCrudo, correccionesCrudo }] = await Promise.all([turnoAbierto
+  const [[{ data: retirosCrudo }, { data: paginaCrudo }, { data: tarjetaManualCrudo }], { ajustesCrudo, correccionesCrudo }] = await Promise.all([turnoAbierto
     ? Promise.all([
         leerTodo<Record<string, unknown> & { created_by: string | null; cancelado_por: string | null; tipo: string }>(() =>
           supabase
@@ -70,15 +71,17 @@ export default async function TurnoCajaPage({ searchParams }: { searchParams: Pr
             .order("created_at")
             .order("id")
         ),
-        // Una sola respuesta (jsonb, sin el tope de 1,000 filas de la API): el total, las sumas de servicios y de ventas
-        // de mostrador, y SOLO la página de movimientos que se ve. Los totales por método vienen de resumen_turno.
+        // Una sola respuesta (jsonb, sin el tope de 1,000 filas de la API) con SOLO la página de movimientos que se ve.
+        // Sus montos y sumas se quedan en el servidor (corte ciego).
         supabase.rpc("movimientos_turno_pagina", { p_turno_id: turnoAbierto.id, p_limite: limiteMovimientos, p_desplazamiento: 0 }),
+        // Solo para saber SI hubo tarjeta manual (el arqueo avisa que no va en el conteo de la terminal); su monto se
+        // queda aquí.
         supabase.rpc("resumen_turno", { p_turno_id: turnoAbierto.id }),
       ])
     : Promise.resolve([{ data: [] as never[] }, { data: null }, { data: [] as never[] }] as const), ajustesYCorrecciones]);
   const correccionPorId = new Map((correccionesCrudo ?? []).map((c) => [c.id as string, c]));
 
-  const pagina = (paginaCrudo ?? null) as { total: number; servicios: number; ventas_mostrador: number; movimientos: Record<string, unknown>[] } | null;
+  const pagina = (paginaCrudo ?? null) as { total: number; movimientos: Record<string, unknown>[] } | null;
   const movimientosCrudo = pagina?.movimientos ?? [];
 
   const error = errorTurno ?? errorHistorial;
@@ -133,21 +136,15 @@ export default async function TurnoCajaPage({ searchParams }: { searchParams: Pr
     clienteNombre: (m.cliente_nombre as string | null) ?? null,
     descripcion: (m.descripcion as string) ?? "",
     metodo: m.metodo as string,
-    monto: Number(m.monto),
-    propina: Number(m.propina ?? 0),
     origen: (m.origen as string) ?? "manual",
     grupoId: (m.grupo_id as string | null) ?? null,
     hechoPorNombre: nombrePorId.get(m.hecho_por as string) ?? "—",
     ajusteTipo: (m.ajuste_tipo as string | null) ?? null,
   }));
 
-  const resumen: ResumenMetodo[] = ((resumenCrudo ?? []) as Record<string, unknown>[]).map((r) => ({
-    metodo: r.metodo as string,
-    origen: r.origen as string,
-    cobrado: Number(r.cobrado),
-    propinas: Number(r.propinas),
-    devuelto: Number(r.devuelto),
-  }));
+  const hayTarjetaManual = ((tarjetaManualCrudo ?? []) as { metodo: string; cobrado: number; propinas: number; devuelto: number }[]).some(
+    (r) => r.metodo === "tarjeta_manual" && Number(r.cobrado) + Number(r.propinas) - Number(r.devuelto) !== 0,
+  );
 
   const turnosCerrados: TurnoCerrado[] = (turnosCerradosCrudo ?? []).map((t) => {
     const corte = Array.isArray(t.cortes_caja) ? t.cortes_caja[0] : t.cortes_caja;
@@ -215,19 +212,14 @@ export default async function TurnoCajaPage({ searchParams }: { searchParams: Pr
             // que abrió ella (regla de cerrar_turno desde el 29 de julio).
             puedeCerrar={sesion?.rol === "admin" || turnoAbierto.abierto_por === sesion?.user.id}
             abiertoPorMi={turnoAbierto.abierto_por === sesion?.user.id}
-            tarjetaManualSinVerificar={resumen
-              .filter((r) => r.metodo === "tarjeta_manual")
-              .reduce((s, r) => s + r.cobrado + r.propinas - r.devuelto, 0)}
+            hayTarjetaManual={hayTarjetaManual}
           />
           <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
             <h2 className="text-lg font-bold text-n-900">Movimientos de este turno</h2>
             <MovimientosTurno
               zona={zona}
               movimientos={movimientos}
-              resumen={resumen}
               totalMovimientos={Number(pagina?.total ?? 0)}
-              servicios={Number(pagina?.servicios ?? 0)}
-              ventasMostrador={Number(pagina?.ventas_mostrador ?? 0)}
               verMasHref={
                 Number(pagina?.total ?? 0) > movimientos.length ? `/caja/turno?mov=${Math.min(limiteMovimientos + 150, MOVIMIENTOS_TOPE)}` : null
               }

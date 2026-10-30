@@ -11,6 +11,8 @@ import { CancelarReservaBoton } from "./cancelar-reserva-boton";
 import type { Cargo, ServicioCargo } from "../cargos-seccion";
 import { AvisosWhatsApp } from "@/components/avisos-whatsapp";
 import { RecordatorioDeLaCita } from "@/components/recordatorio-de-la-cita";
+import { EstadoVivo } from "@/components/concurrencia/estado-vivo";
+import { ESTILO_ESTADO, ETIQUETA_ESTADO, estiloEstado, etiquetaEstado } from "@/lib/estados/insignias";
 import { RefrescoCuenta } from "@/components/cuentas/refresco-cuenta";
 import { negocioActual, negocioIdActual, zonaActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -183,7 +185,29 @@ export default async function DetalleReservaPage({
         </Link>
         <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-n-900">{cliente?.nombre ?? "Cliente"}</h1>
+            {/* QA R59 (N146): la reserva no tiene estado propio, es el de sus estancias: con una, su insignia (cambia con la
+                acción); con varias en el mismo estado, ese; con estados distintos, cada estancia trae el suyo abajo. */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <h1 className="text-2xl font-bold text-n-900">{cliente?.nombre ?? "Cliente"}</h1>
+              {filas.length === 1 ? (
+                <EstadoVivo
+                  t="estancias"
+                  i={filas[0].id}
+                  version={filas[0].version}
+                  estado={filas[0].estado}
+                  etiquetas={ETIQUETA_ESTADO}
+                  clases={ESTILO_ESTADO}
+                  claseBase="rounded-full px-2.5 py-1 text-xs font-semibold"
+                />
+              ) : (
+                filas.length > 1 &&
+                new Set(filas.map((f) => f.estado)).size === 1 && (
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${estiloEstado(filas[0].estado)}`} data-estado-reserva={filas[0].estado}>
+                    {etiquetaEstado(filas[0].estado)}
+                  </span>
+                )
+              )}
+            </div>
             <p className="text-n-600">
               {cliente?.telefono ? formatearTelefono(cliente.telefono) : ""}
             </p>

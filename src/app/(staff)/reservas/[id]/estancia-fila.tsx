@@ -18,6 +18,7 @@ import { CargosSeccion, type Cargo, type ServicioCargo } from "../cargos-seccion
 import { cerrarFrase } from "@/lib/texto/frases";
 import { textoPrecioEstancia, type CuentaEstancia } from "@/lib/cuentas/cuenta-estancia";
 import { admiteCargosNuevos, TEXTO_CUENTA_PAGADA_SIN_CARGOS } from "@/lib/caja/cuenta-por-cobrar";
+import { ESTILO_ESTADO, ETIQUETA_ESTADO } from "@/lib/estados/insignias";
 
 export type FilaEstancia = {
   id: string;
@@ -44,23 +45,6 @@ export type FilaEstancia = {
 
 const ETIQUETA_CATEGORIA: Record<string, string> = { guarderia: "Guardería", hotel: "Hotel" };
 
-const ETIQUETA_ESTADO: Record<string, string> = {
-  reservada: "Reservada",
-  confirmada: "Confirmada",
-  en_curso: "En curso",
-  finalizada: "Finalizada",
-  cancelada: "Cancelada",
-  no_llego: "No llegó",
-};
-
-const ESTILO_ESTADO: Record<string, string> = {
-  reservada: "bg-n-100 text-n-700",
-  confirmada: "bg-morado-suave text-morado",
-  en_curso: "bg-menta-suave text-menta-oscuro",
-  finalizada: "bg-n-100 text-n-600",
-  cancelada: "bg-coral-suave text-coral-oscuro",
-  no_llego: "bg-coral-suave text-coral-oscuro",
-};
 
 export function EstanciaFila({
   fila,
@@ -328,6 +312,7 @@ export function EstanciaFila({
       <div className="border-t border-n-200 pt-3">
         <CargosSeccion
           estanciaId={fila.id}
+          estado={estado}
           cargosIniciales={cargosIniciales}
           serviciosCargo={estado === "cancelada" || estado === "no_llego" || !admiteCargos ? [] : serviciosCargo}
           sinCargosNuevos={admiteCargos ? null : TEXTO_CUENTA_PAGADA_SIN_CARGOS}

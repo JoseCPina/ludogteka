@@ -457,7 +457,7 @@ Con **Ver la cuenta** abres la cuenta del cliente. Abajo, en **Últimos reembols
     rutas: ["/caja/turno"],
     palabras: ["corte", "arqueo", "cerrar caja", "abrir caja", "fondo", "retiro", "turno"],
     captura: "corte-de-caja.jpg",
-    cuerpo: `El turno junta todo lo que entra y sale de la caja desde que abres hasta que cierras. Sin turno abierto no se puede cobrar. En **Movimientos de este turno** la columna **Hora** muestra la hora del negocio (por ejemplo «09:14 a.m.») y debajo la fecha; ves primero los 50 más recientes; aprieta **Ver más movimientos** para ampliar la lista. Los totales por método de arriba siempre cuentan todos los movimientos.
+    cuerpo: `El turno junta todo lo que entra y sale de la caja desde que abres hasta que cierras. Sin turno abierto no se puede cobrar. En **Movimientos de este turno** la columna **Hora** muestra la hora del negocio (por ejemplo «09:14 a.m.») y debajo la fecha; ves primero los 50 más recientes; aprieta **Ver más movimientos** para ampliar la lista. El corte es ciego: mientras el turno está abierto, esa lista no enseña montos ni totales por método a nadie, tampoco al admin, y Reportes no enseña el dinero por método de un periodo que incluye ese turno. Lo esperado sale solo al tocar **Enviar conteo** y queda en el corte, en **Turnos cerrados**.
 
 ## Abrir el turno
 

@@ -16,7 +16,7 @@ export async function SeccionServiciosExtra({ estanciaId }: { estanciaId: string
 
   const { data: est } = await supabase
     .from("estancias")
-    .select("fecha_entrada, fecha_salida, perros(cliente_id, clientes(direccion))")
+    .select("fecha_entrada, fecha_salida, estado, perros(cliente_id, clientes(direccion))")
     .eq("id", estanciaId)
     .maybeSingle();
   if (!est) return null;
@@ -33,6 +33,7 @@ export async function SeccionServiciosExtra({ estanciaId }: { estanciaId: string
   return (
     <ServiciosExtraEstancia
       estanciaId={estanciaId}
+      estado={est.estado as string}
       clienteId={(perro?.cliente_id as string) ?? ""}
       fechaEntrada={est.fecha_entrada as string}
       fechaSalida={est.fecha_salida as string}

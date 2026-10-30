@@ -12,6 +12,8 @@ import { SeccionServiciosExtra } from "@/components/extras/seccion-servicios-ext
 import { CargosSeccion, type Cargo, type ServicioCargo } from "../../../cargos-seccion";
 import { zonaActual } from "@/lib/negocio/actual";
 import { cuentasPorEstancia } from "@/lib/cuentas/cuenta-estancia";
+import { EstadoVivo } from "@/components/concurrencia/estado-vivo";
+import { ESTILO_ESTADO, ETIQUETA_ESTADO } from "@/lib/estados/insignias";
 
 export default async function CheckoutEstanciaPage({
   params,
@@ -171,7 +173,19 @@ export default async function CheckoutEstanciaPage({
       </Link>
 
       <div>
-        <h1 className="text-2xl font-bold text-n-900">Check-out — {perro.nombre}</h1>
+        {/* QA R59 (N146): el estado de la estancia junto al título, con la insignia del calendario. */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h1 className="text-2xl font-bold text-n-900">Check-out — {perro.nombre}</h1>
+          <EstadoVivo
+            t="estancias"
+            i={estancia.id as string}
+            version={(estancia.updated_at as string | null) ?? null}
+            estado={estancia.estado as string}
+            etiquetas={ETIQUETA_ESTADO}
+            clases={ESTILO_ESTADO}
+            claseBase="rounded-full px-2.5 py-1 text-xs font-semibold"
+          />
+        </div>
         <p className="mt-1 text-n-600">
           {/* Una visita de guardería es de un día: su fecha_salida guardada es el día siguiente (convención de noches), no se muestra. */}
           {servicio?.nombre} · {esGuarderia ? `Fecha: ${formatearFechaCalendario(estancia.fecha_entrada)}` : `Salida programada: ${formatearFechaCalendario(estancia.fecha_salida)}`}
@@ -248,6 +262,7 @@ export default async function CheckoutEstanciaPage({
       <div className="border-t border-n-200 pt-4">
         <CargosSeccion
           estanciaId={estanciaId}
+          estado={estancia.estado as string}
           cargosIniciales={cargos}
           serviciosCargo={puedeCheckout ? serviciosCargoLista : []}
           cuenta={cuentaEstancia}
