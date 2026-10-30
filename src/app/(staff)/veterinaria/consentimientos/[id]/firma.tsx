@@ -130,7 +130,7 @@ export function VerFirmado({ ruta }: { ruta: string }) {
   const pdf = useAbrirEnlace();
   return (
     <div className="flex flex-col gap-1">
-      <Button
+      <Button sinBloqueo
         type="button"
         variante="secundario"
         cargando={envio.cargando}

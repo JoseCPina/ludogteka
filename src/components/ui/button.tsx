@@ -23,6 +23,10 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   // al texto. Es la ÚNICA forma de "cargando" de la app — un texto quieto
   // ("Generando…") no le dice a nadie si sigue trabajando o se colgó.
   cargando?: boolean;
+  // QA N151: con el negocio en solo lectura (prueba vencida, falta de pago), un botón con `cargando` llama al servidor
+  // y se bloquea (src/lib/cobro/bloqueo-escritura.ts). Uno que solo LEE (buscar, exportar) o que sirve para salir del
+  // bloqueo (contratar, pagar) lleva `sinBloqueo`.
+  sinBloqueo?: boolean;
 };
 
 // QA S16 (N58): antes de que la página se hidrate, un botón que envía un formulario manejado por React mandaría el
@@ -31,7 +35,7 @@ const suscribirNada = () => () => {};
 const useHidratado = () => useSyncExternalStore(suscribirNada, () => true, () => false);
 
 export const Button = forwardRef<HTMLButtonElement, Props>(
-  ({ variante = "primario", className = "", cargando = false, disabled, children, type, ...props }, ref) => {
+  ({ variante = "primario", className = "", cargando, sinBloqueo = false, disabled, children, type, ...props }, ref) => {
     const hidratado = useHidratado();
     const envia = type !== "button" && type !== "reset";
     return (
@@ -40,8 +44,10 @@ export const Button = forwardRef<HTMLButtonElement, Props>(
       type={type}
       disabled={disabled || cargando || (envia && !hidratado)}
       data-hidratado={hidratado ? undefined : "no"}
+      data-escritura={cargando !== undefined && !sinBloqueo ? "" : undefined}
+      data-sin-bloqueo={sinBloqueo ? "" : undefined}
       aria-busy={cargando || undefined}
-      className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-md px-5 text-base font-semibold transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-n-200 disabled:bg-n-100 disabled:text-n-500 disabled:hover:bg-n-100 ${clasesPorVariante[variante]} ${className}`}
+      className={`inline-flex min-h-12 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 items-center justify-center gap-2 rounded-md px-5 text-base font-semibold transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-n-200 disabled:bg-n-100 disabled:text-n-500 disabled:hover:bg-n-100 ${clasesPorVariante[variante]} ${className}`}
       {...props}
     >
       {cargando && <Spinner />}

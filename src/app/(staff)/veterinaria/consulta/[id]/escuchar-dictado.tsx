@@ -15,7 +15,7 @@ export function EscucharDictado({ dictadoId }: { dictadoId: string }) {
       {url ? (
         <audio controls src={url} className="h-8" />
       ) : (
-        <Button
+        <Button sinBloqueo
           type="button"
           variante="secundario"
           cargando={envio.cargando}

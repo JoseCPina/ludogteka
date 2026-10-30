@@ -14,6 +14,11 @@
 //      llegó; si abre un diálogo o un menú, revisa los enlaces que aparecen.
 // Lo que una acción de servidor respondería no se puede ver sin ejecutarla: eso lo cubre la base (RLS y guardias).
 //
+// Perfil «prueba vencida» (QA N151, `--perfil prueba-vencida`): pone a Huellitas con la prueba vencida mientras corre
+// (y la deja como estaba) y, además de lo anterior, en cada pantalla falla si encuentra un botón, enlace o campo de
+// ESCRITURA activo (definición propia: scripts/auditoria/lib/escritura-pantalla.mjs), si la franja de arriba no dice
+// lo que le toca al rol, o si apretar un botón que no está marcado `data-sin-bloqueo` intenta escribir.
+//
 // Prende un momento todos los módulos de Huellitas para recorrer Empleados, Reportes, Gastos y Contratos, y los deja
 // como estaban al terminar. Sale con 1 si encuentra algo. Con `--json <archivo>` deja el detalle.
 import fs from "node:fs";
@@ -23,6 +28,7 @@ import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { A, URL, env } from "./sesiones-dev.mjs";
 import { abrirNavegador } from "../lib/navegador.mjs";
+import { controlesDeEscritura, franjaEsperada } from "./lib/escritura-pantalla.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : d; };
@@ -31,6 +37,7 @@ const MAX_PANTALLAS = Number(arg("--max", "220"));
 const MAX_BOTONES = Number(arg("--botones", "20"));
 const CON_BOTONES = !process.argv.includes("--sin-botones");
 const SALIDA_JSON = arg("--json", null);
+const PRUEBA_VENCIDA = arg("--perfil", "") === "prueba-vencida";
 
 const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
 const B = datos.B;
@@ -77,10 +84,32 @@ if (ROLES.includes("encargada")) {
 }
 const { data: catalogo } = await SB.from("modulos").select("clave");
 const TODOS = (catalogo ?? []).map((m) => m.clave);
+// Perfil prueba vencida: el plan y el fin de la prueba de Huellitas, guardados para dejarlos como estaban.
+const ESTADO_PRUEBA = path.join(os.tmpdir(), "peludesk-permisos-pantalla-prueba.json");
+async function restaurarPrueba() {
+  if (!fs.existsSync(ESTADO_PRUEBA)) return;
+  const n = JSON.parse(fs.readFileSync(ESTADO_PRUEBA, "utf8"));
+  const r = await SB.from("negocios").update({ plan: n.plan, prueba_termina_at: n.prueba_termina_at }).eq("id", B);
+  if (r.error) throw new Error(`no se pudo devolver el plan de Huellitas: ${r.error.message}`);
+  fs.rmSync(ESTADO_PRUEBA, { force: true });
+  console.log("  · plan de Huellitas como estaba");
+}
+await restaurarPrueba();
+if (PRUEBA_VENCIDA) {
+  const { data: n } = await SB.from("negocios").select("plan, prueba_termina_at").eq("id", B).single();
+  fs.writeFileSync(ESTADO_PRUEBA, JSON.stringify(n));
+  const r = await SB.from("negocios").update({ plan: "prueba", prueba_termina_at: new Date(Date.now() - 86_400_000).toISOString() }).eq("id", B);
+  if (r.error) throw new Error(`no se pudo vencer la prueba de Huellitas: ${r.error.message}`);
+  const { data: estado } = await SB.rpc("estado_cobro_en", { p_negocio_id: B });
+  if (estado !== "prueba_vencida") { await restaurarPrueba(); throw new Error(`Huellitas no quedó en prueba vencida (${estado}).`); }
+  console.log("  · Huellitas con la prueba vencida mientras corre");
+}
+
 let restaurado = false;
 async function restaurarModulos() {
   if (restaurado) return;
   restaurado = true;
+  await restaurarPrueba();
   const tenia = new Map((antes ?? []).map((m) => [m.modulo, m]));
   for (const clave of TODOS) {
     const m = tenia.get(clave);
@@ -187,6 +216,8 @@ async function recorrer(rol) {
       if (m === "GET" || m === "HEAD" || m === "OPTIONS") return r.continue();
       // La sesión se renueva por POST a Auth: eso no escribe datos del negocio.
       if (/\/auth\/v1\/token/.test(r.request().url())) return r.continue();
+      // La pregunta «¿ya se puede escribir?» del bloqueo (acción del servidor sin argumentos) es una lectura.
+      if (PRUEBA_VENCIDA && h["next-action"] && (r.request().postData() ?? "").length < 5) return r.continue();
       bloqueadas++;
       return r.abort();
     });
@@ -204,6 +235,15 @@ async function recorrer(rol) {
   await arrancar();
 
   const malos = new Map(); // clave → hallazgo (uno por pantalla + botón + destino)
+  let exentosEscritura = 0;
+  const reportarEscritura = (pantalla, motivo) => {
+    const clave = `${patronDe(pantalla)} | escritura | ${motivo}`;
+    if (malos.has(clave)) return;
+    const h = { rol, pantalla, boton: motivo, destino: "", motivo: "prueba vencida" };
+    malos.set(clave, h);
+    hallazgos.push(h);
+    console.log(`  ✘ [${rol}] ${pantalla} · ${motivo}`);
+  };
   const reportar = (pantalla, etiqueta, destino, motivo) => {
     const clave = `${patronDe(pantalla)} | ${etiqueta} | ${patronDe(destino)}`;
     if (malos.has(clave)) return;
@@ -272,6 +312,20 @@ async function recorrer(rol) {
     await pagina.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
   }
 
+  let franjaVista = false;
+  async function revisarEscritura(ruta) {
+    if (!franjaVista) {
+      franjaVista = true;
+      const f = franjaEsperada(rol === "encargada" ? "recepcion" : rol);
+      const franja = (await pagina.locator("[data-aviso-plan]").first().innerText().catch(() => "")).replace(/\s+/g, " ");
+      if (!f.texto.test(franja)) reportarEscritura(ruta, `la franja no dice lo que le toca («${franja.slice(0, 120)}»)`);
+      else if (f.boton && !(await pagina.locator("[data-aviso-plan] a", { hasText: f.boton }).count())) reportarEscritura(ruta, "la franja no trae «Contratar»");
+    }
+    const { activos, exentos } = await pagina.evaluate(controlesDeEscritura);
+    exentosEscritura += exentos;
+    for (const a of activos) reportarEscritura(ruta, `${a.tipo} activo: «${a.texto}»`);
+  }
+
   async function apretarBotones(ruta) {
     const etiquetas = await pagina.$$eval("button, [role=button]", (bs) =>
       bs
@@ -285,6 +339,8 @@ async function recorrer(rol) {
       const boton = pagina.locator("button:visible, [role=button]:visible").filter({ hasText: etiqueta }).first();
       if (!(await boton.count())) continue;
       const antesUrl = pagina.url();
+      const antesEscrituras = bloqueadas;
+      const sinBloqueo = PRUEBA_VENCIDA && (await boton.evaluate((b) => Boolean(b.closest("[data-sin-bloqueo]"))).catch(() => false));
       const antesEnlaces = new Set((await enlacesVisibles()).map((e) => e.href));
       try {
         await boton.click({ timeout: 4000, noWaitAfter: true });
@@ -293,6 +349,8 @@ async function recorrer(rol) {
       }
       await pagina.waitForTimeout(600);
       await pagina.waitForLoadState("networkidle", { timeout: 2000 }).catch(() => {});
+      // La Ayuda (tickets de soporte) queda abierta a propósito: la base deja escribir un ticket en solo lectura.
+      if (PRUEBA_VENCIDA && !sinBloqueo && !ruta.startsWith("/ayuda") && bloqueadas > antesEscrituras) reportarEscritura(ruta, `botón activo que intentó escribir: «${etiqueta}»`);
       if (pagina.url() !== antesUrl) await pagina.waitForLoadState("load", { timeout: 20000 }).catch(() => {});
       const ahora = new globalThis.URL(pagina.url());
       if (pagina.url() !== antesUrl) {
@@ -344,6 +402,7 @@ async function recorrer(rol) {
           const final = new globalThis.URL(pagina.url()).pathname;
           if (final !== ruta.split("?")[0] && destinoMalo(rol, ruta, final)) return; // ya se reportó desde quien la enlaza
           if (process.argv.includes("--ver")) console.log(`      abierta en ${Math.round((Date.now() - t0) / 1000)} s`);
+          if (PRUEBA_VENCIDA) await revisarEscritura(ruta);
           await revisarEnlaces(ruta, cola, vistos);
           if (process.argv.includes("--ver")) console.log(`      enlaces en ${Math.round((Date.now() - t0) / 1000)} s`);
           if (CON_BOTONES) await apretarBotones(ruta);
@@ -364,7 +423,8 @@ async function recorrer(rol) {
       }
     }
   }
-  porRol[rol] = { pantallas, hallazgos: malos.size, escriturasBloqueadas: bloqueadas, sinRecorrer: cola.length };
+  porRol[rol] = { pantallas, hallazgos: malos.size, escriturasBloqueadas: bloqueadas, sinRecorrer: cola.length, exentosEscritura };
+  if (PRUEBA_VENCIDA) console.log(`  · ${rol}: ${exentosEscritura} control(es) marcados «sin bloqueo» (buscar, exportar, contratar)`);
   console.log(`  · ${rol}: ${pantallas} pantallas, ${malos.size} botón(es) o enlace(s) que no le tocan, ${bloqueadas} escrituras bloqueadas${cola.length ? `, ${cola.length} sin recorrer (tope --max)` : ""}`);
   await cerrarConTope(nav.close());
 }
@@ -385,5 +445,9 @@ if (avisos.length) {
 console.log("\nPor rol:");
 for (const [rol, r] of Object.entries(porRol)) console.log(`  ${rol.padEnd(10)} ${String(r.pantallas).padStart(4)} pantallas · ${r.hallazgos} hallazgo(s)`);
 if (SALIDA_JSON) fs.writeFileSync(SALIDA_JSON, JSON.stringify({ porRol, hallazgos, avisos }, null, 1));
+if (PRUEBA_VENCIDA) {
+  const escritura = hallazgos.filter((h) => h.motivo === "prueba vencida").length;
+  console.log(escritura ? `\n✘ Prueba vencida: ${escritura} botón(es), enlace(s) o campo(s) de escritura activos.` : "\n✔ Prueba vencida: ningún botón, enlace ni campo de escritura activo; la franja dice lo que le toca a cada rol.");
+}
 console.log(hallazgos.length ? `\n✘ ${hallazgos.length} botón(es) o enlace(s) llevan a una página que ese rol no puede abrir.` : "\n✔ Ningún botón ni enlace lleva a una página que el rol no pueda abrir.");
 process.exit(hallazgos.length ? 1 : 0);

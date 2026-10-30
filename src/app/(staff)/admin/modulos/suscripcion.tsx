@@ -157,7 +157,8 @@ export function Suscripcion({
         : `Se aplica hoy: se cobra la diferencia proporcional a lo que queda de tu periodo, y después ${pesosDeCentavos(total.total)} ${POR[sel.periodicidad]}.`;
 
   return (
-    <section className="flex flex-col gap-5 rounded-xl border border-n-200 bg-white p-5">
+    // QA N151: contratar y pagar es justo lo que saca al negocio de la solo lectura: nunca se bloquea.
+    <section data-sin-bloqueo className="flex flex-col gap-5 rounded-xl border border-n-200 bg-white p-5">
       <EstadoActual cobro={cobro} contratado={contratado} fecha={fecha} diasQueQuedan={diasQueQuedan} planes={planes} />
 
       <div className="flex flex-wrap items-center justify-between gap-3">

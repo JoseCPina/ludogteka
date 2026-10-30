@@ -41,7 +41,7 @@ export function DatosFacturacion({ inicial, regimenes, usos, aviso }: { inicial:
   }
 
   return (
-    <section aria-labelledby="t-facturacion" data-datos-facturacion className="flex flex-col gap-4 rounded-xl border border-n-200 bg-white p-5">
+    <section aria-labelledby="t-facturacion" data-datos-facturacion data-sin-bloqueo className="flex flex-col gap-4 rounded-xl border border-n-200 bg-white p-5">
       <div>
         <h2 id="t-facturacion" className="text-lg font-bold text-n-900">Datos de facturación</h2>
         <p className="mt-1 text-sm text-n-700">

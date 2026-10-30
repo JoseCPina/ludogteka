@@ -251,6 +251,8 @@ export function PerroAdentro({ dato, permiso, retencion }: { dato: PerroAdentroD
           {!abierto && (
             <button
               type="button"
+              // Solo abre y lee lo subido (QA N151: se puede con el negocio en solo lectura; enviar, no).
+              data-sin-bloqueo
               onClick={() => {
                 setAbierto(true);
                 void refrescar();

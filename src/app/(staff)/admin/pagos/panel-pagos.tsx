@@ -192,7 +192,7 @@ export function PanelPagos({
             <div className="flex flex-col gap-3 border-t border-n-200 pt-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-semibold text-n-900">Tu terminal</p>
-                <Button type="button" variante="secundario" cargando={buscando.cargando} onClick={buscarTerminales}>
+                <Button sinBloqueo type="button" variante="secundario" cargando={buscando.cargando} onClick={buscarTerminales}>
                   Ver las terminales de mi cuenta
                 </Button>
               </div>

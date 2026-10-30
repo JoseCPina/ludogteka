@@ -34,7 +34,7 @@ export function AccionesFormulario({
   const hayError = Boolean(error);
 
   return (
-    <div className={`flex flex-col gap-2 ${className}`}>
+    <div data-acciones-formulario className={`flex flex-col gap-2 ${className}`}>
       <div className="flex flex-wrap items-center gap-3">
         {children}
         {hayError ? (

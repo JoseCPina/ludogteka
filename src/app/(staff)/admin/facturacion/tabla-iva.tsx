@@ -96,7 +96,7 @@ function Fila({ clase, inicial, personalizada, editable }: { clase: string; inic
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-end gap-2">
             <Field label="Buscar clave en el catálogo del SAT" value={q} onChange={(e) => setQ(e.target.value)} placeholder="por ejemplo: estética canina" />
-            <Button type="button" variante="secundario" cargando={buscando.cargando} disabled={q.trim().length < 3} onClick={buscar}>
+            <Button sinBloqueo type="button" variante="secundario" cargando={buscando.cargando} disabled={q.trim().length < 3} onClick={buscar}>
               Buscar
             </Button>
           </div>

@@ -126,7 +126,7 @@ export function Sucursales({ grupo, precioMensual, dominio }: { grupo: GrupoSucu
               ) : (
                 <>
                   {n.soy_miembro && (
-                    <Button type="button" variante="secundario" className="min-h-9 px-3 text-sm" cargando={entrar.cargando} onClick={() => irA(n.id)} data-entrar-sucursal={n.id}>
+                    <Button sinBloqueo type="button" variante="secundario" className="min-h-9 px-3 text-sm" cargando={entrar.cargando} onClick={() => irA(n.id)} data-entrar-sucursal={n.id}>
                       Entrar
                     </Button>
                   )}
@@ -185,7 +185,7 @@ export function Sucursales({ grupo, precioMensual, dominio }: { grupo: GrupoSucu
                 Abrir sucursal
               </Button>
               {nueva && (
-                <Button type="button" variante="secundario" cargando={entrar.cargando} onClick={() => irA(nueva)}>
+                <Button sinBloqueo type="button" variante="secundario" cargando={entrar.cargando} onClick={() => irA(nueva)}>
                   Entrar a la sucursal nueva
                 </Button>
               )}
