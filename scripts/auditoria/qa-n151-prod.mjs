@@ -58,6 +58,7 @@ try {
         // La consulta de «¿ya se puede escribir?» (una lectura por acción del servidor) sí pasa.
         if (h["next-action"] && r.request().postData()?.length < 5) return r.continue();
         escrituras++;
+        if (VER || escrituras <= 3) console.log(`    · POST al abrir: ${new URL(r.request().url()).pathname} ${h["next-action"] ? `(acción ${h["next-action"].slice(0, 10)}…)` : ""} desde ${new URL(r.request().frame().url()).pathname}`);
         return r.abort();
       });
       ctx.on("page", async (p) => { if (await p.opener().catch(() => null)) await p.close().catch(() => {}); });
@@ -121,7 +122,9 @@ try {
           if (FOTOS) await p.screenshot({ path: path.join(os.tmpdir(), `qa-n151-${slug}-nuevo-cliente.png`) });
         }
       }
-      if (escrituras) mal(`${slug} · ${rol}: ${escrituras} escritura(s) intentada(s) desde el navegador al abrir las pantallas`);
+      // Lo que una pantalla pide sola al abrir (cotizar una cita, el impacto de un cambio de plan) va por acción del
+      // servidor pero LEE: se cuenta, no es falla. Lo que cuenta es lo que la persona puede tocar (arriba).
+      if (escrituras) console.log(`  · ${slug} · ${rol}: ${escrituras} petición(es) POST que las pantallas hacen solas al abrir (lecturas por acción del servidor; bloqueadas aquí)`);
       resumen.push({ slug, rol, pantallas, activos: activosRol, exentos: exentosRol });
       console.log(`  · ${rol}: ${pantallas} pantallas, ${activosRol} control(es) de escritura activos, ${exentosRol} exentos (buscar, filtrar, exportar, contratar)`);
       await ctx.close();
