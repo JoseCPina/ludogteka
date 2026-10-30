@@ -24,6 +24,8 @@ import { desbordesDePantalla } from "./lib/ancho-pantalla.mjs";
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : d; };
 const MAX = Number(arg("--max", "25"));
 const FOTOS = process.argv.includes("--fotos");
+// `--solo vet`: solo la parte de Veterinaria.
+const SOLO = arg("--solo", null);
 const CITA = "/estetica/b3b76b98-4aa4-4731-9220-883358429db1";
 const foto = (p, nombre) => (FOTOS ? p.screenshot({ path: path.join(os.tmpdir(), `qa-s49-${nombre}.png`), fullPage: false }).catch(() => {}) : null);
 const hallazgos = [];
@@ -63,6 +65,7 @@ const bloqueado = (loc) => loc.evaluate((el) => el.getAttribute("aria-disabled")
 
 try {
   // ── N152 y N153 ──────────────────────────────────────────────────────────────────────────────────────────────
+  if (SOLO !== "vet") {
   console.log("\n══ N152 / N153 · prueba-est-tica ══");
   const est = await negocioPrueba("prueba-est-tica");
   for (const rol of ["recepcion", "estetica"]) {
@@ -202,6 +205,8 @@ try {
     }
   }
 
+  }
+
   // ── Vet: «Emitir receta» en la consulta abierta (clínica demo) ───────────────────────────────────────────────
   console.log("\n══ Vet · clínica demo ══");
   const S = servicioSinNegocio();
@@ -209,7 +214,9 @@ try {
   if (!clinica || clinica.id === LUDOGTEKA_ID) throw new Error("No encontré la clínica demo.");
   const C = servicioEn(clinica.id);
   const { data: borradores } = await C.from("vet_consultas").select("id, perro_id, medico_id, tratamiento").eq("negocio_id", clinica.id).eq("estado", "borrador").is("deleted_at", null).order("updated_at", { ascending: false }).limit(5);
-  const consulta = (borradores ?? []).find((b) => (b.tratamiento ?? "").trim()) ?? borradores?.[0];
+  // El texto guía de la plantilla («Medicamento · dosis · vía…») no cuenta como tratamiento (no se prellena).
+  const real = (t) => (t ?? "").replace(/^Medicamento · dosis · vía · frecuencia · duración:?/m, "").trim();
+  const consulta = (borradores ?? []).find((b) => real(b.tratamiento)) ?? borradores?.[0];
   if (!consulta) mal("la clínica demo no tiene ninguna consulta en borrador para probar");
   else {
     const { data: medico } = await C.from("medicos_veterinarios").select("profile_id").eq("id", consulta.medico_id).single();
@@ -228,10 +235,11 @@ try {
       }
       await p.waitForLoadState("networkidle", { timeout: 8000 }).catch(() => {});
       const elegida = await p.locator("a.border-morado", { hasText: /abierta/ }).count();
-      const medicamento = await p.locator("main input").evaluateAll((is) => is.map((i) => i.value).filter((v) => v.trim()).slice(0, 3)).catch(() => []);
-      if (elegida) bien(`la receta abre ligada a la consulta abierta («· abierta» seleccionada)${medicamento.length ? `, prellenada: ${medicamento.join(" · ").slice(0, 80)}` : (consulta.tratamiento ?? "").trim() ? "" : " (esa consulta no tiene Tratamiento todavía)"}`);
+      const nombreMed = await p.getByLabel("Medicamento", { exact: true }).first().inputValue().catch(() => "");
+      const medicamento = nombreMed.trim() ? [nombreMed.trim()] : [];
+      if (elegida) bien(`la receta abre ligada a la consulta abierta («· abierta» seleccionada)${medicamento.length ? `, prellenada con «${medicamento[0].slice(0, 60)}» desde el Tratamiento` : real(consulta.tratamiento) ? "" : " (esa consulta no tiene Tratamiento todavía)"}`);
       else mal("la receta no quedó ligada a la consulta abierta");
-      if ((consulta.tratamiento ?? "").trim() && !medicamento.length) mal("la consulta tiene Tratamiento y la receta no salió prellenada");
+      if (real(consulta.tratamiento) && !medicamento.length) mal("la consulta tiene Tratamiento y la receta no salió prellenada");
       await foto(p, "vet-receta-desde-borrador");
     }
     await ctx.close();
