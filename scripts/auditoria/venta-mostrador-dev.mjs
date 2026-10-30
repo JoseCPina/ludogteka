@@ -203,9 +203,11 @@ try {
   if (ventas.length !== 3) hallazgo(`el turno no marca las 3 ventas como venta de mostrador: ${JSON.stringify(movs)}`);
   else bien("el turno marca las 3 ventas como «venta de mostrador»");
   await recep.goto(`${BASE}/caja/turno`, { waitUntil: "networkidle" });
-  const linea = await recep.locator("[data-ventas-mostrador]").innerText().catch(() => "");
-  if (!linea.includes("$410.50")) hallazgo(`la pantalla del turno no separa las ventas de mostrador: «${linea}»`);
-  else bien(`la pantalla del turno las separa: «${linea}»`);
+  // Corte ciego (QA R59, N148): con el turno abierto la pantalla nombra las ventas de mostrador pero no enseña montos.
+  const pantalla = await recep.locator("[data-movimientos-ciegos]").innerText().catch(() => "");
+  const filasVenta = (pantalla.match(/Venta de mostrador/g) ?? []).length;
+  if (filasVenta < 3 || pantalla.includes("$410.50") || /\$\d/.test(pantalla)) hallazgo(`la pantalla del turno abierto: ${filasVenta} ventas de mostrador, ${/\$\d/.test(pantalla) ? "CON montos" : "sin montos"}`);
+  else bien(`la pantalla del turno abierto marca ${filasVenta} ventas de mostrador sin montos (corte ciego)`);
   const hoy = (await adminJ.rpc("fecha_negocio")).data;
   const { data: rep, error: eRep } = await adminJ.rpc("reporte_ventas_mostrador_periodo", { p_desde: hoy, p_hasta: hoy }).single();
   if (eRep || Number(rep.total_vendido) < 410.5 || Number(rep.productos) < 360) hallazgo(`el reporte de ventas no cuadra: ${JSON.stringify(rep ?? eRep)}`);

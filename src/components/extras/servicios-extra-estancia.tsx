@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { SiPuedeAbrir } from "@/components/acceso-contexto";
 import { useRouter } from "next/navigation";
+import { textoListaVacia } from "@/lib/reservas/lista-vacia";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -23,6 +24,7 @@ import { dinero } from "@/lib/dinero";
  */
 export function ServiciosExtraEstancia({
   estanciaId,
+  estado,
   clienteId,
   fechaEntrada,
   fechaSalida,
@@ -35,6 +37,8 @@ export function ServiciosExtraEstancia({
   sinCargosNuevos = null,
 }: {
   estanciaId: string;
+  // QA R59 (N144): sin servicios extra, «Ninguno todavía» solo mientras la estancia no termina (textoListaVacia).
+  estado: string;
   clienteId: string;
   fechaEntrada: string;
   fechaSalida: string;
@@ -49,6 +53,7 @@ export function ServiciosExtraEstancia({
 }) {
   const router = useRouter();
   const envio = useEspera();
+  const vacioExtras = textoListaVacia(estado, "Ninguno todavía en esta estancia.");
   const maxFecha = fechaSalida >= fechaEntrada ? fechaSalida : fechaEntrada;
   const fechaInicial = hoy < fechaEntrada ? fechaEntrada : hoy > maxFecha ? maxFecha : hoy;
 
@@ -110,16 +115,18 @@ export function ServiciosExtraEstancia({
 
   return (
     <div className="flex flex-col gap-4" data-servicios-extra>
-      <div className="flex flex-col gap-2">
-        <p className="text-sm font-bold uppercase tracking-wide text-n-600">Servicios extra</p>
-        <ListaExtras
-          filas={filas}
-          negocio={negocio}
-          puedeAgregar={puedeAgregar}
-          conFecha
-          vacio="Ninguno todavía en esta estancia."
-        />
-      </div>
+      {(filas.length > 0 || vacioExtras) && (
+        <div className="flex flex-col gap-2">
+          <p className="text-sm font-bold uppercase tracking-wide text-n-600">Servicios extra</p>
+          <ListaExtras
+            filas={filas}
+            negocio={negocio}
+            puedeAgregar={puedeAgregar}
+            conFecha
+            vacio={vacioExtras ?? ""}
+          />
+        </div>
+      )}
 
       {puedeAgregar && sinCargosNuevos && (
         <p className="text-sm text-n-600" data-extras-cerrados>

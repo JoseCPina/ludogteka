@@ -13,6 +13,7 @@ import { formatearFechaCalendario } from "@/lib/formato";
 import type { Conflicto } from "@/lib/concurrencia/tipos";
 import { cancelarEstancia } from "../reserva-actions";
 import { MoverFechas } from "../mover-fechas";
+import { ESTILO_ESTADO, ETIQUETA_ESTADO } from "@/lib/estados/insignias";
 
 export type ReservaCalendario = {
   id: string;
@@ -31,23 +32,6 @@ export type ReservaCalendario = {
   cuentaTono: "debe" | "ok" | "cancelada" | "neutro";
 };
 
-export const ETIQUETA_ESTADO: Record<string, string> = {
-  reservada: "Reservada",
-  confirmada: "Confirmada",
-  en_curso: "En curso",
-  finalizada: "Finalizada",
-  cancelada: "Cancelada",
-  no_llego: "No llegó",
-};
-
-const ESTILO_ESTADO: Record<string, string> = {
-  reservada: "bg-n-100 text-n-700",
-  confirmada: "bg-morado-suave text-morado",
-  en_curso: "bg-menta-suave text-menta-oscuro",
-  finalizada: "bg-n-100 text-n-600",
-  cancelada: "bg-coral-suave text-coral-oscuro",
-  no_llego: "bg-coral-suave text-coral-oscuro",
-};
 
 const ESTILO_CUENTA: Record<ReservaCalendario["cuentaTono"], string> = {
   debe: "text-coral-oscuro",

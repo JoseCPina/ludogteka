@@ -68,7 +68,7 @@ export function TurnoAbierto({
   puedeAgregarEfectivo = false,
   puedeCerrar,
   abiertoPorMi,
-  tarjetaManualSinVerificar = 0,
+  hayTarjetaManual = false,
 }: {
   turnoId: string;
   fondoInicial: number;
@@ -81,7 +81,8 @@ export function TurnoAbierto({
   puedeCerrar: boolean;
   abiertoPorMi: boolean;
   // Lo cobrado con «Tarjeta (registro manual)» en este turno (neto de devoluciones).
-  tarjetaManualSinVerificar?: number;
+  // Corte ciego: solo SI hubo tarjeta manual en el turno, nunca su monto (se ve en el corte).
+  hayTarjetaManual?: boolean;
 }) {
   const zona = useZonaNegocio();
   const router = useRouter();
@@ -537,10 +538,10 @@ export function TurnoAbierto({
                   onChange={(e) => setConteoTransferencia(e.target.value)}
                 />
               </div>
-              {tarjetaManualSinVerificar !== 0 && (
+              {hayTarjetaManual && (
                 <p className="text-sm text-coral-oscuro" data-cierre-tarjeta-manual>
-                  Tarjeta manual (sin verificar): {dinero(tarjetaManualSinVerificar)}. No va en el conteo de la terminal: sale como línea aparte en el corte y el
-                  admin la revisa contra los vouchers en Conciliación.
+                  Este turno tiene cobros con tarjeta manual (sin verificar). No van en el conteo de la terminal: salen como línea aparte en el corte y el
+                  admin los revisa contra los vouchers en Conciliación.
                 </p>
               )}
               <Textarea label="Notas de cierre (opcional)" value={notasCierre} onChange={(e) => setNotasCierre(e.target.value)} />

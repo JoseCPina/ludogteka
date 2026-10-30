@@ -14,6 +14,8 @@ import type { Estilista } from "../selector-estilista";
 import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { AvisosWhatsApp } from "@/components/avisos-whatsapp";
 import { RecordatorioDeLaCita } from "@/components/recordatorio-de-la-cita";
+import { EstadoVivo } from "@/components/concurrencia/estado-vivo";
+import { ESTILO_ESTADO, ETIQUETA_ESTADO } from "@/lib/estados/insignias";
 import { usaEstancias } from "@/lib/plan/modulos";
 import { puedeAbrirEnServidor } from "@/lib/auth/acceso-servidor";
 
@@ -200,9 +202,21 @@ export default async function CitaDetallePage({
       </Link>
 
       <div>
-        <h1 className="text-2xl font-bold text-n-900">
-          {servicio?.nombre ?? (cita.servicio_nombre as string | null) ?? "Servicio"} — {perro.nombre}
-        </h1>
+        {/* QA R59 (N146): el estado siempre junto al título, con la insignia de la agenda; cambia con la acción (EstadoVivo). */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h1 className="text-2xl font-bold text-n-900">
+            {servicio?.nombre ?? (cita.servicio_nombre as string | null) ?? "Servicio"} — {perro.nombre}
+          </h1>
+          <EstadoVivo
+            t="citas_estetica"
+            i={cita.id}
+            version={(cita.updated_at as string | null) ?? null}
+            estado={cita.estado as string}
+            etiquetas={ETIQUETA_ESTADO}
+            clases={ESTILO_ESTADO}
+            claseBase="rounded-full px-2.5 py-1 text-xs font-semibold"
+          />
+        </div>
         <p className="mt-1 text-n-600">
           <HoraCitaViva citaId={cita.id} inicio={cita.inicio} fin={(cita.fin as string | null) ?? null} version={(cita.updated_at as string | null) ?? null} /> · {cita.empleado_id ? (empleado?.nombre_completo ?? "—") : "Sin asignar"}
         </p>

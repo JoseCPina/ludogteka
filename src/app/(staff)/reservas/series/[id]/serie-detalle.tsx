@@ -24,28 +24,12 @@ import { SelectorDias } from "../selector-dias";
 import { describirBonoAplicado } from "@/lib/bonos/descripcion";
 import type { ServicioOfrecible } from "@/lib/servicios/ofrecibles";
 import { OpcionesServicio, AvisoServiciosSinPrecio } from "@/components/servicios/opciones-servicio";
+import { ESTILO_ESTADO, ETIQUETA_ESTADO } from "@/lib/estados/insignias";
 
 type Servicio = ServicioOfrecible;
 type Estancia = { id: string; fechaEntrada: string; estado: string };
 type Pausa = { id: string; desde: string; hasta: string; motivo: string | null };
 
-const ETIQUETA_ESTADO: Record<string, string> = {
-  reservada: "Reservada",
-  confirmada: "Confirmada",
-  en_curso: "En curso",
-  finalizada: "Finalizada",
-  cancelada: "Cancelada",
-  no_llego: "No llegó",
-};
-
-const ESTILO_ESTADO: Record<string, string> = {
-  reservada: "bg-n-100 text-n-700",
-  confirmada: "bg-morado-suave text-morado",
-  en_curso: "bg-menta-suave text-menta-oscuro",
-  finalizada: "bg-n-100 text-n-600",
-  cancelada: "bg-coral-suave text-coral-oscuro",
-  no_llego: "bg-coral-suave text-coral-oscuro",
-};
 
 function ResumenGeneracion({ resultados }: { resultados: ResultadoFecha[] }) {
   const creadas = resultados.filter((r) => r.exito);

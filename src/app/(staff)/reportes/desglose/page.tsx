@@ -4,6 +4,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { fechaLocalDeInstante, formatearFechaCalendario, horaLocalDeInstante } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
+import { TEXTO_CORTE_CIEGO, esTarjetaDeCaja, turnoAbiertoEnPeriodo } from "@/lib/caja/corte-ciego";
 import {
   COLUMNAS_DESGLOSE,
   POR_PAGINA_DESGLOSE,
@@ -55,6 +56,17 @@ export default async function DesglosePage({
   const pagina = Math.max(1, Number.parseInt(p.pagina ?? "1", 10) || 1);
 
   const supabase = await createSupabaseServerClient();
+  // Corte ciego: el dinero de caja por método de un periodo con el turno abierto no se lista (ni se pide).
+  if (esTarjetaDeCaja(tarjeta) && (await turnoAbiertoEnPeriodo(supabase, desde, hasta, zona))) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Alert variante="info" titulo="Caja por método: al cerrar el turno">
+          {TEXTO_CORTE_CIEGO}
+        </Alert>
+        <Link href={`/reportes?desde=${desde}&hasta=${hasta}`} className="font-semibold text-morado hover:underline">← Volver a Reportes</Link>
+      </div>
+    );
+  }
   const { data, error } = await supabase.rpc("reporte_desglose", {
     p_tarjeta: tarjeta, p_desde: desde, p_hasta: hasta, p_buscar: q || null, p_orden: orden, p_dir: dir,
     p_limite: POR_PAGINA_DESGLOSE, p_desplazamiento: (pagina - 1) * POR_PAGINA_DESGLOSE,

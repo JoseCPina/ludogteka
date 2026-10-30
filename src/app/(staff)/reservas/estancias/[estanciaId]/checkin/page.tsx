@@ -18,6 +18,8 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { SeccionServiciosExtra } from "@/components/extras/seccion-servicios-extra";
 import { cuentasPorEstancia } from "@/lib/cuentas/cuenta-estancia";
+import { EstadoVivo } from "@/components/concurrencia/estado-vivo";
+import { ESTILO_ESTADO, ETIQUETA_ESTADO } from "@/lib/estados/insignias";
 
 export default async function CheckinEstanciaPage({
   params,
@@ -32,7 +34,7 @@ export default async function CheckinEstanciaPage({
   const { data: estancia, error } = await supabase
     .from("estancias")
     .select(
-      "id, reserva_id, perro_id, servicio_id, fecha_entrada, fecha_salida, estado, precio_unitario, entregado_por_nombre, entregado_por_telefono, estado_llegada, foto_llegada_path, hora_entrada_real, pertenencias, perros(nombre, cliente_id, contacto_emergencia_nombre, contacto_emergencia_telefono, clientes(nombre, telefono)), servicios(nombre, categoria, unidad)"
+      "id, reserva_id, perro_id, servicio_id, fecha_entrada, fecha_salida, estado, updated_at, precio_unitario, entregado_por_nombre, entregado_por_telefono, estado_llegada, foto_llegada_path, hora_entrada_real, pertenencias, perros(nombre, cliente_id, contacto_emergencia_nombre, contacto_emergencia_telefono, clientes(nombre, telefono)), servicios(nombre, categoria, unidad)"
     )
     .eq("id", estanciaId)
     .single();
@@ -165,7 +167,19 @@ export default async function CheckinEstanciaPage({
       </Link>
 
       <div>
-        <h1 className="text-2xl font-bold text-n-900">Check-in — {perro.nombre}</h1>
+        {/* QA R59 (N146): el estado de la estancia junto al título, con la insignia del calendario. */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h1 className="text-2xl font-bold text-n-900">Check-in — {perro.nombre}</h1>
+          <EstadoVivo
+            t="estancias"
+            i={estancia.id as string}
+            version={(estancia.updated_at as string | null) ?? null}
+            estado={estancia.estado as string}
+            etiquetas={ETIQUETA_ESTADO}
+            clases={ESTILO_ESTADO}
+            claseBase="rounded-full px-2.5 py-1 text-xs font-semibold"
+          />
+        </div>
         <p className="mt-1 text-n-600">
           {servicio?.nombre} · {esGuarderia ? formatearFechaCalendario(estancia.fecha_entrada) : `${formatearFechaCalendario(estancia.fecha_entrada)} — ${formatearFechaCalendario(estancia.fecha_salida)}`}
         </p>

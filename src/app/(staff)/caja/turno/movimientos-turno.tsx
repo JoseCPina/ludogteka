@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { formatearFecha, formatearHoraNegocio } from "@/lib/formato";
-import { dinero } from "@/lib/dinero";
 
 export type MovimientoTurno = {
   id: string;
@@ -10,8 +9,6 @@ export type MovimientoTurno = {
   clienteNombre: string | null;
   descripcion: string;
   metodo: string;
-  monto: number;
-  propina: number;
   origen: string;
   // Si el cobro fue parte de un cobro junto (varias cuentas, un solo pago).
   grupoId?: string | null;
@@ -19,8 +16,6 @@ export type MovimientoTurno = {
   // «anulacion» o «edicion_monto» si es un ajuste de un cobro; «original_anulado» si es un cobro que se anuló después.
   ajusteTipo?: string | null;
 };
-
-export type ResumenMetodo = { metodo: string; origen: string; cobrado: number; propinas: number; devuelto: number };
 
 const ETIQUETA_TIPO: Record<string, string> = {
   cobro: "Cobro",
@@ -56,83 +51,33 @@ const ETIQUETA_ORIGEN: Record<string, string> = {
 };
 
 /**
- * Lo que movió dinero en el turno, y el acumulado por método. El
- * acumulado separa lo que entró por la app (terminal integrada, links)
- * de lo capturado a mano: al cortar, lo de la app se coteja contra
- * el reporte del proveedor (Mercado Pago o Clip) y lo manual contra el
- * de la terminal no integrada.
+ * Lo que movió dinero en el turno ABIERTO, sin un solo monto (QA R59, N148: corte ciego, regla de Fase 5). Quien va a
+ * contar —recepción o admin— no ve ni recibe lo esperado: ni el acumulado por método, ni los totales de servicios y
+ * ventas, ni el monto de cada movimiento (con un solo cobro con terminal, su monto ES el esperado de la terminal). La
+ * página ni siquiera los pinta: solo hora, qué fue, de quién, el método y quién lo hizo. La comparación sale al
+ * «Enviar conteo» (cerrar_turno) y el corte queda en «Turnos cerrados».
  */
 export function MovimientosTurno({
   movimientos,
-  resumen,
   zona,
   totalMovimientos,
-  servicios,
-  ventasMostrador,
   verMasHref,
 }: {
-  // Solo los más recientes (la página que se ve); los totales vienen de la base.
+  // Solo los más recientes (la página que se ve).
   movimientos: MovimientoTurno[];
-  resumen: ResumenMetodo[];
   zona: string;
   totalMovimientos: number;
-  servicios: number;
-  ventasMostrador: number;
   verMasHref: string | null;
 }) {
-  const porMetodo = ["efectivo", "terminal", "transferencia", "tarjeta_manual"].map((m) => {
-    const filas = resumen.filter((r) => r.metodo === m);
-    const manual = filas.find((r) => r.origen === "manual");
-    const app = filas.filter((r) => r.origen !== "manual");
-    const cobrado = filas.reduce((s, r) => s + r.cobrado, 0);
-    const propinas = filas.reduce((s, r) => s + r.propinas, 0);
-    const devuelto = filas.reduce((s, r) => s + r.devuelto, 0);
-    return { metodo: m, cobrado, propinas, devuelto, neto: cobrado + propinas - devuelto, manual: manual?.cobrado ?? 0, app: app.reduce((s, r) => s + r.cobrado, 0) };
-  });
-
-  // El total de tarjeta se suma explícito y separado: lo verificado y lo sin verificar.
-  const neto = (m: string) => porMetodo.find((x) => x.metodo === m)?.neto ?? 0;
-  const totalTarjeta = { verificada: neto("terminal"), manual: neto("tarjeta_manual") };
-
   return (
-    <div className="flex flex-col gap-4">
-      {ventasMostrador > 0 && (
-        <p className="text-sm text-n-700" data-ventas-mostrador>
-          Servicios y pases: <strong>{dinero(servicios)}</strong> · Ventas de mostrador: <strong>{dinero(ventasMostrador)}</strong>
-        </p>
-      )}
-      {totalTarjeta.manual !== 0 && (
-        <p className="text-sm text-n-700" data-total-tarjeta>
-          Total con tarjeta: <strong>{dinero(totalTarjeta.verificada + totalTarjeta.manual)}</strong> = terminal {dinero(totalTarjeta.verificada)} (verificada
-          por el proveedor) + tarjeta manual {dinero(totalTarjeta.manual)} (sin verificar).
-        </p>
-      )}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {porMetodo.map((m) => (
-          <div key={m.metodo} className="rounded-lg border border-n-200 bg-white p-4">
-            <p className="text-xs font-bold uppercase tracking-wide text-n-500">{ETIQUETA_METODO[m.metodo]}</p>
-            <p className="mt-1 text-2xl font-bold tabular-nums text-n-900">{dinero(m.neto)}</p>
-            <p className="text-xs text-n-500">
-              cobrado {dinero(m.cobrado)}
-              {m.propinas > 0 ? ` · propinas ${dinero(m.propinas)}` : ""}
-              {m.devuelto > 0 ? ` · devuelto ${dinero(m.devuelto)}` : ""}
-            </p>
-            {m.metodo === "tarjeta_manual" ? (
-              <p className="mt-1 text-xs text-ambar-oscuro">Se revisa contra el voucher en Caja → Conciliación.</p>
-            ) : (
-              m.metodo !== "efectivo" && (
-                <p className="mt-1 text-xs text-n-600">
-                  por la app {dinero(m.app)} · a mano {dinero(m.manual)}
-                </p>
-              )
-            )}
-          </div>
-        ))}
-      </div>
-
+    <div className="flex flex-col gap-4" data-movimientos-ciegos>
+      <p className="text-sm text-n-600">
+        Corte ciego: mientras el turno esté abierto no se muestran montos ni totales por método. Se comparan con tu conteo al
+        enviar el arqueo y quedan en el corte.
+      </p>
       {totalMovimientos > movimientos.length && (
         <p className="text-sm text-n-600" data-movimientos-conteo>
-          Se muestran los {movimientos.length} movimientos más recientes de {totalMovimientos}. Los totales de arriba cuentan todos.
+          Se muestran los {movimientos.length} movimientos más recientes de {totalMovimientos}.
         </p>
       )}
       {movimientos.length === 0 ? (
@@ -142,8 +87,8 @@ export function MovimientosTurno({
           <table className="w-full border-collapse text-sm max-sm:block">
             <thead className="max-sm:hidden">
               <tr>
-                {["Hora", "Movimiento", "Cliente / motivo", "Método", "Monto"].map((h) => (
-                  <th key={h} className={`border-b border-n-200 bg-n-100 px-3 py-2 text-xs font-bold uppercase tracking-wide text-n-600 ${h === "Monto" ? "text-right" : "text-left"}`}>
+                {["Hora", "Movimiento", "Cliente / motivo", "Método"].map((h) => (
+                  <th key={h} className="border-b border-n-200 bg-n-100 px-3 py-2 text-left text-xs font-bold uppercase tracking-wide text-n-600">
                     {h}
                   </th>
                 ))}
@@ -181,10 +126,6 @@ export function MovimientosTurno({
                     <span className="block text-xs text-n-500">{m.hechoPorNombre}</span>
                   </td>
                   <td className="border-b border-n-200 px-3 py-2 max-sm:flex max-sm:justify-between max-sm:gap-3 max-sm:border-0 max-sm:px-0 max-sm:py-0.5 text-n-700"><span className="hidden text-xs font-bold uppercase text-n-500 max-sm:inline">Método</span>{ETIQUETA_METODO[m.metodo] ?? m.metodo}</td>
-                  <td className={`border-b border-n-200 px-3 py-2 text-right tabular-nums font-semibold max-sm:block max-sm:border-0 max-sm:px-0 max-sm:py-0.5 max-sm:text-left max-sm:text-base ${m.monto < 0 ? "text-coral-oscuro" : "text-n-900"}`}>
-                    {dinero(m.monto)}
-                    {m.propina > 0 ? <span className="block text-xs font-normal text-n-500">+ propina {dinero(m.propina)}</span> : null}
-                  </td>
                 </tr>
               ))}
             </tbody>

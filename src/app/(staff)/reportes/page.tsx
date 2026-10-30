@@ -6,6 +6,7 @@ import { formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
 import { mesAnterior, periodoAnterior, rangoMes } from "@/lib/gastos/textos";
 import { zonaActual } from "@/lib/negocio/actual";
 import { urlDesglose } from "@/lib/reportes/desglose";
+import { TEXTO_CORTE_CIEGO, turnoAbiertoEnPeriodo } from "@/lib/caja/corte-ciego";
 
 function formatearMoneda(n: number): string {
   return n.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
@@ -74,6 +75,8 @@ export default async function ReportesPage({
     supabase.rpc("reporte_dias_pase_periodo", { p_desde: desde, p_hasta: hasta }).single(),
     supabase.rpc("reporte_servicios_extra_periodo", { p_desde: desde, p_hasta: hasta }),
   ]);
+  // Corte ciego: con un turno abierto en el periodo, el dinero de caja por método no sale de este servidor.
+  const turnoCiego = await turnoAbiertoEnPeriodo(supabase, desde, hasta, zona);
   // Servicios extra de Hotel y guardería: ingreso por servicio y por empleado.
   const extras = ((extrasData ?? []) as { agrupacion: string; clave: string; nombre: string; veces: number; cantidad: number; ingreso: number; cubierto_paquete: number }[]).map((r) => ({
     ...r,
@@ -362,6 +365,7 @@ export default async function ReportesPage({
                 contra costos.
               </p>
             </div>
+            {!turnoCiego && (
             <div className="rounded-lg border-[1.5px] border-morado bg-morado-suave p-5">
               <p className="text-sm font-bold uppercase tracking-wide text-morado-oscuro">
                 Ingreso neto de caja
@@ -374,8 +378,15 @@ export default async function ReportesPage({
                 con los cortes de caja del periodo.
               </p>
             </div>
+            )}
           </div>
 
+          {turnoCiego ? (
+            <Alert variante="info" titulo="Caja por método: al cerrar el turno">
+              {TEXTO_CORTE_CIEGO}
+            </Alert>
+          ) : (
+            <>
           <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
             <table className="tabla-tarjetas w-full min-w-[720px] border-collapse">
               <thead>
@@ -473,6 +484,9 @@ export default async function ReportesPage({
             {formatearMoneda(reporte.cobros_terminal + reporte.propinas_terminal - reporte.devoluciones_terminal)} + tarjeta manual (sin verificar){" "}
             {formatearMoneda(reporte.cobros_tarjeta_manual + reporte.propinas_tarjeta_manual - reporte.devoluciones_tarjeta_manual)}.
           </p>
+
+            </>
+          )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Link href={D("bonos_vendidos")} aria-label="Ver los bonos vendidos" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave">

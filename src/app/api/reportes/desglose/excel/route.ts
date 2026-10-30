@@ -5,6 +5,7 @@ import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { paginaDeError } from "@/lib/http/pagina-de-error";
 import { fechaLocalDeInstante, horaLocalDeInstante } from "@/lib/formato";
 import { etiquetaMetodos, tarjetaValida, type Desglose } from "@/lib/reportes/desglose";
+import { TEXTO_CORTE_CIEGO, esTarjetaDeCaja, turnoAbiertoEnPeriodo } from "@/lib/caja/corte-ciego";
 
 // El desglose de una cifra de Reportes en Excel: TODAS las filas de la tarjeta (con la búsqueda, si la hay), sin el tope
 // de 1,000 filas de la API. La función de la base comprueba el permiso «Reportes financieros».
@@ -22,6 +23,10 @@ export async function GET(req: Request) {
     return paginaDeError({ titulo: "Desglose no válido", que: "Faltan la tarjeta o las fechas del desglose.", queHacer: ["Vuelve a Reportes y toca la cifra otra vez."], status: 400 });
   }
   const supabase = await createSupabaseServerClient();
+  // Corte ciego: tampoco en Excel el dinero de caja por método de un periodo con el turno abierto.
+  if (esTarjetaDeCaja(tarjeta) && (await turnoAbiertoEnPeriodo(supabase, desde, hasta, await zonaActual()))) {
+    return paginaDeError({ titulo: "Todavía no", que: TEXTO_CORTE_CIEGO, queHacer: ["Descárgalo cuando se cierre el turno de caja."], status: 409 });
+  }
   const { data, error } = await supabase.rpc("reporte_desglose", {
     p_tarjeta: tarjeta, p_desde: desde, p_hasta: hasta, p_buscar: q || null, p_orden: orden, p_dir: dir, p_limite: null, p_desplazamiento: 0,
   });
