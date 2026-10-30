@@ -127,3 +127,10 @@ body {
 html:has([data-portal-shell]) {
   scroll-padding-top: 4.5rem;
 }
+
+/* QA N151: con el negocio en solo lectura (prueba vencida, falta de pago), lo que escribe se ve deshabilitado
+   (lo marca <ProveedorEscritura>, src/components/escritura-contexto.tsx). */
+[data-bloqueado] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

@@ -7,7 +7,7 @@
 // Con cada rol del personal de cada negocio, recorre la app desde su inicio siguiendo los enlaces que ve y en cada
 // pantalla cuenta los botones, enlaces y campos de escritura que siguen activos (scripts/auditoria/lib/escritura-pantalla.mjs).
 // Además: la franja de arriba dice lo que le toca al rol (admin: «Tu prueba terminó…» con «Contratar»; los demás:
-// «La prueba del negocio terminó. Pídele al dueño…»), y al tocar «Nuevo cliente» (recepción) aparece el aviso con el
+// «La prueba del negocio terminó. Pídele al dueño…»), y al tocar «Nuevo cliente» (inicio de recepción) aparece el aviso con el
 // mismo texto y no se abre el alta.
 //
 // Sesiones por enlace mágico (scripts/lib/prod.mjs); las llaves se leen al vuelo y nunca se imprimen.
@@ -108,7 +108,7 @@ try {
       }
       // Tocar «Nuevo cliente» (recepción): aviso con el texto de la franja, sin abrir el alta.
       if (rol === "recepcion") {
-        await p.goto(`${base}/clientes`, { waitUntil: "load" });
+        await p.goto(`${base}/recepcion`, { waitUntil: "load" });
         await p.waitForLoadState("networkidle", { timeout: 6000 }).catch(() => {});
         const boton = p.locator("main a, main button").filter({ hasText: /^\s*\+?\s*Nuevo cliente/ }).first();
         if (await boton.count()) {
@@ -116,9 +116,9 @@ try {
           await p.waitForTimeout(1200);
           const aviso = await p.locator("[data-aviso-solo-lectura]").first().innerText().catch(() => "");
           const donde = new URL(p.url()).pathname;
-          if (donde !== "/clientes") mal(`${slug} · recepción: «Nuevo cliente» abrió ${donde}`);
+          if (donde !== "/recepcion") mal(`${slug} · recepción: «Nuevo cliente» abrió ${donde}`);
           else if (!/La prueba del negocio terminó/.test(aviso)) mal(`${slug} · recepción: al tocar «Nuevo cliente» no aparece el aviso`);
-          else bien(`${slug} · recepción: «Nuevo cliente» se queda en /clientes con el aviso «${aviso.replace(/\s+/g, " ").slice(0, 90)}»`);
+          else bien(`${slug} · recepción: «Nuevo cliente» se queda en /recepcion con el aviso «${aviso.replace(/\s+/g, " ").slice(0, 90)}»`);
           if (FOTOS) await p.screenshot({ path: path.join(os.tmpdir(), `qa-n151-${slug}-nuevo-cliente.png`) });
         }
       }
