@@ -6,6 +6,7 @@ import { ReciboPorWhatsApp } from "@/components/herramientas/recibelo-por-whatsa
 import { Selector } from "@/components/herramientas/selector";
 import { Button } from "@/components/ui/button";
 import { useEspera } from "@/hooks/use-espera";
+import { esperarConTope } from "@/lib/ui/espera";
 import { registrarEventoCliente } from "@/lib/herramientas/cliente";
 import { canvasAPng, descargar, dibujarLista, listaAPdf } from "@/lib/herramientas/dibujar-lista";
 import { ESTILOS_LISTA, PLANTILLA_SERVICIOS, type EstiloLista, type RenglonLista } from "@/lib/herramientas/plantillas-servicios";
@@ -40,27 +41,35 @@ export function GeneradorLista({ giroInicial }: { giroInicial: GiroMercado }) {
     setRangos({});
   };
 
-  // Los rangos de la ciudad para los renglones con servicio del catálogo (una consulta por servicio y talla).
+  // Los rangos de la ciudad para los renglones con servicio del catálogo (una consulta por servicio y talla), con
+  // tope: si el servidor no contesta, se dice y se ofrece reintentar; la lista se sigue pudiendo armar sin rangos.
+  const [errorRangos, setErrorRangos] = useState<string | null>(null);
+  const [intentoRangos, setIntentoRangos] = useState(0);
   useEffect(() => {
     let vivo = true;
     const claves = ciudad ? [...new Set(renglones.filter((r) => r.canonico).map((r) => `${r.canonico}|${r.talla ?? ""}`))] : [];
     Promise.all(
       claves.map(async (k) => {
         const [servicio, talla] = k.split("|");
-        const r = await consultarRango({ giro, servicio, ciudad: ciudad!.slug, talla: talla || null });
-        return [k, r.rango] as const;
+        const r = await esperarConTope(() => consultarRango({ giro, servicio, ciudad: ciudad!.slug, talla: talla || null }));
+        return [k, r] as const;
       })
     ).then((pares) => {
       if (!vivo) return;
       const nuevo: Record<string, Rango> = {};
-      for (const [k, r] of pares) if (r && r.nivel !== "sin_datos") nuevo[k] = r;
+      let fallo: string | null = null;
+      for (const [k, r] of pares) {
+        if (r.error) fallo = r.error;
+        else if (r.rango && r.rango.nivel !== "sin_datos") nuevo[k] = r.rango;
+      }
       setRangos(nuevo);
+      setErrorRangos(fallo);
     });
     return () => {
       vivo = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ciudad, giro]);
+  }, [ciudad, giro, intentoRangos]);
 
   const datos = useMemo(() => ({ negocio, whatsapp: whatsapp.replace(/\D/g, "").slice(-10) || null, ciudad: ciudad?.nombre ?? null, giroTexto, renglones, estilo, logo }), [negocio, whatsapp, ciudad, giroTexto, renglones, estilo, logo]);
   const conPrecio = renglones.filter((r) => r.nombre.trim() && r.precio && r.precio > 0);
@@ -100,6 +109,12 @@ export function GeneradorLista({ giroInicial }: { giroInicial: GiroMercado }) {
               <input id="lp-wa" type="tel" inputMode="numeric" className="hta-campo" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value.slice(0, 16))} placeholder="10 dígitos, sale al pie" />
             </div>
             <BuscadorCiudad valor={ciudad} onChange={setCiudad} etiqueta="Tu ciudad (para ver el rango al lado)" />
+            {errorRangos && (
+              <div className="flex flex-wrap items-center gap-3 rounded-xl bg-coral-suave px-4 py-3 text-sm text-n-900" role="alert" data-error-rangos>
+                <span>No pudimos traer los rangos de {ciudad?.nombre ?? "tu ciudad"}. {errorRangos} Tu lista se puede armar igual.</span>
+                <Button type="button" variante="secundario" sinBloqueo onClick={() => { setErrorRangos(null); setIntentoRangos((n) => n + 1); }}>Reintentar</Button>
+              </div>
+            )}
             <div>
               <label htmlFor="lp-logo" className="hta-etiqueta">Logo (opcional)</label>
               <input

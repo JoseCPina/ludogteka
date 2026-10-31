@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { CampoCopiable } from "@/components/ui/campo-copiable";
 import { useEspera } from "@/hooks/use-espera";
+import { esperarConTope } from "@/lib/ui/espera";
 import { origenActual, pixelHerramienta, registrarEventoCliente } from "@/lib/herramientas/cliente";
 import type { EstadoReclamo } from "@/lib/directorio/reclamo";
 import { consultarReclamo, pedirCodigoReclamo } from "@/app/peludesk/directorio/acciones";
@@ -22,18 +23,40 @@ export function Reclamar({ slug, nombre }: { slug: string; nombre: string }) {
   const telefono = useRef<HTMLInputElement>(null);
   const trampa = useRef<HTMLInputElement>(null);
 
+  // Mientras el reclamo está pendiente se pregunta cada 4 s si ya llegó el mensaje, con tope y sin encimar
+  // preguntas; si falla dos veces seguidas se dice y se ofrece reintentar (el sondeo no se detiene).
+  const [errorSondeo, setErrorSondeo] = useState<string | null>(null);
+  const [intento, setIntento] = useState(0);
   useEffect(() => {
     if (!reclamo || reclamo.estado !== "pendiente") return;
     let vivo = true;
-    const t = window.setInterval(async () => {
-      const r = await consultarReclamo(reclamo.id);
-      if (vivo && r.reclamo && r.reclamo.estado !== "pendiente") setReclamo(r.reclamo);
-    }, 4000);
+    let enCurso = false;
+    let fallos = 0;
+    const comprobar = async () => {
+      if (enCurso) return;
+      enCurso = true;
+      try {
+        const r = await esperarConTope(() => consultarReclamo(reclamo.id), 8000);
+        if (!vivo) return;
+        if (r.error) {
+          fallos += 1;
+          if (fallos >= 2) setErrorSondeo(r.error);
+          return;
+        }
+        fallos = 0;
+        setErrorSondeo(null);
+        if (r.reclamo && r.reclamo.estado !== "pendiente") setReclamo(r.reclamo);
+      } finally {
+        enCurso = false;
+      }
+    };
+    if (intento > 0) void comprobar();
+    const t = window.setInterval(comprobar, 4000);
     return () => {
       vivo = false;
       window.clearInterval(t);
     };
-  }, [reclamo]);
+  }, [reclamo, intento]);
 
   const registro = `/registro?${new URLSearchParams({ prospecto: slug, reclamo: reclamo?.id ?? "", utm_source: "herramientas", utm_medium: "directorio", utm_campaign: "reclamo" })}`;
 
@@ -67,6 +90,12 @@ export function Reclamar({ slug, nombre }: { slug: string; nombre: string }) {
             <span className="h-2 w-2 animate-pulse rounded-full bg-morado" aria-hidden /> Esperando tu mensaje…
           </span>
         </div>
+        {errorSondeo && (
+          <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl bg-coral-suave px-4 py-3 text-sm text-n-900" role="alert" data-error-sondeo>
+            <span>No pudimos comprobar si ya llegó tu mensaje. {errorSondeo}</span>
+            <Button type="button" variante="secundario" sinBloqueo onClick={() => { setErrorSondeo(null); setIntento((n) => n + 1); }}>Reintentar</Button>
+          </div>
+        )}
       </div>
     );
   }

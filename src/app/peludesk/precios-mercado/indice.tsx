@@ -10,6 +10,7 @@ import { Resultado } from "@/components/herramientas/resultado";
 import { Selector } from "@/components/herramientas/selector";
 import { registrarEventoCliente } from "@/lib/herramientas/cliente";
 import { herramientaPorClave } from "@/lib/herramientas/lista";
+import { esperarConTope } from "@/lib/ui/espera";
 import { GIROS_MERCADO, SERVICIO_PRINCIPAL, TALLAS, mesEnTexto, pesosMercado, posicionEnRango, servicioMercado, serviciosDeGiro, textoPosicion, TEXTO_MINIMO, type GiroMercado, type Rango, type Talla } from "@/lib/mercado/catalogo";
 import type { CiudadMercado } from "@/lib/mercado/ciudades";
 import { consultarRango, recibirPorWhatsApp } from "../herramientas/acciones";
@@ -38,6 +39,8 @@ export function IndicePrecios({ inicial, precioInicial }: { inicial: Inicial; pr
   const [frase, setFrase] = useState(inicial.frase);
   const [precioTexto, setPrecioTexto] = useState(precioInicial ? String(precioInicial) : "");
   const [pendiente, empezar] = useTransition();
+  const [errorRango, setErrorRango] = useState<string | null>(null);
+  const [intento, setIntento] = useState(0);
   const primera = useRef(true);
   const s = servicioMercado(servicio)!;
   const precio = Number(precioTexto.replace(/[^\d.]/g, "")) || null;
@@ -45,7 +48,8 @@ export function IndicePrecios({ inicial, precioInicial }: { inicial: Inicial; pr
   const calculadora = herramientaPorClave("costo-por-servicio");
   const listaPrecios = herramientaPorClave("lista-de-precios");
 
-  // Cada cambio de consulta: el rango nuevo del servidor y la dirección actualizada.
+  // Cada cambio de consulta: el rango nuevo del servidor y la dirección actualizada. Con tope: si el servidor no
+  // contesta, se queda el rango anterior, se dice y se ofrece reintentar.
   useEffect(() => {
     if (primera.current) {
       primera.current = false;
@@ -53,14 +57,19 @@ export function IndicePrecios({ inicial, precioInicial }: { inicial: Inicial; pr
     }
     const t = s.conTalla ? talla : null;
     empezar(async () => {
-      const r = await consultarRango({ giro, servicio, ciudad: ciudad?.slug ?? null, talla: t });
-      if (!r.error && r.rango) {
+      const r = await esperarConTope(() => consultarRango({ giro, servicio, ciudad: ciudad?.slug ?? null, talla: t }));
+      if (r.error) {
+        setErrorRango(r.error);
+        return;
+      }
+      setErrorRango(null);
+      if (r.rango) {
         setRango(r.rango);
         setFrase(r.frase ?? "");
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [giro, servicio, ciudad, talla]);
+  }, [giro, servicio, ciudad, talla, intento]);
 
   useEffect(() => {
     history.replaceState(null, "", ruta);
@@ -89,6 +98,12 @@ export function IndicePrecios({ inicial, precioInicial }: { inicial: Inicial; pr
 
       <section aria-live="polite" aria-busy={pendiente} className="hta-regla grid gap-10 py-12 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:gap-x-12" data-rango data-nivel={rango.nivel}>
         <div className={pendiente ? "opacity-60 transition-opacity" : "transition-opacity"}>
+          {errorRango && (
+            <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl bg-coral-suave px-4 py-3 text-sm text-n-900" role="alert" data-error-rango>
+              <span>No pudimos traer el rango de esta consulta. {errorRango}</span>
+              <button type="button" className="hta-boton-secundario min-h-11" onClick={() => setIntento((n) => n + 1)}>Reintentar</button>
+            </div>
+          )}
           {rango.nivel !== "sin_datos" && rango.p25 != null && rango.p75 != null ? (
             <Resultado
               etiqueta={`${s.nombre}${talla && s.conTalla ? ` · perro ${talla}` : ""} · ${rango.nivel === "ciudad" ? rango.lugar : rango.nivel === "estado" ? `estado de ${rango.lugar}` : "México"}`}
