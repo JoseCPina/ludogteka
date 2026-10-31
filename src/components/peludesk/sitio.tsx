@@ -21,6 +21,7 @@ const CLASE_PRUEBA =
 const ENLACES = [
   ["/veterinaria", "Veterinaria"],
   ["/precios", "Precios"],
+  ["/herramientas", "Herramientas"],
   ["/blog", "Blog"],
   ["/ayuda", "Ayuda"],
 ] as const;
@@ -89,6 +90,8 @@ export function PieSitio({ whatsapp = null }: { whatsapp?: string | null }) {
         <nav aria-label="Aprende" className="flex flex-col gap-2 text-sm font-semibold text-n-700">
           <p className="text-xs font-bold uppercase tracking-[0.1em] text-n-600">Aprende</p>
           <Link href="/blog" className={ENLACE_PIE}>Blog</Link>
+          <Link href="/herramientas" className={ENLACE_PIE}>Herramientas gratis</Link>
+          <Link href="/precios-mercado" className={ENLACE_PIE}>Índice de precios por ciudad</Link>
           <Link href="/veterinaria" className={ENLACE_PIE}>Software para clínicas veterinarias</Link>
           <Link href="/software-para-guarderias-caninas" className={ENLACE_PIE}>Software para guarderías</Link>
           <Link href="/software-para-esteticas-caninas" className={ENLACE_PIE}>Software para estéticas</Link>

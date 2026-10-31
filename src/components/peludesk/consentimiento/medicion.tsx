@@ -5,30 +5,35 @@ import { usePathname } from "next/navigation";
 import { Analytics } from "@vercel/analytics/next";
 import type { Consentimiento } from "@/lib/peludesk/cookies";
 import { activarPixel, desactivarPixel, enviarEventoPixel, pixelCargado, type EventoPixel } from "@/lib/peludesk/pixel-cliente";
+import { activarGoogleAds, desactivarGoogleAds } from "@/lib/peludesk/gads-cliente";
 
 /**
  * Lo único que mide peludesk.mx, y solo con permiso:
  *  · analítica (Vercel Web Analytics, sin cookies) si aceptó «Analítica»;
- *  · píxel de Meta si aceptó «Marketing» y hay píxel configurado.
+ *  · píxel de Meta si aceptó «Marketing» y hay píxel configurado;
+ *  · tag de Google Ads si aceptó «Marketing» y hay GOOGLE_ADS_ID (vacía hasta que exista la cuenta): recibe los
+ *    mismos eventos que el píxel.
  * Sin permiso este componente no carga nada y no pide nada a nadie.
  *
  * Los elementos con data-pixel-evento="Lead" (los botones del demo) mandan
  * ese evento al tocarlos.
  */
-export function Medicion({ consentimiento, pixelId }: { consentimiento: Consentimiento; pixelId: string | null }) {
+export function Medicion({ consentimiento, pixelId, googleAdsId = null }: { consentimiento: Consentimiento; pixelId: string | null; googleAdsId?: string | null }) {
   const pathname = usePathname();
-  const marketing = consentimiento.marketing && Boolean(pixelId);
+  const marketing = consentimiento.marketing && (Boolean(pixelId) || Boolean(googleAdsId));
   const visto = useRef<string | null>(null);
 
   useEffect(() => {
-    if (marketing && pixelId) {
+    if (consentimiento.marketing && googleAdsId) activarGoogleAds(googleAdsId);
+    else if (consentimiento.decidido) desactivarGoogleAds();
+    if (consentimiento.marketing && pixelId) {
       activarPixel(pixelId);
       visto.current = pathname;
     } else if (consentimiento.decidido) {
       desactivarPixel();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [marketing, pixelId, consentimiento.decidido]);
+  }, [marketing, pixelId, googleAdsId, consentimiento.decidido]);
 
   // Otra página dentro del sitio (sin recargar): otra vista.
   useEffect(() => {

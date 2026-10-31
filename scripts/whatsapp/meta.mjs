@@ -16,6 +16,9 @@
 //   plantillas           crea la plantilla de seguimiento (reabre la ventana de 24 h)
 //   plantilla-carnet-retirar [borrar]   quita la v1 de Meta cuando la v2 ya es UTILITY aprobada
 //   plantillas-recordatorios [enviar]   las 5 de los recordatorios automáticos (src/lib/recordatorios/plantillas.json)
+//   plantilla-herramientas [enviar]
+//                        la plantilla con la que el bot entrega el resultado de una herramienta pública
+//                        (src/lib/herramientas/plantilla.json)
 //   plantilla-carnet [enviar]
 //   plantilla-teleconsulta [enviar]
 //                        la plantilla del recordatorio de próxima dosis del carnet (Veterinaria)
@@ -261,6 +264,31 @@ const pasos = {
       } catch (e) {
         console.log(`${tipo} ${p.nombre}: ✘ ${e.message}`);
       }
+    }
+  },
+
+  // La plantilla con la que el bot entrega el resultado de una herramienta pública de peludesk.mx a quien dejó su
+  // WhatsApp (src/lib/herramientas/plantilla.json): UTILITY, es_MX, tres variables (nombre, resumen, link) y el pie
+  // de baja. Sin «enviar» solo dice su estado.
+  async "plantilla-herramientas"(modo) {
+    const waba = requerir("PELUDESK_WABA_ID");
+    const p = JSON.parse(readFileSync(new URL("../../src/lib/herramientas/plantilla.json", import.meta.url), "utf8"));
+    const ya = await graph(`/${waba}/message_templates?name=${p.nombre}&fields=name,status,category,language,rejected_reason&limit=10`);
+    const en = (ya.data ?? []).find((x) => x.name === p.nombre && x.language === p.idioma);
+    if (en) {
+      console.log(`${p.nombre}: ${en.status} (${en.category})${en.rejected_reason && en.rejected_reason !== "NONE" ? ` · motivo: ${en.rejected_reason}` : ""}`);
+      return;
+    }
+    if (modo !== "enviar") return console.log(`${p.nombre}: no existe en Meta (usa «enviar»)`);
+    const components = [
+      { type: "BODY", text: p.cuerpo, example: { body_text: [p.ejemplo] } },
+      { type: "FOOTER", text: p.pie },
+    ];
+    try {
+      const r = await graph(`/${waba}/message_templates`, { method: "POST", body: { name: p.nombre, language: p.idioma, category: "UTILITY", components } });
+      console.log(`${p.nombre}: enviada a revisión → ${r.status ?? "?"} (${r.category ?? "?"})`);
+    } catch (e) {
+      console.log(`${p.nombre}: ✘ ${e.message}`);
     }
   },
 

@@ -28,7 +28,8 @@ export function telefonoParaMeta(telefono: string): string {
 }
 
 export type EventoConversion = {
-  nombre: "CompleteRegistration";
+  /** CompleteRegistration: abrió su negocio de prueba. Lead: dejó su WhatsApp en una herramienta pública. */
+  nombre: "CompleteRegistration" | "Lead";
   eventId: string;
   url: string;
   ip: string | null;

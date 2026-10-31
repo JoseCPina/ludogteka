@@ -11,6 +11,7 @@ import { ETAPAS, GIROS, textoEtapa, textoGiro } from "@/lib/prospectos/textos";
 import { agregarProspecto, buscarAhora, guardarAjustes, sincronizarMetaAhora } from "./acciones";
 import { type FilaFlow, PanelFormularioWhatsApp } from "./formulario-whatsapp";
 import { EmbudoVentas, type FilaEmbudo } from "./embudo-ventas";
+import { PanelHerramientas, type FilaHerramienta } from "./herramientas";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
 export const maxDuration = 300;
@@ -32,6 +33,7 @@ const coincidencias = (a: AudienciaMeta) =>
   a.coincidencias_min == null && a.coincidencias_max == null ? "Meta aún no lo reporta" : a.coincidencias_min === a.coincidencias_max || a.coincidencias_max == null ? Number(a.coincidencias_min).toLocaleString("es-MX") : `${Number(a.coincidencias_min ?? 0).toLocaleString("es-MX")} a ${Number(a.coincidencias_max).toLocaleString("es-MX")}`;
 
 const ESTADO_CORRIDA: Record<string, string> = { corriendo: "Corriendo", terminada: "Terminada", fallida: "Falló", sin_llave: "Sin llave de Google", pausada: "En pausa" };
+const hace90Dias = () => new Date(Date.now() - 90 * 86_400_000).toISOString();
 
 // CRM de prospectos de PeluDesk (etapa 1 del embudo): lo que encuentra la búsqueda diaria en Google Maps y lo
 // capturado a mano. Solo la administración de PeluDesk; ningún negocio ve nada de esto.
@@ -57,6 +59,8 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
     // limite-filas-ok: agregado en la base (giro × fuente: menos de 25 filas)
     supabase.rpc("wa_ventas_embudo", { p_desde: null }),
   ]);
+  // limite-filas-ok: agregado en la base (herramienta × fuente), últimos 90 días
+  const herramientas = await supabase.rpc("herramientas_resumen", { p_desde: hace90Dias() });
   const audiencias = (audMeta ?? []) as AudienciaMeta[];
   const corridasMeta = (corMeta ?? []) as CorridaMeta[];
   const campanas = (campMeta ?? []) as CampanaMeta[];
@@ -106,6 +110,8 @@ export default async function Prospectos({ searchParams }: { searchParams: Promi
       </section>
 
       <EmbudoVentas filas={(embudo.data ?? []) as FilaEmbudo[]} error={embudo.error?.message ?? null} />
+
+      <PanelHerramientas filas={(herramientas.data ?? []) as FilaHerramienta[]} error={herramientas.error?.message ?? null} />
 
       <PanelFormularioWhatsApp filas={(flowWa.data ?? []) as FilaFlow[]} error={flowWa.error?.message ?? null} />
 

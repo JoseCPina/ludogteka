@@ -21,10 +21,12 @@ export default async function PeluDeskLayout({ children }: { children: React.Rea
   const inicial = leerConsentimiento(jar.get(COOKIE_CONSENTIMIENTO)?.value);
   const whatsapp = await whatsappPeluDesk("Hola, quiero saber más de PeluDesk.");
   const pixelId = process.env.PELUDESK_META_PIXEL_ID?.trim() || null;
+  // GOOGLE_ADS_ID (AW-…): vacía hasta que exista la cuenta; el hueco del tag ya está listo (gads-cliente.ts).
+  const googleAdsId = process.env.GOOGLE_ADS_ID?.trim() || null;
   return (
     <>
       {/* Antes que el resto, para que el teclado llegue primero al aviso. */}
-      <ConsentimientoCookies inicial={inicial} pixelId={pixelId} />
+      <ConsentimientoCookies inicial={inicial} pixelId={pixelId} googleAdsId={googleAdsId} />
       {children}
       {whatsapp && <BotonWhatsApp href={whatsapp} />}
     </>

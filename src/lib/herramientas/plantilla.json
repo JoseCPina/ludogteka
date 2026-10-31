@@ -1,0 +1,8 @@
+{
+  "_nota": "La plantilla con la que el bot de PeluDesk entrega el resultado de una herramienta pública a quien dejó su teléfono (UTILITY, es_MX). Fuente única: la manda a Meta node scripts/whatsapp/meta.mjs plantilla-herramientas enviar y la usa src/lib/herramientas/entregar.ts. Cambiar el texto es una plantilla nueva (_v2).",
+  "idioma": "es_MX",
+  "nombre": "peludesk_herramienta_v1",
+  "cuerpo": "Hola {{1}}, aquí está lo que pediste en peludesk.mx: {{2}} Lo ves completo aquí: {{3}}",
+  "ejemplo": ["Ana", "Baño completo de perro mediano en San Luis Potosí: la mitad de las estéticas cobra entre $280 y $380 (mediana $320, 24 precios de octubre de 2026).", "https://peludesk.mx/precios-mercado?giro=estetica&servicio=bano&ciudad=San+Luis+Potosi"],
+  "pie": "Para no recibir más mensajes, responde BAJA."
+}

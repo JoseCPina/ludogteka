@@ -11,8 +11,21 @@ import { REVISADO_ALTERNATIVAS } from "@/lib/peludesk/guias";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { DOCUMENTOS_LEGALES } from "@/lib/peludesk/legal";
 import { SITIO } from "@/lib/peludesk/seo";
+import { GIROS_MERCADO, slugDe } from "@/lib/mercado/catalogo";
+import { ciudadesConDatos } from "@/lib/mercado/rangos";
 
 const fechaIso = (v: string) => new Date(`${v}T12:00:00Z`);
+
+// Las páginas por ciudad y giro del Índice de precios: solo las ciudades que juntan 8 precios o más.
+async function paginasPorCiudad(): Promise<MetadataRoute.Sitemap> {
+  const salida: MetadataRoute.Sitemap = [];
+  for (const g of GIROS_MERCADO) {
+    for (const c of await ciudadesConDatos(g.clave)) {
+      salida.push({ url: `${SITIO}/precios-mercado/${g.clave}/${slugDe(c.ciudad)}`, lastModified: fechaIso(c.fecha), changeFrequency: "monthly", priority: 0.7 });
+    }
+  }
+  return salida;
+}
 
 // peludesk.mx: solo páginas públicas e indexables (nada de /plataforma,
 // /demo, /peludesk/redes ni /api). Una sola versión del host, el canónico.
@@ -33,6 +46,7 @@ async function sitemapPlataforma(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: "monthly" as const,
         priority: p.ruta === "/precios" || p.tipo === "giro" ? 0.9 : 0.8,
       })),
+    ...(await paginasPorCiudad()),
     { url: `${SITIO}/blog`, lastModified: ultimaEntrada ? fechaIso(ultimaEntrada) : undefined, changeFrequency: "weekly", priority: 0.7 },
     ...Array.from({ length: Math.max(0, paginas - 1) }, (_, i) => ({ url: `${SITIO}/blog/pagina/${i + 2}`, changeFrequency: "weekly" as const, priority: 0.4 })),
     ...categoriasUsadas.map((c) => ({ url: `${SITIO}/blog/categoria/${c}`, changeFrequency: "weekly" as const, priority: 0.5 })),
