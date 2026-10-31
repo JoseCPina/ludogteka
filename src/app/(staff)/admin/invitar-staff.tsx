@@ -104,10 +104,9 @@ export function InvitarStaff() {
             Cópialo ahora — este link no se vuelve a mostrar
           </p>
           <p className="mb-3 text-sm text-n-700">
-            Pásaselo a {etiquetaDeCuenta(resultado.email)} para que entre y elija su contraseña. Si cierras esta
-            pantalla sin copiarlo, no hay forma de recuperarlo: la única salida es invitar nuevamente
-            (y esa vez el correo ya estará registrado, así que tampoco funcionará). Cópialo antes de
-            seguir.
+            Pásaselo a {etiquetaDeCuenta(resultado.email)} para que entre y elija su contraseña. La app no manda
+            correos: el link solo se ve aquí. Si se pierde, en Cuentas aprieta «Restablecer contraseña» de esa
+            persona y te damos una contraseña temporal que ya sirve para entrar.
           </p>
           <CampoCopiable valor={resultado.inviteLink ?? ""} textoBoton="Copiar link" />
         </div>

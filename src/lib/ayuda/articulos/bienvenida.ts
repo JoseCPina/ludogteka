@@ -34,7 +34,7 @@ export const ARTICULOS_BIENVENIDA: Articulo[] = [
 
 En [Tu equipo](/bienvenida/equipo) escribe el **Nombre completo** y escoge:
 
-- **Invitar con cuenta**: escribe su **Correo** y aprieta **Invitar**. Sale el **Link de invitación (mándaselo)** para que cree su contraseña.
+- **Invitar con cuenta**: escribe su **Correo** y aprieta **Invitar**. La app no manda correos: te damos el **Link de invitación** para mandárselo, con **Copiar** y **Mandar por WhatsApp** (a su teléfono si lo capturaste; si no, escoges el chat). Con él crea su contraseña.
 - **Solo en nómina**: para quien no usa la app (limpieza, chofer). Aprieta **Dar de alta en nómina**.
 
 En **Horario y forma de pago (opcional)** puedes dejar capturados sus días y horas y cuánto se le paga; si no, lo haces después en su ficha de Empleados.
