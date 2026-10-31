@@ -16,6 +16,7 @@ const SECCIONES = [
   { href: "/plataforma/dictado", texto: "Dictado por voz" },
   { href: "/plataforma/almacenamiento", texto: "Fotos y videos" },
   { href: "/plataforma/whatsapp", texto: "WhatsApp" },
+  { href: "/plataforma/plantillas-whatsapp", texto: "Plantillas de WhatsApp" },
   { href: "/plataforma/seguimiento", texto: "Seguimiento de pruebas" },
   { href: "/plataforma/recordatorios", texto: "Recordatorios de WhatsApp" },
   { href: "/plataforma/redes", texto: "Redes" },

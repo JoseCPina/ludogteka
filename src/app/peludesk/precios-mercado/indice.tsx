@@ -10,7 +10,7 @@ import { Resultado } from "@/components/herramientas/resultado";
 import { Selector } from "@/components/herramientas/selector";
 import { registrarEventoCliente } from "@/lib/herramientas/cliente";
 import { herramientaPorClave } from "@/lib/herramientas/lista";
-import { GIROS_MERCADO, SERVICIO_PRINCIPAL, TALLAS, mesEnTexto, pesosMercado, posicionEnRango, servicioMercado, serviciosDeGiro, textoPosicion, type GiroMercado, type Rango, type Talla } from "@/lib/mercado/catalogo";
+import { GIROS_MERCADO, SERVICIO_PRINCIPAL, TALLAS, mesEnTexto, pesosMercado, posicionEnRango, servicioMercado, serviciosDeGiro, textoPosicion, TEXTO_MINIMO, type GiroMercado, type Rango, type Talla } from "@/lib/mercado/catalogo";
 import type { CiudadMercado } from "@/lib/mercado/ciudades";
 import { consultarRango, recibirPorWhatsApp } from "../herramientas/acciones";
 
@@ -97,7 +97,7 @@ export function IndicePrecios({ inicial, precioInicial }: { inicial: Inicial; pr
               nota={
                 <>
                   Ahí cobra la mitad de los negocios. Mediana {pesosMercado(rango.mediana!)}. {rango.muestras} precios{mes ? `, actualizado en ${mes}` : ""}.
-                  {rango.nivel !== "ciudad" && ciudad ? ` ${ciudad.nombre} todavía no junta 8 precios de este servicio: se muestra el rango ${rango.nivel === "estado" ? "del estado" : "del país"}.` : ""}
+                  {rango.nivel !== "ciudad" && ciudad ? ` ${ciudad.nombre} todavía no junta ${TEXTO_MINIMO} de este servicio: se muestra el rango ${rango.nivel === "estado" ? "del estado" : "del país"}.` : ""}
                 </>
               }
             >
@@ -106,7 +106,7 @@ export function IndicePrecios({ inicial, precioInicial }: { inicial: Inicial; pr
               </div>
             </Resultado>
           ) : (
-            <Resultado etiqueta={`${s.nombre}${ciudad ? ` · ${ciudad.nombre}` : ""}`} valor="Sin datos todavía" nota="Todavía no juntamos 8 precios de este servicio ni en la ciudad, ni en el estado, ni en el país. El índice crece cada mes; si nos dejas tu WhatsApp te avisamos cuando haya rango." />
+            <Resultado etiqueta={`${s.nombre}${ciudad ? ` · ${ciudad.nombre}` : ""}`} valor="Sin datos todavía" nota={`Todavía no juntamos ${TEXTO_MINIMO} de este servicio ni en la ciudad, ni en el estado, ni en el país. El índice crece cada mes; si nos dejas tu WhatsApp te avisamos cuando haya rango.`} />
           )}
         </div>
 

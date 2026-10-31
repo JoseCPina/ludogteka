@@ -14,7 +14,7 @@ import { SITIO } from "@/lib/peludesk/seo";
  * sin pasar por captura.ts.
  */
 export async function consultarRango(p: { giro: string; servicio: string; ciudad: string | null; talla: string | null }): Promise<{ error: string | null; rango?: Rango; frase?: string }> {
-  const c = leerConsulta(p);
+  const c = await leerConsulta(p);
   if (!c) return { error: "Escoge un giro y un servicio." };
   const rango = await rangoDe(c);
   return { error: null, rango, frase: fraseDeRango(c, rango, pesosMercado, mesEnTexto(rango.fecha)) };

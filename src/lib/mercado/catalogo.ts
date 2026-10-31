@@ -56,6 +56,15 @@ export const giroMercado = (clave: GiroMercado) => GIROS_MERCADO.find((g) => g.c
 /** El servicio principal de cada giro: el que abre la herramienta y el de las páginas por ciudad. */
 export const SERVICIO_PRINCIPAL: Record<GiroMercado, string> = { estetica: "bano", hotel: "noche_hotel", guarderia: "dia_guarderia", veterinaria: "consulta" };
 
+/**
+ * Lo que una ciudad necesita para tener rango y página propios: 8 precios o más Y 3 negocios distintos o más (los
+ * mismos mínimos valen para el estado y el país). Los exige la base (precios_mercado_rangos, precios_mercado_ciudades);
+ * aquí viven para los textos que lo explican.
+ */
+export const MINIMO_MUESTRAS = 8;
+export const MINIMO_NEGOCIOS = 3;
+export const TEXTO_MINIMO = `${MINIMO_MUESTRAS} precios de ${MINIMO_NEGOCIOS} negocios distintos`;
+
 /** Un precio creíble para ese servicio (lo demás entra como no válido). */
 export function precioCreible(clave: string, precio: number): boolean {
   const s = servicioMercado(clave);
@@ -91,6 +100,8 @@ export type Rango = {
   minimo?: number;
   maximo?: number;
   muestras: number;
+  /** Negocios distintos detrás de las muestras (3 o más para que el nivel valga). */
+  negocios?: number;
   fecha?: string | null;
 };
 

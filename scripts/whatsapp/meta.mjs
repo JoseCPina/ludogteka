@@ -39,6 +39,11 @@
 //   WHATSAPP_PIN          PIN de verificación en dos pasos (6 dígitos) para registrar
 //
 // En la nube: NODE_USE_ENV_PROXY=1 y graph.facebook.com en los dominios permitidos.
+//
+// OJO: WHATSAPP_TOKEN y las demás son «Sensitive» en Vercel y no se pueden bajar a la computadora. El estado de TODAS
+// las plantillas y «Mandar a aprobar» viven en /plataforma/plantillas-whatsapp (src/lib/whatsapp/plantillas.ts, el
+// catálogo único), y la tarea diaria /api/cron/plantillas-whatsapp manda sola las que falten. Este script queda para
+// el alta del número y para quien tenga un token en su shell.
 import { createHmac } from "node:crypto";
 import { readFileSync } from "node:fs";
 

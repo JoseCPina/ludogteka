@@ -19,7 +19,7 @@ import { SESIONES } from "@/lib/escuela/sesiones";
 
 const fechaIso = (v: string) => new Date(`${v}T12:00:00Z`);
 
-// Las páginas por ciudad y giro del Índice de precios: solo las ciudades que juntan 8 precios o más.
+// Las páginas por ciudad y giro del Índice de precios: solo las ciudades que juntan 8 precios o más de 3 negocios distintos (lo decide precios_mercado_ciudades).
 async function paginasPorCiudad(): Promise<MetadataRoute.Sitemap> {
   const salida: MetadataRoute.Sitemap = [];
   for (const g of GIROS_MERCADO) {

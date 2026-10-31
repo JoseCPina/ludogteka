@@ -133,7 +133,7 @@ export default async function MercadoPlataforma() {
 
       <section className="rounded-lg border border-n-200 bg-white p-5">
         <h2 className="text-lg font-bold text-n-900">Ciudades con página propia</h2>
-        <p className="mt-1 text-sm text-n-600">Las que juntan 8 precios o más del giro; cada una tiene su página indexable en /precios-mercado/&lt;giro&gt;/&lt;ciudad&gt;.</p>
+        <p className="mt-1 text-sm text-n-600">Las que juntan 8 precios o más del giro de 3 negocios distintos o más; cada una tiene su página indexable en /precios-mercado/&lt;giro&gt;/&lt;ciudad&gt;.</p>
         <div className="mt-3 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {conPagina.map((g) => (
             <div key={g.giro.clave}>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { MarcoHerramienta } from "@/components/herramientas/marco";
 import { herramientaPorClave } from "@/lib/herramientas/lista";
-import { GIROS_MERCADO, SERVICIO_PRINCIPAL, SERVICIOS_MERCADO, esGiroMercado, mesEnTexto, pesosMercado, slugDe, type GiroMercado } from "@/lib/mercado/catalogo";
+import { GIROS_MERCADO, SERVICIO_PRINCIPAL, SERVICIOS_MERCADO, esGiroMercado, mesEnTexto, pesosMercado, slugDe, TEXTO_MINIMO, type GiroMercado } from "@/lib/mercado/catalogo";
 import { ciudadesConDatos, fraseDeRango, leerConsulta, rangoDe } from "@/lib/mercado/rangos";
 import { JsonLd, ORGANIZACION, SITIO, metaPagina, migas, preguntasFrecuentes } from "@/lib/peludesk/seo";
 import { IndicePrecios } from "./indice";
@@ -20,7 +20,7 @@ const h = herramientaPorClave("precios-mercado")!;
 const PREGUNTAS: [string, string][] = [
   ["¿De dónde salen los precios?", "De precios públicos: los sitios web de los negocios, lo que dicen las reseñas de Google, lo que capturan quienes usan esta herramienta y las tarifas de negocios de PeluDesk que lo autorizan, siempre como promedio. No se publica el precio de ningún negocio en particular."],
   ["¿Qué significa el rango?", "La mitad de los negocios de esa ciudad cobra entre el precio del 25 % y el del 75 %. La mediana es el precio de en medio: la mitad cobra menos y la mitad cobra más."],
-  ["¿Por qué mi ciudad muestra el rango del estado o del país?", "Una ciudad necesita al menos 8 precios de ese servicio para tener rango propio. Mientras no los junte, se muestra el del estado y, si tampoco alcanza, el de México. El índice crece cada mes."],
+  ["¿Por qué mi ciudad muestra el rango del estado o del país?", `Una ciudad necesita ${TEXTO_MINIMO} de ese servicio para tener rango propio: así el rango nunca es el de un solo negocio. Mientras no los junte, se muestra el del estado y, si tampoco alcanza, el de México, y la pantalla lo dice. El índice crece cada mes.`],
   ["¿Mi precio se guarda cuando lo escribo?", "No. «¿Cuánto cobras tú?» solo ubica tu precio en la barra, en tu navegador. Solo si pides recibirlo por WhatsApp se guarda, ligado a tu teléfono, para mandártelo y precargarlo si abres tu cuenta."],
   ["¿Cada cuánto se actualiza?", "Cada mes. Si dejas tu WhatsApp, el día 1 te llega el rango actualizado de tu servicio y tu ciudad."],
 ];
@@ -28,7 +28,7 @@ const PREGUNTAS: [string, string][] = [
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const sp = await searchParams;
   const uno = (k: string) => (Array.isArray(sp[k]) ? sp[k]![0] : sp[k]) ?? null;
-  const c = leerConsulta({ giro: uno("giro"), servicio: uno("servicio"), ciudad: uno("ciudad"), talla: uno("talla") });
+  const c = await leerConsulta({ giro: uno("giro"), servicio: uno("servicio"), ciudad: uno("ciudad"), talla: uno("talla") });
   const giro = c ? GIROS_MERCADO.find((g) => g.clave === c.giro)! : null;
   const servicio = c ? SERVICIOS_MERCADO.find((s) => s.clave === c.servicio)! : null;
   const titulo = c && servicio ? `Cuánto cobra ${giro!.articulo} por ${servicio.nombre.toLowerCase()}${c.ciudad ? ` en ${c.ciudad.nombre}` : " en México"} | Índice PeluDesk` : "Índice PeluDesk de precios: cuánto cobran estéticas, hoteles, guarderías y veterinarias";
@@ -45,7 +45,7 @@ export default async function PreciosMercado({ searchParams }: Props) {
   const uno = (k: string) => (Array.isArray(sp[k]) ? sp[k]![0] : sp[k]) ?? null;
   const giroPedido = uno("giro");
   const giro: GiroMercado = esGiroMercado(giroPedido) ? giroPedido : "estetica";
-  const c = leerConsulta({ giro, servicio: uno("servicio") ?? SERVICIO_PRINCIPAL[giro], ciudad: uno("ciudad"), talla: uno("talla") }) ?? leerConsulta({ giro, servicio: SERVICIO_PRINCIPAL[giro], ciudad: uno("ciudad"), talla: null })!;
+  const c = (await leerConsulta({ giro, servicio: uno("servicio") ?? SERVICIO_PRINCIPAL[giro], ciudad: uno("ciudad"), talla: uno("talla") })) ?? (await leerConsulta({ giro, servicio: SERVICIO_PRINCIPAL[giro], ciudad: uno("ciudad"), talla: null }))!;
   const [rango, ciudades] = await Promise.all([rangoDe(c), Promise.all(GIROS_MERCADO.map(async (g) => ({ giro: g.clave, lista: (await ciudadesConDatos(g.clave)).slice(0, 12) })))]);
   const frase = fraseDeRango(c, rango, pesosMercado, mesEnTexto(rango.fecha));
   const precio = Number(uno("precio")) || null;
@@ -91,7 +91,7 @@ export default async function PreciosMercado({ searchParams }: Props) {
         <section className="mx-auto max-w-6xl px-4 pb-6 sm:px-6">
           <div className="hta-regla pt-10">
             <h2 className="text-2xl font-bold tracking-tight text-n-900">Precios por ciudad</h2>
-            <p className="mt-2 max-w-[60ch] text-n-700">Las ciudades que ya juntan 8 precios o más tienen su página, con todos los servicios del giro.</p>
+            <p className="mt-2 max-w-[60ch] text-n-700">Las ciudades que ya juntan {TEXTO_MINIMO} tienen su página, con todos los servicios del giro.</p>
             <div className="mt-6 grid gap-8 md:grid-cols-2 lg:grid-cols-4">
               {conPaginas.map((x) => (
                 <div key={x.giro}>
