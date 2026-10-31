@@ -46,7 +46,17 @@ export function RestablecerPasswordPersonal({ empleadoId, profileId, nombre, com
             </Alert>
           )}
 
-          {resultado?.password ? (
+          {resultado?.inviteLink ? (
+            <div data-invitacion-reenviada className="flex flex-col gap-3 rounded-lg border-[1.5px] border-menta bg-menta-suave p-4">
+              <p className="font-bold text-menta-oscuro">Invitación reenviada</p>
+              <p className="text-sm text-menta-oscuro">
+                {nombre} todavía no abría su invitación, así que no se le puso contraseña: mándale este link nuevo para que
+                cree la suya (el anterior ya no sirve).
+              </p>
+              <CampoCopiable valor={resultado.inviteLink} textoBoton="Copiar" />
+              {resultado.urlWhatsApp && <AbrirWhatsApp href={resultado.urlWhatsApp} texto="Mandar por WhatsApp" variante="secundario" />}
+            </div>
+          ) : resultado?.password ? (
             <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-menta bg-menta-suave p-4">
               <p className="font-bold text-menta-oscuro">Contraseña temporal</p>
               <CampoCopiable valor={resultado.password} monoespaciado textoCopiado="Copiada" />

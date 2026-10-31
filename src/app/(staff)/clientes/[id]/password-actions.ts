@@ -1,11 +1,11 @@
 "use server";
 
+import { ponerPasswordTemporal } from "@/lib/auth/password-temporal";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { generarPasswordTemporal } from "@/lib/auth/identidad";
 import { traducirError } from "../../reservas/traducir-error";
 import { negocioActual } from "@/lib/negocio/actual";
-import { MARCA_CAMBIO_PASSWORD } from "@/lib/auth/cambio-obligatorio";
 
 export type EstadoRestablecer = {
   error: string | null;
@@ -54,12 +54,10 @@ export async function restablecerPasswordCliente(
   const negocio = await negocioActual();
   const admin = createSupabaseAdminClient(negocio.id);
   // Temporal de verdad (R35): la cuenta queda marcada y al entrar al portal se le pide escoger otra.
-  const { error: errorAuth } = await admin.auth.admin.updateUserById(userId as string, {
-    password,
-    app_metadata: { [MARCA_CAMBIO_PASSWORD]: true },
-  });
-  if (errorAuth) {
-    return { error: "No pudimos cambiar la contraseña. Intenta de nuevo." };
+  // Nunca queda una contraseña que no sirve: una cuenta sin confirmar se confirma en este momento (ponerPasswordTemporal).
+  const puesta = await ponerPasswordTemporal(admin, userId as string, password);
+  if (!puesta.ok) {
+    return { error: puesta.sinConfirmar ? "Su cuenta todavía no está activa y no pudimos activarla: mándale otra vez su link para completar el alta." : puesta.error };
   }
 
   const nombre = (cliente?.nombre as string | null) ?? "";

@@ -9,7 +9,15 @@ import { Select } from "@/components/ui/select";
 import { Alert } from "@/components/ui/alert";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { CampoCopiable } from "@/components/ui/campo-copiable";
+import { AbrirWhatsApp } from "@/components/ui/abrir-whatsapp";
+import { useAbrirEnlace } from "@/hooks/use-abrir-enlace";
 import { altaEquipo, type DiaHorario, type EsquemaSimple } from "../acciones";
+
+/** El mensaje de WhatsApp con el link de invitación: a su teléfono si se capturó; si no, WhatsApp deja escoger. */
+function urlWhatsAppInvitacion(d: { link: string; nombre: string; telefono: string }): string {
+  const texto = `Hola ${d.nombre}, te invitamos a usar la app del negocio. Abre este link para crear tu contraseña: ${d.link}`;
+  return d.telefono.length === 10 ? `https://wa.me/52${d.telefono}?text=${encodeURIComponent(texto)}` : `https://wa.me/?text=${encodeURIComponent(texto)}`;
+}
 
 const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
@@ -32,7 +40,11 @@ export function FormularioEquipo({ conEmpleados, conEstetica, conVet }: { conEmp
   const [esquema, setEsquema] = useState<EsquemaSimple>({ tipo: "ninguno", monto: null, periodicidad: "quincenal" });
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
-  const [link, setLink] = useState<string | null>(null);
+  // QA: el link de invitación con el nombre y el teléfono de quien se invitó (el formulario ya se limpió).
+  const [invitado, setInvitado] = useState<{ link: string; nombre: string; telefono: string } | null>(null);
+  // Lo que falta se dice solo después de intentar guardar (no en un formulario vacío ni recién limpiado).
+  const [intentado, setIntentado] = useState(false);
+  const wa = useAbrirEnlace();
 
   const faltan: string[] = [];
   if (nombre.trim().length < 2) faltan.push("el nombre");
@@ -47,12 +59,14 @@ export function FormularioEquipo({ conEmpleados, conEstetica, conVet }: { conEmp
     e.preventDefault();
     setError(null);
     setExito(null);
-    setLink(null);
+    setInvitado(null);
+    wa.olvidar();
+    setIntentado(true);
     if (faltan.length) return setError(`Falta ${faltan.join(", ")}.`);
     const r = await envio.ejecutar(() =>
       altaEquipo({ modo, nombre, puesto, correo, rol, telefono, esMedico: modo === "cuenta" && esMedico, cedula, horario, esquema })
     );
-    if (r.inviteLink) setLink(r.inviteLink);
+    if (r.inviteLink) setInvitado({ link: r.inviteLink, nombre: nombre.trim(), telefono: telefono.replace(/[^0-9]/g, "").slice(-10) });
     if (r.error) return setError(r.error);
     setExito(r.exito ?? "Listo.");
     setNombre("");
@@ -61,6 +75,7 @@ export function FormularioEquipo({ conEmpleados, conEstetica, conVet }: { conEmp
     setTelefono("");
     setEsMedico(false);
     setCedula("");
+    setIntentado(false);
     router.refresh();
   }
 
@@ -72,7 +87,7 @@ export function FormularioEquipo({ conEmpleados, conEstetica, conVet }: { conEmp
         <label className="flex items-start gap-2 text-n-900">
           <input type="radio" name="modo" checked={modo === "cuenta"} onChange={() => setModo("cuenta")} className="mt-1" />
           <span>
-            <strong>Invitar con cuenta</strong> — le llega un link a su correo para crear su contraseña. Puede atender citas y entrar a la app.
+            <strong>Invitar con cuenta</strong>: te damos un link para mandárselo. Con él crea su contraseña; puede atender citas y entrar a la app.
           </span>
         </label>
         {conEmpleados && (
@@ -101,6 +116,7 @@ export function FormularioEquipo({ conEmpleados, conEstetica, conVet }: { conEmp
               {(conEstetica || conVet) && <option value="estetica">{conVet && !conEstetica ? "Atiende consultas (sin caja)" : "Estética: atiende citas"}</option>}
               <option value="recepcion">Recepción: agenda, reservas y caja</option>
             </Select>
+            <Field label="Teléfono (opcional)" type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} ayuda="Para mandarle el link de invitación por WhatsApp." />
           </>
         ) : (
           <Field label="Teléfono (opcional)" type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
@@ -163,12 +179,21 @@ export function FormularioEquipo({ conEmpleados, conEstetica, conVet }: { conEmp
         )}
       </details>
 
-      {link && <CampoCopiable etiqueta="Link de invitación (mándaselo)" valor={link} />}
+      {invitado && (
+        <div data-link-invitacion className="flex flex-col gap-2 rounded-md border border-n-200 bg-n-50 p-3">
+          <CampoCopiable etiqueta={`Link de invitación de ${invitado.nombre} (mándaselo)`} valor={invitado.link} textoBoton="Copiar" />
+          <Button type="button" variante="secundario" sinBloqueo className="self-start" data-mandar-invitacion onClick={() => wa.abrir(urlWhatsAppInvitacion(invitado))}>
+            Mandar por WhatsApp
+          </Button>
+          {!invitado.telefono && <p className="text-sm text-n-600">No capturaste su teléfono: WhatsApp te deja escoger a quién mandárselo.</p>}
+          {wa.enlace?.bloqueado && <AbrirWhatsApp href={wa.enlace.url} bloqueado />}
+        </div>
+      )}
       <AccionesFormulario error={error} exito={exito}>
         <Button type="submit" cargando={envio.cargando}>
           {modo === "cuenta" ? "Invitar" : "Dar de alta en nómina"}
         </Button>
-        {faltan.length > 0 && <span className="text-sm text-n-600" data-falta-equipo>Falta {faltan.join(", ")}.</span>}
+        {intentado && faltan.length > 0 && <span className="text-sm text-n-600" data-falta-equipo>Falta {faltan.join(", ")}.</span>}
       </AccionesFormulario>
     </form>
   );

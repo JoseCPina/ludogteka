@@ -5,9 +5,12 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { generarPasswordTemporal } from "@/lib/auth/identidad";
 import { traducirError } from "../../reservas/traducir-error";
 import { negocioActual } from "@/lib/negocio/actual";
-import { MARCA_CAMBIO_PASSWORD } from "@/lib/auth/cambio-obligatorio";
+import { ponerPasswordTemporal } from "@/lib/auth/password-temporal";
+import { urlDelNegocio } from "@/lib/negocio/actual";
 
-export type EstadoRestablecerPersonal = { error: string | null; password?: string; urlWhatsApp?: string };
+// `inviteLink`: la cuenta (invitada, sin abrir su link) no se pudo confirmar; en vez de una contraseña que no serviría
+// se generó una invitación nueva («Reenviar invitación»).
+export type EstadoRestablecerPersonal = { error: string | null; password?: string; urlWhatsApp?: string; inviteLink?: string };
 
 /**
  * QA S36: un admin le restablece la contraseña a alguien de su equipo (es lo que el login le dice a quien la olvidó en
@@ -38,13 +41,13 @@ async function ponerTemporal(userId: string, nombre: string, telefonoCrudo: stri
   const negocio = await negocioActual();
   const admin = createSupabaseAdminClient(negocio.id);
   // Temporal de verdad: al entrar se le pide escoger otra (/auth/nueva-password).
-  const { data: cuenta, error: errorAuth } = await admin.auth.admin.updateUserById(userId, {
-    password,
-    app_metadata: { [MARCA_CAMBIO_PASSWORD]: true },
-  });
-  if (errorAuth) return { error: "No pudimos cambiar la contraseña. Intenta de nuevo." };
+  // Nunca queda una contraseña que no sirve: alguien invitado que no abrió su link se confirma en este momento (el
+  // admin responde por esa persona); si no se puede, se reenvía la invitación con un link nuevo.
+  const puesta = await ponerPasswordTemporal(admin, userId, password);
+  if (!puesta.ok && puesta.sinConfirmar) return reenviarInvitacion(admin, userId, nombre, telefonoCrudo, negocio);
+  if (!puesta.ok) return { error: puesta.error };
   const telefono = telefonoCrudo.replace(/[^0-9]/g, "");
-  const correo = cuenta.user?.email && !cuenta.user.email.endsWith("@telefono.ludogteka.mx") ? cuenta.user.email : null;
+  const correo = puesta.email && !puesta.email.endsWith("@telefono.ludogteka.mx") ? puesta.email : null;
   const mensaje =
     `Hola ${nombre}, te restablecimos tu contraseña de ${negocio.nombre}.
 
@@ -54,4 +57,27 @@ async function ponerTemporal(userId: string, nombre: string, telefonoCrudo: stri
 ` +
     `Al entrar te va a pedir que escojas una contraseña nueva.`;
   return { error: null, password, urlWhatsApp: telefono ? `https://wa.me/52${telefono.slice(-10)}?text=${encodeURIComponent(mensaje)}` : undefined };
+}
+
+/** «Reenviar invitación»: un link nuevo para la cuenta que sigue sin abrir el suyo (el anterior deja de servir). */
+async function reenviarInvitacion(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  userId: string,
+  nombre: string,
+  telefonoCrudo: string,
+  negocio: Awaited<ReturnType<typeof negocioActual>>
+): Promise<EstadoRestablecerPersonal> {
+  const { data: u } = await admin.auth.admin.getUserById(userId);
+  const email = u?.user?.email;
+  if (!email) return { error: "No pudimos generar la invitación. Intenta de nuevo." };
+  const { data: link, error } = await admin.auth.admin.generateLink({ type: "invite", email });
+  if (error || !link?.properties?.hashed_token) return { error: "No pudimos generar la invitación. Intenta de nuevo." };
+  const inviteLink = `${urlDelNegocio(negocio)}/auth/callback?token_hash=${link.properties.hashed_token}&type=invite`;
+  const telefono = telefonoCrudo.replace(/[^0-9]/g, "").slice(-10);
+  const texto = `Hola ${nombre}, te invitamos a usar la app de ${negocio.nombre}. Abre este link para crear tu contraseña: ${inviteLink}`;
+  return {
+    error: null,
+    inviteLink,
+    urlWhatsApp: telefono.length === 10 ? `https://wa.me/52${telefono}?text=${encodeURIComponent(texto)}` : `https://wa.me/?text=${encodeURIComponent(texto)}`,
+  };
 }

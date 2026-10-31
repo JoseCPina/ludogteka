@@ -10,7 +10,7 @@
 /** Se evalúa en el navegador: `await pagina.evaluate(controlesDeEscritura)`. */
 export function controlesDeEscritura() {
   const CAPTURA = /\/(nuevo|nueva|checkin|checkout|walkin|cobrar|cobrar-junto|cargo|venta|ajustes-servicio)$|^\/caja\/pases$|^\/admin\/importar(\/|$)/;
-  const VERBO = /^\s*\+?\s*(nuev[oa]s?|agregar|añadir|crear|registrar|agendar|reservar|cobrar|check-?\s?in|check-?\s?out|hacer check|firmar|subir|editar|guardar|capturar|vender|aplicar|confirmar|eliminar|borrar|anular|dar de (alta|baja)|abrir turno|cerrar turno|enviar|mandar|marcar|iniciar|finalizar|terminar|devolver|importar|invitar|asignar|corregir|reprogramar|no se presentó|no llegó|cancelar (la )?cita|cancelar toda|cambiar (el |la )?(estilista|servicio|recargo)|aplicar (un )?recargo|ajuste|repartir|pedir|configurar|rechazar|aprobar|revisad[oa])(?![a-záéíóúñ0-9_])/i;
+  const VERBO = /^\s*\+?\s*(nuev[oa]s?|agregar|añadir|crear|registrar|agendar|reservar|cobrar|check-?\s?in|check-?\s?out|hacer check|firmar|subir|editar|guardar|capturar|vender|aplicar|confirmar|eliminar|borrar|anular|dar de (alta|baja)|abrir turno|cerrar turno|enviar|mandar|marcar|iniciar|finalizar|terminar|devolver|importar|invitar|asignar|corregir|reprogramar|no se presentó|no llegó|no se aplicó|suspender|cancelar (la )?cita|cancelar toda|cambiar (el |la )?(estilista|servicio|recargo)|aplicar (un )?recargo|ajuste|repartir|pedir|configurar|rechazar|aprobar|revisad[oa])(?![a-záéíóúñ0-9_])/i;
   const visible = (el) => {
     const r = el.getBoundingClientRect();
     const s = getComputedStyle(el);

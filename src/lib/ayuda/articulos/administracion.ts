@@ -398,7 +398,7 @@ El total del pie es el de la tarjeta, al centavo. Si buscas algo, ves también e
 
 Si una cuenta del personal entra sin nombre (por ejemplo, una invitada antes de que el nombre fuera obligatorio), la app le pregunta **Antes de seguir, ¿cómo te llamas?** una sola vez: escribe su nombre y apellido, aprieta **Guardar y seguir** y queda en su perfil. Si ya tiene ficha de empleado, en los historiales sale el nombre de la ficha.
 
-> Cópialo en ese momento: el link no se vuelve a mostrar.
+> Cópialo en ese momento: el link no se vuelve a mostrar y la app no manda correos. Si se pierde, en **Cuentas** aprieta **Restablecer contraseña** de esa persona: la contraseña temporal ya le sirve para entrar aunque nunca haya abierto su link.
 
 Si esa persona ya tiene cuenta en otro negocio de PeluDesk, no hay link: sale «Acceso dado» y entra con la contraseña que ya usa.
 
@@ -414,6 +414,8 @@ El personal entra en la [página de entrada](/login) por la pestaña **Soy del e
 2. Lee el aviso: su contraseña actual deja de servir en ese momento. Aprieta **Sí, restablecer**.
 3. Sale la **Contraseña temporal** con su botón de copiar y **Mandársela por WhatsApp**. Se muestra una sola vez: si cierras la pantalla, tendrás que generar otra.
 4. Al entrar con la temporal, la app le pide escoger una nueva antes de seguir.
+
+Si la persona nunca abrió su link de invitación, restablecer también activa su cuenta en ese momento (tú respondes por ella), así que la temporal le sirve para entrar. Si la cuenta no se pudiera activar, en vez de una contraseña sale **Invitación reenviada** con un link nuevo para mandárselo (el anterior deja de servir).
 
 No se usa para tu propia cuenta (la tuya la cambias tú, o te la restablece otro admin), ni para clientes (eso va en la ficha del cliente: [Cómo restablecer la contraseña de un cliente](/ayuda/restablecer-contrasena-de-cliente)), ni para alguien que usa la misma cuenta en otro negocio de PeluDesk: a esa persona se la restablece soporte de PeluDesk. Si eres el único admin y olvidaste la tuya, escríbele al WhatsApp de PeluDesk.
 

@@ -25,7 +25,7 @@ export default async function EquipoPage() {
         <h1 className="mt-1 text-2xl font-bold text-n-900">{conEstetica ? "Quién atiende" : "Tu equipo"}</h1>
         <p className="mt-1 text-n-600">
           {conEstetica || conVet
-            ? "Para asignarle una cita o una consulta a alguien, esa persona necesita cuenta en PeluDesk. Invítala con su correo: le llega un link para crear su contraseña y ya aparece en la agenda."
+            ? "Para asignarle una cita o una consulta a alguien, esa persona necesita cuenta en PeluDesk. Invítala con su correo: te damos un link para mandárselo, con él crea su contraseña y ya aparece en la agenda."
             : "Con tu cuenta basta para operar. Agrega a quien vaya a usar la app (con cuenta) o a quien solo le pagas (en nómina)."}
         </p>
       </div>
