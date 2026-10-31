@@ -1,6 +1,9 @@
 // Precios de los SITIOS WEB de los prospectos para el Índice PeluDesk de precios.
 //
-//   node scripts/mercado/sitios.mjs [--prod] [--giros estetica,hotel] [--ciudades "Guadalajara,…"] [--tope 3000] [--paralelo 6] [--tope-ia 300]
+//   node scripts/mercado/sitios.mjs [--prod] [--giros estetica,hotel] [--ciudades "Guadalajara,…"] [--tope 3000] [--desde 0] [--paralelo 6] [--tope-ia 300]
+//
+// --desde N salta los primeros N prospectos del mismo orden (reseñas de más a menos, luego id): sirve para correr una
+// lista larga en tramos que terminen en pocos minutos (cada tramo es su propia corrida).
 //
 // Por cada prospecto vivo con sitio web propio (web_dominio; Facebook e Instagram no cuentan): baja su portada y hasta
 // 3 páginas más del mismo sitio que hablen de precios o servicios (4 por sitio), respetando robots.txt y con 1.2 s
@@ -13,6 +16,7 @@ import { abrirBase, abrirIA, bajarPagina, candidatosDePrecio, clasificarOEncolar
 const GIROS = lista("--giros") ?? ["estetica", "hotel", "guarderia", "veterinaria", "mixto"];
 const CIUDADES = lista("--ciudades");
 const TOPE = Number(valor("--tope") ?? 3000);
+const DESDE = Number(valor("--desde") ?? 0);
 const PARALELO = Number(valor("--paralelo") ?? 6);
 // Los giros que se buscan en su sitio: los de su clasificación (un mixto trae varios) o el suyo.
 const girosDeProspecto = (p) => {
@@ -29,8 +33,9 @@ let prospectos = await todas(() => {
   if (CIUDADES?.length) q = q.in("ciudad", CIUDADES);
   return q.order("resenas", { ascending: false, nullsFirst: false }).order("id");
 });
-prospectos = prospectos.slice(0, TOPE);
-console.log(`${prod ? "PRODUCCIÓN" : "desarrollo"} · ${prospectos.length} prospectos con sitio web`);
+const total = prospectos.length;
+prospectos = prospectos.slice(DESDE, DESDE + TOPE);
+console.log(`${prod ? "PRODUCCIÓN" : "desarrollo"} · ${total} prospectos con sitio web${DESDE || prospectos.length < total ? ` · tramo ${DESDE + 1}–${DESDE + prospectos.length}` : ""}`);
 
 const pendientes = [];
 let hechos = 0;

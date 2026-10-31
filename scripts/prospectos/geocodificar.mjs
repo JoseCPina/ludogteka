@@ -4,7 +4,7 @@
 //   node scripts/prospectos/geocodificar.mjs [--prod] [--tope 20000] [--paralelo 4]
 //
 // Pide a Place Details SOLO el campo `location` (SKU Essentials: 10,000 llamadas gratis al mes y después ~5 USD por
-// mil); la llave sale de GOOGLE_PLACES_API_KEY (entorno o .env.local). En producción la llave de servicio se lee al
+// mil); si Google responde 429 (cuota por minuto) el lugar vuelve a la cola y el hilo espera 20 s; la llave sale de GOOGLE_PLACES_API_KEY (entorno o .env.local). En producción la llave de servicio se lee al
 // vuelo por el CLI (nunca se imprime). Un lugar que Google ya no tiene queda con ubicado_at y sin coordenadas, para
 // no volver a pedirlo.
 import fs from "node:fs";
@@ -37,7 +37,7 @@ for (let desde = 0; pendientes.length < TOPE; desde += 1000) {
   if ((data ?? []).length < 1000) break;
 }
 console.log(`${prod ? "PRODUCCIÓN" : "desarrollo"} · ${Math.min(pendientes.length, TOPE)} prospectos por ubicar`);
-let hechos = 0, ubicados = 0, sinLugar = 0, errores = 0, fatal = false;
+let hechos = 0, ubicados = 0, sinLugar = 0, errores = 0, pausas = 0, fatal = false;
 const cola = pendientes.slice(0, TOPE);
 await Promise.all(Array.from({ length: PARALELO }, async () => {
   while (cola.length && !fatal) {
@@ -45,6 +45,13 @@ await Promise.all(Array.from({ length: PARALELO }, async () => {
     try {
       const r = await fetch(`${base}/places/${encodeURIComponent(p.google_place_id)}`, { headers: { "X-Goog-Api-Key": apiKey, "X-Goog-FieldMask": "location" }, signal: AbortSignal.timeout(15000) });
       if (r.status === 401 || r.status === 403) { fatal = true; console.error(`Google ${r.status}: ${(await r.text()).slice(0, 200)}`); break; }
+      if (r.status === 429) {
+        // Cuota por minuto de Place Details: el lugar vuelve a la cola y este hilo espera antes de seguir.
+        cola.push(p);
+        pausas++;
+        await new Promise((f) => setTimeout(f, 20000));
+        continue;
+      }
       if (r.status === 404 || r.status === 400) {
         await db.from("prospectos").update({ ubicado_at: new Date().toISOString() }).eq("id", p.id);
         sinLugar++;
@@ -61,7 +68,7 @@ await Promise.all(Array.from({ length: PARALELO }, async () => {
       if (errores < 5) console.error("  error:", e.message);
     }
     hechos++;
-    if (hechos % 500 === 0) console.log(`  ${hechos}/${Math.min(pendientes.length, TOPE)} · ubicados ${ubicados} · sin lugar ${sinLugar} · errores ${errores}`);
+    if (hechos % 500 === 0) console.log(`  ${hechos}/${Math.min(pendientes.length, TOPE)} · ubicados ${ubicados} · sin lugar ${sinLugar} · errores ${errores} · pausas por cuota ${pausas}`);
   }
 }));
 console.log(`\nlisto · revisados ${hechos} · ubicados ${ubicados} · sin lugar ${sinLugar} · errores ${errores}${fatal ? " · DETENIDO por la llave" : ""}`);
