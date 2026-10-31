@@ -6,6 +6,7 @@ import recordatorios from "@/lib/recordatorios/plantillas.json";
 import herramienta from "@/lib/herramientas/plantilla.json";
 import carnet from "@/lib/carnet/plantilla-recordatorio.json";
 import teleconsulta from "@/lib/telemedicina/plantilla-teleconsulta.json";
+import perdida from "@/lib/app/plantilla-perdida.json";
 
 /**
  * El catálogo ÚNICO de las plantillas de WhatsApp de PeluDesk (las que el bot y las tareas mandan desde el número de
@@ -66,6 +67,14 @@ export const PLANTILLAS_PELUDESK: PlantillaPeluDesk[] = [
     uso: "Próxima dosis del carnet (Veterinaria), desde la clínica.",
     fuente: "src/lib/carnet/plantilla-recordatorio.json",
     componentes: [cuerpo(carnet.cuerpo, carnet.ejemplos)],
+  },
+  {
+    nombre: perdida.nombre,
+    idioma: perdida.idioma,
+    categoria: "UTILITY",
+    uso: "App para dueños: aviso a los negocios PeluDesk de la zona cuando un dueño marca a su mascota como perdida (docs/app-duenos/FASE-1.md).",
+    fuente: "src/lib/app/plantilla-perdida.json",
+    componentes: [cuerpo(perdida.cuerpo, perdida.ejemplos)],
   },
   {
     nombre: teleconsulta.nombre,

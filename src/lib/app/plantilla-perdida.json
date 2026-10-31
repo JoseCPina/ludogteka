@@ -1,0 +1,7 @@
+{
+  "nombre": "peludesk_mascota_perdida_v1",
+  "idioma": "es_MX",
+  "categoria": "UTILITY",
+  "cuerpo": "Hola {{1}}. Se perdió {{2}} ({{3}}) cerca de {{4}}. Si llega a tu negocio o la ven por ahí, su dueño está aquí: {{5}}. Gracias por echar la mano.",
+  "ejemplos": ["Ludogteka", "Canela", "perra mestiza café", "la colonia Lomas, San Luis Potosí", "https://app.peludesk.mx/m/ABCD2345EF"]
+}

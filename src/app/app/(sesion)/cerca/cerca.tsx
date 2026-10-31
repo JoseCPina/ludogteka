@@ -1,5 +1,6 @@
 "use client";
 
+import { esperarConTope } from "@/lib/ui/espera";
 import { useEffect, useState, useTransition } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { distanciaTexto, type Giro, type LugarCerca } from "@/lib/app/cerca";
@@ -44,7 +45,7 @@ export function Cerca({ zonaGuardada }: { zonaGuardada: { lat: number; lng: numb
     let vivo = true;
     empezar(async () => {
       try {
-        const r = await buscarCerca(punto.lat, punto.lng, giro);
+        const r = await esperarConTope(() => buscarCerca(punto.lat, punto.lng, giro));
         if (!vivo) return;
         if (r.error) setError(r.error);
         else setLugares(r.lugares ?? []);

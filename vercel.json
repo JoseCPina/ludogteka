@@ -38,6 +38,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/app-recordatorios",
+      "schedule": "3,18,33,48 * * * *"
+    },
+    {
       "path": "/api/cron/dictados",
       "schedule": "47 9 * * *"
     },

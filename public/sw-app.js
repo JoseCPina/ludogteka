@@ -6,7 +6,7 @@
  *  · La copia es de UNA persona: si cambia la sesión, se borra.
  *  · Notificaciones push: las muestra (título, cuerpo, ícono) y al tocarlas abre la pantalla que traen.
  */
-const VERSION = "v1";
+const VERSION = "v2";
 const PAGINAS = `peludesk-app-paginas-${VERSION}`;
 const ESTATICOS = `peludesk-app-estaticos-${VERSION}`;
 const META = `peludesk-app-meta-${VERSION}`;
@@ -119,7 +119,7 @@ self.addEventListener("fetch", (evento) => {
   }
 });
 
-// Notificaciones push: { titulo, cuerpo, url, etiqueta }.
+// Notificaciones push: { titulo, cuerpo, url, etiqueta, acciones?: [{ action, title, url }] }.
 self.addEventListener("push", (evento) => {
   let datos = {};
   try {
@@ -134,7 +134,8 @@ self.addEventListener("push", (evento) => {
       icon: "/marca/peludesk/favicon-180.png",
       badge: "/marca/peludesk/favicon-48.png",
       tag: datos.etiqueta || undefined,
-      data: { url: datos.url || "/avisos" },
+      data: { url: datos.url || "/avisos", acciones: Array.isArray(datos.acciones) ? datos.acciones : [] },
+      actions: Array.isArray(datos.acciones) ? datos.acciones.slice(0, 2).map((a) => ({ action: a.action, title: a.title })) : [],
       lang: "es-MX",
     })
   );
@@ -142,7 +143,9 @@ self.addEventListener("push", (evento) => {
 
 self.addEventListener("notificationclick", (evento) => {
   evento.notification.close();
-  const destino = new URL((evento.notification.data && evento.notification.data.url) || "/avisos", self.location.origin).href;
+  const d = evento.notification.data || {};
+  const accion = (d.acciones || []).find((a) => a.action === evento.action);
+  const destino = new URL((accion && accion.url) || d.url || "/avisos", self.location.origin).href;
   evento.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((ventanas) => {
       const abierta = ventanas.find((v) => v.url.startsWith(self.location.origin));

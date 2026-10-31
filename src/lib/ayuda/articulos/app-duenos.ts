@@ -36,8 +36,19 @@ Si ya tiene contraseña del portal de tu negocio, también le sirve ahí («entr
 
 Tú sigues viendo solo lo tuyo: tus clientes, tus mascotas, tus citas. La app no te pide nada ni te quita nada. Lo que el dueño ve de tu negocio sale de lo que ya capturas en PeluDesk.
 
+## Lo que el dueño puede hacer solo (aunque su mascota no esté contigo)
+
+- **Dar de alta a su mascota** (nombre, especie, sexo, nacimiento y foto) y **leer su cartilla de papel con una foto**: la app saca las vacunas, desparasitaciones, lotes y fechas, él revisa y confirma. También puede **anotar a mano** las fechas que recuerde.
+- **Recordatorios**: una semana antes y el mismo día de cada próxima dosis, por notificación en su celular, en Avisos y por WhatsApp (si tiene avisos de WhatsApp prendidos). El recordatorio trae **Pedir cita**: si la mascota tiene expediente contigo, le abre WhatsApp con tu número de la landing y un mensaje listo; si no, las veterinarias cercanas.
+- **Cartilla en PDF** para compartirla con cualquier vet.
+- **Peso, medicinas (con recordatorio a sus horas) y gastos del mes** por mascota.
+- **QR para la placa**: quien lo escanee ve a la mascota y le escribe a la familia sin ver su teléfono (PeluDesk lleva los mensajes; si quien la encontró manda «ENCONTRE» y el código al WhatsApp de PeluDesk, las respuestas del dueño le llegan a su WhatsApp).
+- **Mascota perdida**: con un toque se avisa por notificación a los dueños de la app a 5 km y por WhatsApp a los negocios con PeluDesk a 15 km (si tu sucursal tiene ubicación guardada, te llega a ti el mensaje «Se perdió … cerca de …» con el link de su perfil), y se genera un cartel con QR para compartir. «¡Ya apareció!» la cierra.
+
+> Lo que el dueño captura o lee de su cartilla de papel es suyo y no sustituye el carnet que tú firmas en Veterinaria; en la Fase 3 lo que registras tú aparece en su app automáticamente.
+
 ## Lo que viene
 
-La cartilla de vacunas a partir de la foto de la cartilla de papel, los recordatorios de cada dosis, el QR para la placa y el aviso de mascota perdida se agregan en las siguientes fases (docs/app-duenos/PLAN.md).`,
+El QR que una vet sin PeluDesk escanea para registrar una vacuna (Fase 2), y citas, reservas, fotos, contratos y pagos desde la app (Fase 3): docs/app-duenos/PLAN.md.`,
   },
 ];

@@ -21,9 +21,15 @@ export type Mascota = {
   fallecido: boolean;
   fechaFallecimiento: string | null;
   origen: "app" | "negocio" | "qr";
+  tokenPublico: string;
+  perdidaAt: string | null;
+  perdidaNota: string | null;
+  encontradaAt: string | null;
+  recordatoriosApagados: boolean;
   vinculos: Vinculo[];
   fotoUrl: string | null;
 };
+const COLUMNAS_MASCOTA = "id, nombre, especie, especie_detalle, sexo, fecha_nacimiento, esterilizado, raza_texto, microchip, foto_path, fallecido, fecha_fallecimiento, origen, token_publico, perdida_at, perdida_nota, encontrada_at, recordatorios_apagados";
 export type Negocio = { id: string; slug: string; nombre: string; dominio: string | null; urlPublica: string | null; ciudad: string | null; rol: string; url: string };
 export type Aviso = { id: string; tipo: string; titulo: string; cuerpo: string; url: string | null; leidoAt: string | null; createdAt: string; mascotaId: string | null };
 
@@ -35,7 +41,7 @@ const portalDe = (v: FilaVinculo) => `${urlDelNegocio({ slug: v.negocio_slug, do
 export async function misMascotas(): Promise<Mascota[]> {
   const supabase = await createSupabaseServerClient("portal");
   const [{ data: filas }, { data: vinculos }] = await Promise.all([
-    supabase.from("mascotas").select("id, nombre, especie, especie_detalle, sexo, fecha_nacimiento, esterilizado, raza_texto, microchip, foto_path, fallecido, fecha_fallecimiento, origen").is("deleted_at", null).order("fallecido").order("nombre").order("id"),
+    supabase.from("mascotas").select(COLUMNAS_MASCOTA).is("deleted_at", null).order("fallecido").order("nombre").order("id"),
     supabase.rpc("app_mis_vinculos"),
   ]);
   const porMascota = new Map<string, FilaVinculo[]>();
@@ -49,7 +55,7 @@ export async function miMascota(id: string): Promise<Mascota | null> {
   if (!/^[0-9a-f-]{36}$/.test(id)) return null;
   const supabase = await createSupabaseServerClient("portal");
   const [{ data: f }, { data: vinculos }] = await Promise.all([
-    supabase.from("mascotas").select("id, nombre, especie, especie_detalle, sexo, fecha_nacimiento, esterilizado, raza_texto, microchip, foto_path, fallecido, fecha_fallecimiento, origen").eq("id", id).is("deleted_at", null).maybeSingle(),
+    supabase.from("mascotas").select(COLUMNAS_MASCOTA).eq("id", id).is("deleted_at", null).maybeSingle(),
     supabase.rpc("app_mis_vinculos"),
   ]);
   if (!f) return null;
@@ -73,6 +79,11 @@ function armar(f: FilaMascota, vs: FilaVinculo[]): Mascota {
     fallecido: Boolean(f.fallecido),
     fechaFallecimiento: (f.fecha_fallecimiento as string | null) ?? null,
     origen: (f.origen as Mascota["origen"]) ?? "app",
+    tokenPublico: (f.token_publico as string) ?? "",
+    perdidaAt: (f.perdida_at as string | null) ?? null,
+    perdidaNota: (f.perdida_nota as string | null) ?? null,
+    encontradaAt: (f.encontrada_at as string | null) ?? null,
+    recordatoriosApagados: Boolean(f.recordatorios_apagados),
     vinculos: vs.map((v) => ({
       negocioId: v.negocio_id, negocioNombre: v.negocio_nombre, negocioSlug: v.negocio_slug, negocioDominio: v.negocio_dominio, negocioUrl: v.negocio_url_publica,
       perroId: v.perro_id, perroFotoPath: v.perro_foto_path, perroRaza: v.perro_raza, portalUrl: portalDe(v),
@@ -91,6 +102,7 @@ async function fotoDeMascota(m: Mascota): Promise<string | null> {
       const { data } = await createSupabaseAdminClient().storage.from("app-mascotas").createSignedUrl(m.fotoPath, 3600);
       if (data?.signedUrl) return data.signedUrl;
     }
+    // (La foto propia de la app vive en app-mascotas; sin ella, la del expediente del negocio.)
     const v = m.vinculos.find((x) => x.perroFotoPath);
     if (!v?.perroFotoPath) return null;
     const { data } = await createSupabaseAdminClient(v.negocioId).storage.from("perros-archivos").createSignedUrl(v.perroFotoPath, 3600);
