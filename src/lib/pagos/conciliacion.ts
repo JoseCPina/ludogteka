@@ -2,7 +2,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { buscarPagos, ESTADOS_CON_DINERO, type PagoDeBusqueda } from "@/lib/mercadopago/busqueda";
 import { consultarPago } from "@/lib/mercadopago/links";
 import { listarTerminales } from "@/lib/mercadopago/point";
-import { origenDelPago, type ContextoOrigen } from "./origen-pago";
+import { esDePeluDesk, origenDelPago, type ContextoOrigen } from "./origen-pago";
 import { conexionDeCobro, type NegocioParaCobro } from "./conexion";
 import { pagosYaLigados } from "./no-recibido";
 import { leerTodo } from "@/lib/supabase/paginar";
@@ -14,15 +14,20 @@ import { leerTodo } from "@/lib/supabase/paginar";
  *   cobro_sin_pago  la app dice cobrado con terminal y Mercado Pago no tiene
  *                   un pago que el dinero haya entrado (o no se encuentra uno
  *                   del mismo monto cerca de la hora, en un cobro a mano).
- *   pago_sin_cobro  Mercado Pago tiene un pago aprobado, ORIGINADO POR
- *                   PELUDESK, que la caja no tiene.
+ *   pago_sin_cobro  Mercado Pago tiene un pago aprobado que CONSTA que salió de
+ *                   una orden o link de PeluDesk (origen «orden») y la caja no
+ *                   lo tiene.
  *   pago_ajeno      (solo si el admin lo pidió) pago de la cuenta que PeluDesk no
- *                   originó: informativo, nunca alerta ni cuenta.
+ *                   originó, incluida una venta tecleada directo en la Point:
+ *                   informativo, nunca alerta ni cuenta.
  *
- * Solo cuentan los pagos de origen PeluDesk (origen-pago.ts): una cuenta de
- * Mercado Pago recibe pagos de otras tiendas, transferencias y cobros
- * personales, y esos se ignoran. Un pago que no se puede clasificar con
- * certeza es ajeno.
+ * Solo alerta lo de origen «orden» (origen-pago.ts): una cuenta de Mercado Pago
+ * recibe pagos de otras tiendas, transferencias, cobros personales y ventas
+ * directas en la terminal, y esos se ignoran. Un pago de la terminal vinculada
+ * fuera de PeluDesk (origen «terminal») solo respalda un cobro a mano con
+ * «Terminal»; el texto de una alerta nunca afirma «cobrado desde PeluDesk»
+ * cuando no consta (31 de octubre de 2026). Un pago que no se puede clasificar
+ * con certeza es ajeno.
  *
  * NO corrige nada: solo marca (conciliacion_sincronizar) para «Necesita
  * atención» del negocio y la administración de la plataforma, con antigüedad.
@@ -98,7 +103,9 @@ export function hallazgosDeConciliacion(args: {
 }): Hallazgo[] {
   const { cobros, ligados, ahora } = args;
   const pagos = args.pagos;
-  const esPropio = (p: PagoDeBusqueda) => origenDelPago(p, args.origen) !== "ajeno";
+  // Lo que respalda un cobro a mano con «Terminal»: un pago de PeluDesk o uno hecho
+  // en la terminal del punto de venta vinculado (así se cobraba antes de integrarla).
+  const respalda = (p: PagoDeBusqueda) => origenDelPago(p, args.origen) !== "ajeno";
   const hallazgos: Hallazgo[] = [];
   const reclamados = new Set<string>();
   const porId = new Map(pagos.map((p) => [String(p.id), p]));
@@ -132,7 +139,7 @@ export function hallazgosDeConciliacion(args: {
     const candidato = pagos.find(
       (p) =>
         ESTADOS_CON_DINERO.includes(p.status) &&
-        esPropio(p) &&
+        respalda(p) &&
         !ligados.has(String(p.id)) &&
         !reclamados.has(String(p.id)) &&
         Math.abs(Number(p.transaction_amount) - terminal) <= 0.005 &&
@@ -148,8 +155,9 @@ export function hallazgosDeConciliacion(args: {
     }
   }
 
-  // Pagos aprobados de PeluDesk que la caja no tiene. Los ajenos se ignoran
-  // (o, si el admin lo pidió, salen aparte como informativos).
+  // Pagos aprobados que CONSTA que salieron de PeluDesk y la caja no tiene. Lo
+  // demás (ajeno, o de la terminal sin pasar por PeluDesk) se ignora o, si el
+  // admin lo pidió, sale aparte como informativo.
   for (const p of pagos) {
     const id = String(p.id);
     if (!["approved", "partially_refunded"].includes(p.status)) continue;
@@ -157,11 +165,18 @@ export function hallazgosDeConciliacion(args: {
     const cuando = new Date(p.date_approved ?? p.date_created ?? 0);
     if (cuando.getTime() > margen) continue;
     const origen = origenDelPago(p, args.origen);
-    if (origen === "ajeno") {
+    const referencia = p.external_reference ?? null;
+    if (!esDePeluDesk(origen)) {
       if (args.mostrarAjenos) {
         hallazgos.push({
           tipo: "pago_ajeno", clave: id, mp_pago_id: id, monto: redondea(Number(p.transaction_amount)), ocurrio_at: cuando.toISOString(),
-          detalle: { motivo: "Pago de tu cuenta de Mercado Pago que no se cobró desde PeluDesk. Solo informativo.", tipo_pago: p.payment_type_id ?? null, referencia: p.external_reference ?? null },
+          detalle: {
+            motivo:
+              origen === "terminal"
+                ? "Pago hecho directo en tu terminal, sin pasar por PeluDesk. Solo informativo."
+                : "Pago de tu cuenta de Mercado Pago que no se cobró desde PeluDesk. Solo informativo.",
+            origen, tipo_pago: p.payment_type_id ?? null, referencia,
+          },
         });
       }
       continue;
@@ -169,8 +184,8 @@ export function hallazgosDeConciliacion(args: {
     hallazgos.push({
       tipo: "pago_sin_cobro", clave: id, mp_pago_id: id, monto: redondea(Number(p.transaction_amount)), ocurrio_at: cuando.toISOString(),
       detalle: {
-        motivo: "Mercado Pago tiene este pago aprobado, cobrado desde PeluDesk, y la caja no lo tiene registrado.",
-        origen, tipo_pago: p.payment_type_id ?? null, referencia: p.external_reference ?? null,
+        motivo: `Mercado Pago tiene este pago aprobado de una orden o link de PeluDesk${referencia ? ` (referencia ${referencia})` : ""} y la caja no lo tiene registrado.`,
+        origen, tipo_pago: p.payment_type_id ?? null, referencia,
       },
     });
   }
