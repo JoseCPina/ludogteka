@@ -5,8 +5,8 @@ import { BarraRango } from "@/components/herramientas/barra-rango";
 import { MarcoHerramienta } from "@/components/herramientas/marco";
 import { ReciboPorWhatsApp } from "@/components/herramientas/recibelo-por-whatsapp";
 import { Compartir } from "@/components/herramientas/compartir";
-import { GIROS_MERCADO, TALLAS, esGiroMercado, giroMercado, mesEnTexto, pesosMercado, serviciosDeGiro, type GiroMercado, type Rango } from "@/lib/mercado/catalogo";
-import { ciudadPorSlug } from "@/lib/mercado/ciudades";
+import { GIROS_MERCADO, TALLAS, esGiroMercado, giroMercado, mesEnTexto, pesosMercado, serviciosDeGiro, slugDe, type GiroMercado, type Rango } from "@/lib/mercado/catalogo";
+import { ciudadPorNombre, ciudadPorSlug, type CiudadMercado } from "@/lib/mercado/ciudades";
 import { ciudadesConDatos, fraseDeRango, rangoDe } from "@/lib/mercado/rangos";
 import { JsonLd, ORGANIZACION, SITIO, metaPagina, migas, preguntasFrecuentes } from "@/lib/peludesk/seo";
 import { recibirPorWhatsApp } from "../../../herramientas/acciones";
@@ -24,11 +24,16 @@ const anio = () => new Date().getFullYear();
 
 async function datos(giroParam: string, ciudadSlug: string) {
   if (!esGiroMercado(giroParam)) return null;
-  const ciudad = ciudadPorSlug(ciudadSlug);
-  if (!ciudad) return null;
-  const con = (await ciudadesConDatos(giroParam)).find((x) => x.ciudad.localeCompare(ciudad.nombre, "es", { sensitivity: "base" }) === 0);
-  if (!con) return null;
   const giro: GiroMercado = giroParam;
+  // La ciudad con datos cuyo slug es el de la ruta (el sitemap, llms.txt y los enlaces se arman con slugDe(ciudad de
+  // la base), que es el nombre que da Google: «Naucalpan de Juárez»); si la ruta trae el slug del catálogo
+  // («naucalpan»), se busca la de la base que le corresponde.
+  const conDatos = await ciudadesConDatos(giro);
+  const catalogo = ciudadPorSlug(ciudadSlug);
+  const con = conDatos.find((x) => slugDe(x.ciudad) === ciudadSlug) ?? (catalogo ? conDatos.find((x) => ciudadPorNombre(x.ciudad)?.slug === catalogo.slug) : undefined);
+  if (!con) return null;
+  // Los rangos se piden con el nombre tal como está en la base (así se guardó cada precio).
+  const ciudad: CiudadMercado = { ...(catalogo ?? ciudadPorNombre(con.ciudad) ?? { poblacion: 0, clave: "" }), nombre: con.ciudad, estado: con.estado, slug: ciudadSlug };
   const servicios = serviciosDeGiro(giro);
   const rangos = await Promise.all(
     servicios.map(async (s) => ({
