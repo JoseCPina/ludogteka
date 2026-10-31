@@ -16,7 +16,7 @@ import { MIN_CONTRASENA, TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
 
 export type InicialRegistro = { slug: string; negocio: string; ciudad: string; servicios: string[]; telefono: string };
 
-export function RegistroForm({ origen, inicial, interno }: { origen: Partial<Record<ParametroOrigen, string>>; inicial?: InicialRegistro; interno?: boolean }) {
+export function RegistroForm({ origen, inicial, interno, reclamo = null }: { origen: Partial<Record<ParametroOrigen, string>>; inicial?: InicialRegistro; interno?: boolean; reclamo?: string | null }) {
   const [estado, accion, enviando] = useActionState(useAccionConTope(registrarPrueba), { error: null } as EstadoRegistro);
   // Lo que escribió (si el envío falló) o, la primera vez, lo que trae su vista previa.
   const v = estado.valores ?? (inicial ? { nombre: "", negocio: inicial.negocio, ciudad: inicial.ciudad, telefono: inicial.telefono, servicios: inicial.servicios } : undefined);
@@ -73,6 +73,8 @@ export function RegistroForm({ origen, inicial, interno }: { origen: Partial<Rec
       <input ref={referente} type="hidden" name="referente" defaultValue="" />
       {inicial && <input type="hidden" name="prospecto" value={inicial.slug} />}
       {interno && <input type="hidden" name="interno" value="1" />}
+      {/* Reclamó su ficha del directorio y comprobó su WhatsApp: su negocio nace verificado (src/lib/directorio/reclamo.ts). */}
+      {reclamo && <input type="hidden" name="reclamo" value={reclamo} />}
       <Field label="Tu nombre" name="nombre" autoComplete="name" required defaultValue={v?.nombre} />
       <div className="flex flex-col gap-1.5">
         <Field label="Nombre de tu negocio" name="negocio" autoComplete="organization" required defaultValue={v?.negocio} onInput={(e) => setNombreNegocio(e.currentTarget.value)} />

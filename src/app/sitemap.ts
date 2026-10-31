@@ -13,6 +13,8 @@ import { DOCUMENTOS_LEGALES } from "@/lib/peludesk/legal";
 import { SITIO } from "@/lib/peludesk/seo";
 import { GIROS_MERCADO, slugDe } from "@/lib/mercado/catalogo";
 import { ciudadesConDatos } from "@/lib/mercado/rangos";
+import { ciudadesDirectorio, MINIMO_INDEXABLE } from "@/lib/directorio/consulta";
+import { todasLasPlantillas } from "@/lib/herramientas/mensajes-whatsapp";
 
 const fechaIso = (v: string) => new Date(`${v}T12:00:00Z`);
 
@@ -25,6 +27,12 @@ async function paginasPorCiudad(): Promise<MetadataRoute.Sitemap> {
     }
   }
   return salida;
+}
+
+// Las páginas de ciudad del directorio con 10 negocios o más (las fichas no van: se descubren desde su ciudad, y una
+// lista de miles de fichas haría que la tarea de IndexNow las pidiera todas cada hora).
+async function paginasDirectorio(): Promise<MetadataRoute.Sitemap> {
+  return (await ciudadesDirectorio()).filter((c) => c.n >= MINIMO_INDEXABLE).map((c) => ({ url: `${SITIO}/directorio/${c.giro}/${c.slug}`, changeFrequency: "weekly" as const, priority: 0.6 }));
 }
 
 // peludesk.mx: solo páginas públicas e indexables (nada de /plataforma,
@@ -47,6 +55,8 @@ async function sitemapPlataforma(): Promise<MetadataRoute.Sitemap> {
         priority: p.ruta === "/precios" || p.tipo === "giro" ? 0.9 : 0.8,
       })),
     ...(await paginasPorCiudad()),
+    ...(await paginasDirectorio()),
+    ...todasLasPlantillas().map((p) => ({ url: `${SITIO}/mensajes-whatsapp/${p.slug}`, changeFrequency: "monthly" as const, priority: 0.5 })),
     { url: `${SITIO}/blog`, lastModified: ultimaEntrada ? fechaIso(ultimaEntrada) : undefined, changeFrequency: "weekly", priority: 0.7 },
     ...Array.from({ length: Math.max(0, paginas - 1) }, (_, i) => ({ url: `${SITIO}/blog/pagina/${i + 2}`, changeFrequency: "weekly" as const, priority: 0.4 })),
     ...categoriasUsadas.map((c) => ({ url: `${SITIO}/blog/categoria/${c}`, changeFrequency: "weekly" as const, priority: 0.5 })),

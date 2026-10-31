@@ -1,7 +1,6 @@
 // Precios de los SITIOS WEB de los prospectos para el Índice PeluDesk de precios.
 //
-//   node --experimental-strip-types scripts/mercado/sitios.mjs [--prod] [--giros estetica,hotel] [--ciudades "Guadalajara,…"]
-//        [--tope 3000] [--paralelo 6] [--tope-ia 300]
+//   node scripts/mercado/sitios.mjs [--prod] [--giros estetica,hotel] [--ciudades "Guadalajara,…"] [--tope 3000] [--paralelo 6] [--tope-ia 300]
 //
 // Por cada prospecto vivo con sitio web propio (web_dominio; Facebook e Instagram no cuentan): baja su portada y hasta
 // 3 páginas más del mismo sitio que hablen de precios o servicios (4 por sitio), respetando robots.txt y con 1.2 s
@@ -9,8 +8,7 @@
 // (claude-haiku-5-5) dice de qué servicio del catálogo canónico es cada una, con un tope de gasto de 300 MXN en 31
 // días. Cada precio queda en precios_mercado con su URL, ciudad y estado del prospecto; la corrida, en
 // precios_mercado_corridas. Repetir no duplica (huella por mes).
-import { abrirBase, abrirIA, bajarPagina, clasificarCandidatos, Corrida, enParalelo, insertarPrecios, lista, prod, todas, valor } from "./lib.mjs";
-import { candidatosDePrecio, enlacesDePrecios, textoDeHtml } from "../../src/lib/mercado/extraer.ts";
+import { abrirBase, abrirIA, bajarPagina, candidatosDePrecio, clasificarOEncolar, Corrida, enlacesDePrecios, enParalelo, insertarPrecios, lista, prod, textoDeHtml, todas, valor } from "./lib.mjs";
 
 const GIROS = lista("--giros") ?? ["estetica", "hotel", "guarderia", "veterinaria", "mixto"];
 const CIUDADES = lista("--ciudades");
@@ -69,7 +67,7 @@ try {
 async function vaciar() {
   if (!pendientes.length) return;
   const lote = pendientes.splice(0, pendientes.length);
-  const clasificados = await clasificarCandidatos(ia, corrida, lote);
+  const clasificados = await clasificarOEncolar(db, ia, corrida, lote, (c) => ({ fuente: "sitio_web", url: c.url, prospecto_id: c.prospecto.id, ciudad: c.prospecto.ciudad, estado: c.prospecto.estado, origen: c.prospecto.id }));
   corrida.encontrados += clasificados.length;
   await insertarPrecios(
     db,

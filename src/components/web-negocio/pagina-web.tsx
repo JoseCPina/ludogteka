@@ -44,6 +44,8 @@ export type DatosWeb = {
   deGoogle: boolean;
   /** Fecha (AAAA-MM-DD) y minutos del día en la zona del negocio: para «Abierto · cierra a las…». */
   hoy: { fecha: string; minutos: number };
+  /** El dueño reclamó su ficha del directorio y comprobó su WhatsApp: «Negocio verificado». */
+  verificado?: boolean;
 };
 
 type Props = {
@@ -298,6 +300,12 @@ export function PaginaWeb({ datos, modo, portal, notas }: Props) {
             <span className="break-words text-[14px] font-bold leading-tight min-[420px]:text-[15px] sm:text-[17px]" style={{ fontFamily: "var(--w-titulos)" }}>
               {datos.nombre}
             </span>
+            {datos.verificado && (
+              <span data-verificado className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#e3f3ed] px-2 py-0.5 text-[11px] font-bold text-[#1f6b57]" title="El dueño reclamó su ficha en peludesk.mx y comprobó su WhatsApp">
+                <svg viewBox="0 0 20 20" width="12" height="12" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="#1f6b57" /><path d="M5.5 10.5l3 3L14.5 7" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                Verificado
+              </span>
+            )}
           </a>
           <nav className="flex shrink-0 items-center gap-1" aria-label="Secciones">
             {hayServicios && <a href="#servicios" className="hidden min-h-10 items-center rounded-md px-3 text-sm font-semibold opacity-80 hover:opacity-100 md:inline-flex">Servicios</a>}

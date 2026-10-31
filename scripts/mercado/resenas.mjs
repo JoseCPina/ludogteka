@@ -1,13 +1,12 @@
 // Precios que la gente menciona en las RESEÑAS DE GOOGLE de una muestra de prospectos, para el Índice PeluDesk.
 //
-//   node --experimental-strip-types scripts/mercado/resenas.mjs [--prod] [--muestra 600] [--municipios 30] [--tope-usd 40]
+//   node scripts/mercado/resenas.mjs [--prod] [--muestra 600] [--municipios 30] [--tope-usd 40]
 //
 // Toma los 30 municipios con más prospectos y, de cada uno, los prospectos con más reseñas (600 en total, repartidos),
 // pide a Place Details SOLO el campo `reviews` (hasta 5 reseñas por lugar; SKU con Atmosphere, ~25 USD por 1,000:
 // 600 lugares ≈ 15 USD, tope 40 USD), saca las cantidades en pesos de cada reseña y la IA dice de qué servicio son.
 // Las reseñas NO se guardan: solo el precio, el servicio, la ciudad y el fragmento de hasta 200 caracteres.
-import { abrirBase, abrirIA, clasificarCandidatos, Corrida, env, insertarPrecios, prod, todas, valor } from "./lib.mjs";
-import { candidatosDePrecio } from "../../src/lib/mercado/extraer.ts";
+import { abrirBase, abrirIA, candidatosDePrecio, clasificarOEncolar, Corrida, env, insertarPrecios, prod, todas, valor } from "./lib.mjs";
 
 const MUESTRA = Number(valor("--muestra") ?? 600);
 const MUNICIPIOS = Number(valor("--municipios") ?? 30);
@@ -65,7 +64,7 @@ try {
     });
   }
   console.log(`  ${candidatos.length} cantidades en reseñas por clasificar`);
-  const clasificados = await clasificarCandidatos(ia, corrida, candidatos);
+  const clasificados = await clasificarOEncolar(db, ia, corrida, candidatos, (c) => ({ fuente: "resenas_google", url: null, prospecto_id: c.prospecto.id, ciudad: c.prospecto.ciudad, estado: c.prospecto.estado, origen: c.prospecto.id }));
   corrida.encontrados = clasificados.length;
   await insertarPrecios(db, corrida, clasificados.map((c) => ({ giro: c.giro, servicio: c.servicio, talla: c.talla, precio: c.precio, ciudad: c.prospecto.ciudad, estado: c.prospecto.estado, fuente: "resenas_google", prospecto_id: c.prospecto.id, detalle: `Reseña de Google: ${c.contexto.slice(0, 170)}`, origen: c.prospecto.id })));
   await corrida.terminar();

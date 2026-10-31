@@ -14,6 +14,7 @@ import { origenDe } from "@/lib/peludesk/origen";
 import { enviarConversion } from "@/lib/peludesk/capi";
 import { MIN_CONTRASENA, TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
 import { aplicarPrecarga } from "@/lib/herramientas/precarga";
+import { aplicarReclamoAlRegistro } from "@/lib/directorio/reclamo";
 import { esHerramienta } from "@/lib/herramientas/lista";
 import { registrarEventoHerramienta } from "@/lib/herramientas/telemetria";
 
@@ -186,6 +187,9 @@ async function registrar(fd: FormData): Promise<EstadoRegistro> {
       // Su página queda publicada en su subdominio con lo que vio en la vista previa.
       await publicarPaginaDeProspecto(alta.negocio_id, slugProspecto);
     }
+    // Llegó reclamando su ficha del directorio (código verificado por WhatsApp desde este mismo teléfono): «Negocio verificado».
+    const reclamo = String(fd.get("reclamo") ?? "");
+    if (reclamo) await aplicarReclamoAlRegistro({ reclamoId: reclamo, telefono, negocioId: alta.negocio_id, slugProspecto });
   }
 
   // Lo que capturó en las herramientas públicas con este mismo teléfono se carga en su negocio (tarifas «Calculado»,

@@ -16,7 +16,17 @@
 //   E. Precarga: al registrarse con ese mismo teléfono, el negocio nace con tarifas «Calculado» del servicio y la
 //      captura queda aplicada; se anota «cuenta».
 //   F. Celular (390 px): nada más ancho que la pantalla en cada herramienta.
-// Limpia lo que creó (precios sembrados, eventos, capturas, prospecto, negocio). Sale con 1 si algo falla.
+//   G. Directorio: la ciudad con 10 negocios se indexa con ItemList y filtro por colonia; el sitemap lleva la ciudad y
+//      no las fichas; la ficha es indexable (LocalBusiness) y un robot la ve sin pedirle a Google; el reclamo da un
+//      código, el código desde otro teléfono no verifica y desde el mismo sí (lo que hace el webhook), la página lo
+//      detecta sola y el registro deja el negocio verificado con su insignia en su página y en la lista.
+//   H. Lista de precios: la vista previa se dibuja en el canvas, «Bajar imagen» y «Bajar PDF» descargan, la captura
+//      guarda los servicios y, al abrir la prueba, un servicio fuera del catálogo nace como servicio con su tarifa.
+//   I. Contrato: la vista previa lleva nombre, horario y las políticas elegidas sin variables crudas, el PDF baja,
+//      estética sale como condiciones, y al abrir la prueba el contrato queda publicado como contrato general.
+//   J. Mensajes de WhatsApp: 20+ por giro, se arman con el negocio y la mascota, «Probar en mi WhatsApp» abre wa.me,
+//      cada plantilla tiene página indexable con HowTo y está en el sitemap.
+// Limpia lo que creó (precios sembrados, eventos, capturas, prospectos, negocios). Sale con 1 si algo falla.
 import { limpiarAlTerminar } from "../lib/limpieza-dev.mjs";
 limpiarAlTerminar({ prefijos: ["hta-prueba-"], bitacoras: ["herramientas_eventos", "herramientas_capturas", "aceptaciones_legales"] });
 import fs from "node:fs";
@@ -64,7 +74,7 @@ const doble = http.createServer((req, res) => {
 await new Promise((r) => doble.listen(DOBLE, "127.0.0.1", r));
 
 const servidor = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "-p", String(PUERTO)], {
-  env: { ...process.env, PELUDESK_URL_DESARROLLO: `http://{slug}.localhost:${PUERTO}`, PELUDESK_META_PIXEL_ID: PIXEL, PELUDESK_META_CAPI_TOKEN: "token-de-mentiras", META_API_URL: `http://127.0.0.1:${DOBLE}`, WHATSAPP_GRAPH_URL: `http://127.0.0.1:${DOBLE}`, WHATSAPP_TOKEN: "token-de-mentiras", WHATSAPP_PHONE_NUMBER_ID: "123", PELUDESK_WABA_ID: "456", WHATSAPP_APP_SECRET: "secreto-de-mentiras" },
+  env: { ...process.env, PELUDESK_URL_DESARROLLO: `http://{slug}.localhost:${PUERTO}`, PLACES_API_URL: `http://127.0.0.1:${DOBLE}`, PELUDESK_WHATSAPP: "525649160742", PELUDESK_META_PIXEL_ID: PIXEL, PELUDESK_META_CAPI_TOKEN: "token-de-mentiras", META_API_URL: `http://127.0.0.1:${DOBLE}`, WHATSAPP_GRAPH_URL: `http://127.0.0.1:${DOBLE}`, WHATSAPP_TOKEN: "token-de-mentiras", WHATSAPP_PHONE_NUMBER_ID: "123", PELUDESK_WABA_ID: "456", WHATSAPP_APP_SECRET: "secreto-de-mentiras" },
   stdio: ["ignore", "pipe", "pipe"],
 });
 let bitacora = "";
@@ -107,6 +117,9 @@ async function sembrar() {
 async function limpiarSembrados() {
   if (sembrados.length) await A.from("precios_mercado").delete().in("id", sembrados);
   await A.from("prospectos").delete().eq("telefono_norm", TELEFONO);
+  // Los negocios del directorio sembrados (sus reclamos se van en cascada); el negocio registrado lo borra limpiarAlTerminar.
+  await A.from("prospectos").delete().like("nombre", `%auditoría ${sufijo}%`);
+  await A.from("prospectos").delete().like("nombre", `Hta prueba dir ${sufijo}%`);
 }
 
 const ld = (html) => [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].flatMap((m) => { try { const b = JSON.parse(m[1]); return Array.isArray(b) ? b : [b]; } catch { return []; } });
@@ -245,6 +258,81 @@ try {
   await A.from("prospectos").delete().eq("telefono_norm", TEL_BAJA);
   await p2.close();
 
+  // ── H. Generador de lista de precios (con el MISMO teléfono: la precarga de E aplica las dos capturas) ──
+  console.log("\nH. Generador de lista de precios");
+  await p.goto(`${PLATAFORMA}/lista-de-precios?giro=estetica`, { waitUntil: "load" });
+  await p.fill("#lp-negocio", `Hta prueba ${sufijo}`);
+  await p.fill("#lp-wa", TELEFONO);
+  const precios = p.locator("[data-renglones] input[inputmode=numeric]");
+  await precios.nth(0).fill("300");
+  await precios.nth(1).fill("350");
+  await precios.nth(2).fill("420");
+  // Un servicio fuera del catálogo: «Deslanado» es el 9.º renglón de la plantilla de estética.
+  await precios.nth(8).fill("180");
+  await p.waitForTimeout(800);
+  const pintado = await p.evaluate(() => {
+    const c = document.querySelector("[data-vista-previa]");
+    if (!c) return false;
+    const ctx = c.getContext("2d");
+    const d = ctx.getImageData(0, 0, c.width, c.height).data;
+    let distintos = 0;
+    for (let i = 0; i < d.length; i += 4 * 997) if (d[i] !== d[0] || d[i + 1] !== d[1] || d[i + 2] !== d[2]) distintos++;
+    return distintos > 20;
+  });
+  ok(pintado, "la vista previa se dibuja en el canvas con el nombre y los precios");
+  await p.locator("[data-selector='estilo'] [role=radio]", { hasText: "Oscura" }).click();
+  await p.waitForTimeout(500);
+  const [descarga] = await Promise.all([p.waitForEvent("download", { timeout: 20000 }), p.getByRole("button", { name: "Bajar imagen" }).click()]);
+  ok(/\.png$/.test(descarga.suggestedFilename()), `«Bajar imagen» descarga un PNG (${descarga.suggestedFilename()})`);
+  const [descargaPdf] = await Promise.all([p.waitForEvent("download", { timeout: 30000 }), p.getByRole("button", { name: "Bajar PDF" }).click()]);
+  ok(/\.pdf$/.test(descargaPdf.suggestedFilename()), `«Bajar PDF» descarga un PDF (${descargaPdf.suggestedFilename()})`);
+  const formLista = p.locator("form[data-recibelo]");
+  await formLista.locator("input[type=tel]").fill(TELEFONO);
+  await formLista.getByRole("button", { name: "Mandármelo por WhatsApp" }).click();
+  await p.locator("[data-recibelo-listo]").waitFor({ timeout: 30000 });
+  await new Promise((r) => setTimeout(r, 1200));
+  const { data: capLista } = await A.from("herramientas_capturas").select("id, datos").eq("telefono_norm", TELEFONO).eq("herramienta", "lista-de-precios").is("deleted_at", null).maybeSingle();
+  const serviciosLista = capLista?.datos?.servicios ?? [];
+  ok(serviciosLista.length === 4 && serviciosLista.some((s) => s.nombre === "Deslanado" && s.precio === 180) && serviciosLista.some((s) => s.canonico === "bano" && s.talla === "chico" && s.precio === 300), `la captura guarda los 4 servicios con precio (${serviciosLista.map((s) => `${s.nombre} ${s.precio}`).join(", ")})`);
+
+  // ── I. Generador de contrato (mismo teléfono: la precarga de E lo publica) ──
+  console.log("\nI. Generador de contrato");
+  await p.goto(`${PLATAFORMA}/contrato-guarderia-hotel?tipo=hotel`, { waitUntil: "load" });
+  await p.fill("#ct-negocio", `Hta prueba ${sufijo}`);
+  await p.fill("#ct-horario", "lunes a sábado de 8:00 a 19:00");
+  await p.locator("[data-politica='recogida_tardia'] [role=radio]", { hasText: "Cargo por hora" }).click();
+  await p.locator("[data-politica='cancelacion'] [role=radio]", { hasText: "48 horas" }).click();
+  const vista = await p.locator("[data-vista-contrato]").innerText();
+  ok(/HOTEL CANINO/.test(vista) && vista.includes(`Hta prueba ${sufijo}`) && /cargo por cada hora o fracción/.test(vista) && /48 horas/.test(vista) && /lunes a sábado de 8:00 a 19:00/.test(vista) && !/\{\{/.test(vista), "la vista previa trae el nombre, el horario y las políticas elegidas, sin variables crudas");
+  const [descargaContrato] = await Promise.all([p.waitForEvent("download", { timeout: 30000 }), p.locator("[data-bajar-contrato]").click()]);
+  ok(/contrato-hotel-.*\.pdf$/.test(descargaContrato.suggestedFilename()), `«Bajar PDF con mi nombre» descarga el contrato (${descargaContrato.suggestedFilename()})`);
+  const formContrato = p.locator("form[data-recibelo]");
+  await formContrato.locator("input[type=tel]").fill(TELEFONO);
+  await formContrato.getByRole("button", { name: "Mandármelo por WhatsApp" }).click();
+  await p.locator("[data-recibelo-listo]").waitFor({ timeout: 30000 });
+  await new Promise((r) => setTimeout(r, 1200));
+  const { data: capContrato } = await A.from("herramientas_capturas").select("id, datos").eq("telefono_norm", TELEFONO).eq("herramienta", "contrato").is("deleted_at", null).maybeSingle();
+  ok(capContrato?.datos?.tipo === "hotel" && /\{\{cliente_nombre\}\}/.test(capContrato?.datos?.cuerpo ?? "") && /cargo por cada hora/.test(capContrato?.datos?.cuerpo ?? ""), "la captura guarda el contrato con sus variables para PeluDesk");
+  await p.locator("[data-selector='tipo'] [role=radio]", { hasText: "Estética" }).click();
+  await p.waitForTimeout(300);
+  ok(/CONDICIONES DEL SERVICIO DE ESTÉTICA/.test(await p.locator("[data-vista-contrato]").innerText()), "estética sale como condiciones del servicio");
+
+  // ── J. Mensajes de WhatsApp ──
+  console.log("\nJ. Mensajes de WhatsApp");
+  const slugPagina = await pedir("/mensajes-whatsapp/recordatorio?giro=hotel");
+  ok(slugPagina.status === 200 && !/noindex/.test(slugPagina.texto) && ld(slugPagina.texto).some((x) => x["@type"] === "HowTo") && /reservación/.test(slugPagina.texto), "la página de una plantilla es indexable, con HowTo y el vocabulario del giro");
+  ok((await pedir("/sitemap.xml")).texto.includes("<loc>https://peludesk.mx/mensajes-whatsapp/cobro-pendiente</loc>"), "las plantillas están en el sitemap");
+  await p.goto(`${PLATAFORMA}/mensajes-whatsapp?giro=veterinaria`, { waitUntil: "load" });
+  const nMensajes = await p.locator("[data-mensaje]").count();
+  ok(nMensajes >= 20, `veterinaria tiene ${nMensajes} plantillas (20 o más)`);
+  await p.fill("#m-negocio", `Clínica ${sufijo}`);
+  await p.fill("#m-mascota", "Michi");
+  const primero = await p.locator("[data-mensaje='confirmacion'] p.whitespace-pre-wrap").innerText();
+  ok(primero.includes(`Clínica ${sufijo}`) && primero.includes("Michi") && !/\{\{/.test(primero), "el mensaje se arma con el negocio y la mascota, sin llaves");
+  const waPrueba = await p.locator("[data-mensaje='confirmacion'] a[href^='https://wa.me/?text=']").getAttribute("href");
+  ok(!!waPrueba && decodeURIComponent(waPrueba).includes("Michi"), "«Probar en mi WhatsApp» abre wa.me con el mensaje");
+  ok((await p.locator("[data-mensaje='recordatorio'] span", { hasText: "PeluDesk lo manda solo" }).count()) === 1, "el recordatorio dice que PeluDesk lo manda solo");
+
   // ── E. Precarga al abrir la prueba ──
   console.log("\nE. Precarga al abrir la prueba gratis");
   await p.goto(`${PLATAFORMA}/registro?utm_source=herramientas&utm_medium=precios-mercado`, { waitUntil: "load" });
@@ -270,13 +358,107 @@ try {
     ok((ev ?? []).some((e) => e.evento === "cuenta"), "se anotó «cuenta» para la herramienta");
     const { data: pr2 } = await A.from("prospectos").select("etapa, negocio_cliente_id").eq("id", prospecto.id).maybeSingle();
     ok(pr2?.negocio_cliente_id === negocio.id || pr2?.etapa === "en_prueba" || true, `(info) prospecto tras el registro: ${JSON.stringify(pr2)}`);
+    // La lista de precios también se precargó: el servicio fuera del catálogo nació como servicio con su tarifa.
+    const { data: capLista2 } = await A.from("herramientas_capturas").select("aplicado_negocio_id, aplicado_detalle").eq("id", capLista?.id ?? "00000000-0000-0000-0000-000000000000").maybeSingle();
+    const { data: deslanado } = await A.from("servicios").select("id, categoria").eq("negocio_id", negocio.id).eq("clave", "lista_deslanado").is("deleted_at", null).maybeSingle();
+    const { data: tarifaDeslanado } = await A.from("tarifas").select("precio, calculado").eq("negocio_id", negocio.id).eq("servicio_id", deslanado?.id ?? "00000000-0000-0000-0000-000000000000").is("deleted_at", null);
+    ok(capLista2?.aplicado_negocio_id === negocio.id && deslanado?.categoria === "estetica" && (tarifaDeslanado ?? []).some((t) => Number(t.precio) === 180 && t.calculado), `la lista de precios se precargó: «Deslanado» nació como servicio con $180 «Calculado» (${capLista2?.aplicado_detalle?.slice(0, 120)})`);
+    // El contrato quedó publicado como contrato general del negocio.
+    const { data: plantillas } = await A.from("plantillas_contrato").select("titulo, cuerpo, activa, version, tipos_contrato!inner(categorias_servicio)").eq("negocio_id", negocio.id).is("deleted_at", null).eq("activa", true);
+    const publicada = (plantillas ?? []).find((x) => /HOTEL CANINO/.test(x.cuerpo));
+    ok(!!publicada && publicada.version === 1 && publicada.titulo.includes(`Hta prueba ${sufijo}`), `el contrato se precargó publicado como contrato general (${publicada ? `v${publicada.version}` : "no"})`);
+  }
+
+  // ── G. Directorio y reclamo de ficha ──
+  console.log("\nG. Directorio y reclamo de ficha");
+  const TEL_RECLAMO = `57${sufijo}22`.padEnd(10, "0").slice(0, 10);
+  const idsDir = [];
+  {
+    // Diez negocios de estética en Aguascalientes (la ciudad se indexa con 10 o más); el primero con teléfono y colonia.
+    const filas = Array.from({ length: 10 }, (_, i) => ({
+      nombre: i === 0 ? `Hta prueba dir ${sufijo}` : `Estética auditoría ${sufijo} ${i}`,
+      giro: "estetica",
+      ciudad: CIUDAD_CON,
+      estado: "Aguascalientes",
+      direccion: `Calle ${i + 1} 23, ${i < 4 ? "Colonia Prueba" : "Otra Colonia"}, 20000 Aguascalientes, Ags.`,
+      telefono: i === 0 ? TEL_RECLAMO : null,
+      google_place_id: `aud-${sufijo}-${i}`,
+      calificacion: 4.9 - i * 0.1,
+      resenas: 100 - i,
+      fuente: "manual",
+    }));
+    const { data, error } = await A.from("prospectos").insert(filas).select("id, slug");
+    if (error) throw new Error(`sembrar directorio: ${error.message}`);
+    idsDir.push(...data.map((x) => x.id));
+    const slugDir = data[0].slug;
+    const indice = await pedir("/directorio");
+    ok(indice.status === 200 && indice.texto.includes(`/directorio/estetica/aguascalientes`), "/directorio enlaza la ciudad con negocios");
+    const lista = await pedir("/directorio/estetica/aguascalientes");
+    ok(lista.status === 200 && !/noindex/.test(lista.texto) && lista.texto.includes(`Hta prueba dir ${sufijo}`) && ld(lista.texto).some((x) => x["@type"] === "ItemList") && lista.texto.includes("Colonia Prueba"), "la ciudad con 10 negocios: 200, indexable, ItemList y filtro por colonia");
+    const filtrada = await pedir(`/directorio/estetica/aguascalientes?colonia=${encodeURIComponent("Colonia Prueba")}`);
+    ok(filtrada.status === 200 && filtrada.texto.includes(`Hta prueba dir ${sufijo}`) && !filtrada.texto.includes(`Estética auditoría ${sufijo} 7`), "el filtro por colonia deja solo los de esa colonia");
+    const smDir = (await pedir("/sitemap.xml")).texto;
+    ok(smDir.includes("<loc>https://peludesk.mx/directorio/estetica/aguascalientes</loc>") && !smDir.includes(`/directorio/estetica/aguascalientes/${slugDir}`), "el sitemap lleva la ciudad indexable y no las fichas");
+    const ficha = await pedir(`/directorio/estetica/aguascalientes/${slugDir}`, { cabeceras: { "user-agent": "Googlebot/2.1" } });
+    ok(ficha.status === 200 && !/noindex/.test(ficha.texto) && ld(ficha.texto).some((x) => x["@type"] === "LocalBusiness") && /Reclámalo/.test(ficha.texto), "la ficha: 200, indexable, LocalBusiness y «Reclámalo» (un robot la ve sin pedirle nada a Google)");
+
+    // El reclamo en el navegador.
+    await p.goto(`${PLATAFORMA}/directorio/estetica/aguascalientes/${slugDir}`, { waitUntil: "load" });
+    const fr = p.locator("form[data-reclamar]");
+    ok((await fr.locator("input[type=email]").count()) === 0, "el reclamo no pide correo");
+    await fr.locator("input[type=tel]").fill(TEL_RECLAMO);
+    await fr.getByRole("button", { name: "Pedir mi código" }).click();
+    await p.locator("[data-reclamo-pendiente]").waitFor({ timeout: 30000 });
+    const codigoTexto = await p.locator("[data-reclamo-pendiente] input").first().inputValue();
+    const codigo = /RECLAMO ([A-Z0-9]{6})/.exec(codigoTexto)?.[1];
+    ok(!!codigo, `la página enseña el código (${codigoTexto})`);
+    const waHref = await p.locator("[data-reclamo-pendiente] a[href*='wa.me']").getAttribute("href");
+    ok(waHref?.includes("525649160742") && decodeURIComponent(waHref).includes(`RECLAMO ${codigo}`), "el botón abre WhatsApp al número del bot con el código");
+    const { data: reclamo } = await A.from("prospectos_reclamos").select("id, estado, telefono_coincide").eq("codigo", codigo).maybeSingle();
+    ok(reclamo?.estado === "pendiente" && reclamo?.telefono_coincide === true, "el reclamo quedó pendiente y el teléfono coincide con el de Google");
+    // Otro teléfono manda el código: no pasa. El mismo: verificado (lo que hace el webhook).
+    const { data: mal } = await A.rpc("prospecto_reclamo_verificar", { p_telefono: "525500000000", p_codigo: codigo });
+    ok(mal?.ok === false && mal?.motivo === "otro_telefono", "el código desde otro teléfono no verifica");
+    const { data: bien } = await A.rpc("prospecto_reclamo_verificar", { p_telefono: `52${TEL_RECLAMO}`, p_codigo: codigo });
+    ok(bien?.ok === true && bien?.slug === slugDir, "el código desde el mismo teléfono verifica");
+    await p.locator("[data-reclamo-verificado]").waitFor({ timeout: 15000 });
+    ok(true, "la página detecta sola la verificación");
+    const { data: prDir } = await A.from("prospectos").select("etapa").eq("id", data[0].id).maybeSingle();
+    ok(prDir?.etapa === "respondio", "el prospecto pasó a «respondió»");
+    // Abrir la prueba con la ficha: el negocio nace verificado.
+    await p.locator("[data-boton-prueba-reclamo]").click();
+    await p.waitForURL(/\/registro\?/, { timeout: 30000 });
+    ok(/reclamo=/.test(p.url()) && /prospecto=/.test(p.url()), "«Abrir mi prueba» lleva al registro con el reclamo y el prospecto");
+    ok((await p.inputValue("input[name=negocio]")) === `Hta prueba dir ${sufijo}` && (await p.inputValue("input[name=telefono]")) === TEL_RECLAMO, "el registro viene con el nombre del negocio y el teléfono de la ficha");
+    await p.fill("input[name=nombre]", "Prueba Auditoría");
+    await p.fill("input[name=password]", CLAVE);
+    if (!(await p.isChecked("input[name=servicios][value=estetica]"))) await p.check("input[name=servicios][value=estetica]");
+    await p.check("input[name=acepto]");
+    await p.getByRole("button", { name: /Abrir mi negocio/ }).first().click();
+    await p.waitForURL(/bienvenida|login|auth\/entrar/, { timeout: 60000 }).catch(() => {});
+    await new Promise((r) => setTimeout(r, 2500));
+    const { data: negocioDir } = await A.from("negocios").select("id, slug").like("slug", `hta-prueba-dir-${sufijo}%`).is("deleted_at", null).maybeSingle();
+    ok(!!negocioDir, `el negocio del reclamo se creó (${negocioDir?.slug ?? "no"})`);
+    if (negocioDir) {
+      const { data: perfil } = await A.from("negocio_perfil").select("verificado_at, verificado_por, google_place_id").eq("negocio_id", negocioDir.id).is("deleted_at", null).maybeSingle();
+      ok(!!perfil?.verificado_at && perfil?.verificado_por === "reclamo" && perfil?.google_place_id === `aud-${sufijo}-0`, "el negocio nació verificado y con su lugar de Google (ficha → página)");
+      const { data: rec2 } = await A.from("prospectos_reclamos").select("estado, negocio_id").eq("id", reclamo.id).maybeSingle();
+      ok(rec2?.estado === "registrado" && rec2?.negocio_id === negocioDir.id, "el reclamo quedó registrado con el negocio");
+      const { data: ev } = await A.from("herramientas_eventos").select("evento").eq("herramienta", "directorio").gte("created_at", new Date(Date.now() - 10 * 60_000).toISOString());
+      const tiposDir = (ev ?? []).map((e) => e.evento);
+      ok(tiposDir.includes("visita") && tiposDir.includes("uso") && tiposDir.includes("telefono") && tiposDir.includes("cuenta"), `la medición del directorio tiene visita, uso, teléfono y cuenta (${tiposDir.join(",")})`);
+      const pub = await pedir("/", { cabeceras: { host: `${negocioDir.slug}.localhost:${PUERTO}` } });
+      ok(pub.status === 200 && /data-verificado/.test(pub.texto), "la página publicada del negocio enseña «Verificado»");
+      const lista2 = await pedir("/directorio/estetica/aguascalientes");
+      ok(/data-verificado/.test(lista2.texto), "la lista del directorio enseña la insignia del negocio verificado");
+    }
   }
 
   // ── F. Celular ──
   console.log("\nF. Celular a 390 px");
   const cel = await nav.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, userAgent: UA });
   const pc = await cel.newPage();
-  for (const ruta of ["/herramientas", `/precios-mercado?giro=estetica&servicio=bano&ciudad=aguascalientes&talla=mediano&precio=340`, "/precios-mercado/estetica/aguascalientes"]) {
+  for (const ruta of ["/herramientas", `/precios-mercado?giro=estetica&servicio=bano&ciudad=aguascalientes&talla=mediano&precio=340`, "/precios-mercado/estetica/aguascalientes", "/directorio", "/directorio/estetica/aguascalientes", "/lista-de-precios", "/contrato-guarderia-hotel", "/mensajes-whatsapp"]) {
     await pc.goto(`${PLATAFORMA}${ruta}`, { waitUntil: "load" });
     await pc.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     const desbordes = await pc.evaluate(desbordesDePantalla);

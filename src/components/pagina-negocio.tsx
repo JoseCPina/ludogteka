@@ -91,11 +91,14 @@ export async function PaginaNegocio({ datos }: { datos: DatosPagina }) {
       })
     : null;
   const telefono = (datos.whatsapp ?? "").replace(/\D/g, "").slice(-10);
+  // Reclamó su ficha del directorio de peludesk.mx y comprobó su WhatsApp: la página enseña «Negocio verificado».
+  const { data: perfil } = await createSupabaseAdminClient(negocio.id).from("negocio_perfil").select("verificado_at").eq("negocio_id", negocio.id).is("deleted_at", null).maybeSingle();
 
   return (
     <PaginaWeb
       modo="real"
       datos={{
+        verificado: Boolean(perfil?.verificado_at),
         nombre: datos.nombre,
         ciudad: datos.ciudad,
         direccion: datos.direccion ?? g?.direccion ?? null,

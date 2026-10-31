@@ -1,15 +1,13 @@
 // Precios de páginas PÚBLICAS de plataformas: Doctoralia (consulta veterinaria) y plataformas de cuidadores con
 // precio por noche en México. Solo páginas públicas, respetando robots.txt y 1.2 s entre peticiones por sitio.
 //
-//   node --experimental-strip-types scripts/mercado/publicas.mjs doctoralia [--prod] [--ciudades "Guadalajara,…"] [--paginas 3]
-//   node --experimental-strip-types scripts/mercado/publicas.mjs cuidadores [--prod] [--ciudades …] [--paginas 3]
+//   node scripts/mercado/publicas.mjs doctoralia [--prod] [--ciudades "Guadalajara,…"] [--paginas 3]
+//   node scripts/mercado/publicas.mjs cuidadores [--prod] [--ciudades …] [--paginas 3]
 //
 // Cada plataforma es una entrada de PLATAFORMAS: cómo se arma la URL de una ciudad y el giro/servicio que se busca.
 // Si una plataforma cambia su sitio o su robots.txt la prohíbe, la corrida lo dice y no inventa nada. La IA
 // clasifica cada cantidad (mismo tope de 300 MXN); la ciudad del precio es la de la página que se pidió.
-import { abrirBase, abrirIA, bajarPagina, clasificarCandidatos, Corrida, insertarPrecios, lista, prod, valor } from "./lib.mjs";
-import { candidatosDePrecio, textoDeHtml } from "../../src/lib/mercado/extraer.ts";
-import { CIUDADES_NACIONALES } from "../../src/lib/prospectos/nacional.ts";
+import { abrirBase, abrirIA, bajarPagina, candidatosDePrecio, CIUDADES_NACIONALES, clasificarOEncolar, Corrida, insertarPrecios, lista, prod, textoDeHtml, valor } from "./lib.mjs";
 
 const slug = (t) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
@@ -70,7 +68,7 @@ try {
   }
   corrida.detalle.sitios = porUrl;
   console.log(`  ${candidatos.length} cantidades por clasificar`, JSON.stringify(porUrl));
-  const clasificados = await clasificarCandidatos(ia, corrida, candidatos);
+  const clasificados = await clasificarOEncolar(db, ia, corrida, candidatos, (c) => ({ fuente: plataforma.fuente, url: c.url, prospecto_id: null, ciudad: c.ciudad, estado: estadoDe(c.ciudad), origen: `${c.url}#${c.id}` }));
   corrida.encontrados = clasificados.length;
   await insertarPrecios(db, corrida, clasificados.map((c) => ({ giro: c.giro, servicio: c.servicio, talla: c.talla, precio: c.precio, ciudad: c.ciudad, estado: estadoDe(c.ciudad), fuente: plataforma.fuente, url: c.url, detalle: c.contexto.slice(0, 200), origen: `${c.url}#${c.id}` })));
   await corrida.terminar();
