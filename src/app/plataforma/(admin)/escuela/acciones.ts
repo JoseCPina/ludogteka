@@ -9,7 +9,7 @@ import { sesionPorClave } from "@/lib/escuela/sesiones";
 const ZONA = "America/Mexico_City";
 
 /** Guarda fecha, duración, liga en vivo y grabación de una sesión (la base exige es_admin_plataforma). */
-export async function guardarSesion(clave: string, fd: FormData): Promise<ResultadoPlataforma> {
+export async function guardarSesion(clave: string, fd: FormData): Promise<ResultadoPlataforma> { // registro-final: la plataforma recarga la lista con revalidatePath
   if (!sesionPorClave(clave)) return { error: "Sesión desconocida." };
   const { supabase } = await exigirPlataforma();
   const fecha = String(fd.get("fecha") ?? "").trim();
@@ -21,5 +21,5 @@ export async function guardarSesion(clave: string, fd: FormData): Promise<Result
   const { error } = await supabase.from("escuela_sesiones").update({ fecha_at: fecha ? instanteDeHoraLocal(fecha, ZONA) : null, duracion_min: duracion, url_en_vivo: url || null, youtube_id: yt || null }).eq("clave", clave);
   if (error) return { error: error.message };
   revalidatePath("/plataforma/escuela");
-  return { error: null, exito: "Sesión guardada" }; // registro-final: la plataforma recarga la lista con revalidatePath
+  return { error: null, exito: "Sesión guardada" };
 }

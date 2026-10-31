@@ -7,9 +7,12 @@
 //      sitemap y en llms.txt.
 //   B. Medición: la visita y el uso llegan a herramientas_eventos con su fuente (utm); un robot no cuenta; con
 //      marketing aceptado el píxel recibe ViewContent y Lead; sin consentimiento, nada.
-//   C. Índice de precios: con datos sembrados (ciudad con 8+, otra con menos → estado → país), la pantalla enseña el
-//      rango, la barra y «¿Cuánto cobras tú?» ubica el precio; la imagen y la insignia responden; la página por
-//      ciudad existe solo para la ciudad con 8+ y 404 para la otra; un precio no creíble no cuenta.
+//   C. Índice de precios: con datos sembrados (ciudad con 8+ de 10 negocios, otra con menos → estado → país, otra con
+//      10 precios de UN solo negocio → país, y «Naucalpan de Juárez» que el catálogo llama Naucalpan), la pantalla
+//      enseña el rango, la barra y «¿Cuánto cobras tú?» ubica el precio; la imagen y la insignia responden; la página
+//      por ciudad existe solo para la ciudad con 8 precios y 3 negocios, 404 para las otras y el slug del catálogo
+//      redirige al de la base; la herramienta, la imagen y la insignia resuelven la misma ciudad; un precio no creíble
+//      no cuenta.
 //   D. Captura: «Recíbelo por WhatsApp» crea el prospecto con fuente «herramienta» (o completa uno existente), guarda
 //      herramientas_capturas, manda la plantilla al WhatsApp de mentiras (Lead a la API de conversiones con el mismo
 //      event_id) y nunca pide correo; quien pidió BAJA no recibe mensaje.
@@ -59,6 +62,9 @@ const TELEFONO = `55${sufijo}99`.padEnd(10, "0").slice(0, 10);
 const CLAVE = claveAleatoria();
 const CIUDAD_CON = "Aguascalientes"; // 10 precios de baño mediano
 const CIUDAD_SIN = "Tepic"; // 3 precios: cae al estado (Nayarit, también 3) y luego al país
+const CIUDAD_UNO = "Zacatecas"; // 10 precios de UN solo negocio: no alcanza rango ni página (3 negocios distintos)
+const CIUDAD_ALIAS = "Naucalpan de Juárez"; // como la nombra Google; el catálogo dice «Naucalpan»
+const UN_NEGOCIO = crypto.randomUUID();
 let fallas = 0;
 const ok = (c, q) => { console.log(`  ${c ? "✔" : "✘"} ${q}`); if (!c) fallas++; return c; };
 
@@ -120,6 +126,8 @@ async function sembrar() {
   const base = (ciudad, estado, n, desde, paso) => { for (let i = 0; i < n; i++) filas.push({ giro: "estetica", servicio: "bano", talla: "mediano", precio: desde + i * paso, ciudad, estado, fuente: "sitio_web", url: `https://ejemplo.test/${sufijo}/${ciudad}/${i}`, detalle: `auditoria ${sufijo}`, valido: true, huella: `aud-${sufijo}-${ciudad}-${i}` }); };
   base(CIUDAD_CON, "Aguascalientes", 10, 250, 20); // 250..430: p25 ≈ 295, mediana 340, p75 ≈ 385
   base(CIUDAD_SIN, "Nayarit", 3, 300, 10);
+  for (let i = 0; i < 10; i++) filas.push({ giro: "estetica", servicio: "bano", talla: "mediano", precio: 250 + i * 20, ciudad: CIUDAD_UNO, estado: "Zacatecas", fuente: "sitio_web", negocio_origen_id: UN_NEGOCIO, url: `https://ejemplo.test/${sufijo}/uno/${i}`, detalle: `auditoria ${sufijo} un negocio`, valido: true, huella: `aud-${sufijo}-uno-${i}` });
+  for (let i = 0; i < 10; i++) filas.push({ giro: "estetica", servicio: "bano", talla: "mediano", precio: 250 + i * 20, ciudad: CIUDAD_ALIAS, estado: "Estado de México", fuente: "sitio_web", negocio_origen_id: crypto.randomUUID(), url: `https://ejemplo.test/${sufijo}/alias/${i}`, detalle: `auditoria ${sufijo} alias`, valido: true, huella: `aud-${sufijo}-alias-${i}` });
   filas.push({ giro: "estetica", servicio: "bano", talla: "mediano", precio: 5, ciudad: CIUDAD_CON, estado: "Aguascalientes", fuente: "sitio_web", valido: false, detalle: `auditoria ${sufijo} no creíble`, huella: `aud-${sufijo}-nocreible` });
   const { data, error } = await A.from("precios_mercado").insert(filas).select("id");
   if (error) throw new Error(`sembrar: ${error.message}`);
@@ -185,6 +193,28 @@ try {
   ok(insFuera.status === 404, "la insignia da 404 con un precio fuera del rango (no se falsifica)");
   const { data: rangoBruto } = await A.rpc("precios_mercado_rangos", { p_giro: "estetica", p_servicio: "bano", p_ciudad: CIUDAD_CON, p_estado: "Aguascalientes", p_talla: "mediano" });
   ok(rangoBruto?.muestras === 10, `el precio no creíble ($5) no cuenta en el rango (${rangoBruto?.muestras} muestras)`);
+  // 8 precios Y 3 negocios distintos: una ciudad con 10 precios de un solo negocio no tiene rango ni página.
+  const uno = await pedir(`/precios-mercado?giro=estetica&servicio=bano&ciudad=zacatecas&talla=mediano`);
+  ok(uno.status === 200 && /data-nivel="pais"/.test(uno.texto) && /3 negocios distintos/.test(uno.texto), "10 precios de UN solo negocio no dan rango de ciudad: cae al país y lo dice");
+  ok((await pedir(`/precios-mercado/estetica/zacatecas`)).status === 404 && !sitemap.includes("/precios-mercado/estetica/zacatecas"), "la ciudad de un solo negocio no tiene página ni está en el sitemap");
+  ok((await pedir(`/precios-mercado/insignia?giro=estetica&servicio=bano&ciudad=zacatecas&precio=340`)).status === 404, "la insignia tampoco sale para la ciudad de un solo negocio");
+  const { data: rangoUno } = await A.rpc("precios_mercado_rangos", { p_giro: "estetica", p_servicio: "bano", p_ciudad: CIUDAD_UNO, p_estado: "Zacatecas", p_talla: "mediano" });
+  ok(rangoUno?.nivel === "pais" && Number(rangoUno?.negocios) >= 3, `la base da el nivel país con sus negocios (${rangoUno?.nivel}, ${rangoUno?.negocios} negocios)`);
+  const { data: ciudadesBruto } = await A.rpc("precios_mercado_ciudades", { p_giro: "estetica", p_minimo: 8 });
+  ok(Array.isArray(ciudadesBruto) && ciudadesBruto.some((c) => c.ciudad === CIUDAD_CON) && !ciudadesBruto.some((c) => c.ciudad === CIUDAD_UNO), "precios_mercado_ciudades deja fuera a la ciudad de un solo negocio");
+  // La herramienta, la página, la imagen y la insignia resuelven la MISMA ciudad (resolverCiudad): el slug del
+  // catálogo («naucalpan») es la ciudad de la base («Naucalpan de Juárez»).
+  const alias = await pedir(`/precios-mercado?giro=estetica&servicio=bano&ciudad=naucalpan&talla=mediano`);
+  ok(alias.status === 200 && /data-nivel="ciudad"/.test(alias.texto) && /Naucalpan de Juárez/.test(alias.texto), "«naucalpan» (catálogo) resuelve a «Naucalpan de Juárez» (base) y enseña el rango de la ciudad");
+  const pagAlias = await pedir(`/precios-mercado/estetica/naucalpan-de-juarez`);
+  ok(pagAlias.status === 200 && /Naucalpan de Juárez/.test(pagAlias.texto), "la página por ciudad existe con el slug de la base");
+  const redir = await pedir(`/precios-mercado/estetica/naucalpan`);
+  ok([301, 307, 308].includes(redir.status) && /naucalpan-de-juarez/.test(redir.headers.location ?? ""), `el slug del catálogo redirige al de la base [${redir.status}]`);
+  ok(sitemap.includes("<loc>https://peludesk.mx/precios-mercado/estetica/naucalpan-de-juarez</loc>"), "el sitemap lleva el slug de la base");
+  const imgAlias = await pedir(`/precios-mercado/imagen?giro=estetica&servicio=bano&ciudad=naucalpan&talla=mediano&formato=og`);
+  ok(imgAlias.status === 200 && imgAlias.bytes.length > 5000, "la imagen OG resuelve la misma ciudad");
+  const insAlias = await pedir(`/precios-mercado/insignia?giro=estetica&servicio=bano&ciudad=naucalpan&precio=340`);
+  ok(insAlias.status === 200 && /Dentro del rango de Naucalpan de Juárez/.test(insAlias.texto), "la insignia resuelve la misma ciudad y dice el nombre de la base");
 
   // ── B y D. Navegador: medición, píxel y captura ──
   console.log("\nB/D. Navegador: medición, píxel y captura por WhatsApp");

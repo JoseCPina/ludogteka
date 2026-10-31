@@ -14,7 +14,7 @@ const escapar = (t: string) => t.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<"
 
 export async function GET(request: NextRequest) {
   const p = request.nextUrl.searchParams;
-  const c = leerConsulta({ giro: p.get("giro"), servicio: p.get("servicio"), ciudad: p.get("ciudad"), talla: p.get("talla") });
+  const c = await leerConsulta({ giro: p.get("giro"), servicio: p.get("servicio"), ciudad: p.get("ciudad"), talla: p.get("talla") });
   const precio = Number(p.get("precio"));
   if (!c || !c.ciudad || !Number.isFinite(precio) || precio <= 0) return new NextResponse("No encontrada.", { status: 404 });
   const rango = await rangoDe(c);

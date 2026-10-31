@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const p = request.nextUrl.searchParams;
-  const c = leerConsulta({ giro: p.get("giro"), servicio: p.get("servicio"), ciudad: p.get("ciudad"), talla: p.get("talla") });
+  const c = await leerConsulta({ giro: p.get("giro"), servicio: p.get("servicio"), ciudad: p.get("ciudad"), talla: p.get("talla") });
   if (!c) return new NextResponse("Consulta inválida.", { status: 400 });
   const og = p.get("formato") === "og";
   const [W, H] = og ? [1200, 630] : [1080, 1080];

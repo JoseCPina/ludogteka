@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
         const { data: p } = await db.from("prospectos").select("publicidad_baja_at").eq("id", c.prospecto_id).maybeSingle();
         if (p?.publicidad_baja_at) { saltados++; continue; }
       }
-      const consulta = leerConsulta({ giro: String(c.datos.giro ?? ""), servicio: String(c.datos.servicio ?? ""), ciudad: (c.datos.ciudad as string | null) ?? null, talla: (c.datos.talla as string | null) ?? null });
+      const consulta = await leerConsulta({ giro: String(c.datos.giro ?? ""), servicio: String(c.datos.servicio ?? ""), ciudad: (c.datos.ciudad as string | null) ?? null, talla: (c.datos.talla as string | null) ?? null });
       if (!consulta) { saltados++; continue; }
       const rango = await rangoDe(consulta);
       if (rango.nivel === "sin_datos") { saltados++; continue; }

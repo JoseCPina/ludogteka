@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { BarraRango } from "@/components/herramientas/barra-rango";
 import { MarcoHerramienta } from "@/components/herramientas/marco";
 import { ReciboPorWhatsApp } from "@/components/herramientas/recibelo-por-whatsapp";
 import { Compartir } from "@/components/herramientas/compartir";
-import { GIROS_MERCADO, TALLAS, esGiroMercado, giroMercado, mesEnTexto, pesosMercado, serviciosDeGiro, slugDe, type GiroMercado, type Rango } from "@/lib/mercado/catalogo";
-import { ciudadPorNombre, ciudadPorSlug, type CiudadMercado } from "@/lib/mercado/ciudades";
-import { ciudadesConDatos, fraseDeRango, rangoDe } from "@/lib/mercado/rangos";
+import { GIROS_MERCADO, TALLAS, esGiroMercado, giroMercado, mesEnTexto, pesosMercado, serviciosDeGiro, slugDe, TEXTO_MINIMO, type GiroMercado, type Rango } from "@/lib/mercado/catalogo";
+import { ciudadesConDatos, fraseDeRango, rangoDe, resolverCiudad } from "@/lib/mercado/rangos";
 import { JsonLd, ORGANIZACION, SITIO, metaPagina, migas, preguntasFrecuentes } from "@/lib/peludesk/seo";
 import { recibirPorWhatsApp } from "../../../herramientas/acciones";
 
 /**
  * /precios-mercado/<giro>/<ciudad>: «Cuánto cobra una estética canina en Guadalajara en 2026». Solo existe (200 e
- * indexable) si la ciudad junta 8 precios o más de ese giro; si no, 404. El sitemap la lista desde
- * precios_mercado_ciudades. Dinámica como el resto del sitio (con ISR las lecturas a la base tronaban con
+ * indexable) si la ciudad junta 8 precios o más de ese giro de 3 negocios distintos o más; si no, 404. El sitemap la
+ * lista desde precios_mercado_ciudades, y la ciudad se resuelve con `resolverCiudad` (la misma función que la
+ * herramienta, la imagen y la insignia): el slug del catálogo («naucalpan») redirige al de la base («naucalpan-de-juarez»). Dinámica como el resto del sitio (con ISR las lecturas a la base tronaban con
  * DYNAMIC_SERVER_USAGE); los datos cambian una vez al mes.
  */
 export const dynamic = "force-dynamic";
@@ -25,15 +25,12 @@ const anio = () => new Date().getFullYear();
 async function datos(giroParam: string, ciudadSlug: string) {
   if (!esGiroMercado(giroParam)) return null;
   const giro: GiroMercado = giroParam;
-  // La ciudad con datos cuyo slug es el de la ruta (el sitemap, llms.txt y los enlaces se arman con slugDe(ciudad de
-  // la base), que es el nombre que da Google: «Naucalpan de Juárez»); si la ruta trae el slug del catálogo
-  // («naucalpan»), se busca la de la base que le corresponde.
-  const conDatos = await ciudadesConDatos(giro);
-  const catalogo = ciudadPorSlug(ciudadSlug);
-  const con = conDatos.find((x) => slugDe(x.ciudad) === ciudadSlug) ?? (catalogo ? conDatos.find((x) => ciudadPorNombre(x.ciudad)?.slug === catalogo.slug) : undefined);
+  const ciudad = await resolverCiudad(giro, ciudadSlug);
+  if (!ciudad) return null;
+  // Solo las ciudades con datos tienen página; la ruta canónica es la del slug de la base.
+  const con = (await ciudadesConDatos(giro)).find((x) => slugDe(x.ciudad) === ciudad.slug);
   if (!con) return null;
-  // Los rangos se piden con el nombre tal como está en la base (así se guardó cada precio).
-  const ciudad: CiudadMercado = { ...(catalogo ?? ciudadPorNombre(con.ciudad) ?? { poblacion: 0, clave: "" }), nombre: con.ciudad, estado: con.estado, slug: ciudadSlug };
+  if (ciudad.slug !== ciudadSlug) return { redirigir: `/precios-mercado/${giro}/${ciudad.slug}` } as const;
   const servicios = serviciosDeGiro(giro);
   const rangos = await Promise.all(
     servicios.map(async (s) => ({
@@ -48,7 +45,7 @@ async function datos(giroParam: string, ciudadSlug: string) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { giro, ciudad } = await params;
   const d = await datos(giro, ciudad);
-  if (!d) return { robots: { index: false } };
+  if (!d || "redirigir" in d) return { robots: { index: false } };
   const g = giroMercado(d.giro);
   return metaPagina({
     titulo: `Cuánto cobra ${g.articulo} en ${d.ciudad.nombre} en ${anio()} | Índice PeluDesk`,
@@ -62,6 +59,7 @@ export default async function PreciosPorCiudad({ params }: Props) {
   const { giro, ciudad: ciudadSlug } = await params;
   const d = await datos(giro, ciudadSlug);
   if (!d) notFound();
+  if ("redirigir" in d) permanentRedirect(String(d.redirigir));
   const g = giroMercado(d.giro);
   const ruta = `/precios-mercado/${d.giro}/${ciudadSlug}`;
   const principal = d.rangos[0];
@@ -112,7 +110,7 @@ export default async function PreciosPorCiudad({ params }: Props) {
                 <small> {r.servicio.unidad}</small>
               </p>
               <p className="mt-2 text-n-700">
-                Mediana {pesosMercado(r.general.mediana!)} · {r.general.muestras} precios{r.general.nivel !== "ciudad" ? ` (rango ${r.general.nivel === "estado" ? "del estado" : "del país"}: la ciudad aún no junta 8 de este servicio)` : ""}.
+                Mediana {pesosMercado(r.general.mediana!)} · {r.general.muestras} precios{r.general.negocios ? ` de ${r.general.negocios} negocios` : ""}{r.general.nivel !== "ciudad" ? ` (rango ${r.general.nivel === "estado" ? "del estado" : "del país"}: la ciudad aún no junta ${TEXTO_MINIMO} de este servicio)` : ""}.
               </p>
               {r.tallas.filter((t) => t.rango.nivel === "ciudad").length > 0 && (
                 <dl className="mt-4 grid grid-cols-3 gap-3">
