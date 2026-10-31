@@ -4,6 +4,7 @@ import { type NextRequest } from "next/server";
 import { ImageResponse } from "next/og";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { esPlataforma } from "@/lib/negocio/actual";
+import { esHostApp } from "@/lib/negocio/host";
 import { CACHE_ICONO, iconoPng, marcaDeIcono } from "@/lib/negocio/icono";
 
 // El ícono de la app instalada (pantalla de inicio): el LOGO del negocio centrado sobre
@@ -37,8 +38,10 @@ export async function GET(request: NextRequest) {
   const s = Number(request.nextUrl.searchParams.get("s"));
   const tam = s === 192 || s === 512 ? s : 512;
   const mascarable = request.nextUrl.searchParams.get("m") === "1";
-  const { marca } = await cargarNegocioLanding();
-  const logo = await logoComoDato(marca?.logo);
+  // La app para dueños: el isotipo de PeluDesk sobre blanco (con más aire si es maskable).
+  const enApp = esHostApp(request.headers.get("host"));
+  const { marca } = enApp ? { marca: null } : await cargarNegocioLanding();
+  const logo = await logoComoDato(enApp ? "/marca/peludesk/favicon-512.png" : marca?.logo);
   if (!logo) {
     const { inicial, color } = await marcaDeIcono(request.headers.get("host"));
     return iconoPng(tam, inicial, color);

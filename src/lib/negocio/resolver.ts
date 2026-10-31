@@ -36,6 +36,8 @@ export const ENCABEZADOS_NEGOCIO = {
 
 // La petición es de la administración de PeluDesk (sin negocio).
 export const ENCABEZADO_PLATAFORMA = "x-plataforma";
+// La app para dueños (app.peludesk.mx): sin negocio, con la sesión del dueño. Lo pone el middleware, firmado.
+export const ENCABEZADO_APP = "x-peludesk-app";
 
 // Un ícono de la configuración del negocio: una ruta del propio sitio
 // (/iconos/…) o una dirección https. Cualquier otra cosa, el generado.

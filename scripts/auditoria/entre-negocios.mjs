@@ -63,6 +63,8 @@ const personasA = {
   cliente_de_los_dos: datos.cuentaAmbos,
 };
 const miembrosDeB = new Set([datos.esteticaAmbos, datos.cuentaAmbos]);
+// App para dueños (docs/app-duenos/FASE-0.md): tablas de la persona, no de un negocio.
+const TABLAS_DE_LA_PERSONA = new Set(["duenos", "mascotas", "app_avisos", "app_push_suscripciones"]);
 for (const [rol, id] of Object.entries(personasA)) if (!id) throw new Error(`No hay ${rol} en Ludogteka de desarrollo.`);
 
 const tokens = {};
@@ -141,7 +143,10 @@ for (const [rol, token] of Object.entries(tokens)) {
       // negocios: con el encabezado de B, el id de B es solo el eco del
       // propio encabezado (la fila pública, si la política la deja ver).
       const fuga = deB(texto, { permitirNegocio: negocio === B && rel === "negocios" });
-      if (fuga) hallazgo(`${rol} [${negocio === B ? "encabezado de B" : "encabezado de A"}] ${rel}: aparece ${fuga}`);
+      // Las tablas DE LA PERSONA de la app para dueños (sin negocio: duenos, mascotas, app_*) le enseñan a quien está en
+      // los dos negocios sus propias mascotas de B, con cualquier encabezado: es lo que la app promete.
+      const esSuyaDeLosDos = TABLAS_DE_LA_PERSONA.has(rel) && miembrosDeB.has(personasA[rol]);
+      if (fuga && !esSuyaDeLosDos) hallazgo(`${rol} [${negocio === B ? "encabezado de B" : "encabezado de A"}] ${rel}: aparece ${fuga}`);
       if (conNegocio.has(rel)) {
         const r2 = await fetch(`${URL}/rest/v1/${rel}?select=negocio_id&negocio_id=eq.${B}&limit=5`, { headers: cabeceras(token, negocio) });
         revisiones++;
@@ -193,7 +198,9 @@ const rpcs = Object.keys(spec.paths).filter((p) => p.startsWith("/rpc/")).map((p
 const soloLectura = new Set(rpcs.filter((fn) => spec.paths[`/rpc/${fn}`].get));
 // mis_negocios le dice a cada persona en qué negocios ESTÁ: a un miembro de
 // B le debe mostrar B.
-const propiasDeLaPersona = new Set(["mis_negocios"]);
+// Lo mismo para la app para dueños (docs/app-duenos/FASE-0.md): app_mis_negocios y app_mis_vinculos son de la persona,
+// en todos sus negocios, filtradas por auth.uid().
+const propiasDeLaPersona = new Set(["mis_negocios", "app_mis_negocios", "app_mis_vinculos"]);
 let llamadas = 0;
 for (const [rol, token] of Object.entries(tokens)) {
   for (const fn of rpcs) {

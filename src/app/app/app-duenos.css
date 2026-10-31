@@ -1,0 +1,509 @@
+/* La app para dueños (docs/app-duenos/PLAN.md). Distinta al panel del negocio: crema cálido, tarjetas blancas que
+   flotan con sombra muy difusa (nunca un borde gris de 1 px), botones de píldora, tres pestañas abajo y poco en cada
+   pantalla. Outfit. Todo el movimiento es opacity/transform con una curva con peso y se apaga con «reducir movimiento». */
+.apd {
+  --apd-fondo: #fff8ee;
+  --apd-tinta: #2b2a33;
+  --apd-tinta-2: #4f4c5c;
+  --apd-tinta-3: #7a7686;
+  --apd-morado: #4b3f72;
+  --apd-morado-2: #3a2f5c;
+  --apd-morado-suave: #ece8f6;
+  --apd-menta: #a7d8c8;
+  --apd-menta-suave: #e6f4ef;
+  --apd-menta-oscuro: #1f6b57;
+  --apd-coral-suave: #fde4e1;
+  --apd-coral-oscuro: #b23c31;
+  --apd-ambar-suave: #fdebc9;
+  --apd-ambar-oscuro: #8a5400;
+  --apd-curva: cubic-bezier(0.32, 0.72, 0, 1);
+  --apd-sombra: 0 24px 48px -32px rgba(43, 42, 51, 0.35), 0 1px 0 rgba(43, 42, 51, 0.03);
+  --apd-filo: inset 0 0 0 1px rgba(43, 42, 51, 0.06);
+  --apd-radio: 1.75rem;
+  min-height: 100dvh;
+  background: var(--apd-fondo);
+  color: var(--apd-tinta);
+  font-variant-numeric: tabular-nums;
+  -webkit-tap-highlight-color: transparent;
+}
+/* Un resplandor fijo arriba (menta y morado muy diluidos): el fondo respira sin pintar nada por encima. */
+.apd::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(42rem 22rem at 110% -10%, rgba(167, 216, 200, 0.35), transparent 60%),
+    radial-gradient(36rem 20rem at -20% 0%, rgba(75, 63, 114, 0.1), transparent 60%);
+}
+.apd > * {
+  position: relative;
+  z-index: 1;
+}
+.apd-cuerpo {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 40rem;
+  padding: 0 1rem calc(6.5rem + env(safe-area-inset-bottom)) 1rem;
+}
+.apd-encabezado {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 40rem;
+  padding: calc(0.75rem + env(safe-area-inset-top)) 1rem 0.75rem;
+  background: linear-gradient(to bottom, var(--apd-fondo) 70%, rgba(255, 248, 238, 0));
+}
+.apd-marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-size: 1.125rem;
+  color: var(--apd-morado);
+  text-decoration: none;
+}
+.apd-marca img {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+.apd-yo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: var(--apd-sombra), var(--apd-filo);
+  color: var(--apd-morado);
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.5s var(--apd-curva);
+}
+.apd-yo:active {
+  transform: scale(0.96);
+}
+.apd-ceja {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  background: var(--apd-morado-suave);
+  color: var(--apd-morado);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.apd-titulo {
+  margin-top: 0.75rem;
+  font-size: clamp(1.75rem, 7vw, 2.25rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  color: var(--apd-tinta);
+  text-wrap: balance;
+}
+.apd-linea {
+  margin-top: 0.5rem;
+  max-width: 44ch;
+  color: var(--apd-tinta-2);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+}
+.apd-seccion {
+  margin-top: 1.75rem;
+}
+.apd-seccion-titulo {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--apd-tinta-3);
+  margin-bottom: 0.75rem;
+}
+/* La tarjeta: blanca, radio grande, sombra difusa y un filo apenas visible (nunca un borde gris). */
+.apd-tarjeta {
+  position: relative;
+  display: block;
+  border-radius: var(--apd-radio);
+  background: #fff;
+  box-shadow: var(--apd-sombra), var(--apd-filo);
+  padding: 1.1rem 1.15rem;
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.6s var(--apd-curva), box-shadow 0.6s var(--apd-curva);
+}
+a.apd-tarjeta:active,
+button.apd-tarjeta:active {
+  transform: scale(0.985);
+}
+/* Doble marco: una lámina sobre una bandeja (la tarjeta grande de la mascota). */
+.apd-bandeja {
+  padding: 0.375rem;
+  border-radius: calc(var(--apd-radio) + 0.375rem);
+  background: rgba(75, 63, 114, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(75, 63, 114, 0.06);
+}
+.apd-bandeja > .apd-tarjeta {
+  box-shadow: var(--apd-sombra), inset 0 1px 1px rgba(255, 255, 255, 0.9), var(--apd-filo);
+}
+.apd-foto {
+  width: 4.25rem;
+  height: 4.25rem;
+  flex: none;
+  border-radius: 1.25rem;
+  object-fit: cover;
+  background: var(--apd-menta-suave);
+}
+.apd-foto-grande {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: calc(var(--apd-radio) - 0.375rem);
+  object-fit: cover;
+  background: var(--apd-menta-suave);
+}
+.apd-inicial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--apd-menta-oscuro);
+}
+.apd-foto-grande.apd-inicial {
+  font-size: 4rem;
+}
+.apd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--apd-menta-suave);
+  color: var(--apd-menta-oscuro);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.apd-chip-neutro {
+  background: #f3f0ea;
+  color: var(--apd-tinta-2);
+}
+.apd-chip-coral {
+  background: var(--apd-coral-suave);
+  color: var(--apd-coral-oscuro);
+}
+.apd-chip-ambar {
+  background: var(--apd-ambar-suave);
+  color: var(--apd-ambar-oscuro);
+}
+/* Botones: píldoras. El primario lleva su flecha en un circulito propio al final. */
+.apd-boton,
+.apd-boton-sec,
+.apd-boton-suave {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 3.25rem;
+  padding: 0 1.4rem;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  border: 0;
+  transition: transform 0.5s var(--apd-curva), background-color 0.5s var(--apd-curva), opacity 0.5s var(--apd-curva);
+}
+.apd-boton {
+  background: var(--apd-morado);
+  color: #fff;
+  box-shadow: 0 16px 32px -20px rgba(75, 63, 114, 0.7);
+}
+.apd-boton:hover {
+  background: var(--apd-morado-2);
+}
+.apd-boton:active,
+.apd-boton-sec:active,
+.apd-boton-suave:active {
+  transform: scale(0.98);
+}
+.apd-boton-sec {
+  background: #fff;
+  color: var(--apd-morado);
+  box-shadow: var(--apd-filo), 0 10px 24px -20px rgba(43, 42, 51, 0.5);
+}
+.apd-boton-suave {
+  background: var(--apd-morado-suave);
+  color: var(--apd-morado);
+  min-height: 2.75rem;
+  padding: 0 1.1rem;
+  font-size: 0.9375rem;
+}
+.apd-boton:disabled,
+.apd-boton-sec:disabled,
+.apd-boton-suave:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.apd-boton-flecha {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  margin-right: -0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  transition: transform 0.5s var(--apd-curva);
+}
+.apd-boton:hover .apd-boton-flecha {
+  transform: translateX(2px);
+}
+.apd-boton[aria-busy="true"] .apd-boton-flecha,
+.apd-boton-sec[aria-busy="true"]::after {
+  animation: apd-girar 0.9s linear infinite;
+}
+.apd-boton[aria-busy="true"] .apd-boton-flecha svg {
+  display: none;
+}
+.apd-boton[aria-busy="true"] .apd-boton-flecha::after,
+.apd-boton-sec[aria-busy="true"]::after {
+  content: "";
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+}
+.apd-boton-ancho {
+  width: 100%;
+}
+@keyframes apd-girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* Campos */
+.apd-etiqueta {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--apd-tinta-2);
+}
+.apd-campo {
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0 1.1rem;
+  border-radius: 1.1rem;
+  border: 0;
+  background: #fff;
+  box-shadow: var(--apd-filo);
+  font-size: 1.0625rem;
+  color: var(--apd-tinta);
+  transition: box-shadow 0.4s var(--apd-curva);
+}
+.apd-campo:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--apd-morado);
+}
+.apd-codigo {
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: var(--apd-morado);
+  font-variant-numeric: tabular-nums;
+}
+.apd-aviso {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1.1rem;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+.apd-aviso-error {
+  background: var(--apd-coral-suave);
+  color: var(--apd-coral-oscuro);
+}
+.apd-aviso-ok {
+  background: var(--apd-menta-suave);
+  color: var(--apd-menta-oscuro);
+}
+.apd-aviso-ambar {
+  background: var(--apd-ambar-suave);
+  color: var(--apd-ambar-oscuro);
+}
+.apd-nota {
+  color: var(--apd-tinta-3);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.apd-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+.apd-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.apd-datos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+.apd-dato {
+  border-radius: 1.1rem;
+  background: #f8f4ec;
+  padding: 0.75rem 0.9rem;
+}
+.apd-dato dt {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--apd-tinta-3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.apd-dato dd {
+  margin-top: 0.15rem;
+  font-weight: 700;
+  color: var(--apd-tinta);
+}
+.apd-enlace {
+  color: var(--apd-morado);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+}
+/* Las tres pestañas: una píldora de vidrio flotando abajo. */
+.apd-nav {
+  position: fixed;
+  left: 50%;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  z-index: 30;
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: min(calc(100% - 2rem), 24rem);
+  padding: 0.375rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 20px 44px -24px rgba(43, 42, 51, 0.45), var(--apd-filo);
+}
+.apd-nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-height: 3.25rem;
+  padding: 0.4rem 0.25rem 0.35rem;
+  border-radius: 999px;
+  color: var(--apd-tinta-3);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 0.5s var(--apd-curva), color 0.5s var(--apd-curva), transform 0.5s var(--apd-curva);
+}
+.apd-nav a:active {
+  transform: scale(0.96);
+}
+.apd-nav a[aria-current="page"] {
+  background: var(--apd-morado-suave);
+  color: var(--apd-morado);
+}
+.apd-nav svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+.apd-punto {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--apd-coral-oscuro);
+}
+/* Entrada con peso: cada bloque aparece de abajo, escalonado con --i. */
+.apd-aparece {
+  animation: apd-aparecer 0.8s var(--apd-curva) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+@keyframes apd-aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.apd-vacio {
+  padding: 2rem 1.25rem;
+  text-align: center;
+  border-radius: var(--apd-radio);
+  background: #fff;
+  box-shadow: var(--apd-sombra), var(--apd-filo);
+}
+.apd-vacio svg {
+  width: 3.5rem;
+  height: 3.5rem;
+  margin: 0 auto 0.75rem;
+  color: var(--apd-menta-oscuro);
+}
+.apd-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.apd-tab {
+  min-height: 2.5rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  border: 0;
+  background: #fff;
+  box-shadow: var(--apd-filo);
+  color: var(--apd-tinta-2);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.5s var(--apd-curva), color 0.5s var(--apd-curva);
+}
+.apd-tab[aria-pressed="true"] {
+  background: var(--apd-morado);
+  color: #fff;
+}
+@media (min-width: 640px) {
+  .apd-datos {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .apd-aparece {
+    animation: none;
+  }
+  .apd *,
+  .apd *::before,
+  .apd *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
