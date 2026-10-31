@@ -73,7 +73,7 @@ export default async function RegistroPage({ searchParams }: { searchParams: Pro
           </p>
         </div>
         <section className="relative rounded-2xl border border-n-200 bg-white p-6 shadow-[0_1px_2px_rgb(75_63_114/0.06)] sm:p-8">
-          <RegistroForm origen={origen} inicial={inicial} interno={q.interno === "1"} />
+          <RegistroForm origen={origen} inicial={inicial} interno={q.interno === "1"} reclamo={/^[0-9a-f-]{36}$/.test(String(q.reclamo ?? "")) ? String(q.reclamo) : null} />
         </section>
       </div>
       <div className="mx-auto w-full max-w-5xl px-4 pb-12 sm:px-6">

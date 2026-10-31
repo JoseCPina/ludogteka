@@ -3,11 +3,33 @@
 // precios_mercado_corridas, la inserción sin duplicados (huella), el límite de velocidad por sitio, robots.txt y
 // el tope de gasto de IA (300 MXN entre todas las corridas de los últimos 31 días de esa fuente).
 import fs from "node:fs";
+import path from "node:path";
 import { createHash } from "node:crypto";
+import { registerHooks } from "node:module";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { createClient } from "@supabase/supabase-js";
-import { costoIaMxn, HERRAMIENTA_PRECIOS, limpiarClasificacion, robotsPermite, SISTEMA_CLASIFICAR_PRECIOS, usuarioClasificar } from "../../src/lib/mercado/extraer.ts";
-import { precioCreible, servicioMercado } from "../../src/lib/mercado/catalogo.ts";
-import { crearIAConUso } from "../../src/lib/mercado/ia.ts";
+
+// Los módulos de src/ se importan entre sí sin extensión («./catalogo»): Node necesita que alguien le ponga el .ts.
+const SRC = path.join(fileURLToPath(new URL("../../", import.meta.url)), "src") + path.sep;
+registerHooks({
+  resolve(especificador, contexto, siguiente) {
+    let e = especificador.startsWith("@/") ? pathToFileURL(SRC + especificador.slice(2)).href : especificador;
+    if ((e.startsWith("file:") || e.startsWith(".")) && !/\.\w+$/.test(e)) {
+      const ruta = fileURLToPath(new URL(e, e.startsWith("file:") ? undefined : contexto.parentURL));
+      if (fs.existsSync(`${ruta}.ts`)) e = pathToFileURL(`${ruta}.ts`).href;
+      else if (fs.existsSync(`${ruta}.tsx`)) e = pathToFileURL(`${ruta}.tsx`).href;
+    }
+    return siguiente(e, contexto);
+  },
+});
+const extraer = await import("../../src/lib/mercado/extraer.ts");
+const catalogo = await import("../../src/lib/mercado/catalogo.ts");
+const { crearIAConUso } = await import("../../src/lib/mercado/ia.ts");
+const { costoIaMxn, HERRAMIENTA_PRECIOS, limpiarClasificacion, robotsPermite, SISTEMA_CLASIFICAR_PRECIOS, usuarioClasificar } = extraer;
+const { precioCreible, servicioMercado } = catalogo;
+// Lo que usan los scripts (importan de aquí, no de src/: así el resolvedor ya está puesto).
+export const { candidatosDePrecio, enlacesDePrecios, textoDeHtml } = extraer;
+export const { CIUDADES_NACIONALES } = await import("../../src/lib/prospectos/nacional.ts");
 
 export const args = process.argv.slice(2);
 export const valor = (k) => {
@@ -65,9 +87,13 @@ export class Corrida {
     this.id = null;
   }
   async empezar() {
+    // Una corrida que quedó «corriendo» más de 6 h murió sin cerrar (se cortó el proceso): se marca.
+    await this.db.from("precios_mercado_corridas").update({ estado: "fallida", fin_at: new Date().toISOString(), error: "cortada sin terminar" }).eq("fuente", this.fuente).eq("estado", "corriendo").lt("inicio_at", new Date(Date.now() - 6 * 3600_000).toISOString());
     const { data, error } = await this.db.from("precios_mercado_corridas").insert({ fuente: this.fuente, origen: "script" }).select("id").single();
     if (error) throw new Error(`corrida: ${error.message}`);
     this.id = data.id;
+    this.iaRota = false;
+    this.encolados = 0;
     const { data: previas } = await this.db.from("precios_mercado_corridas").select("costo_ia_mxn").eq("fuente", this.fuente).gte("inicio_at", new Date(Date.now() - 31 * 86_400_000).toISOString()).is("deleted_at", null).limit(500);
     this.costoIaPrevio = (previas ?? []).reduce((n, c) => n + Number(c.costo_ia_mxn || 0), 0);
     console.log(`corrida ${this.id} (${this.fuente}) · IA gastada en 31 días: $${this.costoIaPrevio.toFixed(2)} MXN de $${TOPE_IA_MXN}`);
@@ -84,8 +110,26 @@ export class Corrida {
     await this.db.from("precios_mercado_corridas").update({ estado, fin_at: estado === "corriendo" ? null : new Date().toISOString(), revisados: this.revisados, encontrados: this.encontrados, insertados: this.insertados, errores: this.errores, costo_ia_mxn: Math.round(this.costoIa * 100) / 100, gasto_usd: Math.round(this.gastoUsd * 100) / 100, detalle: this.detalle, error }).eq("id", this.id);
   }
   async terminar(error = null) {
+    if (this.encolados) this.detalle.notas.push(`${this.encolados} candidatos encolados en precios_mercado_candidatos: los clasifica /api/cron/mercado-clasificar (cada hora, en Vercel)`);
     await this.guardar(error ? "fallida" : "terminada", error ? String(error).slice(0, 400) : null);
-    console.log(`\n${prod ? "PRODUCCIÓN" : "desarrollo"} · ${this.fuente} · revisados ${this.revisados} · precios encontrados ${this.encontrados} · insertados ${this.insertados} · IA $${this.costoIa.toFixed(2)} MXN · Places $${this.gastoUsd.toFixed(2)} USD · errores ${this.errores}`);
+    console.log(`\n${prod ? "PRODUCCIÓN" : "desarrollo"} · ${this.fuente} · revisados ${this.revisados} · precios encontrados ${this.encontrados} · insertados ${this.insertados} · encolados ${this.encolados} · IA $${this.costoIa.toFixed(2)} MXN · Places $${this.gastoUsd.toFixed(2)} USD · errores ${this.errores}`);
+  }
+}
+
+/**
+ * Sin IA aquí (sin llave, o Anthropic la rechaza: la llave real solo vive en Vercel), los candidatos se dejan en
+ * precios_mercado_candidatos y la tarea /api/cron/mercado-clasificar los clasifica cada hora. Cada candidato lleva
+ * lo que hace falta para insertar el precio después (fuente, url, prospecto, ciudad, estado, origen de la huella).
+ */
+export async function encolarCandidatos(db, corrida, candidatos, aFila) {
+  const filas = candidatos.map((c) => {
+    const f = aFila(c);
+    return { giro: c.giro, precio: Math.round(Number(c.precio) * 100) / 100, contexto: c.contexto.slice(0, 600), fuente: f.fuente, url: f.url?.slice(0, 500) ?? null, prospecto_id: f.prospecto_id ?? null, ciudad: f.ciudad ?? null, estado: f.estado ?? null, origen: f.origen ?? null, corrida_id: corrida.id };
+  });
+  for (let i = 0; i < filas.length; i += 200) {
+    const { error } = await db.from("precios_mercado_candidatos").insert(filas.slice(i, i + 200));
+    if (error) corrida.error(`encolar: ${error.message}`);
+    else corrida.encolados += Math.min(200, filas.length - i);
   }
 }
 
@@ -121,11 +165,15 @@ export async function insertarPrecios(db, corrida, filas) {
 }
 
 // ── IA ─────────────────────────────────────────────────────────────────────────────────────────────────────────
-/** Clasifica candidatos en lotes de 30; respeta el tope de gasto. Devuelve [{...candidato, servicio, talla}] solo los que sí son de un servicio. */
+/**
+ * Clasifica candidatos en lotes de 30; respeta el tope de gasto. Devuelve [{...candidato, servicio, talla}] solo los
+ * que sí son de un servicio. Sin IA aquí (o si Anthropic rechaza la llave), devuelve [] y marca corrida.iaRota: quien
+ * llama los encola con encolarCandidatos para que los clasifique Vercel.
+ */
 export async function clasificarCandidatos(ia, corrida, candidatos) {
   const salida = [];
-  if (!ia) {
-    corrida.detalle.notas.push("sin ANTHROPIC_API_KEY: no se clasificó nada");
+  if (!ia || corrida.iaRota) {
+    corrida.iaRota = true;
     return salida;
   }
   for (let i = 0; i < candidatos.length; i += 30) {
@@ -145,9 +193,22 @@ export async function clasificarCandidatos(ia, corrida, candidatos) {
       }
     } catch (e) {
       corrida.error(`IA: ${e.message}`);
+      if (/401|403|invalid x-api-key/.test(e.message)) {
+        corrida.iaRota = true;
+        corrida.detalle.notas.push("Anthropic rechazó la llave local: los candidatos se encolan para Vercel");
+        return salida;
+      }
     }
   }
   return salida;
+}
+
+/** Clasifica aquí si se puede; si no, encola. `aFila(c)` da fuente, url, prospecto_id, ciudad, estado y origen de cada candidato. */
+export async function clasificarOEncolar(db, ia, corrida, candidatos, aFila) {
+  if (!candidatos.length) return [];
+  const clasificados = await clasificarCandidatos(ia, corrida, candidatos);
+  if (corrida.iaRota) await encolarCandidatos(db, corrida, candidatos, aFila);
+  return clasificados;
 }
 
 // ── Red: velocidad por sitio y robots ──────────────────────────────────────────────────────────────────────────

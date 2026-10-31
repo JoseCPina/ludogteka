@@ -6,6 +6,7 @@ import { TEXTO_AHORA_NO, TEXTO_BAJA, TEXTO_BAJA_PROSPECTO, clasificarRespuesta }
 import { guardarEstado, esFalloDeCuenta, type EstadoMeta } from "@/lib/whatsapp/entregas";
 import { avisarFalloDeEntrega } from "@/lib/soporte/notificar";
 import { procesarSesion } from "@/lib/whatsapp/flow/servidor";
+import { atenderReclamo } from "@/lib/directorio/webhook";
 import { atenderBoton, atenderTexto, guardarEntregaRecordatorio, reportarSiHayExcedente, type Atencion } from "@/lib/recordatorios/respuestas";
 
 const TEXTO_FORMULARIO_ENVIADO = "[Envió el formulario «Prueba gratis»]";
@@ -216,6 +217,13 @@ export async function POST(request: NextRequest) {
           const aviso = seguimiento.tipo === "baja" ? TEXTO_BAJA : TEXTO_AHORA_NO;
           await wa.texto(m.telefono, aviso);
           await datos.apuntarMensaje(m.telefono, "agente", aviso);
+          continue;
+        }
+        // «RECLAMO ABC123»: quien reclama su ficha del directorio manda el código desde su número (src/lib/directorio/webhook.ts).
+        const reclamo = m.texto ? await atenderReclamo(m.telefono, m.texto) : null;
+        if (reclamo) {
+          await wa.texto(m.telefono, reclamo.texto);
+          await datos.apuntarMensaje(m.telefono, "agente", reclamo.texto);
           continue;
         }
         // BAJA de quien no está en el seguimiento (un prospecto): fuera de mensajes y de la publicidad (aviso de privacidad).

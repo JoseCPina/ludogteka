@@ -292,11 +292,15 @@ const PUBLICAS_PLATAFORMA: Record<string, string> = {
   "/precios-mercado/imagen": "/peludesk/precios-mercado/imagen",
   // Sin extensión a propósito: el matcher del middleware no toma rutas que terminan en .svg.
   "/precios-mercado/insignia": "/peludesk/precios-mercado/insignia",
+  "/directorio": "/peludesk/directorio",
+  "/lista-de-precios": "/peludesk/lista-de-precios",
+  "/contrato-guarderia-hotel": "/peludesk/contrato-guarderia-hotel",
+  "/mensajes-whatsapp": "/peludesk/mensajes-whatsapp",
 };
 // Con parámetro: artículos del centro de ayuda y del blog, páginas del índice
 // del blog y sus categorías. Una lista cerrada de formas, nunca por prefijo.
 const COOKIE_INTERNO = "peludesk_interno";
-const PUBLICAS_PLATAFORMA_PATRON = /^\/(ayuda\/[a-z0-9-]+|guias\/[a-z0-9-]+|alternativas\/[a-z0-9-]+|ayuda\/videos\/[a-z0-9-]+|blog\/[a-z0-9-]+|blog\/pagina\/\d{1,3}|blog\/categoria\/[a-z0-9-]+|para\/[a-z0-9-]{3,60}|para\/[a-z0-9-]{3,60}\/ir\/(?:prueba|whatsapp|demo)|entrar\/[A-Za-z0-9_-]{30,60}|precios-mercado\/(?:estetica|hotel|guarderia|veterinaria)\/[a-z0-9-]{2,60})$/;
+const PUBLICAS_PLATAFORMA_PATRON = /^\/(ayuda\/[a-z0-9-]+|guias\/[a-z0-9-]+|alternativas\/[a-z0-9-]+|ayuda\/videos\/[a-z0-9-]+|blog\/[a-z0-9-]+|blog\/pagina\/\d{1,3}|blog\/categoria\/[a-z0-9-]+|para\/[a-z0-9-]{3,60}|para\/[a-z0-9-]{3,60}\/ir\/(?:prueba|whatsapp|demo)|entrar\/[A-Za-z0-9_-]{30,60}|precios-mercado\/(?:estetica|hotel|guarderia|veterinaria)\/[a-z0-9-]{2,60}|directorio\/(?:estetica|hotel|guarderia|veterinaria)\/[a-z0-9-]{2,60}(?:\/[a-z0-9-]{3,60})?|mensajes-whatsapp\/[a-z0-9-]{3,60})$/;
 
 async function plataforma(request: NextRequest, cabeceras: Headers) {
   const { pathname } = request.nextUrl;
