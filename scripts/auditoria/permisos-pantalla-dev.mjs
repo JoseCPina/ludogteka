@@ -4,7 +4,7 @@
 //   node scripts/auditoria/permisos-pantalla-dev.mjs [--roles admin,recepcion,estetica] [--max 220] [--botones 20] [--sin-botones] [--ver]
 //
 // Entra con cada rol del personal (estética, recepción con sus permisos de siempre, una «encargada» de recepción con
-// los permisos de administrar, y admin) y recorre la app desde su
+// los permisos de administrar, un médico veterinario designado, y admin) y recorre la app desde su
 // menú siguiendo los enlaces que ve. En cada pantalla:
 //   1. revisa cada enlace visible (uno por destino): si la página de destino lo regresa (al inicio de su rol, a la
 //      página de arriba, a «módulo apagado», a /sin-acceso o a /login), responde 401/403 o solo dice «No tienes
@@ -31,10 +31,11 @@ import { createClient } from "@supabase/supabase-js";
 import { A, URL, env } from "./sesiones-dev.mjs";
 import { abrirNavegador } from "../lib/navegador.mjs";
 import { camposDeEscrituraVisibles, controlesDeEscritura, franjaEsperada } from "./lib/escritura-pantalla.mjs";
+import { designarMedicoTemporal, quitarMedicoTemporal } from "./lib/medico-dev.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : d; };
-const ROLES = arg("--roles", "estetica,recepcion,encargada,admin").split(",");
+const ROLES = arg("--roles", "estetica,recepcion,encargada,medico,admin").split(",");
 const MAX_PANTALLAS = Number(arg("--max", "220"));
 const MAX_BOTONES = Number(arg("--botones", "20"));
 const CON_BOTONES = !process.argv.includes("--sin-botones");
@@ -49,8 +50,9 @@ const SB = createClient(URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: 
 // «encargada»: otra persona de recepción con los permisos de administrar (se los da esta corrida y se los quita al
 // terminar), para ver lo que recepción alcanza dentro de Administración.
 const { data: otraRecepcion } = await SB.from("membresias").select("profile_id").eq("negocio_id", B).eq("rol", "recepcion").neq("profile_id", datos.recepcionB).is("deleted_at", null).order("created_at").limit(1).maybeSingle();
-const CUENTAS = { admin: datos.adminB, recepcion: datos.recepcionB, estetica: datos.esteticaB, encargada: otraRecepcion?.profile_id };
-const INICIO = { admin: "/admin", recepcion: "/recepcion", estetica: "/estetica", encargada: "/recepcion" };
+// «medico»: un médico veterinario designado (la cuenta de estética que está en los dos negocios; scripts/auditoria/lib/medico-dev.mjs).
+const CUENTAS = { admin: datos.adminB, recepcion: datos.recepcionB, estetica: datos.esteticaB, encargada: otraRecepcion?.profile_id, medico: datos.esteticaAmbos };
+const INICIO = { admin: "/admin", recepcion: "/recepcion", estetica: "/estetica", encargada: "/recepcion", medico: "/veterinaria" };
 const PERMISOS_ENCARGADA = ["personal", "configuracion_negocio", "tarifas", "reportes_financieros", "nomina", "gastos", "inventario_costos"];
 
 // ── Módulos: todos prendidos mientras corre, y de regreso como estaban ──────────────────────────────────────────
@@ -97,6 +99,8 @@ async function restaurarPrueba() {
   console.log("  · plan de Huellitas como estaba");
 }
 await restaurarPrueba();
+// El médico se designa con el negocio escribible (antes de vencer la prueba).
+if (ROLES.includes("medico")) await designarMedicoTemporal({ B, adminId: datos.adminB, profileId: CUENTAS.medico });
 if (PRUEBA_VENCIDA) {
   const { data: n } = await SB.from("negocios").select("plan, prueba_termina_at").eq("id", B).single();
   fs.writeFileSync(ESTADO_PRUEBA, JSON.stringify(n));
@@ -112,6 +116,7 @@ async function restaurarModulos() {
   if (restaurado) return;
   restaurado = true;
   await restaurarPrueba();
+  await quitarMedicoTemporal();
   const tenia = new Map((antes ?? []).map((m) => [m.modulo, m]));
   for (const clave of TODOS) {
     const m = tenia.get(clave);
