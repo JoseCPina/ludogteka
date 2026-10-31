@@ -133,6 +133,7 @@ Fases 0 a 18 del roadmap, PeluDesk multi-negocio, integraciones de cobro, bot de
 
 ## Índice de docs/
 - docs/PROYECTO.md — siempre al empezar: roles, roadmap, reglas de negocio y fuera de alcance.
+- docs/app-duenos/PLAN.md — **toda función que vea un dueño de mascota se diseña bajo docs/app-duenos/PLAN.md** (la app gratuita para dueños: identidad por teléfono, mascota global, PWA en app.peludesk.mx, cartilla por foto, QR, mascota perdida; principios, fases y métricas). Lo construido de cada fase: docs/app-duenos/.
 - docs/OPERACIONES-PRODUCCION.md — antes de cualquier SQL operativo en producción y para ver los casos ya resueltos.
 - docs/MERCADO-PAGO.md — guía para el negocio de cómo conectar Mercado Pago.
 - docs/TUTORIALES.md — mapa de los videos tutoriales.
