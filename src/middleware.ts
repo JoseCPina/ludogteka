@@ -4,9 +4,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { ENCABEZADO_AREA, areaDeRuta, nombreCookieSesion, opcionesCookieSesion } from "@/lib/supabase/area";
 import { rutaPorRol } from "@/lib/auth/rutas";
-import { ENCABEZADOS_NEGOCIO, ENCABEZADO_PLATAFORMA, hostPorMudanza, resolverNegocio, type NegocioBasico } from "@/lib/negocio/resolver";
+import { ENCABEZADOS_NEGOCIO, ENCABEZADO_APP, ENCABEZADO_PLATAFORMA, hostPorMudanza, resolverNegocio, type NegocioBasico } from "@/lib/negocio/resolver";
 import { ENCABEZADO_FIRMA, firmaValida, firmarNegocio, firmarPlataforma, plataformaFirmada } from "@/lib/negocio/firma";
-import { DOMINIO_PLATAFORMA, esHostPlataforma } from "@/lib/negocio/host";
+import { DOMINIO_PLATAFORMA, esHostApp, esHostPlataforma } from "@/lib/negocio/host";
 import { moduloDeRuta, moduloRequeridoActivo } from "@/lib/plan/modulos";
 import { ZONAS_API, accesoAbreZona, zonaDeRuta, zonaPidePermisos, zonaPideVeterinaria, type Acceso } from "@/lib/auth/acceso";
 
@@ -72,13 +72,21 @@ export async function middleware(request: NextRequest) {
   const firmado = await negocioFirmado(request.headers);
   const plataformaInterna =
     request.headers.get(ENCABEZADO_PLATAFORMA) === "1" && (await plataformaFirmada(request.headers.get(ENCABEZADO_FIRMA)));
+  // La petición interna con la que Next pinta el destino de un redirect() de una acción de la app para dueños.
+  const appInterna = request.headers.get(ENCABEZADO_APP) === "1" && (await plataformaFirmada(request.headers.get(ENCABEZADO_FIRMA)));
   const cabeceras = new Headers(request.headers);
   for (const nombre of Object.values(ENCABEZADOS_NEGOCIO)) cabeceras.delete(nombre);
   cabeceras.delete(ENCABEZADO_FIRMA);
   cabeceras.delete(ENCABEZADO_PLATAFORMA);
+  cabeceras.delete(ENCABEZADO_APP);
 
   if (pathname === "/negocio-no-encontrado" || pathname === "/pagina-no-encontrada") {
     return NextResponse.next({ request: { headers: cabeceras } });
+  }
+
+  // ── La app para dueños (app.peludesk.mx): sin negocio, con la sesión del dueño ──
+  if (!firmado && !plataformaInterna && (appInterna || esHostApp(request.headers.get("host")))) {
+    return appDuenos(request, cabeceras);
   }
 
   // ── El dominio de la plataforma: la administración de PeluDesk ──
@@ -91,6 +99,7 @@ export async function middleware(request: NextRequest) {
   // 404 de verdad (lo da la página con notFound(); el status del rewrite no llega).
   if (
     pathname === "/plataforma" || pathname.startsWith("/plataforma/") || pathname === "/peludesk" || pathname.startsWith("/peludesk/") ||
+    pathname === "/app" || pathname.startsWith("/app/") ||
     pathname.startsWith("/api/stripe/") || pathname.startsWith("/api/whatsapp/") || pathname.startsWith("/api/telegram/")
   ) {
     return NextResponse.rewrite(new URL("/pagina-no-encontrada", request.url), { request: { headers: cabeceras }, status: 404 });
@@ -372,6 +381,56 @@ async function plataforma(request: NextRequest, cabeceras: Headers) {
     },
   });
   await supabase.auth.getUser();
+  return response;
+}
+
+// ── La app para dueños (docs/app-duenos/PLAN.md) ──
+// Sin negocio: las páginas viven en src/app/app y aquí se reescribe la ruta («/» → «/app», «/avisos» → «/app/avisos»).
+// La sesión es la del dueño (la cookie del portal: una persona, todos sus negocios). Lo público: entrar, el manifest,
+// el service worker, los íconos y la pantalla sin conexión. Todo lo demás pide sesión y, sin ella, manda a /entrar.
+const PUBLICAS_APP = new Set(["/entrar", "/manifest.webmanifest", "/sw-app.js", "/icono-pwa", "/sin-conexion", "/favicon.ico", "/robots.txt"]);
+const ARCHIVOS_APP = new Set(["/sw-app.js", "/favicon.ico", "/robots.txt"]);
+
+async function appDuenos(request: NextRequest, cabeceras: Headers) {
+  const { pathname } = request.nextUrl;
+  cabeceras.set(ENCABEZADO_APP, "1");
+  cabeceras.set(ENCABEZADO_FIRMA, await firmarPlataforma());
+  cabeceras.set(ENCABEZADO_AREA, "portal");
+  cabeceras.set(ENCABEZADO_RUTA, pathname);
+  // Nada de la plataforma, de un negocio ni de los webhooks existe en este dominio.
+  if (pathname === "/plataforma" || pathname.startsWith("/plataforma/") || pathname.startsWith("/api/") || pathname === "/app" || pathname.startsWith("/app/") || pathname === "/portal" || pathname.startsWith("/portal/")) {
+    return NextResponse.rewrite(new URL("/pagina-no-encontrada", request.url), { request: { headers: cabeceras }, status: 404 });
+  }
+  const destino = (ruta: string) => {
+    const u = new URL(ARCHIVOS_APP.has(ruta) || ruta === "/manifest.webmanifest" || ruta === "/icono-pwa" || ruta === "/sin-conexion" ? ruta : ruta === "/" ? "/app" : `/app${ruta}`, request.url);
+    u.search = request.nextUrl.search;
+    return u;
+  };
+  const siguiente = () => NextResponse.rewrite(destino(pathname), { request: { headers: cabeceras } });
+  if (PUBLICAS_APP.has(pathname) || pathname.startsWith("/entrar/")) return siguiente();
+
+  let response = siguiente();
+  const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    cookieOptions: opcionesCookieSesion("portal"),
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        cabeceras.set("cookie", request.headers.get("cookie") ?? "");
+        response = siguiente();
+        cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+      },
+    },
+  });
+  const {
+    data: { user },
+  } = await getUserConReintento(supabase);
+  if (!user) {
+    const ir = pathname === "/" ? "" : `?ir=${encodeURIComponent(pathname + request.nextUrl.search)}`;
+    return conCookiesDe(response, NextResponse.redirect(new URL(`/entrar${ir}`, request.url)));
+  }
   return response;
 }
 

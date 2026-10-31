@@ -7,6 +7,7 @@ import { guardarEstado, esFalloDeCuenta, type EstadoMeta } from "@/lib/whatsapp/
 import { avisarFalloDeEntrega } from "@/lib/soporte/notificar";
 import { procesarSesion } from "@/lib/whatsapp/flow/servidor";
 import { atenderReclamo } from "@/lib/directorio/webhook";
+import { atenderEntrada } from "@/lib/app/entrada";
 import { atenderInscripcion } from "@/lib/escuela/datos";
 import { atenderBoton, atenderTexto, guardarEntregaRecordatorio, reportarSiHayExcedente, type Atencion } from "@/lib/recordatorios/respuestas";
 
@@ -225,6 +226,13 @@ export async function POST(request: NextRequest) {
         if (reclamo) {
           await wa.texto(m.telefono, reclamo.texto);
           await datos.apuntarMensaje(m.telefono, "agente", reclamo.texto);
+          continue;
+        }
+        // «ENTRAR ABC123»: un dueño entra a la app para dueños con el código que vio en pantalla (src/lib/app/entrada.ts).
+        const entrada = m.texto ? await atenderEntrada(m.telefono, m.texto) : null;
+        if (entrada) {
+          await wa.texto(m.telefono, entrada.texto);
+          await datos.apuntarMensaje(m.telefono, "agente", entrada.texto);
           continue;
         }
         // «Quiero inscribirme a la Escuela PeluDesk: … (clave)»: inscripción a una sesión (src/lib/escuela/datos.ts).

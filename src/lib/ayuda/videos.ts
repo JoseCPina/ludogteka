@@ -156,6 +156,7 @@ export const ARTICULOS_SIN_VIDEO: Record<string, string> = {
   "primeros-pasos-para-operar": "Pendiente de grabar: la bienvenida por giro (QA S16) cambió; se graba con un negocio de prueba nuevo, no con el demo.",
   "requisitos-para-hospedar": "Pendiente de grabar: pantalla nueva de la bienvenida (QA S16).",
   "ver-mis-facturas": "Pendiente de grabar: ningún video muestra las facturas en el portal del dueño. El folio 100 necesita que `tutoriales.numero` admita tres dígitos (migración).",
+  "app-peludesk-para-duenos": "Pendiente de grabar: la app para dueños (app.peludesk.mx, Fase 0 del 31 de octubre de 2026) vive en otro dominio y se graba con una cuenta de dueño del demo cuando la grabación se retome.",
 };
 
 /** Los números de los videos de un artículo (el principal primero); [] si no tiene. */

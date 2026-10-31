@@ -179,6 +179,14 @@ export const VIDEOS_PENDIENTES = [
 export const EXCLUIDOS = {
   rutas: {
     "/": "Es la landing o la página pública del negocio; se enseña en el video 52 solo como resultado.",
+    // La app para dueños (app.peludesk.mx, docs/app-duenos/FASE-0.md): otro dominio y otra persona (el dueño); se graba
+    // con una cuenta de dueño del demo cuando la grabación se retome.
+    "/app": "App para dueños (app.peludesk.mx): pendiente de grabar con una cuenta de dueño del demo cuando la grabación se retome.",
+    "/app/entrar": "App para dueños: entrar por código de WhatsApp; pendiente de grabar con una cuenta de dueño del demo.",
+    "/app/mascotas/[id]": "App para dueños: la ficha de la mascota; pendiente de grabar con una cuenta de dueño del demo.",
+    "/app/avisos": "App para dueños: Avisos y notificaciones; pendiente de grabar con una cuenta de dueño del demo.",
+    "/app/cerca": "App para dueños: Cerca de mí; pendiente de grabar con una cuenta de dueño del demo.",
+    "/app/yo": "App para dueños: Mi cuenta; pendiente de grabar con una cuenta de dueño del demo.",
     "/negocio-no-encontrado": "Pantalla de error técnica (dominio sin negocio); no es una tarea del usuario.",
     "/pagina-no-encontrada": "Pantalla de error técnica (404); no es una tarea del usuario.",
     "/fac/[token]": "Enlace público de una factura para el cliente; se enseña solo como resultado en el video 65.",

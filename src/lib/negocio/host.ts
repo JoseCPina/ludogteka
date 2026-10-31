@@ -21,9 +21,10 @@ const RESERVADOS = SLUGS_RESERVADOS;
 
 /**
  * ¿Es el dominio de la PLATAFORMA (la administración de PeluDesk)?
- *   peludesk.mx, www.peludesk.mx, app.peludesk.mx → sí
- *   plataforma.localhost                             → sí (desarrollo)
+ *   peludesk.mx, www.peludesk.mx → sí
+ *   plataforma.localhost          → sí (desarrollo)
  * Más dominios: PELUDESK_HOSTS_PLATAFORMA (separados por coma).
+ * (app.peludesk.mx es la app para dueños: esHostApp.)
  */
 export function esHostPlataforma(hostCrudo: string | null | undefined): boolean {
   const host = (hostCrudo ?? "").toLowerCase().split(":")[0].trim().replace(/\.$/, "");
@@ -31,10 +32,27 @@ export function esHostPlataforma(hostCrudo: string | null | undefined): boolean 
   return (
     host === DOMINIO_PLATAFORMA ||
     host === `www.${DOMINIO_PLATAFORMA}` ||
-    host === `app.${DOMINIO_PLATAFORMA}` ||
     host === "plataforma.localhost" ||
     extra.includes(host)
   );
+}
+
+/**
+ * ¿Es el dominio de la APP PARA DUEÑOS (docs/app-duenos/PLAN.md)?
+ *   app.peludesk.mx → sí
+ *   app.localhost    → sí (desarrollo)
+ * Más dominios: PELUDESK_HOSTS_APP (separados por coma). Sin negocio: lo que
+ * ve el dueño es lo suyo en todos los negocios.
+ */
+export function esHostApp(hostCrudo: string | null | undefined): boolean {
+  const host = (hostCrudo ?? "").toLowerCase().split(":")[0].trim().replace(/\.$/, "");
+  const extra = (process.env.PELUDESK_HOSTS_APP ?? "").split(",").map((h) => h.trim().toLowerCase()).filter(Boolean);
+  return host === `app.${DOMINIO_PLATAFORMA}` || host === "app.localhost" || extra.includes(host);
+}
+
+/** La dirección de la app para dueños, para los links que se le mandan a alguien (PELUDESK_APP_URL en desarrollo). */
+export function urlApp(): string {
+  return (process.env.PELUDESK_APP_URL ?? `https://app.${DOMINIO_PLATAFORMA}`).replace(/\/$/, "");
 }
 
 export function busquedaPorHost(hostCrudo: string | null | undefined): Busqueda | null {

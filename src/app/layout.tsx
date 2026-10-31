@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { ENCABEZADOS_NEGOCIO, ENCABEZADO_PLATAFORMA } from "@/lib/negocio/resolver";
+import { ENCABEZADOS_NEGOCIO, ENCABEZADO_APP, ENCABEZADO_PLATAFORMA } from "@/lib/negocio/resolver";
 import { urlDelNegocio } from "@/lib/negocio/actual";
 import { ProveedorZonaNegocio } from "@/components/zona-negocio";
 import { ValidacionEnEspanol } from "@/components/validacion-en-espanol";
@@ -19,6 +19,20 @@ import "./globals.css";
 // si no tiene, del que se arma con su inicial y su color (/icono-negocio).
 export async function generateMetadata(): Promise<Metadata> {
   const h = await headers();
+  // La app para dueños (app.peludesk.mx): PeluDesk, instalable, sin indexar.
+  if (h.get(ENCABEZADO_APP) === "1") {
+    return {
+      title: { default: "PeluDesk", template: "%s · PeluDesk" },
+      description: "La cartilla, los recordatorios y los negocios de tus mascotas, en un solo lugar.",
+      manifest: "/manifest.webmanifest",
+      appleWebApp: { capable: true, title: "PeluDesk", statusBarStyle: "default" },
+      icons: {
+        icon: [{ url: "/marca/peludesk/isotipo.svg", type: "image/svg+xml" }, { url: "/marca/peludesk/favicon-32.png", sizes: "32x32" }],
+        apple: "/marca/peludesk/favicon-180.png",
+      },
+      robots: { index: false, follow: false },
+    };
+  }
   if (h.get(ENCABEZADO_PLATAFORMA) === "1") {
     return {
       title: "PeluDesk",
