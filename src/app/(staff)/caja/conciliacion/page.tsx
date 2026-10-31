@@ -5,8 +5,9 @@ import { negocioActual } from "@/lib/negocio/actual";
 import { Alert } from "@/components/ui/alert";
 import { Antiguedad } from "@/components/ui/antiguedad";
 import { diasDesde } from "@/lib/antiguedad";
-import { formatearFecha, horaLocalDeInstante } from "@/lib/formato";
+import { fechaLocalDeInstante, formatearFecha, horaLocalDeInstante } from "@/lib/formato";
 import { DarPorRevisada } from "./dar-por-revisada";
+import { RevisarHasta } from "./revisar-hasta";
 import { RevisarTarjetaManual } from "@/components/cobro/revisar-tarjeta-manual";
 import { ETIQUETA_TARJETA_MANUAL, etiquetaMotivo } from "@/lib/cobro/tarjeta-manual";
 import { leerTodo, leerTodoPorIds } from "@/lib/supabase/paginar";
@@ -92,8 +93,9 @@ export default async function ConciliacionPage() {
         <Link href="/caja" className="text-sm font-semibold text-morado hover:underline">← Caja</Link>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Conciliación</h1>
         <p className="mt-1 text-n-600">
-          Cada hora la app compara los cobros con terminal contra los pagos de Mercado Pago que se cobraron desde PeluDesk. Aquí salen las diferencias y las
-          tarjetas registradas a mano que faltan por revisar: no se corrige nada solo. Los demás pagos de tu cuenta de Mercado Pago se ignoran.
+          Cada hora la app compara los cobros con terminal contra los pagos de Mercado Pago que salieron de una orden o link de PeluDesk. Aquí salen las
+          diferencias y las tarjetas registradas a mano que faltan por revisar: no se corrige nada solo. Los pagos hechos directo en la terminal, sin pasar por
+          PeluDesk, y los demás pagos de tu cuenta de Mercado Pago se ignoran.
         </p>
       </div>
       {error && <Alert variante="error" titulo="No pudimos cargar la conciliación">Recarga la página.</Alert>}
@@ -197,7 +199,7 @@ export default async function ConciliacionPage() {
                   <p className="text-sm text-n-600">
                     {f.tipo === "cobro_sin_pago"
                       ? "Pregúntale al cliente si pagó. Si no pagó, el admin abre la cuenta y usa «Marcar como no recibido» (la app vuelve a preguntarle a Mercado Pago antes de dejarlo)."
-                      : "Revisa en tu panel de Mercado Pago de quién es y si hay que cobrarlo o devolverlo; la app no lo registra sola."}
+                      : "Salió de una orden o link de PeluDesk y la caja no lo registró: búscalo en tu panel de Mercado Pago por su referencia y decide si se registra en la cuenta o se devuelve; la app no lo registra sola."}
                   </p>
                   <div className="flex flex-wrap items-start gap-3">
                     {reserva && (
@@ -211,6 +213,9 @@ export default async function ConciliacionPage() {
               );
             })}
           </ul>
+        )}
+        {esAdmin && filas.length > 0 && (
+          <RevisarHasta fechas={[...filas, ...ajenos].map((f) => fechaLocalDeInstante(f.ocurrio_at, zona))} hoy={hoy} />
         )}
       </section>
 

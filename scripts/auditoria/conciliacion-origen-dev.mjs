@@ -16,8 +16,10 @@
 //      «Necesita atención», ni aparece (opción apagada).
 //   2. Un pago de una orden/link de PeluDesk sin cobro SÍ alerta (por la
 //      referencia o por la metadata del link); la metadata de otro negocio, no.
-//   3. Un pago de la terminal vinculada (pos_id/store_id) sin cobro SÍ alerta;
-//      el de otra terminal o de otra tienda, no.
+//   3. Un pago hecho en la terminal vinculada (pos_id/store_id) SIN pasar por
+//      PeluDesk (una venta tecleada en la Point) NO alerta: no consta que sea
+//      de PeluDesk (31 de octubre de 2026). Un pago de la API de Orders cuyo
+//      payment_intent_id es «seller-order_<orden nuestra>» sí (origen orden).
 //   4. Un cobro a mano con «Terminal» sin respaldo de la terminal sigue
 //      alertando aunque haya un pago AJENO del mismo monto; con el pago de la
 //      terminal, se resuelve.
@@ -30,6 +32,12 @@
 //      evento, se revierte, y no toca lo propio ni los cobros sospechosos.
 //   7. Las funciones de plataforma no las ejecuta nadie más; el celular
 //      (390 px) no se desborda.
+//   8. «Dar por revisadas todas las anteriores a…» (31 de octubre de 2026):
+//      la RPC del admin cierra solo lo anterior a la fecha (hora del negocio)
+//      y solo de su negocio; recepción y el anónimo no; la pantalla la ofrece
+//      al admin con el conteo; y el cierre por la plataforma a petición del
+//      negocio (scripts/plataforma/cerrar-conciliacion-hasta.mjs) deja evento
+//      con quién lo pidió, es reversible y nadie más lo ejecuta.
 import http from "node:http";
 import { execFileSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
@@ -223,17 +231,27 @@ try {
   else bien("la alerta propia sí sale en «Necesita atención»");
   await cerrarTodo();
 
-  console.log("\n3. Un pago de la TERMINAL vinculada sin cobro SÍ alerta");
-  const idTerm = `93${sufijo}01`, idOtraTerm = `93${sufijo}02`, idOtraTienda = `93${sufijo}03`;
+  console.log("\n3. Un pago hecho en la TERMINAL vinculada sin pasar por PeluDesk NO alerta");
+  const idTerm = `93${sufijo}01`, idOtraTerm = `93${sufijo}02`, idOtraTienda = `93${sufijo}03`, idIntento = `93${sufijo}04`;
+  const ordenPoint = await ordenPeluDesk("point", 324.4);
+  await A.from("mp_ordenes").update({ mp_order_id: `ORD${sufijo}POINT` }).eq("negocio_id", H).eq("id", ordenPoint);
   mock.busqueda = [
-    pago(idTerm, 321.1, { pos_id: 7001, store_id: "8001" }),
+    // Lo que manda Mercado Pago por una venta tecleada directo en la Point (visto en la cuenta real de Ludogteka).
+    pago(idTerm, 321.1, { pos_id: 7001, store_id: "8001", external_reference: "Venta presencial", metadata: { integration: "none" } }),
     pago(idOtraTerm, 322.2, { pos_id: 7002, store_id: "8001" }),
     pago(idOtraTienda, 323.3, { pos_id: 7001, store_id: "8999" }),
+    // Lo que manda por una orden de la API de Orders de PeluDesk.
+    pago(idIntento, 324.4, { pos_id: 7001, store_id: "8001", external_reference: null, metadata: { integration: "api", payment_intent_id: `seller-order_ORD${sufijo}POINT` } }),
   ];
   await conc();
   const a3 = await abiertas();
-  if (a3.length !== 1 || a3[0].clave !== idTerm || a3[0].detalle?.origen !== "terminal") hallazgo(`solo el pago de la terminal vinculada debía alertar: ${JSON.stringify(a3)}`);
-  else bien("pos_id/store_id de la terminal vinculada → alerta (origen terminal); otra terminal y otra tienda → ignoradas");
+  const alertaTerm = a3.find((a) => a.clave === idTerm);
+  const alertaIntento = a3.find((a) => a.tipo === "pago_sin_cobro" && a.clave === idIntento);
+  if (alertaTerm || a3.some((a) => [idOtraTerm, idOtraTienda].includes(a.clave))) hallazgo(`un pago de la terminal sin pasar por PeluDesk (o de otra terminal/tienda) alertó: ${JSON.stringify(a3)}`);
+  else bien("venta tecleada en la Point (pos_id de la terminal vinculada, «Venta presencial», integration none) → sin alerta; otra terminal y otra tienda → ignoradas");
+  if (!alertaIntento || alertaIntento.detalle?.origen !== "orden" || !/orden o link de PeluDesk/.test(alertaIntento.detalle?.motivo ?? "") || /cobrado desde PeluDesk/.test(alertaIntento.detalle?.motivo ?? "")) hallazgo(`el pago con payment_intent_id de una orden nuestra no alertó como «orden» con el texto nuevo: ${JSON.stringify(alertaIntento)}`);
+  else bien("pago con payment_intent_id «seller-order_<orden nuestra>» → alerta (origen orden) y el texto dice de dónde salió");
+  if (a3.length !== 1) hallazgo(`debía haber exactamente una alerta: ${JSON.stringify(a3)}`);
   await cerrarTodo();
 
   console.log("\n4. Cobro a mano con «Terminal»: un pago ajeno del mismo monto NO lo respalda");
@@ -270,31 +288,40 @@ try {
   if (!encendida?.mostrar_pagos_ajenos) hallazgo("encender el interruptor no quedó guardado");
   else bien("encendido desde la pantalla y guardado");
 
-  const idInfo = `95${sufijo}01`;
-  mock.busqueda = [pago(idInfo, 1089.0, { pos_id: 9999 }), pago(`95${sufijo}02`, 88.8, { pos_id: 7001, store_id: "8001" })];
+  const idInfo = `95${sufijo}01`, idInfoTerm = `95${sufijo}03`;
+  mock.busqueda = [
+    pago(idInfo, 1089.0, { pos_id: 9999 }),
+    pago(`95${sufijo}02`, 88.8, { external_reference: ordenLink }),
+    pago(idInfoTerm, 77.7, { pos_id: 7001, store_id: "8001", external_reference: "Venta presencial", metadata: { integration: "none" } }),
+  ];
   await conc();
   const a5 = await abiertas();
   const info = a5.find((a) => a.tipo === "pago_ajeno" && a.clave === idInfo);
+  const infoTerm = a5.find((a) => a.tipo === "pago_ajeno" && a.clave === idInfoTerm);
   const alerta = a5.find((a) => a.tipo === "pago_sin_cobro" && a.clave === `95${sufijo}02`);
-  if (!info || !alerta || a5.length !== 2) hallazgo(`encendida debía guardar el ajeno como informativo y alertar el propio: ${JSON.stringify(a5)}`);
-  else bien("encendida: el ajeno queda como «pago_ajeno» (informativo) y el propio sigue alertando");
+  if (!info || !alerta || !infoTerm || a5.length !== 3) hallazgo(`encendida debía guardar el ajeno y el de la terminal como informativos y alertar el propio: ${JSON.stringify(a5)}`);
+  else bien("encendida: el ajeno y la venta directa en la Point quedan como «pago_ajeno» (informativo) y el de la orden sigue alertando");
+  if (infoTerm && !/directo en tu terminal, sin pasar por PeluDesk/.test(infoTerm.detalle?.motivo ?? "")) hallazgo(`el informativo de la terminal no dice que fue directo en la terminal: ${infoTerm.detalle?.motivo}`);
+  else if (infoTerm) bien("el informativo de la terminal dice «Pago hecho directo en tu terminal, sin pasar por PeluDesk»");
   await admin.goto(`${BASE}/caja/conciliacion`, { waitUntil: "networkidle" });
   const seccion = admin.locator("[data-pagos-ajenos]");
-  if (!(await seccion.count()) || !(await seccion.getByText("Otros pagos de tu cuenta (informativo)").count()) || (await seccion.locator("[data-pago-ajeno]").count()) !== 1) hallazgo("no sale la sección «Otros pagos de tu cuenta (informativo)» con el pago");
+  if (!(await seccion.count()) || !(await seccion.getByText("Otros pagos de tu cuenta (informativo)").count()) || (await seccion.locator("[data-pago-ajeno]").count()) !== 2) hallazgo("no sale la sección «Otros pagos de tu cuenta (informativo)» con los dos pagos");
   else bien("sale la sección «Otros pagos de tu cuenta (informativo)», separada de las diferencias");
   if ((await admin.getByText("Pago aprobado en Mercado Pago, sin cobro en la caja").count()) !== 1) hallazgo("el ajeno aparece también en la lista de diferencias (o falta el propio)");
   else bien("las diferencias reales siguen aparte (solo el pago propio)");
   await admin.goto(`${BASE}/recepcion`, { waitUntil: "networkidle" });
   const cuerpo = (await admin.locator("body").innerText()).replace(/\s+/g, " ");
   const nDif = (await abiertasTodas()).filter((a) => a.tipo !== "pago_ajeno").length;
-  if (!new RegExp(`${nDif} diferencias entre la caja y Mercado Pago`).test(cuerpo)) hallazgo(`«Necesita atención» no cuenta solo las ${nDif} diferencias sin el ajeno: ${cuerpo.match(/.{0,40}diferencias entre.{0,60}/)?.[0]}`);
+  const textoAtencion = nDif === 1 ? /Mercado Pago tiene un pago que la caja no registró|Un cobro con terminal no aparece como pagado/ : new RegExp(`${nDif} diferencias entre la caja y Mercado Pago`);
+  if (!textoAtencion.test(cuerpo)) hallazgo(`«Necesita atención» no cuenta solo las ${nDif} diferencias sin el ajeno: ${cuerpo.match(/.{0,40}(diferencias entre|Mercado Pago tiene|no aparece como pagado).{0,60}/)?.[0]}`);
   else bien(`«Necesita atención» cuenta ${nDif} diferencias (el ajeno informativo no suma)`);
   // Dar por revisada.
   await admin.goto(`${BASE}/caja/conciliacion`, { waitUntil: "networkidle" });
-  await admin.locator("[data-pago-ajeno]").getByRole("button", { name: "Dar por revisada" }).click();
-  await admin.getByLabel("¿Qué revisaste?").fill("Es de la otra tienda");
-  await admin.locator("[data-pago-ajeno]").getByRole("button", { name: "Guardar" }).click();
-  await admin.waitForFunction(() => !document.querySelector("[data-pago-ajeno]"), null, { timeout: 20_000 });
+  const primerAjeno = admin.locator("[data-pago-ajeno]").filter({ hasText: `pago ${idInfo}` });
+  await primerAjeno.getByRole("button", { name: "Dar por revisada" }).click();
+  await primerAjeno.getByLabel("¿Qué revisaste?").fill("Es de la otra tienda");
+  await primerAjeno.getByRole("button", { name: "Guardar" }).click();
+  await admin.waitForFunction(() => document.querySelectorAll("[data-pago-ajeno]").length === 1, null, { timeout: 20_000 });
   const revisada = (await A.from("conciliacion_terminal").select("resuelta_motivo").eq("negocio_id", H).eq("clave", idInfo).order("created_at", { ascending: false }).limit(1).single()).data;
   if (!/Revisada por un admin/.test(revisada?.resuelta_motivo ?? "")) hallazgo("«Dar por revisada» no resolvió el pago informativo");
   else bien("«Dar por revisada» funciona en lo informativo");
@@ -369,14 +396,16 @@ try {
   const [eAj, ePr1, ePr2, ePr3, eSo, eL] = await Promise.all([idAjenoH, idPropioRef, idPropioLigado, idPropioOrigen, idSospechoso, idAjenoL].map(estado));
   if (!eAj.resuelta_at || eAj.resuelta_motivo !== "Ajeno a PeluDesk") hallazgo(`el pago ajeno no quedó cerrado como «Ajeno a PeluDesk»: ${JSON.stringify(eAj)}`);
   else bien("el pago ajeno de Huellitas queda cerrado como «Ajeno a PeluDesk»");
-  if (ePr1.resuelta_at || ePr2.resuelta_at || ePr3.resuelta_at) hallazgo("la limpieza cerró una alerta de un pago de PeluDesk (por referencia, ligado o con origen)");
-  else bien("no toca las alertas de pagos de PeluDesk (referencia a una orden, pago ligado, origen anotado)");
+  if (ePr1.resuelta_at || ePr2.resuelta_at) hallazgo("la limpieza cerró una alerta de un pago de PeluDesk (por referencia o ligado)");
+  else bien("no toca las alertas de pagos de PeluDesk (referencia a una orden, pago ligado)");
+  if (!ePr3.resuelta_at || ePr3.resuelta_motivo !== "Ajeno a PeluDesk") hallazgo(`una alerta vieja con origen «terminal» debía cerrarse como ajena (regla del 31 de octubre): ${JSON.stringify(ePr3)}`);
+  else bien("una alerta vieja con origen «terminal» (pos_id del punto de venta) se cierra como «Ajeno a PeluDesk»");
   if (eSo.resuelta_at) hallazgo("la limpieza cerró un cobro sospechoso (cobro_sin_pago)");
   else bien("no toca los cobros a mano sospechosos");
   if (eL.resuelta_at) hallazgo("limitar a --negocio huellitas cerró también lo de Ludogteka");
   else bien("con --negocio solo toca ese negocio");
   const eventos1 = (await A.from("plataforma_eventos").select("id, accion, negocio_id, detalle").eq("accion", "conciliacion_cerrar_ajenos").eq("negocio_id", H)).data ?? [];
-  if (!evento || !eventos1.some((e) => e.id === evento && e.detalle.filas.length === 1)) hallazgo(`falta el evento de auditoría con la fila cerrada: ${evento}`);
+  if (!evento || !eventos1.some((e) => e.id === evento && e.detalle.filas.length === 2)) hallazgo(`falta el evento de auditoría con las dos filas cerradas (ajeno y origen terminal): ${evento}`);
   else bien("deja un evento de auditoría con lo que cerró");
   const sal2 = correr("--negocio", "huellitas", "--aplicar");
   const eventos2 = (await A.from("plataforma_eventos").select("id").eq("accion", "conciliacion_cerrar_ajenos").eq("negocio_id", H)).data ?? [];
@@ -423,6 +452,94 @@ try {
     if (ancho.s > ancho.w + 1 || !visible) hallazgo(`${ruta} a 390 px: desborda (${ancho.s} > ${ancho.w}) o no se ve (${visible})`);
     else bien(`${ruta} a 390 px: sin desborde y con su sección visible`);
   }
+  console.log("\n8. «Dar por revisadas todas las anteriores a…»");
+  await cerrarTodo();
+  const hoyH = String((await servicioH.rpc("fecha_negocio")).data);
+  const zonaH = (await A.from("negocios").select("zona_horaria").eq("id", H).single()).data.zona_horaria;
+  const diaEn = (iso) => new Intl.DateTimeFormat("en-CA", { timeZone: zonaH, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso));
+  const abiertasConFecha = async () => (await A.from("conciliacion_terminal").select("id, tipo, ocurrio_at").eq("negocio_id", H).is("resuelta_at", null)).data ?? [];
+  const hace3d = new Date(Date.now() - 3 * 86_400_000).toISOString();
+  const ahoraIso = new Date().toISOString();
+  const sembrarH = (clave, tipo, ocurrio, negocio = H) => sembrar(negocio, clave, tipo, { ocurrio_at: ocurrio, detalle: { origen: "orden" } });
+  const h1 = await sembrarH(`ORIG-${sufijo}-H1`, "pago_sin_cobro", hace3d);
+  const h2 = await sembrarH(`ORIG-${sufijo}-H2`, "cobro_sin_pago", new Date(Date.now() - 86_400_000).toISOString());
+  const h3 = await sembrarH(`ORIG-${sufijo}-H3`, "pago_sin_cobro", ahoraIso);
+  const hl = await sembrarH(`ORIG-${sufijo}-HL`, "pago_sin_cobro", hace3d, ludogteka.id);
+  const porRecep8 = await cRec.rpc("conciliacion_dar_por_revisadas_hasta", { p_hasta: hoyH, p_nota: "Revisión de recepción" });
+  const porAnon8 = await anonimo.rpc("conciliacion_dar_por_revisadas_hasta", { p_hasta: hoyH, p_nota: "Revisión anónima" });
+  const sinNota = await admH.rpc("conciliacion_dar_por_revisadas_hasta", { p_hasta: hoyH, p_nota: "ok" });
+  if (!porRecep8.error || !porAnon8.error || !sinNota.error) hallazgo(`recepción (${porRecep8.error ? "no" : "SÍ"}), anónimo (${porAnon8.error ? "no" : "SÍ"}) o una nota corta (${sinNota.error ? "no" : "SÍ"}) cerraron en lote`);
+  else bien("recepción, el anónimo y una nota de menos de 5 letras no cierran en lote");
+  const antesLote = (await abiertasConFecha()).filter((a) => diaEn(a.ocurrio_at) < hoyH).length;
+  const lote = await admH.rpc("conciliacion_dar_por_revisadas_hasta", { p_hasta: hoyH, p_nota: "Revisadas contra el panel de Mercado Pago" });
+  const [e1, e2, e3, eLud] = await Promise.all([h1, h2, h3, hl].map(estado));
+  if (lote.error || lote.data?.cerradas !== antesLote || !e1.resuelta_at || !e2.resuelta_at || e3.resuelta_at || eLud.resuelta_at) hallazgo(`el lote del admin debía cerrar las ${antesLote} anteriores a hoy de Huellitas y nada más: ${JSON.stringify(lote)} ${JSON.stringify([e1, e2, e3, eLud])}`);
+  else bien(`el admin cierra en lote las ${antesLote} diferencias anteriores a hoy (las dos sembradas incluidas); la de hoy y la de Ludogteka siguen abiertas`);
+  if (!/^Revisadas por un admin hasta el \d{2}\/\d{2}\/\d{4}: Revisadas contra el panel/.test(e1.resuelta_motivo ?? "")) hallazgo(`el motivo del lote no es el esperado: ${e1.resuelta_motivo}`);
+  else bien("cada una queda con «Revisadas por un admin hasta el <fecha>: <nota>»");
+  if (!(lote.data?.ids ?? []).includes(h1)) hallazgo("la RPC no devuelve los ids que cerró");
+
+  // La pantalla: recepción no ve el botón; el admin lo ve, con el conteo, y cierra.
+  const h4 = await sembrarH(`ORIG-${sufijo}-H4`, "pago_sin_cobro", hace3d);
+  const h5 = await sembrarH(`ORIG-${sufijo}-H5`, "cobro_sin_pago", hace3d);
+  await recep.goto(`${BASE}/caja/conciliacion`, { waitUntil: "networkidle" });
+  if (await recep.locator("[data-revisar-hasta]").count()) hallazgo("recepción ve «Dar por revisadas todas las anteriores a…»");
+  else bien("recepción no ve el botón");
+  await admin.setViewportSize({ width: 390, height: 800 });
+  await admin.goto(`${BASE}/caja/conciliacion`, { waitUntil: "networkidle" });
+  const boton = admin.locator("[data-revisar-hasta]");
+  if (!(await boton.count())) hallazgo("el admin no ve «Dar por revisadas todas las anteriores a…»");
+  else {
+    const esperadas = (await abiertasConFecha()).filter((a) => diaEn(a.ocurrio_at) < hoyH).length;
+    await boton.click();
+    const conteo = admin.locator("[data-revisar-hasta-conteo]");
+    await conteo.waitFor({ timeout: 10_000 });
+    const textoConteo = await conteo.innerText();
+    if (!new RegExp(`${esperadas} diferencia`).test(textoConteo)) hallazgo(`el conteo con la fecha de hoy no dice ${esperadas}: «${textoConteo}»`);
+    else bien(`con la fecha de hoy la pantalla dice «${textoConteo.trim()}»`);
+    const ancho = await admin.evaluate(() => ({ s: document.documentElement.scrollWidth, w: window.innerWidth }));
+    if (ancho.s > ancho.w + 1) hallazgo(`el formulario del lote desborda a 390 px (${ancho.s} > ${ancho.w})`);
+    await admin.getByLabel("¿Qué revisaste?").fill("Periodo revisado completo");
+    await admin.getByRole("button", { name: /^Dar por revisadas \(/ }).click();
+    await admin.locator("[data-revisar-hasta-exito]").waitFor({ timeout: 20_000 });
+    const textoExito = await admin.locator("[data-revisar-hasta-exito]").innerText();
+    const [e4, e5, e3b] = await Promise.all([h4, h5, h3].map(estado));
+    if (!new RegExp(`${esperadas} diferencia`).test(textoExito) || !e4.resuelta_at || !e5.resuelta_at || e3b.resuelta_at) hallazgo(`desde la pantalla no cerró lo esperado: «${textoExito}» ${JSON.stringify([e4, e5, e3b])}`);
+    else bien(`desde la pantalla: «${textoExito.trim()}» y la de hoy sigue abierta`);
+    await admin.waitForFunction(() => !document.querySelector("[data-revisar-hasta-formulario]"), null, { timeout: 10_000 }).catch(() => hallazgo("el formulario del lote no se cerró tras guardar"));
+  }
+  await admin.setViewportSize({ width: 1280, height: 800 });
+
+  // El cierre por la plataforma a petición del negocio (script), con evento y reversa.
+  const h6 = await sembrarH(`ORIG-${sufijo}-H6`, "pago_sin_cobro", hace3d);
+  const h7 = await sembrarH(`ORIG-${sufijo}-H7`, "cobro_sin_pago", hace3d);
+  const correrHasta = (...a) => execFileSync("node", ["scripts/plataforma/cerrar-conciliacion-hasta.mjs", ...a], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  const argsHasta = ["--negocio", "huellitas", "--hasta", hoyH, "--motivo", `Revisadas por el negocio (prueba ${sufijo})`, "--solicitante", "la dueña de Huellitas, por WhatsApp"];
+  const secoH = correrHasta(...argsHasta);
+  if ((await estado(h6)).resuelta_at || !/Sin --aplicar no escribo nada/.test(secoH)) hallazgo("cerrar-conciliacion-hasta sin --aplicar escribió algo");
+  else bien("cerrar-conciliacion-hasta sin --aplicar solo revisa");
+  const salH = correrHasta(...argsHasta, "--aplicar");
+  const eventoH = salH.match(/evento ([0-9a-f-]{36})/)?.[1];
+  const [e6, e7, e3c, eLud2] = await Promise.all([h6, h7, h3, hl].map(estado));
+  if (!eventoH || !e6.resuelta_at || e6.resuelta_motivo !== `Revisadas por el negocio (prueba ${sufijo})` || !e7.resuelta_at || e3c.resuelta_at || eLud2.resuelta_at) hallazgo(`el cierre por la plataforma no dejó lo esperado: ${salH.slice(-300)} ${JSON.stringify([e6, e7, e3c, eLud2])}`);
+  else bien("la plataforma cierra lo anterior a la fecha de ESE negocio con el motivo pedido; la de hoy y la de Ludogteka siguen abiertas");
+  const evH = eventoH ? (await servicioH.from("plataforma_eventos").select("accion, negocio_id, motivo, detalle").eq("id", eventoH).maybeSingle()).data : null;
+  if (!evH || evH.accion !== "conciliacion_cerrar_revisadas" || evH.negocio_id !== H || evH.detalle?.solicitante !== "la dueña de Huellitas, por WhatsApp" || !(evH.detalle?.filas ?? []).some((f) => f.id === h6)) hallazgo(`falta el evento con quién lo pidió y las filas: ${JSON.stringify(evH)}`);
+  else bien("queda el evento conciliacion_cerrar_revisadas con quién lo pidió, el motivo, la fecha y cada fila");
+  const salRev = correrHasta("--revertir", eventoH, "--aplicar");
+  if ((await estado(h6)).resuelta_at || (await estado(h7)).resuelta_at || !/Revertido/.test(salRev)) hallazgo(`la reversa no reabrió lo cerrado: ${salRev.slice(-200)}`);
+  else bien("la reversa reabre exactamente lo que cerró");
+  let dobleRevH = "";
+  try { correrHasta("--revertir", eventoH, "--aplicar"); } catch (e) { dobleRevH = String(e.stderr ?? e.message); }
+  if (!/ya se revirtió/.test(dobleRevH)) hallazgo("revertir dos veces el cierre no se rechazó");
+  else bien("no se revierte dos veces");
+  for (const [nombre, cli] of [["anónimo", anonimo], ["recepción", cRec], ["admin de un negocio", admH]]) {
+    const a = await cli.rpc("plataforma_conciliacion_cerrar_hasta", { p_negocio_id: H, p_hasta: hoyH, p_motivo: "Prueba de permisos", p_solicitante: "nadie" });
+    const b = await cli.rpc("plataforma_conciliacion_revertir_cierre", { p_evento_id: eventoH });
+    if (!a.error || !b.error) hallazgo(`${nombre} pudo llamar el cierre de plataforma (${!a.error ? "cerrar " : ""}${!b.error ? "revertir" : ""})`);
+    else bien(`${nombre} no puede llamar el cierre ni la reversa de la plataforma`);
+  }
+  await cerrarTodo();
 } finally {
   await nav.close();
   servidor.close();

@@ -207,13 +207,13 @@ Si un pago se confirma sin turno abierto, la orden dice «Pagado, sin turno» y 
 Hay dos tipos de diferencia:
 
 - **Cobrado en la app, sin pago aprobado en Mercado Pago**: la caja dice que se cobró con terminal y Mercado Pago no tiene el pago.
-- **Pago aprobado en Mercado Pago, sin cobro en la caja**: Mercado Pago recibió dinero, cobrado desde PeluDesk (una orden o link de PeluDesk, o tu terminal vinculada), que la caja no tiene. Revisa en tu panel de Mercado Pago de quién es.
+- **Pago aprobado en Mercado Pago, sin cobro en la caja**: Mercado Pago recibió un pago que **salió de una orden o link de PeluDesk** (trae la referencia de esa orden) y la caja no lo tiene. Búscalo en tu panel de Mercado Pago por su referencia y decide si se registra en la cuenta o se devuelve.
 
 ## Qué pagos cuenta la conciliación (cuenta compartida de Mercado Pago)
 
-Tu cuenta de Mercado Pago puede recibir pagos que **no se cobraron desde PeluDesk**: otra tienda, una transferencia, un cobro personal, otra terminal. **PeluDesk solo concilia los pagos que cobra desde aquí**; los demás se **ignoran por completo**: no generan alertas, no salen en **Necesita atención** y no cuentan en ningún contador. Un pago que no se puede reconocer con certeza como de PeluDesk también se ignora.
+Tu cuenta de Mercado Pago puede recibir pagos que **no se cobraron desde PeluDesk**: una venta tecleada directo en la Point (sin pasar por la app), otra tienda, una transferencia, un cobro personal, otra terminal. **PeluDesk solo alerta por los pagos que salieron de una orden o link de PeluDesk**; los demás se **ignoran por completo**: no generan alertas, no salen en **Necesita atención** y no cuentan en ningún contador. Un pago que no se puede reconocer con certeza como de PeluDesk también se ignora, y ninguna alerta dice «cobrado desde PeluDesk» si no consta.
 
-Un cobro a mano con método **Terminal** solo se respalda con un pago de la terminal vinculada o de una orden de PeluDesk: un pago ajeno del mismo monto **no** lo respalda (así no tapa un cobro que nadie recibió).
+Un cobro a mano con método **Terminal** solo se respalda con un pago de una orden de PeluDesk o uno hecho en tu terminal vinculada del mismo monto cerca de esa hora: un pago ajeno del mismo monto **no** lo respalda (así no tapa un cobro que nadie recibió).
 
 Si quieres verlos, el admin enciende **Mostrar también otros pagos de mi cuenta de Mercado Pago** en [Cobro con terminal](/admin/pagos) (viene apagado). Salen aparte en **Otros pagos de tu cuenta (informativo)**, sin alertas, y el admin puede apretar **Dar por revisada**.
 
@@ -236,6 +236,10 @@ Antes de cambiar nada, la app le **pregunta a Mercado Pago**: si tiene un pago a
 ## Si el cobro SÍ se recibió
 
 Si ya confirmaste que el cliente pagó, el admin puede apretar **Dar por revisada** en la diferencia y escribir qué revisó.
+
+## Dar por revisadas todas las anteriores a una fecha (solo admin)
+
+Si ya revisaste un periodo completo contra tu panel de Mercado Pago, no hace falta cerrar una por una: en [Conciliación](/caja/conciliacion), debajo de las diferencias, aprieta **Dar por revisadas todas las anteriores a…**, escoge la fecha y escribe qué revisaste. Se cierran todas las diferencias cuyo pago o cobro ocurrió **antes** de esa fecha (las de esa fecha en adelante se quedan abiertas); antes de confirmar, la pantalla te dice cuántas son, y en cada una queda tu nota y quién lo hizo.
 
 ## Tarjetas manuales por revisar
 
