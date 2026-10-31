@@ -68,6 +68,10 @@
     {
       "path": "/api/cron/mercado-clasificar",
       "schedule": "33 * * * *"
+    },
+    {
+      "path": "/api/cron/escuela",
+      "schedule": "7,22,37,52 * * * *"
     }
   ]
 }

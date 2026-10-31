@@ -62,8 +62,9 @@ const aNumero = (t: string) => Number(t.replace(/[.,](?=\d{3}\b)/g, "").replace(
  * Las cantidades en pesos de un texto con su contexto (±150 caracteres), solo las que están cerca de una palabra de
  * algún servicio del giro y son creíbles para alguno. `prefijo` hace únicos los ids entre páginas.
  */
-export function candidatosDePrecio(texto: string, giro: GiroMercado, prefijo: string, tope = 40): Candidato[] {
-  const servicios = serviciosDeGiro(giro);
+export function candidatosDePrecio(texto: string, giro: GiroMercado | GiroMercado[], prefijo: string, tope = 40): Candidato[] {
+  // Un negocio mixto (hotel y estética) tiene precios de los dos: se buscan las palabras de todos sus giros.
+  const servicios = (Array.isArray(giro) ? giro : [giro]).flatMap((g) => serviciosDeGiro(g));
   const palabras = new Set(servicios.flatMap((s) => s.sinonimos));
   const salida: Candidato[] = [];
   const vistos = new Set<string>();
@@ -137,7 +138,8 @@ export function limpiarClasificacion(entrada: unknown, lote: (Candidato & { giro
     const servicio = typeof x.servicio === "string" ? x.servicio : null;
     const s = SERVICIOS_MERCADO.find((y) => y.clave === servicio);
     const confianza = Number(x.confianza) || 0;
-    if (!s || s.giro !== c.giro || confianza < 0.6 || !precioCreible(s.clave, c.precio)) {
+    // El giro del candidato es el de la búsqueda, no una regla: una veterinaria que también baña tiene precios de estética.
+    if (!s || confianza < 0.6 || !precioCreible(s.clave, c.precio)) {
       salida.push({ id: c.id, servicio: null, talla: null, confianza });
       continue;
     }

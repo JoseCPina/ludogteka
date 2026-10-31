@@ -167,6 +167,8 @@ export async function correrProspeccion(o: OpcionesCorrida): Promise<ResultadoCo
             const k = `${c.ciudad}|${c.giro}`;
             r.porCiudadGiro[k] = (r.porCiudadGiro[k] ?? 0) + 1;
             if (id) nuevosDeEsta.set(id, k);
+            // La ubicación viene en la misma búsqueda (campo location): para el mapa de competencia.
+            if (id && typeof l.lat === "number" && typeof l.lng === "number") await db.from("prospectos").update({ lat: l.lat, lng: l.lng, ubicado_at: new Date().toISOString() }).eq("id", id);
           } else if (resultado === "cliente") r.clientes++;
           else r.duplicados++;
         }

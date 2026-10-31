@@ -17,11 +17,14 @@ export type LugarGoogle = {
   resenas: number | null;
   tipos: string[];
   cerrado: boolean;
+  lat?: number | null;
+  lng?: number | null;
 };
 
 export const PLACES_URL = "https://places.googleapis.com/v1";
 
-const CAMPOS = ["id", "displayName", "formattedAddress", "nationalPhoneNumber", "internationalPhoneNumber", "websiteUri", "rating", "userRatingCount", "types", "businessStatus"];
+// `location` (SKU Essentials, no sube el costo de la llamada): la ubicación para el mapa de competencia.
+const CAMPOS = ["id", "displayName", "formattedAddress", "nationalPhoneNumber", "internationalPhoneNumber", "websiteUri", "rating", "userRatingCount", "types", "businessStatus", "location"];
 
 type LugarApi = {
   id?: string;
@@ -34,6 +37,7 @@ type LugarApi = {
   userRatingCount?: number;
   types?: string[];
   businessStatus?: string;
+  location?: { latitude?: number; longitude?: number };
 };
 
 export class ErrorPlaces extends Error {
@@ -58,6 +62,8 @@ function aLugar(p: LugarApi): LugarGoogle | null {
     resenas: typeof p.userRatingCount === "number" ? p.userRatingCount : null,
     tipos: p.types ?? [],
     cerrado: p.businessStatus === "CLOSED_PERMANENTLY",
+    lat: typeof p.location?.latitude === "number" ? p.location.latitude : null,
+    lng: typeof p.location?.longitude === "number" ? p.location.longitude : null,
   };
 }
 

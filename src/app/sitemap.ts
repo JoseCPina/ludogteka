@@ -15,6 +15,7 @@ import { GIROS_MERCADO, slugDe } from "@/lib/mercado/catalogo";
 import { ciudadesConDatos } from "@/lib/mercado/rangos";
 import { ciudadesDirectorio, MINIMO_INDEXABLE } from "@/lib/directorio/consulta";
 import { todasLasPlantillas } from "@/lib/herramientas/mensajes-whatsapp";
+import { SESIONES } from "@/lib/escuela/sesiones";
 
 const fechaIso = (v: string) => new Date(`${v}T12:00:00Z`);
 
@@ -57,6 +58,7 @@ async function sitemapPlataforma(): Promise<MetadataRoute.Sitemap> {
     ...(await paginasPorCiudad()),
     ...(await paginasDirectorio()),
     ...todasLasPlantillas().map((p) => ({ url: `${SITIO}/mensajes-whatsapp/${p.slug}`, changeFrequency: "monthly" as const, priority: 0.5 })),
+    ...SESIONES.map((s) => ({ url: `${SITIO}/escuela/${s.clave}`, changeFrequency: "weekly" as const, priority: 0.6 })),
     { url: `${SITIO}/blog`, lastModified: ultimaEntrada ? fechaIso(ultimaEntrada) : undefined, changeFrequency: "weekly", priority: 0.7 },
     ...Array.from({ length: Math.max(0, paginas - 1) }, (_, i) => ({ url: `${SITIO}/blog/pagina/${i + 2}`, changeFrequency: "weekly" as const, priority: 0.4 })),
     ...categoriasUsadas.map((c) => ({ url: `${SITIO}/blog/categoria/${c}`, changeFrequency: "weekly" as const, priority: 0.5 })),

@@ -51,6 +51,12 @@ export async function capturarTelefono(e: EntradaCaptura): Promise<SalidaCaptura
     return { error: "No pudimos guardar tu teléfono. Intenta de nuevo." };
   }
   const p = data as { id: string; slug: string; nuevo: boolean; baja: boolean } | null;
+  // El diagnóstico se queda en el prospecto, en una línea, para que el bot venda con eso.
+  if (p?.id && e.herramienta === "diagnostico" && typeof e.datos?.resumen_bot === "string") {
+    // La columna admite 300 caracteres.
+    const { error: eCal } = await admin.from("prospectos").update({ calificacion_texto: String(e.datos.resumen_bot).slice(0, 300) }).eq("id", p.id);
+    if (eCal) console.error("[herramientas] calificacion_texto", eCal.message);
+  }
 
   // 2. La captura (una viva por teléfono y herramienta: la última gana; el índice único es parcial, así que no sirve
   //    un upsert con on conflict: se busca y se actualiza o se inserta).
