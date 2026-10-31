@@ -25,6 +25,8 @@ import { usaVeterinaria } from "@/lib/plan/modulos";
 import { ETIQUETA_ESPECIE, esEspecie } from "@/lib/perros/ficha-clinica";
 import { leerTodo } from "@/lib/supabase/paginar";
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
+import { nombreMotivoBaja } from "@/lib/perros/baja";
+import { PedirBajaMascota, type SolicitudBajaPortal } from "../../pedir-baja-mascota";
 
 const ESTILO_GRAVEDAD: Record<string, string> = {
   grave: "border-coral bg-coral-suave text-coral-oscuro",
@@ -46,10 +48,9 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
     supabase
       .from("perros")
       .select(
-        "id, nombre, raza, sexo, esterilizado, fecha_nacimiento, fallecido, foto_path, cliente_id, temperamento_notas, contacto_emergencia_nombre, contacto_emergencia_telefono, veterinario_nombre, veterinario_telefono, veterinario_clinica, autorizacion_medica_notas, tope_gasto_autorizado, alimentacion_notas, tamanos_categoria(etiqueta), tipos_pelaje(etiqueta)"
+        "id, nombre, raza, sexo, esterilizado, fecha_nacimiento, fallecido, deleted_at, baja_motivo, foto_path, cliente_id, temperamento_notas, contacto_emergencia_nombre, contacto_emergencia_telefono, veterinario_nombre, veterinario_telefono, veterinario_clinica, autorizacion_medica_notas, tope_gasto_autorizado, alimentacion_notas, tamanos_categoria(etiqueta), tipos_pelaje(etiqueta)"
       )
       .eq("id", id)
-      .is("deleted_at", null)
       .single(),
     supabase
       .from("perro_requisitos_sanitarios_estado")
@@ -84,6 +85,11 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
   if (!perro) notFound();
 
   const esPropio = perro.cliente_id === sesion.clienteId;
+  // Dada de baja (deleted_at): se abre en solo lectura, sin avisos ni propuestas. Lo que el dueño pidió sobre la baja.
+  const dadaDeBaja = Boolean(perro.deleted_at);
+  const { data: solicitudesBaja } = esPropio
+    ? await supabase.from("perros_bajas").select("id, motivo, nota, resultado, respuesta, created_at, atendida_at").eq("perro_id", id).eq("tipo", "solicitud").is("deleted_at", null).order("created_at", { ascending: false }).limit(5)
+    : { data: [] };
 
   // Ficha de la mascota (solo con Veterinaria activa). Las notas clínicas son
   // internas del negocio: NO se consultan aquí.
@@ -220,6 +226,11 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
               Falleció
             </span>
           )}
+          {dadaDeBaja && !perro.fallecido && (
+            <span className="rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-600" data-dada-de-baja>
+              {nombreMotivoBaja(perro.baja_motivo)}
+            </span>
+          )}
           {!esPropio && (
             <span className="rounded-full bg-menta-suave px-2 py-0.5 text-xs font-semibold text-menta-oscuro">
               Acceso compartido
@@ -240,7 +251,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
         perroId={id}
         urlInicial={urlFoto}
         tieneFotoInicial={Boolean(perro.foto_path)}
-        soloLectura={!esPropio || Boolean(perro.fallecido)}
+        soloLectura={!esPropio || Boolean(perro.fallecido) || dadaDeBaja}
         subirConAccion={subirFotoMiPerro}
         capture={false}
         tamano="grande"
@@ -318,7 +329,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
           zona={zona}
           items={(estadoSanitario as EstadoRequisitoItem[]) ?? []}
           perroId={id}
-          puedeProponer={esPropio && !perro.fallecido}
+          puedeProponer={esPropio && !perro.fallecido && !dadaDeBaja}
           propuestas={(propuestas as PropuestaCliente[]) ?? []}
           tipos={(tiposRequisito as TipoRequisitoCliente[]) ?? []}
           aplica={aplicanRequisitosDe({ modulos: sesion.modulos ?? [], usaGuarderiaHotel: Boolean(usaGuarderiaHotel), tieneCitasEstetica: serviciosQueUsa.includes("estética") })}
@@ -330,6 +341,10 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
       {carnetDelDueno && <CarnetCliente carnet={carnetDelDueno} />}
       {expedienteDelDueno && <ExpedienteCliente expediente={expedienteDelDueno} />}
       <RecetasCliente recetas={recetasDelDueno} />
+
+      {esPropio && !dadaDeBaja && !perro.fallecido && (
+        <PedirBajaMascota perroId={id} nombre={perro.nombre} femenino={v.el.startsWith("la ")} solicitudes={(solicitudesBaja ?? []) as SolicitudBajaPortal[]} />
+      )}
 
       {esPropio && contratos.length > 0 && (sesion?.modulos ?? []).includes("contratos") && (
         <div className="flex flex-col gap-3">
