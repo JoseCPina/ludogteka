@@ -32,8 +32,15 @@ let idCargado: string | null = null;
 // bloqueado: la persona ya dijo que no; no sale nada ni se guarda nada en cola.
 let activo = false;
 let bloqueado = false;
+// Otra salida con los mismos eventos (el tag de Google Ads, src/lib/peludesk/gads-cliente.ts): recibe lo que sale.
+let salidaExtra: ((nombre: EventoPixel, datos?: Record<string, string | number>) => void) | null = null;
+
+export function conectarSalidaExtra(fn: typeof salidaExtra) {
+  salidaExtra = fn;
+}
 
 function llamar(p: Pendiente) {
+  salidaExtra?.(p.nombre, p.datos);
   if (!window.fbq) return;
   if (p.eventId) window.fbq("track", p.nombre, p.datos ?? {}, { eventID: p.eventId });
   else window.fbq("track", p.nombre, p.datos ?? {});

@@ -99,7 +99,15 @@ export const COOKIES_DECLARADAS: CookieDeclarada[] = [
     quien: "Meta Platforms, Inc. (tercero)",
     categoria: "Marketing",
     duracion: "Las cookies propias de Meta en su dominio las gobierna Meta (por ejemplo «fr», hasta 90 días)",
-    finalidad: "Envía a Meta qué página viste y si abriste el demo o creaste tu negocio de prueba, para medir y optimizar nuestra publicidad. Al crear tu negocio de prueba, el servidor manda además ese evento a Meta con tu IP, navegador y un hash de tu teléfono.",
+    finalidad: "Envía a Meta qué página viste y si abriste el demo, dejaste tu WhatsApp en una herramienta o creaste tu negocio de prueba, para medir y optimizar nuestra publicidad. Al dejar tu WhatsApp o crear tu negocio de prueba, el servidor manda además ese evento a Meta con tu IP, navegador y un hash de tu teléfono.",
     cuando: "Solo si aceptas el marketing.",
+  },
+  {
+    nombre: "_gcl_au y el tag de Google Ads (solicitudes a googletagmanager.com y google.com)",
+    quien: "Google LLC (tercero)",
+    categoria: "Marketing",
+    duracion: "90 días",
+    finalidad: "Mide si un anuncio de PeluDesk en Google terminó en una visita, un WhatsApp dejado en una herramienta o un registro. Envía qué página viste y el nombre del evento, sin datos tuyos. Solo existe cuando PeluDesk tiene una cuenta de Google Ads activa.",
+    cuando: "Solo si aceptas el marketing y la cuenta de Google Ads está activa.",
   },
 ];

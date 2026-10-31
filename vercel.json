@@ -60,6 +60,10 @@
     {
       "path": "/api/cron/whatsapp-flow",
       "schedule": "*/2 * * * *"
+    },
+    {
+      "path": "/api/cron/mercado",
+      "schedule": "0 14 1 * *"
     }
   ]
 }

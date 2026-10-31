@@ -94,10 +94,13 @@ export function PerfilForm({
   fotos,
   perfilId = null,
   version = null,
+  compartePrecios = false,
 }: {
   /** El perfil y su updated_at al cargar (QA N43). */
   perfilId?: string | null;
   version?: string | null;
+  /** Comparte sus tarifas con el Índice PeluDesk de precios (solo agregados). */
+  compartePrecios?: boolean;
   descripcion: string;
   direccion: string;
   temaWeb: string | null;
@@ -168,6 +171,12 @@ export function PerfilForm({
               Usar el color de mis fotos
             </label>
           </div>
+          <label className="flex items-start gap-3 rounded-md bg-n-100 p-3 text-sm text-n-800">
+            <input type="checkbox" name="comparte_precios_mercado" defaultChecked={compartePrecios} className="mt-0.5 h-5 w-5 accent-morado" />
+            <span>
+              <b>Compartir mis tarifas con el Índice PeluDesk de precios</b>, solo como promedio. Tus precios entran a los rangos públicos de tu ciudad (<Link href="https://peludesk.mx/precios-mercado" target="_blank" rel="noopener" className="font-semibold text-morado underline">peludesk.mx/precios-mercado</Link>) junto con los de otros negocios; nunca se publica el precio de tu negocio ni su nombre. Viene apagado.
+            </span>
+          </label>
           <AccionesFormulario error={res?.error} exito={res && !res.error && !res.conflicto ? res.exito ?? true : null}>
             <Button type="submit" cargando={envio.cargando}>
               Guardar datos

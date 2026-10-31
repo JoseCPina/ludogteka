@@ -680,7 +680,7 @@ Cada regla solo se muestra con el módulo que la usa prendido: sin hotel no se h
     modulo: "pagina_web",
     roles: ["admin", "recepcion"],
     rutas: ["/admin/perfil"],
-    palabras: ["sitio web", "página", "logo", "fotos", "dirección", "web incluida", "internet", "diseño", "color", "reservar en línea", "pedir cita", "avisar por whatsapp", "confirmación", "recordatorio"],
+    palabras: ["sitio web", "página", "logo", "fotos", "dirección", "web incluida", "internet", "diseño", "color", "reservar en línea", "pedir cita", "avisar por whatsapp", "confirmación", "recordatorio", "índice de precios", "compartir tarifas", "precios de mercado", "cuánto cobran"],
     captura: "perfil-y-pagina-web.jpg",
     cuerpo: `Tu página web se arma sola con tu perfil, tus servicios, tus precios y tu horario. Tú solo pones lo que la hace tuya: logo, fotos y dirección.
 
@@ -689,6 +689,10 @@ Cada regla solo se muestra con el módulo que la usa prendido: sin hotel no se h
 3. En **Logo**, escoge el archivo (PNG, JPG, WebP o SVG, de hasta 2 MB). Antes de guardar ves cómo se va a ver en tu registro de clientes, en un recibo y en tu portal, y te avisamos si es muy ancho o muy alto, si trae fondo blanco o si tiene márgenes grandes. Si te gusta, aprieta **Guardar logo** (o **Guardar el logo nuevo**). Lo mejor es un PNG o SVG con fondo transparente, recortado cerca del dibujo.
 4. En **Fotos del negocio**, sube al menos 3 con **Agregar foto**: tu local, tu equipo, perros felices.
 5. En **Diseño de tu página** escoge cómo se ve: **Clínica veterinaria**, **Estética**, **Guardería** u **Hotel** (cambian la letra, los colores y cómo se acomoda), o déjalo en **Automático (según tus servicios)**. En **Color de tu página** puedes poner el tuyo o marcar **Usar el color de mis fotos**. Aprieta **Guardar datos**.
+
+## Compartir tus tarifas con el Índice PeluDesk de precios
+
+En **Datos** hay una casilla, **Compartir mis tarifas con el Índice PeluDesk de precios**, que viene apagada. Si la marcas, tus precios de baño, baño y corte, noche de hotel y día de guardería entran, el día 1 de cada mes, a los rangos públicos de tu ciudad en peludesk.mx/precios-mercado junto con los de otros negocios, solo como promedio: nunca se publica tu precio ni el nombre de tu negocio. La quitas cuando quieras y tus tarifas dejan de entrar desde el mes siguiente.
 
 ## Qué hacen tus clientes en tu página
 

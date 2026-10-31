@@ -13,6 +13,9 @@ import { COOKIE_CONSENTIMIENTO, leerConsentimiento } from "@/lib/peludesk/cookie
 import { origenDe } from "@/lib/peludesk/origen";
 import { enviarConversion } from "@/lib/peludesk/capi";
 import { MIN_CONTRASENA, TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
+import { aplicarPrecarga } from "@/lib/herramientas/precarga";
+import { esHerramienta } from "@/lib/herramientas/lista";
+import { registrarEventoHerramienta } from "@/lib/herramientas/telemetria";
 
 // Lo que la persona escribió regresa con el error: React limpia el
 // formulario al terminar la acción y sin esto tendría que capturar todo de
@@ -183,6 +186,14 @@ async function registrar(fd: FormData): Promise<EstadoRegistro> {
       // Su página queda publicada en su subdominio con lo que vio en la vista previa.
       await publicarPaginaDeProspecto(alta.negocio_id, slugProspecto);
     }
+  }
+
+  // Lo que capturó en las herramientas públicas con este mismo teléfono se carga en su negocio (tarifas «Calculado»,
+  // contrato, lista de precios…) y cada herramienta suma una «cuenta». Si llegó desde una herramienta sin haber dejado
+  // su teléfono (utm_source=herramientas&utm_medium=<clave>), esa cuenta también se anota.
+  const precarga = await aplicarPrecarga(alta.negocio_id, telefono);
+  if (origen.utm_source === "herramientas" && origen.utm_medium && esHerramienta(origen.utm_medium) && !precarga.herramientas.includes(origen.utm_medium)) {
+    await registrarEventoHerramienta({ herramienta: origen.utm_medium, evento: "cuenta", origen: { fuente: origen.utm_source, medio: origen.utm_medium, campana: origen.utm_campaign, contenido: origen.utm_content }, ciudad: ciudad || null, negocioId: alta.negocio_id, sinFiltroNavegador: true });
   }
 
   // API de conversiones de Meta, deduplicada con el píxel por el mismo event_id. Solo con marketing aceptado.

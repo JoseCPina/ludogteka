@@ -2,6 +2,7 @@ import { articuloPorSlug as articuloAyuda } from "@/lib/ayuda";
 import { articuloPorSlug as articuloBlog } from "@/lib/peludesk/blog";
 import { todosLosAterrizajes } from "@/lib/peludesk/aterrizajes";
 import { todasLasAlternativas, todasLasGuias } from "@/lib/peludesk/guias";
+import { herramientasPublicadas } from "@/lib/herramientas/lista";
 
 /**
  * Registro de las páginas públicas de venta de peludesk.mx: lo leen el
@@ -9,7 +10,7 @@ import { todasLasAlternativas, todasLasGuias } from "@/lib/peludesk/guias";
  * pública nueva se agrega aquí (y en rutas-publicas.ts si no es un caso ya
  * cubierto por una carpeta con slug).
  */
-export type PaginaPublica = { ruta: string; titulo: string; descripcion: string; tipo: "producto" | "giro" | "guia" | "alternativa" | "precio" };
+export type PaginaPublica = { ruta: string; titulo: string; descripcion: string; tipo: "producto" | "giro" | "guia" | "alternativa" | "precio" | "herramienta" };
 
 export const PAGINAS_FIJAS: PaginaPublica[] = [
   { ruta: "/", titulo: "PeluDesk: software para veterinarias y negocios caninos", descripcion: "Un sistema para clínica veterinaria, hotel y guardería, y estética canina.", tipo: "producto" },
@@ -24,6 +25,8 @@ export function paginasDeVenta(): PaginaPublica[] {
     ...todosLosAterrizajes().map((a) => ({ ruta: `/${a.slug}`, titulo: a.titulo.replace(" | PeluDesk", ""), descripcion: a.descripcion, tipo: "giro" as const })),
     ...todasLasGuias().map((g) => ({ ruta: `/guias/${g.slug}`, titulo: g.h1, descripcion: g.descripcion, tipo: "guia" as const })),
     ...todasLasAlternativas().map((a) => ({ ruta: `/alternativas/${a.slug}`, titulo: `PeluDesk frente a ${a.nombre}`, descripcion: a.resumen, tipo: "alternativa" as const })),
+    { ruta: "/herramientas", titulo: "Herramientas gratis para negocios de mascotas", descripcion: "Índice de precios por ciudad y más herramientas, sin cuenta.", tipo: "herramienta" as const },
+    ...herramientasPublicadas().map((h) => ({ ruta: h.ruta, titulo: h.nombre, descripcion: h.que, tipo: "herramienta" as const })),
   ];
 }
 

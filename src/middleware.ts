@@ -286,11 +286,17 @@ const PUBLICAS_PLATAFORMA: Record<string, string> = {
   "/llms.txt": "/peludesk/llms.txt",
   "/llms-full.txt": "/peludesk/llms-full.txt",
   "/indexnow-key.txt": "/peludesk/indexnow-key.txt",
+  // Herramientas públicas (src/app/peludesk/herramientas; la lista en src/lib/herramientas/lista.ts).
+  "/herramientas": "/peludesk/herramientas",
+  "/precios-mercado": "/peludesk/precios-mercado",
+  "/precios-mercado/imagen": "/peludesk/precios-mercado/imagen",
+  // Sin extensión a propósito: el matcher del middleware no toma rutas que terminan en .svg.
+  "/precios-mercado/insignia": "/peludesk/precios-mercado/insignia",
 };
 // Con parámetro: artículos del centro de ayuda y del blog, páginas del índice
 // del blog y sus categorías. Una lista cerrada de formas, nunca por prefijo.
 const COOKIE_INTERNO = "peludesk_interno";
-const PUBLICAS_PLATAFORMA_PATRON = /^\/(ayuda\/[a-z0-9-]+|guias\/[a-z0-9-]+|alternativas\/[a-z0-9-]+|ayuda\/videos\/[a-z0-9-]+|blog\/[a-z0-9-]+|blog\/pagina\/\d{1,3}|blog\/categoria\/[a-z0-9-]+|para\/[a-z0-9-]{3,60}|para\/[a-z0-9-]{3,60}\/ir\/(?:prueba|whatsapp|demo)|entrar\/[A-Za-z0-9_-]{30,60})$/;
+const PUBLICAS_PLATAFORMA_PATRON = /^\/(ayuda\/[a-z0-9-]+|guias\/[a-z0-9-]+|alternativas\/[a-z0-9-]+|ayuda\/videos\/[a-z0-9-]+|blog\/[a-z0-9-]+|blog\/pagina\/\d{1,3}|blog\/categoria\/[a-z0-9-]+|para\/[a-z0-9-]{3,60}|para\/[a-z0-9-]{3,60}\/ir\/(?:prueba|whatsapp|demo)|entrar\/[A-Za-z0-9_-]{30,60}|precios-mercado\/(?:estetica|hotel|guarderia|veterinaria)\/[a-z0-9-]{2,60})$/;
 
 async function plataforma(request: NextRequest, cabeceras: Headers) {
   const { pathname } = request.nextUrl;
@@ -313,7 +319,9 @@ async function plataforma(request: NextRequest, cabeceras: Headers) {
     pathname === "/api/mercadopago/oauth" ||
     pathname === "/api/mercadopago/oauth/simulacion" ||
     pathname.startsWith("/api/clip/webhook/") ||
-    pathname.startsWith("/api/cron/")
+    pathname.startsWith("/api/cron/") ||
+    // La medición de las herramientas públicas (sendBeacon desde el navegador; sin sesión, siempre 204).
+    pathname === "/api/herramientas/evento"
   ) {
     return NextResponse.next({ request: { headers: cabeceras } });
   }

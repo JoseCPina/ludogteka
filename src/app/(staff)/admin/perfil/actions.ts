@@ -55,6 +55,8 @@ export async function guardarPerfil(fd: FormData): Promise<ResultadoPerfil> {
     // Diseño de la página web: vacío = el de sus servicios y el color de sus fotos.
     tema_web: ["veterinaria", "estetica", "guarderia", "hotel"].includes(tema) ? tema : null,
     color_web: fd.get("color_auto") || !/^#[0-9a-fA-F]{6}$/.test(color) ? null : color.toLowerCase(),
+    // Sus tarifas al Índice PeluDesk de precios, solo como promedio (precios_mercado_de_negocios, cada mes).
+    comparte_precios_mercado: fd.get("comparte_precios_mercado") === "on",
   };
   const id = await perfilId(supabase);
   const { error } = id

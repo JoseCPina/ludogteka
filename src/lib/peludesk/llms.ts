@@ -10,6 +10,9 @@ import { SITIO } from "@/lib/peludesk/seo";
 import { FUNCIONES_VET, MODULOS_TRES, PREGUNTAS_VET } from "@/lib/peludesk/veterinaria";
 import { EMPRESA } from "@/lib/peludesk/legal";
 import { FUNCION_RECORDATORIOS, QUE_MANDA_RECORDATORIOS, recordatoriosVigentes } from "@/lib/peludesk/recordatorios";
+import { herramientasPublicadas } from "@/lib/herramientas/lista";
+import { GIROS_MERCADO, SERVICIOS_MERCADO, slugDe } from "@/lib/mercado/catalogo";
+import { ciudadesConDatos } from "@/lib/mercado/rangos";
 
 /**
  * llms.txt (índice para asistentes de IA) y llms-full.txt (el contenido
@@ -63,6 +66,12 @@ export async function llmsTxt(): Promise<string> {
   l.push(linea("/registro", "Prueba gratis", "Registro para probar 15 días sin tarjeta."));
   l.push(linea("/veterinaria", "Software para veterinarias", "Expediente, carnet con QR, recetas alineadas al SITPV, hospitalización e inventario con lotes."));
   for (const a of todosLosAterrizajes()) l.push(linea(`/${a.slug}`, a.titulo.replace(" | PeluDesk", ""), a.descripcion));
+  l.push("", "## Herramientas gratuitas (sin cuenta)", "");
+  l.push(linea("/herramientas", "Herramientas", "Qué hace cada una y de dónde salen sus datos."));
+  for (const h of herramientasPublicadas()) l.push(linea(h.ruta, h.nombre, `${h.que} Datos: ${h.datos}`));
+  for (const g of GIROS_MERCADO) {
+    for (const c of (await ciudadesConDatos(g.clave)).slice(0, 30)) l.push(linea(`/precios-mercado/${g.clave}/${slugDe(c.ciudad)}`, `Cuánto cobra ${g.articulo} en ${c.ciudad}`, `Rango de precios por servicio con ${c.muestras} precios públicos.`));
+  }
   l.push("", "## Guías por tema", "");
   for (const g of todasLasGuias()) l.push(linea(`/guias/${g.slug}`, g.h1, g.descripcion));
   l.push("", "## Comparativas con otras alternativas", "");
@@ -83,6 +92,9 @@ export async function llmsTxt(): Promise<string> {
 
 export async function llmsFull(): Promise<string> {
   const [l, precios] = await Promise.all([cabecera(), preciosAyuda()]);
+  l.push("## Herramientas gratuitas", "");
+  for (const h of herramientasPublicadas()) l.push(`### ${h.nombre}`, "", `URL: ${url(h.ruta)}`, "", h.que, "", `Datos: ${h.datos}`, ...(h.precarga ? ["", `Al abrir la prueba gratis: ${h.precarga}`] : []), "");
+  l.push("Servicios que compara el Índice PeluDesk de precios: " + SERVICIOS_MERCADO.map((s) => `${s.nombre} (${s.unidad}${s.conTalla ? ", por talla" : ""})`).join("; ") + ". Una ciudad tiene rango propio con 8 precios o más; si no, el del estado y luego el del país. Se actualiza cada mes.", "");
   l.push("## Veterinaria", "");
   for (const f of FUNCIONES_VET) l.push(`- ${f.titulo}: ${f.texto}`);
   l.push("", "### Preguntas frecuentes de Veterinaria", "");

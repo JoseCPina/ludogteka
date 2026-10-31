@@ -1,0 +1,248 @@
+/* Herramientas públicas de peludesk.mx (src/components/herramientas): una hoja de trabajo. Texto a la izquierda,
+   cifras grandes en tabular, reglas finas en vez de tarjetas con sombra, y un solo acento (morado) con menta para
+   el rango. Todo el movimiento es opacity/transform y se apaga con «reducir movimiento». */
+.hta {
+  --hta-regla: var(--color-n-200);
+  font-variant-numeric: tabular-nums;
+}
+.hta-ceja {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-morado);
+}
+.hta-titulo {
+  max-width: 22ch;
+  font-size: clamp(2rem, 5.6vw, 3.4rem);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  color: var(--color-n-900);
+  text-wrap: balance;
+}
+.hta-linea {
+  max-width: 58ch;
+  color: var(--color-n-800);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+}
+.hta-etiqueta {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-n-600);
+}
+.hta-regla {
+  border-top: 1px solid var(--hta-regla);
+}
+.hta-enlace {
+  font-weight: 600;
+  color: var(--color-morado);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--color-morado) 35%, transparent);
+}
+.hta-enlace:hover {
+  text-decoration-color: var(--color-morado);
+}
+.hta-boton {
+  display: inline-flex;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  background: var(--color-morado);
+  padding: 0 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  transition: background-color 150ms ease, transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.hta-boton:hover {
+  background: var(--color-morado-oscuro);
+}
+.hta-boton:active {
+  transform: scale(0.97);
+}
+.hta-boton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-morado-suave);
+}
+.hta-boton-secundario {
+  background: #fff;
+  color: var(--color-morado);
+  border: 1.5px solid color-mix(in srgb, var(--color-morado) 35%, transparent);
+}
+.hta-boton-secundario:hover {
+  background: var(--color-morado-suave);
+  border-color: var(--color-morado);
+}
+
+/* Selector de opciones (giro, servicio, talla): pastillas en línea, la elegida en morado. */
+.hta-opcion {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1.5px solid var(--color-n-300);
+  border-radius: 999px;
+  background: #fff;
+  padding: 0 1rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-n-800);
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease, transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.hta-opcion:hover {
+  border-color: var(--color-morado);
+}
+.hta-opcion[aria-checked="true"] {
+  border-color: var(--color-morado);
+  background: var(--color-morado);
+  color: #fff;
+}
+.hta-opcion:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-morado-suave);
+}
+.hta-opcion small {
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+/* Campos. */
+.hta-campo {
+  width: 100%;
+  min-height: 3rem;
+  border: 1.5px solid var(--color-n-300);
+  border-radius: 0.75rem;
+  background: #fff;
+  padding: 0 0.9rem;
+  font-size: 1.0625rem;
+  color: var(--color-n-900);
+}
+.hta-campo:focus {
+  outline: none;
+  border-color: var(--color-morado);
+  box-shadow: 0 0 0 3px var(--color-morado-suave);
+}
+.hta-campo::placeholder {
+  color: var(--color-n-500);
+}
+
+/* Cifra grande del resultado. */
+.hta-cifra {
+  font-size: clamp(2.4rem, 7vw, 4rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--color-n-900);
+}
+.hta-cifra small {
+  font-size: 0.4em;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--color-n-600);
+}
+
+/* La barra del rango: la pista, la banda p25–p75 en menta, la mediana en morado y la marca de la persona. */
+.hta-barra {
+  position: relative;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--color-n-200);
+}
+.hta-barra-banda {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: var(--color-menta);
+  transition: left 420ms cubic-bezier(0.23, 1, 0.32, 1), right 420ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.hta-barra-mediana {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 3px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: var(--color-morado);
+  transition: left 420ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.hta-barra-tu {
+  position: absolute;
+  top: -11px;
+  width: 0;
+  height: 0;
+  margin-left: -9px;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 12px solid var(--color-morado-oscuro);
+  transition: left 420ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.hta-marca {
+  position: absolute;
+  top: 1.25rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  color: var(--color-n-700);
+}
+.hta-marca b {
+  display: block;
+  font-size: 0.9375rem;
+  color: var(--color-n-900);
+}
+
+/* Aparición del resultado. */
+.hta-aparece {
+  animation: hta-aparece 420ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+@keyframes hta-aparece {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Lista de ciudades del buscador. */
+.hta-lista {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(100% + 4px);
+  z-index: 10;
+  max-height: 18rem;
+  overflow-y: auto;
+  border: 1px solid var(--color-n-200);
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: 0 18px 36px -18px rgb(75 63 114 / 0.35);
+}
+.hta-lista li[aria-selected="true"],
+.hta-lista li:hover {
+  background: var(--color-morado-suave);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hta-barra-banda,
+  .hta-barra-mediana,
+  .hta-barra-tu,
+  .hta-boton,
+  .hta-opcion {
+    transition: none !important;
+  }
+  .hta-aparece {
+    animation: none !important;
+  }
+}

@@ -81,7 +81,7 @@ function Interruptor({
   );
 }
 
-export function ConsentimientoCookies({ inicial, pixelId }: { inicial: Consentimiento; pixelId: string | null }) {
+export function ConsentimientoCookies({ inicial, pixelId, googleAdsId = null }: { inicial: Consentimiento; pixelId: string | null; googleAdsId?: string | null }) {
   const [estado, setEstado] = useState<Consentimiento>(inicial);
   const [configurando, setConfigurando] = useState(false);
   const [analitica, setAnalitica] = useState(inicial.analitica);
@@ -127,38 +127,26 @@ export function ConsentimientoCookies({ inicial, pixelId }: { inicial: Consentim
 
   return (
     <>
-      <Medicion consentimiento={estado} pixelId={pixelId} />
+      <Medicion consentimiento={estado} pixelId={pixelId} googleAdsId={googleAdsId} />
 
+      {/* Una sola línea: lo que se pide y los dos botones iguales; «Configurar» abre el detalle. */}
       {!estado.decidido && !configurando && (
-        <section
-          aria-label="Aviso de cookies"
-          data-fijo-inferior
-          className="fixed inset-x-0 bottom-0 z-[60] p-3 sm:bottom-4 sm:left-4 sm:right-auto sm:max-w-[26rem] sm:p-0"
-        >
-          <div className="rounded-2xl border border-n-200 bg-white p-4 shadow-[0_12px_40px_rgb(75_63_114/0.22)] sm:p-5">
-            <p className="text-base font-bold text-n-900">Tú decides qué cookies usamos</p>
-            <p className="mt-2 text-sm leading-relaxed text-n-700">
-              Usamos una cookie necesaria para recordar tu elección. La analítica y la publicidad (píxel de Meta) solo se
-              activan si las aceptas. Puedes cambiarlo en «Preferencias de cookies», al final de la página.{" "}
-              <Link href="/cookies" className="font-semibold text-morado underline underline-offset-2">
-                Más información sobre cookies
-              </Link>
+        <section aria-label="Aviso de cookies" data-fijo-inferior className="fixed inset-x-0 bottom-0 z-[60] border-t border-n-200 bg-white/95 shadow-[0_-8px_32px_rgb(75_63_114/0.14)] backdrop-blur">
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:gap-5 sm:px-6">
+            <p className="flex-1 text-sm leading-snug text-n-800">
+              Usamos una cookie necesaria y, solo si aceptas, analítica y publicidad.{" "}
+              <button type="button" onClick={abrir} className="-my-2 inline-flex min-h-11 items-center rounded-md px-1 font-semibold text-morado underline underline-offset-2 hover:bg-morado-suave focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave">Configurar</button>
+              {" · "}
+              <Link href="/cookies" className="font-semibold text-morado underline underline-offset-2">Más información</Link>
             </p>
-            <div className="mt-3 flex gap-3 sm:mt-4">
-              <button type="button" className={BOTON} onClick={() => decidir(false, false)}>
+            <div className="flex gap-2 sm:w-auto">
+              <button type="button" className={`${BOTON} sm:min-h-11 sm:w-36 sm:flex-none sm:px-0 sm:text-sm`} onClick={() => decidir(false, false)}>
                 Rechazar
               </button>
-              <button type="button" className={BOTON} onClick={() => decidir(true, true)}>
+              <button type="button" className={`${BOTON} sm:min-h-11 sm:w-36 sm:flex-none sm:px-0 sm:text-sm`} onClick={() => decidir(true, true)}>
                 Aceptar
               </button>
             </div>
-            <button
-              type="button"
-              onClick={abrir}
-              className="mt-1 flex min-h-11 w-full items-center justify-center rounded-full text-sm font-semibold text-morado underline underline-offset-2 hover:bg-morado-suave focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
-            >
-              Configurar
-            </button>
           </div>
         </section>
       )}
@@ -205,7 +193,7 @@ export function ConsentimientoCookies({ inicial, pixelId }: { inicial: Consentim
             <Interruptor
               id="pd-ck-mkt"
               titulo="Marketing"
-              texto="El píxel de Meta mide si un anuncio de PeluDesk en Facebook o Instagram terminó en un registro. Envía a Meta qué página viste y si abriste el demo o creaste tu negocio de prueba."
+              texto="El píxel de Meta y, cuando exista la cuenta, el tag de Google Ads miden si un anuncio de PeluDesk terminó en un registro. Envían qué página viste y si abriste el demo, dejaste tu WhatsApp en una herramienta o creaste tu negocio de prueba."
               marcado={marketing}
               alCambiar={setMarketing}
             />
