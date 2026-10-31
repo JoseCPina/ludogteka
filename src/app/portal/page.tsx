@@ -8,8 +8,10 @@ import { MisVisitas } from "./mis-visitas";
 import { hoyNegocio } from "@/lib/formato";
 import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { cargarTextosPoliticas } from "@/lib/politicas/cargar";
-import { omisionPolitica, politicasVisibles, textoPolitica } from "@/lib/politicas/catalogo";
+import { omisionPolitica, politicasVisibles, textoPolitica } from "@/lib/politicas/catalogo";
+
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
+import { nombreMotivoBaja } from "@/lib/perros/baja";
 import { usaVeterinaria } from "@/lib/plan/modulos";
 
 export default async function PortalPage({ searchParams }: { searchParams: Promise<{ contrasena?: string }> }) {
@@ -51,11 +53,14 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
 
   // RLS de perros ya combina "míos" + "acceso compartido" — no hace falta
   // filtrar por cliente_id aquí, la política lo hace por nosotros.
-  const { data: perros } = await supabase
-    .from("perros")
-    .select("id, nombre, fallecido, foto_path, cliente_id")
-    .is("deleted_at", null)
-    .order("nombre");
+  // Las activas arriba; las dadas de baja y las fallecidas en una sección aparte, sin avisos (las últimas 50: un dueño
+  // con pruebas viejas puede tener cientos, y la API corta en 1,000 filas).
+  const [{ data: perrosActivas }, { data: retiradasCrudo }] = await Promise.all([
+    supabase.from("perros").select("id, nombre, fallecido, foto_path, cliente_id, deleted_at, baja_motivo").is("deleted_at", null).eq("fallecido", false).order("nombre"),
+    supabase.from("perros").select("id, nombre, fallecido, foto_path, cliente_id, deleted_at, baja_motivo").or("deleted_at.not.is.null,fallecido.eq.true").order("deleted_at", { ascending: false, nullsFirst: false }).order("nombre").limit(50),
+  ]);
+  const perros = perrosActivas ?? [];
+  const retiradas = retiradasCrudo ?? [];
 
   // Contratos que el dueño tiene que firmar (el de guardería llega al
   // comprar un paquete): se ven arriba, con liga a la ficha del perro,
@@ -84,7 +89,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
 
   const urlsFotos = new Map<string, string>();
   await Promise.all(
-    (perros ?? [])
+    [...perros, ...retiradas]
       .filter((p) => p.foto_path)
       .map(async (p) => {
         const { data } = await supabase.storage
@@ -183,6 +188,23 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
           </ul>
         )}
       </div>
+      {retiradas.length > 0 && (
+        <div data-mascotas-retiradas>
+          <h2 className="mb-2 text-lg font-bold text-n-900">{vocabularioMascota({ conVet: usaVeterinaria(sesion.modulos ?? []) }).Plural} que ya no vienen</h2>
+          <p className="mb-3 text-sm text-n-600">Su historial se conserva y puedes abrirlo cuando quieras.</p>
+          <ul className="flex flex-col gap-2">
+            {retiradas.map((perro) => (
+              <li key={perro.id}>
+                <Link href={`/portal/perros/${perro.id}`} className="flex items-center gap-3 rounded-md border-[1.5px] border-n-200 bg-n-50 px-4 py-3 hover:border-morado">
+                  <PerroFoto perroId={perro.id} urlInicial={urlsFotos.get(perro.id) ?? null} tieneFotoInicial={Boolean(perro.foto_path)} soloLectura tamano="miniatura" />
+                  <span className="font-semibold text-n-900">{perro.nombre}</span>
+                  <span className="rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-600">{perro.fallecido ? "Falleció" : nombreMotivoBaja(perro.baja_motivo)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {cuantasFacturas > 0 && (
         <Link
           href="/portal/facturas"

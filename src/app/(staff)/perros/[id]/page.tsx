@@ -39,6 +39,8 @@ import { hoyNegocio, formatearFechaCalendario } from "@/lib/formato";
 import { SiPuedeAbrir } from "@/components/acceso-contexto";
 import { puedeAbrirEnServidor } from "@/lib/auth/acceso-servidor";
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
+import { BajaMascota } from "../baja-mascota";
+import type { ResumenBaja } from "@/lib/perros/baja";
 
 export default async function PerroPage({
   params,
@@ -62,7 +64,7 @@ export default async function PerroPage({
   const conEstancias = usaEstancias(sesion.modulos);
   const conContratos = sesion.modulos.includes("contratos");
   const conVeterinaria = usaVeterinaria(sesion.modulos);
-  const soloLectura = sesion.rol === "estetica";
+  let soloLectura = sesion.rol === "estetica";
   const pCitas = perrosConCitasEstetica(supabase, [id]);
   const pPendientes = Promise.all([cargarPendientesEstancia(supabase, [id]), Promise.resolve(supabase.rpc("evaluacion_exigida"))]);
   const pSeries = Promise.resolve(supabase.from("series_recurrentes").select("id, dias_semana, servicios(nombre)").eq("perro_id", id).is("deleted_at", null));
@@ -145,10 +147,9 @@ export default async function PerroPage({
     supabase
       .from("perros")
       .select(
-        "id, nombre, raza, raza_id, sexo, esterilizado, fecha_nacimiento, tamano_id, pelaje_id, alimentacion_notas, temperamento_notas, contacto_emergencia_nombre, contacto_emergencia_telefono, veterinario_nombre, veterinario_telefono, veterinario_clinica, fallecido, foto_path, cliente_id, en_celo, gestante, evaluacion_comportamiento_fecha, updated_at, clientes(nombre)"
+        "id, deleted_at, baja_motivo, nombre, raza, raza_id, sexo, esterilizado, fecha_nacimiento, tamano_id, pelaje_id, alimentacion_notas, temperamento_notas, contacto_emergencia_nombre, contacto_emergencia_telefono, veterinario_nombre, veterinario_telefono, veterinario_clinica, fallecido, foto_path, cliente_id, en_celo, gestante, evaluacion_comportamiento_fecha, updated_at, clientes(nombre)"
       )
       .eq("id", id)
-      .is("deleted_at", null)
       .single(),
     cargarRazas(supabase, await negocioIdActual(), { conGrupo: true }),
     supabase
@@ -393,6 +394,31 @@ export default async function PerroPage({
       .map((d) => ({ id: d.id, administrado_at: d.administrado_at, omitida: d.omitida, notas: d.notas })),
   }));
 
+  // La baja (31 de octubre de 2026): una mascota dada de baja (deleted_at) sigue abriéndose desde la ficha del dueño,
+  // en solo lectura, con «Reactivar»; una activa tiene «Dar de baja» al final (admin y recepción).
+  const inactiva = Boolean(perro.deleted_at);
+  if (inactiva) soloLectura = true;
+  const puedeBaja = sesion.rol === "admin" || sesion.rol === "recepcion";
+  const [{ data: resumenBajaCrudo }, { data: otrasMascotas }] = await Promise.all([
+    supabase.rpc("perro_baja_resumen", { p_perro_id: id }),
+    inactiva && perro.cliente_id
+      ? supabase.from("perros").select("id, nombre").eq("cliente_id", perro.cliente_id).neq("id", id).is("deleted_at", null).eq("fallecido", false).order("nombre")
+      : Promise.resolve({ data: [] as { id: string; nombre: string }[] }),
+  ]);
+  const resumenBaja = resumenBajaCrudo as ResumenBaja | null;
+  const bajaMascota = resumenBaja ? (
+    <BajaMascota
+      perroId={id}
+      nombre={perro.nombre}
+      version={(perro.updated_at as string | null) ?? null}
+      resumen={resumenBaja}
+      puedeEscribir={puedeBaja}
+      puedeTraspasarPases={sesion.rol === "admin" || tienePermiso(sesion, "ajustar_pases")}
+      otrasMascotas={(otrasMascotas ?? []) as { id: string; nombre: string }[]}
+      v={{ nombre: v.nombre, este: v.este, femenino: v.el.startsWith("la ") }}
+    />
+  ) : null;
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -472,6 +498,8 @@ export default async function PerroPage({
           El expediente se conserva como parte del historial del cliente.
         </Alert>
       )}
+
+      {inactiva && bajaMascota}
 
       {creado === "1" && <Alert variante="exito" titulo={`${v.Nombre} registrad${v.o} correctamente`} />}
 
@@ -693,6 +721,8 @@ export default async function PerroPage({
         </p>
         <MedicamentosSeccion perroId={id} medicamentos={medicamentos} puedeEscribir={!soloLectura} mascota={v} />
       </div>
+
+      {!inactiva && bajaMascota}
     </div>
   );
 }

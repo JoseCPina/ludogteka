@@ -33,18 +33,23 @@ import { cargarPendientesEstancia } from "@/lib/perros/pendientes-estancia";
 import { PendientesEstancia, type CatalogosPerro } from "../../perros/pendientes-estancia";
 import { cargarRazas } from "@/lib/razas";
 import { negocioIdActual } from "@/lib/negocio/actual";
-import { DatosFiscalesCliente } from "@/components/cfdi/datos-fiscales-cliente";
+import { DatosFiscalesCliente } from "@/components/cfdi/datos-fiscales-cliente";
+
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
+import { ReactivarMascota } from "../../perros/baja-mascota";
+import { nombreMotivoBaja } from "@/lib/perros/baja";
+import { zonaActual } from "@/lib/negocio/actual";
+import { formatearFecha } from "@/lib/formato";
 
 export default async function EditarClientePage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ creado?: string }>;
+  searchParams: Promise<{ creado?: string; baja?: string; mascota?: string; pases?: string }>;
 }) {
   const { id } = await params;
-  const { creado } = await searchParams;
+  const { creado, baja, mascota, pases } = await searchParams;
 
   const supabase = await createSupabaseServerClient();
   // Solo lo de los módulos que el negocio tiene prendidos.
@@ -92,6 +97,13 @@ export default async function EditarClientePage({
     .eq("cliente_id", id)
     .is("deleted_at", null)
     .order("nombre");
+  // Las dadas de baja (inactivas, con historial): su expediente sigue abierto desde aquí, con «Reactivar»; y lo que
+  // el dueño pidió desde su portal y nadie ha confirmado.
+  const [{ data: perrosBaja }, { data: solicitudesBaja }] = await Promise.all([
+    supabase.from("perros").select("id, nombre, fallecido, deleted_at, baja_motivo, baja_nota").eq("cliente_id", id).not("deleted_at", "is", null).order("deleted_at", { ascending: false }).limit(100),
+    supabase.from("perros_bajas").select("id, perro_id, perro_nombre, motivo, created_at").eq("cliente_id", id).eq("tipo", "solicitud").eq("resultado", "pendiente").is("deleted_at", null).order("created_at"),
+  ]);
+  const zonaBaja = await zonaActual();
 
   const urlsFotos = new Map<string, string>();
   await Promise.all(
@@ -251,6 +263,27 @@ export default async function EditarClientePage({
         textoBoton="Guardar cambios"
       />
 
+      {baja && mascota && (
+        <Alert variante="exito" titulo={baja === "eliminada" ? `${mascota} se eliminó` : `${mascota} quedó dad${v.o} de baja`} >
+          {baja === "eliminada"
+            ? "No tenía historial, así que ya no existe en el sistema."
+            : `Sigue aquí abajo, en «${v.Plural} dad${v.o}s de baja», con su expediente, cobros y contratos; se puede reactivar.`}
+          {pases ? ` Tiene ${pases === "1" ? "un pase" : `${pases} pases`} con saldo: en su expediente decides devolución o traspaso.` : ""}
+        </Alert>
+      )}
+      {(solicitudesBaja ?? []).length > 0 && (
+        <Alert variante="info" titulo={(solicitudesBaja ?? []).length === 1 ? "El dueño pidió dar de baja a una mascota" : `El dueño pidió dar de baja a ${(solicitudesBaja ?? []).length} mascotas`}>
+          <ul className="mt-1 flex flex-col gap-1">
+            {(solicitudesBaja ?? []).map((s) => (
+              <li key={s.id}>
+                {s.perro_nombre}: {nombreMotivoBaja(s.motivo).toLowerCase()} ·{" "}
+                {s.perro_id ? <Link href={`/perros/${s.perro_id}`} className="font-semibold text-morado underline">confirmar o rechazar</Link> : null}
+              </li>
+            ))}
+          </ul>
+        </Alert>
+      )}
+
       <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-bold text-n-900">{v.Plural}</h2>
@@ -318,6 +351,26 @@ export default async function EditarClientePage({
           </ul>
         )}
       </div>
+
+      {(perrosBaja ?? []).length > 0 && (
+        <div className="flex flex-col gap-3 border-t border-n-200 pt-6" data-mascotas-de-baja>
+          <h2 className="text-lg font-bold text-n-900">{v.Plural} dad{v.o}s de baja</h2>
+          <p className="-mt-1 text-sm text-n-600">No salen en buscadores, agenda, reservas, cupos, pases ni recordatorios; su expediente, cobros y contratos se conservan aquí.</p>
+          <ul className="flex flex-col gap-2">
+            {(perrosBaja ?? []).map((p) => (
+              <li key={p.id} className="flex flex-col gap-2 rounded-md border-[1.5px] border-n-200 bg-n-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between" data-mascota-baja={p.id}>
+                <span className="flex flex-col">
+                  <Link href={`/perros/${p.id}`} className="font-semibold text-n-900 hover:underline">{p.nombre}</Link>
+                  <span className="text-sm text-n-600">
+                    {p.fallecido ? "Falleció · " : ""}{nombreMotivoBaja(p.baja_motivo)}{p.deleted_at ? ` · desde el ${formatearFecha(p.deleted_at as string, zonaBaja)}` : ""}{p.baja_nota ? ` · «${p.baja_nota}»` : ""}
+                  </span>
+                </span>
+                <ReactivarMascota perroId={p.id} nombre={p.nombre} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {perrosVivos.length > 0 && conEstancias && (
         <div className="flex flex-col gap-3 border-t border-n-200 pt-6">

@@ -49,6 +49,7 @@ Si la ocupación dice «Cupo sin configurar», falta capturar el cupo de ese dí
 
 - **Contratos que esperan la firma del dueño**: van a [Contratos por firmar](/recepcion/contratos), donde se lo recuerdas por WhatsApp.
 - **Comprobantes sanitarios que esperan revisión**: los mandó el dueño desde su portal; se revisan en [Comprobantes por revisar](/recepcion/comprobantes).
+- **El dueño pide dar de baja a un perro**: lo pidió desde su portal. Te lleva al expediente del perro, donde confirmas la baja o la rechazas con un motivo que él lee ([Cómo registrar vacunas, alertas y datos del perro](/ayuda/vacunas-alertas-y-datos-del-perro)).
 - **Cuentas nuevas que esperan vincularse**: van a [Vinculación de cuentas](/vinculacion).
 - **Cuentas con saldo pendiente** de perros que ya se fueron: van a la cuenta o a la lista de saldos.
 - **Reembolsos de Mercado Pago**, por ejemplo uno hecho desde el panel de Mercado Pago: se revisan en Caja, en [Reembolsos](/caja/reembolsos).
@@ -127,7 +128,7 @@ Si tienes guardería u hotel prendidos, el link de guardería y hotel trae el pa
     modulo: null,
     roles: ["admin", "recepcion"],
     rutas: ["/perros/[id]"],
-    palabras: ["expediente", "vacunas", "requisitos sanitarios", "evaluación", "celo", "alergias", "peso"],
+    palabras: ["expediente", "vacunas", "requisitos sanitarios", "evaluación", "celo", "alergias", "peso", "dar de baja", "eliminar perro", "falleció", "reactivar", "ya no viene"],
     captura: "vacunas-alertas-y-datos-del-perro.jpg",
     cuerpo: `El expediente del perro es donde se guarda todo lo que necesitas saber antes de recibirlo. Se abre tocando al perro en la ficha de su dueño.
 
@@ -143,9 +144,24 @@ Si tienes guardería u hotel prendidos, el link de guardería y hotel trae el pa
 
 > Si le falta algo para guardería u hotel, arriba aparece la lista. Con **Capturar ahora** llenas solo lo vacío; con **Mandarle un link** se abre WhatsApp con el mensaje para el dueño y él lo completa desde su casa. Si no tiene cuenta, el link le pide solo lo que falta y el contrato que no ha firmado (si ya tenía uno esperando, se le manda ese). Si ya tiene cuenta en el portal, el link lleva a la ficha de su perro en el portal: ahí sube el comprobante de las vacunas, firma el contrato y llena sus datos. La evaluación de comportamiento no va por link: se hace en persona.
 
+## Dar de baja a un perro sin tocar al dueño
+
+Al final del expediente, en **Dar de baja**, toca **Dar de baja…**, escoge el **Motivo** (se capturó por error, ya no viene, falleció o cambió de dueño), agrega una nota si quieres y confirma. Lo hacen admin y recepción.
+
+- Si el perro no tiene historial (ni citas, estancias, consultas, cobros, vacunas ni contratos), el botón dice **Confirmar y eliminar** y se elimina de verdad, con su foto.
+- Si tiene historial, queda inactivo: desaparece de buscadores, agenda, reservas y recordatorios, y no cuenta en cupos ni en pases; pero su expediente, cobros y contratos siguen en la ficha del dueño, en **Perros dados de baja**, con **Reactivar**.
+- Si tiene una cita, reserva, estancia o consulta sin terminar, la pantalla lo dice y no deja: cancélala o termínala primero.
+- **Falleció** lo marca así en el expediente, apaga sus recordatorios de vacunas y citas, y el dueño lo ve en su portal en una sección aparte, sin avisos.
+- Sus series recurrentes terminan ese día. Si tenía pases con saldo, quedan a la vista en su expediente: se devuelven desde la cuenta de la compra, en Caja, o con **Traspasar el pase** pasan a otro perro del mismo dueño (admin o quien tenga «Ajustar días de pases»).
+- Si el dueño pidió la baja desde su portal, el aviso sale en **Necesita atención** y arriba del expediente: **Confirmar la baja…** o **Rechazar la solicitud…** con un motivo que él lee.
+
+Quién dio de baja, cuándo y por qué queda guardado.
+
 ## Si algo no sale
 
-Una perra marcada en celo o gestante, o un perro con una alerta que bloquea, no se puede reservar en guardería ni hotel. Quita la marca cuando ya no aplique.`,
+Una perra marcada en celo o gestante, o un perro con una alerta que bloquea, no se puede reservar en guardería ni hotel. Quita la marca cuando ya no aplique.
+
+«No se puede dar de baja a … mientras tenga … sin terminar»: cancela o termina esa cita, reserva o estancia y vuelve a intentar.`,
   },
   {
     slug: "revisar-comprobante-sanitario",
@@ -221,6 +237,7 @@ Arriba del portal hay una sola barra fija con el nombre de tu negocio y **Salir*
 
 - **Citas y reservas**: las próximas y su historial, de guardería, hotel y estética.
 - **Tus perros**: la ficha de cada uno, su estado de salud, la bitácora con fotos y notas, medicamentos y alergias. En **Tus datos** de cada perro corrige su contacto de emergencia; el veterinario de cabecera, la autorización médica, el tope de gasto y las notas de alimentación solo salen si tu negocio tiene hotel, guardería o Veterinaria.
+- **Pedir la baja…**, al final de la ficha de cada perro suyo, con el motivo (se capturó por error, ya no viene, falleció o cambió de dueño): te llega a **Necesita atención** y tú la confirmas o la rechazas desde el expediente del perro, con un motivo que él lee. Los perros dados de baja o fallecidos los ve en **Perros que ya no vienen**, con su historial y sin avisos.
 - Sus contratos por firmar, con un aviso en la portada.
 - **Tus datos**, que puede corregir él.
 

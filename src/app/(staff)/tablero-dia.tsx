@@ -11,6 +11,7 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
 import { usaEstancias } from "@/lib/plan/modulos";
+import { nombreMotivoBaja } from "@/lib/perros/baja";
 import { SelectorEstilista } from "./estetica/selector-estilista";
 import { textoDeCitaEnAusencia, type CitaEnAusencia } from "@/lib/estetica/ausencias";
 import {
@@ -276,6 +277,26 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
 
   // ── Lo que necesita atención ─────────────────────────────────────
   const atencion: Atencion[] = [];
+
+  // Solicitudes de baja de mascota que el dueño pidió desde su portal: el negocio confirma o rechaza en su expediente.
+  const { data: bajasPendientes } = await supabase
+    .from("perros_bajas")
+    .select("id, perro_id, perro_nombre, motivo, created_at")
+    .eq("tipo", "solicitud")
+    .eq("resultado", "pendiente")
+    .is("deleted_at", null)
+    .order("created_at")
+    .limit(50);
+  for (const b of (bajasPendientes ?? []) as { id: string; perro_id: string | null; perro_nombre: string; motivo: string | null; created_at: string }[]) {
+    if (!b.perro_id) continue;
+    atencion.push({
+      clave: `baja-${b.id}`,
+      texto: `El dueño pide dar de baja a ${b.perro_nombre}`,
+      detalle: `Motivo: ${nombreMotivoBaja(b.motivo).toLowerCase()}. Confírmalo o recházalo en su expediente`,
+      href: `/perros/${b.perro_id}`,
+      ...masViejo([b.created_at], hoy, zona, "a"),
+    });
+  }
 
   // Citas de estética (de hoy en adelante) con una estilista que tiene una ausencia aprobada.
   const citasEnAusencia = (citasEnAusenciaCrudo ?? []) as CitaEnAusencia[];
