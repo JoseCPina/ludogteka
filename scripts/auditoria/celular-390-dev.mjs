@@ -1,6 +1,8 @@
 // Nada más ancho que el celular (QA N154, S49) — SOLO DESARROLLO, en Huellitas, con `next start` en el 3001.
 //
-//   node scripts/auditoria/celular-390-dev.mjs [--roles admin,recepcion,estetica] [--max 120] [--ver]
+//   node scripts/auditoria/celular-390-dev.mjs [--roles admin,recepcion,estetica,medico] [--max 120] [--ver]
+//
+// «medico»: un médico veterinario designado mientras corre (scripts/auditoria/lib/medico-dev.mjs); se quita al terminar.
 //
 // Con cada rol del personal, a 390 × 844 px (celular, táctil), recorre la app desde su inicio siguiendo los enlaces
 // que ve (ninguna escritura sale del navegador) y en cada pantalla falla si:
@@ -17,17 +19,18 @@ import { createClient } from "@supabase/supabase-js";
 import { A, URL, env } from "./sesiones-dev.mjs";
 import { abrirNavegador } from "../lib/navegador.mjs";
 import { desbordesDePantalla } from "./lib/ancho-pantalla.mjs";
+import { designarMedicoTemporal, quitarMedicoTemporal } from "./lib/medico-dev.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : d; };
-const ROLES = arg("--roles", "admin,recepcion,estetica").split(",");
+const ROLES = arg("--roles", "admin,recepcion,estetica,medico").split(",");
 const MAX = Number(arg("--max", "120"));
 const VER = process.argv.includes("--ver");
 const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
 const BASE = "http://huellitas.localhost:3001";
 const REF = new globalThis.URL(URL).hostname.split(".")[0];
-const CUENTAS = { admin: datos.adminB, recepcion: datos.recepcionB, estetica: datos.esteticaB };
-const INICIO = { admin: "/admin", recepcion: "/recepcion", estetica: "/estetica" };
+const CUENTAS = { admin: datos.adminB, recepcion: datos.recepcionB, estetica: datos.esteticaB, medico: datos.esteticaAmbos };
+const INICIO = { admin: "/admin", recepcion: "/recepcion", estetica: "/estetica", medico: "/veterinaria" };
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 const patronDe = (r) => r.replace(/^\/ayuda\/(videos\/)?(?!tickets$|videos$|pedir-ayuda$)[a-z0-9-]+$/, "/ayuda/$1:articulo").replace(UUID, ":id").replace(/\/\d{4}-\d{2}-\d{2}(?=\/|$)/g, "/:fecha").replace(/\/\d+(?=\/|$)/g, "/:n");
 const NO_RECORRER = /^\/(api|portal|login|logout|salir|auth|demo|plataforma|alta|l|r|c|p|v|para|blog|legal|privacidad|terminos|aviso)(\/|$)|\/(imprimir|pdf|descargar|exportar|csv)(\/|$)|\.(pdf|csv|xlsx|xml|png|jpg|ics|zip)$|\/xml$/i;
@@ -74,6 +77,8 @@ function tablasEnCelular() {
 
 const nav = await abrirNavegador();
 const porRol = {};
+if (ROLES.includes("medico")) await designarMedicoTemporal({ B: datos.B, adminId: datos.adminB, profileId: CUENTAS.medico });
+for (const senal of ["SIGINT", "SIGTERM"]) process.on(senal, async () => { await quitarMedicoTemporal(); process.exit(130); });
 try {
   for (const rol of ROLES) {
     console.log(`\n── ${rol} ──`);
@@ -144,6 +149,7 @@ try {
   }
 } finally {
   await nav.close();
+  await quitarMedicoTemporal();
 }
 console.log("\nPor rol:");
 for (const [rol, r] of Object.entries(porRol)) console.log(`  ${rol.padEnd(10)} ${String(r.pantallas).padStart(4)} pantallas · ${r.tablas} tablas · ${r.malas} con desborde`);
