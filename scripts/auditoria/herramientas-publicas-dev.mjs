@@ -26,6 +26,13 @@
 //      estética sale como condiciones, y al abrir la prueba el contrato queda publicado como contrato general.
 //   J. Mensajes de WhatsApp: 20+ por giro, se arman con el negocio y la mascota, «Probar en mi WhatsApp» abre wa.me,
 //      cada plantilla tiene página indexable con HowTo y está en el sitemap.
+//   K. Comisiones: con 50 % la estilista se lleva la mitad; se comparan los tres esquemas.
+//   L. Diagnóstico: 10 preguntas, puntaje y fuga calculados con los números, tres recomendaciones; la captura deja el
+//      resumen en prospectos.calificacion_texto para el bot.
+//   M. Mapa de competencia (Places de mentiras): anillos de 1, 2 y 5 km, cercanos, proporción por habitante y la
+//      imagen servida por el servidor.
+//   N. Escuela: seis sesiones con Course, página con guía, sitemap, inscripción por el webhook (mensaje firmado) que
+//      deja al teléfono como prospecto, y la llave anónima no lee las sesiones.
 // Limpia lo que creó (precios sembrados, eventos, capturas, prospectos, negocios). Sale con 1 si algo falla.
 import { limpiarAlTerminar } from "../lib/limpieza-dev.mjs";
 limpiarAlTerminar({ prefijos: ["hta-prueba-"], bitacoras: ["herramientas_eventos", "herramientas_capturas", "aceptaciones_legales"] });
@@ -41,6 +48,7 @@ import { HERRAMIENTAS } from "../../src/lib/herramientas/lista.ts";
 const env = Object.fromEntries(fs.readFileSync(".env.local", "utf8").split(/\r?\n/).filter((l) => l.includes("=") && !l.startsWith("#")).map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }));
 if (!env.NEXT_PUBLIC_SUPABASE_URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const A = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SECRET_KEY, { auth: { persistSession: false } });
+const anonCliente = () => createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
 
 const PUERTO = 3004;
 const DOBLE = 4466;
@@ -65,6 +73,9 @@ const doble = http.createServer((req, res) => {
     res.setHeader("Content-Type", "application/json");
     res.setHeader("Access-Control-Allow-Origin", "*");
     if (/\/message_templates/.test(u)) return res.end(JSON.stringify({ data: [{ name: "peludesk_herramienta_v1", status: "APPROVED", category: "UTILITY", language: "es_MX" }] }));
+    // Google Places de mentiras: ubicar una dirección (el mapa de competencia) devuelve el centro de Aguascalientes.
+    if (/places:searchText/.test(u)) return res.end(JSON.stringify({ places: [{ location: { latitude: 21.8818, longitude: -102.2916 }, formattedAddress: "Centro, Aguascalientes, Ags., México" }] }));
+    if (/staticmap/.test(u)) { res.setHeader("Content-Type", "image/png"); return res.end(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64")); }
     if (/\/messages$/.test(u)) { try { graph.mensajes.push(JSON.parse(cuerpo)); } catch {} return res.end(JSON.stringify({ messages: [{ id: `wamid.${Date.now()}` }] })); }
     if (/\/events/.test(u)) { try { meta.conversiones.push(JSON.parse(cuerpo)); } catch {} return res.end(JSON.stringify({ events_received: 1 })); }
     if (/fbevents\.js/.test(u)) { res.setHeader("Content-Type", "text/javascript"); return res.end("window.fbq=function(){window.__pd_fbq=(window.__pd_fbq||[]);window.__pd_fbq.push([].slice.call(arguments));};window.fbq.callMethod=window.fbq;"); }
@@ -74,7 +85,7 @@ const doble = http.createServer((req, res) => {
 await new Promise((r) => doble.listen(DOBLE, "127.0.0.1", r));
 
 const servidor = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "-p", String(PUERTO)], {
-  env: { ...process.env, PELUDESK_URL_DESARROLLO: `http://{slug}.localhost:${PUERTO}`, PLACES_API_URL: `http://127.0.0.1:${DOBLE}`, PELUDESK_WHATSAPP: "525649160742", PELUDESK_META_PIXEL_ID: PIXEL, PELUDESK_META_CAPI_TOKEN: "token-de-mentiras", META_API_URL: `http://127.0.0.1:${DOBLE}`, WHATSAPP_GRAPH_URL: `http://127.0.0.1:${DOBLE}`, WHATSAPP_TOKEN: "token-de-mentiras", WHATSAPP_PHONE_NUMBER_ID: "123", PELUDESK_WABA_ID: "456", WHATSAPP_APP_SECRET: "secreto-de-mentiras" },
+  env: { ...process.env, PELUDESK_URL_DESARROLLO: `http://{slug}.localhost:${PUERTO}`, PLACES_API_URL: `http://127.0.0.1:${DOBLE}`, STATIC_MAPS_URL: `http://127.0.0.1:${DOBLE}/staticmap`, GOOGLE_PLACES_API_KEY: "llave-de-mentiras", PELUDESK_WHATSAPP: "525649160742", PELUDESK_META_PIXEL_ID: PIXEL, PELUDESK_META_CAPI_TOKEN: "token-de-mentiras", META_API_URL: `http://127.0.0.1:${DOBLE}`, WHATSAPP_GRAPH_URL: `http://127.0.0.1:${DOBLE}`, WHATSAPP_TOKEN: "token-de-mentiras", WHATSAPP_PHONE_NUMBER_ID: "123", PELUDESK_WABA_ID: "456", WHATSAPP_APP_SECRET: "secreto-de-mentiras" },
   stdio: ["ignore", "pipe", "pipe"],
 });
 let bitacora = "";
@@ -454,11 +465,96 @@ try {
     }
   }
 
+  // ── K. Calculadora de comisiones ──
+  console.log("\nK. Calculadora de comisiones");
+  await p.goto(`${PLATAFORMA}/comisiones-groomers`, { waitUntil: "load" });
+  await p.fill("#c-pct", "50");
+  await p.waitForTimeout(300);
+  const filaPct = await p.locator("[data-esquema='porcentaje'] td").nth(1).innerText();
+  const totalTexto = await p.locator("[data-resultados] .hta-cifra").innerText();
+  const total = Number((/\$([\d,]+)/.exec(totalTexto)?.[1] ?? "0").replace(/,/g, ""));
+  ok(/\$/.test(filaPct) && Number(filaPct.replace(/[^\d]/g, "")) === Math.round(total / 2), `con 50 % la estilista se lleva la mitad de la semana (${filaPct} de ${totalTexto.split("\n")[0]})`);
+  ok((await p.locator("[data-esquema]").count()) === 3, "se comparan los tres esquemas");
+
+  // ── L. Diagnóstico ──
+  console.log("\nL. Diagnóstico de rentabilidad");
+  await p.goto(`${PLATAFORMA}/diagnostico?giro=estetica`, { waitUntil: "load" });
+  ok((await p.locator("[data-pregunta]").count()) === 10, "son 10 preguntas");
+  await p.locator("[data-pregunta='citas'] input").fill("40");
+  await p.locator("[data-pregunta='plantones'] input").fill("6");
+  await p.locator("[data-pregunta='precio'] input").fill("350");
+  await p.locator("[data-pregunta='regresan'] input").fill("5");
+  for (const [k, v] of [["caja", "Libreta"], ["cobro", "Solo efectivo"], ["recordatorios", "No las recuerdo"], ["expediente", "En papel"], ["contrato", "No"], ["tiempo_caja", "Más de 30 minutos"]]) await p.locator(`[data-pregunta='${k}'] [role=radio]`, { hasText: v }).click();
+  await p.locator("[data-diagnostico][data-completo='1']").waitFor({ timeout: 10000 });
+  const puntaje = Number(await p.locator("[data-puntaje]").getAttribute("data-puntaje"));
+  const fuga = Number((await p.locator("[data-fuga]").innerText()).replace(/[^\d]/g, ""));
+  // Plantones: 6 × 350 × 4.33 × 50 % = 4,546; retención: 40 × 4.33 × 0.3 × 0.2 × 350 = 3,637; caja libreta 2 % de 60,620 = 1,212; solo efectivo 5 % = 3,031.
+  ok(puntaje > 0 && puntaje < 45, `el puntaje sale bajo con esas respuestas (${puntaje})`);
+  ok(fuga > 11000 && fuga < 13500, `la fuga mensual se calcula con sus números (${fuga}, esperado ≈ 12,426)`);
+  ok((await p.locator("[data-diagnostico] ol li").count()) === 3, "salen tres recomendaciones");
+  const formDiag = p.locator("form[data-recibelo]");
+  const TEL_DIAG = `58${sufijo}33`.padEnd(10, "0").slice(0, 10);
+  await formDiag.locator("input[type=tel]").fill(TEL_DIAG);
+  await formDiag.getByRole("button", { name: "Mandármelo por WhatsApp" }).click();
+  await p.locator("[data-recibelo-listo]").waitFor({ timeout: 30000 });
+  await new Promise((r) => setTimeout(r, 1200));
+  const { data: prDiag } = await A.from("prospectos").select("id, calificacion_texto").eq("telefono_norm", TEL_DIAG).is("deleted_at", null).maybeSingle();
+  ok(/Diagnóstico \d+\/100/.test(prDiag?.calificacion_texto ?? ""), `el prospecto guarda el diagnóstico para el bot (${(prDiag?.calificacion_texto ?? "").slice(0, 70)}…)`);
+  await A.from("prospectos").delete().eq("telefono_norm", TEL_DIAG);
+
+  // ── M. Mapa de competencia ──
+  console.log("\nM. Mapa de competencia");
+  {
+    // Los 10 negocios sembrados en G se ubican alrededor del centro de Aguascalientes (los primeros 4 a menos de 2 km).
+    const { data: sembradosDir } = await A.from("prospectos").select("id").like("nombre", `%auditoría ${sufijo}%`).order("created_at");
+    const { data: principalDir } = await A.from("prospectos").select("id").like("nombre", `Hta prueba dir ${sufijo}%`).maybeSingle();
+    const todos = [principalDir?.id, ...(sembradosDir ?? []).map((x) => x.id)].filter(Boolean);
+    for (let i = 0; i < todos.length; i++) await A.from("prospectos").update({ lat: 21.8818 + (i < 4 ? 0.005 : 0.03) * (i % 2 ? 1 : -1), lng: -102.2916 + (i < 4 ? 0.004 : 0.025), ubicado_at: new Date().toISOString() }).eq("id", todos[i]);
+    await p.goto(`${PLATAFORMA}/mapa-competencia?giro=estetica`, { waitUntil: "load" });
+    await p.fill("#mc-texto", "Centro");
+    await p.getByRole("button", { name: "Ver la competencia" }).click();
+    await p.locator("[data-analisis]").waitFor({ timeout: 30000 });
+    const an = await p.locator("[data-analisis]").innerText();
+    // innerText aplica el text-transform (las etiquetas salen en mayúsculas).
+    ok(/A 1 km\s*\d+/i.test(an) && /A 2 km/i.test(an) && /A 5 km/i.test(an) && /En 2 km hay/.test(an), "salen los anillos de 1, 2 y 5 km con el resumen en texto");
+    ok((await p.locator("[data-cercanos] li").count()) >= 4, `lista los negocios cercanos (${await p.locator("[data-cercanos] li").count()})`);
+    ok(/Aguascalientes/.test(an) && /por cada 10 mil/.test(an), "dice la proporción por habitante del municipio (INEGI)");
+    const img = await p.locator("[data-analisis] img").getAttribute("src");
+    const r = await pedir(img);
+    ok(r.status === 200 && /image\/png/.test(r.headers["content-type"] ?? ""), "la imagen del mapa la sirve el servidor (la llave no sale)");
+  }
+
+  // ── N. Escuela PeluDesk ──
+  console.log("\nN. Escuela PeluDesk");
+  const esc = await pedir("/escuela");
+  ok(esc.status === 200 && (esc.texto.match(/data-sesion=/g) ?? []).length === 6 && ld(esc.texto).some((x) => x["@type"] === "Course") && /wa\.me\/525649160742/.test(esc.texto), "/escuela: seis sesiones, Course en JSON-LD e inscripción por WhatsApp al bot");
+  const ses = await pedir("/escuela/cuanto-cobrar");
+  ok(ses.status === 200 && /data-guia/.test(ses.texto) && /precios-mercado/.test(ses.texto), "la página de la sesión trae la guía y la herramienta del tema");
+  ok((await pedir("/sitemap.xml")).texto.includes("<loc>https://peludesk.mx/escuela/caja-sin-sorpresas</loc>"), "las sesiones están en el sitemap");
+  {
+    // La inscripción por el bot: un mensaje firmado como lo manda Meta.
+    const { createHmac } = await import("node:crypto");
+    const TEL_ESC = `59${sufijo}44`.padEnd(10, "0").slice(0, 10);
+    const cuerpoWa = JSON.stringify({ object: "whatsapp_business_account", entry: [{ changes: [{ value: { metadata: { phone_number_id: "123" }, contacts: [{ wa_id: `52${TEL_ESC}`, profile: { name: "Prueba Escuela" } }], messages: [{ from: `52${TEL_ESC}`, id: `wamid.aud${sufijo}`, timestamp: String(Math.floor(Date.now() / 1000)), type: "text", text: { body: "Quiero inscribirme a la Escuela PeluDesk: Cuánto cobrar (cuanto-cobrar)" } }] } }] }] });
+    const antes = graph.mensajes.length;
+    const rw = await pedir("/api/whatsapp/webhook", { metodo: "POST", cabeceras: { "content-type": "application/json", "x-hub-signature-256": `sha256=${createHmac("sha256", "secreto-de-mentiras").update(cuerpoWa).digest("hex")}` }, cuerpo: cuerpoWa });
+    await new Promise((r) => setTimeout(r, 2000));
+    const { data: insc } = await A.from("escuela_inscripciones").select("id, sesion_clave, prospecto_id").eq("telefono_norm", TEL_ESC).is("deleted_at", null).maybeSingle();
+    const respuesta = graph.mensajes.slice(antes).find((m) => m.type === "text")?.text?.body ?? "";
+    ok(rw.status === 200 && insc?.sesion_clave === "cuanto-cobrar" && !!insc?.prospecto_id && /quedaste inscrito/.test(respuesta), `el webhook inscribe al teléfono, lo deja como prospecto y contesta (${respuesta.slice(0, 60)}…)`);
+    await A.from("escuela_inscripciones").delete().eq("telefono_norm", TEL_ESC);
+    await A.from("prospectos").delete().eq("telefono_norm", TEL_ESC);
+    await A.from("wa_mensajes").delete().eq("telefono", `52${TEL_ESC}`);
+    await A.from("wa_hilos").delete().eq("telefono", `52${TEL_ESC}`);
+  }
+  const { data: sesAnon } = await anonCliente().rpc("escuela_sesiones_publicas");
+  ok(!sesAnon || sesAnon.length === 0, "la llave anónima no lee las sesiones (las lee el servidor)");
+
   // ── F. Celular ──
   console.log("\nF. Celular a 390 px");
   const cel = await nav.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2, userAgent: UA });
   const pc = await cel.newPage();
-  for (const ruta of ["/herramientas", `/precios-mercado?giro=estetica&servicio=bano&ciudad=aguascalientes&talla=mediano&precio=340`, "/precios-mercado/estetica/aguascalientes", "/directorio", "/directorio/estetica/aguascalientes", "/lista-de-precios", "/contrato-guarderia-hotel", "/mensajes-whatsapp"]) {
+  for (const ruta of ["/herramientas", `/precios-mercado?giro=estetica&servicio=bano&ciudad=aguascalientes&talla=mediano&precio=340`, "/precios-mercado/estetica/aguascalientes", "/directorio", "/directorio/estetica/aguascalientes", "/lista-de-precios", "/contrato-guarderia-hotel", "/mensajes-whatsapp", "/diagnostico", "/comisiones-groomers", "/mapa-competencia", "/escuela", "/escuela/cuanto-cobrar"]) {
     await pc.goto(`${PLATAFORMA}${ruta}`, { waitUntil: "load" });
     await pc.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
     const desbordes = await pc.evaluate(desbordesDePantalla);

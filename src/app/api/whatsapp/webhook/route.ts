@@ -7,6 +7,7 @@ import { guardarEstado, esFalloDeCuenta, type EstadoMeta } from "@/lib/whatsapp/
 import { avisarFalloDeEntrega } from "@/lib/soporte/notificar";
 import { procesarSesion } from "@/lib/whatsapp/flow/servidor";
 import { atenderReclamo } from "@/lib/directorio/webhook";
+import { atenderInscripcion } from "@/lib/escuela/datos";
 import { atenderBoton, atenderTexto, guardarEntregaRecordatorio, reportarSiHayExcedente, type Atencion } from "@/lib/recordatorios/respuestas";
 
 const TEXTO_FORMULARIO_ENVIADO = "[Envió el formulario «Prueba gratis»]";
@@ -224,6 +225,13 @@ export async function POST(request: NextRequest) {
         if (reclamo) {
           await wa.texto(m.telefono, reclamo.texto);
           await datos.apuntarMensaje(m.telefono, "agente", reclamo.texto);
+          continue;
+        }
+        // «Quiero inscribirme a la Escuela PeluDesk: … (clave)»: inscripción a una sesión (src/lib/escuela/datos.ts).
+        const inscripcion = m.texto ? await atenderInscripcion(m.telefono, m.texto, m.perfil ?? null) : null;
+        if (inscripcion) {
+          await wa.texto(m.telefono, inscripcion);
+          await datos.apuntarMensaje(m.telefono, "agente", inscripcion);
           continue;
         }
         // BAJA de quien no está en el seguimiento (un prospecto): fuera de mensajes y de la publicidad (aviso de privacidad).

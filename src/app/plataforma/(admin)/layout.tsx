@@ -7,6 +7,7 @@ const SECCIONES = [
   { href: "/plataforma", texto: "Negocios" },
   { href: "/plataforma/prospectos", texto: "Prospectos" },
   { href: "/plataforma/mercado", texto: "Índice de precios" },
+  { href: "/plataforma/escuela", texto: "Escuela" },
   { href: "/plataforma/planes", texto: "Planes" },
   { href: "/plataforma/cobro", texto: "Cobro" },
   { href: "/plataforma/facturas", texto: "Facturas por emitir" },

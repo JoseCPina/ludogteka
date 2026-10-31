@@ -14,7 +14,11 @@ const GIROS = lista("--giros") ?? ["estetica", "hotel", "guarderia", "veterinari
 const CIUDADES = lista("--ciudades");
 const TOPE = Number(valor("--tope") ?? 3000);
 const PARALELO = Number(valor("--paralelo") ?? 6);
-const giroDeProspecto = (p) => (p.giro === "mixto" ? (p.clasificacion?.servicios?.[0] ?? "hotel") : p.giro);
+// Los giros que se buscan en su sitio: los de su clasificación (un mixto trae varios) o el suyo.
+const girosDeProspecto = (p) => {
+  const s = (p.clasificacion?.servicios ?? []).filter((x) => ["estetica", "hotel", "guarderia", "veterinaria"].includes(x));
+  return s.length ? s : p.giro === "mixto" ? ["hotel", "guarderia"] : [p.giro];
+};
 
 const db = await abrirBase();
 const ia = abrirIA();
@@ -32,7 +36,8 @@ const pendientes = [];
 let hechos = 0;
 try {
   await enParalelo(prospectos, PARALELO, async (p) => {
-    const giro = giroDeProspecto(p);
+    const giros = girosDeProspecto(p);
+    const giro = giros[0];
     const paginas = [];
     const portada = await bajarPagina(p.web);
     corrida.revisados++;
@@ -47,7 +52,7 @@ try {
     }
     const candidatos = [];
     paginas.forEach((pg, i) => {
-      for (const c of candidatosDePrecio(textoDeHtml(pg.html), giro, `${p.id.slice(0, 8)}-${i}`, 30)) candidatos.push({ ...c, giro, url: pg.url, prospecto: p });
+      for (const c of candidatosDePrecio(textoDeHtml(pg.html), giros, `${p.id.slice(0, 8)}-${i}`, 30)) candidatos.push({ ...c, giro, url: pg.url, prospecto: p });
     });
     if (candidatos.length) pendientes.push(...candidatos);
     hechos++;

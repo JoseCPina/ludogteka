@@ -29,7 +29,8 @@ export async function clasificarPendientes(db: SupabaseClient, o: { apiKey: stri
   const gastoPrevio = await gastoIaDelMes(db, "sitio_web");
   const mes = new Date().toISOString().slice(0, 7);
   try {
-    const { data, error } = await db.from("precios_mercado_candidatos").select("id, giro, precio, contexto, fuente, url, prospecto_id, ciudad, estado, origen").eq("situacion", "pendiente").is("deleted_at", null).order("created_at").order("id").limit(o.tope ?? 600);
+    // También los que quedaron en «error» en una corrida anterior (un fallo al insertar no es culpa del candidato).
+    const { data, error } = await db.from("precios_mercado_candidatos").select("id, giro, precio, contexto, fuente, url, prospecto_id, ciudad, estado, origen").in("situacion", ["pendiente", "error"]).is("deleted_at", null).order("created_at").order("id").limit(o.tope ?? 600);
     if (error) throw new Error(error.message);
     const pendientes = (data ?? []) as Pendiente[];
     for (let i = 0; i < pendientes.length; i += 30) {
@@ -77,14 +78,21 @@ export async function clasificarPendientes(db: SupabaseClient, o: { apiKey: stri
           valido: precioCreible(c.servicio, Number(p.precio)),
           huella: huellaDe([p.fuente, p.origen ?? p.url ?? p.prospecto_id ?? "", c.servicio, c.talla ?? "-", String(p.precio), mes]),
         };
-        const { data: ins, error: eIns } = await db.from("precios_mercado").upsert(fila, { onConflict: "huella", ignoreDuplicates: true }).select("id");
-        if (eIns) {
-          resumen.errores.push(`insertar: ${eIns.message}`);
-          await db.from("precios_mercado_candidatos").update({ situacion: "error" }).eq("id", c.id);
-          continue;
+        // El índice único de la huella es parcial: no sirve un upsert con on conflict. Se busca y, si no está, se inserta
+        // (un 23505 por una carrera cuenta como repetido).
+        const { data: repetido } = await db.from("precios_mercado").select("id").eq("huella", fila.huella).is("deleted_at", null).limit(1);
+        let insertado = false;
+        if (!(repetido ?? []).length) {
+          const { error: eIns } = await db.from("precios_mercado").insert(fila);
+          if (eIns && eIns.code !== "23505") {
+            resumen.errores.push(`insertar: ${eIns.message}`);
+            await db.from("precios_mercado_candidatos").update({ situacion: "error" }).eq("id", c.id);
+            continue;
+          }
+          insertado = !eIns;
         }
         resumen.clasificados++;
-        if ((ins ?? []).length) resumen.insertados++;
+        if (insertado) resumen.insertados++;
         await db.from("precios_mercado_candidatos").update({ situacion: "clasificado", servicio: c.servicio, talla: c.talla, confianza: Math.min(1, Math.max(0, c.confianza)), clasificado_at: new Date().toISOString() }).eq("id", c.id);
       }
       // Los que la IA no devolvió quedan pendientes para la siguiente hora (una vez); si tampoco, descartados.

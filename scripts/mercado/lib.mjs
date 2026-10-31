@@ -153,9 +153,14 @@ export async function insertarPrecios(db, corrida, filas) {
     valido: precioCreible(f.servicio, Number(f.precio)),
     huella: huellaDe([f.fuente, f.origen ?? f.url ?? f.prospecto_id ?? "", f.servicio, f.talla ?? "-", String(f.precio), mes()]),
   }));
+  // El índice único de la huella es parcial (no sirve on conflict): se quitan las que ya están y se insertan las demás.
   for (let i = 0; i < listas.length; i += 200) {
     const lote = listas.slice(i, i + 200);
-    const { data, error } = await db.from("precios_mercado").upsert(lote, { onConflict: "huella", ignoreDuplicates: true }).select("id");
+    const { data: ya } = await db.from("precios_mercado").select("huella").in("huella", lote.map((f) => f.huella)).is("deleted_at", null);
+    const existentes = new Set((ya ?? []).map((x) => x.huella));
+    const nuevas = lote.filter((f, k) => !existentes.has(f.huella) && lote.findIndex((g) => g.huella === f.huella) === k);
+    if (!nuevas.length) continue;
+    const { data, error } = await db.from("precios_mercado").insert(nuevas).select("id");
     if (error) {
       corrida.error(`insertar: ${error.message}`);
       continue;
