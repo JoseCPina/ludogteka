@@ -186,7 +186,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
           <ul className="mt-2 flex flex-col gap-1 text-sm text-n-700" data-lista-recetas-consulta>
             {recetas.map((r) => (
               <li key={r.id}>
-                <Link href={`/veterinaria/recetas/${r.id}`} className="font-semibold text-morado hover:underline">Receta N.º {r.numero}</Link>
+                <Enlace href={`/veterinaria/recetas/${r.id}`}>Receta N.º {r.numero}</Enlace>
                 {" · "}{formatearFechaCalendario(r.fecha_emision)}{r.medicamentos ? ` · ${r.medicamentos}` : ""}{r.estado === "anulada" ? " · anulada" : ""}
               </li>
             ))}
