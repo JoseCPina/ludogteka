@@ -195,6 +195,7 @@ export const EXCLUIDOS = {
     "/app/mascotas/[id]/perdida": "App para dueños (Fase 1): mascota perdida; pendiente de grabar con una cuenta de dueño del demo.",
     "/app/mascotas/[id]/cita": "App para dueños (Fase 1): pedir cita; pendiente de grabar con una cuenta de dueño del demo.",
     "/app/m/[token]": "App para dueños (Fase 1): el perfil público del QR de la placa, lo ve quien encuentra a la mascota; no es una tarea del negocio.",
+    "/app/m/[token]/registrar": "App para dueños (Fase 2): el formulario público con el que un negocio SIN PeluDesk registra una atención desde el QR; no es una pantalla del panel.",
     "/negocio-no-encontrado": "Pantalla de error técnica (dominio sin negocio); no es una tarea del usuario.",
     "/pagina-no-encontrada": "Pantalla de error técnica (404); no es una tarea del usuario.",
     "/fac/[token]": "Enlace público de una factura para el cliente; se enseña solo como resultado en el video 65.",

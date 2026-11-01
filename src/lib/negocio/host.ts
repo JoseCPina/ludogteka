@@ -50,6 +50,11 @@ export function esHostApp(hostCrudo: string | null | undefined): boolean {
   return host === `app.${DOMINIO_PLATAFORMA}` || host === "app.localhost" || extra.includes(host);
 }
 
+/** El sitio de PeluDesk (registro, directorio): peludesk.mx, o PELUDESK_SITIO_URL en desarrollo. */
+export function urlSitio(): string {
+  return (process.env.PELUDESK_SITIO_URL ?? `https://${DOMINIO_PLATAFORMA}`).replace(/\/$/, "");
+}
+
 /** La dirección de la app para dueños, para los links que se le mandan a alguien (PELUDESK_APP_URL en desarrollo). */
 export function urlApp(): string {
   return (process.env.PELUDESK_APP_URL ?? `https://app.${DOMINIO_PLATAFORMA}`).replace(/\/$/, "");

@@ -11,10 +11,13 @@ export default async function CartillaPage({ params, searchParams }: { params: P
   const m = await miMascota(id);
   if (!m) notFound();
   const supabase = await createSupabaseServerClient("portal");
-  const [registros, { count: fotosRevisadas }] = await Promise.all([
+  const [registros, { count: fotosRevisadas }, { data: atenciones }] = await Promise.all([
     cartillaDe(m.id),
     supabase.from("mascotas_cartilla_fotos").select("id", { count: "exact", head: true }).eq("mascota_id", m.id).is("deleted_at", null).or("confirmada_at.not.is.null,estado.in.(sin_datos,error)"),
+    // Fase 2: el nombre del negocio que registró por QR (sin columnas internas: por función).
+    supabase.rpc("app_mis_atenciones", { p_mascota: m.id }),
   ]);
+  const negociosQR = Object.fromEntries(((atenciones ?? []) as { id: string; negocio_nombre: string }[]).map((a) => [a.id, a.negocio_nombre]));
   return (
     <>
       <Link href={`/mascotas/${m.id}`} className="apd-enlace apd-aparece" style={{ display: "inline-block", marginTop: "0.25rem" }}>← {m.nombre}</Link>
@@ -31,7 +34,7 @@ export default async function CartillaPage({ params, searchParams }: { params: P
         </div>
       </section>
       <section className="apd-seccion apd-aparece" style={{ ["--i" as string]: 2 }}>
-        <Cartilla mascotaId={m.id} especie={m.especie} registros={registros} abrirCaptura={Boolean(q.capturar)} recordatoriosApagados={m.recordatoriosApagados} />
+        <Cartilla mascotaId={m.id} especie={m.especie} registros={registros} abrirCaptura={Boolean(q.capturar)} recordatoriosApagados={m.recordatoriosApagados} negocios={negociosQR} />
       </section>
       {(fotosRevisadas ?? 0) > 0 && (
         <section className="apd-seccion apd-aparece" style={{ ["--i" as string]: 3 }}>

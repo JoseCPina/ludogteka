@@ -5,6 +5,8 @@ import { cartillaDe, proximas, hoyMx, diasEntre, type RegistroCartilla } from "@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatearFechaCalendario } from "@/lib/formato";
 import { IconoFlecha, IconoFlechaArriba } from "@/components/app/iconos";
+import { aAtencionDelDueno } from "@/lib/app/atenciones";
+import { AtencionesDeNegocios } from "./atenciones";
 
 // La ficha de una mascota en la app: lo que le toca, su cartilla, seguimiento, su QR, «¿se perdió?» y en qué
 // negocios tiene expediente (cada uno abre su portal con la misma cuenta).
@@ -13,11 +15,14 @@ export default async function MascotaPage({ params }: { params: Promise<{ id: st
   const m = await miMascota(id);
   if (!m) notFound();
   const supabase = await createSupabaseServerClient("portal");
-  const [registros, { data: pesoFila }, { count: medsActivos }] = await Promise.all([
+  const [registros, { data: pesoFila }, { count: medsActivos }, { data: atencionesCrudas }] = await Promise.all([
     cartillaDe(m.id),
     supabase.from("mascotas_pesos").select("peso_kg, fecha").eq("mascota_id", m.id).is("deleted_at", null).order("fecha", { ascending: false }).limit(1).maybeSingle(),
     supabase.from("mascotas_medicamentos").select("id", { count: "exact", head: true }).eq("mascota_id", m.id).is("deleted_at", null).eq("activo", true),
+    // Fase 2: lo que registraron negocios con el QR (sin columnas internas: por función).
+    supabase.rpc("app_mis_atenciones", { p_mascota: m.id }),
   ]);
+  const atenciones = ((atencionesCrudas ?? []) as Record<string, unknown>[]).map(aAtencionDelDueno);
   const edad = edadTexto(m.fechaNacimiento);
   const toca = proximas(registros).slice(0, 3);
   const hoy = hoyMx();
@@ -135,7 +140,15 @@ export default async function MascotaPage({ params }: { params: Promise<{ id: st
         </dl>
       </section>
 
-      <section className="apd-seccion apd-aparece" style={{ ["--i" as string]: 5 }}>
+      {atenciones.length > 0 && (
+        <section className="apd-seccion apd-aparece" style={{ ["--i" as string]: 5 }} data-atenciones-negocios>
+          <h2 className="apd-seccion-titulo">Lo que registraron los negocios</h2>
+          <p className="apd-nota" style={{ marginBottom: "0.75rem" }}>Lo registraron con el QR de su placa. Si algo no es de {m.nombre}, ocúltalo: deja de contar en su cartilla, pero el registro no se borra.</p>
+          <AtencionesDeNegocios atenciones={atenciones} nombre={m.nombre} />
+        </section>
+      )}
+
+      <section className="apd-seccion apd-aparece" style={{ ["--i" as string]: 6 }}>
         <h2 className="apd-seccion-titulo">Dónde la conocen</h2>
         {m.vinculos.length === 0 ? (
           <p className="apd-nota">Ningún negocio con PeluDesk la tiene registrada todavía. Cuando tu veterinaria o tu estética la den de alta con tu número, aparece aquí solo.</p>

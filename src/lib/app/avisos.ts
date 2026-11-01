@@ -5,7 +5,7 @@ import { enviarPush } from "./push";
  * Un aviso del centro de avisos de la app para dueños: queda en app_avisos (lo ve en la pestaña Avisos) y, si tiene el
  * celular suscrito, le llega como notificación push. Lo escribe el servidor.
  */
-export type TipoAviso = "bienvenida" | "vinculo" | "prueba" | "recordatorio" | "perdida" | "encontrada" | "mensaje" | "sistema";
+export type TipoAviso = "bienvenida" | "vinculo" | "prueba" | "recordatorio" | "perdida" | "encontrada" | "mensaje" | "sistema" | "registro";
 
 export async function crearAviso(o: { duenoId: string; tipo: TipoAviso; titulo: string; cuerpo: string; url?: string | null; mascotaId?: string | null; datos?: Record<string, unknown>; push?: boolean }): Promise<string | null> {
   const db = createSupabaseAdminClient();

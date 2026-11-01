@@ -16,7 +16,7 @@ const ESTADO: Record<RegistroCartilla["estado"], { texto: string; clase: string 
 };
 const fecha = (f: string | null) => (f ? `${f.slice(8, 10)}/${f.slice(5, 7)}/${f.slice(0, 4)}` : "—");
 
-export function Cartilla({ mascotaId, especie, registros, abrirCaptura, recordatoriosApagados }: { mascotaId: string; especie: "perro" | "gato" | "otro"; registros: RegistroCartilla[]; abrirCaptura: boolean; recordatoriosApagados: boolean }) {
+export function Cartilla({ mascotaId, especie, registros, abrirCaptura, recordatoriosApagados, negocios = {} }: { mascotaId: string; especie: "perro" | "gato" | "otro"; registros: RegistroCartilla[]; abrirCaptura: boolean; recordatoriosApagados: boolean; negocios?: Record<string, string> }) {
   const router = useRouter();
   const envio = useEspera();
   const quitando = useEspera();
@@ -43,7 +43,7 @@ export function Cartilla({ mascotaId, especie, registros, abrirCaptura, recordat
             <div style={{ minWidth: 0 }}>
               <p style={{ fontWeight: 800 }}>{r.nombre}{r.subtipo ? <span className="apd-nota"> · {r.subtipo}</span> : null}</p>
               <p className="apd-nota">{r.tipo === "vacuna" ? "Vacuna" : "Desparasitación"} · aplicada {fecha(r.fechaAplicacion)}{r.proximaDosis ? ` · próxima ${fecha(r.proximaDosis)}` : ""}{r.lote ? ` · lote ${r.lote}` : ""}</p>
-              <p className="apd-nota" style={{ fontSize: "0.75rem" }}>{FUENTE[r.fuente]}{r.confianza != null && r.confianza < 0.7 ? " · lectura dudosa, revísalo" : ""}</p>
+              <p className="apd-nota" style={{ fontSize: "0.75rem" }}>{r.fuente === "qr" && r.atencionId && negocios[r.atencionId] ? `lo registró ${negocios[r.atencionId]} con el QR` : FUENTE[r.fuente]}{r.confianza != null && r.confianza < 0.7 ? " · lectura dudosa, revísalo" : ""}</p>
             </div>
             <span className={ESTADO[r.estado].clase} style={{ flex: "none" }}>{ESTADO[r.estado].texto}</span>
           </div>

@@ -1,0 +1,8 @@
+{
+  "nombre": "peludesk_cita_sugerida_v1",
+  "idioma": "es_MX",
+  "categoria": "UTILITY",
+  "cuerpo": "Hola {{1}}. En {{2}} le sugirieron a {{3}} su próxima cita de {{4}} para el {{5}}. Si quieres agendarla, toca Agendar y te pasamos su WhatsApp.",
+  "ejemplos": ["Ana", "Estética Patitas", "Rocky", "baño y corte", "jueves 5 de diciembre"],
+  "botones": [{ "texto": "Agendar", "accion": "agendar" }, { "texto": "Después", "accion": "despues" }]
+}

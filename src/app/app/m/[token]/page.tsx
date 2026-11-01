@@ -46,10 +46,19 @@ export default async function PerfilPublicoPage({ params }: { params: Promise<{ 
           </div>
         </div>
       </div>
-      <section className="apd-seccion apd-aparece" style={{ ["--i" as string]: 2 }}>
+      {!m.perdida && (
+        <section className="apd-seccion apd-aparece" style={{ ["--i" as string]: 2 }}>
+          <div className="apd-tarjeta" data-entrada-negocio>
+            <p style={{ fontWeight: 800 }}>¿Atiendes a {m.nombre}?</p>
+            <p className="apd-nota" style={{ marginTop: "0.3rem" }}>Si eres veterinaria, estética u hotel, registra su vacuna, su baño o su estancia: le llega a su familia en su cartilla, con tu WhatsApp para agendar. Sin cuenta ni app.</p>
+            <a href={`/m/${m.token}/registrar`} className="apd-boton" style={{ marginTop: "0.9rem" }} data-registrar-atencion>Registrar atención</a>
+          </div>
+        </section>
+      )}
+      <section className="apd-seccion apd-aparece" style={{ ["--i" as string]: 3 }}>
         <Hallador token={m.token} nombre={m.nombre} waUrl={waUrl} />
       </section>
-      <section className="apd-seccion apd-aparece" style={{ ["--i" as string]: 3 }}>
+      <section className="apd-seccion apd-aparece" style={{ ["--i" as string]: 4 }}>
         <div className="apd-tarjeta" style={{ background: "var(--apd-menta-suave)", boxShadow: "none" }}>
           <p style={{ fontWeight: 800 }}>Si la tienes contigo</p>
           <p className="apd-nota" style={{ marginTop: "0.35rem", color: "var(--apd-tinta-2)" }}>Dale agua, mantenla en un lugar tranquilo y, si puedes, llévala a una veterinaria cercana: ahí pueden leer su chip. {encontradas > 0 ? `Con PeluDesk ya han vuelto a casa ${encontradas} ${encontradas === 1 ? "mascota" : "mascotas"}.` : ""}</p>

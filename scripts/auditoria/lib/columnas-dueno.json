@@ -142,6 +142,38 @@
   "pelajes_permitidos",
   "depende_pelaje"
  ],
+ "mascotas_cartilla": [
+  "id",
+  "mascota_id",
+  "tipo",
+  "nombre",
+  "subtipo",
+  "lote",
+  "laboratorio",
+  "fecha_aplicacion",
+  "proxima_dosis",
+  "fuente",
+  "confianza",
+  "foto_id",
+  "notas",
+  "created_at",
+  "updated_at",
+  "deleted_at",
+  "created_by",
+  "atencion_id"
+ ],
+ "mascotas_pesos": [
+  "id",
+  "mascota_id",
+  "peso_kg",
+  "fecha",
+  "notas",
+  "created_at",
+  "updated_at",
+  "deleted_at",
+  "created_by",
+  "atencion_id"
+ ],
  "medicamentos_administrados": [
   "id",
   "perro_medicamento_id",
