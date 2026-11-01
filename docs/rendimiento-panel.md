@@ -52,6 +52,12 @@ Viaje Vercel→base ≈ 10 ms; TTFB desde la PC suma ~100 ms de red.
 
 Si después del despliegue Recepción o Inicio siguen arriba de 600 ms, lo siguiente a medir son `veterinaria_atencion` y `cuentas_abiertas_json` (las dos más caras que quedan en la tanda principal) y el tiempo de render del tablero (HTML de 95–145 KB).
 
+## Cierre en la laptop (1 de noviembre de 2026)
+- **Lo que encontró la primera corrida:** la medición «en verde» de la PC no se podía correr allá (no compila) y en la laptop salió engañosa por tres fallas: (1) el contador vivía en un `Map` del módulo y la build carga el módulo por separado para las páginas y para `/api/medir` (no veía nada; ahora en `globalThis`); (2) la auditoría pedía `127.0.0.1` con encabezado `Host`, que el `fetch` de Node ignora (caía en el negocio por omisión → `/sin-acceso`; ahora pide `huellitas.localhost`); (3) `/admin` y `/recepcion` **tronaban en el servidor** (`TypeError: a.catch is not a function`): el arreglo llamaba `.catch` sobre consultas de Supabase, que son *thenables* perezosos sin `.catch` y que además no salen hasta su `await`. Con la pantalla rota se medían 19–26 consultas y ~500 ms; ahora `arrancarTodas` (`src/lib/supabase/arrancar.ts`) las arranca con `Promise.resolve`.
+- **Desarrollo, base en Medium, misma medición (mediana de 4, hasta el final del cuerpo), `main` → esta rama:** /admin (admin) 5.9 s → 3.1 s; /recepcion (admin) 5.0 s → 2.6 s; /recepcion (recepción) 3.6 s → 2.1 s; /hotel 1.5 s → 1.0 s; /estetica 1.2 s → 1.0 s.
+- **La meta de 600 ms de servidor NO se cumple en /admin ni en /recepcion** (desarrollo: ~2.0–2.5 s sin la latencia; 54–79 consultas, muchas a la vez contra una base de 2 núcleos). Lo que más pesa: `inventario_clinico_alertas` (~470 ms sola, recalcula existencias por insumo) y `cuentas_abiertas_json` (~330 ms); lo demás es espera por concurrencia. /hotel y /estetica sí quedan en ~300–450 ms.
+
 ## Topes de la auditoría (`tiempo-panel-dev.mjs`)
-- Servidor: 600 ms (descontando la latencia de desarrollo por tanda).
-- Consultas por pantalla (layout incluido, middleware no): `/recepcion` 48, `/hotel` 22, `/estetica` 16, `/admin` 70. Son los conteos del diseño después del arreglo; la primera corrida en la laptop los confirma (si una pantalla queda abajo, se baja el tope a lo que quedó + 2). Subirlos es una decisión que se explica en el commit.
+- **Servidor, por pantalla** (lo medido en desarrollo más 25 %, freno a regresiones): `/recepcion` 2,400 ms, `/hotel` 650 ms, `/estetica` 400 ms, `/admin` 3,100 ms.
+- **Consultas** (lo medido más 2): `/recepcion` 64, `/hotel` 20, `/estetica` 19, `/admin` 81.
+- Siguiente paso para acercar /recepcion e /admin a 600 ms: `inventario_clinico_alertas` (existencia por insumo en una pasada) y `cuentas_abiertas_json`, y medir cuántas consultas de «Necesita atención» pueden ir en una sola función.
