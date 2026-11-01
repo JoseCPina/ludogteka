@@ -36,7 +36,25 @@ Lo construido de la Fase 1 del plan (PLAN.md), sobre la Fase 0 (FASE-0.md). Cuá
 - `node scripts/auditoria/app-duenos-f1-dev.mjs` (app compilada + dobles de WhatsApp y de Anthropic en el 4456): alta con foto, lectura por foto (doble de IA → revisar → confirmar; los recordatorios quedan programados), captura a mano, PDF, seguimiento, QR, perfil público y mensaje de quien la encontró (página y «ENCONTRE» por el webhook; el dueño ve el mensaje; su respuesta sale por el bot), perdida/encontrada con dueños cerca y negocios cerca, cron de recordatorios (push + plantilla al doble), RLS de todo lo nuevo con JWT reales, 390 px.
 - `node scripts/auditoria/app-cartillas-prod.mjs`: las 10 cartillas de prueba contra la IA real en producción con la dueña de la demo: tiempo y acierto por campo.
 
+## Medición en producción (1 de noviembre de 2026)
+`app-cartillas-prod.mjs` contra la IA real (`claude-sonnet-5`, en Vercel) con la dueña de la demo; las 10 cartillas son las imágenes generadas por `scripts/auditoria/lib/cartillas-prueba.mjs` (a máquina, a mano, con etiquetas, rotada, con ruido y sin próxima dosis), no fotos de cartillas reales.
+
+| # | Estilo | IA | De punta a punta | Registros | Fecha | Próxima dosis | Lote |
+|---|---|---|---|---|---|---|---|
+| 1 | maquina | 4.0 s | 6.1 s | 3/3 | 3/3 | 3/3 | 2/2 |
+| 2 | mano | 3.4 s | 4.3 s | 2/2 | 2/2 | 2/2 | 1/1 |
+| 3 | etiquetas | 4.8 s | 5.9 s | 4/4 | 4/4 | 4/4 | 3/3 |
+| 4 | maquina-rotada | 4.6 s | 5.5 s | 4/4 | 4/4 | 4/4 | 3/3 |
+| 5 | mano-dos-digitos | 4.3 s | 6.1 s | 3/3 | 3/3 | 3/3 | 1/1 |
+| 6 | maquina-ruido | 3.5 s | 4.4 s | 2/2 | 2/2 | 2/2 | 2/2 |
+| 7 | etiquetas-mano | 3.5 s | 4.1 s | 2/2 | 2/2 | 2/2 | 1/1 |
+| 8 | maquina | 4.1 s | 4.8 s | 3/3 | 3/3 | 3/3 | 2/2 |
+| 9 | mano | 3.8 s | 4.5 s | 3/3 | 3/3 | 3/3 | 1/1 |
+| 10 | sin-proxima | 4.5 s | 5.1 s | 2/2 | 2/2 | 2/2 | 2/2 |
+
+Resumen: 10/10 leídas; IA en 4.1 s de promedio (máximo 4.8 s), 5.1 s de punta a punta; 28/28 registros sin ninguno de más, fecha de aplicación, próxima dosis y tipo 28/28, lote 18/18. Falta medir con fotos de cartillas reales tomadas con el celular.
+
 ## Pendiente (en el reporte de la fase)
-- El aviso a negocios por WhatsApp depende de que Meta apruebe `peludesk_mascota_perdida_v1` (se manda a aprobar desde Vercel con el cron de plantillas); hasta entonces solo salen los avisos a dueños de la app.
+- El aviso a negocios por WhatsApp depende de que Meta apruebe `peludesk_mascota_perdida_v1` (se manda a aprobar desde Vercel con el cron de plantillas); hasta entonces solo salen los avisos a dueños de la app. Enviada a revisión el 1 de noviembre de 2026 (UTILITY, PENDING).
 - Un negocio sin ubicación en su sucursal no recibe avisos de mascotas perdidas: la ubicación se guarda en Administración → Configuración (punto de salida).
 - Las fotos de la cartilla no se borran solas: se guardan para revisar lecturas hasta que el dueño las borra desde su cartilla.
