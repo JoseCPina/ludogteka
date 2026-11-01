@@ -59,7 +59,7 @@ export function esRutaDeCaptura(ruta: string | null | undefined): boolean {
 
 // Lo que dice un botón que escribe o que abre dónde escribir. «Cancelar», «Cerrar», «Ver», «Anterior»… no.
 const VERBO_DE_ESCRITURA =
-  /^\s*\+?\s*(nuev[oa]s?|agregar|añadir|crear|registrar|agendar|reservar|cobrar|check-?\s?in|check-?\s?out|hacer check|firmar|subir|tomar foto|editar|guardar|capturar|vender|aplicar|confirmar|eliminar|borrar|quitar|anular|dar de (alta|baja)|abrir turno|cerrar turno|enviar|mandar|avisar|marcar|iniciar|finalizar|terminar|empezar|devolver|reembolsar|importar|invitar|asignar|corregir|cambiar (?!de negocio)|ajustar|ajuste|recibir|entregar|mover|descartar|reagendar|pausar|reanudar|reactivar|deshacer|generar|timbrar|emitir|designar|vincular|desvincular|reasignar|prender|apagar|conectar|desconectar|cancelar\s+(?!y\b)\S|repartir|pedir|solicitar|configurar|rechazar|aprobar|autorizar|revisad[oa]|es (una|esta) raza|reprogramar|no (se presentó|llegó|vino|se aplicó)|suspender|poner|pasar a|recargo|cerrar (la |esta )?(cuenta|consulta|estancia|cita))/i;
+  /^\s*\+?\s*(nuev[oa]s?|agregar|añadir|crear|registrar|agendar|reservar|cobrar|check-?\s?in|check-?\s?out|hacer check|firmar|subir|tomar foto|editar|guardar|capturar|vender|aplicar|confirmar|eliminar|borrar|quitar|anular|dar de (alta|baja)|abrir turno|cerrar turno|enviar|mandar|avisar|marcar|iniciar|finalizar|terminar|empezar|devolver|reembolsar|importar|invitar|asignar|corregir|cambiar (?!de negocio)|ajustar|ajuste|recibir|entregar|mover|descartar|reagendar|pausar|reanudar|reactivar|deshacer|generar|timbrar|emitir|designar|vincular|desvincular|reasignar|prender|apagar|conectar|desconectar|cancelar\s+(?!y\b)\S|repartir|pedir|solicitar|configurar|rechazar|aprobar|autorizar|revisad[oa]|es (una|esta) raza|surtir|reprogramar|no (se presentó|llegó|vino|se aplicó)|suspender|poner|pasar a|recargo|cerrar (la |esta )?(cuenta|consulta|estancia|cita))/i;
 const SALIR_DE_FORMULARIO = /^\s*(cancelar|cerrar|volver|regresar|ocultar|ver|mostrar|atrás|anterior|siguiente)\b/i;
 
 const textoDe = (el: Element) =>
@@ -147,7 +147,10 @@ export function esControlDeEscritura(el: Element, ruta: string, alcances: readon
   }
   // QA S53 (N155): en el bloque de un botón que guarda (reprogramar, cancelar con motivo, «no se presentó»…) se
   // deshabilita el formulario ENTERO: sus campos y sus otros botones («Dejarla como estaba», «No»), no solo el que guarda.
-  if (esBoton && alcances.some((a) => BLOQUES_SUELTOS.has(a) && a.contains(el))) return true;
+  // Lo que está dentro de un filtro (formulario GET o `role=search`) nunca es parte de ese bloque: buscar y filtrar
+  // siguen aunque el bloque de un botón que guarda abarque la sección entera (el periodo de asistencia del empleado).
+  const enFiltro = Boolean(el.closest("[role=search]")) || (el.closest("form")?.getAttribute("method") ?? "").toLowerCase() === "get";
+  if (esBoton && !enFiltro && alcances.some((a) => BLOQUES_SUELTOS.has(a) && a.contains(el))) return true;
   // QA N152: un select, una casilla o un interruptor guardan al cambiar (el estilista de la cita, un permiso, un
   // recordatorio prendido): cuentan siempre, salvo en un filtro (formulario GET o `role=search`) o marcados
   // `data-sin-bloqueo`.

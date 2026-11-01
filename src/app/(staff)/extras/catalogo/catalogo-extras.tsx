@@ -47,11 +47,11 @@ export function CatalogoExtras({
         <p className="text-sm font-bold uppercase tracking-wide text-n-600">Agregar un servicio extra</p>
         <div className="flex flex-wrap gap-2">
           {SUGERIDOS.filter((s) => !catalogo.some((c) => c.nombre.toLowerCase() === s.nombre.toLowerCase())).map((s) => (
-            <Alternar key={s.nombre} type="button" onClick={() => setNuevo(s)} className="rounded-full border-[1.5px] border-borde bg-white px-3 text-sm font-semibold text-n-900 hover:border-morado hover:bg-morado-suave">
+            <Alternar key={s.nombre} type="button" data-escritura="" onClick={() => setNuevo(s)} className="rounded-full border-[1.5px] border-borde bg-white px-3 text-sm font-semibold text-n-900 hover:border-morado hover:bg-morado-suave">
               + {s.nombre}
             </Alternar>
           ))}
-          <Alternar type="button" onClick={() => setNuevo({ nombre: "", tipo: "general", unidad: "vez" })} className="rounded-full border-[1.5px] border-morado bg-morado-suave px-3 text-sm font-semibold text-morado hover:bg-white">
+          <Alternar type="button" data-escritura="" onClick={() => setNuevo({ nombre: "", tipo: "general", unidad: "vez" })} className="rounded-full border-[1.5px] border-morado bg-morado-suave px-3 text-sm font-semibold text-morado hover:bg-white">
             + Otro servicio
           </Alternar>
         </div>
