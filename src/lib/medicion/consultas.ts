@@ -12,7 +12,10 @@ export const ENCABEZADO_MEDIR = "x-peludesk-medir";
 type Consulta = { que: string; ms: number };
 type Registro = { desde: number; consultas: Consulta[] };
 
-const registros = new Map<string, Registro>();
+// En `globalThis`, no en el módulo: la build de producción carga este módulo por separado para las páginas y para la
+// ruta /api/medir, y con un `Map` del módulo la ruta no veía lo que anotaron las páginas (1 de noviembre de 2026).
+const global = globalThis as typeof globalThis & { __peludeskMedir?: Map<string, Registro> };
+const registros: Map<string, Registro> = (global.__peludeskMedir ??= new Map<string, Registro>());
 const VIDA_MS = 10 * 60_000;
 const TOPE_IDS = 500;
 

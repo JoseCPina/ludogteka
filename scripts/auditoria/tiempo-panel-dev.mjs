@@ -27,7 +27,9 @@ const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? proces
 const TOPE_MS = Number(arg("--tope", "600"));
 const MUESTRAS = Number(arg("--muestras", "4"));
 const JSON_SALIDA = process.argv.includes("--json");
-const BASE = "http://127.0.0.1:3001";
+// El dominio del negocio, no 127.0.0.1 + Host: el fetch de Node ignora el encabezado Host y la petición caía en el negocio
+// por omisión (→ /sin-acceso). *.localhost resuelve a 127.0.0.1 por el archivo hosts de la laptop.
+const BASE = "http://huellitas.localhost:3001";
 const HOST = "huellitas.localhost:3001";
 const REF = new globalThis.URL(URL).hostname.split(".")[0];
 const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
@@ -35,7 +37,7 @@ const B = datos.B;
 
 // Consultas por pantalla después del arreglo (layout del personal incluido; el middleware no se cuenta). Si una
 // pantalla crece, se sube aquí a propósito, con el motivo en el commit.
-const TOPES_CONSULTAS = { "/recepcion": 48, "/hotel": 22, "/estetica": 16, "/admin": 70 };
+const TOPES_CONSULTAS = { "/recepcion": 28, "/hotel": 20, "/estetica": 19, "/admin": 21 };
 // Tandas de viajes a la base que quedan en cada pantalla (sesión + layout + la pantalla): para descontar la latencia
 // de desarrollo, no para premiar más tandas.
 const TANDAS = { "/recepcion": 6, "/hotel": 5, "/estetica": 6, "/admin": 8 };
@@ -59,14 +61,14 @@ async function medir(ruta, cookie) {
   for (let i = 0; i <= MUESTRAS; i++) {
     const id = randomUUID();
     const t0 = performance.now();
-    const r = await fetch(BASE + ruta, { headers: { host: HOST, cookie, accept: "text/html", "x-peludesk-medir": id }, redirect: "manual", signal: AbortSignal.timeout(60_000) });
+    const r = await fetch(BASE + ruta, { headers: { cookie, accept: "text/html", "x-peludesk-medir": id }, redirect: "manual", signal: AbortSignal.timeout(60_000) });
     const head = performance.now() - t0;
     const html = await r.text();
     const total = performance.now() - t0;
-    const m = await fetch(`${BASE}/api/medir?id=${id}`, { headers: { host: HOST } });
+    const m = await fetch(`${BASE}/api/medir?id=${id}`, {});
     const conteo = m.ok ? await m.json() : null;
     if (i > 0) muestras.push({ status: r.status, head, total, bytes: html.length, conteo });
-    if (i === 0 && !m.ok) throw new Error(`/api/medir no responde (${m.status}): la app tiene que arrancar con PELUDESK_MEDIR=1.`);
+    if (i === 0 && !m.ok) throw new Error(`/api/medir no responde (${m.status}: ${(await m.text()).slice(0, 90)}; la pantalla respondió ${r.status}${r.headers.get("location") ? ` → ${r.headers.get("location")}` : ""}).`);
   }
   return muestras;
 }
