@@ -57,6 +57,24 @@ Si después del despliegue Recepción o Inicio siguen arriba de 600 ms, lo sigui
 - **Desarrollo, base en Medium, misma medición (mediana de 4, hasta el final del cuerpo), `main` → esta rama:** /admin (admin) 5.9 s → 3.1 s; /recepcion (admin) 5.0 s → 2.6 s; /recepcion (recepción) 3.6 s → 2.1 s; /hotel 1.5 s → 1.0 s; /estetica 1.2 s → 1.0 s.
 - **La meta de 600 ms de servidor NO se cumple en /admin ni en /recepcion** (desarrollo: ~2.0–2.5 s sin la latencia; 54–79 consultas, muchas a la vez contra una base de 2 núcleos). Lo que más pesa: `inventario_clinico_alertas` (~470 ms sola, recalcula existencias por insumo) y `cuentas_abiertas_json` (~330 ms); lo demás es espera por concurrencia. /hotel y /estetica sí quedan en ~300–450 ms.
 
+## Producción, antes y después (1 de noviembre de 2026, medido desde la laptop tras desplegar PR #221)
+Tiempo hasta el final del cuerpo, mediana, con la latencia de red de la laptop incluida. «Antes» es producción con `main` previo a la rama `fix/recepcion-hotel-tiempo`; «después», la misma medición con el PR #221 desplegado.
+
+| Negocio · rol · pantalla | Antes | Después |
+|---|---|---|
+| patitasyco · recepción · /recepcion | 2.5 s | 0.96 s |
+| patitasyco · recepción · /hotel | 8.8 s | 0.64 s |
+| patitasyco · admin · /admin | 2.2 s | 1.1 s |
+| patitasyco · admin · /recepcion | 1.77 s | 0.85 s |
+| patitasyco · admin · /hotel | 8.6 s | 0.57 s |
+| ludogteka · admin · /admin | 1.95 s | 0.99 s |
+| ludogteka · admin · /recepcion | 1.27 s | 0.70 s |
+| ludogteka · admin · /hotel | 1.93 s | 0.60 s |
+| ludogteka · recepción · /recepcion | 1.25 s | 0.76 s |
+| estética (los dos negocios) | ~0.6 s | ~0.6 s |
+
+/hotel era lo más lento (8.6–8.8 s en el demo, por el calendario de 14 días) y quedó abajo de 0.65 s. /admin y /recepcion bajaron a la mitad o menos, pero siguen arriba de la meta de 600 ms (ver «Cierre en la laptop»).
+
 ## Topes de la auditoría (`tiempo-panel-dev.mjs`)
 - **Servidor, por pantalla** (lo medido en desarrollo más 25 %, freno a regresiones): `/recepcion` 2,400 ms, `/hotel` 650 ms, `/estetica` 400 ms, `/admin` 3,100 ms.
 - **Consultas** (lo medido más 2): `/recepcion` 64, `/hotel` 20, `/estetica` 19, `/admin` 81.
