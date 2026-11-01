@@ -535,6 +535,27 @@ if (EN_NUBE) {
   migracionesUnicas = [...new Set(pendientesMigracion)];
 }
 
+// ---------------------------------------------------------------- tiempo del panel
+// Tiempo de Recepción y Hotel (31 de octubre de 2026): antes de desplegar, la auditoría `tiempo-panel-dev.mjs` tiene
+// que haber pasado en las últimas 24 h con la app compilada (deja su resultado en la carpeta temporal). Sin ese
+// resultado, o con una pantalla arriba del tope, no se despliega. `--sin-tiempo-panel` lo salta (y se dice por qué).
+{
+  titulo("Tiempo del panel (tiempo-panel-dev.mjs)");
+  const fsx = await import("node:fs");
+  const archivo = path.join(os.tmpdir(), "tiempo-panel-dev.json");
+  if (args.has("--sin-tiempo-panel")) {
+    console.log("   saltado con --sin-tiempo-panel.");
+  } else if (!fsx.existsSync(archivo)) {
+    abortar("no hay resultado de la auditoría de tiempo del panel", `Corre, con la app compilada en el 3001 arrancada con PELUDESK_MEDIR=1:\n  node scripts/auditoria/tiempo-panel-dev.mjs\n(deja ${archivo}). Para desplegar sin ella: --sin-tiempo-panel.`);
+  } else {
+    const r = JSON.parse(fsx.readFileSync(archivo, "utf8"));
+    const horas = (Date.now() - Date.parse(r.cuando)) / 3600000;
+    console.log(`   última corrida: ${r.cuando} (hace ${horas.toFixed(1)} h) · ${r.ok ? "en verde" : "con fallas"} · ${(r.pantallas ?? []).map((p) => `${p.ruta} ${p.servidorMs} ms/${p.consultas} consultas`).join(" · ")}`);
+    if (horas > 24) abortar("la auditoría de tiempo del panel tiene más de 24 h", "Vuelve a correr node scripts/auditoria/tiempo-panel-dev.mjs con la app compilada.");
+    if (!r.ok) abortar("la auditoría de tiempo del panel no pasó", (r.fallas ?? []).join("\n"));
+  }
+}
+
 // ---------------------------------------------------------------- respaldo
 if (migracionesUnicas.length) {
   titulo("Respaldo antes de migrar");

@@ -47,8 +47,8 @@ export default async function AgendaPage({
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
 
-  const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
+  // El día del negocio se calcula aquí con su zona (lo mismo que fecha_negocio() en la base), sin un viaje más.
+  const hoy = hoyNegocio(zona);
   const vista = vistaParam === "semana" ? "semana" : "dia";
   const fechaAncla = fechaParam && /^\d{4}-\d{2}-\d{2}$/.test(fechaParam) ? fechaParam : hoy;
 
@@ -63,6 +63,8 @@ export default async function AgendaPage({
     { data: empleados, error: errorEmpleados },
     { data: citasCrudo, error: errorCitas },
     perrosSinRaza,
+    // Citas con una estilista ausente (antes era otro viaje después de la tanda).
+    { data: enAusenciaCrudo },
   ] = await Promise.all([
       // Por la RPC: recepción no puede leer los perfiles del personal.
       supabase.rpc("listar_personal_estetica").then((r) => ({
@@ -84,12 +86,12 @@ export default async function AgendaPage({
           .order("id")
       ),
       contarPerrosSinRazaCatalogo(supabase),
+      supabase.rpc("citas_en_ausencia"),
     ]);
 
   const error = errorEmpleados ?? errorCitas;
 
   // Citas que siguen con alguien que tiene una ausencia aprobada: se marcan hasta que se reasignen.
-  const { data: enAusenciaCrudo } = await supabase.rpc("citas_en_ausencia");
   const enAusencia = new Map(((enAusenciaCrudo ?? []) as CitaEnAusencia[]).map((c) => [c.cita_id, textoDeCitaEnAusencia(c)]));
 
   const citas: Cita[] = (citasCrudo ?? [])

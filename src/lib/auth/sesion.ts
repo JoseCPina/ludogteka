@@ -19,24 +19,27 @@ export const obtenerSesionConRol = cache(async () => {
 
   if (!user) return null;
 
-  const [{ data: rolData }, { data: clienteData }, { data: perfil }, { data: modulosData }] = await Promise.all([
-    supabase.rpc("current_rol"),
+  // Rol, módulos, permisos y Veterinaria en UN viaje (`acceso_de_sesion`, la misma función que usa el middleware), a la
+  // vez que el expediente y el nombre: antes eran tres o cuatro viajes seguidos en cada pantalla (rol + módulos, luego
+  // permisos, luego Veterinaria), unos 60–100 ms de servidor por página (tiempo del panel, 31 de octubre de 2026).
+  const [{ data: accesoData }, { data: clienteData }, { data: perfil }] = await Promise.all([
+    supabase.rpc("acceso_de_sesion"),
     supabase.rpc("mi_cliente_id"),
     // El nombre de la persona EN ESTE negocio (su ficha de empleado, luego su cuenta); nunca el correo (QA N24).
     supabase.rpc("nombre_de_persona", { p_profile: user.id, p_vacio: null }),
-    // Los módulos que el negocio tiene prendidos (su plan y lo que el admin
-    // apagó). La base los hace cumplir; esto es para no mostrar lo demás.
-    supabase.rpc("modulos_activos"),
   ]);
-  const rol = (rolData as string | null) ?? "anonimo";
+  const acceso = (accesoData ?? null) as { rol?: string | null; modulos?: string[] | null; permisos?: string[] | null; acceso_veterinaria?: boolean; es_medico?: boolean } | null;
+  const rol = acceso?.rol ?? "anonimo";
+  // Los módulos que el negocio tiene prendidos (su plan y lo que el admin apagó). La base los hace cumplir; esto es
+  // para no mostrar lo demás.
+  const modulosData = acceso?.modulos ?? [];
 
   // Permisos extra de recepción (admin los tiene todos por definición). La
   // base es la que manda: esto solo sirve para la navegación y para no
   // mostrar botones que la base va a rechazar.
   let permisos: string[] = [];
   if (rol === "recepcion" || rol === "admin") {
-    const { data } = await supabase.rpc("mis_permisos");
-    permisos = ((data as string[] | null) ?? []).map(String);
+    permisos = (acceso?.permisos ?? []).map(String);
   }
 
   // Veterinaria abre por la designación de médico o por algún permiso del módulo,
@@ -46,9 +49,8 @@ export const obtenerSesionConRol = cache(async () => {
   let esMedico = false;
   const modulosActivos = ((modulosData as string[] | null) ?? []).map(String);
   if (rol !== "cliente" && rol !== "anonimo" && modulosActivos.includes("veterinaria")) {
-    const [{ data }, { data: medico }] = await Promise.all([supabase.rpc("acceso_veterinaria"), supabase.rpc("es_medico_veterinario")]);
-    accesoVeterinaria = data === true;
-    esMedico = medico === true;
+    accesoVeterinaria = acceso?.acceso_veterinaria === true;
+    esMedico = acceso?.es_medico === true;
   }
 
   return {

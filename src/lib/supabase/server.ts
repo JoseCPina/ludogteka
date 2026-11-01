@@ -3,6 +3,7 @@ import { cookies, headers } from "next/headers";
 import { ENCABEZADOS_NEGOCIO } from "@/lib/negocio/resolver";
 import { ENCABEZADO_AREA, areaDeEncabezado, opcionesCookieSesion, type AreaSesion } from "@/lib/supabase/area";
 import { ENCABEZADO_PESTANA, esPestanaValida } from "@/lib/concurrencia/tipos";
+import { ENCABEZADO_MEDIR, fetchMedido, medirActivo } from "@/lib/medicion/consultas";
 
 // Toda petición a la base lleva el negocio que resolvió el middleware por
 // el dominio (x-negocio-id): la base decide qué se ve según la membresía
@@ -16,6 +17,8 @@ export async function createSupabaseServerClient(area?: AreaSesion) {
   const areaDeSesion = area ?? areaDeEncabezado(encabezados.get(ENCABEZADO_AREA));
   // N120: la pestaña del navegador que hizo la petición viaja a la base (control de concurrencia por pestaña).
   const pestana = encabezados.get(ENCABEZADO_PESTANA);
+  // Tiempo del panel: con PELUDESK_MEDIR=1 (solo desarrollo) se cuentan las consultas de la petición que trae el id.
+  const idMedir = medirActivo() ? encabezados.get(ENCABEZADO_MEDIR) : null;
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,6 +29,7 @@ export async function createSupabaseServerClient(area?: AreaSesion) {
           ...(negocioId ? { [ENCABEZADOS_NEGOCIO.id]: negocioId } : {}),
           ...(esPestanaValida(pestana) ? { [ENCABEZADO_PESTANA]: pestana } : {}),
         },
+        ...(idMedir && /^[A-Za-z0-9-]{8,64}$/.test(idMedir) ? { fetch: fetchMedido(idMedir) } : {}),
       },
       cookieOptions: opcionesCookieSesion(areaDeSesion),
       cookies: {
