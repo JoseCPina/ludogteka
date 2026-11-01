@@ -55,12 +55,18 @@ const nuevoCtx = async (profileId) => {
 async function emitirRecetaEnEditor(p) {
   await p.getByLabel("Del inventario clínico (opcional)").selectOption({ label: `Meloxicam ${E.MARCA}` });
   await p.locator('input[name="dosis-0"]').fill("1 tableta");
+  // Prellenada desde el «Tratamiento» de la consulta, la vía queda vacía si el texto no la dice (el médico la escribe).
+  await p.locator('input[name="via-0"]').fill("Oral");
   await p.locator('input[name="dn-0"]').fill("1");
   await p.locator('input[name="frec-0"]').fill("Cada 12 horas");
   await p.locator('input[name="fh-0"]').fill("12");
   await p.locator('input[name="dur-0"]').fill("5");
   await p.getByRole("button", { name: "Emitir receta" }).click();
-  await p.waitForURL(/\/veterinaria\/recetas\/[0-9a-f-]{36}$/, { timeout: 60_000 });
+  // Si no llega a la receta, se dice qué enseñó la pantalla (el aviso junto al botón) en vez de solo «se agotó el tiempo».
+  await p.waitForURL(/\/veterinaria\/recetas\/[0-9a-f-]{36}$/, { timeout: 60_000 }).catch(async (e) => {
+    const avisos = await p.locator("[role=alert], [role=status]").allInnerTexts().catch(() => []);
+    throw new Error(`«Emitir receta» no llevó a la receta (${p.url()}): ${avisos.join(" | ").slice(0, 400) || e.message}`);
+  });
   return new globalThis.URL(p.url()).pathname.split("/").pop();
 }
 
@@ -127,7 +133,7 @@ try {
   await adm.p.waitForTimeout(800);
   await adm.p.getByText(nombreCliente).first().click();
   await adm.p.waitForTimeout(600);
-  await adm.p.getByLabel("Perro").selectOption({ label: perroA.nombre });
+  await adm.p.getByLabel(/^(Perro|Mascota)$/).selectOption({ label: perroA.nombre });
   const opciones = await adm.p.getByLabel("Servicio").locator("option").allInnerTexts();
   await adm.p.getByLabel("Servicio").selectOption({ label: opciones.find((o) => /completo/i.test(o)) ?? opciones[1] });
   await adm.p.getByLabel("Empleado").selectOption({ index: 1 });
@@ -144,18 +150,18 @@ try {
     creados.citas.push(cita.id); creados.reservas.push(cita.reserva_id);
     await adm.p.waitForTimeout(1000);
     comprobar(await adm.p.locator("[data-citas-agendadas]").isVisible(), "sale el recuadro «Cita agendada»");
-    comprobar((await adm.p.getByLabel("Perro").count()) === 0 && (await adm.p.getByLabel("Fecha y hora").count()) === 0, "el formulario se colapsó (sin selector de perro ni fecha a la vista)");
+    comprobar((await adm.p.getByLabel(/^(Perro|Mascota)$/).count()) === 0 && (await adm.p.getByLabel("Fecha y hora").count()) === 0, "el formulario se colapsó (sin selector de perro ni fecha a la vista)");
     comprobar((await adm.p.locator("[data-ir-agenda]").count()) === 1 && (await adm.p.locator("[data-agregar-otro-perrito]").count()) === 1, "quedan «Agregar otro perrito de …» y «Listo, ir a la agenda»");
     await adm.p.locator("[data-agregar-otro-perrito]").click();
     await adm.p.waitForTimeout(500);
-    comprobar((await adm.p.getByLabel("Perro").count()) === 1 && (await adm.p.getByLabel("Perro").inputValue()) === "", "«Agregar otro perrito» reabre el formulario limpio (sin perro elegido)");
+    comprobar((await adm.p.getByLabel(/^(Perro|Mascota)$/).count()) === 1 && (await adm.p.getByLabel(/^(Perro|Mascota)$/).inputValue()) === "", "«Agregar otro perrito» reabre el formulario limpio (sin perro elegido)");
 
     seccion("3. «No se presentó» solo desde la hora de la cita");
     await adm.p.goto(`${BASE}/estetica/${cita.id}`, { waitUntil: "networkidle" });
     const boton = adm.p.locator("[data-no-se-presento]");
     const textoFuturo = (await boton.innerText().catch(() => "")).trim();
-    comprobar((await boton.isDisabled().catch(() => false)) && /^Disponible a partir de las \d{2}:\d{2}$/.test(textoFuturo), `cita futura: el botón está deshabilitado y dice «${textoFuturo}»`);
-    comprobar(/10:00$/.test(textoFuturo), "la hora que dice es la de la cita (10:00)");
+    comprobar((await boton.isDisabled().catch(() => false)) && /^Disponible a partir de las \d{1,2}:\d{2}( [ap]\. ?m\.)?$/.test(textoFuturo), `cita futura: el botón está deshabilitado y dice «${textoFuturo}»`);
+    comprobar(/ 10:00( a\. ?m\.)?$/.test(textoFuturo), "la hora que dice es la de la cita (10:00)");
     // (La regla de la hora la aplican la pantalla y la acción del servidor `cancelarCita`, no la base.)
     const pasada = new Date(Date.now() - 2 * 3600_000).toISOString();
     await SB.from("citas_estetica").update({ inicio: pasada, fin: new Date(Date.now() - 3600_000).toISOString() }).eq("id", cita.id);
