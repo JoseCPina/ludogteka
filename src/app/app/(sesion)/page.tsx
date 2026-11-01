@@ -30,9 +30,12 @@ export default async function MisMascotasPage() {
             <IconoHuella />
             <p style={{ fontWeight: 800, fontSize: "1.125rem" }}>Todavía no hay mascotas aquí</p>
             <p className="apd-nota" style={{ marginTop: "0.5rem" }}>
-              Aparecen solas cuando tu veterinaria, estética, guardería u hotel usa PeluDesk y te tiene registrado con este número.
-              Muy pronto también vas a poder darlas de alta tú, con la foto de su cartilla.
+              Dala de alta en un minuto: su nombre, su foto y la foto de su cartilla; nosotros la pasamos a limpio y te avisamos cuando le toque cada vacuna.
+              Si tu veterinaria o tu estética usa PeluDesk y te tiene con este número, sus mascotas aparecen solas.
             </p>
+            <Link href="/mascotas/nueva" className="apd-boton" style={{ marginTop: "1rem" }} data-agregar-mascota>
+              Agregar a mi mascota <span className="apd-boton-flecha"><IconoFlecha style={{ width: 16, height: 16 }} /></span>
+            </Link>
             {negocios.length > 0 && (
               <p className="apd-nota" style={{ marginTop: "0.75rem" }}>
                 Ya eres cliente en {negocios.map((n) => n.nombre).join(", ")}: en cuanto registren a tu mascota, la ves aquí.
@@ -48,6 +51,9 @@ export default async function MisMascotasPage() {
                 <TarjetaMascota m={m} />
               </li>
             ))}
+            <li className="apd-aparece" style={{ ["--i" as string]: vivas.length + 1 }}>
+              <Link href="/mascotas/nueva" className="apd-boton-sec" data-agregar-mascota>Agregar otra mascota</Link>
+            </li>
           </ul>
         </section>
       )}
@@ -110,6 +116,7 @@ function TarjetaMascota({ m }: { m: Mascota }) {
             <span key={v.perroId} className="apd-chip">En {v.negocioNombre}</span>
           ))}
           {m.vinculos.length === 0 && !m.fallecido && <span className="apd-chip apd-chip-neutro">Solo en tu app</span>}
+          {m.perdidaAt && !m.encontradaAt && <span className="apd-chip apd-chip-coral">Perdida</span>}
         </span>
       </span>
       <IconoFlecha style={{ width: 20, height: 20, color: "var(--apd-morado)", flex: "none" }} />

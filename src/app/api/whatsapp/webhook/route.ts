@@ -8,6 +8,8 @@ import { avisarFalloDeEntrega } from "@/lib/soporte/notificar";
 import { procesarSesion } from "@/lib/whatsapp/flow/servidor";
 import { atenderReclamo } from "@/lib/directorio/webhook";
 import { atenderEntrada } from "@/lib/app/entrada";
+import { atenderHallazgo } from "@/lib/app/publico";
+import { atenderBotonApp } from "@/lib/app/recordatorios";
 import { atenderInscripcion } from "@/lib/escuela/datos";
 import { atenderBoton, atenderTexto, guardarEntregaRecordatorio, reportarSiHayExcedente, type Atencion } from "@/lib/recordatorios/respuestas";
 
@@ -199,6 +201,13 @@ export async function POST(request: NextRequest) {
         // Respuesta a un recordatorio automático de un negocio (botón, texto libre o BAJA): la atiende el negocio, no
         // el bot. El texto libre solo se le pasa al negocio si quien escribe no es admin ni personal de un negocio
         // (ellos le escriben a PeluDesk como siempre).
+        // Un botón de un recordatorio de la app para dueños (app:<id>:agendar|despues).
+        const botonApp = await atenderBotonApp(m.payload);
+        if (botonApp) {
+          await wa.texto(m.telefono, botonApp);
+          await datos.apuntarMensaje(m.telefono, "agente", botonApp);
+          continue;
+        }
         let rec: Atencion = await atenderBoton(m.payload, m.telefono);
         if (!rec.manejado && m.texto && !m.payload) {
           const tipo = (await cuentaPorTelefono(m.telefono).catch(() => null))?.tipo ?? "prospecto";
@@ -233,6 +242,13 @@ export async function POST(request: NextRequest) {
         if (entrada) {
           await wa.texto(m.telefono, entrada.texto);
           await datos.apuntarMensaje(m.telefono, "agente", entrada.texto);
+          continue;
+        }
+        // «ENCONTRE ABCD2345EF: …»: alguien encontró una mascota con placa de PeluDesk y le escribe a su familia (src/lib/app/publico.ts).
+        const hallazgo = m.texto ? await atenderHallazgo(m.telefono, m.texto, m.perfil ?? null) : null;
+        if (hallazgo) {
+          await wa.texto(m.telefono, hallazgo);
+          await datos.apuntarMensaje(m.telefono, "agente", hallazgo);
           continue;
         }
         // «Quiero inscribirme a la Escuela PeluDesk: … (clave)»: inscripción a una sesión (src/lib/escuela/datos.ts).
