@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { useModulos } from "@/components/modulos-contexto";
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
-import { describirCita, horaLocalParaInput, instanteDeHoraLocal } from "@/lib/formato";
+import { describirCita, horaLocalDeInstante, horaLocalParaInput, instanteDeHoraLocal } from "@/lib/formato";
 import { useZonaNegocio } from "@/components/zona-negocio";
 import {
   reprogramarCita,
@@ -115,6 +115,15 @@ export function CitaDetalle({
   // El datetime-local no trae huso horario: lo que se precarga y lo que se
   // teclea es la hora EN EL NEGOCIO (su zona), no la del navegador.
   const [nuevoInicio, setNuevoInicio] = useState(horaLocalParaInput(inicio, zona));
+  // QA S53: «No se presentó» no se marca antes de la hora de la cita (el servidor lo vuelve a revisar). El reloj se
+  // actualiza cada minuto para que el botón se habilite solo cuando llegue la hora.
+  const [ahora, setAhora] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setAhora(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  const aunNoEsLaHora = new Date(inicio).getTime() > ahora;
+  const horaDeLaCita = horaLocalDeInstante(inicio, zona);
 
   const [editandoRecargo, setEditandoRecargo] = useState(false);
   const [recargoTexto, setRecargoTexto] = useState(recargo > 0 ? String(recargo) : "");
@@ -523,8 +532,9 @@ export function CitaDetalle({
               <Button type="button" onClick={() => setIniciando(true)}>
                 Iniciar cita
               </Button>
-              <Button type="button" variante="secundario" onClick={() => setConfirmandoNoLlego(true)}>
-                No se presentó
+              {/* QA S53: «No se presentó» solo desde la hora de la cita; antes, el botón dice desde cuándo. */}
+              <Button type="button" variante="secundario" disabled={aunNoEsLaHora} title={aunNoEsLaHora ? `Disponible a partir de las ${horaDeLaCita}` : undefined} onClick={() => setConfirmandoNoLlego(true)} data-no-se-presento>
+                {aunNoEsLaHora ? `Disponible a partir de las ${horaDeLaCita}` : "No se presentó"}
               </Button>
               <Button type="button" variante="peligro" onClick={() => setConfirmandoCancelar(true)}>
                 Cancelar cita

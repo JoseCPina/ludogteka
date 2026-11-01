@@ -29,6 +29,12 @@ const RPC_LECTURA_EXACTAS = new Set([
   "teleconsulta_publica", "vet_dictado_estado", "vet_dictado_audio_ruta", "importacion_deshacer_revisar", "prospectos_revisar_clientes",
 ]);
 
+// QA S53: toda ALTA del panel (cliente, mascota, cita, reserva, consulta) termina en el detalle de lo creado o en la
+// lista con el registro resaltado, nunca en el formulario vacío: su acción navega (`redirect()` o `ir:`) en alguna
+// salida con éxito. La que a propósito se queda en pantalla lleva `// alta-en-pantalla: <motivo>` en la línea de
+// arriba de su `export` (la cita de estética enseña «Cita agendada» y ofrece agregar otro perrito, N158).
+const ALTAS_DEL_PANEL = new Set(["crearCliente", "crearClienteYSuMascota", "crearClienteYVolver", "crearPerro", "crearPerroYVolver", "crearReserva", "crearCita", "iniciarConsulta", "iniciarDesdeCita"]);
+
 function archivos(dir) {
   const out = [];
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -44,7 +50,16 @@ function esUseServer(sf) {
   return primera && ts.isExpressionStatement(primera) && ts.isStringLiteral(primera.expression) && primera.expression.text === "use server";
 }
 
-function analizar(fn, sf, texto) {
+/** Las funciones del archivo que navegan (llaman redirect): una acción que delega en una de ellas navega también. */
+function navegantesDe(sf) {
+  const nombres = new Set();
+  for (const st of sf.statements) {
+    if (ts.isFunctionDeclaration(st) && st.name && st.body && /\b(redirect|permanentRedirect)\s*\(/.test(st.body.getText(sf))) nombres.add(st.name.text);
+  }
+  return nombres;
+}
+
+function analizar(fn, sf, texto, navegantes = new Set()) {
   const escrituras = [];
   const salidas = [];
   let navega = false;
@@ -60,7 +75,7 @@ function analizar(fn, sf, texto) {
           if (!RPC_LECTURA_EXACTAS.has(nombre) && !RPC_LECTURA.test(nombre)) escrituras.push(`rpc ${nombre}`);
         }
       }
-      if (ts.isIdentifier(e) && (e.text === "redirect" || e.text === "permanentRedirect")) navega = true;
+      if (ts.isIdentifier(e) && (e.text === "redirect" || e.text === "permanentRedirect" || navegantes.has(e.text))) navega = true;
     }
     // Las funciones anidadas (callbacks de map, etc.) sí cuentan para escrituras, no para sus `return`.
     if (ts.isReturnStatement(n) && !dentroDeOtraFuncion) salidas.push(n);
@@ -99,7 +114,9 @@ function analizar(fn, sf, texto) {
     const t = r.expression ? r.expression.getText(sf) : "";
     return !/\bregistros\b|\bir\s*:|\bir\b\s*[,}]|registrosFinales|registrosDe|conRegistros/.test(t);
   });
-  return { escrituras, navega, exitos: exitos.length, sinRegistro };
+  // Salidas con éxito que mandan a otra pantalla (`ir: "/ruta"`), para la regla de las altas (QA S53).
+  const exitosConIr = exitos.filter((r) => /\bir\s*:/.test(r.expression ? r.expression.getText(sf) : "")).length;
+  return { escrituras, navega, exitos: exitos.length, sinRegistro, exitosConIr };
 }
 
 const resultados = [];
@@ -108,6 +125,7 @@ for (const f of archivos(RAIZ)) {
   if (!texto.startsWith('"use server"') && !texto.startsWith("'use server'")) continue;
   const sf = ts.createSourceFile(f, texto, ts.ScriptTarget.Latest, true, f.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
   if (!esUseServer(sf)) continue;
+  const navegantes = navegantesDe(sf);
   for (const st of sf.statements) {
     if (!ts.isFunctionDeclaration(st) || !st.name || !st.body) continue;
     if (!st.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)) continue;
@@ -115,9 +133,13 @@ for (const f of archivos(RAIZ)) {
     const lineaTexto = texto.split(/\r?\n/)[linea - 1] ?? "";
     const previa = texto.split(/\r?\n/)[linea - 2] ?? "";
     const excepcion = (lineaTexto.match(/registro-final:\s*(.+)$/) ?? previa.match(/\/\/\s*registro-final:\s*(.+)$/))?.[1] ?? null;
-    const a = analizar(st, sf, texto);
+    const a = analizar(st, sf, texto, navegantes);
     const escribe = a.escrituras.length > 0;
     const cumple = !escribe || a.navega || a.sinRegistro.length === 0 || Boolean(excepcion);
+    // QA S53: un alta del panel navega al detalle (redirect o `ir`) o explica por qué se queda en pantalla.
+    const esAlta = ALTAS_DEL_PANEL.has(st.name.text);
+    const excepcionAlta = (lineaTexto.match(/alta-en-pantalla:\s*(.+)$/) ?? previa.match(/\/\/\s*alta-en-pantalla:\s*(.+)$/))?.[1] ?? null;
+    const altaCumple = !esAlta || a.navega || a.exitosConIr > 0 || Boolean(excepcionAlta);
     resultados.push({
       archivo: f.replace(/\\/g, "/"),
       linea,
@@ -126,6 +148,9 @@ for (const f of archivos(RAIZ)) {
       escrituras: [...new Set(a.escrituras)],
       cumple,
       excepcion,
+      esAlta,
+      altaCumple,
+      excepcionAlta,
       salidasSinRegistro: a.sinRegistro.map((r) => sf.getLineAndCharacterOfPosition(r.getStart(sf)).line + 1),
     });
   }
@@ -143,4 +168,13 @@ if (JSON_SALIDA) {
   const exc = deEstado.filter((r) => r.excepcion);
   if (exc.length) console.log(`Excepciones anotadas: ${exc.length}`);
 }
-process.exit(noCumplen.length ? 1 : 0);
+// QA S53: las altas del panel terminan en el detalle de lo creado.
+const altas = resultados.filter((r) => r.esAlta);
+const altasMal = altas.filter((r) => !r.altaCumple);
+const altasNoVistas = [...ALTAS_DEL_PANEL].filter((n) => !altas.some((a) => a.nombre === n));
+if (!JSON_SALIDA) {
+  console.log(`Altas del panel: ${altas.length}; terminan en el detalle o lo explican: ${altas.length - altasMal.length}.`);
+  for (const r of altasMal) console.log(`  ✘ ${r.archivo}:${r.linea} ${r.nombre} — un alta que se queda en el formulario (sin redirect ni \`ir\`, sin \`// alta-en-pantalla:\`)`);
+  for (const n of altasNoVistas) console.log(`  ✘ no encontré la acción de alta «${n}» (si cambió de nombre, actualiza ALTAS_DEL_PANEL)`);
+}
+process.exit(noCumplen.length || altasMal.length || altasNoVistas.length ? 1 : 0);

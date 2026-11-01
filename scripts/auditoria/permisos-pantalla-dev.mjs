@@ -154,6 +154,11 @@ const patronDe = (ruta) => ruta.replace(/^\/ayuda\/(videos\/)?(?!tickets$|videos
 const NO_RECORRER = /^\/(api|portal|login|logout|salir|auth|demo|plataforma|alta|l|r|c|p|v|para|blog|legal|privacidad|terminos|aviso)(\/|$)|\/(imprimir|pdf|descargar|exportar|csv)(\/|$)|\.(pdf|csv|xlsx|xml|png|jpg|ics|zip)$|\/xml$/i;
 // Cámara, micrófono y archivos abren ventanas del sistema que se quedan esperando: no se aprietan.
 const BOTON_PROHIBIDO = /cerrar sesi[oó]n|^salir$|cambiar de negocio|instalar|imprimir|descargar|exportar|foto|video|galer[ií]a|c[aá]mara|subir|archivo|dictar|grabar|micr[oó]fono/i;
+// QA S53 (N155): pantallas que abren un formulario por parámetro de la URL (se recorren también con él puesto).
+const VARIANTES_EDICION = [
+  [/^\/estetica\/[0-9a-f-]{36}$/i, "reprogramar=1"],
+  [/^\/veterinaria\/recetas\/especial$/, "nuevo=1"],
+];
 const destinoMalo = (rol, origen, destino) => {
   if (["/login", "/sin-acceso", "/modulo-apagado"].includes(destino)) return true;
   if (REDIRECCIONES_LEGITIMAS.some((r) => r.test(origen))) return false;
@@ -238,6 +243,12 @@ async function recorrer(rol) {
     if (pagina) await cerrarConTope(pagina.close());
     pagina = await ctx.newPage();
     pagina.on("dialog", (d) => d.dismiss().catch(() => {}));
+  }
+  // QA S53 (N156): el médico se recorre con Estética APAGADA (así vive una clínica; la corrida la vuelve a prender al
+  // terminar con él, y la restauración final la deja como estaba).
+  if (rol === "medico") {
+    const r = await SB.from("negocio_modulos").update({ activo: false }).eq("negocio_id", B).eq("modulo", "estetica").is("deleted_at", null);
+    if (r.error) throw new Error(`no se pudo apagar Estética para el médico: ${r.error.message}`);
   }
   await arrancar();
 
@@ -398,6 +409,29 @@ async function recorrer(rol) {
     }
   }
 
+  // QA S53 (N156): el médico ve su zona (etiqueta «Médico veterinario», sin el aviso de Estética apagada, sin enlaces
+  // a un módulo apagado) en TODAS las pantallas; se recorre con Estética apagada, que es como vive una clínica.
+  async function revisarMedico(ruta) {
+    const v = await pagina.evaluate(() => {
+      const etiqueta = (document.querySelector("[data-etiqueta-rol]")?.textContent ?? "").trim();
+      const aviso = (document.querySelector("[data-modulo-apagado-aviso]")?.textContent ?? "").trim();
+      const nav = [...document.querySelectorAll("[data-nav-staff] a[href], nav a[href]")].map((a) => a.getAttribute("href") ?? "").filter((h) => /^\/estetica(\/|$|\?)/.test(h));
+      return { etiqueta, aviso, nav };
+    }).catch(() => null);
+    if (!v) return;
+    if (v.aviso) reportarMedico(ruta, `aviso de un módulo apagado: «${v.aviso.slice(0, 80)}»`);
+    if (!/^m[eé]dico veterinari[oa]$/i.test(v.etiqueta)) reportarMedico(ruta, `la etiqueta bajo el nombre dice «${v.etiqueta}» (le toca «Médico veterinario»)`);
+    if (v.nav.length) reportarMedico(ruta, `el menú enlaza a Estética, que está apagada: ${v.nav.slice(0, 3).join(", ")}`);
+  }
+  const reportarMedico = (pantalla, motivo) => {
+    const clave = `${patronDe(pantalla)} | medico | ${motivo}`;
+    if (malos.has(clave)) return;
+    const h = { rol, pantalla, boton: motivo, destino: "", motivo: "zona del médico" };
+    malos.set(clave, h);
+    hallazgos.push(h);
+    console.log(`  ✘ [${rol}] ${pantalla} · ${motivo}`);
+  };
+
   const cola = [arg("--desde", INICIO[rol])];
   const vistos = new Set([patronDe(cola[0].split("?")[0])]);
   let pantallas = 0;
@@ -407,6 +441,15 @@ async function recorrer(rol) {
     pantallas++;
     const t0 = Date.now();
     if (process.argv.includes("--ver")) console.log(`    ${ruta}`);
+    // QA S53 (N155): una pantalla que abre un formulario por parámetro de la URL se recorre TAMBIÉN así (con la prueba
+    // vencida, ese formulario tiene que salir deshabilitado entero).
+    for (const [patron, parametros] of VARIANTES_EDICION) {
+      const sola = ruta.split("?")[0];
+      if (!ruta.includes("?") && patron.test(sola) && !vistos.has(`${patronDe(sola)}?${parametros}`)) {
+        vistos.add(`${patronDe(sola)}?${parametros}`);
+        cola.unshift(`${sola}?${parametros}`);
+      }
+    }
     try {
       // Ninguna pantalla se queda con el recorrido más de tres minutos.
       let tope;
@@ -417,6 +460,7 @@ async function recorrer(rol) {
           if (final !== ruta.split("?")[0] && destinoMalo(rol, ruta, final)) return; // ya se reportó desde quien la enlaza
           if (process.argv.includes("--ver")) console.log(`      abierta en ${Math.round((Date.now() - t0) / 1000)} s`);
           if (PRUEBA_VENCIDA) await revisarEscritura(ruta);
+          if (rol === "medico") await revisarMedico(ruta);
           await revisarEnlaces(ruta, cola, vistos);
           if (process.argv.includes("--ver")) console.log(`      enlaces en ${Math.round((Date.now() - t0) / 1000)} s`);
           if (CON_BOTONES) await apretarBotones(ruta);
@@ -437,6 +481,7 @@ async function recorrer(rol) {
       }
     }
   }
+  if (rol === "medico") await SB.from("negocio_modulos").update({ activo: true }).eq("negocio_id", B).eq("modulo", "estetica").is("deleted_at", null);
   porRol[rol] = { pantallas, hallazgos: malos.size, escriturasBloqueadas: bloqueadas, sinRecorrer: cola.length, exentosEscritura };
   if (PRUEBA_VENCIDA) console.log(`  · ${rol}: ${exentosEscritura} control(es) marcados «sin bloqueo» (buscar, exportar, contratar)`);
   console.log(`  · ${rol}: ${pantallas} pantallas, ${malos.size} botón(es) o enlace(s) que no le tocan, ${bloqueadas} escrituras bloqueadas${cola.length ? `, ${cola.length} sin recorrer (tope --max)` : ""}`);
@@ -462,6 +507,10 @@ if (SALIDA_JSON) fs.writeFileSync(SALIDA_JSON, JSON.stringify({ porRol, hallazgo
 if (PRUEBA_VENCIDA) {
   const escritura = hallazgos.filter((h) => h.motivo === "prueba vencida").length;
   console.log(escritura ? `\n✘ Prueba vencida: ${escritura} botón(es), enlace(s) o campo(s) de escritura activos.` : "\n✔ Prueba vencida: ningún botón, enlace ni campo de escritura activo; la franja dice lo que le toca a cada rol.");
+}
+if (ROLES.includes("medico")) {
+  const zona = hallazgos.filter((h) => h.motivo === "zona del médico").length;
+  console.log(zona ? `\n✘ Médico: ${zona} pantalla(s) con etiqueta, aviso o enlace de un módulo que no le toca o está apagado.` : "\n✔ Médico: en todas sus pantallas la etiqueta es «Médico veterinario», sin aviso ni enlaces de Estética apagada.");
 }
 console.log(hallazgos.length ? `\n✘ ${hallazgos.length} botón(es) o enlace(s) llevan a una página que ese rol no puede abrir.` : "\n✔ Ningún botón ni enlace lleva a una página que el rol no pueda abrir.");
 process.exit(hallazgos.length ? 1 : 0);

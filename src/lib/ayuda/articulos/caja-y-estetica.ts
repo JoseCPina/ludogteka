@@ -740,7 +740,7 @@ Es otra cosa: la raza es nueva y tu negocio no decidió su precio. Asigna el gru
 7. Si necesitas cobrar de más (mucho pelo, nudos, cuidado previo), escribe el **Recargo manual (opcional)** y su **Motivo del recargo**. Se suma al precio, y queda registrado con tu nombre y el motivo. Solo lo hace admin o quien tenga el permiso «Excepciones al reservar».
 8. Pon la **Fecha y hora** y aprieta **Agendar cita**. Mientras el botón esté apagado, junto a él dice qué falta («Elige el perro.», «Elige quién lo atiende.», «Falta resolver el precio…»). La fecha y la hora ya vienen propuestas: hoy (en el horario de tu negocio) a la siguiente media hora que todavía no pasa **y que la estilista elegida tiene libre** (se salta las horas en que ya tiene otra cita), o el siguiente día con lugar a la hora de apertura. Si cambias de estilista, la hora cambia a la suya mientras no hayas escrito otra. Si apretaste **Agendar** desde la vista de **Día** de la agenda, la fecha es la de ese día; desde la vista de **Semana**, el primer día de la semana que estabas viendo (o hoy, si esa semana ya empezó).
 
-Al agendar, junto al botón sale «Cita agendada: perro, servicio, fecha y hora» y el recuadro verde **Cita agendada** se lleva a la vista, con el enlace a la cita. Si ese mismo perro ya tiene una cita ese día (que no esté cancelada), antes de crear otra sale el aviso **Esta mascota ya tiene cita ese día** con el servicio y la hora; **Agendar otra de todos modos** la crea y **No agendar** la deja como estaba.
+Al agendar, el formulario se recoge y queda el recuadro verde **Cita agendada** con el enlace a la cita, **Agregar otro perrito de este cliente** (vuelve a abrir el formulario limpio para el mismo dueño) y **Listo, ir a la agenda**. Si ese mismo perro ya tiene una cita ese día (que no esté cancelada), antes de crear otra sale el aviso **Esta mascota ya tiene cita ese día** con el servicio y la hora; **Agendar otra de todos modos** la crea y **No agendar** la deja como estaba.
 
 El precio sale del grupo de raza del perro, de su pelaje y del servicio; al dueño le aclaramos que **el costo puede aumentar según el tipo de pelo y el cuidado previo**. El rapado solo se ofrece a perros de pelo medio o largo. Cambiar las tarifas después no mueve el precio de las citas que ya están agendadas o cobradas. Para cambiar el recargo de una cita, ábrela y aprieta **Cambiar el recargo**.
 
@@ -1021,7 +1021,7 @@ Una cita **ya cobrada** no se reprograma: primero se anula el cobro (mira [Cómo
 Son dos cosas distintas:
 
 - **Cancelar cita:** la clienta avisó que no viene. Pide motivo; el horario queda libre.
-- **No se presentó:** nadie avisó y no llegó. Queda como «no llegó».
+- **No se presentó:** nadie avisó y no llegó. Queda como «no llegó». Se puede marcar a partir de la hora de la cita: antes, el botón se ve apagado y dice «Disponible a partir de las 09:00» (con la hora de esa cita).
 
 En los dos casos la cita no se borra y queda el historial. Si ya tenía cobro, se anula primero.
 

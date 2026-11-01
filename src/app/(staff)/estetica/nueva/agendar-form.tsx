@@ -253,6 +253,9 @@ export function AgendarForm({
   // N30: un mismo perro con otra cita ese día pide confirmar; y la confirmación de una cita agendada se lleva a la vista.
   const [duplicada, setDuplicada] = useState<string | null>(null);
   const [exitoAgendar, setExitoAgendar] = useState<string | null>(null);
+  // QA S53 (N158): tras «Cita agendada» el formulario se colapsa y queda solo el aviso con «Agregar otro perrito» y
+  // «Listo, ir a la agenda»; «Agregar otro perrito» lo vuelve a abrir limpio.
+  const [formularioCerrado, setFormularioCerrado] = useState(false);
   // QA S41 (N142): el «Cita agendada» borra el aviso de horario de antes; vuelve si cambian fecha, hora o quien atiende.
   const avisoHorario = useAvisoTrasExito(`${fechaHora}|${empleadoId}`);
   const cajaAgendadas = useRef<HTMLDivElement | null>(null);
@@ -332,6 +335,7 @@ export function AgendarForm({
     setGrupoElegido("");
     setMotivoExcepcion("");
     setNuevoPerro(false);
+    setFormularioCerrado(true);
     router.refresh();
   }
 
@@ -524,15 +528,17 @@ export function AgendarForm({
 
   return (
     <div className="flex max-w-2xl flex-col gap-4">
-      <div className="flex items-center justify-between gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
-        <div>
-          <p className="text-sm text-n-600">Cliente</p>
-          <p className="font-bold text-n-900">{clienteElegido.nombre}</p>
+      {!formularioCerrado && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
+          <div>
+            <p className="text-sm text-n-600">Cliente</p>
+            <p className="font-bold text-n-900">{clienteElegido.nombre}</p>
+          </div>
+          <Button type="button" variante="secundario" onClick={() => setClienteId(null)}>
+            Cambiar cliente
+          </Button>
         </div>
-        <Button type="button" variante="secundario" onClick={() => setClienteId(null)}>
-          Cambiar cliente
-        </Button>
-      </div>
+      )}
 
       {agendadas.length > 0 && (
         <div ref={cajaAgendadas} data-citas-agendadas className="flex flex-col gap-3 rounded-lg border-[1.5px] border-menta bg-menta-suave p-4">
@@ -551,7 +557,7 @@ export function AgendarForm({
             ))}
           </ul>
           <div className="flex flex-wrap gap-3">
-            <Button type="button" variante="secundario" data-agregar-otro-perrito onClick={() => { setPerroId(""); setNuevoPerro(false); }}>
+            <Button type="button" variante="secundario" data-agregar-otro-perrito onClick={() => { setPerroId(""); setNuevoPerro(false); setError(null); setFormularioCerrado(false); }}>
               Agregar otro perrito de {clienteElegido.nombre}
             </Button>
             {agendadas.length > 1 && puede("/caja/cobrar-junto") && (
@@ -567,7 +573,7 @@ export function AgendarForm({
         </div>
       )}
 
-      {nuevoPerro || perrosDelCliente.length === 0 ? (
+      {formularioCerrado ? null : nuevoPerro || perrosDelCliente.length === 0 ? (
         <div data-nuevo-perrito className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
           <p className="font-bold text-n-900">
             {perrosDelCliente.length === 0 ? `Registra el perrito de ${clienteElegido.nombre}` : `Otro perrito de ${clienteElegido.nombre}`}

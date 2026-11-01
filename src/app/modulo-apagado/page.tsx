@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
-import { rutaPorRol } from "@/lib/auth/rutas";
+import { inicioDeSesion } from "@/lib/auth/rutas";
 import { EncabezadoNegocio } from "@/components/marca/encabezado-negocio";
 
 // A donde manda el middleware a quien abre una sección de un módulo que el
@@ -12,15 +12,10 @@ export default async function ModuloApagadoPage({ searchParams }: { searchParams
   const sesion = await obtenerSesionConRol();
   const { data: modulo } = m ? await supabase.from("modulos").select("nombre").eq("clave", m).maybeSingle() : { data: null };
   const nombre = (modulo?.nombre as string | undefined) ?? "esta sección";
-  const modulosActivos = sesion?.modulos ?? [];
-  // Quien no administra y se queda sin su módulo (p. ej. estética con Estética apagada) va a lo que sí puede usar.
-  const inicio = !sesion
-    ? "/login"
-    : sesion.rol === "estetica" && !modulosActivos.includes("estetica")
-      ? modulosActivos.includes("empleados")
-        ? "/mi-trabajo"
-        : "/login"
-      : rutaPorRol(sesion.rol);
+  // Quien no administra y se queda sin su módulo (p. ej. estética con Estética apagada) va a lo que sí puede usar
+  // (QA S53, N156: `inicioDeSesion`, la misma regla del layout: Veterinaria si trabaja ahí, su asistencia si no).
+  const inicioSesion = sesion ? inicioDeSesion({ rol: sesion.rol, modulos: sesion.modulos, accesoVeterinaria: sesion.accesoVeterinaria, esMedico: sesion.esMedico }) : "/login";
+  const inicio = !sesion ? "/login" : inicioSesion === `/${m}` ? "/login" : inicioSesion;
   const esAdmin = sesion?.rol === "admin";
   const esCliente = sesion?.rol === "cliente";
   return (

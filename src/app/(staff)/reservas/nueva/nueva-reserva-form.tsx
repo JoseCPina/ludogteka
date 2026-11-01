@@ -2,6 +2,7 @@
 
 import { avisoGeneralPendiente, textoDelBloqueo, tipoDeBloqueo } from "@/lib/reservas/bloqueos";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { useModulos } from "@/components/modulos-contexto";
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
@@ -133,6 +134,7 @@ export function NuevaReservaForm({
   const [notas, setNotas] = useState("");
   const [lineas, setLineas] = useState<Linea[]>([]);
   const [resultados, setResultados] = useState<ResultadoLinea[] | null>(null);
+  const router = useRouter();
   const [reservaId, setReservaId] = useState<string | null>(null);
   const enviando = useEspera();
   const [reintentando, setReintentando] = useState<Record<string, boolean>>({});
@@ -291,6 +293,12 @@ export function NuevaReservaForm({
     const res = await enviando.ejecutar(() => crearReserva(clienteId, notas, payload));
     if (res.error) {
       setErrorGeneral(res.error);
+      return;
+    }
+    // QA S53: con todo guardado, la pantalla va al detalle de la reserva creada (el destino que manda la acción), no se
+    // queda en un formulario. Si alguna línea no se pudo, se queda en la lista para reintentarla o autorizar la excepción.
+    if (res.ir) {
+      router.push(res.ir);
       return;
     }
     setResultados(res.resultados ?? []);

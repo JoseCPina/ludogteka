@@ -66,6 +66,7 @@ export function StaffShell({
   marca,
   aviso,
   rol,
+  etiquetaRol,
   nombreCompleto,
   items,
   ayuda,
@@ -79,6 +80,8 @@ export function StaffShell({
   // El aviso del plan (demo, prueba, solo lectura): components/aviso-plan.tsx.
   aviso?: ReactNode;
   rol: string;
+  // QA S53 (N156): lo que la persona es en este negocio (`etiquetaDeSesion`: rol + módulos + médico), no el rol a secas.
+  etiquetaRol?: string;
   nombreCompleto: string | null;
   items: ItemNav[];
   // Las pantallas con artículo de ayuda (los de los módulos del negocio):
@@ -137,8 +140,8 @@ export function StaffShell({
           <div className="hidden text-right leading-tight sm:block">
             {/* Sin nombre se queda el rol: el correo de una cuenta nunca se muestra como si fuera su nombre (QA N24). */}
             {nombreCompleto && <p className="text-sm font-semibold text-n-900" data-nombre-encabezado>{nombreCompleto}</p>}
-            <p className="text-xs font-semibold uppercase tracking-wide text-n-500">
-              {ETIQUETAS_ROL[rol] ?? rol}
+            <p className="text-xs font-semibold uppercase tracking-wide text-n-500" data-etiqueta-rol>
+              {etiquetaRol ?? ETIQUETAS_ROL[rol] ?? rol}
             </p>
           </div>
           <form action={cerrarSesion}>

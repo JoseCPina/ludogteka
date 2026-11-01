@@ -9,7 +9,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { bloqueoDeEscritura } from "@/lib/solo-lectura-servidor";
 import { negocioActual, urlDelNegocio, zonaActual } from "@/lib/negocio/actual";
-import { fechaLocalDeInstante, instanteDeHoraLocal } from "@/lib/formato";
+import { fechaLocalDeInstante, horaLocalDeInstante, instanteDeHoraLocal } from "@/lib/formato";
 import { descartarBorradorGuardado } from "@/lib/borradores/servidor";
 import { nuevoToken } from "@/lib/reporte/enlaces";
 import { traducirError } from "../../reservas/traducir-error";
@@ -75,6 +75,14 @@ export async function reprogramarCita(id: string, fd: FormData): Promise<Resulta
 
 export async function estadoCita(id: string, estado: string, fd?: FormData | ControlVersion): Promise<ResultadoAccion> {
   const supabase = await createSupabaseServerClient();
+  // QA S53: «no llegó» solo desde la hora de la cita (la misma regla que en Estética).
+  if (estado === "no_llego") {
+    const { data: cita } = await supabase.from("vet_citas").select("inicia_at").eq("id", id).maybeSingle();
+    if (cita?.inicia_at && new Date(cita.inicia_at as string).getTime() > Date.now()) {
+      const zona = await zonaActual();
+      return { error: `Todavía no es la hora de la cita: «no llegó» se marca a partir de las ${horaLocalDeInstante(cita.inicia_at as string, zona)}.` };
+    }
+  }
   const esForm = fd instanceof FormData;
   const control = esForm ? controlDeFormulario(fd) : fd;
   const { error } = await conControl(supabase.rpc("vet_cita_estado", { p_id: id, p_estado: estado, p_motivo: esForm ? o(texto(fd, "motivo")) : null }), control);

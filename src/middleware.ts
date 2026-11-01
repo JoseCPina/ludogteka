@@ -3,7 +3,7 @@ import { ENCABEZADO_RUTA, RUTA_CAMBIO_PERSONAL, RUTA_CAMBIO_PORTAL, debeCambiarP
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { ENCABEZADO_AREA, areaDeRuta, nombreCookieSesion, opcionesCookieSesion } from "@/lib/supabase/area";
-import { rutaPorRol } from "@/lib/auth/rutas";
+import { inicioDeSesion, rutaPorRol } from "@/lib/auth/rutas";
 import { ENCABEZADOS_NEGOCIO, ENCABEZADO_APP, ENCABEZADO_PLATAFORMA, hostPorMudanza, resolverNegocio, type NegocioBasico } from "@/lib/negocio/resolver";
 import { ENCABEZADO_FIRMA, firmaValida, firmarNegocio, firmarPlataforma, plataformaFirmada } from "@/lib/negocio/firma";
 import { DOMINIO_PLATAFORMA, esHostApp, esHostPlataforma } from "@/lib/negocio/host";
@@ -259,9 +259,14 @@ export async function middleware(request: NextRequest) {
       const primero = Array.isArray(moduloZona) ? moduloZona[0] : moduloZona;
       const listaActivos = ((activos as string[] | null) ?? []).map(String);
       // QA S16 (N80): en una clínica sin Estética, «la agenda» (/agenda → /estetica) es la agenda clínica; el médico
-      // invitado con rol de estética también llega ahí.
+      // invitado con rol de estética también llega ahí. QA S53 (N156): la misma regla de zona que el layout y el menú
+      // (`inicioDeSesion`): quien tiene el rol de estética sin su módulo va a su inicio real (Veterinaria o su asistencia).
+      const inicioReal = inicioDeSesion({ rol, modulos: listaActivos, accesoVeterinaria: datosAcceso?.acceso_veterinaria === true, esMedico: datosAcceso?.es_medico === true });
       if (primero === "estetica" && listaActivos.includes("veterinaria") && (rol !== "admin" || pathname === "/estetica")) {
         return conCookiesDe(response, NextResponse.redirect(new URL("/veterinaria/agenda", request.url)));
+      }
+      if (primero === "estetica" && rol === "estetica" && inicioReal !== "/estetica") {
+        return conCookiesDe(response, NextResponse.redirect(new URL(inicioReal, request.url)));
       }
       const destino = rol === "admin" ? `/admin/modulos?apagado=${primero}` : `/modulo-apagado?m=${primero}`;
       return conCookiesDe(response, NextResponse.redirect(new URL(destino, request.url)));
