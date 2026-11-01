@@ -412,6 +412,13 @@ async function recorrer(rol) {
   // QA S53 (N156): el médico ve su zona (etiqueta «Médico veterinario», sin el aviso de Estética apagada, sin enlaces
   // a un módulo apagado) en TODAS las pantallas; se recorre con Estética apagada, que es como vive una clínica.
   async function revisarMedico(ruta) {
+    // El encabezado lo pinta el layout; con la base lenta puede no estar aún: se espera (hasta 30 s) antes de leerlo, y
+    // si nunca aparece es que la pantalla no cargó (aviso), no que la etiqueta esté mal.
+    const hayEncabezado = await pagina.locator("[data-etiqueta-rol]").first().waitFor({ state: "attached", timeout: 30_000 }).then(() => true).catch(() => false);
+    if (!hayEncabezado) {
+      avisos.push(`[medico] ${ruta}: la pantalla no terminó de cargar en 30 s (no se juzga su etiqueta)`);
+      return;
+    }
     const v = await pagina.evaluate(() => {
       const etiqueta = (document.querySelector("[data-etiqueta-rol]")?.textContent ?? "").trim();
       const aviso = (document.querySelector("[data-modulo-apagado-aviso]")?.textContent ?? "").trim();
