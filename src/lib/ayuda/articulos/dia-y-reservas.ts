@@ -299,7 +299,7 @@ Una reserva aparta el lugar del perro y revisa, antes de guardar, que tenga todo
 2. Busca al dueño por perro, nombre o teléfono. Con varias palabras, cada una tiene que estar en el dueño, en alguno de sus perros o, si es un número, en el teléfono («Motita Pérez» trae a Motita de Pérez). Si es nuevo, usa **Nuevo cliente**.
 3. Marca a cada perro que viene y escoge el **Servicio** y la **Fecha**. Si es por hora, pon las **Horas (estimado)**.
 4. Si el perro tiene day pass o mensualidad, aparece **Tiene pases disponibles**: escoge si usa un pase o paga el día suelto.
-5. Toca **Crear reserva**. Desde el resultado puedes **Hacer check-in ahora →**.
+5. Toca **Crear reserva**. Con todo guardado, la pantalla abre el detalle de la reserva creada (ahí están el check-in, los cargos y cancelar). Si algún perro no se pudo reservar (vacunas vencidas, cupo, evaluación), te quedas en la lista con el motivo de cada uno para reintentar o autorizar la excepción, y desde ahí **Hacer check-in ahora →** de los que sí.
 
 ## Perros que vienen siempre los mismos días
 

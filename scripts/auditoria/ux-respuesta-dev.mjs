@@ -122,10 +122,11 @@ try {
       if (p) await p.close().catch(() => {});
       p = await ctx.newPage();
       p.on("dialog", (d) => d.dismiss().catch(() => {}));
-      await p.goto(BASE + ruta, { waitUntil: "load" });
+      const resp = await p.goto(BASE + ruta, { waitUntil: "load" });
       await p.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {});
       await p.waitForTimeout(200);
       registro = [];
+      return resp;
     };
 
     const cola = RUTAS ? [...RUTAS] : [INICIO[rol]];
@@ -133,9 +134,14 @@ try {
     const destinosProbados = new Set();
     const botonesProbados = new Set();
     let pantallas = 0, enlacesN = 0, accionesN = 0, menuProbado = false;
+    // Pantallas que no cargaron (5xx, sin el encabezado del panel, o que no abrieron): no se juzgan, pero el rol no se sella.
+    let noCargo = 0;
     while (cola.length && pantallas < MAX) {
       const ruta = cola.shift();
-      try { await abrir(ruta); } catch (e) { console.log(`  · ${ruta}: ${String(e.message).split("\n")[0]}`); continue; }
+      try {
+        const resp = await abrir(ruta);
+        if (!resp || resp.status() >= 500 || !(await p.locator("header").count())) throw new Error(`no cargó (${resp?.status() ?? "sin respuesta"})`);
+      } catch (e) { noCargo++; console.log(`  · ${ruta}: ${String(e.message).split("\n")[0]}`); continue; }
       pantallas++;
       const aqui = new URL(p.url()).pathname;
       if (!RUTAS) encolar(await enlacesInternos(p), cola, vistos);
@@ -237,7 +243,8 @@ try {
         }
       }
     }
-    resumen[rol] = { pantallas, enlaces: enlacesN, acciones: accionesN };
+    resumen[rol] = { pantallas, enlaces: enlacesN, acciones: accionesN, noCargo };
+    if (noCargo) console.log(`  · ${rol}: ${noCargo} pantalla(s) no cargaron: este rol no se sella`);
     console.log(`  · ${rol}: ${pantallas} pantallas, ${enlacesN} enlaces y ${accionesN} acciones tocadas dos veces`);
     await ctx.close();
   }
@@ -261,5 +268,7 @@ for (const [rol, r] of Object.entries(resumen)) console.log(`  ${rol.padEnd(10)}
 if (avisos.length) console.log("\nAvisos (no fallan):\n" + avisos.map((a) => `  · ${a}`).join("\n"));
 if (MEDIR) process.exit(0);
 console.log(hallazgos.length ? `\n✘ ${hallazgos.length} hallazgo(s) de respuesta.` : "\n✔ Cada enlace y acción tocados responden antes de 100 ms y el doble toque no duplica.");
-if (!hallazgos.length && !RUTAS && ["admin", "recepcion", "estetica", "encargada", "medico"].every((r) => ROLES.includes(r))) sellar("ux-respuesta-dev", { resumen });
+// Sello por rol: cada rol que recorrió sus pantallas sin hallazgos (scripts/auditoria/lib/sello-pantalla.mjs).
+const limpios = Object.entries(resumen).filter(([rol, r]) => r.pantallas > 0 && !r.noCargo && !hallazgos.some((h) => h.startsWith(`${rol} ·`))).map(([rol]) => rol);
+if (!RUTAS && limpios.length) sellar("ux-respuesta-dev", limpios);
 process.exit(hallazgos.length ? 1 : 0);

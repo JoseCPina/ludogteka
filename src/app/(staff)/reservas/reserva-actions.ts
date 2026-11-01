@@ -57,6 +57,8 @@ export type EstadoCrearReserva = {
   reservaId?: string;
   resultados?: ResultadoLinea[];
   registros?: RegistroFinal[];
+  // QA S53: con todas las líneas guardadas, el detalle de la reserva creada (la pantalla navega ahí).
+  ir?: string;
 };
 
 async function insertarEstancia(reservaId: string, linea: LineaReserva): Promise<ResultadoLinea> {
@@ -139,11 +141,15 @@ export async function crearReserva(
   }
 
   revalidarModulosEstancia();
+  const todasGuardadas = resultados.every((r) => r.exito);
   return {
     error: null,
     reservaId: reserva.id,
     resultados,
     registros: await registrosDe(supabase, [{ t: "reservas", i: reserva.id }, ...resultados.map((r) => ({ t: "estancias", i: r.estanciaId }))]),
+    // QA S53: un alta termina en el detalle de lo creado, nunca en el formulario; con alguna línea sin guardar, la
+    // pantalla se queda en la lista para reintentar o autorizar la excepción.
+    ...(todasGuardadas ? { ir: `/reservas/${reserva.id}?creada=1` } : {}),
   };
 }
 

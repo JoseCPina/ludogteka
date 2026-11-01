@@ -21,6 +21,7 @@ export type EstadoCrearCita = {
   registros?: RegistroFinal[];
 };
 
+// alta-en-pantalla: QA S53 (N158), la pantalla colapsa el formulario y enseña «Cita agendada» con el enlace a la cita, «Agregar otro perrito» y «Listo, ir a la agenda»
 export async function crearCita(datos: {
   peloMaltratado?: boolean;
   perroId: string;
@@ -250,6 +251,14 @@ export async function reprogramarCita(citaId: string, nuevoInicio: string, motiv
 /** «Cancelada» (con motivo) o «no se presentó» (sin motivo obligatorio): dos estados distintos. */
 export async function cancelarCita(citaId: string, motivo: string, noLlego = false, control?: ControlVersion): Promise<ResultadoAgenda> {
   const supabase = await createSupabaseServerClient();
+  // QA S53: «No se presentó» solo desde la hora de la cita (la pantalla lo enseña deshabilitado; aquí se vuelve a revisar).
+  if (noLlego) {
+    const { data: cita } = await supabase.from("citas_estetica").select("inicio").eq("id", citaId).maybeSingle();
+    if (cita?.inicio && new Date(cita.inicio as string).getTime() > Date.now()) {
+      const zona = await zonaActual();
+      return { error: `Todavía no es la hora de la cita: «No se presentó» se marca a partir de las ${horaLocalDeInstante(cita.inicio as string, zona)}.` };
+    }
+  }
   const { data, error } = await conControl(supabase.rpc("cancelar_cita_estetica", { p_cita_id: citaId, p_motivo: motivo.trim() || null, p_no_llego: noLlego }), control);
   if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error), registros: await registrosFinales(supabase, control) } : { error: traducirError(error) };
   const d = (data ?? {}) as DatosCambio;

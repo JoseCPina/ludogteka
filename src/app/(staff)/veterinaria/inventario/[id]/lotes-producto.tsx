@@ -127,6 +127,8 @@ export function LotesProducto({
                           type="button"
                           variante={abierto?.lote === l.id && abierto.accion === a ? "primario" : "secundario"}
                           className="px-3 text-sm" tamano="compacto"
+                          // Abren el formulario del movimiento: con el negocio en solo lectura quedan bloqueados (QA N152).
+                          data-escritura=""
                           onClick={() => setAbierto(abierto?.lote === l.id && abierto.accion === a ? null : { lote: l.id, accion: a })}
                         >
                           {a === "surtido" ? "Surtir" : a === "merma" ? "Merma" : a === "caducado" ? "Caducado" : "Ajuste"}

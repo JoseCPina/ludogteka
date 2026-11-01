@@ -4,7 +4,7 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { Desplegable } from "@/components/formulario-accion";
 import { etiquetaEspecie } from "@/lib/veterinaria/buscar";
-import { fechaLocalDeInstante, formatearFecha, hoyNegocio } from "@/lib/formato";
+import { fechaLocalDeInstante, formatearFecha, formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { SECCIONES_CONSULTA, TIPOS_CITA, etiquetaBandera, type DetalleConsulta } from "@/lib/veterinaria/expediente";
 import { AccionesFirmada, AnularItem } from "../../expediente/anular-item";
@@ -46,7 +46,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
   const supabase = await createSupabaseServerClient();
   // QA S19 (rendimiento): todo lo que no depende de la consulta se pide A LA VEZ que la consulta (antes iban 5 tandas
   // una tras otra). Los cargos solo los ven quien atiende o un médico (llevan precios); sin permiso, no salen.
-  const [sesion, zona, { data, error }, { data: cargosData }, { data: miMedico }, { data: puedeAtender }, { data: puedeEstimar }, { data: puedeRecetar }, puedeRegistrarVacunas] = await Promise.all([
+  const [sesion, zona, { data, error }, { data: cargosData }, { data: miMedico }, { data: puedeAtender }, { data: puedeEstimar }, { data: puedeRecetar }, puedeRegistrarVacunas, { data: recetasData }] = await Promise.all([
     obtenerSesionConRol(),
     zonaActual(),
     supabase.rpc("vet_consulta_detalle", { p_id: id }),
@@ -56,7 +56,11 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
     supabase.rpc("vet_puede", { p_permiso: "crear_estimados" }),
     supabase.rpc("vet_puede", { p_permiso: "emitir_recetas" }),
     vetPuede(supabase, "registrar_vacunas"),
+    // QA S53 (N157): las recetas emitidas DESDE esta consulta (antes la pantalla no las leía y solo decía «Emitir receta»).
+    supabase.rpc("vet_recetas_de_consulta", { p_consulta: id }),
   ]);
+  const recetas = ((recetasData ?? []) as { id: string; numero: number; estado: string; fecha_emision: string; medico: string; medicamentos: string }[]);
+  const recetasVigentes = recetas.filter((r) => r.estado !== "anulada");
   const hoy = hoyNegocio(zona);
   if (error || !data) {
     return (
@@ -158,10 +162,35 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
           {etiquetaEspecie(d.mascota.especie)}{d.mascota.raza ? ` · ${d.mascota.raza}` : ""} · de {d.dueno.nombre}{d.dueno.telefono ? ` · ${d.dueno.telefono}` : ""} · {formatearFecha(c.atendida_at, zona)}
         </p>
         <p className="text-sm text-n-600">A cargo de {d.medico.nombre} · cédula {d.medico.cedula}{d.medico.cpa ? ` · CPA ${d.medico.cpa}` : ""}</p>
-        {c.estado === "firmada" && puedeRecetar === true && miMedico != null && (
+        {/* QA S53 (N157): con receta emitida desde esta consulta, el botón es «Ver receta»; emitir otra queda como acción secundaria. */}
+        {recetasVigentes.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-2" data-recetas-consulta>
+            {recetasVigentes.map((r) => (
+              <Enlace key={r.id} href={`/veterinaria/recetas/${r.id}`} data-ver-receta>
+                Ver receta N.º {r.numero}
+              </Enlace>
+            ))}
+            {c.estado === "firmada" && puedeRecetar === true && miMedico != null && (
+              <Enlace href={`/veterinaria/recetas/nueva?perro=${c.perro_id}&consulta=${id}`} data-emitir-receta>
+                Emitir otra receta
+              </Enlace>
+            )}
+          </div>
+        )}
+        {recetasVigentes.length === 0 && c.estado === "firmada" && puedeRecetar === true && miMedico != null && (
           <Enlace href={`/veterinaria/recetas/nueva?perro=${c.perro_id}&consulta=${id}`} className="mt-3" data-emitir-receta>
             Emitir receta
           </Enlace>
+        )}
+        {recetas.length > 0 && (
+          <ul className="mt-2 flex flex-col gap-1 text-sm text-n-700" data-lista-recetas-consulta>
+            {recetas.map((r) => (
+              <li key={r.id}>
+                <Enlace href={`/veterinaria/recetas/${r.id}`}>Receta N.º {r.numero}</Enlace>
+                {" · "}{formatearFechaCalendario(r.fecha_emision)}{r.medicamentos ? ` · ${r.medicamentos}` : ""}{r.estado === "anulada" ? " · anulada" : ""}
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 

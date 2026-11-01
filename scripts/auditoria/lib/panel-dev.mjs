@@ -25,7 +25,19 @@ const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 export const patronDe = (r) => r.replace(/^\/ayuda\/(videos\/)?(?!tickets$|videos$|pedir-ayuda$)[a-z0-9-]+$/, "/ayuda/$1:articulo").replace(UUID, ":id").replace(/\/\d{4}-\d{2}-\d{2}(?=\/|$)/g, "/:fecha").replace(/\/\d+(?=\/|$)/g, "/:n");
 export const NO_RECORRER = /^\/(api|portal|login|logout|salir|auth|demo|plataforma|alta|l|r|c|p|v|para|blog|legal|privacidad|terminos|aviso|app)(\/|$)|\/(imprimir|pdf|descargar|exportar|csv)(\/|$)|\.(pdf|csv|xlsx|xml|png|jpg|ics|zip)$|\/xml$/i;
 
+// Con la base de desarrollo estrangulada, Auth a veces no contesta (usuario nulo, enlace sin token): se reintenta.
 export async function cookiesDe(profileId) {
+  for (let intento = 1; ; intento++) {
+    try {
+      return await cookiesDeUnaVez(profileId);
+    } catch (e) {
+      if (intento >= 5) throw e;
+      console.log(`  · no se pudo abrir la sesión (${String(e.message).slice(0, 60)}); reintento ${intento + 1} de 5 en 30 s`);
+      await new Promise((r) => setTimeout(r, 30_000));
+    }
+  }
+}
+async function cookiesDeUnaVez(profileId) {
   const { data: u } = await A.auth.admin.getUserById(profileId);
   const { data: link } = await A.auth.admin.generateLink({ type: "magiclink", email: u.user.email });
   const cli = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });

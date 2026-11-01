@@ -26,10 +26,14 @@ const fechaLarga = (iso: string) => new Intl.DateTimeFormat("es-MX", { weekday: 
 
 export default async function DetalleReservaPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ creada?: string }>;
 }) {
   const { id } = await params;
+  // QA S53: «Crear reserva» llega aquí con ?creada=1 (el alta termina en el detalle, no en el formulario).
+  const recienCreada = (await searchParams).creada === "1";
   const supabase = await createSupabaseServerClient();
 
   const { data: reserva, error: errorReserva } = await supabase
@@ -180,6 +184,13 @@ export default async function DetalleReservaPage({
         <Enlace href={moduloUnico ? moduloUnico.base : "/reservas"} className="text-sm">
           ← {moduloUnico ? moduloUnico.etiqueta : "Reservas"}
         </Enlace>
+        {recienCreada && (
+          <div className="mt-3" data-reserva-creada>
+            <Alert variante="exito" titulo="Reserva creada">
+              Quedó apartado el lugar. Desde aquí puedes hacer el check-in cuando llegue, aplicar cargos o cancelar.
+            </Alert>
+          </div>
+        )}
         <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
           <div>
             {/* QA R59 (N146): la reserva no tiene estado propio, es el de sus estancias: con una, su insignia (cambia con la

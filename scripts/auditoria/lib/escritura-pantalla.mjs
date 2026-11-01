@@ -10,7 +10,7 @@
 /** Se evalúa en el navegador: `await pagina.evaluate(controlesDeEscritura)`. */
 export function controlesDeEscritura() {
   const CAPTURA = /\/(nuevo|nueva|checkin|checkout|walkin|cobrar|cobrar-junto|cargo|venta|ajustes-servicio)$|^\/caja\/pases$|^\/admin\/importar(\/|$)/;
-  const VERBO = /^\s*\+?\s*(nuev[oa]s?|agregar|añadir|crear|registrar|agendar|reservar|cobrar|check-?\s?in|check-?\s?out|hacer check|firmar|subir|editar|guardar|capturar|vender|aplicar|confirmar|eliminar|borrar|anular|dar de (alta|baja)|abrir turno|cerrar turno|enviar|mandar|marcar|iniciar|finalizar|terminar|devolver|importar|invitar|asignar|corregir|reprogramar|no se presentó|no llegó|no se aplicó|suspender|cancelar (la )?cita|cancelar toda|cambiar (el |la )?(estilista|servicio|recargo)|aplicar (un )?recargo|ajuste|repartir|pedir|configurar|rechazar|aprobar|revisad[oa])(?![a-záéíóúñ0-9_])/i;
+  const VERBO = /^\s*\+?\s*(nuev[oa]s?|agregar|añadir|crear|registrar|agendar|reservar|cobrar|check-?\s?in|check-?\s?out|hacer check|firmar|subir|editar|guardar|capturar|vender|aplicar|confirmar|eliminar|borrar|anular|dar de (alta|baja)|abrir turno|cerrar turno|enviar|mandar|marcar|iniciar|finalizar|terminar|devolver|importar|invitar|asignar|corregir|surtir|reprogramar|no se presentó|no llegó|no se aplicó|suspender|cancelar (la )?cita|cancelar toda|cambiar (el |la )?(estilista|servicio|recargo)|aplicar (un )?recargo|ajuste|repartir|pedir|configurar|rechazar|aprobar|revisad[oa])(?![a-záéíóúñ0-9_])/i;
   const visible = (el) => {
     const r = el.getBoundingClientRect();
     const s = getComputedStyle(el);
@@ -50,6 +50,25 @@ export function controlesDeEscritura() {
     if ((form.getAttribute("method") || "").toLowerCase() === "get" || form.matches("[role=search]")) continue;
     for (const c of form.querySelectorAll("button:not([type=button]), input[type=submit]")) uno(c, "enviar formulario");
     for (const c of form.querySelectorAll("input:not([type=hidden]):not([type=search]), select, textarea")) uno(c, "campo de formulario");
+  }
+  // QA S53 (N155): un formulario SIN <form> (reprogramar, cancelar con motivo, «no se presentó», eliminar…) es la caja
+  // que rodea a un botón que guarda y tiene campos: el ancestro más cercano (hasta 3 niveles) con algún campo. Ahí
+  // cuentan TODOS sus campos y todos sus botones («Dejarla como estaba», «No»), salvo los que solo cierran.
+  const SALIR = /^\s*(cancelar|cerrar|volver|regresar|ocultar|ver|mostrar|atrás|anterior|siguiente)\b/i;
+  const CAMPO = "input:not([type=hidden]):not([type=search]), textarea, select";
+  for (const b of main.querySelectorAll("button, [role=button]")) {
+    if (!VERBO.test(texto(b)) || b.closest("form, [role=search]") || !visible(b)) continue;
+    let bloque = null;
+    let el = b.parentElement;
+    for (let i = 0; i < 3 && el; i++, el = el.parentElement) {
+      if (el === main || el.tagName === "BODY" || el.tagName === "FORM") break;
+      if (el.querySelector(CAMPO)) { bloque = el; break; }
+    }
+    if (!bloque) continue;
+    // Lo que está dentro de un filtro (GET o role=search) lee: no es parte del bloque.
+    const enFiltro = (x) => Boolean(x.closest("[role=search]")) || (x.closest("form")?.getAttribute("method") || "").toLowerCase() === "get";
+    for (const c of bloque.querySelectorAll(CAMPO)) if (!enFiltro(c)) uno(c, "campo de un formulario sin <form>");
+    for (const o of bloque.querySelectorAll("button, [role=button]")) if (o !== b && !enFiltro(o) && !SALIR.test(texto(o))) uno(o, "botón de un formulario sin <form>");
   }
   // QA N152: un select, una casilla o un interruptor guarda al cambiar, esté o no dentro de un <form>. Solo un filtro
   // (formulario GET o `role=search`) lee.

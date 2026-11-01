@@ -19,6 +19,7 @@ import { PedirNombre } from "@/components/personal/pedir-nombre";
 import { PestanaConcurrencia } from "@/components/concurrencia/pestana";
 import { ProveedorEscritura } from "@/components/escritura-contexto";
 import { bloqueoDeEscritura } from "@/lib/cobro/bloqueo-escritura-servidor";
+import { avisarEsteticaApagada, etiquetaDeSesion } from "@/lib/auth/rutas";
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const sesion = await obtenerSesionConRol();
@@ -39,6 +40,8 @@ export default async function StaffLayout({ children }: { children: React.ReactN
     // QA N151: prueba vencida o falta de pago → todo lo que escribe se ve deshabilitado (el mismo indicador que la franja).
     bloqueoDeEscritura(),
   ]);
+  // QA S53 (N156): la zona (inicio, etiqueta, aviso de Estética apagada) sale del rol, los módulos y la designación de médico.
+  const zonaSesion = { rol: sesion.rol, modulos: sesion.modulos, accesoVeterinaria: sesion.accesoVeterinaria, esMedico: sesion.esMedico };
   const negocios = ((suyos ?? []) as { id: string; nombre: string; rol: string; grupo_id: string; grupo_nombre: string; es_principal: boolean }[])
     .filter((n) => ["admin", "recepcion", "estetica"].includes(n.rol))
     .map((n) => ({ id: n.id, nombre: n.nombre, grupoId: n.grupo_id, grupoNombre: n.grupo_nombre, esPrincipal: n.es_principal, actual: n.id === negocio.id }));
@@ -50,7 +53,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
         <>
           <AvisoInstalar />
           <AvisoPlan esPersonal />
-          {sesion.rol === "estetica" && !sesion.modulos.includes("estetica") && (
+          {avisarEsteticaApagada(zonaSesion) && (
             <p role="status" className="rounded-lg border border-ambar-oscuro/30 bg-ambar-suave px-4 py-3 text-sm text-ambar-oscuro" data-modulo-apagado-aviso>
               El módulo de Estética está apagado en este negocio. Lo enciende quien administra, en «Módulos y plan». Mientras tanto puedes usar lo que sí tienes en el menú.
             </p>
@@ -59,8 +62,9 @@ export default async function StaffLayout({ children }: { children: React.ReactN
         </>
       }
       rol={sesion.rol}
+      etiquetaRol={etiquetaDeSesion(zonaSesion)}
       nombreCompleto={sesion.nombreCompleto ?? textoSinNombre(sesion.user.email, sesion.rol === "admin")}
-      items={navStaffPara(sesion.rol, sesion.permisos, sesion.modulos, sesion.accesoVeterinaria)}
+      items={navStaffPara(sesion.rol, sesion.permisos, sesion.modulos, sesion.accesoVeterinaria, sesion.esMedico)}
       negocios={negocios}
       videos={videos.map((v) => ({ slug: v.slug, rutas: v.rutas }))}
       ayuda={conAyuda ? articulosDelNegocio(sesion.modulos).map((a) => ({ slug: a.slug, rutas: a.rutas })) : undefined}

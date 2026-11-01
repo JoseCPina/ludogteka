@@ -1,4 +1,4 @@
-import { rutaPorRol } from "@/lib/auth/rutas";
+import { inicioDeSesion } from "@/lib/auth/rutas";
 import { puedeAbrir } from "@/lib/auth/acceso";
 
 export type ItemNav = {
@@ -82,9 +82,10 @@ export const SECCIONES_STAFF: ItemNav[] = [
 // en cuanto tenga elementos.
 export const SECCIONES_PORTAL: ItemNav[] = [];
 
-export function navStaffPara(rol: string, permisos: string[] = [], modulos: string[] = [], accesoVeterinaria = false): ItemNav[] {
-  // Estética sin su módulo no tiene a dónde aterrizar en /estetica: su inicio pasa a lo que sí puede usar.
-  const inicio = rol === "estetica" && !modulos.includes("estetica") ? (modulos.includes("empleados") ? "/mi-trabajo" : rutaPorRol(rol)) : rutaPorRol(rol);
+export function navStaffPara(rol: string, permisos: string[] = [], modulos: string[] = [], accesoVeterinaria = false, esMedico = false): ItemNav[] {
+  // Estética sin su módulo no tiene a dónde aterrizar en /estetica: su inicio pasa a lo que sí puede usar (QA S53,
+  // N156: Veterinaria si trabaja ahí, si no su asistencia; `inicioDeSesion`, la misma regla del layout y del middleware).
+  const inicio = inicioDeSesion({ rol, modulos, accesoVeterinaria, esMedico });
   return [
     { etiqueta: "Inicio", href: inicio, roles: [rol] },
     // El rol de estética aterriza justamente en /estetica, que además es

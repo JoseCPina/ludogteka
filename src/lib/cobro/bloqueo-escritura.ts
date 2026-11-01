@@ -59,23 +59,62 @@ export function esRutaDeCaptura(ruta: string | null | undefined): boolean {
 
 // Lo que dice un botón que escribe o que abre dónde escribir. «Cancelar», «Cerrar», «Ver», «Anterior»… no.
 const VERBO_DE_ESCRITURA =
-  /^\s*\+?\s*(nuev[oa]s?|agregar|añadir|crear|registrar|agendar|reservar|cobrar|check-?\s?in|check-?\s?out|hacer check|firmar|subir|tomar foto|editar|guardar|capturar|vender|aplicar|confirmar|eliminar|borrar|quitar|anular|dar de (alta|baja)|abrir turno|cerrar turno|enviar|mandar|avisar|marcar|iniciar|finalizar|terminar|empezar|devolver|reembolsar|importar|invitar|asignar|corregir|cambiar (?!de negocio)|ajustar|ajuste|recibir|entregar|mover|descartar|reagendar|pausar|reanudar|reactivar|deshacer|generar|timbrar|emitir|designar|vincular|desvincular|reasignar|prender|apagar|conectar|desconectar|cancelar\s+(?!y\b)\S|repartir|pedir|solicitar|configurar|rechazar|aprobar|autorizar|revisad[oa]|es (una|esta) raza|reprogramar|no (se presentó|llegó|vino|se aplicó)|suspender|poner|pasar a|recargo|cerrar (la |esta )?(cuenta|consulta|estancia|cita))/i;
+  /^\s*\+?\s*(nuev[oa]s?|agregar|añadir|crear|registrar|agendar|reservar|cobrar|check-?\s?in|check-?\s?out|hacer check|firmar|subir|tomar foto|editar|guardar|capturar|vender|aplicar|confirmar|eliminar|borrar|quitar|anular|dar de (alta|baja)|abrir turno|cerrar turno|enviar|mandar|avisar|marcar|iniciar|finalizar|terminar|empezar|devolver|reembolsar|importar|invitar|asignar|corregir|cambiar (?!de negocio)|ajustar|ajuste|recibir|entregar|mover|descartar|reagendar|pausar|reanudar|reactivar|deshacer|generar|timbrar|emitir|designar|vincular|desvincular|reasignar|prender|apagar|conectar|desconectar|cancelar\s+(?!y\b)\S|repartir|pedir|solicitar|configurar|rechazar|aprobar|autorizar|revisad[oa]|es (una|esta) raza|surtir|reprogramar|no (se presentó|llegó|vino|se aplicó)|suspender|poner|pasar a|recargo|cerrar (la |esta )?(cuenta|consulta|estancia|cita))/i;
 const SALIR_DE_FORMULARIO = /^\s*(cancelar|cerrar|volver|regresar|ocultar|ver|mostrar|atrás|anterior|siguiente)\b/i;
 
 const textoDe = (el: Element) =>
   ((el as HTMLElement).innerText || (el as HTMLInputElement).value || el.getAttribute("aria-label") || el.getAttribute("title") || "").trim();
 
+const SELECTOR_CAMPO = "input:not([type=hidden]):not([type=search]), textarea, select";
+// Hasta dónde se busca, desde el botón que guarda, el bloque con sus campos (QA S53, N155: «Guardar la nueva hora» →
+// su fila de botones → la caja de «Reprogramar» con «Nueva fecha y hora» y «Motivo»).
+const NIVELES_DE_BLOQUE = 3;
+
+/**
+ * El bloque de un botón que guarda sin `<form>` ni `<AccionesFormulario>` (QA S53, N155): el formulario de reprogramar,
+ * el de cancelar con motivo, el de «no se presentó», el de eliminar… son una caja con sus campos y sus botones. Es el
+ * ancestro más cercano (hasta 3 niveles) que tiene algún campo; nunca la página entera ni un filtro.
+ */
+export function bloqueDeBoton(boton: Element): Element | null {
+  let el: Element | null = boton.parentElement;
+  for (let i = 0; i < NIVELES_DE_BLOQUE && el; i++, el = el.parentElement) {
+    if (el.tagName === "MAIN" || el.tagName === "BODY" || el.tagName === "FORM" || el.getAttribute("role") === "search") return null;
+    if (el.querySelector(SELECTOR_CAMPO)) return el;
+  }
+  return null;
+}
+
+/** ¿Este botón guarda? (lo dice su texto, o `Button cargando` lo marca con `data-escritura`). */
+function esBotonQueGuarda(el: Element): boolean {
+  if (el.closest("[data-sin-bloqueo]")) return false;
+  return el.hasAttribute("data-escritura") || VERBO_DE_ESCRITURA.test(textoDe(el));
+}
+
 /**
  * Los formularios de la pantalla: lo que rodea a cada `<AccionesFormulario>` que tiene un botón que guarda (la app
- * no siempre usa `<form>`: muchos guardan con un botón y `useEspera`).
+ * no siempre usa `<form>`: muchos guardan con un botón y `useEspera`), y el bloque de cada botón que guarda suelto
+ * (QA S53, N155: así quedaban libres los campos y «Dejarla como estaba» de la reprogramación con la prueba vencida,
+ * porque la primera corrección solo miraba `<form>`, las páginas de captura y `<AccionesFormulario>`).
  */
 export function alcancesDeFormulario(raiz: ParentNode): Element[] {
   const alcances: Element[] = [];
   for (const af of raiz.querySelectorAll("[data-acciones-formulario]")) {
     if (af.querySelector("[data-escritura], button:not([type=button])") && af.parentElement) alcances.push(af.parentElement);
   }
+  for (const b of raiz.querySelectorAll("button, [role=button]")) {
+    if (b.closest("form, [data-acciones-formulario]") || !esBotonQueGuarda(b)) continue;
+    const bloque = bloqueDeBoton(b);
+    if (bloque && !alcances.includes(bloque)) {
+      alcances.push(bloque);
+      BLOQUES_SUELTOS.add(bloque);
+    }
+  }
   return alcances;
 }
+
+// Los bloques de un botón suelto (no los de `<AccionesFormulario>`): ahí se deshabilita TODO, también «Dejarla como
+// estaba» o «No», porque el bloque entero es el formulario.
+const BLOQUES_SUELTOS = new WeakSet<Element>();
 
 /**
  * ¿Este elemento escribe (o lleva a escribir)? `ruta` es la página que se está viendo: en una página de captura, todo
@@ -101,9 +140,17 @@ export function esControlDeEscritura(el: Element, ruta: string, alcances: readon
   // Salir de un formulario o moverse por él siempre se puede. «Cancelar» a secas solo es salir dentro de un
   // formulario; suelto, junto a un registro (un servicio extra, una cuenta), cancela ESE registro (QA N152).
   if (esBoton && (el as HTMLButtonElement).type === "button" && SALIR_DE_FORMULARIO.test(texto)) {
-    if (!/^\s*cancelar\b/i.test(texto) || el.closest("form, [data-acciones-formulario]") || alcances.some((a) => a.contains(el))) return false;
+    // Dentro de un bloque SUELTO (N155) no cuenta como salir: ese bloque se bloquea entero, y puede ser la lista de un
+    // tablero donde «Cancelar» abre el formulario para cancelar el registro (los servicios extra de Recepción).
+    if (!/^\s*cancelar\b/i.test(texto) || el.closest("form, [data-acciones-formulario]") || alcances.some((a) => !BLOQUES_SUELTOS.has(a) && a.contains(el))) return false;
     return true;
   }
+  // QA S53 (N155): en el bloque de un botón que guarda (reprogramar, cancelar con motivo, «no se presentó»…) se
+  // deshabilita el formulario ENTERO: sus campos y sus otros botones («Dejarla como estaba», «No»), no solo el que guarda.
+  // Lo que está dentro de un filtro (formulario GET o `role=search`) nunca es parte de ese bloque: buscar y filtrar
+  // siguen aunque el bloque de un botón que guarda abarque la sección entera (el periodo de asistencia del empleado).
+  const enFiltro = Boolean(el.closest("[role=search]")) || (el.closest("form")?.getAttribute("method") ?? "").toLowerCase() === "get";
+  if (esBoton && !enFiltro && alcances.some((a) => BLOQUES_SUELTOS.has(a) && a.contains(el))) return true;
   // QA N152: un select, una casilla o un interruptor guardan al cambiar (el estilista de la cita, un permiso, un
   // recordatorio prendido): cuentan siempre, salvo en un filtro (formulario GET o `role=search`) o marcados
   // `data-sin-bloqueo`.
