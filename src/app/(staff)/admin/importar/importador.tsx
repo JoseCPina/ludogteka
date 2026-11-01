@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -24,6 +23,8 @@ import {
   type Progreso,
 } from "./actions";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
+import { Enlace } from "@/components/ui/enlace";
+import { Alternar } from "@/components/ui/alternar";
 
 type Paso = "archivo" | "columnas" | "revision" | "importando" | "listo";
 type Filtro = "todas" | "errores" | "avisos" | "duplicados";
@@ -427,15 +428,9 @@ export function Importador({ conClinicos, conVet }: { conClinicos: boolean; conV
               )}
               <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar filas">
                 {(["todas", "errores", "avisos", "duplicados"] as Filtro[]).map((f) => (
-                  <button
-                    key={f}
-                    type="button"
-                    aria-pressed={filtro === f}
-                    onClick={() => { setFiltro(f); setVerHasta(100); }}
-                    className={`min-h-10 rounded-full border px-3 text-sm font-semibold ${filtro === f ? "border-morado bg-morado text-white" : "border-borde bg-white text-n-800"}`}
-                  >
+                  <Alternar key={f} type="button" onClick={() => { setFiltro(f); setVerHasta(100); }} className={`min-h-10 rounded-full border px-3 text-sm font-semibold ${filtro === f ? "border-morado bg-morado text-white" : "border-borde bg-white text-n-800"}`} activo={filtro === f}>
                     {{ todas: "Todas", errores: "Con error", avisos: "Con aviso", duplicados: "Ya existen" }[f]}
-                  </button>
+                  </Alternar>
                 ))}
               </div>
               <div className="overflow-x-auto">
@@ -552,7 +547,7 @@ export function Importador({ conClinicos, conVet }: { conClinicos: boolean; conV
                 <Alert variante="info" titulo="Razas que quedaron como texto">
                   {progreso.razas_sin_catalogo.slice(0, 15).map((r) => `${r.texto} (${r.cuenta})`).join(", ")}
                   {progreso.razas_sin_catalogo.length > 15 ? ` y ${progreso.razas_sin_catalogo.length - 15} más` : ""}. Corrígelas en{" "}
-                  <Link className="font-semibold underline" href="/perros/razas">Razas sin catalogar</Link>.
+                  <Enlace href="/perros/razas" enTexto>Razas sin catalogar</Enlace>.
                 </Alert>
               )}
               {progreso.errores > 0 && (
@@ -561,12 +556,12 @@ export function Importador({ conClinicos, conVet }: { conClinicos: boolean; conV
                 </Alert>
               )}
               <div className="flex flex-wrap gap-3">
-                <Link href={`/admin/importar/${progreso.id}`} className="inline-flex min-h-12 items-center rounded-md bg-morado px-5 font-semibold text-white hover:bg-morado-oscuro">
+                <Enlace href={`/admin/importar/${progreso.id}`}>
                   Ver el detalle
-                </Link>
-                <Link href="/clientes" className="inline-flex min-h-12 items-center rounded-md border-[1.5px] border-borde bg-white px-5 font-semibold text-n-900 hover:bg-n-100">
+                </Enlace>
+                <Enlace href="/clientes">
                   Ir a Clientes
-                </Link>
+                </Enlace>
               </div>
             </>
           )}

@@ -6,6 +6,7 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { diasDePrueba, primerCobro } from "@/lib/cobro/prueba";
 import { cookies } from "next/headers";
 import { bloqueoDeEscritura } from "@/lib/cobro/bloqueo-escritura-servidor";
+import { Enlace } from "@/components/ui/enlace";
 
 // El aviso del plan del negocio, arriba de todo en el staff y el portal:
 //   demo (cuenta de solo lectura) → qué es y cómo probar PeluDesk;
@@ -65,9 +66,9 @@ export async function AvisoPlan({ esPersonal }: { esPersonal: boolean }) {
           <strong className="font-semibold">Negocio de ejemplo de PeluDesk. Así se vería el tuyo.</strong> No es un cliente real: los
           datos son de ejemplo y es de solo lectura, así que los cambios no se guardan.
         </p>
-        <a href={registro} data-demo-registro className="rounded-md bg-white px-3 py-1 font-semibold text-morado hover:bg-crema">
+        <Enlace href={registro} data-demo-registro  >
           Prueba PeluDesk gratis
-        </a>
+        </Enlace>
       </div>
     );
   }
@@ -76,9 +77,9 @@ export async function AvisoPlan({ esPersonal }: { esPersonal: boolean }) {
   const prueba = fin ? estadoPrueba(fin, zona) : null;
   const botonAdmin = (texto: string) =>
     esAdmin ? (
-      <a href="/admin/modulos" className="rounded-md bg-morado px-3 py-1 font-semibold text-white hover:bg-morado-oscuro">
+      <Enlace href="/admin/modulos">
         {texto}
-      </a>
+      </Enlace>
     ) : null;
 
   if (cobro?.estado === "gracia" && esAdmin) {
@@ -107,9 +108,9 @@ export async function AvisoPlan({ esPersonal }: { esPersonal: boolean }) {
           <strong className="font-semibold text-ambar-oscuro">{bloqueo.mensaje}</strong>
         </p>
         {bloqueo.boton && (
-          <a href={bloqueo.boton.href} className="rounded-md bg-morado px-3 py-1 font-semibold text-white hover:bg-morado-oscuro">
+          <Enlace href={bloqueo.boton.href}>
             {bloqueo.boton.texto}
-          </a>
+          </Enlace>
         )}
       </div>
     );
@@ -133,16 +134,16 @@ export async function AvisoPlan({ esPersonal }: { esPersonal: boolean }) {
         Prueba gratis de PeluDesk: {dias === 0 ? "termina hoy" : `te quedan ${dias} ${dias === 1 ? "día" : "días"}`} (hasta el{" "}
         {formatearFecha(fin.toISOString(), zona)}).{" "}
         {esAdmin && (
-          <a href="/bienvenida" className="font-semibold underline underline-offset-2">
+          <Enlace href="/bienvenida" enTexto>
             Primeros pasos
-          </a>
+          </Enlace>
         )}
         {esAdmin && (
           <>
             {" · "}
-            <a href="/admin/modulos" className="font-semibold underline underline-offset-2">
+            <Enlace href="/admin/modulos" enTexto>
               Contratar sin perder días
-            </a>
+            </Enlace>
           </>
         )}
       </div>
@@ -159,9 +160,9 @@ export async function AvisoPlan({ esPersonal }: { esPersonal: boolean }) {
         <div role="status" data-aviso-plan="contratado_en_prueba" className="bg-morado-suave px-4 py-1.5 text-center text-sm text-morado md:px-6">
           Contrataste PeluDesk: tu prueba sigue hasta el {formatearFecha(hasta, zona)} y el primer cobro es el{" "}
           <strong data-primer-cobro>{formatearFecha(primerCobro(hasta), zona)}</strong>.{" "}
-          <a href="/admin/modulos" className="font-semibold underline underline-offset-2">
+          <Enlace href="/admin/modulos" enTexto>
             Ver mi plan
-          </a>
+          </Enlace>
         </div>
       );
     }

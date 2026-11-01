@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { sinTitulosVacios } from "@/lib/veterinaria/portal-texto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -22,6 +21,7 @@ import { FormularioDesparasitacion, FormularioVacuna } from "../../carnet/[perro
 import type { CarnetCompleto } from "@/lib/veterinaria/carnet";
 import { unirFrases } from "@/lib/texto/frases";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
+import { Enlace } from "@/components/ui/enlace";
 
 // El dictado transcribe y arma el borrador dentro de una acción del servidor: puede tardar más de lo normal.
 export const maxDuration = 120;
@@ -61,7 +61,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
   if (error || !data) {
     return (
       <div className="flex max-w-2xl flex-col gap-4">
-        <Link href="/veterinaria/expediente" className="text-sm font-semibold text-morado hover:underline">← Expediente clínico</Link>
+        <Enlace href="/veterinaria/expediente" className="text-sm">← Expediente clínico</Enlace>
         <Alert variante="advertencia" titulo="No pudimos abrir la consulta">
           {error?.message && error.code === "42501" ? error.message : "No existe o no tienes acceso. Ver el expediente es de un médico veterinario, de admin o de quien tenga «Atender consultas»."}
         </Alert>
@@ -139,7 +139,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href={`/veterinaria/expediente/${c.perro_id}`} className="text-sm font-semibold text-morado hover:underline">← Expediente de {d.mascota.nombre}</Link>
+        <Enlace href={`/veterinaria/expediente/${c.perro_id}`} className="text-sm">← Expediente de {d.mascota.nombre}</Enlace>
         <div className="mt-1 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-bold text-n-900">{TIPOS_CITA[c.tipo_clave] ?? c.tipo_clave} · {d.mascota.nombre}</h1>
           {/* QA S41 (N140): al firmar, la insignia cambia con la respuesta (registros), sin esperar a recargar la página. */}
@@ -159,9 +159,9 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
         </p>
         <p className="text-sm text-n-600">A cargo de {d.medico.nombre} · cédula {d.medico.cedula}{d.medico.cpa ? ` · CPA ${d.medico.cpa}` : ""}</p>
         {c.estado === "firmada" && puedeRecetar === true && miMedico != null && (
-          <Link href={`/veterinaria/recetas/nueva?perro=${c.perro_id}&consulta=${id}`} className="mt-3 inline-flex min-h-12 items-center rounded-md bg-morado px-5 font-semibold text-white hover:bg-morado-oscuro" data-emitir-receta>
+          <Enlace href={`/veterinaria/recetas/nueva?perro=${c.perro_id}&consulta=${id}`} className="mt-3" data-emitir-receta>
             Emitir receta
-          </Link>
+          </Enlace>
         )}
       </div>
 
@@ -302,7 +302,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
                   {a.anulada_at ? (
                     <span className="line-through">{a.nombre}</span>
                   ) : (
-                    <Link href={`/api/veterinaria/adjunto/${a.id}`} target="_blank" rel="noopener" className="font-semibold text-morado hover:underline">{a.nombre}</Link>
+                    <Enlace href={`/api/veterinaria/adjunto/${a.id}`} target="_blank" rel="noopener">{a.nombre}</Enlace>
                   )}
                   {a.descripcion ? <span className="text-sm text-n-600"> · {a.descripcion}</span> : null}
                   {a.anulada_at ? <span className="text-sm text-coral-oscuro"> · anulado: {a.anulada_motivo}</span> : null}
@@ -317,7 +317,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
 
       {puedeEstimar === true && c.estado !== "anulada" && (
         <p className="text-sm">
-          <Link href={`/veterinaria/estimados/nuevo?perro=${c.perro_id}&consulta=${id}`} className="font-semibold text-morado hover:underline">Hacer un estimado de esta consulta →</Link>
+          <Enlace href={`/veterinaria/estimados/nuevo?perro=${c.perro_id}&consulta=${id}`}>Hacer un estimado de esta consulta →</Enlace>
         </p>
       )}
     </div>

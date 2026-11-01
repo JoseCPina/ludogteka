@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { firmarContratoDigital, obtenerUrlContrato } from "@/app/portal/contrato-actions";
+import { Enlace } from "@/components/ui/enlace";
 
 const ETIQUETA_ESTADO: Record<string, string> = {
   pendiente_firma: "Pendiente de firma",
@@ -158,9 +159,9 @@ export function FirmarContrato({
           </span>
         </div>
         {urlFirmado && (
-          <a href={urlFirmado} target="_blank" rel="noreferrer" className="text-sm font-semibold text-morado hover:underline">
+          <Enlace href={urlFirmado} target="_blank" rel="noreferrer" className="text-sm">
             Ver contrato firmado →
-          </a>
+          </Enlace>
         )}
       </div>
     );
@@ -181,11 +182,9 @@ export function FirmarContrato({
 
       {!firmando ? (
         <div className="flex flex-wrap gap-3">
-          <a href={`/api/contratos/${contratoId}/preview`} target="_blank" rel="noreferrer">
-            <Button type="button" variante="secundario">
+          <Enlace href={`/api/contratos/${contratoId}/preview`} target="_blank" rel="noreferrer">
               Leer contrato
-            </Button>
-          </a>
+            </Enlace>
           <Button type="button" onClick={abrirFirma}>
             Firmar
           </Button>

@@ -11,6 +11,7 @@ import { VideoSala } from "@/components/telemedicina/video-sala";
 import { useEspera } from "@/hooks/use-espera";
 import { crearLigaDePagoTeleconsulta, entrarComoMedico, enviarLigaPorWhatsApp, generarLigaTeleconsulta, prepararSalaTeleconsulta } from "../../agenda/telemedicina-actions";
 import { iniciarDesdeCita } from "../../expediente/actions";
+import { Enlace } from "@/components/ui/enlace";
 
 type Liga = { liga: string; urlWhatsApp?: string };
 
@@ -65,9 +66,9 @@ export function PanelTeleconsulta({
             <CampoCopiable valor={liga.liga} etiqueta="Liga del dueño" />
             <div className="flex flex-wrap gap-2">
               {liga.urlWhatsApp && (
-                <a href={liga.urlWhatsApp} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center rounded-md border border-n-200 bg-white px-3 text-sm font-semibold text-morado hover:bg-morado-suave">
+                <Enlace href={liga.urlWhatsApp} target="_blank" rel="noopener noreferrer" className="text-sm">
                   Abrir en WhatsApp
-                </a>
+                </Enlace>
               )}
               <Button type="button" variante="secundario" cargando={envio.cargando} onClick={() => correr(() => enviarLigaPorWhatsApp(citaId, liga.liga), () => setExito("Mensaje enviado por WhatsApp."))}>
                 Enviar por WhatsApp
@@ -95,7 +96,7 @@ export function PanelTeleconsulta({
               {pago ? (
                 <div className="flex flex-col gap-2">
                   <CampoCopiable valor={pago.url} etiqueta="Liga de pago" />
-                  {pago.urlWhatsApp && <a href={pago.urlWhatsApp} target="_blank" rel="noopener noreferrer" className="w-fit text-sm font-semibold text-morado hover:underline">Mandar la liga de pago por WhatsApp</a>}
+                  {pago.urlWhatsApp && <Enlace href={pago.urlWhatsApp} target="_blank" rel="noopener noreferrer" className="w-fit text-sm">Mandar la liga de pago por WhatsApp</Enlace>}
                 </div>
               ) : (
                 <div>
@@ -128,7 +129,7 @@ export function PanelTeleconsulta({
         <h2 className="text-lg font-bold text-n-900">3. La consulta</h2>
         <p className="text-n-700">Se documenta en el mismo expediente (marcada «telemedicina») y puedes dictarla. Nada se firma solo.</p>
         {consultaId ? (
-          <a href={`/veterinaria/consulta/${consultaId}`} className="inline-flex min-h-10 w-fit items-center rounded-md bg-morado px-4 text-sm font-semibold text-white hover:opacity-90">Abrir la consulta</a>
+          <Enlace href={`/veterinaria/consulta/${consultaId}`} className="w-fit text-sm">Abrir la consulta</Enlace>
         ) : puedeAtender ? (
           <BotonAccion texto="Iniciar la consulta" accion={() => iniciarDesdeCita(citaId)} />
         ) : (

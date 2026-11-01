@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
 import { cargarMedicos, miMedico } from "@/lib/veterinaria/lotes";
@@ -9,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { formatearFecha, horaLocalDeInstante } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { FormularioIngreso } from "./ingreso";
+import { Enlace } from "@/components/ui/enlace";
 
 type Fila = {
   id: string; mascota: string; especie: string | null; dueno: string; motivo: string; ubicacion: string | null; medico: string; ingreso_at: string; dias: number;
@@ -52,7 +52,7 @@ export default async function CensoHospitalizacion({ searchParams }: { searchPar
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <Link href="/veterinaria" className="text-sm font-semibold text-morado hover:underline">← Veterinaria</Link>
+        <Enlace href="/veterinaria" className="text-sm">← Veterinaria</Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Hospitalización</h1>
         <p className="mt-1 max-w-3xl text-n-600">Quiénes están internados ahora, con sus dosis pendientes y su último monitoreo.</p>
       </div>
@@ -66,7 +66,7 @@ export default async function CensoHospitalizacion({ searchParams }: { searchPar
           <ul className="flex flex-col gap-3">
             {censo.map((f) => (
               <li key={f.id}>
-                <Link href={`/veterinaria/hospitalizacion/${f.id}`} className={`flex flex-col gap-1.5 rounded-lg border bg-white p-4 hover:bg-n-50 ${f.dosis_atrasadas > 0 ? "border-ambar" : "border-n-200"}`}>
+                <Enlace href={`/veterinaria/hospitalizacion/${f.id}`} className={`flex flex-col gap-1.5 rounded-lg border bg-white p-4 hover:bg-n-50 ${f.dosis_atrasadas > 0 ? "border-ambar" : "border-n-200"}`} forma="bloque">
                   <span className="flex flex-wrap items-baseline justify-between gap-2">
                     <span className="text-lg font-bold text-n-900">{f.mascota} <span className="text-sm font-normal text-n-500">· {etiquetaEspecie(f.especie)} · día {f.dias}</span></span>
                     <span className="text-sm text-n-600">{f.ubicacion ?? "Sin ubicación"}</span>
@@ -80,7 +80,7 @@ export default async function CensoHospitalizacion({ searchParams }: { searchPar
                       {f.consentimiento === "firmado" ? "Consentimiento firmado" : f.consentimiento ? "Consentimiento sin firmar" : "Sin consentimiento"}
                     </span>
                   </span>
-                </Link>
+                </Enlace>
               </li>
             ))}
           </ul>
@@ -101,10 +101,10 @@ export default async function CensoHospitalizacion({ searchParams }: { searchPar
           <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
             {candidatas.slice(0, 15).map((c) => (
               <li key={c.id}>
-                <Link href={`/veterinaria/hospitalizacion?perro=${c.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 hover:bg-n-50">
+                <Enlace href={`/veterinaria/hospitalizacion?perro=${c.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 hover:bg-n-50" forma="bloque">
                   <span className="font-semibold text-n-900">{c.nombre} <span className="font-normal text-n-500">· {etiquetaEspecie(c.especie)}</span></span>
                   <span className="text-sm text-n-600">{c.dueno}</span>
-                </Link>
+                </Enlace>
               </li>
             ))}
           </ul>

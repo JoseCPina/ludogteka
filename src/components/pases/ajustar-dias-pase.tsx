@@ -190,13 +190,9 @@ export function AjustarDiasPase({
         />
       )}
       {esAdmin && pase.estado !== "vencido" && !vigencia && (
-        <button
-          type="button"
-          className="self-start text-sm font-semibold text-morado hover:underline"
-          onClick={() => setVigencia(pase.fecha_vencimiento && pase.fecha_vencimiento >= hoy ? pase.fecha_vencimiento : hoy)}
-        >
+        <Button type="button" onClick={() => setVigencia(pase.fecha_vencimiento && pase.fecha_vencimiento >= hoy ? pase.fecha_vencimiento : hoy)} className="self-start" variante="secundario" tamano="compacto">
           También extender la vigencia
-        </button>
+        </Button>
       )}
 
       <div className="rounded-md border border-n-200 bg-white p-3 text-sm">

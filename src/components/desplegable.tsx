@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { CierreDesplegable } from "@/components/formulario-accion";
+import { Alternar } from "@/components/ui/alternar";
 
 // Sección que se abre con un botón de verdad (rol button, aria-expanded), no con <summary>.
 export function Desplegable({
@@ -22,14 +23,10 @@ export function Desplegable({
   const [aviso, setAviso] = useState<string | null>(null);
   return (
     <div className={className} {...atributos}>
-      <button
-        type="button"
-        aria-expanded={abierto}
-        onClick={() => { setAviso(null); setAbierto((a) => !a); }}
-        className="text-sm font-semibold text-morado"
-      >
+      <Alternar type="button" aria-expanded={abierto} onClick={() => { setAviso(null); setAbierto((a) => !a); }} className="inline-flex items-center gap-1.5 rounded-md text-sm font-semibold text-morado hover:text-morado-oscuro">
+        <span aria-hidden="true" className="text-xs">{abierto ? "▾" : "▸"}</span>
         {titulo}
-      </button>
+      </Alternar>
       {!abierto && aviso && <p role="status" data-desplegable-aviso className="mt-1 text-sm font-semibold text-menta-oscuro">{aviso}</p>}
       {abierto && (
         <div className="mt-2">

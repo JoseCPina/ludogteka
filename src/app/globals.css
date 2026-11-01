@@ -50,7 +50,7 @@
   --color-n-200: #ebe3d8;
   --color-n-300: #d9d1c6;
   --color-n-400: #aba49f;
-  --color-n-500: #7b7580;
+  --color-n-500: #716b76;   /* UX (1 nov 2026): 4.5:1 sobre blanco, n-50 y n-100 (antes #7b7580, 4.47:1) */
   --color-n-600: #5e5968;
   --color-n-700: #46424f;
   --color-n-800: #35323e;
@@ -157,4 +157,84 @@ html:has([data-portal-shell]) {
 [data-bloqueado] {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+/* UX (1 de noviembre de 2026): el estado pendiente de un enlace del panel (<EnlacePrecarga>, src/components/ui/
+   enlace-precarga.tsx). Mientras su pantalla carga, el enlace tocado se atenúa, no se puede volver a tocar y enseña su
+   giro (.marca-pendiente, oculto el resto del tiempo). En una tarjeta o renglón entero el giro va en la esquina. */
+.marca-pendiente {
+  display: none;
+}
+a[data-pendiente="si"] {
+  opacity: 0.65;
+  cursor: progress;
+}
+a[data-pendiente="si"] .marca-pendiente {
+  display: inline-block;
+  flex: none;
+  width: 0.9em;
+  height: 0.9em;
+  margin-left: 0.4em;
+  vertical-align: -0.1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 9999px;
+  animation: giro-pendiente 0.7s linear infinite;
+}
+a[data-ui="enlace-bloque"][data-pendiente="si"],
+a[data-ui="menu"][data-pendiente="si"] {
+  position: relative;
+}
+a[data-ui="enlace-bloque"][data-pendiente="si"] .marca-pendiente {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  margin: 0;
+}
+@keyframes giro-pendiente {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* La barra de navegación (<BarraNavegacion>): aparece solo si la navegación pasa de 150 ms. */
+.barra-navegacion {
+  position: fixed;
+  inset: 0 auto auto 0;
+  z-index: 60;
+  height: 3px;
+  width: 0;
+  opacity: 0;
+  background: var(--color-morado);
+  pointer-events: none;
+}
+.barra-navegacion[data-activa="si"] {
+  animation:
+    barra-aparece 0s linear 150ms forwards,
+    barra-avanza 8s cubic-bezier(0.1, 0.7, 0.3, 1) 150ms forwards;
+}
+@keyframes barra-aparece {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes barra-avanza {
+  from {
+    width: 8%;
+  }
+  to {
+    width: 92%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  a[data-pendiente="si"] .marca-pendiente {
+    animation: none;
+    border-right-color: currentColor;
+    opacity: 0.6;
+  }
+  .barra-navegacion[data-activa="si"] {
+    animation: barra-aparece 0s linear 150ms forwards;
+    width: 100%;
+    opacity: 0;
+  }
 }

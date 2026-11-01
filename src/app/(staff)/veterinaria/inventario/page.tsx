@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
@@ -9,6 +8,8 @@ import { FormularioAccion } from "@/components/formulario-accion";
 import { abreviar, etiquetaGrupo, etiquetaLgs } from "../comun";
 import { activarLotesDeInsumo } from "../actions";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
+import { EnlacePestana } from "@/components/ui/enlace-pestana";
 
 type Insumo = {
   id: string;
@@ -27,12 +28,9 @@ const Etiqueta = ({ children, estilo }: { children: React.ReactNode; estilo: str
 
 function Filtro({ href, activo, children }: { href: string; activo: boolean; children: React.ReactNode }) {
   return (
-    <Link
-      href={href}
-      className={`rounded-full border px-3 py-1.5 text-sm font-semibold ${activo ? "border-morado bg-morado-suave text-morado" : "border-n-200 bg-white text-n-700 hover:bg-n-50"}`}
-    >
+    <EnlacePestana href={href} activo={activo}>
       {children}
-    </Link>
+    </EnlacePestana>
   );
 }
 
@@ -110,16 +108,14 @@ export default async function InventarioClinicoPage({ searchParams }: { searchPa
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <Link href="/veterinaria" className="text-sm font-semibold text-morado hover:underline">
+          <Enlace href="/veterinaria" className="text-sm">
             ← Veterinaria
-          </Link>
+          </Enlace>
           <h1 className="mt-1 text-2xl font-bold text-n-900">Inventario clínico</h1>
           <p className="mt-1 max-w-3xl text-n-600">Medicamentos y material clínico, por lote y con su caducidad. Se surten primero los lotes que caducan antes.</p>
         </div>
         {puedeEscribir && (
-          <Link href="/veterinaria/inventario/nuevo">
-            <Button type="button">Nuevo producto clínico</Button>
-          </Link>
+          <Enlace href="/veterinaria/inventario/nuevo">Nuevo producto clínico</Enlace>
         )}
       </div>
 
@@ -176,7 +172,7 @@ export default async function InventarioClinicoPage({ searchParams }: { searchPa
             const lgsTxt = etiquetaLgs(i.clasificacion_lgs);
             return (
               <li key={i.id}>
-                <Link href={`/veterinaria/inventario/${i.id}`} className="flex flex-col gap-2 px-4 py-3 hover:bg-n-50">
+                <Enlace href={`/veterinaria/inventario/${i.id}`} className="flex flex-col gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
                   <span className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-semibold text-n-900">{i.nombre}</span>
                     <span className="text-sm tabular-nums text-n-700">
@@ -193,7 +189,7 @@ export default async function InventarioClinicoPage({ searchParams }: { searchPa
                     {l && l.caducados > 0 && <Etiqueta estilo="bg-coral-suave text-coral-oscuro">{l.caducados === 1 ? "1 lote caducado" : `${l.caducados} lotes caducados`}</Etiqueta>}
                     {l && l.porCaducar > 0 && <Etiqueta estilo="bg-ambar-suave text-ambar-oscuro">{l.porCaducar === 1 ? "1 lote por caducar" : `${l.porCaducar} lotes por caducar`}</Etiqueta>}
                   </span>
-                </Link>
+                </Enlace>
               </li>
             );
           })}

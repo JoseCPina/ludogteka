@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { zonaActual } from "@/lib/negocio/actual";
 import { hoyNegocio } from "@/lib/formato";
 import { cargarCatalogoExtras } from "@/lib/extras/servidor";
 import { CatalogoExtras, type PaqueteExtra } from "./catalogo-extras";
+import { Enlace } from "@/components/ui/enlace";
 
 // El catálogo de servicios extra del negocio. Solo admin, o quien tenga el permiso
 // «Editar catálogo de servicios extra» (el middleware lo deja entrar; la base lo vuelve
@@ -44,9 +44,9 @@ export default async function CatalogoExtrasPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/extras" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/extras" className="text-sm">
           ← Servicios extra
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Catálogo de servicios extra</h1>
         <p className="mt-1 max-w-3xl text-n-600">
           Lo que el negocio cobra aparte de la estancia: paseo, entrenamiento, traslado a domicilio, baño de salida,

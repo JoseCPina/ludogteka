@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { zonaActual } from "@/lib/negocio/actual";
 import { formatearFecha } from "@/lib/formato";
 import { dinero } from "@/lib/dinero";
 import { etiquetaMotivoCuenta } from "@/app/(staff)/caja/cancelar-cuenta-tipos";
+import { Enlace } from "@/components/ui/enlace";
 
 /** Las cuentas que se cancelaron (no se cobraron) de un cliente: motivo, quién y cuándo. */
 export async function CuentasCanceladasCliente({ clienteId }: { clienteId: string }) {
@@ -28,9 +28,9 @@ export async function CuentasCanceladasCliente({ clienteId }: { clienteId: strin
       <ul className="flex flex-col gap-2">
         {filas.map((f) => (
           <li key={f.id} className="rounded-md border border-n-200 bg-white px-4 py-3 text-sm">
-            <Link href={`/caja/cobrar/${f.reserva_id}`} className="font-semibold text-morado hover:underline">
+            <Enlace href={`/caja/cobrar/${f.reserva_id}`}>
               {f.descripcion || "Cuenta"} · {dinero(Number(f.saldo_cancelado))}
-            </Link>
+            </Enlace>
             <p className="text-n-700">
               {etiquetaMotivoCuenta(f.motivo)}
               {f.motivo_texto ? ` — ${f.motivo_texto}` : ""}

@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
 import { formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { ETIQUETA_MOTIVO_CERTIFICADO } from "@/lib/veterinaria/carnet";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function Certificados() {
   const supabase = await createSupabaseServerClient();
@@ -22,16 +22,16 @@ export default async function Certificados() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <Link href="/veterinaria" className="text-sm font-semibold text-morado hover:underline">← Veterinaria</Link>
+        <Enlace href="/veterinaria" className="text-sm">← Veterinaria</Enlace>
         <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-n-900">Certificados de salud</h1>
             <p className="mt-1 max-w-3xl text-n-600">Los que ya se emitieron, del más reciente al más viejo. Un certificado no se edita: se anula con motivo y se emite otro.</p>
           </div>
           {puede && (
-            <Link href="/veterinaria/carnet" className="inline-flex min-h-12 items-center rounded-md bg-morado px-5 text-base font-semibold text-white hover:bg-morado-oscuro">
+            <Enlace href="/veterinaria/carnet" className="text-base">
               Emitir uno nuevo
-            </Link>
+            </Enlace>
           )}
         </div>
       </div>
@@ -45,7 +45,7 @@ export default async function Certificados() {
             const vencido = c.estado === "vigente" && (c.vigente_hasta as string) < hoy;
             return (
               <li key={c.id as string}>
-                <Link href={`/veterinaria/certificados/${c.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50">
+                <Enlace href={`/veterinaria/certificados/${c.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
                   <span>
                     <span className="font-semibold text-n-900">N.º {c.numero as number} · {mascota?.nombre ?? "—"}</span>
                     <span className="block text-sm text-n-600">{dueno?.nombre ?? "—"} · {ETIQUETA_MOTIVO_CERTIFICADO[c.motivo as string] ?? c.motivo}{c.folio_medico ? ` · folio ${c.folio_medico}` : ""}</span>
@@ -56,7 +56,7 @@ export default async function Certificados() {
                       {c.estado === "anulado" ? "Anulado" : vencido ? "Vencido" : "Vigente"}
                     </span>
                   </span>
-                </Link>
+                </Enlace>
               </li>
             );
           })}

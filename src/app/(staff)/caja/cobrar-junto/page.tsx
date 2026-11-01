@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
@@ -7,6 +6,7 @@ import { estadoCobroIntegrado } from "@/app/(staff)/caja/cobro-integrado-actions
 import type { OrdenCobroFila } from "@/app/(staff)/reservas/[id]/cobrar/cobro-integrado";
 import { CobroJunto, type CuentaJunto } from "./cobro-junto";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 const haceMinutos = (min: number) => new Date(Date.now() - min * 60 * 1000).toISOString();
 
@@ -20,9 +20,9 @@ export default async function CobrarJuntoPage({ searchParams }: { searchParams: 
 
   const encabezado = (
     <div>
-      <Link href="/caja" className="text-sm font-semibold text-morado hover:underline">
+      <Enlace href="/caja" className="text-sm">
         ← Caja
-      </Link>
+      </Enlace>
       <h1 className="mt-1 text-2xl font-bold text-n-900">Cobrar varias cuentas juntas</h1>
     </div>
   );

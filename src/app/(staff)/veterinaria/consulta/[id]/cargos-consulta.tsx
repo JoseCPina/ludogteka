@@ -2,7 +2,6 @@
 
 import { Desplegable } from "@/components/desplegable";
 import { useState, type ReactNode } from "react";
-import Link from "next/link";
 import { useEspera } from "@/hooks/use-espera";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,7 @@ import { dinero as formatearMoneda } from "@/lib/dinero";
 import { ETIQUETA_TIPO_CARGO, pareceVacuna, type CargosConsulta, type LineaCargo } from "@/lib/veterinaria/cargos-consulta";
 import { agregarCargoConsulta, ajustarCargoConsulta, pasarCargosACaja, ponerPrecioCargo, quitarCargoConsulta, restaurarCargoConsulta, sinCobroCargo, type ResultadoCargos } from "./cargos-actions";
 import { EnlaceOTexto, SiPuedeAbrir } from "@/components/acceso-contexto";
+import { Enlace } from "@/components/ui/enlace";
 
 // Una línea sin precio de un servicio del catálogo es, por definición, un servicio al que el catálogo no le
 // pone precio: quien puede editar precios la guarda como precio de catálogo (viene marcada, se puede desmarcar).
@@ -193,22 +193,22 @@ export function CargosConsulta({
                   {borrador && l.estado === "propuesto" && (
                     <>
                       {d.puede_ajustar && (
-                        <button type="button" className="text-sm font-semibold text-morado hover:underline" onClick={() => abrir(l, "ajustar")}>Ajustar</button>
+                        <Button type="button" onClick={() => abrir(l, "ajustar")} variante="secundario" tamano="compacto">Ajustar</Button>
                       )}
                       {esDelCarnet(l) ? (
                         // QA S21 (N105): una vacuna vive en el carnet; su cargo se va con ella desde «Vacunas y desparasitación».
-                        <a href="#t-vacunas-consulta" className="text-sm font-semibold text-morado hover:underline" data-se-quita-desde-consulta>
+                        <Enlace href="#t-vacunas-consulta" className="text-sm" data-se-quita-desde-consulta>
                           Se quita desde la consulta
-                        </a>
+                        </Enlace>
                       ) : (d.puede_ajustar || l.origen === "manual") && (
-                        <button type="button" className="text-sm font-semibold text-coral-oscuro hover:underline" onClick={() => abrir(l, "quitar")}>Quitar</button>
+                        <Button type="button" onClick={() => abrir(l, "quitar")} variante="secundario" tamano="compacto">Quitar</Button>
                       )}
                     </>
                   )}
                   {borrador && (l.estado === "quitado" || (l.estado === "cubierto" && l.cubierto_por === "estimado")) && d.puede_ajustar && (
-                    <button type="button" className="text-sm font-semibold text-morado hover:underline" onClick={() => correr(() => restaurarCargoConsulta(consultaId, l.id))}>
+                    <Button type="button" onClick={() => correr(() => restaurarCargoConsulta(consultaId, l.id))} variante="secundario" tamano="compacto" cargando={envio.cargando}>
                       {l.estado === "cubierto" ? "Cobrar aparte" : "Restaurar"}
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -322,7 +322,7 @@ export function CargosConsulta({
             )}
             {nuevoTipo === "producto" && d.productos.length === 0 && (
               <p data-sin-productos className="rounded-md border-l-4 border-ambar bg-ambar-suave px-3 py-2 text-sm text-n-800">
-                No hay productos cargados. Dalos de alta en <Link href="/veterinaria/inventario" className="font-semibold text-morado hover:underline">Inventario</Link> para poder agregarlos a la consulta.
+                No hay productos cargados. Dalos de alta en <Enlace href="/veterinaria/inventario" enTexto>Inventario</Enlace> para poder agregarlos a la consulta.
               </p>
             )}
             {nuevoTipo === "producto" && d.productos.length > 0 && (
@@ -359,7 +359,7 @@ export function CargosConsulta({
         )}
         {d.reserva_id && (
           <SiPuedeAbrir href={`/caja/cobrar/${d.reserva_id}`}>
-            <Link href={`/caja/cobrar/${d.reserva_id}`} className="text-sm font-semibold text-morado hover:underline">Abrir la cuenta en Caja →</Link>
+            <Enlace href={`/caja/cobrar/${d.reserva_id}`} className="text-sm">Abrir la cuenta en Caja →</Enlace>
           </SiPuedeAbrir>
         )}
       </AccionesFormulario>

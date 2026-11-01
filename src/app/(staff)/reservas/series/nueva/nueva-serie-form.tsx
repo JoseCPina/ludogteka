@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { useModulos } from "@/components/modulos-contexto";
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
-import Link from "next/link";
 import { Field } from "@/components/ui/field";
 import { TextoConEnlaces } from "@/components/ui/texto-con-enlaces";
 import { Select } from "@/components/ui/select";
@@ -24,6 +23,7 @@ import { ElegirPase } from "@/components/bonos/elegir-pase";
 import { PrecioDeLinea } from "@/components/servicios/falta-dato-precio";
 import { lineaConPrecio, useCotizacionLineas } from "@/hooks/use-cotizacion-lineas";
 import { sumarDiasFecha } from "@/lib/formato";
+import { Enlace } from "@/components/ui/enlace";
 
 type Perro = { id: string; cliente_id: string; nombre: string };
 type Servicio = ServicioOfrecible;
@@ -145,15 +145,11 @@ export function NuevaSerieForm({
         )}
         <div className="flex flex-wrap gap-3">
           {serieId && (
-            <Link href={`/reservas/series/${serieId}`}>
-              <Button type="button">Ver serie</Button>
-            </Link>
+            <Enlace href={`/reservas/series/${serieId}`}>Ver serie</Enlace>
           )}
-          <Link href={`${base}/series`}>
-            <Button type="button" variante="secundario">
+          <Enlace href={`${base}/series`}>
               Volver al listado
-            </Button>
-          </Link>
+            </Enlace>
         </div>
       </div>
     );

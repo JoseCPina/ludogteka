@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { MarkdownAyuda } from "@/lib/ayuda/markdown";
 import { diceQueNoSeResolvio } from "@/lib/ayuda/asistente";
 import { preguntarAsistente } from "./acciones";
+import { Enlace } from "@/components/ui/enlace";
 
 type Mensaje = { quien: "persona" | "asistente"; texto: string; articulos?: { slug: string; titulo: string }[]; video?: { slug: string; titulo: string } | null; sinRespuesta?: boolean };
 
@@ -75,9 +75,9 @@ export function Asistente({ pantalla, disponible }: { pantalla: string | null; d
                       {m.articulos.map((a, j) => (
                         <span key={a.slug}>
                           {j > 0 ? " · " : ""}
-                          <Link href={`/ayuda/${a.slug}`} className="font-semibold text-morado underline" data-cita={a.slug}>
+                          <Enlace href={`/ayuda/${a.slug}`} data-cita={a.slug} enTexto>
                             {a.titulo}
-                          </Link>
+                          </Enlace>
                         </span>
                       ))}
                     </p>
@@ -85,9 +85,9 @@ export function Asistente({ pantalla, disponible }: { pantalla: string | null; d
                   {m.video && (
                     <p className="text-sm text-n-600">
                       Míralo en video:{" "}
-                      <Link href={`/ayuda/videos/${m.video.slug}`} className="font-semibold text-morado underline" data-cita-video={m.video.slug}>
+                      <Enlace href={`/ayuda/videos/${m.video.slug}`} data-cita-video={m.video.slug} enTexto>
                         ▶ {m.video.titulo}
-                      </Link>
+                      </Enlace>
                     </p>
                   )}
                 </div>
@@ -114,11 +114,9 @@ export function Asistente({ pantalla, disponible }: { pantalla: string | null; d
           {envio.cargando ? "Buscando en la ayuda…" : "Preguntar"}
         </Button>
         {(ofrecerTicket || mensajes.length > 0) && (
-          <Link href={hrefTicket}>
-            <Button type="button" variante={ofrecerTicket ? "primario" : "secundario"} data-ofrecer-ticket={ofrecerTicket ? "si" : "no"}>
+          <Enlace href={hrefTicket} data-ofrecer-ticket={ofrecerTicket ? "si" : "no"}>
               {ofrecerTicket ? "Crear ticket con lo que platicamos" : "No se resolvió: crear ticket"}
-            </Button>
-          </Link>
+            </Enlace>
         )}
       </AccionesFormulario>
       <p className="text-xs text-n-500">El asistente solo contesta con la documentación de PeluDesk; no ve los datos de tu negocio.</p>

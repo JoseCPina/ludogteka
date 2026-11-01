@@ -1,10 +1,10 @@
 import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { CostoReferencia } from "../costo-referencia";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 // Los consumibles que se dieron de alta sin costo (recepción no ve ni
 // captura costos), para que admin —o quien tenga el permiso de costos— no
@@ -19,9 +19,9 @@ export default async function SinCostoPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/inventario" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/inventario" className="text-sm">
           ← Inventario
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Consumibles sin costo</h1>
         <p className="mt-1 max-w-2xl text-n-600">
           No tienen costo de referencia ni compras. Ponles un costo de referencia por unidad de compra; cuando registres
@@ -37,9 +37,9 @@ export default async function SinCostoPage() {
           {filas.map((f) => (
             <li key={f.id} className="rounded-lg border border-n-200 bg-white p-4">
               <p className="font-semibold text-n-900">
-                <Link href={`/inventario/${f.id}`} className="hover:underline">
+                <Enlace href={`/inventario/${f.id}`}>
                   {f.nombre}
-                </Link>{" "}
+                </Enlace>{" "}
                 <span className="text-sm font-normal text-n-500">· {f.area_nombre}</span>
               </p>
               <div className="mt-2">

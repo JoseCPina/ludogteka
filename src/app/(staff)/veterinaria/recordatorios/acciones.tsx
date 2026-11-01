@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { useRouter } from "next/navigation";
 import { marcarRecordatorio, reintentarRecordatorio } from "../carnet/actions";
+import { Enlace } from "@/components/ui/enlace";
 
 /** Mandarlo a mano (wa.me) y anotarlo, u omitirlo. */
 export function AccionesRecordatorio({ id, enlace, fallido = false }: { id: string; enlace: string | null; fallido?: boolean }) {
@@ -30,25 +31,19 @@ export function AccionesRecordatorio({ id, enlace, fallido = false }: { id: stri
   return (
     <AccionesFormulario error={error} exito={exito}>
       {enlace && (
-        <a
-          href={enlace}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex min-h-10 items-center rounded-md bg-menta px-4 text-sm font-semibold text-morado hover:bg-menta-hover"
-          onClick={() => setExito("Se abrió WhatsApp. Cuando lo mandes, toca «Ya lo mandé».")}
-        >
+        <Enlace href={enlace} target="_blank" rel="noreferrer" onClick={() => setExito("Se abrió WhatsApp. Cuando lo mandes, toca «Ya lo mandé».")}>
           Abrir en WhatsApp
-        </a>
+        </Enlace>
       )}
       {fallido && (
-        <Button type="button" variante="secundario" className="min-h-10 px-3 text-sm" cargando={envio.cargando} onClick={reintentar}>
+        <Button type="button" variante="secundario" className="px-3 text-sm" tamano="compacto" cargando={envio.cargando} onClick={reintentar}>
           Reintentar envío
         </Button>
       )}
-      <Button type="button" variante="secundario" className="min-h-10 px-3 text-sm" cargando={envio.cargando} onClick={() => marcar("manual")}>
+      <Button type="button" variante="secundario" className="px-3 text-sm" tamano="compacto" cargando={envio.cargando} onClick={() => marcar("manual")}>
         Ya lo mandé
       </Button>
-      <Button type="button" variante="secundario" className="min-h-10 px-3 text-sm" cargando={envio.cargando} onClick={() => marcar("omitido")}>
+      <Button type="button" variante="secundario" className="px-3 text-sm" tamano="compacto" cargando={envio.cargando} onClick={() => marcar("omitido")}>
         Omitir
       </Button>
     </AccionesFormulario>

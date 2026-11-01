@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { esTipoLinkAlta, tiposDisponibles, type TipoLinkAlta } from "@/lib/alta/tipos-link";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { InvitacionesPanel, type InvitacionFila } from "./invitaciones-panel";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 // El tipo puede venir en la URL: es como los botones de "Nuevo cliente"
 // de Guardería, Hotel y Estética llegan aquí con el flujo correcto ya
@@ -36,9 +36,9 @@ export default async function InvitacionesPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/clientes" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/clientes" className="text-sm">
           ← Clientes
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Altas por link</h1>
         <p className="mt-1 text-n-600">
           Links mandados, cuáles se usaron y cuáles siguen esperando.

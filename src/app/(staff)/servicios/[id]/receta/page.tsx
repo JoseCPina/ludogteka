@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { RecetaConsumo, type LineaReceta } from "./receta-consumo";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function RecetaServicioPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -63,9 +63,9 @@ export default async function RecetaServicioPage({ params }: { params: Promise<{
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href={`/servicios/${id}`} className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href={`/servicios/${id}`} className="text-sm">
           ← {servicio.nombre}
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Receta de consumo — {servicio.nombre}</h1>
         <p className="mt-1 text-n-600">
           Cuánto insumo gasta este servicio, por tamaño de perro. Se descuenta solo al finalizar cada

@@ -9,8 +9,8 @@ import { MovimientosInsumo, type MovimientoFila } from "../movimientos-insumo";
 import { actualizarInsumo, darDeBajaInsumo } from "../actions";
 import { cargarAreas, puedeDarDeAlta } from "../comun";
 import { CostoReferencia } from "../costo-referencia";
-import Link from "next/link";
 import { leerTodoPorIds } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 // Cuántos renglones del historial se traen. La existencia NO sale de esta lista: sale de la base.
 const MOVIMIENTOS_MOSTRADOS = 500;
@@ -101,9 +101,9 @@ export default async function EditarInsumoPage({ params }: { params: Promise<{ i
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/inventario" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/inventario" className="text-sm">
           ← Inventario
-        </Link>
+        </Enlace>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-bold text-n-900">{insumo.nombre}</h1>
           {insumo.deleted_at && (

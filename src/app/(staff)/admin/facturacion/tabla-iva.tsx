@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { ETIQUETA_CLASE, ivaPorOmision } from "@/components/cfdi/textos";
 import { buscarClavesSat, guardarClaseIva } from "./actions";
+import { Alternar } from "@/components/ui/alternar";
 
 export type ClaseGuardada = { clase: string; tratamiento: "tasa" | "exento"; tasa: number; clave_prod_serv: string; clave_unidad: string; unidad: string };
 
@@ -104,16 +105,12 @@ function Fila({ clase, inicial, personalizada, editable }: { clase: string; inic
             <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto rounded-md border border-n-200 p-1 text-sm">
               {resultados.map((r) => (
                 <li key={r.clave}>
-                  <button
-                    type="button"
-                    className="w-full rounded px-2 py-1 text-left hover:bg-n-100"
-                    onClick={() => {
+                  <Alternar type="button" onClick={() => {
                       setClave(r.clave);
                       setResultados([]);
-                    }}
-                  >
+                    }} className="w-full rounded px-2 text-left hover:bg-n-100">
                     <span className="font-semibold">{r.clave}</span> · {r.descripcion}
-                  </button>
+                  </Alternar>
                 </li>
               ))}
             </ul>

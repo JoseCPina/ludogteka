@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -8,6 +7,7 @@ import { formatearFecha } from "@/lib/formato";
 import { Alert } from "@/components/ui/alert";
 import { ETIQUETA_ESTADO_TICKET } from "@/lib/soporte/textos";
 import { ResponderTicket } from "./responder";
+import { Enlace } from "@/components/ui/enlace";
 
 // Un ticket y su hilo con PeluDesk. La RLS decide si se ve: recepción, los
 // suyos; el admin, todos los del negocio. Abrirlo apaga el aviso de respuesta.
@@ -34,9 +34,9 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/ayuda" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/ayuda" className="text-sm">
           ← Ayuda
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">
           Ticket #{t.numero as number} · {t.asunto as string}
         </h1>

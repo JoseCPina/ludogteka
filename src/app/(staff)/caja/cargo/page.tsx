@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BuscadorClientes } from "@/components/buscador-clientes";
 import { cargarClientesBuscables } from "@/lib/clientes/buscables";
@@ -6,6 +5,7 @@ import { formatearTelefono } from "@/lib/telefono";
 import { CargoSueltoForm, type CargoCatalogo, type ConceptoVet, type ProductoCargo } from "./cargo-suelto-form";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 // QA S16 (N66): los conceptos del catálogo de Veterinaria que se cobran sueltos.
 const CONCEPTOS_VET = [
@@ -63,9 +63,9 @@ export default async function CargoSueltoPage({ searchParams }: { searchParams: 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/caja" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/caja" className="text-sm">
           ← Caja
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Cargo suelto</h1>
         <p className="mt-1 text-n-600">Algo que se cobra sin reserva de por medio. Se crea la cuenta y pasas directo a cobrarla.</p>
       </div>
@@ -80,9 +80,9 @@ export default async function CargoSueltoPage({ searchParams }: { searchParams: 
               <p className="font-bold text-n-900">{clienteElegido.nombre}</p>
               <p className="text-sm text-n-600">{formatearTelefono(clienteElegido.telefono)}</p>
             </div>
-            <Link href="/caja/cargo" className="text-sm font-semibold text-morado hover:underline">
+            <Enlace href="/caja/cargo" className="text-sm">
               Cambiar cliente
-            </Link>
+            </Enlace>
           </div>
           <CargoSueltoForm clienteId={clienteElegido.id} cargos={cargos} perros={clienteElegido.perros} conceptosVet={conceptosVet} productos={productos} />
         </div>

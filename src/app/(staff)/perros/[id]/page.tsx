@@ -2,7 +2,6 @@ import { puedeEditarFichaClinica } from "@/lib/veterinaria/ficha-permiso";
 import { cargarPendientesEstancia } from "@/lib/perros/pendientes-estancia";
 import { PendientesEstancia } from "../pendientes-estancia";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { describirBono } from "@/lib/bonos/descripcion";
 import { AjustarDiasPase } from "@/components/pases/ajustar-dias-pase";
 import { HistorialPase } from "@/components/pases/historial-pase";
@@ -41,6 +40,7 @@ import { puedeAbrirEnServidor } from "@/lib/auth/acceso-servidor";
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import { BajaMascota } from "../baja-mascota";
 import type { ResumenBaja } from "@/lib/perros/baja";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function PerroPage({
   params,
@@ -424,12 +424,9 @@ export default async function PerroPage({
       <div>
         {perro.cliente_id && cliente && (
           <SiPuedeAbrir href={`/clientes/${perro.cliente_id}`} sino={<p className="text-sm font-semibold text-n-600">De {cliente.nombre}</p>}>
-            <Link
-              href={`/clientes/${perro.cliente_id}`}
-              className="text-sm font-semibold text-morado hover:underline"
-            >
+            <Enlace href={`/clientes/${perro.cliente_id}`} className="text-sm">
               ← {cliente.nombre}
-            </Link>
+            </Enlace>
           </SiPuedeAbrir>
         )}
         <h1 className="mt-1 text-2xl font-bold text-n-900">{perro.nombre}</h1>
@@ -449,12 +446,9 @@ export default async function PerroPage({
                 href={`/reservas/series/${s.id}`}
                 sino={<p className="rounded-md border-l-4 border-morado bg-morado-suave px-4 py-2.5 text-sm font-semibold text-morado">{texto}</p>}
               >
-                <Link
-                  href={`/reservas/series/${s.id}`}
-                  className="flex items-center gap-2 rounded-md border-l-4 border-morado bg-morado-suave px-4 py-2.5 text-sm font-semibold text-morado hover:underline"
-                >
+                <Enlace href={`/reservas/series/${s.id}`} className="text-sm">
                   {texto}
-                </Link>
+                </Enlace>
               </SiPuedeAbrir>
             );
           })}
@@ -606,9 +600,9 @@ export default async function PerroPage({
               );
             })}
             <SiPuedeAbrir href="/recepcion/comprobantes">
-              <Link href="/recepcion/comprobantes" className="mt-1 block font-semibold text-morado hover:underline">
+              <Enlace href="/recepcion/comprobantes" className="mt-1 block">
                 Revisarlos en la bandeja de comprobantes →
-              </Link>
+              </Enlace>
             </SiPuedeAbrir>
           </Alert>
         )}
@@ -665,12 +659,9 @@ export default async function PerroPage({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-lg font-bold text-n-900">Day pass y mensualidad</h2>
             {!perro.fallecido && puede(`/guarderia/pases`) && (
-              <Link
-                href={`/guarderia/pases?cliente=${perro.cliente_id}&perro=${id}`}
-                className="text-sm font-semibold text-morado hover:underline"
-              >
+              <Enlace href={`/guarderia/pases?cliente=${perro.cliente_id}&perro=${id}`} className="text-sm">
                 Vender paquete para {perro.nombre}
-              </Link>
+              </Enlace>
             )}
           </div>
           {paquetes.length === 0 ? (

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { fechaParaAgendar } from "@/lib/estetica/proponer-hora";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
@@ -13,6 +12,8 @@ import { EnlaceOTexto } from "@/components/acceso-contexto";
 import { Chip } from "@/components/ui/chip";
 import { recordatoriosDeCitas } from "@/lib/recordatorios/de-citas";
 import { estadoDeRecordatorio } from "@/lib/recordatorios/estado";
+import { Enlace } from "@/components/ui/enlace";
+import { EnlacePestana } from "@/components/ui/enlace-pestana";
 
 export default async function AgendaVeterinaria({ searchParams }: { searchParams: Promise<{ vista?: string; fecha?: string; medico?: string; aviso?: string; hora?: string }> }) {
   const zona = await zonaActual();
@@ -60,25 +61,25 @@ export default async function AgendaVeterinaria({ searchParams }: { searchParams
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link href="/veterinaria" className="text-sm font-semibold text-morado hover:underline">← Veterinaria</Link>
+          <Enlace href="/veterinaria" className="text-sm">← Veterinaria</Enlace>
           <h1 className="mt-1 text-2xl font-bold text-n-900">Agenda clínica</h1>
           <p className="mt-1 text-n-600">{vista === "semana" ? `${formatearFechaCalendario(desde)} – ${formatearFechaCalendario(hasta)}` : formatearFechaCalendario(ancla)}</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Link href={enlace(vista, sumarDiasFecha(ancla, vista === "semana" ? -7 : -1))}><Button type="button" variante="secundario">← Anterior</Button></Link>
-          <Link href={enlace("dia", hoy)}><Button type="button" variante="secundario">Hoy</Button></Link>
-          <Link href={enlace(vista, sumarDiasFecha(ancla, vista === "semana" ? 7 : 1))}><Button type="button" variante="secundario">Siguiente →</Button></Link>
-          <Link href={enlace("dia", ancla)}><Button type="button" variante={vista === "dia" ? "primario" : "secundario"}>Día</Button></Link>
-          <Link href={enlace("semana", ancla)}><Button type="button" variante={vista === "semana" ? "primario" : "secundario"}>Semana</Button></Link>
-          <Link href={`/veterinaria/agenda/nueva?fecha=${fechaParaAgendar(vista, ancla, desde, hoy)}`} data-agendar-fecha={fechaParaAgendar(vista, ancla, desde, hoy)}><Button type="button">Agendar</Button></Link>
+          <Enlace href={enlace(vista, sumarDiasFecha(ancla, vista === "semana" ? -7 : -1))}>← Anterior</Enlace>
+          <Enlace href={enlace("dia", hoy)}>Hoy</Enlace>
+          <Enlace href={enlace(vista, sumarDiasFecha(ancla, vista === "semana" ? 7 : 1))}>Siguiente →</Enlace>
+          <EnlacePestana href={enlace("dia", ancla)} activo={vista === "dia"}>Día</EnlacePestana>
+          <EnlacePestana href={enlace("semana", ancla)} activo={vista === "semana"}>Semana</EnlacePestana>
+          <Enlace href={`/veterinaria/agenda/nueva?fecha=${fechaParaAgendar(vista, ancla, desde, hoy)}`} data-agendar-fecha={fechaParaAgendar(vista, ancla, desde, hoy)}>Agendar</Enlace>
         </div>
       </div>
 
       {medicos.length > 1 && (
         <nav className="flex flex-wrap gap-2 text-sm" aria-label="Filtrar por médico">
-          <Link href={`/veterinaria/agenda?vista=${vista}&fecha=${ancla}`} className={`rounded-full border px-3 py-1.5 font-semibold ${!filtroMedico ? "border-morado bg-morado-suave text-morado" : "border-n-200 bg-white text-n-700"}`}>Todos los médicos</Link>
+          <EnlacePestana href={`/veterinaria/agenda?vista=${vista}&fecha=${ancla}`} activo={!filtroMedico}>Todos los médicos</EnlacePestana>
           {medicos.map((m) => (
-            <Link key={m.id} href={`/veterinaria/agenda?vista=${vista}&fecha=${ancla}&medico=${m.id}`} className={`rounded-full border px-3 py-1.5 font-semibold ${filtroMedico === m.id ? "border-morado bg-morado-suave text-morado" : "border-n-200 bg-white text-n-700"}`}>{m.nombre}</Link>
+            <EnlacePestana key={m.id} href={`/veterinaria/agenda?vista=${vista}&fecha=${ancla}&medico=${m.id}`} activo={filtroMedico === m.id}>{m.nombre}</EnlacePestana>
           ))}
         </nav>
       )}
@@ -139,9 +140,9 @@ export default async function AgendaVeterinaria({ searchParams }: { searchParams
                                 </p>
                               )}
                               <div className="mt-1 flex flex-wrap gap-3 text-xs font-semibold">
-                                {c.tipo_clave === "teleconsulta" && <Link href={`/veterinaria/teleconsulta/${c.id}`} className="text-morado hover:underline">Teleconsulta (liga y sala)</Link>}
-                                {puedeLeer && <Link href={`/veterinaria/expediente/${c.perro_id}?fecha=${ancla}`} className="text-morado hover:underline">Expediente</Link>}
-                                <Link href={`/veterinaria/carnet/${c.perro_id}`} className="text-morado hover:underline">Carnet</Link>
+                                {c.tipo_clave === "teleconsulta" && <Enlace href={`/veterinaria/teleconsulta/${c.id}`}>Teleconsulta (liga y sala)</Enlace>}
+                                {puedeLeer && <Enlace href={`/veterinaria/expediente/${c.perro_id}?fecha=${ancla}`}>Expediente</Enlace>}
+                                <Enlace href={`/veterinaria/carnet/${c.perro_id}`}>Carnet</Enlace>
                               </div>
                               {!gris && duenoDe.get(c.perro_id) && (
                                 <div className="mt-2">

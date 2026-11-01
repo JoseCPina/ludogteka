@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { duracionTexto, type Tutorial } from "@/lib/tutoriales";
 import { videosDeArticulo } from "@/lib/ayuda/videos";
 import { ReproductorTutorial } from "./reproductor-tutorial";
+import { Enlace } from "@/components/ui/enlace";
 
 /** Los videos publicados de un artículo, en el orden del mapeo (src/lib/ayuda/videos.ts). Los que el negocio no puede ver ya vienen filtrados en `disponibles`. */
 export function videosParaArticulo(slug: string, disponibles: Tutorial[]): Tutorial[] {
@@ -22,7 +22,7 @@ export function VideosDelArticulo({ videos }: { videos: Tutorial[] }) {
       {videos.map((v) => (
         <div key={v.slug} className="flex flex-col gap-2" data-video-del-articulo={v.numero}>
           <p className="text-base font-bold text-n-900">
-            <Link href={`/ayuda/videos/${v.slug}`} className="hover:underline">{v.titulo}</Link>
+            <Enlace href={`/ayuda/videos/${v.slug}`}>{v.titulo}</Enlace>
             {v.duracion_s ? <>{" "}<span className="ml-1 text-sm font-normal text-n-600">· {duracionTexto(v.duracion_s)}</span></> : null}
           </p>
           <ReproductorTutorial t={v} />

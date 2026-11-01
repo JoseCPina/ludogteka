@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,7 @@ import { CorreccionesRecibo } from "./correcciones-recibo";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { dinero } from "@/lib/dinero";
+import { Enlace } from "@/components/ui/enlace";
 
 export type DetalleGrupo = {
   grupo_id: string;
@@ -59,9 +59,9 @@ export default async function ReciboJuntoPage({ params }: { params: Promise<{ gr
     return (
       <Alert variante="error" titulo="No encontramos este cobro">
         Puede que sea de otro negocio o que no tengas permiso para verlo.{" "}
-        <Link href="/caja" className="font-semibold underline">
+        <Enlace href="/caja" enTexto>
           Volver a Caja
-        </Link>
+        </Enlace>
       </Alert>
     );
   }
@@ -75,9 +75,9 @@ export default async function ReciboJuntoPage({ params }: { params: Promise<{ gr
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-4" data-recibo-junto>
       <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
-        <Link href="/caja" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/caja" className="text-sm">
           ← Caja
-        </Link>
+        </Enlace>
         <BotonImprimir />
       </div>
 
@@ -187,12 +187,8 @@ export default async function ReciboJuntoPage({ params }: { params: Promise<{ gr
       )}
 
       <div className="flex flex-wrap gap-2 print:hidden">
-        <Link href="/caja">
-          <Button type="button">Volver a Caja</Button>
-        </Link>
-        <Link href={`/clientes/${d.cliente_id}`}>
-          <Button type="button" variante="secundario">Ver expediente</Button>
-        </Link>
+        <Enlace href="/caja">Volver a Caja</Enlace>
+        <Enlace href={`/clientes/${d.cliente_id}`}>Ver expediente</Enlace>
       </div>
     </div>
   );

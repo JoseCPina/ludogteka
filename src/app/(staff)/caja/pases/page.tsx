@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { cargarOpcionesCobroManual } from "@/lib/cobro/opciones-manual";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -8,6 +7,7 @@ import { BonosCliente, type BonoCatalogo, type BonoFila } from "@/app/(staff)/cl
 import { BuscadorClientes } from "@/components/buscador-clientes";
 import { cargarClientesBuscables } from "@/lib/clientes/buscables";
 import { formatearTelefono } from "@/lib/telefono";
+import { Enlace } from "@/components/ui/enlace";
 
 // Vender day pass o mensualidad desde Caja, no solo desde Guardería.
 // Aquí se ofrecen TODOS los paquetes cotizables (no solo los que dan
@@ -65,9 +65,9 @@ export default async function PasesCajaPage({ searchParams }: { searchParams: Pr
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/caja" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/caja" className="text-sm">
           ← Caja
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Vender pase o mensualidad</h1>
         <p className="mt-1 text-n-600">Cada paquete es de un perro: solo ese perro lo usa (un dueño con dos perros compra dos), y la reserva lo toma sola.</p>{/* perro-ok: pases de guardería */}
       </div>
@@ -75,9 +75,9 @@ export default async function PasesCajaPage({ searchParams }: { searchParams: Pr
       {!hayTurno && (
         <Alert variante="advertencia" titulo="No hay turno de caja abierto">
           Puedes consultar saldos, pero para vender primero{" "}
-          <Link href="/caja/turno" className="font-semibold underline">
+          <Enlace href="/caja/turno" enTexto>
             abre el turno
-          </Link>
+          </Enlace>
           .
         </Alert>
       )}
@@ -97,9 +97,9 @@ export default async function PasesCajaPage({ searchParams }: { searchParams: Pr
               </p>
               <p className="text-sm text-n-600">{formatearTelefono(clienteElegido.telefono)}</p>
             </div>
-            <Link href="/caja/pases" className="text-sm font-semibold text-morado hover:underline">
+            <Enlace href="/caja/pases" className="text-sm">
               Cambiar cliente
-            </Link>
+            </Enlace>
           </div>
           <BonosCliente
             catalogo={catalogo}

@@ -1,5 +1,4 @@
 import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -12,6 +11,7 @@ import { SubnavEmpleados } from "../subnav";
 import { zonaActual } from "@/lib/negocio/actual";
 import { leerTodo } from "@/lib/supabase/paginar";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
+import { Enlace } from "@/components/ui/enlace";
 
 // La nómina del periodo: cuánto le toca a cada quien y si ya se le pagó.
 // El detalle y el "marcar pagado" están en la página de cada empleado.
@@ -67,9 +67,9 @@ export default async function NominaPage({ searchParams }: { searchParams: Promi
       {(porAprobar ?? 0) > 0 && (
         <p className="rounded-md border border-ambar bg-ambar-suave px-4 py-2 text-sm text-ambar-oscuro">
           Hay {porAprobar} {porAprobar === 1 ? "ausencia" : "ausencias"} por aprobar: mientras no se aprueben, esos días cuentan como falta.{" "}
-          <Link href="/empleados/ausencias" className="font-semibold underline">
+          <Enlace href="/empleados/ausencias" enTexto>
             Revisarlas
-          </Link>
+          </Enlace>
         </p>
       )}
 
@@ -96,9 +96,9 @@ export default async function NominaPage({ searchParams }: { searchParams: Promi
                 return (
                   <tr key={e.id} className="border-t border-n-200">
                     <td className="px-3 py-2">
-                      <Link href={`/empleados/nomina/${e.id}?desde=${desde}&hasta=${hasta}`} className="font-semibold text-morado hover:underline">
+                      <Enlace href={`/empleados/nomina/${e.id}?desde=${desde}&hasta=${hasta}`}>
                         {e.nombre}
-                      </Link>
+                      </Enlace>
                       <span className="block text-xs text-n-500">{e.puesto}</span>
                     </td>
                     {d ? (

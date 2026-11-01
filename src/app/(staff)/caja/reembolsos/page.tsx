@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
@@ -6,6 +5,7 @@ import { diasDesde } from "@/lib/antiguedad";
 import { zonaActual } from "@/lib/negocio/actual";
 import { BandejaReembolsos, type ReembolsoPorAtender } from "./bandeja-reembolsos";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 // Reembolsos de Mercado Pago que alguien tiene que ver (del más viejo al
 // más nuevo): hechos en el panel de Mercado Pago (ya están en caja, pero
@@ -44,9 +44,9 @@ export default async function ReembolsosPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/caja" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/caja" className="text-sm">
           ← Caja
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Reembolsos de Mercado Pago</h1>
         <p className="mt-1 text-n-600">
           Lo que se reembolsó fuera del mostrador, lo que falta de entrar a caja y lo que sigue esperando respuesta de Mercado Pago.

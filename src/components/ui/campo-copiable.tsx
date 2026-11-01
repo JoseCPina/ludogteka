@@ -76,7 +76,7 @@ export function CampoCopiable({
         />
         <Button
           type="button"
-          variante={estado === "copiado" ? "exito" : "secundario"}
+          variante="secundario"
           className="flex-none"
           onClick={copiar}
           aria-live="polite"

@@ -25,6 +25,7 @@ import {
   type ReceptorManual,
   type ResultadoFactura,
 } from "../facturacion-actions";
+import { Enlace } from "@/components/ui/enlace";
 
 export type FilaFactura = {
   id: string;
@@ -162,12 +163,8 @@ function Fila({ f, catalogos, puedeFacturar, puedeCancelar }: { f: FilaFactura; 
       <div className="flex flex-wrap gap-2">
         {(vigente || f.estado === "cancelacion_pendiente" || f.estado === "cancelada") && f.tiene_archivos && (
           <>
-            <a className="inline-flex" href={`/caja/facturas/${f.id}/pdf`}>
-              <Button type="button" variante="secundario">Descargar PDF</Button>
-            </a>
-            <a className="inline-flex" href={`/caja/facturas/${f.id}/xml`}>
-              <Button type="button" variante="secundario">Descargar XML</Button>
-            </a>
+            <Enlace href={`/caja/facturas/${f.id}/pdf`}>Descargar PDF</Enlace>
+            <Enlace href={`/caja/facturas/${f.id}/xml`}>Descargar XML</Enlace>
           </>
         )}
         {puedeFacturar && vigente && (
@@ -221,9 +218,9 @@ function Fila({ f, catalogos, puedeFacturar, puedeCancelar }: { f: FilaFactura; 
       {wa && (
         <div className="flex flex-col gap-2 rounded-md border border-n-200 bg-n-50 p-3">
           {wa.url && (
-            <a href={wa.url} target="_blank" rel="noopener noreferrer" className="w-fit text-sm font-semibold text-morado hover:underline">
+            <Enlace href={wa.url} target="_blank" rel="noopener noreferrer" className="w-fit text-sm">
               Abrir WhatsApp con el mensaje →
-            </a>
+            </Enlace>
           )}
           {wa.mensaje && <CampoCopiable valor={wa.mensaje} etiqueta="Mensaje para el cliente (con el link de descarga)" />}
         </div>

@@ -1,5 +1,4 @@
 import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -9,6 +8,7 @@ import { formatearFecha } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { Chip, type TonoChip } from "@/components/ui/chip";
 import { Importador } from "./importador";
+import { Enlace } from "@/components/ui/enlace";
 
 export const dynamic = "force-dynamic";
 
@@ -65,10 +65,7 @@ export default async function ImportarPage() {
               const e = ESTADO[i.estado] ?? { texto: i.estado, tono: "neutro" as TonoChip };
               return (
                 <li key={i.id}>
-                  <Link
-                    href={`/admin/importar/${i.id}`}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-borde bg-white p-3 hover:bg-n-100"
-                  >
+                  <Enlace href={`/admin/importar/${i.id}`} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-borde bg-white p-3 hover:bg-n-100" forma="bloque">
                     <span>
                       <strong className="text-n-900">{i.nombre_archivo}</strong>
                       <span className="block text-sm text-n-700">
@@ -77,7 +74,7 @@ export default async function ImportarPage() {
                       </span>
                     </span>
                     <Chip tono={e.tono}>{e.texto}</Chip>
-                  </Link>
+                  </Enlace>
                 </li>
               );
             })}

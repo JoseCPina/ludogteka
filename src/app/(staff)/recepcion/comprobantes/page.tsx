@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha, formatearFechaCalendario, hoyNegocio } from "@/lib/formato";
@@ -6,6 +5,7 @@ import { diasDesde } from "@/lib/antiguedad";
 import { BandejaComprobantes, type ComprobantePendiente } from "./bandeja-comprobantes";
 import { zonaActual } from "@/lib/negocio/actual";
 import { leerTodo, leerTodoPorIds } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 const BUCKET = "perros-archivos";
 
@@ -98,9 +98,9 @@ export default async function ComprobantesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/recepcion" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/recepcion" className="text-sm">
           ← Tablero del día
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Comprobantes por revisar</h1>
         <p className="mt-1 text-n-600">Revisa y confirma.</p>
       </div>

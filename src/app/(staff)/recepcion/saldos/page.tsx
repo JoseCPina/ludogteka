@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Antiguedad } from "@/components/ui/antiguedad";
 import { formatearFecha, hoyNegocio } from "@/lib/formato";
 import { haceCuanto } from "@/lib/antiguedad";
 import { cargarSaldosDeSalidas } from "@/lib/tablero/saldos-de-salidas";
 import { zonaActual } from "@/lib/negocio/actual";
+import { Enlace } from "@/components/ui/enlace";
 
 // Cuentas con saldo de perros que ya se fueron, de la más vieja a la más
 // nueva: la que lleva más tiempo sin cobrarse es la primera que se pierde.
@@ -19,9 +19,9 @@ export default async function SaldosPendientesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/recepcion" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/recepcion" className="text-sm">
           ← Tablero del día
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Saldos de perros que ya se fueron</h1>
         <p className="mt-1 text-n-600">
           Cuentas con algo por cobrar cuya estancia o cita ya terminó. Van de la más vieja a la más
@@ -52,12 +52,9 @@ export default async function SaldosPendientesPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="font-bold tabular-nums text-n-900">${s.saldo.toFixed(2)}</span>
-                  <Link
-                    href={`/caja/cobrar/${s.reservaId}`}
-                    className="inline-flex min-h-10 items-center rounded-md bg-morado px-4 text-sm font-semibold text-white hover:bg-morado-oscuro"
-                  >
+                  <Enlace href={`/caja/cobrar/${s.reservaId}`} className="text-sm">
                     Cobrar
-                  </Link>
+                  </Enlace>
                 </div>
               </li>
             ))}

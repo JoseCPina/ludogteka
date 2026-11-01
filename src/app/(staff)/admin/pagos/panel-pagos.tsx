@@ -21,6 +21,7 @@ import {
   terminalesMercadoPago,
   type TerminalMp,
 } from "./actions";
+import { Alternar } from "@/components/ui/alternar";
 
 export type EstadoConexion = {
   conectada: boolean;
@@ -108,20 +109,12 @@ export function PanelPagos({
         <h2 className="text-lg font-bold text-n-900">¿Con qué cobras en el mostrador?</h2>
         <div className="mt-4 grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Con qué cobras">
           {OPCIONES.map((o) => (
-            <button
-              key={o.valor}
-              type="button"
-              role="radio"
-              aria-checked={elegido === o.valor}
-              disabled={eligiendo.cargando}
-              onClick={() => elegir(o.valor)}
-              className={`flex min-h-20 flex-col items-start justify-center rounded-md border-[1.5px] px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado ${
+            <Alternar key={o.valor} type="button" role="radio" aria-checked={elegido === o.valor} onClick={() => elegir(o.valor)} className={`flex min-h-20 flex-col items-start justify-center rounded-md border-[1.5px] px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado ${
                 elegido === o.valor ? "border-morado bg-morado-suave" : "border-n-200 bg-white hover:border-morado/50"
-              }`}
-            >
+              }`} cargando={eligiendo.cargando}>
               <span className="font-semibold text-n-900">{NOMBRE_PROVEEDOR[o.valor]}</span>
               <span className="text-sm text-n-600">{o.texto}</span>
-            </button>
+            </Alternar>
           ))}
         </div>
       </section>

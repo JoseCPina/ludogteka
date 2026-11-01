@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
@@ -8,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Antiguedad } from "@/components/ui/antiguedad";
 import { consultarReembolsosDeOrden, marcarReembolsoRevisado } from "../cobro-integrado-actions";
+import { Enlace } from "@/components/ui/enlace";
 
 export type ReembolsoPorAtender = {
   id: string;
@@ -50,9 +50,7 @@ function Fila({ r }: { r: ReembolsoPorAtender }) {
         {r.detalleError ? ` · ${r.detalleError}` : ""}
       </p>
       <AccionesFormulario error={error} exito={exito}>
-        <Link href={`/caja/cobrar/${r.reservaId}`}>
-          <Button type="button" variante="secundario">Ver la cuenta</Button>
-        </Link>
+        <Enlace href={`/caja/cobrar/${r.reservaId}`}>Ver la cuenta</Enlace>
         {(r.estado === "solicitado" || !r.registrado) && (
           <Button
             type="button"

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,7 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { leerTodo } from "@/lib/supabase/paginar";
 import { SiPuedeAbrir } from "@/components/acceso-contexto";
+import { Enlace } from "@/components/ui/enlace";
 
 // Caja es el mostrador de cobro: cuentas abiertas, buscador, pases,
 // cargos sueltos y el cobro mismo (que sigue siendo el de la reserva,
@@ -74,29 +74,21 @@ export default async function CajaPage() {
           <h1 className="text-2xl font-bold text-n-900">Caja</h1>
           <p className="mt-1 text-n-600">
             Cobra, vende pases y aplica cargos desde aquí. El turno, sus movimientos y el arqueo están en{" "}
-            <Link href="/caja/turno" className="font-semibold text-morado hover:underline">
+            <Enlace href="/caja/turno" enTexto>
               Turno
-            </Link>
+            </Enlace>
             .
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/caja/venta">
-            <Button type="button">Venta rápida</Button>
-          </Link>
-          <Link href="/caja/turno">
-            <Button type="button" variante="secundario">Turno y arqueo</Button>
-          </Link>
+          <Enlace href="/caja/venta">Venta rápida</Enlace>
+          <Enlace href="/caja/turno">Turno y arqueo</Enlace>
           {sesion?.rol === "admin" && (
-            <Link href="/caja/conciliacion">
-              <Button type="button" variante="secundario">Conciliación</Button>
-            </Link>
+            <Enlace href="/caja/conciliacion">Conciliación</Enlace>
           )}
           {/* QA R54 (N145): la ayuda y los avisos dicen «Caja → Reembolsos»; antes solo se llegaba desde el aviso del tablero. */}
           <SiPuedeAbrir href="/caja/reembolsos">
-            <Link href="/caja/reembolsos">
-              <Button type="button" variante="secundario">Reembolsos</Button>
-            </Link>
+            <Enlace href="/caja/reembolsos">Reembolsos</Enlace>
           </SiPuedeAbrir>
         </div>
       </div>
@@ -113,9 +105,9 @@ export default async function CajaPage() {
       ) : (
         <Alert variante="advertencia" titulo="No hay turno de caja abierto">
           Puedes consultar cuentas y mandar links de pago, pero para cobrar en mostrador, con terminal o vender pases,{" "}
-          <Link href="/caja/turno" className="font-semibold underline">
+          <Enlace href="/caja/turno" enTexto>
             abre el turno
-          </Link>
+          </Enlace>
           .
         </Alert>
       )}

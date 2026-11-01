@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Alert } from "@/components/ui/alert";
+import { Enlace } from "@/components/ui/enlace";
 
 /**
  * El aviso de que hay perros cotizando con el grupo equivocado.
@@ -24,9 +24,9 @@ export function AvisoRazasSinCatalogar({ cuantos }: { cuantos: number }) {
     >
       Tienen la raza escrita a mano, de antes del catálogo, y sin raza del catálogo su baño se
       cobra como mestizo: por su talla y su pelaje. Un shih tzu ahí paga como cualquier mestizo.{" "}
-      <Link href="/perros/razas" className="font-semibold text-morado hover:underline">
+      <Enlace href="/perros/razas" enTexto>
         Asignarles su raza →
-      </Link>
+      </Enlace>
     </Alert>
   );
 }

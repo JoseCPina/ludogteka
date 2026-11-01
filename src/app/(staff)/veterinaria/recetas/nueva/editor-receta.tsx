@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
-import Link from "next/link";
 import { calcularCantidad, horasDeFrecuencia, indicacionesGeneradas, medicamentosDeTratamiento, numeroInicial, type Requisito } from "@/lib/veterinaria/recetas";
 import { emitirReceta } from "../actions";
+import { Enlace } from "@/components/ui/enlace";
 
 export type ProductoReceta = {
   id: string;
@@ -164,7 +164,7 @@ export function EditorReceta({ perroId, consultaId, productos, tratamiento = nul
             <div className="grid gap-3 sm:grid-cols-2">
               {emitibles.length === 0 ? (
                 <p data-sin-productos className="rounded-md border-l-4 border-ambar bg-ambar-suave px-3 py-2 text-sm text-n-800">
-                  No hay productos cargados. Dalos de alta en <Link href="/veterinaria/inventario" className="font-semibold text-morado hover:underline">Inventario</Link>, o escribe el medicamento a mano.
+                  No hay productos cargados. Dalos de alta en <Enlace href="/veterinaria/inventario" enTexto>Inventario</Enlace>, o escribe el medicamento a mano.
                 </p>
               ) : (
               <label className="block text-sm font-medium text-n-800">
@@ -203,31 +203,31 @@ export function EditorReceta({ perroId, consultaId, productos, tratamiento = nul
               <Field label="Tiempo de retiro (si aplica)" name={`ret-${i}`} value={f.tiempo_retiro} onChange={(e) => cambiar(i, { tiempo_retiro: e.target.value })} placeholder="28 días" />
             </div>
             {f.cantidad_manual && calc !== null && Number(String(f.cantidad_surtir).replace(",", ".")) !== calc && (
-              <button type="button" data-usar-calculada className="w-fit text-sm font-semibold text-morado hover:underline" onClick={() => cambiar(i, { cantidad_manual: false })}>
+              <Button type="button" data-usar-calculada onClick={() => cambiar(i, { cantidad_manual: false })} className="w-fit" variante="secundario" tamano="compacto">
                 Usar la cantidad calculada con dosis, frecuencia y días ({calc})
-              </button>
+              </Button>
             )}
             <Field label="Indicaciones (opcional)" name={`ind-${i}`} value={indicacionesDe(f)} onChange={(e) => cambiar(i, { indicaciones: e.target.value, indicaciones_manual: true })}
               ayuda={f.indicaciones_manual ? "Las escribiste tú." : "Se arman con la dosis, la frecuencia y los días. Puedes cambiarlas."} />
             {f.indicaciones_manual && f.indicaciones.trim() !== generadas(f).trim() && (
               <div data-indicaciones-desfasadas className="flex flex-col gap-1 rounded-md border-l-4 border-ambar bg-ambar-suave px-3 py-2 text-sm text-n-800">
                 <span>Las indicaciones ya no coinciden con la dosis, la frecuencia y los días de arriba.</span>
-                <button type="button" data-regenerar-indicaciones className="w-fit font-semibold text-morado hover:underline" onClick={() => cambiar(i, { indicaciones_manual: false })}>
+                <Button type="button" data-regenerar-indicaciones onClick={() => cambiar(i, { indicaciones_manual: false })} className="w-fit text-left" variante="secundario" tamano="compacto">
                   Regenerar las indicaciones{generadas(f) ? `: «${generadas(f)}»` : ""}
-                </button>
+                </Button>
               </div>
             )}
             {filas.length > 1 && (
-              <button type="button" className="w-fit text-sm font-semibold text-coral-oscuro hover:underline" onClick={() => setFilas((x) => x.filter((_, j) => j !== i))}>
+              <Button type="button" onClick={() => setFilas((x) => x.filter((_, j) => j !== i))} className="w-fit" variante="secundario" tamano="compacto">
                 Quitar este medicamento
-              </button>
+              </Button>
             )}
           </fieldset>
         );
       })}
-      <button type="button" className="w-fit text-sm font-semibold text-morado hover:underline" onClick={() => setFilas((x) => [...x, vacia()])}>
+      <Button type="button" onClick={() => setFilas((x) => [...x, vacia()])} className="w-fit" variante="secundario" tamano="compacto">
         + Otro medicamento
-      </button>
+      </Button>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Diagnóstico o motivo (opcional)" name="diagnostico" value={diagnostico} onChange={(e) => setDiagnostico(e.target.value)} />
         <Textarea label="Observaciones (opcional)" name="observaciones" rows={2} value={observaciones} onChange={(e) => setObservaciones(e.target.value)} />

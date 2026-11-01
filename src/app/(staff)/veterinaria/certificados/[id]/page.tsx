@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
@@ -10,6 +9,7 @@ import { EncabezadoNegocio } from "@/components/marca/encabezado-negocio";
 import { formatearFechaCalendario } from "@/lib/formato";
 import { ETIQUETA_MOTIVO_CERTIFICADO, TIPOS_DESPARASITACION } from "@/lib/veterinaria/carnet";
 import { anularCertificado } from "../../carnet/actions";
+import { Enlace } from "@/components/ui/enlace";
 
 type Snapshot = {
   establecimiento: { nombre: string; ciudad: string | null; aviso_funcionamiento: string | null; aviso_fecha: string | null; mvra: string | null; mvra_cedula: string | null };
@@ -35,7 +35,7 @@ export default async function Certificado({ params }: { params: Promise<{ id: st
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
-        <Link href="/veterinaria/certificados" className="text-sm font-semibold text-morado hover:underline">← Certificados</Link>
+        <Enlace href="/veterinaria/certificados" className="text-sm">← Certificados</Enlace>
         <BotonImprimirPagina />
       </div>
       {anulado && (

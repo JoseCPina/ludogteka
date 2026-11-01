@@ -1,9 +1,9 @@
-import Link from "next/link";
 
+import { Enlace } from "@/components/ui/enlace";
 export function VolverBienvenida() {
   return (
-    <Link href="/bienvenida" className="text-sm font-semibold text-morado hover:underline">
+    <Enlace href="/bienvenida" className="text-sm">
       ← Bienvenida
-    </Link>
+    </Enlace>
   );
 }

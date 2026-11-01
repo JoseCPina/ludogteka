@@ -1,7 +1,6 @@
 import { textoSalidaAnticipada, type CotizacionSalida } from "@/lib/reservas/salida-anticipada";
 import { cuentaPorCobrar } from "@/lib/caja/cuenta-por-cobrar";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { AlertaCriticaBanner } from "@/app/(staff)/perros/alerta-critica-banner";
 import { formatearFechaCalendario, formatearFecha, hoyNegocio } from "@/lib/formato";
@@ -14,6 +13,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 import { cuentasPorEstancia } from "@/lib/cuentas/cuenta-estancia";
 import { EstadoVivo } from "@/components/concurrencia/estado-vivo";
 import { ESTILO_ESTADO, ETIQUETA_ESTADO } from "@/lib/estados/insignias";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function CheckoutEstanciaPage({
   params,
@@ -165,12 +165,9 @@ export default async function CheckoutEstanciaPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <Link
-        href={modulo ? `${modulo.base}/checkout` : "/reservas"}
-        className="text-sm font-semibold text-morado hover:underline"
-      >
+      <Enlace href={modulo ? `${modulo.base}/checkout` : "/reservas"} className="text-sm">
         ← Check-out{modulo ? ` de ${modulo.etiqueta.toLowerCase()}` : ""}
-      </Link>
+      </Enlace>
 
       <div>
         {/* QA R59 (N146): el estado de la estancia junto al título, con la insignia del calendario. */}
@@ -221,9 +218,9 @@ export default async function CheckoutEstanciaPage({
                 </p>
               )}
               {/* QA S27: al terminar el check-out, el siguiente paso es cobrar la cuenta (N129: si ya está pagada, ver sus cobros). */}
-              <Link href={`/caja/cobrar/${estancia.reserva_id}`} data-cobrar-cuenta className="mt-3 inline-flex min-h-11 items-center rounded-md bg-morado px-4 text-sm font-semibold text-white hover:bg-morado-oscuro">
+              <Enlace href={`/caja/cobrar/${estancia.reserva_id}`} data-cobrar-cuenta className="mt-3 text-sm">
                 {cuentaPorCobrar(saldoCuenta) ? "Cobrar la cuenta" : "Ver cobros"}
-              </Link>
+              </Enlace>
               {(pertenencias ?? []).length > 0 && (
                 <div className="mt-3" data-pertenencias-salida>
                   <p className="text-sm font-semibold text-n-800">Pertenencias</p>

@@ -1,9 +1,9 @@
 import { tienePermiso } from "@/lib/auth/permisos";
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function ProveedoresPage({
   searchParams,
@@ -24,15 +24,13 @@ export default async function ProveedoresPage({
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link href="/inventario" className="text-sm font-semibold text-morado hover:underline">
+          <Enlace href="/inventario" className="text-sm">
             ← Inventario
-          </Link>
+          </Enlace>
           <h1 className="mt-1 text-2xl font-bold text-n-900">Proveedores</h1>
         </div>
         {esAdmin && (
-          <Link href="/inventario/proveedores/nuevo">
-            <Button type="button">Nuevo proveedor</Button>
-          </Link>
+          <Enlace href="/inventario/proveedores/nuevo">Nuevo proveedor</Enlace>
         )}
       </div>
 
@@ -50,18 +48,15 @@ export default async function ProveedoresPage({
         <ul className="flex flex-col gap-2">
           {proveedores.map((p) => (
             <li key={p.id}>
-              <Link
-                href={`/inventario/proveedores/${p.id}`}
-                className={`flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-4 py-3 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave ${
+              <Enlace href={`/inventario/proveedores/${p.id}`} className={`flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-4 py-3 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave ${
                   p.deleted_at ? "opacity-60" : ""
-                }`}
-              >
+                }`} forma="bloque">
                 <div>
                   <span className="font-semibold text-n-900">{p.nombre}</span>
                   {p.contacto_nombre && <span className="ml-2 text-sm text-n-600">{p.contacto_nombre}</span>}
                 </div>
                 <span className="text-sm text-n-600">{p.telefono ?? "—"}</span>
-              </Link>
+              </Enlace>
             </li>
           ))}
         </ul>

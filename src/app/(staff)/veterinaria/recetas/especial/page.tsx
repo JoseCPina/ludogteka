@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
 import { cargarProductosConLotes } from "@/lib/veterinaria/lotes";
@@ -18,6 +17,7 @@ import { AvisoErrorClinico } from "../../aviso-error";
 import { archivarRecetario, cancelarRecetario, registrarRecetario } from "../actions";
 import { SurtirDocumento } from "../surtir";
 import { cerrarFrase } from "@/lib/texto/frases";
+import { Enlace } from "@/components/ui/enlace";
 
 // Estupefacientes (art. 234) y psicotrópicos de la fracción II (art. 245): se recetan en el recetario
 // especial con código de barras, tratamientos de hasta 30 días (regla editable por la plataforma).
@@ -51,10 +51,10 @@ export default async function RecetarioEspecial({ searchParams }: { searchParams
           <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
             {candidatas.map((f) => (
               <li key={f.id}>
-                <Link href={`/veterinaria/recetas/especial?nuevo=1&perro=${f.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50">
+                <Enlace href={`/veterinaria/recetas/especial?nuevo=1&perro=${f.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
                   <span className="font-semibold text-n-900">{f.nombre} <span className="font-normal text-n-500">· {etiquetaEspecie(f.especie)}</span></span>
                   <span className="text-sm text-n-600">{f.dueno}</span>
-                </Link>
+                </Enlace>
               </li>
             ))}
           </ul>
@@ -91,11 +91,11 @@ export default async function RecetarioEspecial({ searchParams }: { searchParams
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <Link href="/veterinaria" className="text-sm font-semibold text-morado hover:underline">← Veterinaria</Link>
+          <Enlace href="/veterinaria" className="text-sm">← Veterinaria</Enlace>
           <h1 className="mt-1 text-2xl font-bold text-n-900">Recetario especial</h1>
           <p className="mt-1 max-w-3xl text-n-600">Estupefacientes y psicotrópicos de la fracción II: se recetan en el recetario especial con código de barras, con tratamientos de hasta {tope} días. Aquí registras el folio y surtes contra él; el establecimiento que surte lleva su propio libro.</p>
         </div>
-        {puede && !nuevo && <Link href="/veterinaria/recetas/especial?nuevo=1"><Button type="button">Registrar un folio</Button></Link>}
+        {puede && !nuevo && <Enlace href="/veterinaria/recetas/especial?nuevo=1">Registrar un folio</Enlace>}
       </div>
       <NavRecetas activa="especial" />
       {formulario}
@@ -141,9 +141,9 @@ export default async function RecetarioEspecial({ searchParams }: { searchParams
           })}
         </ul>
       )}
-      <Link href={archivados === "1" ? "/veterinaria/recetas/especial" : "/veterinaria/recetas/especial?archivados=1"} className="w-fit text-sm font-semibold text-morado hover:underline">
+      <Enlace href={archivados === "1" ? "/veterinaria/recetas/especial" : "/veterinaria/recetas/especial?archivados=1"} className="w-fit text-sm">
         {archivados === "1" ? "Ocultar archivados" : "Ver también archivados"}
-      </Link>
+      </Enlace>
     </div>
   );
 }

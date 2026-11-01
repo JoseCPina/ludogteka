@@ -1,11 +1,11 @@
 import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Field } from "@/components/ui/field";
 import { BotonAccion, Desplegable, FormularioAccion } from "@/components/formulario-accion";
 import { crearCategoria, editarCategoria, quitarCategoria } from "../gastos-actions";
+import { Enlace } from "@/components/ui/enlace";
 
 // Categorías de gasto: solo admin (la base también lo aplica). Quitar una
 // no toca los gastos que ya la usan.
@@ -18,9 +18,9 @@ export default async function CategoriasGastoPage() {
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <div>
-        <Link href="/gastos" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/gastos" className="text-sm">
           ← Gastos
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Categorías de gasto</h1>
       </div>
       <ul className="divide-y divide-n-200 rounded-lg border border-n-200 bg-white">

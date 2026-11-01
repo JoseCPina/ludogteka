@@ -1,5 +1,4 @@
 import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -9,6 +8,7 @@ import { Select } from "@/components/ui/select";
 import { BotonAccion, Desplegable, FormularioAccion } from "@/components/formulario-accion";
 import { formatearFechaCalendario } from "@/lib/formato";
 import { asignarFolios, guardarMedico, quitarMedico } from "./actions";
+import { Enlace } from "@/components/ui/enlace";
 
 type Bloque = {
   bloque_id: string;
@@ -46,9 +46,9 @@ export default async function MedicosPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/veterinaria" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/veterinaria" className="text-sm">
           ← Veterinaria
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Médicos veterinarios</h1>
         <p className="mt-1 max-w-3xl text-n-600">
           El médico veterinario es el único que firmará expediente y recetas en las siguientes fases. Aquí designas a quién del personal lo es, con su cédula y su registro en el SITPV, y le asignas sus bloques de folios de receta.

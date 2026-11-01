@@ -1,7 +1,6 @@
 "use client";
 
 import { useContext, useState } from "react";
-import Link from "next/link";
 import QRCode from "qrcode";
 import { useEspera } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
@@ -24,6 +23,7 @@ import {
 import type { MedicoOpcion, ProductoConLotes } from "@/lib/veterinaria/lotes";
 import { avisarAplicacionConsulta, type AplicacionConsulta } from "@/lib/veterinaria/aplicacion-consulta";
 import { vacunasSugeridas } from "@/lib/perros/vocabulario";
+import { Enlace } from "@/components/ui/enlace";
 
 export type RequisitoOpcion = { id: string; etiqueta: string };
 
@@ -118,9 +118,9 @@ function AvisoDuplicado({ mensaje, perroId, alCancelar }: { mensaje: string; per
         <Button type="button" variante="secundario" onClick={() => { alCancelar(); cerrar?.("No se registró: ya estaba en el carnet."); }} data-cancelar-duplicado>
           Cancelar
         </Button>
-        <Link href={`/veterinaria/carnet/${perroId}`} className="inline-flex min-h-11 items-center rounded-md bg-morado px-4 text-sm font-semibold text-white" data-ver-carnet>
+        <Enlace href={`/veterinaria/carnet/${perroId}`} className="text-sm" data-ver-carnet>
           Ver en el carnet
-        </Link>
+        </Enlace>
       </div>
     </div>
   );
@@ -200,9 +200,9 @@ export function AnularRegistro({ perroId, tipo, id }: { perroId: string; tipo: "
   const [abierto, setAbierto] = useState(false);
   if (!abierto) {
     return (
-      <button type="button" className="text-sm font-semibold text-coral-oscuro hover:underline" onClick={() => setAbierto(true)}>
+      <Button type="button" onClick={() => setAbierto(true)} variante="secundario" tamano="compacto">
         Anular
-      </button>
+      </Button>
     );
   }
   return (

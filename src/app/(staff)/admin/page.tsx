@@ -16,13 +16,13 @@ import { ExtrasTablero } from "@/components/extras/extras-tablero";
 import { RecordatorioPago } from "./recordatorio-pago";
 import { AvanceWeb } from "@/components/avance-web";
 import { VideosInicio } from "@/components/ayuda/videos-inicio";
-import { EnlacePrecarga } from "@/components/ui/enlace-precarga";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { ListaPersonal, type PersonaStaff } from "./lista-personal";
 import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { resumenDeCobro } from "@/lib/pagos/conexion";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 // Admin ve todo. Una persona de recepción con permisos extra llega aquí
 // solo con las secciones que le tocan (el middleware la deja entrar con
@@ -108,9 +108,9 @@ export default async function AdminPage() {
               Dale a una persona de recepción permisos extra para que te ayude a administrar.
             </p>
           </div>
-          <EnlacePrecarga href="/admin/permisos" className="font-semibold text-morado hover:underline">
+          <Enlace href="/admin/permisos">
             Administrar permisos →
-          </EnlacePrecarga>
+          </Enlace>
         </section>
       )}
 
@@ -122,9 +122,9 @@ export default async function AdminPage() {
               Pasa tu lista de un Excel o CSV al sistema, con vista previa y con opción de deshacer.
             </p>
           </div>
-          <EnlacePrecarga href="/admin/importar" className="font-semibold text-morado hover:underline">
+          <Enlace href="/admin/importar">
             Importar →
-          </EnlacePrecarga>
+          </Enlace>
         </section>
       )}
 
@@ -197,9 +197,9 @@ export default async function AdminPage() {
                   : cobroIntegrado.motivo}
             </p>
           </div>
-          <EnlacePrecarga href="/admin/pagos" className="font-semibold text-morado underline underline-offset-4">
+          <Enlace href="/admin/pagos" enTexto>
             Configurar
-          </EnlacePrecarga>
+          </Enlace>
         </section>
       )}
 

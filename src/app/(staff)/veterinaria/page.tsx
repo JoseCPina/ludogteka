@@ -1,9 +1,9 @@
-import { EnlacePrecarga } from "@/components/ui/enlace-precarga";
 import { SiPuedeAbrir } from "@/components/acceso-contexto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { formatearFechaCalendario } from "@/lib/formato";
+import { Enlace } from "@/components/ui/enlace";
 
 type Alertas = { caducados?: number; por_caducar?: number; bajo_minimo?: number };
 type Permiso = { id: string; tipo: string; vencimiento: string; dias: number; estado: string };
@@ -19,9 +19,9 @@ function Tarjeta({ href, titulo, children }: { href?: string; titulo: string; ch
   // Una tarjeta que lleva a una pantalla que esta persona no abre no se muestra (QA N127).
   return href ? (
     <SiPuedeAbrir href={href}>
-      <EnlacePrecarga href={href} className={`${base} hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave`}>
+      <Enlace href={href} className={`${base} hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave`} forma="bloque">
         {cuerpo}
-      </EnlacePrecarga>
+      </Enlace>
     </SiPuedeAbrir>
   ) : (
     <div className={`${base} border-dashed bg-n-50`}>{cuerpo}</div>

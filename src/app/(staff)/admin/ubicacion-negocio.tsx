@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { Field } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { guardarUbicacion } from "./ubicacion-actions";
+import { Enlace } from "@/components/ui/enlace";
 
 /**
  * Con qué se cotiza la recolección: la dirección del negocio (la de Perfil, aquí solo se ubica en el mapa), el
@@ -57,9 +57,9 @@ export function UbicacionNegocio({
         <p className="text-xs text-n-600">
           {direccion ? (conCoordenadas.negocio ? "Ubicada en el mapa. " : "Todavía sin ubicar en el mapa. ") : ""}
           Es la misma de tu perfil y tu página web.{" "}
-          <Link href="/admin/perfil" className="font-semibold text-morado underline" data-cambiar-en-perfil="">
+          <Enlace href="/admin/perfil" data-cambiar-en-perfil="" enTexto>
             Cambiar en Perfil
-          </Link>
+          </Enlace>
         </p>
       </div>
       <Field

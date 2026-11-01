@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -12,6 +11,7 @@ import { guardarRegulatorioProducto } from "../../recetas/actions";
 import { ProductoForm } from "../producto-form";
 import { LotesProducto, type LoteFila } from "./lotes-producto";
 import { AVISO_PRODUCTO_CONTROLADO, etiquetaGrupo, etiquetaLgs, type PrincipioActivo } from "../../comun";
+import { Enlace } from "@/components/ui/enlace";
 
 type Unidad = { etiqueta: string; equivalencia_en_base: number } | null;
 
@@ -85,9 +85,9 @@ export default async function ProductoClinicoPage({ params }: { params: Promise<
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/veterinaria/inventario" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/veterinaria/inventario" className="text-sm">
           ← Inventario clínico
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">{insumo.nombre as string}</h1>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
           <span className="font-semibold tabular-nums text-n-900">

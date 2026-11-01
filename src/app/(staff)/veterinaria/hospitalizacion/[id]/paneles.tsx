@@ -70,10 +70,10 @@ export function AccionesDosis({ hospId, dosisId, insumoId, productos, espejos = 
   if (!modo) {
     return (
       <div className="flex flex-wrap gap-2">
-        <Button type="button" className="min-h-10 px-3 text-sm" onClick={() => setModo("aplicar")}>
+        <Button type="button" className="px-3 text-sm" tamano="compacto" onClick={() => setModo("aplicar")}>
           Aplicar
         </Button>
-        <Button type="button" variante="secundario" className="min-h-10 px-3 text-sm" onClick={() => setModo("omitir")}>
+        <Button type="button" variante="secundario" className="px-3 text-sm" tamano="compacto" onClick={() => setModo("omitir")}>
           No se aplicó
         </Button>
       </div>
@@ -126,9 +126,9 @@ export function SuspenderMedicacion({ hospId, medicacionId }: { hospId: string; 
   const [abierto, setAbierto] = useState(false);
   if (!abierto) {
     return (
-      <button type="button" className="text-sm font-semibold text-coral-oscuro hover:underline" onClick={() => setAbierto(true)}>
+      <Button type="button" onClick={() => setAbierto(true)} variante="secundario" tamano="compacto">
         Suspender esta medicación
-      </button>
+      </Button>
     );
   }
   return (
@@ -179,7 +179,7 @@ export function FormularioCargo({ hospId }: { hospId: string }) {
 
 export function FormularioAlta({ hospId }: { hospId: string }) {
   return (
-    <FormularioAccion accion={(fd) => darAlta(hospId, fd)} textoBoton="Dar de alta" variante="exito" className={cuadro}>
+    <FormularioAccion accion={(fd) => darAlta(hospId, fd)} textoBoton="Dar de alta" variante="primario" className={cuadro}>
       <Textarea label="Resumen del alta" name="resumen" rows={4} required ayuda="Cómo sale la mascota, tratamiento a seguir en casa, cuándo volver. Al dar el alta se completan los días, se cierran las dosis pendientes y el depósito se aplica a la cuenta." />
     </FormularioAccion>
   );

@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import Link from "next/link";
 import { useAccionConTope, useEspera } from "@/hooks/use-espera";
 import { useAbrirEnlace } from "@/hooks/use-abrir-enlace";
 import { AbrirWhatsApp } from "@/components/ui/abrir-whatsapp";
@@ -16,6 +15,7 @@ import { camposPorCapturar, type PendienteEstancia } from "@/lib/perros/pendient
 import { completarParaEstancia, type EstadoPerroForm } from "./actions";
 import type { CategoriaOpcion } from "./perro-form";
 import { usePuedeAbrir } from "@/components/acceso-contexto";
+import { Enlace } from "@/components/ui/enlace";
 
 export type CatalogosPerro = { razas: RazaOpcion[]; tamanos: CategoriaOpcion[]; pelajes: CategoriaOpcion[] };
 
@@ -105,9 +105,9 @@ export function PendientesEstancia({
       <li className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <span>{p.etiqueta}</span>
         {accion && (
-          <Link href={accion.href} className="text-sm font-semibold text-morado hover:underline">
+          <Enlace href={accion.href} className="text-sm">
             {accion.texto} →
-          </Link>
+          </Enlace>
         )}
       </li>
     );

@@ -10,6 +10,7 @@ import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
 import { ESPECIES, ETIQUETA_ESPECIE, type Especie } from "@/lib/perros/ficha-clinica";
 import { guardarFichaClinica, type EstadoFichaClinica } from "./ficha-clinica-actions";
+import { Enlace } from "@/components/ui/enlace";
 
 const ESTADO_INICIAL: EstadoFichaClinica = { error: null };
 
@@ -96,9 +97,9 @@ export function FichaClinica({
           ) : (
             "Sin registrar"
           )}{" "}
-          <a href="#peso" className="text-sm font-semibold text-morado hover:underline">
+          <Enlace href="#peso" className="text-sm">
             Ver historial
-          </a>
+          </Enlace>
         </Dato>
         <Dato etiqueta="Alergias">
           {alergias.length === 0 ? (
@@ -106,9 +107,9 @@ export function FichaClinica({
           ) : (
             <>
               {alergias.map((a) => a.alergeno + (a.gravedad === "grave" ? " (grave)" : "")).join(", ")}{" "}
-              <a href="#alergias" className="text-sm font-semibold text-morado hover:underline">
+              <Enlace href="#alergias" className="text-sm">
                 Ver detalle
-              </a>
+              </Enlace>
             </>
           )}
         </Dato>

@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { EnlaceOTexto } from "@/components/acceso-contexto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { Enlace } from "@/components/ui/enlace";
 
 type Paso = { clave: string; titulo: string; listo: boolean; href: string };
 export type AvanceWebDatos = {
@@ -32,9 +32,9 @@ export async function AvanceWeb({ compacto = false }: { compacto?: boolean }) {
           <h2 className="font-bold text-n-900">Tu página web está lista</h2>
           <p className="text-sm text-n-700">Viene incluida en tu plan y se arma sola con tu perfil, tus servicios y tus precios.</p>
         </div>
-        <Link href="/" target="_blank" className="font-semibold text-morado hover:underline">
+        <Enlace href="/" target="_blank">
           Ver tu página →
-        </Link>
+        </Enlace>
       </section>
     );
   }

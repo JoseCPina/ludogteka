@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { Alert } from "@/components/ui/alert";
 
 import type { ServicioConHuecos } from "@/lib/tarifas/huecos";
+import { Enlace } from "@/components/ui/enlace";
 
 /**
  * Precios sin capturar, en el panel de admin.
@@ -35,12 +35,9 @@ export function TarifasFaltantes({ servicios }: { servicios: ServicioConHuecos[]
       <ul className="flex flex-col gap-1">
         {servicios.map((s) => (
           <li key={s.id}>
-            <Link
-              href={`/servicios/${s.id}/tarifas`}
-              className="font-semibold text-morado hover:underline"
-            >
+            <Enlace href={`/servicios/${s.id}/tarifas`}>
               {s.nombre}
-            </Link>{" "}
+            </Enlace>{" "}
             — {s.faltan} {s.faltan === 1 ? "celda sin precio" : "celdas sin precio"}
           </li>
         ))}

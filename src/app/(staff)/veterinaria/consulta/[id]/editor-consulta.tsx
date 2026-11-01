@@ -20,6 +20,7 @@ import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 import type { Conflicto } from "@/lib/concurrencia/tipos";
 import { agregarDiagnosticoNegocio, buscarDiagnosticos, descartarBorrador, firmarConsulta, guardarBorrador, type DatosBorrador } from "../../expediente/actions";
 import { EVENTO_APLICACION_CONSULTA, type AplicacionConsulta } from "@/lib/veterinaria/aplicacion-consulta";
+import { Alternar } from "@/components/ui/alternar";
 
 type Valores = Record<string, string>;
 const NUMERICOS = ["peso_kg", "temperatura_c", "frecuencia_cardiaca", "frecuencia_respiratoria", "condicion_corporal", "tllc_seg"] as const;
@@ -435,16 +436,12 @@ function SelectorDiagnosticos({ valor, onCambio, especie }: { valor: Diagnostico
                 value={d.nota}
                 onChange={(e) => onCambio(valor.map((x, j) => (j === i ? { ...x, nota: e.target.value } : x)))}
               />
-              <button
-                type="button"
-                className="text-sm font-semibold text-morado hover:underline"
-                onClick={() => onCambio(valor.map((x, j) => (j === i ? { ...x, tipo: x.tipo === "definitivo" ? "presuntivo" : "definitivo" } : x)))}
-              >
+              <Button type="button" onClick={() => onCambio(valor.map((x, j) => (j === i ? { ...x, tipo: x.tipo === "definitivo" ? "presuntivo" : "definitivo" } : x)))} variante="secundario" tamano="compacto">
                 Pasar a {d.tipo === "definitivo" ? "presuntivo" : "definitivo"}
-              </button>
-              <button type="button" className="text-sm font-semibold text-coral-oscuro hover:underline" onClick={() => onCambio(valor.filter((_, j) => j !== i))}>
+              </Button>
+              <Button type="button" onClick={() => onCambio(valor.filter((_, j) => j !== i))} variante="secundario" tamano="compacto">
                 Quitar
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
@@ -461,10 +458,10 @@ function SelectorDiagnosticos({ valor, onCambio, especie }: { valor: Diagnostico
         <ul className="divide-y divide-n-200 overflow-hidden rounded-md border border-n-200 bg-white">
           {resultados.map((r) => (
             <li key={`${r.origen}-${r.id}`}>
-              <button type="button" className="flex w-full flex-wrap items-center justify-between gap-2 px-3 py-2 text-left hover:bg-n-50" onClick={() => agregar({ ref_id: r.id, origen: r.origen, nombre: r.nombre, tipo, nota: "" })}>
+              <Alternar type="button" className="flex w-full flex-wrap items-center justify-between gap-2 px-3 text-left hover:bg-n-50" onClick={() => agregar({ ref_id: r.id, origen: r.origen, nombre: r.nombre, tipo, nota: "" })}>
                 <span className="font-semibold text-n-900">{r.nombre}</span>
                 <span className="text-xs text-n-500">{r.categoria}{r.origen === "negocio" ? " · de tu negocio" : ""}</span>
-              </button>
+              </Alternar>
             </li>
           ))}
         </ul>

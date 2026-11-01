@@ -1,5 +1,4 @@
 import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -14,6 +13,7 @@ import { FormularioAccion } from "@/components/formulario-accion";
 import { ListaPagos, VistaDesglose } from "../../nomina-vistas";
 import { registrarPago } from "../../nomina-actions";
 import { zonaActual } from "@/lib/negocio/actual";
+import { Enlace } from "@/components/ui/enlace";
 
 // El periodo de un empleado: desglose visible, y admin (o quien tenga
 // «Nómina») lo marca pagado con método y fecha. Lo que se guarda es el
@@ -49,15 +49,15 @@ export default async function NominaEmpleadoPage({
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <div>
-        <Link href={`/empleados/nomina?desde=${desde}&hasta=${hasta}`} className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href={`/empleados/nomina?desde=${desde}&hasta=${hasta}`} className="text-sm">
           ← Nómina
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">{empleado.nombre}</h1>
         <p className="mt-1 text-n-600">
           {empleado.puesto} ·{" "}
-          <Link href={`/empleados/${empleadoId}`} className="font-semibold text-morado hover:underline">
+          <Enlace href={`/empleados/${empleadoId}`}>
             Ver ficha
-          </Link>
+          </Enlace>
         </p>
       </div>
 
@@ -78,9 +78,9 @@ export default async function NominaEmpleadoPage({
           {hasta > hoy ? (
             <Alert variante="advertencia" titulo="Este periodo todavía no termina">
               Es una proyección: los días que faltan todavía no tienen asistencia. Se paga cuando termine, o{" "}
-              <Link href={`/empleados/nomina/${empleadoId}?desde=${desde}&hasta=${hoy}`} className="font-semibold underline">
+              <Enlace href={`/empleados/nomina/${empleadoId}?desde=${desde}&hasta=${hoy}`} enTexto>
                 calcula hasta hoy
-              </Link>
+              </Enlace>
               .
             </Alert>
           ) : yaPagado ? (
@@ -92,7 +92,7 @@ export default async function NominaEmpleadoPage({
           ) : (
             <div className="rounded-lg border border-n-200 bg-white p-4">
               <h3 className="mb-3 font-bold text-n-900">Marcar pagado: {moneda(d.total)}</h3>
-              <FormularioAccion accion={registrarPago.bind(null, empleadoId, desde, hasta)} textoBoton="Marcar pagado" variante="exito" textoExito="Pago registrado">
+              <FormularioAccion accion={registrarPago.bind(null, empleadoId, desde, hasta)} textoBoton="Marcar pagado" variante="primario" textoExito="Pago registrado">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Select label="Método" name="metodo" defaultValue="efectivo">
                     {Object.entries(METODOS_PAGO).map(([k, v]) => (

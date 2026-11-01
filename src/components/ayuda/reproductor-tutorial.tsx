@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { urlArchivoTutorial, type Tutorial } from "@/lib/tutoriales";
+import { Alternar } from "@/components/ui/alternar";
 
 const VELOCIDADES = [0.75, 1, 1.25, 1.5, 2];
 
@@ -51,18 +52,12 @@ export function ReproductorTutorial({ t }: { t: Pick<Tutorial, "titulo" | "video
       <div className="flex flex-wrap items-center gap-2 text-sm" role="group" aria-label="Velocidad del video">
         <span className="text-n-600">Velocidad:</span>
         {VELOCIDADES.map((v) => (
-          <button
-            key={v}
-            type="button"
-            aria-pressed={velocidad === v}
-            onClick={() => {
+          <Alternar key={v} type="button" onClick={() => {
               setVelocidad(v);
               if (ref.current) ref.current.playbackRate = v;
-            }}
-            className={`min-h-9 rounded-full border-[1.5px] px-3 font-semibold ${velocidad === v ? "border-morado bg-morado-suave text-morado" : "border-n-300 text-n-700 hover:border-morado"}`}
-          >
+            }} className={`min-h-9 rounded-full border-[1.5px] px-3 font-semibold ${velocidad === v ? "border-morado bg-morado-suave text-morado" : "border-n-300 text-n-700 hover:border-morado"}`} activo={velocidad === v}>
             {v}×
-          </button>
+          </Alternar>
         ))}
       </div>
     </div>

@@ -126,12 +126,12 @@ export function Sucursales({ grupo, precioMensual, dominio }: { grupo: GrupoSucu
               ) : (
                 <>
                   {n.soy_miembro && (
-                    <Button sinBloqueo type="button" variante="secundario" className="min-h-9 px-3 text-sm" cargando={entrar.cargando} onClick={() => irA(n.id)} data-entrar-sucursal={n.id}>
+                    <Button sinBloqueo type="button" variante="secundario" className="px-3 text-sm" tamano="compacto" cargando={entrar.cargando} onClick={() => irA(n.id)} data-entrar-sucursal={n.id}>
                       Entrar
                     </Button>
                   )}
                   {grupo.soy_admin_principal && !n.es_principal && dandoBaja !== n.id && (
-                    <Button type="button" variante="secundario" className="min-h-9 px-3 text-sm" onClick={() => { setDandoBaja(n.id); setMotivoBaja(""); }} data-dar-baja-sucursal={n.id}>
+                    <Button type="button" variante="secundario" className="px-3 text-sm" tamano="compacto" onClick={() => { setDandoBaja(n.id); setMotivoBaja(""); }} data-dar-baja-sucursal={n.id}>
                       Dar de baja
                     </Button>
                   )}

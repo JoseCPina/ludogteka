@@ -3,7 +3,7 @@
 import { useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
-import { Button } from "@/components/ui/button";
+import { Button, type VarianteBoton } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { CampoCopiable } from "@/components/ui/campo-copiable";
 import type { ResultadoPlataforma } from "@/lib/plataforma/tipos";
@@ -24,7 +24,7 @@ export function FormularioPlataforma({
 }: {
   accion: (datos: FormData) => Promise<ResultadoPlataforma>;
   textoBoton: string;
-  variante?: "primario" | "secundario" | "peligro" | "exito";
+  variante?: VarianteBoton;
   reiniciar?: boolean;
   children?: ReactNode;
   className?: string;

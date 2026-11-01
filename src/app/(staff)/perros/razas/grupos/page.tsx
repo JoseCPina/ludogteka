@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
@@ -7,6 +6,7 @@ import { diasDesde } from "@/lib/antiguedad";
 import { hoyNegocio } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { GruposDeRaza, type RazaSinGrupo } from "./grupos-de-raza";
+import { Enlace } from "@/components/ui/enlace";
 
 /**
  * Las razas del catálogo que este negocio todavía no mete en un grupo de
@@ -37,9 +37,9 @@ export default async function GruposDeRazaPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/perros/razas" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/perros/razas" className="text-sm">
           ← Razas
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Razas sin grupo de precio</h1>
         <p className="mt-1 text-n-600">
           Son razas del catálogo con perros de este negocio. Hasta que les asignes un grupo, la app no les adivina precio.

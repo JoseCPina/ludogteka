@@ -1,6 +1,5 @@
 import { puedeEditarFichaClinica } from "@/lib/veterinaria/ficha-permiso";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PerroForm } from "@/app/(staff)/perros/perro-form";
 import { crearPerro, crearPerroYVolver } from "@/app/(staff)/perros/actions";
@@ -13,6 +12,7 @@ import { tienePermiso } from "@/lib/auth/permisos";
 import { usaVeterinaria } from "@/lib/plan/modulos";
 import { hrefDeVuelta, rutaDeVuelta } from "@/lib/clientes/volver";
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function NuevoPerroPage({
   params,
@@ -54,26 +54,26 @@ export default async function NuevoPerroPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href={`/clientes/${id}`} className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href={`/clientes/${id}`} className="text-sm">
           ← {cliente.nombre}
-        </Link>
+        </Enlace>
       </div>
 
       {volver && (
         <Alert variante="exito" titulo={`${cliente.nombre} quedó registrado`}>
           Registra a {v.su} y regresas a donde estabas con el cliente ya elegido.{" "}
-          <Link href={hrefDeVuelta(volver, id)} className="font-semibold underline">
+          <Enlace href={hrefDeVuelta(volver, id)} enTexto>
             Seguir sin registrar {v.nombre}
-          </Link>
+          </Enlace>
         </Alert>
       )}
 
       {recienCreado && (
         <Alert variante="exito" titulo={`${cliente.nombre} quedó registrado`}>
           Registra a {v.su} y quedas en su ficha.{" "}
-          <Link href={`/clientes/${id}`} className="font-semibold underline" data-seguir-sin-perro>
+          <Enlace href={`/clientes/${id}`} data-seguir-sin-perro enTexto>
             Seguir sin registrar {v.nombre}
-          </Link>
+          </Enlace>
         </Alert>
       )}
 

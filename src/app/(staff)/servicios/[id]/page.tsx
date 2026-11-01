@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { ServicioForm } from "../servicio-form";
 import { BajaServicioBoton } from "../baja-servicio-boton";
 import { actualizarServicio, darDeBajaServicio } from "../actions";
 import { ComoSeCobra } from "./tarifas/como-se-cobra";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function EditarServicioPage({
   params,
@@ -69,15 +69,11 @@ export default async function EditarServicioPage({
         </div>
         <div className="flex gap-2">
           {servicio.categoria === "estetica" && (
-            <Link href={`/servicios/${id}/receta`}>
-              <Button type="button" variante="secundario">
+            <Enlace href={`/servicios/${id}/receta`}>
                 Receta de consumo
-              </Button>
-            </Link>
+              </Enlace>
           )}
-          <Link href={`/servicios/${id}/tarifas`}>
-            <Button type="button">Ver/editar tarifas</Button>
-          </Link>
+          <Enlace href={`/servicios/${id}/tarifas`}>Ver/editar tarifas</Enlace>
         </div>
       </div>
 

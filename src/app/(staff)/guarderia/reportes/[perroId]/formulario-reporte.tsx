@@ -2,7 +2,6 @@
 
 import { useAbrirEnlace } from "@/hooks/use-abrir-enlace";
 import { AbrirWhatsApp } from "@/components/ui/abrir-whatsapp";
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -15,6 +14,8 @@ import { iconoSvg } from "@/lib/reporte/iconos";
 import { ETIQUETA_ESTADO, type ColoresTarjeta, type RespuestasReporte, type SeccionPlantilla } from "@/lib/reporte/tipos";
 import { copiarDeAyer, dejarListo, enviarReporte, guardarBorrador, regenerarImagen } from "../actions";
 import type { MetaReporte } from "../tipos";
+import { Enlace } from "@/components/ui/enlace";
+import { Alternar } from "@/components/ui/alternar";
 
 const TONO: Record<string, TonoChip> = { sin_reporte: "pendiente", borrador: "proceso", listo: "info", enviado: "exito" };
 
@@ -80,17 +81,9 @@ function TarjetaSeccion({
         </span>
       );
     return (
-      <button
-        key={o.clave}
-        type="button"
-        role={s.seleccion === "una" ? "radio" : "checkbox"}
-        aria-checked={marcada}
-        onClick={() => alternar(o.clave)}
-        className={base}
-        style={estilo}
-      >
+      <Alternar key={o.clave} type="button" role={s.seleccion === "una" ? "radio" : "checkbox"} aria-checked={marcada} onClick={() => alternar(o.clave)} className={base} style={estilo}>
         {contenido}
-      </button>
+      </Alternar>
     );
   };
 
@@ -355,9 +348,9 @@ export function FormularioReporte({
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 pb-28">
       <header className="flex flex-col gap-2">
-        <Link href="/guarderia/reportes" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/guarderia/reportes" className="text-sm">
           ← Reportes del día
-        </Link>
+        </Enlace>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight text-n-900">Reporte de {perroNombre}</h1>
@@ -382,7 +375,7 @@ export function FormularioReporte({
       )}
 
       <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-n-200 bg-white p-3">
-        <Button type="button" variante="exito" onClick={pedirBuenDia} className="min-h-14 flex-1 sm:flex-none">
+        <Button type="button" variante="primario" onClick={pedirBuenDia} className="min-h-14 flex-1 sm:flex-none">
           Buen día
         </Button>
         <Button type="button" variante="secundario" onClick={pedirAyer} cargando={ayer.cargando} disabled={!hayAyer} className="min-h-14 flex-1 sm:flex-none">
@@ -433,13 +426,9 @@ export function FormularioReporte({
                   {meta.estado === "enviado" ? "Reenviar por WhatsApp" : "Enviar por WhatsApp"}
                 </Button>
                 {meta.descargaUrl && (
-                  <a
-                    href={meta.descargaUrl}
-                    download
-                    className="inline-flex min-h-14 items-center justify-center rounded-md border-[1.5px] border-borde bg-white px-5 text-base font-semibold text-n-900 hover:bg-n-100"
-                  >
+                  <Enlace href={meta.descargaUrl} download className="text-base">
                     Descargar imagen
-                  </a>
+                  </Enlace>
                 )}
               </AccionesFormulario>
               {enlaceWa && <AbrirWhatsApp href={enlaceWa} bloqueado={wa.enlace?.bloqueado} />}

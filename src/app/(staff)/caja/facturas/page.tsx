@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { negocioIdActual } from "@/lib/negocio/actual";
 import { Alert } from "@/components/ui/alert";
@@ -6,6 +5,7 @@ import { contextoFacturar } from "@/components/cfdi/contexto";
 import { PRUEBAS_AVISO } from "@/components/cfdi/textos";
 import { BloqueGlobal, type PeriodoGlobal } from "./bloque-global";
 import { ListaFacturas, type FilaFactura } from "./lista-facturas";
+import { Enlace } from "@/components/ui/enlace";
 
 export const metadata = { title: "Facturas" };
 
@@ -78,9 +78,9 @@ export default async function FacturasPage() {
       {!cfg?.activa && (
         <Alert variante="info" titulo="Facturación sin activar">
           Un admin captura los datos fiscales del negocio y guarda la llave del timbrado en{" "}
-          <Link href="/admin/facturacion" className="font-semibold underline">
+          <Enlace href="/admin/facturacion" enTexto>
             Facturación
-          </Link>
+          </Enlace>
           .
         </Alert>
       )}

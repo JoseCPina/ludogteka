@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
@@ -21,6 +20,7 @@ import {
   type EstadoInvitacion,
 } from "./invitacion-actions";
 import { useZonaNegocio } from "@/components/zona-negocio";
+import { Enlace } from "@/components/ui/enlace";
 
 export type InvitacionFila = {
   id: string;
@@ -132,17 +132,17 @@ function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
               <>
                 {invitacion.es_complemento ? "Completó su expediente el " : "Se dio de alta el "}
                 {formatearFecha(invitacion.usada_at as string, zona)} ·{" "}
-                <Link href={`/clientes/${invitacion.cliente_id}`} className="font-semibold text-morado hover:underline">
+                <Enlace href={`/clientes/${invitacion.cliente_id}`}>
                   Ver expediente de {invitacion.cliente_nombre ?? "el cliente"} →
-                </Link>
+                </Enlace>
               </>
             ) : invitacion.estado === "en_curso" && invitacion.cliente_id ? (
               <>
                 Guardó sus datos el {formatearFecha(invitacion.alta_completada_at as string, zona)}; le
                 falta firmar el contrato. El mismo link le sirve para volver ·{" "}
-                <Link href={`/clientes/${invitacion.cliente_id}`} className="font-semibold text-morado hover:underline">
+                <Enlace href={`/clientes/${invitacion.cliente_id}`}>
                   Ver expediente de {invitacion.cliente_nombre ?? "el cliente"} →
-                </Link>
+                </Enlace>
               </>
             ) : invitacion.estado === "pendiente" ? (
               `Vence el ${formatearFecha(invitacion.expira_at, zona)}`

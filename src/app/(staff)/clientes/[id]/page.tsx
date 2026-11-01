@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { cargarOpcionesCobroManual } from "@/lib/cobro/opciones-manual";
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -40,6 +39,7 @@ import { ReactivarMascota } from "../../perros/baja-mascota";
 import { nombreMotivoBaja } from "@/lib/perros/baja";
 import { zonaActual } from "@/lib/negocio/actual";
 import { formatearFecha } from "@/lib/formato";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function EditarClientePage({
   params,
@@ -277,7 +277,7 @@ export default async function EditarClientePage({
             {(solicitudesBaja ?? []).map((s) => (
               <li key={s.id}>
                 {s.perro_nombre}: {nombreMotivoBaja(s.motivo).toLowerCase()} ·{" "}
-                {s.perro_id ? <Link href={`/perros/${s.perro_id}`} className="font-semibold text-morado underline">confirmar o rechazar</Link> : null}
+                {s.perro_id ? <Enlace href={`/perros/${s.perro_id}`} enTexto>confirmar o rechazar</Enlace> : null}
               </li>
             ))}
           </ul>
@@ -287,11 +287,9 @@ export default async function EditarClientePage({
       <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-bold text-n-900">{v.Plural}</h2>
-          <Link href={`/clientes/${id}/perros/nuevo`}>
-            <Button type="button" variante="secundario">
+          <Enlace href={`/clientes/${id}/perros/nuevo`}>
               Agregar {v.nombre}
-            </Button>
-          </Link>
+            </Enlace>
         </div>
 
         {!perros || perros.length === 0 ? (
@@ -302,10 +300,7 @@ export default async function EditarClientePage({
               const tamano = perro.tamanos_categoria as unknown as { etiqueta: string } | null;
               return (
                 <li key={perro.id}>
-                  <Link
-                    href={`/perros/${perro.id}`}
-                    className="flex flex-col gap-2 rounded-md border-[1.5px] border-n-200 bg-white px-4 py-3 hover:border-morado"
-                  >
+                  <Enlace href={`/perros/${perro.id}`} className="flex flex-col gap-2 rounded-md border-[1.5px] border-n-200 bg-white px-4 py-3 hover:border-morado" forma="bloque">
                     <span className="flex items-center justify-between">
                       <span className="flex items-center gap-3">
                         <PerroFoto
@@ -344,7 +339,7 @@ export default async function EditarClientePage({
                       resumen={contratoPorPerro.get(perro.id) ?? resumenVacio()}
                       tamano="compacto"
                     />
-                  </Link>
+                  </Enlace>
                 </li>
               );
             })}
@@ -360,7 +355,7 @@ export default async function EditarClientePage({
             {(perrosBaja ?? []).map((p) => (
               <li key={p.id} className="flex flex-col gap-2 rounded-md border-[1.5px] border-n-200 bg-n-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between" data-mascota-baja={p.id}>
                 <span className="flex flex-col">
-                  <Link href={`/perros/${p.id}`} className="font-semibold text-n-900 hover:underline">{p.nombre}</Link>
+                  <Enlace href={`/perros/${p.id}`}>{p.nombre}</Enlace>
                   <span className="text-sm text-n-600">
                     {p.fallecido ? "Falleció · " : ""}{nombreMotivoBaja(p.baja_motivo)}{p.deleted_at ? ` · desde el ${formatearFecha(p.deleted_at as string, zonaBaja)}` : ""}{p.baja_nota ? ` · «${p.baja_nota}»` : ""}
                   </span>

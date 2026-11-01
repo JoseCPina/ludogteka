@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { BuscadorClientes } from "@/components/buscador-clientes";
@@ -14,6 +13,7 @@ import { formatearTelefono } from "@/lib/telefono";
 import type { ClienteBuscable } from "@/lib/clientes/buscables";
 import { crearVentaRapida } from "./venta-actions";
 import { dinero } from "@/lib/dinero";
+import { Enlace } from "@/components/ui/enlace";
 
 export type ProductoVenta = { id: string; nombre: string; precio: number; unidad: string; disponible: number };
 
@@ -78,9 +78,9 @@ export function VentaRapida({
       {!turnoAbierto && (
         <Alert variante="advertencia" titulo="No hay turno de caja abierto">
           Puedes armar la venta, pero para cobrarla en mostrador o con terminal{" "}
-          <Link href="/caja/turno" className="font-semibold underline">
+          <Enlace href="/caja/turno" enTexto>
             abre el turno
-          </Link>
+          </Enlace>
           .
         </Alert>
       )}
@@ -148,9 +148,9 @@ export function VentaRapida({
         ) : conInventario ? (
           <p className="text-sm text-n-600">
             No hay productos a la venta. Para vender uno del inventario, márcalo «Se vende en mostrador» con su precio en{" "}
-            <Link href="/inventario" className="font-semibold text-morado hover:underline">
+            <Enlace href="/inventario" enTexto>
               Inventario
-            </Link>
+            </Enlace>
             .
           </p>
         ) : null}

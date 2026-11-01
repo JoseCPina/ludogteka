@@ -674,7 +674,7 @@ export function MatrizTarifas({
                   <Button
                     type="button"
                     variante="secundario"
-                    className="min-h-9 px-3 text-xs"
+                    className="px-3 text-xs" tamano="compacto"
                     onClick={() => quitarTramo(t.clientId)}
                   >
                     Quitar
@@ -727,14 +727,9 @@ export function MatrizTarifas({
                               )
                             }
                           />
-                          <button
-                            type="button"
-                            title="Rellenar columna"
-                            onClick={() => rellenarColumna(tramo.clientId, col.id)}
-                            className="rounded border border-n-300 px-1.5 text-xs text-n-600 hover:bg-n-100"
-                          >
+                          <Button type="button" title="Rellenar columna" onClick={() => rellenarColumna(tramo.clientId, col.id)} className="px-2" variante="secundario" tamano="compacto" aria-label="Rellenar columna">
                             ↓
-                          </button>
+                          </Button>
                         </div>
                       </th>
                     ))}
@@ -781,14 +776,9 @@ export function MatrizTarifas({
                                 )
                               }
                             />
-                            <button
-                              type="button"
-                              title="Rellenar renglón"
-                              onClick={() => rellenarFila(tramo.clientId, fila.key)}
-                              className="rounded border border-n-300 px-1.5 text-xs text-n-600 hover:bg-n-100"
-                            >
+                            <Button type="button" title="Rellenar renglón" onClick={() => rellenarFila(tramo.clientId, fila.key)} className="px-2" variante="secundario" tamano="compacto" aria-label="Rellenar renglón">
                               →
-                            </button>
+                            </Button>
                           </div>
                         </td>
                       )}

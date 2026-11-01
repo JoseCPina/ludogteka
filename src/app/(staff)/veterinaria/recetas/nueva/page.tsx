@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
 import { miMedico } from "@/lib/veterinaria/lotes";
@@ -10,6 +9,8 @@ import { formatearFechaCalendario } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { fechaLocalDeInstante } from "@/lib/formato";
 import { EditorReceta, type ProductoReceta } from "./editor-receta";
+import { Enlace } from "@/components/ui/enlace";
+import { EnlacePestana } from "@/components/ui/enlace-pestana";
 
 export default async function NuevaReceta({ searchParams }: { searchParams: Promise<{ q?: string; perro?: string; consulta?: string }> }) {
   const { q, perro, consulta } = await searchParams;
@@ -19,7 +20,7 @@ export default async function NuevaReceta({ searchParams }: { searchParams: Prom
   if (!puede) {
     return (
       <div className="flex max-w-2xl flex-col gap-4">
-        <Link href="/veterinaria/recetas" className="text-sm font-semibold text-morado hover:underline">← Recetas</Link>
+        <Enlace href="/veterinaria/recetas" className="text-sm">← Recetas</Enlace>
         <Alert variante="advertencia" titulo="Emitir recetas es de un médico veterinario">Una receta la firma un médico veterinario designado con su cédula. Un admin o una recepcionista con el permiso «Emitir recetas» pueden ver y mandar las recetas, pero no emitirlas: pídele a un admin que te designe médico en Veterinaria → Médicos.</Alert>
       </div>
     );
@@ -30,7 +31,7 @@ export default async function NuevaReceta({ searchParams }: { searchParams: Prom
     return (
       <div className="flex flex-col gap-5">
         <div>
-          <Link href="/veterinaria/recetas" className="text-sm font-semibold text-morado hover:underline">← Recetas</Link>
+          <Enlace href="/veterinaria/recetas" className="text-sm">← Recetas</Enlace>
           <h1 className="mt-1 text-2xl font-bold text-n-900">Nueva receta</h1>
           <p className="mt-1 text-n-600">Primero elige a la mascota: busca por su nombre, el de su dueño o su teléfono.</p>
         </div>
@@ -44,10 +45,10 @@ export default async function NuevaReceta({ searchParams }: { searchParams: Prom
           <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
             {filas.map((f) => (
               <li key={f.id}>
-                <Link href={`/veterinaria/recetas/nueva?perro=${f.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50">
+                <Enlace href={`/veterinaria/recetas/nueva?perro=${f.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
                   <span className="font-semibold text-n-900">{f.nombre} <span className="font-normal text-n-500">· {etiquetaEspecie(f.especie)}</span></span>
                   <span className="text-sm text-n-600">{f.dueno}{f.telefono ? ` · ${f.telefono}` : ""}</span>
-                </Link>
+                </Enlace>
               </li>
             ))}
           </ul>
@@ -76,7 +77,7 @@ export default async function NuevaReceta({ searchParams }: { searchParams: Prom
   return (
     <div className="flex max-w-4xl flex-col gap-5">
       <div>
-        <Link href="/veterinaria/recetas/nueva" className="text-sm font-semibold text-morado hover:underline">← Elegir otra mascota</Link>
+        <Enlace href="/veterinaria/recetas/nueva" className="text-sm">← Elegir otra mascota</Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Nueva receta</h1>
         {mascota && <p className="mt-1 text-n-700">{mascota.nombre} · {etiquetaEspecie(mascota.especie as string | null)} · de {dueno?.nombre ?? "—"}</p>}
       </div>
@@ -88,11 +89,11 @@ export default async function NuevaReceta({ searchParams }: { searchParams: Prom
             <div className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-4 text-sm">
               <p className="font-semibold text-n-900">¿Desde una consulta?</p>
               <div className="flex flex-wrap gap-2">
-                <Link href={`/veterinaria/recetas/nueva?perro=${perro}`} className={`rounded-full border px-3 py-1 font-semibold ${!consultaElegida ? "border-morado bg-morado-suave text-morado" : "border-n-200 text-n-700"}`}>Desde la ficha</Link>
+                <EnlacePestana href={`/veterinaria/recetas/nueva?perro=${perro}`} activo={!consultaElegida}>Desde la ficha</EnlacePestana>
                 {consultas.slice(0, 6).map((c) => (
-                  <Link key={c.id} href={`/veterinaria/recetas/nueva?perro=${perro}&consulta=${c.id}`} className={`rounded-full border px-3 py-1 font-semibold ${consultaElegida?.id === c.id ? "border-morado bg-morado-suave text-morado" : "border-n-200 text-n-700"}`}>
+                  <EnlacePestana key={c.id} href={`/veterinaria/recetas/nueva?perro=${perro}&consulta=${c.id}`} activo={consultaElegida?.id === c.id}>
                     {formatearFechaCalendario(fechaLocalDeInstante(c.atendida_at, zona))}{c.motivo ? ` · ${c.motivo.slice(0, 24)}` : ""}{c.estado === "borrador" ? " · abierta" : ""}
-                  </Link>
+                  </EnlacePestana>
                 ))}
               </div>
             </div>

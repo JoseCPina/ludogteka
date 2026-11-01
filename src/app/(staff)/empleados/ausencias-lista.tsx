@@ -79,7 +79,7 @@ export function ListaAusencias({
             <div className="flex flex-wrap items-start gap-2">
               {esAdmin && a.estado === "solicitada" && (
                 <>
-                  <BotonAccion accion={aprobarAusencia.bind(null, a.id)} texto="Aprobar" variante="exito" textoExito="Aprobada" />
+                  <BotonAccion accion={aprobarAusencia.bind(null, a.id)} texto="Aprobar" variante="primario" textoExito="Aprobada" />
                   <Desplegable texto="Rechazar">
                     <FormularioAccion accion={rechazarAusencia.bind(null, a.id)} textoBoton="Rechazar" variante="peligro">
                       <Textarea label="¿Por qué se rechaza?" name="motivo" rows={2} required />

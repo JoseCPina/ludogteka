@@ -1,5 +1,4 @@
 import { tienePermiso } from "@/lib/auth/permisos";
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
@@ -21,6 +20,7 @@ import {
   type GrupoHistorial,
   type MotivoDescuento,
 } from "./cuenta-cobro";
+import { Enlace } from "@/components/ui/enlace";
 
 // La pantalla de cobro de una cuenta, vista desde la reserva
 // (/reservas/[id]/cobrar) o desde Caja (/caja/cobrar/[reservaId]): es el
@@ -410,9 +410,9 @@ export async function PantallaCobro({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href={volverHref} className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href={volverHref} className="text-sm">
           ← {volverEtiqueta}
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Cobrar — {cliente?.nombre ?? "Cliente"}</h1>
       </div>
 

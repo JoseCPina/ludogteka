@@ -1,11 +1,12 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { alcancesDeFormulario, esControlDeEscritura, type BloqueoEscritura } from "@/lib/cobro/bloqueo-escritura";
 import { mensajeSiSoloLectura } from "@/lib/ui/solo-lectura-actions";
 import { conTope } from "@/lib/ui/espera";
+import { Enlace } from "@/components/ui/enlace";
+import { Alternar } from "@/components/ui/alternar";
 
 // QA N151: con el negocio en solo lectura por prueba vencida o falta de pago, todo botón, enlace y campo que escribe
 // se ve deshabilitado y al tocarlo dice por qué (src/lib/cobro/bloqueo-escritura.ts). Lo provee el layout del
@@ -165,13 +166,13 @@ export function ProveedorEscritura({ bloqueo, children }: { bloqueo: BloqueoEscr
           <span>{bloqueo.mensaje}</span>
           <span className="flex items-center gap-2">
             {bloqueo.boton && (
-              <Link href={bloqueo.boton.href} className="rounded-md bg-morado px-3 py-1.5 text-white hover:bg-morado-oscuro">
+              <Enlace href={bloqueo.boton.href}>
                 {bloqueo.boton.texto}
-              </Link>
+              </Enlace>
             )}
-            <button type="button" onClick={() => setAviso(false)} className="rounded-md px-2 py-1 text-n-700 hover:bg-white" aria-label="Cerrar aviso">
+            <Alternar type="button" onClick={() => setAviso(false)} aria-label="Cerrar aviso" className="rounded-md px-2 text-n-700 hover:bg-white">
               ✕
-            </button>
+            </Alternar>
           </span>
         </div>
       )}

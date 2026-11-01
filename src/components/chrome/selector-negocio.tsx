@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { irANegocio } from "@/lib/negocio/ir-a-negocio";
+import { Alternar } from "@/components/ui/alternar";
 
 export type NegocioDelSelector = {
   id: string;
@@ -58,16 +59,10 @@ export function SelectorNegocio({ negocios, className = "" }: { negocios: Negoci
                     {n.nombre} <span className="ml-auto text-xs font-medium">Aquí estás</span>
                   </span>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => ir(n.id)}
-                    disabled={envio.cargando}
-                    data-ir-negocio={n.id}
-                    className={`flex min-h-11 w-full items-center rounded-md px-2 text-left text-sm font-semibold text-n-800 hover:bg-n-100 disabled:opacity-60 ${g.negocios.length > 1 ? "pl-4" : ""}`}
-                  >
+                  <Alternar type="button" onClick={() => ir(n.id)} data-ir-negocio={n.id} className={`flex min-h-11 w-full items-center rounded-md px-2 text-left text-sm font-semibold text-n-800 hover:bg-n-100 disabled:opacity-60 ${g.negocios.length > 1 ? "pl-4" : ""}`} cargando={envio.cargando && cual === n.id} disabled={envio.cargando}>
                     {n.nombre}
                     {envio.cargando && cual === n.id && <span className="ml-auto text-xs font-medium text-n-600">Abriendo…</span>}
-                  </button>
+                  </Alternar>
                 )}
               </li>
             ))}

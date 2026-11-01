@@ -79,7 +79,7 @@ export default async function SeguimientoPlataforma() {
           <FormularioPlataforma
             accion={pausarSeguimiento.bind(null, !r?.pausa)}
             textoBoton={r?.pausa ? "Reanudar el seguimiento" : "Pausar todo el seguimiento"}
-            variante={r?.pausa ? "exito" : "peligro"}
+            variante={r?.pausa ? "primario" : "peligro"}
           />
         </div>
         <div className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">

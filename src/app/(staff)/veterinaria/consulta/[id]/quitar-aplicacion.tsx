@@ -16,7 +16,7 @@ export function QuitarAplicacion({ consultaId, perroId, tipo, id, nombre, delCar
   return (
     <span className="inline-flex flex-col gap-1" data-quitar-aplicacion={tipo}>
       {!confirmando ? (
-        <Button type="button" variante="secundario" className="min-h-9 px-3 text-sm" onClick={() => { setError(null); setConfirmando(true); }} data-quitar-boton>
+        <Button type="button" variante="secundario" className="px-3 text-sm" tamano="compacto" onClick={() => { setError(null); setConfirmando(true); }} data-quitar-boton>
           Quitar
         </Button>
       ) : (
@@ -25,7 +25,7 @@ export function QuitarAplicacion({ consultaId, perroId, tipo, id, nombre, delCar
           <Button
             type="button"
             variante="peligro"
-            className="min-h-9 px-3 text-sm"
+            className="px-3 text-sm" tamano="compacto"
             cargando={envio.cargando}
             onClick={async () => {
               const r = await envio.ejecutar(() => quitarAplicacionConsulta(consultaId, tipo, id, perroId));
@@ -37,7 +37,7 @@ export function QuitarAplicacion({ consultaId, perroId, tipo, id, nombre, delCar
           >
             Sí, quitar
           </Button>
-          <Button type="button" variante="secundario" className="min-h-9 px-3 text-sm" disabled={envio.cargando} onClick={() => setConfirmando(false)}>
+          <Button type="button" variante="secundario" className="px-3 text-sm" tamano="compacto" disabled={envio.cargando} onClick={() => setConfirmando(false)}>
             No
           </Button>
         </span>

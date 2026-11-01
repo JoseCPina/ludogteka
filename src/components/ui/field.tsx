@@ -1,6 +1,7 @@
 "use client";
 
 import { InputHTMLAttributes, forwardRef, useId, useState, type ReactNode } from "react";
+import { Alternar } from "@/components/ui/alternar";
 
 type Props = InputHTMLAttributes<HTMLInputElement> & {
   label: string;
@@ -58,15 +59,9 @@ export const Field = forwardRef<HTMLInputElement, Props>(
             {...props}
           />
           {esPassword && (
-            <button
-              type="button"
-              onClick={() => setMostrar((v) => !v)}
-              tabIndex={-1}
-              aria-label={mostrar ? "Ocultar contraseña" : "Mostrar contraseña"}
-              className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-n-500 hover:text-n-800"
-            >
+            <Alternar type="button" onClick={() => setMostrar((v) => !v)} tabIndex={-1} aria-label={mostrar ? "Ocultar contraseña" : "Mostrar contraseña"} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-n-500 hover:text-n-800">
               <IconoOjo visible={mostrar} />
-            </button>
+            </Alternar>
           )}
         </div>
         {error && (

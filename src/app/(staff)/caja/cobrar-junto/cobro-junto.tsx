@@ -3,7 +3,6 @@
 import { anotarCobroDePantalla, leerCobrosDePantalla } from "@/lib/cobro/cobros-de-pantalla";
 import { idCliente } from "@/lib/id-cliente";
 import { useEffect, useRef, useState, useTransition } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { useCuentaViva, textoSaldoCambio } from "@/hooks/use-cuenta-viva";
@@ -29,6 +28,7 @@ import type { MetodoPago } from "@/app/(staff)/reservas/cobro-actions";
 import { CobroIntegrado, type OrdenCobroFila } from "@/app/(staff)/reservas/[id]/cobrar/cobro-integrado";
 import { registrarCobroGrupo } from "../cobro-grupo-actions";
 import { dinero } from "@/lib/dinero";
+import { Enlace } from "@/components/ui/enlace";
 
 export type CuentaJunto = {
   reservaId: string;
@@ -302,9 +302,7 @@ export function CobroJunto({
         <div className="rounded-lg border-[1.5px] border-ambar bg-ambar-suave p-4">
           <p className="font-bold text-ambar-oscuro">No hay turno de caja abierto</p>
           <p className="mt-1 text-sm text-ambar-oscuro">Ábrelo con el fondo inicial para poder registrar cobros.</p>
-          <Link href="/caja/turno" className="mt-3 inline-block">
-            <Button type="button">Abrir turno</Button>
-          </Link>
+          <Enlace href="/caja/turno">Abrir turno</Enlace>
         </div>
       ) : (
         <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">

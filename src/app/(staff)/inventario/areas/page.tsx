@@ -1,11 +1,11 @@
 import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { cargarAreas } from "../comun";
 import { EditorAreas } from "./editor-areas";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 // Áreas del inventario: solo admin las edita (la base también lo aplica).
 export default async function AreasPage() {
@@ -22,9 +22,9 @@ export default async function AreasPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/inventario" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/inventario" className="text-sm">
           ← Inventario
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Áreas del inventario</h1>
         <p className="mt-1 text-n-600">Cómo se agrupan los consumibles y el equipo.</p>
       </div>

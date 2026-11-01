@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { anularRequisitoAplicado, corregirRequisitoAplicado } from "./requisitos-actions";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
+import { Enlace } from "@/components/ui/enlace";
 
 export type RequisitoAplicadoFila = {
   id: string;
@@ -55,8 +56,8 @@ function AccionesRegistro({ perroId, fila }: { perroId: string; fila: RequisitoA
   if (!modo) {
     return (
       <div className="flex gap-3 text-sm font-semibold">
-        <button type="button" className="text-morado hover:underline" onClick={() => setModo("corregir")}>Corregir</button>
-        <button type="button" className="text-coral-oscuro hover:underline" onClick={() => setModo("anular")}>Anular con motivo</button>
+        <Button type="button" onClick={() => setModo("corregir")} variante="secundario" tamano="compacto">Corregir</Button>
+        <Button type="button" onClick={() => setModo("anular")} variante="secundario" tamano="compacto">Anular con motivo</Button>
       </div>
     );
   }
@@ -146,14 +147,9 @@ export function RequisitosHistorial({ filas, perroId, puedeGestionar = false }: 
               </td>
               <td className="border-b border-n-200 px-4 py-3">
                 {fila.comprobante_url ? (
-                  <a
-                    href={fila.comprobante_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-semibold text-morado hover:underline"
-                  >
+                  <Enlace href={fila.comprobante_url} target="_blank" rel="noreferrer">
                     Ver foto
-                  </a>
+                  </Enlace>
                 ) : (
                   <span className="text-n-400">—</span>
                 )}

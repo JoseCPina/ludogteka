@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { tituloContratoPeluDesk, cuerpoContratoPeluDesk } from "@/lib/contratos/plantilla-peludesk";
 import { VolverBienvenida } from "../volver";
 import { EditorContrato } from "./editor-contrato";
+import { Enlace } from "@/components/ui/enlace";
 
 // «Contrato» (QA S16): la plantilla general de PeluDesk, ya con el nombre del negocio, lista para leer, ajustar y
 // publicar con un clic. Publicada, la firma el dueño al dar de alta a su perro.
@@ -32,9 +32,9 @@ export default async function ContratoPage() {
         </p>
         <p className="mt-1 text-sm text-n-600">
           Contratos aparte para hotel o para paquetes de guardería se crean en{" "}
-          <Link href="/contratos" className="font-semibold text-morado hover:underline">
+          <Enlace href="/contratos" enTexto>
             Contratos
-          </Link>
+          </Enlace>
           .
         </p>
       </div>

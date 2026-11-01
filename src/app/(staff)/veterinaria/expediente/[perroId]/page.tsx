@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { sinTitulosVacios } from "@/lib/veterinaria/portal-texto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -9,6 +8,7 @@ import { formatearFecha, formatearFechaCalendario, hoyNegocio } from "@/lib/form
 import { zonaActual } from "@/lib/negocio/actual";
 import { ESTADOS_ESTIMADO, TIPOS_CITA, TIPOS_EVENTO, dinero, type EstimadoResumen, type EventoLinea, type MedicoVet } from "@/lib/veterinaria/expediente";
 import { CapturarResultado, IniciarConsulta, SubirAdjunto } from "../captura";
+import { Enlace } from "@/components/ui/enlace";
 
 type Lectura = { recurso: string; persona: string; leido_at: string };
 
@@ -24,7 +24,7 @@ export default async function ExpedienteMascota({ params, searchParams }: { para
 
   const { data: mascota } = await supabase.from("perros").select("id, nombre, especie, raza, fecha_nacimiento, esterilizado, clientes(id, nombre, telefono)").eq("id", perroId).is("deleted_at", null).maybeSingle();
   if (!mascota) {
-    return <Alert variante="error" titulo="No encontramos a esa mascota">Búscala de nuevo en <Link href="/veterinaria/expediente" className="font-semibold underline">Expediente clínico</Link>.</Alert>;
+    return <Alert variante="error" titulo="No encontramos a esa mascota">Búscala de nuevo en <Enlace href="/veterinaria/expediente" enTexto>Expediente clínico</Enlace>.</Alert>;
   }
   const dueno = (Array.isArray(mascota.clientes) ? mascota.clientes[0] : mascota.clientes) as { id: string; nombre: string; telefono: string | null } | null;
   const [{ data: puedeLeer }, { data: puedeAtender }, { data: puedeEstimar }] = await Promise.all([
@@ -35,8 +35,8 @@ export default async function ExpedienteMascota({ params, searchParams }: { para
   if (puedeLeer !== true) {
     return (
       <div className="flex max-w-2xl flex-col gap-4">
-        <Link href="/veterinaria" className="text-sm font-semibold text-morado hover:underline">← Veterinaria</Link>
-        <Alert variante="advertencia" titulo="No tienes acceso al expediente">Ver el expediente clínico es de un médico veterinario, de admin o de quien tenga «Atender consultas». Mientras, puedes ver su <Link href={`/veterinaria/carnet/${perroId}`} className="font-semibold underline">carnet</Link>.</Alert>
+        <Enlace href="/veterinaria" className="text-sm">← Veterinaria</Enlace>
+        <Alert variante="advertencia" titulo="No tienes acceso al expediente">Ver el expediente clínico es de un médico veterinario, de admin o de quien tenga «Atender consultas». Mientras, puedes ver su <Enlace href={`/veterinaria/carnet/${perroId}`} enTexto>carnet</Enlace>.</Alert>
       </div>
     );
   }
@@ -58,7 +58,7 @@ export default async function ExpedienteMascota({ params, searchParams }: { para
       {aviso === "descartado" && <Alert variante="exito" titulo="Borrador descartado">La consulta en borrador se quitó del expediente.</Alert>}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <Link href="/veterinaria/expediente" className="text-sm font-semibold text-morado hover:underline">← Expediente clínico</Link>
+          <Enlace href="/veterinaria/expediente" className="text-sm">← Expediente clínico</Enlace>
           <h1 className="mt-1 text-2xl font-bold text-n-900">{mascota.nombre}</h1>
           {/* QA S41 (N139): las consultas en borrador de esta mascota, contadas de la misma línea de tiempo que se lista abajo. */}
           <span data-sin-firmar={sinFirmar} className={`mt-1 inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${sinFirmar > 0 ? "bg-ambar-suave text-ambar-oscuro" : "bg-n-100 text-n-600"}`}>
@@ -71,10 +71,10 @@ export default async function ExpedienteMascota({ params, searchParams }: { para
           </p>
         </div>
         <div className="flex flex-wrap gap-2 text-sm font-semibold">
-          <Link href={`/veterinaria/carnet/${perroId}`} className="inline-flex min-h-10 items-center rounded-md border border-n-200 bg-white px-3 text-morado hover:bg-morado-suave">Carnet</Link>
+          <Enlace href={`/veterinaria/carnet/${perroId}`}>Carnet</Enlace>
           {/* Si se llegó desde un día de la agenda, «Agendar cita» abre en ese día (N116). */}
-          <Link href={`/veterinaria/agenda/nueva?perro=${perroId}${fecha && /^\d{4}-\d{2}-\d{2}$/.test(fecha) ? `&fecha=${fecha}` : ""}`} className="inline-flex min-h-10 items-center rounded-md border border-n-200 bg-white px-3 text-morado hover:bg-morado-suave">Agendar cita</Link>
-          {puedeEstimar === true && <Link href={`/veterinaria/estimados/nuevo?perro=${perroId}`} className="inline-flex min-h-10 items-center rounded-md border border-n-200 bg-white px-3 text-morado hover:bg-morado-suave">Nuevo estimado</Link>}
+          <Enlace href={`/veterinaria/agenda/nueva?perro=${perroId}${fecha && /^\d{4}-\d{2}-\d{2}$/.test(fecha) ? `&fecha=${fecha}` : ""}`}>Agendar cita</Enlace>
+          {puedeEstimar === true && <Enlace href={`/veterinaria/estimados/nuevo?perro=${perroId}`}>Nuevo estimado</Enlace>}
         </div>
       </div>
 
@@ -98,7 +98,7 @@ export default async function ExpedienteMascota({ params, searchParams }: { para
               const est = ESTADOS_ESTIMADO[e.estado] ?? { etiqueta: e.estado, estilo: "bg-n-100" };
               return (
                 <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                  <Link href={`/veterinaria/estimados/${e.id}`} className="font-semibold text-morado hover:underline">{e.titulo} · v{e.version}</Link>
+                  <Enlace href={`/veterinaria/estimados/${e.id}`}>{e.titulo} · v{e.version}</Enlace>
                   <span className="flex items-center gap-2 text-sm text-n-700">
                     {dinero(e.total_min)} – {dinero(e.total_max)}
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${est.estilo}`}>{e.vencido ? "Vencido" : est.etiqueta}</span>
@@ -139,7 +139,7 @@ export default async function ExpedienteMascota({ params, searchParams }: { para
                     {anulada && <span className="rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-600">Anulado</span>}
                   </div>
                   <p className={`mt-1 font-semibold text-n-900 ${anulada ? "line-through" : ""}`}>
-                    {enlace ? <Link href={enlace} className="text-morado hover:underline" {...(e.tipo === "adjunto" ? { target: "_blank", rel: "noopener" } : {})}>{e.tipo === "consulta" ? `${TIPOS_CITA[e.titulo.toLowerCase()] ?? e.titulo}` : e.titulo}</Link> : e.titulo}
+                    {enlace ? <Enlace href={enlace} {...(e.tipo === "adjunto" ? { target: "_blank", rel: "noopener" } : {})}>{e.tipo === "consulta" ? `${TIPOS_CITA[e.titulo.toLowerCase()] ?? e.titulo}` : e.titulo}</Enlace> : e.titulo}
                   </p>
                   {e.detalle && sinTitulosVacios(e.detalle) && <p className="text-sm text-n-700">{e.tipo === "receta" ? `Medicamentos: ${e.detalle}` : sinTitulosVacios(e.detalle)}</p>}
                   {e.tipo === "consulta" && e.extra && <p className="text-sm text-n-700">Diagnóstico: {e.extra}</p>}

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
@@ -10,6 +9,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 import { ETIQUETA_ESTADO_TICKET } from "@/lib/soporte/textos";
 import { Asistente } from "./asistente";
 import { cargarTutorialesVisibles, duracionTexto } from "@/lib/tutoriales";
+import { Enlace } from "@/components/ui/enlace";
 
 
 // Ayuda: los artículos de los módulos de ESTE negocio, el asistente y los
@@ -39,9 +39,7 @@ export default async function AyudaPage({ searchParams }: { searchParams: Promis
           <h1 className="text-2xl font-bold text-n-900">Ayuda</h1>
           <p className="mt-1 text-n-600">Busca cómo hacer algo, pregúntale al asistente o escríbenos.</p>
         </div>
-        <Link href={`/ayuda/tickets/nuevo${pantalla ? `?desde=${encodeURIComponent(pantalla)}` : ""}`}>
-          <Button type="button" variante="secundario">Crear ticket</Button>
-        </Link>
+        <Enlace href={`/ayuda/tickets/nuevo${pantalla ? `?desde=${encodeURIComponent(pantalla)}` : ""}`}>Crear ticket</Enlace>
       </div>
 
       <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
@@ -57,7 +55,7 @@ export default async function AyudaPage({ searchParams }: { searchParams: Promis
               const nueva = t.ultimo_de === "plataforma" && t.profile_id === sesion?.user.id && (!t.visto_creador_at || t.visto_creador_at < t.ultimo_mensaje_at);
               return (
                 <li key={t.id as string}>
-                  <Link href={`/ayuda/tickets/${t.id}`} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-n-200 bg-white px-4 py-3 hover:border-morado">
+                  <Enlace href={`/ayuda/tickets/${t.id}`} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-n-200 bg-white px-4 py-3 hover:border-morado" forma="bloque">
                     <span className="font-semibold text-n-900">
                       #{t.numero as number} · {t.asunto as string}
                     </span>
@@ -66,7 +64,7 @@ export default async function AyudaPage({ searchParams }: { searchParams: Promis
                       <span className="rounded-full bg-n-100 px-2 py-0.5 font-semibold text-n-700">{ETIQUETA_ESTADO_TICKET[t.estado as string]}</span>
                       <span className="text-n-500">{formatearFecha(t.ultimo_mensaje_at as string, zona)}</span>
                     </span>
-                  </Link>
+                  </Enlace>
                 </li>
               );
             })}
@@ -77,7 +75,7 @@ export default async function AyudaPage({ searchParams }: { searchParams: Promis
       <section className="flex flex-col gap-3" data-seccion-videos>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-lg font-bold text-n-900">Videos</h2>
-          {videos.length > 0 && <Link href="/ayuda/videos" className="text-sm font-semibold text-morado hover:underline">Ver todos ({videos.length})</Link>}
+          {videos.length > 0 && <Enlace href="/ayuda/videos" className="text-sm">Ver todos ({videos.length})</Enlace>}
         </div>
         {videos.length === 0 ? (
           <p className="rounded-lg border border-n-200 bg-n-50 p-4 text-n-700">Estamos preparando los videos. Mientras tanto, los artículos de abajo te explican cada pantalla.</p>
@@ -85,10 +83,10 @@ export default async function AyudaPage({ searchParams }: { searchParams: Promis
           <ul className="grid gap-2 sm:grid-cols-2">
             {videos.slice(0, 4).map((v) => (
               <li key={v.slug}>
-                <Link href={`/ayuda/videos/${v.slug}`} className="flex items-center justify-between gap-2 rounded-lg border border-n-200 bg-white px-4 py-3 hover:border-morado">
+                <Enlace href={`/ayuda/videos/${v.slug}`} className="flex items-center justify-between gap-2 rounded-lg border border-n-200 bg-white px-4 py-3 hover:border-morado" forma="bloque">
                   <span className="font-semibold text-n-900">▶ {v.titulo}</span>
                   <span className="text-xs text-n-500">{duracionTexto(v.duracion_s)}</span>
-                </Link>
+                </Enlace>
               </li>
             ))}
           </ul>

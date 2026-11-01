@@ -16,6 +16,7 @@ import {
 } from "@/lib/extras/tipos";
 import { guardarExtraCatalogo, guardarPaqueteExtra, guardarZonaExtra } from "../actions";
 import { dinero } from "@/lib/dinero";
+import { Alternar } from "@/components/ui/alternar";
 
 export type PaqueteExtra = { sesiones: number; vigenciaDias: number | null; precio: number };
 
@@ -46,22 +47,13 @@ export function CatalogoExtras({
         <p className="text-sm font-bold uppercase tracking-wide text-n-600">Agregar un servicio extra</p>
         <div className="flex flex-wrap gap-2">
           {SUGERIDOS.filter((s) => !catalogo.some((c) => c.nombre.toLowerCase() === s.nombre.toLowerCase())).map((s) => (
-            <button
-              key={s.nombre}
-              type="button"
-              onClick={() => setNuevo(s)}
-              className="rounded-full border-[1.5px] border-borde bg-white px-3 py-1.5 text-sm font-semibold text-n-900 hover:bg-n-100"
-            >
+            <Alternar key={s.nombre} type="button" onClick={() => setNuevo(s)} className="rounded-full border-[1.5px] border-borde bg-white px-3 text-sm font-semibold text-n-900 hover:border-morado hover:bg-morado-suave">
               + {s.nombre}
-            </button>
+            </Alternar>
           ))}
-          <button
-            type="button"
-            onClick={() => setNuevo({ nombre: "", tipo: "general", unidad: "vez" })}
-            className="rounded-full border-[1.5px] border-morado bg-morado-suave px-3 py-1.5 text-sm font-semibold text-morado hover:bg-white"
-          >
+          <Alternar type="button" onClick={() => setNuevo({ nombre: "", tipo: "general", unidad: "vez" })} className="rounded-full border-[1.5px] border-morado bg-morado-suave px-3 text-sm font-semibold text-morado hover:bg-white">
             + Otro servicio
-          </button>
+          </Alternar>
         </div>
         {nuevo && (
           <FormularioExtra

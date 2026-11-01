@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { ProveedorForm } from "../proveedor-form";
 import { BajaServicioBoton } from "../../../servicios/baja-servicio-boton";
 import { actualizarProveedor, darDeBajaProveedor } from "../actions";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function EditarProveedorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -24,9 +24,9 @@ export default async function EditarProveedorPage({ params }: { params: Promise<
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/inventario/proveedores" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/inventario/proveedores" className="text-sm">
           ← Proveedores
-        </Link>
+        </Enlace>
         <div className="mt-1 flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-bold text-n-900">{proveedor.nombre}</h1>
           {proveedor.deleted_at && (

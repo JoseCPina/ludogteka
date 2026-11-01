@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CampoCopiable } from "@/components/ui/campo-copiable";
@@ -13,6 +12,7 @@ import { linkComplemento, linkParaCompletar, type EstadoInvitacion } from "../in
 import { useAbrirEnlace } from "@/hooks/use-abrir-enlace";
 import { AbrirWhatsApp } from "@/components/ui/abrir-whatsapp";
 import { useZonaNegocio } from "@/components/zona-negocio";
+import { Enlace } from "@/components/ui/enlace";
 
 export type LinkPendiente = { id: string; tipo: string; expira_at: string; estado: string };
 
@@ -127,9 +127,9 @@ export function LinkComplemento({
                 ? " · ya guardó sus datos, le falta firmar: el mismo link le sirve para volver"
                 : ` · vence el ${formatearFecha(p.expira_at, zona)}`}
               . «Generar link» le vuelve a mandar ese mismo; para cancelarlo, ve a{" "}
-              <Link href="/clientes/invitaciones" className="font-semibold text-morado hover:underline">
+              <Enlace href="/clientes/invitaciones" enTexto>
                 Altas por link
-              </Link>
+              </Enlace>
               .
             </p>
           ))}

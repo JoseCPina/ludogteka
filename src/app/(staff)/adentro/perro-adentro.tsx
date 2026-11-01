@@ -1,9 +1,10 @@
 "use client";
 
 import { idCliente } from "@/lib/id-cliente";
-import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Enlace } from "@/components/ui/enlace";
+import { Alternar } from "@/components/ui/alternar";
 import { Alert } from "@/components/ui/alert";
 import { Chip } from "@/components/ui/chip";
 import { AvisoDemo } from "@/components/ui/aviso-demo";
@@ -78,8 +79,8 @@ function IconoReporte() {
   );
 }
 
-const claseBoton =
-  "inline-flex min-h-14 flex-1 basis-[calc(50%-0.5rem)] items-center justify-center gap-2 rounded-lg border-[1.5px] border-borde bg-white px-3 py-2 text-base font-semibold text-n-900 transition-colors hover:bg-n-100 active:bg-n-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado focus-visible:ring-offset-2 md:basis-0 [-webkit-tap-highlight-color:transparent]";
+// Los botones de foto, video y galería: secundarios del sistema, del alto de un pulgar y a dos por renglón en el celular.
+const claseBoton = "min-h-14 flex-1 basis-[calc(50%-0.5rem)] px-3 md:basis-0 [-webkit-tap-highlight-color:transparent]";
 
 export function PerroAdentro({ dato, permiso, retencion }: { dato: PerroAdentroDato; permiso: boolean; retencion: number }) {
   const [abierto, setAbierto] = useState(false);
@@ -229,19 +230,19 @@ export function PerroAdentro({ dato, permiso, retencion }: { dato: PerroAdentroD
       {permiso && (
         <>
           <div className="mt-3 flex flex-wrap gap-2">
-            <button type="button" className={claseBoton} onClick={() => refFoto.current?.click()}>
+            <Button type="button" variante="secundario" className={claseBoton} onClick={() => refFoto.current?.click()}>
               <IconoCamara /> Tomar foto
-            </button>
-            <button type="button" className={claseBoton} onClick={() => refVideo.current?.click()}>
+            </Button>
+            <Button type="button" variante="secundario" className={claseBoton} onClick={() => refVideo.current?.click()}>
               <IconoVideo /> Tomar video
-            </button>
-            <button type="button" className={claseBoton} onClick={() => refGaleria.current?.click()}>
+            </Button>
+            <Button type="button" variante="secundario" className={claseBoton} onClick={() => refGaleria.current?.click()}>
               <IconoGaleria /> Elegir de la galería
-            </button>
+            </Button>
             {dato.tieneGuarderia && (
-              <Link href={`/guarderia/reportes/${dato.perroId}`} className={`${claseBoton} border-morado text-morado`}>
+              <Enlace href={`/guarderia/reportes/${dato.perroId}`} className="basis-full md:basis-auto">
                 <IconoReporte /> Reporte
-              </Link>
+              </Enlace>
             )}
           </div>
           <input ref={refFoto} type="file" accept="image/*" capture="environment" className="sr-only" tabIndex={-1} aria-label={`Tomar foto de ${dato.nombre}`} onChange={alElegir} />
@@ -249,18 +250,20 @@ export function PerroAdentro({ dato, permiso, retencion }: { dato: PerroAdentroD
           <input ref={refGaleria} type="file" accept="image/*,video/*" multiple className="sr-only" tabIndex={-1} aria-label={`Elegir fotos o videos de ${dato.nombre}`} onChange={alElegir} />
 
           {!abierto && (
-            <button
+            <Button
               type="button"
+              variante="secundario"
+              tamano="compacto"
               // Solo abre y lee lo subido (QA N151: se puede con el negocio en solo lectura; enviar, no).
-              data-sin-bloqueo
+              sinBloqueo
               onClick={() => {
                 setAbierto(true);
                 void refrescar();
               }}
-              className="mt-3 min-h-11 text-sm font-semibold text-morado hover:underline"
+              className="mt-3"
             >
               Ver lo subido y enviar al dueño
-            </button>
+            </Button>
           )}
 
           {abierto && (
@@ -287,21 +290,21 @@ export function PerroAdentro({ dato, permiso, retencion }: { dato: PerroAdentroD
                             <img src={s.vista} alt="" className="h-28 w-28 rounded-md border border-n-200 object-cover" />
                           ))}
                           <AvisoDemo texto={s.tipo === "video" ? AVISO_VIDEO_DEMO : AVISO_FOTO_DEMO} />
-                          <button type="button" className="min-h-11 self-start px-2 text-sm font-semibold text-n-600 hover:underline" onClick={() => setSubidas((x) => x.filter((y) => y.key !== s.key))}>
+                          <Button type="button" variante="secundario" tamano="compacto" className="self-start" onClick={() => setSubidas((x) => x.filter((y) => y.key !== s.key))}>
                             Quitar
-                          </button>
+                          </Button>
                         </div>
                       ) : s.estado === "error" ? (
                         <div className="mt-1 flex flex-wrap items-center gap-2">
                           <p className="text-sm text-coral-oscuro">{s.error}</p>
                           {s.reintentable && (
-                            <Button type="button" variante="secundario" className="min-h-11" onClick={() => void subirPreparado(s.key)}>
+                            <Button type="button" variante="secundario"  tamano="compacto" onClick={() => void subirPreparado(s.key)}>
                               Reintentar
                             </Button>
                           )}
-                          <button type="button" className="min-h-11 px-2 text-sm font-semibold text-n-600 hover:underline" onClick={() => setSubidas((x) => x.filter((y) => y.key !== s.key))}>
+                          <Button type="button" variante="secundario" tamano="compacto" onClick={() => setSubidas((x) => x.filter((y) => y.key !== s.key))}>
                             Descartar
-                          </button>
+                          </Button>
                         </div>
                       ) : (
                         <>
@@ -328,10 +331,9 @@ export function PerroAdentro({ dato, permiso, retencion }: { dato: PerroAdentroD
                       const marcado = seleccion.has(m.id);
                       return (
                         <li key={m.id} className="flex flex-col gap-1">
-                          <button
-                            type="button"
+                          <Alternar
                             onClick={() => alternar(m.id)}
-                            aria-pressed={marcado}
+                            activo={marcado}
                             aria-label={`${m.tipo === "video" ? "Video" : "Foto"} ${marcado ? "incluido" : "no incluido"}`}
                             className={`relative aspect-square overflow-hidden rounded-lg border-2 bg-n-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado ${marcado ? "border-morado" : "border-transparent"}`}
                           >
@@ -353,21 +355,21 @@ export function PerroAdentro({ dato, permiso, retencion }: { dato: PerroAdentroD
                             >
                               ✓
                             </span>
-                          </button>
+                          </Alternar>
                           <p className="text-xs text-n-600">{m.borra}</p>
                           {quitando === m.id ? (
                             <div className="flex gap-2">
-                              <button type="button" className="min-h-11 flex-1 rounded-md bg-coral-oscuro px-2 text-sm font-semibold text-white" onClick={() => void quitarUno(m.id)}>
+                              <Button type="button" variante="peligro" tamano="compacto" className="flex-1 px-2" cargando={quitar.cargando} onClick={() => void quitarUno(m.id)}>
                                 Sí, quitar
-                              </button>
-                              <button type="button" className="min-h-11 flex-1 rounded-md border border-borde px-2 text-sm font-semibold" onClick={() => setQuitando(null)}>
+                              </Button>
+                              <Button type="button" variante="secundario" tamano="compacto" className="flex-1 px-2" onClick={() => setQuitando(null)}>
                                 No
-                              </button>
+                              </Button>
                             </div>
                           ) : (
-                            <button type="button" className="min-h-11 text-left text-sm font-semibold text-coral-oscuro hover:underline" onClick={() => setQuitando(m.id)}>
+                            <Button type="button" variante="secundario" tamano="compacto" onClick={() => setQuitando(m.id)}>
                               Quitar
-                            </button>
+                            </Button>
                           )}
                         </li>
                       );
@@ -382,7 +384,7 @@ export function PerroAdentro({ dato, permiso, retencion }: { dato: PerroAdentroD
                     Falta el teléfono del dueño
                   </Button>
                 ) : (
-                  <Button type="button" variante="exito" cargando={envio.cargando} disabled={nSel === 0 || ocupado} onClick={enviar} className="w-full sm:w-auto">
+                  <Button type="button" variante="primario" cargando={envio.cargando} disabled={nSel === 0 || ocupado} onClick={enviar} className="w-full sm:w-auto">
                     {nSel === 0 ? "Escoge algo para enviar" : `Enviar por WhatsApp (${nSel})`}
                   </Button>
                 )}

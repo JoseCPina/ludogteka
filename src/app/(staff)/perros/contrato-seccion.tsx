@@ -21,6 +21,7 @@ import {
 } from "../contratos/contrato-actions";
 import { useZonaNegocio } from "@/components/zona-negocio";
 import { SiPuedeAbrir } from "@/components/acceso-contexto";
+import { Enlace } from "@/components/ui/enlace";
 
 const BUCKET = "perros-archivos";
 
@@ -123,11 +124,9 @@ function AccionesPendiente({
   return (
     <div className="mt-3">
       <div className="flex flex-wrap gap-2">
-        <a href={`/api/contratos/${contrato.id}/preview`} target="_blank" rel="noreferrer">
-          <Button type="button" variante="secundario">
+        <Enlace href={`/api/contratos/${contrato.id}/preview`} target="_blank" rel="noreferrer">
             Ver borrador
-          </Button>
-        </a>
+          </Enlace>
         <Button
           type="button"
           variante="secundario"
@@ -391,9 +390,9 @@ export function ContratoSeccion({
                     <p className="mt-1 text-xs font-semibold text-coral-oscuro">
                       {c.regenerarMotivo}{" "}
                       <SiPuedeAbrir href="/recepcion/contratos">
-                        <a href="/recepcion/contratos" className="underline">
+                        <Enlace href="/recepcion/contratos" enTexto>
                           Volver a generarlo
-                        </a>
+                        </Enlace>
                       </SiPuedeAbrir>
                     </p>
                   )}
@@ -404,9 +403,9 @@ export function ContratoSeccion({
                   </Button>
                 )}
                 {c.storagePath && pdf.enlace?.bloqueado && (
-                  <a href={pdf.enlace.url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-morado underline">
+                  <Enlace href={pdf.enlace.url} target="_blank" rel="noopener noreferrer" className="text-sm" enTexto>
                     El navegador no lo abrió solo: toca aquí para ver el PDF
-                  </a>
+                  </Enlace>
                 )}
               </li>
             ))}

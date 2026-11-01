@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
@@ -11,6 +10,7 @@ import { Select } from "@/components/ui/select";
 import { SelectorRaza, type RazaOpcion } from "@/components/selector-raza";
 import { cotizarPerro, type CotizacionEstetica } from "@/lib/estetica/cotizacion";
 import { asignarRazasEnLote, type AsignacionRaza } from "./acciones";
+import { Enlace } from "@/components/ui/enlace";
 
 export type PerroSinRaza = {
   id: string;
@@ -194,12 +194,9 @@ export function NormalizarRazas({
             >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <div>
-                  <Link
-                    href={`/perros/${perro.id}`}
-                    className="font-bold text-morado hover:underline"
-                  >
+                  <Enlace href={`/perros/${perro.id}`}>
                     {perro.nombre}
-                  </Link>
+                  </Enlace>
                   <span className="text-n-600"> · {perro.cliente_nombre}</span>
                 </div>
                 <p className="text-sm text-n-600">

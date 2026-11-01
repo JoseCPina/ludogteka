@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { VolverBienvenida } from "../volver";
 import { DesignarMedico } from "./designar-medico";
+import { Enlace } from "@/components/ui/enlace";
 
 // «Médico veterinario» (QA S16): antes de agendar consultas hace falta al menos un médico con cuenta y cédula. Si el
 // dueño es el médico, se designa a sí mismo; si no, se designa a una persona del personal que ya tiene cuenta.
@@ -41,9 +41,9 @@ export default async function MedicoPage() {
           </ul>
           <p className="mt-2 text-sm text-n-700">
             Folios, CPA y permisos del establecimiento se capturan en{" "}
-            <Link href="/veterinaria/medicos" className="font-semibold text-morado hover:underline">
+            <Enlace href="/veterinaria/medicos" enTexto>
               Veterinaria → Médicos
-            </Link>
+            </Enlace>
             .
           </p>
         </section>

@@ -77,7 +77,7 @@ export default async function RedesPlataforma() {
         <div className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
           <h2 className="text-lg font-bold text-n-900">Calendario</h2>
           <FormularioPlataforma accion={cargarSerie} textoBoton="Cargar el calendario de la serie" variante="secundario" />
-          <FormularioPlataforma accion={pausar.bind(null, !pausado)} textoBoton={pausado ? "Reanudar la publicación" : "Pausar todo"} variante={pausado ? "exito" : "peligro"} />
+          <FormularioPlataforma accion={pausar.bind(null, !pausado)} textoBoton={pausado ? "Reanudar la publicación" : "Pausar todo"} variante={pausado ? "primario" : "peligro"} />
           <div className="border-t border-n-200 pt-4">
             <p className="text-sm text-n-600">Prueba de conexión: Facebook sube un video sin publicar y lo borra; Instagram deja un contenedor que nunca se publica; TikTok deja un borrador (bórralo en la app).</p>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -168,7 +168,7 @@ export default async function RedesPlataforma() {
                     )}
                     {["revisar", "fallida"].includes(f.estado) && (
                       <div className="mt-3 flex flex-col gap-3 border-t border-n-200 pt-3">
-                        <FormularioPlataforma accion={resolver.bind(null, f.id, true)} textoBoton="Sí salió: anotarla" variante="exito">
+                        <FormularioPlataforma accion={resolver.bind(null, f.id, true)} textoBoton="Sí salió: anotarla" variante="primario">
                           <Field label="Enlace de la publicación (opcional)" name="url" type="url" />
                         </FormularioPlataforma>
                         {f.estado === "revisar" && <FormularioPlataforma accion={resolver.bind(null, f.id, false)} textoBoton="No salió: volver a mandarla" variante="secundario" />}

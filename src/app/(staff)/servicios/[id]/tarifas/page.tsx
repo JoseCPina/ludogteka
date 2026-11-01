@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { SiPuedeAbrir } from "@/components/acceso-contexto";
 import { ComoSeCobra } from "./como-se-cobra";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -10,6 +9,7 @@ import { zonaActual, negocioIdActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { nombresDePersonal } from "@/lib/personal/nombres";
 import { hoyNegocio } from "@/lib/formato";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function TarifasServicioPage({
   params,
@@ -108,10 +108,10 @@ export default async function TarifasServicioPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <SiPuedeAbrir href={`/servicios/${id}`} sino={<Link href="/servicios" className="text-sm font-semibold text-morado hover:underline">← Servicios</Link>}>
-          <Link href={`/servicios/${id}`} className="text-sm font-semibold text-morado hover:underline">
+        <SiPuedeAbrir href={`/servicios/${id}`} sino={<Enlace href="/servicios" className="text-sm">← Servicios</Enlace>}>
+          <Enlace href={`/servicios/${id}`} className="text-sm">
             ← {servicio.nombre}
-          </Link>
+          </Enlace>
         </SiPuedeAbrir>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Tarifas — {servicio.nombre}</h1>
         <p className="mt-1 text-n-600">
