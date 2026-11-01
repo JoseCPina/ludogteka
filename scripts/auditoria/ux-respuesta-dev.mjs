@@ -261,5 +261,7 @@ for (const [rol, r] of Object.entries(resumen)) console.log(`  ${rol.padEnd(10)}
 if (avisos.length) console.log("\nAvisos (no fallan):\n" + avisos.map((a) => `  · ${a}`).join("\n"));
 if (MEDIR) process.exit(0);
 console.log(hallazgos.length ? `\n✘ ${hallazgos.length} hallazgo(s) de respuesta.` : "\n✔ Cada enlace y acción tocados responden antes de 100 ms y el doble toque no duplica.");
-if (!hallazgos.length && !RUTAS && ["admin", "recepcion", "estetica", "encargada", "medico"].every((r) => ROLES.includes(r))) sellar("ux-respuesta-dev", { resumen });
+// Sello por rol: cada rol que recorrió sus pantallas sin hallazgos (scripts/auditoria/lib/sello-pantalla.mjs).
+const limpios = Object.entries(resumen).filter(([rol, r]) => r.pantallas > 0 && !hallazgos.some((h) => h.startsWith(`${rol} ·`))).map(([rol]) => rol);
+if (!RUTAS && limpios.length) sellar("ux-respuesta-dev", limpios);
 process.exit(hallazgos.length ? 1 : 0);

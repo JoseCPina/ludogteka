@@ -329,8 +329,8 @@ if (!EN_NUBE) {
   if (faltan.length) {
     abortar(
       "faltan auditorías de pantalla para este código",
-      faltan.map((x) => `  · ${x.nombre}: ${x.tiene ? `pasó con otro src/ (${x.tiene}), este es ${x.falta}` : "no ha pasado"}`).join("\n") +
-        "\nCompila (npm run build), levanta next start -p 3001 y corre cada una completa: node scripts/auditoria/<nombre>.mjs"
+      faltan.map((x) => `  · ${x.nombre}: le falta ${x.roles.join(", ")} con este src/ (${x.falta})${x.tiene && x.tiene !== x.falta ? `; su último sello es de otro src/ (${x.tiene})` : ""}`).join("\n") +
+        "\nCompila (npm run build), levanta next start -p 3001 y corre cada una (todos sus roles, juntos o uno por uno con --roles): node scripts/auditoria/<nombre>.mjs"
     );
   }
   console.log("   auditorías de pantalla: celular-390-dev, ux-jerarquia-dev y ux-respuesta-dev pasaron con este src/.");

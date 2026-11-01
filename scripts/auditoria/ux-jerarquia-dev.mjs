@@ -172,5 +172,7 @@ if (Object.keys(porRegla).length) {
   for (const [regla, n] of Object.entries(porRegla)) console.log(`  ${regla.padEnd(32)} ${n}`);
 }
 console.log(hallazgos.length ? `\n✘ ${hallazgos.length} hallazgo(s) de jerarquía.` : "\n✔ Todo botón y enlace del panel es del sistema, con tope, estado pendiente, 44 px y contraste AA.");
-if (!hallazgos.length && !RUTAS && TODOS.every((r) => ROLES.includes(r))) sellar("ux-jerarquia-dev", { resumen });
+// Sello por rol: cada rol que recorrió su panel completo sin hallazgos (scripts/auditoria/lib/sello-pantalla.mjs).
+const limpios = Object.entries(resumen).filter(([, r]) => r.malas === 0 && r.pantallas > 0).map(([rol]) => rol);
+if (!RUTAS && limpios.length) sellar("ux-jerarquia-dev", limpios);
 process.exit(hallazgos.length ? 1 : 0);

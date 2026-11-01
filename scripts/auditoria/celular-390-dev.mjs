@@ -168,5 +168,7 @@ console.log("\nPor rol:");
 for (const [rol, r] of Object.entries(porRol)) console.log(`  ${rol.padEnd(10)} ${String(r.pantallas).padStart(4)} pantallas · ${r.tablas} tablas · ${r.malas} con desborde`);
 console.log(hallazgos.length ? `\n✘ ${hallazgos.length} hallazgo(s) a 390 px.` : "\n✔ A 390 px nada es más ancho que la pantalla, toda tabla es tarjetas y el menú se cierra con su botón.");
 // La corrida completa deja su sello para `npm run desplegar` (scripts/auditoria/lib/sello-pantalla.mjs).
-if (!hallazgos.length && ["admin", "recepcion", "estetica", "medico"].every((r) => ROLES.includes(r))) sellar("celular-390-dev", { porRol });
+// Sello por rol: cada rol que recorrió su panel sin desbordes y con el menú bien (scripts/auditoria/lib/sello-pantalla.mjs).
+const limpios = Object.entries(porRol).filter(([rol, r]) => r.pantallas > 0 && r.malas === 0 && !hallazgos.some((h) => h.startsWith(`${rol}:`) || h.startsWith(`${rol} ·`))).map(([rol]) => rol);
+if (limpios.length) sellar("celular-390-dev", limpios);
 process.exit(hallazgos.length ? 1 : 0);
