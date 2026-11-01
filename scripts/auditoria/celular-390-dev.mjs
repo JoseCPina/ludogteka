@@ -40,7 +40,19 @@ const hallazgos = [];
 const mal = (t) => { hallazgos.push(t); console.log(`  ✘ ${t}`); };
 const bien = (t) => console.log(`  ✔ ${t}`);
 
+// Con la base de desarrollo estrangulada, Auth a veces no contesta (usuario nulo, enlace sin token): se reintenta.
 async function cookiesDe(profileId) {
+  for (let intento = 1; ; intento++) {
+    try {
+      return await cookiesDeUnaVez(profileId);
+    } catch (e) {
+      if (intento >= 5) throw e;
+      console.log(`  · no se pudo abrir la sesión (${String(e.message).slice(0, 60)}); reintento ${intento + 1} de 5 en 30 s`);
+      await new Promise((r) => setTimeout(r, 30_000));
+    }
+  }
+}
+async function cookiesDeUnaVez(profileId) {
   const { data: u } = await A.auth.admin.getUserById(profileId);
   const { data: link } = await A.auth.admin.generateLink({ type: "magiclink", email: u.user.email });
   const cli = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
