@@ -67,8 +67,11 @@ const miembrosDeB = new Set([datos.esteticaAmbos, datos.cuentaAmbos]);
 const TABLAS_DE_LA_PERSONA = new Set(["duenos", "mascotas", "app_avisos", "app_push_suscripciones"]);
 for (const [rol, id] of Object.entries(personasA)) if (!id) throw new Error(`No hay ${rol} en Ludogteka de desarrollo.`);
 
+// La auditoría dura más que una sesión (de 17 a 40 min contra desarrollo): cada bloque renueva los tokens que tengan
+// menos de 20 min, y una lectura con 401 detiene todo (un token vencido no ve nada de B y pasaría en verde).
 const tokens = {};
-for (const [rol, id] of Object.entries(personasA)) tokens[rol] = await tokenDe(id);
+const renovarTokens = async () => { for (const [rol, id] of Object.entries(personasA)) tokens[rol] = await tokenDe(id, 20); };
+await renovarTokens();
 const cabeceras = (token, negocio) => ({
   apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   Authorization: `Bearer ${token ?? env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
@@ -131,14 +134,16 @@ const conNegocio = new Set(relaciones.filter((r) => spec.definitions[r].properti
 
 // ── 1 y 2. Tablas y vistas ──
 console.log("\n── Tablas y vistas");
-for (const [rol, token] of Object.entries(tokens)) {
+for (const rol of Object.keys(tokens)) {
   const esMiembroB = miembrosDeB.has(personasA[rol]);
   for (const negocio of [LUDOGTEKA, B]) {
     if (negocio === B && esMiembroB) continue; // se revisa aparte (punto 5)
+    const token = (tokens[rol] = await tokenDe(personasA[rol], 20));
     let vistas = 0;
     for (const rel of relaciones) {
       const r = await fetch(`${URL}/rest/v1/${rel}?select=*&limit=1000`, { headers: cabeceras(token, negocio) });
       revisiones++;
+      if (r.status === 401) throw new Error(`${rol} ${rel}: 401 (sesión vencida); la revisión no sería válida`);
       const texto = await r.text();
       // negocios: con el encabezado de B, el id de B es solo el eco del
       // propio encabezado (la fila pública, si la política la deja ver).
@@ -160,6 +165,7 @@ for (const [rol, token] of Object.entries(tokens)) {
 }
 
 // ── 3. RPC ──
+await renovarTokens();
 console.log("\n── Funciones (RPC)");
 const idsPorTabla = {};
 for (const t of ["clientes", "perros", "reservas", "contratos", "turnos_caja", "gastos", "empleados", "tipos_contrato", "servicios", "cobros", "categorias_gasto", "cargos_aplicados", "plantillas_contrato"]) {
@@ -202,7 +208,8 @@ const soloLectura = new Set(rpcs.filter((fn) => spec.paths[`/rpc/${fn}`].get));
 // en todos sus negocios, filtradas por auth.uid().
 const propiasDeLaPersona = new Set(["mis_negocios", "app_mis_negocios", "app_mis_vinculos"]);
 let llamadas = 0;
-for (const [rol, token] of Object.entries(tokens)) {
+for (const rol of Object.keys(tokens)) {
+  const token = (tokens[rol] = await tokenDe(personasA[rol], 20));
   for (const fn of rpcs) {
     const lectura = soloLectura.has(fn);
     const args = argumentos(fn);
@@ -229,6 +236,7 @@ for (const [rol, token] of Object.entries(tokens)) {
 console.log(`  ${llamadas} llamadas (${soloLectura.size} funciones de lectura, las demás solo con ids de B)`);
 
 // ── 4. Escrituras directas sobre filas de B ──
+await renovarTokens();
 console.log("\n── Escribir sobre filas de B");
 const objetivos = [
   ["clientes", datos.clienteSoloB, { nombre: "hackeado desde A" }],
@@ -239,7 +247,8 @@ const objetivos = [
   ["contratos", idsPorTabla.contratos, { deleted_at: new Date().toISOString() }],
   ["membresias", null, { rol: "admin" }],
 ];
-for (const [rol, token] of Object.entries(tokens)) {
+for (const rol of Object.keys(tokens)) {
+  const token = (tokens[rol] = await tokenDe(personasA[rol], 20));
   if (miembrosDeB.has(personasA[rol])) continue;
   for (const negocio of [LUDOGTEKA, B]) {
     for (const [t, id, cambio] of objetivos) {
@@ -261,6 +270,7 @@ for (const [rol, token] of Object.entries(tokens)) {
 console.log("  PATCH, DELETE e INSERT revisados");
 
 // ── 5. Quien está en los dos negocios ──
+await renovarTokens();
 console.log("\n── Personas de los dos negocios");
 {
   const t = tokens.cliente_de_los_dos;
@@ -303,6 +313,7 @@ console.log("\n── Personas de los dos negocios");
 }
 
 // ── 6. Storage ──
+await renovarTokens();
 console.log("\n── Storage");
 for (const [rol, token] of Object.entries(tokens)) {
   if (miembrosDeB.has(personasA[rol])) continue;
@@ -347,6 +358,7 @@ console.log(`  ${relaciones.length} relaciones y ${soloLectura.size} funciones d
 
 
 // ── 9. Lo compartido: solo la plataforma lo escribe ──
+await renovarTokens();
 console.log("\n── Lo compartido entre negocios");
 const COMPARTIDAS = {
   razas: { cambio: { nombre: "hackeado por un negocio" }, alta: { nombre: `Raza intrusa ${MARCA}` } },
@@ -498,6 +510,7 @@ else {
 }
 
 // ── 10. Razas: propuestas, normalizaciones y grupos de precio ──
+await renovarTokens();
 // Un negocio no ve las propuestas ni el historial de otro, las funciones de
 // razas (fuera del catálogo, sin grupo, asignaciones) solo hablan del negocio
 // de la petición, y la bandeja de la plataforma es solo de la plataforma.
@@ -616,6 +629,7 @@ console.log("\n── Razas: propuestas y normalizaciones");
 }
 
 // ── 11. Reasignar la estilista de una cita ──
+await renovarTokens();
 // El historial y la función solo hablan del negocio de la petición: nadie de
 // Ludogteka (ni el anónimo, ni suplantando el encabezado de Huellitas) lee el
 // historial de una cita de B, ve a sus estilistas ni la reasigna.
