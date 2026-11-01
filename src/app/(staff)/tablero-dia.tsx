@@ -156,9 +156,78 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   const puedeReasignar = sesion?.rol === "admin" || sesion?.rol === "recepcion";
   const puedeCorregirEstilista = tienePermiso(sesion, "corregir_estilista");
 
-  const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
+  // El día del negocio se calcula aquí con su zona (lo mismo que fecha_negocio() en la base), sin un viaje más.
+  const hoy = hoyNegocio(zona);
   const columnas = "estancia_id, reserva_id, perro_id, perro_nombre, categoria, servicio_nombre";
+
+  // Tiempo del panel (31 de octubre de 2026): lo que no depende de nada se pide A LA VEZ, aquí; cada bloque de abajo
+  // solo espera lo suyo (antes eran 14 viajes a la base uno tras otro).
+  const previas = {
+    bajas: supabase
+    .from("perros_bajas")
+    .select("id, perro_id, perro_nombre, motivo, created_at")
+    .eq("tipo", "solicitud")
+    .eq("resultado", "pendiente")
+    .is("deleted_at", null)
+    .order("created_at")
+    .limit(50),
+    evaluacionExigida: supabase.rpc("evaluacion_exigida"),
+    saldos: cargarSaldosDeSalidas(supabase, hoy, zona),
+    razas: tienePermiso(sesion, "tarifas")
+      ? Promise.all([
+      supabase.rpc("razas_sin_grupo"),
+      supabase.rpc("razas_propuestas_sin_grupo"),
+    ])
+      : Promise.resolve([{ data: null }, { data: null }] as const),
+    gastos: tienePermiso(sesion, "gastos") && mods.includes("gastos")
+      ? leerTodo<Record<string, unknown>>(() => supabase.rpc("gastos_por_atender").order("id"))
+      : Promise.resolve({ data: null }),
+    vet: mods.includes("veterinaria")
+      ? Promise.all([
+      tienePermiso(sesion, "lotes_clinicos") ? supabase.rpc("inventario_clinico_alertas") : Promise.resolve({ data: null }),
+      tienePermiso(sesion, "configuracion_negocio") ? supabase.rpc("permisos_establecimiento_por_vencer") : Promise.resolve({ data: null }),
+      supabase.rpc("veterinaria_atencion"),
+    ])
+      : Promise.resolve([{ data: null }, { data: null }, { data: null }] as const),
+    fallosWa: mods.includes("veterinaria")
+      ? supabase.rpc("wa_fallos_atencion")
+      : Promise.resolve({ data: null }),
+    recordatorios: sesion && ["admin", "recepcion"].includes(sesion.rol)
+      ? Promise.all([
+      supabase.from("recordatorios_mensajes").select("tipo, created_at").is("deleted_at", null).is("atendido_at", null).neq("tipo", "baja").order("created_at").limit(200),
+      supabase.from("recordatorios_wa").select("id", { count: "exact", head: true }).eq("estado", "pausado").is("deleted_at", null),
+    ])
+      : Promise.resolve([{ data: null }, { count: null }] as const),
+    reembolsos: sesion && ["admin", "recepcion"].includes(sesion.rol)
+      ? leerTodo<Record<string, unknown>>(() => supabase.rpc("reembolsos_por_atender").order("id"))
+      : Promise.resolve({ data: null }),
+    conciliacion: sesion && ["admin", "recepcion"].includes(sesion.rol)
+      ? Promise.all([
+      // Los pagos ajenos (informativos) nunca cuentan en «Necesita atención».
+      leerTodo<{ id: string; tipo: string; monto: number; detectada_at: string }>(() =>
+        supabase.from("conciliacion_terminal").select("id, tipo, monto, detectada_at").is("resuelta_at", null).neq("tipo", "pago_ajeno").order("detectada_at").order("id")
+      ),
+      leerTodo<{ id: string; monto: number; created_at: string }>(() =>
+        supabase.from("mp_ordenes").select("id, monto, created_at").eq("estado", "por_confirmar").is("deleted_at", null).order("created_at").order("id")
+      ),
+    ])
+      : Promise.resolve([{ data: null }, { data: null }] as const),
+    tarjetas: sesion?.rol === "admin"
+      ? Promise.all([
+      leerTodo<Record<string, unknown>>(() => supabase.rpc("tarjetas_manuales_por_revisar", { p_historial: false }).order("id")),
+      supabase.rpc("tarjetas_manuales_atencion"),
+    ])
+      : Promise.resolve([{ data: null }, { data: null }] as const),
+    ajustes: conEstetica && sesion && ["admin", "recepcion"].includes(sesion.rol)
+      ? leerTodo<Record<string, unknown>>(() => supabase.rpc("ajustes_servicio_por_atender").order("correccion_id"))
+      : Promise.resolve({ data: null }),
+    cobro: sesion?.rol === "admin"
+      ? supabase.rpc("estado_cobro")
+      : Promise.resolve({ data: null }),
+    cfdi: supabase.rpc("cfdi_atencion"),
+  };
+  // Si el tablero sale antes (error de la tanda principal), ninguna de estas promesas queda sin quien la atrape.
+  for (const p of Object.values(previas)) void (p as Promise<unknown>).catch(() => {});
 
   const [
     { data: llegadas, error: e1 },
@@ -273,14 +342,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   const atencion: Atencion[] = [];
 
   // Solicitudes de baja de mascota que el dueño pidió desde su portal: el negocio confirma o rechaza en su expediente.
-  const { data: bajasPendientes } = await supabase
-    .from("perros_bajas")
-    .select("id, perro_id, perro_nombre, motivo, created_at")
-    .eq("tipo", "solicitud")
-    .eq("resultado", "pendiente")
-    .is("deleted_at", null)
-    .order("created_at")
-    .limit(50);
+  const { data: bajasPendientes } = await previas.bajas;
   for (const b of (bajasPendientes ?? []) as { id: string; perro_id: string | null; perro_nombre: string; motivo: string | null; created_at: string }[]) {
     if (!b.perro_id) continue;
     atencion.push({
@@ -350,7 +412,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     }
     const contratoPorPerro = new Map((contratos ?? []).map((c) => [c.perro_id as string, c]));
     // El negocio puede no pedir la evaluación de comportamiento (Requisitos para hospedar, QA S16).
-    const { data: evaluacionExigida } = await supabase.rpc("evaluacion_exigida");
+    const { data: evaluacionExigida } = await previas.evaluacionExigida;
     const vistos = new Set<string>();
     for (const p of proximas ?? []) {
       const perroId = p.perro_id as string;
@@ -420,7 +482,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // Cuentas con saldo de perros que ya se fueron (estancia o cita
   // terminada), sin tope de dos días: la que lleva semanas es la que más
   // importa que no se pierda.
-  const saldos = await cargarSaldosDeSalidas(supabase, hoy, zona);
+  const saldos = await previas.saldos;
   if (saldos.length > 0) {
     const total = saldos.reduce((suma, c) => suma + c.saldo, 0);
     atencion.push({
@@ -439,10 +501,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // precio: la app no les adivina precio. La lista a la que manda va de la
   // más vieja a la más nueva.
   if (tienePermiso(sesion, "tarifas")) {
-    const [{ data: sinGrupo }, { data: propuestasSinGrupo }] = await Promise.all([
-      supabase.rpc("razas_sin_grupo"),
-      supabase.rpc("razas_propuestas_sin_grupo"),
-    ]);
+    const [{ data: sinGrupo }, { data: propuestasSinGrupo }] = await previas.razas;
     // Las razas del catálogo sin grupo y las razas propuestas que esperan
     // aprobación (con perros, sin grupo que el negocio les haya dado).
     const razasSinGrupo = [
@@ -464,7 +523,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // tiene «Gastos»). La lista a la que manda va del vencimiento más viejo
   // al más nuevo.
   if (tienePermiso(sesion, "gastos") && mods.includes("gastos")) {
-    const { data: porPagar } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("gastos_por_atender").order("id"));
+    const { data: porPagar } = await previas.gastos;
     const lista = (porPagar ?? []) as { concepto: string; vencimiento: string; dias: number; vencido: boolean }[];
     const vencidos = lista.filter((g) => g.vencido);
     const proximos = lista.filter((g) => !g.vencido);
@@ -500,11 +559,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // tiene «Configuración del negocio».
   if (mods.includes("veterinaria")) {
     const cuando = (n: number) => (n <= 0 ? "hoy" : n === 1 ? "mañana" : `en ${n} días`);
-    const [{ data: alertasCrudo }, { data: permisosCrudo }, { data: vetCrudo }] = await Promise.all([
-      tienePermiso(sesion, "lotes_clinicos") ? supabase.rpc("inventario_clinico_alertas") : Promise.resolve({ data: null }),
-      tienePermiso(sesion, "configuracion_negocio") ? supabase.rpc("permisos_establecimiento_por_vencer") : Promise.resolve({ data: null }),
-      supabase.rpc("veterinaria_atencion"),
-    ]);
+    const [{ data: alertasCrudo }, { data: permisosCrudo }, { data: vetCrudo }] = await previas.vet;
     // Carnet, hospitalización y consentimientos (Fase 1): la base solo responde lo que a esta persona le toca.
     const vet = (vetCrudo ?? {}) as {
       recordatorios_pendientes?: number;
@@ -595,7 +650,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       });
     }
     // Mensajes de WhatsApp que Meta aceptó y no entregó (estado «failed» del webhook): con el motivo en palabras claras.
-    const { data: fallosWa } = await supabase.rpc("wa_fallos_atencion");
+    const { data: fallosWa } = await previas.fallosWa;
     const fallos = (fallosWa ?? []) as { id: string; etiqueta: string | null; href: string | null; motivo: string | null; fallido_at: string }[];
     if (fallos.length > 0) {
       const masViejo = fallos[0];
@@ -693,10 +748,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // Recordatorios por WhatsApp: lo que contestaron los clientes (cambiar la cita, agendar, un mensaje) y los que
   // quedaron en pausa por los gratis del mes o el tope.
   if (sesion && ["admin", "recepcion"].includes(sesion.rol)) {
-    const [{ data: porAtender }, { count: pausadosRec }] = await Promise.all([
-      supabase.from("recordatorios_mensajes").select("tipo, created_at").is("deleted_at", null).is("atendido_at", null).neq("tipo", "baja").order("created_at").limit(200),
-      supabase.from("recordatorios_wa").select("id", { count: "exact", head: true }).eq("estado", "pausado").is("deleted_at", null),
-    ]);
+    const [{ data: porAtender }, { count: pausadosRec }] = await previas.recordatorios;
     const msgs = (porAtender ?? []) as { tipo: string; created_at: string }[];
     if (msgs.length > 0) {
       const cambios = msgs.filter((m) => m.tipo === "pide_cambio").length;
@@ -729,7 +781,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // panel del proveedor (ya en caja, pero nadie en el mostrador los pidió),
   // hechos sin turno abierto, o pedidos cuya respuesta no ha llegado.
   if (sesion && ["admin", "recepcion"].includes(sesion.rol)) {
-    const { data: reembolsos } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("reembolsos_por_atender").order("id"));
+    const { data: reembolsos } = await previas.reembolsos;
     const lista = (reembolsos ?? []) as { origen: string; estado: string; registrado: boolean; monto: number; desde: string }[];
     if (lista.length > 0) {
       const panel = lista.filter((r) => r.origen === "proveedor");
@@ -755,15 +807,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // hora, solo marca) y órdenes que no se pudieron confirmar: dinero que
   // alguien tiene que revisar. Con su antigüedad.
   if (sesion && ["admin", "recepcion"].includes(sesion.rol)) {
-    const [{ data: conciliacion }, { data: porConfirmar }] = await Promise.all([
-      // Los pagos ajenos (informativos) nunca cuentan en «Necesita atención».
-      leerTodo<{ id: string; tipo: string; monto: number; detectada_at: string }>(() =>
-        supabase.from("conciliacion_terminal").select("id, tipo, monto, detectada_at").is("resuelta_at", null).neq("tipo", "pago_ajeno").order("detectada_at").order("id")
-      ),
-      leerTodo<{ id: string; monto: number; created_at: string }>(() =>
-        supabase.from("mp_ordenes").select("id, monto, created_at").eq("estado", "por_confirmar").is("deleted_at", null).order("created_at").order("id")
-      ),
-    ]);
+    const [{ data: conciliacion }, { data: porConfirmar }] = await previas.conciliacion;
     const filas = (conciliacion ?? []) as { tipo: string; monto: number; detectada_at: string }[];
     if (filas.length > 0) {
       const sinPago = filas.filter((f) => f.tipo === "cobro_sin_pago").length;
@@ -794,10 +838,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // pagadas pero nadie las ha verificado. Solo el admin las revisa (trae
   // montos y folios); sube también la que pasó el tope y el patrón de uso.
   if (sesion?.rol === "admin") {
-    const [{ data: tarjetas }, { data: aviso }] = await Promise.all([
-      leerTodo<Record<string, unknown>>(() => supabase.rpc("tarjetas_manuales_por_revisar", { p_historial: false }).order("id")),
-      supabase.rpc("tarjetas_manuales_atencion"),
-    ]);
+    const [{ data: tarjetas }, { data: aviso }] = await previas.tarjetas;
     const lista = (tarjetas ?? []) as { monto: number; sobre_tope: boolean; registrada_at: string }[];
     if (lista.length > 0) {
       const total = lista.reduce((s2, t) => s2 + Number(t.monto), 0);
@@ -840,7 +881,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // Servicios corregidos después de cobrarse: la cuenta quedó con un cobro
   // adicional o un saldo a favor que nadie ha resuelto. Con su antigüedad.
   if (conEstetica && sesion && ["admin", "recepcion"].includes(sesion.rol)) {
-    const { data: ajustes } = await leerTodo<Record<string, unknown>>(() => supabase.rpc("ajustes_servicio_por_atender").order("correccion_id"));
+    const { data: ajustes } = await previas.ajustes;
     const lista = (ajustes ?? []) as { tipo_ajuste: string; saldo: number; desde: string }[];
     if (lista.length > 0) {
       const aFavor = lista.filter((x) => x.tipo_ajuste === "saldo_a_favor");
@@ -922,7 +963,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // La suscripción a PeluDesk: un cobro fallido espera al admin aquí, con
   // cuánto lleva (la gracia es de 7 días; al 8 el negocio queda en solo lectura).
   if (sesion?.rol === "admin") {
-    const { data: cobroData } = await supabase.rpc("estado_cobro");
+    const { data: cobroData } = await previas.cobro;
     const cobro = cobroData as { estado: string; primer_fallo_at: string | null; solo_lectura_desde: string | null } | null;
     if (cobro && (cobro.estado === "gracia" || cobro.estado === "solo_lectura") && cobro.primer_fallo_at) {
       atencion.unshift({
@@ -942,7 +983,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // timbres por agotarse, cancelaciones esperando al cliente y timbrados por
   // revisar. La base solo las entrega a quien factura o cancela.
   {
-    const { data: cfdi } = await supabase.rpc("cfdi_atencion");
+    const { data: cfdi } = await previas.cfdi;
     for (const [i, a] of ((cfdi ?? []) as { clave: string; texto: string; desde: string; urgente: boolean; ruta: string }[]).entries()) {
       const dias = diasDesde(a.desde, hoy, zona);
       atencion.push({

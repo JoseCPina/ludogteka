@@ -1,0 +1,117 @@
+// Tiempo de las cuatro pantallas del panel — SOLO DESARROLLO, en Huellitas, con la app compilada en el 3001 arrancada con
+// el contador de consultas: `npm run build` y luego `PELUDESK_MEDIR=1 npm run start -- -p 3001` (en PowerShell:
+// `$env:PELUDESK_MEDIR="1"; npm run start -- -p 3001`).
+//
+//   node scripts/auditoria/tiempo-panel-dev.mjs [--tope 600] [--muestras 4] [--json]
+//
+// Mide, con la sesión de admin y de recepción de Huellitas, Recepción (/recepcion), Hotel (/hotel), la Agenda de
+// estética (/estetica) y el Inicio del panel (/admin): el tiempo del servidor (hasta los encabezados y hasta el final del
+// cuerpo, mediana de varias muestras tras una de calentamiento) y CUÁNTAS consultas a la base hace cada una (el servidor
+// las anota por petición con el encabezado `x-peludesk-medir`; src/lib/medicion/consultas.ts). Falla si una pantalla
+// pasa del tope de servidor o si hace más consultas que su tope (TOPES_CONSULTAS, fijados con lo que quedó después del
+// arreglo del 31 de octubre de 2026). Deja el resultado en <temp>/tiempo-panel-dev.json, que `npm run desplegar` exige
+// en verde y de menos de 24 h.
+//
+// Ojo: la base de desarrollo está en Canadá (ca-central-1) y producción en us-east-1 junto a Vercel; cada viaje a la
+// base cuesta aquí unos 70–100 ms más que en producción. El tope de tiempo se compara contra lo medido menos esa ida y
+// vuelta por tanda (se mide con `fecha_negocio`), para que el número signifique lo mismo que en producción.
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { randomUUID } from "node:crypto";
+import { createClient } from "@supabase/supabase-js";
+import { A, URL, env } from "./sesiones-dev.mjs";
+
+if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
+const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : d; };
+const TOPE_MS = Number(arg("--tope", "600"));
+const MUESTRAS = Number(arg("--muestras", "4"));
+const JSON_SALIDA = process.argv.includes("--json");
+const BASE = "http://127.0.0.1:3001";
+const HOST = "huellitas.localhost:3001";
+const REF = new globalThis.URL(URL).hostname.split(".")[0];
+const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
+const B = datos.B;
+
+// Consultas por pantalla después del arreglo (layout del personal incluido; el middleware no se cuenta). Si una
+// pantalla crece, se sube aquí a propósito, con el motivo en el commit.
+const TOPES_CONSULTAS = { "/recepcion": 48, "/hotel": 22, "/estetica": 16, "/admin": 70 };
+// Tandas de viajes a la base que quedan en cada pantalla (sesión + layout + la pantalla): para descontar la latencia
+// de desarrollo, no para premiar más tandas.
+const TANDAS = { "/recepcion": 6, "/hotel": 5, "/estetica": 6, "/admin": 8 };
+
+async function cookieDe(profileId) {
+  const { data: u } = await A.auth.admin.getUserById(profileId);
+  const { data: link } = await A.auth.admin.generateLink({ type: "magiclink", email: u.user.email });
+  const cli = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+  const { data: s, error } = await cli.auth.verifyOtp({ type: "magiclink", token_hash: link.properties.hashed_token });
+  if (error) throw error;
+  const valor = "base64-" + Buffer.from(JSON.stringify(s.session)).toString("base64url");
+  const trozos = valor.match(/.{1,3180}/g);
+  const galletas = (nombre) => (trozos.length === 1 ? [[nombre, valor]] : trozos.map((t, i) => [`${nombre}.${i}`, t]));
+  return { cookie: [...galletas(`sb-${REF}-auth-token`), ...galletas(`sb-${REF}-portal-auth-token`)].map(([k, v]) => `${k}=${v}`).join("; "), token: s.session.access_token };
+}
+
+const mediana = (xs) => { const s = [...xs].sort((a, b) => a - b); return s[Math.floor(s.length / 2)]; };
+
+async function medir(ruta, cookie) {
+  const muestras = [];
+  for (let i = 0; i <= MUESTRAS; i++) {
+    const id = randomUUID();
+    const t0 = performance.now();
+    const r = await fetch(BASE + ruta, { headers: { host: HOST, cookie, accept: "text/html", "x-peludesk-medir": id }, redirect: "manual", signal: AbortSignal.timeout(60_000) });
+    const head = performance.now() - t0;
+    const html = await r.text();
+    const total = performance.now() - t0;
+    const m = await fetch(`${BASE}/api/medir?id=${id}`, { headers: { host: HOST } });
+    const conteo = m.ok ? await m.json() : null;
+    if (i > 0) muestras.push({ status: r.status, head, total, bytes: html.length, conteo });
+    if (i === 0 && !m.ok) throw new Error(`/api/medir no responde (${m.status}): la app tiene que arrancar con PELUDESK_MEDIR=1.`);
+  }
+  return muestras;
+}
+
+const fallas = [];
+const pantallas = [];
+console.log("Tiempo del panel (Huellitas, app compilada en el 3001)");
+// Latencia de una ida y vuelta a la base desde esta máquina (para descontarla por tanda).
+const { token } = await cookieDe(datos.adminB);
+const c = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${token}`, "x-negocio-id": B } } });
+const idas = [];
+for (let i = 0; i < 5; i++) { const t0 = performance.now(); await c.rpc("fecha_negocio"); idas.push(performance.now() - t0); }
+const ida = Math.min(...idas);
+const { data: mods } = await c.rpc("modulos_activos");
+const modulos = (mods ?? []).map(String);
+console.log(`  ida y vuelta a la base de desarrollo: ${Math.round(ida)} ms (se descuenta por tanda) · módulos: ${modulos.join(", ")}`);
+
+for (const rol of ["admin", "recepcion"]) {
+  const { cookie } = await cookieDe(rol === "admin" ? datos.adminB : datos.recepcionB);
+  const rutas = rol === "admin" ? ["/admin", "/recepcion", "/hotel", "/estetica"] : ["/recepcion", "/hotel", "/estetica"];
+  console.log(`\n── ${rol} ──`);
+  for (const ruta of rutas) {
+    if (ruta === "/hotel" && !modulos.includes("hotel")) { console.log(`  ${ruta}: Hotel apagado en Huellitas, no se mide`); continue; }
+    if (ruta === "/estetica" && !modulos.includes("estetica")) { console.log(`  ${ruta}: Estética apagada en Huellitas, no se mide`); continue; }
+    let m;
+    try { m = await medir(ruta, cookie); } catch (e) { fallas.push(`${rol} ${ruta}: ${e.message}`); console.log(`  ✘ ${ruta}: ${e.message}`); continue; }
+    if (m[0].status !== 200) { fallas.push(`${rol} ${ruta}: responde ${m[0].status}`); console.log(`  ✘ ${ruta}: responde ${m[0].status}`); continue; }
+    const total = mediana(m.map((x) => x.total));
+    const consultas = Math.max(...m.map((x) => x.conteo?.total ?? 0));
+    const tandas = TANDAS[ruta] ?? 6;
+    const servidor = Math.max(0, total - tandas * ida);
+    const tope = TOPES_CONSULTAS[ruta] ?? 60;
+    const porTipo = m[0].conteo?.porTipo ?? {};
+    const lentas = (m[0].conteo?.consultas ?? []).slice().sort((a, b) => b.ms - a.ms).slice(0, 3).map((x) => `${x.que} ${x.ms} ms`).join(", ");
+    const ok = servidor <= TOPE_MS && consultas <= tope;
+    pantallas.push({ rol, ruta, totalMs: Math.round(total), servidorMs: Math.round(servidor), consultas, tope, ok });
+    console.log(`  ${ok ? "✔" : "✘"} ${ruta.padEnd(11)} ${Math.round(total)} ms medidos · ${Math.round(servidor)} ms sin la latencia de desarrollo (tope ${TOPE_MS}) · ${consultas} consultas (tope ${tope}) · ${Math.round(m[0].bytes / 1024)} KB · más lentas: ${lentas}`);
+    if (JSON_SALIDA) console.log(`      ${JSON.stringify(porTipo)}`);
+    if (servidor > TOPE_MS) fallas.push(`${rol} ${ruta}: ${Math.round(servidor)} ms de servidor (tope ${TOPE_MS})`);
+    if (consultas > tope) fallas.push(`${rol} ${ruta}: ${consultas} consultas (tope ${tope}): ${JSON.stringify(porTipo)}`);
+  }
+}
+
+const salida = { cuando: new Date().toISOString(), ok: fallas.length === 0, topeMs: TOPE_MS, idaMs: Math.round(ida), pantallas, fallas };
+fs.writeFileSync(path.join(os.tmpdir(), "tiempo-panel-dev.json"), JSON.stringify(salida, null, 1));
+console.log(fallas.length ? `\n✘ Tiempo del panel: ${fallas.length} pantalla(s) fuera de tope.\n  ${fallas.join("\n  ")}` : `\n✔ Tiempo del panel: las ${pantallas.length} mediciones dentro de ${TOPE_MS} ms y de su tope de consultas.`);
+console.log(`Resultado en ${path.join(os.tmpdir(), "tiempo-panel-dev.json")} (lo exige npm run desplegar).`);
+process.exit(fallas.length ? 1 : 0);

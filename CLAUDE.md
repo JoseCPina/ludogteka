@@ -6,7 +6,7 @@ App interna + portal de clientes para negocios caninos y veterinarios (guarderí
 - Next.js 16 (App Router, TypeScript, Tailwind) en `src/`: `src/app` (rutas: `(staff)`, `portal`, `peludesk` = sitio de la plataforma, `plataforma`, `api`), `src/lib` (lógica por tema), `src/components`.
 - Supabase (Auth, Postgres con RLS, Storage). Esquema por migraciones versionadas: `npx supabase migration new <nombre>` → editar .sql → aplicar (dev: `node scripts/nube/migrar-dev.mjs --aplicar` o `npx supabase db push`).
 - Dev en puerto 3001 (`npm run dev`; lo que solo se ve compilado: `npm run build` + `npm run start -- -p 3001`).
-- Controles: `npx tsc --noEmit`, `npx eslint`, `npm run secretos`, auditorías en `scripts/auditoria/` (Huellitas en desarrollo; una por una), `select * from auditoria_frontera()` vacía después de cualquier migración.
+- Controles: `npx tsc --noEmit`, `npx eslint`, `npm run secretos`, auditorías en `scripts/auditoria/` (Huellitas en desarrollo; una por una), `select * from auditoria_frontera()` vacía después de cualquier migración. **Antes de desplegar, `tiempo-panel-dev.mjs` en verde** (con la app compilada arrancada con `PELUDESK_MEDIR=1`; `npm run desplegar` exige su resultado de menos de 24 h): Recepción, Hotel, Agenda e Inicio en menos de 600 ms de servidor y dentro de su tope de consultas (docs/rendimiento-panel.md).
 - Scripts: `scripts/desplegar-produccion.mjs` (`npm run desplegar`), `scripts/nube/`, `scripts/demo/` (demo Patitas & Co.), `scripts/tutoriales/`, `scripts/plataforma/`, `scripts/clinica-demo/`, `scripts/whatsapp/meta.mjs`, `scripts/videos/`.
 
 ## Entornos
@@ -163,6 +163,7 @@ Fases 0 a 18 del roadmap, PeluDesk multi-negocio, integraciones de cobro, bot de
 - docs/veterinaria.md — Al tocar cualquier cosa de /veterinaria, recetas/SITPV, teleconsulta, dictado o la clínica demo.
 - docs/columnas-internas.md — Al agregar una columna a una tabla que el dueño puede leer.
 - docs/lecciones-tecnicas.md — Al escribir auditorías de navegador, listas o sumas grandes, o al borrar secretos de un negocio.
+- docs/rendimiento-panel.md — Al tocar la carga de datos de una pantalla del personal (tableros, agenda, inicio), `obtenerSesionConRol`, `calendario_ocupacion`, o el tope de `tiempo-panel-dev.mjs`: cómo se mide (producción y desarrollo), las cifras de antes y la causa raíz.
 - docs/qa-historial.md — Para entender por qué existe una regla de las tandas de QA (B2–B21, N6–N91, S12–S22, R17–R35) o repetir sus pruebas.
 - docs/herramientas-publicas.md — Al tocar las herramientas públicas de peludesk.mx (/herramientas, /precios-mercado…), «Recíbelo por WhatsApp», la precarga al abrir la prueba, el Índice de precios (`precios_mercado`, `scripts/mercado`), la medición por herramienta o Google Ads.
 - docs/prospectos-y-ventas.md — Al tocar /plataforma/prospectos, la búsqueda en Google Places (diaria y nacional), la página por prospecto (/para), «Contactar hoy», las audiencias o la campaña de Meta.

@@ -60,8 +60,8 @@ export async function TableroModulo({ modulo }: { modulo: ModuloEstancia }) {
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
 
-  const { data: hoyData } = await supabase.rpc("fecha_negocio");
-  const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
+  // El día del negocio se calcula aquí con su zona (lo mismo que fecha_negocio() en la base), sin un viaje más.
+  const hoy = hoyNegocio(zona);
   const hasta = sumarDiasFecha(hoy, DIAS_CALENDARIO - 1);
 
   const columnas = "estancia_id, reserva_id, perro_id, perro_nombre, categoria, servicio_nombre";
@@ -70,6 +70,8 @@ export async function TableroModulo({ modulo }: { modulo: ModuloEstancia }) {
     { data: salidas, error: errorSalidas },
     { data: adentro, error: errorAdentro },
     { data: calendario, error: errorCalendario },
+    // Llegadas atrasadas (antes era otro viaje después de la tanda).
+    { data: atrasadasCrudas, error: errorAtrasadas },
   ] = await Promise.all([
     supabase.from("llegadas_hoy").select(columnas).eq("categoria", modulo.categoria).order("perro_nombre"),
     supabase.from("salidas_hoy").select(columnas).eq("categoria", modulo.categoria).order("perro_nombre"),
@@ -79,19 +81,19 @@ export async function TableroModulo({ modulo }: { modulo: ModuloEstancia }) {
       .eq("categoria", modulo.categoria)
       .order("perro_nombre"),
     supabase.rpc("calendario_ocupacion", { p_desde: hoy, p_hasta: hasta }),
+    supabase
+      .from("estancias")
+      .select("id, reserva_id, fecha_entrada, updated_at, perros(nombre), servicios!inner(nombre, categoria)")
+      .is("deleted_at", null)
+      .is("hora_entrada_real", null)
+      .in("estado", ["reservada", "confirmada"])
+      .lt("fecha_entrada", hoy)
+      .eq("servicios.categoria", modulo.categoria)
+      .order("fecha_entrada")
+      .order("id")
+      .limit(TOPE_ATRASADAS + 1)
   ]);
   // Llegadas atrasadas: la entrada ya pasó y no hicieron check-in. Siguen vivas pero ya no cuentan en la ocupación.
-  const { data: atrasadasCrudas, error: errorAtrasadas } = await supabase
-    .from("estancias")
-    .select("id, reserva_id, fecha_entrada, updated_at, perros(nombre), servicios!inner(nombre, categoria)")
-    .is("deleted_at", null)
-    .is("hora_entrada_real", null)
-    .in("estado", ["reservada", "confirmada"])
-    .lt("fecha_entrada", hoy)
-    .eq("servicios.categoria", modulo.categoria)
-    .order("fecha_entrada")
-    .order("id")
-    .limit(TOPE_ATRASADAS + 1);
   const atrasadas: LlegadaAtrasada[] = (atrasadasCrudas ?? []).slice(0, TOPE_ATRASADAS).map((e) => ({
     id: e.id,
     reservaId: e.reserva_id,

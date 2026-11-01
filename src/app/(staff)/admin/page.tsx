@@ -38,6 +38,19 @@ export default async function AdminPage() {
   // Integraciones del negocio: con qué cobra (src/lib/pagos) y su ubicación
   // y consumo de Google Maps (la llave es de PeluDesk, con tope por mes).
   const puedeUbicacion = esAdmin || puedeConfig;
+  const nada = Promise.resolve({ data: null, error: null });
+  // Tiempo del panel (31 de octubre de 2026): lo que no depende de nada arranca A LA VEZ (antes eran cinco viajes a la
+  // base uno tras otro: cobro, perfil, personal, huecos de tarifa…).
+  const previas = {
+    cobro: esAdmin ? supabase.rpc("mi_cobro") : nada,
+    // QA S16/R22 (N61): una sola dirección del negocio: negocio_perfil.direccion (la sucursal se sincroniza sola).
+    perfil: supabase.from("negocio_perfil").select("direccion").is("deleted_at", null).maybeSingle(),
+    personal: !esAdmin && puedePersonal ? supabase.rpc("listar_personal") : nada,
+    // Mismo cálculo que la matriz y la lista de Servicios (src/lib/tarifas/huecos.ts) y solo de los
+    // módulos que el negocio tiene prendidos: un servicio apagado no se cobra, no es un hueco.
+    huecos: cargarServiciosConHuecos(supabase, sesion?.modulos ?? []),
+  };
+  for (const p of Object.values(previas)) void (p as Promise<unknown>).catch(() => {});
   const [cobroIntegrado, ubicacion] = await Promise.all([
     esAdmin ? resumenDeCobro(await negocioActual()) : Promise.resolve(null),
     puedeUbicacion
@@ -49,10 +62,6 @@ export default async function AdminPage() {
       : Promise.resolve(null),
   ]);
   const cupoUbic = ubicacion ? ((Array.isArray(ubicacion[1].data) ? ubicacion[1].data[0] : ubicacion[1].data) as { base_direccion: string | null; base_lat: number | null } | null) : null;
-  const nada = Promise.resolve({ data: null, error: null });
-  const cobro = esAdmin
-    ? ((await supabase.rpc("mi_cobro")).data as { toca_recordatorio?: boolean; solo_lectura_desde?: string | null } | null)
-    : null;
   const [
     { data, error },
     { data: topeData },
@@ -66,15 +75,12 @@ export default async function AdminPage() {
     supabase.rpc("horario_semana_vigente"),
     supabase.from("horario_semana").select("updated_at").order("updated_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
-  // QA S16/R22 (N61): una sola dirección del negocio: negocio_perfil.direccion (la sucursal se sincroniza sola).
-  const { data: perfilDir } = await supabase.from("negocio_perfil").select("direccion").is("deleted_at", null).maybeSingle();
+  const cobro = (await previas.cobro).data as { toca_recordatorio?: boolean; solo_lectura_desde?: string | null } | null;
+  const { data: perfilDir } = await previas.perfil;
   const direccionNegocio = ((perfilDir?.direccion as string | null) ?? "").trim();
   const negocioIdActual = (await negocioActual()).id;
-  const { data: personal } = !esAdmin && puedePersonal ? await supabase.rpc("listar_personal") : { data: null };
-
-  // Mismo cálculo que la matriz y la lista de Servicios (src/lib/tarifas/huecos.ts) y solo de los
-  // módulos que el negocio tiene prendidos: un servicio apagado no se cobra, no es un hueco.
-  const serviciosSinTarifa = await cargarServiciosConHuecos(supabase, sesion?.modulos ?? []);
+  const { data: personal } = await previas.personal;
+  const serviciosSinTarifa = await previas.huecos;
   const topeFila = Array.isArray(topeData) ? topeData[0] : topeData;
   const configVigente = (Array.isArray(configData) ? configData[0] : configData) as
     | ConfiguracionVigente
