@@ -129,14 +129,17 @@ try {
     let pantallas = 0;
     let malas = 0;
     let tablas = 0;
+    // Pantallas que no cargaron (5xx, sin el encabezado del panel, o que no abrieron): no se juzgan, pero el rol no se sella.
+    let noCargo = 0;
     while (cola.length && pantallas < MAX) {
       const ruta = cola.shift();
       try {
         await pestana();
-        await p.goto(BASE + ruta, { waitUntil: "load" });
+        const resp = await p.goto(BASE + ruta, { waitUntil: "load" });
         await p.waitForLoadState("networkidle", { timeout: 6000 }).catch(() => {});
         await p.waitForTimeout(250);
-      } catch (e) { console.log(`  · ${ruta}: ${String(e.message).split("\n")[0]}`); continue; }
+        if (!resp || resp.status() >= 500 || !(await p.locator("header").count())) throw new Error(`no cargó (${resp?.status() ?? "sin respuesta"})`);
+      } catch (e) { noCargo++; console.log(`  · ${ruta}: ${String(e.message).split("\n")[0]}`); continue; }
       pantallas++;
       const final = new globalThis.URL(p.url()).pathname;
       const desbordes = await p.evaluate(desbordesDePantalla).catch(() => []);
@@ -156,7 +159,8 @@ try {
         cola.push(r);
       }
     }
-    porRol[rol] = { pantallas, malas, tablas };
+    porRol[rol] = { pantallas, malas, tablas, noCargo };
+    if (noCargo) console.log(`  · ${rol}: ${noCargo} pantalla(s) no cargaron: este rol no se sella`);
     console.log(`  · ${rol}: ${pantallas} pantallas a 390 px, ${tablas} tablas vistas, ${malas} con algo más ancho que la pantalla`);
     await ctx.close();
   }
@@ -169,6 +173,6 @@ for (const [rol, r] of Object.entries(porRol)) console.log(`  ${rol.padEnd(10)} 
 console.log(hallazgos.length ? `\n✘ ${hallazgos.length} hallazgo(s) a 390 px.` : "\n✔ A 390 px nada es más ancho que la pantalla, toda tabla es tarjetas y el menú se cierra con su botón.");
 // La corrida completa deja su sello para `npm run desplegar` (scripts/auditoria/lib/sello-pantalla.mjs).
 // Sello por rol: cada rol que recorrió su panel sin desbordes y con el menú bien (scripts/auditoria/lib/sello-pantalla.mjs).
-const limpios = Object.entries(porRol).filter(([rol, r]) => r.pantallas > 0 && r.malas === 0 && !hallazgos.some((h) => h.startsWith(`${rol}:`) || h.startsWith(`${rol} ·`))).map(([rol]) => rol);
+const limpios = Object.entries(porRol).filter(([rol, r]) => r.pantallas > 0 && r.malas === 0 && !r.noCargo && !hallazgos.some((h) => h.startsWith(`${rol}:`) || h.startsWith(`${rol} ·`))).map(([rol]) => rol);
 if (limpios.length) sellar("celular-390-dev", limpios);
 process.exit(hallazgos.length ? 1 : 0);

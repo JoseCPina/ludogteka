@@ -127,6 +127,8 @@ try {
     const vistos = new Set(cola.map(patronDe));
     const yaDichos = new Set();
     let pantallas = 0, controles = 0, malas = 0;
+    // Pantallas que no cargaron (5xx, sin el encabezado del panel, o que no abrieron): no se juzgan, pero el rol no se sella.
+    let noCargo = 0;
     let p = null;
     while (cola.length && pantallas < MAX) {
       const ruta = cola.shift();
@@ -134,10 +136,11 @@ try {
         if (p) await p.close().catch(() => {});
         p = await ctx.newPage();
         p.on("dialog", (d) => d.dismiss().catch(() => {}));
-        await p.goto(BASE + ruta, { waitUntil: "load" });
+        const resp = await p.goto(BASE + ruta, { waitUntil: "load" });
         await p.waitForLoadState("networkidle", { timeout: 6000 }).catch(() => {});
         await p.waitForTimeout(250);
-      } catch (e) { console.log(`  · ${ruta}: ${String(e.message).split("\n")[0]}`); continue; }
+        if (!resp || resp.status() >= 500 || !(await p.locator("header").count())) throw new Error(`no cargó (${resp?.status() ?? "sin respuesta"})`);
+      } catch (e) { noCargo++; console.log(`  · ${ruta}: ${String(e.message).split("\n")[0]}`); continue; }
       pantallas++;
       const final = new URL(p.url()).pathname;
       if (!RUTAS) encolar(await enlacesInternos(p), cola, vistos);
@@ -156,7 +159,8 @@ try {
       }
       if (nuevos) malas++;
     }
-    resumen[rol] = { pantallas, controles, malas };
+    resumen[rol] = { pantallas, controles, malas, noCargo };
+    if (noCargo) console.log(`  · ${rol}: ${noCargo} pantalla(s) no cargaron: este rol no se sella`);
     console.log(`  · ${rol}: ${pantallas} pantallas, ${controles} controles revisados, ${malas} con algo fuera de regla`);
     await ctx.close();
   }
@@ -173,6 +177,6 @@ if (Object.keys(porRegla).length) {
 }
 console.log(hallazgos.length ? `\n✘ ${hallazgos.length} hallazgo(s) de jerarquía.` : "\n✔ Todo botón y enlace del panel es del sistema, con tope, estado pendiente, 44 px y contraste AA.");
 // Sello por rol: cada rol que recorrió su panel completo sin hallazgos (scripts/auditoria/lib/sello-pantalla.mjs).
-const limpios = Object.entries(resumen).filter(([, r]) => r.malas === 0 && r.pantallas > 0).map(([rol]) => rol);
+const limpios = Object.entries(resumen).filter(([, r]) => r.malas === 0 && r.pantallas > 0 && !r.noCargo).map(([rol]) => rol);
 if (!RUTAS && limpios.length) sellar("ux-jerarquia-dev", limpios);
 process.exit(hallazgos.length ? 1 : 0);
