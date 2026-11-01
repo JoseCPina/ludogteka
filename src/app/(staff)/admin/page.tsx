@@ -23,6 +23,7 @@ import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { resumenDeCobro } from "@/lib/pagos/conexion";
 import { leerTodo } from "@/lib/supabase/paginar";
 import { Enlace } from "@/components/ui/enlace";
+import { arrancarTodas } from "@/lib/supabase/arrancar";
 
 // Admin ve todo. Una persona de recepción con permisos extra llega aquí
 // solo con las secciones que le tocan (el middleware la deja entrar con
@@ -41,7 +42,7 @@ export default async function AdminPage() {
   const nada = Promise.resolve({ data: null, error: null });
   // Tiempo del panel (31 de octubre de 2026): lo que no depende de nada arranca A LA VEZ (antes eran cinco viajes a la
   // base uno tras otro: cobro, perfil, personal, huecos de tarifa…).
-  const previas = {
+  const previas = arrancarTodas({
     cobro: esAdmin ? supabase.rpc("mi_cobro") : nada,
     // QA S16/R22 (N61): una sola dirección del negocio: negocio_perfil.direccion (la sucursal se sincroniza sola).
     perfil: supabase.from("negocio_perfil").select("direccion").is("deleted_at", null).maybeSingle(),
@@ -49,8 +50,7 @@ export default async function AdminPage() {
     // Mismo cálculo que la matriz y la lista de Servicios (src/lib/tarifas/huecos.ts) y solo de los
     // módulos que el negocio tiene prendidos: un servicio apagado no se cobra, no es un hueco.
     huecos: cargarServiciosConHuecos(supabase, sesion?.modulos ?? []),
-  };
-  for (const p of Object.values(previas)) void (p as Promise<unknown>).catch(() => {});
+  });
   const [cobroIntegrado, ubicacion] = await Promise.all([
     esAdmin ? resumenDeCobro(await negocioActual()) : Promise.resolve(null),
     puedeUbicacion

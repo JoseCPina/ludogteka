@@ -23,6 +23,7 @@ import {
 } from "@/lib/formato";
 import { leerTodo, leerTodoPorIds } from "@/lib/supabase/paginar";
 import { Enlace } from "@/components/ui/enlace";
+import { arrancarTodas } from "@/lib/supabase/arrancar";
 
 /**
  * El tablero del día: lo que recepción necesita ver al abrir la app.
@@ -162,7 +163,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
 
   // Tiempo del panel (31 de octubre de 2026): lo que no depende de nada se pide A LA VEZ, aquí; cada bloque de abajo
   // solo espera lo suyo (antes eran 14 viajes a la base uno tras otro).
-  const previas = {
+  const previas = arrancarTodas({
     bajas: supabase
     .from("perros_bajas")
     .select("id, perro_id, perro_nombre, motivo, created_at")
@@ -225,9 +226,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       ? supabase.rpc("estado_cobro")
       : Promise.resolve({ data: null }),
     cfdi: supabase.rpc("cfdi_atencion"),
-  };
-  // Si el tablero sale antes (error de la tanda principal), ninguna de estas promesas queda sin quien la atrape.
-  for (const p of Object.values(previas)) void (p as Promise<unknown>).catch(() => {});
+  });
 
   const [
     { data: llegadas, error: e1 },
